@@ -74,51 +74,42 @@ export default class MatrixEngineGPURender {
     const world = mat4.rotationY(time);
     mat4.transpose(mat4.inverse(world), this.engine.worldInverseTranspose);
     mat4.multiply(viewProjection, world, this.engine.worldViewProjection);
-
     vec3.normalize([1, 8, -10], this.engine.lightDirection);
 
-    this.engine.device.queue.writeBuffer(
-      this.engine.vsUniformBuffer,
-      0,
-      this.engine.vsUniformValues,
-    );
-    this.engine.device.queue.writeBuffer(
-      this.engine.fsUniformBuffer,
-      0,
-      this.engine.fsUniformValues,
-    );
+    this.engine.device.queue.writeBuffer(this.engine.vsUniformBuffer, 0, this.engine.vsUniformValues);
+    this.engine.device.queue.writeBuffer(this.engine.fsUniformBuffer, 0, this.engine.fsUniformValues);
 
     if(this.engine.canvasInfo.sampleCount === 1) {
       const colorTexture = this.engine.context.getCurrentTexture();
-      this.engine.renderPassDescriptor.colorAttachments[0].view =
-        colorTexture.createView();
+      this.engine.renderPassDescriptor.colorAttachments[0].view = colorTexture.createView();
     } else {
-      this.engine.renderPassDescriptor.colorAttachments[0].view =
-        this.engine.canvasInfo.renderTargetView;
-      this.engine.renderPassDescriptor.colorAttachments[0].resolveTarget =
-        this.engine.context.getCurrentTexture().createView();
+      this.engine.renderPassDescriptor.colorAttachments[0].view = this.engine.canvasInfo.renderTargetView;
+      this.engine.renderPassDescriptor.colorAttachments[0].resolveTarget = this.engine.context.getCurrentTexture().createView();
     }
-    this.engine.renderPassDescriptor.depthStencilAttachment.view =
-      this.engine.canvasInfo.depthTextureView;
+    this.engine.renderPassDescriptor.depthStencilAttachment.view = this.engine.canvasInfo.depthTextureView;
 
     const commandEncoder = this.engine.device.createCommandEncoder();
-
-    const passEncoder = commandEncoder.beginRenderPass(
-      this.engine.renderPassDescriptor,
-    );
-
+    const passEncoder = commandEncoder.beginRenderPass(this.engine.renderPassDescriptor);
 
     passEncoder.setPipeline(this.engine.pipeline);
     passEncoder.setBindGroup(0, this.engine.bindGroup);
-    passEncoder.setVertexBuffer(0, this.engine.meBuffers.MY_GPU_BUFFER.positionBuffer);
-    passEncoder.setVertexBuffer(1, this.engine.meBuffers.MY_GPU_BUFFER.normalBuffer);
-    passEncoder.setVertexBuffer(2, this.engine.meBuffers.MY_GPU_BUFFER.texcoordBuffer);
-    passEncoder.setIndexBuffer(this.engine.meBuffers.MY_GPU_BUFFER.indicesBuffer, "uint16");
-    passEncoder.drawIndexed(this.engine.meBuffers.MY_GPU_BUFFER.indices.length);
+    passEncoder.setVertexBuffer(0, this.engine.buffersManager.MY_GPU_BUFFER.positionBuffer);
+    passEncoder.setVertexBuffer(1, this.engine.buffersManager.MY_GPU_BUFFER.normalBuffer);
+    passEncoder.setVertexBuffer(2, this.engine.buffersManager.MY_GPU_BUFFER.texcoordBuffer);
+    passEncoder.setIndexBuffer(this.engine.buffersManager.MY_GPU_BUFFER.indicesBuffer, "uint16");
+    passEncoder.drawIndexed(this.engine.buffersManager.MY_GPU_BUFFER.indices.length);
     passEncoder.end();
 
     this.engine.device.queue.submit([commandEncoder.finish()]);
 
+    this.engine.systemScene.forEach((matrixEnginePipline) => {
+      matrixEnginePipline.draw()
+    })
+    
+ 
     requestAnimationFrame(this.render);
   }
+
+
+
 }

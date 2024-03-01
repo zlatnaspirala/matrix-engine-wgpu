@@ -1,23 +1,47 @@
 import MatrixEngineGPUCreateBuffers from "./buffers.js";
-import {shaderSrc} from "../shaders/shaders.js";
+import {cubeTexShader, shaderSrc} from "../shaders/shaders.js";
 import MatrixEngineGPUTextures from "./textures.js";
 import MatrixEngineGPURender from "./render.js";
-
+import MECubeTexPipline from "./pipline.js";
 
 export default class MatrixEngineGPUEngine {
+
+  name = "MatrixEngineWGPU WebGPU Powered PWA Application - MIT LICENCE";
+  author = "zlatnaspirala@";
   version = "1.0.0";
   adapter = null;
   device = null;
+  systemScene = [];
 
   constructor() {
     this.loadwebGPUContext().then(() => {
+      // load simple cube
       this.main();
     });
+
+    this.systemScene = [];
+  }
+
+  async addCubeTex() {
+    const moduleCubeTex = this.device.createShaderModule({code: cubeTexShader})
+    const piplineCubeTex = new MECubeTexPipline(this.device, this.presentationFormat, moduleCubeTex, this.context, this.canvas);
+
+    const texture = await this.textureManager.createTextureFromImage(this.device,
+      './res/textures/tex1.jpg', {mips: true, flipY: false});
+
+    const sampler = this.device.createSampler({
+      magFilter: 'linear',
+      minFilter: 'linear',
+      mipmapFilter: 'linear',
+    });
+    piplineCubeTex.loadObjProgram(this.device, this.buffersManager, sampler, texture)
+
+    this.systemScene.push(piplineCubeTex)
   }
 
   main() {
-    this.meBuffers = new MatrixEngineGPUCreateBuffers(this.device);
-    this.meTexture = new MatrixEngineGPUTextures(this.device);
+    this.buffersManager = new MatrixEngineGPUCreateBuffers(this.device);
+    this.textureManager = new MatrixEngineGPUTextures(this.device);
     this.shaderModule = this.device.createShaderModule({code: shaderSrc});
     this.createPipline();
     this.render = new MatrixEngineGPURender(this)
@@ -27,7 +51,7 @@ export default class MatrixEngineGPUEngine {
     return new Promise(async (resolve, reject) => {
       this.adapter = await navigator.gpu?.requestAdapter();
       this.device = await this.adapter?.requestDevice();
-      if (!this.device) {
+      if(!this.device) {
         fail("need a browser that supports WebGPU");
         reject();
         return;
@@ -50,6 +74,7 @@ export default class MatrixEngineGPUEngine {
       this.context.configure({
         device: this.device,
         format: this.presentationFormat,
+        alphaMode: 'premultiplied'
       });
 
       this.canvasInfo = {
@@ -135,15 +160,15 @@ export default class MatrixEngineGPUEngine {
     this.fsUniformValues = new Float32Array(3); // 1 vec3
     this.lightDirection = this.fsUniformValues.subarray(0, 3);
 
-    console.log("test this.meTexture.sampler ", this.meTexture.sampler);
+    console.log("test this.textureManager.sampler ", this.textureManager.sampler);
 
     this.bindGroup = this.device.createBindGroup({
       layout: this.pipeline.getBindGroupLayout(0),
       entries: [
         {binding: 0, resource: {buffer: this.vsUniformBuffer}},
         {binding: 1, resource: {buffer: this.fsUniformBuffer}},
-        {binding: 2, resource: this.meTexture.sampler},
-        {binding: 3, resource: this.meTexture.tex.createView()},
+        {binding: 2, resource: this.textureManager.sampler},
+        {binding: 3, resource: this.textureManager.tex.createView()},
       ],
     });
 

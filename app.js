@@ -1,6 +1,10 @@
 
-import engine from "./src/me-gpu-world.js";
+import {meWGPU} from "./src/me-gpu-world.js";
 
 
+window.addEventListener('click', () => {
+  // test
+  meWGPU.addCubeTex()
+})
 
-console.log('App level ... run ', engine)
+console.log('App level ... run ', meWGPU)

@@ -1,6 +1,6 @@
 
 import MatrixEngineGPUEngine from "./me-gpu-engine/engine.js";
 
-export let engine = new MatrixEngineGPUEngine()
+export let meWGPU = new MatrixEngineGPUEngine()
 
-console.log('Running me-gpu engine...', engine)
+console.log('Running me-gpu engine...', meWGPU)

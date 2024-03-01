@@ -1,11 +1,14 @@
 (function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
 "use strict";
 
-var _meGpuWorld = _interopRequireDefault(require("./src/me-gpu-world.js"));
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-console.log('App level ... run ', _meGpuWorld.default);
+var _meGpuWorld = require("./src/me-gpu-world.js");
+window.addEventListener('click', () => {
+  // test
+  _meGpuWorld.meWGPU.addCubeTex();
+});
+console.log('App level ... run ', _meGpuWorld.meWGPU);
 
-},{"./src/me-gpu-world.js":7}],2:[function(require,module,exports){
+},{"./src/me-gpu-world.js":8}],2:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -5364,14 +5367,51 @@ class MatrixEngineGPUCreateBuffers {
   constructor(device) {
     this.device = device;
     this.MY_GPU_BUFFER = {};
+    this.createSimpleCubeBuffers();
+  }
+  createSimpleCubeBuffers() {
     const positions = new Float32Array([1, 1, -1, 1, 1, 1, 1, -1, 1, 1, -1, -1, -1, 1, 1, -1, 1, -1, -1, -1, -1, -1, -1, 1, -1, 1, 1, 1, 1, 1, 1, 1, -1, -1, 1, -1, -1, -1, -1, 1, -1, -1, 1, -1, 1, -1, -1, 1, 1, 1, 1, -1, 1, 1, -1, -1, 1, 1, -1, 1, -1, 1, -1, 1, 1, -1, 1, -1, -1, -1, -1, -1]);
     const normals = new Float32Array([1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0, -1]);
     const texcoords = new Float32Array([1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1]);
     this.MY_GPU_BUFFER.indices = new Uint16Array([0, 1, 2, 0, 2, 3, 4, 5, 6, 4, 6, 7, 8, 9, 10, 8, 10, 11, 12, 13, 14, 12, 14, 15, 16, 17, 18, 16, 18, 19, 20, 21, 22, 20, 22, 23]);
-    this.MY_GPU_BUFFER.positionBuffer = this.createBuffer(device, positions, GPUBufferUsage.VERTEX);
-    this.MY_GPU_BUFFER.normalBuffer = this.createBuffer(device, normals, GPUBufferUsage.VERTEX);
-    this.MY_GPU_BUFFER.texcoordBuffer = this.createBuffer(device, texcoords, GPUBufferUsage.VERTEX);
-    this.MY_GPU_BUFFER.indicesBuffer = this.createBuffer(device, this.MY_GPU_BUFFER.indices, GPUBufferUsage.INDEX);
+    this.MY_GPU_BUFFER.positionBuffer = this.createBuffer(this.device, positions, GPUBufferUsage.VERTEX);
+    this.MY_GPU_BUFFER.normalBuffer = this.createBuffer(this.device, normals, GPUBufferUsage.VERTEX);
+    this.MY_GPU_BUFFER.texcoordBuffer = this.createBuffer(this.device, texcoords, GPUBufferUsage.VERTEX);
+    this.MY_GPU_BUFFER.indicesBuffer = this.createBuffer(this.device, this.MY_GPU_BUFFER.indices, GPUBufferUsage.INDEX);
+  }
+  createCubeVertices() {
+    const vertexData = new Float32Array([
+    //  position   |  texture coordinate
+    //-------------+----------------------
+    // front face     select the top left image
+    -1, 1, 1, 0, 0, -1, -1, 1, 0, 0.5, 1, 1, 1, 0.25, 0, 1, -1, 1, 0.25, 0.5,
+    // right face     select the top middle image
+    1, 1, -1, 0.25, 0, 1, 1, 1, 0.5, 0, 1, -1, -1, 0.25, 0.5, 1, -1, 1, 0.5, 0.5,
+    // back face      select to top right image
+    1, 1, -1, 0.5, 0, 1, -1, -1, 0.5, 0.5, -1, 1, -1, 0.75, 0, -1, -1, -1, 0.75, 0.5,
+    // left face       select the bottom left image
+    -1, 1, 1, 0, 0.5, -1, 1, -1, 0.25, 0.5, -1, -1, 1, 0, 1, -1, -1, -1, 0.25, 1,
+    // bottom face     select the bottom middle image
+    1, -1, 1, 0.25, 0.5, -1, -1, 1, 0.5, 0.5, 1, -1, -1, 0.25, 1, -1, -1, -1, 0.5, 1,
+    // top face        select the bottom right image
+    -1, 1, 1, 0.5, 0.5, 1, 1, 1, 0.75, 0.5, -1, 1, -1, 0.5, 1, 1, 1, -1, 0.75, 1]);
+    const indexData = new Uint16Array([0, 1, 2, 2, 1, 3,
+    // front
+    4, 5, 6, 6, 5, 7,
+    // right
+    8, 9, 10, 10, 9, 11,
+    // back
+    12, 13, 14, 14, 13, 15,
+    // left
+    16, 17, 18, 18, 17, 19,
+    // bottom
+    20, 21, 22, 22, 21, 23 // top
+    ]);
+    return {
+      vertexData,
+      indexData,
+      numVertices: indexData.length
+    };
   }
   createBuffer(device, data, usage) {
     const buffer = device.createBuffer({
@@ -5398,19 +5438,42 @@ var _buffers = _interopRequireDefault(require("./buffers.js"));
 var _shaders = require("../shaders/shaders.js");
 var _textures = _interopRequireDefault(require("./textures.js"));
 var _render = _interopRequireDefault(require("./render.js"));
+var _pipline = _interopRequireDefault(require("./pipline.js"));
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 class MatrixEngineGPUEngine {
+  name = "MatrixEngineWGPU WebGPU Powered PWA Application - MIT LICENCE";
+  author = "zlatnaspirala@";
   version = "1.0.0";
   adapter = null;
   device = null;
+  systemScene = [];
   constructor() {
     this.loadwebGPUContext().then(() => {
+      // load simple cube
       this.main();
     });
+    this.systemScene = [];
+  }
+  async addCubeTex() {
+    const moduleCubeTex = this.device.createShaderModule({
+      code: _shaders.cubeTexShader
+    });
+    const piplineCubeTex = new _pipline.default(this.device, this.presentationFormat, moduleCubeTex, this.context, this.canvas);
+    const texture = await this.textureManager.createTextureFromImage(this.device, './res/textures/tex1.jpg', {
+      mips: true,
+      flipY: false
+    });
+    const sampler = this.device.createSampler({
+      magFilter: 'linear',
+      minFilter: 'linear',
+      mipmapFilter: 'linear'
+    });
+    piplineCubeTex.loadObjProgram(this.device, this.buffersManager, sampler, texture);
+    this.systemScene.push(piplineCubeTex);
   }
   main() {
-    this.meBuffers = new _buffers.default(this.device);
-    this.meTexture = new _textures.default(this.device);
+    this.buffersManager = new _buffers.default(this.device);
+    this.textureManager = new _textures.default(this.device);
     this.shaderModule = this.device.createShaderModule({
       code: _shaders.shaderSrc
     });
@@ -5440,7 +5503,8 @@ class MatrixEngineGPUEngine {
       this.presentationFormat = navigator.gpu.getPreferredCanvasFormat(this.adapter);
       this.context.configure({
         device: this.device,
-        format: this.presentationFormat
+        format: this.presentationFormat,
+        alphaMode: 'premultiplied'
       });
       this.canvasInfo = {
         canvas: this.canvas,
@@ -5535,7 +5599,7 @@ class MatrixEngineGPUEngine {
     this.worldInverseTranspose = this.vsUniformValues.subarray(16, 32);
     this.fsUniformValues = new Float32Array(3); // 1 vec3
     this.lightDirection = this.fsUniformValues.subarray(0, 3);
-    console.log("test this.meTexture.sampler ", this.meTexture.sampler);
+    console.log("test this.textureManager.sampler ", this.textureManager.sampler);
     this.bindGroup = this.device.createBindGroup({
       layout: this.pipeline.getBindGroupLayout(0),
       entries: [{
@@ -5550,10 +5614,10 @@ class MatrixEngineGPUEngine {
         }
       }, {
         binding: 2,
-        resource: this.meTexture.sampler
+        resource: this.textureManager.sampler
       }, {
         binding: 3,
-        resource: this.meTexture.tex.createView()
+        resource: this.textureManager.tex.createView()
       }]
     });
     this.renderPassDescriptor = {
@@ -5580,7 +5644,186 @@ class MatrixEngineGPUEngine {
 }
 exports.default = MatrixEngineGPUEngine;
 
-},{"../shaders/shaders.js":8,"./buffers.js":3,"./render.js":5,"./textures.js":6}],5:[function(require,module,exports){
+},{"../shaders/shaders.js":9,"./buffers.js":3,"./pipline.js":5,"./render.js":6,"./textures.js":7}],5:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+var _wgpuMatrix = require("wgpu-matrix");
+// CUBE TEXTURE BASE OBJECT
+class MECubeTexPipline {
+  depthTexture;
+  cubeTexPipeline = null;
+  renderPassDescriptor = null;
+  context = null;
+  device = null;
+  constructor(device, presentationFormat, moduleCubeTex, context, canvas) {
+    this.canvas = canvas;
+    this.context = context;
+    this.device = device;
+    this.cubeTexPipeline = device.createRenderPipeline({
+      label: '2 attributes',
+      layout: 'auto',
+      vertex: {
+        module: moduleCubeTex,
+        entryPoint: 'vs',
+        buffers: [{
+          arrayStride: (3 + 2) * 4,
+          // (3+2) floats 4 bytes each
+          attributes: [{
+            shaderLocation: 0,
+            offset: 0,
+            format: 'float32x3'
+          },
+          // position
+          {
+            shaderLocation: 1,
+            offset: 12,
+            format: 'float32x2'
+          } // texcoord
+          ]
+        }]
+      },
+      fragment: {
+        module: moduleCubeTex,
+        entryPoint: 'fs',
+        targets: [{
+          format: presentationFormat
+        }]
+      },
+      primitive: {
+        cullMode: 'back'
+      },
+      depthStencil: {
+        depthWriteEnabled: true,
+        depthCompare: 'less',
+        format: 'depth24plus'
+      }
+    });
+  }
+  loadObjProgram(device, bufferManager, sampler, texture) {
+    // matrix
+    const uniformBufferSize = 16 * 4;
+    this.uniformBuffer = device.createBuffer({
+      label: 'uniforms',
+      size: uniformBufferSize,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    this.uniformValues = new Float32Array(uniformBufferSize / 4);
+
+    // offsets to the various uniform values in float32 indices
+    const kMatrixOffset = 0;
+    this.matrixValue = this.uniformValues.subarray(kMatrixOffset, kMatrixOffset + 16);
+    const {
+      vertexData,
+      indexData,
+      numVertices
+    } = bufferManager.createCubeVertices();
+    this.numVertices = numVertices;
+    this.vertexBuffer = device.createBuffer({
+      label: 'vertex buffer vertices',
+      size: vertexData.byteLength,
+      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
+    });
+    device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
+    this.indexBuffer = device.createBuffer({
+      label: 'index buffer',
+      size: vertexData.byteLength,
+      usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST
+    });
+    device.queue.writeBuffer(this.indexBuffer, 0, indexData);
+    this.bindGroup = device.createBindGroup({
+      label: 'bind group for object',
+      layout: this.cubeTexPipeline.getBindGroupLayout(0),
+      entries: [{
+        binding: 0,
+        resource: {
+          buffer: this.uniformBuffer
+        }
+      }, {
+        binding: 1,
+        resource: sampler
+      }, {
+        binding: 2,
+        resource: texture.createView()
+      }]
+    });
+    this.renderPassDescriptor = {
+      label: 'our basic canvas renderPass',
+      colorAttachments: [{
+        // view: <- to be filled out when we render
+        loadOp: 'clear',
+        storeOp: 'store'
+      }],
+      depthStencilAttachment: {
+        // view: <- to be filled out when we render
+        depthClearValue: 1.0,
+        depthLoadOp: 'clear',
+        depthStoreOp: 'store'
+      }
+    };
+    const degToRad = d => d * Math.PI / 180;
+    this.settings = {
+      rotation: [degToRad(20), degToRad(25), degToRad(0)]
+    };
+
+    // const radToDegOptions = {min: -360, max: 360, step: 1, converters: GUI.converters.radToDeg};
+  }
+  draw() {
+    // Get the current texture from the canvas context and
+    // set it as the texture to render to.
+    const canvasTexture = this.context.getCurrentTexture();
+    this.renderPassDescriptor.colorAttachments[0].view = canvasTexture.createView();
+
+    // If we don't have a depth texture OR if its size is different
+    // from the canvasTexture when make a new depth texture
+    if (!this.depthTexture || this.depthTexture.width !== canvasTexture.width || this.depthTexture.height !== canvasTexture.height) {
+      if (this.depthTexture) {
+        this.depthTexture.destroy();
+      }
+      this.depthTexture = this.device.createTexture({
+        size: [canvasTexture.width, canvasTexture.height],
+        format: 'depth24plus',
+        usage: GPUTextureUsage.RENDER_ATTACHMENT
+      });
+    }
+    this.renderPassDescriptor.depthStencilAttachment.view = this.depthTexture.createView();
+    const encoder = this.device.createCommandEncoder();
+    const pass = encoder.beginRenderPass(this.renderPassDescriptor);
+    pass.setPipeline(this.cubeTexPipeline);
+    pass.setVertexBuffer(0, this.vertexBuffer);
+    pass.setIndexBuffer(this.indexBuffer, 'uint16');
+    const aspect = this.canvas.clientWidth / this.canvas.clientHeight;
+    _wgpuMatrix.mat4.perspective(60 * Math.PI / 180, aspect, 0.1,
+    // zNear
+    10,
+    // zFar
+    this.matrixValue);
+    const view = _wgpuMatrix.mat4.lookAt([0, 1, 5],
+    // camera position
+    [0, 0, 0],
+    // target
+    [0, 1, 0] // up
+    );
+    _wgpuMatrix.mat4.multiply(this.matrixValue, view, this.matrixValue);
+    _wgpuMatrix.mat4.rotateX(this.matrixValue, this.settings.rotation[0], this.matrixValue);
+    _wgpuMatrix.mat4.rotateY(this.matrixValue, this.settings.rotation[1], this.matrixValue);
+    _wgpuMatrix.mat4.rotateZ(this.matrixValue, this.settings.rotation[2], this.matrixValue);
+
+    // upload the uniform values to the uniform buffer
+    this.device.queue.writeBuffer(this.uniformBuffer, 0, this.uniformValues);
+    pass.setBindGroup(0, this.bindGroup);
+    pass.drawIndexed(this.numVertices);
+    pass.end();
+    const commandBuffer = encoder.finish();
+    this.device.queue.submit([commandBuffer]);
+  }
+}
+exports.default = MECubeTexPipline;
+
+},{"wgpu-matrix":2}],6:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -5666,19 +5909,22 @@ class MatrixEngineGPURender {
     const passEncoder = commandEncoder.beginRenderPass(this.engine.renderPassDescriptor);
     passEncoder.setPipeline(this.engine.pipeline);
     passEncoder.setBindGroup(0, this.engine.bindGroup);
-    passEncoder.setVertexBuffer(0, this.engine.meBuffers.MY_GPU_BUFFER.positionBuffer);
-    passEncoder.setVertexBuffer(1, this.engine.meBuffers.MY_GPU_BUFFER.normalBuffer);
-    passEncoder.setVertexBuffer(2, this.engine.meBuffers.MY_GPU_BUFFER.texcoordBuffer);
-    passEncoder.setIndexBuffer(this.engine.meBuffers.MY_GPU_BUFFER.indicesBuffer, "uint16");
-    passEncoder.drawIndexed(this.engine.meBuffers.MY_GPU_BUFFER.indices.length);
+    passEncoder.setVertexBuffer(0, this.engine.buffersManager.MY_GPU_BUFFER.positionBuffer);
+    passEncoder.setVertexBuffer(1, this.engine.buffersManager.MY_GPU_BUFFER.normalBuffer);
+    passEncoder.setVertexBuffer(2, this.engine.buffersManager.MY_GPU_BUFFER.texcoordBuffer);
+    passEncoder.setIndexBuffer(this.engine.buffersManager.MY_GPU_BUFFER.indicesBuffer, "uint16");
+    passEncoder.drawIndexed(this.engine.buffersManager.MY_GPU_BUFFER.indices.length);
     passEncoder.end();
     this.engine.device.queue.submit([commandEncoder.finish()]);
+    this.engine.systemScene.forEach(matrixEnginePipline => {
+      matrixEnginePipline.draw();
+    });
     requestAnimationFrame(this.render);
   };
 }
 exports.default = MatrixEngineGPURender;
 
-},{"wgpu-matrix":2}],6:[function(require,module,exports){
+},{"wgpu-matrix":2}],7:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -5688,14 +5934,24 @@ exports.default = void 0;
 class MatrixEngineGPUTextures {
   device = null;
   tex = null;
+
+  // related to the cubeTex
+  numMipLevels = null;
   constructor(device) {
     this.device = device;
-    this.tex = device.createTexture({
+    this.createPixelTextures();
+
+    // not in fly [moment of calling addcube]
+    this.createImageCubeTexture();
+    console.log("MatrixEngineGPUTextures constructed.");
+  }
+  createPixelTextures() {
+    this.tex = this.device.createTexture({
       size: [2, 2],
       format: "rgba8unorm",
       usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST
     });
-    device.queue.writeTexture({
+    this.device.queue.writeTexture({
       texture: this.tex
     }, new Uint8Array([255, 255, 128, 255, 128, 255, 255, 255, 255, 128, 255, 255, 255, 128, 128, 255]), {
       bytesPerRow: 8,
@@ -5704,34 +5960,192 @@ class MatrixEngineGPUTextures {
       width: 2,
       height: 2
     });
-    this.sampler = device.createSampler({
+    this.sampler = this.device.createSampler({
       magFilter: "nearest",
       minFilter: "nearest"
     });
-    console.log("MeTexture constructed.");
+  }
+  createImageCubeTexture() {
+    this.numMipLevels = (...sizes) => {
+      const maxSize = Math.max(...sizes);
+      return 1 + Math.log2(maxSize) | 0;
+    };
+    this.loadImageBitmap = async url => {
+      const res = await fetch(url);
+      const blob = await res.blob();
+      return await createImageBitmap(blob, {
+        colorSpaceConversion: 'none'
+      });
+    };
+    this.copySourceToTexture = (device, texture, source, {
+      flipY
+    } = {}) => {
+      this.device.queue.copyExternalImageToTexture({
+        source,
+        flipY
+      }, {
+        texture
+      }, {
+        width: source.width,
+        height: source.height
+      });
+      if (texture.mipLevelCount > 1) {
+        generateMips(device, texture);
+      }
+    };
+    this.createTextureFromSource = (device, source, options = {}) => {
+      const texture = device.createTexture({
+        format: 'rgba8unorm',
+        mipLevelCount: options.mips ? this.numMipLevels(source.width, source.height) : 1,
+        size: [source.width, source.height],
+        usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT
+      });
+      this.copySourceToTexture(device, texture, source, options);
+      return texture;
+    };
+    const generateMips = (() => {
+      let sampler;
+      let module;
+      const pipelineByFormat = {};
+      return function generateMips(device, texture) {
+        console.log(' device' + device);
+        if (!module) {
+          module = device.createShaderModule({
+            label: 'textured quad shaders for mip level generation',
+            code: `
+              struct VSOutput {
+                @builtin(position) position: vec4f,
+                @location(0) texcoord: vec2f,
+              };
+  
+              @vertex fn vs(
+                @builtin(vertex_index) vertexIndex : u32
+              ) -> VSOutput {
+                let pos = array(
+  
+                  vec2f( 0.0,  0.0),  // center
+                  vec2f( 1.0,  0.0),  // right, center
+                  vec2f( 0.0,  1.0),  // center, top
+  
+                  // 2st triangle
+                  vec2f( 0.0,  1.0),  // center, top
+                  vec2f( 1.0,  0.0),  // right, center
+                  vec2f( 1.0,  1.0),  // right, top
+                );
+  
+                var vsOutput: VSOutput;
+                let xy = pos[vertexIndex];
+                vsOutput.position = vec4f(xy * 2.0 - 1.0, 0.0, 1.0);
+                vsOutput.texcoord = vec2f(xy.x, 1.0 - xy.y);
+                return vsOutput;
+              }
+  
+              @group(0) @binding(0) var ourSampler: sampler;
+              @group(0) @binding(1) var ourTexture: texture_2d<f32>;
+  
+              @fragment fn fs(fsInput: VSOutput) -> @location(0) vec4f {
+                return textureSample(ourTexture, ourSampler, fsInput.texcoord);
+              }
+            `
+          });
+          sampler = device.createSampler({
+            minFilter: 'linear',
+            magFilter: 'linear'
+          });
+        }
+        if (!pipelineByFormat[texture.format]) {
+          pipelineByFormat[texture.format] = device.createRenderPipeline({
+            label: 'mip level generator pipeline',
+            layout: 'auto',
+            vertex: {
+              module,
+              entryPoint: 'vs'
+            },
+            fragment: {
+              module,
+              entryPoint: 'fs',
+              targets: [{
+                format: texture.format
+              }]
+            }
+          });
+        }
+        const pipeline = pipelineByFormat[texture.format];
+        const encoder = device.createCommandEncoder({
+          label: 'mip gen encoder'
+        });
+        let width = texture.width;
+        let height = texture.height;
+        let baseMipLevel = 0;
+        while (width > 1 || height > 1) {
+          width = Math.max(1, width / 2 | 0);
+          height = Math.max(1, height / 2 | 0);
+          const bindGroup = device.createBindGroup({
+            layout: pipeline.getBindGroupLayout(0),
+            entries: [{
+              binding: 0,
+              resource: sampler
+            }, {
+              binding: 1,
+              resource: texture.createView({
+                baseMipLevel,
+                mipLevelCount: 1
+              })
+            }]
+          });
+          ++baseMipLevel;
+          const renderPassDescriptor = {
+            label: 'our basic canvas renderPass',
+            colorAttachments: [{
+              view: texture.createView({
+                baseMipLevel,
+                mipLevelCount: 1
+              }),
+              loadOp: 'clear',
+              storeOp: 'store'
+            }]
+          };
+          const pass = encoder.beginRenderPass(renderPassDescriptor);
+          pass.setPipeline(pipeline);
+          pass.setBindGroup(0, bindGroup);
+          pass.draw(6); // call our vertex shader 6 times
+          pass.end();
+        }
+        const commandBuffer = encoder.finish();
+        device.queue.submit([commandBuffer]);
+      };
+    })();
+  }
+  async createTextureFromImage(device, url, options) {
+    const imgBitmap = await this.loadImageBitmap(url);
+    return this.createTextureFromSource(device, imgBitmap, options);
   }
 }
 exports.default = MatrixEngineGPUTextures;
 
-},{}],7:[function(require,module,exports){
+},{}],8:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.engine = void 0;
+exports.meWGPU = void 0;
 var _engine = _interopRequireDefault(require("./me-gpu-engine/engine.js"));
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-let engine = exports.engine = new _engine.default();
-console.log('Running me-gpu engine...', engine);
+let meWGPU = exports.meWGPU = new _engine.default();
+console.log('Running me-gpu engine...', meWGPU);
 
-},{"./me-gpu-engine/engine.js":4}],8:[function(require,module,exports){
+},{"./me-gpu-engine/engine.js":4}],9:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.shaderSrc = void 0;
+exports.shaderSrc = exports.cubeTexShader = void 0;
+/**
+ * @description
+ * For microdraw pixel cube texture
+ */
 const shaderSrc = exports.shaderSrc = `struct VSUniforms {
   worldViewProjection: mat4x4f,
   worldInverseTranspose: mat4x4f,
@@ -5774,6 +6188,40 @@ fn myFSMain(v: MyVSOutput) -> @location(0) vec4f {
   var l = dot(a_normal, fsUniforms.lightDirection) * 0.5 + 0.5;
   return vec4f(diffuseColor.rgb * l, diffuseColor.a);
 }
+`;
+
+/**
+ * @description
+ * For Cube with images
+ */
+const cubeTexShader = exports.cubeTexShader = `struct Uniforms {
+      matrix: mat4x4f,
+    };
+
+    struct Vertex {
+      @location(0) position: vec4f,
+      @location(1) texcoord: vec2f,
+    };
+
+    struct VSOutput {
+      @builtin(position) position: vec4f,
+      @location(0) texcoord: vec2f,
+    };
+
+    @group(0) @binding(0) var<uniform> uni: Uniforms;
+    @group(0) @binding(1) var ourSampler: sampler;
+    @group(0) @binding(2) var ourTexture: texture_2d<f32>;
+
+    @vertex fn vs(vert: Vertex) -> VSOutput {
+      var vsOut: VSOutput;
+      vsOut.position = uni.matrix * vert.position;
+      vsOut.texcoord = vert.texcoord;
+      return vsOut;
+    }
+
+    @fragment fn fs(vsOut: VSOutput) -> @location(0) vec4f {
+      return textureSample(ourTexture, ourSampler, vsOut.texcoord);
+    }
 `;
 
 },{}]},{},[1]);
