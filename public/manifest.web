@@ -1,0 +1,25 @@
+{
+  "name": "Matrix Engine wGpu",
+  "short_name": "matrix-wgpu",
+  "start_url": "build.html",
+  "orientation": "any",
+  "theme_color": "lime",
+  "background_color": "black",
+  "description": "Welcome here !",
+  "display": "standalone",
+  "lang": "en-US",
+  "icons": [
+    {
+      "src": "res/icons/512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "author": {
+      "name": "Nikola Lukic",
+      "website": "https://maximumroulette.com",
+      "github": "https://github.com/zlatnaspirala",
+      "source-repo": "https://github.com/zlatnaspirala/matrix-engine"
+  }
+}

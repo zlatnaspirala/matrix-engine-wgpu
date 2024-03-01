@@ -1,0 +1,24 @@
+{
+  "name": "matrix-wgpu",
+  "version": "1.0.0",
+  "description": "webGPU powered pwa application.Crazy fast rendering.",
+  "main": "index.js",
+  "scripts": {
+    "app": "watchify app.js -p [esmify --noImplicitAny] -o public/app.js"
+  },
+  "keywords": [
+    "webGPU",
+    "matrix"
+  ],
+  "author": "Nikola Lukic",
+  "license": "MIT",
+  "devDependencies": {
+    "browser-resolve": "^2.0.0",
+    "browserify": "^17.0.0",
+    "esmify": "^2.1.1",
+    "watchify": "^4.0.0"
+  },
+  "dependencies": {
+    "wgpu-matrix": "^2.5.1"
+  }
+}
