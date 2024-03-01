@@ -13,7 +13,7 @@ Download from https://www.w3.org/2023/02/webgpu-logos.html
 
 Used npm package `wgpu-matrix` for replacment of glmatrix library.
 
-
+I publish (this repo) npm package with name `matrix-wgpu`.
 
 
 ## Objective
