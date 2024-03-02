@@ -3,40 +3,49 @@ export default class MatrixEngineGPUCreateBuffers {
   constructor(device) {
     this.device = device;
     this.MY_GPU_BUFFER = {};
+
+    this.sceneBufferElements = [];
     this.createSimpleCubeBuffers();
   }
 
-  createSimpleCubeBuffers() {
+  createSimpleCubeBuffers(options) {
+
+    if (typeof options === 'undefined') {
+      var options = {
+        scale: 1
+      }
+    }
+
     const positions = new Float32Array([
-      1, 1, -1,
-      1, 1, 1,
-      1, -1, 1,
-      1, -1, -1,
+      options.scale * 1, options.scale * 1, options.scale * -1,
+      options.scale *1,  options.scale *1,  options.scale *1,
+      options.scale *1,  options.scale *-1,  options.scale *1,
+      options.scale *1,  options.scale *-1, options.scale *-1,
 
-      -1, 1, 1,
-      -1, 1, -1,
-      -1, -1, -1,
-      -1, -1, 1,
+      options.scale *-1, options.scale * 1,  options.scale *1,
+      options.scale *-1, options.scale * 1,  options.scale *-1,
+      options.scale *-1, options.scale * -1,  options.scale *-1,
+      options.scale *-1, options.scale * -1,  options.scale *1,
 
-      -1, 1, 1,
-      1, 1, 1,
-      1, 1, -1,
-      -1, 1, -1,
+      options.scale *-1,  options.scale *1, options.scale * 1,
+      options.scale *1,  options.scale *1, options.scale * 1,
+      options.scale * 1, options.scale * 1, options.scale * -1,
+      options.scale *-1,  options.scale *1, options.scale * -1,
 
-      -1, -1, -1,
-      1, -1, -1,
-      1, -1, 1,
-      -1, -1, 1,
+      options.scale *-1,  options.scale *-1, options.scale * -1,
+      options.scale *1,  options.scale *-1, options.scale * -1,
+      options.scale *1,  options.scale *-1,  options.scale *1,
+      options.scale *-1,  options.scale *-1, options.scale *1,
 
-      1, 1, 1,
-      -1, 1, 1,
-      -1, -1, 1,
-      1, -1, 1,
+      options.scale * 1,  options.scale *1, options.scale *1,
+      options.scale * -1, options.scale * 1, options.scale *1,
+      options.scale * -1,  options.scale *-1, options.scale * 1,
+      options.scale *1,  options.scale *-1,  options.scale *1,
 
-      -1, 1, -1,
-      1, 1, -1,
-      1, -1, -1,
-      -1, -1, -1]);
+      options.scale * -1,  options.scale *1,  options.scale *-1,
+      options.scale * 1,  options.scale *1,  options.scale *-1,
+      options.scale * 1,  options.scale *-1,  options.scale *-1,
+      options.scale * -1,  options.scale *-1,  options.scale *-1]);
       
     const normals = new Float32Array([1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0, -1]);
     const texcoords = new Float32Array([1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1]);
@@ -47,40 +56,47 @@ export default class MatrixEngineGPUCreateBuffers {
     this.MY_GPU_BUFFER.indicesBuffer = this.createBuffer(this.device, this.MY_GPU_BUFFER.indices, GPUBufferUsage.INDEX);
   }
 
-  createCubeVertices() {
+  createCubeVertices(options) {
+
+    if (typeof options === 'undefined') {
+      var options = {
+        scale: 1
+      }
+    }
+    
     const vertexData = new Float32Array([
       //  position   |  texture coordinate
       //-------------+----------------------
       // front face     select the top left image
-      -1, 1, 1, 0, 0,
-      -1, -1, 1, 0, 0.5,
-      1, 1, 1, 0.25, 0,
-      1, -1, 1, 0.25, 0.5,
+      options.scale *-1, options.scale *1,options.scale * 1, 0, 0,
+      options.scale *-1, options.scale *-1, options.scale *1, 0, 0.5,
+      options.scale *1, options.scale *1,options.scale * 1, 0.25, 0,
+      options.scale * 1,options.scale * -1,options.scale * 1, 0.25, 0.5,
       // right face     select the top middle image
-      1, 1, -1, 0.25, 0,
-      1, 1, 1, 0.5, 0,
-      1, -1, -1, 0.25, 0.5,
-      1, -1, 1, 0.5, 0.5,
+      options.scale * 1, options.scale *1,options.scale * -1, 0.25, 0,
+      options.scale * 1, options.scale *1,options.scale * 1, 0.5, 0,
+      options.scale * 1, options.scale *-1,options.scale * -1, 0.25, 0.5,
+      options.scale * 1, options.scale *-1,options.scale * 1, 0.5, 0.5,
       // back face      select to top right image
-      1, 1, -1, 0.5, 0,
-      1, -1, -1, 0.5, 0.5,
-      -1, 1, -1, 0.75, 0,
-      -1, -1, -1, 0.75, 0.5,
+      options.scale *1, options.scale *1, options.scale *-1, 0.5, 0,
+      options.scale * 1,options.scale * -1, options.scale *-1, 0.5, 0.5,
+      options.scale *-1,options.scale * 1,options.scale * -1, 0.75, 0,
+      options.scale * -1,options.scale * -1,options.scale * -1, 0.75, 0.5,
       // left face       select the bottom left image
-      -1, 1, 1, 0, 0.5,
-      -1, 1, -1, 0.25, 0.5,
-      -1, -1, 1, 0, 1,
-      -1, -1, -1, 0.25, 1,
+      options.scale *-1,options.scale * 1, options.scale *1, 0, 0.5,
+      options.scale *-1,options.scale * 1, options.scale *-1, 0.25, 0.5,
+      options.scale *-1, options.scale *-1,options.scale * 1, 0, 1,
+      options.scale *-1, options.scale *-1, options.scale *-1, 0.25, 1,
       // bottom face     select the bottom middle image
-      1, -1, 1, 0.25, 0.5,
-      -1, -1, 1, 0.5, 0.5,
-      1, -1, -1, 0.25, 1,
-      -1, -1, -1, 0.5, 1,
+      options.scale *1, options.scale *-1, options.scale *1, 0.25, 0.5,
+      options.scale *-1,options.scale * -1, options.scale *1, 0.5, 0.5,
+      options.scale * 1, options.scale *-1, options.scale *-1, 0.25, 1,
+      options.scale *-1, options.scale *-1, options.scale *-1, 0.5, 1,
       // top face        select the bottom right image
-      -1, 1, 1, 0.5, 0.5,
-      1, 1, 1, 0.75, 0.5,
-      -1, 1, -1, 0.5, 1,
-      1, 1, -1, 0.75, 1,
+      options.scale *-1, options.scale *1, options.scale *1, 0.5, 0.5,
+      options.scale *1, options.scale *1,options.scale * 1, 0.75, 0.5,
+      options.scale *-1,options.scale * 1, options.scale *-1, 0.5, 1,
+      options.scale * 1, options.scale *1, options.scale *-1, 0.75, 1,
     ]);
     const indexData = new Uint16Array([
       0, 1, 2, 2, 1, 3,  // front

@@ -3,6 +3,7 @@ import {cubeTexShader, shaderSrc} from "../shaders/shaders.js";
 import MatrixEngineGPUTextures from "./textures.js";
 import MatrixEngineGPURender from "./render.js";
 import MECubeTexPipline from "./pipline.js";
+import MECubeTexPipline2 from "./pipline2.js";
 
 export default class MatrixEngineGPUEngine {
 
@@ -22,9 +23,16 @@ export default class MatrixEngineGPUEngine {
     this.systemScene = [];
   }
 
-  async addCubeTex() {
+  async addCubeTex(options) {
+    
+    if (typeof options === 'undefined') {
+      var options = {
+        scale: 1
+      }
+    }
+
     const moduleCubeTex = this.device.createShaderModule({code: cubeTexShader})
-    const piplineCubeTex = new MECubeTexPipline(this.device, this.presentationFormat, moduleCubeTex, this.context, this.canvas);
+    const piplineCubeTex = new MECubeTexPipline(this.device, this.presentationFormat, moduleCubeTex, this.context, this.canvas, options);
 
     const texture = await this.textureManager.createTextureFromImage(this.device,
       './res/textures/tex1.jpg', {mips: true, flipY: false});
@@ -39,11 +47,22 @@ export default class MatrixEngineGPUEngine {
     this.systemScene.push(piplineCubeTex)
   }
 
+  async addCubeTex2(options) {
+
+    if (typeof options === 'undefined') {
+      var options = {
+        scale: 1
+      }
+    }
+    const piplineCubeTex = new MECubeTexPipline2(this.device, this.presentationFormat, this.context, this.canvas, options);
+
+    this.systemScene.push(piplineCubeTex)
+  }
+
   main() {
     this.buffersManager = new MatrixEngineGPUCreateBuffers(this.device);
     this.textureManager = new MatrixEngineGPUTextures(this.device);
-    this.shaderModule = this.device.createShaderModule({code: shaderSrc});
-    this.createPipline();
+
     this.render = new MatrixEngineGPURender(this)
   }
 
@@ -92,103 +111,5 @@ export default class MatrixEngineGPUEngine {
     });
   }
 
-  createPipline() {
-    var shaderModule = this.shaderModule;
-    this.pipeline = this.device.createRenderPipeline({
-      layout: "auto",
-      vertex: {
-        module: shaderModule,
-        entryPoint: "myVSMain",
-        buffers: [
-          // position
-          {
-            arrayStride: 3 * 4, // 3 floats, 4 bytes each
-            attributes: [{shaderLocation: 0, offset: 0, format: "float32x3"}],
-          },
-          // normals
-          {
-            arrayStride: 3 * 4, // 3 floats, 4 bytes each
-            attributes: [{shaderLocation: 1, offset: 0, format: "float32x3"}],
-          },
-          // texcoords
-          {
-            arrayStride: 2 * 4, // 2 floats, 4 bytes each
-            attributes: [{shaderLocation: 2, offset: 0, format: "float32x2"}],
-          },
-        ],
-      },
-      fragment: {
-        module: this.shaderModule,
-        entryPoint: "myFSMain",
-        targets: [{format: this.presentationFormat}],
-      },
-      primitive: {
-        topology: "triangle-list",
-        cullMode: "back",
-      },
-      depthStencil: {
-        depthWriteEnabled: true,
-        depthCompare: "less",
-        format: "depth24plus",
-      },
-      ...(this.canvasInfo.sampleCount > 1 && {
-        multisample: {
-          count: this.canvasInfo.sampleCount,
-        },
-      }),
-    });
-
-    this.createPP();
-  }
-
-  createPP() {
-    const vUniformBufferSize = 2 * 16 * 4; // 2 mat4s * 16 floats per mat * 4 bytes per float
-    const fUniformBufferSize = 3 * 4; // 1 vec3 * 3 floats per vec3 * 4 bytes per float
-
-    this.vsUniformBuffer = this.device.createBuffer({
-      size: Math.max(16, vUniformBufferSize),
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-    });
-
-    this.fsUniformBuffer = this.device.createBuffer({
-      size: Math.max(16, fUniformBufferSize),
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-    });
-    this.vsUniformValues = new Float32Array(2 * 16); // 2 mat4s
-    this.worldViewProjection = this.vsUniformValues.subarray(0, 16);
-    this.worldInverseTranspose = this.vsUniformValues.subarray(16, 32);
-    this.fsUniformValues = new Float32Array(3); // 1 vec3
-    this.lightDirection = this.fsUniformValues.subarray(0, 3);
-
-    console.log("test this.textureManager.sampler ", this.textureManager.sampler);
-
-    this.bindGroup = this.device.createBindGroup({
-      layout: this.pipeline.getBindGroupLayout(0),
-      entries: [
-        {binding: 0, resource: {buffer: this.vsUniformBuffer}},
-        {binding: 1, resource: {buffer: this.fsUniformBuffer}},
-        {binding: 2, resource: this.textureManager.sampler},
-        {binding: 3, resource: this.textureManager.tex.createView()},
-      ],
-    });
-
-    this.renderPassDescriptor = {
-      colorAttachments: [
-        {
-          // view: undefined, // Assigned later
-          // resolveTarget: undefined, // Assigned Later
-          clearValue: {r: 0.5, g: 0.5, b: 0.5, a: 1.0},
-          loadOp: "clear",
-          storeOp: "store",
-        },
-      ],
-      depthStencilAttachment: {
-        // view: undefined,  // Assigned later
-        depthClearValue: 1,
-        depthLoadOp: "clear",
-        depthStoreOp: "store",
-      },
-    };
-  }
 
 }

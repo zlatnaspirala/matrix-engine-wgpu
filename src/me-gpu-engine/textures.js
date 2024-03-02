@@ -7,37 +7,10 @@ export default class MatrixEngineGPUTextures {
 
   constructor(device) {
     this.device = device;
-
-    this.createPixelTextures();
-
     // not in fly [moment of calling addcube]
     this.createImageCubeTexture()
 
     console.log("MatrixEngineGPUTextures constructed.");
-  }
-
-  createPixelTextures() {
-
-    this.tex = this.device.createTexture({
-      size: [2, 2],
-      format: "rgba8unorm",
-      usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST,
-    });
-
-    this.device.queue.writeTexture(
-      {texture: this.tex},
-      new Uint8Array([
-        255, 255, 128, 255, 128, 255, 255, 255, 255, 128, 255, 255, 255, 128, 128, 255,
-      ]),
-      {bytesPerRow: 8, rowsPerImage: 2},
-      {width: 2, height: 2},
-    );
-
-    this.sampler = this.device.createSampler({
-      magFilter: "nearest",
-      minFilter: "nearest",
-    });
-
   }
 
   createImageCubeTexture() {

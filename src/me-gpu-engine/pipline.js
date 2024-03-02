@@ -9,8 +9,10 @@ export default class MECubeTexPipline {
   renderPassDescriptor = null;
   context = null;
   device = null;
+  options = null;
 
-  constructor(device, presentationFormat, moduleCubeTex, context, canvas) {
+  constructor(device, presentationFormat, moduleCubeTex, context, canvas, options) {
+    this.options = options;
     this.canvas = canvas;
     this.context = context;
     this.device = device;
@@ -47,7 +49,6 @@ export default class MECubeTexPipline {
   }
 
   loadObjProgram(device, bufferManager, sampler, texture) {
-
     // matrix
     const uniformBufferSize = (16) * 4;
     this.uniformBuffer = device.createBuffer({
@@ -63,7 +64,7 @@ export default class MECubeTexPipline {
 
     this.matrixValue = this.uniformValues.subarray(kMatrixOffset, kMatrixOffset + 16);
 
-    const {vertexData, indexData, numVertices} = bufferManager.createCubeVertices();
+    const {vertexData, indexData, numVertices} = bufferManager.createCubeVertices(this.options);
     this.numVertices = numVertices;
     this.vertexBuffer = device.createBuffer({
       label: 'vertex buffer vertices',
@@ -94,29 +95,26 @@ export default class MECubeTexPipline {
       colorAttachments: [
         {
           // view: <- to be filled out when we render
-          loadOp: 'clear',
+          loadOp: 'load',
           storeOp: 'store',
         },
       ],
       depthStencilAttachment: {
         // view: <- to be filled out when we render
         depthClearValue: 1.0,
-        depthLoadOp: 'clear',
+        depthLoadOp: 'load',
         depthStoreOp: 'store',
       },
     };
 
     const degToRad = d => d * Math.PI / 180;
-
     this.settings = {
       rotation: [degToRad(20), degToRad(25), degToRad(0)],
     };
-
     // const radToDegOptions = {min: -360, max: 360, step: 1, converters: GUI.converters.radToDeg};
-
   }
 
-  draw() {
+  draw(p, c) {
     // Get the current texture from the canvas context and
     // set it as the texture to render to.
     const canvasTexture = this.context.getCurrentTexture();
@@ -124,6 +122,7 @@ export default class MECubeTexPipline {
 
     // If we don't have a depth texture OR if its size is different
     // from the canvasTexture when make a new depth texture
+
     if(!this.depthTexture ||
       this.depthTexture.width !== canvasTexture.width ||
       this.depthTexture.height !== canvasTexture.height) {
@@ -136,14 +135,13 @@ export default class MECubeTexPipline {
         usage: GPUTextureUsage.RENDER_ATTACHMENT,
       });
     }
+
     this.renderPassDescriptor.depthStencilAttachment.view = this.depthTexture.createView();
-
-    const encoder = this.device.createCommandEncoder();
-    const pass = encoder.beginRenderPass(this.renderPassDescriptor);
-
-    pass.setPipeline(this.cubeTexPipeline);
-    pass.setVertexBuffer(0, this.vertexBuffer);
-    pass.setIndexBuffer(this.indexBuffer, 'uint16');
+    const commandEncoder = this.device.createCommandEncoder();
+    const passEncoder = commandEncoder.beginRenderPass(this.renderPassDescriptor);
+    passEncoder.setPipeline(this.cubeTexPipeline);
+    passEncoder.setVertexBuffer(0, this.vertexBuffer);
+    passEncoder.setIndexBuffer(this.indexBuffer, 'uint16');
 
     const aspect = this.canvas.clientWidth / this.canvas.clientHeight;
     mat4.perspective(
@@ -163,14 +161,15 @@ export default class MECubeTexPipline {
     mat4.rotateY(this.matrixValue, this.settings.rotation[1], this.matrixValue);
     mat4.rotateZ(this.matrixValue, this.settings.rotation[2], this.matrixValue);
 
+ 
+
     // upload the uniform values to the uniform buffer
     this.device.queue.writeBuffer(this.uniformBuffer, 0, this.uniformValues);
-    pass.setBindGroup(0, this.bindGroup);
-    pass.drawIndexed(this.numVertices);
+    passEncoder.setBindGroup(0, this.bindGroup);
+    passEncoder.drawIndexed(this.numVertices);
 
-    pass.end();
-
-    // const commandBuffer = encoder.finish();
-    // this.device.queue.submit([commandBuffer]);
+    passEncoder.end();
+    const commandBuffer = commandEncoder.finish();
+    this.device.queue.submit([commandBuffer]);
   }
 }
