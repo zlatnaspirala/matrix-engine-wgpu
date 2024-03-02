@@ -65,13 +65,13 @@ export default class MatrixEngineGPURender {
       10,
     );
 
-    const eye = [1, 4, -6];
-    const target = [0, 0, 0];
-    const up = [0, 1, 0];
+    var eye = [1, 4, -6];
+    var target = [0, 0, 0];
+    var up = [0, 1, 0];
 
-    const view = mat4.lookAt(eye, target, up);
-    const viewProjection = mat4.multiply(projection, view);
-    const world = mat4.rotationY(time);
+    var view = mat4.lookAt(eye, target, up);
+    var viewProjection = mat4.multiply(projection, view);
+    var world = mat4.rotationY(time);
     mat4.transpose(mat4.inverse(world), this.engine.worldInverseTranspose);
     mat4.multiply(viewProjection, world, this.engine.worldViewProjection);
     vec3.normalize([1, 8, -10], this.engine.lightDirection);
@@ -88,6 +88,11 @@ export default class MatrixEngineGPURender {
     }
     this.engine.renderPassDescriptor.depthStencilAttachment.view = this.engine.canvasInfo.depthTextureView;
 
+    
+    this.engine.systemScene.forEach((matrixEnginePipline) => {
+      matrixEnginePipline.draw()
+    })
+    
     const commandEncoder = this.engine.device.createCommandEncoder();
     const passEncoder = commandEncoder.beginRenderPass(this.engine.renderPassDescriptor);
 
@@ -100,12 +105,8 @@ export default class MatrixEngineGPURender {
     passEncoder.drawIndexed(this.engine.buffersManager.MY_GPU_BUFFER.indices.length);
     passEncoder.end();
 
-    this.engine.device.queue.submit([commandEncoder.finish()]);
 
-    this.engine.systemScene.forEach((matrixEnginePipline) => {
-      matrixEnginePipline.draw()
-    })
-    
+    this.engine.device.queue.submit([commandEncoder.finish()]);
  
     requestAnimationFrame(this.render);
   }

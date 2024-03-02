@@ -170,7 +170,7 @@ export default class MECubeTexPipline {
 
     pass.end();
 
-    const commandBuffer = encoder.finish();
-    this.device.queue.submit([commandBuffer]);
+    // const commandBuffer = encoder.finish();
+    // this.device.queue.submit([commandBuffer]);
   }
 }
