@@ -1,12 +1,13 @@
 (function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
 "use strict";
 
-var _wgpuMatrix = require("wgpu-matrix");
-var _ballsBuffer = require("./src/test2/ballsBuffer.js");
 var _shaders = require("./src/shaders/shaders.js");
-var _ball = _interopRequireDefault(require("./src/test2/ball.js"));
-var _cube = _interopRequireDefault(require("./src/test2/cube.js"));
+var _ball = _interopRequireDefault(require("./src/engine/ball.js"));
+var _cube = _interopRequireDefault(require("./src/engine/cube.js"));
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+// import { mat4, vec3 } from 'wgpu-matrix';
+// import { createSphereMesh, SphereLayout } from './src/engine/ballsBuffer.js';
+
 var canvas = document.createElement('canvas');
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
@@ -26,8 +27,9 @@ const init = async ({
     format: presentationFormat,
     alphaMode: 'premultiplied'
   });
-  let NIK = new _ball.default(canvas, device);
-  let NIK2 = new _ball.default(canvas, device);
+  let NIK = new _cube.default(canvas, device);
+
+  // let NIK2 = new MEBall(canvas, device)
   // let NIK2 = new MEBall(canvas, device)
 
   function frame() {
@@ -38,15 +40,26 @@ const init = async ({
     const transformationMatrix = NIK.getTransformationMatrix(0, 0.5, -5);
     device.queue.writeBuffer(NIK.uniformBuffer, 0, transformationMatrix.buffer, transformationMatrix.byteOffset, transformationMatrix.byteLength);
     NIK.renderPassDescriptor.colorAttachments[0].view = context.getCurrentTexture().createView();
-    const transformationMatrix2 = NIK2.getTransformationMatrix(0.4, 0.7, -5);
-    device.queue.writeBuffer(NIK2.uniformBuffer, 0, transformationMatrix2.buffer, transformationMatrix2.byteOffset, transformationMatrix2.byteLength);
-    NIK2.renderPassDescriptor.colorAttachments[0].view = context.getCurrentTexture().createView();
+
+    //   const transformationMatrix2 = NIK2.getTransformationMatrix(0.4, 0.7, -5);
+    // device.queue.writeBuffer(
+    //   NIK2.uniformBuffer,
+    //   0,
+    //   transformationMatrix2.buffer,
+    //   transformationMatrix2.byteOffset,
+    //   transformationMatrix2.byteLength
+    // );
+    // NIK2.renderPassDescriptor.colorAttachments[0].view = context
+    //   .getCurrentTexture()
+    //   .createView();
+
     const commandEncoder = device.createCommandEncoder();
     const passEncoder = commandEncoder.beginRenderPass(NIK.renderPassDescriptor);
     if (NIK.settings.useRenderBundles) {
       // Executing a bundle is equivalent to calling all of the commands encoded
       // in the render bundle as part of the current render pass.
-      passEncoder.executeBundles([NIK.renderBundle, NIK2.renderBundle]);
+      //passEncoder.executeBundles([NIK.renderBundle, NIK2.renderBundle]);
+      passEncoder.executeBundles([NIK.renderBundle]);
     } else {
       // Alternatively, the same render commands can be encoded manually, which
       // can take longer since each command needs to be interpreted by the
@@ -65,7 +78,7 @@ init({
   canvas
 });
 
-},{"./src/shaders/shaders.js":3,"./src/test2/ball.js":4,"./src/test2/ballsBuffer.js":5,"./src/test2/cube.js":6,"wgpu-matrix":2}],2:[function(require,module,exports){
+},{"./src/engine/ball.js":3,"./src/engine/cube.js":5,"./src/shaders/shaders.js":6}],2:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -5418,170 +5431,6 @@ function setDefaultType(ctor) {
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.vertexPositionColorWGSL = exports.shaderSrc = exports.cubeTexShader = exports.basicVertWGSL = exports.BALL_SHADER = void 0;
-/**
- * @description
- * For microdraw pixel cube texture
- */
-const shaderSrc = exports.shaderSrc = `struct VSUniforms {
-  worldViewProjection: mat4x4f,
-  worldInverseTranspose: mat4x4f,
-};
-@group(0) @binding(0) var<uniform> vsUniforms: VSUniforms;
-
-struct MyVSInput {
-    @location(0) position: vec4f,
-    @location(1) normal: vec3f,
-    @location(2) texcoord: vec2f,
-};
-
-struct MyVSOutput {
-  @builtin(position) position: vec4f,
-  @location(0) normal: vec3f,
-  @location(1) texcoord: vec2f,
-};
-
-@vertex
-fn myVSMain(v: MyVSInput) -> MyVSOutput {
-  var vsOut: MyVSOutput;
-  vsOut.position = vsUniforms.worldViewProjection * v.position;
-  vsOut.normal = (vsUniforms.worldInverseTranspose * vec4f(v.normal, 0.0)).xyz;
-  vsOut.texcoord = v.texcoord;
-  return vsOut;
-}
-
-struct FSUniforms {
-  lightDirection: vec3f,
-};
-
-@group(0) @binding(1) var<uniform> fsUniforms: FSUniforms;
-@group(0) @binding(2) var diffuseSampler: sampler;
-@group(0) @binding(3) var diffuseTexture: texture_2d<f32>;
-
-@fragment
-fn myFSMain(v: MyVSOutput) -> @location(0) vec4f {
-  var diffuseColor = textureSample(diffuseTexture, diffuseSampler, v.texcoord);
-  var a_normal = normalize(v.normal);
-  var l = dot(a_normal, fsUniforms.lightDirection) * 0.5 + 0.5;
-  return vec4f(diffuseColor.rgb * l, diffuseColor.a);
-}
-`;
-
-/**
- * @description
- * For Cube with images
- */
-const cubeTexShader = exports.cubeTexShader = `struct Uniforms {
-      matrix: mat4x4f,
-    };
-
-    struct Vertex {
-      @location(0) position: vec4f,
-      @location(1) texcoord: vec2f,
-    };
-
-    struct VSOutput {
-      @builtin(position) position: vec4f,
-      @location(0) texcoord: vec2f,
-    };
-
-    @group(0) @binding(0) var<uniform> uni: Uniforms;
-    @group(0) @binding(1) var ourSampler: sampler;
-    @group(0) @binding(2) var ourTexture: texture_2d<f32>;
-
-    @vertex fn vs(vert: Vertex) -> VSOutput {
-      var vsOut: VSOutput;
-      vsOut.position = uni.matrix * vert.position;
-      vsOut.texcoord = vert.texcoord;
-      return vsOut;
-    }
-
-    @fragment fn fs(vsOut: VSOutput) -> @location(0) vec4f {
-      return textureSample(ourTexture, ourSampler, vsOut.texcoord);
-    }
-`;
-const basicVertWGSL = exports.basicVertWGSL = `struct Uniforms {
-  modelViewProjectionMatrix : mat4x4<f32>,
-}
-@binding(0) @group(0) var<uniform> uniforms : Uniforms;
-
-struct VertexOutput {
-  @builtin(position) Position : vec4<f32>,
-  @location(0) fragUV : vec2<f32>,
-  @location(1) fragPosition: vec4<f32>,
-}
-
-@vertex
-fn main(
-  @location(0) position : vec4<f32>,
-  @location(1) uv : vec2<f32>
-) -> VertexOutput {
-  var output : VertexOutput;
-  output.Position = uniforms.modelViewProjectionMatrix * position;
-  output.fragUV = uv;
-  output.fragPosition = 0.5 * (position + vec4(1.0, 1.0, 1.0, 1.0));
-  return output;
-}
-`;
-const vertexPositionColorWGSL = exports.vertexPositionColorWGSL = `@fragment
-fn main(
-  @location(0) fragUV: vec2<f32>,
-  @location(1) fragPosition: vec4<f32>
-) -> @location(0) vec4<f32> {
-  return fragPosition;
-}`;
-const BALL_SHADER = exports.BALL_SHADER = `struct Uniforms {
-  viewProjectionMatrix : mat4x4f
-}
-@group(0) @binding(0) var<uniform> uniforms : Uniforms;
-
-@group(1) @binding(0) var<uniform> modelMatrix : mat4x4f;
-
-struct VertexInput {
-  @location(0) position : vec4f,
-  @location(1) normal : vec3f,
-  @location(2) uv : vec2f
-}
-
-struct VertexOutput {
-  @builtin(position) position : vec4f,
-  @location(0) normal: vec3f,
-  @location(1) uv : vec2f,
-}
-
-@vertex
-fn vertexMain(input: VertexInput) -> VertexOutput {
-  var output : VertexOutput;
-  output.position = uniforms.viewProjectionMatrix * modelMatrix * input.position;
-  output.normal = normalize((modelMatrix * vec4(input.normal, 0)).xyz);
-  output.uv = input.uv;
-  return output;
-}
-
-@group(1) @binding(1) var meshSampler: sampler;
-@group(1) @binding(2) var meshTexture: texture_2d<f32>;
-
-// Static directional lighting
-const lightDir = vec3f(1, 1, 1);
-const dirColor = vec3(1);
-const ambientColor = vec3f(0.05);
-
-@fragment
-fn fragmentMain(input: VertexOutput) -> @location(0) vec4f {
-  let textureColor = textureSample(meshTexture, meshSampler, input.uv);
-
-  // Very simplified lighting algorithm.
-  let lightColor = saturate(ambientColor + max(dot(input.normal, lightDir), 0.0) * dirColor);
-
-  return vec4f(textureColor.rgb * lightColor, textureColor.a);
-}`;
-
-},{}],4:[function(require,module,exports){
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
 exports.default = void 0;
 var _shaders = require("../shaders/shaders");
 var _ballsBuffer = require("./ballsBuffer");
@@ -5753,7 +5602,7 @@ class MEBall {
     this.renderScene(renderBundleEncoder);
     this.renderBundle = renderBundleEncoder.finish();
   }
-  createSphereRenderable(radius, widthSegments = 32, heightSegments = 16, randomness = 0) {
+  createSphereRenderable(radius, widthSegments = 8, heightSegments = 4, randomness = 0) {
     const sphereMesh = (0, _ballsBuffer.createSphereMesh)(radius, widthSegments, heightSegments, randomness);
     // Create a vertex buffer from the sphere data.
     const vertices = this.device.createBuffer({
@@ -5877,7 +5726,7 @@ class MEBall {
 }
 exports.default = MEBall;
 
-},{"../shaders/shaders":3,"./ballsBuffer":5,"wgpu-matrix":2}],5:[function(require,module,exports){
+},{"../shaders/shaders":6,"./ballsBuffer":4,"wgpu-matrix":2}],4:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -5940,6 +5789,7 @@ function createSphereMesh(radius, widthSegments = 3, heightSegments = 3, randomn
         }
       }
       vertices.push(...vertex);
+
       // normal
       _wgpuMatrix.vec3.copy(vertex, normal);
       _wgpuMatrix.vec3.normalize(normal, normal);
@@ -5967,7 +5817,7 @@ function createSphereMesh(radius, widthSegments = 3, heightSegments = 3, randomn
   };
 }
 
-},{"wgpu-matrix":2}],6:[function(require,module,exports){
+},{"wgpu-matrix":2}],5:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -5991,18 +5841,21 @@ class MECube {
         entryPoint: 'vertexMain',
         buffers: [{
           arrayStride: _ballsBuffer.SphereLayout.vertexStride,
-          attributes: [{
-            // position
+          attributes: [
+          // position
+          {
             shaderLocation: 0,
             offset: _ballsBuffer.SphereLayout.positionsOffset,
             format: 'float32x3'
-          }, {
-            // normal
+          },
+          // normal
+          {
             shaderLocation: 1,
             offset: _ballsBuffer.SphereLayout.normalOffset,
             format: 'float32x3'
-          }, {
-            // uv
+          },
+          // uv
+          {
             shaderLocation: 2,
             offset: _ballsBuffer.SphereLayout.uvOffset,
             format: 'float32x2'
@@ -6051,7 +5904,6 @@ class MECube {
     };
     this.loadTex1(device).then(() => {
       this.loadTex2(device).then(() => {
-        console.log('NICE THIS', this);
         this.sampler = device.createSampler({
           magFilter: 'linear',
           minFilter: 'linear'
@@ -6070,8 +5922,6 @@ class MECube {
         this.renderPassDescriptor = {
           colorAttachments: [{
             view: undefined,
-            // Assigned later
-
             clearValue: {
               r: 0.0,
               g: 0.0,
@@ -6197,11 +6047,9 @@ class MECube {
     const viewMatrix = _wgpuMatrix.mat4.identity();
     _wgpuMatrix.mat4.translate(viewMatrix, _wgpuMatrix.vec3.fromValues(0, 0, -4), viewMatrix);
     const now = Date.now() / 1000;
-    // Tilt the view matrix so the planet looks like it's off-axis.
-    _wgpuMatrix.mat4.rotateZ(viewMatrix, Math.PI * 0.1, viewMatrix);
-    _wgpuMatrix.mat4.rotateX(viewMatrix, Math.PI * 0.1, viewMatrix);
-    // Rotate the view matrix slowly so the planet appears to spin.
-    _wgpuMatrix.mat4.rotateY(viewMatrix, now * 0.05, viewMatrix);
+    _wgpuMatrix.mat4.rotateZ(viewMatrix, Math.PI * 0, viewMatrix);
+    _wgpuMatrix.mat4.rotateX(viewMatrix, Math.PI * 0, viewMatrix);
+    _wgpuMatrix.mat4.rotateY(viewMatrix, now * 1, viewMatrix);
     _wgpuMatrix.mat4.multiply(this.projectionMatrix, viewMatrix, this.modelViewProjectionMatrix);
     return this.modelViewProjectionMatrix;
   }
@@ -6276,21 +6124,19 @@ class MECube {
     const vertices = new Float32Array([
     //  position   |  texture coordinate
     //-------------+----------------------
-    // front face     select the top left image
-    options.scale * -1, options.scale * 1, options.scale * 1, 0, 0, options.scale * -1, options.scale * -1, options.scale * 1, 0, 0.5, options.scale * 1, options.scale * 1, options.scale * 1, 0.25, 0, options.scale * 1, options.scale * -1, options.scale * 1, 0.25, 0.5,
+    // front face     select the top left image  1, 0.5,   
+
+    -1, 1, 1, 1, 0, 0, 0, 0, -1, -1, 1, 1, 0, 0, 0, 0.5, 1, 1, 1, 1, 0, 0, 0.25, 0, 1, -1, 1, 1, 0, 0, 0.25, 0.5,
     // right face     select the top middle image
-    options.scale * 1, options.scale * 1, options.scale * -1, 0.25, 0, options.scale * 1, options.scale * 1, options.scale * 1, 0.5, 0, options.scale * 1, options.scale * -1, options.scale * -1, 0.25, 0.5, options.scale * 1, options.scale * -1, options.scale * 1, 0.5, 0.5,
+    1, 1, -1, 1, 0, 0, 0.25, 0, 1, 1, 1, 1, 0, 0, 0.5, 0, 1, -1, -1, 1, 0, 0, 0.25, 0.5, 1, -1, 1, 1, 0, 0, 0.5, 0.5,
     // back face      select to top right image
-    options.scale * 1, options.scale * 1, options.scale * -1, 0.5, 0, options.scale * 1, options.scale * -1, options.scale * -1, 0.5, 0.5, options.scale * -1, options.scale * 1, options.scale * -1, 0.75, 0, options.scale * -1, options.scale * -1, options.scale * -1, 0.75, 0.5,
+    1, 1, -1, 1, 0, 0, 0.5, 0, 1, -1, -1, 1, 0, 0, 0.5, 0.5, -1, 1, -1, 1, 0, 0, 0.75, 0, -1, -1, -1, 1, 0, 0, 0.75, 0.5,
     // left face       select the bottom left image
-    options.scale * -1, options.scale * 1, options.scale * 1, 0, 0.5, options.scale * -1, options.scale * 1, options.scale * -1, 0.25, 0.5, options.scale * -1, options.scale * -1, options.scale * 1, 0, 1, options.scale * -1, options.scale * -1, options.scale * -1, 0.25, 1,
+    -1, 1, 1, 1, 0, 0, 0, 0.5, -1, 1, -1, 1, 0, 0, 0.25, 0.5, -1, -1, 1, 1, 0, 0, 0, 1, -1, -1, -1, 1, 0, 0, 0.25, 1,
     // bottom face     select the bottom middle image
-    options.scale * 1, options.scale * -1, options.scale * 1, 0.25, 0.5, options.scale * -1, options.scale * -1, options.scale * 1, 0.5, 0.5, options.scale * 1, options.scale * -1, options.scale * -1, 0.25, 1, options.scale * -1, options.scale * -1, options.scale * -1, 0.5, 1,
+    1, -1, 1, 1, 0, 0, 0.25, 0.5, -1, -1, 1, 1, 0, 0, 0.5, 0.5, 1, -1, -1, 1, 0, 0, 0.25, 1, -1, -1, -1, 1, 0, 0, 0.5, 1,
     // top face        select the bottom right image
-    options.scale * -1, options.scale * 1, options.scale * 1, 0.5, 0.5, options.scale * 1, options.scale * 1, options.scale * 1, 0.75, 0.5, options.scale * -1, options.scale * 1, options.scale * -1, 0.5, 1, options.scale * 1, options.scale * 1, options.scale * -1, 0.75, 1]);
-
-    // const texCORDS =   new Float32Array([])
-
+    -1, 1, 1, 1, 0, 0, 0.5, 0.5, 1, 1, 1, 1, 0, 0, 0.75, 0.5, -1, 1, -1, 1, 0, 0, 0.5, 1, 1, 1, -1, 1, 0, 0, 0.75, 1]);
     const indices = new Uint16Array([0, 1, 2, 2, 1, 3,
     // front
     4, 5, 6, 6, 5, 7,
@@ -6312,4 +6158,179 @@ class MECube {
 }
 exports.default = MECube;
 
-},{"../shaders/shaders":3,"./ballsBuffer":5,"wgpu-matrix":2}]},{},[1]);
+},{"../shaders/shaders":6,"./ballsBuffer":4,"wgpu-matrix":2}],6:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.vertexPositionColorWGSL = exports.shaderSrc = exports.cubeTexShader = exports.basicVertWGSL = exports.basicFragWGSL = exports.BALL_SHADER = void 0;
+/**
+ * @description
+ * For microdraw pixel cube texture
+ */
+const shaderSrc = exports.shaderSrc = `struct VSUniforms {
+  worldViewProjection: mat4x4f,
+  worldInverseTranspose: mat4x4f,
+};
+@group(0) @binding(0) var<uniform> vsUniforms: VSUniforms;
+
+struct MyVSInput {
+    @location(0) position: vec4f,
+    @location(1) normal: vec3f,
+    @location(2) texcoord: vec2f,
+};
+
+struct MyVSOutput {
+  @builtin(position) position: vec4f,
+  @location(0) normal: vec3f,
+  @location(1) texcoord: vec2f,
+};
+
+@vertex
+fn myVSMain(v: MyVSInput) -> MyVSOutput {
+  var vsOut: MyVSOutput;
+  vsOut.position = vsUniforms.worldViewProjection * v.position;
+  vsOut.normal = (vsUniforms.worldInverseTranspose * vec4f(v.normal, 0.0)).xyz;
+  vsOut.texcoord = v.texcoord;
+  return vsOut;
+}
+
+struct FSUniforms {
+  lightDirection: vec3f,
+};
+
+@group(0) @binding(1) var<uniform> fsUniforms: FSUniforms;
+@group(0) @binding(2) var diffuseSampler: sampler;
+@group(0) @binding(3) var diffuseTexture: texture_2d<f32>;
+
+@fragment
+fn myFSMain(v: MyVSOutput) -> @location(0) vec4f {
+  var diffuseColor = textureSample(diffuseTexture, diffuseSampler, v.texcoord);
+  var a_normal = normalize(v.normal);
+  var l = dot(a_normal, fsUniforms.lightDirection) * 0.5 + 0.5;
+  return vec4f(diffuseColor.rgb * l, diffuseColor.a);
+}
+`;
+
+/**
+ * @description
+ * For Cube with images
+ */
+const cubeTexShader = exports.cubeTexShader = `struct Uniforms {
+      matrix: mat4x4f,
+    };
+
+    struct Vertex {
+      @location(0) position: vec4f,
+      @location(1) texcoord: vec2f,
+    };
+
+    struct VSOutput {
+      @builtin(position) position: vec4f,
+      @location(0) texcoord: vec2f,
+    };
+
+    @group(0) @binding(0) var<uniform> uni: Uniforms;
+    @group(0) @binding(1) var ourSampler: sampler;
+    @group(0) @binding(2) var ourTexture: texture_2d<f32>;
+
+    @vertex fn vs(vert: Vertex) -> VSOutput {
+      var vsOut: VSOutput;
+      vsOut.position = uni.matrix * vert.position;
+      vsOut.texcoord = vert.texcoord;
+      return vsOut;
+    }
+
+    @fragment fn fs(vsOut: VSOutput) -> @location(0) vec4f {
+      return textureSample(ourTexture, ourSampler, vsOut.texcoord);
+    }
+`;
+const basicVertWGSL = exports.basicVertWGSL = `struct Uniforms {
+  modelViewProjectionMatrix : mat4x4<f32>,
+}
+@binding(0) @group(0) var<uniform> uniforms : Uniforms;
+
+struct VertexOutput {
+  @builtin(position) Position : vec4<f32>,
+  @location(0) fragUV : vec2<f32>,
+  @location(1) fragPosition: vec4<f32>,
+}
+
+@vertex
+fn main(
+  @location(0) position : vec4<f32>,
+  @location(1) uv : vec2<f32>
+) -> VertexOutput {
+  var output : VertexOutput;
+  output.Position = uniforms.modelViewProjectionMatrix * position;
+  output.fragUV = uv;
+  output.fragPosition = 0.5 * (position + vec4(1.0, 1.0, 1.0, 1.0));
+  return output;
+}
+`;
+const basicFragWGSL = exports.basicFragWGSL = `@group(0) @binding(1) var mySampler: sampler;
+@group(0) @binding(2) var myTexture: texture_2d<f32>;
+
+@fragment
+fn main(
+  @location(0) fragUV: vec2<f32>,
+  @location(1) fragPosition: vec4<f32>
+) -> @location(0) vec4<f32> {
+  return textureSample(myTexture, mySampler, fragUV) * fragPosition;
+}
+`;
+const vertexPositionColorWGSL = exports.vertexPositionColorWGSL = `@fragment
+fn main(
+  @location(0) fragUV: vec2<f32>,
+  @location(1) fragPosition: vec4<f32>
+) -> @location(0) vec4<f32> {
+  return fragPosition;
+}`;
+const BALL_SHADER = exports.BALL_SHADER = `struct Uniforms {
+  viewProjectionMatrix : mat4x4f
+}
+@group(0) @binding(0) var<uniform> uniforms : Uniforms;
+
+@group(1) @binding(0) var<uniform> modelMatrix : mat4x4f;
+
+struct VertexInput {
+  @location(0) position : vec4f,
+  @location(1) normal : vec3f,
+  @location(2) uv : vec2f
+}
+
+struct VertexOutput {
+  @builtin(position) position : vec4f,
+  @location(0) normal: vec3f,
+  @location(1) uv : vec2f,
+}
+
+@vertex
+fn vertexMain(input: VertexInput) -> VertexOutput {
+  var output : VertexOutput;
+  output.position = uniforms.viewProjectionMatrix * modelMatrix * input.position;
+  output.normal = normalize((modelMatrix * vec4(input.normal, 0)).xyz);
+  output.uv = input.uv;
+  return output;
+}
+
+@group(1) @binding(1) var meshSampler: sampler;
+@group(1) @binding(2) var meshTexture: texture_2d<f32>;
+
+// Static directional lighting
+const lightDir = vec3f(1, 1, 1);
+const dirColor = vec3(1);
+const ambientColor = vec3f(0.05);
+
+@fragment
+fn fragmentMain(input: VertexOutput) -> @location(0) vec4f {
+  let textureColor = textureSample(meshTexture, meshSampler, input.uv);
+
+  // Very simplified lighting algorithm.
+  let lightColor = saturate(ambientColor + max(dot(input.normal, lightDir), 0.0) * dirColor);
+
+  return vec4f(textureColor.rgb * lightColor, textureColor.a);
+}`;
+
+},{}]},{},[1]);

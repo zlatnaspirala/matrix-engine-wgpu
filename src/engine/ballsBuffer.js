@@ -59,6 +59,7 @@ export function createSphereMesh(radius, widthSegments = 3, heightSegments = 3, 
         }
       }
       vertices.push(...vertex);
+      
       // normal
       vec3.copy(vertex, normal);
       vec3.normalize(normal, normal);
@@ -81,6 +82,8 @@ export function createSphereMesh(radius, widthSegments = 3, heightSegments = 3, 
       if (iy !== heightSegments - 1) indices.push(b, c, d);
     }
   }
+
+
   return {
     vertices: new Float32Array(vertices),
     indices: new Uint16Array(indices),

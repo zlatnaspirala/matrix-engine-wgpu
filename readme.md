@@ -25,4 +25,4 @@ I publish (this repo) npm package with name `matrix-wgpu`.
 
  - MIT LICENCE - Nikola Lukic zlatnaspirala@gmail.com 2024
  - Structural shema for project and personal learning inspired by:
-   https://webgpufundamentals.org/webgpu/lessons/webgpu-from-webgl.html
+   https://webgpu.github.io/webgpu-samples/samples/renderBundles

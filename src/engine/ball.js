@@ -1,8 +1,8 @@
-import {BALL_SHADER, cubeTexShader} from "../shaders/shaders";
+import {BALL_SHADER} from "../shaders/shaders";
 import {SphereLayout, createSphereMesh} from "./ballsBuffer";
 import {mat4, vec3} from 'wgpu-matrix';
 
-export default class MECube {
+export default class MEBall {
 
   constructor(canvas, device) {
 
@@ -206,9 +206,9 @@ export default class MECube {
     this.renderBundle = renderBundleEncoder.finish();
   }
 
-  createSphereRenderable(radius, widthSegments = 32, heightSegments = 16, randomness = 0) {
+  createSphereRenderable(radius, widthSegments = 8, heightSegments = 4, randomness = 0) {
 
-    const sphereMesh = this.createCubeVertices();
+    const sphereMesh = createSphereMesh(radius, widthSegments, heightSegments, randomness);
     // Create a vertex buffer from the sphere data.
     const vertices = this.device.createBuffer({
       size: sphereMesh.vertices.byteLength,
@@ -267,15 +267,16 @@ export default class MECube {
     return bindGroup;
   }
 
-  getTransformationMatrix() {
+  getTransformationMatrix(byX, byY, byZ) {
+
     const viewMatrix = mat4.identity();
-    mat4.translate(viewMatrix, vec3.fromValues(0, 0, -4), viewMatrix);
+    mat4.translate(viewMatrix, vec3.fromValues(byX, byY, byZ), viewMatrix);
     const now = Date.now() / 1000;
-    // Tilt the view matrix so the planet looks like it's off-axis.
+
     mat4.rotateZ(viewMatrix, Math.PI * 0.1, viewMatrix);
     mat4.rotateX(viewMatrix, Math.PI * 0.1, viewMatrix);
-    // Rotate the view matrix slowly so the planet appears to spin.
     mat4.rotateY(viewMatrix, now * 0.05, viewMatrix);
+
     mat4.multiply(this.projectionMatrix, viewMatrix, this.modelViewProjectionMatrix);
     return this.modelViewProjectionMatrix;
   }
@@ -327,7 +328,7 @@ export default class MECube {
 
   }
 
-  
+
   // Render bundles function as partial, limited render passes, so we can use the
   // same code both to render the scene normally and to build the render bundle.
   renderScene(passEncoder) {
@@ -356,64 +357,4 @@ export default class MECube {
     }
   }
 
-  createCubeVertices(options) {
-
-    if (typeof options === 'undefined') {
-      var options = {
-        scale: 1
-      }
-    }
-    
-    const vertices = new Float32Array([
-      //  position   |  texture coordinate
-      //-------------+----------------------
-      // front face     select the top left image
-      options.scale *-1, options.scale *1,options.scale * 1, 0, 0,
-      options.scale *-1, options.scale *-1, options.scale *1, 0, 0.5,
-      options.scale *1, options.scale *1,options.scale * 1, 0.25, 0,
-      options.scale * 1,options.scale * -1,options.scale * 1, 0.25, 0.5,
-      // right face     select the top middle image
-      options.scale * 1, options.scale *1,options.scale * -1, 0.25, 0,
-      options.scale * 1, options.scale *1,options.scale * 1, 0.5, 0,
-      options.scale * 1, options.scale *-1,options.scale * -1, 0.25, 0.5,
-      options.scale * 1, options.scale *-1,options.scale * 1, 0.5, 0.5,
-      // back face      select to top right image
-      options.scale *1, options.scale *1, options.scale *-1, 0.5, 0,
-      options.scale * 1,options.scale * -1, options.scale *-1, 0.5, 0.5,
-      options.scale *-1,options.scale * 1,options.scale * -1, 0.75, 0,
-      options.scale * -1,options.scale * -1,options.scale * -1, 0.75, 0.5,
-      // left face       select the bottom left image
-      options.scale *-1,options.scale * 1, options.scale *1, 0, 0.5,
-      options.scale *-1,options.scale * 1, options.scale *-1, 0.25, 0.5,
-      options.scale *-1, options.scale *-1,options.scale * 1, 0, 1,
-      options.scale *-1, options.scale *-1, options.scale *-1, 0.25, 1,
-      // bottom face     select the bottom middle image
-      options.scale *1, options.scale *-1, options.scale *1, 0.25, 0.5,
-      options.scale *-1,options.scale * -1, options.scale *1, 0.5, 0.5,
-      options.scale * 1, options.scale *-1, options.scale *-1, 0.25, 1,
-      options.scale *-1, options.scale *-1, options.scale *-1, 0.5, 1,
-      // top face        select the bottom right image
-      options.scale *-1, options.scale *1, options.scale *1, 0.5, 0.5,
-      options.scale *1, options.scale *1,options.scale * 1, 0.75, 0.5,
-      options.scale *-1,options.scale * 1, options.scale *-1, 0.5, 1,
-      options.scale * 1, options.scale *1, options.scale *-1, 0.75, 1,
-    ]);
-
-    // const texCORDS =   new Float32Array([])
-    
-    const indices = new Uint16Array([
-      0, 1, 2, 2, 1, 3,  // front
-      4, 5, 6, 6, 5, 7,  // right
-      8, 9, 10, 10, 9, 11,  // back
-      12, 13, 14, 14, 13, 15,  // left
-      16, 17, 18, 18, 17, 19,  // bottom
-      20, 21, 22, 22, 21, 23,  // top
-    ]);
-
-    return {
-      vertices,
-      indices,
-      numVertices: indices.length,
-    };
-  }
 }
