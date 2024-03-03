@@ -1,20 +1,23 @@
 import { mat4, vec3 } from 'wgpu-matrix';
 import { createSphereMesh, SphereLayout } from './src/test2/ballsBuffer.js';
 import {BALL_SHADER} from './src/shaders/shaders.js';
+import MEBall from "./src/test2/ball.js";
+import MECube from './src/test2/cube.js';
+
 
 var canvas = document.createElement('canvas')
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 document.body.append(canvas)
 
-const init = async ({ canvas, pageState, gui, stats }) => {
+
+
+const init = async ({ canvas }) => {
+
   const adapter = await navigator.gpu.requestAdapter();
   const device = await adapter.requestDevice();
 
-  const settings = {
-    useRenderBundles: true,
-    asteroidCount: 15,
-  };
+
 
   const context = canvas.getContext('webgpu');
   const devicePixelRatio = window.devicePixelRatio;
@@ -28,347 +31,50 @@ const init = async ({ canvas, pageState, gui, stats }) => {
     alphaMode: 'premultiplied',
   });
 
+  let NIK = new MEBall(canvas, device)
 
-  const shaderModule = device.createShaderModule({
-    code: BALL_SHADER,
-  });
-
-  const pipeline = device.createRenderPipeline({
-    layout: 'auto',
-    vertex: {
-      module: shaderModule,
-      entryPoint: 'vertexMain',
-      buffers: [
-        {
-          arrayStride: SphereLayout.vertexStride,
-          attributes: [
-            {
-              // position
-              shaderLocation: 0,
-              offset: SphereLayout.positionsOffset,
-              format: 'float32x3',
-            },
-            {
-              // normal
-              shaderLocation: 1,
-              offset: SphereLayout.normalOffset,
-              format: 'float32x3',
-            },
-            {
-              // uv
-              shaderLocation: 2,
-              offset: SphereLayout.uvOffset,
-              format: 'float32x2',
-            },
-          ],
-        },
-      ],
-    },
-    fragment: {
-      module: shaderModule,
-      entryPoint: 'fragmentMain',
-      targets: [
-        {
-          format: presentationFormat,
-        },
-      ],
-    },
-    primitive: {
-      topology: 'triangle-list',
-
-      // Backface culling since the sphere is solid piece of geometry.
-      // Faces pointing away from the camera will be occluded by faces
-      // pointing toward the camera.
-      cullMode: 'back',
-    },
-
-    // Enable depth testing so that the fragment closest to the camera
-    // is rendered in front.
-    depthStencil: {
-      depthWriteEnabled: true,
-      depthCompare: 'less',
-      format: 'depth24plus',
-    },
-  });
-
-  const depthTexture = device.createTexture({
-    size: [canvas.width, canvas.height],
-    format: 'depth24plus',
-    usage: GPUTextureUsage.RENDER_ATTACHMENT,
-  });
-
-  const uniformBufferSize = 4 * 16; // 4x4 matrix
-  const uniformBuffer = device.createBuffer({
-    size: uniformBufferSize,
-    usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-  });
-
-  // Fetch the images and upload them into a GPUTexture.
-  let planetTexture;
-  {
-    const response = await fetch('./res/textures/tex1.jpg');
-    const imageBitmap = await createImageBitmap(await response.blob());
-
-    planetTexture = device.createTexture({
-      size: [imageBitmap.width, imageBitmap.height, 1],
-      format: 'rgba8unorm',
-      usage:
-        GPUTextureUsage.TEXTURE_BINDING |
-        GPUTextureUsage.COPY_DST |
-        GPUTextureUsage.RENDER_ATTACHMENT,
-    });
-    device.queue.copyExternalImageToTexture(
-      { source: imageBitmap },
-      { texture: planetTexture },
-      [imageBitmap.width, imageBitmap.height]
-    );
-  }
-
-  let moonTexture;
-  {
-    const response = await fetch('./res/textures/tex1.jpg');
-    const imageBitmap = await createImageBitmap(await response.blob());
-
-    moonTexture = device.createTexture({
-      size: [imageBitmap.width, imageBitmap.height, 1],
-      format: 'rgba8unorm',
-      usage:
-        GPUTextureUsage.TEXTURE_BINDING |
-        GPUTextureUsage.COPY_DST |
-        GPUTextureUsage.RENDER_ATTACHMENT,
-    });
-    device.queue.copyExternalImageToTexture(
-      { source: imageBitmap },
-      { texture: moonTexture },
-      [imageBitmap.width, imageBitmap.height]
-    );
-  }
-
-  const sampler = device.createSampler({
-    magFilter: 'linear',
-    minFilter: 'linear',
-  });
-
-  // Helper functions to create the required meshes and bind groups for each sphere.
-  function createSphereRenderable(radius, widthSegments = 32, heightSegments = 16, randomness = 0) {
-
-    const sphereMesh = createSphereMesh(radius, widthSegments, heightSegments, randomness);
-    // Create a vertex buffer from the sphere data.
-    const vertices = device.createBuffer({
-      size: sphereMesh.vertices.byteLength,
-      usage: GPUBufferUsage.VERTEX,
-      mappedAtCreation: true,
-    });
-    new Float32Array(vertices.getMappedRange()).set(sphereMesh.vertices);
-    vertices.unmap();
-
-    const indices = device.createBuffer({
-      size: sphereMesh.indices.byteLength,
-      usage: GPUBufferUsage.INDEX,
-      mappedAtCreation: true,
-    });
-    new Uint16Array(indices.getMappedRange()).set(sphereMesh.indices);
-    indices.unmap();
-
-    return {
-      vertices,
-      indices,
-      indexCount: sphereMesh.indices.length,
-    };
-  }
-
-  function createSphereBindGroup(texture, transform) {
-
-    const uniformBufferSize = 4 * 16; // 4x4 matrix
-    const uniformBuffer = device.createBuffer({
-      size: uniformBufferSize,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-      mappedAtCreation: true,
-    });
-    new Float32Array(uniformBuffer.getMappedRange()).set(transform);
-    uniformBuffer.unmap();
-
-    const bindGroup = device.createBindGroup({
-      layout: pipeline.getBindGroupLayout(1),
-      entries: [
-        {
-          binding: 0,
-          resource: {
-            buffer: uniformBuffer,
-          },
-        },
-        {
-          binding: 1,
-          resource: sampler,
-        },
-        {
-          binding: 2,
-          resource: texture.createView(),
-        },
-      ],
-    });
-
-    return bindGroup;
-  }
-
-  const transform = mat4.create();
-  mat4.identity(transform);
-
-  // Create one large central planet surrounded by a large ring of asteroids
-  const planet = createSphereRenderable(1.0);
-  planet.bindGroup = createSphereBindGroup(planetTexture, transform);
-
-  const asteroids = [
-     createSphereRenderable(0.2, 8, 6, 0.15),
-     createSphereRenderable(0.13, 8, 6, 0.15)
-  ];
-
-  const renderables = [planet];
-
-  function ensureEnoughAsteroids() {
-    for (let i = renderables.length; i <= settings.asteroidCount; ++i) {
-      // Place copies of the asteroid in a ring.
-      const radius = Math.random() * 1.7 + 1.25;
-      const angle = Math.random() * Math.PI * 2;
-      const x = Math.sin(angle) * radius;
-      const y = (Math.random() - 0.5) * 0.015;
-      const z = Math.cos(angle) * radius;
-
-      mat4.identity(transform);
-      mat4.translate(transform, [x, y, z], transform);
-      mat4.rotateX(transform, Math.random() * Math.PI, transform);
-      mat4.rotateY(transform, Math.random() * Math.PI, transform);
-      renderables.push({
-        ...asteroids[i % asteroids.length],
-        bindGroup: createSphereBindGroup(moonTexture, transform),
-      });
-    }
-  }
-  ensureEnoughAsteroids();
-
-  const renderPassDescriptor = {
-    colorAttachments: [
-      {
-        view: undefined, // Assigned later
-
-        clearValue: { r: 0.0, g: 0.0, b: 0.0, a: 1.0 },
-        loadOp: 'clear',
-        storeOp: 'store',
-      },
-    ],
-    depthStencilAttachment: {
-      view: depthTexture.createView(),
-
-      depthClearValue: 1.0,
-      depthLoadOp: 'clear',
-      depthStoreOp: 'store',
-    },
-  };
-
-  const aspect = canvas.width / canvas.height;
-  const projectionMatrix = mat4.perspective(
-    (2 * Math.PI) / 5,
-    aspect,
-    1,
-    100.0
-  );
-  const modelViewProjectionMatrix = mat4.create();
-
-  const frameBindGroup = device.createBindGroup({
-    layout: pipeline.getBindGroupLayout(0),
-    entries: [
-      {
-        binding: 0,
-        resource: {
-          buffer: uniformBuffer,
-        },
-      },
-    ],
-  });
-
-  function getTransformationMatrix() {
-    const viewMatrix = mat4.identity();
-    mat4.translate(viewMatrix, vec3.fromValues(0, 0, -4), viewMatrix);
-    const now = Date.now() / 1000;
-    // Tilt the view matrix so the planet looks like it's off-axis.
-    mat4.rotateZ(viewMatrix, Math.PI * 0.1, viewMatrix);
-    mat4.rotateX(viewMatrix, Math.PI * 0.1, viewMatrix);
-    // Rotate the view matrix slowly so the planet appears to spin.
-    mat4.rotateY(viewMatrix, now * 0.05, viewMatrix);
-    mat4.multiply(projectionMatrix, viewMatrix, modelViewProjectionMatrix);
-    return modelViewProjectionMatrix;
-  }
-
-  // Render bundles function as partial, limited render passes, so we can use the
-  // same code both to render the scene normally and to build the render bundle.
-  function renderScene(passEncoder) {
-
-    passEncoder.setPipeline(pipeline);
-    passEncoder.setBindGroup(0, frameBindGroup);
-
-    // Loop through every renderable object and draw them individually.
-    // (Because many of these meshes are repeated, with only the transforms
-    // differing, instancing would be highly effective here. This sample
-    // intentionally avoids using instancing in order to emulate a more complex
-    // scene, which helps demonstrate the potential time savings a render bundle
-    // can provide.)
-    let count = 0;
-    for (const renderable of renderables) {
-      passEncoder.setBindGroup(1, renderable.bindGroup);
-      passEncoder.setVertexBuffer(0, renderable.vertices);
-      passEncoder.setIndexBuffer(renderable.indices, 'uint16');
-      passEncoder.drawIndexed(renderable.indexCount);
-
-      if (++count > settings.asteroidCount) {
-        break;
-      }
-    }
-  }
-
-  // The render bundle can be encoded once and re-used as many times as needed.
-  // Because it encodes all of the commands needed to render at the GPU level,
-  // those commands will not need to execute the associated JavaScript code upon
-  // execution or be re-validated, which can represent a significant time savings.
-  //
-  // However, because render bundles are immutable once created, they are only
-  // appropriate for rendering content where the same commands will be executed
-  // every time, with the only changes being the contents of the buffers and
-  // textures used. Cases where the executed commands differ from frame-to-frame,
-  // such as when using frustrum or occlusion culling, will not benefit from
-  // using render bundles as much.
-  let renderBundle;
-  function updateRenderBundle() {
-    console.log('sss')
-    const renderBundleEncoder = device.createRenderBundleEncoder({
-      colorFormats: [presentationFormat],
-      depthStencilFormat: 'depth24plus',
-    });
-    renderScene(renderBundleEncoder);
-    renderBundle = renderBundleEncoder.finish();
-  }
-  updateRenderBundle();
+  let NIK2 = new MEBall(canvas, device)
+  // let NIK2 = new MEBall(canvas, device)
 
   function frame() {
 
-    const transformationMatrix = getTransformationMatrix();
+    if (NIK.moonTexture == null) {
+      console.log('not ready')
+      return;
+    }
+    const transformationMatrix = NIK.getTransformationMatrix(0, 0.5, -5);
     device.queue.writeBuffer(
-      uniformBuffer,
+      NIK.uniformBuffer,
       0,
       transformationMatrix.buffer,
       transformationMatrix.byteOffset,
       transformationMatrix.byteLength
     );
-    renderPassDescriptor.colorAttachments[0].view = context
+    NIK.renderPassDescriptor.colorAttachments[0].view = context
       .getCurrentTexture()
       .createView();
 
-    const commandEncoder = device.createCommandEncoder();
-    const passEncoder = commandEncoder.beginRenderPass(renderPassDescriptor);
 
-    if (settings.useRenderBundles) {
+      const transformationMatrix2 = NIK2.getTransformationMatrix(0.4, 0.7, -5);
+    device.queue.writeBuffer(
+      NIK2.uniformBuffer,
+      0,
+      transformationMatrix2.buffer,
+      transformationMatrix2.byteOffset,
+      transformationMatrix2.byteLength
+    );
+    NIK2.renderPassDescriptor.colorAttachments[0].view = context
+      .getCurrentTexture()
+      .createView();
+
+
+    const commandEncoder = device.createCommandEncoder();
+    const passEncoder = commandEncoder.beginRenderPass(NIK.renderPassDescriptor);
+
+    if (NIK.settings.useRenderBundles) {
       // Executing a bundle is equivalent to calling all of the commands encoded
       // in the render bundle as part of the current render pass.
-      passEncoder.executeBundles([renderBundle]);
+      passEncoder.executeBundles([NIK.renderBundle, NIK2.renderBundle]);
     } else {
       // Alternatively, the same render commands can be encoded manually, which
       // can take longer since each command needs to be interpreted by the
@@ -379,11 +85,10 @@ const init = async ({ canvas, pageState, gui, stats }) => {
     passEncoder.end();
     device.queue.submit([commandEncoder.finish()]);
 
-    // stats.end();
-
     requestAnimationFrame(frame);
   }
-  requestAnimationFrame(frame);
+
+  setTimeout(() => { requestAnimationFrame(frame); }, 1000)
 };
 
 

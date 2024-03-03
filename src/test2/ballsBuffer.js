@@ -10,7 +10,14 @@ export const SphereLayout = {
   uvOffset: 6 * 4,
 };
 
-export function createSphereMesh(radius, widthSegments = 32, heightSegments = 16, randomness = 0) {
+export const SphereLayout2 = {
+  vertexStride: 8 * 4,
+  positionsOffset: 0,
+  normalOffset: 3 * 4,
+  uvOffset: 6 * 4,
+};
+
+export function createSphereMesh(radius, widthSegments = 3, heightSegments = 3, randomness = 0) {
   const vertices = [];
   const indices = [];
 

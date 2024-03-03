@@ -204,7 +204,7 @@ export default class MECubeTexPipline2 {
 
   
 
-  draw(p, c) {
+  draw(commandEncoder, c) {
 
     let clientWidth = this.canvas.clientWidth;
     let clientHeight = this.canvas.clientHeight;
@@ -216,7 +216,7 @@ export default class MECubeTexPipline2 {
 
     var view = mat4.lookAt(eye, target, up);
     var viewProjection = mat4.multiply(projection, view);
-    var world = mat4.rotationY(p);
+    var world = mat4.rotationY(c);
     mat4.transpose(mat4.inverse(world), this.worldInverseTranspose);
     mat4.multiply(viewProjection, world, this.worldViewProjection);
     vec3.normalize([1, 8, -10], this.lightDirection);
@@ -236,7 +236,7 @@ export default class MECubeTexPipline2 {
     }
     this.renderPassDescriptor.depthStencilAttachment.view = this.canvasInfo.depthTextureView;
 
-    const commandEncoder = this.device.createCommandEncoder();
+    // const commandEncoder = this.device.createCommandEncoder();
     const passEncoder = commandEncoder.beginRenderPass(this.renderPassDescriptor);
     passEncoder.setPipeline(this.pipeline);
     passEncoder.setBindGroup(0, this.bindGroup);
@@ -247,7 +247,7 @@ export default class MECubeTexPipline2 {
     passEncoder.drawIndexed(this.buffersManager.MY_GPU_BUFFER.indices.length);
 
     passEncoder.end();
-    this.device.queue.submit([commandEncoder.finish()]);
+    // this.device.queue.submit([commandEncoder.finish()]);
 
 
 

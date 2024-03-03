@@ -53,11 +53,20 @@ export default class MatrixEngineGPURender {
   render = (t) => {
     var time = t;
     time *= 0.001;
-    //  this.resizeToDisplaySize(this.engine.device, this.engine.canvasInfo);
-
+ 
+ 
+    const commandEncoder = this.engine.device.createCommandEncoder();
+ 
     this.engine.systemScene.forEach((matrixEnginePipline) => {
-      matrixEnginePipline.draw(1, 2)
+      matrixEnginePipline.draw(commandEncoder, 2)
     })
+
+
+
+   
+    this.engine.device.queue.submit([commandEncoder.finish()]);
+
+
 
     requestAnimationFrame(this.render);
   }

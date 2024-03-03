@@ -4,22 +4,18 @@
 var _wgpuMatrix = require("wgpu-matrix");
 var _ballsBuffer = require("./src/test2/ballsBuffer.js");
 var _shaders = require("./src/shaders/shaders.js");
+var _ball = _interopRequireDefault(require("./src/test2/ball.js"));
+var _cube = _interopRequireDefault(require("./src/test2/cube.js"));
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 var canvas = document.createElement('canvas');
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 document.body.append(canvas);
 const init = async ({
-  canvas,
-  pageState,
-  gui,
-  stats
+  canvas
 }) => {
   const adapter = await navigator.gpu.requestAdapter();
   const device = await adapter.requestDevice();
-  const settings = {
-    useRenderBundles: true,
-    asteroidCount: 15
-  };
   const context = canvas.getContext('webgpu');
   const devicePixelRatio = window.devicePixelRatio;
   canvas.width = canvas.clientWidth * devicePixelRatio;
@@ -30,282 +26,27 @@ const init = async ({
     format: presentationFormat,
     alphaMode: 'premultiplied'
   });
-  const shaderModule = device.createShaderModule({
-    code: _shaders.BALL_SHADER
-  });
-  const pipeline = device.createRenderPipeline({
-    layout: 'auto',
-    vertex: {
-      module: shaderModule,
-      entryPoint: 'vertexMain',
-      buffers: [{
-        arrayStride: _ballsBuffer.SphereLayout.vertexStride,
-        attributes: [{
-          // position
-          shaderLocation: 0,
-          offset: _ballsBuffer.SphereLayout.positionsOffset,
-          format: 'float32x3'
-        }, {
-          // normal
-          shaderLocation: 1,
-          offset: _ballsBuffer.SphereLayout.normalOffset,
-          format: 'float32x3'
-        }, {
-          // uv
-          shaderLocation: 2,
-          offset: _ballsBuffer.SphereLayout.uvOffset,
-          format: 'float32x2'
-        }]
-      }]
-    },
-    fragment: {
-      module: shaderModule,
-      entryPoint: 'fragmentMain',
-      targets: [{
-        format: presentationFormat
-      }]
-    },
-    primitive: {
-      topology: 'triangle-list',
-      // Backface culling since the sphere is solid piece of geometry.
-      // Faces pointing away from the camera will be occluded by faces
-      // pointing toward the camera.
-      cullMode: 'back'
-    },
-    // Enable depth testing so that the fragment closest to the camera
-    // is rendered in front.
-    depthStencil: {
-      depthWriteEnabled: true,
-      depthCompare: 'less',
-      format: 'depth24plus'
-    }
-  });
-  const depthTexture = device.createTexture({
-    size: [canvas.width, canvas.height],
-    format: 'depth24plus',
-    usage: GPUTextureUsage.RENDER_ATTACHMENT
-  });
-  const uniformBufferSize = 4 * 16; // 4x4 matrix
-  const uniformBuffer = device.createBuffer({
-    size: uniformBufferSize,
-    usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-  });
+  let NIK = new _ball.default(canvas, device);
+  let NIK2 = new _ball.default(canvas, device);
+  // let NIK2 = new MEBall(canvas, device)
 
-  // Fetch the images and upload them into a GPUTexture.
-  let planetTexture;
-  {
-    const response = await fetch('./res/textures/tex1.jpg');
-    const imageBitmap = await createImageBitmap(await response.blob());
-    planetTexture = device.createTexture({
-      size: [imageBitmap.width, imageBitmap.height, 1],
-      format: 'rgba8unorm',
-      usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT
-    });
-    device.queue.copyExternalImageToTexture({
-      source: imageBitmap
-    }, {
-      texture: planetTexture
-    }, [imageBitmap.width, imageBitmap.height]);
-  }
-  let moonTexture;
-  {
-    const response = await fetch('./res/textures/tex1.jpg');
-    const imageBitmap = await createImageBitmap(await response.blob());
-    moonTexture = device.createTexture({
-      size: [imageBitmap.width, imageBitmap.height, 1],
-      format: 'rgba8unorm',
-      usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT
-    });
-    device.queue.copyExternalImageToTexture({
-      source: imageBitmap
-    }, {
-      texture: moonTexture
-    }, [imageBitmap.width, imageBitmap.height]);
-  }
-  const sampler = device.createSampler({
-    magFilter: 'linear',
-    minFilter: 'linear'
-  });
-
-  // Helper functions to create the required meshes and bind groups for each sphere.
-  function createSphereRenderable(radius, widthSegments = 32, heightSegments = 16, randomness = 0) {
-    const sphereMesh = (0, _ballsBuffer.createSphereMesh)(radius, widthSegments, heightSegments, randomness);
-    // Create a vertex buffer from the sphere data.
-    const vertices = device.createBuffer({
-      size: sphereMesh.vertices.byteLength,
-      usage: GPUBufferUsage.VERTEX,
-      mappedAtCreation: true
-    });
-    new Float32Array(vertices.getMappedRange()).set(sphereMesh.vertices);
-    vertices.unmap();
-    const indices = device.createBuffer({
-      size: sphereMesh.indices.byteLength,
-      usage: GPUBufferUsage.INDEX,
-      mappedAtCreation: true
-    });
-    new Uint16Array(indices.getMappedRange()).set(sphereMesh.indices);
-    indices.unmap();
-    return {
-      vertices,
-      indices,
-      indexCount: sphereMesh.indices.length
-    };
-  }
-  function createSphereBindGroup(texture, transform) {
-    const uniformBufferSize = 4 * 16; // 4x4 matrix
-    const uniformBuffer = device.createBuffer({
-      size: uniformBufferSize,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-      mappedAtCreation: true
-    });
-    new Float32Array(uniformBuffer.getMappedRange()).set(transform);
-    uniformBuffer.unmap();
-    const bindGroup = device.createBindGroup({
-      layout: pipeline.getBindGroupLayout(1),
-      entries: [{
-        binding: 0,
-        resource: {
-          buffer: uniformBuffer
-        }
-      }, {
-        binding: 1,
-        resource: sampler
-      }, {
-        binding: 2,
-        resource: texture.createView()
-      }]
-    });
-    return bindGroup;
-  }
-  const transform = _wgpuMatrix.mat4.create();
-  _wgpuMatrix.mat4.identity(transform);
-
-  // Create one large central planet surrounded by a large ring of asteroids
-  const planet = createSphereRenderable(1.0);
-  planet.bindGroup = createSphereBindGroup(planetTexture, transform);
-  const asteroids = [createSphereRenderable(0.2, 8, 6, 0.15), createSphereRenderable(0.13, 8, 6, 0.15)];
-  const renderables = [planet];
-  function ensureEnoughAsteroids() {
-    for (let i = renderables.length; i <= settings.asteroidCount; ++i) {
-      // Place copies of the asteroid in a ring.
-      const radius = Math.random() * 1.7 + 1.25;
-      const angle = Math.random() * Math.PI * 2;
-      const x = Math.sin(angle) * radius;
-      const y = (Math.random() - 0.5) * 0.015;
-      const z = Math.cos(angle) * radius;
-      _wgpuMatrix.mat4.identity(transform);
-      _wgpuMatrix.mat4.translate(transform, [x, y, z], transform);
-      _wgpuMatrix.mat4.rotateX(transform, Math.random() * Math.PI, transform);
-      _wgpuMatrix.mat4.rotateY(transform, Math.random() * Math.PI, transform);
-      renderables.push({
-        ...asteroids[i % asteroids.length],
-        bindGroup: createSphereBindGroup(moonTexture, transform)
-      });
-    }
-  }
-  ensureEnoughAsteroids();
-  const renderPassDescriptor = {
-    colorAttachments: [{
-      view: undefined,
-      // Assigned later
-
-      clearValue: {
-        r: 0.0,
-        g: 0.0,
-        b: 0.0,
-        a: 1.0
-      },
-      loadOp: 'clear',
-      storeOp: 'store'
-    }],
-    depthStencilAttachment: {
-      view: depthTexture.createView(),
-      depthClearValue: 1.0,
-      depthLoadOp: 'clear',
-      depthStoreOp: 'store'
-    }
-  };
-  const aspect = canvas.width / canvas.height;
-  const projectionMatrix = _wgpuMatrix.mat4.perspective(2 * Math.PI / 5, aspect, 1, 100.0);
-  const modelViewProjectionMatrix = _wgpuMatrix.mat4.create();
-  const frameBindGroup = device.createBindGroup({
-    layout: pipeline.getBindGroupLayout(0),
-    entries: [{
-      binding: 0,
-      resource: {
-        buffer: uniformBuffer
-      }
-    }]
-  });
-  function getTransformationMatrix() {
-    const viewMatrix = _wgpuMatrix.mat4.identity();
-    _wgpuMatrix.mat4.translate(viewMatrix, _wgpuMatrix.vec3.fromValues(0, 0, -4), viewMatrix);
-    const now = Date.now() / 1000;
-    // Tilt the view matrix so the planet looks like it's off-axis.
-    _wgpuMatrix.mat4.rotateZ(viewMatrix, Math.PI * 0.1, viewMatrix);
-    _wgpuMatrix.mat4.rotateX(viewMatrix, Math.PI * 0.1, viewMatrix);
-    // Rotate the view matrix slowly so the planet appears to spin.
-    _wgpuMatrix.mat4.rotateY(viewMatrix, now * 0.05, viewMatrix);
-    _wgpuMatrix.mat4.multiply(projectionMatrix, viewMatrix, modelViewProjectionMatrix);
-    return modelViewProjectionMatrix;
-  }
-
-  // Render bundles function as partial, limited render passes, so we can use the
-  // same code both to render the scene normally and to build the render bundle.
-  function renderScene(passEncoder) {
-    passEncoder.setPipeline(pipeline);
-    passEncoder.setBindGroup(0, frameBindGroup);
-
-    // Loop through every renderable object and draw them individually.
-    // (Because many of these meshes are repeated, with only the transforms
-    // differing, instancing would be highly effective here. This sample
-    // intentionally avoids using instancing in order to emulate a more complex
-    // scene, which helps demonstrate the potential time savings a render bundle
-    // can provide.)
-    let count = 0;
-    for (const renderable of renderables) {
-      passEncoder.setBindGroup(1, renderable.bindGroup);
-      passEncoder.setVertexBuffer(0, renderable.vertices);
-      passEncoder.setIndexBuffer(renderable.indices, 'uint16');
-      passEncoder.drawIndexed(renderable.indexCount);
-      if (++count > settings.asteroidCount) {
-        break;
-      }
-    }
-  }
-
-  // The render bundle can be encoded once and re-used as many times as needed.
-  // Because it encodes all of the commands needed to render at the GPU level,
-  // those commands will not need to execute the associated JavaScript code upon
-  // execution or be re-validated, which can represent a significant time savings.
-  //
-  // However, because render bundles are immutable once created, they are only
-  // appropriate for rendering content where the same commands will be executed
-  // every time, with the only changes being the contents of the buffers and
-  // textures used. Cases where the executed commands differ from frame-to-frame,
-  // such as when using frustrum or occlusion culling, will not benefit from
-  // using render bundles as much.
-  let renderBundle;
-  function updateRenderBundle() {
-    console.log('sss');
-    const renderBundleEncoder = device.createRenderBundleEncoder({
-      colorFormats: [presentationFormat],
-      depthStencilFormat: 'depth24plus'
-    });
-    renderScene(renderBundleEncoder);
-    renderBundle = renderBundleEncoder.finish();
-  }
-  updateRenderBundle();
   function frame() {
-    const transformationMatrix = getTransformationMatrix();
-    device.queue.writeBuffer(uniformBuffer, 0, transformationMatrix.buffer, transformationMatrix.byteOffset, transformationMatrix.byteLength);
-    renderPassDescriptor.colorAttachments[0].view = context.getCurrentTexture().createView();
+    if (NIK.moonTexture == null) {
+      console.log('not ready');
+      return;
+    }
+    const transformationMatrix = NIK.getTransformationMatrix(0, 0.5, -5);
+    device.queue.writeBuffer(NIK.uniformBuffer, 0, transformationMatrix.buffer, transformationMatrix.byteOffset, transformationMatrix.byteLength);
+    NIK.renderPassDescriptor.colorAttachments[0].view = context.getCurrentTexture().createView();
+    const transformationMatrix2 = NIK2.getTransformationMatrix(0.4, 0.7, -5);
+    device.queue.writeBuffer(NIK2.uniformBuffer, 0, transformationMatrix2.buffer, transformationMatrix2.byteOffset, transformationMatrix2.byteLength);
+    NIK2.renderPassDescriptor.colorAttachments[0].view = context.getCurrentTexture().createView();
     const commandEncoder = device.createCommandEncoder();
-    const passEncoder = commandEncoder.beginRenderPass(renderPassDescriptor);
-    if (settings.useRenderBundles) {
+    const passEncoder = commandEncoder.beginRenderPass(NIK.renderPassDescriptor);
+    if (NIK.settings.useRenderBundles) {
       // Executing a bundle is equivalent to calling all of the commands encoded
       // in the render bundle as part of the current render pass.
-      passEncoder.executeBundles([renderBundle]);
+      passEncoder.executeBundles([NIK.renderBundle, NIK2.renderBundle]);
     } else {
       // Alternatively, the same render commands can be encoded manually, which
       // can take longer since each command needs to be interpreted by the
@@ -314,18 +55,17 @@ const init = async ({
     }
     passEncoder.end();
     device.queue.submit([commandEncoder.finish()]);
-
-    // stats.end();
-
     requestAnimationFrame(frame);
   }
-  requestAnimationFrame(frame);
+  setTimeout(() => {
+    requestAnimationFrame(frame);
+  }, 1000);
 };
 init({
   canvas
 });
 
-},{"./src/shaders/shaders.js":3,"./src/test2/ballsBuffer.js":4,"wgpu-matrix":2}],2:[function(require,module,exports){
+},{"./src/shaders/shaders.js":3,"./src/test2/ball.js":4,"./src/test2/ballsBuffer.js":5,"./src/test2/cube.js":6,"wgpu-matrix":2}],2:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -5842,7 +5582,308 @@ fn fragmentMain(input: VertexOutput) -> @location(0) vec4f {
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.SphereLayout = void 0;
+exports.default = void 0;
+var _shaders = require("../shaders/shaders");
+var _ballsBuffer = require("./ballsBuffer");
+var _wgpuMatrix = require("wgpu-matrix");
+class MEBall {
+  constructor(canvas, device) {
+    this.device = device;
+    this.shaderModule = device.createShaderModule({
+      code: _shaders.BALL_SHADER
+    });
+    this.presentationFormat = navigator.gpu.getPreferredCanvasFormat();
+    this.pipeline = device.createRenderPipeline({
+      layout: 'auto',
+      vertex: {
+        module: this.shaderModule,
+        entryPoint: 'vertexMain',
+        buffers: [{
+          arrayStride: _ballsBuffer.SphereLayout.vertexStride,
+          attributes: [{
+            // position
+            shaderLocation: 0,
+            offset: _ballsBuffer.SphereLayout.positionsOffset,
+            format: 'float32x3'
+          }, {
+            // normal
+            shaderLocation: 1,
+            offset: _ballsBuffer.SphereLayout.normalOffset,
+            format: 'float32x3'
+          }, {
+            // uv
+            shaderLocation: 2,
+            offset: _ballsBuffer.SphereLayout.uvOffset,
+            format: 'float32x2'
+          }]
+        }]
+      },
+      fragment: {
+        module: this.shaderModule,
+        entryPoint: 'fragmentMain',
+        targets: [{
+          format: this.presentationFormat
+        }]
+      },
+      primitive: {
+        topology: 'triangle-list',
+        // Backface culling since the sphere is solid piece of geometry.
+        // Faces pointing away from the camera will be occluded by faces
+        // pointing toward the camera.
+        cullMode: 'back'
+      },
+      // Enable depth testing so that the fragment closest to the camera
+      // is rendered in front.
+      depthStencil: {
+        depthWriteEnabled: true,
+        depthCompare: 'less',
+        format: 'depth24plus'
+      }
+    });
+    this.depthTexture = device.createTexture({
+      size: [canvas.width, canvas.height],
+      format: 'depth24plus',
+      usage: GPUTextureUsage.RENDER_ATTACHMENT
+    });
+    this.uniformBufferSize = 4 * 16; // 4x4 matrix
+    this.uniformBuffer = device.createBuffer({
+      size: this.uniformBufferSize,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+
+    // Fetch the images and upload them into a GPUTexture.
+    this.planetTexture = null;
+    this.moonTexture = null;
+    this.settings = {
+      useRenderBundles: true,
+      asteroidCount: 15
+    };
+    this.loadTex1(device).then(() => {
+      this.loadTex2(device).then(() => {
+        console.log('NICE THIS', this);
+        this.sampler = device.createSampler({
+          magFilter: 'linear',
+          minFilter: 'linear'
+        });
+        this.transform = _wgpuMatrix.mat4.create();
+        _wgpuMatrix.mat4.identity(this.transform);
+
+        // Create one large central planet surrounded by a large ring of asteroids
+        this.planet = this.createSphereRenderable(1.0);
+        this.planet.bindGroup = this.createSphereBindGroup(this.planetTexture, this.transform);
+        var asteroids = [this.createSphereRenderable(0.2, 8, 6, 0.15), this.createSphereRenderable(0.13, 8, 6, 0.15)];
+        this.renderables = [this.planet];
+
+        // this.ensureEnoughAsteroids(asteroids, this.transform);
+
+        this.renderPassDescriptor = {
+          colorAttachments: [{
+            view: undefined,
+            // Assigned later
+
+            clearValue: {
+              r: 0.0,
+              g: 0.0,
+              b: 0.0,
+              a: 1.0
+            },
+            loadOp: 'clear',
+            storeOp: 'store'
+          }],
+          depthStencilAttachment: {
+            view: this.depthTexture.createView(),
+            depthClearValue: 1.0,
+            depthLoadOp: 'clear',
+            depthStoreOp: 'store'
+          }
+        };
+        const aspect = canvas.width / canvas.height;
+        this.projectionMatrix = _wgpuMatrix.mat4.perspective(2 * Math.PI / 5, aspect, 1, 100.0);
+        this.modelViewProjectionMatrix = _wgpuMatrix.mat4.create();
+        this.frameBindGroup = device.createBindGroup({
+          layout: this.pipeline.getBindGroupLayout(0),
+          entries: [{
+            binding: 0,
+            resource: {
+              buffer: this.uniformBuffer
+            }
+          }]
+        });
+
+        // The render bundle can be encoded once and re-used as many times as needed.
+        // Because it encodes all of the commands needed to render at the GPU level,
+        // those commands will not need to execute the associated JavaScript code upon
+        // execution or be re-validated, which can represent a significant time savings.
+        //
+        // However, because render bundles are immutable once created, they are only
+        // appropriate for rendering content where the same commands will be executed
+        // every time, with the only changes being the contents of the buffers and
+        // textures used. Cases where the executed commands differ from frame-to-frame,
+        // such as when using frustrum or occlusion culling, will not benefit from
+        // using render bundles as much.
+        this.renderBundle;
+        this.updateRenderBundle();
+      });
+    });
+  }
+  ensureEnoughAsteroids(asteroids, transform) {
+    for (let i = this.renderables.length; i <= this.settings.asteroidCount; ++i) {
+      // Place copies of the asteroid in a ring.
+      const radius = Math.random() * 1.7 + 1.25;
+      const angle = Math.random() * Math.PI * 2;
+      const x = Math.sin(angle) * radius;
+      const y = (Math.random() - 0.5) * 0.015;
+      const z = Math.cos(angle) * radius;
+      _wgpuMatrix.mat4.identity(transform);
+      _wgpuMatrix.mat4.translate(transform, [x, y, z], transform);
+      _wgpuMatrix.mat4.rotateX(transform, Math.random() * Math.PI, transform);
+      _wgpuMatrix.mat4.rotateY(transform, Math.random() * Math.PI, transform);
+      this.renderables.push({
+        ...asteroids[i % asteroids.length],
+        bindGroup: this.createSphereBindGroup(this.moonTexture, transform)
+      });
+    }
+  }
+  updateRenderBundle() {
+    console.log('sss');
+    const renderBundleEncoder = this.device.createRenderBundleEncoder({
+      colorFormats: [this.presentationFormat],
+      depthStencilFormat: 'depth24plus'
+    });
+    this.renderScene(renderBundleEncoder);
+    this.renderBundle = renderBundleEncoder.finish();
+  }
+  createSphereRenderable(radius, widthSegments = 32, heightSegments = 16, randomness = 0) {
+    const sphereMesh = (0, _ballsBuffer.createSphereMesh)(radius, widthSegments, heightSegments, randomness);
+    // Create a vertex buffer from the sphere data.
+    const vertices = this.device.createBuffer({
+      size: sphereMesh.vertices.byteLength,
+      usage: GPUBufferUsage.VERTEX,
+      mappedAtCreation: true
+    });
+    new Float32Array(vertices.getMappedRange()).set(sphereMesh.vertices);
+    vertices.unmap();
+    const indices = this.device.createBuffer({
+      size: sphereMesh.indices.byteLength,
+      usage: GPUBufferUsage.INDEX,
+      mappedAtCreation: true
+    });
+    new Uint16Array(indices.getMappedRange()).set(sphereMesh.indices);
+    indices.unmap();
+    return {
+      vertices,
+      indices,
+      indexCount: sphereMesh.indices.length
+    };
+  }
+  createSphereBindGroup(texture, transform) {
+    const uniformBufferSize = 4 * 16; // 4x4 matrix
+    const uniformBuffer = this.device.createBuffer({
+      size: uniformBufferSize,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+      mappedAtCreation: true
+    });
+    new Float32Array(uniformBuffer.getMappedRange()).set(transform);
+    uniformBuffer.unmap();
+    const bindGroup = this.device.createBindGroup({
+      layout: this.pipeline.getBindGroupLayout(1),
+      entries: [{
+        binding: 0,
+        resource: {
+          buffer: uniformBuffer
+        }
+      }, {
+        binding: 1,
+        resource: this.sampler
+      }, {
+        binding: 2,
+        resource: texture.createView()
+      }]
+    });
+    return bindGroup;
+  }
+  getTransformationMatrix(byX, byY, byZ) {
+    const viewMatrix = _wgpuMatrix.mat4.identity();
+    _wgpuMatrix.mat4.translate(viewMatrix, _wgpuMatrix.vec3.fromValues(byX, byY, byZ), viewMatrix);
+    const now = Date.now() / 1000;
+    _wgpuMatrix.mat4.rotateZ(viewMatrix, Math.PI * 0.1, viewMatrix);
+    _wgpuMatrix.mat4.rotateX(viewMatrix, Math.PI * 0.1, viewMatrix);
+    _wgpuMatrix.mat4.rotateY(viewMatrix, now * 0.05, viewMatrix);
+    _wgpuMatrix.mat4.multiply(this.projectionMatrix, viewMatrix, this.modelViewProjectionMatrix);
+    return this.modelViewProjectionMatrix;
+  }
+  async loadTex2(device) {
+    return new Promise(async resolve => {
+      const response = await fetch('./res/textures/tex1.jpg');
+      const imageBitmap = await createImageBitmap(await response.blob());
+      this.moonTexture = device.createTexture({
+        size: [imageBitmap.width, imageBitmap.height, 1],
+        format: 'rgba8unorm',
+        usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT
+      });
+      var moonTexture = this.moonTexture;
+      device.queue.copyExternalImageToTexture({
+        source: imageBitmap
+      }, {
+        texture: moonTexture
+      }, [imageBitmap.width, imageBitmap.height]);
+      resolve();
+    });
+  }
+  async loadTex1(device) {
+    return new Promise(async resolve => {
+      const response = await fetch('./res/textures/tex1.jpg');
+      const imageBitmap = await createImageBitmap(await response.blob());
+      console.log('WHAT IS THIS ', this);
+      this.planetTexture = device.createTexture({
+        size: [imageBitmap.width, imageBitmap.height, 1],
+        format: 'rgba8unorm',
+        usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT
+      });
+      var planetTexture = this.planetTexture;
+      device.queue.copyExternalImageToTexture({
+        source: imageBitmap
+      }, {
+        texture: planetTexture
+      }, [imageBitmap.width, imageBitmap.height]);
+      resolve();
+    });
+  }
+
+  // Render bundles function as partial, limited render passes, so we can use the
+  // same code both to render the scene normally and to build the render bundle.
+  renderScene(passEncoder) {
+    if (typeof this.renderables === 'undefined') return;
+    passEncoder.setPipeline(this.pipeline);
+    passEncoder.setBindGroup(0, this.frameBindGroup);
+
+    // Loop through every renderable object and draw them individually.
+    // (Because many of these meshes are repeated, with only the transforms
+    // differing, instancing would be highly effective here. This sample
+    // intentionally avoids using instancing in order to emulate a more complex
+    // scene, which helps demonstrate the potential time savings a render bundle
+    // can provide.)
+    let count = 0;
+    for (const renderable of this.renderables) {
+      passEncoder.setBindGroup(1, renderable.bindGroup);
+      passEncoder.setVertexBuffer(0, renderable.vertices);
+      passEncoder.setIndexBuffer(renderable.indices, 'uint16');
+      passEncoder.drawIndexed(renderable.indexCount);
+      if (++count > this.settings.asteroidCount) {
+        break;
+      }
+    }
+  }
+}
+exports.default = MEBall;
+
+},{"../shaders/shaders":3,"./ballsBuffer":5,"wgpu-matrix":2}],5:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.SphereLayout2 = exports.SphereLayout = void 0;
 exports.createSphereMesh = createSphereMesh;
 var _wgpuMatrix = require("wgpu-matrix");
 // export interface SphereMesh {
@@ -5855,7 +5896,13 @@ const SphereLayout = exports.SphereLayout = {
   normalOffset: 3 * 4,
   uvOffset: 6 * 4
 };
-function createSphereMesh(radius, widthSegments = 32, heightSegments = 16, randomness = 0) {
+const SphereLayout2 = exports.SphereLayout2 = {
+  vertexStride: 8 * 4,
+  positionsOffset: 0,
+  normalOffset: 3 * 4,
+  uvOffset: 6 * 4
+};
+function createSphereMesh(radius, widthSegments = 3, heightSegments = 3, randomness = 0) {
   const vertices = [];
   const indices = [];
   widthSegments = Math.max(3, Math.floor(widthSegments));
@@ -5920,4 +5967,349 @@ function createSphereMesh(radius, widthSegments = 32, heightSegments = 16, rando
   };
 }
 
-},{"wgpu-matrix":2}]},{},[1]);
+},{"wgpu-matrix":2}],6:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+var _shaders = require("../shaders/shaders");
+var _ballsBuffer = require("./ballsBuffer");
+var _wgpuMatrix = require("wgpu-matrix");
+class MECube {
+  constructor(canvas, device) {
+    this.device = device;
+    this.shaderModule = device.createShaderModule({
+      code: _shaders.BALL_SHADER
+    });
+    this.presentationFormat = navigator.gpu.getPreferredCanvasFormat();
+    this.pipeline = device.createRenderPipeline({
+      layout: 'auto',
+      vertex: {
+        module: this.shaderModule,
+        entryPoint: 'vertexMain',
+        buffers: [{
+          arrayStride: _ballsBuffer.SphereLayout.vertexStride,
+          attributes: [{
+            // position
+            shaderLocation: 0,
+            offset: _ballsBuffer.SphereLayout.positionsOffset,
+            format: 'float32x3'
+          }, {
+            // normal
+            shaderLocation: 1,
+            offset: _ballsBuffer.SphereLayout.normalOffset,
+            format: 'float32x3'
+          }, {
+            // uv
+            shaderLocation: 2,
+            offset: _ballsBuffer.SphereLayout.uvOffset,
+            format: 'float32x2'
+          }]
+        }]
+      },
+      fragment: {
+        module: this.shaderModule,
+        entryPoint: 'fragmentMain',
+        targets: [{
+          format: this.presentationFormat
+        }]
+      },
+      primitive: {
+        topology: 'triangle-list',
+        // Backface culling since the sphere is solid piece of geometry.
+        // Faces pointing away from the camera will be occluded by faces
+        // pointing toward the camera.
+        cullMode: 'back'
+      },
+      // Enable depth testing so that the fragment closest to the camera
+      // is rendered in front.
+      depthStencil: {
+        depthWriteEnabled: true,
+        depthCompare: 'less',
+        format: 'depth24plus'
+      }
+    });
+    this.depthTexture = device.createTexture({
+      size: [canvas.width, canvas.height],
+      format: 'depth24plus',
+      usage: GPUTextureUsage.RENDER_ATTACHMENT
+    });
+    this.uniformBufferSize = 4 * 16; // 4x4 matrix
+    this.uniformBuffer = device.createBuffer({
+      size: this.uniformBufferSize,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+
+    // Fetch the images and upload them into a GPUTexture.
+    this.planetTexture = null;
+    this.moonTexture = null;
+    this.settings = {
+      useRenderBundles: true,
+      asteroidCount: 15
+    };
+    this.loadTex1(device).then(() => {
+      this.loadTex2(device).then(() => {
+        console.log('NICE THIS', this);
+        this.sampler = device.createSampler({
+          magFilter: 'linear',
+          minFilter: 'linear'
+        });
+        this.transform = _wgpuMatrix.mat4.create();
+        _wgpuMatrix.mat4.identity(this.transform);
+
+        // Create one large central planet surrounded by a large ring of asteroids
+        this.planet = this.createSphereRenderable(1.0);
+        this.planet.bindGroup = this.createSphereBindGroup(this.planetTexture, this.transform);
+        var asteroids = [this.createSphereRenderable(0.2, 8, 6, 0.15), this.createSphereRenderable(0.13, 8, 6, 0.15)];
+        this.renderables = [this.planet];
+
+        // this.ensureEnoughAsteroids(asteroids, this.transform);
+
+        this.renderPassDescriptor = {
+          colorAttachments: [{
+            view: undefined,
+            // Assigned later
+
+            clearValue: {
+              r: 0.0,
+              g: 0.0,
+              b: 0.0,
+              a: 1.0
+            },
+            loadOp: 'clear',
+            storeOp: 'store'
+          }],
+          depthStencilAttachment: {
+            view: this.depthTexture.createView(),
+            depthClearValue: 1.0,
+            depthLoadOp: 'clear',
+            depthStoreOp: 'store'
+          }
+        };
+        const aspect = canvas.width / canvas.height;
+        this.projectionMatrix = _wgpuMatrix.mat4.perspective(2 * Math.PI / 5, aspect, 1, 100.0);
+        this.modelViewProjectionMatrix = _wgpuMatrix.mat4.create();
+        this.frameBindGroup = device.createBindGroup({
+          layout: this.pipeline.getBindGroupLayout(0),
+          entries: [{
+            binding: 0,
+            resource: {
+              buffer: this.uniformBuffer
+            }
+          }]
+        });
+
+        // The render bundle can be encoded once and re-used as many times as needed.
+        // Because it encodes all of the commands needed to render at the GPU level,
+        // those commands will not need to execute the associated JavaScript code upon
+        // execution or be re-validated, which can represent a significant time savings.
+        //
+        // However, because render bundles are immutable once created, they are only
+        // appropriate for rendering content where the same commands will be executed
+        // every time, with the only changes being the contents of the buffers and
+        // textures used. Cases where the executed commands differ from frame-to-frame,
+        // such as when using frustrum or occlusion culling, will not benefit from
+        // using render bundles as much.
+        this.renderBundle;
+        this.updateRenderBundle();
+      });
+    });
+  }
+  ensureEnoughAsteroids(asteroids, transform) {
+    for (let i = this.renderables.length; i <= this.settings.asteroidCount; ++i) {
+      // Place copies of the asteroid in a ring.
+      const radius = Math.random() * 1.7 + 1.25;
+      const angle = Math.random() * Math.PI * 2;
+      const x = Math.sin(angle) * radius;
+      const y = (Math.random() - 0.5) * 0.015;
+      const z = Math.cos(angle) * radius;
+      _wgpuMatrix.mat4.identity(transform);
+      _wgpuMatrix.mat4.translate(transform, [x, y, z], transform);
+      _wgpuMatrix.mat4.rotateX(transform, Math.random() * Math.PI, transform);
+      _wgpuMatrix.mat4.rotateY(transform, Math.random() * Math.PI, transform);
+      this.renderables.push({
+        ...asteroids[i % asteroids.length],
+        bindGroup: this.createSphereBindGroup(this.moonTexture, transform)
+      });
+    }
+  }
+  updateRenderBundle() {
+    console.log('sss');
+    const renderBundleEncoder = this.device.createRenderBundleEncoder({
+      colorFormats: [this.presentationFormat],
+      depthStencilFormat: 'depth24plus'
+    });
+    this.renderScene(renderBundleEncoder);
+    this.renderBundle = renderBundleEncoder.finish();
+  }
+  createSphereRenderable(radius, widthSegments = 32, heightSegments = 16, randomness = 0) {
+    const sphereMesh = this.createCubeVertices();
+    // Create a vertex buffer from the sphere data.
+    const vertices = this.device.createBuffer({
+      size: sphereMesh.vertices.byteLength,
+      usage: GPUBufferUsage.VERTEX,
+      mappedAtCreation: true
+    });
+    new Float32Array(vertices.getMappedRange()).set(sphereMesh.vertices);
+    vertices.unmap();
+    const indices = this.device.createBuffer({
+      size: sphereMesh.indices.byteLength,
+      usage: GPUBufferUsage.INDEX,
+      mappedAtCreation: true
+    });
+    new Uint16Array(indices.getMappedRange()).set(sphereMesh.indices);
+    indices.unmap();
+    return {
+      vertices,
+      indices,
+      indexCount: sphereMesh.indices.length
+    };
+  }
+  createSphereBindGroup(texture, transform) {
+    const uniformBufferSize = 4 * 16; // 4x4 matrix
+    const uniformBuffer = this.device.createBuffer({
+      size: uniformBufferSize,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+      mappedAtCreation: true
+    });
+    new Float32Array(uniformBuffer.getMappedRange()).set(transform);
+    uniformBuffer.unmap();
+    const bindGroup = this.device.createBindGroup({
+      layout: this.pipeline.getBindGroupLayout(1),
+      entries: [{
+        binding: 0,
+        resource: {
+          buffer: uniformBuffer
+        }
+      }, {
+        binding: 1,
+        resource: this.sampler
+      }, {
+        binding: 2,
+        resource: texture.createView()
+      }]
+    });
+    return bindGroup;
+  }
+  getTransformationMatrix() {
+    const viewMatrix = _wgpuMatrix.mat4.identity();
+    _wgpuMatrix.mat4.translate(viewMatrix, _wgpuMatrix.vec3.fromValues(0, 0, -4), viewMatrix);
+    const now = Date.now() / 1000;
+    // Tilt the view matrix so the planet looks like it's off-axis.
+    _wgpuMatrix.mat4.rotateZ(viewMatrix, Math.PI * 0.1, viewMatrix);
+    _wgpuMatrix.mat4.rotateX(viewMatrix, Math.PI * 0.1, viewMatrix);
+    // Rotate the view matrix slowly so the planet appears to spin.
+    _wgpuMatrix.mat4.rotateY(viewMatrix, now * 0.05, viewMatrix);
+    _wgpuMatrix.mat4.multiply(this.projectionMatrix, viewMatrix, this.modelViewProjectionMatrix);
+    return this.modelViewProjectionMatrix;
+  }
+  async loadTex2(device) {
+    return new Promise(async resolve => {
+      const response = await fetch('./res/textures/tex1.jpg');
+      const imageBitmap = await createImageBitmap(await response.blob());
+      this.moonTexture = device.createTexture({
+        size: [imageBitmap.width, imageBitmap.height, 1],
+        format: 'rgba8unorm',
+        usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT
+      });
+      var moonTexture = this.moonTexture;
+      device.queue.copyExternalImageToTexture({
+        source: imageBitmap
+      }, {
+        texture: moonTexture
+      }, [imageBitmap.width, imageBitmap.height]);
+      resolve();
+    });
+  }
+  async loadTex1(device) {
+    return new Promise(async resolve => {
+      const response = await fetch('./res/textures/tex1.jpg');
+      const imageBitmap = await createImageBitmap(await response.blob());
+      console.log('WHAT IS THIS ', this);
+      this.planetTexture = device.createTexture({
+        size: [imageBitmap.width, imageBitmap.height, 1],
+        format: 'rgba8unorm',
+        usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT
+      });
+      var planetTexture = this.planetTexture;
+      device.queue.copyExternalImageToTexture({
+        source: imageBitmap
+      }, {
+        texture: planetTexture
+      }, [imageBitmap.width, imageBitmap.height]);
+      resolve();
+    });
+  }
+
+  // Render bundles function as partial, limited render passes, so we can use the
+  // same code both to render the scene normally and to build the render bundle.
+  renderScene(passEncoder) {
+    if (typeof this.renderables === 'undefined') return;
+    passEncoder.setPipeline(this.pipeline);
+    passEncoder.setBindGroup(0, this.frameBindGroup);
+
+    // Loop through every renderable object and draw them individually.
+    // (Because many of these meshes are repeated, with only the transforms
+    // differing, instancing would be highly effective here. This sample
+    // intentionally avoids using instancing in order to emulate a more complex
+    // scene, which helps demonstrate the potential time savings a render bundle
+    // can provide.)
+    let count = 0;
+    for (const renderable of this.renderables) {
+      passEncoder.setBindGroup(1, renderable.bindGroup);
+      passEncoder.setVertexBuffer(0, renderable.vertices);
+      passEncoder.setIndexBuffer(renderable.indices, 'uint16');
+      passEncoder.drawIndexed(renderable.indexCount);
+      if (++count > this.settings.asteroidCount) {
+        break;
+      }
+    }
+  }
+  createCubeVertices(options) {
+    if (typeof options === 'undefined') {
+      var options = {
+        scale: 1
+      };
+    }
+    const vertices = new Float32Array([
+    //  position   |  texture coordinate
+    //-------------+----------------------
+    // front face     select the top left image
+    options.scale * -1, options.scale * 1, options.scale * 1, 0, 0, options.scale * -1, options.scale * -1, options.scale * 1, 0, 0.5, options.scale * 1, options.scale * 1, options.scale * 1, 0.25, 0, options.scale * 1, options.scale * -1, options.scale * 1, 0.25, 0.5,
+    // right face     select the top middle image
+    options.scale * 1, options.scale * 1, options.scale * -1, 0.25, 0, options.scale * 1, options.scale * 1, options.scale * 1, 0.5, 0, options.scale * 1, options.scale * -1, options.scale * -1, 0.25, 0.5, options.scale * 1, options.scale * -1, options.scale * 1, 0.5, 0.5,
+    // back face      select to top right image
+    options.scale * 1, options.scale * 1, options.scale * -1, 0.5, 0, options.scale * 1, options.scale * -1, options.scale * -1, 0.5, 0.5, options.scale * -1, options.scale * 1, options.scale * -1, 0.75, 0, options.scale * -1, options.scale * -1, options.scale * -1, 0.75, 0.5,
+    // left face       select the bottom left image
+    options.scale * -1, options.scale * 1, options.scale * 1, 0, 0.5, options.scale * -1, options.scale * 1, options.scale * -1, 0.25, 0.5, options.scale * -1, options.scale * -1, options.scale * 1, 0, 1, options.scale * -1, options.scale * -1, options.scale * -1, 0.25, 1,
+    // bottom face     select the bottom middle image
+    options.scale * 1, options.scale * -1, options.scale * 1, 0.25, 0.5, options.scale * -1, options.scale * -1, options.scale * 1, 0.5, 0.5, options.scale * 1, options.scale * -1, options.scale * -1, 0.25, 1, options.scale * -1, options.scale * -1, options.scale * -1, 0.5, 1,
+    // top face        select the bottom right image
+    options.scale * -1, options.scale * 1, options.scale * 1, 0.5, 0.5, options.scale * 1, options.scale * 1, options.scale * 1, 0.75, 0.5, options.scale * -1, options.scale * 1, options.scale * -1, 0.5, 1, options.scale * 1, options.scale * 1, options.scale * -1, 0.75, 1]);
+
+    // const texCORDS =   new Float32Array([])
+
+    const indices = new Uint16Array([0, 1, 2, 2, 1, 3,
+    // front
+    4, 5, 6, 6, 5, 7,
+    // right
+    8, 9, 10, 10, 9, 11,
+    // back
+    12, 13, 14, 14, 13, 15,
+    // left
+    16, 17, 18, 18, 17, 19,
+    // bottom
+    20, 21, 22, 22, 21, 23 // top
+    ]);
+    return {
+      vertices,
+      indices,
+      numVertices: indices.length
+    };
+  }
+}
+exports.default = MECube;
+
+},{"../shaders/shaders":3,"./ballsBuffer":5,"wgpu-matrix":2}]},{},[1]);

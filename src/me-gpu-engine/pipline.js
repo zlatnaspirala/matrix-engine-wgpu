@@ -114,7 +114,7 @@ export default class MECubeTexPipline {
     // const radToDegOptions = {min: -360, max: 360, step: 1, converters: GUI.converters.radToDeg};
   }
 
-  draw(p, c) {
+  draw(commandEncoder, c) {
     // Get the current texture from the canvas context and
     // set it as the texture to render to.
     const canvasTexture = this.context.getCurrentTexture();
@@ -137,7 +137,7 @@ export default class MECubeTexPipline {
     }
 
     this.renderPassDescriptor.depthStencilAttachment.view = this.depthTexture.createView();
-    const commandEncoder = this.device.createCommandEncoder();
+    // const commandEncoder = this.device.createCommandEncoder();
     const passEncoder = commandEncoder.beginRenderPass(this.renderPassDescriptor);
     passEncoder.setPipeline(this.cubeTexPipeline);
     passEncoder.setVertexBuffer(0, this.vertexBuffer);
@@ -169,7 +169,7 @@ export default class MECubeTexPipline {
     passEncoder.drawIndexed(this.numVertices);
 
     passEncoder.end();
-    const commandBuffer = commandEncoder.finish();
-    this.device.queue.submit([commandBuffer]);
+    // const commandBuffer = commandEncoder.finish();
+    // this.device.queue.submit([commandBuffer]);
   }
 }

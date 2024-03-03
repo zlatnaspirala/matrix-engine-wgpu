@@ -35,7 +35,7 @@ export default class MatrixEngineGPUEngine {
     const piplineCubeTex = new MECubeTexPipline(this.device, this.presentationFormat, moduleCubeTex, this.context, this.canvas, options);
 
     const texture = await this.textureManager.createTextureFromImage(this.device,
-      './res/textures/tex1.jpg', {mips: true, flipY: false});
+      './res/textures/tex1.jpg', {mips: false, flipY: false});
 
     const sampler = this.device.createSampler({
       magFilter: 'linear',
