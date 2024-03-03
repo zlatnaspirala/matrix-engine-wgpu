@@ -1,84 +1,13 @@
 (function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
 "use strict";
 
-var _shaders = require("./src/shaders/shaders.js");
-var _ball = _interopRequireDefault(require("./src/engine/ball.js"));
-var _cube = _interopRequireDefault(require("./src/engine/cube.js"));
+var _meWGPU = _interopRequireDefault(require("./src/meWGPU"));
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-// import { mat4, vec3 } from 'wgpu-matrix';
-// import { createSphereMesh, SphereLayout } from './src/engine/ballsBuffer.js';
-
-var canvas = document.createElement('canvas');
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
-document.body.append(canvas);
-const init = async ({
-  canvas
-}) => {
-  const adapter = await navigator.gpu.requestAdapter();
-  const device = await adapter.requestDevice();
-  const context = canvas.getContext('webgpu');
-  const devicePixelRatio = window.devicePixelRatio;
-  canvas.width = canvas.clientWidth * devicePixelRatio;
-  canvas.height = canvas.clientHeight * devicePixelRatio;
-  const presentationFormat = navigator.gpu.getPreferredCanvasFormat();
-  context.configure({
-    device,
-    format: presentationFormat,
-    alphaMode: 'premultiplied'
-  });
-  let NIK = new _cube.default(canvas, device);
-
-  // let NIK2 = new MEBall(canvas, device)
-  // let NIK2 = new MEBall(canvas, device)
-
-  function frame() {
-    if (NIK.moonTexture == null) {
-      console.log('not ready');
-      return;
-    }
-    const transformationMatrix = NIK.getTransformationMatrix(0, 0.5, -5);
-    device.queue.writeBuffer(NIK.uniformBuffer, 0, transformationMatrix.buffer, transformationMatrix.byteOffset, transformationMatrix.byteLength);
-    NIK.renderPassDescriptor.colorAttachments[0].view = context.getCurrentTexture().createView();
-
-    //   const transformationMatrix2 = NIK2.getTransformationMatrix(0.4, 0.7, -5);
-    // device.queue.writeBuffer(
-    //   NIK2.uniformBuffer,
-    //   0,
-    //   transformationMatrix2.buffer,
-    //   transformationMatrix2.byteOffset,
-    //   transformationMatrix2.byteLength
-    // );
-    // NIK2.renderPassDescriptor.colorAttachments[0].view = context
-    //   .getCurrentTexture()
-    //   .createView();
-
-    const commandEncoder = device.createCommandEncoder();
-    const passEncoder = commandEncoder.beginRenderPass(NIK.renderPassDescriptor);
-    if (NIK.settings.useRenderBundles) {
-      // Executing a bundle is equivalent to calling all of the commands encoded
-      // in the render bundle as part of the current render pass.
-      //passEncoder.executeBundles([NIK.renderBundle, NIK2.renderBundle]);
-      passEncoder.executeBundles([NIK.renderBundle]);
-    } else {
-      // Alternatively, the same render commands can be encoded manually, which
-      // can take longer since each command needs to be interpreted by the
-      // JavaScript virtual machine and re-validated each time.
-      renderScene(passEncoder);
-    }
-    passEncoder.end();
-    device.queue.submit([commandEncoder.finish()]);
-    requestAnimationFrame(frame);
-  }
-  setTimeout(() => {
-    requestAnimationFrame(frame);
-  }, 1000);
-};
-init({
-  canvas
+let application = new _meWGPU.default(() => {
+  application.addCube();
 });
 
-},{"./src/engine/ball.js":3,"./src/engine/cube.js":5,"./src/shaders/shaders.js":6}],2:[function(require,module,exports){
+},{"./src/meWGPU":6}],2:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -5726,7 +5655,7 @@ class MEBall {
 }
 exports.default = MEBall;
 
-},{"../shaders/shaders":6,"./ballsBuffer":4,"wgpu-matrix":2}],4:[function(require,module,exports){
+},{"../shaders/shaders":7,"./ballsBuffer":4,"wgpu-matrix":2}],4:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -5828,8 +5757,9 @@ var _shaders = require("../shaders/shaders");
 var _ballsBuffer = require("./ballsBuffer");
 var _wgpuMatrix = require("wgpu-matrix");
 class MECube {
-  constructor(canvas, device) {
+  constructor(canvas, device, context) {
     this.device = device;
+    this.context = context;
     this.shaderModule = device.createShaderModule({
       code: _shaders.BALL_SHADER
     });
@@ -6155,10 +6085,101 @@ class MECube {
       numVertices: indices.length
     };
   }
+  draw = () => {
+    if (this.moonTexture == null) {
+      console.log('not ready');
+      return;
+    }
+    const transformationMatrix = this.getTransformationMatrix(0, 0.5, -5);
+    this.device.queue.writeBuffer(this.uniformBuffer, 0, transformationMatrix.buffer, transformationMatrix.byteOffset, transformationMatrix.byteLength);
+    this.renderPassDescriptor.colorAttachments[0].view = this.context.getCurrentTexture().createView();
+  };
 }
 exports.default = MECube;
 
-},{"../shaders/shaders":6,"./ballsBuffer":4,"wgpu-matrix":2}],6:[function(require,module,exports){
+},{"../shaders/shaders":7,"./ballsBuffer":4,"wgpu-matrix":2}],6:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+var _ball = _interopRequireDefault(require("./engine/ball.js"));
+var _cube = _interopRequireDefault(require("./engine/cube.js"));
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+// import { mat4, vec3 } from 'wgpu-matrix';
+// import { createSphereMesh, SphereLayout } from './src/engine/ballsBuffer.js';
+
+class MatrixEngineWGPU {
+  mainRenderBundle = [];
+  constructor(callback) {
+    var canvas = document.createElement('canvas');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    document.body.append(canvas);
+    this.init({
+      canvas,
+      callback
+    });
+  }
+  init = async ({
+    canvas,
+    callback
+  }) => {
+    this.canvas = canvas;
+    this.adapter = await navigator.gpu.requestAdapter();
+    this.device = await this.adapter.requestDevice();
+    this.context = canvas.getContext('webgpu');
+    const devicePixelRatio = window.devicePixelRatio;
+    canvas.width = canvas.clientWidth * devicePixelRatio;
+    canvas.height = canvas.clientHeight * devicePixelRatio;
+    const presentationFormat = navigator.gpu.getPreferredCanvasFormat();
+    this.context.configure({
+      device: this.device,
+      format: presentationFormat,
+      alphaMode: 'premultiplied'
+    });
+    this.run(callback);
+  };
+  addCube = () => {
+    let myCube1 = new _cube.default(this.canvas, this.device, this.context);
+    this.mainRenderBundle.push(myCube1);
+    // let NIK2 = new MEBall(canvas, device)
+  };
+  run(callback) {
+    setTimeout(() => {
+      requestAnimationFrame(this.frame);
+    }, 1000);
+    setTimeout(() => {
+      callback();
+    }, 10);
+  }
+  frame = () => {
+    const commandEncoder = this.device.createCommandEncoder();
+    let passEncoder;
+    this.mainRenderBundle.forEach(meItem => {
+      meItem.draw();
+      passEncoder = commandEncoder.beginRenderPass(meItem.renderPassDescriptor);
+      if (true) {
+        // Executing a bundle is equivalent to calling all of the commands encoded
+        // in the render bundle as part of the current render pass.
+        //passEncoder.executeBundles([NIK.renderBundle, NIK2.renderBundle]);
+        passEncoder.executeBundles([meItem.renderBundle]);
+      } else {
+        // Alternatively, the same render commands can be encoded manually, which
+        // can take longer since each command needs to be interpreted by the
+        // JavaScript virtual machine and re-validated each time.
+        renderScene(passEncoder);
+      }
+      passEncoder.end();
+      this.device.queue.submit([commandEncoder.finish()]);
+    });
+    requestAnimationFrame(this.frame);
+  };
+}
+exports.default = MatrixEngineWGPU;
+
+},{"./engine/ball.js":3,"./engine/cube.js":5}],7:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {

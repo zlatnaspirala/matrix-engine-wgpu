@@ -4,9 +4,10 @@ import {mat4, vec3} from 'wgpu-matrix';
 
 export default class MECube {
 
-  constructor(canvas, device) {
+  constructor(canvas, device, context ) {
     this.device = device;
-
+    this.context = context;
+    
     this.shaderModule = device.createShaderModule({
       code: BALL_SHADER,
     });
@@ -380,5 +381,23 @@ export default class MECube {
       indices,
       numVertices: indices.length,
     };
+  }
+
+  draw = () => {
+  if(this.moonTexture == null) {
+    console.log('not ready')
+    return;
+  }
+  const transformationMatrix = this.getTransformationMatrix(0, 0.5, -5);
+  this.device.queue.writeBuffer(
+    this.uniformBuffer,
+    0,
+    transformationMatrix.buffer,
+    transformationMatrix.byteOffset,
+    transformationMatrix.byteLength
+  );
+  this.renderPassDescriptor.colorAttachments[0].view = this.context
+    .getCurrentTexture()
+    .createView();
   }
 }
