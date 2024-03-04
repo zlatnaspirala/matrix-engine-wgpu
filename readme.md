@@ -17,12 +17,10 @@ I publish (this repo) npm package with name `matrix-wgpu`.
 
 
 ## Objective
-  - scene objects feature
+  - scene objects feature [objects/scene/transformation]
   - Make it similar to the matrix-engine webGL features.
 
-
 For now i will use `createRenderBundleEncoder` for multi object scene draws.
-
 
 Main instance script:
 ```js
@@ -37,7 +35,6 @@ let application = new MatrixEngineWGPU(()=> {
 
 })
 ```
-
 
 Not the best solution but works for now.
 Next level is draw in one scene different shaders different pipline...
