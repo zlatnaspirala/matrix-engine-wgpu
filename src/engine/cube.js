@@ -1,6 +1,12 @@
 import {BALL_SHADER} from "../shaders/shaders";
-import {SphereLayout} from "./ballsBuffer";
 import {mat4, vec3} from 'wgpu-matrix';
+
+var SphereLayout = {
+  vertexStride: 8 * 4,
+  positionsOffset: 0,
+  normalOffset: 3 * 4,
+  uvOffset: 6 * 4,
+};
 
 export default class MECube {
 

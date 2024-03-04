@@ -16,7 +16,7 @@ let application = new _meWGPU.default(() => {
 });
 window.app = application;
 
-},{"./src/meWGPU":7}],2:[function(require,module,exports){
+},{"./src/meWGPU":6}],2:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -5371,13 +5371,18 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.default = void 0;
 var _shaders = require("../shaders/shaders");
-var _ballsBuffer = require("./ballsBuffer");
 var _wgpuMatrix = require("wgpu-matrix");
 var _matrixClass = require("./matrix-class");
 class MEBall {
   constructor(canvas, device, context, o) {
     this.context = context;
     this.device = device;
+    this.SphereLayout = {
+      vertexStride: 8 * 4,
+      positionsOffset: 0,
+      normalOffset: 3 * 4,
+      uvOffset: 6 * 4
+    };
     this.position = new _matrixClass.Position(o.x, o.y, o.z);
     this.shaderModule = device.createShaderModule({
       code: _shaders.BALL_SHADER
@@ -5389,21 +5394,21 @@ class MEBall {
         module: this.shaderModule,
         entryPoint: 'vertexMain',
         buffers: [{
-          arrayStride: _ballsBuffer.SphereLayout.vertexStride,
+          arrayStride: this.SphereLayout.vertexStride,
           attributes: [{
             // position
             shaderLocation: 0,
-            offset: _ballsBuffer.SphereLayout.positionsOffset,
+            offset: this.SphereLayout.positionsOffset,
             format: 'float32x3'
           }, {
             // normal
             shaderLocation: 1,
-            offset: _ballsBuffer.SphereLayout.normalOffset,
+            offset: this.SphereLayout.normalOffset,
             format: 'float32x3'
           }, {
             // uv
             shaderLocation: 2,
-            offset: _ballsBuffer.SphereLayout.uvOffset,
+            offset: this.SphereLayout.uvOffset,
             format: 'float32x2'
           }]
         }]
@@ -5544,7 +5549,7 @@ class MEBall {
     this.renderBundle = renderBundleEncoder.finish();
   }
   createSphereRenderable(radius, widthSegments = 8, heightSegments = 4, randomness = 0) {
-    const sphereMesh = (0, _ballsBuffer.createSphereMesh)(radius, widthSegments, heightSegments, randomness);
+    const sphereMesh = this.createSphereMesh(radius, widthSegments, heightSegments, randomness);
     // Create a vertex buffer from the sphere data.
     const vertices = this.device.createBuffer({
       size: sphereMesh.vertices.byteLength,
@@ -5639,7 +5644,71 @@ class MEBall {
       resolve();
     });
   }
+  createSphereMesh(radius, widthSegments = 3, heightSegments = 3, randomness = 0) {
+    const vertices = [];
+    const indices = [];
+    widthSegments = Math.max(3, Math.floor(widthSegments));
+    heightSegments = Math.max(2, Math.floor(heightSegments));
+    const firstVertex = _wgpuMatrix.vec3.create();
+    const vertex = _wgpuMatrix.vec3.create();
+    const normal = _wgpuMatrix.vec3.create();
+    let index = 0;
+    const grid = [];
 
+    // generate vertices, normals and uvs
+    for (let iy = 0; iy <= heightSegments; iy++) {
+      const verticesRow = [];
+      const v = iy / heightSegments;
+      // special case for the poles
+      let uOffset = 0;
+      if (iy === 0) {
+        uOffset = 0.5 / widthSegments;
+      } else if (iy === heightSegments) {
+        uOffset = -0.5 / widthSegments;
+      }
+      for (let ix = 0; ix <= widthSegments; ix++) {
+        const u = ix / widthSegments;
+        // Poles should just use the same position all the way around.
+        if (ix == widthSegments) {
+          _wgpuMatrix.vec3.copy(firstVertex, vertex);
+        } else if (ix == 0 || iy != 0 && iy !== heightSegments) {
+          const rr = radius + (Math.random() - 0.5) * 2 * randomness * radius;
+          // vertex
+          vertex[0] = -rr * Math.cos(u * Math.PI * 2) * Math.sin(v * Math.PI);
+          vertex[1] = rr * Math.cos(v * Math.PI);
+          vertex[2] = rr * Math.sin(u * Math.PI * 2) * Math.sin(v * Math.PI);
+          if (ix == 0) {
+            _wgpuMatrix.vec3.copy(vertex, firstVertex);
+          }
+        }
+        vertices.push(...vertex);
+
+        // normal
+        _wgpuMatrix.vec3.copy(vertex, normal);
+        _wgpuMatrix.vec3.normalize(normal, normal);
+        vertices.push(...normal);
+        // uv
+        vertices.push(u + uOffset, 1 - v);
+        verticesRow.push(index++);
+      }
+      grid.push(verticesRow);
+    }
+    // indices
+    for (let iy = 0; iy < heightSegments; iy++) {
+      for (let ix = 0; ix < widthSegments; ix++) {
+        const a = grid[iy][ix + 1];
+        const b = grid[iy][ix];
+        const c = grid[iy + 1][ix];
+        const d = grid[iy + 1][ix + 1];
+        if (iy !== 0) indices.push(a, b, d);
+        if (iy !== heightSegments - 1) indices.push(b, c, d);
+      }
+    }
+    return {
+      vertices: new Float32Array(vertices),
+      indices: new Uint16Array(indices)
+    };
+  }
   // Render bundles function as partial, limited render passes, so we can use the
   // same code both to render the scene normally and to build the render bundle.
   renderScene(passEncoder) {
@@ -5676,98 +5745,7 @@ class MEBall {
 }
 exports.default = MEBall;
 
-},{"../shaders/shaders":8,"./ballsBuffer":4,"./matrix-class":6,"wgpu-matrix":2}],4:[function(require,module,exports){
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.SphereLayout2 = exports.SphereLayout = void 0;
-exports.createSphereMesh = createSphereMesh;
-var _wgpuMatrix = require("wgpu-matrix");
-// export interface SphereMesh {
-//   vertices: Float32Array;
-//   indices: Uint16Array;
-// }
-const SphereLayout = exports.SphereLayout = {
-  vertexStride: 8 * 4,
-  positionsOffset: 0,
-  normalOffset: 3 * 4,
-  uvOffset: 6 * 4
-};
-const SphereLayout2 = exports.SphereLayout2 = {
-  vertexStride: 8 * 4,
-  positionsOffset: 0,
-  normalOffset: 3 * 4,
-  uvOffset: 6 * 4
-};
-function createSphereMesh(radius, widthSegments = 3, heightSegments = 3, randomness = 0) {
-  const vertices = [];
-  const indices = [];
-  widthSegments = Math.max(3, Math.floor(widthSegments));
-  heightSegments = Math.max(2, Math.floor(heightSegments));
-  const firstVertex = _wgpuMatrix.vec3.create();
-  const vertex = _wgpuMatrix.vec3.create();
-  const normal = _wgpuMatrix.vec3.create();
-  let index = 0;
-  const grid = [];
-
-  // generate vertices, normals and uvs
-  for (let iy = 0; iy <= heightSegments; iy++) {
-    const verticesRow = [];
-    const v = iy / heightSegments;
-    // special case for the poles
-    let uOffset = 0;
-    if (iy === 0) {
-      uOffset = 0.5 / widthSegments;
-    } else if (iy === heightSegments) {
-      uOffset = -0.5 / widthSegments;
-    }
-    for (let ix = 0; ix <= widthSegments; ix++) {
-      const u = ix / widthSegments;
-      // Poles should just use the same position all the way around.
-      if (ix == widthSegments) {
-        _wgpuMatrix.vec3.copy(firstVertex, vertex);
-      } else if (ix == 0 || iy != 0 && iy !== heightSegments) {
-        const rr = radius + (Math.random() - 0.5) * 2 * randomness * radius;
-        // vertex
-        vertex[0] = -rr * Math.cos(u * Math.PI * 2) * Math.sin(v * Math.PI);
-        vertex[1] = rr * Math.cos(v * Math.PI);
-        vertex[2] = rr * Math.sin(u * Math.PI * 2) * Math.sin(v * Math.PI);
-        if (ix == 0) {
-          _wgpuMatrix.vec3.copy(vertex, firstVertex);
-        }
-      }
-      vertices.push(...vertex);
-
-      // normal
-      _wgpuMatrix.vec3.copy(vertex, normal);
-      _wgpuMatrix.vec3.normalize(normal, normal);
-      vertices.push(...normal);
-      // uv
-      vertices.push(u + uOffset, 1 - v);
-      verticesRow.push(index++);
-    }
-    grid.push(verticesRow);
-  }
-  // indices
-  for (let iy = 0; iy < heightSegments; iy++) {
-    for (let ix = 0; ix < widthSegments; ix++) {
-      const a = grid[iy][ix + 1];
-      const b = grid[iy][ix];
-      const c = grid[iy + 1][ix];
-      const d = grid[iy + 1][ix + 1];
-      if (iy !== 0) indices.push(a, b, d);
-      if (iy !== heightSegments - 1) indices.push(b, c, d);
-    }
-  }
-  return {
-    vertices: new Float32Array(vertices),
-    indices: new Uint16Array(indices)
-  };
-}
-
-},{"wgpu-matrix":2}],5:[function(require,module,exports){
+},{"../shaders/shaders":7,"./matrix-class":5,"wgpu-matrix":2}],4:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -5775,8 +5753,13 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.default = void 0;
 var _shaders = require("../shaders/shaders");
-var _ballsBuffer = require("./ballsBuffer");
 var _wgpuMatrix = require("wgpu-matrix");
+var SphereLayout = {
+  vertexStride: 8 * 4,
+  positionsOffset: 0,
+  normalOffset: 3 * 4,
+  uvOffset: 6 * 4
+};
 class MECube {
   constructor(canvas, device, context) {
     this.device = device;
@@ -5791,24 +5774,24 @@ class MECube {
         module: this.shaderModule,
         entryPoint: 'vertexMain',
         buffers: [{
-          arrayStride: _ballsBuffer.SphereLayout.vertexStride,
+          arrayStride: SphereLayout.vertexStride,
           attributes: [
           // position
           {
             shaderLocation: 0,
-            offset: _ballsBuffer.SphereLayout.positionsOffset,
+            offset: SphereLayout.positionsOffset,
             format: 'float32x3'
           },
           // normal
           {
             shaderLocation: 1,
-            offset: _ballsBuffer.SphereLayout.normalOffset,
+            offset: SphereLayout.normalOffset,
             format: 'float32x3'
           },
           // uv
           {
             shaderLocation: 2,
-            offset: _ballsBuffer.SphereLayout.uvOffset,
+            offset: SphereLayout.uvOffset,
             format: 'float32x2'
           }]
         }]
@@ -6118,7 +6101,7 @@ class MECube {
 }
 exports.default = MECube;
 
-},{"../shaders/shaders":8,"./ballsBuffer":4,"wgpu-matrix":2}],6:[function(require,module,exports){
+},{"../shaders/shaders":7,"wgpu-matrix":2}],5:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -6276,7 +6259,7 @@ class Position {
 }
 exports.Position = Position;
 
-},{}],7:[function(require,module,exports){
+},{}],6:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -6366,7 +6349,7 @@ class MatrixEngineWGPU {
 }
 exports.default = MatrixEngineWGPU;
 
-},{"./engine/ball.js":3,"./engine/cube.js":5}],8:[function(require,module,exports){
+},{"./engine/ball.js":3,"./engine/cube.js":4}],7:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
