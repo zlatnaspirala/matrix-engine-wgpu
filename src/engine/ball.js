@@ -1,17 +1,16 @@
 import {BALL_SHADER} from "../shaders/shaders";
 import {SphereLayout, createSphereMesh} from "./ballsBuffer";
 import {mat4, vec3} from 'wgpu-matrix';
+import {Position} from "./matrix-class";
 
 export default class MEBall {
 
-  constructor(canvas, device) {
-
+  constructor(canvas, device, context, o) {
+    this.context = context;
     this.device = device;
 
-    this.shaderModule = device.createShaderModule({
-      code: BALL_SHADER,
-    });
-
+    this.position = new Position(o.x, o.y, o.z)
+    this.shaderModule = device.createShaderModule({code: BALL_SHADER});
     this.presentationFormat = navigator.gpu.getPreferredCanvasFormat();
 
     this.pipeline = device.createRenderPipeline({
@@ -171,7 +170,6 @@ export default class MEBall {
       })
     })
 
-
   }
 
   ensureEnoughAsteroids(asteroids, transform) {
@@ -195,9 +193,7 @@ export default class MEBall {
   }
 
   updateRenderBundle() {
-    console.log('sss')
-
-
+    console.log('updateRenderBundle')
     const renderBundleEncoder = this.device.createRenderBundleEncoder({
       colorFormats: [this.presentationFormat],
       depthStencilFormat: 'depth24plus',
@@ -328,7 +324,6 @@ export default class MEBall {
 
   }
 
-
   // Render bundles function as partial, limited render passes, so we can use the
   // same code both to render the scene normally and to build the render bundle.
   renderScene(passEncoder) {
@@ -357,4 +352,21 @@ export default class MEBall {
     }
   }
 
+  draw = () => {
+    if(this.moonTexture == null) {
+      console.log('not ready')
+      return;
+    }
+    const transformationMatrix = this.getTransformationMatrix(this.position.x, this.position.y, this.position.z);
+    this.device.queue.writeBuffer(
+      this.uniformBuffer,
+      0,
+      transformationMatrix.buffer,
+      transformationMatrix.byteOffset,
+      transformationMatrix.byteLength
+    );
+    this.renderPassDescriptor.colorAttachments[0].view = this.context
+      .getCurrentTexture()
+      .createView();
+  }
 }

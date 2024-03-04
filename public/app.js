@@ -4,10 +4,19 @@
 var _meWGPU = _interopRequireDefault(require("./src/meWGPU"));
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 let application = new _meWGPU.default(() => {
+  let o = {
+    position: {
+      x: 5,
+      y: 2,
+      z: -10
+    }
+  };
   application.addCube();
+  application.addBall(o.position);
 });
+window.app = application;
 
-},{"./src/meWGPU":6}],2:[function(require,module,exports){
+},{"./src/meWGPU":7}],2:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -5364,9 +5373,12 @@ exports.default = void 0;
 var _shaders = require("../shaders/shaders");
 var _ballsBuffer = require("./ballsBuffer");
 var _wgpuMatrix = require("wgpu-matrix");
+var _matrixClass = require("./matrix-class");
 class MEBall {
-  constructor(canvas, device) {
+  constructor(canvas, device, context, o) {
+    this.context = context;
     this.device = device;
+    this.position = new _matrixClass.Position(o.x, o.y, o.z);
     this.shaderModule = device.createShaderModule({
       code: _shaders.BALL_SHADER
     });
@@ -5523,7 +5535,7 @@ class MEBall {
     }
   }
   updateRenderBundle() {
-    console.log('sss');
+    console.log('updateRenderBundle');
     const renderBundleEncoder = this.device.createRenderBundleEncoder({
       colorFormats: [this.presentationFormat],
       depthStencilFormat: 'depth24plus'
@@ -5652,10 +5664,19 @@ class MEBall {
       }
     }
   }
+  draw = () => {
+    if (this.moonTexture == null) {
+      console.log('not ready');
+      return;
+    }
+    const transformationMatrix = this.getTransformationMatrix(this.position.x, this.position.y, this.position.z);
+    this.device.queue.writeBuffer(this.uniformBuffer, 0, transformationMatrix.buffer, transformationMatrix.byteOffset, transformationMatrix.byteLength);
+    this.renderPassDescriptor.colorAttachments[0].view = this.context.getCurrentTexture().createView();
+  };
 }
 exports.default = MEBall;
 
-},{"../shaders/shaders":7,"./ballsBuffer":4,"wgpu-matrix":2}],4:[function(require,module,exports){
+},{"../shaders/shaders":8,"./ballsBuffer":4,"./matrix-class":6,"wgpu-matrix":2}],4:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -6097,7 +6118,165 @@ class MECube {
 }
 exports.default = MECube;
 
-},{"../shaders/shaders":7,"./ballsBuffer":4,"wgpu-matrix":2}],6:[function(require,module,exports){
+},{"../shaders/shaders":8,"./ballsBuffer":4,"wgpu-matrix":2}],6:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.Position = void 0;
+// Sub classes for matrix-wgpu
+
+/**
+ * @description Base class
+ * Position { x, y, z }
+ */
+
+class Position {
+  constructor(x, y, z) {
+    // Not in use for nwo this is from matrix-engine project [nameUniq]
+    this.nameUniq = null;
+    if (typeof x == 'undefined') x = 0;
+    if (typeof y == 'undefined') y = 0;
+    if (typeof z == 'undefined') z = 0;
+    this.x = x;
+    this.y = y;
+    this.z = z;
+    this.velY = 0;
+    this.velX = 0;
+    this.velZ = 0;
+    this.inMove = false;
+    this.targetX = x;
+    this.targetY = y;
+    this.targetZ = z;
+    this.thrust = 0.01;
+    return this;
+  }
+  setSpeed(n) {
+    if (typeof n === 'number') {
+      this.thrust = n;
+    } else {
+      console.log('Description: arguments (w, h) must be type of number.');
+    }
+  }
+  translateByX(x) {
+    this.inMove = true;
+    this.targetX = x;
+  }
+  translateByY(y) {
+    this.inMove = true;
+    this.targetY = y;
+  }
+  translateByZ(z) {
+    this.inMove = true;
+    this.targetZ = z;
+  }
+  translateByXY(x, y) {
+    this.inMove = true;
+    this.targetX = x;
+    this.targetY = y;
+  }
+  translateByXZ(x, z) {
+    this.inMove = true;
+    this.targetX = x;
+    this.targetZ = z;
+  }
+  translateByYZ(y, z) {
+    this.inMove = true;
+    this.targetY = y;
+    this.targetZ = z;
+  }
+  onTargetPositionReach() {}
+  update() {
+    var tx = this.targetX - this.x,
+      ty = this.targetY - this.y,
+      tz = this.targetZ - this.z,
+      dist = Math.sqrt(tx * tx + ty * ty + tz * tz);
+    this.velX = tx / dist * this.thrust;
+    this.velY = ty / dist * this.thrust;
+    this.velZ = tz / dist * this.thrust;
+    if (this.inMove == true) {
+      if (dist > this.thrust) {
+        this.x += this.velX;
+        this.y += this.velY;
+        this.z += this.velZ;
+
+        // // from me
+        // if(net && net.connection && typeof em === 'undefined' && App.scene[this.nameUniq].net.enable == true) net.connection.send({
+        //   netPos: {x: this.x, y: this.y, z: this.z},
+        //   netObjId: this.nameUniq,
+        // });
+      } else {
+        this.x = this.targetX;
+        this.y = this.targetY;
+        this.z = this.targetZ;
+        this.inMove = false;
+        this.onTargetPositionReach();
+
+        // // from me
+        // if(net && net.connection && typeof em === 'undefined' && App.scene[this.nameUniq].net.enable == true) net.connection.send({
+        //   netPos: {x: this.x, y: this.y, z: this.z},
+        //   netObjId: this.nameUniq,
+        // });
+      }
+    }
+  }
+  get worldLocation() {
+    return [this.x, this.y, this.z];
+  }
+  SetX(newx, em) {
+    this.x = newx;
+    this.targetX = newx;
+    this.inMove = false;
+
+    // if(net && net.connection && typeof em === 'undefined' &&
+    //   App.scene[this.nameUniq].net && App.scene[this.nameUniq].net.enable == true) {
+    //   net.connection.send({
+    //     netPos: {x: this.x, y: this.y, z: this.z},
+    //     netObjId: this.nameUniq,
+    //   });
+    // }
+  }
+  SetY(newy, em) {
+    this.y = newy;
+    this.targetY = newy;
+    this.inMove = false;
+    // if(net && net.connection && typeof em === 'undefined' &&
+    //   App.scene[this.nameUniq].net && App.scene[this.nameUniq].net.enable == true) net.connection.send({
+    //     netPos: {x: this.x, y: this.y, z: this.z},
+    //     netObjId: this.nameUniq,
+    //   });
+  }
+  SetZ(newz, em) {
+    this.z = newz;
+    this.targetZ = newz;
+    this.inMove = false;
+    // if(net && net.connection && typeof em === 'undefined' &&
+    //   App.scene[this.nameUniq].net && App.scene[this.nameUniq].net.enable == true) net.connection.send({
+    //     netPos: {x: this.x, y: this.y, z: this.z},
+    //     netObjId: this.nameUniq,
+    //   });
+  }
+  setPosition(newx, newy, newz) {
+    this.x = newx;
+    this.y = newy;
+    this.z = newz;
+    this.targetX = newx;
+    this.targetY = newy;
+    this.targetZ = newz;
+    this.inMove = false;
+
+    // from me
+    // if(App.scene[this.nameUniq] && net && net.connection && typeof em === 'undefined' &&
+    //   App.scene[this.nameUniq].net && App.scene[this.nameUniq].net.enable == true) net.connection.send({
+    //     netPos: {x: this.x, y: this.y, z: this.z},
+    //     netObjId: this.nameUniq,
+    //   });
+  }
+}
+exports.Position = Position;
+
+},{}],7:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -6112,6 +6291,7 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 
 class MatrixEngineWGPU {
   mainRenderBundle = [];
+  rbContainer = [];
   constructor(callback) {
     var canvas = document.createElement('canvas');
     canvas.width = window.innerWidth;
@@ -6146,6 +6326,19 @@ class MatrixEngineWGPU {
     this.mainRenderBundle.push(myCube1);
     // let NIK2 = new MEBall(canvas, device)
   };
+  addBall = o => {
+    if (typeof o === 'undefined') {
+      var o = {
+        position: {
+          x: 0,
+          y: 0,
+          z: -4
+        }
+      };
+    }
+    let myBall1 = new _ball.default(this.canvas, this.device, this.context, o);
+    this.mainRenderBundle.push(myBall1);
+  };
   run(callback) {
     setTimeout(() => {
       requestAnimationFrame(this.frame);
@@ -6155,31 +6348,28 @@ class MatrixEngineWGPU {
     }, 10);
   }
   frame = () => {
-    const commandEncoder = this.device.createCommandEncoder();
+    let commandEncoder = this.device.createCommandEncoder();
+    this.rbContainer = [];
     let passEncoder;
-    this.mainRenderBundle.forEach(meItem => {
+    this.mainRenderBundle.forEach((meItem, index) => {
       meItem.draw();
-      passEncoder = commandEncoder.beginRenderPass(meItem.renderPassDescriptor);
-      if (true) {
-        // Executing a bundle is equivalent to calling all of the commands encoded
-        // in the render bundle as part of the current render pass.
-        //passEncoder.executeBundles([NIK.renderBundle, NIK2.renderBundle]);
-        passEncoder.executeBundles([meItem.renderBundle]);
-      } else {
-        // Alternatively, the same render commands can be encoded manually, which
-        // can take longer since each command needs to be interpreted by the
-        // JavaScript virtual machine and re-validated each time.
-        renderScene(passEncoder);
-      }
-      passEncoder.end();
-      this.device.queue.submit([commandEncoder.finish()]);
+      this.rbContainer.push(meItem.renderBundle);
+      if (index == 0) passEncoder = commandEncoder.beginRenderPass(meItem.renderPassDescriptor);
     });
+
+    //
+    if (true) {
+      //  passEncoder.executeBundles([NIK.renderBundle, NIK2.renderBundle]);
+      passEncoder.executeBundles(this.rbContainer);
+    }
+    passEncoder.end();
+    this.device.queue.submit([commandEncoder.finish()]);
     requestAnimationFrame(this.frame);
   };
 }
 exports.default = MatrixEngineWGPU;
 
-},{"./engine/ball.js":3,"./engine/cube.js":5}],7:[function(require,module,exports){
+},{"./engine/ball.js":3,"./engine/cube.js":5}],8:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {

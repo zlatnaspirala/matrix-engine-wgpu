@@ -6,6 +6,7 @@ import MECube from './engine/cube.js';
 export default class MatrixEngineWGPU {
 
   mainRenderBundle = [];
+  rbContainer = [];
 
   constructor(callback) {
     var canvas = document.createElement('canvas')
@@ -42,33 +43,42 @@ export default class MatrixEngineWGPU {
     // let NIK2 = new MEBall(canvas, device)
   }
 
+  addBall = (o) => {
+    if (typeof o === 'undefined') {
+      var o = {
+        position: {x : 0 , y : 0 , z : -4}
+      }
+    }
+    let myBall1 = new MEBall(this.canvas, this.device, this.context, o)
+    this.mainRenderBundle.push(myBall1); 
+  }
+
   run(callback) {
     setTimeout(() => {requestAnimationFrame(this.frame)}, 1000)
     setTimeout(() => {callback()}, 10)
   }
 
   frame = () => {
-    const commandEncoder = this.device.createCommandEncoder();
+
+    let commandEncoder = this.device.createCommandEncoder();
+    this.rbContainer = [];
 
     let passEncoder;
-    this.mainRenderBundle.forEach((meItem) => {
-      meItem.draw();
-      passEncoder = commandEncoder.beginRenderPass(meItem.renderPassDescriptor);
 
-      if(true) {
-        // Executing a bundle is equivalent to calling all of the commands encoded
-        // in the render bundle as part of the current render pass.
-        //passEncoder.executeBundles([NIK.renderBundle, NIK2.renderBundle]);
-        passEncoder.executeBundles([meItem.renderBundle]);
-      } else {
-        // Alternatively, the same render commands can be encoded manually, which
-        // can take longer since each command needs to be interpreted by the
-        // JavaScript virtual machine and re-validated each time.
-        renderScene(passEncoder);
-      }
-      passEncoder.end();
-      this.device.queue.submit([commandEncoder.finish()]);
+    this.mainRenderBundle.forEach((meItem, index) => {
+      meItem.draw();
+      this.rbContainer.push(meItem.renderBundle)
+      if (index == 0) passEncoder = commandEncoder.beginRenderPass(meItem.renderPassDescriptor);
     })
+
+    //
+    if(true) {
+      //  passEncoder.executeBundles([NIK.renderBundle, NIK2.renderBundle]);
+      passEncoder.executeBundles(this.rbContainer);
+    }
+    passEncoder.end();
+    this.device.queue.submit([commandEncoder.finish()]);
+
     requestAnimationFrame(this.frame);
   }
 }
