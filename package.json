@@ -1,6 +1,6 @@
 {
   "name": "matrix-wgpu",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "webGPU powered pwa application.Crazy fast rendering.",
   "main": "index.js",
   "scripts": {

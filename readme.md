@@ -1,4 +1,5 @@
-# matrix-wgpu
+# matrix-wgpu 
+## [underconstruct - not fully operative for now - deeply WIP]
 ## Author Nikola Lukic zlatnaspirala@gmail.com 2024
 
 
