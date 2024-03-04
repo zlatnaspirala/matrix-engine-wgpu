@@ -18,8 +18,52 @@ I publish (this repo) npm package with name `matrix-wgpu`.
 
 ## Objective
   - scene objects feature
-  - similar to the matrix-engine webGL variant.
+  - Make it similar to the matrix-engine webGL features.
 
+
+For now i will use `createRenderBundleEncoder` for multi object scene draws.
+
+
+Main instance script:
+```js
+let application = new MatrixEngineWGPU(()=> {
+
+  let o = {
+    position: { x: 5, y: 2, z: -10}
+  };
+
+  application.addCube()
+  application.addBall(o.position)
+
+})
+```
+
+
+Not the best solution but works for now.
+Next level is draw in one scene different shaders different pipline...
+
+System draws func:
+```js
+frame = () => {
+    let commandEncoder = this.device.createCommandEncoder();
+    this.rbContainer = [];
+
+    let passEncoder;
+
+    this.mainRenderBundle.forEach((meItem, index) => {
+      meItem.draw();
+      this.rbContainer.push(meItem.renderBundle)
+      if(index == 0) passEncoder = commandEncoder.beginRenderPass(meItem.renderPassDescriptor);
+    })
+
+    // passEncoder.executeBundles([NIK.renderBundle, NIK2.renderBundle]);
+    passEncoder.executeBundles(this.rbContainer);
+    passEncoder.end();
+    this.device.queue.submit([commandEncoder.finish()]);
+
+    requestAnimationFrame(this.frame);
+  }
+```
 
 ## LICENCE
 

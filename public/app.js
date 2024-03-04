@@ -6357,11 +6357,8 @@ class MatrixEngineWGPU {
       if (index == 0) passEncoder = commandEncoder.beginRenderPass(meItem.renderPassDescriptor);
     });
 
-    //
-    if (true) {
-      //  passEncoder.executeBundles([NIK.renderBundle, NIK2.renderBundle]);
-      passEncoder.executeBundles(this.rbContainer);
-    }
+    // passEncoder.executeBundles([NIK.renderBundle, NIK2.renderBundle]);
+    passEncoder.executeBundles(this.rbContainer);
     passEncoder.end();
     this.device.queue.submit([commandEncoder.finish()]);
     requestAnimationFrame(this.frame);
