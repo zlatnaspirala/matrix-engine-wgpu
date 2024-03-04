@@ -6,5 +6,6 @@ var testNpm = () => {
 }
 
 export {
-  MatrixEngineWGPU
+  MatrixEngineWGPU,
+  testNpm
 }

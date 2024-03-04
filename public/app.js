@@ -4,6 +4,13 @@
 var _meWGPU = _interopRequireDefault(require("./src/meWGPU"));
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 let application = new _meWGPU.default(() => {
+  let c = {
+    position: {
+      x: -5,
+      y: 3,
+      z: -10
+    }
+  };
   let o = {
     position: {
       x: 5,
@@ -11,8 +18,8 @@ let application = new _meWGPU.default(() => {
       z: -10
     }
   };
-  application.addCube();
-  application.addBall(o.position);
+  application.addCube(c);
+  application.addBall(o);
 });
 window.app = application;
 
@@ -5383,7 +5390,7 @@ class MEBall {
       normalOffset: 3 * 4,
       uvOffset: 6 * 4
     };
-    this.position = new _matrixClass.Position(o.x, o.y, o.z);
+    this.position = new _matrixClass.Position(o.position.x, o.position.y, o.position.z);
     this.shaderModule = device.createShaderModule({
       code: _shaders.BALL_SHADER
     });
@@ -5597,9 +5604,9 @@ class MEBall {
     });
     return bindGroup;
   }
-  getTransformationMatrix(byX, byY, byZ) {
+  getTransformationMatrix(pos) {
     const viewMatrix = _wgpuMatrix.mat4.identity();
-    _wgpuMatrix.mat4.translate(viewMatrix, _wgpuMatrix.vec3.fromValues(byX, byY, byZ), viewMatrix);
+    _wgpuMatrix.mat4.translate(viewMatrix, _wgpuMatrix.vec3.fromValues(pos.x, pos.y, pos.z), viewMatrix);
     const now = Date.now() / 1000;
     _wgpuMatrix.mat4.rotateZ(viewMatrix, Math.PI * 0.1, viewMatrix);
     _wgpuMatrix.mat4.rotateX(viewMatrix, Math.PI * 0.1, viewMatrix);
@@ -5738,7 +5745,7 @@ class MEBall {
       console.log('not ready');
       return;
     }
-    const transformationMatrix = this.getTransformationMatrix(this.position.x, this.position.y, this.position.z);
+    const transformationMatrix = this.getTransformationMatrix(this.position);
     this.device.queue.writeBuffer(this.uniformBuffer, 0, transformationMatrix.buffer, transformationMatrix.byteOffset, transformationMatrix.byteLength);
     this.renderPassDescriptor.colorAttachments[0].view = this.context.getCurrentTexture().createView();
   };
@@ -5754,6 +5761,7 @@ Object.defineProperty(exports, "__esModule", {
 exports.default = void 0;
 var _shaders = require("../shaders/shaders");
 var _wgpuMatrix = require("wgpu-matrix");
+var _matrixClass = require("./matrix-class");
 var SphereLayout = {
   vertexStride: 8 * 4,
   positionsOffset: 0,
@@ -5761,13 +5769,14 @@ var SphereLayout = {
   uvOffset: 6 * 4
 };
 class MECube {
-  constructor(canvas, device, context) {
+  constructor(canvas, device, context, o) {
     this.device = device;
     this.context = context;
     this.shaderModule = device.createShaderModule({
       code: _shaders.BALL_SHADER
     });
     this.presentationFormat = navigator.gpu.getPreferredCanvasFormat();
+    this.position = new _matrixClass.Position(o.position.x, o.position.y, o.position.z);
     this.pipeline = device.createRenderPipeline({
       layout: 'auto',
       vertex: {
@@ -5977,9 +5986,9 @@ class MECube {
     });
     return bindGroup;
   }
-  getTransformationMatrix() {
+  getTransformationMatrix(pos) {
     const viewMatrix = _wgpuMatrix.mat4.identity();
-    _wgpuMatrix.mat4.translate(viewMatrix, _wgpuMatrix.vec3.fromValues(0, 0, -4), viewMatrix);
+    _wgpuMatrix.mat4.translate(viewMatrix, _wgpuMatrix.vec3.fromValues(pos.x, pos.y, pos.z), viewMatrix);
     const now = Date.now() / 1000;
     _wgpuMatrix.mat4.rotateZ(viewMatrix, Math.PI * 0, viewMatrix);
     _wgpuMatrix.mat4.rotateX(viewMatrix, Math.PI * 0, viewMatrix);
@@ -6094,14 +6103,14 @@ class MECube {
       console.log('not ready');
       return;
     }
-    const transformationMatrix = this.getTransformationMatrix(0, 0.5, -5);
+    const transformationMatrix = this.getTransformationMatrix(this.position);
     this.device.queue.writeBuffer(this.uniformBuffer, 0, transformationMatrix.buffer, transformationMatrix.byteOffset, transformationMatrix.byteLength);
     this.renderPassDescriptor.colorAttachments[0].view = this.context.getCurrentTexture().createView();
   };
 }
 exports.default = MECube;
 
-},{"../shaders/shaders":7,"wgpu-matrix":2}],5:[function(require,module,exports){
+},{"../shaders/shaders":7,"./matrix-class":5,"wgpu-matrix":2}],5:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -6304,10 +6313,18 @@ class MatrixEngineWGPU {
     });
     this.run(callback);
   };
-  addCube = () => {
-    let myCube1 = new _cube.default(this.canvas, this.device, this.context);
+  addCube = o => {
+    if (typeof o === 'undefined') {
+      var o = {
+        position: {
+          x: 0,
+          y: 0,
+          z: -4
+        }
+      };
+    }
+    let myCube1 = new _cube.default(this.canvas, this.device, this.context, o);
     this.mainRenderBundle.push(myCube1);
-    // let NIK2 = new MEBall(canvas, device)
   };
   addBall = o => {
     if (typeof o === 'undefined') {

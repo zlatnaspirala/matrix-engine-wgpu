@@ -15,7 +15,7 @@ export default class MEBall {
       uvOffset: 6 * 4,
     };
 
-    this.position = new Position(o.x, o.y, o.z)
+    this.position = new Position(o.position.x, o.position.y, o.position.z)
     this.shaderModule = device.createShaderModule({code: BALL_SHADER});
     this.presentationFormat = navigator.gpu.getPreferredCanvasFormat();
 
@@ -269,10 +269,10 @@ export default class MEBall {
     return bindGroup;
   }
 
-  getTransformationMatrix(byX, byY, byZ) {
+  getTransformationMatrix(pos) {
 
     const viewMatrix = mat4.identity();
-    mat4.translate(viewMatrix, vec3.fromValues(byX, byY, byZ), viewMatrix);
+    mat4.translate(viewMatrix, vec3.fromValues(pos.x, pos.y, pos.z), viewMatrix);
     const now = Date.now() / 1000;
 
     mat4.rotateZ(viewMatrix, Math.PI * 0.1, viewMatrix);
@@ -435,7 +435,7 @@ export default class MEBall {
       console.log('not ready')
       return;
     }
-    const transformationMatrix = this.getTransformationMatrix(this.position.x, this.position.y, this.position.z);
+    const transformationMatrix = this.getTransformationMatrix(this.position);
     this.device.queue.writeBuffer(
       this.uniformBuffer,
       0,

@@ -37,10 +37,14 @@ export default class MatrixEngineWGPU {
     this.run(callback)
   };
 
-  addCube = () => {
-    let myCube1 = new MECube(this.canvas, this.device, this.context)
+  addCube = (o) => {
+    if(typeof o === 'undefined') {
+      var o = {
+        position: {x: 0, y: 0, z: -4}
+      }
+    }
+    let myCube1 = new MECube(this.canvas, this.device, this.context, o)
     this.mainRenderBundle.push(myCube1);
-    // let NIK2 = new MEBall(canvas, device)
   }
 
   addBall = (o) => {

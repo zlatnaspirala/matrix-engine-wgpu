@@ -8,7 +8,15 @@
   },
   "keywords": [
     "webGPU",
-    "matrix"
+    "matrix",
+    "matrix-engine",
+    "matrix-engine-webGPU",
+    "matrix-calculation",
+    "render",
+    "wgpu",
+    "zlatnaspirala",
+    "maximumroulette.com",
+    "GLSL"
   ],
   "author": "Nikola Lukic",
   "license": "MIT",

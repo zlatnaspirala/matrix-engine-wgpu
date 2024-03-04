@@ -1,5 +1,6 @@
 import {BALL_SHADER} from "../shaders/shaders";
 import {mat4, vec3} from 'wgpu-matrix';
+import {Position} from "./matrix-class";
 
 var SphereLayout = {
   vertexStride: 8 * 4,
@@ -10,16 +11,16 @@ var SphereLayout = {
 
 export default class MECube {
 
-  constructor(canvas, device, context ) {
+  constructor(canvas, device, context, o) {
     this.device = device;
     this.context = context;
-    
+
     this.shaderModule = device.createShaderModule({
       code: BALL_SHADER,
     });
 
     this.presentationFormat = navigator.gpu.getPreferredCanvasFormat();
-
+    this.position = new Position(o.position.x, o.position.y, o.position.z)
     this.pipeline = device.createRenderPipeline({
       layout: 'auto',
       vertex: {
@@ -244,9 +245,9 @@ export default class MECube {
     return bindGroup;
   }
 
-  getTransformationMatrix() {
+  getTransformationMatrix(pos) {
     const viewMatrix = mat4.identity();
-    mat4.translate(viewMatrix, vec3.fromValues(0, 0, -4), viewMatrix);
+    mat4.translate(viewMatrix, vec3.fromValues(pos.x, pos.y, pos.z), viewMatrix);
     const now = Date.now() / 1000;
     mat4.rotateZ(viewMatrix, Math.PI * 0, viewMatrix);
     mat4.rotateX(viewMatrix, Math.PI * 0, viewMatrix);
@@ -390,20 +391,20 @@ export default class MECube {
   }
 
   draw = () => {
-  if(this.moonTexture == null) {
-    console.log('not ready')
-    return;
-  }
-  const transformationMatrix = this.getTransformationMatrix(0, 0.5, -5);
-  this.device.queue.writeBuffer(
-    this.uniformBuffer,
-    0,
-    transformationMatrix.buffer,
-    transformationMatrix.byteOffset,
-    transformationMatrix.byteLength
-  );
-  this.renderPassDescriptor.colorAttachments[0].view = this.context
-    .getCurrentTexture()
-    .createView();
+    if(this.moonTexture == null) {
+      console.log('not ready')
+      return;
+    }
+    const transformationMatrix = this.getTransformationMatrix(this.position);
+    this.device.queue.writeBuffer(
+      this.uniformBuffer,
+      0,
+      transformationMatrix.buffer,
+      transformationMatrix.byteOffset,
+      transformationMatrix.byteLength
+    );
+    this.renderPassDescriptor.colorAttachments[0].view = this.context
+      .getCurrentTexture()
+      .createView();
   }
 }
