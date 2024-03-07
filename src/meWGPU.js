@@ -15,11 +15,11 @@ export default class MatrixEngineWGPU {
   }
 
   constructor(options, callback) {
-    console.log('typeof options ', typeof options )
-    console.log('typeof options ',  options )
-    if (typeof options == 'undefined' || typeof options == "function") {
+    // console.log('typeof options ', typeof options )
+    if(typeof options == 'undefined' || typeof options == "function") {
       this.options = {
-        useSingleRenderPass: true
+        useSingleRenderPass: true,
+        canvasSize: 'fullscreen' // | [w,h]
       }
       callback = options;
     }
@@ -27,8 +27,13 @@ export default class MatrixEngineWGPU {
     this.options = options;
 
     var canvas = document.createElement('canvas')
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+    if(this.options.canvasSize == 'fullscreen') {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    } else {
+      canvas.width = this.options.canvasSize.w;
+      canvas.height = this.options.canvasSize.h;
+    }
     document.body.append(canvas)
     this.init({canvas, callback})
   }

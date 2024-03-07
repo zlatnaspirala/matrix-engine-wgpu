@@ -24,24 +24,28 @@ I publish (this repo) npm package with name `matrix-engine-wgpu`.
 For now i will use `createRenderBundleEncoder` for multi object scene draws.
 
 
-
-
 Main instance script:
 ```js
-let application = new MatrixEngineWGPU(()=> {
+let application = new MatrixEngineWGPU({ useSingleRenderPass: false }, () => {
 
   let c = {
-    position: { x: -5, y: 3, z: -10}
+    position: {x: -3, y: 0, z: -5},
+    rotation: {x: 0, y: 45, z: 0},
+    rotationSpeed: {x: 0, y: 0, z: 0},
+    texturesPaths: ['./res/textures/rust.jpg']
   };
 
   let o = {
-    position: { x: 5, y: 2, z: -10}
+    position: {x: 3, y: 0, z: -10},
+    rotation: {x: 0, y: 45, z: 0},
+    rotationSpeed: {x: 0, y: 10, z: 0},
+    texturesPaths: ['./res/textures/rust.jpg']
   };
 
-  application.addCube(c)
   application.addBall(o)
-
+  application.addCube(c)
 })
+
 ```
 
 Not the best solution but works for now.

@@ -1,6 +1,8 @@
 import MatrixEngineWGPU from "./src/meWGPU";
 
-let application = new MatrixEngineWGPU({ useSingleRenderPass: false }, () => {
+let application = new MatrixEngineWGPU({ 
+  useSingleRenderPass: false,
+  canvasSize: {w: '512', h: '512'} }, () => {
 
   let c = {
     position: {x: -3, y: 0, z: -5},
@@ -16,12 +18,8 @@ let application = new MatrixEngineWGPU({ useSingleRenderPass: false }, () => {
     texturesPaths: ['./res/textures/rust.jpg']
   };
 
-
   application.addBall(o)
-
   application.addCube(c)
-  
-
 })
 
 window.app = application
