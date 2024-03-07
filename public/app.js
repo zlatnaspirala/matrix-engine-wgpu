@@ -3,23 +3,47 @@
 
 var _meWGPU = _interopRequireDefault(require("./src/meWGPU"));
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-let application = new _meWGPU.default(() => {
+let application = new _meWGPU.default({
+  useSingleRenderPass: false
+}, () => {
   let c = {
     position: {
-      x: -5,
-      y: 3,
-      z: -10
-    }
+      x: -3,
+      y: 0,
+      z: -5
+    },
+    rotation: {
+      x: 0,
+      y: 45,
+      z: 0
+    },
+    rotationSpeed: {
+      x: 0,
+      y: 0,
+      z: 0
+    },
+    texturesPaths: ['./res/textures/rust.jpg']
   };
   let o = {
     position: {
-      x: 5,
-      y: 2,
+      x: 3,
+      y: 0,
       z: -10
-    }
+    },
+    rotation: {
+      x: 0,
+      y: 45,
+      z: 0
+    },
+    rotationSpeed: {
+      x: 0,
+      y: 10,
+      z: 0
+    },
+    texturesPaths: ['./res/textures/rust.jpg']
   };
-  application.addCube(c);
   application.addBall(o);
+  application.addCube(c);
 });
 window.app = application;
 
@@ -5384,13 +5408,22 @@ class MEBall {
   constructor(canvas, device, context, o) {
     this.context = context;
     this.device = device;
+    this.entityArgPass = o.entityArgPass;
     this.SphereLayout = {
       vertexStride: 8 * 4,
       positionsOffset: 0,
       normalOffset: 3 * 4,
       uvOffset: 6 * 4
     };
+    this.texturesPaths = [];
+    o.texturesPaths.forEach(t => {
+      this.texturesPaths.push(t);
+    });
     this.position = new _matrixClass.Position(o.position.x, o.position.y, o.position.z);
+    this.rotation = new _matrixClass.Rotation(o.rotation.x, o.rotation.y, o.rotation.z);
+    this.rotation.rotationSpeed.x = o.rotationSpeed.x;
+    this.rotation.rotationSpeed.y = o.rotationSpeed.y;
+    this.rotation.rotationSpeed.z = o.rotationSpeed.z;
     this.shaderModule = device.createShaderModule({
       code: _shaders.BALL_SHADER
     });
@@ -5454,14 +5487,14 @@ class MEBall {
     });
 
     // Fetch the images and upload them into a GPUTexture.
-    this.planetTexture = null;
+    this.texture0 = null;
     this.moonTexture = null;
     this.settings = {
       useRenderBundles: true,
       asteroidCount: 15
     };
-    this.loadTex1(device).then(() => {
-      this.loadTex2(device).then(() => {
+    this.loadTex0(this.texturesPaths, device).then(() => {
+      this.loadTex1(device).then(() => {
         console.log('NICE THIS', this);
         this.sampler = device.createSampler({
           magFilter: 'linear',
@@ -5472,31 +5505,28 @@ class MEBall {
 
         // Create one large central planet surrounded by a large ring of asteroids
         this.planet = this.createSphereRenderable(1.0);
-        this.planet.bindGroup = this.createSphereBindGroup(this.planetTexture, this.transform);
+        this.planet.bindGroup = this.createSphereBindGroup(this.texture0, this.transform);
         var asteroids = [this.createSphereRenderable(0.2, 8, 6, 0.15), this.createSphereRenderable(0.13, 8, 6, 0.15)];
         this.renderables = [this.planet];
 
         // this.ensureEnoughAsteroids(asteroids, this.transform);
-
         this.renderPassDescriptor = {
           colorAttachments: [{
             view: undefined,
-            // Assigned later
-
             clearValue: {
               r: 0.0,
               g: 0.0,
               b: 0.0,
               a: 1.0
             },
-            loadOp: 'clear',
-            storeOp: 'store'
+            loadOp: this.entityArgPass.loadOp,
+            storeOp: this.entityArgPass.storeOp
           }],
           depthStencilAttachment: {
             view: this.depthTexture.createView(),
             depthClearValue: 1.0,
-            depthLoadOp: 'clear',
-            depthStoreOp: 'store'
+            depthLoadOp: this.entityArgPass.depthLoadOp,
+            depthStoreOp: this.entityArgPass.depthStoreOp
           }
         };
         const aspect = canvas.width / canvas.height;
@@ -5608,13 +5638,13 @@ class MEBall {
     const viewMatrix = _wgpuMatrix.mat4.identity();
     _wgpuMatrix.mat4.translate(viewMatrix, _wgpuMatrix.vec3.fromValues(pos.x, pos.y, pos.z), viewMatrix);
     const now = Date.now() / 1000;
-    _wgpuMatrix.mat4.rotateZ(viewMatrix, Math.PI * 0.1, viewMatrix);
-    _wgpuMatrix.mat4.rotateX(viewMatrix, Math.PI * 0.1, viewMatrix);
-    _wgpuMatrix.mat4.rotateY(viewMatrix, now * 0.05, viewMatrix);
+    _wgpuMatrix.mat4.rotateX(viewMatrix, Math.PI * this.rotation.getRotX(), viewMatrix);
+    _wgpuMatrix.mat4.rotateY(viewMatrix, Math.PI * this.rotation.getRotY(), viewMatrix);
+    _wgpuMatrix.mat4.rotateZ(viewMatrix, Math.PI * this.rotation.getRotZ(), viewMatrix);
     _wgpuMatrix.mat4.multiply(this.projectionMatrix, viewMatrix, this.modelViewProjectionMatrix);
     return this.modelViewProjectionMatrix;
   }
-  async loadTex2(device) {
+  async loadTex1(device) {
     return new Promise(async resolve => {
       const response = await fetch('./res/textures/tex1.jpg');
       const imageBitmap = await createImageBitmap(await response.blob());
@@ -5632,21 +5662,21 @@ class MEBall {
       resolve();
     });
   }
-  async loadTex1(device) {
+  async loadTex0(paths, device) {
     return new Promise(async resolve => {
-      const response = await fetch('./res/textures/tex1.jpg');
+      const response = await fetch(paths[0]);
       const imageBitmap = await createImageBitmap(await response.blob());
-      console.log('WHAT IS THIS ', this);
-      this.planetTexture = device.createTexture({
+      console.log('loadTex0 WHAT IS THIS -> ', this);
+      this.texture0 = device.createTexture({
         size: [imageBitmap.width, imageBitmap.height, 1],
         format: 'rgba8unorm',
         usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT
       });
-      var planetTexture = this.planetTexture;
+      var texture0 = this.texture0;
       device.queue.copyExternalImageToTexture({
         source: imageBitmap
       }, {
-        texture: planetTexture
+        texture: texture0
       }, [imageBitmap.width, imageBitmap.height]);
       resolve();
     });
@@ -5716,6 +5746,7 @@ class MEBall {
       indices: new Uint16Array(indices)
     };
   }
+
   // Render bundles function as partial, limited render passes, so we can use the
   // same code both to render the scene normally and to build the render bundle.
   renderScene(passEncoder) {
@@ -5772,11 +5803,21 @@ class MECube {
   constructor(canvas, device, context, o) {
     this.device = device;
     this.context = context;
+    this.entityArgPass = o.entityArgPass;
+    console.log('passed args', o.entityArgPass);
     this.shaderModule = device.createShaderModule({
       code: _shaders.BALL_SHADER
     });
+    this.texturesPaths = [];
+    o.texturesPaths.forEach(t => {
+      this.texturesPaths.push(t);
+    });
     this.presentationFormat = navigator.gpu.getPreferredCanvasFormat();
     this.position = new _matrixClass.Position(o.position.x, o.position.y, o.position.z);
+    this.rotation = new _matrixClass.Rotation(o.rotation.x, o.rotation.y, o.rotation.z);
+    this.rotation.rotationSpeed.x = o.rotationSpeed.x;
+    this.rotation.rotationSpeed.y = o.rotationSpeed.y;
+    this.rotation.rotationSpeed.z = o.rotationSpeed.z;
     this.pipeline = device.createRenderPipeline({
       layout: 'auto',
       vertex: {
@@ -5839,14 +5880,14 @@ class MECube {
     });
 
     // Fetch the images and upload them into a GPUTexture.
-    this.planetTexture = null;
+    this.texture0 = null;
     this.moonTexture = null;
     this.settings = {
       useRenderBundles: true,
       asteroidCount: 15
     };
-    this.loadTex1(device).then(() => {
-      this.loadTex2(device).then(() => {
+    this.loadTex0(this.texturesPaths, device).then(() => {
+      this.loadTex1(device).then(() => {
         this.sampler = device.createSampler({
           magFilter: 'linear',
           minFilter: 'linear'
@@ -5856,12 +5897,10 @@ class MECube {
 
         // Create one large central planet surrounded by a large ring of asteroids
         this.planet = this.createSphereRenderable(1.0);
-        this.planet.bindGroup = this.createSphereBindGroup(this.planetTexture, this.transform);
+        this.planet.bindGroup = this.createSphereBindGroup(this.texture0, this.transform);
         var asteroids = [this.createSphereRenderable(0.2, 8, 6, 0.15), this.createSphereRenderable(0.13, 8, 6, 0.15)];
         this.renderables = [this.planet];
-
         // this.ensureEnoughAsteroids(asteroids, this.transform);
-
         this.renderPassDescriptor = {
           colorAttachments: [{
             view: undefined,
@@ -5871,14 +5910,14 @@ class MECube {
               b: 0.0,
               a: 1.0
             },
-            loadOp: 'clear',
-            storeOp: 'store'
+            loadOp: this.entityArgPass.loadOp,
+            storeOp: this.entityArgPass.storeOp
           }],
           depthStencilAttachment: {
             view: this.depthTexture.createView(),
             depthClearValue: 1.0,
-            depthLoadOp: 'clear',
-            depthStoreOp: 'store'
+            depthLoadOp: this.entityArgPass.depthLoadOp,
+            depthStoreOp: this.entityArgPass.depthStoreOp
           }
         };
         const aspect = canvas.width / canvas.height;
@@ -5929,7 +5968,7 @@ class MECube {
     }
   }
   updateRenderBundle() {
-    console.log('sss');
+    console.log('[CUBE] updateRenderBundle');
     const renderBundleEncoder = this.device.createRenderBundleEncoder({
       colorFormats: [this.presentationFormat],
       depthStencilFormat: 'depth24plus'
@@ -5987,16 +6026,17 @@ class MECube {
     return bindGroup;
   }
   getTransformationMatrix(pos) {
+    // const now = Date.now() / 1000;
+
     const viewMatrix = _wgpuMatrix.mat4.identity();
     _wgpuMatrix.mat4.translate(viewMatrix, _wgpuMatrix.vec3.fromValues(pos.x, pos.y, pos.z), viewMatrix);
-    const now = Date.now() / 1000;
-    _wgpuMatrix.mat4.rotateZ(viewMatrix, Math.PI * 0, viewMatrix);
-    _wgpuMatrix.mat4.rotateX(viewMatrix, Math.PI * 0, viewMatrix);
-    _wgpuMatrix.mat4.rotateY(viewMatrix, now * 1, viewMatrix);
+    _wgpuMatrix.mat4.rotateX(viewMatrix, Math.PI * this.rotation.getRotX(), viewMatrix);
+    _wgpuMatrix.mat4.rotateY(viewMatrix, Math.PI * this.rotation.getRotY(), viewMatrix);
+    _wgpuMatrix.mat4.rotateZ(viewMatrix, Math.PI * this.rotation.getRotZ(), viewMatrix);
     _wgpuMatrix.mat4.multiply(this.projectionMatrix, viewMatrix, this.modelViewProjectionMatrix);
     return this.modelViewProjectionMatrix;
   }
-  async loadTex2(device) {
+  async loadTex1(device) {
     return new Promise(async resolve => {
       const response = await fetch('./res/textures/tex1.jpg');
       const imageBitmap = await createImageBitmap(await response.blob());
@@ -6014,21 +6054,21 @@ class MECube {
       resolve();
     });
   }
-  async loadTex1(device) {
+  async loadTex0(texturesPaths, device) {
     return new Promise(async resolve => {
-      const response = await fetch('./res/textures/tex1.jpg');
+      const response = await fetch(texturesPaths[0]);
       const imageBitmap = await createImageBitmap(await response.blob());
       console.log('WHAT IS THIS ', this);
-      this.planetTexture = device.createTexture({
+      this.texture0 = device.createTexture({
         size: [imageBitmap.width, imageBitmap.height, 1],
         format: 'rgba8unorm',
         usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT
       });
-      var planetTexture = this.planetTexture;
+      var texture0 = this.texture0;
       device.queue.copyExternalImageToTexture({
         source: imageBitmap
       }, {
-        texture: planetTexture
+        texture: texture0
       }, [imageBitmap.width, imageBitmap.height]);
       resolve();
     });
@@ -6061,25 +6101,44 @@ class MECube {
   createCubeVertices(options) {
     if (typeof options === 'undefined') {
       var options = {
-        scale: 1
+        scale: 1,
+        useUVShema4x2: false
       };
     }
-    const vertices = new Float32Array([
-    //  position   |  texture coordinate
-    //-------------+----------------------
-    // front face     select the top left image  1, 0.5,   
-
-    -1, 1, 1, 1, 0, 0, 0, 0, -1, -1, 1, 1, 0, 0, 0, 0.5, 1, 1, 1, 1, 0, 0, 0.25, 0, 1, -1, 1, 1, 0, 0, 0.25, 0.5,
-    // right face     select the top middle image
-    1, 1, -1, 1, 0, 0, 0.25, 0, 1, 1, 1, 1, 0, 0, 0.5, 0, 1, -1, -1, 1, 0, 0, 0.25, 0.5, 1, -1, 1, 1, 0, 0, 0.5, 0.5,
-    // back face      select to top right image
-    1, 1, -1, 1, 0, 0, 0.5, 0, 1, -1, -1, 1, 0, 0, 0.5, 0.5, -1, 1, -1, 1, 0, 0, 0.75, 0, -1, -1, -1, 1, 0, 0, 0.75, 0.5,
-    // left face       select the bottom left image
-    -1, 1, 1, 1, 0, 0, 0, 0.5, -1, 1, -1, 1, 0, 0, 0.25, 0.5, -1, -1, 1, 1, 0, 0, 0, 1, -1, -1, -1, 1, 0, 0, 0.25, 1,
-    // bottom face     select the bottom middle image
-    1, -1, 1, 1, 0, 0, 0.25, 0.5, -1, -1, 1, 1, 0, 0, 0.5, 0.5, 1, -1, -1, 1, 0, 0, 0.25, 1, -1, -1, -1, 1, 0, 0, 0.5, 1,
-    // top face        select the bottom right image
-    -1, 1, 1, 1, 0, 0, 0.5, 0.5, 1, 1, 1, 1, 0, 0, 0.75, 0.5, -1, 1, -1, 1, 0, 0, 0.5, 1, 1, 1, -1, 1, 0, 0, 0.75, 1]);
+    let vertices;
+    if (options.useUVShema4x2 == true) {
+      vertices = new Float32Array([
+      //  position   |  texture coordinate
+      //-------------+----------------------
+      // front face     select the top left image  1, 0.5,   
+      -1, 1, 1, 1, 0, 0, 0, 0, -1, -1, 1, 1, 0, 0, 0, 0.5, 1, 1, 1, 1, 0, 0, 0.25, 0, 1, -1, 1, 1, 0, 0, 0.25, 0.5,
+      // right face     select the top middle image
+      1, 1, -1, 1, 0, 0, 0.25, 0, 1, 1, 1, 1, 0, 0, 0.5, 0, 1, -1, -1, 1, 0, 0, 0.25, 0.5, 1, -1, 1, 1, 0, 0, 0.5, 0.5,
+      // back face      select to top right image
+      1, 1, -1, 1, 0, 0, 0.5, 0, 1, -1, -1, 1, 0, 0, 0.5, 0.5, -1, 1, -1, 1, 0, 0, 0.75, 0, -1, -1, -1, 1, 0, 0, 0.75, 0.5,
+      // left face       select the bottom left image
+      -1, 1, 1, 1, 0, 0, 0, 0.5, -1, 1, -1, 1, 0, 0, 0.25, 0.5, -1, -1, 1, 1, 0, 0, 0, 1, -1, -1, -1, 1, 0, 0, 0.25, 1,
+      // bottom face     select the bottom middle image
+      1, -1, 1, 1, 0, 0, 0.25, 0.5, -1, -1, 1, 1, 0, 0, 0.5, 0.5, 1, -1, -1, 1, 0, 0, 0.25, 1, -1, -1, -1, 1, 0, 0, 0.5, 1,
+      // top face        select the bottom right image
+      -1, 1, 1, 1, 0, 0, 0.5, 0.5, 1, 1, 1, 1, 0, 0, 0.75, 0.5, -1, 1, -1, 1, 0, 0, 0.5, 1, 1, 1, -1, 1, 0, 0, 0.75, 1]);
+    } else {
+      vertices = new Float32Array([
+      //  position   |  texture coordinate
+      //-------------+----------------------
+      // front face     select the top left image  1, 0.5,   
+      -1, 1, 1, 1, 0, 0, 0, 0, -1, -1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 1, 0, 1, -1, 1, 1, 0, 0, 1, 1,
+      // right face     select the top middle image
+      1, 1, -1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 1, -1, -1, 1, 0, 0, 1, 0, 1, -1, 1, 1, 0, 0, 1, 1,
+      // back face      select to top right image
+      1, 1, -1, 1, 0, 0, 0, 0, 1, -1, -1, 1, 0, 0, 0, 1, -1, 1, -1, 1, 0, 0, 1, 0, -1, -1, -1, 1, 0, 0, 1, 1,
+      // left face       select the bottom left image
+      -1, 1, 1, 1, 0, 0, 0, 0, -1, 1, -1, 1, 0, 0, 0, 1, -1, -1, 1, 1, 0, 0, 1, 0, -1, -1, -1, 1, 0, 0, 1, 1,
+      // bottom face     select the bottom middle image
+      1, -1, 1, 1, 0, 0, 0, 0, -1, -1, 1, 1, 0, 0, 0, 1, 1, -1, -1, 1, 0, 0, 1, 0, -1, -1, -1, 1, 0, 0, 1, 1,
+      // top face        select the bottom right image
+      -1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, -1, 1, -1, 1, 0, 0, 1, 0, 1, 1, -1, 1, 0, 0, 1, 1]);
+    }
     const indices = new Uint16Array([0, 1, 2, 2, 1, 3,
     // front
     4, 5, 6, 6, 5, 7,
@@ -6116,7 +6175,7 @@ exports.default = MECube;
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.Position = void 0;
+exports.Rotation = exports.Position = void 0;
 // Sub classes for matrix-wgpu
 
 /**
@@ -6267,6 +6326,48 @@ class Position {
   }
 }
 exports.Position = Position;
+class Rotation {
+  constructor(x, y, z) {
+    // Not in use for nwo this is from matrix-engine project [nameUniq]
+    this.nameUniq = null;
+    if (typeof x == 'undefined') x = 0;
+    if (typeof y == 'undefined') y = 0;
+    if (typeof z == 'undefined') z = 0;
+    this.x = x;
+    this.y = y;
+    this.z = z;
+    this.rotationSpeed = {
+      x: 0,
+      y: 0,
+      z: 0
+    };
+  }
+  getRotX() {
+    if (this.rotationSpeed.x == 0) {
+      return this.x;
+    } else {
+      this.x = this.x + this.rotationSpeed.x * 0.001;
+      return this.x;
+    }
+  }
+  getRotY() {
+    if (this.rotationSpeed.y == 0) {
+      return this.y;
+    } else {
+      this.y = this.y + this.rotationSpeed.y * 0.001;
+      return this.y;
+    }
+  }
+  getRotZ() {
+    if (this.rotationSpeed.z == 0) {
+      return this.z;
+    } else {
+      this.z = this.z + this.rotationSpeed.z * 0.001;
+      return this.z;
+    }
+  }
+}
+exports.Rotation = Rotation;
 
 },{}],6:[function(require,module,exports){
 "use strict";
@@ -6278,13 +6379,26 @@ exports.default = void 0;
 var _ball = _interopRequireDefault(require("./engine/ball.js"));
 var _cube = _interopRequireDefault(require("./engine/cube.js"));
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-// import { mat4, vec3 } from 'wgpu-matrix';
-// import { createSphereMesh, SphereLayout } from './src/engine/ballsBuffer.js';
-
 class MatrixEngineWGPU {
   mainRenderBundle = [];
   rbContainer = [];
-  constructor(callback) {
+  frame = () => {};
+  entityArgPass = {
+    loadOp: 'clear',
+    storeOp: 'store',
+    depthLoadOp: 'clear',
+    depthStoreOp: 'store'
+  };
+  constructor(options, callback) {
+    console.log('typeof options ', typeof options);
+    console.log('typeof options ', options);
+    if (typeof options == 'undefined' || typeof options == "function") {
+      this.options = {
+        useSingleRenderPass: true
+      };
+      callback = options;
+    }
+    this.options = options;
     var canvas = document.createElement('canvas');
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
@@ -6311,7 +6425,40 @@ class MatrixEngineWGPU {
       format: presentationFormat,
       alphaMode: 'premultiplied'
     });
+    if (this.options.useSingleRenderPass == true) {
+      this.makeDefaultRenderPassDescriptor();
+      this.frame = this.frameSinglePass;
+    } else {
+      // must be
+      this.frame = this.framePassPerObject;
+    }
     this.run(callback);
+  };
+  makeDefaultRenderPassDescriptor = () => {
+    this.depthTexture = this.device.createTexture({
+      size: [this.canvas.width, this.canvas.height],
+      format: 'depth24plus',
+      usage: GPUTextureUsage.RENDER_ATTACHMENT
+    });
+    this.renderPassDescriptor = {
+      colorAttachments: [{
+        view: undefined,
+        clearValue: {
+          r: 0.0,
+          g: 0.0,
+          b: 0.0,
+          a: 1.0
+        },
+        loadOp: 'clear',
+        storeOp: 'store'
+      }],
+      depthStencilAttachment: {
+        view: this.depthTexture.createView(),
+        depthClearValue: 1.0,
+        depthLoadOp: 'clear',
+        depthStoreOp: 'store'
+      }
+    };
   };
   addCube = o => {
     if (typeof o === 'undefined') {
@@ -6320,8 +6467,46 @@ class MatrixEngineWGPU {
           x: 0,
           y: 0,
           z: -4
-        }
+        },
+        texturesPaths: ['./res/textures/default.png'],
+        rotation: {
+          x: 0,
+          y: 0,
+          z: 0
+        },
+        rotationSpeed: {
+          x: 0,
+          y: 0,
+          z: 0
+        },
+        entityArgPass: this.entityArgPass
       };
+    } else {
+      if (typeof o.position === 'undefined') {
+        o.position = {
+          x: 0,
+          y: 0,
+          z: -4
+        };
+      }
+      if (typeof o.rotation === 'undefined') {
+        o.rotation = {
+          x: 0,
+          y: 0,
+          z: 0
+        };
+      }
+      if (typeof o.rotationSpeed === 'undefined') {
+        o.rotationSpeed = {
+          x: 0,
+          y: 0,
+          z: 0
+        };
+      }
+      if (typeof o.texturesPaths === 'undefined') {
+        o.texturesPaths = ['./res/textures/default.png'];
+      }
+      o.entityArgPass = this.entityArgPass;
     }
     let myCube1 = new _cube.default(this.canvas, this.device, this.context, o);
     this.mainRenderBundle.push(myCube1);
@@ -6333,8 +6518,46 @@ class MatrixEngineWGPU {
           x: 0,
           y: 0,
           z: -4
-        }
+        },
+        texturesPaths: ['./res/textures/default.png'],
+        rotation: {
+          x: 0,
+          y: 0,
+          z: 0
+        },
+        rotationSpeed: {
+          x: 0,
+          y: 0,
+          z: 0
+        },
+        entityArgPass: this.entityArgPass
       };
+    } else {
+      if (typeof o.position === 'undefined') {
+        o.position = {
+          x: 0,
+          y: 0,
+          z: -4
+        };
+      }
+      if (typeof o.rotation === 'undefined') {
+        o.rotation = {
+          x: 0,
+          y: 0,
+          z: 0
+        };
+      }
+      if (typeof o.rotationSpeed === 'undefined') {
+        o.rotationSpeed = {
+          x: 0,
+          y: 0,
+          z: 0
+        };
+      }
+      if (typeof o.texturesPaths === 'undefined') {
+        o.texturesPaths = ['./res/textures/default.png'];
+      }
+      o.entityArgPass = this.entityArgPass;
     }
     let myBall1 = new _ball.default(this.canvas, this.device, this.context, o);
     this.mainRenderBundle.push(myBall1);
@@ -6347,19 +6570,35 @@ class MatrixEngineWGPU {
       callback();
     }, 10);
   }
-  frame = () => {
+  frameSinglePass = () => {
+    console.log('single');
     let commandEncoder = this.device.createCommandEncoder();
     this.rbContainer = [];
     let passEncoder;
     this.mainRenderBundle.forEach((meItem, index) => {
       meItem.draw();
       this.rbContainer.push(meItem.renderBundle);
-      if (index == 0) passEncoder = commandEncoder.beginRenderPass(meItem.renderPassDescriptor);
+      // if(index == 0) passEncoder = commandEncoder.beginRenderPass(meItem.renderPassDescriptor);
     });
-
-    // passEncoder.executeBundles([NIK.renderBundle, NIK2.renderBundle]);
+    this.renderPassDescriptor.colorAttachments[0].view = this.context.getCurrentTexture().createView();
+    passEncoder = commandEncoder.beginRenderPass(this.renderPassDescriptor);
     passEncoder.executeBundles(this.rbContainer);
     passEncoder.end();
+    this.device.queue.submit([commandEncoder.finish()]);
+    requestAnimationFrame(this.frame);
+  };
+  framePassPerObject = () => {
+    console.log('framePassPerObject');
+    let commandEncoder = this.device.createCommandEncoder();
+    this.rbContainer = [];
+    let passEncoder;
+    this.mainRenderBundle.forEach((meItem, index) => {
+      meItem.draw();
+      this.rbContainer.push(meItem.renderBundle);
+      passEncoder = commandEncoder.beginRenderPass(meItem.renderPassDescriptor);
+      passEncoder.executeBundles(this.rbContainer);
+      passEncoder.end();
+    });
     this.device.queue.submit([commandEncoder.finish()]);
     requestAnimationFrame(this.frame);
   };

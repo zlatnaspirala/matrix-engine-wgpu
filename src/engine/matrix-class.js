@@ -169,3 +169,45 @@ export class Position {
   }
 }
 
+export class Rotation {
+
+  constructor(x, y, z) {
+    // Not in use for nwo this is from matrix-engine project [nameUniq]
+    this.nameUniq = null;
+    if(typeof x == 'undefined') x = 0;
+    if(typeof y == 'undefined') y = 0;
+    if(typeof z == 'undefined') z = 0;
+    this.x = x;
+    this.y = y;
+    this.z = z;
+    this.rotationSpeed = {x: 0, y: 0, z: 0}
+  }
+
+  getRotX () {
+    if (this.rotationSpeed.x == 0) {
+      return this.x;
+    } else {
+      this.x = this.x + this.rotationSpeed.x* 0.001;
+      return this.x;
+    }
+  }
+
+  getRotY () {
+    if (this.rotationSpeed.y == 0) {
+      return this.y;
+    } else {
+      this.y = this.y + this.rotationSpeed.y * 0.001;
+      return this.y;
+    }
+  }
+
+  getRotZ () {
+    if (this.rotationSpeed.z == 0) {
+      return this.z;
+    } else {
+      this.z = this.z + this.rotationSpeed.z* 0.001;
+      return this.z;
+    }
+  }
+
+}

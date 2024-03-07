@@ -1,6 +1,6 @@
 import {BALL_SHADER} from "../shaders/shaders";
 import {mat4, vec3} from 'wgpu-matrix';
-import {Position} from "./matrix-class";
+import {Position, Rotation} from "./matrix-class";
 
 var SphereLayout = {
   vertexStride: 8 * 4,
@@ -15,12 +15,25 @@ export default class MECube {
     this.device = device;
     this.context = context;
 
+    this.entityArgPass = o.entityArgPass;
+
+    console.log('passed args', o.entityArgPass)
     this.shaderModule = device.createShaderModule({
       code: BALL_SHADER,
     });
 
+    this.texturesPaths = [];
+
+    o.texturesPaths.forEach((t) => {
+      this.texturesPaths.push(t)
+    })
+
     this.presentationFormat = navigator.gpu.getPreferredCanvasFormat();
-    this.position = new Position(o.position.x, o.position.y, o.position.z)
+    this.position = new Position(o.position.x, o.position.y, o.position.z);
+    this.rotation = new Rotation(o.rotation.x, o.rotation.y, o.rotation.z);
+    this.rotation.rotationSpeed.x = o.rotationSpeed.x;
+    this.rotation.rotationSpeed.y = o.rotationSpeed.y;
+    this.rotation.rotationSpeed.z = o.rotationSpeed.z;
     this.pipeline = device.createRenderPipeline({
       layout: 'auto',
       vertex: {
@@ -74,7 +87,7 @@ export default class MECube {
     });
 
     // Fetch the images and upload them into a GPUTexture.
-    this.planetTexture = null;
+    this.texture0 = null;
     this.moonTexture = null;
 
     this.settings = {
@@ -82,8 +95,8 @@ export default class MECube {
       asteroidCount: 15,
     };
 
-    this.loadTex1(device).then(() => {
-      this.loadTex2(device).then(() => {
+    this.loadTex0(this.texturesPaths, device).then(() => {
+      this.loadTex1(device).then(() => {
 
         this.sampler = device.createSampler({
           magFilter: 'linear',
@@ -95,7 +108,7 @@ export default class MECube {
 
         // Create one large central planet surrounded by a large ring of asteroids
         this.planet = this.createSphereRenderable(1.0);
-        this.planet.bindGroup = this.createSphereBindGroup(this.planetTexture, this.transform);
+        this.planet.bindGroup = this.createSphereBindGroup(this.texture0, this.transform);
 
         var asteroids = [
           this.createSphereRenderable(0.2, 8, 6, 0.15),
@@ -103,23 +116,21 @@ export default class MECube {
         ];
 
         this.renderables = [this.planet];
-
         // this.ensureEnoughAsteroids(asteroids, this.transform);
-
         this.renderPassDescriptor = {
           colorAttachments: [
             {
               view: undefined,
               clearValue: {r: 0.0, g: 0.0, b: 0.0, a: 1.0},
-              loadOp: 'clear',
-              storeOp: 'store',
+              loadOp:  this.entityArgPass.loadOp,
+              storeOp: this.entityArgPass.storeOp,
             },
           ],
           depthStencilAttachment: {
             view: this.depthTexture.createView(),
             depthClearValue: 1.0,
-            depthLoadOp: 'clear',
-            depthStoreOp: 'store',
+            depthLoadOp: this.entityArgPass.depthLoadOp,
+            depthStoreOp: this.entityArgPass.depthStoreOp,
           },
         };
 
@@ -175,7 +186,7 @@ export default class MECube {
   }
 
   updateRenderBundle() {
-    console.log('sss')
+    console.log('[CUBE] updateRenderBundle')
     const renderBundleEncoder = this.device.createRenderBundleEncoder({
       colorFormats: [this.presentationFormat],
       depthStencilFormat: 'depth24plus',
@@ -246,17 +257,22 @@ export default class MECube {
   }
 
   getTransformationMatrix(pos) {
+    // const now = Date.now() / 1000;
+
     const viewMatrix = mat4.identity();
+
     mat4.translate(viewMatrix, vec3.fromValues(pos.x, pos.y, pos.z), viewMatrix);
-    const now = Date.now() / 1000;
-    mat4.rotateZ(viewMatrix, Math.PI * 0, viewMatrix);
-    mat4.rotateX(viewMatrix, Math.PI * 0, viewMatrix);
-    mat4.rotateY(viewMatrix, now * 1, viewMatrix);
+
+    mat4.rotateX(viewMatrix, Math.PI * this.rotation.getRotX(), viewMatrix);
+    mat4.rotateY(viewMatrix, Math.PI * this.rotation.getRotY(), viewMatrix);
+    mat4.rotateZ(viewMatrix, Math.PI * this.rotation.getRotZ(), viewMatrix);
+
     mat4.multiply(this.projectionMatrix, viewMatrix, this.modelViewProjectionMatrix);
     return this.modelViewProjectionMatrix;
+
   }
 
-  async loadTex2(device) {
+  async loadTex1(device) {
     return new Promise(async (resolve) => {
       const response = await fetch('./res/textures/tex1.jpg');
       const imageBitmap = await createImageBitmap(await response.blob());
@@ -278,12 +294,12 @@ export default class MECube {
     })
   }
 
-  async loadTex1(device) {
+  async loadTex0(texturesPaths, device) {
     return new Promise(async (resolve) => {
-      const response = await fetch('./res/textures/tex1.jpg');
+      const response = await fetch(texturesPaths[0]);
       const imageBitmap = await createImageBitmap(await response.blob());
       console.log('WHAT IS THIS ', this)
-      this.planetTexture = device.createTexture({
+      this.texture0 = device.createTexture({
         size: [imageBitmap.width, imageBitmap.height, 1],
         format: 'rgba8unorm',
         usage:
@@ -291,10 +307,10 @@ export default class MECube {
           GPUTextureUsage.COPY_DST |
           GPUTextureUsage.RENDER_ATTACHMENT,
       });
-      var planetTexture = this.planetTexture
+      var texture0 = this.texture0
       device.queue.copyExternalImageToTexture(
         {source: imageBitmap},
-        {texture: planetTexture},
+        {texture: texture0},
         [imageBitmap.width, imageBitmap.height]
       );
       resolve()
@@ -333,20 +349,21 @@ export default class MECube {
   createCubeVertices(options) {
     if(typeof options === 'undefined') {
       var options = {
-        scale: 1
+        scale: 1,
+        useUVShema4x2: false
       }
     }
 
-    const vertices = new Float32Array([
+    let vertices;
+    if(options.useUVShema4x2 == true) {
+      vertices = new Float32Array([
       //  position   |  texture coordinate
       //-------------+----------------------
       // front face     select the top left image  1, 0.5,   
-
       -1, 1, 1, 1, 0, 0, 0, 0,
       -1, -1, 1, 1, 0, 0, 0, 0.5,
       1, 1, 1, 1, 0, 0, 0.25, 0,
       1, -1, 1, 1, 0, 0, 0.25, 0.5,
-
       // right face     select the top middle image
       1, 1, -1, 1, 0, 0, 0.25, 0,
       1, 1, 1, 1, 0, 0, 0.5, 0,
@@ -373,6 +390,43 @@ export default class MECube {
       -1, 1, -1, 1, 0, 0, 0.5, 1,
       1, 1, -1, 1, 0, 0, 0.75, 1,
     ]);
+    } else {
+      vertices = new Float32Array([
+        //  position   |  texture coordinate
+        //-------------+----------------------
+        // front face     select the top left image  1, 0.5,   
+        -1, 1, 1, 1, 0, 0, 0, 0,
+        -1, -1, 1, 1, 0, 0, 0, 1,
+        1, 1, 1, 1, 0, 0, 1, 0,
+        1, -1, 1, 1, 0, 0, 1, 1,
+        // right face     select the top middle image
+        1, 1, -1, 1, 0, 0, 0, 0,
+        1, 1, 1, 1, 0, 0, 0, 1,
+        1, -1, -1, 1, 0, 0, 1, 0,
+        1, -1, 1, 1, 0, 0, 1, 1,
+        // back face      select to top right image
+        1, 1, -1, 1, 0, 0, 0, 0,
+        1, -1, -1, 1, 0, 0, 0, 1,
+        -1, 1, -1, 1, 0, 0, 1, 0,
+        -1, -1, -1, 1, 0, 0, 1, 1,
+        // left face       select the bottom left image
+        -1, 1, 1, 1, 0, 0, 0, 0,
+        -1, 1, -1, 1, 0, 0, 0, 1,
+        -1, -1, 1, 1, 0, 0, 1, 0,
+        -1, -1, -1, 1, 0, 0, 1, 1,
+        // bottom face     select the bottom middle image
+        1, -1, 1, 1, 0, 0, 0, 0,
+        -1, -1, 1, 1, 0, 0, 0, 1,
+        1, -1, -1, 1, 0, 0, 1, 0,
+        -1, -1, -1, 1, 0, 0, 1, 1,
+        // top face        select the bottom right image
+        -1, 1, 1, 1, 0, 0, 0, 0,
+        1, 1, 1, 1, 0, 0, 0, 1,
+        -1, 1, -1, 1, 0, 0, 1, 0,
+        1, 1, -1, 1, 0, 0, 1, 1,
+      ])
+    }
+  
 
     const indices = new Uint16Array([
       0, 1, 2, 2, 1, 3,  // front

@@ -1,12 +1,14 @@
 import {BALL_SHADER} from "../shaders/shaders";
 import {mat4, vec3} from 'wgpu-matrix';
-import {Position} from "./matrix-class";
+import {Position, Rotation} from "./matrix-class";
 
 export default class MEBall {
 
   constructor(canvas, device, context, o) {
     this.context = context;
     this.device = device;
+
+    this.entityArgPass = o.entityArgPass;
 
     this.SphereLayout = {
       vertexStride: 8 * 4,
@@ -15,7 +17,18 @@ export default class MEBall {
       uvOffset: 6 * 4,
     };
 
+    this.texturesPaths = [];
+
+    o.texturesPaths.forEach((t) => {
+      this.texturesPaths.push(t)
+    })
+
     this.position = new Position(o.position.x, o.position.y, o.position.z)
+    this.rotation = new Rotation(o.rotation.x, o.rotation.y, o.rotation.z);
+    this.rotation.rotationSpeed.x = o.rotationSpeed.x;
+    this.rotation.rotationSpeed.y = o.rotationSpeed.y;
+    this.rotation.rotationSpeed.z = o.rotationSpeed.z;
+
     this.shaderModule = device.createShaderModule({code: BALL_SHADER});
     this.presentationFormat = navigator.gpu.getPreferredCanvasFormat();
 
@@ -90,7 +103,7 @@ export default class MEBall {
     });
 
     // Fetch the images and upload them into a GPUTexture.
-    this.planetTexture = null;
+    this.texture0 = null;
     this.moonTexture = null;
 
     this.settings = {
@@ -98,8 +111,8 @@ export default class MEBall {
       asteroidCount: 15,
     };
 
-    this.loadTex1(device).then(() => {
-      this.loadTex2(device).then(() => {
+    this.loadTex0(this.texturesPaths, device).then(() => {
+      this.loadTex1(device).then(() => {
 
         console.log('NICE THIS', this)
         this.sampler = device.createSampler({
@@ -112,7 +125,7 @@ export default class MEBall {
 
         // Create one large central planet surrounded by a large ring of asteroids
         this.planet = this.createSphereRenderable(1.0);
-        this.planet.bindGroup = this.createSphereBindGroup(this.planetTexture, this.transform);
+        this.planet.bindGroup = this.createSphereBindGroup(this.texture0, this.transform);
 
         var asteroids = [
           this.createSphereRenderable(0.2, 8, 6, 0.15),
@@ -122,23 +135,20 @@ export default class MEBall {
         this.renderables = [this.planet];
 
         // this.ensureEnoughAsteroids(asteroids, this.transform);
-
         this.renderPassDescriptor = {
           colorAttachments: [
             {
-              view: undefined, // Assigned later
-
+              view: undefined,
               clearValue: {r: 0.0, g: 0.0, b: 0.0, a: 1.0},
-              loadOp: 'clear',
-              storeOp: 'store',
+              loadOp:  this.entityArgPass.loadOp,
+              storeOp: this.entityArgPass.storeOp,
             },
           ],
           depthStencilAttachment: {
             view: this.depthTexture.createView(),
-
             depthClearValue: 1.0,
-            depthLoadOp: 'clear',
-            depthStoreOp: 'store',
+            depthLoadOp: this.entityArgPass.depthLoadOp,
+            depthStoreOp: this.entityArgPass.depthStoreOp,
           },
         };
 
@@ -275,15 +285,15 @@ export default class MEBall {
     mat4.translate(viewMatrix, vec3.fromValues(pos.x, pos.y, pos.z), viewMatrix);
     const now = Date.now() / 1000;
 
-    mat4.rotateZ(viewMatrix, Math.PI * 0.1, viewMatrix);
-    mat4.rotateX(viewMatrix, Math.PI * 0.1, viewMatrix);
-    mat4.rotateY(viewMatrix, now * 0.05, viewMatrix);
+    mat4.rotateX(viewMatrix, Math.PI * this.rotation.getRotX(), viewMatrix);
+    mat4.rotateY(viewMatrix, Math.PI * this.rotation.getRotY(), viewMatrix);
+    mat4.rotateZ(viewMatrix, Math.PI * this.rotation.getRotZ(), viewMatrix);
 
     mat4.multiply(this.projectionMatrix, viewMatrix, this.modelViewProjectionMatrix);
     return this.modelViewProjectionMatrix;
   }
 
-  async loadTex2(device) {
+  async loadTex1(device) {
     return new Promise(async (resolve) => {
       const response = await fetch('./res/textures/tex1.jpg');
       const imageBitmap = await createImageBitmap(await response.blob());
@@ -306,12 +316,12 @@ export default class MEBall {
     })
   }
 
-  async loadTex1(device) {
+  async loadTex0(paths, device) {
     return new Promise(async (resolve) => {
-      const response = await fetch('./res/textures/tex1.jpg');
+      const response = await fetch(paths[0]);
       const imageBitmap = await createImageBitmap(await response.blob());
-      console.log('WHAT IS THIS ', this)
-      this.planetTexture = device.createTexture({
+      console.log('loadTex0 WHAT IS THIS -> ', this)
+      this.texture0 = device.createTexture({
         size: [imageBitmap.width, imageBitmap.height, 1],
         format: 'rgba8unorm',
         usage:
@@ -319,10 +329,10 @@ export default class MEBall {
           GPUTextureUsage.COPY_DST |
           GPUTextureUsage.RENDER_ATTACHMENT,
       });
-      var planetTexture = this.planetTexture
+      var texture0 = this.texture0
       device.queue.copyExternalImageToTexture(
         {source: imageBitmap},
-        {texture: planetTexture},
+        {texture: texture0},
         [imageBitmap.width, imageBitmap.height]
       );
       resolve()
@@ -396,12 +406,12 @@ export default class MEBall {
       }
     }
 
-
     return {
       vertices: new Float32Array(vertices),
       indices: new Uint16Array(indices),
     };
   }
+
   // Render bundles function as partial, limited render passes, so we can use the
   // same code both to render the scene normally and to build the render bundle.
   renderScene(passEncoder) {
