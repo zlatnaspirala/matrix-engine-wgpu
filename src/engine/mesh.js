@@ -1,7 +1,8 @@
-import {BALL_SHADER} from "../shaders/shaders";
+import {BALL_SHADER, vertexShadowWGSL} from "../shaders/shaders";
 import {mat4, vec3} from 'wgpu-matrix';
 import {Position, Rotation} from "./matrix-class";
 import {createInputHandler} from "./engine";
+import {makeMeshData1} from "./matrix-mesh";
 
 var SphereLayout = {
   vertexStride: 8 * 4,
@@ -10,13 +11,14 @@ var SphereLayout = {
   uvOffset: 6 * 4,
 };
 
-export default class MECube {
+export default class MEMesh {
 
   constructor(canvas, device, context, o) {
     this.device = device;
     this.context = context;
-
     this.entityArgPass = o.entityArgPass;
+
+    this.mesh = o.mesh;
 
     // The input handler
     this.inputHandler = createInputHandler(window, canvas);
@@ -50,6 +52,7 @@ export default class MECube {
     this.rotation.rotationSpeed.z = o.rotationSpeed.z;
 
     this.scale = o.scale;
+
     this.pipeline = device.createRenderPipeline({
       layout: 'auto',
       vertex: {
@@ -96,6 +99,51 @@ export default class MECube {
       usage: GPUTextureUsage.RENDER_ATTACHMENT,
     });
 
+    // new
+
+    this.mesh = makeMeshData1(this.mesh)
+    this.shadowDepthTextureSize = 1024;
+    // Create the model vertex buffer.
+    const vertexBuffer = device.createBuffer({
+      size: this.mesh.positions.length * 3 * 2 * Float32Array.BYTES_PER_ELEMENT,
+      usage: GPUBufferUsage.VERTEX,
+      mappedAtCreation: true,
+    });
+    {
+      console.log('.....')
+      const mapping = new Float32Array(vertexBuffer.getMappedRange());
+      for(let i = 0;i < this.mesh.positions.length;++i) {
+        mapping.set(this.mesh.positions[i], 6 * i);
+        mapping.set(this.mesh.normals[i], 6 * i + 3);
+      }
+      vertexBuffer.unmap();
+    }
+
+    // Create the model index buffer.
+    const indexCount = this.mesh.triangles.length * 3;
+    const indexBuffer = device.createBuffer({
+      size: indexCount * Uint16Array.BYTES_PER_ELEMENT,
+      usage: GPUBufferUsage.INDEX,
+      mappedAtCreation: true,
+    });
+    {
+      const mapping = new Uint16Array(indexBuffer.getMappedRange());
+      for(let i = 0;i < this.mesh.triangles.length;++i) {
+        mapping.set(this.mesh.triangles[i], 3 * i);
+      }
+      indexBuffer.unmap();
+    }
+
+    // Create the depth texture for rendering/sampling the shadow map.
+    let shadowDepthTexture = device.createTexture({
+      size: [this.shadowDepthTextureSize, this.shadowDepthTextureSize, 1],
+      usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING,
+      format: 'depth32float',
+    });
+    this.shadowDepthTextureView = shadowDepthTexture.createView();
+
+    // - end new
+
     this.uniformBufferSize = 4 * 16; // 4x4 matrix
     this.uniformBuffer = device.createBuffer({
       size: this.uniformBufferSize,
@@ -108,8 +156,15 @@ export default class MECube {
 
     this.settings = {
       useRenderBundles: true,
-      asteroidCount: 15,
+      asteroidCount: 2,
     };
+
+
+    // new
+
+    this.createShadowsPipline();
+
+    // new
 
     this.loadTex0(this.texturesPaths, device).then(() => {
       this.loadTex1(device).then(() => {
@@ -215,7 +270,8 @@ export default class MECube {
   }
 
   createGeometry(options) {
-    const mesh = this.createCubeVertices(options);
+    console.log('TEST ....')
+    const mesh = this.mesh;
     // Create a vertex buffer from the sphere data.
     const vertices = this.device.createBuffer({
       size: mesh.vertices.byteLength,
@@ -366,103 +422,192 @@ export default class MECube {
     }
   }
 
-  createCubeVertices(options) {
-    if(typeof options === 'undefined') {
-      var options = {
-        scale: 1,
-        useUVShema4x2: false
-      }
-    }
-    if(typeof options.scale === 'undefined') options.scale = 1;
+  createShadowsPipline() {
 
-    let vertices;
-    if(options.useUVShema4x2 == true) {
-      vertices = new Float32Array([
-        //  position   |  texture coordinate
-        //-------------+----------------------
-        // front face     select the top left image  1, 0.5,   
-        -1, 1, 1, 1, 0, 0, 0, 0,
-        -1, -1, 1, 1, 0, 0, 0, 0.5,
-        1, 1, 1, 1, 0, 0, 0.25, 0,
-        1, -1, 1, 1, 0, 0, 0.25, 0.5,
-        // right face     select the top middle image
-        1, 1, -1, 1, 0, 0, 0.25, 0,
-        1, 1, 1, 1, 0, 0, 0.5, 0,
-        1, -1, -1, 1, 0, 0, 0.25, 0.5,
-        1, -1, 1, 1, 0, 0, 0.5, 0.5,
-        // back face      select to top right image
-        1, 1, -1, 1, 0, 0, 0.5, 0,
-        1, -1, -1, 1, 0, 0, 0.5, 0.5,
-        -1, 1, -1, 1, 0, 0, 0.75, 0,
-        -1, -1, -1, 1, 0, 0, 0.75, 0.5,
-        // left face       select the bottom left image
-        -1, 1, 1, 1, 0, 0, 0, 0.5,
-        -1, 1, -1, 1, 0, 0, 0.25, 0.5,
-        -1, -1, 1, 1, 0, 0, 0, 1,
-        -1, -1, -1, 1, 0, 0, 0.25, 1,
-        // bottom face     select the bottom middle image
-        1, -1, 1, 1, 0, 0, 0.25, 0.5,
-        -1, -1, 1, 1, 0, 0, 0.5, 0.5,
-        1, -1, -1, 1, 0, 0, 0.25, 1,
-        -1, -1, -1, 1, 0, 0, 0.5, 1,
-        // top face        select the bottom right image
-        -1, 1, 1, 1, 0, 0, 0.5, 0.5,
-        1, 1, 1, 1, 0, 0, 0.75, 0.5,
-        -1, 1, -1, 1, 0, 0, 0.5, 1,
-        1, 1, -1, 1, 0, 0, 0.75, 1,
-      ]);
-    } else {
-      vertices = new Float32Array([
-        //  position                                                   |  texture coordinate
-        //-------------                                              +----------------------
-        // front face     select the top left image  1, 0.5,   
-        -1 * options.scale, 1 * options.scale, 1 * options.scale,       1, 0, 0, 0, 0,
-        -1 * options.scale, -1 * options.scale, 1 * options.scale,      1, 0, 0, 0, 1,
-        1 * options.scale, 1 * options.scale, 1 * options.scale,        1, 0, 0, 1, 0,
-        1 * options.scale, -1 * options.scale, 1 * options.scale,       1, 0, 0, 1, 1,
-        // right face     select the top middle image
-        1 * options.scale, 1 * options.scale, -1 * options.scale,       1, 0, 0, 0, 0,
-        1 * options.scale, 1 * options.scale, 1 * options.scale,        1, 0, 0, 0, 1,
-        1 * options.scale, -1 * options.scale, -1 * options.scale,      1, 0, 0, 1, 0,
-        1 * options.scale, -1 * options.scale, 1 * options.scale,       1, 0, 0, 1, 1,
-        // back face      select to top right image
-        1 * options.scale, 1 * options.scale, -1 * options.scale,       1, 0, 0, 0, 0,
-        1 * options.scale, -1 * options.scale, -1 * options.scale,      1, 0, 0, 0, 1,
-        -1 * options.scale, 1 * options.scale, -1 * options.scale,      1, 0, 0, 1, 0,
-        -1 * options.scale, -1 * options.scale, -1 * options.scale,     1, 0, 0, 1, 1,
-        // left face       select the bottom left image
-        -1 * options.scale, 1 * options.scale, 1 * options.scale,       1, 0, 0, 0, 0,
-        -1 * options.scale, 1 * options.scale, -1 * options.scale,      1, 0, 0, 0, 1,
-        -1 * options.scale, -1 * options.scale, 1 * options.scale,      1, 0, 0, 1, 0,
-        -1 * options.scale, -1 * options.scale, -1 * options.scale,     1, 0, 0, 1, 1,
-        // bottom face     select the bottom middle image
-        1 * options.scale, -1 * options.scale, 1 * options.scale,       1, 0, 0, 0, 0,
-        -1 * options.scale, -1 * options.scale, 1 * options.scale,      1, 0, 0, 0, 1,
-        1 * options.scale, -1 * options.scale, -1 * options.scale,      1, 0, 0, 1, 0,
-        -1 * options.scale, -1 * options.scale, -1 * options.scale,     1, 0, 0, 1, 1,
-        // top face        select the bottom right image
-        -1 * options.scale, 1 * options.scale, 1 * options.scale,       1, 0, 0, 0, 0,
-        1 * options.scale, 1 * options.scale, 1 * options.scale,        1, 0, 0, 0, 1,
-        -1 * options.scale, 1 * options.scale, -1 * options.scale,      1, 0, 0, 1, 0,
-        1 * options.scale, 1 * options.scale, -1 * options.scale,       1, 0, 0, 1, 1,
-      ])
-    }
+    // Create some common descriptors used for both the shadow pipeline
+    // and the color rendering pipeline.
+    const vertexBuffers = [
+      {
+        arrayStride: Float32Array.BYTES_PER_ELEMENT * 6,
+        attributes: [
+          {
+            // position
+            shaderLocation: 0,
+            offset: 0,
+            format: 'float32x3',
+          },
+          {
+            // normal
+            shaderLocation: 1,
+            offset: Float32Array.BYTES_PER_ELEMENT * 3,
+            format: 'float32x3',
+          },
+        ],
+      },
+    ];
 
-
-    const indices = new Uint16Array([
-      0, 1, 2, 2, 1, 3,  // front
-      4, 5, 6, 6, 5, 7,  // right
-      8, 9, 10, 10, 9, 11,  // back
-      12, 13, 14, 14, 13, 15,  // left
-      16, 17, 18, 18, 17, 19,  // bottom
-      20, 21, 22, 22, 21, 23,  // top
-    ]);
-
-    return {
-      vertices,
-      indices,
-      numVertices: indices.length,
+    const primitive = {
+      topology: 'triangle-list',
+      cullMode: 'back',
     };
+    const uniformBufferBindGroupLayout = this.device.createBindGroupLayout({
+      entries: [
+        {
+          binding: 0,
+          visibility: GPUShaderStage.VERTEX,
+          buffer: {
+            type: 'uniform',
+          },
+        },
+      ],
+    });
+
+    this.shadowPipeline = this.device.createRenderPipeline({
+      layout: this.device.createPipelineLayout({
+        bindGroupLayouts: [
+          uniformBufferBindGroupLayout,
+          uniformBufferBindGroupLayout,
+        ],
+      }),
+      vertex: {
+        module: this.device.createShaderModule({
+          code: vertexShadowWGSL,
+        }),
+        buffers: vertexBuffers,
+      },
+      depthStencil: {
+        depthWriteEnabled: true,
+        depthCompare: 'less',
+        format: 'depth32float',
+      },
+      primitive,
+    });
+
+    //
+
+
+    // Create a bind group layout which holds the scene uniforms and
+    // the texture+sampler for depth. We create it manually because the WebPU
+    // implementation doesn't infer this from the shader (yet).
+    const bglForRender = this.device.createBindGroupLayout({
+      entries: [
+        {
+          binding: 0,
+          visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
+          buffer: {
+            type: 'uniform',
+          },
+        },
+        {
+          binding: 1,
+          visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
+          texture: {
+            sampleType: 'depth',
+          },
+        },
+        {
+          binding: 2,
+          visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
+          sampler: {
+            type: 'comparison',
+          },
+        },
+      ],
+    });
+
+
+    const modelUniformBuffer = this.device.createBuffer({
+      size: 4 * 16, // 4x4 matrix
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+    });
+
+    const sceneUniformBuffer = this.device.createBuffer({
+      // Two 4x4 viewProj matrices,
+      // one for the camera and one for the light.
+      // Then a vec3 for the light position.
+      // Rounded to the nearest multiple of 16.
+      size: 2 * 4 * 16 + 4 * 4,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+    });
+
+    const sceneBindGroupForShadow = this.device.createBindGroup({
+      layout: uniformBufferBindGroupLayout,
+      entries: [
+        {
+          binding: 0,
+          resource: {
+            buffer: sceneUniformBuffer,
+          },
+        },
+      ],
+    });
+
+    const sceneBindGroupForRender = this.device.createBindGroup({
+      layout: bglForRender,
+      entries: [
+        {
+          binding: 0,
+          resource: {
+            buffer: sceneUniformBuffer,
+          },
+        },
+        {
+          binding: 1,
+          resource: this.shadowDepthTextureView,
+        },
+        {
+          binding: 2,
+          resource: this.device.createSampler({
+            compare: 'less',
+          }),
+        },
+      ],
+    });
+
+    const modelBindGroup = this.device.createBindGroup({
+      layout: uniformBufferBindGroupLayout,
+      entries: [
+        {
+          binding: 0,
+          resource: {
+            buffer: modelUniformBuffer,
+          },
+        },
+      ],
+    });
+
+    //
+
+
+    this.createLight()
+
+    //
+
+  }
+
+  createLight() {
+
+    const upVector = vec3.fromValues(0, 1, 0);
+    const origin = vec3.fromValues(0, 0, 0);
+
+    this.lightPosition = vec3.fromValues(50, 100, -100);
+    this.lightViewMatrix = mat4.lookAt(this.lightPosition, origin, upVector);
+    this.lightProjectionMatrix = mat4.create();
+    {
+      const left = -80;
+      const right = 80;
+      const bottom = -80;
+      const top = 80;
+      const near = -200;
+      const far = 300;
+      mat4.ortho(left, right, bottom, top, near, far, this.lightProjectionMatrix);
+    }
+
+    this.lightViewProjMatrix = mat4.multiply(
+      this.lightProjectionMatrix,
+      this.lightViewMatrix
+    );
+
   }
 
   draw = () => {

@@ -1,12 +1,25 @@
 import {BALL_SHADER} from "../shaders/shaders";
 import {mat4, vec3} from 'wgpu-matrix';
 import {Position, Rotation} from "./matrix-class";
+import {createInputHandler} from "./engine";
 
 export default class MEBall {
 
   constructor(canvas, device, context, o) {
     this.context = context;
     this.device = device;
+
+    // The input handler
+    this.inputHandler = createInputHandler(window, canvas);
+    this.cameras = o.cameras;
+    this.scale = o.scale;
+    console.log('passed : o.mainCameraParams.responseCoef ', o.mainCameraParams.responseCoef)
+    this.cameraParams = {
+      type: o.mainCameraParams.type,
+      responseCoef: o.mainCameraParams.responseCoef
+    } // |  WASD 'arcball' };
+
+    this.lastFrameMS = 0;
 
     this.entityArgPass = o.entityArgPass;
 
@@ -113,8 +126,6 @@ export default class MEBall {
 
     this.loadTex0(this.texturesPaths, device).then(() => {
       this.loadTex1(device).then(() => {
-
-        console.log('NICE THIS', this)
         this.sampler = device.createSampler({
           magFilter: 'linear',
           minFilter: 'linear',
@@ -124,12 +135,11 @@ export default class MEBall {
         mat4.identity(this.transform);
 
         // Create one large central planet surrounded by a large ring of asteroids
-        this.planet = this.createSphereRenderable(1.0);
+        this.planet = this.createGeometry(this.scale);
         this.planet.bindGroup = this.createSphereBindGroup(this.texture0, this.transform);
 
         var asteroids = [
-          this.createSphereRenderable(0.2, 8, 6, 0.15),
-          this.createSphereRenderable(0.13, 8, 6, 0.15)
+          this.createGeometry(12, 8, 6, 0.15),
         ];
 
         this.renderables = [this.planet];
@@ -218,7 +228,7 @@ export default class MEBall {
     this.renderBundle = renderBundleEncoder.finish();
   }
 
-  createSphereRenderable(radius, widthSegments = 8, heightSegments = 4, randomness = 0) {
+  createGeometry(radius, widthSegments = 8, heightSegments = 4, randomness = 0) {
 
     const sphereMesh = this.createSphereMesh(radius, widthSegments, heightSegments, randomness);
     // Create a vertex buffer from the sphere data.
@@ -280,10 +290,16 @@ export default class MEBall {
   }
 
   getTransformationMatrix(pos) {
+    // const viewMatrix = mat4.identity();
+    const now = Date.now();
+    const deltaTime = (now - this.lastFrameMS) / this.cameraParams.responseCoef;
+    this.lastFrameMS = now;
 
-    const viewMatrix = mat4.identity();
+    // const viewMatrix = mat4.identity(); ORI
+    const camera = this.cameras[this.cameraParams.type];
+    const viewMatrix = camera.update(deltaTime, this.inputHandler());
+
     mat4.translate(viewMatrix, vec3.fromValues(pos.x, pos.y, pos.z), viewMatrix);
-    const now = Date.now() / 1000;
 
     mat4.rotateX(viewMatrix, Math.PI * this.rotation.getRotX(), viewMatrix);
     mat4.rotateY(viewMatrix, Math.PI * this.rotation.getRotY(), viewMatrix);

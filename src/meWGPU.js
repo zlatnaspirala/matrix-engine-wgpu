@@ -1,11 +1,16 @@
+import {vec3} from "wgpu-matrix";
 import MEBall from "./engine/ball.js";
 import MECube from './engine/cube.js';
+import {ArcballCamera, WASDCamera} from "./engine/engine.js";
+import MEMesh from "./engine/mesh.js";
 
 export default class MatrixEngineWGPU {
 
   mainRenderBundle = [];
   rbContainer = [];
   frame = () => {};
+
+  entityHolder = [];
 
   entityArgPass = {
     loadOp: 'clear',
@@ -14,12 +19,13 @@ export default class MatrixEngineWGPU {
     depthStoreOp: 'store'
   }
 
+  // The input handler
   constructor(options, callback) {
     // console.log('typeof options ', typeof options )
     if(typeof options == 'undefined' || typeof options == "function") {
       this.options = {
         useSingleRenderPass: true,
-        canvasSize: 'fullscreen' // | [w,h]
+        canvasSize: 'fullscreen'
       }
       callback = options;
     }
@@ -35,6 +41,19 @@ export default class MatrixEngineWGPU {
       canvas.height = this.options.canvasSize.h;
     }
     document.body.append(canvas)
+
+    // The camera types
+    const initialCameraPosition = vec3.create(0, 0, 0);
+    this.mainCameraParams = {
+      type: 'WASD',
+      responseCoef: 2000
+    }
+
+    this.cameras = {
+      arcball: new ArcballCamera({position: initialCameraPosition}),
+      WASD: new WASDCamera({position: initialCameraPosition}),
+    };
+
     this.init({canvas, callback})
   }
 
@@ -95,18 +114,24 @@ export default class MatrixEngineWGPU {
   addCube = (o) => {
     if(typeof o === 'undefined') {
       var o = {
+        scale: 1,
         position: {x: 0, y: 0, z: -4},
         texturesPaths: ['./res/textures/default.png'],
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
-        entityArgPass: this.entityArgPass
+        entityArgPass: this.entityArgPass,
+        cameras: this.cameras,
+        mainCameraParams: this.mainCameraParams
       }
     } else {
       if(typeof o.position === 'undefined') {o.position = {x: 0, y: 0, z: -4}}
       if(typeof o.rotation === 'undefined') {o.rotation = {x: 0, y: 0, z: 0}}
       if(typeof o.rotationSpeed === 'undefined') {o.rotationSpeed = {x: 0, y: 0, z: 0}}
       if(typeof o.texturesPaths === 'undefined') {o.texturesPaths = ['./res/textures/default.png']}
+      if(typeof o.scale === 'undefined') {o.scale = 1;}
+      if(typeof o.mainCameraParams === 'undefined') {o.mainCameraParams = this.mainCameraParams}
       o.entityArgPass = this.entityArgPass;
+      o.cameras = this.cameras;
     }
     let myCube1 = new MECube(this.canvas, this.device, this.context, o)
     this.mainRenderBundle.push(myCube1);
@@ -115,35 +140,63 @@ export default class MatrixEngineWGPU {
   addBall = (o) => {
     if(typeof o === 'undefined') {
       var o = {
+        scale: 1,
         position: {x: 0, y: 0, z: -4},
         texturesPaths: ['./res/textures/default.png'],
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
-        entityArgPass: this.entityArgPass
+        entityArgPass: this.entityArgPass,
+        cameras: this.cameras,
+        mainCameraParams: this.mainCameraParams
       }
     } else {
       if(typeof o.position === 'undefined') {o.position = {x: 0, y: 0, z: -4}}
       if(typeof o.rotation === 'undefined') {o.rotation = {x: 0, y: 0, z: 0}}
       if(typeof o.rotationSpeed === 'undefined') {o.rotationSpeed = {x: 0, y: 0, z: 0}}
       if(typeof o.texturesPaths === 'undefined') {o.texturesPaths = ['./res/textures/default.png']}
+      if(typeof o.mainCameraParams === 'undefined') {o.mainCameraParams = this.mainCameraParams}
+      if(typeof o.scale === 'undefined') {o.scale = 1;}
       o.entityArgPass = this.entityArgPass;
+      o.cameras = this.cameras;
     }
     let myBall1 = new MEBall(this.canvas, this.device, this.context, o)
     this.mainRenderBundle.push(myBall1);
   }
 
+  addMesh = (o) => {
+    if(typeof o.position === 'undefined') {o.position = {x: 0, y: 0, z: -4}}
+    if(typeof o.rotation === 'undefined') {o.rotation = {x: 0, y: 0, z: 0}}
+    if(typeof o.rotationSpeed === 'undefined') {o.rotationSpeed = {x: 0, y: 0, z: 0}}
+    if(typeof o.texturesPaths === 'undefined') {o.texturesPaths = ['./res/textures/default.png']}
+    if(typeof o.mainCameraParams === 'undefined') {o.mainCameraParams = this.mainCameraParams}
+    if(typeof o.scale === 'undefined') {o.scale = 1;}
+    o.entityArgPass = this.entityArgPass;
+    o.cameras = this.cameras;
+    if(typeof o.name === 'undefined') {o.name = 'random' + Math.random();}
+    if(typeof o.mesh === 'undefined') {
+      throw console.error('arg mesh is empty...');
+      return;
+    }
+    console.log('Mesh procedure', o)
+
+    let myMesh1 = new MEMesh(this.canvas, this.device, this.context, o)
+    this.mainRenderBundle.push(myMesh1);
+
+
+  }
+
   run(callback) {
-    setTimeout(() => {requestAnimationFrame(this.frame)}, 1000)
-    setTimeout(() => {callback()}, 10)
+    setTimeout(() => {requestAnimationFrame(this.frame)}, 500)
+    setTimeout(() => {callback()}, 20)
   }
 
   frameSinglePass = () => {
-    console.log('single')
     let commandEncoder = this.device.createCommandEncoder();
     this.rbContainer = [];
     let passEncoder;
 
     this.mainRenderBundle.forEach((meItem, index) => {
+      meItem.position.update();
       meItem.draw();
       this.rbContainer.push(meItem.renderBundle)
       // if(index == 0) passEncoder = commandEncoder.beginRenderPass(meItem.renderPassDescriptor);
@@ -161,7 +214,7 @@ export default class MatrixEngineWGPU {
   }
 
   framePassPerObject = () => {
-    console.log('framePassPerObject')
+    // console.log('framePassPerObject')
     let commandEncoder = this.device.createCommandEncoder();
     this.rbContainer = [];
     let passEncoder;
