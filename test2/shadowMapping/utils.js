@@ -1,7 +1,8 @@
 import { vec3 } from 'wgpu-matrix';
 
-export function computeSurfaceNormals(positions,triangles) {
+export function computeSurfaceNormals(positions,triangles){
   const normals = positions.map(() => {
+    // Initialize to zero.
     return [0, 0, 0];
   });
   triangles.forEach(([i0, i1, i2]) => {
@@ -36,9 +37,7 @@ const projectedPlane2Ids = {
   yz: [1, 2],
 };
 
-export function computeProjectedPlaneUVs(
-  positions,
-  projectedPlane ='xy') {
+export function computeProjectedPlaneUVs(positions, projectedPlane) {
   const idxs = projectedPlane2Ids[projectedPlane];
   const uvs = positions.map(() => {
     // Initialize to zero.

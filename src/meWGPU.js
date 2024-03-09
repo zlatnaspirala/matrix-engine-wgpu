@@ -191,25 +191,67 @@ export default class MatrixEngineWGPU {
   }
 
   frameSinglePass = () => {
+
+    let passEncoder;
+    let commandEncoder = this.device.createCommandEncoder();
+    if (typeof this.mainRenderBundle != 'undefined') this.mainRenderBundle.forEach((meItem, index) => {
+      meItem.position.update();
+      meItem.draw(commandEncoder);
+
+
+      // 
+      if (typeof meItem.done == 'undefined') {
+
+        this.rbContainer.push(meItem.renderBundle);
+        
+        this.renderPassDescriptor.colorAttachments[0].view = this.context
+        .getCurrentTexture()
+        .createView();
+         console.log('prolazi ')
+        passEncoder = commandEncoder.beginRenderPass(this.renderPassDescriptor);
+        passEncoder.executeBundles(this.rbContainer);
+        passEncoder.end();
+        // this.device.queue.submit([commandEncoder.finish()]);
+      }
+    })
+    this.device.queue.submit([commandEncoder.finish()]);
+
+    requestAnimationFrame(this.frame);
+  }
+
+  frameSinglePass2 = () => {
     let commandEncoder = this.device.createCommandEncoder();
     this.rbContainer = [];
     let passEncoder;
 
+    var testme = false;
     this.mainRenderBundle.forEach((meItem, index) => {
       meItem.position.update();
-      meItem.draw();
-      this.rbContainer.push(meItem.renderBundle)
+      meItem.draw(commandEncoder);
+
+      if (!meItem.renderBundle) {
+        testme = true;
+        return;
+      } else {
+        this.rbContainer.push(meItem.renderBundle)
+      }
       // if(index == 0) passEncoder = commandEncoder.beginRenderPass(meItem.renderPassDescriptor);
     })
 
-    this.renderPassDescriptor.colorAttachments[0].view = this.context
-      .getCurrentTexture()
-      .createView();
+    if (testme == false) {
 
+    this.renderPassDescriptor.colorAttachments[0].view = this.context
+    .getCurrentTexture()
+    .createView();
+     console.log('prolazi ')
     passEncoder = commandEncoder.beginRenderPass(this.renderPassDescriptor);
     passEncoder.executeBundles(this.rbContainer);
     passEncoder.end();
     this.device.queue.submit([commandEncoder.finish()]);
+    } else {
+      // console.log( 'ne prolazi ')
+      // this.device.queue.submit([commandEncoder.finish()]);
+    }
     requestAnimationFrame(this.frame);
   }
 
@@ -219,11 +261,17 @@ export default class MatrixEngineWGPU {
     this.rbContainer = [];
     let passEncoder;
     this.mainRenderBundle.forEach((meItem, index) => {
-      meItem.draw();
+      meItem.draw(commandEncoder);
+
+      if (meItem.renderBundle) {
       this.rbContainer.push(meItem.renderBundle)
       passEncoder = commandEncoder.beginRenderPass(meItem.renderPassDescriptor);
       passEncoder.executeBundles(this.rbContainer);
       passEncoder.end();
+      } else {
+        meItem.renderScene(commandEncoder)
+      }
+
     })
     this.device.queue.submit([commandEncoder.finish()]);
     requestAnimationFrame(this.frame);

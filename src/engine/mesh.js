@@ -1,48 +1,30 @@
-import {BALL_SHADER, vertexShadowWGSL} from "../shaders/shaders";
+
 import {mat4, vec3} from 'wgpu-matrix';
 import {Position, Rotation} from "./matrix-class";
 import {createInputHandler} from "./engine";
-import {makeMeshData1} from "./matrix-mesh";
 
-var SphereLayout = {
-  vertexStride: 8 * 4,
-  positionsOffset: 0,
-  normalOffset: 3 * 4,
-  uvOffset: 6 * 4,
-};
+import {vertexShadowWGSL} from './final/vertexShadow.wgsl';
+import {fragmentWGSL} from './final/fragment.wgsl';
+import {vertexWGSL} from './final/vertex.wgsl';
 
 export default class MEMesh {
 
   constructor(canvas, device, context, o) {
+    this.done = false;
     this.device = device;
     this.context = context;
     this.entityArgPass = o.entityArgPass;
-
     this.mesh = o.mesh;
-
-    // The input handler
     this.inputHandler = createInputHandler(window, canvas);
     this.cameras = o.cameras;
-
     console.log('passed : o.mainCameraParams.responseCoef ', o.mainCameraParams.responseCoef)
     this.cameraParams = {
       type: o.mainCameraParams.type,
       responseCoef: o.mainCameraParams.responseCoef
-    } // |  WASD 'arcball' };
-
+    }
     this.lastFrameMS = 0;
-
-    console.log('passed args', o.entityArgPass)
-    this.shaderModule = device.createShaderModule({
-      code: BALL_SHADER,
-    });
-
     this.texturesPaths = [];
-
-    o.texturesPaths.forEach((t) => {
-      this.texturesPaths.push(t)
-    })
-
+    o.texturesPaths.forEach((t) => {this.texturesPaths.push(t)})
     this.presentationFormat = navigator.gpu.getPreferredCanvasFormat();
     this.position = new Position(o.position.x, o.position.y, o.position.z);
     console.log('cube added on pos : ', this.position)
@@ -50,581 +32,421 @@ export default class MEMesh {
     this.rotation.rotationSpeed.x = o.rotationSpeed.x;
     this.rotation.rotationSpeed.y = o.rotationSpeed.y;
     this.rotation.rotationSpeed.z = o.rotationSpeed.z;
-
     this.scale = o.scale;
 
-    this.pipeline = device.createRenderPipeline({
-      layout: 'auto',
-      vertex: {
-        module: this.shaderModule,
-        entryPoint: 'vertexMain',
-        buffers: [
-          {
-            arrayStride: SphereLayout.vertexStride,
-            attributes: [
-              // position
-              {shaderLocation: 0, offset: SphereLayout.positionsOffset, format: 'float32x3'},
-              // normal
-              {shaderLocation: 1, offset: SphereLayout.normalOffset, format: 'float32x3'},
-              // uv
-              {shaderLocation: 2, offset: SphereLayout.uvOffset, format: 'float32x2', },
-            ],
-          },
-        ],
-      },
-      fragment: {
-        module: this.shaderModule,
-        entryPoint: 'fragmentMain',
-        targets: [{format: this.presentationFormat, },],
-      },
-      primitive: {
-        topology: 'triangle-list',
-        // Backface culling since the sphere is solid piece of geometry.
-        // Faces pointing away from the camera will be occluded by faces
-        // pointing toward the camera.
-        cullMode: 'back',
-      },
-      // Enable depth testing so that the fragment closest to the camera
-      // is rendered in front.
-      depthStencil: {
-        depthWriteEnabled: true,
-        depthCompare: 'less',
-        format: 'depth24plus',
-      },
-    });
-
-    this.depthTexture = device.createTexture({
-      size: [canvas.width, canvas.height],
-      format: 'depth24plus',
-      usage: GPUTextureUsage.RENDER_ATTACHMENT,
-    });
-
     // new
-
-    this.mesh = makeMeshData1(this.mesh)
-    this.shadowDepthTextureSize = 1024;
-    // Create the model vertex buffer.
-    const vertexBuffer = device.createBuffer({
-      size: this.mesh.positions.length * 3 * 2 * Float32Array.BYTES_PER_ELEMENT,
-      usage: GPUBufferUsage.VERTEX,
-      mappedAtCreation: true,
-    });
-    {
-      console.log('.....')
-      const mapping = new Float32Array(vertexBuffer.getMappedRange());
-      for(let i = 0;i < this.mesh.positions.length;++i) {
-        mapping.set(this.mesh.positions[i], 6 * i);
-        mapping.set(this.mesh.normals[i], 6 * i + 3);
-      }
-      vertexBuffer.unmap();
-    }
-
-    // Create the model index buffer.
-    const indexCount = this.mesh.triangles.length * 3;
-    const indexBuffer = device.createBuffer({
-      size: indexCount * Uint16Array.BYTES_PER_ELEMENT,
-      usage: GPUBufferUsage.INDEX,
-      mappedAtCreation: true,
-    });
-    {
-      const mapping = new Uint16Array(indexBuffer.getMappedRange());
-      for(let i = 0;i < this.mesh.triangles.length;++i) {
-        mapping.set(this.mesh.triangles[i], 3 * i);
-      }
-      indexBuffer.unmap();
-    }
-
-    // Create the depth texture for rendering/sampling the shadow map.
-    let shadowDepthTexture = device.createTexture({
-      size: [this.shadowDepthTextureSize, this.shadowDepthTextureSize, 1],
-      usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING,
-      format: 'depth32float',
-    });
-    this.shadowDepthTextureView = shadowDepthTexture.createView();
-
-    // - end new
-
-    this.uniformBufferSize = 4 * 16; // 4x4 matrix
-    this.uniformBuffer = device.createBuffer({
-      size: this.uniformBufferSize,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-    });
-
-    // Fetch the images and upload them into a GPUTexture.
-    this.texture0 = null;
-    this.moonTexture = null;
-
-    this.settings = {
-      useRenderBundles: true,
-      asteroidCount: 2,
-    };
-
-
-    // new
-
-    this.createShadowsPipline();
-
-    // new
-
-    this.loadTex0(this.texturesPaths, device).then(() => {
-      this.loadTex1(device).then(() => {
-
-        this.sampler = device.createSampler({
-          magFilter: 'linear',
-          minFilter: 'linear',
-        });
-
-        this.transform = mat4.create();
-        mat4.identity(this.transform);
-
-        // Create one large central planet surrounded by a large ring of asteroids
-        this.planet = this.createGeometry({
-          scale: this.scale,
-          useUVShema4x2: false
-        });
-        this.planet.bindGroup = this.createSphereBindGroup(this.texture0, this.transform);
-
-        // can be used like instance draws
-        var asteroids = [
-          // this.createGeometry(0.2, 8, 6, 0.15),
-        ];
-
-        this.renderables = [this.planet];
-        // this.ensureEnoughAsteroids(asteroids, this.transform);
-        this.renderPassDescriptor = {
-          colorAttachments: [
-            {
-              view: undefined,
-              clearValue: {r: 0.0, g: 0.0, b: 0.0, a: 1.0},
-              loadOp: this.entityArgPass.loadOp,
-              storeOp: this.entityArgPass.storeOp,
-            },
-          ],
-          depthStencilAttachment: {
-            view: this.depthTexture.createView(),
-            depthClearValue: 1.0,
-            depthLoadOp: this.entityArgPass.depthLoadOp,
-            depthStoreOp: this.entityArgPass.depthStoreOp,
-          },
-        };
-
-        const aspect = canvas.width / canvas.height;
-        this.projectionMatrix = mat4.perspective((2 * Math.PI) / 5, aspect, 1, 100.0);
-        this.modelViewProjectionMatrix = mat4.create();
-
-        this.frameBindGroup = device.createBindGroup({
-          layout: this.pipeline.getBindGroupLayout(0),
-          entries: [
-            {
-              binding: 0,
-              resource: {buffer: this.uniformBuffer, },
-            },
-          ],
-        });
-
-        // The render bundle can be encoded once and re-used as many times as needed.
-        // Because it encodes all of the commands needed to render at the GPU level,
-        // those commands will not need to execute the associated JavaScript code upon
-        // execution or be re-validated, which can represent a significant time savings.
-        //
-        // However, because render bundles are immutable once created, they are only
-        // appropriate for rendering content where the same commands will be executed
-        // every time, with the only changes being the contents of the buffers and
-        // textures used. Cases where the executed commands differ from frame-to-frame,
-        // such as when using frustrum or occlusion culling, will not benefit from
-        // using render bundles as much.
-        this.renderBundle;
-        this.updateRenderBundle();
+    this.runProgram = () => {
+      return new Promise(async (resolve) => {
+        this.shadowDepthTextureSize = 1024;
+        // this.adapter = await navigator.gpu.requestAdapter();
+        // this.device = await this.adapter.requestDevice();
+        // this.context = canvas.getContext('webgpu');
+        resolve()
       })
-    })
-  }
-
-  ensureEnoughAsteroids(asteroids, transform) {
-    for(let i = this.renderables.length;i <= this.settings.asteroidCount;++i) {
-      // Place copies of the asteroid in a ring.
-      const radius = Math.random() * 1.7 + 1.25;
-      const angle = Math.random() * Math.PI * 2;
-      const x = Math.sin(angle) * radius;
-      const y = (Math.random() - 0.5) * 0.015;
-      const z = Math.cos(angle) * radius;
-
-      mat4.identity(transform);
-      mat4.translate(transform, [x, y, z], transform);
-      mat4.rotateX(transform, Math.random() * Math.PI, transform);
-      mat4.rotateY(transform, Math.random() * Math.PI, transform);
-      this.renderables.push({
-        ...asteroids[i % asteroids.length],
-        bindGroup: this.createSphereBindGroup(this.moonTexture, transform),
-      });
     }
-  }
 
-  updateRenderBundle() {
-    console.log('[CUBE] updateRenderBundle')
-    const renderBundleEncoder = this.device.createRenderBundleEncoder({
-      colorFormats: [this.presentationFormat],
-      depthStencilFormat: 'depth24plus',
-    });
-    this.renderScene(renderBundleEncoder);
-    this.renderBundle = renderBundleEncoder.finish();
-  }
+    this.runProgram().then(() => {
 
-  createGeometry(options) {
-    console.log('TEST ....')
-    const mesh = this.mesh;
-    // Create a vertex buffer from the sphere data.
-    const vertices = this.device.createBuffer({
-      size: mesh.vertices.byteLength,
-      usage: GPUBufferUsage.VERTEX,
-      mappedAtCreation: true,
-    });
-    new Float32Array(vertices.getMappedRange()).set(mesh.vertices);
-    vertices.unmap();
-
-    const indices = this.device.createBuffer({
-      size: mesh.indices.byteLength,
-      usage: GPUBufferUsage.INDEX,
-      mappedAtCreation: true,
-    });
-    new Uint16Array(indices.getMappedRange()).set(mesh.indices);
-    indices.unmap();
-
-    return {
-      vertices,
-      indices,
-      indexCount: mesh.indices.length,
-    };
-  }
-
-  createSphereBindGroup(texture, transform) {
-
-    const uniformBufferSize = 4 * 16; // 4x4 matrix
-    const uniformBuffer = this.device.createBuffer({
-      size: uniformBufferSize,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-      mappedAtCreation: true,
-    });
-    new Float32Array(uniformBuffer.getMappedRange()).set(transform);
-    uniformBuffer.unmap();
-
-    const bindGroup = this.device.createBindGroup({
-      layout: this.pipeline.getBindGroupLayout(1),
-      entries: [
-        {
-          binding: 0,
-          resource: {
-            buffer: uniformBuffer,
-          },
-        },
-        {
-          binding: 1,
-          resource: this.sampler,
-        },
-        {
-          binding: 2,
-          resource: texture.createView(),
-        },
-      ],
-    });
-
-    return bindGroup;
-  }
-
-  getTransformationMatrix(pos) {
-    const now = Date.now();
-    const deltaTime = (now - this.lastFrameMS) / this.cameraParams.responseCoef;
-    this.lastFrameMS = now;
-
-    // const viewMatrix = mat4.identity(); ORI
-    const camera = this.cameras[this.cameraParams.type];
-    const viewMatrix = camera.update(deltaTime, this.inputHandler());
-
-    mat4.translate(viewMatrix, vec3.fromValues(pos.x, pos.y, pos.z), viewMatrix);
-    mat4.rotateX(viewMatrix, Math.PI * this.rotation.getRotX(), viewMatrix);
-    mat4.rotateY(viewMatrix, Math.PI * this.rotation.getRotY(), viewMatrix);
-    mat4.rotateZ(viewMatrix, Math.PI * this.rotation.getRotZ(), viewMatrix);
-    mat4.multiply(this.projectionMatrix, viewMatrix, this.modelViewProjectionMatrix);
-
-    return this.modelViewProjectionMatrix;
-  }
-
-  async loadTex1(device) {
-    return new Promise(async (resolve) => {
-      const response = await fetch('./res/textures/tex1.jpg');
-      const imageBitmap = await createImageBitmap(await response.blob());
-      this.moonTexture = device.createTexture({
-        size: [imageBitmap.width, imageBitmap.height, 1],
-        format: 'rgba8unorm',
-        usage:
-          GPUTextureUsage.TEXTURE_BINDING |
-          GPUTextureUsage.COPY_DST |
-          GPUTextureUsage.RENDER_ATTACHMENT,
+      const aspect = canvas.width / canvas.height;
+      const presentationFormat = navigator.gpu.getPreferredCanvasFormat();
+      this.context.configure({
+        device: this.device,
+        format: presentationFormat,
+        alphaMode: 'premultiplied',
       });
-      var moonTexture = this.moonTexture
-      device.queue.copyExternalImageToTexture(
-        {source: imageBitmap},
-        {texture: moonTexture},
-        [imageBitmap.width, imageBitmap.height]
-      );
-      resolve()
-    })
-  }
 
-  async loadTex0(texturesPaths, device) {
-    return new Promise(async (resolve) => {
-      const response = await fetch(texturesPaths[0]);
-      const imageBitmap = await createImageBitmap(await response.blob());
-      console.log('WHAT IS THIS ', this)
-      this.texture0 = device.createTexture({
-        size: [imageBitmap.width, imageBitmap.height, 1],
-        format: 'rgba8unorm',
-        usage:
-          GPUTextureUsage.TEXTURE_BINDING |
-          GPUTextureUsage.COPY_DST |
-          GPUTextureUsage.RENDER_ATTACHMENT,
+      // Create the model vertex buffer.
+      this.vertexBuffer = this.device.createBuffer({
+        size: this.mesh.positions.length * 3 * 2 * Float32Array.BYTES_PER_ELEMENT,
+        usage: GPUBufferUsage.VERTEX,
+        mappedAtCreation: true,
       });
-      var texture0 = this.texture0
-      device.queue.copyExternalImageToTexture(
-        {source: imageBitmap},
-        {texture: texture0},
-        [imageBitmap.width, imageBitmap.height]
-      );
-      resolve()
-    })
-
-  }
-
-
-  // Render bundles function as partial, limited render passes, so we can use the
-  // same code both to render the scene normally and to build the render bundle.
-  renderScene(passEncoder) {
-
-    if(typeof this.renderables === 'undefined') return;
-
-    passEncoder.setPipeline(this.pipeline);
-    passEncoder.setBindGroup(0, this.frameBindGroup);
-
-    // Loop through every renderable object and draw them individually.
-    // (Because many of these meshes are repeated, with only the transforms
-    // differing, instancing would be highly effective here. This sample
-    // intentionally avoids using instancing in order to emulate a more complex
-    // scene, which helps demonstrate the potential time savings a render bundle
-    // can provide.)
-    let count = 0;
-    for(const renderable of this.renderables) {
-      passEncoder.setBindGroup(1, renderable.bindGroup);
-      passEncoder.setVertexBuffer(0, renderable.vertices);
-      passEncoder.setIndexBuffer(renderable.indices, 'uint16');
-      passEncoder.drawIndexed(renderable.indexCount);
-      if(++count > this.settings.asteroidCount) {
-        break;
-      }
-    }
-  }
-
-  createShadowsPipline() {
-
-    // Create some common descriptors used for both the shadow pipeline
-    // and the color rendering pipeline.
-    const vertexBuffers = [
       {
-        arrayStride: Float32Array.BYTES_PER_ELEMENT * 6,
-        attributes: [
-          {
-            // position
-            shaderLocation: 0,
-            offset: 0,
-            format: 'float32x3',
-          },
-          {
-            // normal
-            shaderLocation: 1,
-            offset: Float32Array.BYTES_PER_ELEMENT * 3,
-            format: 'float32x3',
-          },
-        ],
-      },
-    ];
+        const mapping = new Float32Array(this.vertexBuffer.getMappedRange());
+        for(let i = 0;i < this.mesh.positions.length;++i) {
+          mapping.set(this.mesh.positions[i], 6 * i);
+          mapping.set(this.mesh.normals[i], 6 * i + 3);
+        }
+        this.vertexBuffer.unmap();
+      }
 
-    const primitive = {
-      topology: 'triangle-list',
-      cullMode: 'back',
-    };
-    const uniformBufferBindGroupLayout = this.device.createBindGroupLayout({
-      entries: [
-        {
-          binding: 0,
-          visibility: GPUShaderStage.VERTEX,
-          buffer: {
-            type: 'uniform',
-          },
-        },
-      ],
-    });
+      // Create the model index buffer.
+      this.indexCount = this.mesh.triangles.length * 3;
+      this.indexBuffer = this.device.createBuffer({
+        size: this.indexCount * Uint16Array.BYTES_PER_ELEMENT,
+        usage: GPUBufferUsage.INDEX,
+        mappedAtCreation: true,
+      });
+      {
+        const mapping = new Uint16Array(this.indexBuffer.getMappedRange());
+        for(let i = 0;i < this.mesh.triangles.length;++i) {
+          mapping.set(this.mesh.triangles[i], 3 * i);
+        }
+        this.indexBuffer.unmap();
+      }
 
-    this.shadowPipeline = this.device.createRenderPipeline({
-      layout: this.device.createPipelineLayout({
-        bindGroupLayouts: [
-          uniformBufferBindGroupLayout,
-          uniformBufferBindGroupLayout,
-        ],
-      }),
-      vertex: {
-        module: this.device.createShaderModule({
-          code: vertexShadowWGSL,
-        }),
-        buffers: vertexBuffers,
-      },
-      depthStencil: {
-        depthWriteEnabled: true,
-        depthCompare: 'less',
+      // Create the depth texture for rendering/sampling the shadow map.
+      this.shadowDepthTexture = this.device.createTexture({
+        size: [this.shadowDepthTextureSize, this.shadowDepthTextureSize, 1],
+        usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING,
         format: 'depth32float',
-      },
-      primitive,
-    });
+      });
+      this.shadowDepthTextureView = this.shadowDepthTexture.createView();
 
-    //
-
-
-    // Create a bind group layout which holds the scene uniforms and
-    // the texture+sampler for depth. We create it manually because the WebPU
-    // implementation doesn't infer this from the shader (yet).
-    const bglForRender = this.device.createBindGroupLayout({
-      entries: [
+      // Create some common descriptors used for both the shadow pipeline
+      // and the color rendering pipeline.
+      this.vertexBuffers = [
         {
-          binding: 0,
-          visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
-          buffer: {
-            type: 'uniform',
+          arrayStride: Float32Array.BYTES_PER_ELEMENT * 6,
+          attributes: [
+            {
+              // position
+              shaderLocation: 0,
+              offset: 0,
+              format: 'float32x3',
+            },
+            {
+              // normal
+              shaderLocation: 1,
+              offset: Float32Array.BYTES_PER_ELEMENT * 3,
+              format: 'float32x3',
+            },
+          ],
+        },
+      ];
+
+      const primitive = {
+        topology: 'triangle-list',
+        cullMode: 'back',
+      };
+
+      this.uniformBufferBindGroupLayout = this.device.createBindGroupLayout({
+        entries: [
+          {
+            binding: 0,
+            visibility: GPUShaderStage.VERTEX,
+            buffer: {
+              type: 'uniform',
+            },
           },
-        },
-        {
-          binding: 1,
-          visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
-          texture: {
-            sampleType: 'depth',
-          },
-        },
-        {
-          binding: 2,
-          visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
-          sampler: {
-            type: 'comparison',
-          },
-        },
-      ],
-    });
+        ],
+      });
 
-
-    const modelUniformBuffer = this.device.createBuffer({
-      size: 4 * 16, // 4x4 matrix
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-    });
-
-    const sceneUniformBuffer = this.device.createBuffer({
-      // Two 4x4 viewProj matrices,
-      // one for the camera and one for the light.
-      // Then a vec3 for the light position.
-      // Rounded to the nearest multiple of 16.
-      size: 2 * 4 * 16 + 4 * 4,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-    });
-
-    const sceneBindGroupForShadow = this.device.createBindGroup({
-      layout: uniformBufferBindGroupLayout,
-      entries: [
-        {
-          binding: 0,
-          resource: {
-            buffer: sceneUniformBuffer,
-          },
-        },
-      ],
-    });
-
-    const sceneBindGroupForRender = this.device.createBindGroup({
-      layout: bglForRender,
-      entries: [
-        {
-          binding: 0,
-          resource: {
-            buffer: sceneUniformBuffer,
-          },
-        },
-        {
-          binding: 1,
-          resource: this.shadowDepthTextureView,
-        },
-        {
-          binding: 2,
-          resource: this.device.createSampler({
-            compare: 'less',
+      this.shadowPipeline = this.device.createRenderPipeline({
+        layout: this.device.createPipelineLayout({
+          bindGroupLayouts: [
+            this.uniformBufferBindGroupLayout,
+            this.uniformBufferBindGroupLayout,
+          ],
+        }),
+        vertex: {
+          module: this.device.createShaderModule({
+            code: vertexShadowWGSL,
           }),
+          buffers: this.vertexBuffers,
         },
-      ],
-    });
+        depthStencil: {
+          depthWriteEnabled: true,
+          depthCompare: 'less',
+          format: 'depth32float',
+        },
+        primitive,
+      });
 
-    const modelBindGroup = this.device.createBindGroup({
-      layout: uniformBufferBindGroupLayout,
-      entries: [
-        {
-          binding: 0,
-          resource: {
-            buffer: modelUniformBuffer,
+      // Create a bind group layout which holds the scene uniforms and
+      // the texture+sampler for depth. We create it manually because the WebPU
+      // implementation doesn't infer this from the shader (yet).
+      this.bglForRender = this.device.createBindGroupLayout({
+        entries: [
+          {
+            binding: 0,
+            visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
+            buffer: {
+              type: 'uniform',
+            },
+          },
+          {
+            binding: 1,
+            visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
+            texture: {
+              sampleType: 'depth',
+            },
+          },
+          {
+            binding: 2,
+            visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
+            sampler: {
+              type: 'comparison',
+            },
+          },
+        ],
+      });
+
+      this.pipeline = this.device.createRenderPipeline({
+        layout: this.device.createPipelineLayout({
+          bindGroupLayouts: [this.bglForRender, this.uniformBufferBindGroupLayout],
+        }),
+        vertex: {
+          module: this.device.createShaderModule({
+            code: vertexWGSL,
+          }),
+          buffers: this.vertexBuffers,
+        },
+        fragment: {
+          module: this.device.createShaderModule({
+            code: fragmentWGSL,
+          }),
+          targets: [
+            {
+              format: presentationFormat,
+            },
+          ],
+          constants: {
+            shadowDepthTextureSize: this.shadowDepthTextureSize,
           },
         },
-      ],
-    });
+        depthStencil: {
+          depthWriteEnabled: true,
+          depthCompare: 'less',
+          format: 'depth24plus-stencil8',
+        },
+        primitive,
+      });
 
-    //
+      const depthTexture = this.device.createTexture({
+        size: [canvas.width, canvas.height],
+        format: 'depth24plus-stencil8',
+        usage: GPUTextureUsage.RENDER_ATTACHMENT,
+      });
 
+      this.renderPassDescriptor = {
+        colorAttachments: [
+          {
+            // view is acquired and set in render loop.
+            view: undefined,
 
-    this.createLight()
+            clearValue: {r: 0.5, g: 0.5, b: 0.5, a: 1.0},
+            loadOp: 'load',
+            storeOp: 'store',
+          },
+        ],
+        depthStencilAttachment: {
+          view: depthTexture.createView(),
 
-    //
+          depthClearValue: 1.0,
+          depthLoadOp: 'clear',
+          depthStoreOp: 'store',
+          stencilClearValue: 0,
+          stencilLoadOp: 'clear',
+          stencilStoreOp: 'store',
+        },
+      };
 
+      this.modelUniformBuffer = this.device.createBuffer({
+        size: 4 * 16, // 4x4 matrix
+        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+      });
+
+      this.sceneUniformBuffer = this.device.createBuffer({
+        // Two 4x4 viewProj matrices,
+        // one for the camera and one for the light.
+        // Then a vec3 for the light position.
+        // Rounded to the nearest multiple of 16.
+        size: 2 * 4 * 16 + 4 * 4,
+        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+      });
+
+      this.sceneBindGroupForShadow = this.device.createBindGroup({
+        layout: this.uniformBufferBindGroupLayout,
+        entries: [
+          {
+            binding: 0,
+            resource: {
+              buffer: this.sceneUniformBuffer,
+            },
+          },
+        ],
+      });
+
+      this.sceneBindGroupForRender = this.device.createBindGroup({
+        layout: this.bglForRender,
+        entries: [
+          {
+            binding: 0,
+            resource: {
+              buffer: this.sceneUniformBuffer,
+            },
+          },
+          {
+            binding: 1,
+            resource: this.shadowDepthTextureView,
+          },
+          {
+            binding: 2,
+            resource: this.device.createSampler({
+              compare: 'less',
+            }),
+          },
+        ],
+      });
+
+      this.modelBindGroup = this.device.createBindGroup({
+        layout: this.uniformBufferBindGroupLayout,
+        entries: [
+          {
+            binding: 0,
+            resource: {
+              buffer: this.modelUniformBuffer,
+            },
+          },
+        ],
+      });
+
+      // Rotates the camera around the origin based on time.
+      this.getCameraViewProjMatrix = () => {
+        const eyePosition = vec3.fromValues(0, 50, -100);
+
+        const rad = Math.PI * (Date.now() / 2000);
+        const rotation = mat4.rotateY(mat4.translation(this.origin), rad);
+        vec3.transformMat4(eyePosition, rotation, eyePosition);
+
+        const viewMatrix = mat4.lookAt(eyePosition, this.origin, this.upVector);
+
+        mat4.multiply(this.projectionMatrix, viewMatrix, this.viewProjMatrix);
+        return this.viewProjMatrix;
+      }
+      // --------------------renderBundle
+      // this.renderables = [this.planet];
+      // --------------------
+
+      this.eyePosition = vec3.fromValues(0, 50, -100);
+      this.upVector = vec3.fromValues(0, 1, 0);
+      this.origin = vec3.fromValues(0, 0, 0);
+
+      this.projectionMatrix = mat4.perspective((2 * Math.PI) / 5, aspect, 1, 2000.0);
+      const viewMatrix = mat4.lookAt(this.eyePosition, this.origin, this.upVector);
+
+      const lightPosition = vec3.fromValues(50, 100, -100);
+      const lightViewMatrix = mat4.lookAt(lightPosition, this.origin, this.upVector);
+      const lightProjectionMatrix = mat4.create();
+      {
+        const left = -80;
+        const right = 80;
+        const bottom = -80;
+        const top = 80;
+        const near = -200;
+        const far = 300;
+        mat4.ortho(left, right, bottom, top, near, far, lightProjectionMatrix);
+      }
+
+      const lightViewProjMatrix = mat4.multiply(
+        lightProjectionMatrix,
+        lightViewMatrix
+      );
+
+      this.viewProjMatrix = mat4.multiply(this.projectionMatrix, viewMatrix);
+
+      // Move the model so it's centered.
+      const modelMatrix = mat4.translation([0, -45, 0]);
+
+      // The camera/light aren't moving, so write them into buffers now.
+      {
+        const lightMatrixData = lightViewProjMatrix; // as Float32Array;
+        this.device.queue.writeBuffer(
+          this.sceneUniformBuffer,
+          0,
+          lightMatrixData.buffer,
+          lightMatrixData.byteOffset,
+          lightMatrixData.byteLength
+        );
+
+        const cameraMatrixData = this.viewProjMatrix; //  as Float32Array;
+        this.device.queue.writeBuffer(
+          this.sceneUniformBuffer,
+          64,
+          cameraMatrixData.buffer,
+          cameraMatrixData.byteOffset,
+          cameraMatrixData.byteLength
+        );
+
+        const lightData = lightPosition; // as Float32Array;
+        this.device.queue.writeBuffer(
+          this.sceneUniformBuffer,
+          128,
+          lightData.buffer,
+          lightData.byteOffset,
+          lightData.byteLength
+        );
+
+        const modelData = modelMatrix; // as Float32Array;
+        this.device.queue.writeBuffer(
+          this.modelUniformBuffer,
+          0,
+          modelData.buffer,
+          modelData.byteOffset,
+          modelData.byteLength
+        );
+      }
+
+      this.shadowPassDescriptor = {
+        colorAttachments: [],
+        depthStencilAttachment: {
+          view: this.shadowDepthTextureView,
+          depthClearValue: 1.0,
+          depthLoadOp: 'clear',
+          depthStoreOp: 'store',
+        },
+      };
+
+      this.done = true;
+    })
   }
 
-  createLight() {
+  draw = (commandEncoder) => {
+    // let commandEncoder = this.device.createCommandEncoder();
+    if(this.done == false) return;
 
-    const upVector = vec3.fromValues(0, 1, 0);
-    const origin = vec3.fromValues(0, 0, 0);
-
-    this.lightPosition = vec3.fromValues(50, 100, -100);
-    this.lightViewMatrix = mat4.lookAt(this.lightPosition, origin, upVector);
-    this.lightProjectionMatrix = mat4.create();
-    {
-      const left = -80;
-      const right = 80;
-      const bottom = -80;
-      const top = 80;
-      const near = -200;
-      const far = 300;
-      mat4.ortho(left, right, bottom, top, near, far, this.lightProjectionMatrix);
-    }
-
-    this.lightViewProjMatrix = mat4.multiply(
-      this.lightProjectionMatrix,
-      this.lightViewMatrix
-    );
-
-  }
-
-  draw = () => {
-    if(this.moonTexture == null) {
-      console.log('not ready')
-      return;
-    }
-    const transformationMatrix = this.getTransformationMatrix(this.position);
+    const cameraViewProj = this.getCameraViewProjMatrix();
     this.device.queue.writeBuffer(
-      this.uniformBuffer,
-      0,
-      transformationMatrix.buffer,
-      transformationMatrix.byteOffset,
-      transformationMatrix.byteLength
+      this.sceneUniformBuffer,
+      64,
+      cameraViewProj.buffer,
+      cameraViewProj.byteOffset,
+      cameraViewProj.byteLength
     );
+
+
+    // console.log('log this.cameraViewProj', cameraViewProj)
+
     this.renderPassDescriptor.colorAttachments[0].view = this.context
       .getCurrentTexture()
       .createView();
+    //  const commandEncoder = this.device.createCommandEncoder();
+    {
+      const shadowPass = commandEncoder.beginRenderPass(this.shadowPassDescriptor);
+      shadowPass.setPipeline(this.shadowPipeline);
+      shadowPass.setBindGroup(0, this.sceneBindGroupForShadow);
+      shadowPass.setBindGroup(1, this.modelBindGroup);
+      shadowPass.setVertexBuffer(0, this.vertexBuffer);
+      shadowPass.setIndexBuffer(this.indexBuffer, 'uint16');
+      shadowPass.drawIndexed(this.indexCount);
+      shadowPass.end();
+    }
+    {
+      const renderPass = commandEncoder.beginRenderPass(this.renderPassDescriptor);
+      renderPass.setPipeline(this.pipeline);
+      renderPass.setBindGroup(0, this.sceneBindGroupForRender);
+      renderPass.setBindGroup(1, this.modelBindGroup);
+      renderPass.setVertexBuffer(0, this.vertexBuffer);
+      renderPass.setIndexBuffer(this.indexBuffer, 'uint16');
+      renderPass.drawIndexed(this.indexCount);
+
+      renderPass.end();
+    }
+
+    //  this.device.queue.submit([commandEncoder.finish()]);
+    // requestAnimationFrame(frame);
+
   }
+
 }

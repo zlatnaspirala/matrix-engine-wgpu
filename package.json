@@ -4,6 +4,8 @@
   "description": "webGPU powered pwa application.Crazy fast rendering.",
   "main": "index.js",
   "scripts": {
+    "main2w": "watchify ./test2/shadowMapping/app-worker.js -p [esmify --noImplicitAny] -o public/app-worker.js",
+    "main2": "watchify ./test2/shadowMapping/main.js -p [esmify --noImplicitAny] -o public/app.js",
     "main": "watchify main.js -p [esmify --noImplicitAny] -o public/app.js"
   },
   "keywords": [

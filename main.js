@@ -1,6 +1,7 @@
 import MatrixEngineWGPU from "./src/meWGPU";
 
 import dragon from "./public/res/meshes/dragon/dragon";
+import {mesh} from "./src/engine/final/stanfordDragon";
 
 let application = new MatrixEngineWGPU({ 
   useSingleRenderPass: true,
@@ -30,7 +31,7 @@ let application = new MatrixEngineWGPU({
   application.addMesh({
     position: {x: 2, y: 0, z: -10},
     name: 'dragon',
-    mesh: dragon
+    mesh: mesh
   });
 
   // application.addCube(o)
