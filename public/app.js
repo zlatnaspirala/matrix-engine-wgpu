@@ -9,7 +9,6 @@ let application = new _meWGPU.default({
   useSingleRenderPass: true,
   canvasSize: 'fullscreen'
 }, () => {
-  console.log('application.mainCameraParams', application.mainCameraParams);
   let c = {
     scale: 12,
     position: {
@@ -60,7 +59,6 @@ let application = new _meWGPU.default({
     name: 'dragon',
     mesh: _stanfordDragon.mesh
   });
-
   // application.addCube(o)
 });
 window.app = application;

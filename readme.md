@@ -26,26 +26,39 @@ For now i will use `createRenderBundleEncoder` for multi object scene draws.
 
 Main instance script:
 ```js
-let application = new MatrixEngineWGPU({ useSingleRenderPass: false }, () => {
+import MatrixEngineWGPU from "./src/meWGPU";
+import {mesh} from "./src/engine/final/stanfordDragon";
+
+let application = new MatrixEngineWGPU({ 
+  useSingleRenderPass: true,
+  canvasSize: 'fullscreen' }, () => {
 
   let c = {
-    position: {x: -3, y: 0, z: -5},
-    rotation: {x: 0, y: 45, z: 0},
+    scale: 12,
+    position: {x: -2, y: 2, z: -10},
+    rotation: {x: 0, y: 0, z: 0},
     rotationSpeed: {x: 0, y: 0, z: 0},
     texturesPaths: ['./res/textures/rust.jpg']
   };
 
   let o = {
-    position: {x: 3, y: 0, z: -10},
+    scale: 2,
+    position: {x: 2, y: 0, z: -10},
     rotation: {x: 0, y: 45, z: 0},
-    rotationSpeed: {x: 0, y: 10, z: 0},
+    rotationSpeed: {x: 0, y: 0, z: 0},
     texturesPaths: ['./res/textures/rust.jpg']
   };
 
-  application.addBall(o)
+  // application.addBall(o)
   application.addCube(c)
+  application.addMesh({
+    position: {x: 2, y: 0, z: -10},
+    name: 'dragon',
+    mesh: mesh
+  });
 })
 
+window.app = application
 ```
 
 Not the best solution but works for now.

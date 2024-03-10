@@ -7,8 +7,6 @@ let application = new MatrixEngineWGPU({
   useSingleRenderPass: true,
   canvasSize: 'fullscreen' }, () => {
 
-    console.log('application.mainCameraParams' , application.mainCameraParams);
-
   let c = {
     scale: 12,
     position: {x: -2, y: 2, z: -10},
@@ -25,8 +23,6 @@ let application = new MatrixEngineWGPU({
     texturesPaths: ['./res/textures/rust.jpg']
   };
 
-
-
   // application.addBall(o)
   application.addCube(c)
   application.addMesh({
@@ -34,8 +30,6 @@ let application = new MatrixEngineWGPU({
     name: 'dragon',
     mesh: mesh
   });
-
-
   // application.addCube(o)
 })
 
