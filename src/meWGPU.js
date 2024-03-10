@@ -198,16 +198,13 @@ export default class MatrixEngineWGPU {
       meItem.position.update();
       meItem.draw(commandEncoder);
 
-
       // 
       if (typeof meItem.done == 'undefined') {
-
         this.rbContainer.push(meItem.renderBundle);
-        
         this.renderPassDescriptor.colorAttachments[0].view = this.context
         .getCurrentTexture()
         .createView();
-         console.log('prolazi ')
+        //  console.log('prolazi ')
         passEncoder = commandEncoder.beginRenderPass(this.renderPassDescriptor);
         passEncoder.executeBundles(this.rbContainer);
         passEncoder.end();

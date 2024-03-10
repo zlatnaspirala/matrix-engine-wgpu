@@ -11,7 +11,7 @@ let application = new MatrixEngineWGPU({
 
   let c = {
     scale: 12,
-    position: {x: -2, y: -16, z: -10},
+    position: {x: -2, y: 2, z: -10},
     rotation: {x: 0, y: 0, z: 0},
     rotationSpeed: {x: 0, y: 0, z: 0},
     texturesPaths: ['./res/textures/rust.jpg']
@@ -25,14 +25,16 @@ let application = new MatrixEngineWGPU({
     texturesPaths: ['./res/textures/rust.jpg']
   };
 
+
+
   // application.addBall(o)
   application.addCube(c)
-
   application.addMesh({
     position: {x: 2, y: 0, z: -10},
     name: 'dragon',
     mesh: mesh
   });
+
 
   // application.addCube(o)
 })

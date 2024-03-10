@@ -1,8 +1,6 @@
-
 import {mat4, vec3} from 'wgpu-matrix';
 import {Position, Rotation} from "./matrix-class";
 import {createInputHandler} from "./engine";
-
 import {vertexShadowWGSL} from './final/vertexShadow.wgsl';
 import {fragmentWGSL} from './final/fragment.wgsl';
 import {vertexWGSL} from './final/vertex.wgsl';
@@ -10,10 +8,12 @@ import {vertexWGSL} from './final/vertex.wgsl';
 export default class MEMesh {
 
   constructor(canvas, device, context, o) {
+    console.log("???????????????????????????????" + o.mesh + "<<<<<<<<<<<<<<<<<<o.mesh")
     this.done = false;
     this.device = device;
     this.context = context;
     this.entityArgPass = o.entityArgPass;
+    
     this.mesh = o.mesh;
     this.inputHandler = createInputHandler(window, canvas);
     this.cameras = o.cameras;
@@ -38,9 +38,11 @@ export default class MEMesh {
     this.runProgram = () => {
       return new Promise(async (resolve) => {
         this.shadowDepthTextureSize = 1024;
-        // this.adapter = await navigator.gpu.requestAdapter();
-        // this.device = await this.adapter.requestDevice();
-        // this.context = canvas.getContext('webgpu');
+
+        const aspect = canvas.width / canvas.height;
+        this.projectionMatrix = mat4.perspective((2 * Math.PI) / 5, aspect, 1, 2000.0);
+        this.modelViewProjectionMatrix = mat4.create();
+
         resolve()
       })
     }
@@ -303,28 +305,33 @@ export default class MEMesh {
       });
 
       // Rotates the camera around the origin based on time.
-      this.getCameraViewProjMatrix = () => {
-        const eyePosition = vec3.fromValues(0, 50, -100);
-
-        const rad = Math.PI * (Date.now() / 2000);
-        const rotation = mat4.rotateY(mat4.translation(this.origin), rad);
-        vec3.transformMat4(eyePosition, rotation, eyePosition);
-
-        const viewMatrix = mat4.lookAt(eyePosition, this.origin, this.upVector);
-
-        mat4.multiply(this.projectionMatrix, viewMatrix, this.viewProjMatrix);
-        return this.viewProjMatrix;
+      this.getTransformationMatrix = (pos) => {
+        const now = Date.now();
+        const deltaTime = (now - this.lastFrameMS) / this.cameraParams.responseCoef;
+        this.lastFrameMS = now;
+    
+        // const this.viewMatrix = mat4.identity(); ORI
+        const camera = this.cameras[this.cameraParams.type];
+        this.viewMatrix = camera.update(deltaTime, this.inputHandler());
+    
+        mat4.translate(this.viewMatrix, vec3.fromValues(pos.x, pos.y, pos.z), this.viewMatrix);
+        mat4.rotateX(this.viewMatrix, Math.PI * this.rotation.getRotX(), this.viewMatrix);
+        mat4.rotateY(this.viewMatrix, Math.PI * this.rotation.getRotY(), this.viewMatrix);
+        mat4.rotateZ(this.viewMatrix, Math.PI * this.rotation.getRotZ(), this.viewMatrix);
+        mat4.multiply(this.projectionMatrix, this.viewMatrix, this.modelViewProjectionMatrix);
+    
+        return this.modelViewProjectionMatrix;
       }
       // --------------------renderBundle
       // this.renderables = [this.planet];
       // --------------------
 
-      this.eyePosition = vec3.fromValues(0, 50, -100);
+      // this.eyePosition = vec3.fromValues(0, 50, -100);
       this.upVector = vec3.fromValues(0, 1, 0);
       this.origin = vec3.fromValues(0, 0, 0);
 
-      this.projectionMatrix = mat4.perspective((2 * Math.PI) / 5, aspect, 1, 2000.0);
-      const viewMatrix = mat4.lookAt(this.eyePosition, this.origin, this.upVector);
+      // this.projectionMatrix = mat4.perspective((2 * Math.PI) / 5, aspect, 1, 2000.0);
+      // this.viewMatrix = mat4.lookAt(this.eyePosition, this.origin, this.upVector);
 
       const lightPosition = vec3.fromValues(50, 100, -100);
       const lightViewMatrix = mat4.lookAt(lightPosition, this.origin, this.upVector);
@@ -344,10 +351,10 @@ export default class MEMesh {
         lightViewMatrix
       );
 
-      this.viewProjMatrix = mat4.multiply(this.projectionMatrix, viewMatrix);
+      // this.viewProjMatrix = mat4.multiply(this.projectionMatrix, this.viewMatrix);
 
       // Move the model so it's centered.
-      const modelMatrix = mat4.translation([0, -45, 0]);
+      const modelMatrix = mat4.translation([0, 0, 0]);
 
       // The camera/light aren't moving, so write them into buffers now.
       {
@@ -360,14 +367,14 @@ export default class MEMesh {
           lightMatrixData.byteLength
         );
 
-        const cameraMatrixData = this.viewProjMatrix; //  as Float32Array;
-        this.device.queue.writeBuffer(
-          this.sceneUniformBuffer,
-          64,
-          cameraMatrixData.buffer,
-          cameraMatrixData.byteOffset,
-          cameraMatrixData.byteLength
-        );
+        // const cameraMatrixData = this.viewProjMatrix; //  as Float32Array;
+        // this.device.queue.writeBuffer(
+        //   this.sceneUniformBuffer,
+        //   64,
+        //   cameraMatrixData.buffer,
+        //   cameraMatrixData.byteOffset,
+        //   cameraMatrixData.byteLength
+        // );
 
         const lightData = lightPosition; // as Float32Array;
         this.device.queue.writeBuffer(
@@ -403,25 +410,18 @@ export default class MEMesh {
   }
 
   draw = (commandEncoder) => {
-    // let commandEncoder = this.device.createCommandEncoder();
     if(this.done == false) return;
-
-    const cameraViewProj = this.getCameraViewProjMatrix();
+    const transformationMatrix = this.getTransformationMatrix(this.position);
     this.device.queue.writeBuffer(
       this.sceneUniformBuffer,
       64,
-      cameraViewProj.buffer,
-      cameraViewProj.byteOffset,
-      cameraViewProj.byteLength
+      transformationMatrix.buffer,
+      transformationMatrix.byteOffset,
+      transformationMatrix.byteLength
     );
-
-
-    // console.log('log this.cameraViewProj', cameraViewProj)
-
     this.renderPassDescriptor.colorAttachments[0].view = this.context
       .getCurrentTexture()
       .createView();
-    //  const commandEncoder = this.device.createCommandEncoder();
     {
       const shadowPass = commandEncoder.beginRenderPass(this.shadowPassDescriptor);
       shadowPass.setPipeline(this.shadowPipeline);
@@ -440,13 +440,7 @@ export default class MEMesh {
       renderPass.setVertexBuffer(0, this.vertexBuffer);
       renderPass.setIndexBuffer(this.indexBuffer, 'uint16');
       renderPass.drawIndexed(this.indexCount);
-
       renderPass.end();
     }
-
-    //  this.device.queue.submit([commandEncoder.finish()]);
-    // requestAnimationFrame(frame);
-
   }
-
 }
