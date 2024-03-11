@@ -26,6 +26,7 @@ fn main(
 ) -> VertexOutput {
   var output : VertexOutput;
 
+ 
   // XY is in (-1, 1) space, Z is in (0, 1) space
   let posFromLight = scene.lightViewProjMatrix * model.modelMatrix * vec4(position, 1.0);
 

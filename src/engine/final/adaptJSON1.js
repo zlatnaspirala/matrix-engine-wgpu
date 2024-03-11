@@ -1,19 +1,22 @@
-import dragonRawData from './stanfordDragonData.js';
-import { computeSurfaceNormals, computeProjectedPlaneUVs } from './utils2.js';
+import {computeSurfaceNormals, computeProjectedPlaneUVs} from './utils2.js';
 
-export let mesh = {
-  positions: dragonRawData.positions,
-  triangles: dragonRawData.cells,
-  normals: [],
-  uvs: []
-};
+export function adaptJSON1(dragonRawData) {
 
-// Compute surface normals
-mesh.normals = computeSurfaceNormals(mesh.positions, mesh.triangles);
+  let mesh = {
+    positions: dragonRawData.positions,
+    triangles: dragonRawData.cells,
+    normals: [],
+    uvs: []
+  };
 
-// Compute some easy uvs for testing
-mesh.uvs = computeProjectedPlaneUVs(mesh.positions, 'xy');
+  // Compute surface normals
+  mesh.normals = computeSurfaceNormals(mesh.positions, mesh.triangles);
 
+  // Compute some easy uvs for testing
+  mesh.uvs = computeProjectedPlaneUVs(mesh.positions, 'xy');
+
+  return mesh;
+}
 // // Push indices for an additional ground plane
 // mesh.triangles.push(
 //   [mesh.positions.length, mesh.positions.length + 2, mesh.positions.length + 1],

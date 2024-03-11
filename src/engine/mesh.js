@@ -8,7 +8,7 @@ import {vertexWGSL} from './final/vertex.wgsl';
 export default class MEMesh {
 
   constructor(canvas, device, context, o) {
-    console.log("???????????????????????????????" + o.mesh + "<<<<<<<<<<<<<<<<<<o.mesh")
+
     this.done = false;
     this.device = device;
     this.context = context;
@@ -43,11 +43,20 @@ export default class MEMesh {
         this.projectionMatrix = mat4.perspective((2 * Math.PI) / 5, aspect, 1, 2000.0);
         this.modelViewProjectionMatrix = mat4.create();
 
-        resolve()
+        this.loadTex0(['./res/textures/rust.jpg'], device).then(() => {
+          //
+          resolve()
+          console.log('!!!!!!!!!!!load tex for mesh' , this.texture0)
+          // put it in bund group 
+        })
+
+        
       })
     }
 
     this.runProgram().then(() => {
+
+ 
 
       const aspect = canvas.width / canvas.height;
       const presentationFormat = navigator.gpu.getPreferredCanvasFormat();
@@ -181,6 +190,22 @@ export default class MEMesh {
               type: 'comparison',
             },
           },
+
+          {
+            binding: 3,
+            visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
+            texture: {
+              sampleType: 'float',
+            },
+          },
+          {
+            binding: 4,
+            visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
+            sampler: {
+              type: 'filtering',
+            },
+          },
+
         ],
       });
 
@@ -289,6 +314,16 @@ export default class MEMesh {
               compare: 'less',
             }),
           },
+           {
+            binding: 3,
+            resource: this.texture0.createView(),
+          },
+          {
+            binding: 4,
+            resource: this.sampler,
+          },
+
+
         ],
       });
 
@@ -322,16 +357,9 @@ export default class MEMesh {
     
         return this.modelViewProjectionMatrix;
       }
-      // --------------------renderBundle
-      // this.renderables = [this.planet];
-      // --------------------
 
-      // this.eyePosition = vec3.fromValues(0, 50, -100);
       this.upVector = vec3.fromValues(0, 1, 0);
       this.origin = vec3.fromValues(0, 0, 0);
-
-      // this.projectionMatrix = mat4.perspective((2 * Math.PI) / 5, aspect, 1, 2000.0);
-      // this.viewMatrix = mat4.lookAt(this.eyePosition, this.origin, this.upVector);
 
       const lightPosition = vec3.fromValues(50, 100, -100);
       const lightViewMatrix = mat4.lookAt(lightPosition, this.origin, this.upVector);
@@ -351,11 +379,8 @@ export default class MEMesh {
         lightViewMatrix
       );
 
-      // this.viewProjMatrix = mat4.multiply(this.projectionMatrix, this.viewMatrix);
-
-      // Move the model so it's centered.
+      // looks like affect on transformations for now const 0
       const modelMatrix = mat4.translation([0, 0, 0]);
-
       // The camera/light aren't moving, so write them into buffers now.
       {
         const lightMatrixData = lightViewProjMatrix; // as Float32Array;
@@ -367,16 +392,7 @@ export default class MEMesh {
           lightMatrixData.byteLength
         );
 
-        // const cameraMatrixData = this.viewProjMatrix; //  as Float32Array;
-        // this.device.queue.writeBuffer(
-        //   this.sceneUniformBuffer,
-        //   64,
-        //   cameraMatrixData.buffer,
-        //   cameraMatrixData.byteOffset,
-        //   cameraMatrixData.byteLength
-        // );
-
-        const lightData = lightPosition; // as Float32Array;
+        const lightData = lightPosition;
         this.device.queue.writeBuffer(
           this.sceneUniformBuffer,
           128,
@@ -385,7 +401,7 @@ export default class MEMesh {
           lightData.byteLength
         );
 
-        const modelData = modelMatrix; // as Float32Array;
+        const modelData = modelMatrix;
         this.device.queue.writeBuffer(
           this.modelUniformBuffer,
           0,
@@ -406,6 +422,35 @@ export default class MEMesh {
       };
 
       this.done = true;
+    })
+  }
+
+  async loadTex0(texturesPaths, device) {
+
+    this.sampler = device.createSampler({
+      magFilter: 'linear',
+      minFilter: 'linear',
+    });
+
+    return new Promise(async (resolve) => {
+      const response = await fetch(texturesPaths[0]);
+      const imageBitmap = await createImageBitmap(await response.blob());
+      console.log('WHAT IS THIS ', this)
+      this.texture0 = device.createTexture({
+        size: [imageBitmap.width, imageBitmap.height, 1],
+        format: 'rgba8unorm',
+        usage:
+          GPUTextureUsage.TEXTURE_BINDING |
+          GPUTextureUsage.COPY_DST |
+          GPUTextureUsage.RENDER_ATTACHMENT,
+      });
+      var texture0 = this.texture0
+      device.queue.copyExternalImageToTexture(
+        {source: imageBitmap},
+        {texture: texture0},
+        [imageBitmap.width, imageBitmap.height]
+      );
+      resolve()
     })
   }
 

@@ -154,7 +154,7 @@ export default class MECube {
         };
 
         const aspect = canvas.width / canvas.height;
-        this.projectionMatrix = mat4.perspective((2 * Math.PI) / 5, aspect, 1, 100.0);
+        this.projectionMatrix = mat4.perspective((2 * Math.PI) / 5, aspect, 1, 1000.0);
         this.modelViewProjectionMatrix = mat4.create();
 
         this.frameBindGroup = device.createBindGroup({
