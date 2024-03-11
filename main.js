@@ -2,7 +2,8 @@ import MatrixEngineWGPU from "./src/meWGPU";
 
 import {adaptJSON1} from "./src/engine/final/adaptJSON1.js";
 import stanfordDragonData from "./public/res/meshes/dragon/stanfordDragonData.js"
-// import {testCUSTOMGEO} from "./public/res/meshes/blender/piramida.js";
+import {testCUSTOMGEO} from "./public/res/meshes/blender/piramida.js";
+import {downloadMeshes} from './src/engine/loader-obj.js';
 
 let application = new MatrixEngineWGPU({ 
   useSingleRenderPass: true,
@@ -35,14 +36,22 @@ let application = new MatrixEngineWGPU({
   // console.log('APP ', testCUSTOMGEO)
   // testCUSTOMGEO = adaptJSON1(testCUSTOMGEO)
 
+  function onLoadObj (m) {
+    console.log('TES LOADING OBJ', m)
+  }
+  downloadMeshes(
+    {armor: "./res/meshes/obj/armor.obj"},
+    onLoadObj
+  );
+
   application.addCube(c)
 
   application.addMesh({
-    position: {x: 2, y: 0, z: -10},
+    position: {x: 2, y: 0, z: -120},
     name: 'dragon',
     mesh: mesh
   });
-  
+
   //  application.addCube(o)
 })
 

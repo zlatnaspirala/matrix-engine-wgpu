@@ -4,6 +4,7 @@ import {createInputHandler} from "./engine";
 import {vertexShadowWGSL} from './final/vertexShadow.wgsl';
 import {fragmentWGSL} from './final/fragment.wgsl';
 import {vertexWGSL} from './final/vertex.wgsl';
+import {downloadMeshes} from './loader-obj';
 
 export default class MEMesh {
 
@@ -42,6 +43,9 @@ export default class MEMesh {
         const aspect = canvas.width / canvas.height;
         this.projectionMatrix = mat4.perspective((2 * Math.PI) / 5, aspect, 1, 2000.0);
         this.modelViewProjectionMatrix = mat4.create();
+
+        // test
+        this.testLoadObj()
 
         this.loadTex0(['./res/textures/rust.jpg'], device).then(() => {
           //
@@ -322,8 +326,6 @@ export default class MEMesh {
             binding: 4,
             resource: this.sampler,
           },
-
-
         ],
       });
 
@@ -423,6 +425,11 @@ export default class MEMesh {
 
       this.done = true;
     })
+  }
+
+  testLoadObj () {
+
+
   }
 
   async loadTex0(texturesPaths, device) {
