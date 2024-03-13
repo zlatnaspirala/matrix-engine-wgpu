@@ -16,6 +16,7 @@ struct FragmentInput {
   @location(0) shadowPos : vec3f,
   @location(1) fragPos : vec3f,
   @location(2) fragNorm : vec3f,
+  @location(3) uv : vec2f,
 }
 
 const albedo = vec3f(0.9);
@@ -41,7 +42,7 @@ fn main(input : FragmentInput) -> @location(0) vec4f {
 
   let lambertFactor = max(dot(normalize(scene.lightPos - input.fragPos), normalize(input.fragNorm)), 0.0);
   let lightingFactor = min(ambientFactor + visibility * lambertFactor, 1.0);
-  let textureColor = textureSample(meshTexture, meshSampler, input.shadowPos.xy);
+  let textureColor = textureSample(meshTexture, meshSampler, input.uv);
 
   return vec4(textureColor.rgb * lightingFactor * albedo, 1.0);
 }`

@@ -21,13 +21,17 @@ I publish (this repo) npm package with name `matrix-engine-wgpu`.
   - scene objects feature [objects/scene/transformation]
   - Make it similar to the matrix-engine webGL features.
 
-For now i will use `createRenderBundleEncoder` for multi object scene draws.
+For now i will use `createRenderBundleEncoder` for multi object scene draws but mix also with shadows pipline.
 
 
+## How to load obj file:
 Main instance script:
 ```js
 import MatrixEngineWGPU from "./src/meWGPU";
-import {mesh} from "./src/engine/final/stanfordDragon";
+// import {adaptJSON1} from "./src/engine/final/adaptJSON1.js";
+// import stanfordDragonData from "./public/res/meshes/dragon/stanfordDragonData.js"
+import {testCUSTOMGEO} from "./public/res/meshes/blender/piramida.js";
+import {downloadMeshes} from './src/engine/loader-obj.js';
 
 let application = new MatrixEngineWGPU({ 
   useSingleRenderPass: true,
@@ -49,48 +53,39 @@ let application = new MatrixEngineWGPU({
     texturesPaths: ['./res/textures/rust.jpg']
   };
 
+  // let mesh = adaptJSON1(stanfordDragonData)
   // application.addBall(o)
-  application.addCube(c)
-  application.addMesh({
-    position: {x: 2, y: 0, z: -10},
-    name: 'dragon',
-    mesh: mesh
-  });
+  // application.addCube(c)
+  // application.addCube(o)
+
+  function onLoadObj (m) {
+    application.addMeshObj({
+      position: {x: 0, y: 0, z: -5},
+      texturesPaths: ['./res/meshes/obj/armor.png'],
+      name: 'Armor',
+      mesh: m.armor
+    })
+  }
+
+  downloadMeshes(
+    {armor: "./res/meshes/obj/armor.obj"},
+    onLoadObj
+  )
 })
 
 window.app = application
 ```
 
-Not the best solution but works for now.
-Next level is draw in one scene different shaders different pipline...
 
-System draws func:
-```js
-frame = () => {
-    let commandEncoder = this.device.createCommandEncoder();
-    this.rbContainer = [];
 
-    let passEncoder;
-
-    this.mainRenderBundle.forEach((meItem, index) => {
-      meItem.draw();
-      this.rbContainer.push(meItem.renderBundle)
-      if(index == 0) passEncoder = commandEncoder.beginRenderPass(meItem.renderPassDescriptor);
-    })
-
-    // passEncoder.executeBundles([NIK.renderBundle, NIK2.renderBundle]);
-    passEncoder.executeBundles(this.rbContainer);
-    passEncoder.end();
-    this.device.queue.submit([commandEncoder.finish()]);
-
-    requestAnimationFrame(this.frame);
-  }
-```
 
 ## LICENCE
 
  - Structural shema for project and personal learning inspired by:
    https://webgpu.github.io/webgpu-samples/samples/renderBundles
+
+ - Obj loader [same like matrix-engine webgl engine]
+   Obj loader source http://math.hws.edu/graphicsbook/source/webgl/cube-camera.html
 
 ### BSD 3-Clause 
 

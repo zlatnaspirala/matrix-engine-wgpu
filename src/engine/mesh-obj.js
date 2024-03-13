@@ -94,6 +94,16 @@ export default class MEMeshObj {
         this.vertexNormalsBuffer.unmap();
       }
 
+      this.vertexTexCoordsBuffer = this.device.createBuffer({
+        size: this.mesh.textures.length * Float32Array.BYTES_PER_ELEMENT,
+        usage: GPUBufferUsage.VERTEX,
+        mappedAtCreation: true,
+      });
+      {
+        new Float32Array(this.vertexTexCoordsBuffer.getMappedRange()).set(this.mesh.textures);
+        this.vertexTexCoordsBuffer.unmap();
+      }
+
       // Create the model index buffer.
       this.indexCount = this.mesh.indices.length;
       this.indexBuffer = this.device.createBuffer({
@@ -140,6 +150,17 @@ export default class MEMeshObj {
               shaderLocation: 1,
               offset: 0,
               format: "float32x3",
+            },
+          ],
+        },
+        {
+          arrayStride: Float32Array.BYTES_PER_ELEMENT * 2,
+          attributes: [
+            {
+              // uvs
+              shaderLocation: 2,
+              offset: 0,
+              format: "float32x2",
             },
           ],
         },
@@ -486,6 +507,7 @@ export default class MEMeshObj {
       shadowPass.setBindGroup(1, this.modelBindGroup);
       shadowPass.setVertexBuffer(0, this.vertexBuffer);
       shadowPass.setVertexBuffer(1, this.vertexNormalsBuffer);
+      shadowPass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
       shadowPass.setIndexBuffer(this.indexBuffer, 'uint16');
       shadowPass.drawIndexed(this.indexCount);
       shadowPass.end();
@@ -497,6 +519,7 @@ export default class MEMeshObj {
       renderPass.setBindGroup(1, this.modelBindGroup);
       renderPass.setVertexBuffer(0, this.vertexBuffer);
       renderPass.setVertexBuffer(1, this.vertexNormalsBuffer);
+      renderPass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
       renderPass.setIndexBuffer(this.indexBuffer, 'uint16');
       renderPass.drawIndexed(this.indexCount);
       renderPass.end();

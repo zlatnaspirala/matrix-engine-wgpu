@@ -15,18 +15,19 @@ struct VertexOutput {
   @location(0) shadowPos: vec3f,
   @location(1) fragPos: vec3f,
   @location(2) fragNorm: vec3f,
-
+  @location(3) uv : vec2f,
+  
   @builtin(position) Position: vec4f,
 }
 
 @vertex
 fn main(
   @location(0) position: vec3f,
-  @location(1) normal: vec3f
+  @location(1) normal: vec3f,
+  @location(2) uv : vec2f
 ) -> VertexOutput {
   var output : VertexOutput;
 
- 
   // XY is in (-1, 1) space, Z is in (0, 1) space
   let posFromLight = scene.lightViewProjMatrix * model.modelMatrix * vec4(position, 1.0);
 
@@ -40,6 +41,9 @@ fn main(
   output.Position = scene.cameraViewProjMatrix * model.modelMatrix * vec4(position, 1.0);
   output.fragPos = output.Position.xyz;
   output.fragNorm = normal;
+  // nidza
+  output.uv = uv;
+
   return output;
 }
 `

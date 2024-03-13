@@ -238,42 +238,6 @@ export default class MatrixEngineWGPU {
     requestAnimationFrame(this.frame);
   }
 
-  frameSinglePass2 = () => {
-    let commandEncoder = this.device.createCommandEncoder();
-    this.rbContainer = [];
-    let passEncoder;
-
-    var testme = false;
-    this.mainRenderBundle.forEach((meItem, index) => {
-      meItem.position.update();
-      meItem.draw(commandEncoder);
-
-      if (!meItem.renderBundle) {
-        testme = true;
-        return;
-      } else {
-        this.rbContainer.push(meItem.renderBundle)
-      }
-      // if(index == 0) passEncoder = commandEncoder.beginRenderPass(meItem.renderPassDescriptor);
-    })
-
-    if (testme == false) {
-
-    this.renderPassDescriptor.colorAttachments[0].view = this.context
-    .getCurrentTexture()
-    .createView();
-     console.log('prolazi ')
-    passEncoder = commandEncoder.beginRenderPass(this.renderPassDescriptor);
-    passEncoder.executeBundles(this.rbContainer);
-    passEncoder.end();
-    this.device.queue.submit([commandEncoder.finish()]);
-    } else {
-      // console.log( 'ne prolazi ')
-      // this.device.queue.submit([commandEncoder.finish()]);
-    }
-    requestAnimationFrame(this.frame);
-  }
-
   framePassPerObject = () => {
     // console.log('framePassPerObject')
     let commandEncoder = this.device.createCommandEncoder();
@@ -288,7 +252,7 @@ export default class MatrixEngineWGPU {
       passEncoder.executeBundles(this.rbContainer);
       passEncoder.end();
       } else {
-        meItem.renderScene(commandEncoder)
+        meItem.draw(commandEncoder)
       }
 
     })
