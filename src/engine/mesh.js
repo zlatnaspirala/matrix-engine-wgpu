@@ -39,12 +39,10 @@ export default class MEMesh {
     this.runProgram = () => {
       return new Promise(async (resolve) => {
         this.shadowDepthTextureSize = 1024;
-
         const aspect = canvas.width / canvas.height;
         this.projectionMatrix = mat4.perspective((2 * Math.PI) / 5, aspect, 1, 2000.0);
         this.modelViewProjectionMatrix = mat4.create();
 
-        // this.testLoadObj()
         this.loadTex0(['./res/textures/rust.jpg'], device).then(() => {
           resolve()
           console.log('load tex for mesh', this.texture0)
@@ -185,7 +183,6 @@ export default class MEMesh {
               type: 'comparison',
             },
           },
-
           {
             binding: 3,
             visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
@@ -199,8 +196,7 @@ export default class MEMesh {
             sampler: {
               type: 'filtering',
             },
-          },
-
+          }
         ],
       });
 
@@ -338,7 +334,6 @@ export default class MEMesh {
         const deltaTime = (now - this.lastFrameMS) / this.cameraParams.responseCoef;
         this.lastFrameMS = now;
 
-        // const this.viewMatrix = mat4.identity(); ORI
         const camera = this.cameras[this.cameraParams.type];
         this.viewMatrix = camera.update(deltaTime, this.inputHandler());
 
@@ -418,13 +413,7 @@ export default class MEMesh {
     })
   }
 
-  testLoadObj() {
-
-
-  }
-
   async loadTex0(texturesPaths, device) {
-
     this.sampler = device.createSampler({
       magFilter: 'linear',
       minFilter: 'linear',

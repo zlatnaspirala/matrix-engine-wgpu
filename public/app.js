@@ -53,18 +53,18 @@ let application = new _meWGPU.default({
   // let mesh = adaptJSON1(stanfordDragonData)
 
   //  application.addBall(o)
-  //  console.log('APP ', testCUSTOMGEO);
 
   // application.addCube(c)
 
   function onLoadObj(m) {
+    console.log('APP ', m.armor);
     application.addMeshObj({
       position: {
         x: 0,
         y: 0,
         z: -10
       },
-      texturesPaths: ['./res/meshes/obj/armor.png'],
+      texturesPaths: ['./res/textures/default.png'],
       name: 'dragon',
       mesh: m.armor
     });
@@ -6870,9 +6870,7 @@ fn main(input : FragmentInput) -> @location(0) vec4f {
 
   let lambertFactor = max(dot(normalize(scene.lightPos - input.fragPos), normalize(input.fragNorm)), 0.0);
   let lightingFactor = min(ambientFactor + visibility * lambertFactor, 1.0);
-
   let textureColor = textureSample(meshTexture, meshSampler, input.shadowPos.xy);
-
 
   return vec4(textureColor.rgb * lightingFactor * albedo, 1.0);
 }`;
@@ -8161,8 +8159,6 @@ class MEMesh {
         const aspect = canvas.width / canvas.height;
         this.projectionMatrix = _wgpuMatrix.mat4.perspective(2 * Math.PI / 5, aspect, 1, 2000.0);
         this.modelViewProjectionMatrix = _wgpuMatrix.mat4.create();
-
-        // this.testLoadObj()
         this.loadTex0(['./res/textures/rust.jpg'], device).then(() => {
           resolve();
           console.log('load tex for mesh', this.texture0);
@@ -8415,8 +8411,6 @@ class MEMesh {
         const now = Date.now();
         const deltaTime = (now - this.lastFrameMS) / this.cameraParams.responseCoef;
         this.lastFrameMS = now;
-
-        // const this.viewMatrix = mat4.identity(); ORI
         const camera = this.cameras[this.cameraParams.type];
         this.viewMatrix = camera.update(deltaTime, this.inputHandler());
         _wgpuMatrix.mat4.translate(this.viewMatrix, _wgpuMatrix.vec3.fromValues(pos.x, pos.y, pos.z), this.viewMatrix);
@@ -8465,7 +8459,6 @@ class MEMesh {
       this.done = true;
     });
   }
-  testLoadObj() {}
   async loadTex0(texturesPaths, device) {
     this.sampler = device.createSampler({
       magFilter: 'linear',

@@ -28,14 +28,17 @@ let application = new MatrixEngineWGPU({
   // let mesh = adaptJSON1(stanfordDragonData)
 
   //  application.addBall(o)
-  //  console.log('APP ', testCUSTOMGEO);
+
 
   // application.addCube(c)
 
   function onLoadObj (m) {
+
+    console.log('APP ', m.armor);
+    
     application.addMeshObj({
       position: {x: 0, y: 0, z: -10},
-      texturesPaths: ['./res/meshes/obj/armor.png'],
+      texturesPaths: ['./res/textures/default.png'],
       name: 'dragon',
       mesh: m.armor
     })

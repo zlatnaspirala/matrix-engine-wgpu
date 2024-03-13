@@ -41,9 +41,7 @@ fn main(input : FragmentInput) -> @location(0) vec4f {
 
   let lambertFactor = max(dot(normalize(scene.lightPos - input.fragPos), normalize(input.fragNorm)), 0.0);
   let lightingFactor = min(ambientFactor + visibility * lambertFactor, 1.0);
-
   let textureColor = textureSample(meshTexture, meshSampler, input.shadowPos.xy);
-
 
   return vec4(textureColor.rgb * lightingFactor * albedo, 1.0);
 }`
