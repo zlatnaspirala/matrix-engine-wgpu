@@ -8159,7 +8159,7 @@ class MEMesh {
         const aspect = canvas.width / canvas.height;
         this.projectionMatrix = _wgpuMatrix.mat4.perspective(2 * Math.PI / 5, aspect, 1, 2000.0);
         this.modelViewProjectionMatrix = _wgpuMatrix.mat4.create();
-        this.loadTex0(['./res/textures/rust.jpg'], device).then(() => {
+        this.loadTex0(this.texturesPaths, device).then(() => {
           resolve();
           console.log('load tex for mesh', this.texture0);
         });

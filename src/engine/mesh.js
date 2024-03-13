@@ -43,7 +43,7 @@ export default class MEMesh {
         this.projectionMatrix = mat4.perspective((2 * Math.PI) / 5, aspect, 1, 2000.0);
         this.modelViewProjectionMatrix = mat4.create();
 
-        this.loadTex0(['./res/textures/rust.jpg'], device).then(() => {
+        this.loadTex0(this.texturesPaths, device).then(() => {
           resolve()
           console.log('load tex for mesh', this.texture0)
         })
