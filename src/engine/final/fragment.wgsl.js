@@ -12,7 +12,6 @@ struct Scene {
 @group(0) @binding(3) var meshTexture: texture_2d<f32>;
 @group(0) @binding(4) var meshSampler: sampler;
 
-
 struct FragmentInput {
   @location(0) shadowPos : vec3f,
   @location(1) fragPos : vec3f,

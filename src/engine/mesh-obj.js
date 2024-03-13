@@ -4,8 +4,8 @@ import {createInputHandler} from "./engine";
 import {vertexShadowWGSL} from './final/vertexShadow.wgsl';
 import {fragmentWGSL} from './final/fragment.wgsl';
 import {vertexWGSL} from './final/vertex.wgsl';
-import {downloadMeshes} from './loader-obj';
-import {adaptJSON2, addVerticesNormalUvs} from './final/adaptJSON1';
+// import {downloadMeshes} from './loader-obj';
+// import {adaptJSON2, addVerticesNormalUvs} from './final/adaptJSON1';
 
 export default class MEMeshObj {
 
@@ -16,59 +16,47 @@ export default class MEMeshObj {
     this.context = context;
     this.entityArgPass = o.entityArgPass;
 
-    // make uvs
-
+    // Mesh stuff
     this.mesh = o.mesh;
-    // this.mesh = addVerticesNormalUvs(o.mesh);
     this.mesh.uvs = this.mesh.textures;
     console.log('mesh obj : ', this.mesh)
 
     this.inputHandler = createInputHandler(window, canvas);
     this.cameras = o.cameras;
-    console.log('passed : o.mainCameraParams.responseCoef ', o.mainCameraParams.responseCoef)
+
     this.cameraParams = {
       type: o.mainCameraParams.type,
       responseCoef: o.mainCameraParams.responseCoef
     }
+
     this.lastFrameMS = 0;
     this.texturesPaths = [];
     o.texturesPaths.forEach((t) => {this.texturesPaths.push(t)})
+
     this.presentationFormat = navigator.gpu.getPreferredCanvasFormat();
+
     this.position = new Position(o.position.x, o.position.y, o.position.z);
-    console.log('cube added on pos : ', this.position)
     this.rotation = new Rotation(o.rotation.x, o.rotation.y, o.rotation.z);
     this.rotation.rotationSpeed.x = o.rotationSpeed.x;
     this.rotation.rotationSpeed.y = o.rotationSpeed.y;
     this.rotation.rotationSpeed.z = o.rotationSpeed.z;
     this.scale = o.scale;
 
-    // new
     this.runProgram = () => {
       return new Promise(async (resolve) => {
         this.shadowDepthTextureSize = 1024;
-
         const aspect = canvas.width / canvas.height;
         this.projectionMatrix = mat4.perspective((2 * Math.PI) / 5, aspect, 1, 2000.0);
         this.modelViewProjectionMatrix = mat4.create();
-
-        // test
-        this.testLoadObj()
-
-        this.loadTex0(['./res/textures/rust.jpg'], device).then(() => {
-          //
+        // console.log('cube added texturesPaths: ', this.texturesPaths)
+        this.loadTex0(this.texturesPaths, device).then(() => {
+          console.log('loaded tex buffer for mesh:', this.texture0)
           resolve()
-          console.log('!!!!!!!!!!!load tex for mesh', this.texture0)
-          // put it in bund group 
         })
-
-
       })
     }
 
     this.runProgram().then(() => {
-
-
-
       const aspect = canvas.width / canvas.height;
       const presentationFormat = navigator.gpu.getPreferredCanvasFormat();
       this.context.configure({
@@ -90,12 +78,11 @@ export default class MEMeshObj {
         // //   mapping.set(this.mesh.normals[i], 6 * i + 3);
         // // }
         // this.vertexBuffer.unmap();
-
         new Float32Array(this.vertexBuffer.getMappedRange()).set(this.mesh.vertices);
         this.vertexBuffer.unmap();
       }
 
-      // NIDZA TEST SECOUND BUFFER 
+      // NIDZA TEST SECOUND BUFFER
       // Create the model vertex buffer.
       this.vertexNormalsBuffer = this.device.createBuffer({
         size: this.mesh.vertexNormals.length * Float32Array.BYTES_PER_ELEMENT,
@@ -142,13 +129,7 @@ export default class MEMeshObj {
               shaderLocation: 0,
               offset: 0,
               format: "float32x3",
-            },
-            // {
-            //   // normal
-            //   shaderLocation: 1,
-            //   offset: Float32Array.BYTES_PER_ELEMENT * 3,
-            //   format: 'float32x3',
-            // },
+            }
           ],
         },
         {
@@ -233,16 +214,16 @@ export default class MEMeshObj {
             visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
             texture: {
               sampleType: 'float',
-            },
+            }
           },
           {
             binding: 4,
             visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
             sampler: {
               type: 'filtering',
-            },
-          },
-        ],
+            }
+          }
+        ]
       });
 
       this.pipeline = this.device.createRenderPipeline({
@@ -287,7 +268,6 @@ export default class MEMeshObj {
           {
             // view is acquired and set in render loop.
             view: undefined,
-
             clearValue: {r: 0.5, g: 0.5, b: 0.5, a: 1.0},
             loadOp: 'load',
             storeOp: 'store',
@@ -295,7 +275,6 @@ export default class MEMeshObj {
         ],
         depthStencilAttachment: {
           view: depthTexture.createView(),
-
           depthClearValue: 1.0,
           depthLoadOp: 'clear',
           depthStoreOp: 'store',
@@ -457,11 +436,6 @@ export default class MEMeshObj {
 
       this.done = true;
     })
-  }
-
-  testLoadObj() {
-
-
   }
 
   async loadTex0(texturesPaths, device) {

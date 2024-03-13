@@ -14,7 +14,7 @@ export default class MEMesh {
     this.device = device;
     this.context = context;
     this.entityArgPass = o.entityArgPass;
-    
+
     this.mesh = o.mesh;
     this.inputHandler = createInputHandler(window, canvas);
     this.cameras = o.cameras;
@@ -44,24 +44,15 @@ export default class MEMesh {
         this.projectionMatrix = mat4.perspective((2 * Math.PI) / 5, aspect, 1, 2000.0);
         this.modelViewProjectionMatrix = mat4.create();
 
-        // test
-        this.testLoadObj()
-
+        // this.testLoadObj()
         this.loadTex0(['./res/textures/rust.jpg'], device).then(() => {
-          //
           resolve()
-          console.log('!!!!!!!!!!!load tex for mesh' , this.texture0)
-          // put it in bund group 
+          console.log('load tex for mesh', this.texture0)
         })
-
-        
       })
     }
 
     this.runProgram().then(() => {
-
- 
-
       const aspect = canvas.width / canvas.height;
       const presentationFormat = navigator.gpu.getPreferredCanvasFormat();
       this.context.configure({
@@ -318,7 +309,7 @@ export default class MEMesh {
               compare: 'less',
             }),
           },
-           {
+          {
             binding: 3,
             resource: this.texture0.createView(),
           },
@@ -346,17 +337,17 @@ export default class MEMesh {
         const now = Date.now();
         const deltaTime = (now - this.lastFrameMS) / this.cameraParams.responseCoef;
         this.lastFrameMS = now;
-    
+
         // const this.viewMatrix = mat4.identity(); ORI
         const camera = this.cameras[this.cameraParams.type];
         this.viewMatrix = camera.update(deltaTime, this.inputHandler());
-    
+
         mat4.translate(this.viewMatrix, vec3.fromValues(pos.x, pos.y, pos.z), this.viewMatrix);
         mat4.rotateX(this.viewMatrix, Math.PI * this.rotation.getRotX(), this.viewMatrix);
         mat4.rotateY(this.viewMatrix, Math.PI * this.rotation.getRotY(), this.viewMatrix);
         mat4.rotateZ(this.viewMatrix, Math.PI * this.rotation.getRotZ(), this.viewMatrix);
         mat4.multiply(this.projectionMatrix, this.viewMatrix, this.modelViewProjectionMatrix);
-    
+
         return this.modelViewProjectionMatrix;
       }
 
@@ -427,7 +418,7 @@ export default class MEMesh {
     })
   }
 
-  testLoadObj () {
+  testLoadObj() {
 
 
   }
@@ -450,7 +441,7 @@ export default class MEMesh {
           GPUTextureUsage.COPY_DST |
           GPUTextureUsage.RENDER_ATTACHMENT,
       });
-       
+
       device.queue.copyExternalImageToTexture(
         {source: imageBitmap},
         {texture: this.texture0},

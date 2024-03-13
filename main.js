@@ -24,30 +24,23 @@ let application = new MatrixEngineWGPU({
     texturesPaths: ['./res/textures/rust.jpg']
   };
 
-  // testCUSTOMGEO
-  let mesh = adaptJSON1(stanfordDragonData)
+
+  // let mesh = adaptJSON1(stanfordDragonData)
+
   //  application.addBall(o)
-  // console.log('APP ', testCUSTOMGEO);
-  // testCUSTOMGEO.positions = testCUSTOMGEO.vertices
-  // testCUSTOMGEO.triangles = testCUSTOMGEO.faces;
-  // testCUSTOMGEO.cells = testCUSTOMGEO.vertices;
-  // testCUSTOMGEO.uvs = testCUSTOMGEO.normals;
-  // console.log('APP ', testCUSTOMGEO)
-  // testCUSTOMGEO = adaptJSON1(testCUSTOMGEO)
+  //  console.log('APP ', testCUSTOMGEO);
 
   // application.addCube(c)
 
   function onLoadObj (m) {
-    // console.log('TES LOADING OBJ', m)
-    var M = m.armor
-    // console.log('OBJ FILE STATUS ', M)
     application.addMeshObj({
-      position: {x: 0, y: 0, z: -22},
-      texturesPaths: ['./res/textures/rust.jpg'],
+      position: {x: 0, y: 0, z: -10},
+      texturesPaths: ['./res/meshes/obj/armor.png'],
       name: 'dragon',
-      mesh: M
+      mesh: m.armor
     })
   }
+
   downloadMeshes(
     {armor: "./res/meshes/obj/armor.obj"},
     onLoadObj

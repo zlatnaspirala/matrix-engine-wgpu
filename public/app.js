@@ -50,32 +50,23 @@ let application = new _meWGPU.default({
     texturesPaths: ['./res/textures/rust.jpg']
   };
 
-  // testCUSTOMGEO
-  let mesh = (0, _adaptJSON.adaptJSON1)(_stanfordDragonData.default);
+  // let mesh = adaptJSON1(stanfordDragonData)
+
   //  application.addBall(o)
-  // console.log('APP ', testCUSTOMGEO);
-  // testCUSTOMGEO.positions = testCUSTOMGEO.vertices
-  // testCUSTOMGEO.triangles = testCUSTOMGEO.faces;
-  // testCUSTOMGEO.cells = testCUSTOMGEO.vertices;
-  // testCUSTOMGEO.uvs = testCUSTOMGEO.normals;
-  // console.log('APP ', testCUSTOMGEO)
-  // testCUSTOMGEO = adaptJSON1(testCUSTOMGEO)
+  //  console.log('APP ', testCUSTOMGEO);
 
   // application.addCube(c)
 
   function onLoadObj(m) {
-    // console.log('TES LOADING OBJ', m)
-    var M = m.armor;
-    // console.log('OBJ FILE STATUS ', M)
     application.addMeshObj({
       position: {
         x: 0,
         y: 0,
-        z: -22
+        z: -10
       },
-      texturesPaths: ['./res/textures/rust.jpg'],
+      texturesPaths: ['./res/meshes/obj/armor.png'],
       name: 'dragon',
-      mesh: M
+      mesh: m.armor
     });
   }
   (0, _loaderObj.downloadMeshes)({
@@ -6850,7 +6841,6 @@ struct Scene {
 @group(0) @binding(3) var meshTexture: texture_2d<f32>;
 @group(0) @binding(4) var meshSampler: sampler;
 
-
 struct FragmentInput {
   @location(0) shadowPos : vec3f,
   @location(1) fragPos : vec3f,
@@ -7711,8 +7701,9 @@ var _engine = require("./engine");
 var _vertexShadow = require("./final/vertexShadow.wgsl");
 var _fragment = require("./final/fragment.wgsl");
 var _vertex = require("./final/vertex.wgsl");
-var _loaderObj = require("./loader-obj");
-var _adaptJSON = require("./final/adaptJSON1");
+// import {downloadMeshes} from './loader-obj';
+// import {adaptJSON2, addVerticesNormalUvs} from './final/adaptJSON1';
+
 class MEMeshObj {
   constructor(canvas, device, context, o) {
     this.done = false;
@@ -7720,15 +7711,12 @@ class MEMeshObj {
     this.context = context;
     this.entityArgPass = o.entityArgPass;
 
-    // make uvs
-
+    // Mesh stuff
     this.mesh = o.mesh;
-    // this.mesh = addVerticesNormalUvs(o.mesh);
     this.mesh.uvs = this.mesh.textures;
     console.log('mesh obj : ', this.mesh);
     this.inputHandler = (0, _engine.createInputHandler)(window, canvas);
     this.cameras = o.cameras;
-    console.log('passed : o.mainCameraParams.responseCoef ', o.mainCameraParams.responseCoef);
     this.cameraParams = {
       type: o.mainCameraParams.type,
       responseCoef: o.mainCameraParams.responseCoef
@@ -7740,28 +7728,21 @@ class MEMeshObj {
     });
     this.presentationFormat = navigator.gpu.getPreferredCanvasFormat();
     this.position = new _matrixClass.Position(o.position.x, o.position.y, o.position.z);
-    console.log('cube added on pos : ', this.position);
     this.rotation = new _matrixClass.Rotation(o.rotation.x, o.rotation.y, o.rotation.z);
     this.rotation.rotationSpeed.x = o.rotationSpeed.x;
     this.rotation.rotationSpeed.y = o.rotationSpeed.y;
     this.rotation.rotationSpeed.z = o.rotationSpeed.z;
     this.scale = o.scale;
-
-    // new
     this.runProgram = () => {
       return new Promise(async resolve => {
         this.shadowDepthTextureSize = 1024;
         const aspect = canvas.width / canvas.height;
         this.projectionMatrix = _wgpuMatrix.mat4.perspective(2 * Math.PI / 5, aspect, 1, 2000.0);
         this.modelViewProjectionMatrix = _wgpuMatrix.mat4.create();
-
-        // test
-        this.testLoadObj();
-        this.loadTex0(['./res/textures/rust.jpg'], device).then(() => {
-          //
+        // console.log('cube added texturesPaths: ', this.texturesPaths)
+        this.loadTex0(this.texturesPaths, device).then(() => {
+          console.log('loaded tex buffer for mesh:', this.texture0);
           resolve();
-          console.log('!!!!!!!!!!!load tex for mesh', this.texture0);
-          // put it in bund group 
         });
       });
     };
@@ -7787,12 +7768,11 @@ class MEMeshObj {
         // //   mapping.set(this.mesh.normals[i], 6 * i + 3);
         // // }
         // this.vertexBuffer.unmap();
-
         new Float32Array(this.vertexBuffer.getMappedRange()).set(this.mesh.vertices);
         this.vertexBuffer.unmap();
       }
 
-      // NIDZA TEST SECOUND BUFFER 
+      // NIDZA TEST SECOUND BUFFER
       // Create the model vertex buffer.
       this.vertexNormalsBuffer = this.device.createBuffer({
         size: this.mesh.vertexNormals.length * Float32Array.BYTES_PER_ELEMENT,
@@ -7837,14 +7817,7 @@ class MEMeshObj {
           shaderLocation: 0,
           offset: 0,
           format: "float32x3"
-        }
-        // {
-        //   // normal
-        //   shaderLocation: 1,
-        //   offset: Float32Array.BYTES_PER_ELEMENT * 3,
-        //   format: 'float32x3',
-        // },
-        ]
+        }]
       }, {
         arrayStride: Float32Array.BYTES_PER_ELEMENT * 3,
         attributes: [{
@@ -8087,7 +8060,6 @@ class MEMeshObj {
       this.done = true;
     });
   }
-  testLoadObj() {}
   async loadTex0(texturesPaths, device) {
     this.sampler = device.createSampler({
       magFilter: 'linear',
@@ -8140,7 +8112,7 @@ class MEMeshObj {
 }
 exports.default = MEMeshObj;
 
-},{"./engine":7,"./final/adaptJSON1":8,"./final/fragment.wgsl":9,"./final/vertex.wgsl":11,"./final/vertexShadow.wgsl":12,"./loader-obj":13,"./matrix-class":14,"wgpu-matrix":2}],16:[function(require,module,exports){
+},{"./engine":7,"./final/fragment.wgsl":9,"./final/vertex.wgsl":11,"./final/vertexShadow.wgsl":12,"./matrix-class":14,"wgpu-matrix":2}],16:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -8190,13 +8162,10 @@ class MEMesh {
         this.projectionMatrix = _wgpuMatrix.mat4.perspective(2 * Math.PI / 5, aspect, 1, 2000.0);
         this.modelViewProjectionMatrix = _wgpuMatrix.mat4.create();
 
-        // test
-        this.testLoadObj();
+        // this.testLoadObj()
         this.loadTex0(['./res/textures/rust.jpg'], device).then(() => {
-          //
           resolve();
-          console.log('!!!!!!!!!!!load tex for mesh', this.texture0);
-          // put it in bund group 
+          console.log('load tex for mesh', this.texture0);
         });
       });
     };
