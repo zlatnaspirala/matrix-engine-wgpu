@@ -61,28 +61,32 @@ let application = new _meWGPU.default({
   // console.log('APP ', testCUSTOMGEO)
   // testCUSTOMGEO = adaptJSON1(testCUSTOMGEO)
 
+  // application.addCube(c)
+
   function onLoadObj(m) {
-    console.log('TES LOADING OBJ', m);
+    // console.log('TES LOADING OBJ', m)
+    var M = m.armor;
+    // console.log('OBJ FILE STATUS ', M)
+    application.addMeshObj({
+      position: {
+        x: 0,
+        y: 0,
+        z: -22
+      },
+      texturesPaths: ['./res/textures/rust.jpg'],
+      name: 'dragon',
+      mesh: M
+    });
   }
   (0, _loaderObj.downloadMeshes)({
     armor: "./res/meshes/obj/armor.obj"
   }, onLoadObj);
-  application.addCube(c);
-  application.addMesh({
-    position: {
-      x: 2,
-      y: 0,
-      z: -120
-    },
-    name: 'dragon',
-    mesh: mesh
-  });
 
   //  application.addCube(o)
 });
 window.app = application;
 
-},{"./public/res/meshes/blender/piramida.js":3,"./public/res/meshes/dragon/stanfordDragonData.js":4,"./src/engine/final/adaptJSON1.js":8,"./src/engine/loader-obj.js":13,"./src/meWGPU":16}],2:[function(require,module,exports){
+},{"./public/res/meshes/blender/piramida.js":3,"./public/res/meshes/dragon/stanfordDragonData.js":4,"./src/engine/final/adaptJSON1.js":8,"./src/engine/loader-obj.js":13,"./src/meWGPU":17}],2:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -5899,7 +5903,7 @@ class MEBall {
 }
 exports.default = MEBall;
 
-},{"../shaders/shaders":17,"./engine":7,"./matrix-class":14,"wgpu-matrix":2}],6:[function(require,module,exports){
+},{"../shaders/shaders":18,"./engine":7,"./matrix-class":14,"wgpu-matrix":2}],6:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -5921,8 +5925,6 @@ class MECube {
     this.device = device;
     this.context = context;
     this.entityArgPass = o.entityArgPass;
-
-    // The input handler
     this.inputHandler = (0, _engine.createInputHandler)(window, canvas);
     this.cameras = o.cameras;
     console.log('passed : o.mainCameraParams.responseCoef ', o.mainCameraParams.responseCoef);
@@ -5932,7 +5934,6 @@ class MECube {
     }; // |  WASD 'arcball' };
 
     this.lastFrameMS = 0;
-    console.log('passed args', o.entityArgPass);
     this.shaderModule = device.createShaderModule({
       code: _shaders.BALL_SHADER
     });
@@ -6311,7 +6312,7 @@ class MECube {
 }
 exports.default = MECube;
 
-},{"../shaders/shaders":17,"./engine":7,"./matrix-class":14,"wgpu-matrix":2}],7:[function(require,module,exports){
+},{"../shaders/shaders":18,"./engine":7,"./matrix-class":14,"wgpu-matrix":2}],7:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -6781,6 +6782,7 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.adaptJSON1 = adaptJSON1;
+exports.addVerticesNormalUvs = addVerticesNormalUvs;
 var _utils = require("./utils2.js");
 function adaptJSON1(dragonRawData) {
   let mesh = {
@@ -6797,32 +6799,35 @@ function adaptJSON1(dragonRawData) {
   mesh.uvs = (0, _utils.computeProjectedPlaneUVs)(mesh.positions, 'xy');
   return mesh;
 }
-// // Push indices for an additional ground plane
-// mesh.triangles.push(
-//   [mesh.positions.length, mesh.positions.length + 2, mesh.positions.length + 1],
-//   [mesh.positions.length, mesh.positions.length + 1, mesh.positions.length + 3]
-// );
+function addVerticesNormalUvs(mesh) {
+  var meshAdapted = {
+    positions: [],
+    cells: [],
+    uvs: mesh.textures,
+    vertices: mesh.vertices
+    // normals: mesh.vertexNormals
+  };
+  // force syntese 
+  for (var x = 0; x < mesh.vertices.length; x = x + 3) {
+    var sub = [];
+    sub.push(mesh.vertices[x]);
+    sub.push(mesh.vertices[x + 1]);
+    sub.push(mesh.vertices[x + 2]);
+    meshAdapted.positions.push(sub);
+    sub = [];
+    sub.push(mesh.indices[x]);
+    sub.push(mesh.indices[x + 1]);
+    sub.push(mesh.indices[x + 2]);
+    meshAdapted.cells.push(sub);
+  }
 
-// // Push vertex attributes for an additional ground plane
-// // prettier-ignore
-// mesh.positions.push(
-//   [-100, 20, -100], //
-//   [ 100, 20,  100], //
-//   [-100, 20,  100], //
-//   [ 100, 20, -100]
-// );
-// mesh.normals.push(
-//   [0, 1, 0], //
-//   [0, 1, 0], //
-//   [0, 1, 0], //
-//   [0, 1, 0]
-// );
-// mesh.uvs.push(
-//   [0, 0], //
-//   [1, 1], //
-//   [0, 1], //
-//   [1, 0]
-// );
+  // Compute surface normals
+  meshAdapted.normals = (0, _utils.computeSurfaceNormals)(meshAdapted.positions, meshAdapted.cells);
+  // Compute some easy uvs for testing
+  meshAdapted.uvs = (0, _utils.computeProjectedPlaneUVs)(meshAdapted.positions, 'xy');
+  meshAdapted.triangles = meshAdapted.cells;
+  return meshAdapted;
+}
 
 },{"./utils2.js":10}],9:[function(require,module,exports){
 "use strict";
@@ -7297,7 +7302,7 @@ var downloadMeshes = function (nameAndURLs, completionCallback, inputArg) {
       swap: [null]
     };
   }
-  if (typeof inputArg.scale === 'undefined') inputArg.scale = 1;
+  if (typeof inputArg.scale === 'undefined') inputArg.scale = 0.1;
   if (typeof inputArg.swap === 'undefined') inputArg.swap = [null];
   var meshes = {};
 
@@ -7707,6 +7712,448 @@ var _vertexShadow = require("./final/vertexShadow.wgsl");
 var _fragment = require("./final/fragment.wgsl");
 var _vertex = require("./final/vertex.wgsl");
 var _loaderObj = require("./loader-obj");
+var _adaptJSON = require("./final/adaptJSON1");
+class MEMeshObj {
+  constructor(canvas, device, context, o) {
+    this.done = false;
+    this.device = device;
+    this.context = context;
+    this.entityArgPass = o.entityArgPass;
+
+    // make uvs
+
+    this.mesh = o.mesh;
+    // this.mesh = addVerticesNormalUvs(o.mesh);
+    this.mesh.uvs = this.mesh.textures;
+    console.log('mesh obj : ', this.mesh);
+    this.inputHandler = (0, _engine.createInputHandler)(window, canvas);
+    this.cameras = o.cameras;
+    console.log('passed : o.mainCameraParams.responseCoef ', o.mainCameraParams.responseCoef);
+    this.cameraParams = {
+      type: o.mainCameraParams.type,
+      responseCoef: o.mainCameraParams.responseCoef
+    };
+    this.lastFrameMS = 0;
+    this.texturesPaths = [];
+    o.texturesPaths.forEach(t => {
+      this.texturesPaths.push(t);
+    });
+    this.presentationFormat = navigator.gpu.getPreferredCanvasFormat();
+    this.position = new _matrixClass.Position(o.position.x, o.position.y, o.position.z);
+    console.log('cube added on pos : ', this.position);
+    this.rotation = new _matrixClass.Rotation(o.rotation.x, o.rotation.y, o.rotation.z);
+    this.rotation.rotationSpeed.x = o.rotationSpeed.x;
+    this.rotation.rotationSpeed.y = o.rotationSpeed.y;
+    this.rotation.rotationSpeed.z = o.rotationSpeed.z;
+    this.scale = o.scale;
+
+    // new
+    this.runProgram = () => {
+      return new Promise(async resolve => {
+        this.shadowDepthTextureSize = 1024;
+        const aspect = canvas.width / canvas.height;
+        this.projectionMatrix = _wgpuMatrix.mat4.perspective(2 * Math.PI / 5, aspect, 1, 2000.0);
+        this.modelViewProjectionMatrix = _wgpuMatrix.mat4.create();
+
+        // test
+        this.testLoadObj();
+        this.loadTex0(['./res/textures/rust.jpg'], device).then(() => {
+          //
+          resolve();
+          console.log('!!!!!!!!!!!load tex for mesh', this.texture0);
+          // put it in bund group 
+        });
+      });
+    };
+    this.runProgram().then(() => {
+      const aspect = canvas.width / canvas.height;
+      const presentationFormat = navigator.gpu.getPreferredCanvasFormat();
+      this.context.configure({
+        device: this.device,
+        format: presentationFormat,
+        alphaMode: 'premultiplied'
+      });
+
+      // Create the model vertex buffer.
+      this.vertexBuffer = this.device.createBuffer({
+        size: this.mesh.vertices.length * Float32Array.BYTES_PER_ELEMENT,
+        usage: GPUBufferUsage.VERTEX,
+        mappedAtCreation: true
+      });
+      {
+        // const mapping = new Float32Array(this.vertexBuffer.getMappedRange());
+        // // for(let i = 0;i < this.mesh.vertices.length;++i) {
+        // //   mapping.set(this.mesh.vertices[i], 6 * i);
+        // //   mapping.set(this.mesh.normals[i], 6 * i + 3);
+        // // }
+        // this.vertexBuffer.unmap();
+
+        new Float32Array(this.vertexBuffer.getMappedRange()).set(this.mesh.vertices);
+        this.vertexBuffer.unmap();
+      }
+
+      // NIDZA TEST SECOUND BUFFER 
+      // Create the model vertex buffer.
+      this.vertexNormalsBuffer = this.device.createBuffer({
+        size: this.mesh.vertexNormals.length * Float32Array.BYTES_PER_ELEMENT,
+        usage: GPUBufferUsage.VERTEX,
+        mappedAtCreation: true
+      });
+      {
+        new Float32Array(this.vertexNormalsBuffer.getMappedRange()).set(this.mesh.vertexNormals);
+        this.vertexNormalsBuffer.unmap();
+      }
+
+      // Create the model index buffer.
+      this.indexCount = this.mesh.indices.length;
+      this.indexBuffer = this.device.createBuffer({
+        size: this.indexCount * Uint16Array.BYTES_PER_ELEMENT,
+        usage: GPUBufferUsage.INDEX,
+        mappedAtCreation: true
+      });
+      {
+        // const mapping = new Uint16Array(this.indexBuffer.getMappedRange());
+        // for(let i = 0;i < this.mesh.indices.length;++i) {
+        //   mapping.set(this.mesh.indices[i], i);
+        // }
+        new Uint16Array(this.indexBuffer.getMappedRange()).set(this.mesh.indices);
+        this.indexBuffer.unmap();
+      }
+
+      // Create the depth texture for rendering/sampling the shadow map.
+      this.shadowDepthTexture = this.device.createTexture({
+        size: [this.shadowDepthTextureSize, this.shadowDepthTextureSize, 1],
+        usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING,
+        format: 'depth32float'
+      });
+      this.shadowDepthTextureView = this.shadowDepthTexture.createView();
+
+      // Create some common descriptors used for both the shadow pipeline
+      // and the color rendering pipeline.
+      this.vertexBuffers = [{
+        arrayStride: Float32Array.BYTES_PER_ELEMENT * 3,
+        attributes: [{
+          // position
+          shaderLocation: 0,
+          offset: 0,
+          format: "float32x3"
+        }
+        // {
+        //   // normal
+        //   shaderLocation: 1,
+        //   offset: Float32Array.BYTES_PER_ELEMENT * 3,
+        //   format: 'float32x3',
+        // },
+        ]
+      }, {
+        arrayStride: Float32Array.BYTES_PER_ELEMENT * 3,
+        attributes: [{
+          // normal
+          shaderLocation: 1,
+          offset: 0,
+          format: "float32x3"
+        }]
+      }];
+      const primitive = {
+        topology: 'triangle-list',
+        cullMode: 'back'
+      };
+      this.uniformBufferBindGroupLayout = this.device.createBindGroupLayout({
+        entries: [{
+          binding: 0,
+          visibility: GPUShaderStage.VERTEX,
+          buffer: {
+            type: 'uniform'
+          }
+        }]
+      });
+      this.shadowPipeline = this.device.createRenderPipeline({
+        layout: this.device.createPipelineLayout({
+          bindGroupLayouts: [this.uniformBufferBindGroupLayout, this.uniformBufferBindGroupLayout]
+        }),
+        vertex: {
+          module: this.device.createShaderModule({
+            code: _vertexShadow.vertexShadowWGSL
+          }),
+          buffers: this.vertexBuffers
+        },
+        depthStencil: {
+          depthWriteEnabled: true,
+          depthCompare: 'less',
+          format: 'depth32float'
+        },
+        primitive
+      });
+
+      // Create a bind group layout which holds the scene uniforms and
+      // the texture+sampler for depth. We create it manually because the WebPU
+      // implementation doesn't infer this from the shader (yet).
+      this.bglForRender = this.device.createBindGroupLayout({
+        entries: [{
+          binding: 0,
+          visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
+          buffer: {
+            type: 'uniform'
+          }
+        }, {
+          binding: 1,
+          visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
+          texture: {
+            sampleType: 'depth'
+          }
+        }, {
+          binding: 2,
+          visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
+          sampler: {
+            type: 'comparison'
+          }
+        }, {
+          binding: 3,
+          visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
+          texture: {
+            sampleType: 'float'
+          }
+        }, {
+          binding: 4,
+          visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
+          sampler: {
+            type: 'filtering'
+          }
+        }]
+      });
+      this.pipeline = this.device.createRenderPipeline({
+        layout: this.device.createPipelineLayout({
+          bindGroupLayouts: [this.bglForRender, this.uniformBufferBindGroupLayout]
+        }),
+        vertex: {
+          module: this.device.createShaderModule({
+            code: _vertex.vertexWGSL
+          }),
+          buffers: this.vertexBuffers
+        },
+        fragment: {
+          module: this.device.createShaderModule({
+            code: _fragment.fragmentWGSL
+          }),
+          targets: [{
+            format: presentationFormat
+          }],
+          constants: {
+            shadowDepthTextureSize: this.shadowDepthTextureSize
+          }
+        },
+        depthStencil: {
+          depthWriteEnabled: true,
+          depthCompare: 'less',
+          format: 'depth24plus-stencil8'
+        },
+        primitive
+      });
+      const depthTexture = this.device.createTexture({
+        size: [canvas.width, canvas.height],
+        format: 'depth24plus-stencil8',
+        usage: GPUTextureUsage.RENDER_ATTACHMENT
+      });
+      this.renderPassDescriptor = {
+        colorAttachments: [{
+          // view is acquired and set in render loop.
+          view: undefined,
+          clearValue: {
+            r: 0.5,
+            g: 0.5,
+            b: 0.5,
+            a: 1.0
+          },
+          loadOp: 'load',
+          storeOp: 'store'
+        }],
+        depthStencilAttachment: {
+          view: depthTexture.createView(),
+          depthClearValue: 1.0,
+          depthLoadOp: 'clear',
+          depthStoreOp: 'store',
+          stencilClearValue: 0,
+          stencilLoadOp: 'clear',
+          stencilStoreOp: 'store'
+        }
+      };
+      this.modelUniformBuffer = this.device.createBuffer({
+        size: 4 * 16,
+        // 4x4 matrix
+        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+      });
+      this.sceneUniformBuffer = this.device.createBuffer({
+        // Two 4x4 viewProj matrices,
+        // one for the camera and one for the light.
+        // Then a vec3 for the light position.
+        // Rounded to the nearest multiple of 16.
+        size: 2 * 4 * 16 + 4 * 4,
+        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+      });
+      this.sceneBindGroupForShadow = this.device.createBindGroup({
+        layout: this.uniformBufferBindGroupLayout,
+        entries: [{
+          binding: 0,
+          resource: {
+            buffer: this.sceneUniformBuffer
+          }
+        }]
+      });
+      this.sceneBindGroupForRender = this.device.createBindGroup({
+        layout: this.bglForRender,
+        entries: [{
+          binding: 0,
+          resource: {
+            buffer: this.sceneUniformBuffer
+          }
+        }, {
+          binding: 1,
+          resource: this.shadowDepthTextureView
+        }, {
+          binding: 2,
+          resource: this.device.createSampler({
+            compare: 'less'
+          })
+        }, {
+          binding: 3,
+          resource: this.texture0.createView()
+        }, {
+          binding: 4,
+          resource: this.sampler
+        }]
+      });
+      this.modelBindGroup = this.device.createBindGroup({
+        layout: this.uniformBufferBindGroupLayout,
+        entries: [{
+          binding: 0,
+          resource: {
+            buffer: this.modelUniformBuffer
+          }
+        }]
+      });
+
+      // Rotates the camera around the origin based on time.
+      this.getTransformationMatrix = pos => {
+        const now = Date.now();
+        const deltaTime = (now - this.lastFrameMS) / this.cameraParams.responseCoef;
+        this.lastFrameMS = now;
+
+        // const this.viewMatrix = mat4.identity(); ORI
+        const camera = this.cameras[this.cameraParams.type];
+        this.viewMatrix = camera.update(deltaTime, this.inputHandler());
+        _wgpuMatrix.mat4.translate(this.viewMatrix, _wgpuMatrix.vec3.fromValues(pos.x, pos.y, pos.z), this.viewMatrix);
+        _wgpuMatrix.mat4.rotateX(this.viewMatrix, Math.PI * this.rotation.getRotX(), this.viewMatrix);
+        _wgpuMatrix.mat4.rotateY(this.viewMatrix, Math.PI * this.rotation.getRotY(), this.viewMatrix);
+        _wgpuMatrix.mat4.rotateZ(this.viewMatrix, Math.PI * this.rotation.getRotZ(), this.viewMatrix);
+        _wgpuMatrix.mat4.multiply(this.projectionMatrix, this.viewMatrix, this.modelViewProjectionMatrix);
+        return this.modelViewProjectionMatrix;
+      };
+      this.upVector = _wgpuMatrix.vec3.fromValues(0, 1, 0);
+      this.origin = _wgpuMatrix.vec3.fromValues(0, 0, 0);
+      const lightPosition = _wgpuMatrix.vec3.fromValues(50, 100, -100);
+      const lightViewMatrix = _wgpuMatrix.mat4.lookAt(lightPosition, this.origin, this.upVector);
+      const lightProjectionMatrix = _wgpuMatrix.mat4.create();
+      {
+        const left = -80;
+        const right = 80;
+        const bottom = -80;
+        const top = 80;
+        const near = -200;
+        const far = 300;
+        _wgpuMatrix.mat4.ortho(left, right, bottom, top, near, far, lightProjectionMatrix);
+      }
+      const lightViewProjMatrix = _wgpuMatrix.mat4.multiply(lightProjectionMatrix, lightViewMatrix);
+
+      // looks like affect on transformations for now const 0
+      const modelMatrix = _wgpuMatrix.mat4.translation([0, 0, 0]);
+      // The camera/light aren't moving, so write them into buffers now.
+      {
+        const lightMatrixData = lightViewProjMatrix; // as Float32Array;
+        this.device.queue.writeBuffer(this.sceneUniformBuffer, 0, lightMatrixData.buffer, lightMatrixData.byteOffset, lightMatrixData.byteLength);
+        const lightData = lightPosition;
+        this.device.queue.writeBuffer(this.sceneUniformBuffer, 128, lightData.buffer, lightData.byteOffset, lightData.byteLength);
+        const modelData = modelMatrix;
+        this.device.queue.writeBuffer(this.modelUniformBuffer, 0, modelData.buffer, modelData.byteOffset, modelData.byteLength);
+      }
+      this.shadowPassDescriptor = {
+        colorAttachments: [],
+        depthStencilAttachment: {
+          view: this.shadowDepthTextureView,
+          depthClearValue: 1.0,
+          depthLoadOp: 'clear',
+          depthStoreOp: 'store'
+        }
+      };
+      this.done = true;
+    });
+  }
+  testLoadObj() {}
+  async loadTex0(texturesPaths, device) {
+    this.sampler = device.createSampler({
+      magFilter: 'linear',
+      minFilter: 'linear'
+    });
+    return new Promise(async resolve => {
+      const response = await fetch(texturesPaths[0]);
+      const imageBitmap = await createImageBitmap(await response.blob());
+      this.texture0 = device.createTexture({
+        size: [imageBitmap.width, imageBitmap.height, 1],
+        format: 'rgba8unorm',
+        usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT
+      });
+      device.queue.copyExternalImageToTexture({
+        source: imageBitmap
+      }, {
+        texture: this.texture0
+      }, [imageBitmap.width, imageBitmap.height]);
+      resolve();
+    });
+  }
+  draw = commandEncoder => {
+    if (this.done == false) return;
+    const transformationMatrix = this.getTransformationMatrix(this.position);
+    this.device.queue.writeBuffer(this.sceneUniformBuffer, 64, transformationMatrix.buffer, transformationMatrix.byteOffset, transformationMatrix.byteLength);
+    this.renderPassDescriptor.colorAttachments[0].view = this.context.getCurrentTexture().createView();
+    {
+      const shadowPass = commandEncoder.beginRenderPass(this.shadowPassDescriptor);
+      shadowPass.setPipeline(this.shadowPipeline);
+      shadowPass.setBindGroup(0, this.sceneBindGroupForShadow);
+      shadowPass.setBindGroup(1, this.modelBindGroup);
+      shadowPass.setVertexBuffer(0, this.vertexBuffer);
+      shadowPass.setVertexBuffer(1, this.vertexNormalsBuffer);
+      shadowPass.setIndexBuffer(this.indexBuffer, 'uint16');
+      shadowPass.drawIndexed(this.indexCount);
+      shadowPass.end();
+    }
+    {
+      const renderPass = commandEncoder.beginRenderPass(this.renderPassDescriptor);
+      renderPass.setPipeline(this.pipeline);
+      renderPass.setBindGroup(0, this.sceneBindGroupForRender);
+      renderPass.setBindGroup(1, this.modelBindGroup);
+      renderPass.setVertexBuffer(0, this.vertexBuffer);
+      renderPass.setVertexBuffer(1, this.vertexNormalsBuffer);
+      renderPass.setIndexBuffer(this.indexBuffer, 'uint16');
+      renderPass.drawIndexed(this.indexCount);
+      renderPass.end();
+    }
+  };
+}
+exports.default = MEMeshObj;
+
+},{"./engine":7,"./final/adaptJSON1":8,"./final/fragment.wgsl":9,"./final/vertex.wgsl":11,"./final/vertexShadow.wgsl":12,"./loader-obj":13,"./matrix-class":14,"wgpu-matrix":2}],16:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+var _wgpuMatrix = require("wgpu-matrix");
+var _matrixClass = require("./matrix-class");
+var _engine = require("./engine");
+var _vertexShadow = require("./final/vertexShadow.wgsl");
+var _fragment = require("./final/fragment.wgsl");
+var _vertex = require("./final/vertex.wgsl");
+var _loaderObj = require("./loader-obj");
 class MEMesh {
   constructor(canvas, device, context, o) {
     this.done = false;
@@ -8058,17 +8505,15 @@ class MEMesh {
     return new Promise(async resolve => {
       const response = await fetch(texturesPaths[0]);
       const imageBitmap = await createImageBitmap(await response.blob());
-      console.log('WHAT IS THIS ', this);
       this.texture0 = device.createTexture({
         size: [imageBitmap.width, imageBitmap.height, 1],
         format: 'rgba8unorm',
         usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT
       });
-      var texture0 = this.texture0;
       device.queue.copyExternalImageToTexture({
         source: imageBitmap
       }, {
-        texture: texture0
+        texture: this.texture0
       }, [imageBitmap.width, imageBitmap.height]);
       resolve();
     });
@@ -8102,7 +8547,7 @@ class MEMesh {
 }
 exports.default = MEMesh;
 
-},{"./engine":7,"./final/fragment.wgsl":9,"./final/vertex.wgsl":11,"./final/vertexShadow.wgsl":12,"./loader-obj":13,"./matrix-class":14,"wgpu-matrix":2}],16:[function(require,module,exports){
+},{"./engine":7,"./final/fragment.wgsl":9,"./final/vertex.wgsl":11,"./final/vertexShadow.wgsl":12,"./loader-obj":13,"./matrix-class":14,"wgpu-matrix":2}],17:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -8114,6 +8559,7 @@ var _ball = _interopRequireDefault(require("./engine/ball.js"));
 var _cube = _interopRequireDefault(require("./engine/cube.js"));
 var _engine = require("./engine/engine.js");
 var _mesh = _interopRequireDefault(require("./engine/mesh.js"));
+var _meshObj = _interopRequireDefault(require("./engine/mesh-obj.js"));
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 class MatrixEngineWGPU {
   mainRenderBundle = [];
@@ -8385,6 +8831,50 @@ class MatrixEngineWGPU {
     let myMesh1 = new _mesh.default(this.canvas, this.device, this.context, o);
     this.mainRenderBundle.push(myMesh1);
   };
+  addMeshObj = o => {
+    if (typeof o.position === 'undefined') {
+      o.position = {
+        x: 0,
+        y: 0,
+        z: -4
+      };
+    }
+    if (typeof o.rotation === 'undefined') {
+      o.rotation = {
+        x: 0,
+        y: 0,
+        z: 0
+      };
+    }
+    if (typeof o.rotationSpeed === 'undefined') {
+      o.rotationSpeed = {
+        x: 0,
+        y: 0,
+        z: 0
+      };
+    }
+    if (typeof o.texturesPaths === 'undefined') {
+      o.texturesPaths = ['./res/textures/default.png'];
+    }
+    if (typeof o.mainCameraParams === 'undefined') {
+      o.mainCameraParams = this.mainCameraParams;
+    }
+    if (typeof o.scale === 'undefined') {
+      o.scale = 1;
+    }
+    o.entityArgPass = this.entityArgPass;
+    o.cameras = this.cameras;
+    if (typeof o.name === 'undefined') {
+      o.name = 'random' + Math.random();
+    }
+    if (typeof o.mesh === 'undefined') {
+      throw console.error('arg mesh is empty...');
+      return;
+    }
+    console.log('Mesh procedure', o);
+    let myMesh1 = new _meshObj.default(this.canvas, this.device, this.context, o);
+    this.mainRenderBundle.push(myMesh1);
+  };
   run(callback) {
     setTimeout(() => {
       requestAnimationFrame(this.frame);
@@ -8465,7 +8955,7 @@ class MatrixEngineWGPU {
 }
 exports.default = MatrixEngineWGPU;
 
-},{"./engine/ball.js":5,"./engine/cube.js":6,"./engine/engine.js":7,"./engine/mesh.js":15,"wgpu-matrix":2}],17:[function(require,module,exports){
+},{"./engine/ball.js":5,"./engine/cube.js":6,"./engine/engine.js":7,"./engine/mesh-obj.js":15,"./engine/mesh.js":16,"wgpu-matrix":2}],18:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {

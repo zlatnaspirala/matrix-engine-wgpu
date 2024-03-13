@@ -15,13 +15,9 @@ export default class MECube {
   constructor(canvas, device, context, o) {
     this.device = device;
     this.context = context;
-
     this.entityArgPass = o.entityArgPass;
-
-    // The input handler
     this.inputHandler = createInputHandler(window, canvas);
     this.cameras = o.cameras;
-
     console.log('passed : o.mainCameraParams.responseCoef ', o.mainCameraParams.responseCoef)
     this.cameraParams = {
       type: o.mainCameraParams.type,
@@ -29,8 +25,6 @@ export default class MECube {
     } // |  WASD 'arcball' };
 
     this.lastFrameMS = 0;
-
-    console.log('passed args', o.entityArgPass)
     this.shaderModule = device.createShaderModule({
       code: BALL_SHADER,
     });

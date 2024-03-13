@@ -17,29 +17,37 @@ export function adaptJSON1(dragonRawData) {
 
   return mesh;
 }
-// // Push indices for an additional ground plane
-// mesh.triangles.push(
-//   [mesh.positions.length, mesh.positions.length + 2, mesh.positions.length + 1],
-//   [mesh.positions.length, mesh.positions.length + 1, mesh.positions.length + 3]
-// );
 
-// // Push vertex attributes for an additional ground plane
-// // prettier-ignore
-// mesh.positions.push(
-//   [-100, 20, -100], //
-//   [ 100, 20,  100], //
-//   [-100, 20,  100], //
-//   [ 100, 20, -100]
-// );
-// mesh.normals.push(
-//   [0, 1, 0], //
-//   [0, 1, 0], //
-//   [0, 1, 0], //
-//   [0, 1, 0]
-// );
-// mesh.uvs.push(
-//   [0, 0], //
-//   [1, 1], //
-//   [0, 1], //
-//   [1, 0]
-// );
+export function addVerticesNormalUvs(mesh) {
+
+  var meshAdapted = {
+    positions: [],
+    cells: [],
+    uvs: mesh.textures,
+    vertices: mesh.vertices
+    // normals: mesh.vertexNormals
+  };
+  // force syntese 
+  for (var x = 0; x < mesh.vertices.length; x=x+3) {
+    var sub = [];
+    sub.push(mesh.vertices[x])
+    sub.push(mesh.vertices[x+1])
+    sub.push(mesh.vertices[x+2])
+    meshAdapted.positions.push(sub)
+    sub = [];
+    sub.push(mesh.indices[x])
+    sub.push(mesh.indices[x+1])
+    sub.push(mesh.indices[x+2])
+    meshAdapted.cells.push(sub)
+  }
+
+    // Compute surface normals
+    meshAdapted.normals = computeSurfaceNormals(meshAdapted.positions, meshAdapted.cells);
+    // Compute some easy uvs for testing
+    meshAdapted.uvs = computeProjectedPlaneUVs(meshAdapted.positions, 'xy');
+     
+    meshAdapted.triangles = meshAdapted.cells
+  return meshAdapted;
+}
+
+ 

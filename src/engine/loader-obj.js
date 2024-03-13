@@ -267,7 +267,7 @@ export var downloadMeshes = function (nameAndURLs, completionCallback, inputArg)
       swap: [null]
      };
   }
-  if (typeof inputArg.scale === 'undefined') inputArg.scale = 1;
+  if (typeof inputArg.scale === 'undefined') inputArg.scale = 0.1;
   if (typeof inputArg.swap === 'undefined') inputArg.swap = [null];
 
   var meshes = {};

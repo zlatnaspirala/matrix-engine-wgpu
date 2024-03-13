@@ -3,6 +3,7 @@ import MEBall from "./engine/ball.js";
 import MECube from './engine/cube.js';
 import {ArcballCamera, WASDCamera} from "./engine/engine.js";
 import MEMesh from "./engine/mesh.js";
+import MEMeshObj from "./engine/mesh-obj.js";
 
 export default class MatrixEngineWGPU {
 
@@ -185,6 +186,27 @@ export default class MatrixEngineWGPU {
 
   }
 
+  addMeshObj = (o) => {
+    if(typeof o.position === 'undefined') {o.position = {x: 0, y: 0, z: -4}}
+    if(typeof o.rotation === 'undefined') {o.rotation = {x: 0, y: 0, z: 0}}
+    if(typeof o.rotationSpeed === 'undefined') {o.rotationSpeed = {x: 0, y: 0, z: 0}}
+    if(typeof o.texturesPaths === 'undefined') {o.texturesPaths = ['./res/textures/default.png']}
+    if(typeof o.mainCameraParams === 'undefined') {o.mainCameraParams = this.mainCameraParams}
+    if(typeof o.scale === 'undefined') {o.scale = 1;}
+    o.entityArgPass = this.entityArgPass;
+    o.cameras = this.cameras;
+    if(typeof o.name === 'undefined') {o.name = 'random' + Math.random();}
+    if(typeof o.mesh === 'undefined') {
+      throw console.error('arg mesh is empty...');
+      return;
+    }
+    console.log('Mesh procedure', o)
+
+    let myMesh1 = new MEMeshObj(this.canvas, this.device, this.context, o)
+    this.mainRenderBundle.push(myMesh1);
+
+
+  }
   run(callback) {
     setTimeout(() => {requestAnimationFrame(this.frame)}, 500)
     setTimeout(() => {callback()}, 20)

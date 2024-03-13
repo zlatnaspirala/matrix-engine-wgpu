@@ -5,8 +5,9 @@ import {vertexShadowWGSL} from './final/vertexShadow.wgsl';
 import {fragmentWGSL} from './final/fragment.wgsl';
 import {vertexWGSL} from './final/vertex.wgsl';
 import {downloadMeshes} from './loader-obj';
+import {adaptJSON2, addVerticesNormalUvs} from './final/adaptJSON1';
 
-export default class MEMesh {
+export default class MEMeshObj {
 
   constructor(canvas, device, context, o) {
 
@@ -14,8 +15,14 @@ export default class MEMesh {
     this.device = device;
     this.context = context;
     this.entityArgPass = o.entityArgPass;
-    
+
+    // make uvs
+
     this.mesh = o.mesh;
+    // this.mesh = addVerticesNormalUvs(o.mesh);
+    this.mesh.uvs = this.mesh.textures;
+    console.log('mesh obj : ', this.mesh)
+
     this.inputHandler = createInputHandler(window, canvas);
     this.cameras = o.cameras;
     console.log('passed : o.mainCameraParams.responseCoef ', o.mainCameraParams.responseCoef)
@@ -50,17 +57,17 @@ export default class MEMesh {
         this.loadTex0(['./res/textures/rust.jpg'], device).then(() => {
           //
           resolve()
-          console.log('!!!!!!!!!!!load tex for mesh' , this.texture0)
+          console.log('!!!!!!!!!!!load tex for mesh', this.texture0)
           // put it in bund group 
         })
 
-        
+
       })
     }
 
     this.runProgram().then(() => {
 
- 
+
 
       const aspect = canvas.width / canvas.height;
       const presentationFormat = navigator.gpu.getPreferredCanvasFormat();
@@ -72,31 +79,47 @@ export default class MEMesh {
 
       // Create the model vertex buffer.
       this.vertexBuffer = this.device.createBuffer({
-        size: this.mesh.positions.length * 3 * 2 * Float32Array.BYTES_PER_ELEMENT,
+        size: this.mesh.vertices.length * Float32Array.BYTES_PER_ELEMENT,
         usage: GPUBufferUsage.VERTEX,
         mappedAtCreation: true,
       });
       {
-        const mapping = new Float32Array(this.vertexBuffer.getMappedRange());
-        for(let i = 0;i < this.mesh.positions.length;++i) {
-          mapping.set(this.mesh.positions[i], 6 * i);
-          mapping.set(this.mesh.normals[i], 6 * i + 3);
-        }
+        // const mapping = new Float32Array(this.vertexBuffer.getMappedRange());
+        // // for(let i = 0;i < this.mesh.vertices.length;++i) {
+        // //   mapping.set(this.mesh.vertices[i], 6 * i);
+        // //   mapping.set(this.mesh.normals[i], 6 * i + 3);
+        // // }
+        // this.vertexBuffer.unmap();
+
+        new Float32Array(this.vertexBuffer.getMappedRange()).set(this.mesh.vertices);
         this.vertexBuffer.unmap();
       }
 
+      // NIDZA TEST SECOUND BUFFER 
+      // Create the model vertex buffer.
+      this.vertexNormalsBuffer = this.device.createBuffer({
+        size: this.mesh.vertexNormals.length * Float32Array.BYTES_PER_ELEMENT,
+        usage: GPUBufferUsage.VERTEX,
+        mappedAtCreation: true,
+      });
+      {
+        new Float32Array(this.vertexNormalsBuffer.getMappedRange()).set(this.mesh.vertexNormals);
+        this.vertexNormalsBuffer.unmap();
+      }
+
       // Create the model index buffer.
-      this.indexCount = this.mesh.triangles.length * 3;
+      this.indexCount = this.mesh.indices.length;
       this.indexBuffer = this.device.createBuffer({
         size: this.indexCount * Uint16Array.BYTES_PER_ELEMENT,
         usage: GPUBufferUsage.INDEX,
         mappedAtCreation: true,
       });
       {
-        const mapping = new Uint16Array(this.indexBuffer.getMappedRange());
-        for(let i = 0;i < this.mesh.triangles.length;++i) {
-          mapping.set(this.mesh.triangles[i], 3 * i);
-        }
+        // const mapping = new Uint16Array(this.indexBuffer.getMappedRange());
+        // for(let i = 0;i < this.mesh.indices.length;++i) {
+        //   mapping.set(this.mesh.indices[i], i);
+        // }
+        new Uint16Array(this.indexBuffer.getMappedRange()).set(this.mesh.indices);
         this.indexBuffer.unmap();
       }
 
@@ -112,19 +135,30 @@ export default class MEMesh {
       // and the color rendering pipeline.
       this.vertexBuffers = [
         {
-          arrayStride: Float32Array.BYTES_PER_ELEMENT * 6,
+          arrayStride: Float32Array.BYTES_PER_ELEMENT * 3,
           attributes: [
             {
               // position
               shaderLocation: 0,
               offset: 0,
-              format: 'float32x3',
+              format: "float32x3",
             },
+            // {
+            //   // normal
+            //   shaderLocation: 1,
+            //   offset: Float32Array.BYTES_PER_ELEMENT * 3,
+            //   format: 'float32x3',
+            // },
+          ],
+        },
+        {
+          arrayStride: Float32Array.BYTES_PER_ELEMENT * 3,
+          attributes: [
             {
               // normal
               shaderLocation: 1,
-              offset: Float32Array.BYTES_PER_ELEMENT * 3,
-              format: 'float32x3',
+              offset: 0,
+              format: "float32x3",
             },
           ],
         },
@@ -194,7 +228,6 @@ export default class MEMesh {
               type: 'comparison',
             },
           },
-
           {
             binding: 3,
             visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
@@ -209,7 +242,6 @@ export default class MEMesh {
               type: 'filtering',
             },
           },
-
         ],
       });
 
@@ -318,7 +350,7 @@ export default class MEMesh {
               compare: 'less',
             }),
           },
-           {
+          {
             binding: 3,
             resource: this.texture0.createView(),
           },
@@ -346,17 +378,17 @@ export default class MEMesh {
         const now = Date.now();
         const deltaTime = (now - this.lastFrameMS) / this.cameraParams.responseCoef;
         this.lastFrameMS = now;
-    
+
         // const this.viewMatrix = mat4.identity(); ORI
         const camera = this.cameras[this.cameraParams.type];
         this.viewMatrix = camera.update(deltaTime, this.inputHandler());
-    
+
         mat4.translate(this.viewMatrix, vec3.fromValues(pos.x, pos.y, pos.z), this.viewMatrix);
         mat4.rotateX(this.viewMatrix, Math.PI * this.rotation.getRotX(), this.viewMatrix);
         mat4.rotateY(this.viewMatrix, Math.PI * this.rotation.getRotY(), this.viewMatrix);
         mat4.rotateZ(this.viewMatrix, Math.PI * this.rotation.getRotZ(), this.viewMatrix);
         mat4.multiply(this.projectionMatrix, this.viewMatrix, this.modelViewProjectionMatrix);
-    
+
         return this.modelViewProjectionMatrix;
       }
 
@@ -427,7 +459,7 @@ export default class MEMesh {
     })
   }
 
-  testLoadObj () {
+  testLoadObj() {
 
 
   }
@@ -450,7 +482,7 @@ export default class MEMesh {
           GPUTextureUsage.COPY_DST |
           GPUTextureUsage.RENDER_ATTACHMENT,
       });
-       
+
       device.queue.copyExternalImageToTexture(
         {source: imageBitmap},
         {texture: this.texture0},
@@ -479,6 +511,7 @@ export default class MEMesh {
       shadowPass.setBindGroup(0, this.sceneBindGroupForShadow);
       shadowPass.setBindGroup(1, this.modelBindGroup);
       shadowPass.setVertexBuffer(0, this.vertexBuffer);
+      shadowPass.setVertexBuffer(1, this.vertexNormalsBuffer);
       shadowPass.setIndexBuffer(this.indexBuffer, 'uint16');
       shadowPass.drawIndexed(this.indexCount);
       shadowPass.end();
@@ -489,6 +522,7 @@ export default class MEMesh {
       renderPass.setBindGroup(0, this.sceneBindGroupForRender);
       renderPass.setBindGroup(1, this.modelBindGroup);
       renderPass.setVertexBuffer(0, this.vertexBuffer);
+      renderPass.setVertexBuffer(1, this.vertexNormalsBuffer);
       renderPass.setIndexBuffer(this.indexBuffer, 'uint16');
       renderPass.drawIndexed(this.indexCount);
       renderPass.end();
