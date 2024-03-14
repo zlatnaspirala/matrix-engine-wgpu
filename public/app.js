@@ -10,7 +10,11 @@ var _loaderObj = require("./src/engine/loader-obj.js");
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 let application = exports.application = new _world.default({
   useSingleRenderPass: false,
-  canvasSize: 'fullscreen'
+  canvasSize: 'fullscreen',
+  mainCameraParams: {
+    type: 'WASD',
+    responseCoef: 1000
+  }
 }, () => {
   function onLoadObj(m) {
     console.log('Loaded objs:', m);
@@ -5430,7 +5434,7 @@ class MEBall {
     this.cameras = o.cameras;
     this.scale = o.scale;
     console.log('passed : o.mainCameraParams.responseCoef ', o.mainCameraParams.responseCoef);
-    this.cameraParams = {
+    this.mainCameraParams = {
       type: o.mainCameraParams.type,
       responseCoef: o.mainCameraParams.responseCoef
     }; // |  WASD 'arcball' };
@@ -5664,11 +5668,11 @@ class MEBall {
   getTransformationMatrix(pos) {
     // const viewMatrix = mat4.identity();
     const now = Date.now();
-    const deltaTime = (now - this.lastFrameMS) / this.cameraParams.responseCoef;
+    const deltaTime = (now - this.lastFrameMS) / this.mainCameraParams.responseCoef;
     this.lastFrameMS = now;
 
     // const viewMatrix = mat4.identity(); ORI
-    const camera = this.cameras[this.cameraParams.type];
+    const camera = this.cameras[this.mainCameraParams.type];
     const viewMatrix = camera.update(deltaTime, this.inputHandler());
     _wgpuMatrix.mat4.translate(viewMatrix, _wgpuMatrix.vec3.fromValues(pos.x, pos.y, pos.z), viewMatrix);
     _wgpuMatrix.mat4.rotateX(viewMatrix, Math.PI * this.rotation.getRotX(), viewMatrix);
@@ -5841,7 +5845,7 @@ class MECube {
     this.inputHandler = (0, _engine.createInputHandler)(window, canvas);
     this.cameras = o.cameras;
     console.log('passed : o.mainCameraParams.responseCoef ', o.mainCameraParams.responseCoef);
-    this.cameraParams = {
+    this.mainCameraParams = {
       type: o.mainCameraParams.type,
       responseCoef: o.mainCameraParams.responseCoef
     }; // |  WASD 'arcball' };
@@ -6078,11 +6082,11 @@ class MECube {
   }
   getTransformationMatrix(pos) {
     const now = Date.now();
-    const deltaTime = (now - this.lastFrameMS) / this.cameraParams.responseCoef;
+    const deltaTime = (now - this.lastFrameMS) / this.mainCameraParams.responseCoef;
     this.lastFrameMS = now;
 
     // const viewMatrix = mat4.identity(); ORI
-    const camera = this.cameras[this.cameraParams.type];
+    const camera = this.cameras[this.mainCameraParams.type];
     const viewMatrix = camera.update(deltaTime, this.inputHandler());
     _wgpuMatrix.mat4.translate(viewMatrix, _wgpuMatrix.vec3.fromValues(pos.x, pos.y, pos.z), viewMatrix);
     _wgpuMatrix.mat4.rotateX(viewMatrix, Math.PI * this.rotation.getRotX(), viewMatrix);
@@ -7686,11 +7690,11 @@ class MEMeshObj {
       // Rotates the camera around the origin based on time.
       this.getTransformationMatrix = pos => {
         const now = Date.now();
-        const deltaTime = (now - this.lastFrameMS) / this.cameraParams.responseCoef;
+        const deltaTime = (now - this.lastFrameMS) / this.mainCameraParams.responseCoef;
         this.lastFrameMS = now;
 
         // const this.viewMatrix = mat4.identity()
-        const camera = this.cameras[this.cameraParams.type];
+        const camera = this.cameras[this.mainCameraParams.type];
         this.viewMatrix = camera.update(deltaTime, this.inputHandler());
         _wgpuMatrix.mat4.translate(this.viewMatrix, _wgpuMatrix.vec3.fromValues(pos.x, pos.y, pos.z), this.viewMatrix);
         _wgpuMatrix.mat4.rotateX(this.viewMatrix, Math.PI * this.rotation.getRotX(), this.viewMatrix);
@@ -7815,7 +7819,7 @@ class MEMesh {
     this.mesh = o.mesh;
     this.inputHandler = (0, _engine.createInputHandler)(window, canvas);
     this.cameras = o.cameras;
-    this.cameraParams = {
+    this.mainCameraParams = {
       type: o.mainCameraParams.type,
       responseCoef: o.mainCameraParams.responseCoef
     };
@@ -8090,9 +8094,9 @@ class MEMesh {
       // Rotates the camera around the origin based on time.
       this.getTransformationMatrix = pos => {
         const now = Date.now();
-        const deltaTime = (now - this.lastFrameMS) / this.cameraParams.responseCoef;
+        const deltaTime = (now - this.lastFrameMS) / this.mainCameraParams.responseCoef;
         this.lastFrameMS = now;
-        const camera = this.cameras[this.cameraParams.type];
+        const camera = this.cameras[this.mainCameraParams.type];
         this.viewMatrix = camera.update(deltaTime, this.inputHandler());
         _wgpuMatrix.mat4.translate(this.viewMatrix, _wgpuMatrix.vec3.fromValues(pos.x, pos.y, pos.z), this.viewMatrix);
         _wgpuMatrix.mat4.rotateX(this.viewMatrix, Math.PI * this.rotation.getRotX(), this.viewMatrix);
@@ -8808,7 +8812,14 @@ class MatrixEngineWGPU {
       };
       callback = options;
     }
+    if (typeof options.mainCameraParams === 'undefined') {
+      options.mainCameraParams = {
+        type: 'WASD',
+        responseCoef: 2000
+      };
+    }
     this.options = options;
+    this.mainCameraParams = options.mainCameraParams;
     var canvas = document.createElement('canvas');
     if (this.options.canvasSize == 'fullscreen') {
       canvas.width = window.innerWidth;
@@ -8822,7 +8833,7 @@ class MatrixEngineWGPU {
     // The camera types
     const initialCameraPosition = _wgpuMatrix.vec3.create(0, 0, 0);
     // console.log('passed : o.mainCameraParams.responseCoef ', o.mainCameraParams.responseCoef)
-    this.cameraParams = {
+    this.mainCameraParams = {
       type: this.options.mainCameraParams.type,
       responseCoef: this.options.mainCameraParams.responseCoef
     };

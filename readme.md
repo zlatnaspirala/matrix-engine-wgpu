@@ -33,8 +33,16 @@ I publish (this repo) npm package with name `matrix-engine-wgpu`.
   app.mainRenderBundle[0];
   ```
 
-### Position
+### Camera
+Camera type: `WASD | arcball`
+```js
+  mainCameraParams: {
+    type: 'WASD',
+    responseCoef: 1000
+  }
+```
 
+### Position
 #### app.mainRenderBundle[0] -> position
 
 Position is taken from matrix-engine[webgl] same struct.

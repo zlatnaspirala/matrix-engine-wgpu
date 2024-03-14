@@ -3,7 +3,11 @@ import {downloadMeshes} from './src/engine/loader-obj.js';
 
 export let application = new MatrixEngineWGPU({
   useSingleRenderPass: false,
-  canvasSize: 'fullscreen'
+  canvasSize: 'fullscreen',
+  mainCameraParams: {
+    type: 'WASD',
+    responseCoef: 1000
+  }
 }, () => {
   function onLoadObj(m) {
 

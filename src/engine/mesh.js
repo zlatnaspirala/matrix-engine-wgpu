@@ -18,7 +18,7 @@ export default class MEMesh {
     this.mesh = o.mesh;
     this.inputHandler = createInputHandler(window, canvas);
     this.cameras = o.cameras;
-    this.cameraParams = {
+    this.mainCameraParams = {
       type: o.mainCameraParams.type,
       responseCoef: o.mainCameraParams.responseCoef
     }
@@ -330,10 +330,10 @@ export default class MEMesh {
       // Rotates the camera around the origin based on time.
       this.getTransformationMatrix = (pos) => {
         const now = Date.now();
-        const deltaTime = (now - this.lastFrameMS) / this.cameraParams.responseCoef;
+        const deltaTime = (now - this.lastFrameMS) / this.mainCameraParams.responseCoef;
         this.lastFrameMS = now;
 
-        const camera = this.cameras[this.cameraParams.type];
+        const camera = this.cameras[this.mainCameraParams.type];
         this.viewMatrix = camera.update(deltaTime, this.inputHandler());
 
         mat4.translate(this.viewMatrix, vec3.fromValues(pos.x, pos.y, pos.z), this.viewMatrix);

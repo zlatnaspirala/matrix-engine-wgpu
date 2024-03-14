@@ -34,8 +34,15 @@ export default class MatrixEngineWGPU {
       }
       callback = options;
     }
-
+    if(typeof options.mainCameraParams === 'undefined') {
+      options.mainCameraParams = {
+        type: 'WASD',
+        responseCoef: 2000
+      }
+    }
     this.options = options;
+
+    this.mainCameraParams = options.mainCameraParams;
 
     var canvas = document.createElement('canvas')
     if(this.options.canvasSize == 'fullscreen') {
@@ -50,7 +57,7 @@ export default class MatrixEngineWGPU {
     // The camera types
     const initialCameraPosition = vec3.create(0, 0, 0);
     // console.log('passed : o.mainCameraParams.responseCoef ', o.mainCameraParams.responseCoef)
-    this.cameraParams = {
+    this.mainCameraParams = {
       type: this.options.mainCameraParams.type,
       responseCoef: this.options.mainCameraParams.responseCoef
     }

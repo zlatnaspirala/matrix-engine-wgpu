@@ -19,7 +19,7 @@ export default class MECube {
     this.inputHandler = createInputHandler(window, canvas);
     this.cameras = o.cameras;
     console.log('passed : o.mainCameraParams.responseCoef ', o.mainCameraParams.responseCoef)
-    this.cameraParams = {
+    this.mainCameraParams = {
       type: o.mainCameraParams.type,
       responseCoef: o.mainCameraParams.responseCoef
     } // |  WASD 'arcball' };
@@ -270,11 +270,11 @@ export default class MECube {
 
   getTransformationMatrix(pos) {
     const now = Date.now();
-    const deltaTime = (now - this.lastFrameMS) / this.cameraParams.responseCoef;
+    const deltaTime = (now - this.lastFrameMS) / this.mainCameraParams.responseCoef;
     this.lastFrameMS = now;
 
     // const viewMatrix = mat4.identity(); ORI
-    const camera = this.cameras[this.cameraParams.type];
+    const camera = this.cameras[this.mainCameraParams.type];
     const viewMatrix = camera.update(deltaTime, this.inputHandler());
 
     mat4.translate(viewMatrix, vec3.fromValues(pos.x, pos.y, pos.z), viewMatrix);
