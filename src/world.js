@@ -207,6 +207,7 @@ export default class MatrixEngineWGPU {
 
 
   }
+
   run(callback) {
     setTimeout(() => {requestAnimationFrame(this.frame)}, 500)
     setTimeout(() => {callback()}, 20)
@@ -216,16 +217,16 @@ export default class MatrixEngineWGPU {
 
     let passEncoder;
     let commandEncoder = this.device.createCommandEncoder();
-    if (typeof this.mainRenderBundle != 'undefined') this.mainRenderBundle.forEach((meItem, index) => {
+    if(typeof this.mainRenderBundle != 'undefined') this.mainRenderBundle.forEach((meItem, index) => {
       meItem.position.update();
       meItem.draw(commandEncoder);
 
       // 
-      if (typeof meItem.done == 'undefined') {
+      if(typeof meItem.done == 'undefined') {
         this.rbContainer.push(meItem.renderBundle);
         this.renderPassDescriptor.colorAttachments[0].view = this.context
-        .getCurrentTexture()
-        .createView();
+          .getCurrentTexture()
+          .createView();
         //  console.log('prolazi ')
         passEncoder = commandEncoder.beginRenderPass(this.renderPassDescriptor);
         passEncoder.executeBundles(this.rbContainer);
@@ -246,11 +247,11 @@ export default class MatrixEngineWGPU {
     this.mainRenderBundle.forEach((meItem, index) => {
       meItem.draw(commandEncoder);
 
-      if (meItem.renderBundle) {
-      this.rbContainer.push(meItem.renderBundle)
-      passEncoder = commandEncoder.beginRenderPass(meItem.renderPassDescriptor);
-      passEncoder.executeBundles(this.rbContainer);
-      passEncoder.end();
+      if(meItem.renderBundle) {
+        this.rbContainer.push(meItem.renderBundle)
+        passEncoder = commandEncoder.beginRenderPass(meItem.renderPassDescriptor);
+        passEncoder.executeBundles(this.rbContainer);
+        passEncoder.end();
       } else {
         meItem.draw(commandEncoder)
       }

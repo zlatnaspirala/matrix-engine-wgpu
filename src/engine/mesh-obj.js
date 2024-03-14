@@ -1,11 +1,9 @@
 import {mat4, vec3} from 'wgpu-matrix';
 import {Position, Rotation} from "./matrix-class";
 import {createInputHandler} from "./engine";
-import {vertexShadowWGSL} from './final/vertexShadow.wgsl';
-import {fragmentWGSL} from './final/fragment.wgsl';
-import {vertexWGSL} from './final/vertex.wgsl';
-// import {downloadMeshes} from './loader-obj';
-// import {adaptJSON2, addVerticesNormalUvs} from './final/adaptJSON1';
+import {vertexShadowWGSL} from '../shaders/vertexShadow.wgsl';
+import {fragmentWGSL} from '../shaders/fragment.wgsl';
+import {vertexWGSL} from '../shaders/vertex.wgsl';
 
 export default class MEMeshObj {
 
@@ -19,7 +17,7 @@ export default class MEMeshObj {
     // Mesh stuff
     this.mesh = o.mesh;
     this.mesh.uvs = this.mesh.textures;
-    console.log('mesh obj : ', this.mesh)
+    console.log('mesh obj: ', this.mesh)
 
     this.inputHandler = createInputHandler(window, canvas);
     this.cameras = o.cameras;
@@ -379,7 +377,7 @@ export default class MEMeshObj {
         const deltaTime = (now - this.lastFrameMS) / this.cameraParams.responseCoef;
         this.lastFrameMS = now;
 
-        // const this.viewMatrix = mat4.identity(); ORI
+        // const this.viewMatrix = mat4.identity()
         const camera = this.cameras[this.cameraParams.type];
         this.viewMatrix = camera.update(deltaTime, this.inputHandler());
 

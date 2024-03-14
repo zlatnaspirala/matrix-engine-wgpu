@@ -351,3 +351,5 @@ export const mat4 = {
     return mat4.multiply(m, mat4.scaling(scale), dst);
   },
 };
+
+export function degToRad(degrees) {return (degrees * Math.PI) / 180};

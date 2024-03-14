@@ -12,55 +12,11 @@ let application = exports.application = new _world.default({
   useSingleRenderPass: false,
   canvasSize: 'fullscreen'
 }, () => {
-  function onLoadObj(m) {
-    console.log('Loaded objs:', m);
-    application.addMeshObj({
-      position: {
-        x: -3,
-        y: 0,
-        z: -5
-      },
-      rotation: {
-        x: 0,
-        y: 0,
-        z: 0
-      },
-      rotationSpeed: {
-        x: 0,
-        y: 10,
-        z: 0
-      },
-      texturesPaths: ['./res/meshes/obj/armor.png'],
-      name: 'Armor',
-      mesh: m.armor
-    });
-    application.addMeshObj({
-      position: {
-        x: 3,
-        y: 0,
-        z: -5
-      },
-      rotation: {
-        x: -90,
-        y: 0,
-        z: 0
-      },
-      rotationSpeed: {
-        x: 0,
-        y: 0,
-        z: 0
-      },
-      texturesPaths: ['./res/meshes/obj/armor.png'],
-      name: 'MyText',
-      mesh: m.welcomeText
-    });
-  }
-  (0, _loaderObj.downloadMeshes)({
-    welcomeText: "./res/meshes/blender/piramyd.obj",
-    armor: "./res/meshes/obj/armor.obj"
-  }, onLoadObj);
+  window.app = application;
+  // for now
+  window.downloadMeshes = _loaderObj.downloadMeshes;
+  console.log("matrix-engine-wgpu is loaded with text/javascript.");
 });
-window.app = application;
 
 },{"./src/engine/loader-obj.js":6,"./src/world.js":15}],2:[function(require,module,exports){
 "use strict";

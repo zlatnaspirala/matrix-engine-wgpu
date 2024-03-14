@@ -1,4 +1,4 @@
-import {BALL_SHADER} from "../shaders/shaders";
+import {UNLIT_SHADER} from "../shaders/shaders";
 import {mat4, vec3} from 'wgpu-matrix';
 import {Position, Rotation} from "./matrix-class";
 import {createInputHandler} from "./engine";
@@ -26,7 +26,7 @@ export default class MECube {
 
     this.lastFrameMS = 0;
     this.shaderModule = device.createShaderModule({
-      code: BALL_SHADER,
+      code: UNLIT_SHADER,
     });
 
     this.texturesPaths = [];

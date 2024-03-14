@@ -12,10 +12,9 @@
 The logos are licensed under Creative Commons Attribution 4.0 International.
 Download from https://www.w3.org/2023/02/webgpu-logos.html
 
-Used npm package `wgpu-matrix` for replacment of glmatrix library.
 
+Used npm package `wgpu-matrix` for replacment of glmatrix library.Classis "modelViewProjectionMatrix" calculations.
 I publish (this repo) npm package with name `matrix-engine-wgpu`.
-
 
 ## Objective
   - scene objects feature [objects/scene/transformation]
@@ -28,35 +27,12 @@ For now i will use `createRenderBundleEncoder` for multi object scene draws but 
 Main instance script:
 ```js
 import MatrixEngineWGPU from "./src/meWGPU";
-// import {adaptJSON1} from "./src/engine/final/adaptJSON1.js";
-// import stanfordDragonData from "./public/res/meshes/dragon/stanfordDragonData.js"
 import {testCUSTOMGEO} from "./public/res/meshes/blender/piramida.js";
 import {downloadMeshes} from './src/engine/loader-obj.js';
 
 let application = new MatrixEngineWGPU({ 
   useSingleRenderPass: true,
   canvasSize: 'fullscreen' }, () => {
-
-  let c = {
-    scale: 12,
-    position: {x: -2, y: 2, z: -10},
-    rotation: {x: 0, y: 0, z: 0},
-    rotationSpeed: {x: 0, y: 0, z: 0},
-    texturesPaths: ['./res/textures/rust.jpg']
-  };
-
-  let o = {
-    scale: 2,
-    position: {x: 2, y: 0, z: -10},
-    rotation: {x: 0, y: 45, z: 0},
-    rotationSpeed: {x: 0, y: 0, z: 0},
-    texturesPaths: ['./res/textures/rust.jpg']
-  };
-
-  // let mesh = adaptJSON1(stanfordDragonData)
-  // application.addBall(o)
-  // application.addCube(c)
-  // application.addCube(o)
 
   function onLoadObj (m) {
     application.addMeshObj({
@@ -72,11 +48,31 @@ let application = new MatrixEngineWGPU({
     onLoadObj
   )
 })
-
+// just for dev
 window.app = application
 ```
 
+## NPM Scripts
 
+```js
+  "main-worker": "watchify app-worker.js -p [esmify --noImplicitAny] -o public/app-worker.js",
+  "examples": "watchify examples.js -p [esmify --noImplicitAny] -o public/examples.js",
+  "main": "watchify main.js -p [esmify --noImplicitAny] -o public/app.js",
+  "build-empty": "watchify empty.js -p [esmify --noImplicitAny] -o public/empty.js",
+  "build-all": "npm run main-worker.js | npm run examples | npm run main | npm run build-empty"
+```
+
+1) "main-worker" use same endpoint but with root wrapper.
+2) "examples" for now build just one current (just import script from ./examples/) instance.
+3) "main" this is build for main.js main instance.
+4) "build-empty" when you wanna use this engine on codepen or stackoverflow just build one empty instance
+   and you can write megpu code.
+5) "build-all" build all at once [every output is diff name].
+
+## Resource
+ Resources place is ./public also this folder is root for output js builds.
+ After all you get all needed stuff in one public folder (www).
+ 
 
 
 ## LICENCE

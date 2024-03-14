@@ -1,9 +1,9 @@
 import {mat4, vec3} from 'wgpu-matrix';
 import {Position, Rotation} from "./matrix-class";
 import {createInputHandler} from "./engine";
-import {vertexShadowWGSL} from './final/vertexShadow.wgsl';
-import {fragmentWGSL} from './final/fragment.wgsl';
-import {vertexWGSL} from './final/vertex.wgsl';
+import {vertexShadowWGSL} from '../shaders/vertexShadow.wgsl';
+import {fragmentWGSL} from '../shaders/fragment.wgsl';
+import {vertexWGSL} from '../shaders/vertex.wgsl';
 import {downloadMeshes} from './loader-obj';
 
 export default class MEMesh {

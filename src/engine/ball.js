@@ -1,4 +1,4 @@
-import {BALL_SHADER} from "../shaders/shaders";
+import {UNLIT_SHADER} from "../shaders/shaders";
 import {mat4, vec3} from 'wgpu-matrix';
 import {Position, Rotation} from "./matrix-class";
 import {createInputHandler} from "./engine";
@@ -42,7 +42,7 @@ export default class MEBall {
     this.rotation.rotationSpeed.y = o.rotationSpeed.y;
     this.rotation.rotationSpeed.z = o.rotationSpeed.z;
 
-    this.shaderModule = device.createShaderModule({code: BALL_SHADER});
+    this.shaderModule = device.createShaderModule({code: UNLIT_SHADER});
     this.presentationFormat = navigator.gpu.getPreferredCanvasFormat();
 
     this.pipeline = device.createRenderPipeline({

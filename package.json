@@ -1,19 +1,26 @@
 {
   "name": "matrix-engine-wgpu",
-  "version": "1.0.2",
+  "version": "1.0.4",
   "description": "webGPU powered pwa application.Crazy fast rendering.",
   "main": "index.js",
   "scripts": {
-    "main2w": "watchify ./test2/shadowMapping/app-worker.js -p [esmify --noImplicitAny] -o public/app-worker.js",
-    "main2": "watchify ./test2/shadowMapping/main.js -p [esmify --noImplicitAny] -o public/app.js",
-    "main": "watchify main.js -p [esmify --noImplicitAny] -o public/app.js"
+    "main-worker": "watchify app-worker.js -p [esmify --noImplicitAny] -o public/app-worker.js",
+    "examples": "watchify examples.js -p [esmify --noImplicitAny] -o public/examples.js",
+    "main": "watchify main.js -p [esmify --noImplicitAny] -o public/app.js",
+    "build-empty": "watchify empty.js -p [esmify --noImplicitAny] -o public/empty.js",
+    "build-all": "npm run main-worker | npm run examples | npm run main | npm run build-empty"
   },
   "keywords": [
     "webGPU",
+    "webGPU-scene",
+    "webGPU-engine",
     "matrix",
     "matrix-engine",
     "matrix-engine-webGPU",
     "matrix-calculation",
+    "modelView",
+    "modelViewProjectionMatrix",
+    "ProjectionMatrix",
     "render",
     "wgpu",
     "zlatnaspirala",

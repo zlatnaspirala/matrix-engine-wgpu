@@ -1,5 +1,6 @@
-// Sub classes for matrix-wgpu
+import {degToRad} from "./utils";
 
+// Sub classes for matrix-wgpu
 /**
  * @description Base class
  * Position { x, y, z }
@@ -185,7 +186,7 @@ export class Rotation {
 
   getRotX () {
     if (this.rotationSpeed.x == 0) {
-      return this.x;
+      return degToRad(this.x);
     } else {
       this.x = this.x + this.rotationSpeed.x* 0.001;
       return this.x;
@@ -194,7 +195,7 @@ export class Rotation {
 
   getRotY () {
     if (this.rotationSpeed.y == 0) {
-      return this.y;
+      return degToRad(this.y);
     } else {
       this.y = this.y + this.rotationSpeed.y * 0.001;
       return this.y;
@@ -203,7 +204,7 @@ export class Rotation {
 
   getRotZ () {
     if (this.rotationSpeed.z == 0) {
-      return this.z;
+      return degToRad(this.z);
     } else {
       this.z = this.z + this.rotationSpeed.z* 0.001;
       return this.z;
