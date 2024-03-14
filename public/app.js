@@ -8821,10 +8821,10 @@ class MatrixEngineWGPU {
 
     // The camera types
     const initialCameraPosition = _wgpuMatrix.vec3.create(0, 0, 0);
-    console.log('passed : o.mainCameraParams.responseCoef ', o.mainCameraParams.responseCoef);
+    // console.log('passed : o.mainCameraParams.responseCoef ', o.mainCameraParams.responseCoef)
     this.cameraParams = {
-      type: o.mainCameraParams.type,
-      responseCoef: o.mainCameraParams.responseCoef
+      type: this.options.mainCameraParams.type,
+      responseCoef: this.options.mainCameraParams.responseCoef
     };
     this.cameras = {
       arcball: new _engine.ArcballCamera({
