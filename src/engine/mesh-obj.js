@@ -22,7 +22,7 @@ export default class MEMeshObj {
     this.inputHandler = createInputHandler(window, canvas);
     this.cameras = o.cameras;
 
-    this.cameraParams = {
+    this.mainCameraParams = {
       type: o.mainCameraParams.type,
       responseCoef: o.mainCameraParams.responseCoef
     }
@@ -48,7 +48,7 @@ export default class MEMeshObj {
         this.modelViewProjectionMatrix = mat4.create();
         // console.log('cube added texturesPaths: ', this.texturesPaths)
         this.loadTex0(this.texturesPaths, device).then(() => {
-          console.log('loaded tex buffer for mesh:', this.texture0)
+          // console.log('loaded tex buffer for mesh:', this.texture0)
           resolve()
         })
       })

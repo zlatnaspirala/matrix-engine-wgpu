@@ -26,7 +26,11 @@ export default class MatrixEngineWGPU {
     if(typeof options == 'undefined' || typeof options == "function") {
       this.options = {
         useSingleRenderPass: true,
-        canvasSize: 'fullscreen'
+        canvasSize: 'fullscreen',
+        mainCameraParams: {
+          type: 'WASD',
+          responseCoef: 2000
+        }
       }
       callback = options;
     }
@@ -45,9 +49,10 @@ export default class MatrixEngineWGPU {
 
     // The camera types
     const initialCameraPosition = vec3.create(0, 0, 0);
-    this.mainCameraParams = {
-      type: 'WASD',
-      responseCoef: 2000
+    console.log('passed : o.mainCameraParams.responseCoef ', o.mainCameraParams.responseCoef)
+    this.cameraParams = {
+      type: o.mainCameraParams.type,
+      responseCoef: o.mainCameraParams.responseCoef
     }
 
     this.cameras = {
@@ -220,8 +225,6 @@ export default class MatrixEngineWGPU {
     if(typeof this.mainRenderBundle != 'undefined') this.mainRenderBundle.forEach((meItem, index) => {
       meItem.position.update();
       meItem.draw(commandEncoder);
-
-      // 
       if(typeof meItem.done == 'undefined') {
         this.rbContainer.push(meItem.renderBundle);
         this.renderPassDescriptor.colorAttachments[0].view = this.context
@@ -246,7 +249,7 @@ export default class MatrixEngineWGPU {
     let passEncoder;
     this.mainRenderBundle.forEach((meItem, index) => {
       meItem.draw(commandEncoder);
-
+      meItem.position.update();
       if(meItem.renderBundle) {
         this.rbContainer.push(meItem.renderBundle)
         passEncoder = commandEncoder.beginRenderPass(meItem.renderPassDescriptor);

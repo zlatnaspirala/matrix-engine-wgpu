@@ -18,7 +18,6 @@ export default class MEMesh {
     this.mesh = o.mesh;
     this.inputHandler = createInputHandler(window, canvas);
     this.cameras = o.cameras;
-    console.log('passed : o.mainCameraParams.responseCoef ', o.mainCameraParams.responseCoef)
     this.cameraParams = {
       type: o.mainCameraParams.type,
       responseCoef: o.mainCameraParams.responseCoef
@@ -28,7 +27,7 @@ export default class MEMesh {
     o.texturesPaths.forEach((t) => {this.texturesPaths.push(t)})
     this.presentationFormat = navigator.gpu.getPreferredCanvasFormat();
     this.position = new Position(o.position.x, o.position.y, o.position.z);
-    console.log('cube added on pos : ', this.position)
+    // console.log('cube added on pos : ', this.position)
     this.rotation = new Rotation(o.rotation.x, o.rotation.y, o.rotation.z);
     this.rotation.rotationSpeed.x = o.rotationSpeed.x;
     this.rotation.rotationSpeed.y = o.rotationSpeed.y;

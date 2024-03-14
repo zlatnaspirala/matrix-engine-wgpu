@@ -36,7 +36,7 @@ let application = exports.application = new _world.default({
     });
     application.addMeshObj({
       position: {
-        x: 3,
+        x: 1,
         y: 0,
         z: -5
       },
@@ -7378,7 +7378,7 @@ class MEMeshObj {
     console.log('mesh obj: ', this.mesh);
     this.inputHandler = (0, _engine.createInputHandler)(window, canvas);
     this.cameras = o.cameras;
-    this.cameraParams = {
+    this.mainCameraParams = {
       type: o.mainCameraParams.type,
       responseCoef: o.mainCameraParams.responseCoef
     };
@@ -7402,7 +7402,7 @@ class MEMeshObj {
         this.modelViewProjectionMatrix = _wgpuMatrix.mat4.create();
         // console.log('cube added texturesPaths: ', this.texturesPaths)
         this.loadTex0(this.texturesPaths, device).then(() => {
-          console.log('loaded tex buffer for mesh:', this.texture0);
+          // console.log('loaded tex buffer for mesh:', this.texture0)
           resolve();
         });
       });
@@ -7815,7 +7815,6 @@ class MEMesh {
     this.mesh = o.mesh;
     this.inputHandler = (0, _engine.createInputHandler)(window, canvas);
     this.cameras = o.cameras;
-    console.log('passed : o.mainCameraParams.responseCoef ', o.mainCameraParams.responseCoef);
     this.cameraParams = {
       type: o.mainCameraParams.type,
       responseCoef: o.mainCameraParams.responseCoef
@@ -7827,7 +7826,7 @@ class MEMesh {
     });
     this.presentationFormat = navigator.gpu.getPreferredCanvasFormat();
     this.position = new _matrixClass.Position(o.position.x, o.position.y, o.position.z);
-    console.log('cube added on pos : ', this.position);
+    // console.log('cube added on pos : ', this.position)
     this.rotation = new _matrixClass.Rotation(o.rotation.x, o.rotation.y, o.rotation.z);
     this.rotation.rotationSpeed.x = o.rotationSpeed.x;
     this.rotation.rotationSpeed.y = o.rotationSpeed.y;
@@ -8801,7 +8800,11 @@ class MatrixEngineWGPU {
     if (typeof options == 'undefined' || typeof options == "function") {
       this.options = {
         useSingleRenderPass: true,
-        canvasSize: 'fullscreen'
+        canvasSize: 'fullscreen',
+        mainCameraParams: {
+          type: 'WASD',
+          responseCoef: 2000
+        }
       };
       callback = options;
     }
@@ -8818,9 +8821,10 @@ class MatrixEngineWGPU {
 
     // The camera types
     const initialCameraPosition = _wgpuMatrix.vec3.create(0, 0, 0);
-    this.mainCameraParams = {
-      type: 'WASD',
-      responseCoef: 2000
+    console.log('passed : o.mainCameraParams.responseCoef ', o.mainCameraParams.responseCoef);
+    this.cameraParams = {
+      type: o.mainCameraParams.type,
+      responseCoef: o.mainCameraParams.responseCoef
     };
     this.cameras = {
       arcball: new _engine.ArcballCamera({
@@ -9111,8 +9115,6 @@ class MatrixEngineWGPU {
     if (typeof this.mainRenderBundle != 'undefined') this.mainRenderBundle.forEach((meItem, index) => {
       meItem.position.update();
       meItem.draw(commandEncoder);
-
-      // 
       if (typeof meItem.done == 'undefined') {
         this.rbContainer.push(meItem.renderBundle);
         this.renderPassDescriptor.colorAttachments[0].view = this.context.getCurrentTexture().createView();
@@ -9133,6 +9135,7 @@ class MatrixEngineWGPU {
     let passEncoder;
     this.mainRenderBundle.forEach((meItem, index) => {
       meItem.draw(commandEncoder);
+      meItem.position.update();
       if (meItem.renderBundle) {
         this.rbContainer.push(meItem.renderBundle);
         passEncoder = commandEncoder.beginRenderPass(meItem.renderPassDescriptor);
