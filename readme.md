@@ -74,6 +74,13 @@ window.app = application
  After all you get all needed stuff in one public folder (www).
  
 
+## LINKS
+
+ - How to use it on codepen
+   https://codepen.io/zlatnaspirala/pen/VwNKMar?editors=0011
+   I use empty build then i add to my public server you can use it :
+   "https://maximumroulette.com/apps/megpu/empty.js"
+
 
 ## LICENCE
 
