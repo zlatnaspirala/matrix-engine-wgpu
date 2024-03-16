@@ -216,14 +216,20 @@ export default class MatrixEngineWGPU {
       throw console.error('arg mesh is empty...');
       return;
     }
-    if(typeof o.physics === 'undefined') {o.physics = {enabled: false}}
-    //initObjectTest
-    console.log('Mesh procedure', o)
-
+    if(typeof o.physics === 'undefined') {
+      o.physics = {
+        enabled: false,
+        geometry: "Sphere"
+      }
+    }
+    if(typeof o.physics.enabled === 'undefined') {o.physics.enabled = false}
+    if(typeof o.physics.geometry === 'undefined') {o.physics.geometry = "Sphere"}
+    // console.log('Mesh procedure', o)
     let myMesh1 = new MEMeshObj(this.canvas, this.device, this.context, o)
+    if (o.physics.enabled == true) {
+      this.matrixAmmo.addPhysics(myMesh1, o.physics)
+    }
     this.mainRenderBundle.push(myMesh1);
-
-
   }
 
   run(callback) {

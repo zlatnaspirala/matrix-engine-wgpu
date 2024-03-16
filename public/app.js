@@ -16,6 +16,13 @@ let application = exports.application = new _world.default({
     responseCoef: 1000
   }
 }, () => {
+  addEventListener('AmmoReady', () => {
+    (0, _loaderObj.downloadMeshes)({
+      welcomeText: "./res/meshes/blender/piramyd.obj",
+      armor: "./res/meshes/obj/armor.obj",
+      lopta: "./res/meshes/blender/lopta.obj"
+    }, onLoadObj);
+  });
   function onLoadObj(m) {
     console.log('Loaded objs:', m);
     application.addMeshObj({
@@ -76,19 +83,17 @@ let application = exports.application = new _world.default({
       },
       texturesPaths: ['./res/meshes/obj/armor.png'],
       name: 'Lopta-Fizika',
-      mesh: m.lopta
+      mesh: m.lopta,
+      physics: {
+        enabled: true
+      }
     });
   }
-  (0, _loaderObj.downloadMeshes)({
-    welcomeText: "./res/meshes/blender/piramyd.obj",
-    armor: "./res/meshes/obj/armor.obj",
-    lopta: "./res/meshes/blender/lopta.obj"
-  }, onLoadObj);
   let o = {
     scale: 10,
     position: {
       x: 3,
-      y: -25,
+      y: -12,
       z: -10
     },
     rotation: {
@@ -98,7 +103,7 @@ let application = exports.application = new _world.default({
     },
     texturesPaths: ['./res/textures/rust.jpg']
   };
-  application.addCube(o);
+  // application.addCube(o)
 });
 window.app = application;
 
@@ -8880,14 +8885,11 @@ class MatrixAmmo {
       // Physics variables
       this.dynamicsWorld = null;
       this.rigidBodies = [];
-
-      // Best wat to save it like class prop
       this.Ammo = Ammo;
       this.lastUpdate = 0;
       console.log("Ammo core loaded.");
       this.initPhysics();
-
-      // this.initObjectTest()
+      dispatchEvent(new CustomEvent('AmmoReady', {}));
     });
   };
   initPhysics() {
@@ -8900,10 +8902,10 @@ class MatrixAmmo {
       solver = new Ammo.btSequentialImpulseConstraintSolver();
     this.dynamicsWorld = new Ammo.btDiscreteDynamicsWorld(dispatcher, overlappingPairCache, solver, collisionConfiguration);
     this.dynamicsWorld.setGravity(new Ammo.btVector3(0, -10, 0));
-    var groundShape = new Ammo.btBoxShape(new Ammo.btVector3(50, 50, 50)),
+    var groundShape = new Ammo.btBoxShape(new Ammo.btVector3(50, 2, 50)),
       groundTransform = new Ammo.btTransform();
     groundTransform.setIdentity();
-    groundTransform.setOrigin(new Ammo.btVector3(0, -50, 0));
+    groundTransform.setOrigin(new Ammo.btVector3(0, -1, 0));
     var mass = 0,
       isDynamic = mass !== 0,
       localInertia = new Ammo.btVector3(0, 0, 0);
@@ -8914,20 +8916,29 @@ class MatrixAmmo {
     this.dynamicsWorld.addRigidBody(body);
     // this.rigidBodies.push(body);
   }
-  initObjectTest() {
+  addPhysics(MEObject, pOptions) {
+    if (pOptions.geometry == "Sphere") {
+      this.addPhysicsSphere(MEObject, pOptions);
+    } else if (pOptions.geometry == "Cube") {
+      // 
+    }
+  }
+  addPhysicsSphere(MEObject, pOptions) {
+    let Ammo = this.Ammo;
     var colShape = new Ammo.btSphereShape(1),
       startTransform = new Ammo.btTransform();
     startTransform.setIdentity();
-    var mass = 1,
-      isDynamic = mass !== 0,
-      localInertia = new Ammo.btVector3(0, 0, 0);
-    if (isDynamic) colShape.calculateLocalInertia(mass, localInertia);
-    startTransform.setOrigin(new Ammo.btVector3(2, 10, 0));
+    var mass = 1;
+    var localInertia = new Ammo.btVector3(0, 0, 0);
+    colShape.calculateLocalInertia(mass, localInertia);
+    startTransform.setOrigin(new Ammo.btVector3(0, 15, -10));
     var myMotionState = new Ammo.btDefaultMotionState(startTransform),
       rbInfo = new Ammo.btRigidBodyConstructionInfo(mass, myMotionState, colShape, localInertia),
       body = new Ammo.btRigidBody(rbInfo);
+    body.MEObject = MEObject;
     this.dynamicsWorld.addRigidBody(body);
     this.rigidBodies.push(body);
+    return body;
   }
   updatePhysics() {
     // Step world
@@ -8937,8 +8948,10 @@ class MatrixAmmo {
     this.rigidBodies.forEach(function (body) {
       if (body.getMotionState()) {
         body.getMotionState().getWorldTransform(trans);
-        // console.log("world pos = " + [trans.getOrigin().x().toFixed(2), trans.getOrigin().y().toFixed(2), trans.getOrigin().z().toFixed(2)]);
-        // console.log("world rot = " + trans.getRotation());
+        var _x = trans.getOrigin().x().toFixed(2);
+        var _y = trans.getOrigin().y().toFixed(2);
+        var _z = trans.getOrigin().z().toFixed(2);
+        body.MEObject.position.setPosition(_x, _y, _z);
         var test = trans.getRotation();
         // var testAxis = test.getAxis();
         // var testAngle = test.getAngle()
@@ -9502,12 +9515,21 @@ class MatrixEngineWGPU {
     }
     if (typeof o.physics === 'undefined') {
       o.physics = {
-        enabled: false
+        enabled: false,
+        geometry: "Sphere"
       };
     }
-    //initObjectTest
-    console.log('Mesh procedure', o);
+    if (typeof o.physics.enabled === 'undefined') {
+      o.physics.enabled = false;
+    }
+    if (typeof o.physics.geometry === 'undefined') {
+      o.physics.geometry = "Sphere";
+    }
+    // console.log('Mesh procedure', o)
     let myMesh1 = new _meshObj.default(this.canvas, this.device, this.context, o);
+    if (o.physics.enabled == true) {
+      this.matrixAmmo.addPhysics(myMesh1, o.physics);
+    }
     this.mainRenderBundle.push(myMesh1);
   };
   run(callback) {
