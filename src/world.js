@@ -4,6 +4,8 @@ import MECube from './engine/cube.js';
 import {ArcballCamera, WASDCamera} from "./engine/engine.js";
 import MEMesh from "./engine/mesh.js";
 import MEMeshObj from "./engine/mesh-obj.js";
+import MatrixAmmo from "./physics/matrix-ammo.js";
+import {scriptManager} from "./engine/utils.js";
 
 export default class MatrixEngineWGPU {
 
@@ -19,6 +21,8 @@ export default class MatrixEngineWGPU {
     depthLoadOp: 'clear',
     depthStoreOp: 'store'
   }
+
+  matrixAmmo = new MatrixAmmo();
 
   // The input handler
   constructor(options, callback) {
@@ -212,6 +216,8 @@ export default class MatrixEngineWGPU {
       throw console.error('arg mesh is empty...');
       return;
     }
+    if(typeof o.physics === 'undefined') {o.physics = {enabled: false}}
+    //initObjectTest
     console.log('Mesh procedure', o)
 
     let myMesh1 = new MEMeshObj(this.canvas, this.device, this.context, o)
@@ -250,6 +256,7 @@ export default class MatrixEngineWGPU {
   }
 
   framePassPerObject = () => {
+    if (this.matrixAmmo && this.matrixAmmo.updatePhysics) this.matrixAmmo.updatePhysics()
     // console.log('framePassPerObject')
     let commandEncoder = this.device.createCommandEncoder();
     this.rbContainer = [];

@@ -30,12 +30,30 @@ export let application = new MatrixEngineWGPU({
       name: 'MyText',
       mesh: m.welcomeText
     })
+
+    application.addMeshObj({
+      position: {x: 1, y: 0, z: -5},
+      rotation: {x: -90, y: 0, z: 0},
+      rotationSpeed: {x: 0, y: 0, z: 0},
+      texturesPaths: ['./res/meshes/obj/armor.png'],
+      name: 'Lopta-Fizika',
+      mesh: m.lopta
+    })
   }
 
   downloadMeshes({
     welcomeText: "./res/meshes/blender/piramyd.obj",
-    armor: "./res/meshes/obj/armor.obj"
+    armor: "./res/meshes/obj/armor.obj",
+    lopta: "./res/meshes/blender/lopta.obj",
   }, onLoadObj)
+
+  let o = {
+    scale: 10,
+    position: {x: 3, y: -25, z: -10},
+    rotation: {x: 0, y: 0, z: 0},
+    texturesPaths: ['./res/textures/rust.jpg']
+  };
+  application.addCube(o)
 
 })
 
