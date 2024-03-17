@@ -2,7 +2,7 @@ import MatrixEngineWGPU from "./src/world.js";
 import {downloadMeshes} from './src/engine/loader-obj.js';
 
 export let application = new MatrixEngineWGPU({
-  useSingleRenderPass: false,
+  useSingleRenderPass: true,
   canvasSize: 'fullscreen',
   mainCameraParams: {
     type: 'WASD',
@@ -10,23 +10,19 @@ export let application = new MatrixEngineWGPU({
   }
 }, () => {
 
-
   addEventListener('AmmoReady', () => {
-
 
     downloadMeshes({
       welcomeText: "./res/meshes/blender/piramyd.obj",
       armor: "./res/meshes/obj/armor.obj",
       lopta: "./res/meshes/blender/lopta.obj",
     }, onLoadObj)
-  
+
   })
 
 
   function onLoadObj(m) {
-
-    console.log('Loaded objs:', m);
-
+    // console.log('Loaded objs:', m);
     application.addMeshObj({
       position: {x: -3, y: 0, z: -5},
       rotation: {x: 0, y: 0, z: 0},
@@ -46,13 +42,13 @@ export let application = new MatrixEngineWGPU({
     })
 
     application.addMeshObj({
-      position: {x: 1, y: 0, z: -5},
+      position: {x: 1, y: 0, z: -15},
       rotation: {x: -90, y: 0, z: 0},
-      rotationSpeed: {x: 0, y: 0, z: 0},
+      rotationSpeed: {x: 0, y: 10, z: 0},
       texturesPaths: ['./res/meshes/obj/armor.png'],
       name: 'Lopta-Fizika',
       mesh: m.lopta,
-      physics:{ enabled: true }
+      physics: {enabled: true}
     })
   }
 

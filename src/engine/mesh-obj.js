@@ -498,29 +498,37 @@ export default class MEMeshObj {
     this.renderPassDescriptor.colorAttachments[0].view = this.context
       .getCurrentTexture()
       .createView();
-    {
-      const shadowPass = commandEncoder.beginRenderPass(this.shadowPassDescriptor);
-      shadowPass.setPipeline(this.shadowPipeline);
-      shadowPass.setBindGroup(0, this.sceneBindGroupForShadow);
-      shadowPass.setBindGroup(1, this.modelBindGroup);
-      shadowPass.setVertexBuffer(0, this.vertexBuffer);
-      shadowPass.setVertexBuffer(1, this.vertexNormalsBuffer);
-      shadowPass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
-      shadowPass.setIndexBuffer(this.indexBuffer, 'uint16');
-      shadowPass.drawIndexed(this.indexCount);
-      shadowPass.end();
-    }
-    {
-      const renderPass = commandEncoder.beginRenderPass(this.renderPassDescriptor);
-      renderPass.setPipeline(this.pipeline);
-      renderPass.setBindGroup(0, this.sceneBindGroupForRender);
-      renderPass.setBindGroup(1, this.modelBindGroup);
-      renderPass.setVertexBuffer(0, this.vertexBuffer);
-      renderPass.setVertexBuffer(1, this.vertexNormalsBuffer);
-      renderPass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
-      renderPass.setIndexBuffer(this.indexBuffer, 'uint16');
-      renderPass.drawIndexed(this.indexCount);
-      renderPass.end();
-    }
+    // {
+    //   const shadowPass = commandEncoder.beginRenderPass(this.shadowPassDescriptor);
+    //   shadowPass.setPipeline(this.shadowPipeline);
+      
+    //   shadowPass.end();
+    // }
+    // {
+    //   const renderPass = commandEncoder.beginRenderPass(this.renderPassDescriptor);
+    //   renderPass.setPipeline(this.pipeline);
+ 
+    //   renderPass.end();
+    // }
+  }
+
+  drawElements = (renderPass) => {
+    renderPass.setBindGroup(0, this.sceneBindGroupForRender);
+    renderPass.setBindGroup(1, this.modelBindGroup);
+    renderPass.setVertexBuffer(0, this.vertexBuffer);
+    renderPass.setVertexBuffer(1, this.vertexNormalsBuffer);
+    renderPass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
+    renderPass.setIndexBuffer(this.indexBuffer, 'uint16');
+    renderPass.drawIndexed(this.indexCount);
+  }
+
+  drawShadows = (shadowPass) => {
+    shadowPass.setBindGroup(0, this.sceneBindGroupForShadow);
+    shadowPass.setBindGroup(1, this.modelBindGroup);
+    shadowPass.setVertexBuffer(0, this.vertexBuffer);
+    shadowPass.setVertexBuffer(1, this.vertexNormalsBuffer);
+    shadowPass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
+    shadowPass.setIndexBuffer(this.indexBuffer, 'uint16');
+    shadowPass.drawIndexed(this.indexCount);
   }
 }

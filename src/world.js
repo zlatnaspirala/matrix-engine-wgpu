@@ -226,7 +226,7 @@ export default class MatrixEngineWGPU {
     if(typeof o.physics.geometry === 'undefined') {o.physics.geometry = "Sphere"}
     // console.log('Mesh procedure', o)
     let myMesh1 = new MEMeshObj(this.canvas, this.device, this.context, o)
-    if (o.physics.enabled == true) {
+    if(o.physics.enabled == true) {
       this.matrixAmmo.addPhysics(myMesh1, o.physics)
     }
     this.mainRenderBundle.push(myMesh1);
@@ -238,48 +238,35 @@ export default class MatrixEngineWGPU {
   }
 
   frameSinglePass = () => {
-
-    let passEncoder;
+    if(typeof this.mainRenderBundle == 'undefined') return;
+    let shadowPass = null;
+    let renderPass;
     let commandEncoder = this.device.createCommandEncoder();
-    if(typeof this.mainRenderBundle != 'undefined') this.mainRenderBundle.forEach((meItem, index) => {
+
+    this.mainRenderBundle.forEach((meItem, index) => {
       meItem.position.update();
-      meItem.draw(commandEncoder);
-      if(typeof meItem.done == 'undefined') {
-        this.rbContainer.push(meItem.renderBundle);
-        this.renderPassDescriptor.colorAttachments[0].view = this.context
-          .getCurrentTexture()
-          .createView();
-        //  console.log('prolazi ')
-        passEncoder = commandEncoder.beginRenderPass(this.renderPassDescriptor);
-        passEncoder.executeBundles(this.rbContainer);
-        passEncoder.end();
-        // this.device.queue.submit([commandEncoder.finish()]);
-      }
+
+      // for now
+      if(index == 0) shadowPass = commandEncoder.beginRenderPass(meItem.shadowPassDescriptor);      
+      if (index == 1) shadowPass.setPipeline(meItem.shadowPipeline);
     })
-    this.device.queue.submit([commandEncoder.finish()]);
 
-    requestAnimationFrame(this.frame);
-  }
-
-  framePassPerObject = () => {
-    if (this.matrixAmmo && this.matrixAmmo.updatePhysics) this.matrixAmmo.updatePhysics()
-    // console.log('framePassPerObject')
-    let commandEncoder = this.device.createCommandEncoder();
-    this.rbContainer = [];
-    let passEncoder;
     this.mainRenderBundle.forEach((meItem, index) => {
       meItem.draw(commandEncoder);
-      meItem.position.update();
-      if(meItem.renderBundle) {
-        this.rbContainer.push(meItem.renderBundle)
-        passEncoder = commandEncoder.beginRenderPass(meItem.renderPassDescriptor);
-        passEncoder.executeBundles(this.rbContainer);
-        passEncoder.end();
-      } else {
-        meItem.draw(commandEncoder)
-      }
-
+      meItem.drawShadows(shadowPass);
     })
+    shadowPass.end();
+
+    this.mainRenderBundle.forEach((meItem, index) => {
+      if(index == 0) renderPass = commandEncoder.beginRenderPass(meItem.renderPassDescriptor);
+      if(index == 1) renderPass.setPipeline(meItem.pipeline);
+    })
+
+    this.mainRenderBundle.forEach((meItem, index) => {
+      meItem.drawElements(renderPass);
+    })
+    renderPass.end();
+
     this.device.queue.submit([commandEncoder.finish()]);
     requestAnimationFrame(this.frame);
   }

@@ -9,7 +9,7 @@ var _world = _interopRequireDefault(require("./src/world.js"));
 var _loaderObj = require("./src/engine/loader-obj.js");
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 let application = exports.application = new _world.default({
-  useSingleRenderPass: false,
+  useSingleRenderPass: true,
   canvasSize: 'fullscreen',
   mainCameraParams: {
     type: 'WASD',
@@ -24,7 +24,7 @@ let application = exports.application = new _world.default({
     }, onLoadObj);
   });
   function onLoadObj(m) {
-    console.log('Loaded objs:', m);
+    // console.log('Loaded objs:', m);
     application.addMeshObj({
       position: {
         x: -3,
@@ -69,7 +69,7 @@ let application = exports.application = new _world.default({
       position: {
         x: 1,
         y: 0,
-        z: -5
+        z: -15
       },
       rotation: {
         x: -90,
@@ -78,7 +78,7 @@ let application = exports.application = new _world.default({
       },
       rotationSpeed: {
         x: 0,
-        y: 0,
+        y: 10,
         z: 0
       },
       texturesPaths: ['./res/meshes/obj/armor.png'],
@@ -7552,7 +7552,7 @@ class MEMeshObj {
       }];
       const primitive = {
         topology: 'triangle-list',
-        cullMode: 'none'
+        cullMode: 'back'
       };
       this.uniformBufferBindGroupLayout = this.device.createBindGroupLayout({
         entries: [{
@@ -7809,30 +7809,36 @@ class MEMeshObj {
     const transformationMatrix = this.getTransformationMatrix(this.position);
     this.device.queue.writeBuffer(this.sceneUniformBuffer, 64, transformationMatrix.buffer, transformationMatrix.byteOffset, transformationMatrix.byteLength);
     this.renderPassDescriptor.colorAttachments[0].view = this.context.getCurrentTexture().createView();
-    {
-      const shadowPass = commandEncoder.beginRenderPass(this.shadowPassDescriptor);
-      shadowPass.setPipeline(this.shadowPipeline);
-      shadowPass.setBindGroup(0, this.sceneBindGroupForShadow);
-      shadowPass.setBindGroup(1, this.modelBindGroup);
-      shadowPass.setVertexBuffer(0, this.vertexBuffer);
-      shadowPass.setVertexBuffer(1, this.vertexNormalsBuffer);
-      shadowPass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
-      shadowPass.setIndexBuffer(this.indexBuffer, 'uint16');
-      shadowPass.drawIndexed(this.indexCount);
-      shadowPass.end();
-    }
-    {
-      const renderPass = commandEncoder.beginRenderPass(this.renderPassDescriptor);
-      renderPass.setPipeline(this.pipeline);
-      renderPass.setBindGroup(0, this.sceneBindGroupForRender);
-      renderPass.setBindGroup(1, this.modelBindGroup);
-      renderPass.setVertexBuffer(0, this.vertexBuffer);
-      renderPass.setVertexBuffer(1, this.vertexNormalsBuffer);
-      renderPass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
-      renderPass.setIndexBuffer(this.indexBuffer, 'uint16');
-      renderPass.drawIndexed(this.indexCount);
-      renderPass.end();
-    }
+    // {
+    //   const shadowPass = commandEncoder.beginRenderPass(this.shadowPassDescriptor);
+    //   shadowPass.setPipeline(this.shadowPipeline);
+
+    //   shadowPass.end();
+    // }
+    // {
+    //   const renderPass = commandEncoder.beginRenderPass(this.renderPassDescriptor);
+    //   renderPass.setPipeline(this.pipeline);
+
+    //   renderPass.end();
+    // }
+  };
+  drawElements = renderPass => {
+    renderPass.setBindGroup(0, this.sceneBindGroupForRender);
+    renderPass.setBindGroup(1, this.modelBindGroup);
+    renderPass.setVertexBuffer(0, this.vertexBuffer);
+    renderPass.setVertexBuffer(1, this.vertexNormalsBuffer);
+    renderPass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
+    renderPass.setIndexBuffer(this.indexBuffer, 'uint16');
+    renderPass.drawIndexed(this.indexCount);
+  };
+  drawShadows = shadowPass => {
+    shadowPass.setBindGroup(0, this.sceneBindGroupForShadow);
+    shadowPass.setBindGroup(1, this.modelBindGroup);
+    shadowPass.setVertexBuffer(0, this.vertexBuffer);
+    shadowPass.setVertexBuffer(1, this.vertexNormalsBuffer);
+    shadowPass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
+    shadowPass.setIndexBuffer(this.indexBuffer, 'uint16');
+    shadowPass.drawIndexed(this.indexCount);
   };
 }
 exports.default = MEMeshObj;
@@ -9541,42 +9547,30 @@ class MatrixEngineWGPU {
     }, 20);
   }
   frameSinglePass = () => {
-    let passEncoder;
+    if (typeof this.mainRenderBundle == 'undefined') return;
+    let shadowPass = null;
+    let renderPass;
     let commandEncoder = this.device.createCommandEncoder();
-    if (typeof this.mainRenderBundle != 'undefined') this.mainRenderBundle.forEach((meItem, index) => {
+    this.mainRenderBundle.forEach((meItem, index) => {
       meItem.position.update();
-      meItem.draw(commandEncoder);
-      if (typeof meItem.done == 'undefined') {
-        this.rbContainer.push(meItem.renderBundle);
-        this.renderPassDescriptor.colorAttachments[0].view = this.context.getCurrentTexture().createView();
-        //  console.log('prolazi ')
-        passEncoder = commandEncoder.beginRenderPass(this.renderPassDescriptor);
-        passEncoder.executeBundles(this.rbContainer);
-        passEncoder.end();
-        // this.device.queue.submit([commandEncoder.finish()]);
-      }
+
+      // for now
+      if (index == 0) shadowPass = commandEncoder.beginRenderPass(meItem.shadowPassDescriptor);
+      if (index == 1) shadowPass.setPipeline(meItem.shadowPipeline);
     });
-    this.device.queue.submit([commandEncoder.finish()]);
-    requestAnimationFrame(this.frame);
-  };
-  framePassPerObject = () => {
-    if (this.matrixAmmo && this.matrixAmmo.updatePhysics) this.matrixAmmo.updatePhysics();
-    // console.log('framePassPerObject')
-    let commandEncoder = this.device.createCommandEncoder();
-    this.rbContainer = [];
-    let passEncoder;
     this.mainRenderBundle.forEach((meItem, index) => {
       meItem.draw(commandEncoder);
-      meItem.position.update();
-      if (meItem.renderBundle) {
-        this.rbContainer.push(meItem.renderBundle);
-        passEncoder = commandEncoder.beginRenderPass(meItem.renderPassDescriptor);
-        passEncoder.executeBundles(this.rbContainer);
-        passEncoder.end();
-      } else {
-        // meItem.draw(commandEncoder)
-      }
+      meItem.drawShadows(shadowPass);
     });
+    shadowPass.end();
+    this.mainRenderBundle.forEach((meItem, index) => {
+      if (index == 0) renderPass = commandEncoder.beginRenderPass(meItem.renderPassDescriptor);
+      if (index == 1) renderPass.setPipeline(meItem.pipeline);
+    });
+    this.mainRenderBundle.forEach((meItem, index) => {
+      meItem.drawElements(renderPass);
+    });
+    renderPass.end();
     this.device.queue.submit([commandEncoder.finish()]);
     requestAnimationFrame(this.frame);
   };
