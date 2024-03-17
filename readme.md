@@ -33,6 +33,8 @@ I publish (this repo) npm package with name `matrix-engine-wgpu`.
   app.mainRenderBundle[0];
   ```
 
+  For now only `addMeshObj` works [Obj file loader].
+
 ### Camera
 Camera type: `WASD | arcball`
 ```js
