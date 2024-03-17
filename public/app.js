@@ -7552,7 +7552,7 @@ class MEMeshObj {
       }];
       const primitive = {
         topology: 'triangle-list',
-        cullMode: 'back'
+        cullMode: 'none'
       };
       this.uniformBufferBindGroupLayout = this.device.createBindGroupLayout({
         entries: [{
@@ -9574,7 +9574,7 @@ class MatrixEngineWGPU {
         passEncoder.executeBundles(this.rbContainer);
         passEncoder.end();
       } else {
-        meItem.draw(commandEncoder);
+        // meItem.draw(commandEncoder)
       }
     });
     this.device.queue.submit([commandEncoder.finish()]);
