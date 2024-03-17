@@ -9555,14 +9555,15 @@ class MatrixEngineWGPU {
       meItem.position.update();
 
       // for now
-      if (index == 0) shadowPass = commandEncoder.beginRenderPass(meItem.shadowPassDescriptor);
-      if (index == 1) shadowPass.setPipeline(meItem.shadowPipeline);
+      // if(index == 0) shadowPass = commandEncoder.beginRenderPass(meItem.shadowPassDescriptor);      
     });
     this.mainRenderBundle.forEach((meItem, index) => {
       meItem.draw(commandEncoder);
+      shadowPass = commandEncoder.beginRenderPass(meItem.shadowPassDescriptor);
+      shadowPass.setPipeline(meItem.shadowPipeline);
       meItem.drawShadows(shadowPass);
+      shadowPass.end();
     });
-    shadowPass.end();
     this.mainRenderBundle.forEach((meItem, index) => {
       if (index == 0) renderPass = commandEncoder.beginRenderPass(meItem.renderPassDescriptor);
       if (index == 1) renderPass.setPipeline(meItem.pipeline);
