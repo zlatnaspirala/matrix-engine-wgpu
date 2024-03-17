@@ -245,20 +245,15 @@ export default class MatrixEngineWGPU {
 
     this.mainRenderBundle.forEach((meItem, index) => {
       meItem.position.update();
-
-      // for now
-      // if(index == 0) shadowPass = commandEncoder.beginRenderPass(meItem.shadowPassDescriptor);      
-      
-      
     })
 
     this.mainRenderBundle.forEach((meItem, index) => {
       meItem.draw(commandEncoder);
 
-      shadowPass = commandEncoder.beginRenderPass(meItem.shadowPassDescriptor);      
+      shadowPass = commandEncoder.beginRenderPass(meItem.shadowPassDescriptor);
       shadowPass.setPipeline(meItem.shadowPipeline);
       meItem.drawShadows(shadowPass);
-          shadowPass.end();
+      shadowPass.end();
     })
 
 

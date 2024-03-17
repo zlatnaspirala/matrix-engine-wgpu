@@ -88,11 +88,7 @@ import MatrixEngineWGPU from "./src/meWGPU";
 import {testCUSTOMGEO} from "./public/res/meshes/blender/piramida.js";
 import {downloadMeshes} from "./src/engine/loader-obj.js";
 
-let application = new MatrixEngineWGPU(
-  {
-    useSingleRenderPass: true,
-    canvasSize: "fullscreen",
-  },
+let application = new MatrixEngineWGPU({canvasSize: "fullscreen"},
   () => {
     function onLoadObj(m) {
       application.addMeshObj({

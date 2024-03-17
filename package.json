@@ -1,7 +1,7 @@
 {
   "name": "matrix-engine-wgpu",
-  "version": "1.0.4",
-  "description": "webGPU powered pwa application.Crazy fast rendering.",
+  "version": "1.0.5",
+  "description": "webGPU powered pwa application. Crazy fast rendering.",
   "main": "index.js",
   "scripts": {
     "main-worker": "watchify app-worker.js -p [esmify --noImplicitAny] -o public/app-worker.js",
@@ -11,6 +11,7 @@
     "build-all": "npm run main-worker | npm run examples | npm run main | npm run build-empty"
   },
   "keywords": [
+    "3dScene",
     "webGPU",
     "webGPU-scene",
     "webGPU-engine",

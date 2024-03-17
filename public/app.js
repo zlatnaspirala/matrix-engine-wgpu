@@ -9553,9 +9553,6 @@ class MatrixEngineWGPU {
     let commandEncoder = this.device.createCommandEncoder();
     this.mainRenderBundle.forEach((meItem, index) => {
       meItem.position.update();
-
-      // for now
-      // if(index == 0) shadowPass = commandEncoder.beginRenderPass(meItem.shadowPassDescriptor);      
     });
     this.mainRenderBundle.forEach((meItem, index) => {
       meItem.draw(commandEncoder);
