@@ -21,9 +21,8 @@ I publish (this repo) npm package with name `matrix-engine-wgpu`.
 
 - scene objects feature [objects/scene/transformation]
 - Make it similar to the matrix-engine webGL features.
-
-- For now i will use `createRenderBundleEncoder` for multi object scene draws but mix also with shadows pipline.
 - Main base example is `shadowMapping` from [webgpu-samples](https://webgpu.github.io/webgpu-samples/?sample=shadowMapping)
+- Integrate ammojs
 
 ## Support list
 

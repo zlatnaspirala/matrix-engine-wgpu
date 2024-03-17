@@ -91,7 +91,7 @@ let application = exports.application = new _world.default({
 });
 window.app = application;
 
-},{"../src/engine/loader-obj.js":7,"../src/world.js":16}],3:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":7,"../src/world.js":17}],3:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -5459,7 +5459,7 @@ class MEBall {
     this.cameras = o.cameras;
     this.scale = o.scale;
     console.log('passed : o.mainCameraParams.responseCoef ', o.mainCameraParams.responseCoef);
-    this.cameraParams = {
+    this.mainCameraParams = {
       type: o.mainCameraParams.type,
       responseCoef: o.mainCameraParams.responseCoef
     }; // |  WASD 'arcball' };
@@ -5693,11 +5693,11 @@ class MEBall {
   getTransformationMatrix(pos) {
     // const viewMatrix = mat4.identity();
     const now = Date.now();
-    const deltaTime = (now - this.lastFrameMS) / this.cameraParams.responseCoef;
+    const deltaTime = (now - this.lastFrameMS) / this.mainCameraParams.responseCoef;
     this.lastFrameMS = now;
 
     // const viewMatrix = mat4.identity(); ORI
-    const camera = this.cameras[this.cameraParams.type];
+    const camera = this.cameras[this.mainCameraParams.type];
     const viewMatrix = camera.update(deltaTime, this.inputHandler());
     _wgpuMatrix.mat4.translate(viewMatrix, _wgpuMatrix.vec3.fromValues(pos.x, pos.y, pos.z), viewMatrix);
     _wgpuMatrix.mat4.rotateX(viewMatrix, Math.PI * this.rotation.getRotX(), viewMatrix);
@@ -5845,7 +5845,7 @@ class MEBall {
 }
 exports.default = MEBall;
 
-},{"../shaders/shaders":13,"./engine":6,"./matrix-class":8,"wgpu-matrix":3}],5:[function(require,module,exports){
+},{"../shaders/shaders":14,"./engine":6,"./matrix-class":8,"wgpu-matrix":3}],5:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -5870,7 +5870,7 @@ class MECube {
     this.inputHandler = (0, _engine.createInputHandler)(window, canvas);
     this.cameras = o.cameras;
     console.log('passed : o.mainCameraParams.responseCoef ', o.mainCameraParams.responseCoef);
-    this.cameraParams = {
+    this.mainCameraParams = {
       type: o.mainCameraParams.type,
       responseCoef: o.mainCameraParams.responseCoef
     }; // |  WASD 'arcball' };
@@ -6107,11 +6107,11 @@ class MECube {
   }
   getTransformationMatrix(pos) {
     const now = Date.now();
-    const deltaTime = (now - this.lastFrameMS) / this.cameraParams.responseCoef;
+    const deltaTime = (now - this.lastFrameMS) / this.mainCameraParams.responseCoef;
     this.lastFrameMS = now;
 
     // const viewMatrix = mat4.identity(); ORI
-    const camera = this.cameras[this.cameraParams.type];
+    const camera = this.cameras[this.mainCameraParams.type];
     const viewMatrix = camera.update(deltaTime, this.inputHandler());
     _wgpuMatrix.mat4.translate(viewMatrix, _wgpuMatrix.vec3.fromValues(pos.x, pos.y, pos.z), viewMatrix);
     _wgpuMatrix.mat4.rotateX(viewMatrix, Math.PI * this.rotation.getRotX(), viewMatrix);
@@ -6254,7 +6254,7 @@ class MECube {
 }
 exports.default = MECube;
 
-},{"../shaders/shaders":13,"./engine":6,"./matrix-class":8,"wgpu-matrix":3}],6:[function(require,module,exports){
+},{"../shaders/shaders":14,"./engine":6,"./matrix-class":8,"wgpu-matrix":3}],6:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -7407,7 +7407,7 @@ class MEMeshObj {
     console.log('mesh obj: ', this.mesh);
     this.inputHandler = (0, _engine.createInputHandler)(window, canvas);
     this.cameras = o.cameras;
-    this.cameraParams = {
+    this.mainCameraParams = {
       type: o.mainCameraParams.type,
       responseCoef: o.mainCameraParams.responseCoef
     };
@@ -7431,7 +7431,7 @@ class MEMeshObj {
         this.modelViewProjectionMatrix = _wgpuMatrix.mat4.create();
         // console.log('cube added texturesPaths: ', this.texturesPaths)
         this.loadTex0(this.texturesPaths, device).then(() => {
-          console.log('loaded tex buffer for mesh:', this.texture0);
+          // console.log('loaded tex buffer for mesh:', this.texture0)
           resolve();
         });
       });
@@ -7715,11 +7715,11 @@ class MEMeshObj {
       // Rotates the camera around the origin based on time.
       this.getTransformationMatrix = pos => {
         const now = Date.now();
-        const deltaTime = (now - this.lastFrameMS) / this.cameraParams.responseCoef;
+        const deltaTime = (now - this.lastFrameMS) / this.mainCameraParams.responseCoef;
         this.lastFrameMS = now;
 
         // const this.viewMatrix = mat4.identity()
-        const camera = this.cameras[this.cameraParams.type];
+        const camera = this.cameras[this.mainCameraParams.type];
         this.viewMatrix = camera.update(deltaTime, this.inputHandler());
         _wgpuMatrix.mat4.translate(this.viewMatrix, _wgpuMatrix.vec3.fromValues(pos.x, pos.y, pos.z), this.viewMatrix);
         _wgpuMatrix.mat4.rotateX(this.viewMatrix, Math.PI * this.rotation.getRotX(), this.viewMatrix);
@@ -7793,35 +7793,41 @@ class MEMeshObj {
     const transformationMatrix = this.getTransformationMatrix(this.position);
     this.device.queue.writeBuffer(this.sceneUniformBuffer, 64, transformationMatrix.buffer, transformationMatrix.byteOffset, transformationMatrix.byteLength);
     this.renderPassDescriptor.colorAttachments[0].view = this.context.getCurrentTexture().createView();
-    {
-      const shadowPass = commandEncoder.beginRenderPass(this.shadowPassDescriptor);
-      shadowPass.setPipeline(this.shadowPipeline);
-      shadowPass.setBindGroup(0, this.sceneBindGroupForShadow);
-      shadowPass.setBindGroup(1, this.modelBindGroup);
-      shadowPass.setVertexBuffer(0, this.vertexBuffer);
-      shadowPass.setVertexBuffer(1, this.vertexNormalsBuffer);
-      shadowPass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
-      shadowPass.setIndexBuffer(this.indexBuffer, 'uint16');
-      shadowPass.drawIndexed(this.indexCount);
-      shadowPass.end();
-    }
-    {
-      const renderPass = commandEncoder.beginRenderPass(this.renderPassDescriptor);
-      renderPass.setPipeline(this.pipeline);
-      renderPass.setBindGroup(0, this.sceneBindGroupForRender);
-      renderPass.setBindGroup(1, this.modelBindGroup);
-      renderPass.setVertexBuffer(0, this.vertexBuffer);
-      renderPass.setVertexBuffer(1, this.vertexNormalsBuffer);
-      renderPass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
-      renderPass.setIndexBuffer(this.indexBuffer, 'uint16');
-      renderPass.drawIndexed(this.indexCount);
-      renderPass.end();
-    }
+    // {
+    //   const shadowPass = commandEncoder.beginRenderPass(this.shadowPassDescriptor);
+    //   shadowPass.setPipeline(this.shadowPipeline);
+
+    //   shadowPass.end();
+    // }
+    // {
+    //   const renderPass = commandEncoder.beginRenderPass(this.renderPassDescriptor);
+    //   renderPass.setPipeline(this.pipeline);
+
+    //   renderPass.end();
+    // }
+  };
+  drawElements = renderPass => {
+    renderPass.setBindGroup(0, this.sceneBindGroupForRender);
+    renderPass.setBindGroup(1, this.modelBindGroup);
+    renderPass.setVertexBuffer(0, this.vertexBuffer);
+    renderPass.setVertexBuffer(1, this.vertexNormalsBuffer);
+    renderPass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
+    renderPass.setIndexBuffer(this.indexBuffer, 'uint16');
+    renderPass.drawIndexed(this.indexCount);
+  };
+  drawShadows = shadowPass => {
+    shadowPass.setBindGroup(0, this.sceneBindGroupForShadow);
+    shadowPass.setBindGroup(1, this.modelBindGroup);
+    shadowPass.setVertexBuffer(0, this.vertexBuffer);
+    shadowPass.setVertexBuffer(1, this.vertexNormalsBuffer);
+    shadowPass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
+    shadowPass.setIndexBuffer(this.indexBuffer, 'uint16');
+    shadowPass.drawIndexed(this.indexCount);
   };
 }
 exports.default = MEMeshObj;
 
-},{"../shaders/fragment.wgsl":12,"../shaders/vertex.wgsl":14,"../shaders/vertexShadow.wgsl":15,"./engine":6,"./matrix-class":8,"wgpu-matrix":3}],10:[function(require,module,exports){
+},{"../shaders/fragment.wgsl":13,"../shaders/vertex.wgsl":15,"../shaders/vertexShadow.wgsl":16,"./engine":6,"./matrix-class":8,"wgpu-matrix":3}],10:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -7844,8 +7850,7 @@ class MEMesh {
     this.mesh = o.mesh;
     this.inputHandler = (0, _engine.createInputHandler)(window, canvas);
     this.cameras = o.cameras;
-    console.log('passed : o.mainCameraParams.responseCoef ', o.mainCameraParams.responseCoef);
-    this.cameraParams = {
+    this.mainCameraParams = {
       type: o.mainCameraParams.type,
       responseCoef: o.mainCameraParams.responseCoef
     };
@@ -7856,7 +7861,7 @@ class MEMesh {
     });
     this.presentationFormat = navigator.gpu.getPreferredCanvasFormat();
     this.position = new _matrixClass.Position(o.position.x, o.position.y, o.position.z);
-    console.log('cube added on pos : ', this.position);
+    // console.log('cube added on pos : ', this.position)
     this.rotation = new _matrixClass.Rotation(o.rotation.x, o.rotation.y, o.rotation.z);
     this.rotation.rotationSpeed.x = o.rotationSpeed.x;
     this.rotation.rotationSpeed.y = o.rotationSpeed.y;
@@ -8120,9 +8125,9 @@ class MEMesh {
       // Rotates the camera around the origin based on time.
       this.getTransformationMatrix = pos => {
         const now = Date.now();
-        const deltaTime = (now - this.lastFrameMS) / this.cameraParams.responseCoef;
+        const deltaTime = (now - this.lastFrameMS) / this.mainCameraParams.responseCoef;
         this.lastFrameMS = now;
-        const camera = this.cameras[this.cameraParams.type];
+        const camera = this.cameras[this.mainCameraParams.type];
         this.viewMatrix = camera.update(deltaTime, this.inputHandler());
         _wgpuMatrix.mat4.translate(this.viewMatrix, _wgpuMatrix.vec3.fromValues(pos.x, pos.y, pos.z), this.viewMatrix);
         _wgpuMatrix.mat4.rotateX(this.viewMatrix, Math.PI * this.rotation.getRotX(), this.viewMatrix);
@@ -8220,14 +8225,27 @@ class MEMesh {
 }
 exports.default = MEMesh;
 
-},{"../shaders/fragment.wgsl":12,"../shaders/vertex.wgsl":14,"../shaders/vertexShadow.wgsl":15,"./engine":6,"./loader-obj":7,"./matrix-class":8,"wgpu-matrix":3}],11:[function(require,module,exports){
+},{"../shaders/fragment.wgsl":13,"../shaders/vertex.wgsl":15,"../shaders/vertexShadow.wgsl":16,"./engine":6,"./loader-obj":7,"./matrix-class":8,"wgpu-matrix":3}],11:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
+exports.ORBIT = ORBIT;
+exports.ORBIT_FROM_ARRAY = ORBIT_FROM_ARRAY;
+exports.OSCILLATOR = OSCILLATOR;
+exports.QueryString = void 0;
+exports.SWITCHER = SWITCHER;
+exports.byId = void 0;
+exports.createAppEvent = createAppEvent;
 exports.degToRad = degToRad;
-exports.vec3 = exports.mat4 = void 0;
+exports.getAxisRot = getAxisRot;
+exports.mat4 = void 0;
+exports.quaternion_rotation_matrix = quaternion_rotation_matrix;
+exports.radToDeg = radToDeg;
+exports.randomFloatFromTo = randomFloatFromTo;
+exports.randomIntFromTo = randomIntFromTo;
+exports.vec3 = exports.scriptManager = void 0;
 const vec3 = exports.vec3 = {
   cross(a, b, dst) {
     dst = dst || new Float32Array(3);
@@ -8598,8 +8616,356 @@ function degToRad(degrees) {
   return degrees * Math.PI / 180;
 }
 ;
+function radToDeg(r) {
+  var pi = Math.PI;
+  return r * (180 / pi);
+}
+;
+function createAppEvent(name, myDetails) {
+  return new CustomEvent(name, {
+    detail: {
+      eventName: name,
+      data: myDetails
+    },
+    bubbles: true
+  });
+}
+
+/**
+ * @description
+ * Load script in runtime.
+ */
+var scriptManager = exports.scriptManager = {
+  SCRIPT_ID: 0,
+  LOAD: function addScript(src, id, type, parent, callback) {
+    var s = document.createElement('script');
+    s.onload = function () {
+      // console.log('Script id loaded [src]: ' + this.src);
+      if (typeof callback != 'undefined') callback();
+    };
+    if (typeof type !== 'undefined') {
+      s.setAttribute('type', type);
+      s.innerHTML = src;
+    } else {
+      s.setAttribute('src', src);
+    }
+    if (typeof id !== 'undefined') {
+      s.setAttribute('id', id);
+    }
+    if (typeof parent !== 'undefined') {
+      document.getElementById(parent).appendChild(s);
+      if (typeof callback != 'undefined') callback();
+    } else {
+      document.body.appendChild(s);
+    }
+  },
+  loadModule: function addScript(src, id, type, parent) {
+    console.log('Script id load called ');
+    var s = document.createElement('script');
+    s.onload = function () {
+      scriptManager.SCRIPT_ID++;
+    };
+    if (typeof type === 'undefined') {
+      s.setAttribute('type', 'module');
+      s.setAttribute('src', src);
+    } else {
+      s.setAttribute('type', type);
+      s.innerHTML = src;
+    }
+    s.setAttribute('src', src);
+    if (typeof id !== 'undefined') {
+      s.setAttribute('id', id);
+    }
+    if (typeof parent !== 'undefined') {
+      document.getElementById(parent).appendChild(s);
+    } else {
+      document.body.appendChild(s);
+    }
+  },
+  loadGLSL: function (src) {
+    return new Promise(resolve => {
+      fetch(src).then(data => {
+        resolve(data.text());
+      });
+    });
+  }
+};
+
+// GET PULSE VALUES IN REAL TIME
+function OSCILLATOR(min, max, step) {
+  if ((typeof min === 'string' || typeof min === 'number') && (typeof max === 'string' || typeof max === 'number') && (typeof step === 'string' || typeof step === 'number')) {
+    var ROOT = this;
+    this.min = parseFloat(min);
+    this.max = parseFloat(max);
+    this.step = parseFloat(step);
+    this.value_ = parseFloat(min);
+    this.status = 0;
+    this.on_maximum_value = function () {};
+    this.on_minimum_value = function () {};
+    this.UPDATE = function (STATUS_) {
+      if (STATUS_ === undefined) {
+        if (this.status == 0 && this.value_ < this.max) {
+          this.value_ = this.value_ + this.step;
+          if (this.value_ >= this.max) {
+            this.value_ = this.max;
+            this.status = 1;
+            ROOT.on_maximum_value();
+          }
+          return this.value_;
+        } else if (this.status == 1 && this.value_ > this.min) {
+          this.value_ = this.value_ - this.step;
+          if (this.value_ <= this.min) {
+            this.value_ = this.min;
+            this.status = 0;
+            ROOT.on_minimum_value();
+          }
+          return this.value_;
+        }
+      } else {
+        return this.value_;
+      }
+    };
+  } else {
+    console.log("SYS : warning for procedure 'SYS.MATH.OSCILLATOR' Desciption : Replace object with string or number, min >> " + typeof min + ' and max >>' + typeof max + ' and step >>' + typeof step + ' << must be string or number.');
+  }
+}
+
+// this is class not func ecma5
+function SWITCHER() {
+  var ROOT = this;
+  ROOT.VALUE = 1;
+  ROOT.GET = function () {
+    ROOT.VALUE = ROOT.VALUE * -1;
+    return ROOT.VALUE;
+  };
+}
+function ORBIT(cx, cy, angle, p) {
+  var s = Math.sin(angle);
+  var c = Math.cos(angle);
+  p.x -= cx;
+  p.y -= cy;
+  var xnew = p.x * c - p.y * s;
+  var ynew = p.x * s + p.y * c;
+  p.x = xnew + cx;
+  p.y = ynew + cy;
+  return p;
+}
+function ORBIT_FROM_ARRAY(cx, cy, angle, p, byIndexs) {
+  var s = Math.sin(angle);
+  var c = Math.cos(angle);
+  p[byIndexs[0]] -= cx;
+  p[byIndexs[1]] -= cy;
+  var xnew = p[byIndexs[0]] * c - p[byIndexs[1]] * s;
+  var ynew = p[byIndexs[0]] * s + p[byIndexs[1]] * c;
+  p[byIndexs[0]] = xnew + cx;
+  p[byIndexs[1]] = ynew + cy;
+  return p;
+}
+var byId = function (id) {
+  return document.getElementById(id);
+};
+exports.byId = byId;
+function randomFloatFromTo(min, max) {
+  return Math.random() * (max - min) + min;
+}
+function randomIntFromTo(min, max) {
+  if (typeof min === 'object' || typeof max === 'object') {
+    console.log("SYS : warning Desciption : Replace object with string , this >> " + typeof min + ' and ' + typeof min + ' << must be string or number.');
+  } else if (typeof min === 'undefined' || typeof max === 'undefined') {
+    console.log("SYS : warning Desciption : arguments (min, max) cant be undefined , this >> " + typeof min + ' and ' + typeof min + ' << must be string or number.');
+  } else {
+    return Math.floor(Math.random() * (max - min + 1) + min);
+  }
+}
+var QueryString = exports.QueryString = function () {
+  var query_string = {};
+  var query = window.location.search.substring(1);
+  var vars = query.split('&');
+  for (var i = 0; i < vars.length; i++) {
+    var pair = vars[i].split('=');
+    if (typeof query_string[pair[0]] === 'undefined') {
+      query_string[pair[0]] = decodeURIComponent(pair[1]);
+    } else if (typeof query_string[pair[0]] === 'string') {
+      var arr = [query_string[pair[0]], decodeURIComponent(pair[1])];
+      query_string[pair[0]] = arr;
+    } else {
+      query_string[pair[0]].push(decodeURIComponent(pair[1]));
+    }
+  }
+  return query_string;
+}();
+function getAxisRot(q1) {
+  var x, y, z;
+
+  // if w>1 acos and sqrt will produce errors, this cant happen if quaternion is normalised
+  if (q1.w > 1) q1.normalise();
+  var angle = 2 * Math.acos(q1.w);
+  // assuming quaternion normalised then w is less than 1, so term always positive.
+  var s = Math.sqrt(1 - q1.w * q1.w);
+  // test to avoid divide by zero, s is always positive due to sqrt
+  if (s < 0.001) {
+    // if s close to zero then direction of axis not important
+    // if it is important that axis is normalised then replace with x=1; y=z=0;
+    x = q1.x;
+    y = q1.y;
+    z = q1.z;
+  } else {
+    x = q1.x / s; // normalise axis
+    y = q1.y / s;
+    z = q1.z / s;
+  }
+  return [radToDeg(x), radToDeg(y), radToDeg(z)];
+}
+
+// NTO TESTED
+function quaternion_rotation_matrix(Q) {
+  // Covert a quaternion into a full three-dimensional rotation matrix.
+
+  // Input
+  // :param Q: A 4 element array representing the quaternion (q0,q1,q2,q3) 
+
+  // Output
+  // :return: A 3x3 element matrix representing the full 3D rotation matrix. 
+  //          This rotation matrix converts a point in the local reference 
+  //          frame to a point in the global reference frame.
+  // """
+  // # Extract the values from Q
+  var q0 = Q[0];
+  var q1 = Q[1];
+  var q2 = Q[2];
+  var q3 = Q[3];
+
+  // # First row of the rotation matrix
+  var r00 = 2 * (q0 * q0 + q1 * q1) - 1;
+  var r01 = 2 * (q1 * q2 - q0 * q3);
+  var r02 = 2 * (q1 * q3 + q0 * q2);
+
+  // # Second row of the rotation matrix
+  var r10 = 2 * (q1 * q2 + q0 * q3);
+  var r11 = 2 * (q0 * q0 + q2 * q2) - 1;
+  var r12 = 2 * (q2 * q3 - q0 * q1);
+
+  // # Third row of the rotation matrix
+  var r20 = 2 * (q1 * q3 - q0 * q2);
+  var r21 = 2 * (q2 * q3 + q0 * q1);
+  var r22 = 2 * (q0 * q0 + q3 * q3) - 1;
+
+  // # 3x3 rotation matrix
+  var rot_matrix = [[r00, r01, r02], [r10, r11, r12], [r20, r21, r22]];
+  return rot_matrix;
+}
 
 },{}],12:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+var _wgpuMatrix = require("wgpu-matrix");
+var _utils = require("../engine/utils");
+class MatrixAmmo {
+  constructor() {
+    // THIS PATH IS PATH FROM PUBLIC FINAL FOLDER
+    _utils.scriptManager.LOAD("./ammojs/ammo.js", "ammojs", undefined, undefined, this.init);
+  }
+  init = () => {
+    // start
+    Ammo().then(Ammo => {
+      // Physics variables
+      this.dynamicsWorld = null;
+      this.rigidBodies = [];
+      this.Ammo = Ammo;
+      this.lastUpdate = 0;
+      console.log("Ammo core loaded.");
+      this.initPhysics();
+      dispatchEvent(new CustomEvent('AmmoReady', {}));
+    });
+  };
+  initPhysics() {
+    let Ammo = this.Ammo;
+
+    // Physics configuration
+    var collisionConfiguration = new Ammo.btDefaultCollisionConfiguration(),
+      dispatcher = new Ammo.btCollisionDispatcher(collisionConfiguration),
+      overlappingPairCache = new Ammo.btDbvtBroadphase(),
+      solver = new Ammo.btSequentialImpulseConstraintSolver();
+    this.dynamicsWorld = new Ammo.btDiscreteDynamicsWorld(dispatcher, overlappingPairCache, solver, collisionConfiguration);
+    this.dynamicsWorld.setGravity(new Ammo.btVector3(0, -10, 0));
+    var groundShape = new Ammo.btBoxShape(new Ammo.btVector3(50, 2, 50)),
+      groundTransform = new Ammo.btTransform();
+    groundTransform.setIdentity();
+    groundTransform.setOrigin(new Ammo.btVector3(0, -1, 0));
+    var mass = 0,
+      isDynamic = mass !== 0,
+      localInertia = new Ammo.btVector3(0, 0, 0);
+    if (isDynamic) groundShape.calculateLocalInertia(mass, localInertia);
+    var myMotionState = new Ammo.btDefaultMotionState(groundTransform),
+      rbInfo = new Ammo.btRigidBodyConstructionInfo(mass, myMotionState, groundShape, localInertia),
+      body = new Ammo.btRigidBody(rbInfo);
+    this.dynamicsWorld.addRigidBody(body);
+    // this.rigidBodies.push(body);
+  }
+  addPhysics(MEObject, pOptions) {
+    if (pOptions.geometry == "Sphere") {
+      this.addPhysicsSphere(MEObject, pOptions);
+    } else if (pOptions.geometry == "Cube") {
+      // 
+    }
+  }
+  addPhysicsSphere(MEObject, pOptions) {
+    let Ammo = this.Ammo;
+    var colShape = new Ammo.btSphereShape(1),
+      startTransform = new Ammo.btTransform();
+    startTransform.setIdentity();
+    var mass = 1;
+    var localInertia = new Ammo.btVector3(0, 0, 0);
+    colShape.calculateLocalInertia(mass, localInertia);
+    startTransform.setOrigin(new Ammo.btVector3(0, 15, -10));
+    var myMotionState = new Ammo.btDefaultMotionState(startTransform),
+      rbInfo = new Ammo.btRigidBodyConstructionInfo(mass, myMotionState, colShape, localInertia),
+      body = new Ammo.btRigidBody(rbInfo);
+    body.MEObject = MEObject;
+    this.dynamicsWorld.addRigidBody(body);
+    this.rigidBodies.push(body);
+    return body;
+  }
+  updatePhysics() {
+    // Step world
+    this.dynamicsWorld.stepSimulation(1 / 60, 10);
+    // Update rigid bodies
+    var trans = new Ammo.btTransform();
+    this.rigidBodies.forEach(function (body) {
+      if (body.getMotionState()) {
+        body.getMotionState().getWorldTransform(trans);
+        var _x = trans.getOrigin().x().toFixed(2);
+        var _y = trans.getOrigin().y().toFixed(2);
+        var _z = trans.getOrigin().z().toFixed(2);
+        body.MEObject.position.setPosition(_x, _y, _z);
+        var test = trans.getRotation();
+        // var testAxis = test.getAxis();
+        // var testAngle = test.getAngle()
+        // testAxis.x()
+        // console.log("world axis X = " + testAxis.x());
+        console.log("world axis X = " + test.x());
+        console.log("world axis Y = " + test.y());
+        console.log("world axis Z = " + test.z());
+        console.log("world axis W = " + test.w());
+        var bug = (0, _utils.getAxisRot)({
+          x: test.x(),
+          y: test.y(),
+          z: test.z(),
+          w: test.w()
+        });
+        console.log('bug:', bug);
+        // transform.setRotation(new Ammo.btQuaternion(quat.x, quat.y, quat.z, quat.w));
+      }
+    });
+  }
+}
+exports.default = MatrixAmmo;
+
+},{"../engine/utils":11,"wgpu-matrix":3}],13:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -8655,7 +9021,7 @@ fn main(input : FragmentInput) -> @location(0) vec4f {
   return vec4(textureColor.rgb * lightingFactor * albedo, 1.0);
 }`;
 
-},{}],13:[function(require,module,exports){
+},{}],14:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -8713,7 +9079,7 @@ fn fragmentMain(input: VertexOutput) -> @location(0) vec4f {
   return vec4f(textureColor.rgb * lightColor, textureColor.a);
 }`;
 
-},{}],14:[function(require,module,exports){
+},{}],15:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -8770,7 +9136,7 @@ fn main(
 }
 `;
 
-},{}],15:[function(require,module,exports){
+},{}],16:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -8798,7 +9164,7 @@ fn main(
 }
 `;
 
-},{}],16:[function(require,module,exports){
+},{}],17:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -8811,6 +9177,8 @@ var _cube = _interopRequireDefault(require("./engine/cube.js"));
 var _engine = require("./engine/engine.js");
 var _mesh = _interopRequireDefault(require("./engine/mesh.js"));
 var _meshObj = _interopRequireDefault(require("./engine/mesh-obj.js"));
+var _matrixAmmo = _interopRequireDefault(require("./physics/matrix-ammo.js"));
+var _utils = require("./engine/utils.js");
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 class MatrixEngineWGPU {
   mainRenderBundle = [];
@@ -8823,6 +9191,7 @@ class MatrixEngineWGPU {
     depthLoadOp: 'clear',
     depthStoreOp: 'store'
   };
+  matrixAmmo = new _matrixAmmo.default();
 
   // The input handler
   constructor(options, callback) {
@@ -8830,11 +9199,22 @@ class MatrixEngineWGPU {
     if (typeof options == 'undefined' || typeof options == "function") {
       this.options = {
         useSingleRenderPass: true,
-        canvasSize: 'fullscreen'
+        canvasSize: 'fullscreen',
+        mainCameraParams: {
+          type: 'WASD',
+          responseCoef: 2000
+        }
       };
       callback = options;
     }
+    if (typeof options.mainCameraParams === 'undefined') {
+      options.mainCameraParams = {
+        type: 'WASD',
+        responseCoef: 2000
+      };
+    }
     this.options = options;
+    this.mainCameraParams = options.mainCameraParams;
     var canvas = document.createElement('canvas');
     if (this.options.canvasSize == 'fullscreen') {
       canvas.width = window.innerWidth;
@@ -8847,9 +9227,10 @@ class MatrixEngineWGPU {
 
     // The camera types
     const initialCameraPosition = _wgpuMatrix.vec3.create(0, 0, 0);
+    // console.log('passed : o.mainCameraParams.responseCoef ', o.mainCameraParams.responseCoef)
     this.mainCameraParams = {
-      type: 'WASD',
-      responseCoef: 2000
+      type: this.options.mainCameraParams.type,
+      responseCoef: this.options.mainCameraParams.responseCoef
     };
     this.cameras = {
       arcball: new _engine.ArcballCamera({
@@ -9122,8 +9503,23 @@ class MatrixEngineWGPU {
       throw console.error('arg mesh is empty...');
       return;
     }
-    console.log('Mesh procedure', o);
+    if (typeof o.physics === 'undefined') {
+      o.physics = {
+        enabled: false,
+        geometry: "Sphere"
+      };
+    }
+    if (typeof o.physics.enabled === 'undefined') {
+      o.physics.enabled = false;
+    }
+    if (typeof o.physics.geometry === 'undefined') {
+      o.physics.geometry = "Sphere";
+    }
+    // console.log('Mesh procedure', o)
     let myMesh1 = new _meshObj.default(this.canvas, this.device, this.context, o);
+    if (o.physics.enabled == true) {
+      this.matrixAmmo.addPhysics(myMesh1, o.physics);
+    }
     this.mainRenderBundle.push(myMesh1);
   };
   run(callback) {
@@ -9135,46 +9531,32 @@ class MatrixEngineWGPU {
     }, 20);
   }
   frameSinglePass = () => {
-    let passEncoder;
+    if (typeof this.mainRenderBundle == 'undefined') return;
+    let shadowPass = null;
+    let renderPass;
     let commandEncoder = this.device.createCommandEncoder();
-    if (typeof this.mainRenderBundle != 'undefined') this.mainRenderBundle.forEach((meItem, index) => {
+    this.mainRenderBundle.forEach((meItem, index) => {
       meItem.position.update();
-      meItem.draw(commandEncoder);
-
-      // 
-      if (typeof meItem.done == 'undefined') {
-        this.rbContainer.push(meItem.renderBundle);
-        this.renderPassDescriptor.colorAttachments[0].view = this.context.getCurrentTexture().createView();
-        //  console.log('prolazi ')
-        passEncoder = commandEncoder.beginRenderPass(this.renderPassDescriptor);
-        passEncoder.executeBundles(this.rbContainer);
-        passEncoder.end();
-        // this.device.queue.submit([commandEncoder.finish()]);
-      }
     });
-    this.device.queue.submit([commandEncoder.finish()]);
-    requestAnimationFrame(this.frame);
-  };
-  framePassPerObject = () => {
-    // console.log('framePassPerObject')
-    let commandEncoder = this.device.createCommandEncoder();
-    this.rbContainer = [];
-    let passEncoder;
     this.mainRenderBundle.forEach((meItem, index) => {
       meItem.draw(commandEncoder);
-      if (meItem.renderBundle) {
-        this.rbContainer.push(meItem.renderBundle);
-        passEncoder = commandEncoder.beginRenderPass(meItem.renderPassDescriptor);
-        passEncoder.executeBundles(this.rbContainer);
-        passEncoder.end();
-      } else {
-        meItem.draw(commandEncoder);
-      }
+      shadowPass = commandEncoder.beginRenderPass(meItem.shadowPassDescriptor);
+      shadowPass.setPipeline(meItem.shadowPipeline);
+      meItem.drawShadows(shadowPass);
+      shadowPass.end();
     });
+    this.mainRenderBundle.forEach((meItem, index) => {
+      if (index == 0) renderPass = commandEncoder.beginRenderPass(meItem.renderPassDescriptor);
+      if (index == 1) renderPass.setPipeline(meItem.pipeline);
+    });
+    this.mainRenderBundle.forEach((meItem, index) => {
+      meItem.drawElements(renderPass);
+    });
+    renderPass.end();
     this.device.queue.submit([commandEncoder.finish()]);
     requestAnimationFrame(this.frame);
   };
 }
 exports.default = MatrixEngineWGPU;
 
-},{"./engine/ball.js":4,"./engine/cube.js":5,"./engine/engine.js":6,"./engine/mesh-obj.js":9,"./engine/mesh.js":10,"wgpu-matrix":3}]},{},[1]);
+},{"./engine/ball.js":4,"./engine/cube.js":5,"./engine/engine.js":6,"./engine/mesh-obj.js":9,"./engine/mesh.js":10,"./engine/utils.js":11,"./physics/matrix-ammo.js":12,"wgpu-matrix":3}]},{},[1]);
