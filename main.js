@@ -15,7 +15,7 @@ export let application = new MatrixEngineWGPU({
     downloadMeshes({
       welcomeText: "./res/meshes/blender/piramyd.obj",
       armor: "./res/meshes/obj/armor.obj",
-      lopta: "./res/meshes/blender/lopta.obj",
+      lopta: "./res/meshes/blender/cube.obj",
     }, onLoadObj)
 
   })
@@ -44,24 +44,16 @@ export let application = new MatrixEngineWGPU({
     application.addMeshObj({
       position: {x: 1, y: 0, z: -15},
       rotation: {x: -90, y: 0, z: 0},
-      rotationSpeed: {x: 0, y: 10, z: 0},
+      // rotationSpeed: {x: 0, y: 10, z: 0},
       texturesPaths: ['./res/meshes/obj/armor.png'],
       name: 'Lopta-Fizika',
       mesh: m.lopta,
       physics: {
         enabled: true,
-        geometry: "Sphere"
+        geometry: "Cube"
       }
     })
   }
-
-  let o = {
-    scale: 10,
-    position: {x: 3, y: -12, z: -10},
-    rotation: {x: 0, y: 0, z: 0},
-    texturesPaths: ['./res/textures/rust.jpg']
-  };
-  // application.addCube(o)
 
 })
 

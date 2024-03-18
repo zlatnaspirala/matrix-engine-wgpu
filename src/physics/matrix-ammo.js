@@ -60,10 +60,10 @@ export default class MatrixAmmo {
   }
 
   addPhysics(MEObject, pOptions) {
-    if (pOptions.geometry == "Sphere") {
-     this.addPhysicsSphere(MEObject, pOptions)
-    } else if (pOptions.geometry == "Cube") {
-      // 
+    if(pOptions.geometry == "Sphere") {
+      this.addPhysicsSphere(MEObject, pOptions)
+    } else if(pOptions.geometry == "Cube") {
+      this.addPhysicsBox(MEObject, pOptions)
     }
   }
 
@@ -88,6 +88,31 @@ export default class MatrixAmmo {
     return body;
   }
 
+  addPhysicsBox(MEObject, pOptions) {
+    let Ammo = this.Ammo;
+    var colShape = new Ammo.btBoxShape(new Ammo.btVector3(1, 1, 1)),
+      startTransform = new Ammo.btTransform();
+    startTransform.setIdentity();
+    var mass = 1;
+    var localInertia = new Ammo.btVector3(0, 0, 0);
+    colShape.calculateLocalInertia(mass, localInertia);
+    startTransform.setOrigin(new Ammo.btVector3(0, 25, -10));
+    var myMotionState = new Ammo.btDefaultMotionState(startTransform),
+      rbInfo = new Ammo.btRigidBodyConstructionInfo(mass, myMotionState, colShape, localInertia),
+      body = new Ammo.btRigidBody(rbInfo);
+    body.setActivationState(4)
+    body.MEObject = MEObject;
+    this.dynamicsWorld.addRigidBody(body);
+    this.rigidBodies.push(body);
+    return body;
+  }
+
+  setBodyVelocity(body, x, y, z) {
+    var tbv30 = new Ammo.btVector3();
+    tbv30.setValue(x, y, z);
+    body.setLinearVelocity(tbv30);
+  }
+
   updatePhysics() {
     // Step world
     this.dynamicsWorld.stepSimulation(1 / 60, 10);
@@ -100,19 +125,21 @@ export default class MatrixAmmo {
         var _y = trans.getOrigin().y().toFixed(2);
         var _z = trans.getOrigin().z().toFixed(2);
         body.MEObject.position.setPosition(_x, _y, _z)
-        
+
         var test = trans.getRotation();
         // var testAxis = test.getAxis();
         // var testAngle = test.getAngle()
         // testAxis.x()
         // console.log("world axis X = " + testAxis.x());
-        console.log("world axis X = " + test.x());
-        console.log("world axis Y = " + test.y());
-        console.log("world axis Z = " + test.z());
-        console.log("world axis W = " + test.w());
-        var bug = getAxisRot({x: test.x(), y: test.y(), z: test.z(), w: test.w()})
-        console.log('bug:', bug)
-        // body.MEObject.
+        // console.log("world axis X = " + test.x());
+        // console.log("world axis Y = " + test.y());
+        // console.log("world axis Z = " + test.z());
+        // console.log("world axis W = " + test.w());
+        var bug = getAxisRot({x: test.x().toFixed(2), y: test.y().toFixed(2), z: test.z().toFixed(2), w: test.w().toFixed(2)})
+        // console.log('bug:', bug)
+        body.MEObject.rotation.x = bug[0]
+        body.MEObject.rotation.y = bug[1]
+        body.MEObject.rotation.z = bug[2]
         // transform.setRotation(new Ammo.btQuaternion(quat.x, quat.y, quat.z, quat.w));
       }
     })
