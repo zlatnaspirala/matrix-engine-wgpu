@@ -57,7 +57,7 @@ let application = exports.application = new _world.default({
         z: 0
       },
       rotationSpeed: {
-        x: 0,
+        x: 5,
         y: 0,
         z: 0
       },
@@ -85,7 +85,8 @@ let application = exports.application = new _world.default({
       name: 'Lopta-Fizika',
       mesh: m.lopta,
       physics: {
-        enabled: true
+        enabled: true,
+        geometry: "Sphere"
       }
     });
   }
@@ -7809,18 +7810,6 @@ class MEMeshObj {
     const transformationMatrix = this.getTransformationMatrix(this.position);
     this.device.queue.writeBuffer(this.sceneUniformBuffer, 64, transformationMatrix.buffer, transformationMatrix.byteOffset, transformationMatrix.byteLength);
     this.renderPassDescriptor.colorAttachments[0].view = this.context.getCurrentTexture().createView();
-    // {
-    //   const shadowPass = commandEncoder.beginRenderPass(this.shadowPassDescriptor);
-    //   shadowPass.setPipeline(this.shadowPipeline);
-
-    //   shadowPass.end();
-    // }
-    // {
-    //   const renderPass = commandEncoder.beginRenderPass(this.renderPassDescriptor);
-    //   renderPass.setPipeline(this.pipeline);
-
-    //   renderPass.end();
-    // }
   };
   drawElements = renderPass => {
     renderPass.setBindGroup(0, this.sceneBindGroupForRender);
@@ -8937,7 +8926,7 @@ class MatrixAmmo {
     var mass = 1;
     var localInertia = new Ammo.btVector3(0, 0, 0);
     colShape.calculateLocalInertia(mass, localInertia);
-    startTransform.setOrigin(new Ammo.btVector3(0, 15, -10));
+    startTransform.setOrigin(new Ammo.btVector3(0, 25, -10));
     var myMotionState = new Ammo.btDefaultMotionState(startTransform),
       rbInfo = new Ammo.btRigidBodyConstructionInfo(mass, myMotionState, colShape, localInertia),
       body = new Ammo.btRigidBody(rbInfo);
@@ -8974,6 +8963,7 @@ class MatrixAmmo {
           w: test.w()
         });
         console.log('bug:', bug);
+        // body.MEObject.
         // transform.setRotation(new Ammo.btQuaternion(quat.x, quat.y, quat.z, quat.w));
       }
     });
@@ -9554,6 +9544,7 @@ class MatrixEngineWGPU {
     this.mainRenderBundle.forEach((meItem, index) => {
       meItem.position.update();
     });
+    this.matrixAmmo.updatePhysics();
     this.mainRenderBundle.forEach((meItem, index) => {
       meItem.draw(commandEncoder);
       shadowPass = commandEncoder.beginRenderPass(meItem.shadowPassDescriptor);

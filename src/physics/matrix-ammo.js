@@ -76,7 +76,7 @@ export default class MatrixAmmo {
     var localInertia = new Ammo.btVector3(0, 0, 0);
     colShape.calculateLocalInertia(mass, localInertia);
 
-    startTransform.setOrigin(new Ammo.btVector3(0, 15, -10));
+    startTransform.setOrigin(new Ammo.btVector3(0, 25, -10));
 
     var myMotionState = new Ammo.btDefaultMotionState(startTransform),
       rbInfo = new Ammo.btRigidBodyConstructionInfo(mass, myMotionState, colShape, localInertia),
@@ -112,6 +112,7 @@ export default class MatrixAmmo {
         console.log("world axis W = " + test.w());
         var bug = getAxisRot({x: test.x(), y: test.y(), z: test.z(), w: test.w()})
         console.log('bug:', bug)
+        // body.MEObject.
         // transform.setRotation(new Ammo.btQuaternion(quat.x, quat.y, quat.z, quat.w));
       }
     })

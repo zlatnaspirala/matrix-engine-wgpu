@@ -247,6 +247,8 @@ export default class MatrixEngineWGPU {
       meItem.position.update();
     })
 
+    this.matrixAmmo.updatePhysics()
+
     this.mainRenderBundle.forEach((meItem, index) => {
       meItem.draw(commandEncoder);
 

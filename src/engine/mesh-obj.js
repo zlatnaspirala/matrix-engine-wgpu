@@ -498,18 +498,6 @@ export default class MEMeshObj {
     this.renderPassDescriptor.colorAttachments[0].view = this.context
       .getCurrentTexture()
       .createView();
-    // {
-    //   const shadowPass = commandEncoder.beginRenderPass(this.shadowPassDescriptor);
-    //   shadowPass.setPipeline(this.shadowPipeline);
-      
-    //   shadowPass.end();
-    // }
-    // {
-    //   const renderPass = commandEncoder.beginRenderPass(this.renderPassDescriptor);
-    //   renderPass.setPipeline(this.pipeline);
- 
-    //   renderPass.end();
-    // }
   }
 
   drawElements = (renderPass) => {
