@@ -22,7 +22,10 @@ export let application = new MatrixEngineWGPU({
 
 
   function onLoadObj(m) {
-    // console.log('Loaded objs:', m);
+    application.myLoadedMeshes = m;
+
+
+    console.log('Loaded objs:', m);
     application.addMeshObj({
       position: {x: -3, y: 0, z: -5},
       rotation: {x: 0, y: 0, z: 0},
@@ -32,27 +35,31 @@ export let application = new MatrixEngineWGPU({
       mesh: m.armor
     })
 
-    application.addMeshObj({
-      position: {x: 1, y: 0, z: -5},
-      rotation: {x: -90, y: 0, z: 0},
-      rotationSpeed: {x: 5, y: 0, z: 0},
-      texturesPaths: ['./res/meshes/obj/armor.png'],
-      name: 'MyText',
-      mesh: m.welcomeText
-    })
+    // application.addMeshObj({
+    //   position: {x: 1, y: 0, z: -5},
+    //   rotation: {x: -90, y: 0, z: 0},
+    //   rotationSpeed: {x: 5, y: 0, z: 0},
+    //   texturesPaths: ['./res/meshes/obj/armor.png'],
+    //   name: 'MyText',
+    //   mesh: m.welcomeText
+    // })
 
     application.addMeshObj({
-      position: {x: 1, y: 0, z: -15},
-      rotation: {x: -90, y: 0, z: 0},
+      position: {x: 0, y: 0, z: -5},
+      rotation: {x: 0, y: 0, z: 0},
       // rotationSpeed: {x: 0, y: 10, z: 0},
       texturesPaths: ['./res/meshes/obj/armor.png'],
       name: 'Lopta-Fizika',
       mesh: m.lopta,
       physics: {
-        enabled: true,
+        enabled: false,
         geometry: "Cube"
       }
     })
+
+ 
+
+
   }
 
 })

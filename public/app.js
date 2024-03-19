@@ -24,7 +24,8 @@ let application = exports.application = new _world.default({
     }, onLoadObj);
   });
   function onLoadObj(m) {
-    // console.log('Loaded objs:', m);
+    application.myLoadedMeshes = m;
+    console.log('Loaded objs:', m);
     application.addMeshObj({
       position: {
         x: -3,
@@ -45,34 +46,24 @@ let application = exports.application = new _world.default({
       name: 'Armor',
       mesh: m.armor
     });
+
+    // application.addMeshObj({
+    //   position: {x: 1, y: 0, z: -5},
+    //   rotation: {x: -90, y: 0, z: 0},
+    //   rotationSpeed: {x: 5, y: 0, z: 0},
+    //   texturesPaths: ['./res/meshes/obj/armor.png'],
+    //   name: 'MyText',
+    //   mesh: m.welcomeText
+    // })
+
     application.addMeshObj({
       position: {
-        x: 1,
+        x: 0,
         y: 0,
         z: -5
       },
       rotation: {
-        x: -90,
-        y: 0,
-        z: 0
-      },
-      rotationSpeed: {
-        x: 5,
-        y: 0,
-        z: 0
-      },
-      texturesPaths: ['./res/meshes/obj/armor.png'],
-      name: 'MyText',
-      mesh: m.welcomeText
-    });
-    application.addMeshObj({
-      position: {
-        x: 1,
-        y: 0,
-        z: -15
-      },
-      rotation: {
-        x: -90,
+        x: 0,
         y: 0,
         z: 0
       },
@@ -81,7 +72,7 @@ let application = exports.application = new _world.default({
       name: 'Lopta-Fizika',
       mesh: m.lopta,
       physics: {
-        enabled: true,
+        enabled: false,
         geometry: "Cube"
       }
     });
@@ -7720,9 +7711,12 @@ class MEMeshObj {
         const camera = this.cameras[this.mainCameraParams.type];
         this.viewMatrix = camera.update(deltaTime, this.inputHandler());
         _wgpuMatrix.mat4.translate(this.viewMatrix, _wgpuMatrix.vec3.fromValues(pos.x, pos.y, pos.z), this.viewMatrix);
-        _wgpuMatrix.mat4.rotateX(this.viewMatrix, Math.PI * this.rotation.getRotX(), this.viewMatrix);
-        _wgpuMatrix.mat4.rotateY(this.viewMatrix, Math.PI * this.rotation.getRotY(), this.viewMatrix);
-        _wgpuMatrix.mat4.rotateZ(this.viewMatrix, Math.PI * this.rotation.getRotZ(), this.viewMatrix);
+        // mat4.rotateX(this.viewMatrix, Math.PI * this.rotation.getRotX(), this.viewMatrix);
+        // mat4.rotateY(this.viewMatrix, Math.PI * this.rotation.getRotY(), this.viewMatrix);
+        // mat4.rotateZ(this.viewMatrix, Math.PI * this.rotation.getRotZ(), this.viewMatrix);
+        _wgpuMatrix.mat4.rotateX(this.viewMatrix, this.rotation.getRotX(), this.viewMatrix);
+        _wgpuMatrix.mat4.rotateY(this.viewMatrix, this.rotation.getRotY(), this.viewMatrix);
+        _wgpuMatrix.mat4.rotateZ(this.viewMatrix, this.rotation.getRotZ(), this.viewMatrix);
         _wgpuMatrix.mat4.multiply(this.projectionMatrix, this.viewMatrix, this.modelViewProjectionMatrix);
         return this.modelViewProjectionMatrix;
       };
@@ -9544,30 +9538,35 @@ class MatrixEngineWGPU {
   }
   frameSinglePass = () => {
     if (typeof this.mainRenderBundle == 'undefined') return;
-    let shadowPass = null;
-    let renderPass;
-    let commandEncoder = this.device.createCommandEncoder();
-    this.mainRenderBundle.forEach((meItem, index) => {
-      meItem.position.update();
-    });
-    this.matrixAmmo.updatePhysics();
-    this.mainRenderBundle.forEach((meItem, index) => {
-      meItem.draw(commandEncoder);
-      shadowPass = commandEncoder.beginRenderPass(meItem.shadowPassDescriptor);
-      shadowPass.setPipeline(meItem.shadowPipeline);
-      meItem.drawShadows(shadowPass);
-      shadowPass.end();
-    });
-    this.mainRenderBundle.forEach((meItem, index) => {
-      if (index == 0) renderPass = commandEncoder.beginRenderPass(meItem.renderPassDescriptor);
-      if (index == 1) renderPass.setPipeline(meItem.pipeline);
-    });
-    this.mainRenderBundle.forEach((meItem, index) => {
-      meItem.drawElements(renderPass);
-    });
-    renderPass.end();
-    this.device.queue.submit([commandEncoder.finish()]);
-    requestAnimationFrame(this.frame);
+    try {
+      let shadowPass = null;
+      let renderPass;
+      let commandEncoder = this.device.createCommandEncoder();
+      this.mainRenderBundle.forEach((meItem, index) => {
+        meItem.position.update();
+      });
+      this.matrixAmmo.updatePhysics();
+      this.mainRenderBundle.forEach((meItem, index) => {
+        meItem.draw(commandEncoder);
+        shadowPass = commandEncoder.beginRenderPass(meItem.shadowPassDescriptor);
+        shadowPass.setPipeline(meItem.shadowPipeline);
+        meItem.drawShadows(shadowPass);
+        shadowPass.end();
+      });
+      this.mainRenderBundle.forEach((meItem, index) => {
+        if (index == 0) renderPass = commandEncoder.beginRenderPass(meItem.renderPassDescriptor);
+        if (index == 1) renderPass.setPipeline(meItem.pipeline);
+      });
+      this.mainRenderBundle.forEach((meItem, index) => {
+        meItem.drawElements(renderPass);
+      });
+      renderPass.end();
+      this.device.queue.submit([commandEncoder.finish()]);
+      requestAnimationFrame(this.frame);
+    } catch (err) {
+      console.log('Error in draw func.', err);
+      requestAnimationFrame(this.frame);
+    }
   };
 }
 exports.default = MatrixEngineWGPU;

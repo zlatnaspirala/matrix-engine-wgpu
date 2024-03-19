@@ -239,6 +239,7 @@ export default class MatrixEngineWGPU {
 
   frameSinglePass = () => {
     if(typeof this.mainRenderBundle == 'undefined') return;
+    try { 
     let shadowPass = null;
     let renderPass;
     let commandEncoder = this.device.createCommandEncoder();
@@ -271,5 +272,9 @@ export default class MatrixEngineWGPU {
 
     this.device.queue.submit([commandEncoder.finish()]);
     requestAnimationFrame(this.frame);
+  } catch (err) {
+    console.log('Error in draw func.', err)
+    requestAnimationFrame(this.frame);
+  }
   }
 }

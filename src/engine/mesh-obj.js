@@ -382,9 +382,12 @@ export default class MEMeshObj {
         this.viewMatrix = camera.update(deltaTime, this.inputHandler());
 
         mat4.translate(this.viewMatrix, vec3.fromValues(pos.x, pos.y, pos.z), this.viewMatrix);
-        mat4.rotateX(this.viewMatrix, Math.PI * this.rotation.getRotX(), this.viewMatrix);
-        mat4.rotateY(this.viewMatrix, Math.PI * this.rotation.getRotY(), this.viewMatrix);
-        mat4.rotateZ(this.viewMatrix, Math.PI * this.rotation.getRotZ(), this.viewMatrix);
+        // mat4.rotateX(this.viewMatrix, Math.PI * this.rotation.getRotX(), this.viewMatrix);
+        // mat4.rotateY(this.viewMatrix, Math.PI * this.rotation.getRotY(), this.viewMatrix);
+        // mat4.rotateZ(this.viewMatrix, Math.PI * this.rotation.getRotZ(), this.viewMatrix);
+        mat4.rotateX(this.viewMatrix, this.rotation.getRotX(), this.viewMatrix);
+        mat4.rotateY(this.viewMatrix, this.rotation.getRotY(), this.viewMatrix);
+        mat4.rotateZ(this.viewMatrix, this.rotation.getRotZ(), this.viewMatrix);
         mat4.multiply(this.projectionMatrix, this.viewMatrix, this.modelViewProjectionMatrix);
 
         return this.modelViewProjectionMatrix;
