@@ -45,14 +45,14 @@ export let application = new MatrixEngineWGPU({
     // })
 
     application.addMeshObj({
-      position: {x: 0, y: 0, z: -5},
+      position: {x: 0, y: 10, z: -5},
       rotation: {x: 0, y: 0, z: 0},
       // rotationSpeed: {x: 0, y: 10, z: 0},
       texturesPaths: ['./res/meshes/obj/armor.png'],
       name: 'Lopta-Fizika',
       mesh: m.lopta,
       physics: {
-        enabled: false,
+        enabled: true,
         geometry: "Cube"
       }
     })

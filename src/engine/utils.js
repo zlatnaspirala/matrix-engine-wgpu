@@ -543,17 +543,18 @@ export var QueryString = (function() {
 
 
 export function getAxisRot(q1) {
-  var x,y,z;
+  var x, y, z;
 
   // if w>1 acos and sqrt will produce errors, this cant happen if quaternion is normalised
-  if (q1.w > 1) q1.normalise(); 
+  if(q1.w > 1) q1.normalise();
   var angle = 2 * Math.acos(q1.w);
   // assuming quaternion normalised then w is less than 1, so term always positive.
-  var s = Math.sqrt(1-q1.w*q1.w); 
-   // test to avoid divide by zero, s is always positive due to sqrt
-  if (s < 0.001) {
+  var s = Math.sqrt(1 - q1.w * q1.w);
+  // test to avoid divide by zero, s is always positive due to sqrt
+  if(s < 0.001) {
     // if s close to zero then direction of axis not important
-     // if it is important that axis is normalised then replace with x=1; y=z=0;
+    // if it is important that axis is normalised then replace with x=1; y=z=0;
+
     x = q1.x;
     y = q1.y;
     z = q1.z;
@@ -562,12 +563,32 @@ export function getAxisRot(q1) {
     y = q1.y / s;
     z = q1.z / s;
   }
-  return [radToDeg(x),radToDeg(y), radToDeg(z)]
+  return [radToDeg(x), radToDeg(y), radToDeg(z)]
+}
+
+export function getAxisRot2(Q  ) {
+ 
+  var angle = Math.acos(Q.w) * 2;
+  var axis = {};
+
+  if (Math.sin(Math.acos(angle)) > 0) {
+
+    axis.x = Q.x / Math.sin(Math.acos(angle/2));
+    axis.y  = Q.y / Math.sin(Math.acos(angle/2));
+    axis.z  = Q.z / Math.sin(Math.acos(angle/2));
+
+  } else {
+    axis.x = 0;
+    axis.y = 0;
+    axis.z = 0;
+  }
+
+  return axis;
 }
 
 // NTO TESTED
 export function quaternion_rotation_matrix(Q) {
-    
+
   // Covert a quaternion into a full three-dimensional rotation matrix.
 
   // Input
@@ -583,26 +604,26 @@ export function quaternion_rotation_matrix(Q) {
   var q1 = Q[1]
   var q2 = Q[2]
   var q3 = Q[3]
-   
+
   // # First row of the rotation matrix
   var r00 = 2 * (q0 * q0 + q1 * q1) - 1
   var r01 = 2 * (q1 * q2 - q0 * q3)
   var r02 = 2 * (q1 * q3 + q0 * q2)
-   
+
   // # Second row of the rotation matrix
   var r10 = 2 * (q1 * q2 + q0 * q3)
   var r11 = 2 * (q0 * q0 + q2 * q2) - 1
   var r12 = 2 * (q2 * q3 - q0 * q1)
-   
+
   // # Third row of the rotation matrix
   var r20 = 2 * (q1 * q3 - q0 * q2)
   var r21 = 2 * (q2 * q3 + q0 * q1)
   var r22 = 2 * (q0 * q0 + q3 * q3) - 1
-   
+
   // # 3x3 rotation matrix
   var rot_matrix = [[r00, r01, r02],
-                         [r10, r11, r12],
-                         [r20, r21, r22]]
+  [r10, r11, r12],
+  [r20, r21, r22]]
 
   return rot_matrix;
 }

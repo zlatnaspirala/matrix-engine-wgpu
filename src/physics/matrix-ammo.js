@@ -1,5 +1,5 @@
 import {vec3, vec4} from "wgpu-matrix";
-import {createAppEvent, getAxisRot, quaternion_rotation_matrix, scriptManager} from "../engine/utils";
+import {createAppEvent, degToRad, getAxisRot, getAxisRot2, quaternion_rotation_matrix, radToDeg, scriptManager} from "../engine/utils";
 
 export default class MatrixAmmo {
   constructor() {
@@ -135,11 +135,18 @@ export default class MatrixAmmo {
         // console.log("world axis Y = " + test.y());
         // console.log("world axis Z = " + test.z());
         // console.log("world axis W = " + test.w());
-        var bug = getAxisRot({x: test.x().toFixed(2), y: test.y().toFixed(2), z: test.z().toFixed(2), w: test.w().toFixed(2)})
+        var bug = getAxisRot2({x: test.x().toFixed(2), y: test.y().toFixed(2), z: test.z().toFixed(2), w: test.w().toFixed(2)}, body.MEObject.rotation)
         // console.log('bug:', bug)
-        body.MEObject.rotation.x = bug[0]
-        body.MEObject.rotation.y = bug[1]
-        body.MEObject.rotation.z = bug[2]
+
+        // body.MEObject.rotation.x = radToDeg(bug[0])
+        // body.MEObject.rotation.y = radToDeg(bug[1])
+        // body.MEObject.rotation.z = radToDeg(bug[2])
+
+        console.log("world axis AXIS Y  ANGLE  = " + degToRad(bug.y));
+
+        body.MEObject.rotation.x = degToRad(bug.x)
+        body.MEObject.rotation.y = degToRad(bug.y)
+        body.MEObject.rotation.z = degToRad(bug.z)
         // transform.setRotation(new Ammo.btQuaternion(quat.x, quat.y, quat.z, quat.w));
       }
     })

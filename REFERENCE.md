@@ -54,3 +54,8 @@ YEs this is happening " would erase the results from render pass 1 "
 
 # https://www.euclideanspace.com/maths/geometry/rotations/conversions/quaternionToAngle/index.htm
 
+
+
+LOOK HERE
+
+https://glm.g-truc.net/0.9.0/api/a00184.html

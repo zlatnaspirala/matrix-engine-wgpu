@@ -59,7 +59,7 @@ let application = exports.application = new _world.default({
     application.addMeshObj({
       position: {
         x: 0,
-        y: 0,
+        y: 10,
         z: -5
       },
       rotation: {
@@ -72,7 +72,7 @@ let application = exports.application = new _world.default({
       name: 'Lopta-Fizika',
       mesh: m.lopta,
       physics: {
-        enabled: false,
+        enabled: true,
         geometry: "Cube"
       }
     });
@@ -8220,6 +8220,7 @@ exports.byId = void 0;
 exports.createAppEvent = createAppEvent;
 exports.degToRad = degToRad;
 exports.getAxisRot = getAxisRot;
+exports.getAxisRot2 = getAxisRot2;
 exports.mat4 = void 0;
 exports.quaternion_rotation_matrix = quaternion_rotation_matrix;
 exports.radToDeg = radToDeg;
@@ -8786,6 +8787,7 @@ function getAxisRot(q1) {
   if (s < 0.001) {
     // if s close to zero then direction of axis not important
     // if it is important that axis is normalised then replace with x=1; y=z=0;
+
     x = q1.x;
     y = q1.y;
     z = q1.z;
@@ -8795,6 +8797,20 @@ function getAxisRot(q1) {
     z = q1.z / s;
   }
   return [radToDeg(x), radToDeg(y), radToDeg(z)];
+}
+function getAxisRot2(Q) {
+  var angle = Math.acos(Q.w) * 2;
+  var axis = {};
+  if (Math.sin(Math.acos(angle)) > 0) {
+    axis.x = Q.x / Math.sin(Math.acos(angle / 2));
+    axis.y = Q.y / Math.sin(Math.acos(angle / 2));
+    axis.z = Q.z / Math.sin(Math.acos(angle / 2));
+  } else {
+    axis.x = 0;
+    axis.y = 0;
+    axis.z = 0;
+  }
+  return axis;
 }
 
 // NTO TESTED
@@ -8954,16 +8970,22 @@ class MatrixAmmo {
         // console.log("world axis Y = " + test.y());
         // console.log("world axis Z = " + test.z());
         // console.log("world axis W = " + test.w());
-        var bug = (0, _utils.getAxisRot)({
+        var bug = (0, _utils.getAxisRot2)({
           x: test.x().toFixed(2),
           y: test.y().toFixed(2),
           z: test.z().toFixed(2),
           w: test.w().toFixed(2)
-        });
+        }, body.MEObject.rotation);
         // console.log('bug:', bug)
-        body.MEObject.rotation.x = bug[0];
-        body.MEObject.rotation.y = bug[1];
-        body.MEObject.rotation.z = bug[2];
+
+        // body.MEObject.rotation.x = radToDeg(bug[0])
+        // body.MEObject.rotation.y = radToDeg(bug[1])
+        // body.MEObject.rotation.z = radToDeg(bug[2])
+
+        console.log("world axis AXIS Y  ANGLE  = " + (0, _utils.degToRad)(bug.y));
+        body.MEObject.rotation.x = (0, _utils.degToRad)(bug.x);
+        body.MEObject.rotation.y = (0, _utils.degToRad)(bug.y);
+        body.MEObject.rotation.z = (0, _utils.degToRad)(bug.z);
         // transform.setRotation(new Ammo.btQuaternion(quat.x, quat.y, quat.z, quat.w));
       }
     });
