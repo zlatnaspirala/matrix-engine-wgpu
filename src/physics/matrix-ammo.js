@@ -125,29 +125,20 @@ export default class MatrixAmmo {
         var _y = trans.getOrigin().y().toFixed(2);
         var _z = trans.getOrigin().z().toFixed(2);
         body.MEObject.position.setPosition(_x, _y, _z)
-
         var test = trans.getRotation();
         var testAxis = test.getAxis();
-        // console.warn('testAxis x : ', testAxis.x().toFixed(2) , " y : " , testAxis.y().toFixed(2) , " z " , testAxis.z().toFixed(2) )
-        // var testAngle = test.getAngle()
-        // testAxis.x()
-        // console.log("world axis X = " + testAxis.x());
+
+        test.normalize()
         // console.log("world axis X = " + test.x());
         // console.log("world axis Y = " + test.y());
         // console.log("world axis Z = " + test.z());
         // console.log("world axis W = " + test.w());
-        var bugX = getAxisRot2(
-          {x: 0, y: 0, z:0},
-          test)
-        //  console.log('bug:', bugX)
-        // body.MEObject.rotation.x = radToDeg(bug[0])
-        // body.MEObject.rotation.y = radToDeg(bug[1])
-        // body.MEObject.rotation.z = radToDeg(bug[2])
-        // if ( degToRad(bug.y) > 0) console.log("world axis AXIS Y degToRad(bug.y) ANGLE  = " + degToRad(bug.y));
+        // var bugX = getAxisRot2(
+        //   {x: 0, y: 0, z:0},
+        //   test)
         if((parseFloat(testAxis.x().toFixed(2) )) > 0) {
-
           if (radToDeg(testAxis.x().toFixed(2) * (parseFloat(test.getAngle().toFixed(2))))   > 180) {
-            body.MEObject.rotation.x = radToDeg(testAxis.x().toFixed(2) * (parseFloat(test.getAngle().toFixed(2))))  - 0;
+            body.MEObject.rotation.x = radToDeg(testAxis.x().toFixed(2) * (parseFloat(test.getAngle().toFixed(2))))  -180
              console.log('MORE THEM 180  X degree ',body.MEObject.rotation.x )
           } else {
              body.MEObject.rotation.x = radToDeg(testAxis.x().toFixed(2) * (parseFloat(test.getAngle().toFixed(2))))  
@@ -159,8 +150,8 @@ export default class MatrixAmmo {
         if((parseFloat(testAxis.y().toFixed(2) )) > 0) {
         
           if (radToDeg(testAxis.y().toFixed(2) * (parseFloat(test.getAngle().toFixed(2)))) > 180) {
-            body.MEObject.rotation.y = radToDeg(testAxis.y().toFixed(2) * (parseFloat(test.getAngle().toFixed(2))))  - 0;
-             console.log('MORE THEM 180  Y degree ',body.MEObject.rotation.x )
+            body.MEObject.rotation.y = radToDeg(testAxis.y().toFixed(2) * (parseFloat(test.getAngle().toFixed(2))))  -180;
+             console.log('MORE THEM 180  Y degree ',body.MEObject.rotation.y )
           } else {
              body.MEObject.rotation.y = radToDeg(testAxis.y().toFixed(2) * (parseFloat(test.getAngle().toFixed(2))))  
           }
@@ -169,7 +160,7 @@ export default class MatrixAmmo {
         }
         if((parseFloat(testAxis.z().toFixed(2) )) > 0) {
           if (radToDeg(testAxis.z().toFixed(2) * (parseFloat(test.getAngle().toFixed(2)))) > 180) {
-            body.MEObject.rotation.z = radToDeg(testAxis.z().toFixed(2) * (parseFloat(test.getAngle().toFixed(2))))  - 0;
+            body.MEObject.rotation.z = radToDeg(testAxis.z().toFixed(2) * (parseFloat(test.getAngle().toFixed(2)))) -180;
             //  console.log('MORE THEM 180  Z degree ',body.MEObject.rotation.x )
           } else {
              body.MEObject.rotation.z = radToDeg(testAxis.z().toFixed(2) * (parseFloat(test.getAngle().toFixed(2))))  
@@ -178,17 +169,13 @@ export default class MatrixAmmo {
           body.MEObject.rotation.z = 0;
         }
 
-        
         // body.MEObject.rotation.x = (parseFloat(test.getAngle().toFixed(2)))
         // body.MEObject.rotation.y = (parseFloat(test.getAngle().toFixed(2)))
         // body.MEObject.rotation.z = (parseFloat(test.getAngle().toFixed(2)))
-
-
-        //body.MEObject.rotation.z =  (testAxis.z())
+        // body.MEObject.rotation.z =  (testAxis.z())
         // body.MEObject.rotation.x = degToRad(bug.x)
         // body.MEObject.rotation.y = degToRad(bug.y)
         // body.MEObject.rotation.z = degToRad(bug.z)
-        // transform.setRotation(new Ammo.btQuaternion(quat.x, quat.y, quat.z, quat.w));
       }
     })
   }

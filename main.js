@@ -48,7 +48,7 @@ export let application = new MatrixEngineWGPU({
       position: {x: 0, y: 2, z: -10},
       rotation: {x: 0, y: 0, z: 0},
       rotationSpeed: {x: 0, y: 0, z: 0},
-      texturesPaths: ['./res/meshes/obj/armor.png'],
+      texturesPaths: ['./res/meshes/blender/cube.png'],
       name: 'Lopta-Fizika',
       mesh: m.lopta,
       physics: {
