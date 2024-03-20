@@ -189,7 +189,7 @@ export class Rotation {
       return degToRad(this.x);
     } else {
       this.x = this.x + this.rotationSpeed.x* 0.001;
-      return this.x;
+      return degToRad(this.x);
     }
   }
 
@@ -198,7 +198,7 @@ export class Rotation {
       return degToRad(this.y);
     } else {
       this.y = this.y + this.rotationSpeed.y * 0.001;
-      return this.y;
+      return degToRad(this.y);
     }
   }
 
@@ -207,7 +207,7 @@ export class Rotation {
       return degToRad(this.z);
     } else {
       this.z = this.z + this.rotationSpeed.z* 0.001;
-      return this.z;
+      return degToRad(this.z);
     }
   }
 

@@ -239,42 +239,44 @@ export default class MatrixEngineWGPU {
 
   frameSinglePass = () => {
     if(typeof this.mainRenderBundle == 'undefined') return;
-    try { 
-    let shadowPass = null;
-    let renderPass;
-    let commandEncoder = this.device.createCommandEncoder();
+    try {
+      let shadowPass = null;
+      let renderPass;
+      let commandEncoder = this.device.createCommandEncoder();
 
-    this.mainRenderBundle.forEach((meItem, index) => {
-      meItem.position.update();
-    })
+      this.mainRenderBundle.forEach((meItem, index) => {
+        meItem.position.update();
+      })
 
-    this.matrixAmmo.updatePhysics()
+      this.matrixAmmo.updatePhysics()
 
-    this.mainRenderBundle.forEach((meItem, index) => {
-      meItem.draw(commandEncoder);
+      this.mainRenderBundle.forEach((meItem, index) => {
+        meItem.draw(commandEncoder);
 
-      shadowPass = commandEncoder.beginRenderPass(meItem.shadowPassDescriptor);
-      shadowPass.setPipeline(meItem.shadowPipeline);
-      meItem.drawShadows(shadowPass);
-      shadowPass.end();
-    })
+        shadowPass = commandEncoder.beginRenderPass(meItem.shadowPassDescriptor);
+        shadowPass.setPipeline(meItem.shadowPipeline);
+        meItem.drawShadows(shadowPass);
+        shadowPass.end();
+      })
 
 
-    this.mainRenderBundle.forEach((meItem, index) => {
-      if(index == 0) renderPass = commandEncoder.beginRenderPass(meItem.renderPassDescriptor);
-      if(index == 1) renderPass.setPipeline(meItem.pipeline);
-    })
+      this.mainRenderBundle.forEach((meItem, index) => {
+        if(index == 0) {
+          renderPass = commandEncoder.beginRenderPass(meItem.renderPassDescriptor);
+          renderPass.setPipeline(meItem.pipeline);
+        }
+      })
 
-    this.mainRenderBundle.forEach((meItem, index) => {
-      meItem.drawElements(renderPass);
-    })
-    renderPass.end();
+      this.mainRenderBundle.forEach((meItem, index) => {
+        meItem.drawElements(renderPass);
+      })
+      renderPass.end();
 
-    this.device.queue.submit([commandEncoder.finish()]);
-    requestAnimationFrame(this.frame);
-  } catch (err) {
-    console.log('Error in draw func.', err)
-    requestAnimationFrame(this.frame);
-  }
+      this.device.queue.submit([commandEncoder.finish()]);
+      requestAnimationFrame(this.frame);
+    } catch(err) {
+      console.log('Error in draw func.', err)
+      requestAnimationFrame(this.frame);
+    }
   }
 }

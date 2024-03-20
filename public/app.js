@@ -26,11 +26,40 @@ let application = exports.application = new _world.default({
   function onLoadObj(m) {
     application.myLoadedMeshes = m;
     console.log('Loaded objs:', m);
+    // application.addMeshObj({
+    //   position: {x: -3, y: 0, z: -10},
+    //   rotation: {x: 0, y: 0, z: 0},
+    //   rotationSpeed: {x: 0, y: 10, z: 0},
+    //   texturesPaths: ['./res/meshes/obj/armor.png'],
+    //   name: 'Armor',
+    //   mesh: m.armor
+    // })
+
     application.addMeshObj({
       position: {
-        x: -3,
+        x: 1,
         y: 0,
         z: -5
+      },
+      rotation: {
+        x: -90,
+        y: 0,
+        z: 0
+      },
+      rotationSpeed: {
+        x: 0,
+        y: 0,
+        z: 0
+      },
+      texturesPaths: ['./res/meshes/obj/armor.png'],
+      name: 'MyText',
+      mesh: m.welcomeText
+    });
+    application.addMeshObj({
+      position: {
+        x: 0,
+        y: 2,
+        z: -10
       },
       rotation: {
         x: 0,
@@ -39,35 +68,9 @@ let application = exports.application = new _world.default({
       },
       rotationSpeed: {
         x: 0,
-        y: 10,
-        z: 0
-      },
-      texturesPaths: ['./res/meshes/obj/armor.png'],
-      name: 'Armor',
-      mesh: m.armor
-    });
-
-    // application.addMeshObj({
-    //   position: {x: 1, y: 0, z: -5},
-    //   rotation: {x: -90, y: 0, z: 0},
-    //   rotationSpeed: {x: 5, y: 0, z: 0},
-    //   texturesPaths: ['./res/meshes/obj/armor.png'],
-    //   name: 'MyText',
-    //   mesh: m.welcomeText
-    // })
-
-    application.addMeshObj({
-      position: {
-        x: 0,
-        y: 10,
-        z: -5
-      },
-      rotation: {
-        x: 0,
         y: 0,
         z: 0
       },
-      // rotationSpeed: {x: 0, y: 10, z: 0},
       texturesPaths: ['./res/meshes/obj/armor.png'],
       name: 'Lopta-Fizika',
       mesh: m.lopta,
@@ -7348,7 +7351,7 @@ class Rotation {
       return (0, _utils.degToRad)(this.x);
     } else {
       this.x = this.x + this.rotationSpeed.x * 0.001;
-      return this.x;
+      return (0, _utils.degToRad)(this.x);
     }
   }
   getRotY() {
@@ -7356,7 +7359,7 @@ class Rotation {
       return (0, _utils.degToRad)(this.y);
     } else {
       this.y = this.y + this.rotationSpeed.y * 0.001;
-      return this.y;
+      return (0, _utils.degToRad)(this.y);
     }
   }
   getRotZ() {
@@ -7364,7 +7367,7 @@ class Rotation {
       return (0, _utils.degToRad)(this.z);
     } else {
       this.z = this.z + this.rotationSpeed.z * 0.001;
-      return this.z;
+      return (0, _utils.degToRad)(this.z);
     }
   }
 }
@@ -8221,6 +8224,7 @@ exports.createAppEvent = createAppEvent;
 exports.degToRad = degToRad;
 exports.getAxisRot = getAxisRot;
 exports.getAxisRot2 = getAxisRot2;
+exports.getAxisRot3 = getAxisRot3;
 exports.mat4 = void 0;
 exports.quaternion_rotation_matrix = quaternion_rotation_matrix;
 exports.radToDeg = radToDeg;
@@ -8798,7 +8802,28 @@ function getAxisRot(q1) {
   }
   return [radToDeg(x), radToDeg(y), radToDeg(z)];
 }
-function getAxisRot2(Q) {
+function getAxisRot2(targetAxis, Q) {
+  Q.normalize(); // if w>1 acos and sqrt will produce errors, this cant happen if quaternion is normalised
+  var angle = 2 * Math.acos(Q.w());
+  var s = Math.sqrt(1 - Q.w() * Q.w()); // assuming quaternion normalised then w is less than 1, so term always positive.
+  if (s < 0.001) {
+    // test to avoid divide by zero, s is always positive due to sqrt
+    // if s close to zero then direction of axis not important
+    // if it is important that axis is normalised then replace with x=1; y=z=0;
+    // targetAxis.x = 1;
+    // targetAxis.y = 0;
+    // targetAxis.z = 0;
+    targetAxis.x = Q.x();
+    targetAxis.y = Q.y();
+    targetAxis.z = Q.z();
+  } else {
+    targetAxis.x = Q.x() / s; // normalise axis
+    targetAxis.y = Q.y() / s;
+    targetAxis.z = Q.z() / s;
+  }
+  return [targetAxis, angle];
+}
+function getAxisRot3(Q) {
   var angle = Math.acos(Q.w) * 2;
   var axis = {};
   if (Math.sin(Math.acos(angle)) > 0) {
@@ -8962,7 +8987,8 @@ class MatrixAmmo {
         var _z = trans.getOrigin().z().toFixed(2);
         body.MEObject.position.setPosition(_x, _y, _z);
         var test = trans.getRotation();
-        // var testAxis = test.getAxis();
+        var testAxis = test.getAxis();
+        // console.warn('testAxis x : ', testAxis.x().toFixed(2) , " y : " , testAxis.y().toFixed(2) , " z " , testAxis.z().toFixed(2) )
         // var testAngle = test.getAngle()
         // testAxis.x()
         // console.log("world axis X = " + testAxis.x());
@@ -8970,22 +8996,55 @@ class MatrixAmmo {
         // console.log("world axis Y = " + test.y());
         // console.log("world axis Z = " + test.z());
         // console.log("world axis W = " + test.w());
-        var bug = (0, _utils.getAxisRot2)({
-          x: test.x().toFixed(2),
-          y: test.y().toFixed(2),
-          z: test.z().toFixed(2),
-          w: test.w().toFixed(2)
-        }, body.MEObject.rotation);
-        // console.log('bug:', bug)
-
+        var bugX = (0, _utils.getAxisRot2)({
+          x: 0,
+          y: 0,
+          z: 0
+        }, test);
+        //  console.log('bug:', bugX)
         // body.MEObject.rotation.x = radToDeg(bug[0])
         // body.MEObject.rotation.y = radToDeg(bug[1])
         // body.MEObject.rotation.z = radToDeg(bug[2])
+        // if ( degToRad(bug.y) > 0) console.log("world axis AXIS Y degToRad(bug.y) ANGLE  = " + degToRad(bug.y));
+        if (parseFloat(testAxis.x().toFixed(2)) > 0) {
+          if ((0, _utils.radToDeg)(testAxis.x().toFixed(2) * parseFloat(test.getAngle().toFixed(2))) > 180) {
+            body.MEObject.rotation.x = (0, _utils.radToDeg)(testAxis.x().toFixed(2) * parseFloat(test.getAngle().toFixed(2))) - 0;
+            console.log('MORE THEM 180  X degree ', body.MEObject.rotation.x);
+          } else {
+            body.MEObject.rotation.x = (0, _utils.radToDeg)(testAxis.x().toFixed(2) * parseFloat(test.getAngle().toFixed(2)));
+          }
+        } else {
+          body.MEObject.rotation.x = 0;
+        }
+        if (parseFloat(testAxis.y().toFixed(2)) > 0) {
+          if ((0, _utils.radToDeg)(testAxis.y().toFixed(2) * parseFloat(test.getAngle().toFixed(2))) > 180) {
+            body.MEObject.rotation.y = (0, _utils.radToDeg)(testAxis.y().toFixed(2) * parseFloat(test.getAngle().toFixed(2))) - 0;
+            console.log('MORE THEM 180  Y degree ', body.MEObject.rotation.x);
+          } else {
+            body.MEObject.rotation.y = (0, _utils.radToDeg)(testAxis.y().toFixed(2) * parseFloat(test.getAngle().toFixed(2)));
+          }
+        } else {
+          body.MEObject.rotation.y = 0;
+        }
+        if (parseFloat(testAxis.z().toFixed(2)) > 0) {
+          if ((0, _utils.radToDeg)(testAxis.z().toFixed(2) * parseFloat(test.getAngle().toFixed(2))) > 180) {
+            body.MEObject.rotation.z = (0, _utils.radToDeg)(testAxis.z().toFixed(2) * parseFloat(test.getAngle().toFixed(2))) - 0;
+            //  console.log('MORE THEM 180  Z degree ',body.MEObject.rotation.x )
+          } else {
+            body.MEObject.rotation.z = (0, _utils.radToDeg)(testAxis.z().toFixed(2) * parseFloat(test.getAngle().toFixed(2)));
+          }
+        } else {
+          body.MEObject.rotation.z = 0;
+        }
 
-        console.log("world axis AXIS Y  ANGLE  = " + (0, _utils.degToRad)(bug.y));
-        body.MEObject.rotation.x = (0, _utils.degToRad)(bug.x);
-        body.MEObject.rotation.y = (0, _utils.degToRad)(bug.y);
-        body.MEObject.rotation.z = (0, _utils.degToRad)(bug.z);
+        // body.MEObject.rotation.x = (parseFloat(test.getAngle().toFixed(2)))
+        // body.MEObject.rotation.y = (parseFloat(test.getAngle().toFixed(2)))
+        // body.MEObject.rotation.z = (parseFloat(test.getAngle().toFixed(2)))
+
+        //body.MEObject.rotation.z =  (testAxis.z())
+        // body.MEObject.rotation.x = degToRad(bug.x)
+        // body.MEObject.rotation.y = degToRad(bug.y)
+        // body.MEObject.rotation.z = degToRad(bug.z)
         // transform.setRotation(new Ammo.btQuaternion(quat.x, quat.y, quat.z, quat.w));
       }
     });
@@ -9576,8 +9635,10 @@ class MatrixEngineWGPU {
         shadowPass.end();
       });
       this.mainRenderBundle.forEach((meItem, index) => {
-        if (index == 0) renderPass = commandEncoder.beginRenderPass(meItem.renderPassDescriptor);
-        if (index == 1) renderPass.setPipeline(meItem.pipeline);
+        if (index == 0) {
+          renderPass = commandEncoder.beginRenderPass(meItem.renderPassDescriptor);
+          renderPass.setPipeline(meItem.pipeline);
+        }
       });
       this.mainRenderBundle.forEach((meItem, index) => {
         meItem.drawElements(renderPass);

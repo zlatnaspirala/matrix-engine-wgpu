@@ -566,16 +566,37 @@ export function getAxisRot(q1) {
   return [radToDeg(x), radToDeg(y), radToDeg(z)]
 }
 
-export function getAxisRot2(Q  ) {
- 
+export function getAxisRot2(targetAxis, Q) {
+  Q.normalize(); // if w>1 acos and sqrt will produce errors, this cant happen if quaternion is normalised
+  var angle = 2 * Math.acos(Q.w());
+  var s = Math.sqrt(1 - Q.w() * Q.w()); // assuming quaternion normalised then w is less than 1, so term always positive.
+  if(s < 0.001) { // test to avoid divide by zero, s is always positive due to sqrt
+    // if s close to zero then direction of axis not important
+    // if it is important that axis is normalised then replace with x=1; y=z=0;
+    // targetAxis.x = 1;
+    // targetAxis.y = 0;
+    // targetAxis.z = 0;
+    targetAxis.x = Q.x();
+    targetAxis.y = Q.y();
+    targetAxis.z = Q.z();
+  } else {
+    targetAxis.x = Q.x() / s; // normalise axis
+    targetAxis.y = Q.y() / s;
+    targetAxis.z = Q.z() / s;
+  }
+  return [targetAxis, angle];
+}
+
+export function getAxisRot3(Q) {
+
   var angle = Math.acos(Q.w) * 2;
   var axis = {};
 
-  if (Math.sin(Math.acos(angle)) > 0) {
+  if(Math.sin(Math.acos(angle)) > 0) {
 
-    axis.x = Q.x / Math.sin(Math.acos(angle/2));
-    axis.y  = Q.y / Math.sin(Math.acos(angle/2));
-    axis.z  = Q.z / Math.sin(Math.acos(angle/2));
+    axis.x = Q.x / Math.sin(Math.acos(angle / 2));
+    axis.y = Q.y / Math.sin(Math.acos(angle / 2));
+    axis.z = Q.z / Math.sin(Math.acos(angle / 2));
 
   } else {
     axis.x = 0;
