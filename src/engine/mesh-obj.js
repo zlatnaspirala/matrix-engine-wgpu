@@ -4,6 +4,7 @@ import {createInputHandler} from "./engine";
 import {vertexShadowWGSL} from '../shaders/vertexShadow.wgsl';
 import {fragmentWGSL} from '../shaders/fragment.wgsl';
 import {vertexWGSL} from '../shaders/vertex.wgsl';
+import {degToRad, LOG_INFO} from './utils';
 
 export default class MEMeshObj {
 
@@ -17,7 +18,7 @@ export default class MEMeshObj {
     // Mesh stuff
     this.mesh = o.mesh;
     this.mesh.uvs = this.mesh.textures;
-    console.log('mesh obj: ', this.mesh)
+    console.log(`%c Mesh loaded: ${o.name}`, LOG_INFO);
 
     this.inputHandler = createInputHandler(window, canvas);
     this.cameras = o.cameras;
@@ -376,20 +377,18 @@ export default class MEMeshObj {
         const now = Date.now();
         const deltaTime = (now - this.lastFrameMS) / this.mainCameraParams.responseCoef;
         this.lastFrameMS = now;
-
         // const this.viewMatrix = mat4.identity()
         const camera = this.cameras[this.mainCameraParams.type];
         this.viewMatrix = camera.update(deltaTime, this.inputHandler());
-
         mat4.translate(this.viewMatrix, vec3.fromValues(pos.x, pos.y, pos.z), this.viewMatrix);
-        // mat4.rotateX(this.viewMatrix, Math.PI * this.rotation.getRotX(), this.viewMatrix);
-        // mat4.rotateY(this.viewMatrix, Math.PI * this.rotation.getRotY(), this.viewMatrix);
-        // mat4.rotateZ(this.viewMatrix, Math.PI * this.rotation.getRotZ(), this.viewMatrix);
-        mat4.rotateX(this.viewMatrix, this.rotation.getRotX(), this.viewMatrix);
-        mat4.rotateY(this.viewMatrix, this.rotation.getRotY(), this.viewMatrix);
-        mat4.rotateZ(this.viewMatrix, this.rotation.getRotZ(), this.viewMatrix);
+        mat4.rotate(
+          this.viewMatrix,
+          vec3.fromValues(this.rotation.axis.x, this.rotation.axis.y, this.rotation.axis.z),
+          degToRad(this.rotation.angle), this.viewMatrix)
+        // mat4.rotateX(this.viewMatrix, this.rotation.getRotX(), this.viewMatrix);
+        // mat4.rotateY(this.viewMatrix, this.rotation.getRotY(), this.viewMatrix);
+        // mat4.rotateZ(this.viewMatrix, this.rotation.getRotZ(), this.viewMatrix);
         mat4.multiply(this.projectionMatrix, this.viewMatrix, this.modelViewProjectionMatrix);
-
         return this.modelViewProjectionMatrix;
       }
 

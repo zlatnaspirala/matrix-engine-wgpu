@@ -1,8 +1,9 @@
 import {degToRad} from "./utils";
 
-// Sub classes for matrix-wgpu
 /**
- * @description Base class
+ * @description 
+ * Sub classes for matrix-wgpu
+ * Base class
  * Position { x, y, z }
  */
 
@@ -181,7 +182,11 @@ export class Rotation {
     this.x = x;
     this.y = y;
     this.z = z;
-    this.rotationSpeed = {x: 0, y: 0, z: 0}
+    this.rotationSpeed = {x: 0, y: 0, z: 0};
+    this.angle = 0;
+    this.axis = {x:0, y:0 , z:0};
+    // not in use good for exstend logic
+    this.matrixRotation = null;
   }
 
   getRotX () {

@@ -7,6 +7,7 @@ Object.defineProperty(exports, "__esModule", {
 exports.application = void 0;
 var _world = _interopRequireDefault(require("./src/world.js"));
 var _loaderObj = require("./src/engine/loader-obj.js");
+var _utils = require("./src/engine/utils.js");
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 let application = exports.application = new _world.default({
   useSingleRenderPass: true,
@@ -25,36 +26,18 @@ let application = exports.application = new _world.default({
   });
   function onLoadObj(m) {
     application.myLoadedMeshes = m;
-    console.log('Loaded objs:', m);
+    for (var key in m) {
+      console.log(`%c Loaded objs: ${key} `, _utils.LOG_MATRIX);
+    }
     // application.addMeshObj({
-    //   position: {x: -3, y: 0, z: -10},
-    //   rotation: {x: 0, y: 0, z: 0},
-    //   rotationSpeed: {x: 0, y: 10, z: 0},
+    //   position: {x: 1, y: 0, z: -5},
+    //   rotation: {x: -90, y: 0, z: 0},
+    //   rotationSpeed: {x: 0, y: 0, z: 0},
     //   texturesPaths: ['./res/meshes/obj/armor.png'],
-    //   name: 'Armor',
-    //   mesh: m.armor
+    //   name: 'MyText',
+    //   mesh: m.welcomeText
     // })
 
-    application.addMeshObj({
-      position: {
-        x: 1,
-        y: 0,
-        z: -5
-      },
-      rotation: {
-        x: -90,
-        y: 0,
-        z: 0
-      },
-      rotationSpeed: {
-        x: 0,
-        y: 0,
-        z: 0
-      },
-      texturesPaths: ['./res/meshes/obj/armor.png'],
-      name: 'MyText',
-      mesh: m.welcomeText
-    });
     application.addMeshObj({
       position: {
         x: 0,
@@ -72,7 +55,7 @@ let application = exports.application = new _world.default({
         z: 0
       },
       texturesPaths: ['./res/meshes/blender/cube.png'],
-      name: 'Lopta-Fizika',
+      name: 'CubePhysics',
       mesh: m.lopta,
       physics: {
         enabled: true,
@@ -83,7 +66,7 @@ let application = exports.application = new _world.default({
 });
 window.app = application;
 
-},{"./src/engine/loader-obj.js":6,"./src/world.js":16}],2:[function(require,module,exports){
+},{"./src/engine/loader-obj.js":6,"./src/engine/utils.js":10,"./src/world.js":16}],2:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -6255,6 +6238,7 @@ Object.defineProperty(exports, "__esModule", {
 exports.WASDCamera = exports.ArcballCamera = void 0;
 exports.createInputHandler = createInputHandler;
 var _wgpuMatrix = require("wgpu-matrix");
+var _utils = require("./utils");
 // Note: The code in this file does not use the 'dst' output parameter of functions in the
 // 'wgpu-matrix' library, so produces many temporary vectors and matrices.
 // This is intentional, as this sample prefers readability over performance.
@@ -6377,8 +6361,6 @@ class WASDCamera extends CameraBase {
   set velocity(vec) {
     _wgpuMatrix.vec3.copy(vec, this.velocity_);
   }
-
-  // Construtor
   constructor(options) {
     super();
     if (options && (options.position || options.target)) {
@@ -6387,7 +6369,7 @@ class WASDCamera extends CameraBase {
       const forward = _wgpuMatrix.vec3.normalize(_wgpuMatrix.vec3.sub(target, position));
       this.recalculateAngles(forward);
       this.position = position;
-      console.log('camera postion:', position);
+      // console.log(`%cCamera pos: ${position}`, LOG_INFO);
     }
   }
 
@@ -6709,7 +6691,7 @@ function createInputHandler(window, canvas) {
   };
 }
 
-},{"wgpu-matrix":2}],6:[function(require,module,exports){
+},{"./utils":10,"wgpu-matrix":2}],6:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -7181,9 +7163,10 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.Rotation = exports.Position = void 0;
 var _utils = require("./utils");
-// Sub classes for matrix-wgpu
 /**
- * @description Base class
+ * @description 
+ * Sub classes for matrix-wgpu
+ * Base class
  * Position { x, y, z }
  */
 
@@ -7345,6 +7328,14 @@ class Rotation {
       y: 0,
       z: 0
     };
+    this.angle = 0;
+    this.axis = {
+      x: 0,
+      y: 0,
+      z: 0
+    };
+    // not in use good for exstend logic
+    this.matrixRotation = null;
   }
   getRotX() {
     if (this.rotationSpeed.x == 0) {
@@ -7386,6 +7377,7 @@ var _engine = require("./engine");
 var _vertexShadow = require("../shaders/vertexShadow.wgsl");
 var _fragment = require("../shaders/fragment.wgsl");
 var _vertex = require("../shaders/vertex.wgsl");
+var _utils = require("./utils");
 class MEMeshObj {
   constructor(canvas, device, context, o) {
     this.done = false;
@@ -7396,7 +7388,7 @@ class MEMeshObj {
     // Mesh stuff
     this.mesh = o.mesh;
     this.mesh.uvs = this.mesh.textures;
-    console.log('mesh obj: ', this.mesh);
+    console.log(`%c Mesh loaded: ${o.name}`, _utils.LOG_INFO);
     this.inputHandler = (0, _engine.createInputHandler)(window, canvas);
     this.cameras = o.cameras;
     this.mainCameraParams = {
@@ -7709,17 +7701,14 @@ class MEMeshObj {
         const now = Date.now();
         const deltaTime = (now - this.lastFrameMS) / this.mainCameraParams.responseCoef;
         this.lastFrameMS = now;
-
         // const this.viewMatrix = mat4.identity()
         const camera = this.cameras[this.mainCameraParams.type];
         this.viewMatrix = camera.update(deltaTime, this.inputHandler());
         _wgpuMatrix.mat4.translate(this.viewMatrix, _wgpuMatrix.vec3.fromValues(pos.x, pos.y, pos.z), this.viewMatrix);
-        // mat4.rotateX(this.viewMatrix, Math.PI * this.rotation.getRotX(), this.viewMatrix);
-        // mat4.rotateY(this.viewMatrix, Math.PI * this.rotation.getRotY(), this.viewMatrix);
-        // mat4.rotateZ(this.viewMatrix, Math.PI * this.rotation.getRotZ(), this.viewMatrix);
-        _wgpuMatrix.mat4.rotateX(this.viewMatrix, this.rotation.getRotX(), this.viewMatrix);
-        _wgpuMatrix.mat4.rotateY(this.viewMatrix, this.rotation.getRotY(), this.viewMatrix);
-        _wgpuMatrix.mat4.rotateZ(this.viewMatrix, this.rotation.getRotZ(), this.viewMatrix);
+        _wgpuMatrix.mat4.rotate(this.viewMatrix, _wgpuMatrix.vec3.fromValues(this.rotation.axis.x, this.rotation.axis.y, this.rotation.axis.z), (0, _utils.degToRad)(this.rotation.angle), this.viewMatrix);
+        // mat4.rotateX(this.viewMatrix, this.rotation.getRotX(), this.viewMatrix);
+        // mat4.rotateY(this.viewMatrix, this.rotation.getRotY(), this.viewMatrix);
+        // mat4.rotateZ(this.viewMatrix, this.rotation.getRotZ(), this.viewMatrix);
         _wgpuMatrix.mat4.multiply(this.projectionMatrix, this.viewMatrix, this.modelViewProjectionMatrix);
         return this.modelViewProjectionMatrix;
       };
@@ -7810,7 +7799,7 @@ class MEMeshObj {
 }
 exports.default = MEMeshObj;
 
-},{"../shaders/fragment.wgsl":12,"../shaders/vertex.wgsl":14,"../shaders/vertexShadow.wgsl":15,"./engine":5,"./matrix-class":7,"wgpu-matrix":2}],9:[function(require,module,exports){
+},{"../shaders/fragment.wgsl":12,"../shaders/vertex.wgsl":14,"../shaders/vertexShadow.wgsl":15,"./engine":5,"./matrix-class":7,"./utils":10,"wgpu-matrix":2}],9:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -8214,6 +8203,7 @@ exports.default = MEMesh;
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
+exports.LOG_WARN = exports.LOG_MATRIX = exports.LOG_INFO = exports.LOG_FUNNY = void 0;
 exports.ORBIT = ORBIT;
 exports.ORBIT_FROM_ARRAY = ORBIT_FROM_ARRAY;
 exports.OSCILLATOR = OSCILLATOR;
@@ -8876,6 +8866,12 @@ function quaternion_rotation_matrix(Q) {
   return rot_matrix;
 }
 
+// copnsole log graphics
+const LOG_WARN = exports.LOG_WARN = 'background: gray; color: yellow; font-size:10px';
+const LOG_INFO = exports.LOG_INFO = 'background: green; color: white; font-size:11px';
+const LOG_MATRIX = exports.LOG_MATRIX = "font-family: verdana;color: #lime; font-size:11px;text-shadow: 2px 2px 4px orangered;background: black;";
+const LOG_FUNNY = exports.LOG_FUNNY = "font-family: stormfaze;color: #f1f033; font-size:14px;text-shadow: 2px 2px 4px #f335f4, 4px 4px 4px #d64444, 2px 2px 4px #c160a6, 6px 2px 0px #123de3;background: black;";
+
 },{}],11:[function(require,module,exports){
 "use strict";
 
@@ -8883,7 +8879,6 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.default = void 0;
-var _wgpuMatrix = require("wgpu-matrix");
 var _utils = require("../engine/utils");
 class MatrixAmmo {
   constructor() {
@@ -8891,14 +8886,13 @@ class MatrixAmmo {
     _utils.scriptManager.LOAD("./ammojs/ammo.js", "ammojs", undefined, undefined, this.init);
   }
   init = () => {
-    // start
     Ammo().then(Ammo => {
       // Physics variables
       this.dynamicsWorld = null;
       this.rigidBodies = [];
       this.Ammo = Ammo;
       this.lastUpdate = 0;
-      console.log("Ammo core loaded.");
+      console.log("%c Ammo core loaded.", _utils.LOG_FUNNY);
       this.initPhysics();
       dispatchEvent(new CustomEvent('AmmoReady', {}));
     });
@@ -8989,58 +8983,21 @@ class MatrixAmmo {
         var test = trans.getRotation();
         var testAxis = test.getAxis();
         test.normalize();
-        // console.log("world axis X = " + test.x());
-        // console.log("world axis Y = " + test.y());
-        // console.log("world axis Z = " + test.z());
-        // console.log("world axis W = " + test.w());
-        // var bugX = getAxisRot2(
-        //   {x: 0, y: 0, z:0},
-        //   test)
-        if (parseFloat(testAxis.x().toFixed(2)) > 0) {
-          if ((0, _utils.radToDeg)(testAxis.x().toFixed(2) * parseFloat(test.getAngle().toFixed(2))) > 180) {
-            body.MEObject.rotation.x = (0, _utils.radToDeg)(testAxis.x().toFixed(2) * parseFloat(test.getAngle().toFixed(2))) - 180;
-            console.log('MORE THEM 180  X degree ', body.MEObject.rotation.x);
-          } else {
-            body.MEObject.rotation.x = (0, _utils.radToDeg)(testAxis.x().toFixed(2) * parseFloat(test.getAngle().toFixed(2)));
-          }
-        } else {
-          body.MEObject.rotation.x = 0;
-        }
-        if (parseFloat(testAxis.y().toFixed(2)) > 0) {
-          if ((0, _utils.radToDeg)(testAxis.y().toFixed(2) * parseFloat(test.getAngle().toFixed(2))) > 180) {
-            body.MEObject.rotation.y = (0, _utils.radToDeg)(testAxis.y().toFixed(2) * parseFloat(test.getAngle().toFixed(2))) - 180;
-            console.log('MORE THEM 180  Y degree ', body.MEObject.rotation.y);
-          } else {
-            body.MEObject.rotation.y = (0, _utils.radToDeg)(testAxis.y().toFixed(2) * parseFloat(test.getAngle().toFixed(2)));
-          }
-        } else {
-          body.MEObject.rotation.y = 0;
-        }
-        if (parseFloat(testAxis.z().toFixed(2)) > 0) {
-          if ((0, _utils.radToDeg)(testAxis.z().toFixed(2) * parseFloat(test.getAngle().toFixed(2))) > 180) {
-            body.MEObject.rotation.z = (0, _utils.radToDeg)(testAxis.z().toFixed(2) * parseFloat(test.getAngle().toFixed(2))) - 180;
-            //  console.log('MORE THEM 180  Z degree ',body.MEObject.rotation.x )
-          } else {
-            body.MEObject.rotation.z = (0, _utils.radToDeg)(testAxis.z().toFixed(2) * parseFloat(test.getAngle().toFixed(2)));
-          }
-        } else {
-          body.MEObject.rotation.z = 0;
-        }
-
-        // body.MEObject.rotation.x = (parseFloat(test.getAngle().toFixed(2)))
-        // body.MEObject.rotation.y = (parseFloat(test.getAngle().toFixed(2)))
-        // body.MEObject.rotation.z = (parseFloat(test.getAngle().toFixed(2)))
-        // body.MEObject.rotation.z =  (testAxis.z())
-        // body.MEObject.rotation.x = degToRad(bug.x)
-        // body.MEObject.rotation.y = degToRad(bug.y)
-        // body.MEObject.rotation.z = degToRad(bug.z)
+        body.MEObject.rotation.axis.x = testAxis.x();
+        body.MEObject.rotation.axis.y = testAxis.y();
+        body.MEObject.rotation.axis.z = testAxis.z();
+        // var tx = radToDeg(parseFloat(test.getAngle().toFixed(2)) * testAxis.x().toFixed(2))
+        // var ty = radToDeg(parseFloat(test.getAngle().toFixed(2)) * testAxis.y().toFixed(2))
+        // var tz = radToDeg(parseFloat(test.getAngle().toFixed(2)) * testAxis.z().toFixed(2))
+        body.MEObject.rotation.matrixRotation = (0, _utils.quaternion_rotation_matrix)(test);
+        body.MEObject.rotation.angle = (0, _utils.radToDeg)(parseFloat(test.getAngle().toFixed(2)));
       }
     });
   }
 }
 exports.default = MatrixAmmo;
 
-},{"../engine/utils":10,"wgpu-matrix":2}],12:[function(require,module,exports){
+},{"../engine/utils":10}],12:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -9635,7 +9592,7 @@ class MatrixEngineWGPU {
       this.device.queue.submit([commandEncoder.finish()]);
       requestAnimationFrame(this.frame);
     } catch (err) {
-      console.log('Error in draw func.', err);
+      console.log('%cDraw func (err):' + err, _utils.LOG_WARN);
       requestAnimationFrame(this.frame);
     }
   };

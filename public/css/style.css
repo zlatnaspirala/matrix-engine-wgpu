@@ -1,18 +1,18 @@
 
 @font-face {
   font-family: stormfaze;
-  src: url(../res/fonts/stormfaze.ttf);
+  src: url(../../public/res/fonts/stormfaze.ttf);
 }
 
 @font-face {
   font-family: wargames;
-  src: url(../res/fonts/wargames.ttf);
+  src: url(../../public/res/fonts/wargames.ttf);
 }
 
 body {
   color: lime;
   background-color:#95003d;
-  font-family: "Courier New";
+  font-family: "stormfaze";
   font-size: 14px;
   margin: 0;
   padding: 0;
@@ -20,6 +20,9 @@ body {
   text-align: center;
 }
 
+.meBody{
+  font-family: stormfaze;
+}
 
 .noselection {
 	-webkit-touch-callout: none; /* Safari */

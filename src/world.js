@@ -5,7 +5,7 @@ import {ArcballCamera, WASDCamera} from "./engine/engine.js";
 import MEMesh from "./engine/mesh.js";
 import MEMeshObj from "./engine/mesh-obj.js";
 import MatrixAmmo from "./physics/matrix-ammo.js";
-import {scriptManager} from "./engine/utils.js";
+import {LOG_WARN, scriptManager} from "./engine/utils.js";
 
 export default class MatrixEngineWGPU {
 
@@ -195,11 +195,8 @@ export default class MatrixEngineWGPU {
       return;
     }
     console.log('Mesh procedure', o)
-
     let myMesh1 = new MEMesh(this.canvas, this.device, this.context, o)
     this.mainRenderBundle.push(myMesh1);
-
-
   }
 
   addMeshObj = (o) => {
@@ -259,7 +256,6 @@ export default class MatrixEngineWGPU {
         shadowPass.end();
       })
 
-
       this.mainRenderBundle.forEach((meItem, index) => {
         if(index == 0) {
           renderPass = commandEncoder.beginRenderPass(meItem.renderPassDescriptor);
@@ -275,7 +271,7 @@ export default class MatrixEngineWGPU {
       this.device.queue.submit([commandEncoder.finish()]);
       requestAnimationFrame(this.frame);
     } catch(err) {
-      console.log('Error in draw func.', err)
+      console.log('%cDraw func (err):' + err , LOG_WARN)
       requestAnimationFrame(this.frame);
     }
   }

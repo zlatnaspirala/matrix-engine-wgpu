@@ -22,17 +22,11 @@ export let application = new MatrixEngineWGPU({
     texturesPaths: ['./res/textures/rust.jpg']
   };
 
-  // let mesh = adaptJSON1(stanfordDragonData)
-  // application.addBall(o)
-  // application.addCube(c)
   application.addCube(o)
 
   function onLoadObj(m) {
     console.log('Loaded obj:', m.armor);
-    // console.log('APP2 ', jsonPiramyd);
-    // jsonPiramyd.vertexNormals = jsonPiramyd.normals;
-    // jsonPiramyd.indices = jsonPiramyd.faces;
-    // jsonPiramyd.textures = jsonPiramyd.uvs;
+
     application.addMeshObj({
       position: {x: 0, y: 0, z: -5},
       texturesPaths: ['./res/meshes/obj/armor.png'],
@@ -41,7 +35,6 @@ export let application = new MatrixEngineWGPU({
     })
   }
 
-  // downloadMeshes({armor: "./res/meshes/obj/armor.obj"}, onLoadObj)
   downloadMeshes({armor: "./res/meshes/blender/piramyd.obj"}, onLoadObj)
 })
 

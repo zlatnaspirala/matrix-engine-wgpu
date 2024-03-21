@@ -1,5 +1,4 @@
-import {vec3, vec4} from "wgpu-matrix";
-import {createAppEvent, degToRad, getAxisRot, getAxisRot2, quaternion_rotation_matrix, radToDeg, scriptManager} from "../engine/utils";
+import {LOG_FUNNY, LOG_MATRIX, quaternion_rotation_matrix, radToDeg, scriptManager} from "../engine/utils";
 
 export default class MatrixAmmo {
   constructor() {
@@ -14,14 +13,13 @@ export default class MatrixAmmo {
   }
 
   init = () => {
-    // start
     Ammo().then(Ammo => {
       // Physics variables
       this.dynamicsWorld = null;
       this.rigidBodies = [];
       this.Ammo = Ammo;
       this.lastUpdate = 0
-      console.log("Ammo core loaded.");
+      console.log("%c Ammo core loaded.", LOG_FUNNY);
       this.initPhysics();
       dispatchEvent(new CustomEvent('AmmoReady', {}))
     });
@@ -127,55 +125,15 @@ export default class MatrixAmmo {
         body.MEObject.position.setPosition(_x, _y, _z)
         var test = trans.getRotation();
         var testAxis = test.getAxis();
-
         test.normalize()
-        // console.log("world axis X = " + test.x());
-        // console.log("world axis Y = " + test.y());
-        // console.log("world axis Z = " + test.z());
-        // console.log("world axis W = " + test.w());
-        // var bugX = getAxisRot2(
-        //   {x: 0, y: 0, z:0},
-        //   test)
-        if((parseFloat(testAxis.x().toFixed(2) )) > 0) {
-          if (radToDeg(testAxis.x().toFixed(2) * (parseFloat(test.getAngle().toFixed(2))))   > 180) {
-            body.MEObject.rotation.x = radToDeg(testAxis.x().toFixed(2) * (parseFloat(test.getAngle().toFixed(2))))  -180
-             console.log('MORE THEM 180  X degree ',body.MEObject.rotation.x )
-          } else {
-             body.MEObject.rotation.x = radToDeg(testAxis.x().toFixed(2) * (parseFloat(test.getAngle().toFixed(2))))  
-          }
-
-        } else {
-          body.MEObject.rotation.x = 0;
-        }
-        if((parseFloat(testAxis.y().toFixed(2) )) > 0) {
-        
-          if (radToDeg(testAxis.y().toFixed(2) * (parseFloat(test.getAngle().toFixed(2)))) > 180) {
-            body.MEObject.rotation.y = radToDeg(testAxis.y().toFixed(2) * (parseFloat(test.getAngle().toFixed(2))))  -180;
-             console.log('MORE THEM 180  Y degree ',body.MEObject.rotation.y )
-          } else {
-             body.MEObject.rotation.y = radToDeg(testAxis.y().toFixed(2) * (parseFloat(test.getAngle().toFixed(2))))  
-          }
-        } else {
-          body.MEObject.rotation.y = 0;
-        }
-        if((parseFloat(testAxis.z().toFixed(2) )) > 0) {
-          if (radToDeg(testAxis.z().toFixed(2) * (parseFloat(test.getAngle().toFixed(2)))) > 180) {
-            body.MEObject.rotation.z = radToDeg(testAxis.z().toFixed(2) * (parseFloat(test.getAngle().toFixed(2)))) -180;
-            //  console.log('MORE THEM 180  Z degree ',body.MEObject.rotation.x )
-          } else {
-             body.MEObject.rotation.z = radToDeg(testAxis.z().toFixed(2) * (parseFloat(test.getAngle().toFixed(2))))  
-          }
-        } else {
-          body.MEObject.rotation.z = 0;
-        }
-
-        // body.MEObject.rotation.x = (parseFloat(test.getAngle().toFixed(2)))
-        // body.MEObject.rotation.y = (parseFloat(test.getAngle().toFixed(2)))
-        // body.MEObject.rotation.z = (parseFloat(test.getAngle().toFixed(2)))
-        // body.MEObject.rotation.z =  (testAxis.z())
-        // body.MEObject.rotation.x = degToRad(bug.x)
-        // body.MEObject.rotation.y = degToRad(bug.y)
-        // body.MEObject.rotation.z = degToRad(bug.z)
+        body.MEObject.rotation.axis.x = testAxis.x()
+        body.MEObject.rotation.axis.y = testAxis.y()
+        body.MEObject.rotation.axis.z = testAxis.z()
+        // var tx = radToDeg(parseFloat(test.getAngle().toFixed(2)) * testAxis.x().toFixed(2))
+        // var ty = radToDeg(parseFloat(test.getAngle().toFixed(2)) * testAxis.y().toFixed(2))
+        // var tz = radToDeg(parseFloat(test.getAngle().toFixed(2)) * testAxis.z().toFixed(2))
+        body.MEObject.rotation.matrixRotation = quaternion_rotation_matrix(test);
+        body.MEObject.rotation.angle = radToDeg(parseFloat(test.getAngle().toFixed(2)))
       }
     })
   }
