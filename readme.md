@@ -1,12 +1,10 @@
-# matrix-wgpu
-
-## [underconstruct - not fully operative for now - deeply WIP]
-
+# matrix-engine-wgpu
+## [not fully operative for now - WIP]
 ## Author Nikola Lukic zlatnaspirala@gmail.com 2024
 
 ## Logo:
 
-<img width="350" height="350" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/public/res/icons/512.png?raw=true" />
+<img width="320" height="320" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/public/res/icons/512.png?raw=true" />
 
 ### In logo i used webGPU logo from:
 
@@ -64,6 +62,14 @@ Change speed of translation
 app.mainRenderBundle[0].position.thrust = 0.1;
 ```
 
+####Note: Position for Physics enabled object look like:
+No working `.position` and `.rotation` in physics enabled regime.
+You must use Ammo body funcs like : applyForce, setAngularVelocity, setLinearVelocity etc...
+```js
+app.matrixAmmo.rigidBodies[0].setAngularVelocity(new Ammo.btVector3(0,2,0))
+app.matrixAmmo.rigidBodies[0].setLinearVelocity(new Ammo.btVector3(0,7,0))
+```
+
 ### Rotation
 #### app.mainRenderBundle[0].rotation
 
@@ -78,33 +84,72 @@ app.mainRenderBundle[0].rotation.rotationSpeed.y = 10
 ```
 
 Stop rotating
-```
+```js
 app.mainRenderBundle[0].rotation.rotationSpeed.y = 0
 ```
+
+#### Note: In physics enabled object `.rotation` have no affect.
 
 ## How to load obj [with uvs] file:
 Main instance script:
 ```js
-import MatrixEngineWGPU from "./src/meWGPU";
-import {testCUSTOMGEO} from "./public/res/meshes/blender/piramida.js";
-import {downloadMeshes} from "./src/engine/loader-obj.js";
+import MatrixEngineWGPU from "./src/world.js";
+import {downloadMeshes} from './src/engine/loader-obj.js';
+import {LOG_FUNNY, LOG_INFO, LOG_MATRIX} from "./src/engine/utils.js";
 
-let application = new MatrixEngineWGPU({canvasSize: "fullscreen"},
-  () => {
-    function onLoadObj(m) {
-      application.addMeshObj({
-        position: {x: 0, y: 0, z: -5},
-        texturesPaths: ["./res/meshes/obj/armor.png"],
-        name: "Armor",
-        mesh: m.armor,
-      });
+export let application = new MatrixEngineWGPU({
+  useSingleRenderPass: true,
+  canvasSize: 'fullscreen',
+  mainCameraParams: {
+    type: 'WASD',
+    responseCoef: 1000
+  }
+}, () => {
+
+  addEventListener('AmmoReady', () => {
+    downloadMeshes({
+      welcomeText: "./res/meshes/blender/piramyd.obj",
+      armor: "./res/meshes/obj/armor.obj",
+      sphere: "./res/meshes/blender/sphere.obj",
+      cube: "./res/meshes/blender/cube.obj",
+    }, onLoadObj)
+  })
+
+  function onLoadObj(m) {
+    application.myLoadedMeshes = m;
+    for(var key in m) {
+      console.log(`%c Loaded objs: ${key} `, LOG_MATRIX);
     }
 
-    downloadMeshes({armor: "./res/meshes/obj/armor.obj"}, onLoadObj);
-  },
-);
-// just for dev
-window.app = application;
+    application.addMeshObj({
+      position: {x: 0, y: 2, z: -10},
+      rotation: {x: 0, y: 0, z: 0},
+      rotationSpeed: {x: 0, y: 0, z: 0},
+      texturesPaths: ['./res/meshes/blender/cube.png'],
+      name: 'CubePhysics',
+      mesh: m.cube,
+      physics: {
+        enabled: true,
+        geometry: "Cube"
+      }
+    })
+
+    application.addMeshObj({
+      position: {x: 0, y: 2, z: -10},
+      rotation: {x: 0, y: 0, z: 0},
+      rotationSpeed: {x: 0, y: 0, z: 0},
+      texturesPaths: ['./res/meshes/blender/cube.png'],
+      name: 'SpherePhysics',
+      mesh: m.sphere,
+      physics: {
+        enabled: true,
+        geometry: "Sphere"
+      }
+    })
+  }
+})
+
+window.app = application
 ```
 
 ## NPM Scripts

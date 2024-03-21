@@ -56,7 +56,7 @@ export default class MatrixEngineWGPU {
       canvas.width = this.options.canvasSize.w;
       canvas.height = this.options.canvasSize.h;
     }
-    document.body.append(canvas)
+    document.body.append(canvas);
 
     // The camera types
     const initialCameraPosition = vec3.create(0, 0, 0);
@@ -92,42 +92,15 @@ export default class MatrixEngineWGPU {
     });
 
     if(this.options.useSingleRenderPass == true) {
-      this.makeDefaultRenderPassDescriptor()
       this.frame = this.frameSinglePass;
     } else {
-      // must be
       this.frame = this.framePassPerObject;
     }
 
     this.run(callback)
   };
 
-  makeDefaultRenderPassDescriptor = () => {
-
-    this.depthTexture = this.device.createTexture({
-      size: [this.canvas.width, this.canvas.height],
-      format: 'depth24plus',
-      usage: GPUTextureUsage.RENDER_ATTACHMENT,
-    });
-
-    this.renderPassDescriptor = {
-      colorAttachments: [
-        {
-          view: undefined,
-          clearValue: {r: 0.0, g: 0.0, b: 0.0, a: 1.0},
-          loadOp: 'clear',
-          storeOp: 'store',
-        },
-      ],
-      depthStencilAttachment: {
-        view: this.depthTexture.createView(),
-        depthClearValue: 1.0,
-        depthLoadOp: 'clear',
-        depthStoreOp: 'store',
-      },
-    };
-  }
-
+  // Not in use for now
   addCube = (o) => {
     if(typeof o === 'undefined') {
       var o = {
@@ -154,6 +127,7 @@ export default class MatrixEngineWGPU {
     this.mainRenderBundle.push(myCube1);
   }
 
+  // Not in use for now
   addBall = (o) => {
     if(typeof o === 'undefined') {
       var o = {
@@ -180,6 +154,7 @@ export default class MatrixEngineWGPU {
     this.mainRenderBundle.push(myBall1);
   }
 
+  // Not in use for now
   addMesh = (o) => {
     if(typeof o.position === 'undefined') {o.position = {x: 0, y: 0, z: -4}}
     if(typeof o.rotation === 'undefined') {o.rotation = {x: 0, y: 0, z: 0}}
@@ -216,11 +191,17 @@ export default class MatrixEngineWGPU {
     if(typeof o.physics === 'undefined') {
       o.physics = {
         enabled: false,
-        geometry: "Sphere"
+        geometry: "Sphere",
+        radius: o.scale
       }
     }
     if(typeof o.physics.enabled === 'undefined') {o.physics.enabled = false}
     if(typeof o.physics.geometry === 'undefined') {o.physics.geometry = "Sphere"}
+    if(typeof o.physics.radius === 'undefined') {o.physics.radius = o.scale}
+
+    // send same pos
+    o.physics.position = o.position;
+
     // console.log('Mesh procedure', o)
     let myMesh1 = new MEMeshObj(this.canvas, this.device, this.context, o)
     if(o.physics.enabled == true) {

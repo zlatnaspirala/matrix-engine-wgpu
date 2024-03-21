@@ -67,14 +67,14 @@ export default class MatrixAmmo {
 
   addPhysicsSphere(MEObject, pOptions) {
     let Ammo = this.Ammo;
-    var colShape = new Ammo.btSphereShape(1),
+    var colShape = new Ammo.btSphereShape(pOptions.radius),
       startTransform = new Ammo.btTransform();
     startTransform.setIdentity();
     var mass = 1;
     var localInertia = new Ammo.btVector3(0, 0, 0);
     colShape.calculateLocalInertia(mass, localInertia);
 
-    startTransform.setOrigin(new Ammo.btVector3(0, 25, -10));
+    startTransform.setOrigin(new Ammo.btVector3(pOptions.position.x, pOptions.position.y, pOptions.position.z));
 
     var myMotionState = new Ammo.btDefaultMotionState(startTransform),
       rbInfo = new Ammo.btRigidBodyConstructionInfo(mass, myMotionState, colShape, localInertia),
@@ -94,7 +94,7 @@ export default class MatrixAmmo {
     var mass = 1;
     var localInertia = new Ammo.btVector3(0, 0, 0);
     colShape.calculateLocalInertia(mass, localInertia);
-    startTransform.setOrigin(new Ammo.btVector3(0, 25, -10));
+    startTransform.setOrigin(new Ammo.btVector3(pOptions.position.x, pOptions.position.y, pOptions.position.z));
     var myMotionState = new Ammo.btDefaultMotionState(startTransform),
       rbInfo = new Ammo.btRigidBodyConstructionInfo(mass, myMotionState, colShape, localInertia),
       body = new Ammo.btRigidBody(rbInfo);

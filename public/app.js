@@ -21,7 +21,8 @@ let application = exports.application = new _world.default({
     (0, _loaderObj.downloadMeshes)({
       welcomeText: "./res/meshes/blender/piramyd.obj",
       armor: "./res/meshes/obj/armor.obj",
-      lopta: "./res/meshes/blender/cube.obj"
+      sphere: "./res/meshes/blender/sphere.obj",
+      cube: "./res/meshes/blender/cube.obj"
     }, onLoadObj);
   });
   function onLoadObj(m) {
@@ -29,15 +30,6 @@ let application = exports.application = new _world.default({
     for (var key in m) {
       console.log(`%c Loaded objs: ${key} `, _utils.LOG_MATRIX);
     }
-    // application.addMeshObj({
-    //   position: {x: 1, y: 0, z: -5},
-    //   rotation: {x: -90, y: 0, z: 0},
-    //   rotationSpeed: {x: 0, y: 0, z: 0},
-    //   texturesPaths: ['./res/meshes/obj/armor.png'],
-    //   name: 'MyText',
-    //   mesh: m.welcomeText
-    // })
-
     application.addMeshObj({
       position: {
         x: 0,
@@ -56,10 +48,34 @@ let application = exports.application = new _world.default({
       },
       texturesPaths: ['./res/meshes/blender/cube.png'],
       name: 'CubePhysics',
-      mesh: m.lopta,
+      mesh: m.cube,
       physics: {
         enabled: true,
         geometry: "Cube"
+      }
+    });
+    application.addMeshObj({
+      position: {
+        x: 0,
+        y: 2,
+        z: -10
+      },
+      rotation: {
+        x: 0,
+        y: 0,
+        z: 0
+      },
+      rotationSpeed: {
+        x: 0,
+        y: 0,
+        z: 0
+      },
+      texturesPaths: ['./res/meshes/blender/cube.png'],
+      name: 'SpherePhysics',
+      mesh: m.sphere,
+      physics: {
+        enabled: true,
+        geometry: "Sphere"
       }
     });
   }
@@ -8930,13 +8946,13 @@ class MatrixAmmo {
   }
   addPhysicsSphere(MEObject, pOptions) {
     let Ammo = this.Ammo;
-    var colShape = new Ammo.btSphereShape(1),
+    var colShape = new Ammo.btSphereShape(pOptions.radius),
       startTransform = new Ammo.btTransform();
     startTransform.setIdentity();
     var mass = 1;
     var localInertia = new Ammo.btVector3(0, 0, 0);
     colShape.calculateLocalInertia(mass, localInertia);
-    startTransform.setOrigin(new Ammo.btVector3(0, 25, -10));
+    startTransform.setOrigin(new Ammo.btVector3(pOptions.position.x, pOptions.position.y, pOptions.position.z));
     var myMotionState = new Ammo.btDefaultMotionState(startTransform),
       rbInfo = new Ammo.btRigidBodyConstructionInfo(mass, myMotionState, colShape, localInertia),
       body = new Ammo.btRigidBody(rbInfo);
@@ -8953,7 +8969,7 @@ class MatrixAmmo {
     var mass = 1;
     var localInertia = new Ammo.btVector3(0, 0, 0);
     colShape.calculateLocalInertia(mass, localInertia);
-    startTransform.setOrigin(new Ammo.btVector3(0, 25, -10));
+    startTransform.setOrigin(new Ammo.btVector3(pOptions.position.x, pOptions.position.y, pOptions.position.z));
     var myMotionState = new Ammo.btDefaultMotionState(startTransform),
       rbInfo = new Ammo.btRigidBodyConstructionInfo(mass, myMotionState, colShape, localInertia),
       body = new Ammo.btRigidBody(rbInfo);
@@ -9295,40 +9311,14 @@ class MatrixEngineWGPU {
       alphaMode: 'premultiplied'
     });
     if (this.options.useSingleRenderPass == true) {
-      this.makeDefaultRenderPassDescriptor();
       this.frame = this.frameSinglePass;
     } else {
-      // must be
       this.frame = this.framePassPerObject;
     }
     this.run(callback);
   };
-  makeDefaultRenderPassDescriptor = () => {
-    this.depthTexture = this.device.createTexture({
-      size: [this.canvas.width, this.canvas.height],
-      format: 'depth24plus',
-      usage: GPUTextureUsage.RENDER_ATTACHMENT
-    });
-    this.renderPassDescriptor = {
-      colorAttachments: [{
-        view: undefined,
-        clearValue: {
-          r: 0.0,
-          g: 0.0,
-          b: 0.0,
-          a: 1.0
-        },
-        loadOp: 'clear',
-        storeOp: 'store'
-      }],
-      depthStencilAttachment: {
-        view: this.depthTexture.createView(),
-        depthClearValue: 1.0,
-        depthLoadOp: 'clear',
-        depthStoreOp: 'store'
-      }
-    };
-  };
+
+  // Not in use for now
   addCube = o => {
     if (typeof o === 'undefined') {
       var o = {
@@ -9390,6 +9380,8 @@ class MatrixEngineWGPU {
     let myCube1 = new _cube.default(this.canvas, this.device, this.context, o);
     this.mainRenderBundle.push(myCube1);
   };
+
+  // Not in use for now
   addBall = o => {
     if (typeof o === 'undefined') {
       var o = {
@@ -9451,6 +9443,8 @@ class MatrixEngineWGPU {
     let myBall1 = new _ball.default(this.canvas, this.device, this.context, o);
     this.mainRenderBundle.push(myBall1);
   };
+
+  // Not in use for now
   addMesh = o => {
     if (typeof o.position === 'undefined') {
       o.position = {
@@ -9538,7 +9532,8 @@ class MatrixEngineWGPU {
     if (typeof o.physics === 'undefined') {
       o.physics = {
         enabled: false,
-        geometry: "Sphere"
+        geometry: "Sphere",
+        radius: o.scale
       };
     }
     if (typeof o.physics.enabled === 'undefined') {
@@ -9547,6 +9542,13 @@ class MatrixEngineWGPU {
     if (typeof o.physics.geometry === 'undefined') {
       o.physics.geometry = "Sphere";
     }
+    if (typeof o.physics.radius === 'undefined') {
+      o.physics.radius = o.scale;
+    }
+
+    // send same pos
+    o.physics.position = o.position;
+
     // console.log('Mesh procedure', o)
     let myMesh1 = new _meshObj.default(this.canvas, this.device, this.context, o);
     if (o.physics.enabled == true) {
