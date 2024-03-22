@@ -1,7 +1,10 @@
 /**
  * @examples
- * Just import curent example/demo
+ * WIP
  */
-import { application } from "./examples/load-obj-file.js";
+import {runThis} from "./examples/load-obj-file.js";
+import {unlitTextures} from "./examples/unlit-textures.js";
 
-window.app = application
+console.log("runThis", runThis)
+runThis()
+// Default example

@@ -19,7 +19,7 @@
     "ProjectionMatrix", "render",
     "wgpu", "zlatnaspirala",
     "maximumroulette.com", "GLSL",
-    "webgpu-obj-loader"
+    "webgpu-obj-loader", "webgpu-fps"
   ],
   "author": "Nikola Lukic",
   "license": "MIT",

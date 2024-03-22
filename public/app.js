@@ -9561,7 +9561,7 @@ class MatrixEngineWGPU {
       requestAnimationFrame(this.frame);
     }, 500);
     setTimeout(() => {
-      callback();
+      callback(this);
     }, 20);
   }
   frameSinglePass = () => {
@@ -9590,7 +9590,7 @@ class MatrixEngineWGPU {
       this.mainRenderBundle.forEach((meItem, index) => {
         meItem.drawElements(renderPass);
       });
-      renderPass.end();
+      if (renderPass) renderPass.end();
       this.device.queue.submit([commandEncoder.finish()]);
       requestAnimationFrame(this.frame);
     } catch (err) {

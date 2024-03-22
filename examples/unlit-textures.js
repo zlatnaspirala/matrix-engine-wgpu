@@ -1,6 +1,7 @@
-import MatrixEngineWGPU from "../src/meWGPU";
+import MatrixEngineWGPU from "../src/world.js";
 
-export let application = new MatrixEngineWGPU({
+export let unlitTextures = {
+  run: () => new MatrixEngineWGPU({
   useSingleRenderPass: false,
   canvasSize: 'fullscreen'
 }, () => {
@@ -23,5 +24,4 @@ export let application = new MatrixEngineWGPU({
   application.addBall(c)
   application.addCube(o)
 })
-
-window.app = application
+}
