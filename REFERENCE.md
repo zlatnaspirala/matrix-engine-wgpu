@@ -48,14 +48,12 @@ For each render pass, you need to set loadOp and storeOp correctly.
 Most examples that have one render pass set loadOp: 'clear' but in the example above, if render pass 2 had loadOp: 'clear' it would erase the results from render pass 1. Instead it would need to be loadOp: 'load'.
 ```
 
-YEs this is happening " would erase the results from render pass 1 "
-
+YEs this is happening " would erase the results from render pass 1 " FIXED !
 
 
 # https://www.euclideanspace.com/maths/geometry/rotations/conversions/quaternionToAngle/index.htm
 
 
-
-LOOK HERE
+LOOK HERE:
 
 https://glm.g-truc.net/0.9.0/api/a00184.html

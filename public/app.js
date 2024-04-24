@@ -9,6 +9,7 @@ var _world = _interopRequireDefault(require("./src/world.js"));
 var _loaderObj = require("./src/engine/loader-obj.js");
 var _utils = require("./src/engine/utils.js");
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+console.log(' pre ucitavanje');
 let application = exports.application = new _world.default({
   useSingleRenderPass: true,
   canvasSize: 'fullscreen',
@@ -17,23 +18,25 @@ let application = exports.application = new _world.default({
     responseCoef: 1000
   }
 }, () => {
+  console.log(' post ucitavanje ');
   addEventListener('AmmoReady', () => {
     (0, _loaderObj.downloadMeshes)({
       welcomeText: "./res/meshes/blender/piramyd.obj",
-      armor: "./res/meshes/obj/armor.obj",
-      sphere: "./res/meshes/blender/sphere.obj",
-      cube: "./res/meshes/blender/cube.obj"
+      cube: "./res/meshes/blender/cubeSmartUV.obj"
     }, onLoadObj);
+    console.log(' camera ??/');
+    // application.cameras.WASD.pitch = 0.2
+    app.cameras.WASD.velocity[1] = 10;
   });
   function onLoadObj(m) {
     application.myLoadedMeshes = m;
     for (var key in m) {
-      console.log(`%c Loaded objs: ${key} `, _utils.LOG_MATRIX);
+      console.log(`%c Loaded objs -> : ${key} `, _utils.LOG_MATRIX);
     }
     application.addMeshObj({
       position: {
         x: 0,
-        y: 2,
+        y: 1,
         z: -10
       },
       rotation: {
@@ -47,6 +50,7 @@ let application = exports.application = new _world.default({
         z: 0
       },
       texturesPaths: ['./res/meshes/blender/cube.png'],
+      useUVShema4x2: true,
       name: 'CubePhysics',
       mesh: m.cube,
       physics: {
@@ -54,30 +58,19 @@ let application = exports.application = new _world.default({
         geometry: "Cube"
       }
     });
-    application.addMeshObj({
-      position: {
-        x: 0,
-        y: 2,
-        z: -10
-      },
-      rotation: {
-        x: 0,
-        y: 0,
-        z: 0
-      },
-      rotationSpeed: {
-        x: 0,
-        y: 0,
-        z: 0
-      },
-      texturesPaths: ['./res/meshes/blender/cube.png'],
-      name: 'SpherePhysics',
-      mesh: m.sphere,
-      physics: {
-        enabled: true,
-        geometry: "Sphere"
-      }
-    });
+
+    // application.addMeshObj({
+    //   position: {x: 0, y: 2, z: -10},
+    //   rotation: {x: 0, y: 0, z: 0},
+    //   rotationSpeed: {x: 0, y: 0, z: 0},
+    //   texturesPaths: ['./res/meshes/blender/cube.png'],
+    //   name: 'SpherePhysics',
+    //   mesh: m.sphere,
+    //   physics: {
+    //     enabled: true,
+    //     geometry: "Sphere"
+    //   }
+    // })
   }
 });
 window.app = application;
@@ -5871,6 +5864,9 @@ class MECube {
       code: _shaders.UNLIT_SHADER
     });
     this.texturesPaths = [];
+
+    // useUVShema4x2 pass this from top !
+
     o.texturesPaths.forEach(t => {
       this.texturesPaths.push(t);
     });
@@ -5958,8 +5954,6 @@ class MECube {
         });
         this.transform = _wgpuMatrix.mat4.create();
         _wgpuMatrix.mat4.identity(this.transform);
-
-        // Create one large central planet surrounded by a large ring of asteroids
         this.planet = this.createGeometry({
           scale: this.scale,
           useUVShema4x2: false
@@ -7730,8 +7724,8 @@ class MEMeshObj {
       };
       this.upVector = _wgpuMatrix.vec3.fromValues(0, 1, 0);
       this.origin = _wgpuMatrix.vec3.fromValues(0, 0, 0);
-      const lightPosition = _wgpuMatrix.vec3.fromValues(50, 100, -100);
-      const lightViewMatrix = _wgpuMatrix.mat4.lookAt(lightPosition, this.origin, this.upVector);
+      this.lightPosition = _wgpuMatrix.vec3.fromValues(0, 10, -2);
+      this.lightViewMatrix = _wgpuMatrix.mat4.lookAt(this.lightPosition, this.origin, this.upVector);
       const lightProjectionMatrix = _wgpuMatrix.mat4.create();
       {
         const left = -80;
@@ -7742,15 +7736,15 @@ class MEMeshObj {
         const far = 300;
         _wgpuMatrix.mat4.ortho(left, right, bottom, top, near, far, lightProjectionMatrix);
       }
-      const lightViewProjMatrix = _wgpuMatrix.mat4.multiply(lightProjectionMatrix, lightViewMatrix);
+      this.lightViewProjMatrix = _wgpuMatrix.mat4.multiply(lightProjectionMatrix, this.lightViewMatrix);
 
       // looks like affect on transformations for now const 0
       const modelMatrix = _wgpuMatrix.mat4.translation([0, 0, 0]);
       // The camera/light aren't moving, so write them into buffers now.
       {
-        const lightMatrixData = lightViewProjMatrix; // as Float32Array;
+        const lightMatrixData = this.lightViewProjMatrix; // as Float32Array;
         this.device.queue.writeBuffer(this.sceneUniformBuffer, 0, lightMatrixData.buffer, lightMatrixData.byteOffset, lightMatrixData.byteLength);
-        const lightData = lightPosition;
+        const lightData = this.lightPosition;
         this.device.queue.writeBuffer(this.sceneUniformBuffer, 128, lightData.buffer, lightData.byteOffset, lightData.byteLength);
         const modelData = modelMatrix;
         this.device.queue.writeBuffer(this.modelUniformBuffer, 0, modelData.buffer, modelData.byteOffset, modelData.byteLength);
@@ -7767,6 +7761,46 @@ class MEMeshObj {
       this.done = true;
     });
   }
+  updateLightsTest = position => {
+    console.log('test !');
+    ////////////////////////
+    this.lightPosition = _wgpuMatrix.vec3.fromValues(position[0], position[1], position[2]);
+    this.lightViewMatrix = _wgpuMatrix.mat4.lookAt(this.lightPosition, this.origin, this.upVector);
+    const lightProjectionMatrix = _wgpuMatrix.mat4.create();
+    {
+      const left = -80;
+      const right = 80;
+      const bottom = -80;
+      const top = 80;
+      const near = -200;
+      const far = 300;
+      _wgpuMatrix.mat4.ortho(left, right, bottom, top, near, far, lightProjectionMatrix);
+    }
+    this.lightViewProjMatrix = _wgpuMatrix.mat4.multiply(lightProjectionMatrix, this.lightViewMatrix);
+
+    // looks like affect on transformations for now const 0
+    const modelMatrix = _wgpuMatrix.mat4.translation([0, 0, 0]);
+    // The camera/light aren't moving, so write them into buffers now.
+    {
+      const lightMatrixData = this.lightViewProjMatrix; // as Float32Array;
+      this.device.queue.writeBuffer(this.sceneUniformBuffer, 0, lightMatrixData.buffer, lightMatrixData.byteOffset, lightMatrixData.byteLength);
+      const lightData = this.lightPosition;
+      this.device.queue.writeBuffer(this.sceneUniformBuffer, 128, lightData.buffer, lightData.byteOffset, lightData.byteLength);
+      const modelData = modelMatrix;
+      this.device.queue.writeBuffer(this.modelUniformBuffer, 0, modelData.buffer, modelData.byteOffset, modelData.byteLength);
+    }
+    this.shadowPassDescriptor = {
+      colorAttachments: [],
+      depthStencilAttachment: {
+        view: this.shadowDepthTextureView,
+        depthClearValue: 1.0,
+        depthLoadOp: 'clear',
+        depthStoreOp: 'store'
+      }
+    };
+
+    ///////////////////////
+  };
   async loadTex0(texturesPaths, device) {
     this.sampler = device.createSampler({
       magFilter: 'linear',
@@ -8902,6 +8936,7 @@ class MatrixAmmo {
     _utils.scriptManager.LOAD("./ammojs/ammo.js", "ammojs", undefined, undefined, this.init);
   }
   init = () => {
+    console.log('pre ammo');
     Ammo().then(Ammo => {
       // Physics variables
       this.dynamicsWorld = null;
@@ -8910,7 +8945,8 @@ class MatrixAmmo {
       this.lastUpdate = 0;
       console.log("%c Ammo core loaded.", _utils.LOG_FUNNY);
       this.initPhysics();
-      dispatchEvent(new CustomEvent('AmmoReady', {}));
+      // simulate async
+      setTimeout(() => dispatchEvent(new CustomEvent('AmmoReady', {})), 50);
     });
   };
   initPhysics() {
@@ -8923,7 +8959,7 @@ class MatrixAmmo {
       solver = new Ammo.btSequentialImpulseConstraintSolver();
     this.dynamicsWorld = new Ammo.btDiscreteDynamicsWorld(dispatcher, overlappingPairCache, solver, collisionConfiguration);
     this.dynamicsWorld.setGravity(new Ammo.btVector3(0, -10, 0));
-    var groundShape = new Ammo.btBoxShape(new Ammo.btVector3(50, 2, 50)),
+    var groundShape = new Ammo.btBoxShape(new Ammo.btVector3(50, 0.5, 50)),
       groundTransform = new Ammo.btTransform();
     groundTransform.setIdentity();
     groundTransform.setOrigin(new Ammo.btVector3(0, -1, 0));
@@ -9564,6 +9600,10 @@ class MatrixEngineWGPU {
       callback(this);
     }, 20);
   }
+  destroyProgram = () => {
+    this.mainRenderBundle = undefined;
+    this.canvas.remove();
+  };
   frameSinglePass = () => {
     if (typeof this.mainRenderBundle == 'undefined') return;
     try {
@@ -9597,6 +9637,25 @@ class MatrixEngineWGPU {
       console.log('%cDraw func (err):' + err, _utils.LOG_WARN);
       requestAnimationFrame(this.frame);
     }
+  };
+  framePassPerObject = () => {
+    console.log('framePassPerObject');
+    let commandEncoder = this.device.createCommandEncoder();
+    this.rbContainer = [];
+    let passEncoder;
+    this.mainRenderBundle.forEach((meItem, index) => {
+      meItem.draw(commandEncoder);
+      if (meItem.renderBundle) {
+        this.rbContainer.push(meItem.renderBundle);
+        passEncoder = commandEncoder.beginRenderPass(meItem.renderPassDescriptor);
+        passEncoder.executeBundles(this.rbContainer);
+        passEncoder.end();
+      } else {
+        meItem.draw(commandEncoder);
+      }
+    });
+    this.device.queue.submit([commandEncoder.finish()]);
+    requestAnimationFrame(this.frame);
   };
 }
 exports.default = MatrixEngineWGPU;

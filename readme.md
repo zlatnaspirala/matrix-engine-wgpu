@@ -24,15 +24,26 @@ I publish (this repo) npm package with name `matrix-engine-wgpu`.
 
 ## Support list
 
+### SCENE/APP
+- Everytime you run program make new canvas from code.No need to have canvas in html file.
+
 - Only access to the object scene instance look like:
   `mainRenderBundle` is scene holder.
   ```js
   app.mainRenderBundle[0];
   ```
 
-  For now only `addMeshObj` works [Obj file loader].
+  - For now only `addMeshObj` works [Obj file loader].
+  You can use unlitTextures simpliest pipline with addCube, addBall. See in examples...
+
+- Destroy current/runned program and make free space for next app...
+  [This function stops render and remove canvas]
+ ```js
+ app.destroyProgram()
+ ```
 
 ### Camera
+
 Camera type: `WASD | arcball`
 ```js
   mainCameraParams: {
@@ -41,23 +52,20 @@ Camera type: `WASD | arcball`
   }
 ```
 
-### Position
+### Position [YT video - use position from console](https://www.youtube.com/watch?v=cipic7hkN7o&ab_channel=javascriptfanatic)
 #### app.mainRenderBundle[0] -> position
 
 Position is taken from matrix-engine[webgl] same struct.
-
 ```js
 app.mainRenderBundle[0].position.translateByX(12);
 ```
 
 Teleport/ direct set
-
 ```js
 app.mainRenderBundle[0].position.SetX(-2);
 ```
 
 Change speed of translation
-
 ```js
 app.mainRenderBundle[0].position.thrust = 0.1;
 ```
@@ -88,7 +96,15 @@ Stop rotating
 app.mainRenderBundle[0].rotation.rotationSpeed.y = 0
 ```
 
-#### Note: In physics enabled object `.rotation` have no affect.
+#### Note: In physics enabled object `.rotation.x y z` have no affect.
+
+
+## Camera manipulation examples
+
+ ```js
+ app.cameras.WASD.pitch = 0.2
+ ```
+
 
 ## How to load obj [with uvs] file:
 Main instance script:

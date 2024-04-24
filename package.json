@@ -1,6 +1,6 @@
 {
   "name": "matrix-engine-wgpu",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "webGPU powered pwa application. Crazy fast rendering with AmmoJS physics support.",
   "main": "index.js",
   "scripts": {

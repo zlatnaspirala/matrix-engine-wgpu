@@ -395,8 +395,8 @@ export default class MEMeshObj {
       this.upVector = vec3.fromValues(0, 1, 0);
       this.origin = vec3.fromValues(0, 0, 0);
 
-      const lightPosition = vec3.fromValues(50, 100, -100);
-      const lightViewMatrix = mat4.lookAt(lightPosition, this.origin, this.upVector);
+      this.lightPosition = vec3.fromValues(0, 10, -2);
+      this.lightViewMatrix = mat4.lookAt(this.lightPosition, this.origin, this.upVector);
       const lightProjectionMatrix = mat4.create();
       {
         const left = -80;
@@ -408,16 +408,16 @@ export default class MEMeshObj {
         mat4.ortho(left, right, bottom, top, near, far, lightProjectionMatrix);
       }
 
-      const lightViewProjMatrix = mat4.multiply(
+      this.lightViewProjMatrix = mat4.multiply(
         lightProjectionMatrix,
-        lightViewMatrix
+        this.lightViewMatrix
       );
 
       // looks like affect on transformations for now const 0
       const modelMatrix = mat4.translation([0, 0, 0]);
       // The camera/light aren't moving, so write them into buffers now.
       {
-        const lightMatrixData = lightViewProjMatrix; // as Float32Array;
+        const lightMatrixData = this.lightViewProjMatrix; // as Float32Array;
         this.device.queue.writeBuffer(
           this.sceneUniformBuffer,
           0,
@@ -426,7 +426,7 @@ export default class MEMeshObj {
           lightMatrixData.byteLength
         );
 
-        const lightData = lightPosition;
+        const lightData = this.lightPosition;
         this.device.queue.writeBuffer(
           this.sceneUniformBuffer,
           128,
@@ -457,6 +457,72 @@ export default class MEMeshObj {
 
       this.done = true;
     })
+  }
+
+  updateLightsTest = (position) => {
+    console.log('test !')
+    ////////////////////////
+    this.lightPosition = vec3.fromValues(position[0], position[1], position[2]);
+    this.lightViewMatrix = mat4.lookAt(this.lightPosition, this.origin, this.upVector);
+    const lightProjectionMatrix = mat4.create();
+    {
+      const left = -80;
+      const right = 80;
+      const bottom = -80;
+      const top = 80;
+      const near = -200;
+      const far = 300;
+      mat4.ortho(left, right, bottom, top, near, far, lightProjectionMatrix);
+    }
+
+    this.lightViewProjMatrix = mat4.multiply(
+      lightProjectionMatrix,
+      this.lightViewMatrix
+    );
+
+    // looks like affect on transformations for now const 0
+    const modelMatrix = mat4.translation([0, 0, 0]);
+    // The camera/light aren't moving, so write them into buffers now.
+    {
+      const lightMatrixData = this.lightViewProjMatrix; // as Float32Array;
+      this.device.queue.writeBuffer(
+        this.sceneUniformBuffer,
+        0,
+        lightMatrixData.buffer,
+        lightMatrixData.byteOffset,
+        lightMatrixData.byteLength
+      );
+
+      const lightData = this.lightPosition;
+      this.device.queue.writeBuffer(
+        this.sceneUniformBuffer,
+        128,
+        lightData.buffer,
+        lightData.byteOffset,
+        lightData.byteLength
+      );
+
+      const modelData = modelMatrix;
+      this.device.queue.writeBuffer(
+        this.modelUniformBuffer,
+        0,
+        modelData.buffer,
+        modelData.byteOffset,
+        modelData.byteLength
+      );
+    }
+
+    this.shadowPassDescriptor = {
+      colorAttachments: [],
+      depthStencilAttachment: {
+        view: this.shadowDepthTextureView,
+        depthClearValue: 1.0,
+        depthLoadOp: 'clear',
+        depthStoreOp: 'store',
+      },
+    };
+
+    ///////////////////////
   }
 
   async loadTex0(texturesPaths, device) {

@@ -31,6 +31,8 @@ export default class MECube {
 
     this.texturesPaths = [];
 
+    // useUVShema4x2 pass this from top !
+
     o.texturesPaths.forEach((t) => {
       this.texturesPaths.push(t)
     })
@@ -116,7 +118,6 @@ export default class MECube {
         this.transform = mat4.create();
         mat4.identity(this.transform);
 
-        // Create one large central planet surrounded by a large ring of asteroids
         this.planet = this.createGeometry({
           scale: this.scale,
           useUVShema4x2: false

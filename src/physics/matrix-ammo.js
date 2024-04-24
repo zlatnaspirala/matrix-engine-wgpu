@@ -13,6 +13,7 @@ export default class MatrixAmmo {
   }
 
   init = () => {
+    console.log('pre ammo')
     Ammo().then(Ammo => {
       // Physics variables
       this.dynamicsWorld = null;
@@ -21,7 +22,8 @@ export default class MatrixAmmo {
       this.lastUpdate = 0
       console.log("%c Ammo core loaded.", LOG_FUNNY);
       this.initPhysics();
-      dispatchEvent(new CustomEvent('AmmoReady', {}))
+      // simulate async
+      setTimeout(() => dispatchEvent(new CustomEvent('AmmoReady', {})), 50);
     });
   };
 
@@ -38,7 +40,7 @@ export default class MatrixAmmo {
 
     this.dynamicsWorld.setGravity(new Ammo.btVector3(0, -10, 0));
 
-    var groundShape = new Ammo.btBoxShape(new Ammo.btVector3(50, 2, 50)),
+    var groundShape = new Ammo.btBoxShape(new Ammo.btVector3(50, 0.5, 50)),
       groundTransform = new Ammo.btTransform();
     groundTransform.setIdentity();
     groundTransform.setOrigin(new Ammo.btVector3(0, -1, 0));

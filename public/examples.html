@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <link rel="manifest" href="manifest.web" />
-    <title>Matrix Engine webGPU variant. Created by Nikola Lukic zlatnaspirala@gmail.com </title>
+    <title>Matrix Engine Powered by webGPU. Created by Nikola Lukic zlatnaspirala@gmail.com </title>
     <meta name="description" content="The benefits of this project is offering an overview of the entire application logic, easy native implementations (hybrid app), object structural. " />
     <meta http-equiv="content-type" content="text/html; charset=utf-8" />
     <link defer rel="stylesheet" href="css/style.css" />
@@ -10,18 +10,17 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="theme-color" content="#000000" />
-    <!-- <script defer src="./lib/gl-matrix-min.js"></script> -->
     <meta name="viewport" content="width=device-width,initial-scale=1.0,minimal-ui" />
-    <!-- <link rel="icon" type="image/png" sizes="96x96" href="res/icons/favicon-96x96.png" /> -->
     <link rel="icon" type="image/png" sizes="512x512" href="res/icons/512.png" />
-    <!-- <link rel="icon" href="res/icons/favicon.ico" type="image/x-icon" /> -->
-    <!-- <meta name="msapplication-TileImage" content="res/icons/ms-icon.png" /> -->
-    <!-- <script src="https://webglfundamentals.org/webgl/resources/m4.js"></script> -->
   </head>
   <body allow="autoplay">
+    <div class="header" style="display: contents;text-align: center;font-size: large;">
+      MATRIX-ENGINE-WGPU WORKSPACE 2024
+    </div>
     <div id="examples" style="display: flex;">
-      <button onclick="loadObjFile.run();">Load meshes</button>
-      <button onclick="unlitTextures.run();">UnlitTexture pipline</button>
+      <button class="btn" id="loadObjFile">Load meshes</button>
+      <button class="btn" id="unlitTextures">UnlitTexture pipline</button>
+      <button class="btn" id="jamb">Jamb</button>
     </div>
     <script src="examples.js"></script>
   </body>

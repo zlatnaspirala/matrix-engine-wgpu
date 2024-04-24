@@ -215,6 +215,11 @@ export default class MatrixEngineWGPU {
     setTimeout(() => {callback(this)}, 20)
   }
 
+  destroyProgram = () => {
+    this.mainRenderBundle = undefined;
+    this.canvas.remove();
+  }
+
   frameSinglePass = () => {
     if(typeof this.mainRenderBundle == 'undefined') return;
     try {
@@ -256,4 +261,27 @@ export default class MatrixEngineWGPU {
       requestAnimationFrame(this.frame);
     }
   }
+
+  framePassPerObject = () => {
+      console.log('framePassPerObject')
+    let commandEncoder = this.device.createCommandEncoder();
+    this.rbContainer = [];
+    let passEncoder;
+    this.mainRenderBundle.forEach((meItem, index) => {
+      meItem.draw(commandEncoder);
+
+      if(meItem.renderBundle) {
+        this.rbContainer.push(meItem.renderBundle)
+        passEncoder = commandEncoder.beginRenderPass(meItem.renderPassDescriptor);
+        passEncoder.executeBundles(this.rbContainer);
+        passEncoder.end();
+      } else {
+        meItem.draw(commandEncoder)
+      }
+
+    })
+    this.device.queue.submit([commandEncoder.finish()]);
+    requestAnimationFrame(this.frame);
+  }
+
 }
