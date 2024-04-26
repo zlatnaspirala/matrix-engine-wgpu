@@ -209,6 +209,30 @@ var loadObjFile = function () {
           geometry: "Sphere"
         }
       });
+      loadObjFile.addMeshObj({
+        position: {
+          x: 0,
+          y: 2,
+          z: -10
+        },
+        rotation: {
+          x: 0,
+          y: 0,
+          z: 0
+        },
+        rotationSpeed: {
+          x: 0,
+          y: 0,
+          z: 0
+        },
+        texturesPaths: ['./res/meshes/blender/cube.png'],
+        name: 'CubePhysics',
+        mesh: m.welcomeText,
+        physics: {
+          enabled: true,
+          geometry: "Cube"
+        }
+      });
     }
   });
   window.app = loadObjFile;
@@ -6063,6 +6087,9 @@ class MECube {
       code: _shaders.UNLIT_SHADER
     });
     this.texturesPaths = [];
+
+    // useUVShema4x2 pass this from top !
+
     o.texturesPaths.forEach(t => {
       this.texturesPaths.push(t);
     });
@@ -6150,8 +6177,6 @@ class MECube {
         });
         this.transform = _wgpuMatrix.mat4.create();
         _wgpuMatrix.mat4.identity(this.transform);
-
-        // Create one large central planet surrounded by a large ring of asteroids
         this.planet = this.createGeometry({
           scale: this.scale,
           useUVShema4x2: false
@@ -6775,9 +6800,7 @@ function lerp(a, b, s) {
   return _wgpuMatrix.vec3.addScaled(a, _wgpuMatrix.vec3.sub(b, a), s);
 }
 
-// IMPUT 
-
-// // Input holds as snapshot of input state
+// Input holds as snapshot of input state
 // export default interface Input {
 //   // Digital input (e.g keyboard state)
 //   readonly digital: {
@@ -6796,10 +6819,8 @@ function lerp(a, b, s) {
 //     readonly touching: boolean;
 //   };
 // }
-
 // InputHandler is a function that when called, returns the current Input state.
 // export type InputHandler = () => Input;
-
 // createInputHandler returns an InputHandler by attaching event handlers to the window and canvas.
 function createInputHandler(window, canvas) {
   let digital = {
@@ -7380,6 +7401,7 @@ var _utils = require("./utils");
 
 class Position {
   constructor(x, y, z) {
+    console.log('TEST TYTPOF ', x);
     // Not in use for nwo this is from matrix-engine project [nameUniq]
     this.nameUniq = null;
     if (typeof x == 'undefined') x = 0;
@@ -9127,6 +9149,7 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.default = void 0;
+var _wgpuMatrix = require("wgpu-matrix");
 var _utils = require("../engine/utils");
 class MatrixAmmo {
   constructor() {
@@ -9134,6 +9157,7 @@ class MatrixAmmo {
     _utils.scriptManager.LOAD("./ammojs/ammo.js", "ammojs", undefined, undefined, this.init);
   }
   init = () => {
+    console.log('pre ammo');
     Ammo().then(Ammo => {
       // Physics variables
       this.dynamicsWorld = null;
@@ -9142,7 +9166,8 @@ class MatrixAmmo {
       this.lastUpdate = 0;
       console.log("%c Ammo core loaded.", _utils.LOG_FUNNY);
       this.initPhysics();
-      dispatchEvent(new CustomEvent('AmmoReady', {}));
+      // simulate async
+      setTimeout(() => dispatchEvent(new CustomEvent('AmmoReady', {})), 100);
     });
   };
   initPhysics() {
@@ -9194,18 +9219,27 @@ class MatrixAmmo {
     return body;
   }
   addPhysicsBox(MEObject, pOptions) {
+    const FLAGS = {
+      CF_KINEMATIC_OBJECT: 2
+    };
     let Ammo = this.Ammo;
     var colShape = new Ammo.btBoxShape(new Ammo.btVector3(1, 1, 1)),
       startTransform = new Ammo.btTransform();
     startTransform.setIdentity();
-    var mass = 1;
+    var mass = pOptions.mass;
     var localInertia = new Ammo.btVector3(0, 0, 0);
     colShape.calculateLocalInertia(mass, localInertia);
     startTransform.setOrigin(new Ammo.btVector3(pOptions.position.x, pOptions.position.y, pOptions.position.z));
     var myMotionState = new Ammo.btDefaultMotionState(startTransform),
       rbInfo = new Ammo.btRigidBodyConstructionInfo(mass, myMotionState, colShape, localInertia),
       body = new Ammo.btRigidBody(rbInfo);
-    body.setActivationState(4);
+    if (pOptions.mass == 0 && typeof pOptions.state == 'undefined') {
+      body.setActivationState(2);
+      body.setCollisionFlags(FLAGS.CF_KINEMATIC_OBJECT);
+      console.log('what is pOptions.mass and state is 2 ....', pOptions.mass);
+    } else {
+      body.setActivationState(4);
+    }
     body.MEObject = MEObject;
     this.dynamicsWorld.addRigidBody(body);
     this.rigidBodies.push(body);
@@ -9215,6 +9249,32 @@ class MatrixAmmo {
     var tbv30 = new Ammo.btVector3();
     tbv30.setValue(x, y, z);
     body.setLinearVelocity(tbv30);
+  }
+  setKinematicTransform(body, x, y, z) {
+    let pos = new Ammo.btVector3();
+    let quat = new Ammo.btQuaternion();
+    pos = body.getWorldTransform().getOrigin();
+    let localRot = pos = body.getWorldTransform().getRotation();
+    pos.setX(pos.x() + x);
+    pos.setY(pos.y() + y);
+    pos.setZ(pos.z() + z);
+    console.log('position kinematic move : ', pos);
+    console.log('position localRot  : ', localRot);
+
+    // body.getWorldQuaternion(quat);
+    // let physicsBody = kObject.userData.physicsBody;
+    let physicsBody = body;
+    let ms = physicsBody.getMotionState();
+    if (ms) {
+      var tmpTrans = new Ammo.btTransform();
+      console.log('TEST pos  x:', pos.x(), " y : ", pos.y(), " z:", pos.z());
+      // quat.setValue(quat.x(), quat.y(), quat.z(), quat.w());
+      tmpTrans.setIdentity();
+      tmpTrans.setOrigin(pos);
+      // tmpTrans.setRotation(quat);
+      ms.setWorldTransform(tmpTrans);
+    }
+    console.log('body, ', body);
   }
   updatePhysics() {
     // Step world
@@ -9245,7 +9305,7 @@ class MatrixAmmo {
 }
 exports.default = MatrixAmmo;
 
-},{"../engine/utils":13}],15:[function(require,module,exports){
+},{"../engine/utils":13,"wgpu-matrix":5}],15:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -9776,6 +9836,9 @@ class MatrixEngineWGPU {
     }
     if (typeof o.physics.radius === 'undefined') {
       o.physics.radius = o.scale;
+    }
+    if (typeof o.physics.mass === 'undefined') {
+      o.physics.mass = 1;
     }
 
     // send same pos

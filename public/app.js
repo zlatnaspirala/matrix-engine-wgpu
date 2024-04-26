@@ -4,11 +4,244 @@
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
+exports.myDom = void 0;
+var _world = _interopRequireDefault(require("../../../src/world.js"));
+var _loaderObj = require("../../../src/engine/loader-obj.js");
+var _utils = require("../../../src/engine/utils.js");
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+// import MatrixEngineWGPU from "./src/world.js";
+// import {downloadMeshes} from './src/engine/loader-obj.js';
+
+let myDom = exports.myDom = {
+  createJamb: function () {
+    var root = document.createElement('div');
+    root.id = 'jambTable';
+    root.style.position = 'absolute';
+    root.style.display = 'flex';
+    root.style.top = '10px';
+    root.style.left = '10px';
+    root.style.width = '200px';
+    // root.style.height = '500px';
+    root.style.background = '#7d7d7d8c';
+    var rowHeader = document.createElement('div');
+    rowHeader.id = 'rowHeader';
+    rowHeader.style.top = '10px';
+    rowHeader.style.left = '10px';
+    rowHeader.style.width = '200px';
+    rowHeader.style.background = '#7d7d7d8c';
+    rowHeader.innerHTML = 'NIDZA';
+    root.appendChild(rowHeader);
+    var rowDown = document.createElement('div');
+    rowDown.id = 'rowDown';
+    rowDown.style.top = '10px';
+    rowDown.style.left = '10px';
+    rowDown.style.width = '200px';
+    rowDown.style.background = '#7d7d7d8c';
+    rowDown.innerHTML = '↓';
+    // this.createRow(rowDown);
+    // this.createSumField(rowDown);
+    root.appendChild(rowDown);
+    var rowFree = document.createElement('div');
+    rowFree.id = 'rowFree';
+    rowFree.style.top = '10px';
+    rowFree.style.left = '10px';
+    rowFree.style.width = '200px';
+    rowFree.style.background = '#7d7d7d8c';
+    rowFree.innerHTML = '↕';
+    root.appendChild(rowFree);
+    var rowUp = document.createElement('div');
+    rowUp.id = 'rowUp';
+    rowUp.style.top = '10px';
+    rowUp.style.left = '10px';
+    rowUp.style.width = '200px';
+    rowUp.style.background = '#7d7d7d8c';
+    rowUp.innerHTML = '↑';
+    root.appendChild(rowUp);
+    var rowHand = document.createElement('div');
+    rowHand.id = 'rowHand';
+    rowHand.style.top = '10px';
+    rowHand.style.left = '10px';
+    rowHand.style.width = '200px';
+    rowHand.style.background = '#7d7d7d8c';
+    rowHand.innerHTML = 'Hand';
+    root.appendChild(rowHand);
+
+    // INJECT TABLE HEADER ROW
+    this.createLeftHeaderRow(rowHeader);
+    this.createRow(rowDown);
+    this.createRow(rowFree);
+    this.createRow(rowUp);
+    this.createRow(rowHand);
+    document.body.appendChild(root);
+    console.log('JambTable added.');
+  },
+  createLeftHeaderRow: function (myRoot) {
+    for (var x = 1; x < 7; x++) {
+      var rowNumber = document.createElement('div');
+      rowNumber.id = 'rowNumber' + x;
+      rowNumber.style.top = '10px';
+      rowNumber.style.left = '10px';
+      rowNumber.style.width = 'auto';
+      rowNumber.style.background = '#7d7d7d8c';
+      rowNumber.innerHTML = `<span>${x}</span>`;
+      myRoot.appendChild(rowNumber);
+    }
+    var rowNumberSum = document.createElement('div');
+    rowNumberSum.id = 'H_rowNumberSum';
+    rowNumberSum.style.width = 'auto';
+    rowNumberSum.style.background = '#7d7d7d8c';
+    rowNumberSum.innerHTML = `Σ`;
+    myRoot.appendChild(rowNumberSum);
+    var rowMax = document.createElement('div');
+    rowMax.id = 'H_rowMax';
+    rowMax.style.width = 'auto';
+    rowMax.style.background = '#7d7d7d8c';
+    rowMax.innerHTML = `MAX`;
+    myRoot.appendChild(rowMax);
+    var rowMin = document.createElement('div');
+    rowMin.id = 'H_rowMax';
+    rowMin.style.width = 'auto';
+    rowMin.style.background = '#7d7d7d8c';
+    rowMin.innerHTML = `MIN`;
+    myRoot.appendChild(rowMin);
+    var rowMaxMinSum = document.createElement('div');
+    rowMaxMinSum.id = 'H_rowMaxMinSum';
+    rowMaxMinSum.style.width = 'auto';
+    rowMaxMinSum.style.background = '#7d7d7d8c';
+    rowMaxMinSum.innerHTML = `Σ`;
+    myRoot.appendChild(rowMaxMinSum);
+    var largeStraight = document.createElement('div');
+    largeStraight.id = 'H_largeStraight';
+    largeStraight.style.width = 'auto';
+    largeStraight.style.background = '#7d7d7d8c';
+    largeStraight.innerHTML = `Straight`;
+    myRoot.appendChild(largeStraight);
+    var threeOfAKind = document.createElement('div');
+    threeOfAKind.id = 'H_threeOfAKind';
+    threeOfAKind.style.width = 'auto';
+    threeOfAKind.style.background = '#7d7d7d8c';
+    threeOfAKind.innerHTML = `ThreeOf`;
+    myRoot.appendChild(threeOfAKind);
+    var fullHouse = document.createElement('div');
+    fullHouse.id = 'H_fullHouse';
+    fullHouse.style.width = 'auto';
+    fullHouse.style.background = '#7d7d7d8c';
+    fullHouse.innerHTML = `Full`;
+    myRoot.appendChild(fullHouse);
+    var poker = document.createElement('div');
+    poker.id = 'H_poker';
+    poker.style.width = 'auto';
+    poker.style.background = '#7d7d7d8c';
+    poker.innerHTML = `Poker`;
+    myRoot.appendChild(poker);
+    var jamb = document.createElement('div');
+    jamb.id = 'H_jamb';
+    jamb.style.width = 'auto';
+    jamb.style.background = '#7d7d7d8c';
+    jamb.innerHTML = `Jamb`;
+    myRoot.appendChild(jamb);
+    var rowSum = document.createElement('div');
+    rowSum.id = 'H_rowSum';
+    rowSum.style.width = 'auto';
+    rowSum.style.background = '#7d7d7d8c';
+    rowSum.innerHTML = `Σ`;
+    myRoot.appendChild(rowSum);
+    var rowSumFINAL = document.createElement('div');
+    rowSumFINAL.id = 'H_rowSumFINAL';
+    rowSumFINAL.style.width = 'auto';
+    rowSumFINAL.style.background = '#7d7d7d8c';
+    rowSumFINAL.innerHTML = `Final Σ`;
+    myRoot.appendChild(rowSumFINAL);
+  },
+  createRow: function (myRoot, type) {
+    for (var x = 1; x < 7; x++) {
+      var rowNumber = document.createElement('div');
+      rowNumber.id = 'rowNumber' + x;
+      rowNumber.style.top = '10px';
+      rowNumber.style.left = '10px';
+      rowNumber.style.width = 'auto';
+      rowNumber.style.background = '#7d7d7d8c';
+      rowNumber.innerHTML = `-`;
+      myRoot.appendChild(rowNumber);
+    }
+    var rowNumberSum = document.createElement('div');
+    rowNumberSum.id = 'rowNumberSum';
+    rowNumberSum.style.width = 'auto';
+    rowNumberSum.style.background = '#7d7d7d8c';
+    rowNumberSum.innerHTML = `-`;
+    myRoot.appendChild(rowNumberSum);
+    var rowMax = document.createElement('div');
+    rowMax.id = 'rowMax';
+    rowMax.style.width = 'auto';
+    rowMax.style.background = '#7d7d7d8c';
+    rowMax.innerHTML = `-`;
+    myRoot.appendChild(rowMax);
+    var rowMin = document.createElement('div');
+    rowMin.id = 'rowMax';
+    rowMin.style.width = 'auto';
+    rowMin.style.background = '#7d7d7d8c';
+    rowMin.innerHTML = `-`;
+    myRoot.appendChild(rowMin);
+    var rowMaxMinSum = document.createElement('div');
+    rowMaxMinSum.id = 'rowMaxMinSum';
+    rowMaxMinSum.style.width = 'auto';
+    rowMaxMinSum.style.background = '#7d7d7d8c';
+    rowMaxMinSum.innerHTML = `-`;
+    myRoot.appendChild(rowMaxMinSum);
+    var largeStraight = document.createElement('div');
+    largeStraight.id = 'largeStraight';
+    largeStraight.style.width = 'auto';
+    largeStraight.style.background = '#7d7d7d8c';
+    largeStraight.innerHTML = `-`;
+    myRoot.appendChild(largeStraight);
+    var threeOfAKind = document.createElement('div');
+    threeOfAKind.id = 'threeOfAKind';
+    threeOfAKind.style.width = 'auto';
+    threeOfAKind.style.background = '#7d7d7d8c';
+    threeOfAKind.innerHTML = `-`;
+    myRoot.appendChild(threeOfAKind);
+    var fullHouse = document.createElement('div');
+    fullHouse.id = 'fullHouse';
+    fullHouse.style.width = 'auto';
+    fullHouse.style.background = '#7d7d7d8c';
+    fullHouse.innerHTML = `-`;
+    myRoot.appendChild(fullHouse);
+    var poker = document.createElement('div');
+    poker.id = 'poker';
+    poker.style.width = 'auto';
+    poker.style.background = '#7d7d7d8c';
+    poker.innerHTML = `-`;
+    myRoot.appendChild(poker);
+    var jamb = document.createElement('div');
+    jamb.id = 'jamb';
+    jamb.style.width = 'auto';
+    jamb.style.background = '#7d7d7d8c';
+    jamb.innerHTML = `-`;
+    myRoot.appendChild(jamb);
+    var rowSum = document.createElement('div');
+    rowSum.id = 'rowSum';
+    rowSum.style.width = 'auto';
+    rowSum.style.background = '#7d7d7d8c';
+    rowSum.innerHTML = `-`;
+    myRoot.appendChild(rowSum);
+  },
+  createSumField: function (myRoot) {}
+};
+
+},{"../../../src/engine/loader-obj.js":7,"../../../src/engine/utils.js":11,"../../../src/world.js":17}],2:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
 exports.application = void 0;
 var _world = _interopRequireDefault(require("./src/world.js"));
 var _loaderObj = require("./src/engine/loader-obj.js");
 var _utils = require("./src/engine/utils.js");
+var _jamb = require("./examples/games/jamb/jamb.js");
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+// change this after in examples folder
+
 console.log(' pre ucitavanje');
 let application = exports.application = new _world.default({
   useSingleRenderPass: true,
@@ -18,21 +251,147 @@ let application = exports.application = new _world.default({
     responseCoef: 1000
   }
 }, () => {
-  console.log(' post ucitavanje ');
+  // Dom operations
+  _jamb.myDom.createJamb();
   addEventListener('AmmoReady', () => {
     (0, _loaderObj.downloadMeshes)({
-      welcomeText: "./res/meshes/blender/piramyd.obj",
-      cube: "./res/meshes/blender/cubeSmartUV.obj"
+      mainTitle: "./res/meshes/jamb/jamb-title.obj",
+      cube: "./res/meshes/jamb/dice.obj",
+      bg: "./res/meshes/jamb/bg.obj"
     }, onLoadObj);
-    console.log(' camera ??/');
-    // application.cameras.WASD.pitch = 0.2
-    app.cameras.WASD.velocity[1] = 10;
   });
   function onLoadObj(m) {
     application.myLoadedMeshes = m;
     for (var key in m) {
       console.log(`%c Loaded objs -> : ${key} `, _utils.LOG_MATRIX);
     }
+
+    // Add dices
+    application.addMeshObj({
+      position: {
+        x: 0,
+        y: 6,
+        z: -10
+      },
+      rotation: {
+        x: 0,
+        y: 0,
+        z: 0
+      },
+      rotationSpeed: {
+        x: 0,
+        y: 0,
+        z: 0
+      },
+      texturesPaths: ['./res/meshes/jamb/dice.png'],
+      useUVShema4x2: true,
+      name: 'CubePhysics0',
+      mesh: m.cube,
+      physics: {
+        enabled: true,
+        geometry: "Cube"
+      }
+    });
+    application.addMeshObj({
+      position: {
+        x: 0,
+        y: 4,
+        z: -10
+      },
+      rotation: {
+        x: 0,
+        y: 0,
+        z: 0
+      },
+      rotationSpeed: {
+        x: 0,
+        y: 0,
+        z: 0
+      },
+      texturesPaths: ['./res/meshes/jamb/dice-mark.png'],
+      useUVShema4x2: true,
+      name: 'CubePhysics2',
+      mesh: m.cube,
+      physics: {
+        enabled: true,
+        geometry: "Cube"
+      }
+    });
+    application.addMeshObj({
+      position: {
+        x: 0,
+        y: 4,
+        z: -10
+      },
+      rotation: {
+        x: 0,
+        y: 0,
+        z: 0
+      },
+      rotationSpeed: {
+        x: 0,
+        y: 0,
+        z: 0
+      },
+      texturesPaths: ['./res/meshes/jamb/dice.png'],
+      useUVShema4x2: true,
+      name: 'CubePhysics3',
+      mesh: m.cube,
+      physics: {
+        enabled: true,
+        geometry: "Cube"
+      }
+    });
+    application.addMeshObj({
+      position: {
+        x: 3,
+        y: 4,
+        z: -10
+      },
+      rotation: {
+        x: 0,
+        y: 0,
+        z: 0
+      },
+      rotationSpeed: {
+        x: 0,
+        y: 0,
+        z: 0
+      },
+      texturesPaths: ['./res/meshes/jamb/dice.png'],
+      useUVShema4x2: true,
+      name: 'CubePhysics4',
+      mesh: m.cube,
+      physics: {
+        enabled: true,
+        geometry: "Cube"
+      }
+    });
+    application.addMeshObj({
+      position: {
+        x: -2,
+        y: 4,
+        z: -10
+      },
+      rotation: {
+        x: 0,
+        y: 0,
+        z: 0
+      },
+      rotationSpeed: {
+        x: 0,
+        y: 0,
+        z: 0
+      },
+      texturesPaths: ['./res/meshes/jamb/dice.png'],
+      useUVShema4x2: true,
+      name: 'CubePhysics5',
+      mesh: m.cube,
+      physics: {
+        enabled: true,
+        geometry: "Cube"
+      }
+    });
     application.addMeshObj({
       position: {
         x: 0,
@@ -49,9 +408,9 @@ let application = exports.application = new _world.default({
         y: 0,
         z: 0
       },
-      texturesPaths: ['./res/meshes/blender/cube.png'],
+      texturesPaths: ['./res/meshes/jamb/dice.png'],
       useUVShema4x2: true,
-      name: 'CubePhysics',
+      name: 'CubePhysics6',
       mesh: m.cube,
       physics: {
         enabled: true,
@@ -59,23 +418,65 @@ let application = exports.application = new _world.default({
       }
     });
 
-    // application.addMeshObj({
-    //   position: {x: 0, y: 2, z: -10},
-    //   rotation: {x: 0, y: 0, z: 0},
-    //   rotationSpeed: {x: 0, y: 0, z: 0},
-    //   texturesPaths: ['./res/meshes/blender/cube.png'],
-    //   name: 'SpherePhysics',
-    //   mesh: m.sphere,
-    //   physics: {
-    //     enabled: true,
-    //     geometry: "Sphere"
-    //   }
-    // })
+    // Add logo text top
+    application.addMeshObj({
+      position: {
+        x: 0,
+        y: 6,
+        z: -10
+      },
+      rotation: {
+        x: 0,
+        y: 0,
+        z: 0
+      },
+      texturesPaths: ['./res/meshes/jamb/text.png'],
+      name: 'mainTitle',
+      mesh: m.mainTitle,
+      physics: {
+        mass: 0,
+        enabled: true,
+        geometry: "Cube"
+      }
+    });
+    application.addMeshObj({
+      position: {
+        x: 0,
+        y: 6,
+        z: -10
+      },
+      rotation: {
+        x: 0,
+        y: 0,
+        z: 0
+      },
+      // rotationSpeed: {x: 0, y: 0, z: 0},
+      texturesPaths: ['./res/meshes/jamb/bg.png'],
+      name: 'bg',
+      mesh: m.bg,
+      physics: {
+        mass: 0,
+        enabled: true,
+        geometry: "Cube"
+      }
+    });
+    console.log('camera set');
+    // application.cameras.WASD.pitch = 0.2
+    setTimeout(() => {
+      app.cameras.WASD.velocity[1] = 18;
+
+      //                                             BODY              , x,  y, z, rotX, rotY, RotZ
+      app.matrixAmmo.setKinematicTransform(app.matrixAmmo.rigidBodies[6], 0, 0, 0, 1);
+      app.matrixAmmo.setKinematicTransform(app.matrixAmmo.rigidBodies[7], 0, -10, 0, 0, 0, 0);
+
+      // Better access getBodyByName
+      console.log(' app.matrixAmmo. ', app.matrixAmmo.getBodyByName('CubePhysics2'));
+    }, 1225);
   }
 });
 window.app = application;
 
-},{"./src/engine/loader-obj.js":6,"./src/engine/utils.js":10,"./src/world.js":16}],2:[function(require,module,exports){
+},{"./examples/games/jamb/jamb.js":1,"./src/engine/loader-obj.js":7,"./src/engine/utils.js":11,"./src/world.js":17}],3:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -5422,7 +5823,7 @@ function setDefaultType(ctor) {
   setDefaultType$1(ctor);
 }
 
-},{}],3:[function(require,module,exports){
+},{}],4:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -5829,7 +6230,7 @@ class MEBall {
 }
 exports.default = MEBall;
 
-},{"../shaders/shaders":13,"./engine":5,"./matrix-class":7,"wgpu-matrix":2}],4:[function(require,module,exports){
+},{"../shaders/shaders":14,"./engine":6,"./matrix-class":8,"wgpu-matrix":3}],5:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -6239,7 +6640,7 @@ class MECube {
 }
 exports.default = MECube;
 
-},{"../shaders/shaders":13,"./engine":5,"./matrix-class":7,"wgpu-matrix":2}],5:[function(require,module,exports){
+},{"../shaders/shaders":14,"./engine":6,"./matrix-class":8,"wgpu-matrix":3}],6:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -6577,9 +6978,7 @@ function lerp(a, b, s) {
   return _wgpuMatrix.vec3.addScaled(a, _wgpuMatrix.vec3.sub(b, a), s);
 }
 
-// IMPUT 
-
-// // Input holds as snapshot of input state
+// Input holds as snapshot of input state
 // export default interface Input {
 //   // Digital input (e.g keyboard state)
 //   readonly digital: {
@@ -6598,10 +6997,8 @@ function lerp(a, b, s) {
 //     readonly touching: boolean;
 //   };
 // }
-
 // InputHandler is a function that when called, returns the current Input state.
 // export type InputHandler = () => Input;
-
 // createInputHandler returns an InputHandler by attaching event handlers to the window and canvas.
 function createInputHandler(window, canvas) {
   let digital = {
@@ -6701,7 +7098,7 @@ function createInputHandler(window, canvas) {
   };
 }
 
-},{"./utils":10,"wgpu-matrix":2}],6:[function(require,module,exports){
+},{"./utils":11,"wgpu-matrix":3}],7:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -7165,7 +7562,7 @@ function play(nameAni) {
   this.animation.currentAni = this.animation.anims[this.animation.anims.active].from;
 }
 
-},{}],7:[function(require,module,exports){
+},{}],8:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -7182,6 +7579,7 @@ var _utils = require("./utils");
 
 class Position {
   constructor(x, y, z) {
+    console.log('TEST TYTPOF ', x);
     // Not in use for nwo this is from matrix-engine project [nameUniq]
     this.nameUniq = null;
     if (typeof x == 'undefined') x = 0;
@@ -7374,7 +7772,7 @@ class Rotation {
 }
 exports.Rotation = Rotation;
 
-},{"./utils":10}],8:[function(require,module,exports){
+},{"./utils":11}],9:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -7390,6 +7788,8 @@ var _vertex = require("../shaders/vertex.wgsl");
 var _utils = require("./utils");
 class MEMeshObj {
   constructor(canvas, device, context, o) {
+    if (typeof o.name === 'undefined') o.name = (0, _utils.genName)(9);
+    this.name = o.name;
     this.done = false;
     this.device = device;
     this.context = context;
@@ -7724,7 +8124,7 @@ class MEMeshObj {
       };
       this.upVector = _wgpuMatrix.vec3.fromValues(0, 1, 0);
       this.origin = _wgpuMatrix.vec3.fromValues(0, 0, 0);
-      this.lightPosition = _wgpuMatrix.vec3.fromValues(0, 10, -2);
+      this.lightPosition = _wgpuMatrix.vec3.fromValues(10, -12, -2);
       this.lightViewMatrix = _wgpuMatrix.mat4.lookAt(this.lightPosition, this.origin, this.upVector);
       const lightProjectionMatrix = _wgpuMatrix.mat4.create();
       {
@@ -7849,7 +8249,7 @@ class MEMeshObj {
 }
 exports.default = MEMeshObj;
 
-},{"../shaders/fragment.wgsl":12,"../shaders/vertex.wgsl":14,"../shaders/vertexShadow.wgsl":15,"./engine":5,"./matrix-class":7,"./utils":10,"wgpu-matrix":2}],9:[function(require,module,exports){
+},{"../shaders/fragment.wgsl":13,"../shaders/vertex.wgsl":15,"../shaders/vertexShadow.wgsl":16,"./engine":6,"./matrix-class":8,"./utils":11,"wgpu-matrix":3}],10:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -8247,7 +8647,7 @@ class MEMesh {
 }
 exports.default = MEMesh;
 
-},{"../shaders/fragment.wgsl":12,"../shaders/vertex.wgsl":14,"../shaders/vertexShadow.wgsl":15,"./engine":5,"./loader-obj":6,"./matrix-class":7,"wgpu-matrix":2}],10:[function(require,module,exports){
+},{"../shaders/fragment.wgsl":13,"../shaders/vertex.wgsl":15,"../shaders/vertexShadow.wgsl":16,"./engine":6,"./loader-obj":7,"./matrix-class":8,"wgpu-matrix":3}],11:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -8262,6 +8662,7 @@ exports.SWITCHER = SWITCHER;
 exports.byId = void 0;
 exports.createAppEvent = createAppEvent;
 exports.degToRad = degToRad;
+exports.genName = genName;
 exports.getAxisRot = getAxisRot;
 exports.getAxisRot2 = getAxisRot2;
 exports.getAxisRot3 = getAxisRot3;
@@ -8921,14 +9322,23 @@ const LOG_WARN = exports.LOG_WARN = 'background: gray; color: yellow; font-size:
 const LOG_INFO = exports.LOG_INFO = 'background: green; color: white; font-size:11px';
 const LOG_MATRIX = exports.LOG_MATRIX = "font-family: verdana;color: #lime; font-size:11px;text-shadow: 2px 2px 4px orangered;background: black;";
 const LOG_FUNNY = exports.LOG_FUNNY = "font-family: stormfaze;color: #f1f033; font-size:14px;text-shadow: 2px 2px 4px #f335f4, 4px 4px 4px #d64444, 2px 2px 4px #c160a6, 6px 2px 0px #123de3;background: black;";
+function genName(length) {
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  let result = "";
+  for (let i = 0; i < length; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+}
 
-},{}],11:[function(require,module,exports){
+},{}],12:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.default = void 0;
+var _wgpuMatrix = require("wgpu-matrix");
 var _utils = require("../engine/utils");
 class MatrixAmmo {
   constructor() {
@@ -8946,7 +9356,7 @@ class MatrixAmmo {
       console.log("%c Ammo core loaded.", _utils.LOG_FUNNY);
       this.initPhysics();
       // simulate async
-      setTimeout(() => dispatchEvent(new CustomEvent('AmmoReady', {})), 50);
+      setTimeout(() => dispatchEvent(new CustomEvent('AmmoReady', {})), 100);
     });
   };
   initPhysics() {
@@ -8970,8 +9380,13 @@ class MatrixAmmo {
     var myMotionState = new Ammo.btDefaultMotionState(groundTransform),
       rbInfo = new Ammo.btRigidBodyConstructionInfo(mass, myMotionState, groundShape, localInertia),
       body = new Ammo.btRigidBody(rbInfo);
+    body.name = 'ground';
+    this.ground = body;
     this.dynamicsWorld.addRigidBody(body);
     // this.rigidBodies.push(body);
+
+    // add collide event
+    this.detectCollision();
   }
   addPhysics(MEObject, pOptions) {
     if (pOptions.geometry == "Sphere") {
@@ -8998,18 +9413,29 @@ class MatrixAmmo {
     return body;
   }
   addPhysicsBox(MEObject, pOptions) {
+    const FLAGS = {
+      CF_KINEMATIC_OBJECT: 2
+    };
     let Ammo = this.Ammo;
     var colShape = new Ammo.btBoxShape(new Ammo.btVector3(1, 1, 1)),
       startTransform = new Ammo.btTransform();
     startTransform.setIdentity();
-    var mass = 1;
+    var mass = pOptions.mass;
     var localInertia = new Ammo.btVector3(0, 0, 0);
     colShape.calculateLocalInertia(mass, localInertia);
     startTransform.setOrigin(new Ammo.btVector3(pOptions.position.x, pOptions.position.y, pOptions.position.z));
     var myMotionState = new Ammo.btDefaultMotionState(startTransform),
       rbInfo = new Ammo.btRigidBodyConstructionInfo(mass, myMotionState, colShape, localInertia),
       body = new Ammo.btRigidBody(rbInfo);
-    body.setActivationState(4);
+    if (pOptions.mass == 0 && typeof pOptions.state == 'undefined') {
+      body.setActivationState(2);
+      body.setCollisionFlags(FLAGS.CF_KINEMATIC_OBJECT);
+      console.log('what is pOptions.mass and state is 2 ....', pOptions.mass);
+    } else {
+      body.setActivationState(4);
+    }
+    console.log('what is name....', pOptions.name);
+    body.name = pOptions.name;
     body.MEObject = MEObject;
     this.dynamicsWorld.addRigidBody(body);
     this.rigidBodies.push(body);
@@ -9019,6 +9445,96 @@ class MatrixAmmo {
     var tbv30 = new Ammo.btVector3();
     tbv30.setValue(x, y, z);
     body.setLinearVelocity(tbv30);
+  }
+  setKinematicTransform(body, x, y, z, rx, ry, rz) {
+    if (typeof rx == 'undefined') {
+      var rx = 0;
+    }
+    if (typeof ry == 'undefined') {
+      var ry = 0;
+    }
+    if (typeof rz == 'undefined') {
+      var rz = 0;
+    }
+    let pos = new Ammo.btVector3();
+    let quat = new Ammo.btQuaternion();
+    pos = body.getWorldTransform().getOrigin();
+    let localRot = body.getWorldTransform().getRotation();
+    console.log('pre pos x:', pos.x(), " y : ", pos.y(), " z:", pos.z());
+    pos.setX(pos.x() + x);
+    pos.setY(pos.y() + y);
+    pos.setZ(pos.z() + z);
+    console.log('position kinematic move : ', pos);
+    console.log('position localRot  : ', localRot);
+    localRot.setX(rx);
+    localRot.setY(ry);
+    localRot.setZ(rz);
+    console.log('position localRot after  : ', localRot);
+    // body.getWorldQuaternion(quat);
+    // let physicsBody = kObject.userData.physicsBody;
+    let physicsBody = body;
+    let ms = physicsBody.getMotionState();
+    if (ms) {
+      var tmpTrans = new Ammo.btTransform();
+
+      // quat.setValue(quat.x(), quat.y(), quat.z(), quat.w());
+      tmpTrans.setIdentity();
+      tmpTrans.setOrigin(pos);
+      tmpTrans.setRotation(localRot);
+      ms.setWorldTransform(tmpTrans);
+    }
+    console.log('body, ', body);
+  }
+  getBodyByName(name) {
+    var b = null;
+    this.rigidBodies.forEach((item, index, array) => {
+      if (item.name == name) {
+        b = array[index];
+      }
+    });
+    return b;
+  }
+  getNameByBody(body) {
+    var b = null;
+    this.rigidBodies.forEach((item, index, array) => {
+      if (item.kB == body.kB) {
+        b = array[index].name;
+      }
+    });
+    return b;
+  }
+  detectCollision() {
+    let dispatcher = this.dynamicsWorld.getDispatcher();
+    let numManifolds = dispatcher.getNumManifolds();
+    // console.log('detect collision')
+    for (let i = 0; i < numManifolds; i++) {
+      let contactManifold = dispatcher.getManifoldByIndexInternal(i);
+      let numContacts = contactManifold.getNumContacts();
+      this.rigidBodies.forEach(item => {
+        if (item.kB == contactManifold.getBody0().kB) {
+          // console.log('Detected body0 =', item.name)
+        }
+        if (item.kB == contactManifold.getBody1().kB) {
+          // console.log('Detected body1 =', item.name)
+        }
+      });
+      if (this.ground.kB == contactManifold.getBody0().kB && this.getNameByBody(contactManifold.getBody1()) == 'CubePhysics2') {
+        // console.log(this.ground ,'GROUND IS IN CONTACT WHO IS BODY1 ', contactManifold.getBody1())
+        // console.log('GROUND IS IN CONTACT WHO IS BODY1 getNameByBody  ', this.getNameByBody(contactManifold.getBody1()))
+        // CHECK ROTATION
+        var testR = contactManifold.getBody1().getWorldTransform().getRotation();
+        console.log('testR.getAngle() =  ', (0, _utils.radToDeg)(testR.getAngle()));
+        console.log('testR.getAngle() =  ', contactManifold.getBody1());
+
+        // console.log('testR.getAxis() =  ', testR.getAxis().x(), ' y ' ,  testR.getAxis().y(), ' z ' ,  testR.getAxis().z())
+        // console.log('testR.x y z() =  ', testR.x(), ' , ' , testR.y(), '  , ' , testR.z() , ' w ', testR.w())
+      }
+      for (let j = 0; j < numContacts; j++) {
+        let contactPoint = contactManifold.getContactPoint(j);
+        let distance = contactPoint.getDistance();
+        // console.log({manifoldIndex: i, contactIndex: j, distance: distance});
+      }
+    }
   }
   updatePhysics() {
     // Step world
@@ -9045,11 +9561,14 @@ class MatrixAmmo {
         body.MEObject.rotation.angle = (0, _utils.radToDeg)(parseFloat(test.getAngle().toFixed(2)));
       }
     });
+
+    // collision detect
+    this.detectCollision();
   }
 }
 exports.default = MatrixAmmo;
 
-},{"../engine/utils":10}],12:[function(require,module,exports){
+},{"../engine/utils":11,"wgpu-matrix":3}],13:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -9105,7 +9624,7 @@ fn main(input : FragmentInput) -> @location(0) vec4f {
   return vec4(textureColor.rgb * lightingFactor * albedo, 1.0);
 }`;
 
-},{}],13:[function(require,module,exports){
+},{}],14:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -9163,7 +9682,7 @@ fn fragmentMain(input: VertexOutput) -> @location(0) vec4f {
   return vec4f(textureColor.rgb * lightColor, textureColor.a);
 }`;
 
-},{}],14:[function(require,module,exports){
+},{}],15:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -9220,7 +9739,7 @@ fn main(
 }
 `;
 
-},{}],15:[function(require,module,exports){
+},{}],16:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -9248,7 +9767,7 @@ fn main(
 }
 `;
 
-},{}],16:[function(require,module,exports){
+},{}],17:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -9526,6 +10045,9 @@ class MatrixEngineWGPU {
     this.mainRenderBundle.push(myMesh1);
   };
   addMeshObj = o => {
+    if (typeof o.name === 'undefined') {
+      o.name = (0, _utils.genName)(9);
+    }
     if (typeof o.position === 'undefined') {
       o.position = {
         x: 0,
@@ -9558,9 +10080,7 @@ class MatrixEngineWGPU {
     }
     o.entityArgPass = this.entityArgPass;
     o.cameras = this.cameras;
-    if (typeof o.name === 'undefined') {
-      o.name = 'random' + Math.random();
-    }
+    // if(typeof o.name === 'undefined') {o.name = 'random' + Math.random();}
     if (typeof o.mesh === 'undefined') {
       throw console.error('arg mesh is empty...');
       return;
@@ -9569,7 +10089,8 @@ class MatrixEngineWGPU {
       o.physics = {
         enabled: false,
         geometry: "Sphere",
-        radius: o.scale
+        radius: o.scale,
+        name: o.name
       };
     }
     if (typeof o.physics.enabled === 'undefined') {
@@ -9580,6 +10101,12 @@ class MatrixEngineWGPU {
     }
     if (typeof o.physics.radius === 'undefined') {
       o.physics.radius = o.scale;
+    }
+    if (typeof o.physics.mass === 'undefined') {
+      o.physics.mass = 1;
+    }
+    if (typeof o.physics.name === 'undefined') {
+      o.physics.name = o.name;
     }
 
     // send same pos
@@ -9660,4 +10187,4 @@ class MatrixEngineWGPU {
 }
 exports.default = MatrixEngineWGPU;
 
-},{"./engine/ball.js":3,"./engine/cube.js":4,"./engine/engine.js":5,"./engine/mesh-obj.js":8,"./engine/mesh.js":9,"./engine/utils.js":10,"./physics/matrix-ammo.js":11,"wgpu-matrix":2}]},{},[1]);
+},{"./engine/ball.js":4,"./engine/cube.js":5,"./engine/engine.js":6,"./engine/mesh-obj.js":9,"./engine/mesh.js":10,"./engine/utils.js":11,"./physics/matrix-ammo.js":12,"wgpu-matrix":3}]},{},[2]);

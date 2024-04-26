@@ -71,7 +71,7 @@ app.mainRenderBundle[0].position.thrust = 0.1;
 ```
 
 ####Note: Position for Physics enabled object look like:
-No working `.position` and `.rotation` in physics enabled regime.
+No working `.position` and `.rotation` in physics enabled regime but you can read it.
 You must use Ammo body funcs like : applyForce, setAngularVelocity, setLinearVelocity etc...
 ```js
 app.matrixAmmo.rigidBodies[0].setAngularVelocity(new Ammo.btVector3(0,2,0))
@@ -97,7 +97,6 @@ app.mainRenderBundle[0].rotation.rotationSpeed.y = 0
 ```
 
 #### Note: In physics enabled object `.rotation.x y z` have no affect.
-
 
 ## Camera manipulation examples
 

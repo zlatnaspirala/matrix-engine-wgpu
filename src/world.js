@@ -5,7 +5,7 @@ import {ArcballCamera, WASDCamera} from "./engine/engine.js";
 import MEMesh from "./engine/mesh.js";
 import MEMeshObj from "./engine/mesh-obj.js";
 import MatrixAmmo from "./physics/matrix-ammo.js";
-import {LOG_WARN, scriptManager} from "./engine/utils.js";
+import {LOG_WARN, genName, scriptManager} from "./engine/utils.js";
 
 export default class MatrixEngineWGPU {
 
@@ -175,6 +175,7 @@ export default class MatrixEngineWGPU {
   }
 
   addMeshObj = (o) => {
+    if(typeof o.name === 'undefined') {o.name = genName(9)}
     if(typeof o.position === 'undefined') {o.position = {x: 0, y: 0, z: -4}}
     if(typeof o.rotation === 'undefined') {o.rotation = {x: 0, y: 0, z: 0}}
     if(typeof o.rotationSpeed === 'undefined') {o.rotationSpeed = {x: 0, y: 0, z: 0}}
@@ -183,7 +184,7 @@ export default class MatrixEngineWGPU {
     if(typeof o.scale === 'undefined') {o.scale = 1;}
     o.entityArgPass = this.entityArgPass;
     o.cameras = this.cameras;
-    if(typeof o.name === 'undefined') {o.name = 'random' + Math.random();}
+    // if(typeof o.name === 'undefined') {o.name = 'random' + Math.random();}
     if(typeof o.mesh === 'undefined') {
       throw console.error('arg mesh is empty...');
       return;
@@ -192,12 +193,15 @@ export default class MatrixEngineWGPU {
       o.physics = {
         enabled: false,
         geometry: "Sphere",
-        radius: o.scale
+        radius: o.scale,
+        name: o.name
       }
     }
     if(typeof o.physics.enabled === 'undefined') {o.physics.enabled = false}
     if(typeof o.physics.geometry === 'undefined') {o.physics.geometry = "Sphere"}
     if(typeof o.physics.radius === 'undefined') {o.physics.radius = o.scale}
+    if(typeof o.physics.mass === 'undefined') {o.physics.mass = 1;}
+    if(typeof o.physics.name === 'undefined') {o.physics.name = o.name;}
 
     // send same pos
     o.physics.position = o.position;

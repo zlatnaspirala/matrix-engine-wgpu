@@ -4,12 +4,14 @@ import {createInputHandler} from "./engine";
 import {vertexShadowWGSL} from '../shaders/vertexShadow.wgsl';
 import {fragmentWGSL} from '../shaders/fragment.wgsl';
 import {vertexWGSL} from '../shaders/vertex.wgsl';
-import {degToRad, LOG_INFO} from './utils';
+import {degToRad, genName, LOG_INFO} from './utils';
 
 export default class MEMeshObj {
 
   constructor(canvas, device, context, o) {
 
+    if (typeof o.name === 'undefined') o.name = genName(9);
+    this.name = o.name;
     this.done = false;
     this.device = device;
     this.context = context;
@@ -395,7 +397,7 @@ export default class MEMeshObj {
       this.upVector = vec3.fromValues(0, 1, 0);
       this.origin = vec3.fromValues(0, 0, 0);
 
-      this.lightPosition = vec3.fromValues(0, 10, -2);
+      this.lightPosition = vec3.fromValues(10, -12, -2);
       this.lightViewMatrix = mat4.lookAt(this.lightPosition, this.origin, this.upVector);
       const lightProjectionMatrix = mat4.create();
       {

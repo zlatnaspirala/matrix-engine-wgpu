@@ -337,9 +337,7 @@ function lerp(a, b, s) {
   return vec3.addScaled(a, vec3.sub(b, a), s);
 }
 
-// IMPUT 
-
-// // Input holds as snapshot of input state
+// Input holds as snapshot of input state
 // export default interface Input {
 //   // Digital input (e.g keyboard state)
 //   readonly digital: {
@@ -358,10 +356,8 @@ function lerp(a, b, s) {
 //     readonly touching: boolean;
 //   };
 // }
-
 // InputHandler is a function that when called, returns the current Input state.
 // export type InputHandler = () => Input;
-
 // createInputHandler returns an InputHandler by attaching event handlers to the window and canvas.
 export function createInputHandler(window, canvas) {
   let digital = {

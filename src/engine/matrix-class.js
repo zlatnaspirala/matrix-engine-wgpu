@@ -11,6 +11,7 @@ export class Position {
 
   constructor(x, y, z) {
 
+    console.log('TEST TYTPOF ', x)
     // Not in use for nwo this is from matrix-engine project [nameUniq]
     this.nameUniq = null;
 
