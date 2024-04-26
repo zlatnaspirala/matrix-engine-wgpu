@@ -213,8 +213,11 @@ export default class MatrixAmmo {
         // console.log('GROUND IS IN CONTACT WHO IS BODY1 getNameByBody  ', this.getNameByBody(contactManifold.getBody1()))
         // CHECK ROTATION
         var testR = contactManifold.getBody1().getWorldTransform().getRotation();
-        console.log('testR.getAngle() =  ', radToDeg(testR.getAngle()))
-        console.log('testR.getAngle() =  ',  contactManifold.getBody1() )
+
+        var TEST = this.getBodyByName('CubePhysics2')
+
+        // console.log('testR.getAngle() =  ', radToDeg(testR.getAngle()))
+        // console.log('testR.getAngle() =  ',  TEST )
         
         // console.log('testR.getAxis() =  ', testR.getAxis().x(), ' y ' ,  testR.getAxis().y(), ' z ' ,  testR.getAxis().z())
         // console.log('testR.x y z() =  ', testR.x(), ' , ' , testR.y(), '  , ' , testR.z() , ' w ', testR.w())
