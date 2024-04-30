@@ -13,6 +13,10 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 // import {downloadMeshes} from './src/engine/loader-obj.js';
 
 let myDom = exports.myDom = {
+  // 
+  state: {
+    rowDown: []
+  },
   createJamb: function () {
     var root = document.createElement('div');
     root.id = 'jambTable';
@@ -68,7 +72,7 @@ let myDom = exports.myDom = {
 
     // INJECT TABLE HEADER ROW
     this.createLeftHeaderRow(rowHeader);
-    this.createRow(rowDown);
+    this.createRowDown(rowDown);
     this.createRow(rowFree);
     this.createRow(rowUp);
     this.createRow(rowHand);
@@ -153,7 +157,7 @@ let myDom = exports.myDom = {
     rowSumFINAL.innerHTML = `Final Σ`;
     myRoot.appendChild(rowSumFINAL);
   },
-  createRow: function (myRoot, type) {
+  createRow: function (myRoot) {
     for (var x = 1; x < 7; x++) {
       var rowNumber = document.createElement('div');
       rowNumber.id = 'rowNumber' + x;
@@ -162,6 +166,14 @@ let myDom = exports.myDom = {
       rowNumber.style.width = 'auto';
       rowNumber.style.background = '#7d7d7d8c';
       rowNumber.innerHTML = `-`;
+      rowNumber.addEventListener('click', () => {
+        console.log('LOG THIS ', this);
+        // works
+        // rowDown
+        if (this.state.rowDown.length == 0) {
+          console.log('it is no play yet in this row ', this);
+        }
+      });
       myRoot.appendChild(rowNumber);
     }
     var rowNumberSum = document.createElement('div');
@@ -225,7 +237,92 @@ let myDom = exports.myDom = {
     rowSum.innerHTML = `-`;
     myRoot.appendChild(rowSum);
   },
-  createSumField: function (myRoot) {}
+  createRowDown: function (myRoot) {
+    for (var x = 1; x < 7; x++) {
+      var rowNumber = document.createElement('div');
+      rowNumber.id = 'down-rowNumber' + x;
+      rowNumber.style.top = '10px';
+      rowNumber.style.left = '10px';
+      rowNumber.style.width = 'auto';
+      rowNumber.style.background = '#7d7d7d8c';
+      rowNumber.innerHTML = `-`;
+      rowNumber.addEventListener('click', e => {
+        console.log('LOG e ', e.target.id);
+        // works // rowDown
+        if (this.state.rowDown.length == 0) {
+          console.log('it is no play yet in this row ', this);
+          // down-rowNumber3
+          var getName = e.target.id;
+          getName = getName.replace('down-rowNumber', '');
+          console.log('LOG e ', getName);
+          if (parseInt(getName) == 1) {
+            console.log('MOZE ');
+          }
+        }
+      });
+      myRoot.appendChild(rowNumber);
+    }
+    var rowNumberSum = document.createElement('div');
+    rowNumberSum.id = 'down-rowNumberSum';
+    rowNumberSum.style.width = 'auto';
+    rowNumberSum.style.background = '#7d7d7d8c';
+    rowNumberSum.innerHTML = `-`;
+    myRoot.appendChild(rowNumberSum);
+    var rowMax = document.createElement('div');
+    rowMax.id = 'down-rowMax';
+    rowMax.style.width = 'auto';
+    rowMax.style.background = '#7d7d7d8c';
+    rowMax.innerHTML = `-`;
+    myRoot.appendChild(rowMax);
+    var rowMin = document.createElement('div');
+    rowMin.id = 'down-rowMax';
+    rowMin.style.width = 'auto';
+    rowMin.style.background = '#7d7d7d8c';
+    rowMin.innerHTML = `-`;
+    myRoot.appendChild(rowMin);
+    var rowMaxMinSum = document.createElement('div');
+    rowMaxMinSum.id = 'down-rowMaxMinSum';
+    rowMaxMinSum.style.width = 'auto';
+    rowMaxMinSum.style.background = '#7d7d7d8c';
+    rowMaxMinSum.innerHTML = `-`;
+    myRoot.appendChild(rowMaxMinSum);
+    var largeStraight = document.createElement('div');
+    largeStraight.id = 'down-largeStraight';
+    largeStraight.style.width = 'auto';
+    largeStraight.style.background = '#7d7d7d8c';
+    largeStraight.innerHTML = `-`;
+    myRoot.appendChild(largeStraight);
+    var threeOfAKind = document.createElement('div');
+    threeOfAKind.id = 'down-threeOfAKind';
+    threeOfAKind.style.width = 'auto';
+    threeOfAKind.style.background = '#7d7d7d8c';
+    threeOfAKind.innerHTML = `-`;
+    myRoot.appendChild(threeOfAKind);
+    var fullHouse = document.createElement('div');
+    fullHouse.id = 'down-fullHouse';
+    fullHouse.style.width = 'auto';
+    fullHouse.style.background = '#7d7d7d8c';
+    fullHouse.innerHTML = `-`;
+    myRoot.appendChild(fullHouse);
+    var poker = document.createElement('div');
+    poker.id = 'down-poker';
+    poker.style.width = 'auto';
+    poker.style.background = '#7d7d7d8c';
+    poker.innerHTML = `-`;
+    myRoot.appendChild(poker);
+    var jamb = document.createElement('div');
+    jamb.id = 'down-jamb';
+    jamb.style.width = 'auto';
+    jamb.style.background = '#7d7d7d8c';
+    jamb.innerHTML = `-`;
+    myRoot.appendChild(jamb);
+    var rowSum = document.createElement('div');
+    rowSum.id = 'down-rowSum';
+    rowSum.style.width = 'auto';
+    rowSum.style.background = '#7d7d7d8c';
+    rowSum.innerHTML = `-`;
+    myRoot.appendChild(rowSum);
+  }
 };
 
 },{"../../../src/engine/loader-obj.js":7,"../../../src/engine/utils.js":11,"../../../src/world.js":17}],2:[function(require,module,exports){
