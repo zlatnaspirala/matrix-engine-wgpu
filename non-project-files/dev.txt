@@ -7,5 +7,8 @@ app.matrixAmmo.rigidBodies[0].setLinearVelocity(new Ammo.btVector3(-0,16,1))
  za 4  daje 1
  za 2  daje 6  ali posle prazan string
  za 6  je   5 
+ za 1  daje 2
+            4
+            3
+            
 
- 

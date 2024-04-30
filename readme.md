@@ -17,10 +17,10 @@ I publish (this repo) npm package with name `matrix-engine-wgpu`.
 
 ## Objective
 
-- scene objects feature [objects/scene/transformation]
+- scene objects feature [objects/scene/transformation] ✔️
 - Make it similar to the matrix-engine webGL features.
 - Main base example is `shadowMapping` from [webgpu-samples](https://webgpu.github.io/webgpu-samples/?sample=shadowMapping)
-- Integrate ammojs
+- Integrate ammojs [basic cube]✔️
 
 ## Support list
 
@@ -190,6 +190,9 @@ Bundle compiler: `watchify`
 
 - Resources place is ./public also this folder is root for output js builds,
   after all you get all needed stuff in one public folder (www).
+
+## Proof of concept
+  - Main example will be 🎲 Ultimate Yahtzee game.
 
 ## LINKS
 
