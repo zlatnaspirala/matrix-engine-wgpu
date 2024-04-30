@@ -1,5 +1,5 @@
-import {vec3} from "wgpu-matrix";
-import {LOG_FUNNY, LOG_MATRIX, quaternion_rotation_matrix, radToDeg, scriptManager} from "../engine/utils";
+// import {vec3} from "wgpu-matrix";
+import {LOG_FUNNY, quaternion_rotation_matrix, radToDeg, scriptManager} from "../engine/utils";
 
 export default class MatrixAmmo {
   constructor() {
@@ -12,13 +12,12 @@ export default class MatrixAmmo {
       this.init,
     );
 
-
     this.lastRoll = '';
     this.presentScore = '';
   }
 
   init = () => {
-    console.log('pre ammo')
+    // console.log('pre ammo')
     Ammo().then(Ammo => {
       // Physics variables
       this.dynamicsWorld = null;
@@ -34,7 +33,6 @@ export default class MatrixAmmo {
 
   initPhysics() {
     let Ammo = this.Ammo;
-
     // Physics configuration
     var collisionConfiguration = new Ammo.btDefaultCollisionConfiguration(),
       dispatcher = new Ammo.btCollisionDispatcher(collisionConfiguration),
@@ -42,19 +40,17 @@ export default class MatrixAmmo {
       solver = new Ammo.btSequentialImpulseConstraintSolver();
 
     this.dynamicsWorld = new Ammo.btDiscreteDynamicsWorld(dispatcher, overlappingPairCache, solver, collisionConfiguration);
-
     this.dynamicsWorld.setGravity(new Ammo.btVector3(0, -10, 0));
 
-    var groundShape = new Ammo.btBoxShape(new Ammo.btVector3(50, 0.5, 50)),
+    var groundShape = new Ammo.btBoxShape(new Ammo.btVector3(70, 1, 70)),
       groundTransform = new Ammo.btTransform();
     groundTransform.setIdentity();
-    groundTransform.setOrigin(new Ammo.btVector3(0, -1, 0));
+    groundTransform.setOrigin(new Ammo.btVector3(0, -4.45, 0));
     var mass = 0,
       isDynamic = (mass !== 0),
       localInertia = new Ammo.btVector3(0, 0, 0);
 
-    if(isDynamic)
-      groundShape.calculateLocalInertia(mass, localInertia);
+    if(isDynamic) groundShape.calculateLocalInertia(mass, localInertia);
 
     var myMotionState = new Ammo.btDefaultMotionState(groundTransform),
       rbInfo = new Ammo.btRigidBodyConstructionInfo(mass, myMotionState, groundShape, localInertia),
@@ -63,7 +59,6 @@ export default class MatrixAmmo {
     this.ground = body;
     this.dynamicsWorld.addRigidBody(body);
     // this.rigidBodies.push(body);
-
     // add collide event
     this.detectCollision()
   }
@@ -116,16 +111,12 @@ export default class MatrixAmmo {
     if(pOptions.mass == 0 && typeof pOptions.state == 'undefined') {
       body.setActivationState(2)
       body.setCollisionFlags(FLAGS.CF_KINEMATIC_OBJECT);
-
-      console.log('what is pOptions.mass and state is 2 ....', pOptions.mass)
+      // console.log('what is pOptions.mass and state is 2 ....', pOptions.mass)
     } else {
       body.setActivationState(4)
     }
-
-
-    console.log('what is name....', pOptions.name)
+    // console.log('what is name.', pOptions.name)
     body.name = pOptions.name;
-
     body.MEObject = MEObject;
     this.dynamicsWorld.addRigidBody(body);
     this.rigidBodies.push(body);
@@ -195,25 +186,26 @@ export default class MatrixAmmo {
   }
 
   detectCollision() {
+    console.log('override this')
+    return;
 
     this.lastRoll = '';
     this.presentScore = '';
 
     let dispatcher = this.dynamicsWorld.getDispatcher();
     let numManifolds = dispatcher.getNumManifolds();
-    // console.log('detect collision')
+
     for(let i = 0;i < numManifolds;i++) {
       let contactManifold = dispatcher.getManifoldByIndexInternal(i);
-      let numContacts = contactManifold.getNumContacts();
-
-      this.rigidBodies.forEach((item) => {
-        if(item.kB == contactManifold.getBody0().kB) {
-          // console.log('Detected body0 =', item.name)
-        }
-        if(item.kB == contactManifold.getBody1().kB) {
-          // console.log('Detected body1 =', item.name)
-        }
-      })
+      // let numContacts = contactManifold.getNumContacts();
+      // this.rigidBodies.forEach((item) => {
+      //   if(item.kB == contactManifold.getBody0().kB) {
+      //     // console.log('Detected body0 =', item.name)
+      //   }
+      //   if(item.kB == contactManifold.getBody1().kB) {
+      //     // console.log('Detected body1 =', item.name)
+      //   }
+      // })
 
       if(this.ground.kB == contactManifold.getBody0().kB &&
         this.getNameByBody(contactManifold.getBody1()) == 'CubePhysics1') {
@@ -221,75 +213,42 @@ export default class MatrixAmmo {
         // console.log('GROUND IS IN CONTACT WHO IS BODY1 getNameByBody  ', this.getNameByBody(contactManifold.getBody1()))
         // CHECK ROTATION
         var testR = contactManifold.getBody1().getWorldTransform().getRotation();
-        var TEST = this.getBodyByName('CubePhysics1')
-        // console.log('testR.getAngle() =  ', radToDeg(testR.getAngle()))
-        //  console.log('TEST modelViewProjectionMatrix =  ',  TEST.MEObject.modelViewProjectionMatrix  )        
-        //  console.log('TEST viewMatrix =  ',  TEST.MEObject.viewMatrix  )     
-
         if(Math.abs(testR.y()) < 0.00001) {
           this.lastRoll += " 4 +";
           this.presentScore += 4;
+          dispatchEvent(new CustomEvent('dice-1', {}));
         }
         if(Math.abs(testR.x()) < 0.00001) {
           this.lastRoll += " 3 +";
           this.presentScore += 3;
+          dispatchEvent(new CustomEvent('dice-4', {}));
         }
         if(testR.x().toString().substring(0, 5) == testR.y().toString().substring(1, 6)) {
           this.lastRoll += " 2 +";
           this.presentScore += 2;
+          dispatchEvent(new CustomEvent('dice-6', {}));
         }
 
         if(testR.x().toString().substring(0, 5) == testR.y().toString().substring(0, 5)) {
           this.lastRoll += " 1 +";
           this.presentScore += 1;
+          dispatchEvent(new CustomEvent('dice-2', {}));
         }
 
         if(testR.z().toString().substring(0, 5) == testR.y().toString().substring(1, 6)) {
           this.lastRoll += " 6 +";
           this.presentScore += 6;
+          dispatchEvent(new CustomEvent('dice-5', {}));
         }
 
         if(testR.z().toString().substring(0, 5) == testR.y().toString().substring(0, 5)) {
           this.lastRoll += " 5 +";
           this.presentScore += 5;
-        }
-        // 
-        console.log('this.lastRoll =  ', this.lastRoll , ' presentScore = ' , this.presentScore )
-        // console.log('testR.x y z() =  ', testR.x(), ' , ' , testR.y(), '  , ' , testR.z() , ' w ', testR.w())
-        for(let j = 0;j < numContacts;j++) {
-          let contactPoint = contactManifold.getContactPoint(j);
-          let distance = contactPoint.getDistance();
-          // console.log(numContacts + 'dis ' + distance.toFixed(2));
-          if(numContacts == 4) {
-            // let worldPos0 = contactPoint.get_m_positionWorldOnA();
-            // let worldPos1 = contactPoint.get_m_positionWorldOnB();
-            // let localPos0 = contactPoint.get_m_localPointA();
-            // let localPos1 = contactPoint.get_m_localPointB();
-
-            // console.log({
-            //   manifoldIndex: i, 
-            //   contactIndex: j, 
-            //   distance: distance, 
-            //   object0:{
-            //   //  tag: tag0,
-            //   //  velocity: {x: velocity0.x(), y: velocity0.y(), z: velocity0.z()},
-            //    worldPos: {x: worldPos0.x(), y: worldPos0.y(), z: worldPos0.z()},
-            //    localPos: {x: localPos0.x(), y: localPos0.y(), z: localPos0.z()}
-            //   },
-            //   object1:{
-            //   //  tag: tag1,
-            //   //  velocity: {x: velocity1.x(), y: velocity1.y(), z: velocity1.z()},
-            //    worldPos: {x: worldPos1.x(), y: worldPos1.y(), z: worldPos1.z()},
-            //    localPos: {x: localPos1.x(), y: localPos1.y(), z: localPos1.z()}
-            //   }
-            //  });
-
-          }
+          dispatchEvent(new CustomEvent('dice-3', {}));
         }
 
+        console.log('this.lastRoll = ', this.lastRoll, ' presentScore = ', this.presentScore)
       }
-
-
     }
   }
 
@@ -311,14 +270,10 @@ export default class MatrixAmmo {
         body.MEObject.rotation.axis.x = testAxis.x()
         body.MEObject.rotation.axis.y = testAxis.y()
         body.MEObject.rotation.axis.z = testAxis.z()
-        // var tx = radToDeg(parseFloat(test.getAngle().toFixed(2)) * testAxis.x().toFixed(2))
-        // var ty = radToDeg(parseFloat(test.getAngle().toFixed(2)) * testAxis.y().toFixed(2))
-        // var tz = radToDeg(parseFloat(test.getAngle().toFixed(2)) * testAxis.z().toFixed(2))
         body.MEObject.rotation.matrixRotation = quaternion_rotation_matrix(test);
         body.MEObject.rotation.angle = radToDeg(parseFloat(test.getAngle().toFixed(2)))
       }
     })
-
     // collision detect
     this.detectCollision()
   }

@@ -1,14 +1,14 @@
 
-
-
 app.matrixAmmo.rigidBodies[0].setAngularVelocity(new Ammo.btVector3(5,6,0))
 app.matrixAmmo.rigidBodies[0].setLinearVelocity(new Ammo.btVector3(-0,16,1))
 
- za 4  daje 1
- za 2  daje 6  ali posle prazan string
- za 6  je   5 
- za 1  daje 2
-            4
-            3
-            
+
+dice shema for now
+====================
+ FOR  4  gives 1
+  2      6
+  6      5 
+  1      2
+  3      4
+  5      3
 

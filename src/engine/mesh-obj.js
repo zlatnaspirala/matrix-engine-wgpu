@@ -465,10 +465,8 @@ export default class MEMeshObj {
   }
 
   updateLightsTest = (position) => {
-    console.log('test !')
-    ////////////////////////
+    console.log('Update light position.', position)
     this.lightPosition = vec3.fromValues(position[0], position[1], position[2]);
-
     this.lightViewMatrix = mat4.lookAt(this.lightPosition, this.origin, this.upVector);
 
     const lightProjectionMatrix = mat4.create();
