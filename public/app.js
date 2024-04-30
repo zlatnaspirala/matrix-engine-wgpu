@@ -285,138 +285,83 @@ let application = exports.application = new _world.default({
       },
       texturesPaths: ['./res/meshes/jamb/dice.png'],
       useUVShema4x2: true,
-      name: 'CubePhysics0',
+      name: 'CubePhysics1',
       mesh: m.cube,
       physics: {
         enabled: true,
         geometry: "Cube"
       }
     });
-    application.addMeshObj({
-      position: {
-        x: 0,
-        y: 4,
-        z: -10
-      },
-      rotation: {
-        x: 0,
-        y: 0,
-        z: 0
-      },
-      rotationSpeed: {
-        x: 0,
-        y: 0,
-        z: 0
-      },
-      texturesPaths: ['./res/meshes/jamb/dice-mark.png'],
-      useUVShema4x2: true,
-      name: 'CubePhysics2',
-      mesh: m.cube,
-      physics: {
-        enabled: true,
-        geometry: "Cube"
-      }
-    });
-    application.addMeshObj({
-      position: {
-        x: 0,
-        y: 4,
-        z: -10
-      },
-      rotation: {
-        x: 0,
-        y: 0,
-        z: 0
-      },
-      rotationSpeed: {
-        x: 0,
-        y: 0,
-        z: 0
-      },
-      texturesPaths: ['./res/meshes/jamb/dice.png'],
-      useUVShema4x2: true,
-      name: 'CubePhysics3',
-      mesh: m.cube,
-      physics: {
-        enabled: true,
-        geometry: "Cube"
-      }
-    });
-    application.addMeshObj({
-      position: {
-        x: 3,
-        y: 4,
-        z: -10
-      },
-      rotation: {
-        x: 0,
-        y: 0,
-        z: 0
-      },
-      rotationSpeed: {
-        x: 0,
-        y: 0,
-        z: 0
-      },
-      texturesPaths: ['./res/meshes/jamb/dice.png'],
-      useUVShema4x2: true,
-      name: 'CubePhysics4',
-      mesh: m.cube,
-      physics: {
-        enabled: true,
-        geometry: "Cube"
-      }
-    });
-    application.addMeshObj({
-      position: {
-        x: -2,
-        y: 4,
-        z: -10
-      },
-      rotation: {
-        x: 0,
-        y: 0,
-        z: 0
-      },
-      rotationSpeed: {
-        x: 0,
-        y: 0,
-        z: 0
-      },
-      texturesPaths: ['./res/meshes/jamb/dice.png'],
-      useUVShema4x2: true,
-      name: 'CubePhysics5',
-      mesh: m.cube,
-      physics: {
-        enabled: true,
-        geometry: "Cube"
-      }
-    });
-    application.addMeshObj({
-      position: {
-        x: 0,
-        y: 1,
-        z: -10
-      },
-      rotation: {
-        x: 0,
-        y: 0,
-        z: 0
-      },
-      rotationSpeed: {
-        x: 0,
-        y: 0,
-        z: 0
-      },
-      texturesPaths: ['./res/meshes/jamb/dice.png'],
-      useUVShema4x2: true,
-      name: 'CubePhysics6',
-      mesh: m.cube,
-      physics: {
-        enabled: true,
-        geometry: "Cube"
-      }
-    });
+
+    // application.addMeshObj({
+    //   position: {x: 0, y: 4, z: -10},
+    //   rotation: {x: 0, y: 0, z: 0},
+    //   rotationSpeed: {x: 0, y: 0, z: 0},
+    //   texturesPaths: ['./res/meshes/jamb/dice-mark.png'],
+    //   useUVShema4x2: true,
+    //   name: 'CubePhysics2',
+    //   mesh: m.cube,
+    //   physics: {
+    //     enabled: true,
+    //     geometry: "Cube"
+    //   }
+    // })
+
+    // application.addMeshObj({
+    //   position: {x: 0, y: 4, z: -10},
+    //   rotation: {x: 0, y: 0, z: 0},
+    //   rotationSpeed: {x: 0, y: 0, z: 0},
+    //   texturesPaths: ['./res/meshes/jamb/dice.png'],
+    //   useUVShema4x2: true,
+    //   name: 'CubePhysics3',
+    //   mesh: m.cube,
+    //   physics: {
+    //     enabled: true,
+    //     geometry: "Cube"
+    //   }
+    // })
+
+    // application.addMeshObj({
+    //   position: {x: 3, y: 4, z: -10},
+    //   rotation: {x: 0, y: 0, z: 0},
+    //   rotationSpeed: {x: 0, y: 0, z: 0},
+    //   texturesPaths: ['./res/meshes/jamb/dice.png'],
+    //   useUVShema4x2: true,
+    //   name: 'CubePhysics4',
+    //   mesh: m.cube,
+    //   physics: {
+    //     enabled: true,
+    //     geometry: "Cube"
+    //   }
+    // })
+
+    // application.addMeshObj({
+    //   position: {x: -2, y: 4, z: -10},
+    //   rotation: {x: 0, y: 0, z: 0},
+    //   rotationSpeed: {x: 0, y: 0, z: 0},
+    //   texturesPaths: ['./res/meshes/jamb/dice.png'],
+    //   useUVShema4x2: true,
+    //   name: 'CubePhysics5',
+    //   mesh: m.cube,
+    //   physics: {
+    //     enabled: true,
+    //     geometry: "Cube"
+    //   }
+    // })
+
+    // application.addMeshObj({
+    //   position: {x: 0, y: 1, z: -10},
+    //   rotation: {x: 0, y: 0, z: 0},
+    //   rotationSpeed: {x: 0, y: 0, z: 0},
+    //   texturesPaths: ['./res/meshes/jamb/dice.png'],
+    //   useUVShema4x2: true,
+    //   name: 'CubePhysics6',
+    //   mesh: m.cube,
+    //   physics: {
+    //     enabled: true,
+    //     geometry: "Cube"
+    //   }
+    // })
 
     // Add logo text top
     application.addMeshObj({
@@ -466,11 +411,11 @@ let application = exports.application = new _world.default({
       app.cameras.WASD.velocity[1] = 18;
 
       //                                             BODY              , x,  y, z, rotX, rotY, RotZ
-      app.matrixAmmo.setKinematicTransform(app.matrixAmmo.rigidBodies[6], 0, 0, 0, 1);
-      app.matrixAmmo.setKinematicTransform(app.matrixAmmo.rigidBodies[7], 0, -10, 0, 0, 0, 0);
+      app.matrixAmmo.setKinematicTransform(app.matrixAmmo.rigidBodies[1], 0, 0, 0, 1);
+      app.matrixAmmo.setKinematicTransform(app.matrixAmmo.rigidBodies[2], 0, -10, 0, 0, 0, 0);
 
       // Better access getBodyByName
-      console.log(' app.matrixAmmo. ', app.matrixAmmo.getBodyByName('CubePhysics2'));
+      console.log(' app.matrixAmmo. ', app.matrixAmmo.getBodyByName('CubePhysics1'));
     }, 1225);
   }
 });
@@ -8116,25 +8061,27 @@ class MEMeshObj {
         this.viewMatrix = camera.update(deltaTime, this.inputHandler());
         _wgpuMatrix.mat4.translate(this.viewMatrix, _wgpuMatrix.vec3.fromValues(pos.x, pos.y, pos.z), this.viewMatrix);
         _wgpuMatrix.mat4.rotate(this.viewMatrix, _wgpuMatrix.vec3.fromValues(this.rotation.axis.x, this.rotation.axis.y, this.rotation.axis.z), (0, _utils.degToRad)(this.rotation.angle), this.viewMatrix);
-        // mat4.rotateX(this.viewMatrix, this.rotation.getRotX(), this.viewMatrix);
-        // mat4.rotateY(this.viewMatrix, this.rotation.getRotY(), this.viewMatrix);
-        // mat4.rotateZ(this.viewMatrix, this.rotation.getRotZ(), this.viewMatrix);
+
+        // console.info('angle: ', this.rotation.angle, ' axis ' ,  this.rotation.axis.x, ' , ', this.rotation.axis.y, ' , ',  this.rotation.axis.z)
         _wgpuMatrix.mat4.multiply(this.projectionMatrix, this.viewMatrix, this.modelViewProjectionMatrix);
         return this.modelViewProjectionMatrix;
       };
       this.upVector = _wgpuMatrix.vec3.fromValues(0, 1, 0);
       this.origin = _wgpuMatrix.vec3.fromValues(0, 0, 0);
-      this.lightPosition = _wgpuMatrix.vec3.fromValues(10, -12, -2);
+      this.lightPosition = _wgpuMatrix.vec3.fromValues(0, 0, 0);
       this.lightViewMatrix = _wgpuMatrix.mat4.lookAt(this.lightPosition, this.origin, this.upVector);
       const lightProjectionMatrix = _wgpuMatrix.mat4.create();
+      var myLMargin = 100;
       {
-        const left = -80;
-        const right = 80;
-        const bottom = -80;
-        const top = 80;
+        const left = -myLMargin;
+        const right = myLMargin;
+        const bottom = -myLMargin;
+        const top = myLMargin;
         const near = -200;
         const far = 300;
         _wgpuMatrix.mat4.ortho(left, right, bottom, top, near, far, lightProjectionMatrix);
+        // test 
+        // mat4.ortho(right, left, top, bottom, near, far, lightProjectionMatrix);
       }
       this.lightViewProjMatrix = _wgpuMatrix.mat4.multiply(lightProjectionMatrix, this.lightViewMatrix);
 
@@ -8183,9 +8130,11 @@ class MEMeshObj {
     // The camera/light aren't moving, so write them into buffers now.
     {
       const lightMatrixData = this.lightViewProjMatrix; // as Float32Array;
-      this.device.queue.writeBuffer(this.sceneUniformBuffer, 0, lightMatrixData.buffer, lightMatrixData.byteOffset, lightMatrixData.byteLength);
+      this.device.queue.writeBuffer(this.sceneUniformBuffer, 0,
+      // 0 ori
+      lightMatrixData.buffer, lightMatrixData.byteOffset, lightMatrixData.byteLength);
       const lightData = this.lightPosition;
-      this.device.queue.writeBuffer(this.sceneUniformBuffer, 128, lightData.buffer, lightData.byteOffset, lightData.byteLength);
+      this.device.queue.writeBuffer(this.sceneUniformBuffer, 256, lightData.buffer, lightData.byteOffset, lightData.byteLength);
       const modelData = modelMatrix;
       this.device.queue.writeBuffer(this.modelUniformBuffer, 0, modelData.buffer, modelData.byteOffset, modelData.byteLength);
     }
@@ -8194,6 +8143,7 @@ class MEMeshObj {
       depthStencilAttachment: {
         view: this.shadowDepthTextureView,
         depthClearValue: 1.0,
+        // ori 1.0
         depthLoadOp: 'clear',
         depthStoreOp: 'store'
       }
@@ -9344,6 +9294,8 @@ class MatrixAmmo {
   constructor() {
     // THIS PATH IS PATH FROM PUBLIC FINAL FOLDER
     _utils.scriptManager.LOAD("./ammojs/ammo.js", "ammojs", undefined, undefined, this.init);
+    this.lastRoll = '';
+    this.presentScore = '';
   }
   init = () => {
     console.log('pre ammo');
@@ -9504,6 +9456,8 @@ class MatrixAmmo {
     return b;
   }
   detectCollision() {
+    this.lastRoll = '';
+    this.presentScore = '';
     let dispatcher = this.dynamicsWorld.getDispatcher();
     let numManifolds = dispatcher.getNumManifolds();
     // console.log('detect collision')
@@ -9518,23 +9472,72 @@ class MatrixAmmo {
           // console.log('Detected body1 =', item.name)
         }
       });
-      if (this.ground.kB == contactManifold.getBody0().kB && this.getNameByBody(contactManifold.getBody1()) == 'CubePhysics2') {
+      if (this.ground.kB == contactManifold.getBody0().kB && this.getNameByBody(contactManifold.getBody1()) == 'CubePhysics1') {
         // console.log(this.ground ,'GROUND IS IN CONTACT WHO IS BODY1 ', contactManifold.getBody1())
         // console.log('GROUND IS IN CONTACT WHO IS BODY1 getNameByBody  ', this.getNameByBody(contactManifold.getBody1()))
         // CHECK ROTATION
         var testR = contactManifold.getBody1().getWorldTransform().getRotation();
-        var TEST = this.getBodyByName('CubePhysics2');
-
+        var TEST = this.getBodyByName('CubePhysics1');
         // console.log('testR.getAngle() =  ', radToDeg(testR.getAngle()))
-        // console.log('testR.getAngle() =  ',  TEST )
+        //  console.log('TEST modelViewProjectionMatrix =  ',  TEST.MEObject.modelViewProjectionMatrix  )        
+        //  console.log('TEST viewMatrix =  ',  TEST.MEObject.viewMatrix  )     
 
-        // console.log('testR.getAxis() =  ', testR.getAxis().x(), ' y ' ,  testR.getAxis().y(), ' z ' ,  testR.getAxis().z())
+        if (Math.abs(testR.y()) < 0.00001) {
+          this.lastRoll += " 4 +";
+          this.presentScore += 4;
+        }
+        if (Math.abs(testR.x()) < 0.00001) {
+          this.lastRoll += " 3 +";
+          this.presentScore += 3;
+        }
+        if (testR.x().toString().substring(0, 5) == testR.y().toString().substring(1, 6)) {
+          this.lastRoll += " 2 +";
+          this.presentScore += 2;
+        }
+        if (testR.x().toString().substring(0, 5) == testR.y().toString().substring(0, 5)) {
+          this.lastRoll += " 1 +";
+          this.presentScore += 1;
+        }
+        if (testR.z().toString().substring(0, 5) == testR.y().toString().substring(1, 6)) {
+          this.lastRoll += " 6 +";
+          this.presentScore += 6;
+        }
+        if (testR.z().toString().substring(0, 5) == testR.y().toString().substring(0, 5)) {
+          this.lastRoll += " 5 +";
+          this.presentScore += 5;
+        }
+        // 
+        console.log('this.lastRoll =  ', this.lastRoll, ' presentScore = ', this.presentScore);
         // console.log('testR.x y z() =  ', testR.x(), ' , ' , testR.y(), '  , ' , testR.z() , ' w ', testR.w())
-      }
-      for (let j = 0; j < numContacts; j++) {
-        let contactPoint = contactManifold.getContactPoint(j);
-        let distance = contactPoint.getDistance();
-        // console.log({manifoldIndex: i, contactIndex: j, distance: distance});
+        for (let j = 0; j < numContacts; j++) {
+          let contactPoint = contactManifold.getContactPoint(j);
+          let distance = contactPoint.getDistance();
+          // console.log(numContacts + 'dis ' + distance.toFixed(2));
+          if (numContacts == 4) {
+            // let worldPos0 = contactPoint.get_m_positionWorldOnA();
+            // let worldPos1 = contactPoint.get_m_positionWorldOnB();
+            // let localPos0 = contactPoint.get_m_localPointA();
+            // let localPos1 = contactPoint.get_m_localPointB();
+
+            // console.log({
+            //   manifoldIndex: i, 
+            //   contactIndex: j, 
+            //   distance: distance, 
+            //   object0:{
+            //   //  tag: tag0,
+            //   //  velocity: {x: velocity0.x(), y: velocity0.y(), z: velocity0.z()},
+            //    worldPos: {x: worldPos0.x(), y: worldPos0.y(), z: worldPos0.z()},
+            //    localPos: {x: localPos0.x(), y: localPos0.y(), z: localPos0.z()}
+            //   },
+            //   object1:{
+            //   //  tag: tag1,
+            //   //  velocity: {x: velocity1.x(), y: velocity1.y(), z: velocity1.z()},
+            //    worldPos: {x: worldPos1.x(), y: worldPos1.y(), z: worldPos1.z()},
+            //    localPos: {x: localPos1.x(), y: localPos1.y(), z: localPos1.z()}
+            //   }
+            //  });
+          }
+        }
       }
     }
   }
@@ -9599,7 +9602,7 @@ struct FragmentInput {
 }
 
 const albedo = vec3f(0.9);
-const ambientFactor = 0.2;
+const ambientFactor = 1.2;
 
 @fragment
 fn main(input : FragmentInput) -> @location(0) vec4f {
@@ -9623,7 +9626,8 @@ fn main(input : FragmentInput) -> @location(0) vec4f {
   let lightingFactor = min(ambientFactor + visibility * lambertFactor, 1.0);
   let textureColor = textureSample(meshTexture, meshSampler, input.uv);
 
-  return vec4(textureColor.rgb * lightingFactor * albedo, 1.0);
+  // ORI // return vec4(textureColor.rgb * lightingFactor * albedo, 1.0);
+  return vec4(textureColor.rgb , 0.5);
 }`;
 
 },{}],14:[function(require,module,exports){
@@ -9670,7 +9674,7 @@ fn vertexMain(input: VertexInput) -> VertexOutput {
 @group(1) @binding(2) var meshTexture: texture_2d<f32>;
 
 // Static directional lighting
-const lightDir = vec3f(1, 1, 1);
+const lightDir = vec3f(0, 1, 0);
 const dirColor = vec3(1);
 const ambientColor = vec3f(0.05);
 
@@ -9765,7 +9769,7 @@ struct Model {
 fn main(
   @location(0) position: vec3f
 ) -> @builtin(position) vec4f {
-  return scene.lightViewProjMatrix * model.modelMatrix * vec4(position, 1.0);
+  return scene.lightViewProjMatrix * model.modelMatrix * vec4(position, 1);
 }
 `;
 

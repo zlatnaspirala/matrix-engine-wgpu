@@ -35,7 +35,7 @@ fn vertexMain(input: VertexInput) -> VertexOutput {
 @group(1) @binding(2) var meshTexture: texture_2d<f32>;
 
 // Static directional lighting
-const lightDir = vec3f(1, 1, 1);
+const lightDir = vec3f(0, 1, 0);
 const dirColor = vec3(1);
 const ambientColor = vec3f(0.05);
 

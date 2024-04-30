@@ -10,7 +10,7 @@ export default class MEMeshObj {
 
   constructor(canvas, device, context, o) {
 
-    if (typeof o.name === 'undefined') o.name = genName(9);
+    if(typeof o.name === 'undefined') o.name = genName(9);
     this.name = o.name;
     this.done = false;
     this.device = device;
@@ -387,9 +387,8 @@ export default class MEMeshObj {
           this.viewMatrix,
           vec3.fromValues(this.rotation.axis.x, this.rotation.axis.y, this.rotation.axis.z),
           degToRad(this.rotation.angle), this.viewMatrix)
-        // mat4.rotateX(this.viewMatrix, this.rotation.getRotX(), this.viewMatrix);
-        // mat4.rotateY(this.viewMatrix, this.rotation.getRotY(), this.viewMatrix);
-        // mat4.rotateZ(this.viewMatrix, this.rotation.getRotZ(), this.viewMatrix);
+
+        // console.info('angle: ', this.rotation.angle, ' axis ' ,  this.rotation.axis.x, ' , ', this.rotation.axis.y, ' , ',  this.rotation.axis.z)
         mat4.multiply(this.projectionMatrix, this.viewMatrix, this.modelViewProjectionMatrix);
         return this.modelViewProjectionMatrix;
       }
@@ -397,17 +396,21 @@ export default class MEMeshObj {
       this.upVector = vec3.fromValues(0, 1, 0);
       this.origin = vec3.fromValues(0, 0, 0);
 
-      this.lightPosition = vec3.fromValues(10, -12, -2);
+      this.lightPosition = vec3.fromValues(0, 0, 0);
       this.lightViewMatrix = mat4.lookAt(this.lightPosition, this.origin, this.upVector);
       const lightProjectionMatrix = mat4.create();
+
+      var myLMargin = 100;
       {
-        const left = -80;
-        const right = 80;
-        const bottom = -80;
-        const top = 80;
+        const left = -myLMargin;
+        const right = myLMargin;
+        const bottom = -myLMargin;
+        const top = myLMargin;
         const near = -200;
         const far = 300;
         mat4.ortho(left, right, bottom, top, near, far, lightProjectionMatrix);
+        // test 
+        // mat4.ortho(right, left, top, bottom, near, far, lightProjectionMatrix);
       }
 
       this.lightViewProjMatrix = mat4.multiply(
@@ -465,7 +468,9 @@ export default class MEMeshObj {
     console.log('test !')
     ////////////////////////
     this.lightPosition = vec3.fromValues(position[0], position[1], position[2]);
+
     this.lightViewMatrix = mat4.lookAt(this.lightPosition, this.origin, this.upVector);
+
     const lightProjectionMatrix = mat4.create();
     {
       const left = -80;
@@ -489,7 +494,7 @@ export default class MEMeshObj {
       const lightMatrixData = this.lightViewProjMatrix; // as Float32Array;
       this.device.queue.writeBuffer(
         this.sceneUniformBuffer,
-        0,
+        0, // 0 ori
         lightMatrixData.buffer,
         lightMatrixData.byteOffset,
         lightMatrixData.byteLength
@@ -498,7 +503,7 @@ export default class MEMeshObj {
       const lightData = this.lightPosition;
       this.device.queue.writeBuffer(
         this.sceneUniformBuffer,
-        128,
+        256,
         lightData.buffer,
         lightData.byteOffset,
         lightData.byteLength
@@ -518,7 +523,7 @@ export default class MEMeshObj {
       colorAttachments: [],
       depthStencilAttachment: {
         view: this.shadowDepthTextureView,
-        depthClearValue: 1.0,
+        depthClearValue: 1.0, // ori 1.0
         depthLoadOp: 'clear',
         depthStoreOp: 'store',
       },

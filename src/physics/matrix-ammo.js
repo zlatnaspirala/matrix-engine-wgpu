@@ -11,6 +11,10 @@ export default class MatrixAmmo {
       undefined,
       this.init,
     );
+
+
+    this.lastRoll = '';
+    this.presentScore = '';
   }
 
   init = () => {
@@ -191,6 +195,10 @@ export default class MatrixAmmo {
   }
 
   detectCollision() {
+
+    this.lastRoll = '';
+    this.presentScore = '';
+
     let dispatcher = this.dynamicsWorld.getDispatcher();
     let numManifolds = dispatcher.getNumManifolds();
     // console.log('detect collision')
@@ -208,27 +216,80 @@ export default class MatrixAmmo {
       })
 
       if(this.ground.kB == contactManifold.getBody0().kB &&
-      this.getNameByBody(contactManifold.getBody1()) == 'CubePhysics2') {
+        this.getNameByBody(contactManifold.getBody1()) == 'CubePhysics1') {
         // console.log(this.ground ,'GROUND IS IN CONTACT WHO IS BODY1 ', contactManifold.getBody1())
         // console.log('GROUND IS IN CONTACT WHO IS BODY1 getNameByBody  ', this.getNameByBody(contactManifold.getBody1()))
         // CHECK ROTATION
         var testR = contactManifold.getBody1().getWorldTransform().getRotation();
-
-        var TEST = this.getBodyByName('CubePhysics2')
-
+        var TEST = this.getBodyByName('CubePhysics1')
         // console.log('testR.getAngle() =  ', radToDeg(testR.getAngle()))
-        // console.log('testR.getAngle() =  ',  TEST )
-        
-        // console.log('testR.getAxis() =  ', testR.getAxis().x(), ' y ' ,  testR.getAxis().y(), ' z ' ,  testR.getAxis().z())
+        //  console.log('TEST modelViewProjectionMatrix =  ',  TEST.MEObject.modelViewProjectionMatrix  )        
+        //  console.log('TEST viewMatrix =  ',  TEST.MEObject.viewMatrix  )     
+
+        if(Math.abs(testR.y()) < 0.00001) {
+          this.lastRoll += " 4 +";
+          this.presentScore += 4;
+        }
+        if(Math.abs(testR.x()) < 0.00001) {
+          this.lastRoll += " 3 +";
+          this.presentScore += 3;
+        }
+        if(testR.x().toString().substring(0, 5) == testR.y().toString().substring(1, 6)) {
+          this.lastRoll += " 2 +";
+          this.presentScore += 2;
+        }
+
+        if(testR.x().toString().substring(0, 5) == testR.y().toString().substring(0, 5)) {
+          this.lastRoll += " 1 +";
+          this.presentScore += 1;
+        }
+
+        if(testR.z().toString().substring(0, 5) == testR.y().toString().substring(1, 6)) {
+          this.lastRoll += " 6 +";
+          this.presentScore += 6;
+        }
+
+        if(testR.z().toString().substring(0, 5) == testR.y().toString().substring(0, 5)) {
+          this.lastRoll += " 5 +";
+          this.presentScore += 5;
+        }
+        // 
+        console.log('this.lastRoll =  ', this.lastRoll , ' presentScore = ' , this.presentScore )
         // console.log('testR.x y z() =  ', testR.x(), ' , ' , testR.y(), '  , ' , testR.z() , ' w ', testR.w())
+        for(let j = 0;j < numContacts;j++) {
+          let contactPoint = contactManifold.getContactPoint(j);
+          let distance = contactPoint.getDistance();
+          // console.log(numContacts + 'dis ' + distance.toFixed(2));
+          if(numContacts == 4) {
+            // let worldPos0 = contactPoint.get_m_positionWorldOnA();
+            // let worldPos1 = contactPoint.get_m_positionWorldOnB();
+            // let localPos0 = contactPoint.get_m_localPointA();
+            // let localPos1 = contactPoint.get_m_localPointB();
+
+            // console.log({
+            //   manifoldIndex: i, 
+            //   contactIndex: j, 
+            //   distance: distance, 
+            //   object0:{
+            //   //  tag: tag0,
+            //   //  velocity: {x: velocity0.x(), y: velocity0.y(), z: velocity0.z()},
+            //    worldPos: {x: worldPos0.x(), y: worldPos0.y(), z: worldPos0.z()},
+            //    localPos: {x: localPos0.x(), y: localPos0.y(), z: localPos0.z()}
+            //   },
+            //   object1:{
+            //   //  tag: tag1,
+            //   //  velocity: {x: velocity1.x(), y: velocity1.y(), z: velocity1.z()},
+            //    worldPos: {x: worldPos1.x(), y: worldPos1.y(), z: worldPos1.z()},
+            //    localPos: {x: localPos1.x(), y: localPos1.y(), z: localPos1.z()}
+            //   }
+            //  });
+
+          }
+        }
 
       }
 
-      for(let j = 0;j < numContacts;j++) {
-        let contactPoint = contactManifold.getContactPoint(j);
-        let distance = contactPoint.getDistance();
-        // console.log({manifoldIndex: i, contactIndex: j, distance: distance});
-      }
+
     }
   }
 

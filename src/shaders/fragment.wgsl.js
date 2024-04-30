@@ -20,7 +20,7 @@ struct FragmentInput {
 }
 
 const albedo = vec3f(0.9);
-const ambientFactor = 0.2;
+const ambientFactor = 1.2;
 
 @fragment
 fn main(input : FragmentInput) -> @location(0) vec4f {
@@ -44,5 +44,6 @@ fn main(input : FragmentInput) -> @location(0) vec4f {
   let lightingFactor = min(ambientFactor + visibility * lambertFactor, 1.0);
   let textureColor = textureSample(meshTexture, meshSampler, input.uv);
 
-  return vec4(textureColor.rgb * lightingFactor * albedo, 1.0);
+  // ORI // return vec4(textureColor.rgb * lightingFactor * albedo, 1.0);
+  return vec4(textureColor.rgb , 0.5);
 }`

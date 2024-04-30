@@ -38,7 +38,7 @@ export let application = new MatrixEngineWGPU({
       rotationSpeed: {x: 0, y: 0, z: 0},
       texturesPaths: ['./res/meshes/jamb/dice.png'],
       useUVShema4x2: true,
-      name: 'CubePhysics0',
+      name: 'CubePhysics1',
       mesh: m.cube,
       physics: {
         enabled: true,
@@ -46,75 +46,75 @@ export let application = new MatrixEngineWGPU({
       }
     })
 
-    application.addMeshObj({
-      position: {x: 0, y: 4, z: -10},
-      rotation: {x: 0, y: 0, z: 0},
-      rotationSpeed: {x: 0, y: 0, z: 0},
-      texturesPaths: ['./res/meshes/jamb/dice-mark.png'],
-      useUVShema4x2: true,
-      name: 'CubePhysics2',
-      mesh: m.cube,
-      physics: {
-        enabled: true,
-        geometry: "Cube"
-      }
-    })
+    // application.addMeshObj({
+    //   position: {x: 0, y: 4, z: -10},
+    //   rotation: {x: 0, y: 0, z: 0},
+    //   rotationSpeed: {x: 0, y: 0, z: 0},
+    //   texturesPaths: ['./res/meshes/jamb/dice-mark.png'],
+    //   useUVShema4x2: true,
+    //   name: 'CubePhysics2',
+    //   mesh: m.cube,
+    //   physics: {
+    //     enabled: true,
+    //     geometry: "Cube"
+    //   }
+    // })
 
-    application.addMeshObj({
-      position: {x: 0, y: 4, z: -10},
-      rotation: {x: 0, y: 0, z: 0},
-      rotationSpeed: {x: 0, y: 0, z: 0},
-      texturesPaths: ['./res/meshes/jamb/dice.png'],
-      useUVShema4x2: true,
-      name: 'CubePhysics3',
-      mesh: m.cube,
-      physics: {
-        enabled: true,
-        geometry: "Cube"
-      }
-    })
+    // application.addMeshObj({
+    //   position: {x: 0, y: 4, z: -10},
+    //   rotation: {x: 0, y: 0, z: 0},
+    //   rotationSpeed: {x: 0, y: 0, z: 0},
+    //   texturesPaths: ['./res/meshes/jamb/dice.png'],
+    //   useUVShema4x2: true,
+    //   name: 'CubePhysics3',
+    //   mesh: m.cube,
+    //   physics: {
+    //     enabled: true,
+    //     geometry: "Cube"
+    //   }
+    // })
 
-    application.addMeshObj({
-      position: {x: 3, y: 4, z: -10},
-      rotation: {x: 0, y: 0, z: 0},
-      rotationSpeed: {x: 0, y: 0, z: 0},
-      texturesPaths: ['./res/meshes/jamb/dice.png'],
-      useUVShema4x2: true,
-      name: 'CubePhysics4',
-      mesh: m.cube,
-      physics: {
-        enabled: true,
-        geometry: "Cube"
-      }
-    })
+    // application.addMeshObj({
+    //   position: {x: 3, y: 4, z: -10},
+    //   rotation: {x: 0, y: 0, z: 0},
+    //   rotationSpeed: {x: 0, y: 0, z: 0},
+    //   texturesPaths: ['./res/meshes/jamb/dice.png'],
+    //   useUVShema4x2: true,
+    //   name: 'CubePhysics4',
+    //   mesh: m.cube,
+    //   physics: {
+    //     enabled: true,
+    //     geometry: "Cube"
+    //   }
+    // })
 
-    application.addMeshObj({
-      position: {x: -2, y: 4, z: -10},
-      rotation: {x: 0, y: 0, z: 0},
-      rotationSpeed: {x: 0, y: 0, z: 0},
-      texturesPaths: ['./res/meshes/jamb/dice.png'],
-      useUVShema4x2: true,
-      name: 'CubePhysics5',
-      mesh: m.cube,
-      physics: {
-        enabled: true,
-        geometry: "Cube"
-      }
-    })
+    // application.addMeshObj({
+    //   position: {x: -2, y: 4, z: -10},
+    //   rotation: {x: 0, y: 0, z: 0},
+    //   rotationSpeed: {x: 0, y: 0, z: 0},
+    //   texturesPaths: ['./res/meshes/jamb/dice.png'],
+    //   useUVShema4x2: true,
+    //   name: 'CubePhysics5',
+    //   mesh: m.cube,
+    //   physics: {
+    //     enabled: true,
+    //     geometry: "Cube"
+    //   }
+    // })
 
-    application.addMeshObj({
-      position: {x: 0, y: 1, z: -10},
-      rotation: {x: 0, y: 0, z: 0},
-      rotationSpeed: {x: 0, y: 0, z: 0},
-      texturesPaths: ['./res/meshes/jamb/dice.png'],
-      useUVShema4x2: true,
-      name: 'CubePhysics6',
-      mesh: m.cube,
-      physics: {
-        enabled: true,
-        geometry: "Cube"
-      }
-    })
+    // application.addMeshObj({
+    //   position: {x: 0, y: 1, z: -10},
+    //   rotation: {x: 0, y: 0, z: 0},
+    //   rotationSpeed: {x: 0, y: 0, z: 0},
+    //   texturesPaths: ['./res/meshes/jamb/dice.png'],
+    //   useUVShema4x2: true,
+    //   name: 'CubePhysics6',
+    //   mesh: m.cube,
+    //   physics: {
+    //     enabled: true,
+    //     geometry: "Cube"
+    //   }
+    // })
 
     // Add logo text top
     application.addMeshObj({
@@ -151,12 +151,12 @@ export let application = new MatrixEngineWGPU({
 
       
       //                                             BODY              , x,  y, z, rotX, rotY, RotZ
-      app.matrixAmmo.setKinematicTransform(app.matrixAmmo.rigidBodies[6], 0, 0, 0, 1)
+      app.matrixAmmo.setKinematicTransform(app.matrixAmmo.rigidBodies[1], 0, 0, 0, 1)
 
-      app.matrixAmmo.setKinematicTransform(app.matrixAmmo.rigidBodies[7], 0, -10, 0, 0, 0, 0)
+      app.matrixAmmo.setKinematicTransform(app.matrixAmmo.rigidBodies[2], 0, -10, 0, 0, 0, 0)
 
       // Better access getBodyByName
-      console.log(' app.matrixAmmo. ',  app.matrixAmmo.getBodyByName('CubePhysics2') )
+      console.log(' app.matrixAmmo. ',  app.matrixAmmo.getBodyByName('CubePhysics1') )
 
     }, 1225)
 
