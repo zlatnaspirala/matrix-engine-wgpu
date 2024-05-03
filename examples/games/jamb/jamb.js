@@ -4,9 +4,24 @@ import {downloadMeshes} from '../../../src/engine/loader-obj.js';
 // import {downloadMeshes} from './src/engine/loader-obj.js';
 import {LOG_FUNNY, LOG_INFO, LOG_MATRIX} from "../../../src/engine/utils.js";
 
+
+var C = 0;
+
 export let dices = {
   STATUS: 'FREE_TO_PLAY',
-  R: []
+  R: {},
+  checkAll: function() {
+    C++;
+    if(typeof this.R.CubePhysics1 != 'undefined' &&
+      typeof this.R.CubePhysics2 != 'undefined' &&
+      typeof this.R.CubePhysics3 != 'undefined' &&
+      typeof this.R.CubePhysics4 != 'undefined' &&
+      typeof this.R.CubePhysics5 != 'undefined' &&
+      typeof this.R.CubePhysics6 != 'undefined' && C > 500) {
+        dispatchEvent(new CustomEvent('all-done', {detail: {}}))
+        C = 0;
+    }
+  }
 };
 
 export let myDom = {

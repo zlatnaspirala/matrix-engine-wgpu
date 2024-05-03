@@ -101,7 +101,7 @@ export default class MatrixAmmo {
 
     let Ammo = this.Ammo;
     // improve this - scale by comp
-    var colShape = new Ammo.btBoxShape(new Ammo.btVector3(pOptions.scale, pOptions.scale, pOptions.scale)),
+    var colShape = new Ammo.btBoxShape(new Ammo.btVector3(pOptions.scale[0], pOptions.scale[1], pOptions.scale[2])),
       startTransform = new Ammo.btTransform();
     startTransform.setIdentity();
     var mass = pOptions.mass;

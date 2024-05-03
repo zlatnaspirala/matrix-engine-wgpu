@@ -13,121 +13,67 @@ export let application = new MatrixEngineWGPU({
 }, () => {
   // Dom operations
   myDom.createJamb();
+
+  application.dices = dices;
+
   // this code must be on top
   application.matrixAmmo.detectCollision = function() {
     this.lastRoll = '';
     this.presentScore = '';
     let dispatcher = this.dynamicsWorld.getDispatcher();
     let numManifolds = dispatcher.getNumManifolds();
-        console.log('numManifolds  ', numManifolds)
     for(let i = 0;i < numManifolds;i++) {
       let contactManifold = dispatcher.getManifoldByIndexInternal(i);
-
-      let numContacts = contactManifold.getNumContacts();
-
-      // if (numContacts < 3) 
-      // {
-      //   console.log('less 3 ',  this.getNameByBody(contactManifold.getBody1()))
-      //   return;
-      // }
-
-      // this.rigidBodies.forEach((item) => {
-      //   if(item.kB == contactManifold.getBody0().kB) {
-      //     // console.log('Detected body0 =', item.name)
-      //   }
-      //   if(item.kB == contactManifold.getBody1().kB) {
-      //     // console.log('Detected body1 =', item.name)
-      //   }
-      // })
-      // this.getNameByBody(contactManifold.getBody1()) == 'CubePhysics1'
-      // if(this.ground.kB == contactManifold.getBody0().kB || this.ground.kB == contactManifold.getBody1().kB ){
-      //   // && 
-      //    // this.getNameByBody(contactManifold.getBody1()).indexOf('CubePhysics') != -1 ) {
-      //   // console.log(this.getNameByBody(contactManifold.getBody1()) , '<<<<')
-      // } else {
-      //   // dice collide
-      //   // console.log(this.getNameByBody(contactManifold.getBody0()) , '<<<0<')
-      //   // console.log(this.getNameByBody(contactManifold.getBody1()) , '<<<1<')
-      // }
-
-      // return;
-      if(this.ground.kB == contactManifold.getBody0().kB || 
-          this.ground.kB == contactManifold.getBody1().kB) {
+      // let numContacts = contactManifold.getNumContacts();
+      if(this.ground.kB == contactManifold.getBody0().kB ||
+        this.ground.kB == contactManifold.getBody1().kB) {
         // console.log(this.ground ,'GROUND IS IN CONTACT WHO IS BODY1 ', contactManifold.getBody1())
-        // console.log('GROUND IS IN CONTACT WHO IS BODY1 getNameByBody  ', this.getNameByBody(contactManifold.getBody1()))
-        // CHECK ROTATION
-        if (this.ground.kB == contactManifold.getBody0().kB) {
+        // CHECK ROTATION BEST WAY - VISAL PART IS NOT INTEREST NOW 
+        if(this.ground.kB == contactManifold.getBody0().kB) {
           var MY_DICE_NAME = this.getNameByBody(contactManifold.getBody1());
           var testR = contactManifold.getBody1().getWorldTransform().getRotation();
         }
-        if (this.ground.kB == contactManifold.getBody1().kB) {
-           var MY_DICE_NAME = this.getNameByBody(contactManifold.getBody0());
-           var testR = contactManifold.getBody0().getWorldTransform().getRotation();
+        if(this.ground.kB == contactManifold.getBody1().kB) {
+          var MY_DICE_NAME = this.getNameByBody(contactManifold.getBody0());
+          var testR = contactManifold.getBody0().getWorldTransform().getRotation();
         }
-        
+        var passed = false;
         if(Math.abs(testR.y()) < 0.00001) {
-          this.lastRoll += " 4 +";
+          this.lastRoll = "1";
           this.presentScore += 4;
-          dispatchEvent(new CustomEvent('dice-1', {
-            detail: {
-              result: 'dice-1',
-              cubeId: MY_DICE_NAME
-            }
-          }));
+          passed = true;
         }
         if(Math.abs(testR.x()) < 0.00001) {
-          this.lastRoll += " 3 +";
+          this.lastRoll = "5";
           this.presentScore += 3;
-          dispatchEvent(new CustomEvent('dice-5', {
-            detail: {
-              result: 'dice-5',
-              cubeId:MY_DICE_NAME
-            }
-          }));
+          passed = true;
         }
         if(testR.x().toString().substring(0, 5) == testR.y().toString().substring(1, 6)) {
-          this.lastRoll += " 2 +";
+          this.lastRoll = "6";
           this.presentScore += 2;
-          dispatchEvent(new CustomEvent('dice-6', {
-            detail: {
-              result: 'dice-6',
-              cubeId: MY_DICE_NAME
-            }
-          }));
+          passed = true;
         }
-
         if(testR.x().toString().substring(0, 5) == testR.y().toString().substring(0, 5)) {
-          this.lastRoll += " 1 +";
+          this.lastRoll = "2";
           this.presentScore += 1;
-          dispatchEvent(new CustomEvent('dice-2', {
-            detail: {
-              result: 'dice-2',
-              cubeId: MY_DICE_NAME
-            }
-          }));
+          passed = true;
         }
-
         if(testR.z().toString().substring(0, 5) == testR.y().toString().substring(1, 6)) {
-          this.lastRoll += " 6 +";
+          this.lastRoll = "4";
           this.presentScore += 6;
-          dispatchEvent(new CustomEvent('dice-4', {
-            detail: {
-              result: 'dice-4',
-              cubeId: MY_DICE_NAME
-            }
-          }));
+          passed = true;
         }
-
         if(testR.z().toString().substring(0, 5) == testR.y().toString().substring(0, 5)) {
-          this.lastRoll += " 5 +";
+          this.lastRoll = "5";
           this.presentScore += 5;
-          dispatchEvent(new CustomEvent('dice-3', {
-            detail: {
-              result: 'dice-3',
-              cubeId: MY_DICE_NAME
-            }
-          }));
+          passed = true;
         }
+        if (passed == true) dispatchEvent(new CustomEvent(`dice-${this.lastRoll}`, {
+          detail: {
+            result: `dice-${this.lastRoll}`,
+            cubeId: MY_DICE_NAME
+          }
+        }))
       }
     }
   }
@@ -136,9 +82,36 @@ export let application = new MatrixEngineWGPU({
     downloadMeshes({
       mainTitle: "./res/meshes/jamb/jamb-title.obj",
       cube: "./res/meshes/jamb/dice.obj",
+    }, onLoadObj, { scale: [1,1,1], swap: [null] })
+
+    downloadMeshes({
       bg: "./res/meshes/jamb/bg.obj",
-    }, onLoadObj)
+    }, onLoadObjOther, { scale: [1,1,1], swap: [null] })
+
   })
+
+  function onLoadObjOther(m) {
+    application.myLoadedMeshes = m;
+    for(var key in m) {
+      console.log(`%c Loaded objs -> : ${key} `, LOG_MATRIX);
+    }
+
+    application.addMeshObj({
+      scale: [2,3,1],
+      position: {x: 0, y: 6, z: -10},
+      rotation: {x: 0, y: 0, z: 0},
+      // rotationSpeed: {x: 0, y: 0, z: 0},
+      texturesPaths: ['./res/meshes/jamb/bg.png'],
+      name: 'bg',
+      mesh: m.bg,
+      physics: {
+        collide: false,
+        mass: 0,
+        enabled: true,
+        geometry: "Cube"
+      }
+    })
+  }
 
   function onLoadObj(m) {
     application.myLoadedMeshes = m;
@@ -162,7 +135,7 @@ export let application = new MatrixEngineWGPU({
     })
 
     application.addMeshObj({
-      position: {x: 0, y: 4, z: -14},
+      position: {x: -5, y: 4, z: -14},
       rotation: {x: 0, y: 0, z: 0},
       rotationSpeed: {x: 0, y: 0, z: 0},
       texturesPaths: ['./res/meshes/jamb/dice.png'],
@@ -218,7 +191,7 @@ export let application = new MatrixEngineWGPU({
     })
 
     application.addMeshObj({
-      position: {x: -4, y: 1, z: -9},
+      position: {x: -4, y: 6, z: -9},
       rotation: {x: 0, y: 0, z: 0},
       rotationSpeed: {x: 0, y: 0, z: 0},
       texturesPaths: ['./res/meshes/jamb/dice.png'],
@@ -245,27 +218,28 @@ export let application = new MatrixEngineWGPU({
       }
     })
 
-    application.addMeshObj({
-      scale: 0.01,
-      position: {x: 0, y: 6, z: -10},
-      rotation: {x: 0, y: 0, z: 0},
-      // rotationSpeed: {x: 0, y: 0, z: 0},
-      texturesPaths: ['./res/meshes/jamb/bg.png'],
-      name: 'bg',
-      mesh: m.bg,
-      physics: {
-        collide: false,
-        mass: 0,
-        enabled: true,
-        geometry: "Cube"
-      }
-    })
 
+
+
+    let TOLERANCE = 0;
 
     let allDiceDoneProcedure = () => {
       console.log("ALL DONE")
+      TOLERANCE++;
+
+      if (TOLERANCE > 1000) {
+      removeEventListener('dice-1', dice1Click)
+      removeEventListener('dice-2', dice2Click)
+      removeEventListener('dice-3', dice3Click)
+      removeEventListener('dice-4', dice4Click)
+      removeEventListener('dice-5', dice5Click)
+      removeEventListener('dice-6', dice6Click)
+      console.log('FINAL : ',  dices.R)
+      }
     };
+
     addEventListener('all-done', allDiceDoneProcedure)
+
     //
     let dice1Click = (e) => {
       console.info('DICE 1', e.detail)
@@ -273,92 +247,100 @@ export let application = new MatrixEngineWGPU({
         detail: e.detail,
         dice: 'dice-1'
       };
-      dices.R.push(info)
-      if(dices.R.length > 2) {
-        dispatchEvent(new CustomEvent('all-done', {detail: {}}))
-        removeEventListener('dice-1', dice1Click)
-      }
+      dices.R[e.detail.cubeId] = '1';
+      dices.checkAll()
+
       // removeEventListener('dice-1', dice1Click)
     };
     addEventListener('dice-1', dice1Click)
 
     let dice2Click = (e) => {
-      console.info('DICE 2', e.detail)
+      // console.info('DICE 2', e.detail)
       var info = {
         detail: e.detail,
         dice: 'dice-2'
       };
-      dices.R.push(info)
-      
-      if(dices.R.length > 2) {
-        dispatchEvent(new CustomEvent('all-done', {detail: {}}))
-        // removeEventListener('dice-2', dice2Click)
-      }
+      dices.R[e.detail.cubeId] = '2';
+      dices.checkAll()
+      // dices.R.push(info)
+
+      // if(dices.R.length > 6) {
+      //   dispatchEvent(new CustomEvent('all-done', {detail: {}}))
+      //   // removeEventListener('dice-2', dice2Click)
+      // }
       // removeEventListener('dice-2', dice2Click)
     };
     addEventListener('dice-2', dice2Click)
 
     let dice3Click = (e) => {
-      console.info('DICE 3', e.detail)
+      // console.info('DICE 3', e.detail)
       var info = {
         detail: e.detail,
         dice: 'dice-3'
       };
-      dices.R.push(info)
-      
-      if(dices.R.length == 6) {
-        dispatchEvent(new CustomEvent('all-done', {detail: {}}))
-        removeEventListener('dice-3', dice3Click)
-      }
-      removeEventListener('dice-3', dice3Click)
+
+      dices.R[e.detail.cubeId] = '3';
+      dices.checkAll()
+      // dices.R.push(info)
+
+      // if(dices.R.length == 6) {
+      //   dispatchEvent(new CustomEvent('all-done', {detail: {}}))
+      //   removeEventListener('dice-3', dice3Click)
+      // }
+      // removeEventListener('dice-3', dice3Click)
     };
     addEventListener('dice-3', dice3Click)
 
     let dice4Click = (e) => {
-      console.info('DICE 4', e.detail)
+      // console.info('DICE 4', e.detail)
       var info = {
         detail: e.detail,
         dice: 'dice-4'
       };
-      dices.R.push(info)
-      
-      if(dices.R.length == 6) {
-        dispatchEvent(new CustomEvent('all-done', {detail: {}}))
-        // removeEventListener('dice-4', dice4Click)
-      }
+      dices.R[e.detail.cubeId] = '4';
+      dices.checkAll()
+      // dices.R.push(info)
+
+      // if(dices.R.length == 6) {
+      //   dispatchEvent(new CustomEvent('all-done', {detail: {}}))
+      //   // removeEventListener('dice-4', dice4Click)
+      // }
       // removeEventListener('dice-4', dice4Click)
     }
     addEventListener('dice-4', dice4Click)
 
-    let diceClick5 = (e) => {
-      console.info('DICE 5', e.detail)
+    let dice5Click = (e) => {
+      // console.info('DICE 5', e.detail)
       var info = {
         detail: e.detail,
         dice: 'dice-5'
       };
-      dices.R.push(info)
-     
-      if(dices.R.length == 6) {
-        dispatchEvent(new CustomEvent('all-done', {detail: {}}))
-        // removeEventListener('dice-5', diceClick5)
-      }
+      dices.R[e.detail.cubeId] = '5';
+      dices.checkAll()
+      // dices.R.push(info)
+
+      // if(dices.R.length == 6) {
+      //   dispatchEvent(new CustomEvent('all-done', {detail: {}}))
+      //   // removeEventListener('dice-5', diceClick5)
+      // }
       // removeEventListener('dice-5', diceClick5)
     }
-    addEventListener('dice-5', diceClick5)
+    addEventListener('dice-5', dice5Click)
 
     let dice6Click = (e) => {
-      console.info('DICE 6', e.detail)
+      // console.info('DICE 6', e.detail)
       var info = {
         detail: e.detail,
         dice: 'dice-6'
       };
-      dices.R.push(info)
-      
 
-      if(dices.R.length == 6) {
-        dispatchEvent(new CustomEvent('all-done', {detail: {}}))
-        // removeEventListener('dice-6', dice6Click)
-      }
+      dices.R[e.detail.cubeId] = '6';
+      dices.checkAll()
+      // dices.R.push(info)
+      // if(dices.R.length == 6) {
+      //   dispatchEvent(new CustomEvent('all-done', {detail: {}}))
+      //   // removeEventListener('dice-6', dice6Click)
+      // }
       // removeEventListener('dice-6', dice6Click)
     }
     addEventListener('dice-6', dice6Click)

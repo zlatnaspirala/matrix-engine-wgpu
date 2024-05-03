@@ -181,7 +181,7 @@ export default class MatrixEngineWGPU {
     if(typeof o.rotationSpeed === 'undefined') {o.rotationSpeed = {x: 0, y: 0, z: 0}}
     if(typeof o.texturesPaths === 'undefined') {o.texturesPaths = ['./res/textures/default.png']}
     if(typeof o.mainCameraParams === 'undefined') {o.mainCameraParams = this.mainCameraParams}
-    if(typeof o.scale === 'undefined') {o.scale = 1;}
+    if(typeof o.scale === 'undefined') {o.scale = [1,1,1];}
     o.entityArgPass = this.entityArgPass;
     o.cameras = this.cameras;
     // if(typeof o.name === 'undefined') {o.name = 'random' + Math.random();}

@@ -12,9 +12,19 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 // import MatrixEngineWGPU from "./src/world.js";
 // import {downloadMeshes} from './src/engine/loader-obj.js';
 
+var C = 0;
 let dices = exports.dices = {
   STATUS: 'FREE_TO_PLAY',
-  R: []
+  R: {},
+  checkAll: function () {
+    C++;
+    if (typeof this.R.CubePhysics1 != 'undefined' && typeof this.R.CubePhysics2 != 'undefined' && typeof this.R.CubePhysics3 != 'undefined' && typeof this.R.CubePhysics4 != 'undefined' && typeof this.R.CubePhysics5 != 'undefined' && typeof this.R.CubePhysics6 != 'undefined' && C > 500) {
+      dispatchEvent(new CustomEvent('all-done', {
+        detail: {}
+      }));
+      C = 0;
+    }
+  }
 };
 let myDom = exports.myDom = {
   // 
@@ -361,47 +371,20 @@ let application = exports.application = new _world.default({
 }, () => {
   // Dom operations
   _jamb.myDom.createJamb();
+  application.dices = _jamb.dices;
+
   // this code must be on top
   application.matrixAmmo.detectCollision = function () {
     this.lastRoll = '';
     this.presentScore = '';
     let dispatcher = this.dynamicsWorld.getDispatcher();
     let numManifolds = dispatcher.getNumManifolds();
-    console.log('numManifolds  ', numManifolds);
     for (let i = 0; i < numManifolds; i++) {
       let contactManifold = dispatcher.getManifoldByIndexInternal(i);
-      let numContacts = contactManifold.getNumContacts();
-
-      // if (numContacts < 3) 
-      // {
-      //   console.log('less 3 ',  this.getNameByBody(contactManifold.getBody1()))
-      //   return;
-      // }
-
-      // this.rigidBodies.forEach((item) => {
-      //   if(item.kB == contactManifold.getBody0().kB) {
-      //     // console.log('Detected body0 =', item.name)
-      //   }
-      //   if(item.kB == contactManifold.getBody1().kB) {
-      //     // console.log('Detected body1 =', item.name)
-      //   }
-      // })
-      // this.getNameByBody(contactManifold.getBody1()) == 'CubePhysics1'
-      // if(this.ground.kB == contactManifold.getBody0().kB || this.ground.kB == contactManifold.getBody1().kB ){
-      //   // && 
-      //    // this.getNameByBody(contactManifold.getBody1()).indexOf('CubePhysics') != -1 ) {
-      //   // console.log(this.getNameByBody(contactManifold.getBody1()) , '<<<<')
-      // } else {
-      //   // dice collide
-      //   // console.log(this.getNameByBody(contactManifold.getBody0()) , '<<<0<')
-      //   // console.log(this.getNameByBody(contactManifold.getBody1()) , '<<<1<')
-      // }
-
-      // return;
+      // let numContacts = contactManifold.getNumContacts();
       if (this.ground.kB == contactManifold.getBody0().kB || this.ground.kB == contactManifold.getBody1().kB) {
         // console.log(this.ground ,'GROUND IS IN CONTACT WHO IS BODY1 ', contactManifold.getBody1())
-        // console.log('GROUND IS IN CONTACT WHO IS BODY1 getNameByBody  ', this.getNameByBody(contactManifold.getBody1()))
-        // CHECK ROTATION
+        // CHECK ROTATION BEST WAY - VISAL PART IS NOT INTEREST NOW 
         if (this.ground.kB == contactManifold.getBody0().kB) {
           var MY_DICE_NAME = this.getNameByBody(contactManifold.getBody1());
           var testR = contactManifold.getBody1().getWorldTransform().getRotation();
@@ -410,76 +393,90 @@ let application = exports.application = new _world.default({
           var MY_DICE_NAME = this.getNameByBody(contactManifold.getBody0());
           var testR = contactManifold.getBody0().getWorldTransform().getRotation();
         }
+        var passed = false;
         if (Math.abs(testR.y()) < 0.00001) {
-          this.lastRoll += " 4 +";
+          this.lastRoll = "1";
           this.presentScore += 4;
-          dispatchEvent(new CustomEvent('dice-1', {
-            detail: {
-              result: 'dice-1',
-              cubeId: MY_DICE_NAME
-            }
-          }));
+          passed = true;
         }
         if (Math.abs(testR.x()) < 0.00001) {
-          this.lastRoll += " 3 +";
+          this.lastRoll = "5";
           this.presentScore += 3;
-          dispatchEvent(new CustomEvent('dice-5', {
-            detail: {
-              result: 'dice-5',
-              cubeId: MY_DICE_NAME
-            }
-          }));
+          passed = true;
         }
         if (testR.x().toString().substring(0, 5) == testR.y().toString().substring(1, 6)) {
-          this.lastRoll += " 2 +";
+          this.lastRoll = "6";
           this.presentScore += 2;
-          dispatchEvent(new CustomEvent('dice-6', {
-            detail: {
-              result: 'dice-6',
-              cubeId: MY_DICE_NAME
-            }
-          }));
+          passed = true;
         }
         if (testR.x().toString().substring(0, 5) == testR.y().toString().substring(0, 5)) {
-          this.lastRoll += " 1 +";
+          this.lastRoll = "2";
           this.presentScore += 1;
-          dispatchEvent(new CustomEvent('dice-2', {
-            detail: {
-              result: 'dice-2',
-              cubeId: MY_DICE_NAME
-            }
-          }));
+          passed = true;
         }
         if (testR.z().toString().substring(0, 5) == testR.y().toString().substring(1, 6)) {
-          this.lastRoll += " 6 +";
+          this.lastRoll = "4";
           this.presentScore += 6;
-          dispatchEvent(new CustomEvent('dice-4', {
-            detail: {
-              result: 'dice-4',
-              cubeId: MY_DICE_NAME
-            }
-          }));
+          passed = true;
         }
         if (testR.z().toString().substring(0, 5) == testR.y().toString().substring(0, 5)) {
-          this.lastRoll += " 5 +";
+          this.lastRoll = "5";
           this.presentScore += 5;
-          dispatchEvent(new CustomEvent('dice-3', {
-            detail: {
-              result: 'dice-3',
-              cubeId: MY_DICE_NAME
-            }
-          }));
+          passed = true;
         }
+        if (passed == true) dispatchEvent(new CustomEvent(`dice-${this.lastRoll}`, {
+          detail: {
+            result: `dice-${this.lastRoll}`,
+            cubeId: MY_DICE_NAME
+          }
+        }));
       }
     }
   };
   addEventListener('AmmoReady', () => {
     (0, _loaderObj.downloadMeshes)({
       mainTitle: "./res/meshes/jamb/jamb-title.obj",
-      cube: "./res/meshes/jamb/dice.obj",
+      cube: "./res/meshes/jamb/dice.obj"
+    }, onLoadObj, {
+      scale: [1, 1, 1],
+      swap: [null]
+    });
+    (0, _loaderObj.downloadMeshes)({
       bg: "./res/meshes/jamb/bg.obj"
-    }, onLoadObj);
+    }, onLoadObjOther, {
+      scale: [1, 1, 1],
+      swap: [null]
+    });
   });
+  function onLoadObjOther(m) {
+    application.myLoadedMeshes = m;
+    for (var key in m) {
+      console.log(`%c Loaded objs -> : ${key} `, _utils.LOG_MATRIX);
+    }
+    application.addMeshObj({
+      scale: [2, 3, 1],
+      position: {
+        x: 0,
+        y: 6,
+        z: -10
+      },
+      rotation: {
+        x: 0,
+        y: 0,
+        z: 0
+      },
+      // rotationSpeed: {x: 0, y: 0, z: 0},
+      texturesPaths: ['./res/meshes/jamb/bg.png'],
+      name: 'bg',
+      mesh: m.bg,
+      physics: {
+        collide: false,
+        mass: 0,
+        enabled: true,
+        geometry: "Cube"
+      }
+    });
+  }
   function onLoadObj(m) {
     application.myLoadedMeshes = m;
     for (var key in m) {
@@ -514,7 +511,7 @@ let application = exports.application = new _world.default({
     });
     application.addMeshObj({
       position: {
-        x: 0,
+        x: -5,
         y: 4,
         z: -14
       },
@@ -615,7 +612,7 @@ let application = exports.application = new _world.default({
     application.addMeshObj({
       position: {
         x: -4,
-        y: 1,
+        y: 6,
         z: -9
       },
       rotation: {
@@ -659,33 +656,22 @@ let application = exports.application = new _world.default({
         geometry: "Cube"
       }
     });
-    application.addMeshObj({
-      scale: 0.01,
-      position: {
-        x: 0,
-        y: 6,
-        z: -10
-      },
-      rotation: {
-        x: 0,
-        y: 0,
-        z: 0
-      },
-      // rotationSpeed: {x: 0, y: 0, z: 0},
-      texturesPaths: ['./res/meshes/jamb/bg.png'],
-      name: 'bg',
-      mesh: m.bg,
-      physics: {
-        collide: false,
-        mass: 0,
-        enabled: true,
-        geometry: "Cube"
-      }
-    });
+    let TOLERANCE = 0;
     let allDiceDoneProcedure = () => {
       console.log("ALL DONE");
+      TOLERANCE++;
+      if (TOLERANCE > 1000) {
+        removeEventListener('dice-1', dice1Click);
+        removeEventListener('dice-2', dice2Click);
+        removeEventListener('dice-3', dice3Click);
+        removeEventListener('dice-4', dice4Click);
+        removeEventListener('dice-5', dice5Click);
+        removeEventListener('dice-6', dice6Click);
+        console.log('FINAL : ', _jamb.dices.R);
+      }
     };
     addEventListener('all-done', allDiceDoneProcedure);
+
     //
     let dice1Click = e => {
       console.info('DICE 1', e.detail);
@@ -693,93 +679,93 @@ let application = exports.application = new _world.default({
         detail: e.detail,
         dice: 'dice-1'
       };
-      _jamb.dices.R.push(info);
-      if (_jamb.dices.R.length > 2) {
-        dispatchEvent(new CustomEvent('all-done', {
-          detail: {}
-        }));
-        removeEventListener('dice-1', dice1Click);
-      }
+      _jamb.dices.R[e.detail.cubeId] = '1';
+      _jamb.dices.checkAll();
+
       // removeEventListener('dice-1', dice1Click)
     };
     addEventListener('dice-1', dice1Click);
     let dice2Click = e => {
-      console.info('DICE 2', e.detail);
+      // console.info('DICE 2', e.detail)
       var info = {
         detail: e.detail,
         dice: 'dice-2'
       };
-      _jamb.dices.R.push(info);
-      if (_jamb.dices.R.length > 2) {
-        dispatchEvent(new CustomEvent('all-done', {
-          detail: {}
-        }));
-        // removeEventListener('dice-2', dice2Click)
-      }
+      _jamb.dices.R[e.detail.cubeId] = '2';
+      _jamb.dices.checkAll();
+      // dices.R.push(info)
+
+      // if(dices.R.length > 6) {
+      //   dispatchEvent(new CustomEvent('all-done', {detail: {}}))
+      //   // removeEventListener('dice-2', dice2Click)
+      // }
       // removeEventListener('dice-2', dice2Click)
     };
     addEventListener('dice-2', dice2Click);
     let dice3Click = e => {
-      console.info('DICE 3', e.detail);
+      // console.info('DICE 3', e.detail)
       var info = {
         detail: e.detail,
         dice: 'dice-3'
       };
-      _jamb.dices.R.push(info);
-      if (_jamb.dices.R.length == 6) {
-        dispatchEvent(new CustomEvent('all-done', {
-          detail: {}
-        }));
-        removeEventListener('dice-3', dice3Click);
-      }
-      removeEventListener('dice-3', dice3Click);
+      _jamb.dices.R[e.detail.cubeId] = '3';
+      _jamb.dices.checkAll();
+      // dices.R.push(info)
+
+      // if(dices.R.length == 6) {
+      //   dispatchEvent(new CustomEvent('all-done', {detail: {}}))
+      //   removeEventListener('dice-3', dice3Click)
+      // }
+      // removeEventListener('dice-3', dice3Click)
     };
     addEventListener('dice-3', dice3Click);
     let dice4Click = e => {
-      console.info('DICE 4', e.detail);
+      // console.info('DICE 4', e.detail)
       var info = {
         detail: e.detail,
         dice: 'dice-4'
       };
-      _jamb.dices.R.push(info);
-      if (_jamb.dices.R.length == 6) {
-        dispatchEvent(new CustomEvent('all-done', {
-          detail: {}
-        }));
-        // removeEventListener('dice-4', dice4Click)
-      }
+      _jamb.dices.R[e.detail.cubeId] = '4';
+      _jamb.dices.checkAll();
+      // dices.R.push(info)
+
+      // if(dices.R.length == 6) {
+      //   dispatchEvent(new CustomEvent('all-done', {detail: {}}))
+      //   // removeEventListener('dice-4', dice4Click)
+      // }
       // removeEventListener('dice-4', dice4Click)
     };
     addEventListener('dice-4', dice4Click);
-    let diceClick5 = e => {
-      console.info('DICE 5', e.detail);
+    let dice5Click = e => {
+      // console.info('DICE 5', e.detail)
       var info = {
         detail: e.detail,
         dice: 'dice-5'
       };
-      _jamb.dices.R.push(info);
-      if (_jamb.dices.R.length == 6) {
-        dispatchEvent(new CustomEvent('all-done', {
-          detail: {}
-        }));
-        // removeEventListener('dice-5', diceClick5)
-      }
+      _jamb.dices.R[e.detail.cubeId] = '5';
+      _jamb.dices.checkAll();
+      // dices.R.push(info)
+
+      // if(dices.R.length == 6) {
+      //   dispatchEvent(new CustomEvent('all-done', {detail: {}}))
+      //   // removeEventListener('dice-5', diceClick5)
+      // }
       // removeEventListener('dice-5', diceClick5)
     };
-    addEventListener('dice-5', diceClick5);
+    addEventListener('dice-5', dice5Click);
     let dice6Click = e => {
-      console.info('DICE 6', e.detail);
+      // console.info('DICE 6', e.detail)
       var info = {
         detail: e.detail,
         dice: 'dice-6'
       };
-      _jamb.dices.R.push(info);
-      if (_jamb.dices.R.length == 6) {
-        dispatchEvent(new CustomEvent('all-done', {
-          detail: {}
-        }));
-        // removeEventListener('dice-6', dice6Click)
-      }
+      _jamb.dices.R[e.detail.cubeId] = '6';
+      _jamb.dices.checkAll();
+      // dices.R.push(info)
+      // if(dices.R.length == 6) {
+      //   dispatchEvent(new CustomEvent('all-done', {detail: {}}))
+      //   // removeEventListener('dice-6', dice6Click)
+      // }
       // removeEventListener('dice-6', dice6Click)
     };
     addEventListener('dice-6', dice6Click);
@@ -7434,6 +7420,9 @@ exports.play = play;
  * information can then be used later on when creating your VBOs. See
  * OBJ.initMeshBuffers for an example of how to use the newly created Mesh
  *
+ * Nidza Note:
+ * There is difference from me source obj loader and me-wgpu obj loader
+ * Here we need scele in comp x,y,z because we use also primitive [cube, sphere etc...]
  * @class Mesh
  * @constructor
  *
@@ -7450,7 +7439,7 @@ class constructMesh {
       this.create(this.objectData, this.inputArg);
     };
     this.updateBuffers = () => {
-      this.inputArg.scale = 1;
+      this.inputArg.scale = [0.1, 0.1, 0.1];
       this.create(this.objectData, this.inputArg);
     };
   }
@@ -7607,9 +7596,9 @@ class constructMesh {
                   This same process is repeated for verts and textures.
                   */
             // vertex position
-            unpacked.verts.push(+verts[(vertex[0] - 1) * 3 + initOrientation[0]] * inputArg.scale);
-            unpacked.verts.push(+verts[(vertex[0] - 1) * 3 + initOrientation[1]] * inputArg.scale);
-            unpacked.verts.push(+verts[(vertex[0] - 1) * 3 + initOrientation[2]] * inputArg.scale);
+            unpacked.verts.push(+verts[(vertex[0] - 1) * 3 + initOrientation[0]] * inputArg.scale[0]);
+            unpacked.verts.push(+verts[(vertex[0] - 1) * 3 + initOrientation[1]] * inputArg.scale[1]);
+            unpacked.verts.push(+verts[(vertex[0] - 1) * 3 + initOrientation[2]] * inputArg.scale[2]);
 
             // vertex textures
             if (textures.length) {
@@ -7684,11 +7673,11 @@ var downloadMeshes = function (nameAndURLs, completionCallback, inputArg) {
   // a new object is created. this will be passed into the completionCallback
   if (typeof inputArg === 'undefined') {
     var inputArg = {
-      scale: 1,
+      scale: [0.1, 0.1, 0.1],
       swap: [null]
     };
   }
-  if (typeof inputArg.scale === 'undefined') inputArg.scale = 0.1;
+  if (typeof inputArg.scale === 'undefined') inputArg.scale = [0.1, 0.1, 0.1];
   if (typeof inputArg.swap === 'undefined') inputArg.swap = [null];
   var meshes = {};
 
@@ -9746,7 +9735,7 @@ class MatrixAmmo {
     };
     let Ammo = this.Ammo;
     // improve this - scale by comp
-    var colShape = new Ammo.btBoxShape(new Ammo.btVector3(pOptions.scale, pOptions.scale, pOptions.scale)),
+    var colShape = new Ammo.btBoxShape(new Ammo.btVector3(pOptions.scale[0], pOptions.scale[1], pOptions.scale[2])),
       startTransform = new Ammo.btTransform();
     startTransform.setIdentity();
     var mass = pOptions.mass;
@@ -10432,7 +10421,7 @@ class MatrixEngineWGPU {
       o.mainCameraParams = this.mainCameraParams;
     }
     if (typeof o.scale === 'undefined') {
-      o.scale = 1;
+      o.scale = [1, 1, 1];
     }
     o.entityArgPass = this.entityArgPass;
     o.cameras = this.cameras;

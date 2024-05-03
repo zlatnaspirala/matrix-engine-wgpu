@@ -4,6 +4,9 @@
  * information can then be used later on when creating your VBOs. See
  * OBJ.initMeshBuffers for an example of how to use the newly created Mesh
  *
+ * Nidza Note:
+ * There is difference from me source obj loader and me-wgpu obj loader
+ * Here we need scele in comp x,y,z because we use also primitive [cube, sphere etc...]
  * @class Mesh
  * @constructor
  *
@@ -21,7 +24,7 @@ export class constructMesh {
       this.create(this.objectData, this.inputArg)
     };
     this.updateBuffers = () => {
-      this.inputArg.scale = 1;
+      this.inputArg.scale = [0.1,0.1,0.1];
       this.create(this.objectData, this.inputArg);
     };
   }
@@ -184,9 +187,9 @@ export class constructMesh {
                   This same process is repeated for verts and textures.
                   */
             // vertex position
-            unpacked.verts.push(+verts[(vertex[0] - 1) * 3 + initOrientation[0]] * inputArg.scale);
-            unpacked.verts.push(+verts[(vertex[0] - 1) * 3 + initOrientation[1]] * inputArg.scale);
-            unpacked.verts.push(+verts[(vertex[0] - 1) * 3 + initOrientation[2]] * inputArg.scale);
+            unpacked.verts.push(+verts[(vertex[0] - 1) * 3 + initOrientation[0]] * inputArg.scale[0]);
+            unpacked.verts.push(+verts[(vertex[0] - 1) * 3 + initOrientation[1]] * inputArg.scale[1]);
+            unpacked.verts.push(+verts[(vertex[0] - 1) * 3 + initOrientation[2]] * inputArg.scale[2]);
 
             // vertex textures
             if (textures.length) {
@@ -263,11 +266,11 @@ export var downloadMeshes = function (nameAndURLs, completionCallback, inputArg)
   // a new object is created. this will be passed into the completionCallback
   if (typeof inputArg === 'undefined') {
     var inputArg = {
-      scale: 1,
+      scale: [0.1,0.1,0.1],
       swap: [null]
      };
   }
-  if (typeof inputArg.scale === 'undefined') inputArg.scale = 0.1;
+  if (typeof inputArg.scale === 'undefined') inputArg.scale = [0.1,0.1,0.1];
   if (typeof inputArg.swap === 'undefined') inputArg.swap = [null];
 
   var meshes = {};
