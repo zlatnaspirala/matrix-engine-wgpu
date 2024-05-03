@@ -319,10 +319,15 @@ export let myDom = {
       rowNumber.style.background = '#7d7d7d8c';
       rowNumber.innerHTML = `-`;
       rowNumber.addEventListener('click', (e) => {
-        console.log('LOG e ', e.target.id)
+
+        if (dices.STATUS = "PLACE_RESULT") {
+          console.log('BLOCK FROM JAMB DOM  ')
+          return;
+        }
+
+        
         var getName = e.target.id;
         getName = getName.replace('down-rowNumber', '')
-
         // rowDown click
         if(this.state.rowDown.length == 0) {
           console.log('LOG ', getName)
@@ -338,7 +343,6 @@ export let myDom = {
             e.target.innerHTML = count1;
             dices.STATUS = "FREE_TO_PLAY";
             dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}))
-
           } else {
             console.log('BLOCK')
           }
@@ -355,6 +359,12 @@ export let myDom = {
               }
               this.state.rowDown.push((count23456 * parseInt(getName)))
               e.target.innerHTML = (count23456 * parseInt(getName));
+
+              if(parseInt(getName) == 6) {
+                // // calc sum
+                console.log('calc sum for numb ~ ')
+              }
+
               dices.STATUS = "FREE_TO_PLAY";
               dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}))
             } else {

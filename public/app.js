@@ -278,10 +278,12 @@ let myDom = exports.myDom = {
       rowNumber.style.background = '#7d7d7d8c';
       rowNumber.innerHTML = `-`;
       rowNumber.addEventListener('click', e => {
-        console.log('LOG e ', e.target.id);
+        if (dices.STATUS = "PLACE_RESULT") {
+          console.log('BLOCK FROM JAMB DOM  ');
+          return;
+        }
         var getName = e.target.id;
         getName = getName.replace('down-rowNumber', '');
-
         // rowDown click
         if (this.state.rowDown.length == 0) {
           console.log('LOG ', getName);
@@ -313,6 +315,10 @@ let myDom = exports.myDom = {
               }
               this.state.rowDown.push(count23456 * parseInt(getName));
               e.target.innerHTML = count23456 * parseInt(getName);
+              if (parseInt(getName) == 6) {
+                // // calc sum
+                console.log('calc sum for numb ~ ');
+              }
               dices.STATUS = "FREE_TO_PLAY";
               dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
             } else {
@@ -754,24 +760,34 @@ let application = exports.application = new _world.default({
     let allDiceDoneProcedure = () => {
       console.log("ALL DONE");
       application.TOLERANCE++;
-      if (application.TOLERANCE > 1) {
+      if (application.TOLERANCE >= 1) {
         removeEventListener('dice-1', dice1Click);
         removeEventListener('dice-2', dice2Click);
         removeEventListener('dice-3', dice3Click);
         removeEventListener('dice-4', dice4Click);
         removeEventListener('dice-5', dice5Click);
         removeEventListener('dice-6', dice6Click);
-        console.log('FINAL >>>>>>>>>>>>>>>>>>>>>>> : ', _jamb.dices.R);
+        console.log('FINAL >>>> ', _jamb.dices.R);
         application.TOLERANCE = 0;
         app.cameras.WASD.yaw = 0.01;
         app.cameras.WASD.pitch = -1.26;
         app.cameras.WASD.position[2] = -18;
         app.cameras.WASD.position[1] = 19;
-
+        _jamb.dices.STATUS = "PLACE_RESULT";
         // application.dices.STATUS = "FREE_TO_PLAY";
       }
     };
     addEventListener('all-done', allDiceDoneProcedure);
+    addEventListener('FREE_TO_PLAY', () => {
+      // setup againt 3d space loc
+      console.info(' setup againt 3d space loc make some logic for pos ...');
+      app.matrixAmmo.getBodyByName('CubePhysics1').setLinearVelocity(new Ammo.btVector3(2, 2, 12));
+      app.matrixAmmo.getBodyByName('CubePhysics2').setLinearVelocity(new Ammo.btVector3(2, 2, 12));
+      app.matrixAmmo.getBodyByName('CubePhysics3').setLinearVelocity(new Ammo.btVector3(2, 2, 12));
+      app.matrixAmmo.getBodyByName('CubePhysics4').setLinearVelocity(new Ammo.btVector3(2, 2, 12));
+      app.matrixAmmo.getBodyByName('CubePhysics5').setLinearVelocity(new Ammo.btVector3(2, 2, 12));
+      app.matrixAmmo.getBodyByName('CubePhysics6').setLinearVelocity(new Ammo.btVector3(2, 2, 12));
+    });
 
     // ACTIONS
     let dice1Click = e => {
