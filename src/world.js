@@ -191,7 +191,7 @@ export default class MatrixEngineWGPU {
     }
     if(typeof o.physics === 'undefined') {
       o.physics = {
-        scale: 1,
+        scale: [1,1,1],
         enabled: true,
         geometry: "Sphere",
         radius: o.scale,

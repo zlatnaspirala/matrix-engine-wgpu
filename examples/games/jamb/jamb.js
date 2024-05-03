@@ -1,34 +1,56 @@
 import MatrixEngineWGPU from "../../../src/world.js";
 import {downloadMeshes} from '../../../src/engine/loader-obj.js';
-// import MatrixEngineWGPU from "./src/world.js";
-// import {downloadMeshes} from './src/engine/loader-obj.js';
-import {LOG_FUNNY, LOG_INFO, LOG_MATRIX} from "../../../src/engine/utils.js";
-
-
-var C = 0;
+import {LOG_FUNNY, LOG_INFO, LOG_MATRIX, byId} from "../../../src/engine/utils.js";
 
 export let dices = {
+  C: 0,
   STATUS: 'FREE_TO_PLAY',
   R: {},
   checkAll: function() {
-    C++;
+    this.C++;
     if(typeof this.R.CubePhysics1 != 'undefined' &&
       typeof this.R.CubePhysics2 != 'undefined' &&
       typeof this.R.CubePhysics3 != 'undefined' &&
       typeof this.R.CubePhysics4 != 'undefined' &&
       typeof this.R.CubePhysics5 != 'undefined' &&
-      typeof this.R.CubePhysics6 != 'undefined' && C > 500) {
-        dispatchEvent(new CustomEvent('all-done', {detail: {}}))
-        C = 0;
+      typeof this.R.CubePhysics6 != 'undefined' && this.C > 2000) {
+      dispatchEvent(new CustomEvent('all-done', {detail: {}}))
+      this.C = 0;
     }
   }
 };
 
 export let myDom = {
 
-  // 
   state: {
     rowDown: []
+  },
+
+  createBlocker: function() {
+    var root = document.createElement('div')
+    root.id = 'blocker';
+
+    var messageBox = document.createElement('div')
+    messageBox.id = 'messageBox';
+
+    messageBox.innerHTML = `
+    Welcome here, <br>
+     open source project 🎲 Ultimate Yahtzee game<br>
+     download from <a href="https://github.com/zlatnaspirala/matrix-engine-wgpu">github.com/zlatnaspirala/matrix-engine-wgpu</a><br>
+     <button class="btn" >🎲START GAME</button>
+    `;
+
+    let initialMsgBoxEvent = function() {
+      console.log('click on msgbox')
+      byId('messageBox').innerHTML = ``;
+      byId('blocker').style.display = 'none';
+      messageBox.removeEventListener('click', initialMsgBoxEvent)
+    };
+
+    messageBox.addEventListener('click', initialMsgBoxEvent)
+    root.append(messageBox)
+
+    document.body.appendChild(root);
   },
 
   createJamb: function() {
@@ -192,9 +214,7 @@ export let myDom = {
     myRoot.appendChild(rowSumFINAL);
   },
 
-
   createRow: function(myRoot) {
-
     for(var x = 1;x < 7;x++) {
       var rowNumber = document.createElement('div')
       rowNumber.id = 'rowNumber' + x;
@@ -289,9 +309,7 @@ export let myDom = {
 
   },
 
-
   createRowDown: function(myRoot) {
-
     for(var x = 1;x < 7;x++) {
       var rowNumber = document.createElement('div')
       rowNumber.id = 'down-rowNumber' + x;
@@ -311,9 +329,18 @@ export let myDom = {
           // down-rowNumber3
           console.log('LOG e ', getName)
           if(parseInt(getName) == 1) {
-            console.log('yeap')
+            var count1 = 0;
+            for(let key in dices.R) {
+              if(parseInt(dices.R[key]) == 1) {
+                console.log('yeap', dices.R)
+                count1++;
+              }
+            }
             // check for only `1`
-            this.state.rowDown.push()
+            this.state.rowDown.push(count1)
+            e.target.innerHTML = count1;
+
+            dices.STATUS = "FREE_TO_PLAY";
 
           } else {
             console.log('BLOCK')
@@ -322,6 +349,24 @@ export let myDom = {
           // 
           if(this.state.rowDown.length > 0) {
             //
+            if(parseInt(getName) == this.state.rowDown.length + 1) {
+              console.log('moze za ', parseInt(getName))
+              var count23456 = 0;
+              for(let key in dices.R) {
+                if(parseInt(dices.R[key]) == parseInt(getName)) {
+                  console.log('yeap', dices.R)
+                  count23456++;
+                }
+              }
+              this.state.rowDown.push(
+                (count23456 * parseInt(getName))
+              )
+              dices.STATUS = "FREE_TO_PLAY";
+
+              e.target.innerHTML = (count23456 * parseInt(getName));
+            } else {
+              console.log('BLOCK...')
+            }
 
           }
         }
