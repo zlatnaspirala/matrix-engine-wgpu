@@ -117,10 +117,9 @@ export default class MatrixAmmo {
       body.setCollisionFlags(FLAGS.CF_KINEMATIC_OBJECT);
       // console.log('what is pOptions.mass and state is 2 ....', pOptions.mass)
     } else if (typeof pOptions.collide != 'undefined' && pOptions.collide == false) {
-      console.log('SSSSSSSSSSSSSSSSS xsdf ')
+      // idea not work for now - eliminate collide effect
       body.setActivationState(4)
       body.setCollisionFlags(FLAGS.TEST_NIDZA);
-
     }else {
       body.setActivationState(4)
     }
@@ -139,27 +138,22 @@ export default class MatrixAmmo {
   }
 
   setKinematicTransform(body, x, y, z, rx, ry, rz) {
-
     if(typeof rx == 'undefined') {var rx = 0;}
     if(typeof ry == 'undefined') {var ry = 0;}
     if(typeof rz == 'undefined') {var rz = 0;}
-
     let pos = new Ammo.btVector3();
-    let quat = new Ammo.btQuaternion();
+    // let quat = new Ammo.btQuaternion();
     pos = body.getWorldTransform().getOrigin();
     let localRot = body.getWorldTransform().getRotation();
-    console.log('pre pos x:', pos.x(), " y : ", pos.y(), " z:", pos.z())
+    // console.log('pre pos x:', pos.x(), " y : ", pos.y(), " z:", pos.z())
     pos.setX(pos.x() + x)
     pos.setY(pos.y() + y)
     pos.setZ(pos.z() + z)
-    console.log('position kinematic move : ', pos)
-    console.log('position localRot  : ', localRot)
+    // console.log('position kinematic move : ', pos)
+    // console.log('position localRot  : ', localRot)
     localRot.setX(rx)
     localRot.setY(ry)
     localRot.setZ(rz)
-    // console.log('position localRot after  : ', localRot)
-    // body.getWorldQuaternion(quat);
-    // let physicsBody = kObject.userData.physicsBody;
     let physicsBody = body;
     let ms = physicsBody.getMotionState();
     if(ms) {
