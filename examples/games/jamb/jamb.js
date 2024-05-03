@@ -4,12 +4,16 @@ import {downloadMeshes} from '../../../src/engine/loader-obj.js';
 // import {downloadMeshes} from './src/engine/loader-obj.js';
 import {LOG_FUNNY, LOG_INFO, LOG_MATRIX} from "../../../src/engine/utils.js";
 
+export let dices = {
+  STATUS: 'FREE_TO_PLAY',
+  R: []
+};
 
 export let myDom = {
 
   // 
   state: {
-    rowDown : []
+    rowDown: []
   },
 
   createJamb: function() {
@@ -96,12 +100,12 @@ export let myDom = {
 
     var rowNumberSum = document.createElement('div')
     rowNumberSum.id = 'H_rowNumberSum';
-    
+
     rowNumberSum.style.width = 'auto';
     rowNumberSum.style.background = '#7d7d7d8c';
     rowNumberSum.innerHTML = `Σ`;
     myRoot.appendChild(rowNumberSum);
-  
+
     var rowMax = document.createElement('div')
     rowMax.id = 'H_rowMax';
     rowMax.style.width = 'auto';
@@ -123,35 +127,35 @@ export let myDom = {
     rowMaxMinSum.innerHTML = `Σ`;
     myRoot.appendChild(rowMaxMinSum);
 
-    var largeStraight =  document.createElement('div')
+    var largeStraight = document.createElement('div')
     largeStraight.id = 'H_largeStraight';
     largeStraight.style.width = 'auto';
     largeStraight.style.background = '#7d7d7d8c';
     largeStraight.innerHTML = `Straight`;
     myRoot.appendChild(largeStraight);
 
-    var threeOfAKind =  document.createElement('div')
+    var threeOfAKind = document.createElement('div')
     threeOfAKind.id = 'H_threeOfAKind';
     threeOfAKind.style.width = 'auto';
     threeOfAKind.style.background = '#7d7d7d8c';
     threeOfAKind.innerHTML = `ThreeOf`;
     myRoot.appendChild(threeOfAKind);
 
-    var fullHouse =  document.createElement('div')
+    var fullHouse = document.createElement('div')
     fullHouse.id = 'H_fullHouse';
     fullHouse.style.width = 'auto';
     fullHouse.style.background = '#7d7d7d8c';
     fullHouse.innerHTML = `Full`;
     myRoot.appendChild(fullHouse);
 
-    var poker =  document.createElement('div')
+    var poker = document.createElement('div')
     poker.id = 'H_poker';
     poker.style.width = 'auto';
     poker.style.background = '#7d7d7d8c';
     poker.innerHTML = `Poker`;
     myRoot.appendChild(poker);
 
-    var jamb =  document.createElement('div')
+    var jamb = document.createElement('div')
     jamb.id = 'H_jamb';
     jamb.style.width = 'auto';
     jamb.style.background = '#7d7d7d8c';
@@ -188,8 +192,9 @@ export let myDom = {
         console.log('LOG THIS ', this)
         // works
         // rowDown
-        if (this.state.rowDown.length == 0) {
+        if(this.state.rowDown.length == 0) {
           console.log('it is no play yet in this row ', this)
+
         }
       })
       myRoot.appendChild(rowNumber);
@@ -197,12 +202,12 @@ export let myDom = {
 
     var rowNumberSum = document.createElement('div')
     rowNumberSum.id = 'rowNumberSum';
-    
+
     rowNumberSum.style.width = 'auto';
     rowNumberSum.style.background = '#7d7d7d8c';
     rowNumberSum.innerHTML = `-`;
     myRoot.appendChild(rowNumberSum);
-  
+
     var rowMax = document.createElement('div')
     rowMax.id = 'rowMax';
     rowMax.style.width = 'auto';
@@ -224,35 +229,35 @@ export let myDom = {
     rowMaxMinSum.innerHTML = `-`;
     myRoot.appendChild(rowMaxMinSum);
 
-    var largeStraight =  document.createElement('div')
+    var largeStraight = document.createElement('div')
     largeStraight.id = 'largeStraight';
     largeStraight.style.width = 'auto';
     largeStraight.style.background = '#7d7d7d8c';
     largeStraight.innerHTML = `-`;
     myRoot.appendChild(largeStraight);
 
-    var threeOfAKind =  document.createElement('div')
+    var threeOfAKind = document.createElement('div')
     threeOfAKind.id = 'threeOfAKind';
     threeOfAKind.style.width = 'auto';
     threeOfAKind.style.background = '#7d7d7d8c';
     threeOfAKind.innerHTML = `-`;
     myRoot.appendChild(threeOfAKind);
 
-    var fullHouse =  document.createElement('div')
+    var fullHouse = document.createElement('div')
     fullHouse.id = 'fullHouse';
     fullHouse.style.width = 'auto';
     fullHouse.style.background = '#7d7d7d8c';
     fullHouse.innerHTML = `-`;
     myRoot.appendChild(fullHouse);
 
-    var poker =  document.createElement('div')
+    var poker = document.createElement('div')
     poker.id = 'poker';
     poker.style.width = 'auto';
     poker.style.background = '#7d7d7d8c';
     poker.innerHTML = `-`;
     myRoot.appendChild(poker);
 
-    var jamb =  document.createElement('div')
+    var jamb = document.createElement('div')
     jamb.id = 'jamb';
     jamb.style.width = 'auto';
     jamb.style.background = '#7d7d7d8c';
@@ -266,7 +271,7 @@ export let myDom = {
     rowSum.innerHTML = `-`;
     myRoot.appendChild(rowSum);
 
- 
+
   },
 
 
@@ -282,29 +287,44 @@ export let myDom = {
       rowNumber.innerHTML = `-`;
       rowNumber.addEventListener('click', (e) => {
         console.log('LOG e ', e.target.id)
-        // works // rowDown
-        if (this.state.rowDown.length == 0) {
+        var getName = e.target.id;
+        getName = getName.replace('down-rowNumber', '')
+
+        // rowDown click
+        if(this.state.rowDown.length == 0) {
           console.log('it is no play yet in this row ', this)
           // down-rowNumber3
-          var getName = e.target.id;
-          getName = getName.replace('down-rowNumber', '')
           console.log('LOG e ', getName)
-          if (parseInt(getName) == 1) {
-            console.log('MOZE ')
+          if(parseInt(getName) == 1) {
+            console.log('yeap')
+            // check for only `1`
+            this.state.rowDown.push()
+
+          } else {
+            console.log('BLOCK')
+          }
+        } else {
+          // 
+          if(this.state.rowDown.length > 0) {
+            //
+
           }
         }
+
+
+
       })
       myRoot.appendChild(rowNumber);
     }
 
     var rowNumberSum = document.createElement('div')
     rowNumberSum.id = 'down-rowNumberSum';
-    
+
     rowNumberSum.style.width = 'auto';
     rowNumberSum.style.background = '#7d7d7d8c';
     rowNumberSum.innerHTML = `-`;
     myRoot.appendChild(rowNumberSum);
-  
+
     var rowMax = document.createElement('div')
     rowMax.id = 'down-rowMax';
     rowMax.style.width = 'auto';
@@ -326,35 +346,35 @@ export let myDom = {
     rowMaxMinSum.innerHTML = `-`;
     myRoot.appendChild(rowMaxMinSum);
 
-    var largeStraight =  document.createElement('div')
+    var largeStraight = document.createElement('div')
     largeStraight.id = 'down-largeStraight';
     largeStraight.style.width = 'auto';
     largeStraight.style.background = '#7d7d7d8c';
     largeStraight.innerHTML = `-`;
     myRoot.appendChild(largeStraight);
 
-    var threeOfAKind =  document.createElement('div')
+    var threeOfAKind = document.createElement('div')
     threeOfAKind.id = 'down-threeOfAKind';
     threeOfAKind.style.width = 'auto';
     threeOfAKind.style.background = '#7d7d7d8c';
     threeOfAKind.innerHTML = `-`;
     myRoot.appendChild(threeOfAKind);
 
-    var fullHouse =  document.createElement('div')
+    var fullHouse = document.createElement('div')
     fullHouse.id = 'down-fullHouse';
     fullHouse.style.width = 'auto';
     fullHouse.style.background = '#7d7d7d8c';
     fullHouse.innerHTML = `-`;
     myRoot.appendChild(fullHouse);
 
-    var poker =  document.createElement('div')
+    var poker = document.createElement('div')
     poker.id = 'down-poker';
     poker.style.width = 'auto';
     poker.style.background = '#7d7d7d8c';
     poker.innerHTML = `-`;
     myRoot.appendChild(poker);
 
-    var jamb =  document.createElement('div')
+    var jamb = document.createElement('div')
     jamb.id = 'down-jamb';
     jamb.style.width = 'auto';
     jamb.style.background = '#7d7d7d8c';
@@ -368,7 +388,7 @@ export let myDom = {
     rowSum.innerHTML = `-`;
     myRoot.appendChild(rowSum);
 
- 
+
   },
 
 };

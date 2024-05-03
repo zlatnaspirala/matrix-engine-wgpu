@@ -4,7 +4,7 @@
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.myDom = void 0;
+exports.myDom = exports.dices = void 0;
 var _world = _interopRequireDefault(require("../../../src/world.js"));
 var _loaderObj = require("../../../src/engine/loader-obj.js");
 var _utils = require("../../../src/engine/utils.js");
@@ -12,6 +12,10 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 // import MatrixEngineWGPU from "./src/world.js";
 // import {downloadMeshes} from './src/engine/loader-obj.js';
 
+let dices = exports.dices = {
+  STATUS: 'FREE_TO_PLAY',
+  R: []
+};
 let myDom = exports.myDom = {
   // 
   state: {
@@ -248,15 +252,25 @@ let myDom = exports.myDom = {
       rowNumber.innerHTML = `-`;
       rowNumber.addEventListener('click', e => {
         console.log('LOG e ', e.target.id);
-        // works // rowDown
+        var getName = e.target.id;
+        getName = getName.replace('down-rowNumber', '');
+
+        // rowDown click
         if (this.state.rowDown.length == 0) {
           console.log('it is no play yet in this row ', this);
           // down-rowNumber3
-          var getName = e.target.id;
-          getName = getName.replace('down-rowNumber', '');
           console.log('LOG e ', getName);
           if (parseInt(getName) == 1) {
-            console.log('MOZE ');
+            console.log('yeap');
+            // check for only `1`
+            this.state.rowDown.push();
+          } else {
+            console.log('BLOCK');
+          }
+        } else {
+          // 
+          if (this.state.rowDown.length > 0) {
+            //
           }
         }
       });
@@ -337,8 +351,6 @@ var _loaderObj = require("./src/engine/loader-obj.js");
 var _utils = require("./src/engine/utils.js");
 var _jamb = require("./examples/games/jamb/jamb.js");
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-// change this after in examples folder
-
 let application = exports.application = new _world.default({
   useSingleRenderPass: true,
   canvasSize: 'fullscreen',
@@ -349,16 +361,23 @@ let application = exports.application = new _world.default({
 }, () => {
   // Dom operations
   _jamb.myDom.createJamb();
-
   // this code must be on top
   application.matrixAmmo.detectCollision = function () {
     this.lastRoll = '';
     this.presentScore = '';
     let dispatcher = this.dynamicsWorld.getDispatcher();
     let numManifolds = dispatcher.getNumManifolds();
+    console.log('numManifolds  ', numManifolds);
     for (let i = 0; i < numManifolds; i++) {
       let contactManifold = dispatcher.getManifoldByIndexInternal(i);
-      // let numContacts = contactManifold.getNumContacts();
+      let numContacts = contactManifold.getNumContacts();
+
+      // if (numContacts < 3) 
+      // {
+      //   console.log('less 3 ',  this.getNameByBody(contactManifold.getBody1()))
+      //   return;
+      // }
+
       // this.rigidBodies.forEach((item) => {
       //   if(item.kB == contactManifold.getBody0().kB) {
       //     // console.log('Detected body0 =', item.name)
@@ -367,20 +386,37 @@ let application = exports.application = new _world.default({
       //     // console.log('Detected body1 =', item.name)
       //   }
       // })
-
       // this.getNameByBody(contactManifold.getBody1()) == 'CubePhysics1'
+      // if(this.ground.kB == contactManifold.getBody0().kB || this.ground.kB == contactManifold.getBody1().kB ){
+      //   // && 
+      //    // this.getNameByBody(contactManifold.getBody1()).indexOf('CubePhysics') != -1 ) {
+      //   // console.log(this.getNameByBody(contactManifold.getBody1()) , '<<<<')
+      // } else {
+      //   // dice collide
+      //   // console.log(this.getNameByBody(contactManifold.getBody0()) , '<<<0<')
+      //   // console.log(this.getNameByBody(contactManifold.getBody1()) , '<<<1<')
+      // }
 
-      if (this.ground.kB == contactManifold.getBody0().kB) {
+      // return;
+      if (this.ground.kB == contactManifold.getBody0().kB || this.ground.kB == contactManifold.getBody1().kB) {
         // console.log(this.ground ,'GROUND IS IN CONTACT WHO IS BODY1 ', contactManifold.getBody1())
         // console.log('GROUND IS IN CONTACT WHO IS BODY1 getNameByBody  ', this.getNameByBody(contactManifold.getBody1()))
         // CHECK ROTATION
-        var testR = contactManifold.getBody1().getWorldTransform().getRotation();
+        if (this.ground.kB == contactManifold.getBody0().kB) {
+          var MY_DICE_NAME = this.getNameByBody(contactManifold.getBody1());
+          var testR = contactManifold.getBody1().getWorldTransform().getRotation();
+        }
+        if (this.ground.kB == contactManifold.getBody1().kB) {
+          var MY_DICE_NAME = this.getNameByBody(contactManifold.getBody0());
+          var testR = contactManifold.getBody0().getWorldTransform().getRotation();
+        }
         if (Math.abs(testR.y()) < 0.00001) {
           this.lastRoll += " 4 +";
           this.presentScore += 4;
           dispatchEvent(new CustomEvent('dice-1', {
             detail: {
-              cubeId: this.getNameByBody(contactManifold.getBody1())
+              result: 'dice-1',
+              cubeId: MY_DICE_NAME
             }
           }));
         }
@@ -389,7 +425,8 @@ let application = exports.application = new _world.default({
           this.presentScore += 3;
           dispatchEvent(new CustomEvent('dice-5', {
             detail: {
-              cubeId: this.getNameByBody(contactManifold.getBody1())
+              result: 'dice-5',
+              cubeId: MY_DICE_NAME
             }
           }));
         }
@@ -398,7 +435,8 @@ let application = exports.application = new _world.default({
           this.presentScore += 2;
           dispatchEvent(new CustomEvent('dice-6', {
             detail: {
-              cubeId: this.getNameByBody(contactManifold.getBody1())
+              result: 'dice-6',
+              cubeId: MY_DICE_NAME
             }
           }));
         }
@@ -407,7 +445,8 @@ let application = exports.application = new _world.default({
           this.presentScore += 1;
           dispatchEvent(new CustomEvent('dice-2', {
             detail: {
-              cubeId: this.getNameByBody(contactManifold.getBody1())
+              result: 'dice-2',
+              cubeId: MY_DICE_NAME
             }
           }));
         }
@@ -416,7 +455,8 @@ let application = exports.application = new _world.default({
           this.presentScore += 6;
           dispatchEvent(new CustomEvent('dice-4', {
             detail: {
-              cubeId: this.getNameByBody(contactManifold.getBody1())
+              result: 'dice-4',
+              cubeId: MY_DICE_NAME
             }
           }));
         }
@@ -425,12 +465,11 @@ let application = exports.application = new _world.default({
           this.presentScore += 5;
           dispatchEvent(new CustomEvent('dice-3', {
             detail: {
-              cubeId: this.getNameByBody(contactManifold.getBody1())
+              result: 'dice-3',
+              cubeId: MY_DICE_NAME
             }
           }));
         }
-
-        // console.log('this.lastRoll = ', this.lastRoll, ' presentScore = ', this.presentScore)
       }
     }
   };
@@ -477,7 +516,7 @@ let application = exports.application = new _world.default({
       position: {
         x: 0,
         y: 4,
-        z: -10
+        z: -14
       },
       rotation: {
         x: 0,
@@ -489,7 +528,7 @@ let application = exports.application = new _world.default({
         y: 0,
         z: 0
       },
-      texturesPaths: ['./res/meshes/jamb/dice-mark.png'],
+      texturesPaths: ['./res/meshes/jamb/dice.png'],
       useUVShema4x2: true,
       name: 'CubePhysics2',
       mesh: m.cube,
@@ -500,8 +539,8 @@ let application = exports.application = new _world.default({
     });
     application.addMeshObj({
       position: {
-        x: 0,
-        y: 4,
+        x: 4,
+        y: 8,
         z: -10
       },
       rotation: {
@@ -552,7 +591,7 @@ let application = exports.application = new _world.default({
       position: {
         x: -2,
         y: 4,
-        z: -10
+        z: -13
       },
       rotation: {
         x: 0,
@@ -575,9 +614,9 @@ let application = exports.application = new _world.default({
     });
     application.addMeshObj({
       position: {
-        x: 0,
+        x: -4,
         y: 1,
-        z: -10
+        z: -9
       },
       rotation: {
         x: 0,
@@ -604,7 +643,7 @@ let application = exports.application = new _world.default({
       position: {
         x: 0,
         y: 6,
-        z: -10
+        z: -16
       },
       rotation: {
         x: 0,
@@ -621,6 +660,7 @@ let application = exports.application = new _world.default({
       }
     });
     application.addMeshObj({
+      scale: 0.01,
       position: {
         x: 0,
         y: 6,
@@ -636,31 +676,113 @@ let application = exports.application = new _world.default({
       name: 'bg',
       mesh: m.bg,
       physics: {
+        collide: false,
         mass: 0,
         enabled: true,
         geometry: "Cube"
       }
     });
-
-    // 
-    addEventListener('dice-1', e => {
+    let allDiceDoneProcedure = () => {
+      console.log("ALL DONE");
+    };
+    addEventListener('all-done', allDiceDoneProcedure);
+    //
+    let dice1Click = e => {
       console.info('DICE 1', e.detail);
-    });
-    addEventListener('dice-2', e => {
+      var info = {
+        detail: e.detail,
+        dice: 'dice-1'
+      };
+      _jamb.dices.R.push(info);
+      if (_jamb.dices.R.length > 2) {
+        dispatchEvent(new CustomEvent('all-done', {
+          detail: {}
+        }));
+        removeEventListener('dice-1', dice1Click);
+      }
+      // removeEventListener('dice-1', dice1Click)
+    };
+    addEventListener('dice-1', dice1Click);
+    let dice2Click = e => {
       console.info('DICE 2', e.detail);
-    });
-    addEventListener('dice-3', e => {
+      var info = {
+        detail: e.detail,
+        dice: 'dice-2'
+      };
+      _jamb.dices.R.push(info);
+      if (_jamb.dices.R.length > 2) {
+        dispatchEvent(new CustomEvent('all-done', {
+          detail: {}
+        }));
+        // removeEventListener('dice-2', dice2Click)
+      }
+      // removeEventListener('dice-2', dice2Click)
+    };
+    addEventListener('dice-2', dice2Click);
+    let dice3Click = e => {
       console.info('DICE 3', e.detail);
-    });
-    addEventListener('dice-4', e => {
+      var info = {
+        detail: e.detail,
+        dice: 'dice-3'
+      };
+      _jamb.dices.R.push(info);
+      if (_jamb.dices.R.length == 6) {
+        dispatchEvent(new CustomEvent('all-done', {
+          detail: {}
+        }));
+        removeEventListener('dice-3', dice3Click);
+      }
+      removeEventListener('dice-3', dice3Click);
+    };
+    addEventListener('dice-3', dice3Click);
+    let dice4Click = e => {
       console.info('DICE 4', e.detail);
-    });
-    addEventListener('dice-5', e => {
-      // console.info('DICE 5')
-    });
-    addEventListener('dice-6', e => {
+      var info = {
+        detail: e.detail,
+        dice: 'dice-4'
+      };
+      _jamb.dices.R.push(info);
+      if (_jamb.dices.R.length == 6) {
+        dispatchEvent(new CustomEvent('all-done', {
+          detail: {}
+        }));
+        // removeEventListener('dice-4', dice4Click)
+      }
+      // removeEventListener('dice-4', dice4Click)
+    };
+    addEventListener('dice-4', dice4Click);
+    let diceClick5 = e => {
+      console.info('DICE 5', e.detail);
+      var info = {
+        detail: e.detail,
+        dice: 'dice-5'
+      };
+      _jamb.dices.R.push(info);
+      if (_jamb.dices.R.length == 6) {
+        dispatchEvent(new CustomEvent('all-done', {
+          detail: {}
+        }));
+        // removeEventListener('dice-5', diceClick5)
+      }
+      // removeEventListener('dice-5', diceClick5)
+    };
+    addEventListener('dice-5', diceClick5);
+    let dice6Click = e => {
       console.info('DICE 6', e.detail);
-    });
+      var info = {
+        detail: e.detail,
+        dice: 'dice-6'
+      };
+      _jamb.dices.R.push(info);
+      if (_jamb.dices.R.length == 6) {
+        dispatchEvent(new CustomEvent('all-done', {
+          detail: {}
+        }));
+        // removeEventListener('dice-6', dice6Click)
+      }
+      // removeEventListener('dice-6', dice6Click)
+    };
+    addEventListener('dice-6', dice6Click);
 
     // console.log('camera set')
     // application.cameras.WASD.pitch = 0.2
@@ -9619,10 +9741,12 @@ class MatrixAmmo {
   }
   addPhysicsBox(MEObject, pOptions) {
     const FLAGS = {
+      TEST_NIDZA: 3,
       CF_KINEMATIC_OBJECT: 2
     };
     let Ammo = this.Ammo;
-    var colShape = new Ammo.btBoxShape(new Ammo.btVector3(1, 1, 1)),
+    // improve this - scale by comp
+    var colShape = new Ammo.btBoxShape(new Ammo.btVector3(pOptions.scale, pOptions.scale, pOptions.scale)),
       startTransform = new Ammo.btTransform();
     startTransform.setIdentity();
     var mass = pOptions.mass;
@@ -9632,10 +9756,14 @@ class MatrixAmmo {
     var myMotionState = new Ammo.btDefaultMotionState(startTransform),
       rbInfo = new Ammo.btRigidBodyConstructionInfo(mass, myMotionState, colShape, localInertia),
       body = new Ammo.btRigidBody(rbInfo);
-    if (pOptions.mass == 0 && typeof pOptions.state == 'undefined') {
+    if (pOptions.mass == 0 && typeof pOptions.state == 'undefined' && typeof pOptions.collide == 'undefined') {
       body.setActivationState(2);
       body.setCollisionFlags(FLAGS.CF_KINEMATIC_OBJECT);
       // console.log('what is pOptions.mass and state is 2 ....', pOptions.mass)
+    } else if (typeof pOptions.collide != 'undefined' && pOptions.collide == false) {
+      console.log('SSSSSSSSSSSSSSSSS xsdf ');
+      body.setActivationState(4);
+      body.setCollisionFlags(FLAGS.TEST_NIDZA);
     } else {
       body.setActivationState(4);
     }
@@ -9674,7 +9802,7 @@ class MatrixAmmo {
     localRot.setX(rx);
     localRot.setY(ry);
     localRot.setZ(rz);
-    console.log('position localRot after  : ', localRot);
+    // console.log('position localRot after  : ', localRot)
     // body.getWorldQuaternion(quat);
     // let physicsBody = kObject.userData.physicsBody;
     let physicsBody = body;
@@ -9688,7 +9816,7 @@ class MatrixAmmo {
       tmpTrans.setRotation(localRot);
       ms.setWorldTransform(tmpTrans);
     }
-    console.log('body, ', body);
+    // console.log('body, ', body)
   }
   getBodyByName(name) {
     var b = null;
@@ -10315,14 +10443,15 @@ class MatrixEngineWGPU {
     }
     if (typeof o.physics === 'undefined') {
       o.physics = {
-        enabled: false,
+        scale: 1,
+        enabled: true,
         geometry: "Sphere",
         radius: o.scale,
         name: o.name
       };
     }
     if (typeof o.physics.enabled === 'undefined') {
-      o.physics.enabled = false;
+      o.physics.enabled = true;
     }
     if (typeof o.physics.geometry === 'undefined') {
       o.physics.geometry = "Sphere";
@@ -10336,11 +10465,12 @@ class MatrixEngineWGPU {
     if (typeof o.physics.name === 'undefined') {
       o.physics.name = o.name;
     }
-
+    if (typeof o.physics.scale === 'undefined') {
+      o.physics.scale = o.scale;
+    }
     // send same pos
     o.physics.position = o.position;
-
-    // console.log('Mesh procedure', o)
+    //  console.log('Mesh procedure', o)
     let myMesh1 = new _meshObj.default(this.canvas, this.device, this.context, o);
     if (o.physics.enabled == true) {
       this.matrixAmmo.addPhysics(myMesh1, o.physics);

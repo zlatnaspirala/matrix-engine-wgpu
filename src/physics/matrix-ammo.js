@@ -94,10 +94,14 @@ export default class MatrixAmmo {
 
   addPhysicsBox(MEObject, pOptions) {
 
-    const FLAGS = {CF_KINEMATIC_OBJECT: 2}
+    const FLAGS = {
+      TEST_NIDZA: 3,
+      CF_KINEMATIC_OBJECT: 2
+    }
 
     let Ammo = this.Ammo;
-    var colShape = new Ammo.btBoxShape(new Ammo.btVector3(1, 1, 1)),
+    // improve this - scale by comp
+    var colShape = new Ammo.btBoxShape(new Ammo.btVector3(pOptions.scale, pOptions.scale, pOptions.scale)),
       startTransform = new Ammo.btTransform();
     startTransform.setIdentity();
     var mass = pOptions.mass;
@@ -108,11 +112,16 @@ export default class MatrixAmmo {
       rbInfo = new Ammo.btRigidBodyConstructionInfo(mass, myMotionState, colShape, localInertia),
       body = new Ammo.btRigidBody(rbInfo);
 
-    if(pOptions.mass == 0 && typeof pOptions.state == 'undefined') {
+    if(pOptions.mass == 0 && typeof pOptions.state == 'undefined' && typeof pOptions.collide == 'undefined') {
       body.setActivationState(2)
       body.setCollisionFlags(FLAGS.CF_KINEMATIC_OBJECT);
       // console.log('what is pOptions.mass and state is 2 ....', pOptions.mass)
-    } else {
+    } else if (typeof pOptions.collide != 'undefined' && pOptions.collide == false) {
+      console.log('SSSSSSSSSSSSSSSSS xsdf ')
+      body.setActivationState(4)
+      body.setCollisionFlags(FLAGS.TEST_NIDZA);
+
+    }else {
       body.setActivationState(4)
     }
     // console.log('what is name.', pOptions.name)
@@ -148,7 +157,7 @@ export default class MatrixAmmo {
     localRot.setX(rx)
     localRot.setY(ry)
     localRot.setZ(rz)
-    console.log('position localRot after  : ', localRot)
+    // console.log('position localRot after  : ', localRot)
     // body.getWorldQuaternion(quat);
     // let physicsBody = kObject.userData.physicsBody;
     let physicsBody = body;
@@ -162,7 +171,7 @@ export default class MatrixAmmo {
       tmpTrans.setRotation(localRot);
       ms.setWorldTransform(tmpTrans);
     }
-    console.log('body, ', body)
+    // console.log('body, ', body)
   }
 
   getBodyByName(name) {

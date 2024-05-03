@@ -12,3 +12,6 @@ dice shema for now
   3      4
   5      3
 
+
+
+https://phaser.discourse.group/t/disable-all-collision-impacts-matter-js/13715/2

@@ -191,22 +191,22 @@ export default class MatrixEngineWGPU {
     }
     if(typeof o.physics === 'undefined') {
       o.physics = {
-        enabled: false,
+        scale: 1,
+        enabled: true,
         geometry: "Sphere",
         radius: o.scale,
         name: o.name
       }
     }
-    if(typeof o.physics.enabled === 'undefined') {o.physics.enabled = false}
+    if(typeof o.physics.enabled === 'undefined') {o.physics.enabled = true}
     if(typeof o.physics.geometry === 'undefined') {o.physics.geometry = "Sphere"}
     if(typeof o.physics.radius === 'undefined') {o.physics.radius = o.scale}
     if(typeof o.physics.mass === 'undefined') {o.physics.mass = 1;}
     if(typeof o.physics.name === 'undefined') {o.physics.name = o.name;}
-
+    if(typeof o.physics.scale === 'undefined') {o.physics.scale = o.scale;}
     // send same pos
     o.physics.position = o.position;
-
-    // console.log('Mesh procedure', o)
+    //  console.log('Mesh procedure', o)
     let myMesh1 = new MEMeshObj(this.canvas, this.device, this.context, o)
     if(o.physics.enabled == true) {
       this.matrixAmmo.addPhysics(myMesh1, o.physics)
