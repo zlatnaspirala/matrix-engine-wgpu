@@ -435,7 +435,6 @@ let application = exports.application = new _world.default({
   };
   addEventListener('AmmoReady', () => {
     (0, _loaderObj.downloadMeshes)({
-      mainTitle: "./res/meshes/jamb/jamb-title.obj",
       cube: "./res/meshes/jamb/dice.obj"
     }, onLoadObj, {
       scale: [1, 1, 1],
@@ -443,8 +442,14 @@ let application = exports.application = new _world.default({
     });
     (0, _loaderObj.downloadMeshes)({
       bg: "./res/meshes/jamb/bg.obj"
+    }, onLoadObjFloor, {
+      scale: [3, 1, 3],
+      swap: [null]
+    });
+    (0, _loaderObj.downloadMeshes)({
+      mainTitle: "./res/meshes/jamb/jamb-title.obj"
     }, onLoadObjOther, {
-      scale: [1, 1, 1],
+      scale: [3, 2, 3],
       swap: [null]
     });
   });
@@ -453,8 +458,46 @@ let application = exports.application = new _world.default({
     for (var key in m) {
       console.log(`%c Loaded objs -> : ${key} `, _utils.LOG_MATRIX);
     }
+
+    // Add logo text top
     application.addMeshObj({
-      scale: [2, 3, 1],
+      position: {
+        x: 0,
+        y: 6,
+        z: -15
+      },
+      rotation: {
+        x: 0,
+        y: 0,
+        z: 0
+      },
+      texturesPaths: ['./res/meshes/jamb/text.png'],
+      name: 'mainTitle',
+      mesh: m.mainTitle,
+      physics: {
+        mass: 0,
+        enabled: true,
+        geometry: "Cube"
+      }
+    });
+    // console.log('camera set')
+    // application.cameras.WASD.pitch = 0.2
+    setTimeout(() => {
+      app.cameras.WASD.velocity[1] = 18;
+      //                                             BODY              , x,  y, z, rotX, rotY, RotZ
+      app.matrixAmmo.setKinematicTransform(app.matrixAmmo.getBodyByName('mainTitle'), 0, 0, 0, 1);
+      app.matrixAmmo.setKinematicTransform(app.matrixAmmo.getBodyByName('bg'), 0, -10, 0, 0, 0, 0);
+      // Better access getBodyByName
+      console.log(' app.matrixAmmo. ', app.matrixAmmo.getBodyByName('CubePhysics1'));
+    }, 1225);
+  }
+  function onLoadObjFloor(m) {
+    application.myLoadedMeshes = m;
+    for (var key in m) {
+      console.log(`%c Loaded objs -> : ${key} `, _utils.LOG_MATRIX);
+    }
+    application.addMeshObj({
+      scale: [10, 0.1, 0.1],
       position: {
         x: 0,
         y: 6,
@@ -476,17 +519,6 @@ let application = exports.application = new _world.default({
         geometry: "Cube"
       }
     });
-
-    // console.log('camera set')
-    // application.cameras.WASD.pitch = 0.2
-    setTimeout(() => {
-      app.cameras.WASD.velocity[1] = 18;
-      //                                             BODY              , x,  y, z, rotX, rotY, RotZ
-      app.matrixAmmo.setKinematicTransform(app.matrixAmmo.getBodyByName('mainTitle'), 0, 0, 0, 1);
-      app.matrixAmmo.setKinematicTransform(app.matrixAmmo.getBodyByName('bg'), 0, -10, 0, 0, 0, 0);
-      // Better access getBodyByName
-      console.log(' app.matrixAmmo. ', app.matrixAmmo.getBodyByName('CubePhysics1'));
-    }, 1225);
   }
   function onLoadObj(m) {
     application.myLoadedMeshes = m;
@@ -645,28 +677,6 @@ let application = exports.application = new _world.default({
         geometry: "Cube"
       }
     });
-
-    // Add logo text top
-    application.addMeshObj({
-      position: {
-        x: 0,
-        y: 6,
-        z: -11
-      },
-      rotation: {
-        x: 0,
-        y: 0,
-        z: 0
-      },
-      texturesPaths: ['./res/meshes/jamb/text.png'],
-      name: 'mainTitle',
-      mesh: m.mainTitle,
-      physics: {
-        mass: 0,
-        enabled: true,
-        geometry: "Cube"
-      }
-    });
     let TOLERANCE = 0;
     let allDiceDoneProcedure = () => {
       console.log("ALL DONE");
@@ -779,6 +789,23 @@ let application = exports.application = new _world.default({
       // removeEventListener('dice-6', dice6Click)
     };
     addEventListener('dice-6', dice6Click);
+    let rollProcedure = () => {
+      if (_jamb.dices.STATUS == "FREE_TO_PLAY") {
+        app.matrixAmmo.getBodyByName('CubePhysics1').setAngularVelocity(new Ammo.btVector3((0, _utils.randomFloatFromTo)(3, 9), 9, 9));
+        app.matrixAmmo.getBodyByName('CubePhysics1').setLinearVelocity(new Ammo.btVector3((0, _utils.randomFloatFromTo)(-1, 1), 15, -20));
+
+        // app.matrixAmmo.getBodyByName('CubePhysics2').setAngularVelocity(new Ammo.btVector3(
+        //   randomFloatFromTo(5, 10), 8, randomFloatFromTo(5, 10)
+        // ))
+        // app.matrixAmmo.getBodyByName('CubePhysics2').setLinearVelocity(new Ammo.btVector3(
+        //   randomFloatFromTo(-1, 1), 15, randomFloatFromTo(-12, -8)
+        // ))
+      }
+    };
+    addEventListener('DICE.ROLL', rollProcedure);
+    app.ROLL = () => {
+      dispatchEvent(new CustomEvent('DICE.ROLL', {}));
+    };
   }
 });
 window.app = application;
