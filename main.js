@@ -122,6 +122,7 @@ export let application = new MatrixEngineWGPU({
 
 
   }
+
   function onLoadObjOther(m) {
     application.myLoadedMeshes = m;
     for(var key in m) {
@@ -274,7 +275,7 @@ export let application = new MatrixEngineWGPU({
     let allDiceDoneProcedure = () => {
       console.log("ALL DONE")
       application.TOLERANCE++;
-      if(application.TOLERANCE > 2) {
+      if(application.TOLERANCE > 1) {
         removeEventListener('dice-1', dice1Click)
         removeEventListener('dice-2', dice2Click)
         removeEventListener('dice-3', dice3Click)
@@ -283,6 +284,13 @@ export let application = new MatrixEngineWGPU({
         removeEventListener('dice-6', dice6Click)
         console.log('FINAL >>>>>>>>>>>>>>>>>>>>>>> : ', dices.R)
         application.TOLERANCE = 0;
+
+        app.cameras.WASD.yaw = 0.01;
+        app.cameras.WASD.pitch = -1.26;
+        app.cameras.WASD.position[2] = -18;
+        app.cameras.WASD.position[1]  = 19;
+
+
         // application.dices.STATUS = "FREE_TO_PLAY";
 
       }
@@ -296,42 +304,42 @@ export let application = new MatrixEngineWGPU({
       dices.R[e.detail.cubeId] = '1';
       dices.checkAll()
     };
-    addEventListener('dice-1', dice1Click)
+    // addEventListener('dice-1', dice1Click)
 
     let dice2Click = (e) => {
       // console.info('DICE 2', e.detail)
       dices.R[e.detail.cubeId] = '2';
       dices.checkAll()
     };
-    addEventListener('dice-2', dice2Click)
+    // addEventListener('dice-2', dice2Click)
 
     let dice3Click = (e) => {
       // console.info('DICE 3', e.detail)
       dices.R[e.detail.cubeId] = '3';
       dices.checkAll()
     };
-    addEventListener('dice-3', dice3Click)
+    // addEventListener('dice-3', dice3Click)
 
     let dice4Click = (e) => {
       // console.info('DICE 4', e.detail)
       dices.R[e.detail.cubeId] = '4';
       dices.checkAll()
     }
-    addEventListener('dice-4', dice4Click)
+    // addEventListener('dice-4', dice4Click)
 
     let dice5Click = (e) => {
       // console.info('DICE 5', e.detail)
       dices.R[e.detail.cubeId] = '5';
       dices.checkAll()
     }
-    addEventListener('dice-5', dice5Click)
+    // addEventListener('dice-5', dice5Click)
 
     let dice6Click = (e) => {
       // console.info('DICE 6', e.detail)
       dices.R[e.detail.cubeId] = '6';
       dices.checkAll()
     }
-    addEventListener('dice-6', dice6Click)
+    // addEventListener('dice-6', dice6Click)
 
     let rollProcedure = () => {
       if(dices.STATUS == "FREE_TO_PLAY") {

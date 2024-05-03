@@ -284,9 +284,7 @@ let myDom = exports.myDom = {
 
         // rowDown click
         if (this.state.rowDown.length == 0) {
-          console.log('it is no play yet in this row ', this);
-          // down-rowNumber3
-          console.log('LOG e ', getName);
+          console.log('LOG ', getName);
           if (parseInt(getName) == 1) {
             var count1 = 0;
             for (let key in dices.R) {
@@ -295,17 +293,15 @@ let myDom = exports.myDom = {
                 count1++;
               }
             }
-            // check for only `1`
             this.state.rowDown.push(count1);
             e.target.innerHTML = count1;
             dices.STATUS = "FREE_TO_PLAY";
+            dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
           } else {
             console.log('BLOCK');
           }
         } else {
-          // 
           if (this.state.rowDown.length > 0) {
-            //
             if (parseInt(getName) == this.state.rowDown.length + 1) {
               console.log('moze za ', parseInt(getName));
               var count23456 = 0;
@@ -316,10 +312,11 @@ let myDom = exports.myDom = {
                 }
               }
               this.state.rowDown.push(count23456 * parseInt(getName));
-              dices.STATUS = "FREE_TO_PLAY";
               e.target.innerHTML = count23456 * parseInt(getName);
+              dices.STATUS = "FREE_TO_PLAY";
+              dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
             } else {
-              console.log('BLOCK...');
+              console.log('BLOCK');
             }
           }
         }
@@ -757,7 +754,7 @@ let application = exports.application = new _world.default({
     let allDiceDoneProcedure = () => {
       console.log("ALL DONE");
       application.TOLERANCE++;
-      if (application.TOLERANCE > 2) {
+      if (application.TOLERANCE > 1) {
         removeEventListener('dice-1', dice1Click);
         removeEventListener('dice-2', dice2Click);
         removeEventListener('dice-3', dice3Click);
@@ -766,6 +763,11 @@ let application = exports.application = new _world.default({
         removeEventListener('dice-6', dice6Click);
         console.log('FINAL >>>>>>>>>>>>>>>>>>>>>>> : ', _jamb.dices.R);
         application.TOLERANCE = 0;
+        app.cameras.WASD.yaw = 0.01;
+        app.cameras.WASD.pitch = -1.26;
+        app.cameras.WASD.position[2] = -18;
+        app.cameras.WASD.position[1] = 19;
+
         // application.dices.STATUS = "FREE_TO_PLAY";
       }
     };
@@ -777,37 +779,43 @@ let application = exports.application = new _world.default({
       _jamb.dices.R[e.detail.cubeId] = '1';
       _jamb.dices.checkAll();
     };
-    addEventListener('dice-1', dice1Click);
+    // addEventListener('dice-1', dice1Click)
+
     let dice2Click = e => {
       // console.info('DICE 2', e.detail)
       _jamb.dices.R[e.detail.cubeId] = '2';
       _jamb.dices.checkAll();
     };
-    addEventListener('dice-2', dice2Click);
+    // addEventListener('dice-2', dice2Click)
+
     let dice3Click = e => {
       // console.info('DICE 3', e.detail)
       _jamb.dices.R[e.detail.cubeId] = '3';
       _jamb.dices.checkAll();
     };
-    addEventListener('dice-3', dice3Click);
+    // addEventListener('dice-3', dice3Click)
+
     let dice4Click = e => {
       // console.info('DICE 4', e.detail)
       _jamb.dices.R[e.detail.cubeId] = '4';
       _jamb.dices.checkAll();
     };
-    addEventListener('dice-4', dice4Click);
+    // addEventListener('dice-4', dice4Click)
+
     let dice5Click = e => {
       // console.info('DICE 5', e.detail)
       _jamb.dices.R[e.detail.cubeId] = '5';
       _jamb.dices.checkAll();
     };
-    addEventListener('dice-5', dice5Click);
+    // addEventListener('dice-5', dice5Click)
+
     let dice6Click = e => {
       // console.info('DICE 6', e.detail)
       _jamb.dices.R[e.detail.cubeId] = '6';
       _jamb.dices.checkAll();
     };
-    addEventListener('dice-6', dice6Click);
+    // addEventListener('dice-6', dice6Click)
+
     let rollProcedure = () => {
       if (_jamb.dices.STATUS == "FREE_TO_PLAY") {
         _jamb.dices.STATUS = "IN_PLAY";

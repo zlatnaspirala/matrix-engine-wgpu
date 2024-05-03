@@ -325,9 +325,7 @@ export let myDom = {
 
         // rowDown click
         if(this.state.rowDown.length == 0) {
-          console.log('it is no play yet in this row ', this)
-          // down-rowNumber3
-          console.log('LOG e ', getName)
+          console.log('LOG ', getName)
           if(parseInt(getName) == 1) {
             var count1 = 0;
             for(let key in dices.R) {
@@ -336,19 +334,16 @@ export let myDom = {
                 count1++;
               }
             }
-            // check for only `1`
             this.state.rowDown.push(count1)
             e.target.innerHTML = count1;
-
             dices.STATUS = "FREE_TO_PLAY";
+            dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}))
 
           } else {
             console.log('BLOCK')
           }
         } else {
-          // 
           if(this.state.rowDown.length > 0) {
-            //
             if(parseInt(getName) == this.state.rowDown.length + 1) {
               console.log('moze za ', parseInt(getName))
               var count23456 = 0;
@@ -358,21 +353,15 @@ export let myDom = {
                   count23456++;
                 }
               }
-              this.state.rowDown.push(
-                (count23456 * parseInt(getName))
-              )
-              dices.STATUS = "FREE_TO_PLAY";
-
+              this.state.rowDown.push((count23456 * parseInt(getName)))
               e.target.innerHTML = (count23456 * parseInt(getName));
+              dices.STATUS = "FREE_TO_PLAY";
+              dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}))
             } else {
-              console.log('BLOCK...')
+              console.log('BLOCK')
             }
-
           }
         }
-
-
-
       })
       myRoot.appendChild(rowNumber);
     }
