@@ -68,7 +68,7 @@ export let application = new MatrixEngineWGPU({
           this.presentScore += 5;
           passed = true;
         }
-        if (passed == true) dispatchEvent(new CustomEvent(`dice-${this.lastRoll}`, {
+        if(passed == true) dispatchEvent(new CustomEvent(`dice-${this.lastRoll}`, {
           detail: {
             result: `dice-${this.lastRoll}`,
             cubeId: MY_DICE_NAME
@@ -82,11 +82,11 @@ export let application = new MatrixEngineWGPU({
     downloadMeshes({
       mainTitle: "./res/meshes/jamb/jamb-title.obj",
       cube: "./res/meshes/jamb/dice.obj",
-    }, onLoadObj, { scale: [1,1,1], swap: [null] })
+    }, onLoadObj, {scale: [1, 1, 1], swap: [null]})
 
     downloadMeshes({
       bg: "./res/meshes/jamb/bg.obj",
-    }, onLoadObjOther, { scale: [1,1,1], swap: [null] })
+    }, onLoadObjOther, {scale: [1, 1, 1], swap: [null]})
 
   })
 
@@ -97,7 +97,7 @@ export let application = new MatrixEngineWGPU({
     }
 
     application.addMeshObj({
-      scale: [2,3,1],
+      scale: [2, 3, 1],
       position: {x: 0, y: 6, z: -10},
       rotation: {x: 0, y: 0, z: 0},
       // rotationSpeed: {x: 0, y: 0, z: 0},
@@ -111,6 +111,19 @@ export let application = new MatrixEngineWGPU({
         geometry: "Cube"
       }
     })
+
+    // console.log('camera set')
+    // application.cameras.WASD.pitch = 0.2
+    setTimeout(() => {
+      app.cameras.WASD.velocity[1] = 18
+      //                                             BODY              , x,  y, z, rotX, rotY, RotZ
+      app.matrixAmmo.setKinematicTransform(
+        app.matrixAmmo.getBodyByName('mainTitle'), 0, 0, 0, 1)
+      app.matrixAmmo.setKinematicTransform(
+        app.matrixAmmo.getBodyByName('bg'), 0, -10, 0, 0, 0, 0)
+      // Better access getBodyByName
+      console.log(' app.matrixAmmo. ', app.matrixAmmo.getBodyByName('CubePhysics1'))
+    }, 1225)
   }
 
   function onLoadObj(m) {
@@ -206,7 +219,7 @@ export let application = new MatrixEngineWGPU({
 
     // Add logo text top
     application.addMeshObj({
-      position: {x: 0, y: 6, z: -16},
+      position: {x: 0, y: 6, z: -11},
       rotation: {x: 0, y: 0, z: 0},
       texturesPaths: ['./res/meshes/jamb/text.png'],
       name: 'mainTitle',
@@ -218,28 +231,22 @@ export let application = new MatrixEngineWGPU({
       }
     })
 
-
-
-
     let TOLERANCE = 0;
-
     let allDiceDoneProcedure = () => {
       console.log("ALL DONE")
       TOLERANCE++;
-
-      if (TOLERANCE > 1000) {
-      removeEventListener('dice-1', dice1Click)
-      removeEventListener('dice-2', dice2Click)
-      removeEventListener('dice-3', dice3Click)
-      removeEventListener('dice-4', dice4Click)
-      removeEventListener('dice-5', dice5Click)
-      removeEventListener('dice-6', dice6Click)
-      console.log('FINAL : ',  dices.R)
+      if(TOLERANCE > 1000) {
+        removeEventListener('dice-1', dice1Click)
+        removeEventListener('dice-2', dice2Click)
+        removeEventListener('dice-3', dice3Click)
+        removeEventListener('dice-4', dice4Click)
+        removeEventListener('dice-5', dice5Click)
+        removeEventListener('dice-6', dice6Click)
+        console.log('FINAL : ', dices.R)
       }
     };
 
     addEventListener('all-done', allDiceDoneProcedure)
-
     //
     let dice1Click = (e) => {
       console.info('DICE 1', e.detail)
@@ -328,7 +335,7 @@ export let application = new MatrixEngineWGPU({
     addEventListener('dice-5', dice5Click)
 
     let dice6Click = (e) => {
-      // console.info('DICE 6', e.detail)
+       console.info('DICE 6', e.detail)
       var info = {
         detail: e.detail,
         dice: 'dice-6'
@@ -345,17 +352,6 @@ export let application = new MatrixEngineWGPU({
     }
     addEventListener('dice-6', dice6Click)
 
-
-    // console.log('camera set')
-    // application.cameras.WASD.pitch = 0.2
-    setTimeout(() => {
-      app.cameras.WASD.velocity[1] = 18
-      //                                             BODY              , x,  y, z, rotX, rotY, RotZ
-      app.matrixAmmo.setKinematicTransform(app.matrixAmmo.rigidBodies[6], 0, 0, 0, 1)
-      app.matrixAmmo.setKinematicTransform(app.matrixAmmo.rigidBodies[7], 0, -10, 0, 0, 0, 0)
-      // Better access getBodyByName
-      console.log(' app.matrixAmmo. ', app.matrixAmmo.getBodyByName('CubePhysics1'))
-    }, 1225)
   }
 })
 

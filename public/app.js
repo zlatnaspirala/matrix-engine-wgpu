@@ -476,6 +476,17 @@ let application = exports.application = new _world.default({
         geometry: "Cube"
       }
     });
+
+    // console.log('camera set')
+    // application.cameras.WASD.pitch = 0.2
+    setTimeout(() => {
+      app.cameras.WASD.velocity[1] = 18;
+      //                                             BODY              , x,  y, z, rotX, rotY, RotZ
+      app.matrixAmmo.setKinematicTransform(app.matrixAmmo.getBodyByName('mainTitle'), 0, 0, 0, 1);
+      app.matrixAmmo.setKinematicTransform(app.matrixAmmo.getBodyByName('bg'), 0, -10, 0, 0, 0, 0);
+      // Better access getBodyByName
+      console.log(' app.matrixAmmo. ', app.matrixAmmo.getBodyByName('CubePhysics1'));
+    }, 1225);
   }
   function onLoadObj(m) {
     application.myLoadedMeshes = m;
@@ -640,7 +651,7 @@ let application = exports.application = new _world.default({
       position: {
         x: 0,
         y: 6,
-        z: -16
+        z: -11
       },
       rotation: {
         x: 0,
@@ -671,7 +682,6 @@ let application = exports.application = new _world.default({
       }
     };
     addEventListener('all-done', allDiceDoneProcedure);
-
     //
     let dice1Click = e => {
       console.info('DICE 1', e.detail);
@@ -754,7 +764,7 @@ let application = exports.application = new _world.default({
     };
     addEventListener('dice-5', dice5Click);
     let dice6Click = e => {
-      // console.info('DICE 6', e.detail)
+      console.info('DICE 6', e.detail);
       var info = {
         detail: e.detail,
         dice: 'dice-6'
@@ -769,17 +779,6 @@ let application = exports.application = new _world.default({
       // removeEventListener('dice-6', dice6Click)
     };
     addEventListener('dice-6', dice6Click);
-
-    // console.log('camera set')
-    // application.cameras.WASD.pitch = 0.2
-    setTimeout(() => {
-      app.cameras.WASD.velocity[1] = 18;
-      //                                             BODY              , x,  y, z, rotX, rotY, RotZ
-      app.matrixAmmo.setKinematicTransform(app.matrixAmmo.rigidBodies[6], 0, 0, 0, 1);
-      app.matrixAmmo.setKinematicTransform(app.matrixAmmo.rigidBodies[7], 0, -10, 0, 0, 0, 0);
-      // Better access getBodyByName
-      console.log(' app.matrixAmmo. ', app.matrixAmmo.getBodyByName('CubePhysics1'));
-    }, 1225);
   }
 });
 window.app = application;
