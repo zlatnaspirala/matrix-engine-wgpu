@@ -340,6 +340,7 @@ p {
   position: absolute;
   top: 30px;
   left: 50%;
+  translate: -50%;
   border-radius: 6px !important;
   font-size: 15px !important;
   width: 300px;
