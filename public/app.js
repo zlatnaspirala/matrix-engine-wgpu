@@ -355,8 +355,14 @@ let myDom = exports.myDom = {
               if (parseInt(getName) == 6) {
                 // calc sum
                 console.log('calc sum for numb ~ ');
+                //  this.state.rowDown.length + 1
+                myDom.calcDownNumbers();
               }
               dices.STATUS = "FREE_TO_PLAY";
+
+              // dev
+              // myDom.calcDownNumbers()
+
               dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
             } else {
               console.log('BLOCK');
@@ -426,6 +432,17 @@ let myDom = exports.myDom = {
     rowSum.style.background = '#7d7d7d8c';
     rowSum.innerHTML = `-`;
     myRoot.appendChild(rowSum);
+  },
+  calcDownNumbers: function () {
+    var s = 0;
+    this.state.rowDown.forEach(i => {
+      console.log(parseFloat(i));
+      s += parseFloat(i);
+    });
+    console.log('sum is ', s);
+    (0, _utils.byId)('down-rowNumberSum').style.background = 'rgb(113 0 0 / 55%)';
+    (0, _utils.byId)('down-rowNumberSum').innerHTML = s;
+    // unlock MAX and MIN
   }
 };
 
