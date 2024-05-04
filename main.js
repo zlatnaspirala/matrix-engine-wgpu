@@ -15,6 +15,7 @@ export let application = new MatrixEngineWGPU({
   application.myDom = myDom;
   myDom.createJamb();
   myDom.createBlocker();
+
   application.dices = dices;
 
   // this code must be on top
@@ -104,11 +105,25 @@ export let application = new MatrixEngineWGPU({
       }
       // right
       application.addMeshObj({
-        position: {x: -25, y: 5, z: -25},
-        rotation: {x: 0, y: 22, z: 0},
-        scale: [1, 1, 1],
+        position: {x: 25, y: 5.5, z: -25},
+        rotation: {x: 0, y: -22, z: 0},
+        scale: [25, 10, 4],
         texturesPaths: ['./res/meshes/jamb/text.png'],
         name: 'wallRight',
+        mesh: m.cube,
+        physics: {
+          mass: 0,
+          enabled: true,
+          geometry: "Cube"
+        }
+      })
+
+      application.addMeshObj({
+        position: {x: -25, y: 5.5, z: -25},
+        rotation: {x: 0, y: 22, z: 0},
+        scale: [25, 10, 4],
+        texturesPaths: ['./res/meshes/jamb/text.png'],
+        name: 'wallLeft',
         mesh: m.cube,
         physics: {
           mass: 0,

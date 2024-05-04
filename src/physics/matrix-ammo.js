@@ -108,10 +108,8 @@ export default class MatrixAmmo {
     var localInertia = new Ammo.btVector3(0, 0, 0);
     colShape.calculateLocalInertia(mass, localInertia);
     startTransform.setOrigin(new Ammo.btVector3(pOptions.position.x, pOptions.position.y, pOptions.position.z));
-
     //rotation
-    console.log('startTransform.setRotation', startTransform.setRotation)
-
+    // console.log('startTransform.setRotation', startTransform.setRotation)
     var t = startTransform.getRotation()
     t.setX(degToRad(pOptions.rotation.x))
     t.setY(degToRad(pOptions.rotation.y))

@@ -26,6 +26,37 @@ export let myDom = {
     rowDown: []
   },
 
+  createMenu: function() {
+
+    var root = document.createElement('div')
+    root.id = 'hud';
+    root.style.position = 'absolute';
+    root.style.right = '10%';
+    root.style.top = '10%';
+
+    var help = document.createElement('div')
+    help.id = 'HELP';
+    help.classList.add('btn2')
+    help.innerHTML = `HELP`;
+
+    var roll = document.createElement('div')
+    roll.id = 'hud-roll';
+    roll.classList.add('btn');
+    roll.innerHTML = `ROLL`;
+    roll.addEventListener('click', () => {
+      app.ROLL()
+    })
+
+    var separator = document.createElement('div')
+    separator.innerHTML = `--------`;
+
+    root.append(help)
+    root.append(separator)
+    root.append(roll)
+    
+    document.body.appendChild(root)
+  },
+
   createBlocker: function() {
     var root = document.createElement('div')
     root.id = 'blocker';
@@ -33,17 +64,29 @@ export let myDom = {
     var messageBox = document.createElement('div')
     messageBox.id = 'messageBox';
 
+    console.log('TEST', app.label.get)
     messageBox.innerHTML = `
-    Welcome here, <br>
-     open source project 🎲 Ultimate Yahtzee game<br>
-     download from <a href="https://github.com/zlatnaspirala/matrix-engine-wgpu">github.com/zlatnaspirala/matrix-engine-wgpu</a><br>
-     <button class="btn" >🎲START GAME</button>
+     <span data-label="welcomeMsg"></span>
+     <a href="https://github.com/zlatnaspirala/matrix-engine-wgpu">zlatnaspirala/matrix-engine-wgpu</a><br><br>
+     <button class="btn" ><span style="font-size:30px;margin:15px;padding:10px" data-label="startGame"></span></button> <br>
+     <div><span data-label="changeLang"></span></div> 
+     <button class="btn" onclick="
+      app.label.loadMultilang('en').then(r => {
+        app.label.get = r;
+        app.label.update()
+      });
+     " ><span data-label="english"></span></button> 
+     <button class="btn" onclick="app.label.loadMultilang('sr').then(r => {
+        app.label.get = r
+        app.label.update() })" ><span data-label="serbian"></span></button> 
     `;
+
 
     let initialMsgBoxEvent = function() {
       console.log('click on msgbox')
       byId('messageBox').innerHTML = ``;
       byId('blocker').style.display = 'none';
+      myDom.createMenu();
       messageBox.removeEventListener('click', initialMsgBoxEvent)
     };
 
@@ -51,6 +94,8 @@ export let myDom = {
     root.append(messageBox)
 
     document.body.appendChild(root);
+
+    app.label.update();
   },
 
   createJamb: function() {
@@ -147,14 +192,14 @@ export let myDom = {
     rowMax.id = 'H_rowMax';
     rowMax.style.width = 'auto';
     rowMax.style.background = '#7d7d7d8c';
-    rowMax.innerHTML = `MAX`;
+    rowMax.innerHTML = `<span data-label="MAX"></span>`;
     myRoot.appendChild(rowMax);
 
     var rowMin = document.createElement('div')
     rowMin.id = 'H_rowMax';
     rowMin.style.width = 'auto';
     rowMin.style.background = '#7d7d7d8c';
-    rowMin.innerHTML = `MIN`;
+    rowMin.innerHTML = `<span data-label="MIN"></span>`;
     myRoot.appendChild(rowMin);
 
     var rowMaxMinSum = document.createElement('div')
@@ -168,7 +213,7 @@ export let myDom = {
     largeStraight.id = 'H_largeStraight';
     largeStraight.style.width = 'auto';
     largeStraight.style.background = '#7d7d7d8c';
-    largeStraight.innerHTML = `Straight`;
+    largeStraight.innerHTML = `<span data-label="straight"></span>`;
     myRoot.appendChild(largeStraight);
 
     var threeOfAKind = document.createElement('div')
@@ -320,10 +365,10 @@ export let myDom = {
       rowNumber.innerHTML = `-`;
       rowNumber.addEventListener('click', (e) => {
 
-        if (dices.STATUS == "IN_PLAY" || dices.STATUS == "FREE_TO_PLAY") {
+        if(dices.STATUS == "IN_PLAY" || dices.STATUS == "FREE_TO_PLAY") {
           console.log('BLOCK FROM JAMB DOM  ')
-          if (dices.STATUS == "IN_PLAY") mb.error(`STATUS IS ${dices.STATUS}, please wait for results...`);
-          if (dices.STATUS == "FREE_TO_PLAY") mb.error(`STATUS IS ${dices.STATUS}, you need to roll dice first.`);
+          if(dices.STATUS == "IN_PLAY") mb.error(`STATUS IS ${dices.STATUS}, please wait for results...`);
+          if(dices.STATUS == "FREE_TO_PLAY") mb.error(`STATUS IS ${dices.STATUS}, you need to roll dice first.`);
           return;
         }
 

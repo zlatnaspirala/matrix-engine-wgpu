@@ -658,65 +658,63 @@ export const LOG_FUNNY = "font-family: stormfaze;color: #f1f033; font-size:14px;
 export function genName(length) {
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
   let result = "";
-  for (let i = 0; i < length; i++) {
+  for(let i = 0;i < length;i++) {
     result += chars.charAt(Math.floor(Math.random() * chars.length));
   }
   return result;
 }
 
-// 
-	export let mb = {
-		root: () => byId('msgBox'),
-		pContent: () => byId('not-content'),
-		copy: function() {
-			navigator.clipboard.writeText(mb.root().children[0].innerText);
-		},
-		c: 0, ic: 0, t: {},
-		setContent: function(content, t) {
-			var iMsg = document.createElement('div');
-			iMsg.innerHTML = content;
-			iMsg.id = `msgbox-loc-${mb.c}`;
-			mb.root().appendChild(iMsg);
-			if (t == 'ok') {
-				iMsg.style = 'background: white;color:#945512;padding:7px;margin:2px';
-			} else {
-				iMsg.style = 'background: #A56119;color:white;padding:7px;margin:2px';
-			}
-		},
-		kill: function() {
-			mb.root().remove();
-		},
-		show: function(content, t) {
-			mb.setContent(content, t);
-			mb.root().style.display = "block";
-			var loc2 = mb.c;
-			setTimeout(function() {
-				byId(`msgbox-loc-${loc2}`).classList.remove("fadeInDown");
-				byId(`msgbox-loc-${loc2}`).classList.add("fadeOut");
-				setTimeout(function() {
-					byId(`msgbox-loc-${loc2}`).style.display = "none";
-					byId(`msgbox-loc-${loc2}`).classList.remove("fadeOut");
+export let mb = {
+  root: () => byId('msgBox'),
+  pContent: () => byId('not-content'),
+  copy: function() {
+    navigator.clipboard.writeText(mb.root().children[0].innerText);
+  },
+  c: 0, ic: 0, t: {},
+  setContent: function(content, t) {
+    var iMsg = document.createElement('div');
+    iMsg.innerHTML = content;
+    iMsg.id = `msgbox-loc-${mb.c}`;
+    mb.root().appendChild(iMsg);
+    if(t == 'ok') {
+      iMsg.style = 'background: white;color:#945512;padding:7px;margin:2px';
+    } else {
+      iMsg.style = 'background: #A56119;color:white;padding:7px;margin:2px';
+    }
+  },
+  kill: function() {
+    mb.root().remove();
+  },
+  show: function(content, t) {
+    mb.setContent(content, t);
+    mb.root().style.display = "block";
+    var loc2 = mb.c;
+    setTimeout(function() {
+      byId(`msgbox-loc-${loc2}`).classList.remove("fadeInDown");
+      byId(`msgbox-loc-${loc2}`).classList.add("fadeOut");
+      setTimeout(function() {
+        byId(`msgbox-loc-${loc2}`).style.display = "none";
+        byId(`msgbox-loc-${loc2}`).classList.remove("fadeOut");
 
-					byId(`msgbox-loc-${loc2}`).remove();
-					mb.ic++;
-					if (mb.c == mb.ic) {
-						mb.root().style.display = 'none';
-					}
-				}, 1000)
-			}, 3000);
-			mb.c++;
-		},
-		error: function(content) {
-			mb.root().classList.remove("success")
-			mb.root().classList.add("error")
-			mb.root().classList.add("fadeInDown");
-			mb.show(content, 'err');
-		},
-		success: function(content) {
-			mb.root().classList.remove("error")
-			mb.root().classList.add("success")
-			mb.root().classList.add("fadeInDown");
-			mb.show(content, 'ok');
-		}
-	};
-
+        byId(`msgbox-loc-${loc2}`).remove();
+        mb.ic++;
+        if(mb.c == mb.ic) {
+          mb.root().style.display = 'none';
+        }
+      }, 1000)
+    }, 3000);
+    mb.c++;
+  },
+  error: function(content) {
+    mb.root().classList.remove("success")
+    mb.root().classList.add("error")
+    mb.root().classList.add("fadeInDown");
+    mb.show(content, 'err');
+  },
+  success: function(content) {
+    mb.root().classList.remove("error")
+    mb.root().classList.add("success")
+    mb.root().classList.add("fadeInDown");
+    mb.show(content, 'ok');
+  }
+}

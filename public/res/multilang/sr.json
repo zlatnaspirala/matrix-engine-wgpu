@@ -1,5 +1,13 @@
 {
   "changeTheme": "Promeni Temu",
   "yes": "Da",
-  "no": "Ne"
+  "no": "Ne",
+  "startGame": "🎲Pokreni igru",
+  "changeLang": "Promeni Jezik",
+  "english": "Engleski",
+  "serbian": "Srpski",
+  "MAX": "MAKS",
+  "MIN": "MIN",
+  "straight": "Kenta",
+  "welcomeMsg": "Dobro dosli, <br> otvoren izvori kod 🎲 Ultimate Jamb igra <br> Pokupi kod: "
 }

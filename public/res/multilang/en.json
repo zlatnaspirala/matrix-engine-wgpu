@@ -1,5 +1,13 @@
 {
   "changeTheme": "Theme dark/light",
   "yes": "Yes",
-  "no": "No"
+  "no": "No",
+  "startGame": "🎲Start Game",
+  "changeLang": "Change Lang",
+  "english": "English",
+  "serbian": "Serbian",
+  "MAX": "MAX",
+  "MIN": "MIN",
+  "straight": "Straight",
+  "welcomeMsg": "Welcome here, <br> open source project 🎲 Ultimate Yahtzee game <br> download from "
 }

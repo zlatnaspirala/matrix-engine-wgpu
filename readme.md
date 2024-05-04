@@ -217,6 +217,9 @@ and you can sell or what ever you want with your project."
 - Obj loader [same like matrix-engine webgl engine]
   Obj loader source http://math.hws.edu/graphicsbook/source/webgl/cube-camera.html
 
+- File public\res\meshes\jamb\sounds\roll1.wav download from 
+  https://wavbvkery.com/dice-rolling-sound/
+
 ### BSD 3-Clause
 
 https://github.com/webgpu/webgpu-samples/blob/main/LICENSE.txt
