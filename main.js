@@ -96,6 +96,28 @@ export let application = new MatrixEngineWGPU({
       cube: "./res/meshes/jamb/dice.obj",
     }, onLoadObjWallCenter, {scale: [50, 10, 10], swap: [null]})
 
+    downloadMeshes({
+      cube: "./res/meshes/jamb/dice.obj",
+    }, (m) => {
+      for(var key in m) {
+        console.log(`%c Loaded objs -> : ${key} `, LOG_MATRIX);
+      }
+      // right
+      application.addMeshObj({
+        position: {x: -25, y: 5, z: -25},
+        rotation: {x: 0, y: 22, z: 0},
+        scale: [1, 1, 1],
+        texturesPaths: ['./res/meshes/jamb/text.png'],
+        name: 'wallRight',
+        mesh: m.cube,
+        physics: {
+          mass: 0,
+          enabled: true,
+          geometry: "Cube"
+        }
+      })
+    }, {scale: [25, 10, 4], swap: [null]})
+
   })
 
 
@@ -105,7 +127,7 @@ export let application = new MatrixEngineWGPU({
       console.log(`%c Loaded objs -> : ${key} `, LOG_MATRIX);
     }
 
-    // WALLS
+    // WALLS Center
     application.addMeshObj({
       position: {x: 0, y: 5, z: -45},
       rotation: {x: 0, y: 0, z: 0},
@@ -119,6 +141,8 @@ export let application = new MatrixEngineWGPU({
         geometry: "Cube"
       }
     })
+
+
 
 
   }
@@ -288,7 +312,7 @@ export let application = new MatrixEngineWGPU({
         app.cameras.WASD.yaw = 0.01;
         app.cameras.WASD.pitch = -1.26;
         app.cameras.WASD.position[2] = -18;
-        app.cameras.WASD.position[1]  = 19;
+        app.cameras.WASD.position[1] = 19;
 
         dices.STATUS = "PLACE_RESULT";
         // application.dices.STATUS = "FREE_TO_PLAY";
@@ -300,12 +324,12 @@ export let application = new MatrixEngineWGPU({
     addEventListener('FREE_TO_PLAY', () => {
       // setup againt 3d space loc
       console.info(' setup againt 3d space loc make some logic for pos ...')
-      app.matrixAmmo.getBodyByName('CubePhysics1').setLinearVelocity(new Ammo.btVector3(2,2,12))
-      app.matrixAmmo.getBodyByName('CubePhysics2').setLinearVelocity(new Ammo.btVector3(2,2,12))
-      app.matrixAmmo.getBodyByName('CubePhysics3').setLinearVelocity(new Ammo.btVector3(2,2,12))
-      app.matrixAmmo.getBodyByName('CubePhysics4').setLinearVelocity(new Ammo.btVector3(2,2,12))
-      app.matrixAmmo.getBodyByName('CubePhysics5').setLinearVelocity(new Ammo.btVector3(2,2,12))
-      app.matrixAmmo.getBodyByName('CubePhysics6').setLinearVelocity(new Ammo.btVector3(2,2,12))
+      app.matrixAmmo.getBodyByName('CubePhysics1').setLinearVelocity(new Ammo.btVector3(2, 2, 12))
+      app.matrixAmmo.getBodyByName('CubePhysics2').setLinearVelocity(new Ammo.btVector3(2, 2, 12))
+      app.matrixAmmo.getBodyByName('CubePhysics3').setLinearVelocity(new Ammo.btVector3(2, 2, 12))
+      app.matrixAmmo.getBodyByName('CubePhysics4').setLinearVelocity(new Ammo.btVector3(2, 2, 12))
+      app.matrixAmmo.getBodyByName('CubePhysics5').setLinearVelocity(new Ammo.btVector3(2, 2, 12))
+      app.matrixAmmo.getBodyByName('CubePhysics6').setLinearVelocity(new Ammo.btVector3(2, 2, 12))
     })
 
     // ACTIONS

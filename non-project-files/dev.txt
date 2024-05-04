@@ -15,3 +15,7 @@ dice shema for now
 
 
 https://phaser.discourse.group/t/disable-all-collision-impacts-matter-js/13715/2
+
+
+https://stackoverflow.com/questions/17755848/is-it-possible-to-disable-x-z-rotation-in-ammo-js
+

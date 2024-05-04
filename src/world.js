@@ -5,7 +5,8 @@ import {ArcballCamera, WASDCamera} from "./engine/engine.js";
 import MEMesh from "./engine/mesh.js";
 import MEMeshObj from "./engine/mesh-obj.js";
 import MatrixAmmo from "./physics/matrix-ammo.js";
-import {LOG_WARN, genName, scriptManager} from "./engine/utils.js";
+import {LOG_WARN, genName, mb, scriptManager, urlQuery} from "./engine/utils.js";
+import {MultiLang} from "./multilang/lang.js";
 
 export default class MatrixEngineWGPU {
 
@@ -70,6 +71,19 @@ export default class MatrixEngineWGPU {
       arcball: new ArcballCamera({position: initialCameraPosition}),
       WASD: new WASDCamera({position: initialCameraPosition}),
     };
+
+    //
+    this.label = new MultiLang()
+    if(urlQuery.lang != null) {
+      this.label.loadMultilang(urlQuery.lang).then((rez) => {
+        this.label.get = rez;
+      });
+    } else {
+     
+      this.label.loadMultilang().then((rez) => {
+        this.label.get = rez;
+      });
+    }
 
     this.init({canvas, callback})
   }
@@ -181,21 +195,23 @@ export default class MatrixEngineWGPU {
     if(typeof o.rotationSpeed === 'undefined') {o.rotationSpeed = {x: 0, y: 0, z: 0}}
     if(typeof o.texturesPaths === 'undefined') {o.texturesPaths = ['./res/textures/default.png']}
     if(typeof o.mainCameraParams === 'undefined') {o.mainCameraParams = this.mainCameraParams}
-    if(typeof o.scale === 'undefined') {o.scale = [1,1,1];}
+    if(typeof o.scale === 'undefined') {o.scale = [1, 1, 1];}
     o.entityArgPass = this.entityArgPass;
     o.cameras = this.cameras;
     // if(typeof o.name === 'undefined') {o.name = 'random' + Math.random();}
     if(typeof o.mesh === 'undefined') {
+      mb.error('arg mesh is empty for ', o.name);
       throw console.error('arg mesh is empty...');
       return;
     }
     if(typeof o.physics === 'undefined') {
       o.physics = {
-        scale: [1,1,1],
+        scale: [1, 1, 1],
         enabled: true,
         geometry: "Sphere",
         radius: o.scale,
-        name: o.name
+        name: o.name,
+        rotation: o.rotation
       }
     }
     if(typeof o.physics.enabled === 'undefined') {o.physics.enabled = true}
@@ -204,6 +220,7 @@ export default class MatrixEngineWGPU {
     if(typeof o.physics.mass === 'undefined') {o.physics.mass = 1;}
     if(typeof o.physics.name === 'undefined') {o.physics.name = o.name;}
     if(typeof o.physics.scale === 'undefined') {o.physics.scale = o.scale;}
+    if(typeof o.physics.rotation === 'undefined') {o.physics.rotation = o.rotation;}
     // send same pos
     o.physics.position = o.position;
     //  console.log('Mesh procedure', o)
@@ -256,18 +273,18 @@ export default class MatrixEngineWGPU {
       this.mainRenderBundle.forEach((meItem, index) => {
         meItem.drawElements(renderPass);
       })
-      if (renderPass) renderPass.end();
+      if(renderPass) renderPass.end();
 
       this.device.queue.submit([commandEncoder.finish()]);
       requestAnimationFrame(this.frame);
     } catch(err) {
-      console.log('%cDraw func (err):' + err , LOG_WARN)
+      console.log('%cDraw func (err):' + err, LOG_WARN)
       requestAnimationFrame(this.frame);
     }
   }
 
   framePassPerObject = () => {
-      console.log('framePassPerObject')
+    console.log('framePassPerObject')
     let commandEncoder = this.device.createCommandEncoder();
     this.rbContainer = [];
     let passEncoder;

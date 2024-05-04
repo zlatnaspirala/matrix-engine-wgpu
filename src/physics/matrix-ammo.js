@@ -1,5 +1,5 @@
 // import {vec3} from "wgpu-matrix";
-import {LOG_FUNNY, quaternion_rotation_matrix, radToDeg, scriptManager} from "../engine/utils";
+import {LOG_FUNNY, degToRad, quaternion_rotation_matrix, radToDeg, scriptManager} from "../engine/utils";
 
 export default class MatrixAmmo {
   constructor() {
@@ -108,6 +108,18 @@ export default class MatrixAmmo {
     var localInertia = new Ammo.btVector3(0, 0, 0);
     colShape.calculateLocalInertia(mass, localInertia);
     startTransform.setOrigin(new Ammo.btVector3(pOptions.position.x, pOptions.position.y, pOptions.position.z));
+
+    //rotation
+    console.log('startTransform.setRotation', startTransform.setRotation)
+
+    var t = startTransform.getRotation()
+    t.setX(degToRad(pOptions.rotation.x))
+    t.setY(degToRad(pOptions.rotation.y))
+    t.setZ(degToRad(pOptions.rotation.z))
+    startTransform.setRotation(t)
+
+    // startTransform.setRotation(pOptions.rotation.x, pOptions.rotation.y, pOptions.rotation.z);
+
     var myMotionState = new Ammo.btDefaultMotionState(startTransform),
       rbInfo = new Ammo.btRigidBodyConstructionInfo(mass, myMotionState, colShape, localInertia),
       body = new Ammo.btRigidBody(rbInfo);
@@ -116,11 +128,11 @@ export default class MatrixAmmo {
       body.setActivationState(2)
       body.setCollisionFlags(FLAGS.CF_KINEMATIC_OBJECT);
       // console.log('what is pOptions.mass and state is 2 ....', pOptions.mass)
-    } else if (typeof pOptions.collide != 'undefined' && pOptions.collide == false) {
+    } else if(typeof pOptions.collide != 'undefined' && pOptions.collide == false) {
       // idea not work for now - eliminate collide effect
       body.setActivationState(4)
       body.setCollisionFlags(FLAGS.TEST_NIDZA);
-    }else {
+    } else {
       body.setActivationState(4)
     }
     // console.log('what is name.', pOptions.name)

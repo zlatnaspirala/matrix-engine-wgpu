@@ -278,13 +278,14 @@ let myDom = exports.myDom = {
       rowNumber.style.background = '#7d7d7d8c';
       rowNumber.innerHTML = `-`;
       rowNumber.addEventListener('click', e => {
-        if (dices.STATUS = "PLACE_RESULT") {
+        if (dices.STATUS == "IN_PLAY" || dices.STATUS == "FREE_TO_PLAY") {
           console.log('BLOCK FROM JAMB DOM  ');
+          if (dices.STATUS == "IN_PLAY") _utils.mb.error(`STATUS IS ${dices.STATUS}, please wait for results...`);
+          if (dices.STATUS == "FREE_TO_PLAY") _utils.mb.error(`STATUS IS ${dices.STATUS}, you need to roll dice first.`);
           return;
         }
         var getName = e.target.id;
         getName = getName.replace('down-rowNumber', '');
-        // rowDown click
         if (this.state.rowDown.length == 0) {
           console.log('LOG ', getName);
           if (parseInt(getName) == 1) {
@@ -316,7 +317,7 @@ let myDom = exports.myDom = {
               this.state.rowDown.push(count23456 * parseInt(getName));
               e.target.innerHTML = count23456 * parseInt(getName);
               if (parseInt(getName) == 6) {
-                // // calc sum
+                // calc sum
                 console.log('calc sum for numb ~ ');
               }
               dices.STATUS = "FREE_TO_PLAY";
@@ -392,7 +393,7 @@ let myDom = exports.myDom = {
   }
 };
 
-},{"../../../src/engine/loader-obj.js":7,"../../../src/engine/utils.js":11,"../../../src/world.js":17}],2:[function(require,module,exports){
+},{"../../../src/engine/loader-obj.js":7,"../../../src/engine/utils.js":11,"../../../src/world.js":18}],2:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -503,6 +504,38 @@ let application = exports.application = new _world.default({
       scale: [50, 10, 10],
       swap: [null]
     });
+    (0, _loaderObj.downloadMeshes)({
+      cube: "./res/meshes/jamb/dice.obj"
+    }, m => {
+      for (var key in m) {
+        console.log(`%c Loaded objs -> : ${key} `, _utils.LOG_MATRIX);
+      }
+      // right
+      application.addMeshObj({
+        position: {
+          x: -25,
+          y: 5,
+          z: -25
+        },
+        rotation: {
+          x: 0,
+          y: 22,
+          z: 0
+        },
+        scale: [1, 1, 1],
+        texturesPaths: ['./res/meshes/jamb/text.png'],
+        name: 'wallRight',
+        mesh: m.cube,
+        physics: {
+          mass: 0,
+          enabled: true,
+          geometry: "Cube"
+        }
+      });
+    }, {
+      scale: [25, 10, 4],
+      swap: [null]
+    });
   });
   function onLoadObjWallCenter(m) {
     application.myLoadedMeshesWalls = m;
@@ -510,7 +543,7 @@ let application = exports.application = new _world.default({
       console.log(`%c Loaded objs -> : ${key} `, _utils.LOG_MATRIX);
     }
 
-    // WALLS
+    // WALLS Center
     application.addMeshObj({
       position: {
         x: 0,
@@ -860,7 +893,7 @@ let application = exports.application = new _world.default({
 });
 window.app = application;
 
-},{"./examples/games/jamb/jamb.js":1,"./src/engine/loader-obj.js":7,"./src/engine/utils.js":11,"./src/world.js":17}],3:[function(require,module,exports){
+},{"./examples/games/jamb/jamb.js":1,"./src/engine/loader-obj.js":7,"./src/engine/utils.js":11,"./src/world.js":18}],3:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -6614,7 +6647,7 @@ class MEBall {
 }
 exports.default = MEBall;
 
-},{"../shaders/shaders":14,"./engine":6,"./matrix-class":8,"wgpu-matrix":3}],5:[function(require,module,exports){
+},{"../shaders/shaders":15,"./engine":6,"./matrix-class":8,"wgpu-matrix":3}],5:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -7024,7 +7057,7 @@ class MECube {
 }
 exports.default = MECube;
 
-},{"../shaders/shaders":14,"./engine":6,"./matrix-class":8,"wgpu-matrix":3}],6:[function(require,module,exports){
+},{"../shaders/shaders":15,"./engine":6,"./matrix-class":8,"wgpu-matrix":3}],6:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -8640,7 +8673,7 @@ class MEMeshObj {
 }
 exports.default = MEMeshObj;
 
-},{"../shaders/fragment.wgsl":13,"../shaders/vertex.wgsl":15,"../shaders/vertexShadow.wgsl":16,"./engine":6,"./matrix-class":8,"./utils":11,"wgpu-matrix":3}],10:[function(require,module,exports){
+},{"../shaders/fragment.wgsl":14,"../shaders/vertex.wgsl":16,"../shaders/vertexShadow.wgsl":17,"./engine":6,"./matrix-class":8,"./utils":11,"wgpu-matrix":3}],10:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -9038,7 +9071,7 @@ class MEMesh {
 }
 exports.default = MEMesh;
 
-},{"../shaders/fragment.wgsl":13,"../shaders/vertex.wgsl":15,"../shaders/vertexShadow.wgsl":16,"./engine":6,"./loader-obj":7,"./matrix-class":8,"wgpu-matrix":3}],11:[function(require,module,exports){
+},{"../shaders/fragment.wgsl":14,"../shaders/vertex.wgsl":16,"../shaders/vertexShadow.wgsl":17,"./engine":6,"./loader-obj":7,"./matrix-class":8,"wgpu-matrix":3}],11:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -9048,7 +9081,6 @@ exports.LOG_WARN = exports.LOG_MATRIX = exports.LOG_INFO = exports.LOG_FUNNY = v
 exports.ORBIT = ORBIT;
 exports.ORBIT_FROM_ARRAY = ORBIT_FROM_ARRAY;
 exports.OSCILLATOR = OSCILLATOR;
-exports.QueryString = void 0;
 exports.SWITCHER = SWITCHER;
 exports.byId = void 0;
 exports.createAppEvent = createAppEvent;
@@ -9057,12 +9089,12 @@ exports.genName = genName;
 exports.getAxisRot = getAxisRot;
 exports.getAxisRot2 = getAxisRot2;
 exports.getAxisRot3 = getAxisRot3;
-exports.mat4 = void 0;
+exports.mb = exports.mat4 = void 0;
 exports.quaternion_rotation_matrix = quaternion_rotation_matrix;
 exports.radToDeg = radToDeg;
 exports.randomFloatFromTo = randomFloatFromTo;
 exports.randomIntFromTo = randomIntFromTo;
-exports.vec3 = exports.scriptManager = void 0;
+exports.vec3 = exports.urlQuery = exports.scriptManager = void 0;
 const vec3 = exports.vec3 = {
   cross(a, b, dst) {
     dst = dst || new Float32Array(3);
@@ -9594,7 +9626,7 @@ function randomIntFromTo(min, max) {
     return Math.floor(Math.random() * (max - min + 1) + min);
   }
 }
-var QueryString = exports.QueryString = function () {
+var urlQuery = exports.urlQuery = function () {
   var query_string = {};
   var query = window.location.search.substring(1);
   var vars = query.split('&');
@@ -9722,7 +9754,127 @@ function genName(length) {
   return result;
 }
 
+// 
+let mb = exports.mb = {
+  root: () => byId('msgBox'),
+  pContent: () => byId('not-content'),
+  copy: function () {
+    navigator.clipboard.writeText(mb.root().children[0].innerText);
+  },
+  c: 0,
+  ic: 0,
+  t: {},
+  setContent: function (content, t) {
+    var iMsg = document.createElement('div');
+    iMsg.innerHTML = content;
+    iMsg.id = `msgbox-loc-${mb.c}`;
+    mb.root().appendChild(iMsg);
+    if (t == 'ok') {
+      iMsg.style = 'background: white;color:#945512;padding:7px;margin:2px';
+    } else {
+      iMsg.style = 'background: #A56119;color:white;padding:7px;margin:2px';
+    }
+  },
+  kill: function () {
+    mb.root().remove();
+  },
+  show: function (content, t) {
+    mb.setContent(content, t);
+    mb.root().style.display = "block";
+    var loc2 = mb.c;
+    setTimeout(function () {
+      byId(`msgbox-loc-${loc2}`).classList.remove("fadeInDown");
+      byId(`msgbox-loc-${loc2}`).classList.add("fadeOut");
+      setTimeout(function () {
+        byId(`msgbox-loc-${loc2}`).style.display = "none";
+        byId(`msgbox-loc-${loc2}`).classList.remove("fadeOut");
+        byId(`msgbox-loc-${loc2}`).remove();
+        mb.ic++;
+        if (mb.c == mb.ic) {
+          mb.root().style.display = 'none';
+        }
+      }, 1000);
+    }, 3000);
+    mb.c++;
+  },
+  error: function (content) {
+    mb.root().classList.remove("success");
+    mb.root().classList.add("error");
+    mb.root().classList.add("fadeInDown");
+    mb.show(content, 'err');
+  },
+  success: function (content) {
+    mb.root().classList.remove("error");
+    mb.root().classList.add("success");
+    mb.root().classList.add("fadeInDown");
+    mb.show(content, 'ok');
+  }
+};
+
 },{}],12:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.MultiLang = void 0;
+class MultiLang {
+  constructor() {
+    console.log('multi lang');
+  }
+  /**
+   * @description
+   * Multi language system is already deep integrated like common feature
+   * in developing apps proccess.
+   */
+
+  T = {};
+  load = async path => {
+    let x = null;
+    if (path) {
+      x = await this.loadMultilang(path);
+    } else {
+      x = await this.loadMultilang();
+    }
+
+    // Internal exspose to the global obj
+    this.T = x;
+    T = x;
+    dispatchEvent(new CustomEvent('app.ready', {
+      detail: {
+        info: 'app.ready'
+      }
+    }));
+  };
+  translate = {
+    update: function () {
+      var allTranDoms = document.querySelectorAll('[data-label]');
+      console.log(allTranDoms);
+      allTranDoms.forEach(i => {
+        i.innerHTML = T[i.getAttribute('data-label')];
+      });
+    }
+  };
+  loadMultilang = async function (lang = 'en') {
+    lang = 'res/multilang/' + lang + '.json';
+    console.info("Multilang: ", lang);
+    try {
+      const r = await fetch(lang, {
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        }
+      });
+      return await r.json();
+    } catch (err) {
+      console.warn('Not possible to access multilang json asset! Err => ', err);
+      return {};
+    }
+  };
+}
+exports.MultiLang = MultiLang;
+
+},{}],13:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -9818,6 +9970,17 @@ class MatrixAmmo {
     var localInertia = new Ammo.btVector3(0, 0, 0);
     colShape.calculateLocalInertia(mass, localInertia);
     startTransform.setOrigin(new Ammo.btVector3(pOptions.position.x, pOptions.position.y, pOptions.position.z));
+
+    //rotation
+    console.log('startTransform.setRotation', startTransform.setRotation);
+    var t = startTransform.getRotation();
+    t.setX((0, _utils.degToRad)(pOptions.rotation.x));
+    t.setY((0, _utils.degToRad)(pOptions.rotation.y));
+    t.setZ((0, _utils.degToRad)(pOptions.rotation.z));
+    startTransform.setRotation(t);
+
+    // startTransform.setRotation(pOptions.rotation.x, pOptions.rotation.y, pOptions.rotation.z);
+
     var myMotionState = new Ammo.btDefaultMotionState(startTransform),
       rbInfo = new Ammo.btRigidBodyConstructionInfo(mass, myMotionState, colShape, localInertia),
       body = new Ammo.btRigidBody(rbInfo);
@@ -9984,7 +10147,7 @@ class MatrixAmmo {
 }
 exports.default = MatrixAmmo;
 
-},{"../engine/utils":11}],13:[function(require,module,exports){
+},{"../engine/utils":11}],14:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -10042,7 +10205,7 @@ fn main(input : FragmentInput) -> @location(0) vec4f {
   // return vec4(textureColor.rgb , 0.5);
 }`;
 
-},{}],14:[function(require,module,exports){
+},{}],15:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -10100,7 +10263,7 @@ fn fragmentMain(input: VertexOutput) -> @location(0) vec4f {
   return vec4f(textureColor.rgb * lightColor, textureColor.a);
 }`;
 
-},{}],15:[function(require,module,exports){
+},{}],16:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -10157,7 +10320,7 @@ fn main(
 }
 `;
 
-},{}],16:[function(require,module,exports){
+},{}],17:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -10185,7 +10348,7 @@ fn main(
 }
 `;
 
-},{}],17:[function(require,module,exports){
+},{}],18:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -10200,6 +10363,7 @@ var _mesh = _interopRequireDefault(require("./engine/mesh.js"));
 var _meshObj = _interopRequireDefault(require("./engine/mesh-obj.js"));
 var _matrixAmmo = _interopRequireDefault(require("./physics/matrix-ammo.js"));
 var _utils = require("./engine/utils.js");
+var _lang = require("./multilang/lang.js");
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 class MatrixEngineWGPU {
   mainRenderBundle = [];
@@ -10261,6 +10425,18 @@ class MatrixEngineWGPU {
         position: initialCameraPosition
       })
     };
+
+    //
+    this.label = new _lang.MultiLang();
+    if (_utils.urlQuery.lang != null) {
+      this.label.loadMultilang(_utils.urlQuery.lang).then(rez => {
+        this.label.get = rez;
+      });
+    } else {
+      this.label.loadMultilang().then(rez => {
+        this.label.get = rez;
+      });
+    }
     this.init({
       canvas,
       callback
@@ -10500,6 +10676,7 @@ class MatrixEngineWGPU {
     o.cameras = this.cameras;
     // if(typeof o.name === 'undefined') {o.name = 'random' + Math.random();}
     if (typeof o.mesh === 'undefined') {
+      _utils.mb.error('arg mesh is empty for ', o.name);
       throw console.error('arg mesh is empty...');
       return;
     }
@@ -10509,7 +10686,8 @@ class MatrixEngineWGPU {
         enabled: true,
         geometry: "Sphere",
         radius: o.scale,
-        name: o.name
+        name: o.name,
+        rotation: o.rotation
       };
     }
     if (typeof o.physics.enabled === 'undefined') {
@@ -10529,6 +10707,9 @@ class MatrixEngineWGPU {
     }
     if (typeof o.physics.scale === 'undefined') {
       o.physics.scale = o.scale;
+    }
+    if (typeof o.physics.rotation === 'undefined') {
+      o.physics.rotation = o.rotation;
     }
     // send same pos
     o.physics.position = o.position;
@@ -10607,4 +10788,4 @@ class MatrixEngineWGPU {
 }
 exports.default = MatrixEngineWGPU;
 
-},{"./engine/ball.js":4,"./engine/cube.js":5,"./engine/engine.js":6,"./engine/mesh-obj.js":9,"./engine/mesh.js":10,"./engine/utils.js":11,"./physics/matrix-ammo.js":12,"wgpu-matrix":3}]},{},[2]);
+},{"./engine/ball.js":4,"./engine/cube.js":5,"./engine/engine.js":6,"./engine/mesh-obj.js":9,"./engine/mesh.js":10,"./engine/utils.js":11,"./multilang/lang.js":12,"./physics/matrix-ammo.js":13,"wgpu-matrix":3}]},{},[2]);

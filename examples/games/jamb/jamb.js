@@ -1,6 +1,6 @@
 import MatrixEngineWGPU from "../../../src/world.js";
 import {downloadMeshes} from '../../../src/engine/loader-obj.js';
-import {LOG_FUNNY, LOG_INFO, LOG_MATRIX, byId} from "../../../src/engine/utils.js";
+import {LOG_FUNNY, LOG_INFO, LOG_MATRIX, byId, mb} from "../../../src/engine/utils.js";
 
 export let dices = {
   C: 0,
@@ -320,15 +320,15 @@ export let myDom = {
       rowNumber.innerHTML = `-`;
       rowNumber.addEventListener('click', (e) => {
 
-        if (dices.STATUS = "PLACE_RESULT") {
+        if (dices.STATUS == "IN_PLAY" || dices.STATUS == "FREE_TO_PLAY") {
           console.log('BLOCK FROM JAMB DOM  ')
+          if (dices.STATUS == "IN_PLAY") mb.error(`STATUS IS ${dices.STATUS}, please wait for results...`);
+          if (dices.STATUS == "FREE_TO_PLAY") mb.error(`STATUS IS ${dices.STATUS}, you need to roll dice first.`);
           return;
         }
 
-        
         var getName = e.target.id;
         getName = getName.replace('down-rowNumber', '')
-        // rowDown click
         if(this.state.rowDown.length == 0) {
           console.log('LOG ', getName)
           if(parseInt(getName) == 1) {
@@ -359,12 +359,10 @@ export let myDom = {
               }
               this.state.rowDown.push((count23456 * parseInt(getName)))
               e.target.innerHTML = (count23456 * parseInt(getName));
-
               if(parseInt(getName) == 6) {
-                // // calc sum
+                // calc sum
                 console.log('calc sum for numb ~ ')
               }
-
               dices.STATUS = "FREE_TO_PLAY";
               dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}))
             } else {
