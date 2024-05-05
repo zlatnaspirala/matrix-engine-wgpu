@@ -112,14 +112,12 @@ let myDom = exports.myDom = {
     root.style.top = '10px';
     root.style.left = '10px';
     root.style.width = '200px';
-    // root.style.height = '500px';
     root.style.background = '#7d7d7d8c';
     var rowHeader = document.createElement('div');
     rowHeader.id = 'rowHeader';
     rowHeader.style.top = '10px';
     rowHeader.style.left = '10px';
     rowHeader.style.width = '200px';
-    // rowHeader.style.background = '#7d7d7d8c';
     rowHeader.innerHTML = 'NIDZA';
     root.appendChild(rowHeader);
     rowHeader.classList.add('myTheme1');
@@ -128,11 +126,8 @@ let myDom = exports.myDom = {
     rowDown.style.top = '10px';
     rowDown.style.left = '10px';
     rowDown.style.width = '200px';
-    // rowDown.style.background = '#7d7d7d8c';
     rowDown.innerHTML = '↓';
     rowDown.classList.add('myTheme1');
-    // this.createRow(rowDown);
-    // this.createSumField(rowDown);
     root.appendChild(rowDown);
     var rowFree = document.createElement('div');
     rowFree.id = 'rowFree';
@@ -383,6 +378,7 @@ let myDom = exports.myDom = {
                 }
               }
               this.state.rowDown.push(count23456 * parseInt(getName));
+              //
               e.target.innerHTML = count23456 * parseInt(getName);
               if (parseInt(getName) == 6) {
                 // calc sum
@@ -390,15 +386,12 @@ let myDom = exports.myDom = {
                 //  this.state.rowDown.length + 1
                 myDom.calcDownNumbers();
                 e.target.classList.remove('canPlay');
+                this.rowMax.classList.add('canPlay');
               } else {
                 e.target.classList.remove('canPlay');
                 this.memoNumberRow[parseInt(getName)].classList.add('canPlay');
               }
               dices.STATUS = "FREE_TO_PLAY";
-
-              // dev
-              // myDom.calcDownNumbers()
-
               dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
             } else {
               console.log('BLOCK');
@@ -420,12 +413,18 @@ let myDom = exports.myDom = {
     rowMax.style.background = '#7d7d7d8c';
     rowMax.innerHTML = `-`;
     myRoot.appendChild(rowMax);
+    this.rowMax = rowMax;
+    this.rowMax.addEventListener("click", e => {
+      e.target.classList.remove('canPlay');
+      this.rowMin.classList.add('canPlay');
+    });
     var rowMin = document.createElement('div');
     rowMin.id = 'down-rowMax';
     rowMin.style.width = 'auto';
     rowMin.style.background = '#7d7d7d8c';
     rowMin.innerHTML = `-`;
     myRoot.appendChild(rowMin);
+    this.rowMin = rowMin;
     var rowMaxMinSum = document.createElement('div');
     rowMaxMinSum.id = 'down-rowMaxMinSum';
     rowMaxMinSum.style.width = 'auto';

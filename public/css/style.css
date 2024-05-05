@@ -328,7 +328,6 @@ p {
 
 #blocker {
   z-index: 2;
-  background-color: #121212f5;
   flex-direction: column;
   position: absolute;
   left: 0;
@@ -336,6 +335,14 @@ p {
   width: 100%;
   height: 100%;
   display: flex;
+
+  background: linear-gradient(291deg, #2960bb, #b22710, #b22710);
+  background-size: 600% 600%;
+
+  -webkit-animation: bganim 10s ease infinite;
+  -moz-animation: bganim 10s ease infinite;
+  -o-animation: bganim 10s ease infinite;
+  animation: bganim 10s ease infinite;
 }
 
 #messageBox {
@@ -347,6 +354,7 @@ p {
 }
 
 #msgBox {
+  text-shadow: 0px 4px 4px #282828;
   -webkit-user-select: none;
   /* Safari */
   -ms-user-select: none;
@@ -398,12 +406,15 @@ p {
 }
 
 .stroke {
+
+  text-shadow: 0px 4px 4px #282828;
+
   -webkit-text-stroke-width: 1px;
   -webkit-text-stroke-color: black;
 }
 
 .animate1 {
-
+	text-shadow: 0px 4px 4px #282828;
   -webkit-text-stroke-width: 1px;
   -webkit-text-stroke-color: black;
 
@@ -429,4 +440,36 @@ p {
   0%{background-position:0% 50%}
   50%{background-position:100% 50%}
   100%{background-position:0% 50%}
+}
+
+
+.bganim1 {
+  background: linear-gradient(291deg, #2960bb, #b22710, #b22710);
+  background-size: 600% 600%;
+
+  -webkit-animation: bganim 10s ease infinite;
+  -moz-animation: bganim 10s ease infinite;
+  -o-animation: bganim 10s ease infinite;
+  animation: bganim 10s ease infinite;
+}
+
+@-webkit-keyframes bganim {
+  0%{background-position:0% 45%}
+  50%{background-position:100% 56%}
+  100%{background-position:0% 45%}
+}
+@-moz-keyframes bganim {
+  0%{background-position:0% 45%}
+  50%{background-position:100% 56%}
+  100%{background-position:0% 45%}
+}
+@-o-keyframes bganim {
+  0%{background-position:0% 45%}
+  50%{background-position:100% 56%}
+  100%{background-position:0% 45%}
+}
+@keyframes bganim {
+  0%{background-position:0% 45%}
+  50%{background-position:100% 56%}
+  100%{background-position:0% 45%}
 }
