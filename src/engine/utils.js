@@ -676,10 +676,11 @@ export let mb = {
     iMsg.innerHTML = content;
     iMsg.id = `msgbox-loc-${mb.c}`;
     mb.root().appendChild(iMsg);
+    iMsg.classList.add('animate1')
     if(t == 'ok') {
-      iMsg.style = 'background: white;color:#945512;padding:7px;margin:2px';
+      iMsg.style = 'font-family: stormfaze;color:white;padding:7px;margin:2px';
     } else {
-      iMsg.style = 'background: #A56119;color:white;padding:7px;margin:2px';
+      iMsg.style = 'font-family: stormfaze;color:white;padding:7px;margin:2px';
     }
   },
   kill: function() {

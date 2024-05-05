@@ -17,6 +17,16 @@ body {
   padding: 0;
   overflow: hidden;
   text-align: center;
+
+  -webkit-user-select: none;
+  /* Safari */
+  -ms-user-select: none;
+  /* IE 10 and IE 11 */
+  user-select: none;
+  /* Standard syntax */
+
+  -webkit-text-stroke-width: 1px;
+  -webkit-text-stroke-color: rgba(0, 0, 0, 0.575);
 }
 
 .meBody {
@@ -317,6 +327,7 @@ p {
 }
 
 #blocker {
+  z-index: 2;
   background-color: #121212f5;
   flex-direction: column;
   position: absolute;
@@ -335,6 +346,17 @@ p {
   vertical-align: middle;
 }
 
+#msgBox {
+  -webkit-user-select: none;
+  /* Safari */
+  -ms-user-select: none;
+  /* IE 10 and IE 11 */
+  user-select: none;
+  /* Standard syntax */
+  background: rgb(2, 0, 36);
+  background: radial-gradient(circle, rgba(2, 0, 36, 1) 0%, rgba(9, 81, 121, 0.8463760504201681) 34%, rgba(0, 212, 255, 1) 100%);
+}
+
 .msg-box {
   display: none;
   position: absolute;
@@ -348,15 +370,63 @@ p {
   font-family: Arial, Helvetica, sans-serif;
 
   &.error {
-    background-color: rgb(93, 4, 5);
+    /* background-color: rgb(93, 4, 5); */
     color: rgb(255, 0, 30);
   }
 
   &.success {
-    background-color: rgb(220, 14, 14);
+    /* background-color: rgb(220, 14, 14); */
     color: rgb(32, 255, 84);
     text-align: center;
     margin-left: -150px;
     z-index: 20;
   }
+}
+
+.canPlay {
+  border: solid limegreen 1px;
+}
+
+.canNotPlay {
+  border: unset;
+}
+
+
+.myTheme1 {
+  background: rgb(235, 1, 110);
+  background: radial-gradient(circle, rgb(255, 73, 179) 7%, rgba(0, 144, 224, 0.9332107843137255) 57%, rgba(0, 212, 255, 1) 85%);
+}
+
+.stroke {
+  -webkit-text-stroke-width: 1px;
+  -webkit-text-stroke-color: black;
+}
+
+.animate1 {
+
+  -webkit-text-stroke-width: 1px;
+  -webkit-text-stroke-color: black;
+
+  background: linear-gradient(270deg, #ff0270, #02c5ff);
+  background-size: 50% 50%;
+
+  -webkit-animation: AnimationName 2s ease infinite;
+  -moz-animation: AnimationName 2s ease infinite;
+  animation: AnimationName 2s ease infinite;
+}
+
+@-webkit-keyframes AnimationName {
+  0%{background-position:0% 50%}
+  50%{background-position:100% 50%}
+  100%{background-position:0% 50%}
+}
+@-moz-keyframes AnimationName {
+  0%{background-position:0% 50%}
+  50%{background-position:100% 50%}
+  100%{background-position:0% 50%}
+}
+@keyframes AnimationName {
+  0%{background-position:0% 50%}
+  50%{background-position:100% 50%}
+  100%{background-position:0% 50%}
 }

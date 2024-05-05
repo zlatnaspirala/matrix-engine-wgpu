@@ -27,6 +27,7 @@ let myDom = exports.myDom = {
   state: {
     rowDown: []
   },
+  memoNumberRow: [],
   createMenu: function () {
     var root = document.createElement('div');
     root.id = 'hud';
@@ -36,20 +37,39 @@ let myDom = exports.myDom = {
     var help = document.createElement('div');
     help.id = 'HELP';
     help.classList.add('btn2');
-    help.innerHTML = `HELP`;
+    help.innerHTML = `<span data-label="help"></span>`;
+    var settings = document.createElement('div');
+    settings.id = 'settings';
+    settings.classList.add('btn2');
+    settings.innerHTML = `settings`;
+    settings.addEventListener('click', () => {
+      (0, _utils.byId)('messageBox').innerHTML = `
+      <div>
+        <span data-label="settings"></span>
+      </div>
+      `;
+      (0, _utils.byId)('blocker').style.display = 'flex';
+      (0, _utils.byId)('messageBox').style.display = 'flex';
+      dispatchEvent(new CustomEvent('updateLang', {}));
+    });
     var roll = document.createElement('div');
     roll.id = 'hud-roll';
     roll.classList.add('btn');
-    roll.innerHTML = `ROLL`;
+    roll.innerHTML = `<span data-label="roll"></span>`;
     roll.addEventListener('click', () => {
       app.ROLL();
     });
     var separator = document.createElement('div');
-    separator.innerHTML = `--------`;
+    separator.innerHTML = `=======`;
+    root.append(settings);
     root.append(help);
     root.append(separator);
     root.append(roll);
     document.body.appendChild(root);
+
+    // global access
+    // app.label.update()
+    dispatchEvent(new CustomEvent('updateLang', {}));
   },
   createBlocker: function () {
     var root = document.createElement('div');
@@ -99,16 +119,18 @@ let myDom = exports.myDom = {
     rowHeader.style.top = '10px';
     rowHeader.style.left = '10px';
     rowHeader.style.width = '200px';
-    rowHeader.style.background = '#7d7d7d8c';
+    // rowHeader.style.background = '#7d7d7d8c';
     rowHeader.innerHTML = 'NIDZA';
     root.appendChild(rowHeader);
+    rowHeader.classList.add('myTheme1');
     var rowDown = document.createElement('div');
     rowDown.id = 'rowDown';
     rowDown.style.top = '10px';
     rowDown.style.left = '10px';
     rowDown.style.width = '200px';
-    rowDown.style.background = '#7d7d7d8c';
+    // rowDown.style.background = '#7d7d7d8c';
     rowDown.innerHTML = '↓';
+    rowDown.classList.add('myTheme1');
     // this.createRow(rowDown);
     // this.createSumField(rowDown);
     root.appendChild(rowDown);
@@ -117,24 +139,27 @@ let myDom = exports.myDom = {
     rowFree.style.top = '10px';
     rowFree.style.left = '10px';
     rowFree.style.width = '200px';
-    rowFree.style.background = '#7d7d7d8c';
+    // rowFree.style.background = '#7d7d7d8c';
     rowFree.innerHTML = '↕';
+    rowFree.classList.add('myTheme1');
     root.appendChild(rowFree);
     var rowUp = document.createElement('div');
     rowUp.id = 'rowUp';
     rowUp.style.top = '10px';
     rowUp.style.left = '10px';
     rowUp.style.width = '200px';
-    rowUp.style.background = '#7d7d7d8c';
+    // rowUp.style.background = '#7d7d7d8c';
     rowUp.innerHTML = '↑';
+    rowUp.classList.add('myTheme1');
     root.appendChild(rowUp);
     var rowHand = document.createElement('div');
     rowHand.id = 'rowHand';
     rowHand.style.top = '10px';
     rowHand.style.left = '10px';
     rowHand.style.width = '200px';
-    rowHand.style.background = '#7d7d7d8c';
+    // rowHand.style.background = '#7d7d7d8c';
     rowHand.innerHTML = 'Hand';
+    rowHand.classList.add('myTheme1');
     root.appendChild(rowHand);
 
     // INJECT TABLE HEADER ROW
@@ -191,7 +216,7 @@ let myDom = exports.myDom = {
     threeOfAKind.id = 'H_threeOfAKind';
     threeOfAKind.style.width = 'auto';
     threeOfAKind.style.background = '#7d7d7d8c';
-    threeOfAKind.innerHTML = `ThreeOf`;
+    threeOfAKind.innerHTML = `<span data-label="threeOf"></span>`;
     myRoot.appendChild(threeOfAKind);
     var fullHouse = document.createElement('div');
     fullHouse.id = 'H_fullHouse';
@@ -313,6 +338,11 @@ let myDom = exports.myDom = {
       rowNumber.style.width = 'auto';
       rowNumber.style.background = '#7d7d7d8c';
       rowNumber.innerHTML = `-`;
+      this.memoNumberRow.push(rowNumber);
+      // initial
+      if (x == 1) {
+        rowNumber.classList.add('canPlay');
+      }
       rowNumber.addEventListener('click', e => {
         if (dices.STATUS == "IN_PLAY" || dices.STATUS == "FREE_TO_PLAY") {
           console.log('BLOCK FROM JAMB DOM  ');
@@ -334,6 +364,8 @@ let myDom = exports.myDom = {
             }
             this.state.rowDown.push(count1);
             e.target.innerHTML = count1;
+            e.target.classList.remove('canPlay');
+            this.memoNumberRow[1].classList.add('canPlay');
             dices.STATUS = "FREE_TO_PLAY";
             dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
           } else {
@@ -357,6 +389,10 @@ let myDom = exports.myDom = {
                 console.log('calc sum for numb ~ ');
                 //  this.state.rowDown.length + 1
                 myDom.calcDownNumbers();
+                e.target.classList.remove('canPlay');
+              } else {
+                e.target.classList.remove('canPlay');
+                this.memoNumberRow[parseInt(getName)].classList.add('canPlay');
               }
               dices.STATUS = "FREE_TO_PLAY";
 
@@ -9841,10 +9877,11 @@ let mb = exports.mb = {
     iMsg.innerHTML = content;
     iMsg.id = `msgbox-loc-${mb.c}`;
     mb.root().appendChild(iMsg);
+    iMsg.classList.add('animate1');
     if (t == 'ok') {
-      iMsg.style = 'background: white;color:#945512;padding:7px;margin:2px';
+      iMsg.style = 'font-family: stormfaze;color:white;padding:7px;margin:2px';
     } else {
-      iMsg.style = 'background: #A56119;color:white;padding:7px;margin:2px';
+      iMsg.style = 'font-family: stormfaze;color:white;padding:7px;margin:2px';
     }
   },
   kill: function () {
@@ -9897,16 +9934,6 @@ class MultiLang {
       this.update();
     });
   }
-  // T = {};
-  // load = async (path) => {
-  //   if(path) {
-  //     this.T = await this.loadMultilang(path);
-  //   } else {
-  //     this.T = await this.loadMultilang();
-  //   }
-  //   dispatchEvent(new CustomEvent('app.ready', {detail: {info: 'app.ready'}}));
-  // }
-
   update = function () {
     var allTranDoms = document.querySelectorAll('[data-label]');
     allTranDoms.forEach(i => {

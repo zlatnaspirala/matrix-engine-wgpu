@@ -9,5 +9,9 @@
   "MAX": "MAX",
   "MIN": "MIN",
   "straight": "Straight",
+  "threeOf": "ThreeOf",
+  "help": "HELP",
+  "roll":"ROLL DICES",
+  "settings": "Settings",
   "welcomeMsg": "Welcome here, <br> open source project 🎲 Ultimate Yahtzee game <br> download from "
 }
