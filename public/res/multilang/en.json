@@ -10,8 +10,15 @@
   "MIN": "MIN",
   "straight": "Straight",
   "threeOf": "ThreeOf",
+  "fullhouse": "FULLH",
   "help": "HELP",
   "roll":"ROLL DICES",
   "settings": "Settings",
+  "hand": "Hand",
+  "cornerText": "zlatna",
+  "poker":"Poker",
+  "jamb":"Jamb",
+  "final":"Final Σ",
+  "hide": "HIDE",
   "welcomeMsg": "Welcome here, <br> open source project 🎲 Ultimate Yahtzee game <br> download from "
 }

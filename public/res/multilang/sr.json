@@ -10,8 +10,15 @@
   "MIN": "MIN",
   "straight": "Kenta",
   "threeOf": "Triling",
-  "help": "Pomoc",
+  "fullhouse": "FUL",
+  "help": "Pomoć",
   "roll": "Igraj",
-  "settings": "Podesavanja",
-  "welcomeMsg": "Dobro dosli, <br> otvoren izvori kod 🎲 Ultimate Jamb igra <br> Pokupi kod: "
+  "settings": "Podešavanja",
+  "hand": "Ručno",
+  "cornerText": "zlatna",
+  "poker":"Poker",
+  "jamb":"Jamb",
+  "final":"Konačna Σ",
+  "hide": "Zatvori",
+  "welcomeMsg": "Dobro došli, <br> otvoren izvori kod 🎲 Ultimate Jamb igra <br> Pokupi kod: "
 }

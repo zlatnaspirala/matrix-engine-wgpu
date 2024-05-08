@@ -15,11 +15,21 @@ let dices = exports.dices = {
   R: {},
   checkAll: function () {
     this.C++;
-    if (typeof this.R.CubePhysics1 != 'undefined' && typeof this.R.CubePhysics2 != 'undefined' && typeof this.R.CubePhysics3 != 'undefined' && typeof this.R.CubePhysics4 != 'undefined' && typeof this.R.CubePhysics5 != 'undefined' && typeof this.R.CubePhysics6 != 'undefined' && this.C > 2000) {
+    if (typeof this.R.CubePhysics1 != 'undefined' && typeof this.R.CubePhysics2 != 'undefined' && typeof this.R.CubePhysics3 != 'undefined' && typeof this.R.CubePhysics4 != 'undefined' && typeof this.R.CubePhysics5 != 'undefined' && typeof this.R.CubePhysics6 != 'undefined' && this.C > 1200) {
       dispatchEvent(new CustomEvent('all-done', {
         detail: {}
       }));
       this.C = 0;
+    }
+  },
+  validatePass: function () {
+    if (dices.STATUS == "IN_PLAY" || dices.STATUS == "FREE_TO_PLAY") {
+      console.log('BLOCK FROM JAMB DOM  ');
+      if (dices.STATUS == "IN_PLAY") _utils.mb.error(`STATUS IS ${dices.STATUS}, please wait for results...`);
+      if (dices.STATUS == "FREE_TO_PLAY") _utils.mb.error(`STATUS IS ${dices.STATUS}, you need to roll dice first.`);
+      return false;
+    } else {
+      return true;
     }
   }
 };
@@ -28,6 +38,10 @@ let myDom = exports.myDom = {
     rowDown: []
   },
   memoNumberRow: [],
+  hideSettings: function () {
+    (0, _utils.byId)('blocker').style.display = 'none';
+    (0, _utils.byId)('messageBox').style.display = 'none';
+  },
   createMenu: function () {
     var root = document.createElement('div');
     root.id = 'hud';
@@ -41,11 +55,16 @@ let myDom = exports.myDom = {
     var settings = document.createElement('div');
     settings.id = 'settings';
     settings.classList.add('btn2');
-    settings.innerHTML = `settings`;
+    settings.innerHTML = `<span data-label="settings"></span>`;
     settings.addEventListener('click', () => {
       (0, _utils.byId)('messageBox').innerHTML = `
       <div>
         <span data-label="settings"></span>
+        <div>
+          <button class="btn2" onclick="app.myDom.hideSettings()">
+            <span data-label="hide"></span>
+          </button>
+        </div>
       </div>
       `;
       (0, _utils.byId)('blocker').style.display = 'flex';
@@ -118,7 +137,7 @@ let myDom = exports.myDom = {
     rowHeader.style.top = '10px';
     rowHeader.style.left = '10px';
     rowHeader.style.width = '200px';
-    rowHeader.innerHTML = 'NIDZA';
+    rowHeader.innerHTML = '<span data-label="cornerText"></span>';
     root.appendChild(rowHeader);
     rowHeader.classList.add('myTheme1');
     var rowDown = document.createElement('div');
@@ -153,7 +172,7 @@ let myDom = exports.myDom = {
     rowHand.style.left = '10px';
     rowHand.style.width = '200px';
     // rowHand.style.background = '#7d7d7d8c';
-    rowHand.innerHTML = 'Hand';
+    rowHand.innerHTML = '<span data-label="hand"></span>';
     rowHand.classList.add('myTheme1');
     root.appendChild(rowHand);
 
@@ -217,19 +236,19 @@ let myDom = exports.myDom = {
     fullHouse.id = 'H_fullHouse';
     fullHouse.style.width = 'auto';
     fullHouse.style.background = '#7d7d7d8c';
-    fullHouse.innerHTML = `Full`;
+    fullHouse.innerHTML = `<span data-label="fullhouse"></span>`;
     myRoot.appendChild(fullHouse);
     var poker = document.createElement('div');
     poker.id = 'H_poker';
     poker.style.width = 'auto';
     poker.style.background = '#7d7d7d8c';
-    poker.innerHTML = `Poker`;
+    poker.innerHTML = `<span data-label="poker"></span>`;
     myRoot.appendChild(poker);
     var jamb = document.createElement('div');
     jamb.id = 'H_jamb';
     jamb.style.width = 'auto';
     jamb.style.background = '#7d7d7d8c';
-    jamb.innerHTML = `Jamb`;
+    jamb.innerHTML = `<span data-label="jamb"></span>`;
     myRoot.appendChild(jamb);
     var rowSum = document.createElement('div');
     rowSum.id = 'H_rowSum';
@@ -241,7 +260,7 @@ let myDom = exports.myDom = {
     rowSumFINAL.id = 'H_rowSumFINAL';
     rowSumFINAL.style.width = 'auto';
     rowSumFINAL.style.background = '#7d7d7d8c';
-    rowSumFINAL.innerHTML = `Final Σ`;
+    rowSumFINAL.innerHTML = `<spam data-label="final"></span>`;
     myRoot.appendChild(rowSumFINAL);
   },
   createRow: function (myRoot) {
@@ -339,12 +358,7 @@ let myDom = exports.myDom = {
         rowNumber.classList.add('canPlay');
       }
       rowNumber.addEventListener('click', e => {
-        if (dices.STATUS == "IN_PLAY" || dices.STATUS == "FREE_TO_PLAY") {
-          console.log('BLOCK FROM JAMB DOM  ');
-          if (dices.STATUS == "IN_PLAY") _utils.mb.error(`STATUS IS ${dices.STATUS}, please wait for results...`);
-          if (dices.STATUS == "FREE_TO_PLAY") _utils.mb.error(`STATUS IS ${dices.STATUS}, you need to roll dice first.`);
-          return;
-        }
+        if (dices.validatePass() == false) return;
         var getName = e.target.id;
         getName = getName.replace('down-rowNumber', '');
         if (this.state.rowDown.length == 0) {
@@ -414,15 +428,17 @@ let myDom = exports.myDom = {
     rowMax.innerHTML = `-`;
     myRoot.appendChild(rowMax);
     this.rowMax = rowMax;
-    this.rowMax.addEventListener("click", e => {
-      e.target.classList.remove('canPlay');
-      this.rowMin.classList.add('canPlay');
-    });
+    // this.rowMax.addEventListener("click", (e) => {
+    //   e.target.classList.remove('canPlay')
+    //   this.rowMin.classList.add('canPlay')
+    // })
+
     var rowMin = document.createElement('div');
-    rowMin.id = 'down-rowMax';
+    rowMin.id = 'down-rowMin';
     rowMin.style.width = 'auto';
     rowMin.style.background = '#7d7d7d8c';
     rowMin.innerHTML = `-`;
+    this.rowMin = rowMin;
     myRoot.appendChild(rowMin);
     this.rowMin = rowMin;
     var rowMaxMinSum = document.createElement('div');
@@ -474,10 +490,79 @@ let myDom = exports.myDom = {
       console.log(parseFloat(i));
       s += parseFloat(i);
     });
-    console.log('sum is ', s);
     (0, _utils.byId)('down-rowNumberSum').style.background = 'rgb(113 0 0 / 55%)';
     (0, _utils.byId)('down-rowNumberSum').innerHTML = s;
     // unlock MAX and MIN
+
+    console.log('this.rowMax also set free to plat status', this.rowMax);
+    dices.STATUS = "FREE_TO_PLAY";
+    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
+    this.rowMax.addEventListener("click", e => {
+      if (dices.validatePass() == false) return;
+      e.target.classList.remove('canPlay');
+      this.rowMin.classList.add('canPlay');
+      var test = 0;
+      let keyLessNum = Object.keys(dices.R).reduce((key, v) => dices.R[v] < dices.R[key] ? v : key);
+      console.log('FIND MIN DICE TO REMOVE FROM SUM ', keyLessNum);
+      for (var key in dices.R) {
+        if (key != keyLessNum) {
+          test += parseFloat(dices.R[key]);
+        }
+      }
+      e.target.innerHTML = test;
+      // now attach next event.
+      dices.STATUS = "FREE_TO_PLAY";
+      dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
+      (0, _utils.byId)('down-rowMin').addEventListener('click', this.calcDownRowMin);
+    });
+  },
+  calcDownRowMin: function () {
+    if (dices.validatePass() == false) return;
+    this.rowMin.classList.remove('canPlay');
+    console.log('MIN ENABLED');
+    var maxTestKey = Object.keys(dices.R).reduce(function (a, b) {
+      return dices.R[a] > dices.R[b] ? a : b;
+    });
+    var test = 0;
+    for (var key in dices.R) {
+      if (key != maxTestKey) {
+        test += parseFloat(dices.R[key]);
+      } else {
+        console.log('not calc dice ', dices.R[key]);
+      }
+    }
+    this.rowMin.innerHTML = test;
+
+    // calc max min dont forget rules for bonus +30
+    var SUMMINMAX = parseFloat(this.rowMax.innerHTML) - parseFloat(this.rowMin.innerHTML);
+    (0, _utils.byId)('down-rowMaxMinSum').innerHTML = SUMMINMAX;
+    dices.STATUS = "FREE_TO_PLAY";
+    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
+    (0, _utils.byId)('down-largeStraight').classList.add('canPlay');
+    (0, _utils.byId)('down-largeStraight').addEventListener('click', this.attachKenta);
+  },
+  attachKenta: function () {
+    console.log('Test kenta  ', dices.R);
+    (0, _utils.byId)('down-largeStraight').classList.remove('canPlay');
+
+    // make array 
+    var testArray = [];
+    for (var key in dices.R) {
+      var gen = {
+        myId: key,
+        value: dices.R[key]
+      };
+      testArray.push(gen);
+    }
+    console.log('testArray ', testArray);
+    var result = Object.values(testArray.reduce((c, v) => {
+      let k = v.value;
+      c[k] = c[k] || [];
+      c[k].push(v);
+      return c;
+    }, {})).reduce((c, v) => v.length > 1 ? c.concat(v) : c, []);
+    console.log('TEST dupli: ' + result);
+    //
   }
 };
 
