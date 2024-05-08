@@ -566,7 +566,7 @@ let myDom = exports.myDom = {
   }
 };
 
-},{"../../../src/engine/loader-obj.js":7,"../../../src/engine/utils.js":11,"../../../src/world.js":18}],2:[function(require,module,exports){
+},{"../../../src/engine/loader-obj.js":7,"../../../src/engine/utils.js":11,"../../../src/world.js":19}],2:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -1087,7 +1087,7 @@ let application = exports.application = new _world.default({
 });
 window.app = application;
 
-},{"./examples/games/jamb/jamb.js":1,"./src/engine/loader-obj.js":7,"./src/engine/utils.js":11,"./src/world.js":18}],3:[function(require,module,exports){
+},{"./examples/games/jamb/jamb.js":1,"./src/engine/loader-obj.js":7,"./src/engine/utils.js":11,"./src/world.js":19}],3:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -10522,6 +10522,56 @@ fn main(
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
+exports.MatrixSounds = void 0;
+class MatrixSounds {
+  constructor() {
+    this.volume = 0.5;
+    this.audios = {};
+  }
+  createClones(c, name, path) {
+    for (var x = 1; x < c; x++) {
+      let a = new Audio(path);
+      a.id = name + x;
+      a.volume = this.volume;
+      this.audios[name + x] = a;
+      document.body.append(a);
+    }
+  }
+  createAudio(name, path, useClones) {
+    let a = new Audio(path);
+    a.id = name;
+    a.volume = this.volume;
+    this.audios[name] = a;
+    document.body.append(a);
+    if (typeof useClones !== 'undefined') {
+      this.createClones(useClones, name, path);
+    }
+  }
+  play(name) {
+    if (this.audios[name].paused == true) {
+      this.audios[name].play();
+    } else {
+      this.tryClone(name);
+    }
+  }
+  tryClone(name) {
+    var cc = 1;
+    try {
+      while (this.audios[name + cc].paused == false) {
+        cc++;
+      }
+      if (this.audios[name + cc]) this.audios[name + cc].play();
+    } catch (err) {}
+  }
+}
+exports.MatrixSounds = MatrixSounds;
+
+},{}],19:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
 exports.default = void 0;
 var _wgpuMatrix = require("wgpu-matrix");
 var _ball = _interopRequireDefault(require("./engine/ball.js"));
@@ -10532,6 +10582,7 @@ var _meshObj = _interopRequireDefault(require("./engine/mesh-obj.js"));
 var _matrixAmmo = _interopRequireDefault(require("./physics/matrix-ammo.js"));
 var _utils = require("./engine/utils.js");
 var _lang = require("./multilang/lang.js");
+var _sounds = require("./sounds/sounds.js");
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 class MatrixEngineWGPU {
   mainRenderBundle = [];
@@ -10545,6 +10596,7 @@ class MatrixEngineWGPU {
     depthStoreOp: 'store'
   };
   matrixAmmo = new _matrixAmmo.default();
+  matrixSounds = new _sounds.MatrixSounds();
 
   // The input handler
   constructor(options, callback) {
@@ -10956,4 +11008,4 @@ class MatrixEngineWGPU {
 }
 exports.default = MatrixEngineWGPU;
 
-},{"./engine/ball.js":4,"./engine/cube.js":5,"./engine/engine.js":6,"./engine/mesh-obj.js":9,"./engine/mesh.js":10,"./engine/utils.js":11,"./multilang/lang.js":12,"./physics/matrix-ammo.js":13,"wgpu-matrix":3}]},{},[2]);
+},{"./engine/ball.js":4,"./engine/cube.js":5,"./engine/engine.js":6,"./engine/mesh-obj.js":9,"./engine/mesh.js":10,"./engine/utils.js":11,"./multilang/lang.js":12,"./physics/matrix-ammo.js":13,"./sounds/sounds.js":18,"wgpu-matrix":3}]},{},[2]);

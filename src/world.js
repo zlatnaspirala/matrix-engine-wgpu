@@ -7,6 +7,7 @@ import MEMeshObj from "./engine/mesh-obj.js";
 import MatrixAmmo from "./physics/matrix-ammo.js";
 import {LOG_WARN, genName, mb, scriptManager, urlQuery} from "./engine/utils.js";
 import {MultiLang} from "./multilang/lang.js";
+import {MatrixSounds} from "./sounds/sounds.js";
 
 export default class MatrixEngineWGPU {
 
@@ -24,6 +25,7 @@ export default class MatrixEngineWGPU {
   }
 
   matrixAmmo = new MatrixAmmo();
+  matrixSounds = new MatrixSounds();
 
   // The input handler
   constructor(options, callback) {
