@@ -2,6 +2,7 @@ import MatrixEngineWGPU from "./src/world.js";
 import {downloadMeshes} from './src/engine/loader-obj.js';
 import {LOG_FUNNY, LOG_INFO, LOG_MATRIX, randomFloatFromTo, randomIntFromTo} from "./src/engine/utils.js";
 import {dices, myDom} from "./examples/games/jamb/jamb.js";
+import {MatrixSounds} from "./src/sounds/sounds.js";
 
 export let application = new MatrixEngineWGPU({
   useSingleRenderPass: true,
@@ -79,6 +80,10 @@ export let application = new MatrixEngineWGPU({
       }
     }
   }
+
+  // Sounds
+  application.matrixSounds.createAudio('start', 'res/audios/start.mp3', 1)
+  application.matrixSounds.createAudio('block', 'res/audios/block.mp3', 6)
 
   addEventListener('AmmoReady', () => {
     downloadMeshes({
@@ -392,6 +397,8 @@ export let application = new MatrixEngineWGPU({
 
     let rollProcedure = () => {
       if(dices.STATUS == "FREE_TO_PLAY") {
+
+        app.matrixSounds.play('start')
 
         dices.STATUS = "IN_PLAY";
         addEventListener('dice-1', dice1Click)

@@ -23,6 +23,7 @@ export let dices = {
       console.log('BLOCK FROM JAMB DOM  ')
       if(dices.STATUS == "IN_PLAY") mb.error(`STATUS IS ${dices.STATUS}, please wait for results...`);
       if(dices.STATUS == "FREE_TO_PLAY") mb.error(`STATUS IS ${dices.STATUS}, you need to roll dice first.`);
+      app.matrixSounds.play('block')
       return false;
     } else {
       return true;

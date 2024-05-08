@@ -27,6 +27,7 @@ let dices = exports.dices = {
       console.log('BLOCK FROM JAMB DOM  ');
       if (dices.STATUS == "IN_PLAY") _utils.mb.error(`STATUS IS ${dices.STATUS}, please wait for results...`);
       if (dices.STATUS == "FREE_TO_PLAY") _utils.mb.error(`STATUS IS ${dices.STATUS}, you need to roll dice first.`);
+      app.matrixSounds.play('block');
       return false;
     } else {
       return true;
@@ -577,6 +578,7 @@ var _world = _interopRequireDefault(require("./src/world.js"));
 var _loaderObj = require("./src/engine/loader-obj.js");
 var _utils = require("./src/engine/utils.js");
 var _jamb = require("./examples/games/jamb/jamb.js");
+var _sounds = require("./src/sounds/sounds.js");
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 let application = exports.application = new _world.default({
   useSingleRenderPass: true,
@@ -652,6 +654,10 @@ let application = exports.application = new _world.default({
       }
     }
   };
+
+  // Sounds
+  application.matrixSounds.createAudio('start', 'res/audios/start.mp3', 1);
+  application.matrixSounds.createAudio('block', 'res/audios/block.mp3', 6);
   addEventListener('AmmoReady', () => {
     (0, _loaderObj.downloadMeshes)({
       cube: "./res/meshes/jamb/dice.obj"
@@ -1061,6 +1067,7 @@ let application = exports.application = new _world.default({
 
     let rollProcedure = () => {
       if (_jamb.dices.STATUS == "FREE_TO_PLAY") {
+        app.matrixSounds.play('start');
         _jamb.dices.STATUS = "IN_PLAY";
         addEventListener('dice-1', dice1Click);
         addEventListener('dice-2', dice2Click);
@@ -1087,7 +1094,7 @@ let application = exports.application = new _world.default({
 });
 window.app = application;
 
-},{"./examples/games/jamb/jamb.js":1,"./src/engine/loader-obj.js":7,"./src/engine/utils.js":11,"./src/world.js":19}],3:[function(require,module,exports){
+},{"./examples/games/jamb/jamb.js":1,"./src/engine/loader-obj.js":7,"./src/engine/utils.js":11,"./src/sounds/sounds.js":18,"./src/world.js":19}],3:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
