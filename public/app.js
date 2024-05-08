@@ -516,9 +516,9 @@ let myDom = exports.myDom = {
       (0, _utils.byId)('down-rowMin').addEventListener('click', this.calcDownRowMin);
     });
   },
-  calcDownRowMin: function () {
+  calcDownRowMin: () => {
     if (dices.validatePass() == false) return;
-    this.rowMin.classList.remove('canPlay');
+    (void 0).rowMin.classList.remove('canPlay');
     console.log('MIN ENABLED');
     var maxTestKey = Object.keys(dices.R).reduce(function (a, b) {
       return dices.R[a] > dices.R[b] ? a : b;
@@ -531,15 +531,15 @@ let myDom = exports.myDom = {
         console.log('not calc dice ', dices.R[key]);
       }
     }
-    this.rowMin.innerHTML = test;
+    (void 0).rowMin.innerHTML = test;
 
     // calc max min dont forget rules for bonus +30
-    var SUMMINMAX = parseFloat(this.rowMax.innerHTML) - parseFloat(this.rowMin.innerHTML);
+    var SUMMINMAX = parseFloat((void 0).rowMax.innerHTML) - parseFloat((void 0).rowMin.innerHTML);
     (0, _utils.byId)('down-rowMaxMinSum').innerHTML = SUMMINMAX;
     dices.STATUS = "FREE_TO_PLAY";
     dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
     (0, _utils.byId)('down-largeStraight').classList.add('canPlay');
-    (0, _utils.byId)('down-largeStraight').addEventListener('click', this.attachKenta);
+    (0, _utils.byId)('down-largeStraight').addEventListener('click', (void 0).attachKenta);
   },
   attachKenta: function () {
     console.log('Test kenta  ', dices.R);

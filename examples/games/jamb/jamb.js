@@ -590,7 +590,7 @@ export let myDom = {
     })
   },
 
-  calcDownRowMin: function() {
+  calcDownRowMin: () => {
 
     if(dices.validatePass() == false) return;
     this.rowMin.classList.remove('canPlay')
