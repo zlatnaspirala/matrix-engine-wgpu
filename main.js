@@ -84,6 +84,8 @@ export let application = new MatrixEngineWGPU({
   // Sounds
   application.matrixSounds.createAudio('start', 'res/audios/start.mp3', 1)
   application.matrixSounds.createAudio('block', 'res/audios/block.mp3', 6)
+  application.matrixSounds.createAudio('dice1', 'res/audios/dice1.mp3', 6)
+  application.matrixSounds.createAudio('dice2', 'res/audios/dice2.mp3', 6)
 
   addEventListener('AmmoReady', () => {
     downloadMeshes({
@@ -140,7 +142,6 @@ export let application = new MatrixEngineWGPU({
 
   })
 
-
   function onLoadObjWallCenter(m) {
     application.myLoadedMeshesWalls = m;
     for(var key in m) {
@@ -161,10 +162,6 @@ export let application = new MatrixEngineWGPU({
         geometry: "Cube"
       }
     })
-
-
-
-
   }
 
   function onLoadObjOther(m) {

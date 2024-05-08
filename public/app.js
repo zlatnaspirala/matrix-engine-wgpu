@@ -62,9 +62,23 @@ let myDom = exports.myDom = {
       <div>
         <span data-label="settings"></span>
         <div>
+
+        <div>
+          <span data-label="sounds"></span>
+
+          <label class="switch">
+            <input type="checkbox">
+            <span class="sliderSwitch round"></span>
+          </label>
+
+        </div>
+
+        <div>
           <button class="btn2" onclick="app.myDom.hideSettings()">
             <span data-label="hide"></span>
           </button>
+        </div>
+
         </div>
       </div>
       `;
@@ -658,6 +672,8 @@ let application = exports.application = new _world.default({
   // Sounds
   application.matrixSounds.createAudio('start', 'res/audios/start.mp3', 1);
   application.matrixSounds.createAudio('block', 'res/audios/block.mp3', 6);
+  application.matrixSounds.createAudio('dice1', 'res/audios/dice1.mp3', 6);
+  application.matrixSounds.createAudio('dice2', 'res/audios/dice2.mp3', 6);
   addEventListener('AmmoReady', () => {
     (0, _loaderObj.downloadMeshes)({
       cube: "./res/meshes/jamb/dice.obj"

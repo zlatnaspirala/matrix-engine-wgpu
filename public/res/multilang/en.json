@@ -2,6 +2,8 @@
   "changeTheme": "Theme dark/light",
   "yes": "Yes",
   "no": "No",
+  "on": "On",
+  "off": "Off",
   "startGame": "🎲Start Game",
   "changeLang": "Change Lang",
   "english": "English",
@@ -20,5 +22,6 @@
   "jamb":"Jamb",
   "final":"Final Σ",
   "hide": "HIDE",
+  "sounds": "Sounds",
   "welcomeMsg": "Welcome here, <br> open source project 🎲 Ultimate Yahtzee game <br> download from "
 }

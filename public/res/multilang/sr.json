@@ -2,6 +2,8 @@
   "changeTheme": "Promeni Temu",
   "yes": "Da",
   "no": "Ne",
+  "on": "Ukljuci",
+  "off": "Iskljuci",
   "startGame": "🎲Pokreni igru",
   "changeLang": "Promeni Jezik",
   "english": "Engleski",
@@ -20,5 +22,6 @@
   "jamb":"Jamb",
   "final":"Konačna Σ",
   "hide": "Zatvori",
+  "sounds": "Zvuk",
   "welcomeMsg": "Dobro došli, <br> otvoren izvori kod 🎲 Ultimate Jamb igra <br> Pokupi kod: "
 }
