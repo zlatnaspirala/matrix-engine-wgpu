@@ -328,7 +328,7 @@ let myDom = exports.myDom = {
     largeStraight.innerHTML = `-`;
     myRoot.appendChild(largeStraight);
     var threeOfAKind = document.createElement('div');
-    threeOfAKind.id = 'threeOfAKind';
+    threeOfAKind.id = 'down_threeOfAKind';
     threeOfAKind.style.width = 'auto';
     threeOfAKind.style.background = '#7d7d7d8c';
     threeOfAKind.innerHTML = `-`;
@@ -512,24 +512,26 @@ let myDom = exports.myDom = {
     console.log('this.rowMax also set free to plat status', this.rowMax);
     dices.STATUS = "FREE_TO_PLAY";
     dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
-    this.rowMax.addEventListener("click", e => {
-      if (dices.validatePass() == false) return;
-      e.target.classList.remove('canPlay');
-      this.rowMin.classList.add('canPlay');
-      var test = 0;
-      let keyLessNum = Object.keys(dices.R).reduce((key, v) => dices.R[v] < dices.R[key] ? v : key);
-      console.log('FIND MIN DICE TO REMOVE FROM SUM ', keyLessNum);
-      for (var key in dices.R) {
-        if (key != keyLessNum) {
-          test += parseFloat(dices.R[key]);
-        }
+    this.rowMax.addEventListener("click", this.calcDownRowMax);
+  },
+  calcDownRowMax: e => {
+    if (dices.validatePass() == false) return;
+    e.target.classList.remove('canPlay');
+    (void 0).rowMin.classList.add('canPlay');
+    var test = 0;
+    let keyLessNum = Object.keys(dices.R).reduce((key, v) => dices.R[v] < dices.R[key] ? v : key);
+    console.log('FIND MIN DICE TO REMOVE FROM SUM ', keyLessNum);
+    for (var key in dices.R) {
+      if (key != keyLessNum) {
+        test += parseFloat(dices.R[key]);
       }
-      e.target.innerHTML = test;
-      // now attach next event.
-      dices.STATUS = "FREE_TO_PLAY";
-      dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
-      (0, _utils.byId)('down-rowMin').addEventListener('click', this.calcDownRowMin);
-    });
+    }
+    e.target.innerHTML = test;
+    // now attach next event.
+    dices.STATUS = "FREE_TO_PLAY";
+    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
+    (void 0).rowMax.removeEventListener("click", (void 0).calcDownRowMax);
+    (0, _utils.byId)('down-rowMin').addEventListener('click', (void 0).calcDownRowMin);
   },
   calcDownRowMin: () => {
     if (dices.validatePass() == false) return;
@@ -547,6 +549,7 @@ let myDom = exports.myDom = {
       }
     }
     (void 0).rowMin.innerHTML = test;
+    (0, _utils.byId)('down-rowMin').removeEventListener('click', (void 0).calcDownRowMin);
 
     // calc max min dont forget rules for bonus +30
     var SUMMINMAX = parseFloat((void 0).rowMax.innerHTML) - parseFloat((void 0).rowMin.innerHTML);
@@ -556,11 +559,7 @@ let myDom = exports.myDom = {
     (0, _utils.byId)('down-largeStraight').classList.add('canPlay');
     (0, _utils.byId)('down-largeStraight').addEventListener('click', (void 0).attachKenta);
   },
-  attachKenta: function () {
-    console.log('Test kenta  ', dices.R);
-    (0, _utils.byId)('down-largeStraight').classList.remove('canPlay');
-
-    // make array 
+  checkForDuplicate: function () {
     var testArray = [];
     for (var key in dices.R) {
       var gen = {
@@ -576,8 +575,83 @@ let myDom = exports.myDom = {
       c[k].push(v);
       return c;
     }, {})).reduce((c, v) => v.length > 1 ? c.concat(v) : c, []);
-    console.log('TEST dupli: ' + result);
+    return [result, testArray];
+  },
+  attachKenta: function () {
+    console.log('Test kenta  ', dices.R);
+    (0, _utils.byId)('down-largeStraight').classList.remove('canPlay');
+    // make array 
+    var result = app.myDom.checkForDuplicate()[0];
+    var testArray = app.myDom.checkForDuplicate()[1];
+    console.log('TEST duplik: ' + result);
+    if (result.length == 2) {
+      //  array.splice(index, 1);
+      console.log('TEST duplik less 3 : ' + result);
+      var locPrevent = false;
+      testArray.forEach((item, index, array) => {
+        if (result[0].value == item.value && locPrevent == false) {
+          console.log('detect by value item.value', item.value);
+          locPrevent = true;
+          array.splice(index, 1);
+        }
+      });
+      // test  if we catch  1 and 6 in same stack then it is not possible for kenta...
+      var test1 = false,
+        test6 = false;
+      testArray.forEach((item, index, array) => {
+        if (item.value == 1) {
+          test1 = true;
+        } else if (item.value == 6) {
+          test6 = true;
+        }
+      });
+      if (test1 == true && test6 == true) {
+        (0, _utils.byId)('down-largeStraight').innerHTML = `0`;
+      } else if (test1 == true) {
+        (0, _utils.byId)('down-largeStraight').innerHTML = 15 + 50;
+      } else if (test6 == true) {
+        (0, _utils.byId)('down-largeStraight').innerHTML = 20 + 50;
+      }
+    } else if (result < 2) {
+      // win  + 50 1 + >> 2 + 3 + 4 + 5 + 6 << = 20
+      (0, _utils.byId)('down-largeStraight').innerHTML = 20 + 50;
+    } else {
+      // zero value
+      (0, _utils.byId)('down-largeStraight').innerHTML = `0`;
+    }
     //
+    (0, _utils.byId)('down-threeOfAKind').addEventListener('click', this.attachDownTrilling);
+    (0, _utils.byId)('down-largeStraight').removeEventListener('click', this.attachKenta);
+  },
+  attachDownTrilling: function () {
+    // trilling
+    var result = app.myDom.checkForDuplicate()[0];
+    var testArray = app.myDom.checkForDuplicate()[1];
+    console.log('DUPLICATE FOR TRILING ', result);
+    if (result.length > 2) {
+      var testWin = 0;
+      for (var x = 0; x < 3; x++) {
+        testWin += parseInt(result[x].value);
+      }
+      (0, _utils.byId)('down-threeOfAKind').innerHTML = 30 + testWin;
+    } else {
+      (0, _utils.byId)('down-threeOfAKind').innerHTML = 0;
+    }
+    (0, _utils.byId)('down-threeOfAKind').removeEventListener('click', this.attachDownTrilling);
+    (0, _utils.byId)('down-fullHouse').addEventListener('click', this.attachDownFullHouse);
+  },
+  attachDownFullHouse: function () {
+    // full    
+    (0, _utils.byId)('down-poker').addEventListener('click', this.attachDownPoker);
+    (0, _utils.byId)('down-fullHouse').removeEventListener('click', this.attachDownFullHouse);
+  },
+  attachDownPoker: function () {
+    (0, _utils.byId)('down-poker').removeEventListener('click', this.attachDownPoker);
+    (0, _utils.byId)('down-jamb').addEventListener('click', this.attachDownJamb);
+  },
+  attachDownJamb: function () {
+    (0, _utils.byId)('down-jamb').removeEventListener('click', this.attachDownJamb);
+    console.log('DOWN ROW IS FEELED >>>>');
   }
 };
 

@@ -196,6 +196,7 @@ Bundle compiler: `watchify`
 
 ## LINKS
 
+- Jamb gameplay public dev test link [DEMO WIP](https://maximumroulette.com/apps/webgpu/)
 - How to use it on codepen
   https://codepen.io/zlatnaspirala/pen/VwNKMar?editors=0011
   I use empty build then i add/upload to my VPS public server you can use it:
