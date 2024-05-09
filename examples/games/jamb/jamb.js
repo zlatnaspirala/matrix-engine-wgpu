@@ -216,7 +216,7 @@ export let myDom = {
     // INJECT TABLE HEADER ROW
     this.createLeftHeaderRow(rowHeader);
     this.createRowDown(rowDown);
-    this.createRow(rowFree);
+    this.createRowFree(rowFree);
     this.createRow(rowUp);
     this.createRow(rowHand);
 
@@ -403,6 +403,110 @@ export let myDom = {
 
     var rowSum = document.createElement('div')
     rowSum.id = 'rowSum';
+    rowSum.style.width = 'auto';
+    rowSum.style.background = '#7d7d7d8c';
+    rowSum.innerHTML = `-`;
+    myRoot.appendChild(rowSum);
+
+
+  },
+
+  createRowFree: function(myRoot) {
+    for(var x = 1;x < 7;x++) {
+      var rowNumber = document.createElement('div')
+      rowNumber.id = 'free-rowNumber' + x;
+      rowNumber.style.top = '10px';
+      rowNumber.style.left = '10px';
+      rowNumber.style.width = 'auto';
+      rowNumber.style.background = '#7d7d7d8c';
+      rowNumber.innerHTML = `-`;
+      rowNumber.addEventListener('click', (e) => {
+        if(dices.validatePass() == false) return;
+        var getName = e.target.id;
+        getName = getName.replace('free-rowNumber', '')
+        var count23456 = 0;
+        for(let key in dices.R) {
+          if(parseInt(dices.R[key]) == parseInt(getName)) {
+            count23456++;
+          }
+        }
+        this.state.rowDown.push((count23456 * parseInt(getName)))
+        e.target.innerHTML = (count23456 * parseInt(getName));
+        if(parseInt(getName) == 6) {
+          myDom.calcDownNumbers()
+        }
+        dices.STATUS = "FREE_TO_PLAY";
+        dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}))
+      })
+      myRoot.appendChild(rowNumber);
+    }
+
+    var rowNumberSum = document.createElement('div')
+    rowNumberSum.id = 'free-rowNumberSum';
+
+    rowNumberSum.style.width = 'auto';
+    rowNumberSum.style.background = '#7d7d7d8c';
+    rowNumberSum.innerHTML = `-`;
+    myRoot.appendChild(rowNumberSum);
+
+    var rowMax = document.createElement('div')
+    rowMax.id = 'free-rowMax';
+    rowMax.style.width = 'auto';
+    rowMax.style.background = '#7d7d7d8c';
+    rowMax.innerHTML = `-`;
+    myRoot.appendChild(rowMax);
+
+    var rowMin = document.createElement('div')
+    rowMin.id = 'free-rowMax';
+    rowMin.style.width = 'auto';
+    rowMin.style.background = '#7d7d7d8c';
+    rowMin.innerHTML = `-`;
+    myRoot.appendChild(rowMin);
+
+    var rowMaxMinSum = document.createElement('div')
+    rowMaxMinSum.id = 'free-rowMaxMinSum';
+    rowMaxMinSum.style.width = 'auto';
+    rowMaxMinSum.style.background = '#7d7d7d8c';
+    rowMaxMinSum.innerHTML = `-`;
+    myRoot.appendChild(rowMaxMinSum);
+
+    var largeStraight = document.createElement('div')
+    largeStraight.id = 'free-largeStraight';
+    largeStraight.style.width = 'auto';
+    largeStraight.style.background = '#7d7d7d8c';
+    largeStraight.innerHTML = `-`;
+    myRoot.appendChild(largeStraight);
+
+    var threeOfAKind = document.createElement('div')
+    threeOfAKind.id = 'free-threeOfAKind';
+    threeOfAKind.style.width = 'auto';
+    threeOfAKind.style.background = '#7d7d7d8c';
+    threeOfAKind.innerHTML = `-`;
+    myRoot.appendChild(threeOfAKind);
+
+    var fullHouse = document.createElement('div')
+    fullHouse.id = 'free-fullHouse';
+    fullHouse.style.width = 'auto';
+    fullHouse.style.background = '#7d7d7d8c';
+    fullHouse.innerHTML = `-`;
+    myRoot.appendChild(fullHouse);
+
+    var poker = document.createElement('div')
+    poker.id = 'free-poker';
+    poker.style.width = 'auto';
+    poker.style.background = '#7d7d7d8c';
+    poker.innerHTML = `-`;
+    myRoot.appendChild(poker);
+
+    var jamb = document.createElement('div')
+    jamb.id = 'free-jamb';
+    jamb.style.width = 'auto';
+    jamb.style.background = '#7d7d7d8c';
+    jamb.innerHTML = `-`;
+    myRoot.appendChild(jamb);
+
+    var rowSum = document.createElement('div')
+    rowSum.id = 'free-rowSum';
     rowSum.style.width = 'auto';
     rowSum.style.background = '#7d7d7d8c';
     rowSum.innerHTML = `-`;
