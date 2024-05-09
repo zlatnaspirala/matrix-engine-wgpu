@@ -651,6 +651,30 @@ export let myDom = {
     return [result, testArray];
   },
 
+  checkForAllDuplicate: function() {
+    var testArray = [];
+    for(var key in dices.R) {
+      var gen = {myId: key, value: dices.R[key]};
+      testArray.push(gen);
+    }
+    console.log('testArray ', testArray)
+    var result = Object.values(testArray.reduce((c, v) => {
+      let k = v.value;
+      c[k] = c[k] || [];
+      c[k].push(v);
+      return c;
+    }, {})).reduce((c, v) => v.length > 1 ? c.concat(v) : c, []);
+    var discret = {};
+    result.forEach((item, index, array) => {
+      if(typeof discret['value__' + item.value] === 'undefined') {
+        discret['value__' + item.value] = 1;
+      } else {
+        discret['value__' + item.value] += 1;
+      }
+    })
+    return discret;
+  },
+
   attachKenta: function() {
     console.log('Test kenta  ', dices.R)
     byId('down-largeStraight').classList.remove('canPlay')
@@ -674,15 +698,15 @@ export let myDom = {
       testArray.forEach((item, index, array) => {
         if(item.value == 1) {
           test1 = true;
-        } else if (item.value == 6) {
+        } else if(item.value == 6) {
           test6 = true;
         }
       })
-      if (test1 == true && test6 == true) {
+      if(test1 == true && test6 == true) {
         byId('down-largeStraight').innerHTML = `0`;
-      } else if (test1 == true) {
+      } else if(test1 == true) {
         byId('down-largeStraight').innerHTML = 15 + 50;
-      } else if (test6 == true) {
+      } else if(test6 == true) {
         byId('down-largeStraight').innerHTML = 20 + 50;
       }
     } else if(result < 2) {
@@ -695,6 +719,10 @@ export let myDom = {
     //
     byId('down-threeOfAKind').addEventListener('click', this.attachDownTrilling)
     byId('down-largeStraight').removeEventListener('click', this.attachKenta)
+
+    dices.STATUS = "FREE_TO_PLAY";
+    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}))
+
   },
 
   attachDownTrilling: function() {
@@ -702,34 +730,85 @@ export let myDom = {
     var result = app.myDom.checkForDuplicate()[0];
     var testArray = app.myDom.checkForDuplicate()[1];
     console.log('DUPLICATE FOR TRILING ', result);
-    if (result.length > 2) {
+    if(result.length > 2) {
       var testWin = 0;
-      for (var x = 0; x < 3; x++) {
-        testWin += parseInt(result[x].value);
+      var TEST = app.myDom.checkForAllDuplicate();
+      console.log('DUPLICATE FOR TRILING TEST ', TEST);
+      for (var key in TEST) {
+        if (TEST[key] > 2) {
+          // win
+          var getDiceID = parseInt( key.replace('value__', '') )
+          testWin = getDiceID * 3;
+        }
       }
-      byId('down-threeOfAKind').innerHTML = 30 + testWin;
+      console.log('DUPLICATE FOR TRILING 30 + TEST ', testWin);
+      byId('down-threeOfAKind').innerHTML = 20 + testWin;
     } else {
       byId('down-threeOfAKind').innerHTML = 0;
     }
     byId('down-threeOfAKind').removeEventListener('click', this.attachDownTrilling)
     byId('down-fullHouse').addEventListener('click', this.attachDownFullHouse)
+
+    dices.STATUS = "FREE_TO_PLAY";
+    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}))
+
   },
 
   attachDownFullHouse: function() {
-    // full    
+    // full
+    var TEST = app.myDom.checkForAllDuplicate();
+    console.log('DUPLICATE FOR FULL HOUSE 30 + TEST ');
+    var win = 0;
+    var testPair = false;
+    var testTrilling = false;
+    var testWinPair = 0;
+    var testWinTrilling = 0;
+    for (var key in TEST) {
+      if (TEST[key] == 2) {
+        // win
+        var getDiceID = parseInt( key.replace('value__', '') )
+        testWinPair = getDiceID * 2;
+        testPair = true;
+      } else if (TEST[key] == 3) {
+        var getDiceID = parseInt( key.replace('value__', '') )
+        testWinTrilling = getDiceID * 3;
+        testTrilling = true;
+      }
+    }
+
+    if (testPair == true && testTrilling == true) {
+      // 
+      win = testWinPair + testWinTrilling;
+      byId('down-fullHouse').innerHTML = win + 30;
+    } else {
+      byId('down-fullHouse').innerHTML = 0;
+    }
+
     byId('down-poker').addEventListener('click', this.attachDownPoker)
     byId('down-fullHouse').removeEventListener('click', this.attachDownFullHouse)
+
+    dices.STATUS = "FREE_TO_PLAY";
+    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}))
   },
 
   attachDownPoker: function() {
 
     byId('down-poker').removeEventListener('click', this.attachDownPoker)
     byId('down-jamb').addEventListener('click', this.attachDownJamb)
+
+    dices.STATUS = "FREE_TO_PLAY";
+    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}))
   },
 
   attachDownJamb: function() {
+
     byId('down-jamb').removeEventListener('click', this.attachDownJamb)
     console.log('DOWN ROW IS FEELED >>>>')
+
+
+    dices.STATUS = "FREE_TO_PLAY";
+    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}))
+
   }
 
 };
