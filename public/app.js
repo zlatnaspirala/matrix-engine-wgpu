@@ -24,7 +24,7 @@ let dices = exports.dices = {
   },
   validatePass: function () {
     if (dices.STATUS == "IN_PLAY" || dices.STATUS == "FREE_TO_PLAY") {
-      console.log('BLOCK FROM JAMB DOM  ');
+      console.log('%cBLOCK', _utils.LOG_FUNNY);
       if (dices.STATUS == "IN_PLAY") _utils.mb.error(`STATUS IS ${dices.STATUS}, please wait for results...`);
       if (dices.STATUS == "FREE_TO_PLAY") _utils.mb.error(`STATUS IS ${dices.STATUS}, you need to roll dice first.`);
       app.matrixSounds.play('block');
@@ -152,7 +152,7 @@ let myDom = exports.myDom = {
     rowHeader.style.top = '10px';
     rowHeader.style.left = '10px';
     rowHeader.style.width = '200px';
-    rowHeader.innerHTML = '<span data-label="cornerText"></span>';
+    rowHeader.innerHTML = '<span data-label="cornerText"></span><span id="user-points">0</span>';
     root.appendChild(rowHeader);
     rowHeader.classList.add('myTheme1');
     var rowDown = document.createElement('div');
@@ -168,7 +168,6 @@ let myDom = exports.myDom = {
     rowFree.style.top = '10px';
     rowFree.style.left = '10px';
     rowFree.style.width = '200px';
-    // rowFree.style.background = '#7d7d7d8c';
     rowFree.innerHTML = '↕';
     rowFree.classList.add('myTheme1');
     root.appendChild(rowFree);
@@ -177,7 +176,6 @@ let myDom = exports.myDom = {
     rowUp.style.top = '10px';
     rowUp.style.left = '10px';
     rowUp.style.width = '200px';
-    // rowUp.style.background = '#7d7d7d8c';
     rowUp.innerHTML = '↑';
     rowUp.classList.add('myTheme1');
     root.appendChild(rowUp);
@@ -186,7 +184,6 @@ let myDom = exports.myDom = {
     rowHand.style.top = '10px';
     rowHand.style.left = '10px';
     rowHand.style.width = '200px';
-    // rowHand.style.background = '#7d7d7d8c';
     rowHand.innerHTML = '<span data-label="hand"></span>';
     rowHand.classList.add('myTheme1');
     root.appendChild(rowHand);
@@ -507,9 +504,7 @@ let myDom = exports.myDom = {
     });
     (0, _utils.byId)('down-rowNumberSum').style.background = 'rgb(113 0 0 / 55%)';
     (0, _utils.byId)('down-rowNumberSum').innerHTML = s;
-    // unlock MAX and MIN
-
-    console.log('this.rowMax also set free to plat status', this.rowMax);
+    // console.log('this.rowMax also set free to plat status', this.rowMax)
     dices.STATUS = "FREE_TO_PLAY";
     dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
     this.rowMax.addEventListener("click", this.calcDownRowMax);
@@ -520,7 +515,7 @@ let myDom = exports.myDom = {
     (void 0).rowMin.classList.add('canPlay');
     var test = 0;
     let keyLessNum = Object.keys(dices.R).reduce((key, v) => dices.R[v] < dices.R[key] ? v : key);
-    console.log('FIND MIN DICE TO REMOVE FROM SUM ', keyLessNum);
+    // console.log('FIND MIN DICE TO REMOVE FROM SUM ', keyLessNum);
     for (var key in dices.R) {
       if (key != keyLessNum) {
         test += parseFloat(dices.R[key]);
@@ -532,6 +527,9 @@ let myDom = exports.myDom = {
     dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
     (void 0).rowMax.removeEventListener("click", (void 0).calcDownRowMax);
     (0, _utils.byId)('down-rowMin').addEventListener('click', (void 0).calcDownRowMin);
+  },
+  incrasePoints: function (arg) {
+    (0, _utils.byId)('user-points').innerHTML = parseInt((0, _utils.byId)('user-points').innerHTML) + parseInt(arg);
   },
   calcDownRowMin: () => {
     if (dices.validatePass() == false) return;
@@ -550,10 +548,10 @@ let myDom = exports.myDom = {
     }
     (void 0).rowMin.innerHTML = test;
     (0, _utils.byId)('down-rowMin').removeEventListener('click', (void 0).calcDownRowMin);
-
     // calc max min dont forget rules for bonus +30
     var SUMMINMAX = parseFloat((void 0).rowMax.innerHTML) - parseFloat((void 0).rowMin.innerHTML);
     (0, _utils.byId)('down-rowMaxMinSum').innerHTML = SUMMINMAX;
+    myDom.incrasePoints(SUMMINMAX);
     dices.STATUS = "FREE_TO_PLAY";
     dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
     (0, _utils.byId)('down-largeStraight').classList.add('canPlay');
@@ -568,7 +566,6 @@ let myDom = exports.myDom = {
       };
       testArray.push(gen);
     }
-    console.log('testArray ', testArray);
     var result = Object.values(testArray.reduce((c, v) => {
       let k = v.value;
       c[k] = c[k] || [];
@@ -586,7 +583,7 @@ let myDom = exports.myDom = {
       };
       testArray.push(gen);
     }
-    console.log('testArray ', testArray);
+    // console.log('testArray ', testArray)
     var result = Object.values(testArray.reduce((c, v) => {
       let k = v.value;
       c[k] = c[k] || [];
@@ -606,12 +603,10 @@ let myDom = exports.myDom = {
   attachKenta: function () {
     console.log('Test kenta  ', dices.R);
     (0, _utils.byId)('down-largeStraight').classList.remove('canPlay');
-    // make array 
     var result = app.myDom.checkForDuplicate()[0];
     var testArray = app.myDom.checkForDuplicate()[1];
-    console.log('TEST duplik: ' + result);
+    // console.log('TEST duplik: ' + result);
     if (result.length == 2) {
-      //  array.splice(index, 1);
       console.log('TEST duplik less 3 : ' + result);
       var locPrevent = false;
       testArray.forEach((item, index, array) => {
@@ -621,7 +616,7 @@ let myDom = exports.myDom = {
           array.splice(index, 1);
         }
       });
-      // test  if we catch  1 and 6 in same stack then it is not possible for kenta...
+      // if we catch  1 and 6 in same stack then it is not possible for kenta...
       var test1 = false,
         test6 = false;
       testArray.forEach((item, index, array) => {
@@ -635,27 +630,27 @@ let myDom = exports.myDom = {
         (0, _utils.byId)('down-largeStraight').innerHTML = `0`;
       } else if (test1 == true) {
         (0, _utils.byId)('down-largeStraight').innerHTML = 15 + 50;
+        myDom.incrasePoints(15 + 50);
       } else if (test6 == true) {
         (0, _utils.byId)('down-largeStraight').innerHTML = 20 + 50;
+        myDom.incrasePoints(20 + 50);
       }
     } else if (result < 2) {
-      // win  + 50 1 + >> 2 + 3 + 4 + 5 + 6 << = 20
-      (0, _utils.byId)('down-largeStraight').innerHTML = 20 + 50;
+      (0, _utils.byId)('down-largeStraight').innerHTML = 66;
+      myDom.incrasePoints(66);
     } else {
       // zero value
       (0, _utils.byId)('down-largeStraight').innerHTML = `0`;
     }
-    //
     (0, _utils.byId)('down-threeOfAKind').addEventListener('click', this.attachDownTrilling);
     (0, _utils.byId)('down-largeStraight').removeEventListener('click', this.attachKenta);
     dices.STATUS = "FREE_TO_PLAY";
     dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
   },
   attachDownTrilling: function () {
-    // trilling
     var result = app.myDom.checkForDuplicate()[0];
-    var testArray = app.myDom.checkForDuplicate()[1];
-    console.log('DUPLICATE FOR TRILING ', result);
+    // var testArray = app.myDom.checkForDuplicate()[1];
+    // console.log('DUPLICATE FOR TRILING ', result);
     if (result.length > 2) {
       var testWin = 0;
       var TEST = app.myDom.checkForAllDuplicate();
@@ -669,6 +664,7 @@ let myDom = exports.myDom = {
       }
       console.log('DUPLICATE FOR TRILING 30 + TEST ', testWin);
       (0, _utils.byId)('down-threeOfAKind').innerHTML = 20 + testWin;
+      myDom.incrasePoints(20 + testWin);
     } else {
       (0, _utils.byId)('down-threeOfAKind').innerHTML = 0;
     }
@@ -678,9 +674,8 @@ let myDom = exports.myDom = {
     dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
   },
   attachDownFullHouse: function () {
-    // full
     var TEST = app.myDom.checkForAllDuplicate();
-    console.log('DUPLICATE FOR FULL HOUSE 30 + TEST ');
+    // console.log('DUPLICATE FOR FULL HOUSE 30 + TEST ');
     var win = 0;
     var testPair = false;
     var testTrilling = false;
@@ -699,9 +694,9 @@ let myDom = exports.myDom = {
       }
     }
     if (testPair == true && testTrilling == true) {
-      // 
       win = testWinPair + testWinTrilling;
       (0, _utils.byId)('down-fullHouse').innerHTML = win + 30;
+      myDom.incrasePoints(win + 30);
     } else {
       (0, _utils.byId)('down-fullHouse').innerHTML = 0;
     }
@@ -711,6 +706,17 @@ let myDom = exports.myDom = {
     dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
   },
   attachDownPoker: function () {
+    var TEST = app.myDom.checkForAllDuplicate();
+    // console.log('DUPLICATE FOR poker 40 + TEST ');
+    for (var key in TEST) {
+      if (TEST[key] == 4 || TEST[key] > 4) {
+        // win
+        var getDiceID = parseInt(key.replace('value__', ''));
+        var win = getDiceID * 4;
+        (0, _utils.byId)('down-poker').innerHTML = win + 40;
+        myDom.incrasePoints(win + 40);
+      }
+    }
     (0, _utils.byId)('down-poker').removeEventListener('click', this.attachDownPoker);
     (0, _utils.byId)('down-jamb').addEventListener('click', this.attachDownJamb);
     dices.STATUS = "FREE_TO_PLAY";
@@ -718,7 +724,17 @@ let myDom = exports.myDom = {
   },
   attachDownJamb: function () {
     (0, _utils.byId)('down-jamb').removeEventListener('click', this.attachDownJamb);
-    console.log('DOWN ROW IS FEELED >>>>');
+    console.log('<GAMEPLAY><DOWN ROW IS FEELED>');
+    var TEST = app.myDom.checkForAllDuplicate();
+    for (var key in TEST) {
+      if (TEST[key] == 5 || TEST[key] > 5) {
+        // win
+        var getDiceID = parseInt(key.replace('value__', ''));
+        var win = getDiceID * 5;
+        (0, _utils.byId)('down-poker').innerHTML = win + 50;
+        myDom.incrasePoints(win + 50);
+      }
+    }
     dices.STATUS = "FREE_TO_PLAY";
     dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
   }
