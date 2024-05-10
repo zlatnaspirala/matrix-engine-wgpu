@@ -331,7 +331,8 @@ export let application = new MatrixEngineWGPU({
         app.cameras.WASD.position[2] = -18;
         app.cameras.WASD.position[1] = 19;
 
-        dices.STATUS = "PLACE_RESULT";
+        // dices.STATUS = "PLACE_RESULT";
+        dices.STATUS = "SELECT_DICES_1";
         // application.dices.STATUS = "FREE_TO_PLAY";
       }
     };

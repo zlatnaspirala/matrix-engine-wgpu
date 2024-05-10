@@ -5,6 +5,7 @@ import {vertexShadowWGSL} from '../shaders/vertexShadow.wgsl';
 import {fragmentWGSL} from '../shaders/fragment.wgsl';
 import {vertexWGSL} from '../shaders/vertex.wgsl';
 import {degToRad, genName, LOG_INFO} from './utils';
+import {checkingRay, touchCoordinate} from './raycast-test';
 
 export default class MEMeshObj {
 
@@ -29,6 +30,12 @@ export default class MEMeshObj {
       type: o.mainCameraParams.type,
       responseCoef: o.mainCameraParams.responseCoef
     }
+
+    // test raycast
+    touchCoordinate.enabled = true;
+    this.raycast = {
+      enabled: true
+    };
 
     this.lastFrameMS = 0;
     this.texturesPaths = [];
@@ -581,6 +588,9 @@ export default class MEMeshObj {
     renderPass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
     renderPass.setIndexBuffer(this.indexBuffer, 'uint16');
     renderPass.drawIndexed(this.indexCount);
+
+    // test ray
+    checkingRay(this)
   }
 
   drawShadows = (shadowPass) => {
