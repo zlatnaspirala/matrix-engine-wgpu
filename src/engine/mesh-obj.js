@@ -5,7 +5,7 @@ import {vertexShadowWGSL} from '../shaders/vertexShadow.wgsl';
 import {fragmentWGSL} from '../shaders/fragment.wgsl';
 import {vertexWGSL} from '../shaders/vertex.wgsl';
 import {degToRad, genName, LOG_INFO} from './utils';
-import {checkingRay, touchCoordinate} from './raycast-test';
+import {checkingProcedure, checkingRay, touchCoordinate} from './raycast-test';
 
 export default class MEMeshObj {
 
@@ -32,6 +32,10 @@ export default class MEMeshObj {
     }
 
     // test raycast
+    // fullscreen for now
+    window.addEventListener('mousedown', (e) => {
+      checkingProcedure(e);
+    });
     touchCoordinate.enabled = true;
     this.raycast = {
       enabled: true
@@ -590,7 +594,11 @@ export default class MEMeshObj {
     renderPass.drawIndexed(this.indexCount);
 
     // test ray
+
+    // try{
     checkingRay(this)
+    // } catch(e) {}
+
   }
 
   drawShadows = (shadowPass) => {
