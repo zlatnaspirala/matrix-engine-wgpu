@@ -38,7 +38,7 @@ export default class MEMeshObj {
     });
     touchCoordinate.enabled = true;
     this.raycast = {
-      enabled: true
+      enabled: false
     };
 
     this.lastFrameMS = 0;
@@ -596,7 +596,7 @@ export default class MEMeshObj {
     // test ray
 
     // try{
-    checkingRay(this)
+    if (this.raycast.enabled == true) checkingRay(this)
     // } catch(e) {}
 
   }

@@ -17,17 +17,17 @@ export class Position {
     if(typeof y == 'undefined') y = 0;
     if(typeof z == 'undefined') z = 0;
 
-    this.x = x;
-    this.y = y;
-    this.z = z;
+    this.x = parseFloat(x);
+    this.y = parseFloat(y);
+    this.z = parseFloat(z);
 
     this.velY = 0;
     this.velX = 0;
     this.velZ = 0;
     this.inMove = false;
-    this.targetX = x;
-    this.targetY = y;
-    this.targetZ = z;
+    this.targetX = parseFloat(x);
+    this.targetY = parseFloat(y);
+    this.targetZ = parseFloat(z);
     this.thrust = 0.01;
 
     return this;
@@ -43,35 +43,35 @@ export class Position {
 
   translateByX(x) {
     this.inMove = true;
-    this.targetX = x;
+    this.targetX = parseFloat(x);
   };
 
   translateByY(y) {
     this.inMove = true;
-    this.targetY = y;
+    this.targetY = parseFloat(y);
   }
 
   translateByZ(z) {
     this.inMove = true;
-    this.targetZ = z;
+    this.targetZ = parseFloat(z);
   }
 
   translateByXY(x, y) {
     this.inMove = true;
-    this.targetX = x;
-    this.targetY = y;
+    this.targetX = parseFloat(x);
+    this.targetY = parseFloat(y);
   }
 
   translateByXZ(x, z) {
     this.inMove = true;
-    this.targetX = x;
-    this.targetZ = z;
+    this.targetX = parseFloat(x);
+    this.targetZ = parseFloat(z);
   }
 
   translateByYZ(y, z) {
     this.inMove = true;
-    this.targetY = y;
-    this.targetZ = z;
+    this.targetY = parseFloat(y);
+    this.targetZ = parseFloat(z);
   }
 
   onTargetPositionReach() {}
@@ -113,7 +113,7 @@ export class Position {
   }
 
   get worldLocation() {
-    return [this.x, this.y, this.z];
+    return [parseFloat(this.x), parseFloat(this.y), parseFloat(this.z)];
   }
 
   SetX(newx, em) {
@@ -183,22 +183,22 @@ export class Rotation {
     this.z = z;
     this.rotationSpeed = {x: 0, y: 0, z: 0};
     this.angle = 0;
-    this.axis = {x:0, y:0 , z:0};
+    this.axis = {x: 0, y: 0, z: 0};
     // not in use good for exstend logic
     this.matrixRotation = null;
   }
 
-  getRotX () {
-    if (this.rotationSpeed.x == 0) {
+  getRotX() {
+    if(this.rotationSpeed.x == 0) {
       return degToRad(this.x);
     } else {
-      this.x = this.x + this.rotationSpeed.x* 0.001;
+      this.x = this.x + this.rotationSpeed.x * 0.001;
       return degToRad(this.x);
     }
   }
 
-  getRotY () {
-    if (this.rotationSpeed.y == 0) {
+  getRotY() {
+    if(this.rotationSpeed.y == 0) {
       return degToRad(this.y);
     } else {
       this.y = this.y + this.rotationSpeed.y * 0.001;
@@ -206,11 +206,11 @@ export class Rotation {
     }
   }
 
-  getRotZ () {
-    if (this.rotationSpeed.z == 0) {
+  getRotZ() {
+    if(this.rotationSpeed.z == 0) {
       return degToRad(this.z);
     } else {
-      this.z = this.z + this.rotationSpeed.z* 0.001;
+      this.z = this.z + this.rotationSpeed.z * 0.001;
       return degToRad(this.z);
     }
   }

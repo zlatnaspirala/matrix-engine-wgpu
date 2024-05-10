@@ -81,6 +81,10 @@ export let application = new MatrixEngineWGPU({
     }
   }
 
+  addEventListener('ray.hit.event', () => {
+    console.log('YEEEEEEEEEEEEEEEEEEEs')
+  })
+
   // Sounds
   application.matrixSounds.createAudio('start', 'res/audios/start.mp3', 1)
   application.matrixSounds.createAudio('block', 'res/audios/block.mp3', 6)

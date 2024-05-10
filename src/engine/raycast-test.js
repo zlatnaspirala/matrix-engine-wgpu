@@ -49,7 +49,8 @@ export function rayIntersectsTriangle(
   rayOrigin[0] = app.cameras.WASD.position_[0];
   rayOrigin[1] = app.cameras.WASD.position_[1];
 
-  const EPSILON = 0.0000001;
+  // const EPSILON = 0.0000001;
+  const EPSILON = 0.000001;
   const [v0, v1, v2] = triangle;
   const edge1 = vec3.create();
   const edge2 = vec3.create();
@@ -57,6 +58,7 @@ export function rayIntersectsTriangle(
 
   vec3.sub(edge1, v1, v0);
   vec3.sub(edge2, v2, v0);
+  if (rayVector.x > 0) console.log('ray vector ', rayVector)
   vec3.cross(h, rayVector, edge2);
   const a = vec3.dot(edge1, h);
 
@@ -104,7 +106,7 @@ export function unproject(
   const [left, top, width, height] = viewport;
   const [x, y] = screenCoord;
 
-  console.log("test out x ", x)
+   console.log("test out x ", x)
 
   const out = vec4.fromValues((2 * x) / width - 1 - left, (2 * (height - y - 1)) / height - 1, 1, 1);
 
@@ -142,177 +144,6 @@ export function checkingProcedure(ev, customArg) {
   touchCoordinate.w = ev.target.width;
   touchCoordinate.h = ev.target.height;
   touchCoordinate.enabled = true;
-}
-
-export function checkingProcedureCalc(object) {
-  if(object.raycast.enabled == false || touchCoordinate.enabled == false) return;
-  var world = matrixEngine.matrixWorld.world;
-  let mvMatrix = [...object.mvMatrix];
-  let ray;
-  let outp = mat4.create();
-  let outv = mat4.create();
-  let myRayOrigin = vec3.fromValues(matrixEngine.Events.camera.xPos, matrixEngine.Events.camera.yPos, matrixEngine.Events.camera.zPos);
-
-  if(matrixEngine.Events.camera.zPos < object.position.z) {
-    myRayOrigin = vec3.fromValues(matrixEngine.Events.camera.xPos, matrixEngine.Events.camera.yPos, -matrixEngine.Events.camera.zPos);
-  }
-
-  ray = unproject([touchCoordinate.x, touchCoordinate.y], [0, 0, touchCoordinate.w, touchCoordinate.h], mat4.invert(outp, world.pMatrix), mat4.invert(outv, mvMatrix));
-
-  const intersectionPoint = vec3.create();
-  object.raycastFace = [];
-
-  for(var f = 0;f < object.geometry.indices.length;f = f + 3) {
-    var a = object.geometry.indices[f];
-    var b = object.geometry.indices[f + 1];
-    var c = object.geometry.indices[f + 2];
-
-    let triangle = null;
-    const triangleInZero = [
-      [object.geometry.vertices[0 + a * 3], object.geometry.vertices[1 + a * 3], object.geometry.vertices[2 + a * 3]],
-      [object.geometry.vertices[0 + b * 3], object.geometry.vertices[1 + b * 3], object.geometry.vertices[2 + b * 3]],
-      [object.geometry.vertices[0 + c * 3], object.geometry.vertices[1 + c * 3], object.geometry.vertices[2 + c * 3]]
-    ];
-
-    var rez0, rez1, rez2;
-
-    if(object.rotation.rx != 0) {
-      rez0 = rotate2dPlot(0, 0, triangleInZero[0][1], triangleInZero[0][2], object.rotation.rx);
-      rez1 = rotate2dPlot(0, 0, triangleInZero[1][1], triangleInZero[1][2], object.rotation.rx);
-      rez2 = rotate2dPlot(0, 0, triangleInZero[2][1], triangleInZero[2][2], object.rotation.rx);
-      triangle = [
-        [triangleInZero[0][0] + object.position.worldLocation[0], rez0[0] + object.position.worldLocation[1], rez0[1]],
-        [triangleInZero[1][0] + object.position.worldLocation[0], rez1[0] + object.position.worldLocation[1], rez1[1]],
-        [triangleInZero[2][0] + object.position.worldLocation[0], rez2[0] + object.position.worldLocation[1], rez2[1]]
-      ];
-      // console.log("only x rot => ", triangle);
-    }
-
-    // y z changed - rez0[1] is z
-    if(object.rotation.ry != 0) {
-      if(object.rotation.rx != 0) {
-        // Y i Z
-        // get y
-        rez0 = rotate2dPlot(0, 0, triangleInZero[0][1], triangleInZero[0][2], object.rotation.rx - 90);
-        rez1 = rotate2dPlot(0, 0, triangleInZero[1][1], triangleInZero[1][2], object.rotation.rx - 90);
-        rez2 = rotate2dPlot(0, 0, triangleInZero[2][1], triangleInZero[2][2], object.rotation.rx - 90);
-
-        const detY0 = rez0[0];
-        const detY1 = rez1[0];
-        const detY2 = rez2[0];
-
-        const detZ0 = rez0[1];
-        const detZ1 = rez1[1];
-        const detZ2 = rez2[1];
-
-        //                          X INITIAL             Z
-        rez0 = rotate2dPlot(0, 0, triangleInZero[0][0], detZ0, object.rotation.ry - 90);
-        rez1 = rotate2dPlot(0, 0, triangleInZero[1][0], detZ1, object.rotation.ry - 90);
-        rez2 = rotate2dPlot(0, 0, triangleInZero[2][0], detZ2, object.rotation.ry - 90);
-
-        const detZ00 = rez0[1];
-        const detZ11 = rez1[1];
-        const detZ22 = rez2[1];
-
-        rez0 = rotate2dPlot(0, 0, rez0[0], detY0, object.rotation.rz - 90);
-        rez1 = rotate2dPlot(0, 0, rez1[0], detY1, object.rotation.rz - 90);
-        rez2 = rotate2dPlot(0, 0, rez2[0], detY2, object.rotation.rz - 90);
-
-        triangle = [
-          [rez0[0] + object.position.worldLocation[0], rez0[1] + object.position.worldLocation[1], detZ00],
-          [rez1[0] + object.position.worldLocation[0], rez1[1] + object.position.worldLocation[1], detZ11],
-          [rez2[0] + object.position.worldLocation[0], rez2[1] + object.position.worldLocation[1], detZ22]
-        ];
-      } else if(object.rotation.rz == 0) {
-        rez0 = rotate2dPlot(0, 0, triangleInZero[0][0], triangleInZero[0][2], -object.rotation.ry);
-        rez1 = rotate2dPlot(0, 0, triangleInZero[1][0], triangleInZero[1][2], -object.rotation.ry);
-        rez2 = rotate2dPlot(0, 0, triangleInZero[2][0], triangleInZero[2][2], -object.rotation.ry);
-
-        triangle = [
-          [rez0[0] + object.position.worldLocation[0], triangleInZero[0][1] + object.position.worldLocation[1], rez0[1]],
-          [rez1[0] + object.position.worldLocation[0], triangleInZero[1][1] + object.position.worldLocation[1], rez1[1]],
-          [rez2[0] + object.position.worldLocation[0], triangleInZero[2][1] + object.position.worldLocation[1], rez2[1]]
-        ];
-      }
-    }
-
-    if(object.rotation.rz != 0) {
-      if(object.rotation.ry != 0) {
-        if(object.rotation.rx == 180) {
-          rez0 = rotate2dPlot(0, 0, triangleInZero[0][0], triangleInZero[0][2], object.rotation.ry);
-          rez1 = rotate2dPlot(0, 0, triangleInZero[1][0], triangleInZero[1][2], object.rotation.ry);
-          rez2 = rotate2dPlot(0, 0, triangleInZero[2][0], triangleInZero[2][2], object.rotation.ry);
-
-          let detZ00 = rez0[1];
-          let detZ11 = rez1[1];
-          let detZ22 = rez2[1];
-
-          rez0 = rotate2dPlot(0, 0, rez0[0], triangleInZero[0][1], object.rotation.rz);
-          rez1 = rotate2dPlot(0, 0, rez1[0], triangleInZero[1][1], object.rotation.rz);
-          rez2 = rotate2dPlot(0, 0, rez2[0], triangleInZero[2][1], object.rotation.rz);
-
-          const detZ0 = rez0[1];
-          const detZ1 = rez1[1];
-          const detZ2 = rez2[1];
-          // rez0 = rotate2dPlot(0, 0,rez0[0], detZ00, object.rotation.rx - 180);
-          // rez1 = rotate2dPlot(0, 0,rez0[0], detZ11, object.rotation.rx - 180);
-          // rez2 = rotate2dPlot(0, 0, rez0[0], detZ22, object.rotation.rx - 180);
-          // detZ00 = rez0[1];
-          // detZ11 = rez1[1];
-          // detZ22 = rez2[1];
-
-          triangle = [
-            [rez0[0] + object.position.worldLocation[0], detZ0 + object.position.worldLocation[1], detZ00],
-            [rez1[0] + object.position.worldLocation[0], detZ1 + object.position.worldLocation[1], detZ11],
-            [rez2[0] + object.position.worldLocation[0], detZ2 + object.position.worldLocation[1], detZ22]
-          ];
-        } else {
-          // console.info('unhandled ray cast');
-        }
-      } else {
-        if(object.rotation.rx == 0) {
-          rez0 = rotate2dPlot(0, +0, triangleInZero[0][0], triangleInZero[0][1], object.rotation.rz);
-          rez1 = rotate2dPlot(0, 0, triangleInZero[1][0], triangleInZero[1][1], object.rotation.rz);
-          rez2 = rotate2dPlot(0, 0, triangleInZero[2][0], triangleInZero[2][1], object.rotation.rz);
-          triangle = [
-            [rez0[0] + object.position.worldLocation[0], rez0[1] + object.position.worldLocation[1], triangleInZero[0][2]],
-            [rez1[0] + object.position.worldLocation[0], rez1[1] + object.position.worldLocation[1], triangleInZero[1][2]],
-            [rez2[0] + object.position.worldLocation[0], rez2[1] + object.position.worldLocation[1], triangleInZero[2][2]]
-          ];
-        } else {
-          // console.info('must be handled rz vs rx');
-        }
-      }
-    }
-
-    // no rot
-    if(object.rotation.rx == 0 && object.rotation.ry == 0 && object.rotation.rz == 0) {
-      triangle = [
-        [triangleInZero[0][0] + object.position.worldLocation[0], triangleInZero[0][1] + object.position.worldLocation[1], triangleInZero[0][2]],
-        [triangleInZero[1][0] + object.position.worldLocation[0], triangleInZero[1][1] + object.position.worldLocation[1], triangleInZero[1][2]],
-        [triangleInZero[2][0] + object.position.worldLocation[0], triangleInZero[2][1] + object.position.worldLocation[1], triangleInZero[2][2]]
-      ];
-    }
-
-    object.raycastFace.push(triangle);
-
-    if(rayIntersectsTriangle(myRayOrigin, ray, triangle, intersectionPoint, object.position)) {
-
-      rayHitEvent = new CustomEvent('ray.hit.event', {
-        detail: {
-          touchCoordinate: {x: touchCoordinate.x, y: touchCoordinate.y},
-          hitObject: object,
-          intersectionPoint: intersectionPoint,
-          ray: ray,
-          rayOrigin: myRayOrigin
-        }
-      });
-      dispatchEvent(rayHitEvent);
-      if(touchCoordinate.enabled == true && touchCoordinate.stopOnFirstDetectedHit == true) {
-        touchCoordinate.enabled = false;
-      }
-    }
-  }
 }
 
 export function checkingProcedureCalcObj(object) {
@@ -483,7 +314,6 @@ export function checkingProcedureCalcObj(object) {
 }
 
 export function checkingRay(object) {
-
   try {
 
     if(object.raycast.enabled == false || touchCoordinate.enabled == false) return;
@@ -500,17 +330,20 @@ export function checkingRay(object) {
       myRayOrigin = vec3.fromValues(app.cameras.WASD.position_[0], app.cameras.WASD.position_[1], -app.cameras.WASD.position_[2]);
     }
 
+    let projectionMatrix = [...object.projectionMatrix]
+    let modelViewProjectionMatrix = [...object.modelViewProjectionMatrix]
+    // return;
+
     // test projectionMatrix
-    // ori world.pMatrix ?! 
+    // ori world.pMatrix ?!
+    // object.projectionMatrix
 
+    //  console.log("test out obj  ", object.modelViewProjectionMatrix[0])
+    // return;
     // ???
-    ray = unproject([touchCoordinate.x, touchCoordinate.y], [0, 0, touchCoordinate.w, touchCoordinate.h], mat4.invert(outp, object.projectionMatrix), mat4.invert(outv, mvMatrix));
-
-    // console.log('ray object', object)
-    return;
-
-    
-
+    ray = unproject([touchCoordinate.x, touchCoordinate.y], [0, 0, touchCoordinate.w, touchCoordinate.h], mat4.invert(outp, projectionMatrix), mat4.invert(outv, modelViewProjectionMatrix));
+     if (ray[0] > 0) console.log('ray ray >>>', ray)
+    // return;
     const intersectionPoint = vec3.create();
     object.raycastFace = [];
 
@@ -527,10 +360,10 @@ export function checkingRay(object) {
 
       var rez0, rez1, rez2;
 
-      if(object.rotation.rx != 0) {
-        rez0 = rotate2dPlot(0, 0, triangleInZero[0][1], triangleInZero[0][2], object.rotation.rx);
-        rez1 = rotate2dPlot(0, 0, triangleInZero[1][1], triangleInZero[1][2], object.rotation.rx);
-        rez2 = rotate2dPlot(0, 0, triangleInZero[2][1], triangleInZero[2][2], object.rotation.rx);
+      if(object.rotation.x != 0) {
+        rez0 = rotate2dPlot(0, 0, triangleInZero[0][1], triangleInZero[0][2], object.rotation.x);
+        rez1 = rotate2dPlot(0, 0, triangleInZero[1][1], triangleInZero[1][2], object.rotation.x);
+        rez2 = rotate2dPlot(0, 0, triangleInZero[2][1], triangleInZero[2][2], object.rotation.x);
         triangle = [
           [triangleInZero[0][0] + object.position.worldLocation[0], rez0[0] + object.position.worldLocation[1], rez0[1]],
           [triangleInZero[1][0] + object.position.worldLocation[0], rez1[0] + object.position.worldLocation[1], rez1[1]],
@@ -538,13 +371,13 @@ export function checkingRay(object) {
         ];
       }
       // y z changed - rez0[1] is z
-      if(object.rotation.ry != 0) {
-        if(object.rotation.rx != 0) {
+      if(object.rotation.y != 0) {
+        if(object.rotation.x != 0) {
           // Y i Z
           // get y
-          rez0 = rotate2dPlot(0, 0, triangleInZero[0][1], triangleInZero[0][2], object.rotation.rx - 90);
-          rez1 = rotate2dPlot(0, 0, triangleInZero[1][1], triangleInZero[1][2], object.rotation.rx - 90);
-          rez2 = rotate2dPlot(0, 0, triangleInZero[2][1], triangleInZero[2][2], object.rotation.rx - 90);
+          rez0 = rotate2dPlot(0, 0, triangleInZero[0][1], triangleInZero[0][2], object.rotation.x - 90);
+          rez1 = rotate2dPlot(0, 0, triangleInZero[1][1], triangleInZero[1][2], object.rotation.x - 90);
+          rez2 = rotate2dPlot(0, 0, triangleInZero[2][1], triangleInZero[2][2], object.rotation.x - 90);
           const detY0 = rez0[0];
           const detY1 = rez1[0];
           const detY2 = rez2[0];
@@ -554,17 +387,17 @@ export function checkingRay(object) {
           const detZ2 = rez2[1];
 
           //                          X INITIAL             Z
-          rez0 = rotate2dPlot(0, 0, triangleInZero[0][0], detZ0, object.rotation.ry - 90);
-          rez1 = rotate2dPlot(0, 0, triangleInZero[1][0], detZ1, object.rotation.ry - 90);
-          rez2 = rotate2dPlot(0, 0, triangleInZero[2][0], detZ2, object.rotation.ry - 90);
+          rez0 = rotate2dPlot(0, 0, triangleInZero[0][0], detZ0, object.rotation.y - 90);
+          rez1 = rotate2dPlot(0, 0, triangleInZero[1][0], detZ1, object.rotation.y - 90);
+          rez2 = rotate2dPlot(0, 0, triangleInZero[2][0], detZ2, object.rotation.y - 90);
 
           const detZ00 = rez0[1];
           const detZ11 = rez1[1];
           const detZ22 = rez2[1];
 
-          rez0 = rotate2dPlot(0, 0, rez0[0], detY0, object.rotation.rz - 90);
-          rez1 = rotate2dPlot(0, 0, rez1[0], detY1, object.rotation.rz - 90);
-          rez2 = rotate2dPlot(0, 0, rez2[0], detY2, object.rotation.rz - 90);
+          rez0 = rotate2dPlot(0, 0, rez0[0], detY0, object.rotation.z - 90);
+          rez1 = rotate2dPlot(0, 0, rez1[0], detY1, object.rotation.z - 90);
+          rez2 = rotate2dPlot(0, 0, rez2[0], detY2, object.rotation.z - 90);
 
           triangle = [
             [rez0[0] + object.position.worldLocation[0], rez0[1] + object.position.worldLocation[1], detZ00],
@@ -572,9 +405,9 @@ export function checkingRay(object) {
             [rez2[0] + object.position.worldLocation[0], rez2[1] + object.position.worldLocation[1], detZ22]
           ];
         } else if(object.rotation.rz == 0) {
-          rez0 = rotate2dPlot(0, 0, triangleInZero[0][0], triangleInZero[0][2], -object.rotation.ry);
-          rez1 = rotate2dPlot(0, 0, triangleInZero[1][0], triangleInZero[1][2], -object.rotation.ry);
-          rez2 = rotate2dPlot(0, 0, triangleInZero[2][0], triangleInZero[2][2], -object.rotation.ry);
+          rez0 = rotate2dPlot(0, 0, triangleInZero[0][0], triangleInZero[0][2], -object.rotation.y);
+          rez1 = rotate2dPlot(0, 0, triangleInZero[1][0], triangleInZero[1][2], -object.rotation.y);
+          rez2 = rotate2dPlot(0, 0, triangleInZero[2][0], triangleInZero[2][2], -object.rotation.y);
 
           triangle = [
             [rez0[0] + object.position.worldLocation[0], triangleInZero[0][1] + object.position.worldLocation[1], rez0[1]],
@@ -584,20 +417,20 @@ export function checkingRay(object) {
         }
       }
 
-      if(object.rotation.rz != 0) {
-        if(object.rotation.ry != 0) {
-          if(object.rotation.rx == 180) {
-            rez0 = rotate2dPlot(0, 0, triangleInZero[0][0], triangleInZero[0][2], object.rotation.ry);
-            rez1 = rotate2dPlot(0, 0, triangleInZero[1][0], triangleInZero[1][2], object.rotation.ry);
-            rez2 = rotate2dPlot(0, 0, triangleInZero[2][0], triangleInZero[2][2], object.rotation.ry);
+      if(object.rotation.z != 0) {
+        if(object.rotation.y != 0) {
+          if(object.rotation.x == 180) {
+            rez0 = rotate2dPlot(0, 0, triangleInZero[0][0], triangleInZero[0][2], object.rotation.y);
+            rez1 = rotate2dPlot(0, 0, triangleInZero[1][0], triangleInZero[1][2], object.rotation.y);
+            rez2 = rotate2dPlot(0, 0, triangleInZero[2][0], triangleInZero[2][2], object.rotation.y);
 
             let detZ00 = rez0[1];
             let detZ11 = rez1[1];
             let detZ22 = rez2[1];
 
-            rez0 = rotate2dPlot(0, 0, rez0[0], triangleInZero[0][1], object.rotation.rz);
-            rez1 = rotate2dPlot(0, 0, rez1[0], triangleInZero[1][1], object.rotation.rz);
-            rez2 = rotate2dPlot(0, 0, rez2[0], triangleInZero[2][1], object.rotation.rz);
+            rez0 = rotate2dPlot(0, 0, rez0[0], triangleInZero[0][1], object.rotation.z);
+            rez1 = rotate2dPlot(0, 0, rez1[0], triangleInZero[1][1], object.rotation.z);
+            rez2 = rotate2dPlot(0, 0, rez2[0], triangleInZero[2][1], object.rotation.z);
 
             const detZ0 = rez0[1];
             const detZ1 = rez1[1];
@@ -617,10 +450,10 @@ export function checkingRay(object) {
             // console.info('unhandled ray cast');
           }
         } else {
-          if(object.rotation.rx == 0) {
-            rez0 = rotate2dPlot(0, +0, triangleInZero[0][0], triangleInZero[0][1], object.rotation.rz);
-            rez1 = rotate2dPlot(0, 0, triangleInZero[1][0], triangleInZero[1][1], object.rotation.rz);
-            rez2 = rotate2dPlot(0, 0, triangleInZero[2][0], triangleInZero[2][1], object.rotation.rz);
+          if(object.rotation.x == 0) {
+            rez0 = rotate2dPlot(0, +0, triangleInZero[0][0], triangleInZero[0][1], object.rotation.z);
+            rez1 = rotate2dPlot(0, 0, triangleInZero[1][0], triangleInZero[1][1], object.rotation.z);
+            rez2 = rotate2dPlot(0, 0, triangleInZero[2][0], triangleInZero[2][1], object.rotation.z);
             triangle = [
               [rez0[0] + object.position.worldLocation[0], rez0[1] + object.position.worldLocation[1], triangleInZero[0][2]],
               [rez1[0] + object.position.worldLocation[0], rez1[1] + object.position.worldLocation[1], triangleInZero[1][2]],
@@ -634,7 +467,7 @@ export function checkingRay(object) {
       }
 
       // no rot
-      if(object.rotation.rx == 0 && object.rotation.ry == 0 && object.rotation.rz == 0) {
+      if(object.rotation.x == 0 && object.rotation.y == 0 && object.rotation.z == 0) {
         triangle = [
           [triangleInZero[0][0] + object.position.worldLocation[0], triangleInZero[0][1] + object.position.worldLocation[1], triangleInZero[0][2]],
           [triangleInZero[1][0] + object.position.worldLocation[0], triangleInZero[1][1] + object.position.worldLocation[1], triangleInZero[1][2]],
