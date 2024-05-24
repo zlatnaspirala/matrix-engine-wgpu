@@ -8,18 +8,28 @@
     "examples": "watchify examples.js -p [esmify --noImplicitAny] -o public/examples.js",
     "main": "watchify main.js -p [esmify --noImplicitAny] -o public/app.js",
     "build-empty": "watchify empty.js -p [esmify --noImplicitAny] -o public/empty.js",
-    "build-all": "npm run main-worker | npm run examples | npm run main | npm run build-empty"
+    "build-all": "npm run main-worker | npm run examples | npm run main | npm run build-empty",
+    "hosts": "http-server ./public/ -p 3000"
   },
   "keywords": [
-    "3dScene", "webGPU",
-    "webGPU-scene", "webGPU-engine",
-    "matrix", "matrix-engine",
-    "matrix-engine-webGPU", "matrix-calculation",
-    "modelView", "modelViewProjectionMatrix",
-    "ProjectionMatrix", "render",
-    "wgpu", "zlatnaspirala",
-    "maximumroulette.com", "GLSL",
-    "webgpu-obj-loader", "webgpu-fps"
+    "3dScene",
+    "webGPU",
+    "webGPU-scene",
+    "webGPU-engine",
+    "matrix",
+    "matrix-engine",
+    "matrix-engine-webGPU",
+    "matrix-calculation",
+    "modelView",
+    "modelViewProjectionMatrix",
+    "ProjectionMatrix",
+    "render",
+    "wgpu",
+    "zlatnaspirala",
+    "maximumroulette.com",
+    "GLSL",
+    "webgpu-obj-loader",
+    "webgpu-fps"
   ],
   "author": "Nikola Lukic",
   "license": "MIT",
@@ -30,6 +40,7 @@
     "watchify": "^4.0.0"
   },
   "dependencies": {
+    "http-server": "^14.1.1",
     "wgpu-matrix": "^2.5.1"
   }
 }
