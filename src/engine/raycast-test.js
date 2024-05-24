@@ -176,8 +176,13 @@ export function checkingRay(object) {
 		// object.projectionMatrix
 		var TEST1 = mat4.inverse(modelViewProjectionMatrix, outv);
 		var TEST2 = mat4.inverse(projectionMatrix, outp);
-		//  console.log("test1 ==== ;; ", TEST1)
-		   console.log("touchCoordinate === ", touchCoordinate)
+
+		console.log("test1 ====>  ", TEST1)
+		console.log("test2 ====>  ", TEST2)
+		console.log("outv ====>  ", outv)
+		console.log("outp ====>  ", outp)
+		// console.log("touchCoordinate === ", touchCoordinate)
+
 		// ray = unproject([touchCoordinate.x, touchCoordinate.y], [0, 0, touchCoordinate.w, touchCoordinate.h], mat4.invert(outp, projectionMatrix), mat4.invert(outv, modelViewProjectionMatrix));
 		ray = unproject([touchCoordinate.x, touchCoordinate.y], [0, 0, touchCoordinate.w, touchCoordinate.h], TEST2, TEST1);
 		if(ray[0] > 0) console.log('ray ray >>>', ray)

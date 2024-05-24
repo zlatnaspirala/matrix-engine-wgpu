@@ -1044,6 +1044,7 @@ var _loaderObj = require("./src/engine/loader-obj.js");
 var _utils = require("./src/engine/utils.js");
 var _jamb = require("./examples/games/jamb/jamb.js");
 var _sounds = require("./src/sounds/sounds.js");
+var _raycastTest = require("./src/engine/raycast-test.js");
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 let application = exports.application = new _world.default({
   useSingleRenderPass: true,
@@ -1124,7 +1125,7 @@ let application = exports.application = new _world.default({
   });
   addEventListener('click', e => {
     console.log('only on click');
-    touchCoordinate.enabled = true;
+    _raycastTest.touchCoordinate.enabled = true;
   });
 
   // Sounds
@@ -1333,6 +1334,9 @@ let application = exports.application = new _world.default({
       useUVShema4x2: true,
       name: 'CubePhysics1',
       mesh: m.cube,
+      raycast: {
+        enabled: true
+      },
       physics: {
         enabled: true,
         geometry: "Cube"
@@ -1358,6 +1362,9 @@ let application = exports.application = new _world.default({
       useUVShema4x2: true,
       name: 'CubePhysics2',
       mesh: m.cube,
+      raycast: {
+        enabled: true
+      },
       physics: {
         enabled: true,
         geometry: "Cube"
@@ -1383,6 +1390,9 @@ let application = exports.application = new _world.default({
       useUVShema4x2: true,
       name: 'CubePhysics3',
       mesh: m.cube,
+      raycast: {
+        enabled: true
+      },
       physics: {
         enabled: true,
         geometry: "Cube"
@@ -1408,6 +1418,9 @@ let application = exports.application = new _world.default({
       useUVShema4x2: true,
       name: 'CubePhysics4',
       mesh: m.cube,
+      raycast: {
+        enabled: true
+      },
       physics: {
         enabled: true,
         geometry: "Cube"
@@ -1433,6 +1446,9 @@ let application = exports.application = new _world.default({
       useUVShema4x2: true,
       name: 'CubePhysics5',
       mesh: m.cube,
+      raycast: {
+        enabled: true
+      },
       physics: {
         enabled: true,
         geometry: "Cube"
@@ -1458,6 +1474,9 @@ let application = exports.application = new _world.default({
       useUVShema4x2: true,
       name: 'CubePhysics6',
       mesh: m.cube,
+      raycast: {
+        enabled: true
+      },
       physics: {
         enabled: true,
         geometry: "Cube"
@@ -1570,7 +1589,7 @@ let application = exports.application = new _world.default({
 });
 window.app = application;
 
-},{"./examples/games/jamb/jamb.js":1,"./src/engine/loader-obj.js":7,"./src/engine/utils.js":12,"./src/sounds/sounds.js":19,"./src/world.js":20}],3:[function(require,module,exports){
+},{"./examples/games/jamb/jamb.js":1,"./src/engine/loader-obj.js":7,"./src/engine/raycast-test.js":11,"./src/engine/utils.js":12,"./src/sounds/sounds.js":19,"./src/world.js":20}],3:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -8896,6 +8915,13 @@ var _raycastTest = require("./raycast-test");
 class MEMeshObj {
   constructor(canvas, device, context, o) {
     if (typeof o.name === 'undefined') o.name = (0, _utils.genName)(9);
+    if (typeof o.raycast === 'undefined') {
+      this.raycast = {
+        enabled: false
+      };
+    } else {
+      this.raycast = o.raycast;
+    }
     this.name = o.name;
     this.done = false;
     this.device = device;
@@ -8919,9 +8945,6 @@ class MEMeshObj {
       (0, _raycastTest.checkingProcedure)(e);
     });
     _raycastTest.touchCoordinate.enabled = true;
-    this.raycast = {
-      enabled: false
-    };
     this.lastFrameMS = 0;
     this.texturesPaths = [];
     o.texturesPaths.forEach(t => {
@@ -9962,8 +9985,12 @@ function checkingRay(object) {
     // object.projectionMatrix
     var TEST1 = _wgpuMatrix.mat4.inverse(modelViewProjectionMatrix, outv);
     var TEST2 = _wgpuMatrix.mat4.inverse(projectionMatrix, outp);
-    //  console.log("test1 ==== ;; ", TEST1)
-    console.log("touchCoordinate === ", touchCoordinate);
+    console.log("test1 ====>  ", TEST1);
+    console.log("test2 ====>  ", TEST2);
+    console.log("outv ====>  ", outv);
+    console.log("outp ====>  ", outp);
+    // console.log("touchCoordinate === ", touchCoordinate)
+
     // ray = unproject([touchCoordinate.x, touchCoordinate.y], [0, 0, touchCoordinate.w, touchCoordinate.h], mat4.invert(outp, projectionMatrix), mat4.invert(outv, modelViewProjectionMatrix));
     ray = unproject([touchCoordinate.x, touchCoordinate.y], [0, 0, touchCoordinate.w, touchCoordinate.h], TEST2, TEST1);
     if (ray[0] > 0) console.log('ray ray >>>', ray);
@@ -11711,6 +11738,11 @@ class MatrixEngineWGPU {
     if (typeof o.scale === 'undefined') {
       o.scale = [1, 1, 1];
     }
+    if (typeof o.raycast === 'undefined') {
+      o.raycast = {
+        enabled: false
+      };
+    }
     o.entityArgPass = this.entityArgPass;
     o.cameras = this.cameras;
     // if(typeof o.name === 'undefined') {o.name = 'random' + Math.random();}
@@ -11750,6 +11782,7 @@ class MatrixEngineWGPU {
     if (typeof o.physics.rotation === 'undefined') {
       o.physics.rotation = o.rotation;
     }
+
     // send same pos
     o.physics.position = o.position;
     //  console.log('Mesh procedure', o)
