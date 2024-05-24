@@ -81,8 +81,13 @@ export let application = new MatrixEngineWGPU({
     }
   }
 
-  addEventListener('ray.hit.event', () => {
+  addEventListener('ray.hit.event', (e) => {
     console.log('YEEEEEEEEEEEEEEEEEEEs')
+  })
+
+	addEventListener('click', (e) => {
+    console.log('only on click')
+		touchCoordinate.enabled = true;
   })
 
   // Sounds

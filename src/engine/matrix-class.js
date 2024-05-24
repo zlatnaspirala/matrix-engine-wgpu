@@ -77,9 +77,9 @@ export class Position {
   onTargetPositionReach() {}
 
   update() {
-    var tx = this.targetX - this.x,
-      ty = this.targetY - this.y,
-      tz = this.targetZ - this.z,
+    var tx = parseFloat(this.targetX) - parseFloat(this.x),
+      ty = parseFloat(this.targetY) - parseFloat(this.y),
+      tz = parseFloat(this.targetZ) - parseFloat(this.z),
       dist = Math.sqrt(tx * tx + ty * ty + tz * tz);
     this.velX = (tx / dist) * this.thrust;
     this.velY = (ty / dist) * this.thrust;
@@ -151,6 +151,18 @@ export class Position {
     //     netObjId: this.nameUniq,
     //   });
   }
+
+	get X() {
+		return parseFloat(this.x)
+	}
+
+	get Y() {
+		return parseFloat(this.y)
+	}
+
+	get Z() {
+		return parseFloat(this.z)
+	}
 
   setPosition(newx, newy, newz) {
     this.x = newx;

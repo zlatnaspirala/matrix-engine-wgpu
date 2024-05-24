@@ -1119,8 +1119,12 @@ let application = exports.application = new _world.default({
       }
     }
   };
-  addEventListener('ray.hit.event', () => {
+  addEventListener('ray.hit.event', e => {
     console.log('YEEEEEEEEEEEEEEEEEEEs');
+  });
+  addEventListener('click', e => {
+    console.log('only on click');
+    touchCoordinate.enabled = true;
   });
 
   // Sounds
@@ -8727,9 +8731,9 @@ class Position {
   }
   onTargetPositionReach() {}
   update() {
-    var tx = this.targetX - this.x,
-      ty = this.targetY - this.y,
-      tz = this.targetZ - this.z,
+    var tx = parseFloat(this.targetX) - parseFloat(this.x),
+      ty = parseFloat(this.targetY) - parseFloat(this.y),
+      tz = parseFloat(this.targetZ) - parseFloat(this.z),
       dist = Math.sqrt(tx * tx + ty * ty + tz * tz);
     this.velX = tx / dist * this.thrust;
     this.velY = ty / dist * this.thrust;
@@ -8795,6 +8799,15 @@ class Position {
     //     netPos: {x: this.x, y: this.y, z: this.z},
     //     netObjId: this.nameUniq,
     //   });
+  }
+  get X() {
+    return parseFloat(this.x);
+  }
+  get Y() {
+    return parseFloat(this.y);
+  }
+  get Z() {
+    return parseFloat(this.z);
   }
   setPosition(newx, newy, newz) {
     this.x = newx;
@@ -9816,10 +9829,10 @@ triangle,
 out,
 // vec3,
 objPos) {
-  if (app.cameras.WASD.position_[2] < objPos.z) {
-    rayOrigin[2] = app.cameras.WASD.position_[2] - parseFloat(objPos.z);
+  if (app.cameras.WASD.position_[2] < objPos.Z) {
+    rayOrigin[2] = app.cameras.WASD.position_[2] - parseFloat(objPos.Z);
   } else {
-    rayOrigin[2] = app.cameras.WASD.position_[2] + -parseFloat(objPos.z);
+    rayOrigin[2] = app.cameras.WASD.position_[2] + -parseFloat(objPos.Z);
   }
   rayOrigin[0] = app.cameras.WASD.position_[0];
   rayOrigin[1] = app.cameras.WASD.position_[1];
@@ -9830,10 +9843,24 @@ objPos) {
   const edge1 = _wgpuMatrix.vec3.create();
   const edge2 = _wgpuMatrix.vec3.create();
   const h = _wgpuMatrix.vec3.create();
-  _wgpuMatrix.vec3.sub(edge1, v1, v0);
-  _wgpuMatrix.vec3.sub(edge2, v2, v0);
-  if (rayVector.x > 0) console.log('ray vector ', rayVector);
-  _wgpuMatrix.vec3.cross(h, rayVector, edge2);
+
+  // vec3.sub(edge1, v1, v0);
+  // vec3.sub(edge2, v2, v0);
+  _wgpuMatrix.vec3.sub(v0, v1, edge1);
+  _wgpuMatrix.vec3.sub(v0, v2, edge2);
+  if (rayVector[0] > 0) console.log('ray vector ', rayVector);
+
+  /**
+   * (static) cross(out, a, b) → {vec3}
+  	Computes the cross product of two vec3's
+  	Parameters:
+  	Name	Type	Description
+  	out	vec3	the receiving vector
+  	a	ReadonlyVec3	the first operand
+  	b	ReadonlyVec3	the second operand
+   */
+  // vec3.cross(h, rayVector, edge2);
+  _wgpuMatrix.vec3.cross(rayVector, edge2, h);
   const a = _wgpuMatrix.vec3.dot(edge1, h);
   if (a > -EPSILON && a < EPSILON) {
     return false;
@@ -9919,10 +9946,9 @@ function checkingProcedure(ev, customArg) {
 function checkingRay(object) {
   try {
     if (object.raycast.enabled == false || touchCoordinate.enabled == false) return;
-    // var world = matrixEngine.matrixWorld.world;
+    touchCoordinate.enabled = false;
     // modelViewProjectionMatrix
-
-    let mvMatrix = [...object.modelViewProjectionMatrix];
+    // let mvMatrix = [...object.modelViewProjectionMatrix];
     let ray;
     let outp = _wgpuMatrix.mat4.create();
     let outv = _wgpuMatrix.mat4.create();
@@ -9930,18 +9956,16 @@ function checkingRay(object) {
     if (app.cameras.WASD.position_[2] < object.position.z) {
       myRayOrigin = _wgpuMatrix.vec3.fromValues(app.cameras.WASD.position_[0], app.cameras.WASD.position_[1], -app.cameras.WASD.position_[2]);
     }
-    let projectionMatrix = object.projectionMatrix;
-    let modelViewProjectionMatrix = [...object.modelViewProjectionMatrix];
-    // return;
-
-    // test projectionMatrix
+    let projectionMatrix = new Float32Array([...object.projectionMatrix]);
+    let modelViewProjectionMatrix = new Float32Array([...object.modelViewProjectionMatrix]);
     // ori world.pMatrix ?!
     // object.projectionMatrix
-
-    //  console.log("test out obj  ", object.modelViewProjectionMatrix[0])
-    // return;
-    // ???
-    ray = unproject([touchCoordinate.x, touchCoordinate.y], [0, 0, touchCoordinate.w, touchCoordinate.h], _wgpuMatrix.mat4.invert(outp, projectionMatrix), _wgpuMatrix.mat4.invert(outv, modelViewProjectionMatrix));
+    var TEST1 = _wgpuMatrix.mat4.inverse(modelViewProjectionMatrix, outv);
+    var TEST2 = _wgpuMatrix.mat4.inverse(projectionMatrix, outp);
+    //  console.log("test1 ==== ;; ", TEST1)
+    console.log("touchCoordinate === ", touchCoordinate);
+    // ray = unproject([touchCoordinate.x, touchCoordinate.y], [0, 0, touchCoordinate.w, touchCoordinate.h], mat4.invert(outp, projectionMatrix), mat4.invert(outv, modelViewProjectionMatrix));
+    ray = unproject([touchCoordinate.x, touchCoordinate.y], [0, 0, touchCoordinate.w, touchCoordinate.h], TEST2, TEST1);
     if (ray[0] > 0) console.log('ray ray >>>', ray);
     // return;
     const intersectionPoint = _wgpuMatrix.vec3.create();
