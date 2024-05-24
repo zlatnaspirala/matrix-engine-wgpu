@@ -9,7 +9,8 @@
     "main": "watchify main.js -p [esmify --noImplicitAny] -o public/app.js",
     "build-empty": "watchify empty.js -p [esmify --noImplicitAny] -o public/empty.js",
     "build-all": "npm run main-worker | npm run examples | npm run main | npm run build-empty",
-    "hosts": "http-server ./public/ -p 3000"
+    "hosts": "http-server ./public/ -p 3000",
+    "build.demo1": "browserify main.js -p esmify > public/app.js"
   },
   "keywords": [
     "3dScene",
