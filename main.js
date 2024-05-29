@@ -83,11 +83,11 @@ export let application = new MatrixEngineWGPU({
 	}
 
 	addEventListener('ray.hit.event', (e) => {
-		console.log('YEEEEEEEEEEEEEEEEEEEs')
+		console.log('HIT =>>>>>>>>>>>>>>>', e.detail.hitObject.name)
 	})
 
-	addEventListener('click', (e) => {
-		console.log('only on click')
+	addEventListener('mousemove', (e) => {
+		// console.log('only on click')
 		touchCoordinate.enabled = true;
 	})
 
@@ -252,80 +252,80 @@ export let application = new MatrixEngineWGPU({
 			}
 		})
 
-		application.addMeshObj({
-			position: {x: -5, y: 4, z: -14},
-			rotation: {x: 0, y: 0, z: 0},
-			rotationSpeed: {x: 0, y: 0, z: 0},
-			texturesPaths: ['./res/meshes/jamb/dice.png'],
-			useUVShema4x2: true,
-			name: 'CubePhysics2',
-			mesh: m.cube,
-			raycast: {enabled: true},
-			physics: {
-				enabled: true,
-				geometry: "Cube"
-			}
-		})
+		// application.addMeshObj({
+		// 	position: {x: -5, y: 4, z: -14},
+		// 	rotation: {x: 0, y: 0, z: 0},
+		// 	rotationSpeed: {x: 0, y: 0, z: 0},
+		// 	texturesPaths: ['./res/meshes/jamb/dice.png'],
+		// 	useUVShema4x2: true,
+		// 	name: 'CubePhysics2',
+		// 	mesh: m.cube,
+		// 	raycast: {enabled: true},
+		// 	physics: {
+		// 		enabled: true,
+		// 		geometry: "Cube"
+		// 	}
+		// })
 
-		application.addMeshObj({
-			position: {x: 4, y: 8, z: -10},
-			rotation: {x: 0, y: 0, z: 0},
-			rotationSpeed: {x: 0, y: 0, z: 0},
-			texturesPaths: ['./res/meshes/jamb/dice.png'],
-			useUVShema4x2: true,
-			name: 'CubePhysics3',
-			mesh: m.cube,
-			raycast: { enabled: true },
-			physics: {
-				enabled: true,
-				geometry: "Cube"
-			}
-		})
+		// application.addMeshObj({
+		// 	position: {x: 4, y: 8, z: -10},
+		// 	rotation: {x: 0, y: 0, z: 0},
+		// 	rotationSpeed: {x: 0, y: 0, z: 0},
+		// 	texturesPaths: ['./res/meshes/jamb/dice.png'],
+		// 	useUVShema4x2: true,
+		// 	name: 'CubePhysics3',
+		// 	mesh: m.cube,
+		// 	raycast: { enabled: true },
+		// 	physics: {
+		// 		enabled: true,
+		// 		geometry: "Cube"
+		// 	}
+		// })
 
-		application.addMeshObj({
-			position: {x: 3, y: 4, z: -10},
-			rotation: {x: 0, y: 0, z: 0},
-			rotationSpeed: {x: 0, y: 0, z: 0},
-			texturesPaths: ['./res/meshes/jamb/dice.png'],
-			useUVShema4x2: true,
-			name: 'CubePhysics4',
-			mesh: m.cube,
-			raycast: { enabled: true },
-			physics: {
-				enabled: true,
-				geometry: "Cube"
-			}
-		})
+		// application.addMeshObj({
+		// 	position: {x: 3, y: 4, z: -10},
+		// 	rotation: {x: 0, y: 0, z: 0},
+		// 	rotationSpeed: {x: 0, y: 0, z: 0},
+		// 	texturesPaths: ['./res/meshes/jamb/dice.png'],
+		// 	useUVShema4x2: true,
+		// 	name: 'CubePhysics4',
+		// 	mesh: m.cube,
+		// 	raycast: { enabled: true },
+		// 	physics: {
+		// 		enabled: true,
+		// 		geometry: "Cube"
+		// 	}
+		// })
 
-		application.addMeshObj({
-			position: {x: -2, y: 4, z: -13},
-			rotation: {x: 0, y: 0, z: 0},
-			rotationSpeed: {x: 0, y: 0, z: 0},
-			texturesPaths: ['./res/meshes/jamb/dice.png'],
-			useUVShema4x2: true,
-			name: 'CubePhysics5',
-			mesh: m.cube,
-			raycast: { enabled: true },
-			physics: {
-				enabled: true,
-				geometry: "Cube"
-			}
-		})
+		// application.addMeshObj({
+		// 	position: {x: -2, y: 4, z: -13},
+		// 	rotation: {x: 0, y: 0, z: 0},
+		// 	rotationSpeed: {x: 0, y: 0, z: 0},
+		// 	texturesPaths: ['./res/meshes/jamb/dice.png'],
+		// 	useUVShema4x2: true,
+		// 	name: 'CubePhysics5',
+		// 	mesh: m.cube,
+		// 	raycast: { enabled: true },
+		// 	physics: {
+		// 		enabled: true,
+		// 		geometry: "Cube"
+		// 	}
+		// })
 
-		application.addMeshObj({
-			position: {x: -4, y: 6, z: -9},
-			rotation: {x: 0, y: 0, z: 0},
-			rotationSpeed: {x: 0, y: 0, z: 0},
-			texturesPaths: ['./res/meshes/jamb/dice.png'],
-			useUVShema4x2: true,
-			name: 'CubePhysics6',
-			mesh: m.cube,
-			raycast: { enabled: true },
-			physics: {
-				enabled: true,
-				geometry: "Cube"
-			}
-		})
+		// application.addMeshObj({
+		// 	position: {x: -4, y: 6, z: -9},
+		// 	rotation: {x: 0, y: 0, z: 0},
+		// 	rotationSpeed: {x: 0, y: 0, z: 0},
+		// 	texturesPaths: ['./res/meshes/jamb/dice.png'],
+		// 	useUVShema4x2: true,
+		// 	name: 'CubePhysics6',
+		// 	mesh: m.cube,
+		// 	raycast: { enabled: true },
+		// 	physics: {
+		// 		enabled: true,
+		// 		geometry: "Cube"
+		// 	}
+		// })
 
 
 		application.TOLERANCE = 0;
