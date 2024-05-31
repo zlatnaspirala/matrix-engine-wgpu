@@ -12,6 +12,8 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 let dices = exports.dices = {
   C: 0,
   STATUS: 'FREE_TO_PLAY',
+  STATUS_H2: 'WAIT',
+  STATUS_H3: 'WAIT',
   R: {},
   checkAll: function () {
     this.C++;
@@ -24,7 +26,7 @@ let dices = exports.dices = {
   },
   validatePass: function () {
     if (dices.STATUS == "IN_PLAY" || dices.STATUS == "FREE_TO_PLAY") {
-      console.log('%cBLOCK', _utils.LOG_FUNNY);
+      // console.log('%cBLOCK', LOG_FUNNY)
       if (dices.STATUS == "IN_PLAY") _utils.mb.error(`STATUS IS ${dices.STATUS}, please wait for results...`);
       if (dices.STATUS == "FREE_TO_PLAY") _utils.mb.error(`STATUS IS ${dices.STATUS}, you need to roll dice first.`);
       app.matrixSounds.play('block');
@@ -377,7 +379,7 @@ let myDom = exports.myDom = {
         this.state.rowDown.push(count23456 * parseInt(getName));
         e.target.innerHTML = count23456 * parseInt(getName);
         if (parseInt(getName) == 6) {
-          myDom.calcDownNumbers();
+          myDom.calcFreeNumbers();
         }
         dices.STATUS = "FREE_TO_PLAY";
         dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
@@ -395,12 +397,14 @@ let myDom = exports.myDom = {
     rowMax.style.width = 'auto';
     rowMax.style.background = '#7d7d7d8c';
     rowMax.innerHTML = `-`;
+    rowMax.addEventListener("click", this.calcFreeRowMax);
     myRoot.appendChild(rowMax);
     var rowMin = document.createElement('div');
-    rowMin.id = 'free-rowMax';
+    rowMin.id = 'free-rowMin';
     rowMin.style.width = 'auto';
     rowMin.style.background = '#7d7d7d8c';
     rowMin.innerHTML = `-`;
+    rowMin.addEventListener('click', this.calcFreeRowMin);
     myRoot.appendChild(rowMin);
     var rowMaxMinSum = document.createElement('div');
     rowMaxMinSum.id = 'free-rowMaxMinSum';
@@ -413,30 +417,35 @@ let myDom = exports.myDom = {
     largeStraight.style.width = 'auto';
     largeStraight.style.background = '#7d7d7d8c';
     largeStraight.innerHTML = `-`;
+    largeStraight.addEventListener('click', this.attachFreeKenta);
     myRoot.appendChild(largeStraight);
     var threeOfAKind = document.createElement('div');
     threeOfAKind.id = 'free-threeOfAKind';
     threeOfAKind.style.width = 'auto';
     threeOfAKind.style.background = '#7d7d7d8c';
     threeOfAKind.innerHTML = `-`;
+    threeOfAKind.addEventListener('click', this.attachFreeTrilling);
     myRoot.appendChild(threeOfAKind);
     var fullHouse = document.createElement('div');
     fullHouse.id = 'free-fullHouse';
     fullHouse.style.width = 'auto';
     fullHouse.style.background = '#7d7d7d8c';
     fullHouse.innerHTML = `-`;
+    fullHouse.addEventListener('click', this.attachFreeFullHouse);
     myRoot.appendChild(fullHouse);
     var poker = document.createElement('div');
     poker.id = 'free-poker';
     poker.style.width = 'auto';
     poker.style.background = '#7d7d7d8c';
     poker.innerHTML = `-`;
+    poker.addEventListener('click', this.attachFreePoker);
     myRoot.appendChild(poker);
     var jamb = document.createElement('div');
     jamb.id = 'free-jamb';
     jamb.style.width = 'auto';
     jamb.style.background = '#7d7d7d8c';
     jamb.innerHTML = `-`;
+    jamb.addEventListener('click', this.attachFreeJamb);
     myRoot.appendChild(jamb);
     var rowSum = document.createElement('div');
     rowSum.id = 'free-rowSum';
@@ -599,6 +608,199 @@ let myDom = exports.myDom = {
     dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
     this.rowMax.addEventListener("click", this.calcDownRowMax);
   },
+  // free row start
+
+  calcFreeNumbers: function () {
+    var s = 0;
+    this.state.rowDown.forEach(i => {
+      console.log(parseFloat(i));
+      s += parseFloat(i);
+    });
+    (0, _utils.byId)('free-rowNumberSum').style.background = 'rgb(113 0 0 / 55%)';
+    (0, _utils.byId)('free-rowNumberSum').innerHTML = s;
+    // console.log('this.rowMax also set free to plat status', this.rowMax)
+    dices.STATUS = "FREE_TO_PLAY";
+    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
+    (0, _utils.byId)('free-rowMax').addEventListener("click", this.calc);
+  },
+  calcFreeRowMax: e => {
+    if (dices.validatePass() == false) return;
+    var test = 0;
+    let keyLessNum = Object.keys(dices.R).reduce((key, v) => dices.R[v] < dices.R[key] ? v : key);
+    for (var key in dices.R) {
+      if (key != keyLessNum) {
+        test += parseFloat(dices.R[key]);
+      }
+    }
+    e.target.innerHTML = test;
+    // now attach next event.
+    dices.STATUS = "FREE_TO_PLAY";
+    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
+    (0, _utils.byId)('free-rowMax').removeEventListener("click", (void 0).calcFreeRowMax);
+  },
+  calcFreeRowMin: () => {
+    if (dices.validatePass() == false) return;
+    var maxTestKey = Object.keys(dices.R).reduce(function (a, b) {
+      return dices.R[a] > dices.R[b] ? a : b;
+    });
+    var test = 0;
+    for (var key in dices.R) {
+      if (key != maxTestKey) {
+        test += parseFloat(dices.R[key]);
+      } else {
+        console.log('not calc dice ', dices.R[key]);
+      }
+    }
+    (0, _utils.byId)('free-rowMin').innerHTML = test;
+    (0, _utils.byId)('free-rowMin').removeEventListener('click', (void 0).calcFreeRowMin);
+    // calc max min dont forget rules for bonus +30
+    var SUMMINMAX = parseFloat((0, _utils.byId)('free-rowMax').innerHTML) - parseFloat((0, _utils.byId)('free-rowMin').innerHTML);
+    (0, _utils.byId)('free-rowMaxMinSum').innerHTML = SUMMINMAX;
+    myDom.incrasePoints(SUMMINMAX);
+    dices.STATUS = "FREE_TO_PLAY";
+    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
+  },
+  attachFreeKenta: function () {
+    if (dices.validatePass() == false) return;
+    console.log('Test free kenta :', dices.R);
+    var result = app.myDom.checkForDuplicate()[0];
+    var testArray = app.myDom.checkForDuplicate()[1];
+    console.log('TEST duplik: ' + result);
+    if (result.length == 2) {
+      console.log('TEST duplik less 3 : ' + result);
+      var locPrevent = false;
+      testArray.forEach((item, index, array) => {
+        if (result[0].value == item.value && locPrevent == false) {
+          console.log('detect by value item.value', item.value);
+          locPrevent = true;
+          array.splice(index, 1);
+        }
+      });
+      // if we catch  1 and 6 in same stack then it is not possible for kenta...
+      var test1 = false,
+        test6 = false;
+      testArray.forEach((item, index, array) => {
+        if (item.value == 1) {
+          test1 = true;
+        } else if (item.value == 6) {
+          test6 = true;
+        }
+      });
+      if (test1 == true && test6 == true) {
+        (0, _utils.byId)('free-largeStraight').innerHTML = `0`;
+      } else if (test1 == true) {
+        (0, _utils.byId)('free-largeStraight').innerHTML = 15 + 50;
+        myDom.incrasePoints(15 + 50);
+      } else if (test6 == true) {
+        (0, _utils.byId)('free-largeStraight').innerHTML = 20 + 50;
+        myDom.incrasePoints(20 + 50);
+      }
+    } else if (result < 2) {
+      (0, _utils.byId)('free-largeStraight').innerHTML = 66;
+      myDom.incrasePoints(66);
+    } else {
+      // zero value
+      (0, _utils.byId)('free-largeStraight').innerHTML = `0`;
+    }
+    (0, _utils.byId)('free-largeStraight').removeEventListener('click', this.attachFreeKenta);
+    dices.STATUS = "FREE_TO_PLAY";
+    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
+  },
+  attachFreeTrilling: function () {
+    if (dices.validatePass() == false) return;
+    var result = app.myDom.checkForDuplicate()[0];
+    // var testArray = app.myDom.checkForDuplicate()[1];
+    // console.log('DUPLICATE FOR TRILING ', result);
+    if (result.length > 2) {
+      var testWin = 0;
+      var TEST = app.myDom.checkForAllDuplicate();
+      console.log('DUPLICATE FOR TRILING TEST ', TEST);
+      for (var key in TEST) {
+        if (TEST[key] > 2) {
+          // win
+          var getDiceID = parseInt(key.replace('value__', ''));
+          testWin = getDiceID * 3;
+        }
+      }
+      console.log('DUPLICATE FOR TRILING 30 + TEST ', testWin);
+      if (testWin > 0) {
+        (0, _utils.byId)('free-threeOfAKind').innerHTML = 20 + testWin;
+        myDom.incrasePoints(20 + testWin);
+      }
+    } else {
+      (0, _utils.byId)('free-threeOfAKind').innerHTML = 0;
+    }
+    (0, _utils.byId)('free-threeOfAKind').removeEventListener('click', this.attachFreeTrilling);
+    dices.STATUS = "FREE_TO_PLAY";
+    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
+  },
+  attachFreeFullHouse: function () {
+    if (dices.validatePass() == false) return;
+    var TEST = app.myDom.checkForAllDuplicate();
+    // console.log('DUPLICATE FOR FULL HOUSE 30 + TEST ');
+    var win = 0;
+    var testPair = false;
+    var testTrilling = false;
+    var testWinPair = 0;
+    var testWinTrilling = 0;
+    for (var key in TEST) {
+      if (TEST[key] == 2) {
+        // win
+        var getDiceID = parseInt(key.replace('value__', ''));
+        testWinPair = getDiceID * 2;
+        testPair = true;
+      } else if (TEST[key] == 3) {
+        var getDiceID = parseInt(key.replace('value__', ''));
+        testWinTrilling = getDiceID * 3;
+        testTrilling = true;
+      }
+    }
+    if (testPair == true && testTrilling == true) {
+      win = testWinPair + testWinTrilling;
+      (0, _utils.byId)('free-fullHouse').innerHTML = win + 30;
+      myDom.incrasePoints(win + 30);
+    } else {
+      (0, _utils.byId)('free-fullHouse').innerHTML = 0;
+    }
+    (0, _utils.byId)('free-fullHouse').removeEventListener('click', this.attachFreeFullHouse);
+    dices.STATUS = "FREE_TO_PLAY";
+    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
+  },
+  attachFreePoker: function () {
+    if (dices.validatePass() == false) return;
+    var TEST = app.myDom.checkForAllDuplicate();
+    // console.log('DUPLICATE FOR poker 40 + TEST ');
+    for (var key in TEST) {
+      if (TEST[key] == 4 || TEST[key] > 4) {
+        var getDiceID = parseInt(key.replace('value__', ''));
+        var win = getDiceID * 4;
+        (0, _utils.byId)('free-poker').innerHTML = win + 40;
+        myDom.incrasePoints(win + 40);
+      }
+    }
+    (0, _utils.byId)('free-poker').removeEventListener('click', this.attachFreePoker);
+    dices.STATUS = "FREE_TO_PLAY";
+    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
+  },
+  attachFreeJamb: function () {
+    if (dices.validatePass() == false) return;
+    // console.log('<GAMEPLAY><FREE ROW IS FEELED>')
+    var TEST = app.myDom.checkForAllDuplicate();
+    for (var key in TEST) {
+      if (TEST[key] == 5 || TEST[key] > 5) {
+        // win
+        var getDiceID = parseInt(key.replace('value__', ''));
+        var win = getDiceID * 5;
+        (0, _utils.byId)('free-poker').innerHTML = win + 50;
+        myDom.incrasePoints(win + 50);
+      }
+    }
+    (0, _utils.byId)('free-jamb').removeEventListener('click', this.attachFreeJamb);
+    dices.STATUS = "FREE_TO_PLAY";
+    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
+  },
+  // end of free row
+
   calcDownRowMax: e => {
     if (dices.validatePass() == false) return;
     e.target.classList.remove('canPlay');
@@ -830,7 +1032,7 @@ let myDom = exports.myDom = {
   }
 };
 
-},{"../../../src/engine/loader-obj.js":7,"../../../src/engine/utils.js":11,"../../../src/world.js":19}],2:[function(require,module,exports){
+},{"../../../src/engine/loader-obj.js":7,"../../../src/engine/utils.js":12,"../../../src/world.js":20}],2:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -842,6 +1044,7 @@ var _loaderObj = require("./src/engine/loader-obj.js");
 var _utils = require("./src/engine/utils.js");
 var _jamb = require("./examples/games/jamb/jamb.js");
 var _sounds = require("./src/sounds/sounds.js");
+var _raycastTest = require("./src/engine/raycast-test.js");
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 let application = exports.application = new _world.default({
   useSingleRenderPass: true,
@@ -917,6 +1120,18 @@ let application = exports.application = new _world.default({
       }
     }
   };
+  addEventListener('ray.hit.event', e => {
+    console.log('HIT =>>>>>>>>>>>>>>>', e.detail.hitObject.name);
+    console.log('HIT =>>>>>>>>>>>>>>>', e.detail.touchCoordinate);
+    console.log('HIT =>>>>>>>>>>>>>>>', e.detail.hitObject);
+    console.log('HIT =>>>>>>>>>>>>>>>', e.detail.intersectionPoint);
+    console.log('HIT =>>>>>>>>>>>>>>>', e.detail.ray);
+    console.log('HIT =>>>>>>>>>>>>>>>', e.detail.rayOrigin);
+  });
+  addEventListener('mousemove', e => {
+    // console.log('only on click')
+    _raycastTest.touchCoordinate.enabled = true;
+  });
 
   // Sounds
   application.matrixSounds.createAudio('start', 'res/audios/start.mp3', 1);
@@ -1124,136 +1339,90 @@ let application = exports.application = new _world.default({
       useUVShema4x2: true,
       name: 'CubePhysics1',
       mesh: m.cube,
+      raycast: {
+        enabled: true
+      },
       physics: {
         enabled: true,
         geometry: "Cube"
       }
     });
-    application.addMeshObj({
-      position: {
-        x: -5,
-        y: 4,
-        z: -14
-      },
-      rotation: {
-        x: 0,
-        y: 0,
-        z: 0
-      },
-      rotationSpeed: {
-        x: 0,
-        y: 0,
-        z: 0
-      },
-      texturesPaths: ['./res/meshes/jamb/dice.png'],
-      useUVShema4x2: true,
-      name: 'CubePhysics2',
-      mesh: m.cube,
-      physics: {
-        enabled: true,
-        geometry: "Cube"
-      }
-    });
-    application.addMeshObj({
-      position: {
-        x: 4,
-        y: 8,
-        z: -10
-      },
-      rotation: {
-        x: 0,
-        y: 0,
-        z: 0
-      },
-      rotationSpeed: {
-        x: 0,
-        y: 0,
-        z: 0
-      },
-      texturesPaths: ['./res/meshes/jamb/dice.png'],
-      useUVShema4x2: true,
-      name: 'CubePhysics3',
-      mesh: m.cube,
-      physics: {
-        enabled: true,
-        geometry: "Cube"
-      }
-    });
-    application.addMeshObj({
-      position: {
-        x: 3,
-        y: 4,
-        z: -10
-      },
-      rotation: {
-        x: 0,
-        y: 0,
-        z: 0
-      },
-      rotationSpeed: {
-        x: 0,
-        y: 0,
-        z: 0
-      },
-      texturesPaths: ['./res/meshes/jamb/dice.png'],
-      useUVShema4x2: true,
-      name: 'CubePhysics4',
-      mesh: m.cube,
-      physics: {
-        enabled: true,
-        geometry: "Cube"
-      }
-    });
-    application.addMeshObj({
-      position: {
-        x: -2,
-        y: 4,
-        z: -13
-      },
-      rotation: {
-        x: 0,
-        y: 0,
-        z: 0
-      },
-      rotationSpeed: {
-        x: 0,
-        y: 0,
-        z: 0
-      },
-      texturesPaths: ['./res/meshes/jamb/dice.png'],
-      useUVShema4x2: true,
-      name: 'CubePhysics5',
-      mesh: m.cube,
-      physics: {
-        enabled: true,
-        geometry: "Cube"
-      }
-    });
-    application.addMeshObj({
-      position: {
-        x: -4,
-        y: 6,
-        z: -9
-      },
-      rotation: {
-        x: 0,
-        y: 0,
-        z: 0
-      },
-      rotationSpeed: {
-        x: 0,
-        y: 0,
-        z: 0
-      },
-      texturesPaths: ['./res/meshes/jamb/dice.png'],
-      useUVShema4x2: true,
-      name: 'CubePhysics6',
-      mesh: m.cube,
-      physics: {
-        enabled: true,
-        geometry: "Cube"
-      }
-    });
+
+    // application.addMeshObj({
+    // 	position: {x: -5, y: 4, z: -14},
+    // 	rotation: {x: 0, y: 0, z: 0},
+    // 	rotationSpeed: {x: 0, y: 0, z: 0},
+    // 	texturesPaths: ['./res/meshes/jamb/dice.png'],
+    // 	useUVShema4x2: true,
+    // 	name: 'CubePhysics2',
+    // 	mesh: m.cube,
+    // 	raycast: {enabled: true},
+    // 	physics: {
+    // 		enabled: true,
+    // 		geometry: "Cube"
+    // 	}
+    // })
+
+    // application.addMeshObj({
+    // 	position: {x: 4, y: 8, z: -10},
+    // 	rotation: {x: 0, y: 0, z: 0},
+    // 	rotationSpeed: {x: 0, y: 0, z: 0},
+    // 	texturesPaths: ['./res/meshes/jamb/dice.png'],
+    // 	useUVShema4x2: true,
+    // 	name: 'CubePhysics3',
+    // 	mesh: m.cube,
+    // 	raycast: { enabled: true },
+    // 	physics: {
+    // 		enabled: true,
+    // 		geometry: "Cube"
+    // 	}
+    // })
+
+    // application.addMeshObj({
+    // 	position: {x: 3, y: 4, z: -10},
+    // 	rotation: {x: 0, y: 0, z: 0},
+    // 	rotationSpeed: {x: 0, y: 0, z: 0},
+    // 	texturesPaths: ['./res/meshes/jamb/dice.png'],
+    // 	useUVShema4x2: true,
+    // 	name: 'CubePhysics4',
+    // 	mesh: m.cube,
+    // 	raycast: { enabled: true },
+    // 	physics: {
+    // 		enabled: true,
+    // 		geometry: "Cube"
+    // 	}
+    // })
+
+    // application.addMeshObj({
+    // 	position: {x: -2, y: 4, z: -13},
+    // 	rotation: {x: 0, y: 0, z: 0},
+    // 	rotationSpeed: {x: 0, y: 0, z: 0},
+    // 	texturesPaths: ['./res/meshes/jamb/dice.png'],
+    // 	useUVShema4x2: true,
+    // 	name: 'CubePhysics5',
+    // 	mesh: m.cube,
+    // 	raycast: { enabled: true },
+    // 	physics: {
+    // 		enabled: true,
+    // 		geometry: "Cube"
+    // 	}
+    // })
+
+    // application.addMeshObj({
+    // 	position: {x: -4, y: 6, z: -9},
+    // 	rotation: {x: 0, y: 0, z: 0},
+    // 	rotationSpeed: {x: 0, y: 0, z: 0},
+    // 	texturesPaths: ['./res/meshes/jamb/dice.png'],
+    // 	useUVShema4x2: true,
+    // 	name: 'CubePhysics6',
+    // 	mesh: m.cube,
+    // 	raycast: { enabled: true },
+    // 	physics: {
+    // 		enabled: true,
+    // 		geometry: "Cube"
+    // 	}
+    // })
+
     application.TOLERANCE = 0;
     let allDiceDoneProcedure = () => {
       console.log("ALL DONE");
@@ -1271,7 +1440,9 @@ let application = exports.application = new _world.default({
         app.cameras.WASD.pitch = -1.26;
         app.cameras.WASD.position[2] = -18;
         app.cameras.WASD.position[1] = 19;
-        _jamb.dices.STATUS = "PLACE_RESULT";
+
+        // dices.STATUS = "PLACE_RESULT";
+        _jamb.dices.STATUS = "SELECT_DICES_1";
         // application.dices.STATUS = "FREE_TO_PLAY";
       }
     };
@@ -1359,7 +1530,7 @@ let application = exports.application = new _world.default({
 });
 window.app = application;
 
-},{"./examples/games/jamb/jamb.js":1,"./src/engine/loader-obj.js":7,"./src/engine/utils.js":11,"./src/sounds/sounds.js":18,"./src/world.js":19}],3:[function(require,module,exports){
+},{"./examples/games/jamb/jamb.js":1,"./src/engine/loader-obj.js":7,"./src/engine/raycast-test.js":11,"./src/engine/utils.js":12,"./src/sounds/sounds.js":19,"./src/world.js":20}],3:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -7113,7 +7284,7 @@ class MEBall {
 }
 exports.default = MEBall;
 
-},{"../shaders/shaders":15,"./engine":6,"./matrix-class":8,"wgpu-matrix":3}],5:[function(require,module,exports){
+},{"../shaders/shaders":16,"./engine":6,"./matrix-class":8,"wgpu-matrix":3}],5:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -7523,7 +7694,7 @@ class MECube {
 }
 exports.default = MECube;
 
-},{"../shaders/shaders":15,"./engine":6,"./matrix-class":8,"wgpu-matrix":3}],6:[function(require,module,exports){
+},{"../shaders/shaders":16,"./engine":6,"./matrix-class":8,"wgpu-matrix":3}],6:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -7981,7 +8152,7 @@ function createInputHandler(window, canvas) {
   };
 }
 
-},{"./utils":11,"wgpu-matrix":3}],7:[function(require,module,exports){
+},{"./utils":12,"wgpu-matrix":3}],7:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -8471,16 +8642,16 @@ class Position {
     if (typeof x == 'undefined') x = 0;
     if (typeof y == 'undefined') y = 0;
     if (typeof z == 'undefined') z = 0;
-    this.x = x;
-    this.y = y;
-    this.z = z;
+    this.x = parseFloat(x);
+    this.y = parseFloat(y);
+    this.z = parseFloat(z);
     this.velY = 0;
     this.velX = 0;
     this.velZ = 0;
     this.inMove = false;
-    this.targetX = x;
-    this.targetY = y;
-    this.targetZ = z;
+    this.targetX = parseFloat(x);
+    this.targetY = parseFloat(y);
+    this.targetZ = parseFloat(z);
     this.thrust = 0.01;
     return this;
   }
@@ -8493,36 +8664,36 @@ class Position {
   }
   translateByX(x) {
     this.inMove = true;
-    this.targetX = x;
+    this.targetX = parseFloat(x);
   }
   translateByY(y) {
     this.inMove = true;
-    this.targetY = y;
+    this.targetY = parseFloat(y);
   }
   translateByZ(z) {
     this.inMove = true;
-    this.targetZ = z;
+    this.targetZ = parseFloat(z);
   }
   translateByXY(x, y) {
     this.inMove = true;
-    this.targetX = x;
-    this.targetY = y;
+    this.targetX = parseFloat(x);
+    this.targetY = parseFloat(y);
   }
   translateByXZ(x, z) {
     this.inMove = true;
-    this.targetX = x;
-    this.targetZ = z;
+    this.targetX = parseFloat(x);
+    this.targetZ = parseFloat(z);
   }
   translateByYZ(y, z) {
     this.inMove = true;
-    this.targetY = y;
-    this.targetZ = z;
+    this.targetY = parseFloat(y);
+    this.targetZ = parseFloat(z);
   }
   onTargetPositionReach() {}
   update() {
-    var tx = this.targetX - this.x,
-      ty = this.targetY - this.y,
-      tz = this.targetZ - this.z,
+    var tx = parseFloat(this.targetX) - parseFloat(this.x),
+      ty = parseFloat(this.targetY) - parseFloat(this.y),
+      tz = parseFloat(this.targetZ) - parseFloat(this.z),
       dist = Math.sqrt(tx * tx + ty * ty + tz * tz);
     this.velX = tx / dist * this.thrust;
     this.velY = ty / dist * this.thrust;
@@ -8554,7 +8725,7 @@ class Position {
     }
   }
   get worldLocation() {
-    return [this.x, this.y, this.z];
+    return [parseFloat(this.x), parseFloat(this.y), parseFloat(this.z)];
   }
   SetX(newx, em) {
     this.x = newx;
@@ -8588,6 +8759,15 @@ class Position {
     //     netPos: {x: this.x, y: this.y, z: this.z},
     //     netObjId: this.nameUniq,
     //   });
+  }
+  get X() {
+    return parseFloat(this.x);
+  }
+  get Y() {
+    return parseFloat(this.y);
+  }
+  get Z() {
+    return parseFloat(this.z);
   }
   setPosition(newx, newy, newz) {
     this.x = newx;
@@ -8631,6 +8811,23 @@ class Rotation {
     // not in use good for exstend logic
     this.matrixRotation = null;
   }
+  toDegree() {
+    /*
+    heading = atan2(y * sin(angle)- x * z * (1 - cos(angle)) , 1 - (y2 + z2 ) * (1 - cos(angle)))
+    attitude = asin(x * y * (1 - cos(angle)) + z * sin(angle))
+    bank = atan2(x * sin(angle)-y * z * (1 - cos(angle)) , 1 - (x2 + z2) * (1 - cos(angle)))
+    */
+    return [(0, _utils.radToDeg)(this.axis.x), (0, _utils.radToDeg)(this.axis.y), (0, _utils.radToDeg)(this.axis.z)];
+  }
+  toDegreeX() {
+    return Math.cos((0, _utils.radToDeg)(this.axis.x) / 2);
+  }
+  toDegreeY() {
+    return Math.cos((0, _utils.radToDeg)(this.axis.z) / 2);
+  }
+  toDegreeZ() {
+    return Math.cos((0, _utils.radToDeg)(this.axis.y) / 2);
+  }
   getRotX() {
     if (this.rotationSpeed.x == 0) {
       return (0, _utils.degToRad)(this.x);
@@ -8658,7 +8855,7 @@ class Rotation {
 }
 exports.Rotation = Rotation;
 
-},{"./utils":11}],9:[function(require,module,exports){
+},{"./utils":12}],9:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -8672,9 +8869,17 @@ var _vertexShadow = require("../shaders/vertexShadow.wgsl");
 var _fragment = require("../shaders/fragment.wgsl");
 var _vertex = require("../shaders/vertex.wgsl");
 var _utils = require("./utils");
+var _raycastTest = require("./raycast-test");
 class MEMeshObj {
   constructor(canvas, device, context, o) {
     if (typeof o.name === 'undefined') o.name = (0, _utils.genName)(9);
+    if (typeof o.raycast === 'undefined') {
+      this.raycast = {
+        enabled: false
+      };
+    } else {
+      this.raycast = o.raycast;
+    }
     this.name = o.name;
     this.done = false;
     this.device = device;
@@ -8691,6 +8896,13 @@ class MEMeshObj {
       type: o.mainCameraParams.type,
       responseCoef: o.mainCameraParams.responseCoef
     };
+
+    // test raycast
+    // fullscreen for now
+    window.addEventListener('mousedown', e => {
+      (0, _raycastTest.checkingProcedure)(e);
+    });
+    _raycastTest.touchCoordinate.enabled = true;
     this.lastFrameMS = 0;
     this.texturesPaths = [];
     o.texturesPaths.forEach(t => {
@@ -9031,6 +9243,8 @@ class MEMeshObj {
       // The camera/light aren't moving, so write them into buffers now.
       {
         const lightMatrixData = this.lightViewProjMatrix; // as Float32Array;
+
+        console.log('TTTTTT ', this.device.createRayTracingAccelerationContainer);
         this.device.queue.writeBuffer(this.sceneUniformBuffer, 0, lightMatrixData.buffer, lightMatrixData.byteOffset, lightMatrixData.byteLength);
         const lightData = this.lightPosition;
         this.device.queue.writeBuffer(this.sceneUniformBuffer, 128, lightData.buffer, lightData.byteOffset, lightData.byteLength);
@@ -9126,6 +9340,12 @@ class MEMeshObj {
     renderPass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
     renderPass.setIndexBuffer(this.indexBuffer, 'uint16');
     renderPass.drawIndexed(this.indexCount);
+
+    // test ray
+
+    // try{
+    if (this.raycast.enabled == true) (0, _raycastTest.checkingRay)(this);
+    // } catch(e) {}
   };
   drawShadows = shadowPass => {
     shadowPass.setBindGroup(0, this.sceneBindGroupForShadow);
@@ -9139,7 +9359,7 @@ class MEMeshObj {
 }
 exports.default = MEMeshObj;
 
-},{"../shaders/fragment.wgsl":14,"../shaders/vertex.wgsl":16,"../shaders/vertexShadow.wgsl":17,"./engine":6,"./matrix-class":8,"./utils":11,"wgpu-matrix":3}],10:[function(require,module,exports){
+},{"../shaders/fragment.wgsl":15,"../shaders/vertex.wgsl":17,"../shaders/vertexShadow.wgsl":18,"./engine":6,"./matrix-class":8,"./raycast-test":11,"./utils":12,"wgpu-matrix":3}],10:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -9537,7 +9757,357 @@ class MEMesh {
 }
 exports.default = MEMesh;
 
-},{"../shaders/fragment.wgsl":14,"../shaders/vertex.wgsl":16,"../shaders/vertexShadow.wgsl":17,"./engine":6,"./loader-obj":7,"./matrix-class":8,"wgpu-matrix":3}],11:[function(require,module,exports){
+},{"../shaders/fragment.wgsl":15,"../shaders/vertex.wgsl":17,"../shaders/vertexShadow.wgsl":18,"./engine":6,"./loader-obj":7,"./matrix-class":8,"wgpu-matrix":3}],11:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.checkingProcedure = checkingProcedure;
+exports.checkingRay = checkingRay;
+exports.rayIntersectsTriangle = rayIntersectsTriangle;
+exports.rotate2dPlot = rotate2dPlot;
+exports.touchCoordinate = void 0;
+exports.unproject = unproject;
+var _wgpuMatrix = require("wgpu-matrix");
+/**
+ * @author Nikola Lukic
+ * @email zlatnaspirala@gmail.com
+ * @site https://maximumroulette.com
+ * @Licence GPL v3
+ * Inspired with original code from:
+ * https://github.com/Necolo/raycaster
+ * 
+ * @Note matrix-engine-wgpu adaptation test
+ * WIP
+ * 
+ * default for now:
+ * app.cameras['WASD']
+ */
+
+let rayHitEvent;
+let touchCoordinate = exports.touchCoordinate = {
+  enabled: false,
+  x: 0,
+  y: 0,
+  stopOnFirstDetectedHit: false
+};
+
+/**
+ * @description 
+ * Ray triangle intersection algorithm.
+ * @param rayOrigin ray origin point
+ * @param rayVector ray direction
+ * @param triangle three points of triangle, should be ccw order
+ * @param out the intersection point
+ * @return intersects or not
+ * Uses Möller–Trumbore intersection algorithm
+ */
+function rayIntersectsTriangle(rayOrigin,
+// vec3,
+rayVector,
+// vec3,
+triangle,
+// vec3[],
+out,
+// vec3,
+objPos) {
+  if (app.cameras.WASD.position_[2] < objPos.Z) {
+    rayOrigin[2] = app.cameras.WASD.position_[2] - parseFloat(objPos.Z);
+  } else {
+    rayOrigin[2] = app.cameras.WASD.position_[2] + -parseFloat(objPos.Z);
+  }
+  rayOrigin[0] = app.cameras.WASD.position_[0];
+  rayOrigin[1] = app.cameras.WASD.position_[1];
+
+  // const EPSILON = 0.0000001;
+  const EPSILON = 0.000001;
+  const [v0, v1, v2] = triangle;
+  const edge1 = _wgpuMatrix.vec3.create();
+  const edge2 = _wgpuMatrix.vec3.create();
+  const h = _wgpuMatrix.vec3.create();
+
+  // vec3.sub(edge1, v1, v0);
+  // vec3.sub(edge2, v2, v0);
+  _wgpuMatrix.vec3.sub(v1, v0, edge1);
+  _wgpuMatrix.vec3.sub(v2, v0, edge2);
+  if (rayVector[0] > 0) {
+    // console.log('ray vector ', rayVector)
+  }
+
+  /**
+   * (static) cross(out, a, b) → {vec3}
+  	Computes the cross product of two vec3's
+  	Parameters:
+  	Name	Type	Description
+  	out	vec3	the receiving vector
+  	a	ReadonlyVec3	the first operand
+  	b	ReadonlyVec3	the second operand
+   */
+  // vec3.cross(h, rayVector, edge2);
+  _wgpuMatrix.vec3.cross(rayVector, edge2, h);
+  const a = _wgpuMatrix.vec3.dot(edge1, h);
+  if (a > -EPSILON && a < EPSILON) {
+    return false;
+  }
+  const s = _wgpuMatrix.vec3.create();
+  // glmatrix  out , v , v 
+  // ori gmatrix   vec3.sub(s, rayOrigin, v0);
+  _wgpuMatrix.vec3.sub(rayOrigin, v0, s);
+  const u = _wgpuMatrix.vec3.dot(s, h);
+  // const uTest = vec3.dot(h, s);
+  // console.log('TEST u = ', u , '  uTest , ', uTest)
+
+  if (u < 0 || u > a) {
+    return false;
+  }
+  const q = _wgpuMatrix.vec3.create();
+
+  // ori vec3.cross(q, s, edge1);
+  _wgpuMatrix.vec3.cross(s, edge1, q);
+  const v = _wgpuMatrix.vec3.dot(rayVector, q);
+  if (v < 0 || u + v > a) {
+    return false;
+  }
+  const t = _wgpuMatrix.vec3.dot(edge2, q) / a;
+  if (t > EPSILON) {
+    if (out) {
+      // ori vec3.add(out, rayOrigin, [rayVector[0] * t, rayVector[1] * t, rayVector[2] * t]);
+      _wgpuMatrix.vec3.add(rayOrigin, [rayVector[0] * t, rayVector[1] * t, rayVector[2] * t], out);
+    }
+    return true;
+  }
+  return false;
+}
+
+/**
+ * @description
+ * Unproject a 2D point into a 3D world.
+ * @param screenCoord [screenX, screenY]
+ * @param viewport [left, top, width, height]
+ * @param invProjection invert projection matrix
+ * @param invView invert view matrix
+ * @return 3D point position
+ */
+function unproject(screenCoord,
+// [number, number]
+viewport,
+// [number, number, number, number]
+invProjection,
+// mat4
+invView) {
+  // return vec3
+  const [left, top, width, height] = viewport;
+  const [x, y] = screenCoord;
+  // console.log("test out x=", x)
+  // console.log("test out y=", y)
+  const out = _wgpuMatrix.vec4.fromValues(2 * x / width - 1 - left, 2 * (height - y - 1) / height - 1, 1, 1);
+  // console.log("1 out =", out)
+
+  // ori glmatrix
+  //   vec4.transformMat4(out, out, invProjection);
+  _wgpuMatrix.vec4.transformMat4(out, invProjection, out);
+
+  // console.log("2 out =", out)
+  out[3] = 0;
+  _wgpuMatrix.vec4.transformMat4(out, invView, out);
+  // console.log("3 out x=", out[1], ' y=', out[2])
+  return _wgpuMatrix.vec3.normalize(out, _wgpuMatrix.vec3.create());
+}
+
+/**
+ * @description 
+ * Fix local rotation raycast bug test.
+ */
+function rotate2dPlot(cx, cy, x, y, angle) {
+  var radians = Math.PI / 180 * -angle,
+    cos = Math.cos(radians),
+    sin = Math.sin(radians),
+    nx = cos * (x - cx) + sin * (y - cy) + cx,
+    ny = cos * (y - cy) - sin * (x - cx) + cy;
+  return [nx, ny];
+}
+function checkingProcedure(ev, customArg) {
+  let {
+    clientX,
+    clientY,
+    screenX,
+    screenY
+  } = ev;
+  if (typeof customArg !== 'undefined') {
+    clientX = customArg.clientX;
+    clientY = customArg.clientY;
+  }
+  touchCoordinate.x = clientX;
+  touchCoordinate.y = clientY;
+  if (typeof ev.target.width != 'undefined') touchCoordinate.w = ev.target.width;
+  if (typeof ev.target.height != 'undefined') touchCoordinate.h = ev.target.height;
+  touchCoordinate.enabled = true;
+}
+function checkingRay(object) {
+  try {
+    if (object.raycast.enabled == false || touchCoordinate.enabled == false) return;
+    touchCoordinate.enabled = false;
+    // modelViewProjectionMatrix
+    // let mvMatrix = [...object.modelViewProjectionMatrix];
+    let ray;
+    let outp = _wgpuMatrix.mat4.create();
+    let outv = _wgpuMatrix.mat4.create();
+    let myRayOrigin = _wgpuMatrix.vec3.fromValues(app.cameras.WASD.position_[0], app.cameras.WASD.position_[1], app.cameras.WASD.position_[2]);
+    if (app.cameras.WASD.position_[2] < object.position.z) {
+      myRayOrigin = _wgpuMatrix.vec3.fromValues(app.cameras.WASD.position_[0], app.cameras.WASD.position_[1], -app.cameras.WASD.position_[2]);
+    }
+
+    // NOT WORK TEST 1
+    // let projectionMatrix = new Float32Array([...object.projectionMatrix])
+    // let modelViewProjectionMatrix = new Float32Array([...object.modelViewProjectionMatrix])
+
+    // // TEST 2
+    let projectionMatrix = new Float32Array([...object.modelViewProjectionMatrix]);
+    let modelViewProjectionMatrix = new Float32Array([...object.viewMatrix]);
+
+    // let projectionMatrix = new Float32Array([...object.projectionMatrix])
+    // let modelViewProjectionMatrix = new Float32Array([...object.viewMatrix])
+    // modelViewProjectionMatrix   viewMatrix
+
+    // ori world.pMatrix ?!
+    // object.projectionMatrix
+    var TEST1 = _wgpuMatrix.mat4.inverse(modelViewProjectionMatrix);
+    var TEST2 = _wgpuMatrix.mat4.inverse(projectionMatrix);
+
+    // console.log("test ############ ====>  ", touchCoordinate.w)
+    // ray = unproject([touchCoordinate.x, touchCoordinate.y], [0, 0, touchCoordinate.w, touchCoordinate.h], mat4.invert(outp, projectionMatrix), mat4.invert(outv, modelViewProjectionMatrix));
+    ray = unproject([touchCoordinate.x, touchCoordinate.y], [0, 0, touchCoordinate.w, touchCoordinate.h], TEST2, TEST1);
+
+    // console.log("ray ====>  ", ray)
+
+    if (ray[0] > 0) {
+      // console.log('ray >', ray)
+    }
+    // return;
+    const intersectionPoint = _wgpuMatrix.vec3.create();
+    object.raycastFace = [];
+    for (var f = 0; f < object.mesh.indices.length; f = f + 3) {
+      // ori 
+      var a = object.mesh.indices[f];
+      var b = object.mesh.indices[f + 1];
+      var c = object.mesh.indices[f + 2];
+      // var b = object.mesh.indices[f];
+      // var c = object.mesh.indices[f + 1];
+      // var a = object.mesh.indices[f + 2];
+
+      let triangle = null;
+      const triangleInZero = [[object.mesh.vertices[0 + a * 3], object.mesh.vertices[1 + a * 3], object.mesh.vertices[2 + a * 3]], [object.mesh.vertices[0 + b * 3], object.mesh.vertices[1 + b * 3], object.mesh.vertices[2 + b * 3]], [object.mesh.vertices[0 + c * 3], object.mesh.vertices[1 + c * 3], object.mesh.vertices[2 + c * 3]]];
+      triangle = [[triangleInZero[0][0] + object.position.worldLocation[0], triangleInZero[0][1] + object.position.worldLocation[1], triangleInZero[0][2] + object.position.worldLocation[2]], [triangleInZero[1][0] + object.position.worldLocation[0], triangleInZero[1][1] + object.position.worldLocation[1], triangleInZero[1][2] + object.position.worldLocation[2]], [triangleInZero[2][0] + object.position.worldLocation[0], triangleInZero[2][1] + object.position.worldLocation[1], triangleInZero[2][2] + object.position.worldLocation[2]]];
+      var rez0, rez1, rez2;
+      if (object.rotation.toDegreeX() != 0) {
+        rez0 = rotate2dPlot(0, 0, triangleInZero[0][1], triangleInZero[0][2], object.rotation.toDegreeX());
+        rez1 = rotate2dPlot(0, 0, triangleInZero[1][1], triangleInZero[1][2], object.rotation.toDegreeX());
+        rez2 = rotate2dPlot(0, 0, triangleInZero[2][1], triangleInZero[2][2], object.rotation.toDegreeX());
+        triangle = [[triangleInZero[0][0] + object.position.worldLocation[0], rez0[0] + object.position.worldLocation[1], rez0[1]], [triangleInZero[1][0] + object.position.worldLocation[0], rez1[0] + object.position.worldLocation[1], rez1[1]], [triangleInZero[2][0] + object.position.worldLocation[0], rez2[0] + object.position.worldLocation[1], rez2[1]]];
+      }
+      // y z changed - rez0[1] is z
+      if (object.rotation.toDegreeY() != 0) {
+        if (object.rotation.toDegreeX() != 0) {
+          // Y i Z
+          // get y
+          rez0 = rotate2dPlot(0, 0, triangleInZero[0][1], triangleInZero[0][2], object.rotation.toDegreeX() - 90);
+          rez1 = rotate2dPlot(0, 0, triangleInZero[1][1], triangleInZero[1][2], object.rotation.toDegreeX() - 90);
+          rez2 = rotate2dPlot(0, 0, triangleInZero[2][1], triangleInZero[2][2], object.rotation.toDegreeX() - 90);
+          const detY0 = rez0[0];
+          const detY1 = rez1[0];
+          const detY2 = rez2[0];
+          const detZ0 = rez0[1];
+          const detZ1 = rez1[1];
+          const detZ2 = rez2[1];
+
+          //                          X INITIAL             Z
+          rez0 = rotate2dPlot(0, 0, triangleInZero[0][0], detZ0, object.rotation.toDegreeY() - 90);
+          rez1 = rotate2dPlot(0, 0, triangleInZero[1][0], detZ1, object.rotation.toDegreeY() - 90);
+          rez2 = rotate2dPlot(0, 0, triangleInZero[2][0], detZ2, object.rotation.toDegreeY() - 90);
+          const detZ00 = rez0[1];
+          const detZ11 = rez1[1];
+          const detZ22 = rez2[1];
+          rez0 = rotate2dPlot(0, 0, rez0[0], detY0, object.rotation.toDegreeZ() - 90);
+          rez1 = rotate2dPlot(0, 0, rez1[0], detY1, object.rotation.toDegreeZ() - 90);
+          rez2 = rotate2dPlot(0, 0, rez2[0], detY2, object.rotation.toDegreeZ() - 90);
+          triangle = [[rez0[0] + object.position.worldLocation[0], rez0[1] + object.position.worldLocation[1], detZ00], [rez1[0] + object.position.worldLocation[0], rez1[1] + object.position.worldLocation[1], detZ11], [rez2[0] + object.position.worldLocation[0], rez2[1] + object.position.worldLocation[1], detZ22]];
+        } else if (object.rotation.rz == 0) {
+          rez0 = rotate2dPlot(0, 0, triangleInZero[0][0], triangleInZero[0][2], -object.rotation.toDegreeY());
+          rez1 = rotate2dPlot(0, 0, triangleInZero[1][0], triangleInZero[1][2], -object.rotation.toDegreeY());
+          rez2 = rotate2dPlot(0, 0, triangleInZero[2][0], triangleInZero[2][2], -object.rotation.toDegreeY());
+          triangle = [[rez0[0] + object.position.worldLocation[0], triangleInZero[0][1] + object.position.worldLocation[1], rez0[1]], [rez1[0] + object.position.worldLocation[0], triangleInZero[1][1] + object.position.worldLocation[1], rez1[1]], [rez2[0] + object.position.worldLocation[0], triangleInZero[2][1] + object.position.worldLocation[1], rez2[1]]];
+        }
+      }
+      if (object.rotation.toDegreeZ() != 0) {
+        if (object.rotation.toDegreeY() != 0) {
+          if (object.rotation.toDegreeX() == 180) {
+            rez0 = rotate2dPlot(0, 0, triangleInZero[0][0], triangleInZero[0][2], object.rotation.toDegreeY());
+            rez1 = rotate2dPlot(0, 0, triangleInZero[1][0], triangleInZero[1][2], object.rotation.toDegreeY());
+            rez2 = rotate2dPlot(0, 0, triangleInZero[2][0], triangleInZero[2][2], object.rotation.toDegreeY());
+            let detZ00 = rez0[1];
+            let detZ11 = rez1[1];
+            let detZ22 = rez2[1];
+            rez0 = rotate2dPlot(0, 0, rez0[0], triangleInZero[0][1], object.rotation.toDegreeZ());
+            rez1 = rotate2dPlot(0, 0, rez1[0], triangleInZero[1][1], object.rotation.toDegreeZ());
+            rez2 = rotate2dPlot(0, 0, rez2[0], triangleInZero[2][1], object.rotation.toDegreeZ());
+            const detZ0 = rez0[1];
+            const detZ1 = rez1[1];
+            const detZ2 = rez2[1];
+            // rez0 = rotate2dPlot(0, 0,rez0[0], detZ00, object.rotation.rx - 180);
+            // rez1 = rotate2dPlot(0, 0,rez0[0], detZ11, object.rotation.rx - 180);
+            // rez2 = rotate2dPlot(0, 0, rez0[0], detZ22, object.rotation.rx - 180);
+            // detZ00 = rez0[1];
+            // detZ11 = rez1[1];
+            // detZ22 = rez2[1];
+            triangle = [[rez0[0] + object.position.worldLocation[0], detZ0 + object.position.worldLocation[1], detZ00], [rez1[0] + object.position.worldLocation[0], detZ1 + object.position.worldLocation[1], detZ11], [rez2[0] + object.position.worldLocation[0], detZ2 + object.position.worldLocation[1], detZ22]];
+          } else {
+            // console.info(`unhandled ray cast triangle = ${triangle}`);
+          }
+        } else {
+          if (object.rotation.toDegreeX() == 0) {
+            rez0 = rotate2dPlot(0, +0, triangleInZero[0][0], triangleInZero[0][1], object.rotation.toDegreeZ());
+            rez1 = rotate2dPlot(0, 0, triangleInZero[1][0], triangleInZero[1][1], object.rotation.toDegreeZ());
+            rez2 = rotate2dPlot(0, 0, triangleInZero[2][0], triangleInZero[2][1], object.rotation.toDegreeZ());
+            triangle = [[rez0[0] + object.position.worldLocation[0], rez0[1] + object.position.worldLocation[1], triangleInZero[0][2]], [rez1[0] + object.position.worldLocation[0], rez1[1] + object.position.worldLocation[1], triangleInZero[1][2]], [rez2[0] + object.position.worldLocation[0], rez2[1] + object.position.worldLocation[1], triangleInZero[2][2]]];
+          } else {
+            // var test;
+            // console.info('must be handled rz vs rx');
+          }
+        }
+      }
+
+      // no rot
+      if (object.rotation.toDegreeX() == 0 && object.rotation.toDegreeY() == 0 && object.rotation.toDegreeZ() == 0) {
+        triangle = [[triangleInZero[0][0] + object.position.worldLocation[0], triangleInZero[0][1] + object.position.worldLocation[1], triangleInZero[0][2]], [triangleInZero[1][0] + object.position.worldLocation[0], triangleInZero[1][1] + object.position.worldLocation[1], triangleInZero[1][2]], [triangleInZero[2][0] + object.position.worldLocation[0], triangleInZero[2][1] + object.position.worldLocation[1], triangleInZero[2][2]]];
+      }
+      object.raycastFace.push(triangle);
+      if (rayIntersectsTriangle(myRayOrigin, ray, triangle, intersectionPoint, object.position)) {
+        rayHitEvent = new CustomEvent('ray.hit.event', {
+          detail: {
+            touchCoordinate: {
+              x: touchCoordinate.x,
+              y: touchCoordinate.y
+            },
+            hitObject: object,
+            intersectionPoint: intersectionPoint,
+            ray: ray,
+            rayOrigin: myRayOrigin
+          }
+        });
+        dispatchEvent(rayHitEvent);
+        if (touchCoordinate.enabled == true && touchCoordinate.stopOnFirstDetectedHit == true) {
+          touchCoordinate.enabled = false;
+        }
+        // console.info('raycast hits for Object: ' + object.name + '  -> face[/3]  : ' + f + ' -> intersectionPoint: ' + intersectionPoint);
+      }
+    }
+  } catch (err) {
+    console.log(err);
+  }
+}
+
+},{"wgpu-matrix":3}],12:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -10276,7 +10846,7 @@ let mb = exports.mb = {
   }
 };
 
-},{}],12:[function(require,module,exports){
+},{}],13:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -10315,7 +10885,7 @@ class MultiLang {
 }
 exports.MultiLang = MultiLang;
 
-},{}],13:[function(require,module,exports){
+},{}],14:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -10587,7 +11157,7 @@ class MatrixAmmo {
 }
 exports.default = MatrixAmmo;
 
-},{"../engine/utils":11}],14:[function(require,module,exports){
+},{"../engine/utils":12}],15:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -10645,7 +11215,7 @@ fn main(input : FragmentInput) -> @location(0) vec4f {
   // return vec4(textureColor.rgb , 0.5);
 }`;
 
-},{}],15:[function(require,module,exports){
+},{}],16:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -10703,7 +11273,7 @@ fn fragmentMain(input: VertexOutput) -> @location(0) vec4f {
   return vec4f(textureColor.rgb * lightColor, textureColor.a);
 }`;
 
-},{}],16:[function(require,module,exports){
+},{}],17:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -10760,7 +11330,7 @@ fn main(
 }
 `;
 
-},{}],17:[function(require,module,exports){
+},{}],18:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -10788,7 +11358,7 @@ fn main(
 }
 `;
 
-},{}],18:[function(require,module,exports){
+},{}],19:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -10838,7 +11408,7 @@ class MatrixSounds {
 }
 exports.MatrixSounds = MatrixSounds;
 
-},{}],19:[function(require,module,exports){
+},{}],20:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -10940,7 +11510,13 @@ class MatrixEngineWGPU {
   }) => {
     this.canvas = canvas;
     this.adapter = await navigator.gpu.requestAdapter();
-    this.device = await this.adapter.requestDevice();
+    this.device = await this.adapter.requestDevice({
+      extensions: ["ray_tracing"]
+    });
+    const adapterInfo = await this.adapter.requestAdapterInfo();
+    console.log(adapterInfo.vendor);
+    console.log(adapterInfo.architecture);
+    console.log("FEATURES : " + this.adapter.features);
     this.context = canvas.getContext('webgpu');
     const devicePixelRatio = window.devicePixelRatio;
     canvas.width = canvas.clientWidth * devicePixelRatio;
@@ -11164,6 +11740,11 @@ class MatrixEngineWGPU {
     if (typeof o.scale === 'undefined') {
       o.scale = [1, 1, 1];
     }
+    if (typeof o.raycast === 'undefined') {
+      o.raycast = {
+        enabled: false
+      };
+    }
     o.entityArgPass = this.entityArgPass;
     o.cameras = this.cameras;
     // if(typeof o.name === 'undefined') {o.name = 'random' + Math.random();}
@@ -11203,6 +11784,7 @@ class MatrixEngineWGPU {
     if (typeof o.physics.rotation === 'undefined') {
       o.physics.rotation = o.rotation;
     }
+
     // send same pos
     o.physics.position = o.position;
     //  console.log('Mesh procedure', o)
@@ -11280,4 +11862,4 @@ class MatrixEngineWGPU {
 }
 exports.default = MatrixEngineWGPU;
 
-},{"./engine/ball.js":4,"./engine/cube.js":5,"./engine/engine.js":6,"./engine/mesh-obj.js":9,"./engine/mesh.js":10,"./engine/utils.js":11,"./multilang/lang.js":12,"./physics/matrix-ammo.js":13,"./sounds/sounds.js":18,"wgpu-matrix":3}]},{},[2]);
+},{"./engine/ball.js":4,"./engine/cube.js":5,"./engine/engine.js":6,"./engine/mesh-obj.js":9,"./engine/mesh.js":10,"./engine/utils.js":12,"./multilang/lang.js":13,"./physics/matrix-ammo.js":14,"./sounds/sounds.js":19,"wgpu-matrix":3}]},{},[2]);

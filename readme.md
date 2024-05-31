@@ -204,6 +204,14 @@ Bundle compiler: `watchify`
   https://maximumroulette.com/apps/megpu/empty.js
   You can build your own with `npm run build-empty`.
 
+- codesandbox.io implemetation done.
+  https://codesandbox.io/p/github/zlatnaspirala/matrix-engine-wgpu/main?file=%2Fpackage.json%3A14%2C16
+
+
+	Place for learn : 
+	https://maierfelix.github.io/2020-01-13-webgpu-ray-tracing/
+	
+
 ## LICENCE
 
 ### Note:

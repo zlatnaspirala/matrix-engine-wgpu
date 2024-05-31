@@ -5,6 +5,8 @@ import {LOG_FUNNY, LOG_INFO, LOG_MATRIX, byId, mb} from "../../../src/engine/uti
 export let dices = {
   C: 0,
   STATUS: 'FREE_TO_PLAY',
+  STATUS_H2: 'WAIT',
+  STATUS_H3: 'WAIT',
   R: {},
   checkAll: function() {
     this.C++;
@@ -20,7 +22,7 @@ export let dices = {
   },
   validatePass: function() {
     if(dices.STATUS == "IN_PLAY" || dices.STATUS == "FREE_TO_PLAY") {
-      console.log('%cBLOCK', LOG_FUNNY)
+      // console.log('%cBLOCK', LOG_FUNNY)
       if(dices.STATUS == "IN_PLAY") mb.error(`STATUS IS ${dices.STATUS}, please wait for results...`);
       if(dices.STATUS == "FREE_TO_PLAY") mb.error(`STATUS IS ${dices.STATUS}, you need to roll dice first.`);
       app.matrixSounds.play('block')
@@ -433,7 +435,7 @@ export let myDom = {
         this.state.rowDown.push((count23456 * parseInt(getName)))
         e.target.innerHTML = (count23456 * parseInt(getName));
         if(parseInt(getName) == 6) {
-          myDom.calcDownNumbers()
+          myDom.calcFreeNumbers()
         }
         dices.STATUS = "FREE_TO_PLAY";
         dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}))
@@ -443,7 +445,6 @@ export let myDom = {
 
     var rowNumberSum = document.createElement('div')
     rowNumberSum.id = 'free-rowNumberSum';
-
     rowNumberSum.style.width = 'auto';
     rowNumberSum.style.background = '#7d7d7d8c';
     rowNumberSum.innerHTML = `-`;
@@ -454,13 +455,15 @@ export let myDom = {
     rowMax.style.width = 'auto';
     rowMax.style.background = '#7d7d7d8c';
     rowMax.innerHTML = `-`;
+    rowMax.addEventListener("click", this.calcFreeRowMax);
     myRoot.appendChild(rowMax);
 
     var rowMin = document.createElement('div')
-    rowMin.id = 'free-rowMax';
+    rowMin.id = 'free-rowMin';
     rowMin.style.width = 'auto';
     rowMin.style.background = '#7d7d7d8c';
     rowMin.innerHTML = `-`;
+    rowMin.addEventListener('click', this.calcFreeRowMin);
     myRoot.appendChild(rowMin);
 
     var rowMaxMinSum = document.createElement('div')
@@ -475,6 +478,7 @@ export let myDom = {
     largeStraight.style.width = 'auto';
     largeStraight.style.background = '#7d7d7d8c';
     largeStraight.innerHTML = `-`;
+    largeStraight.addEventListener('click', this.attachFreeKenta);
     myRoot.appendChild(largeStraight);
 
     var threeOfAKind = document.createElement('div')
@@ -482,6 +486,7 @@ export let myDom = {
     threeOfAKind.style.width = 'auto';
     threeOfAKind.style.background = '#7d7d7d8c';
     threeOfAKind.innerHTML = `-`;
+    threeOfAKind.addEventListener('click', this.attachFreeTrilling)
     myRoot.appendChild(threeOfAKind);
 
     var fullHouse = document.createElement('div')
@@ -489,6 +494,7 @@ export let myDom = {
     fullHouse.style.width = 'auto';
     fullHouse.style.background = '#7d7d7d8c';
     fullHouse.innerHTML = `-`;
+    fullHouse.addEventListener('click', this.attachFreeFullHouse)
     myRoot.appendChild(fullHouse);
 
     var poker = document.createElement('div')
@@ -496,6 +502,7 @@ export let myDom = {
     poker.style.width = 'auto';
     poker.style.background = '#7d7d7d8c';
     poker.innerHTML = `-`;
+    poker.addEventListener('click', this.attachFreePoker)
     myRoot.appendChild(poker);
 
     var jamb = document.createElement('div')
@@ -503,6 +510,7 @@ export let myDom = {
     jamb.style.width = 'auto';
     jamb.style.background = '#7d7d7d8c';
     jamb.innerHTML = `-`;
+    jamb.addEventListener('click', this.attachFreeJamb)
     myRoot.appendChild(jamb);
 
     var rowSum = document.createElement('div')
@@ -511,8 +519,6 @@ export let myDom = {
     rowSum.style.background = '#7d7d7d8c';
     rowSum.innerHTML = `-`;
     myRoot.appendChild(rowSum);
-
-
   },
 
   createRowDown: function(myRoot) {
@@ -684,6 +690,209 @@ export let myDom = {
     dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}))
     this.rowMax.addEventListener("click", this.calcDownRowMax)
   },
+
+  // free row start
+
+  calcFreeNumbers: function() {
+    var s = 0;
+    this.state.rowDown.forEach((i) => {
+      console.log(parseFloat(i))
+      s += parseFloat(i)
+    })
+    byId('free-rowNumberSum').style.background = 'rgb(113 0 0 / 55%)';
+    byId('free-rowNumberSum').innerHTML = s;
+    // console.log('this.rowMax also set free to plat status', this.rowMax)
+    dices.STATUS = "FREE_TO_PLAY";
+    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}))
+    byId('free-rowMax').addEventListener("click", this.calc)
+  },
+
+  calcFreeRowMax: (e) => {
+    if(dices.validatePass() == false) return;
+    var test = 0;
+    let keyLessNum = Object.keys(dices.R).reduce((key, v) => dices.R[v] < dices.R[key] ? v : key);
+    for(var key in dices.R) {
+      if(key != keyLessNum) {
+        test += parseFloat(dices.R[key]);
+      }
+    }
+    e.target.innerHTML = test;
+    // now attach next event.
+    dices.STATUS = "FREE_TO_PLAY";
+    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
+    byId('free-rowMax').removeEventListener("click", this.calcFreeRowMax);
+  },
+
+  calcFreeRowMin: () => {
+    if(dices.validatePass() == false) return;
+    var maxTestKey = Object.keys(dices.R).reduce(function(a, b) {return dices.R[a] > dices.R[b] ? a : b});
+    var test = 0;
+    for(var key in dices.R) {
+      if(key != maxTestKey) {
+        test += parseFloat(dices.R[key])
+      } else {
+        console.log('not calc dice ', dices.R[key])
+      }
+    }
+    byId('free-rowMin').innerHTML = test;
+    byId('free-rowMin').removeEventListener('click', this.calcFreeRowMin);
+    // calc max min dont forget rules for bonus +30
+    var SUMMINMAX = parseFloat(byId('free-rowMax').innerHTML) - parseFloat(byId('free-rowMin').innerHTML)
+    byId('free-rowMaxMinSum').innerHTML = SUMMINMAX;
+    myDom.incrasePoints(SUMMINMAX);
+    dices.STATUS = "FREE_TO_PLAY";
+    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}))
+  },
+
+  attachFreeKenta: function() {
+    if(dices.validatePass() == false) return;
+
+    console.log('Test free kenta :', dices.R)
+    var result = app.myDom.checkForDuplicate()[0];
+    var testArray = app.myDom.checkForDuplicate()[1];
+    console.log('TEST duplik: ' + result);
+    if(result.length == 2) {
+      console.log('TEST duplik less 3 : ' + result);
+      var locPrevent = false;
+      testArray.forEach((item, index, array) => {
+        if(result[0].value == item.value && locPrevent == false) {
+          console.log('detect by value item.value', item.value)
+          locPrevent = true;
+          array.splice(index, 1);
+        }
+      })
+      // if we catch  1 and 6 in same stack then it is not possible for kenta...
+      var test1 = false, test6 = false;
+      testArray.forEach((item, index, array) => {
+        if(item.value == 1) {
+          test1 = true;
+        } else if(item.value == 6) {
+          test6 = true;
+        }
+      })
+      if(test1 == true && test6 == true) {
+        byId('free-largeStraight').innerHTML = `0`;
+      } else if(test1 == true) {
+        byId('free-largeStraight').innerHTML = 15 + 50;
+        myDom.incrasePoints(15 + 50);
+      } else if(test6 == true) {
+        byId('free-largeStraight').innerHTML = 20 + 50;
+        myDom.incrasePoints(20 + 50);
+      }
+    } else if(result < 2) {
+      byId('free-largeStraight').innerHTML = 66;
+      myDom.incrasePoints(66);
+    } else {
+      // zero value
+      byId('free-largeStraight').innerHTML = `0`;
+    }
+    byId('free-largeStraight').removeEventListener('click', this.attachFreeKenta)
+    dices.STATUS = "FREE_TO_PLAY";
+    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}))
+  },
+
+  attachFreeTrilling: function() {
+    if(dices.validatePass() == false) return;
+
+    var result = app.myDom.checkForDuplicate()[0];
+    // var testArray = app.myDom.checkForDuplicate()[1];
+    // console.log('DUPLICATE FOR TRILING ', result);
+    if(result.length > 2) {
+      var testWin = 0;
+      var TEST = app.myDom.checkForAllDuplicate();
+      console.log('DUPLICATE FOR TRILING TEST ', TEST);
+      for(var key in TEST) {
+        if(TEST[key] > 2) {
+          // win
+          var getDiceID = parseInt(key.replace('value__', ''))
+          testWin = getDiceID * 3;
+        }
+      }
+      console.log('DUPLICATE FOR TRILING 30 + TEST ', testWin);
+      if(testWin > 0) {
+        byId('free-threeOfAKind').innerHTML = 20 + testWin;
+        myDom.incrasePoints(20 + testWin);
+      }
+    } else {
+      byId('free-threeOfAKind').innerHTML = 0;
+    }
+    byId('free-threeOfAKind').removeEventListener('click', this.attachFreeTrilling)
+    dices.STATUS = "FREE_TO_PLAY";
+    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}))
+  },
+
+  attachFreeFullHouse: function() {
+
+    if(dices.validatePass() == false) return;
+
+    var TEST = app.myDom.checkForAllDuplicate();
+    // console.log('DUPLICATE FOR FULL HOUSE 30 + TEST ');
+    var win = 0;
+    var testPair = false;
+    var testTrilling = false;
+    var testWinPair = 0;
+    var testWinTrilling = 0;
+    for(var key in TEST) {
+      if(TEST[key] == 2) {
+        // win
+        var getDiceID = parseInt(key.replace('value__', ''))
+        testWinPair = getDiceID * 2;
+        testPair = true;
+      } else if(TEST[key] == 3) {
+        var getDiceID = parseInt(key.replace('value__', ''))
+        testWinTrilling = getDiceID * 3;
+        testTrilling = true;
+      }
+    }
+    if(testPair == true && testTrilling == true) {
+      win = testWinPair + testWinTrilling;
+      byId('free-fullHouse').innerHTML = win + 30;
+      myDom.incrasePoints(win + 30);
+    } else {
+      byId('free-fullHouse').innerHTML = 0;
+    }
+
+    byId('free-fullHouse').removeEventListener('click', this.attachFreeFullHouse)
+    dices.STATUS = "FREE_TO_PLAY";
+    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}))
+  },
+
+  attachFreePoker: function() {
+    if(dices.validatePass() == false) return;
+
+    var TEST = app.myDom.checkForAllDuplicate();
+    // console.log('DUPLICATE FOR poker 40 + TEST ');
+    for(var key in TEST) {
+      if(TEST[key] == 4 || TEST[key] > 4) {
+        var getDiceID = parseInt(key.replace('value__', ''))
+        var win = getDiceID * 4;
+        byId('free-poker').innerHTML = win + 40;
+        myDom.incrasePoints(win + 40);
+      }
+    }
+    byId('free-poker').removeEventListener('click', this.attachFreePoker)
+    dices.STATUS = "FREE_TO_PLAY";
+    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}))
+  },
+
+  attachFreeJamb: function() {
+    if(dices.validatePass() == false) return;
+    // console.log('<GAMEPLAY><FREE ROW IS FEELED>')
+    var TEST = app.myDom.checkForAllDuplicate();
+    for(var key in TEST) {
+      if(TEST[key] == 5 || TEST[key] > 5) {
+        // win
+        var getDiceID = parseInt(key.replace('value__', ''))
+        var win = getDiceID * 5;
+        byId('free-poker').innerHTML = win + 50;
+        myDom.incrasePoints(win + 50);
+      }
+    }
+    byId('free-jamb').removeEventListener('click', this.attachFreeJamb)
+    dices.STATUS = "FREE_TO_PLAY";
+    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}))
+  },
+  // end of free row
 
   calcDownRowMax: (e) => {
     if(dices.validatePass() == false) return;

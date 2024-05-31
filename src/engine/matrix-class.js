@@ -1,4 +1,4 @@
-import {degToRad} from "./utils";
+import {degToRad, radToDeg} from "./utils";
 
 /**
  * @description 
@@ -8,211 +8,245 @@ import {degToRad} from "./utils";
  */
 
 export class Position {
-  constructor(x, y, z) {
-    // console.log('TEST TYTPOF ', x)
-    // Not in use for nwo this is from matrix-engine project [nameUniq]
-    this.nameUniq = null;
+	constructor(x, y, z) {
+		// console.log('TEST TYTPOF ', x)
+		// Not in use for nwo this is from matrix-engine project [nameUniq]
+		this.nameUniq = null;
 
-    if(typeof x == 'undefined') x = 0;
-    if(typeof y == 'undefined') y = 0;
-    if(typeof z == 'undefined') z = 0;
+		if(typeof x == 'undefined') x = 0;
+		if(typeof y == 'undefined') y = 0;
+		if(typeof z == 'undefined') z = 0;
 
-    this.x = x;
-    this.y = y;
-    this.z = z;
+		this.x = parseFloat(x);
+		this.y = parseFloat(y);
+		this.z = parseFloat(z);
 
-    this.velY = 0;
-    this.velX = 0;
-    this.velZ = 0;
-    this.inMove = false;
-    this.targetX = x;
-    this.targetY = y;
-    this.targetZ = z;
-    this.thrust = 0.01;
+		this.velY = 0;
+		this.velX = 0;
+		this.velZ = 0;
+		this.inMove = false;
+		this.targetX = parseFloat(x);
+		this.targetY = parseFloat(y);
+		this.targetZ = parseFloat(z);
+		this.thrust = 0.01;
 
-    return this;
-  }
+		return this;
+	}
 
-  setSpeed(n) {
-    if(typeof n === 'number') {
-      this.thrust = n;
-    } else {
-      console.log('Description: arguments (w, h) must be type of number.');
-    }
-  }
+	setSpeed(n) {
+		if(typeof n === 'number') {
+			this.thrust = n;
+		} else {
+			console.log('Description: arguments (w, h) must be type of number.');
+		}
+	}
 
-  translateByX(x) {
-    this.inMove = true;
-    this.targetX = x;
-  };
+	translateByX(x) {
+		this.inMove = true;
+		this.targetX = parseFloat(x);
+	};
 
-  translateByY(y) {
-    this.inMove = true;
-    this.targetY = y;
-  }
+	translateByY(y) {
+		this.inMove = true;
+		this.targetY = parseFloat(y);
+	}
 
-  translateByZ(z) {
-    this.inMove = true;
-    this.targetZ = z;
-  }
+	translateByZ(z) {
+		this.inMove = true;
+		this.targetZ = parseFloat(z);
+	}
 
-  translateByXY(x, y) {
-    this.inMove = true;
-    this.targetX = x;
-    this.targetY = y;
-  }
+	translateByXY(x, y) {
+		this.inMove = true;
+		this.targetX = parseFloat(x);
+		this.targetY = parseFloat(y);
+	}
 
-  translateByXZ(x, z) {
-    this.inMove = true;
-    this.targetX = x;
-    this.targetZ = z;
-  }
+	translateByXZ(x, z) {
+		this.inMove = true;
+		this.targetX = parseFloat(x);
+		this.targetZ = parseFloat(z);
+	}
 
-  translateByYZ(y, z) {
-    this.inMove = true;
-    this.targetY = y;
-    this.targetZ = z;
-  }
+	translateByYZ(y, z) {
+		this.inMove = true;
+		this.targetY = parseFloat(y);
+		this.targetZ = parseFloat(z);
+	}
 
-  onTargetPositionReach() {}
+	onTargetPositionReach() {}
 
-  update() {
-    var tx = this.targetX - this.x,
-      ty = this.targetY - this.y,
-      tz = this.targetZ - this.z,
-      dist = Math.sqrt(tx * tx + ty * ty + tz * tz);
-    this.velX = (tx / dist) * this.thrust;
-    this.velY = (ty / dist) * this.thrust;
-    this.velZ = (tz / dist) * this.thrust;
-    if(this.inMove == true) {
-      if(dist > this.thrust) {
-        this.x += this.velX;
-        this.y += this.velY;
-        this.z += this.velZ;
+	update() {
+		var tx = parseFloat(this.targetX) - parseFloat(this.x),
+			ty = parseFloat(this.targetY) - parseFloat(this.y),
+			tz = parseFloat(this.targetZ) - parseFloat(this.z),
+			dist = Math.sqrt(tx * tx + ty * ty + tz * tz);
+		this.velX = (tx / dist) * this.thrust;
+		this.velY = (ty / dist) * this.thrust;
+		this.velZ = (tz / dist) * this.thrust;
+		if(this.inMove == true) {
+			if(dist > this.thrust) {
+				this.x += this.velX;
+				this.y += this.velY;
+				this.z += this.velZ;
 
-        // // from me
-        // if(net && net.connection && typeof em === 'undefined' && App.scene[this.nameUniq].net.enable == true) net.connection.send({
-        //   netPos: {x: this.x, y: this.y, z: this.z},
-        //   netObjId: this.nameUniq,
-        // });
+				// // from me
+				// if(net && net.connection && typeof em === 'undefined' && App.scene[this.nameUniq].net.enable == true) net.connection.send({
+				//   netPos: {x: this.x, y: this.y, z: this.z},
+				//   netObjId: this.nameUniq,
+				// });
 
-      } else {
-        this.x = this.targetX;
-        this.y = this.targetY;
-        this.z = this.targetZ;
-        this.inMove = false;
-        this.onTargetPositionReach();
+			} else {
+				this.x = this.targetX;
+				this.y = this.targetY;
+				this.z = this.targetZ;
+				this.inMove = false;
+				this.onTargetPositionReach();
 
-        // // from me
-        // if(net && net.connection && typeof em === 'undefined' && App.scene[this.nameUniq].net.enable == true) net.connection.send({
-        //   netPos: {x: this.x, y: this.y, z: this.z},
-        //   netObjId: this.nameUniq,
-        // });
-      }
-    }
-  }
+				// // from me
+				// if(net && net.connection && typeof em === 'undefined' && App.scene[this.nameUniq].net.enable == true) net.connection.send({
+				//   netPos: {x: this.x, y: this.y, z: this.z},
+				//   netObjId: this.nameUniq,
+				// });
+			}
+		}
+	}
 
-  get worldLocation() {
-    return [this.x, this.y, this.z];
-  }
+	get worldLocation() {
+		return [parseFloat(this.x), parseFloat(this.y), parseFloat(this.z)];
+	}
 
-  SetX(newx, em) {
-    this.x = newx;
-    this.targetX = newx;
-    this.inMove = false;
+	SetX(newx, em) {
+		this.x = newx;
+		this.targetX = newx;
+		this.inMove = false;
 
-    // if(net && net.connection && typeof em === 'undefined' &&
-    //   App.scene[this.nameUniq].net && App.scene[this.nameUniq].net.enable == true) {
-    //   net.connection.send({
-    //     netPos: {x: this.x, y: this.y, z: this.z},
-    //     netObjId: this.nameUniq,
-    //   });
-    // }
-  }
+		// if(net && net.connection && typeof em === 'undefined' &&
+		//   App.scene[this.nameUniq].net && App.scene[this.nameUniq].net.enable == true) {
+		//   net.connection.send({
+		//     netPos: {x: this.x, y: this.y, z: this.z},
+		//     netObjId: this.nameUniq,
+		//   });
+		// }
+	}
 
-  SetY(newy, em) {
-    this.y = newy;
-    this.targetY = newy;
-    this.inMove = false;
-    // if(net && net.connection && typeof em === 'undefined' &&
-    //   App.scene[this.nameUniq].net && App.scene[this.nameUniq].net.enable == true) net.connection.send({
-    //     netPos: {x: this.x, y: this.y, z: this.z},
-    //     netObjId: this.nameUniq,
-    //   });
-  }
+	SetY(newy, em) {
+		this.y = newy;
+		this.targetY = newy;
+		this.inMove = false;
+		// if(net && net.connection && typeof em === 'undefined' &&
+		//   App.scene[this.nameUniq].net && App.scene[this.nameUniq].net.enable == true) net.connection.send({
+		//     netPos: {x: this.x, y: this.y, z: this.z},
+		//     netObjId: this.nameUniq,
+		//   });
+	}
 
-  SetZ(newz, em) {
-    this.z = newz;
-    this.targetZ = newz;
-    this.inMove = false;
-    // if(net && net.connection && typeof em === 'undefined' &&
-    //   App.scene[this.nameUniq].net && App.scene[this.nameUniq].net.enable == true) net.connection.send({
-    //     netPos: {x: this.x, y: this.y, z: this.z},
-    //     netObjId: this.nameUniq,
-    //   });
-  }
+	SetZ(newz, em) {
+		this.z = newz;
+		this.targetZ = newz;
+		this.inMove = false;
+		// if(net && net.connection && typeof em === 'undefined' &&
+		//   App.scene[this.nameUniq].net && App.scene[this.nameUniq].net.enable == true) net.connection.send({
+		//     netPos: {x: this.x, y: this.y, z: this.z},
+		//     netObjId: this.nameUniq,
+		//   });
+	}
 
-  setPosition(newx, newy, newz) {
-    this.x = newx;
-    this.y = newy;
-    this.z = newz;
-    this.targetX = newx;
-    this.targetY = newy;
-    this.targetZ = newz;
-    this.inMove = false;
+	get X() {
+		return parseFloat(this.x)
+	}
 
-    // from me
-    // if(App.scene[this.nameUniq] && net && net.connection && typeof em === 'undefined' &&
-    //   App.scene[this.nameUniq].net && App.scene[this.nameUniq].net.enable == true) net.connection.send({
-    //     netPos: {x: this.x, y: this.y, z: this.z},
-    //     netObjId: this.nameUniq,
-    //   });
-  }
+	get Y() {
+		return parseFloat(this.y)
+	}
+
+	get Z() {
+		return parseFloat(this.z)
+	}
+
+	setPosition(newx, newy, newz) {
+		this.x = newx;
+		this.y = newy;
+		this.z = newz;
+		this.targetX = newx;
+		this.targetY = newy;
+		this.targetZ = newz;
+		this.inMove = false;
+
+		// from me
+		// if(App.scene[this.nameUniq] && net && net.connection && typeof em === 'undefined' &&
+		//   App.scene[this.nameUniq].net && App.scene[this.nameUniq].net.enable == true) net.connection.send({
+		//     netPos: {x: this.x, y: this.y, z: this.z},
+		//     netObjId: this.nameUniq,
+		//   });
+	}
 }
 
 export class Rotation {
 
-  constructor(x, y, z) {
-    // Not in use for nwo this is from matrix-engine project [nameUniq]
-    this.nameUniq = null;
-    if(typeof x == 'undefined') x = 0;
-    if(typeof y == 'undefined') y = 0;
-    if(typeof z == 'undefined') z = 0;
-    this.x = x;
-    this.y = y;
-    this.z = z;
-    this.rotationSpeed = {x: 0, y: 0, z: 0};
-    this.angle = 0;
-    this.axis = {x:0, y:0 , z:0};
-    // not in use good for exstend logic
-    this.matrixRotation = null;
-  }
+	constructor(x, y, z) {
+		// Not in use for nwo this is from matrix-engine project [nameUniq]
+		this.nameUniq = null;
+		if(typeof x == 'undefined') x = 0;
+		if(typeof y == 'undefined') y = 0;
+		if(typeof z == 'undefined') z = 0;
+		this.x = x;
+		this.y = y;
+		this.z = z;
+		this.rotationSpeed = {x: 0, y: 0, z: 0};
+		this.angle = 0;
+		this.axis = {x: 0, y: 0, z: 0};
+		// not in use good for exstend logic
+		this.matrixRotation = null;
+	}
 
-  getRotX () {
-    if (this.rotationSpeed.x == 0) {
-      return degToRad(this.x);
-    } else {
-      this.x = this.x + this.rotationSpeed.x* 0.001;
-      return degToRad(this.x);
-    }
-  }
+	toDegree() {
 
-  getRotY () {
-    if (this.rotationSpeed.y == 0) {
-      return degToRad(this.y);
-    } else {
-      this.y = this.y + this.rotationSpeed.y * 0.001;
-      return degToRad(this.y);
-    }
-  }
+		/*
+		heading = atan2(y * sin(angle)- x * z * (1 - cos(angle)) , 1 - (y2 + z2 ) * (1 - cos(angle)))
+		attitude = asin(x * y * (1 - cos(angle)) + z * sin(angle))
+		bank = atan2(x * sin(angle)-y * z * (1 - cos(angle)) , 1 - (x2 + z2) * (1 - cos(angle)))
+		*/
+		return [radToDeg(this.axis.x), radToDeg(this.axis.y), radToDeg(this.axis.z)];
+	}
 
-  getRotZ () {
-    if (this.rotationSpeed.z == 0) {
-      return degToRad(this.z);
-    } else {
-      this.z = this.z + this.rotationSpeed.z* 0.001;
-      return degToRad(this.z);
-    }
-  }
+	toDegreeX() {
+		return Math.cos(radToDeg(this.axis.x) / 2)
+	}
+
+	toDegreeY() {
+		return Math.cos(radToDeg(this.axis.z) / 2)
+	}
+
+	toDegreeZ() {
+		return Math.cos(radToDeg(this.axis.y) / 2)
+	}
+
+	getRotX() {
+		if(this.rotationSpeed.x == 0) {
+			return degToRad(this.x);
+		} else {
+			this.x = this.x + this.rotationSpeed.x * 0.001;
+			return degToRad(this.x);
+		}
+	}
+
+	getRotY() {
+		if(this.rotationSpeed.y == 0) {
+			return degToRad(this.y);
+		} else {
+			this.y = this.y + this.rotationSpeed.y * 0.001;
+			return degToRad(this.y);
+		}
+	}
+
+	getRotZ() {
+		if(this.rotationSpeed.z == 0) {
+			return degToRad(this.z);
+		} else {
+			this.z = this.z + this.rotationSpeed.z * 0.001;
+			return degToRad(this.z);
+		}
+	}
 
 }
