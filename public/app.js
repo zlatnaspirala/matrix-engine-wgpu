@@ -1122,6 +1122,11 @@ let application = exports.application = new _world.default({
   };
   addEventListener('ray.hit.event', e => {
     console.log('HIT =>>>>>>>>>>>>>>>', e.detail.hitObject.name);
+    console.log('HIT =>>>>>>>>>>>>>>>', e.detail.touchCoordinate);
+    console.log('HIT =>>>>>>>>>>>>>>>', e.detail.hitObject);
+    console.log('HIT =>>>>>>>>>>>>>>>', e.detail.intersectionPoint);
+    console.log('HIT =>>>>>>>>>>>>>>>', e.detail.ray);
+    console.log('HIT =>>>>>>>>>>>>>>>', e.detail.rayOrigin);
   });
   addEventListener('mousemove', e => {
     // console.log('only on click')
@@ -8809,19 +8814,19 @@ class Rotation {
   toDegree() {
     /*
     heading = atan2(y * sin(angle)- x * z * (1 - cos(angle)) , 1 - (y2 + z2 ) * (1 - cos(angle)))
-      attitude = asin(x * y * (1 - cos(angle)) + z * sin(angle))
-      bank = atan2(x * sin(angle)-y * z * (1 - cos(angle)) , 1 - (x2 + z2) * (1 - cos(angle)))
+    attitude = asin(x * y * (1 - cos(angle)) + z * sin(angle))
+    bank = atan2(x * sin(angle)-y * z * (1 - cos(angle)) , 1 - (x2 + z2) * (1 - cos(angle)))
     */
     return [(0, _utils.radToDeg)(this.axis.x), (0, _utils.radToDeg)(this.axis.y), (0, _utils.radToDeg)(this.axis.z)];
   }
   toDegreeX() {
-    return (0, _utils.radToDeg)(this.axis.x);
+    return Math.cos((0, _utils.radToDeg)(this.axis.x) / 2);
   }
   toDegreeY() {
-    return (0, _utils.radToDeg)(this.axis.y);
+    return Math.cos((0, _utils.radToDeg)(this.axis.z) / 2);
   }
   toDegreeZ() {
-    return (0, _utils.radToDeg)(this.axis.z);
+    return Math.cos((0, _utils.radToDeg)(this.axis.y) / 2);
   }
   getRotX() {
     if (this.rotationSpeed.x == 0) {
@@ -9238,6 +9243,8 @@ class MEMeshObj {
       // The camera/light aren't moving, so write them into buffers now.
       {
         const lightMatrixData = this.lightViewProjMatrix; // as Float32Array;
+
+        console.log('TTTTTT ', this.device.createRayTracingAccelerationContainer);
         this.device.queue.writeBuffer(this.sceneUniformBuffer, 0, lightMatrixData.buffer, lightMatrixData.byteOffset, lightMatrixData.byteLength);
         const lightData = this.lightPosition;
         this.device.queue.writeBuffer(this.sceneUniformBuffer, 128, lightData.buffer, lightData.byteOffset, lightData.byteLength);
@@ -9956,11 +9963,11 @@ function checkingRay(object) {
     // let modelViewProjectionMatrix = new Float32Array([...object.modelViewProjectionMatrix])
 
     // // TEST 2
-    // let projectionMatrix = new Float32Array([...object.modelViewProjectionMatrix])
-    // let modelViewProjectionMatrix = new Float32Array([...object.viewMatrix])
-
-    let projectionMatrix = new Float32Array([...object.projectionMatrix]);
+    let projectionMatrix = new Float32Array([...object.modelViewProjectionMatrix]);
     let modelViewProjectionMatrix = new Float32Array([...object.viewMatrix]);
+
+    // let projectionMatrix = new Float32Array([...object.projectionMatrix])
+    // let modelViewProjectionMatrix = new Float32Array([...object.viewMatrix])
     // modelViewProjectionMatrix   viewMatrix
 
     // ori world.pMatrix ?!
@@ -9981,9 +9988,14 @@ function checkingRay(object) {
     const intersectionPoint = _wgpuMatrix.vec3.create();
     object.raycastFace = [];
     for (var f = 0; f < object.mesh.indices.length; f = f + 3) {
+      // ori 
       var a = object.mesh.indices[f];
       var b = object.mesh.indices[f + 1];
       var c = object.mesh.indices[f + 2];
+      // var b = object.mesh.indices[f];
+      // var c = object.mesh.indices[f + 1];
+      // var a = object.mesh.indices[f + 2];
+
       let triangle = null;
       const triangleInZero = [[object.mesh.vertices[0 + a * 3], object.mesh.vertices[1 + a * 3], object.mesh.vertices[2 + a * 3]], [object.mesh.vertices[0 + b * 3], object.mesh.vertices[1 + b * 3], object.mesh.vertices[2 + b * 3]], [object.mesh.vertices[0 + c * 3], object.mesh.vertices[1 + c * 3], object.mesh.vertices[2 + c * 3]]];
       triangle = [[triangleInZero[0][0] + object.position.worldLocation[0], triangleInZero[0][1] + object.position.worldLocation[1], triangleInZero[0][2] + object.position.worldLocation[2]], [triangleInZero[1][0] + object.position.worldLocation[0], triangleInZero[1][1] + object.position.worldLocation[1], triangleInZero[1][2] + object.position.worldLocation[2]], [triangleInZero[2][0] + object.position.worldLocation[0], triangleInZero[2][1] + object.position.worldLocation[1], triangleInZero[2][2] + object.position.worldLocation[2]]];
@@ -11498,7 +11510,13 @@ class MatrixEngineWGPU {
   }) => {
     this.canvas = canvas;
     this.adapter = await navigator.gpu.requestAdapter();
-    this.device = await this.adapter.requestDevice();
+    this.device = await this.adapter.requestDevice({
+      extensions: ["ray_tracing"]
+    });
+    const adapterInfo = await this.adapter.requestAdapterInfo();
+    console.log(adapterInfo.vendor);
+    console.log(adapterInfo.architecture);
+    console.log("FEATURES : " + this.adapter.features);
     this.context = canvas.getContext('webgpu');
     const devicePixelRatio = window.devicePixelRatio;
     canvas.width = canvas.clientWidth * devicePixelRatio;

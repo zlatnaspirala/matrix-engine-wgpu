@@ -92,7 +92,15 @@ export default class MatrixEngineWGPU {
 	init = async ({canvas, callback}) => {
 		this.canvas = canvas;
 		this.adapter = await navigator.gpu.requestAdapter();
-		this.device = await this.adapter.requestDevice();
+		this.device = await this.adapter.requestDevice({
+			extensions: ["ray_tracing"]
+		});
+
+		const adapterInfo = await this.adapter.requestAdapterInfo();
+		console.log(adapterInfo.vendor);
+		console.log(adapterInfo.architecture);
+		console.log("FEATURES : " + this.adapter.features)
+
 		this.context = canvas.getContext('webgpu');
 
 		const devicePixelRatio = window.devicePixelRatio;

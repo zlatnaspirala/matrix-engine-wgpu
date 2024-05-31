@@ -196,11 +196,11 @@ export function checkingRay(object) {
 		// let modelViewProjectionMatrix = new Float32Array([...object.modelViewProjectionMatrix])
 
 		// // TEST 2
-		// let projectionMatrix = new Float32Array([...object.modelViewProjectionMatrix])
-		// let modelViewProjectionMatrix = new Float32Array([...object.viewMatrix])
-
-		let projectionMatrix = new Float32Array([...object.projectionMatrix])
+		let projectionMatrix = new Float32Array([...object.modelViewProjectionMatrix])
 		let modelViewProjectionMatrix = new Float32Array([...object.viewMatrix])
+
+		// let projectionMatrix = new Float32Array([...object.projectionMatrix])
+		// let modelViewProjectionMatrix = new Float32Array([...object.viewMatrix])
 		// modelViewProjectionMatrix   viewMatrix
 
 		// ori world.pMatrix ?!
@@ -222,9 +222,14 @@ export function checkingRay(object) {
 		object.raycastFace = [];
 
 		for(var f = 0;f < object.mesh.indices.length;f = f + 3) {
+			// ori 
 			var a = object.mesh.indices[f];
 			var b = object.mesh.indices[f + 1];
 			var c = object.mesh.indices[f + 2];
+			// var b = object.mesh.indices[f];
+			// var c = object.mesh.indices[f + 1];
+			// var a = object.mesh.indices[f + 2];
+
 			let triangle = null;
 			const triangleInZero = [
 				[object.mesh.vertices[0 + a * 3], object.mesh.vertices[1 + a * 3], object.mesh.vertices[2 + a * 3]],

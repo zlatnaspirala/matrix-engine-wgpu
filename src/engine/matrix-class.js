@@ -204,22 +204,22 @@ export class Rotation {
 
 		/*
 		heading = atan2(y * sin(angle)- x * z * (1 - cos(angle)) , 1 - (y2 + z2 ) * (1 - cos(angle)))
-    attitude = asin(x * y * (1 - cos(angle)) + z * sin(angle))
-    bank = atan2(x * sin(angle)-y * z * (1 - cos(angle)) , 1 - (x2 + z2) * (1 - cos(angle)))
+		attitude = asin(x * y * (1 - cos(angle)) + z * sin(angle))
+		bank = atan2(x * sin(angle)-y * z * (1 - cos(angle)) , 1 - (x2 + z2) * (1 - cos(angle)))
 		*/
 		return [radToDeg(this.axis.x), radToDeg(this.axis.y), radToDeg(this.axis.z)];
 	}
 
 	toDegreeX() {
-		return radToDeg(this.axis.x)
+		return Math.cos(radToDeg(this.axis.x) / 2)
 	}
 
 	toDegreeY() {
-		return radToDeg(this.axis.y)
+		return Math.cos(radToDeg(this.axis.z) / 2)
 	}
 
 	toDegreeZ() {
-		return radToDeg(this.axis.z)
+		return Math.cos(radToDeg(this.axis.y) / 2)
 	}
 
 	getRotX() {

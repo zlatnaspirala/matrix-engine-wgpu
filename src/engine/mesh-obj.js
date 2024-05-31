@@ -435,6 +435,9 @@ export default class MEMeshObj {
 			// The camera/light aren't moving, so write them into buffers now.
 			{
 				const lightMatrixData = this.lightViewProjMatrix; // as Float32Array;
+
+				console.log('TTTTTT ', this.device.createRayTracingAccelerationContainer);
+
 				this.device.queue.writeBuffer(
 					this.sceneUniformBuffer,
 					0,

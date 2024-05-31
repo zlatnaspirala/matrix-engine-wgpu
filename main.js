@@ -84,6 +84,13 @@ export let application = new MatrixEngineWGPU({
 
 	addEventListener('ray.hit.event', (e) => {
 		console.log('HIT =>>>>>>>>>>>>>>>', e.detail.hitObject.name)
+
+		console.log('HIT =>>>>>>>>>>>>>>>', e.detail.touchCoordinate)
+		console.log('HIT =>>>>>>>>>>>>>>>', e.detail.hitObject)
+		console.log('HIT =>>>>>>>>>>>>>>>', e.detail.intersectionPoint)
+		console.log('HIT =>>>>>>>>>>>>>>>', e.detail.ray)
+		console.log('HIT =>>>>>>>>>>>>>>>', e.detail.rayOrigin)
+
 	})
 
 	addEventListener('mousemove', (e) => {
