@@ -1,11 +1,8 @@
-
 # matrix-engine-wgpu
-
-**⚠️ Work in Progress – Not Fully Functional Yet**
 
 **Author:** Nikola Lukić
 📧 [zlatnaspirala@gmail.com](mailto:zlatnaspirala@gmail.com)
-📅 2024
+📅 2025
 
 ---
 
