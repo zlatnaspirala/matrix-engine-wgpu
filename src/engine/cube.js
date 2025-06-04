@@ -269,6 +269,14 @@ export default class MECube {
     return bindGroup;
   }
 
+
+	// TEST 
+	getViewMatrix () {
+		const camera = this.cameras[this.mainCameraParams.type];
+    const viewMatrix = camera.update(deltaTime, this.inputHandler());
+		return viewMatrix;
+	}
+
   getTransformationMatrix(pos) {
     const now = Date.now();
     const deltaTime = (now - this.lastFrameMS) / this.mainCameraParams.responseCoef;

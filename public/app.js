@@ -12,6 +12,8 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 let dices = exports.dices = {
   C: 0,
   STATUS: 'FREE_TO_PLAY',
+  STATUS_H2: 'WAIT',
+  STATUS_H3: 'WAIT',
   R: {},
   checkAll: function () {
     this.C++;
@@ -24,7 +26,7 @@ let dices = exports.dices = {
   },
   validatePass: function () {
     if (dices.STATUS == "IN_PLAY" || dices.STATUS == "FREE_TO_PLAY") {
-      console.log('%cBLOCK', _utils.LOG_FUNNY);
+      // console.log('%cBLOCK', LOG_FUNNY)
       if (dices.STATUS == "IN_PLAY") _utils.mb.error(`STATUS IS ${dices.STATUS}, please wait for results...`);
       if (dices.STATUS == "FREE_TO_PLAY") _utils.mb.error(`STATUS IS ${dices.STATUS}, you need to roll dice first.`);
       app.matrixSounds.play('block');
@@ -110,7 +112,8 @@ let myDom = exports.myDom = {
     root.id = 'blocker';
     var messageBox = document.createElement('div');
     messageBox.id = 'messageBox';
-    console.log('TEST', app.label.get);
+
+    // console.log('TEST', app.label.get)
     messageBox.innerHTML = `
      <span data-label="welcomeMsg"></span>
      <a href="https://github.com/zlatnaspirala/matrix-engine-wgpu">zlatnaspirala/matrix-engine-wgpu</a><br><br>
@@ -195,7 +198,7 @@ let myDom = exports.myDom = {
     this.createRow(rowUp);
     this.createRow(rowHand);
     document.body.appendChild(root);
-    console.log('JambTable added.');
+    // console.log('JambTable added.')
   },
   createLeftHeaderRow: function (myRoot) {
     for (var x = 1; x < 7; x++) {
@@ -377,7 +380,7 @@ let myDom = exports.myDom = {
         this.state.rowDown.push(count23456 * parseInt(getName));
         e.target.innerHTML = count23456 * parseInt(getName);
         if (parseInt(getName) == 6) {
-          myDom.calcDownNumbers();
+          myDom.calcFreeNumbers();
         }
         dices.STATUS = "FREE_TO_PLAY";
         dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
@@ -395,12 +398,14 @@ let myDom = exports.myDom = {
     rowMax.style.width = 'auto';
     rowMax.style.background = '#7d7d7d8c';
     rowMax.innerHTML = `-`;
+    rowMax.addEventListener("click", this.calcFreeRowMax);
     myRoot.appendChild(rowMax);
     var rowMin = document.createElement('div');
-    rowMin.id = 'free-rowMax';
+    rowMin.id = 'free-rowMin';
     rowMin.style.width = 'auto';
     rowMin.style.background = '#7d7d7d8c';
     rowMin.innerHTML = `-`;
+    rowMin.addEventListener('click', this.calcFreeRowMin);
     myRoot.appendChild(rowMin);
     var rowMaxMinSum = document.createElement('div');
     rowMaxMinSum.id = 'free-rowMaxMinSum';
@@ -413,30 +418,35 @@ let myDom = exports.myDom = {
     largeStraight.style.width = 'auto';
     largeStraight.style.background = '#7d7d7d8c';
     largeStraight.innerHTML = `-`;
+    largeStraight.addEventListener('click', this.attachFreeKenta);
     myRoot.appendChild(largeStraight);
     var threeOfAKind = document.createElement('div');
     threeOfAKind.id = 'free-threeOfAKind';
     threeOfAKind.style.width = 'auto';
     threeOfAKind.style.background = '#7d7d7d8c';
     threeOfAKind.innerHTML = `-`;
+    threeOfAKind.addEventListener('click', this.attachFreeTrilling);
     myRoot.appendChild(threeOfAKind);
     var fullHouse = document.createElement('div');
     fullHouse.id = 'free-fullHouse';
     fullHouse.style.width = 'auto';
     fullHouse.style.background = '#7d7d7d8c';
     fullHouse.innerHTML = `-`;
+    fullHouse.addEventListener('click', this.attachFreeFullHouse);
     myRoot.appendChild(fullHouse);
     var poker = document.createElement('div');
     poker.id = 'free-poker';
     poker.style.width = 'auto';
     poker.style.background = '#7d7d7d8c';
     poker.innerHTML = `-`;
+    poker.addEventListener('click', this.attachFreePoker);
     myRoot.appendChild(poker);
     var jamb = document.createElement('div');
     jamb.id = 'free-jamb';
     jamb.style.width = 'auto';
     jamb.style.background = '#7d7d7d8c';
     jamb.innerHTML = `-`;
+    jamb.addEventListener('click', this.attachFreeJamb);
     myRoot.appendChild(jamb);
     var rowSum = document.createElement('div');
     rowSum.id = 'free-rowSum';
@@ -599,6 +609,199 @@ let myDom = exports.myDom = {
     dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
     this.rowMax.addEventListener("click", this.calcDownRowMax);
   },
+  // free row start
+
+  calcFreeNumbers: function () {
+    var s = 0;
+    this.state.rowDown.forEach(i => {
+      console.log(parseFloat(i));
+      s += parseFloat(i);
+    });
+    (0, _utils.byId)('free-rowNumberSum').style.background = 'rgb(113 0 0 / 55%)';
+    (0, _utils.byId)('free-rowNumberSum').innerHTML = s;
+    // console.log('this.rowMax also set free to plat status', this.rowMax)
+    dices.STATUS = "FREE_TO_PLAY";
+    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
+    (0, _utils.byId)('free-rowMax').addEventListener("click", this.calc);
+  },
+  calcFreeRowMax: e => {
+    if (dices.validatePass() == false) return;
+    var test = 0;
+    let keyLessNum = Object.keys(dices.R).reduce((key, v) => dices.R[v] < dices.R[key] ? v : key);
+    for (var key in dices.R) {
+      if (key != keyLessNum) {
+        test += parseFloat(dices.R[key]);
+      }
+    }
+    e.target.innerHTML = test;
+    // now attach next event.
+    dices.STATUS = "FREE_TO_PLAY";
+    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
+    (0, _utils.byId)('free-rowMax').removeEventListener("click", (void 0).calcFreeRowMax);
+  },
+  calcFreeRowMin: () => {
+    if (dices.validatePass() == false) return;
+    var maxTestKey = Object.keys(dices.R).reduce(function (a, b) {
+      return dices.R[a] > dices.R[b] ? a : b;
+    });
+    var test = 0;
+    for (var key in dices.R) {
+      if (key != maxTestKey) {
+        test += parseFloat(dices.R[key]);
+      } else {
+        console.log('not calc dice ', dices.R[key]);
+      }
+    }
+    (0, _utils.byId)('free-rowMin').innerHTML = test;
+    (0, _utils.byId)('free-rowMin').removeEventListener('click', (void 0).calcFreeRowMin);
+    // calc max min dont forget rules for bonus +30
+    var SUMMINMAX = parseFloat((0, _utils.byId)('free-rowMax').innerHTML) - parseFloat((0, _utils.byId)('free-rowMin').innerHTML);
+    (0, _utils.byId)('free-rowMaxMinSum').innerHTML = SUMMINMAX;
+    myDom.incrasePoints(SUMMINMAX);
+    dices.STATUS = "FREE_TO_PLAY";
+    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
+  },
+  attachFreeKenta: function () {
+    if (dices.validatePass() == false) return;
+    console.log('Test free kenta :', dices.R);
+    var result = app.myDom.checkForDuplicate()[0];
+    var testArray = app.myDom.checkForDuplicate()[1];
+    console.log('TEST duplik: ' + result);
+    if (result.length == 2) {
+      console.log('TEST duplik less 3 : ' + result);
+      var locPrevent = false;
+      testArray.forEach((item, index, array) => {
+        if (result[0].value == item.value && locPrevent == false) {
+          console.log('detect by value item.value', item.value);
+          locPrevent = true;
+          array.splice(index, 1);
+        }
+      });
+      // if we catch  1 and 6 in same stack then it is not possible for kenta...
+      var test1 = false,
+        test6 = false;
+      testArray.forEach((item, index, array) => {
+        if (item.value == 1) {
+          test1 = true;
+        } else if (item.value == 6) {
+          test6 = true;
+        }
+      });
+      if (test1 == true && test6 == true) {
+        (0, _utils.byId)('free-largeStraight').innerHTML = `0`;
+      } else if (test1 == true) {
+        (0, _utils.byId)('free-largeStraight').innerHTML = 15 + 50;
+        myDom.incrasePoints(15 + 50);
+      } else if (test6 == true) {
+        (0, _utils.byId)('free-largeStraight').innerHTML = 20 + 50;
+        myDom.incrasePoints(20 + 50);
+      }
+    } else if (result < 2) {
+      (0, _utils.byId)('free-largeStraight').innerHTML = 66;
+      myDom.incrasePoints(66);
+    } else {
+      // zero value
+      (0, _utils.byId)('free-largeStraight').innerHTML = `0`;
+    }
+    (0, _utils.byId)('free-largeStraight').removeEventListener('click', this.attachFreeKenta);
+    dices.STATUS = "FREE_TO_PLAY";
+    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
+  },
+  attachFreeTrilling: function () {
+    if (dices.validatePass() == false) return;
+    var result = app.myDom.checkForDuplicate()[0];
+    // var testArray = app.myDom.checkForDuplicate()[1];
+    // console.log('DUPLICATE FOR TRILING ', result);
+    if (result.length > 2) {
+      var testWin = 0;
+      var TEST = app.myDom.checkForAllDuplicate();
+      console.log('DUPLICATE FOR TRILING TEST ', TEST);
+      for (var key in TEST) {
+        if (TEST[key] > 2) {
+          // win
+          var getDiceID = parseInt(key.replace('value__', ''));
+          testWin = getDiceID * 3;
+        }
+      }
+      console.log('DUPLICATE FOR TRILING 30 + TEST ', testWin);
+      if (testWin > 0) {
+        (0, _utils.byId)('free-threeOfAKind').innerHTML = 20 + testWin;
+        myDom.incrasePoints(20 + testWin);
+      }
+    } else {
+      (0, _utils.byId)('free-threeOfAKind').innerHTML = 0;
+    }
+    (0, _utils.byId)('free-threeOfAKind').removeEventListener('click', this.attachFreeTrilling);
+    dices.STATUS = "FREE_TO_PLAY";
+    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
+  },
+  attachFreeFullHouse: function () {
+    if (dices.validatePass() == false) return;
+    var TEST = app.myDom.checkForAllDuplicate();
+    // console.log('DUPLICATE FOR FULL HOUSE 30 + TEST ');
+    var win = 0;
+    var testPair = false;
+    var testTrilling = false;
+    var testWinPair = 0;
+    var testWinTrilling = 0;
+    for (var key in TEST) {
+      if (TEST[key] == 2) {
+        // win
+        var getDiceID = parseInt(key.replace('value__', ''));
+        testWinPair = getDiceID * 2;
+        testPair = true;
+      } else if (TEST[key] == 3) {
+        var getDiceID = parseInt(key.replace('value__', ''));
+        testWinTrilling = getDiceID * 3;
+        testTrilling = true;
+      }
+    }
+    if (testPair == true && testTrilling == true) {
+      win = testWinPair + testWinTrilling;
+      (0, _utils.byId)('free-fullHouse').innerHTML = win + 30;
+      myDom.incrasePoints(win + 30);
+    } else {
+      (0, _utils.byId)('free-fullHouse').innerHTML = 0;
+    }
+    (0, _utils.byId)('free-fullHouse').removeEventListener('click', this.attachFreeFullHouse);
+    dices.STATUS = "FREE_TO_PLAY";
+    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
+  },
+  attachFreePoker: function () {
+    if (dices.validatePass() == false) return;
+    var TEST = app.myDom.checkForAllDuplicate();
+    // console.log('DUPLICATE FOR poker 40 + TEST ');
+    for (var key in TEST) {
+      if (TEST[key] == 4 || TEST[key] > 4) {
+        var getDiceID = parseInt(key.replace('value__', ''));
+        var win = getDiceID * 4;
+        (0, _utils.byId)('free-poker').innerHTML = win + 40;
+        myDom.incrasePoints(win + 40);
+      }
+    }
+    (0, _utils.byId)('free-poker').removeEventListener('click', this.attachFreePoker);
+    dices.STATUS = "FREE_TO_PLAY";
+    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
+  },
+  attachFreeJamb: function () {
+    if (dices.validatePass() == false) return;
+    // console.log('<GAMEPLAY><FREE ROW IS FEELED>')
+    var TEST = app.myDom.checkForAllDuplicate();
+    for (var key in TEST) {
+      if (TEST[key] == 5 || TEST[key] > 5) {
+        // win
+        var getDiceID = parseInt(key.replace('value__', ''));
+        var win = getDiceID * 5;
+        (0, _utils.byId)('free-poker').innerHTML = win + 50;
+        myDom.incrasePoints(win + 50);
+      }
+    }
+    (0, _utils.byId)('free-jamb').removeEventListener('click', this.attachFreeJamb);
+    dices.STATUS = "FREE_TO_PLAY";
+    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
+  },
+  // end of free row
+
   calcDownRowMax: e => {
     if (dices.validatePass() == false) return;
     e.target.classList.remove('canPlay');
@@ -830,7 +1033,7 @@ let myDom = exports.myDom = {
   }
 };
 
-},{"../../../src/engine/loader-obj.js":7,"../../../src/engine/utils.js":11,"../../../src/world.js":19}],2:[function(require,module,exports){
+},{"../../../src/engine/loader-obj.js":7,"../../../src/engine/utils.js":12,"../../../src/world.js":20}],2:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -842,6 +1045,7 @@ var _loaderObj = require("./src/engine/loader-obj.js");
 var _utils = require("./src/engine/utils.js");
 var _jamb = require("./examples/games/jamb/jamb.js");
 var _sounds = require("./src/sounds/sounds.js");
+var _raycastTest = require("./src/engine/raycast-test.js");
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 let application = exports.application = new _world.default({
   useSingleRenderPass: true,
@@ -917,6 +1121,13 @@ let application = exports.application = new _world.default({
       }
     }
   };
+  (0, _raycastTest.addRaycastListener)();
+  // OR add manual see readme
+
+  addEventListener('mousemove', e => {
+    // console.log('only on click')
+    _raycastTest.touchCoordinate.enabled = true;
+  });
 
   // Sounds
   application.matrixSounds.createAudio('start', 'res/audios/start.mp3', 1);
@@ -952,7 +1163,7 @@ let application = exports.application = new _world.default({
       cube: "./res/meshes/jamb/dice.obj"
     }, m => {
       for (var key in m) {
-        console.log(`%c Loaded objs -> : ${key} `, _utils.LOG_MATRIX);
+        // console.log(`%c Loaded objs -> : ${key} `, LOG_MATRIX);
       }
       // right
       application.addMeshObj({
@@ -1005,7 +1216,7 @@ let application = exports.application = new _world.default({
   function onLoadObjWallCenter(m) {
     application.myLoadedMeshesWalls = m;
     for (var key in m) {
-      console.log(`%c Loaded objs -> : ${key} `, _utils.LOG_MATRIX);
+      // console.log(`%c Loaded objs -> : ${key} `, LOG_MATRIX);
     }
 
     // WALLS Center
@@ -1034,7 +1245,7 @@ let application = exports.application = new _world.default({
   function onLoadObjOther(m) {
     application.myLoadedMeshes = m;
     for (var key in m) {
-      console.log(`%c Loaded objs -> : ${key} `, _utils.LOG_MATRIX);
+      // console.log(`%c Loaded objs -> : ${key} `, LOG_MATRIX);
     }
     // Add logo text top
     application.addMeshObj({
@@ -1071,7 +1282,7 @@ let application = exports.application = new _world.default({
   function onLoadObjFloor(m) {
     application.myLoadedMeshes = m;
     for (var key in m) {
-      console.log(`%c Loaded objs -> : ${key} `, _utils.LOG_MATRIX);
+      // console.log(`%c Loaded objs -> : ${key} `, LOG_MATRIX);
     }
     application.addMeshObj({
       scale: [10, 0.1, 0.1],
@@ -1100,7 +1311,7 @@ let application = exports.application = new _world.default({
   function onLoadObj(m) {
     application.myLoadedMeshes = m;
     for (var key in m) {
-      console.log(`%c Loaded objs -> : ${key} `, _utils.LOG_MATRIX);
+      // console.log(`%c Loaded objs -> : ${key} `, LOG_MATRIX);
     }
 
     // Add dices
@@ -1124,6 +1335,9 @@ let application = exports.application = new _world.default({
       useUVShema4x2: true,
       name: 'CubePhysics1',
       mesh: m.cube,
+      raycast: {
+        enabled: true
+      },
       physics: {
         enabled: true,
         geometry: "Cube"
@@ -1149,111 +1363,75 @@ let application = exports.application = new _world.default({
       useUVShema4x2: true,
       name: 'CubePhysics2',
       mesh: m.cube,
+      raycast: {
+        enabled: true
+      },
       physics: {
         enabled: true,
         geometry: "Cube"
       }
     });
-    application.addMeshObj({
-      position: {
-        x: 4,
-        y: 8,
-        z: -10
-      },
-      rotation: {
-        x: 0,
-        y: 0,
-        z: 0
-      },
-      rotationSpeed: {
-        x: 0,
-        y: 0,
-        z: 0
-      },
-      texturesPaths: ['./res/meshes/jamb/dice.png'],
-      useUVShema4x2: true,
-      name: 'CubePhysics3',
-      mesh: m.cube,
-      physics: {
-        enabled: true,
-        geometry: "Cube"
-      }
-    });
-    application.addMeshObj({
-      position: {
-        x: 3,
-        y: 4,
-        z: -10
-      },
-      rotation: {
-        x: 0,
-        y: 0,
-        z: 0
-      },
-      rotationSpeed: {
-        x: 0,
-        y: 0,
-        z: 0
-      },
-      texturesPaths: ['./res/meshes/jamb/dice.png'],
-      useUVShema4x2: true,
-      name: 'CubePhysics4',
-      mesh: m.cube,
-      physics: {
-        enabled: true,
-        geometry: "Cube"
-      }
-    });
-    application.addMeshObj({
-      position: {
-        x: -2,
-        y: 4,
-        z: -13
-      },
-      rotation: {
-        x: 0,
-        y: 0,
-        z: 0
-      },
-      rotationSpeed: {
-        x: 0,
-        y: 0,
-        z: 0
-      },
-      texturesPaths: ['./res/meshes/jamb/dice.png'],
-      useUVShema4x2: true,
-      name: 'CubePhysics5',
-      mesh: m.cube,
-      physics: {
-        enabled: true,
-        geometry: "Cube"
-      }
-    });
-    application.addMeshObj({
-      position: {
-        x: -4,
-        y: 6,
-        z: -9
-      },
-      rotation: {
-        x: 0,
-        y: 0,
-        z: 0
-      },
-      rotationSpeed: {
-        x: 0,
-        y: 0,
-        z: 0
-      },
-      texturesPaths: ['./res/meshes/jamb/dice.png'],
-      useUVShema4x2: true,
-      name: 'CubePhysics6',
-      mesh: m.cube,
-      physics: {
-        enabled: true,
-        geometry: "Cube"
-      }
-    });
+
+    // application.addMeshObj({
+    // 	position: {x: 4, y: 8, z: -10},
+    // 	rotation: {x: 0, y: 0, z: 0},
+    // 	rotationSpeed: {x: 0, y: 0, z: 0},
+    // 	texturesPaths: ['./res/meshes/jamb/dice.png'],
+    // 	useUVShema4x2: true,
+    // 	name: 'CubePhysics3',
+    // 	mesh: m.cube,
+    // 	raycast: { enabled: true },
+    // 	physics: {
+    // 		enabled: true,
+    // 		geometry: "Cube"
+    // 	}
+    // })
+
+    // application.addMeshObj({
+    // 	position: {x: 3, y: 4, z: -10},
+    // 	rotation: {x: 0, y: 0, z: 0},
+    // 	rotationSpeed: {x: 0, y: 0, z: 0},
+    // 	texturesPaths: ['./res/meshes/jamb/dice.png'],
+    // 	useUVShema4x2: true,
+    // 	name: 'CubePhysics4',
+    // 	mesh: m.cube,
+    // 	raycast: { enabled: true },
+    // 	physics: {
+    // 		enabled: true,
+    // 		geometry: "Cube"
+    // 	}
+    // })
+
+    // application.addMeshObj({
+    // 	position: {x: -2, y: 4, z: -13},
+    // 	rotation: {x: 0, y: 0, z: 0},
+    // 	rotationSpeed: {x: 0, y: 0, z: 0},
+    // 	texturesPaths: ['./res/meshes/jamb/dice.png'],
+    // 	useUVShema4x2: true,
+    // 	name: 'CubePhysics5',
+    // 	mesh: m.cube,
+    // 	raycast: { enabled: true },
+    // 	physics: {
+    // 		enabled: true,
+    // 		geometry: "Cube"
+    // 	}
+    // })
+
+    // application.addMeshObj({
+    // 	position: {x: -4, y: 6, z: -9},
+    // 	rotation: {x: 0, y: 0, z: 0},
+    // 	rotationSpeed: {x: 0, y: 0, z: 0},
+    // 	texturesPaths: ['./res/meshes/jamb/dice.png'],
+    // 	useUVShema4x2: true,
+    // 	name: 'CubePhysics6',
+    // 	mesh: m.cube,
+    // 	raycast: { enabled: true },
+    // 	physics: {
+    // 		enabled: true,
+    // 		geometry: "Cube"
+    // 	}
+    // })
+
     application.TOLERANCE = 0;
     let allDiceDoneProcedure = () => {
       console.log("ALL DONE");
@@ -1271,7 +1449,9 @@ let application = exports.application = new _world.default({
         app.cameras.WASD.pitch = -1.26;
         app.cameras.WASD.position[2] = -18;
         app.cameras.WASD.position[1] = 19;
-        _jamb.dices.STATUS = "PLACE_RESULT";
+
+        // dices.STATUS = "PLACE_RESULT";
+        _jamb.dices.STATUS = "SELECT_DICES_1";
         // application.dices.STATUS = "FREE_TO_PLAY";
       }
     };
@@ -1359,7 +1539,7 @@ let application = exports.application = new _world.default({
 });
 window.app = application;
 
-},{"./examples/games/jamb/jamb.js":1,"./src/engine/loader-obj.js":7,"./src/engine/utils.js":11,"./src/sounds/sounds.js":18,"./src/world.js":19}],3:[function(require,module,exports){
+},{"./examples/games/jamb/jamb.js":1,"./src/engine/loader-obj.js":7,"./src/engine/raycast-test.js":11,"./src/engine/utils.js":12,"./src/sounds/sounds.js":19,"./src/world.js":20}],3:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -7113,7 +7293,7 @@ class MEBall {
 }
 exports.default = MEBall;
 
-},{"../shaders/shaders":15,"./engine":6,"./matrix-class":8,"wgpu-matrix":3}],5:[function(require,module,exports){
+},{"../shaders/shaders":16,"./engine":6,"./matrix-class":8,"wgpu-matrix":3}],5:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -7374,6 +7554,13 @@ class MECube {
     });
     return bindGroup;
   }
+
+  // TEST 
+  getViewMatrix() {
+    const camera = this.cameras[this.mainCameraParams.type];
+    const viewMatrix = camera.update(deltaTime, this.inputHandler());
+    return viewMatrix;
+  }
   getTransformationMatrix(pos) {
     const now = Date.now();
     const deltaTime = (now - this.lastFrameMS) / this.mainCameraParams.responseCoef;
@@ -7523,7 +7710,7 @@ class MECube {
 }
 exports.default = MECube;
 
-},{"../shaders/shaders":15,"./engine":6,"./matrix-class":8,"wgpu-matrix":3}],6:[function(require,module,exports){
+},{"../shaders/shaders":16,"./engine":6,"./matrix-class":8,"wgpu-matrix":3}],6:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -7981,7 +8168,7 @@ function createInputHandler(window, canvas) {
   };
 }
 
-},{"./utils":11,"wgpu-matrix":3}],7:[function(require,module,exports){
+},{"./utils":12,"wgpu-matrix":3}],7:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -8471,16 +8658,16 @@ class Position {
     if (typeof x == 'undefined') x = 0;
     if (typeof y == 'undefined') y = 0;
     if (typeof z == 'undefined') z = 0;
-    this.x = x;
-    this.y = y;
-    this.z = z;
+    this.x = parseFloat(x);
+    this.y = parseFloat(y);
+    this.z = parseFloat(z);
     this.velY = 0;
     this.velX = 0;
     this.velZ = 0;
     this.inMove = false;
-    this.targetX = x;
-    this.targetY = y;
-    this.targetZ = z;
+    this.targetX = parseFloat(x);
+    this.targetY = parseFloat(y);
+    this.targetZ = parseFloat(z);
     this.thrust = 0.01;
     return this;
   }
@@ -8493,36 +8680,36 @@ class Position {
   }
   translateByX(x) {
     this.inMove = true;
-    this.targetX = x;
+    this.targetX = parseFloat(x);
   }
   translateByY(y) {
     this.inMove = true;
-    this.targetY = y;
+    this.targetY = parseFloat(y);
   }
   translateByZ(z) {
     this.inMove = true;
-    this.targetZ = z;
+    this.targetZ = parseFloat(z);
   }
   translateByXY(x, y) {
     this.inMove = true;
-    this.targetX = x;
-    this.targetY = y;
+    this.targetX = parseFloat(x);
+    this.targetY = parseFloat(y);
   }
   translateByXZ(x, z) {
     this.inMove = true;
-    this.targetX = x;
-    this.targetZ = z;
+    this.targetX = parseFloat(x);
+    this.targetZ = parseFloat(z);
   }
   translateByYZ(y, z) {
     this.inMove = true;
-    this.targetY = y;
-    this.targetZ = z;
+    this.targetY = parseFloat(y);
+    this.targetZ = parseFloat(z);
   }
   onTargetPositionReach() {}
   update() {
-    var tx = this.targetX - this.x,
-      ty = this.targetY - this.y,
-      tz = this.targetZ - this.z,
+    var tx = parseFloat(this.targetX) - parseFloat(this.x),
+      ty = parseFloat(this.targetY) - parseFloat(this.y),
+      tz = parseFloat(this.targetZ) - parseFloat(this.z),
       dist = Math.sqrt(tx * tx + ty * ty + tz * tz);
     this.velX = tx / dist * this.thrust;
     this.velY = ty / dist * this.thrust;
@@ -8554,7 +8741,7 @@ class Position {
     }
   }
   get worldLocation() {
-    return [this.x, this.y, this.z];
+    return [parseFloat(this.x), parseFloat(this.y), parseFloat(this.z)];
   }
   SetX(newx, em) {
     this.x = newx;
@@ -8588,6 +8775,15 @@ class Position {
     //     netPos: {x: this.x, y: this.y, z: this.z},
     //     netObjId: this.nameUniq,
     //   });
+  }
+  get X() {
+    return parseFloat(this.x);
+  }
+  get Y() {
+    return parseFloat(this.y);
+  }
+  get Z() {
+    return parseFloat(this.z);
   }
   setPosition(newx, newy, newz) {
     this.x = newx;
@@ -8631,6 +8827,23 @@ class Rotation {
     // not in use good for exstend logic
     this.matrixRotation = null;
   }
+  toDegree() {
+    /*
+    heading = atan2(y * sin(angle)- x * z * (1 - cos(angle)) , 1 - (y2 + z2 ) * (1 - cos(angle)))
+    attitude = asin(x * y * (1 - cos(angle)) + z * sin(angle))
+    bank = atan2(x * sin(angle)-y * z * (1 - cos(angle)) , 1 - (x2 + z2) * (1 - cos(angle)))
+    */
+    return [(0, _utils.radToDeg)(this.axis.x), (0, _utils.radToDeg)(this.axis.y), (0, _utils.radToDeg)(this.axis.z)];
+  }
+  toDegreeX() {
+    return Math.cos((0, _utils.radToDeg)(this.axis.x) / 2);
+  }
+  toDegreeY() {
+    return Math.cos((0, _utils.radToDeg)(this.axis.z) / 2);
+  }
+  toDegreeZ() {
+    return Math.cos((0, _utils.radToDeg)(this.axis.y) / 2);
+  }
   getRotX() {
     if (this.rotationSpeed.x == 0) {
       return (0, _utils.degToRad)(this.x);
@@ -8658,7 +8871,7 @@ class Rotation {
 }
 exports.Rotation = Rotation;
 
-},{"./utils":11}],9:[function(require,module,exports){
+},{"./utils":12}],9:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -8672,9 +8885,17 @@ var _vertexShadow = require("../shaders/vertexShadow.wgsl");
 var _fragment = require("../shaders/fragment.wgsl");
 var _vertex = require("../shaders/vertex.wgsl");
 var _utils = require("./utils");
+var _raycastTest = require("./raycast-test");
 class MEMeshObj {
   constructor(canvas, device, context, o) {
     if (typeof o.name === 'undefined') o.name = (0, _utils.genName)(9);
+    if (typeof o.raycast === 'undefined') {
+      this.raycast = {
+        enabled: false
+      };
+    } else {
+      this.raycast = o.raycast;
+    }
     this.name = o.name;
     this.done = false;
     this.device = device;
@@ -8684,13 +8905,20 @@ class MEMeshObj {
     // Mesh stuff
     this.mesh = o.mesh;
     this.mesh.uvs = this.mesh.textures;
-    console.log(`%c Mesh loaded: ${o.name}`, _utils.LOG_INFO);
+    console.log(`%c Mesh loaded: ${o.name}`, _utils.LOG_FUNNY_SMALL);
     this.inputHandler = (0, _engine.createInputHandler)(window, canvas);
     this.cameras = o.cameras;
     this.mainCameraParams = {
       type: o.mainCameraParams.type,
       responseCoef: o.mainCameraParams.responseCoef
     };
+
+    // test raycast
+    // fullscreen for now
+    // window.addEventListener('mousedown', (e) => {
+    // 	checkingProcedure(e);
+    // });
+    _raycastTest.touchCoordinate.enabled = true;
     this.lastFrameMS = 0;
     this.texturesPaths = [];
     o.texturesPaths.forEach(t => {
@@ -9126,6 +9354,12 @@ class MEMeshObj {
     renderPass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
     renderPass.setIndexBuffer(this.indexBuffer, 'uint16');
     renderPass.drawIndexed(this.indexCount);
+
+    // test ray
+
+    // try{ OLD
+    // if(this.raycast.enabled == true) checkingRay(this)
+    // } catch(e) {}
   };
   drawShadows = shadowPass => {
     shadowPass.setBindGroup(0, this.sceneBindGroupForShadow);
@@ -9139,7 +9373,7 @@ class MEMeshObj {
 }
 exports.default = MEMeshObj;
 
-},{"../shaders/fragment.wgsl":14,"../shaders/vertex.wgsl":16,"../shaders/vertexShadow.wgsl":17,"./engine":6,"./matrix-class":8,"./utils":11,"wgpu-matrix":3}],10:[function(require,module,exports){
+},{"../shaders/fragment.wgsl":15,"../shaders/vertex.wgsl":17,"../shaders/vertexShadow.wgsl":18,"./engine":6,"./matrix-class":8,"./raycast-test":11,"./utils":12,"wgpu-matrix":3}],10:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -9537,13 +9771,112 @@ class MEMesh {
 }
 exports.default = MEMesh;
 
-},{"../shaders/fragment.wgsl":14,"../shaders/vertex.wgsl":16,"../shaders/vertexShadow.wgsl":17,"./engine":6,"./loader-obj":7,"./matrix-class":8,"wgpu-matrix":3}],11:[function(require,module,exports){
+},{"../shaders/fragment.wgsl":15,"../shaders/vertex.wgsl":17,"../shaders/vertexShadow.wgsl":18,"./engine":6,"./loader-obj":7,"./matrix-class":8,"wgpu-matrix":3}],11:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.LOG_WARN = exports.LOG_MATRIX = exports.LOG_INFO = exports.LOG_FUNNY = void 0;
+exports.addRaycastListener = addRaycastListener;
+exports.getRayFromMouse = getRayFromMouse;
+exports.rayIntersectsSphere = rayIntersectsSphere;
+exports.touchCoordinate = void 0;
+var _wgpuMatrix = require("wgpu-matrix");
+/**
+ * @author Nikola Lukic
+ * @email zlatnaspirala@gmail.com
+ * @site https://maximumroulette.com
+ * @Licence GPL v3
+ * @credits chatgpt used for this script adaptation.
+ * @Note matrix-engine-wgpu adaptation test
+ * default for now:
+ * app.cameras['WASD']
+ * Only tested for WASD type of camera.
+ * app is global - will be fixed in future
+ */
+
+let rayHitEvent;
+let touchCoordinate = exports.touchCoordinate = {
+  enabled: false,
+  x: 0,
+  y: 0,
+  stopOnFirstDetectedHit: false
+};
+function multiplyMatrixVector(matrix, vector) {
+  return _wgpuMatrix.vec4.transformMat4(vector, matrix);
+}
+function getRayFromMouse(event, canvas, camera) {
+  const rect = canvas.getBoundingClientRect();
+  let x = (event.clientX - rect.left) / rect.width * 2 - 1;
+  let y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+  // simple invert
+  x = -x;
+  const fov = Math.PI / 4;
+  const aspect = canvas.width / canvas.height;
+  const near = 0.1;
+  const far = 100;
+  camera.projectionMatrix = _wgpuMatrix.mat4.perspective(2 * Math.PI / 5, aspect, 1, 1000.0);
+  const invProjection = _wgpuMatrix.mat4.inverse(camera.projectionMatrix);
+  const correctedView = _wgpuMatrix.mat4.clone(camera.view_);
+  correctedView[2] *= -1;
+  correctedView[6] *= -1;
+  correctedView[10] *= -1;
+  const invView = _wgpuMatrix.mat4.inverse(correctedView);
+  const ndc = [x, y, 1, 1];
+  let worldPos = multiplyMatrixVector(invProjection, ndc);
+  worldPos = multiplyMatrixVector(invView, worldPos);
+  let world;
+  if (worldPos[3] !== 0) {
+    world = [worldPos[0] / worldPos[3], worldPos[2] / worldPos[3], worldPos[1] / worldPos[3]];
+  } else {
+    console.log("[raycaster]special case 0.");
+    world = [worldPos[0], worldPos[1], worldPos[2]];
+  }
+  const rayOrigin = [camera.position[0], camera.position[1], camera.position[2]];
+  const rayDirection = _wgpuMatrix.vec3.normalize(_wgpuMatrix.vec3.subtract(world, rayOrigin));
+  return {
+    rayOrigin,
+    rayDirection
+  };
+}
+function rayIntersectsSphere(rayOrigin, rayDirection, sphereCenter, sphereRadius) {
+  const pos = [sphereCenter.x, sphereCenter.y, sphereCenter.z];
+  const oc = _wgpuMatrix.vec3.subtract(rayOrigin, pos);
+  const a = _wgpuMatrix.vec3.dot(rayDirection, rayDirection);
+  const b = 2.0 * _wgpuMatrix.vec3.dot(oc, rayDirection);
+  const c = _wgpuMatrix.vec3.dot(oc, oc) - sphereRadius * sphereRadius;
+  const discriminant = b * b - 4 * a * c;
+  return discriminant > 0;
+}
+function addRaycastListener() {
+  window.addEventListener('click', event => {
+    let canvas = document.getElementsByTagName('canvas')[0];
+    let camera = app.cameras.WASD;
+    const {
+      rayOrigin,
+      rayDirection
+    } = getRayFromMouse(event, canvas, camera);
+    for (const object of app.mainRenderBundle) {
+      if (rayIntersectsSphere(rayOrigin, rayDirection, object.position, 2)) {
+        console.log('Object clicked:', object.name);
+        // Just like in matrix-engine webGL version "ray.hit.event"
+        dispatchEvent(new CustomEvent('ray.hit.event', {
+          detail: {
+            hitObject: object
+          }
+        }));
+      }
+    }
+  });
+}
+
+},{"wgpu-matrix":3}],12:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.LOG_WARN = exports.LOG_MATRIX = exports.LOG_INFO = exports.LOG_FUNNY_SMALL = exports.LOG_FUNNY = void 0;
 exports.ORBIT = ORBIT;
 exports.ORBIT_FROM_ARRAY = ORBIT_FROM_ARRAY;
 exports.OSCILLATOR = OSCILLATOR;
@@ -10209,8 +10542,9 @@ function quaternion_rotation_matrix(Q) {
 // copnsole log graphics
 const LOG_WARN = exports.LOG_WARN = 'background: gray; color: yellow; font-size:10px';
 const LOG_INFO = exports.LOG_INFO = 'background: green; color: white; font-size:11px';
-const LOG_MATRIX = exports.LOG_MATRIX = "font-family: verdana;color: #lime; font-size:11px;text-shadow: 2px 2px 4px orangered;background: black;";
+const LOG_MATRIX = exports.LOG_MATRIX = "font-family: stormfaze;color: #lime; font-size:11px;text-shadow: 2px 2px 4px orangered;background: black;";
 const LOG_FUNNY = exports.LOG_FUNNY = "font-family: stormfaze;color: #f1f033; font-size:14px;text-shadow: 2px 2px 4px #f335f4, 4px 4px 4px #d64444, 2px 2px 4px #c160a6, 6px 2px 0px #123de3;background: black;";
+const LOG_FUNNY_SMALL = exports.LOG_FUNNY_SMALL = "font-family: stormfaze;color: #f1f033; font-size:10px;text-shadow: 2px 2px 4px #f335f4, 4px 4px 4px #d64444, 1px 1px 2px #c160a6, 3px 1px 0px #123de3;background: black;";
 function genName(length) {
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
   let result = "";
@@ -10276,13 +10610,14 @@ let mb = exports.mb = {
   }
 };
 
-},{}],12:[function(require,module,exports){
+},{}],13:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.MultiLang = void 0;
+var _utils = require("../engine/utils");
 class MultiLang {
   constructor() {
     addEventListener('updateLang', () => {
@@ -10298,7 +10633,7 @@ class MultiLang {
   };
   loadMultilang = async function (lang = 'en') {
     lang = 'res/multilang/' + lang + '.json';
-    console.info("Multilang: ", lang);
+    console.info(`%cMultilang: ${lang}`, _utils.LOG_MATRIX);
     try {
       const r = await fetch(lang, {
         headers: {
@@ -10315,7 +10650,7 @@ class MultiLang {
 }
 exports.MultiLang = MultiLang;
 
-},{}],13:[function(require,module,exports){
+},{"../engine/utils":12}],14:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -10587,7 +10922,7 @@ class MatrixAmmo {
 }
 exports.default = MatrixAmmo;
 
-},{"../engine/utils":11}],14:[function(require,module,exports){
+},{"../engine/utils":12}],15:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -10645,7 +10980,7 @@ fn main(input : FragmentInput) -> @location(0) vec4f {
   // return vec4(textureColor.rgb , 0.5);
 }`;
 
-},{}],15:[function(require,module,exports){
+},{}],16:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -10703,7 +11038,7 @@ fn fragmentMain(input: VertexOutput) -> @location(0) vec4f {
   return vec4f(textureColor.rgb * lightColor, textureColor.a);
 }`;
 
-},{}],16:[function(require,module,exports){
+},{}],17:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -10760,7 +11095,7 @@ fn main(
 }
 `;
 
-},{}],17:[function(require,module,exports){
+},{}],18:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -10788,7 +11123,7 @@ fn main(
 }
 `;
 
-},{}],18:[function(require,module,exports){
+},{}],19:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -10838,7 +11173,7 @@ class MatrixSounds {
 }
 exports.MatrixSounds = MatrixSounds;
 
-},{}],19:[function(require,module,exports){
+},{}],20:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -10940,7 +11275,17 @@ class MatrixEngineWGPU {
   }) => {
     this.canvas = canvas;
     this.adapter = await navigator.gpu.requestAdapter();
-    this.device = await this.adapter.requestDevice();
+    this.device = await this.adapter.requestDevice({
+      extensions: ["ray_tracing"]
+    });
+
+    // Maybe works in ssl with webworkers...
+    // const adapterInfo = await this.adapter.requestAdapterInfo();
+    // var test = this.adapter.features()
+    // console.log(adapterInfo.vendor);
+    // console.log('test' + test);
+    // console.log("FEATURES : " + this.adapter.features)
+
     this.context = canvas.getContext('webgpu');
     const devicePixelRatio = window.devicePixelRatio;
     canvas.width = canvas.clientWidth * devicePixelRatio;
@@ -11164,6 +11509,11 @@ class MatrixEngineWGPU {
     if (typeof o.scale === 'undefined') {
       o.scale = [1, 1, 1];
     }
+    if (typeof o.raycast === 'undefined') {
+      o.raycast = {
+        enabled: false
+      };
+    }
     o.entityArgPass = this.entityArgPass;
     o.cameras = this.cameras;
     // if(typeof o.name === 'undefined') {o.name = 'random' + Math.random();}
@@ -11203,6 +11553,7 @@ class MatrixEngineWGPU {
     if (typeof o.physics.rotation === 'undefined') {
       o.physics.rotation = o.rotation;
     }
+
     // send same pos
     o.physics.position = o.position;
     //  console.log('Mesh procedure', o)
@@ -11259,7 +11610,7 @@ class MatrixEngineWGPU {
     }
   };
   framePassPerObject = () => {
-    console.log('framePassPerObject');
+    // console.log('framePassPerObject')
     let commandEncoder = this.device.createCommandEncoder();
     this.rbContainer = [];
     let passEncoder;
@@ -11280,4 +11631,4 @@ class MatrixEngineWGPU {
 }
 exports.default = MatrixEngineWGPU;
 
-},{"./engine/ball.js":4,"./engine/cube.js":5,"./engine/engine.js":6,"./engine/mesh-obj.js":9,"./engine/mesh.js":10,"./engine/utils.js":11,"./multilang/lang.js":12,"./physics/matrix-ammo.js":13,"./sounds/sounds.js":18,"wgpu-matrix":3}]},{},[2]);
+},{"./engine/ball.js":4,"./engine/cube.js":5,"./engine/engine.js":6,"./engine/mesh-obj.js":9,"./engine/mesh.js":10,"./engine/utils.js":12,"./multilang/lang.js":13,"./physics/matrix-ammo.js":14,"./sounds/sounds.js":19,"wgpu-matrix":3}]},{},[2]);

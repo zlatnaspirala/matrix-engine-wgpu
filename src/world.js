@@ -11,299 +11,312 @@ import {MatrixSounds} from "./sounds/sounds.js";
 
 export default class MatrixEngineWGPU {
 
-  mainRenderBundle = [];
-  rbContainer = [];
-  frame = () => {};
+	mainRenderBundle = [];
+	rbContainer = [];
+	frame = () => {};
 
-  entityHolder = [];
+	entityHolder = [];
 
-  entityArgPass = {
-    loadOp: 'clear',
-    storeOp: 'store',
-    depthLoadOp: 'clear',
-    depthStoreOp: 'store'
-  }
+	entityArgPass = {
+		loadOp: 'clear',
+		storeOp: 'store',
+		depthLoadOp: 'clear',
+		depthStoreOp: 'store'
+	}
 
-  matrixAmmo = new MatrixAmmo();
-  matrixSounds = new MatrixSounds();
+	matrixAmmo = new MatrixAmmo();
+	matrixSounds = new MatrixSounds();
 
-  // The input handler
-  constructor(options, callback) {
-    // console.log('typeof options ', typeof options )
-    if(typeof options == 'undefined' || typeof options == "function") {
-      this.options = {
-        useSingleRenderPass: true,
-        canvasSize: 'fullscreen',
-        mainCameraParams: {
-          type: 'WASD',
-          responseCoef: 2000
-        }
-      }
-      callback = options;
-    }
-    if(typeof options.mainCameraParams === 'undefined') {
-      options.mainCameraParams = {
-        type: 'WASD',
-        responseCoef: 2000
-      }
-    }
-    this.options = options;
+	// The input handler
+	constructor(options, callback) {
+		// console.log('typeof options ', typeof options )
+		if(typeof options == 'undefined' || typeof options == "function") {
+			this.options = {
+				useSingleRenderPass: true,
+				canvasSize: 'fullscreen',
+				mainCameraParams: {
+					type: 'WASD',
+					responseCoef: 2000
+				}
+			}
+			callback = options;
+		}
+		if(typeof options.mainCameraParams === 'undefined') {
+			options.mainCameraParams = {
+				type: 'WASD',
+				responseCoef: 2000
+			}
+		}
+		this.options = options;
 
-    this.mainCameraParams = options.mainCameraParams;
+		this.mainCameraParams = options.mainCameraParams;
 
-    var canvas = document.createElement('canvas')
-    if(this.options.canvasSize == 'fullscreen') {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    } else {
-      canvas.width = this.options.canvasSize.w;
-      canvas.height = this.options.canvasSize.h;
-    }
-    document.body.append(canvas);
+		var canvas = document.createElement('canvas')
+		if(this.options.canvasSize == 'fullscreen') {
+			canvas.width = window.innerWidth;
+			canvas.height = window.innerHeight;
+		} else {
+			canvas.width = this.options.canvasSize.w;
+			canvas.height = this.options.canvasSize.h;
+		}
+		document.body.append(canvas);
 
-    // The camera types
-    const initialCameraPosition = vec3.create(0, 0, 0);
-    // console.log('passed : o.mainCameraParams.responseCoef ', o.mainCameraParams.responseCoef)
-    this.mainCameraParams = {
-      type: this.options.mainCameraParams.type,
-      responseCoef: this.options.mainCameraParams.responseCoef
-    }
+		// The camera types
+		const initialCameraPosition = vec3.create(0, 0, 0);
+		// console.log('passed : o.mainCameraParams.responseCoef ', o.mainCameraParams.responseCoef)
+		this.mainCameraParams = {
+			type: this.options.mainCameraParams.type,
+			responseCoef: this.options.mainCameraParams.responseCoef
+		}
 
-    this.cameras = {
-      arcball: new ArcballCamera({position: initialCameraPosition}),
-      WASD: new WASDCamera({position: initialCameraPosition}),
-    };
+		this.cameras = {
+			arcball: new ArcballCamera({position: initialCameraPosition}),
+			WASD: new WASDCamera({position: initialCameraPosition}),
+		};
 
-    //
-    this.label = new MultiLang()
-    if(urlQuery.lang != null) {
-      this.label.loadMultilang(urlQuery.lang).then((r) => {
-        this.label.get = r;
-      });
-    } else {
-      this.label.loadMultilang().then((r) => {
-        this.label.get = r;
-      });
-    }
+		//
+		this.label = new MultiLang()
+		if(urlQuery.lang != null) {
+			this.label.loadMultilang(urlQuery.lang).then((r) => {
+				this.label.get = r;
+			});
+		} else {
+			this.label.loadMultilang().then((r) => {
+				this.label.get = r;
+			});
+		}
 
-    this.init({canvas, callback})
-  }
+		this.init({canvas, callback})
+	}
 
-  init = async ({canvas, callback}) => {
-    this.canvas = canvas;
-    this.adapter = await navigator.gpu.requestAdapter();
-    this.device = await this.adapter.requestDevice();
-    this.context = canvas.getContext('webgpu');
+	init = async ({canvas, callback}) => {
+		this.canvas = canvas;
+		this.adapter = await navigator.gpu.requestAdapter();
+		this.device = await this.adapter.requestDevice({
+			extensions: ["ray_tracing"]
+		});
 
-    const devicePixelRatio = window.devicePixelRatio;
-    canvas.width = canvas.clientWidth * devicePixelRatio;
-    canvas.height = canvas.clientHeight * devicePixelRatio;
-    const presentationFormat = navigator.gpu.getPreferredCanvasFormat();
+		// Maybe works in ssl with webworkers...
+		// const adapterInfo = await this.adapter.requestAdapterInfo();
+		// var test = this.adapter.features()
+		// console.log(adapterInfo.vendor);
+		// console.log('test' + test);
+		// console.log("FEATURES : " + this.adapter.features)
 
-    this.context.configure({
-      device: this.device,
-      format: presentationFormat,
-      alphaMode: 'premultiplied',
-    });
+		this.context = canvas.getContext('webgpu');
 
-    if(this.options.useSingleRenderPass == true) {
-      this.frame = this.frameSinglePass;
-    } else {
-      this.frame = this.framePassPerObject;
-    }
+		const devicePixelRatio = window.devicePixelRatio;
+		canvas.width = canvas.clientWidth * devicePixelRatio;
+		canvas.height = canvas.clientHeight * devicePixelRatio;
+		const presentationFormat = navigator.gpu.getPreferredCanvasFormat();
 
-    this.run(callback)
-  };
+		this.context.configure({
+			device: this.device,
+			format: presentationFormat,
+			alphaMode: 'premultiplied',
+		});
 
-  // Not in use for now
-  addCube = (o) => {
-    if(typeof o === 'undefined') {
-      var o = {
-        scale: 1,
-        position: {x: 0, y: 0, z: -4},
-        texturesPaths: ['./res/textures/default.png'],
-        rotation: {x: 0, y: 0, z: 0},
-        rotationSpeed: {x: 0, y: 0, z: 0},
-        entityArgPass: this.entityArgPass,
-        cameras: this.cameras,
-        mainCameraParams: this.mainCameraParams
-      }
-    } else {
-      if(typeof o.position === 'undefined') {o.position = {x: 0, y: 0, z: -4}}
-      if(typeof o.rotation === 'undefined') {o.rotation = {x: 0, y: 0, z: 0}}
-      if(typeof o.rotationSpeed === 'undefined') {o.rotationSpeed = {x: 0, y: 0, z: 0}}
-      if(typeof o.texturesPaths === 'undefined') {o.texturesPaths = ['./res/textures/default.png']}
-      if(typeof o.scale === 'undefined') {o.scale = 1;}
-      if(typeof o.mainCameraParams === 'undefined') {o.mainCameraParams = this.mainCameraParams}
-      o.entityArgPass = this.entityArgPass;
-      o.cameras = this.cameras;
-    }
-    let myCube1 = new MECube(this.canvas, this.device, this.context, o)
-    this.mainRenderBundle.push(myCube1);
-  }
+		if(this.options.useSingleRenderPass == true) {
+			this.frame = this.frameSinglePass;
+		} else {
+			this.frame = this.framePassPerObject;
+		}
 
-  // Not in use for now
-  addBall = (o) => {
-    if(typeof o === 'undefined') {
-      var o = {
-        scale: 1,
-        position: {x: 0, y: 0, z: -4},
-        texturesPaths: ['./res/textures/default.png'],
-        rotation: {x: 0, y: 0, z: 0},
-        rotationSpeed: {x: 0, y: 0, z: 0},
-        entityArgPass: this.entityArgPass,
-        cameras: this.cameras,
-        mainCameraParams: this.mainCameraParams
-      }
-    } else {
-      if(typeof o.position === 'undefined') {o.position = {x: 0, y: 0, z: -4}}
-      if(typeof o.rotation === 'undefined') {o.rotation = {x: 0, y: 0, z: 0}}
-      if(typeof o.rotationSpeed === 'undefined') {o.rotationSpeed = {x: 0, y: 0, z: 0}}
-      if(typeof o.texturesPaths === 'undefined') {o.texturesPaths = ['./res/textures/default.png']}
-      if(typeof o.mainCameraParams === 'undefined') {o.mainCameraParams = this.mainCameraParams}
-      if(typeof o.scale === 'undefined') {o.scale = 1;}
-      o.entityArgPass = this.entityArgPass;
-      o.cameras = this.cameras;
-    }
-    let myBall1 = new MEBall(this.canvas, this.device, this.context, o)
-    this.mainRenderBundle.push(myBall1);
-  }
+		this.run(callback)
+	};
 
-  // Not in use for now
-  addMesh = (o) => {
-    if(typeof o.position === 'undefined') {o.position = {x: 0, y: 0, z: -4}}
-    if(typeof o.rotation === 'undefined') {o.rotation = {x: 0, y: 0, z: 0}}
-    if(typeof o.rotationSpeed === 'undefined') {o.rotationSpeed = {x: 0, y: 0, z: 0}}
-    if(typeof o.texturesPaths === 'undefined') {o.texturesPaths = ['./res/textures/default.png']}
-    if(typeof o.mainCameraParams === 'undefined') {o.mainCameraParams = this.mainCameraParams}
-    if(typeof o.scale === 'undefined') {o.scale = 1;}
-    o.entityArgPass = this.entityArgPass;
-    o.cameras = this.cameras;
-    if(typeof o.name === 'undefined') {o.name = 'random' + Math.random();}
-    if(typeof o.mesh === 'undefined') {
-      throw console.error('arg mesh is empty...');
-      return;
-    }
-    console.log('Mesh procedure', o)
-    let myMesh1 = new MEMesh(this.canvas, this.device, this.context, o)
-    this.mainRenderBundle.push(myMesh1);
-  }
+	// Not in use for now
+	addCube = (o) => {
+		if(typeof o === 'undefined') {
+			var o = {
+				scale: 1,
+				position: {x: 0, y: 0, z: -4},
+				texturesPaths: ['./res/textures/default.png'],
+				rotation: {x: 0, y: 0, z: 0},
+				rotationSpeed: {x: 0, y: 0, z: 0},
+				entityArgPass: this.entityArgPass,
+				cameras: this.cameras,
+				mainCameraParams: this.mainCameraParams
+			}
+		} else {
+			if(typeof o.position === 'undefined') {o.position = {x: 0, y: 0, z: -4}}
+			if(typeof o.rotation === 'undefined') {o.rotation = {x: 0, y: 0, z: 0}}
+			if(typeof o.rotationSpeed === 'undefined') {o.rotationSpeed = {x: 0, y: 0, z: 0}}
+			if(typeof o.texturesPaths === 'undefined') {o.texturesPaths = ['./res/textures/default.png']}
+			if(typeof o.scale === 'undefined') {o.scale = 1;}
+			if(typeof o.mainCameraParams === 'undefined') {o.mainCameraParams = this.mainCameraParams}
+			o.entityArgPass = this.entityArgPass;
+			o.cameras = this.cameras;
+		}
+		let myCube1 = new MECube(this.canvas, this.device, this.context, o)
+		this.mainRenderBundle.push(myCube1);
+	}
 
-  addMeshObj = (o) => {
-    if(typeof o.name === 'undefined') {o.name = genName(9)}
-    if(typeof o.position === 'undefined') {o.position = {x: 0, y: 0, z: -4}}
-    if(typeof o.rotation === 'undefined') {o.rotation = {x: 0, y: 0, z: 0}}
-    if(typeof o.rotationSpeed === 'undefined') {o.rotationSpeed = {x: 0, y: 0, z: 0}}
-    if(typeof o.texturesPaths === 'undefined') {o.texturesPaths = ['./res/textures/default.png']}
-    if(typeof o.mainCameraParams === 'undefined') {o.mainCameraParams = this.mainCameraParams}
-    if(typeof o.scale === 'undefined') {o.scale = [1, 1, 1];}
-    o.entityArgPass = this.entityArgPass;
-    o.cameras = this.cameras;
-    // if(typeof o.name === 'undefined') {o.name = 'random' + Math.random();}
-    if(typeof o.mesh === 'undefined') {
-      mb.error('arg mesh is empty for ', o.name);
-      throw console.error('arg mesh is empty...');
-      return;
-    }
-    if(typeof o.physics === 'undefined') {
-      o.physics = {
-        scale: [1, 1, 1],
-        enabled: true,
-        geometry: "Sphere",
-        radius: o.scale,
-        name: o.name,
-        rotation: o.rotation
-      }
-    }
-    if(typeof o.physics.enabled === 'undefined') {o.physics.enabled = true}
-    if(typeof o.physics.geometry === 'undefined') {o.physics.geometry = "Sphere"}
-    if(typeof o.physics.radius === 'undefined') {o.physics.radius = o.scale}
-    if(typeof o.physics.mass === 'undefined') {o.physics.mass = 1;}
-    if(typeof o.physics.name === 'undefined') {o.physics.name = o.name;}
-    if(typeof o.physics.scale === 'undefined') {o.physics.scale = o.scale;}
-    if(typeof o.physics.rotation === 'undefined') {o.physics.rotation = o.rotation;}
-    // send same pos
-    o.physics.position = o.position;
-    //  console.log('Mesh procedure', o)
-    let myMesh1 = new MEMeshObj(this.canvas, this.device, this.context, o)
-    if(o.physics.enabled == true) {
-      this.matrixAmmo.addPhysics(myMesh1, o.physics)
-    }
-    this.mainRenderBundle.push(myMesh1);
-  }
+	// Not in use for now
+	addBall = (o) => {
+		if(typeof o === 'undefined') {
+			var o = {
+				scale: 1,
+				position: {x: 0, y: 0, z: -4},
+				texturesPaths: ['./res/textures/default.png'],
+				rotation: {x: 0, y: 0, z: 0},
+				rotationSpeed: {x: 0, y: 0, z: 0},
+				entityArgPass: this.entityArgPass,
+				cameras: this.cameras,
+				mainCameraParams: this.mainCameraParams
+			}
+		} else {
+			if(typeof o.position === 'undefined') {o.position = {x: 0, y: 0, z: -4}}
+			if(typeof o.rotation === 'undefined') {o.rotation = {x: 0, y: 0, z: 0}}
+			if(typeof o.rotationSpeed === 'undefined') {o.rotationSpeed = {x: 0, y: 0, z: 0}}
+			if(typeof o.texturesPaths === 'undefined') {o.texturesPaths = ['./res/textures/default.png']}
+			if(typeof o.mainCameraParams === 'undefined') {o.mainCameraParams = this.mainCameraParams}
+			if(typeof o.scale === 'undefined') {o.scale = 1;}
+			o.entityArgPass = this.entityArgPass;
+			o.cameras = this.cameras;
+		}
+		let myBall1 = new MEBall(this.canvas, this.device, this.context, o)
+		this.mainRenderBundle.push(myBall1);
+	}
 
-  run(callback) {
-    setTimeout(() => {requestAnimationFrame(this.frame)}, 500)
-    setTimeout(() => {callback(this)}, 20)
-  }
+	// Not in use for now
+	addMesh = (o) => {
+		if(typeof o.position === 'undefined') {o.position = {x: 0, y: 0, z: -4}}
+		if(typeof o.rotation === 'undefined') {o.rotation = {x: 0, y: 0, z: 0}}
+		if(typeof o.rotationSpeed === 'undefined') {o.rotationSpeed = {x: 0, y: 0, z: 0}}
+		if(typeof o.texturesPaths === 'undefined') {o.texturesPaths = ['./res/textures/default.png']}
+		if(typeof o.mainCameraParams === 'undefined') {o.mainCameraParams = this.mainCameraParams}
+		if(typeof o.scale === 'undefined') {o.scale = 1;}
+		o.entityArgPass = this.entityArgPass;
+		o.cameras = this.cameras;
+		if(typeof o.name === 'undefined') {o.name = 'random' + Math.random();}
+		if(typeof o.mesh === 'undefined') {
+			throw console.error('arg mesh is empty...');
+			return;
+		}
+		console.log('Mesh procedure', o)
+		let myMesh1 = new MEMesh(this.canvas, this.device, this.context, o)
+		this.mainRenderBundle.push(myMesh1);
+	}
 
-  destroyProgram = () => {
-    this.mainRenderBundle = undefined;
-    this.canvas.remove();
-  }
+	addMeshObj = (o) => {
+		if(typeof o.name === 'undefined') {o.name = genName(9)}
+		if(typeof o.position === 'undefined') {o.position = {x: 0, y: 0, z: -4}}
+		if(typeof o.rotation === 'undefined') {o.rotation = {x: 0, y: 0, z: 0}}
+		if(typeof o.rotationSpeed === 'undefined') {o.rotationSpeed = {x: 0, y: 0, z: 0}}
+		if(typeof o.texturesPaths === 'undefined') {o.texturesPaths = ['./res/textures/default.png']}
+		if(typeof o.mainCameraParams === 'undefined') {o.mainCameraParams = this.mainCameraParams}
+		if(typeof o.scale === 'undefined') {o.scale = [1, 1, 1];}
+		if(typeof o.raycast === 'undefined') {o.raycast = { enabled: false }}
 
-  frameSinglePass = () => {
-    if(typeof this.mainRenderBundle == 'undefined') return;
-    try {
-      let shadowPass = null;
-      let renderPass;
-      let commandEncoder = this.device.createCommandEncoder();
+		o.entityArgPass = this.entityArgPass;
+		o.cameras = this.cameras;
+		// if(typeof o.name === 'undefined') {o.name = 'random' + Math.random();}
+		if(typeof o.mesh === 'undefined') {
+			mb.error('arg mesh is empty for ', o.name);
+			throw console.error('arg mesh is empty...');
+			return;
+		}
+		if(typeof o.physics === 'undefined') {
+			o.physics = {
+				scale: [1, 1, 1],
+				enabled: true,
+				geometry: "Sphere",
+				radius: o.scale,
+				name: o.name,
+				rotation: o.rotation
+			}
+		}
+		if(typeof o.physics.enabled === 'undefined') {o.physics.enabled = true}
+		if(typeof o.physics.geometry === 'undefined') {o.physics.geometry = "Sphere"}
+		if(typeof o.physics.radius === 'undefined') {o.physics.radius = o.scale}
+		if(typeof o.physics.mass === 'undefined') {o.physics.mass = 1;}
+		if(typeof o.physics.name === 'undefined') {o.physics.name = o.name;}
+		if(typeof o.physics.scale === 'undefined') {o.physics.scale = o.scale;}
+		if(typeof o.physics.rotation === 'undefined') {o.physics.rotation = o.rotation;}
 
-      this.mainRenderBundle.forEach((meItem, index) => {
-        meItem.position.update();
-      })
+		// send same pos
+		o.physics.position = o.position;
+		//  console.log('Mesh procedure', o)
+		let myMesh1 = new MEMeshObj(this.canvas, this.device, this.context, o)
+		if(o.physics.enabled == true) {
+			this.matrixAmmo.addPhysics(myMesh1, o.physics)
+		}
+		this.mainRenderBundle.push(myMesh1);
+	}
 
-      this.matrixAmmo.updatePhysics()
+	run(callback) {
+		setTimeout(() => {requestAnimationFrame(this.frame)}, 500)
+		setTimeout(() => {callback(this)}, 20)
+	}
 
-      this.mainRenderBundle.forEach((meItem, index) => {
-        meItem.draw(commandEncoder);
+	destroyProgram = () => {
+		this.mainRenderBundle = undefined;
+		this.canvas.remove();
+	}
 
-        shadowPass = commandEncoder.beginRenderPass(meItem.shadowPassDescriptor);
-        shadowPass.setPipeline(meItem.shadowPipeline);
-        meItem.drawShadows(shadowPass);
-        shadowPass.end();
-      })
+	frameSinglePass = () => {
+		if(typeof this.mainRenderBundle == 'undefined') return;
+		try {
+			let shadowPass = null;
+			let renderPass;
+			let commandEncoder = this.device.createCommandEncoder();
 
-      this.mainRenderBundle.forEach((meItem, index) => {
-        if(index == 0) {
-          renderPass = commandEncoder.beginRenderPass(meItem.renderPassDescriptor);
-          renderPass.setPipeline(meItem.pipeline);
-        }
-      })
+			this.mainRenderBundle.forEach((meItem, index) => {
+				meItem.position.update();
+			})
 
-      this.mainRenderBundle.forEach((meItem, index) => {
-        meItem.drawElements(renderPass);
-      })
-      if(renderPass) renderPass.end();
+			this.matrixAmmo.updatePhysics()
 
-      this.device.queue.submit([commandEncoder.finish()]);
-      requestAnimationFrame(this.frame);
-    } catch(err) {
-      console.log('%cDraw func (err):' + err, LOG_WARN)
-      requestAnimationFrame(this.frame);
-    }
-  }
+			this.mainRenderBundle.forEach((meItem, index) => {
+				meItem.draw(commandEncoder);
 
-  framePassPerObject = () => {
-    console.log('framePassPerObject')
-    let commandEncoder = this.device.createCommandEncoder();
-    this.rbContainer = [];
-    let passEncoder;
-    this.mainRenderBundle.forEach((meItem, index) => {
-      meItem.draw(commandEncoder);
+				shadowPass = commandEncoder.beginRenderPass(meItem.shadowPassDescriptor);
+				shadowPass.setPipeline(meItem.shadowPipeline);
+				meItem.drawShadows(shadowPass);
+				shadowPass.end();
+			})
 
-      if(meItem.renderBundle) {
-        this.rbContainer.push(meItem.renderBundle)
-        passEncoder = commandEncoder.beginRenderPass(meItem.renderPassDescriptor);
-        passEncoder.executeBundles(this.rbContainer);
-        passEncoder.end();
-      } else {
-        meItem.draw(commandEncoder)
-      }
+			this.mainRenderBundle.forEach((meItem, index) => {
+				if(index == 0) {
+					renderPass = commandEncoder.beginRenderPass(meItem.renderPassDescriptor);
+					renderPass.setPipeline(meItem.pipeline);
+				}
+			})
 
-    })
-    this.device.queue.submit([commandEncoder.finish()]);
-    requestAnimationFrame(this.frame);
-  }
+			this.mainRenderBundle.forEach((meItem, index) => {
+				meItem.drawElements(renderPass);
+			})
+			if(renderPass) renderPass.end();
+
+			this.device.queue.submit([commandEncoder.finish()]);
+			requestAnimationFrame(this.frame);
+		} catch(err) {
+			console.log('%cDraw func (err):' + err, LOG_WARN)
+			requestAnimationFrame(this.frame);
+		}
+	}
+
+	framePassPerObject = () => {
+		// console.log('framePassPerObject')
+		let commandEncoder = this.device.createCommandEncoder();
+		this.rbContainer = [];
+		let passEncoder;
+		this.mainRenderBundle.forEach((meItem, index) => {
+			meItem.draw(commandEncoder);
+
+			if(meItem.renderBundle) {
+				this.rbContainer.push(meItem.renderBundle)
+				passEncoder = commandEncoder.beginRenderPass(meItem.renderPassDescriptor);
+				passEncoder.executeBundles(this.rbContainer);
+				passEncoder.end();
+			} else {
+				meItem.draw(commandEncoder)
+			}
+
+		})
+		this.device.queue.submit([commandEncoder.finish()]);
+		requestAnimationFrame(this.frame);
+	}
 
 }

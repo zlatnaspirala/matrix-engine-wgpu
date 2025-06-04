@@ -1,3 +1,5 @@
+import {LOG_MATRIX} from "../engine/utils";
+
 export class MultiLang {
 
   constructor() {
@@ -16,7 +18,7 @@ export class MultiLang {
 
   loadMultilang = async function(lang = 'en') {
     lang = 'res/multilang/' + lang + '.json';
-    console.info("Multilang: ", lang);
+    console.info(`%cMultilang: ${lang}` , LOG_MATRIX);
     try {
       const r = await fetch(lang, {
         headers: {
