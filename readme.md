@@ -1,116 +1,181 @@
-# matrix-engine-wgpu
-## [not fully operative for now - WIP]
-## Author Nikola Lukic zlatnaspirala@gmail.com 2024
+Here's an improved version of your `README.md`, written in clearer and more natural English while preserving all technical details and your original intent:
 
-## Logo:
+---
+
+# matrix-engine-wgpu
+
+**⚠️ Work in Progress – Not Fully Functional Yet**
+
+**Author:** Nikola Lukić
+📧 [zlatnaspirala@gmail.com](mailto:zlatnaspirala@gmail.com)
+📅 2024
+
+---
+
+## Logo
 
 <img width="320" height="320" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/public/res/icons/512.png?raw=true" />
 
-### In logo i used webGPU logo from:
+> Logo includes the official WebGPU logo.
+> **WebGPU logo by [W3C](https://www.w3.org/)**
+> Licensed under [Creative Commons Attribution 4.0](https://www.w3.org/2023/02/webgpu-logos.html)
 
-<span>WebGPU logo by <a href="https://www.w3.org/"><abbr title="World Wide Web Consortium">W3C</abbr></a></span>.
-The logos are licensed under Creative Commons Attribution 4.0 International.
-Download from https://www.w3.org/2023/02/webgpu-logos.html
+---
 
-Used npm package `wgpu-matrix` for replacment of glmatrix library.Classis "modelViewProjectionMatrix" calculations.
-I publish (this repo) npm package with name `matrix-engine-wgpu`.
+## Description
 
-## Objective
+This project is a work-in-progress WebGPU engine inspired by the original **matrix-engine** for WebGL.
+It uses the `wgpu-matrix` npm package as a modern replacement for `gl-matrix` for handling model-view-projection matrices.
 
-- scene objects feature [objects/scene/transformation] ✔️
-- Make it similar to the matrix-engine webGL features.
-- Main base example is `shadowMapping` from [webgpu-samples](https://webgpu.github.io/webgpu-samples/?sample=shadowMapping)
-- Integrate ammojs [basic cube]✔️
+Published on npm as: **`matrix-engine-wgpu`**
 
-## Support list
+---
 
-### SCENE/APP
-- Everytime you run program make new canvas from code.No need to have canvas in html file.
+## Goals
 
-- Only access to the object scene instance look like:
-  `mainRenderBundle` is scene holder.
+* ✔️ Support for 3D objects and scene transformations
+* 🎯 Replicate matrix-engine (WebGL) features
+* 📦 Based on the `shadowMapping` sample from [webgpu-samples](https://webgpu.github.io/webgpu-samples/?sample=shadowMapping)
+* ✔️ Ammo.js physics integration (basic cube)
+
+---
+
+## Features
+
+### Scene Management
+
+* A canvas is dynamically created in JavaScript — no `<canvas>` in HTML required.
+
+* Access the main scene using:
+
   ```js
   app.mainRenderBundle[0];
   ```
 
-  - For now only `addMeshObj` works [Obj file loader].
-  You can use unlitTextures simpliest pipline with addCube, addBall. See in examples...
+* Add meshes using `.addMeshObj()`
+  (Supports `.obj` loading, unlit textures, cubes, spheres, etc.)
 
-- Destroy current/runned program and make free space for next app...
-  [This function stops render and remove canvas]
- ```js
- app.destroyProgram()
- ```
+* Cleanly destroy the current scene:
 
-### Camera
+  ```js
+  app.destroyProgram();
+  ```
 
-Camera type: `WASD | arcball`
+---
+
+### Camera Options
+
+Supported types: `WASD`, `arcball`
+
 ```js
-  mainCameraParams: {
-    type: 'WASD',
-    responseCoef: 1000
-  }
+mainCameraParams: {
+  type: 'WASD',
+  responseCoef: 1000
+}
 ```
 
-### Position [YT video - use position from console](https://www.youtube.com/watch?v=cipic7hkN7o&ab_channel=javascriptfanatic)
-#### app.mainRenderBundle[0] -> position
+---
 
-Position is taken from matrix-engine[webgl] same struct.
+### Object Positioning
+
+Control object position with:
+
 ```js
 app.mainRenderBundle[0].position.translateByX(12);
 ```
 
-Teleport/ direct set
+Teleport / Direct set:
+
 ```js
 app.mainRenderBundle[0].position.SetX(-2);
 ```
 
-Change speed of translation
+Change movement speed:
+
 ```js
 app.mainRenderBundle[0].position.thrust = 0.1;
 ```
 
-####Note: Position for Physics enabled object look like:
-No working `.position` and `.rotation` in physics enabled regime but you can read it.
-You must use Ammo body funcs like : applyForce, setAngularVelocity, setLinearVelocity etc...
+> ⚠️ For physics-enabled objects, use Ammo.js functions.
+> `.position` and `.rotation` won't apply visually but can be read.
+
+Example:
+
 ```js
-app.matrixAmmo.rigidBodies[0].setAngularVelocity(new Ammo.btVector3(0,2,0))
-app.matrixAmmo.rigidBodies[0].setLinearVelocity(new Ammo.btVector3(0,7,0))
+app.matrixAmmo.rigidBodies[0].setAngularVelocity(new Ammo.btVector3(0, 2, 0));
+app.matrixAmmo.rigidBodies[0].setLinearVelocity(new Ammo.btVector3(0, 7, 0));
 ```
 
-### Rotation
-#### app.mainRenderBundle[0].rotation
+---
 
-Rotate object by axis by degree:
+### Object Rotation
+
+Rotate manually:
+
 ```js
-app.mainRenderBundle[0].rotation.x = 45
+app.mainRenderBundle[0].rotation.x = 45;
 ```
 
-Active rotation
+Auto-rotate:
+
 ```js
-app.mainRenderBundle[0].rotation.rotationSpeed.y = 10
+app.mainRenderBundle[0].rotation.rotationSpeed.y = 10;
 ```
 
-Stop rotating
+Stop rotation:
+
 ```js
-app.mainRenderBundle[0].rotation.rotationSpeed.y = 0
+app.mainRenderBundle[0].rotation.rotationSpeed.y = 0;
 ```
 
-#### Note: In physics enabled object `.rotation.x y z` have no affect.
+> ⚠️ Same note as position: `.rotation.x/y/z` has no effect for physics-enabled objects.
 
-## Camera manipulation examples
+---
 
- ```js
- app.cameras.WASD.pitch = 0.2
- ```
+### Camera Example
 
+Manipulate WASD camera:
 
-## How to load obj [with uvs] file:
-Main instance script:
+```js
+app.cameras.WASD.pitch = 0.2;
+```
+
+---
+
+## Object Interaction (Raycasting)
+
+Manual raycast:
+
+```js
+window.addEventListener('click', (event) => {
+  let canvas = document.querySelector('canvas');
+  let camera = app.cameras.WASD;
+  const { rayOrigin, rayDirection } = getRayFromMouse(event, canvas, camera);
+
+  for (const object of app.mainRenderBundle) {
+    if (rayIntersectsSphere(rayOrigin, rayDirection, object.position, 2)) {
+      console.log('Object clicked:', object.name);
+    }
+  }
+});
+```
+
+Automatic raycast:
+
+```js
+addRaycastListener();
+window.addEventListener('ray.hit.event', (event) => {
+  console.log(event.detail);
+});
+```
+
+---
+
+## How to Load `.obj` Models
+
 ```js
 import MatrixEngineWGPU from "./src/world.js";
-import {downloadMeshes} from './src/engine/loader-obj.js';
-import {LOG_FUNNY, LOG_INFO, LOG_MATRIX} from "./src/engine/utils.js";
+import { downloadMeshes } from './src/engine/loader-obj.js';
 
 export let application = new MatrixEngineWGPU({
   useSingleRenderPass: true,
@@ -120,20 +185,19 @@ export let application = new MatrixEngineWGPU({
     responseCoef: 1000
   }
 }, () => {
-
   addEventListener('AmmoReady', () => {
     downloadMeshes({
       welcomeText: "./res/meshes/blender/piramyd.obj",
       armor: "./res/meshes/obj/armor.obj",
       sphere: "./res/meshes/blender/sphere.obj",
       cube: "./res/meshes/blender/cube.obj",
-    }, onLoadObj)
-  })
+    }, onLoadObj);
+  });
 
-  function onLoadObj(m) {
-    application.myLoadedMeshes = m;
-    for(var key in m) {
-      console.log(`%c Loaded objs: ${key} `, LOG_MATRIX);
+  function onLoadObj(meshes) {
+    application.myLoadedMeshes = meshes;
+    for (const key in meshes) {
+      console.log(`%c Loaded obj: ${key} `, LOG_MATRIX);
     }
 
     application.addMeshObj({
@@ -142,12 +206,12 @@ export let application = new MatrixEngineWGPU({
       rotationSpeed: {x: 0, y: 0, z: 0},
       texturesPaths: ['./res/meshes/blender/cube.png'],
       name: 'CubePhysics',
-      mesh: m.cube,
+      mesh: meshes.cube,
       physics: {
         enabled: true,
         geometry: "Cube"
       }
-    })
+    });
 
     application.addMeshObj({
       position: {x: 0, y: 2, z: -10},
@@ -155,107 +219,93 @@ export let application = new MatrixEngineWGPU({
       rotationSpeed: {x: 0, y: 0, z: 0},
       texturesPaths: ['./res/meshes/blender/cube.png'],
       name: 'SpherePhysics',
-      mesh: m.sphere,
+      mesh: meshes.sphere,
       physics: {
         enabled: true,
         geometry: "Sphere"
       }
-    })
+    });
   }
-})
+});
 
-window.app = application
+window.app = application;
 ```
+
+---
 
 ## NPM Scripts
 
-Bundle compiler: `watchify`
+Uses `watchify` to bundle JavaScript.
 
-```js
-  "main-worker": "watchify app-worker.js -p [esmify --noImplicitAny] -o public/app-worker.js",
-  "examples": "watchify examples.js -p [esmify --noImplicitAny] -o public/examples.js",
-  "main": "watchify main.js -p [esmify --noImplicitAny] -o public/app.js",
-  "build-empty": "watchify empty.js -p [esmify --noImplicitAny] -o public/empty.js",
-  "build-all": "npm run main-worker.js | npm run examples | npm run main | npm run build-empty"
+```json
+"main-worker": "watchify app-worker.js -p [esmify --noImplicitAny] -o public/app-worker.js",
+"examples": "watchify examples.js -p [esmify --noImplicitAny] -o public/examples.js",
+"main": "watchify main.js -p [esmify --noImplicitAny] -o public/app.js",
+"empty": "watchify empty.js -p [esmify --noImplicitAny] -o public/empty.js",
+"build-all": "npm run main-worker && npm run examples && npm run main && npm run build-empty"
 ```
 
-1. "main-worker" use same endpoint but with root wrapper.
-2. "examples" for now build just one current (just import script from ./examples/) instance.
-3. "main" this is build for main.js main instance.
-4. "build-empty" when you wanna use this engine on codepen or stackoverflow just build one empty instance
-   and you can write megpu code.
-5. "build-all" build all at once [every output is diff name].
+Script summary:
 
-## Resource
+1. `main-worker`: For core instance with root wrapper.
+2. `examples`: Current example build from `./examples/`.
+3. `main`: Main project build (YAMB).
+4. `empty`: Build minimal setup for environments like CodePen or StackOverflow.
+5. `build-all`: Run all the above builds at once.
 
-- Resources place is ./public also this folder is root for output js builds,
-  after all you get all needed stuff in one public folder (www).
+---
 
-## Proof of concept
-  - Main example will be 🎲 Ultimate Yahtzee game.
+## Resources
 
-## LINKS
+* All resources and output go into `./public` — a single folder with everything you need.
 
-- Jamb gameplay public dev test link [DEMO WIP](https://maximumroulette.com/apps/webgpu/)
-- How to use it on codepen
-  https://codepen.io/zlatnaspirala/pen/VwNKMar?editors=0011
-  I use empty build then i add/upload to my VPS public server you can use it:
-  Usually last night build stable/unstable version.
-  https://maximumroulette.com/apps/megpu/empty.js
-  You can build your own with `npm run build-empty`.
+---
 
-- codesandbox.io implemetation done.
-  https://codesandbox.io/p/github/zlatnaspirala/matrix-engine-wgpu/main?file=%2Fpackage.json%3A14%2C16
+## Proof of Concept
 
+🎲 The first full app example will be a WebGPU-powered **Ultimate Yahtzee** game.
 
-	Place for learn : 
-	https://maierfelix.github.io/2020-01-13-webgpu-ray-tracing/
-	
+---
 
-## LICENCE
+## Live Demos & Dev Links
 
-### Note:
+* [Jamb WebGPU Demo (WIP)](https://maximumroulette.com/apps/webgpu/)
 
-"Just keep this text also any other about textual file / or code commnet with ref...
-and you can sell or what ever you want with your project."
+* [CodePen Demo](https://codepen.io/zlatnaspirala/pen/VwNKMar?editors=0011)
+  → Uses `empty.js` build from:
+  [https://maximumroulette.com/apps/megpu/empty.js](https://maximumroulette.com/apps/megpu/empty.js)
 
-- Structural shema for project and personal learning inspired by:
-  https://webgpu.github.io/webgpu-samples/samples/renderBundles also
-  https://webgpu.github.io/webgpu-samples/?sample=shadowMapping
+* [CodeSandbox Implementation](https://codesandbox.io/p/github/zlatnaspirala/matrix-engine-wgpu/main?file=%2Fpackage.json%3A14%2C16)
 
-- Obj loader [same like matrix-engine webgl engine]
-  Obj loader source http://math.hws.edu/graphicsbook/source/webgl/cube-camera.html
+* 📘 Learning Resource:
+  [WebGPU Ray Tracing](https://maierfelix.github.io/2020-01-13-webgpu-ray-tracing/)
 
-- File public\res\meshes\jamb\sounds\roll1.wav download from 
-  https://wavbvkery.com/dice-rolling-sound/
+---
 
-### BSD 3-Clause
+## License
 
-https://github.com/webgpu/webgpu-samples/blob/main/LICENSE.txt
+### Usage Note
 
-Copyright 2019 WebGPU Samples Contributors
+> You may use, modify, and even sell your project with this code — just keep this notice and any included references in place.
 
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met:
+---
 
-1.  Redistributions of source code must retain the above copyright notice,
-    this list of conditions and the following disclaimer.
+### Attribution & Credits
 
-2.  Redistributions in binary form must reproduce the above copyright notice,
-    this list of conditions and the following disclaimer in the documentation
-    and/or other materials provided with the distribution.
+* Engine design and scene structure inspired by:
+  [WebGPU Samples](https://webgpu.github.io/webgpu-samples/?sample=shadowMapping)
 
-3.  Neither the name of the copyright holder nor the names of its
-    contributors may be used to endorse or promote products derived from this
-    software without specific prior written permission.
+* OBJ Loader adapted from:
+  [http://math.hws.edu/graphicsbook/source/webgl/cube-camera.html](http://math.hws.edu/graphicsbook/source/webgl/cube-camera.html)
 
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
-FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
-SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+* Dice roll sound `roll1.wav` sourced from:
+  [https://wavbvkery.com/dice-rolling-sound/](https://wavbvkery.com/dice-rolling-sound/)
+
+---
+
+### BSD 3-Clause License (from WebGPU Samples)
+
+[Full License Text](https://github.com/webgpu/webgpu-samples/blob/main/LICENSE.txt)
+
+---
+

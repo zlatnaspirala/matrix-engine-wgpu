@@ -112,7 +112,8 @@ let myDom = exports.myDom = {
     root.id = 'blocker';
     var messageBox = document.createElement('div');
     messageBox.id = 'messageBox';
-    console.log('TEST', app.label.get);
+
+    // console.log('TEST', app.label.get)
     messageBox.innerHTML = `
      <span data-label="welcomeMsg"></span>
      <a href="https://github.com/zlatnaspirala/matrix-engine-wgpu">zlatnaspirala/matrix-engine-wgpu</a><br><br>
@@ -197,7 +198,7 @@ let myDom = exports.myDom = {
     this.createRow(rowUp);
     this.createRow(rowHand);
     document.body.appendChild(root);
-    console.log('JambTable added.');
+    // console.log('JambTable added.')
   },
   createLeftHeaderRow: function (myRoot) {
     for (var x = 1; x < 7; x++) {
@@ -1120,14 +1121,9 @@ let application = exports.application = new _world.default({
       }
     }
   };
-  addEventListener('ray.hit.event', e => {
-    console.log('HIT =>>>>>>>>>>>>>>>', e.detail.hitObject.name);
-    console.log('HIT =>>>>>>>>>>>>>>>', e.detail.touchCoordinate);
-    console.log('HIT =>>>>>>>>>>>>>>>', e.detail.hitObject);
-    console.log('HIT =>>>>>>>>>>>>>>>', e.detail.intersectionPoint);
-    console.log('HIT =>>>>>>>>>>>>>>>', e.detail.ray);
-    console.log('HIT =>>>>>>>>>>>>>>>', e.detail.rayOrigin);
-  });
+  (0, _raycastTest.addRaycastListener)();
+  // OR add manual see readme
+
   addEventListener('mousemove', e => {
     // console.log('only on click')
     _raycastTest.touchCoordinate.enabled = true;
@@ -1167,7 +1163,7 @@ let application = exports.application = new _world.default({
       cube: "./res/meshes/jamb/dice.obj"
     }, m => {
       for (var key in m) {
-        console.log(`%c Loaded objs -> : ${key} `, _utils.LOG_MATRIX);
+        // console.log(`%c Loaded objs -> : ${key} `, LOG_MATRIX);
       }
       // right
       application.addMeshObj({
@@ -1220,7 +1216,7 @@ let application = exports.application = new _world.default({
   function onLoadObjWallCenter(m) {
     application.myLoadedMeshesWalls = m;
     for (var key in m) {
-      console.log(`%c Loaded objs -> : ${key} `, _utils.LOG_MATRIX);
+      // console.log(`%c Loaded objs -> : ${key} `, LOG_MATRIX);
     }
 
     // WALLS Center
@@ -1249,7 +1245,7 @@ let application = exports.application = new _world.default({
   function onLoadObjOther(m) {
     application.myLoadedMeshes = m;
     for (var key in m) {
-      console.log(`%c Loaded objs -> : ${key} `, _utils.LOG_MATRIX);
+      // console.log(`%c Loaded objs -> : ${key} `, LOG_MATRIX);
     }
     // Add logo text top
     application.addMeshObj({
@@ -1286,7 +1282,7 @@ let application = exports.application = new _world.default({
   function onLoadObjFloor(m) {
     application.myLoadedMeshes = m;
     for (var key in m) {
-      console.log(`%c Loaded objs -> : ${key} `, _utils.LOG_MATRIX);
+      // console.log(`%c Loaded objs -> : ${key} `, LOG_MATRIX);
     }
     application.addMeshObj({
       scale: [10, 0.1, 0.1],
@@ -1315,7 +1311,7 @@ let application = exports.application = new _world.default({
   function onLoadObj(m) {
     application.myLoadedMeshes = m;
     for (var key in m) {
-      console.log(`%c Loaded objs -> : ${key} `, _utils.LOG_MATRIX);
+      // console.log(`%c Loaded objs -> : ${key} `, LOG_MATRIX);
     }
 
     // Add dices
@@ -1347,21 +1343,34 @@ let application = exports.application = new _world.default({
         geometry: "Cube"
       }
     });
-
-    // application.addMeshObj({
-    // 	position: {x: -5, y: 4, z: -14},
-    // 	rotation: {x: 0, y: 0, z: 0},
-    // 	rotationSpeed: {x: 0, y: 0, z: 0},
-    // 	texturesPaths: ['./res/meshes/jamb/dice.png'],
-    // 	useUVShema4x2: true,
-    // 	name: 'CubePhysics2',
-    // 	mesh: m.cube,
-    // 	raycast: {enabled: true},
-    // 	physics: {
-    // 		enabled: true,
-    // 		geometry: "Cube"
-    // 	}
-    // })
+    application.addMeshObj({
+      position: {
+        x: -5,
+        y: 4,
+        z: -14
+      },
+      rotation: {
+        x: 0,
+        y: 0,
+        z: 0
+      },
+      rotationSpeed: {
+        x: 0,
+        y: 0,
+        z: 0
+      },
+      texturesPaths: ['./res/meshes/jamb/dice.png'],
+      useUVShema4x2: true,
+      name: 'CubePhysics2',
+      mesh: m.cube,
+      raycast: {
+        enabled: true
+      },
+      physics: {
+        enabled: true,
+        geometry: "Cube"
+      }
+    });
 
     // application.addMeshObj({
     // 	position: {x: 4, y: 8, z: -10},
@@ -7545,6 +7554,13 @@ class MECube {
     });
     return bindGroup;
   }
+
+  // TEST 
+  getViewMatrix() {
+    const camera = this.cameras[this.mainCameraParams.type];
+    const viewMatrix = camera.update(deltaTime, this.inputHandler());
+    return viewMatrix;
+  }
   getTransformationMatrix(pos) {
     const now = Date.now();
     const deltaTime = (now - this.lastFrameMS) / this.mainCameraParams.responseCoef;
@@ -8889,7 +8905,7 @@ class MEMeshObj {
     // Mesh stuff
     this.mesh = o.mesh;
     this.mesh.uvs = this.mesh.textures;
-    console.log(`%c Mesh loaded: ${o.name}`, _utils.LOG_INFO);
+    console.log(`%c Mesh loaded: ${o.name}`, _utils.LOG_FUNNY_SMALL);
     this.inputHandler = (0, _engine.createInputHandler)(window, canvas);
     this.cameras = o.cameras;
     this.mainCameraParams = {
@@ -8899,9 +8915,9 @@ class MEMeshObj {
 
     // test raycast
     // fullscreen for now
-    window.addEventListener('mousedown', e => {
-      (0, _raycastTest.checkingProcedure)(e);
-    });
+    // window.addEventListener('mousedown', (e) => {
+    // 	checkingProcedure(e);
+    // });
     _raycastTest.touchCoordinate.enabled = true;
     this.lastFrameMS = 0;
     this.texturesPaths = [];
@@ -9243,8 +9259,6 @@ class MEMeshObj {
       // The camera/light aren't moving, so write them into buffers now.
       {
         const lightMatrixData = this.lightViewProjMatrix; // as Float32Array;
-
-        console.log('TTTTTT ', this.device.createRayTracingAccelerationContainer);
         this.device.queue.writeBuffer(this.sceneUniformBuffer, 0, lightMatrixData.buffer, lightMatrixData.byteOffset, lightMatrixData.byteLength);
         const lightData = this.lightPosition;
         this.device.queue.writeBuffer(this.sceneUniformBuffer, 128, lightData.buffer, lightData.byteOffset, lightData.byteLength);
@@ -9343,8 +9357,8 @@ class MEMeshObj {
 
     // test ray
 
-    // try{
-    if (this.raycast.enabled == true) (0, _raycastTest.checkingRay)(this);
+    // try{ OLD
+    // if(this.raycast.enabled == true) checkingRay(this)
     // } catch(e) {}
   };
   drawShadows = shadowPass => {
@@ -9763,26 +9777,22 @@ exports.default = MEMesh;
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.checkingProcedure = checkingProcedure;
-exports.checkingRay = checkingRay;
-exports.rayIntersectsTriangle = rayIntersectsTriangle;
-exports.rotate2dPlot = rotate2dPlot;
+exports.addRaycastListener = addRaycastListener;
+exports.getRayFromMouse = getRayFromMouse;
+exports.rayIntersectsSphere = rayIntersectsSphere;
 exports.touchCoordinate = void 0;
-exports.unproject = unproject;
 var _wgpuMatrix = require("wgpu-matrix");
 /**
  * @author Nikola Lukic
  * @email zlatnaspirala@gmail.com
  * @site https://maximumroulette.com
  * @Licence GPL v3
- * Inspired with original code from:
- * https://github.com/Necolo/raycaster
- * 
+ * @credits chatgpt used for this script adaptation.
  * @Note matrix-engine-wgpu adaptation test
- * WIP
- * 
  * default for now:
  * app.cameras['WASD']
+ * Only tested for WASD type of camera.
+ * app is global - will be fixed in future
  */
 
 let rayHitEvent;
@@ -9792,319 +9802,72 @@ let touchCoordinate = exports.touchCoordinate = {
   y: 0,
   stopOnFirstDetectedHit: false
 };
-
-/**
- * @description 
- * Ray triangle intersection algorithm.
- * @param rayOrigin ray origin point
- * @param rayVector ray direction
- * @param triangle three points of triangle, should be ccw order
- * @param out the intersection point
- * @return intersects or not
- * Uses Möller–Trumbore intersection algorithm
- */
-function rayIntersectsTriangle(rayOrigin,
-// vec3,
-rayVector,
-// vec3,
-triangle,
-// vec3[],
-out,
-// vec3,
-objPos) {
-  if (app.cameras.WASD.position_[2] < objPos.Z) {
-    rayOrigin[2] = app.cameras.WASD.position_[2] - parseFloat(objPos.Z);
+function multiplyMatrixVector(matrix, vector) {
+  return _wgpuMatrix.vec4.transformMat4(vector, matrix);
+}
+function getRayFromMouse(event, canvas, camera) {
+  const rect = canvas.getBoundingClientRect();
+  let x = (event.clientX - rect.left) / rect.width * 2 - 1;
+  let y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+  // simple invert
+  x = -x;
+  const fov = Math.PI / 4;
+  const aspect = canvas.width / canvas.height;
+  const near = 0.1;
+  const far = 100;
+  camera.projectionMatrix = _wgpuMatrix.mat4.perspective(2 * Math.PI / 5, aspect, 1, 1000.0);
+  const invProjection = _wgpuMatrix.mat4.inverse(camera.projectionMatrix);
+  const correctedView = _wgpuMatrix.mat4.clone(camera.view_);
+  correctedView[2] *= -1;
+  correctedView[6] *= -1;
+  correctedView[10] *= -1;
+  const invView = _wgpuMatrix.mat4.inverse(correctedView);
+  const ndc = [x, y, 1, 1];
+  let worldPos = multiplyMatrixVector(invProjection, ndc);
+  worldPos = multiplyMatrixVector(invView, worldPos);
+  let world;
+  if (worldPos[3] !== 0) {
+    world = [worldPos[0] / worldPos[3], worldPos[2] / worldPos[3], worldPos[1] / worldPos[3]];
   } else {
-    rayOrigin[2] = app.cameras.WASD.position_[2] + -parseFloat(objPos.Z);
+    console.log("[raycaster]special case 0.");
+    world = [worldPos[0], worldPos[1], worldPos[2]];
   }
-  rayOrigin[0] = app.cameras.WASD.position_[0];
-  rayOrigin[1] = app.cameras.WASD.position_[1];
-
-  // const EPSILON = 0.0000001;
-  const EPSILON = 0.000001;
-  const [v0, v1, v2] = triangle;
-  const edge1 = _wgpuMatrix.vec3.create();
-  const edge2 = _wgpuMatrix.vec3.create();
-  const h = _wgpuMatrix.vec3.create();
-
-  // vec3.sub(edge1, v1, v0);
-  // vec3.sub(edge2, v2, v0);
-  _wgpuMatrix.vec3.sub(v1, v0, edge1);
-  _wgpuMatrix.vec3.sub(v2, v0, edge2);
-  if (rayVector[0] > 0) {
-    // console.log('ray vector ', rayVector)
-  }
-
-  /**
-   * (static) cross(out, a, b) → {vec3}
-  	Computes the cross product of two vec3's
-  	Parameters:
-  	Name	Type	Description
-  	out	vec3	the receiving vector
-  	a	ReadonlyVec3	the first operand
-  	b	ReadonlyVec3	the second operand
-   */
-  // vec3.cross(h, rayVector, edge2);
-  _wgpuMatrix.vec3.cross(rayVector, edge2, h);
-  const a = _wgpuMatrix.vec3.dot(edge1, h);
-  if (a > -EPSILON && a < EPSILON) {
-    return false;
-  }
-  const s = _wgpuMatrix.vec3.create();
-  // glmatrix  out , v , v 
-  // ori gmatrix   vec3.sub(s, rayOrigin, v0);
-  _wgpuMatrix.vec3.sub(rayOrigin, v0, s);
-  const u = _wgpuMatrix.vec3.dot(s, h);
-  // const uTest = vec3.dot(h, s);
-  // console.log('TEST u = ', u , '  uTest , ', uTest)
-
-  if (u < 0 || u > a) {
-    return false;
-  }
-  const q = _wgpuMatrix.vec3.create();
-
-  // ori vec3.cross(q, s, edge1);
-  _wgpuMatrix.vec3.cross(s, edge1, q);
-  const v = _wgpuMatrix.vec3.dot(rayVector, q);
-  if (v < 0 || u + v > a) {
-    return false;
-  }
-  const t = _wgpuMatrix.vec3.dot(edge2, q) / a;
-  if (t > EPSILON) {
-    if (out) {
-      // ori vec3.add(out, rayOrigin, [rayVector[0] * t, rayVector[1] * t, rayVector[2] * t]);
-      _wgpuMatrix.vec3.add(rayOrigin, [rayVector[0] * t, rayVector[1] * t, rayVector[2] * t], out);
-    }
-    return true;
-  }
-  return false;
+  const rayOrigin = [camera.position[0], camera.position[1], camera.position[2]];
+  const rayDirection = _wgpuMatrix.vec3.normalize(_wgpuMatrix.vec3.subtract(world, rayOrigin));
+  return {
+    rayOrigin,
+    rayDirection
+  };
 }
-
-/**
- * @description
- * Unproject a 2D point into a 3D world.
- * @param screenCoord [screenX, screenY]
- * @param viewport [left, top, width, height]
- * @param invProjection invert projection matrix
- * @param invView invert view matrix
- * @return 3D point position
- */
-function unproject(screenCoord,
-// [number, number]
-viewport,
-// [number, number, number, number]
-invProjection,
-// mat4
-invView) {
-  // return vec3
-  const [left, top, width, height] = viewport;
-  const [x, y] = screenCoord;
-  // console.log("test out x=", x)
-  // console.log("test out y=", y)
-  const out = _wgpuMatrix.vec4.fromValues(2 * x / width - 1 - left, 2 * (height - y - 1) / height - 1, 1, 1);
-  // console.log("1 out =", out)
-
-  // ori glmatrix
-  //   vec4.transformMat4(out, out, invProjection);
-  _wgpuMatrix.vec4.transformMat4(out, invProjection, out);
-
-  // console.log("2 out =", out)
-  out[3] = 0;
-  _wgpuMatrix.vec4.transformMat4(out, invView, out);
-  // console.log("3 out x=", out[1], ' y=', out[2])
-  return _wgpuMatrix.vec3.normalize(out, _wgpuMatrix.vec3.create());
+function rayIntersectsSphere(rayOrigin, rayDirection, sphereCenter, sphereRadius) {
+  const pos = [sphereCenter.x, sphereCenter.y, sphereCenter.z];
+  const oc = _wgpuMatrix.vec3.subtract(rayOrigin, pos);
+  const a = _wgpuMatrix.vec3.dot(rayDirection, rayDirection);
+  const b = 2.0 * _wgpuMatrix.vec3.dot(oc, rayDirection);
+  const c = _wgpuMatrix.vec3.dot(oc, oc) - sphereRadius * sphereRadius;
+  const discriminant = b * b - 4 * a * c;
+  return discriminant > 0;
 }
-
-/**
- * @description 
- * Fix local rotation raycast bug test.
- */
-function rotate2dPlot(cx, cy, x, y, angle) {
-  var radians = Math.PI / 180 * -angle,
-    cos = Math.cos(radians),
-    sin = Math.sin(radians),
-    nx = cos * (x - cx) + sin * (y - cy) + cx,
-    ny = cos * (y - cy) - sin * (x - cx) + cy;
-  return [nx, ny];
-}
-function checkingProcedure(ev, customArg) {
-  let {
-    clientX,
-    clientY,
-    screenX,
-    screenY
-  } = ev;
-  if (typeof customArg !== 'undefined') {
-    clientX = customArg.clientX;
-    clientY = customArg.clientY;
-  }
-  touchCoordinate.x = clientX;
-  touchCoordinate.y = clientY;
-  if (typeof ev.target.width != 'undefined') touchCoordinate.w = ev.target.width;
-  if (typeof ev.target.height != 'undefined') touchCoordinate.h = ev.target.height;
-  touchCoordinate.enabled = true;
-}
-function checkingRay(object) {
-  try {
-    if (object.raycast.enabled == false || touchCoordinate.enabled == false) return;
-    touchCoordinate.enabled = false;
-    // modelViewProjectionMatrix
-    // let mvMatrix = [...object.modelViewProjectionMatrix];
-    let ray;
-    let outp = _wgpuMatrix.mat4.create();
-    let outv = _wgpuMatrix.mat4.create();
-    let myRayOrigin = _wgpuMatrix.vec3.fromValues(app.cameras.WASD.position_[0], app.cameras.WASD.position_[1], app.cameras.WASD.position_[2]);
-    if (app.cameras.WASD.position_[2] < object.position.z) {
-      myRayOrigin = _wgpuMatrix.vec3.fromValues(app.cameras.WASD.position_[0], app.cameras.WASD.position_[1], -app.cameras.WASD.position_[2]);
-    }
-
-    // NOT WORK TEST 1
-    // let projectionMatrix = new Float32Array([...object.projectionMatrix])
-    // let modelViewProjectionMatrix = new Float32Array([...object.modelViewProjectionMatrix])
-
-    // // TEST 2
-    let projectionMatrix = new Float32Array([...object.modelViewProjectionMatrix]);
-    let modelViewProjectionMatrix = new Float32Array([...object.viewMatrix]);
-
-    // let projectionMatrix = new Float32Array([...object.projectionMatrix])
-    // let modelViewProjectionMatrix = new Float32Array([...object.viewMatrix])
-    // modelViewProjectionMatrix   viewMatrix
-
-    // ori world.pMatrix ?!
-    // object.projectionMatrix
-    var TEST1 = _wgpuMatrix.mat4.inverse(modelViewProjectionMatrix);
-    var TEST2 = _wgpuMatrix.mat4.inverse(projectionMatrix);
-
-    // console.log("test ############ ====>  ", touchCoordinate.w)
-    // ray = unproject([touchCoordinate.x, touchCoordinate.y], [0, 0, touchCoordinate.w, touchCoordinate.h], mat4.invert(outp, projectionMatrix), mat4.invert(outv, modelViewProjectionMatrix));
-    ray = unproject([touchCoordinate.x, touchCoordinate.y], [0, 0, touchCoordinate.w, touchCoordinate.h], TEST2, TEST1);
-
-    // console.log("ray ====>  ", ray)
-
-    if (ray[0] > 0) {
-      // console.log('ray >', ray)
-    }
-    // return;
-    const intersectionPoint = _wgpuMatrix.vec3.create();
-    object.raycastFace = [];
-    for (var f = 0; f < object.mesh.indices.length; f = f + 3) {
-      // ori 
-      var a = object.mesh.indices[f];
-      var b = object.mesh.indices[f + 1];
-      var c = object.mesh.indices[f + 2];
-      // var b = object.mesh.indices[f];
-      // var c = object.mesh.indices[f + 1];
-      // var a = object.mesh.indices[f + 2];
-
-      let triangle = null;
-      const triangleInZero = [[object.mesh.vertices[0 + a * 3], object.mesh.vertices[1 + a * 3], object.mesh.vertices[2 + a * 3]], [object.mesh.vertices[0 + b * 3], object.mesh.vertices[1 + b * 3], object.mesh.vertices[2 + b * 3]], [object.mesh.vertices[0 + c * 3], object.mesh.vertices[1 + c * 3], object.mesh.vertices[2 + c * 3]]];
-      triangle = [[triangleInZero[0][0] + object.position.worldLocation[0], triangleInZero[0][1] + object.position.worldLocation[1], triangleInZero[0][2] + object.position.worldLocation[2]], [triangleInZero[1][0] + object.position.worldLocation[0], triangleInZero[1][1] + object.position.worldLocation[1], triangleInZero[1][2] + object.position.worldLocation[2]], [triangleInZero[2][0] + object.position.worldLocation[0], triangleInZero[2][1] + object.position.worldLocation[1], triangleInZero[2][2] + object.position.worldLocation[2]]];
-      var rez0, rez1, rez2;
-      if (object.rotation.toDegreeX() != 0) {
-        rez0 = rotate2dPlot(0, 0, triangleInZero[0][1], triangleInZero[0][2], object.rotation.toDegreeX());
-        rez1 = rotate2dPlot(0, 0, triangleInZero[1][1], triangleInZero[1][2], object.rotation.toDegreeX());
-        rez2 = rotate2dPlot(0, 0, triangleInZero[2][1], triangleInZero[2][2], object.rotation.toDegreeX());
-        triangle = [[triangleInZero[0][0] + object.position.worldLocation[0], rez0[0] + object.position.worldLocation[1], rez0[1]], [triangleInZero[1][0] + object.position.worldLocation[0], rez1[0] + object.position.worldLocation[1], rez1[1]], [triangleInZero[2][0] + object.position.worldLocation[0], rez2[0] + object.position.worldLocation[1], rez2[1]]];
-      }
-      // y z changed - rez0[1] is z
-      if (object.rotation.toDegreeY() != 0) {
-        if (object.rotation.toDegreeX() != 0) {
-          // Y i Z
-          // get y
-          rez0 = rotate2dPlot(0, 0, triangleInZero[0][1], triangleInZero[0][2], object.rotation.toDegreeX() - 90);
-          rez1 = rotate2dPlot(0, 0, triangleInZero[1][1], triangleInZero[1][2], object.rotation.toDegreeX() - 90);
-          rez2 = rotate2dPlot(0, 0, triangleInZero[2][1], triangleInZero[2][2], object.rotation.toDegreeX() - 90);
-          const detY0 = rez0[0];
-          const detY1 = rez1[0];
-          const detY2 = rez2[0];
-          const detZ0 = rez0[1];
-          const detZ1 = rez1[1];
-          const detZ2 = rez2[1];
-
-          //                          X INITIAL             Z
-          rez0 = rotate2dPlot(0, 0, triangleInZero[0][0], detZ0, object.rotation.toDegreeY() - 90);
-          rez1 = rotate2dPlot(0, 0, triangleInZero[1][0], detZ1, object.rotation.toDegreeY() - 90);
-          rez2 = rotate2dPlot(0, 0, triangleInZero[2][0], detZ2, object.rotation.toDegreeY() - 90);
-          const detZ00 = rez0[1];
-          const detZ11 = rez1[1];
-          const detZ22 = rez2[1];
-          rez0 = rotate2dPlot(0, 0, rez0[0], detY0, object.rotation.toDegreeZ() - 90);
-          rez1 = rotate2dPlot(0, 0, rez1[0], detY1, object.rotation.toDegreeZ() - 90);
-          rez2 = rotate2dPlot(0, 0, rez2[0], detY2, object.rotation.toDegreeZ() - 90);
-          triangle = [[rez0[0] + object.position.worldLocation[0], rez0[1] + object.position.worldLocation[1], detZ00], [rez1[0] + object.position.worldLocation[0], rez1[1] + object.position.worldLocation[1], detZ11], [rez2[0] + object.position.worldLocation[0], rez2[1] + object.position.worldLocation[1], detZ22]];
-        } else if (object.rotation.rz == 0) {
-          rez0 = rotate2dPlot(0, 0, triangleInZero[0][0], triangleInZero[0][2], -object.rotation.toDegreeY());
-          rez1 = rotate2dPlot(0, 0, triangleInZero[1][0], triangleInZero[1][2], -object.rotation.toDegreeY());
-          rez2 = rotate2dPlot(0, 0, triangleInZero[2][0], triangleInZero[2][2], -object.rotation.toDegreeY());
-          triangle = [[rez0[0] + object.position.worldLocation[0], triangleInZero[0][1] + object.position.worldLocation[1], rez0[1]], [rez1[0] + object.position.worldLocation[0], triangleInZero[1][1] + object.position.worldLocation[1], rez1[1]], [rez2[0] + object.position.worldLocation[0], triangleInZero[2][1] + object.position.worldLocation[1], rez2[1]]];
-        }
-      }
-      if (object.rotation.toDegreeZ() != 0) {
-        if (object.rotation.toDegreeY() != 0) {
-          if (object.rotation.toDegreeX() == 180) {
-            rez0 = rotate2dPlot(0, 0, triangleInZero[0][0], triangleInZero[0][2], object.rotation.toDegreeY());
-            rez1 = rotate2dPlot(0, 0, triangleInZero[1][0], triangleInZero[1][2], object.rotation.toDegreeY());
-            rez2 = rotate2dPlot(0, 0, triangleInZero[2][0], triangleInZero[2][2], object.rotation.toDegreeY());
-            let detZ00 = rez0[1];
-            let detZ11 = rez1[1];
-            let detZ22 = rez2[1];
-            rez0 = rotate2dPlot(0, 0, rez0[0], triangleInZero[0][1], object.rotation.toDegreeZ());
-            rez1 = rotate2dPlot(0, 0, rez1[0], triangleInZero[1][1], object.rotation.toDegreeZ());
-            rez2 = rotate2dPlot(0, 0, rez2[0], triangleInZero[2][1], object.rotation.toDegreeZ());
-            const detZ0 = rez0[1];
-            const detZ1 = rez1[1];
-            const detZ2 = rez2[1];
-            // rez0 = rotate2dPlot(0, 0,rez0[0], detZ00, object.rotation.rx - 180);
-            // rez1 = rotate2dPlot(0, 0,rez0[0], detZ11, object.rotation.rx - 180);
-            // rez2 = rotate2dPlot(0, 0, rez0[0], detZ22, object.rotation.rx - 180);
-            // detZ00 = rez0[1];
-            // detZ11 = rez1[1];
-            // detZ22 = rez2[1];
-            triangle = [[rez0[0] + object.position.worldLocation[0], detZ0 + object.position.worldLocation[1], detZ00], [rez1[0] + object.position.worldLocation[0], detZ1 + object.position.worldLocation[1], detZ11], [rez2[0] + object.position.worldLocation[0], detZ2 + object.position.worldLocation[1], detZ22]];
-          } else {
-            // console.info(`unhandled ray cast triangle = ${triangle}`);
-          }
-        } else {
-          if (object.rotation.toDegreeX() == 0) {
-            rez0 = rotate2dPlot(0, +0, triangleInZero[0][0], triangleInZero[0][1], object.rotation.toDegreeZ());
-            rez1 = rotate2dPlot(0, 0, triangleInZero[1][0], triangleInZero[1][1], object.rotation.toDegreeZ());
-            rez2 = rotate2dPlot(0, 0, triangleInZero[2][0], triangleInZero[2][1], object.rotation.toDegreeZ());
-            triangle = [[rez0[0] + object.position.worldLocation[0], rez0[1] + object.position.worldLocation[1], triangleInZero[0][2]], [rez1[0] + object.position.worldLocation[0], rez1[1] + object.position.worldLocation[1], triangleInZero[1][2]], [rez2[0] + object.position.worldLocation[0], rez2[1] + object.position.worldLocation[1], triangleInZero[2][2]]];
-          } else {
-            // var test;
-            // console.info('must be handled rz vs rx');
-          }
-        }
-      }
-
-      // no rot
-      if (object.rotation.toDegreeX() == 0 && object.rotation.toDegreeY() == 0 && object.rotation.toDegreeZ() == 0) {
-        triangle = [[triangleInZero[0][0] + object.position.worldLocation[0], triangleInZero[0][1] + object.position.worldLocation[1], triangleInZero[0][2]], [triangleInZero[1][0] + object.position.worldLocation[0], triangleInZero[1][1] + object.position.worldLocation[1], triangleInZero[1][2]], [triangleInZero[2][0] + object.position.worldLocation[0], triangleInZero[2][1] + object.position.worldLocation[1], triangleInZero[2][2]]];
-      }
-      object.raycastFace.push(triangle);
-      if (rayIntersectsTriangle(myRayOrigin, ray, triangle, intersectionPoint, object.position)) {
-        rayHitEvent = new CustomEvent('ray.hit.event', {
+function addRaycastListener() {
+  window.addEventListener('click', event => {
+    let canvas = document.getElementsByTagName('canvas')[0];
+    let camera = app.cameras.WASD;
+    const {
+      rayOrigin,
+      rayDirection
+    } = getRayFromMouse(event, canvas, camera);
+    for (const object of app.mainRenderBundle) {
+      if (rayIntersectsSphere(rayOrigin, rayDirection, object.position, 2)) {
+        console.log('Object clicked:', object.name);
+        // Just like in matrix-engine webGL version "ray.hit.event"
+        dispatchEvent(new CustomEvent('ray.hit.event', {
           detail: {
-            touchCoordinate: {
-              x: touchCoordinate.x,
-              y: touchCoordinate.y
-            },
-            hitObject: object,
-            intersectionPoint: intersectionPoint,
-            ray: ray,
-            rayOrigin: myRayOrigin
+            hitObject: object
           }
-        });
-        dispatchEvent(rayHitEvent);
-        if (touchCoordinate.enabled == true && touchCoordinate.stopOnFirstDetectedHit == true) {
-          touchCoordinate.enabled = false;
-        }
-        // console.info('raycast hits for Object: ' + object.name + '  -> face[/3]  : ' + f + ' -> intersectionPoint: ' + intersectionPoint);
+        }));
       }
     }
-  } catch (err) {
-    console.log(err);
-  }
+  });
 }
 
 },{"wgpu-matrix":3}],12:[function(require,module,exports){
@@ -10113,7 +9876,7 @@ function checkingRay(object) {
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.LOG_WARN = exports.LOG_MATRIX = exports.LOG_INFO = exports.LOG_FUNNY = void 0;
+exports.LOG_WARN = exports.LOG_MATRIX = exports.LOG_INFO = exports.LOG_FUNNY_SMALL = exports.LOG_FUNNY = void 0;
 exports.ORBIT = ORBIT;
 exports.ORBIT_FROM_ARRAY = ORBIT_FROM_ARRAY;
 exports.OSCILLATOR = OSCILLATOR;
@@ -10779,8 +10542,9 @@ function quaternion_rotation_matrix(Q) {
 // copnsole log graphics
 const LOG_WARN = exports.LOG_WARN = 'background: gray; color: yellow; font-size:10px';
 const LOG_INFO = exports.LOG_INFO = 'background: green; color: white; font-size:11px';
-const LOG_MATRIX = exports.LOG_MATRIX = "font-family: verdana;color: #lime; font-size:11px;text-shadow: 2px 2px 4px orangered;background: black;";
+const LOG_MATRIX = exports.LOG_MATRIX = "font-family: stormfaze;color: #lime; font-size:11px;text-shadow: 2px 2px 4px orangered;background: black;";
 const LOG_FUNNY = exports.LOG_FUNNY = "font-family: stormfaze;color: #f1f033; font-size:14px;text-shadow: 2px 2px 4px #f335f4, 4px 4px 4px #d64444, 2px 2px 4px #c160a6, 6px 2px 0px #123de3;background: black;";
+const LOG_FUNNY_SMALL = exports.LOG_FUNNY_SMALL = "font-family: stormfaze;color: #f1f033; font-size:10px;text-shadow: 2px 2px 4px #f335f4, 4px 4px 4px #d64444, 1px 1px 2px #c160a6, 3px 1px 0px #123de3;background: black;";
 function genName(length) {
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
   let result = "";
@@ -10853,6 +10617,7 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.MultiLang = void 0;
+var _utils = require("../engine/utils");
 class MultiLang {
   constructor() {
     addEventListener('updateLang', () => {
@@ -10868,7 +10633,7 @@ class MultiLang {
   };
   loadMultilang = async function (lang = 'en') {
     lang = 'res/multilang/' + lang + '.json';
-    console.info("Multilang: ", lang);
+    console.info(`%cMultilang: ${lang}`, _utils.LOG_MATRIX);
     try {
       const r = await fetch(lang, {
         headers: {
@@ -10885,7 +10650,7 @@ class MultiLang {
 }
 exports.MultiLang = MultiLang;
 
-},{}],14:[function(require,module,exports){
+},{"../engine/utils":12}],14:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -11513,10 +11278,14 @@ class MatrixEngineWGPU {
     this.device = await this.adapter.requestDevice({
       extensions: ["ray_tracing"]
     });
-    const adapterInfo = await this.adapter.requestAdapterInfo();
-    console.log(adapterInfo.vendor);
-    console.log(adapterInfo.architecture);
-    console.log("FEATURES : " + this.adapter.features);
+
+    // Maybe works in ssl with webworkers...
+    // const adapterInfo = await this.adapter.requestAdapterInfo();
+    // var test = this.adapter.features()
+    // console.log(adapterInfo.vendor);
+    // console.log('test' + test);
+    // console.log("FEATURES : " + this.adapter.features)
+
     this.context = canvas.getContext('webgpu');
     const devicePixelRatio = window.devicePixelRatio;
     canvas.width = canvas.clientWidth * devicePixelRatio;
@@ -11841,7 +11610,7 @@ class MatrixEngineWGPU {
     }
   };
   framePassPerObject = () => {
-    console.log('framePassPerObject');
+    // console.log('framePassPerObject')
     let commandEncoder = this.device.createCommandEncoder();
     this.rbContainer = [];
     let passEncoder;

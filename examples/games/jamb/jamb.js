@@ -126,7 +126,7 @@ export let myDom = {
     var messageBox = document.createElement('div')
     messageBox.id = 'messageBox';
 
-    console.log('TEST', app.label.get)
+    // console.log('TEST', app.label.get)
     messageBox.innerHTML = `
      <span data-label="welcomeMsg"></span>
      <a href="https://github.com/zlatnaspirala/matrix-engine-wgpu">zlatnaspirala/matrix-engine-wgpu</a><br><br>
@@ -223,7 +223,7 @@ export let myDom = {
     this.createRow(rowHand);
 
     document.body.appendChild(root);
-    console.log('JambTable added.')
+    // console.log('JambTable added.')
   },
 
   createLeftHeaderRow: function(myRoot) {

@@ -3,7 +3,7 @@ import {downloadMeshes} from './src/engine/loader-obj.js';
 import {LOG_FUNNY, LOG_INFO, LOG_MATRIX, randomFloatFromTo, randomIntFromTo} from "./src/engine/utils.js";
 import {dices, myDom} from "./examples/games/jamb/jamb.js";
 import {MatrixSounds} from "./src/sounds/sounds.js";
-import {touchCoordinate} from "./src/engine/raycast-test.js";
+import {addRaycastListener, touchCoordinate,rayIntersectsSphere,  getRayFromMouse} from "./src/engine/raycast-test.js";
 
 export let application = new MatrixEngineWGPU({
 	useSingleRenderPass: true,
@@ -82,16 +82,9 @@ export let application = new MatrixEngineWGPU({
 		}
 	}
 
-	addEventListener('ray.hit.event', (e) => {
-		console.log('HIT =>>>>>>>>>>>>>>>', e.detail.hitObject.name)
+	addRaycastListener();
+	// OR add manual see readme
 
-		console.log('HIT =>>>>>>>>>>>>>>>', e.detail.touchCoordinate)
-		console.log('HIT =>>>>>>>>>>>>>>>', e.detail.hitObject)
-		console.log('HIT =>>>>>>>>>>>>>>>', e.detail.intersectionPoint)
-		console.log('HIT =>>>>>>>>>>>>>>>', e.detail.ray)
-		console.log('HIT =>>>>>>>>>>>>>>>', e.detail.rayOrigin)
-
-	})
 
 	addEventListener('mousemove', (e) => {
 		// console.log('only on click')
@@ -125,7 +118,7 @@ export let application = new MatrixEngineWGPU({
 			cube: "./res/meshes/jamb/dice.obj",
 		}, (m) => {
 			for(var key in m) {
-				console.log(`%c Loaded objs -> : ${key} `, LOG_MATRIX);
+				// console.log(`%c Loaded objs -> : ${key} `, LOG_MATRIX);
 			}
 			// right
 			application.addMeshObj({
@@ -162,7 +155,7 @@ export let application = new MatrixEngineWGPU({
 	function onLoadObjWallCenter(m) {
 		application.myLoadedMeshesWalls = m;
 		for(var key in m) {
-			console.log(`%c Loaded objs -> : ${key} `, LOG_MATRIX);
+			// console.log(`%c Loaded objs -> : ${key} `, LOG_MATRIX);
 		}
 
 		// WALLS Center
@@ -184,7 +177,7 @@ export let application = new MatrixEngineWGPU({
 	function onLoadObjOther(m) {
 		application.myLoadedMeshes = m;
 		for(var key in m) {
-			console.log(`%c Loaded objs -> : ${key} `, LOG_MATRIX);
+			// console.log(`%c Loaded objs -> : ${key} `, LOG_MATRIX);
 		}
 		// Add logo text top
 		application.addMeshObj({
@@ -216,7 +209,7 @@ export let application = new MatrixEngineWGPU({
 	function onLoadObjFloor(m) {
 		application.myLoadedMeshes = m;
 		for(var key in m) {
-			console.log(`%c Loaded objs -> : ${key} `, LOG_MATRIX);
+			// console.log(`%c Loaded objs -> : ${key} `, LOG_MATRIX);
 		}
 
 		application.addMeshObj({
@@ -234,13 +227,12 @@ export let application = new MatrixEngineWGPU({
 				geometry: "Cube"
 			}
 		})
-
 	}
 
 	function onLoadObj(m) {
 		application.myLoadedMeshes = m;
 		for(var key in m) {
-			console.log(`%c Loaded objs -> : ${key} `, LOG_MATRIX);
+			// console.log(`%c Loaded objs -> : ${key} `, LOG_MATRIX);
 		}
 
 		// Add dices
@@ -252,27 +244,27 @@ export let application = new MatrixEngineWGPU({
 			useUVShema4x2: true,
 			name: 'CubePhysics1',
 			mesh: m.cube,
-			raycast: { enabled: true },
+			raycast: {enabled: true},
 			physics: {
 				enabled: true,
 				geometry: "Cube"
 			}
 		})
 
-		// application.addMeshObj({
-		// 	position: {x: -5, y: 4, z: -14},
-		// 	rotation: {x: 0, y: 0, z: 0},
-		// 	rotationSpeed: {x: 0, y: 0, z: 0},
-		// 	texturesPaths: ['./res/meshes/jamb/dice.png'],
-		// 	useUVShema4x2: true,
-		// 	name: 'CubePhysics2',
-		// 	mesh: m.cube,
-		// 	raycast: {enabled: true},
-		// 	physics: {
-		// 		enabled: true,
-		// 		geometry: "Cube"
-		// 	}
-		// })
+		application.addMeshObj({
+			position: {x: -5, y: 4, z: -14},
+			rotation: {x: 0, y: 0, z: 0},
+			rotationSpeed: {x: 0, y: 0, z: 0},
+			texturesPaths: ['./res/meshes/jamb/dice.png'],
+			useUVShema4x2: true,
+			name: 'CubePhysics2',
+			mesh: m.cube,
+			raycast: {enabled: true},
+			physics: {
+				enabled: true,
+				geometry: "Cube"
+			}
+		})
 
 		// application.addMeshObj({
 		// 	position: {x: 4, y: 8, z: -10},

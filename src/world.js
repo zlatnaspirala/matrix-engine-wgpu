@@ -96,10 +96,12 @@ export default class MatrixEngineWGPU {
 			extensions: ["ray_tracing"]
 		});
 
-		const adapterInfo = await this.adapter.requestAdapterInfo();
-		console.log(adapterInfo.vendor);
-		console.log(adapterInfo.architecture);
-		console.log("FEATURES : " + this.adapter.features)
+		// Maybe works in ssl with webworkers...
+		// const adapterInfo = await this.adapter.requestAdapterInfo();
+		// var test = this.adapter.features()
+		// console.log(adapterInfo.vendor);
+		// console.log('test' + test);
+		// console.log("FEATURES : " + this.adapter.features)
 
 		this.context = canvas.getContext('webgpu');
 
@@ -296,7 +298,7 @@ export default class MatrixEngineWGPU {
 	}
 
 	framePassPerObject = () => {
-		console.log('framePassPerObject')
+		// console.log('framePassPerObject')
 		let commandEncoder = this.device.createCommandEncoder();
 		this.rbContainer = [];
 		let passEncoder;

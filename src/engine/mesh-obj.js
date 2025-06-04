@@ -4,7 +4,7 @@ import {createInputHandler} from "./engine";
 import {vertexShadowWGSL} from '../shaders/vertexShadow.wgsl';
 import {fragmentWGSL} from '../shaders/fragment.wgsl';
 import {vertexWGSL} from '../shaders/vertex.wgsl';
-import {degToRad, genName, LOG_INFO} from './utils';
+import {degToRad, genName, LOG_FUNNY, LOG_FUNNY_SMALL, LOG_INFO} from './utils';
 import {checkingProcedure, checkingRay, touchCoordinate} from './raycast-test';
 
 export default class MEMeshObj {
@@ -25,7 +25,7 @@ export default class MEMeshObj {
 		// Mesh stuff
 		this.mesh = o.mesh;
 		this.mesh.uvs = this.mesh.textures;
-		console.log(`%c Mesh loaded: ${o.name}`, LOG_INFO);
+		console.log(`%c Mesh loaded: ${o.name}`, LOG_FUNNY_SMALL);
 
 		this.inputHandler = createInputHandler(window, canvas);
 		this.cameras = o.cameras;
@@ -37,9 +37,9 @@ export default class MEMeshObj {
 
 		// test raycast
 		// fullscreen for now
-		window.addEventListener('mousedown', (e) => {
-			checkingProcedure(e);
-		});
+		// window.addEventListener('mousedown', (e) => {
+		// 	checkingProcedure(e);
+		// });
 		touchCoordinate.enabled = true;
 
 		this.lastFrameMS = 0;
@@ -435,9 +435,6 @@ export default class MEMeshObj {
 			// The camera/light aren't moving, so write them into buffers now.
 			{
 				const lightMatrixData = this.lightViewProjMatrix; // as Float32Array;
-
-				console.log('TTTTTT ', this.device.createRayTracingAccelerationContainer);
-
 				this.device.queue.writeBuffer(
 					this.sceneUniformBuffer,
 					0,
@@ -599,8 +596,8 @@ export default class MEMeshObj {
 
 		// test ray
 
-		// try{
-		if(this.raycast.enabled == true) checkingRay(this)
+		// try{ OLD
+		// if(this.raycast.enabled == true) checkingRay(this)
 		// } catch(e) {}
 
 	}
