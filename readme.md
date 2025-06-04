@@ -1,6 +1,3 @@
-Here's an improved version of your `README.md`, written in clearer and more natural English while preserving all technical details and your original intent:
-
----
 
 # matrix-engine-wgpu
 
