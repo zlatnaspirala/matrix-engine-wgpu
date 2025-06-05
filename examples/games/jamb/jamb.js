@@ -8,6 +8,12 @@ export let dices = {
   STATUS_H2: 'WAIT',
   STATUS_H3: 'WAIT',
   R: {},
+
+	SAVED_DICES: {},
+
+	pickDice: (dice) => {
+		this.SAVED_DICES[dice] = this.R[dice]
+	},
   checkAll: function() {
     this.C++;
     if(typeof this.R.CubePhysics1 != 'undefined' &&

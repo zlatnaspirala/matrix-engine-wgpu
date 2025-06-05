@@ -225,6 +225,18 @@ export let application = new MatrixEngineWGPU({
 window.app = application;
 ```
 
+
+
+## About main.js
+
+Main.js is main instance for Ultimate Yahtzee game template.
+I put u app/application object game context params like `dices`
+If you looking clean start up instance see empty.js. Empty build 
+is good for porting this lib on stackoverflow code snippet, 
+codepen or any other online js editor.
+Load text/plane empty build js file and than write top level 
+matrix-engine-webgpu engine code.
+
 ---
 
 ## NPM Scripts

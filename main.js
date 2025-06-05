@@ -3,7 +3,7 @@ import {downloadMeshes} from './src/engine/loader-obj.js';
 import {LOG_FUNNY, LOG_INFO, LOG_MATRIX, randomFloatFromTo, randomIntFromTo} from "./src/engine/utils.js";
 import {dices, myDom} from "./examples/games/jamb/jamb.js";
 import {MatrixSounds} from "./src/sounds/sounds.js";
-import {addRaycastListener, touchCoordinate,rayIntersectsSphere,  getRayFromMouse} from "./src/engine/raycast-test.js";
+import {addRaycastListener, touchCoordinate, rayIntersectsSphere, getRayFromMouse} from "./src/engine/raycast-test.js";
 
 export let application = new MatrixEngineWGPU({
 	useSingleRenderPass: true,
@@ -83,6 +83,18 @@ export let application = new MatrixEngineWGPU({
 	}
 
 	addRaycastListener();
+
+	addEventListener("ray.hit.event", (e) => {
+
+		console.log("hit cube ", e.detail.hitObject.name)
+
+		if(application.dices.STATUS == "FREE_TO_PLAY") {
+			console.log("hit cube status free to play prevent pick. ", e.detail.hitObject.name)
+		} else if(application.dices.STATUS == "SELECT_DICES_1") {
+			console.log("hit cube status SELECT1 pick.", e.detail.hitObject.name)
+			application.dices.pickDice(e.detail.hitObject.name)
+		}
+	});
 	// OR add manual see readme
 
 
@@ -266,65 +278,65 @@ export let application = new MatrixEngineWGPU({
 			}
 		})
 
-		// application.addMeshObj({
-		// 	position: {x: 4, y: 8, z: -10},
-		// 	rotation: {x: 0, y: 0, z: 0},
-		// 	rotationSpeed: {x: 0, y: 0, z: 0},
-		// 	texturesPaths: ['./res/meshes/jamb/dice.png'],
-		// 	useUVShema4x2: true,
-		// 	name: 'CubePhysics3',
-		// 	mesh: m.cube,
-		// 	raycast: { enabled: true },
-		// 	physics: {
-		// 		enabled: true,
-		// 		geometry: "Cube"
-		// 	}
-		// })
+		application.addMeshObj({
+			position: {x: 4, y: 8, z: -10},
+			rotation: {x: 0, y: 0, z: 0},
+			rotationSpeed: {x: 0, y: 0, z: 0},
+			texturesPaths: ['./res/meshes/jamb/dice.png'],
+			useUVShema4x2: true,
+			name: 'CubePhysics3',
+			mesh: m.cube,
+			raycast: {enabled: true},
+			physics: {
+				enabled: true,
+				geometry: "Cube"
+			}
+		})
 
-		// application.addMeshObj({
-		// 	position: {x: 3, y: 4, z: -10},
-		// 	rotation: {x: 0, y: 0, z: 0},
-		// 	rotationSpeed: {x: 0, y: 0, z: 0},
-		// 	texturesPaths: ['./res/meshes/jamb/dice.png'],
-		// 	useUVShema4x2: true,
-		// 	name: 'CubePhysics4',
-		// 	mesh: m.cube,
-		// 	raycast: { enabled: true },
-		// 	physics: {
-		// 		enabled: true,
-		// 		geometry: "Cube"
-		// 	}
-		// })
+		application.addMeshObj({
+			position: {x: 3, y: 4, z: -10},
+			rotation: {x: 0, y: 0, z: 0},
+			rotationSpeed: {x: 0, y: 0, z: 0},
+			texturesPaths: ['./res/meshes/jamb/dice.png'],
+			useUVShema4x2: true,
+			name: 'CubePhysics4',
+			mesh: m.cube,
+			raycast: {enabled: true},
+			physics: {
+				enabled: true,
+				geometry: "Cube"
+			}
+		})
 
-		// application.addMeshObj({
-		// 	position: {x: -2, y: 4, z: -13},
-		// 	rotation: {x: 0, y: 0, z: 0},
-		// 	rotationSpeed: {x: 0, y: 0, z: 0},
-		// 	texturesPaths: ['./res/meshes/jamb/dice.png'],
-		// 	useUVShema4x2: true,
-		// 	name: 'CubePhysics5',
-		// 	mesh: m.cube,
-		// 	raycast: { enabled: true },
-		// 	physics: {
-		// 		enabled: true,
-		// 		geometry: "Cube"
-		// 	}
-		// })
+		application.addMeshObj({
+			position: {x: -2, y: 4, z: -13},
+			rotation: {x: 0, y: 0, z: 0},
+			rotationSpeed: {x: 0, y: 0, z: 0},
+			texturesPaths: ['./res/meshes/jamb/dice.png'],
+			useUVShema4x2: true,
+			name: 'CubePhysics5',
+			mesh: m.cube,
+			raycast: {enabled: true},
+			physics: {
+				enabled: true,
+				geometry: "Cube"
+			}
+		})
 
-		// application.addMeshObj({
-		// 	position: {x: -4, y: 6, z: -9},
-		// 	rotation: {x: 0, y: 0, z: 0},
-		// 	rotationSpeed: {x: 0, y: 0, z: 0},
-		// 	texturesPaths: ['./res/meshes/jamb/dice.png'],
-		// 	useUVShema4x2: true,
-		// 	name: 'CubePhysics6',
-		// 	mesh: m.cube,
-		// 	raycast: { enabled: true },
-		// 	physics: {
-		// 		enabled: true,
-		// 		geometry: "Cube"
-		// 	}
-		// })
+		application.addMeshObj({
+			position: {x: -4, y: 6, z: -9},
+			rotation: {x: 0, y: 0, z: 0},
+			rotationSpeed: {x: 0, y: 0, z: 0},
+			texturesPaths: ['./res/meshes/jamb/dice.png'],
+			useUVShema4x2: true,
+			name: 'CubePhysics6',
+			mesh: m.cube,
+			raycast: {enabled: true},
+			physics: {
+				enabled: true,
+				geometry: "Cube"
+			}
+		})
 
 
 		application.TOLERANCE = 0;

@@ -1,7 +1,7 @@
 {
   "name": "matrix-engine-wgpu",
-  "version": "1.0.7",
-  "description": "webGPU powered pwa application. Crazy fast rendering with AmmoJS physics support.",
+  "version": "1.1.0",
+  "description": "webGPU powered pwa application. Crazy fast rendering with AmmoJS physics support. Simple raycaster hit object added.",
   "main": "index.js",
   "scripts": {
     "main-worker": "watchify app-worker.js -p [esmify --noImplicitAny] -o public/app-worker.js",

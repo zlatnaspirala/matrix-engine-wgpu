@@ -82,7 +82,7 @@ export function addRaycastListener () {
 		const { rayOrigin, rayDirection } = getRayFromMouse(event, canvas, camera);
 		for (const object of app.mainRenderBundle) {
 			if (rayIntersectsSphere(rayOrigin, rayDirection, object.position, 2)) {
-				console.log('Object clicked:', object.name);
+				// console.log('Object clicked:', object.name);
 				// Just like in matrix-engine webGL version "ray.hit.event"
 				dispatchEvent(new CustomEvent('ray.hit.event', {detail: {
 					hitObject: object
