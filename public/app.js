@@ -7063,7 +7063,7 @@ class MEBall {
       asteroidCount: 15
     };
     this.loadTex0(this.texturesPaths, device).then(() => {
-      this.loadTex1(device).then(() => {
+      this.loadTex1(this.texturesPaths, device).then(() => {
         this.sampler = device.createSampler({
           magFilter: 'linear',
           minFilter: 'linear'
@@ -7218,9 +7218,9 @@ class MEBall {
     _wgpuMatrix.mat4.multiply(this.projectionMatrix, viewMatrix, this.modelViewProjectionMatrix);
     return this.modelViewProjectionMatrix;
   }
-  async loadTex1(device) {
+  async loadTex1(texPaths, device) {
     return new Promise(async resolve => {
-      const response = await fetch('./res/textures/tex1.jpg');
+      const response = await fetch(texPaths[0]);
       const imageBitmap = await createImageBitmap(await response.blob());
       this.moonTexture = device.createTexture({
         size: [imageBitmap.width, imageBitmap.height, 1],
@@ -7475,7 +7475,7 @@ class MECube {
       asteroidCount: 15
     };
     this.loadTex0(this.texturesPaths, device).then(() => {
-      this.loadTex1(device).then(() => {
+      this.loadTex1(this.texturesPaths, device).then(() => {
         this.sampler = device.createSampler({
           magFilter: 'linear',
           minFilter: 'linear'
@@ -7640,9 +7640,9 @@ class MECube {
     _wgpuMatrix.mat4.multiply(this.projectionMatrix, viewMatrix, this.modelViewProjectionMatrix);
     return this.modelViewProjectionMatrix;
   }
-  async loadTex1(device) {
+  async loadTex1(textPath, device) {
     return new Promise(async resolve => {
-      const response = await fetch('./res/textures/tex1.jpg');
+      const response = await fetch(textPath[0]);
       const imageBitmap = await createImageBitmap(await response.blob());
       this.moonTexture = device.createTexture({
         size: [imageBitmap.width, imageBitmap.height, 1],
@@ -7945,6 +7945,8 @@ class WASDCamera extends CameraBase {
 
     // Reconstruct the camera's rotation, and store into the camera matrix.
     super.matrix = _wgpuMatrix.mat4.rotateX(_wgpuMatrix.mat4.rotationY(this.yaw), this.pitch);
+    // super.matrix = mat4.rotateX(mat4.rotationY(this.yaw), -this.pitch);
+    // super.matrix = mat4.rotateY(mat4.rotateX(this.pitch), this.yaw);
 
     // Calculate the new target velocity
     const digital = input.digital;
@@ -9872,20 +9874,24 @@ function multiplyMatrixVector(matrix, vector) {
 function getRayFromMouse(event, canvas, camera) {
   const rect = canvas.getBoundingClientRect();
   let x = (event.clientX - rect.left) / rect.width * 2 - 1;
-  let y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+  let y = (event.clientY - rect.top) / rect.height * 2 - 1;
   // simple invert
   x = -x;
+  y = -y;
   const fov = Math.PI / 4;
   const aspect = canvas.width / canvas.height;
   const near = 0.1;
-  const far = 100;
+  const far = 1000;
   camera.projectionMatrix = _wgpuMatrix.mat4.perspective(2 * Math.PI / 5, aspect, 1, 1000.0);
   const invProjection = _wgpuMatrix.mat4.inverse(camera.projectionMatrix);
-  const correctedView = _wgpuMatrix.mat4.clone(camera.view_);
-  correctedView[2] *= -1;
-  correctedView[6] *= -1;
-  correctedView[10] *= -1;
-  const invView = _wgpuMatrix.mat4.inverse(correctedView);
+
+  // const correctedView = mat4.clone(camera.view_);
+  // correctedView[2] *= -1;
+  // correctedView[6] *= -1;
+  // correctedView[10] *= -1;
+  // const invView = mat4.inverse(correctedView);
+
+  const invView = _wgpuMatrix.mat4.inverse(camera.view);
   const ndc = [x, y, 1, 1];
   let worldPos = multiplyMatrixVector(invProjection, ndc);
   worldPos = multiplyMatrixVector(invView, worldPos);

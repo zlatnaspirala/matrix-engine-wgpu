@@ -108,7 +108,7 @@ export default class MECube {
     };
 
     this.loadTex0(this.texturesPaths, device).then(() => {
-      this.loadTex1(device).then(() => {
+      this.loadTex1(this.texturesPaths, device).then(() => {
 
         this.sampler = device.createSampler({
           magFilter: 'linear',
@@ -295,9 +295,9 @@ export default class MECube {
     return this.modelViewProjectionMatrix;
   }
 
-  async loadTex1(device) {
+  async loadTex1(textPath, device) {
     return new Promise(async (resolve) => {
-      const response = await fetch('./res/textures/tex1.jpg');
+      const response = await fetch(textPath[0]);
       const imageBitmap = await createImageBitmap(await response.blob());
       this.moonTexture = device.createTexture({
         size: [imageBitmap.width, imageBitmap.height, 1],

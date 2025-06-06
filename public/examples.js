@@ -37,95 +37,1046 @@ var examples = {
   (0, _jamb.loadJamb)();
 });
 
-},{"./examples/games/jamb/jamb.js":2,"./examples/load-obj-file.js":3,"./examples/unlit-textures.js":4,"./src/engine/utils.js":13}],2:[function(require,module,exports){
+},{"./examples/games/jamb/jamb.js":2,"./examples/load-obj-file.js":3,"./examples/unlit-textures.js":4,"./src/engine/utils.js":14}],2:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.loadJamb = void 0;
+exports.myDom = exports.dices = void 0;
 var _world = _interopRequireDefault(require("../../../src/world.js"));
 var _loaderObj = require("../../../src/engine/loader-obj.js");
 var _utils = require("../../../src/engine/utils.js");
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-// import MatrixEngineWGPU from "./src/world.js";
-// import {downloadMeshes} from './src/engine/loader-obj.js';
-
-var loadJamb = function () {
-  let jamb = new _world.default({
-    useSingleRenderPass: true,
-    canvasSize: 'fullscreen',
-    mainCameraParams: {
-      type: 'arcball',
-      responseCoef: 1
+let dices = exports.dices = {
+  C: 0,
+  STATUS: 'FREE_TO_PLAY',
+  STATUS_H2: 'WAIT',
+  STATUS_H3: 'WAIT',
+  R: {},
+  SAVED_DICES: {},
+  pickDice: dice => {
+    (void 0).SAVED_DICES[dice] = (void 0).R[dice];
+  },
+  checkAll: function () {
+    this.C++;
+    if (typeof this.R.CubePhysics1 != 'undefined' && typeof this.R.CubePhysics2 != 'undefined' && typeof this.R.CubePhysics3 != 'undefined' && typeof this.R.CubePhysics4 != 'undefined' && typeof this.R.CubePhysics5 != 'undefined' && typeof this.R.CubePhysics6 != 'undefined' && this.C > 1200) {
+      dispatchEvent(new CustomEvent('all-done', {
+        detail: {}
+      }));
+      this.C = 0;
     }
-  }, () => {
-    addEventListener('AmmoReady', () => {
-      (0, _loaderObj.downloadMeshes)({
-        welcomeText: "./res/meshes/blender/piramyd.obj",
-        cube: "./res/meshes/blender/cube.obj"
-      }, onLoadObj);
+  },
+  validatePass: function () {
+    if (dices.STATUS == "IN_PLAY" || dices.STATUS == "FREE_TO_PLAY") {
+      // console.log('%cBLOCK', LOG_FUNNY)
+      if (dices.STATUS == "IN_PLAY") _utils.mb.error(`STATUS IS ${dices.STATUS}, please wait for results...`);
+      if (dices.STATUS == "FREE_TO_PLAY") _utils.mb.error(`STATUS IS ${dices.STATUS}, you need to roll dice first.`);
+      app.matrixSounds.play('block');
+      return false;
+    } else {
+      return true;
+    }
+  }
+};
+let myDom = exports.myDom = {
+  state: {
+    rowDown: []
+  },
+  memoNumberRow: [],
+  hideSettings: function () {
+    (0, _utils.byId)('blocker').style.display = 'none';
+    (0, _utils.byId)('messageBox').style.display = 'none';
+  },
+  createMenu: function () {
+    var root = document.createElement('div');
+    root.id = 'hud';
+    root.style.position = 'absolute';
+    root.style.right = '10%';
+    root.style.top = '10%';
+    var help = document.createElement('div');
+    help.id = 'HELP';
+    help.classList.add('btn2');
+    help.innerHTML = `<span data-label="help"></span>`;
+    var settings = document.createElement('div');
+    settings.id = 'settings';
+    settings.classList.add('btn2');
+    settings.innerHTML = `<span data-label="settings"></span>`;
+    settings.addEventListener('click', () => {
+      (0, _utils.byId)('messageBox').innerHTML = `
+      <div>
+        <span data-label="settings"></span>
+        <div>
+
+        <div>
+          <span data-label="sounds"></span>
+
+          <label class="switch">
+            <input type="checkbox">
+            <span class="sliderSwitch round"></span>
+          </label>
+
+        </div>
+
+        <div>
+          <button class="btn2" onclick="app.myDom.hideSettings()">
+            <span data-label="hide"></span>
+          </button>
+        </div>
+
+        </div>
+      </div>
+      `;
+      (0, _utils.byId)('blocker').style.display = 'flex';
+      (0, _utils.byId)('messageBox').style.display = 'flex';
+      dispatchEvent(new CustomEvent('updateLang', {}));
     });
-    function onLoadObj(m) {
-      jamb.myLoadedMeshes = m;
-      for (var key in m) {
-        console.log(`%c Loaded objs: ${key} `, _utils.LOG_MATRIX);
-      }
-      jamb.addMeshObj({
-        position: {
-          x: 0,
-          y: 2,
-          z: -15
-        },
-        rotation: {
-          x: 0,
-          y: 0,
-          z: 0
-        },
-        rotationSpeed: {
-          x: 0,
-          y: 0,
-          z: 0
-        },
-        texturesPaths: ['./res/meshes/blender/cube.png'],
-        name: 'CubePhysics',
-        mesh: m.cube,
-        physics: {
-          enabled: true,
-          geometry: "Cube"
+    var roll = document.createElement('div');
+    roll.id = 'hud-roll';
+    roll.classList.add('btn');
+    roll.innerHTML = `<span data-label="roll"></span>`;
+    roll.addEventListener('click', () => {
+      app.ROLL();
+    });
+    var separator = document.createElement('div');
+    separator.innerHTML = `=======`;
+    root.append(settings);
+    root.append(help);
+    root.append(separator);
+    root.append(roll);
+    document.body.appendChild(root);
+
+    // global access
+    // app.label.update()
+    dispatchEvent(new CustomEvent('updateLang', {}));
+  },
+  createBlocker: function () {
+    var root = document.createElement('div');
+    root.id = 'blocker';
+    var messageBox = document.createElement('div');
+    messageBox.id = 'messageBox';
+
+    // console.log('TEST', app.label.get)
+    messageBox.innerHTML = `
+     <span data-label="welcomeMsg"></span>
+     <a href="https://github.com/zlatnaspirala/matrix-engine-wgpu">zlatnaspirala/matrix-engine-wgpu</a><br><br>
+     <button class="btn" ><span style="font-size:30px;margin:15px;padding:10px" data-label="startGame"></span></button> <br>
+     <div><span data-label="changeLang"></span></div> 
+     <button class="btn" onclick="
+      app.label.loadMultilang('en').then(r => {
+        app.label.get = r;
+        app.label.update()
+      });
+     " ><span data-label="english"></span></button> 
+     <button class="btn" onclick="app.label.loadMultilang('sr').then(r => {
+        app.label.get = r
+        app.label.update() })" ><span data-label="serbian"></span></button> 
+    `;
+    let initialMsgBoxEvent = function () {
+      console.log('click on msgbox');
+      (0, _utils.byId)('messageBox').innerHTML = ``;
+      (0, _utils.byId)('blocker').style.display = 'none';
+      myDom.createMenu();
+      messageBox.removeEventListener('click', initialMsgBoxEvent);
+    };
+    messageBox.addEventListener('click', initialMsgBoxEvent);
+    root.append(messageBox);
+    document.body.appendChild(root);
+    app.label.update();
+  },
+  createJamb: function () {
+    var root = document.createElement('div');
+    root.id = 'jambTable';
+    root.style.position = 'absolute';
+    root.style.display = 'flex';
+    root.style.top = '10px';
+    root.style.left = '10px';
+    root.style.width = '200px';
+    root.style.background = '#7d7d7d8c';
+    var rowHeader = document.createElement('div');
+    rowHeader.id = 'rowHeader';
+    rowHeader.style.top = '10px';
+    rowHeader.style.left = '10px';
+    rowHeader.style.width = '200px';
+    rowHeader.innerHTML = '<span data-label="cornerText"></span><span id="user-points">0</span>';
+    root.appendChild(rowHeader);
+    rowHeader.classList.add('myTheme1');
+    var rowDown = document.createElement('div');
+    rowDown.id = 'rowDown';
+    rowDown.style.top = '10px';
+    rowDown.style.left = '10px';
+    rowDown.style.width = '200px';
+    rowDown.innerHTML = '↓';
+    rowDown.classList.add('myTheme1');
+    root.appendChild(rowDown);
+    var rowFree = document.createElement('div');
+    rowFree.id = 'rowFree';
+    rowFree.style.top = '10px';
+    rowFree.style.left = '10px';
+    rowFree.style.width = '200px';
+    rowFree.innerHTML = '↕';
+    rowFree.classList.add('myTheme1');
+    root.appendChild(rowFree);
+    var rowUp = document.createElement('div');
+    rowUp.id = 'rowUp';
+    rowUp.style.top = '10px';
+    rowUp.style.left = '10px';
+    rowUp.style.width = '200px';
+    rowUp.innerHTML = '↑';
+    rowUp.classList.add('myTheme1');
+    root.appendChild(rowUp);
+    var rowHand = document.createElement('div');
+    rowHand.id = 'rowHand';
+    rowHand.style.top = '10px';
+    rowHand.style.left = '10px';
+    rowHand.style.width = '200px';
+    rowHand.innerHTML = '<span data-label="hand"></span>';
+    rowHand.classList.add('myTheme1');
+    root.appendChild(rowHand);
+
+    // INJECT TABLE HEADER ROW
+    this.createLeftHeaderRow(rowHeader);
+    this.createRowDown(rowDown);
+    this.createRowFree(rowFree);
+    this.createRow(rowUp);
+    this.createRow(rowHand);
+    document.body.appendChild(root);
+    // console.log('JambTable added.')
+  },
+  createLeftHeaderRow: function (myRoot) {
+    for (var x = 1; x < 7; x++) {
+      var rowNumber = document.createElement('div');
+      rowNumber.id = 'rowNumber' + x;
+      rowNumber.style.top = '10px';
+      rowNumber.style.left = '10px';
+      rowNumber.style.width = 'auto';
+      rowNumber.style.background = '#7d7d7d8c';
+      rowNumber.innerHTML = `<span>${x}</span>`;
+      myRoot.appendChild(rowNumber);
+    }
+    var rowNumberSum = document.createElement('div');
+    rowNumberSum.id = 'H_rowNumberSum';
+    rowNumberSum.style.width = 'auto';
+    rowNumberSum.style.background = '#7d7d7d8c';
+    rowNumberSum.innerHTML = `Σ`;
+    myRoot.appendChild(rowNumberSum);
+    var rowMax = document.createElement('div');
+    rowMax.id = 'H_rowMax';
+    rowMax.style.width = 'auto';
+    rowMax.style.background = '#7d7d7d8c';
+    rowMax.innerHTML = `<span data-label="MAX"></span>`;
+    myRoot.appendChild(rowMax);
+    var rowMin = document.createElement('div');
+    rowMin.id = 'H_rowMax';
+    rowMin.style.width = 'auto';
+    rowMin.style.background = '#7d7d7d8c';
+    rowMin.innerHTML = `<span data-label="MIN"></span>`;
+    myRoot.appendChild(rowMin);
+    var rowMaxMinSum = document.createElement('div');
+    rowMaxMinSum.id = 'H_rowMaxMinSum';
+    rowMaxMinSum.style.width = 'auto';
+    rowMaxMinSum.style.background = '#7d7d7d8c';
+    rowMaxMinSum.innerHTML = `Σ`;
+    myRoot.appendChild(rowMaxMinSum);
+    var largeStraight = document.createElement('div');
+    largeStraight.id = 'H_largeStraight';
+    largeStraight.style.width = 'auto';
+    largeStraight.style.background = '#7d7d7d8c';
+    largeStraight.innerHTML = `<span data-label="straight"></span>`;
+    myRoot.appendChild(largeStraight);
+    var threeOfAKind = document.createElement('div');
+    threeOfAKind.id = 'H_threeOfAKind';
+    threeOfAKind.style.width = 'auto';
+    threeOfAKind.style.background = '#7d7d7d8c';
+    threeOfAKind.innerHTML = `<span data-label="threeOf"></span>`;
+    myRoot.appendChild(threeOfAKind);
+    var fullHouse = document.createElement('div');
+    fullHouse.id = 'H_fullHouse';
+    fullHouse.style.width = 'auto';
+    fullHouse.style.background = '#7d7d7d8c';
+    fullHouse.innerHTML = `<span data-label="fullhouse"></span>`;
+    myRoot.appendChild(fullHouse);
+    var poker = document.createElement('div');
+    poker.id = 'H_poker';
+    poker.style.width = 'auto';
+    poker.style.background = '#7d7d7d8c';
+    poker.innerHTML = `<span data-label="poker"></span>`;
+    myRoot.appendChild(poker);
+    var jamb = document.createElement('div');
+    jamb.id = 'H_jamb';
+    jamb.style.width = 'auto';
+    jamb.style.background = '#7d7d7d8c';
+    jamb.innerHTML = `<span data-label="jamb"></span>`;
+    myRoot.appendChild(jamb);
+    var rowSum = document.createElement('div');
+    rowSum.id = 'H_rowSum';
+    rowSum.style.width = 'auto';
+    rowSum.style.background = '#7d7d7d8c';
+    rowSum.innerHTML = `Σ`;
+    myRoot.appendChild(rowSum);
+    var rowSumFINAL = document.createElement('div');
+    rowSumFINAL.id = 'H_rowSumFINAL';
+    rowSumFINAL.style.width = 'auto';
+    rowSumFINAL.style.background = '#7d7d7d8c';
+    rowSumFINAL.innerHTML = `<spam data-label="final"></span>`;
+    myRoot.appendChild(rowSumFINAL);
+  },
+  createRow: function (myRoot) {
+    for (var x = 1; x < 7; x++) {
+      var rowNumber = document.createElement('div');
+      rowNumber.id = 'rowNumber' + x;
+      rowNumber.style.top = '10px';
+      rowNumber.style.left = '10px';
+      rowNumber.style.width = 'auto';
+      rowNumber.style.background = '#7d7d7d8c';
+      rowNumber.innerHTML = `-`;
+      rowNumber.addEventListener('click', () => {
+        console.log('LOG THIS ', this);
+        // works
+        // rowDown
+        if (this.state.rowDown.length == 0) {
+          console.log('it is no play yet in this row ', this);
         }
       });
-      jamb.addMeshObj({
-        position: {
-          x: 0,
-          y: 1,
-          z: -120
-        },
-        rotation: {
-          x: 0,
-          y: 0,
-          z: 0
-        },
-        rotationSpeed: {
-          x: 0,
-          y: 0,
-          z: 0
-        },
-        texturesPaths: ['./res/meshes/blender/cube.png'],
-        name: 'welcomeTextPhysics',
-        mesh: m.welcomeText
-        // physics: {
-        //   enabled: true,
-        //   geometry: "Sphere"
-        // }
-      });
+      myRoot.appendChild(rowNumber);
     }
-  });
-  window.app = loadObjFile;
-};
-exports.loadJamb = loadJamb;
+    var rowNumberSum = document.createElement('div');
+    rowNumberSum.id = 'rowNumberSum';
+    rowNumberSum.style.width = 'auto';
+    rowNumberSum.style.background = '#7d7d7d8c';
+    rowNumberSum.innerHTML = `-`;
+    myRoot.appendChild(rowNumberSum);
+    var rowMax = document.createElement('div');
+    rowMax.id = 'rowMax';
+    rowMax.style.width = 'auto';
+    rowMax.style.background = '#7d7d7d8c';
+    rowMax.innerHTML = `-`;
+    myRoot.appendChild(rowMax);
+    var rowMin = document.createElement('div');
+    rowMin.id = 'rowMax';
+    rowMin.style.width = 'auto';
+    rowMin.style.background = '#7d7d7d8c';
+    rowMin.innerHTML = `-`;
+    myRoot.appendChild(rowMin);
+    var rowMaxMinSum = document.createElement('div');
+    rowMaxMinSum.id = 'rowMaxMinSum';
+    rowMaxMinSum.style.width = 'auto';
+    rowMaxMinSum.style.background = '#7d7d7d8c';
+    rowMaxMinSum.innerHTML = `-`;
+    myRoot.appendChild(rowMaxMinSum);
+    var largeStraight = document.createElement('div');
+    largeStraight.id = 'largeStraight';
+    largeStraight.style.width = 'auto';
+    largeStraight.style.background = '#7d7d7d8c';
+    largeStraight.innerHTML = `-`;
+    myRoot.appendChild(largeStraight);
+    var threeOfAKind = document.createElement('div');
+    threeOfAKind.id = 'down_threeOfAKind';
+    threeOfAKind.style.width = 'auto';
+    threeOfAKind.style.background = '#7d7d7d8c';
+    threeOfAKind.innerHTML = `-`;
+    myRoot.appendChild(threeOfAKind);
+    var fullHouse = document.createElement('div');
+    fullHouse.id = 'fullHouse';
+    fullHouse.style.width = 'auto';
+    fullHouse.style.background = '#7d7d7d8c';
+    fullHouse.innerHTML = `-`;
+    myRoot.appendChild(fullHouse);
+    var poker = document.createElement('div');
+    poker.id = 'poker';
+    poker.style.width = 'auto';
+    poker.style.background = '#7d7d7d8c';
+    poker.innerHTML = `-`;
+    myRoot.appendChild(poker);
+    var jamb = document.createElement('div');
+    jamb.id = 'jamb';
+    jamb.style.width = 'auto';
+    jamb.style.background = '#7d7d7d8c';
+    jamb.innerHTML = `-`;
+    myRoot.appendChild(jamb);
+    var rowSum = document.createElement('div');
+    rowSum.id = 'rowSum';
+    rowSum.style.width = 'auto';
+    rowSum.style.background = '#7d7d7d8c';
+    rowSum.innerHTML = `-`;
+    myRoot.appendChild(rowSum);
+  },
+  createRowFree: function (myRoot) {
+    for (var x = 1; x < 7; x++) {
+      var rowNumber = document.createElement('div');
+      rowNumber.id = 'free-rowNumber' + x;
+      rowNumber.style.top = '10px';
+      rowNumber.style.left = '10px';
+      rowNumber.style.width = 'auto';
+      rowNumber.style.background = '#7d7d7d8c';
+      rowNumber.innerHTML = `-`;
+      rowNumber.addEventListener('click', e => {
+        if (dices.validatePass() == false) return;
+        var getName = e.target.id;
+        getName = getName.replace('free-rowNumber', '');
+        var count23456 = 0;
+        for (let key in dices.R) {
+          if (parseInt(dices.R[key]) == parseInt(getName)) {
+            count23456++;
+          }
+        }
+        this.state.rowDown.push(count23456 * parseInt(getName));
+        e.target.innerHTML = count23456 * parseInt(getName);
+        if (parseInt(getName) == 6) {
+          myDom.calcFreeNumbers();
+        }
+        dices.STATUS = "FREE_TO_PLAY";
+        dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
+      });
+      myRoot.appendChild(rowNumber);
+    }
+    var rowNumberSum = document.createElement('div');
+    rowNumberSum.id = 'free-rowNumberSum';
+    rowNumberSum.style.width = 'auto';
+    rowNumberSum.style.background = '#7d7d7d8c';
+    rowNumberSum.innerHTML = `-`;
+    myRoot.appendChild(rowNumberSum);
+    var rowMax = document.createElement('div');
+    rowMax.id = 'free-rowMax';
+    rowMax.style.width = 'auto';
+    rowMax.style.background = '#7d7d7d8c';
+    rowMax.innerHTML = `-`;
+    rowMax.addEventListener("click", this.calcFreeRowMax);
+    myRoot.appendChild(rowMax);
+    var rowMin = document.createElement('div');
+    rowMin.id = 'free-rowMin';
+    rowMin.style.width = 'auto';
+    rowMin.style.background = '#7d7d7d8c';
+    rowMin.innerHTML = `-`;
+    rowMin.addEventListener('click', this.calcFreeRowMin);
+    myRoot.appendChild(rowMin);
+    var rowMaxMinSum = document.createElement('div');
+    rowMaxMinSum.id = 'free-rowMaxMinSum';
+    rowMaxMinSum.style.width = 'auto';
+    rowMaxMinSum.style.background = '#7d7d7d8c';
+    rowMaxMinSum.innerHTML = `-`;
+    myRoot.appendChild(rowMaxMinSum);
+    var largeStraight = document.createElement('div');
+    largeStraight.id = 'free-largeStraight';
+    largeStraight.style.width = 'auto';
+    largeStraight.style.background = '#7d7d7d8c';
+    largeStraight.innerHTML = `-`;
+    largeStraight.addEventListener('click', this.attachFreeKenta);
+    myRoot.appendChild(largeStraight);
+    var threeOfAKind = document.createElement('div');
+    threeOfAKind.id = 'free-threeOfAKind';
+    threeOfAKind.style.width = 'auto';
+    threeOfAKind.style.background = '#7d7d7d8c';
+    threeOfAKind.innerHTML = `-`;
+    threeOfAKind.addEventListener('click', this.attachFreeTrilling);
+    myRoot.appendChild(threeOfAKind);
+    var fullHouse = document.createElement('div');
+    fullHouse.id = 'free-fullHouse';
+    fullHouse.style.width = 'auto';
+    fullHouse.style.background = '#7d7d7d8c';
+    fullHouse.innerHTML = `-`;
+    fullHouse.addEventListener('click', this.attachFreeFullHouse);
+    myRoot.appendChild(fullHouse);
+    var poker = document.createElement('div');
+    poker.id = 'free-poker';
+    poker.style.width = 'auto';
+    poker.style.background = '#7d7d7d8c';
+    poker.innerHTML = `-`;
+    poker.addEventListener('click', this.attachFreePoker);
+    myRoot.appendChild(poker);
+    var jamb = document.createElement('div');
+    jamb.id = 'free-jamb';
+    jamb.style.width = 'auto';
+    jamb.style.background = '#7d7d7d8c';
+    jamb.innerHTML = `-`;
+    jamb.addEventListener('click', this.attachFreeJamb);
+    myRoot.appendChild(jamb);
+    var rowSum = document.createElement('div');
+    rowSum.id = 'free-rowSum';
+    rowSum.style.width = 'auto';
+    rowSum.style.background = '#7d7d7d8c';
+    rowSum.innerHTML = `-`;
+    myRoot.appendChild(rowSum);
+  },
+  createRowDown: function (myRoot) {
+    for (var x = 1; x < 7; x++) {
+      var rowNumber = document.createElement('div');
+      rowNumber.id = 'down-rowNumber' + x;
+      rowNumber.style.top = '10px';
+      rowNumber.style.left = '10px';
+      rowNumber.style.width = 'auto';
+      rowNumber.style.background = '#7d7d7d8c';
+      rowNumber.innerHTML = `-`;
+      this.memoNumberRow.push(rowNumber);
+      // initial
+      if (x == 1) {
+        rowNumber.classList.add('canPlay');
+      }
+      rowNumber.addEventListener('click', e => {
+        if (dices.validatePass() == false) return;
+        var getName = e.target.id;
+        getName = getName.replace('down-rowNumber', '');
+        if (this.state.rowDown.length == 0) {
+          console.log('LOG ', getName);
+          if (parseInt(getName) == 1) {
+            var count1 = 0;
+            for (let key in dices.R) {
+              if (parseInt(dices.R[key]) == 1) {
+                console.log('yeap', dices.R);
+                count1++;
+              }
+            }
+            this.state.rowDown.push(count1);
+            e.target.innerHTML = count1;
+            e.target.classList.remove('canPlay');
+            this.memoNumberRow[1].classList.add('canPlay');
+            dices.STATUS = "FREE_TO_PLAY";
+            dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
+          } else {
+            console.log('BLOCK');
+          }
+        } else {
+          if (this.state.rowDown.length > 0) {
+            if (parseInt(getName) == this.state.rowDown.length + 1) {
+              console.log('moze za ', parseInt(getName));
+              var count23456 = 0;
+              for (let key in dices.R) {
+                if (parseInt(dices.R[key]) == parseInt(getName)) {
+                  console.log('yeap', dices.R);
+                  count23456++;
+                }
+              }
+              this.state.rowDown.push(count23456 * parseInt(getName));
+              //
+              e.target.innerHTML = count23456 * parseInt(getName);
+              if (parseInt(getName) == 6) {
+                // calc sum
+                console.log('calc sum for numb ~ ');
+                //  this.state.rowDown.length + 1
+                myDom.calcDownNumbers();
+                e.target.classList.remove('canPlay');
+                this.rowMax.classList.add('canPlay');
+              } else {
+                e.target.classList.remove('canPlay');
+                this.memoNumberRow[parseInt(getName)].classList.add('canPlay');
+              }
+              dices.STATUS = "FREE_TO_PLAY";
+              dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
+            } else {
+              console.log('BLOCK');
+            }
+          }
+        }
+      });
+      myRoot.appendChild(rowNumber);
+    }
+    var rowNumberSum = document.createElement('div');
+    rowNumberSum.id = 'down-rowNumberSum';
+    rowNumberSum.style.width = 'auto';
+    rowNumberSum.style.background = '#7d7d7d8c';
+    rowNumberSum.innerHTML = `-`;
+    myRoot.appendChild(rowNumberSum);
+    var rowMax = document.createElement('div');
+    rowMax.id = 'down-rowMax';
+    rowMax.style.width = 'auto';
+    rowMax.style.background = '#7d7d7d8c';
+    rowMax.innerHTML = `-`;
+    myRoot.appendChild(rowMax);
+    this.rowMax = rowMax;
+    // this.rowMax.addEventListener("click", (e) => {
+    //   e.target.classList.remove('canPlay')
+    //   this.rowMin.classList.add('canPlay')
+    // })
 
-},{"../../../src/engine/loader-obj.js":9,"../../../src/engine/utils.js":13,"../../../src/world.js":19}],3:[function(require,module,exports){
+    var rowMin = document.createElement('div');
+    rowMin.id = 'down-rowMin';
+    rowMin.style.width = 'auto';
+    rowMin.style.background = '#7d7d7d8c';
+    rowMin.innerHTML = `-`;
+    this.rowMin = rowMin;
+    myRoot.appendChild(rowMin);
+    this.rowMin = rowMin;
+    var rowMaxMinSum = document.createElement('div');
+    rowMaxMinSum.id = 'down-rowMaxMinSum';
+    rowMaxMinSum.style.width = 'auto';
+    rowMaxMinSum.style.background = '#7d7d7d8c';
+    rowMaxMinSum.innerHTML = `-`;
+    myRoot.appendChild(rowMaxMinSum);
+    var largeStraight = document.createElement('div');
+    largeStraight.id = 'down-largeStraight';
+    largeStraight.style.width = 'auto';
+    largeStraight.style.background = '#7d7d7d8c';
+    largeStraight.innerHTML = `-`;
+    myRoot.appendChild(largeStraight);
+    var threeOfAKind = document.createElement('div');
+    threeOfAKind.id = 'down-threeOfAKind';
+    threeOfAKind.style.width = 'auto';
+    threeOfAKind.style.background = '#7d7d7d8c';
+    threeOfAKind.innerHTML = `-`;
+    myRoot.appendChild(threeOfAKind);
+    var fullHouse = document.createElement('div');
+    fullHouse.id = 'down-fullHouse';
+    fullHouse.style.width = 'auto';
+    fullHouse.style.background = '#7d7d7d8c';
+    fullHouse.innerHTML = `-`;
+    myRoot.appendChild(fullHouse);
+    var poker = document.createElement('div');
+    poker.id = 'down-poker';
+    poker.style.width = 'auto';
+    poker.style.background = '#7d7d7d8c';
+    poker.innerHTML = `-`;
+    myRoot.appendChild(poker);
+    var jamb = document.createElement('div');
+    jamb.id = 'down-jamb';
+    jamb.style.width = 'auto';
+    jamb.style.background = '#7d7d7d8c';
+    jamb.innerHTML = `-`;
+    myRoot.appendChild(jamb);
+    var rowSum = document.createElement('div');
+    rowSum.id = 'down-rowSum';
+    rowSum.style.width = 'auto';
+    rowSum.style.background = '#7d7d7d8c';
+    rowSum.innerHTML = `-`;
+    myRoot.appendChild(rowSum);
+  },
+  calcDownNumbers: function () {
+    var s = 0;
+    this.state.rowDown.forEach(i => {
+      console.log(parseFloat(i));
+      s += parseFloat(i);
+    });
+    (0, _utils.byId)('down-rowNumberSum').style.background = 'rgb(113 0 0 / 55%)';
+    (0, _utils.byId)('down-rowNumberSum').innerHTML = s;
+    // console.log('this.rowMax also set free to plat status', this.rowMax)
+    dices.STATUS = "FREE_TO_PLAY";
+    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
+    this.rowMax.addEventListener("click", this.calcDownRowMax);
+  },
+  // free row start
+
+  calcFreeNumbers: function () {
+    var s = 0;
+    this.state.rowDown.forEach(i => {
+      console.log(parseFloat(i));
+      s += parseFloat(i);
+    });
+    (0, _utils.byId)('free-rowNumberSum').style.background = 'rgb(113 0 0 / 55%)';
+    (0, _utils.byId)('free-rowNumberSum').innerHTML = s;
+    // console.log('this.rowMax also set free to plat status', this.rowMax)
+    dices.STATUS = "FREE_TO_PLAY";
+    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
+    (0, _utils.byId)('free-rowMax').addEventListener("click", this.calc);
+  },
+  calcFreeRowMax: e => {
+    if (dices.validatePass() == false) return;
+    var test = 0;
+    let keyLessNum = Object.keys(dices.R).reduce((key, v) => dices.R[v] < dices.R[key] ? v : key);
+    for (var key in dices.R) {
+      if (key != keyLessNum) {
+        test += parseFloat(dices.R[key]);
+      }
+    }
+    e.target.innerHTML = test;
+    // now attach next event.
+    dices.STATUS = "FREE_TO_PLAY";
+    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
+    (0, _utils.byId)('free-rowMax').removeEventListener("click", (void 0).calcFreeRowMax);
+  },
+  calcFreeRowMin: () => {
+    if (dices.validatePass() == false) return;
+    var maxTestKey = Object.keys(dices.R).reduce(function (a, b) {
+      return dices.R[a] > dices.R[b] ? a : b;
+    });
+    var test = 0;
+    for (var key in dices.R) {
+      if (key != maxTestKey) {
+        test += parseFloat(dices.R[key]);
+      } else {
+        console.log('not calc dice ', dices.R[key]);
+      }
+    }
+    (0, _utils.byId)('free-rowMin').innerHTML = test;
+    (0, _utils.byId)('free-rowMin').removeEventListener('click', (void 0).calcFreeRowMin);
+    // calc max min dont forget rules for bonus +30
+    var SUMMINMAX = parseFloat((0, _utils.byId)('free-rowMax').innerHTML) - parseFloat((0, _utils.byId)('free-rowMin').innerHTML);
+    (0, _utils.byId)('free-rowMaxMinSum').innerHTML = SUMMINMAX;
+    myDom.incrasePoints(SUMMINMAX);
+    dices.STATUS = "FREE_TO_PLAY";
+    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
+  },
+  attachFreeKenta: function () {
+    if (dices.validatePass() == false) return;
+    console.log('Test free kenta :', dices.R);
+    var result = app.myDom.checkForDuplicate()[0];
+    var testArray = app.myDom.checkForDuplicate()[1];
+    console.log('TEST duplik: ' + result);
+    if (result.length == 2) {
+      console.log('TEST duplik less 3 : ' + result);
+      var locPrevent = false;
+      testArray.forEach((item, index, array) => {
+        if (result[0].value == item.value && locPrevent == false) {
+          console.log('detect by value item.value', item.value);
+          locPrevent = true;
+          array.splice(index, 1);
+        }
+      });
+      // if we catch  1 and 6 in same stack then it is not possible for kenta...
+      var test1 = false,
+        test6 = false;
+      testArray.forEach((item, index, array) => {
+        if (item.value == 1) {
+          test1 = true;
+        } else if (item.value == 6) {
+          test6 = true;
+        }
+      });
+      if (test1 == true && test6 == true) {
+        (0, _utils.byId)('free-largeStraight').innerHTML = `0`;
+      } else if (test1 == true) {
+        (0, _utils.byId)('free-largeStraight').innerHTML = 15 + 50;
+        myDom.incrasePoints(15 + 50);
+      } else if (test6 == true) {
+        (0, _utils.byId)('free-largeStraight').innerHTML = 20 + 50;
+        myDom.incrasePoints(20 + 50);
+      }
+    } else if (result < 2) {
+      (0, _utils.byId)('free-largeStraight').innerHTML = 66;
+      myDom.incrasePoints(66);
+    } else {
+      // zero value
+      (0, _utils.byId)('free-largeStraight').innerHTML = `0`;
+    }
+    (0, _utils.byId)('free-largeStraight').removeEventListener('click', this.attachFreeKenta);
+    dices.STATUS = "FREE_TO_PLAY";
+    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
+  },
+  attachFreeTrilling: function () {
+    if (dices.validatePass() == false) return;
+    var result = app.myDom.checkForDuplicate()[0];
+    // var testArray = app.myDom.checkForDuplicate()[1];
+    // console.log('DUPLICATE FOR TRILING ', result);
+    if (result.length > 2) {
+      var testWin = 0;
+      var TEST = app.myDom.checkForAllDuplicate();
+      console.log('DUPLICATE FOR TRILING TEST ', TEST);
+      for (var key in TEST) {
+        if (TEST[key] > 2) {
+          // win
+          var getDiceID = parseInt(key.replace('value__', ''));
+          testWin = getDiceID * 3;
+        }
+      }
+      console.log('DUPLICATE FOR TRILING 30 + TEST ', testWin);
+      if (testWin > 0) {
+        (0, _utils.byId)('free-threeOfAKind').innerHTML = 20 + testWin;
+        myDom.incrasePoints(20 + testWin);
+      }
+    } else {
+      (0, _utils.byId)('free-threeOfAKind').innerHTML = 0;
+    }
+    (0, _utils.byId)('free-threeOfAKind').removeEventListener('click', this.attachFreeTrilling);
+    dices.STATUS = "FREE_TO_PLAY";
+    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
+  },
+  attachFreeFullHouse: function () {
+    if (dices.validatePass() == false) return;
+    var TEST = app.myDom.checkForAllDuplicate();
+    // console.log('DUPLICATE FOR FULL HOUSE 30 + TEST ');
+    var win = 0;
+    var testPair = false;
+    var testTrilling = false;
+    var testWinPair = 0;
+    var testWinTrilling = 0;
+    for (var key in TEST) {
+      if (TEST[key] == 2) {
+        // win
+        var getDiceID = parseInt(key.replace('value__', ''));
+        testWinPair = getDiceID * 2;
+        testPair = true;
+      } else if (TEST[key] == 3) {
+        var getDiceID = parseInt(key.replace('value__', ''));
+        testWinTrilling = getDiceID * 3;
+        testTrilling = true;
+      }
+    }
+    if (testPair == true && testTrilling == true) {
+      win = testWinPair + testWinTrilling;
+      (0, _utils.byId)('free-fullHouse').innerHTML = win + 30;
+      myDom.incrasePoints(win + 30);
+    } else {
+      (0, _utils.byId)('free-fullHouse').innerHTML = 0;
+    }
+    (0, _utils.byId)('free-fullHouse').removeEventListener('click', this.attachFreeFullHouse);
+    dices.STATUS = "FREE_TO_PLAY";
+    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
+  },
+  attachFreePoker: function () {
+    if (dices.validatePass() == false) return;
+    var TEST = app.myDom.checkForAllDuplicate();
+    // console.log('DUPLICATE FOR poker 40 + TEST ');
+    for (var key in TEST) {
+      if (TEST[key] == 4 || TEST[key] > 4) {
+        var getDiceID = parseInt(key.replace('value__', ''));
+        var win = getDiceID * 4;
+        (0, _utils.byId)('free-poker').innerHTML = win + 40;
+        myDom.incrasePoints(win + 40);
+      }
+    }
+    (0, _utils.byId)('free-poker').removeEventListener('click', this.attachFreePoker);
+    dices.STATUS = "FREE_TO_PLAY";
+    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
+  },
+  attachFreeJamb: function () {
+    if (dices.validatePass() == false) return;
+    // console.log('<GAMEPLAY><FREE ROW IS FEELED>')
+    var TEST = app.myDom.checkForAllDuplicate();
+    for (var key in TEST) {
+      if (TEST[key] == 5 || TEST[key] > 5) {
+        // win
+        var getDiceID = parseInt(key.replace('value__', ''));
+        var win = getDiceID * 5;
+        (0, _utils.byId)('free-poker').innerHTML = win + 50;
+        myDom.incrasePoints(win + 50);
+      }
+    }
+    (0, _utils.byId)('free-jamb').removeEventListener('click', this.attachFreeJamb);
+    dices.STATUS = "FREE_TO_PLAY";
+    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
+  },
+  // end of free row
+
+  calcDownRowMax: e => {
+    if (dices.validatePass() == false) return;
+    e.target.classList.remove('canPlay');
+    (void 0).rowMin.classList.add('canPlay');
+    var test = 0;
+    let keyLessNum = Object.keys(dices.R).reduce((key, v) => dices.R[v] < dices.R[key] ? v : key);
+    // console.log('FIND MIN DICE TO REMOVE FROM SUM ', keyLessNum);
+    for (var key in dices.R) {
+      if (key != keyLessNum) {
+        test += parseFloat(dices.R[key]);
+      }
+    }
+    e.target.innerHTML = test;
+    // now attach next event.
+    dices.STATUS = "FREE_TO_PLAY";
+    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
+    (void 0).rowMax.removeEventListener("click", (void 0).calcDownRowMax);
+    (0, _utils.byId)('down-rowMin').addEventListener('click', (void 0).calcDownRowMin);
+  },
+  incrasePoints: function (arg) {
+    (0, _utils.byId)('user-points').innerHTML = parseInt((0, _utils.byId)('user-points').innerHTML) + parseInt(arg);
+  },
+  calcDownRowMin: () => {
+    if (dices.validatePass() == false) return;
+    (void 0).rowMin.classList.remove('canPlay');
+    console.log('MIN ENABLED');
+    var maxTestKey = Object.keys(dices.R).reduce(function (a, b) {
+      return dices.R[a] > dices.R[b] ? a : b;
+    });
+    var test = 0;
+    for (var key in dices.R) {
+      if (key != maxTestKey) {
+        test += parseFloat(dices.R[key]);
+      } else {
+        console.log('not calc dice ', dices.R[key]);
+      }
+    }
+    (void 0).rowMin.innerHTML = test;
+    (0, _utils.byId)('down-rowMin').removeEventListener('click', (void 0).calcDownRowMin);
+    // calc max min dont forget rules for bonus +30
+    var SUMMINMAX = parseFloat((void 0).rowMax.innerHTML) - parseFloat((void 0).rowMin.innerHTML);
+    (0, _utils.byId)('down-rowMaxMinSum').innerHTML = SUMMINMAX;
+    myDom.incrasePoints(SUMMINMAX);
+    dices.STATUS = "FREE_TO_PLAY";
+    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
+    (0, _utils.byId)('down-largeStraight').classList.add('canPlay');
+    (0, _utils.byId)('down-largeStraight').addEventListener('click', (void 0).attachKenta);
+  },
+  checkForDuplicate: function () {
+    var testArray = [];
+    for (var key in dices.R) {
+      var gen = {
+        myId: key,
+        value: dices.R[key]
+      };
+      testArray.push(gen);
+    }
+    var result = Object.values(testArray.reduce((c, v) => {
+      let k = v.value;
+      c[k] = c[k] || [];
+      c[k].push(v);
+      return c;
+    }, {})).reduce((c, v) => v.length > 1 ? c.concat(v) : c, []);
+    return [result, testArray];
+  },
+  checkForAllDuplicate: function () {
+    var testArray = [];
+    for (var key in dices.R) {
+      var gen = {
+        myId: key,
+        value: dices.R[key]
+      };
+      testArray.push(gen);
+    }
+    // console.log('testArray ', testArray)
+    var result = Object.values(testArray.reduce((c, v) => {
+      let k = v.value;
+      c[k] = c[k] || [];
+      c[k].push(v);
+      return c;
+    }, {})).reduce((c, v) => v.length > 1 ? c.concat(v) : c, []);
+    var discret = {};
+    result.forEach((item, index, array) => {
+      if (typeof discret['value__' + item.value] === 'undefined') {
+        discret['value__' + item.value] = 1;
+      } else {
+        discret['value__' + item.value] += 1;
+      }
+    });
+    return discret;
+  },
+  attachKenta: function () {
+    console.log('Test kenta  ', dices.R);
+    (0, _utils.byId)('down-largeStraight').classList.remove('canPlay');
+    var result = app.myDom.checkForDuplicate()[0];
+    var testArray = app.myDom.checkForDuplicate()[1];
+    // console.log('TEST duplik: ' + result);
+    if (result.length == 2) {
+      console.log('TEST duplik less 3 : ' + result);
+      var locPrevent = false;
+      testArray.forEach((item, index, array) => {
+        if (result[0].value == item.value && locPrevent == false) {
+          console.log('detect by value item.value', item.value);
+          locPrevent = true;
+          array.splice(index, 1);
+        }
+      });
+      // if we catch  1 and 6 in same stack then it is not possible for kenta...
+      var test1 = false,
+        test6 = false;
+      testArray.forEach((item, index, array) => {
+        if (item.value == 1) {
+          test1 = true;
+        } else if (item.value == 6) {
+          test6 = true;
+        }
+      });
+      if (test1 == true && test6 == true) {
+        (0, _utils.byId)('down-largeStraight').innerHTML = `0`;
+      } else if (test1 == true) {
+        (0, _utils.byId)('down-largeStraight').innerHTML = 15 + 50;
+        myDom.incrasePoints(15 + 50);
+      } else if (test6 == true) {
+        (0, _utils.byId)('down-largeStraight').innerHTML = 20 + 50;
+        myDom.incrasePoints(20 + 50);
+      }
+    } else if (result < 2) {
+      (0, _utils.byId)('down-largeStraight').innerHTML = 66;
+      myDom.incrasePoints(66);
+    } else {
+      // zero value
+      (0, _utils.byId)('down-largeStraight').innerHTML = `0`;
+    }
+    (0, _utils.byId)('down-threeOfAKind').addEventListener('click', this.attachDownTrilling);
+    (0, _utils.byId)('down-largeStraight').removeEventListener('click', this.attachKenta);
+    dices.STATUS = "FREE_TO_PLAY";
+    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
+  },
+  attachDownTrilling: function () {
+    var result = app.myDom.checkForDuplicate()[0];
+    // var testArray = app.myDom.checkForDuplicate()[1];
+    // console.log('DUPLICATE FOR TRILING ', result);
+    if (result.length > 2) {
+      var testWin = 0;
+      var TEST = app.myDom.checkForAllDuplicate();
+      console.log('DUPLICATE FOR TRILING TEST ', TEST);
+      for (var key in TEST) {
+        if (TEST[key] > 2) {
+          // win
+          var getDiceID = parseInt(key.replace('value__', ''));
+          testWin = getDiceID * 3;
+        }
+      }
+      console.log('DUPLICATE FOR TRILING 30 + TEST ', testWin);
+      (0, _utils.byId)('down-threeOfAKind').innerHTML = 20 + testWin;
+      myDom.incrasePoints(20 + testWin);
+    } else {
+      (0, _utils.byId)('down-threeOfAKind').innerHTML = 0;
+    }
+    (0, _utils.byId)('down-threeOfAKind').removeEventListener('click', this.attachDownTrilling);
+    (0, _utils.byId)('down-fullHouse').addEventListener('click', this.attachDownFullHouse);
+    dices.STATUS = "FREE_TO_PLAY";
+    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
+  },
+  attachDownFullHouse: function () {
+    var TEST = app.myDom.checkForAllDuplicate();
+    // console.log('DUPLICATE FOR FULL HOUSE 30 + TEST ');
+    var win = 0;
+    var testPair = false;
+    var testTrilling = false;
+    var testWinPair = 0;
+    var testWinTrilling = 0;
+    for (var key in TEST) {
+      if (TEST[key] == 2) {
+        // win
+        var getDiceID = parseInt(key.replace('value__', ''));
+        testWinPair = getDiceID * 2;
+        testPair = true;
+      } else if (TEST[key] == 3) {
+        var getDiceID = parseInt(key.replace('value__', ''));
+        testWinTrilling = getDiceID * 3;
+        testTrilling = true;
+      }
+    }
+    if (testPair == true && testTrilling == true) {
+      win = testWinPair + testWinTrilling;
+      (0, _utils.byId)('down-fullHouse').innerHTML = win + 30;
+      myDom.incrasePoints(win + 30);
+    } else {
+      (0, _utils.byId)('down-fullHouse').innerHTML = 0;
+    }
+    (0, _utils.byId)('down-poker').addEventListener('click', this.attachDownPoker);
+    (0, _utils.byId)('down-fullHouse').removeEventListener('click', this.attachDownFullHouse);
+    dices.STATUS = "FREE_TO_PLAY";
+    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
+  },
+  attachDownPoker: function () {
+    var TEST = app.myDom.checkForAllDuplicate();
+    // console.log('DUPLICATE FOR poker 40 + TEST ');
+    for (var key in TEST) {
+      if (TEST[key] == 4 || TEST[key] > 4) {
+        // win
+        var getDiceID = parseInt(key.replace('value__', ''));
+        var win = getDiceID * 4;
+        (0, _utils.byId)('down-poker').innerHTML = win + 40;
+        myDom.incrasePoints(win + 40);
+      }
+    }
+    (0, _utils.byId)('down-poker').removeEventListener('click', this.attachDownPoker);
+    (0, _utils.byId)('down-jamb').addEventListener('click', this.attachDownJamb);
+    dices.STATUS = "FREE_TO_PLAY";
+    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
+  },
+  attachDownJamb: function () {
+    (0, _utils.byId)('down-jamb').removeEventListener('click', this.attachDownJamb);
+    console.log('<GAMEPLAY><DOWN ROW IS FEELED>');
+    var TEST = app.myDom.checkForAllDuplicate();
+    for (var key in TEST) {
+      if (TEST[key] == 5 || TEST[key] > 5) {
+        // win
+        var getDiceID = parseInt(key.replace('value__', ''));
+        var win = getDiceID * 5;
+        (0, _utils.byId)('down-poker').innerHTML = win + 50;
+        myDom.incrasePoints(win + 50);
+      }
+    }
+    dices.STATUS = "FREE_TO_PLAY";
+    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
+  }
+};
+
+},{"../../../src/engine/loader-obj.js":9,"../../../src/engine/utils.js":14,"../../../src/world.js":22}],3:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -239,7 +1190,7 @@ var loadObjFile = function () {
 };
 exports.loadObjFile = loadObjFile;
 
-},{"../src/engine/loader-obj.js":9,"../src/engine/utils.js":13,"../src/world.js":19}],4:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":9,"../src/engine/utils.js":14,"../src/world.js":22}],4:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -281,15 +1232,15 @@ var unlitTextures = function () {
       },
       rotation: {
         x: 0,
-        y: 45,
+        y: 0,
         z: 0
       },
       rotationSpeed: {
-        x: 0,
-        y: 10,
+        x: 10,
+        y: 0,
         z: 0
       },
-      texturesPaths: ['./res/textures/rust.jpg']
+      texturesPaths: ['./res/textures/default.png']
     };
     unlitTextures.addBall(c);
     unlitTextures.addCube(o);
@@ -298,7 +1249,7 @@ var unlitTextures = function () {
 };
 exports.unlitTextures = unlitTextures;
 
-},{"../src/world.js":19}],5:[function(require,module,exports){
+},{"../src/world.js":22}],5:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -5758,7 +6709,7 @@ class MEBall {
       asteroidCount: 15
     };
     this.loadTex0(this.texturesPaths, device).then(() => {
-      this.loadTex1(device).then(() => {
+      this.loadTex1(this.texturesPaths, device).then(() => {
         this.sampler = device.createSampler({
           magFilter: 'linear',
           minFilter: 'linear'
@@ -5913,9 +6864,9 @@ class MEBall {
     _wgpuMatrix.mat4.multiply(this.projectionMatrix, viewMatrix, this.modelViewProjectionMatrix);
     return this.modelViewProjectionMatrix;
   }
-  async loadTex1(device) {
+  async loadTex1(texPaths, device) {
     return new Promise(async resolve => {
-      const response = await fetch('./res/textures/tex1.jpg');
+      const response = await fetch(texPaths[0]);
       const imageBitmap = await createImageBitmap(await response.blob());
       this.moonTexture = device.createTexture({
         size: [imageBitmap.width, imageBitmap.height, 1],
@@ -6052,7 +7003,7 @@ class MEBall {
 }
 exports.default = MEBall;
 
-},{"../shaders/shaders":16,"./engine":8,"./matrix-class":10,"wgpu-matrix":5}],7:[function(require,module,exports){
+},{"../shaders/shaders":18,"./engine":8,"./matrix-class":10,"wgpu-matrix":5}],7:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -6170,7 +7121,7 @@ class MECube {
       asteroidCount: 15
     };
     this.loadTex0(this.texturesPaths, device).then(() => {
-      this.loadTex1(device).then(() => {
+      this.loadTex1(this.texturesPaths, device).then(() => {
         this.sampler = device.createSampler({
           magFilter: 'linear',
           minFilter: 'linear'
@@ -6313,6 +7264,13 @@ class MECube {
     });
     return bindGroup;
   }
+
+  // TEST 
+  getViewMatrix() {
+    const camera = this.cameras[this.mainCameraParams.type];
+    const viewMatrix = camera.update(deltaTime, this.inputHandler());
+    return viewMatrix;
+  }
   getTransformationMatrix(pos) {
     const now = Date.now();
     const deltaTime = (now - this.lastFrameMS) / this.mainCameraParams.responseCoef;
@@ -6328,9 +7286,9 @@ class MECube {
     _wgpuMatrix.mat4.multiply(this.projectionMatrix, viewMatrix, this.modelViewProjectionMatrix);
     return this.modelViewProjectionMatrix;
   }
-  async loadTex1(device) {
+  async loadTex1(textPath, device) {
     return new Promise(async resolve => {
-      const response = await fetch('./res/textures/tex1.jpg');
+      const response = await fetch(textPath[0]);
       const imageBitmap = await createImageBitmap(await response.blob());
       this.moonTexture = device.createTexture({
         size: [imageBitmap.width, imageBitmap.height, 1],
@@ -6462,7 +7420,7 @@ class MECube {
 }
 exports.default = MECube;
 
-},{"../shaders/shaders":16,"./engine":8,"./matrix-class":10,"wgpu-matrix":5}],8:[function(require,module,exports){
+},{"../shaders/shaders":18,"./engine":8,"./matrix-class":10,"wgpu-matrix":5}],8:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -6633,6 +7591,8 @@ class WASDCamera extends CameraBase {
 
     // Reconstruct the camera's rotation, and store into the camera matrix.
     super.matrix = _wgpuMatrix.mat4.rotateX(_wgpuMatrix.mat4.rotationY(this.yaw), this.pitch);
+    // super.matrix = mat4.rotateX(mat4.rotationY(this.yaw), -this.pitch);
+    // super.matrix = mat4.rotateY(mat4.rotateX(this.pitch), this.yaw);
 
     // Calculate the new target velocity
     const digital = input.digital;
@@ -6920,7 +7880,7 @@ function createInputHandler(window, canvas) {
   };
 }
 
-},{"./utils":13,"wgpu-matrix":5}],9:[function(require,module,exports){
+},{"./utils":14,"wgpu-matrix":5}],9:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -6934,6 +7894,9 @@ exports.play = play;
  * information can then be used later on when creating your VBOs. See
  * OBJ.initMeshBuffers for an example of how to use the newly created Mesh
  *
+ * Nidza Note:
+ * There is difference from me source obj loader and me-wgpu obj loader
+ * Here we need scele in comp x,y,z because we use also primitive [cube, sphere etc...]
  * @class Mesh
  * @constructor
  *
@@ -6950,7 +7913,7 @@ class constructMesh {
       this.create(this.objectData, this.inputArg);
     };
     this.updateBuffers = () => {
-      this.inputArg.scale = 1;
+      this.inputArg.scale = [0.1, 0.1, 0.1];
       this.create(this.objectData, this.inputArg);
     };
   }
@@ -7107,9 +8070,9 @@ class constructMesh {
                   This same process is repeated for verts and textures.
                   */
             // vertex position
-            unpacked.verts.push(+verts[(vertex[0] - 1) * 3 + initOrientation[0]] * inputArg.scale);
-            unpacked.verts.push(+verts[(vertex[0] - 1) * 3 + initOrientation[1]] * inputArg.scale);
-            unpacked.verts.push(+verts[(vertex[0] - 1) * 3 + initOrientation[2]] * inputArg.scale);
+            unpacked.verts.push(+verts[(vertex[0] - 1) * 3 + initOrientation[0]] * inputArg.scale[0]);
+            unpacked.verts.push(+verts[(vertex[0] - 1) * 3 + initOrientation[1]] * inputArg.scale[1]);
+            unpacked.verts.push(+verts[(vertex[0] - 1) * 3 + initOrientation[2]] * inputArg.scale[2]);
 
             // vertex textures
             if (textures.length) {
@@ -7184,11 +8147,11 @@ var downloadMeshes = function (nameAndURLs, completionCallback, inputArg) {
   // a new object is created. this will be passed into the completionCallback
   if (typeof inputArg === 'undefined') {
     var inputArg = {
-      scale: 1,
+      scale: [0.1, 0.1, 0.1],
       swap: [null]
     };
   }
-  if (typeof inputArg.scale === 'undefined') inputArg.scale = 0.1;
+  if (typeof inputArg.scale === 'undefined') inputArg.scale = [0.1, 0.1, 0.1];
   if (typeof inputArg.swap === 'undefined') inputArg.swap = [null];
   var meshes = {};
 
@@ -7401,22 +8364,22 @@ var _utils = require("./utils");
 
 class Position {
   constructor(x, y, z) {
-    console.log('TEST TYTPOF ', x);
+    // console.log('TEST TYTPOF ', x)
     // Not in use for nwo this is from matrix-engine project [nameUniq]
     this.nameUniq = null;
     if (typeof x == 'undefined') x = 0;
     if (typeof y == 'undefined') y = 0;
     if (typeof z == 'undefined') z = 0;
-    this.x = x;
-    this.y = y;
-    this.z = z;
+    this.x = parseFloat(x);
+    this.y = parseFloat(y);
+    this.z = parseFloat(z);
     this.velY = 0;
     this.velX = 0;
     this.velZ = 0;
     this.inMove = false;
-    this.targetX = x;
-    this.targetY = y;
-    this.targetZ = z;
+    this.targetX = parseFloat(x);
+    this.targetY = parseFloat(y);
+    this.targetZ = parseFloat(z);
     this.thrust = 0.01;
     return this;
   }
@@ -7429,36 +8392,36 @@ class Position {
   }
   translateByX(x) {
     this.inMove = true;
-    this.targetX = x;
+    this.targetX = parseFloat(x);
   }
   translateByY(y) {
     this.inMove = true;
-    this.targetY = y;
+    this.targetY = parseFloat(y);
   }
   translateByZ(z) {
     this.inMove = true;
-    this.targetZ = z;
+    this.targetZ = parseFloat(z);
   }
   translateByXY(x, y) {
     this.inMove = true;
-    this.targetX = x;
-    this.targetY = y;
+    this.targetX = parseFloat(x);
+    this.targetY = parseFloat(y);
   }
   translateByXZ(x, z) {
     this.inMove = true;
-    this.targetX = x;
-    this.targetZ = z;
+    this.targetX = parseFloat(x);
+    this.targetZ = parseFloat(z);
   }
   translateByYZ(y, z) {
     this.inMove = true;
-    this.targetY = y;
-    this.targetZ = z;
+    this.targetY = parseFloat(y);
+    this.targetZ = parseFloat(z);
   }
   onTargetPositionReach() {}
   update() {
-    var tx = this.targetX - this.x,
-      ty = this.targetY - this.y,
-      tz = this.targetZ - this.z,
+    var tx = parseFloat(this.targetX) - parseFloat(this.x),
+      ty = parseFloat(this.targetY) - parseFloat(this.y),
+      tz = parseFloat(this.targetZ) - parseFloat(this.z),
       dist = Math.sqrt(tx * tx + ty * ty + tz * tz);
     this.velX = tx / dist * this.thrust;
     this.velY = ty / dist * this.thrust;
@@ -7490,7 +8453,7 @@ class Position {
     }
   }
   get worldLocation() {
-    return [this.x, this.y, this.z];
+    return [parseFloat(this.x), parseFloat(this.y), parseFloat(this.z)];
   }
   SetX(newx, em) {
     this.x = newx;
@@ -7524,6 +8487,15 @@ class Position {
     //     netPos: {x: this.x, y: this.y, z: this.z},
     //     netObjId: this.nameUniq,
     //   });
+  }
+  get X() {
+    return parseFloat(this.x);
+  }
+  get Y() {
+    return parseFloat(this.y);
+  }
+  get Z() {
+    return parseFloat(this.z);
   }
   setPosition(newx, newy, newz) {
     this.x = newx;
@@ -7567,6 +8539,23 @@ class Rotation {
     // not in use good for exstend logic
     this.matrixRotation = null;
   }
+  toDegree() {
+    /*
+    heading = atan2(y * sin(angle)- x * z * (1 - cos(angle)) , 1 - (y2 + z2 ) * (1 - cos(angle)))
+    attitude = asin(x * y * (1 - cos(angle)) + z * sin(angle))
+    bank = atan2(x * sin(angle)-y * z * (1 - cos(angle)) , 1 - (x2 + z2) * (1 - cos(angle)))
+    */
+    return [(0, _utils.radToDeg)(this.axis.x), (0, _utils.radToDeg)(this.axis.y), (0, _utils.radToDeg)(this.axis.z)];
+  }
+  toDegreeX() {
+    return Math.cos((0, _utils.radToDeg)(this.axis.x) / 2);
+  }
+  toDegreeY() {
+    return Math.cos((0, _utils.radToDeg)(this.axis.z) / 2);
+  }
+  toDegreeZ() {
+    return Math.cos((0, _utils.radToDeg)(this.axis.y) / 2);
+  }
   getRotX() {
     if (this.rotationSpeed.x == 0) {
       return (0, _utils.degToRad)(this.x);
@@ -7594,7 +8583,7 @@ class Rotation {
 }
 exports.Rotation = Rotation;
 
-},{"./utils":13}],11:[function(require,module,exports){
+},{"./utils":14}],11:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -7608,8 +8597,18 @@ var _vertexShadow = require("../shaders/vertexShadow.wgsl");
 var _fragment = require("../shaders/fragment.wgsl");
 var _vertex = require("../shaders/vertex.wgsl");
 var _utils = require("./utils");
+var _raycastTest = require("./raycast-test");
 class MEMeshObj {
   constructor(canvas, device, context, o) {
+    if (typeof o.name === 'undefined') o.name = (0, _utils.genName)(9);
+    if (typeof o.raycast === 'undefined') {
+      this.raycast = {
+        enabled: false
+      };
+    } else {
+      this.raycast = o.raycast;
+    }
+    this.name = o.name;
     this.done = false;
     this.device = device;
     this.context = context;
@@ -7618,13 +8617,20 @@ class MEMeshObj {
     // Mesh stuff
     this.mesh = o.mesh;
     this.mesh.uvs = this.mesh.textures;
-    console.log(`%c Mesh loaded: ${o.name}`, _utils.LOG_INFO);
+    console.log(`%c Mesh loaded: ${o.name}`, _utils.LOG_FUNNY_SMALL);
     this.inputHandler = (0, _engine.createInputHandler)(window, canvas);
     this.cameras = o.cameras;
     this.mainCameraParams = {
       type: o.mainCameraParams.type,
       responseCoef: o.mainCameraParams.responseCoef
     };
+
+    // test raycast
+    // fullscreen for now
+    // window.addEventListener('mousedown', (e) => {
+    // 	checkingProcedure(e);
+    // });
+    _raycastTest.touchCoordinate.enabled = true;
     this.lastFrameMS = 0;
     this.texturesPaths = [];
     o.texturesPaths.forEach(t => {
@@ -7936,25 +8942,27 @@ class MEMeshObj {
         this.viewMatrix = camera.update(deltaTime, this.inputHandler());
         _wgpuMatrix.mat4.translate(this.viewMatrix, _wgpuMatrix.vec3.fromValues(pos.x, pos.y, pos.z), this.viewMatrix);
         _wgpuMatrix.mat4.rotate(this.viewMatrix, _wgpuMatrix.vec3.fromValues(this.rotation.axis.x, this.rotation.axis.y, this.rotation.axis.z), (0, _utils.degToRad)(this.rotation.angle), this.viewMatrix);
-        // mat4.rotateX(this.viewMatrix, this.rotation.getRotX(), this.viewMatrix);
-        // mat4.rotateY(this.viewMatrix, this.rotation.getRotY(), this.viewMatrix);
-        // mat4.rotateZ(this.viewMatrix, this.rotation.getRotZ(), this.viewMatrix);
+
+        // console.info('angle: ', this.rotation.angle, ' axis ' ,  this.rotation.axis.x, ' , ', this.rotation.axis.y, ' , ',  this.rotation.axis.z)
         _wgpuMatrix.mat4.multiply(this.projectionMatrix, this.viewMatrix, this.modelViewProjectionMatrix);
         return this.modelViewProjectionMatrix;
       };
       this.upVector = _wgpuMatrix.vec3.fromValues(0, 1, 0);
       this.origin = _wgpuMatrix.vec3.fromValues(0, 0, 0);
-      this.lightPosition = _wgpuMatrix.vec3.fromValues(0, 10, -2);
+      this.lightPosition = _wgpuMatrix.vec3.fromValues(0, 0, 0);
       this.lightViewMatrix = _wgpuMatrix.mat4.lookAt(this.lightPosition, this.origin, this.upVector);
       const lightProjectionMatrix = _wgpuMatrix.mat4.create();
+      var myLMargin = 100;
       {
-        const left = -80;
-        const right = 80;
-        const bottom = -80;
-        const top = 80;
+        const left = -myLMargin;
+        const right = myLMargin;
+        const bottom = -myLMargin;
+        const top = myLMargin;
         const near = -200;
         const far = 300;
         _wgpuMatrix.mat4.ortho(left, right, bottom, top, near, far, lightProjectionMatrix);
+        // test 
+        // mat4.ortho(right, left, top, bottom, near, far, lightProjectionMatrix);
       }
       this.lightViewProjMatrix = _wgpuMatrix.mat4.multiply(lightProjectionMatrix, this.lightViewMatrix);
 
@@ -7982,8 +8990,7 @@ class MEMeshObj {
     });
   }
   updateLightsTest = position => {
-    console.log('test !');
-    ////////////////////////
+    console.log('Update light position.', position);
     this.lightPosition = _wgpuMatrix.vec3.fromValues(position[0], position[1], position[2]);
     this.lightViewMatrix = _wgpuMatrix.mat4.lookAt(this.lightPosition, this.origin, this.upVector);
     const lightProjectionMatrix = _wgpuMatrix.mat4.create();
@@ -8003,9 +9010,11 @@ class MEMeshObj {
     // The camera/light aren't moving, so write them into buffers now.
     {
       const lightMatrixData = this.lightViewProjMatrix; // as Float32Array;
-      this.device.queue.writeBuffer(this.sceneUniformBuffer, 0, lightMatrixData.buffer, lightMatrixData.byteOffset, lightMatrixData.byteLength);
+      this.device.queue.writeBuffer(this.sceneUniformBuffer, 0,
+      // 0 ori
+      lightMatrixData.buffer, lightMatrixData.byteOffset, lightMatrixData.byteLength);
       const lightData = this.lightPosition;
-      this.device.queue.writeBuffer(this.sceneUniformBuffer, 128, lightData.buffer, lightData.byteOffset, lightData.byteLength);
+      this.device.queue.writeBuffer(this.sceneUniformBuffer, 256, lightData.buffer, lightData.byteOffset, lightData.byteLength);
       const modelData = modelMatrix;
       this.device.queue.writeBuffer(this.modelUniformBuffer, 0, modelData.buffer, modelData.byteOffset, modelData.byteLength);
     }
@@ -8014,6 +9023,7 @@ class MEMeshObj {
       depthStencilAttachment: {
         view: this.shadowDepthTextureView,
         depthClearValue: 1.0,
+        // ori 1.0
         depthLoadOp: 'clear',
         depthStoreOp: 'store'
       }
@@ -8056,6 +9066,12 @@ class MEMeshObj {
     renderPass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
     renderPass.setIndexBuffer(this.indexBuffer, 'uint16');
     renderPass.drawIndexed(this.indexCount);
+
+    // test ray
+
+    // try{ OLD
+    // if(this.raycast.enabled == true) checkingRay(this)
+    // } catch(e) {}
   };
   drawShadows = shadowPass => {
     shadowPass.setBindGroup(0, this.sceneBindGroupForShadow);
@@ -8069,7 +9085,7 @@ class MEMeshObj {
 }
 exports.default = MEMeshObj;
 
-},{"../shaders/fragment.wgsl":15,"../shaders/vertex.wgsl":17,"../shaders/vertexShadow.wgsl":18,"./engine":8,"./matrix-class":10,"./utils":13,"wgpu-matrix":5}],12:[function(require,module,exports){
+},{"../shaders/fragment.wgsl":17,"../shaders/vertex.wgsl":19,"../shaders/vertexShadow.wgsl":20,"./engine":8,"./matrix-class":10,"./raycast-test":13,"./utils":14,"wgpu-matrix":5}],12:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -8467,30 +9483,133 @@ class MEMesh {
 }
 exports.default = MEMesh;
 
-},{"../shaders/fragment.wgsl":15,"../shaders/vertex.wgsl":17,"../shaders/vertexShadow.wgsl":18,"./engine":8,"./loader-obj":9,"./matrix-class":10,"wgpu-matrix":5}],13:[function(require,module,exports){
+},{"../shaders/fragment.wgsl":17,"../shaders/vertex.wgsl":19,"../shaders/vertexShadow.wgsl":20,"./engine":8,"./loader-obj":9,"./matrix-class":10,"wgpu-matrix":5}],13:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.LOG_WARN = exports.LOG_MATRIX = exports.LOG_INFO = exports.LOG_FUNNY = void 0;
+exports.addRaycastListener = addRaycastListener;
+exports.getRayFromMouse = getRayFromMouse;
+exports.rayIntersectsSphere = rayIntersectsSphere;
+exports.touchCoordinate = void 0;
+var _wgpuMatrix = require("wgpu-matrix");
+/**
+ * @author Nikola Lukic
+ * @email zlatnaspirala@gmail.com
+ * @site https://maximumroulette.com
+ * @Licence GPL v3
+ * @credits chatgpt used for this script adaptation.
+ * @Note matrix-engine-wgpu adaptation test
+ * default for now:
+ * app.cameras['WASD']
+ * Only tested for WASD type of camera.
+ * app is global - will be fixed in future
+ */
+
+let rayHitEvent;
+let touchCoordinate = exports.touchCoordinate = {
+  enabled: false,
+  x: 0,
+  y: 0,
+  stopOnFirstDetectedHit: false
+};
+function multiplyMatrixVector(matrix, vector) {
+  return _wgpuMatrix.vec4.transformMat4(vector, matrix);
+}
+function getRayFromMouse(event, canvas, camera) {
+  const rect = canvas.getBoundingClientRect();
+  let x = (event.clientX - rect.left) / rect.width * 2 - 1;
+  let y = (event.clientY - rect.top) / rect.height * 2 - 1;
+  // simple invert
+  x = -x;
+  y = -y;
+  const fov = Math.PI / 4;
+  const aspect = canvas.width / canvas.height;
+  const near = 0.1;
+  const far = 1000;
+  camera.projectionMatrix = _wgpuMatrix.mat4.perspective(2 * Math.PI / 5, aspect, 1, 1000.0);
+  const invProjection = _wgpuMatrix.mat4.inverse(camera.projectionMatrix);
+
+  // const correctedView = mat4.clone(camera.view_);
+  // correctedView[2] *= -1;
+  // correctedView[6] *= -1;
+  // correctedView[10] *= -1;
+  // const invView = mat4.inverse(correctedView);
+
+  const invView = _wgpuMatrix.mat4.inverse(camera.view);
+  const ndc = [x, y, 1, 1];
+  let worldPos = multiplyMatrixVector(invProjection, ndc);
+  worldPos = multiplyMatrixVector(invView, worldPos);
+  let world;
+  if (worldPos[3] !== 0) {
+    world = [worldPos[0] / worldPos[3], worldPos[2] / worldPos[3], worldPos[1] / worldPos[3]];
+  } else {
+    console.log("[raycaster]special case 0.");
+    world = [worldPos[0], worldPos[1], worldPos[2]];
+  }
+  const rayOrigin = [camera.position[0], camera.position[1], camera.position[2]];
+  const rayDirection = _wgpuMatrix.vec3.normalize(_wgpuMatrix.vec3.subtract(world, rayOrigin));
+  return {
+    rayOrigin,
+    rayDirection
+  };
+}
+function rayIntersectsSphere(rayOrigin, rayDirection, sphereCenter, sphereRadius) {
+  const pos = [sphereCenter.x, sphereCenter.z, sphereCenter.y];
+  const oc = _wgpuMatrix.vec3.subtract(rayOrigin, pos);
+  const a = _wgpuMatrix.vec3.dot(rayDirection, rayDirection);
+  const b = 2.0 * _wgpuMatrix.vec3.dot(oc, rayDirection);
+  const c = _wgpuMatrix.vec3.dot(oc, oc) - sphereRadius * sphereRadius;
+  const discriminant = b * b - 4 * a * c;
+  return discriminant > 0;
+}
+function addRaycastListener() {
+  window.addEventListener('click', event => {
+    let canvas = document.getElementsByTagName('canvas')[0];
+    let camera = app.cameras.WASD;
+    const {
+      rayOrigin,
+      rayDirection
+    } = getRayFromMouse(event, canvas, camera);
+    for (const object of app.mainRenderBundle) {
+      if (rayIntersectsSphere(rayOrigin, rayDirection, object.position, 2)) {
+        // console.log('Object clicked:', object.name);
+        // Just like in matrix-engine webGL version "ray.hit.event"
+        dispatchEvent(new CustomEvent('ray.hit.event', {
+          detail: {
+            hitObject: object
+          }
+        }));
+      }
+    }
+  });
+}
+
+},{"wgpu-matrix":5}],14:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.LOG_WARN = exports.LOG_MATRIX = exports.LOG_INFO = exports.LOG_FUNNY_SMALL = exports.LOG_FUNNY = void 0;
 exports.ORBIT = ORBIT;
 exports.ORBIT_FROM_ARRAY = ORBIT_FROM_ARRAY;
 exports.OSCILLATOR = OSCILLATOR;
-exports.QueryString = void 0;
 exports.SWITCHER = SWITCHER;
 exports.byId = void 0;
 exports.createAppEvent = createAppEvent;
 exports.degToRad = degToRad;
+exports.genName = genName;
 exports.getAxisRot = getAxisRot;
 exports.getAxisRot2 = getAxisRot2;
 exports.getAxisRot3 = getAxisRot3;
-exports.mat4 = void 0;
+exports.mb = exports.mat4 = void 0;
 exports.quaternion_rotation_matrix = quaternion_rotation_matrix;
 exports.radToDeg = radToDeg;
 exports.randomFloatFromTo = randomFloatFromTo;
 exports.randomIntFromTo = randomIntFromTo;
-exports.vec3 = exports.scriptManager = void 0;
+exports.vec3 = exports.urlQuery = exports.scriptManager = void 0;
 const vec3 = exports.vec3 = {
   cross(a, b, dst) {
     dst = dst || new Float32Array(3);
@@ -9022,7 +10141,7 @@ function randomIntFromTo(min, max) {
     return Math.floor(Math.random() * (max - min + 1) + min);
   }
 }
-var QueryString = exports.QueryString = function () {
+var urlQuery = exports.urlQuery = function () {
   var query_string = {};
   var query = window.location.search.substring(1);
   var vars = query.split('&');
@@ -9139,25 +10258,133 @@ function quaternion_rotation_matrix(Q) {
 // copnsole log graphics
 const LOG_WARN = exports.LOG_WARN = 'background: gray; color: yellow; font-size:10px';
 const LOG_INFO = exports.LOG_INFO = 'background: green; color: white; font-size:11px';
-const LOG_MATRIX = exports.LOG_MATRIX = "font-family: verdana;color: #lime; font-size:11px;text-shadow: 2px 2px 4px orangered;background: black;";
+const LOG_MATRIX = exports.LOG_MATRIX = "font-family: stormfaze;color: #lime; font-size:11px;text-shadow: 2px 2px 4px orangered;background: black;";
 const LOG_FUNNY = exports.LOG_FUNNY = "font-family: stormfaze;color: #f1f033; font-size:14px;text-shadow: 2px 2px 4px #f335f4, 4px 4px 4px #d64444, 2px 2px 4px #c160a6, 6px 2px 0px #123de3;background: black;";
+const LOG_FUNNY_SMALL = exports.LOG_FUNNY_SMALL = "font-family: stormfaze;color: #f1f033; font-size:10px;text-shadow: 2px 2px 4px #f335f4, 4px 4px 4px #d64444, 1px 1px 2px #c160a6, 3px 1px 0px #123de3;background: black;";
+function genName(length) {
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  let result = "";
+  for (let i = 0; i < length; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+}
+let mb = exports.mb = {
+  root: () => byId('msgBox'),
+  pContent: () => byId('not-content'),
+  copy: function () {
+    navigator.clipboard.writeText(mb.root().children[0].innerText);
+  },
+  c: 0,
+  ic: 0,
+  t: {},
+  setContent: function (content, t) {
+    var iMsg = document.createElement('div');
+    iMsg.innerHTML = content;
+    iMsg.id = `msgbox-loc-${mb.c}`;
+    mb.root().appendChild(iMsg);
+    iMsg.classList.add('animate1');
+    if (t == 'ok') {
+      iMsg.style = 'font-family: stormfaze;color:white;padding:7px;margin:2px';
+    } else {
+      iMsg.style = 'font-family: stormfaze;color:white;padding:7px;margin:2px';
+    }
+  },
+  kill: function () {
+    mb.root().remove();
+  },
+  show: function (content, t) {
+    mb.setContent(content, t);
+    mb.root().style.display = "block";
+    var loc2 = mb.c;
+    setTimeout(function () {
+      byId(`msgbox-loc-${loc2}`).classList.remove("fadeInDown");
+      byId(`msgbox-loc-${loc2}`).classList.add("fadeOut");
+      setTimeout(function () {
+        byId(`msgbox-loc-${loc2}`).style.display = "none";
+        byId(`msgbox-loc-${loc2}`).classList.remove("fadeOut");
+        byId(`msgbox-loc-${loc2}`).remove();
+        mb.ic++;
+        if (mb.c == mb.ic) {
+          mb.root().style.display = 'none';
+        }
+      }, 1000);
+    }, 3000);
+    mb.c++;
+  },
+  error: function (content) {
+    mb.root().classList.remove("success");
+    mb.root().classList.add("error");
+    mb.root().classList.add("fadeInDown");
+    mb.show(content, 'err');
+  },
+  success: function (content) {
+    mb.root().classList.remove("error");
+    mb.root().classList.add("success");
+    mb.root().classList.add("fadeInDown");
+    mb.show(content, 'ok');
+  }
+};
 
-},{}],14:[function(require,module,exports){
+},{}],15:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.MultiLang = void 0;
+var _utils = require("../engine/utils");
+class MultiLang {
+  constructor() {
+    addEventListener('updateLang', () => {
+      console.log('Multilang updated.');
+      this.update();
+    });
+  }
+  update = function () {
+    var allTranDoms = document.querySelectorAll('[data-label]');
+    allTranDoms.forEach(i => {
+      i.innerHTML = this.get[i.getAttribute('data-label')];
+    });
+  };
+  loadMultilang = async function (lang = 'en') {
+    lang = 'res/multilang/' + lang + '.json';
+    console.info(`%cMultilang: ${lang}`, _utils.LOG_MATRIX);
+    try {
+      const r = await fetch(lang, {
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        }
+      });
+      return await r.json();
+    } catch (err) {
+      console.warn('Not possible to access multilang json asset! Err => ', err);
+      return {};
+    }
+  };
+}
+exports.MultiLang = MultiLang;
+
+},{"../engine/utils":14}],16:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.default = void 0;
-var _wgpuMatrix = require("wgpu-matrix");
 var _utils = require("../engine/utils");
+// import {vec3} from "wgpu-matrix";
+
 class MatrixAmmo {
   constructor() {
     // THIS PATH IS PATH FROM PUBLIC FINAL FOLDER
     _utils.scriptManager.LOAD("./ammojs/ammo.js", "ammojs", undefined, undefined, this.init);
+    this.lastRoll = '';
+    this.presentScore = '';
   }
   init = () => {
-    console.log('pre ammo');
+    // console.log('pre ammo')
     Ammo().then(Ammo => {
       // Physics variables
       this.dynamicsWorld = null;
@@ -9172,7 +10399,6 @@ class MatrixAmmo {
   };
   initPhysics() {
     let Ammo = this.Ammo;
-
     // Physics configuration
     var collisionConfiguration = new Ammo.btDefaultCollisionConfiguration(),
       dispatcher = new Ammo.btCollisionDispatcher(collisionConfiguration),
@@ -9180,10 +10406,10 @@ class MatrixAmmo {
       solver = new Ammo.btSequentialImpulseConstraintSolver();
     this.dynamicsWorld = new Ammo.btDiscreteDynamicsWorld(dispatcher, overlappingPairCache, solver, collisionConfiguration);
     this.dynamicsWorld.setGravity(new Ammo.btVector3(0, -10, 0));
-    var groundShape = new Ammo.btBoxShape(new Ammo.btVector3(50, 0.5, 50)),
+    var groundShape = new Ammo.btBoxShape(new Ammo.btVector3(70, 1, 70)),
       groundTransform = new Ammo.btTransform();
     groundTransform.setIdentity();
-    groundTransform.setOrigin(new Ammo.btVector3(0, -1, 0));
+    groundTransform.setOrigin(new Ammo.btVector3(0, -4.45, 0));
     var mass = 0,
       isDynamic = mass !== 0,
       localInertia = new Ammo.btVector3(0, 0, 0);
@@ -9191,8 +10417,12 @@ class MatrixAmmo {
     var myMotionState = new Ammo.btDefaultMotionState(groundTransform),
       rbInfo = new Ammo.btRigidBodyConstructionInfo(mass, myMotionState, groundShape, localInertia),
       body = new Ammo.btRigidBody(rbInfo);
+    body.name = 'ground';
+    this.ground = body;
     this.dynamicsWorld.addRigidBody(body);
     // this.rigidBodies.push(body);
+    // add collide event
+    this.detectCollision();
   }
   addPhysics(MEObject, pOptions) {
     if (pOptions.geometry == "Sphere") {
@@ -9220,26 +10450,44 @@ class MatrixAmmo {
   }
   addPhysicsBox(MEObject, pOptions) {
     const FLAGS = {
+      TEST_NIDZA: 3,
       CF_KINEMATIC_OBJECT: 2
     };
     let Ammo = this.Ammo;
-    var colShape = new Ammo.btBoxShape(new Ammo.btVector3(1, 1, 1)),
+    // improve this - scale by comp
+    var colShape = new Ammo.btBoxShape(new Ammo.btVector3(pOptions.scale[0], pOptions.scale[1], pOptions.scale[2])),
       startTransform = new Ammo.btTransform();
     startTransform.setIdentity();
     var mass = pOptions.mass;
     var localInertia = new Ammo.btVector3(0, 0, 0);
     colShape.calculateLocalInertia(mass, localInertia);
     startTransform.setOrigin(new Ammo.btVector3(pOptions.position.x, pOptions.position.y, pOptions.position.z));
+    //rotation
+    // console.log('startTransform.setRotation', startTransform.setRotation)
+    var t = startTransform.getRotation();
+    t.setX((0, _utils.degToRad)(pOptions.rotation.x));
+    t.setY((0, _utils.degToRad)(pOptions.rotation.y));
+    t.setZ((0, _utils.degToRad)(pOptions.rotation.z));
+    startTransform.setRotation(t);
+
+    // startTransform.setRotation(pOptions.rotation.x, pOptions.rotation.y, pOptions.rotation.z);
+
     var myMotionState = new Ammo.btDefaultMotionState(startTransform),
       rbInfo = new Ammo.btRigidBodyConstructionInfo(mass, myMotionState, colShape, localInertia),
       body = new Ammo.btRigidBody(rbInfo);
-    if (pOptions.mass == 0 && typeof pOptions.state == 'undefined') {
+    if (pOptions.mass == 0 && typeof pOptions.state == 'undefined' && typeof pOptions.collide == 'undefined') {
       body.setActivationState(2);
       body.setCollisionFlags(FLAGS.CF_KINEMATIC_OBJECT);
-      console.log('what is pOptions.mass and state is 2 ....', pOptions.mass);
+      // console.log('what is pOptions.mass and state is 2 ....', pOptions.mass)
+    } else if (typeof pOptions.collide != 'undefined' && pOptions.collide == false) {
+      // idea not work for now - eliminate collide effect
+      body.setActivationState(4);
+      body.setCollisionFlags(FLAGS.TEST_NIDZA);
     } else {
       body.setActivationState(4);
     }
+    // console.log('what is name.', pOptions.name)
+    body.name = pOptions.name;
     body.MEObject = MEObject;
     this.dynamicsWorld.addRigidBody(body);
     this.rigidBodies.push(body);
@@ -9250,31 +10498,117 @@ class MatrixAmmo {
     tbv30.setValue(x, y, z);
     body.setLinearVelocity(tbv30);
   }
-  setKinematicTransform(body, x, y, z) {
+  setKinematicTransform(body, x, y, z, rx, ry, rz) {
+    if (typeof rx == 'undefined') {
+      var rx = 0;
+    }
+    if (typeof ry == 'undefined') {
+      var ry = 0;
+    }
+    if (typeof rz == 'undefined') {
+      var rz = 0;
+    }
     let pos = new Ammo.btVector3();
-    let quat = new Ammo.btQuaternion();
+    // let quat = new Ammo.btQuaternion();
     pos = body.getWorldTransform().getOrigin();
-    let localRot = pos = body.getWorldTransform().getRotation();
+    let localRot = body.getWorldTransform().getRotation();
+    // console.log('pre pos x:', pos.x(), " y : ", pos.y(), " z:", pos.z())
     pos.setX(pos.x() + x);
     pos.setY(pos.y() + y);
     pos.setZ(pos.z() + z);
-    console.log('position kinematic move : ', pos);
-    console.log('position localRot  : ', localRot);
-
-    // body.getWorldQuaternion(quat);
-    // let physicsBody = kObject.userData.physicsBody;
+    // console.log('position kinematic move : ', pos)
+    // console.log('position localRot  : ', localRot)
+    localRot.setX(rx);
+    localRot.setY(ry);
+    localRot.setZ(rz);
     let physicsBody = body;
     let ms = physicsBody.getMotionState();
     if (ms) {
       var tmpTrans = new Ammo.btTransform();
-      console.log('TEST pos  x:', pos.x(), " y : ", pos.y(), " z:", pos.z());
+
       // quat.setValue(quat.x(), quat.y(), quat.z(), quat.w());
       tmpTrans.setIdentity();
       tmpTrans.setOrigin(pos);
-      // tmpTrans.setRotation(quat);
+      tmpTrans.setRotation(localRot);
       ms.setWorldTransform(tmpTrans);
     }
-    console.log('body, ', body);
+    // console.log('body, ', body)
+  }
+  getBodyByName(name) {
+    var b = null;
+    this.rigidBodies.forEach((item, index, array) => {
+      if (item.name == name) {
+        b = array[index];
+      }
+    });
+    return b;
+  }
+  getNameByBody(body) {
+    var b = null;
+    this.rigidBodies.forEach((item, index, array) => {
+      if (item.kB == body.kB) {
+        b = array[index].name;
+      }
+    });
+    return b;
+  }
+  detectCollision() {
+    console.log('override this');
+    return;
+    this.lastRoll = '';
+    this.presentScore = '';
+    let dispatcher = this.dynamicsWorld.getDispatcher();
+    let numManifolds = dispatcher.getNumManifolds();
+    for (let i = 0; i < numManifolds; i++) {
+      let contactManifold = dispatcher.getManifoldByIndexInternal(i);
+      // let numContacts = contactManifold.getNumContacts();
+      // this.rigidBodies.forEach((item) => {
+      //   if(item.kB == contactManifold.getBody0().kB) {
+      //     // console.log('Detected body0 =', item.name)
+      //   }
+      //   if(item.kB == contactManifold.getBody1().kB) {
+      //     // console.log('Detected body1 =', item.name)
+      //   }
+      // })
+
+      if (this.ground.kB == contactManifold.getBody0().kB && this.getNameByBody(contactManifold.getBody1()) == 'CubePhysics1') {
+        // console.log(this.ground ,'GROUND IS IN CONTACT WHO IS BODY1 ', contactManifold.getBody1())
+        // console.log('GROUND IS IN CONTACT WHO IS BODY1 getNameByBody  ', this.getNameByBody(contactManifold.getBody1()))
+        // CHECK ROTATION
+        var testR = contactManifold.getBody1().getWorldTransform().getRotation();
+        if (Math.abs(testR.y()) < 0.00001) {
+          this.lastRoll += " 4 +";
+          this.presentScore += 4;
+          dispatchEvent(new CustomEvent('dice-1', {}));
+        }
+        if (Math.abs(testR.x()) < 0.00001) {
+          this.lastRoll += " 3 +";
+          this.presentScore += 3;
+          dispatchEvent(new CustomEvent('dice-4', {}));
+        }
+        if (testR.x().toString().substring(0, 5) == testR.y().toString().substring(1, 6)) {
+          this.lastRoll += " 2 +";
+          this.presentScore += 2;
+          dispatchEvent(new CustomEvent('dice-6', {}));
+        }
+        if (testR.x().toString().substring(0, 5) == testR.y().toString().substring(0, 5)) {
+          this.lastRoll += " 1 +";
+          this.presentScore += 1;
+          dispatchEvent(new CustomEvent('dice-2', {}));
+        }
+        if (testR.z().toString().substring(0, 5) == testR.y().toString().substring(1, 6)) {
+          this.lastRoll += " 6 +";
+          this.presentScore += 6;
+          dispatchEvent(new CustomEvent('dice-5', {}));
+        }
+        if (testR.z().toString().substring(0, 5) == testR.y().toString().substring(0, 5)) {
+          this.lastRoll += " 5 +";
+          this.presentScore += 5;
+          dispatchEvent(new CustomEvent('dice-3', {}));
+        }
+        console.log('this.lastRoll = ', this.lastRoll, ' presentScore = ', this.presentScore);
+      }
+    }
   }
   updatePhysics() {
     // Step world
@@ -9294,18 +10628,17 @@ class MatrixAmmo {
         body.MEObject.rotation.axis.x = testAxis.x();
         body.MEObject.rotation.axis.y = testAxis.y();
         body.MEObject.rotation.axis.z = testAxis.z();
-        // var tx = radToDeg(parseFloat(test.getAngle().toFixed(2)) * testAxis.x().toFixed(2))
-        // var ty = radToDeg(parseFloat(test.getAngle().toFixed(2)) * testAxis.y().toFixed(2))
-        // var tz = radToDeg(parseFloat(test.getAngle().toFixed(2)) * testAxis.z().toFixed(2))
         body.MEObject.rotation.matrixRotation = (0, _utils.quaternion_rotation_matrix)(test);
         body.MEObject.rotation.angle = (0, _utils.radToDeg)(parseFloat(test.getAngle().toFixed(2)));
       }
     });
+    // collision detect
+    this.detectCollision();
   }
 }
 exports.default = MatrixAmmo;
 
-},{"../engine/utils":13,"wgpu-matrix":5}],15:[function(require,module,exports){
+},{"../engine/utils":14}],17:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -9334,7 +10667,7 @@ struct FragmentInput {
 }
 
 const albedo = vec3f(0.9);
-const ambientFactor = 0.2;
+const ambientFactor = 0.7;
 
 @fragment
 fn main(input : FragmentInput) -> @location(0) vec4f {
@@ -9353,15 +10686,17 @@ fn main(input : FragmentInput) -> @location(0) vec4f {
     }
   }
   visibility /= 9.0;
-
   let lambertFactor = max(dot(normalize(scene.lightPos - input.fragPos), normalize(input.fragNorm)), 0.0);
   let lightingFactor = min(ambientFactor + visibility * lambertFactor, 1.0);
   let textureColor = textureSample(meshTexture, meshSampler, input.uv);
 
   return vec4(textureColor.rgb * lightingFactor * albedo, 1.0);
+  // return vec4f(input.fragNorm * 0.5 + 0.5, 1)
+  // return vec4f(input.uv, 0, 1)
+  // return vec4(textureColor.rgb , 0.5);
 }`;
 
-},{}],16:[function(require,module,exports){
+},{}],18:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -9405,7 +10740,7 @@ fn vertexMain(input: VertexInput) -> VertexOutput {
 @group(1) @binding(2) var meshTexture: texture_2d<f32>;
 
 // Static directional lighting
-const lightDir = vec3f(1, 1, 1);
+const lightDir = vec3f(0, 1, 0);
 const dirColor = vec3(1);
 const ambientColor = vec3f(0.05);
 
@@ -9419,7 +10754,7 @@ fn fragmentMain(input: VertexOutput) -> @location(0) vec4f {
   return vec4f(textureColor.rgb * lightColor, textureColor.a);
 }`;
 
-},{}],17:[function(require,module,exports){
+},{}],19:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -9476,7 +10811,7 @@ fn main(
 }
 `;
 
-},{}],18:[function(require,module,exports){
+},{}],20:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -9500,11 +10835,61 @@ struct Model {
 fn main(
   @location(0) position: vec3f
 ) -> @builtin(position) vec4f {
-  return scene.lightViewProjMatrix * model.modelMatrix * vec4(position, 1.0);
+  return scene.lightViewProjMatrix * model.modelMatrix * vec4(position, 1);
 }
 `;
 
-},{}],19:[function(require,module,exports){
+},{}],21:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.MatrixSounds = void 0;
+class MatrixSounds {
+  constructor() {
+    this.volume = 0.5;
+    this.audios = {};
+  }
+  createClones(c, name, path) {
+    for (var x = 1; x < c; x++) {
+      let a = new Audio(path);
+      a.id = name + x;
+      a.volume = this.volume;
+      this.audios[name + x] = a;
+      document.body.append(a);
+    }
+  }
+  createAudio(name, path, useClones) {
+    let a = new Audio(path);
+    a.id = name;
+    a.volume = this.volume;
+    this.audios[name] = a;
+    document.body.append(a);
+    if (typeof useClones !== 'undefined') {
+      this.createClones(useClones, name, path);
+    }
+  }
+  play(name) {
+    if (this.audios[name].paused == true) {
+      this.audios[name].play();
+    } else {
+      this.tryClone(name);
+    }
+  }
+  tryClone(name) {
+    var cc = 1;
+    try {
+      while (this.audios[name + cc].paused == false) {
+        cc++;
+      }
+      if (this.audios[name + cc]) this.audios[name + cc].play();
+    } catch (err) {}
+  }
+}
+exports.MatrixSounds = MatrixSounds;
+
+},{}],22:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -9519,6 +10904,8 @@ var _mesh = _interopRequireDefault(require("./engine/mesh.js"));
 var _meshObj = _interopRequireDefault(require("./engine/mesh-obj.js"));
 var _matrixAmmo = _interopRequireDefault(require("./physics/matrix-ammo.js"));
 var _utils = require("./engine/utils.js");
+var _lang = require("./multilang/lang.js");
+var _sounds = require("./sounds/sounds.js");
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 class MatrixEngineWGPU {
   mainRenderBundle = [];
@@ -9532,6 +10919,7 @@ class MatrixEngineWGPU {
     depthStoreOp: 'store'
   };
   matrixAmmo = new _matrixAmmo.default();
+  matrixSounds = new _sounds.MatrixSounds();
 
   // The input handler
   constructor(options, callback) {
@@ -9580,6 +10968,18 @@ class MatrixEngineWGPU {
         position: initialCameraPosition
       })
     };
+
+    //
+    this.label = new _lang.MultiLang();
+    if (_utils.urlQuery.lang != null) {
+      this.label.loadMultilang(_utils.urlQuery.lang).then(r => {
+        this.label.get = r;
+      });
+    } else {
+      this.label.loadMultilang().then(r => {
+        this.label.get = r;
+      });
+    }
     this.init({
       canvas,
       callback
@@ -9591,7 +10991,17 @@ class MatrixEngineWGPU {
   }) => {
     this.canvas = canvas;
     this.adapter = await navigator.gpu.requestAdapter();
-    this.device = await this.adapter.requestDevice();
+    this.device = await this.adapter.requestDevice({
+      extensions: ["ray_tracing"]
+    });
+
+    // Maybe works in ssl with webworkers...
+    // const adapterInfo = await this.adapter.requestAdapterInfo();
+    // var test = this.adapter.features()
+    // console.log(adapterInfo.vendor);
+    // console.log('test' + test);
+    // console.log("FEATURES : " + this.adapter.features)
+
     this.context = canvas.getContext('webgpu');
     const devicePixelRatio = window.devicePixelRatio;
     canvas.width = canvas.clientWidth * devicePixelRatio;
@@ -9782,6 +11192,9 @@ class MatrixEngineWGPU {
     this.mainRenderBundle.push(myMesh1);
   };
   addMeshObj = o => {
+    if (typeof o.name === 'undefined') {
+      o.name = (0, _utils.genName)(9);
+    }
     if (typeof o.position === 'undefined') {
       o.position = {
         x: 0,
@@ -9810,26 +11223,33 @@ class MatrixEngineWGPU {
       o.mainCameraParams = this.mainCameraParams;
     }
     if (typeof o.scale === 'undefined') {
-      o.scale = 1;
+      o.scale = [1, 1, 1];
+    }
+    if (typeof o.raycast === 'undefined') {
+      o.raycast = {
+        enabled: false
+      };
     }
     o.entityArgPass = this.entityArgPass;
     o.cameras = this.cameras;
-    if (typeof o.name === 'undefined') {
-      o.name = 'random' + Math.random();
-    }
+    // if(typeof o.name === 'undefined') {o.name = 'random' + Math.random();}
     if (typeof o.mesh === 'undefined') {
+      _utils.mb.error('arg mesh is empty for ', o.name);
       throw console.error('arg mesh is empty...');
       return;
     }
     if (typeof o.physics === 'undefined') {
       o.physics = {
-        enabled: false,
+        scale: [1, 1, 1],
+        enabled: true,
         geometry: "Sphere",
-        radius: o.scale
+        radius: o.scale,
+        name: o.name,
+        rotation: o.rotation
       };
     }
     if (typeof o.physics.enabled === 'undefined') {
-      o.physics.enabled = false;
+      o.physics.enabled = true;
     }
     if (typeof o.physics.geometry === 'undefined') {
       o.physics.geometry = "Sphere";
@@ -9840,11 +11260,19 @@ class MatrixEngineWGPU {
     if (typeof o.physics.mass === 'undefined') {
       o.physics.mass = 1;
     }
+    if (typeof o.physics.name === 'undefined') {
+      o.physics.name = o.name;
+    }
+    if (typeof o.physics.scale === 'undefined') {
+      o.physics.scale = o.scale;
+    }
+    if (typeof o.physics.rotation === 'undefined') {
+      o.physics.rotation = o.rotation;
+    }
 
     // send same pos
     o.physics.position = o.position;
-
-    // console.log('Mesh procedure', o)
+    //  console.log('Mesh procedure', o)
     let myMesh1 = new _meshObj.default(this.canvas, this.device, this.context, o);
     if (o.physics.enabled == true) {
       this.matrixAmmo.addPhysics(myMesh1, o.physics);
@@ -9898,7 +11326,7 @@ class MatrixEngineWGPU {
     }
   };
   framePassPerObject = () => {
-    console.log('framePassPerObject');
+    // console.log('framePassPerObject')
     let commandEncoder = this.device.createCommandEncoder();
     this.rbContainer = [];
     let passEncoder;
@@ -9919,4 +11347,4 @@ class MatrixEngineWGPU {
 }
 exports.default = MatrixEngineWGPU;
 
-},{"./engine/ball.js":6,"./engine/cube.js":7,"./engine/engine.js":8,"./engine/mesh-obj.js":11,"./engine/mesh.js":12,"./engine/utils.js":13,"./physics/matrix-ammo.js":14,"wgpu-matrix":5}]},{},[1]);
+},{"./engine/ball.js":6,"./engine/cube.js":7,"./engine/engine.js":8,"./engine/mesh-obj.js":11,"./engine/mesh.js":12,"./engine/utils.js":14,"./multilang/lang.js":15,"./physics/matrix-ammo.js":16,"./sounds/sounds.js":21,"wgpu-matrix":5}]},{},[1]);

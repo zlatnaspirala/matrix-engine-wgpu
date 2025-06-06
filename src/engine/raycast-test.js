@@ -28,20 +28,25 @@ function multiplyMatrixVector(matrix, vector) {
 export function getRayFromMouse(event, canvas, camera) {
 	const rect = canvas.getBoundingClientRect();
 	let x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-	let y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+	let y = ((event.clientY - rect.top) / rect.height) * 2 - 1;
 	// simple invert
 	x = -x;
+	y = -y;
 	const fov = Math.PI / 4;
 	const aspect = canvas.width / canvas.height;
 	const near = 0.1;
-	const far = 100;
+	const far = 1000;
 	camera.projectionMatrix = mat4.perspective((2 * Math.PI) / 5, aspect, 1, 1000.0);
 	const invProjection = mat4.inverse(camera.projectionMatrix);
-	const correctedView = mat4.clone(camera.view_);
-	correctedView[2] *= -1;
-	correctedView[6] *= -1;
-	correctedView[10] *= -1;
-	const invView = mat4.inverse(correctedView);
+
+	// const correctedView = mat4.clone(camera.view_);
+	// correctedView[2] *= -1;
+	// correctedView[6] *= -1;
+	// correctedView[10] *= -1;
+	// const invView = mat4.inverse(correctedView);
+
+	const invView = mat4.inverse(camera.view);
+
 	const ndc = [x, y, 1, 1];
 	let worldPos = multiplyMatrixVector(invProjection, ndc);
 	worldPos = multiplyMatrixVector(invView, worldPos);

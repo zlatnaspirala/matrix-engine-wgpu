@@ -164,7 +164,9 @@ export class WASDCamera extends CameraBase {
     const position = vec3.copy(this.position);
 
     // Reconstruct the camera's rotation, and store into the camera matrix.
-    super.matrix = mat4.rotateX(mat4.rotationY(this.yaw), this.pitch);
+    super.matrix = mat4.rotateX(mat4.rotationY(this.yaw), this.pitch); 
+		// super.matrix = mat4.rotateX(mat4.rotationY(this.yaw), -this.pitch);
+		// super.matrix = mat4.rotateY(mat4.rotateX(this.pitch), this.yaw);
 
     // Calculate the new target velocity
     const digital = input.digital;
