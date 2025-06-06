@@ -67,6 +67,9 @@ export function getRayFromMouse(event, canvas, camera) {
 	}
 	const rayOrigin = [camera.position[0], camera.position[1], camera.position[2]];
 	const rayDirection = vec3.normalize(vec3.subtract(world, rayOrigin));
+
+	rayDirection[2] = -rayDirection[2]; 
+	
 	return {rayOrigin, rayDirection};
 }
 
@@ -86,7 +89,7 @@ export function addRaycastListener () {
 		let camera = app.cameras.WASD;
 		const { rayOrigin, rayDirection } = getRayFromMouse(event, canvas, camera);
 		for (const object of app.mainRenderBundle) {
-			if (rayIntersectsSphere(rayOrigin, rayDirection, object.position, 2)) {
+			if (rayIntersectsSphere(rayOrigin, rayDirection, object.position, object.raycast.radius)) {
 				// console.log('Object clicked:', object.name);
 				// Just like in matrix-engine webGL version "ray.hit.event"
 				dispatchEvent(new CustomEvent('ray.hit.event', {detail: {

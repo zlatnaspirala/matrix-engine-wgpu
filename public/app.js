@@ -1049,7 +1049,7 @@ var _loaderObj = require("./src/engine/loader-obj.js");
 var _utils = require("./src/engine/utils.js");
 var _jamb = require("./examples/games/jamb/jamb.js");
 var _sounds = require("./src/sounds/sounds.js");
-var _raycastTest = require("./src/engine/raycast-test.js");
+var _raycast = require("./src/engine/raycast.js");
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 let application = exports.application = new _world.default({
   useSingleRenderPass: true,
@@ -1125,7 +1125,7 @@ let application = exports.application = new _world.default({
       }
     }
   };
-  (0, _raycastTest.addRaycastListener)();
+  (0, _raycast.addRaycastListener)();
   addEventListener("ray.hit.event", e => {
     console.log("hit cube ", e.detail.hitObject.name);
     if (application.dices.STATUS == "FREE_TO_PLAY") {
@@ -1139,7 +1139,7 @@ let application = exports.application = new _world.default({
 
   addEventListener('mousemove', e => {
     // console.log('only on click')
-    _raycastTest.touchCoordinate.enabled = true;
+    _raycast.touchCoordinate.enabled = true;
   });
 
   // Sounds
@@ -1349,7 +1349,8 @@ let application = exports.application = new _world.default({
       name: 'CubePhysics1',
       mesh: m.cube,
       raycast: {
-        enabled: true
+        enabled: true,
+        radius: 2
       },
       physics: {
         enabled: true,
@@ -1377,7 +1378,8 @@ let application = exports.application = new _world.default({
       name: 'CubePhysics2',
       mesh: m.cube,
       raycast: {
-        enabled: true
+        enabled: true,
+        radius: 2
       },
       physics: {
         enabled: true,
@@ -1405,7 +1407,8 @@ let application = exports.application = new _world.default({
       name: 'CubePhysics3',
       mesh: m.cube,
       raycast: {
-        enabled: true
+        enabled: true,
+        radius: 2
       },
       physics: {
         enabled: true,
@@ -1433,7 +1436,8 @@ let application = exports.application = new _world.default({
       name: 'CubePhysics4',
       mesh: m.cube,
       raycast: {
-        enabled: true
+        enabled: true,
+        radius: 2
       },
       physics: {
         enabled: true,
@@ -1461,7 +1465,8 @@ let application = exports.application = new _world.default({
       name: 'CubePhysics5',
       mesh: m.cube,
       raycast: {
-        enabled: true
+        enabled: true,
+        radius: 2
       },
       physics: {
         enabled: true,
@@ -1489,7 +1494,8 @@ let application = exports.application = new _world.default({
       name: 'CubePhysics6',
       mesh: m.cube,
       raycast: {
-        enabled: true
+        enabled: true,
+        radius: 2
       },
       physics: {
         enabled: true,
@@ -1603,7 +1609,7 @@ let application = exports.application = new _world.default({
 });
 window.app = application;
 
-},{"./examples/games/jamb/jamb.js":1,"./src/engine/loader-obj.js":7,"./src/engine/raycast-test.js":11,"./src/engine/utils.js":12,"./src/sounds/sounds.js":19,"./src/world.js":20}],3:[function(require,module,exports){
+},{"./examples/games/jamb/jamb.js":1,"./src/engine/loader-obj.js":7,"./src/engine/raycast.js":11,"./src/engine/utils.js":12,"./src/sounds/sounds.js":19,"./src/world.js":20}],3:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -6984,6 +6990,14 @@ class MEBall {
       normalOffset: 3 * 4,
       uvOffset: 6 * 4
     };
+    if (typeof o.raycast === 'undefined') {
+      this.raycast = {
+        enabled: false,
+        radius: 2
+      };
+    } else {
+      this.raycast = o.raycast;
+    }
     this.texturesPaths = [];
     o.texturesPaths.forEach(t => {
       this.texturesPaths.push(t);
@@ -7392,6 +7406,14 @@ class MECube {
       code: _shaders.UNLIT_SHADER
     });
     this.texturesPaths = [];
+    if (typeof o.raycast === 'undefined') {
+      this.raycast = {
+        enabled: false,
+        radius: 2
+      };
+    } else {
+      this.raycast = o.raycast;
+    }
 
     // useUVShema4x2 pass this from top !
 
@@ -8951,13 +8973,14 @@ var _vertexShadow = require("../shaders/vertexShadow.wgsl");
 var _fragment = require("../shaders/fragment.wgsl");
 var _vertex = require("../shaders/vertex.wgsl");
 var _utils = require("./utils");
-var _raycastTest = require("./raycast-test");
+var _raycast = require("./raycast");
 class MEMeshObj {
   constructor(canvas, device, context, o) {
     if (typeof o.name === 'undefined') o.name = (0, _utils.genName)(9);
     if (typeof o.raycast === 'undefined') {
       this.raycast = {
-        enabled: false
+        enabled: false,
+        radius: 2
       };
     } else {
       this.raycast = o.raycast;
@@ -8979,12 +9002,8 @@ class MEMeshObj {
       responseCoef: o.mainCameraParams.responseCoef
     };
 
-    // test raycast
-    // fullscreen for now
-    // window.addEventListener('mousedown', (e) => {
-    // 	checkingProcedure(e);
-    // });
-    _raycastTest.touchCoordinate.enabled = true;
+    // touchCoordinate.enabled = true;
+
     this.lastFrameMS = 0;
     this.texturesPaths = [];
     o.texturesPaths.forEach(t => {
@@ -9439,7 +9458,7 @@ class MEMeshObj {
 }
 exports.default = MEMeshObj;
 
-},{"../shaders/fragment.wgsl":15,"../shaders/vertex.wgsl":17,"../shaders/vertexShadow.wgsl":18,"./engine":6,"./matrix-class":8,"./raycast-test":11,"./utils":12,"wgpu-matrix":3}],10:[function(require,module,exports){
+},{"../shaders/fragment.wgsl":15,"../shaders/vertex.wgsl":17,"../shaders/vertexShadow.wgsl":18,"./engine":6,"./matrix-class":8,"./raycast":11,"./utils":12,"wgpu-matrix":3}],10:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -9904,6 +9923,7 @@ function getRayFromMouse(event, canvas, camera) {
   }
   const rayOrigin = [camera.position[0], camera.position[1], camera.position[2]];
   const rayDirection = _wgpuMatrix.vec3.normalize(_wgpuMatrix.vec3.subtract(world, rayOrigin));
+  rayDirection[2] = -rayDirection[2];
   return {
     rayOrigin,
     rayDirection
@@ -9927,7 +9947,7 @@ function addRaycastListener() {
       rayDirection
     } = getRayFromMouse(event, canvas, camera);
     for (const object of app.mainRenderBundle) {
-      if (rayIntersectsSphere(rayOrigin, rayDirection, object.position, 2)) {
+      if (rayIntersectsSphere(rayOrigin, rayDirection, object.position, object.raycast.radius)) {
         // console.log('Object clicked:', object.name);
         // Just like in matrix-engine webGL version "ray.hit.event"
         dispatchEvent(new CustomEvent('ray.hit.event', {

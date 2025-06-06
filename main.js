@@ -3,7 +3,7 @@ import {downloadMeshes} from './src/engine/loader-obj.js';
 import {LOG_FUNNY, LOG_INFO, LOG_MATRIX, randomFloatFromTo, randomIntFromTo} from "./src/engine/utils.js";
 import {dices, myDom} from "./examples/games/jamb/jamb.js";
 import {MatrixSounds} from "./src/sounds/sounds.js";
-import {addRaycastListener, touchCoordinate, rayIntersectsSphere, getRayFromMouse} from "./src/engine/raycast-test.js";
+import {addRaycastListener, touchCoordinate, rayIntersectsSphere, getRayFromMouse} from "./src/engine/raycast.js";
 
 export let application = new MatrixEngineWGPU({
 	useSingleRenderPass: true,
@@ -256,7 +256,7 @@ export let application = new MatrixEngineWGPU({
 			useUVShema4x2: true,
 			name: 'CubePhysics1',
 			mesh: m.cube,
-			raycast: {enabled: true},
+			raycast: {enabled: true, radius: 2},
 			physics: {
 				enabled: true,
 				geometry: "Cube"
@@ -271,7 +271,7 @@ export let application = new MatrixEngineWGPU({
 			useUVShema4x2: true,
 			name: 'CubePhysics2',
 			mesh: m.cube,
-			raycast: {enabled: true},
+			raycast: {enabled: true, radius: 2},
 			physics: {
 				enabled: true,
 				geometry: "Cube"
@@ -286,7 +286,7 @@ export let application = new MatrixEngineWGPU({
 			useUVShema4x2: true,
 			name: 'CubePhysics3',
 			mesh: m.cube,
-			raycast: {enabled: true},
+			raycast: {enabled: true, radius: 2},
 			physics: {
 				enabled: true,
 				geometry: "Cube"
@@ -301,7 +301,7 @@ export let application = new MatrixEngineWGPU({
 			useUVShema4x2: true,
 			name: 'CubePhysics4',
 			mesh: m.cube,
-			raycast: {enabled: true},
+			raycast: {enabled: true, radius: 2},
 			physics: {
 				enabled: true,
 				geometry: "Cube"
@@ -316,7 +316,7 @@ export let application = new MatrixEngineWGPU({
 			useUVShema4x2: true,
 			name: 'CubePhysics5',
 			mesh: m.cube,
-			raycast: {enabled: true},
+			raycast: {enabled: true,radius: 2},
 			physics: {
 				enabled: true,
 				geometry: "Cube"
@@ -331,7 +331,7 @@ export let application = new MatrixEngineWGPU({
 			useUVShema4x2: true,
 			name: 'CubePhysics6',
 			mesh: m.cube,
-			raycast: {enabled: true},
+			raycast: {enabled: true, radius: 2},
 			physics: {
 				enabled: true,
 				geometry: "Cube"

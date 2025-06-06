@@ -5,13 +5,16 @@ import {vertexShadowWGSL} from '../shaders/vertexShadow.wgsl';
 import {fragmentWGSL} from '../shaders/fragment.wgsl';
 import {vertexWGSL} from '../shaders/vertex.wgsl';
 import {degToRad, genName, LOG_FUNNY, LOG_FUNNY_SMALL, LOG_INFO} from './utils';
-import {checkingProcedure, checkingRay, touchCoordinate} from './raycast-test';
+import {checkingProcedure, checkingRay, touchCoordinate} from './raycast';
 
 export default class MEMeshObj {
 	constructor(canvas, device, context, o) {
 		if(typeof o.name === 'undefined') o.name = genName(9);
 		if(typeof o.raycast === 'undefined') {
-			this.raycast = {enabled: false};
+			this.raycast = {
+				enabled: false,
+				radius: 2
+			};
 		} else {
 			this.raycast = o.raycast;
 		}
@@ -35,12 +38,7 @@ export default class MEMeshObj {
 			responseCoef: o.mainCameraParams.responseCoef
 		}
 
-		// test raycast
-		// fullscreen for now
-		// window.addEventListener('mousedown', (e) => {
-		// 	checkingProcedure(e);
-		// });
-		touchCoordinate.enabled = true;
+		// touchCoordinate.enabled = true;
 
 		this.lastFrameMS = 0;
 		this.texturesPaths = [];

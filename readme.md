@@ -19,7 +19,7 @@
 ## Description
 
 This project is a work-in-progress WebGPU engine inspired by the original **matrix-engine** for WebGL.
-It uses the `wgpu-matrix` npm package as a modern replacement for `gl-matrix` for handling model-view-projection matrices.
+It uses the `wgpu-matrix` npm package as a modern replacement for `gl-matrix` to handle model-view-projection matrices.
 
 Published on npm as: **`matrix-engine-wgpu`**
 
@@ -38,18 +38,17 @@ Published on npm as: **`matrix-engine-wgpu`**
 
 ### Scene Management
 
-* A canvas is dynamically created in JavaScript — no `<canvas>` in HTML required.
+* Canvas is dynamically created in JavaScript—no `<canvas>` element needed in HTML.
 
-* Access the main scene using:
+* Access the main scene objects:
 
   ```js
   app.mainRenderBundle[0];
   ```
 
-* Add meshes using `.addMeshObj()`
-  (Supports `.obj` loading, unlit textures, cubes, spheres, etc.)
+* Add meshes with `.addMeshObj()`, supporting `.obj` loading, unlit textures, cubes, spheres, etc.
 
-* Cleanly destroy the current scene:
+* Cleanly destroy the scene:
 
   ```js
   app.destroyProgram();
@@ -72,26 +71,25 @@ mainCameraParams: {
 
 ### Object Positioning
 
-Control object position with:
+Control object position:
 
 ```js
 app.mainRenderBundle[0].position.translateByX(12);
 ```
 
-Teleport / Direct set:
+Teleport / set directly:
 
 ```js
 app.mainRenderBundle[0].position.SetX(-2);
 ```
 
-Change movement speed:
+Adjust movement speed:
 
 ```js
 app.mainRenderBundle[0].position.thrust = 0.1;
 ```
 
-> ⚠️ For physics-enabled objects, use Ammo.js functions.
-> `.position` and `.rotation` won't apply visually but can be read.
+> ⚠️ For physics-enabled objects, use Ammo.js functions — `.position` and `.rotation` are not visually applied but can be read.
 
 Example:
 
@@ -104,7 +102,7 @@ app.matrixAmmo.rigidBodies[0].setLinearVelocity(new Ammo.btVector3(0, 7, 0));
 
 ### Object Rotation
 
-Rotate manually:
+Manual rotation:
 
 ```js
 app.mainRenderBundle[0].rotation.x = 45;
@@ -122,7 +120,7 @@ Stop rotation:
 app.mainRenderBundle[0].rotation.rotationSpeed.y = 0;
 ```
 
-> ⚠️ Same note as position: `.rotation.x/y/z` has no effect for physics-enabled objects.
+> ⚠️ For physics-enabled objects, use Ammo.js methods (e.g., `.setLinearVelocity()`).
 
 ---
 
@@ -138,7 +136,16 @@ app.cameras.WASD.pitch = 0.2;
 
 ## Object Interaction (Raycasting)
 
-Manual raycast:
+The raycast returns:
+
+```js
+{
+  rayOrigin: [x, y, z],
+  rayDirection: [x, y, z] // normalized
+}
+```
+
+Manual raycast example:
 
 ```js
 window.addEventListener('click', (event) => {
@@ -147,19 +154,20 @@ window.addEventListener('click', (event) => {
   const { rayOrigin, rayDirection } = getRayFromMouse(event, canvas, camera);
 
   for (const object of app.mainRenderBundle) {
-    if (rayIntersectsSphere(rayOrigin, rayDirection, object.position, 2)) {
+    if (rayIntersectsSphere(rayOrigin, rayDirection, object.position, object.raycast.radius)) {
       console.log('Object clicked:', object.name);
     }
   }
 });
 ```
 
-Automatic raycast:
+Automatic raycast listener:
 
 ```js
 addRaycastListener();
+
 window.addEventListener('ray.hit.event', (event) => {
-  console.log(event.detail);
+  console.log('Ray hit:', event.detail.hitObject);
 });
 ```
 
@@ -225,17 +233,15 @@ export let application = new MatrixEngineWGPU({
 window.app = application;
 ```
 
+---
 
+## About `main.js`
 
-## About main.js
+`main.js` is the main instance for the Ultimate Yahtzee game template.
+It contains the game context, e.g., `dices`.
 
-Main.js is main instance for Ultimate Yahtzee game template.
-I put u app/application object game context params like `dices`
-If you looking clean start up instance see empty.js. Empty build 
-is good for porting this lib on stackoverflow code snippet, 
-codepen or any other online js editor.
-Load text/plane empty build js file and than write top level 
-matrix-engine-webgpu engine code.
+For a clean startup without extra logic, use `empty.js`.
+This minimal build is ideal for online editors like CodePen or StackOverflow snippets.
 
 ---
 
@@ -251,19 +257,11 @@ Uses `watchify` to bundle JavaScript.
 "build-all": "npm run main-worker && npm run examples && npm run main && npm run build-empty"
 ```
 
-Script summary:
-
-1. `main-worker`: For core instance with root wrapper.
-2. `examples`: Current example build from `./examples/`.
-3. `main`: Main project build (YAMB).
-4. `empty`: Build minimal setup for environments like CodePen or StackOverflow.
-5. `build-all`: Run all the above builds at once.
-
 ---
 
 ## Resources
 
-* All resources and output go into `./public` — a single folder with everything you need.
+All resources and output go into the `./public` folder — everything you need in one place.
 
 ---
 
@@ -276,15 +274,11 @@ Script summary:
 ## Live Demos & Dev Links
 
 * [Jamb WebGPU Demo (WIP)](https://maximumroulette.com/apps/webgpu/)
-
 * [CodePen Demo](https://codepen.io/zlatnaspirala/pen/VwNKMar?editors=0011)
   → Uses `empty.js` build from:
   [https://maximumroulette.com/apps/megpu/empty.js](https://maximumroulette.com/apps/megpu/empty.js)
-
 * [CodeSandbox Implementation](https://codesandbox.io/p/github/zlatnaspirala/matrix-engine-wgpu/main?file=%2Fpackage.json%3A14%2C16)
-
-* 📘 Learning Resource:
-  [WebGPU Ray Tracing](https://maierfelix.github.io/2020-01-13-webgpu-ray-tracing/)
+* 📘 Learning Resource: [WebGPU Ray Tracing](https://maierfelix.github.io/2020-01-13-webgpu-ray-tracing/)
 
 ---
 
@@ -292,7 +286,7 @@ Script summary:
 
 ### Usage Note
 
-> You may use, modify, and even sell your project with this code — just keep this notice and any included references in place.
+You may use, modify, and sell projects based on this code — just keep this notice and included references intact.
 
 ---
 
@@ -300,12 +294,11 @@ Script summary:
 
 * Engine design and scene structure inspired by:
   [WebGPU Samples](https://webgpu.github.io/webgpu-samples/?sample=shadowMapping)
-
 * OBJ Loader adapted from:
   [http://math.hws.edu/graphicsbook/source/webgl/cube-camera.html](http://math.hws.edu/graphicsbook/source/webgl/cube-camera.html)
-
 * Dice roll sound `roll1.wav` sourced from:
   [https://wavbvkery.com/dice-rolling-sound/](https://wavbvkery.com/dice-rolling-sound/)
+* Raycasting logic assisted by ChatGPT
 
 ---
 
@@ -314,4 +307,3 @@ Script summary:
 [Full License Text](https://github.com/webgpu/webgpu-samples/blob/main/LICENSE.txt)
 
 ---
-
