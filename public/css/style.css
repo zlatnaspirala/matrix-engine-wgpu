@@ -265,34 +265,65 @@ p {
 }
 
 .btn {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 600;
+  font-size: 16px;
+  color: #00ffff;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  padding: 12px 24px;
+  background: linear-gradient(145deg, #0f0f0f, #1a1a1a);
+  border: 2px solid #00ffff;
+  border-radius: 12px;
+  box-shadow: 0 0 10px #00ffff44, 0 0 20px #00ffff22 inset;
   cursor: pointer;
-  background: #6e34d9;
-  background-image: -webkit-linear-gradient(top, #6e34d9, #0a027a);
-  background-image: -moz-linear-gradient(top, #6e34d9, #0a027a);
-  background-image: -ms-linear-gradient(top, #6e34d9, #0a027a);
-  background-image: -o-linear-gradient(top, #6e34d9, #0a027a);
-  background-image: linear-gradient(to bottom, #6e34d9, #0a027a);
-  -webkit-border-radius: 28;
-  -moz-border-radius: 28;
-  border-radius: 28px;
-  text-shadow: 0px 0px 14px #ffd52e;
-  -webkit-box-shadow: 0px 1px 26px #666666;
-  -moz-box-shadow: 0px 1px 26px #666666;
-  box-shadow: 0px 1px 26px #666666;
-  color: #ffffff;
-  font-size: 13px;
-  padding: 4px 8px 4px 8px;
-  text-decoration: none;
+  transition: all 0.25s ease-in-out;
+  display: inline-block;
+  text-align: center;
 }
 
 .btn:hover {
-  background: #0a027a;
-  background-image: -webkit-linear-gradient(top, #0a027a, #6e34d9);
-  background-image: -moz-linear-gradient(top, #0a027a, #6e34d9);
-  background-image: -ms-linear-gradient(top, #0a027a, #6e34d9);
-  background-image: -o-linear-gradient(top, #0a027a, #6e34d9);
-  background-image: linear-gradient(to bottom, #0a027a, #6e34d9);
-  text-decoration: none;
+  background: #00ffff22;
+  box-shadow: 0 0 20px #00ffffaa, 0 0 30px #00ffff55 inset;
+  color: #ffffff;
+  transform: scale(1.05);
+}
+
+.btn span::before {
+  content: '▶ ';
+  color: #00ffffaa;
+}
+
+.fancy-label {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 500;
+  font-size: 14px;
+  color: #00ffff;
+  letter-spacing: 1px;
+  text-shadow: 0 0 4px #00ffffaa;
+  padding: 2px 6px;
+  background-color: #111111cc;
+  border: 1px solid #00ffff66;
+  border-radius: 6px;
+  box-shadow: 0 0 6px #00ffff33;
+  display: inline-block;
+  user-select: none;
+}
+
+.fancy-title {
+  width: 100%;
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 700;
+  font-size: 32px;
+  color: #00ffff;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  background: transparent;
+  text-shadow: 0 0 4px #00ffffaa, 0 0 8px #00ffff55;
+  border: none;
+  padding: 8px 16px;
+  display: inline-block;
+  user-select: none;
 }
 
 .btn2 {

@@ -16,12 +16,85 @@ let dices = exports.dices = {
   STATUS_H3: 'WAIT',
   R: {},
   SAVED_DICES: {},
-  pickDice: dice => {
-    (void 0).SAVED_DICES[dice] = (void 0).R[dice];
+  pickDice: function (dice) {
+    if (Object.keys(this.SAVED_DICES).length >= 5) {
+      console.log("⚠️ You can only select up to 5 dice!");
+      return; // prevent adding more
+    }
+    this.SAVED_DICES[dice] = this.R[dice];
+    this.refreshSelectedBox();
+  },
+  refreshSelectedBox: function (arg) {
+    let currentIndex = 0;
+    for (var key in this.SAVED_DICES) {
+      // console.log('key.......', key, ' obj: ', this.SAVED_DICES[key]);
+      let B = app.matrixAmmo.getBodyByName(key);
+      this.deactivatePhysics(B);
+      const transform = new Ammo.btTransform();
+      transform.setIdentity();
+      transform.setOrigin(new Ammo.btVector3(0, 0, 0));
+      B.setWorldTransform(transform);
+      // let testB = this.getDiceByName(key)
+      B.MEObject.position.setPosition(-5 + currentIndex, 5, -16);
+      currentIndex += 3;
+    }
+  },
+  deactivatePhysics: function (body) {
+    const CF_KINEMATIC_OBJECT = 2;
+    const DISABLE_DEACTIVATION = 4;
+
+    // Remove from world if already added
+    app.matrixAmmo.dynamicsWorld.removeRigidBody(body);
+
+    // Set kinematic
+    body.setCollisionFlags(body.getCollisionFlags() | CF_KINEMATIC_OBJECT);
+    body.setActivationState(DISABLE_DEACTIVATION);
+
+    // Optional: Zero velocities
+    const zero = new Ammo.btVector3(0, 0, 0);
+    body.setLinearVelocity(zero);
+    body.setAngularVelocity(zero);
+
+    // Re-add to world
+    app.matrixAmmo.dynamicsWorld.addRigidBody(body);
+
+    // Manual flag for logic
+    body.isKinematic = true;
+  },
+  activatePhysics: function (body) {
+    body.setCollisionFlags(body.getCollisionFlags() & ~2); // remove CF_KINEMATIC_OBJECT
+    body.setActivationState(1); // 1 = ACTIVE_TAG
+
+    body.isKinematic = false;
+  },
+  getAllDices: function () {
+    return app.mainRenderBundle.filter(item => item.name.indexOf("CubePhysics") !== -1);
+  },
+  getDiceByName: function (name) {
+    return app.mainRenderBundle.find(item => item.name === name);
   },
   checkAll: function () {
+    // this.C++;
+    // if(typeof this.R.CubePhysics1 != 'undefined' &&
+    //   typeof this.R.CubePhysics2 != 'undefined' &&
+    //   typeof this.R.CubePhysics3 != 'undefined' &&
+    //   typeof this.R.CubePhysics4 != 'undefined' &&
+    //   typeof this.R.CubePhysics5 != 'undefined' &&
+    //   typeof this.R.CubePhysics6 != 'undefined' && this.C > 1200) {
+    //   dispatchEvent(new CustomEvent('all-done', {detail: {}}))
+    //   this.C = 0;
+    // }
     this.C++;
-    if (typeof this.R.CubePhysics1 != 'undefined' && typeof this.R.CubePhysics2 != 'undefined' && typeof this.R.CubePhysics3 != 'undefined' && typeof this.R.CubePhysics4 != 'undefined' && typeof this.R.CubePhysics5 != 'undefined' && typeof this.R.CubePhysics6 != 'undefined' && this.C > 1200) {
+    let allRolled = true;
+    for (let i = 1; i <= 6; i++) {
+      const key = "CubePhysics" + i;
+      if (key in this.SAVED_DICES) continue; // 🔒 skip saved dice
+      if (typeof this.R[key] === 'undefined') {
+        allRolled = false;
+        break;
+      }
+    }
+    if (allRolled && this.C > 1200) {
       dispatchEvent(new CustomEvent('all-done', {
         detail: {}
       }));
@@ -119,10 +192,10 @@ let myDom = exports.myDom = {
 
     // console.log('TEST', app.label.get)
     messageBox.innerHTML = `
-     <span data-label="welcomeMsg"></span>
+     <span class="fancy-title" data-label="welcomeMsg"></span>
      <a href="https://github.com/zlatnaspirala/matrix-engine-wgpu">zlatnaspirala/matrix-engine-wgpu</a><br><br>
      <button class="btn" ><span style="font-size:30px;margin:15px;padding:10px" data-label="startGame"></span></button> <br>
-     <div><span data-label="changeLang"></span></div> 
+     <div><span class="fancy-label" data-label="changeLang"></span></div> 
      <button class="btn" onclick="
       app.label.loadMultilang('en').then(r => {
         app.label.get = r;
@@ -139,11 +212,23 @@ let myDom = exports.myDom = {
       (0, _utils.byId)('blocker').style.display = 'none';
       myDom.createMenu();
       messageBox.removeEventListener('click', initialMsgBoxEvent);
+      document.querySelectorAll('.btn, .fancy-label, .fancy-title').forEach(el => {
+        el.addEventListener('mouseenter', () => {
+          app.matrixSounds.play('hover');
+        });
+      });
     };
     messageBox.addEventListener('click', initialMsgBoxEvent);
     root.append(messageBox);
     document.body.appendChild(root);
     app.label.update();
+
+    // test 
+    document.querySelectorAll('.btn, .fancy-label, .fancy-title').forEach(el => {
+      el.addEventListener('mouseenter', () => {
+        app.matrixSounds.play('hover');
+      });
+    });
   },
   createJamb: function () {
     var root = document.createElement('div');
@@ -201,8 +286,23 @@ let myDom = exports.myDom = {
     this.createRowFree(rowFree);
     this.createRow(rowUp);
     this.createRow(rowHand);
+    this.createSelectedBox();
     document.body.appendChild(root);
     // console.log('JambTable added.')
+  },
+  createSelectedBox: function () {
+    var selectedBoxRoot = document.createElement('div');
+    selectedBoxRoot.id = 'selectedBoxRoot';
+    selectedBoxRoot.style.width = 'auto';
+    selectedBoxRoot.style.position = 'absolute';
+    selectedBoxRoot.style.left = '35%';
+    selectedBoxRoot.style.top = '5%';
+    selectedBoxRoot.style.background = '#7d7d7d8c';
+    selectedBoxRoot.innerHTML = `SELECTED BOX`;
+    document.body.appendChild(selectedBoxRoot);
+  },
+  addBallToSelectedBox: function (selectedBall) {
+    //
   },
   createLeftHeaderRow: function (myRoot) {
     for (var x = 1; x < 7; x++) {
@@ -1130,7 +1230,7 @@ let application = exports.application = new _world.default({
     console.log("hit cube ", e.detail.hitObject.name);
     if (application.dices.STATUS == "FREE_TO_PLAY") {
       console.log("hit cube status free to play prevent pick. ", e.detail.hitObject.name);
-    } else if (application.dices.STATUS == "SELECT_DICES_1") {
+    } else if (application.dices.STATUS == "SELECT_DICES_1" || application.dices.STATUS == "SELECT_DICES_2") {
       console.log("hit cube status SELECT1 pick.", e.detail.hitObject.name);
       application.dices.pickDice(e.detail.hitObject.name);
     }
@@ -1147,6 +1247,7 @@ let application = exports.application = new _world.default({
   application.matrixSounds.createAudio('block', 'res/audios/block.mp3', 6);
   application.matrixSounds.createAudio('dice1', 'res/audios/dice1.mp3', 6);
   application.matrixSounds.createAudio('dice2', 'res/audios/dice2.mp3', 6);
+  application.matrixSounds.createAudio('hover', 'res/audios/toggle_002.mp3', 3);
   addEventListener('AmmoReady', () => {
     (0, _loaderObj.downloadMeshes)({
       cube: "./res/meshes/jamb/dice.obj"
@@ -1519,10 +1620,13 @@ let application = exports.application = new _world.default({
         app.cameras.WASD.pitch = -1.26;
         app.cameras.WASD.position[2] = -18;
         app.cameras.WASD.position[1] = 19;
-
-        // dices.STATUS = "PLACE_RESULT";
-        _jamb.dices.STATUS = "SELECT_DICES_1";
-        // application.dices.STATUS = "FREE_TO_PLAY";
+        if (_jamb.dices.STATUS == "FREE_TO_PLAY") {
+          _jamb.dices.STATUS = "SELECT_DICES_1";
+        } else if (_jamb.dices.STATUS == "SELECT_DICES_1") {
+          _jamb.dices.STATUS = "SELECT_DICES_2";
+        } else if (_jamb.dices.STATUS == "SELECT_DICES_2") {
+          _jamb.dices.STATUS = "FINISHED";
+        }
       }
     };
     addEventListener('all-done', allDiceDoneProcedure);
@@ -1539,47 +1643,59 @@ let application = exports.application = new _world.default({
 
     // ACTIONS
     let dice1Click = e => {
-      // console.info('DICE 1', e.detail)
+      console.info('DICE 1 click ?????????', e.detail);
       _jamb.dices.R[e.detail.cubeId] = '1';
       _jamb.dices.checkAll();
     };
-    // addEventListener('dice-1', dice1Click)
-
     let dice2Click = e => {
       // console.info('DICE 2', e.detail)
       _jamb.dices.R[e.detail.cubeId] = '2';
       _jamb.dices.checkAll();
     };
-    // addEventListener('dice-2', dice2Click)
-
     let dice3Click = e => {
       // console.info('DICE 3', e.detail)
       _jamb.dices.R[e.detail.cubeId] = '3';
       _jamb.dices.checkAll();
     };
-    // addEventListener('dice-3', dice3Click)
-
     let dice4Click = e => {
       // console.info('DICE 4', e.detail)
       _jamb.dices.R[e.detail.cubeId] = '4';
       _jamb.dices.checkAll();
     };
-    // addEventListener('dice-4', dice4Click)
-
     let dice5Click = e => {
       // console.info('DICE 5', e.detail)
       _jamb.dices.R[e.detail.cubeId] = '5';
       _jamb.dices.checkAll();
     };
-    // addEventListener('dice-5', dice5Click)
-
     let dice6Click = e => {
       // console.info('DICE 6', e.detail)
       _jamb.dices.R[e.detail.cubeId] = '6';
       _jamb.dices.checkAll();
     };
-    // addEventListener('dice-6', dice6Click)
-
+    function shootDice(x) {
+      setTimeout(() => {
+        app.matrixAmmo.getBodyByName(`CubePhysics${x}`).setAngularVelocity(new Ammo.btVector3((0, _utils.randomFloatFromTo)(3, 12), 9, 9));
+        app.matrixAmmo.getBodyByName(`CubePhysics${x}`).setLinearVelocity(new Ammo.btVector3((0, _utils.randomFloatFromTo)(-5, 5), 15, -20));
+      }, 200 * x);
+    }
+    let activeteDiceClickListener = index => {
+      index = parseInt(index);
+      switch (index) {
+        case 1:
+          addEventListener('dice-1', dice1Click);
+        case 2:
+          addEventListener('dice-2', dice2Click);
+        case 3:
+          addEventListener('dice-3', dice3Click);
+        case 4:
+          //
+          addEventListener('dice-4', dice4Click);
+        case 5:
+          addEventListener('dice-5', dice5Click);
+        case 6:
+          addEventListener('dice-6', dice6Click);
+      }
+    };
     let rollProcedure = () => {
       if (_jamb.dices.STATUS == "FREE_TO_PLAY") {
         app.matrixSounds.play('start');
@@ -1590,14 +1706,19 @@ let application = exports.application = new _world.default({
         addEventListener('dice-4', dice4Click);
         addEventListener('dice-5', dice5Click);
         addEventListener('dice-6', dice6Click);
-        function shootDice(x) {
-          setTimeout(() => {
-            app.matrixAmmo.getBodyByName(`CubePhysics${x}`).setAngularVelocity(new Ammo.btVector3((0, _utils.randomFloatFromTo)(3, 12), 9, 9));
-            app.matrixAmmo.getBodyByName(`CubePhysics${x}`).setLinearVelocity(new Ammo.btVector3((0, _utils.randomFloatFromTo)(-5, 5), 15, -20));
-          }, 200 * x);
-        }
         for (var x = 1; x < 7; x++) {
           shootDice(x);
+        }
+      } else if (_jamb.dices.STATUS == "SELECT_DICES_1") {
+        console.log('STATUS IS >>SELECT_DICES_1>> ');
+        // Now no selected dices still rolling
+        for (let i = 1; i <= 6; i++) {
+          const key = "CubePhysics" + i;
+          if (!(key in app.dices.SAVED_DICES)) {
+            console.log("Still in game last char is id : ", key[key.length - 1]);
+            activeteDiceClickListener(key[key.length - 1]);
+            shootDice(key[key.length - 1]);
+          }
         }
       }
     };
@@ -10985,28 +11106,40 @@ class MatrixAmmo {
     }
   }
   updatePhysics() {
-    // Step world
-    this.dynamicsWorld.stepSimulation(1 / 60, 10);
-    // Update rigid bodies
-    var trans = new Ammo.btTransform();
+    const trans = new Ammo.btTransform();
     this.rigidBodies.forEach(function (body) {
-      if (body.getMotionState()) {
-        body.getMotionState().getWorldTransform(trans);
-        var _x = trans.getOrigin().x().toFixed(2);
-        var _y = trans.getOrigin().y().toFixed(2);
-        var _z = trans.getOrigin().z().toFixed(2);
-        body.MEObject.position.setPosition(_x, _y, _z);
-        var test = trans.getRotation();
-        var testAxis = test.getAxis();
-        test.normalize();
-        body.MEObject.rotation.axis.x = testAxis.x();
-        body.MEObject.rotation.axis.y = testAxis.y();
-        body.MEObject.rotation.axis.z = testAxis.z();
-        body.MEObject.rotation.matrixRotation = (0, _utils.quaternion_rotation_matrix)(test);
-        body.MEObject.rotation.angle = (0, _utils.radToDeg)(parseFloat(test.getAngle().toFixed(2)));
+      if (body.isKinematic) {
+        const transform = new Ammo.btTransform();
+        transform.setIdentity();
+        transform.setOrigin(new Ammo.btVector3(body.MEObject.position.x, body.MEObject.position.y, body.MEObject.position.z));
+        const quat = new Ammo.btQuaternion();
+        quat.setRotation(new Ammo.btVector3(body.MEObject.rotation.axis.x, body.MEObject.rotation.axis.y, body.MEObject.rotation.axis.z), (0, _utils.degToRad)(body.MEObject.rotation.angle));
+        transform.setRotation(quat);
+        body.setWorldTransform(transform);
+        const ms = body.getMotionState();
+        if (ms) ms.setWorldTransform(transform);
       }
     });
-    // collision detect
+
+    // Step simulation AFTER setting kinematic transforms
+    this.dynamicsWorld.stepSimulation(1 / 60, 10);
+    this.rigidBodies.forEach(function (body) {
+      if (!body.isKinematic && body.getMotionState()) {
+        body.getMotionState().getWorldTransform(trans);
+        const _x = +trans.getOrigin().x().toFixed(2);
+        const _y = +trans.getOrigin().y().toFixed(2);
+        const _z = +trans.getOrigin().z().toFixed(2);
+        body.MEObject.position.setPosition(_x, _y, _z);
+        const rot = trans.getRotation();
+        const rotAxis = rot.getAxis();
+        rot.normalize();
+        body.MEObject.rotation.axis.x = rotAxis.x();
+        body.MEObject.rotation.axis.y = rotAxis.y();
+        body.MEObject.rotation.axis.z = rotAxis.z();
+        body.MEObject.rotation.matrixRotation = (0, _utils.quaternion_rotation_matrix)(rot);
+        body.MEObject.rotation.angle = (0, _utils.radToDeg)(parseFloat(rot.getAngle().toFixed(2)));
+      }
+    });
     this.detectCollision();
   }
 }

@@ -266,28 +266,63 @@ export default class MatrixAmmo {
   }
 
   updatePhysics() {
-    // Step world
-    this.dynamicsWorld.stepSimulation(1 / 60, 10);
-    // Update rigid bodies
-    var trans = new Ammo.btTransform();
+    const trans = new Ammo.btTransform();
+
     this.rigidBodies.forEach(function(body) {
-      if(body.getMotionState()) {
-        body.getMotionState().getWorldTransform(trans);
-        var _x = trans.getOrigin().x().toFixed(2);
-        var _y = trans.getOrigin().y().toFixed(2);
-        var _z = trans.getOrigin().z().toFixed(2);
-        body.MEObject.position.setPosition(_x, _y, _z)
-        var test = trans.getRotation();
-        var testAxis = test.getAxis();
-        test.normalize()
-        body.MEObject.rotation.axis.x = testAxis.x()
-        body.MEObject.rotation.axis.y = testAxis.y()
-        body.MEObject.rotation.axis.z = testAxis.z()
-        body.MEObject.rotation.matrixRotation = quaternion_rotation_matrix(test);
-        body.MEObject.rotation.angle = radToDeg(parseFloat(test.getAngle().toFixed(2)))
+      if(body.isKinematic) {
+        const transform = new Ammo.btTransform();
+        transform.setIdentity();
+
+        transform.setOrigin(new Ammo.btVector3(
+          body.MEObject.position.x,
+          body.MEObject.position.y,
+          body.MEObject.position.z
+        ));
+
+        const quat = new Ammo.btQuaternion();
+        quat.setRotation(
+          new Ammo.btVector3(
+            body.MEObject.rotation.axis.x,
+            body.MEObject.rotation.axis.y,
+            body.MEObject.rotation.axis.z
+          ),
+          degToRad(body.MEObject.rotation.angle)
+        );
+        transform.setRotation(quat);
+
+        body.setWorldTransform(transform);
+        const ms = body.getMotionState();
+        if(ms) ms.setWorldTransform(transform);
       }
-    })
-    // collision detect
-    this.detectCollision()
+    });
+
+    // Step simulation AFTER setting kinematic transforms
+    this.dynamicsWorld.stepSimulation(1 / 60, 10);
+
+    this.rigidBodies.forEach(function(body) {
+      if(!body.isKinematic && body.getMotionState()) {
+        body.getMotionState().getWorldTransform(trans);
+
+        const _x = +trans.getOrigin().x().toFixed(2);
+        const _y = +trans.getOrigin().y().toFixed(2);
+        const _z = +trans.getOrigin().z().toFixed(2);
+
+        body.MEObject.position.setPosition(_x, _y, _z);
+
+        const rot = trans.getRotation();
+        const rotAxis = rot.getAxis();
+        rot.normalize();
+
+        body.MEObject.rotation.axis.x = rotAxis.x();
+        body.MEObject.rotation.axis.y = rotAxis.y();
+        body.MEObject.rotation.axis.z = rotAxis.z();
+        body.MEObject.rotation.matrixRotation = quaternion_rotation_matrix(rot);
+        body.MEObject.rotation.angle = radToDeg(parseFloat(rot.getAngle().toFixed(2)));
+      }
+    });
+
+    this.detectCollision();
   }
+
+
 }

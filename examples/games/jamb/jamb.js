@@ -9,20 +9,96 @@ export let dices = {
   STATUS_H3: 'WAIT',
   R: {},
 
-	SAVED_DICES: {},
+  SAVED_DICES: {},
 
-	pickDice: (dice) => {
-		this.SAVED_DICES[dice] = this.R[dice]
-	},
+  pickDice: function(dice) {
+    if(Object.keys(this.SAVED_DICES).length >= 5) {
+      console.log("⚠️ You can only select up to 5 dice!");
+      return; // prevent adding more
+    }
+    this.SAVED_DICES[dice] = this.R[dice]
+    this.refreshSelectedBox()
+  },
+
+  refreshSelectedBox: function(arg) {
+    let currentIndex = 0;
+    for(var key in this.SAVED_DICES) {
+      // console.log('key.......', key, ' obj: ', this.SAVED_DICES[key]);
+      let B = app.matrixAmmo.getBodyByName(key)
+      this.deactivatePhysics(B)
+      const transform = new Ammo.btTransform();
+      transform.setIdentity();
+      transform.setOrigin(new Ammo.btVector3(0, 0, 0));
+      B.setWorldTransform(transform);
+      // let testB = this.getDiceByName(key)
+      B.MEObject.position.setPosition(-5 + currentIndex, 5, -16)
+      currentIndex += 3;
+    }
+  },
+
+  deactivatePhysics: function(body) {
+    const CF_KINEMATIC_OBJECT = 2;
+    const DISABLE_DEACTIVATION = 4;
+
+    // Remove from world if already added
+    app.matrixAmmo.dynamicsWorld.removeRigidBody(body);
+
+    // Set kinematic
+    body.setCollisionFlags(body.getCollisionFlags() | CF_KINEMATIC_OBJECT);
+    body.setActivationState(DISABLE_DEACTIVATION);
+
+    // Optional: Zero velocities
+    const zero = new Ammo.btVector3(0, 0, 0);
+    body.setLinearVelocity(zero);
+    body.setAngularVelocity(zero);
+
+    // Re-add to world
+    app.matrixAmmo.dynamicsWorld.addRigidBody(body);
+
+    // Manual flag for logic
+    body.isKinematic = true;
+  },
+
+  activatePhysics: function(body) {
+    body.setCollisionFlags(body.getCollisionFlags() & ~2); // remove CF_KINEMATIC_OBJECT
+    body.setActivationState(1); // 1 = ACTIVE_TAG
+
+    body.isKinematic = false;
+  },
+
+
+
+  getAllDices: function() {
+    return app.mainRenderBundle.filter(item => item.name.indexOf("CubePhysics") !== -1);
+  },
+
+  getDiceByName: function(name) {
+    return app.mainRenderBundle.find(item => item.name === name);
+  },
+
   checkAll: function() {
+    // this.C++;
+    // if(typeof this.R.CubePhysics1 != 'undefined' &&
+    //   typeof this.R.CubePhysics2 != 'undefined' &&
+    //   typeof this.R.CubePhysics3 != 'undefined' &&
+    //   typeof this.R.CubePhysics4 != 'undefined' &&
+    //   typeof this.R.CubePhysics5 != 'undefined' &&
+    //   typeof this.R.CubePhysics6 != 'undefined' && this.C > 1200) {
+    //   dispatchEvent(new CustomEvent('all-done', {detail: {}}))
+    //   this.C = 0;
+    // }
     this.C++;
-    if(typeof this.R.CubePhysics1 != 'undefined' &&
-      typeof this.R.CubePhysics2 != 'undefined' &&
-      typeof this.R.CubePhysics3 != 'undefined' &&
-      typeof this.R.CubePhysics4 != 'undefined' &&
-      typeof this.R.CubePhysics5 != 'undefined' &&
-      typeof this.R.CubePhysics6 != 'undefined' && this.C > 1200) {
-      dispatchEvent(new CustomEvent('all-done', {detail: {}}))
+    let allRolled = true;
+    for(let i = 1;i <= 6;i++) {
+      const key = "CubePhysics" + i;
+      if(key in this.SAVED_DICES) continue; // 🔒 skip saved dice
+      if(typeof this.R[key] === 'undefined') {
+        allRolled = false;
+        break;
+      }
+    }
+    if(allRolled && this.C > 1200) {
+      dispatchEvent(new CustomEvent('all-done', {detail: {}}));
       this.C = 0;
     }
   },
@@ -134,10 +210,10 @@ export let myDom = {
 
     // console.log('TEST', app.label.get)
     messageBox.innerHTML = `
-     <span data-label="welcomeMsg"></span>
+     <span class="fancy-title" data-label="welcomeMsg"></span>
      <a href="https://github.com/zlatnaspirala/matrix-engine-wgpu">zlatnaspirala/matrix-engine-wgpu</a><br><br>
      <button class="btn" ><span style="font-size:30px;margin:15px;padding:10px" data-label="startGame"></span></button> <br>
-     <div><span data-label="changeLang"></span></div> 
+     <div><span class="fancy-label" data-label="changeLang"></span></div> 
      <button class="btn" onclick="
       app.label.loadMultilang('en').then(r => {
         app.label.get = r;
@@ -156,6 +232,12 @@ export let myDom = {
       byId('blocker').style.display = 'none';
       myDom.createMenu();
       messageBox.removeEventListener('click', initialMsgBoxEvent)
+
+      document.querySelectorAll('.btn, .fancy-label, .fancy-title').forEach(el => {
+        el.addEventListener('mouseenter', () => {
+          app.matrixSounds.play('hover');
+        });
+      });
     };
 
     messageBox.addEventListener('click', initialMsgBoxEvent)
@@ -164,6 +246,13 @@ export let myDom = {
     document.body.appendChild(root);
 
     app.label.update();
+
+    // test 
+    document.querySelectorAll('.btn, .fancy-label, .fancy-title').forEach(el => {
+      el.addEventListener('mouseenter', () => {
+        app.matrixSounds.play('hover');
+      });
+    });
   },
 
   createJamb: function() {
@@ -228,12 +317,30 @@ export let myDom = {
     this.createRow(rowUp);
     this.createRow(rowHand);
 
+    this.createSelectedBox();
+
     document.body.appendChild(root);
     // console.log('JambTable added.')
   },
 
-  createLeftHeaderRow: function(myRoot) {
+  createSelectedBox: function() {
+    var selectedBoxRoot = document.createElement('div')
+    selectedBoxRoot.id = 'selectedBoxRoot';
+    selectedBoxRoot.style.width = 'auto';
+    selectedBoxRoot.style.position = 'absolute';
+    selectedBoxRoot.style.left = '35%';
+    selectedBoxRoot.style.top = '5%';
+    selectedBoxRoot.style.background = '#7d7d7d8c';
+    selectedBoxRoot.innerHTML = `SELECTED BOX`;
+    document.body.appendChild(selectedBoxRoot);
+  },
 
+  addBallToSelectedBox: function(selectedBall) {
+    //
+
+  },
+
+  createLeftHeaderRow: function(myRoot) {
     for(var x = 1;x < 7;x++) {
       var rowNumber = document.createElement('div')
       rowNumber.id = 'rowNumber' + x;
