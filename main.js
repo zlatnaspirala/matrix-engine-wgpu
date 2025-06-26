@@ -85,9 +85,6 @@ export let application = new MatrixEngineWGPU({
   addRaycastListener();
 
   addEventListener("ray.hit.event", (e) => {
-
-    console.log("hit cube ", e.detail.hitObject.name)
-
     if(application.dices.STATUS == "FREE_TO_PLAY") {
       console.log("hit cube status free to play prevent pick. ", e.detail.hitObject.name)
     } else if(application.dices.STATUS == "SELECT_DICES_1" ||
@@ -96,8 +93,6 @@ export let application = new MatrixEngineWGPU({
       application.dices.pickDice(e.detail.hitObject.name)
     }
   });
-  // OR add manual see readme
-
 
   addEventListener('mousemove', (e) => {
     // console.log('only on click')
@@ -109,10 +104,7 @@ export let application = new MatrixEngineWGPU({
   application.matrixSounds.createAudio('block', 'res/audios/block.mp3', 6)
   application.matrixSounds.createAudio('dice1', 'res/audios/dice1.mp3', 6)
   application.matrixSounds.createAudio('dice2', 'res/audios/dice2.mp3', 6)
-
   application.matrixSounds.createAudio('hover', 'res/audios/toggle_002.mp3', 3)
-
-
 
   addEventListener('AmmoReady', () => {
     downloadMeshes({
@@ -193,9 +185,9 @@ export let application = new MatrixEngineWGPU({
 
   function onLoadObjOther(m) {
     application.myLoadedMeshes = m;
-    for(var key in m) {
-      // console.log(`%c Loaded objs -> : ${key} `, LOG_MATRIX);
-    }
+    // for(var key in m) {
+    //   // console.log(`%c Loaded objs -> : ${key} `, LOG_MATRIX);
+    // }
     // Add logo text top
     application.addMeshObj({
       position: {x: 0, y: 6, z: -15},
@@ -343,7 +335,6 @@ export let application = new MatrixEngineWGPU({
       }
     })
 
-
     application.TOLERANCE = 0;
     let allDiceDoneProcedure = () => {
       console.log("ALL DONE")
@@ -376,6 +367,9 @@ export let application = new MatrixEngineWGPU({
 
     addEventListener('FREE_TO_PLAY', () => {
       // setup againt 3d space loc
+      // Big reset
+      //  app.matrixAmmo.getBodyByName(`CubePhysics${x}`)
+
       console.info(' setup againt 3d space loc make some logic for pos ...')
       app.matrixAmmo.getBodyByName('CubePhysics1').setLinearVelocity(new Ammo.btVector3(2, 2, 12))
       app.matrixAmmo.getBodyByName('CubePhysics2').setLinearVelocity(new Ammo.btVector3(2, 2, 12))
@@ -467,7 +461,7 @@ export let application = new MatrixEngineWGPU({
           shootDice(x)
         }
       } else if(dices.STATUS == "SELECT_DICES_1") {
-        console.log('STATUS IS >>SELECT_DICES_1>> ')
+        console.log('LAST ROLL...')
         // Now no selected dices still rolling
         for(let i = 1;i <= 6;i++) {
           const key = "CubePhysics" + i;

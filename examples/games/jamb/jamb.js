@@ -324,16 +324,35 @@ export let myDom = {
   },
 
   createSelectedBox: function() {
-    var selectedBoxRoot = document.createElement('div')
-    selectedBoxRoot.id = 'selectedBoxRoot';
-    selectedBoxRoot.style.width = 'auto';
-    selectedBoxRoot.style.position = 'absolute';
-    selectedBoxRoot.style.left = '35%';
-    selectedBoxRoot.style.top = '5%';
-    selectedBoxRoot.style.background = '#7d7d7d8c';
-    selectedBoxRoot.innerHTML = `SELECTED BOX`;
-    document.body.appendChild(selectedBoxRoot);
+    var handResultsBoxUI = document.createElement('div')
+    handResultsBoxUI.id = 'handResultsBoxUI';
+    handResultsBoxUI.style.width = 'auto';
+    handResultsBoxUI.style.position = 'absolute';
+    handResultsBoxUI.style.left = '35%';
+    handResultsBoxUI.style.top = '5%';
+    handResultsBoxUI.style.background = '#7d7d7d8c';
+    handResultsBoxUI.innerHTML = `SELECTED BOX`;
+    document.body.appendChild(handResultsBoxUI);
+    addEventListener('HAND_RESULTS', (e) => {
+      //
+
+    })
   },
+
+  // chooseFinalResults: function() {
+  //   var chooseFinalResults = document.createElement('div')
+  //   chooseFinalResults.id = 'chooseFinalResults';
+  //   chooseFinalResults.style.width = 'auto';
+  //   chooseFinalResults.style.position = 'absolute';
+  //   chooseFinalResults.style.left = '35%';
+  //   chooseFinalResults.style.top = '25%';
+  //   chooseFinalResults.style.background = '#7d7d7d8c';
+  //   chooseFinalResults.innerHTML = ``;
+  //   document.body.appendChild(chooseFinalResults);
+  //   chooseFinalResults.addEventListener('click', (e) => {
+  //     //
+  //   })
+  // },
 
   addBallToSelectedBox: function(selectedBall) {
     //

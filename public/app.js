@@ -291,16 +291,34 @@ let myDom = exports.myDom = {
     // console.log('JambTable added.')
   },
   createSelectedBox: function () {
-    var selectedBoxRoot = document.createElement('div');
-    selectedBoxRoot.id = 'selectedBoxRoot';
-    selectedBoxRoot.style.width = 'auto';
-    selectedBoxRoot.style.position = 'absolute';
-    selectedBoxRoot.style.left = '35%';
-    selectedBoxRoot.style.top = '5%';
-    selectedBoxRoot.style.background = '#7d7d7d8c';
-    selectedBoxRoot.innerHTML = `SELECTED BOX`;
-    document.body.appendChild(selectedBoxRoot);
+    var handResultsBoxUI = document.createElement('div');
+    handResultsBoxUI.id = 'handResultsBoxUI';
+    handResultsBoxUI.style.width = 'auto';
+    handResultsBoxUI.style.position = 'absolute';
+    handResultsBoxUI.style.left = '35%';
+    handResultsBoxUI.style.top = '5%';
+    handResultsBoxUI.style.background = '#7d7d7d8c';
+    handResultsBoxUI.innerHTML = `SELECTED BOX`;
+    document.body.appendChild(handResultsBoxUI);
+    addEventListener('HAND_RESULTS', e => {
+      //
+    });
   },
+  // chooseFinalResults: function() {
+  //   var chooseFinalResults = document.createElement('div')
+  //   chooseFinalResults.id = 'chooseFinalResults';
+  //   chooseFinalResults.style.width = 'auto';
+  //   chooseFinalResults.style.position = 'absolute';
+  //   chooseFinalResults.style.left = '35%';
+  //   chooseFinalResults.style.top = '25%';
+  //   chooseFinalResults.style.background = '#7d7d7d8c';
+  //   chooseFinalResults.innerHTML = ``;
+  //   document.body.appendChild(chooseFinalResults);
+  //   chooseFinalResults.addEventListener('click', (e) => {
+  //     //
+  //   })
+  // },
+
   addBallToSelectedBox: function (selectedBall) {
     //
   },
@@ -1227,7 +1245,6 @@ let application = exports.application = new _world.default({
   };
   (0, _raycast.addRaycastListener)();
   addEventListener("ray.hit.event", e => {
-    console.log("hit cube ", e.detail.hitObject.name);
     if (application.dices.STATUS == "FREE_TO_PLAY") {
       console.log("hit cube status free to play prevent pick. ", e.detail.hitObject.name);
     } else if (application.dices.STATUS == "SELECT_DICES_1" || application.dices.STATUS == "SELECT_DICES_2") {
@@ -1235,8 +1252,6 @@ let application = exports.application = new _world.default({
       application.dices.pickDice(e.detail.hitObject.name);
     }
   });
-  // OR add manual see readme
-
   addEventListener('mousemove', e => {
     // console.log('only on click')
     _raycast.touchCoordinate.enabled = true;
@@ -1358,9 +1373,9 @@ let application = exports.application = new _world.default({
   }
   function onLoadObjOther(m) {
     application.myLoadedMeshes = m;
-    for (var key in m) {
-      // console.log(`%c Loaded objs -> : ${key} `, LOG_MATRIX);
-    }
+    // for(var key in m) {
+    //   // console.log(`%c Loaded objs -> : ${key} `, LOG_MATRIX);
+    // }
     // Add logo text top
     application.addMeshObj({
       position: {
@@ -1632,6 +1647,9 @@ let application = exports.application = new _world.default({
     addEventListener('all-done', allDiceDoneProcedure);
     addEventListener('FREE_TO_PLAY', () => {
       // setup againt 3d space loc
+      // Big reset
+      //  app.matrixAmmo.getBodyByName(`CubePhysics${x}`)
+
       console.info(' setup againt 3d space loc make some logic for pos ...');
       app.matrixAmmo.getBodyByName('CubePhysics1').setLinearVelocity(new Ammo.btVector3(2, 2, 12));
       app.matrixAmmo.getBodyByName('CubePhysics2').setLinearVelocity(new Ammo.btVector3(2, 2, 12));
@@ -1710,7 +1728,7 @@ let application = exports.application = new _world.default({
           shootDice(x);
         }
       } else if (_jamb.dices.STATUS == "SELECT_DICES_1") {
-        console.log('STATUS IS >>SELECT_DICES_1>> ');
+        console.log('LAST ROLL...');
         // Now no selected dices still rolling
         for (let i = 1; i <= 6; i++) {
           const key = "CubePhysics" + i;
