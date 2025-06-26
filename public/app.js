@@ -134,11 +134,11 @@ let myDom = exports.myDom = {
     root.style.top = '10%';
     var help = document.createElement('div');
     help.id = 'HELP';
-    help.classList.add('btn2');
+    help.classList.add('btn');
     help.innerHTML = `<span data-label="help"></span>`;
     var settings = document.createElement('div');
     settings.id = 'settings';
-    settings.classList.add('btn2');
+    settings.classList.add('btn');
     settings.innerHTML = `<span data-label="settings"></span>`;
     settings.addEventListener('click', () => {
       (0, _utils.byId)('messageBox').innerHTML = `
@@ -157,7 +157,7 @@ let myDom = exports.myDom = {
         </div>
 
         <div>
-          <button class="btn2" onclick="app.myDom.hideSettings()">
+          <button class="btn" onclick="app.myDom.hideSettings()">
             <span data-label="hide"></span>
           </button>
         </div>
