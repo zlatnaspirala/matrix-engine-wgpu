@@ -102,10 +102,14 @@ let dices = exports.dices = {
     }
   },
   validatePass: function () {
-    if (dices.STATUS == "IN_PLAY" || dices.STATUS == "FREE_TO_PLAY") {
-      // console.log('%cBLOCK', LOG_FUNNY)
-      if (dices.STATUS == "IN_PLAY") _utils.mb.error(`STATUS IS ${dices.STATUS}, please wait for results...`);
-      if (dices.STATUS == "FREE_TO_PLAY") _utils.mb.error(`STATUS IS ${dices.STATUS}, you need to roll dice first.`);
+    if (Object.keys(this.SAVED_DICES).length >= 5) {
+      console.log('%cBLOCK', _utils.LOG_FUNNY);
+      _utils.mb.error(`Must select minimum 5 dices before add results...`);
+      return false;
+    }
+    if (dices.STATUS != "FINISHED") {
+      console.log('%cBLOCK', _utils.LOG_FUNNY);
+      _utils.mb.error(`STATUS IS ${dices.STATUS}, please wait for results...`);
       app.matrixSounds.play('block');
       return false;
     } else {
@@ -494,7 +498,7 @@ let myDom = exports.myDom = {
         var getName = e.target.id;
         getName = getName.replace('free-rowNumber', '');
         var count23456 = 0;
-        for (let key in dices.R) {
+        for (let key in dices.SAVED_DICES) {
           if (parseInt(dices.R[key]) == parseInt(getName)) {
             count23456++;
           }
@@ -599,7 +603,7 @@ let myDom = exports.myDom = {
           console.log('LOG ', getName);
           if (parseInt(getName) == 1) {
             var count1 = 0;
-            for (let key in dices.R) {
+            for (let key in dices.SAVED_DICES) {
               if (parseInt(dices.R[key]) == 1) {
                 console.log('yeap', dices.R);
                 count1++;
@@ -619,7 +623,7 @@ let myDom = exports.myDom = {
             if (parseInt(getName) == this.state.rowDown.length + 1) {
               console.log('moze za ', parseInt(getName));
               var count23456 = 0;
-              for (let key in dices.R) {
+              for (let key in dices.SAVED_DICES) {
                 if (parseInt(dices.R[key]) == parseInt(getName)) {
                   console.log('yeap', dices.R);
                   count23456++;
@@ -1166,9 +1170,10 @@ var _world = _interopRequireDefault(require("./src/world.js"));
 var _loaderObj = require("./src/engine/loader-obj.js");
 var _utils = require("./src/engine/utils.js");
 var _jamb = require("./examples/games/jamb/jamb.js");
-var _sounds = require("./src/sounds/sounds.js");
 var _raycast = require("./src/engine/raycast.js");
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+// import {MatrixSounds} from "./src/sounds/sounds.js";
+
 let application = exports.application = new _world.default({
   useSingleRenderPass: true,
   canvasSize: 'fullscreen',
@@ -1183,7 +1188,7 @@ let application = exports.application = new _world.default({
   _jamb.myDom.createBlocker();
   application.dices = _jamb.dices;
 
-  // this code must be on top
+  // This code must be on top
   application.matrixAmmo.detectCollision = function () {
     this.lastRoll = '';
     this.presentScore = '';
@@ -1248,7 +1253,7 @@ let application = exports.application = new _world.default({
     if (application.dices.STATUS == "FREE_TO_PLAY") {
       console.log("hit cube status free to play prevent pick. ", e.detail.hitObject.name);
     } else if (application.dices.STATUS == "SELECT_DICES_1" || application.dices.STATUS == "SELECT_DICES_2") {
-      console.log("hit cube status SELECT1 pick.", e.detail.hitObject.name);
+      console.log("hit cube status SELECT1/2 pick.", e.detail.hitObject.name);
       application.dices.pickDice(e.detail.hitObject.name);
     }
   });
@@ -1373,9 +1378,6 @@ let application = exports.application = new _world.default({
   }
   function onLoadObjOther(m) {
     application.myLoadedMeshes = m;
-    // for(var key in m) {
-    //   // console.log(`%c Loaded objs -> : ${key} `, LOG_MATRIX);
-    // }
     // Add logo text top
     application.addMeshObj({
       position: {
@@ -1397,7 +1399,6 @@ let application = exports.application = new _world.default({
         geometry: "Cube"
       }
     });
-    // console.log('camera set')
     // application.cameras.WASD.pitch = 0.2
     setTimeout(() => {
       app.cameras.WASD.velocity[1] = 18;
@@ -1405,14 +1406,11 @@ let application = exports.application = new _world.default({
       app.matrixAmmo.setKinematicTransform(app.matrixAmmo.getBodyByName('mainTitle'), 0, 0, 0, 1);
       app.matrixAmmo.setKinematicTransform(app.matrixAmmo.getBodyByName('bg'), 0, -10, 0, 0, 0, 0);
       // Better access getBodyByName
-      console.log(' app.matrixAmmo. ', app.matrixAmmo.getBodyByName('CubePhysics1'));
-    }, 1225);
+      // console.log(' app.matrixAmmo. ', app.matrixAmmo.getBodyByName('CubePhysics1'))
+    }, 1200);
   }
   function onLoadObjFloor(m) {
     application.myLoadedMeshes = m;
-    for (var key in m) {
-      // console.log(`%c Loaded objs -> : ${key} `, LOG_MATRIX);
-    }
     application.addMeshObj({
       scale: [10, 0.1, 0.1],
       position: {
@@ -1425,7 +1423,6 @@ let application = exports.application = new _world.default({
         y: 0,
         z: 0
       },
-      // rotationSpeed: {x: 0, y: 0, z: 0},
       texturesPaths: ['./res/meshes/jamb/bg.png'],
       name: 'bg',
       mesh: m.bg,
@@ -1439,10 +1436,6 @@ let application = exports.application = new _world.default({
   }
   function onLoadObj(m) {
     application.myLoadedMeshes = m;
-    for (var key in m) {
-      // console.log(`%c Loaded objs -> : ${key} `, LOG_MATRIX);
-    }
-
     // Add dices
     application.addMeshObj({
       position: {
@@ -1629,28 +1622,29 @@ let application = exports.application = new _world.default({
         removeEventListener('dice-4', dice4Click);
         removeEventListener('dice-5', dice5Click);
         removeEventListener('dice-6', dice6Click);
-        console.log('FINAL >>>> ', _jamb.dices.R);
+        console.log(`%cFINAL<preliminar> ${_jamb.dices.R}`, _utils.LOG_FUNNY);
         application.TOLERANCE = 0;
         app.cameras.WASD.yaw = 0.01;
         app.cameras.WASD.pitch = -1.26;
         app.cameras.WASD.position[2] = -18;
         app.cameras.WASD.position[1] = 19;
-        if (_jamb.dices.STATUS == "FREE_TO_PLAY") {
+        // ??                                                     ?
+        if (_jamb.dices.STATUS == "FREE_TO_PLAY" || _jamb.dices.STATUS == "IN_PLAY") {
           _jamb.dices.STATUS = "SELECT_DICES_1";
+          console.log(`%cStatus<SELECT_DICES_1>`, _utils.LOG_FUNNY);
         } else if (_jamb.dices.STATUS == "SELECT_DICES_1") {
           _jamb.dices.STATUS = "SELECT_DICES_2";
+          console.log(`%cStatus<SELECT_DICES_2>`, _utils.LOG_FUNNY);
         } else if (_jamb.dices.STATUS == "SELECT_DICES_2") {
           _jamb.dices.STATUS = "FINISHED";
+          console.log(`%cStatus<FINISHED>`, _utils.LOG_FUNNY);
         }
       }
     };
     addEventListener('all-done', allDiceDoneProcedure);
     addEventListener('FREE_TO_PLAY', () => {
-      // setup againt 3d space loc
       // Big reset
-      //  app.matrixAmmo.getBodyByName(`CubePhysics${x}`)
-
-      console.info(' setup againt 3d space loc make some logic for pos ...');
+      console.log(`%c<Big reset needed ...>`, _utils.LOG_FUNNY);
       app.matrixAmmo.getBodyByName('CubePhysics1').setLinearVelocity(new Ammo.btVector3(2, 2, 12));
       app.matrixAmmo.getBodyByName('CubePhysics2').setLinearVelocity(new Ammo.btVector3(2, 2, 12));
       app.matrixAmmo.getBodyByName('CubePhysics3').setLinearVelocity(new Ammo.btVector3(2, 2, 12));
@@ -1661,7 +1655,7 @@ let application = exports.application = new _world.default({
 
     // ACTIONS
     let dice1Click = e => {
-      console.info('DICE 1 click ?????????', e.detail);
+      // console.info('DICE 1 click ?????????', e.detail)
       _jamb.dices.R[e.detail.cubeId] = '1';
       _jamb.dices.checkAll();
     };
@@ -1748,7 +1742,7 @@ let application = exports.application = new _world.default({
 });
 window.app = application;
 
-},{"./examples/games/jamb/jamb.js":1,"./src/engine/loader-obj.js":7,"./src/engine/raycast.js":11,"./src/engine/utils.js":12,"./src/sounds/sounds.js":19,"./src/world.js":20}],3:[function(require,module,exports){
+},{"./examples/games/jamb/jamb.js":1,"./src/engine/loader-obj.js":7,"./src/engine/raycast.js":11,"./src/engine/utils.js":12,"./src/world.js":20}],3:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -11125,9 +11119,9 @@ class MatrixAmmo {
   }
   updatePhysics() {
     const trans = new Ammo.btTransform();
+    const transform = new Ammo.btTransform();
     this.rigidBodies.forEach(function (body) {
       if (body.isKinematic) {
-        const transform = new Ammo.btTransform();
         transform.setIdentity();
         transform.setOrigin(new Ammo.btVector3(body.MEObject.position.x, body.MEObject.position.y, body.MEObject.position.z));
         const quat = new Ammo.btQuaternion();
@@ -11138,6 +11132,7 @@ class MatrixAmmo {
         if (ms) ms.setWorldTransform(transform);
       }
     });
+    Ammo.destroy(transform);
 
     // Step simulation AFTER setting kinematic transforms
     this.dynamicsWorld.stepSimulation(1 / 60, 10);
@@ -11158,6 +11153,7 @@ class MatrixAmmo {
         body.MEObject.rotation.angle = (0, _utils.radToDeg)(parseFloat(rot.getAngle().toFixed(2)));
       }
     });
+    Ammo.destroy(trans);
     this.detectCollision();
   }
 }
@@ -11397,7 +11393,9 @@ class MatrixSounds {
   }
   play(name) {
     if (this.audios[name].paused == true) {
-      this.audios[name].play();
+      this.audios[name].play().catch(e => {
+        if (e.name !== 'NotAllowedError') console.warn("sounds error:", e);
+      });
     } else {
       this.tryClone(name);
     }

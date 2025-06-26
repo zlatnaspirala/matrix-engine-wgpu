@@ -267,18 +267,16 @@ export default class MatrixAmmo {
 
   updatePhysics() {
     const trans = new Ammo.btTransform();
+    const transform = new Ammo.btTransform();
 
     this.rigidBodies.forEach(function(body) {
       if(body.isKinematic) {
-        const transform = new Ammo.btTransform();
         transform.setIdentity();
-
         transform.setOrigin(new Ammo.btVector3(
           body.MEObject.position.x,
           body.MEObject.position.y,
           body.MEObject.position.z
         ));
-
         const quat = new Ammo.btQuaternion();
         quat.setRotation(
           new Ammo.btVector3(
@@ -295,6 +293,8 @@ export default class MatrixAmmo {
         if(ms) ms.setWorldTransform(transform);
       }
     });
+
+    Ammo.destroy(transform);
 
     // Step simulation AFTER setting kinematic transforms
     this.dynamicsWorld.stepSimulation(1 / 60, 10);
@@ -320,6 +320,8 @@ export default class MatrixAmmo {
         body.MEObject.rotation.angle = radToDeg(parseFloat(rot.getAngle().toFixed(2)));
       }
     });
+
+    Ammo.destroy(trans);
 
     this.detectCollision();
   }

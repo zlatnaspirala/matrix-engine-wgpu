@@ -103,10 +103,14 @@ export let dices = {
     }
   },
   validatePass: function() {
-    if(dices.STATUS == "IN_PLAY" || dices.STATUS == "FREE_TO_PLAY") {
-      // console.log('%cBLOCK', LOG_FUNNY)
-      if(dices.STATUS == "IN_PLAY") mb.error(`STATUS IS ${dices.STATUS}, please wait for results...`);
-      if(dices.STATUS == "FREE_TO_PLAY") mb.error(`STATUS IS ${dices.STATUS}, you need to roll dice first.`);
+     if (Object.keys(this.SAVED_DICES).length >= 5) {
+      console.log('%cBLOCK', LOG_FUNNY)
+      mb.error(`Must select minimum 5 dices before add results...`);
+      return false;
+    }
+    if(dices.STATUS != "FINISHED") {
+      console.log('%cBLOCK', LOG_FUNNY)
+      mb.error(`STATUS IS ${dices.STATUS}, please wait for results...`);
       app.matrixSounds.play('block')
       return false;
     } else {
@@ -559,7 +563,7 @@ export let myDom = {
         var getName = e.target.id;
         getName = getName.replace('free-rowNumber', '')
         var count23456 = 0;
-        for(let key in dices.R) {
+        for(let key in dices.SAVED_DICES) {
           if(parseInt(dices.R[key]) == parseInt(getName)) {
             count23456++;
           }
@@ -679,7 +683,7 @@ export let myDom = {
           console.log('LOG ', getName)
           if(parseInt(getName) == 1) {
             var count1 = 0;
-            for(let key in dices.R) {
+            for(let key in dices.SAVED_DICES) {
               if(parseInt(dices.R[key]) == 1) {
                 console.log('yeap', dices.R)
                 count1++;
@@ -700,7 +704,7 @@ export let myDom = {
             if(parseInt(getName) == this.state.rowDown.length + 1) {
               console.log('moze za ', parseInt(getName))
               var count23456 = 0;
-              for(let key in dices.R) {
+              for(let key in dices.SAVED_DICES) {
                 if(parseInt(dices.R[key]) == parseInt(getName)) {
                   console.log('yeap', dices.R)
                   count23456++;

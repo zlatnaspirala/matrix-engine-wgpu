@@ -29,7 +29,9 @@ export class MatrixSounds {
 
   play(name) {
     if(this.audios[name].paused == true) {
-      this.audios[name].play()
+      this.audios[name].play().catch((e) => {
+        if(e.name !== 'NotAllowedError') console.warn("sounds error:", e);
+      });
     } else {
       this.tryClone(name);
     }
@@ -41,7 +43,7 @@ export class MatrixSounds {
       while(this.audios[name + cc].paused == false) {
         cc++;
       }
-      if (this.audios[name + cc]) this.audios[name + cc].play();
+      if(this.audios[name + cc]) this.audios[name + cc].play();
     } catch(err) {}
   }
 }
