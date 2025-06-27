@@ -66,8 +66,6 @@ export let dices = {
     body.isKinematic = false;
   },
 
-
-
   getAllDices: function() {
     return app.mainRenderBundle.filter(item => item.name.indexOf("CubePhysics") !== -1);
   },
@@ -103,9 +101,9 @@ export let dices = {
     }
   },
   validatePass: function() {
-     if (Object.keys(this.SAVED_DICES).length >= 5) {
+     if (Object.keys(this.SAVED_DICES).length !== 5) {
       console.log('%cBLOCK', LOG_FUNNY)
-      mb.error(`Must select minimum 5 dices before add results...`);
+      mb.error(`Must select (minimum) 5 dices before add results...`);
       return false;
     }
     if(dices.STATUS != "FINISHED") {
@@ -191,7 +189,7 @@ export let myDom = {
     })
 
     var separator = document.createElement('div')
-    separator.innerHTML = `=======`;
+    separator.innerHTML = `✨maximumroulette.com✨`;
 
     root.append(settings)
     root.append(help)

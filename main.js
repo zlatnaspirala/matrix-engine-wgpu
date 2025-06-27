@@ -87,7 +87,13 @@ export let application = new MatrixEngineWGPU({
     if(application.dices.STATUS == "FREE_TO_PLAY") {
       console.log("hit cube status free to play prevent pick. ", e.detail.hitObject.name)
     } else if(application.dices.STATUS == "SELECT_DICES_1" ||
-      application.dices.STATUS == "SELECT_DICES_2") {
+      application.dices.STATUS == "SELECT_DICES_2" ||
+      application.dices.STATUS == "FINISHED") {
+
+        if (Object.keys(application.dices.SAVED_DICES).length >= 5) {
+          console.log("PREVENTED SELECT1/2 pick.", e.detail.hitObject.name)
+          return;console.log("hit cube status SELECT1/2 pick.", e.detail.hitObject.name)
+        }
       console.log("hit cube status SELECT1/2 pick.", e.detail.hitObject.name)
       application.dices.pickDice(e.detail.hitObject.name)
     }
@@ -323,7 +329,7 @@ export let application = new MatrixEngineWGPU({
 
     application.TOLERANCE = 0;
     let allDiceDoneProcedure = () => {
-      console.log("ALL DONE")
+      console.log("ALL DONE", application.TOLERANCE)
       application.TOLERANCE++;
       if(application.TOLERANCE >= 1) {
         removeEventListener('dice-1', dice1Click)
@@ -343,7 +349,7 @@ export let application = new MatrixEngineWGPU({
           dices.STATUS = "SELECT_DICES_1";
           console.log(`%cStatus<SELECT_DICES_1>`, LOG_FUNNY)
         } else if(dices.STATUS == "SELECT_DICES_1") {
-          dices.STATUS = "SELECT_DICES_2";
+          dices.STATUS = "FINISHED";
           console.log(`%cStatus<SELECT_DICES_2>`, LOG_FUNNY)
         } else if(dices.STATUS == "SELECT_DICES_2") {
           dices.STATUS = "FINISHED";
@@ -446,7 +452,7 @@ export let application = new MatrixEngineWGPU({
         for(var x = 1;x < 7;x++) {
           shootDice(x)
         }
-      } else if(dices.STATUS == "SELECT_DICES_1") {
+      } else if(dices.STATUS == "SELECT_DICES_1" || dices.STATUS == "SELECT_DICES_2") {
         console.log('LAST ROLL...')
         // Now no selected dices still rolling
         for(let i = 1;i <= 6;i++) {

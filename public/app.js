@@ -102,9 +102,9 @@ let dices = exports.dices = {
     }
   },
   validatePass: function () {
-    if (Object.keys(this.SAVED_DICES).length >= 5) {
+    if (Object.keys(this.SAVED_DICES).length !== 5) {
       console.log('%cBLOCK', _utils.LOG_FUNNY);
-      _utils.mb.error(`Must select minimum 5 dices before add results...`);
+      _utils.mb.error(`Must select (minimum) 5 dices before add results...`);
       return false;
     }
     if (dices.STATUS != "FINISHED") {
@@ -177,7 +177,7 @@ let myDom = exports.myDom = {
       app.ROLL();
     });
     var separator = document.createElement('div');
-    separator.innerHTML = `=======`;
+    separator.innerHTML = `✨maximumroulette.com✨`;
     root.append(settings);
     root.append(help);
     root.append(separator);
@@ -1252,7 +1252,12 @@ let application = exports.application = new _world.default({
   addEventListener("ray.hit.event", e => {
     if (application.dices.STATUS == "FREE_TO_PLAY") {
       console.log("hit cube status free to play prevent pick. ", e.detail.hitObject.name);
-    } else if (application.dices.STATUS == "SELECT_DICES_1" || application.dices.STATUS == "SELECT_DICES_2") {
+    } else if (application.dices.STATUS == "SELECT_DICES_1" || application.dices.STATUS == "SELECT_DICES_2" || application.dices.STATUS == "FINISHED") {
+      if (Object.keys(application.dices.SAVED_DICES).length >= 5) {
+        console.log("PREVENTED SELECT1/2 pick.", e.detail.hitObject.name);
+        return;
+        console.log("hit cube status SELECT1/2 pick.", e.detail.hitObject.name);
+      }
       console.log("hit cube status SELECT1/2 pick.", e.detail.hitObject.name);
       application.dices.pickDice(e.detail.hitObject.name);
     }
@@ -1613,7 +1618,7 @@ let application = exports.application = new _world.default({
     });
     application.TOLERANCE = 0;
     let allDiceDoneProcedure = () => {
-      console.log("ALL DONE");
+      console.log("ALL DONE", application.TOLERANCE);
       application.TOLERANCE++;
       if (application.TOLERANCE >= 1) {
         removeEventListener('dice-1', dice1Click);
@@ -1633,7 +1638,7 @@ let application = exports.application = new _world.default({
           _jamb.dices.STATUS = "SELECT_DICES_1";
           console.log(`%cStatus<SELECT_DICES_1>`, _utils.LOG_FUNNY);
         } else if (_jamb.dices.STATUS == "SELECT_DICES_1") {
-          _jamb.dices.STATUS = "SELECT_DICES_2";
+          _jamb.dices.STATUS = "FINISHED";
           console.log(`%cStatus<SELECT_DICES_2>`, _utils.LOG_FUNNY);
         } else if (_jamb.dices.STATUS == "SELECT_DICES_2") {
           _jamb.dices.STATUS = "FINISHED";
@@ -1721,7 +1726,7 @@ let application = exports.application = new _world.default({
         for (var x = 1; x < 7; x++) {
           shootDice(x);
         }
-      } else if (_jamb.dices.STATUS == "SELECT_DICES_1") {
+      } else if (_jamb.dices.STATUS == "SELECT_DICES_1" || _jamb.dices.STATUS == "SELECT_DICES_2") {
         console.log('LAST ROLL...');
         // Now no selected dices still rolling
         for (let i = 1; i <= 6; i++) {
