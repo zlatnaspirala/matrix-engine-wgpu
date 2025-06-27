@@ -5,10 +5,7 @@ import {LOG_FUNNY, LOG_INFO, LOG_MATRIX, byId, mb} from "../../../src/engine/uti
 export let dices = {
   C: 0,
   STATUS: 'FREE_TO_PLAY',
-  STATUS_H2: 'WAIT',
-  STATUS_H3: 'WAIT',
   R: {},
-
   SAVED_DICES: {},
 
   pickDice: function(dice) {
@@ -60,10 +57,24 @@ export let dices = {
   },
 
   activatePhysics: function(body) {
+    if(!body?.getCollisionFlags) {
+      console.warn("Invalid body passed to activatePhysics:", body);
+      return;
+    }
     body.setCollisionFlags(body.getCollisionFlags() & ~2); // remove CF_KINEMATIC_OBJECT
     body.setActivationState(1); // 1 = ACTIVE_TAG
-
     body.isKinematic = false;
+  },
+
+  activateAllDicesPhysics: function() {
+    this.getAllDices()
+      .filter((item) => app.matrixAmmo.getBodyByName(item.name)?.isKinematicObject?.() === true)
+      .forEach((dice) => {
+        const body = app.matrixAmmo.getBodyByName(dice.name);
+        if(body) {
+          this.activatePhysics(body);  // <--- FIX: pass the physics body, not the dice object
+        }
+      });
   },
 
   getAllDices: function() {
@@ -75,33 +86,60 @@ export let dices = {
   },
 
   checkAll: function() {
-    // this.C++;
-    // if(typeof this.R.CubePhysics1 != 'undefined' &&
-    //   typeof this.R.CubePhysics2 != 'undefined' &&
-    //   typeof this.R.CubePhysics3 != 'undefined' &&
-    //   typeof this.R.CubePhysics4 != 'undefined' &&
-    //   typeof this.R.CubePhysics5 != 'undefined' &&
-    //   typeof this.R.CubePhysics6 != 'undefined' && this.C > 1200) {
-    //   dispatchEvent(new CustomEvent('all-done', {detail: {}}))
-    //   this.C = 0;
-    // }
     this.C++;
-    let allRolled = true;
+
+    let activeRollingCount = 0;
+    let allReady = true;
+
     for(let i = 1;i <= 6;i++) {
       const key = "CubePhysics" + i;
-      if(key in this.SAVED_DICES) continue; // 🔒 skip saved dice
+
+      if(key in this.SAVED_DICES) continue; // skip saved ones
+
+      activeRollingCount++; // count how many are still active
+
       if(typeof this.R[key] === 'undefined') {
-        allRolled = false;
+        allReady = false;
         break;
       }
     }
-    if(allRolled && this.C > 1200) {
+
+    // Dynamic threshold: min wait time based on rolling dice
+    const minWait = Math.max(200, activeRollingCount * 200); // e.g. 1 die => 200, 5 dice => 1000, 6 dice => 1200
+
+    if(allReady && this.C > minWait) {
       dispatchEvent(new CustomEvent('all-done', {detail: {}}));
       this.C = 0;
     }
   },
+  // checkAll: function() {
+  //   // this.C++;
+  //   // if(typeof this.R.CubePhysics1 != 'undefined' &&
+  //   //   typeof this.R.CubePhysics2 != 'undefined' &&
+  //   //   typeof this.R.CubePhysics3 != 'undefined' &&
+  //   //   typeof this.R.CubePhysics4 != 'undefined' &&
+  //   //   typeof this.R.CubePhysics5 != 'undefined' &&
+  //   //   typeof this.R.CubePhysics6 != 'undefined' && this.C > 1200) {
+  //   //   dispatchEvent(new CustomEvent('all-done', {detail: {}}))
+  //   //   this.C = 0;
+  //   // }
+  //   this.C++;
+  //   let allRolled = true;
+  //   for(let i = 1;i <= 6;i++) {
+  //     const key = "CubePhysics" + i;
+  //     if(key in this.SAVED_DICES) continue; // 🔒 skip saved dice
+  //     if(typeof this.R[key] === 'undefined') {
+  //       allRolled = false;
+  //       break;
+  //     }
+  //   }
+  //   if(allRolled && this.C > 1200) {
+  //     dispatchEvent(new CustomEvent('all-done', {detail: {}}));
+  //     this.C = 0;
+  //   }
+  // },
   validatePass: function() {
-     if (Object.keys(this.SAVED_DICES).length !== 5) {
+    if(Object.keys(this.SAVED_DICES).length !== 5) {
       console.log('%cBLOCK', LOG_FUNNY)
       mb.error(`Must select (minimum) 5 dices before add results...`);
       return false;

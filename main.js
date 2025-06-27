@@ -1,8 +1,7 @@
 import MatrixEngineWGPU from "./src/world.js";
 import {downloadMeshes} from './src/engine/loader-obj.js';
-import {LOG_FUNNY, LOG_INFO, LOG_MATRIX, randomFloatFromTo, randomIntFromTo} from "./src/engine/utils.js";
+import {LOG_FUNNY, LOG_INFO, LOG_MATRIX, mb, randomFloatFromTo, randomIntFromTo} from "./src/engine/utils.js";
 import {dices, myDom} from "./examples/games/jamb/jamb.js";
-// import {MatrixSounds} from "./src/sounds/sounds.js";
 import {addRaycastListener, touchCoordinate, rayIntersectsSphere, getRayFromMouse} from "./src/engine/raycast.js";
 
 export let application = new MatrixEngineWGPU({
@@ -20,7 +19,7 @@ export let application = new MatrixEngineWGPU({
 
   application.dices = dices;
 
-  // This code must be on top
+  // This code must be on top (Physics)
   application.matrixAmmo.detectCollision = function() {
     this.lastRoll = '';
     this.presentScore = '';
@@ -90,10 +89,10 @@ export let application = new MatrixEngineWGPU({
       application.dices.STATUS == "SELECT_DICES_2" ||
       application.dices.STATUS == "FINISHED") {
 
-        if (Object.keys(application.dices.SAVED_DICES).length >= 5) {
-          console.log("PREVENTED SELECT1/2 pick.", e.detail.hitObject.name)
-          return;console.log("hit cube status SELECT1/2 pick.", e.detail.hitObject.name)
-        }
+      if(Object.keys(application.dices.SAVED_DICES).length >= 5) {
+        console.log("PREVENTED SELECT1/2 pick.", e.detail.hitObject.name)
+        return;
+      }
       console.log("hit cube status SELECT1/2 pick.", e.detail.hitObject.name)
       application.dices.pickDice(e.detail.hitObject.name)
     }
@@ -349,7 +348,7 @@ export let application = new MatrixEngineWGPU({
           dices.STATUS = "SELECT_DICES_1";
           console.log(`%cStatus<SELECT_DICES_1>`, LOG_FUNNY)
         } else if(dices.STATUS == "SELECT_DICES_1") {
-          dices.STATUS = "FINISHED";
+          dices.STATUS = "SELECT_DICES_2";
           console.log(`%cStatus<SELECT_DICES_2>`, LOG_FUNNY)
         } else if(dices.STATUS == "SELECT_DICES_2") {
           dices.STATUS = "FINISHED";
@@ -360,15 +359,28 @@ export let application = new MatrixEngineWGPU({
 
     addEventListener('all-done', allDiceDoneProcedure)
 
+
     addEventListener('FREE_TO_PLAY', () => {
       // Big reset
       console.log(`%c<Big reset needed ...>`, LOG_FUNNY)
-      app.matrixAmmo.getBodyByName('CubePhysics1').setLinearVelocity(new Ammo.btVector3(2, 2, 12))
-      app.matrixAmmo.getBodyByName('CubePhysics2').setLinearVelocity(new Ammo.btVector3(2, 2, 12))
-      app.matrixAmmo.getBodyByName('CubePhysics3').setLinearVelocity(new Ammo.btVector3(2, 2, 12))
-      app.matrixAmmo.getBodyByName('CubePhysics4').setLinearVelocity(new Ammo.btVector3(2, 2, 12))
-      app.matrixAmmo.getBodyByName('CubePhysics5').setLinearVelocity(new Ammo.btVector3(2, 2, 12))
-      app.matrixAmmo.getBodyByName('CubePhysics6').setLinearVelocity(new Ammo.btVector3(2, 2, 12))
+      // only from save dices needed 
+      // app.dices.activatePhysics();
+      // pragmatic check
+      // if (app.matrixAmmo.getBodyByName('CubePhysics1').isKinematicObject() == true &&
+      //     app.matrixAmmo.getBodyByName('CubePhysics1').isKinematic == true) {
+      //       // app.dices.activatePhysics();
+      //       app.dices.activatePhysics();
+      // }
+      app.dices.activateAllDicesPhysics();
+
+      setTimeout(() => {
+        app.matrixAmmo.getBodyByName('CubePhysics1').setLinearVelocity(new Ammo.btVector3(2, 2, 12))
+        app.matrixAmmo.getBodyByName('CubePhysics2').setLinearVelocity(new Ammo.btVector3(2, 2, 12))
+        app.matrixAmmo.getBodyByName('CubePhysics3').setLinearVelocity(new Ammo.btVector3(2, 2, 12))
+        app.matrixAmmo.getBodyByName('CubePhysics4').setLinearVelocity(new Ammo.btVector3(2, 2, 12))
+        app.matrixAmmo.getBodyByName('CubePhysics5').setLinearVelocity(new Ammo.btVector3(2, 2, 12))
+        app.matrixAmmo.getBodyByName('CubePhysics6').setLinearVelocity(new Ammo.btVector3(2, 2, 12))
+      }, 1000);
     })
 
     // ACTIONS
@@ -403,7 +415,7 @@ export let application = new MatrixEngineWGPU({
     }
 
     let dice6Click = (e) => {
-      // console.info('DICE 6', e.detail)
+      console.info('DICE 6', e.detail)
       dices.R[e.detail.cubeId] = '6';
       dices.checkAll()
     }
@@ -419,7 +431,7 @@ export let application = new MatrixEngineWGPU({
       }, 200 * x)
     }
 
-    let activeteDiceClickListener = (index) => {
+    let activateDiceClickListener = (index) => {
       index = parseInt(index);
       switch(index) {
         case 1:
@@ -429,7 +441,6 @@ export let application = new MatrixEngineWGPU({
         case 3:
           addEventListener('dice-3', dice3Click)
         case 4:
-          //
           addEventListener('dice-4', dice4Click)
         case 5:
           addEventListener('dice-5', dice5Click)
@@ -453,16 +464,19 @@ export let application = new MatrixEngineWGPU({
           shootDice(x)
         }
       } else if(dices.STATUS == "SELECT_DICES_1" || dices.STATUS == "SELECT_DICES_2") {
-        console.log('LAST ROLL...')
+        // console.log('LAST ROLL...')
         // Now no selected dices still rolling
         for(let i = 1;i <= 6;i++) {
           const key = "CubePhysics" + i;
           if(!(key in app.dices.SAVED_DICES)) {
             console.log("Still in game last char is id : ", key[key.length - 1]);
-            activeteDiceClickListener(key[key.length - 1])
+            activateDiceClickListener(parseInt(key[key.length - 1]))
             shootDice(key[key.length - 1])
           }
         }
+      } else if(dices.STATUS == "FINISHED") {
+        mb.error('No more roll...');
+        mb.show('Pick up 5 dices');
       }
     }
 

@@ -12,8 +12,6 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 let dices = exports.dices = {
   C: 0,
   STATUS: 'FREE_TO_PLAY',
-  STATUS_H2: 'WAIT',
-  STATUS_H3: 'WAIT',
   R: {},
   SAVED_DICES: {},
   pickDice: function (dice) {
@@ -62,10 +60,21 @@ let dices = exports.dices = {
     body.isKinematic = true;
   },
   activatePhysics: function (body) {
+    if (!body?.getCollisionFlags) {
+      console.warn("Invalid body passed to activatePhysics:", body);
+      return;
+    }
     body.setCollisionFlags(body.getCollisionFlags() & ~2); // remove CF_KINEMATIC_OBJECT
     body.setActivationState(1); // 1 = ACTIVE_TAG
-
     body.isKinematic = false;
+  },
+  activateAllDicesPhysics: function () {
+    this.getAllDices().filter(item => app.matrixAmmo.getBodyByName(item.name)?.isKinematicObject?.() === true).forEach(dice => {
+      const body = app.matrixAmmo.getBodyByName(dice.name);
+      if (body) {
+        this.activatePhysics(body); // <--- FIX: pass the physics body, not the dice object
+      }
+    });
   },
   getAllDices: function () {
     return app.mainRenderBundle.filter(item => item.name.indexOf("CubePhysics") !== -1);
@@ -74,33 +83,57 @@ let dices = exports.dices = {
     return app.mainRenderBundle.find(item => item.name === name);
   },
   checkAll: function () {
-    // this.C++;
-    // if(typeof this.R.CubePhysics1 != 'undefined' &&
-    //   typeof this.R.CubePhysics2 != 'undefined' &&
-    //   typeof this.R.CubePhysics3 != 'undefined' &&
-    //   typeof this.R.CubePhysics4 != 'undefined' &&
-    //   typeof this.R.CubePhysics5 != 'undefined' &&
-    //   typeof this.R.CubePhysics6 != 'undefined' && this.C > 1200) {
-    //   dispatchEvent(new CustomEvent('all-done', {detail: {}}))
-    //   this.C = 0;
-    // }
     this.C++;
-    let allRolled = true;
+    let activeRollingCount = 0;
+    let allReady = true;
     for (let i = 1; i <= 6; i++) {
       const key = "CubePhysics" + i;
-      if (key in this.SAVED_DICES) continue; // 🔒 skip saved dice
+      if (key in this.SAVED_DICES) continue; // skip saved ones
+
+      activeRollingCount++; // count how many are still active
+
       if (typeof this.R[key] === 'undefined') {
-        allRolled = false;
+        allReady = false;
         break;
       }
     }
-    if (allRolled && this.C > 1200) {
+
+    // Dynamic threshold: min wait time based on rolling dice
+    const minWait = Math.max(200, activeRollingCount * 200); // e.g. 1 die => 200, 5 dice => 1000, 6 dice => 1200
+
+    if (allReady && this.C > minWait) {
       dispatchEvent(new CustomEvent('all-done', {
         detail: {}
       }));
       this.C = 0;
     }
   },
+  // checkAll: function() {
+  //   // this.C++;
+  //   // if(typeof this.R.CubePhysics1 != 'undefined' &&
+  //   //   typeof this.R.CubePhysics2 != 'undefined' &&
+  //   //   typeof this.R.CubePhysics3 != 'undefined' &&
+  //   //   typeof this.R.CubePhysics4 != 'undefined' &&
+  //   //   typeof this.R.CubePhysics5 != 'undefined' &&
+  //   //   typeof this.R.CubePhysics6 != 'undefined' && this.C > 1200) {
+  //   //   dispatchEvent(new CustomEvent('all-done', {detail: {}}))
+  //   //   this.C = 0;
+  //   // }
+  //   this.C++;
+  //   let allRolled = true;
+  //   for(let i = 1;i <= 6;i++) {
+  //     const key = "CubePhysics" + i;
+  //     if(key in this.SAVED_DICES) continue; // 🔒 skip saved dice
+  //     if(typeof this.R[key] === 'undefined') {
+  //       allRolled = false;
+  //       break;
+  //     }
+  //   }
+  //   if(allRolled && this.C > 1200) {
+  //     dispatchEvent(new CustomEvent('all-done', {detail: {}}));
+  //     this.C = 0;
+  //   }
+  // },
   validatePass: function () {
     if (Object.keys(this.SAVED_DICES).length !== 5) {
       console.log('%cBLOCK', _utils.LOG_FUNNY);
@@ -1172,8 +1205,6 @@ var _utils = require("./src/engine/utils.js");
 var _jamb = require("./examples/games/jamb/jamb.js");
 var _raycast = require("./src/engine/raycast.js");
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-// import {MatrixSounds} from "./src/sounds/sounds.js";
-
 let application = exports.application = new _world.default({
   useSingleRenderPass: true,
   canvasSize: 'fullscreen',
@@ -1188,7 +1219,7 @@ let application = exports.application = new _world.default({
   _jamb.myDom.createBlocker();
   application.dices = _jamb.dices;
 
-  // This code must be on top
+  // This code must be on top (Physics)
   application.matrixAmmo.detectCollision = function () {
     this.lastRoll = '';
     this.presentScore = '';
@@ -1256,7 +1287,6 @@ let application = exports.application = new _world.default({
       if (Object.keys(application.dices.SAVED_DICES).length >= 5) {
         console.log("PREVENTED SELECT1/2 pick.", e.detail.hitObject.name);
         return;
-        console.log("hit cube status SELECT1/2 pick.", e.detail.hitObject.name);
       }
       console.log("hit cube status SELECT1/2 pick.", e.detail.hitObject.name);
       application.dices.pickDice(e.detail.hitObject.name);
@@ -1638,7 +1668,7 @@ let application = exports.application = new _world.default({
           _jamb.dices.STATUS = "SELECT_DICES_1";
           console.log(`%cStatus<SELECT_DICES_1>`, _utils.LOG_FUNNY);
         } else if (_jamb.dices.STATUS == "SELECT_DICES_1") {
-          _jamb.dices.STATUS = "FINISHED";
+          _jamb.dices.STATUS = "SELECT_DICES_2";
           console.log(`%cStatus<SELECT_DICES_2>`, _utils.LOG_FUNNY);
         } else if (_jamb.dices.STATUS == "SELECT_DICES_2") {
           _jamb.dices.STATUS = "FINISHED";
@@ -1650,12 +1680,23 @@ let application = exports.application = new _world.default({
     addEventListener('FREE_TO_PLAY', () => {
       // Big reset
       console.log(`%c<Big reset needed ...>`, _utils.LOG_FUNNY);
-      app.matrixAmmo.getBodyByName('CubePhysics1').setLinearVelocity(new Ammo.btVector3(2, 2, 12));
-      app.matrixAmmo.getBodyByName('CubePhysics2').setLinearVelocity(new Ammo.btVector3(2, 2, 12));
-      app.matrixAmmo.getBodyByName('CubePhysics3').setLinearVelocity(new Ammo.btVector3(2, 2, 12));
-      app.matrixAmmo.getBodyByName('CubePhysics4').setLinearVelocity(new Ammo.btVector3(2, 2, 12));
-      app.matrixAmmo.getBodyByName('CubePhysics5').setLinearVelocity(new Ammo.btVector3(2, 2, 12));
-      app.matrixAmmo.getBodyByName('CubePhysics6').setLinearVelocity(new Ammo.btVector3(2, 2, 12));
+      // only from save dices needed 
+      // app.dices.activatePhysics();
+      // pragmatic check
+      // if (app.matrixAmmo.getBodyByName('CubePhysics1').isKinematicObject() == true &&
+      //     app.matrixAmmo.getBodyByName('CubePhysics1').isKinematic == true) {
+      //       // app.dices.activatePhysics();
+      //       app.dices.activatePhysics();
+      // }
+      app.dices.activateAllDicesPhysics();
+      setTimeout(() => {
+        app.matrixAmmo.getBodyByName('CubePhysics1').setLinearVelocity(new Ammo.btVector3(2, 2, 12));
+        app.matrixAmmo.getBodyByName('CubePhysics2').setLinearVelocity(new Ammo.btVector3(2, 2, 12));
+        app.matrixAmmo.getBodyByName('CubePhysics3').setLinearVelocity(new Ammo.btVector3(2, 2, 12));
+        app.matrixAmmo.getBodyByName('CubePhysics4').setLinearVelocity(new Ammo.btVector3(2, 2, 12));
+        app.matrixAmmo.getBodyByName('CubePhysics5').setLinearVelocity(new Ammo.btVector3(2, 2, 12));
+        app.matrixAmmo.getBodyByName('CubePhysics6').setLinearVelocity(new Ammo.btVector3(2, 2, 12));
+      }, 1000);
     });
 
     // ACTIONS
@@ -1685,7 +1726,7 @@ let application = exports.application = new _world.default({
       _jamb.dices.checkAll();
     };
     let dice6Click = e => {
-      // console.info('DICE 6', e.detail)
+      console.info('DICE 6', e.detail);
       _jamb.dices.R[e.detail.cubeId] = '6';
       _jamb.dices.checkAll();
     };
@@ -1695,7 +1736,7 @@ let application = exports.application = new _world.default({
         app.matrixAmmo.getBodyByName(`CubePhysics${x}`).setLinearVelocity(new Ammo.btVector3((0, _utils.randomFloatFromTo)(-5, 5), 15, -20));
       }, 200 * x);
     }
-    let activeteDiceClickListener = index => {
+    let activateDiceClickListener = index => {
       index = parseInt(index);
       switch (index) {
         case 1:
@@ -1705,7 +1746,6 @@ let application = exports.application = new _world.default({
         case 3:
           addEventListener('dice-3', dice3Click);
         case 4:
-          //
           addEventListener('dice-4', dice4Click);
         case 5:
           addEventListener('dice-5', dice5Click);
@@ -1727,16 +1767,19 @@ let application = exports.application = new _world.default({
           shootDice(x);
         }
       } else if (_jamb.dices.STATUS == "SELECT_DICES_1" || _jamb.dices.STATUS == "SELECT_DICES_2") {
-        console.log('LAST ROLL...');
+        // console.log('LAST ROLL...')
         // Now no selected dices still rolling
         for (let i = 1; i <= 6; i++) {
           const key = "CubePhysics" + i;
           if (!(key in app.dices.SAVED_DICES)) {
             console.log("Still in game last char is id : ", key[key.length - 1]);
-            activeteDiceClickListener(key[key.length - 1]);
+            activateDiceClickListener(parseInt(key[key.length - 1]));
             shootDice(key[key.length - 1]);
           }
         }
+      } else if (_jamb.dices.STATUS == "FINISHED") {
+        _utils.mb.error('No more roll...');
+        _utils.mb.show('Pick up 5 dices');
       }
     };
     addEventListener('DICE.ROLL', rollProcedure);
