@@ -37,38 +37,86 @@ export let dices = {
     const CF_KINEMATIC_OBJECT = 2;
     const DISABLE_DEACTIVATION = 4;
 
-    // Remove from world if already added
+    // 1. Remove from world
     app.matrixAmmo.dynamicsWorld.removeRigidBody(body);
 
-    // Set kinematic
-    body.setCollisionFlags(body.getCollisionFlags() | CF_KINEMATIC_OBJECT);
-    body.setActivationState(DISABLE_DEACTIVATION);
+    // 2. Set body to kinematic
+    const flags = body.getCollisionFlags();
+    body.setCollisionFlags(flags | CF_KINEMATIC_OBJECT);
+    body.setActivationState(DISABLE_DEACTIVATION); // no auto-wakeup
 
-    // Optional: Zero velocities
+    // 3. Clear motion
     const zero = new Ammo.btVector3(0, 0, 0);
     body.setLinearVelocity(zero);
     body.setAngularVelocity(zero);
 
-    // Re-add to world
+    // 4. Reset transform to current position (optional — preserves pose)
+    const currentTransform = body.getWorldTransform();
+    body.setWorldTransform(currentTransform);
+    body.getMotionState().setWorldTransform(currentTransform);
+
+    // 5. Add back to physics world
     app.matrixAmmo.dynamicsWorld.addRigidBody(body);
 
-    // Manual flag for logic
+    // 6. Mark it manually (logic flag)
     body.isKinematic = true;
   },
 
+  resetBodyAboveFloor: function(body, x = 0, z = 0) {
+    const y = 3 + Math.random();
+    const transform = new Ammo.btTransform();
+    transform.setIdentity();
+    transform.setOrigin(new Ammo.btVector3(x, y, z));
+    body.setWorldTransform(transform);
+    body.getMotionState().setWorldTransform(transform);
+  },
+
   activatePhysics: function(body) {
-    if(!body?.getCollisionFlags) {
-      console.warn("Invalid body passed to activatePhysics:", body);
-      return;
-    }
-    body.setCollisionFlags(body.getCollisionFlags() & ~2); // remove CF_KINEMATIC_OBJECT
-    body.setActivationState(1); // 1 = ACTIVE_TAG
+    // 1. Make it dynamic again
+    body.setCollisionFlags(body.getCollisionFlags() & ~2); // remove kinematic
+    body.setActivationState(1); // ACTIVE_TAG
     body.isKinematic = false;
+
+    // 2. Reset position ABOVE the floor — force it out of collision
+    const newY = 3 + Math.random(); // ensure it’s above the floor
+    const transform = new Ammo.btTransform();
+    transform.setIdentity();
+    transform.setOrigin(new Ammo.btVector3(0, newY, 0)); // randomize if needed
+    body.setWorldTransform(transform);
+
+    // 3. Clear velocities
+    body.setLinearVelocity(new Ammo.btVector3(0, 0, 0));
+    body.setAngularVelocity(new Ammo.btVector3(0, 0, 0));
+
+    // 4. Enable CCD (to prevent tunneling)
+    body.setCcdMotionThreshold(1e-7);
+    body.setCcdSweptSphereRadius(0.2);
+
+    const size = 1; // cube side length
+    body.setCcdMotionThreshold(1e-7);
+    body.setCcdSweptSphereRadius(size * 0.5);
+
+    // Re-add to world if needed
+    // Optionally: remove and re-add if not responding
+    app.matrixAmmo.dynamicsWorld.removeRigidBody(body);
+    app.matrixAmmo.dynamicsWorld.addRigidBody(body);
+
+    // 5. Reactivate it
+    body.activate(true);
+
+    this.resetBodyAboveFloor(body);
   },
 
   activateAllDicesPhysics: function() {
     this.getAllDices()
-      .filter((item) => app.matrixAmmo.getBodyByName(item.name)?.isKinematicObject?.() === true)
+      .filter((item) => {
+        let test = app.matrixAmmo.getBodyByName(item.name)?.isKinematicObject();
+        if(test === true) {
+          return true;
+        } else {
+          return false;
+        }
+      })
       .forEach((dice) => {
         const body = app.matrixAmmo.getBodyByName(dice.name);
         if(body) {
@@ -300,10 +348,10 @@ export let myDom = {
     root.id = 'jambTable';
     root.style.position = 'absolute';
     root.style.display = 'flex';
-    root.style.top = '10px';
-    root.style.left = '10px';
+    root.style.top = '5px';
+    root.style.left = '5px';
     root.style.width = '200px';
-    root.style.background = '#7d7d7d8c';
+    // root.style.background = '#7d7d7d8c';
 
     var rowHeader = document.createElement('div')
     rowHeader.id = 'rowHeader';
@@ -312,15 +360,15 @@ export let myDom = {
     rowHeader.style.width = '200px';
     rowHeader.innerHTML = '<span data-label="cornerText"></span><span id="user-points">0</span>';
     root.appendChild(rowHeader);
-    rowHeader.classList.add('myTheme1')
+    rowHeader.classList.add('fancy-label')
 
     var rowDown = document.createElement('div')
     rowDown.id = 'rowDown';
     rowDown.style.top = '10px';
     rowDown.style.left = '10px';
     rowDown.style.width = '200px';
-    rowDown.innerHTML = '↓';
-    rowDown.classList.add('myTheme1')
+    rowDown.innerHTML = '↓<span data-label="down"></span>';
+    rowDown.classList.add('fancy-label')
     root.appendChild(rowDown);
 
     var rowFree = document.createElement('div')
@@ -328,8 +376,8 @@ export let myDom = {
     rowFree.style.top = '10px';
     rowFree.style.left = '10px';
     rowFree.style.width = '200px';
-    rowFree.innerHTML = '↕';
-    rowFree.classList.add('myTheme1')
+    rowFree.innerHTML = '↕<span data-label="free"></span>';
+    rowFree.classList.add('fancy-label')
     root.appendChild(rowFree);
 
     var rowUp = document.createElement('div')
@@ -337,8 +385,8 @@ export let myDom = {
     rowUp.style.top = '10px';
     rowUp.style.left = '10px';
     rowUp.style.width = '200px';
-    rowUp.innerHTML = '↑';
-    rowUp.classList.add('myTheme1')
+    rowUp.innerHTML = '↑<span data-label="up"></span>';
+    rowUp.classList.add('fancy-label')
     root.appendChild(rowUp);
 
     var rowHand = document.createElement('div')
@@ -347,7 +395,7 @@ export let myDom = {
     rowHand.style.left = '10px';
     rowHand.style.width = '200px';
     rowHand.innerHTML = '<span data-label="hand"></span>';
-    rowHand.classList.add('myTheme1')
+    rowHand.classList.add('fancy-label')
     root.appendChild(rowHand);
 
     // INJECT TABLE HEADER ROW

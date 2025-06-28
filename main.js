@@ -357,29 +357,19 @@ export let application = new MatrixEngineWGPU({
       }
     };
 
-    addEventListener('all-done', allDiceDoneProcedure)
-
-
+    addEventListener('all-done', allDiceDoneProcedure);
     addEventListener('FREE_TO_PLAY', () => {
       // Big reset
       console.log(`%c<Big reset needed ...>`, LOG_FUNNY)
       // only from save dices needed 
-      // app.dices.activatePhysics();
-      // pragmatic check
-      // if (app.matrixAmmo.getBodyByName('CubePhysics1').isKinematicObject() == true &&
-      //     app.matrixAmmo.getBodyByName('CubePhysics1').isKinematic == true) {
-      //       // app.dices.activatePhysics();
-      //       app.dices.activatePhysics();
-      // }
       app.dices.activateAllDicesPhysics();
-
       setTimeout(() => {
-        app.matrixAmmo.getBodyByName('CubePhysics1').setLinearVelocity(new Ammo.btVector3(2, 2, 12))
-        app.matrixAmmo.getBodyByName('CubePhysics2').setLinearVelocity(new Ammo.btVector3(2, 2, 12))
-        app.matrixAmmo.getBodyByName('CubePhysics3').setLinearVelocity(new Ammo.btVector3(2, 2, 12))
-        app.matrixAmmo.getBodyByName('CubePhysics4').setLinearVelocity(new Ammo.btVector3(2, 2, 12))
-        app.matrixAmmo.getBodyByName('CubePhysics5').setLinearVelocity(new Ammo.btVector3(2, 2, 12))
-        app.matrixAmmo.getBodyByName('CubePhysics6').setLinearVelocity(new Ammo.btVector3(2, 2, 12))
+        app.matrixAmmo.getBodyByName('CubePhysics1').applyImpulse(new Ammo.btVector3(0, 4, -5), new Ammo.btVector3(0, 0, 0));
+        app.matrixAmmo.getBodyByName('CubePhysics2').applyImpulse(new Ammo.btVector3(0, 4, -10), new Ammo.btVector3(0, 0, 0));
+        app.matrixAmmo.getBodyByName('CubePhysics3').applyImpulse(new Ammo.btVector3(0, 3, -15), new Ammo.btVector3(0, 0, 0));
+        app.matrixAmmo.getBodyByName('CubePhysics4').applyImpulse(new Ammo.btVector3(0, 3, -5), new Ammo.btVector3(0, 0, 0));
+        app.matrixAmmo.getBodyByName('CubePhysics5').applyImpulse(new Ammo.btVector3(0, 5, -5), new Ammo.btVector3(0, 0, 0));
+        app.matrixAmmo.getBodyByName('CubePhysics6').applyImpulse(new Ammo.btVector3(0, 6, -5), new Ammo.btVector3(0, 0, 0));
       }, 1000);
     })
 
@@ -415,7 +405,7 @@ export let application = new MatrixEngineWGPU({
     }
 
     let dice6Click = (e) => {
-      console.info('DICE 6', e.detail)
+      // console.info('DICE 6', e.detail)
       dices.R[e.detail.cubeId] = '6';
       dices.checkAll()
     }

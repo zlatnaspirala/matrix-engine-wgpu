@@ -233,6 +233,14 @@ export let application = new MatrixEngineWGPU({
 window.app = application;
 ```
 
+
+## @Note
+If this happen less then 15 times (Loading procces) then it is ok probably...
+```warn
+Draw func (err):TypeError: Failed to execute 'beginRenderPass' on 'GPUCommandEncoder': The provided value is not of type 'GPURenderPassDescriptor'.
+```
+
+
 ---
 
 ## About `main.js`
