@@ -301,6 +301,7 @@ export let myDom = {
     rowDown.style.width = '200px';
     rowDown.innerHTML = '↓<span data-label="down"></span>';
     rowDown.classList.add('fancy-label')
+    rowDown.classList.add('btn')
     root.appendChild(rowDown);
 
     var rowFree = document.createElement('div')
@@ -310,6 +311,7 @@ export let myDom = {
     rowFree.style.width = '200px';
     rowFree.innerHTML = '↕<span data-label="free"></span>';
     rowFree.classList.add('fancy-label')
+    rowFree.classList.add('btn')
     root.appendChild(rowFree);
 
     var rowUp = document.createElement('div')
@@ -319,6 +321,7 @@ export let myDom = {
     rowUp.style.width = '200px';
     rowUp.innerHTML = '↑<span data-label="up"></span>';
     rowUp.classList.add('fancy-label')
+    rowUp.classList.add('btn')
     root.appendChild(rowUp);
 
     var rowHand = document.createElement('div')
@@ -328,6 +331,7 @@ export let myDom = {
     rowHand.style.width = '200px';
     rowHand.innerHTML = '<span data-label="hand"></span>';
     rowHand.classList.add('fancy-label')
+    rowHand.classList.add('btn')
     root.appendChild(rowHand);
 
     // INJECT TABLE HEADER ROW
