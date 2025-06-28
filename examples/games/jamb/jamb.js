@@ -1,13 +1,11 @@
-import MatrixEngineWGPU from "../../../src/world.js";
-import {downloadMeshes} from '../../../src/engine/loader-obj.js';
 import {LOG_FUNNY, LOG_INFO, LOG_MATRIX, byId, mb} from "../../../src/engine/utils.js";
+import {messageBoxHTML} from "./html-content.js";
 
 export let dices = {
   C: 0,
   STATUS: 'FREE_TO_PLAY',
   R: {},
   SAVED_DICES: {},
-
   pickDice: function(dice) {
     if(Object.keys(this.SAVED_DICES).length >= 5) {
       console.log("⚠️ You can only select up to 5 dice!");
@@ -20,15 +18,13 @@ export let dices = {
   refreshSelectedBox: function(arg) {
     let currentIndex = 0;
     for(var key in this.SAVED_DICES) {
-      // console.log('key.......', key, ' obj: ', this.SAVED_DICES[key]);
-      let B = app.matrixAmmo.getBodyByName(key)
-      this.deactivatePhysics(B)
+      let B = app.matrixAmmo.getBodyByName(key);
+      this.deactivatePhysics(B);
       const transform = new Ammo.btTransform();
       transform.setIdentity();
       transform.setOrigin(new Ammo.btVector3(0, 0, 0));
       B.setWorldTransform(transform);
-      // let testB = this.getDiceByName(key)
-      B.MEObject.position.setPosition(-5 + currentIndex, 5, -16)
+      B.MEObject.position.setPosition(-5 + currentIndex, 5, -16);
       currentIndex += 3;
     }
   },
@@ -36,28 +32,22 @@ export let dices = {
   deactivatePhysics: function(body) {
     const CF_KINEMATIC_OBJECT = 2;
     const DISABLE_DEACTIVATION = 4;
-
     // 1. Remove from world
     app.matrixAmmo.dynamicsWorld.removeRigidBody(body);
-
     // 2. Set body to kinematic
     const flags = body.getCollisionFlags();
     body.setCollisionFlags(flags | CF_KINEMATIC_OBJECT);
     body.setActivationState(DISABLE_DEACTIVATION); // no auto-wakeup
-
     // 3. Clear motion
     const zero = new Ammo.btVector3(0, 0, 0);
     body.setLinearVelocity(zero);
     body.setAngularVelocity(zero);
-
     // 4. Reset transform to current position (optional — preserves pose)
     const currentTransform = body.getWorldTransform();
     body.setWorldTransform(currentTransform);
     body.getMotionState().setWorldTransform(currentTransform);
-
     // 5. Add back to physics world
     app.matrixAmmo.dynamicsWorld.addRigidBody(body);
-
     // 6. Mark it manually (logic flag)
     body.isKinematic = true;
   },
@@ -91,9 +81,6 @@ export let dices = {
     body.setAngularVelocity(new Ammo.btVector3(0, 0, 0));
 
     // 4. Enable CCD (to prevent tunneling)
-    body.setCcdMotionThreshold(1e-7);
-    body.setCcdSweptSphereRadius(0.2);
-
     const size = 1; // cube side length
     body.setCcdMotionThreshold(1e-7);
     body.setCcdSweptSphereRadius(size * 0.5);
@@ -143,51 +130,20 @@ export let dices = {
 
     for(let i = 1;i <= 6;i++) {
       const key = "CubePhysics" + i;
-
       if(key in this.SAVED_DICES) continue; // skip saved ones
-
       activeRollingCount++; // count how many are still active
-
       if(typeof this.R[key] === 'undefined') {
         allReady = false;
         break;
       }
     }
-
     // Dynamic threshold: min wait time based on rolling dice
     const minWait = Math.max(200, activeRollingCount * 200); // e.g. 1 die => 200, 5 dice => 1000, 6 dice => 1200
-
     if(allReady && this.C > minWait) {
       dispatchEvent(new CustomEvent('all-done', {detail: {}}));
       this.C = 0;
     }
   },
-  // checkAll: function() {
-  //   // this.C++;
-  //   // if(typeof this.R.CubePhysics1 != 'undefined' &&
-  //   //   typeof this.R.CubePhysics2 != 'undefined' &&
-  //   //   typeof this.R.CubePhysics3 != 'undefined' &&
-  //   //   typeof this.R.CubePhysics4 != 'undefined' &&
-  //   //   typeof this.R.CubePhysics5 != 'undefined' &&
-  //   //   typeof this.R.CubePhysics6 != 'undefined' && this.C > 1200) {
-  //   //   dispatchEvent(new CustomEvent('all-done', {detail: {}}))
-  //   //   this.C = 0;
-  //   // }
-  //   this.C++;
-  //   let allRolled = true;
-  //   for(let i = 1;i <= 6;i++) {
-  //     const key = "CubePhysics" + i;
-  //     if(key in this.SAVED_DICES) continue; // 🔒 skip saved dice
-  //     if(typeof this.R[key] === 'undefined') {
-  //       allRolled = false;
-  //       break;
-  //     }
-  //   }
-  //   if(allRolled && this.C > 1200) {
-  //     dispatchEvent(new CustomEvent('all-done', {detail: {}}));
-  //     this.C = 0;
-  //   }
-  // },
   validatePass: function() {
     if(Object.keys(this.SAVED_DICES).length !== 5) {
       console.log('%cBLOCK', LOG_FUNNY)
@@ -236,35 +192,9 @@ export let myDom = {
     settings.classList.add('btn')
     settings.innerHTML = `<span data-label="settings"></span>`;
     settings.addEventListener('click', () => {
-
-      byId('messageBox').innerHTML = `
-      <div>
-        <span data-label="settings"></span>
-        <div>
-
-        <div>
-          <span data-label="sounds"></span>
-
-          <label class="switch">
-            <input type="checkbox">
-            <span class="sliderSwitch round"></span>
-          </label>
-
-        </div>
-
-        <div>
-          <button class="btn" onclick="app.myDom.hideSettings()">
-            <span data-label="hide"></span>
-          </button>
-        </div>
-
-        </div>
-      </div>
-      `;
-
+      byId('messageBox').innerHTML = messageBoxHTML;
       byId('blocker').style.display = 'flex';
       byId('messageBox').style.display = 'flex';
-
       dispatchEvent(new CustomEvent('updateLang', {}))
     })
 

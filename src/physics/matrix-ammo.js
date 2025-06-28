@@ -159,8 +159,6 @@ export default class MatrixAmmo {
     pos.setX(pos.x() + x)
     pos.setY(pos.y() + y)
     pos.setZ(pos.z() + z)
-    // console.log('position kinematic move : ', pos)
-    // console.log('position localRot  : ', localRot)
     localRot.setX(rx)
     localRot.setY(ry)
     localRot.setZ(rz)
@@ -168,14 +166,12 @@ export default class MatrixAmmo {
     let ms = physicsBody.getMotionState();
     if(ms) {
       var tmpTrans = new Ammo.btTransform();
-
       // quat.setValue(quat.x(), quat.y(), quat.z(), quat.w());
       tmpTrans.setIdentity();
       tmpTrans.setOrigin(pos);
       tmpTrans.setRotation(localRot);
       ms.setWorldTransform(tmpTrans);
     }
-    // console.log('body, ', body)
   }
 
   getBodyByName(name) {
@@ -322,9 +318,6 @@ export default class MatrixAmmo {
     });
 
     Ammo.destroy(trans);
-
     this.detectCollision();
   }
-
-
 }

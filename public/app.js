@@ -4,11 +4,35 @@
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
+exports.messageBoxHTML = void 0;
+let messageBoxHTML = exports.messageBoxHTML = `
+<div>
+  <span data-label="settings"></span>
+  <div>
+    <div>
+      <span data-label="sounds"></span>
+      <label class="switch">
+        <input type="checkbox">
+        <span class="sliderSwitch round"></span>
+      </label>
+    </div>
+    <div>
+      <button class="btn" onclick="app.myDom.hideSettings()">
+        <span data-label="hide"></span>
+      </button>
+    </div>
+  </div>
+</div>`;
+
+},{}],2:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
 exports.myDom = exports.dices = void 0;
-var _world = _interopRequireDefault(require("../../../src/world.js"));
-var _loaderObj = require("../../../src/engine/loader-obj.js");
 var _utils = require("../../../src/engine/utils.js");
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+var _htmlContent = require("./html-content.js");
 let dices = exports.dices = {
   C: 0,
   STATUS: 'FREE_TO_PLAY',
@@ -25,14 +49,12 @@ let dices = exports.dices = {
   refreshSelectedBox: function (arg) {
     let currentIndex = 0;
     for (var key in this.SAVED_DICES) {
-      // console.log('key.......', key, ' obj: ', this.SAVED_DICES[key]);
       let B = app.matrixAmmo.getBodyByName(key);
       this.deactivatePhysics(B);
       const transform = new Ammo.btTransform();
       transform.setIdentity();
       transform.setOrigin(new Ammo.btVector3(0, 0, 0));
       B.setWorldTransform(transform);
-      // let testB = this.getDiceByName(key)
       B.MEObject.position.setPosition(-5 + currentIndex, 5, -16);
       currentIndex += 3;
     }
@@ -40,28 +62,22 @@ let dices = exports.dices = {
   deactivatePhysics: function (body) {
     const CF_KINEMATIC_OBJECT = 2;
     const DISABLE_DEACTIVATION = 4;
-
     // 1. Remove from world
     app.matrixAmmo.dynamicsWorld.removeRigidBody(body);
-
     // 2. Set body to kinematic
     const flags = body.getCollisionFlags();
     body.setCollisionFlags(flags | CF_KINEMATIC_OBJECT);
     body.setActivationState(DISABLE_DEACTIVATION); // no auto-wakeup
-
     // 3. Clear motion
     const zero = new Ammo.btVector3(0, 0, 0);
     body.setLinearVelocity(zero);
     body.setAngularVelocity(zero);
-
     // 4. Reset transform to current position (optional — preserves pose)
     const currentTransform = body.getWorldTransform();
     body.setWorldTransform(currentTransform);
     body.getMotionState().setWorldTransform(currentTransform);
-
     // 5. Add back to physics world
     app.matrixAmmo.dynamicsWorld.addRigidBody(body);
-
     // 6. Mark it manually (logic flag)
     body.isKinematic = true;
   },
@@ -93,8 +109,6 @@ let dices = exports.dices = {
     body.setAngularVelocity(new Ammo.btVector3(0, 0, 0));
 
     // 4. Enable CCD (to prevent tunneling)
-    body.setCcdMotionThreshold(1e-7);
-    body.setCcdSweptSphereRadius(0.2);
     const size = 1; // cube side length
     body.setCcdMotionThreshold(1e-7);
     body.setCcdSweptSphereRadius(size * 0.5);
@@ -136,18 +150,14 @@ let dices = exports.dices = {
     for (let i = 1; i <= 6; i++) {
       const key = "CubePhysics" + i;
       if (key in this.SAVED_DICES) continue; // skip saved ones
-
       activeRollingCount++; // count how many are still active
-
       if (typeof this.R[key] === 'undefined') {
         allReady = false;
         break;
       }
     }
-
     // Dynamic threshold: min wait time based on rolling dice
     const minWait = Math.max(200, activeRollingCount * 200); // e.g. 1 die => 200, 5 dice => 1000, 6 dice => 1200
-
     if (allReady && this.C > minWait) {
       dispatchEvent(new CustomEvent('all-done', {
         detail: {}
@@ -155,32 +165,6 @@ let dices = exports.dices = {
       this.C = 0;
     }
   },
-  // checkAll: function() {
-  //   // this.C++;
-  //   // if(typeof this.R.CubePhysics1 != 'undefined' &&
-  //   //   typeof this.R.CubePhysics2 != 'undefined' &&
-  //   //   typeof this.R.CubePhysics3 != 'undefined' &&
-  //   //   typeof this.R.CubePhysics4 != 'undefined' &&
-  //   //   typeof this.R.CubePhysics5 != 'undefined' &&
-  //   //   typeof this.R.CubePhysics6 != 'undefined' && this.C > 1200) {
-  //   //   dispatchEvent(new CustomEvent('all-done', {detail: {}}))
-  //   //   this.C = 0;
-  //   // }
-  //   this.C++;
-  //   let allRolled = true;
-  //   for(let i = 1;i <= 6;i++) {
-  //     const key = "CubePhysics" + i;
-  //     if(key in this.SAVED_DICES) continue; // 🔒 skip saved dice
-  //     if(typeof this.R[key] === 'undefined') {
-  //       allRolled = false;
-  //       break;
-  //     }
-  //   }
-  //   if(allRolled && this.C > 1200) {
-  //     dispatchEvent(new CustomEvent('all-done', {detail: {}}));
-  //     this.C = 0;
-  //   }
-  // },
   validatePass: function () {
     if (Object.keys(this.SAVED_DICES).length !== 5) {
       console.log('%cBLOCK', _utils.LOG_FUNNY);
@@ -221,30 +205,7 @@ let myDom = exports.myDom = {
     settings.classList.add('btn');
     settings.innerHTML = `<span data-label="settings"></span>`;
     settings.addEventListener('click', () => {
-      (0, _utils.byId)('messageBox').innerHTML = `
-      <div>
-        <span data-label="settings"></span>
-        <div>
-
-        <div>
-          <span data-label="sounds"></span>
-
-          <label class="switch">
-            <input type="checkbox">
-            <span class="sliderSwitch round"></span>
-          </label>
-
-        </div>
-
-        <div>
-          <button class="btn" onclick="app.myDom.hideSettings()">
-            <span data-label="hide"></span>
-          </button>
-        </div>
-
-        </div>
-      </div>
-      `;
+      (0, _utils.byId)('messageBox').innerHTML = _htmlContent.messageBoxHTML;
       (0, _utils.byId)('blocker').style.display = 'flex';
       (0, _utils.byId)('messageBox').style.display = 'flex';
       dispatchEvent(new CustomEvent('updateLang', {}));
@@ -1240,7 +1201,7 @@ let myDom = exports.myDom = {
   }
 };
 
-},{"../../../src/engine/loader-obj.js":7,"../../../src/engine/utils.js":12,"../../../src/world.js":20}],2:[function(require,module,exports){
+},{"../../../src/engine/utils.js":13,"./html-content.js":1}],3:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -1831,7 +1792,7 @@ let application = exports.application = new _world.default({
 });
 window.app = application;
 
-},{"./examples/games/jamb/jamb.js":1,"./src/engine/loader-obj.js":7,"./src/engine/raycast.js":11,"./src/engine/utils.js":12,"./src/world.js":20}],3:[function(require,module,exports){
+},{"./examples/games/jamb/jamb.js":2,"./src/engine/loader-obj.js":8,"./src/engine/raycast.js":12,"./src/engine/utils.js":13,"./src/world.js":21}],4:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -7178,7 +7139,7 @@ function setDefaultType(ctor) {
   setDefaultType$1(ctor);
 }
 
-},{}],4:[function(require,module,exports){
+},{}],5:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -7593,7 +7554,7 @@ class MEBall {
 }
 exports.default = MEBall;
 
-},{"../shaders/shaders":16,"./engine":6,"./matrix-class":8,"wgpu-matrix":3}],5:[function(require,module,exports){
+},{"../shaders/shaders":17,"./engine":7,"./matrix-class":9,"wgpu-matrix":4}],6:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -8018,7 +7979,7 @@ class MECube {
 }
 exports.default = MECube;
 
-},{"../shaders/shaders":16,"./engine":6,"./matrix-class":8,"wgpu-matrix":3}],6:[function(require,module,exports){
+},{"../shaders/shaders":17,"./engine":7,"./matrix-class":9,"wgpu-matrix":4}],7:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -8478,7 +8439,7 @@ function createInputHandler(window, canvas) {
   };
 }
 
-},{"./utils":12,"wgpu-matrix":3}],7:[function(require,module,exports){
+},{"./utils":13,"wgpu-matrix":4}],8:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -8945,7 +8906,7 @@ function play(nameAni) {
   this.animation.currentAni = this.animation.anims[this.animation.anims.active].from;
 }
 
-},{}],8:[function(require,module,exports){
+},{}],9:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -9181,7 +9142,7 @@ class Rotation {
 }
 exports.Rotation = Rotation;
 
-},{"./utils":12}],9:[function(require,module,exports){
+},{"./utils":13}],10:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -9680,7 +9641,7 @@ class MEMeshObj {
 }
 exports.default = MEMeshObj;
 
-},{"../shaders/fragment.wgsl":15,"../shaders/vertex.wgsl":17,"../shaders/vertexShadow.wgsl":18,"./engine":6,"./matrix-class":8,"./raycast":11,"./utils":12,"wgpu-matrix":3}],10:[function(require,module,exports){
+},{"../shaders/fragment.wgsl":16,"../shaders/vertex.wgsl":18,"../shaders/vertexShadow.wgsl":19,"./engine":7,"./matrix-class":9,"./raycast":12,"./utils":13,"wgpu-matrix":4}],11:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -10078,7 +10039,7 @@ class MEMesh {
 }
 exports.default = MEMesh;
 
-},{"../shaders/fragment.wgsl":15,"../shaders/vertex.wgsl":17,"../shaders/vertexShadow.wgsl":18,"./engine":6,"./loader-obj":7,"./matrix-class":8,"wgpu-matrix":3}],11:[function(require,module,exports){
+},{"../shaders/fragment.wgsl":16,"../shaders/vertex.wgsl":18,"../shaders/vertexShadow.wgsl":19,"./engine":7,"./loader-obj":8,"./matrix-class":9,"wgpu-matrix":4}],12:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -10182,7 +10143,7 @@ function addRaycastListener() {
   });
 }
 
-},{"wgpu-matrix":3}],12:[function(require,module,exports){
+},{"wgpu-matrix":4}],13:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -10922,7 +10883,7 @@ let mb = exports.mb = {
   }
 };
 
-},{}],13:[function(require,module,exports){
+},{}],14:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -10962,7 +10923,7 @@ class MultiLang {
 }
 exports.MultiLang = MultiLang;
 
-},{"../engine/utils":12}],14:[function(require,module,exports){
+},{"../engine/utils":13}],15:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -11112,8 +11073,6 @@ class MatrixAmmo {
     pos.setX(pos.x() + x);
     pos.setY(pos.y() + y);
     pos.setZ(pos.z() + z);
-    // console.log('position kinematic move : ', pos)
-    // console.log('position localRot  : ', localRot)
     localRot.setX(rx);
     localRot.setY(ry);
     localRot.setZ(rz);
@@ -11121,14 +11080,12 @@ class MatrixAmmo {
     let ms = physicsBody.getMotionState();
     if (ms) {
       var tmpTrans = new Ammo.btTransform();
-
       // quat.setValue(quat.x(), quat.y(), quat.z(), quat.w());
       tmpTrans.setIdentity();
       tmpTrans.setOrigin(pos);
       tmpTrans.setRotation(localRot);
       ms.setWorldTransform(tmpTrans);
     }
-    // console.log('body, ', body)
   }
   getBodyByName(name) {
     var b = null;
@@ -11248,7 +11205,7 @@ class MatrixAmmo {
 }
 exports.default = MatrixAmmo;
 
-},{"../engine/utils":12}],15:[function(require,module,exports){
+},{"../engine/utils":13}],16:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -11306,7 +11263,7 @@ fn main(input : FragmentInput) -> @location(0) vec4f {
   // return vec4(textureColor.rgb , 0.5);
 }`;
 
-},{}],16:[function(require,module,exports){
+},{}],17:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -11364,7 +11321,7 @@ fn fragmentMain(input: VertexOutput) -> @location(0) vec4f {
   return vec4f(textureColor.rgb * lightColor, textureColor.a);
 }`;
 
-},{}],17:[function(require,module,exports){
+},{}],18:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -11421,7 +11378,7 @@ fn main(
 }
 `;
 
-},{}],18:[function(require,module,exports){
+},{}],19:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -11449,7 +11406,7 @@ fn main(
 }
 `;
 
-},{}],19:[function(require,module,exports){
+},{}],20:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -11501,7 +11458,7 @@ class MatrixSounds {
 }
 exports.MatrixSounds = MatrixSounds;
 
-},{}],20:[function(require,module,exports){
+},{}],21:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -11959,4 +11916,4 @@ class MatrixEngineWGPU {
 }
 exports.default = MatrixEngineWGPU;
 
-},{"./engine/ball.js":4,"./engine/cube.js":5,"./engine/engine.js":6,"./engine/mesh-obj.js":9,"./engine/mesh.js":10,"./engine/utils.js":12,"./multilang/lang.js":13,"./physics/matrix-ammo.js":14,"./sounds/sounds.js":19,"wgpu-matrix":3}]},{},[2]);
+},{"./engine/ball.js":5,"./engine/cube.js":6,"./engine/engine.js":7,"./engine/mesh-obj.js":10,"./engine/mesh.js":11,"./engine/utils.js":13,"./multilang/lang.js":14,"./physics/matrix-ammo.js":15,"./sounds/sounds.js":20,"wgpu-matrix":4}]},{},[3]);
