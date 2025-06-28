@@ -78,10 +78,12 @@ export let dices = {
     body.isKinematic = false;
 
     // 2. Reset position ABOVE the floor — force it out of collision
-    const newY = 3 + Math.random(); // ensure it’s above the floor
+    // const newY = 3 + Math.random(); // ensure it’s above the floor
     const transform = new Ammo.btTransform();
     transform.setIdentity();
-    transform.setOrigin(new Ammo.btVector3(0, newY, 0)); // randomize if needed
+    const newX = (Math.random() - 0.5) * 4; // spread from -2 to +2 on X
+    const newY = 3;                        // fixed height above floor
+    transform.setOrigin(new Ammo.btVector3(newX, newY, 0));
     body.setWorldTransform(transform);
 
     // 3. Clear velocities
