@@ -591,13 +591,6 @@ export default class MEMeshObj {
 		renderPass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
 		renderPass.setIndexBuffer(this.indexBuffer, 'uint16');
 		renderPass.drawIndexed(this.indexCount);
-
-		// test ray
-
-		// try{ OLD
-		// if(this.raycast.enabled == true) checkingRay(this)
-		// } catch(e) {}
-
 	}
 
 	drawShadows = (shadowPass) => {

@@ -121,20 +121,30 @@ export let application = new MatrixEngineWGPU({
     downloadMeshes({
       star1: "./res/meshes/shapes/star1.obj",
     }, (m) => {
-      application.addMeshObj({
-        position: {x: 0, y: 6, z: -5},
+
+      let o = {
+        scale: 2,
+        position: {x: 3, y: 0, z: -10},
         rotation: {x: 0, y: 0, z: 0},
-        rotationSpeed: {x: 0, y: 0, z: 0},
-        texturesPaths: ['./res/meshes/jamb/dice.png'],
-        useUVShema4x2: true,
-        name: 'star1',
-        mesh: m.star1,
-        raycast: {enabled: true, radius: 2},
-        physics: {
-          enabled: true,
-          geometry: "Cube"
-        }
-      })
+        rotationSpeed: {x: 10, y: 0, z: 0},
+        texturesPaths: ['./res/textures/default.png']
+      };
+      unlitTextures.addBall(c)
+
+      // application.addMeshObj({
+      //   position: {x: 0, y: 6, z: -5},
+      //   rotation: {x: 0, y: 0, z: 0},
+      //   rotationSpeed: {x: 0, y: 0, z: 0},
+      //   texturesPaths: ['./res/meshes/jamb/dice.png'],
+      //   useUVShema4x2: true,
+      //   name: 'star1',
+      //   mesh: m.star1,
+      //   raycast: {enabled: true, radius: 2},
+      //   physics: {
+      //     enabled: true,
+      //     geometry: "Cube"
+      //   }
+      // })
     }, {scale: [11, 11, 11], swap: [null]})
 
     downloadMeshes({

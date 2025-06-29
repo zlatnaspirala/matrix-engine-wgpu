@@ -37,30 +37,262 @@ var examples = {
   (0, _jamb.loadJamb)();
 });
 
-},{"./examples/games/jamb/jamb.js":2,"./examples/load-obj-file.js":3,"./examples/unlit-textures.js":4,"./src/engine/utils.js":14}],2:[function(require,module,exports){
+},{"./examples/games/jamb/jamb.js":3,"./examples/load-obj-file.js":4,"./examples/unlit-textures.js":5,"./src/engine/utils.js":15}],2:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.welcomeBoxHTML = exports.settingsBox = void 0;
+let settingsBox = exports.settingsBox = `
+<div>
+  <span style="font-size:170%" data-label="settings"></span>
+  <div style="margin:20px;" >
+    <div>
+      <span data-label="sounds"></span>
+      <label class="switch">
+        <input id="settingsAudios" type="checkbox">
+        <span class="sliderSwitch round"></span>
+      </label>
+    </div>
+    <div>
+    <div>
+      <span data-label="graphics"></span>
+      <select id="blurControl">
+        <option value="0px">Blur: 0</option>
+        <option value="1px">Blur: 1</option>
+        <option value="2px">Blur: 2</option>
+        <option value="3px">Blur: 3</option>
+      </select>
+      </div>
+
+      <div>
+      <select id="grayscaleControl">
+        <option value="0%">Grayscale: 0%</option>
+        <option value="25%">Grayscale: 25%</option>
+        <option value="50%">Grayscale: 50%</option>
+        <option value="75%">Grayscale: 75%</option>
+        <option value="100%">Grayscale: 100%</option>
+      </select>
+      </div>
+      
+      <div>
+       <label>Brightness:</label>
+      <select id="brightnessControl">
+        <option value="100%">100%</option>
+        <option value="150%">150%</option>
+        <option value="200%">200%</option>
+      </select>
+      </div>
+      
+      <div>
+      <label>Contrast:</label>
+      <select id="contrastControl">
+        <option value="100%">100%</option>
+        <option value="150%">150%</option>
+        <option value="200%">200%</option>
+      </select>
+      </div>
+      
+      <div>
+      <label>Saturate:</label>
+      <select id="saturateControl">
+        <option value="100%">100%</option>
+        <option value="150%">150%</option>
+        <option value="200%">200%</option>
+      </select>
+     </div>
+      
+      <div>
+      <label>Sepia:</label>
+      <select id="sepiaControl">
+        <option value="0%">0%</option>
+        <option value="50%">50%</option>
+        <option value="100%">100%</option>
+      </select>
+     </div>
+      
+      <div>
+      <label>Invert:</label>
+      <select id="invertControl">
+        <option value="0%">0%</option>
+        <option value="50%">50%</option>
+        <option value="100%">100%</option>
+      </select>
+     </div>
+      
+      <div>
+      <label>Hue Rotate:</label>
+      <select id="hueControl">
+        <option value="0deg">0°</option>
+        <option value="90deg">90°</option>
+        <option value="180deg">180°</option>
+        <option value="270deg">270°</option>
+      </select>
+      </div>
+
+    </div>
+    <div>
+      <button class="btn" onclick="app.myDom.hideSettings()">
+        <span data-label="hide"></span>
+      </button>
+    </div>
+  </div>
+</div>`;
+let welcomeBoxHTML = exports.welcomeBoxHTML = `<span class="fancy-title" data-label="welcomeMsg"></span>
+     <a href="https://github.com/zlatnaspirala/matrix-engine-wgpu">zlatnaspirala/matrix-engine-wgpu</a><br><br>
+     <div style="display:flex;flex-direction:column;align-items: center;margin:20px;padding: 10px;">
+       <span style="width:100%">Choose nickname:</span>
+       <input style="text-align: center;height:50px;font-size:100%;width:250px" class="fancy-label" type="text" value="Guest" />
+      </div>
+     <button id="startFromWelcome" class="btn" ><span style="font-size:30px;margin:15px;padding:10px" data-label="startGame"></span></button> <br>
+     <div><span class="fancy-label" data-label="changeLang"></span></div> 
+     <button class="btn" onclick="
+      app.label.loadMultilang('en').then(r => {
+        app.label.get = r;
+        app.label.update()
+      });
+     " ><span data-label="english"></span></button> 
+     <button class="btn" onclick="app.label.loadMultilang('sr').then(r => {
+        app.label.get = r
+        app.label.update() })" ><span data-label="serbian"></span></button> 
+    `;
+
+},{}],3:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.myDom = exports.dices = void 0;
-var _world = _interopRequireDefault(require("../../../src/world.js"));
-var _loaderObj = require("../../../src/engine/loader-obj.js");
 var _utils = require("../../../src/engine/utils.js");
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+var _htmlContent = require("./html-content.js");
 let dices = exports.dices = {
   C: 0,
   STATUS: 'FREE_TO_PLAY',
-  STATUS_H2: 'WAIT',
-  STATUS_H3: 'WAIT',
   R: {},
   SAVED_DICES: {},
-  pickDice: dice => {
-    (void 0).SAVED_DICES[dice] = (void 0).R[dice];
+  pickDice: function (dice) {
+    if (Object.keys(this.SAVED_DICES).length >= 5) {
+      console.log("⚠️ You can only select up to 5 dice!");
+      return; // prevent adding more
+    }
+    this.SAVED_DICES[dice] = this.R[dice];
+    this.refreshSelectedBox();
+  },
+  refreshSelectedBox: function (arg) {
+    let currentIndex = 0;
+    for (var key in this.SAVED_DICES) {
+      let B = app.matrixAmmo.getBodyByName(key);
+      this.deactivatePhysics(B);
+      const transform = new Ammo.btTransform();
+      transform.setIdentity();
+      transform.setOrigin(new Ammo.btVector3(0, 0, 0));
+      B.setWorldTransform(transform);
+      B.MEObject.position.setPosition(-5 + currentIndex, 5, -16);
+      currentIndex += 3;
+    }
+  },
+  deactivatePhysics: function (body) {
+    const CF_KINEMATIC_OBJECT = 2;
+    const DISABLE_DEACTIVATION = 4;
+    // 1. Remove from world
+    app.matrixAmmo.dynamicsWorld.removeRigidBody(body);
+    // 2. Set body to kinematic
+    const flags = body.getCollisionFlags();
+    body.setCollisionFlags(flags | CF_KINEMATIC_OBJECT);
+    body.setActivationState(DISABLE_DEACTIVATION); // no auto-wakeup
+    // 3. Clear motion
+    const zero = new Ammo.btVector3(0, 0, 0);
+    body.setLinearVelocity(zero);
+    body.setAngularVelocity(zero);
+    // 4. Reset transform to current position (optional — preserves pose)
+    const currentTransform = body.getWorldTransform();
+    body.setWorldTransform(currentTransform);
+    body.getMotionState().setWorldTransform(currentTransform);
+    // 5. Add back to physics world
+    app.matrixAmmo.dynamicsWorld.addRigidBody(body);
+    // 6. Mark it manually (logic flag)
+    body.isKinematic = true;
+  },
+  resetBodyAboveFloor: function (body, x = 0, z = 0) {
+    const y = 3 + Math.random();
+    const transform = new Ammo.btTransform();
+    transform.setIdentity();
+    transform.setOrigin(new Ammo.btVector3(x, y, z));
+    body.setWorldTransform(transform);
+    body.getMotionState().setWorldTransform(transform);
+  },
+  activatePhysics: function (body) {
+    // 1. Make it dynamic again
+    body.setCollisionFlags(body.getCollisionFlags() & ~2); // remove kinematic
+    body.setActivationState(1); // ACTIVE_TAG
+    body.isKinematic = false;
+
+    // 2. Reset position ABOVE the floor — force it out of collision
+    // const newY = 3 + Math.random(); // ensure it’s above the floor
+    const transform = new Ammo.btTransform();
+    transform.setIdentity();
+    const newX = (Math.random() - 0.5) * 4; // spread from -2 to +2 on X
+    const newY = 3; // fixed height above floor
+    transform.setOrigin(new Ammo.btVector3(newX, newY, 0));
+    body.setWorldTransform(transform);
+
+    // 3. Clear velocities
+    body.setLinearVelocity(new Ammo.btVector3(0, 0, 0));
+    body.setAngularVelocity(new Ammo.btVector3(0, 0, 0));
+
+    // 4. Enable CCD (to prevent tunneling)
+    const size = 1; // cube side length
+    body.setCcdMotionThreshold(1e-7);
+    body.setCcdSweptSphereRadius(size * 0.5);
+
+    // Re-add to world if needed
+    // Optionally: remove and re-add if not responding
+    app.matrixAmmo.dynamicsWorld.removeRigidBody(body);
+    app.matrixAmmo.dynamicsWorld.addRigidBody(body);
+
+    // 5. Reactivate it
+    body.activate(true);
+    this.resetBodyAboveFloor(body);
+  },
+  activateAllDicesPhysics: function () {
+    this.getAllDices().filter(item => {
+      let test = app.matrixAmmo.getBodyByName(item.name)?.isKinematicObject();
+      if (test === true) {
+        return true;
+      } else {
+        return false;
+      }
+    }).forEach(dice => {
+      const body = app.matrixAmmo.getBodyByName(dice.name);
+      if (body) {
+        this.activatePhysics(body); // <--- FIX: pass the physics body, not the dice object
+      }
+    });
+  },
+  getAllDices: function () {
+    return app.mainRenderBundle.filter(item => item.name.indexOf("CubePhysics") !== -1);
+  },
+  getDiceByName: function (name) {
+    return app.mainRenderBundle.find(item => item.name === name);
   },
   checkAll: function () {
     this.C++;
-    if (typeof this.R.CubePhysics1 != 'undefined' && typeof this.R.CubePhysics2 != 'undefined' && typeof this.R.CubePhysics3 != 'undefined' && typeof this.R.CubePhysics4 != 'undefined' && typeof this.R.CubePhysics5 != 'undefined' && typeof this.R.CubePhysics6 != 'undefined' && this.C > 1200) {
+    let activeRollingCount = 0;
+    let allReady = true;
+    for (let i = 1; i <= 6; i++) {
+      const key = "CubePhysics" + i;
+      if (key in this.SAVED_DICES) continue; // skip saved ones
+      activeRollingCount++; // count how many are still active
+      if (typeof this.R[key] === 'undefined') {
+        allReady = false;
+        break;
+      }
+    }
+    // Dynamic threshold: min wait time based on rolling dice
+    const minWait = Math.max(200, activeRollingCount * 200); // e.g. 1 die => 200, 5 dice => 1000, 6 dice => 1200
+    if (allReady && this.C > minWait) {
       dispatchEvent(new CustomEvent('all-done', {
         detail: {}
       }));
@@ -68,10 +300,14 @@ let dices = exports.dices = {
     }
   },
   validatePass: function () {
-    if (dices.STATUS == "IN_PLAY" || dices.STATUS == "FREE_TO_PLAY") {
-      // console.log('%cBLOCK', LOG_FUNNY)
-      if (dices.STATUS == "IN_PLAY") _utils.mb.error(`STATUS IS ${dices.STATUS}, please wait for results...`);
-      if (dices.STATUS == "FREE_TO_PLAY") _utils.mb.error(`STATUS IS ${dices.STATUS}, you need to roll dice first.`);
+    if (Object.keys(this.SAVED_DICES).length !== 5) {
+      console.log('%cBLOCK', _utils.LOG_FUNNY);
+      _utils.mb.error(`Must select (minimum) 5 dices before add results...`);
+      return false;
+    }
+    if (dices.STATUS != "FINISHED") {
+      console.log('%cBLOCK', _utils.LOG_FUNNY);
+      _utils.mb.error(`STATUS IS ${dices.STATUS}, please wait for results...`);
       app.matrixSounds.play('block');
       return false;
     } else {
@@ -96,40 +332,25 @@ let myDom = exports.myDom = {
     root.style.top = '10%';
     var help = document.createElement('div');
     help.id = 'HELP';
-    help.classList.add('btn2');
+    help.classList.add('btn');
     help.innerHTML = `<span data-label="help"></span>`;
     var settings = document.createElement('div');
     settings.id = 'settings';
-    settings.classList.add('btn2');
+    settings.classList.add('btn');
     settings.innerHTML = `<span data-label="settings"></span>`;
     settings.addEventListener('click', () => {
-      (0, _utils.byId)('messageBox').innerHTML = `
-      <div>
-        <span data-label="settings"></span>
-        <div>
-
-        <div>
-          <span data-label="sounds"></span>
-
-          <label class="switch">
-            <input type="checkbox">
-            <span class="sliderSwitch round"></span>
-          </label>
-
-        </div>
-
-        <div>
-          <button class="btn2" onclick="app.myDom.hideSettings()">
-            <span data-label="hide"></span>
-          </button>
-        </div>
-
-        </div>
-      </div>
-      `;
+      (0, _utils.byId)('messageBox').innerHTML = _htmlContent.settingsBox;
       (0, _utils.byId)('blocker').style.display = 'flex';
-      (0, _utils.byId)('messageBox').style.display = 'flex';
+      (0, _utils.byId)('messageBox').style.display = 'unset';
       dispatchEvent(new CustomEvent('updateLang', {}));
+      (0, _utils.byId)('settingsAudios').addEventListener('change', e => {
+        if (e.target.checked == true) {
+          app.matrixSounds.unmuteAll();
+        } else {
+          app.matrixSounds.muteAll();
+        }
+      });
+      (0, _utils.setupCanvasFilters)();
     });
     var roll = document.createElement('div');
     roll.id = 'hud-roll';
@@ -139,7 +360,7 @@ let myDom = exports.myDom = {
       app.ROLL();
     });
     var separator = document.createElement('div');
-    separator.innerHTML = `=======`;
+    separator.innerHTML = `✨maximumroulette.com✨`;
     root.append(settings);
     root.append(help);
     root.append(separator);
@@ -157,42 +378,41 @@ let myDom = exports.myDom = {
     messageBox.id = 'messageBox';
 
     // console.log('TEST', app.label.get)
-    messageBox.innerHTML = `
-     <span data-label="welcomeMsg"></span>
-     <a href="https://github.com/zlatnaspirala/matrix-engine-wgpu">zlatnaspirala/matrix-engine-wgpu</a><br><br>
-     <button class="btn" ><span style="font-size:30px;margin:15px;padding:10px" data-label="startGame"></span></button> <br>
-     <div><span data-label="changeLang"></span></div> 
-     <button class="btn" onclick="
-      app.label.loadMultilang('en').then(r => {
-        app.label.get = r;
-        app.label.update()
-      });
-     " ><span data-label="english"></span></button> 
-     <button class="btn" onclick="app.label.loadMultilang('sr').then(r => {
-        app.label.get = r
-        app.label.update() })" ><span data-label="serbian"></span></button> 
-    `;
+    messageBox.innerHTML = _htmlContent.welcomeBoxHTML;
     let initialMsgBoxEvent = function () {
       console.log('click on msgbox');
       (0, _utils.byId)('messageBox').innerHTML = ``;
       (0, _utils.byId)('blocker').style.display = 'none';
       myDom.createMenu();
       messageBox.removeEventListener('click', initialMsgBoxEvent);
+      document.querySelectorAll('.btn, .fancy-label, .fancy-title').forEach(el => {
+        el.addEventListener('mouseenter', () => {
+          app.matrixSounds.play('hover');
+        });
+      });
     };
-    messageBox.addEventListener('click', initialMsgBoxEvent);
     root.append(messageBox);
     document.body.appendChild(root);
     app.label.update();
+    document.querySelectorAll('.btn, .fancy-label, .fancy-title').forEach(el => {
+      el.addEventListener('mouseenter', () => {
+        app.matrixSounds.play('hover');
+      });
+    });
+    setTimeout(() => {
+      (0, _utils.byId)('startFromWelcome').addEventListener('click', initialMsgBoxEvent);
+    }, 200);
   },
   createJamb: function () {
     var root = document.createElement('div');
     root.id = 'jambTable';
     root.style.position = 'absolute';
     root.style.display = 'flex';
-    root.style.top = '10px';
-    root.style.left = '10px';
+    root.style.top = '5px';
+    root.style.left = '5px';
     root.style.width = '200px';
-    root.style.background = '#7d7d7d8c';
+    // root.style.background = '#7d7d7d8c';
+
     var rowHeader = document.createElement('div');
     rowHeader.id = 'rowHeader';
     rowHeader.style.top = '10px';
@@ -200,30 +420,33 @@ let myDom = exports.myDom = {
     rowHeader.style.width = '200px';
     rowHeader.innerHTML = '<span data-label="cornerText"></span><span id="user-points">0</span>';
     root.appendChild(rowHeader);
-    rowHeader.classList.add('myTheme1');
+    rowHeader.classList.add('fancy-label');
     var rowDown = document.createElement('div');
     rowDown.id = 'rowDown';
     rowDown.style.top = '10px';
     rowDown.style.left = '10px';
     rowDown.style.width = '200px';
-    rowDown.innerHTML = '↓';
-    rowDown.classList.add('myTheme1');
+    rowDown.innerHTML = '↓<span data-label="down"></span>';
+    rowDown.classList.add('fancy-label');
+    rowDown.classList.add('btn');
     root.appendChild(rowDown);
     var rowFree = document.createElement('div');
     rowFree.id = 'rowFree';
     rowFree.style.top = '10px';
     rowFree.style.left = '10px';
     rowFree.style.width = '200px';
-    rowFree.innerHTML = '↕';
-    rowFree.classList.add('myTheme1');
+    rowFree.innerHTML = '↕<span data-label="free"></span>';
+    rowFree.classList.add('fancy-label');
+    rowFree.classList.add('btn');
     root.appendChild(rowFree);
     var rowUp = document.createElement('div');
     rowUp.id = 'rowUp';
     rowUp.style.top = '10px';
     rowUp.style.left = '10px';
     rowUp.style.width = '200px';
-    rowUp.innerHTML = '↑';
-    rowUp.classList.add('myTheme1');
+    rowUp.innerHTML = '↑<span data-label="up"></span>';
+    rowUp.classList.add('fancy-label');
+    rowUp.classList.add('btn');
     root.appendChild(rowUp);
     var rowHand = document.createElement('div');
     rowHand.id = 'rowHand';
@@ -231,7 +454,8 @@ let myDom = exports.myDom = {
     rowHand.style.left = '10px';
     rowHand.style.width = '200px';
     rowHand.innerHTML = '<span data-label="hand"></span>';
-    rowHand.classList.add('myTheme1');
+    rowHand.classList.add('fancy-label');
+    rowHand.classList.add('btn');
     root.appendChild(rowHand);
 
     // INJECT TABLE HEADER ROW
@@ -240,8 +464,23 @@ let myDom = exports.myDom = {
     this.createRowFree(rowFree);
     this.createRow(rowUp);
     this.createRow(rowHand);
+    this.createSelectedBox();
     document.body.appendChild(root);
     // console.log('JambTable added.')
+  },
+  createSelectedBox: function () {
+    var topTitleDOM = document.createElement('div');
+    topTitleDOM.id = 'topTitleDOM';
+    topTitleDOM.style.width = 'auto';
+    topTitleDOM.style.position = 'absolute';
+    topTitleDOM.style.left = '35%';
+    topTitleDOM.style.top = '5%';
+    topTitleDOM.style.background = '#7d7d7d8c';
+    topTitleDOM.innerHTML = app.label.get.ready + ", " + app.userState.name + '.';
+    document.body.appendChild(topTitleDOM);
+    addEventListener('updateTitle', e => {
+      (0, _utils.typeText)('topTitleDOM', e.detail);
+    });
   },
   createLeftHeaderRow: function (myRoot) {
     for (var x = 1; x < 7; x++) {
@@ -415,7 +654,7 @@ let myDom = exports.myDom = {
         var getName = e.target.id;
         getName = getName.replace('free-rowNumber', '');
         var count23456 = 0;
-        for (let key in dices.R) {
+        for (let key in dices.SAVED_DICES) {
           if (parseInt(dices.R[key]) == parseInt(getName)) {
             count23456++;
           }
@@ -520,7 +759,7 @@ let myDom = exports.myDom = {
           console.log('LOG ', getName);
           if (parseInt(getName) == 1) {
             var count1 = 0;
-            for (let key in dices.R) {
+            for (let key in dices.SAVED_DICES) {
               if (parseInt(dices.R[key]) == 1) {
                 console.log('yeap', dices.R);
                 count1++;
@@ -540,7 +779,7 @@ let myDom = exports.myDom = {
             if (parseInt(getName) == this.state.rowDown.length + 1) {
               console.log('moze za ', parseInt(getName));
               var count23456 = 0;
-              for (let key in dices.R) {
+              for (let key in dices.SAVED_DICES) {
                 if (parseInt(dices.R[key]) == parseInt(getName)) {
                   console.log('yeap', dices.R);
                   count23456++;
@@ -1076,7 +1315,7 @@ let myDom = exports.myDom = {
   }
 };
 
-},{"../../../src/engine/loader-obj.js":9,"../../../src/engine/utils.js":14,"../../../src/world.js":22}],3:[function(require,module,exports){
+},{"../../../src/engine/utils.js":15,"./html-content.js":2}],4:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -1190,7 +1429,7 @@ var loadObjFile = function () {
 };
 exports.loadObjFile = loadObjFile;
 
-},{"../src/engine/loader-obj.js":9,"../src/engine/utils.js":14,"../src/world.js":22}],4:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":10,"../src/engine/utils.js":15,"../src/world.js":23}],5:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -1249,7 +1488,7 @@ var unlitTextures = function () {
 };
 exports.unlitTextures = unlitTextures;
 
-},{"../src/world.js":22}],5:[function(require,module,exports){
+},{"../src/world.js":23}],6:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -6596,7 +6835,7 @@ function setDefaultType(ctor) {
   setDefaultType$1(ctor);
 }
 
-},{}],6:[function(require,module,exports){
+},{}],7:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -6630,6 +6869,14 @@ class MEBall {
       normalOffset: 3 * 4,
       uvOffset: 6 * 4
     };
+    if (typeof o.raycast === 'undefined') {
+      this.raycast = {
+        enabled: false,
+        radius: 2
+      };
+    } else {
+      this.raycast = o.raycast;
+    }
     this.texturesPaths = [];
     o.texturesPaths.forEach(t => {
       this.texturesPaths.push(t);
@@ -7003,7 +7250,7 @@ class MEBall {
 }
 exports.default = MEBall;
 
-},{"../shaders/shaders":18,"./engine":8,"./matrix-class":10,"wgpu-matrix":5}],7:[function(require,module,exports){
+},{"../shaders/shaders":19,"./engine":9,"./matrix-class":11,"wgpu-matrix":6}],8:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -7038,6 +7285,14 @@ class MECube {
       code: _shaders.UNLIT_SHADER
     });
     this.texturesPaths = [];
+    if (typeof o.raycast === 'undefined') {
+      this.raycast = {
+        enabled: false,
+        radius: 2
+      };
+    } else {
+      this.raycast = o.raycast;
+    }
 
     // useUVShema4x2 pass this from top !
 
@@ -7420,7 +7675,7 @@ class MECube {
 }
 exports.default = MECube;
 
-},{"../shaders/shaders":18,"./engine":8,"./matrix-class":10,"wgpu-matrix":5}],8:[function(require,module,exports){
+},{"../shaders/shaders":19,"./engine":9,"./matrix-class":11,"wgpu-matrix":6}],9:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -7880,7 +8135,7 @@ function createInputHandler(window, canvas) {
   };
 }
 
-},{"./utils":14,"wgpu-matrix":5}],9:[function(require,module,exports){
+},{"./utils":15,"wgpu-matrix":6}],10:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -8347,7 +8602,7 @@ function play(nameAni) {
   this.animation.currentAni = this.animation.anims[this.animation.anims.active].from;
 }
 
-},{}],10:[function(require,module,exports){
+},{}],11:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -8583,7 +8838,7 @@ class Rotation {
 }
 exports.Rotation = Rotation;
 
-},{"./utils":14}],11:[function(require,module,exports){
+},{"./utils":15}],12:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -8597,13 +8852,14 @@ var _vertexShadow = require("../shaders/vertexShadow.wgsl");
 var _fragment = require("../shaders/fragment.wgsl");
 var _vertex = require("../shaders/vertex.wgsl");
 var _utils = require("./utils");
-var _raycastTest = require("./raycast-test");
+var _raycast = require("./raycast");
 class MEMeshObj {
   constructor(canvas, device, context, o) {
     if (typeof o.name === 'undefined') o.name = (0, _utils.genName)(9);
     if (typeof o.raycast === 'undefined') {
       this.raycast = {
-        enabled: false
+        enabled: false,
+        radius: 2
       };
     } else {
       this.raycast = o.raycast;
@@ -8625,12 +8881,8 @@ class MEMeshObj {
       responseCoef: o.mainCameraParams.responseCoef
     };
 
-    // test raycast
-    // fullscreen for now
-    // window.addEventListener('mousedown', (e) => {
-    // 	checkingProcedure(e);
-    // });
-    _raycastTest.touchCoordinate.enabled = true;
+    // touchCoordinate.enabled = true;
+
     this.lastFrameMS = 0;
     this.texturesPaths = [];
     o.texturesPaths.forEach(t => {
@@ -9066,12 +9318,6 @@ class MEMeshObj {
     renderPass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
     renderPass.setIndexBuffer(this.indexBuffer, 'uint16');
     renderPass.drawIndexed(this.indexCount);
-
-    // test ray
-
-    // try{ OLD
-    // if(this.raycast.enabled == true) checkingRay(this)
-    // } catch(e) {}
   };
   drawShadows = shadowPass => {
     shadowPass.setBindGroup(0, this.sceneBindGroupForShadow);
@@ -9085,7 +9331,7 @@ class MEMeshObj {
 }
 exports.default = MEMeshObj;
 
-},{"../shaders/fragment.wgsl":17,"../shaders/vertex.wgsl":19,"../shaders/vertexShadow.wgsl":20,"./engine":8,"./matrix-class":10,"./raycast-test":13,"./utils":14,"wgpu-matrix":5}],12:[function(require,module,exports){
+},{"../shaders/fragment.wgsl":18,"../shaders/vertex.wgsl":20,"../shaders/vertexShadow.wgsl":21,"./engine":9,"./matrix-class":11,"./raycast":14,"./utils":15,"wgpu-matrix":6}],13:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -9483,7 +9729,7 @@ class MEMesh {
 }
 exports.default = MEMesh;
 
-},{"../shaders/fragment.wgsl":17,"../shaders/vertex.wgsl":19,"../shaders/vertexShadow.wgsl":20,"./engine":8,"./loader-obj":9,"./matrix-class":10,"wgpu-matrix":5}],13:[function(require,module,exports){
+},{"../shaders/fragment.wgsl":18,"../shaders/vertex.wgsl":20,"../shaders/vertexShadow.wgsl":21,"./engine":9,"./loader-obj":10,"./matrix-class":11,"wgpu-matrix":6}],14:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -9550,13 +9796,14 @@ function getRayFromMouse(event, canvas, camera) {
   }
   const rayOrigin = [camera.position[0], camera.position[1], camera.position[2]];
   const rayDirection = _wgpuMatrix.vec3.normalize(_wgpuMatrix.vec3.subtract(world, rayOrigin));
+  rayDirection[2] = -rayDirection[2];
   return {
     rayOrigin,
     rayDirection
   };
 }
 function rayIntersectsSphere(rayOrigin, rayDirection, sphereCenter, sphereRadius) {
-  const pos = [sphereCenter.x, sphereCenter.z, sphereCenter.y];
+  const pos = [sphereCenter.x, sphereCenter.y, sphereCenter.z];
   const oc = _wgpuMatrix.vec3.subtract(rayOrigin, pos);
   const a = _wgpuMatrix.vec3.dot(rayDirection, rayDirection);
   const b = 2.0 * _wgpuMatrix.vec3.dot(oc, rayDirection);
@@ -9573,7 +9820,7 @@ function addRaycastListener() {
       rayDirection
     } = getRayFromMouse(event, canvas, camera);
     for (const object of app.mainRenderBundle) {
-      if (rayIntersectsSphere(rayOrigin, rayDirection, object.position, 2)) {
+      if (rayIntersectsSphere(rayOrigin, rayDirection, object.position, object.raycast.radius)) {
         // console.log('Object clicked:', object.name);
         // Just like in matrix-engine webGL version "ray.hit.event"
         dispatchEvent(new CustomEvent('ray.hit.event', {
@@ -9586,7 +9833,7 @@ function addRaycastListener() {
   });
 }
 
-},{"wgpu-matrix":5}],14:[function(require,module,exports){
+},{"wgpu-matrix":6}],15:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -9609,7 +9856,10 @@ exports.quaternion_rotation_matrix = quaternion_rotation_matrix;
 exports.radToDeg = radToDeg;
 exports.randomFloatFromTo = randomFloatFromTo;
 exports.randomIntFromTo = randomIntFromTo;
-exports.vec3 = exports.urlQuery = exports.scriptManager = void 0;
+exports.scriptManager = void 0;
+exports.setupCanvasFilters = setupCanvasFilters;
+exports.typeText = typeText;
+exports.vec3 = exports.urlQuery = void 0;
 const vec3 = exports.vec3 = {
   cross(a, b, dst) {
     dst = dst || new Float32Array(3);
@@ -10325,8 +10575,68 @@ let mb = exports.mb = {
     mb.show(content, 'ok');
   }
 };
+function typeText(elementId, text, delay = 50) {
+  const el = document.getElementById(elementId);
+  el.innerText = '';
+  let index = 0;
+  function typeNextChar() {
+    if (index < text.length) {
+      el.textContent += text.charAt(index);
+      index++;
+      setTimeout(typeNextChar, delay);
+    }
+  }
+  typeNextChar();
+}
+function setupCanvasFilters(canvasId) {
+  let canvas = document.getElementById(canvasId);
+  if (canvas == null) {
+    canvas = document.getElementsByTagName('canvas')[0];
+  }
+  const filterState = {
+    blur: "0px",
+    grayscale: "0%",
+    brightness: "100%",
+    contrast: "100%",
+    saturate: "100%",
+    sepia: "0%",
+    invert: "0%",
+    hueRotate: "0deg"
+  };
+  function updateFilter() {
+    const filterString = `
+      blur(${filterState.blur}) 
+      grayscale(${filterState.grayscale}) 
+      brightness(${filterState.brightness}) 
+      contrast(${filterState.contrast}) 
+      saturate(${filterState.saturate}) 
+      sepia(${filterState.sepia}) 
+      invert(${filterState.invert}) 
+      hue-rotate(${filterState.hueRotate})
+    `.trim();
+    canvas.style.filter = filterString;
+  }
+  const bindings = {
+    blurControl: "blur",
+    grayscaleControl: "grayscale",
+    brightnessControl: "brightness",
+    contrastControl: "contrast",
+    saturateControl: "saturate",
+    sepiaControl: "sepia",
+    invertControl: "invert",
+    hueControl: "hueRotate"
+  };
+  Object.entries(bindings).forEach(([selectId, key]) => {
+    const el = document.getElementById(selectId);
+    el.addEventListener("change", e => {
+      filterState[key] = e.target.value;
+      updateFilter();
+    });
+  });
+  updateFilter(); // Initial
+}
 
-},{}],15:[function(require,module,exports){
+},{}],16:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -10366,7 +10676,7 @@ class MultiLang {
 }
 exports.MultiLang = MultiLang;
 
-},{"../engine/utils":14}],16:[function(require,module,exports){
+},{"../engine/utils":15}],17:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -10516,8 +10826,6 @@ class MatrixAmmo {
     pos.setX(pos.x() + x);
     pos.setY(pos.y() + y);
     pos.setZ(pos.z() + z);
-    // console.log('position kinematic move : ', pos)
-    // console.log('position localRot  : ', localRot)
     localRot.setX(rx);
     localRot.setY(ry);
     localRot.setZ(rz);
@@ -10525,14 +10833,12 @@ class MatrixAmmo {
     let ms = physicsBody.getMotionState();
     if (ms) {
       var tmpTrans = new Ammo.btTransform();
-
       // quat.setValue(quat.x(), quat.y(), quat.z(), quat.w());
       tmpTrans.setIdentity();
       tmpTrans.setOrigin(pos);
       tmpTrans.setRotation(localRot);
       ms.setWorldTransform(tmpTrans);
     }
-    // console.log('body, ', body)
   }
   getBodyByName(name) {
     var b = null;
@@ -10611,34 +10917,48 @@ class MatrixAmmo {
     }
   }
   updatePhysics() {
-    // Step world
-    this.dynamicsWorld.stepSimulation(1 / 60, 10);
-    // Update rigid bodies
-    var trans = new Ammo.btTransform();
+    const trans = new Ammo.btTransform();
+    const transform = new Ammo.btTransform();
     this.rigidBodies.forEach(function (body) {
-      if (body.getMotionState()) {
-        body.getMotionState().getWorldTransform(trans);
-        var _x = trans.getOrigin().x().toFixed(2);
-        var _y = trans.getOrigin().y().toFixed(2);
-        var _z = trans.getOrigin().z().toFixed(2);
-        body.MEObject.position.setPosition(_x, _y, _z);
-        var test = trans.getRotation();
-        var testAxis = test.getAxis();
-        test.normalize();
-        body.MEObject.rotation.axis.x = testAxis.x();
-        body.MEObject.rotation.axis.y = testAxis.y();
-        body.MEObject.rotation.axis.z = testAxis.z();
-        body.MEObject.rotation.matrixRotation = (0, _utils.quaternion_rotation_matrix)(test);
-        body.MEObject.rotation.angle = (0, _utils.radToDeg)(parseFloat(test.getAngle().toFixed(2)));
+      if (body.isKinematic) {
+        transform.setIdentity();
+        transform.setOrigin(new Ammo.btVector3(body.MEObject.position.x, body.MEObject.position.y, body.MEObject.position.z));
+        const quat = new Ammo.btQuaternion();
+        quat.setRotation(new Ammo.btVector3(body.MEObject.rotation.axis.x, body.MEObject.rotation.axis.y, body.MEObject.rotation.axis.z), (0, _utils.degToRad)(body.MEObject.rotation.angle));
+        transform.setRotation(quat);
+        body.setWorldTransform(transform);
+        const ms = body.getMotionState();
+        if (ms) ms.setWorldTransform(transform);
       }
     });
-    // collision detect
+    Ammo.destroy(transform);
+
+    // Step simulation AFTER setting kinematic transforms
+    this.dynamicsWorld.stepSimulation(1 / 60, 10);
+    this.rigidBodies.forEach(function (body) {
+      if (!body.isKinematic && body.getMotionState()) {
+        body.getMotionState().getWorldTransform(trans);
+        const _x = +trans.getOrigin().x().toFixed(2);
+        const _y = +trans.getOrigin().y().toFixed(2);
+        const _z = +trans.getOrigin().z().toFixed(2);
+        body.MEObject.position.setPosition(_x, _y, _z);
+        const rot = trans.getRotation();
+        const rotAxis = rot.getAxis();
+        rot.normalize();
+        body.MEObject.rotation.axis.x = rotAxis.x();
+        body.MEObject.rotation.axis.y = rotAxis.y();
+        body.MEObject.rotation.axis.z = rotAxis.z();
+        body.MEObject.rotation.matrixRotation = (0, _utils.quaternion_rotation_matrix)(rot);
+        body.MEObject.rotation.angle = (0, _utils.radToDeg)(parseFloat(rot.getAngle().toFixed(2)));
+      }
+    });
+    Ammo.destroy(trans);
     this.detectCollision();
   }
 }
 exports.default = MatrixAmmo;
 
-},{"../engine/utils":14}],17:[function(require,module,exports){
+},{"../engine/utils":15}],18:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -10696,7 +11016,7 @@ fn main(input : FragmentInput) -> @location(0) vec4f {
   // return vec4(textureColor.rgb , 0.5);
 }`;
 
-},{}],18:[function(require,module,exports){
+},{}],19:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -10754,7 +11074,7 @@ fn fragmentMain(input: VertexOutput) -> @location(0) vec4f {
   return vec4f(textureColor.rgb * lightColor, textureColor.a);
 }`;
 
-},{}],19:[function(require,module,exports){
+},{}],20:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -10811,7 +11131,7 @@ fn main(
 }
 `;
 
-},{}],20:[function(require,module,exports){
+},{}],21:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -10839,7 +11159,7 @@ fn main(
 }
 `;
 
-},{}],21:[function(require,module,exports){
+},{}],22:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -10850,10 +11170,18 @@ class MatrixSounds {
   constructor() {
     this.volume = 0.5;
     this.audios = {};
+    this.enabled = true; // 🔇 global flag to mute/allow audio
+  }
+  muteAll() {
+    this.enabled = false;
+    Object.values(this.audios).forEach(audio => audio.pause());
+  }
+  unmuteAll() {
+    this.enabled = true;
   }
   createClones(c, name, path) {
-    for (var x = 1; x < c; x++) {
-      let a = new Audio(path);
+    for (let x = 1; x < c; x++) {
+      const a = new Audio(path);
       a.id = name + x;
       a.volume = this.volume;
       this.audios[name + x] = a;
@@ -10861,7 +11189,7 @@ class MatrixSounds {
     }
   }
   createAudio(name, path, useClones) {
-    let a = new Audio(path);
+    const a = new Audio(path);
     a.id = name;
     a.volume = this.volume;
     this.audios[name] = a;
@@ -10871,25 +11199,37 @@ class MatrixSounds {
     }
   }
   play(name) {
-    if (this.audios[name].paused == true) {
-      this.audios[name].play();
+    if (!this.enabled) return; // 🔇 prevent playing if muted
+
+    const audio = this.audios[name];
+    if (!audio) return;
+    if (audio.paused) {
+      audio.play().catch(e => {
+        if (e.name !== 'NotAllowedError') console.warn("sounds error:", e);
+      });
     } else {
       this.tryClone(name);
     }
   }
   tryClone(name) {
-    var cc = 1;
+    if (!this.enabled) return; // 🔇 prevent playing clones
+
+    let cc = 1;
     try {
-      while (this.audios[name + cc].paused == false) {
+      while (this.audios[name + cc] && this.audios[name + cc].paused === false) {
         cc++;
       }
-      if (this.audios[name + cc]) this.audios[name + cc].play();
-    } catch (err) {}
+      if (this.audios[name + cc]) {
+        this.audios[name + cc].play();
+      }
+    } catch (err) {
+      console.warn("Clone play failed:", err);
+    }
   }
 }
 exports.MatrixSounds = MatrixSounds;
 
-},{}],22:[function(require,module,exports){
+},{}],23:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -11313,6 +11653,10 @@ class MatrixEngineWGPU {
           renderPass = commandEncoder.beginRenderPass(meItem.renderPassDescriptor);
           renderPass.setPipeline(meItem.pipeline);
         }
+        //  if(index == 0) {
+        // 	renderPass = commandEncoder.beginRenderPass(meItem.renderPassDescriptor);
+        // 	renderPass.setPipeline(meItem.pipeline);
+        //  }
       });
       this.mainRenderBundle.forEach((meItem, index) => {
         meItem.drawElements(renderPass);
@@ -11347,4 +11691,4 @@ class MatrixEngineWGPU {
 }
 exports.default = MatrixEngineWGPU;
 
-},{"./engine/ball.js":6,"./engine/cube.js":7,"./engine/engine.js":8,"./engine/mesh-obj.js":11,"./engine/mesh.js":12,"./engine/utils.js":14,"./multilang/lang.js":15,"./physics/matrix-ammo.js":16,"./sounds/sounds.js":21,"wgpu-matrix":5}]},{},[1]);
+},{"./engine/ball.js":7,"./engine/cube.js":8,"./engine/engine.js":9,"./engine/mesh-obj.js":12,"./engine/mesh.js":13,"./engine/utils.js":15,"./multilang/lang.js":16,"./physics/matrix-ammo.js":17,"./sounds/sounds.js":22,"wgpu-matrix":6}]},{},[1]);
