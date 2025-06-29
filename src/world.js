@@ -282,10 +282,6 @@ export default class MatrixEngineWGPU {
           renderPass = commandEncoder.beginRenderPass(meItem.renderPassDescriptor);
           renderPass.setPipeline(meItem.pipeline);
         }
-        //  if(index == 0) {
-        // 	renderPass = commandEncoder.beginRenderPass(meItem.renderPassDescriptor);
-        // 	renderPass.setPipeline(meItem.pipeline);
-        //  }
       })
 
       this.mainRenderBundle.forEach((meItem, index) => {
@@ -302,23 +298,25 @@ export default class MatrixEngineWGPU {
   }
 
   framePassPerObject = () => {
-    // console.log('framePassPerObject')
     let commandEncoder = this.device.createCommandEncoder();
-    this.rbContainer = [];
-    let passEncoder;
-    this.mainRenderBundle.forEach((meItem, index) => {
-      meItem.draw(commandEncoder);
+
+    this.mainRenderBundle.forEach((meItem) => {
+      // Update transforms, physics, etc. (optional)
+      meItem.draw(commandEncoder); // optional: if this does per-frame updates
 
       if(meItem.renderBundle) {
-        this.rbContainer.push(meItem.renderBundle)
-        passEncoder = commandEncoder.beginRenderPass(meItem.renderPassDescriptor);
-        passEncoder.executeBundles(this.rbContainer);
+        // Set up view per object
+        meItem.renderPassDescriptor.colorAttachments[0].view =
+          this.context.getCurrentTexture().createView();
+
+        const passEncoder = commandEncoder.beginRenderPass(meItem.renderPassDescriptor);
+        passEncoder.executeBundles([meItem.renderBundle]); // ✅ Use only this bundle
         passEncoder.end();
       } else {
-        meItem.draw(commandEncoder)
+        meItem.draw(commandEncoder); // fallback if no renderBundle
       }
+    });
 
-    })
     this.device.queue.submit([commandEncoder.finish()]);
     requestAnimationFrame(this.frame);
   }
