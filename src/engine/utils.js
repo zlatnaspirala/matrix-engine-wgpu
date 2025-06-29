@@ -720,3 +720,18 @@ export let mb = {
     mb.show(content, 'ok');
   }
 }
+
+export function typeText(elementId, text, delay = 50) {
+  const el = document.getElementById(elementId);
+  let index = 0;
+
+  function typeNextChar() {
+    if (index < text.length) {
+      el.textContent += text.charAt(index);
+      index++;
+      setTimeout(typeNextChar, delay);
+    }
+  }
+
+  typeNextChar();
+}

@@ -13,10 +13,13 @@ export let application = new MatrixEngineWGPU({
   }
 }, () => {
   // Dom operations
+  application.userState = {
+    name: 'Guest',
+    points: 0
+  };
   application.myDom = myDom;
   myDom.createJamb();
   myDom.createBlocker();
-
   application.dices = dices;
 
   // This code must be on top (Physics)
@@ -443,6 +446,8 @@ export let application = new MatrixEngineWGPU({
       if(dices.STATUS == "FREE_TO_PLAY") {
         app.matrixSounds.play('start')
         dices.STATUS = "IN_PLAY";
+
+        dispatchEvent('updateTitle', {detail: app.label.get.hand1})
         addEventListener('dice-1', dice1Click)
         addEventListener('dice-2', dice2Click)
         addEventListener('dice-3', dice3Click)

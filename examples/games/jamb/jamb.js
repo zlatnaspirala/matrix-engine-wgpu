@@ -1,5 +1,5 @@
-import {LOG_FUNNY, LOG_INFO, LOG_MATRIX, byId, mb} from "../../../src/engine/utils.js";
-import {messageBoxHTML} from "./html-content.js";
+import {LOG_FUNNY, LOG_INFO, LOG_MATRIX, byId, mb, typeText} from "../../../src/engine/utils.js";
+import {messageBoxHTML, welcomeBoxHTML} from "./html-content.js";
 
 export let dices = {
   C: 0,
@@ -229,21 +229,7 @@ export let myDom = {
     messageBox.id = 'messageBox';
 
     // console.log('TEST', app.label.get)
-    messageBox.innerHTML = `
-     <span class="fancy-title" data-label="welcomeMsg"></span>
-     <a href="https://github.com/zlatnaspirala/matrix-engine-wgpu">zlatnaspirala/matrix-engine-wgpu</a><br><br>
-     <button class="btn" ><span style="font-size:30px;margin:15px;padding:10px" data-label="startGame"></span></button> <br>
-     <div><span class="fancy-label" data-label="changeLang"></span></div> 
-     <button class="btn" onclick="
-      app.label.loadMultilang('en').then(r => {
-        app.label.get = r;
-        app.label.update()
-      });
-     " ><span data-label="english"></span></button> 
-     <button class="btn" onclick="app.label.loadMultilang('sr').then(r => {
-        app.label.get = r
-        app.label.update() })" ><span data-label="serbian"></span></button> 
-    `;
+    messageBox.innerHTML = welcomeBoxHTML;
 
 
     let initialMsgBoxEvent = function() {
@@ -259,20 +245,18 @@ export let myDom = {
         });
       });
     };
-
-    messageBox.addEventListener('click', initialMsgBoxEvent)
     root.append(messageBox)
-
     document.body.appendChild(root);
-
     app.label.update();
-
-    // test 
     document.querySelectorAll('.btn, .fancy-label, .fancy-title').forEach(el => {
       el.addEventListener('mouseenter', () => {
         app.matrixSounds.play('hover');
       });
     });
+
+    setTimeout(() => {
+        byId('startFromWelcome').addEventListener('click', initialMsgBoxEvent)
+    }, 200);
   },
 
   createJamb: function() {
@@ -348,39 +332,18 @@ export let myDom = {
   },
 
   createSelectedBox: function() {
-    var handResultsBoxUI = document.createElement('div')
-    handResultsBoxUI.id = 'handResultsBoxUI';
-    handResultsBoxUI.style.width = 'auto';
-    handResultsBoxUI.style.position = 'absolute';
-    handResultsBoxUI.style.left = '35%';
-    handResultsBoxUI.style.top = '5%';
-    handResultsBoxUI.style.background = '#7d7d7d8c';
-    handResultsBoxUI.innerHTML = `SELECTED BOX`;
-    document.body.appendChild(handResultsBoxUI);
-    addEventListener('HAND_RESULTS', (e) => {
-      //
-
+    var topTitleDOM = document.createElement('div')
+    topTitleDOM.id = 'topTitleDOM';
+    topTitleDOM.style.width = 'auto';
+    topTitleDOM.style.position = 'absolute';
+    topTitleDOM.style.left = '35%';
+    topTitleDOM.style.top = '5%';
+    topTitleDOM.style.background = '#7d7d7d8c';
+    topTitleDOM.innerHTML = app.label.get.ready + ", " +app.userState.name + '.';
+    document.body.appendChild(topTitleDOM);
+    addEventListener('updateTitle', (e) => {
+      typeText('topTitleDOM', e.detail);
     })
-  },
-
-  // chooseFinalResults: function() {
-  //   var chooseFinalResults = document.createElement('div')
-  //   chooseFinalResults.id = 'chooseFinalResults';
-  //   chooseFinalResults.style.width = 'auto';
-  //   chooseFinalResults.style.position = 'absolute';
-  //   chooseFinalResults.style.left = '35%';
-  //   chooseFinalResults.style.top = '25%';
-  //   chooseFinalResults.style.background = '#7d7d7d8c';
-  //   chooseFinalResults.innerHTML = ``;
-  //   document.body.appendChild(chooseFinalResults);
-  //   chooseFinalResults.addEventListener('click', (e) => {
-  //     //
-  //   })
-  // },
-
-  addBallToSelectedBox: function(selectedBall) {
-    //
-
   },
 
   createLeftHeaderRow: function(myRoot) {

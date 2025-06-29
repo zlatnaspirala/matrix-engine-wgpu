@@ -4,7 +4,7 @@
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.messageBoxHTML = void 0;
+exports.welcomeBoxHTML = exports.messageBoxHTML = void 0;
 let messageBoxHTML = exports.messageBoxHTML = `
 <div>
   <span data-label="settings"></span>
@@ -23,6 +23,24 @@ let messageBoxHTML = exports.messageBoxHTML = `
     </div>
   </div>
 </div>`;
+let welcomeBoxHTML = exports.welcomeBoxHTML = `<span class="fancy-title" data-label="welcomeMsg"></span>
+     <a href="https://github.com/zlatnaspirala/matrix-engine-wgpu">zlatnaspirala/matrix-engine-wgpu</a><br><br>
+     <div style="display:flex;flex-direction:column;align-items: center;margin:20px;padding: 10px;">
+       <span style="width:100%">Choose nickname:</span>
+       <input style="text-align: center;height:50px;font-size:100%;width:250px" class="fancy-label" type="text" value="Guest" />
+      </div>
+     <button id="startFromWelcome" class="btn" ><span style="font-size:30px;margin:15px;padding:10px" data-label="startGame"></span></button> <br>
+     <div><span class="fancy-label" data-label="changeLang"></span></div> 
+     <button class="btn" onclick="
+      app.label.loadMultilang('en').then(r => {
+        app.label.get = r;
+        app.label.update()
+      });
+     " ><span data-label="english"></span></button> 
+     <button class="btn" onclick="app.label.loadMultilang('sr').then(r => {
+        app.label.get = r
+        app.label.update() })" ><span data-label="serbian"></span></button> 
+    `;
 
 },{}],2:[function(require,module,exports){
 "use strict";
@@ -236,21 +254,7 @@ let myDom = exports.myDom = {
     messageBox.id = 'messageBox';
 
     // console.log('TEST', app.label.get)
-    messageBox.innerHTML = `
-     <span class="fancy-title" data-label="welcomeMsg"></span>
-     <a href="https://github.com/zlatnaspirala/matrix-engine-wgpu">zlatnaspirala/matrix-engine-wgpu</a><br><br>
-     <button class="btn" ><span style="font-size:30px;margin:15px;padding:10px" data-label="startGame"></span></button> <br>
-     <div><span class="fancy-label" data-label="changeLang"></span></div> 
-     <button class="btn" onclick="
-      app.label.loadMultilang('en').then(r => {
-        app.label.get = r;
-        app.label.update()
-      });
-     " ><span data-label="english"></span></button> 
-     <button class="btn" onclick="app.label.loadMultilang('sr').then(r => {
-        app.label.get = r
-        app.label.update() })" ><span data-label="serbian"></span></button> 
-    `;
+    messageBox.innerHTML = _htmlContent.welcomeBoxHTML;
     let initialMsgBoxEvent = function () {
       console.log('click on msgbox');
       (0, _utils.byId)('messageBox').innerHTML = ``;
@@ -263,17 +267,17 @@ let myDom = exports.myDom = {
         });
       });
     };
-    messageBox.addEventListener('click', initialMsgBoxEvent);
     root.append(messageBox);
     document.body.appendChild(root);
     app.label.update();
-
-    // test 
     document.querySelectorAll('.btn, .fancy-label, .fancy-title').forEach(el => {
       el.addEventListener('mouseenter', () => {
         app.matrixSounds.play('hover');
       });
     });
+    setTimeout(() => {
+      (0, _utils.byId)('startFromWelcome').addEventListener('click', initialMsgBoxEvent);
+    }, 200);
   },
   createJamb: function () {
     var root = document.createElement('div');
@@ -341,36 +345,18 @@ let myDom = exports.myDom = {
     // console.log('JambTable added.')
   },
   createSelectedBox: function () {
-    var handResultsBoxUI = document.createElement('div');
-    handResultsBoxUI.id = 'handResultsBoxUI';
-    handResultsBoxUI.style.width = 'auto';
-    handResultsBoxUI.style.position = 'absolute';
-    handResultsBoxUI.style.left = '35%';
-    handResultsBoxUI.style.top = '5%';
-    handResultsBoxUI.style.background = '#7d7d7d8c';
-    handResultsBoxUI.innerHTML = `SELECTED BOX`;
-    document.body.appendChild(handResultsBoxUI);
-    addEventListener('HAND_RESULTS', e => {
-      //
+    var topTitleDOM = document.createElement('div');
+    topTitleDOM.id = 'topTitleDOM';
+    topTitleDOM.style.width = 'auto';
+    topTitleDOM.style.position = 'absolute';
+    topTitleDOM.style.left = '35%';
+    topTitleDOM.style.top = '5%';
+    topTitleDOM.style.background = '#7d7d7d8c';
+    topTitleDOM.innerHTML = app.label.get.ready + ", " + app.userState.name + '.';
+    document.body.appendChild(topTitleDOM);
+    addEventListener('updateTitle', e => {
+      (0, _utils.typeText)('topTitleDOM', e.detail);
     });
-  },
-  // chooseFinalResults: function() {
-  //   var chooseFinalResults = document.createElement('div')
-  //   chooseFinalResults.id = 'chooseFinalResults';
-  //   chooseFinalResults.style.width = 'auto';
-  //   chooseFinalResults.style.position = 'absolute';
-  //   chooseFinalResults.style.left = '35%';
-  //   chooseFinalResults.style.top = '25%';
-  //   chooseFinalResults.style.background = '#7d7d7d8c';
-  //   chooseFinalResults.innerHTML = ``;
-  //   document.body.appendChild(chooseFinalResults);
-  //   chooseFinalResults.addEventListener('click', (e) => {
-  //     //
-  //   })
-  // },
-
-  addBallToSelectedBox: function (selectedBall) {
-    //
   },
   createLeftHeaderRow: function (myRoot) {
     for (var x = 1; x < 7; x++) {
@@ -1227,6 +1213,10 @@ let application = exports.application = new _world.default({
   }
 }, () => {
   // Dom operations
+  application.userState = {
+    name: 'Guest',
+    points: 0
+  };
   application.myDom = _jamb.myDom;
   _jamb.myDom.createJamb();
   _jamb.myDom.createBlocker();
@@ -1763,6 +1753,9 @@ let application = exports.application = new _world.default({
       if (_jamb.dices.STATUS == "FREE_TO_PLAY") {
         app.matrixSounds.play('start');
         _jamb.dices.STATUS = "IN_PLAY";
+        dispatchEvent('updateTitle', {
+          detail: app.label.get.hand1
+        });
         addEventListener('dice-1', dice1Click);
         addEventListener('dice-2', dice2Click);
         addEventListener('dice-3', dice3Click);
@@ -10170,7 +10163,9 @@ exports.quaternion_rotation_matrix = quaternion_rotation_matrix;
 exports.radToDeg = radToDeg;
 exports.randomFloatFromTo = randomFloatFromTo;
 exports.randomIntFromTo = randomIntFromTo;
-exports.vec3 = exports.urlQuery = exports.scriptManager = void 0;
+exports.scriptManager = void 0;
+exports.typeText = typeText;
+exports.vec3 = exports.urlQuery = void 0;
 const vec3 = exports.vec3 = {
   cross(a, b, dst) {
     dst = dst || new Float32Array(3);
@@ -10886,6 +10881,18 @@ let mb = exports.mb = {
     mb.show(content, 'ok');
   }
 };
+function typeText(elementId, text, delay = 50) {
+  const el = document.getElementById(elementId);
+  let index = 0;
+  function typeNextChar() {
+    if (index < text.length) {
+      el.textContent += text.charAt(index);
+      index++;
+      setTimeout(typeNextChar, delay);
+    }
+  }
+  typeNextChar();
+}
 
 },{}],14:[function(require,module,exports){
 "use strict";
