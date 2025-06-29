@@ -99,7 +99,7 @@ export let welcomeBoxHTML =
   `<span class="fancy-title" data-label="welcomeMsg"></span>
      <a href="https://github.com/zlatnaspirala/matrix-engine-wgpu">zlatnaspirala/matrix-engine-wgpu</a><br><br>
      <div style="display:flex;flex-direction:column;align-items: center;margin:20px;padding: 10px;">
-       <span style="width:100%">Choose nickname:</span>
+       <span style="width:100%" data-label="choosename"></span>
        <input style="text-align: center;height:50px;font-size:100%;width:250px" class="fancy-label" type="text" value="Guest" />
       </div>
      <button id="startFromWelcome" class="btn" ><span style="font-size:30px;margin:15px;padding:10px" data-label="startGame"></span></button> <br>

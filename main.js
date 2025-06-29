@@ -391,10 +391,15 @@ export let application = new MatrixEngineWGPU({
 
     addEventListener('all-done', allDiceDoneProcedure);
     addEventListener('FREE_TO_PLAY', () => {
+
+
       // Big reset
       console.log(`%c<Big reset needed ...>`, LOG_FUNNY)
+      app.dices.SAVED_DICES = {};
+      
       // only from save dices needed 
       app.dices.activateAllDicesPhysics();
+
       setTimeout(() => {
         app.matrixAmmo.getBodyByName('CubePhysics1').applyImpulse(new Ammo.btVector3(0, 4, -5), new Ammo.btVector3(0, 0, 0));
         app.matrixAmmo.getBodyByName('CubePhysics2').applyImpulse(new Ammo.btVector3(0, 4, -10), new Ammo.btVector3(0, 0, 0));

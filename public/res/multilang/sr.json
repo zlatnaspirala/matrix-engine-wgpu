@@ -28,5 +28,6 @@
   "sounds": "Zvuk",
   "welcomeMsg": "Dobro došli, <br> otvoren izvori kod 🎲 Ultimate Jamb igra <br> Pokupi kod: ",
   "ready":"Sve je spremno za igru 🎲!",
-  "hand1":"Prvo bacanje - sackajte..."
+  "hand1":"Prvo bacanje - sackajte...",
+  "choosename":"Izaberi alias:"
 }

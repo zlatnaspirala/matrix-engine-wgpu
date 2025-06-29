@@ -29,5 +29,6 @@
   "welcomeMsg": "Welcome here, <br> open source project 🎲 Ultimate Yahtzee game <br> download from ",
   "ready":"Ready for play 🎲!",
   "hand1":"First hand in play - please wait...",
-  "graphics":"Graphics options"
+  "graphics":"Graphics options",
+  "choosename":"Choose nickname:"
 }
