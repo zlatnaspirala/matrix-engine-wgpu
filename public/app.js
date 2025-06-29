@@ -1399,6 +1399,42 @@ let application = exports.application = new _world.default({
       swap: [null]
     });
     (0, _loaderObj.downloadMeshes)({
+      star1: "./res/meshes/shapes/star1.obj"
+    }, m => {
+      application.addMeshObj({
+        position: {
+          x: 0,
+          y: 6,
+          z: -5
+        },
+        rotation: {
+          x: 0,
+          y: 0,
+          z: 0
+        },
+        rotationSpeed: {
+          x: 0,
+          y: 0,
+          z: 0
+        },
+        texturesPaths: ['./res/meshes/jamb/dice.png'],
+        useUVShema4x2: false,
+        name: 'star1',
+        mesh: m.star1,
+        raycast: {
+          enabled: true,
+          radius: 2
+        },
+        physics: {
+          enabled: false,
+          geometry: "Cube"
+        }
+      });
+    }, {
+      scale: [11, 11, 11],
+      swap: [null]
+    });
+    (0, _loaderObj.downloadMeshes)({
       bg: "./res/meshes/jamb/bg.obj"
     }, onLoadObjFloor, {
       scale: [3, 1, 3],
