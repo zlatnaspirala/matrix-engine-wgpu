@@ -126,12 +126,12 @@ export let application = new MatrixEngineWGPU({
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
         texturesPaths: ['./res/meshes/jamb/dice.png'],
-        useUVShema4x2: false,
+        useUVShema4x2: true,
         name: 'star1',
         mesh: m.star1,
         raycast: {enabled: true, radius: 2},
         physics: {
-          enabled: false,
+          enabled: true,
           geometry: "Cube"
         }
       })

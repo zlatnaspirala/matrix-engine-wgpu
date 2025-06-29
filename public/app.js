@@ -1418,7 +1418,7 @@ let application = exports.application = new _world.default({
           z: 0
         },
         texturesPaths: ['./res/meshes/jamb/dice.png'],
-        useUVShema4x2: false,
+        useUVShema4x2: true,
         name: 'star1',
         mesh: m.star1,
         raycast: {
@@ -1426,7 +1426,7 @@ let application = exports.application = new _world.default({
           radius: 2
         },
         physics: {
-          enabled: false,
+          enabled: true,
           geometry: "Cube"
         }
       });
@@ -12081,6 +12081,10 @@ class MatrixEngineWGPU {
           renderPass = commandEncoder.beginRenderPass(meItem.renderPassDescriptor);
           renderPass.setPipeline(meItem.pipeline);
         }
+        //  if(index == 0) {
+        // 	renderPass = commandEncoder.beginRenderPass(meItem.renderPassDescriptor);
+        // 	renderPass.setPipeline(meItem.pipeline);
+        //  }
       });
       this.mainRenderBundle.forEach((meItem, index) => {
         meItem.drawElements(renderPass);
