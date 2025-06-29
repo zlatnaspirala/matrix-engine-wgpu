@@ -300,7 +300,13 @@ export default class MatrixEngineWGPU {
   framePassPerObject = () => {
     let commandEncoder = this.device.createCommandEncoder();
 
-    this.mainRenderBundle.forEach((meItem) => {
+    this.mainRenderBundle.forEach((meItem, index) => {
+
+      if(index === 0) {
+        meItem.renderPassDescriptor.colorAttachments[0].loadOp = 'clear';
+      } else {
+        meItem.renderPassDescriptor.colorAttachments[0].loadOp = 'load';
+      }
       // Update transforms, physics, etc. (optional)
       meItem.draw(commandEncoder); // optional: if this does per-frame updates
 

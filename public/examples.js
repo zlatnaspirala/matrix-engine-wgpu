@@ -1481,8 +1481,8 @@ var unlitTextures = function () {
       },
       texturesPaths: ['./res/textures/default.png']
     };
-    unlitTextures.addBall(c);
     unlitTextures.addCube(o);
+    unlitTextures.addBall(c);
   });
   window.app = unlitTextures;
 };
@@ -7220,7 +7220,6 @@ class MEBall {
     if (typeof this.renderables === 'undefined') return;
     passEncoder.setPipeline(this.pipeline);
     passEncoder.setBindGroup(0, this.frameBindGroup);
-
     // Loop through every renderable object and draw them individually.
     // (Because many of these meshes are repeated, with only the transforms
     // differing, instancing would be highly effective here. This sample
@@ -11667,7 +11666,12 @@ class MatrixEngineWGPU {
   };
   framePassPerObject = () => {
     let commandEncoder = this.device.createCommandEncoder();
-    this.mainRenderBundle.forEach(meItem => {
+    this.mainRenderBundle.forEach((meItem, index) => {
+      if (index === 0) {
+        meItem.renderPassDescriptor.colorAttachments[0].loadOp = 'clear';
+      } else {
+        meItem.renderPassDescriptor.colorAttachments[0].loadOp = 'load';
+      }
       // Update transforms, physics, etc. (optional)
       meItem.draw(commandEncoder); // optional: if this does per-frame updates
 

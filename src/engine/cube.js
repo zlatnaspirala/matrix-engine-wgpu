@@ -356,7 +356,6 @@ export default class MECube {
 	renderScene(passEncoder) {
 
 		if(typeof this.renderables === 'undefined') return;
-
 		passEncoder.setPipeline(this.pipeline);
 		passEncoder.setBindGroup(0, this.frameBindGroup);
 

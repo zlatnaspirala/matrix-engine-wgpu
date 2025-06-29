@@ -440,12 +440,9 @@ export default class MEBall {
 	// Render bundles function as partial, limited render passes, so we can use the
 	// same code both to render the scene normally and to build the render bundle.
 	renderScene(passEncoder) {
-
 		if(typeof this.renderables === 'undefined') return;
-
 		passEncoder.setPipeline(this.pipeline);
 		passEncoder.setBindGroup(0, this.frameBindGroup);
-
 		// Loop through every renderable object and draw them individually.
 		// (Because many of these meshes are repeated, with only the transforms
 		// differing, instancing would be highly effective here. This sample

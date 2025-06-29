@@ -21,8 +21,10 @@ export var unlitTextures = function() {
       rotationSpeed: {x: 10, y: 0, z: 0},
       texturesPaths: ['./res/textures/default.png']
     };
-    unlitTextures.addBall(c)
     unlitTextures.addCube(o)
+    
+    unlitTextures.addBall(c)
+    
   })
 
   window.app = unlitTextures;
