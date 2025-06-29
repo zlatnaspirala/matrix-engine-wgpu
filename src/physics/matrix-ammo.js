@@ -86,6 +86,8 @@ export default class MatrixAmmo {
       rbInfo = new Ammo.btRigidBodyConstructionInfo(mass, myMotionState, colShape, localInertia),
       body = new Ammo.btRigidBody(rbInfo);
 
+      console.log("TEST ADDING PHYSICS ");
+
     body.MEObject = MEObject;
     this.dynamicsWorld.addRigidBody(body);
     this.rigidBodies.push(body);

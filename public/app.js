@@ -1401,11 +1401,12 @@ let application = exports.application = new _world.default({
     (0, _loaderObj.downloadMeshes)({
       star1: "./res/meshes/shapes/star1.obj"
     }, m => {
-      application.addMeshObj({
+      let o = {
+        scale: 2,
         position: {
-          x: 0,
-          y: 6,
-          z: -5
+          x: 3,
+          y: 0,
+          z: -10
         },
         rotation: {
           x: 0,
@@ -1413,23 +1414,28 @@ let application = exports.application = new _world.default({
           z: 0
         },
         rotationSpeed: {
-          x: 0,
+          x: 10,
           y: 0,
           z: 0
         },
-        texturesPaths: ['./res/meshes/jamb/dice.png'],
-        useUVShema4x2: true,
-        name: 'star1',
-        mesh: m.star1,
-        raycast: {
-          enabled: true,
-          radius: 2
-        },
-        physics: {
-          enabled: true,
-          geometry: "Cube"
-        }
-      });
+        texturesPaths: ['./res/textures/default.png']
+      };
+      application.addCube(o);
+
+      // application.addMeshObj({
+      //   position: {x: 0, y: 6, z: -5},
+      //   rotation: {x: 0, y: 0, z: 0},
+      //   rotationSpeed: {x: 0, y: 0, z: 0},
+      //   texturesPaths: ['./res/meshes/jamb/dice.png'],
+      //   useUVShema4x2: true,
+      //   name: 'star1',
+      //   mesh: m.star1,
+      //   raycast: {enabled: true, radius: 2},
+      //   physics: {
+      //     enabled: true,
+      //     geometry: "Cube"
+      //   }
+      // })
     }, {
       scale: [11, 11, 11],
       swap: [null]
@@ -7642,7 +7648,6 @@ class MEBall {
     if (typeof this.renderables === 'undefined') return;
     passEncoder.setPipeline(this.pipeline);
     passEncoder.setBindGroup(0, this.frameBindGroup);
-
     // Loop through every renderable object and draw them individually.
     // (Because many of these meshes are repeated, with only the transforms
     // differing, instancing would be highly effective here. This sample
@@ -9740,12 +9745,6 @@ class MEMeshObj {
     renderPass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
     renderPass.setIndexBuffer(this.indexBuffer, 'uint16');
     renderPass.drawIndexed(this.indexCount);
-
-    // test ray
-
-    // try{ OLD
-    // if(this.raycast.enabled == true) checkingRay(this)
-    // } catch(e) {}
   };
   drawShadows = shadowPass => {
     shadowPass.setBindGroup(0, this.sceneBindGroupForShadow);
@@ -11910,7 +11909,41 @@ class MatrixEngineWGPU {
       o.entityArgPass = this.entityArgPass;
       o.cameras = this.cameras;
     }
+    if (typeof o.physics === 'undefined') {
+      o.physics = {
+        scale: [1, 1, 1],
+        enabled: true,
+        geometry: "Sphere",
+        radius: o.scale,
+        name: o.name,
+        rotation: o.rotation
+      };
+    }
+    if (typeof o.physics.enabled === 'undefined') {
+      o.physics.enabled = true;
+    }
+    if (typeof o.physics.geometry === 'undefined') {
+      o.physics.geometry = "Sphere";
+    }
+    if (typeof o.physics.radius === 'undefined') {
+      o.physics.radius = o.scale;
+    }
+    if (typeof o.physics.mass === 'undefined') {
+      o.physics.mass = 1;
+    }
+    if (typeof o.physics.name === 'undefined') {
+      o.physics.name = o.name;
+    }
+    if (typeof o.physics.scale === 'undefined') {
+      o.physics.scale = o.scale;
+    }
+    if (typeof o.physics.rotation === 'undefined') {
+      o.physics.rotation = o.rotation;
+    }
     let myBall1 = new _ball.default(this.canvas, this.device, this.context, o);
+    if (o.physics.enabled == true) {
+      this.matrixAmmo.addPhysics(myBall1, o.physics);
+    }
     this.mainRenderBundle.push(myBall1);
   };
 
@@ -12081,10 +12114,6 @@ class MatrixEngineWGPU {
           renderPass = commandEncoder.beginRenderPass(meItem.renderPassDescriptor);
           renderPass.setPipeline(meItem.pipeline);
         }
-        //  if(index == 0) {
-        // 	renderPass = commandEncoder.beginRenderPass(meItem.renderPassDescriptor);
-        // 	renderPass.setPipeline(meItem.pipeline);
-        //  }
       });
       this.mainRenderBundle.forEach((meItem, index) => {
         meItem.drawElements(renderPass);
@@ -12098,19 +12127,25 @@ class MatrixEngineWGPU {
     }
   };
   framePassPerObject = () => {
-    // console.log('framePassPerObject')
     let commandEncoder = this.device.createCommandEncoder();
-    this.rbContainer = [];
-    let passEncoder;
+    this.matrixAmmo.updatePhysics();
     this.mainRenderBundle.forEach((meItem, index) => {
-      meItem.draw(commandEncoder);
+      if (index === 0) {
+        meItem.renderPassDescriptor.colorAttachments[0].loadOp = 'clear';
+      } else {
+        meItem.renderPassDescriptor.colorAttachments[0].loadOp = 'load';
+      }
+      // Update transforms, physics, etc. (optional)
+      meItem.draw(commandEncoder); // optional: if this does per-frame updates
+
       if (meItem.renderBundle) {
-        this.rbContainer.push(meItem.renderBundle);
-        passEncoder = commandEncoder.beginRenderPass(meItem.renderPassDescriptor);
-        passEncoder.executeBundles(this.rbContainer);
+        // Set up view per object
+        meItem.renderPassDescriptor.colorAttachments[0].view = this.context.getCurrentTexture().createView();
+        const passEncoder = commandEncoder.beginRenderPass(meItem.renderPassDescriptor);
+        passEncoder.executeBundles([meItem.renderBundle]); // ✅ Use only this bundle
         passEncoder.end();
       } else {
-        meItem.draw(commandEncoder);
+        meItem.draw(commandEncoder); // fallback if no renderBundle
       }
     });
     this.device.queue.submit([commandEncoder.finish()]);

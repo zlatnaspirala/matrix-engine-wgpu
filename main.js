@@ -129,7 +129,7 @@ export let application = new MatrixEngineWGPU({
         rotationSpeed: {x: 10, y: 0, z: 0},
         texturesPaths: ['./res/textures/default.png']
       };
-      unlitTextures.addBall(c)
+      application.addCube(o)
 
       // application.addMeshObj({
       //   position: {x: 0, y: 6, z: -5},

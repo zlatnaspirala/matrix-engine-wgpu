@@ -1443,46 +1443,48 @@ var unlitTextures = function () {
     useSingleRenderPass: false,
     canvasSize: 'fullscreen'
   }, () => {
-    let c = {
-      scale: 2,
-      position: {
-        x: -3,
-        y: 0,
-        z: -10
-      },
-      rotation: {
-        x: 0,
-        y: 0,
-        z: 0
-      },
-      rotationSpeed: {
-        x: 10,
-        y: 0,
-        z: 0
-      },
-      texturesPaths: ['./res/textures/rust.jpg']
-    };
-    let o = {
-      scale: 2,
-      position: {
-        x: 3,
-        y: 0,
-        z: -10
-      },
-      rotation: {
-        x: 0,
-        y: 0,
-        z: 0
-      },
-      rotationSpeed: {
-        x: 10,
-        y: 0,
-        z: 0
-      },
-      texturesPaths: ['./res/textures/default.png']
-    };
-    unlitTextures.addCube(o);
-    unlitTextures.addBall(c);
+    addEventListener('AmmoReady', () => {
+      let c = {
+        scale: 2,
+        position: {
+          x: -3,
+          y: 0,
+          z: -10
+        },
+        rotation: {
+          x: 0,
+          y: 0,
+          z: 0
+        },
+        rotationSpeed: {
+          x: 10,
+          y: 0,
+          z: 0
+        },
+        texturesPaths: ['./res/textures/rust.jpg']
+      };
+      let o = {
+        scale: 2,
+        position: {
+          x: 3,
+          y: 0,
+          z: -10
+        },
+        rotation: {
+          x: 0,
+          y: 0,
+          z: 0
+        },
+        rotationSpeed: {
+          x: 10,
+          y: 0,
+          z: 0
+        },
+        texturesPaths: ['./res/textures/default.png']
+      };
+      unlitTextures.addCube(o);
+      unlitTextures.addBall(c);
+    });
   });
   window.app = unlitTextures;
 };
@@ -10752,6 +10754,7 @@ class MatrixAmmo {
     var myMotionState = new Ammo.btDefaultMotionState(startTransform),
       rbInfo = new Ammo.btRigidBodyConstructionInfo(mass, myMotionState, colShape, localInertia),
       body = new Ammo.btRigidBody(rbInfo);
+    console.log("TEST ADDING PHYSICS ");
     body.MEObject = MEObject;
     this.dynamicsWorld.addRigidBody(body);
     this.rigidBodies.push(body);
@@ -11418,7 +11421,44 @@ class MatrixEngineWGPU {
       o.entityArgPass = this.entityArgPass;
       o.cameras = this.cameras;
     }
+    if (typeof o.physics === 'undefined') {
+      o.physics = {
+        scale: [1, 1, 1],
+        enabled: true,
+        geometry: "Sphere",
+        radius: o.scale,
+        name: o.name,
+        rotation: o.rotation
+      };
+    }
+    if (typeof o.position !== 'undefined') {
+      o.physics.position = o.position;
+    }
+    if (typeof o.physics.enabled === 'undefined') {
+      o.physics.enabled = true;
+    }
+    if (typeof o.physics.geometry === 'undefined') {
+      o.physics.geometry = "Sphere";
+    }
+    if (typeof o.physics.radius === 'undefined') {
+      o.physics.radius = o.scale;
+    }
+    if (typeof o.physics.mass === 'undefined') {
+      o.physics.mass = 1;
+    }
+    if (typeof o.physics.name === 'undefined') {
+      o.physics.name = o.name;
+    }
+    if (typeof o.physics.scale === 'undefined') {
+      o.physics.scale = o.scale;
+    }
+    if (typeof o.physics.rotation === 'undefined') {
+      o.physics.rotation = o.rotation;
+    }
     let myCube1 = new _cube.default(this.canvas, this.device, this.context, o);
+    if (o.physics.enabled == true) {
+      this.matrixAmmo.addPhysics(myCube1, o.physics);
+    }
     this.mainRenderBundle.push(myCube1);
   };
 
@@ -11481,7 +11521,44 @@ class MatrixEngineWGPU {
       o.entityArgPass = this.entityArgPass;
       o.cameras = this.cameras;
     }
+    if (typeof o.physics === 'undefined') {
+      o.physics = {
+        scale: [1, 1, 1],
+        enabled: true,
+        geometry: "Sphere",
+        radius: o.scale,
+        name: o.name,
+        rotation: o.rotation
+      };
+    }
+    if (typeof o.position !== 'undefined') {
+      o.physics.position = o.position;
+    }
+    if (typeof o.physics.enabled === 'undefined') {
+      o.physics.enabled = true;
+    }
+    if (typeof o.physics.geometry === 'undefined') {
+      o.physics.geometry = "Sphere";
+    }
+    if (typeof o.physics.radius === 'undefined') {
+      o.physics.radius = o.scale;
+    }
+    if (typeof o.physics.mass === 'undefined') {
+      o.physics.mass = 1;
+    }
+    if (typeof o.physics.name === 'undefined') {
+      o.physics.name = o.name;
+    }
+    if (typeof o.physics.scale === 'undefined') {
+      o.physics.scale = o.scale;
+    }
+    if (typeof o.physics.rotation === 'undefined') {
+      o.physics.rotation = o.rotation;
+    }
     let myBall1 = new _ball.default(this.canvas, this.device, this.context, o);
+    if (o.physics.enabled == true) {
+      this.matrixAmmo.addPhysics(myBall1, o.physics);
+    }
     this.mainRenderBundle.push(myBall1);
   };
 
@@ -11666,6 +11743,7 @@ class MatrixEngineWGPU {
   };
   framePassPerObject = () => {
     let commandEncoder = this.device.createCommandEncoder();
+    this.matrixAmmo.updatePhysics();
     this.mainRenderBundle.forEach((meItem, index) => {
       if (index === 0) {
         meItem.renderPassDescriptor.colorAttachments[0].loadOp = 'clear';
