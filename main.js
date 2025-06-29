@@ -447,7 +447,7 @@ export let application = new MatrixEngineWGPU({
         app.matrixSounds.play('start')
         dices.STATUS = "IN_PLAY";
 
-        dispatchEvent('updateTitle', {detail: app.label.get.hand1})
+        dispatchEvent(new CustomEvent('updateTitle', {detail: app.label.get.hand1}))
         addEventListener('dice-1', dice1Click)
         addEventListener('dice-2', dice2Click)
         addEventListener('dice-3', dice3Click)

@@ -723,6 +723,7 @@ export let mb = {
 
 export function typeText(elementId, text, delay = 50) {
   const el = document.getElementById(elementId);
+  el.innerText = '';
   let index = 0;
 
   function typeNextChar() {

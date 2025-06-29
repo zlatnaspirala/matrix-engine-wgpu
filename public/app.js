@@ -1753,9 +1753,9 @@ let application = exports.application = new _world.default({
       if (_jamb.dices.STATUS == "FREE_TO_PLAY") {
         app.matrixSounds.play('start');
         _jamb.dices.STATUS = "IN_PLAY";
-        dispatchEvent('updateTitle', {
+        dispatchEvent(new CustomEvent('updateTitle', {
           detail: app.label.get.hand1
-        });
+        }));
         addEventListener('dice-1', dice1Click);
         addEventListener('dice-2', dice2Click);
         addEventListener('dice-3', dice3Click);
@@ -10883,6 +10883,7 @@ let mb = exports.mb = {
 };
 function typeText(elementId, text, delay = 50) {
   const el = document.getElementById(elementId);
+  el.innerText = '';
   let index = 0;
   function typeNextChar() {
     if (index < text.length) {
