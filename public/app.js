@@ -1420,7 +1420,7 @@ let application = exports.application = new _world.default({
         },
         texturesPaths: ['./res/textures/default.png']
       };
-      application.addCube(o);
+      // application.addCube(o)
 
       // application.addMeshObj({
       //   position: {x: 0, y: 6, z: -5},
@@ -11180,6 +11180,7 @@ class MatrixAmmo {
     var myMotionState = new Ammo.btDefaultMotionState(startTransform),
       rbInfo = new Ammo.btRigidBodyConstructionInfo(mass, myMotionState, colShape, localInertia),
       body = new Ammo.btRigidBody(rbInfo);
+    console.log("TEST ADDING PHYSICS ");
     body.MEObject = MEObject;
     this.dynamicsWorld.addRigidBody(body);
     this.rigidBodies.push(body);
@@ -11344,6 +11345,7 @@ class MatrixAmmo {
     }
   }
   updatePhysics() {
+    if (!Ammo) return;
     const trans = new Ammo.btTransform();
     const transform = new Ammo.btTransform();
     this.rigidBodies.forEach(function (body) {
@@ -11846,7 +11848,44 @@ class MatrixEngineWGPU {
       o.entityArgPass = this.entityArgPass;
       o.cameras = this.cameras;
     }
+    if (typeof o.physics === 'undefined') {
+      o.physics = {
+        scale: [1, 1, 1],
+        enabled: true,
+        geometry: "Sphere",
+        radius: o.scale,
+        name: o.name,
+        rotation: o.rotation
+      };
+    }
+    if (typeof o.position !== 'undefined') {
+      o.physics.position = o.position;
+    }
+    if (typeof o.physics.enabled === 'undefined') {
+      o.physics.enabled = true;
+    }
+    if (typeof o.physics.geometry === 'undefined') {
+      o.physics.geometry = "Sphere";
+    }
+    if (typeof o.physics.radius === 'undefined') {
+      o.physics.radius = o.scale;
+    }
+    if (typeof o.physics.mass === 'undefined') {
+      o.physics.mass = 1;
+    }
+    if (typeof o.physics.name === 'undefined') {
+      o.physics.name = o.name;
+    }
+    if (typeof o.physics.scale === 'undefined') {
+      o.physics.scale = o.scale;
+    }
+    if (typeof o.physics.rotation === 'undefined') {
+      o.physics.rotation = o.rotation;
+    }
     let myCube1 = new _cube.default(this.canvas, this.device, this.context, o);
+    if (o.physics.enabled == true) {
+      this.matrixAmmo.addPhysics(myCube1, o.physics);
+    }
     this.mainRenderBundle.push(myCube1);
   };
 
@@ -11918,6 +11957,9 @@ class MatrixEngineWGPU {
         name: o.name,
         rotation: o.rotation
       };
+    }
+    if (typeof o.position !== 'undefined') {
+      o.physics.position = o.position;
     }
     if (typeof o.physics.enabled === 'undefined') {
       o.physics.enabled = true;
@@ -12131,13 +12173,12 @@ class MatrixEngineWGPU {
     this.matrixAmmo.updatePhysics();
     this.mainRenderBundle.forEach((meItem, index) => {
       if (index === 0) {
-        meItem.renderPassDescriptor.colorAttachments[0].loadOp = 'clear';
+        if (meItem.renderPassDescriptor) meItem.renderPassDescriptor.colorAttachments[0].loadOp = 'clear';
       } else {
-        meItem.renderPassDescriptor.colorAttachments[0].loadOp = 'load';
+        if (meItem.renderPassDescriptor) meItem.renderPassDescriptor.colorAttachments[0].loadOp = 'load';
       }
       // Update transforms, physics, etc. (optional)
       meItem.draw(commandEncoder); // optional: if this does per-frame updates
-
       if (meItem.renderBundle) {
         // Set up view per object
         meItem.renderPassDescriptor.colorAttachments[0].view = this.context.getCurrentTexture().createView();

@@ -349,15 +349,13 @@ export default class MatrixEngineWGPU {
     this.matrixAmmo.updatePhysics();
 
     this.mainRenderBundle.forEach((meItem, index) => {
-
       if(index === 0) {
-        meItem.renderPassDescriptor.colorAttachments[0].loadOp = 'clear';
+        if(meItem.renderPassDescriptor) meItem.renderPassDescriptor.colorAttachments[0].loadOp = 'clear';
       } else {
-        meItem.renderPassDescriptor.colorAttachments[0].loadOp = 'load';
+        if(meItem.renderPassDescriptor) meItem.renderPassDescriptor.colorAttachments[0].loadOp = 'load';
       }
       // Update transforms, physics, etc. (optional)
       meItem.draw(commandEncoder); // optional: if this does per-frame updates
-
       if(meItem.renderBundle) {
         // Set up view per object
         meItem.renderPassDescriptor.colorAttachments[0].view =

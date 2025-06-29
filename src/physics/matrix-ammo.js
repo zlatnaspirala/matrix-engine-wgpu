@@ -264,6 +264,7 @@ export default class MatrixAmmo {
   }
 
   updatePhysics() {
+    if (!Ammo) return;
     const trans = new Ammo.btTransform();
     const transform = new Ammo.btTransform();
 
