@@ -1,14 +1,23 @@
-
 export class MatrixSounds {
 
   constructor() {
     this.volume = 0.5;
     this.audios = {};
+    this.enabled = true; // 🔇 global flag to mute/allow audio
+  }
+
+  muteAll() {
+    this.enabled = false;
+    Object.values(this.audios).forEach(audio => audio.pause());
+  }
+
+  unmuteAll() {
+    this.enabled = true;
   }
 
   createClones(c, name, path) {
-    for(var x = 1;x < c;x++) {
-      let a = new Audio(path);
+    for(let x = 1;x < c;x++) {
+      const a = new Audio(path);
       a.id = name + x;
       a.volume = this.volume;
       this.audios[name + x] = a;
@@ -17,7 +26,7 @@ export class MatrixSounds {
   }
 
   createAudio(name, path, useClones) {
-    let a = new Audio(path);
+    const a = new Audio(path);
     a.id = name;
     a.volume = this.volume;
     this.audios[name] = a;
@@ -28,8 +37,13 @@ export class MatrixSounds {
   }
 
   play(name) {
-    if(this.audios[name].paused == true) {
-      this.audios[name].play().catch((e) => {
+    if(!this.enabled) return; // 🔇 prevent playing if muted
+
+    const audio = this.audios[name];
+    if(!audio) return;
+
+    if(audio.paused) {
+      audio.play().catch((e) => {
         if(e.name !== 'NotAllowedError') console.warn("sounds error:", e);
       });
     } else {
@@ -38,12 +52,18 @@ export class MatrixSounds {
   }
 
   tryClone(name) {
-    var cc = 1;
+    if(!this.enabled) return; // 🔇 prevent playing clones
+
+    let cc = 1;
     try {
-      while(this.audios[name + cc].paused == false) {
+      while(this.audios[name + cc] && this.audios[name + cc].paused === false) {
         cc++;
       }
-      if(this.audios[name + cc]) this.audios[name + cc].play();
-    } catch(err) {}
+      if(this.audios[name + cc]) {
+        this.audios[name + cc].play();
+      }
+    } catch(err) {
+      console.warn("Clone play failed:", err);
+    }
   }
 }

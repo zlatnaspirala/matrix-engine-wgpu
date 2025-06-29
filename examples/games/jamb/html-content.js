@@ -1,14 +1,91 @@
 
-export let messageBoxHTML = `
+export let settingsBox = `
 <div>
-  <span data-label="settings"></span>
-  <div>
+  <span style="font-size:170%" data-label="settings"></span>
+  <div style="margin:20px;" >
     <div>
       <span data-label="sounds"></span>
       <label class="switch">
-        <input type="checkbox">
+        <input id="settingsAudios" type="checkbox">
         <span class="sliderSwitch round"></span>
       </label>
+    </div>
+    <div>
+    <div>
+      <span data-label="graphics"></span>
+      <select id="blurControl">
+        <option value="0px">Blur: 0</option>
+        <option value="1px">Blur: 1</option>
+        <option value="2px">Blur: 2</option>
+        <option value="3px">Blur: 3</option>
+      </select>
+      </div>
+
+      <div>
+      <select id="grayscaleControl">
+        <option value="0%">Grayscale: 0%</option>
+        <option value="25%">Grayscale: 25%</option>
+        <option value="50%">Grayscale: 50%</option>
+        <option value="75%">Grayscale: 75%</option>
+        <option value="100%">Grayscale: 100%</option>
+      </select>
+      </div>
+      
+      <div>
+       <label>Brightness:</label>
+      <select id="brightnessControl">
+        <option value="100%">100%</option>
+        <option value="150%">150%</option>
+        <option value="200%">200%</option>
+      </select>
+      </div>
+      
+      <div>
+      <label>Contrast:</label>
+      <select id="contrastControl">
+        <option value="100%">100%</option>
+        <option value="150%">150%</option>
+        <option value="200%">200%</option>
+      </select>
+      </div>
+      
+      <div>
+      <label>Saturate:</label>
+      <select id="saturateControl">
+        <option value="100%">100%</option>
+        <option value="150%">150%</option>
+        <option value="200%">200%</option>
+      </select>
+     </div>
+      
+      <div>
+      <label>Sepia:</label>
+      <select id="sepiaControl">
+        <option value="0%">0%</option>
+        <option value="50%">50%</option>
+        <option value="100%">100%</option>
+      </select>
+     </div>
+      
+      <div>
+      <label>Invert:</label>
+      <select id="invertControl">
+        <option value="0%">0%</option>
+        <option value="50%">50%</option>
+        <option value="100%">100%</option>
+      </select>
+     </div>
+      
+      <div>
+      <label>Hue Rotate:</label>
+      <select id="hueControl">
+        <option value="0deg">0°</option>
+        <option value="90deg">90°</option>
+        <option value="180deg">180°</option>
+        <option value="270deg">270°</option>
+      </select>
+      </div>
+
     </div>
     <div>
       <button class="btn" onclick="app.myDom.hideSettings()">

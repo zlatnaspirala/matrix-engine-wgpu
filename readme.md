@@ -240,6 +240,9 @@ If this happen less then 15 times (Loading procces) then it is ok probably...
 Draw func (err):TypeError: Failed to execute 'beginRenderPass' on 'GPUCommandEncoder': The provided value is not of type 'GPURenderPassDescriptor'.
 ```
 
+## @Note
+I act according to the fact that there is only one canvas element on the page.
+
 
 ---
 

@@ -1,5 +1,5 @@
-import {LOG_FUNNY, LOG_INFO, LOG_MATRIX, byId, mb, typeText} from "../../../src/engine/utils.js";
-import {messageBoxHTML, welcomeBoxHTML} from "./html-content.js";
+import {LOG_FUNNY, LOG_INFO, LOG_MATRIX, byId, mb, setupCanvasFilters, typeText} from "../../../src/engine/utils.js";
+import {settingsBox, welcomeBoxHTML} from "./html-content.js";
 
 export let dices = {
   C: 0,
@@ -192,10 +192,18 @@ export let myDom = {
     settings.classList.add('btn')
     settings.innerHTML = `<span data-label="settings"></span>`;
     settings.addEventListener('click', () => {
-      byId('messageBox').innerHTML = messageBoxHTML;
+      byId('messageBox').innerHTML = settingsBox;
       byId('blocker').style.display = 'flex';
-      byId('messageBox').style.display = 'flex';
+      byId('messageBox').style.display = 'unset';
       dispatchEvent(new CustomEvent('updateLang', {}))
+      byId('settingsAudios').addEventListener('change', (e) => {
+        if (e.target.checked == true) {
+          app.matrixSounds.unmuteAll();
+        } else {
+          app.matrixSounds.muteAll();
+        }
+      });
+      setupCanvasFilters();
     })
 
     var roll = document.createElement('div')

@@ -727,7 +727,7 @@ export function typeText(elementId, text, delay = 50) {
   let index = 0;
 
   function typeNextChar() {
-    if (index < text.length) {
+    if(index < text.length) {
       el.textContent += text.charAt(index);
       index++;
       setTimeout(typeNextChar, delay);
@@ -735,4 +735,58 @@ export function typeText(elementId, text, delay = 50) {
   }
 
   typeNextChar();
+}
+
+export function setupCanvasFilters(canvasId) {
+  let canvas = document.getElementById(canvasId);
+  if(canvas == null) {
+    canvas = document.getElementsByTagName('canvas')[0];
+  }
+
+  const filterState = {
+    blur: "0px",
+    grayscale: "0%",
+    brightness: "100%",
+    contrast: "100%",
+    saturate: "100%",
+    sepia: "0%",
+    invert: "0%",
+    hueRotate: "0deg"
+  };
+
+  function updateFilter() {
+    const filterString = `
+      blur(${filterState.blur}) 
+      grayscale(${filterState.grayscale}) 
+      brightness(${filterState.brightness}) 
+      contrast(${filterState.contrast}) 
+      saturate(${filterState.saturate}) 
+      sepia(${filterState.sepia}) 
+      invert(${filterState.invert}) 
+      hue-rotate(${filterState.hueRotate})
+    `.trim();
+
+    canvas.style.filter = filterString;
+  }
+
+  const bindings = {
+    blurControl: "blur",
+    grayscaleControl: "grayscale",
+    brightnessControl: "brightness",
+    contrastControl: "contrast",
+    saturateControl: "saturate",
+    sepiaControl: "sepia",
+    invertControl: "invert",
+    hueControl: "hueRotate"
+  };
+
+  Object.entries(bindings).forEach(([selectId, key]) => {
+    const el = document.getElementById(selectId);
+    el.addEventListener("change", (e) => {
+      filterState[key] = e.target.value;
+      updateFilter();
+    });
+  });
+
+  updateFilter(); // Initial
 }

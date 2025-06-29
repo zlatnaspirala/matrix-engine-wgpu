@@ -4,17 +4,94 @@
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.welcomeBoxHTML = exports.messageBoxHTML = void 0;
-let messageBoxHTML = exports.messageBoxHTML = `
+exports.welcomeBoxHTML = exports.settingsBox = void 0;
+let settingsBox = exports.settingsBox = `
 <div>
-  <span data-label="settings"></span>
-  <div>
+  <span style="font-size:170%" data-label="settings"></span>
+  <div style="margin:20px;" >
     <div>
       <span data-label="sounds"></span>
       <label class="switch">
-        <input type="checkbox">
+        <input id="settingsAudios" type="checkbox">
         <span class="sliderSwitch round"></span>
       </label>
+    </div>
+    <div>
+    <div>
+      <span data-label="graphics"></span>
+      <select id="blurControl">
+        <option value="0px">Blur: 0</option>
+        <option value="1px">Blur: 1</option>
+        <option value="2px">Blur: 2</option>
+        <option value="3px">Blur: 3</option>
+      </select>
+      </div>
+
+      <div>
+      <select id="grayscaleControl">
+        <option value="0%">Grayscale: 0%</option>
+        <option value="25%">Grayscale: 25%</option>
+        <option value="50%">Grayscale: 50%</option>
+        <option value="75%">Grayscale: 75%</option>
+        <option value="100%">Grayscale: 100%</option>
+      </select>
+      </div>
+      
+      <div>
+       <label>Brightness:</label>
+      <select id="brightnessControl">
+        <option value="100%">100%</option>
+        <option value="150%">150%</option>
+        <option value="200%">200%</option>
+      </select>
+      </div>
+      
+      <div>
+      <label>Contrast:</label>
+      <select id="contrastControl">
+        <option value="100%">100%</option>
+        <option value="150%">150%</option>
+        <option value="200%">200%</option>
+      </select>
+      </div>
+      
+      <div>
+      <label>Saturate:</label>
+      <select id="saturateControl">
+        <option value="100%">100%</option>
+        <option value="150%">150%</option>
+        <option value="200%">200%</option>
+      </select>
+     </div>
+      
+      <div>
+      <label>Sepia:</label>
+      <select id="sepiaControl">
+        <option value="0%">0%</option>
+        <option value="50%">50%</option>
+        <option value="100%">100%</option>
+      </select>
+     </div>
+      
+      <div>
+      <label>Invert:</label>
+      <select id="invertControl">
+        <option value="0%">0%</option>
+        <option value="50%">50%</option>
+        <option value="100%">100%</option>
+      </select>
+     </div>
+      
+      <div>
+      <label>Hue Rotate:</label>
+      <select id="hueControl">
+        <option value="0deg">0°</option>
+        <option value="90deg">90°</option>
+        <option value="180deg">180°</option>
+        <option value="270deg">270°</option>
+      </select>
+      </div>
+
     </div>
     <div>
       <button class="btn" onclick="app.myDom.hideSettings()">
@@ -223,10 +300,18 @@ let myDom = exports.myDom = {
     settings.classList.add('btn');
     settings.innerHTML = `<span data-label="settings"></span>`;
     settings.addEventListener('click', () => {
-      (0, _utils.byId)('messageBox').innerHTML = _htmlContent.messageBoxHTML;
+      (0, _utils.byId)('messageBox').innerHTML = _htmlContent.settingsBox;
       (0, _utils.byId)('blocker').style.display = 'flex';
-      (0, _utils.byId)('messageBox').style.display = 'flex';
+      (0, _utils.byId)('messageBox').style.display = 'unset';
       dispatchEvent(new CustomEvent('updateLang', {}));
+      (0, _utils.byId)('settingsAudios').addEventListener('change', e => {
+        if (e.target.checked == true) {
+          app.matrixSounds.unmuteAll();
+        } else {
+          app.matrixSounds.muteAll();
+        }
+      });
+      (0, _utils.setupCanvasFilters)();
     });
     var roll = document.createElement('div');
     roll.id = 'hud-roll';
@@ -10164,6 +10249,7 @@ exports.radToDeg = radToDeg;
 exports.randomFloatFromTo = randomFloatFromTo;
 exports.randomIntFromTo = randomIntFromTo;
 exports.scriptManager = void 0;
+exports.setupCanvasFilters = setupCanvasFilters;
 exports.typeText = typeText;
 exports.vec3 = exports.urlQuery = void 0;
 const vec3 = exports.vec3 = {
@@ -10894,6 +10980,53 @@ function typeText(elementId, text, delay = 50) {
   }
   typeNextChar();
 }
+function setupCanvasFilters(canvasId) {
+  let canvas = document.getElementById(canvasId);
+  if (canvas == null) {
+    canvas = document.getElementsByTagName('canvas')[0];
+  }
+  const filterState = {
+    blur: "0px",
+    grayscale: "0%",
+    brightness: "100%",
+    contrast: "100%",
+    saturate: "100%",
+    sepia: "0%",
+    invert: "0%",
+    hueRotate: "0deg"
+  };
+  function updateFilter() {
+    const filterString = `
+      blur(${filterState.blur}) 
+      grayscale(${filterState.grayscale}) 
+      brightness(${filterState.brightness}) 
+      contrast(${filterState.contrast}) 
+      saturate(${filterState.saturate}) 
+      sepia(${filterState.sepia}) 
+      invert(${filterState.invert}) 
+      hue-rotate(${filterState.hueRotate})
+    `.trim();
+    canvas.style.filter = filterString;
+  }
+  const bindings = {
+    blurControl: "blur",
+    grayscaleControl: "grayscale",
+    brightnessControl: "brightness",
+    contrastControl: "contrast",
+    saturateControl: "saturate",
+    sepiaControl: "sepia",
+    invertControl: "invert",
+    hueControl: "hueRotate"
+  };
+  Object.entries(bindings).forEach(([selectId, key]) => {
+    const el = document.getElementById(selectId);
+    el.addEventListener("change", e => {
+      filterState[key] = e.target.value;
+      updateFilter();
+    });
+  });
+  updateFilter(); // Initial
+}
 
 },{}],14:[function(require,module,exports){
 "use strict";
@@ -11429,10 +11562,18 @@ class MatrixSounds {
   constructor() {
     this.volume = 0.5;
     this.audios = {};
+    this.enabled = true; // 🔇 global flag to mute/allow audio
+  }
+  muteAll() {
+    this.enabled = false;
+    Object.values(this.audios).forEach(audio => audio.pause());
+  }
+  unmuteAll() {
+    this.enabled = true;
   }
   createClones(c, name, path) {
-    for (var x = 1; x < c; x++) {
-      let a = new Audio(path);
+    for (let x = 1; x < c; x++) {
+      const a = new Audio(path);
       a.id = name + x;
       a.volume = this.volume;
       this.audios[name + x] = a;
@@ -11440,7 +11581,7 @@ class MatrixSounds {
     }
   }
   createAudio(name, path, useClones) {
-    let a = new Audio(path);
+    const a = new Audio(path);
     a.id = name;
     a.volume = this.volume;
     this.audios[name] = a;
@@ -11450,8 +11591,12 @@ class MatrixSounds {
     }
   }
   play(name) {
-    if (this.audios[name].paused == true) {
-      this.audios[name].play().catch(e => {
+    if (!this.enabled) return; // 🔇 prevent playing if muted
+
+    const audio = this.audios[name];
+    if (!audio) return;
+    if (audio.paused) {
+      audio.play().catch(e => {
         if (e.name !== 'NotAllowedError') console.warn("sounds error:", e);
       });
     } else {
@@ -11459,13 +11604,19 @@ class MatrixSounds {
     }
   }
   tryClone(name) {
-    var cc = 1;
+    if (!this.enabled) return; // 🔇 prevent playing clones
+
+    let cc = 1;
     try {
-      while (this.audios[name + cc].paused == false) {
+      while (this.audios[name + cc] && this.audios[name + cc].paused === false) {
         cc++;
       }
-      if (this.audios[name + cc]) this.audios[name + cc].play();
-    } catch (err) {}
+      if (this.audios[name + cc]) {
+        this.audios[name + cc].play();
+      }
+    } catch (err) {
+      console.warn("Clone play failed:", err);
+    }
   }
 }
 exports.MatrixSounds = MatrixSounds;
