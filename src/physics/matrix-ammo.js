@@ -11,9 +11,9 @@ export default class MatrixAmmo {
       undefined,
       this.init,
     );
-
     this.lastRoll = '';
     this.presentScore = '';
+    this.speedUpSimulation = 1;
   }
 
   init = () => {
@@ -86,7 +86,7 @@ export default class MatrixAmmo {
       rbInfo = new Ammo.btRigidBodyConstructionInfo(mass, myMotionState, colShape, localInertia),
       body = new Ammo.btRigidBody(rbInfo);
 
-      console.log("TEST ADDING PHYSICS ");
+    console.log("TEST ADDING PHYSICS ");
 
     body.MEObject = MEObject;
     this.dynamicsWorld.addRigidBody(body);
@@ -264,7 +264,7 @@ export default class MatrixAmmo {
   }
 
   updatePhysics() {
-    if (!Ammo) return;
+    if(!Ammo) return;
     const trans = new Ammo.btTransform();
     const transform = new Ammo.btTransform();
 
@@ -296,7 +296,12 @@ export default class MatrixAmmo {
     Ammo.destroy(transform);
 
     // Step simulation AFTER setting kinematic transforms
-    this.dynamicsWorld.stepSimulation(1 / 60, 10);
+    const timeStep = 1 / 60;
+    const maxSubSteps = 10;
+
+    for(let i = 0;i < this.speedUpSimulation;i++) {
+      this.dynamicsWorld.stepSimulation(timeStep, maxSubSteps);
+    }
 
     this.rigidBodies.forEach(function(body) {
       if(!body.isKinematic && body.getMotionState()) {

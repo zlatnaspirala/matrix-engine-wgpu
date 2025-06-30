@@ -15,6 +15,14 @@ export let dices = {
     this.refreshSelectedBox()
   },
 
+  setStartUpPosition: () => {
+    // 
+    let currentIndex = 0;
+    for(var x = 1;x < 7;x++) {
+      app.matrixAmmo.getBodyByName(('CubePhysics' + x)).MEObject.position.setPosition(-5 + currentIndex * 5, 2, -15);
+    }
+  },
+
   refreshSelectedBox: function(arg) {
     let currentIndex = 0;
     for(var key in this.SAVED_DICES) {
@@ -52,11 +60,10 @@ export let dices = {
     body.isKinematic = true;
   },
 
-  resetBodyAboveFloor: function(body, x = 0, z = 0) {
-    const y = 3 + Math.random();
+  resetBodyAboveFloor: function(body, z = -14) {
     const transform = new Ammo.btTransform();
     transform.setIdentity();
-    transform.setOrigin(new Ammo.btVector3(x, y, z));
+    transform.setOrigin(new Ammo.btVector3(-1 + Math.random(), 3, z));
     body.setWorldTransform(transform);
     body.getMotionState().setWorldTransform(transform);
   },
@@ -98,14 +105,14 @@ export let dices = {
 
   activateAllDicesPhysics: function() {
     this.getAllDices()
-      .filter((item) => {
-        let test = app.matrixAmmo.getBodyByName(item.name)?.isKinematicObject();
-        if(test === true) {
-          return true;
-        } else {
-          return false;
-        }
-      })
+      // .filter((item) => {
+      //   let test = app.matrixAmmo.getBodyByName(item.name)?.isKinematicObject();
+      //   if(test === true) {
+      //     return true;
+      //   } else {
+      //     return false;
+      //   }
+      // })
       .forEach((dice) => {
         const body = app.matrixAmmo.getBodyByName(dice.name);
         if(body) {
@@ -192,18 +199,30 @@ export let myDom = {
     settings.classList.add('btn')
     settings.innerHTML = `<span data-label="settings"></span>`;
     settings.addEventListener('click', () => {
+      if(document.getElementById('messageBox').getAttribute('data-loaded') != null) {
+        byId('blocker').style.display = 'flex';
+        byId('messageBox').style.display = 'unset';
+        return;
+      }
       byId('messageBox').innerHTML = settingsBox;
       byId('blocker').style.display = 'flex';
       byId('messageBox').style.display = 'unset';
       dispatchEvent(new CustomEvent('updateLang', {}))
+
+      byId('settingsAudios').click()
       byId('settingsAudios').addEventListener('change', (e) => {
-        if (e.target.checked == true) {
+        if(e.target.checked == true) {
           app.matrixSounds.unmuteAll();
         } else {
           app.matrixSounds.muteAll();
         }
       });
       setupCanvasFilters();
+      byId('messageBox').setAttribute('data-loaded', 'loaded')
+      byId("physicsSpeed").addEventListener("change", (e) => {
+        app.matrixAmmo.speedUpSimulation = parseInt(e.target.value);
+      });
+
     })
 
     var roll = document.createElement('div')
@@ -263,7 +282,7 @@ export let myDom = {
     });
 
     setTimeout(() => {
-        byId('startFromWelcome').addEventListener('click', initialMsgBoxEvent)
+      byId('startFromWelcome').addEventListener('click', initialMsgBoxEvent)
     }, 200);
   },
 
@@ -271,11 +290,6 @@ export let myDom = {
     var root = document.createElement('div')
     root.id = 'jambTable';
     root.style.position = 'absolute';
-    root.style.display = 'flex';
-    root.style.top = '5px';
-    root.style.left = '5px';
-    root.style.width = '200px';
-    // root.style.background = '#7d7d7d8c';
 
     var rowHeader = document.createElement('div')
     rowHeader.id = 'rowHeader';
@@ -339,6 +353,23 @@ export let myDom = {
     // console.log('JambTable added.')
   },
 
+  showHideJambTable: () => {
+    const panel = document.getElementById('jambTable');
+    if(panel.classList.contains('show')) {
+      panel.classList.remove('show');
+      panel.classList.add('hide');
+      // Delay actual hiding from layout to finish animation
+      setTimeout(() => {
+        panel.style.display = 'none';
+      }, 300);
+    } else {
+      panel.style.display = 'flex';
+      setTimeout(() => {
+        panel.classList.remove('hide');
+        panel.classList.add('show');
+      }, 10); // allow repaint
+    }
+  },
   createSelectedBox: function() {
     var topTitleDOM = document.createElement('div')
     topTitleDOM.id = 'topTitleDOM';
@@ -347,7 +378,7 @@ export let myDom = {
     topTitleDOM.style.left = '35%';
     topTitleDOM.style.top = '5%';
     topTitleDOM.style.background = '#7d7d7d8c';
-    topTitleDOM.innerHTML = app.label.get.ready + ", " +app.userState.name + '.';
+    topTitleDOM.innerHTML = app.label.get.ready + ", " + app.userState.name + '.';
     document.body.appendChild(topTitleDOM);
     addEventListener('updateTitle', (e) => {
       typeText('topTitleDOM', e.detail);
@@ -656,6 +687,7 @@ export let myDom = {
       rowNumber.style.left = '10px';
       rowNumber.style.width = 'auto';
       rowNumber.style.background = '#7d7d7d8c';
+      rowNumber.style.cursor = 'pointer';
       rowNumber.innerHTML = `-`;
 
       this.memoNumberRow.push(rowNumber)

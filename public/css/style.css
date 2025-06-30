@@ -659,3 +659,33 @@ option {
   padding: 6px;
   font-family: 'Orbitron', sans-serif;
 }
+
+#jambTable {
+  position: absolute;
+  display:flex;
+  top: 17%;
+  left: 17%;
+  width: 300px;
+  transform: translate(-50%, -50%) scale(1);
+  background: rgba(0, 0, 0, 0.9);
+  border: 2px solid #0ff;
+  padding: 15px;
+  border-radius: 12px;
+  transform-origin: center center;
+  transition: transform 0.4s ease, opacity 0.3s ease;
+  font-family: 'Orbitron', sans-serif;
+}
+
+/* Visible state */
+#jambTable.show {
+  display: flex;
+  transform: translate(-50%, -50%) scale(1);
+  opacity: 1;
+}
+
+/* Hidden state */
+#jambTable.hide {
+  transform: translate(-50%, -50%) scale(0);
+  opacity: 0;
+  pointer-events: none;
+}

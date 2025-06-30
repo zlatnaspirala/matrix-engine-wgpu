@@ -390,24 +390,19 @@ export let application = new MatrixEngineWGPU({
     };
 
     addEventListener('all-done', allDiceDoneProcedure);
+
     addEventListener('FREE_TO_PLAY', () => {
-
-
       // Big reset
       console.log(`%c<Big reset needed ...>`, LOG_FUNNY)
       app.dices.SAVED_DICES = {};
-      
-      // only from save dices needed 
-      app.dices.activateAllDicesPhysics();
-
+      app.dices.setStartUpPosition();
       setTimeout(() => {
-        app.matrixAmmo.getBodyByName('CubePhysics1').applyImpulse(new Ammo.btVector3(0, 4, -5), new Ammo.btVector3(0, 0, 0));
-        app.matrixAmmo.getBodyByName('CubePhysics2').applyImpulse(new Ammo.btVector3(0, 4, -10), new Ammo.btVector3(0, 0, 0));
-        app.matrixAmmo.getBodyByName('CubePhysics3').applyImpulse(new Ammo.btVector3(0, 3, -15), new Ammo.btVector3(0, 0, 0));
-        app.matrixAmmo.getBodyByName('CubePhysics4').applyImpulse(new Ammo.btVector3(0, 3, -5), new Ammo.btVector3(0, 0, 0));
-        app.matrixAmmo.getBodyByName('CubePhysics5').applyImpulse(new Ammo.btVector3(0, 5, -5), new Ammo.btVector3(0, 0, 0));
-        app.matrixAmmo.getBodyByName('CubePhysics6').applyImpulse(new Ammo.btVector3(0, 6, -5), new Ammo.btVector3(0, 0, 0));
+        app.dices.activateAllDicesPhysics();
       }, 1000);
+      app.cameras.WASD.yaw = 0;
+      app.cameras.WASD.pitch = 0;
+      app.cameras.WASD.position[2] = 0;
+      app.cameras.WASD.position[1] = 3.76;
     })
 
     // ACTIONS
@@ -493,7 +488,6 @@ export let application = new MatrixEngineWGPU({
           shootDice(x)
         }
       } else if(dices.STATUS == "SELECT_DICES_1" || dices.STATUS == "SELECT_DICES_2") {
-        // console.log('LAST ROLL...')
         // Now no selected dices still rolling
         for(let i = 1;i <= 6;i++) {
           const key = "CubePhysics" + i;

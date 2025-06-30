@@ -13,6 +13,13 @@ export let settingsBox = `
     <div>
     <div>
       <span data-label="graphics"></span>
+
+      <select id="physicsSpeed" class="setting-select">
+        <option value="1">Slow</option>
+        <option value="2">Normal</option>
+        <option value="3">Fast</option>
+      </select>
+
       <select id="blurControl">
         <option value="0px">Blur: 0</option>
         <option value="1px">Blur: 1</option>

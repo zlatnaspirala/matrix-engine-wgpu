@@ -243,6 +243,11 @@ Draw func (err):TypeError: Failed to execute 'beginRenderPass' on 'GPUCommandEnc
 ## @Note
 I act according to the fact that there is only one canvas element on the page.
 
+## About URLParams
+Buildin Url Param check for multiLang.
+```js
+    urlQuery.lang
+```
 
 ---
 

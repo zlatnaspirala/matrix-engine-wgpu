@@ -19,6 +19,13 @@ let settingsBox = exports.settingsBox = `
     <div>
     <div>
       <span data-label="graphics"></span>
+
+      <select id="physicsSpeed" class="setting-select">
+        <option value="1">Slow</option>
+        <option value="2">Normal</option>
+        <option value="3">Fast</option>
+      </select>
+
       <select id="blurControl">
         <option value="0px">Blur: 0</option>
         <option value="1px">Blur: 1</option>
@@ -141,6 +148,13 @@ let dices = exports.dices = {
     this.SAVED_DICES[dice] = this.R[dice];
     this.refreshSelectedBox();
   },
+  setStartUpPosition: () => {
+    // 
+    let currentIndex = 0;
+    for (var x = 1; x < 7; x++) {
+      app.matrixAmmo.getBodyByName('CubePhysics' + x).MEObject.position.setPosition(-5 + currentIndex * 5, 2, -15);
+    }
+  },
   refreshSelectedBox: function (arg) {
     let currentIndex = 0;
     for (var key in this.SAVED_DICES) {
@@ -176,11 +190,10 @@ let dices = exports.dices = {
     // 6. Mark it manually (logic flag)
     body.isKinematic = true;
   },
-  resetBodyAboveFloor: function (body, x = 0, z = 0) {
-    const y = 3 + Math.random();
+  resetBodyAboveFloor: function (body, z = -14) {
     const transform = new Ammo.btTransform();
     transform.setIdentity();
-    transform.setOrigin(new Ammo.btVector3(x, y, z));
+    transform.setOrigin(new Ammo.btVector3(-1 + Math.random(), 3, z));
     body.setWorldTransform(transform);
     body.getMotionState().setWorldTransform(transform);
   },
@@ -218,14 +231,16 @@ let dices = exports.dices = {
     this.resetBodyAboveFloor(body);
   },
   activateAllDicesPhysics: function () {
-    this.getAllDices().filter(item => {
-      let test = app.matrixAmmo.getBodyByName(item.name)?.isKinematicObject();
-      if (test === true) {
-        return true;
-      } else {
-        return false;
-      }
-    }).forEach(dice => {
+    this.getAllDices()
+    // .filter((item) => {
+    //   let test = app.matrixAmmo.getBodyByName(item.name)?.isKinematicObject();
+    //   if(test === true) {
+    //     return true;
+    //   } else {
+    //     return false;
+    //   }
+    // })
+    .forEach(dice => {
       const body = app.matrixAmmo.getBodyByName(dice.name);
       if (body) {
         this.activatePhysics(body); // <--- FIX: pass the physics body, not the dice object
@@ -300,10 +315,16 @@ let myDom = exports.myDom = {
     settings.classList.add('btn');
     settings.innerHTML = `<span data-label="settings"></span>`;
     settings.addEventListener('click', () => {
+      if (document.getElementById('messageBox').getAttribute('data-loaded') != null) {
+        (0, _utils.byId)('blocker').style.display = 'flex';
+        (0, _utils.byId)('messageBox').style.display = 'unset';
+        return;
+      }
       (0, _utils.byId)('messageBox').innerHTML = _htmlContent.settingsBox;
       (0, _utils.byId)('blocker').style.display = 'flex';
       (0, _utils.byId)('messageBox').style.display = 'unset';
       dispatchEvent(new CustomEvent('updateLang', {}));
+      (0, _utils.byId)('settingsAudios').click();
       (0, _utils.byId)('settingsAudios').addEventListener('change', e => {
         if (e.target.checked == true) {
           app.matrixSounds.unmuteAll();
@@ -312,6 +333,10 @@ let myDom = exports.myDom = {
         }
       });
       (0, _utils.setupCanvasFilters)();
+      (0, _utils.byId)('messageBox').setAttribute('data-loaded', 'loaded');
+      (0, _utils.byId)("physicsSpeed").addEventListener("change", e => {
+        app.matrixAmmo.speedUpSimulation = parseInt(e.target.value);
+      });
     });
     var roll = document.createElement('div');
     roll.id = 'hud-roll';
@@ -368,12 +393,6 @@ let myDom = exports.myDom = {
     var root = document.createElement('div');
     root.id = 'jambTable';
     root.style.position = 'absolute';
-    root.style.display = 'flex';
-    root.style.top = '5px';
-    root.style.left = '5px';
-    root.style.width = '200px';
-    // root.style.background = '#7d7d7d8c';
-
     var rowHeader = document.createElement('div');
     rowHeader.id = 'rowHeader';
     rowHeader.style.top = '10px';
@@ -428,6 +447,23 @@ let myDom = exports.myDom = {
     this.createSelectedBox();
     document.body.appendChild(root);
     // console.log('JambTable added.')
+  },
+  showHideJambTable: () => {
+    const panel = document.getElementById('jambTable');
+    if (panel.classList.contains('show')) {
+      panel.classList.remove('show');
+      panel.classList.add('hide');
+      // Delay actual hiding from layout to finish animation
+      setTimeout(() => {
+        panel.style.display = 'none';
+      }, 300);
+    } else {
+      panel.style.display = 'flex';
+      setTimeout(() => {
+        panel.classList.remove('hide');
+        panel.classList.add('show');
+      }, 10); // allow repaint
+    }
   },
   createSelectedBox: function () {
     var topTitleDOM = document.createElement('div');
@@ -706,6 +742,7 @@ let myDom = exports.myDom = {
       rowNumber.style.left = '10px';
       rowNumber.style.width = 'auto';
       rowNumber.style.background = '#7d7d7d8c';
+      rowNumber.style.cursor = 'pointer';
       rowNumber.innerHTML = `-`;
       this.memoNumberRow.push(rowNumber);
       // initial
@@ -1811,17 +1848,14 @@ let application = exports.application = new _world.default({
       // Big reset
       console.log(`%c<Big reset needed ...>`, _utils.LOG_FUNNY);
       app.dices.SAVED_DICES = {};
-
-      // only from save dices needed 
-      app.dices.activateAllDicesPhysics();
+      app.dices.setStartUpPosition();
       setTimeout(() => {
-        app.matrixAmmo.getBodyByName('CubePhysics1').applyImpulse(new Ammo.btVector3(0, 4, -5), new Ammo.btVector3(0, 0, 0));
-        app.matrixAmmo.getBodyByName('CubePhysics2').applyImpulse(new Ammo.btVector3(0, 4, -10), new Ammo.btVector3(0, 0, 0));
-        app.matrixAmmo.getBodyByName('CubePhysics3').applyImpulse(new Ammo.btVector3(0, 3, -15), new Ammo.btVector3(0, 0, 0));
-        app.matrixAmmo.getBodyByName('CubePhysics4').applyImpulse(new Ammo.btVector3(0, 3, -5), new Ammo.btVector3(0, 0, 0));
-        app.matrixAmmo.getBodyByName('CubePhysics5').applyImpulse(new Ammo.btVector3(0, 5, -5), new Ammo.btVector3(0, 0, 0));
-        app.matrixAmmo.getBodyByName('CubePhysics6').applyImpulse(new Ammo.btVector3(0, 6, -5), new Ammo.btVector3(0, 0, 0));
+        app.dices.activateAllDicesPhysics();
       }, 1000);
+      app.cameras.WASD.yaw = 0;
+      app.cameras.WASD.pitch = 0;
+      app.cameras.WASD.position[2] = 0;
+      app.cameras.WASD.position[1] = 3.76;
     });
 
     // ACTIONS
@@ -1895,7 +1929,6 @@ let application = exports.application = new _world.default({
           shootDice(x);
         }
       } else if (_jamb.dices.STATUS == "SELECT_DICES_1" || _jamb.dices.STATUS == "SELECT_DICES_2") {
-        // console.log('LAST ROLL...')
         // Now no selected dices still rolling
         for (let i = 1; i <= 6; i++) {
           const key = "CubePhysics" + i;
@@ -11121,6 +11154,7 @@ class MatrixAmmo {
     _utils.scriptManager.LOAD("./ammojs/ammo.js", "ammojs", undefined, undefined, this.init);
     this.lastRoll = '';
     this.presentScore = '';
+    this.speedUpSimulation = 1;
   }
   init = () => {
     // console.log('pre ammo')
@@ -11365,7 +11399,11 @@ class MatrixAmmo {
     Ammo.destroy(transform);
 
     // Step simulation AFTER setting kinematic transforms
-    this.dynamicsWorld.stepSimulation(1 / 60, 10);
+    const timeStep = 1 / 60;
+    const maxSubSteps = 10;
+    for (let i = 0; i < this.speedUpSimulation; i++) {
+      this.dynamicsWorld.stepSimulation(timeStep, maxSubSteps);
+    }
     this.rigidBodies.forEach(function (body) {
       if (!body.isKinematic && body.getMotionState()) {
         body.getMotionState().getWorldTransform(trans);
