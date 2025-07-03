@@ -849,9 +849,8 @@ let myDom = exports.myDom = {
     rowMin.style.width = 'auto';
     rowMin.style.background = '#7d7d7d8c';
     rowMin.innerHTML = `-`;
-    this.rowMin = rowMin;
+    // this.rowMin = rowMin;
     myRoot.appendChild(rowMin);
-    this.rowMin = rowMin;
     var rowMaxMinSum = document.createElement('div');
     rowMaxMinSum.id = 'down-rowMaxMinSum';
     rowMaxMinSum.style.width = 'auto';
@@ -1104,11 +1103,11 @@ let myDom = exports.myDom = {
   calcDownRowMax: e => {
     if (dices.validatePass() == false) return;
     e.target.classList.remove('canPlay');
-    (void 0).rowMin.classList.add('canPlay');
+    (0, _utils.byId)('down-rowMin').classList.add('canPlay');
     var test = 0;
     let keyLessNum = Object.keys(dices.R).reduce((key, v) => dices.R[v] < dices.R[key] ? v : key);
     // console.log('FIND MIN DICE TO REMOVE FROM SUM ', keyLessNum);
-    for (var key in dices.R) {
+    for (var key in dices.SAVED_DICES) {
       if (key != keyLessNum) {
         test += parseFloat(dices.R[key]);
       }
@@ -1117,37 +1116,37 @@ let myDom = exports.myDom = {
     // now attach next event.
     dices.STATUS = "FREE_TO_PLAY";
     dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
-    (void 0).rowMax.removeEventListener("click", (void 0).calcDownRowMax);
-    (0, _utils.byId)('down-rowMin').addEventListener('click', (void 0).calcDownRowMin);
+    (0, _utils.byId)('down-rowMax').removeEventListener("click", myDom.calcDownRowMax);
+    (0, _utils.byId)('down-rowMin').addEventListener('click', myDom.calcDownRowMin);
   },
   incrasePoints: function (arg) {
     (0, _utils.byId)('user-points').innerHTML = parseInt((0, _utils.byId)('user-points').innerHTML) + parseInt(arg);
   },
   calcDownRowMin: () => {
     if (dices.validatePass() == false) return;
-    (void 0).rowMin.classList.remove('canPlay');
+    (0, _utils.byId)('down-rowMin').classList.remove('canPlay');
     console.log('MIN ENABLED');
     var maxTestKey = Object.keys(dices.R).reduce(function (a, b) {
       return dices.R[a] > dices.R[b] ? a : b;
     });
     var test = 0;
     for (var key in dices.R) {
-      if (key != maxTestKey) {
-        test += parseFloat(dices.R[key]);
-      } else {
-        console.log('not calc dice ', dices.R[key]);
-      }
+      // if(key != maxTestKey) {
+      test += parseFloat(dices.R[key]);
+      // } else {
+      //   console.log('not calc dice ', dices.R[key])
+      // }
     }
-    (void 0).rowMin.innerHTML = test;
-    (0, _utils.byId)('down-rowMin').removeEventListener('click', (void 0).calcDownRowMin);
+    (0, _utils.byId)('down-rowMin').innerHTML = test;
+    (0, _utils.byId)('down-rowMin').removeEventListener('click', myDom.calcDownRowMin);
     // calc max min dont forget rules for bonus +30
-    var SUMMINMAX = parseFloat((void 0).rowMax.innerHTML) - parseFloat((void 0).rowMin.innerHTML);
+    var SUMMINMAX = parseFloat((void 0).rowMax.innerHTML) - parseFloat((0, _utils.byId)('down-rowMin').innerHTML);
     (0, _utils.byId)('down-rowMaxMinSum').innerHTML = SUMMINMAX;
     myDom.incrasePoints(SUMMINMAX);
     dices.STATUS = "FREE_TO_PLAY";
     dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
     (0, _utils.byId)('down-largeStraight').classList.add('canPlay');
-    (0, _utils.byId)('down-largeStraight').addEventListener('click', (void 0).attachKenta);
+    (0, _utils.byId)('down-largeStraight').addEventListener('click', myDom.attachKenta);
   },
   checkForDuplicate: function () {
     var testArray = [];
@@ -1362,6 +1361,7 @@ let application = exports.application = new _world.default({
   _jamb.myDom.createJamb();
   _jamb.myDom.createBlocker();
   application.dices = _jamb.dices;
+  application.activateDiceClickListener = null;
 
   // This code must be on top (Physics)
   application.matrixAmmo.detectCollision = function () {
@@ -1882,7 +1882,7 @@ let application = exports.application = new _world.default({
           console.log(`%cStatus<FINISHED>`, _utils.LOG_FUNNY);
           dispatchEvent(new CustomEvent('updateTitle', {
             detail: {
-              text: app.label.get.hand1,
+              text: app.label.get.pick5,
               status: 'status-select'
             }
           }));
@@ -1947,7 +1947,7 @@ let application = exports.application = new _world.default({
         app.matrixAmmo.getBodyByName(`CubePhysics${x}`).setLinearVelocity(new Ammo.btVector3((0, _utils.randomFloatFromTo)(-5, 5), 15, -20));
       }, 200 * x);
     }
-    let activateDiceClickListener = index => {
+    application.activateDiceClickListener = index => {
       index = parseInt(index);
       switch (index) {
         case 1:
@@ -1993,13 +1993,15 @@ let application = exports.application = new _world.default({
           const key = "CubePhysics" + i;
           if (!(key in app.dices.SAVED_DICES)) {
             console.log("Still in game last char is id : ", key[key.length - 1]);
-            activateDiceClickListener(parseInt(key[key.length - 1]));
+            application.activateDiceClickListener(parseInt(key[key.length - 1]));
             shootDice(key[key.length - 1]);
           }
         }
+        // ????
+        application.activateDiceClickListener(1);
         dispatchEvent(new CustomEvent('updateTitle', {
           detail: {
-            text: app.label.get.hand1,
+            text: _jamb.dices.STATUS == "SELECT_DICES_1" ? app.label.get.hand1 : app.label.get.hand2,
             status: 'inplay'
           }
         }));

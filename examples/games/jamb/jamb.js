@@ -798,9 +798,8 @@ export let myDom = {
     rowMin.style.width = 'auto';
     rowMin.style.background = '#7d7d7d8c';
     rowMin.innerHTML = `-`;
-    this.rowMin = rowMin;
+    // this.rowMin = rowMin;
     myRoot.appendChild(rowMin);
-    this.rowMin = rowMin;
     var rowMaxMinSum = document.createElement('div')
     rowMaxMinSum.id = 'down-rowMaxMinSum';
     rowMaxMinSum.style.width = 'auto';
@@ -1071,11 +1070,11 @@ export let myDom = {
   calcDownRowMax: (e) => {
     if(dices.validatePass() == false) return;
     e.target.classList.remove('canPlay');
-    this.rowMin.classList.add('canPlay');
+    byId('down-rowMin').classList.add('canPlay');
     var test = 0;
     let keyLessNum = Object.keys(dices.R).reduce((key, v) => dices.R[v] < dices.R[key] ? v : key);
     // console.log('FIND MIN DICE TO REMOVE FROM SUM ', keyLessNum);
-    for(var key in dices.R) {
+    for(var key in dices.SAVED_DICES) {
       if(key != keyLessNum) {
         test += parseFloat(dices.R[key]);
       }
@@ -1084,8 +1083,8 @@ export let myDom = {
     // now attach next event.
     dices.STATUS = "FREE_TO_PLAY";
     dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
-    this.rowMax.removeEventListener("click", this.calcDownRowMax);
-    byId('down-rowMin').addEventListener('click', this.calcDownRowMin);
+    byId('down-rowMax').removeEventListener("click", myDom.calcDownRowMax);
+    byId('down-rowMin').addEventListener('click', myDom.calcDownRowMin);
   },
 
   incrasePoints: function(arg) {
@@ -1094,27 +1093,27 @@ export let myDom = {
 
   calcDownRowMin: () => {
     if(dices.validatePass() == false) return;
-    this.rowMin.classList.remove('canPlay')
+    byId('down-rowMin').classList.remove('canPlay')
     console.log('MIN ENABLED')
     var maxTestKey = Object.keys(dices.R).reduce(function(a, b) {return dices.R[a] > dices.R[b] ? a : b});
     var test = 0;
     for(var key in dices.R) {
-      if(key != maxTestKey) {
+      // if(key != maxTestKey) {
         test += parseFloat(dices.R[key])
-      } else {
-        console.log('not calc dice ', dices.R[key])
-      }
+      // } else {
+      //   console.log('not calc dice ', dices.R[key])
+      // }
     }
-    this.rowMin.innerHTML = test;
-    byId('down-rowMin').removeEventListener('click', this.calcDownRowMin);
+    byId('down-rowMin').innerHTML = test;
+    byId('down-rowMin').removeEventListener('click', myDom.calcDownRowMin);
     // calc max min dont forget rules for bonus +30
-    var SUMMINMAX = parseFloat(this.rowMax.innerHTML) - parseFloat(this.rowMin.innerHTML)
+    var SUMMINMAX = parseFloat(this.rowMax.innerHTML) - parseFloat(byId('down-rowMin').innerHTML)
     byId('down-rowMaxMinSum').innerHTML = SUMMINMAX;
     myDom.incrasePoints(SUMMINMAX);
     dices.STATUS = "FREE_TO_PLAY";
     dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}))
     byId('down-largeStraight').classList.add('canPlay');
-    byId('down-largeStraight').addEventListener('click', this.attachKenta)
+    byId('down-largeStraight').addEventListener('click', myDom.attachKenta)
   },
 
   checkForDuplicate: function() {

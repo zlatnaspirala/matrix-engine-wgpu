@@ -22,6 +22,9 @@ export let application = new MatrixEngineWGPU({
   myDom.createBlocker();
   application.dices = dices;
 
+
+  application.activateDiceClickListener = null;
+
   // This code must be on top (Physics)
   application.matrixAmmo.detectCollision = function() {
     this.lastRoll = '';
@@ -415,7 +418,7 @@ export let application = new MatrixEngineWGPU({
           dispatchEvent(new CustomEvent('updateTitle',
             {
               detail: {
-                text: app.label.get.hand1,
+                text: app.label.get.pick5,
                 status: 'status-select'
               }
             }));
@@ -495,7 +498,7 @@ export let application = new MatrixEngineWGPU({
       }, 200 * x)
     }
 
-    let activateDiceClickListener = (index) => {
+    application.activateDiceClickListener = (index) => {
       index = parseInt(index);
       switch(index) {
         case 1:
@@ -544,15 +547,17 @@ export let application = new MatrixEngineWGPU({
           const key = "CubePhysics" + i;
           if(!(key in app.dices.SAVED_DICES)) {
             console.log("Still in game last char is id : ", key[key.length - 1]);
-            activateDiceClickListener(parseInt(key[key.length - 1]))
+            application.activateDiceClickListener(parseInt(key[key.length - 1]))
             shootDice(key[key.length - 1])
           }
         }
+        // ????
+        application.activateDiceClickListener(1);
 
         dispatchEvent(new CustomEvent('updateTitle',
           {
             detail: {
-              text: app.label.get.hand1,
+              text: dices.STATUS == "SELECT_DICES_1" ? app.label.get.hand1 : app.label.get.hand2,
               status: 'inplay'
             }
           }));
