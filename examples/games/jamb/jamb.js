@@ -194,6 +194,16 @@ export let myDom = {
     help.classList.add('btn')
     help.innerHTML = `<span data-label="help"></span>`;
 
+    var table = document.createElement('div')
+    table.id = 'showHideTableDOM';
+    table.classList.add('btn')
+    table.innerHTML = `<span data-label="table"></span>`;
+    table.addEventListener('click', () => {
+      //
+      console.log('XXX')
+      this.showHideJambTable();
+    });
+
     var settings = document.createElement('div')
     settings.id = 'settings';
     settings.classList.add('btn')
@@ -218,7 +228,8 @@ export let myDom = {
         }
       });
       setupCanvasFilters();
-      byId('messageBox').setAttribute('data-loaded', 'loaded')
+      byId('messageBox').setAttribute('data-loaded', 'loaded');
+      document.getElementById('physicsSpeed').value = app.matrixAmmo.speedUpSimulation;
       byId("physicsSpeed").addEventListener("change", (e) => {
         app.matrixAmmo.speedUpSimulation = parseInt(e.target.value);
       });
@@ -237,6 +248,7 @@ export let myDom = {
     separator.innerHTML = `✨maximumroulette.com✨`;
 
     root.append(settings)
+    root.append(table);
     root.append(help)
     root.append(separator)
     root.append(roll)
@@ -376,12 +388,15 @@ export let myDom = {
     topTitleDOM.style.width = 'auto';
     topTitleDOM.style.position = 'absolute';
     topTitleDOM.style.left = '35%';
-    topTitleDOM.style.top = '5%';
+    topTitleDOM.style.fontSize = '175%';
+    topTitleDOM.style.top = '4%';
     topTitleDOM.style.background = '#7d7d7d8c';
     topTitleDOM.innerHTML = app.label.get.ready + ", " + app.userState.name + '.';
+    topTitleDOM.setAttribute('data-gamestatus', 'FREE');
     document.body.appendChild(topTitleDOM);
     addEventListener('updateTitle', (e) => {
-      typeText('topTitleDOM', e.detail);
+      typeText('topTitleDOM', e.detail.text);
+      topTitleDOM.setAttribute('data-gamestatus', e.detail.status);
     })
   },
 

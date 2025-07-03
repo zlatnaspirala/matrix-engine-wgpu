@@ -17,7 +17,7 @@
   "roll":"ROLL DICES",
   "settings": "Settings",
   "hand": "Hand",
-  "up": "Up",
+  "up": "Up |",
   "down": "Down",
   "free": "Free",
   "cornerText": "🎲",
@@ -28,7 +28,11 @@
   "sounds": "Sounds",
   "welcomeMsg": "Welcome here, <br> open source project 🎲 Ultimate Yahtzee game <br> download from ",
   "ready":"Ready for play 🎲!",
+  "freetoroll":"Free for roll 🎲!",
+  "pick5":"Pick best 5 🎲 and choose table field!",
   "hand1":"First hand in play - please wait...",
+  "hand2":"Secound hand in play - please wait...",
   "graphics":"Graphics options",
-  "choosename":"Choose nickname:"
+  "choosename":"Choose nickname:",
+  "table":"Table"
 }

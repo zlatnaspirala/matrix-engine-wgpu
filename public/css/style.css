@@ -606,24 +606,24 @@ p {
   height: 24px;
   left: 4px;
   bottom: 4px;
-  background-color: #00ffee;
+  background-color: #00bbff;
   border-radius: 50%;
   transition: transform 0.4s ease;
   z-index: 2;
-  box-shadow: 0 0 10px #00ffee;
+  box-shadow: 0 0 10px #00bbff;
 }
 
 /* ON state */
 .switch input:checked+.sliderSwitch {
   background-color: #002233;
-  border-color: #00ff88;
-  box-shadow: 0 0 12px #00ff8844;
+  border-color: #00ffee;
+  box-shadow: 0 0 12px #00ffee;
 }
 
 .switch input:checked+.sliderSwitch::before {
   transform: translateX(28px);
-  background-color: #00ff88;
-  box-shadow: 0 0 10px #00ff88;
+  background-color: #00ffee;
+  box-shadow: 0 0 10px #00ffee;
 }
 
 select {
@@ -665,7 +665,7 @@ option {
   display:flex;
   top: 17%;
   left: 17%;
-  width: 300px;
+  width: 370px;
   transform: translate(-50%, -50%) scale(1);
   background: rgba(0, 0, 0, 0.9);
   border: 2px solid #0ff;

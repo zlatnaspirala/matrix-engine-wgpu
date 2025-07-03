@@ -28,6 +28,11 @@
   "sounds": "Zvuk",
   "welcomeMsg": "Dobro došli, <br> otvoren izvori kod 🎲 Ultimate Jamb igra <br> Pokupi kod: ",
   "ready":"Sve je spremno za igru 🎲!",
+  "freetoroll":"Zavrtite 🎲!",
+  "pick5":"Izaberi 5 najboljih 🎲 i izaberi polje u tabeli.",
   "hand1":"Prvo bacanje - sackajte...",
-  "choosename":"Izaberi alias:"
+  "hand2":"Drugo bacanje - sackajte...",
+  "graphics":"Grafika",
+  "choosename":"Izaberi alias:",
+  "table":"Tabla"
 }

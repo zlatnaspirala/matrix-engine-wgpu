@@ -6,9 +6,9 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.welcomeBoxHTML = exports.settingsBox = void 0;
 let settingsBox = exports.settingsBox = `
-<div>
+<div style="">
   <span style="font-size:170%" data-label="settings"></span>
-  <div style="margin:20px;" >
+  <div style="justify-items: flex-end;margin:20px;" >
     <div>
       <span data-label="sounds"></span>
       <label class="switch">
@@ -16,25 +16,29 @@ let settingsBox = exports.settingsBox = `
         <span class="sliderSwitch round"></span>
       </label>
     </div>
-    <div>
-    <div>
-      <span data-label="graphics"></span>
-
-      <select id="physicsSpeed" class="setting-select">
-        <option value="1">Slow</option>
-        <option value="2">Normal</option>
-        <option value="3">Fast</option>
-      </select>
-
-      <select id="blurControl">
-        <option value="0px">Blur: 0</option>
-        <option value="1px">Blur: 1</option>
-        <option value="2px">Blur: 2</option>
-        <option value="3px">Blur: 3</option>
-      </select>
+      <div style="margin-top:20px;margin-bottom:15px;">
+        <span style="font-size: larger;margin-bottom:15px" data-label="graphics"></span>
+        <p></p>
+        <label>Anim speed:</label>
+        <select id="physicsSpeed" class="setting-select">
+          <option value="1">Slow</option>
+          <option value="2">Normal</option>
+          <option value="3">Fast</option>
+        </select>
       </div>
 
       <div>
+        <label>Blur:</label>
+        <select id="blurControl">
+          <option value="0px">Blur: 0</option>
+          <option value="1px">Blur: 1</option>
+          <option value="2px">Blur: 2</option>
+          <option value="3px">Blur: 3</option>
+        </select>
+      </div>
+
+      <div>
+      <label>Grayscale:</label>
       <select id="grayscaleControl">
         <option value="0%">Grayscale: 0%</option>
         <option value="25%">Grayscale: 25%</option>
@@ -98,13 +102,14 @@ let settingsBox = exports.settingsBox = `
         <option value="270deg">270°</option>
       </select>
       </div>
-
-    </div>
-    <div>
+ 
+    <div style="margin-top:20px;">
       <button class="btn" onclick="app.myDom.hideSettings()">
         <span data-label="hide"></span>
       </button>
     </div>
+
+    <img src="res/icons/512.png" style="position:absolute;left:10px;top:5%;width:300px;z-index:-1;"/>
   </div>
 </div>`;
 let welcomeBoxHTML = exports.welcomeBoxHTML = `<span class="fancy-title" data-label="welcomeMsg"></span>
@@ -310,6 +315,15 @@ let myDom = exports.myDom = {
     help.id = 'HELP';
     help.classList.add('btn');
     help.innerHTML = `<span data-label="help"></span>`;
+    var table = document.createElement('div');
+    table.id = 'showHideTableDOM';
+    table.classList.add('btn');
+    table.innerHTML = `<span data-label="table"></span>`;
+    table.addEventListener('click', () => {
+      //
+      console.log('XXX');
+      this.showHideJambTable();
+    });
     var settings = document.createElement('div');
     settings.id = 'settings';
     settings.classList.add('btn');
@@ -334,6 +348,7 @@ let myDom = exports.myDom = {
       });
       (0, _utils.setupCanvasFilters)();
       (0, _utils.byId)('messageBox').setAttribute('data-loaded', 'loaded');
+      document.getElementById('physicsSpeed').value = app.matrixAmmo.speedUpSimulation;
       (0, _utils.byId)("physicsSpeed").addEventListener("change", e => {
         app.matrixAmmo.speedUpSimulation = parseInt(e.target.value);
       });
@@ -348,6 +363,7 @@ let myDom = exports.myDom = {
     var separator = document.createElement('div');
     separator.innerHTML = `✨maximumroulette.com✨`;
     root.append(settings);
+    root.append(table);
     root.append(help);
     root.append(separator);
     root.append(roll);
@@ -471,12 +487,15 @@ let myDom = exports.myDom = {
     topTitleDOM.style.width = 'auto';
     topTitleDOM.style.position = 'absolute';
     topTitleDOM.style.left = '35%';
-    topTitleDOM.style.top = '5%';
+    topTitleDOM.style.fontSize = '175%';
+    topTitleDOM.style.top = '4%';
     topTitleDOM.style.background = '#7d7d7d8c';
     topTitleDOM.innerHTML = app.label.get.ready + ", " + app.userState.name + '.';
+    topTitleDOM.setAttribute('data-gamestatus', 'FREE');
     document.body.appendChild(topTitleDOM);
     addEventListener('updateTitle', e => {
-      (0, _utils.typeText)('topTitleDOM', e.detail);
+      (0, _utils.typeText)('topTitleDOM', e.detail.text);
+      topTitleDOM.setAttribute('data-gamestatus', e.detail.status);
     });
   },
   createLeftHeaderRow: function (myRoot) {
@@ -1406,6 +1425,10 @@ let application = exports.application = new _world.default({
   };
   (0, _raycast.addRaycastListener)();
   addEventListener("ray.hit.event", e => {
+    if ((0, _utils.byId)('topTitleDOM') && (0, _utils.byId)('topTitleDOM').getAttribute('data-gamestatus') != 'FREE' && (0, _utils.byId)('topTitleDOM').getAttribute('data-gamestatus') != 'status-select') {
+      console.log('no hit in middle of game ...');
+      return;
+    }
     if (application.dices.STATUS == "FREE_TO_PLAY") {
       console.log("hit cube status free to play prevent pick. ", e.detail.hitObject.name);
     } else if (application.dices.STATUS == "SELECT_DICES_1" || application.dices.STATUS == "SELECT_DICES_2" || application.dices.STATUS == "FINISHED") {
@@ -1429,6 +1452,7 @@ let application = exports.application = new _world.default({
   application.matrixSounds.createAudio('dice2', 'res/audios/dice2.mp3', 6);
   application.matrixSounds.createAudio('hover', 'res/audios/toggle_002.mp3', 3);
   addEventListener('AmmoReady', () => {
+    app.matrixAmmo.speedUpSimulation = 2;
     (0, _loaderObj.downloadMeshes)({
       cube: "./res/meshes/jamb/dice.obj"
     }, onLoadObj, {
@@ -1834,12 +1858,34 @@ let application = exports.application = new _world.default({
         if (_jamb.dices.STATUS == "FREE_TO_PLAY" || _jamb.dices.STATUS == "IN_PLAY") {
           _jamb.dices.STATUS = "SELECT_DICES_1";
           console.log(`%cStatus<SELECT_DICES_1>`, _utils.LOG_FUNNY);
+          setTimeout(() => {
+            dispatchEvent(new CustomEvent('updateTitle', {
+              detail: {
+                text: app.label.get.freetoroll,
+                status: 'FREE'
+              }
+            }));
+          }, 500);
         } else if (_jamb.dices.STATUS == "SELECT_DICES_1") {
           _jamb.dices.STATUS = "SELECT_DICES_2";
+          setTimeout(() => {
+            dispatchEvent(new CustomEvent('updateTitle', {
+              detail: {
+                text: app.label.get.freetoroll,
+                status: 'FREE'
+              }
+            }));
+          }, 500);
           console.log(`%cStatus<SELECT_DICES_2>`, _utils.LOG_FUNNY);
         } else if (_jamb.dices.STATUS == "SELECT_DICES_2") {
           _jamb.dices.STATUS = "FINISHED";
           console.log(`%cStatus<FINISHED>`, _utils.LOG_FUNNY);
+          dispatchEvent(new CustomEvent('updateTitle', {
+            detail: {
+              text: app.label.get.hand1,
+              status: 'status-select'
+            }
+          }));
         }
       }
     };
@@ -1856,6 +1902,12 @@ let application = exports.application = new _world.default({
       app.cameras.WASD.pitch = 0;
       app.cameras.WASD.position[2] = 0;
       app.cameras.WASD.position[1] = 3.76;
+      dispatchEvent(new CustomEvent('updateTitle', {
+        detail: {
+          text: app.label.get.hand1,
+          status: 'FREE'
+        }
+      }));
     });
 
     // ACTIONS
@@ -1913,11 +1965,18 @@ let application = exports.application = new _world.default({
       }
     };
     let rollProcedure = () => {
+      if (topTitleDOM.getAttribute('data-gamestatus') != 'FREE') {
+        console.log('validation fails...');
+        return;
+      }
       if (_jamb.dices.STATUS == "FREE_TO_PLAY") {
         app.matrixSounds.play('start');
         _jamb.dices.STATUS = "IN_PLAY";
         dispatchEvent(new CustomEvent('updateTitle', {
-          detail: app.label.get.hand1
+          detail: {
+            text: app.label.get.hand1,
+            status: 'inplay'
+          }
         }));
         addEventListener('dice-1', dice1Click);
         addEventListener('dice-2', dice2Click);
@@ -1938,6 +1997,12 @@ let application = exports.application = new _world.default({
             shootDice(key[key.length - 1]);
           }
         }
+        dispatchEvent(new CustomEvent('updateTitle', {
+          detail: {
+            text: app.label.get.hand1,
+            status: 'inplay'
+          }
+        }));
       } else if (_jamb.dices.STATUS == "FINISHED") {
         _utils.mb.error('No more roll...');
         _utils.mb.show('Pick up 5 dices');

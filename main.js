@@ -1,6 +1,6 @@
 import MatrixEngineWGPU from "./src/world.js";
 import {downloadMeshes} from './src/engine/loader-obj.js';
-import {LOG_FUNNY, LOG_INFO, LOG_MATRIX, mb, randomFloatFromTo, randomIntFromTo} from "./src/engine/utils.js";
+import {byId, LOG_FUNNY, LOG_INFO, LOG_MATRIX, mb, randomFloatFromTo, randomIntFromTo} from "./src/engine/utils.js";
 import {dices, myDom} from "./examples/games/jamb/jamb.js";
 import {addRaycastListener, touchCoordinate, rayIntersectsSphere, getRayFromMouse} from "./src/engine/raycast.js";
 
@@ -86,6 +86,12 @@ export let application = new MatrixEngineWGPU({
 
   addRaycastListener();
   addEventListener("ray.hit.event", (e) => {
+    if(byId('topTitleDOM') && byId('topTitleDOM').getAttribute('data-gamestatus') != 'FREE' &&
+      byId('topTitleDOM').getAttribute('data-gamestatus') != 'status-select') {
+      console.log('no hit in middle of game ...');
+      return;
+    }
+
     if(application.dices.STATUS == "FREE_TO_PLAY") {
       console.log("hit cube status free to play prevent pick. ", e.detail.hitObject.name)
     } else if(application.dices.STATUS == "SELECT_DICES_1" ||
@@ -114,6 +120,9 @@ export let application = new MatrixEngineWGPU({
   application.matrixSounds.createAudio('hover', 'res/audios/toggle_002.mp3', 3)
 
   addEventListener('AmmoReady', () => {
+
+    app.matrixAmmo.speedUpSimulation = 2;
+
     downloadMeshes({
       cube: "./res/meshes/jamb/dice.obj",
     }, onLoadObj, {scale: [1, 1, 1], swap: [null]})
@@ -379,12 +388,37 @@ export let application = new MatrixEngineWGPU({
         if(dices.STATUS == "FREE_TO_PLAY" || dices.STATUS == "IN_PLAY") {
           dices.STATUS = "SELECT_DICES_1";
           console.log(`%cStatus<SELECT_DICES_1>`, LOG_FUNNY)
+          setTimeout(() => {
+            dispatchEvent(new CustomEvent('updateTitle',
+              {
+                detail: {
+                  text: app.label.get.freetoroll,
+                  status: 'FREE'
+                }
+              }));
+          }, 500);
         } else if(dices.STATUS == "SELECT_DICES_1") {
           dices.STATUS = "SELECT_DICES_2";
+          setTimeout(() => {
+            dispatchEvent(new CustomEvent('updateTitle',
+              {
+                detail: {
+                  text: app.label.get.freetoroll,
+                  status: 'FREE'
+                }
+              }));
+          }, 500);
           console.log(`%cStatus<SELECT_DICES_2>`, LOG_FUNNY)
         } else if(dices.STATUS == "SELECT_DICES_2") {
           dices.STATUS = "FINISHED";
           console.log(`%cStatus<FINISHED>`, LOG_FUNNY)
+          dispatchEvent(new CustomEvent('updateTitle',
+            {
+              detail: {
+                text: app.label.get.hand1,
+                status: 'status-select'
+              }
+            }));
         }
       }
     };
@@ -403,6 +437,14 @@ export let application = new MatrixEngineWGPU({
       app.cameras.WASD.pitch = 0;
       app.cameras.WASD.position[2] = 0;
       app.cameras.WASD.position[1] = 3.76;
+
+      dispatchEvent(new CustomEvent('updateTitle',
+        {
+          detail: {
+            text: app.label.get.hand1,
+            status: 'FREE'
+          }
+        }));
     })
 
     // ACTIONS
@@ -472,11 +514,20 @@ export let application = new MatrixEngineWGPU({
     };
 
     let rollProcedure = () => {
+      if(topTitleDOM.getAttribute('data-gamestatus') != 'FREE') {
+        console.log('validation fails...');
+        return;
+      }
       if(dices.STATUS == "FREE_TO_PLAY") {
         app.matrixSounds.play('start')
         dices.STATUS = "IN_PLAY";
-
-        dispatchEvent(new CustomEvent('updateTitle', {detail: app.label.get.hand1}))
+        dispatchEvent(new CustomEvent('updateTitle',
+          {
+            detail: {
+              text: app.label.get.hand1,
+              status: 'inplay'
+            }
+          }));
         addEventListener('dice-1', dice1Click)
         addEventListener('dice-2', dice2Click)
         addEventListener('dice-3', dice3Click)
@@ -497,6 +548,15 @@ export let application = new MatrixEngineWGPU({
             shootDice(key[key.length - 1])
           }
         }
+
+        dispatchEvent(new CustomEvent('updateTitle',
+          {
+            detail: {
+              text: app.label.get.hand1,
+              status: 'inplay'
+            }
+          }));
+
       } else if(dices.STATUS == "FINISHED") {
         mb.error('No more roll...');
         mb.show('Pick up 5 dices');

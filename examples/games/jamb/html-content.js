@@ -1,8 +1,8 @@
 
 export let settingsBox = `
-<div>
+<div style="">
   <span style="font-size:170%" data-label="settings"></span>
-  <div style="margin:20px;" >
+  <div style="justify-items: flex-end;margin:20px;" >
     <div>
       <span data-label="sounds"></span>
       <label class="switch">
@@ -10,25 +10,29 @@ export let settingsBox = `
         <span class="sliderSwitch round"></span>
       </label>
     </div>
-    <div>
-    <div>
-      <span data-label="graphics"></span>
-
-      <select id="physicsSpeed" class="setting-select">
-        <option value="1">Slow</option>
-        <option value="2">Normal</option>
-        <option value="3">Fast</option>
-      </select>
-
-      <select id="blurControl">
-        <option value="0px">Blur: 0</option>
-        <option value="1px">Blur: 1</option>
-        <option value="2px">Blur: 2</option>
-        <option value="3px">Blur: 3</option>
-      </select>
+      <div style="margin-top:20px;margin-bottom:15px;">
+        <span style="font-size: larger;margin-bottom:15px" data-label="graphics"></span>
+        <p></p>
+        <label>Anim speed:</label>
+        <select id="physicsSpeed" class="setting-select">
+          <option value="1">Slow</option>
+          <option value="2">Normal</option>
+          <option value="3">Fast</option>
+        </select>
       </div>
 
       <div>
+        <label>Blur:</label>
+        <select id="blurControl">
+          <option value="0px">Blur: 0</option>
+          <option value="1px">Blur: 1</option>
+          <option value="2px">Blur: 2</option>
+          <option value="3px">Blur: 3</option>
+        </select>
+      </div>
+
+      <div>
+      <label>Grayscale:</label>
       <select id="grayscaleControl">
         <option value="0%">Grayscale: 0%</option>
         <option value="25%">Grayscale: 25%</option>
@@ -92,13 +96,14 @@ export let settingsBox = `
         <option value="270deg">270°</option>
       </select>
       </div>
-
-    </div>
-    <div>
+ 
+    <div style="margin-top:20px;">
       <button class="btn" onclick="app.myDom.hideSettings()">
         <span data-label="hide"></span>
       </button>
     </div>
+
+    <img src="res/icons/512.png" style="position:absolute;left:10px;top:5%;width:300px;z-index:-1;"/>
   </div>
 </div>`;
 
