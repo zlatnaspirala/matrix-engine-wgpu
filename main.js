@@ -549,10 +549,13 @@ export let application = new MatrixEngineWGPU({
             console.log("Still in game last char is id : ", key[key.length - 1]);
             application.activateDiceClickListener(parseInt(key[key.length - 1]))
             shootDice(key[key.length - 1])
+          } else {
+            console.log("??????????Still in game last char is id : ", key[key.length - 1]);
+            application.activateDiceClickListener(parseInt(key[key.length - 1]))
           }
         }
         // ????
-        application.activateDiceClickListener(1);
+        // application.activateDiceClickListener(1);
 
         dispatchEvent(new CustomEvent('updateTitle',
           {

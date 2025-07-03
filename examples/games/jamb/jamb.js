@@ -1099,7 +1099,7 @@ export let myDom = {
     var test = 0;
     for(var key in dices.R) {
       // if(key != maxTestKey) {
-        test += parseFloat(dices.R[key])
+      test += parseFloat(dices.R[key])
       // } else {
       //   console.log('not calc dice ', dices.R[key])
       // }
@@ -1107,18 +1107,19 @@ export let myDom = {
     byId('down-rowMin').innerHTML = test;
     byId('down-rowMin').removeEventListener('click', myDom.calcDownRowMin);
     // calc max min dont forget rules for bonus +30
-    var SUMMINMAX = parseFloat(this.rowMax.innerHTML) - parseFloat(byId('down-rowMin').innerHTML)
+    var SUMMINMAX = parseFloat(byId('down-rowMax').innerHTML) - parseFloat(byId('down-rowMin').innerHTML)
     byId('down-rowMaxMinSum').innerHTML = SUMMINMAX;
     myDom.incrasePoints(SUMMINMAX);
     dices.STATUS = "FREE_TO_PLAY";
     dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}))
     byId('down-largeStraight').classList.add('canPlay');
     byId('down-largeStraight').addEventListener('click', myDom.attachKenta)
+    byId('down-rowMin').removeEventListener('click', myDom.calcDownRowMin);
   },
 
   checkForDuplicate: function() {
     var testArray = [];
-    for(var key in dices.R) {
+    for(var key in dices.SAVED_DICES) {
       var gen = {myId: key, value: dices.R[key]};
       testArray.push(gen);
     }
@@ -1134,7 +1135,7 @@ export let myDom = {
 
   checkForAllDuplicate: function() {
     var testArray = [];
-    for(var key in dices.R) {
+    for(var key in dices.SAVED_DICES) {
       var gen = {myId: key, value: dices.R[key]};
       testArray.push(gen);
     }
@@ -1157,12 +1158,12 @@ export let myDom = {
   },
 
   attachKenta: function() {
-    console.log('Test kenta  ', dices.R)
+    console.log('Test kenta  ', dices.SAVED_DICES)
     byId('down-largeStraight').classList.remove('canPlay')
     var result = app.myDom.checkForDuplicate()[0];
     var testArray = app.myDom.checkForDuplicate()[1];
-    // console.log('TEST duplik: ' + result);
-    if(result.length == 2) {
+    console.log('TEST duplik: ' + result);
+    if(result.length > 0) {
       console.log('TEST duplik less 3 : ' + result);
       var locPrevent = false;
       testArray.forEach((item, index, array) => {
@@ -1172,24 +1173,8 @@ export let myDom = {
           array.splice(index, 1);
         }
       })
-      // if we catch  1 and 6 in same stack then it is not possible for kenta...
-      var test1 = false, test6 = false;
-      testArray.forEach((item, index, array) => {
-        if(item.value == 1) {
-          test1 = true;
-        } else if(item.value == 6) {
-          test6 = true;
-        }
-      })
-      if(test1 == true && test6 == true) {
         byId('down-largeStraight').innerHTML = `0`;
-      } else if(test1 == true) {
-        byId('down-largeStraight').innerHTML = 15 + 50;
-        myDom.incrasePoints(15 + 50);
-      } else if(test6 == true) {
-        byId('down-largeStraight').innerHTML = 20 + 50;
-        myDom.incrasePoints(20 + 50);
-      }
+     
     } else if(result < 2) {
       byId('down-largeStraight').innerHTML = 66;
       myDom.incrasePoints(66);
@@ -1197,8 +1182,8 @@ export let myDom = {
       // zero value
       byId('down-largeStraight').innerHTML = `0`;
     }
-    byId('down-threeOfAKind').addEventListener('click', this.attachDownTrilling)
-    byId('down-largeStraight').removeEventListener('click', this.attachKenta)
+    byId('down-threeOfAKind').addEventListener('click', myDom.attachDownTrilling)
+    byId('down-largeStraight').removeEventListener('click', myDom.attachKenta)
     dices.STATUS = "FREE_TO_PLAY";
     dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}))
   },
@@ -1224,8 +1209,8 @@ export let myDom = {
     } else {
       byId('down-threeOfAKind').innerHTML = 0;
     }
-    byId('down-threeOfAKind').removeEventListener('click', this.attachDownTrilling)
-    byId('down-fullHouse').addEventListener('click', this.attachDownFullHouse)
+    byId('down-threeOfAKind').removeEventListener('click', myDom.attachDownTrilling)
+    byId('down-fullHouse').addEventListener('click', myDom.attachDownFullHouse)
     dices.STATUS = "FREE_TO_PLAY";
     dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}))
   },
@@ -1257,8 +1242,8 @@ export let myDom = {
     } else {
       byId('down-fullHouse').innerHTML = 0;
     }
-    byId('down-poker').addEventListener('click', this.attachDownPoker)
-    byId('down-fullHouse').removeEventListener('click', this.attachDownFullHouse)
+    byId('down-poker').addEventListener('click', myDom.attachDownPoker)
+    byId('down-fullHouse').removeEventListener('click', myDom.attachDownFullHouse)
     dices.STATUS = "FREE_TO_PLAY";
     dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}))
   },
@@ -1275,14 +1260,14 @@ export let myDom = {
         myDom.incrasePoints(win + 40);
       }
     }
-    byId('down-poker').removeEventListener('click', this.attachDownPoker)
-    byId('down-jamb').addEventListener('click', this.attachDownJamb)
+    byId('down-poker').removeEventListener('click', myDom.attachDownPoker)
+    byId('down-jamb').addEventListener('click', myDom.attachDownJamb)
     dices.STATUS = "FREE_TO_PLAY";
     dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}))
   },
 
   attachDownJamb: function() {
-    byId('down-jamb').removeEventListener('click', this.attachDownJamb)
+    byId('down-jamb').removeEventListener('click', myDom.attachDownJamb)
     console.log('<GAMEPLAY><DOWN ROW IS FEELED>')
     var TEST = app.myDom.checkForAllDuplicate();
     for(var key in TEST) {

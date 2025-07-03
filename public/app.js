@@ -1140,17 +1140,18 @@ let myDom = exports.myDom = {
     (0, _utils.byId)('down-rowMin').innerHTML = test;
     (0, _utils.byId)('down-rowMin').removeEventListener('click', myDom.calcDownRowMin);
     // calc max min dont forget rules for bonus +30
-    var SUMMINMAX = parseFloat((void 0).rowMax.innerHTML) - parseFloat((0, _utils.byId)('down-rowMin').innerHTML);
+    var SUMMINMAX = parseFloat((0, _utils.byId)('down-rowMax').innerHTML) - parseFloat((0, _utils.byId)('down-rowMin').innerHTML);
     (0, _utils.byId)('down-rowMaxMinSum').innerHTML = SUMMINMAX;
     myDom.incrasePoints(SUMMINMAX);
     dices.STATUS = "FREE_TO_PLAY";
     dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
     (0, _utils.byId)('down-largeStraight').classList.add('canPlay');
     (0, _utils.byId)('down-largeStraight').addEventListener('click', myDom.attachKenta);
+    (0, _utils.byId)('down-rowMin').removeEventListener('click', myDom.calcDownRowMin);
   },
   checkForDuplicate: function () {
     var testArray = [];
-    for (var key in dices.R) {
+    for (var key in dices.SAVED_DICES) {
       var gen = {
         myId: key,
         value: dices.R[key]
@@ -1167,7 +1168,7 @@ let myDom = exports.myDom = {
   },
   checkForAllDuplicate: function () {
     var testArray = [];
-    for (var key in dices.R) {
+    for (var key in dices.SAVED_DICES) {
       var gen = {
         myId: key,
         value: dices.R[key]
@@ -1192,12 +1193,12 @@ let myDom = exports.myDom = {
     return discret;
   },
   attachKenta: function () {
-    console.log('Test kenta  ', dices.R);
+    console.log('Test kenta  ', dices.SAVED_DICES);
     (0, _utils.byId)('down-largeStraight').classList.remove('canPlay');
     var result = app.myDom.checkForDuplicate()[0];
     var testArray = app.myDom.checkForDuplicate()[1];
-    // console.log('TEST duplik: ' + result);
-    if (result.length == 2) {
+    console.log('TEST duplik: ' + result);
+    if (result.length > 0) {
       console.log('TEST duplik less 3 : ' + result);
       var locPrevent = false;
       testArray.forEach((item, index, array) => {
@@ -1207,25 +1208,7 @@ let myDom = exports.myDom = {
           array.splice(index, 1);
         }
       });
-      // if we catch  1 and 6 in same stack then it is not possible for kenta...
-      var test1 = false,
-        test6 = false;
-      testArray.forEach((item, index, array) => {
-        if (item.value == 1) {
-          test1 = true;
-        } else if (item.value == 6) {
-          test6 = true;
-        }
-      });
-      if (test1 == true && test6 == true) {
-        (0, _utils.byId)('down-largeStraight').innerHTML = `0`;
-      } else if (test1 == true) {
-        (0, _utils.byId)('down-largeStraight').innerHTML = 15 + 50;
-        myDom.incrasePoints(15 + 50);
-      } else if (test6 == true) {
-        (0, _utils.byId)('down-largeStraight').innerHTML = 20 + 50;
-        myDom.incrasePoints(20 + 50);
-      }
+      (0, _utils.byId)('down-largeStraight').innerHTML = `0`;
     } else if (result < 2) {
       (0, _utils.byId)('down-largeStraight').innerHTML = 66;
       myDom.incrasePoints(66);
@@ -1233,8 +1216,8 @@ let myDom = exports.myDom = {
       // zero value
       (0, _utils.byId)('down-largeStraight').innerHTML = `0`;
     }
-    (0, _utils.byId)('down-threeOfAKind').addEventListener('click', this.attachDownTrilling);
-    (0, _utils.byId)('down-largeStraight').removeEventListener('click', this.attachKenta);
+    (0, _utils.byId)('down-threeOfAKind').addEventListener('click', myDom.attachDownTrilling);
+    (0, _utils.byId)('down-largeStraight').removeEventListener('click', myDom.attachKenta);
     dices.STATUS = "FREE_TO_PLAY";
     dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
   },
@@ -1259,8 +1242,8 @@ let myDom = exports.myDom = {
     } else {
       (0, _utils.byId)('down-threeOfAKind').innerHTML = 0;
     }
-    (0, _utils.byId)('down-threeOfAKind').removeEventListener('click', this.attachDownTrilling);
-    (0, _utils.byId)('down-fullHouse').addEventListener('click', this.attachDownFullHouse);
+    (0, _utils.byId)('down-threeOfAKind').removeEventListener('click', myDom.attachDownTrilling);
+    (0, _utils.byId)('down-fullHouse').addEventListener('click', myDom.attachDownFullHouse);
     dices.STATUS = "FREE_TO_PLAY";
     dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
   },
@@ -1291,8 +1274,8 @@ let myDom = exports.myDom = {
     } else {
       (0, _utils.byId)('down-fullHouse').innerHTML = 0;
     }
-    (0, _utils.byId)('down-poker').addEventListener('click', this.attachDownPoker);
-    (0, _utils.byId)('down-fullHouse').removeEventListener('click', this.attachDownFullHouse);
+    (0, _utils.byId)('down-poker').addEventListener('click', myDom.attachDownPoker);
+    (0, _utils.byId)('down-fullHouse').removeEventListener('click', myDom.attachDownFullHouse);
     dices.STATUS = "FREE_TO_PLAY";
     dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
   },
@@ -1308,13 +1291,13 @@ let myDom = exports.myDom = {
         myDom.incrasePoints(win + 40);
       }
     }
-    (0, _utils.byId)('down-poker').removeEventListener('click', this.attachDownPoker);
-    (0, _utils.byId)('down-jamb').addEventListener('click', this.attachDownJamb);
+    (0, _utils.byId)('down-poker').removeEventListener('click', myDom.attachDownPoker);
+    (0, _utils.byId)('down-jamb').addEventListener('click', myDom.attachDownJamb);
     dices.STATUS = "FREE_TO_PLAY";
     dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
   },
   attachDownJamb: function () {
-    (0, _utils.byId)('down-jamb').removeEventListener('click', this.attachDownJamb);
+    (0, _utils.byId)('down-jamb').removeEventListener('click', myDom.attachDownJamb);
     console.log('<GAMEPLAY><DOWN ROW IS FEELED>');
     var TEST = app.myDom.checkForAllDuplicate();
     for (var key in TEST) {
@@ -1995,10 +1978,14 @@ let application = exports.application = new _world.default({
             console.log("Still in game last char is id : ", key[key.length - 1]);
             application.activateDiceClickListener(parseInt(key[key.length - 1]));
             shootDice(key[key.length - 1]);
+          } else {
+            console.log("??????????Still in game last char is id : ", key[key.length - 1]);
+            application.activateDiceClickListener(parseInt(key[key.length - 1]));
           }
         }
         // ????
-        application.activateDiceClickListener(1);
+        // application.activateDiceClickListener(1);
+
         dispatchEvent(new CustomEvent('updateTitle', {
           detail: {
             text: _jamb.dices.STATUS == "SELECT_DICES_1" ? app.label.get.hand1 : app.label.get.hand2,
