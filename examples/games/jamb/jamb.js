@@ -151,6 +151,7 @@ export let dices = {
       this.C = 0;
     }
   },
+
   validatePass: function() {
     if(Object.keys(this.SAVED_DICES).length !== 5) {
       console.log('%cBLOCK', LOG_FUNNY)
@@ -199,9 +200,7 @@ export let myDom = {
     table.classList.add('btn')
     table.innerHTML = `<span data-label="table"></span>`;
     table.addEventListener('click', () => {
-      //
-      console.log('XXX')
-      this.showHideJambTable();
+      this.showHideJambTable()
     });
 
     var settings = document.createElement('div')
@@ -236,6 +235,20 @@ export let myDom = {
 
     })
 
+    // test help
+    var helpBox = document.createElement('div')
+    helpBox.id = 'helpBox';
+    helpBox.style.position = 'absolute';
+    helpBox.style.right = '20%';
+    helpBox.style.zIndex = '2';
+    helpBox.style.top = '15%';
+    helpBox.style.width = '60%';
+    helpBox.style.height = '50%';
+    helpBox.style.fontSize = '100%';
+    helpBox.classList.add('btn');
+    document.body.appendChild(helpBox)
+    typeText('helpBox', app.label.get.about, 10);
+    //
     var roll = document.createElement('div')
     roll.id = 'hud-roll';
     roll.classList.add('btn');
@@ -302,6 +315,12 @@ export let myDom = {
     var root = document.createElement('div')
     root.id = 'jambTable';
     root.style.position = 'absolute';
+
+    var dragHandler = document.createElement('div')
+    dragHandler.id = 'dragHandler';
+    dragHandler.classList.add('dragHandler')
+    dragHandler.innerHTML = "⇅ Drag";
+    root.append(dragHandler)
 
     var rowHeader = document.createElement('div')
     rowHeader.id = 'rowHeader';
@@ -1164,7 +1183,7 @@ export let myDom = {
     var testArray = app.myDom.checkForDuplicate()[1];
     console.log('TEST duplik: ' + result);
     if(result.length > 0) {
-      console.log('TEST duplik less 3 : ' + result);
+      console.log('TEST duplik l : ' + result);
       var locPrevent = false;
       testArray.forEach((item, index, array) => {
         if(result[0].value == item.value && locPrevent == false) {
@@ -1173,8 +1192,8 @@ export let myDom = {
           array.splice(index, 1);
         }
       })
-        byId('down-largeStraight').innerHTML = `0`;
-     
+      byId('down-largeStraight').innerHTML = `0`;
+
     } else if(result < 2) {
       byId('down-largeStraight').innerHTML = 66;
       myDom.incrasePoints(66);
@@ -1281,5 +1300,31 @@ export let myDom = {
     }
     dices.STATUS = "FREE_TO_PLAY";
     dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}))
+  },
+
+  isDragging: false,
+  offsetX: 0,
+  offsetY: 0,
+  addDraggerForTable: () => {
+    byId('dragHandler').addEventListener('pointerdown', (e) => {
+      myDom.isDragging = true;
+      const rect = byId('jambTable').getBoundingClientRect();
+      myDom.offsetX = e.clientX - rect.left;
+      myDom.offsetY = e.clientY - rect.top;
+      byId('dragHandler').setPointerCapture(e.pointerId);
+    });
+
+    byId('dragHandler').addEventListener('pointermove', (e) => {
+      if(myDom.isDragging) {
+        byId('jambTable').style.left = `${e.clientX - myDom.offsetX}px`;
+        byId('jambTable').style.top = `${e.clientY - myDom.offsetY}px`;
+      }
+    });
+
+    byId('dragHandler').addEventListener('pointerup', (e) => {
+      myDom.isDragging = false;
+      byId('dragHandler').releasePointerCapture(e.pointerId);
+    });
   }
+
 }

@@ -320,8 +320,6 @@ let myDom = exports.myDom = {
     table.classList.add('btn');
     table.innerHTML = `<span data-label="table"></span>`;
     table.addEventListener('click', () => {
-      //
-      console.log('XXX');
       this.showHideJambTable();
     });
     var settings = document.createElement('div');
@@ -353,6 +351,21 @@ let myDom = exports.myDom = {
         app.matrixAmmo.speedUpSimulation = parseInt(e.target.value);
       });
     });
+
+    // test help
+    var helpBox = document.createElement('div');
+    helpBox.id = 'helpBox';
+    helpBox.style.position = 'absolute';
+    helpBox.style.right = '20%';
+    helpBox.style.zIndex = '2';
+    helpBox.style.top = '15%';
+    helpBox.style.width = '60%';
+    helpBox.style.height = '50%';
+    helpBox.style.fontSize = '100%';
+    helpBox.classList.add('btn');
+    document.body.appendChild(helpBox);
+    (0, _utils.typeText)('helpBox', app.label.get.about, 10);
+    //
     var roll = document.createElement('div');
     roll.id = 'hud-roll';
     roll.classList.add('btn');
@@ -409,6 +422,11 @@ let myDom = exports.myDom = {
     var root = document.createElement('div');
     root.id = 'jambTable';
     root.style.position = 'absolute';
+    var dragHandler = document.createElement('div');
+    dragHandler.id = 'dragHandler';
+    dragHandler.classList.add('dragHandler');
+    dragHandler.innerHTML = "⇅ Drag";
+    root.append(dragHandler);
     var rowHeader = document.createElement('div');
     rowHeader.id = 'rowHeader';
     rowHeader.style.top = '10px';
@@ -1199,7 +1217,7 @@ let myDom = exports.myDom = {
     var testArray = app.myDom.checkForDuplicate()[1];
     console.log('TEST duplik: ' + result);
     if (result.length > 0) {
-      console.log('TEST duplik less 3 : ' + result);
+      console.log('TEST duplik l : ' + result);
       var locPrevent = false;
       testArray.forEach((item, index, array) => {
         if (result[0].value == item.value && locPrevent == false) {
@@ -1311,6 +1329,28 @@ let myDom = exports.myDom = {
     }
     dices.STATUS = "FREE_TO_PLAY";
     dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
+  },
+  isDragging: false,
+  offsetX: 0,
+  offsetY: 0,
+  addDraggerForTable: () => {
+    (0, _utils.byId)('dragHandler').addEventListener('pointerdown', e => {
+      myDom.isDragging = true;
+      const rect = (0, _utils.byId)('jambTable').getBoundingClientRect();
+      myDom.offsetX = e.clientX - rect.left;
+      myDom.offsetY = e.clientY - rect.top;
+      (0, _utils.byId)('dragHandler').setPointerCapture(e.pointerId);
+    });
+    (0, _utils.byId)('dragHandler').addEventListener('pointermove', e => {
+      if (myDom.isDragging) {
+        (0, _utils.byId)('jambTable').style.left = `${e.clientX - myDom.offsetX}px`;
+        (0, _utils.byId)('jambTable').style.top = `${e.clientY - myDom.offsetY}px`;
+      }
+    });
+    (0, _utils.byId)('dragHandler').addEventListener('pointerup', e => {
+      myDom.isDragging = false;
+      (0, _utils.byId)('dragHandler').releasePointerCapture(e.pointerId);
+    });
   }
 };
 
@@ -1342,10 +1382,75 @@ let application = exports.application = new _world.default({
   };
   application.myDom = _jamb.myDom;
   _jamb.myDom.createJamb();
+  _jamb.myDom.addDraggerForTable();
   _jamb.myDom.createBlocker();
   application.dices = _jamb.dices;
   application.activateDiceClickListener = null;
 
+  // -------------------------
+  // TEST
+  application.matrixAmmo.detectTopFaceFromQuat = q => {
+    const faces = [{
+      face: 1,
+      vec: [0, 1, 0]
+    },
+    // top (+Y)
+    {
+      face: 2,
+      vec: [0, -1, 0]
+    },
+    // bottom (-Y)
+    {
+      face: 3,
+      vec: [1, 0, 0]
+    },
+    // right (+X)
+    {
+      face: 4,
+      vec: [-1, 0, 0]
+    },
+    // left (-X)
+    {
+      face: 5,
+      vec: [0, 0, 1]
+    },
+    // front (+Z)
+    {
+      face: 6,
+      vec: [0, 0, -1]
+    } // back (-Z)
+    ];
+    let maxDot = -Infinity;
+    let topFace = null;
+    for (const f of faces) {
+      const v = application.matrixAmmo.applyQuatToVec(q, f.vec);
+      const dot = v.y; // compare with world up (0,1,0)
+      if (dot > maxDot) {
+        maxDot = dot;
+        topFace = f.face;
+      }
+    }
+    return topFace;
+  };
+  application.matrixAmmo.applyQuatToVec = (q, vec) => {
+    const [x, y, z] = vec;
+    const qx = q.x(),
+      qy = q.y(),
+      qz = q.z(),
+      qw = q.w();
+
+    // Quaternion * vector * inverse(quaternion)
+    const ix = qw * x + qy * z - qz * y;
+    const iy = qw * y + qz * x - qx * z;
+    const iz = qw * z + qx * y - qy * x;
+    const iw = -qx * x - qy * y - qz * z;
+    return {
+      x: ix * qw + iw * -qx + iy * -qz - iz * -qy,
+      y: iy * qw + iw * -qy + iz * -qx - ix * -qz,
+      z: iz * qw + iw * -qz + ix * -qy - iy * -qx
+    };
+  };
+  // -------------------------
   // This code must be on top (Physics)
   application.matrixAmmo.detectCollision = function () {
     this.lastRoll = '';
@@ -1367,42 +1472,53 @@ let application = exports.application = new _world.default({
           var testR = contactManifold.getBody0().getWorldTransform().getRotation();
         }
         var passed = false;
-        if (Math.abs(testR.y()) < 0.00001) {
-          this.lastRoll = "3";
-          this.presentScore += 4;
-          passed = true;
+        const face = application.matrixAmmo.detectTopFaceFromQuat(testR);
+        if (face) {
+          this.lastRoll = face.toString();
+          // Update score logic
+          dispatchEvent(new CustomEvent(`dice-${face}`, {
+            detail: {
+              result: `dice-${face}`,
+              cubeId: MY_DICE_NAME
+            }
+          }));
         }
-        if (Math.abs(testR.x()) < 0.00001) {
-          this.lastRoll = "5";
-          this.presentScore += 3;
-          passed = true;
-        }
-        if (testR.x().toString().substring(0, 5) == testR.y().toString().substring(1, 6)) {
-          this.lastRoll = "6";
-          this.presentScore += 2;
-          passed = true;
-        }
-        if (testR.x().toString().substring(0, 5) == testR.y().toString().substring(0, 5)) {
-          this.lastRoll = "2";
-          this.presentScore += 1;
-          passed = true;
-        }
-        if (testR.z().toString().substring(0, 5) == testR.y().toString().substring(1, 6)) {
-          this.lastRoll = "4";
-          this.presentScore += 6;
-          passed = true;
-        }
-        if (testR.z().toString().substring(0, 5) == testR.y().toString().substring(0, 5)) {
-          this.lastRoll = "1";
-          this.presentScore += 5;
-          passed = true;
-        }
-        if (passed == true) dispatchEvent(new CustomEvent(`dice-${this.lastRoll}`, {
-          detail: {
-            result: `dice-${this.lastRoll}`,
-            cubeId: MY_DICE_NAME
-          }
-        }));
+        // if(Math.abs(testR.y()) < 0.00001) {
+        //   this.lastRoll = "3";
+        //   this.presentScore += 4;
+        //   passed = true;
+        // }
+        // if(Math.abs(testR.x()) < 0.00001) {
+        //   this.lastRoll = "5";
+        //   this.presentScore += 3;
+        //   passed = true;
+        // }
+        // if(testR.x().toString().substring(0, 5) == testR.y().toString().substring(1, 6)) {
+        //   this.lastRoll = "6";
+        //   this.presentScore += 2;
+        //   passed = true;
+        // }
+        // if(testR.x().toString().substring(0, 5) == testR.y().toString().substring(0, 5)) {
+        //   this.lastRoll = "2";
+        //   this.presentScore += 1;
+        //   passed = true;
+        // }
+        // if(testR.z().toString().substring(0, 5) == testR.y().toString().substring(1, 6)) {
+        //   this.lastRoll = "4";
+        //   this.presentScore += 6;
+        //   passed = true;
+        // }
+        // if(testR.z().toString().substring(0, 5) == testR.y().toString().substring(0, 5)) {
+        //   this.lastRoll = "1";
+        //   this.presentScore += 5;
+        //   passed = true;
+        // }
+        // if(passed == true) dispatchEvent(new CustomEvent(`dice-${this.lastRoll}`, {
+        //   detail: {
+        //     result: `dice-${this.lastRoll}`,
+        //     cubeId: MY_DICE_NAME
+        //   }
+        // }))
       }
     }
   };
@@ -1434,6 +1550,7 @@ let application = exports.application = new _world.default({
   application.matrixSounds.createAudio('dice1', 'res/audios/dice1.mp3', 6);
   application.matrixSounds.createAudio('dice2', 'res/audios/dice2.mp3', 6);
   application.matrixSounds.createAudio('hover', 'res/audios/toggle_002.mp3', 3);
+  application.matrixSounds.createAudio('roll', 'res/audios/dice-roll.mp3', 2);
   addEventListener('AmmoReady', () => {
     app.matrixAmmo.speedUpSimulation = 2;
     (0, _loaderObj.downloadMeshes)({
@@ -1928,6 +2045,7 @@ let application = exports.application = new _world.default({
       setTimeout(() => {
         app.matrixAmmo.getBodyByName(`CubePhysics${x}`).setAngularVelocity(new Ammo.btVector3((0, _utils.randomFloatFromTo)(3, 12), 9, 9));
         app.matrixAmmo.getBodyByName(`CubePhysics${x}`).setLinearVelocity(new Ammo.btVector3((0, _utils.randomFloatFromTo)(-5, 5), 15, -20));
+        setTimeout(() => app.matrixSounds.play('roll'), 1500);
       }, 200 * x);
     }
     application.activateDiceClickListener = index => {
@@ -11091,16 +11209,82 @@ let mb = exports.mb = {
     mb.show(content, 'ok');
   }
 };
-function typeText(elementId, text, delay = 50) {
+function typeText(elementId, htmlString, delay = 50) {
   const el = document.getElementById(elementId);
-  el.innerText = '';
-  let index = 0;
-  function typeNextChar() {
-    if (index < text.length) {
-      el.textContent += text.charAt(index);
-      index++;
-      setTimeout(typeNextChar, delay);
+  el.innerHTML = '';
+  const tempEl = document.createElement('div');
+  tempEl.innerHTML = htmlString;
+  const queue = [];
+
+  // Flatten DOM nodes into a linear queue
+  function flatten(node) {
+    if (node.nodeType === Node.TEXT_NODE) {
+      queue.push({
+        type: 'text',
+        text: node.textContent
+      });
+    } else if (node.nodeType === Node.ELEMENT_NODE) {
+      if (node.tagName.toLowerCase() === 'img') {
+        // Special handling: <img> gets pushed directly
+        queue.push({
+          type: 'img',
+          src: node.getAttribute('src'),
+          alt: node.getAttribute('alt') || ''
+        });
+      } else {
+        // General case: wrap and recurse
+        queue.push({
+          type: 'element',
+          tag: node.tagName.toLowerCase(),
+          attributes: Object.fromEntries([...node.attributes].map(attr => [attr.name, attr.value]))
+        });
+        for (const child of node.childNodes) flatten(child);
+        queue.push({
+          type: 'end'
+        });
+      }
     }
+  }
+  for (const node of tempEl.childNodes) flatten(node);
+  let stack = [];
+  let currentElement = el;
+  function typeNextChar() {
+    if (queue.length === 0) return;
+    const item = queue[0];
+    if (item.type === 'text') {
+      if (!item.index) item.index = 0;
+      const ch = item.text[item.index];
+      if (ch === '\n') {
+        currentElement.appendChild(document.createElement('br'));
+      } else {
+        currentElement.appendChild(document.createTextNode(ch));
+      }
+      item.index++;
+      if (item.index >= item.text.length) queue.shift();
+    } else if (item.type === 'element') {
+      const newEl = document.createElement(item.tag);
+      if (item.attributes) {
+        for (let [key, val] of Object.entries(item.attributes)) {
+          newEl.setAttribute(key, val);
+        }
+      }
+      currentElement.appendChild(newEl);
+      stack.push(currentElement);
+      currentElement = newEl;
+      queue.shift();
+    } else if (item.type === 'end') {
+      currentElement = stack.pop();
+      queue.shift();
+    } else if (item.type === 'img') {
+      const img = document.createElement('img');
+      img.src = item.src;
+      img.alt = item.alt;
+      img.style.maxWidth = '100px';
+      img.style.verticalAlign = 'middle';
+      currentElement.appendChild(img);
+      queue.shift(); // move on
+    }
+    setTimeout(typeNextChar, delay);
   }
   typeNextChar();
 }

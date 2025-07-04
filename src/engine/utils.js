@@ -721,21 +721,88 @@ export let mb = {
   }
 }
 
-export function typeText(elementId, text, delay = 50) {
+export function typeText(elementId, htmlString, delay = 50) {
   const el = document.getElementById(elementId);
-  el.innerText = '';
-  let index = 0;
+  el.innerHTML = '';
+
+  const tempEl = document.createElement('div');
+  tempEl.innerHTML = htmlString;
+
+  const queue = [];
+
+  // Flatten DOM nodes into a linear queue
+  function flatten(node) {
+    if (node.nodeType === Node.TEXT_NODE) {
+      queue.push({ type: 'text', text: node.textContent });
+    } else if (node.nodeType === Node.ELEMENT_NODE) {
+      if (node.tagName.toLowerCase() === 'img') {
+        // Special handling: <img> gets pushed directly
+        queue.push({ type: 'img', src: node.getAttribute('src'), alt: node.getAttribute('alt') || '' });
+      } else {
+        // General case: wrap and recurse
+        queue.push({ type: 'element', tag: node.tagName.toLowerCase(), attributes: Object.fromEntries([...node.attributes].map(attr => [attr.name, attr.value])) });
+        for (const child of node.childNodes) flatten(child);
+        queue.push({ type: 'end' });
+      }
+    }
+  }
+
+  for (const node of tempEl.childNodes) flatten(node);
+
+  let stack = [];
+  let currentElement = el;
 
   function typeNextChar() {
-    if(index < text.length) {
-      el.textContent += text.charAt(index);
-      index++;
-      setTimeout(typeNextChar, delay);
+    if (queue.length === 0) return;
+
+    const item = queue[0];
+
+    if (item.type === 'text') {
+      if (!item.index) item.index = 0;
+
+      const ch = item.text[item.index];
+      if (ch === '\n') {
+        currentElement.appendChild(document.createElement('br'));
+      } else {
+        currentElement.appendChild(document.createTextNode(ch));
+      }
+
+      item.index++;
+      if (item.index >= item.text.length) queue.shift();
+
+    } else if (item.type === 'element') {
+      const newEl = document.createElement(item.tag);
+      if (item.attributes) {
+        for (let [key, val] of Object.entries(item.attributes)) {
+          newEl.setAttribute(key, val);
+        }
+      }
+      currentElement.appendChild(newEl);
+      stack.push(currentElement);
+      currentElement = newEl;
+      queue.shift();
+
+    } else if (item.type === 'end') {
+      currentElement = stack.pop();
+      queue.shift();
+
+    } else if (item.type === 'img') {
+      const img = document.createElement('img');
+      img.src = item.src;
+      img.alt = item.alt;
+      img.style.maxWidth = '100px';
+      img.style.verticalAlign = 'middle';
+      currentElement.appendChild(img);
+      queue.shift(); // move on
     }
+
+    setTimeout(typeNextChar, delay);
   }
 
   typeNextChar();
 }
+
+
 
 export function setupCanvasFilters(canvasId) {
   let canvas = document.getElementById(canvasId);

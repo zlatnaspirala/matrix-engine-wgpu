@@ -19,12 +19,57 @@ export let application = new MatrixEngineWGPU({
   };
   application.myDom = myDom;
   myDom.createJamb();
+  myDom.addDraggerForTable();
   myDom.createBlocker();
   application.dices = dices;
 
 
   application.activateDiceClickListener = null;
 
+  // -------------------------
+  // TEST
+  application.matrixAmmo.detectTopFaceFromQuat = (q) => {
+    const faces = [
+      {face: 1, vec: [0, 1, 0]},  // top (+Y)
+      {face: 2, vec: [0, -1, 0]}, // bottom (-Y)
+      {face: 3, vec: [1, 0, 0]},  // right (+X)
+      {face: 4, vec: [-1, 0, 0]}, // left (-X)
+      {face: 5, vec: [0, 0, 1]},  // front (+Z)
+      {face: 6, vec: [0, 0, -1]}  // back (-Z)
+    ];
+
+    let maxDot = -Infinity;
+    let topFace = null;
+
+    for(const f of faces) {
+      const v = application.matrixAmmo.applyQuatToVec(q, f.vec);
+      const dot = v.y; // compare with world up (0,1,0)
+      if(dot > maxDot) {
+        maxDot = dot;
+        topFace = f.face;
+      }
+    }
+
+    return topFace;
+  }
+
+  application.matrixAmmo.applyQuatToVec = (q, vec) => {
+    const [x, y, z] = vec;
+    const qx = q.x(), qy = q.y(), qz = q.z(), qw = q.w();
+
+    // Quaternion * vector * inverse(quaternion)
+    const ix = qw * x + qy * z - qz * y;
+    const iy = qw * y + qz * x - qx * z;
+    const iz = qw * z + qx * y - qy * x;
+    const iw = -qx * x - qy * y - qz * z;
+
+    return {
+      x: ix * qw + iw * -qx + iy * -qz - iz * -qy,
+      y: iy * qw + iw * -qy + iz * -qx - ix * -qz,
+      z: iz * qw + iw * -qz + ix * -qy - iy * -qx
+    };
+  }
+  // -------------------------
   // This code must be on top (Physics)
   application.matrixAmmo.detectCollision = function() {
     this.lastRoll = '';
@@ -47,42 +92,48 @@ export let application = new MatrixEngineWGPU({
           var testR = contactManifold.getBody0().getWorldTransform().getRotation();
         }
         var passed = false;
-        if(Math.abs(testR.y()) < 0.00001) {
-          this.lastRoll = "3";
-          this.presentScore += 4;
-          passed = true;
+        const face = application.matrixAmmo.detectTopFaceFromQuat(testR);
+        if(face) {
+          this.lastRoll = face.toString();
+          // Update score logic
+          dispatchEvent(new CustomEvent(`dice-${face}`, {detail: {result: `dice-${face}`, cubeId: MY_DICE_NAME}}));
         }
-        if(Math.abs(testR.x()) < 0.00001) {
-          this.lastRoll = "5";
-          this.presentScore += 3;
-          passed = true;
-        }
-        if(testR.x().toString().substring(0, 5) == testR.y().toString().substring(1, 6)) {
-          this.lastRoll = "6";
-          this.presentScore += 2;
-          passed = true;
-        }
-        if(testR.x().toString().substring(0, 5) == testR.y().toString().substring(0, 5)) {
-          this.lastRoll = "2";
-          this.presentScore += 1;
-          passed = true;
-        }
-        if(testR.z().toString().substring(0, 5) == testR.y().toString().substring(1, 6)) {
-          this.lastRoll = "4";
-          this.presentScore += 6;
-          passed = true;
-        }
-        if(testR.z().toString().substring(0, 5) == testR.y().toString().substring(0, 5)) {
-          this.lastRoll = "1";
-          this.presentScore += 5;
-          passed = true;
-        }
-        if(passed == true) dispatchEvent(new CustomEvent(`dice-${this.lastRoll}`, {
-          detail: {
-            result: `dice-${this.lastRoll}`,
-            cubeId: MY_DICE_NAME
-          }
-        }))
+        // if(Math.abs(testR.y()) < 0.00001) {
+        //   this.lastRoll = "3";
+        //   this.presentScore += 4;
+        //   passed = true;
+        // }
+        // if(Math.abs(testR.x()) < 0.00001) {
+        //   this.lastRoll = "5";
+        //   this.presentScore += 3;
+        //   passed = true;
+        // }
+        // if(testR.x().toString().substring(0, 5) == testR.y().toString().substring(1, 6)) {
+        //   this.lastRoll = "6";
+        //   this.presentScore += 2;
+        //   passed = true;
+        // }
+        // if(testR.x().toString().substring(0, 5) == testR.y().toString().substring(0, 5)) {
+        //   this.lastRoll = "2";
+        //   this.presentScore += 1;
+        //   passed = true;
+        // }
+        // if(testR.z().toString().substring(0, 5) == testR.y().toString().substring(1, 6)) {
+        //   this.lastRoll = "4";
+        //   this.presentScore += 6;
+        //   passed = true;
+        // }
+        // if(testR.z().toString().substring(0, 5) == testR.y().toString().substring(0, 5)) {
+        //   this.lastRoll = "1";
+        //   this.presentScore += 5;
+        //   passed = true;
+        // }
+        // if(passed == true) dispatchEvent(new CustomEvent(`dice-${this.lastRoll}`, {
+        //   detail: {
+        //     result: `dice-${this.lastRoll}`,
+        //     cubeId: MY_DICE_NAME
+        //   }
+        // }))
       }
     }
   }
@@ -121,6 +172,7 @@ export let application = new MatrixEngineWGPU({
   application.matrixSounds.createAudio('dice1', 'res/audios/dice1.mp3', 6)
   application.matrixSounds.createAudio('dice2', 'res/audios/dice2.mp3', 6)
   application.matrixSounds.createAudio('hover', 'res/audios/toggle_002.mp3', 3)
+  application.matrixSounds.createAudio('roll', 'res/audios/dice-roll.mp3', 2)
 
   addEventListener('AmmoReady', () => {
 
@@ -495,6 +547,7 @@ export let application = new MatrixEngineWGPU({
         app.matrixAmmo.getBodyByName(`CubePhysics${x}`).setLinearVelocity(new Ammo.btVector3(
           randomFloatFromTo(-5, 5), 15, -20
         ))
+        setTimeout(() => app.matrixSounds.play('roll'), 1500)
       }, 200 * x)
     }
 

@@ -662,11 +662,12 @@ option {
 
 #jambTable {
   position: absolute;
-  display:flex;
+  display: flex;
   top: 17%;
   left: 17%;
   width: 370px;
-  transform: translate(-50%, -50%) scale(1);
+  transform:  scale(1); 
+  /* translate(-50%, -50%) */
   background: rgba(0, 0, 0, 0.9);
   border: 2px solid #0ff;
   padding: 15px;
@@ -679,13 +680,31 @@ option {
 /* Visible state */
 #jambTable.show {
   display: flex;
-  transform: translate(-50%, -50%) scale(1);
+  transform: scale(1);
+   /* translate(-50%, -50%) */
   opacity: 1;
 }
 
 /* Hidden state */
 #jambTable.hide {
-  transform: translate(-50%, -50%) scale(0);
+  transform:  scale(0);
+  /* translate(-50%, -50%) */
   opacity: 0;
   pointer-events: none;
+}
+
+#dragHandler {
+  width: 100%;
+  height: 20px;
+  background: #333;
+  cursor: move;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 10;
+  opacity: 0.8;
+  color: white;
+  text-align: center;
+  font-size: 12px;
+  line-height: 20px;
 }

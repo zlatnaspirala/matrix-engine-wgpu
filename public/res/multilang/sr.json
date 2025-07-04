@@ -34,5 +34,6 @@
   "hand2":"Drugo bacanje - sackajte...",
   "graphics":"Grafika",
   "choosename":"Izaberi alias:",
-  "table":"Tabla"
+  "table":"Tabla",
+  "about":"Ultimate Yahtzee je moderna 3D igra sa kockicama u potpunosti izgrađena pomoću MatrixEngineWGPU-a, visokoperformansnog rendering endžina zasnovanog na WebGPU-u, razvijenog za kreiranje interaktivne grafike direktno u pregledaču. Igra pruža glatke vizuelne efekte, realističnu fiziku kockica i zanimljivo korisničko iskustvo — sve bez potrebe za bilo kakvim dodacima ili instalacijama.\n  Ovaj projekat je pokretan otvorenim tehnologijama i dizajniran je da bude lagan, brz i veoma prilagodljiv. Odličan je primer kako se WebGPU može koristiti za interaktivni sadržaj u realnom vremenu. \n 🔗 Preuzmite / Isprobajte: \n github.com/zlatnaspirala/matrix-engine-wgpu \n 🛠 Licenca: \n Osnovni endžin i projekat Ultimate Yahtzee objavljeni su pod GPL v3 licencom, što ih čini besplatnim i otvorenog koda za ličnu i komercijalnu upotrebu — sve dok poštujete uslove licence. \n Bez obzira da li ste programer, igrač ili entuzijasta, Ultimate Yahtzee je zabavan način da iskusite potencijal moderne 3D tehnologije zasnovane na pregledaču."
 }
