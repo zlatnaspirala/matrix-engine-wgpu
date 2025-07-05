@@ -322,4 +322,6 @@ You may use, modify, and sell projects based on this code — just keep this not
 
 [Full License Text](https://github.com/webgpu/webgpu-samples/blob/main/LICENSE.txt)
 
+Top level main.js instance (Ultimate Yahtzee)
+
 ---

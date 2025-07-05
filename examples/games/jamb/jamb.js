@@ -194,6 +194,13 @@ export let myDom = {
     help.id = 'HELP';
     help.classList.add('btn')
     help.innerHTML = `<span data-label="help"></span>`;
+    help.addEventListener('click', () => {
+      if(byId('helpBox').style.display != 'none') {
+        byId('helpBox').style.display = 'none';
+      } else {
+        byId('helpBox').style.display = 'block';
+      }
+    });
 
     var table = document.createElement('div')
     table.id = 'showHideTableDOM';
@@ -246,6 +253,9 @@ export let myDom = {
     helpBox.style.height = '50%';
     helpBox.style.fontSize = '100%';
     helpBox.classList.add('btn');
+    helpBox.addEventListener('click', () => {
+      byId('helpBox').style.display = 'none';
+    });
     document.body.appendChild(helpBox)
     typeText('helpBox', app.label.get.about, 10);
     //
@@ -1072,7 +1082,7 @@ export let myDom = {
     // console.log('<GAMEPLAY><FREE ROW IS FEELED>')
     var TEST = app.myDom.checkForAllDuplicate();
     for(var key in TEST) {
-      if(TEST[key] == 5 || TEST[key] > 5) {
+      if(TEST[key] == 5) {
         // win
         var getDiceID = parseInt(key.replace('value__', ''))
         var win = getDiceID * 5;

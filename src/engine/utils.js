@@ -721,26 +721,42 @@ export let mb = {
   }
 }
 
+// Registry to track running animations per element
+const typingStates = new Map();
+
 export function typeText(elementId, htmlString, delay = 50) {
   const el = document.getElementById(elementId);
-  el.innerHTML = '';
+  if (!el) return;
+
+  // If an existing typing is running for this element, cancel it
+  if (typingStates.has(elementId)) {
+    clearTimeout(typingStates.get(elementId).timeoutId);
+    typingStates.delete(elementId);
+  }
+
+  el.innerHTML = ''; // Clear previous content
 
   const tempEl = document.createElement('div');
   tempEl.innerHTML = htmlString;
 
   const queue = [];
 
-  // Flatten DOM nodes into a linear queue
   function flatten(node) {
     if (node.nodeType === Node.TEXT_NODE) {
       queue.push({ type: 'text', text: node.textContent });
     } else if (node.nodeType === Node.ELEMENT_NODE) {
       if (node.tagName.toLowerCase() === 'img') {
-        // Special handling: <img> gets pushed directly
-        queue.push({ type: 'img', src: node.getAttribute('src'), alt: node.getAttribute('alt') || '' });
+        queue.push({
+          type: 'img',
+          src: node.getAttribute('src'),
+          alt: node.getAttribute('alt') || ''
+        });
       } else {
-        // General case: wrap and recurse
-        queue.push({ type: 'element', tag: node.tagName.toLowerCase(), attributes: Object.fromEntries([...node.attributes].map(attr => [attr.name, attr.value])) });
+        queue.push({
+          type: 'element',
+          tag: node.tagName.toLowerCase(),
+          attributes: Object.fromEntries([...node.attributes].map(attr => [attr.name, attr.value]))
+        });
         for (const child of node.childNodes) flatten(child);
         queue.push({ type: 'end' });
       }
@@ -753,7 +769,10 @@ export function typeText(elementId, htmlString, delay = 50) {
   let currentElement = el;
 
   function typeNextChar() {
-    if (queue.length === 0) return;
+    if (queue.length === 0) {
+      typingStates.delete(elementId); // Cleanup after finish
+      return;
+    }
 
     const item = queue[0];
 
@@ -793,15 +812,16 @@ export function typeText(elementId, htmlString, delay = 50) {
       img.style.maxWidth = '100px';
       img.style.verticalAlign = 'middle';
       currentElement.appendChild(img);
-      queue.shift(); // move on
+      queue.shift();
     }
 
-    setTimeout(typeNextChar, delay);
+    // Schedule next step and store timeoutId for control
+    const timeoutId = setTimeout(typeNextChar, delay);
+    typingStates.set(elementId, { timeoutId });
   }
 
   typeNextChar();
 }
-
 
 
 export function setupCanvasFilters(canvasId) {

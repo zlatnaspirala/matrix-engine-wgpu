@@ -663,8 +663,8 @@ option {
 #jambTable {
   position: absolute;
   display: flex;
-  top: 17%;
-  left: 17%;
+  top: 15%;
+  left: 2%;
   width: 370px;
   transform:  scale(1); 
   /* translate(-50%, -50%) */

@@ -29,13 +29,14 @@ export let application = new MatrixEngineWGPU({
   // -------------------------
   // TEST
   application.matrixAmmo.detectTopFaceFromQuat = (q) => {
+    // Define based on *visual face* → object-space normal mapping
     const faces = [
-      {face: 1, vec: [0, 1, 0]},  // top (+Y)
-      {face: 2, vec: [0, -1, 0]}, // bottom (-Y)
-      {face: 3, vec: [1, 0, 0]},  // right (+X)
-      {face: 4, vec: [-1, 0, 0]}, // left (-X)
-      {face: 5, vec: [0, 0, 1]},  // front (+Z)
-      {face: 6, vec: [0, 0, -1]}  // back (-Z)
+      {face: 1, vec: [0, 1, 0]},   // top
+      {face: 2, vec: [0, -1, 0]},  // bottom
+      {face: 3, vec: [0, 0, 1]},   // front
+      {face: 4, vec: [0, 0, -1]},  // back
+      {face: 5, vec: [1, 0, 0]},   // right
+      {face: 6, vec: [-1, 0, 0]}   // left
     ];
 
     let maxDot = -Infinity;
@@ -43,7 +44,7 @@ export let application = new MatrixEngineWGPU({
 
     for(const f of faces) {
       const v = application.matrixAmmo.applyQuatToVec(q, f.vec);
-      const dot = v.y; // compare with world up (0,1,0)
+      const dot = v.y; // Compare with world up (0, 1, 0)
       if(dot > maxDot) {
         maxDot = dot;
         topFace = f.face;
@@ -51,7 +52,7 @@ export let application = new MatrixEngineWGPU({
     }
 
     return topFace;
-  }
+  };
 
   application.matrixAmmo.applyQuatToVec = (q, vec) => {
     const [x, y, z] = vec;

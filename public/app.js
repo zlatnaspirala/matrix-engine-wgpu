@@ -315,6 +315,13 @@ let myDom = exports.myDom = {
     help.id = 'HELP';
     help.classList.add('btn');
     help.innerHTML = `<span data-label="help"></span>`;
+    help.addEventListener('click', () => {
+      if ((0, _utils.byId)('helpBox').style.display != 'none') {
+        (0, _utils.byId)('helpBox').style.display = 'none';
+      } else {
+        (0, _utils.byId)('helpBox').style.display = 'block';
+      }
+    });
     var table = document.createElement('div');
     table.id = 'showHideTableDOM';
     table.classList.add('btn');
@@ -363,6 +370,9 @@ let myDom = exports.myDom = {
     helpBox.style.height = '50%';
     helpBox.style.fontSize = '100%';
     helpBox.classList.add('btn');
+    helpBox.addEventListener('click', () => {
+      (0, _utils.byId)('helpBox').style.display = 'none';
+    });
     document.body.appendChild(helpBox);
     (0, _utils.typeText)('helpBox', app.label.get.about, 10);
     //
@@ -1104,7 +1114,7 @@ let myDom = exports.myDom = {
     // console.log('<GAMEPLAY><FREE ROW IS FEELED>')
     var TEST = app.myDom.checkForAllDuplicate();
     for (var key in TEST) {
-      if (TEST[key] == 5 || TEST[key] > 5) {
+      if (TEST[key] == 5) {
         // win
         var getDiceID = parseInt(key.replace('value__', ''));
         var win = getDiceID * 5;
@@ -1390,41 +1400,42 @@ let application = exports.application = new _world.default({
   // -------------------------
   // TEST
   application.matrixAmmo.detectTopFaceFromQuat = q => {
+    // Define based on *visual face* → object-space normal mapping
     const faces = [{
       face: 1,
       vec: [0, 1, 0]
     },
-    // top (+Y)
+    // top
     {
       face: 2,
       vec: [0, -1, 0]
     },
-    // bottom (-Y)
+    // bottom
     {
       face: 3,
-      vec: [1, 0, 0]
-    },
-    // right (+X)
-    {
-      face: 4,
-      vec: [-1, 0, 0]
-    },
-    // left (-X)
-    {
-      face: 5,
       vec: [0, 0, 1]
     },
-    // front (+Z)
+    // front
+    {
+      face: 4,
+      vec: [0, 0, -1]
+    },
+    // back
+    {
+      face: 5,
+      vec: [1, 0, 0]
+    },
+    // right
     {
       face: 6,
-      vec: [0, 0, -1]
-    } // back (-Z)
+      vec: [-1, 0, 0]
+    } // left
     ];
     let maxDot = -Infinity;
     let topFace = null;
     for (const f of faces) {
       const v = application.matrixAmmo.applyQuatToVec(q, f.vec);
-      const dot = v.y; // compare with world up (0,1,0)
+      const dot = v.y; // Compare with world up (0, 1, 0)
       if (dot > maxDot) {
         maxDot = dot;
         topFace = f.face;
@@ -11209,14 +11220,23 @@ let mb = exports.mb = {
     mb.show(content, 'ok');
   }
 };
+
+// Registry to track running animations per element
+const typingStates = new Map();
 function typeText(elementId, htmlString, delay = 50) {
   const el = document.getElementById(elementId);
-  el.innerHTML = '';
+  if (!el) return;
+
+  // If an existing typing is running for this element, cancel it
+  if (typingStates.has(elementId)) {
+    clearTimeout(typingStates.get(elementId).timeoutId);
+    typingStates.delete(elementId);
+  }
+  el.innerHTML = ''; // Clear previous content
+
   const tempEl = document.createElement('div');
   tempEl.innerHTML = htmlString;
   const queue = [];
-
-  // Flatten DOM nodes into a linear queue
   function flatten(node) {
     if (node.nodeType === Node.TEXT_NODE) {
       queue.push({
@@ -11225,14 +11245,12 @@ function typeText(elementId, htmlString, delay = 50) {
       });
     } else if (node.nodeType === Node.ELEMENT_NODE) {
       if (node.tagName.toLowerCase() === 'img') {
-        // Special handling: <img> gets pushed directly
         queue.push({
           type: 'img',
           src: node.getAttribute('src'),
           alt: node.getAttribute('alt') || ''
         });
       } else {
-        // General case: wrap and recurse
         queue.push({
           type: 'element',
           tag: node.tagName.toLowerCase(),
@@ -11249,7 +11267,10 @@ function typeText(elementId, htmlString, delay = 50) {
   let stack = [];
   let currentElement = el;
   function typeNextChar() {
-    if (queue.length === 0) return;
+    if (queue.length === 0) {
+      typingStates.delete(elementId); // Cleanup after finish
+      return;
+    }
     const item = queue[0];
     if (item.type === 'text') {
       if (!item.index) item.index = 0;
@@ -11282,9 +11303,14 @@ function typeText(elementId, htmlString, delay = 50) {
       img.style.maxWidth = '100px';
       img.style.verticalAlign = 'middle';
       currentElement.appendChild(img);
-      queue.shift(); // move on
+      queue.shift();
     }
-    setTimeout(typeNextChar, delay);
+
+    // Schedule next step and store timeoutId for control
+    const timeoutId = setTimeout(typeNextChar, delay);
+    typingStates.set(elementId, {
+      timeoutId
+    });
   }
   typeNextChar();
 }
