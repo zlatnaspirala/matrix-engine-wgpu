@@ -196,6 +196,29 @@ export default class MatrixAmmo {
     return b;
   }
 
+  deactivatePhysics(body) {
+    const CF_KINEMATIC_OBJECT = 2;
+    const DISABLE_DEACTIVATION = 4;
+    // 1. Remove from world
+    this.dynamicsWorld.removeRigidBody(body);
+    // 2. Set body to kinematic
+    const flags = body.getCollisionFlags();
+    body.setCollisionFlags(flags | CF_KINEMATIC_OBJECT);
+    body.setActivationState(DISABLE_DEACTIVATION); // no auto-wakeup
+    // 3. Clear motion
+    const zero = new Ammo.btVector3(0, 0, 0);
+    body.setLinearVelocity(zero);
+    body.setAngularVelocity(zero);
+    // 4. Reset transform to current position (optional — preserves pose)
+    const currentTransform = body.getWorldTransform();
+    body.setWorldTransform(currentTransform);
+    body.getMotionState().setWorldTransform(currentTransform);
+    // 5. Add back to physics world
+    this.matrixAmmo.dynamicsWorld.addRigidBody(body);
+    // 6. Mark it manually (logic flag)
+    body.isKinematic = true;
+  }
+
   detectCollision() {
     console.log('override this')
     return;

@@ -282,8 +282,6 @@ export default class MatrixEngineWGPU {
     if(typeof o.physics.name === 'undefined') {o.physics.name = o.name;}
     if(typeof o.physics.scale === 'undefined') {o.physics.scale = o.scale;}
     if(typeof o.physics.rotation === 'undefined') {o.physics.rotation = o.rotation;}
-
-    // send same pos
     o.physics.position = o.position;
     //  console.log('Mesh procedure', o)
     let myMesh1 = new MEMeshObj(this.canvas, this.device, this.context, o)
