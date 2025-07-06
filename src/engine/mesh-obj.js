@@ -4,8 +4,8 @@ import {createInputHandler} from "./engine";
 import {vertexShadowWGSL} from '../shaders/vertexShadow.wgsl';
 import {fragmentWGSL} from '../shaders/fragment.wgsl';
 import {vertexWGSL} from '../shaders/vertex.wgsl';
-import {degToRad, genName, LOG_FUNNY, LOG_FUNNY_SMALL, LOG_INFO} from './utils';
-import {checkingProcedure, checkingRay, touchCoordinate} from './raycast';
+import {degToRad, genName, LOG_FUNNY_SMALL} from './utils';
+// import {checkingProcedure, checkingRay, touchCoordinate} from './raycast';
 
 export default class MEMeshObj {
 	constructor(canvas, device, context, o) {

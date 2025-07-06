@@ -1,9 +1,11 @@
 {
   "name": "matrix-engine-wgpu",
-  "version": "1.2.4",
+  "version": "1.2.8",
   "description": "+HOTFIX raycast, webGPU powered pwa application. Crazy fast rendering with AmmoJS physics support. Simple raycaster hit object added.",
   "main": "index.js",
-  "files": ["./src"],
+  "files": [
+    "./src"
+  ],
   "scripts": {
     "main-worker": "watchify app-worker.js -p [esmify --noImplicitAny] -o public/app-worker.js",
     "examples": "watchify examples.js -p [esmify --noImplicitAny] -o public/examples.js",
@@ -16,9 +18,9 @@
   "keywords": [
     "3dScene",
     "webGPU",
-		"webGPU-hit-detect",
-		"webGPU-raycaster",
-		"webGPU-click-on-object",
+    "webGPU-hit-detect",
+    "webGPU-raycaster",
+    "webGPU-click-on-object",
     "webGPU-scene",
     "webGPU-engine",
     "matrix",
@@ -33,9 +35,9 @@
     "zlatnaspirala",
     "maximumroulette.com",
     "GLSL",
-		"raycast",
-		"hit-3d-object",
-		"hit-object",
+    "raycast",
+    "hit-3d-object",
+    "hit-object",
     "webgpu-obj-loader",
     "webgpu-fps"
   ],
@@ -45,10 +47,13 @@
     "browser-resolve": "^2.0.0",
     "browserify": "^17.0.0",
     "esmify": "^2.1.1",
-    "watchify": "^4.0.0"
+    "watchify": "^4.0.0",
+    "wgpu-matrix": "^2.0.0"
   },
   "dependencies": {
-    "http-server": "^14.1.1",
-    "wgpu-matrix": "^2.5.1"
+    "http-server": "^14.1.1"
+  },
+  "peerDependencies": {
+    "wgpu-matrix": "^2.0.0"
   }
 }
