@@ -51,6 +51,8 @@ export default class MatrixEngineWGPU {
 
     this.mainCameraParams = options.mainCameraParams;
 
+    const target = this.options.appendTo || document.body;
+
     var canvas = document.createElement('canvas')
     if(this.options.canvasSize == 'fullscreen') {
       canvas.width = window.innerWidth;
@@ -59,7 +61,7 @@ export default class MatrixEngineWGPU {
       canvas.width = this.options.canvasSize.w;
       canvas.height = this.options.canvasSize.h;
     }
-    document.body.append(canvas);
+    target.append(canvas);
 
     // The camera types
     const initialCameraPosition = vec3.create(0, 0, 0);
