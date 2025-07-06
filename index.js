@@ -3,9 +3,9 @@
  * Nikola Lukic zlatnaspirala@gmail.com mart 2024
  * npm import/export
  */
-import {degToRad} from "wgpu-matrix/dist/2.x/utils.js";
+import { degToRad } from "wgpu-matrix"; 
 import {downloadMeshes} from "./src/engine/loader-obj.js";
-import MatrixEngineWGPU from "./src/meWGPU.js";
+import MatrixEngineWGPU from "./src/world.js";
 import {addRaycastListener, getRayFromMouse, rayIntersectsSphere} from "./src/engine/raycast.js";
 
 var about = () => {

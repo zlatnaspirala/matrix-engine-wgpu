@@ -1,8 +1,9 @@
 {
   "name": "matrix-engine-wgpu",
-  "version": "1.2.1",
+  "version": "1.2.4",
   "description": "+HOTFIX raycast, webGPU powered pwa application. Crazy fast rendering with AmmoJS physics support. Simple raycaster hit object added.",
   "main": "index.js",
+  "files": ["./src"],
   "scripts": {
     "main-worker": "watchify app-worker.js -p [esmify --noImplicitAny] -o public/app-worker.js",
     "examples": "watchify examples.js -p [esmify --noImplicitAny] -o public/examples.js",
