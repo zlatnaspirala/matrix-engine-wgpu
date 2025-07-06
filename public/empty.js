@@ -7,6 +7,7 @@ Object.defineProperty(exports, "__esModule", {
 exports.application = void 0;
 var _world = _interopRequireDefault(require("./src/world.js"));
 var _loaderObj = require("./src/engine/loader-obj.js");
+var _utils = require("./src/engine/utils.js");
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 let application = exports.application = new _world.default({
   useSingleRenderPass: false,
@@ -15,10 +16,10 @@ let application = exports.application = new _world.default({
   window.app = application;
   // for now
   window.downloadMeshes = _loaderObj.downloadMeshes;
-  console.info(`%c matrix-engine-wgpu [ready]`, LOG_MATRIX);
+  console.info(`%c matrix-engine-wgpu [ready]`, _utils.LOG_MATRIX);
 });
 
-},{"./src/engine/loader-obj.js":6,"./src/world.js":19}],2:[function(require,module,exports){
+},{"./src/engine/loader-obj.js":6,"./src/engine/utils.js":11,"./src/world.js":19}],2:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -5399,6 +5400,14 @@ class MEBall {
       normalOffset: 3 * 4,
       uvOffset: 6 * 4
     };
+    if (typeof o.raycast === 'undefined') {
+      this.raycast = {
+        enabled: false,
+        radius: 2
+      };
+    } else {
+      this.raycast = o.raycast;
+    }
     this.texturesPaths = [];
     o.texturesPaths.forEach(t => {
       this.texturesPaths.push(t);
@@ -5478,7 +5487,7 @@ class MEBall {
       asteroidCount: 15
     };
     this.loadTex0(this.texturesPaths, device).then(() => {
-      this.loadTex1(device).then(() => {
+      this.loadTex1(this.texturesPaths, device).then(() => {
         this.sampler = device.createSampler({
           magFilter: 'linear',
           minFilter: 'linear'
@@ -5633,9 +5642,9 @@ class MEBall {
     _wgpuMatrix.mat4.multiply(this.projectionMatrix, viewMatrix, this.modelViewProjectionMatrix);
     return this.modelViewProjectionMatrix;
   }
-  async loadTex1(device) {
+  async loadTex1(texPaths, device) {
     return new Promise(async resolve => {
-      const response = await fetch('./res/textures/tex1.jpg');
+      const response = await fetch(texPaths[0]);
       const imageBitmap = await createImageBitmap(await response.blob());
       this.moonTexture = device.createTexture({
         size: [imageBitmap.width, imageBitmap.height, 1],
@@ -5742,7 +5751,6 @@ class MEBall {
     if (typeof this.renderables === 'undefined') return;
     passEncoder.setPipeline(this.pipeline);
     passEncoder.setBindGroup(0, this.frameBindGroup);
-
     // Loop through every renderable object and draw them individually.
     // (Because many of these meshes are repeated, with only the transforms
     // differing, instancing would be highly effective here. This sample
@@ -5807,6 +5815,14 @@ class MECube {
       code: _shaders.UNLIT_SHADER
     });
     this.texturesPaths = [];
+    if (typeof o.raycast === 'undefined') {
+      this.raycast = {
+        enabled: false,
+        radius: 2
+      };
+    } else {
+      this.raycast = o.raycast;
+    }
 
     // useUVShema4x2 pass this from top !
 
@@ -5890,7 +5906,7 @@ class MECube {
       asteroidCount: 15
     };
     this.loadTex0(this.texturesPaths, device).then(() => {
-      this.loadTex1(device).then(() => {
+      this.loadTex1(this.texturesPaths, device).then(() => {
         this.sampler = device.createSampler({
           magFilter: 'linear',
           minFilter: 'linear'
@@ -6055,9 +6071,9 @@ class MECube {
     _wgpuMatrix.mat4.multiply(this.projectionMatrix, viewMatrix, this.modelViewProjectionMatrix);
     return this.modelViewProjectionMatrix;
   }
-  async loadTex1(device) {
+  async loadTex1(textPath, device) {
     return new Promise(async resolve => {
-      const response = await fetch('./res/textures/tex1.jpg');
+      const response = await fetch(textPath[0]);
       const imageBitmap = await createImageBitmap(await response.blob());
       this.moonTexture = device.createTexture({
         size: [imageBitmap.width, imageBitmap.height, 1],
@@ -6360,6 +6376,8 @@ class WASDCamera extends CameraBase {
 
     // Reconstruct the camera's rotation, and store into the camera matrix.
     super.matrix = _wgpuMatrix.mat4.rotateX(_wgpuMatrix.mat4.rotationY(this.yaw), this.pitch);
+    // super.matrix = mat4.rotateX(mat4.rotationY(this.yaw), -this.pitch);
+    // super.matrix = mat4.rotateY(mat4.rotateX(this.pitch), this.yaw);
 
     // Calculate the new target velocity
     const digital = input.digital;
@@ -7364,13 +7382,14 @@ var _vertexShadow = require("../shaders/vertexShadow.wgsl");
 var _fragment = require("../shaders/fragment.wgsl");
 var _vertex = require("../shaders/vertex.wgsl");
 var _utils = require("./utils");
-var _raycastTest = require("./raycast-test");
+var _raycast = require("./raycast");
 class MEMeshObj {
   constructor(canvas, device, context, o) {
     if (typeof o.name === 'undefined') o.name = (0, _utils.genName)(9);
     if (typeof o.raycast === 'undefined') {
       this.raycast = {
-        enabled: false
+        enabled: false,
+        radius: 2
       };
     } else {
       this.raycast = o.raycast;
@@ -7384,7 +7403,7 @@ class MEMeshObj {
     // Mesh stuff
     this.mesh = o.mesh;
     this.mesh.uvs = this.mesh.textures;
-    console.log(`%c Mesh loaded: ${o.name}`, _utils.LOG_INFO);
+    console.log(`%c Mesh loaded: ${o.name}`, _utils.LOG_FUNNY_SMALL);
     this.inputHandler = (0, _engine.createInputHandler)(window, canvas);
     this.cameras = o.cameras;
     this.mainCameraParams = {
@@ -7392,12 +7411,8 @@ class MEMeshObj {
       responseCoef: o.mainCameraParams.responseCoef
     };
 
-    // test raycast
-    // fullscreen for now
-    // window.addEventListener('mousedown', (e) => {
-    // 	checkingProcedure(e);
-    // });
-    _raycastTest.touchCoordinate.enabled = true;
+    // touchCoordinate.enabled = true;
+
     this.lastFrameMS = 0;
     this.texturesPaths = [];
     o.texturesPaths.forEach(t => {
@@ -7833,12 +7848,6 @@ class MEMeshObj {
     renderPass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
     renderPass.setIndexBuffer(this.indexBuffer, 'uint16');
     renderPass.drawIndexed(this.indexCount);
-
-    // test ray
-
-    // try{ OLD
-    // if(this.raycast.enabled == true) checkingRay(this)
-    // } catch(e) {}
   };
   drawShadows = shadowPass => {
     shadowPass.setBindGroup(0, this.sceneBindGroupForShadow);
@@ -7852,7 +7861,7 @@ class MEMeshObj {
 }
 exports.default = MEMeshObj;
 
-},{"../shaders/fragment.wgsl":14,"../shaders/vertex.wgsl":16,"../shaders/vertexShadow.wgsl":17,"./engine":5,"./matrix-class":7,"./raycast-test":10,"./utils":11,"wgpu-matrix":2}],9:[function(require,module,exports){
+},{"../shaders/fragment.wgsl":14,"../shaders/vertex.wgsl":16,"../shaders/vertexShadow.wgsl":17,"./engine":5,"./matrix-class":7,"./raycast":10,"./utils":11,"wgpu-matrix":2}],9:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -8287,20 +8296,24 @@ function multiplyMatrixVector(matrix, vector) {
 function getRayFromMouse(event, canvas, camera) {
   const rect = canvas.getBoundingClientRect();
   let x = (event.clientX - rect.left) / rect.width * 2 - 1;
-  let y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+  let y = (event.clientY - rect.top) / rect.height * 2 - 1;
   // simple invert
   x = -x;
+  y = -y;
   const fov = Math.PI / 4;
   const aspect = canvas.width / canvas.height;
   const near = 0.1;
-  const far = 100;
+  const far = 1000;
   camera.projectionMatrix = _wgpuMatrix.mat4.perspective(2 * Math.PI / 5, aspect, 1, 1000.0);
   const invProjection = _wgpuMatrix.mat4.inverse(camera.projectionMatrix);
-  const correctedView = _wgpuMatrix.mat4.clone(camera.view_);
-  correctedView[2] *= -1;
-  correctedView[6] *= -1;
-  correctedView[10] *= -1;
-  const invView = _wgpuMatrix.mat4.inverse(correctedView);
+
+  // const correctedView = mat4.clone(camera.view_);
+  // correctedView[2] *= -1;
+  // correctedView[6] *= -1;
+  // correctedView[10] *= -1;
+  // const invView = mat4.inverse(correctedView);
+
+  const invView = _wgpuMatrix.mat4.inverse(camera.view);
   const ndc = [x, y, 1, 1];
   let worldPos = multiplyMatrixVector(invProjection, ndc);
   worldPos = multiplyMatrixVector(invView, worldPos);
@@ -8313,6 +8326,7 @@ function getRayFromMouse(event, canvas, camera) {
   }
   const rayOrigin = [camera.position[0], camera.position[1], camera.position[2]];
   const rayDirection = _wgpuMatrix.vec3.normalize(_wgpuMatrix.vec3.subtract(world, rayOrigin));
+  rayDirection[2] = -rayDirection[2];
   return {
     rayOrigin,
     rayDirection
@@ -8336,8 +8350,8 @@ function addRaycastListener() {
       rayDirection
     } = getRayFromMouse(event, canvas, camera);
     for (const object of app.mainRenderBundle) {
-      if (rayIntersectsSphere(rayOrigin, rayDirection, object.position, 2)) {
-        console.log('Object clicked:', object.name);
+      if (rayIntersectsSphere(rayOrigin, rayDirection, object.position, object.raycast.radius)) {
+        // console.log('Object clicked:', object.name);
         // Just like in matrix-engine webGL version "ray.hit.event"
         dispatchEvent(new CustomEvent('ray.hit.event', {
           detail: {
@@ -8355,7 +8369,7 @@ function addRaycastListener() {
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.LOG_WARN = exports.LOG_MATRIX = exports.LOG_INFO = exports.LOG_FUNNY = void 0;
+exports.LOG_WARN = exports.LOG_MATRIX = exports.LOG_INFO = exports.LOG_FUNNY_SMALL = exports.LOG_FUNNY = void 0;
 exports.ORBIT = ORBIT;
 exports.ORBIT_FROM_ARRAY = ORBIT_FROM_ARRAY;
 exports.OSCILLATOR = OSCILLATOR;
@@ -8372,7 +8386,10 @@ exports.quaternion_rotation_matrix = quaternion_rotation_matrix;
 exports.radToDeg = radToDeg;
 exports.randomFloatFromTo = randomFloatFromTo;
 exports.randomIntFromTo = randomIntFromTo;
-exports.vec3 = exports.urlQuery = exports.scriptManager = void 0;
+exports.scriptManager = void 0;
+exports.setupCanvasFilters = setupCanvasFilters;
+exports.typeText = typeText;
+exports.vec3 = exports.urlQuery = void 0;
 const vec3 = exports.vec3 = {
   cross(a, b, dst) {
     dst = dst || new Float32Array(3);
@@ -9021,8 +9038,9 @@ function quaternion_rotation_matrix(Q) {
 // copnsole log graphics
 const LOG_WARN = exports.LOG_WARN = 'background: gray; color: yellow; font-size:10px';
 const LOG_INFO = exports.LOG_INFO = 'background: green; color: white; font-size:11px';
-const LOG_MATRIX = exports.LOG_MATRIX = "font-family: verdana;color: #lime; font-size:11px;text-shadow: 2px 2px 4px orangered;background: black;";
+const LOG_MATRIX = exports.LOG_MATRIX = "font-family: stormfaze;color: #lime; font-size:11px;text-shadow: 2px 2px 4px orangered;background: black;";
 const LOG_FUNNY = exports.LOG_FUNNY = "font-family: stormfaze;color: #f1f033; font-size:14px;text-shadow: 2px 2px 4px #f335f4, 4px 4px 4px #d64444, 2px 2px 4px #c160a6, 6px 2px 0px #123de3;background: black;";
+const LOG_FUNNY_SMALL = exports.LOG_FUNNY_SMALL = "font-family: stormfaze;color: #f1f033; font-size:10px;text-shadow: 2px 2px 4px #f335f4, 4px 4px 4px #d64444, 1px 1px 2px #c160a6, 3px 1px 0px #123de3;background: black;";
 function genName(length) {
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
   let result = "";
@@ -9088,6 +9106,147 @@ let mb = exports.mb = {
   }
 };
 
+// Registry to track running animations per element
+const typingStates = new Map();
+function typeText(elementId, htmlString, delay = 50) {
+  const el = document.getElementById(elementId);
+  if (!el) return;
+
+  // If an existing typing is running for this element, cancel it
+  if (typingStates.has(elementId)) {
+    clearTimeout(typingStates.get(elementId).timeoutId);
+    typingStates.delete(elementId);
+  }
+  el.innerHTML = ''; // Clear previous content
+
+  const tempEl = document.createElement('div');
+  tempEl.innerHTML = htmlString;
+  const queue = [];
+  function flatten(node) {
+    if (node.nodeType === Node.TEXT_NODE) {
+      queue.push({
+        type: 'text',
+        text: node.textContent
+      });
+    } else if (node.nodeType === Node.ELEMENT_NODE) {
+      if (node.tagName.toLowerCase() === 'img') {
+        queue.push({
+          type: 'img',
+          src: node.getAttribute('src'),
+          alt: node.getAttribute('alt') || ''
+        });
+      } else {
+        queue.push({
+          type: 'element',
+          tag: node.tagName.toLowerCase(),
+          attributes: Object.fromEntries([...node.attributes].map(attr => [attr.name, attr.value]))
+        });
+        for (const child of node.childNodes) flatten(child);
+        queue.push({
+          type: 'end'
+        });
+      }
+    }
+  }
+  for (const node of tempEl.childNodes) flatten(node);
+  let stack = [];
+  let currentElement = el;
+  function typeNextChar() {
+    if (queue.length === 0) {
+      typingStates.delete(elementId); // Cleanup after finish
+      return;
+    }
+    const item = queue[0];
+    if (item.type === 'text') {
+      if (!item.index) item.index = 0;
+      const ch = item.text[item.index];
+      if (ch === '\n') {
+        currentElement.appendChild(document.createElement('br'));
+      } else {
+        currentElement.appendChild(document.createTextNode(ch));
+      }
+      item.index++;
+      if (item.index >= item.text.length) queue.shift();
+    } else if (item.type === 'element') {
+      const newEl = document.createElement(item.tag);
+      if (item.attributes) {
+        for (let [key, val] of Object.entries(item.attributes)) {
+          newEl.setAttribute(key, val);
+        }
+      }
+      currentElement.appendChild(newEl);
+      stack.push(currentElement);
+      currentElement = newEl;
+      queue.shift();
+    } else if (item.type === 'end') {
+      currentElement = stack.pop();
+      queue.shift();
+    } else if (item.type === 'img') {
+      const img = document.createElement('img');
+      img.src = item.src;
+      img.alt = item.alt;
+      img.style.maxWidth = '100px';
+      img.style.verticalAlign = 'middle';
+      currentElement.appendChild(img);
+      queue.shift();
+    }
+
+    // Schedule next step and store timeoutId for control
+    const timeoutId = setTimeout(typeNextChar, delay);
+    typingStates.set(elementId, {
+      timeoutId
+    });
+  }
+  typeNextChar();
+}
+function setupCanvasFilters(canvasId) {
+  let canvas = document.getElementById(canvasId);
+  if (canvas == null) {
+    canvas = document.getElementsByTagName('canvas')[0];
+  }
+  const filterState = {
+    blur: "0px",
+    grayscale: "0%",
+    brightness: "100%",
+    contrast: "100%",
+    saturate: "100%",
+    sepia: "0%",
+    invert: "0%",
+    hueRotate: "0deg"
+  };
+  function updateFilter() {
+    const filterString = `
+      blur(${filterState.blur}) 
+      grayscale(${filterState.grayscale}) 
+      brightness(${filterState.brightness}) 
+      contrast(${filterState.contrast}) 
+      saturate(${filterState.saturate}) 
+      sepia(${filterState.sepia}) 
+      invert(${filterState.invert}) 
+      hue-rotate(${filterState.hueRotate})
+    `.trim();
+    canvas.style.filter = filterString;
+  }
+  const bindings = {
+    blurControl: "blur",
+    grayscaleControl: "grayscale",
+    brightnessControl: "brightness",
+    contrastControl: "contrast",
+    saturateControl: "saturate",
+    sepiaControl: "sepia",
+    invertControl: "invert",
+    hueControl: "hueRotate"
+  };
+  Object.entries(bindings).forEach(([selectId, key]) => {
+    const el = document.getElementById(selectId);
+    el.addEventListener("change", e => {
+      filterState[key] = e.target.value;
+      updateFilter();
+    });
+  });
+  updateFilter(); // Initial
+}
+
 },{}],12:[function(require,module,exports){
 "use strict";
 
@@ -9144,6 +9303,7 @@ class MatrixAmmo {
     _utils.scriptManager.LOAD("./ammojs/ammo.js", "ammojs", undefined, undefined, this.init);
     this.lastRoll = '';
     this.presentScore = '';
+    this.speedUpSimulation = 1;
   }
   init = () => {
     // console.log('pre ammo')
@@ -9205,6 +9365,7 @@ class MatrixAmmo {
     var myMotionState = new Ammo.btDefaultMotionState(startTransform),
       rbInfo = new Ammo.btRigidBodyConstructionInfo(mass, myMotionState, colShape, localInertia),
       body = new Ammo.btRigidBody(rbInfo);
+    console.log("TEST ADDING PHYSICS ");
     body.MEObject = MEObject;
     this.dynamicsWorld.addRigidBody(body);
     this.rigidBodies.push(body);
@@ -9278,8 +9439,6 @@ class MatrixAmmo {
     pos.setX(pos.x() + x);
     pos.setY(pos.y() + y);
     pos.setZ(pos.z() + z);
-    // console.log('position kinematic move : ', pos)
-    // console.log('position localRot  : ', localRot)
     localRot.setX(rx);
     localRot.setY(ry);
     localRot.setZ(rz);
@@ -9287,14 +9446,12 @@ class MatrixAmmo {
     let ms = physicsBody.getMotionState();
     if (ms) {
       var tmpTrans = new Ammo.btTransform();
-
       // quat.setValue(quat.x(), quat.y(), quat.z(), quat.w());
       tmpTrans.setIdentity();
       tmpTrans.setOrigin(pos);
       tmpTrans.setRotation(localRot);
       ms.setWorldTransform(tmpTrans);
     }
-    // console.log('body, ', body)
   }
   getBodyByName(name) {
     var b = null;
@@ -9373,28 +9530,47 @@ class MatrixAmmo {
     }
   }
   updatePhysics() {
-    // Step world
-    this.dynamicsWorld.stepSimulation(1 / 60, 10);
-    // Update rigid bodies
-    var trans = new Ammo.btTransform();
+    if (!Ammo) return;
+    const trans = new Ammo.btTransform();
+    const transform = new Ammo.btTransform();
     this.rigidBodies.forEach(function (body) {
-      if (body.getMotionState()) {
-        body.getMotionState().getWorldTransform(trans);
-        var _x = trans.getOrigin().x().toFixed(2);
-        var _y = trans.getOrigin().y().toFixed(2);
-        var _z = trans.getOrigin().z().toFixed(2);
-        body.MEObject.position.setPosition(_x, _y, _z);
-        var test = trans.getRotation();
-        var testAxis = test.getAxis();
-        test.normalize();
-        body.MEObject.rotation.axis.x = testAxis.x();
-        body.MEObject.rotation.axis.y = testAxis.y();
-        body.MEObject.rotation.axis.z = testAxis.z();
-        body.MEObject.rotation.matrixRotation = (0, _utils.quaternion_rotation_matrix)(test);
-        body.MEObject.rotation.angle = (0, _utils.radToDeg)(parseFloat(test.getAngle().toFixed(2)));
+      if (body.isKinematic) {
+        transform.setIdentity();
+        transform.setOrigin(new Ammo.btVector3(body.MEObject.position.x, body.MEObject.position.y, body.MEObject.position.z));
+        const quat = new Ammo.btQuaternion();
+        quat.setRotation(new Ammo.btVector3(body.MEObject.rotation.axis.x, body.MEObject.rotation.axis.y, body.MEObject.rotation.axis.z), (0, _utils.degToRad)(body.MEObject.rotation.angle));
+        transform.setRotation(quat);
+        body.setWorldTransform(transform);
+        const ms = body.getMotionState();
+        if (ms) ms.setWorldTransform(transform);
       }
     });
-    // collision detect
+    Ammo.destroy(transform);
+
+    // Step simulation AFTER setting kinematic transforms
+    const timeStep = 1 / 60;
+    const maxSubSteps = 10;
+    for (let i = 0; i < this.speedUpSimulation; i++) {
+      this.dynamicsWorld.stepSimulation(timeStep, maxSubSteps);
+    }
+    this.rigidBodies.forEach(function (body) {
+      if (!body.isKinematic && body.getMotionState()) {
+        body.getMotionState().getWorldTransform(trans);
+        const _x = +trans.getOrigin().x().toFixed(2);
+        const _y = +trans.getOrigin().y().toFixed(2);
+        const _z = +trans.getOrigin().z().toFixed(2);
+        body.MEObject.position.setPosition(_x, _y, _z);
+        const rot = trans.getRotation();
+        const rotAxis = rot.getAxis();
+        rot.normalize();
+        body.MEObject.rotation.axis.x = rotAxis.x();
+        body.MEObject.rotation.axis.y = rotAxis.y();
+        body.MEObject.rotation.axis.z = rotAxis.z();
+        body.MEObject.rotation.matrixRotation = (0, _utils.quaternion_rotation_matrix)(rot);
+        body.MEObject.rotation.angle = (0, _utils.radToDeg)(parseFloat(rot.getAngle().toFixed(2)));
+      }
+    });
+    Ammo.destroy(trans);
     this.detectCollision();
   }
 }
@@ -9612,10 +9788,18 @@ class MatrixSounds {
   constructor() {
     this.volume = 0.5;
     this.audios = {};
+    this.enabled = true; // 🔇 global flag to mute/allow audio
+  }
+  muteAll() {
+    this.enabled = false;
+    Object.values(this.audios).forEach(audio => audio.pause());
+  }
+  unmuteAll() {
+    this.enabled = true;
   }
   createClones(c, name, path) {
-    for (var x = 1; x < c; x++) {
-      let a = new Audio(path);
+    for (let x = 1; x < c; x++) {
+      const a = new Audio(path);
       a.id = name + x;
       a.volume = this.volume;
       this.audios[name + x] = a;
@@ -9623,7 +9807,7 @@ class MatrixSounds {
     }
   }
   createAudio(name, path, useClones) {
-    let a = new Audio(path);
+    const a = new Audio(path);
     a.id = name;
     a.volume = this.volume;
     this.audios[name] = a;
@@ -9633,20 +9817,32 @@ class MatrixSounds {
     }
   }
   play(name) {
-    if (this.audios[name].paused == true) {
-      this.audios[name].play();
+    if (!this.enabled) return; // 🔇 prevent playing if muted
+
+    const audio = this.audios[name];
+    if (!audio) return;
+    if (audio.paused) {
+      audio.play().catch(e => {
+        if (e.name !== 'NotAllowedError') console.warn("sounds error:", e);
+      });
     } else {
       this.tryClone(name);
     }
   }
   tryClone(name) {
-    var cc = 1;
+    if (!this.enabled) return; // 🔇 prevent playing clones
+
+    let cc = 1;
     try {
-      while (this.audios[name + cc].paused == false) {
+      while (this.audios[name + cc] && this.audios[name + cc].paused === false) {
         cc++;
       }
-      if (this.audios[name + cc]) this.audios[name + cc].play();
-    } catch (err) {}
+      if (this.audios[name + cc]) {
+        this.audios[name + cc].play();
+      }
+    } catch (err) {
+      console.warn("Clone play failed:", err);
+    }
   }
 }
 exports.MatrixSounds = MatrixSounds;
@@ -9841,7 +10037,44 @@ class MatrixEngineWGPU {
       o.entityArgPass = this.entityArgPass;
       o.cameras = this.cameras;
     }
+    if (typeof o.physics === 'undefined') {
+      o.physics = {
+        scale: [1, 1, 1],
+        enabled: true,
+        geometry: "Sphere",
+        radius: o.scale,
+        name: o.name,
+        rotation: o.rotation
+      };
+    }
+    if (typeof o.position !== 'undefined') {
+      o.physics.position = o.position;
+    }
+    if (typeof o.physics.enabled === 'undefined') {
+      o.physics.enabled = true;
+    }
+    if (typeof o.physics.geometry === 'undefined') {
+      o.physics.geometry = "Sphere";
+    }
+    if (typeof o.physics.radius === 'undefined') {
+      o.physics.radius = o.scale;
+    }
+    if (typeof o.physics.mass === 'undefined') {
+      o.physics.mass = 1;
+    }
+    if (typeof o.physics.name === 'undefined') {
+      o.physics.name = o.name;
+    }
+    if (typeof o.physics.scale === 'undefined') {
+      o.physics.scale = o.scale;
+    }
+    if (typeof o.physics.rotation === 'undefined') {
+      o.physics.rotation = o.rotation;
+    }
     let myCube1 = new _cube.default(this.canvas, this.device, this.context, o);
+    if (o.physics.enabled == true) {
+      this.matrixAmmo.addPhysics(myCube1, o.physics);
+    }
     this.mainRenderBundle.push(myCube1);
   };
 
@@ -9904,7 +10137,44 @@ class MatrixEngineWGPU {
       o.entityArgPass = this.entityArgPass;
       o.cameras = this.cameras;
     }
+    if (typeof o.physics === 'undefined') {
+      o.physics = {
+        scale: [1, 1, 1],
+        enabled: true,
+        geometry: "Sphere",
+        radius: o.scale,
+        name: o.name,
+        rotation: o.rotation
+      };
+    }
+    if (typeof o.position !== 'undefined') {
+      o.physics.position = o.position;
+    }
+    if (typeof o.physics.enabled === 'undefined') {
+      o.physics.enabled = true;
+    }
+    if (typeof o.physics.geometry === 'undefined') {
+      o.physics.geometry = "Sphere";
+    }
+    if (typeof o.physics.radius === 'undefined') {
+      o.physics.radius = o.scale;
+    }
+    if (typeof o.physics.mass === 'undefined') {
+      o.physics.mass = 1;
+    }
+    if (typeof o.physics.name === 'undefined') {
+      o.physics.name = o.name;
+    }
+    if (typeof o.physics.scale === 'undefined') {
+      o.physics.scale = o.scale;
+    }
+    if (typeof o.physics.rotation === 'undefined') {
+      o.physics.rotation = o.rotation;
+    }
     let myBall1 = new _ball.default(this.canvas, this.device, this.context, o);
+    if (o.physics.enabled == true) {
+      this.matrixAmmo.addPhysics(myBall1, o.physics);
+    }
     this.mainRenderBundle.push(myBall1);
   };
 
@@ -10088,19 +10358,24 @@ class MatrixEngineWGPU {
     }
   };
   framePassPerObject = () => {
-    // console.log('framePassPerObject')
     let commandEncoder = this.device.createCommandEncoder();
-    this.rbContainer = [];
-    let passEncoder;
+    this.matrixAmmo.updatePhysics();
     this.mainRenderBundle.forEach((meItem, index) => {
-      meItem.draw(commandEncoder);
+      if (index === 0) {
+        if (meItem.renderPassDescriptor) meItem.renderPassDescriptor.colorAttachments[0].loadOp = 'clear';
+      } else {
+        if (meItem.renderPassDescriptor) meItem.renderPassDescriptor.colorAttachments[0].loadOp = 'load';
+      }
+      // Update transforms, physics, etc. (optional)
+      meItem.draw(commandEncoder); // optional: if this does per-frame updates
       if (meItem.renderBundle) {
-        this.rbContainer.push(meItem.renderBundle);
-        passEncoder = commandEncoder.beginRenderPass(meItem.renderPassDescriptor);
-        passEncoder.executeBundles(this.rbContainer);
+        // Set up view per object
+        meItem.renderPassDescriptor.colorAttachments[0].view = this.context.getCurrentTexture().createView();
+        const passEncoder = commandEncoder.beginRenderPass(meItem.renderPassDescriptor);
+        passEncoder.executeBundles([meItem.renderBundle]); // ✅ Use only this bundle
         passEncoder.end();
       } else {
-        meItem.draw(commandEncoder);
+        meItem.draw(commandEncoder); // fallback if no renderBundle
       }
     });
     this.device.queue.submit([commandEncoder.finish()]);

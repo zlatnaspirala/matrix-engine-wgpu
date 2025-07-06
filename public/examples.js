@@ -45,9 +45,9 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.welcomeBoxHTML = exports.settingsBox = void 0;
 let settingsBox = exports.settingsBox = `
-<div>
+<div style="">
   <span style="font-size:170%" data-label="settings"></span>
-  <div style="margin:20px;" >
+  <div style="justify-items: flex-end;margin:20px;" >
     <div>
       <span data-label="sounds"></span>
       <label class="switch">
@@ -55,18 +55,29 @@ let settingsBox = exports.settingsBox = `
         <span class="sliderSwitch round"></span>
       </label>
     </div>
-    <div>
-    <div>
-      <span data-label="graphics"></span>
-      <select id="blurControl">
-        <option value="0px">Blur: 0</option>
-        <option value="1px">Blur: 1</option>
-        <option value="2px">Blur: 2</option>
-        <option value="3px">Blur: 3</option>
-      </select>
+      <div style="margin-top:20px;margin-bottom:15px;">
+        <span style="font-size: larger;margin-bottom:15px" data-label="graphics"></span>
+        <p></p>
+        <label>Anim speed:</label>
+        <select id="physicsSpeed" class="setting-select">
+          <option value="1">Slow</option>
+          <option value="2">Normal</option>
+          <option value="3">Fast</option>
+        </select>
       </div>
 
       <div>
+        <label>Blur:</label>
+        <select id="blurControl">
+          <option value="0px">Blur: 0</option>
+          <option value="1px">Blur: 1</option>
+          <option value="2px">Blur: 2</option>
+          <option value="3px">Blur: 3</option>
+        </select>
+      </div>
+
+      <div>
+      <label>Grayscale:</label>
       <select id="grayscaleControl">
         <option value="0%">Grayscale: 0%</option>
         <option value="25%">Grayscale: 25%</option>
@@ -130,19 +141,20 @@ let settingsBox = exports.settingsBox = `
         <option value="270deg">270°</option>
       </select>
       </div>
-
-    </div>
-    <div>
+ 
+    <div style="margin-top:20px;">
       <button class="btn" onclick="app.myDom.hideSettings()">
         <span data-label="hide"></span>
       </button>
     </div>
+
+    <img src="res/icons/512.png" style="position:absolute;left:10px;top:5%;width:300px;z-index:-1;"/>
   </div>
 </div>`;
 let welcomeBoxHTML = exports.welcomeBoxHTML = `<span class="fancy-title" data-label="welcomeMsg"></span>
      <a href="https://github.com/zlatnaspirala/matrix-engine-wgpu">zlatnaspirala/matrix-engine-wgpu</a><br><br>
      <div style="display:flex;flex-direction:column;align-items: center;margin:20px;padding: 10px;">
-       <span style="width:100%">Choose nickname:</span>
+       <span style="width:100%" data-label="choosename"></span>
        <input style="text-align: center;height:50px;font-size:100%;width:250px" class="fancy-label" type="text" value="Guest" />
       </div>
      <button id="startFromWelcome" class="btn" ><span style="font-size:30px;margin:15px;padding:10px" data-label="startGame"></span></button> <br>
@@ -180,6 +192,13 @@ let dices = exports.dices = {
     this.SAVED_DICES[dice] = this.R[dice];
     this.refreshSelectedBox();
   },
+  setStartUpPosition: () => {
+    // 
+    let currentIndex = 0;
+    for (var x = 1; x < 7; x++) {
+      app.matrixAmmo.getBodyByName('CubePhysics' + x).MEObject.position.setPosition(-5 + currentIndex * 5, 2, -15);
+    }
+  },
   refreshSelectedBox: function (arg) {
     let currentIndex = 0;
     for (var key in this.SAVED_DICES) {
@@ -215,11 +234,10 @@ let dices = exports.dices = {
     // 6. Mark it manually (logic flag)
     body.isKinematic = true;
   },
-  resetBodyAboveFloor: function (body, x = 0, z = 0) {
-    const y = 3 + Math.random();
+  resetBodyAboveFloor: function (body, z = -14) {
     const transform = new Ammo.btTransform();
     transform.setIdentity();
-    transform.setOrigin(new Ammo.btVector3(x, y, z));
+    transform.setOrigin(new Ammo.btVector3(-1 + Math.random(), 3, z));
     body.setWorldTransform(transform);
     body.getMotionState().setWorldTransform(transform);
   },
@@ -257,14 +275,16 @@ let dices = exports.dices = {
     this.resetBodyAboveFloor(body);
   },
   activateAllDicesPhysics: function () {
-    this.getAllDices().filter(item => {
-      let test = app.matrixAmmo.getBodyByName(item.name)?.isKinematicObject();
-      if (test === true) {
-        return true;
-      } else {
-        return false;
-      }
-    }).forEach(dice => {
+    this.getAllDices()
+    // .filter((item) => {
+    //   let test = app.matrixAmmo.getBodyByName(item.name)?.isKinematicObject();
+    //   if(test === true) {
+    //     return true;
+    //   } else {
+    //     return false;
+    //   }
+    // })
+    .forEach(dice => {
       const body = app.matrixAmmo.getBodyByName(dice.name);
       if (body) {
         this.activatePhysics(body); // <--- FIX: pass the physics body, not the dice object
@@ -334,15 +354,35 @@ let myDom = exports.myDom = {
     help.id = 'HELP';
     help.classList.add('btn');
     help.innerHTML = `<span data-label="help"></span>`;
+    help.addEventListener('click', () => {
+      if ((0, _utils.byId)('helpBox').style.display != 'none') {
+        (0, _utils.byId)('helpBox').style.display = 'none';
+      } else {
+        (0, _utils.byId)('helpBox').style.display = 'block';
+      }
+    });
+    var table = document.createElement('div');
+    table.id = 'showHideTableDOM';
+    table.classList.add('btn');
+    table.innerHTML = `<span data-label="table"></span>`;
+    table.addEventListener('click', () => {
+      this.showHideJambTable();
+    });
     var settings = document.createElement('div');
     settings.id = 'settings';
     settings.classList.add('btn');
     settings.innerHTML = `<span data-label="settings"></span>`;
     settings.addEventListener('click', () => {
+      if (document.getElementById('messageBox').getAttribute('data-loaded') != null) {
+        (0, _utils.byId)('blocker').style.display = 'flex';
+        (0, _utils.byId)('messageBox').style.display = 'unset';
+        return;
+      }
       (0, _utils.byId)('messageBox').innerHTML = _htmlContent.settingsBox;
       (0, _utils.byId)('blocker').style.display = 'flex';
       (0, _utils.byId)('messageBox').style.display = 'unset';
       dispatchEvent(new CustomEvent('updateLang', {}));
+      (0, _utils.byId)('settingsAudios').click();
       (0, _utils.byId)('settingsAudios').addEventListener('change', e => {
         if (e.target.checked == true) {
           app.matrixSounds.unmuteAll();
@@ -351,7 +391,30 @@ let myDom = exports.myDom = {
         }
       });
       (0, _utils.setupCanvasFilters)();
+      (0, _utils.byId)('messageBox').setAttribute('data-loaded', 'loaded');
+      document.getElementById('physicsSpeed').value = app.matrixAmmo.speedUpSimulation;
+      (0, _utils.byId)("physicsSpeed").addEventListener("change", e => {
+        app.matrixAmmo.speedUpSimulation = parseInt(e.target.value);
+      });
     });
+
+    // test help
+    var helpBox = document.createElement('div');
+    helpBox.id = 'helpBox';
+    helpBox.style.position = 'absolute';
+    helpBox.style.right = '20%';
+    helpBox.style.zIndex = '2';
+    helpBox.style.top = '15%';
+    helpBox.style.width = '60%';
+    helpBox.style.height = '50%';
+    helpBox.style.fontSize = '100%';
+    helpBox.classList.add('btn');
+    helpBox.addEventListener('click', () => {
+      (0, _utils.byId)('helpBox').style.display = 'none';
+    });
+    document.body.appendChild(helpBox);
+    (0, _utils.typeText)('helpBox', app.label.get.about, 10);
+    //
     var roll = document.createElement('div');
     roll.id = 'hud-roll';
     roll.classList.add('btn');
@@ -362,6 +425,7 @@ let myDom = exports.myDom = {
     var separator = document.createElement('div');
     separator.innerHTML = `✨maximumroulette.com✨`;
     root.append(settings);
+    root.append(table);
     root.append(help);
     root.append(separator);
     root.append(roll);
@@ -407,12 +471,11 @@ let myDom = exports.myDom = {
     var root = document.createElement('div');
     root.id = 'jambTable';
     root.style.position = 'absolute';
-    root.style.display = 'flex';
-    root.style.top = '5px';
-    root.style.left = '5px';
-    root.style.width = '200px';
-    // root.style.background = '#7d7d7d8c';
-
+    var dragHandler = document.createElement('div');
+    dragHandler.id = 'dragHandler';
+    dragHandler.classList.add('dragHandler');
+    dragHandler.innerHTML = "⇅ Drag";
+    root.append(dragHandler);
     var rowHeader = document.createElement('div');
     rowHeader.id = 'rowHeader';
     rowHeader.style.top = '10px';
@@ -468,18 +531,38 @@ let myDom = exports.myDom = {
     document.body.appendChild(root);
     // console.log('JambTable added.')
   },
+  showHideJambTable: () => {
+    const panel = document.getElementById('jambTable');
+    if (panel.classList.contains('show')) {
+      panel.classList.remove('show');
+      panel.classList.add('hide');
+      // Delay actual hiding from layout to finish animation
+      setTimeout(() => {
+        panel.style.display = 'none';
+      }, 300);
+    } else {
+      panel.style.display = 'flex';
+      setTimeout(() => {
+        panel.classList.remove('hide');
+        panel.classList.add('show');
+      }, 10); // allow repaint
+    }
+  },
   createSelectedBox: function () {
     var topTitleDOM = document.createElement('div');
     topTitleDOM.id = 'topTitleDOM';
     topTitleDOM.style.width = 'auto';
     topTitleDOM.style.position = 'absolute';
     topTitleDOM.style.left = '35%';
-    topTitleDOM.style.top = '5%';
+    topTitleDOM.style.fontSize = '175%';
+    topTitleDOM.style.top = '4%';
     topTitleDOM.style.background = '#7d7d7d8c';
     topTitleDOM.innerHTML = app.label.get.ready + ", " + app.userState.name + '.';
+    topTitleDOM.setAttribute('data-gamestatus', 'FREE');
     document.body.appendChild(topTitleDOM);
     addEventListener('updateTitle', e => {
-      (0, _utils.typeText)('topTitleDOM', e.detail);
+      (0, _utils.typeText)('topTitleDOM', e.detail.text);
+      topTitleDOM.setAttribute('data-gamestatus', e.detail.status);
     });
   },
   createLeftHeaderRow: function (myRoot) {
@@ -745,6 +828,7 @@ let myDom = exports.myDom = {
       rowNumber.style.left = '10px';
       rowNumber.style.width = 'auto';
       rowNumber.style.background = '#7d7d7d8c';
+      rowNumber.style.cursor = 'pointer';
       rowNumber.innerHTML = `-`;
       this.memoNumberRow.push(rowNumber);
       // initial
@@ -832,9 +916,8 @@ let myDom = exports.myDom = {
     rowMin.style.width = 'auto';
     rowMin.style.background = '#7d7d7d8c';
     rowMin.innerHTML = `-`;
-    this.rowMin = rowMin;
+    // this.rowMin = rowMin;
     myRoot.appendChild(rowMin);
-    this.rowMin = rowMin;
     var rowMaxMinSum = document.createElement('div');
     rowMaxMinSum.id = 'down-rowMaxMinSum';
     rowMaxMinSum.style.width = 'auto';
@@ -1070,7 +1153,7 @@ let myDom = exports.myDom = {
     // console.log('<GAMEPLAY><FREE ROW IS FEELED>')
     var TEST = app.myDom.checkForAllDuplicate();
     for (var key in TEST) {
-      if (TEST[key] == 5 || TEST[key] > 5) {
+      if (TEST[key] == 5) {
         // win
         var getDiceID = parseInt(key.replace('value__', ''));
         var win = getDiceID * 5;
@@ -1087,11 +1170,11 @@ let myDom = exports.myDom = {
   calcDownRowMax: e => {
     if (dices.validatePass() == false) return;
     e.target.classList.remove('canPlay');
-    (void 0).rowMin.classList.add('canPlay');
+    (0, _utils.byId)('down-rowMin').classList.add('canPlay');
     var test = 0;
     let keyLessNum = Object.keys(dices.R).reduce((key, v) => dices.R[v] < dices.R[key] ? v : key);
     // console.log('FIND MIN DICE TO REMOVE FROM SUM ', keyLessNum);
-    for (var key in dices.R) {
+    for (var key in dices.SAVED_DICES) {
       if (key != keyLessNum) {
         test += parseFloat(dices.R[key]);
       }
@@ -1100,41 +1183,42 @@ let myDom = exports.myDom = {
     // now attach next event.
     dices.STATUS = "FREE_TO_PLAY";
     dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
-    (void 0).rowMax.removeEventListener("click", (void 0).calcDownRowMax);
-    (0, _utils.byId)('down-rowMin').addEventListener('click', (void 0).calcDownRowMin);
+    (0, _utils.byId)('down-rowMax').removeEventListener("click", myDom.calcDownRowMax);
+    (0, _utils.byId)('down-rowMin').addEventListener('click', myDom.calcDownRowMin);
   },
   incrasePoints: function (arg) {
     (0, _utils.byId)('user-points').innerHTML = parseInt((0, _utils.byId)('user-points').innerHTML) + parseInt(arg);
   },
   calcDownRowMin: () => {
     if (dices.validatePass() == false) return;
-    (void 0).rowMin.classList.remove('canPlay');
+    (0, _utils.byId)('down-rowMin').classList.remove('canPlay');
     console.log('MIN ENABLED');
     var maxTestKey = Object.keys(dices.R).reduce(function (a, b) {
       return dices.R[a] > dices.R[b] ? a : b;
     });
     var test = 0;
     for (var key in dices.R) {
-      if (key != maxTestKey) {
-        test += parseFloat(dices.R[key]);
-      } else {
-        console.log('not calc dice ', dices.R[key]);
-      }
+      // if(key != maxTestKey) {
+      test += parseFloat(dices.R[key]);
+      // } else {
+      //   console.log('not calc dice ', dices.R[key])
+      // }
     }
-    (void 0).rowMin.innerHTML = test;
-    (0, _utils.byId)('down-rowMin').removeEventListener('click', (void 0).calcDownRowMin);
+    (0, _utils.byId)('down-rowMin').innerHTML = test;
+    (0, _utils.byId)('down-rowMin').removeEventListener('click', myDom.calcDownRowMin);
     // calc max min dont forget rules for bonus +30
-    var SUMMINMAX = parseFloat((void 0).rowMax.innerHTML) - parseFloat((void 0).rowMin.innerHTML);
+    var SUMMINMAX = parseFloat((0, _utils.byId)('down-rowMax').innerHTML) - parseFloat((0, _utils.byId)('down-rowMin').innerHTML);
     (0, _utils.byId)('down-rowMaxMinSum').innerHTML = SUMMINMAX;
     myDom.incrasePoints(SUMMINMAX);
     dices.STATUS = "FREE_TO_PLAY";
     dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
     (0, _utils.byId)('down-largeStraight').classList.add('canPlay');
-    (0, _utils.byId)('down-largeStraight').addEventListener('click', (void 0).attachKenta);
+    (0, _utils.byId)('down-largeStraight').addEventListener('click', myDom.attachKenta);
+    (0, _utils.byId)('down-rowMin').removeEventListener('click', myDom.calcDownRowMin);
   },
   checkForDuplicate: function () {
     var testArray = [];
-    for (var key in dices.R) {
+    for (var key in dices.SAVED_DICES) {
       var gen = {
         myId: key,
         value: dices.R[key]
@@ -1151,7 +1235,7 @@ let myDom = exports.myDom = {
   },
   checkForAllDuplicate: function () {
     var testArray = [];
-    for (var key in dices.R) {
+    for (var key in dices.SAVED_DICES) {
       var gen = {
         myId: key,
         value: dices.R[key]
@@ -1176,13 +1260,13 @@ let myDom = exports.myDom = {
     return discret;
   },
   attachKenta: function () {
-    console.log('Test kenta  ', dices.R);
+    console.log('Test kenta  ', dices.SAVED_DICES);
     (0, _utils.byId)('down-largeStraight').classList.remove('canPlay');
     var result = app.myDom.checkForDuplicate()[0];
     var testArray = app.myDom.checkForDuplicate()[1];
-    // console.log('TEST duplik: ' + result);
-    if (result.length == 2) {
-      console.log('TEST duplik less 3 : ' + result);
+    console.log('TEST duplik: ' + result);
+    if (result.length > 0) {
+      console.log('TEST duplik l : ' + result);
       var locPrevent = false;
       testArray.forEach((item, index, array) => {
         if (result[0].value == item.value && locPrevent == false) {
@@ -1191,25 +1275,7 @@ let myDom = exports.myDom = {
           array.splice(index, 1);
         }
       });
-      // if we catch  1 and 6 in same stack then it is not possible for kenta...
-      var test1 = false,
-        test6 = false;
-      testArray.forEach((item, index, array) => {
-        if (item.value == 1) {
-          test1 = true;
-        } else if (item.value == 6) {
-          test6 = true;
-        }
-      });
-      if (test1 == true && test6 == true) {
-        (0, _utils.byId)('down-largeStraight').innerHTML = `0`;
-      } else if (test1 == true) {
-        (0, _utils.byId)('down-largeStraight').innerHTML = 15 + 50;
-        myDom.incrasePoints(15 + 50);
-      } else if (test6 == true) {
-        (0, _utils.byId)('down-largeStraight').innerHTML = 20 + 50;
-        myDom.incrasePoints(20 + 50);
-      }
+      (0, _utils.byId)('down-largeStraight').innerHTML = `0`;
     } else if (result < 2) {
       (0, _utils.byId)('down-largeStraight').innerHTML = 66;
       myDom.incrasePoints(66);
@@ -1217,8 +1283,8 @@ let myDom = exports.myDom = {
       // zero value
       (0, _utils.byId)('down-largeStraight').innerHTML = `0`;
     }
-    (0, _utils.byId)('down-threeOfAKind').addEventListener('click', this.attachDownTrilling);
-    (0, _utils.byId)('down-largeStraight').removeEventListener('click', this.attachKenta);
+    (0, _utils.byId)('down-threeOfAKind').addEventListener('click', myDom.attachDownTrilling);
+    (0, _utils.byId)('down-largeStraight').removeEventListener('click', myDom.attachKenta);
     dices.STATUS = "FREE_TO_PLAY";
     dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
   },
@@ -1243,8 +1309,8 @@ let myDom = exports.myDom = {
     } else {
       (0, _utils.byId)('down-threeOfAKind').innerHTML = 0;
     }
-    (0, _utils.byId)('down-threeOfAKind').removeEventListener('click', this.attachDownTrilling);
-    (0, _utils.byId)('down-fullHouse').addEventListener('click', this.attachDownFullHouse);
+    (0, _utils.byId)('down-threeOfAKind').removeEventListener('click', myDom.attachDownTrilling);
+    (0, _utils.byId)('down-fullHouse').addEventListener('click', myDom.attachDownFullHouse);
     dices.STATUS = "FREE_TO_PLAY";
     dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
   },
@@ -1275,8 +1341,8 @@ let myDom = exports.myDom = {
     } else {
       (0, _utils.byId)('down-fullHouse').innerHTML = 0;
     }
-    (0, _utils.byId)('down-poker').addEventListener('click', this.attachDownPoker);
-    (0, _utils.byId)('down-fullHouse').removeEventListener('click', this.attachDownFullHouse);
+    (0, _utils.byId)('down-poker').addEventListener('click', myDom.attachDownPoker);
+    (0, _utils.byId)('down-fullHouse').removeEventListener('click', myDom.attachDownFullHouse);
     dices.STATUS = "FREE_TO_PLAY";
     dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
   },
@@ -1292,13 +1358,13 @@ let myDom = exports.myDom = {
         myDom.incrasePoints(win + 40);
       }
     }
-    (0, _utils.byId)('down-poker').removeEventListener('click', this.attachDownPoker);
-    (0, _utils.byId)('down-jamb').addEventListener('click', this.attachDownJamb);
+    (0, _utils.byId)('down-poker').removeEventListener('click', myDom.attachDownPoker);
+    (0, _utils.byId)('down-jamb').addEventListener('click', myDom.attachDownJamb);
     dices.STATUS = "FREE_TO_PLAY";
     dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
   },
   attachDownJamb: function () {
-    (0, _utils.byId)('down-jamb').removeEventListener('click', this.attachDownJamb);
+    (0, _utils.byId)('down-jamb').removeEventListener('click', myDom.attachDownJamb);
     console.log('<GAMEPLAY><DOWN ROW IS FEELED>');
     var TEST = app.myDom.checkForAllDuplicate();
     for (var key in TEST) {
@@ -1312,6 +1378,28 @@ let myDom = exports.myDom = {
     }
     dices.STATUS = "FREE_TO_PLAY";
     dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
+  },
+  isDragging: false,
+  offsetX: 0,
+  offsetY: 0,
+  addDraggerForTable: () => {
+    (0, _utils.byId)('dragHandler').addEventListener('pointerdown', e => {
+      myDom.isDragging = true;
+      const rect = (0, _utils.byId)('jambTable').getBoundingClientRect();
+      myDom.offsetX = e.clientX - rect.left;
+      myDom.offsetY = e.clientY - rect.top;
+      (0, _utils.byId)('dragHandler').setPointerCapture(e.pointerId);
+    });
+    (0, _utils.byId)('dragHandler').addEventListener('pointermove', e => {
+      if (myDom.isDragging) {
+        (0, _utils.byId)('jambTable').style.left = `${e.clientX - myDom.offsetX}px`;
+        (0, _utils.byId)('jambTable').style.top = `${e.clientY - myDom.offsetY}px`;
+      }
+    });
+    (0, _utils.byId)('dragHandler').addEventListener('pointerup', e => {
+      myDom.isDragging = false;
+      (0, _utils.byId)('dragHandler').releasePointerCapture(e.pointerId);
+    });
   }
 };
 
@@ -10576,16 +10664,97 @@ let mb = exports.mb = {
     mb.show(content, 'ok');
   }
 };
-function typeText(elementId, text, delay = 50) {
+
+// Registry to track running animations per element
+const typingStates = new Map();
+function typeText(elementId, htmlString, delay = 50) {
   const el = document.getElementById(elementId);
-  el.innerText = '';
-  let index = 0;
-  function typeNextChar() {
-    if (index < text.length) {
-      el.textContent += text.charAt(index);
-      index++;
-      setTimeout(typeNextChar, delay);
+  if (!el) return;
+
+  // If an existing typing is running for this element, cancel it
+  if (typingStates.has(elementId)) {
+    clearTimeout(typingStates.get(elementId).timeoutId);
+    typingStates.delete(elementId);
+  }
+  el.innerHTML = ''; // Clear previous content
+
+  const tempEl = document.createElement('div');
+  tempEl.innerHTML = htmlString;
+  const queue = [];
+  function flatten(node) {
+    if (node.nodeType === Node.TEXT_NODE) {
+      queue.push({
+        type: 'text',
+        text: node.textContent
+      });
+    } else if (node.nodeType === Node.ELEMENT_NODE) {
+      if (node.tagName.toLowerCase() === 'img') {
+        queue.push({
+          type: 'img',
+          src: node.getAttribute('src'),
+          alt: node.getAttribute('alt') || ''
+        });
+      } else {
+        queue.push({
+          type: 'element',
+          tag: node.tagName.toLowerCase(),
+          attributes: Object.fromEntries([...node.attributes].map(attr => [attr.name, attr.value]))
+        });
+        for (const child of node.childNodes) flatten(child);
+        queue.push({
+          type: 'end'
+        });
+      }
     }
+  }
+  for (const node of tempEl.childNodes) flatten(node);
+  let stack = [];
+  let currentElement = el;
+  function typeNextChar() {
+    if (queue.length === 0) {
+      typingStates.delete(elementId); // Cleanup after finish
+      return;
+    }
+    const item = queue[0];
+    if (item.type === 'text') {
+      if (!item.index) item.index = 0;
+      const ch = item.text[item.index];
+      if (ch === '\n') {
+        currentElement.appendChild(document.createElement('br'));
+      } else {
+        currentElement.appendChild(document.createTextNode(ch));
+      }
+      item.index++;
+      if (item.index >= item.text.length) queue.shift();
+    } else if (item.type === 'element') {
+      const newEl = document.createElement(item.tag);
+      if (item.attributes) {
+        for (let [key, val] of Object.entries(item.attributes)) {
+          newEl.setAttribute(key, val);
+        }
+      }
+      currentElement.appendChild(newEl);
+      stack.push(currentElement);
+      currentElement = newEl;
+      queue.shift();
+    } else if (item.type === 'end') {
+      currentElement = stack.pop();
+      queue.shift();
+    } else if (item.type === 'img') {
+      const img = document.createElement('img');
+      img.src = item.src;
+      img.alt = item.alt;
+      img.style.maxWidth = '100px';
+      img.style.verticalAlign = 'middle';
+      currentElement.appendChild(img);
+      queue.shift();
+    }
+
+    // Schedule next step and store timeoutId for control
+    const timeoutId = setTimeout(typeNextChar, delay);
+    typingStates.set(elementId, {
+      timeoutId
+    });
   }
   typeNextChar();
 }
@@ -10693,6 +10862,7 @@ class MatrixAmmo {
     _utils.scriptManager.LOAD("./ammojs/ammo.js", "ammojs", undefined, undefined, this.init);
     this.lastRoll = '';
     this.presentScore = '';
+    this.speedUpSimulation = 1;
   }
   init = () => {
     // console.log('pre ammo')
@@ -10919,6 +11089,7 @@ class MatrixAmmo {
     }
   }
   updatePhysics() {
+    if (!Ammo) return;
     const trans = new Ammo.btTransform();
     const transform = new Ammo.btTransform();
     this.rigidBodies.forEach(function (body) {
@@ -10936,7 +11107,11 @@ class MatrixAmmo {
     Ammo.destroy(transform);
 
     // Step simulation AFTER setting kinematic transforms
-    this.dynamicsWorld.stepSimulation(1 / 60, 10);
+    const timeStep = 1 / 60;
+    const maxSubSteps = 10;
+    for (let i = 0; i < this.speedUpSimulation; i++) {
+      this.dynamicsWorld.stepSimulation(timeStep, maxSubSteps);
+    }
     this.rigidBodies.forEach(function (body) {
       if (!body.isKinematic && body.getMotionState()) {
         body.getMotionState().getWorldTransform(trans);
@@ -11746,13 +11921,12 @@ class MatrixEngineWGPU {
     this.matrixAmmo.updatePhysics();
     this.mainRenderBundle.forEach((meItem, index) => {
       if (index === 0) {
-        meItem.renderPassDescriptor.colorAttachments[0].loadOp = 'clear';
+        if (meItem.renderPassDescriptor) meItem.renderPassDescriptor.colorAttachments[0].loadOp = 'clear';
       } else {
-        meItem.renderPassDescriptor.colorAttachments[0].loadOp = 'load';
+        if (meItem.renderPassDescriptor) meItem.renderPassDescriptor.colorAttachments[0].loadOp = 'load';
       }
       // Update transforms, physics, etc. (optional)
       meItem.draw(commandEncoder); // optional: if this does per-frame updates
-
       if (meItem.renderBundle) {
         // Set up view per object
         meItem.renderPassDescriptor.colorAttachments[0].view = this.context.getCurrentTexture().createView();
