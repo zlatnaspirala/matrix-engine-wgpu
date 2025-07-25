@@ -3,7 +3,8 @@ export let fragmentWGSL = `override shadowDepthTextureSize: f32 = 1024.0;
 struct Scene {
   lightViewProjMatrix : mat4x4f,
   cameraViewProjMatrix : mat4x4f,
-  lightPos : vec3f,
+  lightPos : vec4f,
+  // padding: f32, // 👈 fix alignment
 }
 
 @group(0) @binding(0) var<uniform> scene : Scene;
@@ -39,7 +40,7 @@ fn main(input : FragmentInput) -> @location(0) vec4f {
     }
   }
   visibility /= 9.0;
-  let lambertFactor = max(dot(normalize(scene.lightPos - input.fragPos), normalize(input.fragNorm)), 0.0);
+  let lambertFactor = max(dot(normalize(scene.lightPos.xyz - input.fragPos), normalize(input.fragNorm)), 0.0);
   let lightingFactor = min(ambientFactor + visibility * lambertFactor, 1.0);
   let textureColor = textureSample(meshTexture, meshSampler, input.uv);
 

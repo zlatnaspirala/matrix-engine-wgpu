@@ -22,12 +22,8 @@ export let application = new MatrixEngineWGPU({
   myDom.addDraggerForTable();
   myDom.createBlocker();
   application.dices = dices;
-
-
   application.activateDiceClickListener = null;
 
-  // -------------------------
-  // TEST
   application.matrixAmmo.detectTopFaceFromQuat = (q) => {
     // Define based on *visual face* → object-space normal mapping
     const faces = [
@@ -57,7 +53,6 @@ export let application = new MatrixEngineWGPU({
   application.matrixAmmo.applyQuatToVec = (q, vec) => {
     const [x, y, z] = vec;
     const qx = q.x(), qy = q.y(), qz = q.z(), qw = q.w();
-
     // Quaternion * vector * inverse(quaternion)
     const ix = qw * x + qy * z - qz * y;
     const iy = qw * y + qz * x - qx * z;
@@ -70,7 +65,6 @@ export let application = new MatrixEngineWGPU({
       z: iz * qw + iw * -qz + ix * -qy - iy * -qx
     };
   }
-  // -------------------------
   // This code must be on top (Physics)
   application.matrixAmmo.detectCollision = function() {
     this.lastRoll = '';
@@ -96,45 +90,19 @@ export let application = new MatrixEngineWGPU({
         const face = application.matrixAmmo.detectTopFaceFromQuat(testR);
         if(face) {
           this.lastRoll = face.toString();
-          // Update score logic
-          dispatchEvent(new CustomEvent(`dice-${face}`, {detail: {result: `dice-${face}`, cubeId: MY_DICE_NAME}}));
+          if(face == 5) {
+            // dispatchEvent(new CustomEvent(`dice-${face}`, {detail: {result: `dice-${face}`, cubeId: MY_DICE_NAME}}));
+            dispatchEvent(new CustomEvent(`dice-2`, {detail: {result: `dice-2`, cubeId: MY_DICE_NAME}}));
+          } else if(face == 3) {
+            dispatchEvent(new CustomEvent(`dice-1`, {detail: {result: `dice-1`, cubeId: MY_DICE_NAME}}));
+          } else if(face == 1) {
+            dispatchEvent(new CustomEvent(`dice-5`, {detail: {result: `dice-5`, cubeId: MY_DICE_NAME}}));
+          } else if(face == 2) {
+            dispatchEvent(new CustomEvent(`dice-3`, {detail: {result: `dice-3`, cubeId: MY_DICE_NAME}}));
+          } else { // 4 and 6 are same
+            dispatchEvent(new CustomEvent(`dice-${face}`, {detail: {result: `dice-${face}`, cubeId: MY_DICE_NAME}}));
+          }
         }
-        // if(Math.abs(testR.y()) < 0.00001) {
-        //   this.lastRoll = "3";
-        //   this.presentScore += 4;
-        //   passed = true;
-        // }
-        // if(Math.abs(testR.x()) < 0.00001) {
-        //   this.lastRoll = "5";
-        //   this.presentScore += 3;
-        //   passed = true;
-        // }
-        // if(testR.x().toString().substring(0, 5) == testR.y().toString().substring(1, 6)) {
-        //   this.lastRoll = "6";
-        //   this.presentScore += 2;
-        //   passed = true;
-        // }
-        // if(testR.x().toString().substring(0, 5) == testR.y().toString().substring(0, 5)) {
-        //   this.lastRoll = "2";
-        //   this.presentScore += 1;
-        //   passed = true;
-        // }
-        // if(testR.z().toString().substring(0, 5) == testR.y().toString().substring(1, 6)) {
-        //   this.lastRoll = "4";
-        //   this.presentScore += 6;
-        //   passed = true;
-        // }
-        // if(testR.z().toString().substring(0, 5) == testR.y().toString().substring(0, 5)) {
-        //   this.lastRoll = "1";
-        //   this.presentScore += 5;
-        //   passed = true;
-        // }
-        // if(passed == true) dispatchEvent(new CustomEvent(`dice-${this.lastRoll}`, {
-        //   detail: {
-        //     result: `dice-${this.lastRoll}`,
-        //     cubeId: MY_DICE_NAME
-        //   }
-        // }))
       }
     }
   }
@@ -289,22 +257,20 @@ export let application = new MatrixEngineWGPU({
     // Add logo text top
     application.addMeshObj({
       position: {x: 0, y: 6, z: -15},
-      rotation: {x: 0, y: 0, z: 0},
+      rotation: {x: 45, y: 0, z: 0},
+      rotationSpeed: {x: 200, y: 0, z: 0},
       texturesPaths: ['./res/meshes/jamb/text.png'],
       name: 'mainTitle',
       mesh: m.mainTitle,
-      physics: {
-        mass: 0,
-        enabled: true,
-        geometry: "Cube"
-      }
+      physics: {enable : false }
     })
     // application.cameras.WASD.pitch = 0.2
     setTimeout(() => {
       app.cameras.WASD.velocity[1] = 18
       //                                             BODY              , x,  y, z, rotX, rotY, RotZ
-      app.matrixAmmo.setKinematicTransform(
-        app.matrixAmmo.getBodyByName('mainTitle'), 0, 0, 0, 1)
+      // app.matrixAmmo.setKinematicTransform(
+      //   app.matrixAmmo.getBodyByName('mainTitle'), 0, 0, 0, 1);
+
       app.matrixAmmo.setKinematicTransform(
         app.matrixAmmo.getBodyByName('bg'), 0, -10, 0, 0, 0, 0)
       // Better access getBodyByName

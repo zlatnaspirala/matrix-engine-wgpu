@@ -1,7 +1,8 @@
 export let vertexShadowWGSL =  `struct Scene {
   lightViewProjMatrix: mat4x4f,
   cameraViewProjMatrix: mat4x4f,
-  lightPos: vec3f,
+  lightPos: vec4f,
+  // padding: f32, // 👈 fix alignment
 }
 
 struct Model {
