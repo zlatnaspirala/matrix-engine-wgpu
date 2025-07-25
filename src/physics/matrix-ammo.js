@@ -5,7 +5,7 @@ export default class MatrixAmmo {
   constructor() {
     // THIS PATH IS PATH FROM PUBLIC FINAL FOLDER
     scriptManager.LOAD(
-      "./ammojs/ammo.js",
+      "https://maximumroulette.com/apps/megpu/ammo.js",
       "ammojs",
       undefined,
       undefined,
@@ -287,7 +287,7 @@ export default class MatrixAmmo {
   }
 
   updatePhysics() {
-    if(!Ammo) return;
+    if(typeof Ammo === 'undefined') return;
     const trans = new Ammo.btTransform();
     const transform = new Ammo.btTransform();
 

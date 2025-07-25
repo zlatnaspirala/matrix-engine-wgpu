@@ -10,7 +10,11 @@ var _loaderObj = require("./src/engine/loader-obj.js");
 var _utils = require("./src/engine/utils.js");
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 let application = exports.application = new _world.default({
-  useSingleRenderPass: false,
+  useSingleRenderPass: true,
+  mainCameraParams: {
+    type: 'WASD',
+    responseCoef: 1000
+  },
   canvasSize: 'fullscreen'
 }, () => {
   window.app = application;
@@ -19,7 +23,7 @@ let application = exports.application = new _world.default({
   console.info(`%c matrix-engine-wgpu [ready]`, _utils.LOG_MATRIX);
 });
 
-},{"./src/engine/loader-obj.js":6,"./src/engine/utils.js":11,"./src/world.js":19}],2:[function(require,module,exports){
+},{"./src/engine/loader-obj.js":6,"./src/engine/utils.js":10,"./src/world.js":18}],2:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -5780,7 +5784,7 @@ class MEBall {
 }
 exports.default = MEBall;
 
-},{"../shaders/shaders":15,"./engine":5,"./matrix-class":7,"wgpu-matrix":2}],4:[function(require,module,exports){
+},{"../shaders/shaders":14,"./engine":5,"./matrix-class":7,"wgpu-matrix":2}],4:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -6205,7 +6209,7 @@ class MECube {
 }
 exports.default = MECube;
 
-},{"../shaders/shaders":15,"./engine":5,"./matrix-class":7,"wgpu-matrix":2}],5:[function(require,module,exports){
+},{"../shaders/shaders":14,"./engine":5,"./matrix-class":7,"wgpu-matrix":2}],5:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -6214,7 +6218,6 @@ Object.defineProperty(exports, "__esModule", {
 exports.WASDCamera = exports.ArcballCamera = void 0;
 exports.createInputHandler = createInputHandler;
 var _wgpuMatrix = require("wgpu-matrix");
-var _utils = require("./utils");
 // Note: The code in this file does not use the 'dst' output parameter of functions in the
 // 'wgpu-matrix' library, so produces many temporary vectors and matrices.
 // This is intentional, as this sample prefers readability over performance.
@@ -6665,7 +6668,7 @@ function createInputHandler(window, canvas) {
   };
 }
 
-},{"./utils":11,"wgpu-matrix":2}],6:[function(require,module,exports){
+},{"wgpu-matrix":2}],6:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -7368,7 +7371,7 @@ class Rotation {
 }
 exports.Rotation = Rotation;
 
-},{"./utils":11}],8:[function(require,module,exports){
+},{"./utils":10}],8:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -7382,7 +7385,8 @@ var _vertexShadow = require("../shaders/vertexShadow.wgsl");
 var _fragment = require("../shaders/fragment.wgsl");
 var _vertex = require("../shaders/vertex.wgsl");
 var _utils = require("./utils");
-var _raycast = require("./raycast");
+// import {checkingProcedure, checkingRay, touchCoordinate} from './raycast';
+
 class MEMeshObj {
   constructor(canvas, device, context, o) {
     if (typeof o.name === 'undefined') o.name = (0, _utils.genName)(9);
@@ -7632,7 +7636,7 @@ class MEMeshObj {
         primitive
       });
       const depthTexture = this.device.createTexture({
-        size: [canvas.width, canvas.height],
+        size: [canvas.width, canvas.height, 1],
         format: 'depth24plus-stencil8',
         usage: GPUTextureUsage.RENDER_ATTACHMENT
       });
@@ -7646,7 +7650,7 @@ class MEMeshObj {
             b: 0.5,
             a: 1.0
           },
-          loadOp: 'load',
+          loadOp: 'clear',
           storeOp: 'store'
         }],
         depthStencilAttachment: {
@@ -7669,7 +7673,8 @@ class MEMeshObj {
         // one for the camera and one for the light.
         // Then a vec3 for the light position.
         // Rounded to the nearest multiple of 16.
-        size: 2 * 4 * 16 + 4 * 4,
+        // size: 2 * 4 * 16 + 4 * 4,
+        size: 160,
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
       });
       this.sceneBindGroupForShadow = this.device.createBindGroup({
@@ -7724,7 +7729,10 @@ class MEMeshObj {
         this.viewMatrix = camera.update(deltaTime, this.inputHandler());
         _wgpuMatrix.mat4.translate(this.viewMatrix, _wgpuMatrix.vec3.fromValues(pos.x, pos.y, pos.z), this.viewMatrix);
         _wgpuMatrix.mat4.rotate(this.viewMatrix, _wgpuMatrix.vec3.fromValues(this.rotation.axis.x, this.rotation.axis.y, this.rotation.axis.z), (0, _utils.degToRad)(this.rotation.angle), this.viewMatrix);
-
+        // console.info('this: ', this)
+        _wgpuMatrix.mat4.rotateX(this.viewMatrix, Math.PI * this.rotation.getRotX(), this.viewMatrix);
+        _wgpuMatrix.mat4.rotateY(this.viewMatrix, Math.PI * this.rotation.getRotY(), this.viewMatrix);
+        _wgpuMatrix.mat4.rotateZ(this.viewMatrix, Math.PI * this.rotation.getRotZ(), this.viewMatrix);
         // console.info('angle: ', this.rotation.angle, ' axis ' ,  this.rotation.axis.x, ' , ', this.rotation.axis.y, ' , ',  this.rotation.axis.z)
         _wgpuMatrix.mat4.multiply(this.projectionMatrix, this.viewMatrix, this.modelViewProjectionMatrix);
         return this.modelViewProjectionMatrix;
@@ -7836,6 +7844,7 @@ class MEMeshObj {
   }
   draw = commandEncoder => {
     if (this.done == false) return;
+    // console.log('test draw for meshObj !')
     const transformationMatrix = this.getTransformationMatrix(this.position);
     this.device.queue.writeBuffer(this.sceneUniformBuffer, 64, transformationMatrix.buffer, transformationMatrix.byteOffset, transformationMatrix.byteLength);
     this.renderPassDescriptor.colorAttachments[0].view = this.context.getCurrentTexture().createView();
@@ -7861,7 +7870,7 @@ class MEMeshObj {
 }
 exports.default = MEMeshObj;
 
-},{"../shaders/fragment.wgsl":14,"../shaders/vertex.wgsl":16,"../shaders/vertexShadow.wgsl":17,"./engine":5,"./matrix-class":7,"./raycast":10,"./utils":11,"wgpu-matrix":2}],9:[function(require,module,exports){
+},{"../shaders/fragment.wgsl":13,"../shaders/vertex.wgsl":15,"../shaders/vertexShadow.wgsl":16,"./engine":5,"./matrix-class":7,"./utils":10,"wgpu-matrix":2}],9:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -8259,111 +8268,7 @@ class MEMesh {
 }
 exports.default = MEMesh;
 
-},{"../shaders/fragment.wgsl":14,"../shaders/vertex.wgsl":16,"../shaders/vertexShadow.wgsl":17,"./engine":5,"./loader-obj":6,"./matrix-class":7,"wgpu-matrix":2}],10:[function(require,module,exports){
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.addRaycastListener = addRaycastListener;
-exports.getRayFromMouse = getRayFromMouse;
-exports.rayIntersectsSphere = rayIntersectsSphere;
-exports.touchCoordinate = void 0;
-var _wgpuMatrix = require("wgpu-matrix");
-/**
- * @author Nikola Lukic
- * @email zlatnaspirala@gmail.com
- * @site https://maximumroulette.com
- * @Licence GPL v3
- * @credits chatgpt used for this script adaptation.
- * @Note matrix-engine-wgpu adaptation test
- * default for now:
- * app.cameras['WASD']
- * Only tested for WASD type of camera.
- * app is global - will be fixed in future
- */
-
-let rayHitEvent;
-let touchCoordinate = exports.touchCoordinate = {
-  enabled: false,
-  x: 0,
-  y: 0,
-  stopOnFirstDetectedHit: false
-};
-function multiplyMatrixVector(matrix, vector) {
-  return _wgpuMatrix.vec4.transformMat4(vector, matrix);
-}
-function getRayFromMouse(event, canvas, camera) {
-  const rect = canvas.getBoundingClientRect();
-  let x = (event.clientX - rect.left) / rect.width * 2 - 1;
-  let y = (event.clientY - rect.top) / rect.height * 2 - 1;
-  // simple invert
-  x = -x;
-  y = -y;
-  const fov = Math.PI / 4;
-  const aspect = canvas.width / canvas.height;
-  const near = 0.1;
-  const far = 1000;
-  camera.projectionMatrix = _wgpuMatrix.mat4.perspective(2 * Math.PI / 5, aspect, 1, 1000.0);
-  const invProjection = _wgpuMatrix.mat4.inverse(camera.projectionMatrix);
-
-  // const correctedView = mat4.clone(camera.view_);
-  // correctedView[2] *= -1;
-  // correctedView[6] *= -1;
-  // correctedView[10] *= -1;
-  // const invView = mat4.inverse(correctedView);
-
-  const invView = _wgpuMatrix.mat4.inverse(camera.view);
-  const ndc = [x, y, 1, 1];
-  let worldPos = multiplyMatrixVector(invProjection, ndc);
-  worldPos = multiplyMatrixVector(invView, worldPos);
-  let world;
-  if (worldPos[3] !== 0) {
-    world = [worldPos[0] / worldPos[3], worldPos[2] / worldPos[3], worldPos[1] / worldPos[3]];
-  } else {
-    console.log("[raycaster]special case 0.");
-    world = [worldPos[0], worldPos[1], worldPos[2]];
-  }
-  const rayOrigin = [camera.position[0], camera.position[1], camera.position[2]];
-  const rayDirection = _wgpuMatrix.vec3.normalize(_wgpuMatrix.vec3.subtract(world, rayOrigin));
-  rayDirection[2] = -rayDirection[2];
-  return {
-    rayOrigin,
-    rayDirection
-  };
-}
-function rayIntersectsSphere(rayOrigin, rayDirection, sphereCenter, sphereRadius) {
-  const pos = [sphereCenter.x, sphereCenter.y, sphereCenter.z];
-  const oc = _wgpuMatrix.vec3.subtract(rayOrigin, pos);
-  const a = _wgpuMatrix.vec3.dot(rayDirection, rayDirection);
-  const b = 2.0 * _wgpuMatrix.vec3.dot(oc, rayDirection);
-  const c = _wgpuMatrix.vec3.dot(oc, oc) - sphereRadius * sphereRadius;
-  const discriminant = b * b - 4 * a * c;
-  return discriminant > 0;
-}
-function addRaycastListener() {
-  window.addEventListener('click', event => {
-    let canvas = document.getElementsByTagName('canvas')[0];
-    let camera = app.cameras.WASD;
-    const {
-      rayOrigin,
-      rayDirection
-    } = getRayFromMouse(event, canvas, camera);
-    for (const object of app.mainRenderBundle) {
-      if (rayIntersectsSphere(rayOrigin, rayDirection, object.position, object.raycast.radius)) {
-        // console.log('Object clicked:', object.name);
-        // Just like in matrix-engine webGL version "ray.hit.event"
-        dispatchEvent(new CustomEvent('ray.hit.event', {
-          detail: {
-            hitObject: object
-          }
-        }));
-      }
-    }
-  });
-}
-
-},{"wgpu-matrix":2}],11:[function(require,module,exports){
+},{"../shaders/fragment.wgsl":13,"../shaders/vertex.wgsl":15,"../shaders/vertexShadow.wgsl":16,"./engine":5,"./loader-obj":6,"./matrix-class":7,"wgpu-matrix":2}],10:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -9247,7 +9152,7 @@ function setupCanvasFilters(canvasId) {
   updateFilter(); // Initial
 }
 
-},{}],12:[function(require,module,exports){
+},{}],11:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -9287,7 +9192,7 @@ class MultiLang {
 }
 exports.MultiLang = MultiLang;
 
-},{"../engine/utils":11}],13:[function(require,module,exports){
+},{"../engine/utils":10}],12:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -9300,7 +9205,7 @@ var _utils = require("../engine/utils");
 class MatrixAmmo {
   constructor() {
     // THIS PATH IS PATH FROM PUBLIC FINAL FOLDER
-    _utils.scriptManager.LOAD("./ammojs/ammo.js", "ammojs", undefined, undefined, this.init);
+    _utils.scriptManager.LOAD("https://maximumroulette.com/apps/megpu/ammo.js", "ammojs", undefined, undefined, this.init);
     this.lastRoll = '';
     this.presentScore = '';
     this.speedUpSimulation = 1;
@@ -9471,8 +9376,30 @@ class MatrixAmmo {
     });
     return b;
   }
+  deactivatePhysics(body) {
+    const CF_KINEMATIC_OBJECT = 2;
+    const DISABLE_DEACTIVATION = 4;
+    // 1. Remove from world
+    this.dynamicsWorld.removeRigidBody(body);
+    // 2. Set body to kinematic
+    const flags = body.getCollisionFlags();
+    body.setCollisionFlags(flags | CF_KINEMATIC_OBJECT);
+    body.setActivationState(DISABLE_DEACTIVATION); // no auto-wakeup
+    // 3. Clear motion
+    const zero = new Ammo.btVector3(0, 0, 0);
+    body.setLinearVelocity(zero);
+    body.setAngularVelocity(zero);
+    // 4. Reset transform to current position (optional — preserves pose)
+    const currentTransform = body.getWorldTransform();
+    body.setWorldTransform(currentTransform);
+    body.getMotionState().setWorldTransform(currentTransform);
+    // 5. Add back to physics world
+    this.matrixAmmo.dynamicsWorld.addRigidBody(body);
+    // 6. Mark it manually (logic flag)
+    body.isKinematic = true;
+  }
   detectCollision() {
-    console.log('override this');
+    // console.log('override this')
     return;
     this.lastRoll = '';
     this.presentScore = '';
@@ -9530,7 +9457,7 @@ class MatrixAmmo {
     }
   }
   updatePhysics() {
-    if (!Ammo) return;
+    if (typeof Ammo === 'undefined') return;
     const trans = new Ammo.btTransform();
     const transform = new Ammo.btTransform();
     this.rigidBodies.forEach(function (body) {
@@ -9576,7 +9503,7 @@ class MatrixAmmo {
 }
 exports.default = MatrixAmmo;
 
-},{"../engine/utils":11}],14:[function(require,module,exports){
+},{"../engine/utils":10}],13:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -9588,7 +9515,8 @@ let fragmentWGSL = exports.fragmentWGSL = `override shadowDepthTextureSize: f32 
 struct Scene {
   lightViewProjMatrix : mat4x4f,
   cameraViewProjMatrix : mat4x4f,
-  lightPos : vec3f,
+  lightPos : vec4f,
+  // padding: f32, // 👈 fix alignment
 }
 
 @group(0) @binding(0) var<uniform> scene : Scene;
@@ -9624,7 +9552,7 @@ fn main(input : FragmentInput) -> @location(0) vec4f {
     }
   }
   visibility /= 9.0;
-  let lambertFactor = max(dot(normalize(scene.lightPos - input.fragPos), normalize(input.fragNorm)), 0.0);
+  let lambertFactor = max(dot(normalize(scene.lightPos.xyz - input.fragPos), normalize(input.fragNorm)), 0.0);
   let lightingFactor = min(ambientFactor + visibility * lambertFactor, 1.0);
   let textureColor = textureSample(meshTexture, meshSampler, input.uv);
 
@@ -9634,7 +9562,7 @@ fn main(input : FragmentInput) -> @location(0) vec4f {
   // return vec4(textureColor.rgb , 0.5);
 }`;
 
-},{}],15:[function(require,module,exports){
+},{}],14:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -9692,7 +9620,7 @@ fn fragmentMain(input: VertexOutput) -> @location(0) vec4f {
   return vec4f(textureColor.rgb * lightColor, textureColor.a);
 }`;
 
-},{}],16:[function(require,module,exports){
+},{}],15:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -9702,7 +9630,8 @@ exports.vertexWGSL = void 0;
 let vertexWGSL = exports.vertexWGSL = `struct Scene {
   lightViewProjMatrix: mat4x4f,
   cameraViewProjMatrix: mat4x4f,
-  lightPos: vec3f,
+  lightPos: vec4f,
+  // padding: f32, // 👈 fix alignment
 }
 
 struct Model {
@@ -9749,7 +9678,7 @@ fn main(
 }
 `;
 
-},{}],17:[function(require,module,exports){
+},{}],16:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -9759,7 +9688,8 @@ exports.vertexShadowWGSL = void 0;
 let vertexShadowWGSL = exports.vertexShadowWGSL = `struct Scene {
   lightViewProjMatrix: mat4x4f,
   cameraViewProjMatrix: mat4x4f,
-  lightPos: vec3f,
+  lightPos: vec4f,
+  // padding: f32, // 👈 fix alignment
 }
 
 struct Model {
@@ -9777,7 +9707,7 @@ fn main(
 }
 `;
 
-},{}],18:[function(require,module,exports){
+},{}],17:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -9847,7 +9777,7 @@ class MatrixSounds {
 }
 exports.MatrixSounds = MatrixSounds;
 
-},{}],19:[function(require,module,exports){
+},{}],18:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -9901,6 +9831,7 @@ class MatrixEngineWGPU {
     }
     this.options = options;
     this.mainCameraParams = options.mainCameraParams;
+    const target = this.options.appendTo || document.body;
     var canvas = document.createElement('canvas');
     if (this.options.canvasSize == 'fullscreen') {
       canvas.width = window.innerWidth;
@@ -9909,7 +9840,7 @@ class MatrixEngineWGPU {
       canvas.width = this.options.canvasSize.w;
       canvas.height = this.options.canvasSize.h;
     }
-    document.body.append(canvas);
+    target.append(canvas);
 
     // The camera types
     const initialCameraPosition = _wgpuMatrix.vec3.create(0, 0, 0);
@@ -10301,8 +10232,6 @@ class MatrixEngineWGPU {
     if (typeof o.physics.rotation === 'undefined') {
       o.physics.rotation = o.rotation;
     }
-
-    // send same pos
     o.physics.position = o.position;
     //  console.log('Mesh procedure', o)
     let myMesh1 = new _meshObj.default(this.canvas, this.device, this.context, o);
@@ -10384,4 +10313,4 @@ class MatrixEngineWGPU {
 }
 exports.default = MatrixEngineWGPU;
 
-},{"./engine/ball.js":3,"./engine/cube.js":4,"./engine/engine.js":5,"./engine/mesh-obj.js":8,"./engine/mesh.js":9,"./engine/utils.js":11,"./multilang/lang.js":12,"./physics/matrix-ammo.js":13,"./sounds/sounds.js":18,"wgpu-matrix":2}]},{},[1]);
+},{"./engine/ball.js":3,"./engine/cube.js":4,"./engine/engine.js":5,"./engine/mesh-obj.js":8,"./engine/mesh.js":9,"./engine/utils.js":10,"./multilang/lang.js":11,"./physics/matrix-ammo.js":12,"./sounds/sounds.js":17,"wgpu-matrix":2}]},{},[1]);
