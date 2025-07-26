@@ -9742,7 +9742,7 @@ class MEMeshObj {
         primitive
       });
       const depthTexture = this.device.createTexture({
-        size: [canvas.width, canvas.height],
+        size: [canvas.width, canvas.height, 1],
         format: 'depth24plus-stencil8',
         usage: GPUTextureUsage.RENDER_ATTACHMENT
       });
@@ -9756,7 +9756,7 @@ class MEMeshObj {
             b: 0.5,
             a: 1.0
           },
-          loadOp: 'load',
+          loadOp: 'clear',
           storeOp: 'store'
         }],
         depthStencilAttachment: {
@@ -9779,7 +9779,8 @@ class MEMeshObj {
         // one for the camera and one for the light.
         // Then a vec3 for the light position.
         // Rounded to the nearest multiple of 16.
-        size: 2 * 4 * 16 + 4 * 4,
+        // size: 2 * 4 * 16 + 4 * 4,
+        size: 160,
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
       });
       this.sceneBindGroupForShadow = this.device.createBindGroup({
@@ -11414,7 +11415,7 @@ var _utils = require("../engine/utils");
 class MatrixAmmo {
   constructor() {
     // THIS PATH IS PATH FROM PUBLIC FINAL FOLDER
-    _utils.scriptManager.LOAD("./ammojs/ammo.js", "ammojs", undefined, undefined, this.init);
+    _utils.scriptManager.LOAD("https://maximumroulette.com/apps/megpu/ammo.js", "ammojs", undefined, undefined, this.init);
     this.lastRoll = '';
     this.presentScore = '';
     this.speedUpSimulation = 1;
@@ -11666,7 +11667,7 @@ class MatrixAmmo {
     }
   }
   updatePhysics() {
-    if (!Ammo) return;
+    if (typeof Ammo === 'undefined') return;
     const trans = new Ammo.btTransform();
     const transform = new Ammo.btTransform();
     this.rigidBodies.forEach(function (body) {
@@ -11724,7 +11725,8 @@ let fragmentWGSL = exports.fragmentWGSL = `override shadowDepthTextureSize: f32 
 struct Scene {
   lightViewProjMatrix : mat4x4f,
   cameraViewProjMatrix : mat4x4f,
-  lightPos : vec3f,
+  lightPos : vec4f,
+  // padding: f32, // 👈 fix alignment
 }
 
 @group(0) @binding(0) var<uniform> scene : Scene;
@@ -11760,7 +11762,7 @@ fn main(input : FragmentInput) -> @location(0) vec4f {
     }
   }
   visibility /= 9.0;
-  let lambertFactor = max(dot(normalize(scene.lightPos - input.fragPos), normalize(input.fragNorm)), 0.0);
+  let lambertFactor = max(dot(normalize(scene.lightPos.xyz - input.fragPos), normalize(input.fragNorm)), 0.0);
   let lightingFactor = min(ambientFactor + visibility * lambertFactor, 1.0);
   let textureColor = textureSample(meshTexture, meshSampler, input.uv);
 
@@ -11838,7 +11840,8 @@ exports.vertexWGSL = void 0;
 let vertexWGSL = exports.vertexWGSL = `struct Scene {
   lightViewProjMatrix: mat4x4f,
   cameraViewProjMatrix: mat4x4f,
-  lightPos: vec3f,
+  lightPos: vec4f,
+  // padding: f32, // 👈 fix alignment
 }
 
 struct Model {
@@ -11895,7 +11898,8 @@ exports.vertexShadowWGSL = void 0;
 let vertexShadowWGSL = exports.vertexShadowWGSL = `struct Scene {
   lightViewProjMatrix: mat4x4f,
   cameraViewProjMatrix: mat4x4f,
-  lightPos: vec3f,
+  lightPos: vec4f,
+  // padding: f32, // 👈 fix alignment
 }
 
 struct Model {
