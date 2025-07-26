@@ -241,7 +241,6 @@ export default class MEMesh {
           {
             // view is acquired and set in render loop.
             view: undefined,
-
             clearValue: {r: 0.5, g: 0.5, b: 0.5, a: 1.0},
             loadOp: 'load',
             storeOp: 'store',

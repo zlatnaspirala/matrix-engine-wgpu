@@ -164,7 +164,7 @@ export let application = new MatrixEngineWGPU({
 
   addEventListener('mousemove', (e) => {
     // console.log('only on click')
-    touchCoordinate.enabled = true;
+  
   })
 
   // Sounds

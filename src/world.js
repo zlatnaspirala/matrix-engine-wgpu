@@ -34,12 +34,16 @@ export default class MatrixEngineWGPU {
       this.options = {
         useSingleRenderPass: true,
         canvasSize: 'fullscreen',
+        canvasId: 'canvas1',
         mainCameraParams: {
           type: 'WASD',
           responseCoef: 2000
         }
       }
       callback = options;
+    }
+    if(typeof options.canvasId === 'undefined') {
+      options.canvasId = 'canvas1';
     }
     if(typeof options.mainCameraParams === 'undefined') {
       options.mainCameraParams = {
@@ -48,12 +52,11 @@ export default class MatrixEngineWGPU {
       }
     }
     this.options = options;
-
     this.mainCameraParams = options.mainCameraParams;
 
     const target = this.options.appendTo || document.body;
-
     var canvas = document.createElement('canvas')
+    canvas.id = this.options.canvasId;
     if(this.options.canvasSize == 'fullscreen') {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
@@ -255,11 +258,9 @@ export default class MatrixEngineWGPU {
     if(typeof o.texturesPaths === 'undefined') {o.texturesPaths = ['./res/textures/default.png']}
     if(typeof o.mainCameraParams === 'undefined') {o.mainCameraParams = this.mainCameraParams}
     if(typeof o.scale === 'undefined') {o.scale = [1, 1, 1];}
-    if(typeof o.raycast === 'undefined') {o.raycast = {enabled: false}}
-
+    if(typeof o.raycast === 'undefined') {o.raycast = {enabled: false, radius: 2}}
     o.entityArgPass = this.entityArgPass;
     o.cameras = this.cameras;
-    // if(typeof o.name === 'undefined') {o.name = 'random' + Math.random();}
     if(typeof o.mesh === 'undefined') {
       mb.error('arg mesh is empty for ', o.name);
       throw console.error('arg mesh is empty...');
@@ -368,7 +369,6 @@ export default class MatrixEngineWGPU {
         meItem.draw(commandEncoder); // fallback if no renderBundle
       }
     });
-
     this.device.queue.submit([commandEncoder.finish()]);
     requestAnimationFrame(this.frame);
   }

@@ -1396,6 +1396,9 @@ let application = exports.application = new _world.default({
   _jamb.myDom.createBlocker();
   application.dices = _jamb.dices;
   application.activateDiceClickListener = null;
+
+  // -------------------------
+  // TEST
   application.matrixAmmo.detectTopFaceFromQuat = q => {
     // Define based on *visual face* → object-space normal mapping
     const faces = [{
@@ -1446,6 +1449,7 @@ let application = exports.application = new _world.default({
       qy = q.y(),
       qz = q.z(),
       qw = q.w();
+
     // Quaternion * vector * inverse(quaternion)
     const ix = qw * x + qy * z - qz * y;
     const iy = qw * y + qz * x - qx * z;
@@ -1457,6 +1461,7 @@ let application = exports.application = new _world.default({
       z: iz * qw + iw * -qz + ix * -qy - iy * -qx
     };
   };
+  // -------------------------
   // This code must be on top (Physics)
   application.matrixAmmo.detectCollision = function () {
     this.lastRoll = '';
@@ -1481,45 +1486,50 @@ let application = exports.application = new _world.default({
         const face = application.matrixAmmo.detectTopFaceFromQuat(testR);
         if (face) {
           this.lastRoll = face.toString();
-          if (face == 5) {
-            // dispatchEvent(new CustomEvent(`dice-${face}`, {detail: {result: `dice-${face}`, cubeId: MY_DICE_NAME}}));
-            dispatchEvent(new CustomEvent(`dice-2`, {
-              detail: {
-                result: `dice-2`,
-                cubeId: MY_DICE_NAME
-              }
-            }));
-          } else if (face == 3) {
-            dispatchEvent(new CustomEvent(`dice-1`, {
-              detail: {
-                result: `dice-1`,
-                cubeId: MY_DICE_NAME
-              }
-            }));
-          } else if (face == 1) {
-            dispatchEvent(new CustomEvent(`dice-5`, {
-              detail: {
-                result: `dice-5`,
-                cubeId: MY_DICE_NAME
-              }
-            }));
-          } else if (face == 2) {
-            dispatchEvent(new CustomEvent(`dice-3`, {
-              detail: {
-                result: `dice-3`,
-                cubeId: MY_DICE_NAME
-              }
-            }));
-          } else {
-            // 4 and 6 are same
-            dispatchEvent(new CustomEvent(`dice-${face}`, {
-              detail: {
-                result: `dice-${face}`,
-                cubeId: MY_DICE_NAME
-              }
-            }));
-          }
+          // Update score logic
+          dispatchEvent(new CustomEvent(`dice-${face}`, {
+            detail: {
+              result: `dice-${face}`,
+              cubeId: MY_DICE_NAME
+            }
+          }));
         }
+        // if(Math.abs(testR.y()) < 0.00001) {
+        //   this.lastRoll = "3";
+        //   this.presentScore += 4;
+        //   passed = true;
+        // }
+        // if(Math.abs(testR.x()) < 0.00001) {
+        //   this.lastRoll = "5";
+        //   this.presentScore += 3;
+        //   passed = true;
+        // }
+        // if(testR.x().toString().substring(0, 5) == testR.y().toString().substring(1, 6)) {
+        //   this.lastRoll = "6";
+        //   this.presentScore += 2;
+        //   passed = true;
+        // }
+        // if(testR.x().toString().substring(0, 5) == testR.y().toString().substring(0, 5)) {
+        //   this.lastRoll = "2";
+        //   this.presentScore += 1;
+        //   passed = true;
+        // }
+        // if(testR.z().toString().substring(0, 5) == testR.y().toString().substring(1, 6)) {
+        //   this.lastRoll = "4";
+        //   this.presentScore += 6;
+        //   passed = true;
+        // }
+        // if(testR.z().toString().substring(0, 5) == testR.y().toString().substring(0, 5)) {
+        //   this.lastRoll = "1";
+        //   this.presentScore += 5;
+        //   passed = true;
+        // }
+        // if(passed == true) dispatchEvent(new CustomEvent(`dice-${this.lastRoll}`, {
+        //   detail: {
+        //     result: `dice-${this.lastRoll}`,
+        //     cubeId: MY_DICE_NAME
+        //   }
+        // }))
       }
     }
   };
@@ -1542,7 +1552,6 @@ let application = exports.application = new _world.default({
   });
   addEventListener('mousemove', e => {
     // console.log('only on click')
-    _raycast.touchCoordinate.enabled = true;
   });
 
   // Sounds
@@ -1713,12 +1722,7 @@ let application = exports.application = new _world.default({
         z: -15
       },
       rotation: {
-        x: 45,
-        y: 0,
-        z: 0
-      },
-      rotationSpeed: {
-        x: 200,
+        x: 0,
         y: 0,
         z: 0
       },
@@ -1726,16 +1730,16 @@ let application = exports.application = new _world.default({
       name: 'mainTitle',
       mesh: m.mainTitle,
       physics: {
-        enable: false
+        mass: 0,
+        enabled: true,
+        geometry: "Cube"
       }
     });
     // application.cameras.WASD.pitch = 0.2
     setTimeout(() => {
       app.cameras.WASD.velocity[1] = 18;
       //                                             BODY              , x,  y, z, rotX, rotY, RotZ
-      // app.matrixAmmo.setKinematicTransform(
-      //   app.matrixAmmo.getBodyByName('mainTitle'), 0, 0, 0, 1);
-
+      app.matrixAmmo.setKinematicTransform(app.matrixAmmo.getBodyByName('mainTitle'), 0, 0, 0, 1);
       app.matrixAmmo.setKinematicTransform(app.matrixAmmo.getBodyByName('bg'), 0, -10, 0, 0, 0, 0);
       // Better access getBodyByName
       // console.log(' app.matrixAmmo. ', app.matrixAmmo.getBodyByName('CubePhysics1'))
@@ -9756,7 +9760,8 @@ class MEMeshObj {
             b: 0.5,
             a: 1.0
           },
-          loadOp: 'load',
+          loadOp: 'clear',
+          // load old fix for FF
           storeOp: 'store'
         }],
         depthStencilAttachment: {
@@ -10416,13 +10421,6 @@ function getRayFromMouse(event, canvas, camera) {
   const far = 1000;
   camera.projectionMatrix = _wgpuMatrix.mat4.perspective(2 * Math.PI / 5, aspect, 1, 1000.0);
   const invProjection = _wgpuMatrix.mat4.inverse(camera.projectionMatrix);
-
-  // const correctedView = mat4.clone(camera.view_);
-  // correctedView[2] *= -1;
-  // correctedView[6] *= -1;
-  // correctedView[10] *= -1;
-  // const invView = mat4.inverse(correctedView);
-
   const invView = _wgpuMatrix.mat4.inverse(camera.view);
   const ndc = [x, y, 1, 1];
   let worldPos = multiplyMatrixVector(invProjection, ndc);
@@ -10452,16 +10450,16 @@ function rayIntersectsSphere(rayOrigin, rayDirection, sphereCenter, sphereRadius
   return discriminant > 0;
 }
 function addRaycastListener() {
-  window.addEventListener('click', event => {
-    let canvas = document.getElementsByTagName('canvas')[0];
+  let canvasDom = document.getElementById("canvas1");
+  canvasDom.addEventListener('click', event => {
     let camera = app.cameras.WASD;
     const {
       rayOrigin,
       rayDirection
-    } = getRayFromMouse(event, canvas, camera);
+    } = getRayFromMouse(event, canvasDom, camera);
     for (const object of app.mainRenderBundle) {
       if (rayIntersectsSphere(rayOrigin, rayDirection, object.position, object.raycast.radius)) {
-        // console.log('Object clicked:', object.name);
+        console.log('Object clicked:', object.name);
         // Just like in matrix-engine webGL version "ray.hit.event"
         dispatchEvent(new CustomEvent('ray.hit.event', {
           detail: {
@@ -11604,7 +11602,7 @@ class MatrixAmmo {
     body.isKinematic = true;
   }
   detectCollision() {
-    // console.log('override this')
+    console.log('override this');
     return;
     this.lastRoll = '';
     this.presentScore = '';
@@ -11834,8 +11832,7 @@ exports.vertexWGSL = void 0;
 let vertexWGSL = exports.vertexWGSL = `struct Scene {
   lightViewProjMatrix: mat4x4f,
   cameraViewProjMatrix: mat4x4f,
-  lightPos: vec4f,
-  // padding: f32, // 👈 fix alignment
+  lightPos: vec3f,
 }
 
 struct Model {
@@ -12019,12 +12016,16 @@ class MatrixEngineWGPU {
       this.options = {
         useSingleRenderPass: true,
         canvasSize: 'fullscreen',
+        canvasId: 'canvas1',
         mainCameraParams: {
           type: 'WASD',
           responseCoef: 2000
         }
       };
       callback = options;
+    }
+    if (typeof options.canvasId === 'undefined') {
+      options.canvasId = 'canvas1';
     }
     if (typeof options.mainCameraParams === 'undefined') {
       options.mainCameraParams = {
@@ -12036,6 +12037,7 @@ class MatrixEngineWGPU {
     this.mainCameraParams = options.mainCameraParams;
     const target = this.options.appendTo || document.body;
     var canvas = document.createElement('canvas');
+    canvas.id = this.options.canvasId;
     if (this.options.canvasSize == 'fullscreen') {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
@@ -12393,12 +12395,12 @@ class MatrixEngineWGPU {
     }
     if (typeof o.raycast === 'undefined') {
       o.raycast = {
-        enabled: false
+        enabled: false,
+        radius: 2
       };
     }
     o.entityArgPass = this.entityArgPass;
     o.cameras = this.cameras;
-    // if(typeof o.name === 'undefined') {o.name = 'random' + Math.random();}
     if (typeof o.mesh === 'undefined') {
       _utils.mb.error('arg mesh is empty for ', o.name);
       throw console.error('arg mesh is empty...');

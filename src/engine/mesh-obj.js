@@ -301,7 +301,7 @@ export default class MEMeshObj {
 						// view is acquired and set in render loop.
 						view: undefined,
 						clearValue: {r: 0.5, g: 0.5, b: 0.5, a: 1.0},
-						loadOp: 'load',
+						loadOp: 'clear', // load old fix for FF
 						storeOp: 'store',
 					},
 				],
