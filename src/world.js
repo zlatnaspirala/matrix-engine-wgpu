@@ -285,6 +285,34 @@ export default class MatrixEngineWGPU {
     if(typeof o.physics.rotation === 'undefined') {o.physics.rotation = o.rotation;}
     o.physics.position = o.position;
     //  console.log('Mesh procedure', o)
+    // TEST OBJS SEQ ANIMS 
+    if(typeof o.objAnim == 'undefined' || typeof o.objAnim == null) {
+				o.objAnim = null;
+			} else {
+				o.objAnim = {
+					id: o.objAnim.id,
+					sumOfAniFrames: o.objAnim.sumOfAniFrames,
+					currentAni: o.objAnim.currentAni,
+					speed: o.objAnim.speed,
+					currentDraws: 0
+				};
+
+				if(typeof o.objAnim.animations !== 'undefined') {
+					o.objAnim.animation.anims = o.objAnim.animations;
+					o.objAnim.play = play;
+				}
+				// no need for single test it in future
+				o.objAnim.meshList = o.objAnim.meshList;
+
+				// scale for all
+				// objObject.scaleAll = function(s) {
+				// 	for(var k in objObject.meshList) {
+				// 		// console.log(objObject.meshList[k])
+				// 		objObject.meshList[k].setScale(s)
+				// 	}
+				// }
+			}
+    //
     let myMesh1 = new MEMeshObj(this.canvas, this.device, this.context, o)
     if(o.physics.enabled == true) {
       this.matrixAmmo.addPhysics(myMesh1, o.physics)

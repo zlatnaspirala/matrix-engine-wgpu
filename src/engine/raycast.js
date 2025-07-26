@@ -49,7 +49,7 @@ export function getRayFromMouse(event, canvas, camera) {
       worldPos[1] / worldPos[3]
     ];
   } else {
-    console.log("[raycaster]special case 0.")
+    console.log("[raycaster]special case 0.");
     world = [
       worldPos[0],
       worldPos[1],

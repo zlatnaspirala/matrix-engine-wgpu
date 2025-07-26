@@ -30,6 +30,10 @@ export default class MEMeshObj {
 		this.mesh.uvs = this.mesh.textures;
 		console.log(`%c Mesh loaded: ${o.name}`, LOG_FUNNY_SMALL);
 
+    // TEST OBJ SEQ ANIM
+    console.log(`%c Mesh objAnim : ${o.objAnim}`, LOG_FUNNY_SMALL);
+    //
+
 		this.inputHandler = createInputHandler(window, canvas);
 		this.cameras = o.cameras;
 
@@ -584,6 +588,16 @@ export default class MEMeshObj {
 	}
 
 	drawElements = (renderPass) => {
+		renderPass.setBindGroup(0, this.sceneBindGroupForRender);
+		renderPass.setBindGroup(1, this.modelBindGroup);
+		renderPass.setVertexBuffer(0, this.vertexBuffer);
+		renderPass.setVertexBuffer(1, this.vertexNormalsBuffer);
+		renderPass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
+		renderPass.setIndexBuffer(this.indexBuffer, 'uint16');
+		renderPass.drawIndexed(this.indexCount);
+	}
+
+  drawElementsAnim = (renderPass) => {
 		renderPass.setBindGroup(0, this.sceneBindGroupForRender);
 		renderPass.setBindGroup(1, this.modelBindGroup);
 		renderPass.setVertexBuffer(0, this.vertexBuffer);
