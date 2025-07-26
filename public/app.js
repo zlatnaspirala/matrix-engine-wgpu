@@ -9742,7 +9742,7 @@ class MEMeshObj {
         primitive
       });
       const depthTexture = this.device.createTexture({
-        size: [canvas.width, canvas.height, 1],
+        size: [canvas.width, canvas.height],
         format: 'depth24plus-stencil8',
         usage: GPUTextureUsage.RENDER_ATTACHMENT
       });
@@ -9756,7 +9756,7 @@ class MEMeshObj {
             b: 0.5,
             a: 1.0
           },
-          loadOp: 'clear',
+          loadOp: 'load',
           storeOp: 'store'
         }],
         depthStencilAttachment: {
@@ -9779,8 +9779,7 @@ class MEMeshObj {
         // one for the camera and one for the light.
         // Then a vec3 for the light position.
         // Rounded to the nearest multiple of 16.
-        // size: 2 * 4 * 16 + 4 * 4,
-        size: 160,
+        size: 2 * 4 * 16 + 4 * 4,
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
       });
       this.sceneBindGroupForShadow = this.device.createBindGroup({
@@ -9835,10 +9834,7 @@ class MEMeshObj {
         this.viewMatrix = camera.update(deltaTime, this.inputHandler());
         _wgpuMatrix.mat4.translate(this.viewMatrix, _wgpuMatrix.vec3.fromValues(pos.x, pos.y, pos.z), this.viewMatrix);
         _wgpuMatrix.mat4.rotate(this.viewMatrix, _wgpuMatrix.vec3.fromValues(this.rotation.axis.x, this.rotation.axis.y, this.rotation.axis.z), (0, _utils.degToRad)(this.rotation.angle), this.viewMatrix);
-        // console.info('this: ', this)
-        // mat4.rotateX(this.viewMatrix, Math.PI * this.rotation.getRotX(),  this.viewMatrix);
-        // mat4.rotateY(this.viewMatrix, Math.PI * this.rotation.getRotY(),  this.viewMatrix);
-        // mat4.rotateZ(this.viewMatrix, Math.PI * this.rotation.getRotZ(),  this.viewMatrix);
+
         // console.info('angle: ', this.rotation.angle, ' axis ' ,  this.rotation.axis.x, ' , ', this.rotation.axis.y, ' , ',  this.rotation.axis.z)
         _wgpuMatrix.mat4.multiply(this.projectionMatrix, this.viewMatrix, this.modelViewProjectionMatrix);
         return this.modelViewProjectionMatrix;
@@ -9950,7 +9946,6 @@ class MEMeshObj {
   }
   draw = commandEncoder => {
     if (this.done == false) return;
-    // console.log('test draw for meshObj !')
     const transformationMatrix = this.getTransformationMatrix(this.position);
     this.device.queue.writeBuffer(this.sceneUniformBuffer, 64, transformationMatrix.buffer, transformationMatrix.byteOffset, transformationMatrix.byteLength);
     this.renderPassDescriptor.colorAttachments[0].view = this.context.getCurrentTexture().createView();
@@ -11725,8 +11720,7 @@ let fragmentWGSL = exports.fragmentWGSL = `override shadowDepthTextureSize: f32 
 struct Scene {
   lightViewProjMatrix : mat4x4f,
   cameraViewProjMatrix : mat4x4f,
-  lightPos : vec4f,
-  // padding: f32, // 👈 fix alignment
+  lightPos : vec3f,
 }
 
 @group(0) @binding(0) var<uniform> scene : Scene;
@@ -11762,7 +11756,7 @@ fn main(input : FragmentInput) -> @location(0) vec4f {
     }
   }
   visibility /= 9.0;
-  let lambertFactor = max(dot(normalize(scene.lightPos.xyz - input.fragPos), normalize(input.fragNorm)), 0.0);
+  let lambertFactor = max(dot(normalize(scene.lightPos - input.fragPos), normalize(input.fragNorm)), 0.0);
   let lightingFactor = min(ambientFactor + visibility * lambertFactor, 1.0);
   let textureColor = textureSample(meshTexture, meshSampler, input.uv);
 
@@ -11898,8 +11892,7 @@ exports.vertexShadowWGSL = void 0;
 let vertexShadowWGSL = exports.vertexShadowWGSL = `struct Scene {
   lightViewProjMatrix: mat4x4f,
   cameraViewProjMatrix: mat4x4f,
-  lightPos: vec4f,
-  // padding: f32, // 👈 fix alignment
+  lightPos: vec3f,
 }
 
 struct Model {

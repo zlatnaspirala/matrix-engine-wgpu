@@ -220,7 +220,7 @@ export default class MatrixAmmo {
   }
 
   detectCollision() {
-    // console.log('override this')
+    console.log('override this')
     return;
 
     this.lastRoll = '';
