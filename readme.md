@@ -69,7 +69,7 @@ mainCameraParams: {
 
 ---
 
-### Object Positioning
+### Object Position
 
 Control object position:
 
@@ -134,7 +134,7 @@ app.cameras.WASD.pitch = 0.2;
 
 ---
 
-## Object Interaction (Raycasting)
+### Object Interaction (Raycasting)
 
 The raycast returns:
 
@@ -173,7 +173,7 @@ window.addEventListener('ray.hit.event', (event) => {
 
 ---
 
-## How to Load `.obj` Models
+### How to Load `.obj` Models
 
 ```js
 import MatrixEngineWGPU from "./src/world.js";
@@ -234,13 +234,11 @@ window.app = application;
 ```
 
 
-## 🔁 Load OBJ Sequence Animation
+### 🔁 Load OBJ Sequence Animation
 
 This example shows how to load and animate a sequence of .obj files to simulate mesh-based animation (e.g. walking character).
 
-js
-Copy
-Edit
+
 import MatrixEngineWGPU from "../src/world.js";
 import { downloadMeshes, makeObjSeqArg } from "../src/engine/loader-obj.js";
 import { LOG_MATRIX } from "../src/engine/utils.js";
