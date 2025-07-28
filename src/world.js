@@ -8,6 +8,7 @@ import MatrixAmmo from "./physics/matrix-ammo.js";
 import {LOG_WARN, genName, mb, scriptManager, urlQuery} from "./engine/utils.js";
 import {MultiLang} from "./multilang/lang.js";
 import {MatrixSounds} from "./sounds/sounds.js";
+import {play} from "./engine/loader-obj.js";
 
 export default class MatrixEngineWGPU {
 
@@ -261,23 +262,18 @@ export default class MatrixEngineWGPU {
     if(typeof o.raycast === 'undefined') {o.raycast = {enabled: false, radius: 2}}
     o.entityArgPass = this.entityArgPass;
     o.cameras = this.cameras;
-    if(typeof o.mesh === 'undefined') {
-      mb.error('arg mesh is empty for ', o.name);
-      throw console.error('arg mesh is empty...');
-      return;
-    }
     if(typeof o.physics === 'undefined') {
       o.physics = {
         scale: [1, 1, 1],
         enabled: true,
-        geometry: "Sphere",
-        radius: o.scale,
+        geometry: "Sphere",//                   must be fixed<<
+        radius: (typeof o.scale == Number ? o.scale : o.scale[0]),
         name: o.name,
         rotation: o.rotation
       }
     }
     if(typeof o.physics.enabled === 'undefined') {o.physics.enabled = true}
-    if(typeof o.physics.geometry === 'undefined') {o.physics.geometry = "Sphere"}
+    if(typeof o.physics.geometry === 'undefined') {o.physics.geometry = "Cube"}
     if(typeof o.physics.radius === 'undefined') {o.physics.radius = o.scale}
     if(typeof o.physics.mass === 'undefined') {o.physics.mass = 1;}
     if(typeof o.physics.name === 'undefined') {o.physics.name = o.name;}
@@ -285,6 +281,39 @@ export default class MatrixEngineWGPU {
     if(typeof o.physics.rotation === 'undefined') {o.physics.rotation = o.rotation;}
     o.physics.position = o.position;
     //  console.log('Mesh procedure', o)
+    // TEST OBJS SEQ ANIMS 
+    if(typeof o.objAnim == 'undefined' || typeof o.objAnim == null) {
+      o.objAnim = null;
+    } else {
+      console.log('o.anim', o.objAnim)
+      // o.objAnim = {
+      //   id: o.objAnim.id,
+      //   sumOfAniFrames: o.objAnim.sumOfAniFrames,
+      //   currentAni: o.objAnim.currentAni,
+      //   speed: o.objAnim.speed,
+      //   currentDraws: 0
+      // };
+
+      if(typeof o.objAnim.animations !== 'undefined') {
+        // o.objAnim.animation.anims = o.objAnim.animations;
+        console.log('o.o.objAnim.animations ', o.objAnim.animations )
+        o.objAnim.play = play;
+      }
+      // no need for single test it in future
+      o.objAnim.meshList = o.objAnim.meshList;
+
+      if(typeof o.mesh === 'undefined') {
+        o.mesh = o.objAnim.meshList[0];
+        console.info('objSeq animation is active.');
+      }
+      // scale for all second option!
+      o.objAnim.scaleAll = function(s) {
+        for(var k in this.meshList) {
+          console.log('SCALE');
+          this.meshList[k].setScale(s);
+        }
+      }
+    }
     let myMesh1 = new MEMeshObj(this.canvas, this.device, this.context, o)
     if(o.physics.enabled == true) {
       this.matrixAmmo.addPhysics(myMesh1, o.physics)
@@ -346,9 +375,7 @@ export default class MatrixEngineWGPU {
 
   framePassPerObject = () => {
     let commandEncoder = this.device.createCommandEncoder();
-
     this.matrixAmmo.updatePhysics();
-
     this.mainRenderBundle.forEach((meItem, index) => {
       if(index === 0) {
         if(meItem.renderPassDescriptor) meItem.renderPassDescriptor.colorAttachments[0].loadOp = 'clear';
@@ -361,7 +388,6 @@ export default class MatrixEngineWGPU {
         // Set up view per object
         meItem.renderPassDescriptor.colorAttachments[0].view =
           this.context.getCurrentTexture().createView();
-
         const passEncoder = commandEncoder.beginRenderPass(meItem.renderPassDescriptor);
         passEncoder.executeBundles([meItem.renderBundle]); // ✅ Use only this bundle
         passEncoder.end();
@@ -372,5 +398,4 @@ export default class MatrixEngineWGPU {
     this.device.queue.submit([commandEncoder.finish()]);
     requestAnimationFrame(this.frame);
   }
-
 }

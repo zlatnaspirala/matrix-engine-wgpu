@@ -708,12 +708,14 @@ export let mb = {
     mb.c++;
   },
   error: function(content) {
+    if (mb.root()== null) return;
     mb.root().classList.remove("success")
     mb.root().classList.add("error")
     mb.root().classList.add("fadeInDown");
     mb.show(content, 'err');
   },
   success: function(content) {
+    if (mb.root()== null) return;
     mb.root().classList.remove("error")
     mb.root().classList.add("success")
     mb.root().classList.add("fadeInDown");

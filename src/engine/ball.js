@@ -464,7 +464,7 @@ export default class MEBall {
 
 	draw = () => {
 		if(this.moonTexture == null) {
-			console.log('not ready')
+			// console.log('not ready')
 			return;
 		}
 		const transformationMatrix = this.getTransformationMatrix(this.position);

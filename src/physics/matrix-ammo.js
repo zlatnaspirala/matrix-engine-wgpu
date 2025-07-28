@@ -1,4 +1,3 @@
-// import {vec3} from "wgpu-matrix";
 import {LOG_FUNNY, degToRad, quaternion_rotation_matrix, radToDeg, scriptManager} from "../engine/utils";
 
 export default class MatrixAmmo {
@@ -17,7 +16,6 @@ export default class MatrixAmmo {
   }
 
   init = () => {
-    // console.log('pre ammo')
     Ammo().then(Ammo => {
       // Physics variables
       this.dynamicsWorld = null;
@@ -58,8 +56,6 @@ export default class MatrixAmmo {
     body.name = 'ground';
     this.ground = body;
     this.dynamicsWorld.addRigidBody(body);
-    // this.rigidBodies.push(body);
-    // add collide event
     this.detectCollision()
   }
 
@@ -79,14 +75,11 @@ export default class MatrixAmmo {
     var mass = 1;
     var localInertia = new Ammo.btVector3(0, 0, 0);
     colShape.calculateLocalInertia(mass, localInertia);
-
     startTransform.setOrigin(new Ammo.btVector3(pOptions.position.x, pOptions.position.y, pOptions.position.z));
 
     var myMotionState = new Ammo.btDefaultMotionState(startTransform),
       rbInfo = new Ammo.btRigidBodyConstructionInfo(mass, myMotionState, colShape, localInertia),
       body = new Ammo.btRigidBody(rbInfo);
-
-    console.log("TEST ADDING PHYSICS ");
 
     body.MEObject = MEObject;
     this.dynamicsWorld.addRigidBody(body);
@@ -95,7 +88,6 @@ export default class MatrixAmmo {
   }
 
   addPhysicsBox(MEObject, pOptions) {
-
     const FLAGS = {
       TEST_NIDZA: 3,
       CF_KINEMATIC_OBJECT: 2
@@ -110,15 +102,12 @@ export default class MatrixAmmo {
     var localInertia = new Ammo.btVector3(0, 0, 0);
     colShape.calculateLocalInertia(mass, localInertia);
     startTransform.setOrigin(new Ammo.btVector3(pOptions.position.x, pOptions.position.y, pOptions.position.z));
-    //rotation
     // console.log('startTransform.setRotation', startTransform.setRotation)
     var t = startTransform.getRotation()
     t.setX(degToRad(pOptions.rotation.x))
     t.setY(degToRad(pOptions.rotation.y))
     t.setZ(degToRad(pOptions.rotation.z))
     startTransform.setRotation(t)
-
-    // startTransform.setRotation(pOptions.rotation.x, pOptions.rotation.y, pOptions.rotation.z);
 
     var myMotionState = new Ammo.btDefaultMotionState(startTransform),
       rbInfo = new Ammo.btRigidBodyConstructionInfo(mass, myMotionState, colShape, localInertia),
@@ -135,8 +124,8 @@ export default class MatrixAmmo {
     } else {
       body.setActivationState(4)
     }
-    // console.log('what is name.', pOptions.name)
     body.name = pOptions.name;
+    MEObject.itIsPhysicsBody = true;
     body.MEObject = MEObject;
     this.dynamicsWorld.addRigidBody(body);
     this.rigidBodies.push(body);
@@ -168,7 +157,6 @@ export default class MatrixAmmo {
     let ms = physicsBody.getMotionState();
     if(ms) {
       var tmpTrans = new Ammo.btTransform();
-      // quat.setValue(quat.x(), quat.y(), quat.z(), quat.w());
       tmpTrans.setIdentity();
       tmpTrans.setOrigin(pos);
       tmpTrans.setRotation(localRot);
@@ -220,9 +208,8 @@ export default class MatrixAmmo {
   }
 
   detectCollision() {
-    console.log('override this')
+    // console.log('override this')
     return;
-
     this.lastRoll = '';
     this.presentScore = '';
 

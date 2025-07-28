@@ -467,6 +467,7 @@ export const makeObjSeqArg = (arg) => {
  * Switching obj seq animations frames range.
  */
 export function play (nameAni) {
-  this.animation.anims.active = nameAni;
-  this.animation.currentAni = this.animation.anims[this.animation.anims.active].from;
+  this.animations.active = nameAni;
+  this.currentAni = this.animations[this.animations.active].from;
+  this.playing = true;
 }
