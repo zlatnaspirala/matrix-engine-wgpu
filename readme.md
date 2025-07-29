@@ -238,7 +238,7 @@ window.app = application;
 
 This example shows how to load and animate a sequence of .obj files to simulate mesh-based animation (e.g. walking character).
 
-
+```js
 import MatrixEngineWGPU from "../src/world.js";
 import { downloadMeshes, makeObjSeqArg } from "../src/engine/loader-obj.js";
 import { LOG_MATRIX } from "../src/engine/utils.js";

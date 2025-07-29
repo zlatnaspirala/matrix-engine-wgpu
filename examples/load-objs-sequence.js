@@ -1,6 +1,6 @@
 import MatrixEngineWGPU from "../src/world.js";
 import {downloadMeshes, makeObjSeqArg} from '../src/engine/loader-obj.js';
-import {LOG_FUNNY, LOG_INFO, LOG_MATRIX} from "../src/engine/utils.js";
+import {LOG_MATRIX} from "../src/engine/utils.js";
 
 export var loadObjsSequence = function() {
 
@@ -32,7 +32,6 @@ export var loadObjsSequence = function() {
         id: "swat-walk-pistol",
         meshList: m,
         currentAni: 1,
-        // speed: 3, not implemented yet
         animations: {
           active: 'walk',
           walk: {
@@ -64,6 +63,6 @@ export var loadObjsSequence = function() {
       app.mainRenderBundle[0].objAnim.play('walk');
     }
   })
-
+  // Just for dev - easy console access
   window.app = loadObjFile;
 }

@@ -25,15 +25,17 @@ export default class MEMeshObj {
     this.context = context;
     this.entityArgPass = o.entityArgPass;
 
-    // Mesh stuff
+    // Mesh stuff - for single mesh or t-posed (fiktive-first in loading order)
     this.mesh = o.mesh;
     this.mesh.uvs = this.mesh.textures;
     console.log(`%c Mesh loaded: ${o.name}`, LOG_FUNNY_SMALL);
 
-    // TEST OBJ SEQ ANIM
-    //
+    // ObjSequence animation
     if(typeof o.objAnim !== 'undefined' && o.objAnim != null) {
       this.objAnim = o.objAnim;
+      for (var key in this.objAnim.animations){
+        if (key != 'active') this.objAnim.animations[key].speedCounter = 0;
+      }
       console.log(`%c Mesh objAnim exist: ${o.objAnim}`, LOG_FUNNY_SMALL);
       this.drawElements = this.drawElementsAnim;
     }
@@ -699,18 +701,21 @@ export default class MEMeshObj {
   }
 
   drawElementsAnim = (renderPass) => {
-        console.log('render is  for anim')
     renderPass.setBindGroup(0, this.sceneBindGroupForRender);
     renderPass.setBindGroup(1, this.modelBindGroup);
     const mesh = this.objAnim.meshList[this.objAnim.id + this.objAnim.currentAni];
-
     renderPass.setVertexBuffer(0, mesh.vertexBuffer);
     renderPass.setVertexBuffer(1, mesh.vertexNormalsBuffer);
     renderPass.setVertexBuffer(2, mesh.vertexTexCoordsBuffer);
     renderPass.setIndexBuffer(mesh.indexBuffer, 'uint16');
     renderPass.drawIndexed(mesh.indexCount);
     if(this.objAnim.playing == true) {
-      this.objAnim.currentAni++;
+      if (this.objAnim.animations[this.objAnim.animations.active].speedCounter >= this.objAnim.animations[this.objAnim.animations.active].speed) {
+        this.objAnim.currentAni++;
+        this.objAnim.animations[this.objAnim.animations.active].speedCounter = 0;
+      } else {
+        this.objAnim.animations[this.objAnim.animations.active].speedCounter++;
+      }
       if(this.objAnim.currentAni >= this.objAnim.animations[this.objAnim.animations.active].to) {
         this.objAnim.currentAni = this.objAnim.animations[this.objAnim.animations.active].from;
       }
