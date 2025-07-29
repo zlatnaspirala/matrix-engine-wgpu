@@ -1,6 +1,7 @@
 @font-face {
   font-family: stormfaze;
-  src: url(../../public/res/fonts/stormfaze.ttf);
+  src: url(../../public/res/fonts/stormfaze.ttf),
+       url(../res/fonts/stormfaze.ttf);
 }
 
 @font-face {
