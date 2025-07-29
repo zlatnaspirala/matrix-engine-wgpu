@@ -1,7 +1,7 @@
 (function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
 "use strict";
 
-var _jamb = require("./examples/games/jamb/jamb.js");
+var _loadJamb = require("./examples/load-jamb.js");
 var _loadObjFile = require("./examples/load-obj-file.js");
 var _loadObjsSequence = require("./examples/load-objs-sequence.js");
 var _unlitTextures = require("./examples/unlit-textures.js");
@@ -14,20 +14,27 @@ var _utils = require("./src/engine/utils.js");
 
 // For future
 var examples = {
-  loadJamb: _jamb.loadJamb,
+  // loadJamb,
   loadObjFile: _loadObjFile.loadObjFile,
   unlitTextures: _unlitTextures.unlitTextures
 };
+function destroyJambDoms() {
+  if ((0, _utils.byId)('hud')) (0, _utils.byId)('hud').remove();
+  if ((0, _utils.byId)('jambTable')) (0, _utils.byId)('jambTable').remove();
+  if ((0, _utils.byId)('topTitleDOM')) (0, _utils.byId)('topTitleDOM').remove();
+}
 (0, _utils.byId)('loadObjFile').addEventListener("click", () => {
   // byId('loadObjFile').setAttribute('disabled', true)
   // byId('unlitTextures').removeAttribute('disabled')
   if (typeof app !== "undefined") app.destroyProgram();
+  destroyJambDoms();
   (0, _loadObjFile.loadObjFile)();
 });
 (0, _utils.byId)('unlitTextures').addEventListener("click", () => {
   // byId('unlitTextures').setAttribute('disabled', true)
   // byId('loadObjFile').removeAttribute('disabled')
   if (typeof app !== "undefined") app.destroyProgram();
+  destroyJambDoms();
   (0, _unlitTextures.unlitTextures)();
 });
 (0, _utils.byId)('jamb').addEventListener("click", () => {
@@ -35,24 +42,19 @@ var examples = {
   // byId('loadObjFile').setAttribute('disabled', true)
   // byId('jamb').removeAttribute('disabled')
   if (typeof app !== "undefined") app.destroyProgram();
-  (0, _jamb.loadJamb)();
-});
-(0, _utils.byId)('jamb').addEventListener("click", () => {
-  // byId('unlitTextures').setAttribute('disabled', true)
-  // byId('loadObjFile').setAttribute('disabled', true)
-  // byId('jamb').removeAttribute('disabled')
-  if (typeof app !== "undefined") app.destroyProgram();
-  (0, _jamb.loadJamb)();
+  destroyJambDoms();
+  (0, _loadJamb.loadJamb)();
 });
 (0, _utils.byId)('objs-anim').addEventListener("click", () => {
   // byId('unlitTextures').setAttribute('disabled', true)
   // byId('loadObjFile').setAttribute('disabled', true)
   // byId('jamb').removeAttribute('disabled')
   if (typeof app !== "undefined") app.destroyProgram();
+  destroyJambDoms();
   (0, _loadObjsSequence.loadObjsSequence)();
 });
 
-},{"./examples/games/jamb/jamb.js":3,"./examples/load-obj-file.js":4,"./examples/load-objs-sequence.js":5,"./examples/unlit-textures.js":6,"./src/engine/utils.js":15}],2:[function(require,module,exports){
+},{"./examples/load-jamb.js":4,"./examples/load-obj-file.js":5,"./examples/load-objs-sequence.js":6,"./examples/unlit-textures.js":7,"./src/engine/utils.js":18}],2:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -428,6 +430,7 @@ let myDom = exports.myDom = {
       (0, _utils.byId)('helpBox').style.display = 'none';
     });
     document.body.appendChild(helpBox);
+    console.log('what is dom, ', (0, _utils.byId)('helpBox'));
     (0, _utils.typeText)('helpBox', app.label.get.about, 10);
     //
     var roll = document.createElement('div');
@@ -1418,7 +1421,21 @@ let myDom = exports.myDom = {
   }
 };
 
-},{"../../../src/engine/utils.js":15,"./html-content.js":2}],4:[function(require,module,exports){
+},{"../../../src/engine/utils.js":18,"./html-content.js":2}],4:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.loadJamb = void 0;
+var _main = require("../main.js");
+var loadJamb = function () {
+  console.log('Just loader for example page');
+  window.app = (0, _main.loadJambApp)();
+};
+exports.loadJamb = loadJamb;
+
+},{"../main.js":8}],5:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -1532,7 +1549,7 @@ var loadObjFile = function () {
 };
 exports.loadObjFile = loadObjFile;
 
-},{"../src/engine/loader-obj.js":11,"../src/engine/utils.js":15,"../src/world.js":23}],5:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":13,"../src/engine/utils.js":18,"../src/world.js":26}],6:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -1616,7 +1633,7 @@ var loadObjsSequence = function () {
 };
 exports.loadObjsSequence = loadObjsSequence;
 
-},{"../src/engine/loader-obj.js":11,"../src/engine/utils.js":15,"../src/world.js":23}],6:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":13,"../src/engine/utils.js":18,"../src/world.js":26}],7:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -1677,7 +1694,779 @@ var unlitTextures = function () {
 };
 exports.unlitTextures = unlitTextures;
 
-},{"../src/world.js":23}],7:[function(require,module,exports){
+},{"../src/world.js":26}],8:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.loadJambApp = loadJambApp;
+var _world = _interopRequireDefault(require("./src/world.js"));
+var _loaderObj = require("./src/engine/loader-obj.js");
+var _utils = require("./src/engine/utils.js");
+var _jamb = require("./examples/games/jamb/jamb.js");
+var _raycast = require("./src/engine/raycast.js");
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+function loadJambApp() {
+  let application = new _world.default({
+    useSingleRenderPass: true,
+    canvasSize: 'fullscreen',
+    mainCameraParams: {
+      type: 'WASD',
+      responseCoef: 1000
+    }
+  }, () => {
+    // Dom operations
+    application.userState = {
+      name: 'Guest',
+      points: 0
+    };
+    application.myDom = _jamb.myDom;
+    _jamb.myDom.createJamb();
+    _jamb.myDom.addDraggerForTable();
+    _jamb.myDom.createBlocker();
+    application.dices = _jamb.dices;
+    application.activateDiceClickListener = null;
+
+    // -------------------------
+    // TEST
+    application.matrixAmmo.detectTopFaceFromQuat = q => {
+      // Define based on *visual face* → object-space normal mapping
+      const faces = [{
+        face: 1,
+        vec: [0, 1, 0]
+      },
+      // top
+      {
+        face: 2,
+        vec: [0, -1, 0]
+      },
+      // bottom
+      {
+        face: 3,
+        vec: [0, 0, 1]
+      },
+      // front
+      {
+        face: 4,
+        vec: [0, 0, -1]
+      },
+      // back
+      {
+        face: 5,
+        vec: [1, 0, 0]
+      },
+      // right
+      {
+        face: 6,
+        vec: [-1, 0, 0]
+      } // left
+      ];
+      let maxDot = -Infinity;
+      let topFace = null;
+      for (const f of faces) {
+        const v = application.matrixAmmo.applyQuatToVec(q, f.vec);
+        const dot = v.y; // Compare with world up (0, 1, 0)
+        if (dot > maxDot) {
+          maxDot = dot;
+          topFace = f.face;
+        }
+      }
+      return topFace;
+    };
+    application.matrixAmmo.applyQuatToVec = (q, vec) => {
+      const [x, y, z] = vec;
+      const qx = q.x(),
+        qy = q.y(),
+        qz = q.z(),
+        qw = q.w();
+
+      // Quaternion * vector * inverse(quaternion)
+      const ix = qw * x + qy * z - qz * y;
+      const iy = qw * y + qz * x - qx * z;
+      const iz = qw * z + qx * y - qy * x;
+      const iw = -qx * x - qy * y - qz * z;
+      return {
+        x: ix * qw + iw * -qx + iy * -qz - iz * -qy,
+        y: iy * qw + iw * -qy + iz * -qx - ix * -qz,
+        z: iz * qw + iw * -qz + ix * -qy - iy * -qx
+      };
+    };
+    // -------------------------
+    // This code must be on top (Physics)
+    application.matrixAmmo.detectCollision = function () {
+      this.lastRoll = '';
+      this.presentScore = '';
+      let dispatcher = this.dynamicsWorld.getDispatcher();
+      let numManifolds = dispatcher.getNumManifolds();
+      for (let i = 0; i < numManifolds; i++) {
+        let contactManifold = dispatcher.getManifoldByIndexInternal(i);
+        // let numContacts = contactManifold.getNumContacts();
+        if (this.ground.kB == contactManifold.getBody0().kB || this.ground.kB == contactManifold.getBody1().kB) {
+          // console.log(this.ground ,'GROUND IS IN CONTACT WHO IS BODY1 ', contactManifold.getBody1())
+          // CHECK ROTATION BEST WAY - VISAL PART IS NOT INTEREST NOW 
+          if (this.ground.kB == contactManifold.getBody0().kB) {
+            var MY_DICE_NAME = this.getNameByBody(contactManifold.getBody1());
+            var testR = contactManifold.getBody1().getWorldTransform().getRotation();
+          }
+          if (this.ground.kB == contactManifold.getBody1().kB) {
+            var MY_DICE_NAME = this.getNameByBody(contactManifold.getBody0());
+            var testR = contactManifold.getBody0().getWorldTransform().getRotation();
+          }
+          var passed = false;
+          const face = application.matrixAmmo.detectTopFaceFromQuat(testR);
+          if (face) {
+            this.lastRoll = face.toString();
+            // Update score logic
+            dispatchEvent(new CustomEvent(`dice-${face}`, {
+              detail: {
+                result: `dice-${face}`,
+                cubeId: MY_DICE_NAME
+              }
+            }));
+          }
+          // if(Math.abs(testR.y()) < 0.00001) {
+          //   this.lastRoll = "3";
+          //   this.presentScore += 4;
+          //   passed = true;
+          // }
+          // if(Math.abs(testR.x()) < 0.00001) {
+          //   this.lastRoll = "5";
+          //   this.presentScore += 3;
+          //   passed = true;
+          // }
+          // if(testR.x().toString().substring(0, 5) == testR.y().toString().substring(1, 6)) {
+          //   this.lastRoll = "6";
+          //   this.presentScore += 2;
+          //   passed = true;
+          // }
+          // if(testR.x().toString().substring(0, 5) == testR.y().toString().substring(0, 5)) {
+          //   this.lastRoll = "2";
+          //   this.presentScore += 1;
+          //   passed = true;
+          // }
+          // if(testR.z().toString().substring(0, 5) == testR.y().toString().substring(1, 6)) {
+          //   this.lastRoll = "4";
+          //   this.presentScore += 6;
+          //   passed = true;
+          // }
+          // if(testR.z().toString().substring(0, 5) == testR.y().toString().substring(0, 5)) {
+          //   this.lastRoll = "1";
+          //   this.presentScore += 5;
+          //   passed = true;
+          // }
+          // if(passed == true) dispatchEvent(new CustomEvent(`dice-${this.lastRoll}`, {
+          //   detail: {
+          //     result: `dice-${this.lastRoll}`,
+          //     cubeId: MY_DICE_NAME
+          //   }
+          // }))
+        }
+      }
+    };
+    (0, _raycast.addRaycastListener)();
+    addEventListener("ray.hit.event", e => {
+      if ((0, _utils.byId)('topTitleDOM') && (0, _utils.byId)('topTitleDOM').getAttribute('data-gamestatus') != 'FREE' && (0, _utils.byId)('topTitleDOM').getAttribute('data-gamestatus') != 'status-select') {
+        console.log('no hit in middle of game ...');
+        return;
+      }
+      if (application.dices.STATUS == "FREE_TO_PLAY") {
+        console.log("hit cube status free to play prevent pick. ", e.detail.hitObject.name);
+      } else if (application.dices.STATUS == "SELECT_DICES_1" || application.dices.STATUS == "SELECT_DICES_2" || application.dices.STATUS == "FINISHED") {
+        if (Object.keys(application.dices.SAVED_DICES).length >= 5) {
+          console.log("PREVENTED SELECT1/2 pick.", e.detail.hitObject.name);
+          return;
+        }
+        console.log("hit cube status SELECT1/2 pick.", e.detail.hitObject.name);
+        application.dices.pickDice(e.detail.hitObject.name);
+      }
+    });
+    addEventListener('mousemove', e => {
+      // console.log('only on click')
+    });
+
+    // Sounds
+    application.matrixSounds.createAudio('start', 'res/audios/start.mp3', 1);
+    application.matrixSounds.createAudio('block', 'res/audios/block.mp3', 6);
+    application.matrixSounds.createAudio('dice1', 'res/audios/dice1.mp3', 6);
+    application.matrixSounds.createAudio('dice2', 'res/audios/dice2.mp3', 6);
+    application.matrixSounds.createAudio('hover', 'res/audios/toggle_002.mp3', 3);
+    application.matrixSounds.createAudio('roll', 'res/audios/dice-roll.mp3', 2);
+    addEventListener('AmmoReady', () => {
+      app.matrixAmmo.speedUpSimulation = 2;
+      (0, _loaderObj.downloadMeshes)({
+        cube: "./res/meshes/jamb/dice.obj"
+      }, onLoadObj, {
+        scale: [1, 1, 1],
+        swap: [null]
+      });
+      (0, _loaderObj.downloadMeshes)({
+        star1: "./res/meshes/shapes/star1.obj"
+      }, m => {
+        let o = {
+          scale: 2,
+          position: {
+            x: 3,
+            y: 0,
+            z: -10
+          },
+          rotation: {
+            x: 0,
+            y: 0,
+            z: 0
+          },
+          rotationSpeed: {
+            x: 10,
+            y: 0,
+            z: 0
+          },
+          texturesPaths: ['./res/textures/default.png']
+        };
+        // application.addCube(o)
+
+        // application.addMeshObj({
+        //   position: {x: 0, y: 6, z: -5},
+        //   rotation: {x: 0, y: 0, z: 0},
+        //   rotationSpeed: {x: 0, y: 0, z: 0},
+        //   texturesPaths: ['./res/meshes/jamb/dice.png'],
+        //   useUVShema4x2: true,
+        //   name: 'star1',
+        //   mesh: m.star1,
+        //   raycast: {enabled: true, radius: 2},
+        //   physics: {
+        //     enabled: true,
+        //     geometry: "Cube"
+        //   }
+        // })
+      }, {
+        scale: [11, 11, 11],
+        swap: [null]
+      });
+      (0, _loaderObj.downloadMeshes)({
+        bg: "./res/meshes/jamb/bg.obj"
+      }, onLoadObjFloor, {
+        scale: [3, 1, 3],
+        swap: [null]
+      });
+      (0, _loaderObj.downloadMeshes)({
+        mainTitle: "./res/meshes/jamb/jamb-title.obj"
+      }, onLoadObjOther, {
+        scale: [3, 2, 3],
+        swap: [null]
+      });
+      (0, _loaderObj.downloadMeshes)({
+        cube: "./res/meshes/jamb/dice.obj"
+      }, onLoadObjWallCenter, {
+        scale: [50, 10, 10],
+        swap: [null]
+      });
+      (0, _loaderObj.downloadMeshes)({
+        cube: "./res/meshes/jamb/dice.obj"
+      }, m => {
+        for (var key in m) {
+          // console.log(`%c Loaded objs -> : ${key} `, LOG_MATRIX);
+        }
+        // right
+        application.addMeshObj({
+          position: {
+            x: 25,
+            y: 5.5,
+            z: -25
+          },
+          rotation: {
+            x: 0,
+            y: -22,
+            z: 0
+          },
+          scale: [25, 10, 4],
+          texturesPaths: ['./res/meshes/jamb/text.png'],
+          name: 'wallRight',
+          mesh: m.cube,
+          physics: {
+            mass: 0,
+            enabled: true,
+            geometry: "Cube"
+          }
+        });
+        application.addMeshObj({
+          position: {
+            x: -25,
+            y: 5.5,
+            z: -25
+          },
+          rotation: {
+            x: 0,
+            y: 22,
+            z: 0
+          },
+          scale: [25, 10, 4],
+          texturesPaths: ['./res/meshes/jamb/text.png'],
+          name: 'wallLeft',
+          mesh: m.cube,
+          physics: {
+            mass: 0,
+            enabled: true,
+            geometry: "Cube"
+          }
+        });
+      }, {
+        scale: [25, 10, 4],
+        swap: [null]
+      });
+    });
+    function onLoadObjWallCenter(m) {
+      application.myLoadedMeshesWalls = m;
+      for (var key in m) {
+        // console.log(`%c Loaded objs -> : ${key} `, LOG_MATRIX);
+      }
+
+      // WALLS Center
+      application.addMeshObj({
+        position: {
+          x: 0,
+          y: 5,
+          z: -45
+        },
+        rotation: {
+          x: 0,
+          y: 0,
+          z: 0
+        },
+        scale: [50, 10, 10],
+        texturesPaths: ['./res/meshes/jamb/text.png'],
+        name: 'wallCenter',
+        mesh: m.cube,
+        physics: {
+          mass: 0,
+          enabled: true,
+          geometry: "Cube"
+        }
+      });
+    }
+    function onLoadObjOther(m) {
+      application.myLoadedMeshes = m;
+      // Add logo text top
+      application.addMeshObj({
+        position: {
+          x: 0,
+          y: 6,
+          z: -15
+        },
+        rotation: {
+          x: 0,
+          y: 0,
+          z: 0
+        },
+        texturesPaths: ['./res/meshes/jamb/text.png'],
+        name: 'mainTitle',
+        mesh: m.mainTitle,
+        physics: {
+          mass: 0,
+          enabled: true,
+          geometry: "Cube"
+        }
+      });
+      // application.cameras.WASD.pitch = 0.2
+      setTimeout(() => {
+        app.cameras.WASD.velocity[1] = 18;
+        //                                             BODY              , x,  y, z, rotX, rotY, RotZ
+        app.matrixAmmo.setKinematicTransform(app.matrixAmmo.getBodyByName('mainTitle'), 0, 0, 0, 1);
+        app.matrixAmmo.setKinematicTransform(app.matrixAmmo.getBodyByName('bg'), 0, -10, 0, 0, 0, 0);
+        // Better access getBodyByName
+        // console.log(' app.matrixAmmo. ', app.matrixAmmo.getBodyByName('CubePhysics1'))
+      }, 1200);
+    }
+    function onLoadObjFloor(m) {
+      application.myLoadedMeshes = m;
+      application.addMeshObj({
+        scale: [10, 0.1, 0.1],
+        position: {
+          x: 0,
+          y: 6,
+          z: -10
+        },
+        rotation: {
+          x: 0,
+          y: 0,
+          z: 0
+        },
+        texturesPaths: ['./res/meshes/jamb/bg.png'],
+        name: 'bg',
+        mesh: m.bg,
+        physics: {
+          collide: false,
+          mass: 0,
+          enabled: true,
+          geometry: "Cube"
+        }
+      });
+    }
+    function onLoadObj(m) {
+      application.myLoadedMeshes = m;
+      // Add dices
+      application.addMeshObj({
+        position: {
+          x: 0,
+          y: 6,
+          z: -10
+        },
+        rotation: {
+          x: 0,
+          y: 0,
+          z: 0
+        },
+        rotationSpeed: {
+          x: 0,
+          y: 0,
+          z: 0
+        },
+        texturesPaths: ['./res/meshes/jamb/dice.png'],
+        useUVShema4x2: true,
+        name: 'CubePhysics1',
+        mesh: m.cube,
+        raycast: {
+          enabled: true,
+          radius: 2
+        },
+        physics: {
+          enabled: true,
+          geometry: "Cube"
+        }
+      });
+      application.addMeshObj({
+        position: {
+          x: -5,
+          y: 4,
+          z: -14
+        },
+        rotation: {
+          x: 0,
+          y: 0,
+          z: 0
+        },
+        rotationSpeed: {
+          x: 0,
+          y: 0,
+          z: 0
+        },
+        texturesPaths: ['./res/meshes/jamb/dice.png'],
+        useUVShema4x2: true,
+        name: 'CubePhysics2',
+        mesh: m.cube,
+        raycast: {
+          enabled: true,
+          radius: 2
+        },
+        physics: {
+          enabled: true,
+          geometry: "Cube"
+        }
+      });
+      application.addMeshObj({
+        position: {
+          x: 4,
+          y: 8,
+          z: -10
+        },
+        rotation: {
+          x: 0,
+          y: 0,
+          z: 0
+        },
+        rotationSpeed: {
+          x: 0,
+          y: 0,
+          z: 0
+        },
+        texturesPaths: ['./res/meshes/jamb/dice.png'],
+        useUVShema4x2: true,
+        name: 'CubePhysics3',
+        mesh: m.cube,
+        raycast: {
+          enabled: true,
+          radius: 2
+        },
+        physics: {
+          enabled: true,
+          geometry: "Cube"
+        }
+      });
+      application.addMeshObj({
+        position: {
+          x: 3,
+          y: 4,
+          z: -10
+        },
+        rotation: {
+          x: 0,
+          y: 0,
+          z: 0
+        },
+        rotationSpeed: {
+          x: 0,
+          y: 0,
+          z: 0
+        },
+        texturesPaths: ['./res/meshes/jamb/dice.png'],
+        useUVShema4x2: true,
+        name: 'CubePhysics4',
+        mesh: m.cube,
+        raycast: {
+          enabled: true,
+          radius: 2
+        },
+        physics: {
+          enabled: true,
+          geometry: "Cube"
+        }
+      });
+      application.addMeshObj({
+        position: {
+          x: -2,
+          y: 4,
+          z: -13
+        },
+        rotation: {
+          x: 0,
+          y: 0,
+          z: 0
+        },
+        rotationSpeed: {
+          x: 0,
+          y: 0,
+          z: 0
+        },
+        texturesPaths: ['./res/meshes/jamb/dice.png'],
+        useUVShema4x2: true,
+        name: 'CubePhysics5',
+        mesh: m.cube,
+        raycast: {
+          enabled: true,
+          radius: 2
+        },
+        physics: {
+          enabled: true,
+          geometry: "Cube"
+        }
+      });
+      application.addMeshObj({
+        position: {
+          x: -4,
+          y: 6,
+          z: -9
+        },
+        rotation: {
+          x: 0,
+          y: 0,
+          z: 0
+        },
+        rotationSpeed: {
+          x: 0,
+          y: 0,
+          z: 0
+        },
+        texturesPaths: ['./res/meshes/jamb/dice.png'],
+        useUVShema4x2: true,
+        name: 'CubePhysics6',
+        mesh: m.cube,
+        raycast: {
+          enabled: true,
+          radius: 2
+        },
+        physics: {
+          enabled: true,
+          geometry: "Cube"
+        }
+      });
+      application.TOLERANCE = 0;
+      let allDiceDoneProcedure = () => {
+        console.log("ALL DONE", application.TOLERANCE);
+        application.TOLERANCE++;
+        if (application.TOLERANCE >= 1) {
+          removeEventListener('dice-1', dice1Click);
+          removeEventListener('dice-2', dice2Click);
+          removeEventListener('dice-3', dice3Click);
+          removeEventListener('dice-4', dice4Click);
+          removeEventListener('dice-5', dice5Click);
+          removeEventListener('dice-6', dice6Click);
+          console.log(`%cFINAL<preliminar> ${_jamb.dices.R}`, _utils.LOG_FUNNY);
+          application.TOLERANCE = 0;
+          app.cameras.WASD.yaw = 0.01;
+          app.cameras.WASD.pitch = -1.26;
+          app.cameras.WASD.position[2] = -18;
+          app.cameras.WASD.position[1] = 19;
+          // ??                                                     ?
+          if (_jamb.dices.STATUS == "FREE_TO_PLAY" || _jamb.dices.STATUS == "IN_PLAY") {
+            _jamb.dices.STATUS = "SELECT_DICES_1";
+            console.log(`%cStatus<SELECT_DICES_1>`, _utils.LOG_FUNNY);
+            setTimeout(() => {
+              dispatchEvent(new CustomEvent('updateTitle', {
+                detail: {
+                  text: app.label.get.freetoroll,
+                  status: 'FREE'
+                }
+              }));
+            }, 500);
+          } else if (_jamb.dices.STATUS == "SELECT_DICES_1") {
+            _jamb.dices.STATUS = "SELECT_DICES_2";
+            setTimeout(() => {
+              dispatchEvent(new CustomEvent('updateTitle', {
+                detail: {
+                  text: app.label.get.freetoroll,
+                  status: 'FREE'
+                }
+              }));
+            }, 500);
+            console.log(`%cStatus<SELECT_DICES_2>`, _utils.LOG_FUNNY);
+          } else if (_jamb.dices.STATUS == "SELECT_DICES_2") {
+            _jamb.dices.STATUS = "FINISHED";
+            console.log(`%cStatus<FINISHED>`, _utils.LOG_FUNNY);
+            dispatchEvent(new CustomEvent('updateTitle', {
+              detail: {
+                text: app.label.get.pick5,
+                status: 'status-select'
+              }
+            }));
+          }
+        }
+      };
+      addEventListener('all-done', allDiceDoneProcedure);
+      addEventListener('FREE_TO_PLAY', () => {
+        // Big reset
+        console.log(`%c<Big reset needed ...>`, _utils.LOG_FUNNY);
+        app.dices.SAVED_DICES = {};
+        app.dices.setStartUpPosition();
+        setTimeout(() => {
+          app.dices.activateAllDicesPhysics();
+        }, 1000);
+        app.cameras.WASD.yaw = 0;
+        app.cameras.WASD.pitch = 0;
+        app.cameras.WASD.position[2] = 0;
+        app.cameras.WASD.position[1] = 3.76;
+        dispatchEvent(new CustomEvent('updateTitle', {
+          detail: {
+            text: app.label.get.hand1,
+            status: 'FREE'
+          }
+        }));
+      });
+
+      // ACTIONS
+      let dice1Click = e => {
+        // console.info('DICE 1 click ?????????', e.detail)
+        _jamb.dices.R[e.detail.cubeId] = '1';
+        _jamb.dices.checkAll();
+      };
+      let dice2Click = e => {
+        // console.info('DICE 2', e.detail)
+        _jamb.dices.R[e.detail.cubeId] = '2';
+        _jamb.dices.checkAll();
+      };
+      let dice3Click = e => {
+        // console.info('DICE 3', e.detail)
+        _jamb.dices.R[e.detail.cubeId] = '3';
+        _jamb.dices.checkAll();
+      };
+      let dice4Click = e => {
+        // console.info('DICE 4', e.detail)
+        _jamb.dices.R[e.detail.cubeId] = '4';
+        _jamb.dices.checkAll();
+      };
+      let dice5Click = e => {
+        // console.info('DICE 5', e.detail)
+        _jamb.dices.R[e.detail.cubeId] = '5';
+        _jamb.dices.checkAll();
+      };
+      let dice6Click = e => {
+        // console.info('DICE 6', e.detail)
+        _jamb.dices.R[e.detail.cubeId] = '6';
+        _jamb.dices.checkAll();
+      };
+      function shootDice(x) {
+        setTimeout(() => {
+          app.matrixAmmo.getBodyByName(`CubePhysics${x}`).setAngularVelocity(new Ammo.btVector3((0, _utils.randomFloatFromTo)(3, 12), 9, 9));
+          app.matrixAmmo.getBodyByName(`CubePhysics${x}`).setLinearVelocity(new Ammo.btVector3((0, _utils.randomFloatFromTo)(-5, 5), 15, -20));
+          setTimeout(() => app.matrixSounds.play('roll'), 1500);
+        }, 200 * x);
+      }
+      application.activateDiceClickListener = index => {
+        index = parseInt(index);
+        switch (index) {
+          case 1:
+            addEventListener('dice-1', dice1Click);
+          case 2:
+            addEventListener('dice-2', dice2Click);
+          case 3:
+            addEventListener('dice-3', dice3Click);
+          case 4:
+            addEventListener('dice-4', dice4Click);
+          case 5:
+            addEventListener('dice-5', dice5Click);
+          case 6:
+            addEventListener('dice-6', dice6Click);
+        }
+      };
+      let rollProcedure = () => {
+        if (topTitleDOM.getAttribute('data-gamestatus') != 'FREE') {
+          console.log('validation fails...');
+          return;
+        }
+        if (_jamb.dices.STATUS == "FREE_TO_PLAY") {
+          app.matrixSounds.play('start');
+          _jamb.dices.STATUS = "IN_PLAY";
+          dispatchEvent(new CustomEvent('updateTitle', {
+            detail: {
+              text: app.label.get.hand1,
+              status: 'inplay'
+            }
+          }));
+          addEventListener('dice-1', dice1Click);
+          addEventListener('dice-2', dice2Click);
+          addEventListener('dice-3', dice3Click);
+          addEventListener('dice-4', dice4Click);
+          addEventListener('dice-5', dice5Click);
+          addEventListener('dice-6', dice6Click);
+          for (var x = 1; x < 7; x++) {
+            shootDice(x);
+          }
+        } else if (_jamb.dices.STATUS == "SELECT_DICES_1" || _jamb.dices.STATUS == "SELECT_DICES_2") {
+          // Now no selected dices still rolling
+          for (let i = 1; i <= 6; i++) {
+            const key = "CubePhysics" + i;
+            if (!(key in app.dices.SAVED_DICES)) {
+              console.log("Still in game last char is id : ", key[key.length - 1]);
+              application.activateDiceClickListener(parseInt(key[key.length - 1]));
+              shootDice(key[key.length - 1]);
+            } else {
+              console.log("??????????Still in game last char is id : ", key[key.length - 1]);
+              application.activateDiceClickListener(parseInt(key[key.length - 1]));
+            }
+          }
+          // ????
+          // application.activateDiceClickListener(1);
+
+          dispatchEvent(new CustomEvent('updateTitle', {
+            detail: {
+              text: _jamb.dices.STATUS == "SELECT_DICES_1" ? app.label.get.hand1 : app.label.get.hand2,
+              status: 'inplay'
+            }
+          }));
+        } else if (_jamb.dices.STATUS == "FINISHED") {
+          _utils.mb.error('No more roll...');
+          _utils.mb.show('Pick up 5 dices');
+        }
+      };
+      addEventListener('DICE.ROLL', rollProcedure);
+      app.ROLL = () => {
+        dispatchEvent(new CustomEvent('DICE.ROLL', {}));
+      };
+    }
+  });
+  window.app = application;
+  return application;
+}
+
+},{"./examples/games/jamb/jamb.js":3,"./src/engine/loader-obj.js":13,"./src/engine/raycast.js":17,"./src/engine/utils.js":18,"./src/world.js":26}],9:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -7024,7 +7813,7 @@ function setDefaultType(ctor) {
   setDefaultType$1(ctor);
 }
 
-},{}],8:[function(require,module,exports){
+},{}],10:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -7438,7 +8227,7 @@ class MEBall {
 }
 exports.default = MEBall;
 
-},{"../shaders/shaders":19,"./engine":10,"./matrix-class":12,"wgpu-matrix":7}],9:[function(require,module,exports){
+},{"../shaders/shaders":22,"./engine":12,"./matrix-class":14,"wgpu-matrix":9}],11:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -7863,7 +8652,7 @@ class MECube {
 }
 exports.default = MECube;
 
-},{"../shaders/shaders":19,"./engine":10,"./matrix-class":12,"wgpu-matrix":7}],10:[function(require,module,exports){
+},{"../shaders/shaders":22,"./engine":12,"./matrix-class":14,"wgpu-matrix":9}],12:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -8322,7 +9111,7 @@ function createInputHandler(window, canvas) {
   };
 }
 
-},{"wgpu-matrix":7}],11:[function(require,module,exports){
+},{"wgpu-matrix":9}],13:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -8790,7 +9579,7 @@ function play(nameAni) {
   this.playing = true;
 }
 
-},{}],12:[function(require,module,exports){
+},{}],14:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -9026,7 +9815,7 @@ class Rotation {
 }
 exports.Rotation = Rotation;
 
-},{"./utils":15}],13:[function(require,module,exports){
+},{"./utils":18}],15:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -9102,7 +9891,7 @@ class MEMeshObj {
         this.modelViewProjectionMatrix = _wgpuMatrix.mat4.create();
         // console.log('cube added texturesPaths: ', this.texturesPaths)
         this.loadTex0(this.texturesPaths, device).then(() => {
-          console.log('loaded tex buffer for mesh:', this.texture0);
+          // console.log('loaded tex buffer for mesh:', this.texture0)
           resolve();
         });
       });
@@ -9636,7 +10425,7 @@ class MEMeshObj {
 }
 exports.default = MEMeshObj;
 
-},{"../shaders/fragment.wgsl":18,"../shaders/vertex.wgsl":20,"../shaders/vertexShadow.wgsl":21,"./engine":10,"./matrix-class":12,"./utils":15,"wgpu-matrix":7}],14:[function(require,module,exports){
+},{"../shaders/fragment.wgsl":21,"../shaders/vertex.wgsl":23,"../shaders/vertexShadow.wgsl":24,"./engine":12,"./matrix-class":14,"./utils":18,"wgpu-matrix":9}],16:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -10034,7 +10823,104 @@ class MEMesh {
 }
 exports.default = MEMesh;
 
-},{"../shaders/fragment.wgsl":18,"../shaders/vertex.wgsl":20,"../shaders/vertexShadow.wgsl":21,"./engine":10,"./loader-obj":11,"./matrix-class":12,"wgpu-matrix":7}],15:[function(require,module,exports){
+},{"../shaders/fragment.wgsl":21,"../shaders/vertex.wgsl":23,"../shaders/vertexShadow.wgsl":24,"./engine":12,"./loader-obj":13,"./matrix-class":14,"wgpu-matrix":9}],17:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.addRaycastListener = addRaycastListener;
+exports.getRayFromMouse = getRayFromMouse;
+exports.rayIntersectsSphere = rayIntersectsSphere;
+exports.touchCoordinate = void 0;
+var _wgpuMatrix = require("wgpu-matrix");
+/**
+ * @author Nikola Lukic
+ * @email zlatnaspirala@gmail.com
+ * @site https://maximumroulette.com
+ * @Licence GPL v3
+ * @credits chatgpt used for this script adaptation.
+ * @Note matrix-engine-wgpu adaptation test
+ * default for now:
+ * app.cameras['WASD']
+ * Only tested for WASD type of camera.
+ * app is global - will be fixed in future
+ */
+
+let rayHitEvent;
+let touchCoordinate = exports.touchCoordinate = {
+  enabled: false,
+  x: 0,
+  y: 0,
+  stopOnFirstDetectedHit: false
+};
+function multiplyMatrixVector(matrix, vector) {
+  return _wgpuMatrix.vec4.transformMat4(vector, matrix);
+}
+function getRayFromMouse(event, canvas, camera) {
+  const rect = canvas.getBoundingClientRect();
+  let x = (event.clientX - rect.left) / rect.width * 2 - 1;
+  let y = (event.clientY - rect.top) / rect.height * 2 - 1;
+  // simple invert
+  x = -x;
+  y = -y;
+  const fov = Math.PI / 4;
+  const aspect = canvas.width / canvas.height;
+  const near = 0.1;
+  const far = 1000;
+  camera.projectionMatrix = _wgpuMatrix.mat4.perspective(2 * Math.PI / 5, aspect, 1, 1000.0);
+  const invProjection = _wgpuMatrix.mat4.inverse(camera.projectionMatrix);
+  const invView = _wgpuMatrix.mat4.inverse(camera.view);
+  const ndc = [x, y, 1, 1];
+  let worldPos = multiplyMatrixVector(invProjection, ndc);
+  worldPos = multiplyMatrixVector(invView, worldPos);
+  let world;
+  if (worldPos[3] !== 0) {
+    world = [worldPos[0] / worldPos[3], worldPos[2] / worldPos[3], worldPos[1] / worldPos[3]];
+  } else {
+    console.log("[raycaster]special case 0.");
+    world = [worldPos[0], worldPos[1], worldPos[2]];
+  }
+  const rayOrigin = [camera.position[0], camera.position[1], camera.position[2]];
+  const rayDirection = _wgpuMatrix.vec3.normalize(_wgpuMatrix.vec3.subtract(world, rayOrigin));
+  rayDirection[2] = -rayDirection[2];
+  return {
+    rayOrigin,
+    rayDirection
+  };
+}
+function rayIntersectsSphere(rayOrigin, rayDirection, sphereCenter, sphereRadius) {
+  const pos = [sphereCenter.x, sphereCenter.y, sphereCenter.z];
+  const oc = _wgpuMatrix.vec3.subtract(rayOrigin, pos);
+  const a = _wgpuMatrix.vec3.dot(rayDirection, rayDirection);
+  const b = 2.0 * _wgpuMatrix.vec3.dot(oc, rayDirection);
+  const c = _wgpuMatrix.vec3.dot(oc, oc) - sphereRadius * sphereRadius;
+  const discriminant = b * b - 4 * a * c;
+  return discriminant > 0;
+}
+function addRaycastListener() {
+  let canvasDom = document.getElementById("canvas1");
+  canvasDom.addEventListener('click', event => {
+    let camera = app.cameras.WASD;
+    const {
+      rayOrigin,
+      rayDirection
+    } = getRayFromMouse(event, canvasDom, camera);
+    for (const object of app.mainRenderBundle) {
+      if (rayIntersectsSphere(rayOrigin, rayDirection, object.position, object.raycast.radius)) {
+        console.log('Object clicked:', object.name);
+        // Just like in matrix-engine webGL version "ray.hit.event"
+        dispatchEvent(new CustomEvent('ray.hit.event', {
+          detail: {
+            hitObject: object
+          }
+        }));
+      }
+    }
+  });
+}
+
+},{"wgpu-matrix":9}],18:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -10920,7 +11806,7 @@ function setupCanvasFilters(canvasId) {
   updateFilter(); // Initial
 }
 
-},{}],16:[function(require,module,exports){
+},{}],19:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -10960,7 +11846,7 @@ class MultiLang {
 }
 exports.MultiLang = MultiLang;
 
-},{"../engine/utils":15}],17:[function(require,module,exports){
+},{"../engine/utils":18}],20:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -11260,7 +12146,7 @@ class MatrixAmmo {
 }
 exports.default = MatrixAmmo;
 
-},{"../engine/utils":15}],18:[function(require,module,exports){
+},{"../engine/utils":18}],21:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -11318,7 +12204,7 @@ fn main(input : FragmentInput) -> @location(0) vec4f {
   // return vec4(textureColor.rgb , 0.5);
 }`;
 
-},{}],19:[function(require,module,exports){
+},{}],22:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -11376,7 +12262,7 @@ fn fragmentMain(input: VertexOutput) -> @location(0) vec4f {
   return vec4f(textureColor.rgb * lightColor, textureColor.a);
 }`;
 
-},{}],20:[function(require,module,exports){
+},{}],23:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -11433,7 +12319,7 @@ fn main(
 }
 `;
 
-},{}],21:[function(require,module,exports){
+},{}],24:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -11461,7 +12347,7 @@ fn main(
 }
 `;
 
-},{}],22:[function(require,module,exports){
+},{}],25:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -11531,7 +12417,7 @@ class MatrixSounds {
 }
 exports.MatrixSounds = MatrixSounds;
 
-},{}],23:[function(require,module,exports){
+},{}],26:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -12101,4 +12987,4 @@ class MatrixEngineWGPU {
 }
 exports.default = MatrixEngineWGPU;
 
-},{"./engine/ball.js":8,"./engine/cube.js":9,"./engine/engine.js":10,"./engine/loader-obj.js":11,"./engine/mesh-obj.js":13,"./engine/mesh.js":14,"./engine/utils.js":15,"./multilang/lang.js":16,"./physics/matrix-ammo.js":17,"./sounds/sounds.js":22,"wgpu-matrix":7}]},{},[1]);
+},{"./engine/ball.js":10,"./engine/cube.js":11,"./engine/engine.js":12,"./engine/loader-obj.js":13,"./engine/mesh-obj.js":15,"./engine/mesh.js":16,"./engine/utils.js":18,"./multilang/lang.js":19,"./physics/matrix-ammo.js":20,"./sounds/sounds.js":25,"wgpu-matrix":9}]},{},[1]);

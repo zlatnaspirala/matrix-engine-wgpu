@@ -257,6 +257,7 @@ export let myDom = {
       byId('helpBox').style.display = 'none';
     });
     document.body.appendChild(helpBox)
+    console.log('what is dom, ', byId('helpBox'))
     typeText('helpBox', app.label.get.about, 10);
     //
     var roll = document.createElement('div')
