@@ -25,6 +25,9 @@ export default class MEMeshObj {
     this.context = context;
     this.entityArgPass = o.entityArgPass;
 
+    // comes from engine not from args
+    this.clearColor = "red";
+
     // Mesh stuff - for single mesh or t-posed (fiktive-first in loading order)
     this.mesh = o.mesh;
     this.mesh.uvs = this.mesh.textures;
@@ -310,7 +313,7 @@ export default class MEMeshObj {
           {
             // view is acquired and set in render loop.
             view: undefined,
-            clearValue: {r: 0.5, g: 0.5, b: 0.5, a: 1.0},
+            clearValue: this.clearColor,
             loadOp: 'clear', // load old fix for FF
             storeOp: 'store',
           },

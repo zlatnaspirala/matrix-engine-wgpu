@@ -4,7 +4,7 @@
  * Nikola Lukic 2024
  */
 
-import {loadJamb} from "./examples/load-jamb.js";
+// import {loadJamb} from "./examples/load-jamb.js";
 import {loadObjFile} from "./examples/load-obj-file.js";
 import {loadObjsSequence} from "./examples/load-objs-sequence.js";
 import {unlitTextures} from "./examples/unlit-textures.js";
@@ -46,7 +46,7 @@ byId('jamb').addEventListener("click", () => {
   // byId('jamb').removeAttribute('disabled')
   if(typeof app !== "undefined") app.destroyProgram()
   destroyJambDoms();
-  loadJamb()
+  // loadJamb()
 })
 
 byId('objs-anim').addEventListener("click", () => {

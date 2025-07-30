@@ -39,9 +39,13 @@ export default class MatrixEngineWGPU {
         mainCameraParams: {
           type: 'WASD',
           responseCoef: 2000
-        }
+        },
+        clearColor: {r: 0.584, g: 0, b: 0.239, a: 1.0}
       }
       callback = options;
+    }
+    if(typeof options.clearColor === 'undefined') {
+      options.clearColor = {r: 0.584, g: 0, b: 0.239, a: 1.0};
     }
     if(typeof options.canvasId === 'undefined') {
       options.canvasId = 'canvas1';
@@ -251,7 +255,7 @@ export default class MatrixEngineWGPU {
     this.mainRenderBundle.push(myMesh1);
   }
 
-  addMeshObj = (o) => {
+  addMeshObj = (o , clearColor=this.options.clearColor) => {
     if(typeof o.name === 'undefined') {o.name = genName(9)}
     if(typeof o.position === 'undefined') {o.position = {x: 0, y: 0, z: -4}}
     if(typeof o.rotation === 'undefined') {o.rotation = {x: 0, y: 0, z: 0}}
@@ -285,18 +289,8 @@ export default class MatrixEngineWGPU {
     if(typeof o.objAnim == 'undefined' || typeof o.objAnim == null) {
       o.objAnim = null;
     } else {
-      console.log('o.anim', o.objAnim)
-      // o.objAnim = {
-      //   id: o.objAnim.id,
-      //   sumOfAniFrames: o.objAnim.sumOfAniFrames,
-      //   currentAni: o.objAnim.currentAni,
-      //   speed: o.objAnim.speed,
-      //   currentDraws: 0
-      // };
-
+      // console.log('o.anim', o.objAnim)
       if(typeof o.objAnim.animations !== 'undefined') {
-        // o.objAnim.animation.anims = o.objAnim.animations;
-        console.log('o.o.objAnim.animations ', o.objAnim.animations )
         o.objAnim.play = play;
       }
       // no need for single test it in future
@@ -314,7 +308,8 @@ export default class MatrixEngineWGPU {
         }
       }
     }
-    let myMesh1 = new MEMeshObj(this.canvas, this.device, this.context, o)
+    let myMesh1 = new MEMeshObj(this.canvas, this.device, this.context, o);
+    myMesh1.clearColor = clearColor;
     if(o.physics.enabled == true) {
       this.matrixAmmo.addPhysics(myMesh1, o.physics)
     }
