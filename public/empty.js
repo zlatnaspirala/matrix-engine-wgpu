@@ -5774,7 +5774,7 @@ class MEBall {
   }
   draw = () => {
     if (this.moonTexture == null) {
-      console.log('not ready');
+      // console.log('not ready')
       return;
     }
     const transformationMatrix = this.getTransformationMatrix(this.position);
@@ -6199,7 +6199,7 @@ class MECube {
   }
   draw = () => {
     if (this.moonTexture == null) {
-      console.log('not ready');
+      // console.log('not ready')
       return;
     }
     const transformationMatrix = this.getTransformationMatrix(this.position);
@@ -7131,8 +7131,9 @@ const makeObjSeqArg = arg => {
  */
 exports.makeObjSeqArg = makeObjSeqArg;
 function play(nameAni) {
-  this.animation.anims.active = nameAni;
-  this.animation.currentAni = this.animation.anims[this.animation.anims.active].from;
+  this.animations.active = nameAni;
+  this.currentAni = this.animations[this.animations.active].from;
+  this.playing = true;
 }
 
 },{}],7:[function(require,module,exports){
@@ -7404,10 +7405,23 @@ class MEMeshObj {
     this.context = context;
     this.entityArgPass = o.entityArgPass;
 
-    // Mesh stuff
+    // comes from engine not from args
+    this.clearColor = "red";
+
+    // Mesh stuff - for single mesh or t-posed (fiktive-first in loading order)
     this.mesh = o.mesh;
     this.mesh.uvs = this.mesh.textures;
     console.log(`%c Mesh loaded: ${o.name}`, _utils.LOG_FUNNY_SMALL);
+
+    // ObjSequence animation
+    if (typeof o.objAnim !== 'undefined' && o.objAnim != null) {
+      this.objAnim = o.objAnim;
+      for (var key in this.objAnim.animations) {
+        if (key != 'active') this.objAnim.animations[key].speedCounter = 0;
+      }
+      console.log(`%c Mesh objAnim exist: ${o.objAnim}`, _utils.LOG_FUNNY_SMALL);
+      this.drawElements = this.drawElementsAnim;
+    }
     this.inputHandler = (0, _engine.createInputHandler)(window, canvas);
     this.cameras = o.cameras;
     this.mainCameraParams = {
@@ -7491,19 +7505,16 @@ class MEMeshObj {
 
       // Create the model index buffer.
       this.indexCount = this.mesh.indices.length;
+      const indexCount = this.mesh.indices.length;
+      const size = Math.ceil(indexCount * Uint16Array.BYTES_PER_ELEMENT / 4) * 4;
       this.indexBuffer = this.device.createBuffer({
-        size: this.indexCount * Uint16Array.BYTES_PER_ELEMENT,
-        usage: GPUBufferUsage.INDEX,
+        size,
+        usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST,
         mappedAtCreation: true
       });
-      {
-        // const mapping = new Uint16Array(this.indexBuffer.getMappedRange());
-        // for(let i = 0;i < this.mesh.indices.length;++i) {
-        //   mapping.set(this.mesh.indices[i], i);
-        // }
-        new Uint16Array(this.indexBuffer.getMappedRange()).set(this.mesh.indices);
-        this.indexBuffer.unmap();
-      }
+      new Uint16Array(this.indexBuffer.getMappedRange()).set(this.mesh.indices);
+      this.indexBuffer.unmap();
+      this.indexCount = indexCount;
 
       // Create the depth texture for rendering/sampling the shadow map.
       this.shadowDepthTexture = this.device.createTexture({
@@ -7542,7 +7553,8 @@ class MEMeshObj {
       }];
       const primitive = {
         topology: 'triangle-list',
-        cullMode: 'back'
+        // cullMode: 'back', // ORI 
+        cullMode: 'none' // ORI 
       };
       this.uniformBufferBindGroupLayout = this.device.createBindGroupLayout({
         entries: [{
@@ -7636,7 +7648,7 @@ class MEMeshObj {
         primitive
       });
       const depthTexture = this.device.createTexture({
-        size: [canvas.width, canvas.height, 1],
+        size: [canvas.width, canvas.height],
         format: 'depth24plus-stencil8',
         usage: GPUTextureUsage.RENDER_ATTACHMENT
       });
@@ -7644,13 +7656,9 @@ class MEMeshObj {
         colorAttachments: [{
           // view is acquired and set in render loop.
           view: undefined,
-          clearValue: {
-            r: 0.5,
-            g: 0.5,
-            b: 0.5,
-            a: 1.0
-          },
+          clearValue: this.clearColor,
           loadOp: 'clear',
+          // load old fix for FF
           storeOp: 'store'
         }],
         depthStencilAttachment: {
@@ -7673,8 +7681,7 @@ class MEMeshObj {
         // one for the camera and one for the light.
         // Then a vec3 for the light position.
         // Rounded to the nearest multiple of 16.
-        // size: 2 * 4 * 16 + 4 * 4,
-        size: 160,
+        size: 2 * 4 * 16 + 4 * 4,
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
       });
       this.sceneBindGroupForShadow = this.device.createBindGroup({
@@ -7727,13 +7734,20 @@ class MEMeshObj {
         // const this.viewMatrix = mat4.identity()
         const camera = this.cameras[this.mainCameraParams.type];
         this.viewMatrix = camera.update(deltaTime, this.inputHandler());
+        const scaleVec = [1, 1, 1]; // your desired scale OPTION 1
+        const scaleMatrix = _wgpuMatrix.mat4.scaling(scaleVec);
+        // Apply scaling
+        _wgpuMatrix.mat4.multiply(scaleMatrix, this.viewMatrix, this.viewMatrix);
         _wgpuMatrix.mat4.translate(this.viewMatrix, _wgpuMatrix.vec3.fromValues(pos.x, pos.y, pos.z), this.viewMatrix);
-        _wgpuMatrix.mat4.rotate(this.viewMatrix, _wgpuMatrix.vec3.fromValues(this.rotation.axis.x, this.rotation.axis.y, this.rotation.axis.z), (0, _utils.degToRad)(this.rotation.angle), this.viewMatrix);
-        // console.info('this: ', this)
-        _wgpuMatrix.mat4.rotateX(this.viewMatrix, Math.PI * this.rotation.getRotX(), this.viewMatrix);
-        _wgpuMatrix.mat4.rotateY(this.viewMatrix, Math.PI * this.rotation.getRotY(), this.viewMatrix);
-        _wgpuMatrix.mat4.rotateZ(this.viewMatrix, Math.PI * this.rotation.getRotZ(), this.viewMatrix);
-        // console.info('angle: ', this.rotation.angle, ' axis ' ,  this.rotation.axis.x, ' , ', this.rotation.axis.y, ' , ',  this.rotation.axis.z)
+        if (this.itIsPhysicsBody == true) {
+          _wgpuMatrix.mat4.rotate(this.viewMatrix, _wgpuMatrix.vec3.fromValues(this.rotation.axis.x, this.rotation.axis.y, this.rotation.axis.z), (0, _utils.degToRad)(this.rotation.angle), this.viewMatrix);
+          // console.info('angle: ', this.rotation.angle, ' axis ', this.rotation.axis.x, ' , ', this.rotation.axis.y, ' , ', this.rotation.axis.z)
+        } else {
+          _wgpuMatrix.mat4.rotateX(this.viewMatrix, Math.PI * this.rotation.getRotX(), this.viewMatrix);
+          _wgpuMatrix.mat4.rotateY(this.viewMatrix, Math.PI * this.rotation.getRotY(), this.viewMatrix);
+          _wgpuMatrix.mat4.rotateZ(this.viewMatrix, Math.PI * this.rotation.getRotZ(), this.viewMatrix);
+          // console.info('NOT PHYSICS angle: ', this.rotation.angle, ' axis ', this.rotation.axis.x, ' , ', this.rotation.axis.y, ' , ', this.rotation.axis.z)
+        }
         _wgpuMatrix.mat4.multiply(this.projectionMatrix, this.viewMatrix, this.modelViewProjectionMatrix);
         return this.modelViewProjectionMatrix;
       };
@@ -7777,6 +7791,11 @@ class MEMeshObj {
         }
       };
       this.done = true;
+    }).then(() => {
+      if (typeof this.objAnim !== 'undefined' && this.objAnim !== null) {
+        console.log('after all load configutr mesh list buffers');
+        this.updateMeshListBuffers();
+      }
     });
   }
   updateLightsTest = position => {
@@ -7828,9 +7847,18 @@ class MEMeshObj {
     });
     return new Promise(async resolve => {
       const response = await fetch(texturesPaths[0]);
+
+      // const blob = await response.blob();
+      // if(!blob.type.startsWith('image/')) {
+      //   console.error("Unexpected texture response type:", blob.type);
+      //   return;
+      // }
+
+      // const imageBitmap = await createImageBitmap(blob);
       const imageBitmap = await createImageBitmap(await response.blob());
       this.texture0 = device.createTexture({
         size: [imageBitmap.width, imageBitmap.height, 1],
+        // REMOVED 1
         format: 'rgba8unorm',
         usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT
       });
@@ -7844,7 +7872,6 @@ class MEMeshObj {
   }
   draw = commandEncoder => {
     if (this.done == false) return;
-    // console.log('test draw for meshObj !')
     const transformationMatrix = this.getTransformationMatrix(this.position);
     this.device.queue.writeBuffer(this.sceneUniformBuffer, 64, transformationMatrix.buffer, transformationMatrix.byteOffset, transformationMatrix.byteLength);
     this.renderPassDescriptor.colorAttachments[0].view = this.context.getCurrentTexture().createView();
@@ -7857,6 +7884,89 @@ class MEMeshObj {
     renderPass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
     renderPass.setIndexBuffer(this.indexBuffer, 'uint16');
     renderPass.drawIndexed(this.indexCount);
+  };
+
+  // test 
+  createGPUBuffer(dataArray, usage) {
+    if (!dataArray || typeof dataArray.length !== 'number') {
+      throw new Error('Invalid data array passed to createGPUBuffer');
+    }
+    const size = dataArray.length * dataArray.BYTES_PER_ELEMENT;
+    if (!Number.isFinite(size) || size <= 0) {
+      throw new Error(`Invalid buffer size: ${size}`);
+    }
+    const buffer = this.device.createBuffer({
+      size,
+      usage,
+      mappedAtCreation: true
+    });
+    const writeArray = dataArray.constructor === Float32Array ? new Float32Array(buffer.getMappedRange()) : new Uint16Array(buffer.getMappedRange());
+    writeArray.set(dataArray);
+    buffer.unmap();
+    return buffer;
+  }
+  updateMeshListBuffers() {
+    for (const key in this.objAnim.meshList) {
+      const mesh = this.objAnim.meshList[key];
+      mesh.vertexBuffer = this.device.createBuffer({
+        size: mesh.vertices.length * Float32Array.BYTES_PER_ELEMENT,
+        usage: GPUBufferUsage.VERTEX,
+        mappedAtCreation: true
+      });
+      new Float32Array(mesh.vertexBuffer.getMappedRange()).set(mesh.vertices);
+      mesh.vertexBuffer.unmap();
+
+      // Normals
+      mesh.vertexNormalsBuffer = this.device.createBuffer({
+        size: mesh.vertexNormals.length * Float32Array.BYTES_PER_ELEMENT,
+        usage: GPUBufferUsage.VERTEX,
+        mappedAtCreation: true
+      });
+      new Float32Array(mesh.vertexNormalsBuffer.getMappedRange()).set(mesh.vertexNormals);
+      mesh.vertexNormalsBuffer.unmap();
+
+      // UVs
+      mesh.vertexTexCoordsBuffer = this.device.createBuffer({
+        size: mesh.textures.length * Float32Array.BYTES_PER_ELEMENT,
+        usage: GPUBufferUsage.VERTEX,
+        mappedAtCreation: true
+      });
+      new Float32Array(mesh.vertexTexCoordsBuffer.getMappedRange()).set(mesh.textures);
+      mesh.vertexTexCoordsBuffer.unmap();
+
+      // Indices
+      const indexCount = mesh.indices.length;
+      const indexSize = Math.ceil(indexCount * Uint16Array.BYTES_PER_ELEMENT / 4) * 4;
+      mesh.indexBuffer = this.device.createBuffer({
+        size: indexSize,
+        usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST,
+        mappedAtCreation: true
+      });
+      new Uint16Array(mesh.indexBuffer.getMappedRange()).set(mesh.indices);
+      mesh.indexBuffer.unmap();
+      mesh.indexCount = indexCount;
+    }
+  }
+  drawElementsAnim = renderPass => {
+    renderPass.setBindGroup(0, this.sceneBindGroupForRender);
+    renderPass.setBindGroup(1, this.modelBindGroup);
+    const mesh = this.objAnim.meshList[this.objAnim.id + this.objAnim.currentAni];
+    renderPass.setVertexBuffer(0, mesh.vertexBuffer);
+    renderPass.setVertexBuffer(1, mesh.vertexNormalsBuffer);
+    renderPass.setVertexBuffer(2, mesh.vertexTexCoordsBuffer);
+    renderPass.setIndexBuffer(mesh.indexBuffer, 'uint16');
+    renderPass.drawIndexed(mesh.indexCount);
+    if (this.objAnim.playing == true) {
+      if (this.objAnim.animations[this.objAnim.animations.active].speedCounter >= this.objAnim.animations[this.objAnim.animations.active].speed) {
+        this.objAnim.currentAni++;
+        this.objAnim.animations[this.objAnim.animations.active].speedCounter = 0;
+      } else {
+        this.objAnim.animations[this.objAnim.animations.active].speedCounter++;
+      }
+      if (this.objAnim.currentAni >= this.objAnim.animations[this.objAnim.animations.active].to) {
+        this.objAnim.currentAni = this.objAnim.animations[this.objAnim.animations.active].from;
+      }
+    }
   };
   drawShadows = shadowPass => {
     shadowPass.setBindGroup(0, this.sceneBindGroupForShadow);
@@ -8998,12 +9108,14 @@ let mb = exports.mb = {
     mb.c++;
   },
   error: function (content) {
+    if (mb.root() == null) return;
     mb.root().classList.remove("success");
     mb.root().classList.add("error");
     mb.root().classList.add("fadeInDown");
     mb.show(content, 'err');
   },
   success: function (content) {
+    if (mb.root() == null) return;
     mb.root().classList.remove("error");
     mb.root().classList.add("success");
     mb.root().classList.add("fadeInDown");
@@ -9200,8 +9312,6 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.default = void 0;
 var _utils = require("../engine/utils");
-// import {vec3} from "wgpu-matrix";
-
 class MatrixAmmo {
   constructor() {
     // THIS PATH IS PATH FROM PUBLIC FINAL FOLDER
@@ -9211,7 +9321,6 @@ class MatrixAmmo {
     this.speedUpSimulation = 1;
   }
   init = () => {
-    // console.log('pre ammo')
     Ammo().then(Ammo => {
       // Physics variables
       this.dynamicsWorld = null;
@@ -9247,8 +9356,6 @@ class MatrixAmmo {
     body.name = 'ground';
     this.ground = body;
     this.dynamicsWorld.addRigidBody(body);
-    // this.rigidBodies.push(body);
-    // add collide event
     this.detectCollision();
   }
   addPhysics(MEObject, pOptions) {
@@ -9270,7 +9377,6 @@ class MatrixAmmo {
     var myMotionState = new Ammo.btDefaultMotionState(startTransform),
       rbInfo = new Ammo.btRigidBodyConstructionInfo(mass, myMotionState, colShape, localInertia),
       body = new Ammo.btRigidBody(rbInfo);
-    console.log("TEST ADDING PHYSICS ");
     body.MEObject = MEObject;
     this.dynamicsWorld.addRigidBody(body);
     this.rigidBodies.push(body);
@@ -9290,16 +9396,12 @@ class MatrixAmmo {
     var localInertia = new Ammo.btVector3(0, 0, 0);
     colShape.calculateLocalInertia(mass, localInertia);
     startTransform.setOrigin(new Ammo.btVector3(pOptions.position.x, pOptions.position.y, pOptions.position.z));
-    //rotation
     // console.log('startTransform.setRotation', startTransform.setRotation)
     var t = startTransform.getRotation();
     t.setX((0, _utils.degToRad)(pOptions.rotation.x));
     t.setY((0, _utils.degToRad)(pOptions.rotation.y));
     t.setZ((0, _utils.degToRad)(pOptions.rotation.z));
     startTransform.setRotation(t);
-
-    // startTransform.setRotation(pOptions.rotation.x, pOptions.rotation.y, pOptions.rotation.z);
-
     var myMotionState = new Ammo.btDefaultMotionState(startTransform),
       rbInfo = new Ammo.btRigidBodyConstructionInfo(mass, myMotionState, colShape, localInertia),
       body = new Ammo.btRigidBody(rbInfo);
@@ -9314,8 +9416,8 @@ class MatrixAmmo {
     } else {
       body.setActivationState(4);
     }
-    // console.log('what is name.', pOptions.name)
     body.name = pOptions.name;
+    MEObject.itIsPhysicsBody = true;
     body.MEObject = MEObject;
     this.dynamicsWorld.addRigidBody(body);
     this.rigidBodies.push(body);
@@ -9351,7 +9453,6 @@ class MatrixAmmo {
     let ms = physicsBody.getMotionState();
     if (ms) {
       var tmpTrans = new Ammo.btTransform();
-      // quat.setValue(quat.x(), quat.y(), quat.z(), quat.w());
       tmpTrans.setIdentity();
       tmpTrans.setOrigin(pos);
       tmpTrans.setRotation(localRot);
@@ -9515,8 +9616,7 @@ let fragmentWGSL = exports.fragmentWGSL = `override shadowDepthTextureSize: f32 
 struct Scene {
   lightViewProjMatrix : mat4x4f,
   cameraViewProjMatrix : mat4x4f,
-  lightPos : vec4f,
-  // padding: f32, // 👈 fix alignment
+  lightPos : vec3f,
 }
 
 @group(0) @binding(0) var<uniform> scene : Scene;
@@ -9552,7 +9652,7 @@ fn main(input : FragmentInput) -> @location(0) vec4f {
     }
   }
   visibility /= 9.0;
-  let lambertFactor = max(dot(normalize(scene.lightPos.xyz - input.fragPos), normalize(input.fragNorm)), 0.0);
+  let lambertFactor = max(dot(normalize(scene.lightPos - input.fragPos), normalize(input.fragNorm)), 0.0);
   let lightingFactor = min(ambientFactor + visibility * lambertFactor, 1.0);
   let textureColor = textureSample(meshTexture, meshSampler, input.uv);
 
@@ -9630,8 +9730,7 @@ exports.vertexWGSL = void 0;
 let vertexWGSL = exports.vertexWGSL = `struct Scene {
   lightViewProjMatrix: mat4x4f,
   cameraViewProjMatrix: mat4x4f,
-  lightPos: vec4f,
-  // padding: f32, // 👈 fix alignment
+  lightPos: vec3f,
 }
 
 struct Model {
@@ -9688,8 +9787,7 @@ exports.vertexShadowWGSL = void 0;
 let vertexShadowWGSL = exports.vertexShadowWGSL = `struct Scene {
   lightViewProjMatrix: mat4x4f,
   cameraViewProjMatrix: mat4x4f,
-  lightPos: vec4f,
-  // padding: f32, // 👈 fix alignment
+  lightPos: vec3f,
 }
 
 struct Model {
@@ -9794,6 +9892,7 @@ var _matrixAmmo = _interopRequireDefault(require("./physics/matrix-ammo.js"));
 var _utils = require("./engine/utils.js");
 var _lang = require("./multilang/lang.js");
 var _sounds = require("./sounds/sounds.js");
+var _loaderObj = require("./engine/loader-obj.js");
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 class MatrixEngineWGPU {
   mainRenderBundle = [];
@@ -9816,12 +9915,30 @@ class MatrixEngineWGPU {
       this.options = {
         useSingleRenderPass: true,
         canvasSize: 'fullscreen',
+        canvasId: 'canvas1',
         mainCameraParams: {
           type: 'WASD',
           responseCoef: 2000
+        },
+        clearColor: {
+          r: 0.584,
+          g: 0,
+          b: 0.239,
+          a: 1.0
         }
       };
       callback = options;
+    }
+    if (typeof options.clearColor === 'undefined') {
+      options.clearColor = {
+        r: 0.584,
+        g: 0,
+        b: 0.239,
+        a: 1.0
+      };
+    }
+    if (typeof options.canvasId === 'undefined') {
+      options.canvasId = 'canvas1';
     }
     if (typeof options.mainCameraParams === 'undefined') {
       options.mainCameraParams = {
@@ -9833,6 +9950,7 @@ class MatrixEngineWGPU {
     this.mainCameraParams = options.mainCameraParams;
     const target = this.options.appendTo || document.body;
     var canvas = document.createElement('canvas');
+    canvas.id = this.options.canvasId;
     if (this.options.canvasSize == 'fullscreen') {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
@@ -10154,7 +10272,7 @@ class MatrixEngineWGPU {
     let myMesh1 = new _mesh.default(this.canvas, this.device, this.context, o);
     this.mainRenderBundle.push(myMesh1);
   };
-  addMeshObj = o => {
+  addMeshObj = (o, clearColor = this.options.clearColor) => {
     if (typeof o.name === 'undefined') {
       o.name = (0, _utils.genName)(9);
     }
@@ -10190,23 +10308,19 @@ class MatrixEngineWGPU {
     }
     if (typeof o.raycast === 'undefined') {
       o.raycast = {
-        enabled: false
+        enabled: false,
+        radius: 2
       };
     }
     o.entityArgPass = this.entityArgPass;
     o.cameras = this.cameras;
-    // if(typeof o.name === 'undefined') {o.name = 'random' + Math.random();}
-    if (typeof o.mesh === 'undefined') {
-      _utils.mb.error('arg mesh is empty for ', o.name);
-      throw console.error('arg mesh is empty...');
-      return;
-    }
     if (typeof o.physics === 'undefined') {
       o.physics = {
         scale: [1, 1, 1],
         enabled: true,
         geometry: "Sphere",
-        radius: o.scale,
+        //                   must be fixed<<
+        radius: typeof o.scale == Number ? o.scale : o.scale[0],
         name: o.name,
         rotation: o.rotation
       };
@@ -10215,7 +10329,7 @@ class MatrixEngineWGPU {
       o.physics.enabled = true;
     }
     if (typeof o.physics.geometry === 'undefined') {
-      o.physics.geometry = "Sphere";
+      o.physics.geometry = "Cube";
     }
     if (typeof o.physics.radius === 'undefined') {
       o.physics.radius = o.scale;
@@ -10234,7 +10348,30 @@ class MatrixEngineWGPU {
     }
     o.physics.position = o.position;
     //  console.log('Mesh procedure', o)
+    // TEST OBJS SEQ ANIMS 
+    if (typeof o.objAnim == 'undefined' || typeof o.objAnim == null) {
+      o.objAnim = null;
+    } else {
+      // console.log('o.anim', o.objAnim)
+      if (typeof o.objAnim.animations !== 'undefined') {
+        o.objAnim.play = _loaderObj.play;
+      }
+      // no need for single test it in future
+      o.objAnim.meshList = o.objAnim.meshList;
+      if (typeof o.mesh === 'undefined') {
+        o.mesh = o.objAnim.meshList[0];
+        console.info('objSeq animation is active.');
+      }
+      // scale for all second option!
+      o.objAnim.scaleAll = function (s) {
+        for (var k in this.meshList) {
+          console.log('SCALE');
+          this.meshList[k].setScale(s);
+        }
+      };
+    }
     let myMesh1 = new _meshObj.default(this.canvas, this.device, this.context, o);
+    myMesh1.clearColor = clearColor;
     if (o.physics.enabled == true) {
       this.matrixAmmo.addPhysics(myMesh1, o.physics);
     }
@@ -10313,4 +10450,4 @@ class MatrixEngineWGPU {
 }
 exports.default = MatrixEngineWGPU;
 
-},{"./engine/ball.js":3,"./engine/cube.js":4,"./engine/engine.js":5,"./engine/mesh-obj.js":8,"./engine/mesh.js":9,"./engine/utils.js":10,"./multilang/lang.js":11,"./physics/matrix-ammo.js":12,"./sounds/sounds.js":17,"wgpu-matrix":2}]},{},[1]);
+},{"./engine/ball.js":3,"./engine/cube.js":4,"./engine/engine.js":5,"./engine/loader-obj.js":6,"./engine/mesh-obj.js":8,"./engine/mesh.js":9,"./engine/utils.js":10,"./multilang/lang.js":11,"./physics/matrix-ammo.js":12,"./sounds/sounds.js":17,"wgpu-matrix":2}]},{},[1]);

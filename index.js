@@ -6,7 +6,7 @@
 // import {degToRad, radToDeg} from "./utils";
 import {downloadMeshes} from "./src/engine/loader-obj.js";
 import MatrixEngineWGPU from "./src/world.js";
-import {addRaycastListener, getRayFromMouse, rayIntersectsSphere} from "./src/engine/raycast.js";
+import {addRaycastsAABBListener, addRaycastListener, getRayFromMouse, rayIntersectsSphere} from "./src/engine/raycast.js";
 
 var about = () => {
   console.log("Hi npm. matrix-engine for webgpu is ready...")
@@ -25,5 +25,6 @@ export {
 	rayIntersectsSphere,
 	getRayFromMouse,
 	addRaycastListener,
+  addRaycastsAABBListener,
   about
 }
