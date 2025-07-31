@@ -139,6 +139,30 @@ export function computeAABBFromVertices(vertices) {
   return [min, max];
 }
 
+export function computeWorldAABB(vertices, modelMatrix) {
+  const min = [Infinity, Infinity, Infinity];
+  const max = [-Infinity, -Infinity, -Infinity];
+  const v = [0, 0, 0];
+
+  for (let i = 0; i < vertices.length; i += 3) {
+    v[0] = vertices[i];
+    v[1] = vertices[i + 1];
+    v[2] = vertices[i + 2];
+
+    const worldV = vec3.transformMat4([], v, modelMatrix);
+
+    min[0] = Math.min(min[0], worldV[0]);
+    min[1] = Math.min(min[1], worldV[1]);
+    min[2] = Math.min(min[2], worldV[2]);
+
+    max[0] = Math.max(max[0], worldV[0]);
+    max[1] = Math.max(max[1], worldV[1]);
+    max[2] = Math.max(max[2], worldV[2]);
+  }
+
+  return [min, max];
+}
+
 export function addRaycastsAABBListener(canvasId = "canvas1") {
   const canvasDom = document.getElementById(canvasId);
   if(!canvasDom) {
@@ -153,26 +177,23 @@ export function addRaycastsAABBListener(canvasId = "canvas1") {
     for(const object of app.mainRenderBundle) {
       // Compute AABB min/max from object position and size
       const pos = [object.position.x,object.position.y,object.position.z]; // [x,y,z]
-
-      ////////////
-      const [boxMinLocal, boxMaxLocal] = computeAABBFromVertices(object.mesh.vertices);
+      // Works only for 0,0,0 static object
+      // const [boxMinLocal, boxMaxLocal] = computeAABBFromVertices(object.mesh.vertices);
+      const [boxMin, boxMax] = computeWorldAABB(object.mesh.vertices, object.viewMatrix);
       // Optionally transform to world space using object.position
       // const pos = object.position;
-
-      const boxMin = [
-        boxMinLocal[0] + pos[0],
-        boxMinLocal[1] + pos[1],
-        boxMinLocal[2] + pos[2]
-      ];
-
-      const boxMax = [
-        boxMaxLocal[0] + pos[0],
-        boxMaxLocal[1] + pos[1],
-        boxMaxLocal[2] + pos[2]
-      ];
+      // const boxMin = [
+      //   boxMinLocal[0] + pos[0],
+      //   boxMinLocal[1] + pos[1],
+      //   boxMinLocal[2] + pos[2]
+      // ];
+      // const boxMax = [
+      //   boxMaxLocal[0] + pos[0],
+      //   boxMaxLocal[1] + pos[1],
+      //   boxMaxLocal[2] + pos[2]
+      // ];
       //////////////
       // const size = object.size || [1, 1, 1]; // Replace with actual object size or default 1x1x1
-
       // const boxMin = [
       //   pos[0] - size[0] / 2,
       //   pos[1] - size[1] / 2,
