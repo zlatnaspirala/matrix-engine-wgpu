@@ -55,7 +55,7 @@ function destroyJambDoms() {
   (0, _loadObjsSequence.loadObjsSequence)();
 });
 
-},{"./examples/load-obj-file.js":2,"./examples/load-objs-sequence.js":3,"./examples/unlit-textures.js":4,"./src/engine/utils.js":13}],2:[function(require,module,exports){
+},{"./examples/load-obj-file.js":2,"./examples/load-objs-sequence.js":3,"./examples/unlit-textures.js":4,"./src/engine/utils.js":14}],2:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -65,6 +65,7 @@ exports.loadObjFile = void 0;
 var _world = _interopRequireDefault(require("../src/world.js"));
 var _loaderObj = require("../src/engine/loader-obj.js");
 var _utils = require("../src/engine/utils.js");
+var _raycast = require("../src/engine/raycast.js");
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 // import MatrixEngineWGPU from "./src/world.js";
 // import {downloadMeshes} from './src/engine/loader-obj.js';
@@ -91,7 +92,7 @@ var loadObjFile = function () {
         sphere: "./res/meshes/blender/sphere.obj",
         cube: "./res/meshes/blender/cube.obj"
       }, onLoadObj, {
-        scale: [3, 3, 3]
+        scale: [1, 1, 1]
       });
     });
     function onLoadObj(m) {
@@ -102,7 +103,7 @@ var loadObjFile = function () {
       loadObjFile.addMeshObj({
         position: {
           x: 0,
-          y: 2,
+          y: 0,
           z: -10
         },
         rotation: {
@@ -116,11 +117,15 @@ var loadObjFile = function () {
           z: 0
         },
         texturesPaths: ['./res/meshes/blender/cube.png'],
-        name: 'CubePhysics',
+        name: 'Cube1',
         mesh: m.cube,
         physics: {
-          enabled: true,
+          enabled: false,
           geometry: "Cube"
+        },
+        raycast: {
+          enabled: true,
+          radius: 2
         }
       });
       loadObjFile.addMeshObj({
@@ -145,6 +150,10 @@ var loadObjFile = function () {
         physics: {
           enabled: true,
           geometry: "Sphere"
+        },
+        raycast: {
+          enabled: true,
+          radius: 2
         }
       });
       loadObjFile.addMeshObj({
@@ -164,20 +173,25 @@ var loadObjFile = function () {
           z: 0
         },
         texturesPaths: ['./res/meshes/blender/cube.png'],
-        name: 'CubePhysics',
+        name: 'welcomeText',
         mesh: m.welcomeText,
         physics: {
           enabled: true,
           geometry: "Cube"
+        },
+        raycast: {
+          enabled: true,
+          radius: 2
         }
       });
+      (0, _raycast.addRaycastsAABBListener)();
     }
   });
   window.app = loadObjFile;
 };
 exports.loadObjFile = loadObjFile;
 
-},{"../src/engine/loader-obj.js":9,"../src/engine/utils.js":13,"../src/world.js":21}],3:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":9,"../src/engine/raycast.js":13,"../src/engine/utils.js":14,"../src/world.js":22}],3:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -261,7 +275,7 @@ var loadObjsSequence = function () {
 };
 exports.loadObjsSequence = loadObjsSequence;
 
-},{"../src/engine/loader-obj.js":9,"../src/engine/utils.js":13,"../src/world.js":21}],4:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":9,"../src/engine/utils.js":14,"../src/world.js":22}],4:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -322,7 +336,7 @@ var unlitTextures = function () {
 };
 exports.unlitTextures = unlitTextures;
 
-},{"../src/world.js":21}],5:[function(require,module,exports){
+},{"../src/world.js":22}],5:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -6083,7 +6097,7 @@ class MEBall {
 }
 exports.default = MEBall;
 
-},{"../shaders/shaders":17,"./engine":8,"./matrix-class":10,"wgpu-matrix":5}],7:[function(require,module,exports){
+},{"../shaders/shaders":18,"./engine":8,"./matrix-class":10,"wgpu-matrix":5}],7:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -6508,7 +6522,7 @@ class MECube {
 }
 exports.default = MECube;
 
-},{"../shaders/shaders":17,"./engine":8,"./matrix-class":10,"wgpu-matrix":5}],8:[function(require,module,exports){
+},{"../shaders/shaders":18,"./engine":8,"./matrix-class":10,"wgpu-matrix":5}],8:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -7671,7 +7685,7 @@ class Rotation {
 }
 exports.Rotation = Rotation;
 
-},{"./utils":13}],11:[function(require,module,exports){
+},{"./utils":14}],11:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -8050,6 +8064,20 @@ class MEMeshObj {
         _wgpuMatrix.mat4.multiply(this.projectionMatrix, this.viewMatrix, this.modelViewProjectionMatrix);
         return this.modelViewProjectionMatrix;
       };
+      this.getModelMatrix = pos => {
+        let modelMatrix = _wgpuMatrix.mat4.identity();
+        _wgpuMatrix.mat4.translate(modelMatrix, [pos.x, pos.y, pos.z], modelMatrix);
+        if (this.itIsPhysicsBody) {
+          _wgpuMatrix.mat4.rotate(modelMatrix, [this.rotation.axis.x, this.rotation.axis.y, this.rotation.axis.z], (0, _utils.degToRad)(this.rotation.angle), modelMatrix);
+        } else {
+          _wgpuMatrix.mat4.rotateX(modelMatrix, this.rotation.getRotX(), modelMatrix);
+          _wgpuMatrix.mat4.rotateY(modelMatrix, this.rotation.getRotY(), modelMatrix);
+          _wgpuMatrix.mat4.rotateZ(modelMatrix, this.rotation.getRotZ(), modelMatrix);
+        }
+        // Apply scale if you have it, e.g.:
+        // mat4.scale(modelMatrix, modelMatrix, [this.scale.x, this.scale.y, this.scale.z]);
+        return modelMatrix;
+      };
       this.upVector = _wgpuMatrix.vec3.fromValues(0, 1, 0);
       this.origin = _wgpuMatrix.vec3.fromValues(0, 0, 0);
       this.lightPosition = _wgpuMatrix.vec3.fromValues(0, 0, 0);
@@ -8279,7 +8307,7 @@ class MEMeshObj {
 }
 exports.default = MEMeshObj;
 
-},{"../shaders/fragment.wgsl":16,"../shaders/vertex.wgsl":18,"../shaders/vertexShadow.wgsl":19,"./engine":8,"./matrix-class":10,"./utils":13,"wgpu-matrix":5}],12:[function(require,module,exports){
+},{"../shaders/fragment.wgsl":17,"../shaders/vertex.wgsl":19,"../shaders/vertexShadow.wgsl":20,"./engine":8,"./matrix-class":10,"./utils":14,"wgpu-matrix":5}],12:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -8677,7 +8705,223 @@ class MEMesh {
 }
 exports.default = MEMesh;
 
-},{"../shaders/fragment.wgsl":16,"../shaders/vertex.wgsl":18,"../shaders/vertexShadow.wgsl":19,"./engine":8,"./loader-obj":9,"./matrix-class":10,"wgpu-matrix":5}],13:[function(require,module,exports){
+},{"../shaders/fragment.wgsl":17,"../shaders/vertex.wgsl":19,"../shaders/vertexShadow.wgsl":20,"./engine":8,"./loader-obj":9,"./matrix-class":10,"wgpu-matrix":5}],13:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.addRaycastListener = addRaycastListener;
+exports.addRaycastsAABBListener = addRaycastsAABBListener;
+exports.computeAABB = computeAABB;
+exports.computeWorldVertsAndAABB = computeWorldVertsAndAABB;
+exports.getRayFromMouse = getRayFromMouse;
+exports.getRayFromMouse2 = getRayFromMouse2;
+exports.rayIntersectsAABB = rayIntersectsAABB;
+exports.rayIntersectsSphere = rayIntersectsSphere;
+exports.touchCoordinate = void 0;
+var _wgpuMatrix = require("wgpu-matrix");
+/**
+ * @author Nikola Lukic
+ * @email zlatnaspirala@gmail.com
+ * @site https://maximumroulette.com
+ * @Licence GPL v3
+ * @credits chatgpt used for this script adaptation.
+ * @Note matrix-engine-wgpu adaptation test
+ * default for now:
+ * app.cameras['WASD']
+ * Only tested for WASD type of camera.
+ * app is global - will be fixed in future
+ */
+
+let rayHitEvent;
+let touchCoordinate = exports.touchCoordinate = {
+  enabled: false,
+  x: 0,
+  y: 0,
+  stopOnFirstDetectedHit: false
+};
+function multiplyMatrixVector(matrix, vector) {
+  return _wgpuMatrix.vec4.transformMat4(vector, matrix);
+}
+function getRayFromMouse(event, canvas, camera) {
+  const rect = canvas.getBoundingClientRect();
+  let x = (event.clientX - rect.left) / rect.width * 2 - 1;
+  let y = (event.clientY - rect.top) / rect.height * 2 - 1;
+  // simple invert
+  x = -x;
+  y = -y;
+  const fov = Math.PI / 4;
+  const aspect = canvas.width / canvas.height;
+  const near = 0.1;
+  const far = 1000;
+  camera.projectionMatrix = _wgpuMatrix.mat4.perspective(2 * Math.PI / 5, aspect, 1, 1000.0);
+  const invProjection = _wgpuMatrix.mat4.inverse(camera.projectionMatrix);
+  const invView = _wgpuMatrix.mat4.inverse(camera.view);
+  const ndc = [x, y, 1, 1];
+  let worldPos = multiplyMatrixVector(invProjection, ndc);
+  worldPos = multiplyMatrixVector(invView, worldPos);
+  let world;
+  if (worldPos[3] !== 0) {
+    world = [worldPos[0] / worldPos[3], worldPos[2] / worldPos[3], worldPos[1] / worldPos[3]];
+  } else {
+    console.log("[raycaster]special case 0.");
+    world = [worldPos[0], worldPos[1], worldPos[2]];
+  }
+  const rayOrigin = [camera.position[0], camera.position[1], camera.position[2]];
+  const rayDirection = _wgpuMatrix.vec3.normalize(_wgpuMatrix.vec3.subtract(world, rayOrigin));
+  rayDirection[2] = -rayDirection[2];
+  return {
+    rayOrigin,
+    rayDirection
+  };
+}
+function getRayFromMouse2(event, canvas, camera) {
+  const rect = canvas.getBoundingClientRect();
+  let x = (event.clientX - rect.left) / rect.width * 2 - 1;
+  let y = (event.clientY - rect.top) / rect.height * 2 - 1;
+  // simple invert
+  y = -y;
+  const fov = Math.PI / 4;
+  const aspect = canvas.width / canvas.height;
+  const near = 0.1;
+  const far = 1000;
+  camera.projectionMatrix = _wgpuMatrix.mat4.perspective(2 * Math.PI / 5, aspect, 1, 1000.0);
+  const invProjection = _wgpuMatrix.mat4.inverse(camera.projectionMatrix);
+  console.log("camera.view:" + camera.view);
+  const invView = _wgpuMatrix.mat4.inverse(camera.view);
+  const ndc = [x, y, 1, 1];
+  let worldPos = multiplyMatrixVector(invProjection, ndc);
+  worldPos = multiplyMatrixVector(invView, worldPos);
+  let world;
+  if (worldPos[3] !== 0) {
+    world = [worldPos[0] / worldPos[3], worldPos[1] / worldPos[3], worldPos[2] / worldPos[3]];
+  } else {
+    console.log("[raycaster]special case 0.");
+    world = [worldPos[0], worldPos[1], worldPos[2]];
+  }
+  const rayOrigin = [camera.position[0], camera.position[1], camera.position[2]];
+  const rayDirection = _wgpuMatrix.vec3.normalize(_wgpuMatrix.vec3.subtract(world, rayOrigin));
+  return {
+    rayOrigin,
+    rayDirection
+  };
+}
+function rayIntersectsSphere(rayOrigin, rayDirection, sphereCenter, sphereRadius) {
+  const pos = [sphereCenter.x, sphereCenter.y, sphereCenter.z];
+  const oc = _wgpuMatrix.vec3.subtract(rayOrigin, pos);
+  const a = _wgpuMatrix.vec3.dot(rayDirection, rayDirection);
+  const b = 2.0 * _wgpuMatrix.vec3.dot(oc, rayDirection);
+  const c = _wgpuMatrix.vec3.dot(oc, oc) - sphereRadius * sphereRadius;
+  const discriminant = b * b - 4 * a * c;
+  return discriminant > 0;
+}
+function addRaycastListener(canvasId = "canvas1") {
+  let canvasDom = document.getElementById(canvasId);
+  canvasDom.addEventListener('click', event => {
+    let camera = app.cameras.WASD;
+    const {
+      rayOrigin,
+      rayDirection
+    } = getRayFromMouse(event, canvasDom, camera);
+    for (const object of app.mainRenderBundle) {
+      if (object.raycast.enabled == false) return;
+      if (rayIntersectsSphere(rayOrigin, rayDirection, object.position, object.raycast.radius)) {
+        console.log('Object clicked:', object.name);
+        // Just like in matrix-engine webGL version "ray.hit.event"
+        dispatchEvent(new CustomEvent('ray.hit.event', {
+          detail: {
+            hitObject: object,
+            rayOrigin: rayOrigin,
+            rayDirection: rayDirection
+          }
+        }));
+      }
+    }
+  });
+}
+
+// Compute AABB from flat vertices array [x,y,z, x,y,z, ...]
+function computeAABB(vertices) {
+  const min = [Infinity, Infinity, Infinity];
+  const max = [-Infinity, -Infinity, -Infinity];
+  for (let i = 0; i < vertices.length; i += 3) {
+    min[0] = Math.min(min[0], vertices[i]);
+    min[1] = Math.min(min[1], vertices[i + 1]);
+    min[2] = Math.min(min[2], vertices[i + 2]);
+    max[0] = Math.max(max[0], vertices[i]);
+    max[1] = Math.max(max[1], vertices[i + 1]);
+    max[2] = Math.max(max[2], vertices[i + 2]);
+  }
+  return [min, max];
+}
+
+// Ray-AABB intersection using slabs method
+function rayIntersectsAABB(rayOrigin, rayDirection, boxMin, boxMax) {
+  let tmin = (boxMin[0] - rayOrigin[0]) / rayDirection[0];
+  let tmax = (boxMax[0] - rayOrigin[0]) / rayDirection[0];
+  if (tmin > tmax) [tmin, tmax] = [tmax, tmin];
+  let tymin = (boxMin[1] - rayOrigin[1]) / rayDirection[1];
+  let tymax = (boxMax[1] - rayOrigin[1]) / rayDirection[1];
+  if (tymin > tymax) [tymin, tymax] = [tymax, tymin];
+  if (tmin > tymax || tymin > tmax) return false;
+  if (tymin > tmin) tmin = tymin;
+  if (tymax < tmax) tmax = tymax;
+  let tzmin = (boxMin[2] - rayOrigin[2]) / rayDirection[2];
+  let tzmax = (boxMax[2] - rayOrigin[2]) / rayDirection[2];
+  if (tzmin > tzmax) [tzmin, tzmax] = [tzmax, tzmin];
+  if (tmin > tzmax || tzmin > tmax) return false;
+  return true;
+}
+function computeWorldVertsAndAABB(object) {
+  const modelMatrix = object.getModelMatrix(object.position);
+  const worldVerts = [];
+  for (let i = 0; i < object.mesh.vertices.length; i += 3) {
+    const local = _wgpuMatrix.vec3.fromValues(object.mesh.vertices[i], object.mesh.vertices[i + 1], object.mesh.vertices[i + 2]);
+    const world = _wgpuMatrix.vec3.transformMat4(local, modelMatrix); // OK
+    worldVerts.push(world[0], world[1], world[2]);
+  }
+  const [boxMin, boxMax] = computeAABB(worldVerts);
+  return {
+    modelMatrix,
+    worldVerts,
+    boxMin,
+    boxMax
+  };
+}
+function addRaycastsAABBListener(canvasId = "canvas1") {
+  const canvasDom = document.getElementById(canvasId);
+  if (!canvasDom) {
+    console.warn(`Canvas with id ${canvasId} not found`);
+    return;
+  }
+  canvasDom.addEventListener('click', event => {
+    const camera = app.cameras.WASD;
+    const {
+      rayOrigin,
+      rayDirection
+    } = getRayFromMouse2(event, canvasDom, camera);
+    for (const object of app.mainRenderBundle) {
+      const {
+        boxMin,
+        boxMax
+      } = computeWorldVertsAndAABB(object);
+      if (object.raycast.enabled == false) return;
+      if (rayIntersectsAABB(rayOrigin, rayDirection, boxMin, boxMax)) {
+        // console.log('AABB hit:', object.name);
+        canvasDom.dispatchEvent(new CustomEvent('ray.hit.event', {
+          detail: {
+            hitObject: object
+          },
+          rayOrigin: rayOrigin,
+          rayDirection: rayDirection
+        }));
+      }
+    }
+  });
+}
+
+},{"wgpu-matrix":5}],14:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -9563,7 +9807,7 @@ function setupCanvasFilters(canvasId) {
   updateFilter(); // Initial
 }
 
-},{}],14:[function(require,module,exports){
+},{}],15:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -9603,7 +9847,7 @@ class MultiLang {
 }
 exports.MultiLang = MultiLang;
 
-},{"../engine/utils":13}],15:[function(require,module,exports){
+},{"../engine/utils":14}],16:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -9903,7 +10147,7 @@ class MatrixAmmo {
 }
 exports.default = MatrixAmmo;
 
-},{"../engine/utils":13}],16:[function(require,module,exports){
+},{"../engine/utils":14}],17:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -9961,7 +10205,7 @@ fn main(input : FragmentInput) -> @location(0) vec4f {
   // return vec4(textureColor.rgb , 0.5);
 }`;
 
-},{}],17:[function(require,module,exports){
+},{}],18:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -10019,7 +10263,7 @@ fn fragmentMain(input: VertexOutput) -> @location(0) vec4f {
   return vec4f(textureColor.rgb * lightColor, textureColor.a);
 }`;
 
-},{}],18:[function(require,module,exports){
+},{}],19:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -10076,7 +10320,7 @@ fn main(
 }
 `;
 
-},{}],19:[function(require,module,exports){
+},{}],20:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -10104,7 +10348,7 @@ fn main(
 }
 `;
 
-},{}],20:[function(require,module,exports){
+},{}],21:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -10174,7 +10418,7 @@ class MatrixSounds {
 }
 exports.MatrixSounds = MatrixSounds;
 
-},{}],21:[function(require,module,exports){
+},{}],22:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -10749,4 +10993,4 @@ class MatrixEngineWGPU {
 }
 exports.default = MatrixEngineWGPU;
 
-},{"./engine/ball.js":6,"./engine/cube.js":7,"./engine/engine.js":8,"./engine/loader-obj.js":9,"./engine/mesh-obj.js":11,"./engine/mesh.js":12,"./engine/utils.js":13,"./multilang/lang.js":14,"./physics/matrix-ammo.js":15,"./sounds/sounds.js":20,"wgpu-matrix":5}]},{},[1]);
+},{"./engine/ball.js":6,"./engine/cube.js":7,"./engine/engine.js":8,"./engine/loader-obj.js":9,"./engine/mesh-obj.js":11,"./engine/mesh.js":12,"./engine/utils.js":14,"./multilang/lang.js":15,"./physics/matrix-ammo.js":16,"./sounds/sounds.js":21,"wgpu-matrix":5}]},{},[1]);

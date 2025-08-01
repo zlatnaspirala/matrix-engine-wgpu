@@ -6,7 +6,13 @@
 // import {degToRad, radToDeg} from "./utils";
 import {downloadMeshes} from "./src/engine/loader-obj.js";
 import MatrixEngineWGPU from "./src/world.js";
-import {addRaycastsAABBListener, addRaycastListener, getRayFromMouse, rayIntersectsSphere} from "./src/engine/raycast.js";
+import {
+  addRaycastsAABBListener,
+  addRaycastListener, getRayFromMouse,
+  getRayFromMouse2, rayIntersectsSphere,
+  computeWorldVertsAndAABB, rayIntersectsAABB,
+  computeAABB
+} from "./src/engine/raycast.js";
 
 var about = () => {
   console.log("Hi npm. matrix-engine for webgpu is ready...")
@@ -15,16 +21,20 @@ var about = () => {
   console.log(" - Loading obj files with uvs")
   console.log(" - Scene camera use -z front")
   console.log(" - position, rotation - same like matrix-engine")
-	console.log(" - Physics used Ammo.js build")
-	console.log(" - Raycaster HIT/CLICK on object scene")
+  console.log(" - Physics used Ammo.js build")
+  console.log(" - Raycaster HIT/CLICK on object scene")
 }
 
 export {
   MatrixEngineWGPU,
   downloadMeshes,
-	rayIntersectsSphere,
-	getRayFromMouse,
-	addRaycastListener,
+  rayIntersectsSphere,
+  getRayFromMouse,
+  getRayFromMouse2,
+  addRaycastListener,
   addRaycastsAABBListener,
+  rayIntersectsAABB,
+  computeAABB,
+  computeWorldVertsAndAABB,
   about
 }

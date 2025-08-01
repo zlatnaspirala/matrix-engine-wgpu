@@ -3,6 +3,7 @@ import {downloadMeshes} from '../src/engine/loader-obj.js';
 // import MatrixEngineWGPU from "./src/world.js";
 // import {downloadMeshes} from './src/engine/loader-obj.js';
 import {LOG_FUNNY, LOG_INFO, LOG_MATRIX} from "../src/engine/utils.js";
+import {addRaycastsAABBListener} from "../src/engine/raycast.js";
 
 export var loadObjFile = function() {
 
@@ -23,7 +24,7 @@ export var loadObjFile = function() {
         sphere: "./res/meshes/blender/sphere.obj",
         cube: "./res/meshes/blender/cube.obj",
       }, onLoadObj,
-        {scale: [3, 3, 3]})
+        {scale: [1, 1, 1]})
     })
 
     function onLoadObj(m) {
@@ -33,16 +34,17 @@ export var loadObjFile = function() {
       }
 
       loadObjFile.addMeshObj({
-        position: {x: 0, y: 2, z: -10},
+        position: {x: 0, y: 0, z: -10},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
         texturesPaths: ['./res/meshes/blender/cube.png'],
-        name: 'CubePhysics',
+        name: 'Cube1',
         mesh: m.cube,
         physics: {
-          enabled: true,
+          enabled: false,
           geometry: "Cube"
-        }
+        },
+            raycast: { enabled: true , radius: 2 }
       })
 
       loadObjFile.addMeshObj({
@@ -55,7 +57,8 @@ export var loadObjFile = function() {
         physics: {
           enabled: true,
           geometry: "Sphere"
-        }
+        },
+        raycast: { enabled: true , radius: 2 }
       })
 
 
@@ -64,13 +67,16 @@ export var loadObjFile = function() {
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
         texturesPaths: ['./res/meshes/blender/cube.png'],
-        name: 'CubePhysics',
+        name: 'welcomeText',
         mesh: m.welcomeText,
         physics: {
           enabled: true,
           geometry: "Cube"
-        }
+        },
+        raycast: { enabled: true , radius: 2 }
       })
+
+      addRaycastsAABBListener();
 
     }
   })

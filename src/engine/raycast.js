@@ -62,6 +62,43 @@ export function getRayFromMouse(event, canvas, camera) {
   return {rayOrigin, rayDirection};
 }
 
+export function getRayFromMouse2(event, canvas, camera) {
+  const rect = canvas.getBoundingClientRect();
+  let x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+  let y = ((event.clientY - rect.top) / rect.height) * 2 - 1;
+  // simple invert
+  y = -y;
+  const fov = Math.PI / 4;
+  const aspect = canvas.width / canvas.height;
+  const near = 0.1;
+  const far = 1000;
+  camera.projectionMatrix = mat4.perspective((2 * Math.PI) / 5, aspect, 1, 1000.0);
+  const invProjection = mat4.inverse(camera.projectionMatrix);
+  console.log("camera.view:" + camera.view)
+  const invView = mat4.inverse(camera.view);
+  const ndc = [x, y, 1, 1];
+  let worldPos = multiplyMatrixVector(invProjection, ndc);
+  worldPos = multiplyMatrixVector(invView, worldPos);
+  let world;
+  if(worldPos[3] !== 0) {
+    world = [
+      worldPos[0] / worldPos[3],
+      worldPos[1] / worldPos[3],
+      worldPos[2] / worldPos[3]
+    ];
+  } else {
+    console.log("[raycaster]special case 0.");
+    world = [
+      worldPos[0],
+      worldPos[1],
+      worldPos[2]
+    ];
+  }
+  const rayOrigin = [camera.position[0], camera.position[1], camera.position[2]];
+  const rayDirection = vec3.normalize(vec3.subtract(world, rayOrigin));
+  return {rayOrigin, rayDirection};
+}
+
 export function rayIntersectsSphere(rayOrigin, rayDirection, sphereCenter, sphereRadius) {
   const pos = [sphereCenter.x, sphereCenter.y, sphereCenter.z];
   const oc = vec3.subtract(rayOrigin, pos);
@@ -78,12 +115,15 @@ export function addRaycastListener(canvasId = "canvas1") {
     let camera = app.cameras.WASD;
     const {rayOrigin, rayDirection} = getRayFromMouse(event, canvasDom, camera);
     for(const object of app.mainRenderBundle) {
+      if(object.raycast.enabled == false) return;
       if(rayIntersectsSphere(rayOrigin, rayDirection, object.position, object.raycast.radius)) {
         console.log('Object clicked:', object.name);
         // Just like in matrix-engine webGL version "ray.hit.event"
         dispatchEvent(new CustomEvent('ray.hit.event', {
           detail: {
-            hitObject: object
+            hitObject: object,
+            rayOrigin: rayOrigin,
+            rayDirection: rayDirection
           }
         }))
       }
@@ -91,12 +131,26 @@ export function addRaycastListener(canvasId = "canvas1") {
   });
 }
 
-export function rayIntersectsAABB(
-  rayOrigin,
-  rayDirection,
-  boxMin,
-  boxMax
-) {
+// Compute AABB from flat vertices array [x,y,z, x,y,z, ...]
+export function computeAABB(vertices) {
+  const min = [Infinity, Infinity, Infinity];
+  const max = [-Infinity, -Infinity, -Infinity];
+
+  for(let i = 0;i < vertices.length;i += 3) {
+    min[0] = Math.min(min[0], vertices[i]);
+    min[1] = Math.min(min[1], vertices[i + 1]);
+    min[2] = Math.min(min[2], vertices[i + 2]);
+
+    max[0] = Math.max(max[0], vertices[i]);
+    max[1] = Math.max(max[1], vertices[i + 1]);
+    max[2] = Math.max(max[2], vertices[i + 2]);
+  }
+
+  return [min, max];
+}
+
+// Ray-AABB intersection using slabs method
+export function rayIntersectsAABB(rayOrigin, rayDirection, boxMin, boxMax) {
   let tmin = (boxMin[0] - rayOrigin[0]) / rayDirection[0];
   let tmax = (boxMax[0] - rayOrigin[0]) / rayDirection[0];
   if(tmin > tmax) [tmin, tmax] = [tmax, tmin];
@@ -105,7 +159,7 @@ export function rayIntersectsAABB(
   let tymax = (boxMax[1] - rayOrigin[1]) / rayDirection[1];
   if(tymin > tymax) [tymin, tymax] = [tymax, tymin];
 
-  if(tmin > tymax || tymin > tmax) return false;
+  if((tmin > tymax) || (tymin > tmax)) return false;
   if(tymin > tmin) tmin = tymin;
   if(tymax < tmax) tmax = tymax;
 
@@ -113,54 +167,30 @@ export function rayIntersectsAABB(
   let tzmax = (boxMax[2] - rayOrigin[2]) / rayDirection[2];
   if(tzmin > tzmax) [tzmin, tzmax] = [tzmax, tzmin];
 
-  if(tmin > tzmax || tzmin > tmax) return false;
+  if((tmin > tzmax) || (tzmin > tmax)) return false;
 
   return true;
 }
 
-export function computeAABBFromVertices(vertices) {
-  const min = [Infinity, Infinity, Infinity];
-  const max = [-Infinity, -Infinity, -Infinity];
-
-  for(let i = 0;i < vertices.length;i += 3) {
-    const x = vertices[i];
-    const y = vertices[i + 1];
-    const z = vertices[i + 2];
-
-    min[0] = Math.min(min[0], x);
-    min[1] = Math.min(min[1], y);
-    min[2] = Math.min(min[2], z);
-
-    max[0] = Math.max(max[0], x);
-    max[1] = Math.max(max[1], y);
-    max[2] = Math.max(max[2], z);
+export function computeWorldVertsAndAABB(object) {
+  const modelMatrix = object.getModelMatrix(object.position);
+  const worldVerts = [];
+  for(let i = 0;i < object.mesh.vertices.length;i += 3) {
+    const local = vec3.fromValues(
+      object.mesh.vertices[i],
+      object.mesh.vertices[i + 1],
+      object.mesh.vertices[i + 2]
+    );
+    const world = vec3.transformMat4(local, modelMatrix); // OK
+    worldVerts.push(world[0], world[1], world[2]);
   }
-
-  return [min, max];
-}
-
-export function computeWorldAABB(vertices, modelMatrix) {
-  const min = [Infinity, Infinity, Infinity];
-  const max = [-Infinity, -Infinity, -Infinity];
-  const v = [0, 0, 0];
-
-  for (let i = 0; i < vertices.length; i += 3) {
-    v[0] = vertices[i];
-    v[1] = vertices[i + 1];
-    v[2] = vertices[i + 2];
-
-    const worldV = vec3.transformMat4([], v, modelMatrix);
-
-    min[0] = Math.min(min[0], worldV[0]);
-    min[1] = Math.min(min[1], worldV[1]);
-    min[2] = Math.min(min[2], worldV[2]);
-
-    max[0] = Math.max(max[0], worldV[0]);
-    max[1] = Math.max(max[1], worldV[1]);
-    max[2] = Math.max(max[2], worldV[2]);
-  }
-
-  return [min, max];
+  const [boxMin, boxMax] = computeAABB(worldVerts);
+  return {
+    modelMatrix,
+    worldVerts,
+    boxMin,
+    boxMax,
+  };
 }
 
 export function addRaycastsAABBListener(canvasId = "canvas1") {
@@ -172,44 +202,16 @@ export function addRaycastsAABBListener(canvasId = "canvas1") {
 
   canvasDom.addEventListener('click', (event) => {
     const camera = app.cameras.WASD;
-    const {rayOrigin, rayDirection} = getRayFromMouse(event, canvasDom, camera);
-
+    const {rayOrigin, rayDirection} = getRayFromMouse2(event, canvasDom, camera);
     for(const object of app.mainRenderBundle) {
-      // Compute AABB min/max from object position and size
-      const pos = [object.position.x,object.position.y,object.position.z]; // [x,y,z]
-      // Works only for 0,0,0 static object
-      // const [boxMinLocal, boxMaxLocal] = computeAABBFromVertices(object.mesh.vertices);
-      const [boxMin, boxMax] = computeWorldAABB(object.mesh.vertices, object.viewMatrix);
-      // Optionally transform to world space using object.position
-      // const pos = object.position;
-      // const boxMin = [
-      //   boxMinLocal[0] + pos[0],
-      //   boxMinLocal[1] + pos[1],
-      //   boxMinLocal[2] + pos[2]
-      // ];
-      // const boxMax = [
-      //   boxMaxLocal[0] + pos[0],
-      //   boxMaxLocal[1] + pos[1],
-      //   boxMaxLocal[2] + pos[2]
-      // ];
-      //////////////
-      // const size = object.size || [1, 1, 1]; // Replace with actual object size or default 1x1x1
-      // const boxMin = [
-      //   pos[0] - size[0] / 2,
-      //   pos[1] - size[1] / 2,
-      //   pos[2] - size[2] / 2
-      // ];
-      // const boxMax = [
-      //   pos[0] + size[0] / 2,
-      //   pos[1] + size[1] / 2,
-      //   pos[2] + size[2] / 2
-      // ];
-
+      const {boxMin, boxMax} = computeWorldVertsAndAABB(object);
+      if(object.raycast.enabled == false) return;
       if(rayIntersectsAABB(rayOrigin, rayDirection, boxMin, boxMax)) {
-        console.log('AABB hit:', object.name);
-
+        // console.log('AABB hit:', object.name);
         canvasDom.dispatchEvent(new CustomEvent('ray.hit.event', {
-          detail: {hitObject: object}
+          detail: {hitObject: object},
+          rayOrigin: rayOrigin,
+          rayDirection: rayDirection
         }));
       }
     }

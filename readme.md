@@ -71,6 +71,10 @@ mainCameraParams: {
 
 ### Object Position
 
+Best way for access physics body object:
+ app.matrixAmmo.getBodyByName(name)
+ also app.matrixAmmo.getNameByBody
+
 Control object position:
 
 ```js
@@ -164,13 +168,17 @@ window.addEventListener('click', (event) => {
 Automatic raycast listener:
 
 ```js
-addRaycastListener();
+addRaycastListener(); 
 
 window.addEventListener('ray.hit.event', (event) => {
   console.log('Ray hit:', event.detail.hitObject);
 });
 ```
-
+Engine also exports (box):
+ - addRaycastsAABBListener 
+ - rayIntersectsAABB,
+ - computeAABB,
+ - computeWorldVertsAndAABB,
 ---
 
 ### How to Load `.obj` Models

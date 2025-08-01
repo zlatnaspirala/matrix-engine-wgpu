@@ -36,8 +36,8 @@ export default class MEMeshObj {
     // ObjSequence animation
     if(typeof o.objAnim !== 'undefined' && o.objAnim != null) {
       this.objAnim = o.objAnim;
-      for (var key in this.objAnim.animations){
-        if (key != 'active') this.objAnim.animations[key].speedCounter = 0;
+      for(var key in this.objAnim.animations) {
+        if(key != 'active') this.objAnim.animations[key].speedCounter = 0;
       }
       console.log(`%c Mesh objAnim exist: ${o.objAnim}`, LOG_FUNNY_SMALL);
       this.drawElements = this.drawElementsAnim;
@@ -428,6 +428,25 @@ export default class MEMeshObj {
         return this.modelViewProjectionMatrix;
       }
 
+      this.getModelMatrix = (pos) => {
+        let modelMatrix =  mat4.identity();
+        mat4.translate(modelMatrix, [pos.x, pos.y, pos.z], modelMatrix);
+        if(this.itIsPhysicsBody) {
+          mat4.rotate(modelMatrix,
+            [this.rotation.axis.x, this.rotation.axis.y, this.rotation.axis.z],
+              degToRad(this.rotation.angle),
+              modelMatrix
+          );
+        } else {
+          mat4.rotateX(modelMatrix, this.rotation.getRotX(), modelMatrix);
+          mat4.rotateY(modelMatrix, this.rotation.getRotY(), modelMatrix);
+          mat4.rotateZ(modelMatrix, this.rotation.getRotZ(), modelMatrix);
+        }
+        // Apply scale if you have it, e.g.:
+        // mat4.scale(modelMatrix, modelMatrix, [this.scale.x, this.scale.y, this.scale.z]);
+        return modelMatrix;
+      };
+
       this.upVector = vec3.fromValues(0, 1, 0);
       this.origin = vec3.fromValues(0, 0, 0);
 
@@ -609,6 +628,7 @@ export default class MEMeshObj {
   draw = (commandEncoder) => {
     if(this.done == false) return;
     const transformationMatrix = this.getTransformationMatrix(this.position);
+
     this.device.queue.writeBuffer(
       this.sceneUniformBuffer,
       64,
@@ -713,7 +733,7 @@ export default class MEMeshObj {
     renderPass.setIndexBuffer(mesh.indexBuffer, 'uint16');
     renderPass.drawIndexed(mesh.indexCount);
     if(this.objAnim.playing == true) {
-      if (this.objAnim.animations[this.objAnim.animations.active].speedCounter >= this.objAnim.animations[this.objAnim.animations.active].speed) {
+      if(this.objAnim.animations[this.objAnim.animations.active].speedCounter >= this.objAnim.animations[this.objAnim.animations.active].speed) {
         this.objAnim.currentAni++;
         this.objAnim.animations[this.objAnim.animations.active].speedCounter = 0;
       } else {
