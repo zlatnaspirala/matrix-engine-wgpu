@@ -100,34 +100,21 @@ var loadObjFile = function () {
       for (var key in m) {
         console.log(`%c Loaded objs: ${key} `, _utils.LOG_MATRIX);
       }
-      loadObjFile.addMeshObj({
-        position: {
-          x: 0,
-          y: 0,
-          z: -10
-        },
-        rotation: {
-          x: 0,
-          y: 0,
-          z: 0
-        },
-        rotationSpeed: {
-          x: 0,
-          y: 0,
-          z: 0
-        },
-        texturesPaths: ['./res/meshes/blender/cube.png'],
-        name: 'Cube1',
-        mesh: m.cube,
-        physics: {
-          enabled: false,
-          geometry: "Cube"
-        },
-        raycast: {
-          enabled: true,
-          radius: 2
-        }
-      });
+
+      // loadObjFile.addMeshObj({
+      //   position: {x: 0, y: 0, z: -10},
+      //   rotation: {x: 0, y: 0, z: 0},
+      //   rotationSpeed: {x: 0, y: 0, z: 0},
+      //   texturesPaths: ['./res/meshes/blender/cube.png'],
+      //   name: 'Cube1',
+      //   mesh: m.cube,
+      //   physics: {
+      //     enabled: false,
+      //     geometry: "Cube"
+      //   },
+      //       raycast: { enabled: true , radius: 2 }
+      // })
+
       loadObjFile.addMeshObj({
         position: {
           x: 0,
@@ -150,41 +137,25 @@ var loadObjFile = function () {
         physics: {
           enabled: true,
           geometry: "Sphere"
-        },
-        raycast: {
-          enabled: true,
-          radius: 2
         }
+        // raycast: { enabled: true , radius: 2 }
       });
-      loadObjFile.addMeshObj({
-        position: {
-          x: 0,
-          y: 2,
-          z: -10
-        },
-        rotation: {
-          x: 0,
-          y: 0,
-          z: 0
-        },
-        rotationSpeed: {
-          x: 0,
-          y: 0,
-          z: 0
-        },
-        texturesPaths: ['./res/meshes/blender/cube.png'],
-        name: 'welcomeText',
-        mesh: m.welcomeText,
-        physics: {
-          enabled: true,
-          geometry: "Cube"
-        },
-        raycast: {
-          enabled: true,
-          radius: 2
-        }
-      });
-      (0, _raycast.addRaycastsAABBListener)();
+
+      // loadObjFile.addMeshObj({
+      //   position: {x: 0, y: 2, z: -10},
+      //   rotation: {x: 0, y: 0, z: 0},
+      //   rotationSpeed: {x: 0, y: 0, z: 0},
+      //   texturesPaths: ['./res/meshes/blender/cube.png'],
+      //   name: 'welcomeText',
+      //   mesh: m.welcomeText,
+      //   physics: {
+      //     enabled: true,
+      //     geometry: "Cube"
+      //   },
+      //   raycast: { enabled: true , radius: 2 }
+      // })
+
+      // addRaycastsAABBListener();
     }
   });
   window.app = loadObjFile;
@@ -9909,8 +9880,13 @@ class MatrixAmmo {
     }
   }
   addPhysicsSphere(MEObject, pOptions) {
+    const FLAGS = {
+      TEST_NIDZA: 3,
+      CF_KINEMATIC_OBJECT: 2
+    };
     let Ammo = this.Ammo;
-    var colShape = new Ammo.btSphereShape(pOptions.radius),
+    console.log(pOptions.radius + "<<pOptions.radius");
+    var colShape = new Ammo.btSphereShape(Array.isArray(pOptions.radius) ? pOptions.radius[0] : pOptions.radius),
       startTransform = new Ammo.btTransform();
     startTransform.setIdentity();
     var mass = 1;
@@ -9920,6 +9896,19 @@ class MatrixAmmo {
     var myMotionState = new Ammo.btDefaultMotionState(startTransform),
       rbInfo = new Ammo.btRigidBodyConstructionInfo(mass, myMotionState, colShape, localInertia),
       body = new Ammo.btRigidBody(rbInfo);
+    if (pOptions.mass == 0 && typeof pOptions.state == 'undefined' && typeof pOptions.collide == 'undefined') {
+      body.setActivationState(2);
+      body.setCollisionFlags(FLAGS.CF_KINEMATIC_OBJECT);
+      // console.log('what is pOptions.mass and state is 2 ....', pOptions.mass)
+    } else if (typeof pOptions.collide != 'undefined' && pOptions.collide == false) {
+      // idea not work for now - eliminate collide effect
+      body.setActivationState(4);
+      body.setCollisionFlags(FLAGS.TEST_NIDZA);
+    } else {
+      body.setActivationState(4);
+    }
+    body.name = pOptions.name;
+    MEObject.itIsPhysicsBody = true;
     body.MEObject = MEObject;
     this.dynamicsWorld.addRigidBody(body);
     this.rigidBodies.push(body);

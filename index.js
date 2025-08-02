@@ -4,7 +4,7 @@
  * npm import/export
  */
 // import {degToRad, radToDeg} from "./utils";
-import {downloadMeshes} from "./src/engine/loader-obj.js";
+import {downloadMeshes, makeObjSeqArg} from "./src/engine/loader-obj.js";
 import MatrixEngineWGPU from "./src/world.js";
 import {
   addRaycastsAABBListener,
@@ -36,5 +36,6 @@ export {
   rayIntersectsAABB,
   computeAABB,
   computeWorldVertsAndAABB,
+  makeObjSeqArg,
   about
 }

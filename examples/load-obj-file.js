@@ -33,19 +33,19 @@ export var loadObjFile = function() {
         console.log(`%c Loaded objs: ${key} `, LOG_MATRIX);
       }
 
-      loadObjFile.addMeshObj({
-        position: {x: 0, y: 0, z: -10},
-        rotation: {x: 0, y: 0, z: 0},
-        rotationSpeed: {x: 0, y: 0, z: 0},
-        texturesPaths: ['./res/meshes/blender/cube.png'],
-        name: 'Cube1',
-        mesh: m.cube,
-        physics: {
-          enabled: false,
-          geometry: "Cube"
-        },
-            raycast: { enabled: true , radius: 2 }
-      })
+      // loadObjFile.addMeshObj({
+      //   position: {x: 0, y: 0, z: -10},
+      //   rotation: {x: 0, y: 0, z: 0},
+      //   rotationSpeed: {x: 0, y: 0, z: 0},
+      //   texturesPaths: ['./res/meshes/blender/cube.png'],
+      //   name: 'Cube1',
+      //   mesh: m.cube,
+      //   physics: {
+      //     enabled: false,
+      //     geometry: "Cube"
+      //   },
+      //       raycast: { enabled: true , radius: 2 }
+      // })
 
       loadObjFile.addMeshObj({
         position: {x: 0, y: 2, z: -10},
@@ -58,25 +58,25 @@ export var loadObjFile = function() {
           enabled: true,
           geometry: "Sphere"
         },
-        raycast: { enabled: true , radius: 2 }
+        // raycast: { enabled: true , radius: 2 }
       })
 
 
-      loadObjFile.addMeshObj({
-        position: {x: 0, y: 2, z: -10},
-        rotation: {x: 0, y: 0, z: 0},
-        rotationSpeed: {x: 0, y: 0, z: 0},
-        texturesPaths: ['./res/meshes/blender/cube.png'],
-        name: 'welcomeText',
-        mesh: m.welcomeText,
-        physics: {
-          enabled: true,
-          geometry: "Cube"
-        },
-        raycast: { enabled: true , radius: 2 }
-      })
+      // loadObjFile.addMeshObj({
+      //   position: {x: 0, y: 2, z: -10},
+      //   rotation: {x: 0, y: 0, z: 0},
+      //   rotationSpeed: {x: 0, y: 0, z: 0},
+      //   texturesPaths: ['./res/meshes/blender/cube.png'],
+      //   name: 'welcomeText',
+      //   mesh: m.welcomeText,
+      //   physics: {
+      //     enabled: true,
+      //     geometry: "Cube"
+      //   },
+      //   raycast: { enabled: true , radius: 2 }
+      // })
 
-      addRaycastsAABBListener();
+      // addRaycastsAABBListener();
 
     }
   })
