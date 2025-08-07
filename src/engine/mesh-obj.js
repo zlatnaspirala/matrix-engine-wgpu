@@ -5,10 +5,12 @@ import {vertexShadowWGSL} from '../shaders/vertexShadow.wgsl';
 import {fragmentWGSL} from '../shaders/fragment.wgsl';
 import {vertexWGSL} from '../shaders/vertex.wgsl';
 import {degToRad, genName, LOG_FUNNY_SMALL} from './utils';
-// import {checkingProcedure, checkingRay, touchCoordinate} from './raycast';
+import Materials from './materials';
+import {fragmentVideoWGSL} from '../shaders/fragment.video.wgsl';
 
-export default class MEMeshObj {
+export default class MEMeshObj extends Materials {
   constructor(canvas, device, context, o) {
+    super(device);
     if(typeof o.name === 'undefined') o.name = genName(9);
     if(typeof o.raycast === 'undefined') {
       this.raycast = {
@@ -27,6 +29,8 @@ export default class MEMeshObj {
 
     // comes from engine not from args
     this.clearColor = "red";
+
+    this.video = null;
 
     // Mesh stuff - for single mesh or t-posed (fiktive-first in loading order)
     this.mesh = o.mesh;
@@ -73,7 +77,7 @@ export default class MEMeshObj {
         this.projectionMatrix = mat4.perspective((2 * Math.PI) / 5, aspect, 1, 2000.0);
         this.modelViewProjectionMatrix = mat4.create();
         // console.log('cube added texturesPaths: ', this.texturesPaths)
-        this.loadTex0(this.texturesPaths, device).then(() => {
+        this.loadTex0(this.texturesPaths).then(() => {
           // console.log('loaded tex buffer for mesh:', this.texture0)
           resolve()
         })
@@ -82,10 +86,10 @@ export default class MEMeshObj {
 
     this.runProgram().then(() => {
       const aspect = canvas.width / canvas.height;
-      const presentationFormat = navigator.gpu.getPreferredCanvasFormat();
+      // const presentationFormat = navigator.gpu.getPreferredCanvasFormat();
       this.context.configure({
         device: this.device,
-        format: presentationFormat,
+        format: this.presentationFormat,
         alphaMode: 'premultiplied',
       });
 
@@ -189,7 +193,7 @@ export default class MEMeshObj {
         },
       ];
 
-      const primitive = {
+      this.primitive = {
         topology: 'triangle-list',
         // cullMode: 'back', // ORI 
         cullMode: 'none', // ORI 
@@ -225,82 +229,45 @@ export default class MEMeshObj {
           depthCompare: 'less',
           format: 'depth32float',
         },
-        primitive,
+        primitive: this.primitive,
       });
 
       // Create a bind group layout which holds the scene uniforms and
       // the texture+sampler for depth. We create it manually because the WebPU
       // implementation doesn't infer this from the shader (yet).
-      this.bglForRender = this.device.createBindGroupLayout({
-        entries: [
-          {
-            binding: 0,
-            visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
-            buffer: {
-              type: 'uniform',
-            },
-          },
-          {
-            binding: 1,
-            visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
-            texture: {
-              sampleType: 'depth',
-            },
-          },
-          {
-            binding: 2,
-            visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
-            sampler: {
-              type: 'comparison',
-            },
-          },
-          {
-            binding: 3,
-            visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
-            texture: {
-              sampleType: 'float',
-            }
-          },
-          {
-            binding: 4,
-            visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
-            sampler: {
-              type: 'filtering',
-            }
-          }
-        ]
-      });
+      this.createLayoutForRender()
 
-      this.pipeline = this.device.createRenderPipeline({
-        layout: this.device.createPipelineLayout({
-          bindGroupLayouts: [this.bglForRender, this.uniformBufferBindGroupLayout],
-        }),
-        vertex: {
-          module: this.device.createShaderModule({
-            code: vertexWGSL,
-          }),
-          buffers: this.vertexBuffers,
-        },
-        fragment: {
-          module: this.device.createShaderModule({
-            code: fragmentWGSL,
-          }),
-          targets: [
-            {
-              format: presentationFormat,
-            },
-          ],
-          constants: {
-            shadowDepthTextureSize: this.shadowDepthTextureSize,
-          },
-        },
-        depthStencil: {
-          depthWriteEnabled: true,
-          depthCompare: 'less',
-          format: 'depth24plus-stencil8',
-        },
-        primitive,
-      });
+      this.setupPipeline();
+      // this.pipeline = this.device.createRenderPipeline({
+      //   layout: this.device.createPipelineLayout({
+      //     bindGroupLayouts: [this.bglForRender, this.uniformBufferBindGroupLayout],
+      //   }),
+      //   vertex: {
+      //     module: this.device.createShaderModule({
+      //       code: vertexWGSL,
+      //     }),
+      //     buffers: this.vertexBuffers,
+      //   },
+      //   fragment: {
+      //     module: this.device.createShaderModule({
+      //       code: fragmentWGSL,
+      //     }),
+      //     targets: [
+      //       {
+      //         format: presentationFormat,
+      //       },
+      //     ],
+      //     constants: {
+      //       shadowDepthTextureSize: this.shadowDepthTextureSize,
+      //     },
+      //   },
+      //   depthStencil: {
+      //     depthWriteEnabled: true,
+      //     depthCompare: 'less',
+      //     format: 'depth24plus-stencil8',
+      //   },
+      //   primitive,
+      // });
 
       const depthTexture = this.device.createTexture({
         size: [canvas.width, canvas.height],
@@ -355,35 +322,8 @@ export default class MEMeshObj {
         ],
       });
 
-      this.sceneBindGroupForRender = this.device.createBindGroup({
-        layout: this.bglForRender,
-        entries: [
-          {
-            binding: 0,
-            resource: {
-              buffer: this.sceneUniformBuffer,
-            },
-          },
-          {
-            binding: 1,
-            resource: this.shadowDepthTextureView,
-          },
-          {
-            binding: 2,
-            resource: this.device.createSampler({
-              compare: 'less',
-            }),
-          },
-          {
-            binding: 3,
-            resource: this.texture0.createView(),
-          },
-          {
-            binding: 4,
-            resource: this.sampler,
-          },
-        ],
-      });
+      // --------------------------
+      this.createBindGroupForRender();
 
       this.modelBindGroup = this.device.createBindGroup({
         layout: this.uniformBufferBindGroupLayout,
@@ -429,13 +369,13 @@ export default class MEMeshObj {
       }
 
       this.getModelMatrix = (pos) => {
-        let modelMatrix =  mat4.identity();
+        let modelMatrix = mat4.identity();
         mat4.translate(modelMatrix, [pos.x, pos.y, pos.z], modelMatrix);
         if(this.itIsPhysicsBody) {
           mat4.rotate(modelMatrix,
             [this.rotation.axis.x, this.rotation.axis.y, this.rotation.axis.z],
-              degToRad(this.rotation.angle),
-              modelMatrix
+            degToRad(this.rotation.angle),
+            modelMatrix
           );
         } else {
           mat4.rotateX(modelMatrix, this.rotation.getRotX(), modelMatrix);
@@ -589,40 +529,39 @@ export default class MEMeshObj {
     ///////////////////////
   }
 
-  async loadTex0(texturesPaths, device) {
-
-    this.sampler = device.createSampler({
-      magFilter: 'linear',
-      minFilter: 'linear',
+  setupPipeline = () => {
+    this.pipeline = this.device.createRenderPipeline({
+      layout: this.device.createPipelineLayout({
+        bindGroupLayouts: [this.bglForRender, this.uniformBufferBindGroupLayout],
+      }),
+      vertex: {
+        entryPoint: 'main', // ✅ Add this
+        module: this.device.createShaderModule({
+          code: vertexWGSL,
+        }),
+        buffers: this.vertexBuffers,
+      },
+      fragment: {
+        entryPoint: 'main', // ✅ Add this
+        module: this.device.createShaderModule({
+          code: (this.isVideo == true ? fragmentVideoWGSL : fragmentWGSL),
+        }),
+        targets: [
+          {
+            format: this.presentationFormat,
+          },
+        ],
+        constants: {
+          shadowDepthTextureSize: this.shadowDepthTextureSize,
+        },
+      },
+      depthStencil: {
+        depthWriteEnabled: true,
+        depthCompare: 'less',
+        format: 'depth24plus-stencil8',
+      },
+      primitive: this.primitive,
     });
-
-    return new Promise(async (resolve) => {
-      const response = await fetch(texturesPaths[0]);
-
-      // const blob = await response.blob();
-      // if(!blob.type.startsWith('image/')) {
-      //   console.error("Unexpected texture response type:", blob.type);
-      //   return;
-      // }
-
-      // const imageBitmap = await createImageBitmap(blob);
-      const imageBitmap = await createImageBitmap(await response.blob());
-      this.texture0 = device.createTexture({
-        size: [imageBitmap.width, imageBitmap.height, 1], // REMOVED 1
-        format: 'rgba8unorm',
-        usage:
-          GPUTextureUsage.TEXTURE_BINDING |
-          GPUTextureUsage.COPY_DST |
-          GPUTextureUsage.RENDER_ATTACHMENT,
-      });
-
-      device.queue.copyExternalImageToTexture(
-        {source: imageBitmap},
-        {texture: this.texture0},
-        [imageBitmap.width, imageBitmap.height]
-      );
-      resolve()
-    })
   }
 
   draw = (commandEncoder) => {
@@ -642,6 +581,9 @@ export default class MEMeshObj {
   }
 
   drawElements = (renderPass) => {
+    if(this.isVideo) {
+      this.updateVideoTexture();
+    }
     renderPass.setBindGroup(0, this.sceneBindGroupForRender);
     renderPass.setBindGroup(1, this.modelBindGroup);
     renderPass.setVertexBuffer(0, this.vertexBuffer);
@@ -651,7 +593,7 @@ export default class MEMeshObj {
     renderPass.drawIndexed(this.indexCount);
   }
 
-  // test 
+  // test
   createGPUBuffer(dataArray, usage) {
     if(!dataArray || typeof dataArray.length !== 'number') {
       throw new Error('Invalid data array passed to createGPUBuffer');

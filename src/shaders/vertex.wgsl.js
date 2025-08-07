@@ -16,7 +16,7 @@ struct VertexOutput {
   @location(1) fragPos: vec3f,
   @location(2) fragNorm: vec3f,
   @location(3) uv : vec2f,
-  
+
   @builtin(position) Position: vec4f,
 }
 
@@ -46,4 +46,4 @@ fn main(
 
   return output;
 }
-`
+`;

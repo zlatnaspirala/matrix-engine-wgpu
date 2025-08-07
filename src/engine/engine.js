@@ -60,6 +60,7 @@ class CameraBase {
   get right() {
     return this.right_;
   }
+
   // Assigns `vec` to the first 3 elements of column vector 0 of the camera matrix
   set right(vec) {
     vec3.copy(vec, this.right_);
@@ -69,6 +70,7 @@ class CameraBase {
   get up() {
     return this.up_;
   }
+
   // Assigns `vec` to the first 3 elements of column vector 1 of the camera matrix \ Vec3
   set up(vec) {
     vec3.copy(vec, this.up_);
@@ -78,6 +80,7 @@ class CameraBase {
   get back() {
     return this.back_;
   }
+
   // Assigns `vec` to the first 3 elements of column vector 2 of the camera matrix
   set back(vec) {
     vec3.copy(vec, this.back_);
@@ -87,6 +90,7 @@ class CameraBase {
   get position() {
     return this.position_;
   }
+
   // Assigns `vec` to the first 3 elements of column vector 3 of the camera matrix
   set position(vec) {
     vec3.copy(vec, this.position_);

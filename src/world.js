@@ -84,7 +84,6 @@ export default class MatrixEngineWGPU {
       WASD: new WASDCamera({position: initialCameraPosition}),
     };
 
-    //
     this.label = new MultiLang()
     if(urlQuery.lang != null) {
       this.label.loadMultilang(urlQuery.lang).then((r) => {
@@ -134,6 +133,10 @@ export default class MatrixEngineWGPU {
 
     this.run(callback)
   };
+
+  getSceneObjectByName(name) {
+    return this.mainRenderBundle.find((sceneObject) => sceneObject.name === name )
+  }
 
   // Not in use for now
   addCube = (o) => {
@@ -337,7 +340,7 @@ export default class MatrixEngineWGPU {
         meItem.position.update();
       })
 
-      this.matrixAmmo.updatePhysics()
+      if (this.matrixAmmo) this.matrixAmmo.updatePhysics();
 
       this.mainRenderBundle.forEach((meItem, index) => {
         meItem.draw(commandEncoder);

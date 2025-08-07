@@ -27,10 +27,10 @@ Published on npm as: **`matrix-engine-wgpu`**
 
 ## Goals
 
-* ✔️ Support for 3D objects and scene transformations
-* 🎯 Replicate matrix-engine (WebGL) features
-* 📦 Based on the `shadowMapping` sample from [webgpu-samples](https://webgpu.github.io/webgpu-samples/?sample=shadowMapping)
-* ✔️ Ammo.js physics integration (basic cube)
+- ✔️ Support for 3D objects and scene transformations
+- 🎯 Replicate matrix-engine (WebGL) features
+- 📦 Based on the `shadowMapping` sample from [webgpu-samples](https://webgpu.github.io/webgpu-samples/?sample=shadowMapping)
+- ✔️ Ammo.js physics integration (basic cube)
 
 ---
 
@@ -38,17 +38,21 @@ Published on npm as: **`matrix-engine-wgpu`**
 
 ### Scene Management
 
-* Canvas is dynamically created in JavaScript—no `<canvas>` element needed in HTML.
+- Canvas is dynamically created in JavaScript—no `<canvas>` element needed in HTML.
 
-* Access the main scene objects:
+- Access the main scene objects:
 
   ```js
   app.mainRenderBundle[0];
   ```
+ or
+  ```js
+  app.getSceneObjectByName("Sphere1");
+  ```
 
-* Add meshes with `.addMeshObj()`, supporting `.obj` loading, unlit textures, cubes, spheres, etc.
+- Add meshes with `.addMeshObj()`, supporting `.obj` loading, unlit textures, cubes, spheres, etc.
 
-* Cleanly destroy the scene:
+- Cleanly destroy the scene:
 
   ```js
   app.destroyProgram();
@@ -72,8 +76,8 @@ mainCameraParams: {
 ### Object Position
 
 Best way for access physics body object:
- app.matrixAmmo.getBodyByName(name)
- also app.matrixAmmo.getNameByBody
+app.matrixAmmo.getBodyByName(name)
+also app.matrixAmmo.getNameByBody
 
 Control object position:
 
@@ -152,14 +156,21 @@ The raycast returns:
 Manual raycast example:
 
 ```js
-window.addEventListener('click', (event) => {
-  let canvas = document.querySelector('canvas');
+window.addEventListener("click", event => {
+  let canvas = document.querySelector("canvas");
   let camera = app.cameras.WASD;
-  const { rayOrigin, rayDirection } = getRayFromMouse(event, canvas, camera);
+  const {rayOrigin, rayDirection} = getRayFromMouse(event, canvas, camera);
 
   for (const object of app.mainRenderBundle) {
-    if (rayIntersectsSphere(rayOrigin, rayDirection, object.position, object.raycast.radius)) {
-      console.log('Object clicked:', object.name);
+    if (
+      rayIntersectsSphere(
+        rayOrigin,
+        rayDirection,
+        object.position,
+        object.raycast.radius
+      )
+    ) {
+      console.log("Object clicked:", object.name);
     }
   }
 });
@@ -168,85 +179,93 @@ window.addEventListener('click', (event) => {
 Automatic raycast listener:
 
 ```js
-addRaycastListener(); 
+addRaycastListener();
 
-window.addEventListener('ray.hit.event', (event) => {
-  console.log('Ray hit:', event.detail.hitObject);
+window.addEventListener("ray.hit.event", event => {
+  console.log("Ray hit:", event.detail.hitObject);
 });
 ```
+
 Engine also exports (box):
- - addRaycastsAABBListener 
- - rayIntersectsAABB,
- - computeAABB,
- - computeWorldVertsAndAABB,
+
+- addRaycastsAABBListener
+- rayIntersectsAABB,
+- computeAABB,
+- computeWorldVertsAndAABB,
+
 ---
 
 ### How to Load `.obj` Models
 
 ```js
 import MatrixEngineWGPU from "./src/world.js";
-import { downloadMeshes } from './src/engine/loader-obj.js';
+import {downloadMeshes} from "./src/engine/loader-obj.js";
 
-export let application = new MatrixEngineWGPU({
-  useSingleRenderPass: true,
-  canvasSize: 'fullscreen',
-  mainCameraParams: {
-    type: 'WASD',
-    responseCoef: 1000
-  }
-}, () => {
-  addEventListener('AmmoReady', () => {
-    downloadMeshes({
-      welcomeText: "./res/meshes/blender/piramyd.obj",
-      armor: "./res/meshes/obj/armor.obj",
-      sphere: "./res/meshes/blender/sphere.obj",
-      cube: "./res/meshes/blender/cube.obj",
-    }, onLoadObj);
-  });
+export let application = new MatrixEngineWGPU(
+  {
+    useSingleRenderPass: true,
+    canvasSize: "fullscreen",
+    mainCameraParams: {
+      type: "WASD",
+      responseCoef: 1000,
+    },
+  },
+  () => {
+    addEventListener("AmmoReady", () => {
+      downloadMeshes(
+        {
+          welcomeText: "./res/meshes/blender/piramyd.obj",
+          armor: "./res/meshes/obj/armor.obj",
+          sphere: "./res/meshes/blender/sphere.obj",
+          cube: "./res/meshes/blender/cube.obj",
+        },
+        onLoadObj
+      );
+    });
 
-  function onLoadObj(meshes) {
-    application.myLoadedMeshes = meshes;
-    for (const key in meshes) {
-      console.log(`%c Loaded obj: ${key} `, LOG_MATRIX);
+    function onLoadObj(meshes) {
+      application.myLoadedMeshes = meshes;
+      for (const key in meshes) {
+        console.log(`%c Loaded obj: ${key} `, LOG_MATRIX);
+      }
+
+      application.addMeshObj({
+        position: {x: 0, y: 2, z: -10},
+        rotation: {x: 0, y: 0, z: 0},
+        rotationSpeed: {x: 0, y: 0, z: 0},
+        texturesPaths: ["./res/meshes/blender/cube.png"],
+        name: "CubePhysics",
+        mesh: meshes.cube,
+        physics: {
+          enabled: true,
+          geometry: "Cube",
+        },
+      });
+
+      application.addMeshObj({
+        position: {x: 0, y: 2, z: -10},
+        rotation: {x: 0, y: 0, z: 0},
+        rotationSpeed: {x: 0, y: 0, z: 0},
+        texturesPaths: ["./res/meshes/blender/cube.png"],
+        name: "SpherePhysics",
+        mesh: meshes.sphere,
+        physics: {
+          enabled: true,
+          geometry: "Sphere",
+        },
+      });
     }
-
-    application.addMeshObj({
-      position: {x: 0, y: 2, z: -10},
-      rotation: {x: 0, y: 0, z: 0},
-      rotationSpeed: {x: 0, y: 0, z: 0},
-      texturesPaths: ['./res/meshes/blender/cube.png'],
-      name: 'CubePhysics',
-      mesh: meshes.cube,
-      physics: {
-        enabled: true,
-        geometry: "Cube"
-      }
-    });
-
-    application.addMeshObj({
-      position: {x: 0, y: 2, z: -10},
-      rotation: {x: 0, y: 0, z: 0},
-      rotationSpeed: {x: 0, y: 0, z: 0},
-      texturesPaths: ['./res/meshes/blender/cube.png'],
-      name: 'SpherePhysics',
-      mesh: meshes.sphere,
-      physics: {
-        enabled: true,
-        geometry: "Sphere"
-      }
-    });
   }
-});
+);
 
 window.app = application;
 ```
-
 
 ### 🔁 Load OBJ Sequence Animation
 
 This example shows how to load and animate a sequence of .obj files to simulate mesh-based animation (e.g. walking character).
 
-```js
+````js
 import MatrixEngineWGPU from "../src/world.js";
 import { downloadMeshes, makeObjSeqArg } from "../src/engine/loader-obj.js";
 import { LOG_MATRIX } from "../src/engine/utils.js";
@@ -315,15 +334,18 @@ export var loadObjsSequence = function () {
 If this happen less then 15 times (Loading procces) then it is ok probably...
 ```warn
 Draw func (err):TypeError: Failed to execute 'beginRenderPass' on 'GPUCommandEncoder': The provided value is not of type 'GPURenderPassDescriptor'.
-```
+````
 
 ## @Note
+
 I act according to the fact that there is only one canvas element on the page.
 
 ## About URLParams
+
 Buildin Url Param check for multiLang.
+
 ```js
-    urlQuery.lang
+urlQuery.lang;
 ```
 
 ---
@@ -367,12 +389,12 @@ This is static file storage.
 
 ## Live Demos & Dev Links
 
-* [Jamb WebGPU Demo (WIP)](https://maximumroulette.com/apps/webgpu/)
-* [CodePen Demo](https://codepen.io/zlatnaspirala/pen/VwNKMar?editors=0011)
+- [Jamb WebGPU Demo (WIP)](https://maximumroulette.com/apps/webgpu/)
+- [CodePen Demo](https://codepen.io/zlatnaspirala/pen/VwNKMar?editors=0011)
   → Uses `empty.js` build from:
   [https://maximumroulette.com/apps/megpu/empty.js](https://maximumroulette.com/apps/megpu/empty.js)
-* [CodeSandbox Implementation](https://codesandbox.io/p/github/zlatnaspirala/matrix-engine-wgpu/main?file=%2Fpackage.json%3A14%2C16)
-* 📘 Learning Resource: [WebGPU Ray Tracing](https://maierfelix.github.io/2020-01-13-webgpu-ray-tracing/)
+- [CodeSandbox Implementation](https://codesandbox.io/p/github/zlatnaspirala/matrix-engine-wgpu/main?file=%2Fpackage.json%3A14%2C16)
+- 📘 Learning Resource: [WebGPU Ray Tracing](https://maierfelix.github.io/2020-01-13-webgpu-ray-tracing/)
 
 ---
 
@@ -386,13 +408,13 @@ You may use, modify, and sell projects based on this code — just keep this not
 
 ### Attribution & Credits
 
-* Engine design and scene structure inspired by:
+- Engine design and scene structure inspired by:
   [WebGPU Samples](https://webgpu.github.io/webgpu-samples/?sample=shadowMapping)
-* OBJ Loader adapted from:
+- OBJ Loader adapted from:
   [http://math.hws.edu/graphicsbook/source/webgl/cube-camera.html](http://math.hws.edu/graphicsbook/source/webgl/cube-camera.html)
-* Dice roll sound `roll1.wav` sourced from:
+- Dice roll sound `roll1.wav` sourced from:
   [https://wavbvkery.com/dice-rolling-sound/](https://wavbvkery.com/dice-rolling-sound/)
-* Raycasting logic assisted by ChatGPT
+- Raycasting logic assisted by ChatGPT
 
 ---
 

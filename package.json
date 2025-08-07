@@ -1,6 +1,6 @@
 {
   "name": "matrix-engine-wgpu",
-  "version": "1.3.9",
+  "version": "1.3.10",
   "description": "obj sequence anim +HOTFIX raycast, webGPU powered pwa application. Crazy fast rendering with AmmoJS physics support. Simple raycaster hit object added.",
   "main": "index.js",
   "files": [

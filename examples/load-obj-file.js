@@ -62,21 +62,17 @@ export var loadObjFile = function() {
       })
 
 
-      // loadObjFile.addMeshObj({
-      //   position: {x: 0, y: 2, z: -10},
-      //   rotation: {x: 0, y: 0, z: 0},
-      //   rotationSpeed: {x: 0, y: 0, z: 0},
-      //   texturesPaths: ['./res/meshes/blender/cube.png'],
-      //   name: 'welcomeText',
-      //   mesh: m.welcomeText,
-      //   physics: {
-      //     enabled: true,
-      //     geometry: "Cube"
-      //   },
-      //   raycast: { enabled: true , radius: 2 }
-      // })
+      var TEST = loadObjFile.getSceneObjectByName('SpherePhysics')
+      console.log(`%c TEST VIDEO TEX  objs: ${TEST.loadVideoTexture} `, LOG_MATRIX);
 
-      // addRaycastsAABBListener();
+      setTimeout(() => {
+      console.log(`%c TEST VIDEO TEX  objs: ${TEST.loadVideoTexture} `, LOG_MATRIX);
+      TEST.loadVideoTexture({
+        type: 'video',
+        src: 'res/videos/tunel.mp4'
+      });
+    },4000)
+
 
     }
   })

@@ -1,3 +1,16 @@
+Differences from image:
+You don’t need createImageBitmap.
+
+You don’t create a texture manually via device.createTexture.
+
+You use device.importExternalTexture() every frame.
+
+You’ll store the externalTexture in a property and update it every frame.
+
+
+
+
+
 
 
 https://maierfelix.github.io/2020-01-13-webgpu-ray-tracing/?utm_source=chatgpt.com

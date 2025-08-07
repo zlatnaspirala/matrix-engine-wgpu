@@ -55,7 +55,7 @@ function destroyJambDoms() {
   (0, _loadObjsSequence.loadObjsSequence)();
 });
 
-},{"./examples/load-obj-file.js":2,"./examples/load-objs-sequence.js":3,"./examples/unlit-textures.js":4,"./src/engine/utils.js":14}],2:[function(require,module,exports){
+},{"./examples/load-obj-file.js":2,"./examples/load-objs-sequence.js":3,"./examples/unlit-textures.js":4,"./src/engine/utils.js":15}],2:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -140,29 +140,22 @@ var loadObjFile = function () {
         }
         // raycast: { enabled: true , radius: 2 }
       });
-
-      // loadObjFile.addMeshObj({
-      //   position: {x: 0, y: 2, z: -10},
-      //   rotation: {x: 0, y: 0, z: 0},
-      //   rotationSpeed: {x: 0, y: 0, z: 0},
-      //   texturesPaths: ['./res/meshes/blender/cube.png'],
-      //   name: 'welcomeText',
-      //   mesh: m.welcomeText,
-      //   physics: {
-      //     enabled: true,
-      //     geometry: "Cube"
-      //   },
-      //   raycast: { enabled: true , radius: 2 }
-      // })
-
-      // addRaycastsAABBListener();
+      var TEST = loadObjFile.getSceneObjectByName('SpherePhysics');
+      console.log(`%c TEST VIDEO TEX  objs: ${TEST.loadVideoTexture} `, _utils.LOG_MATRIX);
+      setTimeout(() => {
+        console.log(`%c TEST VIDEO TEX  objs: ${TEST.loadVideoTexture} `, _utils.LOG_MATRIX);
+        TEST.loadVideoTexture({
+          type: 'video',
+          src: 'res/videos/tunel.mp4'
+        });
+      }, 4000);
     }
   });
   window.app = loadObjFile;
 };
 exports.loadObjFile = loadObjFile;
 
-},{"../src/engine/loader-obj.js":9,"../src/engine/raycast.js":13,"../src/engine/utils.js":14,"../src/world.js":22}],3:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":9,"../src/engine/raycast.js":14,"../src/engine/utils.js":15,"../src/world.js":24}],3:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -246,7 +239,7 @@ var loadObjsSequence = function () {
 };
 exports.loadObjsSequence = loadObjsSequence;
 
-},{"../src/engine/loader-obj.js":9,"../src/engine/utils.js":14,"../src/world.js":22}],4:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":9,"../src/engine/utils.js":15,"../src/world.js":24}],4:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -307,7 +300,7 @@ var unlitTextures = function () {
 };
 exports.unlitTextures = unlitTextures;
 
-},{"../src/world.js":22}],5:[function(require,module,exports){
+},{"../src/world.js":24}],5:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -6068,7 +6061,7 @@ class MEBall {
 }
 exports.default = MEBall;
 
-},{"../shaders/shaders":18,"./engine":8,"./matrix-class":10,"wgpu-matrix":5}],7:[function(require,module,exports){
+},{"../shaders/shaders":20,"./engine":8,"./matrix-class":11,"wgpu-matrix":5}],7:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -6493,7 +6486,7 @@ class MECube {
 }
 exports.default = MECube;
 
-},{"../shaders/shaders":18,"./engine":8,"./matrix-class":10,"wgpu-matrix":5}],8:[function(require,module,exports){
+},{"../shaders/shaders":20,"./engine":8,"./matrix-class":11,"wgpu-matrix":5}],8:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -6562,6 +6555,7 @@ class CameraBase {
   get right() {
     return this.right_;
   }
+
   // Assigns `vec` to the first 3 elements of column vector 0 of the camera matrix
   set right(vec) {
     _wgpuMatrix.vec3.copy(vec, this.right_);
@@ -6571,6 +6565,7 @@ class CameraBase {
   get up() {
     return this.up_;
   }
+
   // Assigns `vec` to the first 3 elements of column vector 1 of the camera matrix \ Vec3
   set up(vec) {
     _wgpuMatrix.vec3.copy(vec, this.up_);
@@ -6580,6 +6575,7 @@ class CameraBase {
   get back() {
     return this.back_;
   }
+
   // Assigns `vec` to the first 3 elements of column vector 2 of the camera matrix
   set back(vec) {
     _wgpuMatrix.vec3.copy(vec, this.back_);
@@ -6589,6 +6585,7 @@ class CameraBase {
   get position() {
     return this.position_;
   }
+
   // Assigns `vec` to the first 3 elements of column vector 3 of the camera matrix
   set position(vec) {
     _wgpuMatrix.vec3.copy(vec, this.position_);
@@ -7426,6 +7423,201 @@ function play(nameAni) {
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
+exports.default = void 0;
+/**
+ * @description
+ * Created for matrix-engine-wgpu project.
+ * MeshObj class estends Materials.
+ * @author Nikola Lukic
+ * @email zlatnaspirala@gmail.com
+ */
+
+class Materials {
+  constructor(device) {
+    this.device = device;
+    this.isVideo = false;
+    // For shadow comparison
+    this.compareSampler = this.device.createSampler({
+      compare: 'less'
+    });
+    // For image textures (standard sampler)
+    this.imageSampler = this.device.createSampler({
+      magFilter: 'linear',
+      minFilter: 'linear'
+    });
+    // For external video textures (needs to be filtering sampler too!)
+    this.videoSampler = this.device.createSampler({
+      magFilter: 'linear',
+      minFilter: 'linear'
+    });
+  }
+  async loadTex0(texturesPaths) {
+    this.sampler = this.device.createSampler({
+      magFilter: 'linear',
+      minFilter: 'linear'
+    });
+    return new Promise(async resolve => {
+      const response = await fetch(texturesPaths[0]);
+      const imageBitmap = await createImageBitmap(await response.blob());
+      this.texture0 = this.device.createTexture({
+        size: [imageBitmap.width, imageBitmap.height, 1],
+        // REMOVED 1
+        format: 'rgba8unorm',
+        usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT
+      });
+      this.device.queue.copyExternalImageToTexture({
+        source: imageBitmap
+      }, {
+        texture: this.texture0
+      }, [imageBitmap.width, imageBitmap.height]);
+      resolve();
+    });
+  }
+  async loadVideoTexture(arg) {
+    this.isVideo = true;
+    if (arg.type === 'video') {
+      this.video = document.createElement('video');
+      this.video.src = arg.src || 'res/videos/tunel.mp4';
+      this.video.crossOrigin = 'anonymous';
+      this.video.autoplay = true;
+      this.video.loop = true;
+      document.body.append(this.video);
+      await this.video.play();
+    } else if (arg.type === 'videoElement') {
+      this.video = arg.el;
+      await this.video.play();
+    }
+    this.sampler = this.device.createSampler({
+      magFilter: 'linear',
+      minFilter: 'linear'
+    });
+
+    // ✅ Now
+    // includes externalTexture type
+    this.createLayoutForRender();
+    this.setupPipeline();
+    setTimeout(() => this.createBindGroupForRender(), 1500);
+  }
+  updateVideoTexture() {
+    if (!this.video || this.video.readyState < 2) return;
+    this.externalTexture = this.device.importExternalTexture({
+      source: this.video
+    });
+    this.createBindGroupForRender();
+  }
+  createBindGroupForRender() {
+    const textureResource = this.isVideo ? this.externalTexture // must be set via updateVideoTexture
+    : this.texture0.createView();
+    // Log all bindings to debug
+    if (!textureResource || !this.sceneUniformBuffer || !this.shadowDepthTextureView || !this.sampler) {
+      console.warn("❗Missing res skipping...");
+      return;
+    }
+    if (this.isVideo == true) {
+      this.sceneBindGroupForRender = this.device.createBindGroup({
+        layout: this.bglForRender,
+        entries: [{
+          binding: 0,
+          resource: {
+            buffer: this.sceneUniformBuffer
+          }
+        }, {
+          binding: 1,
+          resource: this.shadowDepthTextureView
+        }, {
+          binding: 2,
+          resource: this.compareSampler
+        }, {
+          binding: 3,
+          resource: textureResource
+        }, {
+          binding: 4,
+          resource: this.videoSampler
+        }]
+      });
+    } else {
+      this.sceneBindGroupForRender = this.device.createBindGroup({
+        layout: this.bglForRender,
+        entries: [{
+          binding: 0,
+          resource: {
+            buffer: this.sceneUniformBuffer
+          }
+        }, {
+          binding: 1,
+          resource: this.shadowDepthTextureView
+        }, {
+          binding: 2,
+          resource: this.compareSampler
+        }, {
+          binding: 3,
+          resource: textureResource
+        }, {
+          binding: 4,
+          resource: this.imageSampler
+        }]
+      });
+    }
+  }
+  createLayoutForRender() {
+    this.bglForRender = this.device.createBindGroupLayout({
+      entries: [{
+        binding: 0,
+        visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
+        buffer: {
+          type: 'uniform'
+        }
+      }, {
+        binding: 1,
+        visibility: GPUShaderStage.FRAGMENT,
+        texture: {
+          sampleType: 'depth'
+        }
+      }, {
+        binding: 2,
+        visibility: GPUShaderStage.FRAGMENT,
+        sampler: {
+          type: 'comparison'
+        }
+      }, ...(this.isVideo ? [
+      // VIDEO
+      {
+        binding: 3,
+        visibility: GPUShaderStage.FRAGMENT,
+        externalTexture: {}
+      }, {
+        binding: 4,
+        visibility: GPUShaderStage.FRAGMENT,
+        sampler: {
+          type: 'filtering'
+        } // for video sampling
+      }] : [
+      // IMAGE
+      {
+        binding: 3,
+        visibility: GPUShaderStage.FRAGMENT,
+        texture: {
+          sampleType: 'float',
+          viewDimension: '2d'
+        }
+      }, {
+        binding: 4,
+        visibility: GPUShaderStage.FRAGMENT,
+        sampler: {
+          type: 'filtering'
+        }
+      }])]
+    });
+  }
+}
+exports.default = Materials;
+
+},{}],11:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
 exports.Rotation = exports.Position = void 0;
 var _utils = require("./utils");
 /**
@@ -7656,7 +7848,7 @@ class Rotation {
 }
 exports.Rotation = Rotation;
 
-},{"./utils":14}],11:[function(require,module,exports){
+},{"./utils":15}],12:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -7670,10 +7862,12 @@ var _vertexShadow = require("../shaders/vertexShadow.wgsl");
 var _fragment = require("../shaders/fragment.wgsl");
 var _vertex = require("../shaders/vertex.wgsl");
 var _utils = require("./utils");
-// import {checkingProcedure, checkingRay, touchCoordinate} from './raycast';
-
-class MEMeshObj {
+var _materials = _interopRequireDefault(require("./materials"));
+var _fragmentVideo = require("../shaders/fragment.video.wgsl");
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+class MEMeshObj extends _materials.default {
   constructor(canvas, device, context, o) {
+    super(device);
     if (typeof o.name === 'undefined') o.name = (0, _utils.genName)(9);
     if (typeof o.raycast === 'undefined') {
       this.raycast = {
@@ -7691,6 +7885,7 @@ class MEMeshObj {
 
     // comes from engine not from args
     this.clearColor = "red";
+    this.video = null;
 
     // Mesh stuff - for single mesh or t-posed (fiktive-first in loading order)
     this.mesh = o.mesh;
@@ -7734,7 +7929,7 @@ class MEMeshObj {
         this.projectionMatrix = _wgpuMatrix.mat4.perspective(2 * Math.PI / 5, aspect, 1, 2000.0);
         this.modelViewProjectionMatrix = _wgpuMatrix.mat4.create();
         // console.log('cube added texturesPaths: ', this.texturesPaths)
-        this.loadTex0(this.texturesPaths, device).then(() => {
+        this.loadTex0(this.texturesPaths).then(() => {
           // console.log('loaded tex buffer for mesh:', this.texture0)
           resolve();
         });
@@ -7742,10 +7937,10 @@ class MEMeshObj {
     };
     this.runProgram().then(() => {
       const aspect = canvas.width / canvas.height;
-      const presentationFormat = navigator.gpu.getPreferredCanvasFormat();
+      // const presentationFormat = navigator.gpu.getPreferredCanvasFormat();
       this.context.configure({
         device: this.device,
-        format: presentationFormat,
+        format: this.presentationFormat,
         alphaMode: 'premultiplied'
       });
 
@@ -7835,7 +8030,7 @@ class MEMeshObj {
           format: "float32x2"
         }]
       }];
-      const primitive = {
+      this.primitive = {
         topology: 'triangle-list',
         // cullMode: 'back', // ORI 
         cullMode: 'none' // ORI 
@@ -7864,73 +8059,45 @@ class MEMeshObj {
           depthCompare: 'less',
           format: 'depth32float'
         },
-        primitive
+        primitive: this.primitive
       });
 
       // Create a bind group layout which holds the scene uniforms and
       // the texture+sampler for depth. We create it manually because the WebPU
       // implementation doesn't infer this from the shader (yet).
-      this.bglForRender = this.device.createBindGroupLayout({
-        entries: [{
-          binding: 0,
-          visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
-          buffer: {
-            type: 'uniform'
-          }
-        }, {
-          binding: 1,
-          visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
-          texture: {
-            sampleType: 'depth'
-          }
-        }, {
-          binding: 2,
-          visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
-          sampler: {
-            type: 'comparison'
-          }
-        }, {
-          binding: 3,
-          visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
-          texture: {
-            sampleType: 'float'
-          }
-        }, {
-          binding: 4,
-          visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
-          sampler: {
-            type: 'filtering'
-          }
-        }]
-      });
-      this.pipeline = this.device.createRenderPipeline({
-        layout: this.device.createPipelineLayout({
-          bindGroupLayouts: [this.bglForRender, this.uniformBufferBindGroupLayout]
-        }),
-        vertex: {
-          module: this.device.createShaderModule({
-            code: _vertex.vertexWGSL
-          }),
-          buffers: this.vertexBuffers
-        },
-        fragment: {
-          module: this.device.createShaderModule({
-            code: _fragment.fragmentWGSL
-          }),
-          targets: [{
-            format: presentationFormat
-          }],
-          constants: {
-            shadowDepthTextureSize: this.shadowDepthTextureSize
-          }
-        },
-        depthStencil: {
-          depthWriteEnabled: true,
-          depthCompare: 'less',
-          format: 'depth24plus-stencil8'
-        },
-        primitive
-      });
+      this.createLayoutForRender();
+      this.setupPipeline();
+      // this.pipeline = this.device.createRenderPipeline({
+      //   layout: this.device.createPipelineLayout({
+      //     bindGroupLayouts: [this.bglForRender, this.uniformBufferBindGroupLayout],
+      //   }),
+      //   vertex: {
+      //     module: this.device.createShaderModule({
+      //       code: vertexWGSL,
+      //     }),
+      //     buffers: this.vertexBuffers,
+      //   },
+      //   fragment: {
+      //     module: this.device.createShaderModule({
+      //       code: fragmentWGSL,
+      //     }),
+      //     targets: [
+      //       {
+      //         format: presentationFormat,
+      //       },
+      //     ],
+      //     constants: {
+      //       shadowDepthTextureSize: this.shadowDepthTextureSize,
+      //     },
+      //   },
+      //   depthStencil: {
+      //     depthWriteEnabled: true,
+      //     depthCompare: 'less',
+      //     format: 'depth24plus-stencil8',
+      //   },
+      //   primitive,
+      // });
+
       const depthTexture = this.device.createTexture({
         size: [canvas.width, canvas.height],
         format: 'depth24plus-stencil8',
@@ -7977,29 +8144,9 @@ class MEMeshObj {
           }
         }]
       });
-      this.sceneBindGroupForRender = this.device.createBindGroup({
-        layout: this.bglForRender,
-        entries: [{
-          binding: 0,
-          resource: {
-            buffer: this.sceneUniformBuffer
-          }
-        }, {
-          binding: 1,
-          resource: this.shadowDepthTextureView
-        }, {
-          binding: 2,
-          resource: this.device.createSampler({
-            compare: 'less'
-          })
-        }, {
-          binding: 3,
-          resource: this.texture0.createView()
-        }, {
-          binding: 4,
-          resource: this.sampler
-        }]
-      });
+
+      // --------------------------
+      this.createBindGroupForRender();
       this.modelBindGroup = this.device.createBindGroup({
         layout: this.uniformBufferBindGroupLayout,
         entries: [{
@@ -8138,36 +8285,40 @@ class MEMeshObj {
 
     ///////////////////////
   };
-  async loadTex0(texturesPaths, device) {
-    this.sampler = device.createSampler({
-      magFilter: 'linear',
-      minFilter: 'linear'
+  setupPipeline = () => {
+    this.pipeline = this.device.createRenderPipeline({
+      layout: this.device.createPipelineLayout({
+        bindGroupLayouts: [this.bglForRender, this.uniformBufferBindGroupLayout]
+      }),
+      vertex: {
+        entryPoint: 'main',
+        // ✅ Add this
+        module: this.device.createShaderModule({
+          code: _vertex.vertexWGSL
+        }),
+        buffers: this.vertexBuffers
+      },
+      fragment: {
+        entryPoint: 'main',
+        // ✅ Add this
+        module: this.device.createShaderModule({
+          code: this.isVideo == true ? _fragmentVideo.fragmentVideoWGSL : _fragment.fragmentWGSL
+        }),
+        targets: [{
+          format: this.presentationFormat
+        }],
+        constants: {
+          shadowDepthTextureSize: this.shadowDepthTextureSize
+        }
+      },
+      depthStencil: {
+        depthWriteEnabled: true,
+        depthCompare: 'less',
+        format: 'depth24plus-stencil8'
+      },
+      primitive: this.primitive
     });
-    return new Promise(async resolve => {
-      const response = await fetch(texturesPaths[0]);
-
-      // const blob = await response.blob();
-      // if(!blob.type.startsWith('image/')) {
-      //   console.error("Unexpected texture response type:", blob.type);
-      //   return;
-      // }
-
-      // const imageBitmap = await createImageBitmap(blob);
-      const imageBitmap = await createImageBitmap(await response.blob());
-      this.texture0 = device.createTexture({
-        size: [imageBitmap.width, imageBitmap.height, 1],
-        // REMOVED 1
-        format: 'rgba8unorm',
-        usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT
-      });
-      device.queue.copyExternalImageToTexture({
-        source: imageBitmap
-      }, {
-        texture: this.texture0
-      }, [imageBitmap.width, imageBitmap.height]);
-      resolve();
-    });
-  }
+  };
   draw = commandEncoder => {
     if (this.done == false) return;
     const transformationMatrix = this.getTransformationMatrix(this.position);
@@ -8175,6 +8326,9 @@ class MEMeshObj {
     this.renderPassDescriptor.colorAttachments[0].view = this.context.getCurrentTexture().createView();
   };
   drawElements = renderPass => {
+    if (this.isVideo) {
+      this.updateVideoTexture();
+    }
     renderPass.setBindGroup(0, this.sceneBindGroupForRender);
     renderPass.setBindGroup(1, this.modelBindGroup);
     renderPass.setVertexBuffer(0, this.vertexBuffer);
@@ -8184,7 +8338,7 @@ class MEMeshObj {
     renderPass.drawIndexed(this.indexCount);
   };
 
-  // test 
+  // test
   createGPUBuffer(dataArray, usage) {
     if (!dataArray || typeof dataArray.length !== 'number') {
       throw new Error('Invalid data array passed to createGPUBuffer');
@@ -8278,7 +8432,7 @@ class MEMeshObj {
 }
 exports.default = MEMeshObj;
 
-},{"../shaders/fragment.wgsl":17,"../shaders/vertex.wgsl":19,"../shaders/vertexShadow.wgsl":20,"./engine":8,"./matrix-class":10,"./utils":14,"wgpu-matrix":5}],12:[function(require,module,exports){
+},{"../shaders/fragment.video.wgsl":18,"../shaders/fragment.wgsl":19,"../shaders/vertex.wgsl":21,"../shaders/vertexShadow.wgsl":22,"./engine":8,"./materials":10,"./matrix-class":11,"./utils":15,"wgpu-matrix":5}],13:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -8676,7 +8830,7 @@ class MEMesh {
 }
 exports.default = MEMesh;
 
-},{"../shaders/fragment.wgsl":17,"../shaders/vertex.wgsl":19,"../shaders/vertexShadow.wgsl":20,"./engine":8,"./loader-obj":9,"./matrix-class":10,"wgpu-matrix":5}],13:[function(require,module,exports){
+},{"../shaders/fragment.wgsl":19,"../shaders/vertex.wgsl":21,"../shaders/vertexShadow.wgsl":22,"./engine":8,"./loader-obj":9,"./matrix-class":11,"wgpu-matrix":5}],14:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -8892,7 +9046,7 @@ function addRaycastsAABBListener(canvasId = "canvas1") {
   });
 }
 
-},{"wgpu-matrix":5}],14:[function(require,module,exports){
+},{"wgpu-matrix":5}],15:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -9778,7 +9932,7 @@ function setupCanvasFilters(canvasId) {
   updateFilter(); // Initial
 }
 
-},{}],15:[function(require,module,exports){
+},{}],16:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -9818,7 +9972,7 @@ class MultiLang {
 }
 exports.MultiLang = MultiLang;
 
-},{"../engine/utils":14}],16:[function(require,module,exports){
+},{"../engine/utils":15}],17:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -10136,7 +10290,66 @@ class MatrixAmmo {
 }
 exports.default = MatrixAmmo;
 
-},{"../engine/utils":14}],17:[function(require,module,exports){
+},{"../engine/utils":15}],18:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.fragmentVideoWGSL = void 0;
+let fragmentVideoWGSL = exports.fragmentVideoWGSL = `override shadowDepthTextureSize: f32 = 1024.0;
+
+struct Scene {
+  lightViewProjMatrix : mat4x4f,
+  cameraViewProjMatrix : mat4x4f,
+  lightPos : vec3f,
+}
+
+@group(0) @binding(0) var<uniform> scene : Scene;
+@group(0) @binding(1) var shadowMap: texture_depth_2d;
+@group(0) @binding(2) var shadowSampler: sampler_comparison;
+@group(0) @binding(3) var meshTexture: texture_external;
+@group(0) @binding(4) var meshSampler: sampler;
+
+// ❌ No binding(4) here!
+
+struct FragmentInput {
+  @location(0) shadowPos : vec3f,
+  @location(1) fragPos : vec3f,
+  @location(2) fragNorm : vec3f,
+  @location(3) uv : vec2f,
+}
+
+const albedo = vec3f(0.9);
+const ambientFactor = 0.7;
+
+@fragment
+fn main(input : FragmentInput) -> @location(0) vec4f {
+  // Shadow filtering
+  var visibility = 0.0;
+  let oneOverShadowDepthTextureSize = 1.0 / shadowDepthTextureSize;
+  for (var y = -1; y <= 1; y++) {
+    for (var x = -1; x <= 1; x++) {
+      let offset = vec2f(vec2(x, y)) * oneOverShadowDepthTextureSize;
+      visibility += textureSampleCompare(
+        shadowMap, shadowSampler,
+        input.shadowPos.xy + offset, input.shadowPos.z - 0.007
+      );
+    }
+  }
+  visibility /= 9.0;
+
+  let lambertFactor = max(dot(normalize(scene.lightPos - input.fragPos), normalize(input.fragNorm)), 0.0);
+  let lightingFactor = min(ambientFactor + visibility * lambertFactor, 1.0);
+
+  // ✅ Correct way to sample video texture
+  let textureColor = textureSampleBaseClampToEdge(meshTexture, meshSampler, input.uv);
+
+  return vec4(textureColor.rgb * lightingFactor * albedo, 1.0);
+}
+`;
+
+},{}],19:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -10194,7 +10407,7 @@ fn main(input : FragmentInput) -> @location(0) vec4f {
   // return vec4(textureColor.rgb , 0.5);
 }`;
 
-},{}],18:[function(require,module,exports){
+},{}],20:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -10252,7 +10465,7 @@ fn fragmentMain(input: VertexOutput) -> @location(0) vec4f {
   return vec4f(textureColor.rgb * lightColor, textureColor.a);
 }`;
 
-},{}],19:[function(require,module,exports){
+},{}],21:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -10277,7 +10490,7 @@ struct VertexOutput {
   @location(1) fragPos: vec3f,
   @location(2) fragNorm: vec3f,
   @location(3) uv : vec2f,
-  
+
   @builtin(position) Position: vec4f,
 }
 
@@ -10309,7 +10522,7 @@ fn main(
 }
 `;
 
-},{}],20:[function(require,module,exports){
+},{}],22:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -10337,7 +10550,7 @@ fn main(
 }
 `;
 
-},{}],21:[function(require,module,exports){
+},{}],23:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -10407,7 +10620,7 @@ class MatrixSounds {
 }
 exports.MatrixSounds = MatrixSounds;
 
-},{}],22:[function(require,module,exports){
+},{}],24:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -10507,8 +10720,6 @@ class MatrixEngineWGPU {
         position: initialCameraPosition
       })
     };
-
-    //
     this.label = new _lang.MultiLang();
     if (_utils.urlQuery.lang != null) {
       this.label.loadMultilang(_utils.urlQuery.lang).then(r => {
@@ -10558,6 +10769,9 @@ class MatrixEngineWGPU {
     }
     this.run(callback);
   };
+  getSceneObjectByName(name) {
+    return this.mainRenderBundle.find(sceneObject => sceneObject.name === name);
+  }
 
   // Not in use for now
   addCube = o => {
@@ -10930,7 +11144,7 @@ class MatrixEngineWGPU {
       this.mainRenderBundle.forEach((meItem, index) => {
         meItem.position.update();
       });
-      this.matrixAmmo.updatePhysics();
+      if (this.matrixAmmo) this.matrixAmmo.updatePhysics();
       this.mainRenderBundle.forEach((meItem, index) => {
         meItem.draw(commandEncoder);
         shadowPass = commandEncoder.beginRenderPass(meItem.shadowPassDescriptor);
@@ -10982,4 +11196,4 @@ class MatrixEngineWGPU {
 }
 exports.default = MatrixEngineWGPU;
 
-},{"./engine/ball.js":6,"./engine/cube.js":7,"./engine/engine.js":8,"./engine/loader-obj.js":9,"./engine/mesh-obj.js":11,"./engine/mesh.js":12,"./engine/utils.js":14,"./multilang/lang.js":15,"./physics/matrix-ammo.js":16,"./sounds/sounds.js":21,"wgpu-matrix":5}]},{},[1]);
+},{"./engine/ball.js":6,"./engine/cube.js":7,"./engine/engine.js":8,"./engine/loader-obj.js":9,"./engine/mesh-obj.js":12,"./engine/mesh.js":13,"./engine/utils.js":15,"./multilang/lang.js":16,"./physics/matrix-ammo.js":17,"./sounds/sounds.js":23,"wgpu-matrix":5}]},{},[1]);
