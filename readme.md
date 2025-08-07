@@ -338,6 +338,18 @@ TEST.loadVideoTexture({
 });
 ```
 
+For canvasinline attach this to arg (example for direct draw on canvas2d and passing intro webgpu pipeline):
+```js
+canvaInlineProgram: (ctx, canvas) => {
+  ctx.fillStyle = 'black';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = 'white';
+  ctx.font = '20px Orbitron';
+  ctx.fillText(`FPS: ${Math.round(performance.now() % 60)}`, 10, 30);
+}
+```
+
+
 <pre>
 | Scenario                       | Best Approach                      |
 | ------------------------------ | ---------------------------------- |
