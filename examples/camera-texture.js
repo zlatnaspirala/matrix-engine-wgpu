@@ -3,9 +3,9 @@ import {downloadMeshes} from '../src/engine/loader-obj.js';
 import {LOG_FUNNY, LOG_INFO, LOG_MATRIX} from "../src/engine/utils.js";
 import {addRaycastsAABBListener} from "../src/engine/raycast.js";
 
-export var loadVideoTexture = function() {
+export var loadCameraTexture = function() {
 
-  let videoTexture = new MatrixEngineWGPU({
+  let cameraTexture = new MatrixEngineWGPU({
     useSingleRenderPass: true,
     canvasSize: 'fullscreen',
     mainCameraParams: {
@@ -26,12 +26,12 @@ export var loadVideoTexture = function() {
     })
 
     function onLoadObj(m) {
-      videoTexture.myLoadedMeshes = m;
+      cameraTexture.myLoadedMeshes = m;
       for(var key in m) {
         console.log(`%c Loaded objs: ${key} `, LOG_MATRIX);
       }
 
-      videoTexture.addMeshObj({
+      cameraTexture.addMeshObj({
         position: {x: 0, y: 2, z: -10},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
@@ -45,17 +45,16 @@ export var loadVideoTexture = function() {
         // raycast: { enabled: true , radius: 2 }
       })
 
-      var TEST = videoTexture.getSceneObjectByName('MyVideoTex');
+      var TEST = cameraTexture.getSceneObjectByName('MyVideoTex');
       setTimeout(() => {
         console.log(`%c Test video-texture...`, LOG_MATRIX);
         TEST.loadVideoTexture({
-          type: 'video',
-          src: 'res/videos/tunel.mp4'
+          type: 'camera'
         });
       }, 4000);
     }
   })
 
-  window.app = videoTexture;
+  window.app = cameraTexture;
 
 }

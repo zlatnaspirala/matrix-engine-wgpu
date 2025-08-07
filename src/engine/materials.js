@@ -63,6 +63,79 @@ export default class Materials {
     } else if(arg.type === 'videoElement') {
       this.video = arg.el;
       await this.video.play();
+    } else if(arg.type === 'camera') {
+      this.video = document.createElement('video');
+      this.video.autoplay = true;
+      this.video.muted = true;
+      this.video.playsInline = true;
+      this.video.style.display = 'none';
+      document.body.append(this.video);
+
+      try {
+        const stream = await (navigator.mediaDevices?.getUserMedia?.({
+          video: {
+            width: {ideal: 1280},
+            height: {ideal: 720},
+          },
+          audio: false
+        }));
+
+        this.video.srcObject = stream;
+        await this.video.play();
+      } catch(err) {
+        console.error("❌ Failed to access camera:", err);
+        return;
+      }
+    } else if(arg.type === 'canvas2d') {
+      // Existing canvas (arg.el) — assume it's actively drawing
+      this.video = document.createElement('video');
+      this.video.autoplay = true;
+      this.video.muted = true;
+      this.video.playsInline = true;
+      this.video.style.display = 'none';
+      document.body.append(this.video);
+
+      // Create stream from existing canvas
+      const stream = arg.el.captureStream?.() || arg.el.mozCaptureStream?.();
+      if(!stream) {
+        console.error('❌ Cannot capture stream from canvas2d');
+        return;
+      }
+
+      this.video.srcObject = stream;
+      await this.video.play();
+
+    } else if(arg.type === 'canvas2d-inline') {
+      // Miniature inline-drawn canvas created dynamically
+      const canvas = document.createElement('canvas');
+      canvas.width = arg.width || 256;
+      canvas.height = arg.height || 256;
+      const ctx = canvas.getContext('2d');
+
+      if(typeof arg.canvaInlineProgram === 'function') {
+        // Start drawing loop
+        const drawLoop = () => {
+          arg.canvaInlineProgram(ctx, canvas);
+          requestAnimationFrame(drawLoop);
+        };
+        drawLoop();
+      }
+
+      this.video = document.createElement('video');
+      this.video.autoplay = true;
+      this.video.muted = true;
+      this.video.playsInline = true;
+      this.video.style.display = 'none';
+      document.body.append(this.video);
+
+      const stream = canvas.captureStream?.() || canvas.mozCaptureStream?.();
+      if(!stream) {
+        console.error('❌ Cannot capture stream from inline canvas');
+        return;
+      }
+
+      this.video.srcObject = stream;
+      await this.video.play();
     }
 
     this.sampler = this.device.createSampler({

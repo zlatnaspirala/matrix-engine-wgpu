@@ -132,7 +132,7 @@ app.mainRenderBundle[0].rotation.rotationSpeed.y = 0;
 
 ---
 
-### Camera Example
+### 3D Camera Example
 
 Manipulate WASD camera:
 
@@ -265,7 +265,7 @@ window.app = application;
 
 This example shows how to load and animate a sequence of .obj files to simulate mesh-based animation (e.g. walking character).
 
-````js
+```js
 import MatrixEngineWGPU from "../src/world.js";
 import { downloadMeshes, makeObjSeqArg } from "../src/engine/loader-obj.js";
 import { LOG_MATRIX } from "../src/engine/utils.js";
@@ -327,18 +327,31 @@ export var loadObjsSequence = function () {
 
   window.app = loadObjFile;
 };
+```
 
-### 📽️ Preview
+### 📽️ Video textures
 
-## @Note
+```js
+TEST.loadVideoTexture({
+  type: 'video', // video , camera  //not tested yet canvas2d , canvas2dinline
+  src: 'res/videos/tunel.mp4'
+});
+```
+
+<pre>
+| Scenario                       | Best Approach                      |
+| ------------------------------ | ---------------------------------- |
+| Dynamic 2D canvas animation    | `canvas.captureStream()` → `video` |
+| Static canvas snapshot         | `createImageBitmap(canvas)`        |
+| Replaying real video or webcam | Direct `video` element             |
+</pre>
+
+### Note
 If this happen less then 15 times (Loading procces) then it is ok probably...
-```warn
+
+```json
 Draw func (err):TypeError: Failed to execute 'beginRenderPass' on 'GPUCommandEncoder': The provided value is not of type 'GPURenderPassDescriptor'.
-````
-
-## @Note
-
-I act according to the fact that there is only one canvas element on the page.
+```
 
 ## About URLParams
 

@@ -5,6 +5,7 @@
  */
 
 // import {loadJamb} from "./examples/load-jamb.js";
+import {loadCameraTexture} from "./examples/camera-texture.js";
 import {loadObjFile} from "./examples/load-obj-file.js";
 import {loadObjsSequence} from "./examples/load-objs-sequence.js";
 import {unlitTextures} from "./examples/unlit-textures.js";
@@ -41,6 +42,11 @@ byId('unlitTextures').addEventListener("click", () => {
   unlitTextures();
 })
 
+byId('camera-texture').addEventListener("click", () => {
+  if(typeof app !== "undefined") app.destroyProgram()
+  destroyJambDoms();
+  loadCameraTexture();
+})
 
 byId('video-texture').addEventListener("click", () => {
   if(typeof app !== "undefined") app.destroyProgram()
