@@ -57,7 +57,8 @@ export default class Materials {
       this.video.crossOrigin = 'anonymous';
       this.video.autoplay = true;
       this.video.loop = true;
-      document.body.append(this.video)
+      document.body.append(this.video);
+      this.video.style.display = 'none';
       await this.video.play();
     } else if(arg.type === 'videoElement') {
       this.video = arg.el;

@@ -8,20 +8,21 @@
 import {loadObjFile} from "./examples/load-obj-file.js";
 import {loadObjsSequence} from "./examples/load-objs-sequence.js";
 import {unlitTextures} from "./examples/unlit-textures.js";
+import {loadVideoTexture} from "./examples/video-texture.js";
 import {byId} from "./src/engine/utils.js";
 
 // For future
 var examples = {
   // loadJamb,
   loadObjFile,
-  unlitTextures
+  unlitTextures,
+  loadVideoTexture
 };
 
 function destroyJambDoms() {
-  if (byId('hud')) byId('hud').remove();
-  if (byId('jambTable'))byId('jambTable').remove();
-  if (byId('topTitleDOM'))byId('topTitleDOM').remove();
-
+  if(byId('hud')) byId('hud').remove();
+  if(byId('jambTable')) byId('jambTable').remove();
+  if(byId('topTitleDOM')) byId('topTitleDOM').remove();
 }
 
 byId('loadObjFile').addEventListener("click", () => {
@@ -29,7 +30,7 @@ byId('loadObjFile').addEventListener("click", () => {
   // byId('unlitTextures').removeAttribute('disabled')
   if(typeof app !== "undefined") app.destroyProgram()
   destroyJambDoms();
-  loadObjFile()
+  loadObjFile();
 })
 
 byId('unlitTextures').addEventListener("click", () => {
@@ -37,7 +38,14 @@ byId('unlitTextures').addEventListener("click", () => {
   // byId('loadObjFile').removeAttribute('disabled')
   if(typeof app !== "undefined") app.destroyProgram()
   destroyJambDoms();
-  unlitTextures()
+  unlitTextures();
+})
+
+
+byId('video-texture').addEventListener("click", () => {
+  if(typeof app !== "undefined") app.destroyProgram()
+  destroyJambDoms();
+  loadVideoTexture();
 })
 
 byId('jamb').addEventListener("click", () => {
@@ -57,6 +65,3 @@ byId('objs-anim').addEventListener("click", () => {
   destroyJambDoms();
   loadObjsSequence()
 })
-
-
-

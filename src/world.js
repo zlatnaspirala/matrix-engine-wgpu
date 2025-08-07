@@ -325,7 +325,7 @@ export default class MatrixEngineWGPU {
   }
 
   destroyProgram = () => {
-    this.mainRenderBundle = undefined;
+    this.mainRenderBundle = [];
     this.canvas.remove();
   }
 

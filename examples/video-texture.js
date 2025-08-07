@@ -1,13 +1,11 @@
 import MatrixEngineWGPU from "../src/world.js";
 import {downloadMeshes} from '../src/engine/loader-obj.js';
-// import MatrixEngineWGPU from "./src/world.js";
-// import {downloadMeshes} from './src/engine/loader-obj.js';
 import {LOG_FUNNY, LOG_INFO, LOG_MATRIX} from "../src/engine/utils.js";
 import {addRaycastsAABBListener} from "../src/engine/raycast.js";
 
-export var loadObjFile = function() {
+export var loadVideoTexture = function() {
 
-  let loadObjFile = new MatrixEngineWGPU({
+  let videoTexture = new MatrixEngineWGPU({
     useSingleRenderPass: true,
     canvasSize: 'fullscreen',
     mainCameraParams: {
@@ -28,12 +26,12 @@ export var loadObjFile = function() {
     })
 
     function onLoadObj(m) {
-      loadObjFile.myLoadedMeshes = m;
+      videoTexture.myLoadedMeshes = m;
       for(var key in m) {
         console.log(`%c Loaded objs: ${key} `, LOG_MATRIX);
       }
 
-      loadObjFile.addMeshObj({
+      videoTexture.addMeshObj({
         position: {x: 0, y: 2, z: -10},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
@@ -47,10 +45,17 @@ export var loadObjFile = function() {
         // raycast: { enabled: true , radius: 2 }
       })
 
-      var TEST = loadObjFile.getSceneObjectByName('SpherePhysics');
-      console.log(`%c Test access scene ${TEST} object.`, LOG_MATRIX);
+      var TEST = videoTexture.getSceneObjectByName('SpherePhysics');
+      setTimeout(() => {
+        console.log(`%c Test video-texture...`, LOG_MATRIX);
+        TEST.loadVideoTexture({
+          type: 'video',
+          src: 'res/videos/tunel.mp4'
+        });
+      }, 4000);
     }
   })
-  // just for dev
-  window.app = loadObjFile;
+
+  window.app = videoTexture;
+
 }

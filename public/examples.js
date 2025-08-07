@@ -4,6 +4,7 @@
 var _loadObjFile = require("./examples/load-obj-file.js");
 var _loadObjsSequence = require("./examples/load-objs-sequence.js");
 var _unlitTextures = require("./examples/unlit-textures.js");
+var _videoTexture = require("./examples/video-texture.js");
 var _utils = require("./src/engine/utils.js");
 /**
  * @examples
@@ -17,7 +18,8 @@ var _utils = require("./src/engine/utils.js");
 var examples = {
   // loadJamb,
   loadObjFile: _loadObjFile.loadObjFile,
-  unlitTextures: _unlitTextures.unlitTextures
+  unlitTextures: _unlitTextures.unlitTextures,
+  loadVideoTexture: _videoTexture.loadVideoTexture
 };
 function destroyJambDoms() {
   if ((0, _utils.byId)('hud')) (0, _utils.byId)('hud').remove();
@@ -38,6 +40,11 @@ function destroyJambDoms() {
   destroyJambDoms();
   (0, _unlitTextures.unlitTextures)();
 });
+(0, _utils.byId)('video-texture').addEventListener("click", () => {
+  if (typeof app !== "undefined") app.destroyProgram();
+  destroyJambDoms();
+  (0, _videoTexture.loadVideoTexture)();
+});
 (0, _utils.byId)('jamb').addEventListener("click", () => {
   // byId('unlitTextures').setAttribute('disabled', true)
   // byId('loadObjFile').setAttribute('disabled', true)
@@ -55,7 +62,7 @@ function destroyJambDoms() {
   (0, _loadObjsSequence.loadObjsSequence)();
 });
 
-},{"./examples/load-obj-file.js":2,"./examples/load-objs-sequence.js":3,"./examples/unlit-textures.js":4,"./src/engine/utils.js":15}],2:[function(require,module,exports){
+},{"./examples/load-obj-file.js":2,"./examples/load-objs-sequence.js":3,"./examples/unlit-textures.js":4,"./examples/video-texture.js":5,"./src/engine/utils.js":16}],2:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -100,21 +107,6 @@ var loadObjFile = function () {
       for (var key in m) {
         console.log(`%c Loaded objs: ${key} `, _utils.LOG_MATRIX);
       }
-
-      // loadObjFile.addMeshObj({
-      //   position: {x: 0, y: 0, z: -10},
-      //   rotation: {x: 0, y: 0, z: 0},
-      //   rotationSpeed: {x: 0, y: 0, z: 0},
-      //   texturesPaths: ['./res/meshes/blender/cube.png'],
-      //   name: 'Cube1',
-      //   mesh: m.cube,
-      //   physics: {
-      //     enabled: false,
-      //     geometry: "Cube"
-      //   },
-      //       raycast: { enabled: true , radius: 2 }
-      // })
-
       loadObjFile.addMeshObj({
         position: {
           x: 0,
@@ -141,21 +133,15 @@ var loadObjFile = function () {
         // raycast: { enabled: true , radius: 2 }
       });
       var TEST = loadObjFile.getSceneObjectByName('SpherePhysics');
-      console.log(`%c TEST VIDEO TEX  objs: ${TEST.loadVideoTexture} `, _utils.LOG_MATRIX);
-      setTimeout(() => {
-        console.log(`%c TEST VIDEO TEX  objs: ${TEST.loadVideoTexture} `, _utils.LOG_MATRIX);
-        TEST.loadVideoTexture({
-          type: 'video',
-          src: 'res/videos/tunel.mp4'
-        });
-      }, 4000);
+      console.log(`%c Test access scene ${TEST} object.`, _utils.LOG_MATRIX);
     }
   });
+  // just for dev
   window.app = loadObjFile;
 };
 exports.loadObjFile = loadObjFile;
 
-},{"../src/engine/loader-obj.js":9,"../src/engine/raycast.js":14,"../src/engine/utils.js":15,"../src/world.js":24}],3:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":10,"../src/engine/raycast.js":15,"../src/engine/utils.js":16,"../src/world.js":25}],3:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -239,7 +225,7 @@ var loadObjsSequence = function () {
 };
 exports.loadObjsSequence = loadObjsSequence;
 
-},{"../src/engine/loader-obj.js":9,"../src/engine/utils.js":15,"../src/world.js":24}],4:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":10,"../src/engine/utils.js":16,"../src/world.js":25}],4:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -300,7 +286,88 @@ var unlitTextures = function () {
 };
 exports.unlitTextures = unlitTextures;
 
-},{"../src/world.js":24}],5:[function(require,module,exports){
+},{"../src/world.js":25}],5:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.loadVideoTexture = void 0;
+var _world = _interopRequireDefault(require("../src/world.js"));
+var _loaderObj = require("../src/engine/loader-obj.js");
+var _utils = require("../src/engine/utils.js");
+var _raycast = require("../src/engine/raycast.js");
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+var loadVideoTexture = function () {
+  let videoTexture = new _world.default({
+    useSingleRenderPass: true,
+    canvasSize: 'fullscreen',
+    mainCameraParams: {
+      type: 'WASD',
+      responseCoef: 1000
+    },
+    clearColor: {
+      r: 0,
+      b: 0.122,
+      g: 0.122,
+      a: 1
+    }
+  }, () => {
+    addEventListener('AmmoReady', () => {
+      (0, _loaderObj.downloadMeshes)({
+        welcomeText: "./res/meshes/blender/piramyd.obj",
+        armor: "./res/meshes/obj/armor.obj",
+        sphere: "./res/meshes/blender/sphere.obj",
+        cube: "./res/meshes/blender/cube.obj"
+      }, onLoadObj, {
+        scale: [1, 1, 1]
+      });
+    });
+    function onLoadObj(m) {
+      videoTexture.myLoadedMeshes = m;
+      for (var key in m) {
+        console.log(`%c Loaded objs: ${key} `, _utils.LOG_MATRIX);
+      }
+      videoTexture.addMeshObj({
+        position: {
+          x: 0,
+          y: 2,
+          z: -10
+        },
+        rotation: {
+          x: 0,
+          y: 0,
+          z: 0
+        },
+        rotationSpeed: {
+          x: 0,
+          y: 0,
+          z: 0
+        },
+        texturesPaths: ['./res/meshes/blender/cube.png'],
+        name: 'SpherePhysics',
+        mesh: m.sphere,
+        physics: {
+          enabled: true,
+          geometry: "Sphere"
+        }
+        // raycast: { enabled: true , radius: 2 }
+      });
+      var TEST = videoTexture.getSceneObjectByName('SpherePhysics');
+      setTimeout(() => {
+        console.log(`%c Test video-texture...`, _utils.LOG_MATRIX);
+        TEST.loadVideoTexture({
+          type: 'video',
+          src: 'res/videos/tunel.mp4'
+        });
+      }, 4000);
+    }
+  });
+  window.app = videoTexture;
+};
+exports.loadVideoTexture = loadVideoTexture;
+
+},{"../src/engine/loader-obj.js":10,"../src/engine/raycast.js":15,"../src/engine/utils.js":16,"../src/world.js":25}],6:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -5647,7 +5714,7 @@ function setDefaultType(ctor) {
   setDefaultType$1(ctor);
 }
 
-},{}],6:[function(require,module,exports){
+},{}],7:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -6061,7 +6128,7 @@ class MEBall {
 }
 exports.default = MEBall;
 
-},{"../shaders/shaders":20,"./engine":8,"./matrix-class":11,"wgpu-matrix":5}],7:[function(require,module,exports){
+},{"../shaders/shaders":21,"./engine":9,"./matrix-class":12,"wgpu-matrix":6}],8:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -6486,7 +6553,7 @@ class MECube {
 }
 exports.default = MECube;
 
-},{"../shaders/shaders":20,"./engine":8,"./matrix-class":11,"wgpu-matrix":5}],8:[function(require,module,exports){
+},{"../shaders/shaders":21,"./engine":9,"./matrix-class":12,"wgpu-matrix":6}],9:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -6949,7 +7016,7 @@ function createInputHandler(window, canvas) {
   };
 }
 
-},{"wgpu-matrix":5}],9:[function(require,module,exports){
+},{"wgpu-matrix":6}],10:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -7417,7 +7484,7 @@ function play(nameAni) {
   this.playing = true;
 }
 
-},{}],10:[function(require,module,exports){
+},{}],11:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -7482,6 +7549,7 @@ class Materials {
       this.video.autoplay = true;
       this.video.loop = true;
       document.body.append(this.video);
+      this.video.style.display = 'none';
       await this.video.play();
     } else if (arg.type === 'videoElement') {
       this.video = arg.el;
@@ -7612,7 +7680,7 @@ class Materials {
 }
 exports.default = Materials;
 
-},{}],11:[function(require,module,exports){
+},{}],12:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -7848,7 +7916,7 @@ class Rotation {
 }
 exports.Rotation = Rotation;
 
-},{"./utils":15}],12:[function(require,module,exports){
+},{"./utils":16}],13:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -8319,7 +8387,7 @@ class MEMeshObj extends _materials.default {
       primitive: this.primitive
     });
   };
-  draw = commandEncoder => {
+  draw = () => {
     if (this.done == false) return;
     const transformationMatrix = this.getTransformationMatrix(this.position);
     this.device.queue.writeBuffer(this.sceneUniformBuffer, 64, transformationMatrix.buffer, transformationMatrix.byteOffset, transformationMatrix.byteLength);
@@ -8432,7 +8500,7 @@ class MEMeshObj extends _materials.default {
 }
 exports.default = MEMeshObj;
 
-},{"../shaders/fragment.video.wgsl":18,"../shaders/fragment.wgsl":19,"../shaders/vertex.wgsl":21,"../shaders/vertexShadow.wgsl":22,"./engine":8,"./materials":10,"./matrix-class":11,"./utils":15,"wgpu-matrix":5}],13:[function(require,module,exports){
+},{"../shaders/fragment.video.wgsl":19,"../shaders/fragment.wgsl":20,"../shaders/vertex.wgsl":22,"../shaders/vertexShadow.wgsl":23,"./engine":9,"./materials":11,"./matrix-class":12,"./utils":16,"wgpu-matrix":6}],14:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -8830,7 +8898,7 @@ class MEMesh {
 }
 exports.default = MEMesh;
 
-},{"../shaders/fragment.wgsl":19,"../shaders/vertex.wgsl":21,"../shaders/vertexShadow.wgsl":22,"./engine":8,"./loader-obj":9,"./matrix-class":11,"wgpu-matrix":5}],14:[function(require,module,exports){
+},{"../shaders/fragment.wgsl":20,"../shaders/vertex.wgsl":22,"../shaders/vertexShadow.wgsl":23,"./engine":9,"./loader-obj":10,"./matrix-class":12,"wgpu-matrix":6}],15:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -9046,7 +9114,7 @@ function addRaycastsAABBListener(canvasId = "canvas1") {
   });
 }
 
-},{"wgpu-matrix":5}],15:[function(require,module,exports){
+},{"wgpu-matrix":6}],16:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -9932,7 +10000,7 @@ function setupCanvasFilters(canvasId) {
   updateFilter(); // Initial
 }
 
-},{}],16:[function(require,module,exports){
+},{}],17:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -9972,7 +10040,7 @@ class MultiLang {
 }
 exports.MultiLang = MultiLang;
 
-},{"../engine/utils":15}],17:[function(require,module,exports){
+},{"../engine/utils":16}],18:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -10290,7 +10358,7 @@ class MatrixAmmo {
 }
 exports.default = MatrixAmmo;
 
-},{"../engine/utils":15}],18:[function(require,module,exports){
+},{"../engine/utils":16}],19:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -10349,7 +10417,7 @@ fn main(input : FragmentInput) -> @location(0) vec4f {
 }
 `;
 
-},{}],19:[function(require,module,exports){
+},{}],20:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -10407,7 +10475,7 @@ fn main(input : FragmentInput) -> @location(0) vec4f {
   // return vec4(textureColor.rgb , 0.5);
 }`;
 
-},{}],20:[function(require,module,exports){
+},{}],21:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -10465,7 +10533,7 @@ fn fragmentMain(input: VertexOutput) -> @location(0) vec4f {
   return vec4f(textureColor.rgb * lightColor, textureColor.a);
 }`;
 
-},{}],21:[function(require,module,exports){
+},{}],22:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -10522,7 +10590,7 @@ fn main(
 }
 `;
 
-},{}],22:[function(require,module,exports){
+},{}],23:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -10550,7 +10618,7 @@ fn main(
 }
 `;
 
-},{}],23:[function(require,module,exports){
+},{}],24:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -10620,7 +10688,7 @@ class MatrixSounds {
 }
 exports.MatrixSounds = MatrixSounds;
 
-},{}],24:[function(require,module,exports){
+},{}],25:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -11132,7 +11200,7 @@ class MatrixEngineWGPU {
     }, 20);
   }
   destroyProgram = () => {
-    this.mainRenderBundle = undefined;
+    this.mainRenderBundle = [];
     this.canvas.remove();
   };
   frameSinglePass = () => {
@@ -11196,4 +11264,4 @@ class MatrixEngineWGPU {
 }
 exports.default = MatrixEngineWGPU;
 
-},{"./engine/ball.js":6,"./engine/cube.js":7,"./engine/engine.js":8,"./engine/loader-obj.js":9,"./engine/mesh-obj.js":12,"./engine/mesh.js":13,"./engine/utils.js":15,"./multilang/lang.js":16,"./physics/matrix-ammo.js":17,"./sounds/sounds.js":23,"wgpu-matrix":5}]},{},[1]);
+},{"./engine/ball.js":7,"./engine/cube.js":8,"./engine/engine.js":9,"./engine/loader-obj.js":10,"./engine/mesh-obj.js":13,"./engine/mesh.js":14,"./engine/utils.js":16,"./multilang/lang.js":17,"./physics/matrix-ammo.js":18,"./sounds/sounds.js":24,"wgpu-matrix":6}]},{},[1]);

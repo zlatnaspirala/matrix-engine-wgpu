@@ -564,17 +564,10 @@ export default class MEMeshObj extends Materials {
     });
   }
 
-  draw = (commandEncoder) => {
+  draw = () => {
     if(this.done == false) return;
     const transformationMatrix = this.getTransformationMatrix(this.position);
-
-    this.device.queue.writeBuffer(
-      this.sceneUniformBuffer,
-      64,
-      transformationMatrix.buffer,
-      transformationMatrix.byteOffset,
-      transformationMatrix.byteLength
-    );
+    this.device.queue.writeBuffer(this.sceneUniformBuffer, 64, transformationMatrix.buffer, transformationMatrix.byteOffset, transformationMatrix.byteLength);
     this.renderPassDescriptor.colorAttachments[0].view = this.context
       .getCurrentTexture()
       .createView();
