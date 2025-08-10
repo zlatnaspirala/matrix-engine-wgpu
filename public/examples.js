@@ -189,7 +189,7 @@ var loadObjFile = function () {
       }, onGround, {
         scale: [5, 0.1, 5]
       });
-      loadObjFile.addLight();
+      // loadObjFile.addLight();
     });
     function onGround(m) {
       loadObjFile.addMeshObj({

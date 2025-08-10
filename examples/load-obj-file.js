@@ -28,7 +28,7 @@ export var loadObjFile = function() {
         cube: "./res/meshes/blender/cube.obj",
       }, onGround,
         {scale: [5, 0.1, 5]})
-        loadObjFile.addLight();
+        // loadObjFile.addLight();
     })
 
     function onGround(m) {
