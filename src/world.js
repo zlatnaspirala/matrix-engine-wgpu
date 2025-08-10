@@ -2,18 +2,19 @@ import {vec3} from "wgpu-matrix";
 import MEBall from "./engine/ball.js";
 import MECube from './engine/cube.js';
 import {ArcballCamera, WASDCamera} from "./engine/engine.js";
-import MEMesh from "./engine/mesh.js";
+import {createInputHandler} from "./engine/engine.js";
 import MEMeshObj from "./engine/mesh-obj.js";
 import MatrixAmmo from "./physics/matrix-ammo.js";
 import {LOG_WARN, genName, mb, scriptManager, urlQuery} from "./engine/utils.js";
 import {MultiLang} from "./multilang/lang.js";
 import {MatrixSounds} from "./sounds/sounds.js";
 import {play} from "./engine/loader-obj.js";
+import {SpotLight} from "./engine/lights.js";
 
 export default class MatrixEngineWGPU {
 
   mainRenderBundle = [];
-  rbContainer = [];
+  lightContainer = [];
   frame = () => {};
 
   entityHolder = [];
@@ -131,11 +132,23 @@ export default class MatrixEngineWGPU {
       this.frame = this.framePassPerObject;
     }
 
+    // Global SCENE BUFFER
+    this.sceneUniformBuffer = this.device.createBuffer({
+      // Two 4x4 viewProj matrices,
+      // one for the camera and one for the light.
+      // Then a vec3 for the light position.
+      // Rounded to the nearest multiple of 16.
+      size: 2 * 4 * 16 + 4 * 4,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+    });
+
+    this.inputHandler = createInputHandler(window, canvas);
+
     this.run(callback)
   };
 
   getSceneObjectByName(name) {
-    return this.mainRenderBundle.find((sceneObject) => sceneObject.name === name )
+    return this.mainRenderBundle.find((sceneObject) => sceneObject.name === name)
   }
 
   // Not in use for now
@@ -238,27 +251,15 @@ export default class MatrixEngineWGPU {
     this.mainRenderBundle.push(myBall1);
   }
 
-  // Not in use for now
-  addMesh = (o) => {
-    if(typeof o.position === 'undefined') {o.position = {x: 0, y: 0, z: -4}}
-    if(typeof o.rotation === 'undefined') {o.rotation = {x: 0, y: 0, z: 0}}
-    if(typeof o.rotationSpeed === 'undefined') {o.rotationSpeed = {x: 0, y: 0, z: 0}}
-    if(typeof o.texturesPaths === 'undefined') {o.texturesPaths = ['./res/textures/default.png']}
-    if(typeof o.mainCameraParams === 'undefined') {o.mainCameraParams = this.mainCameraParams}
-    if(typeof o.scale === 'undefined') {o.scale = 1;}
-    o.entityArgPass = this.entityArgPass;
-    o.cameras = this.cameras;
-    if(typeof o.name === 'undefined') {o.name = 'random' + Math.random();}
-    if(typeof o.mesh === 'undefined') {
-      throw console.error('arg mesh is empty...');
-      return;
-    }
-    console.log('Mesh procedure', o)
-    let myMesh1 = new MEMesh(this.canvas, this.device, this.context, o)
-    this.mainRenderBundle.push(myMesh1);
+  addLight(o) {
+    // test light global; entity
+    let newLight = new SpotLight();
+    newLight.prepareBuffer(this.device);
+    this.lightContainer.push(newLight);
+    console.log('Add light : ', newLight);
   }
 
-  addMeshObj = (o , clearColor=this.options.clearColor) => {
+  addMeshObj = (o, clearColor = this.options.clearColor) => {
     if(typeof o.name === 'undefined') {o.name = genName(9)}
     if(typeof o.position === 'undefined') {o.position = {x: 0, y: 0, z: -4}}
     if(typeof o.rotation === 'undefined') {o.rotation = {x: 0, y: 0, z: 0}}
@@ -311,7 +312,9 @@ export default class MatrixEngineWGPU {
         }
       }
     }
-    let myMesh1 = new MEMeshObj(this.canvas, this.device, this.context, o);
+    let myMesh1 = new MEMeshObj(this.canvas, this.device, this.context, o, this.sceneUniformBuffer);
+    myMesh1.lightContainer = this.lightContainer;
+    myMesh1.inputHandler = this.inputHandler;
     myMesh1.clearColor = clearColor;
     if(o.physics.enabled == true) {
       this.matrixAmmo.addPhysics(myMesh1, o.physics)
@@ -330,31 +333,56 @@ export default class MatrixEngineWGPU {
   }
 
   frameSinglePass = () => {
-    if(typeof this.mainRenderBundle == 'undefined') return;
+    if(typeof this.mainRenderBundle == 'undefined' || this.mainRenderBundle.length == 0) {
+      setTimeout(() => {requestAnimationFrame(this.frame)}, 200);
+      return;
+    }
     try {
       let shadowPass = null;
       let renderPass;
       let commandEncoder = this.device.createCommandEncoder();
 
-      this.mainRenderBundle.forEach((meItem, index) => {
-        meItem.position.update();
-      })
+      // 1️⃣ Update light data (position, direction, uniforms)
+      for(const light of this.lightContainer) {
+        // light.updateSceneUniforms(this.sceneUniformBuffer, this.cameras.WASD, this.inputHandler);
+      }
 
-      if (this.matrixAmmo) this.matrixAmmo.updatePhysics();
+      this.mainRenderBundle.forEach((meItem, index) => {meItem.position.update()})
+      if(this.matrixAmmo) this.matrixAmmo.updatePhysics();
 
-      this.mainRenderBundle.forEach((meItem, index) => {
-        meItem.draw(commandEncoder);
+      // no cast WORKING
+      // this.mainRenderBundle.forEach((meItem, index) => {
+      //   meItem.draw(commandEncoder);
 
-        shadowPass = commandEncoder.beginRenderPass(meItem.shadowPassDescriptor);
-        shadowPass.setPipeline(meItem.shadowPipeline);
-        meItem.drawShadows(shadowPass);
-        shadowPass.end();
-      })
+      //   shadowPass = commandEncoder.beginRenderPass(meItem.shadowPassDescriptor);
+      //   shadowPass.setPipeline(meItem.shadowPipeline);
+      //   meItem.drawShadows(shadowPass);
+      //   shadowPass.end();
+      // })
+
+      // cast!
+      const firstItem = this.mainRenderBundle[0];
+      shadowPass = commandEncoder.beginRenderPass(firstItem.shadowPassDescriptor);
+      shadowPass.setPipeline(firstItem.shadowPipeline);
+      for(const meItem of this.mainRenderBundle) {
+        // meItem.draw(commandEncoder);
+        meItem.drawShadows(shadowPass); // Draw ALL objects
+      }
+      shadowPass.end();
 
       this.mainRenderBundle.forEach((meItem, index) => {
         if(index == 0) {
+
+          // meItem. updateSceneUniforms
+          meItem.draw(commandEncoder);
+
+          meItem.renderPassDescriptor.colorAttachments[0].view =
+            this.context.getCurrentTexture().createView();
+
           renderPass = commandEncoder.beginRenderPass(meItem.renderPassDescriptor);
           renderPass.setPipeline(meItem.pipeline);
+        } else {
+          meItem.draw(commandEncoder);
         }
       })
 

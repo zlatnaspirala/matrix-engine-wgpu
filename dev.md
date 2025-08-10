@@ -471,3 +471,71 @@ Theme by beautiful-jekyll
 
 
 https://maierfelix.github.io/2020-01-13-webgpu-ray-tracing/?utm_source=chatgpt.com
+
+
+
+  // updateLightsTest = (position) => {
+  //   console.log('Update light position.', position)
+  //   this.lightPosition = vec3.fromValues(position[0], position[1], position[2]);
+  //   this.lightViewMatrix = mat4.lookAt(this.lightPosition, this.origin, this.upVector);
+
+  //   const lightProjectionMatrix = mat4.create();
+  //   {
+  //     const left = -80;
+  //     const right = 80;
+  //     const bottom = -80;
+  //     const top = 80;
+  //     const near = -200;
+  //     const far = 300;
+  //     mat4.ortho(left, right, bottom, top, near, far, lightProjectionMatrix);
+  //   }
+
+  //   this.lightViewProjMatrix = mat4.multiply(
+  //     lightProjectionMatrix,
+  //     this.lightViewMatrix
+  //   );
+
+  //   // looks like affect on transformations for now const 0
+  //   const modelMatrix = mat4.translation([0, 0, 0]);
+  //   // The camera/light aren't moving, so write them into buffers now.
+  //   {
+  //     const lightMatrixData = this.lightViewProjMatrix; // as Float32Array;
+  //     this.device.queue.writeBuffer(
+  //       this.sceneUniformBuffer,
+  //       0, // 0 ori
+  //       lightMatrixData.buffer,
+  //       lightMatrixData.byteOffset,
+  //       lightMatrixData.byteLength
+  //     );
+
+  //     const lightData = this.lightPosition;
+  //     this.device.queue.writeBuffer(
+  //       this.sceneUniformBuffer,
+  //       256,
+  //       lightData.buffer,
+  //       lightData.byteOffset,
+  //       lightData.byteLength
+  //     );
+
+  //     const modelData = modelMatrix;
+  //     this.device.queue.writeBuffer(
+  //       this.modelUniformBuffer,
+  //       0,
+  //       modelData.buffer,
+  //       modelData.byteOffset,
+  //       modelData.byteLength
+  //     );
+  //   }
+  //   console.log('test >>✅✅✅✅ ' + this.presentationFormat);
+  //   this.shadowPassDescriptor = {
+  //     colorAttachments: [],
+  //     depthStencilAttachment: {
+  //       view: this.shadowDepthTextureView,
+  //       depthClearValue: 1.0, // ori 1.0
+  //       depthLoadOp: 'clear',
+  //       depthStoreOp: 'store',
+  //     },
+  //   };
+
+  //   ///////////////////////
+  // }

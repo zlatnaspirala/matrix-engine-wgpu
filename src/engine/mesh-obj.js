@@ -1,15 +1,15 @@
 import {mat4, vec3} from 'wgpu-matrix';
 import {Position, Rotation} from "./matrix-class";
-import {createInputHandler} from "./engine";
 import {vertexShadowWGSL} from '../shaders/vertexShadow.wgsl';
 import {fragmentWGSL} from '../shaders/fragment.wgsl';
 import {vertexWGSL} from '../shaders/vertex.wgsl';
 import {degToRad, genName, LOG_FUNNY_SMALL} from './utils';
 import Materials from './materials';
 import {fragmentVideoWGSL} from '../shaders/fragment.video.wgsl';
+import {createInputHandler} from './engine';
 
 export default class MEMeshObj extends Materials {
-  constructor(canvas, device, context, o) {
+  constructor(canvas, device, context, o, sceneUniformBuffer) {
     super(device);
     if(typeof o.name === 'undefined') o.name = genName(9);
     if(typeof o.raycast === 'undefined') {
@@ -30,6 +30,9 @@ export default class MEMeshObj extends Materials {
     // comes from engine not from args
     this.clearColor = "red";
 
+
+    // this.lightTest = new SpotLight();
+    // this.lightTest.prepareBuffer(this.device);
     this.video = null;
 
     // Mesh stuff - for single mesh or t-posed (fiktive-first in loading order)
@@ -47,7 +50,7 @@ export default class MEMeshObj extends Materials {
       this.drawElements = this.drawElementsAnim;
     }
 
-    this.inputHandler = createInputHandler(window, canvas);
+    this.inputHandler = null;
     this.cameras = o.cameras;
 
     this.mainCameraParams = {
@@ -55,14 +58,10 @@ export default class MEMeshObj extends Materials {
       responseCoef: o.mainCameraParams.responseCoef
     }
 
-    // touchCoordinate.enabled = true;
-
     this.lastFrameMS = 0;
     this.texturesPaths = [];
     o.texturesPaths.forEach((t) => {this.texturesPaths.push(t)})
-
     this.presentationFormat = navigator.gpu.getPreferredCanvasFormat();
-
     this.position = new Position(o.position.x, o.position.y, o.position.z);
     this.rotation = new Rotation(o.rotation.x, o.rotation.y, o.rotation.z);
     this.rotation.rotationSpeed.x = o.rotationSpeed.x;
@@ -74,7 +73,7 @@ export default class MEMeshObj extends Materials {
       return new Promise(async (resolve) => {
         this.shadowDepthTextureSize = 1024;
         const aspect = canvas.width / canvas.height;
-        this.projectionMatrix = mat4.perspective((2 * Math.PI) / 5, aspect, 1, 2000.0);
+        // this.projectionMatrix = mat4.perspective((2 * Math.PI) / 5, aspect, 1, 2000.0);
         this.modelViewProjectionMatrix = mat4.create();
         // console.log('cube added texturesPaths: ', this.texturesPaths)
         this.loadTex0(this.texturesPaths).then(() => {
@@ -235,43 +234,13 @@ export default class MEMeshObj extends Materials {
       // Create a bind group layout which holds the scene uniforms and
       // the texture+sampler for depth. We create it manually because the WebPU
       // implementation doesn't infer this from the shader (yet).
-      this.createLayoutForRender()
-
+      this.createLayoutForRender();
       this.setupPipeline();
-      // this.pipeline = this.device.createRenderPipeline({
-      //   layout: this.device.createPipelineLayout({
-      //     bindGroupLayouts: [this.bglForRender, this.uniformBufferBindGroupLayout],
-      //   }),
-      //   vertex: {
-      //     module: this.device.createShaderModule({
-      //       code: vertexWGSL,
-      //     }),
-      //     buffers: this.vertexBuffers,
-      //   },
-      //   fragment: {
-      //     module: this.device.createShaderModule({
-      //       code: fragmentWGSL,
-      //     }),
-      //     targets: [
-      //       {
-      //         format: presentationFormat,
-      //       },
-      //     ],
-      //     constants: {
-      //       shadowDepthTextureSize: this.shadowDepthTextureSize,
-      //     },
-      //   },
-      //   depthStencil: {
-      //     depthWriteEnabled: true,
-      //     depthCompare: 'less',
-      //     format: 'depth24plus-stencil8',
-      //   },
-      //   primitive,
-      // });
 
       const depthTexture = this.device.createTexture({
         size: [canvas.width, canvas.height],
-        format: 'depth24plus-stencil8',
+        // format: 'depth24plus-stencil8',
+        format: 'depth24plus',
         usage: GPUTextureUsage.RENDER_ATTACHMENT,
       });
 
@@ -290,9 +259,9 @@ export default class MEMeshObj extends Materials {
           depthClearValue: 1.0,
           depthLoadOp: 'clear',
           depthStoreOp: 'store',
-          stencilClearValue: 0,
-          stencilLoadOp: 'clear',
-          stencilStoreOp: 'store',
+          // stencilClearValue: 0,
+          // stencilLoadOp: 'clear',
+          // stencilStoreOp: 'store',
         },
       };
 
@@ -309,6 +278,9 @@ export default class MEMeshObj extends Materials {
         size: 2 * 4 * 16 + 4 * 4,
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
       });
+      // cant be global
+      // console.log('sceneUniformBuffer', sceneUniformBuffer)
+      // this.sceneUniformBuffer = sceneUniformBuffer;
 
       this.sceneBindGroupForShadow = this.device.createBindGroup({
         layout: this.uniformBufferBindGroupLayout,
@@ -322,7 +294,6 @@ export default class MEMeshObj extends Materials {
         ],
       });
 
-      // --------------------------
       this.createBindGroupForRender();
 
       this.modelBindGroup = this.device.createBindGroup({
@@ -364,7 +335,9 @@ export default class MEMeshObj extends Materials {
           mat4.rotateZ(this.viewMatrix, Math.PI * this.rotation.getRotZ(), this.viewMatrix);
           // console.info('NOT PHYSICS angle: ', this.rotation.angle, ' axis ', this.rotation.axis.x, ' , ', this.rotation.axis.y, ' , ', this.rotation.axis.z)
         }
-        mat4.multiply(this.projectionMatrix, this.viewMatrix, this.modelViewProjectionMatrix);
+
+        // console.info('NOT camera.projectionMatrix: ', camera.projectionMatrix )
+        mat4.multiply(camera.projectionMatrix, this.viewMatrix, this.modelViewProjectionMatrix);
         return this.modelViewProjectionMatrix;
       }
 
@@ -387,62 +360,16 @@ export default class MEMeshObj extends Materials {
         return modelMatrix;
       };
 
-      this.upVector = vec3.fromValues(0, 1, 0);
-      this.origin = vec3.fromValues(0, 0, 0);
-
-      this.lightPosition = vec3.fromValues(0, 0, 0);
-      this.lightViewMatrix = mat4.lookAt(this.lightPosition, this.origin, this.upVector);
-      const lightProjectionMatrix = mat4.create();
-
-      var myLMargin = 100;
-      {
-        const left = -myLMargin;
-        const right = myLMargin;
-        const bottom = -myLMargin;
-        const top = myLMargin;
-        const near = -200;
-        const far = 300;
-        mat4.ortho(left, right, bottom, top, near, far, lightProjectionMatrix);
-        // test 
-        // mat4.ortho(right, left, top, bottom, near, far, lightProjectionMatrix);
-      }
-
-      this.lightViewProjMatrix = mat4.multiply(
-        lightProjectionMatrix,
-        this.lightViewMatrix
-      );
-
       // looks like affect on transformations for now const 0
       const modelMatrix = mat4.translation([0, 0, 0]);
-      // The camera/light aren't moving, so write them into buffers now.
-      {
-        const lightMatrixData = this.lightViewProjMatrix; // as Float32Array;
-        this.device.queue.writeBuffer(
-          this.sceneUniformBuffer,
-          0,
-          lightMatrixData.buffer,
-          lightMatrixData.byteOffset,
-          lightMatrixData.byteLength
-        );
-
-        const lightData = this.lightPosition;
-        this.device.queue.writeBuffer(
-          this.sceneUniformBuffer,
-          128,
-          lightData.buffer,
-          lightData.byteOffset,
-          lightData.byteLength
-        );
-
-        const modelData = modelMatrix;
-        this.device.queue.writeBuffer(
-          this.modelUniformBuffer,
-          0,
-          modelData.buffer,
-          modelData.byteOffset,
-          modelData.byteLength
-        );
-      }
+      const modelData = modelMatrix;
+      this.device.queue.writeBuffer(
+        this.modelUniformBuffer,
+        0,
+        modelData.buffer,
+        modelData.byteOffset,
+        modelData.byteLength
+      );
 
       this.shadowPassDescriptor = {
         colorAttachments: [],
@@ -463,73 +390,8 @@ export default class MEMeshObj extends Materials {
     })
   }
 
-  updateLightsTest = (position) => {
-    console.log('Update light position.', position)
-    this.lightPosition = vec3.fromValues(position[0], position[1], position[2]);
-    this.lightViewMatrix = mat4.lookAt(this.lightPosition, this.origin, this.upVector);
-
-    const lightProjectionMatrix = mat4.create();
-    {
-      const left = -80;
-      const right = 80;
-      const bottom = -80;
-      const top = 80;
-      const near = -200;
-      const far = 300;
-      mat4.ortho(left, right, bottom, top, near, far, lightProjectionMatrix);
-    }
-
-    this.lightViewProjMatrix = mat4.multiply(
-      lightProjectionMatrix,
-      this.lightViewMatrix
-    );
-
-    // looks like affect on transformations for now const 0
-    const modelMatrix = mat4.translation([0, 0, 0]);
-    // The camera/light aren't moving, so write them into buffers now.
-    {
-      const lightMatrixData = this.lightViewProjMatrix; // as Float32Array;
-      this.device.queue.writeBuffer(
-        this.sceneUniformBuffer,
-        0, // 0 ori
-        lightMatrixData.buffer,
-        lightMatrixData.byteOffset,
-        lightMatrixData.byteLength
-      );
-
-      const lightData = this.lightPosition;
-      this.device.queue.writeBuffer(
-        this.sceneUniformBuffer,
-        256,
-        lightData.buffer,
-        lightData.byteOffset,
-        lightData.byteLength
-      );
-
-      const modelData = modelMatrix;
-      this.device.queue.writeBuffer(
-        this.modelUniformBuffer,
-        0,
-        modelData.buffer,
-        modelData.byteOffset,
-        modelData.byteLength
-      );
-    }
-
-    this.shadowPassDescriptor = {
-      colorAttachments: [],
-      depthStencilAttachment: {
-        view: this.shadowDepthTextureView,
-        depthClearValue: 1.0, // ori 1.0
-        depthLoadOp: 'clear',
-        depthStoreOp: 'store',
-      },
-    };
-
-    ///////////////////////
-  }
-
   setupPipeline = () => {
+    console.log('test >>>>>>>>>>>>>>>>>>>FORMAT>✅' + this.presentationFormat);
     this.pipeline = this.device.createRenderPipeline({
       layout: this.device.createPipelineLayout({
         bindGroupLayouts: [this.bglForRender, this.uniformBufferBindGroupLayout],
@@ -558,7 +420,8 @@ export default class MEMeshObj extends Materials {
       depthStencil: {
         depthWriteEnabled: true,
         depthCompare: 'less',
-        format: 'depth24plus-stencil8',
+        // format: 'depth24plus-stencil8',
+        format: 'depth24plus',
       },
       primitive: this.primitive,
     });
@@ -586,7 +449,6 @@ export default class MEMeshObj extends Materials {
     renderPass.drawIndexed(this.indexCount);
   }
 
-  // test
   createGPUBuffer(dataArray, usage) {
     if(!dataArray || typeof dataArray.length !== 'number') {
       throw new Error('Invalid data array passed to createGPUBuffer');
@@ -612,7 +474,6 @@ export default class MEMeshObj extends Materials {
 
     return buffer;
   }
-
 
   updateMeshListBuffers() {
     for(const key in this.objAnim.meshList) {

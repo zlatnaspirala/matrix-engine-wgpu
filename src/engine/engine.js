@@ -2,6 +2,7 @@
 // 'wgpu-matrix' library, so produces many temporary vectors and matrices.
 // This is intentional, as this sample prefers readability over performance.
 import { mat4, vec3 } from 'wgpu-matrix';
+import {LOG_INFO} from './utils';
 // import Input from './input';
 
 // // Common interface for camera implementations
@@ -45,6 +46,10 @@ class CameraBase {
   // Assigns `mat` to the camera matrix
   set matrix(mat) {
     mat4.copy(mat, this.matrix_);
+  }
+
+  setProjection(fov = (2 * Math.PI) / 5, aspect = 1, near = 1, far = 1000) {
+    this.projectionMatrix = mat4.perspective(fov, aspect, near, far);
   }
 
   // Returns the camera view matrix
@@ -135,7 +140,9 @@ export class WASDCamera extends CameraBase {
       const forward = vec3.normalize(vec3.sub(target, position));
       this.recalculateAngles(forward);
       this.position = position;
-      // console.log(`%cCamera pos: ${position}`, LOG_INFO);
+
+      this.setProjection()
+      console.log(`%cCamera constructor : ${position}`, LOG_INFO);
     }
   }
 

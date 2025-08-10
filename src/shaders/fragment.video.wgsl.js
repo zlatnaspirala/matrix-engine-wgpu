@@ -12,6 +12,8 @@ struct Scene {
 @group(0) @binding(3) var meshTexture: texture_external;
 @group(0) @binding(4) var meshSampler: sampler;
 
+@group(0) @binding(5) var<uniform> postFXMode: u32;
+
 // ❌ No binding(4) here!
 
 struct FragmentInput {
@@ -45,7 +47,37 @@ fn main(input : FragmentInput) -> @location(0) vec4f {
 
   // ✅ Correct way to sample video texture
   let textureColor = textureSampleBaseClampToEdge(meshTexture, meshSampler, input.uv);
+  let color: vec4f = vec4(textureColor.rgb * lightingFactor * albedo, 1.0);
 
-  return vec4(textureColor.rgb * lightingFactor * albedo, 1.0);
+   switch (postFXMode) {
+    case 0: {
+      // Default
+      return color;
+    }
+    case 1: {
+      // Invert
+      return vec4f(1.0 - color.rgb, color.a);
+    }
+    case 2: {
+      // Grayscale
+      let gray = dot(color.rgb, vec3f(0.299, 0.587, 0.114));
+      return vec4f(vec3f(gray), color.a);
+    }
+    case 3: {
+      // Chroma Key
+      let keyColor = vec3f(0.0, 1.0, 0.0);
+      let threshold = 0.3;
+      let diff = distance(color.rgb, keyColor);
+      if (diff < threshold) {
+        return vec4f(0.0, 0.0, 0.0, 0.0);
+      }
+      return color;
+    }
+    default: {
+      return color;
+    }
+  }
+
+  // return color;
 }
 `;

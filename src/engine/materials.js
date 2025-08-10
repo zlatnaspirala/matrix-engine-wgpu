@@ -22,6 +22,25 @@ export default class Materials {
       magFilter: 'linear',
       minFilter: 'linear',
     });
+
+    // FX effect
+    this.postFXModeBuffer = this.device.createBuffer({
+      size: 4, // u32 = 4 bytes
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+    });
+
+    // Dymmy buffer
+    this.dummySpotlightUniformBuffer = this.device.createBuffer({
+      size: 64, // Must match size in shader
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+    });
+    this.device.queue.writeBuffer(this.dummySpotlightUniformBuffer, 0, new Float32Array(16)); 
+
+  }
+
+  updatePostFXMode(mode) {
+    const arrayBuffer = new Uint32Array([mode]);
+    this.device.queue.writeBuffer(this.postFXModeBuffer, 0, arrayBuffer);
   }
 
   async loadTex0(texturesPaths) {
@@ -190,6 +209,7 @@ export default class Materials {
             binding: 4,
             resource: this.videoSampler,
           },
+          {binding: 5, resource: {buffer: this.postFXModeBuffer}}
         ],
       });
     } else {
@@ -215,6 +235,10 @@ export default class Materials {
           {
             binding: 4,
             resource: this.imageSampler,
+          },
+          {
+            binding: 5,
+            resource: {buffer: this.lightContainer.length == 0 ? this.dummySpotlightUniformBuffer : this.lightContainer[0].spotlightUniformBuffer},
           },
         ],
       });
@@ -251,6 +275,11 @@ export default class Materials {
               visibility: GPUShaderStage.FRAGMENT,
               sampler: {type: 'filtering'}, // for video sampling
             },
+            {
+              binding: 5,
+              visibility: GPUShaderStage.FRAGMENT,
+              buffer: {type: 'uniform'},
+            }
           ]
           : [ // IMAGE
             {
@@ -266,6 +295,11 @@ export default class Materials {
               visibility: GPUShaderStage.FRAGMENT,
               sampler: {type: 'filtering'},
             },
+            {
+              binding: 5,
+              visibility: GPUShaderStage.FRAGMENT,
+              buffer: {type: 'uniform'},
+            }
           ])
       ],
     });

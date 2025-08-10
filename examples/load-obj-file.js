@@ -1,7 +1,5 @@
 import MatrixEngineWGPU from "../src/world.js";
 import {downloadMeshes} from '../src/engine/loader-obj.js';
-// import MatrixEngineWGPU from "./src/world.js";
-// import {downloadMeshes} from './src/engine/loader-obj.js';
 import {LOG_FUNNY, LOG_INFO, LOG_MATRIX} from "../src/engine/utils.js";
 import {addRaycastsAABBListener} from "../src/engine/raycast.js";
 
@@ -17,29 +15,67 @@ export var loadObjFile = function() {
     clearColor: {r: 0, b: 0.122, g: 0.122, a: 1}
   }, () => {
 
+
+    // loadObjFile.addLight()
+
     addEventListener('AmmoReady', () => {
       downloadMeshes({
-        welcomeText: "./res/meshes/blender/piramyd.obj",
-        armor: "./res/meshes/obj/armor.obj",
-        sphere: "./res/meshes/blender/sphere.obj",
+        ball: "./res/meshes/blender/sphere.obj",
         cube: "./res/meshes/blender/cube.obj",
       }, onLoadObj,
         {scale: [1, 1, 1]})
+      downloadMeshes({
+        cube: "./res/meshes/blender/cube.obj",
+      }, onGround,
+        {scale: [5, 0.1, 5]})
+        loadObjFile.addLight();
     })
+
+    function onGround(m) {
+
+      loadObjFile.addMeshObj({
+        position: {x: 0, y: -5, z: -10},
+        rotation: {x: 0, y: 0, z: 0},
+        rotationSpeed: {x: 0, y: 0, z: 0},
+        texturesPaths: ['./res/meshes/blender/cube.png'],
+        name: 'ground',
+        mesh: m.cube,
+        physics: {
+          enabled: false,
+          mass: 0,
+          geometry: "Cube"
+        },
+        // raycast: { enabled: true , radius: 2 }
+      })
+
+    }
 
     function onLoadObj(m) {
       loadObjFile.myLoadedMeshes = m;
       for(var key in m) {
         console.log(`%c Loaded objs: ${key} `, LOG_MATRIX);
       }
-
       loadObjFile.addMeshObj({
         position: {x: 0, y: 2, z: -10},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
         texturesPaths: ['./res/meshes/blender/cube.png'],
-        name: 'SpherePhysics',
-        mesh: m.sphere,
+        name: 'cube1',
+        mesh: m.cube,
+        physics: {
+          enabled: true,
+          geometry: "Cube",
+        },
+        // raycast: { enabled: true , radius: 2 }
+      })
+
+      loadObjFile.addMeshObj({
+        position: {x: 3, y: 2, z: -15},
+        rotation: {x: 0, y: 0, z: 0},
+        rotationSpeed: {x: 0, y: 111, z: 0},
+        texturesPaths: ['./res/meshes/blender/cube.png'],
+        name: 'ball1',
+        mesh: m.ball,
         physics: {
           enabled: true,
           geometry: "Sphere"
@@ -47,7 +83,7 @@ export var loadObjFile = function() {
         // raycast: { enabled: true , radius: 2 }
       })
 
-      var TEST = loadObjFile.getSceneObjectByName('SpherePhysics');
+      var TEST = loadObjFile.getSceneObjectByName('cube2');
       console.log(`%c Test access scene ${TEST} object.`, LOG_MATRIX);
     }
   })
