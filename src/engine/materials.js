@@ -10,7 +10,6 @@ export default class Materials {
   constructor(device) {
     this.device = device;
     this.isVideo = false;
-    // For shadow comparison
     this.compareSampler = this.device.createSampler({compare: 'less'});
     // For image textures (standard sampler)
     this.imageSampler = this.device.createSampler({
@@ -35,7 +34,6 @@ export default class Materials {
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
     this.device.queue.writeBuffer(this.dummySpotlightUniformBuffer, 0, new Float32Array(16)); 
-
   }
 
   updatePostFXMode(mode) {
@@ -89,7 +87,6 @@ export default class Materials {
       this.video.playsInline = true;
       this.video.style.display = 'none';
       document.body.append(this.video);
-
       try {
         const stream = await (navigator.mediaDevices?.getUserMedia?.({
           video: {
@@ -113,24 +110,19 @@ export default class Materials {
       this.video.playsInline = true;
       this.video.style.display = 'none';
       document.body.append(this.video);
-
-      // Create stream from existing canvas
       const stream = arg.el.captureStream?.() || arg.el.mozCaptureStream?.();
       if(!stream) {
         console.error('❌ Cannot capture stream from canvas2d');
         return;
       }
-
       this.video.srcObject = stream;
       await this.video.play();
-
     } else if(arg.type === 'canvas2d-inline') {
       // Miniature inline-drawn canvas created dynamically
       const canvas = document.createElement('canvas');
       canvas.width = arg.width || 256;
       canvas.height = arg.height || 256;
       const ctx = canvas.getContext('2d');
-
       if(typeof arg.canvaInlineProgram === 'function') {
         // Start drawing loop
         const drawLoop = () => {
@@ -146,13 +138,11 @@ export default class Materials {
       this.video.playsInline = true;
       this.video.style.display = 'none';
       document.body.append(this.video);
-
       const stream = canvas.captureStream?.() || canvas.mozCaptureStream?.();
       if(!stream) {
         console.error('❌ Cannot capture stream from inline canvas');
         return;
       }
-
       this.video.srcObject = stream;
       await this.video.play();
     }
@@ -163,7 +153,6 @@ export default class Materials {
     });
 
     // ✅ Now
-    // includes externalTexture type
     this.createLayoutForRender();
     this.setupPipeline();
     setTimeout(() => this.createBindGroupForRender(), 1500);
@@ -179,12 +168,11 @@ export default class Materials {
     const textureResource = this.isVideo
       ? this.externalTexture // must be set via updateVideoTexture
       : this.texture0.createView();
-    // Log all bindings to debug
     if(!textureResource || !this.sceneUniformBuffer || !this.shadowDepthTextureView || !this.sampler) {
       console.warn("❗Missing res skipping...");
       return;
     }
-
+    // console.log('what is  this.lightContainer.length ',  this.lightContainer.length)
     if(this.isVideo == true) {
       this.sceneBindGroupForRender = this.device.createBindGroup({
         layout: this.bglForRender,

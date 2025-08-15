@@ -27,7 +27,8 @@ export var loadObjFile = function() {
       downloadMeshes({
         cube: "./res/meshes/blender/cube.obj",
       }, onGround,
-        {scale: [5, 0.1, 5]})
+        {scale: [25, 0.1, 25]})
+
         // loadObjFile.addLight();
     })
 
@@ -85,6 +86,8 @@ export var loadObjFile = function() {
 
       var TEST = loadObjFile.getSceneObjectByName('cube2');
       console.log(`%c Test access scene ${TEST} object.`, LOG_MATRIX);
+
+            loadObjFile.addLight();
     }
   })
   // just for dev

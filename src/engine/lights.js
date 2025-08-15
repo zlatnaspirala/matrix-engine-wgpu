@@ -26,7 +26,7 @@ export class SpotLight {
     fov = 45,
     aspect = 1.0,
     near = 0.1,
-    far = 100
+    far = 200
   ) {
     this.position = position;
     this.target = target;
@@ -52,47 +52,39 @@ export class SpotLight {
   }
 
   update() {
-    this.direction = vec3.normalize(vec3.subtract(this.target, this.position));
-    this.viewMatrix = mat4.lookAt(this.position, this.target, this.up);
+    // this.direction = vec3.normalize(vec3.subtract(this.target, this.position));
+    // this.viewMatrix = mat4.lookAt(this.position, this.target, this.up);
+    // this.viewProjMatrix = mat4.multiply(this.projectionMatrix, this.viewMatrix);
+    // console.log('test light update this.target : ', this.target)
+
+    // this.viewMatrix = mat4.lookAt(this.position, vec3.add(this.position, this.direction), this.up);
+    // this.viewProjMatrix = mat4.multiply(this.projectionMatrix, this.viewMatrix);
+
+    // Use the existing direction
+    const target = vec3.add(this.position, this.direction);
+    this.viewMatrix = mat4.lookAt(this.position, target, this.up);
     this.viewProjMatrix = mat4.multiply(this.projectionMatrix, this.viewMatrix);
-    console.log('test light update this.position : ', this.position)
   }
 
-  updateSceneUniforms = (sceneUniformBuffer, camera, inputHandler) => {
-
-    console.log('test camera.view ', camera.view)
-    // Update spotlight matrices
-    this.update();
-
-    const now = Date.now();
-
-    // Get camera matrices
-    camera.update(now, inputHandler()); // Your camera class should also update view/projection
+  updateSceneUniforms(sceneUniformBuffer, camera) {
     const camVP = mat4.multiply(camera.projectionMatrix, camera.view);
-
-    // Prepare float data
-    const sceneData = new Float32Array(16 + 16 + 4); // 2 matrices + vec3
-
-    // Light view-proj matrix
+    const sceneData = new Float32Array(36); // 16 + 16 + 4
     sceneData.set(this.viewProjMatrix, 0);
-
-    // Camera view-proj matrix
     sceneData.set(camVP, 16);
-
-    // Light position (vec3f + padding)
     sceneData.set(this.position, 32);
+    if(!this.device) {
+      console.warn("Device not set for SpotLight");
+      return;
+    }
 
-    // Write to GPU
     this.device.queue.writeBuffer(
       sceneUniformBuffer,
+      // this.spotlightUniformBuffer,
       0,
       sceneData.buffer,
       sceneData.byteOffset,
       sceneData.byteLength
     );
-
-    console.log('light.viewProj[0..3]', this.viewProjMatrix.slice(0, 4));
-    console.log('camera.vp[0..3]', camVP.slice(0, 4));
   }
 
   prepareBuffer(device) {

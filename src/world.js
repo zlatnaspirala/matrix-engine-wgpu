@@ -133,14 +133,14 @@ export default class MatrixEngineWGPU {
     }
 
     // Global SCENE BUFFER
-    this.sceneUniformBuffer = this.device.createBuffer({
-      // Two 4x4 viewProj matrices,
-      // one for the camera and one for the light.
-      // Then a vec3 for the light position.
-      // Rounded to the nearest multiple of 16.
-      size: 2 * 4 * 16 + 4 * 4,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-    });
+    // this.sceneUniformBuffer = this.device.createBuffer({
+    //   // Two 4x4 viewProj matrices,
+    //   // one for the camera and one for the light.
+    //   // Then a vec3 for the light position.
+    //   // Rounded to the nearest multiple of 16.
+    //   size: 2 * 4 * 16 + 4 * 4,
+    //   usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+    // });
 
     this.inputHandler = createInputHandler(window, canvas);
 
@@ -312,7 +312,7 @@ export default class MatrixEngineWGPU {
         }
       }
     }
-    let myMesh1 = new MEMeshObj(this.canvas, this.device, this.context, o, this.sceneUniformBuffer);
+    let myMesh1 = new MEMeshObj(this.canvas, this.device, this.context, o);
     myMesh1.lightContainer = this.lightContainer;
     myMesh1.inputHandler = this.inputHandler;
     myMesh1.clearColor = clearColor;
@@ -344,7 +344,12 @@ export default class MatrixEngineWGPU {
 
       // 1️⃣ Update light data (position, direction, uniforms)
       for(const light of this.lightContainer) {
-        // light.updateSceneUniforms(this.sceneUniformBuffer, this.cameras.WASD, this.inputHandler);
+        this.mainRenderBundle.forEach((meItem, index) => {
+          light.updateSceneUniforms(meItem.sceneUniformBuffer, this.cameras.WASD);
+          // meItem.createBindGroupForRender()
+          // meItem.createLayoutForRender()
+          // meItem.setupPipeline()
+        })
       }
 
       this.mainRenderBundle.forEach((meItem, index) => {meItem.position.update()})

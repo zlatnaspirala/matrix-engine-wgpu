@@ -6,7 +6,6 @@ import {vertexWGSL} from '../shaders/vertex.wgsl';
 import {degToRad, genName, LOG_FUNNY_SMALL} from './utils';
 import Materials from './materials';
 import {fragmentVideoWGSL} from '../shaders/fragment.video.wgsl';
-import {createInputHandler} from './engine';
 
 export default class MEMeshObj extends Materials {
   constructor(canvas, device, context, o, sceneUniformBuffer) {
@@ -26,13 +25,7 @@ export default class MEMeshObj extends Materials {
     this.device = device;
     this.context = context;
     this.entityArgPass = o.entityArgPass;
-
-    // comes from engine not from args
     this.clearColor = "red";
-
-
-    // this.lightTest = new SpotLight();
-    // this.lightTest.prepareBuffer(this.device);
     this.video = null;
 
     // Mesh stuff - for single mesh or t-posed (fiktive-first in loading order)
@@ -72,20 +65,16 @@ export default class MEMeshObj extends Materials {
     this.runProgram = () => {
       return new Promise(async (resolve) => {
         this.shadowDepthTextureSize = 1024;
-        const aspect = canvas.width / canvas.height;
-        // this.projectionMatrix = mat4.perspective((2 * Math.PI) / 5, aspect, 1, 2000.0);
+        // const aspect = canvas.width / canvas.height;
         this.modelViewProjectionMatrix = mat4.create();
-        // console.log('cube added texturesPaths: ', this.texturesPaths)
         this.loadTex0(this.texturesPaths).then(() => {
-          // console.log('loaded tex buffer for mesh:', this.texture0)
           resolve()
         })
       })
     }
 
     this.runProgram().then(() => {
-      const aspect = canvas.width / canvas.height;
-      // const presentationFormat = navigator.gpu.getPreferredCanvasFormat();
+      // const aspect = canvas.width / canvas.height;
       this.context.configure({
         device: this.device,
         format: this.presentationFormat,
@@ -109,7 +98,6 @@ export default class MEMeshObj extends Materials {
         this.vertexBuffer.unmap();
       }
 
-      // NIDZA TEST SECOUND BUFFER
       // Create the model vertex buffer.
       this.vertexNormalsBuffer = this.device.createBuffer({
         size: this.mesh.vertexNormals.length * Float32Array.BYTES_PER_ELEMENT,
@@ -194,8 +182,8 @@ export default class MEMeshObj extends Materials {
 
       this.primitive = {
         topology: 'triangle-list',
-        // cullMode: 'back', // ORI 
-        cullMode: 'none', // ORI 
+        // cullMode: 'back',
+        cullMode: 'none',
       };
 
       this.uniformBufferBindGroupLayout = this.device.createBindGroupLayout({
@@ -250,7 +238,7 @@ export default class MEMeshObj extends Materials {
             // view is acquired and set in render loop.
             view: undefined,
             clearValue: this.clearColor,
-            loadOp: 'clear', // load old fix for FF
+            loadOp: 'clear', // load -> clear = fix for FF
             storeOp: 'store',
           },
         ],
@@ -278,9 +266,6 @@ export default class MEMeshObj extends Materials {
         size: 2 * 4 * 16 + 4 * 4,
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
       });
-      // cant be global
-      // console.log('sceneUniformBuffer', sceneUniformBuffer)
-      // this.sceneUniformBuffer = sceneUniformBuffer;
 
       this.sceneBindGroupForShadow = this.device.createBindGroup({
         layout: this.uniformBufferBindGroupLayout,
@@ -320,7 +305,6 @@ export default class MEMeshObj extends Materials {
         const scaleMatrix = mat4.scaling(scaleVec);
         // Apply scaling
         mat4.multiply(scaleMatrix, this.viewMatrix, this.viewMatrix);
-
         mat4.translate(this.viewMatrix, vec3.fromValues(pos.x, pos.y, pos.z), this.viewMatrix);
 
         if(this.itIsPhysicsBody == true) {
@@ -328,15 +312,12 @@ export default class MEMeshObj extends Materials {
             this.viewMatrix,
             vec3.fromValues(this.rotation.axis.x, this.rotation.axis.y, this.rotation.axis.z),
             degToRad(this.rotation.angle), this.viewMatrix)
-          // console.info('angle: ', this.rotation.angle, ' axis ', this.rotation.axis.x, ' , ', this.rotation.axis.y, ' , ', this.rotation.axis.z)
         } else {
           mat4.rotateX(this.viewMatrix, Math.PI * this.rotation.getRotX(), this.viewMatrix);
           mat4.rotateY(this.viewMatrix, Math.PI * this.rotation.getRotY(), this.viewMatrix);
           mat4.rotateZ(this.viewMatrix, Math.PI * this.rotation.getRotZ(), this.viewMatrix);
           // console.info('NOT PHYSICS angle: ', this.rotation.angle, ' axis ', this.rotation.axis.x, ' , ', this.rotation.axis.y, ' , ', this.rotation.axis.z)
         }
-
-        // console.info('NOT camera.projectionMatrix: ', camera.projectionMatrix )
         mat4.multiply(camera.projectionMatrix, this.viewMatrix, this.modelViewProjectionMatrix);
         return this.modelViewProjectionMatrix;
       }
@@ -486,7 +467,6 @@ export default class MEMeshObj extends Materials {
       });
       new Float32Array(mesh.vertexBuffer.getMappedRange()).set(mesh.vertices);
       mesh.vertexBuffer.unmap();
-
       // Normals
       mesh.vertexNormalsBuffer = this.device.createBuffer({
         size: mesh.vertexNormals.length * Float32Array.BYTES_PER_ELEMENT,
