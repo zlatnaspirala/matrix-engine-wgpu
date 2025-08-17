@@ -6711,26 +6711,6 @@ var _utils = require("./utils");
 // 'wgpu-matrix' library, so produces many temporary vectors and matrices.
 // This is intentional, as this sample prefers readability over performance.
 
-// import Input from './input';
-
-// // Common interface for camera implementations
-// export default interface Camera {
-//   // update updates the camera using the user-input and returns the view matrix.
-//   update(delta_time: number, input: Input): Mat4;
-
-//   // The camera matrix.
-//   // This is the inverse of the view matrix.
-//   matrix: Mat4;
-//   // Alias to column vector 0 of the camera matrix.
-//   right: Vec4;
-//   // Alias to column vector 1 of the camera matrix.
-//   up: Vec4;
-//   // Alias to column vector 2 of the camera matrix.
-//   back: Vec4;
-//   // Alias to column vector 3 of the camera matrix.
-//   position: Vec4;
-// }
-
 // The common functionality between camera implementations
 class CameraBase {
   // The camera matrix
@@ -6845,7 +6825,7 @@ class WASDCamera extends CameraBase {
       this.recalculateAngles(forward);
       this.position = position;
       this.setProjection();
-      console.log(`%cCamera constructor : ${position}`, _utils.LOG_INFO);
+      // console.log(`%cCamera constructor : ${position}`, LOG_INFO);
     }
   }
 
@@ -7044,29 +7024,6 @@ function rotate(vec, axis, angle) {
 function lerp(a, b, s) {
   return _wgpuMatrix.vec3.addScaled(a, _wgpuMatrix.vec3.sub(b, a), s);
 }
-
-// Input holds as snapshot of input state
-// export default interface Input {
-//   // Digital input (e.g keyboard state)
-//   readonly digital: {
-//     readonly forward: boolean;
-//     readonly backward: boolean;
-//     readonly left: boolean;
-//     readonly right: boolean;
-//     readonly up: boolean;
-//     readonly down: boolean;
-//   };
-//   // Analog input (e.g mouse, touchscreen)
-//   readonly analog: {
-//     readonly x: number;
-//     readonly y: number;
-//     readonly zoom: number;
-//     readonly touching: boolean;
-//   };
-// }
-// InputHandler is a function that when called, returns the current Input state.
-// export type InputHandler = () => Input;
-// createInputHandler returns an InputHandler by attaching event handlers to the window and canvas.
 function createInputHandler(window, canvas) {
   let digital = {
     forward: false,
@@ -7086,37 +7043,27 @@ function createInputHandler(window, canvas) {
     switch (e.code) {
       case 'KeyW':
         digital.forward = value;
-        e.preventDefault();
-        e.stopPropagation();
         break;
       case 'KeyS':
         digital.backward = value;
-        e.preventDefault();
-        e.stopPropagation();
         break;
       case 'KeyA':
         digital.left = value;
-        e.preventDefault();
-        e.stopPropagation();
         break;
       case 'KeyD':
         digital.right = value;
-        e.preventDefault();
-        e.stopPropagation();
         break;
       case 'Space':
         digital.up = value;
-        e.preventDefault();
-        e.stopPropagation();
         break;
       case 'ShiftLeft':
       case 'ControlLeft':
       case 'KeyC':
         digital.down = value;
-        e.preventDefault();
-        e.stopPropagation();
         break;
     }
+    e.preventDefault();
+    e.stopPropagation();
   };
   window.addEventListener('keydown', e => setDigital(e, true));
   window.addEventListener('keyup', e => setDigital(e, false));
@@ -7128,18 +7075,14 @@ function createInputHandler(window, canvas) {
     mouseDown = false;
   });
   canvas.addEventListener('pointermove', e => {
-    mouseDown = e.pointerType == 'mouse' ? (e.buttons & 1) !== 0 : true;
+    mouseDown = e.pointerType === 'mouse' ? (e.buttons & 1) !== 0 : true;
     if (mouseDown) {
-      // console.log('TEST ', analog)
       analog.x += e.movementX / 10;
       analog.y += e.movementY / 10;
     }
   });
   canvas.addEventListener('wheel', e => {
-    mouseDown = (e.buttons & 1) !== 0;
-    if (mouseDown) {
-      // The scroll value varies substantially between user agents / browsers.
-      // Just use the sign.
+    if ((e.buttons & 1) !== 0) {
       analog.zoom += Math.sign(e.deltaY);
       e.preventDefault();
       e.stopPropagation();
@@ -7148,16 +7091,19 @@ function createInputHandler(window, canvas) {
     passive: false
   });
   return () => {
+    // Guard: prevent zero deltas from breaking camera math
+    const safeX = analog.x || 0.0001;
+    const safeY = analog.y || 0.0001;
     const out = {
       digital,
       analog: {
-        x: analog.x,
-        y: analog.y,
+        x: safeX,
+        y: safeY,
         zoom: analog.zoom,
         touching: mouseDown
       }
     };
-    // Clear the analog values, as these accumulate.
+    // Reset only the deltas for next frame
     analog.x = 0;
     analog.y = 0;
     analog.zoom = 0;
@@ -7174,6 +7120,11 @@ Object.defineProperty(exports, "__esModule", {
 exports.SpotLight = void 0;
 var _wgpuMatrix = require("wgpu-matrix");
 class SpotLight {
+  // injected
+  camera;
+  inputHandler;
+
+  // Light
   position;
   target;
   up;
@@ -7188,7 +7139,9 @@ class SpotLight {
   innerCutoff;
   outerCutoff;
   spotlightUniformBuffer;
-  constructor(position = _wgpuMatrix.vec3.create(0, 5, 10), target = _wgpuMatrix.vec3.create(0, 0, 0), fov = 45, aspect = 1.0, near = 0.1, far = 200) {
+  constructor(camera, inputHandler, position = _wgpuMatrix.vec3.create(0, 5, -10), target = _wgpuMatrix.vec3.create(0, 0, 0), fov = 45, aspect = 1.0, near = 0.1, far = 200) {
+    this.camera = camera;
+    this.inputHandler = inputHandler;
     this.position = position;
     this.target = target;
     this.up = _wgpuMatrix.vec3.create(0, 1, 0);
@@ -7208,38 +7161,63 @@ class SpotLight {
     // this.viewMatrix = mat4.lookAt(this.position, this.target, this.up);
     // this.viewProjMatrix = mat4.multiply(this.projectionMatrix, this.viewMatrix);
     // console.log('test light update this.target : ', this.target)
-
-    // this.viewMatrix = mat4.lookAt(this.position, vec3.add(this.position, this.direction), this.up);
-    // this.viewProjMatrix = mat4.multiply(this.projectionMatrix, this.viewMatrix);
-
     // Use the existing direction
     const target = _wgpuMatrix.vec3.add(this.position, this.direction);
     this.viewMatrix = _wgpuMatrix.mat4.lookAt(this.position, target, this.up);
     this.viewProjMatrix = _wgpuMatrix.mat4.multiply(this.projectionMatrix, this.viewMatrix);
   }
-  updateSceneUniforms(sceneUniformBuffer, camera) {
-    const camVP = _wgpuMatrix.mat4.multiply(camera.projectionMatrix, camera.view);
-    const sceneData = new Float32Array(36); // 16 + 16 + 4
-    sceneData.set(this.viewProjMatrix, 0);
-    sceneData.set(camVP, 16);
-    sceneData.set(this.position, 32);
-    if (!this.device) {
-      console.warn("Device not set for SpotLight");
-      return;
+  updateSceneUniforms(mainRenderBundle) {
+    const now = Date.now();
+    // First frame safety
+    let dt = (now - this.lastFrameMS) / 1000;
+    if (!this.lastFrameMS) {
+      dt = 16;
     }
-    this.device.queue.writeBuffer(sceneUniformBuffer,
-    // this.spotlightUniformBuffer,
-    0, sceneData.buffer, sceneData.byteOffset, sceneData.byteLength);
+    this.lastFrameMS = now;
+    // engine, once per frame
+    this.camera.update(dt, this.inputHandler());
+    const camVP = _wgpuMatrix.mat4.multiply(this.camera.projectionMatrix, this.camera.view); // P * V
+
+    for (const mesh of mainRenderBundle) {
+      // scene buffer layout = 0..63 lightVP, 64..127 camVP, 128..143 lightPos(+pad)
+      this.device.queue.writeBuffer(mesh.sceneUniformBuffer, 64,
+      // cameraViewProjMatrix offset
+      camVP.buffer, camVP.byteOffset, camVP.byteLength);
+    }
+    // const camVP = mat4.multiply(camera.projectionMatrix, camera.view);
+    // const sceneData = new Float32Array(36); // 16 + 16 + 4
+    // sceneData.set(this.viewProjMatrix, 0);
+    // sceneData.set(camVP, 16);
+    // sceneData.set(this.position, 32);
+    // if(!this.device) {
+    //   console.warn("Device not set for SpotLight");
+    //   return;
+    // }
+    // this.device.queue.writeBuffer(
+    //   sceneUniformBuffer,
+    //   // this.spotlightUniformBuffer,
+    //   0,
+    //   sceneData.buffer,
+    //   sceneData.byteOffset,
+    //   sceneData.byteLength
+    // );
   }
   prepareBuffer(device) {
-    this.device = device;
-    this.spotlightUniformBuffer = device.createBuffer({
+    if (!this.device) this.device = device;
+    this.spotlightUniformBuffer = this.device.createBuffer({
       size: 16 * 4,
       // 64 bytes
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
     const spotlightData = this.getLightDataBuffer();
-    device.queue.writeBuffer(this.spotlightUniformBuffer, 0, spotlightData.buffer, spotlightData.byteOffset, spotlightData.byteLength);
+    this.device.queue.writeBuffer(this.spotlightUniformBuffer, 0, spotlightData.buffer, spotlightData.byteOffset, spotlightData.byteLength);
+  }
+  updateLightBuffer() {
+    if (!this.device || !this.spotlightUniformBuffer) {
+      return;
+    }
+    const spotlightData = this.getLightDataBuffer();
+    this.device.queue.writeBuffer(this.spotlightUniformBuffer, 0, spotlightData.buffer, spotlightData.byteOffset, spotlightData.byteLength);
   }
   getLightDataBuffer() {
     return new Float32Array([...this.position, 0.0, ...this.direction, 0.0, this.innerCutoff, this.outerCutoff, 0.0, 0.0]);
@@ -8499,6 +8477,7 @@ class MEMeshObj extends _materials.default {
         size: 2 * 4 * 16 + 4 * 4,
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
       });
+      console.log('test buffer sceneUniformBuffer ', this.sceneUniformBuffer);
       this.sceneBindGroupForShadow = this.device.createBindGroup({
         layout: this.uniformBufferBindGroupLayout,
         entries: [{
@@ -8526,22 +8505,41 @@ class MEMeshObj extends _materials.default {
         this.lastFrameMS = now;
         // const this.viewMatrix = mat4.identity()
         const camera = this.cameras[this.mainCameraParams.type];
-        this.viewMatrix = camera.update(deltaTime, this.inputHandler());
-        const scaleVec = [1, 1, 1]; // your desired scale OPTION 1
-        const scaleMatrix = _wgpuMatrix.mat4.scaling(scaleVec);
-        // Apply scaling
-        _wgpuMatrix.mat4.multiply(scaleMatrix, this.viewMatrix, this.viewMatrix);
-        _wgpuMatrix.mat4.translate(this.viewMatrix, _wgpuMatrix.vec3.fromValues(pos.x, pos.y, pos.z), this.viewMatrix);
-        if (this.itIsPhysicsBody == true) {
-          _wgpuMatrix.mat4.rotate(this.viewMatrix, _wgpuMatrix.vec3.fromValues(this.rotation.axis.x, this.rotation.axis.y, this.rotation.axis.z), (0, _utils.degToRad)(this.rotation.angle), this.viewMatrix);
-        } else {
-          _wgpuMatrix.mat4.rotateX(this.viewMatrix, Math.PI * this.rotation.getRotX(), this.viewMatrix);
-          _wgpuMatrix.mat4.rotateY(this.viewMatrix, Math.PI * this.rotation.getRotY(), this.viewMatrix);
-          _wgpuMatrix.mat4.rotateZ(this.viewMatrix, Math.PI * this.rotation.getRotZ(), this.viewMatrix);
-          // console.info('NOT PHYSICS angle: ', this.rotation.angle, ' axis ', this.rotation.axis.x, ' , ', this.rotation.axis.y, ' , ', this.rotation.axis.z)
+
+        // engine frame
+        camera.update(dt, inputHandler());
+        const camVP = _wgpuMatrix.mat4.multiply(camera.projectionMatrix, camera.view);
+        for (const mesh of mainRenderBundle) {
+          // Light’s viewProj should come from your SpotLight
+          // If you have multiple lights, you’ll need an array UBO or multiple passes.
+          const sceneData = new Float32Array(16 + 16 + 4); // lightVP, camVP, lightPos(+pad)
+          sceneData.set(spotLight.viewProjMatrix, 0);
+          sceneData.set(camVP, 16);
+          sceneData.set(spotLight.position, 32);
+          device.queue.writeBuffer(mesh.sceneUniformBuffer,
+          // or a shared one if/when you centralize it
+          0, sceneData.buffer, sceneData.byteOffset, sceneData.byteLength);
         }
-        _wgpuMatrix.mat4.multiply(camera.projectionMatrix, this.viewMatrix, this.modelViewProjectionMatrix);
-        return this.modelViewProjectionMatrix;
+        // this.viewMatrix = camera.update(deltaTime, this.inputHandler());
+        // const scaleVec = [1, 1, 1]; // your desired scale OPTION 1
+        // const scaleMatrix = mat4.scaling(scaleVec);
+        // // Apply scaling
+        // mat4.multiply(scaleMatrix, this.viewMatrix, this.viewMatrix);
+        // mat4.translate(this.viewMatrix, vec3.fromValues(pos.x, pos.y, pos.z), this.viewMatrix);
+
+        // if(this.itIsPhysicsBody == true) {
+        //   mat4.rotate(
+        //     this.viewMatrix,
+        //     vec3.fromValues(this.rotation.axis.x, this.rotation.axis.y, this.rotation.axis.z),
+        //     degToRad(this.rotation.angle), this.viewMatrix)
+        // } else {
+        //   mat4.rotateX(this.viewMatrix, Math.PI * this.rotation.getRotX(), this.viewMatrix);
+        //   mat4.rotateY(this.viewMatrix, Math.PI * this.rotation.getRotY(), this.viewMatrix);
+        //   mat4.rotateZ(this.viewMatrix, Math.PI * this.rotation.getRotZ(), this.viewMatrix);
+        //   // console.info('NOT PHYSICS angle: ', this.rotation.angle, ' axis ', this.rotation.axis.x, ' , ', this.rotation.axis.y, ' , ', this.rotation.axis.z)
+        // }
+        // mat4.multiply(camera.projectionMatrix, this.viewMatrix, this.modelViewProjectionMatrix);
+        // return this.modelViewProjectionMatrix;
       };
       this.getModelMatrix = pos => {
         let modelMatrix = _wgpuMatrix.mat4.identity();
@@ -8616,9 +8614,22 @@ class MEMeshObj extends _materials.default {
     });
   };
   draw = () => {
+    // This code -> light follow camera. can be used like options later!
+    // if(this.done == false) return;
+    // const transformationMatrix = this.getTransformationMatrix(this.position);
+    // this.device.queue.writeBuffer(this.sceneUniformBuffer, 64, transformationMatrix.buffer, transformationMatrix.byteOffset, transformationMatrix.byteLength);
+    // this.renderPassDescriptor.colorAttachments[0].view = this.context
+    //   .getCurrentTexture()
+    //   .createView();
+
+    // test 
     if (this.done == false) return;
-    const transformationMatrix = this.getTransformationMatrix(this.position);
-    this.device.queue.writeBuffer(this.sceneUniformBuffer, 64, transformationMatrix.buffer, transformationMatrix.byteOffset, transformationMatrix.byteLength);
+
+    // Per-object model matrix only
+    const modelMatrix = this.getModelMatrix(this.position);
+    this.device.queue.writeBuffer(this.modelUniformBuffer, 0, modelMatrix.buffer, modelMatrix.byteOffset, modelMatrix.byteLength);
+
+    // Acquire swapchain view for the pass
     this.renderPassDescriptor.colorAttachments[0].view = this.context.getCurrentTexture().createView();
   };
   drawElements = renderPass => {
@@ -8808,7 +8819,6 @@ function getRayFromMouse2(event, canvas, camera) {
   const far = 1000;
   camera.projectionMatrix = _wgpuMatrix.mat4.perspective(2 * Math.PI / 5, aspect, 1, 1000.0);
   const invProjection = _wgpuMatrix.mat4.inverse(camera.projectionMatrix);
-  console.log("camera.view:" + camera.view);
   const invView = _wgpuMatrix.mat4.inverse(camera.view);
   const ndc = [x, y, 1, 1];
   let worldPos = multiplyMatrixVector(invProjection, ndc);
@@ -9893,7 +9903,9 @@ class MatrixAmmo {
       console.log("%c Ammo core loaded.", _utils.LOG_FUNNY);
       this.initPhysics();
       // simulate async
-      setTimeout(() => dispatchEvent(new CustomEvent('AmmoReady', {})), 100);
+      setTimeout(() => {
+        dispatchEvent(new CustomEvent('AmmoReady', {}));
+      }, 200);
     });
   };
   initPhysics() {
@@ -10464,12 +10476,17 @@ fn main(
     posFromLight.z
   );
 
-  output.Position = scene.cameraViewProjMatrix * model.modelMatrix * vec4(position, 1.0);
-  output.fragPos = output.Position.xyz;
-  output.fragNorm = normal;
-  // nidza
-  output.uv = uv;
+  // follewed camera code
+  // output.Position = scene.cameraViewProjMatrix * model.modelMatrix * vec4(position, 1.0);
+  // output.fragPos = output.Position.xyz;
+  // output.fragNorm = normal;
 
+  let worldPos = model.modelMatrix * vec4(position, 1.0);
+  output.Position = scene.cameraViewProjMatrix * worldPos;
+  output.fragPos = worldPos.xyz;          // ✅ world space
+
+  output.fragNorm = normalize((model.modelMatrix * vec4(normal, 0.0)).xyz);
+  output.uv = uv;
   return output;
 }
 `;
@@ -10720,7 +10737,7 @@ class MatrixEngineWGPU {
       this.frame = this.framePassPerObject;
     }
 
-    // Global SCENE BUFFER
+    // Global SCENE BUFFER Good idea for future
     // this.sceneUniformBuffer = this.device.createBuffer({
     //   // Two 4x4 viewProj matrices,
     //   // one for the camera and one for the light.
@@ -10938,7 +10955,8 @@ class MatrixEngineWGPU {
   };
   addLight(o) {
     // test light global; entity
-    let newLight = new _lights.SpotLight();
+    const camera = this.cameras[this.mainCameraParams.type];
+    let newLight = new _lights.SpotLight(camera, this.inputHandler);
     newLight.prepareBuffer(this.device);
     this.lightContainer.push(newLight);
     console.log('Add light : ', newLight);
@@ -11062,6 +11080,49 @@ class MatrixEngineWGPU {
     this.mainRenderBundle = [];
     this.canvas.remove();
   };
+  test = () => {
+    const now = Date.now();
+    // First frame safety
+    let dt = (now - this.lastFrameMS) / this.mainCameraParams.responseCoef;
+    if (!this.lastFrameMS) {
+      dt = 16;
+    }
+    this.lastFrameMS = now;
+    const camera = this.cameras[this.mainCameraParams.type];
+
+    // engine, once per frame
+    // const camera = this.cameras[this.mainCameraParams.type];
+    camera.update(dt, this.inputHandler());
+    const camVP = _wgpuMatrix.mat4.multiply(camera.projectionMatrix, camera.view); // P * V
+
+    for (const mesh of this.mainRenderBundle) {
+      // scene buffer layout = 0..63 lightVP, 64..127 camVP, 128..143 lightPos(+pad)
+      this.device.queue.writeBuffer(mesh.sceneUniformBuffer, 64,
+      // cameraViewProjMatrix offset
+      camVP.buffer, camVP.byteOffset, camVP.byteLength);
+    }
+    // engine frame
+    // camera.update(dt, this.inputHandler());
+    // const camVP = mat4.multiply(camera.projectionMatrix, camera.view);
+
+    // for(const mesh of this.mainRenderBundle) {
+    //   // Light’s viewProj should come from your SpotLight
+    //   // If you have multiple lights, you’ll need an array UBO or multiple passes.
+    //   const sceneData = new Float32Array(16 + 16 + 4); // lightVP, camVP, lightPos(+pad)
+    //   sceneData.set(this.lightContainer[0].viewProjMatrix, 0);
+    //   sceneData.set(camVP, 16);
+    //   sceneData.set(this.lightContainer[0].position, 32);
+
+    //   // sceneUniformBuffer
+    //   this.device.queue.writeBuffer(
+    //     mesh.sceneUniformBuffer,  // or a shared one if/when you centralize it
+    //     0,
+    //     sceneData.buffer,
+    //     sceneData.byteOffset,
+    //     sceneData.byteLength
+    //   );
+    // }
+  };
   frameSinglePass = () => {
     if (typeof this.mainRenderBundle == 'undefined' || this.mainRenderBundle.length == 0) {
       setTimeout(() => {
@@ -11073,14 +11134,12 @@ class MatrixEngineWGPU {
       let shadowPass = null;
       let renderPass;
       let commandEncoder = this.device.createCommandEncoder();
-
+      this.test();
       // 1️⃣ Update light data (position, direction, uniforms)
       for (const light of this.lightContainer) {
+        light.updateLightBuffer();
         this.mainRenderBundle.forEach((meItem, index) => {
-          light.updateSceneUniforms(meItem.sceneUniformBuffer, this.cameras.WASD);
-          // meItem.createBindGroupForRender()
-          // meItem.createLayoutForRender()
-          // meItem.setupPipeline()
+          light.updateSceneUniforms(this.mainRenderBundle, this.cameras.WASD);
         });
       }
       this.mainRenderBundle.forEach((meItem, index) => {
@@ -11109,7 +11168,6 @@ class MatrixEngineWGPU {
       shadowPass.end();
       this.mainRenderBundle.forEach((meItem, index) => {
         if (index == 0) {
-          // meItem. updateSceneUniforms
           meItem.draw(commandEncoder);
           meItem.renderPassDescriptor.colorAttachments[0].view = this.context.getCurrentTexture().createView();
           renderPass = commandEncoder.beginRenderPass(meItem.renderPassDescriptor);

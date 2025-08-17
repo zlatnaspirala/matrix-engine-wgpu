@@ -74,7 +74,6 @@ export function getRayFromMouse2(event, canvas, camera) {
   const far = 1000;
   camera.projectionMatrix = mat4.perspective((2 * Math.PI) / 5, aspect, 1, 1000.0);
   const invProjection = mat4.inverse(camera.projectionMatrix);
-  console.log("camera.view:" + camera.view)
   const invView = mat4.inverse(camera.view);
   const ndc = [x, y, 1, 1];
   let worldPos = multiplyMatrixVector(invProjection, ndc);

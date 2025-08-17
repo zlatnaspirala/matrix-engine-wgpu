@@ -25,7 +25,9 @@ export default class MatrixAmmo {
       console.log("%c Ammo core loaded.", LOG_FUNNY);
       this.initPhysics();
       // simulate async
-      setTimeout(() => dispatchEvent(new CustomEvent('AmmoReady', {})), 100);
+      setTimeout(() => {
+        dispatchEvent(new CustomEvent('AmmoReady', {}))
+      } , 200)
     });
   };
 

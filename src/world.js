@@ -1,4 +1,4 @@
-import {vec3} from "wgpu-matrix";
+import {mat4, vec3} from "wgpu-matrix";
 import MEBall from "./engine/ball.js";
 import MECube from './engine/cube.js';
 import {ArcballCamera, WASDCamera} from "./engine/engine.js";
@@ -132,7 +132,7 @@ export default class MatrixEngineWGPU {
       this.frame = this.framePassPerObject;
     }
 
-    // Global SCENE BUFFER
+    // Global SCENE BUFFER Good idea for future
     // this.sceneUniformBuffer = this.device.createBuffer({
     //   // Two 4x4 viewProj matrices,
     //   // one for the camera and one for the light.
@@ -253,7 +253,8 @@ export default class MatrixEngineWGPU {
 
   addLight(o) {
     // test light global; entity
-    let newLight = new SpotLight();
+    const camera = this.cameras[this.mainCameraParams.type];
+    let newLight = new SpotLight(camera, this.inputHandler);
     newLight.prepareBuffer(this.device);
     this.lightContainer.push(newLight);
     console.log('Add light : ', newLight);
@@ -332,6 +333,52 @@ export default class MatrixEngineWGPU {
     this.canvas.remove();
   }
 
+  test = () => {
+    const now = Date.now();
+    // First frame safety
+    let dt = (now - this.lastFrameMS) / this.mainCameraParams.responseCoef;
+    if(!this.lastFrameMS) {dt = 16;}
+    this.lastFrameMS = now;
+    const camera = this.cameras[this.mainCameraParams.type];
+
+    // engine, once per frame
+    // const camera = this.cameras[this.mainCameraParams.type];
+    camera.update(dt, this.inputHandler());
+    const camVP = mat4.multiply(camera.projectionMatrix, camera.view); // P * V
+
+    for(const mesh of this.mainRenderBundle) {
+      // scene buffer layout = 0..63 lightVP, 64..127 camVP, 128..143 lightPos(+pad)
+      this.device.queue.writeBuffer(
+        mesh.sceneUniformBuffer,
+        64,                              // cameraViewProjMatrix offset
+        camVP.buffer,
+        camVP.byteOffset,
+        camVP.byteLength
+      );
+    }
+    // engine frame
+    // camera.update(dt, this.inputHandler());
+    // const camVP = mat4.multiply(camera.projectionMatrix, camera.view);
+
+    // for(const mesh of this.mainRenderBundle) {
+    //   // Light’s viewProj should come from your SpotLight
+    //   // If you have multiple lights, you’ll need an array UBO or multiple passes.
+    //   const sceneData = new Float32Array(16 + 16 + 4); // lightVP, camVP, lightPos(+pad)
+    //   sceneData.set(this.lightContainer[0].viewProjMatrix, 0);
+    //   sceneData.set(camVP, 16);
+    //   sceneData.set(this.lightContainer[0].position, 32);
+
+    //   // sceneUniformBuffer
+    //   this.device.queue.writeBuffer(
+    //     mesh.sceneUniformBuffer,  // or a shared one if/when you centralize it
+    //     0,
+    //     sceneData.buffer,
+    //     sceneData.byteOffset,
+    //     sceneData.byteLength
+    //   );
+    // }
+  }
+
   frameSinglePass = () => {
     if(typeof this.mainRenderBundle == 'undefined' || this.mainRenderBundle.length == 0) {
       setTimeout(() => {requestAnimationFrame(this.frame)}, 200);
@@ -342,13 +389,12 @@ export default class MatrixEngineWGPU {
       let renderPass;
       let commandEncoder = this.device.createCommandEncoder();
 
+      this.test()
       // 1️⃣ Update light data (position, direction, uniforms)
       for(const light of this.lightContainer) {
+        light.updateLightBuffer();
         this.mainRenderBundle.forEach((meItem, index) => {
-          light.updateSceneUniforms(meItem.sceneUniformBuffer, this.cameras.WASD);
-          // meItem.createBindGroupForRender()
-          // meItem.createLayoutForRender()
-          // meItem.setupPipeline()
+          light.updateSceneUniforms(this.mainRenderBundle, this.cameras.WASD);
         })
       }
 
@@ -377,13 +423,9 @@ export default class MatrixEngineWGPU {
 
       this.mainRenderBundle.forEach((meItem, index) => {
         if(index == 0) {
-
-          // meItem. updateSceneUniforms
           meItem.draw(commandEncoder);
-
           meItem.renderPassDescriptor.colorAttachments[0].view =
             this.context.getCurrentTexture().createView();
-
           renderPass = commandEncoder.beginRenderPass(meItem.renderPassDescriptor);
           renderPass.setPipeline(meItem.pipeline);
         } else {

@@ -267,6 +267,8 @@ export default class MEMeshObj extends Materials {
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
       });
 
+      console.log('test buffer sceneUniformBuffer ', this.sceneUniformBuffer);
+
       this.sceneBindGroupForShadow = this.device.createBindGroup({
         layout: this.uniformBufferBindGroupLayout,
         entries: [
@@ -300,26 +302,47 @@ export default class MEMeshObj extends Materials {
         this.lastFrameMS = now;
         // const this.viewMatrix = mat4.identity()
         const camera = this.cameras[this.mainCameraParams.type];
-        this.viewMatrix = camera.update(deltaTime, this.inputHandler());
-        const scaleVec = [1, 1, 1]; // your desired scale OPTION 1
-        const scaleMatrix = mat4.scaling(scaleVec);
-        // Apply scaling
-        mat4.multiply(scaleMatrix, this.viewMatrix, this.viewMatrix);
-        mat4.translate(this.viewMatrix, vec3.fromValues(pos.x, pos.y, pos.z), this.viewMatrix);
 
-        if(this.itIsPhysicsBody == true) {
-          mat4.rotate(
-            this.viewMatrix,
-            vec3.fromValues(this.rotation.axis.x, this.rotation.axis.y, this.rotation.axis.z),
-            degToRad(this.rotation.angle), this.viewMatrix)
-        } else {
-          mat4.rotateX(this.viewMatrix, Math.PI * this.rotation.getRotX(), this.viewMatrix);
-          mat4.rotateY(this.viewMatrix, Math.PI * this.rotation.getRotY(), this.viewMatrix);
-          mat4.rotateZ(this.viewMatrix, Math.PI * this.rotation.getRotZ(), this.viewMatrix);
-          // console.info('NOT PHYSICS angle: ', this.rotation.angle, ' axis ', this.rotation.axis.x, ' , ', this.rotation.axis.y, ' , ', this.rotation.axis.z)
+        // engine frame
+        camera.update(dt, inputHandler());
+        const camVP = mat4.multiply(camera.projectionMatrix, camera.view);
+
+        for(const mesh of mainRenderBundle) {
+          // Light’s viewProj should come from your SpotLight
+          // If you have multiple lights, you’ll need an array UBO or multiple passes.
+          const sceneData = new Float32Array(16 + 16 + 4); // lightVP, camVP, lightPos(+pad)
+          sceneData.set(spotLight.viewProjMatrix, 0);
+          sceneData.set(camVP, 16);
+          sceneData.set(spotLight.position, 32);
+
+          device.queue.writeBuffer(
+            mesh.sceneUniformBuffer,  // or a shared one if/when you centralize it
+            0,
+            sceneData.buffer,
+            sceneData.byteOffset,
+            sceneData.byteLength
+          );
         }
-        mat4.multiply(camera.projectionMatrix, this.viewMatrix, this.modelViewProjectionMatrix);
-        return this.modelViewProjectionMatrix;
+        // this.viewMatrix = camera.update(deltaTime, this.inputHandler());
+        // const scaleVec = [1, 1, 1]; // your desired scale OPTION 1
+        // const scaleMatrix = mat4.scaling(scaleVec);
+        // // Apply scaling
+        // mat4.multiply(scaleMatrix, this.viewMatrix, this.viewMatrix);
+        // mat4.translate(this.viewMatrix, vec3.fromValues(pos.x, pos.y, pos.z), this.viewMatrix);
+
+        // if(this.itIsPhysicsBody == true) {
+        //   mat4.rotate(
+        //     this.viewMatrix,
+        //     vec3.fromValues(this.rotation.axis.x, this.rotation.axis.y, this.rotation.axis.z),
+        //     degToRad(this.rotation.angle), this.viewMatrix)
+        // } else {
+        //   mat4.rotateX(this.viewMatrix, Math.PI * this.rotation.getRotX(), this.viewMatrix);
+        //   mat4.rotateY(this.viewMatrix, Math.PI * this.rotation.getRotY(), this.viewMatrix);
+        //   mat4.rotateZ(this.viewMatrix, Math.PI * this.rotation.getRotZ(), this.viewMatrix);
+        //   // console.info('NOT PHYSICS angle: ', this.rotation.angle, ' axis ', this.rotation.axis.x, ' , ', this.rotation.axis.y, ' , ', this.rotation.axis.z)
+        // }
+        // mat4.multiply(camera.projectionMatrix, this.viewMatrix, this.modelViewProjectionMatrix);
+        // return this.modelViewProjectionMatrix;
       }
 
       this.getModelMatrix = (pos) => {
@@ -409,12 +432,30 @@ export default class MEMeshObj extends Materials {
   }
 
   draw = () => {
+    // This code -> light follow camera. can be used like options later!
+    // if(this.done == false) return;
+    // const transformationMatrix = this.getTransformationMatrix(this.position);
+    // this.device.queue.writeBuffer(this.sceneUniformBuffer, 64, transformationMatrix.buffer, transformationMatrix.byteOffset, transformationMatrix.byteLength);
+    // this.renderPassDescriptor.colorAttachments[0].view = this.context
+    //   .getCurrentTexture()
+    //   .createView();
+
+    // test 
     if(this.done == false) return;
-    const transformationMatrix = this.getTransformationMatrix(this.position);
-    this.device.queue.writeBuffer(this.sceneUniformBuffer, 64, transformationMatrix.buffer, transformationMatrix.byteOffset, transformationMatrix.byteLength);
-    this.renderPassDescriptor.colorAttachments[0].view = this.context
-      .getCurrentTexture()
-      .createView();
+
+    // Per-object model matrix only
+    const modelMatrix = this.getModelMatrix(this.position);
+    this.device.queue.writeBuffer(
+      this.modelUniformBuffer,
+      0,
+      modelMatrix.buffer,
+      modelMatrix.byteOffset,
+      modelMatrix.byteLength
+    );
+
+    // Acquire swapchain view for the pass
+    this.renderPassDescriptor.colorAttachments[0].view =
+      this.context.getCurrentTexture().createView();
   }
 
   drawElements = (renderPass) => {

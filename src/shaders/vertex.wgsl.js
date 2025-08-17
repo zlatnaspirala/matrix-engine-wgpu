@@ -38,12 +38,17 @@ fn main(
     posFromLight.z
   );
 
-  output.Position = scene.cameraViewProjMatrix * model.modelMatrix * vec4(position, 1.0);
-  output.fragPos = output.Position.xyz;
-  output.fragNorm = normal;
-  // nidza
-  output.uv = uv;
+  // follewed camera code
+  // output.Position = scene.cameraViewProjMatrix * model.modelMatrix * vec4(position, 1.0);
+  // output.fragPos = output.Position.xyz;
+  // output.fragNorm = normal;
 
+  let worldPos = model.modelMatrix * vec4(position, 1.0);
+  output.Position = scene.cameraViewProjMatrix * worldPos;
+  output.fragPos = worldPos.xyz;          // ✅ world space
+
+  output.fragNorm = normalize((model.modelMatrix * vec4(normal, 0.0)).xyz);
+  output.uv = uv;
   return output;
 }
 `;

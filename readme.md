@@ -142,6 +142,29 @@ app.cameras.WASD.pitch = 0.2;
 
 ---
 
+💡 Lighting System
+
+Matrix Engine WGPU now supports independent light entities, meaning lights are no longer tied to the camera. You can freely place and configure lights in the scene, and they will affect objects based on their type and parameters.
+
+Supported Light Types
+
+SpotLight – Emits light in a cone shape with configurable cutoff angles.
+
+(Planned: PointLight, DirectionalLight, AmbientLight)
+
+Features
+
+✅ Independent from camera (lights follow their own transform, not the player view)
+
+✅ Uniform buffer system for per-light data
+
+✅ Works with existing scene objects and materials
+
+✅ Supports multiple lights (attach as many as you want to the scene)
+
+✅ Shadow-ready (spotlight shadows implemented, extendable to others)
+
+
 ### Object Interaction (Raycasting)
 
 The raycast returns:
