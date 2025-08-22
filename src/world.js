@@ -5,12 +5,20 @@ import {ArcballCamera, WASDCamera} from "./engine/engine.js";
 import {createInputHandler} from "./engine/engine.js";
 import MEMeshObj from "./engine/mesh-obj.js";
 import MatrixAmmo from "./physics/matrix-ammo.js";
-import {LOG_WARN, genName, mb, scriptManager, urlQuery} from "./engine/utils.js";
+import {LOG_FUNNY_SMALL, LOG_WARN, genName, mb, scriptManager, urlQuery} from "./engine/utils.js";
 import {MultiLang} from "./multilang/lang.js";
 import {MatrixSounds} from "./sounds/sounds.js";
 import {play} from "./engine/loader-obj.js";
 import {SpotLight} from "./engine/lights.js";
 
+/**
+ * @description
+ * Main engine root class.
+ * @author Nikola Lukic 2025
+ * @email zlatnaspirala@gmail.com
+ * @web https://maximumroulette.com
+ * @github zlatnaspirala
+ */
 export default class MatrixEngineWGPU {
 
   mainRenderBundle = [];
@@ -29,9 +37,7 @@ export default class MatrixEngineWGPU {
   matrixAmmo = new MatrixAmmo();
   matrixSounds = new MatrixSounds();
 
-  // The input handler
   constructor(options, callback) {
-    // console.log('typeof options ', typeof options )
     if(typeof options == 'undefined' || typeof options == "function") {
       this.options = {
         useSingleRenderPass: true,
@@ -95,7 +101,6 @@ export default class MatrixEngineWGPU {
         this.label.get = r;
       });
     }
-
     this.init({canvas, callback})
   }
 
@@ -106,15 +111,7 @@ export default class MatrixEngineWGPU {
       extensions: ["ray_tracing"]
     });
 
-    // Maybe works in ssl with webworkers...
-    // const adapterInfo = await this.adapter.requestAdapterInfo();
-    // var test = this.adapter.features()
-    // console.log(adapterInfo.vendor);
-    // console.log('test' + test);
-    // console.log("FEATURES : " + this.adapter.features)
-
     this.context = canvas.getContext('webgpu');
-
     const devicePixelRatio = window.devicePixelRatio;
     canvas.width = canvas.clientWidth * devicePixelRatio;
     canvas.height = canvas.clientHeight * devicePixelRatio;
@@ -132,18 +129,7 @@ export default class MatrixEngineWGPU {
       this.frame = this.framePassPerObject;
     }
 
-    // Global SCENE BUFFER Good idea for future
-    // this.sceneUniformBuffer = this.device.createBuffer({
-    //   // Two 4x4 viewProj matrices,
-    //   // one for the camera and one for the light.
-    //   // Then a vec3 for the light position.
-    //   // Rounded to the nearest multiple of 16.
-    //   size: 2 * 4 * 16 + 4 * 4,
-    //   usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-    // });
-
     this.inputHandler = createInputHandler(window, canvas);
-
     this.run(callback)
   };
 
@@ -252,12 +238,11 @@ export default class MatrixEngineWGPU {
   }
 
   addLight(o) {
-    // test light global; entity
     const camera = this.cameras[this.mainCameraParams.type];
     let newLight = new SpotLight(camera, this.inputHandler);
     newLight.prepareBuffer(this.device);
     this.lightContainer.push(newLight);
-    console.log('Add light : ', newLight);
+    console.log(`%cAdd light: ${newLight}`, LOG_FUNNY_SMALL);
   }
 
   addMeshObj = (o, clearColor = this.options.clearColor) => {
@@ -289,18 +274,14 @@ export default class MatrixEngineWGPU {
     if(typeof o.physics.scale === 'undefined') {o.physics.scale = o.scale;}
     if(typeof o.physics.rotation === 'undefined') {o.physics.rotation = o.rotation;}
     o.physics.position = o.position;
-    //  console.log('Mesh procedure', o)
-    // TEST OBJS SEQ ANIMS 
     if(typeof o.objAnim == 'undefined' || typeof o.objAnim == null) {
       o.objAnim = null;
     } else {
-      // console.log('o.anim', o.objAnim)
       if(typeof o.objAnim.animations !== 'undefined') {
         o.objAnim.play = play;
       }
       // no need for single test it in future
       o.objAnim.meshList = o.objAnim.meshList;
-
       if(typeof o.mesh === 'undefined') {
         o.mesh = o.objAnim.meshList[0];
         console.info('objSeq animation is active.');
@@ -340,9 +321,6 @@ export default class MatrixEngineWGPU {
     if(!this.lastFrameMS) {dt = 16;}
     this.lastFrameMS = now;
     const camera = this.cameras[this.mainCameraParams.type];
-
-    // engine, once per frame
-    // const camera = this.cameras[this.mainCameraParams.type];
     camera.update(dt, this.inputHandler());
     const camVP = mat4.multiply(camera.projectionMatrix, camera.view); // P * V
 
@@ -356,27 +334,6 @@ export default class MatrixEngineWGPU {
         camVP.byteLength
       );
     }
-    // engine frame
-    // camera.update(dt, this.inputHandler());
-    // const camVP = mat4.multiply(camera.projectionMatrix, camera.view);
-
-    // for(const mesh of this.mainRenderBundle) {
-    //   // Light’s viewProj should come from your SpotLight
-    //   // If you have multiple lights, you’ll need an array UBO or multiple passes.
-    //   const sceneData = new Float32Array(16 + 16 + 4); // lightVP, camVP, lightPos(+pad)
-    //   sceneData.set(this.lightContainer[0].viewProjMatrix, 0);
-    //   sceneData.set(camVP, 16);
-    //   sceneData.set(this.lightContainer[0].position, 32);
-
-    //   // sceneUniformBuffer
-    //   this.device.queue.writeBuffer(
-    //     mesh.sceneUniformBuffer,  // or a shared one if/when you centralize it
-    //     0,
-    //     sceneData.buffer,
-    //     sceneData.byteOffset,
-    //     sceneData.byteLength
-    //   );
-    // }
   }
 
   frameSinglePass = () => {
@@ -400,24 +357,11 @@ export default class MatrixEngineWGPU {
 
       this.mainRenderBundle.forEach((meItem, index) => {meItem.position.update()})
       if(this.matrixAmmo) this.matrixAmmo.updatePhysics();
-
-      // no cast WORKING
-      // this.mainRenderBundle.forEach((meItem, index) => {
-      //   meItem.draw(commandEncoder);
-
-      //   shadowPass = commandEncoder.beginRenderPass(meItem.shadowPassDescriptor);
-      //   shadowPass.setPipeline(meItem.shadowPipeline);
-      //   meItem.drawShadows(shadowPass);
-      //   shadowPass.end();
-      // })
-
-      // cast!
       const firstItem = this.mainRenderBundle[0];
       shadowPass = commandEncoder.beginRenderPass(firstItem.shadowPassDescriptor);
       shadowPass.setPipeline(firstItem.shadowPipeline);
       for(const meItem of this.mainRenderBundle) {
-        // meItem.draw(commandEncoder);
-        meItem.drawShadows(shadowPass); // Draw ALL objects
+        meItem.drawShadows(shadowPass);
       }
       shadowPass.end();
 
@@ -441,7 +385,7 @@ export default class MatrixEngineWGPU {
       this.device.queue.submit([commandEncoder.finish()]);
       requestAnimationFrame(this.frame);
     } catch(err) {
-      console.log('%cDraw func (err):' + err, LOG_WARN)
+      console.log('%cLoop (err):' + err, LOG_WARN)
       requestAnimationFrame(this.frame);
     }
   }
@@ -456,7 +400,7 @@ export default class MatrixEngineWGPU {
         if(meItem.renderPassDescriptor) meItem.renderPassDescriptor.colorAttachments[0].loadOp = 'load';
       }
       // Update transforms, physics, etc. (optional)
-      meItem.draw(commandEncoder); // optional: if this does per-frame updates
+      meItem.draw(commandEncoder);
       if(meItem.renderBundle) {
         // Set up view per object
         meItem.renderPassDescriptor.colorAttachments[0].view =
@@ -465,7 +409,7 @@ export default class MatrixEngineWGPU {
         passEncoder.executeBundles([meItem.renderBundle]); // ✅ Use only this bundle
         passEncoder.end();
       } else {
-        meItem.draw(commandEncoder); // fallback if no renderBundle
+        meItem.draw(commandEncoder);
       }
     });
     this.device.queue.submit([commandEncoder.finish()]);

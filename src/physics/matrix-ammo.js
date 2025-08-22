@@ -76,7 +76,6 @@ export default class MatrixAmmo {
     }
 
     let Ammo = this.Ammo;
-    console.log(pOptions.radius + "<<pOptions.radius")
     var colShape = new Ammo.btSphereShape(Array.isArray(pOptions.radius) ? pOptions.radius[0] : pOptions.radius),
       startTransform = new Ammo.btTransform();
     startTransform.setIdentity();
@@ -234,10 +233,8 @@ export default class MatrixAmmo {
     return;
     this.lastRoll = '';
     this.presentScore = '';
-
     let dispatcher = this.dynamicsWorld.getDispatcher();
     let numManifolds = dispatcher.getNumManifolds();
-
     for(let i = 0;i < numManifolds;i++) {
       let contactManifold = dispatcher.getManifoldByIndexInternal(i);
       // let numContacts = contactManifold.getNumContacts();
@@ -245,51 +242,12 @@ export default class MatrixAmmo {
       //   if(item.kB == contactManifold.getBody0().kB) {
       //     // console.log('Detected body0 =', item.name)
       //   }
-      //   if(item.kB == contactManifold.getBody1().kB) {
-      //     // console.log('Detected body1 =', item.name)
-      //   }
-      // })
-
       if(this.ground.kB == contactManifold.getBody0().kB &&
         this.getNameByBody(contactManifold.getBody1()) == 'CubePhysics1') {
         // console.log(this.ground ,'GROUND IS IN CONTACT WHO IS BODY1 ', contactManifold.getBody1())
         // console.log('GROUND IS IN CONTACT WHO IS BODY1 getNameByBody  ', this.getNameByBody(contactManifold.getBody1()))
         // CHECK ROTATION
         var testR = contactManifold.getBody1().getWorldTransform().getRotation();
-        if(Math.abs(testR.y()) < 0.00001) {
-          this.lastRoll += " 4 +";
-          this.presentScore += 4;
-          dispatchEvent(new CustomEvent('dice-1', {}));
-        }
-        if(Math.abs(testR.x()) < 0.00001) {
-          this.lastRoll += " 3 +";
-          this.presentScore += 3;
-          dispatchEvent(new CustomEvent('dice-4', {}));
-        }
-        if(testR.x().toString().substring(0, 5) == testR.y().toString().substring(1, 6)) {
-          this.lastRoll += " 2 +";
-          this.presentScore += 2;
-          dispatchEvent(new CustomEvent('dice-6', {}));
-        }
-
-        if(testR.x().toString().substring(0, 5) == testR.y().toString().substring(0, 5)) {
-          this.lastRoll += " 1 +";
-          this.presentScore += 1;
-          dispatchEvent(new CustomEvent('dice-2', {}));
-        }
-
-        if(testR.z().toString().substring(0, 5) == testR.y().toString().substring(1, 6)) {
-          this.lastRoll += " 6 +";
-          this.presentScore += 6;
-          dispatchEvent(new CustomEvent('dice-5', {}));
-        }
-
-        if(testR.z().toString().substring(0, 5) == testR.y().toString().substring(0, 5)) {
-          this.lastRoll += " 5 +";
-          this.presentScore += 5;
-          dispatchEvent(new CustomEvent('dice-3', {}));
-        }
-
         console.log('this.lastRoll = ', this.lastRoll, ' presentScore = ', this.presentScore)
       }
     }

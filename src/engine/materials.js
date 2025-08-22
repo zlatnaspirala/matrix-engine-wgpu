@@ -155,7 +155,7 @@ export default class Materials {
     // ✅ Now
     this.createLayoutForRender();
     this.setupPipeline();
-    setTimeout(() => this.createBindGroupForRender(), 1500);
+    
   }
 
   updateVideoTexture() {

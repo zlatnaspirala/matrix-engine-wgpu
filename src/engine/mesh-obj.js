@@ -10,16 +10,12 @@ import {fragmentVideoWGSL} from '../shaders/fragment.video.wgsl';
 export default class MEMeshObj extends Materials {
   constructor(canvas, device, context, o, sceneUniformBuffer) {
     super(device);
-    if(typeof o.name === 'undefined') o.name = genName(9);
+    if(typeof o.name === 'undefined') o.name = genName(3);
     if(typeof o.raycast === 'undefined') {
-      this.raycast = {
-        enabled: false,
-        radius: 2
-      };
+      this.raycast = {enabled: false, radius: 2};
     } else {
       this.raycast = o.raycast;
     }
-
     this.name = o.name;
     this.done = false;
     this.device = device;
@@ -45,7 +41,6 @@ export default class MEMeshObj extends Materials {
 
     this.inputHandler = null;
     this.cameras = o.cameras;
-
     this.mainCameraParams = {
       type: o.mainCameraParams.type,
       responseCoef: o.mainCameraParams.responseCoef
@@ -65,7 +60,6 @@ export default class MEMeshObj extends Materials {
     this.runProgram = () => {
       return new Promise(async (resolve) => {
         this.shadowDepthTextureSize = 1024;
-        // const aspect = canvas.width / canvas.height;
         this.modelViewProjectionMatrix = mat4.create();
         this.loadTex0(this.texturesPaths).then(() => {
           resolve()
@@ -74,7 +68,6 @@ export default class MEMeshObj extends Materials {
     }
 
     this.runProgram().then(() => {
-      // const aspect = canvas.width / canvas.height;
       this.context.configure({
         device: this.device,
         format: this.presentationFormat,
@@ -395,20 +388,21 @@ export default class MEMeshObj extends Materials {
   }
 
   setupPipeline = () => {
-    console.log('test >>>>>>>>>>>>>>>>>>>FORMAT>✅' + this.presentationFormat);
+    console.log('Set Pipeline✅');
     this.pipeline = this.device.createRenderPipeline({
+      label: 'Mesh Pipeline ✅',
       layout: this.device.createPipelineLayout({
         bindGroupLayouts: [this.bglForRender, this.uniformBufferBindGroupLayout],
       }),
       vertex: {
-        entryPoint: 'main', // ✅ Add this
+        entryPoint: 'main',
         module: this.device.createShaderModule({
           code: vertexWGSL,
         }),
         buffers: this.vertexBuffers,
       },
       fragment: {
-        entryPoint: 'main', // ✅ Add this
+        entryPoint: 'main',
         module: this.device.createShaderModule({
           code: (this.isVideo == true ? fragmentVideoWGSL : fragmentWGSL),
         }),
@@ -424,7 +418,6 @@ export default class MEMeshObj extends Materials {
       depthStencil: {
         depthWriteEnabled: true,
         depthCompare: 'less',
-        // format: 'depth24plus-stencil8',
         format: 'depth24plus',
       },
       primitive: this.primitive,
@@ -432,17 +425,7 @@ export default class MEMeshObj extends Materials {
   }
 
   draw = () => {
-    // This code -> light follow camera. can be used like options later!
-    // if(this.done == false) return;
-    // const transformationMatrix = this.getTransformationMatrix(this.position);
-    // this.device.queue.writeBuffer(this.sceneUniformBuffer, 64, transformationMatrix.buffer, transformationMatrix.byteOffset, transformationMatrix.byteLength);
-    // this.renderPassDescriptor.colorAttachments[0].view = this.context
-    //   .getCurrentTexture()
-    //   .createView();
-
-    // test 
     if(this.done == false) return;
-
     // Per-object model matrix only
     const modelMatrix = this.getModelMatrix(this.position);
     this.device.queue.writeBuffer(
@@ -452,7 +435,6 @@ export default class MEMeshObj extends Materials {
       modelMatrix.byteOffset,
       modelMatrix.byteLength
     );
-
     // Acquire swapchain view for the pass
     this.renderPassDescriptor.colorAttachments[0].view =
       this.context.getCurrentTexture().createView();
@@ -516,7 +498,6 @@ export default class MEMeshObj extends Materials {
       });
       new Float32Array(mesh.vertexNormalsBuffer.getMappedRange()).set(mesh.vertexNormals);
       mesh.vertexNormalsBuffer.unmap();
-
       // UVs
       mesh.vertexTexCoordsBuffer = this.device.createBuffer({
         size: mesh.textures.length * Float32Array.BYTES_PER_ELEMENT,
@@ -525,7 +506,6 @@ export default class MEMeshObj extends Materials {
       });
       new Float32Array(mesh.vertexTexCoordsBuffer.getMappedRange()).set(mesh.textures);
       mesh.vertexTexCoordsBuffer.unmap();
-
       // Indices
       const indexCount = mesh.indices.length;
       const indexSize = Math.ceil(indexCount * Uint16Array.BYTES_PER_ELEMENT / 4) * 4;

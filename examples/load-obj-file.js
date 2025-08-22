@@ -1,10 +1,9 @@
 import MatrixEngineWGPU from "../src/world.js";
 import {downloadMeshes} from '../src/engine/loader-obj.js';
 import {LOG_FUNNY, LOG_INFO, LOG_MATRIX} from "../src/engine/utils.js";
-import {addRaycastsAABBListener} from "../src/engine/raycast.js";
+// import {addRaycastsAABBListener} from "../src/engine/raycast.js";
 
 export var loadObjFile = function() {
-
   let loadObjFile = new MatrixEngineWGPU({
     useSingleRenderPass: true,
     canvasSize: 'fullscreen',
@@ -14,10 +13,6 @@ export var loadObjFile = function() {
     },
     clearColor: {r: 0, b: 0.122, g: 0.122, a: 1}
   }, () => {
-
-
-    // loadObjFile.addLight()
-
     addEventListener('AmmoReady', () => {
       downloadMeshes({
         ball: "./res/meshes/blender/sphere.obj",
@@ -54,7 +49,7 @@ export var loadObjFile = function() {
     function onLoadObj(m) {
       loadObjFile.myLoadedMeshes = m;
       for(var key in m) {
-        console.log(`%c Loaded objs: ${key} `, LOG_MATRIX);
+        // console.log(`%c Loaded objs: ${key} `, LOG_MATRIX);
       }
       loadObjFile.addMeshObj({
         position: {x: 0, y: 2, z: -10},
@@ -86,8 +81,8 @@ export var loadObjFile = function() {
 
       var TEST = loadObjFile.getSceneObjectByName('cube2');
       console.log(`%c Test access scene ${TEST} object.`, LOG_MATRIX);
+      loadObjFile.addLight();
 
-            loadObjFile.addLight();
     }
   })
   // just for dev

@@ -158,8 +158,9 @@ exports.loadObjFile = void 0;
 var _world = _interopRequireDefault(require("../src/world.js"));
 var _loaderObj = require("../src/engine/loader-obj.js");
 var _utils = require("../src/engine/utils.js");
-var _raycast = require("../src/engine/raycast.js");
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+// import {addRaycastsAABBListener} from "../src/engine/raycast.js";
+
 var loadObjFile = function () {
   let loadObjFile = new _world.default({
     useSingleRenderPass: true,
@@ -175,8 +176,6 @@ var loadObjFile = function () {
       a: 1
     }
   }, () => {
-    // loadObjFile.addLight()
-
     addEventListener('AmmoReady', () => {
       (0, _loaderObj.downloadMeshes)({
         ball: "./res/meshes/blender/sphere.obj",
@@ -223,7 +222,7 @@ var loadObjFile = function () {
     function onLoadObj(m) {
       loadObjFile.myLoadedMeshes = m;
       for (var key in m) {
-        console.log(`%c Loaded objs: ${key} `, _utils.LOG_MATRIX);
+        // console.log(`%c Loaded objs: ${key} `, LOG_MATRIX);
       }
       loadObjFile.addMeshObj({
         position: {
@@ -285,7 +284,7 @@ var loadObjFile = function () {
 };
 exports.loadObjFile = loadObjFile;
 
-},{"../src/engine/loader-obj.js":12,"../src/engine/raycast.js":16,"../src/engine/utils.js":17,"../src/world.js":26}],4:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":12,"../src/engine/utils.js":17,"../src/world.js":26}],4:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -7857,7 +7856,6 @@ class Materials {
     // ✅ Now
     this.createLayoutForRender();
     this.setupPipeline();
-    setTimeout(() => this.createBindGroupForRender(), 1500);
   }
   updateVideoTexture() {
     if (!this.video || this.video.readyState < 2) return;
@@ -8250,7 +8248,7 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 class MEMeshObj extends _materials.default {
   constructor(canvas, device, context, o, sceneUniformBuffer) {
     super(device);
-    if (typeof o.name === 'undefined') o.name = (0, _utils.genName)(9);
+    if (typeof o.name === 'undefined') o.name = (0, _utils.genName)(3);
     if (typeof o.raycast === 'undefined') {
       this.raycast = {
         enabled: false,
@@ -8302,7 +8300,6 @@ class MEMeshObj extends _materials.default {
     this.runProgram = () => {
       return new Promise(async resolve => {
         this.shadowDepthTextureSize = 1024;
-        // const aspect = canvas.width / canvas.height;
         this.modelViewProjectionMatrix = _wgpuMatrix.mat4.create();
         this.loadTex0(this.texturesPaths).then(() => {
           resolve();
@@ -8310,7 +8307,6 @@ class MEMeshObj extends _materials.default {
       });
     };
     this.runProgram().then(() => {
-      // const aspect = canvas.width / canvas.height;
       this.context.configure({
         device: this.device,
         format: this.presentationFormat,
@@ -8578,14 +8574,14 @@ class MEMeshObj extends _materials.default {
     });
   }
   setupPipeline = () => {
-    console.log('test >>>>>>>>>>>>>>>>>>>FORMAT>✅' + this.presentationFormat);
+    console.log('Set Pipeline✅');
     this.pipeline = this.device.createRenderPipeline({
+      label: 'Mesh Pipeline ✅',
       layout: this.device.createPipelineLayout({
         bindGroupLayouts: [this.bglForRender, this.uniformBufferBindGroupLayout]
       }),
       vertex: {
         entryPoint: 'main',
-        // ✅ Add this
         module: this.device.createShaderModule({
           code: _vertex.vertexWGSL
         }),
@@ -8593,7 +8589,6 @@ class MEMeshObj extends _materials.default {
       },
       fragment: {
         entryPoint: 'main',
-        // ✅ Add this
         module: this.device.createShaderModule({
           code: this.isVideo == true ? _fragmentVideo.fragmentVideoWGSL : _fragment.fragmentWGSL
         }),
@@ -8607,28 +8602,16 @@ class MEMeshObj extends _materials.default {
       depthStencil: {
         depthWriteEnabled: true,
         depthCompare: 'less',
-        // format: 'depth24plus-stencil8',
         format: 'depth24plus'
       },
       primitive: this.primitive
     });
   };
   draw = () => {
-    // This code -> light follow camera. can be used like options later!
-    // if(this.done == false) return;
-    // const transformationMatrix = this.getTransformationMatrix(this.position);
-    // this.device.queue.writeBuffer(this.sceneUniformBuffer, 64, transformationMatrix.buffer, transformationMatrix.byteOffset, transformationMatrix.byteLength);
-    // this.renderPassDescriptor.colorAttachments[0].view = this.context
-    //   .getCurrentTexture()
-    //   .createView();
-
-    // test 
     if (this.done == false) return;
-
     // Per-object model matrix only
     const modelMatrix = this.getModelMatrix(this.position);
     this.device.queue.writeBuffer(this.modelUniformBuffer, 0, modelMatrix.buffer, modelMatrix.byteOffset, modelMatrix.byteLength);
-
     // Acquire swapchain view for the pass
     this.renderPassDescriptor.colorAttachments[0].view = this.context.getCurrentTexture().createView();
   };
@@ -8680,7 +8663,6 @@ class MEMeshObj extends _materials.default {
       });
       new Float32Array(mesh.vertexNormalsBuffer.getMappedRange()).set(mesh.vertexNormals);
       mesh.vertexNormalsBuffer.unmap();
-
       // UVs
       mesh.vertexTexCoordsBuffer = this.device.createBuffer({
         size: mesh.textures.length * Float32Array.BYTES_PER_ELEMENT,
@@ -8689,7 +8671,6 @@ class MEMeshObj extends _materials.default {
       });
       new Float32Array(mesh.vertexTexCoordsBuffer.getMappedRange()).set(mesh.textures);
       mesh.vertexTexCoordsBuffer.unmap();
-
       // Indices
       const indexCount = mesh.indices.length;
       const indexSize = Math.ceil(indexCount * Uint16Array.BYTES_PER_ELEMENT / 4) * 4;
@@ -9946,7 +9927,6 @@ class MatrixAmmo {
       CF_KINEMATIC_OBJECT: 2
     };
     let Ammo = this.Ammo;
-    console.log(pOptions.radius + "<<pOptions.radius");
     var colShape = new Ammo.btSphereShape(Array.isArray(pOptions.radius) ? pOptions.radius[0] : pOptions.radius),
       startTransform = new Ammo.btTransform();
     startTransform.setIdentity();
@@ -10106,46 +10086,11 @@ class MatrixAmmo {
       //   if(item.kB == contactManifold.getBody0().kB) {
       //     // console.log('Detected body0 =', item.name)
       //   }
-      //   if(item.kB == contactManifold.getBody1().kB) {
-      //     // console.log('Detected body1 =', item.name)
-      //   }
-      // })
-
       if (this.ground.kB == contactManifold.getBody0().kB && this.getNameByBody(contactManifold.getBody1()) == 'CubePhysics1') {
         // console.log(this.ground ,'GROUND IS IN CONTACT WHO IS BODY1 ', contactManifold.getBody1())
         // console.log('GROUND IS IN CONTACT WHO IS BODY1 getNameByBody  ', this.getNameByBody(contactManifold.getBody1()))
         // CHECK ROTATION
         var testR = contactManifold.getBody1().getWorldTransform().getRotation();
-        if (Math.abs(testR.y()) < 0.00001) {
-          this.lastRoll += " 4 +";
-          this.presentScore += 4;
-          dispatchEvent(new CustomEvent('dice-1', {}));
-        }
-        if (Math.abs(testR.x()) < 0.00001) {
-          this.lastRoll += " 3 +";
-          this.presentScore += 3;
-          dispatchEvent(new CustomEvent('dice-4', {}));
-        }
-        if (testR.x().toString().substring(0, 5) == testR.y().toString().substring(1, 6)) {
-          this.lastRoll += " 2 +";
-          this.presentScore += 2;
-          dispatchEvent(new CustomEvent('dice-6', {}));
-        }
-        if (testR.x().toString().substring(0, 5) == testR.y().toString().substring(0, 5)) {
-          this.lastRoll += " 1 +";
-          this.presentScore += 1;
-          dispatchEvent(new CustomEvent('dice-2', {}));
-        }
-        if (testR.z().toString().substring(0, 5) == testR.y().toString().substring(1, 6)) {
-          this.lastRoll += " 6 +";
-          this.presentScore += 6;
-          dispatchEvent(new CustomEvent('dice-5', {}));
-        }
-        if (testR.z().toString().substring(0, 5) == testR.y().toString().substring(0, 5)) {
-          this.lastRoll += " 5 +";
-          this.presentScore += 5;
-          dispatchEvent(new CustomEvent('dice-3', {}));
-        }
         console.log('this.lastRoll = ', this.lastRoll, ' presentScore = ', this.presentScore);
       }
     }
@@ -10608,6 +10553,14 @@ var _sounds = require("./sounds/sounds.js");
 var _loaderObj = require("./engine/loader-obj.js");
 var _lights = require("./engine/lights.js");
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+/**
+ * @description
+ * Main engine root class.
+ * @author Nikola Lukic 2025
+ * @email zlatnaspirala@gmail.com
+ * @web https://maximumroulette.com
+ * @github zlatnaspirala
+ */
 class MatrixEngineWGPU {
   mainRenderBundle = [];
   lightContainer = [];
@@ -10621,10 +10574,7 @@ class MatrixEngineWGPU {
   };
   matrixAmmo = new _matrixAmmo.default();
   matrixSounds = new _sounds.MatrixSounds();
-
-  // The input handler
   constructor(options, callback) {
-    // console.log('typeof options ', typeof options )
     if (typeof options == 'undefined' || typeof options == "function") {
       this.options = {
         useSingleRenderPass: true,
@@ -10713,14 +10663,6 @@ class MatrixEngineWGPU {
     this.device = await this.adapter.requestDevice({
       extensions: ["ray_tracing"]
     });
-
-    // Maybe works in ssl with webworkers...
-    // const adapterInfo = await this.adapter.requestAdapterInfo();
-    // var test = this.adapter.features()
-    // console.log(adapterInfo.vendor);
-    // console.log('test' + test);
-    // console.log("FEATURES : " + this.adapter.features)
-
     this.context = canvas.getContext('webgpu');
     const devicePixelRatio = window.devicePixelRatio;
     canvas.width = canvas.clientWidth * devicePixelRatio;
@@ -10736,17 +10678,6 @@ class MatrixEngineWGPU {
     } else {
       this.frame = this.framePassPerObject;
     }
-
-    // Global SCENE BUFFER Good idea for future
-    // this.sceneUniformBuffer = this.device.createBuffer({
-    //   // Two 4x4 viewProj matrices,
-    //   // one for the camera and one for the light.
-    //   // Then a vec3 for the light position.
-    //   // Rounded to the nearest multiple of 16.
-    //   size: 2 * 4 * 16 + 4 * 4,
-    //   usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-    // });
-
     this.inputHandler = (0, _engine.createInputHandler)(window, canvas);
     this.run(callback);
   };
@@ -10954,12 +10885,11 @@ class MatrixEngineWGPU {
     this.mainRenderBundle.push(myBall1);
   };
   addLight(o) {
-    // test light global; entity
     const camera = this.cameras[this.mainCameraParams.type];
     let newLight = new _lights.SpotLight(camera, this.inputHandler);
     newLight.prepareBuffer(this.device);
     this.lightContainer.push(newLight);
-    console.log('Add light : ', newLight);
+    console.log(`%cAdd light: ${newLight}`, _utils.LOG_FUNNY_SMALL);
   }
   addMeshObj = (o, clearColor = this.options.clearColor) => {
     if (typeof o.name === 'undefined') {
@@ -11036,12 +10966,9 @@ class MatrixEngineWGPU {
       o.physics.rotation = o.rotation;
     }
     o.physics.position = o.position;
-    //  console.log('Mesh procedure', o)
-    // TEST OBJS SEQ ANIMS 
     if (typeof o.objAnim == 'undefined' || typeof o.objAnim == null) {
       o.objAnim = null;
     } else {
-      // console.log('o.anim', o.objAnim)
       if (typeof o.objAnim.animations !== 'undefined') {
         o.objAnim.play = _loaderObj.play;
       }
@@ -11089,9 +11016,6 @@ class MatrixEngineWGPU {
     }
     this.lastFrameMS = now;
     const camera = this.cameras[this.mainCameraParams.type];
-
-    // engine, once per frame
-    // const camera = this.cameras[this.mainCameraParams.type];
     camera.update(dt, this.inputHandler());
     const camVP = _wgpuMatrix.mat4.multiply(camera.projectionMatrix, camera.view); // P * V
 
@@ -11101,27 +11025,6 @@ class MatrixEngineWGPU {
       // cameraViewProjMatrix offset
       camVP.buffer, camVP.byteOffset, camVP.byteLength);
     }
-    // engine frame
-    // camera.update(dt, this.inputHandler());
-    // const camVP = mat4.multiply(camera.projectionMatrix, camera.view);
-
-    // for(const mesh of this.mainRenderBundle) {
-    //   // Light’s viewProj should come from your SpotLight
-    //   // If you have multiple lights, you’ll need an array UBO or multiple passes.
-    //   const sceneData = new Float32Array(16 + 16 + 4); // lightVP, camVP, lightPos(+pad)
-    //   sceneData.set(this.lightContainer[0].viewProjMatrix, 0);
-    //   sceneData.set(camVP, 16);
-    //   sceneData.set(this.lightContainer[0].position, 32);
-
-    //   // sceneUniformBuffer
-    //   this.device.queue.writeBuffer(
-    //     mesh.sceneUniformBuffer,  // or a shared one if/when you centralize it
-    //     0,
-    //     sceneData.buffer,
-    //     sceneData.byteOffset,
-    //     sceneData.byteLength
-    //   );
-    // }
   };
   frameSinglePass = () => {
     if (typeof this.mainRenderBundle == 'undefined' || this.mainRenderBundle.length == 0) {
@@ -11146,24 +11049,11 @@ class MatrixEngineWGPU {
         meItem.position.update();
       });
       if (this.matrixAmmo) this.matrixAmmo.updatePhysics();
-
-      // no cast WORKING
-      // this.mainRenderBundle.forEach((meItem, index) => {
-      //   meItem.draw(commandEncoder);
-
-      //   shadowPass = commandEncoder.beginRenderPass(meItem.shadowPassDescriptor);
-      //   shadowPass.setPipeline(meItem.shadowPipeline);
-      //   meItem.drawShadows(shadowPass);
-      //   shadowPass.end();
-      // })
-
-      // cast!
       const firstItem = this.mainRenderBundle[0];
       shadowPass = commandEncoder.beginRenderPass(firstItem.shadowPassDescriptor);
       shadowPass.setPipeline(firstItem.shadowPipeline);
       for (const meItem of this.mainRenderBundle) {
-        // meItem.draw(commandEncoder);
-        meItem.drawShadows(shadowPass); // Draw ALL objects
+        meItem.drawShadows(shadowPass);
       }
       shadowPass.end();
       this.mainRenderBundle.forEach((meItem, index) => {
@@ -11183,7 +11073,7 @@ class MatrixEngineWGPU {
       this.device.queue.submit([commandEncoder.finish()]);
       requestAnimationFrame(this.frame);
     } catch (err) {
-      console.log('%cDraw func (err):' + err, _utils.LOG_WARN);
+      console.log('%cLoop (err):' + err, _utils.LOG_WARN);
       requestAnimationFrame(this.frame);
     }
   };
@@ -11197,7 +11087,7 @@ class MatrixEngineWGPU {
         if (meItem.renderPassDescriptor) meItem.renderPassDescriptor.colorAttachments[0].loadOp = 'load';
       }
       // Update transforms, physics, etc. (optional)
-      meItem.draw(commandEncoder); // optional: if this does per-frame updates
+      meItem.draw(commandEncoder);
       if (meItem.renderBundle) {
         // Set up view per object
         meItem.renderPassDescriptor.colorAttachments[0].view = this.context.getCurrentTexture().createView();
@@ -11205,7 +11095,7 @@ class MatrixEngineWGPU {
         passEncoder.executeBundles([meItem.renderBundle]); // ✅ Use only this bundle
         passEncoder.end();
       } else {
-        meItem.draw(commandEncoder); // fallback if no renderBundle
+        meItem.draw(commandEncoder);
       }
     });
     this.device.queue.submit([commandEncoder.finish()]);
