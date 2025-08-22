@@ -1,5 +1,5 @@
 import {mat4, vec3} from 'wgpu-matrix';
-
+import {vertexShadowWGSL} from '../shaders/vertexShadow.wgsl';
 export class SpotLight {
   // injected
   camera;
@@ -28,6 +28,7 @@ export class SpotLight {
   constructor(
     camera,
     inputHandler,
+    device,
     position = vec3.create(0, 5, -10),
     target = vec3.create(0, 0, 0),
     fov = 45, aspect = 1.0, near = 0.1, far = 200) {
@@ -48,6 +49,8 @@ export class SpotLight {
       near,
       far
     );
+
+    this.device = device;
     this.viewProjMatrix = mat4.multiply(this.projectionMatrix, this.viewMatrix);
 
     this.fov = fov;
@@ -60,6 +63,108 @@ export class SpotLight {
 
     this.ambientFactor = 0.5;
     this.range = 200.0; // example max distance
+
+    this.SHADOW_RES = 1024;
+    this.primitive = {
+      topology: 'triangle-list',
+      // cullMode: 'back',
+      cullMode: 'none',
+    };
+
+    this.shadowTexture = this.device.createTexture({
+      size: [this.SHADOW_RES, this.SHADOW_RES, 1],
+      format: "depth32float",
+      usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING,
+    });
+    this.shadowSampler = device.createSampler({
+      compare: 'less',
+    });
+
+    this.renderPassDescriptor = {
+      label: "shadowPass per ligth.",
+      colorAttachments: [],  
+      depthStencilAttachment: {
+        view: this.shadowTexture.createView(),
+        depthClearValue: 1.0,
+        depthLoadOp: "clear",
+        depthStoreOp: "store",
+      },
+    }
+
+    this.uniformBufferBindGroupLayout = this.device.createBindGroupLayout({
+      label: 'modelBindGroup in light',
+      entries: [
+        {
+          binding: 0,
+          visibility: GPUShaderStage.VERTEX,
+          buffer: {
+            type: 'uniform',
+          },
+        },
+      ],
+    });
+
+    this.shadowBindGroupContainer = [];
+
+    this.getShadowBindGroup = (mesh, index) => {
+
+      if(this.shadowBindGroupContainer[index]) {
+        return this.shadowBindGroupContainer[index];
+      }
+
+      this.shadowBindGroupContainer[index] = this.device.createBindGroup({
+        label: 'sceneBindGroupForShadow in light',
+        layout: this.uniformBufferBindGroupLayout,
+        entries: [
+          {
+            binding: 0,
+            resource: {
+              buffer: mesh.sceneUniformBuffer,
+            },
+          },
+        ],
+      });
+
+      return this.shadowBindGroupContainer[index];
+
+    }
+
+    this.modelBindGroupLayout = this.device.createBindGroupLayout({ entries: [ { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: { type: 'uniform' }, }, ], });
+
+    this.shadowPipeline = this.device.createRenderPipeline({
+      label: 'shadowPipeline per light',
+      layout: this.device.createPipelineLayout({
+        label: 'createPipelineLayout - uniformBufferBindGroupLayout',
+        bindGroupLayouts: [
+          this.uniformBufferBindGroupLayout,
+          this.modelBindGroupLayout,
+        ],
+      }),
+      vertex: {
+        module: this.device.createShaderModule({
+          code: vertexShadowWGSL,
+        }),
+        buffers: [
+          {
+            arrayStride: 12, // 3 * 4 bytes (vec3f)
+            attributes: [
+              {
+                shaderLocation: 0, // must match @location(0) in vertex shader
+                offset: 0,
+                format: "float32x3",
+              },
+            ],
+          },
+        ]
+      },
+      depthStencil: {
+        depthWriteEnabled: true,
+        depthCompare: 'less',
+        format: 'depth32float',
+      },
+      primitive: this.primitive,
+    });
+
   }
 
   update() {
@@ -90,51 +195,19 @@ export class SpotLight {
     }
   }
 
-  // DEPLACED
-  prepareBuffer(device) {
-    if(!this.device) this.device = device;
-    this.spotlightUniformBuffer = this.device.createBuffer({
-      label: 'spotlightUniformBuffer',
-      size:  80,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-    });
-
-    const spotlightData = this.getLightDataBuffer();
-    this.device.queue.writeBuffer(
-      this.spotlightUniformBuffer,
-      0,
-      spotlightData.buffer,
-      spotlightData.byteOffset,
-      spotlightData.byteLength
-    );
-  }
-
-  // DEPLACED
-  updateLightBuffer() {
-    if(!this.device || !this.spotlightUniformBuffer) {return;}
-    const spotlightData = this.getLightDataBuffer();
-    this.device.queue.writeBuffer(
-      this.spotlightUniformBuffer,
-      0,
-      spotlightData.buffer,
-      spotlightData.byteOffset,
-      spotlightData.byteLength
-    );
-  }
-
   getLightDataBuffer() {
-  return new Float32Array([
-    ...this.position, 0.0,
-    ...this.direction, 0.0,
-    this.innerCutoff,
-    this.outerCutoff,
-    this.intensity,
-    0.0,
-    ...this.color,
-    0.0,
-    this.range,
-    this.ambientFactor, // new
-    0.0, 0.0,           // padding
-  ]);
+    return new Float32Array([
+      ...this.position, 0.0,
+      ...this.direction, 0.0,
+      this.innerCutoff,
+      this.outerCutoff,
+      this.intensity,
+      0.0,
+      ...this.color,
+      0.0,
+      this.range,
+      this.ambientFactor, // new
+      0.0, 0.0,           // padding
+    ]);
   }
 }

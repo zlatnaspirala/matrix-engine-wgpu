@@ -154,8 +154,6 @@ export default class Materials {
 
     // ✅ Now
     this.createLayoutForRender();
-    this.setupPipeline();
-
   }
 
   updateVideoTexture() {
@@ -234,6 +232,7 @@ export default class Materials {
 
   createLayoutForRender() {
     this.bglForRender = this.device.createBindGroupLayout({
+      label: 'bglForRender',
       entries: [
         {
           binding: 0,

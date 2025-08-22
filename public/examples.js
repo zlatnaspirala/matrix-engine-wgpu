@@ -244,7 +244,7 @@ var loadObjFile = function () {
         name: 'cube1',
         mesh: m.cube,
         physics: {
-          enabled: true,
+          enabled: false,
           geometry: "Cube"
         }
         // raycast: { enabled: true , radius: 2 }
@@ -269,7 +269,7 @@ var loadObjFile = function () {
         name: 'ball1',
         mesh: m.ball,
         physics: {
-          enabled: true,
+          enabled: false,
           geometry: "Sphere"
         }
         // raycast: { enabled: true , radius: 2 }
@@ -7119,6 +7119,7 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.SpotLight = void 0;
 var _wgpuMatrix = require("wgpu-matrix");
+var _vertexShadow = require("../shaders/vertexShadow.wgsl");
 class SpotLight {
   // injected
   camera;
@@ -7139,7 +7140,7 @@ class SpotLight {
   innerCutoff;
   outerCutoff;
   spotlightUniformBuffer;
-  constructor(camera, inputHandler, position = _wgpuMatrix.vec3.create(0, 5, -10), target = _wgpuMatrix.vec3.create(0, 0, 0), fov = 45, aspect = 1.0, near = 0.1, far = 200) {
+  constructor(camera, inputHandler, device, position = _wgpuMatrix.vec3.create(0, 5, -10), target = _wgpuMatrix.vec3.create(0, 0, 0), fov = 45, aspect = 1.0, near = 0.1, far = 200) {
     this.camera = camera;
     this.inputHandler = inputHandler;
     this.position = position;
@@ -7151,6 +7152,7 @@ class SpotLight {
 
     this.viewMatrix = _wgpuMatrix.mat4.lookAt(position, target, this.up);
     this.projectionMatrix = _wgpuMatrix.mat4.perspective(fov * Math.PI / 180, aspect, near, far);
+    this.device = device;
     this.viewProjMatrix = _wgpuMatrix.mat4.multiply(this.projectionMatrix, this.viewMatrix);
     this.fov = fov;
     this.aspect = aspect;
@@ -7160,6 +7162,95 @@ class SpotLight {
     this.outerCutoff = Math.cos(Math.PI / 180 * 17.5);
     this.ambientFactor = 0.5;
     this.range = 200.0; // example max distance
+
+    this.SHADOW_RES = 1024;
+    this.primitive = {
+      topology: 'triangle-list',
+      // cullMode: 'back',
+      cullMode: 'none'
+    };
+    this.shadowTexture = this.device.createTexture({
+      size: [this.SHADOW_RES, this.SHADOW_RES, 1],
+      format: "depth32float",
+      usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING
+    });
+    this.shadowSampler = device.createSampler({
+      compare: 'less'
+    });
+    this.renderPassDescriptor = {
+      label: "shadowPass per ligth.",
+      colorAttachments: [],
+      depthStencilAttachment: {
+        view: this.shadowTexture.createView(),
+        depthClearValue: 1.0,
+        depthLoadOp: "clear",
+        depthStoreOp: "store"
+      }
+    };
+    this.uniformBufferBindGroupLayout = this.device.createBindGroupLayout({
+      label: 'modelBindGroup in light',
+      entries: [{
+        binding: 0,
+        visibility: GPUShaderStage.VERTEX,
+        buffer: {
+          type: 'uniform'
+        }
+      }]
+    });
+    this.shadowBindGroupContainer = [];
+    this.getShadowBindGroup = (mesh, index) => {
+      if (this.shadowBindGroupContainer[index]) {
+        return this.shadowBindGroupContainer[index];
+      }
+      this.shadowBindGroupContainer[index] = this.device.createBindGroup({
+        label: 'sceneBindGroupForShadow in light',
+        layout: this.uniformBufferBindGroupLayout,
+        entries: [{
+          binding: 0,
+          resource: {
+            buffer: mesh.sceneUniformBuffer
+          }
+        }]
+      });
+      return this.shadowBindGroupContainer[index];
+    };
+    this.modelBindGroupLayout = this.device.createBindGroupLayout({
+      entries: [{
+        binding: 0,
+        visibility: GPUShaderStage.VERTEX,
+        buffer: {
+          type: 'uniform'
+        }
+      }]
+    });
+    this.shadowPipeline = this.device.createRenderPipeline({
+      label: 'shadowPipeline per light',
+      layout: this.device.createPipelineLayout({
+        label: 'createPipelineLayout - uniformBufferBindGroupLayout',
+        bindGroupLayouts: [this.uniformBufferBindGroupLayout, this.modelBindGroupLayout]
+      }),
+      vertex: {
+        module: this.device.createShaderModule({
+          code: _vertexShadow.vertexShadowWGSL
+        }),
+        buffers: [{
+          arrayStride: 12,
+          // 3 * 4 bytes (vec3f)
+          attributes: [{
+            shaderLocation: 0,
+            // must match @location(0) in vertex shader
+            offset: 0,
+            format: "float32x3"
+          }]
+        }]
+      },
+      depthStencil: {
+        depthWriteEnabled: true,
+        depthCompare: 'less',
+        format: 'depth32float'
+      },
+      primitive: this.primitive
+    });
   }
   update() {
     const target = _wgpuMatrix.vec3.add(this.position, this.direction);
@@ -7185,27 +7276,6 @@ class SpotLight {
       camVP.buffer, camVP.byteOffset, camVP.byteLength);
     }
   }
-
-  // DEPLACED
-  prepareBuffer(device) {
-    if (!this.device) this.device = device;
-    this.spotlightUniformBuffer = this.device.createBuffer({
-      label: 'spotlightUniformBuffer',
-      size: 80,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
-    const spotlightData = this.getLightDataBuffer();
-    this.device.queue.writeBuffer(this.spotlightUniformBuffer, 0, spotlightData.buffer, spotlightData.byteOffset, spotlightData.byteLength);
-  }
-
-  // DEPLACED
-  updateLightBuffer() {
-    if (!this.device || !this.spotlightUniformBuffer) {
-      return;
-    }
-    const spotlightData = this.getLightDataBuffer();
-    this.device.queue.writeBuffer(this.spotlightUniformBuffer, 0, spotlightData.buffer, spotlightData.byteOffset, spotlightData.byteLength);
-  }
   getLightDataBuffer() {
     return new Float32Array([...this.position, 0.0, ...this.direction, 0.0, this.innerCutoff, this.outerCutoff, this.intensity, 0.0, ...this.color, 0.0, this.range, this.ambientFactor,
     // new
@@ -7215,7 +7285,7 @@ class SpotLight {
 }
 exports.SpotLight = SpotLight;
 
-},{"wgpu-matrix":7}],12:[function(require,module,exports){
+},{"../shaders/vertexShadow.wgsl":24,"wgpu-matrix":7}],12:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -7846,7 +7916,6 @@ class Materials {
 
     // ✅ Now
     this.createLayoutForRender();
-    this.setupPipeline();
   }
   updateVideoTexture() {
     if (!this.video || this.video.readyState < 2) return;
@@ -7920,6 +7989,7 @@ class Materials {
   }
   createLayoutForRender() {
     this.bglForRender = this.device.createBindGroupLayout({
+      label: 'bglForRender',
       entries: [{
         binding: 0,
         visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
@@ -8236,7 +8306,7 @@ var _materials = _interopRequireDefault(require("./materials"));
 var _fragmentVideo = require("../shaders/fragment.video.wgsl");
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 class MEMeshObj extends _materials.default {
-  constructor(canvas, device, context, o, sceneUniformBuffer) {
+  constructor(canvas, device, context, o, inputHandler) {
     super(device);
     if (typeof o.name === 'undefined') o.name = (0, _utils.genName)(3);
     if (typeof o.raycast === 'undefined') {
@@ -8269,7 +8339,7 @@ class MEMeshObj extends _materials.default {
       console.log(`%c Mesh objAnim exist: ${o.objAnim}`, _utils.LOG_FUNNY_SMALL);
       this.drawElements = this.drawElementsAnim;
     }
-    this.inputHandler = null;
+    this.inputHandler = inputHandler;
     this.cameras = o.cameras;
     this.mainCameraParams = {
       type: o.mainCameraParams.type,
@@ -8393,38 +8463,11 @@ class MEMeshObj extends _materials.default {
         // cullMode: 'back',
         cullMode: 'none'
       };
-      this.uniformBufferBindGroupLayout = this.device.createBindGroupLayout({
-        entries: [{
-          binding: 0,
-          visibility: GPUShaderStage.VERTEX,
-          buffer: {
-            type: 'uniform'
-          }
-        }]
-      });
-      this.shadowPipeline = this.device.createRenderPipeline({
-        layout: this.device.createPipelineLayout({
-          bindGroupLayouts: [this.uniformBufferBindGroupLayout, this.uniformBufferBindGroupLayout]
-        }),
-        vertex: {
-          module: this.device.createShaderModule({
-            code: _vertexShadow.vertexShadowWGSL
-          }),
-          buffers: this.vertexBuffers
-        },
-        depthStencil: {
-          depthWriteEnabled: true,
-          depthCompare: 'less',
-          format: 'depth32float'
-        },
-        primitive: this.primitive
-      });
 
       // Create a bind group layout which holds the scene uniforms and
       // the texture+sampler for depth. We create it manually because the WebPU
       // implementation doesn't infer this from the shader (yet).
       this.createLayoutForRender();
-      this.setupPipeline();
       const depthTexture = this.device.createTexture({
         size: [canvas.width, canvas.height],
         // format: 'depth24plus-stencil8',
@@ -8445,9 +8488,6 @@ class MEMeshObj extends _materials.default {
           depthClearValue: 1.0,
           depthLoadOp: 'clear',
           depthStoreOp: 'store'
-          // stencilClearValue: 0,
-          // stencilLoadOp: 'clear',
-          // stencilStoreOp: 'store',
         }
       };
       this.modelUniformBuffer = this.device.createBuffer({
@@ -8456,6 +8496,7 @@ class MEMeshObj extends _materials.default {
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
       });
       this.sceneUniformBuffer = this.device.createBuffer({
+        label: 'sceneUniformBuffer per mesh',
         // Two 4x4 viewProj matrices,
         // one for the camera and one for the light.
         // Then a vec3 for the light position.
@@ -8464,17 +8505,18 @@ class MEMeshObj extends _materials.default {
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
       });
       console.log('test buffer sceneUniformBuffer ', this.sceneUniformBuffer);
-      this.sceneBindGroupForShadow = this.device.createBindGroup({
-        layout: this.uniformBufferBindGroupLayout,
+      this.uniformBufferBindGroupLayout = this.device.createBindGroupLayout({
+        label: 'uniformBufferBindGroupLayout in mesh',
         entries: [{
           binding: 0,
-          resource: {
-            buffer: this.sceneUniformBuffer
+          visibility: GPUShaderStage.VERTEX,
+          buffer: {
+            type: 'uniform'
           }
         }]
       });
-      this.createBindGroupForRender();
       this.modelBindGroup = this.device.createBindGroup({
+        label: 'modelBindGroup in mesh',
         layout: this.uniformBufferBindGroupLayout,
         entries: [{
           binding: 0,
@@ -8483,11 +8525,12 @@ class MEMeshObj extends _materials.default {
           }
         }]
       });
+      this.setupPipeline();
 
       // Rotates the camera around the origin based on time.
-      this.getTransformationMatrix = pos => {
+      this.getTransformationMatrix = (mainRenderBundle, spotLight) => {
         const now = Date.now();
-        const deltaTime = (now - this.lastFrameMS) / this.mainCameraParams.responseCoef;
+        const dt = (now - this.lastFrameMS) / this.mainCameraParams.responseCoef;
         this.lastFrameMS = now;
         // const this.viewMatrix = mat4.identity()
         const camera = this.cameras[this.mainCameraParams.type];
@@ -8564,10 +8607,12 @@ class MEMeshObj extends _materials.default {
     });
   }
   setupPipeline = () => {
+    this.createBindGroupForRender();
     console.log('Set Pipeline✅');
     this.pipeline = this.device.createRenderPipeline({
       label: 'Mesh Pipeline ✅',
       layout: this.device.createPipelineLayout({
+        label: 'createPipelineLayout Mesh',
         bindGroupLayouts: [this.bglForRender, this.uniformBufferBindGroupLayout]
       }),
       vertex: {
@@ -8695,8 +8740,8 @@ class MEMeshObj extends _materials.default {
       }
     }
   };
-  drawShadows = shadowPass => {
-    shadowPass.setBindGroup(0, this.sceneBindGroupForShadow);
+  drawShadows = (shadowPass, light) => {
+    // shadowPass.setBindGroup(0, light.sceneBindGroupForShadow);
     shadowPass.setBindGroup(1, this.modelBindGroup);
     shadowPass.setVertexBuffer(0, this.vertexBuffer);
     shadowPass.setVertexBuffer(1, this.vertexNormalsBuffer);
@@ -10236,30 +10281,30 @@ struct Scene {
     lightViewProjMatrix : mat4x4f,
     cameraViewProjMatrix : mat4x4f,
     lightPos : vec3f,
-    padding : f32, // Required for alignment
+    padding : f32, // alignment
 }
 
 struct SpotLight {
-    position    : vec3f,
-    _pad1       : f32,
+    position      : vec3f,
+    _pad1         : f32,
 
-    direction   : vec3f,
-    _pad2       : f32,
+    direction     : vec3f,
+    _pad2         : f32,
 
-    innerCutoff : f32,
-    outerCutoff : f32,
-    intensity   : f32,
-    _pad3       : f32,
+    innerCutoff   : f32,
+    outerCutoff   : f32,
+    intensity     : f32,
+    _pad3         : f32,
 
-    color       : vec3f,
-    _pad4       : f32,
+    color         : vec3f,
+    _pad4         : f32,
 
-    range       : f32,
-    ambientFactor: f32, // new
-    _pad5       : vec2f, // padding to align to 16 bytes
+    range         : f32,
+    ambientFactor : f32,
+    _pad5         : vec2f, // padding to align 16 bytes
 };
 
-const MAX_SPOTLIGHTS = 20u; // adjust as needed
+const MAX_SPOTLIGHTS = 20u;
 
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(0) @binding(1) var shadowMap: texture_depth_2d;
@@ -10267,17 +10312,15 @@ const MAX_SPOTLIGHTS = 20u; // adjust as needed
 @group(0) @binding(3) var meshTexture: texture_2d<f32>;
 @group(0) @binding(4) var meshSampler: sampler;
 @group(0) @binding(5) var<uniform> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
-// @group(0) @binding(6) var<uniform> spotlight1: SpotLight;
 
 struct FragmentInput {
-    @location(0) shadowPos : vec3f,
-    @location(1) fragPos : vec3f,
-    @location(2) fragNorm : vec3f,
-    @location(3) uv : vec2f,
+    @location(0) shadowPos : vec4f,
+    @location(1) fragPos   : vec3f,
+    @location(2) fragNorm  : vec3f,
+    @location(3) uv        : vec2f,
 }
 
 const albedo = vec3f(0.9);
-// const ambientFactor = 0.7;
 
 fn calculateSpotlightFactor(light: SpotLight, fragPos: vec3f) -> f32 {
     let L = normalize(light.position - fragPos);
@@ -10309,20 +10352,22 @@ fn main(input : FragmentInput) -> @location(0) vec4f {
     // Shadow PCF
     var visibility = 0.0;
     let oneOverSize = 1.0 / shadowDepthTextureSize;
+
     for (var y = -1; y <= 1; y++) {
         for (var x = -1; x <= 1; x++) {
             let offset = vec2f(vec2(x, y)) * oneOverSize;
             visibility += textureSampleCompare(
                 shadowMap, shadowSampler,
-                input.shadowPos.xy + offset, input.shadowPos.z - 0.007
+                input.shadowPos.xy + offset, // already 0..1 from vertex shader
+                input.shadowPos.z - 0.007
             );
         }
     }
     visibility /= 9.0;
+
     let norm = normalize(input.fragNorm);
     let viewDir = normalize(scene.cameraViewProjMatrix[3].xyz - input.fragPos);
 
-    // Spotlight contribution (diffuse + specular + cone + distance)
     var lightContribution = vec3f(0.0);
     var ambient = vec3f(0.0);
 
@@ -10335,8 +10380,7 @@ fn main(input : FragmentInput) -> @location(0) vec4f {
     let finalColor = texColor.rgb * (ambient + lightContribution * visibility) * albedo;
 
     return vec4f(finalColor, 1.0);
-}
-`;
+}`;
 
 },{}],22:[function(require,module,exports){
 "use strict";
@@ -10404,57 +10448,44 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.vertexWGSL = void 0;
 let vertexWGSL = exports.vertexWGSL = `struct Scene {
-  lightViewProjMatrix: mat4x4f,
-  cameraViewProjMatrix: mat4x4f,
-  lightPos: vec3f,
+    lightViewProjMatrix: mat4x4f,
+    cameraViewProjMatrix: mat4x4f,
+    lightPos: vec3f,
 }
 
 struct Model {
-  modelMatrix: mat4x4f,
+    modelMatrix: mat4x4f,
 }
 
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(1) @binding(0) var<uniform> model : Model;
 
 struct VertexOutput {
-  @location(0) shadowPos: vec3f,
-  @location(1) fragPos: vec3f,
-  @location(2) fragNorm: vec3f,
-  @location(3) uv : vec2f,
-
-  @builtin(position) Position: vec4f,
+    @location(0) shadowPos: vec4f,  // now vec4
+    @location(1) fragPos: vec3f,
+    @location(2) fragNorm: vec3f,
+    @location(3) uv: vec2f,
+    @builtin(position) Position: vec4f,
 }
 
 @vertex
 fn main(
-  @location(0) position: vec3f,
-  @location(1) normal: vec3f,
-  @location(2) uv : vec2f
+    @location(0) position: vec3f,
+    @location(1) normal: vec3f,
+    @location(2) uv: vec2f
 ) -> VertexOutput {
-  var output : VertexOutput;
+    var output : VertexOutput;
 
-  // XY is in (-1, 1) space, Z is in (0, 1) space
-  let posFromLight = scene.lightViewProjMatrix * model.modelMatrix * vec4(position, 1.0);
+    let posFromLight = scene.lightViewProjMatrix * model.modelMatrix * vec4(position, 1.0);
+    output.shadowPos = posFromLight; // pass full vec4 for perspective divide
 
-  // Convert XY to (0, 1)
-  // Y is flipped because texture coords are Y-down.
-  output.shadowPos = vec3(
-    posFromLight.xy * vec2(0.5, -0.5) + vec2(0.5),
-    posFromLight.z
-  );
+    let worldPos = model.modelMatrix * vec4(position, 1.0);
+    output.Position = scene.cameraViewProjMatrix * worldPos;
+    output.fragPos = worldPos.xyz;
 
-  // follewed camera code
-  // output.Position = scene.cameraViewProjMatrix * model.modelMatrix * vec4(position, 1.0);
-  // output.fragPos = output.Position.xyz;
-  // output.fragNorm = normal;
-
-  let worldPos = model.modelMatrix * vec4(position, 1.0);
-  output.Position = scene.cameraViewProjMatrix * worldPos;
-  output.fragPos = worldPos.xyz;          // ✅ world space
-
-  output.fragNorm = normalize((model.modelMatrix * vec4(normal, 0.0)).xyz);
-  output.uv = uv;
-  return output;
+    output.fragNorm = normalize((model.modelMatrix * vec4(normal, 0.0)).xyz);
+    output.uv = uv;
+    return output;
 }
 `;
 
@@ -10918,8 +10949,9 @@ class MatrixEngineWGPU {
   };
   addLight(o) {
     const camera = this.cameras[this.mainCameraParams.type];
-    let newLight = new _lights.SpotLight(camera, this.inputHandler);
-    newLight.prepareBuffer(this.device);
+    // console.info(">>>>>>>>>>>>>>>>>>>", this.inputHandler)
+    let newLight = new _lights.SpotLight(camera, this.inputHandler, this.device);
+    // newLight.prepareBuffer(this.device);
     this.lightContainer.push(newLight);
     console.log(`%cAdd light: ${newLight}`, _utils.LOG_FUNNY_SMALL);
   }
@@ -11018,9 +11050,8 @@ class MatrixEngineWGPU {
         }
       };
     }
-    let myMesh1 = new _meshObj.default(this.canvas, this.device, this.context, o);
+    let myMesh1 = new _meshObj.default(this.canvas, this.device, this.context, o, this.inputHandler);
     myMesh1.spotlightUniformBuffer = this.spotlightUniformBuffer;
-    myMesh1.inputHandler = this.inputHandler;
     myMesh1.clearColor = clearColor;
     if (o.physics.enabled == true) {
       this.matrixAmmo.addPhysics(myMesh1, o.physics);
@@ -11087,20 +11118,26 @@ class MatrixEngineWGPU {
       // 1️⃣ Update light data (position, direction, uniforms)
       for (const light of this.lightContainer) {
         this.mainRenderBundle.forEach((meItem, index) => {
+          //  light.update()
           light.updateSceneUniforms(this.mainRenderBundle, this.cameras.WASD);
         });
       }
       this.mainRenderBundle.forEach((meItem, index) => {
         meItem.position.update();
+        // if(index == 0) meItem.getTransformationMatrix(this.mainRenderBundle)
       });
       if (this.matrixAmmo) this.matrixAmmo.updatePhysics();
-      const firstItem = this.mainRenderBundle[0];
-      shadowPass = commandEncoder.beginRenderPass(firstItem.shadowPassDescriptor);
-      shadowPass.setPipeline(firstItem.shadowPipeline);
-      for (const meItem of this.mainRenderBundle) {
-        meItem.drawShadows(shadowPass);
+      for (const light of this.lightContainer) {
+        const shadowPass = commandEncoder.beginRenderPass(light.renderPassDescriptor);
+        shadowPass.setPipeline(light.shadowPipeline);
+        // Mesh ID index
+        for (const [i, mesh] of this.mainRenderBundle.entries()) {
+          shadowPass.setBindGroup(0, light.getShadowBindGroup(mesh, i));
+          shadowPass.setBindGroup(1, mesh.modelBindGroup);
+          mesh.drawShadows(shadowPass, light);
+        }
+        shadowPass.end();
       }
-      shadowPass.end();
       this.mainRenderBundle.forEach((meItem, index) => {
         if (index == 0) {
           meItem.draw(commandEncoder);

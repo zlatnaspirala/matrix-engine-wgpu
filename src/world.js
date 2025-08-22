@@ -250,8 +250,9 @@ export default class MatrixEngineWGPU {
 
   addLight(o) {
     const camera = this.cameras[this.mainCameraParams.type];
-    let newLight = new SpotLight(camera, this.inputHandler);
-    newLight.prepareBuffer(this.device);
+    // console.info(">>>>>>>>>>>>>>>>>>>", this.inputHandler)
+    let newLight = new SpotLight(camera, this.inputHandler, this.device);
+    // newLight.prepareBuffer(this.device);
     this.lightContainer.push(newLight);
     console.log(`%cAdd light: ${newLight}`, LOG_FUNNY_SMALL);
   }
@@ -305,9 +306,8 @@ export default class MatrixEngineWGPU {
         }
       }
     }
-    let myMesh1 = new MEMeshObj(this.canvas, this.device, this.context, o);
+    let myMesh1 = new MEMeshObj(this.canvas, this.device, this.context, o, this.inputHandler);
     myMesh1.spotlightUniformBuffer = this.spotlightUniformBuffer;
-    myMesh1.inputHandler = this.inputHandler;
     myMesh1.clearColor = clearColor;
     if(o.physics.enabled == true) {
       this.matrixAmmo.addPhysics(myMesh1, o.physics)
@@ -376,20 +376,30 @@ export default class MatrixEngineWGPU {
       // 1️⃣ Update light data (position, direction, uniforms)
       for(const light of this.lightContainer) {
         this.mainRenderBundle.forEach((meItem, index) => {
-      
+          //  light.update()
           light.updateSceneUniforms(this.mainRenderBundle, this.cameras.WASD);
         })
       }
 
-      this.mainRenderBundle.forEach((meItem, index) => {meItem.position.update()})
+
+      this.mainRenderBundle.forEach((meItem, index) => {
+        meItem.position.update()
+        // if(index == 0) meItem.getTransformationMatrix(this.mainRenderBundle)
+      })
       if(this.matrixAmmo) this.matrixAmmo.updatePhysics();
-      const firstItem = this.mainRenderBundle[0];
-      shadowPass = commandEncoder.beginRenderPass(firstItem.shadowPassDescriptor);
-      shadowPass.setPipeline(firstItem.shadowPipeline);
-      for(const meItem of this.mainRenderBundle) {
-        meItem.drawShadows(shadowPass);
+
+      for(const light of this.lightContainer) {
+        const shadowPass = commandEncoder.beginRenderPass(light.renderPassDescriptor);
+        shadowPass.setPipeline(light.shadowPipeline);
+        // Mesh ID index
+        for(const [i, mesh] of this.mainRenderBundle.entries()) {
+          shadowPass.setBindGroup(0, light.getShadowBindGroup(mesh, i));
+          shadowPass.setBindGroup(1, mesh.modelBindGroup);
+          mesh.drawShadows(shadowPass, light);
+        }
+        shadowPass.end();
       }
-      shadowPass.end();
+
 
       this.mainRenderBundle.forEach((meItem, index) => {
         if(index == 0) {

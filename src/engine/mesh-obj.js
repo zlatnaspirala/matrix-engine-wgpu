@@ -8,7 +8,7 @@ import Materials from './materials';
 import {fragmentVideoWGSL} from '../shaders/fragment.video.wgsl';
 
 export default class MEMeshObj extends Materials {
-  constructor(canvas, device, context, o, sceneUniformBuffer) {
+  constructor(canvas, device, context, o, inputHandler) {
     super(device);
     if(typeof o.name === 'undefined') o.name = genName(3);
     if(typeof o.raycast === 'undefined') {
@@ -39,7 +39,7 @@ export default class MEMeshObj extends Materials {
       this.drawElements = this.drawElementsAnim;
     }
 
-    this.inputHandler = null;
+    this.inputHandler = inputHandler;
     this.cameras = o.cameras;
     this.mainCameraParams = {
       type: o.mainCameraParams.type,
@@ -179,44 +179,12 @@ export default class MEMeshObj extends Materials {
         cullMode: 'none',
       };
 
-      this.uniformBufferBindGroupLayout = this.device.createBindGroupLayout({
-        entries: [
-          {
-            binding: 0,
-            visibility: GPUShaderStage.VERTEX,
-            buffer: {
-              type: 'uniform',
-            },
-          },
-        ],
-      });
-
-      this.shadowPipeline = this.device.createRenderPipeline({
-        layout: this.device.createPipelineLayout({
-          bindGroupLayouts: [
-            this.uniformBufferBindGroupLayout,
-            this.uniformBufferBindGroupLayout,
-          ],
-        }),
-        vertex: {
-          module: this.device.createShaderModule({
-            code: vertexShadowWGSL,
-          }),
-          buffers: this.vertexBuffers,
-        },
-        depthStencil: {
-          depthWriteEnabled: true,
-          depthCompare: 'less',
-          format: 'depth32float',
-        },
-        primitive: this.primitive,
-      });
 
       // Create a bind group layout which holds the scene uniforms and
       // the texture+sampler for depth. We create it manually because the WebPU
       // implementation doesn't infer this from the shader (yet).
       this.createLayoutForRender();
-      this.setupPipeline();
+
 
       const depthTexture = this.device.createTexture({
         size: [canvas.width, canvas.height],
@@ -239,10 +207,7 @@ export default class MEMeshObj extends Materials {
           view: depthTexture.createView(),
           depthClearValue: 1.0,
           depthLoadOp: 'clear',
-          depthStoreOp: 'store',
-          // stencilClearValue: 0,
-          // stencilLoadOp: 'clear',
-          // stencilStoreOp: 'store',
+          depthStoreOp: 'store'
         },
       };
 
@@ -252,6 +217,7 @@ export default class MEMeshObj extends Materials {
       });
 
       this.sceneUniformBuffer = this.device.createBuffer({
+        label: 'sceneUniformBuffer per mesh',
         // Two 4x4 viewProj matrices,
         // one for the camera and one for the light.
         // Then a vec3 for the light position.
@@ -262,21 +228,22 @@ export default class MEMeshObj extends Materials {
 
       console.log('test buffer sceneUniformBuffer ', this.sceneUniformBuffer);
 
-      this.sceneBindGroupForShadow = this.device.createBindGroup({
-        layout: this.uniformBufferBindGroupLayout,
+      this.uniformBufferBindGroupLayout = this.device.createBindGroupLayout({
+        label: 'uniformBufferBindGroupLayout in mesh',
         entries: [
           {
             binding: 0,
-            resource: {
-              buffer: this.sceneUniformBuffer,
+            visibility: GPUShaderStage.VERTEX,
+            buffer: {
+              type: 'uniform',
             },
           },
         ],
       });
 
-      this.createBindGroupForRender();
 
       this.modelBindGroup = this.device.createBindGroup({
+        label: 'modelBindGroup in mesh',
         layout: this.uniformBufferBindGroupLayout,
         entries: [
           {
@@ -288,10 +255,12 @@ export default class MEMeshObj extends Materials {
         ],
       });
 
+      this.setupPipeline();
+
       // Rotates the camera around the origin based on time.
-      this.getTransformationMatrix = (pos) => {
+      this.getTransformationMatrix = (mainRenderBundle, spotLight) => {
         const now = Date.now();
-        const deltaTime = (now - this.lastFrameMS) / this.mainCameraParams.responseCoef;
+        const dt = (now - this.lastFrameMS) / this.mainCameraParams.responseCoef;
         this.lastFrameMS = now;
         // const this.viewMatrix = mat4.identity()
         const camera = this.cameras[this.mainCameraParams.type];
@@ -388,10 +357,13 @@ export default class MEMeshObj extends Materials {
   }
 
   setupPipeline = () => {
+
+    this.createBindGroupForRender();
     console.log('Set Pipeline✅');
     this.pipeline = this.device.createRenderPipeline({
       label: 'Mesh Pipeline ✅',
       layout: this.device.createPipelineLayout({
+        label: 'createPipelineLayout Mesh',
         bindGroupLayouts: [this.bglForRender, this.uniformBufferBindGroupLayout],
       }),
       vertex: {
@@ -542,8 +514,8 @@ export default class MEMeshObj extends Materials {
     }
   }
 
-  drawShadows = (shadowPass) => {
-    shadowPass.setBindGroup(0, this.sceneBindGroupForShadow);
+  drawShadows = (shadowPass, light) => {
+    // shadowPass.setBindGroup(0, light.sceneBindGroupForShadow);
     shadowPass.setBindGroup(1, this.modelBindGroup);
     shadowPass.setVertexBuffer(0, this.vertexBuffer);
     shadowPass.setVertexBuffer(1, this.vertexNormalsBuffer);

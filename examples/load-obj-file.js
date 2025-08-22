@@ -59,7 +59,7 @@ export var loadObjFile = function() {
         name: 'cube1',
         mesh: m.cube,
         physics: {
-          enabled: true,
+          enabled: false,
           geometry: "Cube",
         },
         // raycast: { enabled: true , radius: 2 }
@@ -73,7 +73,7 @@ export var loadObjFile = function() {
         name: 'ball1',
         mesh: m.ball,
         physics: {
-          enabled: true,
+          enabled: false,
           geometry: "Sphere"
         },
         // raycast: { enabled: true , radius: 2 }
