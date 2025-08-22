@@ -154,15 +154,11 @@ SpotLight – Emits light in a cone shape with configurable cutoff angles.
 
 Features
 
-✅ Independent from camera (lights follow their own transform, not the player view)
-
-✅ Uniform buffer system for per-light data
-
-✅ Works with existing scene objects and materials
-
-✅ Supports multiple lights (attach as many as you want to the scene)
-
+✅ Supports multiple lights (20 max)
 ✅ Shadow-ready (spotlight0 shadows implemented, extendable to others)
+
+engine.addLight()
+after explore light props.
 
 
 ### Object Interaction (Raycasting)
