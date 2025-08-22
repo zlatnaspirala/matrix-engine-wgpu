@@ -162,7 +162,7 @@ Features
 
 ✅ Supports multiple lights (attach as many as you want to the scene)
 
-✅ Shadow-ready (spotlight shadows implemented, extendable to others)
+✅ Shadow-ready (spotlight0 shadows implemented, extendable to others)
 
 
 ### Object Interaction (Raycasting)

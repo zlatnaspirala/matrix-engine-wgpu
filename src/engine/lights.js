@@ -57,6 +57,9 @@ export class SpotLight {
 
     this.innerCutoff = Math.cos((Math.PI / 180) * 12.5);
     this.outerCutoff = Math.cos((Math.PI / 180) * 17.5);
+
+    this.ambientFactor = 0.5;
+    this.range = 200.0; // example max distance
   }
 
   update() {
@@ -90,7 +93,8 @@ export class SpotLight {
   prepareBuffer(device) {
     if(!this.device) this.device = device;
     this.spotlightUniformBuffer = this.device.createBuffer({
-      size: 32 * 4, // 128 bytes
+      label: 'spotlightUniformBuffer',
+      size:  80,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
 
@@ -117,27 +121,18 @@ export class SpotLight {
   }
 
   getLightDataBuffer() {
-    return new Float32Array([
-      // position + pad
-      ...this.position, 0.0,
-      // direction + pad
-      ...this.direction, 0.0,
-      // cutoffs + intensity + pad
-      this.innerCutoff,
-      this.outerCutoff,
-      this.intensity ?? 1.0,
-      0.0,
-      // color + pad
-      ...(this.color ?? [1.0, 1.0, 1.0]),
-      0.0,
-    ]);
-    // return new Float32Array([
-    //   ...this.position, 0.0,
-    //   ...this.direction, 0.0,
-    //   this.innerCutoff,
-    //   this.outerCutoff,
-    //   0.0,
-    //   0.0,
-    // ]);
+  return new Float32Array([
+    ...this.position, 0.0,
+    ...this.direction, 0.0,
+    this.innerCutoff,
+    this.outerCutoff,
+    this.intensity,
+    0.0,
+    ...this.color,
+    0.0,
+    this.range,
+    this.ambientFactor, // new
+    0.0, 0.0,           // padding
+  ]);
   }
 }

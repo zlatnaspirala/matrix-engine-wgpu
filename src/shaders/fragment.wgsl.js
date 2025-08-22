@@ -1,10 +1,10 @@
 export let fragmentWGSL = `override shadowDepthTextureSize: f32 = 1024.0;
 
 struct Scene {
-  lightViewProjMatrix : mat4x4f,
-  cameraViewProjMatrix : mat4x4f,
-  lightPos : vec3f,
-  padding : f32, // Required for alignment
+    lightViewProjMatrix : mat4x4f,
+    cameraViewProjMatrix : mat4x4f,
+    lightPos : vec3f,
+    padding : f32, // Required for alignment
 }
 
 struct SpotLight {
@@ -16,89 +16,89 @@ struct SpotLight {
 
     innerCutoff : f32,
     outerCutoff : f32,
-    intensity   : f32,    // new
-    _pad3       : f32,    // keep alignment
+    intensity   : f32,
+    _pad3       : f32,
 
-    color       : vec3f,  // new
-    _pad4       : f32,    // keep alignment
-}
+    color       : vec3f,
+    _pad4       : f32,
 
- 
+    range       : f32,
+    ambientFactor: f32, // new
+    _pad5       : vec2f, // padding to align to 16 bytes
+};
 
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(0) @binding(1) var shadowMap: texture_depth_2d;
 @group(0) @binding(2) var shadowSampler: sampler_comparison;
 @group(0) @binding(3) var meshTexture: texture_2d<f32>;
 @group(0) @binding(4) var meshSampler: sampler;
-@group(0) @binding(5) var<uniform> spotlight: SpotLight;
+@group(0) @binding(5) var<uniform> spotlight0: SpotLight;
+@group(0) @binding(6) var<uniform> spotlight1: SpotLight;
 
 struct FragmentInput {
-  @location(0) shadowPos : vec3f,
-  @location(1) fragPos : vec3f,
-  @location(2) fragNorm : vec3f,
-  @location(3) uv : vec2f,
+    @location(0) shadowPos : vec3f,
+    @location(1) fragPos : vec3f,
+    @location(2) fragNorm : vec3f,
+    @location(3) uv : vec2f,
 }
 
 const albedo = vec3f(0.9);
-const ambientFactor = 0.7;
+// const ambientFactor = 0.7;
+
+fn calculateSpotlightFactor(light: SpotLight, fragPos: vec3f) -> f32 {
+    let L = normalize(light.position - fragPos);
+    let theta = dot(L, normalize(-light.direction));
+    let epsilon = light.innerCutoff - light.outerCutoff;
+    return clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
+}
 
 fn computeSpotLight(light: SpotLight, normal: vec3f, fragPos: vec3f, viewDir: vec3f) -> vec3f {
-    let L = normalize(light.position - fragPos);
+    let L = light.position - fragPos;
+    let distance = length(L);
+    let lightDir = normalize(L);
 
-    // get spotlight cone factor
     let spotFactor = calculateSpotlightFactor(light, fragPos);
+    let atten = clamp(1.0 - (distance / light.range), 0.0, 1.0);
 
-    // diffuse
-    let diff = max(dot(normal, L), 0.0);
-
-    // specular (Blinn-Phong)
-    let halfwayDir = normalize(L + viewDir);
+    let diff = max(dot(normal, lightDir), 0.0);
+    let halfwayDir = normalize(lightDir + viewDir);
     let spec = pow(max(dot(normal, halfwayDir), 0.0), 32.0);
 
-    // apply color & intensity
-    let diffuse  = diff * light.color * light.intensity;
-    let specular = spec * light.color * light.intensity;
+    let diffuse  = diff * light.color * light.intensity * atten;
+    let specular = spec * light.color * light.intensity * atten;
 
     return (diffuse + specular) * spotFactor;
 }
 
-fn calculateSpotlightFactor(light: SpotLight, fragPos: vec3f) -> f32 {
-  let L = normalize(light.position - fragPos);
-  let theta = dot(L, normalize(-light.direction));
-  let epsilon = light.innerCutoff - light.outerCutoff;
-  let intensity = clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
-  return intensity;
-}
-
 @fragment
 fn main(input : FragmentInput) -> @location(0) vec4f {
-  // Shadow PFC
-  var visibility = 0.0;
-  let oneOverSize = 1.0 / shadowDepthTextureSize;
-  for (var y = -1; y <= 1; y++) {
-    for (var x = -1; x <= 1; x++) {
-      let offset = vec2f(vec2(x, y)) * oneOverSize;
-      visibility += textureSampleCompare(
-        shadowMap, shadowSampler,
-        input.shadowPos.xy + offset, input.shadowPos.z - 0.007
-      );
+    // Shadow PCF
+    var visibility = 0.0;
+    let oneOverSize = 1.0 / shadowDepthTextureSize;
+    for (var y = -1; y <= 1; y++) {
+        for (var x = -1; x <= 1; x++) {
+            let offset = vec2f(vec2(x, y)) * oneOverSize;
+            visibility += textureSampleCompare(
+                shadowMap, shadowSampler,
+                input.shadowPos.xy + offset, input.shadowPos.z - 0.007
+            );
+        }
     }
-  }
-  visibility /= 9.0;
+    visibility /= 9.0;
+    var lightContribution = vec3f(0.0);
+    let norm = normalize(input.fragNorm);
+    let viewDir = normalize(scene.cameraViewProjMatrix[3].xyz - input.fragPos);
 
-  // Lambert
-  let norm = normalize(input.fragNorm);
-  let lightDir = normalize(scene.lightPos - input.fragPos);
-  let lambert = max(dot(norm, lightDir), 0.0);
+    // Spotlight contribution (diffuse + specular + cone + distance)
+    lightContribution += computeSpotLight(spotlight0, norm, input.fragPos, viewDir);
+    var ambient = spotlight0.ambientFactor * spotlight0.color;
 
-  // Spotlight effect
-  // let spotlightFactor = calculateSpotlightFactor(spotlight, input.fragPos);
-   let lightContribution = computeSpotLight(spotlight, norm,  input.fragPos, lightDir);
+    lightContribution += computeSpotLight(spotlight1, norm, input.fragPos, viewDir);
+    ambient += spotlight1.ambientFactor * spotlight1.color;
 
-  // Combine
-  let lightIntensity = ambientFactor + lambert * visibility;
-  let texColor = textureSample(meshTexture, meshSampler, input.uv);
+    let texColor = textureSample(meshTexture, meshSampler, input.uv);
+    let finalColor = texColor.rgb * (ambient + lightContribution * visibility) * albedo;
 
-  return vec4f(texColor.rgb * (lightIntensity + lightContribution) * albedo, 1.0);
+    return vec4f(finalColor, 1.0);
 }
 `
