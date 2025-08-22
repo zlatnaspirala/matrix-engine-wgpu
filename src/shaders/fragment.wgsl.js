@@ -27,13 +27,15 @@ struct SpotLight {
     _pad5       : vec2f, // padding to align to 16 bytes
 };
 
+const MAX_SPOTLIGHTS = 20u; // adjust as needed
+
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(0) @binding(1) var shadowMap: texture_depth_2d;
 @group(0) @binding(2) var shadowSampler: sampler_comparison;
 @group(0) @binding(3) var meshTexture: texture_2d<f32>;
 @group(0) @binding(4) var meshSampler: sampler;
-@group(0) @binding(5) var<uniform> spotlight0: SpotLight;
-@group(0) @binding(6) var<uniform> spotlight1: SpotLight;
+@group(0) @binding(5) var<uniform> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
+// @group(0) @binding(6) var<uniform> spotlight1: SpotLight;
 
 struct FragmentInput {
     @location(0) shadowPos : vec3f,
@@ -85,16 +87,17 @@ fn main(input : FragmentInput) -> @location(0) vec4f {
         }
     }
     visibility /= 9.0;
-    var lightContribution = vec3f(0.0);
     let norm = normalize(input.fragNorm);
     let viewDir = normalize(scene.cameraViewProjMatrix[3].xyz - input.fragPos);
 
     // Spotlight contribution (diffuse + specular + cone + distance)
-    lightContribution += computeSpotLight(spotlight0, norm, input.fragPos, viewDir);
-    var ambient = spotlight0.ambientFactor * spotlight0.color;
+    var lightContribution = vec3f(0.0);
+    var ambient = vec3f(0.0);
 
-    lightContribution += computeSpotLight(spotlight1, norm, input.fragPos, viewDir);
-    ambient += spotlight1.ambientFactor * spotlight1.color;
+    for (var i = 0u; i < MAX_SPOTLIGHTS; i++) {
+        lightContribution += computeSpotLight(spotlights[i], norm, input.fragPos, viewDir);
+        ambient += spotlights[i].ambientFactor * spotlights[i].color;
+    }
 
     let texColor = textureSample(meshTexture, meshSampler, input.uv);
     let finalColor = texColor.rgb * (ambient + lightContribution * visibility) * albedo;

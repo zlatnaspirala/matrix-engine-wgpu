@@ -277,7 +277,6 @@ var loadObjFile = function () {
       var TEST = loadObjFile.getSceneObjectByName('cube2');
       console.log(`%c Test access scene ${TEST} object.`, _utils.LOG_MATRIX);
       loadObjFile.addLight();
-      loadObjFile.addLight();
     }
   });
   // just for dev
@@ -7185,6 +7184,8 @@ class SpotLight {
       camVP.buffer, camVP.byteOffset, camVP.byteLength);
     }
   }
+
+  // DEPLACED
   prepareBuffer(device) {
     if (!this.device) this.device = device;
     this.spotlightUniformBuffer = this.device.createBuffer({
@@ -7195,6 +7196,8 @@ class SpotLight {
     const spotlightData = this.getLightDataBuffer();
     this.device.queue.writeBuffer(this.spotlightUniformBuffer, 0, spotlightData.buffer, spotlightData.byteOffset, spotlightData.byteLength);
   }
+
+  // DEPLACED
   updateLightBuffer() {
     if (!this.device || !this.spotlightUniformBuffer) {
       return;
@@ -7858,7 +7861,6 @@ class Materials {
       console.warn("❗Missing res skipping...");
       return;
     }
-    // console.log('what is  this.lightContainer.length ',  this.lightContainer.length)
     if (this.isVideo == true) {
       this.sceneBindGroupForRender = this.device.createBindGroup({
         layout: this.bglForRender,
@@ -7909,12 +7911,7 @@ class Materials {
         }, {
           binding: 5,
           resource: {
-            buffer: this.lightContainer.length == 0 ? this.dummySpotlightUniformBuffer : this.lightContainer[0].spotlightUniformBuffer
-          }
-        }, {
-          binding: 6,
-          resource: {
-            buffer: this.lightContainer.length < 2 ? this.dummySpotlightUniformBuffer : this.lightContainer[1].spotlightUniformBuffer
+            buffer: !this.spotlightUniformBuffer ? this.dummySpotlightUniformBuffer : this.spotlightUniformBuffer
           }
         }]
       });
@@ -7975,12 +7972,6 @@ class Materials {
         }
       }, {
         binding: 5,
-        visibility: GPUShaderStage.FRAGMENT,
-        buffer: {
-          type: 'uniform'
-        }
-      }, {
-        binding: 6,
         visibility: GPUShaderStage.FRAGMENT,
         buffer: {
           type: 'uniform'
@@ -10267,13 +10258,15 @@ struct SpotLight {
     _pad5       : vec2f, // padding to align to 16 bytes
 };
 
+const MAX_SPOTLIGHTS = 20u; // adjust as needed
+
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(0) @binding(1) var shadowMap: texture_depth_2d;
 @group(0) @binding(2) var shadowSampler: sampler_comparison;
 @group(0) @binding(3) var meshTexture: texture_2d<f32>;
 @group(0) @binding(4) var meshSampler: sampler;
-@group(0) @binding(5) var<uniform> spotlight0: SpotLight;
-@group(0) @binding(6) var<uniform> spotlight1: SpotLight;
+@group(0) @binding(5) var<uniform> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
+// @group(0) @binding(6) var<uniform> spotlight1: SpotLight;
 
 struct FragmentInput {
     @location(0) shadowPos : vec3f,
@@ -10325,16 +10318,17 @@ fn main(input : FragmentInput) -> @location(0) vec4f {
         }
     }
     visibility /= 9.0;
-    var lightContribution = vec3f(0.0);
     let norm = normalize(input.fragNorm);
     let viewDir = normalize(scene.cameraViewProjMatrix[3].xyz - input.fragPos);
 
     // Spotlight contribution (diffuse + specular + cone + distance)
-    lightContribution += computeSpotLight(spotlight0, norm, input.fragPos, viewDir);
-    var ambient = spotlight0.ambientFactor * spotlight0.color;
+    var lightContribution = vec3f(0.0);
+    var ambient = vec3f(0.0);
 
-    lightContribution += computeSpotLight(spotlight1, norm, input.fragPos, viewDir);
-    ambient += spotlight1.ambientFactor * spotlight1.color;
+    for (var i = 0u; i < MAX_SPOTLIGHTS; i++) {
+        lightContribution += computeSpotLight(spotlights[i], norm, input.fragPos, viewDir);
+        ambient += spotlights[i].ambientFactor * spotlights[i].color;
+    }
 
     let texColor = textureSample(meshTexture, meshSampler, input.uv);
     let finalColor = texColor.rgb * (ambient + lightContribution * visibility) * albedo;
@@ -10589,6 +10583,7 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
  * @github zlatnaspirala
  */
 class MatrixEngineWGPU {
+  lightContainer;
   mainRenderBundle = [];
   lightContainer = [];
   frame = () => {};
@@ -10705,9 +10700,18 @@ class MatrixEngineWGPU {
     } else {
       this.frame = this.framePassPerObject;
     }
+    this.MAX_SPOTLIGHTS = 20;
     this.inputHandler = (0, _engine.createInputHandler)(window, canvas);
+    this.createGlobalStuff();
     this.run(callback);
   };
+  createGlobalStuff() {
+    this.spotlightUniformBuffer = this.device.createBuffer({
+      label: 'spotlightUniformBufferGLOBAL',
+      size: this.MAX_SPOTLIGHTS * 80,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+  }
   getSceneObjectByName(name) {
     return this.mainRenderBundle.find(sceneObject => sceneObject.name === name);
   }
@@ -11014,7 +11018,7 @@ class MatrixEngineWGPU {
       };
     }
     let myMesh1 = new _meshObj.default(this.canvas, this.device, this.context, o);
-    myMesh1.lightContainer = this.lightContainer;
+    myMesh1.spotlightUniformBuffer = this.spotlightUniformBuffer;
     myMesh1.inputHandler = this.inputHandler;
     myMesh1.clearColor = clearColor;
     if (o.physics.enabled == true) {
@@ -11053,6 +11057,18 @@ class MatrixEngineWGPU {
       camVP.buffer, camVP.byteOffset, camVP.byteLength);
     }
   };
+  updateLights() {
+    // Update buffer every frame
+    const data = new Float32Array(this.MAX_SPOTLIGHTS * 20);
+    for (let i = 0; i < this.MAX_SPOTLIGHTS; i++) {
+      if (i < this.lightContainer.length) {
+        data.set(this.lightContainer[i].getLightDataBuffer(), i * 20);
+      } else {
+        data.set(new Float32Array(20), i * 20);
+      }
+    }
+    this.device.queue.writeBuffer(this.spotlightUniformBuffer, 0, data.buffer);
+  }
   frameSinglePass = () => {
     if (typeof this.mainRenderBundle == 'undefined' || this.mainRenderBundle.length == 0) {
       setTimeout(() => {
@@ -11064,10 +11080,11 @@ class MatrixEngineWGPU {
       let shadowPass = null;
       let renderPass;
       let commandEncoder = this.device.createCommandEncoder();
+      this.updateLights();
       this.test();
+
       // 1️⃣ Update light data (position, direction, uniforms)
       for (const light of this.lightContainer) {
-        light.updateLightBuffer();
         this.mainRenderBundle.forEach((meItem, index) => {
           light.updateSceneUniforms(this.mainRenderBundle, this.cameras.WASD);
         });

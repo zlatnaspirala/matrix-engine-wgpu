@@ -172,7 +172,6 @@ export default class Materials {
       console.warn("❗Missing res skipping...");
       return;
     }
-    // console.log('what is  this.lightContainer.length ',  this.lightContainer.length)
     if(this.isVideo == true) {
       this.sceneBindGroupForRender = this.device.createBindGroup({
         layout: this.bglForRender,
@@ -226,12 +225,8 @@ export default class Materials {
           },
           {
             binding: 5,
-            resource: {buffer: this.lightContainer.length == 0 ? this.dummySpotlightUniformBuffer : this.lightContainer[0].spotlightUniformBuffer},
-          },
-          {
-            binding: 6,
-            resource: {buffer: this.lightContainer.length < 2 ? this.dummySpotlightUniformBuffer : this.lightContainer[1].spotlightUniformBuffer},
-          },
+            resource: {buffer: !this.spotlightUniformBuffer ? this.dummySpotlightUniformBuffer : this.spotlightUniformBuffer},
+          }
         ],
       });
     }
@@ -289,11 +284,6 @@ export default class Materials {
             },
             {
               binding: 5,
-              visibility: GPUShaderStage.FRAGMENT,
-              buffer: {type: 'uniform'},
-            },
-            {
-              binding: 6,
               visibility: GPUShaderStage.FRAGMENT,
               buffer: {type: 'uniform'},
             }

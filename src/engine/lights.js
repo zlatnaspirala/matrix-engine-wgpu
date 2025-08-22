@@ -90,6 +90,7 @@ export class SpotLight {
     }
   }
 
+  // DEPLACED
   prepareBuffer(device) {
     if(!this.device) this.device = device;
     this.spotlightUniformBuffer = this.device.createBuffer({
@@ -108,6 +109,7 @@ export class SpotLight {
     );
   }
 
+  // DEPLACED
   updateLightBuffer() {
     if(!this.device || !this.spotlightUniformBuffer) {return;}
     const spotlightData = this.getLightDataBuffer();
