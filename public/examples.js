@@ -7724,7 +7724,7 @@ class Materials {
 
     // Dymmy buffer
     this.dummySpotlightUniformBuffer = this.device.createBuffer({
-      size: 80,
+      size: 64,
       // Must match size in shader
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
@@ -7861,6 +7861,7 @@ class Materials {
       console.warn("❗Missing res skipping...");
       return;
     }
+    // console.log('what is  this.lightContainer.length ',  this.lightContainer.length)
     if (this.isVideo == true) {
       this.sceneBindGroupForRender = this.device.createBindGroup({
         layout: this.bglForRender,
@@ -7911,7 +7912,7 @@ class Materials {
         }, {
           binding: 5,
           resource: {
-            buffer: !this.spotlightUniformBuffer ? this.dummySpotlightUniformBuffer : this.spotlightUniformBuffer
+            buffer: this.lightContainer.length == 0 ? this.dummySpotlightUniformBuffer : this.lightContainer[0].spotlightUniformBuffer
           }
         }]
       });
@@ -10232,108 +10233,76 @@ exports.fragmentWGSL = void 0;
 let fragmentWGSL = exports.fragmentWGSL = `override shadowDepthTextureSize: f32 = 1024.0;
 
 struct Scene {
-    lightViewProjMatrix : mat4x4f,
-    cameraViewProjMatrix : mat4x4f,
-    lightPos : vec3f,
-    padding : f32, // Required for alignment
+  lightViewProjMatrix : mat4x4f,
+  cameraViewProjMatrix : mat4x4f,
+  lightPos : vec3f,
+  padding : f32, // Required for alignment
 }
 
 struct SpotLight {
-    position    : vec3f,
-    _pad1       : f32,
-
-    direction   : vec3f,
-    _pad2       : f32,
-
-    innerCutoff : f32,
-    outerCutoff : f32,
-    intensity   : f32,
-    _pad3       : f32,
-
-    color       : vec3f,
-    _pad4       : f32,
-
-    range       : f32,
-    ambientFactor: f32, // new
-    _pad5       : vec2f, // padding to align to 16 bytes
-};
-
-const MAX_SPOTLIGHTS = 20u; // adjust as needed
+  position: vec3f,
+  _pad1: f32,
+  direction: vec3f,
+  _pad2: f32,
+  innerCutoff: f32,
+  outerCutoff: f32,
+  _pad3: vec2f,
+}
 
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(0) @binding(1) var shadowMap: texture_depth_2d;
 @group(0) @binding(2) var shadowSampler: sampler_comparison;
 @group(0) @binding(3) var meshTexture: texture_2d<f32>;
 @group(0) @binding(4) var meshSampler: sampler;
-@group(0) @binding(5) var<uniform> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
-// @group(0) @binding(6) var<uniform> spotlight1: SpotLight;
+@group(0) @binding(5) var<uniform> spotlight: SpotLight;
 
 struct FragmentInput {
-    @location(0) shadowPos : vec3f,
-    @location(1) fragPos : vec3f,
-    @location(2) fragNorm : vec3f,
-    @location(3) uv : vec2f,
+  @location(0) shadowPos : vec3f,
+  @location(1) fragPos : vec3f,
+  @location(2) fragNorm : vec3f,
+  @location(3) uv : vec2f,
 }
 
 const albedo = vec3f(0.9);
-// const ambientFactor = 0.7;
+const ambientFactor = 0.7;
 
 fn calculateSpotlightFactor(light: SpotLight, fragPos: vec3f) -> f32 {
-    let L = normalize(light.position - fragPos);
-    let theta = dot(L, normalize(-light.direction));
-    let epsilon = light.innerCutoff - light.outerCutoff;
-    return clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
-}
-
-fn computeSpotLight(light: SpotLight, normal: vec3f, fragPos: vec3f, viewDir: vec3f) -> vec3f {
-    let L = light.position - fragPos;
-    let distance = length(L);
-    let lightDir = normalize(L);
-
-    let spotFactor = calculateSpotlightFactor(light, fragPos);
-    let atten = clamp(1.0 - (distance / light.range), 0.0, 1.0);
-
-    let diff = max(dot(normal, lightDir), 0.0);
-    let halfwayDir = normalize(lightDir + viewDir);
-    let spec = pow(max(dot(normal, halfwayDir), 0.0), 32.0);
-
-    let diffuse  = diff * light.color * light.intensity * atten;
-    let specular = spec * light.color * light.intensity * atten;
-
-    return (diffuse + specular) * spotFactor;
+  let L = normalize(light.position - fragPos);
+  let theta = dot(L, normalize(-light.direction));
+  let epsilon = light.innerCutoff - light.outerCutoff;
+  let intensity = clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
+  return intensity;
 }
 
 @fragment
 fn main(input : FragmentInput) -> @location(0) vec4f {
-    // Shadow PCF
-    var visibility = 0.0;
-    let oneOverSize = 1.0 / shadowDepthTextureSize;
-    for (var y = -1; y <= 1; y++) {
-        for (var x = -1; x <= 1; x++) {
-            let offset = vec2f(vec2(x, y)) * oneOverSize;
-            visibility += textureSampleCompare(
-                shadowMap, shadowSampler,
-                input.shadowPos.xy + offset, input.shadowPos.z - 0.007
-            );
-        }
+  // Shadow PFC
+  var visibility = 0.0;
+  let oneOverSize = 1.0 / shadowDepthTextureSize;
+  for (var y = -1; y <= 1; y++) {
+    for (var x = -1; x <= 1; x++) {
+      let offset = vec2f(vec2(x, y)) * oneOverSize;
+      visibility += textureSampleCompare(
+        shadowMap, shadowSampler,
+        input.shadowPos.xy + offset, input.shadowPos.z - 0.007
+      );
     }
-    visibility /= 9.0;
-    let norm = normalize(input.fragNorm);
-    let viewDir = normalize(scene.cameraViewProjMatrix[3].xyz - input.fragPos);
+  }
+  visibility /= 9.0;
 
-    // Spotlight contribution (diffuse + specular + cone + distance)
-    var lightContribution = vec3f(0.0);
-    var ambient = vec3f(0.0);
+  // Lambert
+  let norm = normalize(input.fragNorm);
+  let lightDir = normalize(scene.lightPos - input.fragPos);
+  let lambert = max(dot(norm, lightDir), 0.0);
 
-    for (var i = 0u; i < MAX_SPOTLIGHTS; i++) {
-        lightContribution += computeSpotLight(spotlights[i], norm, input.fragPos, viewDir);
-        ambient += spotlights[i].ambientFactor * spotlights[i].color;
-    }
+  // Spotlight effect
+  let spotlightFactor = calculateSpotlightFactor(spotlight, input.fragPos);
 
-    let texColor = textureSample(meshTexture, meshSampler, input.uv);
-    let finalColor = texColor.rgb * (ambient + lightContribution * visibility) * albedo;
+  // Combine
+  let lightIntensity = ambientFactor + lambert * visibility * spotlightFactor;
+  let texColor = textureSample(meshTexture, meshSampler, input.uv);
 
-    return vec4f(finalColor, 1.0);
+  return vec4f(texColor.rgb * lightIntensity * albedo, 1.0);
 }
 `;
 
@@ -10583,7 +10552,6 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
  * @github zlatnaspirala
  */
 class MatrixEngineWGPU {
-  lightContainer;
   mainRenderBundle = [];
   lightContainer = [];
   frame = () => {};
@@ -10700,18 +10668,9 @@ class MatrixEngineWGPU {
     } else {
       this.frame = this.framePassPerObject;
     }
-    this.MAX_SPOTLIGHTS = 20;
     this.inputHandler = (0, _engine.createInputHandler)(window, canvas);
-    this.createGlobalStuff();
     this.run(callback);
   };
-  createGlobalStuff() {
-    this.spotlightUniformBuffer = this.device.createBuffer({
-      label: 'spotlightUniformBufferGLOBAL',
-      size: this.MAX_SPOTLIGHTS * 80,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
-  }
   getSceneObjectByName(name) {
     return this.mainRenderBundle.find(sceneObject => sceneObject.name === name);
   }
@@ -11018,7 +10977,7 @@ class MatrixEngineWGPU {
       };
     }
     let myMesh1 = new _meshObj.default(this.canvas, this.device, this.context, o);
-    myMesh1.spotlightUniformBuffer = this.spotlightUniformBuffer;
+    myMesh1.lightContainer = this.lightContainer;
     myMesh1.inputHandler = this.inputHandler;
     myMesh1.clearColor = clearColor;
     if (o.physics.enabled == true) {
@@ -11057,18 +11016,6 @@ class MatrixEngineWGPU {
       camVP.buffer, camVP.byteOffset, camVP.byteLength);
     }
   };
-  updateLights() {
-    // Update buffer every frame
-    const data = new Float32Array(this.MAX_SPOTLIGHTS * 20);
-    for (let i = 0; i < this.MAX_SPOTLIGHTS; i++) {
-      if (i < this.lightContainer.length) {
-        data.set(this.lightContainer[i].getLightDataBuffer(), i * 20);
-      } else {
-        data.set(new Float32Array(20), i * 20);
-      }
-    }
-    this.device.queue.writeBuffer(this.spotlightUniformBuffer, 0, data.buffer);
-  }
   frameSinglePass = () => {
     if (typeof this.mainRenderBundle == 'undefined' || this.mainRenderBundle.length == 0) {
       setTimeout(() => {
@@ -11080,11 +11027,10 @@ class MatrixEngineWGPU {
       let shadowPass = null;
       let renderPass;
       let commandEncoder = this.device.createCommandEncoder();
-      this.updateLights();
       this.test();
-
       // 1️⃣ Update light data (position, direction, uniforms)
       for (const light of this.lightContainer) {
+        light.updateLightBuffer();
         this.mainRenderBundle.forEach((meItem, index) => {
           light.updateSceneUniforms(this.mainRenderBundle, this.cameras.WASD);
         });
