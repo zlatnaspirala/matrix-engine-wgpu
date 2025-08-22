@@ -8,14 +8,22 @@ struct Scene {
 }
 
 struct SpotLight {
-  position: vec3f,
-  _pad1: f32,
-  direction: vec3f,
-  _pad2: f32,
-  innerCutoff: f32,
-  outerCutoff: f32,
-  _pad3: vec2f,
+    position    : vec3f,
+    _pad1       : f32,
+
+    direction   : vec3f,
+    _pad2       : f32,
+
+    innerCutoff : f32,
+    outerCutoff : f32,
+    intensity   : f32,    // new
+    _pad3       : f32,    // keep alignment
+
+    color       : vec3f,  // new
+    _pad4       : f32,    // keep alignment
 }
+
+ 
 
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(0) @binding(1) var shadowMap: texture_depth_2d;
@@ -33,6 +41,26 @@ struct FragmentInput {
 
 const albedo = vec3f(0.9);
 const ambientFactor = 0.7;
+
+fn computeSpotLight(light: SpotLight, normal: vec3f, fragPos: vec3f, viewDir: vec3f) -> vec3f {
+    let L = normalize(light.position - fragPos);
+
+    // get spotlight cone factor
+    let spotFactor = calculateSpotlightFactor(light, fragPos);
+
+    // diffuse
+    let diff = max(dot(normal, L), 0.0);
+
+    // specular (Blinn-Phong)
+    let halfwayDir = normalize(L + viewDir);
+    let spec = pow(max(dot(normal, halfwayDir), 0.0), 32.0);
+
+    // apply color & intensity
+    let diffuse  = diff * light.color * light.intensity;
+    let specular = spec * light.color * light.intensity;
+
+    return (diffuse + specular) * spotFactor;
+}
 
 fn calculateSpotlightFactor(light: SpotLight, fragPos: vec3f) -> f32 {
   let L = normalize(light.position - fragPos);
@@ -64,12 +92,13 @@ fn main(input : FragmentInput) -> @location(0) vec4f {
   let lambert = max(dot(norm, lightDir), 0.0);
 
   // Spotlight effect
-  let spotlightFactor = calculateSpotlightFactor(spotlight, input.fragPos);
+  // let spotlightFactor = calculateSpotlightFactor(spotlight, input.fragPos);
+   let lightContribution = computeSpotLight(spotlight, norm,  input.fragPos, lightDir);
 
   // Combine
-  let lightIntensity = ambientFactor + lambert * visibility * spotlightFactor;
+  let lightIntensity = ambientFactor + lambert * visibility;
   let texColor = textureSample(meshTexture, meshSampler, input.uv);
 
-  return vec4f(texColor.rgb * lightIntensity * albedo, 1.0);
+  return vec4f(texColor.rgb * (lightIntensity + lightContribution) * albedo, 1.0);
 }
 `

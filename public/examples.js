@@ -7145,6 +7145,9 @@ class SpotLight {
     this.target = target;
     this.up = _wgpuMatrix.vec3.create(0, 1, 0);
     this.direction = _wgpuMatrix.vec3.normalize(_wgpuMatrix.vec3.subtract(target, position));
+    this.intensity = 1.0;
+    this.color = _wgpuMatrix.vec3.create(1.0, 1.0, 1.0); // white
+
     this.viewMatrix = _wgpuMatrix.mat4.lookAt(position, target, this.up);
     this.projectionMatrix = _wgpuMatrix.mat4.perspective(fov * Math.PI / 180, aspect, near, far);
     this.viewProjMatrix = _wgpuMatrix.mat4.multiply(this.projectionMatrix, this.viewMatrix);
@@ -7156,11 +7159,6 @@ class SpotLight {
     this.outerCutoff = Math.cos(Math.PI / 180 * 17.5);
   }
   update() {
-    // this.direction = vec3.normalize(vec3.subtract(this.target, this.position));
-    // this.viewMatrix = mat4.lookAt(this.position, this.target, this.up);
-    // this.viewProjMatrix = mat4.multiply(this.projectionMatrix, this.viewMatrix);
-    // console.log('test light update this.target : ', this.target)
-    // Use the existing direction
     const target = _wgpuMatrix.vec3.add(this.position, this.direction);
     this.viewMatrix = _wgpuMatrix.mat4.lookAt(this.position, target, this.up);
     this.viewProjMatrix = _wgpuMatrix.mat4.multiply(this.projectionMatrix, this.viewMatrix);
@@ -7183,29 +7181,12 @@ class SpotLight {
       // cameraViewProjMatrix offset
       camVP.buffer, camVP.byteOffset, camVP.byteLength);
     }
-    // const camVP = mat4.multiply(camera.projectionMatrix, camera.view);
-    // const sceneData = new Float32Array(36); // 16 + 16 + 4
-    // sceneData.set(this.viewProjMatrix, 0);
-    // sceneData.set(camVP, 16);
-    // sceneData.set(this.position, 32);
-    // if(!this.device) {
-    //   console.warn("Device not set for SpotLight");
-    //   return;
-    // }
-    // this.device.queue.writeBuffer(
-    //   sceneUniformBuffer,
-    //   // this.spotlightUniformBuffer,
-    //   0,
-    //   sceneData.buffer,
-    //   sceneData.byteOffset,
-    //   sceneData.byteLength
-    // );
   }
   prepareBuffer(device) {
     if (!this.device) this.device = device;
     this.spotlightUniformBuffer = this.device.createBuffer({
-      size: 16 * 4,
-      // 64 bytes
+      size: 32 * 4,
+      // 128 bytes
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
     const spotlightData = this.getLightDataBuffer();
@@ -7219,7 +7200,23 @@ class SpotLight {
     this.device.queue.writeBuffer(this.spotlightUniformBuffer, 0, spotlightData.buffer, spotlightData.byteOffset, spotlightData.byteLength);
   }
   getLightDataBuffer() {
-    return new Float32Array([...this.position, 0.0, ...this.direction, 0.0, this.innerCutoff, this.outerCutoff, 0.0, 0.0]);
+    return new Float32Array([
+    // position + pad
+    ...this.position, 0.0,
+    // direction + pad
+    ...this.direction, 0.0,
+    // cutoffs + intensity + pad
+    this.innerCutoff, this.outerCutoff, this.intensity ?? 1.0, 0.0,
+    // color + pad
+    ...(this.color ?? [1.0, 1.0, 1.0]), 0.0]);
+    // return new Float32Array([
+    //   ...this.position, 0.0,
+    //   ...this.direction, 0.0,
+    //   this.innerCutoff,
+    //   this.outerCutoff,
+    //   0.0,
+    //   0.0,
+    // ]);
   }
 }
 exports.SpotLight = SpotLight;
@@ -10250,14 +10247,22 @@ struct Scene {
 }
 
 struct SpotLight {
-  position: vec3f,
-  _pad1: f32,
-  direction: vec3f,
-  _pad2: f32,
-  innerCutoff: f32,
-  outerCutoff: f32,
-  _pad3: vec2f,
+    position    : vec3f,
+    _pad1       : f32,
+
+    direction   : vec3f,
+    _pad2       : f32,
+
+    innerCutoff : f32,
+    outerCutoff : f32,
+    intensity   : f32,    // new
+    _pad3       : f32,    // keep alignment
+
+    color       : vec3f,  // new
+    _pad4       : f32,    // keep alignment
 }
+
+ 
 
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(0) @binding(1) var shadowMap: texture_depth_2d;
@@ -10275,6 +10280,26 @@ struct FragmentInput {
 
 const albedo = vec3f(0.9);
 const ambientFactor = 0.7;
+
+fn computeSpotLight(light: SpotLight, normal: vec3f, fragPos: vec3f, viewDir: vec3f) -> vec3f {
+    let L = normalize(light.position - fragPos);
+
+    // get spotlight cone factor
+    let spotFactor = calculateSpotlightFactor(light, fragPos);
+
+    // diffuse
+    let diff = max(dot(normal, L), 0.0);
+
+    // specular (Blinn-Phong)
+    let halfwayDir = normalize(L + viewDir);
+    let spec = pow(max(dot(normal, halfwayDir), 0.0), 32.0);
+
+    // apply color & intensity
+    let diffuse  = diff * light.color * light.intensity;
+    let specular = spec * light.color * light.intensity;
+
+    return (diffuse + specular) * spotFactor;
+}
 
 fn calculateSpotlightFactor(light: SpotLight, fragPos: vec3f) -> f32 {
   let L = normalize(light.position - fragPos);
@@ -10306,13 +10331,14 @@ fn main(input : FragmentInput) -> @location(0) vec4f {
   let lambert = max(dot(norm, lightDir), 0.0);
 
   // Spotlight effect
-  let spotlightFactor = calculateSpotlightFactor(spotlight, input.fragPos);
+  // let spotlightFactor = calculateSpotlightFactor(spotlight, input.fragPos);
+   let lightContribution = computeSpotLight(spotlight, norm,  input.fragPos, lightDir);
 
   // Combine
-  let lightIntensity = ambientFactor + lambert * visibility * spotlightFactor;
+  let lightIntensity = ambientFactor + lambert * visibility;
   let texColor = textureSample(meshTexture, meshSampler, input.uv);
 
-  return vec4f(texColor.rgb * lightIntensity * albedo, 1.0);
+  return vec4f(texColor.rgb * (lightIntensity + lightContribution) * albedo, 1.0);
 }
 `;
 
