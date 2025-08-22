@@ -7184,6 +7184,8 @@ class SpotLight {
       camVP.buffer, camVP.byteOffset, camVP.byteLength);
     }
   }
+
+  // DEPLACED
   prepareBuffer(device) {
     if (!this.device) this.device = device;
     this.spotlightUniformBuffer = this.device.createBuffer({
@@ -7194,6 +7196,8 @@ class SpotLight {
     const spotlightData = this.getLightDataBuffer();
     this.device.queue.writeBuffer(this.spotlightUniformBuffer, 0, spotlightData.buffer, spotlightData.byteOffset, spotlightData.byteLength);
   }
+
+  // DEPLACED
   updateLightBuffer() {
     if (!this.device || !this.spotlightUniformBuffer) {
       return;

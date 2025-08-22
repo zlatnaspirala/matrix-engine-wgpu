@@ -30,11 +30,7 @@ export class SpotLight {
     inputHandler,
     position = vec3.create(0, 5, -10),
     target = vec3.create(0, 0, 0),
-    fov = 45,
-    aspect = 1.0,
-    near = 0.1,
-    far = 200
-  ) {
+    fov = 45, aspect = 1.0, near = 0.1, far = 200) {
     this.camera = camera;
     this.inputHandler = inputHandler;
 
@@ -42,6 +38,8 @@ export class SpotLight {
     this.target = target;
     this.up = vec3.create(0, 1, 0);
     this.direction = vec3.normalize(vec3.subtract(target, position));
+    this.intensity = 1.0;
+    this.color = vec3.create(1.0, 1.0, 1.0); // white
 
     this.viewMatrix = mat4.lookAt(position, target, this.up);
     this.projectionMatrix = mat4.perspective(
@@ -59,14 +57,12 @@ export class SpotLight {
 
     this.innerCutoff = Math.cos((Math.PI / 180) * 12.5);
     this.outerCutoff = Math.cos((Math.PI / 180) * 17.5);
+
+    this.ambientFactor = 0.5;
+    this.range = 200.0; // example max distance
   }
 
   update() {
-    // this.direction = vec3.normalize(vec3.subtract(this.target, this.position));
-    // this.viewMatrix = mat4.lookAt(this.position, this.target, this.up);
-    // this.viewProjMatrix = mat4.multiply(this.projectionMatrix, this.viewMatrix);
-    // console.log('test light update this.target : ', this.target)
-    // Use the existing direction
     const target = vec3.add(this.position, this.direction);
     this.viewMatrix = mat4.lookAt(this.position, target, this.up);
     this.viewProjMatrix = mat4.multiply(this.projectionMatrix, this.viewMatrix);
@@ -92,29 +88,14 @@ export class SpotLight {
         camVP.byteLength
       );
     }
-    // const camVP = mat4.multiply(camera.projectionMatrix, camera.view);
-    // const sceneData = new Float32Array(36); // 16 + 16 + 4
-    // sceneData.set(this.viewProjMatrix, 0);
-    // sceneData.set(camVP, 16);
-    // sceneData.set(this.position, 32);
-    // if(!this.device) {
-    //   console.warn("Device not set for SpotLight");
-    //   return;
-    // }
-    // this.device.queue.writeBuffer(
-    //   sceneUniformBuffer,
-    //   // this.spotlightUniformBuffer,
-    //   0,
-    //   sceneData.buffer,
-    //   sceneData.byteOffset,
-    //   sceneData.byteLength
-    // );
   }
 
+  // DEPLACED
   prepareBuffer(device) {
     if(!this.device) this.device = device;
     this.spotlightUniformBuffer = this.device.createBuffer({
-      size: 16 * 4, // 64 bytes
+      label: 'spotlightUniformBuffer',
+      size:  80,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
 
@@ -128,6 +109,7 @@ export class SpotLight {
     );
   }
 
+  // DEPLACED
   updateLightBuffer() {
     if(!this.device || !this.spotlightUniformBuffer) {return;}
     const spotlightData = this.getLightDataBuffer();
@@ -141,13 +123,18 @@ export class SpotLight {
   }
 
   getLightDataBuffer() {
-    return new Float32Array([
-      ...this.position, 0.0,
-      ...this.direction, 0.0,
-      this.innerCutoff,
-      this.outerCutoff,
-      0.0,
-      0.0,
-    ]);
+  return new Float32Array([
+    ...this.position, 0.0,
+    ...this.direction, 0.0,
+    this.innerCutoff,
+    this.outerCutoff,
+    this.intensity,
+    0.0,
+    ...this.color,
+    0.0,
+    this.range,
+    this.ambientFactor, // new
+    0.0, 0.0,           // padding
+  ]);
   }
 }

@@ -30,10 +30,10 @@ export default class Materials {
 
     // Dymmy buffer
     this.dummySpotlightUniformBuffer = this.device.createBuffer({
-      size: 64, // Must match size in shader
+      size: 80, // Must match size in shader
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
-    this.device.queue.writeBuffer(this.dummySpotlightUniformBuffer, 0, new Float32Array(16)); 
+    this.device.queue.writeBuffer(this.dummySpotlightUniformBuffer, 0, new Float32Array(16));
   }
 
   updatePostFXMode(mode) {
@@ -155,7 +155,7 @@ export default class Materials {
     // ✅ Now
     this.createLayoutForRender();
     this.setupPipeline();
-    
+
   }
 
   updateVideoTexture() {
@@ -172,7 +172,6 @@ export default class Materials {
       console.warn("❗Missing res skipping...");
       return;
     }
-    // console.log('what is  this.lightContainer.length ',  this.lightContainer.length)
     if(this.isVideo == true) {
       this.sceneBindGroupForRender = this.device.createBindGroup({
         layout: this.bglForRender,
@@ -226,8 +225,8 @@ export default class Materials {
           },
           {
             binding: 5,
-            resource: {buffer: this.lightContainer.length == 0 ? this.dummySpotlightUniformBuffer : this.lightContainer[0].spotlightUniformBuffer},
-          },
+            resource: {buffer: !this.spotlightUniformBuffer ? this.dummySpotlightUniformBuffer : this.spotlightUniformBuffer},
+          }
         ],
       });
     }
