@@ -29,8 +29,8 @@ export class SpotLight {
     camera,
     inputHandler,
     device,
-    position = vec3.create(0, 5, -10),
-    target = vec3.create(0, 0, 0),
+    position = vec3.create(0, 5, -20),
+    target = vec3.create(0, 0, -20),
     fov = 45, aspect = 1.0, near = 0.1, far = 200) {
     this.camera = camera;
     this.inputHandler = inputHandler;
@@ -72,6 +72,7 @@ export class SpotLight {
     };
 
     this.shadowTexture = this.device.createTexture({
+      label: 'shadowTexture[light]',
       size: [this.SHADOW_RES, this.SHADOW_RES, 1],
       format: "depth32float",
       usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING,

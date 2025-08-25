@@ -228,7 +228,7 @@ var loadObjFile = function () {
         position: {
           x: 0,
           y: 2,
-          z: -10
+          z: -20
         },
         rotation: {
           x: 0,
@@ -277,7 +277,7 @@ var loadObjFile = function () {
       var TEST = loadObjFile.getSceneObjectByName('cube2');
       console.log(`%c Test access scene ${TEST} object.`, _utils.LOG_MATRIX);
       loadObjFile.addLight();
-      loadObjFile.addLight();
+      // loadObjFile.addLight();
     }
   });
   // just for dev
@@ -7140,7 +7140,7 @@ class SpotLight {
   innerCutoff;
   outerCutoff;
   spotlightUniformBuffer;
-  constructor(camera, inputHandler, device, position = _wgpuMatrix.vec3.create(0, 5, -10), target = _wgpuMatrix.vec3.create(0, 0, 0), fov = 45, aspect = 1.0, near = 0.1, far = 200) {
+  constructor(camera, inputHandler, device, position = _wgpuMatrix.vec3.create(0, 5, -20), target = _wgpuMatrix.vec3.create(0, 0, -20), fov = 45, aspect = 1.0, near = 0.1, far = 200) {
     this.camera = camera;
     this.inputHandler = inputHandler;
     this.position = position;
@@ -7170,6 +7170,7 @@ class SpotLight {
       cullMode: 'none'
     };
     this.shadowTexture = this.device.createTexture({
+      label: 'shadowTexture[light]',
       size: [this.SHADOW_RES, this.SHADOW_RES, 1],
       format: "depth32float",
       usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING
@@ -8000,7 +8001,10 @@ class Materials {
         binding: 1,
         visibility: GPUShaderStage.FRAGMENT,
         texture: {
-          sampleType: 'depth'
+          sampleType: "depth",
+          viewDimension: "2d-array",
+          // <- must match shadowMapArray
+          multisampled: false
         }
       }, {
         binding: 2,
@@ -8423,13 +8427,18 @@ class MEMeshObj extends _materials.default {
       this.indexBuffer.unmap();
       this.indexCount = indexCount;
 
-      // Create the depth texture for rendering/sampling the shadow map.
-      this.shadowDepthTexture = this.device.createTexture({
-        size: [this.shadowDepthTextureSize, this.shadowDepthTextureSize, 1],
-        usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING,
-        format: 'depth32float'
-      });
-      this.shadowDepthTextureView = this.shadowDepthTexture.createView();
+      // // Create the depth texture for rendering/sampling the shadow map.
+      // this.shadowDepthTexture = this.device.createTexture({
+      //   label: 'shadowDepthTexture[Per mesh]',
+      //   size: [this.shadowDepthTextureSize, this.shadowDepthTextureSize, 1],
+      //   usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING,
+      //   format: 'depth32float',
+      // });
+      // this.shadowDepthTextureView = this.shadowDepthTexture.createView({
+      //   dimension: "2d-array",       // <- must be 2d-array for the shader
+      //   baseArrayLayer: 0,
+      //   arrayLayerCount: 2, //     this.MAX_SPOTLIGHTS = 20;
+      // });
 
       // Create some common descriptors used for both the shadow pipeline
       // and the color rendering pipeline.
@@ -8589,15 +8598,17 @@ class MEMeshObj extends _materials.default {
       const modelMatrix = _wgpuMatrix.mat4.translation([0, 0, 0]);
       const modelData = modelMatrix;
       this.device.queue.writeBuffer(this.modelUniformBuffer, 0, modelData.buffer, modelData.byteOffset, modelData.byteLength);
-      this.shadowPassDescriptor = {
-        colorAttachments: [],
-        depthStencilAttachment: {
-          view: this.shadowDepthTextureView,
-          depthClearValue: 1.0,
-          depthLoadOp: 'clear',
-          depthStoreOp: 'store'
-        }
-      };
+
+      // this.shadowPassDescriptor = {
+      //   colorAttachments: [],
+      //   depthStencilAttachment: {
+      //     view: this.shadowDepthTextureView,
+      //     depthClearValue: 1.0,
+      //     depthLoadOp: 'clear',
+      //     depthStoreOp: 'store',
+      //   },
+      // };
+
       this.done = true;
     }).then(() => {
       if (typeof this.objAnim !== 'undefined' && this.objAnim !== null) {
@@ -10281,7 +10292,7 @@ struct Scene {
     lightViewProjMatrix : mat4x4f,
     cameraViewProjMatrix : mat4x4f,
     lightPos : vec3f,
-    padding : f32, // alignment
+    padding : f32,
 }
 
 struct SpotLight {
@@ -10301,20 +10312,20 @@ struct SpotLight {
 
     range         : f32,
     ambientFactor : f32,
-    _pad5         : vec2f, // padding to align 16 bytes
+    _pad5         : vec2f,
 };
 
 const MAX_SPOTLIGHTS = 20u;
 
 @group(0) @binding(0) var<uniform> scene : Scene;
-@group(0) @binding(1) var shadowMap: texture_depth_2d;
+@group(0) @binding(1) var shadowMapArray: texture_depth_2d_array; // depth array
 @group(0) @binding(2) var shadowSampler: sampler_comparison;
 @group(0) @binding(3) var meshTexture: texture_2d<f32>;
 @group(0) @binding(4) var meshSampler: sampler;
 @group(0) @binding(5) var<uniform> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
 
 struct FragmentInput {
-    @location(0) shadowPos : vec4f,
+    @location(0) shadowPos : vec4f,  // xy = shadow UV, z = depth, w unused
     @location(1) fragPos   : vec3f,
     @location(2) fragNorm  : vec3f,
     @location(3) uv        : vec2f,
@@ -10322,6 +10333,7 @@ struct FragmentInput {
 
 const albedo = vec3f(0.9);
 
+// Calculate spotlight factor based on cone angles
 fn calculateSpotlightFactor(light: SpotLight, fragPos: vec3f) -> f32 {
     let L = normalize(light.position - fragPos);
     let theta = dot(L, normalize(-light.direction));
@@ -10329,6 +10341,7 @@ fn calculateSpotlightFactor(light: SpotLight, fragPos: vec3f) -> f32 {
     return clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
 }
 
+// Compute diffuse + specular contribution
 fn computeSpotLight(light: SpotLight, normal: vec3f, fragPos: vec3f, viewDir: vec3f) -> vec3f {
     let L = light.position - fragPos;
     let distance = length(L);
@@ -10347,24 +10360,33 @@ fn computeSpotLight(light: SpotLight, normal: vec3f, fragPos: vec3f, viewDir: ve
     return (diffuse + specular) * spotFactor;
 }
 
-@fragment
-fn main(input : FragmentInput) -> @location(0) vec4f {
-    // Shadow PCF
-    var visibility = 0.0;
+// Sample shadow with PCF from texture_depth_2d_array
+fn sampleShadow(shadowUV: vec2f, layer: u32, depthRef: f32) -> f32 {
+    var visibility: f32 = 0.0;
     let oneOverSize = 1.0 / shadowDepthTextureSize;
 
-    for (var y = -1; y <= 1; y++) {
-        for (var x = -1; x <= 1; x++) {
-            let offset = vec2f(vec2(x, y)) * oneOverSize;
-            visibility += textureSampleCompare(
-                shadowMap, shadowSampler,
-                input.shadowPos.xy + offset, // already 0..1 from vertex shader
-                input.shadowPos.z - 0.007
-            );
-        }
-    }
-    visibility /= 9.0;
+    // 3x3 PCF kernel
+    let offsets: array<vec2f, 9> = array<vec2f, 9>(
+        vec2(-1.0, -1.0), vec2(0.0, -1.0), vec2(1.0, -1.0),
+        vec2(-1.0,  0.0), vec2(0.0,  0.0), vec2(1.0,  0.0),
+        vec2(-1.0,  1.0), vec2(0.0,  1.0), vec2(1.0,  1.0)
+    );
 
+    for (var i: u32 = 0u; i < 9u; i = i + 1u) {
+        visibility += textureSampleCompare(
+            shadowMapArray,
+            shadowSampler,
+            shadowUV + offsets[i] * oneOverSize, // vec2 coords
+            layer,                               // array layer
+            depthRef                              // depth
+        );
+    }
+
+    return visibility / 9.0;
+}
+
+@fragment
+fn main(input : FragmentInput) -> @location(0) vec4f {
     let norm = normalize(input.fragNorm);
     let viewDir = normalize(scene.cameraViewProjMatrix[3].xyz - input.fragPos);
 
@@ -10372,12 +10394,18 @@ fn main(input : FragmentInput) -> @location(0) vec4f {
     var ambient = vec3f(0.0);
 
     for (var i = 0u; i < MAX_SPOTLIGHTS; i++) {
-        lightContribution += computeSpotLight(spotlights[i], norm, input.fragPos, viewDir);
+        // Sample shadow for this light
+        let visibility = sampleShadow(input.shadowPos.xy, i, input.shadowPos.z - 0.007);
+
+        // Add light contribution modulated by shadow
+        lightContribution += computeSpotLight(spotlights[i], norm, input.fragPos, viewDir) * visibility;
+
+        // Ambient contribution
         ambient += spotlights[i].ambientFactor * spotlights[i].color;
     }
 
     let texColor = textureSample(meshTexture, meshSampler, input.uv);
-    let finalColor = texColor.rgb * (ambient + lightContribution * visibility) * albedo;
+    let finalColor = texColor.rgb * (ambient + lightContribution) * albedo;
 
     return vec4f(finalColor, 1.0);
 }`;
@@ -10743,6 +10771,23 @@ class MatrixEngineWGPU {
       size: this.MAX_SPOTLIGHTS * 80,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
+    this.SHADOW_RES = 1024;
+    this.createTexArrayForShadows();
+  }
+  createTexArrayForShadows() {
+    console.log('this.lightContainer.length' + this.lightContainer.length);
+    let numberOfLights = this.lightContainer.length;
+    this.shadowTextureArray = this.device.createTexture({
+      label: 'shadowTextureArray[GLOBAL]',
+      size: {
+        width: 1024,
+        height: 1024,
+        depthOrArrayLayers: numberOfLights // at least 1
+      },
+      dimension: '2d',
+      format: 'depth32float',
+      usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING
+    });
   }
   getSceneObjectByName(name) {
     return this.mainRenderBundle.find(sceneObject => sceneObject.name === name);
@@ -10953,6 +10998,7 @@ class MatrixEngineWGPU {
     let newLight = new _lights.SpotLight(camera, this.inputHandler, this.device);
     // newLight.prepareBuffer(this.device);
     this.lightContainer.push(newLight);
+    this.createTexArrayForShadows();
     console.log(`%cAdd light: ${newLight}`, _utils.LOG_FUNNY_SMALL);
   }
   addMeshObj = (o, clearColor = this.options.clearColor) => {
@@ -11127,12 +11173,33 @@ class MatrixEngineWGPU {
         // if(index == 0) meItem.getTransformationMatrix(this.mainRenderBundle)
       });
       if (this.matrixAmmo) this.matrixAmmo.updatePhysics();
-      for (const light of this.lightContainer) {
-        const shadowPass = commandEncoder.beginRenderPass(light.renderPassDescriptor);
+      for (let i = 0; i < this.lightContainer.length; i++) {
+        const light = this.lightContainer[i];
+        let ViewPerLightRenderShadowPass = this.shadowTextureArray.createView({
+          label: `shadow layer ${i}`,
+          dimension: '2d',
+          baseArrayLayer: i,
+          arrayLayerCount: 1
+        });
+        const shadowPass = commandEncoder.beginRenderPass({
+          colorAttachments: [],
+          depthStencilAttachment: {
+            view: ViewPerLightRenderShadowPass,
+            depthLoadOp: 'clear',
+            // MUST be set
+            depthStoreOp: 'store',
+            // MUST be set
+            depthClearValue: 1.0 // start with max depth
+          }
+        });
         shadowPass.setPipeline(light.shadowPipeline);
-        // Mesh ID index
-        for (const [i, mesh] of this.mainRenderBundle.entries()) {
-          shadowPass.setBindGroup(0, light.getShadowBindGroup(mesh, i));
+        let byMeshView = this.shadowTextureArray.createView({
+          dimension: '2d-array'
+        });
+        for (const [meshIndex, mesh] of this.mainRenderBundle.entries()) {
+          mesh.shadowDepthTextureView = byMeshView;
+          mesh.createBindGroupForRender();
+          shadowPass.setBindGroup(0, light.getShadowBindGroup(mesh, meshIndex));
           shadowPass.setBindGroup(1, mesh.modelBindGroup);
           mesh.drawShadows(shadowPass, light);
         }

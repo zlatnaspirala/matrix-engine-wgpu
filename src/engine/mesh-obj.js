@@ -127,13 +127,18 @@ export default class MEMeshObj extends Materials {
       this.indexBuffer.unmap();
       this.indexCount = indexCount;
 
-      // Create the depth texture for rendering/sampling the shadow map.
-      this.shadowDepthTexture = this.device.createTexture({
-        size: [this.shadowDepthTextureSize, this.shadowDepthTextureSize, 1],
-        usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING,
-        format: 'depth32float',
-      });
-      this.shadowDepthTextureView = this.shadowDepthTexture.createView();
+      // // Create the depth texture for rendering/sampling the shadow map.
+      // this.shadowDepthTexture = this.device.createTexture({
+      //   label: 'shadowDepthTexture[Per mesh]',
+      //   size: [this.shadowDepthTextureSize, this.shadowDepthTextureSize, 1],
+      //   usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING,
+      //   format: 'depth32float',
+      // });
+      // this.shadowDepthTextureView = this.shadowDepthTexture.createView({
+      //   dimension: "2d-array",       // <- must be 2d-array for the shader
+      //   baseArrayLayer: 0,
+      //   arrayLayerCount: 2, //     this.MAX_SPOTLIGHTS = 20;
+      // });
 
       // Create some common descriptors used for both the shadow pipeline
       // and the color rendering pipeline.
@@ -337,15 +342,15 @@ export default class MEMeshObj extends Materials {
         modelData.byteLength
       );
 
-      this.shadowPassDescriptor = {
-        colorAttachments: [],
-        depthStencilAttachment: {
-          view: this.shadowDepthTextureView,
-          depthClearValue: 1.0,
-          depthLoadOp: 'clear',
-          depthStoreOp: 'store',
-        },
-      };
+      // this.shadowPassDescriptor = {
+      //   colorAttachments: [],
+      //   depthStencilAttachment: {
+      //     view: this.shadowDepthTextureView,
+      //     depthClearValue: 1.0,
+      //     depthLoadOp: 'clear',
+      //     depthStoreOp: 'store',
+      //   },
+      // };
 
       this.done = true;
     }).then(() => {

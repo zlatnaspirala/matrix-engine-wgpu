@@ -240,9 +240,13 @@ export default class Materials {
           buffer: {type: 'uniform'},
         },
         {
-          binding: 1,
-          visibility: GPUShaderStage.FRAGMENT,
-          texture: {sampleType: 'depth'},
+            binding: 1,
+            visibility: GPUShaderStage.FRAGMENT,
+            texture: {
+                sampleType: "depth",
+                viewDimension: "2d-array", // <- must match shadowMapArray
+                multisampled: false,
+            },
         },
         {
           binding: 2,

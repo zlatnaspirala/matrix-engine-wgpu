@@ -52,7 +52,7 @@ export var loadObjFile = function() {
         // console.log(`%c Loaded objs: ${key} `, LOG_MATRIX);
       }
       loadObjFile.addMeshObj({
-        position: {x: 0, y: 2, z: -10},
+        position: {x: 0, y: 2, z: -20},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
         texturesPaths: ['./res/meshes/blender/cube.png'],
@@ -82,7 +82,7 @@ export var loadObjFile = function() {
       var TEST = loadObjFile.getSceneObjectByName('cube2');
       console.log(`%c Test access scene ${TEST} object.`, LOG_MATRIX);
       loadObjFile.addLight();
-      loadObjFile.addLight();
+      // loadObjFile.addLight();
 
     }
   })

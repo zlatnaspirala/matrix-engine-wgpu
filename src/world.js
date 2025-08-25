@@ -142,6 +142,25 @@ export default class MatrixEngineWGPU {
       size: this.MAX_SPOTLIGHTS * 80,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
+
+    this.SHADOW_RES = 1024;
+    this.createTexArrayForShadows()
+
+  }
+  createTexArrayForShadows() {
+    console.log('this.lightContainer.length' + this.lightContainer.length)
+    let numberOfLights = this.lightContainer.length;
+    this.shadowTextureArray = this.device.createTexture({
+      label: 'shadowTextureArray[GLOBAL]',
+      size: {
+        width: 1024,
+        height: 1024,
+        depthOrArrayLayers: numberOfLights, // at least 1
+      },
+      dimension: '2d',
+      format: 'depth32float',
+      usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING,
+    });
   }
 
   getSceneObjectByName(name) {
@@ -254,6 +273,7 @@ export default class MatrixEngineWGPU {
     let newLight = new SpotLight(camera, this.inputHandler, this.device);
     // newLight.prepareBuffer(this.device);
     this.lightContainer.push(newLight);
+    this.createTexArrayForShadows()
     console.log(`%cAdd light: ${newLight}`, LOG_FUNNY_SMALL);
   }
 
@@ -388,15 +408,39 @@ export default class MatrixEngineWGPU {
       })
       if(this.matrixAmmo) this.matrixAmmo.updatePhysics();
 
-      for(const light of this.lightContainer) {
-        const shadowPass = commandEncoder.beginRenderPass(light.renderPassDescriptor);
+      for(let i = 0;i < this.lightContainer.length;i++) {
+        const light = this.lightContainer[i];
+
+        let ViewPerLightRenderShadowPass = this.shadowTextureArray.createView({
+          label: `shadow layer ${i}`,
+          dimension: '2d',
+          baseArrayLayer: i,
+          arrayLayerCount: 1,
+        });
+        const shadowPass = commandEncoder.beginRenderPass({
+          colorAttachments: [],
+          depthStencilAttachment: {
+            view: ViewPerLightRenderShadowPass,
+            depthLoadOp: 'clear',   // MUST be set
+            depthStoreOp: 'store',  // MUST be set
+            depthClearValue: 1.0,   // start with max depth
+          }
+        });
+
         shadowPass.setPipeline(light.shadowPipeline);
-        // Mesh ID index
-        for(const [i, mesh] of this.mainRenderBundle.entries()) {
-          shadowPass.setBindGroup(0, light.getShadowBindGroup(mesh, i));
+
+        let byMeshView = this.shadowTextureArray.createView({
+          dimension: '2d-array',
+        });
+
+        for(const [meshIndex, mesh] of this.mainRenderBundle.entries()) {
+          mesh.shadowDepthTextureView = byMeshView;
+          mesh.createBindGroupForRender()
+          shadowPass.setBindGroup(0, light.getShadowBindGroup(mesh, meshIndex));
           shadowPass.setBindGroup(1, mesh.modelBindGroup);
           mesh.drawShadows(shadowPass, light);
         }
+
         shadowPass.end();
       }
 

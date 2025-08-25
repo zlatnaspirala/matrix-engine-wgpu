@@ -4,7 +4,7 @@ struct Scene {
     lightViewProjMatrix : mat4x4f,
     cameraViewProjMatrix : mat4x4f,
     lightPos : vec3f,
-    padding : f32, // alignment
+    padding : f32,
 }
 
 struct SpotLight {
@@ -24,20 +24,20 @@ struct SpotLight {
 
     range         : f32,
     ambientFactor : f32,
-    _pad5         : vec2f, // padding to align 16 bytes
+    _pad5         : vec2f,
 };
 
 const MAX_SPOTLIGHTS = 20u;
 
 @group(0) @binding(0) var<uniform> scene : Scene;
-@group(0) @binding(1) var shadowMap: texture_depth_2d;
+@group(0) @binding(1) var shadowMapArray: texture_depth_2d_array; // depth array
 @group(0) @binding(2) var shadowSampler: sampler_comparison;
 @group(0) @binding(3) var meshTexture: texture_2d<f32>;
 @group(0) @binding(4) var meshSampler: sampler;
 @group(0) @binding(5) var<uniform> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
 
 struct FragmentInput {
-    @location(0) shadowPos : vec4f,
+    @location(0) shadowPos : vec4f,  // xy = shadow UV, z = depth, w unused
     @location(1) fragPos   : vec3f,
     @location(2) fragNorm  : vec3f,
     @location(3) uv        : vec2f,
@@ -45,6 +45,7 @@ struct FragmentInput {
 
 const albedo = vec3f(0.9);
 
+// Calculate spotlight factor based on cone angles
 fn calculateSpotlightFactor(light: SpotLight, fragPos: vec3f) -> f32 {
     let L = normalize(light.position - fragPos);
     let theta = dot(L, normalize(-light.direction));
@@ -52,6 +53,7 @@ fn calculateSpotlightFactor(light: SpotLight, fragPos: vec3f) -> f32 {
     return clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
 }
 
+// Compute diffuse + specular contribution
 fn computeSpotLight(light: SpotLight, normal: vec3f, fragPos: vec3f, viewDir: vec3f) -> vec3f {
     let L = light.position - fragPos;
     let distance = length(L);
@@ -70,24 +72,33 @@ fn computeSpotLight(light: SpotLight, normal: vec3f, fragPos: vec3f, viewDir: ve
     return (diffuse + specular) * spotFactor;
 }
 
-@fragment
-fn main(input : FragmentInput) -> @location(0) vec4f {
-    // Shadow PCF
-    var visibility = 0.0;
+// Sample shadow with PCF from texture_depth_2d_array
+fn sampleShadow(shadowUV: vec2f, layer: u32, depthRef: f32) -> f32 {
+    var visibility: f32 = 0.0;
     let oneOverSize = 1.0 / shadowDepthTextureSize;
 
-    for (var y = -1; y <= 1; y++) {
-        for (var x = -1; x <= 1; x++) {
-            let offset = vec2f(vec2(x, y)) * oneOverSize;
-            visibility += textureSampleCompare(
-                shadowMap, shadowSampler,
-                input.shadowPos.xy + offset, // already 0..1 from vertex shader
-                input.shadowPos.z - 0.007
-            );
-        }
-    }
-    visibility /= 9.0;
+    // 3x3 PCF kernel
+    let offsets: array<vec2f, 9> = array<vec2f, 9>(
+        vec2(-1.0, -1.0), vec2(0.0, -1.0), vec2(1.0, -1.0),
+        vec2(-1.0,  0.0), vec2(0.0,  0.0), vec2(1.0,  0.0),
+        vec2(-1.0,  1.0), vec2(0.0,  1.0), vec2(1.0,  1.0)
+    );
 
+    for (var i: u32 = 0u; i < 9u; i = i + 1u) {
+        visibility += textureSampleCompare(
+            shadowMapArray,
+            shadowSampler,
+            shadowUV + offsets[i] * oneOverSize, // vec2 coords
+            layer,                               // array layer
+            depthRef                              // depth
+        );
+    }
+
+    return visibility / 9.0;
+}
+
+@fragment
+fn main(input : FragmentInput) -> @location(0) vec4f {
     let norm = normalize(input.fragNorm);
     let viewDir = normalize(scene.cameraViewProjMatrix[3].xyz - input.fragPos);
 
@@ -95,12 +106,18 @@ fn main(input : FragmentInput) -> @location(0) vec4f {
     var ambient = vec3f(0.0);
 
     for (var i = 0u; i < MAX_SPOTLIGHTS; i++) {
-        lightContribution += computeSpotLight(spotlights[i], norm, input.fragPos, viewDir);
+        // Sample shadow for this light
+        let visibility = sampleShadow(input.shadowPos.xy, i, input.shadowPos.z - 0.007);
+
+        // Add light contribution modulated by shadow
+        lightContribution += computeSpotLight(spotlights[i], norm, input.fragPos, viewDir) * visibility;
+
+        // Ambient contribution
         ambient += spotlights[i].ambientFactor * spotlights[i].color;
     }
 
     let texColor = textureSample(meshTexture, meshSampler, input.uv);
-    let finalColor = texColor.rgb * (ambient + lightContribution * visibility) * albedo;
+    let finalColor = texColor.rgb * (ambient + lightContribution) * albedo;
 
     return vec4f(finalColor, 1.0);
 }`
