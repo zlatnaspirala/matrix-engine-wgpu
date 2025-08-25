@@ -139,7 +139,7 @@ export default class MatrixEngineWGPU {
   createGlobalStuff() {
     this.spotlightUniformBuffer = this.device.createBuffer({
       label: 'spotlightUniformBufferGLOBAL',
-      size: this.MAX_SPOTLIGHTS * 80,
+      size: this.MAX_SPOTLIGHTS * 144,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
 
@@ -150,17 +150,39 @@ export default class MatrixEngineWGPU {
   createTexArrayForShadows() {
     console.log('this.lightContainer.length' + this.lightContainer.length)
     let numberOfLights = this.lightContainer.length;
-    this.shadowTextureArray = this.device.createTexture({
-      label: 'shadowTextureArray[GLOBAL]',
-      size: {
-        width: 1024,
-        height: 1024,
-        depthOrArrayLayers: numberOfLights, // at least 1
-      },
-      dimension: '2d',
-      format: 'depth32float',
-      usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING,
-    });
+    if(this.lightContainer.length == 0) {
+      console.warn('Wait for init light instance')
+      setTimeout(() => {
+        console.warn('Create now !!!!!!!!!!!!')
+        this.createMe();
+      }, 800);
+    }
+
+    this.createMe = () => {
+      Math.max(1, this.lightContainer.length);
+      // console.log('after max 1 numOfLights=' + numberOfLights)
+      if(this.lightContainer.length == 0) {
+        setTimeout(() => {
+          console.warn('Create now !!!!!!!!!!!!')
+          this.createMe();
+        }, 800);
+        return;
+      }
+
+      this.shadowTextureArray = this.device.createTexture({
+        label: 'shadowTextureArray[GLOBAL]',
+        size: {
+          width: 1024,
+          height: 1024,
+          depthOrArrayLayers: numberOfLights, // at least 1
+        },
+        dimension: '2d',
+        format: 'depth32float',
+        usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING,
+      });
+    }
+
+    this.createMe();
   }
 
   getSceneObjectByName(name) {
@@ -367,18 +389,21 @@ export default class MatrixEngineWGPU {
     }
   }
 
-  updateLights() {
-    // Update buffer every frame
-    const data = new Float32Array(this.MAX_SPOTLIGHTS * 20);
-    for(let i = 0;i < this.MAX_SPOTLIGHTS;i++) {
-      if(i < this.lightContainer.length) {
-        data.set(this.lightContainer[i].getLightDataBuffer(), i * 20);
-      } else {
-        data.set(new Float32Array(20), i * 20);
-      }
+updateLights() {
+  const floatsPerLight = 36; // not 20 anymore
+  const data = new Float32Array(this.MAX_SPOTLIGHTS * floatsPerLight);
+
+  for (let i = 0; i < this.MAX_SPOTLIGHTS; i++) {
+    if (i < this.lightContainer.length) {
+      const buf = this.lightContainer[i].getLightDataBuffer();
+      data.set(buf, i * floatsPerLight);
+    } else {
+      data.set(new Float32Array(floatsPerLight), i * floatsPerLight);
     }
-    this.device.queue.writeBuffer(this.spotlightUniformBuffer, 0, data.buffer);
   }
+
+  this.device.queue.writeBuffer(this.spotlightUniformBuffer, 0, data.buffer);
+}
 
   frameSinglePass = () => {
     if(typeof this.mainRenderBundle == 'undefined' || this.mainRenderBundle.length == 0) {
@@ -386,13 +411,10 @@ export default class MatrixEngineWGPU {
       return;
     }
     try {
-      let shadowPass = null;
+      // let shadowPass = null;
       let renderPass;
       let commandEncoder = this.device.createCommandEncoder();
-
       this.updateLights()
-      this.test()
-
       // 1️⃣ Update light data (position, direction, uniforms)
       for(const light of this.lightContainer) {
         this.mainRenderBundle.forEach((meItem, index) => {

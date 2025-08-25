@@ -66,7 +66,7 @@ export var loadObjFile = function() {
       })
 
       loadObjFile.addMeshObj({
-        position: {x: 3, y: 2, z: -15},
+        position: {x: 0, y: -1, z: -20},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 111, z: 0},
         texturesPaths: ['./res/meshes/blender/cube.png'],

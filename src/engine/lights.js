@@ -67,8 +67,7 @@ export class SpotLight {
     this.SHADOW_RES = 1024;
     this.primitive = {
       topology: 'triangle-list',
-      // cullMode: 'back',
-      cullMode: 'none',
+      cullMode: 'none'
     };
 
     this.shadowTexture = this.device.createTexture({
@@ -77,13 +76,14 @@ export class SpotLight {
       format: "depth32float",
       usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING,
     });
+
     this.shadowSampler = device.createSampler({
       compare: 'less',
     });
 
     this.renderPassDescriptor = {
       label: "shadowPass per ligth.",
-      colorAttachments: [],  
+      colorAttachments: [],
       depthStencilAttachment: {
         view: this.shadowTexture.createView(),
         depthClearValue: 1.0,
@@ -130,7 +130,7 @@ export class SpotLight {
 
     }
 
-    this.modelBindGroupLayout = this.device.createBindGroupLayout({ entries: [ { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: { type: 'uniform' }, }, ], });
+    this.modelBindGroupLayout = this.device.createBindGroupLayout({entries: [{binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}, },], });
 
     this.shadowPipeline = this.device.createRenderPipeline({
       label: 'shadowPipeline per light',
@@ -178,7 +178,7 @@ export class SpotLight {
     const now = Date.now();
     // First frame safety
     let dt = (now - this.lastFrameMS) / 1000;
-    if(!this.lastFrameMS) {dt = 16;}
+    if(!this.lastFrameMS) {dt = 1000;}
     this.lastFrameMS = now;
     // engine, once per frame
     this.camera.update(dt, this.inputHandler());
@@ -197,6 +197,7 @@ export class SpotLight {
   }
 
   getLightDataBuffer() {
+    const m = this.viewProjMatrix;
     return new Float32Array([
       ...this.position, 0.0,
       ...this.direction, 0.0,
@@ -207,8 +208,23 @@ export class SpotLight {
       ...this.color,
       0.0,
       this.range,
-      this.ambientFactor, // new
-      0.0, 0.0,           // padding
+      this.ambientFactor,
+      0.0, 0.0, // padding
+      ...m      // NEW: mat4x4<f32>
     ]);
+
+    // return new Float32Array([
+    //   ...this.position, 0.0,
+    //   ...this.direction, 0.0,
+    //   this.innerCutoff,
+    //   this.outerCutoff,
+    //   this.intensity,
+    //   0.0,
+    //   ...this.color,
+    //   0.0,
+    //   this.range,
+    //   this.ambientFactor, // new
+    //   0.0, 0.0,           // padding
+    // ]);
   }
 }

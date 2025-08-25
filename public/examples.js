@@ -251,9 +251,9 @@ var loadObjFile = function () {
       });
       loadObjFile.addMeshObj({
         position: {
-          x: 3,
-          y: 2,
-          z: -15
+          x: 0,
+          y: -1,
+          z: -20
         },
         rotation: {
           x: 0,
@@ -7166,7 +7166,6 @@ class SpotLight {
     this.SHADOW_RES = 1024;
     this.primitive = {
       topology: 'triangle-list',
-      // cullMode: 'back',
       cullMode: 'none'
     };
     this.shadowTexture = this.device.createTexture({
@@ -7263,7 +7262,7 @@ class SpotLight {
     // First frame safety
     let dt = (now - this.lastFrameMS) / 1000;
     if (!this.lastFrameMS) {
-      dt = 16;
+      dt = 1000;
     }
     this.lastFrameMS = now;
     // engine, once per frame
@@ -7278,10 +7277,25 @@ class SpotLight {
     }
   }
   getLightDataBuffer() {
-    return new Float32Array([...this.position, 0.0, ...this.direction, 0.0, this.innerCutoff, this.outerCutoff, this.intensity, 0.0, ...this.color, 0.0, this.range, this.ambientFactor,
-    // new
-    0.0, 0.0 // padding
+    const m = this.viewProjMatrix;
+    return new Float32Array([...this.position, 0.0, ...this.direction, 0.0, this.innerCutoff, this.outerCutoff, this.intensity, 0.0, ...this.color, 0.0, this.range, this.ambientFactor, 0.0, 0.0,
+    // padding
+    ...m // NEW: mat4x4<f32>
     ]);
+
+    // return new Float32Array([
+    //   ...this.position, 0.0,
+    //   ...this.direction, 0.0,
+    //   this.innerCutoff,
+    //   this.outerCutoff,
+    //   this.intensity,
+    //   0.0,
+    //   ...this.color,
+    //   0.0,
+    //   this.range,
+    //   this.ambientFactor, // new
+    //   0.0, 0.0,           // padding
+    // ]);
   }
 }
 exports.SpotLight = SpotLight;
@@ -10313,19 +10327,22 @@ struct SpotLight {
     range         : f32,
     ambientFactor : f32,
     _pad5         : vec2f,
+
+    lightViewProj : mat4x4<f32>,   // shadow projection
 };
 
 const MAX_SPOTLIGHTS = 20u;
+override LIGHT_CLIP_Z_IS_ZERO_TO_ONE: bool = true;
 
 @group(0) @binding(0) var<uniform> scene : Scene;
-@group(0) @binding(1) var shadowMapArray: texture_depth_2d_array; // depth array
+@group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
 @group(0) @binding(2) var shadowSampler: sampler_comparison;
 @group(0) @binding(3) var meshTexture: texture_2d<f32>;
 @group(0) @binding(4) var meshSampler: sampler;
 @group(0) @binding(5) var<uniform> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
 
 struct FragmentInput {
-    @location(0) shadowPos : vec4f,  // xy = shadow UV, z = depth, w unused
+    @location(0) shadowPos : vec4f,
     @location(1) fragPos   : vec3f,
     @location(2) fragNorm  : vec3f,
     @location(3) uv        : vec2f,
@@ -10333,7 +10350,7 @@ struct FragmentInput {
 
 const albedo = vec3f(0.9);
 
-// Calculate spotlight factor based on cone angles
+// spotlight cone factor
 fn calculateSpotlightFactor(light: SpotLight, fragPos: vec3f) -> f32 {
     let L = normalize(light.position - fragPos);
     let theta = dot(L, normalize(-light.direction));
@@ -10341,7 +10358,7 @@ fn calculateSpotlightFactor(light: SpotLight, fragPos: vec3f) -> f32 {
     return clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
 }
 
-// Compute diffuse + specular contribution
+// diffuse + specular
 fn computeSpotLight(light: SpotLight, normal: vec3f, fragPos: vec3f, viewDir: vec3f) -> vec3f {
     let L = light.position - fragPos;
     let distance = length(L);
@@ -10360,31 +10377,28 @@ fn computeSpotLight(light: SpotLight, normal: vec3f, fragPos: vec3f, viewDir: ve
     return (diffuse + specular) * spotFactor;
 }
 
-// Sample shadow with PCF from texture_depth_2d_array
-fn sampleShadow(shadowUV: vec2f, layer: u32, depthRef: f32) -> f32 {
+fn sampleShadow(uv: vec2<f32>, layer: i32, depthRef: f32) -> f32 {
+    let clampedUV = clamp(uv, vec2<f32>(0.0), vec2<f32>(1.0)); // always in [0,1]
+    
     var visibility: f32 = 0.0;
     let oneOverSize = 1.0 / shadowDepthTextureSize;
 
-    // 3x3 PCF kernel
-    let offsets: array<vec2f, 9> = array<vec2f, 9>(
-        vec2(-1.0, -1.0), vec2(0.0, -1.0), vec2(1.0, -1.0),
-        vec2(-1.0,  0.0), vec2(0.0,  0.0), vec2(1.0,  0.0),
-        vec2(-1.0,  1.0), vec2(0.0,  1.0), vec2(1.0,  1.0)
-    );
-
-    for (var i: u32 = 0u; i < 9u; i = i + 1u) {
-        visibility += textureSampleCompare(
-            shadowMapArray,
-            shadowSampler,
-            shadowUV + offsets[i] * oneOverSize, // vec2 coords
-            layer,                               // array layer
-            depthRef                              // depth
-        );
+    for (var x: i32 = -1; x <= 1; x++) {
+        for (var y: i32 = -1; y <= 1; y++) {
+            let offset = vec2<f32>(f32(x), f32(y)) * oneOverSize;
+            visibility += textureSampleCompare(
+                shadowMapArray,
+                shadowSampler,
+                clampedUV + offset,
+                layer,
+                depthRef
+            );
+        }
     }
 
     return visibility / 9.0;
 }
-
+    
 @fragment
 fn main(input : FragmentInput) -> @location(0) vec4f {
     let norm = normalize(input.fragNorm);
@@ -10393,14 +10407,35 @@ fn main(input : FragmentInput) -> @location(0) vec4f {
     var lightContribution = vec3f(0.0);
     var ambient = vec3f(0.0);
 
-    for (var i = 0u; i < MAX_SPOTLIGHTS; i++) {
-        // Sample shadow for this light
-        let visibility = sampleShadow(input.shadowPos.xy, i, input.shadowPos.z - 0.007);
+    for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
+        let sc = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);
+        let p  = sc.xyz / sc.w;
 
-        // Add light contribution modulated by shadow
-        lightContribution += computeSpotLight(spotlights[i], norm, input.fragPos, viewDir) * visibility;
+        // UV in [0,1]
+        let uv = p.xy * 0.5 + vec2(0.5, 0.5);
 
-        // Ambient contribution
+        // Depth mapping depending on API convention
+        let depthRef = select(
+            p.z * 0.5 + 0.5,  // OpenGL style
+            p.z,              // WebGPU (0..1)
+            LIGHT_CLIP_Z_IS_ZERO_TO_ONE
+        );
+
+        // Mask: 1 if inside, 0 if outside
+        let inside = f32(all(p.xy >= vec2<f32>(-1.0)) &&
+                         all(p.xy <= vec2<f32>( 1.0)) &&
+                         p.z >= 0.0 && p.z <= 1.0);
+
+        // Always sample, branchless
+        // let shadow = sampleShadow(uv, i, depthRef - 0.003);
+        let shadow = sampleShadow(uv,i32(i), depthRef - 0.003);
+
+        // Visibility: if outside → 1, else shadow
+        let visibility = mix(1.0, shadow, inside);
+
+        // Lighting
+        let contrib = computeSpotLight(spotlights[i], norm, input.fragPos, viewDir);
+        lightContribution += contrib * visibility;
         ambient += spotlights[i].ambientFactor * spotlights[i].color;
     }
 
@@ -10768,7 +10803,7 @@ class MatrixEngineWGPU {
   createGlobalStuff() {
     this.spotlightUniformBuffer = this.device.createBuffer({
       label: 'spotlightUniformBufferGLOBAL',
-      size: this.MAX_SPOTLIGHTS * 80,
+      size: this.MAX_SPOTLIGHTS * 144,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
     this.SHADOW_RES = 1024;
@@ -10777,17 +10812,36 @@ class MatrixEngineWGPU {
   createTexArrayForShadows() {
     console.log('this.lightContainer.length' + this.lightContainer.length);
     let numberOfLights = this.lightContainer.length;
-    this.shadowTextureArray = this.device.createTexture({
-      label: 'shadowTextureArray[GLOBAL]',
-      size: {
-        width: 1024,
-        height: 1024,
-        depthOrArrayLayers: numberOfLights // at least 1
-      },
-      dimension: '2d',
-      format: 'depth32float',
-      usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING
-    });
+    if (this.lightContainer.length == 0) {
+      console.warn('Wait for init light instance');
+      setTimeout(() => {
+        console.warn('Create now !!!!!!!!!!!!');
+        this.createMe();
+      }, 800);
+    }
+    this.createMe = () => {
+      Math.max(1, this.lightContainer.length);
+      // console.log('after max 1 numOfLights=' + numberOfLights)
+      if (this.lightContainer.length == 0) {
+        setTimeout(() => {
+          console.warn('Create now !!!!!!!!!!!!');
+          this.createMe();
+        }, 800);
+        return;
+      }
+      this.shadowTextureArray = this.device.createTexture({
+        label: 'shadowTextureArray[GLOBAL]',
+        size: {
+          width: 1024,
+          height: 1024,
+          depthOrArrayLayers: numberOfLights // at least 1
+        },
+        dimension: '2d',
+        format: 'depth32float',
+        usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING
+      });
+    };
+    this.createMe();
   }
   getSceneObjectByName(name) {
     return this.mainRenderBundle.find(sceneObject => sceneObject.name === name);
@@ -11136,13 +11190,14 @@ class MatrixEngineWGPU {
     }
   };
   updateLights() {
-    // Update buffer every frame
-    const data = new Float32Array(this.MAX_SPOTLIGHTS * 20);
+    const floatsPerLight = 36; // not 20 anymore
+    const data = new Float32Array(this.MAX_SPOTLIGHTS * floatsPerLight);
     for (let i = 0; i < this.MAX_SPOTLIGHTS; i++) {
       if (i < this.lightContainer.length) {
-        data.set(this.lightContainer[i].getLightDataBuffer(), i * 20);
+        const buf = this.lightContainer[i].getLightDataBuffer();
+        data.set(buf, i * floatsPerLight);
       } else {
-        data.set(new Float32Array(20), i * 20);
+        data.set(new Float32Array(floatsPerLight), i * floatsPerLight);
       }
     }
     this.device.queue.writeBuffer(this.spotlightUniformBuffer, 0, data.buffer);
@@ -11155,12 +11210,10 @@ class MatrixEngineWGPU {
       return;
     }
     try {
-      let shadowPass = null;
+      // let shadowPass = null;
       let renderPass;
       let commandEncoder = this.device.createCommandEncoder();
       this.updateLights();
-      this.test();
-
       // 1️⃣ Update light data (position, direction, uniforms)
       for (const light of this.lightContainer) {
         this.mainRenderBundle.forEach((meItem, index) => {
