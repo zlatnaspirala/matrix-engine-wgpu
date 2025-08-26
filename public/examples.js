@@ -186,7 +186,7 @@ var loadObjFile = function () {
       (0, _loaderObj.downloadMeshes)({
         cube: "./res/meshes/blender/cube.obj"
       }, onGround, {
-        scale: [25, 0.1, 25]
+        scale: [20, 1, 20]
       });
 
       // loadObjFile.addLight();
@@ -249,21 +249,31 @@ var loadObjFile = function () {
         }
         // raycast: { enabled: true , radius: 2 }
       });
-
-      // loadObjFile.addMeshObj({
-      //   position: {x: 0, y: -1, z: -20},
-      //   rotation: {x: 0, y: 0, z: 0},
-      //   rotationSpeed: {x: 0, y: 111, z: 0},
-      //   texturesPaths: ['./res/meshes/blender/cube.png'],
-      //   name: 'ball1',
-      //   mesh: m.ball,
-      //   physics: {
-      //     enabled: false,
-      //     geometry: "Sphere"
-      //   },
-      //   // raycast: { enabled: true , radius: 2 }
-      // })
-
+      loadObjFile.addMeshObj({
+        position: {
+          x: 0,
+          y: -1,
+          z: -20
+        },
+        rotation: {
+          x: 0,
+          y: 0,
+          z: 0
+        },
+        rotationSpeed: {
+          x: 0,
+          y: 111,
+          z: 0
+        },
+        texturesPaths: ['./res/meshes/blender/cube.png'],
+        name: 'ball1',
+        mesh: m.ball,
+        physics: {
+          enabled: false,
+          geometry: "Sphere"
+        }
+        // raycast: { enabled: true , radius: 2 }
+      });
       var TEST = loadObjFile.getSceneObjectByName('cube2');
       console.log(`%c Test access scene ${TEST} object.`, _utils.LOG_MATRIX);
       loadObjFile.addLight();
@@ -6723,7 +6733,7 @@ class CameraBase {
   set matrix(mat) {
     _wgpuMatrix.mat4.copy(mat, this.matrix_);
   }
-  setProjection(fov = 2 * Math.PI / 5, aspect = 1, near = 1, far = 1000) {
+  setProjection(fov = 2 * Math.PI / 5, aspect = 1, near = 0.5, far = 1000) {
     this.projectionMatrix = _wgpuMatrix.mat4.perspective(fov, aspect, near, far);
   }
 
@@ -7150,6 +7160,7 @@ class SpotLight {
     this.outerCutoff = Math.cos(Math.PI / 180 * 17.5);
     this.ambientFactor = 0.5;
     this.range = 200.0;
+    this.shadowBias = 0.01;
     this.SHADOW_RES = 1024;
     this.primitive = {
       topology: 'triangle-list',
@@ -7268,6 +7279,8 @@ class SpotLight {
     };
   }
   update() {
+    //  this.target = vec3.create(x, y, z);              // new target
+    this.direction = _wgpuMatrix.vec3.normalize(_wgpuMatrix.vec3.subtract(this.target, this.position));
     const target = _wgpuMatrix.vec3.add(this.position, this.direction);
     this.viewMatrix = _wgpuMatrix.mat4.lookAt(this.position, target, this.up);
     this.viewProjMatrix = _wgpuMatrix.mat4.multiply(this.projectionMatrix, this.viewMatrix);
@@ -7293,7 +7306,11 @@ class SpotLight {
   }
   getLightDataBuffer() {
     const m = this.viewProjMatrix;
-    return new Float32Array([...this.position, 0.0, ...this.direction, 0.0, this.innerCutoff, this.outerCutoff, this.intensity, 0.0, ...this.color, 0.0, this.range, this.ambientFactor, 0.0, 0.0, ...m]);
+    return new Float32Array([...this.position, 0.0, ...this.direction, 0.0, this.innerCutoff, this.outerCutoff, this.intensity, 0.0, ...this.color, 0.0, this.range, this.ambientFactor, this.shadowBias,
+    // <<--- use shadowBias
+    0.0,
+    // keep padding
+    ...m]);
   }
 }
 exports.SpotLight = SpotLight;
@@ -10283,7 +10300,8 @@ struct SpotLight {
 
     range         : f32,
     ambientFactor : f32,
-    _pad5         : vec2f,
+    shadowBias    : f32,   // <<--- use one of the pad slots
+    _pad5         : f32,   // keep alignment to 16 bytes
 
     lightViewProj : mat4x4<f32>,
 };
@@ -10333,23 +10351,31 @@ fn computeSpotLight(light: SpotLight, normal: vec3f, fragPos: vec3f, viewDir: ve
 }
 
 // Corrected PCF for texture_depth_2d_array
-fn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32) -> f32 {
+fn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, lightDir: vec3f) -> f32 {
     var visibility: f32 = 0.0;
+
+    // Base bias
+    let biasConstant: f32 = 0.002;
+    // Slope bias: avoid self-shadowing on steep angles
+    let slopeBias: f32 = max(0.002 * (1.0 - dot(normal, lightDir)), 0.0);
+    let bias = biasConstant + slopeBias;
+
     let oneOverSize = 1.0 / shadowDepthTextureSize;
 
+    // 3x3 PCF kernel
     let offsets: array<vec2f, 9> = array<vec2f, 9>(
         vec2(-1.0, -1.0), vec2(0.0, -1.0), vec2(1.0, -1.0),
         vec2(-1.0,  0.0), vec2(0.0,  0.0), vec2(1.0,  0.0),
         vec2(-1.0,  1.0), vec2(0.0,  1.0), vec2(1.0,  1.0)
     );
 
-    for (var i: u32 = 0u; i < 9u; i = i + 1u) {
+    for(var i: u32 = 0u; i < 9u; i = i + 1u) {
         visibility += textureSampleCompare(
             shadowMapArray,
             shadowSampler,
-            shadowUV + offsets[i] * oneOverSize, // vec2 coords
-            layer,                               // array layer (i32)
-            depthRef                             // depth comparison
+            shadowUV + offsets[i] * oneOverSize,
+            layer,
+            depthRef - bias
         );
     }
 
@@ -10366,17 +10392,22 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     var lightContribution = vec3f(0.0);
     var ambient = vec3f(0.0);
 
+    
     for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
         let sc = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);
+        
         let p  = sc.xyz / sc.w;
 
         let uv = clamp(p.xy * 0.5 + vec2<f32>(0.5), vec2<f32>(0.0), vec2<f32>(1.0));
-        // let depthRef = select(p.z * 0.5 + 0.5, p.z, LIGHT_CLIP_Z_IS_ZERO_TO_ONE);
-        let depthRef = p.z * 0.5 + 0.5;  // from [-1,1] → [0,1]
+        let depthRef = p.z;
 
-       //let visibility = sampleShadow(uv, i32(i), depthRef - 0.01);
-       let bias = 0.002; // adjust smaller for large-scale scenes, larger for tiny meshes
-       let visibility = sampleShadow(uv, i32(i), depthRef - bias);
+        let lightDir = normalize(spotlights[i].position - input.fragPos);
+        // let bias = spotlights[i].shadowBias;
+        // let visibility = sampleShadow(uv, i32(i), depthRef + bias, norm, lightDir);
+
+        let angleFactor = 1.0 - dot(norm, lightDir);
+        let bias = spotlights[i].shadowBias * angleFactor;
+        let visibility = sampleShadow(uv, i32(i), depthRef - bias, norm, lightDir);
 
         let contrib = computeSpotLight(spotlights[i], norm, input.fragPos, viewDir);
         lightContribution += contrib * visibility;

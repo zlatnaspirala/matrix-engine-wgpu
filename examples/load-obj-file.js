@@ -22,7 +22,7 @@ export var loadObjFile = function() {
       downloadMeshes({
         cube: "./res/meshes/blender/cube.obj",
       }, onGround,
-        {scale: [25, 0.1, 25]})
+        {scale: [20, 1, 20]})
 
         // loadObjFile.addLight();
     })
@@ -65,19 +65,19 @@ export var loadObjFile = function() {
         // raycast: { enabled: true , radius: 2 }
       })
 
-      // loadObjFile.addMeshObj({
-      //   position: {x: 0, y: -1, z: -20},
-      //   rotation: {x: 0, y: 0, z: 0},
-      //   rotationSpeed: {x: 0, y: 111, z: 0},
-      //   texturesPaths: ['./res/meshes/blender/cube.png'],
-      //   name: 'ball1',
-      //   mesh: m.ball,
-      //   physics: {
-      //     enabled: false,
-      //     geometry: "Sphere"
-      //   },
-      //   // raycast: { enabled: true , radius: 2 }
-      // })
+      loadObjFile.addMeshObj({
+        position: {x: 0, y: -1, z: -20},
+        rotation: {x: 0, y: 0, z: 0},
+        rotationSpeed: {x: 0, y: 111, z: 0},
+        texturesPaths: ['./res/meshes/blender/cube.png'],
+        name: 'ball1',
+        mesh: m.ball,
+        physics: {
+          enabled: false,
+          geometry: "Sphere"
+        },
+        // raycast: { enabled: true , radius: 2 }
+      })
 
       var TEST = loadObjFile.getSceneObjectByName('cube2');
       console.log(`%c Test access scene ${TEST} object.`, LOG_MATRIX);

@@ -62,6 +62,7 @@ export class SpotLight {
 
     this.ambientFactor = 0.5;
     this.range = 200.0;
+    this.shadowBias = 0.01;
 
     this.SHADOW_RES = 1024;
     this.primitive = {
@@ -197,6 +198,10 @@ export class SpotLight {
   }
 
   update() {
+
+    //  this.target = vec3.create(x, y, z);              // new target
+    this.direction = vec3.normalize(vec3.subtract(this.target, this.position));
+
     const target = vec3.add(this.position, this.direction);
     this.viewMatrix = mat4.lookAt(this.position, target, this.up);
     this.viewProjMatrix = mat4.multiply(this.projectionMatrix, this.viewMatrix);
@@ -237,7 +242,8 @@ export class SpotLight {
       0.0,
       this.range,
       this.ambientFactor,
-      0.0, 0.0,
+      this.shadowBias,  // <<--- use shadowBias
+      0.0,              // keep padding
       ...m
     ]);
   }
