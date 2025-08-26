@@ -421,9 +421,10 @@ export default class MatrixEngineWGPU {
       // 1️⃣ Update light data (position, direction, uniforms)
       for(const light of this.lightContainer) {
         light.update()
-        light.updateSceneUniforms(this.mainRenderBundle, this.cameras.WASD);
+        // light.updateSceneUniforms(this.mainRenderBundle, this.cameras.WASD);
         this.mainRenderBundle.forEach((meItem, index) => {
           meItem.position.update()
+           meItem.updateModelUniformBuffer()
           meItem.getTransformationMatrix(this.mainRenderBundle, light)
         })
       }

@@ -8626,7 +8626,7 @@ class MEMeshObj extends _materials.default {
       primitive: this.primitive
     });
   };
-  draw = () => {
+  updateModelUniformBuffer = () => {
     if (this.done == false) return;
     // Per-object model matrix only
     const modelMatrix = this.getModelMatrix(this.position);
@@ -8723,8 +8723,6 @@ class MEMeshObj extends _materials.default {
     }
   };
   drawShadows = (shadowPass, light) => {
-    // shadowPass.setBindGroup(0, light.sceneBindGroupForShadow);
-    // shadowPass.setBindGroup(1, this.modelBindGroup);
     shadowPass.setVertexBuffer(0, this.vertexBuffer);
     shadowPass.setVertexBuffer(1, this.vertexNormalsBuffer);
     shadowPass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
@@ -10376,7 +10374,9 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
         // let depthRef = select(p.z * 0.5 + 0.5, p.z, LIGHT_CLIP_Z_IS_ZERO_TO_ONE);
         let depthRef = p.z * 0.5 + 0.5;  // from [-1,1] → [0,1]
 
-       let visibility = sampleShadow(uv, i32(i), depthRef - 0.01);
+       //let visibility = sampleShadow(uv, i32(i), depthRef - 0.01);
+       let bias = 0.002; // adjust smaller for large-scale scenes, larger for tiny meshes
+       let visibility = sampleShadow(uv, i32(i), depthRef - bias);
 
         let contrib = computeSpotLight(spotlights[i], norm, input.fragPos, viewDir);
         lightContribution += contrib * visibility;
@@ -11165,9 +11165,10 @@ class MatrixEngineWGPU {
       // 1️⃣ Update light data (position, direction, uniforms)
       for (const light of this.lightContainer) {
         light.update();
-        light.updateSceneUniforms(this.mainRenderBundle, this.cameras.WASD);
+        // light.updateSceneUniforms(this.mainRenderBundle, this.cameras.WASD);
         this.mainRenderBundle.forEach((meItem, index) => {
           meItem.position.update();
+          meItem.updateModelUniformBuffer();
           meItem.getTransformationMatrix(this.mainRenderBundle, light);
         });
       }

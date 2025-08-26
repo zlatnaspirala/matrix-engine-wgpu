@@ -117,7 +117,9 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
         // let depthRef = select(p.z * 0.5 + 0.5, p.z, LIGHT_CLIP_Z_IS_ZERO_TO_ONE);
         let depthRef = p.z * 0.5 + 0.5;  // from [-1,1] → [0,1]
 
-       let visibility = sampleShadow(uv, i32(i), depthRef - 0.01);
+       //let visibility = sampleShadow(uv, i32(i), depthRef - 0.01);
+       let bias = 0.002; // adjust smaller for large-scale scenes, larger for tiny meshes
+       let visibility = sampleShadow(uv, i32(i), depthRef - bias);
 
         let contrib = computeSpotLight(spotlights[i], norm, input.fragPos, viewDir);
         lightContribution += contrib * visibility;

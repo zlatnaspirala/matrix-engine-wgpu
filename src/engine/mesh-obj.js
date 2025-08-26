@@ -340,7 +340,7 @@ export default class MEMeshObj extends Materials {
     });
   }
 
-  draw = () => {
+  updateModelUniformBuffer = () => {
     if(this.done == false) return;
     // Per-object model matrix only
     const modelMatrix = this.getModelMatrix(this.position);
@@ -456,8 +456,6 @@ export default class MEMeshObj extends Materials {
   }
 
   drawShadows = (shadowPass, light) => {
-    // shadowPass.setBindGroup(0, light.sceneBindGroupForShadow);
-    // shadowPass.setBindGroup(1, this.modelBindGroup);
     shadowPass.setVertexBuffer(0, this.vertexBuffer);
     shadowPass.setVertexBuffer(1, this.vertexNormalsBuffer);
     shadowPass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
