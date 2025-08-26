@@ -1,11 +1,13 @@
 export let fragmentWGSL = `override shadowDepthTextureSize: f32 = 1024.0;
 
 struct Scene {
-    lightViewProjMatrix : mat4x4f,
+    lightViewProjMatrix  : mat4x4f,
     cameraViewProjMatrix : mat4x4f,
-    lightPos : vec3f,
-    padding : f32,
-}
+    cameraPos            : vec3f,
+    padding2             : f32,   // align to 16 bytes
+    lightPos             : vec3f,
+    padding              : f32,   // align to 16 bytes
+};
 
 struct SpotLight {
     position      : vec3f,
@@ -26,7 +28,7 @@ struct SpotLight {
     ambientFactor : f32,
     _pad5         : vec2f,
 
-    lightViewProj : mat4x4<f32>,   // shadow projection
+    lightViewProj : mat4x4<f32>,
 };
 
 const MAX_SPOTLIGHTS = 20u;
@@ -48,7 +50,6 @@ struct FragmentInput {
 
 const albedo = vec3f(0.9);
 
-// spotlight cone factor
 fn calculateSpotlightFactor(light: SpotLight, fragPos: vec3f) -> f32 {
     let L = normalize(light.position - fragPos);
     let theta = dot(L, normalize(-light.direction));
@@ -56,7 +57,6 @@ fn calculateSpotlightFactor(light: SpotLight, fragPos: vec3f) -> f32 {
     return clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
 }
 
-// diffuse + specular
 fn computeSpotLight(light: SpotLight, normal: vec3f, fragPos: vec3f, viewDir: vec3f) -> vec3f {
     let L = light.position - fragPos;
     let distance = length(L);
@@ -75,32 +75,36 @@ fn computeSpotLight(light: SpotLight, normal: vec3f, fragPos: vec3f, viewDir: ve
     return (diffuse + specular) * spotFactor;
 }
 
-fn sampleShadow(uv: vec2<f32>, layer: i32, depthRef: f32) -> f32 {
-    let clampedUV = clamp(uv, vec2<f32>(0.0), vec2<f32>(1.0)); // always in [0,1]
-    
+// Corrected PCF for texture_depth_2d_array
+fn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32) -> f32 {
     var visibility: f32 = 0.0;
     let oneOverSize = 1.0 / shadowDepthTextureSize;
 
-    for (var x: i32 = -1; x <= 1; x++) {
-        for (var y: i32 = -1; y <= 1; y++) {
-            let offset = vec2<f32>(f32(x), f32(y)) * oneOverSize;
-            visibility += textureSampleCompare(
-                shadowMapArray,
-                shadowSampler,
-                clampedUV + offset,
-                layer,
-                depthRef
-            );
-        }
+    let offsets: array<vec2f, 9> = array<vec2f, 9>(
+        vec2(-1.0, -1.0), vec2(0.0, -1.0), vec2(1.0, -1.0),
+        vec2(-1.0,  0.0), vec2(0.0,  0.0), vec2(1.0,  0.0),
+        vec2(-1.0,  1.0), vec2(0.0,  1.0), vec2(1.0,  1.0)
+    );
+
+    for (var i: u32 = 0u; i < 9u; i = i + 1u) {
+        visibility += textureSampleCompare(
+            shadowMapArray,
+            shadowSampler,
+            shadowUV + offsets[i] * oneOverSize, // vec2 coords
+            layer,                               // array layer (i32)
+            depthRef                             // depth comparison
+        );
     }
 
     return visibility / 9.0;
 }
-    
+
 @fragment
-fn main(input : FragmentInput) -> @location(0) vec4f {
+fn main(input: FragmentInput) -> @location(0) vec4f {
     let norm = normalize(input.fragNorm);
-    let viewDir = normalize(scene.cameraViewProjMatrix[3].xyz - input.fragPos);
+
+    let viewDir = normalize(scene.cameraPos - input.fragPos);
+    // let viewDir = normalize(scene.cameraViewProjMatrix[3].xyz - input.fragPos);
 
     var lightContribution = vec3f(0.0);
     var ambient = vec3f(0.0);
@@ -109,36 +113,18 @@ fn main(input : FragmentInput) -> @location(0) vec4f {
         let sc = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);
         let p  = sc.xyz / sc.w;
 
-        // UV in [0,1]
-        let uv = p.xy * 0.5 + vec2(0.5, 0.5);
+        let uv = clamp(p.xy * 0.5 + vec2<f32>(0.5), vec2<f32>(0.0), vec2<f32>(1.0));
+        // let depthRef = select(p.z * 0.5 + 0.5, p.z, LIGHT_CLIP_Z_IS_ZERO_TO_ONE);
+        let depthRef = p.z * 0.5 + 0.5;  // from [-1,1] → [0,1]
 
-        // Depth mapping depending on API convention
-        let depthRef = select(
-            p.z * 0.5 + 0.5,  // OpenGL style
-            p.z,              // WebGPU (0..1)
-            LIGHT_CLIP_Z_IS_ZERO_TO_ONE
-        );
+       let visibility = sampleShadow(uv, i32(i), depthRef - 0.01);
 
-        // Mask: 1 if inside, 0 if outside
-        let inside = f32(all(p.xy >= vec2<f32>(-1.0)) &&
-                         all(p.xy <= vec2<f32>( 1.0)) &&
-                         p.z >= 0.0 && p.z <= 1.0);
-
-        // Always sample, branchless
-        // let shadow = sampleShadow(uv, i, depthRef - 0.003);
-        let shadow = sampleShadow(uv,i32(i), depthRef - 0.003);
-
-        // Visibility: if outside → 1, else shadow
-        let visibility = mix(1.0, shadow, inside);
-
-        // Lighting
         let contrib = computeSpotLight(spotlights[i], norm, input.fragPos, viewDir);
         lightContribution += contrib * visibility;
         ambient += spotlights[i].ambientFactor * spotlights[i].color;
     }
 
     let texColor = textureSample(meshTexture, meshSampler, input.uv);
-    let finalColor = texColor.rgb * (ambient + lightContribution) * albedo;
-
+    let finalColor = texColor.rgb * (ambient + lightContribution); // * albedo;
     return vec4f(finalColor, 1.0);
 }`

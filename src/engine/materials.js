@@ -10,7 +10,14 @@ export default class Materials {
   constructor(device) {
     this.device = device;
     this.isVideo = false;
-    this.compareSampler = this.device.createSampler({compare: 'less'});
+    // this.compareSampler = this.device.createSampler({compare: 'less'});
+    this.compareSampler = this.device.createSampler({
+      compare: 'less-equal',           // safer for shadow comparison
+      addressModeU: 'clamp-to-edge',   // prevents UV leaking outside
+      addressModeV: 'clamp-to-edge',
+      magFilter: 'linear',             // smooth PCF
+      minFilter: 'linear',
+    });
     // For image textures (standard sampler)
     this.imageSampler = this.device.createSampler({
       magFilter: 'linear',
@@ -166,9 +173,11 @@ export default class Materials {
     const textureResource = this.isVideo
       ? this.externalTexture // must be set via updateVideoTexture
       : this.texture0.createView();
-    if(!textureResource || !this.sceneUniformBuffer || !this.shadowDepthTextureView || !this.sampler) {
+    if(!textureResource || !this.sceneUniformBuffer || !this.shadowDepthTextureView) {
       console.warn("❗Missing res skipping...");
       return;
+    } else {
+      // console.warn("❗ PASSED Missing res skipping..."); 
     }
     if(this.isVideo == true) {
       this.sceneBindGroupForRender = this.device.createBindGroup({
@@ -240,13 +249,13 @@ export default class Materials {
           buffer: {type: 'uniform'},
         },
         {
-            binding: 1,
-            visibility: GPUShaderStage.FRAGMENT,
-            texture: {
-                sampleType: "depth",
-                viewDimension: "2d-array", // <- must match shadowMapArray
-                multisampled: false,
-            },
+          binding: 1,
+          visibility: GPUShaderStage.FRAGMENT,
+          texture: {
+            sampleType: "depth",
+            viewDimension: "2d-array", // <- must match shadowMapArray
+            multisampled: false,
+          },
         },
         {
           binding: 2,

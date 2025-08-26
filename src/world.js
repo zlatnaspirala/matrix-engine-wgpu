@@ -146,6 +146,29 @@ export default class MatrixEngineWGPU {
     this.SHADOW_RES = 1024;
     this.createTexArrayForShadows()
 
+    this.mainDepthTexture = this.device.createTexture({
+      size: [this.canvas.width, this.canvas.height],
+      format: 'depth24plus',
+      usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING,
+    });
+
+    this.mainDepthView = this.mainDepthTexture.createView();
+
+    this.mainRenderPassDesc = {
+      label: 'mainRenderPassDesc',
+      colorAttachments: [{
+        view: undefined,                // set each frame
+        loadOp: 'clear',
+        storeOp: 'store',
+        clearValue: [0.02, 0.02, 0.02, 1],
+      }],
+      depthStencilAttachment: {
+        view: this.mainDepthView,       // fixed
+        depthLoadOp: 'clear',
+        depthStoreOp: 'store',
+        depthClearValue: 1.0,
+      },
+    };
   }
   createTexArrayForShadows() {
     console.log('this.lightContainer.length' + this.lightContainer.length)
@@ -163,14 +186,14 @@ export default class MatrixEngineWGPU {
       // console.log('after max 1 numOfLights=' + numberOfLights)
       if(this.lightContainer.length == 0) {
         setTimeout(() => {
-          console.warn('Create now !!!!!!!!!!!!')
+          console.warn('Create now test...')
           this.createMe();
         }, 800);
         return;
       }
 
       this.shadowTextureArray = this.device.createTexture({
-        label: 'shadowTextureArray[GLOBAL]',
+        label: `shadowTextureArray[GLOBAL] num of light ${numberOfLights}`,
         size: {
           width: 1024,
           height: 1024,
@@ -179,6 +202,10 @@ export default class MatrixEngineWGPU {
         dimension: '2d',
         format: 'depth32float',
         usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING,
+      });
+
+      this.shadowArrayView = this.shadowTextureArray.createView({
+        dimension: '2d-array'
       });
     }
 
@@ -367,43 +394,21 @@ export default class MatrixEngineWGPU {
     this.canvas.remove();
   }
 
-  test = () => {
-    const now = Date.now();
-    // First frame safety
-    let dt = (now - this.lastFrameMS) / this.mainCameraParams.responseCoef;
-    if(!this.lastFrameMS) {dt = 16;}
-    this.lastFrameMS = now;
-    const camera = this.cameras[this.mainCameraParams.type];
-    camera.update(dt, this.inputHandler());
-    const camVP = mat4.multiply(camera.projectionMatrix, camera.view); // P * V
+  updateLights() {
+    const floatsPerLight = 36; // not 20 anymore
+    const data = new Float32Array(this.MAX_SPOTLIGHTS * floatsPerLight);
 
-    for(const mesh of this.mainRenderBundle) {
-      // scene buffer layout = 0..63 lightVP, 64..127 camVP, 128..143 lightPos(+pad)
-      this.device.queue.writeBuffer(
-        mesh.sceneUniformBuffer,
-        64,                              // cameraViewProjMatrix offset
-        camVP.buffer,
-        camVP.byteOffset,
-        camVP.byteLength
-      );
+    for(let i = 0;i < this.MAX_SPOTLIGHTS;i++) {
+      if(i < this.lightContainer.length) {
+        const buf = this.lightContainer[i].getLightDataBuffer();
+        data.set(buf, i * floatsPerLight);
+      } else {
+        data.set(new Float32Array(floatsPerLight), i * floatsPerLight);
+      }
     }
+
+    this.device.queue.writeBuffer(this.spotlightUniformBuffer, 0, data.buffer);
   }
-
-updateLights() {
-  const floatsPerLight = 36; // not 20 anymore
-  const data = new Float32Array(this.MAX_SPOTLIGHTS * floatsPerLight);
-
-  for (let i = 0; i < this.MAX_SPOTLIGHTS; i++) {
-    if (i < this.lightContainer.length) {
-      const buf = this.lightContainer[i].getLightDataBuffer();
-      data.set(buf, i * floatsPerLight);
-    } else {
-      data.set(new Float32Array(floatsPerLight), i * floatsPerLight);
-    }
-  }
-
-  this.device.queue.writeBuffer(this.spotlightUniformBuffer, 0, data.buffer);
-}
 
   frameSinglePass = () => {
     if(typeof this.mainRenderBundle == 'undefined' || this.mainRenderBundle.length == 0) {
@@ -411,79 +416,83 @@ updateLights() {
       return;
     }
     try {
-      // let shadowPass = null;
-      let renderPass;
       let commandEncoder = this.device.createCommandEncoder();
       this.updateLights()
       // 1️⃣ Update light data (position, direction, uniforms)
       for(const light of this.lightContainer) {
+        light.update()
+        light.updateSceneUniforms(this.mainRenderBundle, this.cameras.WASD);
         this.mainRenderBundle.forEach((meItem, index) => {
-          //  light.update()
-          light.updateSceneUniforms(this.mainRenderBundle, this.cameras.WASD);
+          meItem.position.update()
+          meItem.getTransformationMatrix(this.mainRenderBundle, light)
         })
       }
-
-
-      this.mainRenderBundle.forEach((meItem, index) => {
-        meItem.position.update()
-        // if(index == 0) meItem.getTransformationMatrix(this.mainRenderBundle)
-      })
       if(this.matrixAmmo) this.matrixAmmo.updatePhysics();
 
       for(let i = 0;i < this.lightContainer.length;i++) {
         const light = this.lightContainer[i];
 
         let ViewPerLightRenderShadowPass = this.shadowTextureArray.createView({
-          label: `shadow layer ${i}`,
           dimension: '2d',
           baseArrayLayer: i,
-          arrayLayerCount: 1,
+          arrayLayerCount: 1, // must be > 0
+          baseMipLevel: 0,
+          mipLevelCount: 1,
         });
+
         const shadowPass = commandEncoder.beginRenderPass({
+          label: "shadowPass",
           colorAttachments: [],
           depthStencilAttachment: {
             view: ViewPerLightRenderShadowPass,
-            depthLoadOp: 'clear',   // MUST be set
-            depthStoreOp: 'store',  // MUST be set
-            depthClearValue: 1.0,   // start with max depth
+            depthLoadOp: 'clear',
+            depthStoreOp: 'store',
+            depthClearValue: 1.0,
           }
         });
-
-        shadowPass.setPipeline(light.shadowPipeline);
-
-        let byMeshView = this.shadowTextureArray.createView({
-          dimension: '2d-array',
-        });
-
+        shadowPass.setPipeline(light.shadowPipeline); // <-- must be first!
         for(const [meshIndex, mesh] of this.mainRenderBundle.entries()) {
-          mesh.shadowDepthTextureView = byMeshView;
-          mesh.createBindGroupForRender()
           shadowPass.setBindGroup(0, light.getShadowBindGroup(mesh, meshIndex));
           shadowPass.setBindGroup(1, mesh.modelBindGroup);
           mesh.drawShadows(shadowPass, light);
         }
-
         shadowPass.end();
       }
+      const currentTextureView = this.context.getCurrentTexture().createView();
+      this.mainRenderPassDesc.colorAttachments[0].view = currentTextureView;
+      const pass = commandEncoder.beginRenderPass(this.mainRenderPassDesc);
+      // Loop over each mesh
+      for(const mesh of this.mainRenderBundle) {
 
+        pass.setPipeline(mesh.pipeline);
 
-      this.mainRenderBundle.forEach((meItem, index) => {
-        if(index == 0) {
-          meItem.draw(commandEncoder);
-          meItem.renderPassDescriptor.colorAttachments[0].view =
-            this.context.getCurrentTexture().createView();
-          renderPass = commandEncoder.beginRenderPass(meItem.renderPassDescriptor);
-          renderPass.setPipeline(meItem.pipeline);
-        } else {
-          meItem.draw(commandEncoder);
+        if(!mesh.sceneBindGroupForRender) {
+          for(const mesh of this.mainRenderBundle) {
+            mesh.shadowDepthTextureView = this.shadowArrayView;
+            mesh.createBindGroupForRender();
+          }
         }
-      })
+        // Bind per-mesh uniforms
+        pass.setBindGroup(0, mesh.sceneBindGroupForRender); // camera/light UBOs
+        pass.setBindGroup(1, mesh.modelBindGroup);          // mesh transforms/textures
+        // Bind each light’s shadow texture & sampler
+        let bindIndex = 2; // start after UBO & model
+        for(const light of this.lightContainer) {
+          pass.setBindGroup(bindIndex++, light.getMainPassBindGroup(mesh));
+        }
 
-      this.mainRenderBundle.forEach((meItem, index) => {
-        meItem.drawElements(renderPass);
-      })
-      if(renderPass) renderPass.end();
+        // Set vertex/index buffers
+        pass.setVertexBuffer(0, mesh.vertexBuffer);
+        pass.setVertexBuffer(1, mesh.vertexNormalsBuffer);
+        pass.setVertexBuffer(2, mesh.vertexTexCoordsBuffer);
+        pass.setIndexBuffer(mesh.indexBuffer, 'uint16');
 
+        // Draw
+        pass.drawIndexed(mesh.indexCount);
+      }
+
+      // End render pass
+      pass.end();
       this.device.queue.submit([commandEncoder.finish()]);
       requestAnimationFrame(this.frame);
     } catch(err) {

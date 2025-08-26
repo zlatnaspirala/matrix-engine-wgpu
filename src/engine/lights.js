@@ -5,7 +5,6 @@ export class SpotLight {
   camera;
   inputHandler;
 
-  // Light
   position;
   target;
   up;
@@ -62,13 +61,14 @@ export class SpotLight {
     this.outerCutoff = Math.cos((Math.PI / 180) * 17.5);
 
     this.ambientFactor = 0.5;
-    this.range = 200.0; // example max distance
+    this.range = 200.0;
 
     this.SHADOW_RES = 1024;
     this.primitive = {
       topology: 'triangle-list',
-      cullMode: 'none'
-    };
+      cullMode: 'back', // typical for shadow passes
+      frontFace: 'ccw'
+    }
 
     this.shadowTexture = this.device.createTexture({
       label: 'shadowTexture[light]',
@@ -79,6 +79,8 @@ export class SpotLight {
 
     this.shadowSampler = device.createSampler({
       compare: 'less',
+      magFilter: 'linear',
+      minFilter: 'linear',
     });
 
     this.renderPassDescriptor = {
@@ -166,6 +168,32 @@ export class SpotLight {
       primitive: this.primitive,
     });
 
+    this.getMainPassBindGroup = function(mesh) {
+      // You can cache it per mesh to avoid recreating each frame
+      if(!this.mainPassBindGroupContainer) this.mainPassBindGroupContainer = [];
+      const index = mesh._lightBindGroupIndex || 0; // assign unique per mesh if needed
+
+      if(this.mainPassBindGroupContainer[index]) {
+        return this.mainPassBindGroupContainer[index];
+      }
+
+      this.mainPassBindGroupContainer[index] = this.device.createBindGroup({
+        label: `mainPassBindGroup for mesh`,
+        layout: mesh.mainPassBindGroupLayout, // this should match the pipeline
+        entries: [
+          {
+            binding: 0, // must match @binding in shader for shadow texture
+            resource: this.shadowTexture.createView(),
+          },
+          {
+            binding: 1, // must match @binding in shader for shadow sampler
+            resource: this.shadowSampler,
+          },
+        ],
+      });
+
+      return this.mainPassBindGroupContainer[index];
+    }
   }
 
   update() {
@@ -209,22 +237,8 @@ export class SpotLight {
       0.0,
       this.range,
       this.ambientFactor,
-      0.0, 0.0, // padding
-      ...m      // NEW: mat4x4<f32>
+      0.0, 0.0,
+      ...m
     ]);
-
-    // return new Float32Array([
-    //   ...this.position, 0.0,
-    //   ...this.direction, 0.0,
-    //   this.innerCutoff,
-    //   this.outerCutoff,
-    //   this.intensity,
-    //   0.0,
-    //   ...this.color,
-    //   0.0,
-    //   this.range,
-    //   this.ambientFactor, // new
-    //   0.0, 0.0,           // padding
-    // ]);
   }
 }
