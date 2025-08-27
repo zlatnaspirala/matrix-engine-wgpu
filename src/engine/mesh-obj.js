@@ -221,7 +221,12 @@ export default class MEMeshObj extends Materials {
         ],
       });
 
+      try {
       this.setupPipeline();
+      } catch (err) {
+        console.log('err in create pipeline in init ', err)
+        
+      }
 
       // Rotates the camera around the origin based on time.
       this.getTransformationMatrix = (mainRenderBundle, spotLight) => {
@@ -350,17 +355,24 @@ export default class MEMeshObj extends Materials {
     );
   }
 
-  drawElements = (renderPass) => {
+  drawElements = (pass, lightContainer) => {
     if(this.isVideo) {
       this.updateVideoTexture();
     }
-    renderPass.setBindGroup(0, this.sceneBindGroupForRender);
-    renderPass.setBindGroup(1, this.modelBindGroup);
-    renderPass.setVertexBuffer(0, this.vertexBuffer);
-    renderPass.setVertexBuffer(1, this.vertexNormalsBuffer);
-    renderPass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
-    renderPass.setIndexBuffer(this.indexBuffer, 'uint16');
-    renderPass.drawIndexed(this.indexCount);
+    // Bind per-mesh uniforms
+    pass.setBindGroup(0, this.sceneBindGroupForRender); // camera/light UBOs
+    pass.setBindGroup(1, this.modelBindGroup);          // mesh transforms/textures
+    // Bind each light’s shadow texture & sampler
+    let bindIndex = 2; // start after UBO & model
+    for(const light of lightContainer) {
+      pass.setBindGroup(bindIndex++, light.getMainPassBindGroup(this));
+    }
+
+    pass.setVertexBuffer(0, this.vertexBuffer);
+    pass.setVertexBuffer(1, this.vertexNormalsBuffer);
+    pass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
+    pass.setIndexBuffer(this.indexBuffer, 'uint16');
+    pass.drawIndexed(this.indexCount);
   }
 
   createGPUBuffer(dataArray, usage) {
@@ -451,6 +463,8 @@ export default class MEMeshObj extends Materials {
     renderPass.setVertexBuffer(2, mesh.vertexTexCoordsBuffer);
     renderPass.setIndexBuffer(mesh.indexBuffer, 'uint16');
     renderPass.drawIndexed(mesh.indexCount);
+
+
     if(this.objAnim.playing == true) {
       if(this.objAnim.animations[this.objAnim.animations.active].speedCounter >= this.objAnim.animations[this.objAnim.animations.active].speed) {
         this.objAnim.currentAni++;

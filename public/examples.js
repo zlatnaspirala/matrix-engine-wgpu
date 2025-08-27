@@ -306,6 +306,8 @@ var loadObjsSequence = function () {
     }
   }, () => {
     addEventListener('AmmoReady', () => {
+      // requied now
+      loadObjFile.addLight();
       (0, _loaderObj.downloadMeshes)((0, _loaderObj.makeObjSeqArg)({
         id: "swat-walk-pistol",
         path: "res/meshes/objs-sequence/swat-walk-pistol",
@@ -8569,7 +8571,11 @@ class MEMeshObj extends _materials.default {
           }
         }]
       });
-      this.setupPipeline();
+      try {
+        this.setupPipeline();
+      } catch (err) {
+        console.log('err in create pipeline in init ', err);
+      }
 
       // Rotates the camera around the origin based on time.
       this.getTransformationMatrix = (mainRenderBundle, spotLight) => {
@@ -8668,17 +8674,23 @@ class MEMeshObj extends _materials.default {
     const modelMatrix = this.getModelMatrix(this.position);
     this.device.queue.writeBuffer(this.modelUniformBuffer, 0, modelMatrix.buffer, modelMatrix.byteOffset, modelMatrix.byteLength);
   };
-  drawElements = renderPass => {
+  drawElements = (pass, lightContainer) => {
     if (this.isVideo) {
       this.updateVideoTexture();
     }
-    renderPass.setBindGroup(0, this.sceneBindGroupForRender);
-    renderPass.setBindGroup(1, this.modelBindGroup);
-    renderPass.setVertexBuffer(0, this.vertexBuffer);
-    renderPass.setVertexBuffer(1, this.vertexNormalsBuffer);
-    renderPass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
-    renderPass.setIndexBuffer(this.indexBuffer, 'uint16');
-    renderPass.drawIndexed(this.indexCount);
+    // Bind per-mesh uniforms
+    pass.setBindGroup(0, this.sceneBindGroupForRender); // camera/light UBOs
+    pass.setBindGroup(1, this.modelBindGroup); // mesh transforms/textures
+    // Bind each light’s shadow texture & sampler
+    let bindIndex = 2; // start after UBO & model
+    for (const light of lightContainer) {
+      pass.setBindGroup(bindIndex++, light.getMainPassBindGroup(this));
+    }
+    pass.setVertexBuffer(0, this.vertexBuffer);
+    pass.setVertexBuffer(1, this.vertexNormalsBuffer);
+    pass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
+    pass.setIndexBuffer(this.indexBuffer, 'uint16');
+    pass.drawIndexed(this.indexCount);
   };
   createGPUBuffer(dataArray, usage) {
     if (!dataArray || typeof dataArray.length !== 'number') {
@@ -10834,11 +10846,12 @@ class MatrixEngineWGPU {
       Math.max(1, this.lightContainer.length);
       if (this.lightContainer.length == 0) {
         setTimeout(() => {
-          // console.warn('Create now test...')
+          console.warn('Create now test...');
           this.createMe();
         }, 800);
         return;
       }
+      console.warn('Create ED YES ...');
       this.shadowTextureArray = this.device.createTexture({
         label: `shadowTextureArray[GLOBAL] num of light ${numberOfLights}`,
         size: {
@@ -11250,24 +11263,12 @@ class MatrixEngineWGPU {
       for (const mesh of this.mainRenderBundle) {
         pass.setPipeline(mesh.pipeline);
         if (!mesh.sceneBindGroupForRender) {
-          for (const mesh of this.mainRenderBundle) {
-            mesh.shadowDepthTextureView = this.shadowArrayView;
-            mesh.createBindGroupForRender();
+          for (const m of this.mainRenderBundle) {
+            m.shadowDepthTextureView = this.shadowArrayView;
+            m.createBindGroupForRender();
           }
         }
-        // Bind per-mesh uniforms
-        pass.setBindGroup(0, mesh.sceneBindGroupForRender); // camera/light UBOs
-        pass.setBindGroup(1, mesh.modelBindGroup); // mesh transforms/textures
-        // Bind each light’s shadow texture & sampler
-        let bindIndex = 2; // start after UBO & model
-        for (const light of this.lightContainer) {
-          pass.setBindGroup(bindIndex++, light.getMainPassBindGroup(mesh));
-        }
-        pass.setVertexBuffer(0, mesh.vertexBuffer);
-        pass.setVertexBuffer(1, mesh.vertexNormalsBuffer);
-        pass.setVertexBuffer(2, mesh.vertexTexCoordsBuffer);
-        pass.setIndexBuffer(mesh.indexBuffer, 'uint16');
-        pass.drawIndexed(mesh.indexCount);
+        mesh.drawElements(pass, this.lightContainer);
       }
 
       // End render pass

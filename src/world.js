@@ -181,12 +181,13 @@ export default class MatrixEngineWGPU {
       Math.max(1, this.lightContainer.length);
       if(this.lightContainer.length == 0) {
         setTimeout(() => {
-          // console.warn('Create now test...')
+          console.warn('Create now test...')
           this.createMe();
         }, 800);
         return;
       }
 
+      console.warn('Create ED YES ...')
       this.shadowTextureArray = this.device.createTexture({
         label: `shadowTextureArray[GLOBAL] num of light ${numberOfLights}`,
         size: {
@@ -463,25 +464,14 @@ export default class MatrixEngineWGPU {
         pass.setPipeline(mesh.pipeline);
 
         if(!mesh.sceneBindGroupForRender) {
-          for(const mesh of this.mainRenderBundle) {
-            mesh.shadowDepthTextureView = this.shadowArrayView;
-            mesh.createBindGroupForRender();
+          for(const m of this.mainRenderBundle) {
+            m.shadowDepthTextureView = this.shadowArrayView;
+            m.createBindGroupForRender();
           }
-        }
-        // Bind per-mesh uniforms
-        pass.setBindGroup(0, mesh.sceneBindGroupForRender); // camera/light UBOs
-        pass.setBindGroup(1, mesh.modelBindGroup);          // mesh transforms/textures
-        // Bind each light’s shadow texture & sampler
-        let bindIndex = 2; // start after UBO & model
-        for(const light of this.lightContainer) {
-          pass.setBindGroup(bindIndex++, light.getMainPassBindGroup(mesh));
+  
         }
 
-        pass.setVertexBuffer(0, mesh.vertexBuffer);
-        pass.setVertexBuffer(1, mesh.vertexNormalsBuffer);
-        pass.setVertexBuffer(2, mesh.vertexTexCoordsBuffer);
-        pass.setIndexBuffer(mesh.indexBuffer, 'uint16');
-        pass.drawIndexed(mesh.indexCount);
+        mesh.drawElements(pass, this.lightContainer);
       }
 
       // End render pass
