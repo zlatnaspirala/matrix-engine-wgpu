@@ -20,12 +20,10 @@ import {SpotLight} from "./engine/lights.js";
  * @github zlatnaspirala
  */
 export default class MatrixEngineWGPU {
-  lightContainer
 
   mainRenderBundle = [];
   lightContainer = [];
   frame = () => {};
-
   entityHolder = [];
 
   entityArgPass = {
@@ -68,7 +66,7 @@ export default class MatrixEngineWGPU {
     this.mainCameraParams = options.mainCameraParams;
 
     const target = this.options.appendTo || document.body;
-    var canvas = document.createElement('canvas')
+    var canvas = document.createElement('canvas');
     canvas.id = this.options.canvasId;
     if(this.options.canvasSize == 'fullscreen') {
       canvas.width = window.innerWidth;
@@ -81,11 +79,10 @@ export default class MatrixEngineWGPU {
 
     // The camera types
     const initialCameraPosition = vec3.create(0, 0, 0);
-    // console.log('passed : o.mainCameraParams.responseCoef ', o.mainCameraParams.responseCoef)
     this.mainCameraParams = {
       type: this.options.mainCameraParams.type,
       responseCoef: this.options.mainCameraParams.responseCoef
-    }
+    };
 
     this.cameras = {
       arcball: new ArcballCamera({position: initialCameraPosition}),
@@ -171,22 +168,20 @@ export default class MatrixEngineWGPU {
     };
   }
   createTexArrayForShadows() {
-    console.log('this.lightContainer.length' + this.lightContainer.length)
     let numberOfLights = this.lightContainer.length;
     if(this.lightContainer.length == 0) {
-      console.warn('Wait for init light instance')
+      // console.warn('Wait for init light instance')
       setTimeout(() => {
-        console.warn('Create now !!!!!!!!!!!!')
+        // console.info('Test light again...')
         this.createMe();
       }, 800);
     }
 
     this.createMe = () => {
       Math.max(1, this.lightContainer.length);
-      // console.log('after max 1 numOfLights=' + numberOfLights)
       if(this.lightContainer.length == 0) {
         setTimeout(() => {
-          console.warn('Create now test...')
+          // console.warn('Create now test...')
           this.createMe();
         }, 800);
         return;
@@ -318,11 +313,9 @@ export default class MatrixEngineWGPU {
 
   addLight(o) {
     const camera = this.cameras[this.mainCameraParams.type];
-    // console.info(">>>>>>>>>>>>>>>>>>>", this.inputHandler)
     let newLight = new SpotLight(camera, this.inputHandler, this.device);
-    // newLight.prepareBuffer(this.device);
     this.lightContainer.push(newLight);
-    this.createTexArrayForShadows()
+    this.createTexArrayForShadows();
     console.log(`%cAdd light: ${newLight}`, LOG_FUNNY_SMALL);
   }
 
@@ -370,7 +363,7 @@ export default class MatrixEngineWGPU {
       // scale for all second option!
       o.objAnim.scaleAll = function(s) {
         for(var k in this.meshList) {
-          console.log('SCALE');
+          console.log('SCALE meshList');
           this.meshList[k].setScale(s);
         }
       }
@@ -424,7 +417,7 @@ export default class MatrixEngineWGPU {
         // light.updateSceneUniforms(this.mainRenderBundle, this.cameras.WASD);
         this.mainRenderBundle.forEach((meItem, index) => {
           meItem.position.update()
-           meItem.updateModelUniformBuffer()
+          meItem.updateModelUniformBuffer()
           meItem.getTransformationMatrix(this.mainRenderBundle, light)
         })
       }
@@ -451,8 +444,10 @@ export default class MatrixEngineWGPU {
             depthClearValue: 1.0,
           }
         });
-        shadowPass.setPipeline(light.shadowPipeline); // <-- must be first!
+
+        shadowPass.setPipeline(light.shadowPipeline);
         for(const [meshIndex, mesh] of this.mainRenderBundle.entries()) {
+
           shadowPass.setBindGroup(0, light.getShadowBindGroup(mesh, meshIndex));
           shadowPass.setBindGroup(1, mesh.modelBindGroup);
           mesh.drawShadows(shadowPass, light);
@@ -482,13 +477,10 @@ export default class MatrixEngineWGPU {
           pass.setBindGroup(bindIndex++, light.getMainPassBindGroup(mesh));
         }
 
-        // Set vertex/index buffers
         pass.setVertexBuffer(0, mesh.vertexBuffer);
         pass.setVertexBuffer(1, mesh.vertexNormalsBuffer);
         pass.setVertexBuffer(2, mesh.vertexTexCoordsBuffer);
         pass.setIndexBuffer(mesh.indexBuffer, 'uint16');
-
-        // Draw
         pass.drawIndexed(mesh.indexCount);
       }
 
@@ -504,7 +496,7 @@ export default class MatrixEngineWGPU {
 
   framePassPerObject = () => {
     let commandEncoder = this.device.createCommandEncoder();
-    this.matrixAmmo.updatePhysics();
+    if (this.matrixAmmo.rigidBodies.length > 0) this.matrixAmmo.updatePhysics();
     this.mainRenderBundle.forEach((meItem, index) => {
       if(index === 0) {
         if(meItem.renderPassDescriptor) meItem.renderPassDescriptor.colorAttachments[0].loadOp = 'clear';

@@ -1,5 +1,7 @@
 export let fragmentWGSL = `override shadowDepthTextureSize: f32 = 1024.0;
 
+// Created by Nikola Lukic with chatgtp assist.
+
 struct Scene {
     lightViewProjMatrix  : mat4x4f,
     cameraViewProjMatrix : mat4x4f,
@@ -26,14 +28,13 @@ struct SpotLight {
 
     range         : f32,
     ambientFactor : f32,
-    shadowBias    : f32,   // <<--- use one of the pad slots
-    _pad5         : f32,   // keep alignment to 16 bytes
+    shadowBias    : f32,
+    _pad5         : f32,
 
     lightViewProj : mat4x4<f32>,
 };
 
 const MAX_SPOTLIGHTS = 20u;
-override LIGHT_CLIP_Z_IS_ZERO_TO_ONE: bool = true;
 
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
@@ -79,14 +80,12 @@ fn computeSpotLight(light: SpotLight, normal: vec3f, fragPos: vec3f, viewDir: ve
 // Corrected PCF for texture_depth_2d_array
 fn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, lightDir: vec3f) -> f32 {
     var visibility: f32 = 0.0;
-
-    // Base bias
-    let biasConstant: f32 = 0.002;
+    let biasConstant: f32 = 0.001;
     // Slope bias: avoid self-shadowing on steep angles
-    let slopeBias: f32 = max(0.002 * (1.0 - dot(normal, lightDir)), 0.0);
-    let bias = biasConstant + slopeBias;
+    // let slopeBias: f32 = max(0.002 * (1.0 - dot(normal, lightDir)), 0.0);
+    let bias = biasConstant;//  + slopeBias;
 
-    let oneOverSize = 1.0 / shadowDepthTextureSize;
+    let oneOverSize = 1.0 / (shadowDepthTextureSize  * 0.5);
 
     // 3x3 PCF kernel
     let offsets: array<vec2f, 9> = array<vec2f, 9>(
@@ -101,10 +100,9 @@ fn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, light
             shadowSampler,
             shadowUV + offsets[i] * oneOverSize,
             layer,
-            depthRef - bias
+            depthRef //+ bias
         );
     }
-
     return visibility / 9.0;
 }
 
@@ -118,23 +116,16 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     var lightContribution = vec3f(0.0);
     var ambient = vec3f(0.0);
 
-    
     for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
         let sc = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);
-        
         let p  = sc.xyz / sc.w;
-
         let uv = clamp(p.xy * 0.5 + vec2<f32>(0.5), vec2<f32>(0.0), vec2<f32>(1.0));
-        let depthRef = p.z;
-
+        let depthRef = p.z * 0.5 + 0.5;
         let lightDir = normalize(spotlights[i].position - input.fragPos);
-        // let bias = spotlights[i].shadowBias;
-        // let visibility = sampleShadow(uv, i32(i), depthRef + bias, norm, lightDir);
-
         let angleFactor = 1.0 - dot(norm, lightDir);
-        let bias = spotlights[i].shadowBias * angleFactor;
+        let slopeBias = 0.01 * (1.0 - dot(norm, lightDir));
+        let bias = spotlights[i].shadowBias + slopeBias;
         let visibility = sampleShadow(uv, i32(i), depthRef - bias, norm, lightDir);
-
         let contrib = computeSpotLight(spotlights[i], norm, input.fragPos, viewDir);
         lightContribution += contrib * visibility;
         ambient += spotlights[i].ambientFactor * spotlights[i].color;
@@ -143,4 +134,4 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     let texColor = textureSample(meshTexture, meshSampler, input.uv);
     let finalColor = texColor.rgb * (ambient + lightContribution); // * albedo;
     return vec4f(finalColor, 1.0);
-}`
+}`;

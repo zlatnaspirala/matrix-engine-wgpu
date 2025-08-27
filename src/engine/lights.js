@@ -1,7 +1,12 @@
 import {mat4, vec3} from 'wgpu-matrix';
 import {vertexShadowWGSL} from '../shaders/vertexShadow.wgsl';
+/**
+ * @description
+ * Spot light with shodow cast.
+ * @author Nikola Lukic
+ * @email zlatnaspirala@gmail.com
+ */
 export class SpotLight {
-  // injected
   camera;
   inputHandler;
 
@@ -28,26 +33,39 @@ export class SpotLight {
     camera,
     inputHandler,
     device,
-    position = vec3.create(0, 5, -20),
+    position = vec3.create(0, 10, -20),
     target = vec3.create(0, 0, -20),
     fov = 45, aspect = 1.0, near = 0.1, far = 200) {
+
+    this.fov = fov;
+    this.aspect = aspect;
+    this.near = near;
+    this.far = far;
+
     this.camera = camera;
     this.inputHandler = inputHandler;
-
     this.position = position;
     this.target = target;
-    this.up = vec3.create(0, 1, 0);
+    this.up = vec3.create(0, 0, -1);
     this.direction = vec3.normalize(vec3.subtract(target, position));
     this.intensity = 1.0;
     this.color = vec3.create(1.0, 1.0, 1.0); // white
 
     this.viewMatrix = mat4.lookAt(position, target, this.up);
     this.projectionMatrix = mat4.perspective(
-      (fov * Math.PI) / 180,
-      aspect,
-      near,
-      far
+      (this.fov * Math.PI) / 180,
+      this.aspect,
+      this.near,
+      this.far
     );
+
+    this.setProjection = function(fov = 45, aspect = 1.0, near = 0.1, far = 200) {
+      this.projectionMatrix = mat4.perspective(fov, aspect, near, far);
+    }
+
+    this.updateProjection = function() {
+      this.projectionMatrix = mat4.perspective(this.fov, this.aspect, this.near, this.far);
+    }
 
     this.device = device;
     this.viewProjMatrix = mat4.multiply(this.projectionMatrix, this.viewMatrix);
@@ -61,13 +79,13 @@ export class SpotLight {
     this.outerCutoff = Math.cos((Math.PI / 180) * 17.5);
 
     this.ambientFactor = 0.5;
-    this.range = 200.0;
+    this.range = 20.0;
     this.shadowBias = 0.01;
 
     this.SHADOW_RES = 1024;
     this.primitive = {
       topology: 'triangle-list',
-      cullMode: 'back', // typical for shadow passes
+      cullMode: 'back', // for front interest border drawen shadows !
       frontFace: 'ccw'
     }
 
@@ -79,13 +97,14 @@ export class SpotLight {
     });
 
     this.shadowSampler = device.createSampler({
+      label: 'shadowSampler[light]',
       compare: 'less',
       magFilter: 'linear',
       minFilter: 'linear',
     });
 
     this.renderPassDescriptor = {
-      label: "shadowPass per ligth.",
+      label: "renderPassDescriptor shadowPass [per SpotLigth]",
       colorAttachments: [],
       depthStencilAttachment: {
         view: this.shadowTexture.createView(),
@@ -128,9 +147,7 @@ export class SpotLight {
           },
         ],
       });
-
       return this.shadowBindGroupContainer[index];
-
     }
 
     this.modelBindGroupLayout = this.device.createBindGroupLayout({entries: [{binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}, },], });
@@ -173,11 +190,9 @@ export class SpotLight {
       // You can cache it per mesh to avoid recreating each frame
       if(!this.mainPassBindGroupContainer) this.mainPassBindGroupContainer = [];
       const index = mesh._lightBindGroupIndex || 0; // assign unique per mesh if needed
-
       if(this.mainPassBindGroupContainer[index]) {
         return this.mainPassBindGroupContainer[index];
       }
-
       this.mainPassBindGroupContainer[index] = this.device.createBindGroup({
         label: `mainPassBindGroup for mesh`,
         layout: mesh.mainPassBindGroupLayout, // this should match the pipeline
@@ -192,42 +207,40 @@ export class SpotLight {
           },
         ],
       });
-
       return this.mainPassBindGroupContainer[index];
     }
   }
 
   update() {
-
     //  this.target = vec3.create(x, y, z);              // new target
     this.direction = vec3.normalize(vec3.subtract(this.target, this.position));
-
     const target = vec3.add(this.position, this.direction);
     this.viewMatrix = mat4.lookAt(this.position, target, this.up);
     this.viewProjMatrix = mat4.multiply(this.projectionMatrix, this.viewMatrix);
   }
 
-  updateSceneUniforms(mainRenderBundle) {
-    const now = Date.now();
-    // First frame safety
-    let dt = (now - this.lastFrameMS) / 1000;
-    if(!this.lastFrameMS) {dt = 1000;}
-    this.lastFrameMS = now;
-    // engine, once per frame
-    this.camera.update(dt, this.inputHandler());
-    const camVP = mat4.multiply(this.camera.projectionMatrix, this.camera.view); // P * V
+  // Done from mesh class.
+  // updateSceneUniforms(mainRenderBundle) {
+  //   const now = Date.now();
+  //   // First frame safety
+  //   let dt = (now - this.lastFrameMS) / 1000;
+  //   if(!this.lastFrameMS) {dt = 1000;}
+  //   this.lastFrameMS = now;
+  //   // engine, once per frame
+  //   this.camera.update(dt, this.inputHandler());
+  //   const camVP = mat4.multiply(this.camera.projectionMatrix, this.camera.view); // P * V
 
-    for(const mesh of mainRenderBundle) {
-      // scene buffer layout = 0..63 lightVP, 64..127 camVP, 128..143 lightPos(+pad)
-      this.device.queue.writeBuffer(
-        mesh.sceneUniformBuffer,
-        64, // cameraViewProjMatrix offset
-        camVP.buffer,
-        camVP.byteOffset,
-        camVP.byteLength
-      );
-    }
-  }
+  //   for(const mesh of mainRenderBundle) {
+  //     // scene buffer layout = 0..63 lightVP, 64..127 camVP, 128..143 lightPos(+pad)
+  //     this.device.queue.writeBuffer(
+  //       mesh.sceneUniformBuffer,
+  //       64, // cameraViewProjMatrix offset
+  //       camVP.buffer,
+  //       camVP.byteOffset,
+  //       camVP.byteLength
+  //     );
+  //   }
+  // }
 
   getLightDataBuffer() {
     const m = this.viewProjMatrix;

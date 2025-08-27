@@ -7120,8 +7120,13 @@ Object.defineProperty(exports, "__esModule", {
 exports.SpotLight = void 0;
 var _wgpuMatrix = require("wgpu-matrix");
 var _vertexShadow = require("../shaders/vertexShadow.wgsl");
+/**
+ * @description
+ * Spot light with shodow cast.
+ * @author Nikola Lukic
+ * @email zlatnaspirala@gmail.com
+ */
 class SpotLight {
-  // injected
   camera;
   inputHandler;
   position;
@@ -7138,18 +7143,28 @@ class SpotLight {
   innerCutoff;
   outerCutoff;
   spotlightUniformBuffer;
-  constructor(camera, inputHandler, device, position = _wgpuMatrix.vec3.create(0, 5, -20), target = _wgpuMatrix.vec3.create(0, 0, -20), fov = 45, aspect = 1.0, near = 0.1, far = 200) {
+  constructor(camera, inputHandler, device, position = _wgpuMatrix.vec3.create(0, 10, -20), target = _wgpuMatrix.vec3.create(0, 0, -20), fov = 45, aspect = 1.0, near = 0.1, far = 200) {
+    this.fov = fov;
+    this.aspect = aspect;
+    this.near = near;
+    this.far = far;
     this.camera = camera;
     this.inputHandler = inputHandler;
     this.position = position;
     this.target = target;
-    this.up = _wgpuMatrix.vec3.create(0, 1, 0);
+    this.up = _wgpuMatrix.vec3.create(0, 0, -1);
     this.direction = _wgpuMatrix.vec3.normalize(_wgpuMatrix.vec3.subtract(target, position));
     this.intensity = 1.0;
     this.color = _wgpuMatrix.vec3.create(1.0, 1.0, 1.0); // white
 
     this.viewMatrix = _wgpuMatrix.mat4.lookAt(position, target, this.up);
-    this.projectionMatrix = _wgpuMatrix.mat4.perspective(fov * Math.PI / 180, aspect, near, far);
+    this.projectionMatrix = _wgpuMatrix.mat4.perspective(this.fov * Math.PI / 180, this.aspect, this.near, this.far);
+    this.setProjection = function (fov = 45, aspect = 1.0, near = 0.1, far = 200) {
+      this.projectionMatrix = _wgpuMatrix.mat4.perspective(fov, aspect, near, far);
+    };
+    this.updateProjection = function () {
+      this.projectionMatrix = _wgpuMatrix.mat4.perspective(this.fov, this.aspect, this.near, this.far);
+    };
     this.device = device;
     this.viewProjMatrix = _wgpuMatrix.mat4.multiply(this.projectionMatrix, this.viewMatrix);
     this.fov = fov;
@@ -7159,13 +7174,13 @@ class SpotLight {
     this.innerCutoff = Math.cos(Math.PI / 180 * 12.5);
     this.outerCutoff = Math.cos(Math.PI / 180 * 17.5);
     this.ambientFactor = 0.5;
-    this.range = 200.0;
+    this.range = 20.0;
     this.shadowBias = 0.01;
     this.SHADOW_RES = 1024;
     this.primitive = {
       topology: 'triangle-list',
       cullMode: 'back',
-      // typical for shadow passes
+      // for front interest border drawen shadows !
       frontFace: 'ccw'
     };
     this.shadowTexture = this.device.createTexture({
@@ -7175,12 +7190,13 @@ class SpotLight {
       usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING
     });
     this.shadowSampler = device.createSampler({
+      label: 'shadowSampler[light]',
       compare: 'less',
       magFilter: 'linear',
       minFilter: 'linear'
     });
     this.renderPassDescriptor = {
-      label: "shadowPass per ligth.",
+      label: "renderPassDescriptor shadowPass [per SpotLigth]",
       colorAttachments: [],
       depthStencilAttachment: {
         view: this.shadowTexture.createView(),
@@ -7257,7 +7273,6 @@ class SpotLight {
       // You can cache it per mesh to avoid recreating each frame
       if (!this.mainPassBindGroupContainer) this.mainPassBindGroupContainer = [];
       const index = mesh._lightBindGroupIndex || 0; // assign unique per mesh if needed
-
       if (this.mainPassBindGroupContainer[index]) {
         return this.mainPassBindGroupContainer[index];
       }
@@ -7285,25 +7300,30 @@ class SpotLight {
     this.viewMatrix = _wgpuMatrix.mat4.lookAt(this.position, target, this.up);
     this.viewProjMatrix = _wgpuMatrix.mat4.multiply(this.projectionMatrix, this.viewMatrix);
   }
-  updateSceneUniforms(mainRenderBundle) {
-    const now = Date.now();
-    // First frame safety
-    let dt = (now - this.lastFrameMS) / 1000;
-    if (!this.lastFrameMS) {
-      dt = 1000;
-    }
-    this.lastFrameMS = now;
-    // engine, once per frame
-    this.camera.update(dt, this.inputHandler());
-    const camVP = _wgpuMatrix.mat4.multiply(this.camera.projectionMatrix, this.camera.view); // P * V
 
-    for (const mesh of mainRenderBundle) {
-      // scene buffer layout = 0..63 lightVP, 64..127 camVP, 128..143 lightPos(+pad)
-      this.device.queue.writeBuffer(mesh.sceneUniformBuffer, 64,
-      // cameraViewProjMatrix offset
-      camVP.buffer, camVP.byteOffset, camVP.byteLength);
-    }
-  }
+  // Done from mesh class.
+  // updateSceneUniforms(mainRenderBundle) {
+  //   const now = Date.now();
+  //   // First frame safety
+  //   let dt = (now - this.lastFrameMS) / 1000;
+  //   if(!this.lastFrameMS) {dt = 1000;}
+  //   this.lastFrameMS = now;
+  //   // engine, once per frame
+  //   this.camera.update(dt, this.inputHandler());
+  //   const camVP = mat4.multiply(this.camera.projectionMatrix, this.camera.view); // P * V
+
+  //   for(const mesh of mainRenderBundle) {
+  //     // scene buffer layout = 0..63 lightVP, 64..127 camVP, 128..143 lightPos(+pad)
+  //     this.device.queue.writeBuffer(
+  //       mesh.sceneUniformBuffer,
+  //       64, // cameraViewProjMatrix offset
+  //       camVP.buffer,
+  //       camVP.byteOffset,
+  //       camVP.byteLength
+  //     );
+  //   }
+  // }
+
   getLightDataBuffer() {
     const m = this.viewProjMatrix;
     return new Float32Array([...this.position, 0.0, ...this.direction, 0.0, this.innerCutoff, this.outerCutoff, this.intensity, 0.0, ...this.color, 0.0, this.range, this.ambientFactor, this.shadowBias,
@@ -7966,10 +7986,10 @@ class Materials {
     const textureResource = this.isVideo ? this.externalTexture // must be set via updateVideoTexture
     : this.texture0.createView();
     if (!textureResource || !this.sceneUniformBuffer || !this.shadowDepthTextureView) {
-      console.warn("❗Missing res skipping...");
+      // console.warn("❗Missing res skipping...");
       return;
     } else {
-      // console.warn("❗ PASSED Missing res skipping..."); 
+      console.info("✅ Passed resource...");
     }
     if (this.isVideo == true) {
       this.sceneBindGroupForRender = this.device.createBindGroup({
@@ -8514,7 +8534,6 @@ class MEMeshObj extends _materials.default {
         size: 160,
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
       });
-      console.log('test buffer sceneUniformBuffer ', this.sceneUniformBuffer);
       this.uniformBufferBindGroupLayout = this.device.createBindGroupLayout({
         label: 'uniformBufferBindGroupLayout in mesh',
         entries: [{
@@ -8602,14 +8621,13 @@ class MEMeshObj extends _materials.default {
       this.done = true;
     }).then(() => {
       if (typeof this.objAnim !== 'undefined' && this.objAnim !== null) {
-        console.log('after all load configutr mesh list buffers');
+        console.log('after all updateMeshListBuffers...');
         this.updateMeshListBuffers();
       }
     });
   }
   setupPipeline = () => {
     this.createBindGroupForRender();
-    console.log('Set Pipeline✅');
     this.pipeline = this.device.createRenderPipeline({
       label: 'Mesh Pipeline ✅',
       layout: this.device.createPipelineLayout({
@@ -8642,6 +8660,7 @@ class MEMeshObj extends _materials.default {
       },
       primitive: this.primitive
     });
+    console.log('✅Set Pipeline done');
   };
   updateModelUniformBuffer = () => {
     if (this.done == false) return;
@@ -8719,6 +8738,14 @@ class MEMeshObj extends _materials.default {
     }
   }
   drawElementsAnim = renderPass => {
+    if (!this.sceneBindGroupForRender || !this.modelBindGroup) {
+      console.log(' NULL 1');
+      return;
+    }
+    if (!this.objAnim.meshList[this.objAnim.id + this.objAnim.currentAni]) {
+      console.log(' NULL 2');
+      return;
+    }
     renderPass.setBindGroup(0, this.sceneBindGroupForRender);
     renderPass.setBindGroup(1, this.modelBindGroup);
     const mesh = this.objAnim.meshList[this.objAnim.id + this.objAnim.currentAni];
@@ -10274,6 +10301,8 @@ Object.defineProperty(exports, "__esModule", {
 exports.fragmentWGSL = void 0;
 let fragmentWGSL = exports.fragmentWGSL = `override shadowDepthTextureSize: f32 = 1024.0;
 
+// Created by Nikola Lukic with chatgtp assist.
+
 struct Scene {
     lightViewProjMatrix  : mat4x4f,
     cameraViewProjMatrix : mat4x4f,
@@ -10300,14 +10329,13 @@ struct SpotLight {
 
     range         : f32,
     ambientFactor : f32,
-    shadowBias    : f32,   // <<--- use one of the pad slots
-    _pad5         : f32,   // keep alignment to 16 bytes
+    shadowBias    : f32,
+    _pad5         : f32,
 
     lightViewProj : mat4x4<f32>,
 };
 
 const MAX_SPOTLIGHTS = 20u;
-override LIGHT_CLIP_Z_IS_ZERO_TO_ONE: bool = true;
 
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
@@ -10353,14 +10381,12 @@ fn computeSpotLight(light: SpotLight, normal: vec3f, fragPos: vec3f, viewDir: ve
 // Corrected PCF for texture_depth_2d_array
 fn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, lightDir: vec3f) -> f32 {
     var visibility: f32 = 0.0;
-
-    // Base bias
-    let biasConstant: f32 = 0.002;
+    let biasConstant: f32 = 0.001;
     // Slope bias: avoid self-shadowing on steep angles
-    let slopeBias: f32 = max(0.002 * (1.0 - dot(normal, lightDir)), 0.0);
-    let bias = biasConstant + slopeBias;
+    // let slopeBias: f32 = max(0.002 * (1.0 - dot(normal, lightDir)), 0.0);
+    let bias = biasConstant;//  + slopeBias;
 
-    let oneOverSize = 1.0 / shadowDepthTextureSize;
+    let oneOverSize = 1.0 / (shadowDepthTextureSize  * 0.5);
 
     // 3x3 PCF kernel
     let offsets: array<vec2f, 9> = array<vec2f, 9>(
@@ -10375,10 +10401,9 @@ fn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, light
             shadowSampler,
             shadowUV + offsets[i] * oneOverSize,
             layer,
-            depthRef - bias
+            depthRef //+ bias
         );
     }
-
     return visibility / 9.0;
 }
 
@@ -10392,23 +10417,16 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     var lightContribution = vec3f(0.0);
     var ambient = vec3f(0.0);
 
-    
     for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
         let sc = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);
-        
         let p  = sc.xyz / sc.w;
-
         let uv = clamp(p.xy * 0.5 + vec2<f32>(0.5), vec2<f32>(0.0), vec2<f32>(1.0));
-        let depthRef = p.z;
-
+        let depthRef = p.z * 0.5 + 0.5;
         let lightDir = normalize(spotlights[i].position - input.fragPos);
-        // let bias = spotlights[i].shadowBias;
-        // let visibility = sampleShadow(uv, i32(i), depthRef + bias, norm, lightDir);
-
         let angleFactor = 1.0 - dot(norm, lightDir);
-        let bias = spotlights[i].shadowBias * angleFactor;
+        let slopeBias = 0.01 * (1.0 - dot(norm, lightDir));
+        let bias = spotlights[i].shadowBias + slopeBias;
         let visibility = sampleShadow(uv, i32(i), depthRef - bias, norm, lightDir);
-
         let contrib = computeSpotLight(spotlights[i], norm, input.fragPos, viewDir);
         lightContribution += contrib * visibility;
         ambient += spotlights[i].ambientFactor * spotlights[i].color;
@@ -10485,46 +10503,45 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.vertexWGSL = void 0;
 let vertexWGSL = exports.vertexWGSL = `struct Scene {
-    lightViewProjMatrix: mat4x4f,
-    cameraViewProjMatrix: mat4x4f,
-    lightPos: vec3f,
+  lightViewProjMatrix: mat4x4f,
+  cameraViewProjMatrix: mat4x4f,
+  lightPos: vec3f,
 }
 
 struct Model {
-    modelMatrix: mat4x4f,
+  modelMatrix: mat4x4f,
 }
 
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(1) @binding(0) var<uniform> model : Model;
 
 struct VertexOutput {
-    @location(0) shadowPos: vec4f,  // now vec4
-    @location(1) fragPos: vec3f,
-    @location(2) fragNorm: vec3f,
-    @location(3) uv: vec2f,
-    @builtin(position) Position: vec4f,
+  @location(0) shadowPos: vec4f,  // now vec4
+  @location(1) fragPos: vec3f,
+  @location(2) fragNorm: vec3f,
+  @location(3) uv: vec2f,
+  @builtin(position) Position: vec4f,
 }
 
 @vertex
 fn main(
-    @location(0) position: vec3f,
-    @location(1) normal: vec3f,
-    @location(2) uv: vec2f
+  @location(0) position: vec3f,
+  @location(1) normal: vec3f,
+  @location(2) uv: vec2f
 ) -> VertexOutput {
-    var output : VertexOutput;
+  var output : VertexOutput;
 
-    let posFromLight = scene.lightViewProjMatrix * model.modelMatrix * vec4(position, 1.0);
-    output.shadowPos = posFromLight; // pass full vec4 for perspective divide
+  let posFromLight = scene.lightViewProjMatrix * model.modelMatrix * vec4(position, 1.0);
+  output.shadowPos = posFromLight; // pass full vec4 for perspective divide
 
-    let worldPos = model.modelMatrix * vec4(position, 1.0);
-    output.Position = scene.cameraViewProjMatrix * worldPos;
-    output.fragPos = worldPos.xyz;
+  let worldPos = model.modelMatrix * vec4(position, 1.0);
+  output.Position = scene.cameraViewProjMatrix * worldPos;
+  output.fragPos = worldPos.xyz;
 
-    output.fragNorm = normalize((model.modelMatrix * vec4(normal, 0.0)).xyz);
-    output.uv = uv;
-    return output;
-}
-`;
+  output.fragNorm = normalize((model.modelMatrix * vec4(normal, 0.0)).xyz);
+  output.uv = uv;
+  return output;
+}`;
 
 },{}],24:[function(require,module,exports){
 "use strict";
@@ -10652,7 +10669,6 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
  * @github zlatnaspirala
  */
 class MatrixEngineWGPU {
-  lightContainer;
   mainRenderBundle = [];
   lightContainer = [];
   frame = () => {};
@@ -10717,7 +10733,6 @@ class MatrixEngineWGPU {
 
     // The camera types
     const initialCameraPosition = _wgpuMatrix.vec3.create(0, 0, 0);
-    // console.log('passed : o.mainCameraParams.responseCoef ', o.mainCameraParams.responseCoef)
     this.mainCameraParams = {
       type: this.options.mainCameraParams.type,
       responseCoef: this.options.mainCameraParams.responseCoef
@@ -10807,21 +10822,19 @@ class MatrixEngineWGPU {
     };
   }
   createTexArrayForShadows() {
-    console.log('this.lightContainer.length' + this.lightContainer.length);
     let numberOfLights = this.lightContainer.length;
     if (this.lightContainer.length == 0) {
-      console.warn('Wait for init light instance');
+      // console.warn('Wait for init light instance')
       setTimeout(() => {
-        console.warn('Create now !!!!!!!!!!!!');
+        // console.info('Test light again...')
         this.createMe();
       }, 800);
     }
     this.createMe = () => {
       Math.max(1, this.lightContainer.length);
-      // console.log('after max 1 numOfLights=' + numberOfLights)
       if (this.lightContainer.length == 0) {
         setTimeout(() => {
-          console.warn('Create now test...');
+          // console.warn('Create now test...')
           this.createMe();
         }, 800);
         return;
@@ -11048,9 +11061,7 @@ class MatrixEngineWGPU {
   };
   addLight(o) {
     const camera = this.cameras[this.mainCameraParams.type];
-    // console.info(">>>>>>>>>>>>>>>>>>>", this.inputHandler)
     let newLight = new _lights.SpotLight(camera, this.inputHandler, this.device);
-    // newLight.prepareBuffer(this.device);
     this.lightContainer.push(newLight);
     this.createTexArrayForShadows();
     console.log(`%cAdd light: ${newLight}`, _utils.LOG_FUNNY_SMALL);
@@ -11145,7 +11156,7 @@ class MatrixEngineWGPU {
       // scale for all second option!
       o.objAnim.scaleAll = function (s) {
         for (var k in this.meshList) {
-          console.log('SCALE');
+          console.log('SCALE meshList');
           this.meshList[k].setScale(s);
         }
       };
@@ -11224,7 +11235,7 @@ class MatrixEngineWGPU {
             depthClearValue: 1.0
           }
         });
-        shadowPass.setPipeline(light.shadowPipeline); // <-- must be first!
+        shadowPass.setPipeline(light.shadowPipeline);
         for (const [meshIndex, mesh] of this.mainRenderBundle.entries()) {
           shadowPass.setBindGroup(0, light.getShadowBindGroup(mesh, meshIndex));
           shadowPass.setBindGroup(1, mesh.modelBindGroup);
@@ -11252,14 +11263,10 @@ class MatrixEngineWGPU {
         for (const light of this.lightContainer) {
           pass.setBindGroup(bindIndex++, light.getMainPassBindGroup(mesh));
         }
-
-        // Set vertex/index buffers
         pass.setVertexBuffer(0, mesh.vertexBuffer);
         pass.setVertexBuffer(1, mesh.vertexNormalsBuffer);
         pass.setVertexBuffer(2, mesh.vertexTexCoordsBuffer);
         pass.setIndexBuffer(mesh.indexBuffer, 'uint16');
-
-        // Draw
         pass.drawIndexed(mesh.indexCount);
       }
 
@@ -11274,7 +11281,7 @@ class MatrixEngineWGPU {
   };
   framePassPerObject = () => {
     let commandEncoder = this.device.createCommandEncoder();
-    this.matrixAmmo.updatePhysics();
+    if (this.matrixAmmo.rigidBodies.length > 0) this.matrixAmmo.updatePhysics();
     this.mainRenderBundle.forEach((meItem, index) => {
       if (index === 0) {
         if (meItem.renderPassDescriptor) meItem.renderPassDescriptor.colorAttachments[0].loadOp = 'clear';

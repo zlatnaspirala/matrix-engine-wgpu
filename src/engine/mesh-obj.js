@@ -187,8 +187,6 @@ export default class MEMeshObj extends Materials {
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
       });
 
-      console.log('test buffer sceneUniformBuffer ', this.sceneUniformBuffer);
-
       this.uniformBufferBindGroupLayout = this.device.createBindGroupLayout({
         label: 'uniformBufferBindGroupLayout in mesh',
         entries: [
@@ -294,16 +292,14 @@ export default class MEMeshObj extends Materials {
       this.done = true;
     }).then(() => {
       if(typeof this.objAnim !== 'undefined' && this.objAnim !== null) {
-        console.log('after all load configutr mesh list buffers')
+        console.log('after all updateMeshListBuffers...')
         this.updateMeshListBuffers()
       }
     })
   }
 
   setupPipeline = () => {
-
     this.createBindGroupForRender();
-    console.log('Set Pipeline✅');
     this.pipeline = this.device.createRenderPipeline({
       label: 'Mesh Pipeline ✅',
       layout: this.device.createPipelineLayout({
@@ -338,6 +334,7 @@ export default class MEMeshObj extends Materials {
       },
       primitive: this.primitive,
     });
+    console.log('✅Set Pipeline done');
   }
 
   updateModelUniformBuffer = () => {
@@ -434,6 +431,18 @@ export default class MEMeshObj extends Materials {
   }
 
   drawElementsAnim = (renderPass) => {
+
+    if(!this.sceneBindGroupForRender || !this.modelBindGroup) {
+      console.log(' NULL 1')
+      return;
+    }
+
+    if(!this.objAnim.meshList[this.objAnim.id + this.objAnim.currentAni]) {
+      console.log(' NULL 2')
+      return;
+    }
+
+
     renderPass.setBindGroup(0, this.sceneBindGroupForRender);
     renderPass.setBindGroup(1, this.modelBindGroup);
     const mesh = this.objAnim.meshList[this.objAnim.id + this.objAnim.currentAni];

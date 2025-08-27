@@ -174,10 +174,10 @@ export default class Materials {
       ? this.externalTexture // must be set via updateVideoTexture
       : this.texture0.createView();
     if(!textureResource || !this.sceneUniformBuffer || !this.shadowDepthTextureView) {
-      console.warn("❗Missing res skipping...");
+      // console.warn("❗Missing res skipping...");
       return;
     } else {
-      // console.warn("❗ PASSED Missing res skipping..."); 
+      console.info("✅ Passed resource..."); 
     }
     if(this.isVideo == true) {
       this.sceneBindGroupForRender = this.device.createBindGroup({
