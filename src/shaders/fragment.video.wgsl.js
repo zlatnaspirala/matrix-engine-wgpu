@@ -11,17 +11,18 @@ struct Scene {
 @group(0) @binding(2) var shadowSampler: sampler_comparison;
 @group(0) @binding(3) var meshTexture: texture_external;
 @group(0) @binding(4) var meshSampler: sampler;
-
 @group(0) @binding(5) var<uniform> postFXMode: u32;
 
 // ❌ No binding(4) here!
 
 struct FragmentInput {
-  @location(0) shadowPos : vec3f,
+  @location(0) shadowPos : vec4f,
   @location(1) fragPos : vec3f,
   @location(2) fragNorm : vec3f,
   @location(3) uv : vec2f,
 }
+
+ 
 
 const albedo = vec3f(0.9);
 const ambientFactor = 0.7;

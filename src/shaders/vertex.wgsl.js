@@ -12,11 +12,10 @@ struct Model {
 @group(1) @binding(0) var<uniform> model : Model;
 
 struct VertexOutput {
-  @location(0) shadowPos: vec3f,
+  @location(0) shadowPos: vec4f,  // now vec4
   @location(1) fragPos: vec3f,
   @location(2) fragNorm: vec3f,
-  @location(3) uv : vec2f,
-
+  @location(3) uv: vec2f,
   @builtin(position) Position: vec4f,
 }
 
@@ -24,31 +23,18 @@ struct VertexOutput {
 fn main(
   @location(0) position: vec3f,
   @location(1) normal: vec3f,
-  @location(2) uv : vec2f
+  @location(2) uv: vec2f
 ) -> VertexOutput {
   var output : VertexOutput;
 
-  // XY is in (-1, 1) space, Z is in (0, 1) space
   let posFromLight = scene.lightViewProjMatrix * model.modelMatrix * vec4(position, 1.0);
-
-  // Convert XY to (0, 1)
-  // Y is flipped because texture coords are Y-down.
-  output.shadowPos = vec3(
-    posFromLight.xy * vec2(0.5, -0.5) + vec2(0.5),
-    posFromLight.z
-  );
-
-  // follewed camera code
-  // output.Position = scene.cameraViewProjMatrix * model.modelMatrix * vec4(position, 1.0);
-  // output.fragPos = output.Position.xyz;
-  // output.fragNorm = normal;
+  output.shadowPos = posFromLight; // pass full vec4 for perspective divide
 
   let worldPos = model.modelMatrix * vec4(position, 1.0);
   output.Position = scene.cameraViewProjMatrix * worldPos;
-  output.fragPos = worldPos.xyz;          // ✅ world space
+  output.fragPos = worldPos.xyz;
 
   output.fragNorm = normalize((model.modelMatrix * vec4(normal, 0.0)).xyz);
   output.uv = uv;
   return output;
-}
-`;
+}`;

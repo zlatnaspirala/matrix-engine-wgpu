@@ -14,6 +14,14 @@ export var loadObjsSequence = function() {
   }, () => {
 
     addEventListener('AmmoReady', () => {
+
+      // requied now
+      loadObjFile.addLight();
+
+      // adapt
+      app.lightContainer[0].position[2] = -5;
+      app.lightContainer[0].position[1] = 22;
+
       downloadMeshes(
         makeObjSeqArg({
           id: "swat-walk-pistol",

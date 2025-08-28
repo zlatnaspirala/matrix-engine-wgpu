@@ -29,7 +29,7 @@ class CameraBase {
     mat4.copy(mat, this.matrix_);
   }
 
-  setProjection(fov = (2 * Math.PI) / 5, aspect = 1, near = 1, far = 1000) {
+  setProjection(fov = (2*Math.PI) / 5 , aspect = 1, near = 0.5, far = 1000) {
     this.projectionMatrix = mat4.perspective(fov, aspect, near, far);
   }
 

@@ -154,12 +154,18 @@ SpotLight – Emits light in a cone shape with configurable cutoff angles.
 
 Features
 
-✅ Supports multiple lights (20 max)
+✅ Supports multiple lights (4 max),  ~20 for next update.
 ✅ Shadow-ready (spotlight0 shadows implemented, extendable to others)
 
+Required:
+```js
 engine.addLight()
-after explore light props.
+```
 
+Access lights with array lightContainer:
+```js
+app.lightContainer[0]
+```
 
 ### Object Interaction (Raycasting)
 
@@ -383,6 +389,15 @@ If this happen less then 15 times (Loading procces) then it is ok probably...
 ```json
 Draw func (err):TypeError: Failed to execute 'beginRenderPass' on 'GPUCommandEncoder': The provided value is not of type 'GPURenderPassDescriptor'.
 ```
+
+### Note VideoTexture
+
+It is possible for 1 or 2 warn in middle time when mesh switch to the videoTexture.
+Will be fixxed in next update.
+```js
+Dimension (TextureViewDimension::e2DArray) of [TextureView of Texture "shadowTextureArray[GLOBAL] num of light 1"] doesn't match the expected dimension (TextureViewDimension::e2D).
+```
+
 
 ## About URLParams
 

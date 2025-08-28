@@ -3,6 +3,7 @@ import {downloadMeshes} from '../src/engine/loader-obj.js';
 import {LOG_FUNNY, LOG_INFO, LOG_MATRIX} from "../src/engine/utils.js";
 import {addRaycastsAABBListener} from "../src/engine/raycast.js";
 
+// @group(0) @binding(5) var<uniform> postFXMode: u32;
 export var loadVideoTexture = function() {
 
   let videoTexture = new MatrixEngineWGPU({
@@ -14,6 +15,11 @@ export var loadVideoTexture = function() {
     },
     clearColor: {r: 0, b: 0.122, g: 0.122, a: 1}
   }, () => {
+
+    // For now one light perscene must be added.
+    // if you dont wanna light just use intesity = 0
+    // videoTexture is app main instance
+    videoTexture.addLight();
 
     addEventListener('AmmoReady', () => {
       downloadMeshes({
@@ -46,13 +52,13 @@ export var loadVideoTexture = function() {
       })
 
       var TEST = videoTexture.getSceneObjectByName('MyVideoTex');
-      setTimeout(() => {
-        console.log(`%c Test video-texture...`, LOG_MATRIX);
-        TEST.loadVideoTexture({
-          type: 'video',
-          src: 'res/videos/tunel.mp4'
-        });
-      }, 4000);
+
+      console.log(`%c Test video-texture...`, LOG_MATRIX);
+      TEST.loadVideoTexture({
+        type: 'video',
+        src: 'res/videos/tunel.mp4'
+      });
+
     }
   })
 
