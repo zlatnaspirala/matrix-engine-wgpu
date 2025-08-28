@@ -219,29 +219,6 @@ export class SpotLight {
     this.viewProjMatrix = mat4.multiply(this.projectionMatrix, this.viewMatrix);
   }
 
-  // Done from mesh class.
-  // updateSceneUniforms(mainRenderBundle) {
-  //   const now = Date.now();
-  //   // First frame safety
-  //   let dt = (now - this.lastFrameMS) / 1000;
-  //   if(!this.lastFrameMS) {dt = 1000;}
-  //   this.lastFrameMS = now;
-  //   // engine, once per frame
-  //   this.camera.update(dt, this.inputHandler());
-  //   const camVP = mat4.multiply(this.camera.projectionMatrix, this.camera.view); // P * V
-
-  //   for(const mesh of mainRenderBundle) {
-  //     // scene buffer layout = 0..63 lightVP, 64..127 camVP, 128..143 lightPos(+pad)
-  //     this.device.queue.writeBuffer(
-  //       mesh.sceneUniformBuffer,
-  //       64, // cameraViewProjMatrix offset
-  //       camVP.buffer,
-  //       camVP.byteOffset,
-  //       camVP.byteLength
-  //     );
-  //   }
-  // }
-
   getLightDataBuffer() {
     const m = this.viewProjMatrix;
     return new Float32Array([

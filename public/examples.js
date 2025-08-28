@@ -308,6 +308,10 @@ var loadObjsSequence = function () {
     addEventListener('AmmoReady', () => {
       // requied now
       loadObjFile.addLight();
+
+      // adapt
+      app.lightContainer[0].position[2] = -5;
+      app.lightContainer[0].position[1] = 22;
       (0, _loaderObj.downloadMeshes)((0, _loaderObj.makeObjSeqArg)({
         id: "swat-walk-pistol",
         path: "res/meshes/objs-sequence/swat-walk-pistol",
@@ -459,6 +463,10 @@ var loadVideoTexture = function () {
       a: 1
     }
   }, () => {
+    // For now one light perscene must be added.
+    // if you dont wanna light just use intesity = 0
+    // videoTexture is app main instance
+    videoTexture.addLight();
     addEventListener('AmmoReady', () => {
       (0, _loaderObj.downloadMeshes)({
         welcomeText: "./res/meshes/blender/piramyd.obj",
@@ -7302,30 +7310,6 @@ class SpotLight {
     this.viewMatrix = _wgpuMatrix.mat4.lookAt(this.position, target, this.up);
     this.viewProjMatrix = _wgpuMatrix.mat4.multiply(this.projectionMatrix, this.viewMatrix);
   }
-
-  // Done from mesh class.
-  // updateSceneUniforms(mainRenderBundle) {
-  //   const now = Date.now();
-  //   // First frame safety
-  //   let dt = (now - this.lastFrameMS) / 1000;
-  //   if(!this.lastFrameMS) {dt = 1000;}
-  //   this.lastFrameMS = now;
-  //   // engine, once per frame
-  //   this.camera.update(dt, this.inputHandler());
-  //   const camVP = mat4.multiply(this.camera.projectionMatrix, this.camera.view); // P * V
-
-  //   for(const mesh of mainRenderBundle) {
-  //     // scene buffer layout = 0..63 lightVP, 64..127 camVP, 128..143 lightPos(+pad)
-  //     this.device.queue.writeBuffer(
-  //       mesh.sceneUniformBuffer,
-  //       64, // cameraViewProjMatrix offset
-  //       camVP.buffer,
-  //       camVP.byteOffset,
-  //       camVP.byteLength
-  //     );
-  //   }
-  // }
-
   getLightDataBuffer() {
     const m = this.viewProjMatrix;
     return new Float32Array([...this.position, 0.0, ...this.direction, 0.0, this.innerCutoff, this.outerCutoff, this.intensity, 0.0, ...this.color, 0.0, this.range, this.ambientFactor, this.shadowBias,
@@ -8674,24 +8658,6 @@ class MEMeshObj extends _materials.default {
     const modelMatrix = this.getModelMatrix(this.position);
     this.device.queue.writeBuffer(this.modelUniformBuffer, 0, modelMatrix.buffer, modelMatrix.byteOffset, modelMatrix.byteLength);
   };
-  drawElements = (pass, lightContainer) => {
-    if (this.isVideo) {
-      this.updateVideoTexture();
-    }
-    // Bind per-mesh uniforms
-    pass.setBindGroup(0, this.sceneBindGroupForRender); // camera/light UBOs
-    pass.setBindGroup(1, this.modelBindGroup); // mesh transforms/textures
-    // Bind each light’s shadow texture & sampler
-    let bindIndex = 2; // start after UBO & model
-    for (const light of lightContainer) {
-      pass.setBindGroup(bindIndex++, light.getMainPassBindGroup(this));
-    }
-    pass.setVertexBuffer(0, this.vertexBuffer);
-    pass.setVertexBuffer(1, this.vertexNormalsBuffer);
-    pass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
-    pass.setIndexBuffer(this.indexBuffer, 'uint16');
-    pass.drawIndexed(this.indexCount);
-  };
   createGPUBuffer(dataArray, usage) {
     if (!dataArray || typeof dataArray.length !== 'number') {
       throw new Error('Invalid data array passed to createGPUBuffer');
@@ -8749,6 +8715,24 @@ class MEMeshObj extends _materials.default {
       mesh.indexCount = indexCount;
     }
   }
+  drawElements = (pass, lightContainer) => {
+    if (this.isVideo) {
+      this.updateVideoTexture();
+    }
+    // Bind per-mesh uniforms
+    pass.setBindGroup(0, this.sceneBindGroupForRender); // camera/light UBOs
+    pass.setBindGroup(1, this.modelBindGroup); // mesh transforms/textures
+    // Bind each light’s shadow texture & sampler
+    let bindIndex = 2; // start after UBO & model
+    for (const light of lightContainer) {
+      pass.setBindGroup(bindIndex++, light.getMainPassBindGroup(this));
+    }
+    pass.setVertexBuffer(0, this.vertexBuffer);
+    pass.setVertexBuffer(1, this.vertexNormalsBuffer);
+    pass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
+    pass.setIndexBuffer(this.indexBuffer, 'uint16');
+    pass.drawIndexed(this.indexCount);
+  };
   drawElementsAnim = renderPass => {
     if (!this.sceneBindGroupForRender || !this.modelBindGroup) {
       console.log(' NULL 1');

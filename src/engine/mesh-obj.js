@@ -222,10 +222,10 @@ export default class MEMeshObj extends Materials {
       });
 
       try {
-      this.setupPipeline();
-      } catch (err) {
+        this.setupPipeline();
+      } catch(err) {
         console.log('err in create pipeline in init ', err)
-        
+
       }
 
       // Rotates the camera around the origin based on time.
@@ -355,26 +355,6 @@ export default class MEMeshObj extends Materials {
     );
   }
 
-  drawElements = (pass, lightContainer) => {
-    if(this.isVideo) {
-      this.updateVideoTexture();
-    }
-    // Bind per-mesh uniforms
-    pass.setBindGroup(0, this.sceneBindGroupForRender); // camera/light UBOs
-    pass.setBindGroup(1, this.modelBindGroup);          // mesh transforms/textures
-    // Bind each light’s shadow texture & sampler
-    let bindIndex = 2; // start after UBO & model
-    for(const light of lightContainer) {
-      pass.setBindGroup(bindIndex++, light.getMainPassBindGroup(this));
-    }
-
-    pass.setVertexBuffer(0, this.vertexBuffer);
-    pass.setVertexBuffer(1, this.vertexNormalsBuffer);
-    pass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
-    pass.setIndexBuffer(this.indexBuffer, 'uint16');
-    pass.drawIndexed(this.indexCount);
-  }
-
   createGPUBuffer(dataArray, usage) {
     if(!dataArray || typeof dataArray.length !== 'number') {
       throw new Error('Invalid data array passed to createGPUBuffer');
@@ -440,6 +420,26 @@ export default class MEMeshObj extends Materials {
       mesh.indexBuffer.unmap();
       mesh.indexCount = indexCount;
     }
+  }
+
+  drawElements = (pass, lightContainer) => {
+    if(this.isVideo) {
+      this.updateVideoTexture();
+    }
+    // Bind per-mesh uniforms
+    pass.setBindGroup(0, this.sceneBindGroupForRender); // camera/light UBOs
+    pass.setBindGroup(1, this.modelBindGroup);          // mesh transforms/textures
+    // Bind each light’s shadow texture & sampler
+    let bindIndex = 2; // start after UBO & model
+    for(const light of lightContainer) {
+      pass.setBindGroup(bindIndex++, light.getMainPassBindGroup(this));
+    }
+
+    pass.setVertexBuffer(0, this.vertexBuffer);
+    pass.setVertexBuffer(1, this.vertexNormalsBuffer);
+    pass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
+    pass.setIndexBuffer(this.indexBuffer, 'uint16');
+    pass.drawIndexed(this.indexCount);
   }
 
   drawElementsAnim = (renderPass) => {

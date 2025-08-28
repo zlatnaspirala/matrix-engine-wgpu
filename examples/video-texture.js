@@ -15,6 +15,11 @@ export var loadVideoTexture = function() {
     clearColor: {r: 0, b: 0.122, g: 0.122, a: 1}
   }, () => {
 
+    // For now one light perscene must be added.
+    // if you dont wanna light just use intesity = 0
+    // videoTexture is app main instance
+    videoTexture.addLight();
+
     addEventListener('AmmoReady', () => {
       downloadMeshes({
         welcomeText: "./res/meshes/blender/piramyd.obj",
