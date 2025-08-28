@@ -95,6 +95,7 @@ var loadCameraTexture = function () {
       a: 1
     }
   }, () => {
+    cameraTexture.addLight();
     addEventListener('AmmoReady', () => {
       (0, _loaderObj.downloadMeshes)({
         welcomeText: "./res/meshes/blender/piramyd.obj",
@@ -7966,7 +7967,7 @@ class Materials {
       minFilter: 'linear'
     });
 
-    // ✅ Now - maybe nont
+    // ✅ Now - maybe noT
     this.createLayoutForRender();
   }
   updateVideoTexture() {

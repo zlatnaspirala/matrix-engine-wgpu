@@ -15,6 +15,8 @@ export var loadCameraTexture = function() {
     clearColor: {r: 0, b: 0.122, g: 0.122, a: 1}
   }, () => {
 
+    cameraTexture.addLight();
+
     addEventListener('AmmoReady', () => {
       downloadMeshes({
         welcomeText: "./res/meshes/blender/piramyd.obj",

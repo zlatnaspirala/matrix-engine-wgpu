@@ -168,13 +168,12 @@ export default class Materials {
       minFilter: 'linear',
     });
 
-    // ✅ Now - maybe nont
+    // ✅ Now - maybe noT
     this.createLayoutForRender();
   }
 
   updateVideoTexture() {
     if(!this.video || this.video.readyState < 2) return;
-
     if(!this.externalTexture) {
       // create it once
       this.externalTexture = this.device.importExternalTexture({source: this.video});
