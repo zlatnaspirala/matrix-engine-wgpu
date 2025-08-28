@@ -187,7 +187,7 @@ export default class MatrixEngineWGPU {
         return;
       }
 
-      console.warn('Create ED YES ...')
+      console.warn('Create this.shadowTextureArray...')
       this.shadowTextureArray = this.device.createTexture({
         label: `shadowTextureArray[GLOBAL] num of light ${numberOfLights}`,
         size: {
@@ -202,6 +202,16 @@ export default class MatrixEngineWGPU {
 
       this.shadowArrayView = this.shadowTextureArray.createView({
         dimension: '2d-array'
+      });
+
+      this.shadowVideoTexture = this.device.createTexture({
+        size: [1024, 1024],
+        format: "depth32float",
+        usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING,
+      });
+
+      this.shadowVideoView = this.shadowVideoTexture.createView({
+        dimension: "2d",
       });
     }
 
@@ -409,6 +419,28 @@ export default class MatrixEngineWGPU {
       setTimeout(() => {requestAnimationFrame(this.frame)}, 200);
       return;
     }
+
+    let noPass = false;
+
+    this.mainRenderBundle.forEach((meItem, index) => {
+      if(meItem.isVideo == true) {
+        if(!meItem.externalTexture || meItem.video.readyState < 2) {
+          console.log('no rendere for video not ready')
+          //  this.externalTexture = this.device.importExternalTexture({source: this.video});
+          noPass = true;
+          setTimeout(() => requestAnimationFrame(this.frame), 1500)
+          return;
+        }
+      }
+    })
+
+    if(noPass == true) {
+      console.log('no rendere for video not ready !!!!')
+      return;
+    }
+
+    // let pass;
+    // let commandEncoder;
     try {
       let commandEncoder = this.device.createCommandEncoder();
       this.updateLights()
@@ -419,7 +451,9 @@ export default class MatrixEngineWGPU {
         this.mainRenderBundle.forEach((meItem, index) => {
           meItem.position.update()
           meItem.updateModelUniformBuffer()
+          // if(meItem.isVideo != true) {
           meItem.getTransformationMatrix(this.mainRenderBundle, light)
+          // }
         })
       }
       if(this.matrixAmmo) this.matrixAmmo.updatePhysics();
@@ -448,29 +482,33 @@ export default class MatrixEngineWGPU {
 
         shadowPass.setPipeline(light.shadowPipeline);
         for(const [meshIndex, mesh] of this.mainRenderBundle.entries()) {
-
-          shadowPass.setBindGroup(0, light.getShadowBindGroup(mesh, meshIndex));
-          shadowPass.setBindGroup(1, mesh.modelBindGroup);
-          mesh.drawShadows(shadowPass, light);
+          if(mesh.videoIsReady == 'NONE') {
+            shadowPass.setBindGroup(0, light.getShadowBindGroup(mesh, meshIndex));
+            shadowPass.setBindGroup(1, mesh.modelBindGroup);
+            mesh.drawShadows(shadowPass, light);
+          }
         }
         shadowPass.end();
       }
       const currentTextureView = this.context.getCurrentTexture().createView();
       this.mainRenderPassDesc.colorAttachments[0].view = currentTextureView;
-      const pass = commandEncoder.beginRenderPass(this.mainRenderPassDesc);
+      let pass = commandEncoder.beginRenderPass(this.mainRenderPassDesc);
       // Loop over each mesh
       for(const mesh of this.mainRenderBundle) {
-
         pass.setPipeline(mesh.pipeline);
-
-        if(!mesh.sceneBindGroupForRender) {
+        if(!mesh.sceneBindGroupForRender || (mesh.FINISH_VIDIO_INIT == false && mesh.isVideo == true)) {
           for(const m of this.mainRenderBundle) {
-            m.shadowDepthTextureView = this.shadowArrayView;
-            m.createBindGroupForRender();
+            if(m.isVideo == true) {
+              console.log('✅✅✅ set shadowVideoView', this.shadowVideoView)
+              m.shadowDepthTextureView = this.shadowVideoView;
+              m.FINISH_VIDIO_INIT = true;
+              m.setupPipeline();
+            } else {
+              console.log('✅ NORMAL shadowArrayView')
+              m.shadowDepthTextureView = this.shadowArrayView;
+            }
           }
-  
         }
-
         mesh.drawElements(pass, this.lightContainer);
       }
 
@@ -479,14 +517,18 @@ export default class MatrixEngineWGPU {
       this.device.queue.submit([commandEncoder.finish()]);
       requestAnimationFrame(this.frame);
     } catch(err) {
-      console.log('%cLoop (err):' + err, LOG_WARN)
+      console.log('%cLoop(err):' + err, LOG_WARN)
+      // if(pass) pass.end();
+      // this.device.queue.submit([commandEncoder.finish()]);
       requestAnimationFrame(this.frame);
+    } finally {
+      //requestAnimationFrame(this.frame);
     }
   }
 
   framePassPerObject = () => {
     let commandEncoder = this.device.createCommandEncoder();
-    if (this.matrixAmmo.rigidBodies.length > 0) this.matrixAmmo.updatePhysics();
+    if(this.matrixAmmo.rigidBodies.length > 0) this.matrixAmmo.updatePhysics();
     this.mainRenderBundle.forEach((meItem, index) => {
       if(index === 0) {
         if(meItem.renderPassDescriptor) meItem.renderPassDescriptor.colorAttachments[0].loadOp = 'clear';

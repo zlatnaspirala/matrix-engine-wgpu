@@ -23,6 +23,7 @@ export default class MEMeshObj extends Materials {
     this.entityArgPass = o.entityArgPass;
     this.clearColor = "red";
     this.video = null;
+    this.FINISH_VIDIO_INIT = false;
 
     // Mesh stuff - for single mesh or t-posed (fiktive-first in loading order)
     this.mesh = o.mesh;
@@ -221,12 +222,7 @@ export default class MEMeshObj extends Materials {
         ],
       });
 
-      try {
-        this.setupPipeline();
-      } catch(err) {
-        console.log('err in create pipeline in init ', err)
-
-      }
+      
 
       // Rotates the camera around the origin based on time.
       this.getTransformationMatrix = (mainRenderBundle, spotLight) => {
@@ -295,13 +291,21 @@ export default class MEMeshObj extends Materials {
       );
 
       this.done = true;
+
+      try {
+        this.setupPipeline();
+      } catch(err) {
+        console.log('err in create pipeline in init ', err)
+      }
     }).then(() => {
       if(typeof this.objAnim !== 'undefined' && this.objAnim !== null) {
         console.log('after all updateMeshListBuffers...')
-        this.updateMeshListBuffers()
+        this.updateMeshListBuffers();
       }
     })
   }
+
+
 
   setupPipeline = () => {
     this.createBindGroupForRender();
@@ -430,9 +434,11 @@ export default class MEMeshObj extends Materials {
     pass.setBindGroup(0, this.sceneBindGroupForRender); // camera/light UBOs
     pass.setBindGroup(1, this.modelBindGroup);          // mesh transforms/textures
     // Bind each light’s shadow texture & sampler
-    let bindIndex = 2; // start after UBO & model
-    for(const light of lightContainer) {
-      pass.setBindGroup(bindIndex++, light.getMainPassBindGroup(this));
+    if(this.isVideo == false) {
+      let bindIndex = 2; // start after UBO & model
+      for(const light of lightContainer) {
+        pass.setBindGroup(bindIndex++, light.getMainPassBindGroup(this));
+      }
     }
 
     pass.setVertexBuffer(0, this.vertexBuffer);

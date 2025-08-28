@@ -10,6 +10,7 @@ export default class Materials {
   constructor(device) {
     this.device = device;
     this.isVideo = false;
+    this.videoIsReady = 'NONE';
     // this.compareSampler = this.device.createSampler({compare: 'less'});
     this.compareSampler = this.device.createSampler({
       compare: 'less-equal',           // safer for shadow comparison
@@ -74,7 +75,8 @@ export default class Materials {
   }
 
   async loadVideoTexture(arg) {
-    this.isVideo = true;
+    // this.isVideo = true;
+    this.videoIsReady = 'MAYBE';
     if(arg.type === 'video') {
       this.video = document.createElement('video');
       this.video.src = arg.src || 'res/videos/tunel.mp4';
@@ -83,7 +85,11 @@ export default class Materials {
       this.video.loop = true;
       document.body.append(this.video);
       this.video.style.display = 'none';
+      this.video.style.position = 'absolute';
+      this.video.style.top = '50px';
+      this.video.style.left = '50px';
       await this.video.play();
+      this.isVideo = true;
     } else if(arg.type === 'videoElement') {
       this.video = arg.el;
       await this.video.play();
@@ -105,6 +111,7 @@ export default class Materials {
 
         this.video.srcObject = stream;
         await this.video.play();
+        this.isVideo = true;
       } catch(err) {
         console.error("❌ Failed to access camera:", err);
         return;
@@ -124,6 +131,7 @@ export default class Materials {
       }
       this.video.srcObject = stream;
       await this.video.play();
+      this.isVideo = true;
     } else if(arg.type === 'canvas2d-inline') {
       // Miniature inline-drawn canvas created dynamically
       const canvas = document.createElement('canvas');
@@ -145,6 +153,7 @@ export default class Materials {
       this.video.playsInline = true;
       this.video.style.display = 'none';
       document.body.append(this.video);
+      this.isVideo = true;
       const stream = canvas.captureStream?.() || canvas.mozCaptureStream?.();
       if(!stream) {
         console.error('❌ Cannot capture stream from inline canvas');
@@ -159,27 +168,40 @@ export default class Materials {
       minFilter: 'linear',
     });
 
-    // ✅ Now
+    // ✅ Now - maybe nont
     this.createLayoutForRender();
   }
 
   updateVideoTexture() {
     if(!this.video || this.video.readyState < 2) return;
-    this.externalTexture = this.device.importExternalTexture({source: this.video});
-    this.createBindGroupForRender();
+
+    if(!this.externalTexture) {
+      // create it once
+      this.externalTexture = this.device.importExternalTexture({source: this.video});
+      this.createBindGroupForRender();
+      this.videoIsReady = 'YES';
+      console.log("✅ video bind group created [createBindGroupForRender()]");
+    } else {
+      this.externalTexture = this.device.importExternalTexture({source: this.video});
+      this.createBindGroupForRender();
+    }
   }
 
   createBindGroupForRender() {
     const textureResource = this.isVideo
-      ? this.externalTexture // must be set via updateVideoTexture
+      ? this.externalTexture
       : this.texture0.createView();
     if(!textureResource || !this.sceneUniformBuffer || !this.shadowDepthTextureView) {
-      // console.warn("❗Missing res skipping...");
+      if(!textureResource) console.warn("❗Missing res texture: ", textureResource);
+      if(!this.sceneUniformBuffer) console.warn("❗Missing res: this.sceneUniformBuffer: ", this.sceneUniformBuffer);
+      if(!this.shadowDepthTextureView) console.warn("❗Missing res: this.shadowDepthTextureView: ", this.shadowDepthTextureView);
+      if(typeof textureResource === 'undefined') this.updateVideoTexture();
       return;
     } else {
-      console.info("✅ Passed resource..."); 
+
     }
     if(this.isVideo == true) {
+      console.info("✅ video sceneBindGroupForRender ");
       this.sceneBindGroupForRender = this.device.createBindGroup({
         layout: this.bglForRender,
         entries: [
@@ -206,6 +228,10 @@ export default class Materials {
           {binding: 5, resource: {buffer: this.postFXModeBuffer}}
         ],
       });
+
+      // special case for video meybe better solution exist 
+      // this.setupPipeline();
+      this.video.play();
     } else {
       this.sceneBindGroupForRender = this.device.createBindGroup({
         layout: this.bglForRender,
@@ -240,67 +266,92 @@ export default class Materials {
   }
 
   createLayoutForRender() {
-    this.bglForRender = this.device.createBindGroupLayout({
-      label: 'bglForRender',
-      entries: [
-        {
-          binding: 0,
-          visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
-          buffer: {type: 'uniform'},
-        },
-        {
+
+    if(this.isVideo == true) {
+      console.info("✅ createLayoutForRender video [bglForRender]");
+    } else {
+      console.info("✅ normal createLayoutForRender [bglForRender]");
+    }
+
+    let e = [
+      {
+        binding: 0,
+        visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
+        buffer: {type: 'uniform'},
+      },
+      ...(this.isVideo == false
+        ? [
+          {
+            binding: 1,
+            visibility: GPUShaderStage.FRAGMENT,
+            texture: {
+              sampleType: "depth",
+              viewDimension: "2d-array", // <- must match shadowMapArray
+              multisampled: false,
+            },
+          },
+        ] : [{
           binding: 1,
           visibility: GPUShaderStage.FRAGMENT,
           texture: {
             sampleType: "depth",
-            viewDimension: "2d-array", // <- must match shadowMapArray
-            multisampled: false,
+            viewDimension: "2d",
           },
-        },
-        {
-          binding: 2,
-          visibility: GPUShaderStage.FRAGMENT,
-          sampler: {type: 'comparison'},
-        },
-        ...(this.isVideo
-          ? [ // VIDEO
-            {
-              binding: 3,
-              visibility: GPUShaderStage.FRAGMENT,
-              externalTexture: {},
+        },])
+      , {
+        binding: 2,
+        visibility: GPUShaderStage.FRAGMENT,
+        sampler: {type: 'comparison'},
+      },
+      ...(this.isVideo
+        ? [ // VIDEO
+          {
+            binding: 3,
+            visibility: GPUShaderStage.FRAGMENT,
+            externalTexture: {},
+          },
+          {
+            binding: 4,
+            visibility: GPUShaderStage.FRAGMENT,
+            sampler: {type: 'filtering'}, // for video sampling
+          },
+          {
+            binding: 5,
+            visibility: GPUShaderStage.FRAGMENT,
+            buffer: {type: 'uniform'},
+          }
+        ]
+        : [ // IMAGE
+          {
+            binding: 3,
+            visibility: GPUShaderStage.FRAGMENT,
+            texture: {
+              sampleType: 'float',
+              viewDimension: '2d',
             },
-            {
-              binding: 4,
-              visibility: GPUShaderStage.FRAGMENT,
-              sampler: {type: 'filtering'}, // for video sampling
-            },
-            {
-              binding: 5,
-              visibility: GPUShaderStage.FRAGMENT,
-              buffer: {type: 'uniform'},
-            }
-          ]
-          : [ // IMAGE
-            {
-              binding: 3,
-              visibility: GPUShaderStage.FRAGMENT,
-              texture: {
-                sampleType: 'float',
-                viewDimension: '2d',
-              },
-            },
-            {
-              binding: 4,
-              visibility: GPUShaderStage.FRAGMENT,
-              sampler: {type: 'filtering'},
-            },
-            {
-              binding: 5,
-              visibility: GPUShaderStage.FRAGMENT,
-              buffer: {type: 'uniform'},
-            }
-          ])
-      ],
+          },
+          {
+            binding: 4,
+            visibility: GPUShaderStage.FRAGMENT,
+            sampler: {type: 'filtering'},
+          },
+          {
+            binding: 5,
+            visibility: GPUShaderStage.FRAGMENT,
+            buffer: {type: 'uniform'},
+          }
+        ])
+    ];
+
+    console.log("BG E : ", e)
+
+    this.bglForRender = this.device.createBindGroupLayout({
+      label: 'bglForRender',
+      entries: e,
     });
+
+    if(this.isVideo == true) {
+      this.createBindGroupForRender();
+    }
   }
 }
