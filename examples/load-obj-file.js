@@ -81,8 +81,13 @@ export var loadObjFile = function() {
 
       var TEST = loadObjFile.getSceneObjectByName('cube2');
       console.log(`%c Test access scene ${TEST} object.`, LOG_MATRIX);
+
       loadObjFile.addLight();
-      // loadObjFile.addLight();
+      loadObjFile.lightContainer[0].behavior.setOsc0(-1,1,0.1)
+      loadObjFile.lightContainer[0].behavior.value_ = -1;
+      loadObjFile.lightContainer[0].updater.push((light) => {
+        light.position[0] = light.behavior.setPath0()
+      })
 
     }
   })

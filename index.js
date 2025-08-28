@@ -1,7 +1,8 @@
 /**
  * This file created by:
- * Nikola Lukic zlatnaspirala@gmail.com mart 2024
- * npm import/export
+ * @author Nikola Lukic 
+ * @email zlatnaspirala@gmail.com mart 2024
+ * @description npm import/export
  */
 // import {degToRad, radToDeg} from "./utils";
 import {downloadMeshes, makeObjSeqArg} from "./src/engine/loader-obj.js";
@@ -13,16 +14,20 @@ import {
   computeWorldVertsAndAABB, rayIntersectsAABB,
   computeAABB
 } from "./src/engine/raycast.js";
+import {OSCILLATOR, SWITCHER} from "./src/engine/utils.js";
 
 var about = () => {
-  console.log("Hi npm. matrix-engine for webgpu is ready...")
-  console.log("--------------------------------------------")
-  console.log("List of features: ")
-  console.log(" - Loading obj files with uvs")
-  console.log(" - Scene camera use -z front")
-  console.log(" - position, rotation - same like matrix-engine")
-  console.log(" - Physics used Ammo.js build")
-  console.log(" - Raycaster HIT/CLICK on object scene")
+  console.info("Hi npm. matrix-engine for webgpu is ready...")
+  console.info("--------------------------------------------")
+  console.info("List of features: ")
+  console.info(" - Loading obj files with uvs")
+  console.info(" - Scene camera use -z front")
+  console.info(" - position, rotation - same like matrix-engine")
+  console.info(" - Physics used Ammo.js build")
+  console.info(" - Raycaster HIT/CLICK on object scene")
+  console.info(" - Light cast shadow multi lights")
+  console.info("--------------------------------------------")
+
 }
 
 export {
@@ -37,5 +42,7 @@ export {
   computeAABB,
   computeWorldVertsAndAABB,
   makeObjSeqArg,
+  SWITCHER,
+  OSCILLATOR,
   about
 }

@@ -1,5 +1,7 @@
 import {mat4, vec3} from 'wgpu-matrix';
 import {vertexShadowWGSL} from '../shaders/vertexShadow.wgsl';
+import Behavior from './behavior';
+
 /**
  * @description
  * Spot light with shodow cast.
@@ -209,10 +211,16 @@ export class SpotLight {
       });
       return this.mainPassBindGroupContainer[index];
     }
+
+    // Only osc values +-
+    this.behavior = new Behavior();
+
+    // put here only func
+    this.updater = [];
   }
 
   update() {
-    //  this.target = vec3.create(x, y, z);              // new target
+    this.updater.forEach((update) => {update(this)})
     this.direction = vec3.normalize(vec3.subtract(this.target, this.position));
     const target = vec3.add(this.position, this.direction);
     this.viewMatrix = mat4.lookAt(this.position, target, this.up);

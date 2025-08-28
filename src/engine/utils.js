@@ -460,15 +460,7 @@ export function OSCILLATOR(min, max, step) {
       }
     };
   } else {
-    console.log(
-      "SYS : warning for procedure 'SYS.MATH.OSCILLATOR' Desciption : Replace object with string or number, min >> " +
-      typeof min +
-      ' and max >>' +
-      typeof max +
-      ' and step >>' +
-      typeof step +
-      ' << must be string or number.'
-    );
+    console.log("OSCILLATOR ERROR");
   }
 }
 

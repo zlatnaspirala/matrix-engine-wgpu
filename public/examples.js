@@ -68,7 +68,7 @@ function destroyJambDoms() {
   (0, _loadObjsSequence.loadObjsSequence)();
 });
 
-},{"./examples/camera-texture.js":2,"./examples/load-obj-file.js":3,"./examples/load-objs-sequence.js":4,"./examples/unlit-textures.js":5,"./examples/video-texture.js":6,"./src/engine/utils.js":17}],2:[function(require,module,exports){
+},{"./examples/camera-texture.js":2,"./examples/load-obj-file.js":3,"./examples/load-objs-sequence.js":4,"./examples/unlit-textures.js":5,"./examples/video-texture.js":6,"./src/engine/utils.js":18}],2:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -149,7 +149,7 @@ var loadCameraTexture = function () {
 };
 exports.loadCameraTexture = loadCameraTexture;
 
-},{"../src/engine/loader-obj.js":12,"../src/engine/raycast.js":16,"../src/engine/utils.js":17,"../src/world.js":26}],3:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":13,"../src/engine/raycast.js":17,"../src/engine/utils.js":18,"../src/world.js":27}],3:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -278,7 +278,11 @@ var loadObjFile = function () {
       var TEST = loadObjFile.getSceneObjectByName('cube2');
       console.log(`%c Test access scene ${TEST} object.`, _utils.LOG_MATRIX);
       loadObjFile.addLight();
-      // loadObjFile.addLight();
+      loadObjFile.lightContainer[0].behavior.setOsc0(-1, 1, 0.1);
+      loadObjFile.lightContainer[0].behavior.value_ = -1;
+      loadObjFile.lightContainer[0].updater.push(light => {
+        light.position[0] = light.behavior.setPath0();
+      });
     }
   });
   // just for dev
@@ -286,7 +290,7 @@ var loadObjFile = function () {
 };
 exports.loadObjFile = loadObjFile;
 
-},{"../src/engine/loader-obj.js":12,"../src/engine/utils.js":17,"../src/world.js":26}],4:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":13,"../src/engine/utils.js":18,"../src/world.js":27}],4:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -376,7 +380,7 @@ var loadObjsSequence = function () {
 };
 exports.loadObjsSequence = loadObjsSequence;
 
-},{"../src/engine/loader-obj.js":12,"../src/engine/utils.js":17,"../src/world.js":26}],5:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":13,"../src/engine/utils.js":18,"../src/world.js":27}],5:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -437,7 +441,7 @@ var unlitTextures = function () {
 };
 exports.unlitTextures = unlitTextures;
 
-},{"../src/world.js":26}],6:[function(require,module,exports){
+},{"../src/world.js":27}],6:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -521,7 +525,7 @@ var loadVideoTexture = function () {
 };
 exports.loadVideoTexture = loadVideoTexture;
 
-},{"../src/engine/loader-obj.js":12,"../src/engine/raycast.js":16,"../src/engine/utils.js":17,"../src/world.js":26}],7:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":13,"../src/engine/raycast.js":17,"../src/engine/utils.js":18,"../src/world.js":27}],7:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -6282,7 +6286,45 @@ class MEBall {
 }
 exports.default = MEBall;
 
-},{"../shaders/shaders":22,"./engine":10,"./matrix-class":14,"wgpu-matrix":7}],9:[function(require,module,exports){
+},{"../shaders/shaders":23,"./engine":11,"./matrix-class":15,"wgpu-matrix":7}],9:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+var _utils = require("./utils");
+/**
+ * @description
+ * Can be reuse for any other tasks.
+ * @author Nikola Lukic
+ */
+
+class Behavior {
+  status = "Only oscillator";
+  constructor() {
+    this.osc0 = new _utils.OSCILLATOR(0, 5, 0.01);
+  }
+  setOsc0(min, max, step) {
+    this.osc0.min = min;
+    this.osc0.max = max;
+    this.osc0.step = step;
+  }
+
+  // apend - keep init origin
+  addPath(NUMBER) {
+    let inc = this.osc0.UPDATE();
+    console.log('test inc', inc);
+    console.log('test inc + number', NUMBER + inc);
+    return inc + NUMBER;
+  }
+  setPath0() {
+    return this.osc0.UPDATE();
+  }
+}
+exports.default = Behavior;
+
+},{"./utils":18}],10:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -6707,7 +6749,7 @@ class MECube {
 }
 exports.default = MECube;
 
-},{"../shaders/shaders":22,"./engine":10,"./matrix-class":14,"wgpu-matrix":7}],10:[function(require,module,exports){
+},{"../shaders/shaders":23,"./engine":11,"./matrix-class":15,"wgpu-matrix":7}],11:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -7121,7 +7163,7 @@ function createInputHandler(window, canvas) {
   };
 }
 
-},{"./utils":17,"wgpu-matrix":7}],11:[function(require,module,exports){
+},{"./utils":18,"wgpu-matrix":7}],12:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -7130,6 +7172,8 @@ Object.defineProperty(exports, "__esModule", {
 exports.SpotLight = void 0;
 var _wgpuMatrix = require("wgpu-matrix");
 var _vertexShadow = require("../shaders/vertexShadow.wgsl");
+var _behavior = _interopRequireDefault(require("./behavior"));
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 /**
  * @description
  * Spot light with shodow cast.
@@ -7302,9 +7346,17 @@ class SpotLight {
       });
       return this.mainPassBindGroupContainer[index];
     };
+
+    // Only osc values +-
+    this.behavior = new _behavior.default();
+
+    // put here only func
+    this.updater = [];
   }
   update() {
-    //  this.target = vec3.create(x, y, z);              // new target
+    this.updater.forEach(update => {
+      update(this);
+    });
     this.direction = _wgpuMatrix.vec3.normalize(_wgpuMatrix.vec3.subtract(this.target, this.position));
     const target = _wgpuMatrix.vec3.add(this.position, this.direction);
     this.viewMatrix = _wgpuMatrix.mat4.lookAt(this.position, target, this.up);
@@ -7321,7 +7373,7 @@ class SpotLight {
 }
 exports.SpotLight = SpotLight;
 
-},{"../shaders/vertexShadow.wgsl":24,"wgpu-matrix":7}],12:[function(require,module,exports){
+},{"../shaders/vertexShadow.wgsl":25,"./behavior":9,"wgpu-matrix":7}],13:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -7789,7 +7841,7 @@ function play(nameAni) {
   this.playing = true;
 }
 
-},{}],13:[function(require,module,exports){
+},{}],14:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -8143,7 +8195,7 @@ class Materials {
 }
 exports.default = Materials;
 
-},{}],14:[function(require,module,exports){
+},{}],15:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -8379,7 +8431,7 @@ class Rotation {
 }
 exports.Rotation = Rotation;
 
-},{"./utils":17}],15:[function(require,module,exports){
+},{"./utils":18}],16:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -8396,7 +8448,7 @@ var _materials = _interopRequireDefault(require("./materials"));
 var _fragmentVideo = require("../shaders/fragment.video.wgsl");
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 class MEMeshObj extends _materials.default {
-  constructor(canvas, device, context, o, inputHandler) {
+  constructor(canvas, device, context, o, inputHandler, globalAmbient) {
     super(device);
     if (typeof o.name === 'undefined') o.name = (0, _utils.genName)(3);
     if (typeof o.raycast === 'undefined') {
@@ -8415,6 +8467,7 @@ class MEMeshObj extends _materials.default {
     this.clearColor = "red";
     this.video = null;
     this.FINISH_VIDIO_INIT = false;
+    this.globalAmbient = globalAmbient;
 
     // Mesh stuff - for single mesh or t-posed (fiktive-first in loading order)
     this.mesh = o.mesh;
@@ -8559,7 +8612,7 @@ class MEMeshObj extends _materials.default {
       });
       this.sceneUniformBuffer = this.device.createBuffer({
         label: 'sceneUniformBuffer per mesh',
-        size: 160,
+        size: 176,
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
       });
       this.uniformBufferBindGroupLayout = this.device.createBindGroupLayout({
@@ -8607,10 +8660,9 @@ class MEMeshObj extends _materials.default {
         camera.update(dt, inputHandler());
         const camVP = _wgpuMatrix.mat4.multiply(camera.projectionMatrix, camera.view);
         for (const mesh of mainRenderBundle) {
-          // Flattened buffer: lightVP(16) + camVP(16) + cameraPos(3+pad) + lightPos(3+pad)
-          const sceneData = new Float32Array(16 + 16 + 4 + 4); // 16+16+4+4 = 40 floats
+          const sceneData = new Float32Array(44);
 
-          // Light ViewProj
+          // Light VP
           sceneData.set(spotLight.viewProjMatrix, 0);
 
           // Camera VP
@@ -8621,9 +8673,10 @@ class MEMeshObj extends _materials.default {
 
           // Light position + padding
           sceneData.set([spotLight.position[0], spotLight.position[1], spotLight.position[2], 0.0], 36);
-          device.queue.writeBuffer(mesh.sceneUniformBuffer,
-          // or shared buffer
-          0, sceneData.buffer, sceneData.byteOffset, sceneData.byteLength);
+
+          // Global ambient + padding
+          sceneData.set([this.globalAmbient[0], this.globalAmbient[1], this.globalAmbient[2], 0.0], 40);
+          device.queue.writeBuffer(mesh.sceneUniformBuffer, 0, sceneData.buffer, sceneData.byteOffset, sceneData.byteLength);
         }
       };
       this.getModelMatrix = pos => {
@@ -8816,7 +8869,7 @@ class MEMeshObj extends _materials.default {
 }
 exports.default = MEMeshObj;
 
-},{"../shaders/fragment.video.wgsl":20,"../shaders/fragment.wgsl":21,"../shaders/vertex.wgsl":23,"../shaders/vertexShadow.wgsl":24,"./materials":13,"./matrix-class":14,"./utils":17,"wgpu-matrix":7}],16:[function(require,module,exports){
+},{"../shaders/fragment.video.wgsl":21,"../shaders/fragment.wgsl":22,"../shaders/vertex.wgsl":24,"../shaders/vertexShadow.wgsl":25,"./materials":14,"./matrix-class":15,"./utils":18,"wgpu-matrix":7}],17:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -9031,7 +9084,7 @@ function addRaycastsAABBListener(canvasId = "canvas1") {
   });
 }
 
-},{"wgpu-matrix":7}],17:[function(require,module,exports){
+},{"wgpu-matrix":7}],18:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -9538,7 +9591,7 @@ function OSCILLATOR(min, max, step) {
       }
     };
   } else {
-    console.log("SYS : warning for procedure 'SYS.MATH.OSCILLATOR' Desciption : Replace object with string or number, min >> " + typeof min + ' and max >>' + typeof max + ' and step >>' + typeof step + ' << must be string or number.');
+    console.log("OSCILLATOR ERROR");
   }
 }
 
@@ -9917,7 +9970,7 @@ function setupCanvasFilters(canvasId) {
   updateFilter(); // Initial
 }
 
-},{}],18:[function(require,module,exports){
+},{}],19:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -9957,7 +10010,7 @@ class MultiLang {
 }
 exports.MultiLang = MultiLang;
 
-},{"../engine/utils":17}],19:[function(require,module,exports){
+},{"../engine/utils":18}],20:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -10241,7 +10294,7 @@ class MatrixAmmo {
 }
 exports.default = MatrixAmmo;
 
-},{"../engine/utils":17}],20:[function(require,module,exports){
+},{"../engine/utils":18}],21:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -10333,7 +10386,7 @@ fn main(input : FragmentInput) -> @location(0) vec4f {
 }
 `;
 
-},{}],21:[function(require,module,exports){
+},{}],22:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -10351,6 +10404,8 @@ struct Scene {
     padding2             : f32,   // align to 16 bytes
     lightPos             : vec3f,
     padding              : f32,   // align to 16 bytes
+    globalAmbient        : vec3f,  // <--- new
+    padding3             : f32,    // keep alignment (16 bytes)
 };
 
 struct SpotLight {
@@ -10456,7 +10511,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     // let viewDir = normalize(scene.cameraViewProjMatrix[3].xyz - input.fragPos);
 
     var lightContribution = vec3f(0.0);
-    var ambient = vec3f(0.0);
+    var ambient = vec3f(0.5);
 
     for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
         let sc = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);
@@ -10470,15 +10525,15 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
         let visibility = sampleShadow(uv, i32(i), depthRef - bias, norm, lightDir);
         let contrib = computeSpotLight(spotlights[i], norm, input.fragPos, viewDir);
         lightContribution += contrib * visibility;
-        ambient += spotlights[i].ambientFactor * spotlights[i].color;
+        // ambient += spotlights[i].ambientFactor * spotlights[i].color;
     }
-
+    // ambient /= f32(MAX_SPOTLIGHTS); PREVENT OVER NEXT FEATURE ON SWICHER
     let texColor = textureSample(meshTexture, meshSampler, input.uv);
-    let finalColor = texColor.rgb * (ambient + lightContribution); // * albedo;
+    let finalColor = texColor.rgb * (scene.globalAmbient + lightContribution); // * albedo;
     return vec4f(finalColor, 1.0);
 }`;
 
-},{}],22:[function(require,module,exports){
+},{}],23:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -10536,7 +10591,7 @@ fn fragmentMain(input: VertexOutput) -> @location(0) vec4f {
   return vec4f(textureColor.rgb * lightColor, textureColor.a);
 }`;
 
-},{}],23:[function(require,module,exports){
+},{}],24:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -10584,7 +10639,7 @@ fn main(
   return output;
 }`;
 
-},{}],24:[function(require,module,exports){
+},{}],25:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -10612,7 +10667,7 @@ fn main(
 }
 `;
 
-},{}],25:[function(require,module,exports){
+},{}],26:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -10682,7 +10737,7 @@ class MatrixSounds {
 }
 exports.MatrixSounds = MatrixSounds;
 
-},{}],26:[function(require,module,exports){
+},{}],27:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -10825,6 +10880,7 @@ class MatrixEngineWGPU {
     } else {
       this.frame = this.framePassPerObject;
     }
+    this.globalAmbient = _wgpuMatrix.vec3.create(0.5, 0.5, 0.5);
     this.MAX_SPOTLIGHTS = 20;
     this.inputHandler = (0, _engine.createInputHandler)(window, canvas);
     this.createGlobalStuff();
@@ -11211,7 +11267,7 @@ class MatrixEngineWGPU {
         }
       };
     }
-    let myMesh1 = new _meshObj.default(this.canvas, this.device, this.context, o, this.inputHandler);
+    let myMesh1 = new _meshObj.default(this.canvas, this.device, this.context, o, this.inputHandler, this.globalAmbient);
     myMesh1.spotlightUniformBuffer = this.spotlightUniformBuffer;
     myMesh1.clearColor = clearColor;
     if (o.physics.enabled == true) {
@@ -11276,13 +11332,10 @@ class MatrixEngineWGPU {
       // 1️⃣ Update light data (position, direction, uniforms)
       for (const light of this.lightContainer) {
         light.update();
-        // light.updateSceneUniforms(this.mainRenderBundle, this.cameras.WASD);
         this.mainRenderBundle.forEach((meItem, index) => {
           meItem.position.update();
           meItem.updateModelUniformBuffer();
-          // if(meItem.isVideo != true) {
           meItem.getTransformationMatrix(this.mainRenderBundle, light);
-          // }
         });
       }
       if (this.matrixAmmo) this.matrixAmmo.updatePhysics();
@@ -11325,30 +11378,24 @@ class MatrixEngineWGPU {
         if (!mesh.sceneBindGroupForRender || mesh.FINISH_VIDIO_INIT == false && mesh.isVideo == true) {
           for (const m of this.mainRenderBundle) {
             if (m.isVideo == true) {
-              console.log('✅✅✅ set shadowVideoView', this.shadowVideoView);
+              console.log('✅shadowVideoView', this.shadowVideoView);
               m.shadowDepthTextureView = this.shadowVideoView;
               m.FINISH_VIDIO_INIT = true;
               m.setupPipeline();
             } else {
-              console.log('✅ NORMAL shadowArrayView');
               m.shadowDepthTextureView = this.shadowArrayView;
+              m.setupPipeline();
             }
           }
         }
         mesh.drawElements(pass, this.lightContainer);
       }
-
-      // End render pass
       pass.end();
       this.device.queue.submit([commandEncoder.finish()]);
       requestAnimationFrame(this.frame);
     } catch (err) {
       console.log('%cLoop(err):' + err, _utils.LOG_WARN);
-      // if(pass) pass.end();
-      // this.device.queue.submit([commandEncoder.finish()]);
       requestAnimationFrame(this.frame);
-    } finally {
-      //requestAnimationFrame(this.frame);
     }
   };
   framePassPerObject = () => {
@@ -11378,4 +11425,4 @@ class MatrixEngineWGPU {
 }
 exports.default = MatrixEngineWGPU;
 
-},{"./engine/ball.js":8,"./engine/cube.js":9,"./engine/engine.js":10,"./engine/lights.js":11,"./engine/loader-obj.js":12,"./engine/mesh-obj.js":15,"./engine/utils.js":17,"./multilang/lang.js":18,"./physics/matrix-ammo.js":19,"./sounds/sounds.js":25,"wgpu-matrix":7}]},{},[1]);
+},{"./engine/ball.js":8,"./engine/cube.js":10,"./engine/engine.js":11,"./engine/lights.js":12,"./engine/loader-obj.js":13,"./engine/mesh-obj.js":16,"./engine/utils.js":18,"./multilang/lang.js":19,"./physics/matrix-ammo.js":20,"./sounds/sounds.js":26,"wgpu-matrix":7}]},{},[1]);

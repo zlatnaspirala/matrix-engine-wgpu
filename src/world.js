@@ -127,6 +127,7 @@ export default class MatrixEngineWGPU {
       this.frame = this.framePassPerObject;
     }
 
+    this.globalAmbient = vec3.create(0.5, 0.5, 0.5);
     this.MAX_SPOTLIGHTS = 20;
     this.inputHandler = createInputHandler(window, canvas);
     this.createGlobalStuff();
@@ -379,7 +380,7 @@ export default class MatrixEngineWGPU {
         }
       }
     }
-    let myMesh1 = new MEMeshObj(this.canvas, this.device, this.context, o, this.inputHandler);
+    let myMesh1 = new MEMeshObj(this.canvas, this.device, this.context, o, this.inputHandler, this.globalAmbient);
     myMesh1.spotlightUniformBuffer = this.spotlightUniformBuffer;
     myMesh1.clearColor = clearColor;
     if(o.physics.enabled == true) {
@@ -447,20 +448,16 @@ export default class MatrixEngineWGPU {
       // 1️⃣ Update light data (position, direction, uniforms)
       for(const light of this.lightContainer) {
         light.update()
-        // light.updateSceneUniforms(this.mainRenderBundle, this.cameras.WASD);
         this.mainRenderBundle.forEach((meItem, index) => {
           meItem.position.update()
           meItem.updateModelUniformBuffer()
-          // if(meItem.isVideo != true) {
           meItem.getTransformationMatrix(this.mainRenderBundle, light)
-          // }
         })
       }
       if(this.matrixAmmo) this.matrixAmmo.updatePhysics();
 
       for(let i = 0;i < this.lightContainer.length;i++) {
         const light = this.lightContainer[i];
-
         let ViewPerLightRenderShadowPass = this.shadowTextureArray.createView({
           dimension: '2d',
           baseArrayLayer: i,
@@ -499,30 +496,24 @@ export default class MatrixEngineWGPU {
         if(!mesh.sceneBindGroupForRender || (mesh.FINISH_VIDIO_INIT == false && mesh.isVideo == true)) {
           for(const m of this.mainRenderBundle) {
             if(m.isVideo == true) {
-              console.log('✅✅✅ set shadowVideoView', this.shadowVideoView)
+              console.log('✅shadowVideoView', this.shadowVideoView)
               m.shadowDepthTextureView = this.shadowVideoView;
               m.FINISH_VIDIO_INIT = true;
               m.setupPipeline();
             } else {
-              console.log('✅ NORMAL shadowArrayView')
               m.shadowDepthTextureView = this.shadowArrayView;
+              m.setupPipeline();
             }
           }
         }
         mesh.drawElements(pass, this.lightContainer);
       }
-
-      // End render pass
       pass.end();
       this.device.queue.submit([commandEncoder.finish()]);
       requestAnimationFrame(this.frame);
     } catch(err) {
       console.log('%cLoop(err):' + err, LOG_WARN)
-      // if(pass) pass.end();
-      // this.device.queue.submit([commandEncoder.finish()]);
       requestAnimationFrame(this.frame);
-    } finally {
-      //requestAnimationFrame(this.frame);
     }
   }
 

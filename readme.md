@@ -45,7 +45,9 @@ Published on npm as: **`matrix-engine-wgpu`**
   ```js
   app.mainRenderBundle[0];
   ```
- or
+
+  or
+
   ```js
   app.getSceneObjectByName("Sphere1");
   ```
@@ -154,17 +156,36 @@ SpotLight – Emits light in a cone shape with configurable cutoff angles.
 
 Features
 
-✅ Supports multiple lights (4 max),  ~20 for next update.
+✅ Supports multiple lights (4 max), ~20 for next update.
 ✅ Shadow-ready (spotlight0 shadows implemented, extendable to others)
 
-Required:
+Important Required to be added manual:
+
 ```js
-engine.addLight()
+engine.addLight();
 ```
 
 Access lights with array lightContainer:
+
 ```js
-app.lightContainer[0]
+app.lightContainer[0];
+```
+
+Small behavior object.
+ - For now just one ocs0 object
+ Everytime if called than updated (light.position[0] = light.behavior.setPath0())
+  behavior.setOsc0(min, max, step);
+  app.lightContainer[0].behavior.osc0.on_maximum_value = function() {/* what ever*/};
+  app.lightContainer[0].behavior.osc0.on_minimum_value = function() {/* what ever*/};
+
+Make light move by x.
+```js
+loadObjFile.addLight();
+loadObjFile.lightContainer[0].behavior.setOsc0(-1, 1, 0.01);
+loadObjFile.lightContainer[0].behavior.value_ = -1;
+loadObjFile.lightContainer[0].updater.push(light => {
+  light.position[0] = light.behavior.setPath0();
+});
 ```
 
 ### Object Interaction (Raycasting)
@@ -292,63 +313,65 @@ This example shows how to load and animate a sequence of .obj files to simulate 
 
 ```js
 import MatrixEngineWGPU from "../src/world.js";
-import { downloadMeshes, makeObjSeqArg } from "../src/engine/loader-obj.js";
-import { LOG_MATRIX } from "../src/engine/utils.js";
+import {downloadMeshes, makeObjSeqArg} from "../src/engine/loader-obj.js";
+import {LOG_MATRIX} from "../src/engine/utils.js";
 
 export var loadObjsSequence = function () {
-  let loadObjFile = new MatrixEngineWGPU({
-    useSingleRenderPass: true,
-    canvasSize: "fullscreen",
-    mainCameraParams: {
-      type: "WASD",
-      responseCoef: 1000,
+  let loadObjFile = new MatrixEngineWGPU(
+    {
+      useSingleRenderPass: true,
+      canvasSize: "fullscreen",
+      mainCameraParams: {
+        type: "WASD",
+        responseCoef: 1000,
+      },
     },
-  }, () => {
-
-    addEventListener("AmmoReady", () => {
-      downloadMeshes(
-        makeObjSeqArg({
-          id: "swat-walk-pistol",
-          path: "res/meshes/objs-sequence/swat-walk-pistol",
-          from: 1,
-          to: 20,
-        }),
-        onLoadObj,
-        { scale: [10, 10, 10] }
-      );
-    });
-
-    function onLoadObj(m) {
-      console.log(`%c Loaded objs: ${m} `, LOG_MATRIX);
-      var objAnim = {
-        id: "swat-walk-pistol",
-        meshList: m,
-        currentAni: 1,
-        animations: {
-          active: "walk",
-          walk: { from: 1, to: 20, speed: 3 },
-          walkPistol: { from: 36, to: 60, speed: 3 },
-        },
-      };
-
-      loadObjFile.addMeshObj({
-        position: { x: 0, y: 2, z: -10 },
-        rotation: { x: 0, y: 0, z: 0 },
-        rotationSpeed: { x: 0, y: 0, z: 0 },
-        scale: [100, 100, 100],
-        texturesPaths: ["./res/meshes/blender/cube.png"],
-        name: "swat",
-        mesh: m["swat-walk-pistol"],
-        physics: {
-          enabled: false,
-          geometry: "Cube",
-        },
-        objAnim: objAnim,
+    () => {
+      addEventListener("AmmoReady", () => {
+        downloadMeshes(
+          makeObjSeqArg({
+            id: "swat-walk-pistol",
+            path: "res/meshes/objs-sequence/swat-walk-pistol",
+            from: 1,
+            to: 20,
+          }),
+          onLoadObj,
+          {scale: [10, 10, 10]}
+        );
       });
 
-      app.mainRenderBundle[0].objAnim.play("walk");
+      function onLoadObj(m) {
+        console.log(`%c Loaded objs: ${m} `, LOG_MATRIX);
+        var objAnim = {
+          id: "swat-walk-pistol",
+          meshList: m,
+          currentAni: 1,
+          animations: {
+            active: "walk",
+            walk: {from: 1, to: 20, speed: 3},
+            walkPistol: {from: 36, to: 60, speed: 3},
+          },
+        };
+
+        loadObjFile.addMeshObj({
+          position: {x: 0, y: 2, z: -10},
+          rotation: {x: 0, y: 0, z: 0},
+          rotationSpeed: {x: 0, y: 0, z: 0},
+          scale: [100, 100, 100],
+          texturesPaths: ["./res/meshes/blender/cube.png"],
+          name: "swat",
+          mesh: m["swat-walk-pistol"],
+          physics: {
+            enabled: false,
+            geometry: "Cube",
+          },
+          objAnim: objAnim,
+        });
+
+        app.mainRenderBundle[0].objAnim.play("walk");
+      }
     }
-  });
+  );
 
   window.app = loadObjFile;
 };
@@ -358,22 +381,22 @@ export var loadObjsSequence = function () {
 
 ```js
 TEST.loadVideoTexture({
-  type: 'video', // video , camera  //not tested yet canvas2d , canvas2dinline
-  src: 'res/videos/tunel.mp4'
+  type: "video", // video , camera  //not tested yet canvas2d , canvas2dinline
+  src: "res/videos/tunel.mp4",
 });
 ```
 
 For canvasinline attach this to arg (example for direct draw on canvas2d and passing intro webgpu pipeline):
+
 ```js
 canvaInlineProgram: (ctx, canvas) => {
-  ctx.fillStyle = 'black';
+  ctx.fillStyle = "black";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
-  ctx.fillStyle = 'white';
-  ctx.font = '20px Orbitron';
+  ctx.fillStyle = "white";
+  ctx.font = "20px Orbitron";
   ctx.fillText(`FPS: ${Math.round(performance.now() % 60)}`, 10, 30);
-}
+};
 ```
-
 
 <pre>
 | Scenario                       | Best Approach                      |
@@ -384,6 +407,7 @@ canvaInlineProgram: (ctx, canvas) => {
 </pre>
 
 ### Note
+
 If this happen less then 15 times (Loading procces) then it is ok probably...
 
 ```json
@@ -394,10 +418,10 @@ Draw func (err):TypeError: Failed to execute 'beginRenderPass' on 'GPUCommandEnc
 
 It is possible for 1 or 2 warn in middle time when mesh switch to the videoTexture.
 Will be fixxed in next update.
+
 ```js
 Dimension (TextureViewDimension::e2DArray) of [TextureView of Texture "shadowTextureArray[GLOBAL] num of light 1"] doesn't match the expected dimension (TextureViewDimension::e2D).
 ```
-
 
 ## About URLParams
 

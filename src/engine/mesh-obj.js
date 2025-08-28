@@ -8,7 +8,7 @@ import Materials from './materials';
 import {fragmentVideoWGSL} from '../shaders/fragment.video.wgsl';
 
 export default class MEMeshObj extends Materials {
-  constructor(canvas, device, context, o, inputHandler) {
+  constructor(canvas, device, context, o, inputHandler, globalAmbient) {
     super(device);
     if(typeof o.name === 'undefined') o.name = genName(3);
     if(typeof o.raycast === 'undefined') {
@@ -24,6 +24,7 @@ export default class MEMeshObj extends Materials {
     this.clearColor = "red";
     this.video = null;
     this.FINISH_VIDIO_INIT = false;
+    this.globalAmbient = globalAmbient;
 
     // Mesh stuff - for single mesh or t-posed (fiktive-first in loading order)
     this.mesh = o.mesh;
@@ -184,7 +185,7 @@ export default class MEMeshObj extends Materials {
 
       this.sceneUniformBuffer = this.device.createBuffer({
         label: 'sceneUniformBuffer per mesh',
-        size: 160,
+        size: 176,
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
       });
 
@@ -222,7 +223,7 @@ export default class MEMeshObj extends Materials {
         ],
       });
 
-      
+
 
       // Rotates the camera around the origin based on time.
       this.getTransformationMatrix = (mainRenderBundle, spotLight) => {
@@ -235,23 +236,31 @@ export default class MEMeshObj extends Materials {
         const camVP = mat4.multiply(camera.projectionMatrix, camera.view);
 
         for(const mesh of mainRenderBundle) {
-          // Flattened buffer: lightVP(16) + camVP(16) + cameraPos(3+pad) + lightPos(3+pad)
-          const sceneData = new Float32Array(16 + 16 + 4 + 4); // 16+16+4+4 = 40 floats
+          const sceneData = new Float32Array(44);
 
-          // Light ViewProj
+          // Light VP
           sceneData.set(spotLight.viewProjMatrix, 0);
 
           // Camera VP
           sceneData.set(camVP, 16);
 
           // Camera position + padding
-          sceneData.set([camera.position.x, camera.position.y, camera.position.z, 0.0], 32);
+          sceneData.set(
+            [camera.position.x, camera.position.y, camera.position.z, 0.0],
+            32
+          );
 
           // Light position + padding
-          sceneData.set([spotLight.position[0], spotLight.position[1], spotLight.position[2], 0.0], 36);
+          sceneData.set(
+            [spotLight.position[0], spotLight.position[1], spotLight.position[2], 0.0],
+            36
+          );
+
+          // Global ambient + padding
+          sceneData.set([this.globalAmbient[0], this.globalAmbient[1], this.globalAmbient[2], 0.0], 40);
 
           device.queue.writeBuffer(
-            mesh.sceneUniformBuffer,  // or shared buffer
+            mesh.sceneUniformBuffer,
             0,
             sceneData.buffer,
             sceneData.byteOffset,

@@ -9,6 +9,8 @@ struct Scene {
     padding2             : f32,   // align to 16 bytes
     lightPos             : vec3f,
     padding              : f32,   // align to 16 bytes
+    globalAmbient        : vec3f,  // <--- new
+    padding3             : f32,    // keep alignment (16 bytes)
 };
 
 struct SpotLight {
@@ -114,7 +116,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     // let viewDir = normalize(scene.cameraViewProjMatrix[3].xyz - input.fragPos);
 
     var lightContribution = vec3f(0.0);
-    var ambient = vec3f(0.0);
+    var ambient = vec3f(0.5);
 
     for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
         let sc = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);
@@ -128,10 +130,10 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
         let visibility = sampleShadow(uv, i32(i), depthRef - bias, norm, lightDir);
         let contrib = computeSpotLight(spotlights[i], norm, input.fragPos, viewDir);
         lightContribution += contrib * visibility;
-        ambient += spotlights[i].ambientFactor * spotlights[i].color;
+        // ambient += spotlights[i].ambientFactor * spotlights[i].color;
     }
-
+    // ambient /= f32(MAX_SPOTLIGHTS); PREVENT OVER NEXT FEATURE ON SWICHER
     let texColor = textureSample(meshTexture, meshSampler, input.uv);
-    let finalColor = texColor.rgb * (ambient + lightContribution); // * albedo;
+    let finalColor = texColor.rgb * (scene.globalAmbient + lightContribution); // * albedo;
     return vec4f(finalColor, 1.0);
 }`;
