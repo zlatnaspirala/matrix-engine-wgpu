@@ -21,6 +21,11 @@ export var loadVideoTexture = function() {
     // videoTexture is app main instance
     videoTexture.addLight();
 
+    addRaycastsAABBListener();
+    videoTexture.canvas.addEventListener("ray.hit.event", (e) => {
+      console.log('test ray after shadows merge')
+    })
+
     addEventListener('AmmoReady', () => {
       downloadMeshes({
         welcomeText: "./res/meshes/blender/piramyd.obj",
@@ -48,7 +53,7 @@ export var loadVideoTexture = function() {
           enabled: true,
           geometry: "Cube"
         },
-        // raycast: { enabled: true , radius: 2 }
+        raycast: {enabled: true, radius: 12}
       })
 
       var TEST = videoTexture.getSceneObjectByName('MyVideoTex');

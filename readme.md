@@ -227,7 +227,8 @@ Automatic raycast listener:
 ```js
 addRaycastListener();
 
-window.addEventListener("ray.hit.event", event => {
+// Must be app.canvas or [Program name].canvas
+app.canvas.addEventListener("ray.hit.event", event => {
   console.log("Ray hit:", event.detail.hitObject);
 });
 ```

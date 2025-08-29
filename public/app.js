@@ -1365,7 +1365,7 @@ let myDom = exports.myDom = {
   }
 };
 
-},{"../../../src/engine/utils.js":13,"./html-content.js":1}],3:[function(require,module,exports){
+},{"../../../src/engine/utils.js":15,"./html-content.js":1}],3:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -1386,6 +1386,18 @@ let application = exports.application = new _world.default({
     responseCoef: 1000
   }
 }, () => {
+  application.addLight();
+  console.log('light added.');
+  application.lightContainer[0].outerCutoff = 0.5;
+  application.lightContainer[0].position[2] = -27;
+  application.lightContainer[0].intensity = 4;
+  application.lightContainer[0].target[2] = -25;
+  application.lightContainer[0].position[1] = 9;
+  application.globalAmbient[0] = 0.7;
+  application.globalAmbient[1] = 0.7;
+  application.globalAmbient[2] = 0.7;
+  const diceTexturePath = './res/meshes/jamb/dice.png';
+
   // Dom operations
   application.userState = {
     name: 'Guest',
@@ -1535,7 +1547,10 @@ let application = exports.application = new _world.default({
     }
   };
   (0, _raycast.addRaycastListener)();
-  addEventListener("ray.hit.event", e => {
+  // addRaycastsAABBListener();
+
+  application.canvas.addEventListener("ray.hit.event", e => {
+    console.log('ray.hit.event @@@@@@@@@@@@ detected');
     if ((0, _utils.byId)('topTitleDOM') && (0, _utils.byId)('topTitleDOM').getAttribute('data-gamestatus') != 'FREE' && (0, _utils.byId)('topTitleDOM').getAttribute('data-gamestatus') != 'status-select') {
       console.log('no hit in middle of game ...');
       return;
@@ -1570,48 +1585,20 @@ let application = exports.application = new _world.default({
       scale: [1, 1, 1],
       swap: [null]
     });
-    (0, _loaderObj.downloadMeshes)({
-      star1: "./res/meshes/shapes/star1.obj"
-    }, m => {
-      let o = {
-        scale: 2,
-        position: {
-          x: 3,
-          y: 0,
-          z: -10
-        },
-        rotation: {
-          x: 0,
-          y: 0,
-          z: 0
-        },
-        rotationSpeed: {
-          x: 10,
-          y: 0,
-          z: 0
-        },
-        texturesPaths: ['./res/textures/default.png']
-      };
-      // application.addCube(o)
 
-      // application.addMeshObj({
-      //   position: {x: 0, y: 6, z: -5},
-      //   rotation: {x: 0, y: 0, z: 0},
-      //   rotationSpeed: {x: 0, y: 0, z: 0},
-      //   texturesPaths: ['./res/meshes/jamb/dice.png'],
-      //   useUVShema4x2: true,
-      //   name: 'star1',
-      //   mesh: m.star1,
-      //   raycast: {enabled: true, radius: 2},
-      //   physics: {
-      //     enabled: true,
-      //     geometry: "Cube"
-      //   }
-      // })
-    }, {
-      scale: [11, 11, 11],
-      swap: [null]
-    });
+    // downloadMeshes({
+    //   star1: "./res/meshes/shapes/star1.obj",
+    // }, (m) => {
+
+    //   let o = {
+    //     scale: 2,
+    //     position: {x: 3, y: 0, z: -10},
+    //     rotation: {x: 0, y: 0, z: 0},
+    //     rotationSpeed: {x: 10, y: 0, z: 0},
+    //     texturesPaths: ['./res/textures/default.png']
+    //   };
+    // }, {scale: [11, 11, 11], swap: [null]})
+
     (0, _loaderObj.downloadMeshes)({
       bg: "./res/meshes/jamb/bg.obj"
     }, onLoadObjFloor, {
@@ -1656,6 +1643,10 @@ let application = exports.application = new _world.default({
           mass: 0,
           enabled: true,
           geometry: "Cube"
+        },
+        raycast: {
+          enabled: false,
+          radius: 2
         }
       });
       application.addMeshObj({
@@ -1677,6 +1668,10 @@ let application = exports.application = new _world.default({
           mass: 0,
           enabled: true,
           geometry: "Cube"
+        },
+        raycast: {
+          enabled: false,
+          radius: 2
         }
       });
     }, {
@@ -1710,6 +1705,10 @@ let application = exports.application = new _world.default({
         mass: 0,
         enabled: true,
         geometry: "Cube"
+      },
+      raycast: {
+        enabled: false,
+        radius: 2
       }
     });
   }
@@ -1734,11 +1733,20 @@ let application = exports.application = new _world.default({
         mass: 0,
         enabled: true,
         geometry: "Cube"
+      },
+      raycast: {
+        enabled: false,
+        radius: 2
       }
     });
     // application.cameras.WASD.pitch = 0.2
     setTimeout(() => {
-      app.cameras.WASD.velocity[1] = 18;
+      // app.cameras.WASD.velocity[1] = 18
+      console.log('set camera position with timeout...');
+      app.cameras.WASD.yaw = -6.21;
+      app.cameras.WASD.pitch = -0.32;
+      app.cameras.WASD.position[2] = 0;
+      app.cameras.WASD.position[1] = 3.76;
       //                                             BODY              , x,  y, z, rotX, rotY, RotZ
       app.matrixAmmo.setKinematicTransform(app.matrixAmmo.getBodyByName('mainTitle'), 0, 0, 0, 1);
       app.matrixAmmo.setKinematicTransform(app.matrixAmmo.getBodyByName('bg'), 0, -10, 0, 0, 0, 0);
@@ -1768,6 +1776,10 @@ let application = exports.application = new _world.default({
         mass: 0,
         enabled: true,
         geometry: "Cube"
+      },
+      raycast: {
+        enabled: false,
+        radius: 2
       }
     });
   }
@@ -1790,7 +1802,7 @@ let application = exports.application = new _world.default({
         y: 0,
         z: 0
       },
-      texturesPaths: ['./res/meshes/jamb/dice.png'],
+      texturesPaths: [diceTexturePath],
       useUVShema4x2: true,
       name: 'CubePhysics1',
       mesh: m.cube,
@@ -1819,7 +1831,7 @@ let application = exports.application = new _world.default({
         y: 0,
         z: 0
       },
-      texturesPaths: ['./res/meshes/jamb/dice.png'],
+      texturesPaths: [diceTexturePath],
       useUVShema4x2: true,
       name: 'CubePhysics2',
       mesh: m.cube,
@@ -1848,7 +1860,7 @@ let application = exports.application = new _world.default({
         y: 0,
         z: 0
       },
-      texturesPaths: ['./res/meshes/jamb/dice.png'],
+      texturesPaths: [diceTexturePath],
       useUVShema4x2: true,
       name: 'CubePhysics3',
       mesh: m.cube,
@@ -1877,7 +1889,7 @@ let application = exports.application = new _world.default({
         y: 0,
         z: 0
       },
-      texturesPaths: ['./res/meshes/jamb/dice.png'],
+      texturesPaths: [diceTexturePath],
       useUVShema4x2: true,
       name: 'CubePhysics4',
       mesh: m.cube,
@@ -1906,7 +1918,7 @@ let application = exports.application = new _world.default({
         y: 0,
         z: 0
       },
-      texturesPaths: ['./res/meshes/jamb/dice.png'],
+      texturesPaths: [diceTexturePath],
       useUVShema4x2: true,
       name: 'CubePhysics5',
       mesh: m.cube,
@@ -1935,7 +1947,7 @@ let application = exports.application = new _world.default({
         y: 0,
         z: 0
       },
-      texturesPaths: ['./res/meshes/jamb/dice.png'],
+      texturesPaths: [diceTexturePath],
       useUVShema4x2: true,
       name: 'CubePhysics6',
       mesh: m.cube,
@@ -1961,6 +1973,7 @@ let application = exports.application = new _world.default({
         removeEventListener('dice-6', dice6Click);
         console.log(`%cFINAL<preliminar> ${_jamb.dices.R}`, _utils.LOG_FUNNY);
         application.TOLERANCE = 0;
+        console.log('se camera position 2');
         app.cameras.WASD.yaw = 0.01;
         app.cameras.WASD.pitch = -1.26;
         app.cameras.WASD.position[2] = -18;
@@ -2009,6 +2022,7 @@ let application = exports.application = new _world.default({
       setTimeout(() => {
         app.dices.activateAllDicesPhysics();
       }, 1000);
+      console.log('se camera position 3');
       app.cameras.WASD.yaw = 0;
       app.cameras.WASD.pitch = 0;
       app.cameras.WASD.position[2] = 0;
@@ -2134,7 +2148,7 @@ let application = exports.application = new _world.default({
 });
 window.app = application;
 
-},{"./examples/games/jamb/jamb.js":2,"./src/engine/loader-obj.js":8,"./src/engine/raycast.js":12,"./src/engine/utils.js":13,"./src/world.js":21}],4:[function(require,module,exports){
+},{"./examples/games/jamb/jamb.js":2,"./src/engine/loader-obj.js":10,"./src/engine/raycast.js":14,"./src/engine/utils.js":15,"./src/world.js":24}],4:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -7895,7 +7909,45 @@ class MEBall {
 }
 exports.default = MEBall;
 
-},{"../shaders/shaders":17,"./engine":7,"./matrix-class":9,"wgpu-matrix":4}],6:[function(require,module,exports){
+},{"../shaders/shaders":20,"./engine":8,"./matrix-class":12,"wgpu-matrix":4}],6:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+var _utils = require("./utils");
+/**
+ * @description
+ * Can be reuse for any other tasks.
+ * @author Nikola Lukic
+ */
+
+class Behavior {
+  status = "Only oscillator";
+  constructor() {
+    this.osc0 = new _utils.OSCILLATOR(0, 5, 0.01);
+  }
+  setOsc0(min, max, step) {
+    this.osc0.min = min;
+    this.osc0.max = max;
+    this.osc0.step = step;
+  }
+
+  // apend - keep init origin
+  addPath(NUMBER) {
+    let inc = this.osc0.UPDATE();
+    console.log('test inc', inc);
+    console.log('test inc + number', NUMBER + inc);
+    return inc + NUMBER;
+  }
+  setPath0() {
+    return this.osc0.UPDATE();
+  }
+}
+exports.default = Behavior;
+
+},{"./utils":15}],7:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -8320,7 +8372,7 @@ class MECube {
 }
 exports.default = MECube;
 
-},{"../shaders/shaders":17,"./engine":7,"./matrix-class":9,"wgpu-matrix":4}],7:[function(require,module,exports){
+},{"../shaders/shaders":20,"./engine":8,"./matrix-class":12,"wgpu-matrix":4}],8:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -8329,29 +8381,10 @@ Object.defineProperty(exports, "__esModule", {
 exports.WASDCamera = exports.ArcballCamera = void 0;
 exports.createInputHandler = createInputHandler;
 var _wgpuMatrix = require("wgpu-matrix");
+var _utils = require("./utils");
 // Note: The code in this file does not use the 'dst' output parameter of functions in the
 // 'wgpu-matrix' library, so produces many temporary vectors and matrices.
 // This is intentional, as this sample prefers readability over performance.
-
-// import Input from './input';
-
-// // Common interface for camera implementations
-// export default interface Camera {
-//   // update updates the camera using the user-input and returns the view matrix.
-//   update(delta_time: number, input: Input): Mat4;
-
-//   // The camera matrix.
-//   // This is the inverse of the view matrix.
-//   matrix: Mat4;
-//   // Alias to column vector 0 of the camera matrix.
-//   right: Vec4;
-//   // Alias to column vector 1 of the camera matrix.
-//   up: Vec4;
-//   // Alias to column vector 2 of the camera matrix.
-//   back: Vec4;
-//   // Alias to column vector 3 of the camera matrix.
-//   position: Vec4;
-// }
 
 // The common functionality between camera implementations
 class CameraBase {
@@ -8375,6 +8408,9 @@ class CameraBase {
   set matrix(mat) {
     _wgpuMatrix.mat4.copy(mat, this.matrix_);
   }
+  setProjection(fov = 2 * Math.PI / 5, aspect = 1, near = 0.5, far = 1000) {
+    this.projectionMatrix = _wgpuMatrix.mat4.perspective(fov, aspect, near, far);
+  }
 
   // Returns the camera view matrix
   get view() {
@@ -8389,6 +8425,7 @@ class CameraBase {
   get right() {
     return this.right_;
   }
+
   // Assigns `vec` to the first 3 elements of column vector 0 of the camera matrix
   set right(vec) {
     _wgpuMatrix.vec3.copy(vec, this.right_);
@@ -8398,6 +8435,7 @@ class CameraBase {
   get up() {
     return this.up_;
   }
+
   // Assigns `vec` to the first 3 elements of column vector 1 of the camera matrix \ Vec3
   set up(vec) {
     _wgpuMatrix.vec3.copy(vec, this.up_);
@@ -8407,6 +8445,7 @@ class CameraBase {
   get back() {
     return this.back_;
   }
+
   // Assigns `vec` to the first 3 elements of column vector 2 of the camera matrix
   set back(vec) {
     _wgpuMatrix.vec3.copy(vec, this.back_);
@@ -8416,6 +8455,7 @@ class CameraBase {
   get position() {
     return this.position_;
   }
+
   // Assigns `vec` to the first 3 elements of column vector 3 of the camera matrix
   set position(vec) {
     _wgpuMatrix.vec3.copy(vec, this.position_);
@@ -8459,7 +8499,8 @@ class WASDCamera extends CameraBase {
       const forward = _wgpuMatrix.vec3.normalize(_wgpuMatrix.vec3.sub(target, position));
       this.recalculateAngles(forward);
       this.position = position;
-      // console.log(`%cCamera pos: ${position}`, LOG_INFO);
+      this.setProjection();
+      // console.log(`%cCamera constructor : ${position}`, LOG_INFO);
     }
   }
 
@@ -8658,29 +8699,6 @@ function rotate(vec, axis, angle) {
 function lerp(a, b, s) {
   return _wgpuMatrix.vec3.addScaled(a, _wgpuMatrix.vec3.sub(b, a), s);
 }
-
-// Input holds as snapshot of input state
-// export default interface Input {
-//   // Digital input (e.g keyboard state)
-//   readonly digital: {
-//     readonly forward: boolean;
-//     readonly backward: boolean;
-//     readonly left: boolean;
-//     readonly right: boolean;
-//     readonly up: boolean;
-//     readonly down: boolean;
-//   };
-//   // Analog input (e.g mouse, touchscreen)
-//   readonly analog: {
-//     readonly x: number;
-//     readonly y: number;
-//     readonly zoom: number;
-//     readonly touching: boolean;
-//   };
-// }
-// InputHandler is a function that when called, returns the current Input state.
-// export type InputHandler = () => Input;
-// createInputHandler returns an InputHandler by attaching event handlers to the window and canvas.
 function createInputHandler(window, canvas) {
   let digital = {
     forward: false,
@@ -8700,37 +8718,27 @@ function createInputHandler(window, canvas) {
     switch (e.code) {
       case 'KeyW':
         digital.forward = value;
-        e.preventDefault();
-        e.stopPropagation();
         break;
       case 'KeyS':
         digital.backward = value;
-        e.preventDefault();
-        e.stopPropagation();
         break;
       case 'KeyA':
         digital.left = value;
-        e.preventDefault();
-        e.stopPropagation();
         break;
       case 'KeyD':
         digital.right = value;
-        e.preventDefault();
-        e.stopPropagation();
         break;
       case 'Space':
         digital.up = value;
-        e.preventDefault();
-        e.stopPropagation();
         break;
       case 'ShiftLeft':
       case 'ControlLeft':
       case 'KeyC':
         digital.down = value;
-        e.preventDefault();
-        e.stopPropagation();
         break;
     }
+    e.preventDefault();
+    e.stopPropagation();
   };
   window.addEventListener('keydown', e => setDigital(e, true));
   window.addEventListener('keyup', e => setDigital(e, false));
@@ -8742,18 +8750,14 @@ function createInputHandler(window, canvas) {
     mouseDown = false;
   });
   canvas.addEventListener('pointermove', e => {
-    mouseDown = e.pointerType == 'mouse' ? (e.buttons & 1) !== 0 : true;
+    mouseDown = e.pointerType === 'mouse' ? (e.buttons & 1) !== 0 : true;
     if (mouseDown) {
-      // console.log('TEST ', analog)
       analog.x += e.movementX / 10;
       analog.y += e.movementY / 10;
     }
   });
   canvas.addEventListener('wheel', e => {
-    mouseDown = (e.buttons & 1) !== 0;
-    if (mouseDown) {
-      // The scroll value varies substantially between user agents / browsers.
-      // Just use the sign.
+    if ((e.buttons & 1) !== 0) {
       analog.zoom += Math.sign(e.deltaY);
       e.preventDefault();
       e.stopPropagation();
@@ -8762,16 +8766,19 @@ function createInputHandler(window, canvas) {
     passive: false
   });
   return () => {
+    // Guard: prevent zero deltas from breaking camera math
+    const safeX = analog.x || 0.0001;
+    const safeY = analog.y || 0.0001;
     const out = {
       digital,
       analog: {
-        x: analog.x,
-        y: analog.y,
+        x: safeX,
+        y: safeY,
         zoom: analog.zoom,
         touching: mouseDown
       }
     };
-    // Clear the analog values, as these accumulate.
+    // Reset only the deltas for next frame
     analog.x = 0;
     analog.y = 0;
     analog.zoom = 0;
@@ -8779,7 +8786,217 @@ function createInputHandler(window, canvas) {
   };
 }
 
-},{"wgpu-matrix":4}],8:[function(require,module,exports){
+},{"./utils":15,"wgpu-matrix":4}],9:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.SpotLight = void 0;
+var _wgpuMatrix = require("wgpu-matrix");
+var _vertexShadow = require("../shaders/vertexShadow.wgsl");
+var _behavior = _interopRequireDefault(require("./behavior"));
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+/**
+ * @description
+ * Spot light with shodow cast.
+ * @author Nikola Lukic
+ * @email zlatnaspirala@gmail.com
+ */
+class SpotLight {
+  camera;
+  inputHandler;
+  position;
+  target;
+  up;
+  direction;
+  viewMatrix;
+  projectionMatrix;
+  viewProjMatrix;
+  fov;
+  aspect;
+  near;
+  far;
+  innerCutoff;
+  outerCutoff;
+  spotlightUniformBuffer;
+  constructor(camera, inputHandler, device, position = _wgpuMatrix.vec3.create(0, 10, -20), target = _wgpuMatrix.vec3.create(0, 0, -20), fov = 45, aspect = 1.0, near = 0.1, far = 200) {
+    this.fov = fov;
+    this.aspect = aspect;
+    this.near = near;
+    this.far = far;
+    this.camera = camera;
+    this.inputHandler = inputHandler;
+    this.position = position;
+    this.target = target;
+    this.up = _wgpuMatrix.vec3.create(0, 0, -1);
+    this.direction = _wgpuMatrix.vec3.normalize(_wgpuMatrix.vec3.subtract(target, position));
+    this.intensity = 1.0;
+    this.color = _wgpuMatrix.vec3.create(1.0, 1.0, 1.0); // white
+
+    this.viewMatrix = _wgpuMatrix.mat4.lookAt(position, target, this.up);
+    this.projectionMatrix = _wgpuMatrix.mat4.perspective(this.fov * Math.PI / 180, this.aspect, this.near, this.far);
+    this.setProjection = function (fov = 45, aspect = 1.0, near = 0.1, far = 200) {
+      this.projectionMatrix = _wgpuMatrix.mat4.perspective(fov, aspect, near, far);
+    };
+    this.updateProjection = function () {
+      this.projectionMatrix = _wgpuMatrix.mat4.perspective(this.fov, this.aspect, this.near, this.far);
+    };
+    this.device = device;
+    this.viewProjMatrix = _wgpuMatrix.mat4.multiply(this.projectionMatrix, this.viewMatrix);
+    this.fov = fov;
+    this.aspect = aspect;
+    this.near = near;
+    this.far = far;
+    this.innerCutoff = Math.cos(Math.PI / 180 * 12.5);
+    this.outerCutoff = Math.cos(Math.PI / 180 * 17.5);
+    this.ambientFactor = 0.5;
+    this.range = 20.0;
+    this.shadowBias = 0.01;
+    this.SHADOW_RES = 1024;
+    this.primitive = {
+      topology: 'triangle-list',
+      cullMode: 'back',
+      // for front interest border drawen shadows !
+      frontFace: 'ccw'
+    };
+    this.shadowTexture = this.device.createTexture({
+      label: 'shadowTexture[light]',
+      size: [this.SHADOW_RES, this.SHADOW_RES, 1],
+      format: "depth32float",
+      usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING
+    });
+    this.shadowSampler = device.createSampler({
+      label: 'shadowSampler[light]',
+      compare: 'less',
+      magFilter: 'linear',
+      minFilter: 'linear'
+    });
+    this.renderPassDescriptor = {
+      label: "renderPassDescriptor shadowPass [per SpotLigth]",
+      colorAttachments: [],
+      depthStencilAttachment: {
+        view: this.shadowTexture.createView(),
+        depthClearValue: 1.0,
+        depthLoadOp: "clear",
+        depthStoreOp: "store"
+      }
+    };
+    this.uniformBufferBindGroupLayout = this.device.createBindGroupLayout({
+      label: 'modelBindGroup in light',
+      entries: [{
+        binding: 0,
+        visibility: GPUShaderStage.VERTEX,
+        buffer: {
+          type: 'uniform'
+        }
+      }]
+    });
+    this.shadowBindGroupContainer = [];
+    this.getShadowBindGroup = (mesh, index) => {
+      if (this.shadowBindGroupContainer[index]) {
+        return this.shadowBindGroupContainer[index];
+      }
+      this.shadowBindGroupContainer[index] = this.device.createBindGroup({
+        label: 'sceneBindGroupForShadow in light',
+        layout: this.uniformBufferBindGroupLayout,
+        entries: [{
+          binding: 0,
+          resource: {
+            buffer: mesh.sceneUniformBuffer
+          }
+        }]
+      });
+      return this.shadowBindGroupContainer[index];
+    };
+    this.modelBindGroupLayout = this.device.createBindGroupLayout({
+      entries: [{
+        binding: 0,
+        visibility: GPUShaderStage.VERTEX,
+        buffer: {
+          type: 'uniform'
+        }
+      }]
+    });
+    this.shadowPipeline = this.device.createRenderPipeline({
+      label: 'shadowPipeline per light',
+      layout: this.device.createPipelineLayout({
+        label: 'createPipelineLayout - uniformBufferBindGroupLayout',
+        bindGroupLayouts: [this.uniformBufferBindGroupLayout, this.modelBindGroupLayout]
+      }),
+      vertex: {
+        module: this.device.createShaderModule({
+          code: _vertexShadow.vertexShadowWGSL
+        }),
+        buffers: [{
+          arrayStride: 12,
+          // 3 * 4 bytes (vec3f)
+          attributes: [{
+            shaderLocation: 0,
+            // must match @location(0) in vertex shader
+            offset: 0,
+            format: "float32x3"
+          }]
+        }]
+      },
+      depthStencil: {
+        depthWriteEnabled: true,
+        depthCompare: 'less',
+        format: 'depth32float'
+      },
+      primitive: this.primitive
+    });
+    this.getMainPassBindGroup = function (mesh) {
+      // You can cache it per mesh to avoid recreating each frame
+      if (!this.mainPassBindGroupContainer) this.mainPassBindGroupContainer = [];
+      const index = mesh._lightBindGroupIndex || 0; // assign unique per mesh if needed
+      if (this.mainPassBindGroupContainer[index]) {
+        return this.mainPassBindGroupContainer[index];
+      }
+      this.mainPassBindGroupContainer[index] = this.device.createBindGroup({
+        label: `mainPassBindGroup for mesh`,
+        layout: mesh.mainPassBindGroupLayout,
+        // this should match the pipeline
+        entries: [{
+          binding: 0,
+          // must match @binding in shader for shadow texture
+          resource: this.shadowTexture.createView()
+        }, {
+          binding: 1,
+          // must match @binding in shader for shadow sampler
+          resource: this.shadowSampler
+        }]
+      });
+      return this.mainPassBindGroupContainer[index];
+    };
+
+    // Only osc values +-
+    this.behavior = new _behavior.default();
+
+    // put here only func
+    this.updater = [];
+  }
+  update() {
+    this.updater.forEach(update => {
+      update(this);
+    });
+    this.direction = _wgpuMatrix.vec3.normalize(_wgpuMatrix.vec3.subtract(this.target, this.position));
+    const target = _wgpuMatrix.vec3.add(this.position, this.direction);
+    this.viewMatrix = _wgpuMatrix.mat4.lookAt(this.position, target, this.up);
+    this.viewProjMatrix = _wgpuMatrix.mat4.multiply(this.projectionMatrix, this.viewMatrix);
+  }
+  getLightDataBuffer() {
+    const m = this.viewProjMatrix;
+    return new Float32Array([...this.position, 0.0, ...this.direction, 0.0, this.innerCutoff, this.outerCutoff, this.intensity, 0.0, ...this.color, 0.0, this.range, this.ambientFactor, this.shadowBias,
+    // <<--- use shadowBias
+    0.0,
+    // keep padding
+    ...m]);
+  }
+}
+exports.SpotLight = SpotLight;
+
+},{"../shaders/vertexShadow.wgsl":22,"./behavior":6,"wgpu-matrix":4}],10:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -9247,7 +9464,361 @@ function play(nameAni) {
   this.playing = true;
 }
 
-},{}],9:[function(require,module,exports){
+},{}],11:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+/**
+ * @description
+ * Created for matrix-engine-wgpu project.
+ * MeshObj class estends Materials.
+ * @author Nikola Lukic
+ * @email zlatnaspirala@gmail.com
+ */
+
+class Materials {
+  constructor(device) {
+    this.device = device;
+    this.isVideo = false;
+    this.videoIsReady = 'NONE';
+    // this.compareSampler = this.device.createSampler({compare: 'less'});
+    this.compareSampler = this.device.createSampler({
+      compare: 'less-equal',
+      // safer for shadow comparison
+      addressModeU: 'clamp-to-edge',
+      // prevents UV leaking outside
+      addressModeV: 'clamp-to-edge',
+      magFilter: 'linear',
+      // smooth PCF
+      minFilter: 'linear'
+    });
+    // For image textures (standard sampler)
+    this.imageSampler = this.device.createSampler({
+      magFilter: 'linear',
+      minFilter: 'linear'
+    });
+    // For external video textures (needs to be filtering sampler too!)
+    this.videoSampler = this.device.createSampler({
+      magFilter: 'linear',
+      minFilter: 'linear'
+    });
+
+    // FX effect
+    this.postFXModeBuffer = this.device.createBuffer({
+      size: 4,
+      // u32 = 4 bytes
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+
+    // Dymmy buffer
+    this.dummySpotlightUniformBuffer = this.device.createBuffer({
+      size: 80,
+      // Must match size in shader
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    this.device.queue.writeBuffer(this.dummySpotlightUniformBuffer, 0, new Float32Array(16));
+  }
+  updatePostFXMode(mode) {
+    const arrayBuffer = new Uint32Array([mode]);
+    this.device.queue.writeBuffer(this.postFXModeBuffer, 0, arrayBuffer);
+  }
+  async loadTex0(texturesPaths) {
+    this.sampler = this.device.createSampler({
+      magFilter: 'linear',
+      minFilter: 'linear'
+    });
+    return new Promise(async resolve => {
+      const response = await fetch(texturesPaths[0]);
+      const imageBitmap = await createImageBitmap(await response.blob());
+      this.texture0 = this.device.createTexture({
+        size: [imageBitmap.width, imageBitmap.height, 1],
+        // REMOVED 1
+        format: 'rgba8unorm',
+        usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT
+      });
+      this.device.queue.copyExternalImageToTexture({
+        source: imageBitmap
+      }, {
+        texture: this.texture0
+      }, [imageBitmap.width, imageBitmap.height]);
+      resolve();
+    });
+  }
+  async loadVideoTexture(arg) {
+    // this.isVideo = true;
+    this.videoIsReady = 'MAYBE';
+    if (arg.type === 'video') {
+      this.video = document.createElement('video');
+      this.video.src = arg.src || 'res/videos/tunel.mp4';
+      this.video.crossOrigin = 'anonymous';
+      this.video.autoplay = true;
+      this.video.loop = true;
+      document.body.append(this.video);
+      this.video.style.display = 'none';
+      this.video.style.position = 'absolute';
+      this.video.style.top = '50px';
+      this.video.style.left = '50px';
+      await this.video.play();
+      this.isVideo = true;
+    } else if (arg.type === 'videoElement') {
+      this.video = arg.el;
+      await this.video.play();
+    } else if (arg.type === 'camera') {
+      this.video = document.createElement('video');
+      this.video.autoplay = true;
+      this.video.muted = true;
+      this.video.playsInline = true;
+      this.video.style.display = 'none';
+      document.body.append(this.video);
+      try {
+        const stream = await navigator.mediaDevices?.getUserMedia?.({
+          video: {
+            width: {
+              ideal: 1280
+            },
+            height: {
+              ideal: 720
+            }
+          },
+          audio: false
+        });
+        this.video.srcObject = stream;
+        await this.video.play();
+        this.isVideo = true;
+      } catch (err) {
+        console.error("❌ Failed to access camera:", err);
+        return;
+      }
+    } else if (arg.type === 'canvas2d') {
+      // Existing canvas (arg.el) — assume it's actively drawing
+      this.video = document.createElement('video');
+      this.video.autoplay = true;
+      this.video.muted = true;
+      this.video.playsInline = true;
+      this.video.style.display = 'none';
+      document.body.append(this.video);
+      const stream = arg.el.captureStream?.() || arg.el.mozCaptureStream?.();
+      if (!stream) {
+        console.error('❌ Cannot capture stream from canvas2d');
+        return;
+      }
+      this.video.srcObject = stream;
+      await this.video.play();
+      this.isVideo = true;
+    } else if (arg.type === 'canvas2d-inline') {
+      // Miniature inline-drawn canvas created dynamically
+      const canvas = document.createElement('canvas');
+      canvas.width = arg.width || 256;
+      canvas.height = arg.height || 256;
+      const ctx = canvas.getContext('2d');
+      if (typeof arg.canvaInlineProgram === 'function') {
+        // Start drawing loop
+        const drawLoop = () => {
+          arg.canvaInlineProgram(ctx, canvas);
+          requestAnimationFrame(drawLoop);
+        };
+        drawLoop();
+      }
+      this.video = document.createElement('video');
+      this.video.autoplay = true;
+      this.video.muted = true;
+      this.video.playsInline = true;
+      this.video.style.display = 'none';
+      document.body.append(this.video);
+      this.isVideo = true;
+      const stream = canvas.captureStream?.() || canvas.mozCaptureStream?.();
+      if (!stream) {
+        console.error('❌ Cannot capture stream from inline canvas');
+        return;
+      }
+      this.video.srcObject = stream;
+      await this.video.play();
+    }
+    this.sampler = this.device.createSampler({
+      magFilter: 'linear',
+      minFilter: 'linear'
+    });
+
+    // ✅ Now - maybe noT
+    this.createLayoutForRender();
+  }
+  updateVideoTexture() {
+    if (!this.video || this.video.readyState < 2) return;
+    if (!this.externalTexture) {
+      // create it once
+      this.externalTexture = this.device.importExternalTexture({
+        source: this.video
+      });
+      this.createBindGroupForRender();
+      this.videoIsReady = 'YES';
+      console.log("✅ video bind group created [createBindGroupForRender()]");
+    } else {
+      this.externalTexture = this.device.importExternalTexture({
+        source: this.video
+      });
+      this.createBindGroupForRender();
+    }
+  }
+  createBindGroupForRender() {
+    const textureResource = this.isVideo ? this.externalTexture : this.texture0.createView();
+    if (!textureResource || !this.sceneUniformBuffer || !this.shadowDepthTextureView) {
+      if (!textureResource) console.warn("❗Missing res texture: ", textureResource);
+      if (!this.sceneUniformBuffer) console.warn("❗Missing res: this.sceneUniformBuffer: ", this.sceneUniformBuffer);
+      if (!this.shadowDepthTextureView) console.warn("❗Missing res: this.shadowDepthTextureView: ", this.shadowDepthTextureView);
+      if (typeof textureResource === 'undefined') this.updateVideoTexture();
+      return;
+    } else {}
+    if (this.isVideo == true) {
+      // console.info("✅ video sceneBindGroupForRender ");
+      this.sceneBindGroupForRender = this.device.createBindGroup({
+        layout: this.bglForRender,
+        entries: [{
+          binding: 0,
+          resource: {
+            buffer: this.sceneUniformBuffer
+          }
+        }, {
+          binding: 1,
+          resource: this.shadowDepthTextureView
+        }, {
+          binding: 2,
+          resource: this.compareSampler
+        }, {
+          binding: 3,
+          resource: textureResource
+        }, {
+          binding: 4,
+          resource: this.videoSampler
+        }, {
+          binding: 5,
+          resource: {
+            buffer: this.postFXModeBuffer
+          }
+        }]
+      });
+
+      // special case for video meybe better solution exist 
+      // this.setupPipeline();
+      this.video.play();
+    } else {
+      this.sceneBindGroupForRender = this.device.createBindGroup({
+        layout: this.bglForRender,
+        entries: [{
+          binding: 0,
+          resource: {
+            buffer: this.sceneUniformBuffer
+          }
+        }, {
+          binding: 1,
+          resource: this.shadowDepthTextureView
+        }, {
+          binding: 2,
+          resource: this.compareSampler
+        }, {
+          binding: 3,
+          resource: textureResource
+        }, {
+          binding: 4,
+          resource: this.imageSampler
+        }, {
+          binding: 5,
+          resource: {
+            buffer: !this.spotlightUniformBuffer ? this.dummySpotlightUniformBuffer : this.spotlightUniformBuffer
+          }
+        }]
+      });
+    }
+  }
+  createLayoutForRender() {
+    if (this.isVideo == true) {
+      console.info("✅ createLayoutForRender video [bglForRender]");
+    } else {
+      console.info("✅ normal createLayoutForRender [bglForRender]");
+    }
+    let e = [{
+      binding: 0,
+      visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
+      buffer: {
+        type: 'uniform'
+      }
+    }, ...(this.isVideo == false ? [{
+      binding: 1,
+      visibility: GPUShaderStage.FRAGMENT,
+      texture: {
+        sampleType: "depth",
+        viewDimension: "2d-array",
+        // <- must match shadowMapArray
+        multisampled: false
+      }
+    }] : [{
+      binding: 1,
+      visibility: GPUShaderStage.FRAGMENT,
+      texture: {
+        sampleType: "depth",
+        viewDimension: "2d"
+      }
+    }]), {
+      binding: 2,
+      visibility: GPUShaderStage.FRAGMENT,
+      sampler: {
+        type: 'comparison'
+      }
+    }, ...(this.isVideo ? [
+    // VIDEO
+    {
+      binding: 3,
+      visibility: GPUShaderStage.FRAGMENT,
+      externalTexture: {}
+    }, {
+      binding: 4,
+      visibility: GPUShaderStage.FRAGMENT,
+      sampler: {
+        type: 'filtering'
+      } // for video sampling
+    }, {
+      binding: 5,
+      visibility: GPUShaderStage.FRAGMENT,
+      buffer: {
+        type: 'uniform'
+      }
+    }] : [
+    // IMAGE
+    {
+      binding: 3,
+      visibility: GPUShaderStage.FRAGMENT,
+      texture: {
+        sampleType: 'float',
+        viewDimension: '2d'
+      }
+    }, {
+      binding: 4,
+      visibility: GPUShaderStage.FRAGMENT,
+      sampler: {
+        type: 'filtering'
+      }
+    }, {
+      binding: 5,
+      visibility: GPUShaderStage.FRAGMENT,
+      buffer: {
+        type: 'uniform'
+      }
+    }])];
+    console.log("BG E : ", e);
+    this.bglForRender = this.device.createBindGroupLayout({
+      label: 'bglForRender',
+      entries: e
+    });
+    if (this.isVideo == true) {
+      this.createBindGroupForRender();
+    }
+  }
+}
+exports.default = Materials;
+
+},{}],12:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -9483,7 +10054,7 @@ class Rotation {
 }
 exports.Rotation = Rotation;
 
-},{"./utils":13}],10:[function(require,module,exports){
+},{"./utils":15}],13:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -9492,16 +10063,17 @@ Object.defineProperty(exports, "__esModule", {
 exports.default = void 0;
 var _wgpuMatrix = require("wgpu-matrix");
 var _matrixClass = require("./matrix-class");
-var _engine = require("./engine");
 var _vertexShadow = require("../shaders/vertexShadow.wgsl");
 var _fragment = require("../shaders/fragment.wgsl");
 var _vertex = require("../shaders/vertex.wgsl");
 var _utils = require("./utils");
-// import {checkingProcedure, checkingRay, touchCoordinate} from './raycast';
-
-class MEMeshObj {
-  constructor(canvas, device, context, o) {
-    if (typeof o.name === 'undefined') o.name = (0, _utils.genName)(9);
+var _materials = _interopRequireDefault(require("./materials"));
+var _fragmentVideo = require("../shaders/fragment.video.wgsl");
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+class MEMeshObj extends _materials.default {
+  constructor(canvas, device, context, o, inputHandler, globalAmbient) {
+    super(device);
+    if (typeof o.name === 'undefined') o.name = (0, _utils.genName)(3);
     if (typeof o.raycast === 'undefined') {
       this.raycast = {
         enabled: false,
@@ -9515,9 +10087,10 @@ class MEMeshObj {
     this.device = device;
     this.context = context;
     this.entityArgPass = o.entityArgPass;
-
-    // comes from engine not from args
     this.clearColor = "red";
+    this.video = null;
+    this.FINISH_VIDIO_INIT = false;
+    this.globalAmbient = globalAmbient;
 
     // Mesh stuff - for single mesh or t-posed (fiktive-first in loading order)
     this.mesh = o.mesh;
@@ -9533,15 +10106,12 @@ class MEMeshObj {
       console.log(`%c Mesh objAnim exist: ${o.objAnim}`, _utils.LOG_FUNNY_SMALL);
       this.drawElements = this.drawElementsAnim;
     }
-    this.inputHandler = (0, _engine.createInputHandler)(window, canvas);
+    this.inputHandler = inputHandler;
     this.cameras = o.cameras;
     this.mainCameraParams = {
       type: o.mainCameraParams.type,
       responseCoef: o.mainCameraParams.responseCoef
     };
-
-    // touchCoordinate.enabled = true;
-
     this.lastFrameMS = 0;
     this.texturesPaths = [];
     o.texturesPaths.forEach(t => {
@@ -9557,22 +10127,16 @@ class MEMeshObj {
     this.runProgram = () => {
       return new Promise(async resolve => {
         this.shadowDepthTextureSize = 1024;
-        const aspect = canvas.width / canvas.height;
-        this.projectionMatrix = _wgpuMatrix.mat4.perspective(2 * Math.PI / 5, aspect, 1, 2000.0);
         this.modelViewProjectionMatrix = _wgpuMatrix.mat4.create();
-        // console.log('cube added texturesPaths: ', this.texturesPaths)
-        this.loadTex0(this.texturesPaths, device).then(() => {
-          // console.log('loaded tex buffer for mesh:', this.texture0)
+        this.loadTex0(this.texturesPaths).then(() => {
           resolve();
         });
       });
     };
     this.runProgram().then(() => {
-      const aspect = canvas.width / canvas.height;
-      const presentationFormat = navigator.gpu.getPreferredCanvasFormat();
       this.context.configure({
         device: this.device,
-        format: presentationFormat,
+        format: this.presentationFormat,
         alphaMode: 'premultiplied'
       });
 
@@ -9593,7 +10157,6 @@ class MEMeshObj {
         this.vertexBuffer.unmap();
       }
 
-      // NIDZA TEST SECOUND BUFFER
       // Create the model vertex buffer.
       this.vertexNormalsBuffer = this.device.createBuffer({
         size: this.mesh.vertexNormals.length * Float32Array.BYTES_PER_ELEMENT,
@@ -9627,14 +10190,6 @@ class MEMeshObj {
       this.indexBuffer.unmap();
       this.indexCount = indexCount;
 
-      // Create the depth texture for rendering/sampling the shadow map.
-      this.shadowDepthTexture = this.device.createTexture({
-        size: [this.shadowDepthTextureSize, this.shadowDepthTextureSize, 1],
-        usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING,
-        format: 'depth32float'
-      });
-      this.shadowDepthTextureView = this.shadowDepthTexture.createView();
-
       // Create some common descriptors used for both the shadow pipeline
       // and the color rendering pipeline.
       this.vertexBuffers = [{
@@ -9662,12 +10217,29 @@ class MEMeshObj {
           format: "float32x2"
         }]
       }];
-      const primitive = {
+      this.primitive = {
         topology: 'triangle-list',
-        // cullMode: 'back', // ORI 
-        cullMode: 'none' // ORI 
+        cullMode: 'back',
+        // typical for shadow passes
+        frontFace: 'ccw'
       };
+
+      // Create a bind group layout which holds the scene uniforms and
+      // the texture+sampler for depth. We create it manually because the WebPU
+      // implementation doesn't infer this from the shader (yet).
+      this.createLayoutForRender();
+      this.modelUniformBuffer = this.device.createBuffer({
+        size: 4 * 16,
+        // 4x4 matrix
+        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+      });
+      this.sceneUniformBuffer = this.device.createBuffer({
+        label: 'sceneUniformBuffer per mesh',
+        size: 176,
+        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+      });
       this.uniformBufferBindGroupLayout = this.device.createBindGroupLayout({
+        label: 'uniformBufferBindGroupLayout in mesh',
         entries: [{
           binding: 0,
           visibility: GPUShaderStage.VERTEX,
@@ -9676,158 +10248,8 @@ class MEMeshObj {
           }
         }]
       });
-      this.shadowPipeline = this.device.createRenderPipeline({
-        layout: this.device.createPipelineLayout({
-          bindGroupLayouts: [this.uniformBufferBindGroupLayout, this.uniformBufferBindGroupLayout]
-        }),
-        vertex: {
-          module: this.device.createShaderModule({
-            code: _vertexShadow.vertexShadowWGSL
-          }),
-          buffers: this.vertexBuffers
-        },
-        depthStencil: {
-          depthWriteEnabled: true,
-          depthCompare: 'less',
-          format: 'depth32float'
-        },
-        primitive
-      });
-
-      // Create a bind group layout which holds the scene uniforms and
-      // the texture+sampler for depth. We create it manually because the WebPU
-      // implementation doesn't infer this from the shader (yet).
-      this.bglForRender = this.device.createBindGroupLayout({
-        entries: [{
-          binding: 0,
-          visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
-          buffer: {
-            type: 'uniform'
-          }
-        }, {
-          binding: 1,
-          visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
-          texture: {
-            sampleType: 'depth'
-          }
-        }, {
-          binding: 2,
-          visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
-          sampler: {
-            type: 'comparison'
-          }
-        }, {
-          binding: 3,
-          visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
-          texture: {
-            sampleType: 'float'
-          }
-        }, {
-          binding: 4,
-          visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
-          sampler: {
-            type: 'filtering'
-          }
-        }]
-      });
-      this.pipeline = this.device.createRenderPipeline({
-        layout: this.device.createPipelineLayout({
-          bindGroupLayouts: [this.bglForRender, this.uniformBufferBindGroupLayout]
-        }),
-        vertex: {
-          module: this.device.createShaderModule({
-            code: _vertex.vertexWGSL
-          }),
-          buffers: this.vertexBuffers
-        },
-        fragment: {
-          module: this.device.createShaderModule({
-            code: _fragment.fragmentWGSL
-          }),
-          targets: [{
-            format: presentationFormat
-          }],
-          constants: {
-            shadowDepthTextureSize: this.shadowDepthTextureSize
-          }
-        },
-        depthStencil: {
-          depthWriteEnabled: true,
-          depthCompare: 'less',
-          format: 'depth24plus-stencil8'
-        },
-        primitive
-      });
-      const depthTexture = this.device.createTexture({
-        size: [canvas.width, canvas.height],
-        format: 'depth24plus-stencil8',
-        usage: GPUTextureUsage.RENDER_ATTACHMENT
-      });
-      this.renderPassDescriptor = {
-        colorAttachments: [{
-          // view is acquired and set in render loop.
-          view: undefined,
-          clearValue: this.clearColor,
-          loadOp: 'clear',
-          // load old fix for FF
-          storeOp: 'store'
-        }],
-        depthStencilAttachment: {
-          view: depthTexture.createView(),
-          depthClearValue: 1.0,
-          depthLoadOp: 'clear',
-          depthStoreOp: 'store',
-          stencilClearValue: 0,
-          stencilLoadOp: 'clear',
-          stencilStoreOp: 'store'
-        }
-      };
-      this.modelUniformBuffer = this.device.createBuffer({
-        size: 4 * 16,
-        // 4x4 matrix
-        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-      });
-      this.sceneUniformBuffer = this.device.createBuffer({
-        // Two 4x4 viewProj matrices,
-        // one for the camera and one for the light.
-        // Then a vec3 for the light position.
-        // Rounded to the nearest multiple of 16.
-        size: 2 * 4 * 16 + 4 * 4,
-        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-      });
-      this.sceneBindGroupForShadow = this.device.createBindGroup({
-        layout: this.uniformBufferBindGroupLayout,
-        entries: [{
-          binding: 0,
-          resource: {
-            buffer: this.sceneUniformBuffer
-          }
-        }]
-      });
-      this.sceneBindGroupForRender = this.device.createBindGroup({
-        layout: this.bglForRender,
-        entries: [{
-          binding: 0,
-          resource: {
-            buffer: this.sceneUniformBuffer
-          }
-        }, {
-          binding: 1,
-          resource: this.shadowDepthTextureView
-        }, {
-          binding: 2,
-          resource: this.device.createSampler({
-            compare: 'less'
-          })
-        }, {
-          binding: 3,
-          resource: this.texture0.createView()
-        }, {
-          binding: 4,
-          resource: this.sampler
-        }]
-      });
       this.modelBindGroup = this.device.createBindGroup({
+        label: 'modelBindGroup in mesh',
         layout: this.uniformBufferBindGroupLayout,
         entries: [{
           binding: 0,
@@ -9836,168 +10258,124 @@ class MEMeshObj {
           }
         }]
       });
+      this.mainPassBindGroupLayout = this.device.createBindGroupLayout({
+        entries: [{
+          binding: 0,
+          visibility: GPUShaderStage.FRAGMENT,
+          texture: {
+            sampleType: 'depth'
+          }
+        }, {
+          binding: 1,
+          visibility: GPUShaderStage.FRAGMENT,
+          sampler: {
+            type: 'comparison'
+          }
+        }]
+      });
 
       // Rotates the camera around the origin based on time.
-      this.getTransformationMatrix = pos => {
+      this.getTransformationMatrix = (mainRenderBundle, spotLight) => {
         const now = Date.now();
-        const deltaTime = (now - this.lastFrameMS) / this.mainCameraParams.responseCoef;
+        const dt = (now - this.lastFrameMS) / this.mainCameraParams.responseCoef;
         this.lastFrameMS = now;
-        // const this.viewMatrix = mat4.identity()
         const camera = this.cameras[this.mainCameraParams.type];
-        this.viewMatrix = camera.update(deltaTime, this.inputHandler());
-        const scaleVec = [1, 1, 1]; // your desired scale OPTION 1
-        const scaleMatrix = _wgpuMatrix.mat4.scaling(scaleVec);
-        // Apply scaling
-        _wgpuMatrix.mat4.multiply(scaleMatrix, this.viewMatrix, this.viewMatrix);
-        _wgpuMatrix.mat4.translate(this.viewMatrix, _wgpuMatrix.vec3.fromValues(pos.x, pos.y, pos.z), this.viewMatrix);
-        if (this.itIsPhysicsBody == true) {
-          _wgpuMatrix.mat4.rotate(this.viewMatrix, _wgpuMatrix.vec3.fromValues(this.rotation.axis.x, this.rotation.axis.y, this.rotation.axis.z), (0, _utils.degToRad)(this.rotation.angle), this.viewMatrix);
-          // console.info('angle: ', this.rotation.angle, ' axis ', this.rotation.axis.x, ' , ', this.rotation.axis.y, ' , ', this.rotation.axis.z)
-        } else {
-          _wgpuMatrix.mat4.rotateX(this.viewMatrix, Math.PI * this.rotation.getRotX(), this.viewMatrix);
-          _wgpuMatrix.mat4.rotateY(this.viewMatrix, Math.PI * this.rotation.getRotY(), this.viewMatrix);
-          _wgpuMatrix.mat4.rotateZ(this.viewMatrix, Math.PI * this.rotation.getRotZ(), this.viewMatrix);
-          // console.info('NOT PHYSICS angle: ', this.rotation.angle, ' axis ', this.rotation.axis.x, ' , ', this.rotation.axis.y, ' , ', this.rotation.axis.z)
+        camera.update(dt, inputHandler());
+        const camVP = _wgpuMatrix.mat4.multiply(camera.projectionMatrix, camera.view);
+        for (const mesh of mainRenderBundle) {
+          const sceneData = new Float32Array(44);
+
+          // Light VP
+          sceneData.set(spotLight.viewProjMatrix, 0);
+
+          // Camera VP
+          sceneData.set(camVP, 16);
+
+          // Camera position + padding
+          sceneData.set([camera.position.x, camera.position.y, camera.position.z, 0.0], 32);
+
+          // Light position + padding
+          sceneData.set([spotLight.position[0], spotLight.position[1], spotLight.position[2], 0.0], 36);
+
+          // Global ambient + padding
+          sceneData.set([this.globalAmbient[0], this.globalAmbient[1], this.globalAmbient[2], 0.0], 40);
+          device.queue.writeBuffer(mesh.sceneUniformBuffer, 0, sceneData.buffer, sceneData.byteOffset, sceneData.byteLength);
         }
-        _wgpuMatrix.mat4.multiply(this.projectionMatrix, this.viewMatrix, this.modelViewProjectionMatrix);
-        return this.modelViewProjectionMatrix;
       };
-      this.upVector = _wgpuMatrix.vec3.fromValues(0, 1, 0);
-      this.origin = _wgpuMatrix.vec3.fromValues(0, 0, 0);
-      this.lightPosition = _wgpuMatrix.vec3.fromValues(0, 0, 0);
-      this.lightViewMatrix = _wgpuMatrix.mat4.lookAt(this.lightPosition, this.origin, this.upVector);
-      const lightProjectionMatrix = _wgpuMatrix.mat4.create();
-      var myLMargin = 100;
-      {
-        const left = -myLMargin;
-        const right = myLMargin;
-        const bottom = -myLMargin;
-        const top = myLMargin;
-        const near = -200;
-        const far = 300;
-        _wgpuMatrix.mat4.ortho(left, right, bottom, top, near, far, lightProjectionMatrix);
-        // test 
-        // mat4.ortho(right, left, top, bottom, near, far, lightProjectionMatrix);
-      }
-      this.lightViewProjMatrix = _wgpuMatrix.mat4.multiply(lightProjectionMatrix, this.lightViewMatrix);
+      this.getModelMatrix = pos => {
+        let modelMatrix = _wgpuMatrix.mat4.identity();
+        _wgpuMatrix.mat4.translate(modelMatrix, [pos.x, pos.y, pos.z], modelMatrix);
+        if (this.itIsPhysicsBody) {
+          _wgpuMatrix.mat4.rotate(modelMatrix, [this.rotation.axis.x, this.rotation.axis.y, this.rotation.axis.z], (0, _utils.degToRad)(this.rotation.angle), modelMatrix);
+        } else {
+          _wgpuMatrix.mat4.rotateX(modelMatrix, this.rotation.getRotX(), modelMatrix);
+          _wgpuMatrix.mat4.rotateY(modelMatrix, this.rotation.getRotY(), modelMatrix);
+          _wgpuMatrix.mat4.rotateZ(modelMatrix, this.rotation.getRotZ(), modelMatrix);
+        }
+        // Apply scale if you have it, e.g.:
+        // mat4.scale(modelMatrix, modelMatrix, [this.scale.x, this.scale.y, this.scale.z]);
+        return modelMatrix;
+      };
 
       // looks like affect on transformations for now const 0
       const modelMatrix = _wgpuMatrix.mat4.translation([0, 0, 0]);
-      // The camera/light aren't moving, so write them into buffers now.
-      {
-        const lightMatrixData = this.lightViewProjMatrix; // as Float32Array;
-        this.device.queue.writeBuffer(this.sceneUniformBuffer, 0, lightMatrixData.buffer, lightMatrixData.byteOffset, lightMatrixData.byteLength);
-        const lightData = this.lightPosition;
-        this.device.queue.writeBuffer(this.sceneUniformBuffer, 128, lightData.buffer, lightData.byteOffset, lightData.byteLength);
-        const modelData = modelMatrix;
-        this.device.queue.writeBuffer(this.modelUniformBuffer, 0, modelData.buffer, modelData.byteOffset, modelData.byteLength);
-      }
-      this.shadowPassDescriptor = {
-        colorAttachments: [],
-        depthStencilAttachment: {
-          view: this.shadowDepthTextureView,
-          depthClearValue: 1.0,
-          depthLoadOp: 'clear',
-          depthStoreOp: 'store'
-        }
-      };
+      const modelData = modelMatrix;
+      this.device.queue.writeBuffer(this.modelUniformBuffer, 0, modelData.buffer, modelData.byteOffset, modelData.byteLength);
       this.done = true;
+      try {
+        this.setupPipeline();
+      } catch (err) {
+        console.log('err in create pipeline in init ', err);
+      }
     }).then(() => {
       if (typeof this.objAnim !== 'undefined' && this.objAnim !== null) {
-        console.log('after all load configutr mesh list buffers');
+        console.log('after all updateMeshListBuffers...');
         this.updateMeshListBuffers();
       }
     });
   }
-  updateLightsTest = position => {
-    console.log('Update light position.', position);
-    this.lightPosition = _wgpuMatrix.vec3.fromValues(position[0], position[1], position[2]);
-    this.lightViewMatrix = _wgpuMatrix.mat4.lookAt(this.lightPosition, this.origin, this.upVector);
-    const lightProjectionMatrix = _wgpuMatrix.mat4.create();
-    {
-      const left = -80;
-      const right = 80;
-      const bottom = -80;
-      const top = 80;
-      const near = -200;
-      const far = 300;
-      _wgpuMatrix.mat4.ortho(left, right, bottom, top, near, far, lightProjectionMatrix);
-    }
-    this.lightViewProjMatrix = _wgpuMatrix.mat4.multiply(lightProjectionMatrix, this.lightViewMatrix);
-
-    // looks like affect on transformations for now const 0
-    const modelMatrix = _wgpuMatrix.mat4.translation([0, 0, 0]);
-    // The camera/light aren't moving, so write them into buffers now.
-    {
-      const lightMatrixData = this.lightViewProjMatrix; // as Float32Array;
-      this.device.queue.writeBuffer(this.sceneUniformBuffer, 0,
-      // 0 ori
-      lightMatrixData.buffer, lightMatrixData.byteOffset, lightMatrixData.byteLength);
-      const lightData = this.lightPosition;
-      this.device.queue.writeBuffer(this.sceneUniformBuffer, 256, lightData.buffer, lightData.byteOffset, lightData.byteLength);
-      const modelData = modelMatrix;
-      this.device.queue.writeBuffer(this.modelUniformBuffer, 0, modelData.buffer, modelData.byteOffset, modelData.byteLength);
-    }
-    this.shadowPassDescriptor = {
-      colorAttachments: [],
-      depthStencilAttachment: {
-        view: this.shadowDepthTextureView,
-        depthClearValue: 1.0,
-        // ori 1.0
-        depthLoadOp: 'clear',
-        depthStoreOp: 'store'
-      }
-    };
-
-    ///////////////////////
+  setupPipeline = () => {
+    this.createBindGroupForRender();
+    this.pipeline = this.device.createRenderPipeline({
+      label: 'Mesh Pipeline ✅',
+      layout: this.device.createPipelineLayout({
+        label: 'createPipelineLayout Mesh',
+        bindGroupLayouts: [this.bglForRender, this.uniformBufferBindGroupLayout]
+      }),
+      vertex: {
+        entryPoint: 'main',
+        module: this.device.createShaderModule({
+          code: _vertex.vertexWGSL
+        }),
+        buffers: this.vertexBuffers
+      },
+      fragment: {
+        entryPoint: 'main',
+        module: this.device.createShaderModule({
+          code: this.isVideo == true ? _fragmentVideo.fragmentVideoWGSL : _fragment.fragmentWGSL
+        }),
+        targets: [{
+          format: this.presentationFormat
+        }],
+        constants: {
+          shadowDepthTextureSize: this.shadowDepthTextureSize
+        }
+      },
+      depthStencil: {
+        depthWriteEnabled: true,
+        depthCompare: 'less',
+        format: 'depth24plus'
+      },
+      primitive: this.primitive
+    });
+    console.log('✅Set Pipeline done');
   };
-  async loadTex0(texturesPaths, device) {
-    this.sampler = device.createSampler({
-      magFilter: 'linear',
-      minFilter: 'linear'
-    });
-    return new Promise(async resolve => {
-      const response = await fetch(texturesPaths[0]);
-
-      // const blob = await response.blob();
-      // if(!blob.type.startsWith('image/')) {
-      //   console.error("Unexpected texture response type:", blob.type);
-      //   return;
-      // }
-
-      // const imageBitmap = await createImageBitmap(blob);
-      const imageBitmap = await createImageBitmap(await response.blob());
-      this.texture0 = device.createTexture({
-        size: [imageBitmap.width, imageBitmap.height, 1],
-        // REMOVED 1
-        format: 'rgba8unorm',
-        usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT
-      });
-      device.queue.copyExternalImageToTexture({
-        source: imageBitmap
-      }, {
-        texture: this.texture0
-      }, [imageBitmap.width, imageBitmap.height]);
-      resolve();
-    });
-  }
-  draw = commandEncoder => {
+  updateModelUniformBuffer = () => {
     if (this.done == false) return;
-    const transformationMatrix = this.getTransformationMatrix(this.position);
-    this.device.queue.writeBuffer(this.sceneUniformBuffer, 64, transformationMatrix.buffer, transformationMatrix.byteOffset, transformationMatrix.byteLength);
-    this.renderPassDescriptor.colorAttachments[0].view = this.context.getCurrentTexture().createView();
+    // Per-object model matrix only
+    const modelMatrix = this.getModelMatrix(this.position);
+    this.device.queue.writeBuffer(this.modelUniformBuffer, 0, modelMatrix.buffer, modelMatrix.byteOffset, modelMatrix.byteLength);
   };
-  drawElements = renderPass => {
-    renderPass.setBindGroup(0, this.sceneBindGroupForRender);
-    renderPass.setBindGroup(1, this.modelBindGroup);
-    renderPass.setVertexBuffer(0, this.vertexBuffer);
-    renderPass.setVertexBuffer(1, this.vertexNormalsBuffer);
-    renderPass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
-    renderPass.setIndexBuffer(this.indexBuffer, 'uint16');
-    renderPass.drawIndexed(this.indexCount);
-  };
-
-  // test 
   createGPUBuffer(dataArray, usage) {
     if (!dataArray || typeof dataArray.length !== 'number') {
       throw new Error('Invalid data array passed to createGPUBuffer');
@@ -10026,7 +10404,6 @@ class MEMeshObj {
       });
       new Float32Array(mesh.vertexBuffer.getMappedRange()).set(mesh.vertices);
       mesh.vertexBuffer.unmap();
-
       // Normals
       mesh.vertexNormalsBuffer = this.device.createBuffer({
         size: mesh.vertexNormals.length * Float32Array.BYTES_PER_ELEMENT,
@@ -10035,7 +10412,6 @@ class MEMeshObj {
       });
       new Float32Array(mesh.vertexNormalsBuffer.getMappedRange()).set(mesh.vertexNormals);
       mesh.vertexNormalsBuffer.unmap();
-
       // UVs
       mesh.vertexTexCoordsBuffer = this.device.createBuffer({
         size: mesh.textures.length * Float32Array.BYTES_PER_ELEMENT,
@@ -10044,7 +10420,6 @@ class MEMeshObj {
       });
       new Float32Array(mesh.vertexTexCoordsBuffer.getMappedRange()).set(mesh.textures);
       mesh.vertexTexCoordsBuffer.unmap();
-
       // Indices
       const indexCount = mesh.indices.length;
       const indexSize = Math.ceil(indexCount * Uint16Array.BYTES_PER_ELEMENT / 4) * 4;
@@ -10058,7 +10433,35 @@ class MEMeshObj {
       mesh.indexCount = indexCount;
     }
   }
+  drawElements = (pass, lightContainer) => {
+    if (this.isVideo) {
+      this.updateVideoTexture();
+    }
+    // Bind per-mesh uniforms
+    pass.setBindGroup(0, this.sceneBindGroupForRender); // camera/light UBOs
+    pass.setBindGroup(1, this.modelBindGroup); // mesh transforms/textures
+    // Bind each light’s shadow texture & sampler
+    if (this.isVideo == false) {
+      let bindIndex = 2; // start after UBO & model
+      for (const light of lightContainer) {
+        pass.setBindGroup(bindIndex++, light.getMainPassBindGroup(this));
+      }
+    }
+    pass.setVertexBuffer(0, this.vertexBuffer);
+    pass.setVertexBuffer(1, this.vertexNormalsBuffer);
+    pass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
+    pass.setIndexBuffer(this.indexBuffer, 'uint16');
+    pass.drawIndexed(this.indexCount);
+  };
   drawElementsAnim = renderPass => {
+    if (!this.sceneBindGroupForRender || !this.modelBindGroup) {
+      console.log(' NULL 1');
+      return;
+    }
+    if (!this.objAnim.meshList[this.objAnim.id + this.objAnim.currentAni]) {
+      console.log(' NULL 2');
+      return;
+    }
     renderPass.setBindGroup(0, this.sceneBindGroupForRender);
     renderPass.setBindGroup(1, this.modelBindGroup);
     const mesh = this.objAnim.meshList[this.objAnim.id + this.objAnim.currentAni];
@@ -10079,9 +10482,7 @@ class MEMeshObj {
       }
     }
   };
-  drawShadows = shadowPass => {
-    shadowPass.setBindGroup(0, this.sceneBindGroupForShadow);
-    shadowPass.setBindGroup(1, this.modelBindGroup);
+  drawShadows = (shadowPass, light) => {
     shadowPass.setVertexBuffer(0, this.vertexBuffer);
     shadowPass.setVertexBuffer(1, this.vertexNormalsBuffer);
     shadowPass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
@@ -10091,405 +10492,7 @@ class MEMeshObj {
 }
 exports.default = MEMeshObj;
 
-},{"../shaders/fragment.wgsl":16,"../shaders/vertex.wgsl":18,"../shaders/vertexShadow.wgsl":19,"./engine":7,"./matrix-class":9,"./utils":13,"wgpu-matrix":4}],11:[function(require,module,exports){
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.default = void 0;
-var _wgpuMatrix = require("wgpu-matrix");
-var _matrixClass = require("./matrix-class");
-var _engine = require("./engine");
-var _vertexShadow = require("../shaders/vertexShadow.wgsl");
-var _fragment = require("../shaders/fragment.wgsl");
-var _vertex = require("../shaders/vertex.wgsl");
-var _loaderObj = require("./loader-obj");
-class MEMesh {
-  constructor(canvas, device, context, o) {
-    this.done = false;
-    this.device = device;
-    this.context = context;
-    this.entityArgPass = o.entityArgPass;
-    this.mesh = o.mesh;
-    this.inputHandler = (0, _engine.createInputHandler)(window, canvas);
-    this.cameras = o.cameras;
-    this.mainCameraParams = {
-      type: o.mainCameraParams.type,
-      responseCoef: o.mainCameraParams.responseCoef
-    };
-    this.lastFrameMS = 0;
-    this.texturesPaths = [];
-    o.texturesPaths.forEach(t => {
-      this.texturesPaths.push(t);
-    });
-    this.presentationFormat = navigator.gpu.getPreferredCanvasFormat();
-    this.position = new _matrixClass.Position(o.position.x, o.position.y, o.position.z);
-    // console.log('cube added on pos : ', this.position)
-    this.rotation = new _matrixClass.Rotation(o.rotation.x, o.rotation.y, o.rotation.z);
-    this.rotation.rotationSpeed.x = o.rotationSpeed.x;
-    this.rotation.rotationSpeed.y = o.rotationSpeed.y;
-    this.rotation.rotationSpeed.z = o.rotationSpeed.z;
-    this.scale = o.scale;
-
-    // new
-    this.runProgram = () => {
-      return new Promise(async resolve => {
-        this.shadowDepthTextureSize = 1024;
-        const aspect = canvas.width / canvas.height;
-        this.projectionMatrix = _wgpuMatrix.mat4.perspective(2 * Math.PI / 5, aspect, 1, 2000.0);
-        this.modelViewProjectionMatrix = _wgpuMatrix.mat4.create();
-        this.loadTex0(this.texturesPaths, device).then(() => {
-          resolve();
-          console.log('load tex for mesh', this.texture0);
-        });
-      });
-    };
-    this.runProgram().then(() => {
-      const aspect = canvas.width / canvas.height;
-      const presentationFormat = navigator.gpu.getPreferredCanvasFormat();
-      this.context.configure({
-        device: this.device,
-        format: presentationFormat,
-        alphaMode: 'premultiplied'
-      });
-
-      // Create the model vertex buffer.
-      this.vertexBuffer = this.device.createBuffer({
-        size: this.mesh.positions.length * 3 * 2 * Float32Array.BYTES_PER_ELEMENT,
-        usage: GPUBufferUsage.VERTEX,
-        mappedAtCreation: true
-      });
-      {
-        const mapping = new Float32Array(this.vertexBuffer.getMappedRange());
-        for (let i = 0; i < this.mesh.positions.length; ++i) {
-          mapping.set(this.mesh.positions[i], 6 * i);
-          mapping.set(this.mesh.normals[i], 6 * i + 3);
-        }
-        this.vertexBuffer.unmap();
-      }
-
-      // Create the model index buffer.
-      this.indexCount = this.mesh.triangles.length * 3;
-      this.indexBuffer = this.device.createBuffer({
-        size: this.indexCount * Uint16Array.BYTES_PER_ELEMENT,
-        usage: GPUBufferUsage.INDEX,
-        mappedAtCreation: true
-      });
-      {
-        const mapping = new Uint16Array(this.indexBuffer.getMappedRange());
-        for (let i = 0; i < this.mesh.triangles.length; ++i) {
-          mapping.set(this.mesh.triangles[i], 3 * i);
-        }
-        this.indexBuffer.unmap();
-      }
-
-      // Create the depth texture for rendering/sampling the shadow map.
-      this.shadowDepthTexture = this.device.createTexture({
-        size: [this.shadowDepthTextureSize, this.shadowDepthTextureSize, 1],
-        usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING,
-        format: 'depth32float'
-      });
-      this.shadowDepthTextureView = this.shadowDepthTexture.createView();
-
-      // Create some common descriptors used for both the shadow pipeline
-      // and the color rendering pipeline.
-      this.vertexBuffers = [{
-        arrayStride: Float32Array.BYTES_PER_ELEMENT * 6,
-        attributes: [{
-          // position
-          shaderLocation: 0,
-          offset: 0,
-          format: 'float32x3'
-        }, {
-          // normal
-          shaderLocation: 1,
-          offset: Float32Array.BYTES_PER_ELEMENT * 3,
-          format: 'float32x3'
-        }]
-      }];
-      const primitive = {
-        topology: 'triangle-list',
-        cullMode: 'back'
-      };
-      this.uniformBufferBindGroupLayout = this.device.createBindGroupLayout({
-        entries: [{
-          binding: 0,
-          visibility: GPUShaderStage.VERTEX,
-          buffer: {
-            type: 'uniform'
-          }
-        }]
-      });
-      this.shadowPipeline = this.device.createRenderPipeline({
-        layout: this.device.createPipelineLayout({
-          bindGroupLayouts: [this.uniformBufferBindGroupLayout, this.uniformBufferBindGroupLayout]
-        }),
-        vertex: {
-          module: this.device.createShaderModule({
-            code: _vertexShadow.vertexShadowWGSL
-          }),
-          buffers: this.vertexBuffers
-        },
-        depthStencil: {
-          depthWriteEnabled: true,
-          depthCompare: 'less',
-          format: 'depth32float'
-        },
-        primitive
-      });
-
-      // Create a bind group layout which holds the scene uniforms and
-      // the texture+sampler for depth. We create it manually because the WebPU
-      // implementation doesn't infer this from the shader (yet).
-      this.bglForRender = this.device.createBindGroupLayout({
-        entries: [{
-          binding: 0,
-          visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
-          buffer: {
-            type: 'uniform'
-          }
-        }, {
-          binding: 1,
-          visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
-          texture: {
-            sampleType: 'depth'
-          }
-        }, {
-          binding: 2,
-          visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
-          sampler: {
-            type: 'comparison'
-          }
-        }, {
-          binding: 3,
-          visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
-          texture: {
-            sampleType: 'float'
-          }
-        }, {
-          binding: 4,
-          visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
-          sampler: {
-            type: 'filtering'
-          }
-        }]
-      });
-      this.pipeline = this.device.createRenderPipeline({
-        layout: this.device.createPipelineLayout({
-          bindGroupLayouts: [this.bglForRender, this.uniformBufferBindGroupLayout]
-        }),
-        vertex: {
-          module: this.device.createShaderModule({
-            code: _vertex.vertexWGSL
-          }),
-          buffers: this.vertexBuffers
-        },
-        fragment: {
-          module: this.device.createShaderModule({
-            code: _fragment.fragmentWGSL
-          }),
-          targets: [{
-            format: presentationFormat
-          }],
-          constants: {
-            shadowDepthTextureSize: this.shadowDepthTextureSize
-          }
-        },
-        depthStencil: {
-          depthWriteEnabled: true,
-          depthCompare: 'less',
-          format: 'depth24plus-stencil8'
-        },
-        primitive
-      });
-      const depthTexture = this.device.createTexture({
-        size: [canvas.width, canvas.height],
-        format: 'depth24plus-stencil8',
-        usage: GPUTextureUsage.RENDER_ATTACHMENT
-      });
-      this.renderPassDescriptor = {
-        colorAttachments: [{
-          // view is acquired and set in render loop.
-          view: undefined,
-          clearValue: {
-            r: 0.5,
-            g: 0.5,
-            b: 0.5,
-            a: 1.0
-          },
-          loadOp: 'load',
-          storeOp: 'store'
-        }],
-        depthStencilAttachment: {
-          view: depthTexture.createView(),
-          depthClearValue: 1.0,
-          depthLoadOp: 'clear',
-          depthStoreOp: 'store',
-          stencilClearValue: 0,
-          stencilLoadOp: 'clear',
-          stencilStoreOp: 'store'
-        }
-      };
-      this.modelUniformBuffer = this.device.createBuffer({
-        size: 4 * 16,
-        // 4x4 matrix
-        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-      });
-      this.sceneUniformBuffer = this.device.createBuffer({
-        // Two 4x4 viewProj matrices,
-        // one for the camera and one for the light.
-        // Then a vec3 for the light position.
-        // Rounded to the nearest multiple of 16.
-        size: 2 * 4 * 16 + 4 * 4,
-        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-      });
-      this.sceneBindGroupForShadow = this.device.createBindGroup({
-        layout: this.uniformBufferBindGroupLayout,
-        entries: [{
-          binding: 0,
-          resource: {
-            buffer: this.sceneUniformBuffer
-          }
-        }]
-      });
-      this.sceneBindGroupForRender = this.device.createBindGroup({
-        layout: this.bglForRender,
-        entries: [{
-          binding: 0,
-          resource: {
-            buffer: this.sceneUniformBuffer
-          }
-        }, {
-          binding: 1,
-          resource: this.shadowDepthTextureView
-        }, {
-          binding: 2,
-          resource: this.device.createSampler({
-            compare: 'less'
-          })
-        }, {
-          binding: 3,
-          resource: this.texture0.createView()
-        }, {
-          binding: 4,
-          resource: this.sampler
-        }]
-      });
-      this.modelBindGroup = this.device.createBindGroup({
-        layout: this.uniformBufferBindGroupLayout,
-        entries: [{
-          binding: 0,
-          resource: {
-            buffer: this.modelUniformBuffer
-          }
-        }]
-      });
-
-      // Rotates the camera around the origin based on time.
-      this.getTransformationMatrix = pos => {
-        const now = Date.now();
-        const deltaTime = (now - this.lastFrameMS) / this.mainCameraParams.responseCoef;
-        this.lastFrameMS = now;
-        const camera = this.cameras[this.mainCameraParams.type];
-        this.viewMatrix = camera.update(deltaTime, this.inputHandler());
-        _wgpuMatrix.mat4.translate(this.viewMatrix, _wgpuMatrix.vec3.fromValues(pos.x, pos.y, pos.z), this.viewMatrix);
-        _wgpuMatrix.mat4.rotateX(this.viewMatrix, Math.PI * this.rotation.getRotX(), this.viewMatrix);
-        _wgpuMatrix.mat4.rotateY(this.viewMatrix, Math.PI * this.rotation.getRotY(), this.viewMatrix);
-        _wgpuMatrix.mat4.rotateZ(this.viewMatrix, Math.PI * this.rotation.getRotZ(), this.viewMatrix);
-        _wgpuMatrix.mat4.multiply(this.projectionMatrix, this.viewMatrix, this.modelViewProjectionMatrix);
-        return this.modelViewProjectionMatrix;
-      };
-      this.upVector = _wgpuMatrix.vec3.fromValues(0, 1, 0);
-      this.origin = _wgpuMatrix.vec3.fromValues(0, 0, 0);
-      const lightPosition = _wgpuMatrix.vec3.fromValues(50, 100, -100);
-      const lightViewMatrix = _wgpuMatrix.mat4.lookAt(lightPosition, this.origin, this.upVector);
-      const lightProjectionMatrix = _wgpuMatrix.mat4.create();
-      {
-        const left = -80;
-        const right = 80;
-        const bottom = -80;
-        const top = 80;
-        const near = -200;
-        const far = 300;
-        _wgpuMatrix.mat4.ortho(left, right, bottom, top, near, far, lightProjectionMatrix);
-      }
-      const lightViewProjMatrix = _wgpuMatrix.mat4.multiply(lightProjectionMatrix, lightViewMatrix);
-
-      // looks like affect on transformations for now const 0
-      const modelMatrix = _wgpuMatrix.mat4.translation([0, 0, 0]);
-      // The camera/light aren't moving, so write them into buffers now.
-      {
-        const lightMatrixData = lightViewProjMatrix; // as Float32Array;
-        this.device.queue.writeBuffer(this.sceneUniformBuffer, 0, lightMatrixData.buffer, lightMatrixData.byteOffset, lightMatrixData.byteLength);
-        const lightData = lightPosition;
-        this.device.queue.writeBuffer(this.sceneUniformBuffer, 128, lightData.buffer, lightData.byteOffset, lightData.byteLength);
-        const modelData = modelMatrix;
-        this.device.queue.writeBuffer(this.modelUniformBuffer, 0, modelData.buffer, modelData.byteOffset, modelData.byteLength);
-      }
-      this.shadowPassDescriptor = {
-        colorAttachments: [],
-        depthStencilAttachment: {
-          view: this.shadowDepthTextureView,
-          depthClearValue: 1.0,
-          depthLoadOp: 'clear',
-          depthStoreOp: 'store'
-        }
-      };
-      this.done = true;
-    });
-  }
-  async loadTex0(texturesPaths, device) {
-    this.sampler = device.createSampler({
-      magFilter: 'linear',
-      minFilter: 'linear'
-    });
-    return new Promise(async resolve => {
-      const response = await fetch(texturesPaths[0]);
-      const imageBitmap = await createImageBitmap(await response.blob());
-      this.texture0 = device.createTexture({
-        size: [imageBitmap.width, imageBitmap.height, 1],
-        format: 'rgba8unorm',
-        usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT
-      });
-      device.queue.copyExternalImageToTexture({
-        source: imageBitmap
-      }, {
-        texture: this.texture0
-      }, [imageBitmap.width, imageBitmap.height]);
-      resolve();
-    });
-  }
-  draw = commandEncoder => {
-    if (this.done == false) return;
-    const transformationMatrix = this.getTransformationMatrix(this.position);
-    this.device.queue.writeBuffer(this.sceneUniformBuffer, 64, transformationMatrix.buffer, transformationMatrix.byteOffset, transformationMatrix.byteLength);
-    this.renderPassDescriptor.colorAttachments[0].view = this.context.getCurrentTexture().createView();
-    {
-      const shadowPass = commandEncoder.beginRenderPass(this.shadowPassDescriptor);
-      shadowPass.setPipeline(this.shadowPipeline);
-      shadowPass.setBindGroup(0, this.sceneBindGroupForShadow);
-      shadowPass.setBindGroup(1, this.modelBindGroup);
-      shadowPass.setVertexBuffer(0, this.vertexBuffer);
-      shadowPass.setIndexBuffer(this.indexBuffer, 'uint16');
-      shadowPass.drawIndexed(this.indexCount);
-      shadowPass.end();
-    }
-    {
-      const renderPass = commandEncoder.beginRenderPass(this.renderPassDescriptor);
-      renderPass.setPipeline(this.pipeline);
-      renderPass.setBindGroup(0, this.sceneBindGroupForRender);
-      renderPass.setBindGroup(1, this.modelBindGroup);
-      renderPass.setVertexBuffer(0, this.vertexBuffer);
-      renderPass.setIndexBuffer(this.indexBuffer, 'uint16');
-      renderPass.drawIndexed(this.indexCount);
-      renderPass.end();
-    }
-  };
-}
-exports.default = MEMesh;
-
-},{"../shaders/fragment.wgsl":16,"../shaders/vertex.wgsl":18,"../shaders/vertexShadow.wgsl":19,"./engine":7,"./loader-obj":8,"./matrix-class":9,"wgpu-matrix":4}],12:[function(require,module,exports){
+},{"../shaders/fragment.video.wgsl":18,"../shaders/fragment.wgsl":19,"../shaders/vertex.wgsl":21,"../shaders/vertexShadow.wgsl":22,"./materials":11,"./matrix-class":12,"./utils":15,"wgpu-matrix":4}],14:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -10497,8 +10500,10 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.addRaycastListener = addRaycastListener;
 exports.addRaycastsAABBListener = addRaycastsAABBListener;
-exports.computeAABBFromVertices = computeAABBFromVertices;
+exports.computeAABB = computeAABB;
+exports.computeWorldVertsAndAABB = computeWorldVertsAndAABB;
 exports.getRayFromMouse = getRayFromMouse;
+exports.getRayFromMouse2 = getRayFromMouse2;
 exports.rayIntersectsAABB = rayIntersectsAABB;
 exports.rayIntersectsSphere = rayIntersectsSphere;
 exports.touchCoordinate = void 0;
@@ -10530,8 +10535,69 @@ function getRayFromMouse(event, canvas, camera) {
   const rect = canvas.getBoundingClientRect();
   let x = (event.clientX - rect.left) / rect.width * 2 - 1;
   let y = (event.clientY - rect.top) / rect.height * 2 - 1;
+  y = -y; // flip Y only (WebGPU NDC)
+
+  const aspect = canvas.width / canvas.height;
+  camera.projectionMatrix = _wgpuMatrix.mat4.perspective(2 * Math.PI / 5, aspect, 0.1, 1000);
+  const invProjection = _wgpuMatrix.mat4.inverse(camera.projectionMatrix);
+  const invView = _wgpuMatrix.mat4.inverse(camera.view);
+
+  // NDC -> clip -> eye -> world
+  let clip = [x, y, 1, 1];
+  let eye = _wgpuMatrix.vec4.transformMat4(clip, invProjection);
+  eye = [eye[0], eye[1], -1, 0]; // direction in view space
+
+  let worldDir = _wgpuMatrix.vec4.transformMat4(eye, invView);
+  const rayDirection = _wgpuMatrix.vec3.normalize([worldDir[0], worldDir[1], worldDir[2]]);
+  const rayOrigin = [...camera.position];
+  return {
+    rayOrigin,
+    rayDirection
+  };
+}
+// export function getRayFromMouse(event, canvas, camera) {
+//   const rect = canvas.getBoundingClientRect();
+//   let x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+//   let y = ((event.clientY - rect.top) / rect.height) * 2 - 1;
+//   // simple invert
+//   x = -x;
+//   y = -y;
+//   const fov = Math.PI / 4;
+//   const aspect = canvas.width / canvas.height;
+//   const near = 0.1;
+//   const far = 1000;
+//   camera.projectionMatrix = mat4.perspective((2 * Math.PI) / 5, aspect, 1, 1000.0);
+//   const invProjection = mat4.inverse(camera.projectionMatrix);
+//   const invView = mat4.inverse(camera.view);
+//   const ndc = [x, y, 1, 1];
+//   let worldPos = multiplyMatrixVector(invProjection, ndc);
+//   worldPos = multiplyMatrixVector(invView, worldPos);
+//   let world;
+//   if(worldPos[3] !== 0) {
+//     world = [
+//       worldPos[0] / worldPos[3],
+//       worldPos[2] / worldPos[3],
+//       worldPos[1] / worldPos[3]
+//     ];
+//   } else {
+//     console.log("[raycaster]special case 0.");
+//     world = [
+//       worldPos[0],
+//       worldPos[1],
+//       worldPos[2]
+//     ];
+//   }
+//   const rayOrigin = [camera.position[0], camera.position[1], camera.position[2]];
+//   const rayDirection = vec3.normalize(vec3.subtract(world, rayOrigin));
+//   rayDirection[2] = -rayDirection[2];
+//   return {rayOrigin, rayDirection};
+// }
+
+function getRayFromMouse2(event, canvas, camera) {
+  const rect = canvas.getBoundingClientRect();
+  let x = (event.clientX - rect.left) / rect.width * 2 - 1;
+  let y = (event.clientY - rect.top) / rect.height * 2 - 1;
   // simple invert
-  x = -x;
   y = -y;
   const fov = Math.PI / 4;
   const aspect = canvas.width / canvas.height;
@@ -10545,14 +10611,13 @@ function getRayFromMouse(event, canvas, camera) {
   worldPos = multiplyMatrixVector(invView, worldPos);
   let world;
   if (worldPos[3] !== 0) {
-    world = [worldPos[0] / worldPos[3], worldPos[2] / worldPos[3], worldPos[1] / worldPos[3]];
+    world = [worldPos[0] / worldPos[3], worldPos[1] / worldPos[3], worldPos[2] / worldPos[3]];
   } else {
     console.log("[raycaster]special case 0.");
     world = [worldPos[0], worldPos[1], worldPos[2]];
   }
   const rayOrigin = [camera.position[0], camera.position[1], camera.position[2]];
   const rayDirection = _wgpuMatrix.vec3.normalize(_wgpuMatrix.vec3.subtract(world, rayOrigin));
-  rayDirection[2] = -rayDirection[2];
   return {
     rayOrigin,
     rayDirection
@@ -10576,18 +10641,38 @@ function addRaycastListener(canvasId = "canvas1") {
       rayDirection
     } = getRayFromMouse(event, canvasDom, camera);
     for (const object of app.mainRenderBundle) {
-      if (rayIntersectsSphere(rayOrigin, rayDirection, object.position, object.raycast.radius)) {
-        console.log('Object clicked:', object.name);
-        // Just like in matrix-engine webGL version "ray.hit.event"
-        dispatchEvent(new CustomEvent('ray.hit.event', {
-          detail: {
-            hitObject: object
-          }
-        }));
+      if (object.raycast.enabled == true) {
+        if (rayIntersectsSphere(rayOrigin, rayDirection, object.position, object.raycast.radius)) {
+          // Just like in matrix-engine webGL version "ray.hit.event"
+          canvasDom.dispatchEvent(new CustomEvent('ray.hit.event', {
+            detail: {
+              hitObject: object,
+              rayOrigin: rayOrigin,
+              rayDirection: rayDirection
+            }
+          }));
+        }
       }
     }
   });
 }
+
+// Compute AABB from flat vertices array [x,y,z, x,y,z, ...]
+function computeAABB(vertices) {
+  const min = [Infinity, Infinity, Infinity];
+  const max = [-Infinity, -Infinity, -Infinity];
+  for (let i = 0; i < vertices.length; i += 3) {
+    min[0] = Math.min(min[0], vertices[i]);
+    min[1] = Math.min(min[1], vertices[i + 1]);
+    min[2] = Math.min(min[2], vertices[i + 2]);
+    max[0] = Math.max(max[0], vertices[i]);
+    max[1] = Math.max(max[1], vertices[i + 1]);
+    max[2] = Math.max(max[2], vertices[i + 2]);
+  }
+  return [min, max];
+}
+
+// Ray-AABB intersection using slabs method
 function rayIntersectsAABB(rayOrigin, rayDirection, boxMin, boxMax) {
   let tmin = (boxMin[0] - rayOrigin[0]) / rayDirection[0];
   let tmax = (boxMax[0] - rayOrigin[0]) / rayDirection[0];
@@ -10604,21 +10689,21 @@ function rayIntersectsAABB(rayOrigin, rayDirection, boxMin, boxMax) {
   if (tmin > tzmax || tzmin > tmax) return false;
   return true;
 }
-function computeAABBFromVertices(vertices) {
-  const min = [Infinity, Infinity, Infinity];
-  const max = [-Infinity, -Infinity, -Infinity];
-  for (let i = 0; i < vertices.length; i += 3) {
-    const x = vertices[i];
-    const y = vertices[i + 1];
-    const z = vertices[i + 2];
-    min[0] = Math.min(min[0], x);
-    min[1] = Math.min(min[1], y);
-    min[2] = Math.min(min[2], z);
-    max[0] = Math.max(max[0], x);
-    max[1] = Math.max(max[1], y);
-    max[2] = Math.max(max[2], z);
+function computeWorldVertsAndAABB(object) {
+  const modelMatrix = object.getModelMatrix(object.position);
+  const worldVerts = [];
+  for (let i = 0; i < object.mesh.vertices.length; i += 3) {
+    const local = _wgpuMatrix.vec3.fromValues(object.mesh.vertices[i], object.mesh.vertices[i + 1], object.mesh.vertices[i + 2]);
+    const world = _wgpuMatrix.vec3.transformMat4(local, modelMatrix); // OK
+    worldVerts.push(world[0], world[1], world[2]);
   }
-  return [min, max];
+  const [boxMin, boxMax] = computeAABB(worldVerts);
+  return {
+    modelMatrix,
+    worldVerts,
+    boxMin,
+    boxMax
+  };
 }
 function addRaycastsAABBListener(canvasId = "canvas1") {
   const canvasDom = document.getElementById(canvasId);
@@ -10627,49 +10712,33 @@ function addRaycastsAABBListener(canvasId = "canvas1") {
     return;
   }
   canvasDom.addEventListener('click', event => {
+    console.warn(`Canvas click  ${event} `);
     const camera = app.cameras.WASD;
     const {
       rayOrigin,
       rayDirection
-    } = getRayFromMouse(event, canvasDom, camera);
+    } = getRayFromMouse2(event, canvasDom, camera);
     for (const object of app.mainRenderBundle) {
-      // Compute AABB min/max from object position and size
-      const pos = [object.position.x, object.position.y, object.position.z]; // [x,y,z]
-
-      ////////////
-      const [boxMinLocal, boxMaxLocal] = computeAABBFromVertices(object.mesh.vertices);
-      // Optionally transform to world space using object.position
-      // const pos = object.position;
-
-      const boxMin = [boxMinLocal[0] + pos[0], boxMinLocal[1] + pos[1], boxMinLocal[2] + pos[2]];
-      const boxMax = [boxMaxLocal[0] + pos[0], boxMaxLocal[1] + pos[1], boxMaxLocal[2] + pos[2]];
-      //////////////
-      // const size = object.size || [1, 1, 1]; // Replace with actual object size or default 1x1x1
-
-      // const boxMin = [
-      //   pos[0] - size[0] / 2,
-      //   pos[1] - size[1] / 2,
-      //   pos[2] - size[2] / 2
-      // ];
-      // const boxMax = [
-      //   pos[0] + size[0] / 2,
-      //   pos[1] + size[1] / 2,
-      //   pos[2] + size[2] / 2
-      // ];
-
+      const {
+        boxMin,
+        boxMax
+      } = computeWorldVertsAndAABB(object);
+      if (object.raycast.enabled == false) return;
       if (rayIntersectsAABB(rayOrigin, rayDirection, boxMin, boxMax)) {
-        console.log('AABB hit:', object.name);
+        // console.log('AABB hit:', object.name);
         canvasDom.dispatchEvent(new CustomEvent('ray.hit.event', {
           detail: {
             hitObject: object
-          }
+          },
+          rayOrigin: rayOrigin,
+          rayDirection: rayDirection
         }));
       }
     }
   });
 }
 
-},{"wgpu-matrix":4}],13:[function(require,module,exports){
+},{"wgpu-matrix":4}],15:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -11176,7 +11245,7 @@ function OSCILLATOR(min, max, step) {
       }
     };
   } else {
-    console.log("SYS : warning for procedure 'SYS.MATH.OSCILLATOR' Desciption : Replace object with string or number, min >> " + typeof min + ' and max >>' + typeof max + ' and step >>' + typeof step + ' << must be string or number.');
+    console.log("OSCILLATOR ERROR");
   }
 }
 
@@ -11555,7 +11624,7 @@ function setupCanvasFilters(canvasId) {
   updateFilter(); // Initial
 }
 
-},{}],14:[function(require,module,exports){
+},{}],16:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -11595,7 +11664,7 @@ class MultiLang {
 }
 exports.MultiLang = MultiLang;
 
-},{"../engine/utils":13}],15:[function(require,module,exports){
+},{"../engine/utils":15}],17:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -11621,7 +11690,9 @@ class MatrixAmmo {
       console.log("%c Ammo core loaded.", _utils.LOG_FUNNY);
       this.initPhysics();
       // simulate async
-      setTimeout(() => dispatchEvent(new CustomEvent('AmmoReady', {})), 100);
+      setTimeout(() => {
+        dispatchEvent(new CustomEvent('AmmoReady', {}));
+      }, 200);
     });
   };
   initPhysics() {
@@ -11657,8 +11728,12 @@ class MatrixAmmo {
     }
   }
   addPhysicsSphere(MEObject, pOptions) {
+    const FLAGS = {
+      TEST_NIDZA: 3,
+      CF_KINEMATIC_OBJECT: 2
+    };
     let Ammo = this.Ammo;
-    var colShape = new Ammo.btSphereShape(pOptions.radius),
+    var colShape = new Ammo.btSphereShape(Array.isArray(pOptions.radius) ? pOptions.radius[0] : pOptions.radius),
       startTransform = new Ammo.btTransform();
     startTransform.setIdentity();
     var mass = 1;
@@ -11668,6 +11743,19 @@ class MatrixAmmo {
     var myMotionState = new Ammo.btDefaultMotionState(startTransform),
       rbInfo = new Ammo.btRigidBodyConstructionInfo(mass, myMotionState, colShape, localInertia),
       body = new Ammo.btRigidBody(rbInfo);
+    if (pOptions.mass == 0 && typeof pOptions.state == 'undefined' && typeof pOptions.collide == 'undefined') {
+      body.setActivationState(2);
+      body.setCollisionFlags(FLAGS.CF_KINEMATIC_OBJECT);
+      // console.log('what is pOptions.mass and state is 2 ....', pOptions.mass)
+    } else if (typeof pOptions.collide != 'undefined' && pOptions.collide == false) {
+      // idea not work for now - eliminate collide effect
+      body.setActivationState(4);
+      body.setCollisionFlags(FLAGS.TEST_NIDZA);
+    } else {
+      body.setActivationState(4);
+    }
+    body.name = pOptions.name;
+    MEObject.itIsPhysicsBody = true;
     body.MEObject = MEObject;
     this.dynamicsWorld.addRigidBody(body);
     this.rigidBodies.push(body);
@@ -11804,46 +11892,11 @@ class MatrixAmmo {
       //   if(item.kB == contactManifold.getBody0().kB) {
       //     // console.log('Detected body0 =', item.name)
       //   }
-      //   if(item.kB == contactManifold.getBody1().kB) {
-      //     // console.log('Detected body1 =', item.name)
-      //   }
-      // })
-
       if (this.ground.kB == contactManifold.getBody0().kB && this.getNameByBody(contactManifold.getBody1()) == 'CubePhysics1') {
         // console.log(this.ground ,'GROUND IS IN CONTACT WHO IS BODY1 ', contactManifold.getBody1())
         // console.log('GROUND IS IN CONTACT WHO IS BODY1 getNameByBody  ', this.getNameByBody(contactManifold.getBody1()))
         // CHECK ROTATION
         var testR = contactManifold.getBody1().getWorldTransform().getRotation();
-        if (Math.abs(testR.y()) < 0.00001) {
-          this.lastRoll += " 4 +";
-          this.presentScore += 4;
-          dispatchEvent(new CustomEvent('dice-1', {}));
-        }
-        if (Math.abs(testR.x()) < 0.00001) {
-          this.lastRoll += " 3 +";
-          this.presentScore += 3;
-          dispatchEvent(new CustomEvent('dice-4', {}));
-        }
-        if (testR.x().toString().substring(0, 5) == testR.y().toString().substring(1, 6)) {
-          this.lastRoll += " 2 +";
-          this.presentScore += 2;
-          dispatchEvent(new CustomEvent('dice-6', {}));
-        }
-        if (testR.x().toString().substring(0, 5) == testR.y().toString().substring(0, 5)) {
-          this.lastRoll += " 1 +";
-          this.presentScore += 1;
-          dispatchEvent(new CustomEvent('dice-2', {}));
-        }
-        if (testR.z().toString().substring(0, 5) == testR.y().toString().substring(1, 6)) {
-          this.lastRoll += " 6 +";
-          this.presentScore += 6;
-          dispatchEvent(new CustomEvent('dice-5', {}));
-        }
-        if (testR.z().toString().substring(0, 5) == testR.y().toString().substring(0, 5)) {
-          this.lastRoll += " 5 +";
-          this.presentScore += 5;
-          dispatchEvent(new CustomEvent('dice-3', {}));
-        }
         console.log('this.lastRoll = ', this.lastRoll, ' presentScore = ', this.presentScore);
       }
     }
@@ -11895,14 +11948,14 @@ class MatrixAmmo {
 }
 exports.default = MatrixAmmo;
 
-},{"../engine/utils":13}],16:[function(require,module,exports){
+},{"../engine/utils":15}],18:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.fragmentWGSL = void 0;
-let fragmentWGSL = exports.fragmentWGSL = `override shadowDepthTextureSize: f32 = 1024.0;
+exports.fragmentVideoWGSL = void 0;
+let fragmentVideoWGSL = exports.fragmentVideoWGSL = `override shadowDepthTextureSize: f32 = 1024.0;
 
 struct Scene {
   lightViewProjMatrix : mat4x4f,
@@ -11913,29 +11966,32 @@ struct Scene {
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(0) @binding(1) var shadowMap: texture_depth_2d;
 @group(0) @binding(2) var shadowSampler: sampler_comparison;
-@group(0) @binding(3) var meshTexture: texture_2d<f32>;
+@group(0) @binding(3) var meshTexture: texture_external;
 @group(0) @binding(4) var meshSampler: sampler;
+@group(0) @binding(5) var<uniform> postFXMode: u32;
+
+// ❌ No binding(4) here!
 
 struct FragmentInput {
-  @location(0) shadowPos : vec3f,
+  @location(0) shadowPos : vec4f,
   @location(1) fragPos : vec3f,
   @location(2) fragNorm : vec3f,
   @location(3) uv : vec2f,
 }
+
+ 
 
 const albedo = vec3f(0.9);
 const ambientFactor = 0.7;
 
 @fragment
 fn main(input : FragmentInput) -> @location(0) vec4f {
-  // Percentage-closer filtering. Sample texels in the region
-  // to smooth the result.
+  // Shadow filtering
   var visibility = 0.0;
   let oneOverShadowDepthTextureSize = 1.0 / shadowDepthTextureSize;
   for (var y = -1; y <= 1; y++) {
     for (var x = -1; x <= 1; x++) {
       let offset = vec2f(vec2(x, y)) * oneOverShadowDepthTextureSize;
-
       visibility += textureSampleCompare(
         shadowMap, shadowSampler,
         input.shadowPos.xy + offset, input.shadowPos.z - 0.007
@@ -11943,17 +11999,195 @@ fn main(input : FragmentInput) -> @location(0) vec4f {
     }
   }
   visibility /= 9.0;
+
   let lambertFactor = max(dot(normalize(scene.lightPos - input.fragPos), normalize(input.fragNorm)), 0.0);
   let lightingFactor = min(ambientFactor + visibility * lambertFactor, 1.0);
-  let textureColor = textureSample(meshTexture, meshSampler, input.uv);
 
-  return vec4(textureColor.rgb * lightingFactor * albedo, 1.0);
-  // return vec4f(input.fragNorm * 0.5 + 0.5, 1)
-  // return vec4f(input.uv, 0, 1)
-  // return vec4(textureColor.rgb , 0.5);
+  // ✅ Correct way to sample video texture
+  let textureColor = textureSampleBaseClampToEdge(meshTexture, meshSampler, input.uv);
+  let color: vec4f = vec4(textureColor.rgb * lightingFactor * albedo, 1.0);
+
+   switch (postFXMode) {
+    case 0: {
+      // Default
+      return color;
+    }
+    case 1: {
+      // Invert
+      return vec4f(1.0 - color.rgb, color.a);
+    }
+    case 2: {
+      // Grayscale
+      let gray = dot(color.rgb, vec3f(0.299, 0.587, 0.114));
+      return vec4f(vec3f(gray), color.a);
+    }
+    case 3: {
+      // Chroma Key
+      let keyColor = vec3f(0.0, 1.0, 0.0);
+      let threshold = 0.3;
+      let diff = distance(color.rgb, keyColor);
+      if (diff < threshold) {
+        return vec4f(0.0, 0.0, 0.0, 0.0);
+      }
+      return color;
+    }
+    default: {
+      return color;
+    }
+  }
+
+  // return color;
+}
+`;
+
+},{}],19:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.fragmentWGSL = void 0;
+let fragmentWGSL = exports.fragmentWGSL = `override shadowDepthTextureSize: f32 = 1024.0;
+
+// Created by Nikola Lukic with chatgtp assist.
+
+struct Scene {
+    lightViewProjMatrix  : mat4x4f,
+    cameraViewProjMatrix : mat4x4f,
+    cameraPos            : vec3f,
+    padding2             : f32,   // align to 16 bytes
+    lightPos             : vec3f,
+    padding              : f32,   // align to 16 bytes
+    globalAmbient        : vec3f,  // <--- new
+    padding3             : f32,    // keep alignment (16 bytes)
+};
+
+struct SpotLight {
+    position      : vec3f,
+    _pad1         : f32,
+
+    direction     : vec3f,
+    _pad2         : f32,
+
+    innerCutoff   : f32,
+    outerCutoff   : f32,
+    intensity     : f32,
+    _pad3         : f32,
+
+    color         : vec3f,
+    _pad4         : f32,
+
+    range         : f32,
+    ambientFactor : f32,
+    shadowBias    : f32,
+    _pad5         : f32,
+
+    lightViewProj : mat4x4<f32>,
+};
+
+const MAX_SPOTLIGHTS = 20u;
+
+@group(0) @binding(0) var<uniform> scene : Scene;
+@group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
+@group(0) @binding(2) var shadowSampler: sampler_comparison;
+@group(0) @binding(3) var meshTexture: texture_2d<f32>;
+@group(0) @binding(4) var meshSampler: sampler;
+@group(0) @binding(5) var<uniform> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
+
+struct FragmentInput {
+    @location(0) shadowPos : vec4f,
+    @location(1) fragPos   : vec3f,
+    @location(2) fragNorm  : vec3f,
+    @location(3) uv        : vec2f,
+}
+
+const albedo = vec3f(0.9);
+
+fn calculateSpotlightFactor(light: SpotLight, fragPos: vec3f) -> f32 {
+    let L = normalize(light.position - fragPos);
+    let theta = dot(L, normalize(-light.direction));
+    let epsilon = light.innerCutoff - light.outerCutoff;
+    return clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
+}
+
+fn computeSpotLight(light: SpotLight, normal: vec3f, fragPos: vec3f, viewDir: vec3f) -> vec3f {
+    let L = light.position - fragPos;
+    let distance = length(L);
+    let lightDir = normalize(L);
+
+    let spotFactor = calculateSpotlightFactor(light, fragPos);
+    let atten = clamp(1.0 - (distance / light.range), 0.0, 1.0);
+
+    let diff = max(dot(normal, lightDir), 0.0);
+    let halfwayDir = normalize(lightDir + viewDir);
+    let spec = pow(max(dot(normal, halfwayDir), 0.0), 32.0);
+
+    let diffuse  = diff * light.color * light.intensity * atten;
+    let specular = spec * light.color * light.intensity * atten;
+
+    return (diffuse + specular) * spotFactor;
+}
+
+// Corrected PCF for texture_depth_2d_array
+fn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, lightDir: vec3f) -> f32 {
+    var visibility: f32 = 0.0;
+    let biasConstant: f32 = 0.001;
+    // Slope bias: avoid self-shadowing on steep angles
+    // let slopeBias: f32 = max(0.002 * (1.0 - dot(normal, lightDir)), 0.0);
+    let bias = biasConstant;//  + slopeBias;
+
+    let oneOverSize = 1.0 / (shadowDepthTextureSize  * 0.5);
+
+    // 3x3 PCF kernel
+    let offsets: array<vec2f, 9> = array<vec2f, 9>(
+        vec2(-1.0, -1.0), vec2(0.0, -1.0), vec2(1.0, -1.0),
+        vec2(-1.0,  0.0), vec2(0.0,  0.0), vec2(1.0,  0.0),
+        vec2(-1.0,  1.0), vec2(0.0,  1.0), vec2(1.0,  1.0)
+    );
+
+    for(var i: u32 = 0u; i < 9u; i = i + 1u) {
+        visibility += textureSampleCompare(
+            shadowMapArray,
+            shadowSampler,
+            shadowUV + offsets[i] * oneOverSize,
+            layer,
+            depthRef //+ bias
+        );
+    }
+    return visibility / 9.0;
+}
+
+@fragment
+fn main(input: FragmentInput) -> @location(0) vec4f {
+    let norm = normalize(input.fragNorm);
+
+    let viewDir = normalize(scene.cameraPos - input.fragPos);
+    // let viewDir = normalize(scene.cameraViewProjMatrix[3].xyz - input.fragPos);
+
+    var lightContribution = vec3f(0.0);
+    var ambient = vec3f(0.5);
+
+    for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
+        let sc = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);
+        let p  = sc.xyz / sc.w;
+        let uv = clamp(p.xy * 0.5 + vec2<f32>(0.5), vec2<f32>(0.0), vec2<f32>(1.0));
+        let depthRef = p.z * 0.5 + 0.5;
+        let lightDir = normalize(spotlights[i].position - input.fragPos);
+        let angleFactor = 1.0 - dot(norm, lightDir);
+        let slopeBias = 0.01 * (1.0 - dot(norm, lightDir));
+        let bias = spotlights[i].shadowBias + slopeBias;
+        let visibility = sampleShadow(uv, i32(i), depthRef - bias, norm, lightDir);
+        let contrib = computeSpotLight(spotlights[i], norm, input.fragPos, viewDir);
+        lightContribution += contrib * visibility;
+        // ambient += spotlights[i].ambientFactor * spotlights[i].color;
+    }
+    // ambient /= f32(MAX_SPOTLIGHTS); PREVENT OVER NEXT FEATURE ON SWICHER
+    let texColor = textureSample(meshTexture, meshSampler, input.uv);
+    let finalColor = texColor.rgb * (scene.globalAmbient + lightContribution); // * albedo;
+    return vec4f(finalColor, 1.0);
 }`;
 
-},{}],17:[function(require,module,exports){
+},{}],20:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -12011,7 +12245,7 @@ fn fragmentMain(input: VertexOutput) -> @location(0) vec4f {
   return vec4f(textureColor.rgb * lightColor, textureColor.a);
 }`;
 
-},{}],18:[function(require,module,exports){
+},{}],21:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -12032,11 +12266,10 @@ struct Model {
 @group(1) @binding(0) var<uniform> model : Model;
 
 struct VertexOutput {
-  @location(0) shadowPos: vec3f,
+  @location(0) shadowPos: vec4f,  // now vec4
   @location(1) fragPos: vec3f,
   @location(2) fragNorm: vec3f,
-  @location(3) uv : vec2f,
-  
+  @location(3) uv: vec2f,
   @builtin(position) Position: vec4f,
 }
 
@@ -12044,31 +12277,23 @@ struct VertexOutput {
 fn main(
   @location(0) position: vec3f,
   @location(1) normal: vec3f,
-  @location(2) uv : vec2f
+  @location(2) uv: vec2f
 ) -> VertexOutput {
   var output : VertexOutput;
 
-  // XY is in (-1, 1) space, Z is in (0, 1) space
   let posFromLight = scene.lightViewProjMatrix * model.modelMatrix * vec4(position, 1.0);
+  output.shadowPos = posFromLight; // pass full vec4 for perspective divide
 
-  // Convert XY to (0, 1)
-  // Y is flipped because texture coords are Y-down.
-  output.shadowPos = vec3(
-    posFromLight.xy * vec2(0.5, -0.5) + vec2(0.5),
-    posFromLight.z
-  );
+  let worldPos = model.modelMatrix * vec4(position, 1.0);
+  output.Position = scene.cameraViewProjMatrix * worldPos;
+  output.fragPos = worldPos.xyz;
 
-  output.Position = scene.cameraViewProjMatrix * model.modelMatrix * vec4(position, 1.0);
-  output.fragPos = output.Position.xyz;
-  output.fragNorm = normal;
-  // nidza
+  output.fragNorm = normalize((model.modelMatrix * vec4(normal, 0.0)).xyz);
   output.uv = uv;
-
   return output;
-}
-`;
+}`;
 
-},{}],19:[function(require,module,exports){
+},{}],22:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -12096,7 +12321,7 @@ fn main(
 }
 `;
 
-},{}],20:[function(require,module,exports){
+},{}],23:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -12166,7 +12391,7 @@ class MatrixSounds {
 }
 exports.MatrixSounds = MatrixSounds;
 
-},{}],21:[function(require,module,exports){
+},{}],24:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -12177,17 +12402,25 @@ var _wgpuMatrix = require("wgpu-matrix");
 var _ball = _interopRequireDefault(require("./engine/ball.js"));
 var _cube = _interopRequireDefault(require("./engine/cube.js"));
 var _engine = require("./engine/engine.js");
-var _mesh = _interopRequireDefault(require("./engine/mesh.js"));
 var _meshObj = _interopRequireDefault(require("./engine/mesh-obj.js"));
 var _matrixAmmo = _interopRequireDefault(require("./physics/matrix-ammo.js"));
 var _utils = require("./engine/utils.js");
 var _lang = require("./multilang/lang.js");
 var _sounds = require("./sounds/sounds.js");
 var _loaderObj = require("./engine/loader-obj.js");
+var _lights = require("./engine/lights.js");
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+/**
+ * @description
+ * Main engine root class.
+ * @author Nikola Lukic 2025
+ * @email zlatnaspirala@gmail.com
+ * @web https://maximumroulette.com
+ * @github zlatnaspirala
+ */
 class MatrixEngineWGPU {
   mainRenderBundle = [];
-  rbContainer = [];
+  lightContainer = [];
   frame = () => {};
   entityHolder = [];
   entityArgPass = {
@@ -12198,10 +12431,7 @@ class MatrixEngineWGPU {
   };
   matrixAmmo = new _matrixAmmo.default();
   matrixSounds = new _sounds.MatrixSounds();
-
-  // The input handler
   constructor(options, callback) {
-    // console.log('typeof options ', typeof options )
     if (typeof options == 'undefined' || typeof options == "function") {
       this.options = {
         useSingleRenderPass: true,
@@ -12253,7 +12483,6 @@ class MatrixEngineWGPU {
 
     // The camera types
     const initialCameraPosition = _wgpuMatrix.vec3.create(0, 0, 0);
-    // console.log('passed : o.mainCameraParams.responseCoef ', o.mainCameraParams.responseCoef)
     this.mainCameraParams = {
       type: this.options.mainCameraParams.type,
       responseCoef: this.options.mainCameraParams.responseCoef
@@ -12266,8 +12495,6 @@ class MatrixEngineWGPU {
         position: initialCameraPosition
       })
     };
-
-    //
     this.label = new _lang.MultiLang();
     if (_utils.urlQuery.lang != null) {
       this.label.loadMultilang(_utils.urlQuery.lang).then(r => {
@@ -12292,14 +12519,6 @@ class MatrixEngineWGPU {
     this.device = await this.adapter.requestDevice({
       extensions: ["ray_tracing"]
     });
-
-    // Maybe works in ssl with webworkers...
-    // const adapterInfo = await this.adapter.requestAdapterInfo();
-    // var test = this.adapter.features()
-    // console.log(adapterInfo.vendor);
-    // console.log('test' + test);
-    // console.log("FEATURES : " + this.adapter.features)
-
     this.context = canvas.getContext('webgpu');
     const devicePixelRatio = window.devicePixelRatio;
     canvas.width = canvas.clientWidth * devicePixelRatio;
@@ -12315,8 +12534,91 @@ class MatrixEngineWGPU {
     } else {
       this.frame = this.framePassPerObject;
     }
+    this.globalAmbient = _wgpuMatrix.vec3.create(0.5, 0.5, 0.5);
+    this.MAX_SPOTLIGHTS = 20;
+    this.inputHandler = (0, _engine.createInputHandler)(window, canvas);
+    this.createGlobalStuff();
     this.run(callback);
   };
+  createGlobalStuff() {
+    this.spotlightUniformBuffer = this.device.createBuffer({
+      label: 'spotlightUniformBufferGLOBAL',
+      size: this.MAX_SPOTLIGHTS * 144,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    this.SHADOW_RES = 1024;
+    this.createTexArrayForShadows();
+    this.mainDepthTexture = this.device.createTexture({
+      size: [this.canvas.width, this.canvas.height],
+      format: 'depth24plus',
+      usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING
+    });
+    this.mainDepthView = this.mainDepthTexture.createView();
+    this.mainRenderPassDesc = {
+      label: 'mainRenderPassDesc',
+      colorAttachments: [{
+        view: undefined,
+        // set each frame
+        loadOp: 'clear',
+        storeOp: 'store',
+        clearValue: [0.02, 0.02, 0.02, 1]
+      }],
+      depthStencilAttachment: {
+        view: this.mainDepthView,
+        // fixed
+        depthLoadOp: 'clear',
+        depthStoreOp: 'store',
+        depthClearValue: 1.0
+      }
+    };
+  }
+  createTexArrayForShadows() {
+    let numberOfLights = this.lightContainer.length;
+    if (this.lightContainer.length == 0) {
+      // console.warn('Wait for init light instance')
+      setTimeout(() => {
+        // console.info('Test light again...')
+        this.createMe();
+      }, 800);
+    }
+    this.createMe = () => {
+      Math.max(1, this.lightContainer.length);
+      if (this.lightContainer.length == 0) {
+        setTimeout(() => {
+          console.warn('Create now test...');
+          this.createMe();
+        }, 800);
+        return;
+      }
+      console.warn('Create this.shadowTextureArray...');
+      this.shadowTextureArray = this.device.createTexture({
+        label: `shadowTextureArray[GLOBAL] num of light ${numberOfLights}`,
+        size: {
+          width: 1024,
+          height: 1024,
+          depthOrArrayLayers: numberOfLights // at least 1
+        },
+        dimension: '2d',
+        format: 'depth32float',
+        usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING
+      });
+      this.shadowArrayView = this.shadowTextureArray.createView({
+        dimension: '2d-array'
+      });
+      this.shadowVideoTexture = this.device.createTexture({
+        size: [1024, 1024],
+        format: "depth32float",
+        usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING
+      });
+      this.shadowVideoView = this.shadowVideoTexture.createView({
+        dimension: "2d"
+      });
+    };
+    this.createMe();
+  }
+  getSceneObjectByName(name) {
+    return this.mainRenderBundle.find(sceneObject => sceneObject.name === name);
+  }
 
   // Not in use for now
   addCube = o => {
@@ -12517,52 +12819,13 @@ class MatrixEngineWGPU {
     }
     this.mainRenderBundle.push(myBall1);
   };
-
-  // Not in use for now
-  addMesh = o => {
-    if (typeof o.position === 'undefined') {
-      o.position = {
-        x: 0,
-        y: 0,
-        z: -4
-      };
-    }
-    if (typeof o.rotation === 'undefined') {
-      o.rotation = {
-        x: 0,
-        y: 0,
-        z: 0
-      };
-    }
-    if (typeof o.rotationSpeed === 'undefined') {
-      o.rotationSpeed = {
-        x: 0,
-        y: 0,
-        z: 0
-      };
-    }
-    if (typeof o.texturesPaths === 'undefined') {
-      o.texturesPaths = ['./res/textures/default.png'];
-    }
-    if (typeof o.mainCameraParams === 'undefined') {
-      o.mainCameraParams = this.mainCameraParams;
-    }
-    if (typeof o.scale === 'undefined') {
-      o.scale = 1;
-    }
-    o.entityArgPass = this.entityArgPass;
-    o.cameras = this.cameras;
-    if (typeof o.name === 'undefined') {
-      o.name = 'random' + Math.random();
-    }
-    if (typeof o.mesh === 'undefined') {
-      throw console.error('arg mesh is empty...');
-      return;
-    }
-    console.log('Mesh procedure', o);
-    let myMesh1 = new _mesh.default(this.canvas, this.device, this.context, o);
-    this.mainRenderBundle.push(myMesh1);
-  };
+  addLight(o) {
+    const camera = this.cameras[this.mainCameraParams.type];
+    let newLight = new _lights.SpotLight(camera, this.inputHandler, this.device);
+    this.lightContainer.push(newLight);
+    this.createTexArrayForShadows();
+    console.log(`%cAdd light: ${newLight}`, _utils.LOG_FUNNY_SMALL);
+  }
   addMeshObj = (o, clearColor = this.options.clearColor) => {
     if (typeof o.name === 'undefined') {
       o.name = (0, _utils.genName)(9);
@@ -12638,12 +12901,9 @@ class MatrixEngineWGPU {
       o.physics.rotation = o.rotation;
     }
     o.physics.position = o.position;
-    //  console.log('Mesh procedure', o)
-    // TEST OBJS SEQ ANIMS 
     if (typeof o.objAnim == 'undefined' || typeof o.objAnim == null) {
       o.objAnim = null;
     } else {
-      // console.log('o.anim', o.objAnim)
       if (typeof o.objAnim.animations !== 'undefined') {
         o.objAnim.play = _loaderObj.play;
       }
@@ -12656,12 +12916,13 @@ class MatrixEngineWGPU {
       // scale for all second option!
       o.objAnim.scaleAll = function (s) {
         for (var k in this.meshList) {
-          console.log('SCALE');
+          console.log('SCALE meshList');
           this.meshList[k].setScale(s);
         }
       };
     }
-    let myMesh1 = new _meshObj.default(this.canvas, this.device, this.context, o);
+    let myMesh1 = new _meshObj.default(this.canvas, this.device, this.context, o, this.inputHandler, this.globalAmbient);
+    myMesh1.spotlightUniformBuffer = this.spotlightUniformBuffer;
     myMesh1.clearColor = clearColor;
     if (o.physics.enabled == true) {
       this.matrixAmmo.addPhysics(myMesh1, o.physics);
@@ -12677,46 +12938,123 @@ class MatrixEngineWGPU {
     }, 20);
   }
   destroyProgram = () => {
-    this.mainRenderBundle = undefined;
+    this.mainRenderBundle = [];
     this.canvas.remove();
   };
+  updateLights() {
+    const floatsPerLight = 36; // not 20 anymore
+    const data = new Float32Array(this.MAX_SPOTLIGHTS * floatsPerLight);
+    for (let i = 0; i < this.MAX_SPOTLIGHTS; i++) {
+      if (i < this.lightContainer.length) {
+        const buf = this.lightContainer[i].getLightDataBuffer();
+        data.set(buf, i * floatsPerLight);
+      } else {
+        data.set(new Float32Array(floatsPerLight), i * floatsPerLight);
+      }
+    }
+    this.device.queue.writeBuffer(this.spotlightUniformBuffer, 0, data.buffer);
+  }
   frameSinglePass = () => {
-    if (typeof this.mainRenderBundle == 'undefined') return;
-    try {
-      let shadowPass = null;
-      let renderPass;
-      let commandEncoder = this.device.createCommandEncoder();
-      this.mainRenderBundle.forEach((meItem, index) => {
-        meItem.position.update();
-      });
-      this.matrixAmmo.updatePhysics();
-      this.mainRenderBundle.forEach((meItem, index) => {
-        meItem.draw(commandEncoder);
-        shadowPass = commandEncoder.beginRenderPass(meItem.shadowPassDescriptor);
-        shadowPass.setPipeline(meItem.shadowPipeline);
-        meItem.drawShadows(shadowPass);
-        shadowPass.end();
-      });
-      this.mainRenderBundle.forEach((meItem, index) => {
-        if (index == 0) {
-          renderPass = commandEncoder.beginRenderPass(meItem.renderPassDescriptor);
-          renderPass.setPipeline(meItem.pipeline);
+    if (typeof this.mainRenderBundle == 'undefined' || this.mainRenderBundle.length == 0) {
+      setTimeout(() => {
+        requestAnimationFrame(this.frame);
+      }, 200);
+      return;
+    }
+    let noPass = false;
+    this.mainRenderBundle.forEach((meItem, index) => {
+      if (meItem.isVideo == true) {
+        if (!meItem.externalTexture || meItem.video.readyState < 2) {
+          console.log('no rendere for video not ready');
+          //  this.externalTexture = this.device.importExternalTexture({source: this.video});
+          noPass = true;
+          setTimeout(() => requestAnimationFrame(this.frame), 1500);
+          return;
         }
-      });
-      this.mainRenderBundle.forEach((meItem, index) => {
-        meItem.drawElements(renderPass);
-      });
-      if (renderPass) renderPass.end();
+      }
+    });
+    if (noPass == true) {
+      console.log('no rendere for video not ready !!!!');
+      return;
+    }
+
+    // let pass;
+    // let commandEncoder;
+    try {
+      let commandEncoder = this.device.createCommandEncoder();
+      this.updateLights();
+      // 1️⃣ Update light data (position, direction, uniforms)
+      for (const light of this.lightContainer) {
+        light.update();
+        this.mainRenderBundle.forEach((meItem, index) => {
+          meItem.position.update();
+          meItem.updateModelUniformBuffer();
+          meItem.getTransformationMatrix(this.mainRenderBundle, light);
+        });
+      }
+      if (this.matrixAmmo) this.matrixAmmo.updatePhysics();
+      for (let i = 0; i < this.lightContainer.length; i++) {
+        const light = this.lightContainer[i];
+        let ViewPerLightRenderShadowPass = this.shadowTextureArray.createView({
+          dimension: '2d',
+          baseArrayLayer: i,
+          arrayLayerCount: 1,
+          // must be > 0
+          baseMipLevel: 0,
+          mipLevelCount: 1
+        });
+        const shadowPass = commandEncoder.beginRenderPass({
+          label: "shadowPass",
+          colorAttachments: [],
+          depthStencilAttachment: {
+            view: ViewPerLightRenderShadowPass,
+            depthLoadOp: 'clear',
+            depthStoreOp: 'store',
+            depthClearValue: 1.0
+          }
+        });
+        shadowPass.setPipeline(light.shadowPipeline);
+        for (const [meshIndex, mesh] of this.mainRenderBundle.entries()) {
+          if (mesh.videoIsReady == 'NONE') {
+            shadowPass.setBindGroup(0, light.getShadowBindGroup(mesh, meshIndex));
+            shadowPass.setBindGroup(1, mesh.modelBindGroup);
+            mesh.drawShadows(shadowPass, light);
+          }
+        }
+        shadowPass.end();
+      }
+      const currentTextureView = this.context.getCurrentTexture().createView();
+      this.mainRenderPassDesc.colorAttachments[0].view = currentTextureView;
+      let pass = commandEncoder.beginRenderPass(this.mainRenderPassDesc);
+      // Loop over each mesh
+      for (const mesh of this.mainRenderBundle) {
+        pass.setPipeline(mesh.pipeline);
+        if (!mesh.sceneBindGroupForRender || mesh.FINISH_VIDIO_INIT == false && mesh.isVideo == true) {
+          for (const m of this.mainRenderBundle) {
+            if (m.isVideo == true) {
+              console.log('✅shadowVideoView', this.shadowVideoView);
+              m.shadowDepthTextureView = this.shadowVideoView;
+              m.FINISH_VIDIO_INIT = true;
+              m.setupPipeline();
+            } else {
+              m.shadowDepthTextureView = this.shadowArrayView;
+              m.setupPipeline();
+            }
+          }
+        }
+        mesh.drawElements(pass, this.lightContainer);
+      }
+      pass.end();
       this.device.queue.submit([commandEncoder.finish()]);
       requestAnimationFrame(this.frame);
     } catch (err) {
-      console.log('%cDraw func (err):' + err, _utils.LOG_WARN);
+      console.log('%cLoop(err):' + err, _utils.LOG_WARN);
       requestAnimationFrame(this.frame);
     }
   };
   framePassPerObject = () => {
     let commandEncoder = this.device.createCommandEncoder();
-    this.matrixAmmo.updatePhysics();
+    if (this.matrixAmmo.rigidBodies.length > 0) this.matrixAmmo.updatePhysics();
     this.mainRenderBundle.forEach((meItem, index) => {
       if (index === 0) {
         if (meItem.renderPassDescriptor) meItem.renderPassDescriptor.colorAttachments[0].loadOp = 'clear';
@@ -12724,7 +13062,7 @@ class MatrixEngineWGPU {
         if (meItem.renderPassDescriptor) meItem.renderPassDescriptor.colorAttachments[0].loadOp = 'load';
       }
       // Update transforms, physics, etc. (optional)
-      meItem.draw(commandEncoder); // optional: if this does per-frame updates
+      meItem.draw(commandEncoder);
       if (meItem.renderBundle) {
         // Set up view per object
         meItem.renderPassDescriptor.colorAttachments[0].view = this.context.getCurrentTexture().createView();
@@ -12732,7 +13070,7 @@ class MatrixEngineWGPU {
         passEncoder.executeBundles([meItem.renderBundle]); // ✅ Use only this bundle
         passEncoder.end();
       } else {
-        meItem.draw(commandEncoder); // fallback if no renderBundle
+        meItem.draw(commandEncoder);
       }
     });
     this.device.queue.submit([commandEncoder.finish()]);
@@ -12741,4 +13079,4 @@ class MatrixEngineWGPU {
 }
 exports.default = MatrixEngineWGPU;
 
-},{"./engine/ball.js":5,"./engine/cube.js":6,"./engine/engine.js":7,"./engine/loader-obj.js":8,"./engine/mesh-obj.js":10,"./engine/mesh.js":11,"./engine/utils.js":13,"./multilang/lang.js":14,"./physics/matrix-ammo.js":15,"./sounds/sounds.js":20,"wgpu-matrix":4}]},{},[3]);
+},{"./engine/ball.js":5,"./engine/cube.js":7,"./engine/engine.js":8,"./engine/lights.js":9,"./engine/loader-obj.js":10,"./engine/mesh-obj.js":13,"./engine/utils.js":15,"./multilang/lang.js":16,"./physics/matrix-ammo.js":17,"./sounds/sounds.js":23,"wgpu-matrix":4}]},{},[3]);

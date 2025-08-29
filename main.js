@@ -2,7 +2,7 @@ import MatrixEngineWGPU from "./src/world.js";
 import {downloadMeshes} from './src/engine/loader-obj.js';
 import {byId, LOG_FUNNY, LOG_INFO, LOG_MATRIX, mb, randomFloatFromTo, randomIntFromTo} from "./src/engine/utils.js";
 import {dices, myDom} from "./examples/games/jamb/jamb.js";
-import {addRaycastListener, touchCoordinate, rayIntersectsSphere, getRayFromMouse} from "./src/engine/raycast.js";
+import {addRaycastsAABBListener, addRaycastListener, touchCoordinate, rayIntersectsSphere, getRayFromMouse} from "./src/engine/raycast.js";
 
 export let application = new MatrixEngineWGPU({
   useSingleRenderPass: true,
@@ -12,6 +12,20 @@ export let application = new MatrixEngineWGPU({
     responseCoef: 1000
   }
 }, () => {
+
+  application.addLight();
+  console.log('light added.')
+  application.lightContainer[0].outerCutoff = 0.5;
+  application.lightContainer[0].position[2] = -27;
+  application.lightContainer[0].intensity = 4;
+  application.lightContainer[0].target[2] = -25;
+  application.lightContainer[0].position[1] = 9;
+  application.globalAmbient[0] = 0.7;
+  application.globalAmbient[1] = 0.7;
+  application.globalAmbient[2] = 0.7;
+
+  const diceTexturePath = './res/meshes/jamb/dice.png';
+
   // Dom operations
   application.userState = {
     name: 'Guest',
@@ -22,7 +36,6 @@ export let application = new MatrixEngineWGPU({
   myDom.addDraggerForTable();
   myDom.createBlocker();
   application.dices = dices;
-
 
   application.activateDiceClickListener = null;
 
@@ -140,7 +153,11 @@ export let application = new MatrixEngineWGPU({
   }
 
   addRaycastListener();
-  addEventListener("ray.hit.event", (e) => {
+  // addRaycastsAABBListener();
+
+  application.canvas.addEventListener("ray.hit.event", (e) => {
+    console.log('ray.hit.event @@@@@@@@@@@@ detected');
+
     if(byId('topTitleDOM') && byId('topTitleDOM').getAttribute('data-gamestatus') != 'FREE' &&
       byId('topTitleDOM').getAttribute('data-gamestatus') != 'status-select') {
       console.log('no hit in middle of game ...');
@@ -164,7 +181,7 @@ export let application = new MatrixEngineWGPU({
 
   addEventListener('mousemove', (e) => {
     // console.log('only on click')
-  
+
   })
 
   // Sounds
@@ -183,34 +200,18 @@ export let application = new MatrixEngineWGPU({
       cube: "./res/meshes/jamb/dice.obj",
     }, onLoadObj, {scale: [1, 1, 1], swap: [null]})
 
-    downloadMeshes({
-      star1: "./res/meshes/shapes/star1.obj",
-    }, (m) => {
+    // downloadMeshes({
+    //   star1: "./res/meshes/shapes/star1.obj",
+    // }, (m) => {
 
-      let o = {
-        scale: 2,
-        position: {x: 3, y: 0, z: -10},
-        rotation: {x: 0, y: 0, z: 0},
-        rotationSpeed: {x: 10, y: 0, z: 0},
-        texturesPaths: ['./res/textures/default.png']
-      };
-      // application.addCube(o)
-
-      // application.addMeshObj({
-      //   position: {x: 0, y: 6, z: -5},
-      //   rotation: {x: 0, y: 0, z: 0},
-      //   rotationSpeed: {x: 0, y: 0, z: 0},
-      //   texturesPaths: ['./res/meshes/jamb/dice.png'],
-      //   useUVShema4x2: true,
-      //   name: 'star1',
-      //   mesh: m.star1,
-      //   raycast: {enabled: true, radius: 2},
-      //   physics: {
-      //     enabled: true,
-      //     geometry: "Cube"
-      //   }
-      // })
-    }, {scale: [11, 11, 11], swap: [null]})
+    //   let o = {
+    //     scale: 2,
+    //     position: {x: 3, y: 0, z: -10},
+    //     rotation: {x: 0, y: 0, z: 0},
+    //     rotationSpeed: {x: 10, y: 0, z: 0},
+    //     texturesPaths: ['./res/textures/default.png']
+    //   };
+    // }, {scale: [11, 11, 11], swap: [null]})
 
     downloadMeshes({
       bg: "./res/meshes/jamb/bg.obj",
@@ -242,7 +243,8 @@ export let application = new MatrixEngineWGPU({
           mass: 0,
           enabled: true,
           geometry: "Cube"
-        }
+        },
+        raycast: {enabled: false, radius: 2},
       })
 
       application.addMeshObj({
@@ -256,7 +258,8 @@ export let application = new MatrixEngineWGPU({
           mass: 0,
           enabled: true,
           geometry: "Cube"
-        }
+        },
+        raycast: {enabled: false, radius: 2},
       })
     }, {scale: [25, 10, 4], swap: [null]})
 
@@ -280,7 +283,8 @@ export let application = new MatrixEngineWGPU({
         mass: 0,
         enabled: true,
         geometry: "Cube"
-      }
+      },
+      raycast: {enabled: false, radius: 2},
     })
   }
 
@@ -297,11 +301,17 @@ export let application = new MatrixEngineWGPU({
         mass: 0,
         enabled: true,
         geometry: "Cube"
-      }
+      },
+      raycast: {enabled: false, radius: 2},
     })
     // application.cameras.WASD.pitch = 0.2
     setTimeout(() => {
-      app.cameras.WASD.velocity[1] = 18
+      // app.cameras.WASD.velocity[1] = 18
+      console.log('set camera position with timeout...')
+      app.cameras.WASD.yaw = -6.21;
+      app.cameras.WASD.pitch = -0.32;
+      app.cameras.WASD.position[2] = 0;
+      app.cameras.WASD.position[1] = 3.76;
       //                                             BODY              , x,  y, z, rotX, rotY, RotZ
       app.matrixAmmo.setKinematicTransform(
         app.matrixAmmo.getBodyByName('mainTitle'), 0, 0, 0, 1)
@@ -326,7 +336,8 @@ export let application = new MatrixEngineWGPU({
         mass: 0,
         enabled: true,
         geometry: "Cube"
-      }
+      },
+      raycast: {enabled: false, radius: 2},
     })
   }
 
@@ -337,7 +348,7 @@ export let application = new MatrixEngineWGPU({
       position: {x: 0, y: 6, z: -10},
       rotation: {x: 0, y: 0, z: 0},
       rotationSpeed: {x: 0, y: 0, z: 0},
-      texturesPaths: ['./res/meshes/jamb/dice.png'],
+      texturesPaths: [diceTexturePath],
       useUVShema4x2: true,
       name: 'CubePhysics1',
       mesh: m.cube,
@@ -352,7 +363,7 @@ export let application = new MatrixEngineWGPU({
       position: {x: -5, y: 4, z: -14},
       rotation: {x: 0, y: 0, z: 0},
       rotationSpeed: {x: 0, y: 0, z: 0},
-      texturesPaths: ['./res/meshes/jamb/dice.png'],
+      texturesPaths: [diceTexturePath],
       useUVShema4x2: true,
       name: 'CubePhysics2',
       mesh: m.cube,
@@ -367,7 +378,7 @@ export let application = new MatrixEngineWGPU({
       position: {x: 4, y: 8, z: -10},
       rotation: {x: 0, y: 0, z: 0},
       rotationSpeed: {x: 0, y: 0, z: 0},
-      texturesPaths: ['./res/meshes/jamb/dice.png'],
+      texturesPaths: [diceTexturePath],
       useUVShema4x2: true,
       name: 'CubePhysics3',
       mesh: m.cube,
@@ -382,7 +393,7 @@ export let application = new MatrixEngineWGPU({
       position: {x: 3, y: 4, z: -10},
       rotation: {x: 0, y: 0, z: 0},
       rotationSpeed: {x: 0, y: 0, z: 0},
-      texturesPaths: ['./res/meshes/jamb/dice.png'],
+      texturesPaths: [diceTexturePath],
       useUVShema4x2: true,
       name: 'CubePhysics4',
       mesh: m.cube,
@@ -397,7 +408,7 @@ export let application = new MatrixEngineWGPU({
       position: {x: -2, y: 4, z: -13},
       rotation: {x: 0, y: 0, z: 0},
       rotationSpeed: {x: 0, y: 0, z: 0},
-      texturesPaths: ['./res/meshes/jamb/dice.png'],
+      texturesPaths: [diceTexturePath],
       useUVShema4x2: true,
       name: 'CubePhysics5',
       mesh: m.cube,
@@ -412,7 +423,7 @@ export let application = new MatrixEngineWGPU({
       position: {x: -4, y: 6, z: -9},
       rotation: {x: 0, y: 0, z: 0},
       rotationSpeed: {x: 0, y: 0, z: 0},
-      texturesPaths: ['./res/meshes/jamb/dice.png'],
+      texturesPaths: [diceTexturePath],
       useUVShema4x2: true,
       name: 'CubePhysics6',
       mesh: m.cube,
@@ -436,6 +447,7 @@ export let application = new MatrixEngineWGPU({
         removeEventListener('dice-6', dice6Click)
         console.log(`%cFINAL<preliminar> ${dices.R}`, LOG_FUNNY)
         application.TOLERANCE = 0;
+        console.log('se camera position 2')
         app.cameras.WASD.yaw = 0.01;
         app.cameras.WASD.pitch = -1.26;
         app.cameras.WASD.position[2] = -18;
@@ -489,6 +501,8 @@ export let application = new MatrixEngineWGPU({
       setTimeout(() => {
         app.dices.activateAllDicesPhysics();
       }, 1000);
+
+      console.log('se camera position 3')
       app.cameras.WASD.yaw = 0;
       app.cameras.WASD.pitch = 0;
       app.cameras.WASD.position[2] = 0;

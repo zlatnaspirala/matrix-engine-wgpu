@@ -200,7 +200,7 @@ export default class Materials {
 
     }
     if(this.isVideo == true) {
-      console.info("✅ video sceneBindGroupForRender ");
+      // console.info("✅ video sceneBindGroupForRender ");
       this.sceneBindGroupForRender = this.device.createBindGroup({
         layout: this.bglForRender,
         entries: [
