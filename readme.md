@@ -482,6 +482,10 @@ This is static file storage.
 
 ---
 
+Performance for Jamb game: 
+
+<img width="860" height="640" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/performance.png?raw=true" />
+
 ## License
 
 ### Usage Note
