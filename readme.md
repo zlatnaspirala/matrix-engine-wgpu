@@ -439,6 +439,9 @@ urlQuery.lang;
 `main.js` is the main instance for the Ultimate Yahtzee game template.
 It contains the game context, e.g., `dices`.
 
+What ever you find here onder main.js is open source part.
+Next level of upgrade is commercial part.
+
 For a clean startup without extra logic, use `empty.js`.
 This minimal build is ideal for online editors like CodePen or StackOverflow snippets.
 
@@ -485,6 +488,7 @@ This is static file storage.
 Performance for Jamb game: 
 
 <img width="860" height="640" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/performance.png?raw=true" />
+
 
 ## License
 
