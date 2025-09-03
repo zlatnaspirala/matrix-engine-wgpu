@@ -436,7 +436,7 @@ urlQuery.lang;
 
 ## About `main.js`
 
-`main.js` is the main instance for the Ultimate Yahtzee game template.
+`main.js` is the main instance for the jamb 3d deluxe game template.
 It contains the game context, e.g., `dices`.
 
 What ever you find here onder main.js is open source part.
