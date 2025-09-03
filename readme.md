@@ -445,6 +445,8 @@ Next level of upgrade is commercial part.
 For a clean startup without extra logic, use `empty.js`.
 This minimal build is ideal for online editors like CodePen or StackOverflow snippets.
 
+<img width="860" height="640" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/3d-jamb.png?raw=true" />
+
 ---
 
 ## NPM Scripts

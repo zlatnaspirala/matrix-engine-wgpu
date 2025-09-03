@@ -356,7 +356,9 @@ export function createInputHandler(window, canvas) {
       case 'ControlLeft':
       case 'KeyC': digital.down = value; break;
     }
-    e.preventDefault();
+    // if you wanna dosavle all keyboard input for some reason...
+    // add later like new option feature...
+    // e.preventDefault();
     e.stopPropagation();
   };
 
