@@ -147,6 +147,9 @@ export function addRaycastListener(canvasId = "canvas1") {
               rayDirection: rayDirection
             }
           }))
+          if(touchCoordinate.stopOnFirstDetectedHit == true) {
+            break;
+          }
         }
       }
     }
@@ -236,6 +239,9 @@ export function addRaycastsAABBListener(canvasId = "canvas1") {
           rayOrigin: rayOrigin,
           rayDirection: rayDirection
         }));
+        if(touchCoordinate.stopOnFirstDetectedHit == true) {
+          break;
+        }
       }
     }
   });
