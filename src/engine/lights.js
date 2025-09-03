@@ -61,7 +61,7 @@ export class SpotLight {
       this.far
     );
 
-    this.setProjection = function(fov = 45, aspect = 1.0, near = 0.1, far = 200) {
+    this.setProjection = function(fov = (2*Math.PI) / 5 , aspect = 1.0, near = 0.1, far = 200) {
       this.projectionMatrix = mat4.perspective(fov, aspect, near, far);
     }
 
