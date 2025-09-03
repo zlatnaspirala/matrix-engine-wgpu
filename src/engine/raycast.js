@@ -231,16 +231,17 @@ export function addRaycastsAABBListener(canvasId = "canvas1") {
     const {rayOrigin, rayDirection} = getRayFromMouse2(event, canvasDom, camera);
     for(const object of app.mainRenderBundle) {
       const {boxMin, boxMax} = computeWorldVertsAndAABB(object);
-      if(object.raycast.enabled == false) return;
-      if(rayIntersectsAABB(rayOrigin, rayDirection, boxMin, boxMax)) {
-        // console.log('AABB hit:', object.name);
-        canvasDom.dispatchEvent(new CustomEvent('ray.hit.event', {
-          detail: {hitObject: object},
-          rayOrigin: rayOrigin,
-          rayDirection: rayDirection
-        }));
-        if(touchCoordinate.stopOnFirstDetectedHit == true) {
-          break;
+      if(object.raycast.enabled == true) {
+        if(rayIntersectsAABB(rayOrigin, rayDirection, boxMin, boxMax)) {
+          // console.log('AABB hit:', object.name);
+          canvasDom.dispatchEvent(new CustomEvent('ray.hit.event', {
+            detail: {hitObject: object},
+            rayOrigin: rayOrigin,
+            rayDirection: rayDirection
+          }));
+          if(touchCoordinate.stopOnFirstDetectedHit == true) {
+            break;
+          }
         }
       }
     }
