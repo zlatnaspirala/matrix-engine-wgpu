@@ -86,7 +86,7 @@ export default class MatrixEngineWGPU {
 
     this.cameras = {
       arcball: new ArcballCamera({position: initialCameraPosition}),
-      WASD: new WASDCamera({position: initialCameraPosition}),
+      WASD: new WASDCamera({position: initialCameraPosition, canvas: canvas}),
     };
 
     this.label = new MultiLang()

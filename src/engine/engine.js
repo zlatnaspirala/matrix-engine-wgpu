@@ -1,7 +1,7 @@
 // Note: The code in this file does not use the 'dst' output parameter of functions in the
 // 'wgpu-matrix' library, so produces many temporary vectors and matrices.
 // This is intentional, as this sample prefers readability over performance.
-import { mat4, vec3 } from 'wgpu-matrix';
+import {mat4, vec3} from 'wgpu-matrix';
 import {LOG_INFO} from './utils';
 
 // The common functionality between camera implementations
@@ -15,10 +15,10 @@ class CameraBase {
   view_ = mat4.create();
 
   // Aliases to column vectors of the matrix
-   right_ = new Float32Array(this.matrix_.buffer, 4 * 0, 4);
-   up_ = new Float32Array(this.matrix_.buffer, 4 * 4, 4);
-   back_ = new Float32Array(this.matrix_.buffer, 4 * 8, 4);
-   position_ = new Float32Array(this.matrix_.buffer, 4 * 12, 4);
+  right_ = new Float32Array(this.matrix_.buffer, 4 * 0, 4);
+  up_ = new Float32Array(this.matrix_.buffer, 4 * 4, 4);
+  back_ = new Float32Array(this.matrix_.buffer, 4 * 8, 4);
+  position_ = new Float32Array(this.matrix_.buffer, 4 * 12, 4);
 
   // Returns the camera matrix
   get matrix() {
@@ -29,9 +29,9 @@ class CameraBase {
     mat4.copy(mat, this.matrix_);
   }
 
-  setProjection(fov = (2*Math.PI) / 5 , aspect = 1, near = 0.5, far = 1000) {
-    this.projectionMatrix = mat4.perspective(fov, aspect, near, far);
-  }
+  // setProjection(fov = (2*Math.PI) / 5 , aspect = 1, near = 0.5, far = 1000) {
+  //   this.projectionMatrix = mat4.perspective(fov, aspect, near, far);
+  // }
 
   // Returns the camera view matrix
   get view() {
@@ -86,9 +86,9 @@ class CameraBase {
 // WASDCamera is a camera implementation that behaves similar to first-person-shooter PC games.
 export class WASDCamera extends CameraBase {
   // The camera absolute pitch angle
-   pitch = 0;
+  pitch = 0;
   // The camera absolute yaw angle
-   yaw = 0;
+  yaw = 0;
 
   // The movement veloicty readonly
   velocity_ = vec3.create();
@@ -113,15 +113,21 @@ export class WASDCamera extends CameraBase {
     vec3.copy(vec, this.velocity_);
   }
 
+  setProjection(fov = (2 * Math.PI) / 5, aspect = 1, near = 1, far = 1000) {
+    this.projectionMatrix = mat4.perspective(fov, aspect, near, far);
+  }
+
   constructor(options) {
     super();
-    if (options && (options.position || options.target)) {
+    if(options && (options.position || options.target)) {
       const position = options.position ?? vec3.create(0, 0, 0);
       const target = options.target ?? vec3.create(0, 0, 0);
       const forward = vec3.normalize(vec3.sub(target, position));
       this.recalculateAngles(forward);
       this.position = position;
-      this.setProjection()
+      this.canvas = options.canvas;
+      this.aspect = options.canvas.width / options.canvas.height;
+      this.setProjection((2 * Math.PI) / 5, this.aspect, 1, 1000);
       // console.log(`%cCamera constructor : ${position}`, LOG_INFO);
     }
   }
@@ -154,9 +160,9 @@ export class WASDCamera extends CameraBase {
     const position = vec3.copy(this.position);
 
     // Reconstruct the camera's rotation, and store into the camera matrix.
-    super.matrix = mat4.rotateX(mat4.rotationY(this.yaw), this.pitch); 
-		// super.matrix = mat4.rotateX(mat4.rotationY(this.yaw), -this.pitch);
-		// super.matrix = mat4.rotateY(mat4.rotateX(this.pitch), this.yaw);
+    super.matrix = mat4.rotateX(mat4.rotationY(this.yaw), this.pitch);
+    // super.matrix = mat4.rotateX(mat4.rotationY(this.yaw), -this.pitch);
+    // super.matrix = mat4.rotateY(mat4.rotateX(this.pitch), this.yaw);
 
     // Calculate the new target velocity
     const digital = input.digital;
@@ -195,13 +201,13 @@ export class WASDCamera extends CameraBase {
 // ArcballCamera implements a basic orbiting camera around the world origin
 export class ArcballCamera extends CameraBase {
   // The camera distance from the target
-   distance = 0;
+  distance = 0;
 
   // The current angular velocity
-   angularVelocity = 0;
+  angularVelocity = 0;
 
   // The current rotation axis
-   axis_ = vec3.create();
+  axis_ = vec3.create();
 
   // Returns the rotation axis
   get axis() {
@@ -226,7 +232,7 @@ export class ArcballCamera extends CameraBase {
   // Construtor
   constructor(options) {
     super();
-    if (options && options.position) {
+    if(options && options.position) {
       this.position = options.position;
       this.distance = vec3.len(this.position);
       this.back = vec3.normalize(this.position);
@@ -249,7 +255,7 @@ export class ArcballCamera extends CameraBase {
   update(deltaTime, input) {
     const epsilon = 0.0000001;
 
-    if (input.analog.touching) {
+    if(input.analog.touching) {
       // Currently being dragged.
       this.angularVelocity = 0;
     } else {
@@ -268,7 +274,7 @@ export class ArcballCamera extends CameraBase {
     // Calculate the magnitude of the drag
     const magnitude = vec3.len(crossProduct);
 
-    if (magnitude > epsilon) {
+    if(magnitude > epsilon) {
       // Normalize the crossProduct to get the rotation axis
       this.axis = vec3.scale(crossProduct, 1 / magnitude);
 
@@ -278,7 +284,7 @@ export class ArcballCamera extends CameraBase {
 
     // The rotation around this.axis to apply to the camera matrix this update
     const rotationAngle = this.angularVelocity * deltaTime;
-    if (rotationAngle > epsilon) {
+    if(rotationAngle > epsilon) {
       // Rotate the matrix around axis
       // Note: The rotation is not done as a matrix-matrix multiply as the repeated multiplications
       // will quickly introduce substantial error into the matrix.
@@ -288,7 +294,7 @@ export class ArcballCamera extends CameraBase {
     }
 
     // recalculate `this.position` from `this.back` considering zoom
-    if (input.analog.zoom !== 0) {
+    if(input.analog.zoom !== 0) {
       this.distance *= 1 + input.analog.zoom * this.zoomSpeed;
     }
     this.position = vec3.scale(this.back, this.distance);
@@ -346,7 +352,7 @@ export function createInputHandler(window, canvas) {
   let mouseDown = false;
 
   const setDigital = (e, value) => {
-    switch (e.code) {
+    switch(e.code) {
       case 'KeyW': digital.forward = value; break;
       case 'KeyS': digital.backward = value; break;
       case 'KeyA': digital.left = value; break;
@@ -366,23 +372,23 @@ export function createInputHandler(window, canvas) {
   window.addEventListener('keyup', (e) => setDigital(e, false));
 
   canvas.style.touchAction = 'pinch-zoom';
-  canvas.addEventListener('pointerdown', () => { mouseDown = true; });
-  canvas.addEventListener('pointerup', () => { mouseDown = false; });
+  canvas.addEventListener('pointerdown', () => {mouseDown = true;});
+  canvas.addEventListener('pointerup', () => {mouseDown = false;});
   canvas.addEventListener('pointermove', (e) => {
     mouseDown = e.pointerType === 'mouse' ? (e.buttons & 1) !== 0 : true;
-    if (mouseDown) {
+    if(mouseDown) {
       analog.x += e.movementX / 10;
       analog.y += e.movementY / 10;
     }
   });
 
   canvas.addEventListener('wheel', (e) => {
-    if ((e.buttons & 1) !== 0) {
+    if((e.buttons & 1) !== 0) {
       analog.zoom += Math.sign(e.deltaY);
       e.preventDefault();
       e.stopPropagation();
     }
-  }, { passive: false });
+  }, {passive: false});
 
   return () => {
     // Guard: prevent zero deltas from breaking camera math

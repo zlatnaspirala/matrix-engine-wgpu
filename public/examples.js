@@ -6792,9 +6792,10 @@ class CameraBase {
   set matrix(mat) {
     _wgpuMatrix.mat4.copy(mat, this.matrix_);
   }
-  setProjection(fov = 2 * Math.PI / 5, aspect = 1, near = 0.5, far = 1000) {
-    this.projectionMatrix = _wgpuMatrix.mat4.perspective(fov, aspect, near, far);
-  }
+
+  // setProjection(fov = (2*Math.PI) / 5 , aspect = 1, near = 0.5, far = 1000) {
+  //   this.projectionMatrix = mat4.perspective(fov, aspect, near, far);
+  // }
 
   // Returns the camera view matrix
   get view() {
@@ -6875,6 +6876,9 @@ class WASDCamera extends CameraBase {
   set velocity(vec) {
     _wgpuMatrix.vec3.copy(vec, this.velocity_);
   }
+  setProjection(fov = 2 * Math.PI / 5, aspect = 1, near = 1, far = 1000) {
+    this.projectionMatrix = _wgpuMatrix.mat4.perspective(fov, aspect, near, far);
+  }
   constructor(options) {
     super();
     if (options && (options.position || options.target)) {
@@ -6883,7 +6887,9 @@ class WASDCamera extends CameraBase {
       const forward = _wgpuMatrix.vec3.normalize(_wgpuMatrix.vec3.sub(target, position));
       this.recalculateAngles(forward);
       this.position = position;
-      this.setProjection();
+      this.canvas = options.canvas;
+      this.aspect = options.canvas.width / options.canvas.height;
+      this.setProjection(2 * Math.PI / 5, this.aspect, 1, 1000);
       // console.log(`%cCamera constructor : ${position}`, LOG_INFO);
     }
   }
@@ -7121,7 +7127,9 @@ function createInputHandler(window, canvas) {
         digital.down = value;
         break;
     }
-    e.preventDefault();
+    // if you wanna dosavle all keyboard input for some reason...
+    // add later like new option feature...
+    // e.preventDefault();
     e.stopPropagation();
   };
   window.addEventListener('keydown', e => setDigital(e, true));
@@ -7220,7 +7228,7 @@ class SpotLight {
 
     this.viewMatrix = _wgpuMatrix.mat4.lookAt(position, target, this.up);
     this.projectionMatrix = _wgpuMatrix.mat4.perspective(this.fov * Math.PI / 180, this.aspect, this.near, this.far);
-    this.setProjection = function (fov = 45, aspect = 1.0, near = 0.1, far = 200) {
+    this.setProjection = function (fov = 2 * Math.PI / 5, aspect = 1.0, near = 0.1, far = 200) {
       this.projectionMatrix = _wgpuMatrix.mat4.perspective(fov, aspect, near, far);
     };
     this.updateProjection = function () {
@@ -9035,6 +9043,9 @@ function addRaycastListener(canvasId = "canvas1") {
               rayDirection: rayDirection
             }
           }));
+          if (touchCoordinate.stopOnFirstDetectedHit == true) {
+            break;
+          }
         }
       }
     }
@@ -9107,16 +9118,20 @@ function addRaycastsAABBListener(canvasId = "canvas1") {
         boxMin,
         boxMax
       } = computeWorldVertsAndAABB(object);
-      if (object.raycast.enabled == false) return;
-      if (rayIntersectsAABB(rayOrigin, rayDirection, boxMin, boxMax)) {
-        // console.log('AABB hit:', object.name);
-        canvasDom.dispatchEvent(new CustomEvent('ray.hit.event', {
-          detail: {
-            hitObject: object
-          },
-          rayOrigin: rayOrigin,
-          rayDirection: rayDirection
-        }));
+      if (object.raycast.enabled == true) {
+        if (rayIntersectsAABB(rayOrigin, rayDirection, boxMin, boxMax)) {
+          // console.log('AABB hit:', object.name);
+          canvasDom.dispatchEvent(new CustomEvent('ray.hit.event', {
+            detail: {
+              hitObject: object
+            },
+            rayOrigin: rayOrigin,
+            rayDirection: rayDirection
+          }));
+          if (touchCoordinate.stopOnFirstDetectedHit == true) {
+            break;
+          }
+        }
       }
     }
   });
@@ -10876,7 +10891,8 @@ class MatrixEngineWGPU {
         position: initialCameraPosition
       }),
       WASD: new _engine.WASDCamera({
-        position: initialCameraPosition
+        position: initialCameraPosition,
+        canvas: canvas
       })
     };
     this.label = new _lang.MultiLang();
