@@ -519,7 +519,7 @@ export default class MatrixEngineWGPU {
 
   framePassPerObject = () => {
     let commandEncoder = this.device.createCommandEncoder();
-    if(this.matrixAmmo.rigidBodies.length > 0) this.matrixAmmo.updatePhysics();
+    if(this.matrixAmmo.rigidBodies && this.matrixAmmo.rigidBodies.length > 0) this.matrixAmmo.updatePhysics();
     this.mainRenderBundle.forEach((meItem, index) => {
       if(index === 0) {
         if(meItem.renderPassDescriptor) meItem.renderPassDescriptor.colorAttachments[0].loadOp = 'clear';
