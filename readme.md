@@ -472,7 +472,7 @@ This is static file storage.
 
 ## Proof of Concept
 
-🎲 The first full app example will be a WebGPU-powered **Ultimate Yahtzee** game.
+🎲 The first full app example will be a WebGPU-powered **Jamb 3d deluxe** game.
 
 ---
 
@@ -516,6 +516,6 @@ You may use, modify, and sell projects based on this code — just keep this not
 
 [Full License Text](https://github.com/webgpu/webgpu-samples/blob/main/LICENSE.txt)
 
-Top level main.js instance (Ultimate Yahtzee)
+Top level main.js instance (Jamb 3d deluxe)
 
 ---
