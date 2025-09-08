@@ -79,7 +79,7 @@ var _world = _interopRequireDefault(require("../src/world.js"));
 var _loaderObj = require("../src/engine/loader-obj.js");
 var _utils = require("../src/engine/utils.js");
 var _raycast = require("../src/engine/raycast.js");
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 var loadCameraTexture = function () {
   let cameraTexture = new _world.default({
     useSingleRenderPass: true,
@@ -159,7 +159,7 @@ exports.loadObjFile = void 0;
 var _world = _interopRequireDefault(require("../src/world.js"));
 var _loaderObj = require("../src/engine/loader-obj.js");
 var _utils = require("../src/engine/utils.js");
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 // import {addRaycastsAABBListener} from "../src/engine/raycast.js";
 
 var loadObjFile = function () {
@@ -300,7 +300,7 @@ exports.loadObjsSequence = void 0;
 var _world = _interopRequireDefault(require("../src/world.js"));
 var _loaderObj = require("../src/engine/loader-obj.js");
 var _utils = require("../src/engine/utils.js");
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 var loadObjsSequence = function () {
   let loadObjFile = new _world.default({
     useSingleRenderPass: true,
@@ -388,7 +388,7 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.unlitTextures = void 0;
 var _world = _interopRequireDefault(require("../src/world.js"));
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 var unlitTextures = function () {
   let unlitTextures = new _world.default({
     useSingleRenderPass: false,
@@ -452,7 +452,7 @@ var _world = _interopRequireDefault(require("../src/world.js"));
 var _loaderObj = require("../src/engine/loader-obj.js");
 var _utils = require("../src/engine/utils.js");
 var _raycast = require("../src/engine/raycast.js");
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 // @group(0) @binding(5) var<uniform> postFXMode: u32;
 var loadVideoTexture = function () {
   let videoTexture = new _world.default({
@@ -7188,7 +7188,7 @@ exports.SpotLight = void 0;
 var _wgpuMatrix = require("wgpu-matrix");
 var _vertexShadow = require("../shaders/vertexShadow.wgsl");
 var _behavior = _interopRequireDefault(require("./behavior"));
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 /**
  * @description
  * Spot light with shodow cast.
@@ -8461,7 +8461,7 @@ var _vertex = require("../shaders/vertex.wgsl");
 var _utils = require("./utils");
 var _materials = _interopRequireDefault(require("./materials"));
 var _fragmentVideo = require("../shaders/fragment.video.wgsl");
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 class MEMeshObj extends _materials.default {
   constructor(canvas, device, context, o, inputHandler, globalAmbient) {
     super(device);
@@ -10808,7 +10808,7 @@ var _lang = require("./multilang/lang.js");
 var _sounds = require("./sounds/sounds.js");
 var _loaderObj = require("./engine/loader-obj.js");
 var _lights = require("./engine/lights.js");
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 /**
  * @description
  * Main engine root class.
@@ -11454,7 +11454,7 @@ class MatrixEngineWGPU {
   };
   framePassPerObject = () => {
     let commandEncoder = this.device.createCommandEncoder();
-    if (this.matrixAmmo.rigidBodies.length > 0) this.matrixAmmo.updatePhysics();
+    if (this.matrixAmmo.rigidBodies && this.matrixAmmo.rigidBodies.length > 0) this.matrixAmmo.updatePhysics();
     this.mainRenderBundle.forEach((meItem, index) => {
       if (index === 0) {
         if (meItem.renderPassDescriptor) meItem.renderPassDescriptor.colorAttachments[0].loadOp = 'clear';

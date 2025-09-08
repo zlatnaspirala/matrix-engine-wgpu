@@ -542,4 +542,59 @@ export default class MatrixEngineWGPU {
     this.device.queue.submit([commandEncoder.finish()]);
     requestAnimationFrame(this.frame);
   }
+
+
+
+  // ---------------------------------------
+  // test
+    // Not in use for now
+  addGLB = (o) => {
+    if(typeof o === 'undefined') {
+      var o = {
+        scale: 1,
+        position: {x: 0, y: 0, z: -4},
+        texturesPaths: ['./res/textures/default.png'],
+        rotation: {x: 0, y: 0, z: 0},
+        rotationSpeed: {x: 0, y: 0, z: 0},
+        entityArgPass: this.entityArgPass,
+        cameras: this.cameras,
+        mainCameraParams: this.mainCameraParams
+      }
+    } else {
+      if(typeof o.position === 'undefined') {o.position = {x: 0, y: 0, z: -4}}
+      if(typeof o.rotation === 'undefined') {o.rotation = {x: 0, y: 0, z: 0}}
+      if(typeof o.rotationSpeed === 'undefined') {o.rotationSpeed = {x: 0, y: 0, z: 0}}
+      if(typeof o.texturesPaths === 'undefined') {o.texturesPaths = ['./res/textures/default.png']}
+      if(typeof o.mainCameraParams === 'undefined') {o.mainCameraParams = this.mainCameraParams}
+      if(typeof o.scale === 'undefined') {o.scale = 1;}
+      o.entityArgPass = this.entityArgPass;
+      o.cameras = this.cameras;
+    }
+
+    if(typeof o.physics === 'undefined') {
+      o.physics = {
+        scale: [1, 1, 1],
+        enabled: true,
+        geometry: "Sphere",
+        radius: o.scale,
+        name: o.name,
+        rotation: o.rotation
+      }
+    }
+    if(typeof o.position !== 'undefined') {o.physics.position = o.position;}
+    if(typeof o.physics.enabled === 'undefined') {o.physics.enabled = true}
+    if(typeof o.physics.geometry === 'undefined') {o.physics.geometry = "Sphere"}
+    if(typeof o.physics.radius === 'undefined') {o.physics.radius = o.scale}
+    if(typeof o.physics.mass === 'undefined') {o.physics.mass = 1;}
+    if(typeof o.physics.name === 'undefined') {o.physics.name = o.name;}
+    if(typeof o.physics.scale === 'undefined') {o.physics.scale = o.scale;}
+    if(typeof o.physics.rotation === 'undefined') {o.physics.rotation = o.rotation;}
+
+    let myBall1 = new MEBall(this.canvas, this.device, this.context, o);
+    
+    if(o.physics.enabled == true) {
+      this.matrixAmmo.addPhysics(myBall1, o.physics)
+    }
+    this.mainRenderBundle.push(myBall1);
+  }
 }

@@ -10,7 +10,8 @@
     "empty": "watchify empty.js -p [esmify --noImplicitAny] -o public/empty.js",
     "build-all": "npm run main-worker | npm run examples | npm run main | npm run empty",
     "hosts": "http-server ./public/ -p 3000",
-    "build.demo1": "browserify main.js -p esmify > public/app.js"
+    "build.test": "browserify main.js -p esmify > public/app.js",
+    "test1": "watchify ./examples/bvh-gltf-test.js -p [esmify --noImplicitAny] -o public/app.js"
   },
   "keywords": [
     "3dScene",
@@ -49,10 +50,12 @@
     "browserify": "^17.0.0",
     "esmify": "^2.1.1",
     "watchify": "^4.0.0",
-    "wgpu-matrix": "^2.0.0"
+    "wgpu-matrix": "^2.0.0",
+    "http-server": "^14.1.1"
   },
   "dependencies": {
-    "http-server": "^14.1.1"
+    "bvh-loader": "1.0.0",
+    "gl-matrix": "^3.4.4"
   },
   "peerDependencies": {
     "wgpu-matrix": "^2.0.0"
