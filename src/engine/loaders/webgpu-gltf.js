@@ -559,9 +559,10 @@ export class GLTFTexture {
 }
 
 export class GLBModel {
-  constructor(nodes, skins) {
+  constructor(nodes, skins, skinnedMeshNodes) {
     this.nodes = nodes;
     this.skins = skins;
+    this.skinnedMeshNodes = skinnedMeshNodes;
     this.bvhToGLBMap = null;
   }
 
@@ -695,16 +696,39 @@ export async function uploadGLBModel(buffer, device) {
     skinnedMeshNodes.forEach(n => {
       console.log("Mesh", n.mesh.name, "uses skin index", n.skin);
       // setup bone matrices for this mesh
+        n.sceneUniformBuffer = device.createBuffer({
+        size: 44 * 4, // 44 floats (like your engine scene data)
+        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+      });
+
     });
   }
 
-  return new GLBModel(nodes, skins);
+  // // Attach engine-style scene uniform buffers to GLB nodes with meshes
+  // for(const node of nodes) {
+  //   if(node.mesh) {
+
+  //     console.log('create  node.sceneUniformBuffer ');
+  //     node.sceneUniformBuffer = device.createBuffer({
+  //       size: 44 * 4, // 44 floats (like your engine scene data)
+  //       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+  //     });
+
+  //     // Optional: create bind group here if your pipeline needs it
+  //     // node.sceneBindGroup = device.createBindGroup({
+  //     //   layout: yourSceneBindGroupLayout,
+  //     //   entries: [{ binding: 0, resource: { buffer: node.sceneUniformBuffer } }],
+  //     // });
+  //   }
+  // }
+
+  return new GLBModel(nodes, skins, skinnedMeshNodes);
 }
 
 export function createBVHToGLBMap(glb, bvh) {
   const map = {};
-  for (const node of glb.nodes) {
-    if (bvh.joints[node.name]) {
+  for(const node of glb.nodes) {
+    if(bvh.joints[node.name]) {
       map[node.name] = node;
     }
   }
@@ -712,9 +736,9 @@ export function createBVHToGLBMap(glb, bvh) {
 }
 
 export function applyBVHToGLB(glb, bvhBones, device) {
-  for (const nodeName in bvhBones) {
+  for(const nodeName in bvhBones) {
     const boneNode = glb.bvhToGLBMap[nodeName];
-    if (!boneNode) continue;
+    if(!boneNode) continue;
 
     const bvhBone = bvhBones[nodeName];
     boneNode.transform = bvhBone.worldMatrix;

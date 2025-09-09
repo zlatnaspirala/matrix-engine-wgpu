@@ -83,12 +83,6 @@ export default class MEMeshObj extends Materials {
         mappedAtCreation: true,
       });
       {
-        // const mapping = new Float32Array(this.vertexBuffer.getMappedRange());
-        // // for(let i = 0;i < this.mesh.vertices.length;++i) {
-        // //   mapping.set(this.mesh.vertices[i], 6 * i);
-        // //   mapping.set(this.mesh.normals[i], 6 * i + 3);
-        // // }
-        // this.vertexBuffer.unmap();
         new Float32Array(this.vertexBuffer.getMappedRange()).set(this.mesh.vertices);
         this.vertexBuffer.unmap();
       }
@@ -259,13 +253,30 @@ export default class MEMeshObj extends Materials {
           // Global ambient + padding
           sceneData.set([this.globalAmbient[0], this.globalAmbient[1], this.globalAmbient[2], 0.0], 40);
 
-          device.queue.writeBuffer(
-            mesh.sceneUniformBuffer,
-            0,
-            sceneData.buffer,
-            sceneData.byteOffset,
-            sceneData.byteLength
-          );
+
+
+          if(mesh.glb && mesh.glb.skinnedMeshNodes) {
+            console.log('mesh 1111', mesh.glb.skinnedMeshNodes)
+
+            mesh.glb.skinnedMeshNodes.forEach((skinnedMeshNode) => {
+            device.queue.writeBuffer(
+              skinnedMeshNode.sceneUniformBuffer,
+              0,
+              sceneData.buffer,
+              sceneData.byteOffset,
+              sceneData.byteLength
+            );
+          })
+          } else {
+
+            device.queue.writeBuffer(
+              mesh.sceneUniformBuffer,
+              0,
+              sceneData.buffer,
+              sceneData.byteOffset,
+              sceneData.byteLength
+            );
+          }
         }
       };
 

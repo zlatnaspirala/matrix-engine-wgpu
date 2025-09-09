@@ -53,11 +53,13 @@ let TEST_ANIM = new MatrixEngineWGPU({
       });
 
       // test 
-      glbFile.bvhToGLBMap = applyBVHToGLB(glbFile, BVHANIM, TEST_ANIM.device);
+      // glbFile.bvhToGLBMap = applyBVHToGLB(glbFile, BVHANIM, TEST_ANIM.device);
       // applyBVHToGLB(glbFile, BVHANIM, TEST_ANIM.device)
 
       const bvhPlayer = new BVHPlayer(BVHANIM, glbFile);
-      console.log(`  bvhPlayer: ${bvhPlayer}`);
+      console.log(`bvhPlayer!!!!!: ${bvhPlayer}`);
+
+       TEST_ANIM.addGlbObj({name: 'firstGlb'}, bvhPlayer);
 
     });
   })

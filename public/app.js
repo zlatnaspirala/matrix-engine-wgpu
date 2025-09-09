@@ -61,11 +61,14 @@ let TEST_ANIM = new _world.default({
       });
 
       // test 
-      glbFile.bvhToGLBMap = (0, _bvh.applyBVHToGLB)(glbFile, BVHANIM, TEST_ANIM.device);
+      // glbFile.bvhToGLBMap = applyBVHToGLB(glbFile, BVHANIM, TEST_ANIM.device);
       // applyBVHToGLB(glbFile, BVHANIM, TEST_ANIM.device)
 
       const bvhPlayer = new _bvh.BVHPlayer(BVHANIM, glbFile);
-      console.log(`  bvhPlayer: ${bvhPlayer}`);
+      console.log(`bvhPlayer!!!!!: ${bvhPlayer}`);
+      TEST_ANIM.addGlbObj({
+        name: 'firstGlb'
+      }, bvhPlayer);
     });
   });
   function onGround(m) {
@@ -381,13 +384,41 @@ class MEBvhJoint {
   }
   matrixFromKeyframe(frameData) {
     const m = createIdentityMatrix();
-    // Apply translation first if it’s the root
-    if (this.channels.includes('Xposition')) {
-      m.translate(frameData[0], frameData[1], frameData[2]);
+    let t = [0, 0, 0];
+    let r = [0, 0, 0];
+    for (let i = 0; i < this.channels.length; i++) {
+      const channel = this.channels[i];
+      const value = frameData[this.channelOffset + i];
+      // channelOffset = index into frameData where this joint’s values start
+
+      switch (channel) {
+        case 'Xposition':
+          t[0] = value;
+          break;
+        case 'Yposition':
+          t[1] = value;
+          break;
+        case 'Zposition':
+          t[2] = value;
+          break;
+        case 'Xrotation':
+          r[0] = degToRad(value);
+          break;
+        case 'Yrotation':
+          r[1] = degToRad(value);
+          break;
+        case 'Zrotation':
+          r[2] = degToRad(value);
+          break;
+      }
     }
-    // Apply rotation channels
-    // frameData indices depend on your BVH format
-    m.rotateXYZ(degToRad(frameData[3]), degToRad(frameData[4]), degToRad(frameData[5]));
+
+    // Apply translation
+    mat4.translate(m, t, m);
+    // Apply rotations in BVH order (important!)
+    mat4.rotateX(m, r[0], m);
+    mat4.rotateY(m, r[1], m);
+    mat4.rotateZ(m, r[2], m);
     return m;
   }
 }
@@ -16494,9 +16525,10 @@ class GLTFTexture {
 }
 exports.GLTFTexture = GLTFTexture;
 class GLBModel {
-  constructor(nodes, skins) {
+  constructor(nodes, skins, skinnedMeshNodes) {
     this.nodes = nodes;
     this.skins = skins;
+    this.skinnedMeshNodes = skinnedMeshNodes;
     this.bvhToGLBMap = null;
   }
   buildRenderBundles(device, shaderCache, viewParamsLayout, viewParamsBindGroup, swapChainFormat) {
@@ -16619,9 +16651,33 @@ async function uploadGLBModel(buffer, device) {
     skinnedMeshNodes.forEach(n => {
       console.log("Mesh", n.mesh.name, "uses skin index", n.skin);
       // setup bone matrices for this mesh
+      n.sceneUniformBuffer = device.createBuffer({
+        size: 44 * 4,
+        // 44 floats (like your engine scene data)
+        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+      });
     });
   }
-  return new GLBModel(nodes, skins);
+
+  // // Attach engine-style scene uniform buffers to GLB nodes with meshes
+  // for(const node of nodes) {
+  //   if(node.mesh) {
+
+  //     console.log('create  node.sceneUniformBuffer ');
+  //     node.sceneUniformBuffer = device.createBuffer({
+  //       size: 44 * 4, // 44 floats (like your engine scene data)
+  //       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+  //     });
+
+  //     // Optional: create bind group here if your pipeline needs it
+  //     // node.sceneBindGroup = device.createBindGroup({
+  //     //   layout: yourSceneBindGroupLayout,
+  //     //   entries: [{ binding: 0, resource: { buffer: node.sceneUniformBuffer } }],
+  //     // });
+  //   }
+  // }
+
+  return new GLBModel(nodes, skins, skinnedMeshNodes);
 }
 function createBVHToGLBMap(glb, bvh) {
   const map = {};
@@ -17325,12 +17381,6 @@ class MEMeshObj extends _materials.default {
         mappedAtCreation: true
       });
       {
-        // const mapping = new Float32Array(this.vertexBuffer.getMappedRange());
-        // // for(let i = 0;i < this.mesh.vertices.length;++i) {
-        // //   mapping.set(this.mesh.vertices[i], 6 * i);
-        // //   mapping.set(this.mesh.normals[i], 6 * i + 3);
-        // // }
-        // this.vertexBuffer.unmap();
         new Float32Array(this.vertexBuffer.getMappedRange()).set(this.mesh.vertices);
         this.vertexBuffer.unmap();
       }
@@ -17477,7 +17527,14 @@ class MEMeshObj extends _materials.default {
 
           // Global ambient + padding
           sceneData.set([this.globalAmbient[0], this.globalAmbient[1], this.globalAmbient[2], 0.0], 40);
-          device.queue.writeBuffer(mesh.sceneUniformBuffer, 0, sceneData.buffer, sceneData.byteOffset, sceneData.byteLength);
+          if (mesh.glb && mesh.glb.skinnedMeshNodes) {
+            console.log('mesh 1111', mesh.glb.skinnedMeshNodes);
+            mesh.glb.skinnedMeshNodes.forEach(skinnedMeshNode => {
+              device.queue.writeBuffer(skinnedMeshNode.sceneUniformBuffer, 0, sceneData.buffer, sceneData.byteOffset, sceneData.byteLength);
+            });
+          } else {
+            device.queue.writeBuffer(mesh.sceneUniformBuffer, 0, sceneData.buffer, sceneData.byteOffset, sceneData.byteLength);
+          }
         }
       };
       this.getModelMatrix = pos => {
@@ -19981,7 +20038,7 @@ class MatrixEngineWGPU {
       this.device.queue.submit([commandEncoder.finish()]);
       requestAnimationFrame(this.frame);
     } catch (err) {
-      console.log('%cLoop(err):' + err, _utils.LOG_WARN);
+      console.log('%cLoop(err):' + err + " info : " + err.stack, _utils.LOG_WARN);
       requestAnimationFrame(this.frame);
     }
   };
@@ -20013,82 +20070,65 @@ class MatrixEngineWGPU {
   // ---------------------------------------
   // test
   // Not in use for now
-  addGLB = o => {
-    if (typeof o === 'undefined') {
-      var o = {
-        scale: 1,
-        position: {
-          x: 0,
-          y: 0,
-          z: -4
-        },
-        texturesPaths: ['./res/textures/default.png'],
-        rotation: {
-          x: 0,
-          y: 0,
-          z: 0
-        },
-        rotationSpeed: {
-          x: 0,
-          y: 0,
-          z: 0
-        },
-        entityArgPass: this.entityArgPass,
-        cameras: this.cameras,
-        mainCameraParams: this.mainCameraParams
-      };
-    } else {
-      if (typeof o.position === 'undefined') {
-        o.position = {
-          x: 0,
-          y: 0,
-          z: -4
-        };
-      }
-      if (typeof o.rotation === 'undefined') {
-        o.rotation = {
-          x: 0,
-          y: 0,
-          z: 0
-        };
-      }
-      if (typeof o.rotationSpeed === 'undefined') {
-        o.rotationSpeed = {
-          x: 0,
-          y: 0,
-          z: 0
-        };
-      }
-      if (typeof o.texturesPaths === 'undefined') {
-        o.texturesPaths = ['./res/textures/default.png'];
-      }
-      if (typeof o.mainCameraParams === 'undefined') {
-        o.mainCameraParams = this.mainCameraParams;
-      }
-      if (typeof o.scale === 'undefined') {
-        o.scale = 1;
-      }
-      o.entityArgPass = this.entityArgPass;
-      o.cameras = this.cameras;
+
+  addGlbObj = (o, bhvPlayer, clearColor = this.options.clearColor) => {
+    if (typeof o.name === 'undefined') {
+      o.name = (0, _utils.genName)(9);
     }
+    if (typeof o.position === 'undefined') {
+      o.position = {
+        x: 0,
+        y: 0,
+        z: -4
+      };
+    }
+    if (typeof o.rotation === 'undefined') {
+      o.rotation = {
+        x: 0,
+        y: 0,
+        z: 0
+      };
+    }
+    if (typeof o.rotationSpeed === 'undefined') {
+      o.rotationSpeed = {
+        x: 0,
+        y: 0,
+        z: 0
+      };
+    }
+    if (typeof o.texturesPaths === 'undefined') {
+      o.texturesPaths = ['./res/textures/default.png'];
+    }
+    if (typeof o.mainCameraParams === 'undefined') {
+      o.mainCameraParams = this.mainCameraParams;
+    }
+    if (typeof o.scale === 'undefined') {
+      o.scale = [1, 1, 1];
+    }
+    if (typeof o.raycast === 'undefined') {
+      o.raycast = {
+        enabled: false,
+        radius: 2
+      };
+    }
+    o.entityArgPass = this.entityArgPass;
+    o.cameras = this.cameras;
     if (typeof o.physics === 'undefined') {
       o.physics = {
         scale: [1, 1, 1],
         enabled: true,
         geometry: "Sphere",
-        radius: o.scale,
+        //                   must be fixed<<
+        radius: typeof o.scale == Number ? o.scale : o.scale[0],
         name: o.name,
         rotation: o.rotation
       };
-    }
-    if (typeof o.position !== 'undefined') {
-      o.physics.position = o.position;
     }
     if (typeof o.physics.enabled === 'undefined') {
       o.physics.enabled = true;
     }
     if (typeof o.physics.geometry === 'undefined') {
-      o.physics.geometry = "Sphere";
+      o.physics.geometry = "Cube";
     }
     if (typeof o.physics.radius === 'undefined') {
       o.physics.radius = o.scale;
@@ -20105,11 +20145,37 @@ class MatrixEngineWGPU {
     if (typeof o.physics.rotation === 'undefined') {
       o.physics.rotation = o.rotation;
     }
-    let myBall1 = new _ball.default(this.canvas, this.device, this.context, o);
-    if (o.physics.enabled == true) {
-      this.matrixAmmo.addPhysics(myBall1, o.physics);
+    o.physics.position = o.position;
+    if (typeof o.objAnim == 'undefined' || typeof o.objAnim == null) {
+      o.objAnim = null;
+    } else {
+      if (typeof o.objAnim.animations !== 'undefined') {
+        o.objAnim.play = _loaderObj.play;
+      }
+      // no need for single test it in future
+      o.objAnim.meshList = o.objAnim.meshList;
+      if (typeof o.mesh === 'undefined') {
+        o.mesh = o.objAnim.meshList[0];
+        console.info('objSeq animation is active.');
+      }
+      // scale for all second option!
+      o.objAnim.scaleAll = function (s) {
+        for (var k in this.meshList) {
+          console.log('SCALE meshList');
+          this.meshList[k].setScale(s);
+        }
+      };
     }
-    this.mainRenderBundle.push(myBall1);
+    // let myMesh1 = new MEMeshObj(this.canvas, this.device, this.context, o, this.inputHandler, this.globalAmbient);
+
+    let myMesh1 = bhvPlayer;
+    myMesh1.spotlightUniformBuffer = this.spotlightUniformBuffer;
+    myMesh1.clearColor = clearColor;
+
+    // if(o.physics.enabled == true) {
+    //   this.matrixAmmo.addPhysics(myMesh1, o.physics)
+    // }
+    this.mainRenderBundle.push(myMesh1);
   };
 }
 exports.default = MatrixEngineWGPU;

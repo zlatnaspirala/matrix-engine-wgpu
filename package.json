@@ -1,6 +1,6 @@
 {
   "name": "matrix-engine-wgpu",
-  "version": "1.4.8",
+  "version": "1.4.9",
   "description": "Fixed shadows casting vs camera/video texture, webGPU powered pwa application. Crazy fast rendering with AmmoJS physics support. Simple raycaster hit object added.",
   "main": "index.js",
   "scripts": {
@@ -12,6 +12,23 @@
     "hosts": "http-server ./public/ -p 3000",
     "build.test": "browserify main.js -p esmify > public/app.js",
     "test1": "watchify ./examples/bvh-gltf-test.js -p [esmify --noImplicitAny] -o public/app.js"
+  },
+  "author": "Nikola Lukic",
+  "license": "MIT",
+  "devDependencies": {
+    "browser-resolve": "^2.0.0",
+    "browserify": "^17.0.0",
+    "esmify": "^2.1.1",
+    "watchify": "^4.0.0",
+    "wgpu-matrix": "^2.0.0",
+    "http-server": "^14.1.1"
+  },
+  "dependencies": {
+    "bvh-loader": "1.0.1",
+    "gl-matrix": "^3.4.4"
+  },
+  "peerDependencies": {
+    "wgpu-matrix": "^2.0.0"
   },
   "keywords": [
     "3dScene",
@@ -42,22 +59,5 @@
     "hit-object",
     "webgpu-obj-loader",
     "webgpu-fps"
-  ],
-  "author": "Nikola Lukic",
-  "license": "MIT",
-  "devDependencies": {
-    "browser-resolve": "^2.0.0",
-    "browserify": "^17.0.0",
-    "esmify": "^2.1.1",
-    "watchify": "^4.0.0",
-    "wgpu-matrix": "^2.0.0",
-    "http-server": "^14.1.1"
-  },
-  "dependencies": {
-    "bvh-loader": "1.0.0",
-    "gl-matrix": "^3.4.4"
-  },
-  "peerDependencies": {
-    "wgpu-matrix": "^2.0.0"
-  }
+  ]
 }

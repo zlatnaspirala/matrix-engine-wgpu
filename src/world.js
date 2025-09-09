@@ -512,7 +512,7 @@ export default class MatrixEngineWGPU {
       this.device.queue.submit([commandEncoder.finish()]);
       requestAnimationFrame(this.frame);
     } catch(err) {
-      console.log('%cLoop(err):' + err, LOG_WARN)
+      console.log('%cLoop(err):' + err + " info : " + err.stack, LOG_WARN)
       requestAnimationFrame(this.frame);
     }
   }
@@ -548,53 +548,67 @@ export default class MatrixEngineWGPU {
   // ---------------------------------------
   // test
     // Not in use for now
-  addGLB = (o) => {
-    if(typeof o === 'undefined') {
-      var o = {
-        scale: 1,
-        position: {x: 0, y: 0, z: -4},
-        texturesPaths: ['./res/textures/default.png'],
-        rotation: {x: 0, y: 0, z: 0},
-        rotationSpeed: {x: 0, y: 0, z: 0},
-        entityArgPass: this.entityArgPass,
-        cameras: this.cameras,
-        mainCameraParams: this.mainCameraParams
-      }
-    } else {
-      if(typeof o.position === 'undefined') {o.position = {x: 0, y: 0, z: -4}}
-      if(typeof o.rotation === 'undefined') {o.rotation = {x: 0, y: 0, z: 0}}
-      if(typeof o.rotationSpeed === 'undefined') {o.rotationSpeed = {x: 0, y: 0, z: 0}}
-      if(typeof o.texturesPaths === 'undefined') {o.texturesPaths = ['./res/textures/default.png']}
-      if(typeof o.mainCameraParams === 'undefined') {o.mainCameraParams = this.mainCameraParams}
-      if(typeof o.scale === 'undefined') {o.scale = 1;}
-      o.entityArgPass = this.entityArgPass;
-      o.cameras = this.cameras;
-    }
-
+ 
+  addGlbObj = (o, bhvPlayer, clearColor = this.options.clearColor) => {
+    if(typeof o.name === 'undefined') {o.name = genName(9)}
+    if(typeof o.position === 'undefined') {o.position = {x: 0, y: 0, z: -4}}
+    if(typeof o.rotation === 'undefined') {o.rotation = {x: 0, y: 0, z: 0}}
+    if(typeof o.rotationSpeed === 'undefined') {o.rotationSpeed = {x: 0, y: 0, z: 0}}
+    if(typeof o.texturesPaths === 'undefined') {o.texturesPaths = ['./res/textures/default.png']}
+    if(typeof o.mainCameraParams === 'undefined') {o.mainCameraParams = this.mainCameraParams}
+    if(typeof o.scale === 'undefined') {o.scale = [1, 1, 1];}
+    if(typeof o.raycast === 'undefined') {o.raycast = {enabled: false, radius: 2}}
+    o.entityArgPass = this.entityArgPass;
+    o.cameras = this.cameras;
     if(typeof o.physics === 'undefined') {
       o.physics = {
         scale: [1, 1, 1],
         enabled: true,
-        geometry: "Sphere",
-        radius: o.scale,
+        geometry: "Sphere",//                   must be fixed<<
+        radius: (typeof o.scale == Number ? o.scale : o.scale[0]),
         name: o.name,
         rotation: o.rotation
       }
     }
-    if(typeof o.position !== 'undefined') {o.physics.position = o.position;}
     if(typeof o.physics.enabled === 'undefined') {o.physics.enabled = true}
-    if(typeof o.physics.geometry === 'undefined') {o.physics.geometry = "Sphere"}
+    if(typeof o.physics.geometry === 'undefined') {o.physics.geometry = "Cube"}
     if(typeof o.physics.radius === 'undefined') {o.physics.radius = o.scale}
     if(typeof o.physics.mass === 'undefined') {o.physics.mass = 1;}
     if(typeof o.physics.name === 'undefined') {o.physics.name = o.name;}
     if(typeof o.physics.scale === 'undefined') {o.physics.scale = o.scale;}
     if(typeof o.physics.rotation === 'undefined') {o.physics.rotation = o.rotation;}
-
-    let myBall1 = new MEBall(this.canvas, this.device, this.context, o);
-    
-    if(o.physics.enabled == true) {
-      this.matrixAmmo.addPhysics(myBall1, o.physics)
+    o.physics.position = o.position;
+    if(typeof o.objAnim == 'undefined' || typeof o.objAnim == null) {
+      o.objAnim = null;
+    } else {
+      if(typeof o.objAnim.animations !== 'undefined') {
+        o.objAnim.play = play;
+      }
+      // no need for single test it in future
+      o.objAnim.meshList = o.objAnim.meshList;
+      if(typeof o.mesh === 'undefined') {
+        o.mesh = o.objAnim.meshList[0];
+        console.info('objSeq animation is active.');
+      }
+      // scale for all second option!
+      o.objAnim.scaleAll = function(s) {
+        for(var k in this.meshList) {
+          console.log('SCALE meshList');
+          this.meshList[k].setScale(s);
+        }
+      }
     }
-    this.mainRenderBundle.push(myBall1);
+    // let myMesh1 = new MEMeshObj(this.canvas, this.device, this.context, o, this.inputHandler, this.globalAmbient);
+
+    let myMesh1 = bhvPlayer;
+    myMesh1.spotlightUniformBuffer = this.spotlightUniformBuffer;
+    myMesh1.clearColor = clearColor;
+
+
+
+    // if(o.physics.enabled == true) {
+    //   this.matrixAmmo.addPhysics(myMesh1, o.physics)
+    // }
+    this.mainRenderBundle.push(myMesh1);
   }
 }
