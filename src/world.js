@@ -10,6 +10,7 @@ import {MultiLang} from "./multilang/lang.js";
 import {MatrixSounds} from "./sounds/sounds.js";
 import {play} from "./engine/loader-obj.js";
 import {SpotLight} from "./engine/lights.js";
+import {BVHPlayer} from "./engine/loaders/bvh.js";
 
 /**
  * @description
@@ -481,7 +482,8 @@ export default class MatrixEngineWGPU {
         for(const [meshIndex, mesh] of this.mainRenderBundle.entries()) {
           if(mesh.videoIsReady == 'NONE') {
             shadowPass.setBindGroup(0, light.getShadowBindGroup(mesh, meshIndex));
-            shadowPass.setBindGroup(1, mesh.modelBindGroup);
+            // shadowPass.setBindGroup(1, mesh.modelBindGroup); // ORI 
+            shadowPass.setBindGroup(1, light.getShadowBindGroup_bones(meshIndex)); // ORI 
             mesh.drawShadows(shadowPass, light);
           }
         }
@@ -547,9 +549,9 @@ export default class MatrixEngineWGPU {
 
   // ---------------------------------------
   // test
-    // Not in use for now
- 
-  addGlbObj = (o, bhvPlayer, clearColor = this.options.clearColor) => {
+  // Not in use for now
+
+  addGlbObj = (o, BVHANIM, glbFile, clearColor = this.options.clearColor) => {
     if(typeof o.name === 'undefined') {o.name = genName(9)}
     if(typeof o.position === 'undefined') {o.position = {x: 0, y: 0, z: -4}}
     if(typeof o.rotation === 'undefined') {o.rotation = {x: 0, y: 0, z: 0}}
@@ -599,16 +601,14 @@ export default class MatrixEngineWGPU {
       }
     }
     // let myMesh1 = new MEMeshObj(this.canvas, this.device, this.context, o, this.inputHandler, this.globalAmbient);
-
-    let myMesh1 = bhvPlayer;
-    myMesh1.spotlightUniformBuffer = this.spotlightUniformBuffer;
-    myMesh1.clearColor = clearColor;
-
-
+    const bvhPlayer = new BVHPlayer(o, BVHANIM, glbFile, this.device, this.inputHandler, this.globalAmbient);
+    console.log(`bvhPlayer!!!!!: ${bvhPlayer}`);
+    bvhPlayer.spotlightUniformBuffer = this.spotlightUniformBuffer;
+    bvhPlayer.clearColor = clearColor;
 
     // if(o.physics.enabled == true) {
     //   this.matrixAmmo.addPhysics(myMesh1, o.physics)
     // }
-    this.mainRenderBundle.push(myMesh1);
+    this.mainRenderBundle.push(bvhPlayer);
   }
 }

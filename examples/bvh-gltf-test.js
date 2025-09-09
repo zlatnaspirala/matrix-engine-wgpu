@@ -56,10 +56,7 @@ let TEST_ANIM = new MatrixEngineWGPU({
       // glbFile.bvhToGLBMap = applyBVHToGLB(glbFile, BVHANIM, TEST_ANIM.device);
       // applyBVHToGLB(glbFile, BVHANIM, TEST_ANIM.device)
 
-      const bvhPlayer = new BVHPlayer(BVHANIM, glbFile);
-      console.log(`bvhPlayer!!!!!: ${bvhPlayer}`);
-
-       TEST_ANIM.addGlbObj({name: 'firstGlb'}, bvhPlayer);
+       TEST_ANIM.addGlbObj({name: 'firstGlb'}, BVHANIM, glbFile);
 
     });
   })
@@ -81,6 +78,8 @@ let TEST_ANIM = new MatrixEngineWGPU({
       },
       // raycast: { enabled: true , radius: 2 }
     })
+
+    // alert('yes')
   }
 
 })

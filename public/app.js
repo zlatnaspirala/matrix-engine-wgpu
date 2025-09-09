@@ -64,11 +64,9 @@ let TEST_ANIM = new _world.default({
       // glbFile.bvhToGLBMap = applyBVHToGLB(glbFile, BVHANIM, TEST_ANIM.device);
       // applyBVHToGLB(glbFile, BVHANIM, TEST_ANIM.device)
 
-      const bvhPlayer = new _bvh.BVHPlayer(BVHANIM, glbFile);
-      console.log(`bvhPlayer!!!!!: ${bvhPlayer}`);
       TEST_ANIM.addGlbObj({
         name: 'firstGlb'
-      }, bvhPlayer);
+      }, BVHANIM, glbFile);
     });
   });
   function onGround(m) {
@@ -99,6 +97,8 @@ let TEST_ANIM = new _world.default({
       }
       // raycast: { enabled: true , radius: 2 }
     });
+
+    // alert('yes')
   }
 });
 // just for dev
@@ -15315,7 +15315,7 @@ class SpotLight {
       }
     };
     this.uniformBufferBindGroupLayout = this.device.createBindGroupLayout({
-      label: 'modelBindGroup in light',
+      label: 'uniformBufferBindGroupLayout in light',
       entries: [{
         binding: 0,
         visibility: GPUShaderStage.VERTEX,
@@ -15325,6 +15325,7 @@ class SpotLight {
       }]
     });
     this.shadowBindGroupContainer = [];
+    this.shadowBindGroup = [];
     this.getShadowBindGroup = (mesh, index) => {
       if (this.shadowBindGroupContainer[index]) {
         return this.shadowBindGroupContainer[index];
@@ -15341,7 +15342,31 @@ class SpotLight {
       });
       return this.shadowBindGroupContainer[index];
     };
+
+    // test
+    this.getShadowBindGroup_bones = index => {
+      if (this.shadowBindGroup[index]) {
+        return this.shadowBindGroup[index];
+      }
+      this.modelUniformBuffer = this.device.createBuffer({
+        size: 4 * 16,
+        // 4x4 matrix
+        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+      });
+      this.shadowBindGroup[index] = this.device.createBindGroup({
+        label: 'model BindGroupForShadow in light',
+        layout: this.uniformBufferBindGroupLayout,
+        entries: [{
+          binding: 0,
+          resource: {
+            buffer: this.modelUniformBuffer
+          }
+        }]
+      });
+      return this.shadowBindGroupContainer[index];
+    };
     this.modelBindGroupLayout = this.device.createBindGroupLayout({
+      label: 'modelBindGroupLayout in light [one bindings]',
       entries: [{
         binding: 0,
         visibility: GPUShaderStage.VERTEX,
@@ -15353,7 +15378,7 @@ class SpotLight {
     this.shadowPipeline = this.device.createRenderPipeline({
       label: 'shadowPipeline per light',
       layout: this.device.createPipelineLayout({
-        label: 'createPipelineLayout - uniformBufferBindGroupLayout',
+        label: 'createPipelineLayout - uniformBufferBindGroupLayout light',
         bindGroupLayouts: [this.uniformBufferBindGroupLayout, this.modelBindGroupLayout]
       }),
       vertex: {
@@ -17358,6 +17383,43 @@ class MEMeshObj extends _materials.default {
     this.rotation.rotationSpeed.y = o.rotationSpeed.y;
     this.rotation.rotationSpeed.z = o.rotationSpeed.z;
     this.scale = o.scale;
+
+    // new dummy for skin mesh
+    // in MeshObj constructor or setup
+    if (!this.joints) {
+      // Joints data (all zeros for dummy, size = numVerts * 4)
+      const jointsData = new Uint32Array(this.mesh.vertices.length * 4);
+      const jointsBuffer = this.device.createBuffer({
+        size: jointsData.byteLength,
+        usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+        mappedAtCreation: true
+      });
+      new Uint32Array(jointsBuffer.getMappedRange()).set(jointsData);
+      jointsBuffer.unmap();
+      this.joints = {
+        data: jointsData,
+        buffer: jointsBuffer,
+        stride: 16 // vec4<u32>
+      };
+
+      // Weights data (default = bone0 has weight=1.0)
+      const weightsData = new Float32Array(this.mesh.vertices.length * 4);
+      for (let i = 0; i < this.mesh.vertices.length; i++) {
+        weightsData[i * 4 + 0] = 1.0;
+      }
+      const weightsBuffer = this.device.createBuffer({
+        size: weightsData.byteLength,
+        usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+        mappedAtCreation: true
+      });
+      new Float32Array(weightsBuffer.getMappedRange()).set(weightsData);
+      weightsBuffer.unmap();
+      this.weights = {
+        data: weightsData,
+        buffer: weightsBuffer,
+        stride: 16 // vec4<f32>
+      };
+    }
     this.runProgram = () => {
       return new Promise(async resolve => {
         this.shadowDepthTextureSize = 1024;
@@ -17444,6 +17506,26 @@ class MEMeshObj extends _materials.default {
           offset: 0,
           format: "float32x2"
         }]
+      },
+      // new joint indices
+      {
+        arrayStride: 4 * 4,
+        // vec4<u32> = 4 * 4 bytes
+        attributes: [{
+          format: 'uint32x4',
+          offset: 0,
+          shaderLocation: 3
+        }]
+      },
+      // new weights
+      {
+        arrayStride: 4 * 4,
+        // vec4<f32> = 4 * 4 bytes
+        attributes: [{
+          format: 'float32x4',
+          offset: 0,
+          shaderLocation: 4
+        }]
       }];
       this.primitive = {
         topology: 'triangle-list',
@@ -17474,7 +17556,25 @@ class MEMeshObj extends _materials.default {
           buffer: {
             type: 'uniform'
           }
+        }, {
+          binding: 1,
+          visibility: GPUShaderStage.VERTEX,
+          buffer: {
+            type: 'uniform'
+          }
         }]
+      });
+
+      // dummy for non skin mesh like this class
+
+      function alignTo256(n) {
+        return Math.ceil(n / 256) * 256;
+      }
+      let MAX_BONES = 100;
+      this.MAX_BONES = MAX_BONES;
+      this.bonesBuffer = device.createBuffer({
+        size: alignTo256(64 * MAX_BONES),
+        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
       });
       this.modelBindGroup = this.device.createBindGroup({
         label: 'modelBindGroup in mesh',
@@ -17484,8 +17584,14 @@ class MEMeshObj extends _materials.default {
           resource: {
             buffer: this.modelUniformBuffer
           }
+        }, {
+          binding: 1,
+          resource: {
+            buffer: this.bonesBuffer
+          }
         }]
       });
+      this.updateBones();
       this.mainPassBindGroupLayout = this.device.createBindGroupLayout({
         entries: [{
           binding: 0,
@@ -17568,6 +17674,22 @@ class MEMeshObj extends _materials.default {
         this.updateMeshListBuffers();
       }
     });
+  }
+  updateBones() {
+    const bones = new Float32Array(this.MAX_BONES * 16);
+    for (let i = 0; i < this.MAX_BONES; i++) {
+      // identity matrices
+      bones.set([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1], i * 16);
+    }
+    this.device.queue.writeBuffer(this.bonesBuffer, 0, bones);
+    const weights = new Float32Array(this.mesh.vertices.length * 4); // vec4<f32>
+    for (let i = 0; i < this.mesh.vertices.length; i++) {
+      weights[i * 4 + 0] = 1.0; // bone 0 full weight
+      weights[i * 4 + 1] = 0.0;
+      weights[i * 4 + 2] = 0.0;
+      weights[i * 4 + 3] = 0.0;
+    }
+    this.device.queue.writeBuffer(this.weights.buffer, 0, weights);
   }
   setupPipeline = () => {
     this.createBindGroupForRender();
@@ -17685,6 +17807,14 @@ class MEMeshObj extends _materials.default {
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setVertexBuffer(1, this.vertexNormalsBuffer);
     pass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
+
+    // -----------------------------------------------------------
+    if (this.joints) {
+      pass.setVertexBuffer(3, this.joints.buffer); // new dummy
+      pass.setVertexBuffer(4, this.weights.buffer); // new dummy
+    }
+    // -----------------------------------------------------------
+
     pass.setIndexBuffer(this.indexBuffer, 'uint16');
     pass.drawIndexed(this.indexCount);
   };
@@ -17721,6 +17851,13 @@ class MEMeshObj extends _materials.default {
     shadowPass.setVertexBuffer(0, this.vertexBuffer);
     shadowPass.setVertexBuffer(1, this.vertexNormalsBuffer);
     shadowPass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
+
+    // dummy joints & weights for shadow pass
+    // if(this.joints && this.weights) {
+    //   shadowPass.setVertexBuffer(3, this.joints.buffer);
+    //   shadowPass.setVertexBuffer(4, this.weights.buffer);
+    // }
+
     shadowPass.setIndexBuffer(this.indexBuffer, 'uint16');
     shadowPass.drawIndexed(this.indexCount);
   };
@@ -19241,7 +19378,11 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.vertexWGSL = void 0;
-let vertexWGSL = exports.vertexWGSL = `struct Scene {
+let vertexWGSL = exports.vertexWGSL = `
+
+const MAX_BONES = 100u;
+
+struct Scene {
   lightViewProjMatrix: mat4x4f,
   cameraViewProjMatrix: mat4x4f,
   lightPos: vec3f,
@@ -19251,33 +19392,77 @@ struct Model {
   modelMatrix: mat4x4f,
 }
 
+struct Bones {
+  boneMatrices : array<mat4x4f, MAX_BONES>
+}
+
+struct SkinResult {
+  position : vec4f,
+  normal   : vec3f,
+};
+
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(1) @binding(0) var<uniform> model : Model;
+@group(1) @binding(1) var<uniform> bones : Bones;
 
 struct VertexOutput {
-  @location(0) shadowPos: vec4f,  // now vec4
+  @location(0) shadowPos: vec4f,
   @location(1) fragPos: vec3f,
   @location(2) fragNorm: vec3f,
   @location(3) uv: vec2f,
   @builtin(position) Position: vec4f,
 }
 
+// skinning helper
+fn skinVertex(pos: vec4f, nrm: vec3f, joints: vec4<u32>, weights: vec4f) -> SkinResult {
+    var skinnedPos = vec4f(0.0);
+    var skinnedNorm = vec3f(0.0);
+
+    for (var i: u32 = 0u; i < 4u; i = i + 1u) {
+        let jointIndex = joints[i];
+        let w = weights[i];
+        let boneMat = bones.boneMatrices[jointIndex];
+        skinnedPos  += (boneMat * pos) * w;
+
+        let boneMat3 = mat3x3f(
+          boneMat[0].xyz,
+          boneMat[1].xyz,
+          boneMat[2].xyz
+        );
+        skinnedNorm += (boneMat3 * nrm) * w;
+        // skinnedNorm += (mat3x3f(boneMat) * nrm) * w;
+    }
+
+    return SkinResult(skinnedPos, normalize(skinnedNorm));
+}
+
 @vertex
 fn main(
   @location(0) position: vec3f,
   @location(1) normal: vec3f,
-  @location(2) uv: vec2f
+  @location(2) uv: vec2f,
+  @location(3) joints: vec4<u32>,   // added at end
+  @location(4) weights: vec4<f32>   // added at end
 ) -> VertexOutput {
   var output : VertexOutput;
 
-  let posFromLight = scene.lightViewProjMatrix * model.modelMatrix * vec4(position, 1.0);
-  output.shadowPos = posFromLight; // pass full vec4 for perspective divide
+  // base values
+  var pos = vec4(position, 1.0);
+  var nrm = normal;
 
-  let worldPos = model.modelMatrix * vec4(position, 1.0);
+  // apply skinning
+  let skinned = skinVertex(pos, nrm, joints, weights);
+  let skinnedPos  = skinned.position;
+  let skinnedNorm = skinned.normal;
+
+  // transform
+  let worldPos = model.modelMatrix * skinnedPos;
   output.Position = scene.cameraViewProjMatrix * worldPos;
   output.fragPos = worldPos.xyz;
 
-  output.fragNorm = normalize((model.modelMatrix * vec4(normal, 0.0)).xyz);
+  output.shadowPos = scene.lightViewProjMatrix * worldPos;
+  output.fragNorm = normalize((model.modelMatrix * vec4(skinnedNorm, 0.0)).xyz);
+
   output.uv = uv;
   return output;
 }`;
@@ -19398,6 +19583,7 @@ var _lang = require("./multilang/lang.js");
 var _sounds = require("./sounds/sounds.js");
 var _loaderObj = require("./engine/loader-obj.js");
 var _lights = require("./engine/lights.js");
+var _bvh = require("./engine/loaders/bvh.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 /**
  * @description
@@ -20007,7 +20193,8 @@ class MatrixEngineWGPU {
         for (const [meshIndex, mesh] of this.mainRenderBundle.entries()) {
           if (mesh.videoIsReady == 'NONE') {
             shadowPass.setBindGroup(0, light.getShadowBindGroup(mesh, meshIndex));
-            shadowPass.setBindGroup(1, mesh.modelBindGroup);
+            // shadowPass.setBindGroup(1, mesh.modelBindGroup); // ORI 
+            shadowPass.setBindGroup(1, light.getShadowBindGroup_bones(meshIndex)); // ORI 
             mesh.drawShadows(shadowPass, light);
           }
         }
@@ -20071,7 +20258,7 @@ class MatrixEngineWGPU {
   // test
   // Not in use for now
 
-  addGlbObj = (o, bhvPlayer, clearColor = this.options.clearColor) => {
+  addGlbObj = (o, BVHANIM, glbFile, clearColor = this.options.clearColor) => {
     if (typeof o.name === 'undefined') {
       o.name = (0, _utils.genName)(9);
     }
@@ -20167,17 +20354,17 @@ class MatrixEngineWGPU {
       };
     }
     // let myMesh1 = new MEMeshObj(this.canvas, this.device, this.context, o, this.inputHandler, this.globalAmbient);
-
-    let myMesh1 = bhvPlayer;
-    myMesh1.spotlightUniformBuffer = this.spotlightUniformBuffer;
-    myMesh1.clearColor = clearColor;
+    const bvhPlayer = new _bvh.BVHPlayer(o, BVHANIM, glbFile, this.device, this.inputHandler, this.globalAmbient);
+    console.log(`bvhPlayer!!!!!: ${bvhPlayer}`);
+    bvhPlayer.spotlightUniformBuffer = this.spotlightUniformBuffer;
+    bvhPlayer.clearColor = clearColor;
 
     // if(o.physics.enabled == true) {
     //   this.matrixAmmo.addPhysics(myMesh1, o.physics)
     // }
-    this.mainRenderBundle.push(myMesh1);
+    this.mainRenderBundle.push(bvhPlayer);
   };
 }
 exports.default = MatrixEngineWGPU;
 
-},{"./engine/ball.js":16,"./engine/cube.js":18,"./engine/engine.js":19,"./engine/lights.js":20,"./engine/loader-obj.js":21,"./engine/mesh-obj.js":26,"./engine/utils.js":27,"./multilang/lang.js":28,"./physics/matrix-ammo.js":29,"./sounds/sounds.js":35,"wgpu-matrix":15}]},{},[1]);
+},{"./engine/ball.js":16,"./engine/cube.js":18,"./engine/engine.js":19,"./engine/lights.js":20,"./engine/loader-obj.js":21,"./engine/loaders/bvh.js":22,"./engine/mesh-obj.js":26,"./engine/utils.js":27,"./multilang/lang.js":28,"./physics/matrix-ammo.js":29,"./sounds/sounds.js":35,"wgpu-matrix":15}]},{},[1]);

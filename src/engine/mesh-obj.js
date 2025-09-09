@@ -59,6 +59,47 @@ export default class MEMeshObj extends Materials {
     this.rotation.rotationSpeed.z = o.rotationSpeed.z;
     this.scale = o.scale;
 
+    // new dummy for skin mesh
+    // in MeshObj constructor or setup
+    if(!this.joints) {
+      // Joints data (all zeros for dummy, size = numVerts * 4)
+      const jointsData = new Uint32Array(this.mesh.vertices.length * 4);
+
+      const jointsBuffer = this.device.createBuffer({
+        size: jointsData.byteLength,
+        usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+        mappedAtCreation: true,
+      });
+      new Uint32Array(jointsBuffer.getMappedRange()).set(jointsData);
+      jointsBuffer.unmap();
+
+      this.joints = {
+        data: jointsData,
+        buffer: jointsBuffer,
+        stride: 16, // vec4<u32>
+      };
+
+      // Weights data (default = bone0 has weight=1.0)
+      const weightsData = new Float32Array(this.mesh.vertices.length * 4);
+      for(let i = 0;i < this.mesh.vertices.length;i++) {
+        weightsData[i * 4 + 0] = 1.0;
+      }
+
+      const weightsBuffer = this.device.createBuffer({
+        size: weightsData.byteLength,
+        usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+        mappedAtCreation: true,
+      });
+      new Float32Array(weightsBuffer.getMappedRange()).set(weightsData);
+      weightsBuffer.unmap();
+
+      this.weights = {
+        data: weightsData,
+        buffer: weightsBuffer,
+        stride: 16, // vec4<f32>
+      };
+    }
+
     this.runProgram = () => {
       return new Promise(async (resolve) => {
         this.shadowDepthTextureSize = 1024;
@@ -159,6 +200,16 @@ export default class MEMeshObj extends Materials {
             },
           ],
         },
+        // new joint indices
+        {
+          arrayStride: 4 * 4, // vec4<u32> = 4 * 4 bytes
+          attributes: [{format: 'uint32x4', offset: 0, shaderLocation: 3}]
+        },
+        // new weights
+        {
+          arrayStride: 4 * 4, // vec4<f32> = 4 * 4 bytes
+          attributes: [{format: 'float32x4', offset: 0, shaderLocation: 4}]
+        }
       ];
 
       this.primitive = {
@@ -193,9 +244,28 @@ export default class MEMeshObj extends Materials {
               type: 'uniform',
             },
           },
+          {
+            binding: 1,
+            visibility: GPUShaderStage.VERTEX,
+            buffer: {
+              type: 'uniform',
+            },
+          },
         ],
       });
 
+      // dummy for non skin mesh like this class
+
+      function alignTo256(n) {
+        return Math.ceil(n / 256) * 256;
+      }
+
+      let MAX_BONES = 100;
+      this.MAX_BONES = MAX_BONES;
+      this.bonesBuffer = device.createBuffer({
+        size: alignTo256(64 * MAX_BONES),
+        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+      });
 
       this.modelBindGroup = this.device.createBindGroup({
         label: 'modelBindGroup in mesh',
@@ -207,8 +277,11 @@ export default class MEMeshObj extends Materials {
               buffer: this.modelUniformBuffer,
             },
           },
+          {binding: 1, resource: {buffer: this.bonesBuffer}},
         ],
       });
+
+      this.updateBones()
 
       this.mainPassBindGroupLayout = this.device.createBindGroupLayout({
         entries: [
@@ -259,14 +332,14 @@ export default class MEMeshObj extends Materials {
             console.log('mesh 1111', mesh.glb.skinnedMeshNodes)
 
             mesh.glb.skinnedMeshNodes.forEach((skinnedMeshNode) => {
-            device.queue.writeBuffer(
-              skinnedMeshNode.sceneUniformBuffer,
-              0,
-              sceneData.buffer,
-              sceneData.byteOffset,
-              sceneData.byteLength
-            );
-          })
+              device.queue.writeBuffer(
+                skinnedMeshNode.sceneUniformBuffer,
+                0,
+                sceneData.buffer,
+                sceneData.byteOffset,
+                sceneData.byteLength
+              );
+            })
           } else {
 
             device.queue.writeBuffer(
@@ -325,8 +398,23 @@ export default class MEMeshObj extends Materials {
     })
   }
 
+  updateBones() {
+    const bones = new Float32Array(this.MAX_BONES * 16);
+    for(let i = 0;i < this.MAX_BONES;i++) {
+      // identity matrices
+      bones.set([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1], i * 16);
+    }
+    this.device.queue.writeBuffer(this.bonesBuffer, 0, bones);
 
-
+    const weights = new Float32Array(this.mesh.vertices.length  * 4); // vec4<f32>
+    for(let i = 0;i < this.mesh.vertices.length ;i++) {
+      weights[i * 4 + 0] = 1.0; // bone 0 full weight
+      weights[i * 4 + 1] = 0.0;
+      weights[i * 4 + 2] = 0.0;
+      weights[i * 4 + 3] = 0.0;
+    }
+    this.device.queue.writeBuffer(this.weights.buffer, 0, weights);
+  }
   setupPipeline = () => {
     this.createBindGroupForRender();
     this.pipeline = this.device.createRenderPipeline({
@@ -464,6 +552,15 @@ export default class MEMeshObj extends Materials {
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setVertexBuffer(1, this.vertexNormalsBuffer);
     pass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
+
+
+    // -----------------------------------------------------------
+    if(this.joints) {
+      pass.setVertexBuffer(3, this.joints.buffer);  // new dummy
+      pass.setVertexBuffer(4, this.weights.buffer); // new dummy
+    }
+    // -----------------------------------------------------------
+
     pass.setIndexBuffer(this.indexBuffer, 'uint16');
     pass.drawIndexed(this.indexCount);
   }
@@ -508,6 +605,13 @@ export default class MEMeshObj extends Materials {
     shadowPass.setVertexBuffer(0, this.vertexBuffer);
     shadowPass.setVertexBuffer(1, this.vertexNormalsBuffer);
     shadowPass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
+
+    // dummy joints & weights for shadow pass
+    // if(this.joints && this.weights) {
+    //   shadowPass.setVertexBuffer(3, this.joints.buffer);
+    //   shadowPass.setVertexBuffer(4, this.weights.buffer);
+    // }
+
     shadowPass.setIndexBuffer(this.indexBuffer, 'uint16');
     shadowPass.drawIndexed(this.indexCount);
   }
