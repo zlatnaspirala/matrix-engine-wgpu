@@ -65,7 +65,8 @@ let TEST_ANIM = new _world.default({
       // applyBVHToGLB(glbFile, BVHANIM, TEST_ANIM.device)
 
       TEST_ANIM.addGlbObj({
-        name: 'firstGlb'
+        name: 'firstGlb',
+        texturesPaths: ['./res/meshes/blender/cube.png']
       }, BVHANIM, glbFile);
     });
   });
@@ -382,8 +383,12 @@ class MEBvhJoint {
     }
     return detFlag;
   }
+  createIdentityMatrix() {
+    // Returns a flat Float32Array of length 16 (column-major)
+    return new Float32Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
+  }
   matrixFromKeyframe(frameData) {
-    const m = createIdentityMatrix();
+    const m = this.createIdentityMatrix();
     let t = [0, 0, 0];
     let r = [0, 0, 0];
     for (let i = 0; i < this.channels.length; i++) {
@@ -15927,12 +15932,10 @@ function play(nameAni) {
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.animBVH = exports.BVHPlayer = void 0;
-exports.applyBVHToGLB = applyBVHToGLB;
-exports.loadBVH = void 0;
+exports.loadBVH = exports.animBVH = exports.BVHPlayer = void 0;
 var _bvhLoader = _interopRequireDefault(require("bvh-loader"));
+var _meshObj = _interopRequireDefault(require("../mesh-obj"));
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
-console.log('Test BVH loader', _bvhLoader.default);
 var animBVH = exports.animBVH = new _bvhLoader.default();
 let loadBVH = path => {
   return new Promise((resolve, reject) => {
@@ -15944,7 +15947,7 @@ let loadBVH = path => {
       console.log("FINAL R => ", r[1].length);
       var KEYS = animBVH.joint_names();
       for (var x = 0; x < r[0].length; x++) {
-        console.log("->" + KEYS[x] + "-> position: " + r[0][x] + " rotation: " + r[1][x]);
+        // console.log("->" + KEYS[x] + "-> position: " + r[0][x] + " rotation: " + r[1][x]);
       }
       var all = animBVH.all_frame_poses();
       console.log("Final All -> ", all);
@@ -15962,66 +15965,71 @@ let loadBVH = path => {
  * @param {GPUDevice} device - WebGPU device
  */
 exports.loadBVH = loadBVH;
-function applyBVHToGLB(glb, bvhBones, device) {
-  // Iterate all GLB nodes that have a skin
-  for (const node of glb.nodes) {
-    if (node.mesh && node.skin !== undefined) {
-      const skin = glb.skins[node.skin]; // e.g., index 0
-
-      // Iterate all joints in the skin
-      for (let i = 0; i < skin.joints.length; i++) {
-        const jointIndex = skin.joints[i];
-        const boneNode = glb.nodes[jointIndex];
-        const bvhBone = bvhBones[boneNode.name];
-        if (bvhBone) {
-          // Apply BVH transform to GLB node
-          // Choose worldMatrix or localMatrix depending on your shader setup
-          boneNode.transform = bvhBone.worldMatrix;
-          boneNode.upload(device); // update uniform buffer
-        }
-      }
-    }
-  }
-}
-class BVHPlayer {
-  constructor(bvh, glb) {
+class BVHPlayer extends _meshObj.default {
+  constructor(o, bvh, glb, primitiveIndex, skinnedNodeIndex, canvas, device, context, inputHandler, globalAmbient) {
+    super(canvas, device, context, o, inputHandler, globalAmbient, glb, primitiveIndex, skinnedNodeIndex);
     this.bvh = bvh;
     this.glb = glb;
     this.currentFrame = 0;
     this.fps = bvh.fps || 30;
     this.timeAccumulator = 0;
-  }
-  update(deltaTime, device) {
-    // Accumulate time
-    this.timeAccumulator += deltaTime;
 
-    // How many frames to advance
+    // Reference to the skinned node containing all bones
+    this.skinnedNode = this.glb.skinnedMeshNodes[skinnedNodeIndex];
+
+    // Prepare joint index map (BVH joint name -> bone index)
+    this.setupBVHJointIndices();
+  }
+  setupBVHJointIndices() {
+    this.bvh.jointIndices = {};
+    const skin = this.glb.skins[this.skinnedNode.skin]; // get skin for this node
+    const bones = skin.joints; // indices of joints in GLB
+
+    const jointNames = Object.keys(this.bvh.joints);
+    jointNames.forEach((name, i) => {
+      if (i < bones.length) {
+        this.bvh.jointIndices[name] = i;
+      }
+    });
+
+    // Optionally store inverseBindMatrices if needed
+    this.inverseBindMatrices = skin.inverseBindMatrices;
+  }
+  update(deltaTime) {
+    // Advance time and frame
+    this.timeAccumulator += deltaTime;
     const frameTime = 1 / this.fps;
     while (this.timeAccumulator >= frameTime) {
       this.currentFrame = (this.currentFrame + 1) % this.bvh.keyframes.length;
       this.timeAccumulator -= frameTime;
     }
 
-    // Apply current frame to GLB
-    this.applyFrame(this.currentFrame, device);
+    // Apply BVH frame to GLB
+    this.applyBVHToGLB(this.currentFrame);
   }
-  applyFrame(frameIndex, device) {
+  applyBVHToGLB(frameIndex) {
     const keyframe = this.bvh.keyframes[frameIndex];
-    // keyframe[i] corresponds to joint i
-    for (const nodeName in this.glb.bvhToGLBMap) {
-      const glbNode = this.glb.bvhToGLBMap[nodeName];
-      const bvhJoint = this.bvh.joints[nodeName];
-      if (!glbNode || !bvhJoint) continue;
+    const numBones = this.glb.skins[this.skinnedNode.skin].joints.length;
+    // const numBones = this.skinnedNode.mesh.skin.joints.length;
+    const bonesData = new Float32Array(16 * numBones); // flat mat4 array
 
-      // Convert BVH rotation & position to a matrix
-      glbNode.transform = bvhJoint.matrixFromKeyframe(keyframe);
-      glbNode.upload(device);
+    for (const jointName in this.bvh.jointIndices) {
+      const boneIndex = this.bvh.jointIndices[jointName];
+      const bvhJoint = this.bvh.joints[jointName];
+      if (!bvhJoint) continue;
+
+      // Convert BVH joint keyframe to mat4
+      const mat = bvhJoint.matrixFromKeyframe(keyframe);
+      bonesData.set(mat, boneIndex * 16);
     }
+
+    // Upload to GPU
+    this.device.queue.writeBuffer(this.bonesBuffer, 0, bonesData);
   }
 }
 exports.BVHPlayer = BVHPlayer;
 
-},{"bvh-loader":2}],23:[function(require,module,exports){
+},{"../mesh-obj":26,"bvh-loader":2}],23:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -17330,7 +17338,7 @@ var _materials = _interopRequireDefault(require("./materials"));
 var _fragmentVideo = require("../shaders/fragment.video.wgsl");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 class MEMeshObj extends _materials.default {
-  constructor(canvas, device, context, o, inputHandler, globalAmbient) {
+  constructor(canvas, device, context, o, inputHandler, globalAmbient, _glbFile = null, primitiveIndex = null, skinnedNodeIndex = null) {
     super(device);
     if (typeof o.name === 'undefined') o.name = (0, _utils.genName)(3);
     if (typeof o.raycast === 'undefined') {
@@ -17353,7 +17361,68 @@ class MEMeshObj extends _materials.default {
 
     // Mesh stuff - for single mesh or t-posed (fiktive-first in loading order)
     this.mesh = o.mesh;
-    this.mesh.uvs = this.mesh.textures;
+    if (_glbFile != null) {
+      // check 
+      if (typeof this.mesh == 'undefined') {
+        console.log('glb detected..create mesh obj.');
+        this.mesh = {};
+      }
+      console.log('glb detected - name: ' + this.name + ' - skinnedNodeIndex:' + skinnedNodeIndex + " primitiveIndex:" + primitiveIndex);
+
+      // V
+      const verView = _glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex].positions.view;
+      // If you know byteOffset (from accessor):
+      const byteOffsetV = verView.byteOffset || 0;
+      const byteLengthV = verView.buffer.byteLength;
+
+      // Make a Float32Array view of the same underlying buffer:
+      const vertices = new Float32Array(verView.buffer.buffer, byteOffsetV, byteLengthV / 4);
+      this.mesh.vertices = vertices;
+      //N
+      const norView = _glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex].normals.view;
+      const normalsUint8 = norView.buffer;
+      const byteOffsetN = norView.byteOffset || 0; // if your loader provides it
+      const byteLengthN = normalsUint8.byteLength;
+      const normals = new Float32Array(normalsUint8.buffer, byteOffsetN, byteLengthN / 4);
+      this.mesh.vertexNormals = normals;
+      //UV
+      let binary = _glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex].texcoords[0].view.buffer;
+      const byteOffset = 0; // or from accessor
+      const byteLength = binary.byteLength;
+      const uvFloatArray = new Float32Array(binary.buffer, byteOffset, byteLength / 4);
+      this.mesh.uvs = uvFloatArray;
+      this.mesh.textures = this.mesh.uvs;
+      // indices
+      let binaryI = _glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex].indices;
+      const indicesView = binaryI.view;
+      const indicesUint8 = indicesView.buffer;
+      const byteOffsetI = indicesView.byteOffset || 0;
+      const byteLengthI = indicesUint8.byteLength;
+      // Decide on type from accessor.componentType
+      // (5121 = UNSIGNED_BYTE, 5123 = UNSIGNED_SHORT, 5125 = UNSIGNED_INT)
+      let indicesArray;
+      console.info('importtant ("binaryI.componentType") ', binaryI.componentType);
+      switch (binaryI.componentType) {
+        case 5121:
+          // UNSIGNED_BYTE
+          indicesArray = new Uint8Array(indicesUint8.buffer, byteOffsetI, byteLengthI);
+          break;
+        case 5123:
+          // UNSIGNED_SHORT
+          indicesArray = new Uint16Array(indicesUint8.buffer, byteOffsetI, byteLengthI / 2);
+          break;
+        case 5125:
+          // UNSIGNED_INT
+          indicesArray = new Uint32Array(indicesUint8.buffer, byteOffsetI, byteLengthI / 4);
+          break;
+        default:
+          throw new Error("Unknown index componentType");
+      }
+      this.mesh.indices = indicesArray;
+    } else {
+      // obj files flow 
+      this.mesh.uvs = this.mesh.textures;
+    }
     console.log(`%c Mesh loaded: ${o.name}`, _utils.LOG_FUNNY_SMALL);
 
     // ObjSequence animation
@@ -17388,7 +17457,7 @@ class MEMeshObj extends _materials.default {
     // in MeshObj constructor or setup
     if (!this.joints) {
       // Joints data (all zeros for dummy, size = numVerts * 4)
-      const jointsData = new Uint32Array(this.mesh.vertices.length * 4);
+      const jointsData = new Uint32Array(this.mesh.vertices.length / 3 * 4);
       const jointsBuffer = this.device.createBuffer({
         size: jointsData.byteLength,
         usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
@@ -17403,7 +17472,7 @@ class MEMeshObj extends _materials.default {
       };
 
       // Weights data (default = bone0 has weight=1.0)
-      const weightsData = new Float32Array(this.mesh.vertices.length * 4);
+      const weightsData = new Float32Array(this.mesh.vertices.length / 3 * 4);
       for (let i = 0; i < this.mesh.vertices.length; i++) {
         weightsData[i * 4 + 0] = 1.0;
       }
@@ -17634,9 +17703,12 @@ class MEMeshObj extends _materials.default {
           // Global ambient + padding
           sceneData.set([this.globalAmbient[0], this.globalAmbient[1], this.globalAmbient[2], 0.0], 40);
           if (mesh.glb && mesh.glb.skinnedMeshNodes) {
-            console.log('mesh 1111', mesh.glb.skinnedMeshNodes);
+            // console.log('mesh 1111', mesh.glb.skinnedMeshNodes)
+
             mesh.glb.skinnedMeshNodes.forEach(skinnedMeshNode => {
-              device.queue.writeBuffer(skinnedMeshNode.sceneUniformBuffer, 0, sceneData.buffer, sceneData.byteOffset, sceneData.byteLength);
+              device.queue.writeBuffer(
+              // skinnedMeshNode.sceneUniformBuffer,
+              mesh.sceneUniformBuffer, 0, sceneData.buffer, sceneData.byteOffset, sceneData.byteLength);
             });
           } else {
             device.queue.writeBuffer(mesh.sceneUniformBuffer, 0, sceneData.buffer, sceneData.byteOffset, sceneData.byteLength);
@@ -20165,7 +20237,7 @@ class MatrixEngineWGPU {
         this.mainRenderBundle.forEach((meItem, index) => {
           meItem.position.update();
           meItem.updateModelUniformBuffer();
-          meItem.getTransformationMatrix(this.mainRenderBundle, light);
+          meItem.getTransformationMatrix(this.mainRenderBundle, light); // >check optisation
         });
       }
       if (this.matrixAmmo) this.matrixAmmo.updatePhysics();
@@ -20205,6 +20277,7 @@ class MatrixEngineWGPU {
       let pass = commandEncoder.beginRenderPass(this.mainRenderPassDesc);
       // Loop over each mesh
       for (const mesh of this.mainRenderBundle) {
+        if (mesh.update) mesh.update(); // glb
         pass.setPipeline(mesh.pipeline);
         if (!mesh.sceneBindGroupForRender || mesh.FINISH_VIDIO_INIT == false && mesh.isVideo == true) {
           for (const m of this.mainRenderBundle) {
@@ -20255,9 +20328,6 @@ class MatrixEngineWGPU {
   };
 
   // ---------------------------------------
-  // test
-  // Not in use for now
-
   addGlbObj = (o, BVHANIM, glbFile, clearColor = this.options.clearColor) => {
     if (typeof o.name === 'undefined') {
       o.name = (0, _utils.genName)(9);
@@ -20336,33 +20406,31 @@ class MatrixEngineWGPU {
     if (typeof o.objAnim == 'undefined' || typeof o.objAnim == null) {
       o.objAnim = null;
     } else {
-      if (typeof o.objAnim.animations !== 'undefined') {
-        o.objAnim.play = _loaderObj.play;
-      }
-      // no need for single test it in future
-      o.objAnim.meshList = o.objAnim.meshList;
-      if (typeof o.mesh === 'undefined') {
-        o.mesh = o.objAnim.meshList[0];
-        console.info('objSeq animation is active.');
-      }
-      // scale for all second option!
-      o.objAnim.scaleAll = function (s) {
-        for (var k in this.meshList) {
-          console.log('SCALE meshList');
-          this.meshList[k].setScale(s);
-        }
-      };
+      alert('GLB not use objAnim (it is only for obj sequence). GLB use BVH skeletal for animation');
     }
     // let myMesh1 = new MEMeshObj(this.canvas, this.device, this.context, o, this.inputHandler, this.globalAmbient);
-    const bvhPlayer = new _bvh.BVHPlayer(o, BVHANIM, glbFile, this.device, this.inputHandler, this.globalAmbient);
-    console.log(`bvhPlayer!!!!!: ${bvhPlayer}`);
-    bvhPlayer.spotlightUniformBuffer = this.spotlightUniformBuffer;
-    bvhPlayer.clearColor = clearColor;
 
-    // if(o.physics.enabled == true) {
-    //   this.matrixAmmo.addPhysics(myMesh1, o.physics)
-    // }
-    this.mainRenderBundle.push(bvhPlayer);
+    let skinnedNodeIndex = 0;
+    for (const skinnedNode of glbFile.skinnedMeshNodes) {
+      let c = 0;
+      for (const primitive of skinnedNode.mesh.primitives) {
+        console.log(`primitive-glb: ${primitive}`);
+        // primitive is mesh - probably with own material . material/texture per primitive
+        // create scene object for each
+        // --
+        // 
+        o.name = o.name + "-GLBGroup-" + c;
+        const bvhPlayer = new _bvh.BVHPlayer(o, BVHANIM, glbFile, c, skinnedNodeIndex, this.canvas, this.device, this.context, this.inputHandler, this.globalAmbient);
+        console.log(`bvhPlayer!!!!!: ${bvhPlayer}`);
+        bvhPlayer.spotlightUniformBuffer = this.spotlightUniformBuffer;
+        bvhPlayer.clearColor = clearColor;
+        // if(o.physics.enabled == true) {
+        //   this.matrixAmmo.addPhysics(myMesh1, o.physics)
+        // }
+        this.mainRenderBundle.push(bvhPlayer);
+        c++;
+      }
+    }
   };
 }
 exports.default = MatrixEngineWGPU;

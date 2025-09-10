@@ -8,7 +8,7 @@ import Materials from './materials';
 import {fragmentVideoWGSL} from '../shaders/fragment.video.wgsl';
 
 export default class MEMeshObj extends Materials {
-  constructor(canvas, device, context, o, inputHandler, globalAmbient) {
+  constructor(canvas, device, context, o, inputHandler, globalAmbient, _glbFile = null, primitiveIndex = null, skinnedNodeIndex = null) {
     super(device);
     if(typeof o.name === 'undefined') o.name = genName(3);
     if(typeof o.raycast === 'undefined') {
@@ -28,7 +28,80 @@ export default class MEMeshObj extends Materials {
 
     // Mesh stuff - for single mesh or t-posed (fiktive-first in loading order)
     this.mesh = o.mesh;
-    this.mesh.uvs = this.mesh.textures;
+    if(_glbFile != null) {
+
+      // check 
+      if(typeof this.mesh == 'undefined') {
+        console.log('glb detected..create mesh obj.')
+        this.mesh = {};
+      }
+      console.log('glb detected - name: ' + this.name + ' - skinnedNodeIndex:' + skinnedNodeIndex + " primitiveIndex:" + primitiveIndex)
+
+      // V
+      const verView = _glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex].positions.view;
+      // If you know byteOffset (from accessor):
+      const byteOffsetV = verView.byteOffset || 0;
+      const byteLengthV = verView.buffer.byteLength;
+
+      // Make a Float32Array view of the same underlying buffer:
+      const vertices = new Float32Array(
+        verView.buffer.buffer,
+        byteOffsetV,
+        byteLengthV / 4
+      );
+      this.mesh.vertices = vertices;
+      //N
+      const norView = _glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex].normals.view;
+      const normalsUint8 = norView.buffer;
+      const byteOffsetN = norView.byteOffset || 0; // if your loader provides it
+      const byteLengthN = normalsUint8.byteLength;
+      const normals = new Float32Array(
+        normalsUint8.buffer,
+        byteOffsetN,
+        byteLengthN / 4
+      );
+      this.mesh.vertexNormals = normals;
+      //UV
+      let binary = _glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex].texcoords[0].view.buffer;
+      const byteOffset = 0; // or from accessor
+      const byteLength = binary.byteLength;
+      const uvFloatArray = new Float32Array(
+        binary.buffer,
+        byteOffset,
+        byteLength / 4
+      );
+      this.mesh.uvs = uvFloatArray;
+      this.mesh.textures = this.mesh.uvs;
+      // indices
+      let binaryI = _glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex].indices;
+      const indicesView = binaryI.view;
+      const indicesUint8 = indicesView.buffer;
+      const byteOffsetI = indicesView.byteOffset || 0;
+      const byteLengthI = indicesUint8.byteLength;
+      // Decide on type from accessor.componentType
+      // (5121 = UNSIGNED_BYTE, 5123 = UNSIGNED_SHORT, 5125 = UNSIGNED_INT)
+      let indicesArray;
+      console.info('importtant ("binaryI.componentType") ', binaryI.componentType)
+      switch(binaryI.componentType) {
+        case 5121: // UNSIGNED_BYTE
+          indicesArray = new Uint8Array(indicesUint8.buffer, byteOffsetI, byteLengthI);
+          break;
+        case 5123: // UNSIGNED_SHORT
+          indicesArray = new Uint16Array(indicesUint8.buffer, byteOffsetI, byteLengthI / 2);
+          break;
+        case 5125: // UNSIGNED_INT
+          indicesArray = new Uint32Array(indicesUint8.buffer, byteOffsetI, byteLengthI / 4);
+          break;
+        default:
+          throw new Error("Unknown index componentType");
+      }
+      this.mesh.indices = indicesArray;
+
+    } else {
+      // obj files flow 
+      this.mesh.uvs = this.mesh.textures;
+    }
+
     console.log(`%c Mesh loaded: ${o.name}`, LOG_FUNNY_SMALL);
 
     // ObjSequence animation
@@ -63,7 +136,7 @@ export default class MEMeshObj extends Materials {
     // in MeshObj constructor or setup
     if(!this.joints) {
       // Joints data (all zeros for dummy, size = numVerts * 4)
-      const jointsData = new Uint32Array(this.mesh.vertices.length * 4);
+      const jointsData = new Uint32Array((this.mesh.vertices.length/3) * 4);
 
       const jointsBuffer = this.device.createBuffer({
         size: jointsData.byteLength,
@@ -80,7 +153,7 @@ export default class MEMeshObj extends Materials {
       };
 
       // Weights data (default = bone0 has weight=1.0)
-      const weightsData = new Float32Array(this.mesh.vertices.length * 4);
+      const weightsData = new Float32Array((this.mesh.vertices.length/3) * 4);
       for(let i = 0;i < this.mesh.vertices.length;i++) {
         weightsData[i * 4 + 0] = 1.0;
       }
@@ -329,11 +402,12 @@ export default class MEMeshObj extends Materials {
 
 
           if(mesh.glb && mesh.glb.skinnedMeshNodes) {
-            console.log('mesh 1111', mesh.glb.skinnedMeshNodes)
+            // console.log('mesh 1111', mesh.glb.skinnedMeshNodes)
 
             mesh.glb.skinnedMeshNodes.forEach((skinnedMeshNode) => {
               device.queue.writeBuffer(
-                skinnedMeshNode.sceneUniformBuffer,
+                // skinnedMeshNode.sceneUniformBuffer,
+                  mesh.sceneUniformBuffer,
                 0,
                 sceneData.buffer,
                 sceneData.byteOffset,
@@ -406,8 +480,8 @@ export default class MEMeshObj extends Materials {
     }
     this.device.queue.writeBuffer(this.bonesBuffer, 0, bones);
 
-    const weights = new Float32Array(this.mesh.vertices.length  * 4); // vec4<f32>
-    for(let i = 0;i < this.mesh.vertices.length ;i++) {
+    const weights = new Float32Array(this.mesh.vertices.length * 4); // vec4<f32>
+    for(let i = 0;i < this.mesh.vertices.length;i++) {
       weights[i * 4 + 0] = 1.0; // bone 0 full weight
       weights[i * 4 + 1] = 0.0;
       weights[i * 4 + 2] = 0.0;

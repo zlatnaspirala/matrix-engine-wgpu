@@ -452,7 +452,7 @@ export default class MatrixEngineWGPU {
         this.mainRenderBundle.forEach((meItem, index) => {
           meItem.position.update()
           meItem.updateModelUniformBuffer()
-          meItem.getTransformationMatrix(this.mainRenderBundle, light)
+          meItem.getTransformationMatrix(this.mainRenderBundle, light) // >check optisation
         })
       }
       if(this.matrixAmmo) this.matrixAmmo.updatePhysics();
@@ -494,6 +494,7 @@ export default class MatrixEngineWGPU {
       let pass = commandEncoder.beginRenderPass(this.mainRenderPassDesc);
       // Loop over each mesh
       for(const mesh of this.mainRenderBundle) {
+        if (mesh.update) mesh.update(); // glb
         pass.setPipeline(mesh.pipeline);
         if(!mesh.sceneBindGroupForRender || (mesh.FINISH_VIDIO_INIT == false && mesh.isVideo == true)) {
           for(const m of this.mainRenderBundle) {
@@ -545,12 +546,7 @@ export default class MatrixEngineWGPU {
     requestAnimationFrame(this.frame);
   }
 
-
-
   // ---------------------------------------
-  // test
-  // Not in use for now
-
   addGlbObj = (o, BVHANIM, glbFile, clearColor = this.options.clearColor) => {
     if(typeof o.name === 'undefined') {o.name = genName(9)}
     if(typeof o.position === 'undefined') {o.position = {x: 0, y: 0, z: -4}}
@@ -583,32 +579,43 @@ export default class MatrixEngineWGPU {
     if(typeof o.objAnim == 'undefined' || typeof o.objAnim == null) {
       o.objAnim = null;
     } else {
-      if(typeof o.objAnim.animations !== 'undefined') {
-        o.objAnim.play = play;
-      }
-      // no need for single test it in future
-      o.objAnim.meshList = o.objAnim.meshList;
-      if(typeof o.mesh === 'undefined') {
-        o.mesh = o.objAnim.meshList[0];
-        console.info('objSeq animation is active.');
-      }
-      // scale for all second option!
-      o.objAnim.scaleAll = function(s) {
-        for(var k in this.meshList) {
-          console.log('SCALE meshList');
-          this.meshList[k].setScale(s);
-        }
-      }
+      alert('GLB not use objAnim (it is only for obj sequence). GLB use BVH skeletal for animation');
     }
     // let myMesh1 = new MEMeshObj(this.canvas, this.device, this.context, o, this.inputHandler, this.globalAmbient);
-    const bvhPlayer = new BVHPlayer(o, BVHANIM, glbFile, this.device, this.inputHandler, this.globalAmbient);
-    console.log(`bvhPlayer!!!!!: ${bvhPlayer}`);
-    bvhPlayer.spotlightUniformBuffer = this.spotlightUniformBuffer;
-    bvhPlayer.clearColor = clearColor;
 
-    // if(o.physics.enabled == true) {
-    //   this.matrixAmmo.addPhysics(myMesh1, o.physics)
-    // }
-    this.mainRenderBundle.push(bvhPlayer);
+
+    let skinnedNodeIndex = 0;
+    for(const skinnedNode of glbFile.skinnedMeshNodes) {
+      let c = 0;
+      for(const primitive of skinnedNode.mesh.primitives) {
+        console.log(`primitive-glb: ${primitive}`);
+        // primitive is mesh - probably with own material . material/texture per primitive
+        // create scene object for each
+        // --
+        // 
+        o.name = o.name + "-GLBGroup-" + c;
+        const bvhPlayer = new BVHPlayer(
+          o,
+          BVHANIM,
+          glbFile,
+          c,
+          skinnedNodeIndex,
+          this.canvas,
+          this.device,
+          this.context,
+          this.inputHandler,
+          this.globalAmbient);
+        console.log(`bvhPlayer!!!!!: ${bvhPlayer}`);
+        bvhPlayer.spotlightUniformBuffer = this.spotlightUniformBuffer;
+        bvhPlayer.clearColor = clearColor;
+        // if(o.physics.enabled == true) {
+        //   this.matrixAmmo.addPhysics(myMesh1, o.physics)
+        // }
+        this.mainRenderBundle.push(bvhPlayer);
+        c++;
+      }
+    }
+
+
   }
 }

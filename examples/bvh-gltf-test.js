@@ -56,7 +56,10 @@ let TEST_ANIM = new MatrixEngineWGPU({
       // glbFile.bvhToGLBMap = applyBVHToGLB(glbFile, BVHANIM, TEST_ANIM.device);
       // applyBVHToGLB(glbFile, BVHANIM, TEST_ANIM.device)
 
-       TEST_ANIM.addGlbObj({name: 'firstGlb'}, BVHANIM, glbFile);
+      TEST_ANIM.addGlbObj({
+        name: 'firstGlb',
+        texturesPaths: ['./res/meshes/blender/cube.png'],
+      }, BVHANIM, glbFile);
 
     });
   })
