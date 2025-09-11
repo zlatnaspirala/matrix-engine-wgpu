@@ -97,6 +97,49 @@ export default class MEMeshObj extends Materials {
       }
       this.mesh.indices = indicesArray;
 
+      let weightsView = _glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex].weights.view;
+      console.warn('weightsView', weightsView)
+      this.mesh.weightsView = weightsView;
+
+      const weightsArray = new Float32Array(
+        weightsView.buffer,
+        weightsView.byteOffset || 0,
+        weightsView.byteLength / 4
+      );
+
+      this.mesh.weightsBuffer = this.device.createBuffer({
+        label: "weightsBuffer real data",
+        size: weightsArray.byteLength,
+        usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+        mappedAtCreation: true,
+      });
+      new Float32Array(this.mesh.weightsBuffer.getMappedRange()).set(weightsArray);
+      this.mesh.weightsBuffer.unmap();
+
+      // Get JOINTS_0 accessor view from the GLB mesh
+      let jointsView = _glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex].joints.view;
+      console.warn('jointsView', jointsView);
+      this.mesh.jointsView = jointsView;
+
+      // Create typed array from the buffer (Uint16Array or Uint8Array depending on GLB)
+      const jointsArray = new Uint16Array(
+        jointsView.buffer,
+        jointsView.byteOffset || 0,
+        jointsView.byteLength / 2 // Uint16 = 2 bytes
+      );
+
+      // Create GPU buffer for joints
+      this.mesh.jointsBuffer = this.device.createBuffer({
+        label: "jointsBuffer real data",
+        size: jointsArray.byteLength,
+        usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+        mappedAtCreation: true,
+      });
+
+      // Upload the data to GPU
+      new Uint16Array(this.mesh.jointsBuffer.getMappedRange()).set(jointsArray);
+      this.mesh.jointsBuffer.unmap();
+
     } else {
       // obj files flow 
       this.mesh.uvs = this.mesh.textures;
@@ -137,7 +180,6 @@ export default class MEMeshObj extends Materials {
     if(!this.joints) {
       // Joints data (all zeros for dummy, size = numVerts * 4)
       const jointsData = new Uint32Array((this.mesh.vertices.length / 3) * 4);
-
       const jointsBuffer = this.device.createBuffer({
         label: "jointsBuffer",
         size: jointsData.byteLength,
@@ -146,25 +188,31 @@ export default class MEMeshObj extends Materials {
       });
       new Uint32Array(jointsBuffer.getMappedRange()).set(jointsData);
       jointsBuffer.unmap();
-
       this.joints = {
         data: jointsData,
         buffer: jointsBuffer,
         stride: 16, // vec4<u32>
       };
 
-      // Weights data (default = bone0 has weight=1.0)
-      const weightsData = new Float32Array((this.mesh.vertices.length) * 4);
-      for(let i = 0;i < this.mesh.vertices.length;i++) {
-        weightsData[i * 4 + 0] = 1.0;
+      const numVerts = this.mesh.vertices.length / 3;
+
+      // Weights data (vec4<f32>) – default all weight to bone 0
+      const weightsData = new Float32Array(numVerts * 4 * 4);
+      for(let i = 0;i < numVerts;i++) {
+        weightsData[i * 4 + 0] = 1.0; // 100% influence of bone 0
+        weightsData[i * 4 + 1] = 0.0;
+        weightsData[i * 4 + 2] = 0.0;
+        weightsData[i * 4 + 3] = 0.0;
       }
 
+      // GPU buffer
       const weightsBuffer = this.device.createBuffer({
-        label: "weightsBuffer",
+        label: "weightsBuffer dummy",
         size: weightsData.byteLength,
         usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
         mappedAtCreation: true,
       });
+
       new Float32Array(weightsBuffer.getMappedRange()).set(weightsData);
       weightsBuffer.unmap();
 
@@ -173,6 +221,7 @@ export default class MEMeshObj extends Materials {
         buffer: weightsBuffer,
         stride: 16, // vec4<f32>
       };
+
     }
 
     this.runProgram = () => {
@@ -338,9 +387,17 @@ export default class MEMeshObj extends Materials {
       let MAX_BONES = 100;
       this.MAX_BONES = MAX_BONES;
       this.bonesBuffer = device.createBuffer({
+        label: "bonesBuffer",
         size: alignTo256(64 * MAX_BONES),
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
       });
+
+      const bones = new Float32Array(this.MAX_BONES * 16);
+      for(let i = 0;i < this.MAX_BONES;i++) {
+        // identity matrices
+        bones.set([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1], i * 16);
+      }
+      this.device.queue.writeBuffer(this.bonesBuffer, 0, bones);
 
       this.modelBindGroup = this.device.createBindGroup({
         label: 'modelBindGroup in mesh',
@@ -475,23 +532,18 @@ export default class MEMeshObj extends Materials {
   }
 
   updateBones() {
-    const bones = new Float32Array(this.MAX_BONES * 16);
-    for(let i = 0;i < this.MAX_BONES;i++) {
-      // identity matrices
-      bones.set([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1], i * 16);
-    }
-    this.device.queue.writeBuffer(this.bonesBuffer, 0, bones);
 
-    const weights = new Float32Array(this.mesh.vertices.length * 4); // vec4<f32>
-    for(let i = 0;i < this.mesh.vertices.length;i++) {
-      weights[i * 4 + 0] = 1.0; // bone 0 full weight
-      weights[i * 4 + 1] = 0.0;
-      weights[i * 4 + 2] = 0.0;
-      weights[i * 4 + 3] = 0.0;
-    }
-    this.device.queue.writeBuffer(this.weights.buffer, 0, weights);
+
+    // const weights = new Float32Array(this.mesh.vertices.length * 4); // vec4<f32>
+    // for(let i = 0;i < this.mesh.vertices.length;i++) {
+    //   weights[i * 4 + 0] = 1.0; // bone 0 full weight
+    //   weights[i * 4 + 1] = 0.0;
+    //   weights[i * 4 + 2] = 0.0;
+    //   weights[i * 4 + 3] = 0.0;
+    // }
+    // this.device.queue.writeBuffer(this.weights.buffer, 0, weights);
   }
-  
+
   setupPipeline = () => {
     this.createBindGroupForRender();
     this.pipeline = this.device.createRenderPipeline({
@@ -633,9 +685,18 @@ export default class MEMeshObj extends Materials {
 
     // -----------------------------------------------------------
     if(this.joints) {
-      pass.setVertexBuffer(3, this.joints.buffer);  // new dummy
-      pass.setVertexBuffer(4, this.weights.buffer); // new dummy
+
+
+      if(this.constructor.name === "BVHPlayer") {
+              pass.setVertexBuffer(3, this.mesh.jointsBuffer);  // new dummy
+        pass.setVertexBuffer(4, this.mesh.weightsBuffer); // new dummy
+      } else {
+        // dumyy
+        pass.setVertexBuffer(3, this.joints.buffer);  // new dummy
+        pass.setVertexBuffer(4, this.weights.buffer); // new dummy
+      }
     }
+
     // -----------------------------------------------------------
 
     pass.setIndexBuffer(this.indexBuffer, 'uint16');

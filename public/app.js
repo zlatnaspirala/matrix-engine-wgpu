@@ -19943,6 +19943,7 @@ class BVHPlayer extends _meshObj.default {
     this.currentFrame = 0;
     this.fps = bvh.fps || 30;
     this.timeAccumulator = 0;
+    this.primitiveIndex = primitiveIndex;
     if (!bvh.sharedState) {
       bvh.sharedState = {
         currentFrame: 0,
@@ -19953,7 +19954,7 @@ class BVHPlayer extends _meshObj.default {
 
     // Reference to the skinned node containing all bones
     this.skinnedNode = this.glb.skinnedMeshNodes[skinnedNodeIndex];
-
+    console.log('this.skinnedNode', this.skinnedNode);
     // Prepare joint index map (BVH joint name -> bone index)
     this.setupBVHJointIndices();
   }
@@ -19985,49 +19986,61 @@ class BVHPlayer extends _meshObj.default {
   }
   applyBVHToGLB(frameIndex) {
     const keyframe = this.bvh.keyframes[frameIndex]; // flat array
-    const numBones = this.glb.skins[this.skinnedNode.skin].joints.length;
-    const bonesData = new Float32Array(16 * numBones);
-    const scale = 0.01;
+    const skin = this.glb.skins[this.skinnedNode.skin];
+    const numBones = skin.joints.length;
+    const bonesData = new Float32Array(16 * numBones); // final matrices per bone
+
+    const scale = 0.01; // adjust if mesh too small/large
     let offsetInFrame = 0;
     const traverseJoint = (joint, parentMat) => {
       const t = [0, 0, 0];
       const r = [0, 0, 0];
 
-      // Extract channels in order
+      // Extract channels from BVH keyframe
       for (const channel of joint.channels) {
         const value = keyframe[offsetInFrame++];
         if (channel === 'Xposition') t[0] = value;else if (channel === 'Yposition') t[1] = value;else if (channel === 'Zposition') t[2] = value;else if (channel === 'Xrotation') r[0] = value;else if (channel === 'Yrotation') r[1] = value;else if (channel === 'Zrotation') r[2] = value;
       }
 
-      // Local translation + offset
+      // Local translation (apply before rotation)
       const translation = [(t[0] + joint.offset[0]) * scale, (t[1] + joint.offset[1]) * scale, (t[2] + joint.offset[2]) * scale];
 
       // Build local matrix
       let localMat = _wgpuMatrix.mat4.identity();
-      _wgpuMatrix.mat4.translate(localMat, translation, localMat);
+      _wgpuMatrix.mat4.translate(localMat, translation, localMat); // translation first
       _wgpuMatrix.mat4.rotateX(localMat, (0, _utils.degToRad)(r[0]), localMat);
       _wgpuMatrix.mat4.rotateY(localMat, (0, _utils.degToRad)(r[1]), localMat);
       _wgpuMatrix.mat4.rotateZ(localMat, (0, _utils.degToRad)(r[2]), localMat);
 
-      // Combine with parent
+      // Combine with parent matrix
       const finalMat = _wgpuMatrix.mat4.create();
-      _wgpuMatrix.mat4.multiply(parentMat, localMat, finalMat);
+      _wgpuMatrix.mat4.identity(finalMat); // must initialize to identity!
+      _wgpuMatrix.mat4.multiply(parentMat, localMat, finalMat); // ✅ correct
 
-      // Write to buffer
+      // Apply inverse bind matrix if exists
       const boneIndex = this.bvh.jointIndices[joint.name];
-      bonesData.set(finalMat, boneIndex * 16);
+      if (boneIndex !== undefined) {
+        const invBind = this.inverseBindMatrices[boneIndex]; // Float32Array[16]
+        if (invBind) {
+          const finalBoneMat = _wgpuMatrix.mat4.create();
+          _wgpuMatrix.mat4.multiply(finalBoneMat, finalMat, invBind); // finalBoneMat = finalMat * invBind
+          bonesData.set(finalBoneMat, boneIndex * 16);
+        } else {
+          bonesData.set(finalMat, boneIndex * 16); // fallback if invBind missing
+        }
+      }
 
-      // Traverse children
+      // Recurse children
       for (const child of joint.children) {
         traverseJoint(child, finalMat);
       }
+
+      // Upload to GPU
+      this.device.queue.writeBuffer(this.bonesBuffer, 0, bonesData);
     };
 
-    // Start recursion from root
+    // Start recursion from BVH root
     traverseJoint(this.bvh.root, _wgpuMatrix.mat4.identity());
-
-    // Upload to GPU
-    this.device.queue.writeBuffer(this.bonesBuffer, 0, bonesData);
   }
 }
 exports.BVHPlayer = BVHPlayer;
@@ -20231,13 +20244,15 @@ class GLTFAccessor {
 }
 exports.GLTFAccessor = GLTFAccessor;
 class GLTFPrimitive {
-  constructor(indices, positions, normals, texcoords, material, topology) {
+  constructor(indices, positions, normals, texcoords, material, topology, weights, joints) {
     this.indices = indices;
     this.positions = positions;
     this.normals = normals;
     this.texcoords = texcoords;
     this.material = material;
     this.topology = topology;
+    this.weights = weights;
+    this.joints = joints;
   }
 
   // Build the primitive render commands into the bundle
@@ -20642,15 +20657,17 @@ async function uploadGLBModel(buffer, device) {
       let positions = null,
         normals = null,
         texcoords = [];
+      let weights = null;
+      let joints = null;
       for (const attr in prim.attributes) {
         const accessor = glbJsonData.accessors[prim.attributes[attr]];
         const viewID = accessor.bufferView;
         bufferViews[viewID].needsUpload = true;
         bufferViews[viewID].addUsage(GPUBufferUsage.VERTEX);
-        if (attr === 'POSITION') positions = new GLTFAccessor(bufferViews[viewID], accessor);else if (attr === 'NORMAL') normals = new GLTFAccessor(bufferViews[viewID], accessor);else if (attr.startsWith('TEXCOORD')) texcoords.push(new GLTFAccessor(bufferViews[viewID], accessor));
+        if (attr === 'POSITION') positions = new GLTFAccessor(bufferViews[viewID], accessor);else if (attr === 'NORMAL') normals = new GLTFAccessor(bufferViews[viewID], accessor);else if (attr.startsWith('TEXCOORD')) texcoords.push(new GLTFAccessor(bufferViews[viewID], accessor));else if (attr === 'WEIGHTS_0') weights = new GLTFAccessor(bufferViews[viewID], accessor);else if (attr.startsWith('JOINTS')) joints = new GLTFAccessor(bufferViews[viewID], accessor);
       }
       const material = prim.material !== undefined ? materials[prim.material] : defaultMaterial;
-      return new GLTFPrimitive(indices, positions, normals, texcoords, material, topology);
+      return new GLTFPrimitive(indices, positions, normals, texcoords, material, topology, weights, joints);
     });
     return new GLTFMesh(mesh.name, primitives);
   });
@@ -21422,6 +21439,39 @@ class MEMeshObj extends _materials.default {
           throw new Error("Unknown index componentType");
       }
       this.mesh.indices = indicesArray;
+      let weightsView = _glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex].weights.view;
+      console.warn('weightsView', weightsView);
+      this.mesh.weightsView = weightsView;
+      const weightsArray = new Float32Array(weightsView.buffer, weightsView.byteOffset || 0, weightsView.byteLength / 4);
+      this.mesh.weightsBuffer = this.device.createBuffer({
+        label: "weightsBuffer real data",
+        size: weightsArray.byteLength,
+        usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+        mappedAtCreation: true
+      });
+      new Float32Array(this.mesh.weightsBuffer.getMappedRange()).set(weightsArray);
+      this.mesh.weightsBuffer.unmap();
+
+      // Get JOINTS_0 accessor view from the GLB mesh
+      let jointsView = _glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex].joints.view;
+      console.warn('jointsView', jointsView);
+      this.mesh.jointsView = jointsView;
+
+      // Create typed array from the buffer (Uint16Array or Uint8Array depending on GLB)
+      const jointsArray = new Uint16Array(jointsView.buffer, jointsView.byteOffset || 0, jointsView.byteLength / 2 // Uint16 = 2 bytes
+      );
+
+      // Create GPU buffer for joints
+      this.mesh.jointsBuffer = this.device.createBuffer({
+        label: "jointsBuffer real data",
+        size: jointsArray.byteLength,
+        usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+        mappedAtCreation: true
+      });
+
+      // Upload the data to GPU
+      new Uint16Array(this.mesh.jointsBuffer.getMappedRange()).set(jointsArray);
+      this.mesh.jointsBuffer.unmap();
     } else {
       // obj files flow 
       this.mesh.uvs = this.mesh.textures;
@@ -21474,14 +21524,20 @@ class MEMeshObj extends _materials.default {
         buffer: jointsBuffer,
         stride: 16 // vec4<u32>
       };
+      const numVerts = this.mesh.vertices.length / 3;
 
-      // Weights data (default = bone0 has weight=1.0)
-      const weightsData = new Float32Array(this.mesh.vertices.length * 4);
-      for (let i = 0; i < this.mesh.vertices.length; i++) {
-        weightsData[i * 4 + 0] = 1.0;
+      // Weights data (vec4<f32>) – default all weight to bone 0
+      const weightsData = new Float32Array(numVerts * 4 * 4);
+      for (let i = 0; i < numVerts; i++) {
+        weightsData[i * 4 + 0] = 1.0; // 100% influence of bone 0
+        weightsData[i * 4 + 1] = 0.0;
+        weightsData[i * 4 + 2] = 0.0;
+        weightsData[i * 4 + 3] = 0.0;
       }
+
+      // GPU buffer
       const weightsBuffer = this.device.createBuffer({
-        label: "weightsBuffer",
+        label: "weightsBuffer dummy",
         size: weightsData.byteLength,
         usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
         mappedAtCreation: true
@@ -21647,9 +21703,16 @@ class MEMeshObj extends _materials.default {
       let MAX_BONES = 100;
       this.MAX_BONES = MAX_BONES;
       this.bonesBuffer = device.createBuffer({
+        label: "bonesBuffer",
         size: alignTo256(64 * MAX_BONES),
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
       });
+      const bones = new Float32Array(this.MAX_BONES * 16);
+      for (let i = 0; i < this.MAX_BONES; i++) {
+        // identity matrices
+        bones.set([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1], i * 16);
+      }
+      this.device.queue.writeBuffer(this.bonesBuffer, 0, bones);
       this.modelBindGroup = this.device.createBindGroup({
         label: 'modelBindGroup in mesh',
         layout: this.uniformBufferBindGroupLayout,
@@ -21753,20 +21816,15 @@ class MEMeshObj extends _materials.default {
     });
   }
   updateBones() {
-    const bones = new Float32Array(this.MAX_BONES * 16);
-    for (let i = 0; i < this.MAX_BONES; i++) {
-      // identity matrices
-      bones.set([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1], i * 16);
-    }
-    this.device.queue.writeBuffer(this.bonesBuffer, 0, bones);
-    const weights = new Float32Array(this.mesh.vertices.length * 4); // vec4<f32>
-    for (let i = 0; i < this.mesh.vertices.length; i++) {
-      weights[i * 4 + 0] = 1.0; // bone 0 full weight
-      weights[i * 4 + 1] = 0.0;
-      weights[i * 4 + 2] = 0.0;
-      weights[i * 4 + 3] = 0.0;
-    }
-    this.device.queue.writeBuffer(this.weights.buffer, 0, weights);
+
+    // const weights = new Float32Array(this.mesh.vertices.length * 4); // vec4<f32>
+    // for(let i = 0;i < this.mesh.vertices.length;i++) {
+    //   weights[i * 4 + 0] = 1.0; // bone 0 full weight
+    //   weights[i * 4 + 1] = 0.0;
+    //   weights[i * 4 + 2] = 0.0;
+    //   weights[i * 4 + 3] = 0.0;
+    // }
+    // this.device.queue.writeBuffer(this.weights.buffer, 0, weights);
   }
   setupPipeline = () => {
     this.createBindGroupForRender();
@@ -21887,9 +21945,16 @@ class MEMeshObj extends _materials.default {
 
     // -----------------------------------------------------------
     if (this.joints) {
-      pass.setVertexBuffer(3, this.joints.buffer); // new dummy
-      pass.setVertexBuffer(4, this.weights.buffer); // new dummy
+      if (this.constructor.name === "BVHPlayer") {
+        pass.setVertexBuffer(3, this.mesh.jointsBuffer); // new dummy
+        pass.setVertexBuffer(4, this.mesh.weightsBuffer); // new dummy
+      } else {
+        // dumyy
+        pass.setVertexBuffer(3, this.joints.buffer); // new dummy
+        pass.setVertexBuffer(4, this.weights.buffer); // new dummy
+      }
     }
+
     // -----------------------------------------------------------
 
     pass.setIndexBuffer(this.indexBuffer, 'uint16');

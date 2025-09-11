@@ -201,13 +201,15 @@ export class GLTFAccessor {
 }
 
 export class GLTFPrimitive {
-  constructor(indices, positions, normals, texcoords, material, topology) {
+  constructor(indices, positions, normals, texcoords, material, topology, weights, joints) {
     this.indices = indices;
     this.positions = positions;
     this.normals = normals;
     this.texcoords = texcoords;
     this.material = material;
     this.topology = topology;
+    this.weights = weights;
+    this.joints = joints;
   }
 
   // Build the primitive render commands into the bundle
@@ -646,6 +648,7 @@ export async function uploadGLBModel(buffer, device) {
 
       // Vertex attributes
       let positions = null, normals = null, texcoords = [];
+      let weights = null;let joints = null;
       for(const attr in prim.attributes) {
         const accessor = glbJsonData.accessors[prim.attributes[attr]];
         const viewID = accessor.bufferView;
@@ -654,10 +657,12 @@ export async function uploadGLBModel(buffer, device) {
         if(attr === 'POSITION') positions = new GLTFAccessor(bufferViews[viewID], accessor);
         else if(attr === 'NORMAL') normals = new GLTFAccessor(bufferViews[viewID], accessor);
         else if(attr.startsWith('TEXCOORD')) texcoords.push(new GLTFAccessor(bufferViews[viewID], accessor));
+        else if(attr === 'WEIGHTS_0') weights = new GLTFAccessor(bufferViews[viewID], accessor);
+        else if(attr.startsWith('JOINTS')) joints = new GLTFAccessor(bufferViews[viewID], accessor);
       }
 
       const material = prim.material !== undefined ? materials[prim.material] : defaultMaterial;
-      return new GLTFPrimitive(indices, positions, normals, texcoords, material, topology);
+      return new GLTFPrimitive(indices, positions, normals, texcoords, material, topology, weights, joints);
     });
 
     return new GLTFMesh(mesh.name, primitives);

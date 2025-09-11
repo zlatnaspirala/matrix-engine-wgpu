@@ -44,6 +44,8 @@ export class BVHPlayer extends MEMeshObj {
     this.fps = bvh.fps || 30;
     this.timeAccumulator = 0;
 
+    this.primitiveIndex = primitiveIndex;
+
     if(!bvh.sharedState) {
       bvh.sharedState = {currentFrame: 0, timeAccumulator: 0};
     }
@@ -52,6 +54,7 @@ export class BVHPlayer extends MEMeshObj {
     // Reference to the skinned node containing all bones
     this.skinnedNode = this.glb.skinnedMeshNodes[skinnedNodeIndex];
 
+    console.log('this.skinnedNode', this.skinnedNode)
     // Prepare joint index map (BVH joint name -> bone index)
     this.setupBVHJointIndices();
   }
@@ -74,6 +77,8 @@ export class BVHPlayer extends MEMeshObj {
     this.inverseBindMatrices = skin.inverseBindMatrices;
   }
 
+
+
   update(deltaTime) {
     const frameTime = 1 / this.fps;
     this.sharedState.timeAccumulator += deltaTime;
@@ -86,64 +91,81 @@ export class BVHPlayer extends MEMeshObj {
     const frame = this.sharedState.currentFrame;
     // console.log('frame : ', frame)
     this.applyBVHToGLB(frame);
+
+
   }
 
-applyBVHToGLB(frameIndex) {
-  const keyframe = this.bvh.keyframes[frameIndex]; // flat array
-  const numBones = this.glb.skins[this.skinnedNode.skin].joints.length;
-  const bonesData = new Float32Array(16 * numBones);
+  applyBVHToGLB(frameIndex) {
+    const keyframe = this.bvh.keyframes[frameIndex]; // flat array
+    const skin = this.glb.skins[this.skinnedNode.skin];
+    const numBones = skin.joints.length;
+    const bonesData = new Float32Array(16 * numBones); // final matrices per bone
 
-  const scale = 0.01;
-  let offsetInFrame = 0;
+    const scale = 0.01; // adjust if mesh too small/large
+    let offsetInFrame = 0;
 
-  const traverseJoint = (joint, parentMat) => {
-    const t = [0, 0, 0];
-    const r = [0, 0, 0];
+    const traverseJoint = (joint, parentMat) => {
+      const t = [0, 0, 0];
+      const r = [0, 0, 0];
 
-    // Extract channels in order
-    for (const channel of joint.channels) {
-      const value = keyframe[offsetInFrame++];
-      if (channel === 'Xposition') t[0] = value;
-      else if (channel === 'Yposition') t[1] = value;
-      else if (channel === 'Zposition') t[2] = value;
-      else if (channel === 'Xrotation') r[0] = value;
-      else if (channel === 'Yrotation') r[1] = value;
-      else if (channel === 'Zrotation') r[2] = value;
-    }
+      // Extract channels from BVH keyframe
+      for(const channel of joint.channels) {
+        const value = keyframe[offsetInFrame++];
+        if(channel === 'Xposition') t[0] = value;
+        else if(channel === 'Yposition') t[1] = value;
+        else if(channel === 'Zposition') t[2] = value;
+        else if(channel === 'Xrotation') r[0] = value;
+        else if(channel === 'Yrotation') r[1] = value;
+        else if(channel === 'Zrotation') r[2] = value;
+      }
 
-    // Local translation + offset
-    const translation = [
-      (t[0] + joint.offset[0]) * scale,
-      (t[1] + joint.offset[1]) * scale,
-      (t[2] + joint.offset[2]) * scale
-    ];
+      // Local translation (apply before rotation)
+      const translation = [
+        (t[0] + joint.offset[0]) * scale,
+        (t[1] + joint.offset[1]) * scale,
+        (t[2] + joint.offset[2]) * scale
+      ];
 
-    // Build local matrix
-    let localMat = mat4.identity();
-    mat4.translate(localMat, translation, localMat);
-    mat4.rotateX(localMat, degToRad(r[0]), localMat);
-    mat4.rotateY(localMat, degToRad(r[1]), localMat);
-    mat4.rotateZ(localMat, degToRad(r[2]), localMat);
+      // Build local matrix
+      let localMat = mat4.identity();
+      mat4.translate(localMat, translation, localMat); // translation first
+      mat4.rotateX(localMat, degToRad(r[0]), localMat);
+      mat4.rotateY(localMat, degToRad(r[1]), localMat);
+      mat4.rotateZ(localMat, degToRad(r[2]), localMat);
 
-    // Combine with parent
-    const finalMat = mat4.create();
-    mat4.multiply(parentMat, localMat, finalMat);
+      // Combine with parent matrix
+      const finalMat = mat4.create();
+      mat4.identity(finalMat); // must initialize to identity!
+      mat4.multiply(parentMat, localMat, finalMat); // ✅ correct
 
-    // Write to buffer
-    const boneIndex = this.bvh.jointIndices[joint.name];
-    bonesData.set(finalMat, boneIndex * 16);
+      // Apply inverse bind matrix if exists
+      const boneIndex = this.bvh.jointIndices[joint.name];
+      if(boneIndex !== undefined) {
+        const invBind = this.inverseBindMatrices[boneIndex]; // Float32Array[16]
+        if(invBind) {
+          const finalBoneMat = mat4.create();
+          mat4.multiply(finalBoneMat, finalMat, invBind); // finalBoneMat = finalMat * invBind
+          bonesData.set(finalBoneMat, boneIndex * 16);
+        } else {
+          bonesData.set(finalMat, boneIndex * 16); // fallback if invBind missing
+        }
+      }
 
-    // Traverse children
-    for (const child of joint.children) {
-      traverseJoint(child, finalMat);
-    }
-  };
+      // Recurse children
+      for(const child of joint.children) {
+        traverseJoint(child, finalMat);
+      }
 
-  // Start recursion from root
-  traverseJoint(this.bvh.root, mat4.identity());
+          // Upload to GPU
+    this.device.queue.writeBuffer(this.bonesBuffer, 0, bonesData);
+    
+    };
 
-  // Upload to GPU
-  this.device.queue.writeBuffer(this.bonesBuffer, 0, bonesData);
-}
+    // Start recursion from BVH root
+    traverseJoint(this.bvh.root, mat4.identity());
+
+
+  }
+
 }
 
