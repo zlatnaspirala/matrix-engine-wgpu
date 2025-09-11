@@ -19989,33 +19989,44 @@ class BVHPlayer extends _meshObj.default {
     const bonesData = new Float32Array(16 * numBones);
     const scale = 0.01;
     let offsetInFrame = 0;
-
-    // Iterate joints in BVH order
-    for (const jointName of this.bvh.jointOrder) {
-      // you need jointOrder array
-      const boneIndex = this.bvh.jointIndices[jointName];
-      const bvhJoint = this.bvh.joints[jointName];
-      if (!bvhJoint) continue;
+    const traverseJoint = (joint, parentMat) => {
       const t = [0, 0, 0];
       const r = [0, 0, 0];
 
       // Extract channels in order
-      for (const channel of bvhJoint.channels) {
+      for (const channel of joint.channels) {
         const value = keyframe[offsetInFrame++];
         if (channel === 'Xposition') t[0] = value;else if (channel === 'Yposition') t[1] = value;else if (channel === 'Zposition') t[2] = value;else if (channel === 'Xrotation') r[0] = value;else if (channel === 'Yrotation') r[1] = value;else if (channel === 'Zrotation') r[2] = value;
       }
 
-      // Translation + offset
-      const translation = [(t[0] + bvhJoint.offset[0]) * scale, (t[1] + bvhJoint.offset[1]) * scale, (t[2] + bvhJoint.offset[2]) * scale];
+      // Local translation + offset
+      const translation = [(t[0] + joint.offset[0]) * scale, (t[1] + joint.offset[1]) * scale, (t[2] + joint.offset[2]) * scale];
 
-      // Build mat4
-      const mat = _wgpuMatrix.mat4.identity();
-      _wgpuMatrix.mat4.translate(mat, translation, mat);
-      _wgpuMatrix.mat4.rotateX(mat, (0, _utils.degToRad)(r[0]), mat);
-      _wgpuMatrix.mat4.rotateY(mat, (0, _utils.degToRad)(r[1]), mat);
-      _wgpuMatrix.mat4.rotateZ(mat, (0, _utils.degToRad)(r[2]), mat);
-      bonesData.set(mat, boneIndex * 16);
-    }
+      // Build local matrix
+      let localMat = _wgpuMatrix.mat4.identity();
+      _wgpuMatrix.mat4.translate(localMat, translation, localMat);
+      _wgpuMatrix.mat4.rotateX(localMat, (0, _utils.degToRad)(r[0]), localMat);
+      _wgpuMatrix.mat4.rotateY(localMat, (0, _utils.degToRad)(r[1]), localMat);
+      _wgpuMatrix.mat4.rotateZ(localMat, (0, _utils.degToRad)(r[2]), localMat);
+
+      // Combine with parent
+      const finalMat = _wgpuMatrix.mat4.create();
+      _wgpuMatrix.mat4.multiply(parentMat, localMat, finalMat);
+
+      // Write to buffer
+      const boneIndex = this.bvh.jointIndices[joint.name];
+      bonesData.set(finalMat, boneIndex * 16);
+
+      // Traverse children
+      for (const child of joint.children) {
+        traverseJoint(child, finalMat);
+      }
+    };
+
+    // Start recursion from root
+    traverseJoint(this.bvh.root, _wgpuMatrix.mat4.identity());
+
+    // Upload to GPU
     this.device.queue.writeBuffer(this.bonesBuffer, 0, bonesData);
   }
 }
