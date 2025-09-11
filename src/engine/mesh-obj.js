@@ -136,9 +136,10 @@ export default class MEMeshObj extends Materials {
     // in MeshObj constructor or setup
     if(!this.joints) {
       // Joints data (all zeros for dummy, size = numVerts * 4)
-      const jointsData = new Uint32Array((this.mesh.vertices.length/3) * 4);
+      const jointsData = new Uint32Array((this.mesh.vertices.length / 3) * 4);
 
       const jointsBuffer = this.device.createBuffer({
+        label: "jointsBuffer",
         size: jointsData.byteLength,
         usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
         mappedAtCreation: true,
@@ -153,12 +154,13 @@ export default class MEMeshObj extends Materials {
       };
 
       // Weights data (default = bone0 has weight=1.0)
-      const weightsData = new Float32Array((this.mesh.vertices.length/3) * 4);
+      const weightsData = new Float32Array((this.mesh.vertices.length) * 4);
       for(let i = 0;i < this.mesh.vertices.length;i++) {
         weightsData[i * 4 + 0] = 1.0;
       }
 
       const weightsBuffer = this.device.createBuffer({
+        label: "weightsBuffer",
         size: weightsData.byteLength,
         usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
         mappedAtCreation: true,
@@ -407,7 +409,7 @@ export default class MEMeshObj extends Materials {
             mesh.glb.skinnedMeshNodes.forEach((skinnedMeshNode) => {
               device.queue.writeBuffer(
                 // skinnedMeshNode.sceneUniformBuffer,
-                  mesh.sceneUniformBuffer,
+                mesh.sceneUniformBuffer,
                 0,
                 sceneData.buffer,
                 sceneData.byteOffset,
@@ -489,6 +491,7 @@ export default class MEMeshObj extends Materials {
     }
     this.device.queue.writeBuffer(this.weights.buffer, 0, weights);
   }
+  
   setupPipeline = () => {
     this.createBindGroupForRender();
     this.pipeline = this.device.createRenderPipeline({

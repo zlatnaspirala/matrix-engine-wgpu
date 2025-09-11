@@ -27,6 +27,8 @@ export default class MatrixEngineWGPU {
   frame = () => {};
   entityHolder = [];
 
+  lastTime = 0;
+
   entityArgPass = {
     loadOp: 'clear',
     storeOp: 'store',
@@ -494,7 +496,15 @@ export default class MatrixEngineWGPU {
       let pass = commandEncoder.beginRenderPass(this.mainRenderPassDesc);
       // Loop over each mesh
       for(const mesh of this.mainRenderBundle) {
-        if (mesh.update) mesh.update(); // glb
+        if(mesh.update) {
+
+          const now = performance.now() / 1000; // seconds
+          const deltaTime = now - (this.lastTime || now);
+          this.lastTime = now;
+
+          mesh.update(deltaTime); // glb
+          // mesh.updateBones()
+        }
         pass.setPipeline(mesh.pipeline);
         if(!mesh.sceneBindGroupForRender || (mesh.FINISH_VIDIO_INIT == false && mesh.isVideo == true)) {
           for(const m of this.mainRenderBundle) {

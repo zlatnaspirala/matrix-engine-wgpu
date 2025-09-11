@@ -364,6 +364,9 @@ class MEBvhJoint {
     this.offset = [[0, 0, 0], [0, 0, 0], [0, 0, 0]];
     this.channels = [];
     this.children = [];
+
+    // New: where in the frame array this joint’s channels start ???
+    this.channelOffset = 0;
   }
   add_child(child) {
     this.children.push(child);
@@ -442,6 +445,30 @@ class MEBvh {
     this.frames = 0;
     this.fps = 0;
     this.myName = "MATRIX-ENGINE-BVH";
+    // new
+    this.jointOrder = []; // array to store joints in order
+  }
+  computeJointOrder() {
+    this.jointOrder = [];
+    const traverse = joint => {
+      this.jointOrder.push(joint.name);
+      for (const child of joint.children) {
+        traverse(child);
+      }
+    };
+    traverse(this.root); // root is your MEBvhJoint
+  }
+  computeChannelOffsets() {
+    let offset = 0;
+    const walk = joint => {
+      joint.channelOffset = offset; // assign
+      offset += joint.channels.length; // advance
+      for (const child of joint.children) {
+        walk(child);
+      }
+    };
+    if (this.root) walk(this.root);
+    this.totalChannels = offset; // store total for frame allocation
   }
   async parse_file(link) {
     return new Promise((resolve, reject) => {
@@ -460,6 +487,8 @@ class MEBvh {
             byId('log').appendChild(newLog);
           }
           this._parse_hierarchy(hierarchy);
+          this.computeJointOrder();
+          this.computeChannelOffsets(); // <— must do this here NEW
           this.parse_motion(motion);
           resolve();
         });
@@ -19874,6 +19903,8 @@ Object.defineProperty(exports, "__esModule", {
 exports.loadBVH = exports.animBVH = exports.BVHPlayer = void 0;
 var _bvhLoader = _interopRequireDefault(require("bvh-loader"));
 var _meshObj = _interopRequireDefault(require("../mesh-obj"));
+var _wgpuMatrix = require("wgpu-matrix");
+var _utils = require("../utils.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 var animBVH = exports.animBVH = new _bvhLoader.default();
 let loadBVH = path => {
@@ -19912,6 +19943,13 @@ class BVHPlayer extends _meshObj.default {
     this.currentFrame = 0;
     this.fps = bvh.fps || 30;
     this.timeAccumulator = 0;
+    if (!bvh.sharedState) {
+      bvh.sharedState = {
+        currentFrame: 0,
+        timeAccumulator: 0
+      };
+    }
+    this.sharedState = bvh.sharedState;
 
     // Reference to the skinned node containing all bones
     this.skinnedNode = this.glb.skinnedMeshNodes[skinnedNodeIndex];
@@ -19935,40 +19973,55 @@ class BVHPlayer extends _meshObj.default {
     this.inverseBindMatrices = skin.inverseBindMatrices;
   }
   update(deltaTime) {
-    // Advance time and frame
-    this.timeAccumulator += deltaTime;
     const frameTime = 1 / this.fps;
-    while (this.timeAccumulator >= frameTime) {
-      this.currentFrame = (this.currentFrame + 1) % this.bvh.keyframes.length;
-      this.timeAccumulator -= frameTime;
+    this.sharedState.timeAccumulator += deltaTime;
+    while (this.sharedState.timeAccumulator >= frameTime) {
+      this.sharedState.currentFrame = (this.sharedState.currentFrame + 1) % this.bvh.keyframes.length;
+      this.sharedState.timeAccumulator -= frameTime;
     }
-
-    // Apply BVH frame to GLB
-    this.applyBVHToGLB(this.currentFrame);
+    const frame = this.sharedState.currentFrame;
+    // console.log('frame : ', frame)
+    this.applyBVHToGLB(frame);
   }
   applyBVHToGLB(frameIndex) {
-    const keyframe = this.bvh.keyframes[frameIndex];
+    const keyframe = this.bvh.keyframes[frameIndex]; // flat array
     const numBones = this.glb.skins[this.skinnedNode.skin].joints.length;
-    // const numBones = this.skinnedNode.mesh.skin.joints.length;
-    const bonesData = new Float32Array(16 * numBones); // flat mat4 array
+    const bonesData = new Float32Array(16 * numBones);
+    const scale = 0.01;
+    let offsetInFrame = 0;
 
-    for (const jointName in this.bvh.jointIndices) {
+    // Iterate joints in BVH order
+    for (const jointName of this.bvh.jointOrder) {
+      // you need jointOrder array
       const boneIndex = this.bvh.jointIndices[jointName];
       const bvhJoint = this.bvh.joints[jointName];
       if (!bvhJoint) continue;
+      const t = [0, 0, 0];
+      const r = [0, 0, 0];
 
-      // Convert BVH joint keyframe to mat4
-      const mat = bvhJoint.matrixFromKeyframe(keyframe);
+      // Extract channels in order
+      for (const channel of bvhJoint.channels) {
+        const value = keyframe[offsetInFrame++];
+        if (channel === 'Xposition') t[0] = value;else if (channel === 'Yposition') t[1] = value;else if (channel === 'Zposition') t[2] = value;else if (channel === 'Xrotation') r[0] = value;else if (channel === 'Yrotation') r[1] = value;else if (channel === 'Zrotation') r[2] = value;
+      }
+
+      // Translation + offset
+      const translation = [(t[0] + bvhJoint.offset[0]) * scale, (t[1] + bvhJoint.offset[1]) * scale, (t[2] + bvhJoint.offset[2]) * scale];
+
+      // Build mat4
+      const mat = _wgpuMatrix.mat4.identity();
+      _wgpuMatrix.mat4.translate(mat, translation, mat);
+      _wgpuMatrix.mat4.rotateX(mat, (0, _utils.degToRad)(r[0]), mat);
+      _wgpuMatrix.mat4.rotateY(mat, (0, _utils.degToRad)(r[1]), mat);
+      _wgpuMatrix.mat4.rotateZ(mat, (0, _utils.degToRad)(r[2]), mat);
       bonesData.set(mat, boneIndex * 16);
     }
-
-    // Upload to GPU
     this.device.queue.writeBuffer(this.bonesBuffer, 0, bonesData);
   }
 }
 exports.BVHPlayer = BVHPlayer;
 
-},{"../mesh-obj":27,"bvh-loader":2}],24:[function(require,module,exports){
+},{"../mesh-obj":27,"../utils.js":28,"bvh-loader":2,"wgpu-matrix":16}],24:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -21398,6 +21451,7 @@ class MEMeshObj extends _materials.default {
       // Joints data (all zeros for dummy, size = numVerts * 4)
       const jointsData = new Uint32Array(this.mesh.vertices.length / 3 * 4);
       const jointsBuffer = this.device.createBuffer({
+        label: "jointsBuffer",
         size: jointsData.byteLength,
         usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
         mappedAtCreation: true
@@ -21411,11 +21465,12 @@ class MEMeshObj extends _materials.default {
       };
 
       // Weights data (default = bone0 has weight=1.0)
-      const weightsData = new Float32Array(this.mesh.vertices.length / 3 * 4);
+      const weightsData = new Float32Array(this.mesh.vertices.length * 4);
       for (let i = 0; i < this.mesh.vertices.length; i++) {
         weightsData[i * 4 + 0] = 1.0;
       }
       const weightsBuffer = this.device.createBuffer({
+        label: "weightsBuffer",
         size: weightsData.byteLength,
         usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
         mappedAtCreation: true
@@ -23609,6 +23664,7 @@ class MatrixEngineWGPU {
   lightContainer = [];
   frame = () => {};
   entityHolder = [];
+  lastTime = 0;
   entityArgPass = {
     loadOp: 'clear',
     storeOp: 'store',
@@ -24216,7 +24272,13 @@ class MatrixEngineWGPU {
       let pass = commandEncoder.beginRenderPass(this.mainRenderPassDesc);
       // Loop over each mesh
       for (const mesh of this.mainRenderBundle) {
-        if (mesh.update) mesh.update(); // glb
+        if (mesh.update) {
+          const now = performance.now() / 1000; // seconds
+          const deltaTime = now - (this.lastTime || now);
+          this.lastTime = now;
+          mesh.update(deltaTime); // glb
+          // mesh.updateBones()
+        }
         pass.setPipeline(mesh.pipeline);
         if (!mesh.sceneBindGroupForRender || mesh.FINISH_VIDIO_INIT == false && mesh.isVideo == true) {
           for (const m of this.mainRenderBundle) {

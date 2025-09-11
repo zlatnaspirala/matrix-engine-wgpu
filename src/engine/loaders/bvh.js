@@ -1,5 +1,7 @@
 import MEBvh from "bvh-loader";
 import MEMeshObj from "../mesh-obj";
+import {mat4} from "wgpu-matrix";
+import {degToRad} from "../utils.js";
 
 export var animBVH = new MEBvh();
 
@@ -42,6 +44,11 @@ export class BVHPlayer extends MEMeshObj {
     this.fps = bvh.fps || 30;
     this.timeAccumulator = 0;
 
+    if(!bvh.sharedState) {
+      bvh.sharedState = {currentFrame: 0, timeAccumulator: 0};
+    }
+    this.sharedState = bvh.sharedState;
+
     // Reference to the skinned node containing all bones
     this.skinnedNode = this.glb.skinnedMeshNodes[skinnedNodeIndex];
 
@@ -68,35 +75,64 @@ export class BVHPlayer extends MEMeshObj {
   }
 
   update(deltaTime) {
-    // Advance time and frame
-    this.timeAccumulator += deltaTime;
     const frameTime = 1 / this.fps;
-    while(this.timeAccumulator >= frameTime) {
-      this.currentFrame = (this.currentFrame + 1) % this.bvh.keyframes.length;
-      this.timeAccumulator -= frameTime;
+    this.sharedState.timeAccumulator += deltaTime;
+
+    while(this.sharedState.timeAccumulator >= frameTime) {
+      this.sharedState.currentFrame = (this.sharedState.currentFrame + 1) % this.bvh.keyframes.length;
+      this.sharedState.timeAccumulator -= frameTime;
     }
 
-    // Apply BVH frame to GLB
-    this.applyBVHToGLB(this.currentFrame);
+    const frame = this.sharedState.currentFrame;
+    // console.log('frame : ', frame)
+    this.applyBVHToGLB(frame);
   }
 
   applyBVHToGLB(frameIndex) {
-    const keyframe = this.bvh.keyframes[frameIndex];
-    const numBones =this.glb.skins[this.skinnedNode.skin].joints.length;
-    // const numBones = this.skinnedNode.mesh.skin.joints.length;
-    const bonesData = new Float32Array(16 * numBones); // flat mat4 array
+    const keyframe = this.bvh.keyframes[frameIndex]; // flat array
+    const numBones = this.glb.skins[this.skinnedNode.skin].joints.length;
+    const bonesData = new Float32Array(16 * numBones);
 
-    for(const jointName in this.bvh.jointIndices) {
+    const scale = 0.01;
+    let offsetInFrame = 0;
+
+    // Iterate joints in BVH order
+    for(const jointName of this.bvh.jointOrder) { // you need jointOrder array
       const boneIndex = this.bvh.jointIndices[jointName];
       const bvhJoint = this.bvh.joints[jointName];
       if(!bvhJoint) continue;
 
-      // Convert BVH joint keyframe to mat4
-      const mat = bvhJoint.matrixFromKeyframe(keyframe);
+      const t = [0, 0, 0];
+      const r = [0, 0, 0];
+
+      // Extract channels in order
+      for(const channel of bvhJoint.channels) {
+        const value = keyframe[offsetInFrame++];
+        if(channel === 'Xposition') t[0] = value;
+        else if(channel === 'Yposition') t[1] = value;
+        else if(channel === 'Zposition') t[2] = value;
+        else if(channel === 'Xrotation') r[0] = value;
+        else if(channel === 'Yrotation') r[1] = value;
+        else if(channel === 'Zrotation') r[2] = value;
+      }
+
+      // Translation + offset
+      const translation = [
+        (t[0] + bvhJoint.offset[0]) * scale,
+        (t[1] + bvhJoint.offset[1]) * scale,
+        (t[2] + bvhJoint.offset[2]) * scale
+      ];
+
+      // Build mat4
+      const mat = mat4.identity();
+      mat4.translate(mat, translation, mat);
+      mat4.rotateX(mat, degToRad(r[0]), mat);
+      mat4.rotateY(mat, degToRad(r[1]), mat);
+      mat4.rotateZ(mat, degToRad(r[2]), mat);
+
       bonesData.set(mat, boneIndex * 16);
     }
 
-    // Upload to GPU
     this.device.queue.writeBuffer(this.bonesBuffer, 0, bonesData);
   }
 }
