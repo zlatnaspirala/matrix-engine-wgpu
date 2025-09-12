@@ -245,7 +245,8 @@ export class BVHPlayer extends MEMeshObj {
       const invBindMat = this.inverseBindMatrices[i]; // Float32Array[16]
       let finalBoneMat = mat4.identity();
       if(invBindMat) {
-        mat4.multiply(worldMat, invBindMat, finalBoneMat);
+        // mat4.multiply(worldMat, invBindMat, finalBoneMat);
+        mat4.multiply(invBindMat, worldMat, finalBoneMat);
       } else {
         mat4.copy(worldMat, finalBoneMat);
       }
@@ -312,7 +313,8 @@ export class BVHPlayer extends MEMeshObj {
     console.log(Object.keys(glb.glbJsonData)); // forced list of keys
 
     // Get the actual ArrayBuffer from GLB binary chunk
-    const bufferDef = this.glb.glbJsonData.buffers[0]; // usually just one buffer
+    // const bufferDef = this.glb.glbJsonData.buffers[0]; // usually just one buffer
+    const bufferDef = this.glb.glbBinaryBuffer;
  
 
     // ✅ now just slice:

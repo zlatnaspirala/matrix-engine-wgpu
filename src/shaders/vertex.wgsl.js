@@ -72,6 +72,8 @@ fn main(
 
   // apply skinning
   let skinned = skinVertex(pos, nrm, joints, weights);
+  // let skinned = SkinResult(pos, nrm); // bypass skinVertex
+
   let skinnedPos  = skinned.position;
   let skinnedNorm = skinned.normal;
 

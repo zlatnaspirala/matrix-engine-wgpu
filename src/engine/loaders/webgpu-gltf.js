@@ -561,12 +561,13 @@ export class GLTFTexture {
 }
 
 export class GLBModel {
-  constructor(nodes, skins, skinnedMeshNodes, glbJsonData) {
+  constructor(nodes, skins, skinnedMeshNodes, glbJsonData, glbBinaryBuffer) {
     this.nodes = nodes;
     this.skins = skins;
     this.skinnedMeshNodes = skinnedMeshNodes;
     this.bvhToGLBMap = null;
     this.glbJsonData = glbJsonData;
+    this.glbBinaryBuffer = glbBinaryBuffer;
   }
 
   buildRenderBundles(
@@ -588,58 +589,87 @@ export class GLBModel {
 
 // Upload a GLB model and return it
 export async function uploadGLBModel(buffer, device) {
+  // 1️⃣ Validate header
   const header = new Uint32Array(buffer, 0, 5);
-  if(header[0] !== 0x46546C67) {
+  if (header[0] !== 0x46546C67) {
     alert('This does not appear to be a glb file?');
     return;
   }
 
+  // 2️⃣ JSON chunk
   const glbJsonData = JSON.parse(
     new TextDecoder('utf-8').decode(new Uint8Array(buffer, 20, header[3]))
   );
 
+  // 3️⃣ Binary chunk header + buffer
   const binaryHeader = new Uint32Array(buffer, 20 + header[3], 2);
   const glbBuffer = new GLTFBuffer(buffer, binaryHeader[0], 28 + header[3]);
 
-  const bufferViews = glbJsonData.bufferViews.map(v => new GLTFBufferView(glbBuffer, v));
+  // 4️⃣ BufferViews
+  const bufferViews = glbJsonData.bufferViews.map(
+    v => new GLTFBufferView(glbBuffer, v)
+  );
 
-  // Load images
+
+
+  const binaryOffset = 28 + header[3];
+const binaryLength = binaryHeader[0];
+
+// ✅ raw ArrayBuffer slice of the binary chunk:
+const glbBinaryBuffer = buffer.slice(binaryOffset, binaryOffset + binaryLength);
+
+
+  // 5️⃣ Load images
   const images = [];
-  if(glbJsonData.images) {
-    for(const imgJson of glbJsonData.images) {
-      const view = new GLTFBufferView(glbBuffer, glbJsonData.bufferViews[imgJson.bufferView]);
-      const blob = new Blob([view.buffer], {type: imgJson['mime/type']});
+  if (glbJsonData.images) {
+    for (const imgJson of glbJsonData.images) {
+      const view = new GLTFBufferView(
+        glbBuffer,
+        glbJsonData.bufferViews[imgJson.bufferView]
+      );
+      const blob = new Blob([view.buffer], { type: imgJson['mime/type'] });
       const img = await createImageBitmap(blob);
       const gpuImg = device.createTexture({
         size: [img.width, img.height, 1],
         format: 'rgba8unorm-srgb',
-        usage: GPUTextureUsage.TEXTURE_BINDING |
+        usage:
+          GPUTextureUsage.TEXTURE_BINDING |
           GPUTextureUsage.COPY_DST |
           GPUTextureUsage.RENDER_ATTACHMENT,
       });
-      device.queue.copyExternalImageToTexture({source: img}, {texture: gpuImg}, [img.width, img.height, 1]);
+      device.queue.copyExternalImageToTexture(
+        { source: img },
+        { texture: gpuImg },
+        [img.width, img.height, 1]
+      );
       images.push(gpuImg);
     }
   }
 
+  // 6️⃣ Samplers, Textures, Materials
   const defaultSampler = new GLTFSampler({}, device);
-  const samplers = (glbJsonData.samplers || []).map(s => new GLTFSampler(s, device));
+  const samplers = (glbJsonData.samplers || []).map(
+    s => new GLTFSampler(s, device)
+  );
   const textures = (glbJsonData.textures || []).map(tex => {
-    const sampler = tex.sampler !== undefined ? samplers[tex.sampler] : defaultSampler;
+    const sampler =
+      tex.sampler !== undefined ? samplers[tex.sampler] : defaultSampler;
     return new GLTFTexture(sampler, images[tex.source]);
   });
 
   const defaultMaterial = new GLTFMaterial({});
-  const materials = (glbJsonData.materials || []).map(m => new GLTFMaterial(m, textures));
+  const materials = (glbJsonData.materials || []).map(
+    m => new GLTFMaterial(m, textures)
+  );
 
-  // Load meshes
+  // 7️⃣ Meshes
   const meshes = (glbJsonData.meshes || []).map(mesh => {
     const primitives = mesh.primitives.map(prim => {
       const topology = prim.mode ?? GLTFRenderMode.TRIANGLES;
 
       // Indices
       let indices = null;
-      if(prim.indices !== undefined) {
+      if (prim.indices !== undefined) {
         const accessor = glbJsonData.accessors[prim.indices];
         const viewID = accessor.bufferView;
         bufferViews[viewID].needsUpload = true;
@@ -648,75 +678,94 @@ export async function uploadGLBModel(buffer, device) {
       }
 
       // Vertex attributes
-      let positions = null, normals = null, texcoords = [];
-      let weights = null; let joints = null;
-      for(const attr in prim.attributes) {
+      let positions = null,
+        normals = null,
+        texcoords = [];
+      let weights = null;
+      let joints = null;
+      for (const attr in prim.attributes) {
         const accessor = glbJsonData.accessors[prim.attributes[attr]];
         const viewID = accessor.bufferView;
         bufferViews[viewID].needsUpload = true;
         bufferViews[viewID].addUsage(GPUBufferUsage.VERTEX);
-        if(attr === 'POSITION') positions = new GLTFAccessor(bufferViews[viewID], accessor);
-        else if(attr === 'NORMAL') normals = new GLTFAccessor(bufferViews[viewID], accessor);
-        else if(attr.startsWith('TEXCOORD')) texcoords.push(new GLTFAccessor(bufferViews[viewID], accessor));
-        else if(attr === 'WEIGHTS_0') weights = new GLTFAccessor(bufferViews[viewID], accessor);
-        else if(attr.startsWith('JOINTS')) {
-          console.info('importer attr JOINTS .... ', attr)
+
+        if (attr === 'POSITION')
+          positions = new GLTFAccessor(bufferViews[viewID], accessor);
+        else if (attr === 'NORMAL')
+          normals = new GLTFAccessor(bufferViews[viewID], accessor);
+        else if (attr.startsWith('TEXCOORD'))
+          texcoords.push(new GLTFAccessor(bufferViews[viewID], accessor));
+        else if (attr === 'WEIGHTS_0')
+          weights = new GLTFAccessor(bufferViews[viewID], accessor);
+        else if (attr.startsWith('JOINTS'))
           joints = new GLTFAccessor(bufferViews[viewID], accessor);
-        }
-        else {
-          console.info('importer attr unknow .... ', attr)
-        }
       }
 
-      const material = prim.material !== undefined ? materials[prim.material] : defaultMaterial;
-      return new GLTFPrimitive(indices, positions, normals, texcoords, material, topology, weights, joints);
+      const material =
+        prim.material !== undefined
+          ? materials[prim.material]
+          : defaultMaterial;
+
+      return new GLTFPrimitive(
+        indices,
+        positions,
+        normals,
+        texcoords,
+        material,
+        topology,
+        weights,
+        joints
+      );
     });
 
     return new GLTFMesh(mesh.name, primitives);
   });
 
-  // Upload bufferViews
-  for(const bv of bufferViews) if(bv.needsUpload) bv.upload(device);
+  // Upload buffers & materials
+  for (const bv of bufferViews) if (bv.needsUpload) bv.upload(device);
   defaultMaterial.upload(device);
-  for(const m of materials) m.upload(device);
+  for (const m of materials) m.upload(device);
 
-  // Read skins
+  // 8️⃣ Skins (we only store the index of inverseBindMatrices here)
   const skins = (glbJsonData.skins || []).map(skin => ({
     name: skin.name,
     joints: skin.joints,
-    inverseBindMatrices: skin.inverseBindMatrices
+    inverseBindMatrices: skin.inverseBindMatrices, // accessor index
   }));
 
-  // Create nodes (including bones)
+  // 9️⃣ Nodes
   const nodes = [];
   const gltfNodes = makeGLTFSingleLevel(glbJsonData.nodes);
-  for(let i = 0;i < gltfNodes.length;i++) {
+  for (let i = 0; i < gltfNodes.length; i++) {
     const n = gltfNodes[i];
     const meshObj = n.mesh !== undefined ? meshes[n.mesh] : null;
     const node = new GLTFNode(n.name, meshObj, readNodeTransform(n));
-    if(n.skin !== undefined) node.skin = n.skin; // attach skin index
+
+    if (n.skin !== undefined) node.skin = n.skin; // skin index
     node.upload(device);
     nodes.push(node);
   }
 
-  // pseudo-code
-  const skinnedMeshNodes = nodes.filter(n => n.mesh && n.skin !== undefined);
+  // 🔟 Skinned mesh nodes
+  const skinnedMeshNodes = nodes.filter(
+    n => n.mesh && n.skin !== undefined
+  );
 
-  if(skinnedMeshNodes.length === 0) {
-    console.warn("No skins found — mesh not bound to skeleton");
+  if (skinnedMeshNodes.length === 0) {
+    console.warn('No skins found — mesh not bound to skeleton');
   } else {
     skinnedMeshNodes.forEach(n => {
-      console.log("Mesh", n.mesh.name, "uses skin index", n.skin);
-      // setup bone matrices for this mesh
+      console.log('Mesh', n.mesh.name, 'uses skin index', n.skin);
+
+      // Per-mesh uniform buffer (example)
       n.sceneUniformBuffer = device.createBuffer({
-        size: 44 * 4, // 44 floats (like your engine scene data)
+        size: 44 * 4,
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
       });
-
     });
   }
-
-  return new GLBModel(nodes, skins, skinnedMeshNodes, glbJsonData);
+ let R = new GLBModel(nodes, skins, skinnedMeshNodes, glbJsonData, glbBinaryBuffer)
+  return R;
 }
 
 export function createBVHToGLBMap(glb, bvh) {
