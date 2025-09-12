@@ -19905,6 +19905,7 @@ var _bvhLoader = _interopRequireDefault(require("bvh-loader"));
 var _meshObj = _interopRequireDefault(require("../mesh-obj"));
 var _wgpuMatrix = require("wgpu-matrix");
 var _utils = require("../utils.js");
+var _webgpuGltf = require("./webgpu-gltf.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 var animBVH = exports.animBVH = new _bvhLoader.default();
 let loadBVH = path => {
@@ -19956,7 +19957,35 @@ class BVHPlayer extends _meshObj.default {
     this.skinnedNode = this.glb.skinnedMeshNodes[skinnedNodeIndex];
     console.log('this.skinnedNode', this.skinnedNode);
     // Prepare joint index map (BVH joint name -> bone index)
-    this.setupBVHJointIndices();
+    // this.setupBVHJointIndices();
+
+    this.nodeWorldMatrices = Array.from({
+      length: this.glb.nodes.length
+    }, () => _wgpuMatrix.mat4.identity());
+
+    // Optionally store inverseBindMatrices if needed
+    this.initInverseBindMatrices();
+    this.computeNodeWorldMatrices();
+  }
+  initInverseBindMatrices(skinIndex = 0) {
+    const skin = this.glb.skins[skinIndex];
+    const invBindAccessorIndex = skin.inverseBindMatrices; // usually a number
+    if (invBindAccessorIndex === undefined || invBindAccessorIndex === null) {
+      console.warn('No inverseBindMatrices accessor for skin', skinIndex);
+      return;
+    }
+    const invBindArray = this.getAccessorArray(this.glb, invBindAccessorIndex);
+    this.inverseBindMatrices = [];
+    const numBones = skin.joints.length;
+    for (let i = 0; i < numBones; i++) {
+      const mat = _wgpuMatrix.mat4.create();
+      // Copy 16 floats from invBindArray
+      for (let j = 0; j < 16; j++) {
+        mat[j] = invBindArray[i * 16 + j];
+      }
+      this.inverseBindMatrices.push(mat);
+    }
+    console.log('Inverse bind matrices loaded:', this.inverseBindMatrices.length, 'bones');
   }
   setupBVHJointIndices() {
     this.bvh.jointIndices = {};
@@ -19969,9 +19998,6 @@ class BVHPlayer extends _meshObj.default {
         this.bvh.jointIndices[name] = i;
       }
     });
-
-    // Optionally store inverseBindMatrices if needed
-    this.inverseBindMatrices = skin.inverseBindMatrices;
   }
   update(deltaTime) {
     const frameTime = 1 / this.fps;
@@ -19982,7 +20008,8 @@ class BVHPlayer extends _meshObj.default {
     }
     const frame = this.sharedState.currentFrame;
     // console.log('frame : ', frame)
-    this.applyBVHToGLB(frame);
+    // this.applyBVHToGLB(frame);
+    this.updateBonesFromGLTF_wgpuMatrix();
   }
   applyBVHToGLB(frameIndex) {
     const keyframe = this.bvh.keyframes[frameIndex]; // flat array
@@ -20042,10 +20069,190 @@ class BVHPlayer extends _meshObj.default {
     // Start recursion from BVH root
     traverseJoint(this.bvh.root, _wgpuMatrix.mat4.identity());
   }
+  updateBonesFromGLTF_wgpuMatrix() {
+    const skin = this.glb.skins[this.skinnedNode.skin];
+    const numBones = skin.joints.length;
+    const bonesData = new Float32Array(16 * numBones);
+
+    // Ensure world matrices storage exists
+    if (!this.nodeWorldMatrices) this.nodeWorldMatrices = [];
+    for (let i = 0; i < numBones; i++) {
+      const nodeIndex = skin.joints[i];
+      const node = this.glb.nodes[nodeIndex];
+
+      // 1️⃣ Local matrix (from transform or TRS)
+      let localMat = _wgpuMatrix.mat4.identity();
+      if (node.transform) {
+        // node.transform is already 16 elements
+        _wgpuMatrix.mat4.copy(node.transform, localMat);
+      } else {
+        _wgpuMatrix.mat4.identity(localMat);
+        if (node.translation) _wgpuMatrix.mat4.translate(localMat, node.translation, localMat);
+        if (node.rotation) {
+          const rotMat = quat.toMat4(node.rotation);
+          _wgpuMatrix.mat4.multiply(localMat, rotMat, localMat);
+        }
+        if (node.scale) _wgpuMatrix.mat4.scale(localMat, node.scale, localMat);
+      }
+
+      // 2️⃣ World matrix
+      let worldMat = _wgpuMatrix.mat4.identity();
+      if (node.parent !== undefined) {
+        const parentWorld = this.nodeWorldMatrices[node.parent];
+        _wgpuMatrix.mat4.multiply(parentWorld, localMat, worldMat);
+      } else {
+        _wgpuMatrix.mat4.copy(localMat, worldMat);
+      }
+      this.nodeWorldMatrices[nodeIndex] = worldMat;
+
+      // 3️⃣ Apply inverse bind matrix
+      const invBindMat = this.inverseBindMatrices[i]; // Float32Array[16]
+      let finalBoneMat = _wgpuMatrix.mat4.identity();
+      if (invBindMat) {
+        _wgpuMatrix.mat4.multiply(worldMat, invBindMat, finalBoneMat);
+      } else {
+        _wgpuMatrix.mat4.copy(worldMat, finalBoneMat);
+      }
+
+      // 4️⃣ Store into GPU buffer array
+      bonesData.set(finalBoneMat, i * 16);
+    }
+
+    // 5️⃣ Upload to GPU
+    this.device.queue.writeBuffer(this.bonesBuffer, 0, bonesData);
+  }
+  computeNodeWorldMatrices() {
+    // pre-allocate world matrices array if not done
+    if (!this.nodeWorldMatrices) {
+      this.nodeWorldMatrices = new Array(this.glb.nodes.length);
+    }
+    for (let i = 0; i < this.glb.nodes.length; i++) {
+      const node = this.glb.nodes[i];
+
+      // Local matrix from node.transform (Float32Array[16])
+      let localMat = _wgpuMatrix.mat4.identity(); // start with identity
+      if (node.transform) {
+        // Copy values into mat4
+        localMat = _wgpuMatrix.mat4.create();
+        for (let j = 0; j < 16; j++) {
+          localMat[j] = node.transform[j];
+        }
+      }
+
+      // World matrix: parent * local
+      if (node.parent !== undefined) {
+        const parentWorld = this.nodeWorldMatrices[node.parent];
+        const worldMat = _wgpuMatrix.mat4.create();
+        _wgpuMatrix.mat4.multiply(parentWorld, localMat, worldMat);
+        this.nodeWorldMatrices[i] = worldMat;
+      } else {
+        // Root node
+        this.nodeWorldMatrices[i] = localMat;
+      }
+    }
+  }
+  getAccessorArray(glb, accessorIndex) {
+    const accessor = glb.glbJsonData.accessors[accessorIndex];
+    const bufferView = glb.glbJsonData.bufferViews[accessor.bufferView];
+    // const bufferDef = glb.glbJsonData.buffers[bufferView.buffer]; // usually buffers[0]
+
+    // Compute offsets
+    // const byteOffset = (bufferView.byteOffset || 0) + (accessor.byteOffset || 0);
+    const numComponents = this.getNumComponents(accessor.type);
+    const componentSize = this.getComponentSize(accessor.componentType);
+    // const byteLength = accessor.count * numComponents * componentSize;
+    const byteOffset = (bufferView.byteOffset || 0) + (accessor.byteOffset || 0);
+    const byteLength = accessor.count * this.getNumComponents(accessor.type) * (accessor.componentType === 5126 ? 4 : 2); // adjust per type
+
+    console.log(glb.glbJsonData); // to see the structure
+    console.log(Object.keys(glb.glbJsonData)); // forced list of keys
+
+    // Get the actual ArrayBuffer from GLB binary chunk
+    const bufferDef = this.glb.glbJsonData.buffers[0]; // usually just one buffer
+
+    // ✅ now just slice:
+    const slice = this.getBufferSlice(bufferDef, byteOffset, byteLength);
+    // const slice = arrayBuffer.slice(byteOffset, byteOffset + byteLength);
+
+    switch (accessor.componentType) {
+      case 5126:
+        // FLOAT
+        return new Float32Array(slice);
+      case 5123:
+        // UNSIGNED_SHORT
+        return new Uint16Array(slice);
+      case 5121:
+        // UNSIGNED_BYTE
+        return new Uint8Array(slice);
+      default:
+        throw new Error("Unsupported componentType: " + accessor.componentType);
+    }
+  }
+  getNumComponents(type) {
+    switch (type) {
+      case "SCALAR":
+        return 1;
+      case "VEC2":
+        return 2;
+      case "VEC3":
+        return 3;
+      case "VEC4":
+        return 4;
+      case "MAT4":
+        return 16;
+      default:
+        throw new Error("Unknown type: " + type);
+    }
+  }
+  getComponentSize(componentType) {
+    switch (componentType) {
+      case 5126:
+        return 4;
+      // float32
+      case 5123:
+        return 2;
+      // uint16
+      case 5121:
+        return 1;
+      // uint8
+      default:
+        throw new Error("Unknown componentType: " + componentType);
+    }
+  }
+
+  /**
+  * Get a typed slice of the raw binary buffer from glTF buffer definitions.
+  *
+  * @param {Object} bufferDef - the glTF buffer definition (usually gltfJson.buffers[0])
+  * @param {Number} byteOffset - byte offset into the buffer
+  * @param {Number} byteLength - byte length to slice
+  * @returns {ArrayBuffer} sliced array buffer
+  */
+  getBufferSlice(bufferDef, byteOffset, byteLength) {
+    // GLTFBuffer instance:
+    if (bufferDef instanceof _webgpuGltf.GLTFBuffer) {
+      // Use .arrayBuffer + .byteOffset:
+      return bufferDef.arrayBuffer.slice(bufferDef.byteOffset + (byteOffset || 0), bufferDef.byteOffset + (byteOffset || 0) + byteLength);
+    }
+
+    // Already have a raw ArrayBuffer:
+    if (bufferDef instanceof ArrayBuffer) {
+      return bufferDef.slice(byteOffset, byteOffset + byteLength);
+    }
+
+    // Some loaders store it as .data or ._data:
+    if (bufferDef && bufferDef.data instanceof ArrayBuffer) {
+      return bufferDef.data.slice(byteOffset, byteOffset + byteLength);
+    }
+    if (bufferDef && bufferDef._data instanceof ArrayBuffer) {
+      return bufferDef._data.slice(byteOffset, byteOffset + byteLength);
+    }
+    throw new Error("No binary data found in GLB buffer[0]");
+  }
 }
 exports.BVHPlayer = BVHPlayer;
 
-},{"../mesh-obj":27,"../utils.js":28,"bvh-loader":2,"wgpu-matrix":16}],24:[function(require,module,exports){
+},{"../mesh-obj":27,"../utils.js":28,"./webgpu-gltf.js":24,"bvh-loader":2,"wgpu-matrix":16}],24:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -20576,11 +20783,12 @@ class GLTFTexture {
 }
 exports.GLTFTexture = GLTFTexture;
 class GLBModel {
-  constructor(nodes, skins, skinnedMeshNodes) {
+  constructor(nodes, skins, skinnedMeshNodes, glbJsonData) {
     this.nodes = nodes;
     this.skins = skins;
     this.skinnedMeshNodes = skinnedMeshNodes;
     this.bvhToGLBMap = null;
+    this.glbJsonData = glbJsonData;
   }
   buildRenderBundles(device, shaderCache, viewParamsLayout, viewParamsBindGroup, swapChainFormat) {
     var renderBundles = [];
@@ -20664,7 +20872,12 @@ async function uploadGLBModel(buffer, device) {
         const viewID = accessor.bufferView;
         bufferViews[viewID].needsUpload = true;
         bufferViews[viewID].addUsage(GPUBufferUsage.VERTEX);
-        if (attr === 'POSITION') positions = new GLTFAccessor(bufferViews[viewID], accessor);else if (attr === 'NORMAL') normals = new GLTFAccessor(bufferViews[viewID], accessor);else if (attr.startsWith('TEXCOORD')) texcoords.push(new GLTFAccessor(bufferViews[viewID], accessor));else if (attr === 'WEIGHTS_0') weights = new GLTFAccessor(bufferViews[viewID], accessor);else if (attr.startsWith('JOINTS')) joints = new GLTFAccessor(bufferViews[viewID], accessor);
+        if (attr === 'POSITION') positions = new GLTFAccessor(bufferViews[viewID], accessor);else if (attr === 'NORMAL') normals = new GLTFAccessor(bufferViews[viewID], accessor);else if (attr.startsWith('TEXCOORD')) texcoords.push(new GLTFAccessor(bufferViews[viewID], accessor));else if (attr === 'WEIGHTS_0') weights = new GLTFAccessor(bufferViews[viewID], accessor);else if (attr.startsWith('JOINTS')) {
+          console.info('importer attr JOINTS .... ', attr);
+          joints = new GLTFAccessor(bufferViews[viewID], accessor);
+        } else {
+          console.info('importer attr unknow .... ', attr);
+        }
       }
       const material = prim.material !== undefined ? materials[prim.material] : defaultMaterial;
       return new GLTFPrimitive(indices, positions, normals, texcoords, material, topology, weights, joints);
@@ -20711,26 +20924,7 @@ async function uploadGLBModel(buffer, device) {
       });
     });
   }
-
-  // // Attach engine-style scene uniform buffers to GLB nodes with meshes
-  // for(const node of nodes) {
-  //   if(node.mesh) {
-
-  //     console.log('create  node.sceneUniformBuffer ');
-  //     node.sceneUniformBuffer = device.createBuffer({
-  //       size: 44 * 4, // 44 floats (like your engine scene data)
-  //       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-  //     });
-
-  //     // Optional: create bind group here if your pipeline needs it
-  //     // node.sceneBindGroup = device.createBindGroup({
-  //     //   layout: yourSceneBindGroupLayout,
-  //     //   entries: [{ binding: 0, resource: { buffer: node.sceneUniformBuffer } }],
-  //     // });
-  //   }
-  // }
-
-  return new GLBModel(nodes, skins, skinnedMeshNodes);
+  return new GLBModel(nodes, skins, skinnedMeshNodes, glbJsonData);
 }
 function createBVHToGLBMap(glb, bvh) {
   const map = {};
@@ -21946,8 +22140,8 @@ class MEMeshObj extends _materials.default {
     // -----------------------------------------------------------
     if (this.joints) {
       if (this.constructor.name === "BVHPlayer") {
-        pass.setVertexBuffer(3, this.mesh.jointsBuffer); // new dummy
-        pass.setVertexBuffer(4, this.mesh.weightsBuffer); // new dummy
+        pass.setVertexBuffer(3, this.mesh.jointsBuffer); // real
+        pass.setVertexBuffer(4, this.mesh.weightsBuffer); //real
       } else {
         // dumyy
         pass.setVertexBuffer(3, this.joints.buffer); // new dummy

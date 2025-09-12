@@ -561,11 +561,12 @@ export class GLTFTexture {
 }
 
 export class GLBModel {
-  constructor(nodes, skins, skinnedMeshNodes) {
+  constructor(nodes, skins, skinnedMeshNodes, glbJsonData) {
     this.nodes = nodes;
     this.skins = skins;
     this.skinnedMeshNodes = skinnedMeshNodes;
     this.bvhToGLBMap = null;
+    this.glbJsonData = glbJsonData;
   }
 
   buildRenderBundles(
@@ -648,7 +649,7 @@ export async function uploadGLBModel(buffer, device) {
 
       // Vertex attributes
       let positions = null, normals = null, texcoords = [];
-      let weights = null;let joints = null;
+      let weights = null; let joints = null;
       for(const attr in prim.attributes) {
         const accessor = glbJsonData.accessors[prim.attributes[attr]];
         const viewID = accessor.bufferView;
@@ -658,7 +659,13 @@ export async function uploadGLBModel(buffer, device) {
         else if(attr === 'NORMAL') normals = new GLTFAccessor(bufferViews[viewID], accessor);
         else if(attr.startsWith('TEXCOORD')) texcoords.push(new GLTFAccessor(bufferViews[viewID], accessor));
         else if(attr === 'WEIGHTS_0') weights = new GLTFAccessor(bufferViews[viewID], accessor);
-        else if(attr.startsWith('JOINTS')) joints = new GLTFAccessor(bufferViews[viewID], accessor);
+        else if(attr.startsWith('JOINTS')) {
+          console.info('importer attr JOINTS .... ', attr)
+          joints = new GLTFAccessor(bufferViews[viewID], accessor);
+        }
+        else {
+          console.info('importer attr unknow .... ', attr)
+        }
       }
 
       const material = prim.material !== undefined ? materials[prim.material] : defaultMaterial;
@@ -701,7 +708,7 @@ export async function uploadGLBModel(buffer, device) {
     skinnedMeshNodes.forEach(n => {
       console.log("Mesh", n.mesh.name, "uses skin index", n.skin);
       // setup bone matrices for this mesh
-        n.sceneUniformBuffer = device.createBuffer({
+      n.sceneUniformBuffer = device.createBuffer({
         size: 44 * 4, // 44 floats (like your engine scene data)
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
       });
@@ -709,25 +716,7 @@ export async function uploadGLBModel(buffer, device) {
     });
   }
 
-  // // Attach engine-style scene uniform buffers to GLB nodes with meshes
-  // for(const node of nodes) {
-  //   if(node.mesh) {
-
-  //     console.log('create  node.sceneUniformBuffer ');
-  //     node.sceneUniformBuffer = device.createBuffer({
-  //       size: 44 * 4, // 44 floats (like your engine scene data)
-  //       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-  //     });
-
-  //     // Optional: create bind group here if your pipeline needs it
-  //     // node.sceneBindGroup = device.createBindGroup({
-  //     //   layout: yourSceneBindGroupLayout,
-  //     //   entries: [{ binding: 0, resource: { buffer: node.sceneUniformBuffer } }],
-  //     // });
-  //   }
-  // }
-
-  return new GLBModel(nodes, skins, skinnedMeshNodes);
+  return new GLBModel(nodes, skins, skinnedMeshNodes, glbJsonData);
 }
 
 export function createBVHToGLBMap(glb, bvh) {

@@ -688,8 +688,8 @@ export default class MEMeshObj extends Materials {
 
 
       if(this.constructor.name === "BVHPlayer") {
-              pass.setVertexBuffer(3, this.mesh.jointsBuffer);  // new dummy
-        pass.setVertexBuffer(4, this.mesh.weightsBuffer); // new dummy
+        pass.setVertexBuffer(3, this.mesh.jointsBuffer);  // real
+        pass.setVertexBuffer(4, this.mesh.weightsBuffer); //real
       } else {
         // dumyy
         pass.setVertexBuffer(3, this.joints.buffer);  // new dummy
