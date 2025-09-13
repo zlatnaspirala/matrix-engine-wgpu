@@ -20009,7 +20009,7 @@ class BVHPlayer extends _meshObj.default {
     const frame = this.sharedState.currentFrame;
     // console.log('frame : ', frame)
     // this.applyBVHToGLB(frame);
-    this.updateBonesFromGLTF_wgpuMatrix();
+    // this.updateBonesFromGLTF_wgpuMatrix();
   }
   applyBVHToGLB(frameIndex) {
     const keyframe = this.bvh.keyframes[frameIndex]; // flat array
@@ -20050,7 +20050,10 @@ class BVHPlayer extends _meshObj.default {
         const invBind = this.inverseBindMatrices[boneIndex]; // Float32Array[16]
         if (invBind) {
           const finalBoneMat = _wgpuMatrix.mat4.create();
-          _wgpuMatrix.mat4.multiply(finalBoneMat, finalMat, invBind); // finalBoneMat = finalMat * invBind
+
+          // mat4.multiply(finalBoneMat, finalMat, invBind); // finalBoneMat = finalMat * invBind
+          _wgpuMatrix.mat4.multiply(finalMat, invBind, finalBoneMat); // finalBoneMat = finalMat * invBind
+
           bonesData.set(finalBoneMat, boneIndex * 16);
         } else {
           bonesData.set(finalMat, boneIndex * 16); // fallback if invBind missing
@@ -20110,7 +20113,8 @@ class BVHPlayer extends _meshObj.default {
       let finalBoneMat = _wgpuMatrix.mat4.identity();
       if (invBindMat) {
         // mat4.multiply(worldMat, invBindMat, finalBoneMat);
-        _wgpuMatrix.mat4.multiply(invBindMat, worldMat, finalBoneMat);
+        // mat4.multiply(invBindMat, worldMat, finalBoneMat);
+        _wgpuMatrix.mat4.copy(worldMat, finalBoneMat);
       } else {
         _wgpuMatrix.mat4.copy(worldMat, finalBoneMat);
       }
@@ -20159,14 +20163,14 @@ class BVHPlayer extends _meshObj.default {
 
     // Compute offsets
     // const byteOffset = (bufferView.byteOffset || 0) + (accessor.byteOffset || 0);
-    const numComponents = this.getNumComponents(accessor.type);
-    const componentSize = this.getComponentSize(accessor.componentType);
+    // const numComponents = this.getNumComponents(accessor.type);
+    // const componentSize = this.getComponentSize(accessor.componentType);
     // const byteLength = accessor.count * numComponents * componentSize;
     const byteOffset = (bufferView.byteOffset || 0) + (accessor.byteOffset || 0);
     const byteLength = accessor.count * this.getNumComponents(accessor.type) * (accessor.componentType === 5126 ? 4 : 2); // adjust per type
 
     console.log(glb.glbJsonData); // to see the structure
-    console.log(Object.keys(glb.glbJsonData)); // forced list of keys
+    console.log('----------------' + accessor.componentType); // forced list of keys
 
     // Get the actual ArrayBuffer from GLB binary chunk
     // const bufferDef = this.glb.glbJsonData.buffers[0]; // usually just one buffer
@@ -21593,6 +21597,7 @@ class MEMeshObj extends _materials.default {
       if (typeof this.mesh == 'undefined') {
         console.log('glb detected..create mesh obj.');
         this.mesh = {};
+        this.mesh.feedFromRealGlb = true;
       }
       console.log('glb detected - name: ' + this.name + ' - skinnedNodeIndex:' + skinnedNodeIndex + " primitiveIndex:" + primitiveIndex);
 
@@ -21668,6 +21673,7 @@ class MEMeshObj extends _materials.default {
       const jointsArray = new Uint16Array(jointsView.buffer, jointsView.byteOffset || 0, jointsView.byteLength / 2 // Uint16 = 2 bytes
       );
 
+      // const DUMMY = new Uint32Array((this.mesh.vertices.length / 3) * 4);
       // Create GPU buffer for joints
       this.mesh.jointsBuffer = this.device.createBuffer({
         label: "jointsBuffer real data",
@@ -21817,6 +21823,31 @@ class MEMeshObj extends _materials.default {
       this.indexBuffer.unmap();
       this.indexCount = indexCount;
 
+      // ----------------
+      let glbInfo;
+      if (this.mesh.feedFromRealGlb && this.mesh.feedFromRealGlb == true) {
+        console.log('it is GLB ');
+        glbInfo = {
+          arrayStride: 4 * 4 * 4,
+          // vec4<f32> = 4 * 4 bytes
+          attributes: [{
+            format: 'float32x4',
+            offset: 0,
+            shaderLocation: 4
+          }]
+        };
+      } else {
+        console.log('it is not  GLB ');
+        glbInfo = {
+          arrayStride: 4 * 4,
+          // vec4<f32> = 4 * 4 bytes
+          attributes: [{
+            format: 'float32x4',
+            offset: 0,
+            shaderLocation: 4
+          }]
+        };
+      }
       // Create some common descriptors used for both the shadow pipeline
       // and the color rendering pipeline.
       this.vertexBuffers = [{
@@ -21855,15 +21886,7 @@ class MEMeshObj extends _materials.default {
         }]
       },
       // new weights
-      {
-        arrayStride: 4 * 4,
-        // vec4<f32> = 4 * 4 bytes
-        attributes: [{
-          format: 'float32x4',
-          offset: 0,
-          shaderLocation: 4
-        }]
-      }];
+      glbInfo];
       this.primitive = {
         topology: 'triangle-list',
         cullMode: 'back',
@@ -22154,6 +22177,11 @@ class MEMeshObj extends _materials.default {
     if (this.joints) {
       if (this.constructor.name === "BVHPlayer") {
         pass.setVertexBuffer(3, this.mesh.jointsBuffer); // real
+        // dumyy
+        // pass.setVertexBuffer(3, this.joints.buffer);  // new dummy
+        // pass.setVertexBuffer(4, this.weights.buffer); // new dummy
+
+        // pass.setVertexBuffer(3, this.mesh.jointsBuffer);  // real
         pass.setVertexBuffer(4, this.mesh.weightsBuffer); //real
       } else {
         // dumyy
@@ -24700,7 +24728,7 @@ class MatrixEngineWGPU {
     for (const skinnedNode of glbFile.skinnedMeshNodes) {
       let c = 0;
       for (const primitive of skinnedNode.mesh.primitives) {
-        console.log(`primitive-glb: ${primitive}`);
+        console.log(`count: ${c} primitive-glb: ${primitive}`);
         // primitive is mesh - probably with own material . material/texture per primitive
         // create scene object for each
         // --

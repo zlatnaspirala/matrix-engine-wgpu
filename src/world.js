@@ -598,7 +598,7 @@ export default class MatrixEngineWGPU {
     for(const skinnedNode of glbFile.skinnedMeshNodes) {
       let c = 0;
       for(const primitive of skinnedNode.mesh.primitives) {
-        console.log(`primitive-glb: ${primitive}`);
+        console.log(`count: ${c} primitive-glb: ${primitive}`);
         // primitive is mesh - probably with own material . material/texture per primitive
         // create scene object for each
         // --

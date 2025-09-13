@@ -34,6 +34,7 @@ export default class MEMeshObj extends Materials {
       if(typeof this.mesh == 'undefined') {
         console.log('glb detected..create mesh obj.')
         this.mesh = {};
+        this.mesh.feedFromRealGlb = true;
       }
       console.log('glb detected - name: ' + this.name + ' - skinnedNodeIndex:' + skinnedNodeIndex + " primitiveIndex:" + primitiveIndex)
 
@@ -128,6 +129,8 @@ export default class MEMeshObj extends Materials {
         jointsView.byteLength / 2 // Uint16 = 2 bytes
       );
 
+
+      // const DUMMY = new Uint32Array((this.mesh.vertices.length / 3) * 4);
       // Create GPU buffer for joints
       this.mesh.jointsBuffer = this.device.createBuffer({
         label: "jointsBuffer real data",
@@ -288,6 +291,21 @@ export default class MEMeshObj extends Materials {
       this.indexBuffer.unmap();
       this.indexCount = indexCount;
 
+      // ----------------
+      let glbInfo;
+      if(this.mesh.feedFromRealGlb && this.mesh.feedFromRealGlb == true) {
+        console.log('it is GLB ')
+        glbInfo = {
+          arrayStride: 4 * 4 * 4, // vec4<f32> = 4 * 4 bytes
+          attributes: [{format: 'float32x4', offset: 0, shaderLocation: 4}]
+        }
+      } else {
+        console.log('it is not  GLB ')
+        glbInfo = {
+          arrayStride: 4 * 4, // vec4<f32> = 4 * 4 bytes
+          attributes: [{format: 'float32x4', offset: 0, shaderLocation: 4}]
+        }
+      }
       // Create some common descriptors used for both the shadow pipeline
       // and the color rendering pipeline.
       this.vertexBuffers = [
@@ -330,10 +348,7 @@ export default class MEMeshObj extends Materials {
           attributes: [{format: 'uint32x4', offset: 0, shaderLocation: 3}]
         },
         // new weights
-        {
-          arrayStride: 4 * 4, // vec4<f32> = 4 * 4 bytes
-          attributes: [{format: 'float32x4', offset: 0, shaderLocation: 4}]
-        }
+        glbInfo
       ];
 
       this.primitive = {
@@ -688,7 +703,14 @@ export default class MEMeshObj extends Materials {
 
 
       if(this.constructor.name === "BVHPlayer") {
+
+
         pass.setVertexBuffer(3, this.mesh.jointsBuffer);  // real
+        // dumyy
+        // pass.setVertexBuffer(3, this.joints.buffer);  // new dummy
+        // pass.setVertexBuffer(4, this.weights.buffer); // new dummy
+
+        // pass.setVertexBuffer(3, this.mesh.jointsBuffer);  // real
         pass.setVertexBuffer(4, this.mesh.weightsBuffer); //real
       } else {
         // dumyy

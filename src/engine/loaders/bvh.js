@@ -126,7 +126,7 @@ export class BVHPlayer extends MEMeshObj {
     const frame = this.sharedState.currentFrame;
     // console.log('frame : ', frame)
     // this.applyBVHToGLB(frame);
-    this.updateBonesFromGLTF_wgpuMatrix();
+    // this.updateBonesFromGLTF_wgpuMatrix();
 
 
   }
@@ -180,7 +180,10 @@ export class BVHPlayer extends MEMeshObj {
         const invBind = this.inverseBindMatrices[boneIndex]; // Float32Array[16]
         if(invBind) {
           const finalBoneMat = mat4.create();
-          mat4.multiply(finalBoneMat, finalMat, invBind); // finalBoneMat = finalMat * invBind
+
+          // mat4.multiply(finalBoneMat, finalMat, invBind); // finalBoneMat = finalMat * invBind
+          mat4.multiply(finalMat, invBind, finalBoneMat); // finalBoneMat = finalMat * invBind
+
           bonesData.set(finalBoneMat, boneIndex * 16);
         } else {
           bonesData.set(finalMat, boneIndex * 16); // fallback if invBind missing
@@ -246,7 +249,8 @@ export class BVHPlayer extends MEMeshObj {
       let finalBoneMat = mat4.identity();
       if(invBindMat) {
         // mat4.multiply(worldMat, invBindMat, finalBoneMat);
-        mat4.multiply(invBindMat, worldMat, finalBoneMat);
+        // mat4.multiply(invBindMat, worldMat, finalBoneMat);
+            mat4.copy(worldMat, finalBoneMat);
       } else {
         mat4.copy(worldMat, finalBoneMat);
       }
@@ -299,8 +303,8 @@ export class BVHPlayer extends MEMeshObj {
 
     // Compute offsets
     // const byteOffset = (bufferView.byteOffset || 0) + (accessor.byteOffset || 0);
-    const numComponents = this.getNumComponents(accessor.type);
-    const componentSize = this.getComponentSize(accessor.componentType);
+    // const numComponents = this.getNumComponents(accessor.type);
+    // const componentSize = this.getComponentSize(accessor.componentType);
     // const byteLength = accessor.count * numComponents * componentSize;
     const byteOffset = (bufferView.byteOffset || 0) + (accessor.byteOffset || 0);
     const byteLength =
@@ -310,7 +314,7 @@ export class BVHPlayer extends MEMeshObj {
 
 
     console.log(glb.glbJsonData); // to see the structure
-    console.log(Object.keys(glb.glbJsonData)); // forced list of keys
+    console.log('----------------' + accessor.componentType); // forced list of keys
 
     // Get the actual ArrayBuffer from GLB binary chunk
     // const bufferDef = this.glb.glbJsonData.buffers[0]; // usually just one buffer
