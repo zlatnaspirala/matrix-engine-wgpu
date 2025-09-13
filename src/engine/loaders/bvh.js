@@ -1,6 +1,6 @@
 import MEBvh from "bvh-loader";
 import MEMeshObj from "../mesh-obj";
-import {mat4} from "wgpu-matrix";
+import {mat4, vec3, quat} from "wgpu-matrix";
 import {degToRad} from "../utils.js";
 import {GLTFBuffer} from "./webgpu-gltf.js";
 
@@ -64,10 +64,52 @@ export class BVHPlayer extends MEMeshObj {
       () => mat4.identity()
     );
 
-    // Optionally store inverseBindMatrices if needed
-    this.initInverseBindMatrices();
 
+    this.startTime = performance.now() / 1000; // seconds
+     this.MAX_BONES = 100;
+
+    this.skeleton = []; // array of joint node indices
+    this.inverseBindMatrices = []; // Float32Array for each joint
+
+    this.initInverseBindMatrices();
     this.computeNodeWorldMatrices();
+    this.makeSkeletal();
+
+  }
+
+  makeSkeletal() {
+    console.warn("No inverseBindMatrices, makeSkeletal ");
+    let skin = this.glb.skins[0];
+
+    const accessorIndex = skin.inverseBindMatrices; // this is an int
+    if(accessorIndex == null) {
+      console.warn("No inverseBindMatrices, using identity matrices");
+    }
+
+    const accessor = this.glb.glbJsonData.accessors[accessorIndex];
+
+    // glTF standard: accessor points to a bufferView index
+    const bufferViewIndex = accessor.bufferView;
+    const bufferView = this.glb.glbJsonData.bufferViews[bufferViewIndex];
+
+    // get the underlying ArrayBuffer
+    const buffer = bufferView.buffer; // might be Buffer object or ArrayBuffer depending on loader
+
+    // Get raw ArrayBuffer
+    const arrayBuffer = this.glb.glbJsonData.buffers[bufferView.buffer].data;
+
+
+    const totalOffset = (bufferView.byteOffset || 0) + (accessor.byteOffset || 0);
+    // Create typed array of all matrices
+    const inverseBindMatrices = new Float32Array(arrayBuffer, totalOffset, accessor.count * 16);
+
+    // Assign each matrix to joint node
+    for(let i = 0;i < accessor.count;i++) {
+      const jointIndex = skin.joints[i];
+        this.skeleton.push(jointIndex);
+      const jointNode = this.glb.nodes[jointIndex]; // your node array
+      jointNode.inverseBindMatrix = inverseBindMatrices.slice(i * 16, (i + 1) * 16);
+    }
 
   }
 
@@ -112,7 +154,7 @@ export class BVHPlayer extends MEMeshObj {
 
   }
 
-
+  
 
   update(deltaTime) {
     const frameTime = 1 / this.fps;
@@ -127,6 +169,9 @@ export class BVHPlayer extends MEMeshObj {
     // console.log('frame : ', frame)
     // this.applyBVHToGLB(frame);
     // this.updateBonesFromGLTF_wgpuMatrix();
+     const currentTime = performance.now() / 1000 - this.startTime;
+    const boneMatrices = new Float32Array(this.MAX_BONES * 16);
+    this.updateAnimation(this.glb.glbJsonData.animations[0], this.glb.nodes,currentTime,boneMatrices )
 
 
   }
@@ -250,7 +295,7 @@ export class BVHPlayer extends MEMeshObj {
       if(invBindMat) {
         // mat4.multiply(worldMat, invBindMat, finalBoneMat);
         // mat4.multiply(invBindMat, worldMat, finalBoneMat);
-            mat4.copy(worldMat, finalBoneMat);
+        mat4.copy(worldMat, finalBoneMat);
       } else {
         mat4.copy(worldMat, finalBoneMat);
       }
@@ -262,6 +307,8 @@ export class BVHPlayer extends MEMeshObj {
     // 5️⃣ Upload to GPU
     this.device.queue.writeBuffer(this.bonesBuffer, 0, bonesData);
   }
+
+
 
   computeNodeWorldMatrices() {
     // pre-allocate world matrices array if not done
@@ -319,7 +366,7 @@ export class BVHPlayer extends MEMeshObj {
     // Get the actual ArrayBuffer from GLB binary chunk
     // const bufferDef = this.glb.glbJsonData.buffers[0]; // usually just one buffer
     const bufferDef = this.glb.glbBinaryBuffer;
- 
+
 
     // ✅ now just slice:
     const slice = this.getBufferSlice(bufferDef, byteOffset, byteLength);
@@ -389,6 +436,132 @@ export class BVHPlayer extends MEMeshObj {
     }
 
     throw new Error("No binary data found in GLB buffer[0]");
+  }
+
+  // --- helpers ---
+  lerpVec(a, b, t) {
+    return a.map((v, i) => v * (1 - t) + b[i] * t);
+  }
+
+  // Example quaternion slerp (a,b = [x,y,z,w])
+  quatSlerp(a, b, t) {
+    // naive slerp for small demo, normalize result
+    let dot = a[0] * b[0] + a[1] * b[1] + a[2] * b[2] + a[3] * b[3];
+    if(dot < 0) {b = b.map(v => -v); dot = -dot;}
+    if(dot > 0.9995) return lerpVec(a, b, t);
+    const theta0 = Math.acos(dot);
+    const theta = theta0 * t;
+    const sinTheta = Math.sin(theta);
+    const sinTheta0 = Math.sin(theta0);
+    const s0 = Math.cos(theta) - dot * sinTheta / sinTheta0;
+    const s1 = sinTheta / sinTheta0;
+    return a.map((v, i) => s0 * v + s1 * b[i]);
+  }
+
+  // compose translation/rotation/scale into 4x4
+  composeTRS(t, r, s) {
+    // assumes r is quaternion [x,y,z,w], s,t are vec3
+    const mat = quatToMat4(r);
+    mat[0] *= s[0]; mat[1] *= s[0]; mat[2] *= s[0];
+    mat[4] *= s[1]; mat[5] *= s[1]; mat[6] *= s[1];
+    mat[8] *= s[2]; mat[9] *= s[2]; mat[10] *= s[2];
+    mat[12] = t[0]; mat[13] = t[1]; mat[14] = t[2]; mat[15] = 1;
+    return mat;
+  }
+
+  // naive quaternion to 4x4 matrix
+  quatToMat4(q) {
+    const [x, y, z, w] = q;
+    const xx = x * x, yy = y * y, zz = z * z;
+    const xy = x * y, xz = x * z, yz = y * z, wx = w * x, wy = w * y, wz = w * z;
+    return new Float32Array([
+      1 - 2 * (yy + zz), 2 * (xy + wz), 2 * (xz - wy), 0,
+      2 * (xy - wz), 1 - 2 * (xx + zz), 2 * (yz + wx), 0,
+      2 * (xz + wy), 2 * (yz - wx), 1 - 2 * (xx + yy), 0,
+      0, 0, 0, 1
+    ]);
+  }
+
+
+  updateAnimation(glbAnimation, nodes, time, boneMatrices) {
+    const channels = glbAnimation.channels;
+    const samplers = glbAnimation.samplers;
+
+    // --- 1️⃣ Apply animation channels ---
+    for(const channel of channels) {
+      const sampler = samplers[channel.sampler];
+      const node = nodes[channel.target.node];
+      const path = channel.target.path; // "translation", "rotation", "scale"
+
+      const input = sampler.input;   // keyframe times
+      const output = sampler.output; // values
+
+      const accessor = this.glb.glbJsonData.accessors[sampler.output]; // correct accessor index
+      const bufferView = this.glb.glbJsonData.bufferViews[accessor.bufferView];
+      const buffer = this.glb.glbJsonData.buffers[bufferView.buffer].data; // ArrayBuffer
+      const byteOffset = (bufferView.byteOffset || 0) + (accessor.byteOffset || 0);
+      const count = accessor.count; // number of keyframes
+      const numComponents2 = accessor.type === "VEC3" ? 3 : 4; // vec3/vec4
+
+      const outputArray = new Float32Array(buffer, byteOffset, count * numComponents2);
+
+
+      const animTime = time % input[input.length - 1];
+
+      // Find bracketing keyframes
+      let i = 0;
+      while(i < input.length - 1 && input[i + 1] < animTime) i++;
+
+      const t0 = input[i];
+      const t1 = input[i + 1] || t0;
+      const factor = t1 !== t0 ? (animTime - t0) / (t1 - t0) : 0;
+
+      const numComponents = path === "rotation" ? 4 : 3;
+      const v0 = outputArray.slice(i * numComponents, i * numComponents + numComponents);
+      const v1 = outputArray.slice((i + 1) * numComponents, (i + 1) * numComponents + numComponents);
+
+      // Interpolate
+      if(path === "rotation") {
+        node.rotation = quat.slerp(v0, v1, factor);
+      } else if(path === "translation" || path === "scale") {
+        node[path] = vec3.lerp(v0, v1, factor);
+      }
+    }
+
+    // // --- 2️⃣ Compute local matrices ---
+    for(const node of nodes) {
+
+        node.matrix = node.transform; // use existing matrix directly
+    //   const t = node.translation || [0, 0, 0];
+    //   const r = node.rotation || [0, 0, 0, 1];
+    //   const s = node.scale || [1, 1, 1];
+    //   node.matrix = mat4.fromRotationTranslationScale(r, t, s);
+    }
+
+    // --- 3️⃣ Compute world matrices ---
+    function computeWorld(node) {
+      if(node.parent != null) {
+        node.worldMatrix = mat4.multiply(node.parent.worldMatrix, node.matrix);
+      } else {
+        node.worldMatrix = node.matrix;
+      }
+      if(node.children) for(const c of node.children) computeWorld(c);
+    }
+    for(const root of nodes.filter(n => !n.parent)) computeWorld(root);
+
+    // --- 4️⃣ Compute final bone matrices for skinning ---
+    for(let j = 0;j < this.skeleton.length;j++) {
+      const jointNode = nodes[this.skeleton[j]];
+      const finalMat = mat4.multiply(jointNode.worldMatrix, jointNode.inverseBindMatrix);
+      boneMatrices.set(finalMat, j * 16);
+       if (j < 3) { // only first 3 joints to keep output readable
+    console.log(`Joint ${j} finalMat:`, Array.from(finalMat));
+  }
+    }
+
+          this.device.queue.writeBuffer(this.bonesBuffer, 0, boneMatrices);
+
+    return boneMatrices;
   }
 
 }
