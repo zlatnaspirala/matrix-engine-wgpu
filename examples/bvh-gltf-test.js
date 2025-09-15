@@ -24,19 +24,6 @@ let TEST_ANIM = new MatrixEngineWGPU({
       var glbFile = await fetch(
         "res/meshes/glb/test1.glb")
         .then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, TEST_ANIM.device)));
-      // console.log('Loaded gltf ...', glbFile);
-      // // ✅ Check if skins exist
-      // if(glbFile.skins && glbFile.skins.length > 0) {
-      //   console.log("Found skins:", glbFile.skins);
-
-      //   // Each skin has: joints[] and inverseBindMatrices
-      //   glbFile.skins.forEach((skin, i) => {
-      //     console.log(`Skin[${i}] joints:`, skin.joints);
-      //     console.log(`Skin[${i}] inverseBindMatrices:`, skin.inverseBindMatrices);
-      //   });
-      // } else {
-      //   console.warn("❌ No skins found — mesh not bound to skeleton");
-      // }
 
       // ✅ Inspect nodes (should now include bones + hierarchy)
       glbFile.nodes.forEach((node, i) => {
@@ -51,10 +38,6 @@ let TEST_ANIM = new MatrixEngineWGPU({
           console.log(`   Uses skin index: ${node.skin}`);
         }
       });
-
-      // test 
-      // glbFile.bvhToGLBMap = applyBVHToGLB(glbFile, BVHANIM, TEST_ANIM.device);
-      // applyBVHToGLB(glbFile, BVHANIM, TEST_ANIM.device)
 
       TEST_ANIM.addGlbObj({
         name: 'firstGlb',

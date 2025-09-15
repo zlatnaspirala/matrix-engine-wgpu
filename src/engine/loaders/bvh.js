@@ -66,7 +66,7 @@ export class BVHPlayer extends MEMeshObj {
 
 
     this.startTime = performance.now() / 1000; // seconds
-     this.MAX_BONES = 100;
+    this.MAX_BONES = 100;
 
     this.skeleton = []; // array of joint node indices
     this.inverseBindMatrices = []; // Float32Array for each joint
@@ -80,35 +80,29 @@ export class BVHPlayer extends MEMeshObj {
   makeSkeletal() {
     console.warn("No inverseBindMatrices, makeSkeletal ");
     let skin = this.glb.skins[0];
-
     const accessorIndex = skin.inverseBindMatrices; // this is an int
     if(accessorIndex == null) {
       console.warn("No inverseBindMatrices, using identity matrices");
     }
-
     const accessor = this.glb.glbJsonData.accessors[accessorIndex];
-
-    // glTF standard: accessor points to a bufferView index
-    const bufferViewIndex = accessor.bufferView;
-    const bufferView = this.glb.glbJsonData.bufferViews[bufferViewIndex];
-
-    // get the underlying ArrayBuffer
-    const buffer = bufferView.buffer; // might be Buffer object or ArrayBuffer depending on loader
-
-    // Get raw ArrayBuffer
-    const arrayBuffer = this.glb.glbJsonData.buffers[bufferView.buffer].data;
-
-
-    const totalOffset = (bufferView.byteOffset || 0) + (accessor.byteOffset || 0);
-    // Create typed array of all matrices
-    const inverseBindMatrices = new Float32Array(arrayBuffer, totalOffset, accessor.count * 16);
-
-    // Assign each matrix to joint node
     for(let i = 0;i < accessor.count;i++) {
       const jointIndex = skin.joints[i];
-        this.skeleton.push(jointIndex);
+      this.skeleton.push(jointIndex);
       const jointNode = this.glb.nodes[jointIndex]; // your node array
-      jointNode.inverseBindMatrix = inverseBindMatrices.slice(i * 16, (i + 1) * 16);
+      jointNode.inverseBindMatrix = this.inverseBindMatrices.slice(i * 16, (i + 1) * 16);
+    }
+    for(const node of this.glb.nodes) {
+      if(!node.transform) {
+        node.transform = new Float32Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
+      }
+      // Decompose matrix into T/R/S and attach to node if not present
+      if(!node.translation || !node.rotation || !node.scale) {
+        const {translation, rotation, scale} = this.decomposeMatrix(node.transform);
+        node.translation = translation;
+        node.rotation = rotation;
+        node.scale = scale;
+        console.log('matrix decoposite')
+      }
     }
 
   }
@@ -120,21 +114,9 @@ export class BVHPlayer extends MEMeshObj {
       console.warn('No inverseBindMatrices accessor for skin', skinIndex);
       return;
     }
-
     const invBindArray = this.getAccessorArray(this.glb, invBindAccessorIndex);
-
-    this.inverseBindMatrices = [];
-    const numBones = skin.joints.length;
-
-    for(let i = 0;i < numBones;i++) {
-      const mat = mat4.create();
-      // Copy 16 floats from invBindArray
-      for(let j = 0;j < 16;j++) {
-        mat[j] = invBindArray[i * 16 + j];
-      }
-      this.inverseBindMatrices.push(mat);
-    }
-
+    // ✅ store directly as typed array (one big contiguous Float32Array)
+    this.inverseBindMatrices = invBindArray;
     console.log('Inverse bind matrices loaded:', this.inverseBindMatrices.length, 'bones');
   }
 
@@ -154,8 +136,6 @@ export class BVHPlayer extends MEMeshObj {
 
   }
 
-  
-
   update(deltaTime) {
     const frameTime = 1 / this.fps;
     this.sharedState.timeAccumulator += deltaTime;
@@ -169,9 +149,9 @@ export class BVHPlayer extends MEMeshObj {
     // console.log('frame : ', frame)
     // this.applyBVHToGLB(frame);
     // this.updateBonesFromGLTF_wgpuMatrix();
-     const currentTime = performance.now() / 1000 - this.startTime;
+    const currentTime = performance.now() / 1000 - this.startTime;
     const boneMatrices = new Float32Array(this.MAX_BONES * 16);
-    this.updateAnimation(this.glb.glbJsonData.animations[0], this.glb.nodes,currentTime,boneMatrices )
+    this.updateAnimationMatrixOnly(this.glb.glbJsonData.animations[0], this.glb.nodes, currentTime, boneMatrices)
 
 
   }
@@ -308,8 +288,6 @@ export class BVHPlayer extends MEMeshObj {
     this.device.queue.writeBuffer(this.bonesBuffer, 0, bonesData);
   }
 
-
-
   computeNodeWorldMatrices() {
     // pre-allocate world matrices array if not done
     if(!this.nodeWorldMatrices) {
@@ -342,36 +320,17 @@ export class BVHPlayer extends MEMeshObj {
     }
   }
 
-
   getAccessorArray(glb, accessorIndex) {
     const accessor = glb.glbJsonData.accessors[accessorIndex];
     const bufferView = glb.glbJsonData.bufferViews[accessor.bufferView];
-    // const bufferDef = glb.glbJsonData.buffers[bufferView.buffer]; // usually buffers[0]
-
-    // Compute offsets
-    // const byteOffset = (bufferView.byteOffset || 0) + (accessor.byteOffset || 0);
-    // const numComponents = this.getNumComponents(accessor.type);
-    // const componentSize = this.getComponentSize(accessor.componentType);
-    // const byteLength = accessor.count * numComponents * componentSize;
     const byteOffset = (bufferView.byteOffset || 0) + (accessor.byteOffset || 0);
     const byteLength =
       accessor.count *
       this.getNumComponents(accessor.type) *
       (accessor.componentType === 5126 ? 4 : 2); // adjust per type
-
-
-    console.log(glb.glbJsonData); // to see the structure
-    console.log('----------------' + accessor.componentType); // forced list of keys
-
-    // Get the actual ArrayBuffer from GLB binary chunk
-    // const bufferDef = this.glb.glbJsonData.buffers[0]; // usually just one buffer
     const bufferDef = this.glb.glbBinaryBuffer;
-
-
     // ✅ now just slice:
     const slice = this.getBufferSlice(bufferDef, byteOffset, byteLength);
-    // const slice = arrayBuffer.slice(byteOffset, byteOffset + byteLength);
-
     switch(accessor.componentType) {
       case 5126: // FLOAT
         return new Float32Array(slice);
@@ -482,6 +441,14 @@ export class BVHPlayer extends MEMeshObj {
     ]);
   }
 
+  base64ToArrayBuffer(base64) {
+    const binary = atob(base64.split(',')[1]);
+    const len = binary.length;
+    const buffer = new ArrayBuffer(len);
+    const view = new Uint8Array(buffer);
+    for(let i = 0;i < len;i++) view[i] = binary.charCodeAt(i);
+    return buffer;
+  }
 
   updateAnimation(glbAnimation, nodes, time, boneMatrices) {
     const channels = glbAnimation.channels;
@@ -496,14 +463,35 @@ export class BVHPlayer extends MEMeshObj {
       const input = sampler.input;   // keyframe times
       const output = sampler.output; // values
 
-      const accessor = this.glb.glbJsonData.accessors[sampler.output]; // correct accessor index
+      const accessor = this.glb.glbJsonData.accessors[sampler.output];
       const bufferView = this.glb.glbJsonData.bufferViews[accessor.bufferView];
-      const buffer = this.glb.glbJsonData.buffers[bufferView.buffer].data; // ArrayBuffer
-      const byteOffset = (bufferView.byteOffset || 0) + (accessor.byteOffset || 0);
-      const count = accessor.count; // number of keyframes
-      const numComponents2 = accessor.type === "VEC3" ? 3 : 4; // vec3/vec4
+      const buffer = this.glb.glbJsonData.buffers[bufferView.buffer].data; // now defined
 
-      const outputArray = new Float32Array(buffer, byteOffset, count * numComponents2);
+      const totalOffset = (bufferView.byteOffset || 0) + (accessor.byteOffset || 0);
+      const numComponents = accessor.type === "MAT4" ? 16 :
+        accessor.type === "VEC4" ? 4 : 3;
+
+      const outputArray = new Float32Array(buffer, totalOffset, accessor.count * numComponents);
+      // Get actual ArrayBuffer
+      let arrayBuffer;
+      if(bufferEntry.data) {
+        // your loader stored data here
+        arrayBuffer = bufferEntry.data;
+      } else if(bufferEntry.uri) {
+        // if it's external .bin, you need to fetch and parse it
+        console.warn('External buffer. Load the .bin file and store it in bufferEntry.data first');
+      } else {
+        throw new Error('No buffer data available');
+      }
+
+      // // Compute total byte offset
+      // const totalOffset = (bufferView.byteOffset || 0) + (accessor.byteOffset || 0);
+      // const count = accessor.count;
+      // const numComponents = accessor.type === "VEC4" ? 16 : 4; // if matrix = 16, rotation/translation = 4/3
+
+      // const outputArray = new Float32Array(arrayBuffer, totalOffset, count * numComponents);
+
+      // const outputArray = new Float32Array(buffer, byteOffset, count * numComponents2);
 
 
       const animTime = time % input[input.length - 1];
@@ -516,7 +504,7 @@ export class BVHPlayer extends MEMeshObj {
       const t1 = input[i + 1] || t0;
       const factor = t1 !== t0 ? (animTime - t0) / (t1 - t0) : 0;
 
-      const numComponents = path === "rotation" ? 4 : 3;
+      // const numComponents = path === "rotation" ? 4 : 3;
       const v0 = outputArray.slice(i * numComponents, i * numComponents + numComponents);
       const v1 = outputArray.slice((i + 1) * numComponents, (i + 1) * numComponents + numComponents);
 
@@ -531,17 +519,21 @@ export class BVHPlayer extends MEMeshObj {
     // // --- 2️⃣ Compute local matrices ---
     for(const node of nodes) {
 
-        node.matrix = node.transform; // use existing matrix directly
-    //   const t = node.translation || [0, 0, 0];
-    //   const r = node.rotation || [0, 0, 0, 1];
-    //   const s = node.scale || [1, 1, 1];
-    //   node.matrix = mat4.fromRotationTranslationScale(r, t, s);
+      node.matrix = node.transform; // use existing matrix directly
+      //   const t = node.translation || [0, 0, 0];
+      //   const r = node.rotation || [0, 0, 0, 1];
+      //   const s = node.scale || [1, 1, 1];
+      //   node.matrix = mat4.fromRotationTranslationScale(r, t, s);
     }
 
     // --- 3️⃣ Compute world matrices ---
     function computeWorld(node) {
       if(node.parent != null) {
         node.worldMatrix = mat4.multiply(node.parent.worldMatrix, node.matrix);
+
+        console.log('Joint', j, 'worldMatrix', node.worldMatrix);
+        console.log('Joint', j, 'invBind', node.inverseBindMatrix);
+
       } else {
         node.worldMatrix = node.matrix;
       }
@@ -554,14 +546,224 @@ export class BVHPlayer extends MEMeshObj {
       const jointNode = nodes[this.skeleton[j]];
       const finalMat = mat4.multiply(jointNode.worldMatrix, jointNode.inverseBindMatrix);
       boneMatrices.set(finalMat, j * 16);
-       if (j < 3) { // only first 3 joints to keep output readable
-    console.log(`Joint ${j} finalMat:`, Array.from(finalMat));
-  }
+      if(j < 3) { // only first 3 joints to keep output readable
+        console.log(`Joint ${j} finalMat:`, Array.from(finalMat));
+      }
     }
 
-          this.device.queue.writeBuffer(this.bonesBuffer, 0, boneMatrices);
+    this.device.queue.writeBuffer(this.bonesBuffer, 0, boneMatrices);
 
     return boneMatrices;
+  }
+
+  updateAnimationMatrixOnly(glbAnimation, nodes, time, boneMatrices) {
+ 
+  const channels = glbAnimation.channels;
+  const samplers = glbAnimation.samplers;
+
+  // --- 1️⃣ Apply animation channels
+  for (const channel of channels) {
+    const sampler = samplers[channel.sampler];
+    const node = nodes[channel.target.node];
+
+    // ✅ read keyframe times from accessor
+    const inputAccessorIndex = sampler.input;
+    const inputTimes = this.getAccessorArray(this.glb, inputAccessorIndex);
+
+    const outputAccessorIndex = sampler.output; // accessor index
+    const outputArray = this.getAccessorArray(this.glb, outputAccessorIndex);
+
+    // Figure out num components based on channel target
+    let numComponents = 0;
+    let isMatrix = false;
+    switch (channel.target.path) {
+      case "translation": numComponents = 3; break;
+      case "rotation": numComponents = 4; break;
+      case "scale": numComponents = 3; break;
+      case "matrix": numComponents = 16; isMatrix = true; break;
+    }
+
+    // --- Find current keyframe interval
+    const animTime = time % inputTimes[inputTimes.length - 1];
+    let i = 0;
+    while (i < inputTimes.length - 1 && inputTimes[i + 1] < animTime) i++;
+    const t0 = inputTimes[i];
+    const t1 = inputTimes[i + 1] || t0;
+    const factor = t1 !== t0 ? (animTime - t0) / (t1 - t0) : 0;
+
+    // Get two keyframe values
+    const v0 = outputArray.subarray(i * numComponents, (i + 1) * numComponents);
+    const v1 = outputArray.subarray((i + 1) * numComponents, (i + 2) * numComponents);
+
+    // --- Interpolation based on sampler.interpolation
+    const interp = sampler.interpolation || "LINEAR";
+
+    if (isMatrix) {
+      if (!node.transform || node.transform.length !== 16) node.transform = new Float32Array(16);
+
+      if (interp === "STEP") {
+        for (let j = 0; j < 16; j++) node.transform[j] = v0[j];
+      } else {
+        for (let j = 0; j < 16; j++) node.transform[j] = v0[j] * (1 - factor) + v1[j] * factor;
+      }
+
+      const { translation, rotation, scale } = this.decomposeMatrix(node.transform);
+      node.translation.set(translation);
+      node.rotation.set(rotation);
+      node.scale.set(scale);
+
+    } else {
+      if (channel.target.path === "translation" || channel.target.path === "scale") {
+        const target = channel.target.path === "translation" ? node.translation : node.scale;
+        if (interp === "STEP") {
+          for (let j = 0; j < numComponents; j++) target[j] = v0[j];
+        } else {
+          for (let j = 0; j < numComponents; j++) target[j] = v0[j] * (1 - factor) + v1[j] * factor;
+        }
+      } else if (channel.target.path === "rotation") {
+        if (interp === "STEP") {
+          node.rotation.set(v0);
+        } else {
+          quat.slerp(v0, v1, factor, node.rotation);
+          quat.normalize(node.rotation, node.rotation);
+        }
+      }
+
+      node.transform = this.composeMatrix(node.translation, node.rotation, node.scale);
+    }
+  }
+
+  // --- 2️⃣ Compute world matrices recursively
+  const computeWorld = (node) => {
+    if (node.parent != null) {
+      node.worldMatrix = mat4.multiply(node.parent.worldMatrix, node.transform);
+    } else {
+      node.worldMatrix = node.transform;
+    }
+    if (node.children) for (const c of node.children) computeWorld(c);
+  };
+  for (const root of nodes.filter(n => !n.parent)) computeWorld(root);
+
+  // --- 3️⃣ Compute final bone matrices
+  for (let j = 0; j < this.skeleton.length; j++) {
+    const jointNode = nodes[this.skeleton[j]];
+    const finalMat = mat4.multiply(jointNode.worldMatrix, jointNode.inverseBindMatrix);
+    boneMatrices.set(finalMat, j * 16);
+
+    if (j < 3) console.log(`Joint ${j} finalMat:`, Array.from(finalMat));
+  }
+
+  // --- 4️⃣ Upload to GPU
+  this.device.queue.writeBuffer(this.bonesBuffer, 0, boneMatrices);
+
+  return boneMatrices;
+
+  }
+
+  // Compose TRS to a 4×4
+  composeMatrix(translation, rotationQuat, scale) {
+    const m = mat4.identity();
+    mat4.translate(m, translation, m);
+    const rot = mat4.fromQuat(rotationQuat);
+    mat4.multiply(m, rot, m);
+    mat4.scale(m, scale, m);
+    return m;
+  }
+
+  // Decompose a 4×4 to TRS (if you need on load)
+  decomposeMatrix2(m) {
+    const t = vec3.fromValues(m[12], m[13], m[14]);
+    // get scale
+    const sx = vec3.length([m[0], m[1], m[2]]);
+    const sy = vec3.length([m[4], m[5], m[6]]);
+    const sz = vec3.length([m[8], m[9], m[10]]);
+    const s = [sx, sy, sz];
+    // normalize rotation part
+    const rotMat = [
+      m[0] / sx, m[1] / sx, m[2] / sx, 0,
+      m[4] / sy, m[5] / sy, m[6] / sy, 0,
+      m[8] / sz, m[9] / sz, m[10] / sz, 0,
+      0, 0, 0, 1
+    ];
+    const rQuat = quat.fromMat(rotMat);
+    return {translation: t, rotation: rQuat, scale: s};
+  }
+
+  decomposeMatrix(m) {
+    // m is column-major: indices:
+    // [ m0 m4 m8  m12
+    //   m1 m5 m9  m13
+    //   m2 m6 m10 m14
+    //   m3 m7 m11 m15 ]
+    const t = new Float32Array([m[12], m[13], m[14]]);
+
+    // Extract the 3 column vectors (upper-left 3x3)
+    const cx = [m[0], m[1], m[2]];
+    const cy = [m[4], m[5], m[6]];
+    const cz = [m[8], m[9], m[10]];
+
+    // Lengths = scales
+    const len = v => Math.hypot(v[0], v[1], v[2]);
+    let sx = len(cx), sy = len(cy), sz = len(cz);
+
+    // If any scale nearly zero, avoid divide-by-zero
+    if(sx === 0) sx = 1.0;
+    if(sy === 0) sy = 1.0;
+    if(sz === 0) sz = 1.0;
+
+    // Normalize columns to produce a pure rotation matrix
+    const r00 = m[0] / sx, r01 = m[4] / sy, r02 = m[8] / sz;
+    const r10 = m[1] / sx, r11 = m[5] / sy, r12 = m[9] / sz;
+    const r20 = m[2] / sx, r21 = m[6] / sy, r22 = m[10] / sz;
+
+    // Fix negative-scale (reflection) case: if determinant < 0, flip sign of one scale and corresponding column
+    const det3 = r00 * (r11 * r22 - r12 * r21) - r01 * (r10 * r22 - r12 * r20) + r02 * (r10 * r21 - r11 * r20);
+    if(det3 < 0) {
+      // flip Z
+      sz = -sz;
+      // flip third column sign
+      // multiply cz by -1 => r02,r12,r22 *= -1
+      // recompute normalized r* accordingly:
+      // since we only need a valid rotation matrix for quaternion conversion,
+      // just invert the third column
+      // (alternatively flip sx or sy—this is a convention choice)
+      // Here we flip the third column:
+      // r02 = -r02; r12 = -r12; r22 = -r22;
+    }
+
+    // Build quaternion from rotation matrix (r00..r22)
+    // Using standard conversion (column-major rotation)
+    const trace = r00 + r11 + r22;
+    let qx, qy, qz, qw;
+    if(trace > 0.00001) {
+      const s = Math.sqrt(trace + 1.0) * 2; // s=4*qw
+      qw = 0.25 * s;
+      qx = (r21 - r12) / s;
+      qy = (r02 - r20) / s;
+      qz = (r10 - r01) / s;
+    } else if(r00 > r11 && r00 > r22) {
+      const s = Math.sqrt(1.0 + r00 - r11 - r22) * 2; // s=4*qx
+      qw = (r21 - r12) / s;
+      qx = 0.25 * s;
+      qy = (r01 + r10) / s;
+      qz = (r02 + r20) / s;
+    } else if(r11 > r22) {
+      const s = Math.sqrt(1.0 + r11 - r00 - r22) * 2; // s=4*qy
+      qw = (r02 - r20) / s;
+      qx = (r01 + r10) / s;
+      qy = 0.25 * s;
+      qz = (r12 + r21) / s;
+    } else {
+      const s = Math.sqrt(1.0 + r22 - r00 - r11) * 2; // s=4*qz
+      qw = (r10 - r01) / s;
+      qx = (r02 + r20) / s;
+      qy = (r12 + r21) / s;
+      qz = 0.25 * s;
+    }
+
+    const rot = new Float32Array([qx, qy, qz, qw]);
+    const scale = new Float32Array([sx, sy, sz]);
+    return {translation: t, rotation: rot, scale: scale};
   }
 
 }
