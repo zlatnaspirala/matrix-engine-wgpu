@@ -484,6 +484,7 @@ This is static file storage.
   [https://maximumroulette.com/apps/megpu/empty.js](https://maximumroulette.com/apps/megpu/empty.js)
 - [CodeSandbox Implementation](https://codesandbox.io/p/github/zlatnaspirala/matrix-engine-wgpu/main?file=%2Fpackage.json%3A14%2C16)
 - 📘 Learning Resource: [WebGPU Ray Tracing](https://maierfelix.github.io/2020-01-13-webgpu-ray-tracing/)
+- 💲 Commercial part: [3d-jamb](https://goldenspiral.itch.io/jamb-3d-deluxe)
 
 ---
 
