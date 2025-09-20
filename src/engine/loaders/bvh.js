@@ -558,101 +558,113 @@ export class BVHPlayer extends MEMeshObj {
     }
   }
 
-    quatToEuler(q) {
-  const [x, y, z, w] = q;
-  const ysqr = y * y;
+  quatToEuler(q) {
+    const [x, y, z, w] = q;
+    const ysqr = y * y;
 
-  // roll (X-axis rotation)
-  const t0 = +2.0 * (w * x + y * z);
-  const t1 = +1.0 - 2.0 * (x * x + ysqr);
-  const roll = Math.atan2(t0, t1);
+    // roll (X-axis rotation)
+    const t0 = +2.0 * (w * x + y * z);
+    const t1 = +1.0 - 2.0 * (x * x + ysqr);
+    const roll = Math.atan2(t0, t1);
 
-  // pitch (Y-axis rotation)
-  let t2 = +2.0 * (w * y - z * x);
-  t2 = t2 > 1 ? 1 : t2;
-  t2 = t2 < -1 ? -1 : t2;
-  const pitch = Math.asin(t2);
+    // pitch (Y-axis rotation)
+    let t2 = +2.0 * (w * y - z * x);
+    t2 = t2 > 1 ? 1 : t2;
+    t2 = t2 < -1 ? -1 : t2;
+    const pitch = Math.asin(t2);
 
-  // yaw (Z-axis rotation)
-  const t3 = +2.0 * (w * z + x * y);
-  const t4 = +1.0 - 2.0 * (ysqr + z * z);
-  const yaw = Math.atan2(t3, t4);
+    // yaw (Z-axis rotation)
+    const t3 = +2.0 * (w * z + x * y);
+    const t4 = +1.0 - 2.0 * (ysqr + z * z);
+    const yaw = Math.atan2(t3, t4);
 
-  return [roll, pitch, yaw]; // in radians
-}
+    return [roll, pitch, yaw]; // in radians
+  }
 
   updateSingleBoneCubeAnimation(glbAnimation, nodes, time, boneMatrices) {
     const channels = glbAnimation.channels;
     const samplers = glbAnimation.samplers;
 
-    // --- 1️⃣ Apply animation channels
+    // --- Map channels per node for faster lookup
+    const nodeChannels = new Map();
     for(const channel of channels) {
-      const sampler = samplers[channel.sampler];
-      const node = nodes[channel.target.node];
-      const path = channel.target.path; // "translation" | "rotation" | "scale"
+      if(!nodeChannels.has(channel.target.node)) nodeChannels.set(channel.target.node, []);
+      nodeChannels.get(channel.target.node).push(channel);
+    }
 
-      // --- Get input/output accessor arrays
-      const inputTimes = this.getAccessorArray(this.glb, sampler.input);   // keyframe times
-      const outputArray = this.getAccessorArray(this.glb, sampler.output);  // animation data
-
-      const numComponents = path === "rotation" ? 4 : 3;
-
-      // --- Find current keyframe interval
-      const animTime = time % inputTimes[inputTimes.length - 1];
-      let i = 0;
-      while(i < inputTimes.length - 1 && inputTimes[i + 1] <= animTime) i++;
-      const t0 = inputTimes[i];
-      const t1 = inputTimes[Math.min(i + 1, inputTimes.length - 1)];
-      const factor = t1 !== t0 ? (animTime - t0) / (t1 - t0) : 0;
-
-      // --- Interpolated keyframe values
-      const v0 = outputArray.subarray(i * numComponents, (i + 1) * numComponents);
-      const v1 = outputArray.subarray(
-        Math.min(i + 1, inputTimes.length - 1) * numComponents,
-        Math.min(i + 2, inputTimes.length) * numComponents
-      );
+    // --- Loop only over skeleton bones
+    for(let j = 0;j < this.skeleton.length;j++) {
+      const nodeIndex = this.skeleton[j];
+      const node = nodes[nodeIndex];
 
       // --- Initialize node TRS if needed
       if(!node.translation) node.translation = new Float32Array([0, 0, 0]);
       if(!node.rotation) node.rotation = quat.create();
       if(!node.scale) node.scale = new Float32Array([1, 1, 1]);
 
-      // --- Keep original values for additive translation/scale
+      // --- Keep original TRS for additive animation
       if(!node.originalTranslation) node.originalTranslation = node.translation.slice();
       if(!node.originalRotation) node.originalRotation = node.rotation.slice();
       if(!node.originalScale) node.originalScale = node.scale.slice();
 
-      // --- Apply animation based on path
-      if(path === "translation") {
-        // additive: original + animation
-        for(let j = 0;j < 3;j++) {
-          node.translation[j] = node.originalTranslation[j] + v0[j] * (1 - factor) + v1[j] * factor;
-        }
-      } else if(path === "scale") {
-        for(let j = 0;j < 3;j++) {
-          node.scale[j] = node.originalScale[j] * (v0[j] * (1 - factor) + v1[j] * factor);
-        }
-      } else if(path === "rotation") {
-        // quaternion slerp (replace original, do not add)
-        this.slerp(v0, v1, factor, node.rotation);
+      const channelsForNode = nodeChannels.get(nodeIndex) || [];
 
-        // quaternion values
-        console.log(`Node ${channel.target.node} quaternion:`, Array.from(node.rotation));
+      for(const channel of channelsForNode) {
+        const path = channel.target.path; // "translation" | "rotation" | "scale"
+        const sampler = samplers[channel.sampler];
 
-        // convert to Euler angles (degrees)
-        // const euler = this.quatToEuler(node.rotation); // using your quat library
-        // console.log(`Node ${channel.target.node} rotation (deg):`, {
-        //   x: euler[0] * 180 / Math.PI,
-        //   y: euler[1] * 180 / Math.PI,
-        //   z: euler[2] * 180 / Math.PI
-        // });
+        // --- Get input/output arrays
+        const inputTimes = this.getAccessorArray(this.glb, sampler.input);
+        const outputArray = this.getAccessorArray(this.glb, sampler.output);
+        const numComponents = path === "rotation" ? 4 : 3;
+
+
+        // --- Find keyframe interval
+        const animTime = time % inputTimes[inputTimes.length - 1];
+        let i = 0;
+        while(i < inputTimes.length - 1 && inputTimes[i + 1] <= animTime) i++;
+        const t0 = inputTimes[i];
+        const t1 = inputTimes[Math.min(i + 1, inputTimes.length - 1)];
+        const factor = t1 !== t0 ? (animTime - t0) / (t1 - t0) : 0;
+
+        // --- Interpolated keyframe values
+        const v0 = outputArray.subarray(i * numComponents, (i + 1) * numComponents);
+        const v1 = outputArray.subarray(
+          Math.min(i + 1, inputTimes.length - 1) * numComponents,
+          Math.min(i + 2, inputTimes.length) * numComponents
+        );
+
+        // --- Apply animation
+        if(path === "translation") {
+          for(let k = 0;k < 3;k++) {
+            node.translation[k] = node.originalTranslation[k] + v0[k] * (1 - factor) + v1[k] * factor;
+
+          }
+        } else if(path === "scale") {
+          for(let k = 0;k < 3;k++) {
+            node.scale[k] = node.originalScale[k] * (v0[k] * (1 - factor) + v1[k] * factor);
+          }
+        } else if(path === "rotation") {
+
+
+          // console.log(`Rotation sampler for node ${channel.target.node}:`);
+          // print first few keyframes
+          // for(let k = 0;k < Math.min(inputTimes.length, 100);k++) {
+          //   const q = outputArray.subarray(k * 4, (k + 1) * 4);
+          //   console.log(`!!!Keyframe ${k}: [${q.join(", ")}]`);
+          // }
+
+          // console.log("v0", v0, "v1", v1, "factor", factor);
+          this.slerp(v0, v1, factor, node.rotation); // quaternion slerp
+          //  console.log("path", path, " node.rotation" , node.rotation)
+        }
       }
 
       // --- Recompose local transform
       node.transform = this.composeMatrix(node.translation, node.rotation, node.scale);
     }
 
-    // --- 2️⃣ Compute world matrices recursively
+    // --- Compute world matrices recursively
     const computeWorld = (node) => {
       node.worldMatrix = node.parent
         ? mat4.multiply(node.parent.worldMatrix, node.transform)
@@ -661,14 +673,14 @@ export class BVHPlayer extends MEMeshObj {
     };
     for(const root of nodes.filter(n => !n.parent)) computeWorld(root);
 
-    // --- 3️⃣ Compute final bone matrices
+    // --- Compute final bone matrices
     for(let j = 0;j < this.skeleton.length;j++) {
       const jointNode = nodes[this.skeleton[j]];
       const finalMat = mat4.multiply(jointNode.worldMatrix, jointNode.inverseBindMatrix);
       boneMatrices.set(finalMat, j * 16);
     }
 
-    // --- 4️⃣ Upload to GPU
+    // --- Upload to GPU
     this.device.queue.writeBuffer(this.bonesBuffer, 0, boneMatrices);
 
     return boneMatrices;
