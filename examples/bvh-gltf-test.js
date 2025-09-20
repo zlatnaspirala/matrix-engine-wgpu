@@ -30,7 +30,7 @@ let TEST_ANIM = new MatrixEngineWGPU({
     loadBVH(path).then(async (BVHANIM) => {
       console.info(BVHANIM)
       var glbFile = await fetch(
-        "res/meshes/glb/test1.glb")
+        "res/meshes/glb/test.glb")
         .then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, TEST_ANIM.device)));
 
       // ✅ Inspect nodes (should now include bones + hierarchy)
