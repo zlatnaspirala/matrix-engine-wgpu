@@ -108,6 +108,31 @@ export default class MEMeshObj extends Materials {
         weightsView.byteLength / 4
       );
 
+      // Normalize each group of 4
+      for(let i = 0;i < weightsArray.length;i += 4) {
+        const w0 = weightsArray[i];
+        const w1 = weightsArray[i + 1];
+        const w2 = weightsArray[i + 2];
+        const w3 = weightsArray[i + 3];
+
+        const sum = w0 + w1 + w2 + w3;
+
+        if(sum > 0.0) {
+          weightsArray[i] = w0 / sum;
+          weightsArray[i + 1] = w1 / sum;
+          weightsArray[i + 2] = w2 / sum;
+          weightsArray[i + 3] = w3 / sum;
+        } else {
+          // If all zero, set default (avoids NaNs)
+          weightsArray[i] = 1;
+          weightsArray[i + 1] = 0;
+          weightsArray[i + 2] = 0;
+          weightsArray[i + 3] = 0;
+        }
+      }
+
+      console.log('Normalized weightsArray', weightsArray);
+
       this.mesh.weightsBuffer = this.device.createBuffer({
         label: "weightsBuffer real data",
         size: weightsArray.byteLength,
@@ -123,25 +148,34 @@ export default class MEMeshObj extends Materials {
       this.mesh.jointsView = jointsView;
 
       // Create typed array from the buffer (Uint16Array or Uint8Array depending on GLB)
-      const jointsArray = new Uint16Array(
+      let jointsArray16 = new Uint16Array(
         jointsView.buffer,
         jointsView.byteOffset || 0,
-        jointsView.byteLength / 2 // Uint16 = 2 bytes
+        jointsView.byteLength / 2 // in Uint16 elements
       );
+
+      const jointsArray32 = new Uint32Array(jointsArray16.length);
+      for(let i = 0;i < jointsArray16.length;i++) {
+        jointsArray32[i] = jointsArray16[i];
+      }
 
 
       // const DUMMY = new Uint32Array((this.mesh.vertices.length / 3) * 4);
       // Create GPU buffer for joints
       this.mesh.jointsBuffer = this.device.createBuffer({
         label: "jointsBuffer real data",
-        size: jointsArray.byteLength,
+        size: jointsArray32.byteLength,
         usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
         mappedAtCreation: true,
       });
 
       // Upload the data to GPU
-      new Uint16Array(this.mesh.jointsBuffer.getMappedRange()).set(jointsArray);
+      new Uint32Array(this.mesh.jointsBuffer.getMappedRange()).set(jointsArray32);
       this.mesh.jointsBuffer.unmap();
+
+
+      console.log('JOINTS_0', jointsArray32.slice(0, 32));
+      console.log('WEIGHTS_0', weightsArray.slice(0, 32));
 
     } else {
       // obj files flow 
@@ -296,7 +330,7 @@ export default class MEMeshObj extends Materials {
       if(this.mesh.feedFromRealGlb && this.mesh.feedFromRealGlb == true) {
         console.log('it is GLB ')
         glbInfo = {
-          arrayStride: 4 * 4 * 4, // vec4<f32> = 4 * 4 bytes
+          arrayStride: 4 * 4, // vec4<f32> = 4 * 4 bytes
           attributes: [{format: 'float32x4', offset: 0, shaderLocation: 4}]
         }
       } else {
@@ -473,8 +507,6 @@ export default class MEMeshObj extends Materials {
           // Global ambient + padding
           sceneData.set([this.globalAmbient[0], this.globalAmbient[1], this.globalAmbient[2], 0.0], 40);
 
-
-
           if(mesh.glb && mesh.glb.skinnedMeshNodes) {
             // console.log('mesh 1111', mesh.glb.skinnedMeshNodes)
 
@@ -516,7 +548,8 @@ export default class MEMeshObj extends Materials {
           mat4.rotateZ(modelMatrix, this.rotation.getRotZ(), modelMatrix);
         }
         // Apply scale if you have it, e.g.:
-        // mat4.scale(modelMatrix, modelMatrix, [this.scale.x, this.scale.y, this.scale.z]);
+        // console.warn('what is csle comes from user level not glb ', this.scale)
+        mat4.scale(modelMatrix, [this.scale[0], this.scale[1], this.scale[2]], modelMatrix);
         return modelMatrix;
       };
 

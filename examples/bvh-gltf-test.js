@@ -15,6 +15,14 @@ let TEST_ANIM = new MatrixEngineWGPU({
 }, () => {
 
   addEventListener('AmmoReady', () => {
+
+        setTimeout(()=> {
+      app.cameras.WASD.yaw = -0.03;
+      app.cameras.WASD.pitch = -0.49;
+      app.cameras.WASD.position[2] = 0;
+      app.cameras.WASD.position[1] = 3.76;
+    },500)
+
     downloadMeshes({cube: "./res/meshes/blender/cube.obj"}, onGround, {scale: [20, 1, 20]})
     // const path = 'https://raw.githubusercontent.com/zlatnaspirala/Matrix-Engine-BVH-test/main/javascript-bvh/example.bvh';
     const path = 'res/meshes/glb/glb-test1.bvh';
@@ -39,9 +47,11 @@ let TEST_ANIM = new MatrixEngineWGPU({
         }
       });
 
+
       TEST_ANIM.addGlbObj({
+        scale: [1,1,1],
         name: 'firstGlb',
-        texturesPaths: ['./res/meshes/blender/cube.png'],
+        texturesPaths: ['./res/textures/rust.jpg'],
       }, BVHANIM, glbFile);
 
     });
@@ -49,6 +59,9 @@ let TEST_ANIM = new MatrixEngineWGPU({
 
   function onGround(m) {
     TEST_ANIM.addLight();
+
+    // -0.03450356494543923 -0.4885164267948901 0 3.759999990463257
+
 
     TEST_ANIM.addMeshObj({
       position: {x: 0, y: -5, z: -10},

@@ -1,6 +1,4 @@
-export let vertexWGSL = `
-
-const MAX_BONES = 100u;
+export let vertexWGSL = `const MAX_BONES = 100u;
 
 struct Scene {
   lightViewProjMatrix: mat4x4f,
@@ -41,16 +39,17 @@ fn skinVertex(pos: vec4f, nrm: vec3f, joints: vec4<u32>, weights: vec4f) -> Skin
     for (var i: u32 = 0u; i < 4u; i = i + 1u) {
         let jointIndex = joints[i];
         let w = weights[i];
-        let boneMat = bones.boneMatrices[jointIndex];
-        skinnedPos  += (boneMat * pos) * w;
+        if (w > 0.0) {
+          let boneMat = bones.boneMatrices[jointIndex];
+          skinnedPos  += (boneMat * pos) * w;
 
-        let boneMat3 = mat3x3f(
-          boneMat[0].xyz,
-          boneMat[1].xyz,
-          boneMat[2].xyz
-        );
-        skinnedNorm += (boneMat3 * nrm) * w;
-        // skinnedNorm += (mat3x3f(boneMat) * nrm) * w;
+          let boneMat3 = mat3x3f(
+            boneMat[0].xyz,
+            boneMat[1].xyz,
+            boneMat[2].xyz
+          );
+          skinnedNorm += (boneMat3 * nrm) * w;
+        }
     }
 
     return SkinResult(skinnedPos, normalize(skinnedNorm));
@@ -61,30 +60,31 @@ fn main(
   @location(0) position: vec3f,
   @location(1) normal: vec3f,
   @location(2) uv: vec2f,
-  @location(3) joints: vec4<u32>,   // added at end
-  @location(4) weights: vec4<f32>   // added at end
+  @location(3) joints: vec4<u32>,
+  @location(4) weights: vec4<f32>
 ) -> VertexOutput {
   var output : VertexOutput;
 
-  // base values
   var pos = vec4(position, 1.0);
   var nrm = normal;
 
   // apply skinning
   let skinned = skinVertex(pos, nrm, joints, weights);
-  // let skinned = SkinResult(pos, nrm); // bypass skinVertex
 
-  let skinnedPos  = skinned.position;
-  let skinnedNorm = skinned.normal;
+  // transform to world
+  let worldPos = model.modelMatrix * skinned.position;
+  let normalMatrix = mat3x3f(
+    model.modelMatrix[0].xyz,
+    model.modelMatrix[1].xyz,
+    model.modelMatrix[2].xyz
+  );
 
-  // transform
-  let worldPos = model.modelMatrix * skinnedPos;
   output.Position = scene.cameraViewProjMatrix * worldPos;
   output.fragPos = worldPos.xyz;
 
   output.shadowPos = scene.lightViewProjMatrix * worldPos;
-  output.fragNorm = normalize((model.modelMatrix * vec4(skinnedNorm, 0.0)).xyz);
-
+  output.fragNorm = normalize(normalMatrix * skinned.normal);
   output.uv = uv;
+
   return output;
 }`
