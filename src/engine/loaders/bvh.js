@@ -45,6 +45,8 @@ export class BVHPlayer extends MEMeshObj {
     this.fps = bvh.fps || 30;
     this.timeAccumulator = 0;
 
+    this.scaleBoneTest = 1;
+
     this.primitiveIndex = primitiveIndex;
 
     if(!bvh.sharedState) {
@@ -637,26 +639,16 @@ export class BVHPlayer extends MEMeshObj {
         // --- Apply animation
         if(path === "translation") {
           for(let k = 0;k < 3;k++) {
-            node.translation[k] = node.originalTranslation[k] + v0[k] * (1 - factor) + v1[k] * factor;
-
+            // node.translation[k] = node.originalTranslation[k] + v0[k] * (1 - factor) + v1[k] * factor;
+            node.translation[k] = v0[k] * (1 - factor) + v1[k] * factor;
           }
         } else if(path === "scale") {
           for(let k = 0;k < 3;k++) {
-            node.scale[k] = node.originalScale[k] * (v0[k] * (1 - factor) + v1[k] * factor);
+            // node.scale[k] = node.originalScale[k] * (v0[k] * (1 - factor) + v1[k] * factor);
+            node.scale[k] = (v0[k] * (1 - factor) + v1[k] * factor);
           }
         } else if(path === "rotation") {
-
-
-          // console.log(`Rotation sampler for node ${channel.target.node}:`);
-          // print first few keyframes
-          // for(let k = 0;k < Math.min(inputTimes.length, 100);k++) {
-          //   const q = outputArray.subarray(k * 4, (k + 1) * 4);
-          //   console.log(`!!!Keyframe ${k}: [${q.join(", ")}]`);
-          // }
-
-          // console.log("v0", v0, "v1", v1, "factor", factor);
-          this.slerp(v0, v1, factor, node.rotation); // quaternion slerp
-          //  console.log("path", path, " node.rotation" , node.rotation)
+          this.slerp(v0, v1, factor, node.rotation);
         }
       }
 
@@ -664,59 +656,50 @@ export class BVHPlayer extends MEMeshObj {
       node.transform = this.composeMatrix(node.translation, node.rotation, node.scale);
     }
 
-const computeWorld = (nodeIndex) => {
-  const node = nodes[nodeIndex];
+    const computeWorld = (nodeIndex) => {
+      const node = nodes[nodeIndex];
 
-  if (!node.worldMatrix) node.worldMatrix = mat4.create();
+      if(!node.worldMatrix) node.worldMatrix = mat4.create();
 
-  let parentWorld = node.parent !== null ? nodes[node.parent].worldMatrix : null;
+      let parentWorld = node.parent !== null ? nodes[node.parent].worldMatrix : null;
 
-  if (parentWorld) {
-    // multiply parent * local
-    mat4.multiply(parentWorld, node.transform, node.worldMatrix);
-    // mat4.copy(node.transform, node.worldMatrix);
-  } else {
-    // root node — copy local, but reset scale if needed
-    mat4.copy(node.transform, node.worldMatrix);
-    // optional: remove Blender scale
+      if(parentWorld) {
+        // multiply parent * local
+        mat4.multiply(parentWorld, node.transform, node.worldMatrix);
+        // mat4.copy(node.transform, node.worldMatrix);
+      } else {
+        // root node — copy local, but reset scale if needed
+        mat4.copy(node.transform, node.worldMatrix);
+        // optional: remove Blender scale
 
-  }
+      }
 
-       mat4.scale(node.worldMatrix, [100,100,100], node.worldMatrix ); 
+      mat4.scale(node.worldMatrix, [this.scaleBoneTest, this.scaleBoneTest, this.scaleBoneTest], node.worldMatrix);
 
-  if (node.children) {
-    for (const childIndex of node.children) computeWorld(childIndex);
-  }
-};
+      if(node.children) {
+        for(const childIndex of node.children) computeWorld(childIndex);
+      }
+    };
 
-// start from roots (no parent)
-for (let i = 0; i < nodes.length; i++) {
-  if (nodes[i].parent === null || nodes[i].parent === undefined) {
-    computeWorld(i);
-  }
-}
-
-
+    // start from roots (no parent)
+    for(let i = 0;i < nodes.length;i++) {
+      if(nodes[i].parent === null || nodes[i].parent === undefined) {
+        computeWorld(i);
+      }
+    }
 
 
-for (let j = 0; j < this.skeleton.length; j++) {
-  const jointNode = nodes[this.skeleton[j]];
-  const finalMat = mat4.create();
-  mat4.multiply(jointNode.worldMatrix, jointNode.inverseBindMatrix, finalMat);
-  boneMatrices.set(finalMat, j * 16);
-}
 
-    // // --- Compute final bone matrices
-    // for(let j = 0;j < this.skeleton.length;j++) {
-    //   const jointNode = nodes[this.skeleton[j]];
-    //   const finalMat = mat4.multiply(jointNode.worldMatrix, jointNode.inverseBindMatrix);
-    //   boneMatrices.set(finalMat, j * 16);
-    //   // boneMatrices.set(jointNode.worldMatrix, j * 16);
-    // }
+
+    for(let j = 0;j < this.skeleton.length;j++) {
+      const jointNode = nodes[this.skeleton[j]];
+      const finalMat = mat4.create();
+      mat4.multiply(jointNode.worldMatrix, jointNode.inverseBindMatrix, finalMat);
+      boneMatrices.set(finalMat, j * 16);
+    }
 
     // --- Upload to GPU
     this.device.queue.writeBuffer(this.bonesBuffer, 0, boneMatrices);
-
     return boneMatrices;
   }
 

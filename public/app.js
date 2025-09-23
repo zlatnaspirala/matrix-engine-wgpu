@@ -53,6 +53,8 @@ let TEST_ANIM = new _world.default({
         }
       });
       TEST_ANIM.addGlbObj({
+        // scale: [0.001,0.001,0.001],
+        // scale: [1,1,1],
         scale: [10, 10, 10],
         name: 'firstGlb',
         texturesPaths: ['./res/textures/rust.jpg']
@@ -19936,6 +19938,7 @@ class BVHPlayer extends _meshObj.default {
     this.currentFrame = 0;
     this.fps = bvh.fps || 30;
     this.timeAccumulator = 0;
+    this.scaleBoneTest = 1;
     this.primitiveIndex = primitiveIndex;
     if (!bvh.sharedState) {
       bvh.sharedState = {
@@ -20525,23 +20528,16 @@ class BVHPlayer extends _meshObj.default {
         // --- Apply animation
         if (path === "translation") {
           for (let k = 0; k < 3; k++) {
-            node.translation[k] = node.originalTranslation[k] + v0[k] * (1 - factor) + v1[k] * factor;
+            // node.translation[k] = node.originalTranslation[k] + v0[k] * (1 - factor) + v1[k] * factor;
+            node.translation[k] = v0[k] * (1 - factor) + v1[k] * factor;
           }
         } else if (path === "scale") {
           for (let k = 0; k < 3; k++) {
-            node.scale[k] = node.originalScale[k] * (v0[k] * (1 - factor) + v1[k] * factor);
+            // node.scale[k] = node.originalScale[k] * (v0[k] * (1 - factor) + v1[k] * factor);
+            node.scale[k] = v0[k] * (1 - factor) + v1[k] * factor;
           }
         } else if (path === "rotation") {
-          // console.log(`Rotation sampler for node ${channel.target.node}:`);
-          // print first few keyframes
-          // for(let k = 0;k < Math.min(inputTimes.length, 100);k++) {
-          //   const q = outputArray.subarray(k * 4, (k + 1) * 4);
-          //   console.log(`!!!Keyframe ${k}: [${q.join(", ")}]`);
-          // }
-
-          // console.log("v0", v0, "v1", v1, "factor", factor);
-          this.slerp(v0, v1, factor, node.rotation); // quaternion slerp
-          //  console.log("path", path, " node.rotation" , node.rotation)
+          this.slerp(v0, v1, factor, node.rotation);
         }
       }
 
@@ -20561,7 +20557,7 @@ class BVHPlayer extends _meshObj.default {
         _wgpuMatrix.mat4.copy(node.transform, node.worldMatrix);
         // optional: remove Blender scale
       }
-      _wgpuMatrix.mat4.scale(node.worldMatrix, [100, 100, 100], node.worldMatrix);
+      _wgpuMatrix.mat4.scale(node.worldMatrix, [this.scaleBoneTest, this.scaleBoneTest, this.scaleBoneTest], node.worldMatrix);
       if (node.children) {
         for (const childIndex of node.children) computeWorld(childIndex);
       }
@@ -20579,14 +20575,6 @@ class BVHPlayer extends _meshObj.default {
       _wgpuMatrix.mat4.multiply(jointNode.worldMatrix, jointNode.inverseBindMatrix, finalMat);
       boneMatrices.set(finalMat, j * 16);
     }
-
-    // // --- Compute final bone matrices
-    // for(let j = 0;j < this.skeleton.length;j++) {
-    //   const jointNode = nodes[this.skeleton[j]];
-    //   const finalMat = mat4.multiply(jointNode.worldMatrix, jointNode.inverseBindMatrix);
-    //   boneMatrices.set(finalMat, j * 16);
-    //   // boneMatrices.set(jointNode.worldMatrix, j * 16);
-    // }
 
     // --- Upload to GPU
     this.device.queue.writeBuffer(this.bonesBuffer, 0, boneMatrices);

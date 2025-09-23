@@ -49,6 +49,8 @@ let TEST_ANIM = new MatrixEngineWGPU({
 
 
       TEST_ANIM.addGlbObj({
+        // scale: [0.001,0.001,0.001],
+        // scale: [1,1,1],
         scale: [10,10,10],
         name: 'firstGlb',
         texturesPaths: ['./res/textures/rust.jpg'],
