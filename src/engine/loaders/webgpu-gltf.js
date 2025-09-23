@@ -432,7 +432,7 @@ function flattenGLTFChildren(nodes, node, parent_transform) {
   node['translation'] = undefined;
 
   if(node['children']) {
-    for(var i = 0; i < node['children'].length; ++i) {
+    for(var i = 0;i < node['children'].length;++i) {
       flattenGLTFChildren(nodes, nodes[node['children'][i]], tfm);
     }
     // node['children'] = []; // REMOVE THIS LINE
@@ -610,7 +610,7 @@ export class GLBModel {
 export async function uploadGLBModel(buffer, device) {
   // 1️⃣ Validate header
   const header = new Uint32Array(buffer, 0, 5);
-  if (header[0] !== 0x46546C67) {
+  if(header[0] !== 0x46546C67) {
     alert('This does not appear to be a glb file?');
     return;
   }
@@ -632,21 +632,21 @@ export async function uploadGLBModel(buffer, device) {
 
 
   const binaryOffset = 28 + header[3];
-const binaryLength = binaryHeader[0];
+  const binaryLength = binaryHeader[0];
 
-// ✅ raw ArrayBuffer slice of the binary chunk:
-const glbBinaryBuffer = buffer.slice(binaryOffset, binaryOffset + binaryLength);
+  // ✅ raw ArrayBuffer slice of the binary chunk:
+  const glbBinaryBuffer = buffer.slice(binaryOffset, binaryOffset + binaryLength);
 
 
   // 5️⃣ Load images
   const images = [];
-  if (glbJsonData.images) {
-    for (const imgJson of glbJsonData.images) {
+  if(glbJsonData.images) {
+    for(const imgJson of glbJsonData.images) {
       const view = new GLTFBufferView(
         glbBuffer,
         glbJsonData.bufferViews[imgJson.bufferView]
       );
-      const blob = new Blob([view.buffer], { type: imgJson['mime/type'] });
+      const blob = new Blob([view.buffer], {type: imgJson['mime/type']});
       const img = await createImageBitmap(blob);
       const gpuImg = device.createTexture({
         size: [img.width, img.height, 1],
@@ -657,8 +657,8 @@ const glbBinaryBuffer = buffer.slice(binaryOffset, binaryOffset + binaryLength);
           GPUTextureUsage.RENDER_ATTACHMENT,
       });
       device.queue.copyExternalImageToTexture(
-        { source: img },
-        { texture: gpuImg },
+        {source: img},
+        {texture: gpuImg},
         [img.width, img.height, 1]
       );
       images.push(gpuImg);
@@ -688,7 +688,7 @@ const glbBinaryBuffer = buffer.slice(binaryOffset, binaryOffset + binaryLength);
 
       // Indices
       let indices = null;
-      if (prim.indices !== undefined) {
+      if(prim.indices !== undefined) {
         const accessor = glbJsonData.accessors[prim.indices];
         const viewID = accessor.bufferView;
         bufferViews[viewID].needsUpload = true;
@@ -702,21 +702,21 @@ const glbBinaryBuffer = buffer.slice(binaryOffset, binaryOffset + binaryLength);
         texcoords = [];
       let weights = null;
       let joints = null;
-      for (const attr in prim.attributes) {
+      for(const attr in prim.attributes) {
         const accessor = glbJsonData.accessors[prim.attributes[attr]];
         const viewID = accessor.bufferView;
         bufferViews[viewID].needsUpload = true;
         bufferViews[viewID].addUsage(GPUBufferUsage.VERTEX);
 
-        if (attr === 'POSITION')
+        if(attr === 'POSITION')
           positions = new GLTFAccessor(bufferViews[viewID], accessor);
-        else if (attr === 'NORMAL')
+        else if(attr === 'NORMAL')
           normals = new GLTFAccessor(bufferViews[viewID], accessor);
-        else if (attr.startsWith('TEXCOORD'))
+        else if(attr.startsWith('TEXCOORD'))
           texcoords.push(new GLTFAccessor(bufferViews[viewID], accessor));
-        else if (attr === 'WEIGHTS_0')
+        else if(attr === 'WEIGHTS_0')
           weights = new GLTFAccessor(bufferViews[viewID], accessor);
-        else if (attr.startsWith('JOINTS'))
+        else if(attr.startsWith('JOINTS'))
           joints = new GLTFAccessor(bufferViews[viewID], accessor);
       }
 
@@ -741,9 +741,9 @@ const glbBinaryBuffer = buffer.slice(binaryOffset, binaryOffset + binaryLength);
   });
 
   // Upload buffers & materials
-  for (const bv of bufferViews) if (bv.needsUpload) bv.upload(device);
+  for(const bv of bufferViews) if(bv.needsUpload) bv.upload(device);
   defaultMaterial.upload(device);
-  for (const m of materials) m.upload(device);
+  for(const m of materials) m.upload(device);
 
   // 8️⃣ Skins (we only store the index of inverseBindMatrices here)
   const skins = (glbJsonData.skins || []).map(skin => ({
@@ -755,14 +755,30 @@ const glbBinaryBuffer = buffer.slice(binaryOffset, binaryOffset + binaryLength);
   // 9️⃣ Nodes
   const nodes = [];
   const gltfNodes = makeGLTFSingleLevel(glbJsonData.nodes);
-  for (let i = 0; i < gltfNodes.length; i++) {
+  for(let i = 0;i < gltfNodes.length;i++) {
     const n = gltfNodes[i];
     const meshObj = n.mesh !== undefined ? meshes[n.mesh] : null;
     const node = new GLTFNode(n.name, meshObj, readNodeTransform(n), n);
 
-    if (n.skin !== undefined) node.skin = n.skin; // skin index
+    if(n.skin !== undefined) node.skin = n.skin; // skin index
     node.upload(device);
     nodes.push(node);
+  }
+
+  // 🟩 Build parent references:
+  for(let i = 0;i < gltfNodes.length;i++) {
+    const srcNode = gltfNodes[i];
+    // srcNode.children is an array of indices
+    if(srcNode.children) {
+      for(const childIndex of srcNode.children) {
+        nodes[childIndex].parent = i;   // add .parent to the child node
+      }
+    }
+  }
+
+  // Ensure nodes without parent are root nodes
+  for(const node of nodes) {
+    if(node.parent === undefined) node.parent = null;
   }
 
   // 🔟 Skinned mesh nodes
@@ -770,7 +786,7 @@ const glbBinaryBuffer = buffer.slice(binaryOffset, binaryOffset + binaryLength);
     n => n.mesh && n.skin !== undefined
   );
 
-  if (skinnedMeshNodes.length === 0) {
+  if(skinnedMeshNodes.length === 0) {
     console.warn('No skins found — mesh not bound to skeleton');
   } else {
     skinnedMeshNodes.forEach(n => {
@@ -783,7 +799,7 @@ const glbBinaryBuffer = buffer.slice(binaryOffset, binaryOffset + binaryLength);
       });
     });
   }
- let R = new GLBModel(nodes, skins, skinnedMeshNodes, glbJsonData, glbBinaryBuffer)
+  let R = new GLBModel(nodes, skins, skinnedMeshNodes, glbJsonData, glbBinaryBuffer)
   return R;
 }
 

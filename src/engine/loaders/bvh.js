@@ -79,7 +79,7 @@ export class BVHPlayer extends MEMeshObj {
     this.inverseBindMatrices = []; // Float32Array for each joint
 
     this.initInverseBindMatrices();
-    this.computeNodeWorldMatrices();
+    // this.computeNodeWorldMatrices();
     this.makeSkeletal();
 
   }
@@ -664,21 +664,55 @@ export class BVHPlayer extends MEMeshObj {
       node.transform = this.composeMatrix(node.translation, node.rotation, node.scale);
     }
 
-    // --- Compute world matrices recursively
-    const computeWorld = (node) => {
-      node.worldMatrix = node.parent
-        ? mat4.multiply(node.parent.worldMatrix, node.transform)
-        : node.transform;
-      if(node.children) for(const c of node.children) computeWorld(c);
-    };
-    for(const root of nodes.filter(n => !n.parent)) computeWorld(root);
+const computeWorld = (nodeIndex) => {
+  const node = nodes[nodeIndex];
 
-    // --- Compute final bone matrices
-    for(let j = 0;j < this.skeleton.length;j++) {
-      const jointNode = nodes[this.skeleton[j]];
-      const finalMat = mat4.multiply(jointNode.worldMatrix, jointNode.inverseBindMatrix);
-      boneMatrices.set(finalMat, j * 16);
-    }
+  if (!node.worldMatrix) node.worldMatrix = mat4.create();
+
+  let parentWorld = node.parent !== null ? nodes[node.parent].worldMatrix : null;
+
+  if (parentWorld) {
+    // multiply parent * local
+    mat4.multiply(parentWorld, node.transform, node.worldMatrix);
+    // mat4.copy(node.transform, node.worldMatrix);
+  } else {
+    // root node — copy local, but reset scale if needed
+    mat4.copy(node.transform, node.worldMatrix);
+    // optional: remove Blender scale
+
+  }
+
+       mat4.scale(node.worldMatrix, [100,100,100], node.worldMatrix ); 
+
+  if (node.children) {
+    for (const childIndex of node.children) computeWorld(childIndex);
+  }
+};
+
+// start from roots (no parent)
+for (let i = 0; i < nodes.length; i++) {
+  if (nodes[i].parent === null || nodes[i].parent === undefined) {
+    computeWorld(i);
+  }
+}
+
+
+
+
+for (let j = 0; j < this.skeleton.length; j++) {
+  const jointNode = nodes[this.skeleton[j]];
+  const finalMat = mat4.create();
+  mat4.multiply(jointNode.worldMatrix, jointNode.inverseBindMatrix, finalMat);
+  boneMatrices.set(finalMat, j * 16);
+}
+
+    // // --- Compute final bone matrices
+    // for(let j = 0;j < this.skeleton.length;j++) {
+    //   const jointNode = nodes[this.skeleton[j]];
+    //   const finalMat = mat4.multiply(jointNode.worldMatrix, jointNode.inverseBindMatrix);
+    //   boneMatrices.set(finalMat, j * 16);
+    //   // boneMatrices.set(jointNode.worldMatrix, j * 16);
+    // }
 
     // --- Upload to GPU
     this.device.queue.writeBuffer(this.bonesBuffer, 0, boneMatrices);

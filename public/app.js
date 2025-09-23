@@ -53,7 +53,7 @@ let TEST_ANIM = new _world.default({
         }
       });
       TEST_ANIM.addGlbObj({
-        scale: [1, 1, 1],
+        scale: [10, 10, 10],
         name: 'firstGlb',
         texturesPaths: ['./res/textures/rust.jpg']
       }, BVHANIM, glbFile);
@@ -19968,7 +19968,7 @@ class BVHPlayer extends _meshObj.default {
     this.inverseBindMatrices = []; // Float32Array for each joint
 
     this.initInverseBindMatrices();
-    this.computeNodeWorldMatrices();
+    // this.computeNodeWorldMatrices();
     this.makeSkeletal();
   }
   makeSkeletal() {
@@ -20548,20 +20548,45 @@ class BVHPlayer extends _meshObj.default {
       // --- Recompose local transform
       node.transform = this.composeMatrix(node.translation, node.rotation, node.scale);
     }
-
-    // --- Compute world matrices recursively
-    const computeWorld = node => {
-      node.worldMatrix = node.parent ? _wgpuMatrix.mat4.multiply(node.parent.worldMatrix, node.transform) : node.transform;
-      if (node.children) for (const c of node.children) computeWorld(c);
+    const computeWorld = nodeIndex => {
+      const node = nodes[nodeIndex];
+      if (!node.worldMatrix) node.worldMatrix = _wgpuMatrix.mat4.create();
+      let parentWorld = node.parent !== null ? nodes[node.parent].worldMatrix : null;
+      if (parentWorld) {
+        // multiply parent * local
+        _wgpuMatrix.mat4.multiply(parentWorld, node.transform, node.worldMatrix);
+        // mat4.copy(node.transform, node.worldMatrix);
+      } else {
+        // root node — copy local, but reset scale if needed
+        _wgpuMatrix.mat4.copy(node.transform, node.worldMatrix);
+        // optional: remove Blender scale
+      }
+      _wgpuMatrix.mat4.scale(node.worldMatrix, [100, 100, 100], node.worldMatrix);
+      if (node.children) {
+        for (const childIndex of node.children) computeWorld(childIndex);
+      }
     };
-    for (const root of nodes.filter(n => !n.parent)) computeWorld(root);
 
-    // --- Compute final bone matrices
+    // start from roots (no parent)
+    for (let i = 0; i < nodes.length; i++) {
+      if (nodes[i].parent === null || nodes[i].parent === undefined) {
+        computeWorld(i);
+      }
+    }
     for (let j = 0; j < this.skeleton.length; j++) {
       const jointNode = nodes[this.skeleton[j]];
-      const finalMat = _wgpuMatrix.mat4.multiply(jointNode.worldMatrix, jointNode.inverseBindMatrix);
+      const finalMat = _wgpuMatrix.mat4.create();
+      _wgpuMatrix.mat4.multiply(jointNode.worldMatrix, jointNode.inverseBindMatrix, finalMat);
       boneMatrices.set(finalMat, j * 16);
     }
+
+    // // --- Compute final bone matrices
+    // for(let j = 0;j < this.skeleton.length;j++) {
+    //   const jointNode = nodes[this.skeleton[j]];
+    //   const finalMat = mat4.multiply(jointNode.worldMatrix, jointNode.inverseBindMatrix);
+    //   boneMatrices.set(finalMat, j * 16);
+    //   // boneMatrices.set(jointNode.worldMatrix, j * 16);
+    // }
 
     // --- Upload to GPU
     this.device.queue.writeBuffer(this.bonesBuffer, 0, boneMatrices);
@@ -20874,12 +20899,13 @@ class GLTFMesh {
 }
 exports.GLTFMesh = GLTFMesh;
 class GLTFNode {
-  constructor(name, mesh, transform) {
+  constructor(name, mesh, transform, n) {
     this.name = name;
     this.mesh = mesh;
     this.transform = transform;
     this.gpuUniforms = null;
     this.bindGroup = null;
+    this.children = n.children || [];
   }
   upload(device) {
     var buf = device.createBuffer({
@@ -20947,6 +20973,22 @@ function readNodeTransform(node) {
     return _glMatrix.mat4.fromRotationTranslationScale(m, rotation, translation, scale);
   }
 }
+
+// function flattenGLTFChildren(nodes, node, parent_transform) {
+//   var tfm = readNodeTransform(node);
+//   var tfm = mat4.mul(tfm, parent_transform, tfm);
+//   node['matrix'] = tfm;
+//   node['scale'] = undefined;
+//   node['rotation'] = undefined;
+//   node['translation'] = undefined;
+//   if(node['children']) {
+//     for(var i = 0;i < node['children'].length;++i) {
+//       flattenGLTFChildren(nodes, nodes[node['children'][i]], tfm);
+//     }
+//     node['children'] = [];
+//   }
+// }
+
 function flattenGLTFChildren(nodes, node, parent_transform) {
   var tfm = readNodeTransform(node);
   var tfm = _glMatrix.mat4.mul(tfm, parent_transform, tfm);
@@ -20958,7 +21000,7 @@ function flattenGLTFChildren(nodes, node, parent_transform) {
     for (var i = 0; i < node['children'].length; ++i) {
       flattenGLTFChildren(nodes, nodes[node['children'][i]], tfm);
     }
-    node['children'] = [];
+    // node['children'] = []; // REMOVE THIS LINE
   }
 }
 function makeGLTFSingleLevel(nodes) {
@@ -21231,10 +21273,26 @@ async function uploadGLBModel(buffer, device) {
   for (let i = 0; i < gltfNodes.length; i++) {
     const n = gltfNodes[i];
     const meshObj = n.mesh !== undefined ? meshes[n.mesh] : null;
-    const node = new GLTFNode(n.name, meshObj, readNodeTransform(n));
+    const node = new GLTFNode(n.name, meshObj, readNodeTransform(n), n);
     if (n.skin !== undefined) node.skin = n.skin; // skin index
     node.upload(device);
     nodes.push(node);
+  }
+
+  // 🟩 Build parent references:
+  for (let i = 0; i < gltfNodes.length; i++) {
+    const srcNode = gltfNodes[i];
+    // srcNode.children is an array of indices
+    if (srcNode.children) {
+      for (const childIndex of srcNode.children) {
+        nodes[childIndex].parent = i; // add .parent to the child node
+      }
+    }
+  }
+
+  // Ensure nodes without parent are root nodes
+  for (const node of nodes) {
+    if (node.parent === undefined) node.parent = null;
   }
 
   // 🔟 Skinned mesh nodes
