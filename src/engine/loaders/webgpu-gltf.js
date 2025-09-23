@@ -311,13 +311,15 @@ export class GLTFMesh {
 }
 
 export class GLTFNode {
-  constructor(name, mesh, transform) {
+  constructor(name, mesh, transform, n) {
     this.name = name;
     this.mesh = mesh;
     this.transform = transform;
 
     this.gpuUniforms = null;
     this.bindGroup = null;
+
+    this.children = n.children || [];
   }
 
   upload(device) {
@@ -406,6 +408,21 @@ function readNodeTransform(node) {
   }
 }
 
+// function flattenGLTFChildren(nodes, node, parent_transform) {
+//   var tfm = readNodeTransform(node);
+//   var tfm = mat4.mul(tfm, parent_transform, tfm);
+//   node['matrix'] = tfm;
+//   node['scale'] = undefined;
+//   node['rotation'] = undefined;
+//   node['translation'] = undefined;
+//   if(node['children']) {
+//     for(var i = 0;i < node['children'].length;++i) {
+//       flattenGLTFChildren(nodes, nodes[node['children'][i]], tfm);
+//     }
+//     node['children'] = [];
+//   }
+// }
+
 function flattenGLTFChildren(nodes, node, parent_transform) {
   var tfm = readNodeTransform(node);
   var tfm = mat4.mul(tfm, parent_transform, tfm);
@@ -413,13 +430,15 @@ function flattenGLTFChildren(nodes, node, parent_transform) {
   node['scale'] = undefined;
   node['rotation'] = undefined;
   node['translation'] = undefined;
+
   if(node['children']) {
-    for(var i = 0;i < node['children'].length;++i) {
+    for(var i = 0; i < node['children'].length; ++i) {
       flattenGLTFChildren(nodes, nodes[node['children'][i]], tfm);
     }
-    node['children'] = [];
+    // node['children'] = []; // REMOVE THIS LINE
   }
 }
+
 
 function makeGLTFSingleLevel(nodes) {
   var rootTfm = mat4.create();
@@ -739,7 +758,7 @@ const glbBinaryBuffer = buffer.slice(binaryOffset, binaryOffset + binaryLength);
   for (let i = 0; i < gltfNodes.length; i++) {
     const n = gltfNodes[i];
     const meshObj = n.mesh !== undefined ? meshes[n.mesh] : null;
-    const node = new GLTFNode(n.name, meshObj, readNodeTransform(n));
+    const node = new GLTFNode(n.name, meshObj, readNodeTransform(n), n);
 
     if (n.skin !== undefined) node.skin = n.skin; // skin index
     node.upload(device);
