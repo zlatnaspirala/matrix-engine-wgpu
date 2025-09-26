@@ -606,6 +606,15 @@ export class GLBModel {
   }
 };
 
+ function getComponentSize(componentType) {
+    switch(componentType) {
+      case 5126: return 4; // float32
+      case 5123: return 2; // uint16
+      case 5121: return 1; // uint8
+      default: throw new Error("Unknown componentType: " + componentType);
+    }
+  }
+
 // Upload a GLB model and return it
 export async function uploadGLBModel(buffer, device) {
   // 1️⃣ Validate header
@@ -681,6 +690,7 @@ export async function uploadGLBModel(buffer, device) {
     m => new GLTFMaterial(m, textures)
   );
 
+  
   // 7️⃣ Meshes
   const meshes = (glbJsonData.meshes || []).map(mesh => {
     const primitives = mesh.primitives.map(prim => {
@@ -704,20 +714,30 @@ export async function uploadGLBModel(buffer, device) {
       let joints = null;
       for(const attr in prim.attributes) {
         const accessor = glbJsonData.accessors[prim.attributes[attr]];
+        console.log("??????????attr??????" + attr );
+          console.log("??????????prim.attributes??????" + prim.attributes );
         const viewID = accessor.bufferView;
         bufferViews[viewID].needsUpload = true;
         bufferViews[viewID].addUsage(GPUBufferUsage.VERTEX);
 
-        if(attr === 'POSITION')
+        if(attr === 'POSITION') {
           positions = new GLTFAccessor(bufferViews[viewID], accessor);
-        else if(attr === 'NORMAL')
+        }
+        else if(attr === 'NORMAL'){
           normals = new GLTFAccessor(bufferViews[viewID], accessor);
-        else if(attr.startsWith('TEXCOORD'))
+        }
+        else if(attr.startsWith('TEXCOORD')){
           texcoords.push(new GLTFAccessor(bufferViews[viewID], accessor));
-        else if(attr === 'WEIGHTS_0')
+        }
+        else if(attr === 'WEIGHTS_0'){
           weights = new GLTFAccessor(bufferViews[viewID], accessor);
-        else if(attr.startsWith('JOINTS'))
+        }
+        else if(attr.startsWith('JOINTS')){
           joints = new GLTFAccessor(bufferViews[viewID], accessor);
+        }
+        else {
+          console.log('inknow ', attr)
+        }
       }
 
       const material =

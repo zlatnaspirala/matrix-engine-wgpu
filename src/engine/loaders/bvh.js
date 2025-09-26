@@ -125,6 +125,15 @@ export class BVHPlayer extends MEMeshObj {
     }
 
     // 4. For mesh nodes or armature parent nodes, leave them alone
+
+    // what is animation , check is it more - we look for Armature by defoult 
+    // frendly blender
+    this.glb.animationIndex = 0;
+    for (let j = 0 ; j < this.glb.glbJsonData.animations.length; j++) {
+      if (this.glb.glbJsonData.animations[j].name.indexOf('Armature') !== -1) {
+        this.glb.animationIndex = j;
+      }
+    }
   }
 
   initInverseBindMatrices(skinIndex = 0) {
@@ -160,10 +169,10 @@ export class BVHPlayer extends MEMeshObj {
       this.sharedState.timeAccumulator -= frameTime;
     }
     // const frame = this.sharedState.currentFrame;
-    const currentTime = performance.now() / 100 - this.startTime;
+    const currentTime = performance.now() / 5000 - this.startTime;
     const boneMatrices = new Float32Array(this.MAX_BONES * 16);
     if(this.glb.glbJsonData.animations && this.glb.glbJsonData.animations.length > 0) {
-      this.updateSingleBoneCubeAnimation(this.glb.glbJsonData.animations[0], this.glb.nodes, currentTime, boneMatrices)
+      this.updateSingleBoneCubeAnimation(this.glb.glbJsonData.animations[this.glb.animationIndex], this.glb.nodes, currentTime, boneMatrices)
     }
   }
 
@@ -282,7 +291,7 @@ export class BVHPlayer extends MEMeshObj {
       accessor.count *
       this.getNumComponents(accessor.type) *
       (accessor.componentType === 5126 ? 4 : 2); // adjust per type
-    const bufferDef = this.glb.glbBinaryBuffer;
+    const bufferDef =  glb.glbBinaryBuffer;
     // ✅ now just slice:
     const slice = this.getBufferSlice(bufferDef, byteOffset, byteLength);
     switch(accessor.componentType) {
@@ -638,15 +647,11 @@ export class BVHPlayer extends MEMeshObj {
 
         // --- Apply animation
         if(path === "translation") {
-          for(let k = 0;k < 3;k++) {
-            // node.translation[k] = node.originalTranslation[k] + v0[k] * (1 - factor) + v1[k] * factor;
+          for(let k = 0;k < 3;k++)
             node.translation[k] = v0[k] * (1 - factor) + v1[k] * factor;
-          }
         } else if(path === "scale") {
-          for(let k = 0;k < 3;k++) {
-            // node.scale[k] = node.originalScale[k] * (v0[k] * (1 - factor) + v1[k] * factor);
-            node.scale[k] = (v0[k] * (1 - factor) + v1[k] * factor);
-          }
+          for(let k = 0;k < 3;k++)
+            node.scale[k] = v0[k] * (1 - factor) + v1[k] * factor;
         } else if(path === "rotation") {
           this.slerp(v0, v1, factor, node.rotation);
         }

@@ -98,40 +98,46 @@ export default class MEMeshObj extends Materials {
       }
       this.mesh.indices = indicesArray;
 
+
+
+      // ----------------
       let weightsView = _glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex].weights.view;
       console.warn('weightsView', weightsView)
       this.mesh.weightsView = weightsView;
 
-      const weightsArray = new Float32Array(
-        weightsView.buffer,
-        weightsView.byteOffset || 0,
-        weightsView.byteLength / 4
-      );
+      // loadSkinWeights();
+
+      let primitive = _glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex];
+      let finalRoundedWeights =   this.getAccessorArray(_glbFile, primitive.weights.numComponents);
+    // console.log(finalRoundedWeights.slice(0, 16)); // first 4 vertices
+
+      const offset = weightsView.byteOffset ?? 0;
+       const weightsArray =finalRoundedWeights
+      // const weightsArray = new Float32Array(
+      //   weightsView.buffer,
+      //   offset,
+      //   weightsView.byteLength / 4
+      // );
 
       // Normalize each group of 4
       for(let i = 0;i < weightsArray.length;i += 4) {
-        const w0 = weightsArray[i];
-        const w1 = weightsArray[i + 1];
-        const w2 = weightsArray[i + 2];
-        const w3 = weightsArray[i + 3];
-
-        const sum = w0 + w1 + w2 + w3;
-
-        if(sum > 0.0) {
-          // console.log('DEBUG: ', sum)
-          weightsArray[i] = w0 / sum;
-          weightsArray[i + 1] = w1 / sum;
-          weightsArray[i + 2] = w2 / sum;
-          weightsArray[i + 3] = w3 / sum;
+        const sum = weightsArray[i] + weightsArray[i + 1] + weightsArray[i + 2] + weightsArray[i + 3];
+        if(sum > 0) {
+          const inv = 1 / sum;
+          weightsArray[i] *= inv;
+          weightsArray[i + 1] *= inv;
+          weightsArray[i + 2] *= inv;
+          weightsArray[i + 3] *= inv;
         } else {
-          // If all zero, set default (avoids NaNs)
-          weightsArray[i] = 1;
-          weightsArray[i + 1] = 0;
-          weightsArray[i + 2] = 0;
-          weightsArray[i + 3] = 0;
+          weightsArray[i] = 1; weightsArray[i + 1] = 0;
+          weightsArray[i + 2] = 0; weightsArray[i + 3] = 0;
         }
       }
 
+      for(let i = 0;i < weightsArray.length;i += 4) {
+        const s = weightsArray[i] + weightsArray[i + 1] + weightsArray[i + 2] + weightsArray[i + 3];
+        if(Math.abs(s - 1.0) > 0.001) console.warn("Weight not normalized!", i, s);
+      }
       console.log('Normalized weightsArray', weightsArray);
 
       this.mesh.weightsBuffer = this.device.createBuffer({

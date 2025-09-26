@@ -20012,6 +20012,15 @@ class BVHPlayer extends _meshObj.default {
     }
 
     // 4. For mesh nodes or armature parent nodes, leave them alone
+
+    // what is animation , check is it more - we look for Armature by defoult 
+    // frendly blender
+    this.glb.animationIndex = 0;
+    for (let j = 0; j < this.glb.glbJsonData.animations.length; j++) {
+      if (this.glb.glbJsonData.animations[j].name.indexOf('Armature') !== -1) {
+        this.glb.animationIndex = j;
+      }
+    }
   }
   initInverseBindMatrices(skinIndex = 0) {
     const skin = this.glb.skins[skinIndex];
@@ -20044,10 +20053,10 @@ class BVHPlayer extends _meshObj.default {
       this.sharedState.timeAccumulator -= frameTime;
     }
     // const frame = this.sharedState.currentFrame;
-    const currentTime = performance.now() / 100 - this.startTime;
+    const currentTime = performance.now() / 5000 - this.startTime;
     const boneMatrices = new Float32Array(this.MAX_BONES * 16);
     if (this.glb.glbJsonData.animations && this.glb.glbJsonData.animations.length > 0) {
-      this.updateSingleBoneCubeAnimation(this.glb.glbJsonData.animations[0], this.glb.nodes, currentTime, boneMatrices);
+      this.updateSingleBoneCubeAnimation(this.glb.glbJsonData.animations[this.glb.animationIndex], this.glb.nodes, currentTime, boneMatrices);
     }
   }
   applyBVHToGLB(frameIndex) {
@@ -20146,7 +20155,7 @@ class BVHPlayer extends _meshObj.default {
     const bufferView = glb.glbJsonData.bufferViews[accessor.bufferView];
     const byteOffset = (bufferView.byteOffset || 0) + (accessor.byteOffset || 0);
     const byteLength = accessor.count * this.getNumComponents(accessor.type) * (accessor.componentType === 5126 ? 4 : 2); // adjust per type
-    const bufferDef = this.glb.glbBinaryBuffer;
+    const bufferDef = glb.glbBinaryBuffer;
     // ✅ now just slice:
     const slice = this.getBufferSlice(bufferDef, byteOffset, byteLength);
     switch (accessor.componentType) {
@@ -20527,15 +20536,9 @@ class BVHPlayer extends _meshObj.default {
 
         // --- Apply animation
         if (path === "translation") {
-          for (let k = 0; k < 3; k++) {
-            // node.translation[k] = node.originalTranslation[k] + v0[k] * (1 - factor) + v1[k] * factor;
-            node.translation[k] = v0[k] * (1 - factor) + v1[k] * factor;
-          }
+          for (let k = 0; k < 3; k++) node.translation[k] = v0[k] * (1 - factor) + v1[k] * factor;
         } else if (path === "scale") {
-          for (let k = 0; k < 3; k++) {
-            // node.scale[k] = node.originalScale[k] * (v0[k] * (1 - factor) + v1[k] * factor);
-            node.scale[k] = v0[k] * (1 - factor) + v1[k] * factor;
-          }
+          for (let k = 0; k < 3; k++) node.scale[k] = v0[k] * (1 - factor) + v1[k] * factor;
         } else if (path === "rotation") {
           this.slerp(v0, v1, factor, node.rotation);
         }
@@ -21151,6 +21154,21 @@ class GLBModel {
 }
 exports.GLBModel = GLBModel;
 ;
+function getComponentSize(componentType) {
+  switch (componentType) {
+    case 5126:
+      return 4;
+    // float32
+    case 5123:
+      return 2;
+    // uint16
+    case 5121:
+      return 1;
+    // uint8
+    default:
+      throw new Error("Unknown componentType: " + componentType);
+  }
+}
 
 // Upload a GLB model and return it
 async function uploadGLBModel(buffer, device) {
@@ -21232,10 +21250,24 @@ async function uploadGLBModel(buffer, device) {
       let joints = null;
       for (const attr in prim.attributes) {
         const accessor = glbJsonData.accessors[prim.attributes[attr]];
+        console.log("??????????attr??????" + attr);
+        console.log("??????????prim.attributes??????" + prim.attributes);
         const viewID = accessor.bufferView;
         bufferViews[viewID].needsUpload = true;
         bufferViews[viewID].addUsage(GPUBufferUsage.VERTEX);
-        if (attr === 'POSITION') positions = new GLTFAccessor(bufferViews[viewID], accessor);else if (attr === 'NORMAL') normals = new GLTFAccessor(bufferViews[viewID], accessor);else if (attr.startsWith('TEXCOORD')) texcoords.push(new GLTFAccessor(bufferViews[viewID], accessor));else if (attr === 'WEIGHTS_0') weights = new GLTFAccessor(bufferViews[viewID], accessor);else if (attr.startsWith('JOINTS')) joints = new GLTFAccessor(bufferViews[viewID], accessor);
+        if (attr === 'POSITION') {
+          positions = new GLTFAccessor(bufferViews[viewID], accessor);
+        } else if (attr === 'NORMAL') {
+          normals = new GLTFAccessor(bufferViews[viewID], accessor);
+        } else if (attr.startsWith('TEXCOORD')) {
+          texcoords.push(new GLTFAccessor(bufferViews[viewID], accessor));
+        } else if (attr === 'WEIGHTS_0') {
+          weights = new GLTFAccessor(bufferViews[viewID], accessor);
+        } else if (attr.startsWith('JOINTS')) {
+          joints = new GLTFAccessor(bufferViews[viewID], accessor);
+        } else {
+          console.log('inknow ', attr);
+        }
       }
       const material = prim.material !== undefined ? materials[prim.material] : defaultMaterial;
       return new GLTFPrimitive(indices, positions, normals, texcoords, material, topology, weights, joints);
@@ -22009,31 +22041,45 @@ class MEMeshObj extends _materials.default {
           throw new Error("Unknown index componentType");
       }
       this.mesh.indices = indicesArray;
+
+      // ----------------
       let weightsView = _glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex].weights.view;
       console.warn('weightsView', weightsView);
       this.mesh.weightsView = weightsView;
-      const weightsArray = new Float32Array(weightsView.buffer, weightsView.byteOffset || 0, weightsView.byteLength / 4);
+
+      // loadSkinWeights();
+
+      let primitive = _glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex];
+      let finalRoundedWeights = this.getAccessorArray(_glbFile, primitive.weights.numComponents);
+      // console.log(finalRoundedWeights.slice(0, 16)); // first 4 vertices
+
+      const offset = weightsView.byteOffset ?? 0;
+      const weightsArray = finalRoundedWeights;
+      // const weightsArray = new Float32Array(
+      //   weightsView.buffer,
+      //   offset,
+      //   weightsView.byteLength / 4
+      // );
 
       // Normalize each group of 4
       for (let i = 0; i < weightsArray.length; i += 4) {
-        const w0 = weightsArray[i];
-        const w1 = weightsArray[i + 1];
-        const w2 = weightsArray[i + 2];
-        const w3 = weightsArray[i + 3];
-        const sum = w0 + w1 + w2 + w3;
-        if (sum > 0.0) {
-          // console.log('DEBUG: ', sum)
-          weightsArray[i] = w0 / sum;
-          weightsArray[i + 1] = w1 / sum;
-          weightsArray[i + 2] = w2 / sum;
-          weightsArray[i + 3] = w3 / sum;
+        const sum = weightsArray[i] + weightsArray[i + 1] + weightsArray[i + 2] + weightsArray[i + 3];
+        if (sum > 0) {
+          const inv = 1 / sum;
+          weightsArray[i] *= inv;
+          weightsArray[i + 1] *= inv;
+          weightsArray[i + 2] *= inv;
+          weightsArray[i + 3] *= inv;
         } else {
-          // If all zero, set default (avoids NaNs)
           weightsArray[i] = 1;
           weightsArray[i + 1] = 0;
           weightsArray[i + 2] = 0;
           weightsArray[i + 3] = 0;
         }
+      }
+      for (let i = 0; i < weightsArray.length; i += 4) {
+        const s = weightsArray[i] + weightsArray[i + 1] + weightsArray[i + 2] + weightsArray[i + 3];
+        if (Math.abs(s - 1.0) > 0.001) console.warn("Weight not normalized!", i, s);
       }
       console.log('Normalized weightsArray', weightsArray);
       this.mesh.weightsBuffer = this.device.createBuffer({
@@ -24187,9 +24233,7 @@ fn skinVertex(pos: vec4f, nrm: vec3f, joints: vec4<u32>, weights: vec4f) -> Skin
         let w = weights[i];
         if (w > 0.0) {
           let boneMat = bones.boneMatrices[jointIndex];
-          skinnedPos  += (pos) * w;
-          // skinnedPos  += (boneMat) * w;
-
+          skinnedPos  += (boneMat * pos) * w;
           let boneMat3 = mat3x3f(
             boneMat[0].xyz,
             boneMat[1].xyz,
@@ -24199,7 +24243,8 @@ fn skinVertex(pos: vec4f, nrm: vec3f, joints: vec4<u32>, weights: vec4f) -> Skin
         }
     }
 
-    return SkinResult(skinnedPos, normalize(skinnedNorm));
+    // return SkinResult(skinnedPos, normalize(skinnedNorm));
+    return SkinResult(skinnedPos, skinnedNorm);
 }
 
 @vertex
@@ -24213,7 +24258,7 @@ fn main(
   var output : VertexOutput;
 
   var pos = vec4(position, 1.0);
-  var nrm = normalize(normal);
+  var nrm = normal;
 
   // apply skinning
   let skinned = skinVertex(pos, nrm, joints, weights);
@@ -24232,6 +24277,7 @@ fn main(
 
   output.shadowPos = scene.lightViewProjMatrix * worldPos;
   output.fragNorm = normalize(normalMatrix * skinned.normal);
+  // output.fragNorm = skinned.normal;
   output.uv = uv;
 
   return output;
