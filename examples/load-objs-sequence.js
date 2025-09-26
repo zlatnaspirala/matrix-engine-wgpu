@@ -30,7 +30,7 @@ export var loadObjsSequence = function() {
           to: 20
         }),
         onLoadObj,
-        {scale: [10,10,10]}
+        {scale: [0.1,0.1,0.1]}
       );
     })
 
@@ -69,6 +69,13 @@ export var loadObjsSequence = function() {
         objAnim: objAnim
       })
       app.mainRenderBundle[0].objAnim.play('walk');
+
+      setTimeout(()=> {
+      app.cameras.WASD.pitch =  -0.2605728267949113;
+      app.cameras.WASD.yaw = -0.0580;
+      app.cameras.WASD.position[1] = 15
+      app.cameras.WASD.position[2] = 11
+      }, 200)
     }
   })
   // Just for dev - easy console access

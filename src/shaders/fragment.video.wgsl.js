@@ -22,8 +22,6 @@ struct FragmentInput {
   @location(3) uv : vec2f,
 }
 
- 
-
 const albedo = vec3f(0.9);
 const ambientFactor = 0.7;
 
