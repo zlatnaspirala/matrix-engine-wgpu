@@ -118,6 +118,7 @@ export default class MEMeshObj extends Materials {
         const sum = w0 + w1 + w2 + w3;
 
         if(sum > 0.0) {
+          // console.log('DEBUG: ', sum)
           weightsArray[i] = w0 / sum;
           weightsArray[i + 1] = w1 / sum;
           weightsArray[i + 2] = w2 / sum;
@@ -174,8 +175,8 @@ export default class MEMeshObj extends Materials {
       this.mesh.jointsBuffer.unmap();
 
 
-      console.log('JOINTS_0', jointsArray32.slice(0, 32));
-      console.log('WEIGHTS_0', weightsArray.slice(0, 32));
+      // console.log('JOINTS_0', jointsArray32.slice(0, 32));
+      // console.log('WEIGHTS_0', weightsArray.slice(0, 32));
 
     } else {
       // obj files flow 

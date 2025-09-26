@@ -41,7 +41,8 @@ fn skinVertex(pos: vec4f, nrm: vec3f, joints: vec4<u32>, weights: vec4f) -> Skin
         let w = weights[i];
         if (w > 0.0) {
           let boneMat = bones.boneMatrices[jointIndex];
-          skinnedPos  += (boneMat * pos) * w;
+          skinnedPos  += (pos) * w;
+          // skinnedPos  += (boneMat) * w;
 
           let boneMat3 = mat3x3f(
             boneMat[0].xyz,
@@ -66,13 +67,14 @@ fn main(
   var output : VertexOutput;
 
   var pos = vec4(position, 1.0);
-  var nrm = normal;
+  var nrm = normalize(normal);
 
   // apply skinning
   let skinned = skinVertex(pos, nrm, joints, weights);
 
   // transform to world
   let worldPos = model.modelMatrix * skinned.position;
+  // let worldPos =  skinned.position;
   let normalMatrix = mat3x3f(
     model.modelMatrix[0].xyz,
     model.modelMatrix[1].xyz,

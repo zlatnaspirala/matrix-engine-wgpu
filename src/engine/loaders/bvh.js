@@ -160,7 +160,7 @@ export class BVHPlayer extends MEMeshObj {
       this.sharedState.timeAccumulator -= frameTime;
     }
     // const frame = this.sharedState.currentFrame;
-    const currentTime = performance.now() / 1000 - this.startTime;
+    const currentTime = performance.now() / 100 - this.startTime;
     const boneMatrices = new Float32Array(this.MAX_BONES * 16);
     if(this.glb.glbJsonData.animations && this.glb.glbJsonData.animations.length > 0) {
       this.updateSingleBoneCubeAnimation(this.glb.glbJsonData.animations[0], this.glb.nodes, currentTime, boneMatrices)

@@ -53,9 +53,9 @@ let TEST_ANIM = new _world.default({
         }
       });
       TEST_ANIM.addGlbObj({
-        // scale: [0.001,0.001,0.001],
+        // scale: [0.1,0.1,0.1],
         // scale: [1,1,1],
-        scale: [10, 10, 10],
+        // scale: [100,100,100],
         name: 'firstGlb',
         texturesPaths: ['./res/textures/rust.jpg']
       }, BVHANIM, glbFile);
@@ -20044,7 +20044,7 @@ class BVHPlayer extends _meshObj.default {
       this.sharedState.timeAccumulator -= frameTime;
     }
     // const frame = this.sharedState.currentFrame;
-    const currentTime = performance.now() / 1000 - this.startTime;
+    const currentTime = performance.now() / 100 - this.startTime;
     const boneMatrices = new Float32Array(this.MAX_BONES * 16);
     if (this.glb.glbJsonData.animations && this.glb.glbJsonData.animations.length > 0) {
       this.updateSingleBoneCubeAnimation(this.glb.glbJsonData.animations[0], this.glb.nodes, currentTime, boneMatrices);
@@ -22022,6 +22022,7 @@ class MEMeshObj extends _materials.default {
         const w3 = weightsArray[i + 3];
         const sum = w0 + w1 + w2 + w3;
         if (sum > 0.0) {
+          // console.log('DEBUG: ', sum)
           weightsArray[i] = w0 / sum;
           weightsArray[i + 1] = w1 / sum;
           weightsArray[i + 2] = w2 / sum;
@@ -22069,8 +22070,9 @@ class MEMeshObj extends _materials.default {
       // Upload the data to GPU
       new Uint32Array(this.mesh.jointsBuffer.getMappedRange()).set(jointsArray32);
       this.mesh.jointsBuffer.unmap();
-      console.log('JOINTS_0', jointsArray32.slice(0, 32));
-      console.log('WEIGHTS_0', weightsArray.slice(0, 32));
+
+      // console.log('JOINTS_0', jointsArray32.slice(0, 32));
+      // console.log('WEIGHTS_0', weightsArray.slice(0, 32));
     } else {
       // obj files flow 
       this.mesh.uvs = this.mesh.textures;
@@ -24185,7 +24187,8 @@ fn skinVertex(pos: vec4f, nrm: vec3f, joints: vec4<u32>, weights: vec4f) -> Skin
         let w = weights[i];
         if (w > 0.0) {
           let boneMat = bones.boneMatrices[jointIndex];
-          skinnedPos  += (boneMat * pos) * w;
+          skinnedPos  += (pos) * w;
+          // skinnedPos  += (boneMat) * w;
 
           let boneMat3 = mat3x3f(
             boneMat[0].xyz,
@@ -24210,13 +24213,14 @@ fn main(
   var output : VertexOutput;
 
   var pos = vec4(position, 1.0);
-  var nrm = normal;
+  var nrm = normalize(normal);
 
   // apply skinning
   let skinned = skinVertex(pos, nrm, joints, weights);
 
   // transform to world
   let worldPos = model.modelMatrix * skinned.position;
+  // let worldPos =  skinned.position;
   let normalMatrix = mat3x3f(
     model.modelMatrix[0].xyz,
     model.modelMatrix[1].xyz,
