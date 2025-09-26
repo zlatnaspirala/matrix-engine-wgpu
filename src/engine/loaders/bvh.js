@@ -12,21 +12,18 @@ export let loadBVH = (path) => {
       console.info("plot_hierarchy no function")
       animBVH.plot_hierarchy();
       var r = animBVH.frame_pose(0);
-      console.log("FINAL P => ", r[0].length)
-      console.log("FINAL R => ", r[1].length)
-
+      // Not in use at the moment next feature - change skeletal or indipended new class.
+      // console.log("FINAL P => ", r[0].length)
+      // console.log("FINAL R => ", r[1].length)
       var KEYS = animBVH.joint_names();
       for(var x = 0;x < r[0].length;x++) {
         // console.log("->" + KEYS[x] + "-> position: " + r[0][x] + " rotation: " + r[1][x]);
       }
-
       var all = animBVH.all_frame_poses();
-      console.log("Final All -> ", all);
+      // console.log("Final All -> ", all);
       resolve(animBVH);
-
     }).catch((err) => {reject(err)});
   })
-
 }
 
 /**
@@ -56,24 +53,11 @@ export class BVHPlayer extends MEMeshObj {
 
     // Reference to the skinned node containing all bones
     this.skinnedNode = this.glb.skinnedMeshNodes[skinnedNodeIndex];
-
-    // // === APPLY Y-FLIP HERE ===
-    // const flipYMat = mat4.identity();
-    // mat4.scale(flipYMat, [1, -1, -1], flipYMat);
-
-    // // Apply to root node of skinned mesh
-    // mat4.multiply(flipYMat, this.skinnedNode.transform, this.skinnedNode.transform);
-
-    console.log('this.skinnedNode', this.skinnedNode)
-    // Prepare joint index map (BVH joint name -> bone index)
-    // this.setupBVHJointIndices();
-
+    // console.log('this.skinnedNode', this.skinnedNode)
     this.nodeWorldMatrices = Array.from(
       {length: this.glb.nodes.length},
       () => mat4.identity()
     );
-
-
     this.startTime = performance.now() / 1000; // seconds
     this.MAX_BONES = 100;
 
@@ -390,17 +374,6 @@ export class BVHPlayer extends MEMeshObj {
     return a.map((v, i) => s0 * v + s1 * b[i]);
   }
 
-  // compose translation/rotation/scale into 4x4
-  composeTRS(t, r, s) {
-    // assumes r is quaternion [x,y,z,w], s,t are vec3
-    const mat = quatToMat4(r);
-    mat[0] *= s[0]; mat[1] *= s[0]; mat[2] *= s[0];
-    mat[4] *= s[1]; mat[5] *= s[1]; mat[6] *= s[1];
-    mat[8] *= s[2]; mat[9] *= s[2]; mat[10] *= s[2];
-    mat[12] = t[0]; mat[13] = t[1]; mat[14] = t[2]; mat[15] = 1;
-    return mat;
-  }
-
   // naive quaternion to 4x4 matrix
   quatToMat4(q) {
     const [x, y, z, w] = q;
@@ -412,15 +385,6 @@ export class BVHPlayer extends MEMeshObj {
       2 * (xz + wy), 2 * (yz - wx), 1 - 2 * (xx + yy), 0,
       0, 0, 0, 1
     ]);
-  }
-
-  base64ToArrayBuffer(base64) {
-    const binary = atob(base64.split(',')[1]);
-    const len = binary.length;
-    const buffer = new ArrayBuffer(len);
-    const view = new Uint8Array(buffer);
-    for(let i = 0;i < len;i++) view[i] = binary.charCodeAt(i);
-    return buffer;
   }
 
   // Compose TRS to a 4×4
@@ -445,25 +409,6 @@ export class BVHPlayer extends MEMeshObj {
 
     // return m;
 
-  }
-
-  // Decompose a 4×4 to TRS (if you need on load)
-  decomposeMatrix2(m) {
-    const t = vec3.fromValues(m[12], m[13], m[14]);
-    // get scale
-    const sx = vec3.length([m[0], m[1], m[2]]);
-    const sy = vec3.length([m[4], m[5], m[6]]);
-    const sz = vec3.length([m[8], m[9], m[10]]);
-    const s = [sx, sy, sz];
-    // normalize rotation part
-    const rotMat = [
-      m[0] / sx, m[1] / sx, m[2] / sx, 0,
-      m[4] / sy, m[5] / sy, m[6] / sy, 0,
-      m[8] / sz, m[9] / sz, m[10] / sz, 0,
-      0, 0, 0, 1
-    ];
-    const rQuat = quat.fromMat(rotMat);
-    return {translation: t, rotation: rQuat, scale: s};
   }
 
   decomposeMatrix(m) {
@@ -569,29 +514,6 @@ export class BVHPlayer extends MEMeshObj {
     }
   }
 
-  quatToEuler(q) {
-    const [x, y, z, w] = q;
-    const ysqr = y * y;
-
-    // roll (X-axis rotation)
-    const t0 = +2.0 * (w * x + y * z);
-    const t1 = +1.0 - 2.0 * (x * x + ysqr);
-    const roll = Math.atan2(t0, t1);
-
-    // pitch (Y-axis rotation)
-    let t2 = +2.0 * (w * y - z * x);
-    t2 = t2 > 1 ? 1 : t2;
-    t2 = t2 < -1 ? -1 : t2;
-    const pitch = Math.asin(t2);
-
-    // yaw (Z-axis rotation)
-    const t3 = +2.0 * (w * z + x * y);
-    const t4 = +1.0 - 2.0 * (ysqr + z * z);
-    const yaw = Math.atan2(t3, t4);
-
-    return [roll, pitch, yaw]; // in radians
-  }
-
   updateSingleBoneCubeAnimation(glbAnimation, nodes, time, boneMatrices) {
     const channels = glbAnimation.channels;
     const samplers = glbAnimation.samplers;
@@ -623,13 +545,10 @@ export class BVHPlayer extends MEMeshObj {
       for(const channel of channelsForNode) {
         const path = channel.target.path; // "translation" | "rotation" | "scale"
         const sampler = samplers[channel.sampler];
-
         // --- Get input/output arrays
         const inputTimes = this.getAccessorArray(this.glb, sampler.input);
         const outputArray = this.getAccessorArray(this.glb, sampler.output);
         const numComponents = path === "rotation" ? 4 : 3;
-
-
         // --- Find keyframe interval
         const animTime = time % inputTimes[inputTimes.length - 1];
         let i = 0;
@@ -637,14 +556,12 @@ export class BVHPlayer extends MEMeshObj {
         const t0 = inputTimes[i];
         const t1 = inputTimes[Math.min(i + 1, inputTimes.length - 1)];
         const factor = t1 !== t0 ? (animTime - t0) / (t1 - t0) : 0;
-
         // --- Interpolated keyframe values
         const v0 = outputArray.subarray(i * numComponents, (i + 1) * numComponents);
         const v1 = outputArray.subarray(
           Math.min(i + 1, inputTimes.length - 1) * numComponents,
           Math.min(i + 2, inputTimes.length) * numComponents
         );
-
         // --- Apply animation
         if(path === "translation") {
           for(let k = 0;k < 3;k++)
@@ -656,29 +573,22 @@ export class BVHPlayer extends MEMeshObj {
           this.slerp(v0, v1, factor, node.rotation);
         }
       }
-
       // --- Recompose local transform
       node.transform = this.composeMatrix(node.translation, node.rotation, node.scale);
     }
 
     const computeWorld = (nodeIndex) => {
       const node = nodes[nodeIndex];
-
       if(!node.worldMatrix) node.worldMatrix = mat4.create();
-
       let parentWorld = node.parent !== null ? nodes[node.parent].worldMatrix : null;
-
       if(parentWorld) {
         // multiply parent * local
         mat4.multiply(parentWorld, node.transform, node.worldMatrix);
-        // mat4.copy(node.transform, node.worldMatrix);
       } else {
-        // root node — copy local, but reset scale if needed
         mat4.copy(node.transform, node.worldMatrix);
-        // optional: remove Blender scale
-
       }
 
+      // maybe no need to exist...
       mat4.scale(node.worldMatrix, [this.scaleBoneTest, this.scaleBoneTest, this.scaleBoneTest], node.worldMatrix);
 
       if(node.children) {
@@ -692,9 +602,6 @@ export class BVHPlayer extends MEMeshObj {
         computeWorld(i);
       }
     }
-
-
-
 
     for(let j = 0;j < this.skeleton.length;j++) {
       const jointNode = nodes[this.skeleton[j]];

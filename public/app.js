@@ -19908,14 +19908,15 @@ let loadBVH = path => {
       console.info("plot_hierarchy no function");
       animBVH.plot_hierarchy();
       var r = animBVH.frame_pose(0);
-      console.log("FINAL P => ", r[0].length);
-      console.log("FINAL R => ", r[1].length);
+      // Not in use at the moment next feature - change skeletal or indipended new class.
+      // console.log("FINAL P => ", r[0].length)
+      // console.log("FINAL R => ", r[1].length)
       var KEYS = animBVH.joint_names();
       for (var x = 0; x < r[0].length; x++) {
         // console.log("->" + KEYS[x] + "-> position: " + r[0][x] + " rotation: " + r[1][x]);
       }
       var all = animBVH.all_frame_poses();
-      console.log("Final All -> ", all);
+      // console.log("Final All -> ", all);
       resolve(animBVH);
     }).catch(err => {
       reject(err);
@@ -19950,18 +19951,7 @@ class BVHPlayer extends _meshObj.default {
 
     // Reference to the skinned node containing all bones
     this.skinnedNode = this.glb.skinnedMeshNodes[skinnedNodeIndex];
-
-    // // === APPLY Y-FLIP HERE ===
-    // const flipYMat = mat4.identity();
-    // mat4.scale(flipYMat, [1, -1, -1], flipYMat);
-
-    // // Apply to root node of skinned mesh
-    // mat4.multiply(flipYMat, this.skinnedNode.transform, this.skinnedNode.transform);
-
-    console.log('this.skinnedNode', this.skinnedNode);
-    // Prepare joint index map (BVH joint name -> bone index)
-    // this.setupBVHJointIndices();
-
+    // console.log('this.skinnedNode', this.skinnedNode)
     this.nodeWorldMatrices = Array.from({
       length: this.glb.nodes.length
     }, () => _wgpuMatrix.mat4.identity());
@@ -20272,26 +20262,6 @@ class BVHPlayer extends _meshObj.default {
     return a.map((v, i) => s0 * v + s1 * b[i]);
   }
 
-  // compose translation/rotation/scale into 4x4
-  composeTRS(t, r, s) {
-    // assumes r is quaternion [x,y,z,w], s,t are vec3
-    const mat = quatToMat4(r);
-    mat[0] *= s[0];
-    mat[1] *= s[0];
-    mat[2] *= s[0];
-    mat[4] *= s[1];
-    mat[5] *= s[1];
-    mat[6] *= s[1];
-    mat[8] *= s[2];
-    mat[9] *= s[2];
-    mat[10] *= s[2];
-    mat[12] = t[0];
-    mat[13] = t[1];
-    mat[14] = t[2];
-    mat[15] = 1;
-    return mat;
-  }
-
   // naive quaternion to 4x4 matrix
   quatToMat4(q) {
     const [x, y, z, w] = q;
@@ -20305,14 +20275,6 @@ class BVHPlayer extends _meshObj.default {
       wy = w * y,
       wz = w * z;
     return new Float32Array([1 - 2 * (yy + zz), 2 * (xy + wz), 2 * (xz - wy), 0, 2 * (xy - wz), 1 - 2 * (xx + zz), 2 * (yz + wx), 0, 2 * (xz + wy), 2 * (yz - wx), 1 - 2 * (xx + yy), 0, 0, 0, 0, 1]);
-  }
-  base64ToArrayBuffer(base64) {
-    const binary = atob(base64.split(',')[1]);
-    const len = binary.length;
-    const buffer = new ArrayBuffer(len);
-    const view = new Uint8Array(buffer);
-    for (let i = 0; i < len; i++) view[i] = binary.charCodeAt(i);
-    return buffer;
   }
 
   // Compose TRS to a 4×4
@@ -20336,24 +20298,6 @@ class BVHPlayer extends _meshObj.default {
     // mat4.multiply(m, flipY, m);
 
     // return m;
-  }
-
-  // Decompose a 4×4 to TRS (if you need on load)
-  decomposeMatrix2(m) {
-    const t = _wgpuMatrix.vec3.fromValues(m[12], m[13], m[14]);
-    // get scale
-    const sx = _wgpuMatrix.vec3.length([m[0], m[1], m[2]]);
-    const sy = _wgpuMatrix.vec3.length([m[4], m[5], m[6]]);
-    const sz = _wgpuMatrix.vec3.length([m[8], m[9], m[10]]);
-    const s = [sx, sy, sz];
-    // normalize rotation part
-    const rotMat = [m[0] / sx, m[1] / sx, m[2] / sx, 0, m[4] / sy, m[5] / sy, m[6] / sy, 0, m[8] / sz, m[9] / sz, m[10] / sz, 0, 0, 0, 0, 1];
-    const rQuat = _wgpuMatrix.quat.fromMat(rotMat);
-    return {
-      translation: t,
-      rotation: rQuat,
-      scale: s
-    };
   }
   decomposeMatrix(m) {
     // m is column-major: indices:
@@ -20466,27 +20410,6 @@ class BVHPlayer extends _meshObj.default {
       out[i] = s0 * q0[i] + s1 * q1[i];
     }
   }
-  quatToEuler(q) {
-    const [x, y, z, w] = q;
-    const ysqr = y * y;
-
-    // roll (X-axis rotation)
-    const t0 = +2.0 * (w * x + y * z);
-    const t1 = +1.0 - 2.0 * (x * x + ysqr);
-    const roll = Math.atan2(t0, t1);
-
-    // pitch (Y-axis rotation)
-    let t2 = +2.0 * (w * y - z * x);
-    t2 = t2 > 1 ? 1 : t2;
-    t2 = t2 < -1 ? -1 : t2;
-    const pitch = Math.asin(t2);
-
-    // yaw (Z-axis rotation)
-    const t3 = +2.0 * (w * z + x * y);
-    const t4 = +1.0 - 2.0 * (ysqr + z * z);
-    const yaw = Math.atan2(t3, t4);
-    return [roll, pitch, yaw]; // in radians
-  }
   updateSingleBoneCubeAnimation(glbAnimation, nodes, time, boneMatrices) {
     const channels = glbAnimation.channels;
     const samplers = glbAnimation.samplers;
@@ -20516,12 +20439,10 @@ class BVHPlayer extends _meshObj.default {
       for (const channel of channelsForNode) {
         const path = channel.target.path; // "translation" | "rotation" | "scale"
         const sampler = samplers[channel.sampler];
-
         // --- Get input/output arrays
         const inputTimes = this.getAccessorArray(this.glb, sampler.input);
         const outputArray = this.getAccessorArray(this.glb, sampler.output);
         const numComponents = path === "rotation" ? 4 : 3;
-
         // --- Find keyframe interval
         const animTime = time % inputTimes[inputTimes.length - 1];
         let i = 0;
@@ -20529,11 +20450,9 @@ class BVHPlayer extends _meshObj.default {
         const t0 = inputTimes[i];
         const t1 = inputTimes[Math.min(i + 1, inputTimes.length - 1)];
         const factor = t1 !== t0 ? (animTime - t0) / (t1 - t0) : 0;
-
         // --- Interpolated keyframe values
         const v0 = outputArray.subarray(i * numComponents, (i + 1) * numComponents);
         const v1 = outputArray.subarray(Math.min(i + 1, inputTimes.length - 1) * numComponents, Math.min(i + 2, inputTimes.length) * numComponents);
-
         // --- Apply animation
         if (path === "translation") {
           for (let k = 0; k < 3; k++) node.translation[k] = v0[k] * (1 - factor) + v1[k] * factor;
@@ -20543,7 +20462,6 @@ class BVHPlayer extends _meshObj.default {
           this.slerp(v0, v1, factor, node.rotation);
         }
       }
-
       // --- Recompose local transform
       node.transform = this.composeMatrix(node.translation, node.rotation, node.scale);
     }
@@ -20554,12 +20472,11 @@ class BVHPlayer extends _meshObj.default {
       if (parentWorld) {
         // multiply parent * local
         _wgpuMatrix.mat4.multiply(parentWorld, node.transform, node.worldMatrix);
-        // mat4.copy(node.transform, node.worldMatrix);
       } else {
-        // root node — copy local, but reset scale if needed
         _wgpuMatrix.mat4.copy(node.transform, node.worldMatrix);
-        // optional: remove Blender scale
       }
+
+      // maybe no need to exist...
       _wgpuMatrix.mat4.scale(node.worldMatrix, [this.scaleBoneTest, this.scaleBoneTest, this.scaleBoneTest], node.worldMatrix);
       if (node.children) {
         for (const childIndex of node.children) computeWorld(childIndex);
@@ -21951,13 +21868,14 @@ Object.defineProperty(exports, "__esModule", {
 exports.default = void 0;
 var _wgpuMatrix = require("wgpu-matrix");
 var _matrixClass = require("./matrix-class");
-var _vertexShadow = require("../shaders/vertexShadow.wgsl");
 var _fragment = require("../shaders/fragment.wgsl");
 var _vertex = require("../shaders/vertex.wgsl");
 var _utils = require("./utils");
 var _materials = _interopRequireDefault(require("./materials"));
 var _fragmentVideo = require("../shaders/fragment.video.wgsl");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
+// import {vertexShadowWGSL} from '../shaders/vertexShadow.wgsl';
+
 class MEMeshObj extends _materials.default {
   constructor(canvas, device, context, o, inputHandler, globalAmbient, _glbFile = null, primitiveIndex = null, skinnedNodeIndex = null) {
     super(device);
@@ -21983,21 +21901,16 @@ class MEMeshObj extends _materials.default {
     // Mesh stuff - for single mesh or t-posed (fiktive-first in loading order)
     this.mesh = o.mesh;
     if (_glbFile != null) {
-      // check 
       if (typeof this.mesh == 'undefined') {
-        console.log('glb detected..create mesh obj.');
+        // console.log('glb detected..create mesh obj.')
         this.mesh = {};
         this.mesh.feedFromRealGlb = true;
       }
-      console.log('glb detected - name: ' + this.name + ' - skinnedNodeIndex:' + skinnedNodeIndex + " primitiveIndex:" + primitiveIndex);
-
+      // console.log('glb detected - name: ' + this.name + ' - skinnedNodeIndex:' + skinnedNodeIndex + " primitiveIndex:" + primitiveIndex)
       // V
       const verView = _glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex].positions.view;
-      // If you know byteOffset (from accessor):
       const byteOffsetV = verView.byteOffset || 0;
       const byteLengthV = verView.buffer.byteLength;
-
-      // Make a Float32Array view of the same underlying buffer:
       const vertices = new Float32Array(verView.buffer.buffer, byteOffsetV, byteLengthV / 4);
       this.mesh.vertices = vertices;
       //N
@@ -22023,7 +21936,6 @@ class MEMeshObj extends _materials.default {
       // Decide on type from accessor.componentType
       // (5121 = UNSIGNED_BYTE, 5123 = UNSIGNED_SHORT, 5125 = UNSIGNED_INT)
       let indicesArray;
-      console.info('importtant ("binaryI.componentType") ', binaryI.componentType);
       switch (binaryI.componentType) {
         case 5121:
           // UNSIGNED_BYTE
@@ -22041,26 +21953,13 @@ class MEMeshObj extends _materials.default {
           throw new Error("Unknown index componentType");
       }
       this.mesh.indices = indicesArray;
-
-      // ----------------
+      // W
       let weightsView = _glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex].weights.view;
       console.warn('weightsView', weightsView);
       this.mesh.weightsView = weightsView;
-
-      // loadSkinWeights();
-
       let primitive = _glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex];
       let finalRoundedWeights = this.getAccessorArray(_glbFile, primitive.weights.numComponents);
-      // console.log(finalRoundedWeights.slice(0, 16)); // first 4 vertices
-
-      const offset = weightsView.byteOffset ?? 0;
       const weightsArray = finalRoundedWeights;
-      // const weightsArray = new Float32Array(
-      //   weightsView.buffer,
-      //   offset,
-      //   weightsView.byteLength / 4
-      // );
-
       // Normalize each group of 4
       for (let i = 0; i < weightsArray.length; i += 4) {
         const sum = weightsArray[i] + weightsArray[i + 1] + weightsArray[i + 2] + weightsArray[i + 3];
@@ -22081,7 +21980,7 @@ class MEMeshObj extends _materials.default {
         const s = weightsArray[i] + weightsArray[i + 1] + weightsArray[i + 2] + weightsArray[i + 3];
         if (Math.abs(s - 1.0) > 0.001) console.warn("Weight not normalized!", i, s);
       }
-      console.log('Normalized weightsArray', weightsArray);
+      // console.log('Normalized weightsArray', weightsArray);
       this.mesh.weightsBuffer = this.device.createBuffer({
         label: "weightsBuffer real data",
         size: weightsArray.byteLength,
@@ -22095,7 +21994,6 @@ class MEMeshObj extends _materials.default {
       let jointsView = _glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex].joints.view;
       console.warn('jointsView', jointsView);
       this.mesh.jointsView = jointsView;
-
       // Create typed array from the buffer (Uint16Array or Uint8Array depending on GLB)
       let jointsArray16 = new Uint16Array(jointsView.buffer, jointsView.byteOffset || 0, jointsView.byteLength / 2 // in Uint16 elements
       );
@@ -22103,7 +22001,6 @@ class MEMeshObj extends _materials.default {
       for (let i = 0; i < jointsArray16.length; i++) {
         jointsArray32[i] = jointsArray16[i];
       }
-
       // const DUMMY = new Uint32Array((this.mesh.vertices.length / 3) * 4);
       // Create GPU buffer for joints
       this.mesh.jointsBuffer = this.device.createBuffer({
@@ -22112,19 +22009,14 @@ class MEMeshObj extends _materials.default {
         usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
         mappedAtCreation: true
       });
-
       // Upload the data to GPU
       new Uint32Array(this.mesh.jointsBuffer.getMappedRange()).set(jointsArray32);
       this.mesh.jointsBuffer.unmap();
-
-      // console.log('JOINTS_0', jointsArray32.slice(0, 32));
-      // console.log('WEIGHTS_0', weightsArray.slice(0, 32));
     } else {
-      // obj files flow 
+      // obj files flow
       this.mesh.uvs = this.mesh.textures;
     }
     console.log(`%c Mesh loaded: ${o.name}`, _utils.LOG_FUNNY_SMALL);
-
     // ObjSequence animation
     if (typeof o.objAnim !== 'undefined' && o.objAnim != null) {
       this.objAnim = o.objAnim;
@@ -22152,11 +22044,9 @@ class MEMeshObj extends _materials.default {
     this.rotation.rotationSpeed.y = o.rotationSpeed.y;
     this.rotation.rotationSpeed.z = o.rotationSpeed.z;
     this.scale = o.scale;
-
     // new dummy for skin mesh
     // in MeshObj constructor or setup
     if (!this.joints) {
-      // Joints data (all zeros for dummy, size = numVerts * 4)
       const jointsData = new Uint32Array(this.mesh.vertices.length / 3 * 4);
       const jointsBuffer = this.device.createBuffer({
         label: "jointsBuffer",
@@ -22172,7 +22062,6 @@ class MEMeshObj extends _materials.default {
         stride: 16 // vec4<u32>
       };
       const numVerts = this.mesh.vertices.length / 3;
-
       // Weights data (vec4<f32>) – default all weight to bone 0
       const weightsData = new Float32Array(numVerts * 4 * 4);
       for (let i = 0; i < numVerts; i++) {
@@ -22181,7 +22070,6 @@ class MEMeshObj extends _materials.default {
         weightsData[i * 4 + 2] = 0.0;
         weightsData[i * 4 + 3] = 0.0;
       }
-
       // GPU buffer
       const weightsBuffer = this.device.createBuffer({
         label: "weightsBuffer dummy",
@@ -22256,32 +22144,28 @@ class MEMeshObj extends _materials.default {
       new Uint16Array(this.indexBuffer.getMappedRange()).set(this.mesh.indices);
       this.indexBuffer.unmap();
       this.indexCount = indexCount;
-
-      // ----------------
-      let glbInfo;
-      if (this.mesh.feedFromRealGlb && this.mesh.feedFromRealGlb == true) {
-        console.log('it is GLB ');
-        glbInfo = {
-          arrayStride: 4 * 4,
-          // vec4<f32> = 4 * 4 bytes
-          attributes: [{
-            format: 'float32x4',
-            offset: 0,
-            shaderLocation: 4
-          }]
-        };
-      } else {
-        console.log('it is not  GLB ');
-        glbInfo = {
-          arrayStride: 4 * 4,
-          // vec4<f32> = 4 * 4 bytes
-          attributes: [{
-            format: 'float32x4',
-            offset: 0,
-            shaderLocation: 4
-          }]
-        };
-      }
+      let glbInfo = {
+        arrayStride: 4 * 4,
+        // vec4<f32> = 4 * 4 bytes
+        attributes: [{
+          format: 'float32x4',
+          offset: 0,
+          shaderLocation: 4
+        }]
+      };
+      // if(this.mesh.feedFromRealGlb && this.mesh.feedFromRealGlb == true) {
+      //   // console.log('it is GLB ')
+      //   glbInfo = {
+      //     arrayStride: 4 * 4, // vec4<f32> = 4 * 4 bytes
+      //     attributes: [{format: 'float32x4', offset: 0, shaderLocation: 4}]
+      //   }
+      // } else {
+      //   // console.log('it is not  GLB ')
+      //   glbInfo = {
+      //     arrayStride: 4 * 4, // vec4<f32> = 4 * 4 bytes
+      //     attributes: [{format: 'float32x4', offset: 0, shaderLocation: 4}]
+      //   }
+      // }
       // Create some common descriptors used for both the shadow pipeline
       // and the color rendering pipeline.
       this.vertexBuffers = [{
@@ -22309,7 +22193,7 @@ class MEMeshObj extends _materials.default {
           format: "float32x2"
         }]
       },
-      // new joint indices
+      // joint indices
       {
         arrayStride: 4 * 4,
         // vec4<u32> = 4 * 4 bytes
@@ -22319,7 +22203,7 @@ class MEMeshObj extends _materials.default {
           shaderLocation: 3
         }]
       },
-      // new weights
+      // weights
       glbInfo];
       this.primitive = {
         topology: 'triangle-list',
@@ -22360,7 +22244,6 @@ class MEMeshObj extends _materials.default {
       });
 
       // dummy for non skin mesh like this class
-
       function alignTo256(n) {
         return Math.ceil(n / 256) * 256;
       }
@@ -22392,7 +22275,6 @@ class MEMeshObj extends _materials.default {
           }
         }]
       });
-      this.updateBones();
       this.mainPassBindGroupLayout = this.device.createBindGroupLayout({
         entries: [{
           binding: 0,
@@ -22408,7 +22290,6 @@ class MEMeshObj extends _materials.default {
           }
         }]
       });
-
       // Rotates the camera around the origin based on time.
       this.getTransformationMatrix = (mainRenderBundle, spotLight) => {
         const now = Date.now();
@@ -22419,24 +22300,17 @@ class MEMeshObj extends _materials.default {
         const camVP = _wgpuMatrix.mat4.multiply(camera.projectionMatrix, camera.view);
         for (const mesh of mainRenderBundle) {
           const sceneData = new Float32Array(44);
-
           // Light VP
           sceneData.set(spotLight.viewProjMatrix, 0);
-
           // Camera VP
           sceneData.set(camVP, 16);
-
           // Camera position + padding
           sceneData.set([camera.position.x, camera.position.y, camera.position.z, 0.0], 32);
-
           // Light position + padding
           sceneData.set([spotLight.position[0], spotLight.position[1], spotLight.position[2], 0.0], 36);
-
           // Global ambient + padding
           sceneData.set([this.globalAmbient[0], this.globalAmbient[1], this.globalAmbient[2], 0.0], 40);
           if (mesh.glb && mesh.glb.skinnedMeshNodes) {
-            // console.log('mesh 1111', mesh.glb.skinnedMeshNodes)
-
             mesh.glb.skinnedMeshNodes.forEach(skinnedMeshNode => {
               device.queue.writeBuffer(
               // skinnedMeshNode.sceneUniformBuffer,
@@ -22479,17 +22353,6 @@ class MEMeshObj extends _materials.default {
         this.updateMeshListBuffers();
       }
     });
-  }
-  updateBones() {
-
-    // const weights = new Float32Array(this.mesh.vertices.length * 4); // vec4<f32>
-    // for(let i = 0;i < this.mesh.vertices.length;i++) {
-    //   weights[i * 4 + 0] = 1.0; // bone 0 full weight
-    //   weights[i * 4 + 1] = 0.0;
-    //   weights[i * 4 + 2] = 0.0;
-    //   weights[i * 4 + 3] = 0.0;
-    // }
-    // this.device.queue.writeBuffer(this.weights.buffer, 0, weights);
   }
   setupPipeline = () => {
     this.createBindGroupForRender();
@@ -22607,26 +22470,16 @@ class MEMeshObj extends _materials.default {
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setVertexBuffer(1, this.vertexNormalsBuffer);
     pass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
-
-    // -----------------------------------------------------------
     if (this.joints) {
       if (this.constructor.name === "BVHPlayer") {
         pass.setVertexBuffer(3, this.mesh.jointsBuffer); // real
-        // dumyy
-        // pass.setVertexBuffer(3, this.joints.buffer);  // new dummy
-        // pass.setVertexBuffer(4, this.weights.buffer); // new dummy
-
-        // pass.setVertexBuffer(3, this.mesh.jointsBuffer);  // real
         pass.setVertexBuffer(4, this.mesh.weightsBuffer); //real
       } else {
-        // dumyy
+        // dummy
         pass.setVertexBuffer(3, this.joints.buffer); // new dummy
         pass.setVertexBuffer(4, this.weights.buffer); // new dummy
       }
     }
-
-    // -----------------------------------------------------------
-
     pass.setIndexBuffer(this.indexBuffer, 'uint16');
     pass.drawIndexed(this.indexCount);
   };
@@ -22664,7 +22517,7 @@ class MEMeshObj extends _materials.default {
     shadowPass.setVertexBuffer(1, this.vertexNormalsBuffer);
     shadowPass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
 
-    // dummy joints & weights for shadow pass
+    // dummy joints & weights for shadow pass ??
     // if(this.joints && this.weights) {
     //   shadowPass.setVertexBuffer(3, this.joints.buffer);
     //   shadowPass.setVertexBuffer(4, this.weights.buffer);
@@ -22676,7 +22529,7 @@ class MEMeshObj extends _materials.default {
 }
 exports.default = MEMeshObj;
 
-},{"../shaders/fragment.video.wgsl":31,"../shaders/fragment.wgsl":32,"../shaders/vertex.wgsl":34,"../shaders/vertexShadow.wgsl":35,"./materials":25,"./matrix-class":26,"./utils":28,"wgpu-matrix":16}],28:[function(require,module,exports){
+},{"../shaders/fragment.video.wgsl":31,"../shaders/fragment.wgsl":32,"../shaders/vertex.wgsl":34,"./materials":25,"./matrix-class":26,"./utils":28,"wgpu-matrix":16}],28:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
