@@ -1,3 +1,12 @@
+/**
+ * @author Nikola Lukic zlatnaspirala
+ * @description
+ * Importer is adapted for matrix-engine-wgpu.
+ * Improved - Fix children empty array.
+ * Access to json raw data.
+ * @source
+ * https://github.com/Twinklebear/webgpu-gltf/blob/main/src/glb_import.js
+ */
 import {mat4} from "gl-matrix";
 
 const GLTFRenderMode = {
@@ -55,51 +64,6 @@ function gltfTypeNumComponents(type) {
     default:
       alert('Unhandled glTF Type ' + type);
       return null;
-  }
-}
-
-function gltfTypeToWebGPU(componentType, type) {
-  var typeStr = null;
-  switch(componentType) {
-    case GLTFComponentType.BYTE:
-      typeStr = 'char';
-      break;
-    case GLTFComponentType.UNSIGNED_BYTE:
-      typeStr = 'uchar';
-      break;
-    case GLTFComponentType.SHORT:
-      typeStr = 'short';
-      break;
-    case GLTFComponentType.UNSIGNED_SHORT:
-      typeStr = 'ushort';
-      break;
-    case GLTFComponentType.INT:
-      typeStr = 'int';
-      break;
-    case GLTFComponentType.UNSIGNED_INT:
-      typeStr = 'uint';
-      break;
-    case GLTFComponentType.FLOAT:
-      typeStr = 'float';
-      break;
-    case GLTFComponentType.DOUBLE:
-      typeStr = 'double';
-      break;
-    default:
-      alert('Unrecognized GLTF Component Type?');
-  }
-
-  switch(gltfTypeNumComponents(type)) {
-    case 1:
-      return typeStr;
-    case 2:
-      return typeStr + '2';
-    case 3:
-      return typeStr + '3';
-    case 4:
-      return typeStr + '4';
-    default:
-      alert('Too many components!');
   }
 }
 
@@ -211,96 +175,6 @@ export class GLTFPrimitive {
     this.weights = weights;
     this.joints = joints;
   }
-
-  // Build the primitive render commands into the bundle
-  buildRenderBundle(
-    device, shaderCache, bindGroupLayouts, bundleEncoder, swapChainFormat, depthFormat) {
-    var shaderModule = shaderCache.getShader(
-      this.normals, this.texcoords.length > 0, this.material.baseColorTexture);
-
-    var vertexBuffers = [{
-      arrayStride: this.positions.byteStride,
-      attributes: [{format: 'float32x3', offset: 0, shaderLocation: 0}]
-    }];
-
-    if(this.normals) {
-      vertexBuffers.push({
-        arrayStride: this.normals.byteStride,
-        attributes: [{format: 'float32x3', offset: 0, shaderLocation: 1}]
-      });
-    }
-
-    // TODO: Multi-texturing
-    if(this.texcoords.length > 0) {
-      vertexBuffers.push({
-        arrayStride: this.texcoords[0].byteStride,
-        attributes: [{format: 'float32x2', offset: 0, shaderLocation: 2}]
-      });
-    }
-
-    var layout = device.createPipelineLayout({
-      bindGroupLayouts:
-        [bindGroupLayouts[0], bindGroupLayouts[1], this.material.bindGroupLayout],
-    });
-
-    var vertexStage = {
-      module: shaderModule,
-      entryPoint: 'vertex_main',
-      buffers: vertexBuffers
-    };
-    var fragmentStage = {
-      module: shaderModule,
-      entryPoint: 'fragment_main',
-      targets: [{format: swapChainFormat}]
-    };
-
-    var primitive = {topology: 'triangle-list'};
-    if(this.topology == GLTFRenderMode.TRIANGLE_STRIP) {
-      primitive.topology = 'triangle-strip';
-      primitive.stripIndexFormat =
-        this.indices.componentType == GLTFComponentType.UNSIGNED_SHORT ? 'uint16'
-          : 'uint32';
-    }
-
-    var pipelineDescriptor = {
-      layout: layout,
-      vertex: vertexStage,
-      fragment: fragmentStage,
-      primitive: primitive,
-      depthStencil: {format: depthFormat, depthWriteEnabled: true, depthCompare: 'less'}
-    };
-
-    var renderPipeline = device.createRenderPipeline(pipelineDescriptor);
-
-    bundleEncoder.setBindGroup(2, this.material.bindGroup);
-    bundleEncoder.setPipeline(renderPipeline);
-    bundleEncoder.setVertexBuffer(0,
-      this.positions.view.gpuBuffer,
-      this.positions.byteOffset,
-      this.positions.length);
-    if(this.normals) {
-      bundleEncoder.setVertexBuffer(
-        1, this.normals.view.gpuBuffer, this.normals.byteOffset, this.normals.length);
-    }
-    if(this.texcoords.length > 0) {
-      bundleEncoder.setVertexBuffer(2,
-        this.texcoords[0].view.gpuBuffer,
-        this.texcoords[0].byteOffset,
-        this.texcoords[0].length);
-    }
-    if(this.indices) {
-      var indexFormat = this.indices.componentType == GLTFComponentType.UNSIGNED_SHORT
-        ? 'uint16'
-        : 'uint32';
-      bundleEncoder.setIndexBuffer(this.indices.view.gpuBuffer,
-        indexFormat,
-        this.indices.byteOffset,
-        this.indices.length);
-      bundleEncoder.drawIndexed(this.indices.count);
-    } else {
-      bundleEncoder.draw(this.positions.count);
-    }
-  }
 }
 
 export class GLTFMesh {
@@ -328,45 +202,6 @@ export class GLTFNode {
     new Float32Array(buf.getMappedRange()).set(this.transform);
     buf.unmap();
     this.gpuUniforms = buf;
-  }
-
-  buildRenderBundle(device,
-    shaderCache,
-    viewParamsLayout,
-    viewParamsBindGroup,
-    swapChainFormat,
-    depthFormat) {
-    var nodeParamsLayout = device.createBindGroupLayout({
-      entries:
-        [{binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}}]
-    });
-
-    this.bindGroup = device.createBindGroup({
-      layout: nodeParamsLayout,
-      entries: [{binding: 0, resource: {buffer: this.gpuUniforms}}]
-    });
-
-    var bindGroupLayouts = [viewParamsLayout, nodeParamsLayout];
-
-    var bundleEncoder = device.createRenderBundleEncoder({
-      colorFormats: [swapChainFormat],
-      depthStencilFormat: depthFormat,
-    });
-
-    bundleEncoder.setBindGroup(0, viewParamsBindGroup);
-    bundleEncoder.setBindGroup(1, this.bindGroup);
-
-    for(var i = 0;i < this.mesh.primitives.length;++i) {
-      this.mesh.primitives[i].buildRenderBundle(device,
-        shaderCache,
-        bindGroupLayouts,
-        bundleEncoder,
-        swapChainFormat,
-        depthFormat);
-    }
-
-    this.renderBundle = bundleEncoder.finish();
-    return this.renderBundle;
   }
 }
 
@@ -588,32 +423,16 @@ export class GLBModel {
     this.glbJsonData = glbJsonData;
     this.glbBinaryBuffer = glbBinaryBuffer;
   }
-
-  buildRenderBundles(
-    device, shaderCache, viewParamsLayout, viewParamsBindGroup, swapChainFormat) {
-    var renderBundles = [];
-    for(var i = 0;i < this.nodes.length;++i) {
-      var n = this.nodes[i];
-      var bundle = n.buildRenderBundle(device,
-        shaderCache,
-        viewParamsLayout,
-        viewParamsBindGroup,
-        swapChainFormat,
-        'depth24plus-stencil8');
-      renderBundles.push(bundle);
-    }
-    return renderBundles;
-  }
 };
 
- function getComponentSize(componentType) {
-    switch(componentType) {
-      case 5126: return 4; // float32
-      case 5123: return 2; // uint16
-      case 5121: return 1; // uint8
-      default: throw new Error("Unknown componentType: " + componentType);
-    }
-  }
+// function getComponentSize(componentType) {
+//   switch(componentType) {
+//     case 5126: return 4; // float32
+//     case 5123: return 2; // uint16
+//     case 5121: return 1; // uint8
+//     default: throw new Error("Unknown componentType: " + componentType);
+//   }
+// }
 
 // Upload a GLB model and return it
 export async function uploadGLBModel(buffer, device) {
@@ -638,14 +457,11 @@ export async function uploadGLBModel(buffer, device) {
     v => new GLTFBufferView(glbBuffer, v)
   );
 
-
-
   const binaryOffset = 28 + header[3];
   const binaryLength = binaryHeader[0];
 
   // ✅ raw ArrayBuffer slice of the binary chunk:
   const glbBinaryBuffer = buffer.slice(binaryOffset, binaryOffset + binaryLength);
-
 
   // 5️⃣ Load images
   const images = [];
@@ -690,7 +506,6 @@ export async function uploadGLBModel(buffer, device) {
     m => new GLTFMaterial(m, textures)
   );
 
-  
   // 7️⃣ Meshes
   const meshes = (glbJsonData.meshes || []).map(mesh => {
     const primitives = mesh.primitives.map(prim => {
@@ -705,7 +520,6 @@ export async function uploadGLBModel(buffer, device) {
         bufferViews[viewID].addUsage(GPUBufferUsage.INDEX);
         indices = new GLTFAccessor(bufferViews[viewID], accessor);
       }
-
       // Vertex attributes
       let positions = null,
         normals = null,
@@ -714,37 +528,25 @@ export async function uploadGLBModel(buffer, device) {
       let joints = null;
       for(const attr in prim.attributes) {
         const accessor = glbJsonData.accessors[prim.attributes[attr]];
-        console.log("??????????attr??????" + attr );
-          console.log("??????????prim.attributes??????" + prim.attributes );
         const viewID = accessor.bufferView;
         bufferViews[viewID].needsUpload = true;
         bufferViews[viewID].addUsage(GPUBufferUsage.VERTEX);
-
         if(attr === 'POSITION') {
           positions = new GLTFAccessor(bufferViews[viewID], accessor);
-        }
-        else if(attr === 'NORMAL'){
+        } else if(attr === 'NORMAL') {
           normals = new GLTFAccessor(bufferViews[viewID], accessor);
-        }
-        else if(attr.startsWith('TEXCOORD')){
+        } else if(attr.startsWith('TEXCOORD')) {
           texcoords.push(new GLTFAccessor(bufferViews[viewID], accessor));
-        }
-        else if(attr === 'WEIGHTS_0'){
+        } else if(attr === 'WEIGHTS_0') {
           weights = new GLTFAccessor(bufferViews[viewID], accessor);
-        }
-        else if(attr.startsWith('JOINTS')){
+        } else if(attr.startsWith('JOINTS')) {
           joints = new GLTFAccessor(bufferViews[viewID], accessor);
-        }
-        else {
+        } else {
           console.log('inknow ', attr)
         }
       }
 
-      const material =
-        prim.material !== undefined
-          ? materials[prim.material]
-          : defaultMaterial;
-
+      const material = prim.material !== undefined ? materials[prim.material] : defaultMaterial;
       return new GLTFPrimitive(
         indices,
         positions,
@@ -756,7 +558,6 @@ export async function uploadGLBModel(buffer, device) {
         joints
       );
     });
-
     return new GLTFMesh(mesh.name, primitives);
   });
 
@@ -764,14 +565,12 @@ export async function uploadGLBModel(buffer, device) {
   for(const bv of bufferViews) if(bv.needsUpload) bv.upload(device);
   defaultMaterial.upload(device);
   for(const m of materials) m.upload(device);
-
   // 8️⃣ Skins (we only store the index of inverseBindMatrices here)
   const skins = (glbJsonData.skins || []).map(skin => ({
     name: skin.name,
     joints: skin.joints,
     inverseBindMatrices: skin.inverseBindMatrices, // accessor index
   }));
-
   // 9️⃣ Nodes
   const nodes = [];
   const gltfNodes = makeGLTFSingleLevel(glbJsonData.nodes);
@@ -795,23 +594,18 @@ export async function uploadGLBModel(buffer, device) {
       }
     }
   }
-
   // Ensure nodes without parent are root nodes
   for(const node of nodes) {
     if(node.parent === undefined) node.parent = null;
   }
-
-  // 🔟 Skinned mesh nodes
   const skinnedMeshNodes = nodes.filter(
     n => n.mesh && n.skin !== undefined
   );
-
   if(skinnedMeshNodes.length === 0) {
     console.warn('No skins found — mesh not bound to skeleton');
   } else {
     skinnedMeshNodes.forEach(n => {
       console.log('Mesh', n.mesh.name, 'uses skin index', n.skin);
-
       // Per-mesh uniform buffer (example)
       n.sceneUniformBuffer = device.createBuffer({
         size: 44 * 4,
@@ -821,25 +615,4 @@ export async function uploadGLBModel(buffer, device) {
   }
   let R = new GLBModel(nodes, skins, skinnedMeshNodes, glbJsonData, glbBinaryBuffer)
   return R;
-}
-
-export function createBVHToGLBMap(glb, bvh) {
-  const map = {};
-  for(const node of glb.nodes) {
-    if(bvh.joints[node.name]) {
-      map[node.name] = node;
-    }
-  }
-  return map;
-}
-
-export function applyBVHToGLB(glb, bvhBones, device) {
-  for(const nodeName in bvhBones) {
-    const boneNode = glb.bvhToGLBMap[nodeName];
-    if(!boneNode) continue;
-
-    const bvhBone = bvhBones[nodeName];
-    boneNode.transform = bvhBone.worldMatrix;
-    boneNode.upload(device);
-  }
 }

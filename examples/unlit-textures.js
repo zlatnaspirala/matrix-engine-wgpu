@@ -23,6 +23,9 @@ export var unlitTextures = function() {
       };
       unlitTextures.addCube(o)
       unlitTextures.addBall(c)
+
+      // just to fix warns
+      unlitTextures.addLight()
     });
   })
 

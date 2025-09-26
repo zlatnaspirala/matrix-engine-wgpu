@@ -21,7 +21,7 @@ let TEST_ANIM = new _world.default({
     a: 1
   }
 }, () => {
-  addEventListener('AmmoReady', () => {
+  addEventListener('AmmoReady', async () => {
     setTimeout(() => {
       app.cameras.WASD.yaw = -0.03;
       app.cameras.WASD.pitch = -0.49;
@@ -35,37 +35,28 @@ let TEST_ANIM = new _world.default({
     });
     // const path = 'https://raw.githubusercontent.com/zlatnaspirala/Matrix-Engine-BVH-test/main/javascript-bvh/example.bvh';
     const path = 'res/meshes/glb/glb-test1.bvh';
-    (0, _bvh.loadBVH)(path).then(async BVHANIM => {
-      console.info(BVHANIM);
-      var glbFile = await fetch("res/meshes/glb/test.glb").then(res => res.arrayBuffer().then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, TEST_ANIM.device)));
+    var glbFile = await fetch("res/meshes/glb/test.glb").then(res => res.arrayBuffer().then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, TEST_ANIM.device)));
+    TEST_ANIM.addGlbObj({
+      // scale: [1,1,1],
+      scale: [10, 10, 10],
+      name: 'firstGlb',
+      texturesPaths: ['./res/textures/rust.jpg']
+    }, null, glbFile);
 
-      // ✅ Inspect nodes (should now include bones + hierarchy)
-      glbFile.nodes.forEach((node, i) => {
-        console.log(`Node[${i}]: ${node.name || "(unnamed)"}`);
-        if (node.children) {
-          console.log(`   Children: ${node.children}`);
-        }
-        if (node.mesh !== undefined) {
-          console.log(`   Mesh attached →`, node.mesh);
-        }
-        if (node.skin !== undefined) {
-          console.log(`   Uses skin index: ${node.skin}`);
-        }
-      });
-      TEST_ANIM.addGlbObj({
-        // scale: [0.1,0.1,0.1],
-        // scale: [1,1,1],
-        // scale: [100,100,100],
-        name: 'firstGlb',
-        texturesPaths: ['./res/textures/rust.jpg']
-      }, BVHANIM, glbFile);
-    });
+    // loadBVH(path).then(async (BVHANIM) => {
+    //   var glbFile = await fetch(
+    //     "res/meshes/glb/test.glb")
+    //     .then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, TEST_ANIM.device)));
+    //   TEST_ANIM.addGlbObj({
+    //     // scale: [1,1,1],
+    //     scale: [10, 10, 10],
+    //     name: 'firstGlb',
+    //     texturesPaths: ['./res/textures/rust.jpg'],
+    //   }, BVHANIM, glbFile);
+    // });
   });
   function onGround(m) {
     TEST_ANIM.addLight();
-
-    // -0.03450356494543923 -0.4885164267948901 0 3.759999990463257
-
     TEST_ANIM.addMeshObj({
       position: {
         x: 0,
@@ -90,10 +81,7 @@ let TEST_ANIM = new _world.default({
         mass: 0,
         geometry: "Cube"
       }
-      // raycast: { enabled: true , radius: 2 }
     });
-
-    // alert('yes')
   }
 });
 // just for dev
@@ -19934,20 +19922,22 @@ exports.loadBVH = loadBVH;
 class BVHPlayer extends _meshObj.default {
   constructor(o, bvh, glb, primitiveIndex, skinnedNodeIndex, canvas, device, context, inputHandler, globalAmbient) {
     super(canvas, device, context, o, inputHandler, globalAmbient, glb, primitiveIndex, skinnedNodeIndex);
-    this.bvh = bvh;
+
+    // bvh arg not actula at hte moment
+    this.bvh = {};
     this.glb = glb;
     this.currentFrame = 0;
-    this.fps = bvh.fps || 30;
+    this.fps = 30;
     this.timeAccumulator = 0;
     this.scaleBoneTest = 1;
     this.primitiveIndex = primitiveIndex;
-    if (!bvh.sharedState) {
-      bvh.sharedState = {
+    if (!this.bvh.sharedState) {
+      this.bvh.sharedState = {
         currentFrame: 0,
         timeAccumulator: 0
       };
     }
-    this.sharedState = bvh.sharedState;
+    this.sharedState = this.bvh.sharedState;
 
     // Reference to the skinned node containing all bones
     this.skinnedNode = this.glb.skinnedMeshNodes[skinnedNodeIndex];
@@ -20024,22 +20014,18 @@ class BVHPlayer extends _meshObj.default {
     this.inverseBindMatrices = invBindArray;
     console.log('Inverse bind matrices loaded:', this.inverseBindMatrices.length, 'bones');
   }
-  setupBVHJointIndices() {
-    // this.bvh.jointIndices = {};
-    // const skin = this.glb.skins[this.skinnedNode.skin]; // get skin for this node
-    // const bones = skin.joints; // indices of joints in GLB
-    // const jointNames = Object.keys(this.bvh.joints);
-    // jointNames.forEach((name, i) => {
-    //   if(i < bones.length) {
-    //     this.bvh.jointIndices[name] = i;
-    //   }
-    // });
+  getNumberOfAnimation() {
+    let anim = this.glb.glbJsonData.animations[this.glb.animationIndex];
+    const sampler = anim.samplers[0];
+    const inputAccessor = this.glb.glbJsonData.accessors[sampler.input];
+    const numFrames = inputAccessor.count;
+    return numFrames;
   }
   update(deltaTime) {
     const frameTime = 1 / this.fps;
     this.sharedState.timeAccumulator += deltaTime;
     while (this.sharedState.timeAccumulator >= frameTime) {
-      this.sharedState.currentFrame = (this.sharedState.currentFrame + 1) % this.bvh.keyframes.length;
+      this.sharedState.currentFrame = (this.sharedState.currentFrame + 1) % this.getNumberOfAnimation();
       this.sharedState.timeAccumulator -= frameTime;
     }
     // const frame = this.sharedState.currentFrame;
@@ -20048,67 +20034,6 @@ class BVHPlayer extends _meshObj.default {
     if (this.glb.glbJsonData.animations && this.glb.glbJsonData.animations.length > 0) {
       this.updateSingleBoneCubeAnimation(this.glb.glbJsonData.animations[this.glb.animationIndex], this.glb.nodes, currentTime, boneMatrices);
     }
-  }
-  applyBVHToGLB(frameIndex) {
-    const keyframe = this.bvh.keyframes[frameIndex]; // flat array
-    const skin = this.glb.skins[this.skinnedNode.skin];
-    const numBones = skin.joints.length;
-    const bonesData = new Float32Array(16 * numBones); // final matrices per bone
-
-    const scale = -0.1; // adjust if mesh too small/large
-    let offsetInFrame = 0;
-    const traverseJoint = (joint, parentMat) => {
-      const t = [0, 0, 0];
-      const r = [0, 0, 0];
-
-      // Extract channels from BVH keyframe
-      for (const channel of joint.channels) {
-        const value = keyframe[offsetInFrame++];
-        if (channel === 'Xposition') t[0] = value;else if (channel === 'Yposition') t[1] = value;else if (channel === 'Zposition') t[2] = value;else if (channel === 'Xrotation') r[0] = value;else if (channel === 'Yrotation') r[1] = value;else if (channel === 'Zrotation') r[2] = value;
-      }
-
-      // Local translation (apply before rotation)
-      const translation = [(t[0] + joint.offset[0]) * scale, (t[1] + joint.offset[1]) * scale, (t[2] + joint.offset[2]) * scale];
-
-      // Build local matrix
-      let localMat = _wgpuMatrix.mat4.identity();
-      _wgpuMatrix.mat4.translate(localMat, translation, localMat); // translation first
-      _wgpuMatrix.mat4.rotateX(localMat, (0, _utils.degToRad)(r[0]), localMat);
-      _wgpuMatrix.mat4.rotateY(localMat, (0, _utils.degToRad)(r[1]), localMat);
-      _wgpuMatrix.mat4.rotateZ(localMat, (0, _utils.degToRad)(r[2]), localMat);
-
-      // Combine with parent matrix
-      const finalMat = _wgpuMatrix.mat4.create();
-      _wgpuMatrix.mat4.identity(finalMat); // must initialize to identity!
-      _wgpuMatrix.mat4.multiply(parentMat, localMat, finalMat); // ✅ correct
-
-      // Apply inverse bind matrix if exists
-      const boneIndex = this.bvh.jointIndices[joint.name];
-      if (boneIndex !== undefined) {
-        const invBind = this.inverseBindMatrices[boneIndex]; // Float32Array[16]
-        if (invBind) {
-          const finalBoneMat = _wgpuMatrix.mat4.create();
-
-          // mat4.multiply(finalBoneMat, finalMat, invBind); // finalBoneMat = finalMat * invBind
-          _wgpuMatrix.mat4.multiply(finalMat, invBind, finalBoneMat); // finalBoneMat = finalMat * invBind
-
-          bonesData.set(finalBoneMat, boneIndex * 16);
-        } else {
-          bonesData.set(finalMat, boneIndex * 16); // fallback if invBind missing
-        }
-      }
-
-      // Recurse children
-      for (const child of joint.children) {
-        traverseJoint(child, finalMat);
-      }
-
-      // Upload to GPU
-      this.device.queue.writeBuffer(this.bonesBuffer, 0, bonesData);
-    };
-
-    // Start recursion from BVH root
-    traverseJoint(this.bvh.root, _wgpuMatrix.mat4.identity());
   }
   computeNodeWorldMatrices() {
     // pre-allocate world matrices array if not done
@@ -20510,10 +20435,18 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.GLTFTexture = exports.GLTFSampler = exports.GLTFPrimitive = exports.GLTFNode = exports.GLTFMesh = exports.GLTFMaterial = exports.GLTFBufferView = exports.GLTFBuffer = exports.GLTFAccessor = exports.GLBModel = void 0;
-exports.applyBVHToGLB = applyBVHToGLB;
-exports.createBVHToGLBMap = createBVHToGLBMap;
 exports.uploadGLBModel = uploadGLBModel;
 var _glMatrix = require("gl-matrix");
+/**
+ * @author Nikola Lukic zlatnaspirala
+ * @description
+ * Importer is adapted for matrix-engine-wgpu.
+ * Improved - Fix children empty array.
+ * Access to json raw data.
+ * @source
+ * https://github.com/Twinklebear/webgpu-gltf/blob/main/src/glb_import.js
+ */
+
 const GLTFRenderMode = {
   POINTS: 0,
   LINE: 1,
@@ -20564,49 +20497,6 @@ function gltfTypeNumComponents(type) {
     default:
       alert('Unhandled glTF Type ' + type);
       return null;
-  }
-}
-function gltfTypeToWebGPU(componentType, type) {
-  var typeStr = null;
-  switch (componentType) {
-    case GLTFComponentType.BYTE:
-      typeStr = 'char';
-      break;
-    case GLTFComponentType.UNSIGNED_BYTE:
-      typeStr = 'uchar';
-      break;
-    case GLTFComponentType.SHORT:
-      typeStr = 'short';
-      break;
-    case GLTFComponentType.UNSIGNED_SHORT:
-      typeStr = 'ushort';
-      break;
-    case GLTFComponentType.INT:
-      typeStr = 'int';
-      break;
-    case GLTFComponentType.UNSIGNED_INT:
-      typeStr = 'uint';
-      break;
-    case GLTFComponentType.FLOAT:
-      typeStr = 'float';
-      break;
-    case GLTFComponentType.DOUBLE:
-      typeStr = 'double';
-      break;
-    default:
-      alert('Unrecognized GLTF Component Type?');
-  }
-  switch (gltfTypeNumComponents(type)) {
-    case 1:
-      return typeStr;
-    case 2:
-      return typeStr + '2';
-    case 3:
-      return typeStr + '3';
-    case 4:
-      return typeStr + '4';
-    default:
-      alert('Too many components!');
   }
 }
 function gltfTypeSize(componentType, type) {
@@ -20712,91 +20602,6 @@ class GLTFPrimitive {
     this.weights = weights;
     this.joints = joints;
   }
-
-  // Build the primitive render commands into the bundle
-  buildRenderBundle(device, shaderCache, bindGroupLayouts, bundleEncoder, swapChainFormat, depthFormat) {
-    var shaderModule = shaderCache.getShader(this.normals, this.texcoords.length > 0, this.material.baseColorTexture);
-    var vertexBuffers = [{
-      arrayStride: this.positions.byteStride,
-      attributes: [{
-        format: 'float32x3',
-        offset: 0,
-        shaderLocation: 0
-      }]
-    }];
-    if (this.normals) {
-      vertexBuffers.push({
-        arrayStride: this.normals.byteStride,
-        attributes: [{
-          format: 'float32x3',
-          offset: 0,
-          shaderLocation: 1
-        }]
-      });
-    }
-
-    // TODO: Multi-texturing
-    if (this.texcoords.length > 0) {
-      vertexBuffers.push({
-        arrayStride: this.texcoords[0].byteStride,
-        attributes: [{
-          format: 'float32x2',
-          offset: 0,
-          shaderLocation: 2
-        }]
-      });
-    }
-    var layout = device.createPipelineLayout({
-      bindGroupLayouts: [bindGroupLayouts[0], bindGroupLayouts[1], this.material.bindGroupLayout]
-    });
-    var vertexStage = {
-      module: shaderModule,
-      entryPoint: 'vertex_main',
-      buffers: vertexBuffers
-    };
-    var fragmentStage = {
-      module: shaderModule,
-      entryPoint: 'fragment_main',
-      targets: [{
-        format: swapChainFormat
-      }]
-    };
-    var primitive = {
-      topology: 'triangle-list'
-    };
-    if (this.topology == GLTFRenderMode.TRIANGLE_STRIP) {
-      primitive.topology = 'triangle-strip';
-      primitive.stripIndexFormat = this.indices.componentType == GLTFComponentType.UNSIGNED_SHORT ? 'uint16' : 'uint32';
-    }
-    var pipelineDescriptor = {
-      layout: layout,
-      vertex: vertexStage,
-      fragment: fragmentStage,
-      primitive: primitive,
-      depthStencil: {
-        format: depthFormat,
-        depthWriteEnabled: true,
-        depthCompare: 'less'
-      }
-    };
-    var renderPipeline = device.createRenderPipeline(pipelineDescriptor);
-    bundleEncoder.setBindGroup(2, this.material.bindGroup);
-    bundleEncoder.setPipeline(renderPipeline);
-    bundleEncoder.setVertexBuffer(0, this.positions.view.gpuBuffer, this.positions.byteOffset, this.positions.length);
-    if (this.normals) {
-      bundleEncoder.setVertexBuffer(1, this.normals.view.gpuBuffer, this.normals.byteOffset, this.normals.length);
-    }
-    if (this.texcoords.length > 0) {
-      bundleEncoder.setVertexBuffer(2, this.texcoords[0].view.gpuBuffer, this.texcoords[0].byteOffset, this.texcoords[0].length);
-    }
-    if (this.indices) {
-      var indexFormat = this.indices.componentType == GLTFComponentType.UNSIGNED_SHORT ? 'uint16' : 'uint32';
-      bundleEncoder.setIndexBuffer(this.indices.view.gpuBuffer, indexFormat, this.indices.byteOffset, this.indices.length);
-      bundleEncoder.drawIndexed(this.indices.count);
-    } else {
-      bundleEncoder.draw(this.positions.count);
-    }
-  }
 }
 exports.GLTFPrimitive = GLTFPrimitive;
 class GLTFMesh {
@@ -20824,38 +20629,6 @@ class GLTFNode {
     new Float32Array(buf.getMappedRange()).set(this.transform);
     buf.unmap();
     this.gpuUniforms = buf;
-  }
-  buildRenderBundle(device, shaderCache, viewParamsLayout, viewParamsBindGroup, swapChainFormat, depthFormat) {
-    var nodeParamsLayout = device.createBindGroupLayout({
-      entries: [{
-        binding: 0,
-        visibility: GPUShaderStage.VERTEX,
-        buffer: {
-          type: 'uniform'
-        }
-      }]
-    });
-    this.bindGroup = device.createBindGroup({
-      layout: nodeParamsLayout,
-      entries: [{
-        binding: 0,
-        resource: {
-          buffer: this.gpuUniforms
-        }
-      }]
-    });
-    var bindGroupLayouts = [viewParamsLayout, nodeParamsLayout];
-    var bundleEncoder = device.createRenderBundleEncoder({
-      colorFormats: [swapChainFormat],
-      depthStencilFormat: depthFormat
-    });
-    bundleEncoder.setBindGroup(0, viewParamsBindGroup);
-    bundleEncoder.setBindGroup(1, this.bindGroup);
-    for (var i = 0; i < this.mesh.primitives.length; ++i) {
-      this.mesh.primitives[i].buildRenderBundle(device, shaderCache, bindGroupLayouts, bundleEncoder, swapChainFormat, depthFormat);
-    }
-    this.renderBundle = bundleEncoder.finish();
-    return this.renderBundle;
   }
 }
 exports.GLTFNode = GLTFNode;
@@ -21059,33 +20832,18 @@ class GLBModel {
     this.glbJsonData = glbJsonData;
     this.glbBinaryBuffer = glbBinaryBuffer;
   }
-  buildRenderBundles(device, shaderCache, viewParamsLayout, viewParamsBindGroup, swapChainFormat) {
-    var renderBundles = [];
-    for (var i = 0; i < this.nodes.length; ++i) {
-      var n = this.nodes[i];
-      var bundle = n.buildRenderBundle(device, shaderCache, viewParamsLayout, viewParamsBindGroup, swapChainFormat, 'depth24plus-stencil8');
-      renderBundles.push(bundle);
-    }
-    return renderBundles;
-  }
 }
 exports.GLBModel = GLBModel;
 ;
-function getComponentSize(componentType) {
-  switch (componentType) {
-    case 5126:
-      return 4;
-    // float32
-    case 5123:
-      return 2;
-    // uint16
-    case 5121:
-      return 1;
-    // uint8
-    default:
-      throw new Error("Unknown componentType: " + componentType);
-  }
-}
+
+// function getComponentSize(componentType) {
+//   switch(componentType) {
+//     case 5126: return 4; // float32
+//     case 5123: return 2; // uint16
+//     case 5121: return 1; // uint8
+//     default: throw new Error("Unknown componentType: " + componentType);
+//   }
+// }
 
 // Upload a GLB model and return it
 async function uploadGLBModel(buffer, device) {
@@ -21158,7 +20916,6 @@ async function uploadGLBModel(buffer, device) {
         bufferViews[viewID].addUsage(GPUBufferUsage.INDEX);
         indices = new GLTFAccessor(bufferViews[viewID], accessor);
       }
-
       // Vertex attributes
       let positions = null,
         normals = null,
@@ -21167,8 +20924,6 @@ async function uploadGLBModel(buffer, device) {
       let joints = null;
       for (const attr in prim.attributes) {
         const accessor = glbJsonData.accessors[prim.attributes[attr]];
-        console.log("??????????attr??????" + attr);
-        console.log("??????????prim.attributes??????" + prim.attributes);
         const viewID = accessor.bufferView;
         bufferViews[viewID].needsUpload = true;
         bufferViews[viewID].addUsage(GPUBufferUsage.VERTEX);
@@ -21196,14 +20951,12 @@ async function uploadGLBModel(buffer, device) {
   for (const bv of bufferViews) if (bv.needsUpload) bv.upload(device);
   defaultMaterial.upload(device);
   for (const m of materials) m.upload(device);
-
   // 8️⃣ Skins (we only store the index of inverseBindMatrices here)
   const skins = (glbJsonData.skins || []).map(skin => ({
     name: skin.name,
     joints: skin.joints,
     inverseBindMatrices: skin.inverseBindMatrices // accessor index
   }));
-
   // 9️⃣ Nodes
   const nodes = [];
   const gltfNodes = makeGLTFSingleLevel(glbJsonData.nodes);
@@ -21226,20 +20979,16 @@ async function uploadGLBModel(buffer, device) {
       }
     }
   }
-
   // Ensure nodes without parent are root nodes
   for (const node of nodes) {
     if (node.parent === undefined) node.parent = null;
   }
-
-  // 🔟 Skinned mesh nodes
   const skinnedMeshNodes = nodes.filter(n => n.mesh && n.skin !== undefined);
   if (skinnedMeshNodes.length === 0) {
     console.warn('No skins found — mesh not bound to skeleton');
   } else {
     skinnedMeshNodes.forEach(n => {
       console.log('Mesh', n.mesh.name, 'uses skin index', n.skin);
-
       // Per-mesh uniform buffer (example)
       n.sceneUniformBuffer = device.createBuffer({
         size: 44 * 4,
@@ -21249,24 +20998,6 @@ async function uploadGLBModel(buffer, device) {
   }
   let R = new GLBModel(nodes, skins, skinnedMeshNodes, glbJsonData, glbBinaryBuffer);
   return R;
-}
-function createBVHToGLBMap(glb, bvh) {
-  const map = {};
-  for (const node of glb.nodes) {
-    if (bvh.joints[node.name]) {
-      map[node.name] = node;
-    }
-  }
-  return map;
-}
-function applyBVHToGLB(glb, bvhBones, device) {
-  for (const nodeName in bvhBones) {
-    const boneNode = glb.bvhToGLBMap[nodeName];
-    if (!boneNode) continue;
-    const bvhBone = bvhBones[nodeName];
-    boneNode.transform = bvhBone.worldMatrix;
-    boneNode.upload(device);
-  }
 }
 
 },{"gl-matrix":5}],25:[function(require,module,exports){

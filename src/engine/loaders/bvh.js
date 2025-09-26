@@ -36,20 +36,21 @@ export class BVHPlayer extends MEMeshObj {
   constructor(o, bvh, glb, primitiveIndex, skinnedNodeIndex, canvas, device, context, inputHandler, globalAmbient) {
     super(canvas, device, context, o, inputHandler, globalAmbient, glb, primitiveIndex, skinnedNodeIndex);
 
-    this.bvh = bvh;
+    // bvh arg not actula at hte moment
+    this.bvh = {};
     this.glb = glb;
     this.currentFrame = 0;
-    this.fps = bvh.fps || 30;
+    this.fps = 30;
     this.timeAccumulator = 0;
 
     this.scaleBoneTest = 1;
 
     this.primitiveIndex = primitiveIndex;
 
-    if(!bvh.sharedState) {
-      bvh.sharedState = {currentFrame: 0, timeAccumulator: 0};
+    if(!this.bvh.sharedState) {
+      this.bvh.sharedState = {currentFrame: 0, timeAccumulator: 0};
     }
-    this.sharedState = bvh.sharedState;
+    this.sharedState = this.bvh.sharedState;
 
     // Reference to the skinned node containing all bones
     this.skinnedNode = this.glb.skinnedMeshNodes[skinnedNodeIndex];
@@ -113,8 +114,8 @@ export class BVHPlayer extends MEMeshObj {
     // what is animation , check is it more - we look for Armature by defoult 
     // frendly blender
     this.glb.animationIndex = 0;
-    for (let j = 0 ; j < this.glb.glbJsonData.animations.length; j++) {
-      if (this.glb.glbJsonData.animations[j].name.indexOf('Armature') !== -1) {
+    for(let j = 0;j < this.glb.glbJsonData.animations.length;j++) {
+      if(this.glb.glbJsonData.animations[j].name.indexOf('Armature') !== -1) {
         this.glb.animationIndex = j;
       }
     }
@@ -133,23 +134,19 @@ export class BVHPlayer extends MEMeshObj {
     console.log('Inverse bind matrices loaded:', this.inverseBindMatrices.length, 'bones');
   }
 
-  setupBVHJointIndices() {
-    // this.bvh.jointIndices = {};
-    // const skin = this.glb.skins[this.skinnedNode.skin]; // get skin for this node
-    // const bones = skin.joints; // indices of joints in GLB
-    // const jointNames = Object.keys(this.bvh.joints);
-    // jointNames.forEach((name, i) => {
-    //   if(i < bones.length) {
-    //     this.bvh.jointIndices[name] = i;
-    //   }
-    // });
+  getNumberOfAnimation() {
+    let anim = this.glb.glbJsonData.animations[this.glb.animationIndex]
+    const sampler = anim.samplers[0];
+    const inputAccessor = this.glb.glbJsonData.accessors[sampler.input];
+    const numFrames = inputAccessor.count;
+    return numFrames;
   }
 
   update(deltaTime) {
     const frameTime = 1 / this.fps;
     this.sharedState.timeAccumulator += deltaTime;
     while(this.sharedState.timeAccumulator >= frameTime) {
-      this.sharedState.currentFrame = (this.sharedState.currentFrame + 1) % this.bvh.keyframes.length;
+      this.sharedState.currentFrame = (this.sharedState.currentFrame + 1) %  this.getNumberOfAnimation();
       this.sharedState.timeAccumulator -= frameTime;
     }
     // const frame = this.sharedState.currentFrame;
@@ -158,81 +155,6 @@ export class BVHPlayer extends MEMeshObj {
     if(this.glb.glbJsonData.animations && this.glb.glbJsonData.animations.length > 0) {
       this.updateSingleBoneCubeAnimation(this.glb.glbJsonData.animations[this.glb.animationIndex], this.glb.nodes, currentTime, boneMatrices)
     }
-  }
-
-  applyBVHToGLB(frameIndex) {
-    const keyframe = this.bvh.keyframes[frameIndex]; // flat array
-    const skin = this.glb.skins[this.skinnedNode.skin];
-    const numBones = skin.joints.length;
-    const bonesData = new Float32Array(16 * numBones); // final matrices per bone
-
-    const scale = -0.1; // adjust if mesh too small/large
-    let offsetInFrame = 0;
-
-    const traverseJoint = (joint, parentMat) => {
-      const t = [0, 0, 0];
-      const r = [0, 0, 0];
-
-      // Extract channels from BVH keyframe
-      for(const channel of joint.channels) {
-        const value = keyframe[offsetInFrame++];
-        if(channel === 'Xposition') t[0] = value;
-        else if(channel === 'Yposition') t[1] = value;
-        else if(channel === 'Zposition') t[2] = value;
-        else if(channel === 'Xrotation') r[0] = value;
-        else if(channel === 'Yrotation') r[1] = value;
-        else if(channel === 'Zrotation') r[2] = value;
-      }
-
-      // Local translation (apply before rotation)
-      const translation = [
-        (t[0] + joint.offset[0]) * scale,
-        (t[1] + joint.offset[1]) * scale,
-        (t[2] + joint.offset[2]) * scale
-      ];
-
-      // Build local matrix
-      let localMat = mat4.identity();
-      mat4.translate(localMat, translation, localMat); // translation first
-      mat4.rotateX(localMat, degToRad(r[0]), localMat);
-      mat4.rotateY(localMat, degToRad(r[1]), localMat);
-      mat4.rotateZ(localMat, degToRad(r[2]), localMat);
-
-      // Combine with parent matrix
-      const finalMat = mat4.create();
-      mat4.identity(finalMat); // must initialize to identity!
-      mat4.multiply(parentMat, localMat, finalMat); // ✅ correct
-
-      // Apply inverse bind matrix if exists
-      const boneIndex = this.bvh.jointIndices[joint.name];
-      if(boneIndex !== undefined) {
-        const invBind = this.inverseBindMatrices[boneIndex]; // Float32Array[16]
-        if(invBind) {
-          const finalBoneMat = mat4.create();
-
-          // mat4.multiply(finalBoneMat, finalMat, invBind); // finalBoneMat = finalMat * invBind
-          mat4.multiply(finalMat, invBind, finalBoneMat); // finalBoneMat = finalMat * invBind
-
-          bonesData.set(finalBoneMat, boneIndex * 16);
-        } else {
-          bonesData.set(finalMat, boneIndex * 16); // fallback if invBind missing
-        }
-      }
-
-      // Recurse children
-      for(const child of joint.children) {
-        traverseJoint(child, finalMat);
-      }
-
-      // Upload to GPU
-      this.device.queue.writeBuffer(this.bonesBuffer, 0, bonesData);
-
-    };
-
-    // Start recursion from BVH root
-    traverseJoint(this.bvh.root, mat4.identity());
-
-
   }
 
   computeNodeWorldMatrices() {
@@ -275,7 +197,7 @@ export class BVHPlayer extends MEMeshObj {
       accessor.count *
       this.getNumComponents(accessor.type) *
       (accessor.componentType === 5126 ? 4 : 2); // adjust per type
-    const bufferDef =  glb.glbBinaryBuffer;
+    const bufferDef = glb.glbBinaryBuffer;
     // ✅ now just slice:
     const slice = this.getBufferSlice(bufferDef, byteOffset, byteLength);
     switch(accessor.componentType) {

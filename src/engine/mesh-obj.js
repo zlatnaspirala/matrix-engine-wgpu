@@ -200,7 +200,7 @@ export default class MEMeshObj extends Materials {
       };
       const numVerts = this.mesh.vertices.length / 3;
       // Weights data (vec4<f32>) – default all weight to bone 0
-      const weightsData = new Float32Array(numVerts * 4 * 4);
+      const weightsData = new Float32Array(numVerts * 4);
       for(let i = 0;i < numVerts;i++) {
         weightsData[i * 4 + 0] = 1.0; // 100% influence of bone 0
         weightsData[i * 4 + 1] = 0.0;
@@ -669,8 +669,8 @@ export default class MEMeshObj extends Materials {
   }
 
   drawElementsAnim = (renderPass) => {
-    if(!this.sceneBindGroupForRender || !this.modelBindGroup) {console.log(' NULL 1');return;}
-    if(!this.objAnim.meshList[this.objAnim.id + this.objAnim.currentAni]) {console.log(' NULL 2');return;}
+    if(!this.sceneBindGroupForRender || !this.modelBindGroup) {console.log(' NULL 1'); return;}
+    if(!this.objAnim.meshList[this.objAnim.id + this.objAnim.currentAni]) {console.log(' NULL 2'); return;}
 
     renderPass.setBindGroup(0, this.sceneBindGroupForRender);
     renderPass.setBindGroup(1, this.modelBindGroup);
@@ -678,6 +678,16 @@ export default class MEMeshObj extends Materials {
     renderPass.setVertexBuffer(0, mesh.vertexBuffer);
     renderPass.setVertexBuffer(1, mesh.vertexNormalsBuffer);
     renderPass.setVertexBuffer(2, mesh.vertexTexCoordsBuffer);
+
+    if(this.constructor.name === "BVHPlayer") {
+      renderPass.setVertexBuffer(3, this.mesh.jointsBuffer);  // real
+      renderPass.setVertexBuffer(4, this.mesh.weightsBuffer); //real
+    } else {
+      // dummy
+      renderPass.setVertexBuffer(3, this.joints.buffer);  // new dummy
+      renderPass.setVertexBuffer(4, this.weights.buffer); // new dummy
+    }
+
     renderPass.setIndexBuffer(mesh.indexBuffer, 'uint16');
     renderPass.drawIndexed(mesh.indexCount);
 
@@ -699,13 +709,6 @@ export default class MEMeshObj extends Materials {
     shadowPass.setVertexBuffer(0, this.vertexBuffer);
     shadowPass.setVertexBuffer(1, this.vertexNormalsBuffer);
     shadowPass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
-
-    // dummy joints & weights for shadow pass ??
-    // if(this.joints && this.weights) {
-    //   shadowPass.setVertexBuffer(3, this.joints.buffer);
-    //   shadowPass.setVertexBuffer(4, this.weights.buffer);
-    // }
-
     shadowPass.setIndexBuffer(this.indexBuffer, 'uint16');
     shadowPass.drawIndexed(this.indexCount);
   }
