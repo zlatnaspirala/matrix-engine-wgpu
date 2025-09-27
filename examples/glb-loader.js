@@ -15,7 +15,6 @@ let TEST_ANIM = new MatrixEngineWGPU({
 }, () => {
 
   addEventListener('AmmoReady', async () => {
-
     setTimeout(() => {
       app.cameras.WASD.yaw = -0.03;
       app.cameras.WASD.pitch = -0.49;

@@ -26,16 +26,13 @@ export default class MatrixEngineWGPU {
   lightContainer = [];
   frame = () => {};
   entityHolder = [];
-
   lastTime = 0;
-
   entityArgPass = {
     loadOp: 'clear',
     storeOp: 'store',
     depthLoadOp: 'clear',
     depthStoreOp: 'store'
   }
-
   matrixAmmo = new MatrixAmmo();
   matrixSounds = new MatrixSounds();
 
@@ -174,7 +171,6 @@ export default class MatrixEngineWGPU {
   createTexArrayForShadows() {
     let numberOfLights = this.lightContainer.length;
     if(this.lightContainer.length == 0) {
-      // console.warn('Wait for init light instance')
       setTimeout(() => {
         // console.info('Test light again...')
         this.createMe();
@@ -378,7 +374,7 @@ export default class MatrixEngineWGPU {
       // scale for all second option!
       o.objAnim.scaleAll = function(s) {
         for(var k in this.meshList) {
-          console.log('SCALE meshList');
+          // console.log('SCALE meshList');
           this.meshList[k].setScale(s);
         }
       }
@@ -405,7 +401,6 @@ export default class MatrixEngineWGPU {
   updateLights() {
     const floatsPerLight = 36; // not 20 anymore
     const data = new Float32Array(this.MAX_SPOTLIGHTS * floatsPerLight);
-
     for(let i = 0;i < this.MAX_SPOTLIGHTS;i++) {
       if(i < this.lightContainer.length) {
         const buf = this.lightContainer[i].getLightDataBuffer();
@@ -414,24 +409,19 @@ export default class MatrixEngineWGPU {
         data.set(new Float32Array(floatsPerLight), i * floatsPerLight);
       }
     }
-
     this.device.queue.writeBuffer(this.spotlightUniformBuffer, 0, data.buffer);
   }
 
   frameSinglePass = () => {
     if(typeof this.mainRenderBundle == 'undefined' || this.mainRenderBundle.length == 0) {
-      setTimeout(() => {requestAnimationFrame(this.frame)}, 200);
+      setTimeout(() => {requestAnimationFrame(this.frame)}, 100);
       return;
     }
-
-    let noPass = false;
-
     this.mainRenderBundle.forEach((meItem, index) => {
       if(meItem.isVideo == true) {
         if(!meItem.externalTexture) { // || meItem.video.readyState < 2) {
-          console.log('no rendere for video not ready')
-          //  this.externalTexture = this.device.importExternalTexture({source: this.video});
-          noPass = true;
+          // console.log('no rendere for video not ready')
+          // this.externalTexture = this.device.importExternalTexture({source: this.video});
           meItem.createBindGroupForRender();
           setTimeout(() => {
             requestAnimationFrame(this.frame)
@@ -441,14 +431,6 @@ export default class MatrixEngineWGPU {
       }
     })
 
-    // if(noPass == true) {
-    //   console.log('no rendere for video not ready !!!!')
-
-    //   return;
-    // }
-
-    // let pass;
-    // let commandEncoder;
     try {
       let commandEncoder = this.device.createCommandEncoder();
       this.updateLights()

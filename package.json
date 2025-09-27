@@ -1,6 +1,6 @@
 {
   "name": "matrix-engine-wgpu",
-  "version": "1.4.10",
+  "version": "1.5.0",
   "description": "Fixed shadows casting vs camera/video texture, webGPU powered pwa application. Crazy fast rendering with AmmoJS physics support. Simple raycaster hit object added.",
   "main": "index.js",
   "scripts": {
@@ -11,7 +11,7 @@
     "build-all": "npm run main-worker | npm run examples | npm run main | npm run empty",
     "hosts": "http-server ./public/ -p 3000",
     "build.test": "browserify main.js -p esmify > public/app.js",
-    "test1": "watchify ./examples/bvh-gltf-test.js -p [esmify --noImplicitAny] -o public/app.js"
+    "glb-loader": "watchify ./examples/glb-loader.js -p [esmify --noImplicitAny] -o public/app.js"
   },
   "author": "Nikola Lukic",
   "license": "MIT",
