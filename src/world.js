@@ -428,20 +428,24 @@ export default class MatrixEngineWGPU {
 
     this.mainRenderBundle.forEach((meItem, index) => {
       if(meItem.isVideo == true) {
-        if(!meItem.externalTexture || meItem.video.readyState < 2) {
+        if(!meItem.externalTexture) { // || meItem.video.readyState < 2) {
           console.log('no rendere for video not ready')
           //  this.externalTexture = this.device.importExternalTexture({source: this.video});
           noPass = true;
-          setTimeout(() => requestAnimationFrame(this.frame), 1500)
+          meItem.createBindGroupForRender();
+          setTimeout(() => {
+            requestAnimationFrame(this.frame)
+          }, 1000)
           return;
         }
       }
     })
 
-    if(noPass == true) {
-      console.log('no rendere for video not ready !!!!')
-      return;
-    }
+    // if(noPass == true) {
+    //   console.log('no rendere for video not ready !!!!')
+
+    //   return;
+    // }
 
     // let pass;
     // let commandEncoder;

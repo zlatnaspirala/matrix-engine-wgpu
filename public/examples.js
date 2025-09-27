@@ -21533,7 +21533,6 @@ class Materials {
     });
   }
   async loadVideoTexture(arg) {
-    // this.isVideo = true;
     this.videoIsReady = 'MAYBE';
     if (arg.type === 'video') {
       this.video = document.createElement('video');
@@ -21544,7 +21543,7 @@ class Materials {
       document.body.append(this.video);
       this.video.style.display = 'none';
       this.video.style.position = 'absolute';
-      this.video.style.top = '50px';
+      this.video.style.top = '750px';
       this.video.style.left = '50px';
       await this.video.play();
       this.isVideo = true;
@@ -21639,7 +21638,7 @@ class Materials {
       });
       this.createBindGroupForRender();
       this.videoIsReady = 'YES';
-      console.log("✅ video bind group created [createBindGroupForRender()]");
+      console.log("✅ video bind group created in updateV[createBindGroupForRender()]");
     } else {
       this.externalTexture = this.device.importExternalTexture({
         source: this.video
@@ -21653,7 +21652,9 @@ class Materials {
       if (!textureResource) console.warn("❗Missing res texture: ", textureResource);
       if (!this.sceneUniformBuffer) console.warn("❗Missing res: this.sceneUniformBuffer: ", this.sceneUniformBuffer);
       if (!this.shadowDepthTextureView) console.warn("❗Missing res: this.shadowDepthTextureView: ", this.shadowDepthTextureView);
-      if (typeof textureResource === 'undefined') this.updateVideoTexture();
+      if (typeof textureResource === 'undefined') {
+        this.updateVideoTexture();
+      }
       return;
     } else {}
     if (this.isVideo == true) {
@@ -21684,10 +21685,8 @@ class Materials {
           }
         }]
       });
-
-      // special case for video meybe better solution exist 
-      // this.setupPipeline();
-      this.video.play();
+      // Special case for video maybe better solution exist
+      if (this.video.paused == true) this.video.play();
     } else {
       this.sceneBindGroupForRender = this.device.createBindGroup({
         layout: this.bglForRender,
@@ -21797,7 +21796,7 @@ class Materials {
       entries: e
     });
     if (this.isVideo == true) {
-      this.createBindGroupForRender();
+      // this.createBindGroupForRender();
     }
   }
 }
@@ -25242,19 +25241,25 @@ class MatrixEngineWGPU {
     let noPass = false;
     this.mainRenderBundle.forEach((meItem, index) => {
       if (meItem.isVideo == true) {
-        if (!meItem.externalTexture || meItem.video.readyState < 2) {
+        if (!meItem.externalTexture) {
+          // || meItem.video.readyState < 2) {
           console.log('no rendere for video not ready');
           //  this.externalTexture = this.device.importExternalTexture({source: this.video});
           noPass = true;
-          setTimeout(() => requestAnimationFrame(this.frame), 1500);
+          meItem.createBindGroupForRender();
+          setTimeout(() => {
+            requestAnimationFrame(this.frame);
+          }, 1000);
           return;
         }
       }
     });
-    if (noPass == true) {
-      console.log('no rendere for video not ready !!!!');
-      return;
-    }
+
+    // if(noPass == true) {
+    //   console.log('no rendere for video not ready !!!!')
+
+    //   return;
+    // }
 
     // let pass;
     // let commandEncoder;
