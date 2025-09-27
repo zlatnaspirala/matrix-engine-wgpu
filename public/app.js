@@ -62,6 +62,7 @@ let TEST_ANIM = new _world.default({
   });
   function onGround(m) {
     TEST_ANIM.addLight();
+    TEST_ANIM.globalAmbient[1] = 1.5;
     TEST_ANIM.addMeshObj({
       position: {
         x: 0,

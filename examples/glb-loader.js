@@ -53,6 +53,8 @@ let TEST_ANIM = new MatrixEngineWGPU({
 
   function onGround(m) {
     TEST_ANIM.addLight();
+    TEST_ANIM.globalAmbient[1] = 1.5;
+
     TEST_ANIM.addMeshObj({
       position: {x: 0, y: -5, z: -10},
       rotation: {x: 0, y: 0, z: 0},
