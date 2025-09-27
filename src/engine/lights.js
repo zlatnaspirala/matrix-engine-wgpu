@@ -61,7 +61,7 @@ export class SpotLight {
       this.far
     );
 
-    this.setProjection = function(fov = (2*Math.PI) / 5 , aspect = 1.0, near = 0.1, far = 200) {
+    this.setProjection = function(fov = (2 * Math.PI) / 5, aspect = 1.0, near = 0.1, far = 200) {
       this.projectionMatrix = mat4.perspective(fov, aspect, near, far);
     }
 
@@ -117,7 +117,7 @@ export class SpotLight {
     }
 
     this.uniformBufferBindGroupLayout = this.device.createBindGroupLayout({
-      label: 'modelBindGroup in light',
+      label: 'uniformBufferBindGroupLayout in light',
       entries: [
         {
           binding: 0,
@@ -130,6 +130,7 @@ export class SpotLight {
     });
 
     this.shadowBindGroupContainer = [];
+    this.shadowBindGroup = [];
 
     this.getShadowBindGroup = (mesh, index) => {
 
@@ -152,12 +153,42 @@ export class SpotLight {
       return this.shadowBindGroupContainer[index];
     }
 
-    this.modelBindGroupLayout = this.device.createBindGroupLayout({entries: [{binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}, },], });
+    // test
+    this.getShadowBindGroup_bones = (index) => {
+
+      if(this.shadowBindGroup[index]) {
+        return this.shadowBindGroup[index];
+      }
+
+      this.modelUniformBuffer = this.device.createBuffer({
+        size: 4 * 16, // 4x4 matrix
+        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+      });
+
+      this.shadowBindGroup[index] = this.device.createBindGroup({
+        label: 'model BindGroupForShadow in light',
+        layout: this.uniformBufferBindGroupLayout,
+        entries: [
+          {
+            binding: 0,
+            resource: {
+              buffer: this.modelUniformBuffer,
+            },
+          },
+        ],
+      });
+      return this.shadowBindGroupContainer[index];
+    }
+
+    this.modelBindGroupLayout = this.device.createBindGroupLayout({
+      label: 'modelBindGroupLayout in light [one bindings]',
+      entries: [{binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}, },]
+    });
 
     this.shadowPipeline = this.device.createRenderPipeline({
       label: 'shadowPipeline per light',
       layout: this.device.createPipelineLayout({
-        label: 'createPipelineLayout - uniformBufferBindGroupLayout',
+        label: 'createPipelineLayout - uniformBufferBindGroupLayout light',
         bindGroupLayouts: [
           this.uniformBufferBindGroupLayout,
           this.modelBindGroupLayout,

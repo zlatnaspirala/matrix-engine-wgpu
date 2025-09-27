@@ -10,6 +10,7 @@ import {MultiLang} from "./multilang/lang.js";
 import {MatrixSounds} from "./sounds/sounds.js";
 import {play} from "./engine/loader-obj.js";
 import {SpotLight} from "./engine/lights.js";
+import {BVHPlayer} from "./engine/loaders/bvh.js";
 
 /**
  * @description
@@ -25,14 +26,13 @@ export default class MatrixEngineWGPU {
   lightContainer = [];
   frame = () => {};
   entityHolder = [];
-
+  lastTime = 0;
   entityArgPass = {
     loadOp: 'clear',
     storeOp: 'store',
     depthLoadOp: 'clear',
     depthStoreOp: 'store'
   }
-
   matrixAmmo = new MatrixAmmo();
   matrixSounds = new MatrixSounds();
 
@@ -171,7 +171,6 @@ export default class MatrixEngineWGPU {
   createTexArrayForShadows() {
     let numberOfLights = this.lightContainer.length;
     if(this.lightContainer.length == 0) {
-      // console.warn('Wait for init light instance')
       setTimeout(() => {
         // console.info('Test light again...')
         this.createMe();
@@ -375,7 +374,7 @@ export default class MatrixEngineWGPU {
       // scale for all second option!
       o.objAnim.scaleAll = function(s) {
         for(var k in this.meshList) {
-          console.log('SCALE meshList');
+          // console.log('SCALE meshList');
           this.meshList[k].setScale(s);
         }
       }
@@ -402,7 +401,6 @@ export default class MatrixEngineWGPU {
   updateLights() {
     const floatsPerLight = 36; // not 20 anymore
     const data = new Float32Array(this.MAX_SPOTLIGHTS * floatsPerLight);
-
     for(let i = 0;i < this.MAX_SPOTLIGHTS;i++) {
       if(i < this.lightContainer.length) {
         const buf = this.lightContainer[i].getLightDataBuffer();
@@ -411,37 +409,28 @@ export default class MatrixEngineWGPU {
         data.set(new Float32Array(floatsPerLight), i * floatsPerLight);
       }
     }
-
     this.device.queue.writeBuffer(this.spotlightUniformBuffer, 0, data.buffer);
   }
 
   frameSinglePass = () => {
     if(typeof this.mainRenderBundle == 'undefined' || this.mainRenderBundle.length == 0) {
-      setTimeout(() => {requestAnimationFrame(this.frame)}, 200);
+      setTimeout(() => {requestAnimationFrame(this.frame)}, 100);
       return;
     }
-
-    let noPass = false;
-
     this.mainRenderBundle.forEach((meItem, index) => {
       if(meItem.isVideo == true) {
-        if(!meItem.externalTexture || meItem.video.readyState < 2) {
-          console.log('no rendere for video not ready')
-          //  this.externalTexture = this.device.importExternalTexture({source: this.video});
-          noPass = true;
-          setTimeout(() => requestAnimationFrame(this.frame), 1500)
+        if(!meItem.externalTexture) { // || meItem.video.readyState < 2) {
+          // console.log('no rendere for video not ready')
+          // this.externalTexture = this.device.importExternalTexture({source: this.video});
+          meItem.createBindGroupForRender();
+          setTimeout(() => {
+            requestAnimationFrame(this.frame)
+          }, 1000)
           return;
         }
       }
     })
 
-    if(noPass == true) {
-      console.log('no rendere for video not ready !!!!')
-      return;
-    }
-
-    // let pass;
-    // let commandEncoder;
     try {
       let commandEncoder = this.device.createCommandEncoder();
       this.updateLights()
@@ -451,7 +440,7 @@ export default class MatrixEngineWGPU {
         this.mainRenderBundle.forEach((meItem, index) => {
           meItem.position.update()
           meItem.updateModelUniformBuffer()
-          meItem.getTransformationMatrix(this.mainRenderBundle, light)
+          meItem.getTransformationMatrix(this.mainRenderBundle, light) // >check optisation
         })
       }
       if(this.matrixAmmo) this.matrixAmmo.updatePhysics();
@@ -481,7 +470,8 @@ export default class MatrixEngineWGPU {
         for(const [meshIndex, mesh] of this.mainRenderBundle.entries()) {
           if(mesh.videoIsReady == 'NONE') {
             shadowPass.setBindGroup(0, light.getShadowBindGroup(mesh, meshIndex));
-            shadowPass.setBindGroup(1, mesh.modelBindGroup);
+            // shadowPass.setBindGroup(1, mesh.modelBindGroup); // ORI 
+            shadowPass.setBindGroup(1, light.getShadowBindGroup_bones(meshIndex)); // ORI 
             mesh.drawShadows(shadowPass, light);
           }
         }
@@ -492,6 +482,15 @@ export default class MatrixEngineWGPU {
       let pass = commandEncoder.beginRenderPass(this.mainRenderPassDesc);
       // Loop over each mesh
       for(const mesh of this.mainRenderBundle) {
+        if(mesh.update) {
+
+          const now = performance.now() / 1000; // seconds
+          const deltaTime = now - (this.lastTime || now);
+          this.lastTime = now;
+
+          mesh.update(deltaTime); // glb
+          // mesh.updateBones()
+        }
         pass.setPipeline(mesh.pipeline);
         if(!mesh.sceneBindGroupForRender || (mesh.FINISH_VIDIO_INIT == false && mesh.isVideo == true)) {
           for(const m of this.mainRenderBundle) {
@@ -512,7 +511,7 @@ export default class MatrixEngineWGPU {
       this.device.queue.submit([commandEncoder.finish()]);
       requestAnimationFrame(this.frame);
     } catch(err) {
-      console.log('%cLoop(err):' + err, LOG_WARN)
+      console.log('%cLoop(err):' + err + " info : " + err.stack, LOG_WARN)
       requestAnimationFrame(this.frame);
     }
   }
@@ -541,5 +540,78 @@ export default class MatrixEngineWGPU {
     });
     this.device.queue.submit([commandEncoder.finish()]);
     requestAnimationFrame(this.frame);
+  }
+
+  // ---------------------------------------
+  addGlbObj = (o, BVHANIM, glbFile, clearColor = this.options.clearColor) => {
+    if(typeof o.name === 'undefined') {o.name = genName(9)}
+    if(typeof o.position === 'undefined') {o.position = {x: 0, y: 0, z: -4}}
+    if(typeof o.rotation === 'undefined') {o.rotation = {x: 0, y: 0, z: 0}}
+    if(typeof o.rotationSpeed === 'undefined') {o.rotationSpeed = {x: 0, y: 0, z: 0}}
+    if(typeof o.texturesPaths === 'undefined') {o.texturesPaths = ['./res/textures/default.png']}
+    if(typeof o.mainCameraParams === 'undefined') {o.mainCameraParams = this.mainCameraParams}
+    if(typeof o.scale === 'undefined') {o.scale = [1, 1, 1];}
+    if(typeof o.raycast === 'undefined') {o.raycast = {enabled: false, radius: 2}}
+    o.entityArgPass = this.entityArgPass;
+    o.cameras = this.cameras;
+    if(typeof o.physics === 'undefined') {
+      o.physics = {
+        scale: [1, 1, 1],
+        enabled: true,
+        geometry: "Sphere",//                   must be fixed<<
+        radius: (typeof o.scale == Number ? o.scale : o.scale[0]),
+        name: o.name,
+        rotation: o.rotation
+      }
+    }
+    if(typeof o.physics.enabled === 'undefined') {o.physics.enabled = true}
+    if(typeof o.physics.geometry === 'undefined') {o.physics.geometry = "Cube"}
+    if(typeof o.physics.radius === 'undefined') {o.physics.radius = o.scale}
+    if(typeof o.physics.mass === 'undefined') {o.physics.mass = 1;}
+    if(typeof o.physics.name === 'undefined') {o.physics.name = o.name;}
+    if(typeof o.physics.scale === 'undefined') {o.physics.scale = o.scale;}
+    if(typeof o.physics.rotation === 'undefined') {o.physics.rotation = o.rotation;}
+    o.physics.position = o.position;
+    if(typeof o.objAnim == 'undefined' || typeof o.objAnim == null) {
+      o.objAnim = null;
+    } else {
+      alert('GLB not use objAnim (it is only for obj sequence). GLB use BVH skeletal for animation');
+    }
+    // let myMesh1 = new MEMeshObj(this.canvas, this.device, this.context, o, this.inputHandler, this.globalAmbient);
+
+
+    let skinnedNodeIndex = 0;
+    for(const skinnedNode of glbFile.skinnedMeshNodes) {
+      let c = 0;
+      for(const primitive of skinnedNode.mesh.primitives) {
+        console.log(`count: ${c} primitive-glb: ${primitive}`);
+        // primitive is mesh - probably with own material . material/texture per primitive
+        // create scene object for each
+        // --
+        // 
+        o.name = o.name + "-GLBGroup-" + c;
+        const bvhPlayer = new BVHPlayer(
+          o,
+          BVHANIM,
+          glbFile,
+          c,
+          skinnedNodeIndex,
+          this.canvas,
+          this.device,
+          this.context,
+          this.inputHandler,
+          this.globalAmbient);
+        console.log(`bvhPlayer!!!!!: ${bvhPlayer}`);
+        bvhPlayer.spotlightUniformBuffer = this.spotlightUniformBuffer;
+        bvhPlayer.clearColor = clearColor;
+        // if(o.physics.enabled == true) {
+        //   this.matrixAmmo.addPhysics(myMesh1, o.physics)
+        // }
+        this.mainRenderBundle.push(bvhPlayer);
+        c++;
+      }
+    }
+
+
   }
 }

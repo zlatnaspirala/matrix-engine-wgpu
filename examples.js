@@ -55,12 +55,8 @@ byId('video-texture').addEventListener("click", () => {
 })
 
 byId('jamb').addEventListener("click", () => {
-  // byId('unlitTextures').setAttribute('disabled', true)
-  // byId('loadObjFile').setAttribute('disabled', true)
-  // byId('jamb').removeAttribute('disabled')
-  if(typeof app !== "undefined") app.destroyProgram()
-  destroyJambDoms();
-  // loadJamb()
+  
+  open("https://maximumroulette.com/apps/webgpu/");
 })
 
 byId('objs-anim').addEventListener("click", () => {

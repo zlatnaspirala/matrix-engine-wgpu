@@ -11,7 +11,6 @@ export default class Materials {
     this.device = device;
     this.isVideo = false;
     this.videoIsReady = 'NONE';
-    // this.compareSampler = this.device.createSampler({compare: 'less'});
     this.compareSampler = this.device.createSampler({
       compare: 'less-equal',           // safer for shadow comparison
       addressModeU: 'clamp-to-edge',   // prevents UV leaking outside
@@ -29,13 +28,11 @@ export default class Materials {
       magFilter: 'linear',
       minFilter: 'linear',
     });
-
     // FX effect
     this.postFXModeBuffer = this.device.createBuffer({
       size: 4, // u32 = 4 bytes
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
-
     // Dymmy buffer
     this.dummySpotlightUniformBuffer = this.device.createBuffer({
       size: 80, // Must match size in shader
@@ -75,7 +72,6 @@ export default class Materials {
   }
 
   async loadVideoTexture(arg) {
-    // this.isVideo = true;
     this.videoIsReady = 'MAYBE';
     if(arg.type === 'video') {
       this.video = document.createElement('video');
@@ -86,7 +82,7 @@ export default class Materials {
       document.body.append(this.video);
       this.video.style.display = 'none';
       this.video.style.position = 'absolute';
-      this.video.style.top = '50px';
+      this.video.style.top = '750px';
       this.video.style.left = '50px';
       await this.video.play();
       this.isVideo = true;
@@ -108,7 +104,6 @@ export default class Materials {
           },
           audio: false
         }));
-
         this.video.srcObject = stream;
         await this.video.play();
         this.isVideo = true;
@@ -125,10 +120,7 @@ export default class Materials {
       this.video.style.display = 'none';
       document.body.append(this.video);
       const stream = arg.el.captureStream?.() || arg.el.mozCaptureStream?.();
-      if(!stream) {
-        console.error('❌ Cannot capture stream from canvas2d');
-        return;
-      }
+      if(!stream) {console.error('❌ Cannot capture stream from canvas2d'); return;}
       this.video.srcObject = stream;
       await this.video.play();
       this.isVideo = true;
@@ -146,7 +138,6 @@ export default class Materials {
         };
         drawLoop();
       }
-
       this.video = document.createElement('video');
       this.video.autoplay = true;
       this.video.muted = true;
@@ -162,12 +153,10 @@ export default class Materials {
       this.video.srcObject = stream;
       await this.video.play();
     }
-
     this.sampler = this.device.createSampler({
       magFilter: 'linear',
       minFilter: 'linear',
     });
-
     // ✅ Now - maybe noT
     this.createLayoutForRender();
   }
@@ -179,7 +168,7 @@ export default class Materials {
       this.externalTexture = this.device.importExternalTexture({source: this.video});
       this.createBindGroupForRender();
       this.videoIsReady = 'YES';
-      console.log("✅ video bind group created [createBindGroupForRender()]");
+      console.log("✅video bind group");
     } else {
       this.externalTexture = this.device.importExternalTexture({source: this.video});
       this.createBindGroupForRender();
@@ -194,84 +183,47 @@ export default class Materials {
       if(!textureResource) console.warn("❗Missing res texture: ", textureResource);
       if(!this.sceneUniformBuffer) console.warn("❗Missing res: this.sceneUniformBuffer: ", this.sceneUniformBuffer);
       if(!this.shadowDepthTextureView) console.warn("❗Missing res: this.shadowDepthTextureView: ", this.shadowDepthTextureView);
-      if(typeof textureResource === 'undefined') this.updateVideoTexture();
+      if(typeof textureResource === 'undefined') {
+        this.updateVideoTexture();
+      }
       return;
-    } else {
-
     }
     if(this.isVideo == true) {
-      // console.info("✅ video sceneBindGroupForRender ");
+      // console.info("✅ video sceneBindGroupForRender");
       this.sceneBindGroupForRender = this.device.createBindGroup({
         layout: this.bglForRender,
         entries: [
-          {
-            binding: 0,
-            resource: {buffer: this.sceneUniformBuffer},
-          },
-          {
-            binding: 1,
-            resource: this.shadowDepthTextureView,
-          },
-          {
-            binding: 2,
-            resource: this.compareSampler,
-          },
-          {
-            binding: 3,
-            resource: textureResource,
-          },
-          {
-            binding: 4,
-            resource: this.videoSampler,
-          },
+          {binding: 0, resource: {buffer: this.sceneUniformBuffer}, },
+          {binding: 1, resource: this.shadowDepthTextureView, },
+          {binding: 2, resource: this.compareSampler, },
+          {binding: 3, resource: textureResource, },
+          {binding: 4, resource: this.videoSampler, },
           {binding: 5, resource: {buffer: this.postFXModeBuffer}}
         ],
       });
-
-      // special case for video meybe better solution exist 
-      // this.setupPipeline();
-      this.video.play();
+      // Special case for video maybe better solution exist
+      if(this.video.paused == true) this.video.play();
     } else {
       this.sceneBindGroupForRender = this.device.createBindGroup({
         layout: this.bglForRender,
         entries: [
-          {
-            binding: 0,
-            resource: {buffer: this.sceneUniformBuffer},
-          },
-          {
-            binding: 1,
-            resource: this.shadowDepthTextureView,
-          },
-          {
-            binding: 2,
-            resource: this.compareSampler,
-          },
-          {
-            binding: 3,
-            resource: textureResource,
-          },
-          {
-            binding: 4,
-            resource: this.imageSampler,
-          },
-          {
-            binding: 5,
-            resource: {buffer: !this.spotlightUniformBuffer ? this.dummySpotlightUniformBuffer : this.spotlightUniformBuffer},
-          }
+          {binding: 0, resource: {buffer: this.sceneUniformBuffer}, },
+          {binding: 1, resource: this.shadowDepthTextureView, },
+          {binding: 2, resource: this.compareSampler, },
+          {binding: 3, resource: textureResource, },
+          {binding: 4, resource: this.imageSampler, },
+          {binding: 5, resource: {buffer: !this.spotlightUniformBuffer ? this.dummySpotlightUniformBuffer : this.spotlightUniformBuffer}, }
         ],
       });
     }
   }
 
   createLayoutForRender() {
-
-    if(this.isVideo == true) {
-      console.info("✅ createLayoutForRender video [bglForRender]");
-    } else {
-      console.info("✅ normal createLayoutForRender [bglForRender]");
-    }
-
+    // if(this.isVideo == true) {
+    //   console.info("✅ createLayoutForRender video [bglForRender]");
+    // } else {
+    //   console.info("✅ normal createLayoutForRender [bglForRender]");
+    // }
     let e = [
       {
         binding: 0,
@@ -341,16 +293,7 @@ export default class Materials {
           }
         ])
     ];
-
-    console.log("BG E : ", e)
-
-    this.bglForRender = this.device.createBindGroupLayout({
-      label: 'bglForRender',
-      entries: e,
-    });
-
-    if(this.isVideo == true) {
-      this.createBindGroupForRender();
-    }
+    // console.log("BG E : ", e)
+    this.bglForRender = this.device.createBindGroupLayout({label: 'bglForRender', entries: e, });
   }
 }

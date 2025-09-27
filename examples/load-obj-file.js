@@ -24,10 +24,17 @@ export var loadObjFile = function() {
       }, onGround,
         {scale: [20, 1, 20]})
 
-        // loadObjFile.addLight();
+      // loadObjFile.addLight();
     })
 
     function onGround(m) {
+
+      setTimeout(() => {
+        app.cameras.WASD.yaw = -0.03;
+        app.cameras.WASD.pitch = -0.49;
+        app.cameras.WASD.position[2] = 0;
+        app.cameras.WASD.position[1] = 3.76;
+      }, 500)
 
       loadObjFile.addMeshObj({
         position: {x: 0, y: -5, z: -10},
@@ -83,7 +90,7 @@ export var loadObjFile = function() {
       console.log(`%c Test access scene ${TEST} object.`, LOG_MATRIX);
 
       loadObjFile.addLight();
-      loadObjFile.lightContainer[0].behavior.setOsc0(-1,1,0.1)
+      loadObjFile.lightContainer[0].behavior.setOsc0(-1, 1, 0.1)
       loadObjFile.lightContainer[0].behavior.value_ = -1;
       loadObjFile.lightContainer[0].updater.push((light) => {
         light.position[0] = light.behavior.setPath0()

@@ -30,7 +30,7 @@ Published on npm as: **`matrix-engine-wgpu`**
 - ✔️ Support for 3D objects and scene transformations
 - 🎯 Replicate matrix-engine (WebGL) features
 - 📦 Based on the `shadowMapping` sample from [webgpu-samples](https://webgpu.github.io/webgpu-samples/?sample=shadowMapping)
-- ✔️ Ammo.js physics integration (basic cube)
+- ✔️ Ammo.js physics full integration
 
 ---
 
@@ -46,7 +46,7 @@ Published on npm as: **`matrix-engine-wgpu`**
   app.mainRenderBundle[0];
   ```
 
-  or
+  or by name:
 
   ```js
   app.getSceneObjectByName("Sphere1");
@@ -378,11 +378,16 @@ export var loadObjsSequence = function () {
 };
 ```
 
+💡 GLB binary loading bvh(rig)animations.
+ - See examples glb-loader.js (build with npm run glb-loader)
+ - Next update materials improvements!
+ - No light affect for now.
+
 ### 📽️ Video textures
 
 ```js
 TEST.loadVideoTexture({
-  type: "video", // video , camera  //not tested yet canvas2d , canvas2dinline
+  type: "video", // video , camera  //not tested canvas2d, canvas2dinline
   src: "res/videos/tunel.mp4",
 });
 ```
@@ -479,6 +484,7 @@ This is static file storage.
 ## Live Demos & Dev Links
 
 - [Jamb WebGPU Demo (WIP)](https://maximumroulette.com/apps/webgpu/)
+  Support on https://goldenspiral.itch.io/jamb-3d-deluxe
 - [CodePen Demo](https://codepen.io/zlatnaspirala/pen/VwNKMar?editors=0011)
   → Uses `empty.js` build from:
   [https://maximumroulette.com/apps/megpu/empty.js](https://maximumroulette.com/apps/megpu/empty.js)
@@ -509,8 +515,8 @@ You may use, modify, and sell projects based on this code — just keep this not
   [http://math.hws.edu/graphicsbook/source/webgl/cube-camera.html](http://math.hws.edu/graphicsbook/source/webgl/cube-camera.html)
 - Dice roll sound `roll1.wav` sourced from:
   [https://wavbvkery.com/dice-rolling-sound/](https://wavbvkery.com/dice-rolling-sound/)
-- Raycasting logic assisted by ChatGPT
-
+- Raycasting logic and glb loader assisted by ChatGPT.
+- GLTF Loader: https://github.com/Twinklebear/webgpu-gltf, improved with chatgpt.
 - Music by <a href="https://pixabay.com/users/mfcc-28627740/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=274290">Mykola Sosin</a> from <a href="https://pixabay.com//?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=274290">Pixabay</a>
 
 ---

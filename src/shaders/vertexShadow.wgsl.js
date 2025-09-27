@@ -17,4 +17,4 @@ fn main(
 ) -> @builtin(position) vec4f {
   return scene.lightViewProjMatrix * model.modelMatrix * vec4(position, 1);
 }
-`
+`;
