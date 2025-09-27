@@ -21469,7 +21469,6 @@ class Materials {
     this.device = device;
     this.isVideo = false;
     this.videoIsReady = 'NONE';
-    // this.compareSampler = this.device.createSampler({compare: 'less'});
     this.compareSampler = this.device.createSampler({
       compare: 'less-equal',
       // safer for shadow comparison
@@ -21490,14 +21489,12 @@ class Materials {
       magFilter: 'linear',
       minFilter: 'linear'
     });
-
     // FX effect
     this.postFXModeBuffer = this.device.createBuffer({
       size: 4,
       // u32 = 4 bytes
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
-
     // Dymmy buffer
     this.dummySpotlightUniformBuffer = this.device.createBuffer({
       size: 80,
@@ -21625,7 +21622,6 @@ class Materials {
       magFilter: 'linear',
       minFilter: 'linear'
     });
-
     // ✅ Now - maybe noT
     this.createLayoutForRender();
   }
@@ -21638,7 +21634,7 @@ class Materials {
       });
       this.createBindGroupForRender();
       this.videoIsReady = 'YES';
-      console.log("✅ video bind group created in updateV[createBindGroupForRender()]");
+      console.log("✅video bind group");
     } else {
       this.externalTexture = this.device.importExternalTexture({
         source: this.video
@@ -21656,9 +21652,9 @@ class Materials {
         this.updateVideoTexture();
       }
       return;
-    } else {}
+    }
     if (this.isVideo == true) {
-      // console.info("✅ video sceneBindGroupForRender ");
+      // console.info("✅ video sceneBindGroupForRender");
       this.sceneBindGroupForRender = this.device.createBindGroup({
         layout: this.bglForRender,
         entries: [{
@@ -21717,11 +21713,11 @@ class Materials {
     }
   }
   createLayoutForRender() {
-    if (this.isVideo == true) {
-      console.info("✅ createLayoutForRender video [bglForRender]");
-    } else {
-      console.info("✅ normal createLayoutForRender [bglForRender]");
-    }
+    // if(this.isVideo == true) {
+    //   console.info("✅ createLayoutForRender video [bglForRender]");
+    // } else {
+    //   console.info("✅ normal createLayoutForRender [bglForRender]");
+    // }
     let e = [{
       binding: 0,
       visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
@@ -21790,14 +21786,11 @@ class Materials {
         type: 'uniform'
       }
     }])];
-    console.log("BG E : ", e);
+    // console.log("BG E : ", e)
     this.bglForRender = this.device.createBindGroupLayout({
       label: 'bglForRender',
       entries: e
     });
-    if (this.isVideo == true) {
-      // this.createBindGroupForRender();
-    }
   }
 }
 exports.default = Materials;
