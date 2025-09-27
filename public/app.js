@@ -38,9 +38,14 @@ let TEST_ANIM = new _world.default({
     var glbFile = await fetch("res/meshes/glb/test.glb").then(res => res.arrayBuffer().then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, TEST_ANIM.device)));
     TEST_ANIM.addGlbObj({
       // scale: [1,1,1],
+      position: {
+        x: 0,
+        y: -4,
+        z: -20
+      },
       scale: [10, 10, 10],
       name: 'firstGlb',
-      texturesPaths: ['./res/textures/rust.jpg']
+      texturesPaths: ['./res/meshes/glb/textures/mutant.png']
     }, null, glbFile);
 
     // loadBVH(path).then(async (BVHANIM) => {
@@ -19886,9 +19891,10 @@ exports.loadBVH = exports.animBVH = exports.BVHPlayer = void 0;
 var _bvhLoader = _interopRequireDefault(require("bvh-loader"));
 var _meshObj = _interopRequireDefault(require("../mesh-obj"));
 var _wgpuMatrix = require("wgpu-matrix");
-var _utils = require("../utils.js");
 var _webgpuGltf = require("./webgpu-gltf.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
+// import {degToRad} from "../utils.js";
+
 var animBVH = exports.animBVH = new _bvhLoader.default();
 let loadBVH = path => {
   return new Promise((resolve, reject) => {
@@ -19913,22 +19919,25 @@ let loadBVH = path => {
 };
 
 /**
- * Applies BVH animation to a GLB model with skinning
+ * @description
+ * Skinning basic done animation can be changed with animation index.
+ * Holder for GLB model with skinning.
  * @param {GLBModel} glb - Your loaded GLB
  * @param {Object} bvhBones - Mapping of boneName → BVH bone data
  * @param {GPUDevice} device - WebGPU device
+ * @credits Chatgpt assist here.
  */
 exports.loadBVH = loadBVH;
 class BVHPlayer extends _meshObj.default {
   constructor(o, bvh, glb, primitiveIndex, skinnedNodeIndex, canvas, device, context, inputHandler, globalAmbient) {
     super(canvas, device, context, o, inputHandler, globalAmbient, glb, primitiveIndex, skinnedNodeIndex);
-
-    // bvh arg not actula at hte moment
+    // bvh arg not actula at the moment
     this.bvh = {};
     this.glb = glb;
     this.currentFrame = 0;
     this.fps = 30;
     this.timeAccumulator = 0;
+    // debug
     this.scaleBoneTest = 1;
     this.primitiveIndex = primitiveIndex;
     if (!this.bvh.sharedState) {
@@ -19938,20 +19947,18 @@ class BVHPlayer extends _meshObj.default {
       };
     }
     this.sharedState = this.bvh.sharedState;
-
     // Reference to the skinned node containing all bones
     this.skinnedNode = this.glb.skinnedMeshNodes[skinnedNodeIndex];
     // console.log('this.skinnedNode', this.skinnedNode)
     this.nodeWorldMatrices = Array.from({
       length: this.glb.nodes.length
     }, () => _wgpuMatrix.mat4.identity());
-    this.startTime = performance.now() / 1000; // seconds
-    this.MAX_BONES = 100;
+    this.startTime = performance.now() / 1000; // seconds - anim speed control
+    this.MAX_BONES = 100; // predefined
     this.skeleton = []; // array of joint node indices
+    this.animationSpeed = 1000;
     this.inverseBindMatrices = []; // Float32Array for each joint
-
     this.initInverseBindMatrices();
-    // this.computeNodeWorldMatrices();
     this.makeSkeletal();
   }
   makeSkeletal() {
@@ -19960,21 +19967,16 @@ class BVHPlayer extends _meshObj.default {
     if (accessorIndex == null) {
       console.warn("No inverseBindMatrices, using identity matrices");
     }
-
     // 1. Load all inverse bind matrices once
     const invBindArray = this.inverseBindMatrices; // set earlier by initInverseBindMatrices()
-
     // 2. Build skeleton array from skin.joints only
     this.skeleton = skin.joints.slice(); // direct copy of indices
-
     // 3. Assign inverseBindMatrix to each joint node correctly
     for (let i = 0; i < skin.joints.length; i++) {
       const jointIndex = skin.joints[i];
       const jointNode = this.glb.nodes[jointIndex];
-
       // assign only to bone nodes
       jointNode.inverseBindMatrix = invBindArray.slice(i * 16, (i + 1) * 16);
-
       // decompose node’s transform once (if not already)
       if (!jointNode.transform) {
         jointNode.transform = new Float32Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
@@ -19990,9 +19992,7 @@ class BVHPlayer extends _meshObj.default {
         jointNode.scale = scale;
       }
     }
-
     // 4. For mesh nodes or armature parent nodes, leave them alone
-
     // what is animation , check is it more - we look for Armature by defoult 
     // frendly blender
     this.glb.animationIndex = 0;
@@ -20029,40 +20029,10 @@ class BVHPlayer extends _meshObj.default {
       this.sharedState.timeAccumulator -= frameTime;
     }
     // const frame = this.sharedState.currentFrame;
-    const currentTime = performance.now() / 5000 - this.startTime;
+    const currentTime = performance.now() / this.animationSpeed - this.startTime;
     const boneMatrices = new Float32Array(this.MAX_BONES * 16);
     if (this.glb.glbJsonData.animations && this.glb.glbJsonData.animations.length > 0) {
       this.updateSingleBoneCubeAnimation(this.glb.glbJsonData.animations[this.glb.animationIndex], this.glb.nodes, currentTime, boneMatrices);
-    }
-  }
-  computeNodeWorldMatrices() {
-    // pre-allocate world matrices array if not done
-    if (!this.nodeWorldMatrices) {
-      this.nodeWorldMatrices = new Array(this.glb.nodes.length);
-    }
-    for (let i = 0; i < this.glb.nodes.length; i++) {
-      const node = this.glb.nodes[i];
-
-      // Local matrix from node.transform (Float32Array[16])
-      let localMat = _wgpuMatrix.mat4.identity(); // start with identity
-      if (node.transform) {
-        // Copy values into mat4
-        localMat = _wgpuMatrix.mat4.create();
-        for (let j = 0; j < 16; j++) {
-          localMat[j] = node.transform[j];
-        }
-      }
-
-      // World matrix: parent * local
-      if (node.parent !== undefined) {
-        const parentWorld = this.nodeWorldMatrices[node.parent];
-        const worldMat = _wgpuMatrix.mat4.create();
-        _wgpuMatrix.mat4.multiply(parentWorld, localMat, worldMat);
-        this.nodeWorldMatrices[i] = worldMat;
-      } else {
-        // Root node
-        this.nodeWorldMatrices[i] = localMat;
-      }
     }
   }
   getAccessorArray(glb, accessorIndex) {
@@ -20135,13 +20105,13 @@ class BVHPlayer extends _meshObj.default {
   }
 
   /**
-  * Get a typed slice of the raw binary buffer from glTF buffer definitions.
-  *
-  * @param {Object} bufferDef - the glTF buffer definition (usually gltfJson.buffers[0])
-  * @param {Number} byteOffset - byte offset into the buffer
-  * @param {Number} byteLength - byte length to slice
-  * @returns {ArrayBuffer} sliced array buffer
-  */
+   *  @description
+   *  Get a typed slice of the raw binary buffer from glTF buffer definitions.
+   * @param {Object} bufferDef - the glTF buffer definition (usually gltfJson.buffers[0])
+   * @param {Number} byteOffset - byte offset into the buffer
+   * @param {Number} byteLength - byte length to slice
+   * @returns {ArrayBuffer} sliced array buffer
+   **/
   getBufferSlice(bufferDef, byteOffset, byteLength) {
     // GLTFBuffer instance:
     if (bufferDef instanceof _webgpuGltf.GLTFBuffer) {
@@ -20164,7 +20134,7 @@ class BVHPlayer extends _meshObj.default {
     throw new Error("No binary data found in GLB buffer[0]");
   }
 
-  // --- helpers ---
+  // --- helpers
   lerpVec(a, b, t) {
     return a.map((v, i) => v * (1 - t) + b[i] * t);
   }
@@ -20338,15 +20308,12 @@ class BVHPlayer extends _meshObj.default {
   updateSingleBoneCubeAnimation(glbAnimation, nodes, time, boneMatrices) {
     const channels = glbAnimation.channels;
     const samplers = glbAnimation.samplers;
-
     // --- Map channels per node for faster lookup
     const nodeChannels = new Map();
     for (const channel of channels) {
       if (!nodeChannels.has(channel.target.node)) nodeChannels.set(channel.target.node, []);
       nodeChannels.get(channel.target.node).push(channel);
     }
-
-    // --- Loop only over skeleton bones
     for (let j = 0; j < this.skeleton.length; j++) {
       const nodeIndex = this.skeleton[j];
       const node = nodes[nodeIndex];
@@ -20407,8 +20374,6 @@ class BVHPlayer extends _meshObj.default {
         for (const childIndex of node.children) computeWorld(childIndex);
       }
     };
-
-    // start from roots (no parent)
     for (let i = 0; i < nodes.length; i++) {
       if (nodes[i].parent === null || nodes[i].parent === undefined) {
         computeWorld(i);
@@ -20420,7 +20385,6 @@ class BVHPlayer extends _meshObj.default {
       _wgpuMatrix.mat4.multiply(jointNode.worldMatrix, jointNode.inverseBindMatrix, finalMat);
       boneMatrices.set(finalMat, j * 16);
     }
-
     // --- Upload to GPU
     this.device.queue.writeBuffer(this.bonesBuffer, 0, boneMatrices);
     return boneMatrices;
@@ -20428,7 +20392,7 @@ class BVHPlayer extends _meshObj.default {
 }
 exports.BVHPlayer = BVHPlayer;
 
-},{"../mesh-obj":27,"../utils.js":28,"./webgpu-gltf.js":24,"bvh-loader":2,"wgpu-matrix":16}],24:[function(require,module,exports){
+},{"../mesh-obj":27,"./webgpu-gltf.js":24,"bvh-loader":2,"wgpu-matrix":16}],24:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -21020,7 +20984,6 @@ class Materials {
     this.device = device;
     this.isVideo = false;
     this.videoIsReady = 'NONE';
-    // this.compareSampler = this.device.createSampler({compare: 'less'});
     this.compareSampler = this.device.createSampler({
       compare: 'less-equal',
       // safer for shadow comparison
@@ -21041,14 +21004,12 @@ class Materials {
       magFilter: 'linear',
       minFilter: 'linear'
     });
-
     // FX effect
     this.postFXModeBuffer = this.device.createBuffer({
       size: 4,
       // u32 = 4 bytes
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
-
     // Dymmy buffer
     this.dummySpotlightUniformBuffer = this.device.createBuffer({
       size: 80,
@@ -21084,7 +21045,6 @@ class Materials {
     });
   }
   async loadVideoTexture(arg) {
-    // this.isVideo = true;
     this.videoIsReady = 'MAYBE';
     if (arg.type === 'video') {
       this.video = document.createElement('video');
@@ -21095,7 +21055,7 @@ class Materials {
       document.body.append(this.video);
       this.video.style.display = 'none';
       this.video.style.position = 'absolute';
-      this.video.style.top = '50px';
+      this.video.style.top = '750px';
       this.video.style.left = '50px';
       await this.video.play();
       this.isVideo = true;
@@ -21177,7 +21137,6 @@ class Materials {
       magFilter: 'linear',
       minFilter: 'linear'
     });
-
     // ✅ Now - maybe noT
     this.createLayoutForRender();
   }
@@ -21190,7 +21149,7 @@ class Materials {
       });
       this.createBindGroupForRender();
       this.videoIsReady = 'YES';
-      console.log("✅ video bind group created [createBindGroupForRender()]");
+      console.log("✅video bind group");
     } else {
       this.externalTexture = this.device.importExternalTexture({
         source: this.video
@@ -21204,11 +21163,13 @@ class Materials {
       if (!textureResource) console.warn("❗Missing res texture: ", textureResource);
       if (!this.sceneUniformBuffer) console.warn("❗Missing res: this.sceneUniformBuffer: ", this.sceneUniformBuffer);
       if (!this.shadowDepthTextureView) console.warn("❗Missing res: this.shadowDepthTextureView: ", this.shadowDepthTextureView);
-      if (typeof textureResource === 'undefined') this.updateVideoTexture();
+      if (typeof textureResource === 'undefined') {
+        this.updateVideoTexture();
+      }
       return;
-    } else {}
+    }
     if (this.isVideo == true) {
-      // console.info("✅ video sceneBindGroupForRender ");
+      // console.info("✅ video sceneBindGroupForRender");
       this.sceneBindGroupForRender = this.device.createBindGroup({
         layout: this.bglForRender,
         entries: [{
@@ -21235,10 +21196,8 @@ class Materials {
           }
         }]
       });
-
-      // special case for video meybe better solution exist 
-      // this.setupPipeline();
-      this.video.play();
+      // Special case for video maybe better solution exist
+      if (this.video.paused == true) this.video.play();
     } else {
       this.sceneBindGroupForRender = this.device.createBindGroup({
         layout: this.bglForRender,
@@ -21269,11 +21228,11 @@ class Materials {
     }
   }
   createLayoutForRender() {
-    if (this.isVideo == true) {
-      console.info("✅ createLayoutForRender video [bglForRender]");
-    } else {
-      console.info("✅ normal createLayoutForRender [bglForRender]");
-    }
+    // if(this.isVideo == true) {
+    //   console.info("✅ createLayoutForRender video [bglForRender]");
+    // } else {
+    //   console.info("✅ normal createLayoutForRender [bglForRender]");
+    // }
     let e = [{
       binding: 0,
       visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
@@ -21342,14 +21301,11 @@ class Materials {
         type: 'uniform'
       }
     }])];
-    console.log("BG E : ", e);
+    // console.log("BG E : ", e)
     this.bglForRender = this.device.createBindGroupLayout({
       label: 'bglForRender',
       entries: e
     });
-    if (this.isVideo == true) {
-      this.createBindGroupForRender();
-    }
   }
 }
 exports.default = Materials;
@@ -21794,7 +21750,7 @@ class MEMeshObj extends _materials.default {
       };
       const numVerts = this.mesh.vertices.length / 3;
       // Weights data (vec4<f32>) – default all weight to bone 0
-      const weightsData = new Float32Array(numVerts * 4 * 4);
+      const weightsData = new Float32Array(numVerts * 4);
       for (let i = 0; i < numVerts; i++) {
         weightsData[i * 4 + 0] = 1.0; // 100% influence of bone 0
         weightsData[i * 4 + 1] = 0.0;
@@ -22229,6 +22185,14 @@ class MEMeshObj extends _materials.default {
     renderPass.setVertexBuffer(0, mesh.vertexBuffer);
     renderPass.setVertexBuffer(1, mesh.vertexNormalsBuffer);
     renderPass.setVertexBuffer(2, mesh.vertexTexCoordsBuffer);
+    if (this.constructor.name === "BVHPlayer") {
+      renderPass.setVertexBuffer(3, this.mesh.jointsBuffer); // real
+      renderPass.setVertexBuffer(4, this.mesh.weightsBuffer); //real
+    } else {
+      // dummy
+      renderPass.setVertexBuffer(3, this.joints.buffer); // new dummy
+      renderPass.setVertexBuffer(4, this.weights.buffer); // new dummy
+    }
     renderPass.setIndexBuffer(mesh.indexBuffer, 'uint16');
     renderPass.drawIndexed(mesh.indexCount);
     if (this.objAnim.playing == true) {
@@ -22247,13 +22211,6 @@ class MEMeshObj extends _materials.default {
     shadowPass.setVertexBuffer(0, this.vertexBuffer);
     shadowPass.setVertexBuffer(1, this.vertexNormalsBuffer);
     shadowPass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
-
-    // dummy joints & weights for shadow pass ??
-    // if(this.joints && this.weights) {
-    //   shadowPass.setVertexBuffer(3, this.joints.buffer);
-    //   shadowPass.setVertexBuffer(4, this.weights.buffer);
-    // }
-
     shadowPass.setIndexBuffer(this.indexBuffer, 'uint16');
     shadowPass.drawIndexed(this.indexCount);
   };
@@ -23501,8 +23458,6 @@ struct FragmentInput {
   @location(3) uv : vec2f,
 }
 
- 
-
 const albedo = vec3f(0.9);
 const ambientFactor = 0.7;
 
@@ -24152,7 +24107,6 @@ class MatrixEngineWGPU {
   createTexArrayForShadows() {
     let numberOfLights = this.lightContainer.length;
     if (this.lightContainer.length == 0) {
-      // console.warn('Wait for init light instance')
       setTimeout(() => {
         // console.info('Test light again...')
         this.createMe();
@@ -24493,7 +24447,7 @@ class MatrixEngineWGPU {
       // scale for all second option!
       o.objAnim.scaleAll = function (s) {
         for (var k in this.meshList) {
-          console.log('SCALE meshList');
+          // console.log('SCALE meshList');
           this.meshList[k].setScale(s);
         }
       };
@@ -24535,28 +24489,23 @@ class MatrixEngineWGPU {
     if (typeof this.mainRenderBundle == 'undefined' || this.mainRenderBundle.length == 0) {
       setTimeout(() => {
         requestAnimationFrame(this.frame);
-      }, 200);
+      }, 100);
       return;
     }
-    let noPass = false;
     this.mainRenderBundle.forEach((meItem, index) => {
       if (meItem.isVideo == true) {
-        if (!meItem.externalTexture || meItem.video.readyState < 2) {
-          console.log('no rendere for video not ready');
-          //  this.externalTexture = this.device.importExternalTexture({source: this.video});
-          noPass = true;
-          setTimeout(() => requestAnimationFrame(this.frame), 1500);
+        if (!meItem.externalTexture) {
+          // || meItem.video.readyState < 2) {
+          // console.log('no rendere for video not ready')
+          // this.externalTexture = this.device.importExternalTexture({source: this.video});
+          meItem.createBindGroupForRender();
+          setTimeout(() => {
+            requestAnimationFrame(this.frame);
+          }, 1000);
           return;
         }
       }
     });
-    if (noPass == true) {
-      console.log('no rendere for video not ready !!!!');
-      return;
-    }
-
-    // let pass;
-    // let commandEncoder;
     try {
       let commandEncoder = this.device.createCommandEncoder();
       this.updateLights();
