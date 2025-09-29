@@ -20987,7 +20987,7 @@ class GLTFBufferView {
 }
 exports.GLTFBufferView = GLTFBufferView;
 class GLTFAccessor {
-  constructor(view, accessor) {
+  constructor(view, accessor, weightsAccessIndex) {
     this.count = accessor['count'];
     this.componentType = accessor['componentType'];
     this.gltfType = accessor['type'];
@@ -20998,6 +20998,7 @@ class GLTFAccessor {
     if (accessor['byteOffset'] !== undefined) {
       this.byteOffset = accessor['byteOffset'];
     }
+    if (weightsAccessIndex) this.weightsAccessIndex = weightsAccessIndex;
   }
   get byteStride() {
     var elementSize = gltfTypeSize(this.componentType, this.gltfType);
@@ -21305,7 +21306,7 @@ async function uploadGLBModel(buffer, device) {
       images.push(gpuImg);
     }
   }
-
+  console.log('what is IMAGE ', images);
   // 6️⃣ Samplers, Textures, Materials
   const defaultSampler = new GLTFSampler({}, device);
   const samplers = (glbJsonData.samplers || []).map(s => new GLTFSampler(s, device));
@@ -21348,11 +21349,12 @@ async function uploadGLBModel(buffer, device) {
         } else if (attr.startsWith('TEXCOORD')) {
           texcoords.push(new GLTFAccessor(bufferViews[viewID], accessor));
         } else if (attr === 'WEIGHTS_0') {
-          weights = new GLTFAccessor(bufferViews[viewID], accessor);
+          console.log('WEIGHTS_0', prim.attributes['WEIGHTS_0']);
+          weights = new GLTFAccessor(bufferViews[viewID], accessor, prim.attributes['WEIGHTS_0']);
         } else if (attr.startsWith('JOINTS')) {
           joints = new GLTFAccessor(bufferViews[viewID], accessor);
         } else {
-          console.log('inknow ', attr);
+          console.log('unknow ', attr);
         }
       }
       const material = prim.material !== undefined ? materials[prim.material] : defaultMaterial;
@@ -21467,6 +21469,56 @@ class Materials {
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
     this.device.queue.writeBuffer(this.dummySpotlightUniformBuffer, 0, new Float32Array(16));
+    console.log('Material class ');
+    // Create a 1x1 RGBA texture filled with white
+    const mrDummyTex = this.device.createTexture({
+      size: [1, 1, 1],
+      format: 'rgba8unorm',
+      usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST
+    });
+
+    // Upload a single pixel
+    const pixel = new Uint8Array([255, 255, 255, 255]); // white RGBA
+    this.device.queue.writeTexture({
+      texture: mrDummyTex
+    }, pixel, {
+      bytesPerRow: 4
+    }, [1, 1, 1]);
+    this.metallicRoughnessTextureView = mrDummyTex.createView();
+    this.metallicRoughnessSampler = this.device.createSampler({
+      magFilter: 'linear',
+      minFilter: 'linear'
+    });
+
+    // 4 floats for baseColorFactor + 1 metallic + 1 roughness + 2 pad floats = 8 floats
+    const materialPBRSize = 8 * 4; // 32 bytes
+    this.materialPBRBuffer = this.device.createBuffer({
+      size: materialPBRSize,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+
+    // Dummy values
+    const baseColorFactor = [1.0, 1.0, 1.0, 1.0];
+    const metallicFactor = 0.0; // diffuse like plastic
+    const roughnessFactor = 0.5; // some gloss
+
+    // const baseColorFactor = [1.0, 1.0, 1.0, 1.0];
+    // const metallicFactor = 0.0;
+    // const roughnessFactor = 1.0;
+    const pad = [0.0, 0.0];
+
+    // Pack into Float32Array
+    const materialArray = new Float32Array([...baseColorFactor, metallicFactor, roughnessFactor, ...pad]);
+
+    // this.device.queue.writeBuffer(this.materialPBRBuffer, 0, materialArray.buffer);
+
+    const defaultPBR = new Float32Array([1.0, 1.0, 1.0, 1.0,
+    // baseColorFactor RGBA
+    0.0,
+    // metallicFactor (plastic)
+    0.5 // roughnessFactor (semi glossy)
+    ]);
+    device.queue.writeBuffer(this.materialPBRBuffer, 0, defaultPBR.buffer);
   }
   updatePostFXMode(mode) {
     const arrayBuffer = new Uint32Array([mode]);
@@ -21673,6 +21725,17 @@ class Materials {
           resource: {
             buffer: !this.spotlightUniformBuffer ? this.dummySpotlightUniformBuffer : this.spotlightUniformBuffer
           }
+        }, {
+          binding: 6,
+          resource: this.metallicRoughnessTextureView
+        }, {
+          binding: 7,
+          resource: this.metallicRoughnessSampler
+        }, {
+          binding: 8,
+          resource: {
+            buffer: this.materialPBRBuffer
+          }
         }]
       });
     }
@@ -21746,6 +21809,25 @@ class Materials {
       }
     }, {
       binding: 5,
+      visibility: GPUShaderStage.FRAGMENT,
+      buffer: {
+        type: 'uniform'
+      }
+    }, {
+      binding: 6,
+      visibility: GPUShaderStage.FRAGMENT,
+      texture: {
+        sampleType: 'float',
+        viewDimension: '2d'
+      }
+    }, {
+      binding: 7,
+      visibility: GPUShaderStage.FRAGMENT,
+      sampler: {
+        type: 'filtering'
+      }
+    }, {
+      binding: 8,
       visibility: GPUShaderStage.FRAGMENT,
       buffer: {
         type: 'uniform'
@@ -22092,10 +22174,9 @@ class MEMeshObj extends _materials.default {
       this.mesh.indices = indicesArray;
       // W
       let weightsView = _glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex].weights.view;
-      console.warn('weightsView', weightsView);
       this.mesh.weightsView = weightsView;
       let primitive = _glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex];
-      let finalRoundedWeights = this.getAccessorArray(_glbFile, primitive.weights.numComponents);
+      let finalRoundedWeights = this.getAccessorArray(_glbFile, primitive.weights.weightsAccessIndex);
       const weightsArray = finalRoundedWeights;
       // Normalize each group of 4
       for (let i = 0; i < weightsArray.length; i += 4) {
@@ -22632,16 +22713,22 @@ class MEMeshObj extends _materials.default {
     renderPass.setBindGroup(0, this.sceneBindGroupForRender);
     renderPass.setBindGroup(1, this.modelBindGroup);
     const mesh = this.objAnim.meshList[this.objAnim.id + this.objAnim.currentAni];
+    if (this.isVideo == false) {
+      let bindIndex = 2; // start after UBO & model
+      for (const light of lightContainer) {
+        pass.setBindGroup(bindIndex++, light.getMainPassBindGroup(this));
+      }
+    }
     renderPass.setVertexBuffer(0, mesh.vertexBuffer);
     renderPass.setVertexBuffer(1, mesh.vertexNormalsBuffer);
     renderPass.setVertexBuffer(2, mesh.vertexTexCoordsBuffer);
     if (this.constructor.name === "BVHPlayer") {
       renderPass.setVertexBuffer(3, this.mesh.jointsBuffer); // real
-      renderPass.setVertexBuffer(4, this.mesh.weightsBuffer); //real
+      renderPass.setVertexBuffer(4, this.mesh.weightsBuffer); // real
     } else {
       // dummy
-      renderPass.setVertexBuffer(3, this.joints.buffer); // new dummy
-      renderPass.setVertexBuffer(4, this.weights.buffer); // new dummy
+      renderPass.setVertexBuffer(3, this.joints.buffer); // dummy
+      renderPass.setVertexBuffer(4, this.weights.buffer); // dummy
     }
     renderPass.setIndexBuffer(mesh.indexBuffer, 'uint16');
     renderPass.drawIndexed(mesh.indexCount);
@@ -24230,6 +24317,7 @@ exports.fragmentWGSL = void 0;
 let fragmentWGSL = exports.fragmentWGSL = `override shadowDepthTextureSize: f32 = 1024.0;
 
 // Created by Nikola Lukic with chatgtp assist.
+const PI: f32 = 3.141592653589793;
 
 struct Scene {
     lightViewProjMatrix  : mat4x4f,
@@ -24265,6 +24353,20 @@ struct SpotLight {
     lightViewProj : mat4x4<f32>,
 };
 
+struct MaterialPBR {
+    baseColorFactor : vec4f,
+    metallicFactor  : f32,
+    roughnessFactor : f32,
+    _pad1           : f32,
+    _pad2           : f32,
+};
+
+struct PBRMaterialData {
+    baseColor : vec3f,
+    metallic  : f32,
+    roughness : f32,
+};
+
 const MAX_SPOTLIGHTS = 20u;
 
 @group(0) @binding(0) var<uniform> scene : Scene;
@@ -24273,6 +24375,59 @@ const MAX_SPOTLIGHTS = 20u;
 @group(0) @binding(3) var meshTexture: texture_2d<f32>;
 @group(0) @binding(4) var meshSampler: sampler;
 @group(0) @binding(5) var<uniform> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
+
+// NEW
+@group(0) @binding(6) var metallicRoughnessTex: texture_2d<f32>;
+@group(0) @binding(7) var metallicRoughnessSampler: sampler;
+@group(0) @binding(8) var<uniform> material: MaterialPBR;
+
+fn getPBRMaterial(uv: vec2f) -> PBRMaterialData {
+    // Base color
+    let texColor = textureSample(meshTexture, meshSampler, uv);
+    let baseColor = texColor.rgb * material.baseColorFactor.rgb;
+
+    // Metallic / Roughness
+    let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);
+    let metallic = mrTex.b * material.metallicFactor;
+    let roughness = mrTex.g * material.roughnessFactor;
+
+    // Return the struct instance:
+    return PBRMaterialData(
+        baseColor,
+        metallic,
+        roughness
+    );
+}
+
+fn fresnelSchlick(cosTheta: f32, F0: vec3f) -> vec3f {
+    return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
+}
+
+fn distributionGGX(N: vec3f, H: vec3f, roughness: f32) -> f32 {
+    let a = roughness * roughness;
+    let a2 = a * a;
+    let NdotH = max(dot(N, H), 0.0);
+    let NdotH2 = NdotH * NdotH;
+
+    let denom = (NdotH2 * (a2 - 1.0) + 1.0);
+    return a2 / (PI * denom * denom);
+}
+
+fn geometrySchlickGGX(NdotV: f32, roughness: f32) -> f32 {
+    let r = (roughness + 1.0);
+    let k = (r * r) / 8.0;
+    return NdotV / (NdotV * (1.0 - k) + k);
+}
+
+fn geometrySmith(N: vec3f, V: vec3f, L: vec3f, roughness: f32) -> f32 {
+    let NdotV = max(dot(N, V), 0.0);
+    let NdotL = max(dot(N, L), 0.0);
+    let ggx1 = geometrySchlickGGX(NdotV, roughness);
+    let ggx2 = geometrySchlickGGX(NdotL, roughness);
+    return ggx1 * ggx2;
+}
+
+// NEW
 
 struct FragmentInput {
     @location(0) shadowPos : vec4f,
@@ -24339,32 +24494,56 @@ fn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, light
 
 @fragment
 fn main(input: FragmentInput) -> @location(0) vec4f {
-    let norm = normalize(input.fragNorm);
 
-    let viewDir = normalize(scene.cameraPos - input.fragPos);
-    // let viewDir = normalize(scene.cameraViewProjMatrix[3].xyz - input.fragPos);
+let norm = normalize(input.fragNorm);
+let viewDir = normalize(scene.cameraPos - input.fragPos);
 
-    var lightContribution = vec3f(0.0);
-    var ambient = vec3f(0.5);
+var lightContribution = vec3f(0.0);
+for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
+    let sc = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);
+    let p  = sc.xyz / sc.w;
+    let uv = clamp(p.xy * 0.5 + vec2<f32>(0.5), vec2<f32>(0.0), vec2<f32>(1.0));
+    let depthRef = p.z * 0.5 + 0.5;
+    let lightDir = normalize(spotlights[i].position - input.fragPos);
+    let bias = spotlights[i].shadowBias;
+    let visibility = sampleShadow(uv, i32(i), depthRef - bias, norm, lightDir);
+    let contrib = computeSpotLight(spotlights[i], norm, input.fragPos, viewDir);
+    lightContribution += contrib * visibility;
+}
+let texColor = textureSample(meshTexture, meshSampler, input.uv);
+let finalColor = texColor.rgb * (scene.globalAmbient + lightContribution);
+return vec4f(finalColor, 1.0);
 
-    for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
-        let sc = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);
-        let p  = sc.xyz / sc.w;
-        let uv = clamp(p.xy * 0.5 + vec2<f32>(0.5), vec2<f32>(0.0), vec2<f32>(1.0));
-        let depthRef = p.z * 0.5 + 0.5;
-        let lightDir = normalize(spotlights[i].position - input.fragPos);
-        let angleFactor = 1.0 - dot(norm, lightDir);
-        let slopeBias = 0.01 * (1.0 - dot(norm, lightDir));
-        let bias = spotlights[i].shadowBias + slopeBias;
-        let visibility = sampleShadow(uv, i32(i), depthRef - bias, norm, lightDir);
-        let contrib = computeSpotLight(spotlights[i], norm, input.fragPos, viewDir);
-        lightContribution += contrib * visibility;
-        // ambient += spotlights[i].ambientFactor * spotlights[i].color;
-    }
-    // ambient /= f32(MAX_SPOTLIGHTS); PREVENT OVER NEXT FEATURE ON SWICHER
-    let texColor = textureSample(meshTexture, meshSampler, input.uv);
-    let finalColor = texColor.rgb * (scene.globalAmbient + lightContribution); // * albedo;
-    return vec4f(finalColor, 1.0);
+
+// @fragment
+// fn main(input: FragmentInput) -> @location(0) vec4f {
+//     let norm = normalize(input.fragNorm);
+
+//     let viewDir = normalize(scene.cameraPos - input.fragPos);
+//     // let viewDir = normalize(scene.cameraViewProjMatrix[3].xyz - input.fragPos);
+
+//     var lightContribution = vec3f(0.0);
+//     var ambient = vec3f(0.5);
+
+//     for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
+//         let sc = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);
+//         let p  = sc.xyz / sc.w;
+//         let uv = clamp(p.xy * 0.5 + vec2<f32>(0.5), vec2<f32>(0.0), vec2<f32>(1.0));
+//         let depthRef = p.z * 0.5 + 0.5;
+//         let lightDir = normalize(spotlights[i].position - input.fragPos);
+//         let angleFactor = 1.0 - dot(norm, lightDir);
+//         let slopeBias = 0.01 * (1.0 - dot(norm, lightDir));
+//         let bias = spotlights[i].shadowBias + slopeBias;
+//         let visibility = sampleShadow(uv, i32(i), depthRef - bias, norm, lightDir);
+//         let contrib = computeSpotLight(spotlights[i], norm, input.fragPos, viewDir);
+//         lightContribution += contrib * visibility;
+//         // ambient += spotlights[i].ambientFactor * spotlights[i].color;
+//     }
+//     // ambient /= f32(MAX_SPOTLIGHTS); PREVENT OVER NEXT FEATURE ON SWICHER
+//     let texColor = textureSample(meshTexture, meshSampler, input.uv);
+//     let finalColor = texColor.rgb * (scene.globalAmbient + lightContribution); // * albedo;
+//     return vec4f(finalColor, 1.0);
+
 }`;
 
 },{}],39:[function(require,module,exports){

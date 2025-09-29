@@ -1,6 +1,7 @@
 export let fragmentWGSL = `override shadowDepthTextureSize: f32 = 1024.0;
 
 // Created by Nikola Lukic with chatgtp assist.
+const PI: f32 = 3.141592653589793;
 
 struct Scene {
     lightViewProjMatrix  : mat4x4f,
@@ -36,6 +37,20 @@ struct SpotLight {
     lightViewProj : mat4x4<f32>,
 };
 
+struct MaterialPBR {
+    baseColorFactor : vec4f,
+    metallicFactor  : f32,
+    roughnessFactor : f32,
+    _pad1           : f32,
+    _pad2           : f32,
+};
+
+struct PBRMaterialData {
+    baseColor : vec3f,
+    metallic  : f32,
+    roughness : f32,
+};
+
 const MAX_SPOTLIGHTS = 20u;
 
 @group(0) @binding(0) var<uniform> scene : Scene;
@@ -44,6 +59,59 @@ const MAX_SPOTLIGHTS = 20u;
 @group(0) @binding(3) var meshTexture: texture_2d<f32>;
 @group(0) @binding(4) var meshSampler: sampler;
 @group(0) @binding(5) var<uniform> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
+
+// NEW
+@group(0) @binding(6) var metallicRoughnessTex: texture_2d<f32>;
+@group(0) @binding(7) var metallicRoughnessSampler: sampler;
+@group(0) @binding(8) var<uniform> material: MaterialPBR;
+
+fn getPBRMaterial(uv: vec2f) -> PBRMaterialData {
+    // Base color
+    let texColor = textureSample(meshTexture, meshSampler, uv);
+    let baseColor = texColor.rgb * material.baseColorFactor.rgb;
+
+    // Metallic / Roughness
+    let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);
+    let metallic = mrTex.b * material.metallicFactor;
+    let roughness = mrTex.g * material.roughnessFactor;
+
+    // Return the struct instance:
+    return PBRMaterialData(
+        baseColor,
+        metallic,
+        roughness
+    );
+}
+
+fn fresnelSchlick(cosTheta: f32, F0: vec3f) -> vec3f {
+    return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
+}
+
+fn distributionGGX(N: vec3f, H: vec3f, roughness: f32) -> f32 {
+    let a = roughness * roughness;
+    let a2 = a * a;
+    let NdotH = max(dot(N, H), 0.0);
+    let NdotH2 = NdotH * NdotH;
+
+    let denom = (NdotH2 * (a2 - 1.0) + 1.0);
+    return a2 / (PI * denom * denom);
+}
+
+fn geometrySchlickGGX(NdotV: f32, roughness: f32) -> f32 {
+    let r = (roughness + 1.0);
+    let k = (r * r) / 8.0;
+    return NdotV / (NdotV * (1.0 - k) + k);
+}
+
+fn geometrySmith(N: vec3f, V: vec3f, L: vec3f, roughness: f32) -> f32 {
+    let NdotV = max(dot(N, V), 0.0);
+    let NdotL = max(dot(N, L), 0.0);
+    let ggx1 = geometrySchlickGGX(NdotV, roughness);
+    let ggx2 = geometrySchlickGGX(NdotL, roughness);
+    return ggx1 * ggx2;
+}
+
+// NEW
 
 struct FragmentInput {
     @location(0) shadowPos : vec4f,
@@ -110,30 +178,54 @@ fn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, light
 
 @fragment
 fn main(input: FragmentInput) -> @location(0) vec4f {
-    let norm = normalize(input.fragNorm);
 
-    let viewDir = normalize(scene.cameraPos - input.fragPos);
-    // let viewDir = normalize(scene.cameraViewProjMatrix[3].xyz - input.fragPos);
+let norm = normalize(input.fragNorm);
+let viewDir = normalize(scene.cameraPos - input.fragPos);
 
-    var lightContribution = vec3f(0.0);
-    var ambient = vec3f(0.5);
+var lightContribution = vec3f(0.0);
+for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
+    let sc = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);
+    let p  = sc.xyz / sc.w;
+    let uv = clamp(p.xy * 0.5 + vec2<f32>(0.5), vec2<f32>(0.0), vec2<f32>(1.0));
+    let depthRef = p.z * 0.5 + 0.5;
+    let lightDir = normalize(spotlights[i].position - input.fragPos);
+    let bias = spotlights[i].shadowBias;
+    let visibility = sampleShadow(uv, i32(i), depthRef - bias, norm, lightDir);
+    let contrib = computeSpotLight(spotlights[i], norm, input.fragPos, viewDir);
+    lightContribution += contrib * visibility;
+}
+let texColor = textureSample(meshTexture, meshSampler, input.uv);
+let finalColor = texColor.rgb * (scene.globalAmbient + lightContribution);
+return vec4f(finalColor, 1.0);
 
-    for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
-        let sc = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);
-        let p  = sc.xyz / sc.w;
-        let uv = clamp(p.xy * 0.5 + vec2<f32>(0.5), vec2<f32>(0.0), vec2<f32>(1.0));
-        let depthRef = p.z * 0.5 + 0.5;
-        let lightDir = normalize(spotlights[i].position - input.fragPos);
-        let angleFactor = 1.0 - dot(norm, lightDir);
-        let slopeBias = 0.01 * (1.0 - dot(norm, lightDir));
-        let bias = spotlights[i].shadowBias + slopeBias;
-        let visibility = sampleShadow(uv, i32(i), depthRef - bias, norm, lightDir);
-        let contrib = computeSpotLight(spotlights[i], norm, input.fragPos, viewDir);
-        lightContribution += contrib * visibility;
-        // ambient += spotlights[i].ambientFactor * spotlights[i].color;
-    }
-    // ambient /= f32(MAX_SPOTLIGHTS); PREVENT OVER NEXT FEATURE ON SWICHER
-    let texColor = textureSample(meshTexture, meshSampler, input.uv);
-    let finalColor = texColor.rgb * (scene.globalAmbient + lightContribution); // * albedo;
-    return vec4f(finalColor, 1.0);
+
+// @fragment
+// fn main(input: FragmentInput) -> @location(0) vec4f {
+//     let norm = normalize(input.fragNorm);
+
+//     let viewDir = normalize(scene.cameraPos - input.fragPos);
+//     // let viewDir = normalize(scene.cameraViewProjMatrix[3].xyz - input.fragPos);
+
+//     var lightContribution = vec3f(0.0);
+//     var ambient = vec3f(0.5);
+
+//     for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
+//         let sc = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);
+//         let p  = sc.xyz / sc.w;
+//         let uv = clamp(p.xy * 0.5 + vec2<f32>(0.5), vec2<f32>(0.0), vec2<f32>(1.0));
+//         let depthRef = p.z * 0.5 + 0.5;
+//         let lightDir = normalize(spotlights[i].position - input.fragPos);
+//         let angleFactor = 1.0 - dot(norm, lightDir);
+//         let slopeBias = 0.01 * (1.0 - dot(norm, lightDir));
+//         let bias = spotlights[i].shadowBias + slopeBias;
+//         let visibility = sampleShadow(uv, i32(i), depthRef - bias, norm, lightDir);
+//         let contrib = computeSpotLight(spotlights[i], norm, input.fragPos, viewDir);
+//         lightContribution += contrib * visibility;
+//         // ambient += spotlights[i].ambientFactor * spotlights[i].color;
+//     }
+//     // ambient /= f32(MAX_SPOTLIGHTS); PREVENT OVER NEXT FEATURE ON SWICHER
+//     let texColor = textureSample(meshTexture, meshSampler, input.uv);
+//     let finalColor = texColor.rgb * (scene.globalAmbient + lightContribution); // * albedo;
+//     return vec4f(finalColor, 1.0);
+
 }`;

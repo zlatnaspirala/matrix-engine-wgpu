@@ -39,6 +39,64 @@ export default class Materials {
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
     this.device.queue.writeBuffer(this.dummySpotlightUniformBuffer, 0, new Float32Array(16));
+
+    console.log('Material class ')
+    // Create a 1x1 RGBA texture filled with white
+    const mrDummyTex = this.device.createTexture({
+      size: [1, 1, 1],
+      format: 'rgba8unorm',
+      usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST,
+    });
+
+    // Upload a single pixel
+    const pixel = new Uint8Array([255, 255, 255, 255]); // white RGBA
+    this.device.queue.writeTexture(
+      {texture: mrDummyTex},
+      pixel,
+      {bytesPerRow: 4},
+      [1, 1, 1]
+    );
+
+    this.metallicRoughnessTextureView = mrDummyTex.createView();
+
+    this.metallicRoughnessSampler = this.device.createSampler({
+      magFilter: 'linear',
+      minFilter: 'linear',
+    });
+
+    // 4 floats for baseColorFactor + 1 metallic + 1 roughness + 2 pad floats = 8 floats
+    const materialPBRSize = 8 * 4; // 32 bytes
+    this.materialPBRBuffer = this.device.createBuffer({
+      size: materialPBRSize,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+    });
+
+    // Dummy values
+    const baseColorFactor = [1.0, 1.0, 1.0, 1.0];
+    const metallicFactor = 0.0;    // diffuse like plastic
+    const roughnessFactor = 0.5;   // some gloss
+
+    // const baseColorFactor = [1.0, 1.0, 1.0, 1.0];
+    // const metallicFactor = 0.0;
+    // const roughnessFactor = 1.0;
+    const pad = [0.0, 0.0];
+
+    // Pack into Float32Array
+    const materialArray = new Float32Array([
+      ...baseColorFactor,
+      metallicFactor,
+      roughnessFactor,
+      ...pad
+    ]);
+
+    // this.device.queue.writeBuffer(this.materialPBRBuffer, 0, materialArray.buffer);
+
+    const defaultPBR = new Float32Array([
+  1.0, 1.0, 1.0, 1.0, // baseColorFactor RGBA
+  0.0,                // metallicFactor (plastic)
+  0.5                 // roughnessFactor (semi glossy)
+]);
+device.queue.writeBuffer(this.materialPBRBuffer, 0, defaultPBR.buffer);
   }
 
   updatePostFXMode(mode) {
@@ -212,7 +270,10 @@ export default class Materials {
           {binding: 2, resource: this.compareSampler, },
           {binding: 3, resource: textureResource, },
           {binding: 4, resource: this.imageSampler, },
-          {binding: 5, resource: {buffer: !this.spotlightUniformBuffer ? this.dummySpotlightUniformBuffer : this.spotlightUniformBuffer}, }
+          {binding: 5, resource: {buffer: !this.spotlightUniformBuffer ? this.dummySpotlightUniformBuffer : this.spotlightUniformBuffer}, },
+          {binding: 6, resource: this.metallicRoughnessTextureView},
+          {binding: 7, resource: this.metallicRoughnessSampler},
+          {binding: 8, resource: {buffer: this.materialPBRBuffer}},
         ],
       });
     }
@@ -290,7 +351,25 @@ export default class Materials {
             binding: 5,
             visibility: GPUShaderStage.FRAGMENT,
             buffer: {type: 'uniform'},
-          }
+          },
+          {
+            binding: 6,
+            visibility: GPUShaderStage.FRAGMENT,
+            texture: {
+              sampleType: 'float',
+              viewDimension: '2d'
+            }
+          },
+          {
+            binding: 7,
+            visibility: GPUShaderStage.FRAGMENT,
+            sampler: {type: 'filtering'}
+          },
+          {
+            binding: 8,
+            visibility: GPUShaderStage.FRAGMENT,
+            buffer: {type: 'uniform'}
+          },
         ])
     ];
     // console.log("BG E : ", e)

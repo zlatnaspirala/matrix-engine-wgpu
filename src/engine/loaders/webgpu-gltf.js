@@ -491,6 +491,7 @@ export async function uploadGLBModel(buffer, device) {
     }
   }
 
+  console.log('what is IMAGE ', images)
   // 6️⃣ Samplers, Textures, Materials
   const defaultSampler = new GLTFSampler({}, device);
   const samplers = (glbJsonData.samplers || []).map(

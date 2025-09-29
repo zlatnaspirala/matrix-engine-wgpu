@@ -22184,22 +22184,16 @@ class MEMeshObj extends _materials.default {
     renderPass.setBindGroup(0, this.sceneBindGroupForRender);
     renderPass.setBindGroup(1, this.modelBindGroup);
     const mesh = this.objAnim.meshList[this.objAnim.id + this.objAnim.currentAni];
-    if (this.isVideo == false) {
-      let bindIndex = 2; // start after UBO & model
-      for (const light of lightContainer) {
-        pass.setBindGroup(bindIndex++, light.getMainPassBindGroup(this));
-      }
-    }
     renderPass.setVertexBuffer(0, mesh.vertexBuffer);
     renderPass.setVertexBuffer(1, mesh.vertexNormalsBuffer);
     renderPass.setVertexBuffer(2, mesh.vertexTexCoordsBuffer);
     if (this.constructor.name === "BVHPlayer") {
       renderPass.setVertexBuffer(3, this.mesh.jointsBuffer); // real
-      renderPass.setVertexBuffer(4, this.mesh.weightsBuffer); // real
+      renderPass.setVertexBuffer(4, this.mesh.weightsBuffer); //real
     } else {
       // dummy
-      renderPass.setVertexBuffer(3, this.joints.buffer); // dummy
-      renderPass.setVertexBuffer(4, this.weights.buffer); // dummy
+      renderPass.setVertexBuffer(3, this.joints.buffer); // new dummy
+      renderPass.setVertexBuffer(4, this.weights.buffer); // new dummy
     }
     renderPass.setIndexBuffer(mesh.indexBuffer, 'uint16');
     renderPass.drawIndexed(mesh.indexCount);
