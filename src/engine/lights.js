@@ -182,7 +182,10 @@ export class SpotLight {
 
     this.modelBindGroupLayout = this.device.createBindGroupLayout({
       label: 'modelBindGroupLayout in light [one bindings]',
-      entries: [{binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}, },]
+      entries: [
+        {binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'} },
+        {binding: 1, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform', } }
+      ]
     });
 
     this.shadowPipeline = this.device.createRenderPipeline({

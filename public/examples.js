@@ -19783,6 +19783,12 @@ class SpotLight {
         buffer: {
           type: 'uniform'
         }
+      }, {
+        binding: 1,
+        visibility: GPUShaderStage.VERTEX,
+        buffer: {
+          type: 'uniform'
+        }
       }]
     });
     this.shadowPipeline = this.device.createRenderPipeline({
@@ -20987,7 +20993,7 @@ class GLTFBufferView {
 }
 exports.GLTFBufferView = GLTFBufferView;
 class GLTFAccessor {
-  constructor(view, accessor) {
+  constructor(view, accessor, weightsAccessIndex) {
     this.count = accessor['count'];
     this.componentType = accessor['componentType'];
     this.gltfType = accessor['type'];
@@ -20998,6 +21004,7 @@ class GLTFAccessor {
     if (accessor['byteOffset'] !== undefined) {
       this.byteOffset = accessor['byteOffset'];
     }
+    if (weightsAccessIndex) this.weightsAccessIndex = weightsAccessIndex;
   }
   get byteStride() {
     var elementSize = gltfTypeSize(this.componentType, this.gltfType);
@@ -21348,11 +21355,12 @@ async function uploadGLBModel(buffer, device) {
         } else if (attr.startsWith('TEXCOORD')) {
           texcoords.push(new GLTFAccessor(bufferViews[viewID], accessor));
         } else if (attr === 'WEIGHTS_0') {
-          weights = new GLTFAccessor(bufferViews[viewID], accessor);
+          console.log('WEIGHTS_0', prim.attributes['WEIGHTS_0']);
+          weights = new GLTFAccessor(bufferViews[viewID], accessor, prim.attributes['WEIGHTS_0']);
         } else if (attr.startsWith('JOINTS')) {
           joints = new GLTFAccessor(bufferViews[viewID], accessor);
         } else {
-          console.log('inknow ', attr);
+          console.log('unknow ', attr);
         }
       }
       const material = prim.material !== undefined ? materials[prim.material] : defaultMaterial;
@@ -22092,10 +22100,9 @@ class MEMeshObj extends _materials.default {
       this.mesh.indices = indicesArray;
       // W
       let weightsView = _glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex].weights.view;
-      console.warn('weightsView', weightsView);
       this.mesh.weightsView = weightsView;
       let primitive = _glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex];
-      let finalRoundedWeights = this.getAccessorArray(_glbFile, primitive.weights.numComponents);
+      let finalRoundedWeights = this.getAccessorArray(_glbFile, primitive.weights.weightsAccessIndex);
       const weightsArray = finalRoundedWeights;
       // Normalize each group of 4
       for (let i = 0; i < weightsArray.length; i += 4) {
@@ -22363,6 +22370,7 @@ class MEMeshObj extends _materials.default {
         size: 176,
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
       });
+      // test
       this.uniformBufferBindGroupLayout = this.device.createBindGroupLayout({
         label: 'uniformBufferBindGroupLayout in mesh',
         entries: [{
@@ -22632,16 +22640,22 @@ class MEMeshObj extends _materials.default {
     renderPass.setBindGroup(0, this.sceneBindGroupForRender);
     renderPass.setBindGroup(1, this.modelBindGroup);
     const mesh = this.objAnim.meshList[this.objAnim.id + this.objAnim.currentAni];
+    if (this.isVideo == false) {
+      let bindIndex = 2; // start after UBO & model
+      for (const light of lightContainer) {
+        pass.setBindGroup(bindIndex++, light.getMainPassBindGroup(this));
+      }
+    }
     renderPass.setVertexBuffer(0, mesh.vertexBuffer);
     renderPass.setVertexBuffer(1, mesh.vertexNormalsBuffer);
     renderPass.setVertexBuffer(2, mesh.vertexTexCoordsBuffer);
     if (this.constructor.name === "BVHPlayer") {
       renderPass.setVertexBuffer(3, this.mesh.jointsBuffer); // real
-      renderPass.setVertexBuffer(4, this.mesh.weightsBuffer); //real
+      renderPass.setVertexBuffer(4, this.mesh.weightsBuffer); // real
     } else {
       // dummy
-      renderPass.setVertexBuffer(3, this.joints.buffer); // new dummy
-      renderPass.setVertexBuffer(4, this.weights.buffer); // new dummy
+      renderPass.setVertexBuffer(3, this.joints.buffer); // dummy
+      renderPass.setVertexBuffer(4, this.weights.buffer); // dummy
     }
     renderPass.setIndexBuffer(mesh.indexBuffer, 'uint16');
     renderPass.drawIndexed(mesh.indexCount);
@@ -25246,8 +25260,12 @@ class MatrixEngineWGPU {
         for (const [meshIndex, mesh] of this.mainRenderBundle.entries()) {
           if (mesh.videoIsReady == 'NONE') {
             shadowPass.setBindGroup(0, light.getShadowBindGroup(mesh, meshIndex));
-            // shadowPass.setBindGroup(1, mesh.modelBindGroup); // ORI 
-            shadowPass.setBindGroup(1, light.getShadowBindGroup_bones(meshIndex)); // ORI 
+            if (mesh.glb && mesh.glb.skinnedMeshNodes) {
+              shadowPass.setBindGroup(1, light.getShadowBindGroup_bones(meshIndex));
+            } else {
+              // shadowPass.setBindGroup(0, light.getShadowBindGroup(mesh, meshIndex));
+              shadowPass.setBindGroup(1, mesh.modelBindGroup);
+            }
             mesh.drawShadows(shadowPass, light);
           }
         }
