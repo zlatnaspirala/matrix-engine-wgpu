@@ -20538,7 +20538,7 @@ class GLTFBufferView {
 }
 exports.GLTFBufferView = GLTFBufferView;
 class GLTFAccessor {
-  constructor(view, accessor) {
+  constructor(view, accessor, weightsAccessIndex) {
     this.count = accessor['count'];
     this.componentType = accessor['componentType'];
     this.gltfType = accessor['type'];
@@ -20549,6 +20549,7 @@ class GLTFAccessor {
     if (accessor['byteOffset'] !== undefined) {
       this.byteOffset = accessor['byteOffset'];
     }
+    if (weightsAccessIndex) this.weightsAccessIndex = weightsAccessIndex;
   }
   get byteStride() {
     var elementSize = gltfTypeSize(this.componentType, this.gltfType);
@@ -20899,11 +20900,12 @@ async function uploadGLBModel(buffer, device) {
         } else if (attr.startsWith('TEXCOORD')) {
           texcoords.push(new GLTFAccessor(bufferViews[viewID], accessor));
         } else if (attr === 'WEIGHTS_0') {
-          weights = new GLTFAccessor(bufferViews[viewID], accessor);
+          console.log('WEIGHTS_0', prim.attributes['WEIGHTS_0']);
+          weights = new GLTFAccessor(bufferViews[viewID], accessor, prim.attributes['WEIGHTS_0']);
         } else if (attr.startsWith('JOINTS')) {
           joints = new GLTFAccessor(bufferViews[viewID], accessor);
         } else {
-          console.log('inknow ', attr);
+          console.log('unknow ', attr);
         }
       }
       const material = prim.material !== undefined ? materials[prim.material] : defaultMaterial;
@@ -21643,10 +21645,9 @@ class MEMeshObj extends _materials.default {
       this.mesh.indices = indicesArray;
       // W
       let weightsView = _glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex].weights.view;
-      console.warn('weightsView', weightsView);
       this.mesh.weightsView = weightsView;
       let primitive = _glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex];
-      let finalRoundedWeights = this.getAccessorArray(_glbFile, primitive.weights.numComponents);
+      let finalRoundedWeights = this.getAccessorArray(_glbFile, primitive.weights.weightsAccessIndex);
       const weightsArray = finalRoundedWeights;
       // Normalize each group of 4
       for (let i = 0; i < weightsArray.length; i += 4) {

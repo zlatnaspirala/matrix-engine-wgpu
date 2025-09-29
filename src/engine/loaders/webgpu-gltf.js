@@ -145,7 +145,7 @@ export class GLTFBufferView {
 }
 
 export class GLTFAccessor {
-  constructor(view, accessor) {
+  constructor(view, accessor, weightsAccessIndex) {
     this.count = accessor['count'];
     this.componentType = accessor['componentType'];
     this.gltfType = accessor['type'];
@@ -156,6 +156,7 @@ export class GLTFAccessor {
     if(accessor['byteOffset'] !== undefined) {
       this.byteOffset = accessor['byteOffset'];
     }
+    if (weightsAccessIndex) this.weightsAccessIndex = weightsAccessIndex;
   }
 
   get byteStride() {
@@ -538,11 +539,12 @@ export async function uploadGLBModel(buffer, device) {
         } else if(attr.startsWith('TEXCOORD')) {
           texcoords.push(new GLTFAccessor(bufferViews[viewID], accessor));
         } else if(attr === 'WEIGHTS_0') {
-          weights = new GLTFAccessor(bufferViews[viewID], accessor);
+          console.log('WEIGHTS_0', prim.attributes['WEIGHTS_0'])
+          weights = new GLTFAccessor(bufferViews[viewID], accessor, prim.attributes['WEIGHTS_0']);
         } else if(attr.startsWith('JOINTS')) {
           joints = new GLTFAccessor(bufferViews[viewID], accessor);
         } else {
-          console.log('inknow ', attr)
+          console.log('unknow ', attr)
         }
       }
 

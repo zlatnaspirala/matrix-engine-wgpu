@@ -92,10 +92,9 @@ export default class MEMeshObj extends Materials {
       this.mesh.indices = indicesArray;
       // W
       let weightsView = _glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex].weights.view;
-      console.warn('weightsView', weightsView)
       this.mesh.weightsView = weightsView;
       let primitive = _glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex];
-      let finalRoundedWeights = this.getAccessorArray(_glbFile, primitive.weights.numComponents);
+      let finalRoundedWeights = this.getAccessorArray(_glbFile, primitive.weights.weightsAccessIndex);
       const weightsArray = finalRoundedWeights;
       // Normalize each group of 4
       for(let i = 0;i < weightsArray.length;i += 4) {
