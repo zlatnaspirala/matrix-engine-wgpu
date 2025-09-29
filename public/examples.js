@@ -19783,6 +19783,12 @@ class SpotLight {
         buffer: {
           type: 'uniform'
         }
+      }, {
+        binding: 1,
+        visibility: GPUShaderStage.VERTEX,
+        buffer: {
+          type: 'uniform'
+        }
       }]
     });
     this.shadowPipeline = this.device.createRenderPipeline({
@@ -22444,6 +22450,7 @@ class MEMeshObj extends _materials.default {
         size: 176,
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
       });
+      // test
       this.uniformBufferBindGroupLayout = this.device.createBindGroupLayout({
         label: 'uniformBufferBindGroupLayout in mesh',
         entries: [{
@@ -25425,8 +25432,12 @@ class MatrixEngineWGPU {
         for (const [meshIndex, mesh] of this.mainRenderBundle.entries()) {
           if (mesh.videoIsReady == 'NONE') {
             shadowPass.setBindGroup(0, light.getShadowBindGroup(mesh, meshIndex));
-            // shadowPass.setBindGroup(1, mesh.modelBindGroup); // ORI 
-            shadowPass.setBindGroup(1, light.getShadowBindGroup_bones(meshIndex)); // ORI 
+            if (mesh.glb && mesh.glb.skinnedMeshNodes) {
+              shadowPass.setBindGroup(1, light.getShadowBindGroup_bones(meshIndex));
+            } else {
+              // shadowPass.setBindGroup(0, light.getShadowBindGroup(mesh, meshIndex));
+              shadowPass.setBindGroup(1, mesh.modelBindGroup);
+            }
             mesh.drawShadows(shadowPass, light);
           }
         }

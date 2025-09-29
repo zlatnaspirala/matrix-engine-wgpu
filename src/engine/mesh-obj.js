@@ -368,7 +368,7 @@ export default class MEMeshObj extends Materials {
         size: 176,
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
       });
-
+   // test
       this.uniformBufferBindGroupLayout = this.device.createBindGroupLayout({
         label: 'uniformBufferBindGroupLayout in mesh',
         entries: [
