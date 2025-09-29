@@ -177,7 +177,7 @@ export class SpotLight {
           },
         ],
       });
-      return this.shadowBindGroupContainer[index];
+      return this.shadowBindGroup[index];
     }
 
     this.modelBindGroupLayout = this.device.createBindGroupLayout({
