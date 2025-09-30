@@ -470,11 +470,11 @@ export default class MatrixEngineWGPU {
         for(const [meshIndex, mesh] of this.mainRenderBundle.entries()) {
           if(mesh.videoIsReady == 'NONE') {
             shadowPass.setBindGroup(0, light.getShadowBindGroup(mesh, meshIndex));
-            if(mesh.glb && mesh.glb.skinnedMeshNodes) {
-              shadowPass.setBindGroup(1, light.getShadowBindGroup_bones(meshIndex));
-            } else {
+            // if(mesh.glb && mesh.glb.skinnedMeshNodes) {
+              // shadowPass.setBindGroup(1, light.getShadowBindGroup_bones(meshIndex));
+            // } else {
               shadowPass.setBindGroup(1, mesh.modelBindGroup);
-            }
+            // }
             mesh.drawShadows(shadowPass, light);
           }
         }
