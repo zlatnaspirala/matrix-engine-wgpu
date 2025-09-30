@@ -38,7 +38,7 @@ export default class Materials {
       size: 80, // Must match size in shader
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
-    this.device.queue.writeBuffer(this.dummySpotlightUniformBuffer, 0, new Float32Array(16));
+    this.device.queue.writeBuffer(this.dummySpotlightUniformBuffer, 0, new Float32Array(20));
 
     console.log('Material class ')
     // Create a 1x1 RGBA texture filled with white
@@ -73,14 +73,9 @@ export default class Materials {
 
     // Dummy values
     const baseColorFactor = [1.0, 1.0, 1.0, 1.0];
-    const metallicFactor = 0.0;    // diffuse like plastic
+    const metallicFactor = 0.1;    // diffuse like plastic
     const roughnessFactor = 0.5;   // some gloss
-
-    // const baseColorFactor = [1.0, 1.0, 1.0, 1.0];
-    // const metallicFactor = 0.0;
-    // const roughnessFactor = 1.0;
     const pad = [0.0, 0.0];
-
     // Pack into Float32Array
     const materialArray = new Float32Array([
       ...baseColorFactor,
@@ -89,14 +84,14 @@ export default class Materials {
       ...pad
     ]);
 
-    // this.device.queue.writeBuffer(this.materialPBRBuffer, 0, materialArray.buffer);
+    this.device.queue.writeBuffer(this.materialPBRBuffer, 0, materialArray.buffer);
 
-    const defaultPBR = new Float32Array([
-  1.0, 1.0, 1.0, 1.0, // baseColorFactor RGBA
-  0.0,                // metallicFactor (plastic)
-  0.5                 // roughnessFactor (semi glossy)
-]);
-device.queue.writeBuffer(this.materialPBRBuffer, 0, defaultPBR.buffer);
+//     const defaultPBR = new Float32Array([
+//   1.0, 1.0, 1.0, 1.0, // baseColorFactor RGBA
+//   0.1,                // metallicFactor (plastic)
+//   0.5                 // roughnessFactor (semi glossy)
+// ]);
+// device.queue.writeBuffer(this.materialPBRBuffer, 0, defaultPBR.buffer);
   }
 
   updatePostFXMode(mode) {

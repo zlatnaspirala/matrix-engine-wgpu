@@ -34,7 +34,7 @@ export function loadGLBLoader() {
       TEST_ANIM.addGlbObj({
         // scale: [1,1,1],
         position: {x: 0, y: -4, z: -20},
-        scale: [1, 1, 1],
+        scale: [5, 5, 5],
         name: 'firstGlb',
         texturesPaths: ['./res/meshes/glb/textures/mutant.png'],
       }, null, glbFile);
