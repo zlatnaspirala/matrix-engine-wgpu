@@ -19,8 +19,9 @@ export var loadObjsSequence = function() {
       loadObjFile.addLight();
 
       // adapt
-      app.lightContainer[0].position[2] = -5;
-      app.lightContainer[0].position[1] = 22;
+      app.lightContainer[0].position[2] = -20;
+      app.lightContainer[0].position[1] = 12;
+      app.lightContainer[0].intensity = 12;
 
       downloadMeshes(
         makeObjSeqArg({
@@ -55,7 +56,7 @@ export var loadObjsSequence = function() {
         }
       };
       loadObjFile.addMeshObj({
-        position: {x: 0, y: 2, z: -10},
+        position: {x: 0, y: 2, z: -20},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
         scale: [100,100,100],

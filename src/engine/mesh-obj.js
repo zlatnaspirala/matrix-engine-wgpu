@@ -368,7 +368,7 @@ export default class MEMeshObj extends Materials {
         size: 176,
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
       });
-   // test
+   // test MUST BE IF
       this.uniformBufferBindGroupLayout = this.device.createBindGroupLayout({
         label: 'uniformBufferBindGroupLayout in mesh',
         entries: [
@@ -667,7 +667,7 @@ export default class MEMeshObj extends Materials {
     pass.drawIndexed(this.indexCount);
   }
 
-  drawElementsAnim = (renderPass) => {
+  drawElementsAnim = (renderPass, lightContainer) => {
     if(!this.sceneBindGroupForRender || !this.modelBindGroup) {console.log(' NULL 1'); return;}
     if(!this.objAnim.meshList[this.objAnim.id + this.objAnim.currentAni]) {console.log(' NULL 2'); return;}
 
@@ -678,7 +678,7 @@ export default class MEMeshObj extends Materials {
     if(this.isVideo == false) {
       let bindIndex = 2; // start after UBO & model
       for(const light of lightContainer) {
-        pass.setBindGroup(bindIndex++, light.getMainPassBindGroup(this));
+        renderPass.setBindGroup(bindIndex++, light.getMainPassBindGroup(this));
       }
     }
 
