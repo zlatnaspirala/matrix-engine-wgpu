@@ -55,7 +55,7 @@ export function loadGLBLoader() {
 
     function onGround(m) {
       TEST_ANIM.addLight();
-      TEST_ANIM.globalAmbient[1] = 1.5;
+      // TEST_ANIM.globalAmbient[1] = 1;
 
       TEST_ANIM.addMeshObj({
         position: {x: 0, y: -5, z: -10},

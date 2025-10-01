@@ -1,7 +1,8 @@
 import {mat4, vec3} from 'wgpu-matrix';
 import {Position, Rotation} from "./matrix-class";
-// import {vertexShadowWGSL} from '../shaders/vertexShadow.wgsl';
 import {fragmentWGSL} from '../shaders/fragment.wgsl';
+import {fragmentWGSLNoCut} from '../shaders/fragment.wgsl.noCut';
+import {fragmentWGSLPong} from '../shaders/fragment.wgsl.pong';
 import {vertexWGSL} from '../shaders/vertex.wgsl';
 import {degToRad, genName, LOG_FUNNY_SMALL} from './utils';
 import Materials from './materials';
@@ -538,7 +539,7 @@ export default class MEMeshObj extends Materials {
       fragment: {
         entryPoint: 'main',
         module: this.device.createShaderModule({
-          code: (this.isVideo == true ? fragmentVideoWGSL : fragmentWGSL),
+          code: (this.isVideo == true ? fragmentVideoWGSL : fragmentWGSLPong),
         }),
         targets: [
           {
