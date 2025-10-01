@@ -7,6 +7,7 @@ import {vertexWGSL} from '../shaders/vertex.wgsl';
 import {degToRad, genName, LOG_FUNNY_SMALL} from './utils';
 import Materials from './materials';
 import {fragmentVideoWGSL} from '../shaders/fragment.video.wgsl';
+import {fragmentWGSLPower} from '../shaders/fragment.wgsl.power';
 
 export default class MEMeshObj extends Materials {
   constructor(canvas, device, context, o, inputHandler, globalAmbient, _glbFile = null, primitiveIndex = null, skinnedNodeIndex = null) {
@@ -539,7 +540,7 @@ export default class MEMeshObj extends Materials {
       fragment: {
         entryPoint: 'main',
         module: this.device.createShaderModule({
-          code: (this.isVideo == true ? fragmentVideoWGSL : fragmentWGSL),
+          code: (this.isVideo == true ? fragmentVideoWGSL : fragmentWGSLPower),
         }),
         targets: [
           {
