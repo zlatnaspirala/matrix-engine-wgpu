@@ -19794,8 +19794,8 @@ class SpotLight {
     this.aspect = aspect;
     this.near = near;
     this.far = far;
-    this.innerCutoff = Math.cos(Math.PI / 180 * 12.5);
-    this.outerCutoff = Math.cos(Math.PI / 180 * 17.5);
+    this.innerCutoff = Math.cos(Math.PI / 180 * 20.0);
+    this.outerCutoff = Math.cos(Math.PI / 180 * 30.0);
     this.ambientFactor = 0.5;
     this.range = 20.0;
     this.shadowBias = 0.01;

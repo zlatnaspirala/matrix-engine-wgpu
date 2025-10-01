@@ -159,7 +159,9 @@ Features
 ✅ Supports multiple lights (4 max), ~20 for next update.
 ✅ Shadow-ready (spotlight0 shadows implemented, extendable to others)
 
-Important Required to be added manual:
+```json
+## Important Required to be added manual:
+```
 
 ```js
 engine.addLight();
@@ -187,6 +189,10 @@ loadObjFile.lightContainer[0].updater.push(light => {
   light.position[0] = light.behavior.setPath0();
 });
 ```
+
+### Materials
+ With last glb feature materials become part of engine also.
+ 
 
 ### Object Interaction (Raycasting)
 
