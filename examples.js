@@ -6,19 +6,12 @@
 
 // import {loadJamb} from "./examples/load-jamb.js";
 import {loadCameraTexture} from "./examples/camera-texture.js";
+import {loadGLBLoader} from "./examples/glb-loader.js";
 import {loadObjFile} from "./examples/load-obj-file.js";
 import {loadObjsSequence} from "./examples/load-objs-sequence.js";
 import {unlitTextures} from "./examples/unlit-textures.js";
 import {loadVideoTexture} from "./examples/video-texture.js";
 import {byId} from "./src/engine/utils.js";
-
-// For future
-var examples = {
-  // loadJamb,
-  loadObjFile,
-  unlitTextures,
-  loadVideoTexture
-};
 
 function destroyJambDoms() {
   if(byId('hud')) byId('hud').remove();
@@ -52,6 +45,12 @@ byId('video-texture').addEventListener("click", () => {
   if(typeof app !== "undefined") app.destroyProgram()
   destroyJambDoms();
   loadVideoTexture();
+})
+
+byId('glb-loader').addEventListener("click", () => {
+  if(typeof app !== "undefined") app.destroyProgram()
+  // destroyJambDoms();
+  loadGLBLoader();
 })
 
 byId('jamb').addEventListener("click", () => {

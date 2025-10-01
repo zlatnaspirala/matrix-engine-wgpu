@@ -19,8 +19,15 @@ export var loadObjsSequence = function() {
       loadObjFile.addLight();
 
       // adapt
-      app.lightContainer[0].position[2] = -5;
-      app.lightContainer[0].position[1] = 22;
+      app.lightContainer[0].position[2] = -20;
+      app.lightContainer[0].position[1] = 25;
+      app.lightContainer[0].intensity = 10;
+
+      downloadMeshes({
+        cube: "./res/meshes/blender/cube.obj",
+      }, onGround,
+        {scale: [20, 1, 20]})
+
 
       downloadMeshes(
         makeObjSeqArg({
@@ -30,7 +37,7 @@ export var loadObjsSequence = function() {
           to: 20
         }),
         onLoadObj,
-        {scale: [0.1,0.1,0.1]}
+        {scale: [0.1, 0.1, 0.1]}
       );
     })
 
@@ -55,10 +62,10 @@ export var loadObjsSequence = function() {
         }
       };
       loadObjFile.addMeshObj({
-        position: {x: 0, y: 2, z: -10},
+        position: {x: 0, y: 0, z: -20},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
-        scale: [100,100,100],
+        scale: [100, 100, 100],
         texturesPaths: ['./res/meshes/blender/cube.png'],
         name: 'swat',
         mesh: m['swat-walk-pistol'],
@@ -68,14 +75,41 @@ export var loadObjsSequence = function() {
         },
         objAnim: objAnim
       })
-      app.mainRenderBundle[0].objAnim.play('walk');
+  
 
-      setTimeout(()=> {
-      app.cameras.WASD.pitch =  -0.2605728267949113;
-      app.cameras.WASD.yaw = -0.0580;
-      app.cameras.WASD.position[1] = 15
-      app.cameras.WASD.position[2] = 11
+      setTimeout(() => {
+        app.cameras.WASD.pitch = -0.2605728267949113;
+        app.cameras.WASD.yaw = -0.0580;
+        app.cameras.WASD.position[1] = 15
+        app.cameras.WASD.position[2] = 11;
+        app.getSceneObjectByName('swat').objAnim.play('walk')
       }, 200)
+    }
+
+    function onGround(m) {
+
+      setTimeout(() => {
+        app.cameras.WASD.yaw = -0.03;
+        app.cameras.WASD.pitch = -0.49;
+        app.cameras.WASD.position[2] = 0;
+        app.cameras.WASD.position[1] = 3.76;
+      }, 500)
+
+      loadObjFile.addMeshObj({
+        position: {x: 0, y: -1, z: -10},
+        rotation: {x: 0, y: 0, z: 0},
+        rotationSpeed: {x: 0, y: 0, z: 0},
+        texturesPaths: ['./res/meshes/blender/cube.png'],
+        name: 'ground',
+        mesh: m.cube,
+        physics: {
+          enabled: false,
+          mass: 0,
+          geometry: "Cube"
+        },
+        // raycast: { enabled: true , radius: 2 }
+      })
+
     }
   })
   // Just for dev - easy console access

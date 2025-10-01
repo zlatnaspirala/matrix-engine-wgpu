@@ -77,8 +77,8 @@ export class SpotLight {
     this.near = near;
     this.far = far;
 
-    this.innerCutoff = Math.cos((Math.PI / 180) * 12.5);
-    this.outerCutoff = Math.cos((Math.PI / 180) * 17.5);
+    this.innerCutoff = Math.cos((Math.PI / 180) * 20.0);
+    this.outerCutoff = Math.cos((Math.PI / 180) * 30.0);
 
     this.ambientFactor = 0.5;
     this.range = 20.0;
@@ -177,14 +177,14 @@ export class SpotLight {
           },
         ],
       });
-      return this.shadowBindGroupContainer[index];
+      return this.shadowBindGroup[index];
     }
 
     this.modelBindGroupLayout = this.device.createBindGroupLayout({
       label: 'modelBindGroupLayout in light [one bindings]',
       entries: [
-        {binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'} },
-        {binding: 1, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform', } }
+        {binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
+        {binding: 1, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform', }}
       ]
     });
 

@@ -1,72 +1,1795 @@
 (function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
 "use strict";
 
-var _world = _interopRequireDefault(require("../src/world.js"));
-var _loaderObj = require("../src/engine/loader-obj.js");
-var _utils = require("../src/engine/utils.js");
-var _bvh = require("../src/engine/loaders/bvh.js");
-var _webgpuGltf = require("../src/engine/loaders/webgpu-gltf.js");
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.welcomeBoxHTML = exports.settingsBox = void 0;
+let settingsBox = exports.settingsBox = `
+<div style="">
+  <span style="font-size:170%" data-label="settings"></span>
+  <div style="justify-items: flex-end;margin:20px;" >
+    <div>
+      <span data-label="sounds"></span>
+      <label class="switch">
+        <input id="settingsAudios" type="checkbox">
+        <span class="sliderSwitch round"></span>
+      </label>
+    </div>
+      <div style="margin-top:20px;margin-bottom:15px;">
+        <span style="font-size: larger;margin-bottom:15px" data-label="graphics"></span>
+        <p></p>
+        <label>Anim speed:</label>
+        <select id="physicsSpeed" class="setting-select">
+          <option value="1">Slow</option>
+          <option value="2">Normal</option>
+          <option value="3">Fast</option>
+        </select>
+      </div>
+
+      <div>
+        <label>Blur:</label>
+        <select id="blurControl">
+          <option value="0px">Blur: 0</option>
+          <option value="1px">Blur: 1</option>
+          <option value="2px">Blur: 2</option>
+          <option value="3px">Blur: 3</option>
+        </select>
+      </div>
+
+      <div>
+      <label>Grayscale:</label>
+      <select id="grayscaleControl">
+        <option value="0%">Grayscale: 0%</option>
+        <option value="25%">Grayscale: 25%</option>
+        <option value="50%">Grayscale: 50%</option>
+        <option value="75%">Grayscale: 75%</option>
+        <option value="100%">Grayscale: 100%</option>
+      </select>
+      </div>
+      
+      <div>
+       <label>Brightness:</label>
+      <select id="brightnessControl">
+        <option value="100%">100%</option>
+        <option value="150%">150%</option>
+        <option value="200%">200%</option>
+      </select>
+      </div>
+      
+      <div>
+      <label>Contrast:</label>
+      <select id="contrastControl">
+        <option value="100%">100%</option>
+        <option value="150%">150%</option>
+        <option value="200%">200%</option>
+      </select>
+      </div>
+      
+      <div>
+      <label>Saturate:</label>
+      <select id="saturateControl">
+        <option value="100%">100%</option>
+        <option value="150%">150%</option>
+        <option value="200%">200%</option>
+      </select>
+     </div>
+      
+      <div>
+      <label>Sepia:</label>
+      <select id="sepiaControl">
+        <option value="0%">0%</option>
+        <option value="50%">50%</option>
+        <option value="100%">100%</option>
+      </select>
+     </div>
+      
+      <div>
+      <label>Invert:</label>
+      <select id="invertControl">
+        <option value="0%">0%</option>
+        <option value="50%">50%</option>
+        <option value="100%">100%</option>
+      </select>
+     </div>
+      
+      <div>
+      <label>Hue Rotate:</label>
+      <select id="hueControl">
+        <option value="0deg">0°</option>
+        <option value="90deg">90°</option>
+        <option value="180deg">180°</option>
+        <option value="270deg">270°</option>
+      </select>
+      </div>
+ 
+    <div style="margin-top:20px;">
+      <button class="btn" onclick="app.myDom.hideSettings()">
+        <span data-label="hide"></span>
+      </button>
+    </div>
+
+    <img src="res/icons/512.png" style="position:absolute;left:10px;top:5%;width:300px;z-index:-1;"/>
+  </div>
+</div>`;
+let welcomeBoxHTML = exports.welcomeBoxHTML = `<span class="fancy-title" data-label="welcomeMsg"></span>
+     <a href="https://github.com/zlatnaspirala/matrix-engine-wgpu">zlatnaspirala/matrix-engine-wgpu</a><br><br>
+     <div style="display:flex;flex-direction:column;align-items: center;margin:20px;padding: 10px;">
+       <span style="width:100%" data-label="choosename"></span>
+       <input style="text-align: center;height:50px;font-size:100%;width:250px" class="fancy-label" type="text" value="Guest" />
+      </div>
+     <button id="startFromWelcome" class="btn" ><span style="font-size:30px;margin:15px;padding:10px" data-label="startGame"></span></button> <br>
+     <div><span class="fancy-label" data-label="changeLang"></span></div> 
+     <button class="btn" onclick="
+      app.label.loadMultilang('en').then(r => {
+        app.label.get = r;
+        app.label.update()
+      });
+     " ><span data-label="english"></span></button> 
+     <button class="btn" onclick="app.label.loadMultilang('sr').then(r => {
+        app.label.get = r
+        app.label.update() })" ><span data-label="serbian"></span></button> 
+    `;
+
+},{}],2:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.myDom = exports.dices = void 0;
+var _utils = require("../../../src/engine/utils.js");
+var _htmlContent = require("./html-content.js");
+let dices = exports.dices = {
+  C: 0,
+  STATUS: 'FREE_TO_PLAY',
+  R: {},
+  SAVED_DICES: {},
+  pickDice: function (dice) {
+    if (Object.keys(this.SAVED_DICES).length >= 5) {
+      console.log("⚠️ You can only select up to 5 dice!");
+      return; // prevent adding more
+    }
+    this.SAVED_DICES[dice] = this.R[dice];
+    this.refreshSelectedBox();
+  },
+  setStartUpPosition: () => {
+    // 
+    let currentIndex = 0;
+    for (var x = 1; x < 7; x++) {
+      app.matrixAmmo.getBodyByName('CubePhysics' + x).MEObject.position.setPosition(-5 + currentIndex * 5, 2, -15);
+    }
+  },
+  refreshSelectedBox: function (arg) {
+    let currentIndex = 0;
+    for (var key in this.SAVED_DICES) {
+      let B = app.matrixAmmo.getBodyByName(key);
+      this.deactivatePhysics(B);
+      const transform = new Ammo.btTransform();
+      transform.setIdentity();
+      transform.setOrigin(new Ammo.btVector3(0, 0, 0));
+      B.setWorldTransform(transform);
+      B.MEObject.position.setPosition(-5 + currentIndex, 5, -16);
+      currentIndex += 3;
+    }
+  },
+  deactivatePhysics: function (body) {
+    const CF_KINEMATIC_OBJECT = 2;
+    const DISABLE_DEACTIVATION = 4;
+    // 1. Remove from world
+    app.matrixAmmo.dynamicsWorld.removeRigidBody(body);
+    // 2. Set body to kinematic
+    const flags = body.getCollisionFlags();
+    body.setCollisionFlags(flags | CF_KINEMATIC_OBJECT);
+    body.setActivationState(DISABLE_DEACTIVATION); // no auto-wakeup
+    // 3. Clear motion
+    const zero = new Ammo.btVector3(0, 0, 0);
+    body.setLinearVelocity(zero);
+    body.setAngularVelocity(zero);
+    // 4. Reset transform to current position (optional — preserves pose)
+    const currentTransform = body.getWorldTransform();
+    body.setWorldTransform(currentTransform);
+    body.getMotionState().setWorldTransform(currentTransform);
+    // 5. Add back to physics world
+    app.matrixAmmo.dynamicsWorld.addRigidBody(body);
+    // 6. Mark it manually (logic flag)
+    body.isKinematic = true;
+  },
+  resetBodyAboveFloor: function (body, z = -14) {
+    const transform = new Ammo.btTransform();
+    transform.setIdentity();
+    transform.setOrigin(new Ammo.btVector3(-1 + Math.random(), 3, z));
+    body.setWorldTransform(transform);
+    body.getMotionState().setWorldTransform(transform);
+  },
+  activatePhysics: function (body) {
+    // 1. Make it dynamic again
+    body.setCollisionFlags(body.getCollisionFlags() & ~2); // remove kinematic
+    body.setActivationState(1); // ACTIVE_TAG
+    body.isKinematic = false;
+
+    // 2. Reset position ABOVE the floor — force it out of collision
+    // const newY = 3 + Math.random(); // ensure it’s above the floor
+    const transform = new Ammo.btTransform();
+    transform.setIdentity();
+    const newX = (Math.random() - 0.5) * 4; // spread from -2 to +2 on X
+    const newY = 3; // fixed height above floor
+    transform.setOrigin(new Ammo.btVector3(newX, newY, 0));
+    body.setWorldTransform(transform);
+
+    // 3. Clear velocities
+    body.setLinearVelocity(new Ammo.btVector3(0, 0, 0));
+    body.setAngularVelocity(new Ammo.btVector3(0, 0, 0));
+
+    // 4. Enable CCD (to prevent tunneling)
+    const size = 1; // cube side length
+    body.setCcdMotionThreshold(1e-7);
+    body.setCcdSweptSphereRadius(size * 0.5);
+
+    // Re-add to world if needed
+    // Optionally: remove and re-add if not responding
+    app.matrixAmmo.dynamicsWorld.removeRigidBody(body);
+    app.matrixAmmo.dynamicsWorld.addRigidBody(body);
+
+    // 5. Reactivate it
+    body.activate(true);
+    this.resetBodyAboveFloor(body);
+  },
+  activateAllDicesPhysics: function () {
+    this.getAllDices()
+    // .filter((item) => {
+    //   let test = app.matrixAmmo.getBodyByName(item.name)?.isKinematicObject();
+    //   if(test === true) {
+    //     return true;
+    //   } else {
+    //     return false;
+    //   }
+    // })
+    .forEach(dice => {
+      const body = app.matrixAmmo.getBodyByName(dice.name);
+      if (body) {
+        this.activatePhysics(body); // <--- FIX: pass the physics body, not the dice object
+      }
+    });
+  },
+  getAllDices: function () {
+    return app.mainRenderBundle.filter(item => item.name.indexOf("CubePhysics") !== -1);
+  },
+  getDiceByName: function (name) {
+    return app.mainRenderBundle.find(item => item.name === name);
+  },
+  checkAll: function () {
+    this.C++;
+    let activeRollingCount = 0;
+    let allReady = true;
+    for (let i = 1; i <= 6; i++) {
+      const key = "CubePhysics" + i;
+      if (key in this.SAVED_DICES) continue; // skip saved ones
+      activeRollingCount++; // count how many are still active
+      if (typeof this.R[key] === 'undefined') {
+        allReady = false;
+        break;
+      }
+    }
+    // Dynamic threshold: min wait time based on rolling dice
+    const minWait = Math.max(200, activeRollingCount * 200); // e.g. 1 die => 200, 5 dice => 1000, 6 dice => 1200
+    if (allReady && this.C > minWait) {
+      dispatchEvent(new CustomEvent('all-done', {
+        detail: {}
+      }));
+      this.C = 0;
+    }
+  },
+  validatePass: function () {
+    if (Object.keys(this.SAVED_DICES).length !== 5) {
+      console.log('%cBLOCK', _utils.LOG_FUNNY);
+      _utils.mb.error(`Must select (minimum) 5 dices before add results...`);
+      return false;
+    }
+    if (dices.STATUS != "FINISHED") {
+      console.log('%cBLOCK', _utils.LOG_FUNNY);
+      _utils.mb.error(`STATUS IS ${dices.STATUS}, please wait for results...`);
+      app.matrixSounds.play('block');
+      return false;
+    } else {
+      return true;
+    }
+  }
+};
+let myDom = exports.myDom = {
+  state: {
+    rowDown: []
+  },
+  memoNumberRow: [],
+  hideSettings: function () {
+    (0, _utils.byId)('blocker').style.display = 'none';
+    (0, _utils.byId)('messageBox').style.display = 'none';
+  },
+  createMenu: function () {
+    var root = document.createElement('div');
+    root.id = 'hud';
+    root.style.position = 'absolute';
+    root.style.right = '10%';
+    root.style.top = '10%';
+    var help = document.createElement('div');
+    help.id = 'HELP';
+    help.classList.add('btn');
+    help.innerHTML = `<span data-label="help"></span>`;
+    help.addEventListener('click', () => {
+      if ((0, _utils.byId)('helpBox').style.display != 'none') {
+        (0, _utils.byId)('helpBox').style.display = 'none';
+      } else {
+        (0, _utils.byId)('helpBox').style.display = 'block';
+      }
+    });
+    var table = document.createElement('div');
+    table.id = 'showHideTableDOM';
+    table.classList.add('btn');
+    table.innerHTML = `<span data-label="table"></span>`;
+    table.addEventListener('click', () => {
+      this.showHideJambTable();
+    });
+    var settings = document.createElement('div');
+    settings.id = 'settings';
+    settings.classList.add('btn');
+    settings.innerHTML = `<span data-label="settings"></span>`;
+    settings.addEventListener('click', () => {
+      if (document.getElementById('messageBox').getAttribute('data-loaded') != null) {
+        (0, _utils.byId)('blocker').style.display = 'flex';
+        (0, _utils.byId)('messageBox').style.display = 'unset';
+        return;
+      }
+      (0, _utils.byId)('messageBox').innerHTML = _htmlContent.settingsBox;
+      (0, _utils.byId)('blocker').style.display = 'flex';
+      (0, _utils.byId)('messageBox').style.display = 'unset';
+      dispatchEvent(new CustomEvent('updateLang', {}));
+      (0, _utils.byId)('settingsAudios').click();
+      (0, _utils.byId)('settingsAudios').addEventListener('change', e => {
+        if (e.target.checked == true) {
+          app.matrixSounds.unmuteAll();
+        } else {
+          app.matrixSounds.muteAll();
+        }
+      });
+      (0, _utils.setupCanvasFilters)();
+      (0, _utils.byId)('messageBox').setAttribute('data-loaded', 'loaded');
+      document.getElementById('physicsSpeed').value = app.matrixAmmo.speedUpSimulation;
+      (0, _utils.byId)("physicsSpeed").addEventListener("change", e => {
+        app.matrixAmmo.speedUpSimulation = parseInt(e.target.value);
+      });
+    });
+
+    // test help
+    var helpBox = document.createElement('div');
+    helpBox.id = 'helpBox';
+    helpBox.style.position = 'absolute';
+    helpBox.style.right = '20%';
+    helpBox.style.zIndex = '2';
+    helpBox.style.top = '15%';
+    helpBox.style.width = '60%';
+    helpBox.style.height = '50%';
+    helpBox.style.fontSize = '100%';
+    helpBox.classList.add('btn');
+    helpBox.addEventListener('click', () => {
+      (0, _utils.byId)('helpBox').style.display = 'none';
+    });
+    document.body.appendChild(helpBox);
+    console.log('what is dom, ', (0, _utils.byId)('helpBox'));
+    (0, _utils.typeText)('helpBox', app.label.get.about, 10);
+    //
+    var roll = document.createElement('div');
+    roll.id = 'hud-roll';
+    roll.classList.add('btn');
+    roll.innerHTML = `<span data-label="roll"></span>`;
+    roll.addEventListener('click', () => {
+      app.ROLL();
+    });
+    var separator = document.createElement('div');
+    separator.innerHTML = `✨maximumroulette.com✨`;
+    root.append(settings);
+    root.append(table);
+    root.append(help);
+    root.append(separator);
+    root.append(roll);
+    document.body.appendChild(root);
+
+    // global access
+    // app.label.update()
+    dispatchEvent(new CustomEvent('updateLang', {}));
+  },
+  createBlocker: function () {
+    var root = document.createElement('div');
+    root.id = 'blocker';
+    var messageBox = document.createElement('div');
+    messageBox.id = 'messageBox';
+
+    // console.log('TEST', app.label.get)
+    messageBox.innerHTML = _htmlContent.welcomeBoxHTML;
+    let initialMsgBoxEvent = function () {
+      console.log('click on msgbox');
+      (0, _utils.byId)('messageBox').innerHTML = ``;
+      (0, _utils.byId)('blocker').style.display = 'none';
+      myDom.createMenu();
+      messageBox.removeEventListener('click', initialMsgBoxEvent);
+      document.querySelectorAll('.btn, .fancy-label, .fancy-title').forEach(el => {
+        el.addEventListener('mouseenter', () => {
+          app.matrixSounds.play('hover');
+        });
+      });
+    };
+    root.append(messageBox);
+    document.body.appendChild(root);
+    app.label.update();
+    document.querySelectorAll('.btn, .fancy-label, .fancy-title').forEach(el => {
+      el.addEventListener('mouseenter', () => {
+        app.matrixSounds.play('hover');
+      });
+    });
+    setTimeout(() => {
+      (0, _utils.byId)('startFromWelcome').addEventListener('click', initialMsgBoxEvent);
+    }, 200);
+  },
+  createJamb: function () {
+    var root = document.createElement('div');
+    root.id = 'jambTable';
+    root.style.position = 'absolute';
+    var dragHandler = document.createElement('div');
+    dragHandler.id = 'dragHandler';
+    dragHandler.classList.add('dragHandler');
+    dragHandler.innerHTML = "⇅ Drag";
+    root.append(dragHandler);
+    var rowHeader = document.createElement('div');
+    rowHeader.id = 'rowHeader';
+    rowHeader.style.top = '10px';
+    rowHeader.style.left = '10px';
+    rowHeader.style.width = '200px';
+    rowHeader.innerHTML = '<span data-label="cornerText"></span><span id="user-points">0</span>';
+    root.appendChild(rowHeader);
+    rowHeader.classList.add('fancy-label');
+    var rowDown = document.createElement('div');
+    rowDown.id = 'rowDown';
+    rowDown.style.top = '10px';
+    rowDown.style.left = '10px';
+    rowDown.style.width = '200px';
+    rowDown.innerHTML = '↓<span data-label="down"></span>';
+    rowDown.classList.add('fancy-label');
+    rowDown.classList.add('btn');
+    root.appendChild(rowDown);
+    var rowFree = document.createElement('div');
+    rowFree.id = 'rowFree';
+    rowFree.style.top = '10px';
+    rowFree.style.left = '10px';
+    rowFree.style.width = '200px';
+    rowFree.innerHTML = '↕<span data-label="free"></span>';
+    rowFree.classList.add('fancy-label');
+    rowFree.classList.add('btn');
+    root.appendChild(rowFree);
+    var rowUp = document.createElement('div');
+    rowUp.id = 'rowUp';
+    rowUp.style.top = '10px';
+    rowUp.style.left = '10px';
+    rowUp.style.width = '200px';
+    rowUp.innerHTML = '↑<span data-label="up"></span>';
+    rowUp.classList.add('fancy-label');
+    rowUp.classList.add('btn');
+    root.appendChild(rowUp);
+    var rowHand = document.createElement('div');
+    rowHand.id = 'rowHand';
+    rowHand.style.top = '10px';
+    rowHand.style.left = '10px';
+    rowHand.style.width = '200px';
+    rowHand.innerHTML = '<span data-label="hand"></span>';
+    rowHand.classList.add('fancy-label');
+    rowHand.classList.add('btn');
+    root.appendChild(rowHand);
+
+    // INJECT TABLE HEADER ROW
+    this.createLeftHeaderRow(rowHeader);
+    this.createRowDown(rowDown);
+    this.createRowFree(rowFree);
+    this.createRow(rowUp);
+    this.createRow(rowHand);
+    this.createSelectedBox();
+    document.body.appendChild(root);
+    // console.log('JambTable added.')
+  },
+  showHideJambTable: () => {
+    const panel = document.getElementById('jambTable');
+    if (panel.classList.contains('show')) {
+      panel.classList.remove('show');
+      panel.classList.add('hide');
+      // Delay actual hiding from layout to finish animation
+      setTimeout(() => {
+        panel.style.display = 'none';
+      }, 300);
+    } else {
+      panel.style.display = 'flex';
+      setTimeout(() => {
+        panel.classList.remove('hide');
+        panel.classList.add('show');
+      }, 10); // allow repaint
+    }
+  },
+  createSelectedBox: function () {
+    var topTitleDOM = document.createElement('div');
+    topTitleDOM.id = 'topTitleDOM';
+    topTitleDOM.style.width = 'auto';
+    topTitleDOM.style.position = 'absolute';
+    topTitleDOM.style.left = '35%';
+    topTitleDOM.style.fontSize = '175%';
+    topTitleDOM.style.top = '4%';
+    topTitleDOM.style.background = '#7d7d7d8c';
+    topTitleDOM.innerHTML = app.label.get.ready + ", " + app.userState.name + '.';
+    topTitleDOM.setAttribute('data-gamestatus', 'FREE');
+    document.body.appendChild(topTitleDOM);
+    addEventListener('updateTitle', e => {
+      (0, _utils.typeText)('topTitleDOM', e.detail.text);
+      topTitleDOM.setAttribute('data-gamestatus', e.detail.status);
+    });
+  },
+  createLeftHeaderRow: function (myRoot) {
+    for (var x = 1; x < 7; x++) {
+      var rowNumber = document.createElement('div');
+      rowNumber.id = 'rowNumber' + x;
+      rowNumber.style.top = '10px';
+      rowNumber.style.left = '10px';
+      rowNumber.style.width = 'auto';
+      rowNumber.style.background = '#7d7d7d8c';
+      rowNumber.innerHTML = `<span>${x}</span>`;
+      myRoot.appendChild(rowNumber);
+    }
+    var rowNumberSum = document.createElement('div');
+    rowNumberSum.id = 'H_rowNumberSum';
+    rowNumberSum.style.width = 'auto';
+    rowNumberSum.style.background = '#7d7d7d8c';
+    rowNumberSum.innerHTML = `Σ`;
+    myRoot.appendChild(rowNumberSum);
+    var rowMax = document.createElement('div');
+    rowMax.id = 'H_rowMax';
+    rowMax.style.width = 'auto';
+    rowMax.style.background = '#7d7d7d8c';
+    rowMax.innerHTML = `<span data-label="MAX"></span>`;
+    myRoot.appendChild(rowMax);
+    var rowMin = document.createElement('div');
+    rowMin.id = 'H_rowMax';
+    rowMin.style.width = 'auto';
+    rowMin.style.background = '#7d7d7d8c';
+    rowMin.innerHTML = `<span data-label="MIN"></span>`;
+    myRoot.appendChild(rowMin);
+    var rowMaxMinSum = document.createElement('div');
+    rowMaxMinSum.id = 'H_rowMaxMinSum';
+    rowMaxMinSum.style.width = 'auto';
+    rowMaxMinSum.style.background = '#7d7d7d8c';
+    rowMaxMinSum.innerHTML = `Σ`;
+    myRoot.appendChild(rowMaxMinSum);
+    var largeStraight = document.createElement('div');
+    largeStraight.id = 'H_largeStraight';
+    largeStraight.style.width = 'auto';
+    largeStraight.style.background = '#7d7d7d8c';
+    largeStraight.innerHTML = `<span data-label="straight"></span>`;
+    myRoot.appendChild(largeStraight);
+    var threeOfAKind = document.createElement('div');
+    threeOfAKind.id = 'H_threeOfAKind';
+    threeOfAKind.style.width = 'auto';
+    threeOfAKind.style.background = '#7d7d7d8c';
+    threeOfAKind.innerHTML = `<span data-label="threeOf"></span>`;
+    myRoot.appendChild(threeOfAKind);
+    var fullHouse = document.createElement('div');
+    fullHouse.id = 'H_fullHouse';
+    fullHouse.style.width = 'auto';
+    fullHouse.style.background = '#7d7d7d8c';
+    fullHouse.innerHTML = `<span data-label="fullhouse"></span>`;
+    myRoot.appendChild(fullHouse);
+    var poker = document.createElement('div');
+    poker.id = 'H_poker';
+    poker.style.width = 'auto';
+    poker.style.background = '#7d7d7d8c';
+    poker.innerHTML = `<span data-label="poker"></span>`;
+    myRoot.appendChild(poker);
+    var jamb = document.createElement('div');
+    jamb.id = 'H_jamb';
+    jamb.style.width = 'auto';
+    jamb.style.background = '#7d7d7d8c';
+    jamb.innerHTML = `<span data-label="jamb"></span>`;
+    myRoot.appendChild(jamb);
+    var rowSum = document.createElement('div');
+    rowSum.id = 'H_rowSum';
+    rowSum.style.width = 'auto';
+    rowSum.style.background = '#7d7d7d8c';
+    rowSum.innerHTML = `Σ`;
+    myRoot.appendChild(rowSum);
+    var rowSumFINAL = document.createElement('div');
+    rowSumFINAL.id = 'H_rowSumFINAL';
+    rowSumFINAL.style.width = 'auto';
+    rowSumFINAL.style.background = '#7d7d7d8c';
+    rowSumFINAL.innerHTML = `<spam data-label="final"></span>`;
+    myRoot.appendChild(rowSumFINAL);
+  },
+  createRow: function (myRoot) {
+    for (var x = 1; x < 7; x++) {
+      var rowNumber = document.createElement('div');
+      rowNumber.id = 'rowNumber' + x;
+      rowNumber.style.top = '10px';
+      rowNumber.style.left = '10px';
+      rowNumber.style.width = 'auto';
+      rowNumber.style.background = '#7d7d7d8c';
+      rowNumber.innerHTML = `-`;
+      rowNumber.addEventListener('click', () => {
+        console.log('LOG THIS ', this);
+        // works
+        // rowDown
+        if (this.state.rowDown.length == 0) {
+          console.log('it is no play yet in this row ', this);
+        }
+      });
+      myRoot.appendChild(rowNumber);
+    }
+    var rowNumberSum = document.createElement('div');
+    rowNumberSum.id = 'rowNumberSum';
+    rowNumberSum.style.width = 'auto';
+    rowNumberSum.style.background = '#7d7d7d8c';
+    rowNumberSum.innerHTML = `-`;
+    myRoot.appendChild(rowNumberSum);
+    var rowMax = document.createElement('div');
+    rowMax.id = 'rowMax';
+    rowMax.style.width = 'auto';
+    rowMax.style.background = '#7d7d7d8c';
+    rowMax.innerHTML = `-`;
+    myRoot.appendChild(rowMax);
+    var rowMin = document.createElement('div');
+    rowMin.id = 'rowMax';
+    rowMin.style.width = 'auto';
+    rowMin.style.background = '#7d7d7d8c';
+    rowMin.innerHTML = `-`;
+    myRoot.appendChild(rowMin);
+    var rowMaxMinSum = document.createElement('div');
+    rowMaxMinSum.id = 'rowMaxMinSum';
+    rowMaxMinSum.style.width = 'auto';
+    rowMaxMinSum.style.background = '#7d7d7d8c';
+    rowMaxMinSum.innerHTML = `-`;
+    myRoot.appendChild(rowMaxMinSum);
+    var largeStraight = document.createElement('div');
+    largeStraight.id = 'largeStraight';
+    largeStraight.style.width = 'auto';
+    largeStraight.style.background = '#7d7d7d8c';
+    largeStraight.innerHTML = `-`;
+    myRoot.appendChild(largeStraight);
+    var threeOfAKind = document.createElement('div');
+    threeOfAKind.id = 'down_threeOfAKind';
+    threeOfAKind.style.width = 'auto';
+    threeOfAKind.style.background = '#7d7d7d8c';
+    threeOfAKind.innerHTML = `-`;
+    myRoot.appendChild(threeOfAKind);
+    var fullHouse = document.createElement('div');
+    fullHouse.id = 'fullHouse';
+    fullHouse.style.width = 'auto';
+    fullHouse.style.background = '#7d7d7d8c';
+    fullHouse.innerHTML = `-`;
+    myRoot.appendChild(fullHouse);
+    var poker = document.createElement('div');
+    poker.id = 'poker';
+    poker.style.width = 'auto';
+    poker.style.background = '#7d7d7d8c';
+    poker.innerHTML = `-`;
+    myRoot.appendChild(poker);
+    var jamb = document.createElement('div');
+    jamb.id = 'jamb';
+    jamb.style.width = 'auto';
+    jamb.style.background = '#7d7d7d8c';
+    jamb.innerHTML = `-`;
+    myRoot.appendChild(jamb);
+    var rowSum = document.createElement('div');
+    rowSum.id = 'rowSum';
+    rowSum.style.width = 'auto';
+    rowSum.style.background = '#7d7d7d8c';
+    rowSum.innerHTML = `-`;
+    myRoot.appendChild(rowSum);
+  },
+  createRowFree: function (myRoot) {
+    for (var x = 1; x < 7; x++) {
+      var rowNumber = document.createElement('div');
+      rowNumber.id = 'free-rowNumber' + x;
+      rowNumber.style.top = '10px';
+      rowNumber.style.left = '10px';
+      rowNumber.style.width = 'auto';
+      rowNumber.style.background = '#7d7d7d8c';
+      rowNumber.innerHTML = `-`;
+      rowNumber.addEventListener('click', e => {
+        if (dices.validatePass() == false) return;
+        var getName = e.target.id;
+        getName = getName.replace('free-rowNumber', '');
+        var count23456 = 0;
+        for (let key in dices.SAVED_DICES) {
+          if (parseInt(dices.R[key]) == parseInt(getName)) {
+            count23456++;
+          }
+        }
+        this.state.rowDown.push(count23456 * parseInt(getName));
+        e.target.innerHTML = count23456 * parseInt(getName);
+        if (parseInt(getName) == 6) {
+          myDom.calcFreeNumbers();
+        }
+        dices.STATUS = "FREE_TO_PLAY";
+        dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
+      });
+      myRoot.appendChild(rowNumber);
+    }
+    var rowNumberSum = document.createElement('div');
+    rowNumberSum.id = 'free-rowNumberSum';
+    rowNumberSum.style.width = 'auto';
+    rowNumberSum.style.background = '#7d7d7d8c';
+    rowNumberSum.innerHTML = `-`;
+    myRoot.appendChild(rowNumberSum);
+    var rowMax = document.createElement('div');
+    rowMax.id = 'free-rowMax';
+    rowMax.style.width = 'auto';
+    rowMax.style.background = '#7d7d7d8c';
+    rowMax.innerHTML = `-`;
+    rowMax.addEventListener("click", this.calcFreeRowMax);
+    myRoot.appendChild(rowMax);
+    var rowMin = document.createElement('div');
+    rowMin.id = 'free-rowMin';
+    rowMin.style.width = 'auto';
+    rowMin.style.background = '#7d7d7d8c';
+    rowMin.innerHTML = `-`;
+    rowMin.addEventListener('click', this.calcFreeRowMin);
+    myRoot.appendChild(rowMin);
+    var rowMaxMinSum = document.createElement('div');
+    rowMaxMinSum.id = 'free-rowMaxMinSum';
+    rowMaxMinSum.style.width = 'auto';
+    rowMaxMinSum.style.background = '#7d7d7d8c';
+    rowMaxMinSum.innerHTML = `-`;
+    myRoot.appendChild(rowMaxMinSum);
+    var largeStraight = document.createElement('div');
+    largeStraight.id = 'free-largeStraight';
+    largeStraight.style.width = 'auto';
+    largeStraight.style.background = '#7d7d7d8c';
+    largeStraight.innerHTML = `-`;
+    largeStraight.addEventListener('click', this.attachFreeKenta);
+    myRoot.appendChild(largeStraight);
+    var threeOfAKind = document.createElement('div');
+    threeOfAKind.id = 'free-threeOfAKind';
+    threeOfAKind.style.width = 'auto';
+    threeOfAKind.style.background = '#7d7d7d8c';
+    threeOfAKind.innerHTML = `-`;
+    threeOfAKind.addEventListener('click', this.attachFreeTrilling);
+    myRoot.appendChild(threeOfAKind);
+    var fullHouse = document.createElement('div');
+    fullHouse.id = 'free-fullHouse';
+    fullHouse.style.width = 'auto';
+    fullHouse.style.background = '#7d7d7d8c';
+    fullHouse.innerHTML = `-`;
+    fullHouse.addEventListener('click', this.attachFreeFullHouse);
+    myRoot.appendChild(fullHouse);
+    var poker = document.createElement('div');
+    poker.id = 'free-poker';
+    poker.style.width = 'auto';
+    poker.style.background = '#7d7d7d8c';
+    poker.innerHTML = `-`;
+    poker.addEventListener('click', this.attachFreePoker);
+    myRoot.appendChild(poker);
+    var jamb = document.createElement('div');
+    jamb.id = 'free-jamb';
+    jamb.style.width = 'auto';
+    jamb.style.background = '#7d7d7d8c';
+    jamb.innerHTML = `-`;
+    jamb.addEventListener('click', this.attachFreeJamb);
+    myRoot.appendChild(jamb);
+    var rowSum = document.createElement('div');
+    rowSum.id = 'free-rowSum';
+    rowSum.style.width = 'auto';
+    rowSum.style.background = '#7d7d7d8c';
+    rowSum.innerHTML = `-`;
+    myRoot.appendChild(rowSum);
+  },
+  createRowDown: function (myRoot) {
+    for (var x = 1; x < 7; x++) {
+      var rowNumber = document.createElement('div');
+      rowNumber.id = 'down-rowNumber' + x;
+      rowNumber.style.top = '10px';
+      rowNumber.style.left = '10px';
+      rowNumber.style.width = 'auto';
+      rowNumber.style.background = '#7d7d7d8c';
+      rowNumber.style.cursor = 'pointer';
+      rowNumber.innerHTML = `-`;
+      this.memoNumberRow.push(rowNumber);
+      // initial
+      if (x == 1) {
+        rowNumber.classList.add('canPlay');
+      }
+      rowNumber.addEventListener('click', e => {
+        if (dices.validatePass() == false) return;
+        var getName = e.target.id;
+        getName = getName.replace('down-rowNumber', '');
+        if (this.state.rowDown.length == 0) {
+          console.log('LOG ', getName);
+          if (parseInt(getName) == 1) {
+            var count1 = 0;
+            for (let key in dices.SAVED_DICES) {
+              if (parseInt(dices.R[key]) == 1) {
+                console.log('yeap', dices.R);
+                count1++;
+              }
+            }
+            this.state.rowDown.push(count1);
+            e.target.innerHTML = count1;
+            e.target.classList.remove('canPlay');
+            this.memoNumberRow[1].classList.add('canPlay');
+            dices.STATUS = "FREE_TO_PLAY";
+            dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
+          } else {
+            console.log('BLOCK');
+          }
+        } else {
+          if (this.state.rowDown.length > 0) {
+            if (parseInt(getName) == this.state.rowDown.length + 1) {
+              console.log('moze za ', parseInt(getName));
+              var count23456 = 0;
+              for (let key in dices.SAVED_DICES) {
+                if (parseInt(dices.R[key]) == parseInt(getName)) {
+                  console.log('yeap', dices.R);
+                  count23456++;
+                }
+              }
+              this.state.rowDown.push(count23456 * parseInt(getName));
+              //
+              e.target.innerHTML = count23456 * parseInt(getName);
+              if (parseInt(getName) == 6) {
+                // calc sum
+                console.log('calc sum for numb ~ ');
+                //  this.state.rowDown.length + 1
+                myDom.calcDownNumbers();
+                e.target.classList.remove('canPlay');
+                this.rowMax.classList.add('canPlay');
+              } else {
+                e.target.classList.remove('canPlay');
+                this.memoNumberRow[parseInt(getName)].classList.add('canPlay');
+              }
+              dices.STATUS = "FREE_TO_PLAY";
+              dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
+            } else {
+              console.log('BLOCK');
+            }
+          }
+        }
+      });
+      myRoot.appendChild(rowNumber);
+    }
+    var rowNumberSum = document.createElement('div');
+    rowNumberSum.id = 'down-rowNumberSum';
+    rowNumberSum.style.width = 'auto';
+    rowNumberSum.style.background = '#7d7d7d8c';
+    rowNumberSum.innerHTML = `-`;
+    myRoot.appendChild(rowNumberSum);
+    var rowMax = document.createElement('div');
+    rowMax.id = 'down-rowMax';
+    rowMax.style.width = 'auto';
+    rowMax.style.background = '#7d7d7d8c';
+    rowMax.innerHTML = `-`;
+    myRoot.appendChild(rowMax);
+    this.rowMax = rowMax;
+    // this.rowMax.addEventListener("click", (e) => {
+    //   e.target.classList.remove('canPlay')
+    //   this.rowMin.classList.add('canPlay')
+    // })
+
+    var rowMin = document.createElement('div');
+    rowMin.id = 'down-rowMin';
+    rowMin.style.width = 'auto';
+    rowMin.style.background = '#7d7d7d8c';
+    rowMin.innerHTML = `-`;
+    // this.rowMin = rowMin;
+    myRoot.appendChild(rowMin);
+    var rowMaxMinSum = document.createElement('div');
+    rowMaxMinSum.id = 'down-rowMaxMinSum';
+    rowMaxMinSum.style.width = 'auto';
+    rowMaxMinSum.style.background = '#7d7d7d8c';
+    rowMaxMinSum.innerHTML = `-`;
+    myRoot.appendChild(rowMaxMinSum);
+    var largeStraight = document.createElement('div');
+    largeStraight.id = 'down-largeStraight';
+    largeStraight.style.width = 'auto';
+    largeStraight.style.background = '#7d7d7d8c';
+    largeStraight.innerHTML = `-`;
+    myRoot.appendChild(largeStraight);
+    var threeOfAKind = document.createElement('div');
+    threeOfAKind.id = 'down-threeOfAKind';
+    threeOfAKind.style.width = 'auto';
+    threeOfAKind.style.background = '#7d7d7d8c';
+    threeOfAKind.innerHTML = `-`;
+    myRoot.appendChild(threeOfAKind);
+    var fullHouse = document.createElement('div');
+    fullHouse.id = 'down-fullHouse';
+    fullHouse.style.width = 'auto';
+    fullHouse.style.background = '#7d7d7d8c';
+    fullHouse.innerHTML = `-`;
+    myRoot.appendChild(fullHouse);
+    var poker = document.createElement('div');
+    poker.id = 'down-poker';
+    poker.style.width = 'auto';
+    poker.style.background = '#7d7d7d8c';
+    poker.innerHTML = `-`;
+    myRoot.appendChild(poker);
+    var jamb = document.createElement('div');
+    jamb.id = 'down-jamb';
+    jamb.style.width = 'auto';
+    jamb.style.background = '#7d7d7d8c';
+    jamb.innerHTML = `-`;
+    myRoot.appendChild(jamb);
+    var rowSum = document.createElement('div');
+    rowSum.id = 'down-rowSum';
+    rowSum.style.width = 'auto';
+    rowSum.style.background = '#7d7d7d8c';
+    rowSum.innerHTML = `-`;
+    myRoot.appendChild(rowSum);
+  },
+  calcDownNumbers: function () {
+    var s = 0;
+    this.state.rowDown.forEach(i => {
+      console.log(parseFloat(i));
+      s += parseFloat(i);
+    });
+    (0, _utils.byId)('down-rowNumberSum').style.background = 'rgb(113 0 0 / 55%)';
+    (0, _utils.byId)('down-rowNumberSum').innerHTML = s;
+    // console.log('this.rowMax also set free to plat status', this.rowMax)
+    dices.STATUS = "FREE_TO_PLAY";
+    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
+    this.rowMax.addEventListener("click", this.calcDownRowMax);
+  },
+  // free row start
+
+  calcFreeNumbers: function () {
+    var s = 0;
+    this.state.rowDown.forEach(i => {
+      console.log(parseFloat(i));
+      s += parseFloat(i);
+    });
+    (0, _utils.byId)('free-rowNumberSum').style.background = 'rgb(113 0 0 / 55%)';
+    (0, _utils.byId)('free-rowNumberSum').innerHTML = s;
+    // console.log('this.rowMax also set free to plat status', this.rowMax)
+    dices.STATUS = "FREE_TO_PLAY";
+    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
+    (0, _utils.byId)('free-rowMax').addEventListener("click", this.calc);
+  },
+  calcFreeRowMax: e => {
+    if (dices.validatePass() == false) return;
+    var test = 0;
+    let keyLessNum = Object.keys(dices.R).reduce((key, v) => dices.R[v] < dices.R[key] ? v : key);
+    for (var key in dices.R) {
+      if (key != keyLessNum) {
+        test += parseFloat(dices.R[key]);
+      }
+    }
+    e.target.innerHTML = test;
+    // now attach next event.
+    dices.STATUS = "FREE_TO_PLAY";
+    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
+    (0, _utils.byId)('free-rowMax').removeEventListener("click", (void 0).calcFreeRowMax);
+  },
+  calcFreeRowMin: () => {
+    if (dices.validatePass() == false) return;
+    var maxTestKey = Object.keys(dices.R).reduce(function (a, b) {
+      return dices.R[a] > dices.R[b] ? a : b;
+    });
+    var test = 0;
+    for (var key in dices.R) {
+      if (key != maxTestKey) {
+        test += parseFloat(dices.R[key]);
+      } else {
+        console.log('not calc dice ', dices.R[key]);
+      }
+    }
+    (0, _utils.byId)('free-rowMin').innerHTML = test;
+    (0, _utils.byId)('free-rowMin').removeEventListener('click', (void 0).calcFreeRowMin);
+    // calc max min dont forget rules for bonus +30
+    var SUMMINMAX = parseFloat((0, _utils.byId)('free-rowMax').innerHTML) - parseFloat((0, _utils.byId)('free-rowMin').innerHTML);
+    (0, _utils.byId)('free-rowMaxMinSum').innerHTML = SUMMINMAX;
+    myDom.incrasePoints(SUMMINMAX);
+    dices.STATUS = "FREE_TO_PLAY";
+    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
+  },
+  attachFreeKenta: function () {
+    if (dices.validatePass() == false) return;
+    console.log('Test free kenta :', dices.R);
+    var result = app.myDom.checkForDuplicate()[0];
+    var testArray = app.myDom.checkForDuplicate()[1];
+    console.log('TEST duplik: ' + result);
+    if (result.length == 2) {
+      console.log('TEST duplik less 3 : ' + result);
+      var locPrevent = false;
+      testArray.forEach((item, index, array) => {
+        if (result[0].value == item.value && locPrevent == false) {
+          console.log('detect by value item.value', item.value);
+          locPrevent = true;
+          array.splice(index, 1);
+        }
+      });
+      // if we catch  1 and 6 in same stack then it is not possible for kenta...
+      var test1 = false,
+        test6 = false;
+      testArray.forEach((item, index, array) => {
+        if (item.value == 1) {
+          test1 = true;
+        } else if (item.value == 6) {
+          test6 = true;
+        }
+      });
+      if (test1 == true && test6 == true) {
+        (0, _utils.byId)('free-largeStraight').innerHTML = `0`;
+      } else if (test1 == true) {
+        (0, _utils.byId)('free-largeStraight').innerHTML = 15 + 50;
+        myDom.incrasePoints(15 + 50);
+      } else if (test6 == true) {
+        (0, _utils.byId)('free-largeStraight').innerHTML = 20 + 50;
+        myDom.incrasePoints(20 + 50);
+      }
+    } else if (result < 2) {
+      (0, _utils.byId)('free-largeStraight').innerHTML = 66;
+      myDom.incrasePoints(66);
+    } else {
+      // zero value
+      (0, _utils.byId)('free-largeStraight').innerHTML = `0`;
+    }
+    (0, _utils.byId)('free-largeStraight').removeEventListener('click', this.attachFreeKenta);
+    dices.STATUS = "FREE_TO_PLAY";
+    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
+  },
+  attachFreeTrilling: function () {
+    if (dices.validatePass() == false) return;
+    var result = app.myDom.checkForDuplicate()[0];
+    // var testArray = app.myDom.checkForDuplicate()[1];
+    // console.log('DUPLICATE FOR TRILING ', result);
+    if (result.length > 2) {
+      var testWin = 0;
+      var TEST = app.myDom.checkForAllDuplicate();
+      console.log('DUPLICATE FOR TRILING TEST ', TEST);
+      for (var key in TEST) {
+        if (TEST[key] > 2) {
+          // win
+          var getDiceID = parseInt(key.replace('value__', ''));
+          testWin = getDiceID * 3;
+        }
+      }
+      console.log('DUPLICATE FOR TRILING 30 + TEST ', testWin);
+      if (testWin > 0) {
+        (0, _utils.byId)('free-threeOfAKind').innerHTML = 20 + testWin;
+        myDom.incrasePoints(20 + testWin);
+      }
+    } else {
+      (0, _utils.byId)('free-threeOfAKind').innerHTML = 0;
+    }
+    (0, _utils.byId)('free-threeOfAKind').removeEventListener('click', this.attachFreeTrilling);
+    dices.STATUS = "FREE_TO_PLAY";
+    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
+  },
+  attachFreeFullHouse: function () {
+    if (dices.validatePass() == false) return;
+    var TEST = app.myDom.checkForAllDuplicate();
+    // console.log('DUPLICATE FOR FULL HOUSE 30 + TEST ');
+    var win = 0;
+    var testPair = false;
+    var testTrilling = false;
+    var testWinPair = 0;
+    var testWinTrilling = 0;
+    for (var key in TEST) {
+      if (TEST[key] == 2) {
+        // win
+        var getDiceID = parseInt(key.replace('value__', ''));
+        testWinPair = getDiceID * 2;
+        testPair = true;
+      } else if (TEST[key] == 3) {
+        var getDiceID = parseInt(key.replace('value__', ''));
+        testWinTrilling = getDiceID * 3;
+        testTrilling = true;
+      }
+    }
+    if (testPair == true && testTrilling == true) {
+      win = testWinPair + testWinTrilling;
+      (0, _utils.byId)('free-fullHouse').innerHTML = win + 30;
+      myDom.incrasePoints(win + 30);
+    } else {
+      (0, _utils.byId)('free-fullHouse').innerHTML = 0;
+    }
+    (0, _utils.byId)('free-fullHouse').removeEventListener('click', this.attachFreeFullHouse);
+    dices.STATUS = "FREE_TO_PLAY";
+    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
+  },
+  attachFreePoker: function () {
+    if (dices.validatePass() == false) return;
+    var TEST = app.myDom.checkForAllDuplicate();
+    // console.log('DUPLICATE FOR poker 40 + TEST ');
+    for (var key in TEST) {
+      if (TEST[key] == 4 || TEST[key] > 4) {
+        var getDiceID = parseInt(key.replace('value__', ''));
+        var win = getDiceID * 4;
+        (0, _utils.byId)('free-poker').innerHTML = win + 40;
+        myDom.incrasePoints(win + 40);
+      }
+    }
+    (0, _utils.byId)('free-poker').removeEventListener('click', this.attachFreePoker);
+    dices.STATUS = "FREE_TO_PLAY";
+    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
+  },
+  attachFreeJamb: function () {
+    if (dices.validatePass() == false) return;
+    // console.log('<GAMEPLAY><FREE ROW IS FEELED>')
+    var TEST = app.myDom.checkForAllDuplicate();
+    for (var key in TEST) {
+      if (TEST[key] == 5) {
+        // win
+        var getDiceID = parseInt(key.replace('value__', ''));
+        var win = getDiceID * 5;
+        (0, _utils.byId)('free-poker').innerHTML = win + 50;
+        myDom.incrasePoints(win + 50);
+      }
+    }
+    (0, _utils.byId)('free-jamb').removeEventListener('click', this.attachFreeJamb);
+    dices.STATUS = "FREE_TO_PLAY";
+    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
+  },
+  // end of free row
+
+  calcDownRowMax: e => {
+    if (dices.validatePass() == false) return;
+    e.target.classList.remove('canPlay');
+    (0, _utils.byId)('down-rowMin').classList.add('canPlay');
+    var test = 0;
+    let keyLessNum = Object.keys(dices.R).reduce((key, v) => dices.R[v] < dices.R[key] ? v : key);
+    // console.log('FIND MIN DICE TO REMOVE FROM SUM ', keyLessNum);
+    for (var key in dices.SAVED_DICES) {
+      if (key != keyLessNum) {
+        test += parseFloat(dices.R[key]);
+      }
+    }
+    e.target.innerHTML = test;
+    // now attach next event.
+    dices.STATUS = "FREE_TO_PLAY";
+    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
+    (0, _utils.byId)('down-rowMax').removeEventListener("click", myDom.calcDownRowMax);
+    (0, _utils.byId)('down-rowMin').addEventListener('click', myDom.calcDownRowMin);
+  },
+  incrasePoints: function (arg) {
+    (0, _utils.byId)('user-points').innerHTML = parseInt((0, _utils.byId)('user-points').innerHTML) + parseInt(arg);
+  },
+  calcDownRowMin: () => {
+    if (dices.validatePass() == false) return;
+    (0, _utils.byId)('down-rowMin').classList.remove('canPlay');
+    console.log('MIN ENABLED');
+    var maxTestKey = Object.keys(dices.R).reduce(function (a, b) {
+      return dices.R[a] > dices.R[b] ? a : b;
+    });
+    var test = 0;
+    for (var key in dices.R) {
+      // if(key != maxTestKey) {
+      test += parseFloat(dices.R[key]);
+      // } else {
+      //   console.log('not calc dice ', dices.R[key])
+      // }
+    }
+    (0, _utils.byId)('down-rowMin').innerHTML = test;
+    (0, _utils.byId)('down-rowMin').removeEventListener('click', myDom.calcDownRowMin);
+    // calc max min dont forget rules for bonus +30
+    var SUMMINMAX = parseFloat((0, _utils.byId)('down-rowMax').innerHTML) - parseFloat((0, _utils.byId)('down-rowMin').innerHTML);
+    (0, _utils.byId)('down-rowMaxMinSum').innerHTML = SUMMINMAX;
+    myDom.incrasePoints(SUMMINMAX);
+    dices.STATUS = "FREE_TO_PLAY";
+    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
+    (0, _utils.byId)('down-largeStraight').classList.add('canPlay');
+    (0, _utils.byId)('down-largeStraight').addEventListener('click', myDom.attachKenta);
+    (0, _utils.byId)('down-rowMin').removeEventListener('click', myDom.calcDownRowMin);
+  },
+  checkForDuplicate: function () {
+    var testArray = [];
+    for (var key in dices.SAVED_DICES) {
+      var gen = {
+        myId: key,
+        value: dices.R[key]
+      };
+      testArray.push(gen);
+    }
+    var result = Object.values(testArray.reduce((c, v) => {
+      let k = v.value;
+      c[k] = c[k] || [];
+      c[k].push(v);
+      return c;
+    }, {})).reduce((c, v) => v.length > 1 ? c.concat(v) : c, []);
+    return [result, testArray];
+  },
+  checkForAllDuplicate: function () {
+    var testArray = [];
+    for (var key in dices.SAVED_DICES) {
+      var gen = {
+        myId: key,
+        value: dices.R[key]
+      };
+      testArray.push(gen);
+    }
+    // console.log('testArray ', testArray)
+    var result = Object.values(testArray.reduce((c, v) => {
+      let k = v.value;
+      c[k] = c[k] || [];
+      c[k].push(v);
+      return c;
+    }, {})).reduce((c, v) => v.length > 1 ? c.concat(v) : c, []);
+    var discret = {};
+    result.forEach((item, index, array) => {
+      if (typeof discret['value__' + item.value] === 'undefined') {
+        discret['value__' + item.value] = 1;
+      } else {
+        discret['value__' + item.value] += 1;
+      }
+    });
+    return discret;
+  },
+  attachKenta: function () {
+    console.log('Test kenta  ', dices.SAVED_DICES);
+    (0, _utils.byId)('down-largeStraight').classList.remove('canPlay');
+    var result = app.myDom.checkForDuplicate()[0];
+    var testArray = app.myDom.checkForDuplicate()[1];
+    console.log('TEST duplik: ' + result);
+    if (result.length > 0) {
+      console.log('TEST duplik l : ' + result);
+      var locPrevent = false;
+      testArray.forEach((item, index, array) => {
+        if (result[0].value == item.value && locPrevent == false) {
+          console.log('detect by value item.value', item.value);
+          locPrevent = true;
+          array.splice(index, 1);
+        }
+      });
+      (0, _utils.byId)('down-largeStraight').innerHTML = `0`;
+    } else if (result < 2) {
+      (0, _utils.byId)('down-largeStraight').innerHTML = 66;
+      myDom.incrasePoints(66);
+    } else {
+      // zero value
+      (0, _utils.byId)('down-largeStraight').innerHTML = `0`;
+    }
+    (0, _utils.byId)('down-threeOfAKind').addEventListener('click', myDom.attachDownTrilling);
+    (0, _utils.byId)('down-largeStraight').removeEventListener('click', myDom.attachKenta);
+    dices.STATUS = "FREE_TO_PLAY";
+    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
+  },
+  attachDownTrilling: function () {
+    var result = app.myDom.checkForDuplicate()[0];
+    // var testArray = app.myDom.checkForDuplicate()[1];
+    // console.log('DUPLICATE FOR TRILING ', result);
+    if (result.length > 2) {
+      var testWin = 0;
+      var TEST = app.myDom.checkForAllDuplicate();
+      console.log('DUPLICATE FOR TRILING TEST ', TEST);
+      for (var key in TEST) {
+        if (TEST[key] > 2) {
+          // win
+          var getDiceID = parseInt(key.replace('value__', ''));
+          testWin = getDiceID * 3;
+        }
+      }
+      console.log('DUPLICATE FOR TRILING 30 + TEST ', testWin);
+      (0, _utils.byId)('down-threeOfAKind').innerHTML = 20 + testWin;
+      myDom.incrasePoints(20 + testWin);
+    } else {
+      (0, _utils.byId)('down-threeOfAKind').innerHTML = 0;
+    }
+    (0, _utils.byId)('down-threeOfAKind').removeEventListener('click', myDom.attachDownTrilling);
+    (0, _utils.byId)('down-fullHouse').addEventListener('click', myDom.attachDownFullHouse);
+    dices.STATUS = "FREE_TO_PLAY";
+    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
+  },
+  attachDownFullHouse: function () {
+    var TEST = app.myDom.checkForAllDuplicate();
+    // console.log('DUPLICATE FOR FULL HOUSE 30 + TEST ');
+    var win = 0;
+    var testPair = false;
+    var testTrilling = false;
+    var testWinPair = 0;
+    var testWinTrilling = 0;
+    for (var key in TEST) {
+      if (TEST[key] == 2) {
+        // win
+        var getDiceID = parseInt(key.replace('value__', ''));
+        testWinPair = getDiceID * 2;
+        testPair = true;
+      } else if (TEST[key] == 3) {
+        var getDiceID = parseInt(key.replace('value__', ''));
+        testWinTrilling = getDiceID * 3;
+        testTrilling = true;
+      }
+    }
+    if (testPair == true && testTrilling == true) {
+      win = testWinPair + testWinTrilling;
+      (0, _utils.byId)('down-fullHouse').innerHTML = win + 30;
+      myDom.incrasePoints(win + 30);
+    } else {
+      (0, _utils.byId)('down-fullHouse').innerHTML = 0;
+    }
+    (0, _utils.byId)('down-poker').addEventListener('click', myDom.attachDownPoker);
+    (0, _utils.byId)('down-fullHouse').removeEventListener('click', myDom.attachDownFullHouse);
+    dices.STATUS = "FREE_TO_PLAY";
+    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
+  },
+  attachDownPoker: function () {
+    var TEST = app.myDom.checkForAllDuplicate();
+    // console.log('DUPLICATE FOR poker 40 + TEST ');
+    for (var key in TEST) {
+      if (TEST[key] == 4 || TEST[key] > 4) {
+        // win
+        var getDiceID = parseInt(key.replace('value__', ''));
+        var win = getDiceID * 4;
+        (0, _utils.byId)('down-poker').innerHTML = win + 40;
+        myDom.incrasePoints(win + 40);
+      }
+    }
+    (0, _utils.byId)('down-poker').removeEventListener('click', myDom.attachDownPoker);
+    (0, _utils.byId)('down-jamb').addEventListener('click', myDom.attachDownJamb);
+    dices.STATUS = "FREE_TO_PLAY";
+    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
+  },
+  attachDownJamb: function () {
+    (0, _utils.byId)('down-jamb').removeEventListener('click', myDom.attachDownJamb);
+    console.log('<GAMEPLAY><DOWN ROW IS FEELED>');
+    var TEST = app.myDom.checkForAllDuplicate();
+    for (var key in TEST) {
+      if (TEST[key] == 5 || TEST[key] > 5) {
+        // win
+        var getDiceID = parseInt(key.replace('value__', ''));
+        var win = getDiceID * 5;
+        (0, _utils.byId)('down-poker').innerHTML = win + 50;
+        myDom.incrasePoints(win + 50);
+      }
+    }
+    dices.STATUS = "FREE_TO_PLAY";
+    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
+  },
+  isDragging: false,
+  offsetX: 0,
+  offsetY: 0,
+  addDraggerForTable: () => {
+    (0, _utils.byId)('dragHandler').addEventListener('pointerdown', e => {
+      myDom.isDragging = true;
+      const rect = (0, _utils.byId)('jambTable').getBoundingClientRect();
+      myDom.offsetX = e.clientX - rect.left;
+      myDom.offsetY = e.clientY - rect.top;
+      (0, _utils.byId)('dragHandler').setPointerCapture(e.pointerId);
+    });
+    (0, _utils.byId)('dragHandler').addEventListener('pointermove', e => {
+      if (myDom.isDragging) {
+        (0, _utils.byId)('jambTable').style.left = `${e.clientX - myDom.offsetX}px`;
+        (0, _utils.byId)('jambTable').style.top = `${e.clientY - myDom.offsetY}px`;
+      }
+    });
+    (0, _utils.byId)('dragHandler').addEventListener('pointerup', e => {
+      myDom.isDragging = false;
+      (0, _utils.byId)('dragHandler').releasePointerCapture(e.pointerId);
+    });
+  }
+};
+
+},{"../../../src/engine/utils.js":31,"./html-content.js":1}],3:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.application = void 0;
+var _world = _interopRequireDefault(require("./src/world.js"));
+var _loaderObj = require("./src/engine/loader-obj.js");
+var _utils = require("./src/engine/utils.js");
+var _jamb = require("./examples/games/jamb/jamb.js");
+var _raycast = require("./src/engine/raycast.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
-let TEST_ANIM = new _world.default({
+let application = exports.application = new _world.default({
   useSingleRenderPass: true,
   canvasSize: 'fullscreen',
   mainCameraParams: {
     type: 'WASD',
     responseCoef: 1000
-  },
-  clearColor: {
-    r: 0,
-    b: 0.122,
-    g: 0.122,
-    a: 1
   }
 }, () => {
-  addEventListener('AmmoReady', async () => {
+  application.addLight();
+  console.log('light added.');
+  application.lightContainer[0].outerCutoff = 0.5;
+  application.lightContainer[0].position[2] = -27;
+  application.lightContainer[0].intensity = 4;
+  application.lightContainer[0].target[2] = -25;
+  application.lightContainer[0].position[1] = 9;
+  application.globalAmbient[0] = 0.7;
+  application.globalAmbient[1] = 0.7;
+  application.globalAmbient[2] = 0.7;
+  const diceTexturePath = './res/meshes/jamb/dice.png';
+
+  // Dom operations
+  application.userState = {
+    name: 'Guest',
+    points: 0
+  };
+  application.myDom = _jamb.myDom;
+  _jamb.myDom.createJamb();
+  _jamb.myDom.addDraggerForTable();
+  _jamb.myDom.createBlocker();
+  application.dices = _jamb.dices;
+  application.activateDiceClickListener = null;
+
+  // -------------------------
+  // TEST
+  application.matrixAmmo.detectTopFaceFromQuat = q => {
+    // Define based on *visual face* → object-space normal mapping
+    const faces = [{
+      face: 1,
+      vec: [0, 1, 0]
+    },
+    // top
+    {
+      face: 2,
+      vec: [0, -1, 0]
+    },
+    // bottom
+    {
+      face: 3,
+      vec: [0, 0, 1]
+    },
+    // front
+    {
+      face: 4,
+      vec: [0, 0, -1]
+    },
+    // back
+    {
+      face: 5,
+      vec: [1, 0, 0]
+    },
+    // right
+    {
+      face: 6,
+      vec: [-1, 0, 0]
+    } // left
+    ];
+    let maxDot = -Infinity;
+    let topFace = null;
+    for (const f of faces) {
+      const v = application.matrixAmmo.applyQuatToVec(q, f.vec);
+      const dot = v.y; // Compare with world up (0, 1, 0)
+      if (dot > maxDot) {
+        maxDot = dot;
+        topFace = f.face;
+      }
+    }
+    return topFace;
+  };
+  application.matrixAmmo.applyQuatToVec = (q, vec) => {
+    const [x, y, z] = vec;
+    const qx = q.x(),
+      qy = q.y(),
+      qz = q.z(),
+      qw = q.w();
+
+    // Quaternion * vector * inverse(quaternion)
+    const ix = qw * x + qy * z - qz * y;
+    const iy = qw * y + qz * x - qx * z;
+    const iz = qw * z + qx * y - qy * x;
+    const iw = -qx * x - qy * y - qz * z;
+    return {
+      x: ix * qw + iw * -qx + iy * -qz - iz * -qy,
+      y: iy * qw + iw * -qy + iz * -qx - ix * -qz,
+      z: iz * qw + iw * -qz + ix * -qy - iy * -qx
+    };
+  };
+  // -------------------------
+  // This code must be on top (Physics)
+  application.matrixAmmo.detectCollision = function () {
+    this.lastRoll = '';
+    this.presentScore = '';
+    let dispatcher = this.dynamicsWorld.getDispatcher();
+    let numManifolds = dispatcher.getNumManifolds();
+    for (let i = 0; i < numManifolds; i++) {
+      let contactManifold = dispatcher.getManifoldByIndexInternal(i);
+      // let numContacts = contactManifold.getNumContacts();
+      if (this.ground.kB == contactManifold.getBody0().kB || this.ground.kB == contactManifold.getBody1().kB) {
+        // console.log(this.ground ,'GROUND IS IN CONTACT WHO IS BODY1 ', contactManifold.getBody1())
+        // CHECK ROTATION BEST WAY - VISAL PART IS NOT INTEREST NOW 
+        if (this.ground.kB == contactManifold.getBody0().kB) {
+          var MY_DICE_NAME = this.getNameByBody(contactManifold.getBody1());
+          var testR = contactManifold.getBody1().getWorldTransform().getRotation();
+        }
+        if (this.ground.kB == contactManifold.getBody1().kB) {
+          var MY_DICE_NAME = this.getNameByBody(contactManifold.getBody0());
+          var testR = contactManifold.getBody0().getWorldTransform().getRotation();
+        }
+        var passed = false;
+        const face = application.matrixAmmo.detectTopFaceFromQuat(testR);
+        if (face) {
+          this.lastRoll = face.toString();
+          // Update score logic
+          dispatchEvent(new CustomEvent(`dice-${face}`, {
+            detail: {
+              result: `dice-${face}`,
+              cubeId: MY_DICE_NAME
+            }
+          }));
+        }
+        // if(Math.abs(testR.y()) < 0.00001) {
+        //   this.lastRoll = "3";
+        //   this.presentScore += 4;
+        //   passed = true;
+        // }
+        // if(Math.abs(testR.x()) < 0.00001) {
+        //   this.lastRoll = "5";
+        //   this.presentScore += 3;
+        //   passed = true;
+        // }
+        // if(testR.x().toString().substring(0, 5) == testR.y().toString().substring(1, 6)) {
+        //   this.lastRoll = "6";
+        //   this.presentScore += 2;
+        //   passed = true;
+        // }
+        // if(testR.x().toString().substring(0, 5) == testR.y().toString().substring(0, 5)) {
+        //   this.lastRoll = "2";
+        //   this.presentScore += 1;
+        //   passed = true;
+        // }
+        // if(testR.z().toString().substring(0, 5) == testR.y().toString().substring(1, 6)) {
+        //   this.lastRoll = "4";
+        //   this.presentScore += 6;
+        //   passed = true;
+        // }
+        // if(testR.z().toString().substring(0, 5) == testR.y().toString().substring(0, 5)) {
+        //   this.lastRoll = "1";
+        //   this.presentScore += 5;
+        //   passed = true;
+        // }
+        // if(passed == true) dispatchEvent(new CustomEvent(`dice-${this.lastRoll}`, {
+        //   detail: {
+        //     result: `dice-${this.lastRoll}`,
+        //     cubeId: MY_DICE_NAME
+        //   }
+        // }))
+      }
+    }
+  };
+  (0, _raycast.addRaycastListener)();
+  // addRaycastsAABBListener();
+
+  application.canvas.addEventListener("ray.hit.event", e => {
+    console.log('ray.hit.event @@@@@@@@@@@@ detected');
+    if ((0, _utils.byId)('topTitleDOM') && (0, _utils.byId)('topTitleDOM').getAttribute('data-gamestatus') != 'FREE' && (0, _utils.byId)('topTitleDOM').getAttribute('data-gamestatus') != 'status-select') {
+      console.log('no hit in middle of game ...');
+      return;
+    }
+    if (application.dices.STATUS == "FREE_TO_PLAY") {
+      console.log("hit cube status free to play prevent pick. ", e.detail.hitObject.name);
+    } else if (application.dices.STATUS == "SELECT_DICES_1" || application.dices.STATUS == "SELECT_DICES_2" || application.dices.STATUS == "FINISHED") {
+      if (Object.keys(application.dices.SAVED_DICES).length >= 5) {
+        console.log("PREVENTED SELECT1/2 pick.", e.detail.hitObject.name);
+        return;
+      }
+      console.log("hit cube status SELECT1/2 pick.", e.detail.hitObject.name);
+      application.dices.pickDice(e.detail.hitObject.name);
+    }
+  });
+  addEventListener('mousemove', e => {
+    // console.log('only on click')
+  });
+
+  // Sounds
+  application.matrixSounds.createAudio('start', 'res/audios/start.mp3', 1);
+  application.matrixSounds.createAudio('block', 'res/audios/block.mp3', 6);
+  application.matrixSounds.createAudio('dice1', 'res/audios/dice1.mp3', 6);
+  application.matrixSounds.createAudio('dice2', 'res/audios/dice2.mp3', 6);
+  application.matrixSounds.createAudio('hover', 'res/audios/toggle_002.mp3', 3);
+  application.matrixSounds.createAudio('roll', 'res/audios/dice-roll.mp3', 2);
+  addEventListener('AmmoReady', () => {
+    app.matrixAmmo.speedUpSimulation = 2;
+    (0, _loaderObj.downloadMeshes)({
+      cube: "./res/meshes/jamb/dice.obj"
+    }, onLoadObj, {
+      scale: [1, 1, 1],
+      swap: [null]
+    });
+
+    // downloadMeshes({
+    //   star1: "./res/meshes/shapes/star1.obj",
+    // }, (m) => {
+
+    //   let o = {
+    //     scale: 2,
+    //     position: {x: 3, y: 0, z: -10},
+    //     rotation: {x: 0, y: 0, z: 0},
+    //     rotationSpeed: {x: 10, y: 0, z: 0},
+    //     texturesPaths: ['./res/textures/default.png']
+    //   };
+    // }, {scale: [11, 11, 11], swap: [null]})
+
+    (0, _loaderObj.downloadMeshes)({
+      bg: "./res/meshes/jamb/bg.obj"
+    }, onLoadObjFloor, {
+      scale: [3, 1, 3],
+      swap: [null]
+    });
+    (0, _loaderObj.downloadMeshes)({
+      mainTitle: "./res/meshes/jamb/jamb-title.obj"
+    }, onLoadObjOther, {
+      scale: [3, 2, 3],
+      swap: [null]
+    });
+    (0, _loaderObj.downloadMeshes)({
+      cube: "./res/meshes/jamb/dice.obj"
+    }, onLoadObjWallCenter, {
+      scale: [50, 10, 10],
+      swap: [null]
+    });
+    (0, _loaderObj.downloadMeshes)({
+      cube: "./res/meshes/jamb/dice.obj"
+    }, m => {
+      for (var key in m) {
+        // console.log(`%c Loaded objs -> : ${key} `, LOG_MATRIX);
+      }
+      // right
+      application.addMeshObj({
+        position: {
+          x: 25,
+          y: 5.5,
+          z: -25
+        },
+        rotation: {
+          x: 0,
+          y: -22,
+          z: 0
+        },
+        scale: [25, 10, 4],
+        texturesPaths: ['./res/meshes/jamb/text.png'],
+        name: 'wallRight',
+        mesh: m.cube,
+        physics: {
+          mass: 0,
+          enabled: true,
+          geometry: "Cube"
+        },
+        raycast: {
+          enabled: false,
+          radius: 2
+        }
+      });
+      application.addMeshObj({
+        position: {
+          x: -25,
+          y: 5.5,
+          z: -25
+        },
+        rotation: {
+          x: 0,
+          y: 22,
+          z: 0
+        },
+        scale: [25, 10, 4],
+        texturesPaths: ['./res/meshes/jamb/text.png'],
+        name: 'wallLeft',
+        mesh: m.cube,
+        physics: {
+          mass: 0,
+          enabled: true,
+          geometry: "Cube"
+        },
+        raycast: {
+          enabled: false,
+          radius: 2
+        }
+      });
+    }, {
+      scale: [25, 10, 4],
+      swap: [null]
+    });
+  });
+  function onLoadObjWallCenter(m) {
+    application.myLoadedMeshesWalls = m;
+    for (var key in m) {
+      // console.log(`%c Loaded objs -> : ${key} `, LOG_MATRIX);
+    }
+
+    // WALLS Center
+    application.addMeshObj({
+      position: {
+        x: 0,
+        y: 5,
+        z: -45
+      },
+      rotation: {
+        x: 0,
+        y: 0,
+        z: 0
+      },
+      scale: [50, 10, 10],
+      texturesPaths: ['./res/meshes/jamb/text.png'],
+      name: 'wallCenter',
+      mesh: m.cube,
+      physics: {
+        mass: 0,
+        enabled: true,
+        geometry: "Cube"
+      },
+      raycast: {
+        enabled: false,
+        radius: 2
+      }
+    });
+  }
+  function onLoadObjOther(m) {
+    application.myLoadedMeshes = m;
+    // Add logo text top
+    application.addMeshObj({
+      position: {
+        x: 0,
+        y: 6,
+        z: -15
+      },
+      rotation: {
+        x: 0,
+        y: 0,
+        z: 0
+      },
+      texturesPaths: ['./res/meshes/jamb/text.png'],
+      name: 'mainTitle',
+      mesh: m.mainTitle,
+      physics: {
+        mass: 0,
+        enabled: true,
+        geometry: "Cube"
+      },
+      raycast: {
+        enabled: false,
+        radius: 2
+      }
+    });
+    // application.cameras.WASD.pitch = 0.2
     setTimeout(() => {
-      app.cameras.WASD.yaw = -0.03;
-      app.cameras.WASD.pitch = -0.49;
+      // app.cameras.WASD.velocity[1] = 18
+      console.log('set camera position with timeout...');
+      app.cameras.WASD.yaw = -6.21;
+      app.cameras.WASD.pitch = -0.32;
       app.cameras.WASD.position[2] = 0;
       app.cameras.WASD.position[1] = 3.76;
-    }, 500);
-    (0, _loaderObj.downloadMeshes)({
-      cube: "./res/meshes/blender/cube.obj"
-    }, onGround, {
-      scale: [20, 1, 20]
-    });
-    // const path = 'https://raw.githubusercontent.com/zlatnaspirala/Matrix-Engine-BVH-test/main/javascript-bvh/example.bvh';
-    const path = 'res/meshes/glb/glb-test1.bvh';
-    var glbFile = await fetch("res/meshes/glb/test.glb").then(res => res.arrayBuffer().then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, TEST_ANIM.device)));
-    TEST_ANIM.addGlbObj({
-      // scale: [1,1,1],
+      //                                             BODY              , x,  y, z, rotX, rotY, RotZ
+      app.matrixAmmo.setKinematicTransform(app.matrixAmmo.getBodyByName('mainTitle'), 0, 0, 0, 1);
+      app.matrixAmmo.setKinematicTransform(app.matrixAmmo.getBodyByName('bg'), 0, -10, 0, 0, 0, 0);
+      // Better access getBodyByName
+      // console.log(' app.matrixAmmo. ', app.matrixAmmo.getBodyByName('CubePhysics1'))
+    }, 1200);
+  }
+  function onLoadObjFloor(m) {
+    application.myLoadedMeshes = m;
+    application.addMeshObj({
+      scale: [10, 0.1, 0.1],
       position: {
         x: 0,
-        y: -4,
-        z: -20
+        y: 6,
+        z: -10
       },
-      scale: [10, 10, 10],
-      name: 'firstGlb',
-      texturesPaths: ['./res/meshes/glb/textures/mutant.png']
-    }, null, glbFile);
-
-    // loadBVH(path).then(async (BVHANIM) => {
-    //   var glbFile = await fetch(
-    //     "res/meshes/glb/test.glb")
-    //     .then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, TEST_ANIM.device)));
-    //   TEST_ANIM.addGlbObj({
-    //     // scale: [1,1,1],
-    //     scale: [10, 10, 10],
-    //     name: 'firstGlb',
-    //     texturesPaths: ['./res/textures/rust.jpg'],
-    //   }, BVHANIM, glbFile);
-    // });
-  });
-  function onGround(m) {
-    TEST_ANIM.addLight();
-    TEST_ANIM.globalAmbient[1] = 1.5;
-    TEST_ANIM.addMeshObj({
+      rotation: {
+        x: 0,
+        y: 0,
+        z: 0
+      },
+      texturesPaths: ['./res/meshes/jamb/bg.png'],
+      name: 'bg',
+      mesh: m.bg,
+      physics: {
+        collide: false,
+        mass: 0,
+        enabled: true,
+        geometry: "Cube"
+      },
+      raycast: {
+        enabled: false,
+        radius: 2
+      }
+    });
+  }
+  function onLoadObj(m) {
+    application.myLoadedMeshes = m;
+    // Add dices
+    application.addMeshObj({
       position: {
         x: 0,
-        y: -5,
+        y: 6,
         z: -10
       },
       rotation: {
@@ -79,21 +1802,353 @@ let TEST_ANIM = new _world.default({
         y: 0,
         z: 0
       },
-      texturesPaths: ['./res/meshes/blender/cube.png'],
-      name: 'ground',
+      texturesPaths: [diceTexturePath],
+      useUVShema4x2: true,
+      name: 'CubePhysics1',
       mesh: m.cube,
+      raycast: {
+        enabled: true,
+        radius: 2
+      },
       physics: {
-        enabled: false,
-        mass: 0,
+        enabled: true,
         geometry: "Cube"
       }
     });
+    application.addMeshObj({
+      position: {
+        x: -5,
+        y: 4,
+        z: -14
+      },
+      rotation: {
+        x: 0,
+        y: 0,
+        z: 0
+      },
+      rotationSpeed: {
+        x: 0,
+        y: 0,
+        z: 0
+      },
+      texturesPaths: [diceTexturePath],
+      useUVShema4x2: true,
+      name: 'CubePhysics2',
+      mesh: m.cube,
+      raycast: {
+        enabled: true,
+        radius: 2
+      },
+      physics: {
+        enabled: true,
+        geometry: "Cube"
+      }
+    });
+    application.addMeshObj({
+      position: {
+        x: 4,
+        y: 8,
+        z: -10
+      },
+      rotation: {
+        x: 0,
+        y: 0,
+        z: 0
+      },
+      rotationSpeed: {
+        x: 0,
+        y: 0,
+        z: 0
+      },
+      texturesPaths: [diceTexturePath],
+      useUVShema4x2: true,
+      name: 'CubePhysics3',
+      mesh: m.cube,
+      raycast: {
+        enabled: true,
+        radius: 2
+      },
+      physics: {
+        enabled: true,
+        geometry: "Cube"
+      }
+    });
+    application.addMeshObj({
+      position: {
+        x: 3,
+        y: 4,
+        z: -10
+      },
+      rotation: {
+        x: 0,
+        y: 0,
+        z: 0
+      },
+      rotationSpeed: {
+        x: 0,
+        y: 0,
+        z: 0
+      },
+      texturesPaths: [diceTexturePath],
+      useUVShema4x2: true,
+      name: 'CubePhysics4',
+      mesh: m.cube,
+      raycast: {
+        enabled: true,
+        radius: 2
+      },
+      physics: {
+        enabled: true,
+        geometry: "Cube"
+      }
+    });
+    application.addMeshObj({
+      position: {
+        x: -2,
+        y: 4,
+        z: -13
+      },
+      rotation: {
+        x: 0,
+        y: 0,
+        z: 0
+      },
+      rotationSpeed: {
+        x: 0,
+        y: 0,
+        z: 0
+      },
+      texturesPaths: [diceTexturePath],
+      useUVShema4x2: true,
+      name: 'CubePhysics5',
+      mesh: m.cube,
+      raycast: {
+        enabled: true,
+        radius: 2
+      },
+      physics: {
+        enabled: true,
+        geometry: "Cube"
+      }
+    });
+    application.addMeshObj({
+      position: {
+        x: -4,
+        y: 6,
+        z: -9
+      },
+      rotation: {
+        x: 0,
+        y: 0,
+        z: 0
+      },
+      rotationSpeed: {
+        x: 0,
+        y: 0,
+        z: 0
+      },
+      texturesPaths: [diceTexturePath],
+      useUVShema4x2: true,
+      name: 'CubePhysics6',
+      mesh: m.cube,
+      raycast: {
+        enabled: true,
+        radius: 2
+      },
+      physics: {
+        enabled: true,
+        geometry: "Cube"
+      }
+    });
+    application.TOLERANCE = 0;
+    let allDiceDoneProcedure = () => {
+      console.log("ALL DONE", application.TOLERANCE);
+      application.TOLERANCE++;
+      if (application.TOLERANCE >= 1) {
+        removeEventListener('dice-1', dice1Click);
+        removeEventListener('dice-2', dice2Click);
+        removeEventListener('dice-3', dice3Click);
+        removeEventListener('dice-4', dice4Click);
+        removeEventListener('dice-5', dice5Click);
+        removeEventListener('dice-6', dice6Click);
+        console.log(`%cFINAL<preliminar> ${_jamb.dices.R}`, _utils.LOG_FUNNY);
+        application.TOLERANCE = 0;
+        console.log('se camera position 2');
+        app.cameras.WASD.yaw = 0.01;
+        app.cameras.WASD.pitch = -1.26;
+        app.cameras.WASD.position[2] = -18;
+        app.cameras.WASD.position[1] = 19;
+        // ??                                                     ?
+        if (_jamb.dices.STATUS == "FREE_TO_PLAY" || _jamb.dices.STATUS == "IN_PLAY") {
+          _jamb.dices.STATUS = "SELECT_DICES_1";
+          console.log(`%cStatus<SELECT_DICES_1>`, _utils.LOG_FUNNY);
+          setTimeout(() => {
+            dispatchEvent(new CustomEvent('updateTitle', {
+              detail: {
+                text: app.label.get.freetoroll,
+                status: 'FREE'
+              }
+            }));
+          }, 500);
+        } else if (_jamb.dices.STATUS == "SELECT_DICES_1") {
+          _jamb.dices.STATUS = "SELECT_DICES_2";
+          setTimeout(() => {
+            dispatchEvent(new CustomEvent('updateTitle', {
+              detail: {
+                text: app.label.get.freetoroll,
+                status: 'FREE'
+              }
+            }));
+          }, 500);
+          console.log(`%cStatus<SELECT_DICES_2>`, _utils.LOG_FUNNY);
+        } else if (_jamb.dices.STATUS == "SELECT_DICES_2") {
+          _jamb.dices.STATUS = "FINISHED";
+          console.log(`%cStatus<FINISHED>`, _utils.LOG_FUNNY);
+          dispatchEvent(new CustomEvent('updateTitle', {
+            detail: {
+              text: app.label.get.pick5,
+              status: 'status-select'
+            }
+          }));
+        }
+      }
+    };
+    addEventListener('all-done', allDiceDoneProcedure);
+    addEventListener('FREE_TO_PLAY', () => {
+      // Big reset
+      console.log(`%c<Big reset needed ...>`, _utils.LOG_FUNNY);
+      app.dices.SAVED_DICES = {};
+      app.dices.setStartUpPosition();
+      setTimeout(() => {
+        app.dices.activateAllDicesPhysics();
+      }, 1000);
+      console.log('se camera position 3');
+      app.cameras.WASD.yaw = 0;
+      app.cameras.WASD.pitch = 0;
+      app.cameras.WASD.position[2] = 0;
+      app.cameras.WASD.position[1] = 3.76;
+      dispatchEvent(new CustomEvent('updateTitle', {
+        detail: {
+          text: app.label.get.hand1,
+          status: 'FREE'
+        }
+      }));
+    });
+
+    // ACTIONS
+    let dice1Click = e => {
+      // console.info('DICE 1 click ?????????', e.detail)
+      _jamb.dices.R[e.detail.cubeId] = '1';
+      _jamb.dices.checkAll();
+    };
+    let dice2Click = e => {
+      // console.info('DICE 2', e.detail)
+      _jamb.dices.R[e.detail.cubeId] = '2';
+      _jamb.dices.checkAll();
+    };
+    let dice3Click = e => {
+      // console.info('DICE 3', e.detail)
+      _jamb.dices.R[e.detail.cubeId] = '3';
+      _jamb.dices.checkAll();
+    };
+    let dice4Click = e => {
+      // console.info('DICE 4', e.detail)
+      _jamb.dices.R[e.detail.cubeId] = '4';
+      _jamb.dices.checkAll();
+    };
+    let dice5Click = e => {
+      // console.info('DICE 5', e.detail)
+      _jamb.dices.R[e.detail.cubeId] = '5';
+      _jamb.dices.checkAll();
+    };
+    let dice6Click = e => {
+      // console.info('DICE 6', e.detail)
+      _jamb.dices.R[e.detail.cubeId] = '6';
+      _jamb.dices.checkAll();
+    };
+    function shootDice(x) {
+      setTimeout(() => {
+        app.matrixAmmo.getBodyByName(`CubePhysics${x}`).setAngularVelocity(new Ammo.btVector3((0, _utils.randomFloatFromTo)(3, 12), 9, 9));
+        app.matrixAmmo.getBodyByName(`CubePhysics${x}`).setLinearVelocity(new Ammo.btVector3((0, _utils.randomFloatFromTo)(-5, 5), 15, -20));
+        setTimeout(() => app.matrixSounds.play('roll'), 1500);
+      }, 200 * x);
+    }
+    application.activateDiceClickListener = index => {
+      index = parseInt(index);
+      switch (index) {
+        case 1:
+          addEventListener('dice-1', dice1Click);
+        case 2:
+          addEventListener('dice-2', dice2Click);
+        case 3:
+          addEventListener('dice-3', dice3Click);
+        case 4:
+          addEventListener('dice-4', dice4Click);
+        case 5:
+          addEventListener('dice-5', dice5Click);
+        case 6:
+          addEventListener('dice-6', dice6Click);
+      }
+    };
+    let rollProcedure = () => {
+      if (topTitleDOM.getAttribute('data-gamestatus') != 'FREE') {
+        console.log('validation fails...');
+        return;
+      }
+      if (_jamb.dices.STATUS == "FREE_TO_PLAY") {
+        app.matrixSounds.play('start');
+        _jamb.dices.STATUS = "IN_PLAY";
+        dispatchEvent(new CustomEvent('updateTitle', {
+          detail: {
+            text: app.label.get.hand1,
+            status: 'inplay'
+          }
+        }));
+        addEventListener('dice-1', dice1Click);
+        addEventListener('dice-2', dice2Click);
+        addEventListener('dice-3', dice3Click);
+        addEventListener('dice-4', dice4Click);
+        addEventListener('dice-5', dice5Click);
+        addEventListener('dice-6', dice6Click);
+        for (var x = 1; x < 7; x++) {
+          shootDice(x);
+        }
+      } else if (_jamb.dices.STATUS == "SELECT_DICES_1" || _jamb.dices.STATUS == "SELECT_DICES_2") {
+        // Now no selected dices still rolling
+        for (let i = 1; i <= 6; i++) {
+          const key = "CubePhysics" + i;
+          if (!(key in app.dices.SAVED_DICES)) {
+            console.log("Still in game last char is id : ", key[key.length - 1]);
+            application.activateDiceClickListener(parseInt(key[key.length - 1]));
+            shootDice(key[key.length - 1]);
+          } else {
+            console.log("??????????Still in game last char is id : ", key[key.length - 1]);
+            application.activateDiceClickListener(parseInt(key[key.length - 1]));
+          }
+        }
+        // ????
+        // application.activateDiceClickListener(1);
+
+        dispatchEvent(new CustomEvent('updateTitle', {
+          detail: {
+            text: _jamb.dices.STATUS == "SELECT_DICES_1" ? app.label.get.hand1 : app.label.get.hand2,
+            status: 'inplay'
+          }
+        }));
+      } else if (_jamb.dices.STATUS == "FINISHED") {
+        _utils.mb.error('No more roll...');
+        _utils.mb.show('Pick up 5 dices');
+      }
+    };
+    addEventListener('DICE.ROLL', rollProcedure);
+    app.ROLL = () => {
+      dispatchEvent(new CustomEvent('DICE.ROLL', {}));
+    };
   }
 });
-// just for dev
-window.app = TEST_ANIM;
+window.app = application;
 
-},{"../src/engine/loader-obj.js":22,"../src/engine/loaders/bvh.js":23,"../src/engine/loaders/webgpu-gltf.js":24,"../src/engine/utils.js":28,"../src/world.js":37}],2:[function(require,module,exports){
+},{"./examples/games/jamb/jamb.js":2,"./src/engine/loader-obj.js":24,"./src/engine/raycast.js":30,"./src/engine/utils.js":31,"./src/world.js":43}],4:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -103,7 +2158,7 @@ exports.default = void 0;
 var _bvhLoader = require("./module/bvh-loader");
 var _default = exports.default = _bvhLoader.MEBvh;
 
-},{"./module/bvh-loader":3}],3:[function(require,module,exports){
+},{"./module/bvh-loader":5}],5:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -792,7 +2847,7 @@ class MEBvh {
 }
 exports.MEBvh = MEBvh;
 
-},{"webgpu-matrix":15}],4:[function(require,module,exports){
+},{"webgpu-matrix":17}],6:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -870,7 +2925,7 @@ function equals(a, b) {
   return Math.abs(a - b) <= tolerance * Math.max(1, Math.abs(a), Math.abs(b));
 }
 
-},{}],5:[function(require,module,exports){
+},{}],7:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -899,7 +2954,7 @@ var vec4 = _interopRequireWildcard(require("./vec4.js"));
 exports.vec4 = vec4;
 function _interopRequireWildcard(e, t) { if ("function" == typeof WeakMap) var r = new WeakMap(), n = new WeakMap(); return (_interopRequireWildcard = function (e, t) { if (!t && e && e.__esModule) return e; var o, i, f = { __proto__: null, default: e }; if (null === e || "object" != typeof e && "function" != typeof e) return f; if (o = t ? n : r) { if (o.has(e)) return o.get(e); o.set(e, f); } for (const t in e) "default" !== t && {}.hasOwnProperty.call(e, t) && ((i = (o = Object.defineProperty) && Object.getOwnPropertyDescriptor(e, t)) && (i.get || i.set) ? o(f, t, i) : f[t] = e[t]); return f; })(e, t); }
 
-},{"./common.js":4,"./mat2.js":6,"./mat2d.js":7,"./mat3.js":8,"./mat4.js":9,"./quat.js":10,"./quat2.js":11,"./vec2.js":12,"./vec3.js":13,"./vec4.js":14}],6:[function(require,module,exports){
+},{"./common.js":6,"./mat2.js":8,"./mat2d.js":9,"./mat3.js":10,"./mat4.js":11,"./quat.js":12,"./quat2.js":13,"./vec2.js":14,"./vec3.js":15,"./vec4.js":16}],8:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -1361,7 +3416,7 @@ var mul = exports.mul = multiply;
  */
 var sub = exports.sub = subtract;
 
-},{"./common.js":4}],7:[function(require,module,exports){
+},{"./common.js":6}],9:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -1875,7 +3930,7 @@ var mul = exports.mul = multiply;
  */
 var sub = exports.sub = subtract;
 
-},{"./common.js":4}],8:[function(require,module,exports){
+},{"./common.js":6}],10:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -2687,7 +4742,7 @@ var mul = exports.mul = multiply;
  */
 var sub = exports.sub = subtract;
 
-},{"./common.js":4}],9:[function(require,module,exports){
+},{"./common.js":6}],11:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -4707,7 +6762,7 @@ var mul = exports.mul = multiply;
  */
 var sub = exports.sub = subtract;
 
-},{"./common.js":4}],10:[function(require,module,exports){
+},{"./common.js":6}],12:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -5490,7 +7545,7 @@ var setAxes = exports.setAxes = function () {
   };
 }();
 
-},{"./common.js":4,"./mat3.js":8,"./vec3.js":13,"./vec4.js":14}],11:[function(require,module,exports){
+},{"./common.js":6,"./mat3.js":10,"./vec3.js":15,"./vec4.js":16}],13:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -6363,7 +8418,7 @@ function equals(a, b) {
   return Math.abs(a0 - b0) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a0), Math.abs(b0)) && Math.abs(a1 - b1) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a1), Math.abs(b1)) && Math.abs(a2 - b2) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a2), Math.abs(b2)) && Math.abs(a3 - b3) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a3), Math.abs(b3)) && Math.abs(a4 - b4) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a4), Math.abs(b4)) && Math.abs(a5 - b5) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a5), Math.abs(b5)) && Math.abs(a6 - b6) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a6), Math.abs(b6)) && Math.abs(a7 - b7) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a7), Math.abs(b7));
 }
 
-},{"./common.js":4,"./mat4.js":9,"./quat.js":10}],12:[function(require,module,exports){
+},{"./common.js":6,"./mat4.js":11,"./quat.js":12}],14:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -7041,7 +9096,7 @@ var forEach = exports.forEach = function () {
   };
 }();
 
-},{"./common.js":4}],13:[function(require,module,exports){
+},{"./common.js":6}],15:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -7893,7 +9948,7 @@ var forEach = exports.forEach = function () {
   };
 }();
 
-},{"./common.js":4}],14:[function(require,module,exports){
+},{"./common.js":6}],16:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -8600,7 +10655,7 @@ var forEach = exports.forEach = function () {
   };
 }();
 
-},{"./common.js":4}],15:[function(require,module,exports){
+},{"./common.js":6}],17:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -12533,7 +14588,7 @@ function setDefaultType(ctor) {
   setDefaultType$1(ctor);
 }
 
-},{}],16:[function(require,module,exports){
+},{}],18:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -17880,7 +19935,7 @@ function setDefaultType(ctor) {
   setDefaultType$1(ctor);
 }
 
-},{}],17:[function(require,module,exports){
+},{}],19:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -18294,7 +20349,7 @@ class MEBall {
 }
 exports.default = MEBall;
 
-},{"../shaders/shaders":33,"./engine":20,"./matrix-class":26,"wgpu-matrix":16}],18:[function(require,module,exports){
+},{"../shaders/shaders":39,"./engine":22,"./matrix-class":28,"wgpu-matrix":18}],20:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -18332,7 +20387,7 @@ class Behavior {
 }
 exports.default = Behavior;
 
-},{"./utils":28}],19:[function(require,module,exports){
+},{"./utils":31}],21:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -18757,7 +20812,7 @@ class MECube {
 }
 exports.default = MECube;
 
-},{"../shaders/shaders":33,"./engine":20,"./matrix-class":26,"wgpu-matrix":16}],20:[function(require,module,exports){
+},{"../shaders/shaders":39,"./engine":22,"./matrix-class":28,"wgpu-matrix":18}],22:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -19179,7 +21234,7 @@ function createInputHandler(window, canvas) {
   };
 }
 
-},{"./utils":28,"wgpu-matrix":16}],21:[function(require,module,exports){
+},{"./utils":31,"wgpu-matrix":18}],23:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -19241,8 +21296,8 @@ class SpotLight {
     this.aspect = aspect;
     this.near = near;
     this.far = far;
-    this.innerCutoff = Math.cos(Math.PI / 180 * 12.5);
-    this.outerCutoff = Math.cos(Math.PI / 180 * 17.5);
+    this.innerCutoff = Math.cos(Math.PI / 180 * 20.0);
+    this.outerCutoff = Math.cos(Math.PI / 180 * 30.0);
     this.ambientFactor = 0.5;
     this.range = 20.0;
     this.shadowBias = 0.01;
@@ -19324,12 +21379,18 @@ class SpotLight {
           }
         }]
       });
-      return this.shadowBindGroupContainer[index];
+      return this.shadowBindGroup[index];
     };
     this.modelBindGroupLayout = this.device.createBindGroupLayout({
       label: 'modelBindGroupLayout in light [one bindings]',
       entries: [{
         binding: 0,
+        visibility: GPUShaderStage.VERTEX,
+        buffer: {
+          type: 'uniform'
+        }
+      }, {
+        binding: 1,
         visibility: GPUShaderStage.VERTEX,
         buffer: {
           type: 'uniform'
@@ -19414,7 +21475,7 @@ class SpotLight {
 }
 exports.SpotLight = SpotLight;
 
-},{"../shaders/vertexShadow.wgsl":35,"./behavior":18,"wgpu-matrix":16}],22:[function(require,module,exports){
+},{"../shaders/vertexShadow.wgsl":41,"./behavior":20,"wgpu-matrix":18}],24:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -19882,7 +21943,7 @@ function play(nameAni) {
   this.playing = true;
 }
 
-},{}],23:[function(require,module,exports){
+},{}],25:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -20393,7 +22454,7 @@ class BVHPlayer extends _meshObj.default {
 }
 exports.BVHPlayer = BVHPlayer;
 
-},{"../mesh-obj":27,"./webgpu-gltf.js":24,"bvh-loader":2,"wgpu-matrix":16}],24:[function(require,module,exports){
+},{"../mesh-obj":29,"./webgpu-gltf.js":26,"bvh-loader":4,"wgpu-matrix":18}],26:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -20967,7 +23028,7 @@ async function uploadGLBModel(buffer, device) {
   return R;
 }
 
-},{"gl-matrix":5}],25:[function(require,module,exports){
+},{"gl-matrix":7}],27:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -21019,7 +23080,51 @@ class Materials {
       // Must match size in shader
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
-    this.device.queue.writeBuffer(this.dummySpotlightUniformBuffer, 0, new Float32Array(16));
+    this.device.queue.writeBuffer(this.dummySpotlightUniformBuffer, 0, new Float32Array(20));
+    console.log('Material class ');
+    // Create a 1x1 RGBA texture filled with white
+    const mrDummyTex = this.device.createTexture({
+      size: [1, 1, 1],
+      format: 'rgba8unorm',
+      usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST
+    });
+
+    // Upload a single pixel
+    const pixel = new Uint8Array([255, 255, 255, 255]); // white RGBA
+    this.device.queue.writeTexture({
+      texture: mrDummyTex
+    }, pixel, {
+      bytesPerRow: 4
+    }, [1, 1, 1]);
+    this.metallicRoughnessTextureView = mrDummyTex.createView();
+    this.metallicRoughnessSampler = this.device.createSampler({
+      magFilter: 'linear',
+      minFilter: 'linear'
+    });
+
+    // 4 floats for baseColorFactor + 1 metallic + 1 roughness + 2 pad floats = 8 floats
+    const materialPBRSize = 8 * 4; // 32 bytes
+    this.materialPBRBuffer = this.device.createBuffer({
+      size: materialPBRSize,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+
+    // Dummy values
+    const baseColorFactor = [1.0, 1.0, 1.0, 1.0];
+    const metallicFactor = 0.1; // diffuse like plastic
+    const roughnessFactor = 0.5; // some gloss
+    const pad = [0.0, 0.0];
+    // Pack into Float32Array
+    const materialArray = new Float32Array([...baseColorFactor, metallicFactor, roughnessFactor, ...pad]);
+    this.device.queue.writeBuffer(this.materialPBRBuffer, 0, materialArray.buffer);
+  }
+  setupMaterialPBR(metallicFactor) {
+    const baseColorFactor = [1.0, 1.0, 1.0, 1.0];
+    const roughnessFactor = 0.5; // some gloss
+    const pad = [0.0, 0.0];
+    // Pack into Float32Array
+    const materialArray = new Float32Array([...baseColorFactor, metallicFactor, roughnessFactor, ...pad]);
+    this.device.queue.writeBuffer(this.materialPBRBuffer, 0, materialArray.buffer);
   }
   updatePostFXMode(mode) {
     const arrayBuffer = new Uint32Array([mode]);
@@ -21226,6 +23331,17 @@ class Materials {
           resource: {
             buffer: !this.spotlightUniformBuffer ? this.dummySpotlightUniformBuffer : this.spotlightUniformBuffer
           }
+        }, {
+          binding: 6,
+          resource: this.metallicRoughnessTextureView
+        }, {
+          binding: 7,
+          resource: this.metallicRoughnessSampler
+        }, {
+          binding: 8,
+          resource: {
+            buffer: this.materialPBRBuffer
+          }
         }]
       });
     }
@@ -21303,6 +23419,25 @@ class Materials {
       buffer: {
         type: 'uniform'
       }
+    }, {
+      binding: 6,
+      visibility: GPUShaderStage.FRAGMENT,
+      texture: {
+        sampleType: 'float',
+        viewDimension: '2d'
+      }
+    }, {
+      binding: 7,
+      visibility: GPUShaderStage.FRAGMENT,
+      sampler: {
+        type: 'filtering'
+      }
+    }, {
+      binding: 8,
+      visibility: GPUShaderStage.FRAGMENT,
+      buffer: {
+        type: 'uniform'
+      }
     }])];
     // console.log("BG E : ", e)
     this.bglForRender = this.device.createBindGroupLayout({
@@ -21313,7 +23448,7 @@ class Materials {
 }
 exports.default = Materials;
 
-},{}],26:[function(require,module,exports){
+},{}],28:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -21549,7 +23684,7 @@ class Rotation {
 }
 exports.Rotation = Rotation;
 
-},{"./utils":28}],27:[function(require,module,exports){
+},{"./utils":31}],29:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -21559,13 +23694,14 @@ exports.default = void 0;
 var _wgpuMatrix = require("wgpu-matrix");
 var _matrixClass = require("./matrix-class");
 var _fragment = require("../shaders/fragment.wgsl");
+var _fragmentWgsl = require("../shaders/fragment.wgsl.noCut");
+var _fragmentWgsl2 = require("../shaders/fragment.wgsl.pong");
 var _vertex = require("../shaders/vertex.wgsl");
 var _utils = require("./utils");
 var _materials = _interopRequireDefault(require("./materials"));
 var _fragmentVideo = require("../shaders/fragment.video.wgsl");
+var _fragmentWgsl3 = require("../shaders/fragment.wgsl.power");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
-// import {vertexShadowWGSL} from '../shaders/vertexShadow.wgsl';
-
 class MEMeshObj extends _materials.default {
   constructor(canvas, device, context, o, inputHandler, globalAmbient, _glbFile = null, primitiveIndex = null, skinnedNodeIndex = null) {
     super(device);
@@ -21915,6 +24051,7 @@ class MEMeshObj extends _materials.default {
         size: 176,
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
       });
+      // test MUST BE IF
       this.uniformBufferBindGroupLayout = this.device.createBindGroupLayout({
         label: 'uniformBufferBindGroupLayout in mesh',
         entries: [{
@@ -22022,7 +24159,7 @@ class MEMeshObj extends _materials.default {
         }
         // Apply scale if you have it, e.g.:
         // console.warn('what is csle comes from user level not glb ', this.scale)
-        _wgpuMatrix.mat4.scale(modelMatrix, [this.scale[0], this.scale[1], this.scale[2]], modelMatrix);
+        // mat4.scale(modelMatrix, [this.scale[0], this.scale[1], this.scale[2]], modelMatrix);
         return modelMatrix;
       };
 
@@ -22172,7 +24309,7 @@ class MEMeshObj extends _materials.default {
     pass.setIndexBuffer(this.indexBuffer, 'uint16');
     pass.drawIndexed(this.indexCount);
   };
-  drawElementsAnim = renderPass => {
+  drawElementsAnim = (renderPass, lightContainer) => {
     if (!this.sceneBindGroupForRender || !this.modelBindGroup) {
       console.log(' NULL 1');
       return;
@@ -22187,7 +24324,7 @@ class MEMeshObj extends _materials.default {
     if (this.isVideo == false) {
       let bindIndex = 2; // start after UBO & model
       for (const light of lightContainer) {
-        pass.setBindGroup(bindIndex++, light.getMainPassBindGroup(this));
+        renderPass.setBindGroup(bindIndex++, light.getMainPassBindGroup(this));
       }
     }
     renderPass.setVertexBuffer(0, mesh.vertexBuffer);
@@ -22225,7 +24362,260 @@ class MEMeshObj extends _materials.default {
 }
 exports.default = MEMeshObj;
 
-},{"../shaders/fragment.video.wgsl":31,"../shaders/fragment.wgsl":32,"../shaders/vertex.wgsl":34,"./materials":25,"./matrix-class":26,"./utils":28,"wgpu-matrix":16}],28:[function(require,module,exports){
+},{"../shaders/fragment.video.wgsl":34,"../shaders/fragment.wgsl":35,"../shaders/fragment.wgsl.noCut":36,"../shaders/fragment.wgsl.pong":37,"../shaders/fragment.wgsl.power":38,"../shaders/vertex.wgsl":40,"./materials":27,"./matrix-class":28,"./utils":31,"wgpu-matrix":18}],30:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.addRaycastListener = addRaycastListener;
+exports.addRaycastsAABBListener = addRaycastsAABBListener;
+exports.computeAABB = computeAABB;
+exports.computeWorldVertsAndAABB = computeWorldVertsAndAABB;
+exports.getRayFromMouse = getRayFromMouse;
+exports.getRayFromMouse2 = getRayFromMouse2;
+exports.rayIntersectsAABB = rayIntersectsAABB;
+exports.rayIntersectsSphere = rayIntersectsSphere;
+exports.touchCoordinate = void 0;
+var _wgpuMatrix = require("wgpu-matrix");
+/**
+ * @author Nikola Lukic
+ * @email zlatnaspirala@gmail.com
+ * @site https://maximumroulette.com
+ * @Licence GPL v3
+ * @credits chatgpt used for this script adaptation.
+ * @Note matrix-engine-wgpu adaptation test
+ * default for now:
+ * app.cameras['WASD']
+ * Only tested for WASD type of camera.
+ * app is global - will be fixed in future
+ */
+
+let rayHitEvent;
+let touchCoordinate = exports.touchCoordinate = {
+  enabled: false,
+  x: 0,
+  y: 0,
+  stopOnFirstDetectedHit: false
+};
+function multiplyMatrixVector(matrix, vector) {
+  return _wgpuMatrix.vec4.transformMat4(vector, matrix);
+}
+function getRayFromMouse(event, canvas, camera) {
+  const rect = canvas.getBoundingClientRect();
+  let x = (event.clientX - rect.left) / rect.width * 2 - 1;
+  let y = (event.clientY - rect.top) / rect.height * 2 - 1;
+  y = -y; // flip Y only (WebGPU NDC)
+
+  const aspect = canvas.width / canvas.height;
+  camera.projectionMatrix = _wgpuMatrix.mat4.perspective(2 * Math.PI / 5, aspect, 0.1, 1000);
+  const invProjection = _wgpuMatrix.mat4.inverse(camera.projectionMatrix);
+  const invView = _wgpuMatrix.mat4.inverse(camera.view);
+
+  // NDC -> clip -> eye -> world
+  let clip = [x, y, 1, 1];
+  let eye = _wgpuMatrix.vec4.transformMat4(clip, invProjection);
+  eye = [eye[0], eye[1], -1, 0]; // direction in view space
+
+  let worldDir = _wgpuMatrix.vec4.transformMat4(eye, invView);
+  const rayDirection = _wgpuMatrix.vec3.normalize([worldDir[0], worldDir[1], worldDir[2]]);
+  const rayOrigin = [...camera.position];
+  return {
+    rayOrigin,
+    rayDirection
+  };
+}
+// export function getRayFromMouse(event, canvas, camera) {
+//   const rect = canvas.getBoundingClientRect();
+//   let x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+//   let y = ((event.clientY - rect.top) / rect.height) * 2 - 1;
+//   // simple invert
+//   x = -x;
+//   y = -y;
+//   const fov = Math.PI / 4;
+//   const aspect = canvas.width / canvas.height;
+//   const near = 0.1;
+//   const far = 1000;
+//   camera.projectionMatrix = mat4.perspective((2 * Math.PI) / 5, aspect, 1, 1000.0);
+//   const invProjection = mat4.inverse(camera.projectionMatrix);
+//   const invView = mat4.inverse(camera.view);
+//   const ndc = [x, y, 1, 1];
+//   let worldPos = multiplyMatrixVector(invProjection, ndc);
+//   worldPos = multiplyMatrixVector(invView, worldPos);
+//   let world;
+//   if(worldPos[3] !== 0) {
+//     world = [
+//       worldPos[0] / worldPos[3],
+//       worldPos[2] / worldPos[3],
+//       worldPos[1] / worldPos[3]
+//     ];
+//   } else {
+//     console.log("[raycaster]special case 0.");
+//     world = [
+//       worldPos[0],
+//       worldPos[1],
+//       worldPos[2]
+//     ];
+//   }
+//   const rayOrigin = [camera.position[0], camera.position[1], camera.position[2]];
+//   const rayDirection = vec3.normalize(vec3.subtract(world, rayOrigin));
+//   rayDirection[2] = -rayDirection[2];
+//   return {rayOrigin, rayDirection};
+// }
+
+function getRayFromMouse2(event, canvas, camera) {
+  const rect = canvas.getBoundingClientRect();
+  let x = (event.clientX - rect.left) / rect.width * 2 - 1;
+  let y = (event.clientY - rect.top) / rect.height * 2 - 1;
+  // simple invert
+  y = -y;
+  const fov = Math.PI / 4;
+  const aspect = canvas.width / canvas.height;
+  const near = 0.1;
+  const far = 1000;
+  camera.projectionMatrix = _wgpuMatrix.mat4.perspective(2 * Math.PI / 5, aspect, 1, 1000.0);
+  const invProjection = _wgpuMatrix.mat4.inverse(camera.projectionMatrix);
+  const invView = _wgpuMatrix.mat4.inverse(camera.view);
+  const ndc = [x, y, 1, 1];
+  let worldPos = multiplyMatrixVector(invProjection, ndc);
+  worldPos = multiplyMatrixVector(invView, worldPos);
+  let world;
+  if (worldPos[3] !== 0) {
+    world = [worldPos[0] / worldPos[3], worldPos[1] / worldPos[3], worldPos[2] / worldPos[3]];
+  } else {
+    console.log("[raycaster]special case 0.");
+    world = [worldPos[0], worldPos[1], worldPos[2]];
+  }
+  const rayOrigin = [camera.position[0], camera.position[1], camera.position[2]];
+  const rayDirection = _wgpuMatrix.vec3.normalize(_wgpuMatrix.vec3.subtract(world, rayOrigin));
+  return {
+    rayOrigin,
+    rayDirection
+  };
+}
+function rayIntersectsSphere(rayOrigin, rayDirection, sphereCenter, sphereRadius) {
+  const pos = [sphereCenter.x, sphereCenter.y, sphereCenter.z];
+  const oc = _wgpuMatrix.vec3.subtract(rayOrigin, pos);
+  const a = _wgpuMatrix.vec3.dot(rayDirection, rayDirection);
+  const b = 2.0 * _wgpuMatrix.vec3.dot(oc, rayDirection);
+  const c = _wgpuMatrix.vec3.dot(oc, oc) - sphereRadius * sphereRadius;
+  const discriminant = b * b - 4 * a * c;
+  return discriminant > 0;
+}
+function addRaycastListener(canvasId = "canvas1") {
+  let canvasDom = document.getElementById(canvasId);
+  canvasDom.addEventListener('click', event => {
+    let camera = app.cameras.WASD;
+    const {
+      rayOrigin,
+      rayDirection
+    } = getRayFromMouse(event, canvasDom, camera);
+    for (const object of app.mainRenderBundle) {
+      if (object.raycast.enabled == true) {
+        if (rayIntersectsSphere(rayOrigin, rayDirection, object.position, object.raycast.radius)) {
+          // Just like in matrix-engine webGL version "ray.hit.event"
+          canvasDom.dispatchEvent(new CustomEvent('ray.hit.event', {
+            detail: {
+              hitObject: object,
+              rayOrigin: rayOrigin,
+              rayDirection: rayDirection
+            }
+          }));
+          if (touchCoordinate.stopOnFirstDetectedHit == true) {
+            break;
+          }
+        }
+      }
+    }
+  });
+}
+
+// Compute AABB from flat vertices array [x,y,z, x,y,z, ...]
+function computeAABB(vertices) {
+  const min = [Infinity, Infinity, Infinity];
+  const max = [-Infinity, -Infinity, -Infinity];
+  for (let i = 0; i < vertices.length; i += 3) {
+    min[0] = Math.min(min[0], vertices[i]);
+    min[1] = Math.min(min[1], vertices[i + 1]);
+    min[2] = Math.min(min[2], vertices[i + 2]);
+    max[0] = Math.max(max[0], vertices[i]);
+    max[1] = Math.max(max[1], vertices[i + 1]);
+    max[2] = Math.max(max[2], vertices[i + 2]);
+  }
+  return [min, max];
+}
+
+// Ray-AABB intersection using slabs method
+function rayIntersectsAABB(rayOrigin, rayDirection, boxMin, boxMax) {
+  let tmin = (boxMin[0] - rayOrigin[0]) / rayDirection[0];
+  let tmax = (boxMax[0] - rayOrigin[0]) / rayDirection[0];
+  if (tmin > tmax) [tmin, tmax] = [tmax, tmin];
+  let tymin = (boxMin[1] - rayOrigin[1]) / rayDirection[1];
+  let tymax = (boxMax[1] - rayOrigin[1]) / rayDirection[1];
+  if (tymin > tymax) [tymin, tymax] = [tymax, tymin];
+  if (tmin > tymax || tymin > tmax) return false;
+  if (tymin > tmin) tmin = tymin;
+  if (tymax < tmax) tmax = tymax;
+  let tzmin = (boxMin[2] - rayOrigin[2]) / rayDirection[2];
+  let tzmax = (boxMax[2] - rayOrigin[2]) / rayDirection[2];
+  if (tzmin > tzmax) [tzmin, tzmax] = [tzmax, tzmin];
+  if (tmin > tzmax || tzmin > tmax) return false;
+  return true;
+}
+function computeWorldVertsAndAABB(object) {
+  const modelMatrix = object.getModelMatrix(object.position);
+  const worldVerts = [];
+  for (let i = 0; i < object.mesh.vertices.length; i += 3) {
+    const local = _wgpuMatrix.vec3.fromValues(object.mesh.vertices[i], object.mesh.vertices[i + 1], object.mesh.vertices[i + 2]);
+    const world = _wgpuMatrix.vec3.transformMat4(local, modelMatrix); // OK
+    worldVerts.push(world[0], world[1], world[2]);
+  }
+  const [boxMin, boxMax] = computeAABB(worldVerts);
+  return {
+    modelMatrix,
+    worldVerts,
+    boxMin,
+    boxMax
+  };
+}
+function addRaycastsAABBListener(canvasId = "canvas1") {
+  const canvasDom = document.getElementById(canvasId);
+  if (!canvasDom) {
+    console.warn(`Canvas with id ${canvasId} not found`);
+    return;
+  }
+  canvasDom.addEventListener('click', event => {
+    console.warn(`Canvas click  ${event} `);
+    const camera = app.cameras.WASD;
+    const {
+      rayOrigin,
+      rayDirection
+    } = getRayFromMouse2(event, canvasDom, camera);
+    for (const object of app.mainRenderBundle) {
+      const {
+        boxMin,
+        boxMax
+      } = computeWorldVertsAndAABB(object);
+      if (object.raycast.enabled == true) {
+        if (rayIntersectsAABB(rayOrigin, rayDirection, boxMin, boxMax)) {
+          // console.log('AABB hit:', object.name);
+          canvasDom.dispatchEvent(new CustomEvent('ray.hit.event', {
+            detail: {
+              hitObject: object
+            },
+            rayOrigin: rayOrigin,
+            rayDirection: rayDirection
+          }));
+          if (touchCoordinate.stopOnFirstDetectedHit == true) {
+            break;
+          }
+        }
+      }
+    }
+  });
+}
+
+},{"wgpu-matrix":18}],31:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -23111,7 +25501,7 @@ function setupCanvasFilters(canvasId) {
   updateFilter(); // Initial
 }
 
-},{}],29:[function(require,module,exports){
+},{}],32:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -23151,7 +25541,7 @@ class MultiLang {
 }
 exports.MultiLang = MultiLang;
 
-},{"../engine/utils":28}],30:[function(require,module,exports){
+},{"../engine/utils":31}],33:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -23435,7 +25825,7 @@ class MatrixAmmo {
 }
 exports.default = MatrixAmmo;
 
-},{"../engine/utils":28}],31:[function(require,module,exports){
+},{"../engine/utils":31}],34:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -23525,49 +25915,58 @@ fn main(input : FragmentInput) -> @location(0) vec4f {
 }
 `;
 
-},{}],32:[function(require,module,exports){
+},{}],35:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.fragmentWGSL = void 0;
-let fragmentWGSL = exports.fragmentWGSL = `override shadowDepthTextureSize: f32 = 1024.0;
-
-// Created by Nikola Lukic with chatgtp assist.
+let fragmentWGSL = exports.fragmentWGSL = `
+override shadowDepthTextureSize: f32 = 1024.0;
+const PI: f32 = 3.141592653589793;
 
 struct Scene {
     lightViewProjMatrix  : mat4x4f,
     cameraViewProjMatrix : mat4x4f,
     cameraPos            : vec3f,
-    padding2             : f32,   // align to 16 bytes
+    padding2             : f32,
     lightPos             : vec3f,
-    padding              : f32,   // align to 16 bytes
-    globalAmbient        : vec3f,  // <--- new
-    padding3             : f32,    // keep alignment (16 bytes)
+    padding              : f32,
+    globalAmbient        : vec3f,
+    padding3             : f32,
 };
 
 struct SpotLight {
     position      : vec3f,
     _pad1         : f32,
-
     direction     : vec3f,
     _pad2         : f32,
-
     innerCutoff   : f32,
     outerCutoff   : f32,
     intensity     : f32,
     _pad3         : f32,
-
     color         : vec3f,
     _pad4         : f32,
-
     range         : f32,
     ambientFactor : f32,
     shadowBias    : f32,
     _pad5         : f32,
-
     lightViewProj : mat4x4<f32>,
+};
+
+struct MaterialPBR {
+    baseColorFactor : vec4f,
+    metallicFactor  : f32,
+    roughnessFactor : f32,
+    _pad1           : f32,
+    _pad2           : f32,
+};
+
+struct PBRMaterialData {
+    baseColor : vec3f,
+    metallic  : f32,
+    roughness : f32,
 };
 
 const MAX_SPOTLIGHTS = 20u;
@@ -23579,14 +25978,51 @@ const MAX_SPOTLIGHTS = 20u;
 @group(0) @binding(4) var meshSampler: sampler;
 @group(0) @binding(5) var<uniform> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
 
+// PBR textures
+@group(0) @binding(6) var metallicRoughnessTex: texture_2d<f32>;
+@group(0) @binding(7) var metallicRoughnessSampler: sampler;
+@group(0) @binding(8) var<uniform> material: MaterialPBR;
+
 struct FragmentInput {
     @location(0) shadowPos : vec4f,
     @location(1) fragPos   : vec3f,
     @location(2) fragNorm  : vec3f,
     @location(3) uv        : vec2f,
+};
+
+fn getPBRMaterial(uv: vec2f) -> PBRMaterialData {
+    let texColor = textureSample(meshTexture, meshSampler, uv);
+    let baseColor = texColor.rgb * material.baseColorFactor.rgb;
+    let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);
+    let metallic = mrTex.b * material.metallicFactor;
+    let roughness = mrTex.g * material.roughnessFactor;
+    return PBRMaterialData(baseColor, metallic, roughness);
 }
 
-const albedo = vec3f(0.9);
+fn fresnelSchlick(cosTheta: f32, F0: vec3f) -> vec3f {
+    return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
+}
+
+fn distributionGGX(N: vec3f, H: vec3f, roughness: f32) -> f32 {
+    let a = roughness * roughness;
+    let a2 = a * a;
+    let NdotH = max(dot(N, H), 0.0);
+    let NdotH2 = NdotH * NdotH;
+    let denom = (NdotH2 * (a2 - 1.0) + 1.0);
+    return a2 / (PI * denom * denom);
+}
+
+fn geometrySchlickGGX(NdotV: f32, roughness: f32) -> f32 {
+    let r = (roughness + 1.0);
+    let k = (r * r) / 8.0;
+    return NdotV / (NdotV * (1.0 - k) + k);
+}
+
+fn geometrySmith(N: vec3f, V: vec3f, L: vec3f, roughness: f32) -> f32 {
+    let NdotV = max(dot(N, V), 0.0);
+    let NdotL = max(dot(N, L), 0.0);
+    return geometrySchlickGGX(NdotV, roughness) * geometrySchlickGGX(NdotL, roughness);
+}
 
 fn calculateSpotlightFactor(light: SpotLight, fragPos: vec3f) -> f32 {
     let L = normalize(light.position - fragPos);
@@ -23595,48 +26031,74 @@ fn calculateSpotlightFactor(light: SpotLight, fragPos: vec3f) -> f32 {
     return clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
 }
 
-fn computeSpotLight(light: SpotLight, normal: vec3f, fragPos: vec3f, viewDir: vec3f) -> vec3f {
-    let L = light.position - fragPos;
-    let distance = length(L);
-    let lightDir = normalize(L);
-
-    let spotFactor = calculateSpotlightFactor(light, fragPos);
-    let atten = clamp(1.0 - (distance / light.range), 0.0, 1.0);
-
-    let diff = max(dot(normal, lightDir), 0.0);
-    let halfwayDir = normalize(lightDir + viewDir);
-    let spec = pow(max(dot(normal, halfwayDir), 0.0), 32.0);
-
-    let diffuse  = diff * light.color * light.intensity * atten;
-    let specular = spec * light.color * light.intensity * atten;
-
-    return (diffuse + specular) * spotFactor;
+fn computeSpotLight2(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, material: PBRMaterialData) -> vec3f {
+    let L = normalize(light.position - fragPos);
+    let NdotL = max(dot(N, L), 0.0);
+    if (NdotL <= 0.0) {
+        return vec3f(0.0);
+    }
+    return material.baseColor * light.color * light.intensity * NdotL;
+    // return material.baseColor * light.color * light.intensity * NdotL;
 }
 
-// Corrected PCF for texture_depth_2d_array
+fn computeSpotLight(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, material: PBRMaterialData) -> vec3f {
+    let L = normalize(light.position - fragPos);
+    let NdotL = max(dot(N, L), 0.0);
+
+    let theta = dot(L, normalize(-light.direction));
+    let epsilon = light.innerCutoff - light.outerCutoff;
+    var coneAtten = clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
+
+    // coneAtten = 1.0;
+    if (coneAtten <= 0.0 || NdotL <= 0.0) {
+        return vec3f(0.0);
+    }
+
+    let F0 = mix(vec3f(0.04), material.baseColor.rgb, vec3f(material.metallic));
+    let H = normalize(L + V);
+    let F = F0 + (1.0 - F0) * pow(1.0 - max(dot(H, V), 0.0), 5.0);
+
+    let alpha = material.roughness * material.roughness;
+    let NdotH = max(dot(N, H), 0.0);
+    let alpha2 = alpha * alpha;
+    let denom = (NdotH * NdotH * (alpha2 - 1.0) + 1.0);
+    let D = alpha2 / (PI * denom * denom + 1e-5);
+
+    let k = (alpha + 1.0) * (alpha + 1.0) / 8.0;
+    let NdotV = max(dot(N, V), 0.0);
+    let Gv = NdotV / (NdotV * (1.0 - k) + k);
+    let Gl = NdotL / (NdotL * (1.0 - k) + k);
+    let G = Gv * Gl;
+
+    let numerator = D * G * F;
+    let denominator = 4.0 * NdotV * NdotL + 1e-5;
+    let specular = numerator / denominator;
+
+    let kS = F;
+    let kD = (vec3f(1.0) - kS) * (1.0 - material.metallic);
+    let diffuse = kD * material.baseColor.rgb / PI;
+
+    let radiance = light.color * light.intensity;
+    // return (diffuse + specular) * radiance * NdotL * coneAtten;
+    return material.baseColor * light.color * light.intensity * NdotL * coneAtten;
+}
+
 fn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, lightDir: vec3f) -> f32 {
     var visibility: f32 = 0.0;
     let biasConstant: f32 = 0.001;
-    // Slope bias: avoid self-shadowing on steep angles
-    // let slopeBias: f32 = max(0.002 * (1.0 - dot(normal, lightDir)), 0.0);
-    let bias = biasConstant;//  + slopeBias;
-
-    let oneOverSize = 1.0 / (shadowDepthTextureSize  * 0.5);
-
-    // 3x3 PCF kernel
+    let slopeBias = max(0.002 * (1.0 - dot(normal, lightDir)), 0.0);
+    let bias = biasConstant + slopeBias;
+    let oneOverSize = 1.0 / (shadowDepthTextureSize * 0.5);
     let offsets: array<vec2f, 9> = array<vec2f, 9>(
         vec2(-1.0, -1.0), vec2(0.0, -1.0), vec2(1.0, -1.0),
         vec2(-1.0,  0.0), vec2(0.0,  0.0), vec2(1.0,  0.0),
         vec2(-1.0,  1.0), vec2(0.0,  1.0), vec2(1.0,  1.0)
     );
-
     for(var i: u32 = 0u; i < 9u; i = i + 1u) {
         visibility += textureSampleCompare(
-            shadowMapArray,
-            shadowSampler,
+            shadowMapArray, shadowSampler,
             shadowUV + offsets[i] * oneOverSize,
-            layer,
-            depthRef //+ bias
+            layer, depthRef - bias
         );
     }
     return visibility / 9.0;
@@ -23645,34 +26107,628 @@ fn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, light
 @fragment
 fn main(input: FragmentInput) -> @location(0) vec4f {
     let norm = normalize(input.fragNorm);
-
     let viewDir = normalize(scene.cameraPos - input.fragPos);
-    // let viewDir = normalize(scene.cameraViewProjMatrix[3].xyz - input.fragPos);
+
+    // ✅ now we declare materialData
+    let materialData = getPBRMaterial(input.uv);
 
     var lightContribution = vec3f(0.0);
-    var ambient = vec3f(0.5);
 
     for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
         let sc = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);
         let p  = sc.xyz / sc.w;
         let uv = clamp(p.xy * 0.5 + vec2<f32>(0.5), vec2<f32>(0.0), vec2<f32>(1.0));
         let depthRef = p.z * 0.5 + 0.5;
+
         let lightDir = normalize(spotlights[i].position - input.fragPos);
-        let angleFactor = 1.0 - dot(norm, lightDir);
-        let slopeBias = 0.01 * (1.0 - dot(norm, lightDir));
-        let bias = spotlights[i].shadowBias + slopeBias;
+        let bias = spotlights[i].shadowBias;
         let visibility = sampleShadow(uv, i32(i), depthRef - bias, norm, lightDir);
-        let contrib = computeSpotLight(spotlights[i], norm, input.fragPos, viewDir);
+        // let visibility = 1.0;
+        let contrib = computeSpotLight(spotlights[i], norm, input.fragPos, viewDir, materialData);
         lightContribution += contrib * visibility;
-        // ambient += spotlights[i].ambientFactor * spotlights[i].color;
     }
-    // ambient /= f32(MAX_SPOTLIGHTS); PREVENT OVER NEXT FEATURE ON SWICHER
+
     let texColor = textureSample(meshTexture, meshSampler, input.uv);
-    let finalColor = texColor.rgb * (scene.globalAmbient + lightContribution); // * albedo;
+    let finalColor = texColor.rgb * (scene.globalAmbient + lightContribution);
     return vec4f(finalColor, 1.0);
 }`;
 
-},{}],33:[function(require,module,exports){
+},{}],36:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.fragmentWGSLNoCut = void 0;
+let fragmentWGSLNoCut = exports.fragmentWGSLNoCut = `override shadowDepthTextureSize: f32 = 1024.0;
+const PI: f32 = 3.141592653589793;
+
+struct Scene {
+    lightViewProjMatrix  : mat4x4f,
+    cameraViewProjMatrix : mat4x4f,
+    cameraPos            : vec3f,
+    padding2             : f32,
+    lightPos             : vec3f,
+    padding              : f32,
+    globalAmbient        : vec3f,
+    padding3             : f32,
+};
+
+struct SpotLight {
+    position      : vec3f,
+    _pad1         : f32,
+    direction     : vec3f,
+    _pad2         : f32,
+    innerCutoff   : f32,
+    outerCutoff   : f32,
+    intensity     : f32,
+    _pad3         : f32,
+    color         : vec3f,
+    _pad4         : f32,
+    range         : f32,
+    ambientFactor : f32,
+    shadowBias    : f32,
+    _pad5         : f32,
+    lightViewProj : mat4x4<f32>,
+};
+
+struct MaterialPBR {
+    baseColorFactor : vec4f,
+    metallicFactor  : f32,
+    roughnessFactor : f32,
+    _pad1           : f32,
+    _pad2           : f32,
+};
+
+struct PBRMaterialData {
+    baseColor : vec3f,
+    metallic  : f32,
+    roughness : f32,
+};
+
+const MAX_SPOTLIGHTS = 20u;
+
+@group(0) @binding(0) var<uniform> scene : Scene;
+@group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
+@group(0) @binding(2) var shadowSampler: sampler_comparison;
+@group(0) @binding(3) var meshTexture: texture_2d<f32>;
+@group(0) @binding(4) var meshSampler: sampler;
+@group(0) @binding(5) var<uniform> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
+
+// PBR textures
+@group(0) @binding(6) var metallicRoughnessTex: texture_2d<f32>;
+@group(0) @binding(7) var metallicRoughnessSampler: sampler;
+@group(0) @binding(8) var<uniform> material: MaterialPBR;
+
+struct FragmentInput {
+    @location(0) shadowPos : vec4f,
+    @location(1) fragPos   : vec3f,
+    @location(2) fragNorm  : vec3f,
+    @location(3) uv        : vec2f,
+};
+
+fn getPBRMaterial(uv: vec2f) -> PBRMaterialData {
+    let texColor = textureSample(meshTexture, meshSampler, uv);
+    let baseColor = texColor.rgb * material.baseColorFactor.rgb;
+    let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);
+    let metallic = mrTex.b * material.metallicFactor;
+    let roughness = mrTex.g * material.roughnessFactor;
+    return PBRMaterialData(baseColor, metallic, roughness);
+}
+
+fn fresnelSchlick(cosTheta: f32, F0: vec3f) -> vec3f {
+    return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
+}
+
+fn distributionGGX(N: vec3f, H: vec3f, roughness: f32) -> f32 {
+    let a = roughness * roughness;
+    let a2 = a * a;
+    let NdotH = max(dot(N, H), 0.0);
+    let NdotH2 = NdotH * NdotH;
+    let denom = (NdotH2 * (a2 - 1.0) + 1.0);
+    return a2 / (PI * denom * denom);
+}
+
+fn geometrySchlickGGX(NdotV: f32, roughness: f32) -> f32 {
+    let r = (roughness + 1.0);
+    let k = (r * r) / 8.0;
+    return NdotV / (NdotV * (1.0 - k) + k);
+}
+
+fn geometrySmith(N: vec3f, V: vec3f, L: vec3f, roughness: f32) -> f32 {
+    let NdotV = max(dot(N, V), 0.0);
+    let NdotL = max(dot(N, L), 0.0);
+    return geometrySchlickGGX(NdotV, roughness) * geometrySchlickGGX(NdotL, roughness);
+}
+
+fn calculateSpotlightFactor(light: SpotLight, fragPos: vec3f) -> f32 {
+    let L = normalize(light.position - fragPos);
+    let theta = dot(L, normalize(-light.direction));
+    let epsilon = light.innerCutoff - light.outerCutoff;
+    return clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
+}
+
+// PCF shadow sampling
+fn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, lightDir: vec3f) -> f32 {
+    var visibility: f32 = 0.0;
+    let biasConstant: f32 = 0.001;
+    let slopeBias = max(0.002 * (1.0 - dot(normal, lightDir)), 0.0);
+    let bias = biasConstant + slopeBias;
+    let oneOverSize = 1.0 / (shadowDepthTextureSize * 0.5);
+    let offsets: array<vec2f, 9> = array<vec2f, 9>(
+        vec2(-1.0, -1.0), vec2(0.0, -1.0), vec2(1.0, -1.0),
+        vec2(-1.0,  0.0), vec2(0.0,  0.0), vec2(1.0,  0.0),
+        vec2(-1.0,  1.0), vec2(0.0,  1.0), vec2(1.0,  1.0)
+    );
+    for(var i: u32 = 0u; i < 9u; i = i + 1u) {
+        visibility += textureSampleCompare(shadowMapArray, shadowSampler, shadowUV + offsets[i] * oneOverSize, layer, depthRef - bias);
+    }
+    return visibility / 9.0;
+}
+
+@fragment
+fn main(input: FragmentInput) -> @location(0) vec4f {
+
+let materialData = getPBRMaterial(input.uv);
+let N = normalize(input.fragNorm);
+let V = normalize(scene.cameraPos - input.fragPos);
+
+var Lo = vec3f(0.0);
+
+for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
+    let L = normalize(spotlights[i].position - input.fragPos);
+    let NdotL = max(dot(N, L), 0.0);
+
+    // Shadow calculation
+    let sc       = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);
+    let p        = sc.xyz / sc.w;
+    let uv       = clamp(p.xy * 0.5 + vec2<f32>(0.5), vec2<f32>(0.0), vec2<f32>(1.0));
+    let depthRef = p.z * 0.5 + 0.5;
+    let bias     = spotlights[i].shadowBias;
+
+    let visibility = sampleShadow(uv, i32(i), depthRef - bias, N, L);
+
+    // Apply simple diffuse with shadow
+    Lo += NdotL * materialData.baseColor * spotlights[i].color * spotlights[i].intensity * visibility;
+}
+
+// Add ambient
+let color = scene.globalAmbient * materialData.baseColor + Lo;
+
+return vec4f(color, 1.0);
+    // let materialData = getPBRMaterial(input.uv);
+    // let N = normalize(input.fragNorm);
+    // let V = normalize(scene.cameraPos - input.fragPos);
+    // var Lo = vec3f(0.0);
+
+    // for(var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
+    //     let L = normalize(spotlights[i].position - input.fragPos);
+    //     let H = normalize(V + L);
+    //     let distance = length(spotlights[i].position - input.fragPos);
+    //     let attenuation = clamp(1.0 - (distance / spotlights[i].range), 0.0, 1.0);
+    //     let radiance = spotlights[i].color * spotlights[i].intensity * attenuation;
+
+    //     let NDF = distributionGGX(N, H, materialData.roughness);
+    //     let G   = geometrySmith(N, V, L, materialData.roughness);
+    //     let F0 = mix(vec3f(0.04), materialData.baseColor, materialData.metallic);
+    //     let F  = fresnelSchlick(max(dot(H, V), 0.0), F0);
+    //     let kS = F;
+    //     let kD = (vec3f(1.0) - kS) * (1.0 - materialData.metallic);
+    //     let NdotL = max(dot(N, L), 0.0);
+    //     let specular = (NDF * G * F) / (4.0 * max(dot(N, V), 0.0) * NdotL + 0.001);
+
+    //     // shadow
+    //     let sc = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);
+    //     let p = sc.xyz / sc.w;
+    //     let uv = clamp(p.xy * 0.5 + vec2<f32>(0.5), vec2<f32>(0.0), vec2<f32>(1.0));
+    //     let depthRef = p.z * 0.5 + 0.5;
+    //     let visibility = 1.0; //sampleShadow(uv, i32(i), depthRef, N, L);
+
+    //     // Lo += visibility * (kD * materialData.baseColor / PI + specular) * radiance * NdotL;
+    //     Lo += NdotL * spotlights[i].color * spotlights[i].intensity;
+    // }
+
+    // let ambient = scene.globalAmbient * materialData.baseColor;
+    // let color = ambient + Lo;
+    // return vec4f(color, 1.0);
+}
+`;
+
+// let N = normalize(input.fragNorm);
+// let L = normalize(spotlights[0].position - input.fragPos);
+// let NdotL = max(dot(N,L),0.0);
+// let radiance = spotlights[0].color * 10.0; // test high intensity
+// Lo += materialData.baseColor * radiance * NdotL;
+
+},{}],37:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.fragmentWGSLPong = void 0;
+let fragmentWGSLPong = exports.fragmentWGSLPong = `
+override shadowDepthTextureSize: f32 = 1024.0;
+const PI: f32 = 3.141592653589793;
+
+struct Scene {
+    lightViewProjMatrix  : mat4x4f,
+    cameraViewProjMatrix : mat4x4f,
+    cameraPos            : vec3f,
+    padding2             : f32,
+    lightPos             : vec3f,
+    padding              : f32,
+    globalAmbient        : vec3f,
+    padding3             : f32,
+};
+
+struct SpotLight {
+    position      : vec3f,
+    _pad1         : f32,
+    direction     : vec3f,
+    _pad2         : f32,
+    innerCutoff   : f32,
+    outerCutoff   : f32,
+    intensity     : f32,
+    _pad3         : f32,
+    color         : vec3f,
+    _pad4         : f32,
+    range         : f32,
+    ambientFactor : f32,
+    shadowBias    : f32,
+    _pad5         : f32,
+    lightViewProj : mat4x4<f32>,
+};
+
+struct MaterialPBR {
+    baseColorFactor : vec4f,
+    metallicFactor  : f32,
+    roughnessFactor : f32,
+    _pad1           : f32,
+    _pad2           : f32,
+};
+
+struct PBRMaterialData {
+    baseColor : vec3f,
+    metallic  : f32,
+    roughness : f32,
+};
+
+const MAX_SPOTLIGHTS = 20u;
+
+@group(0) @binding(0) var<uniform> scene : Scene;
+@group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
+@group(0) @binding(2) var shadowSampler: sampler_comparison;
+@group(0) @binding(3) var meshTexture: texture_2d<f32>;
+@group(0) @binding(4) var meshSampler: sampler;
+@group(0) @binding(5) var<uniform> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
+
+// PBR textures
+@group(0) @binding(6) var metallicRoughnessTex: texture_2d<f32>;
+@group(0) @binding(7) var metallicRoughnessSampler: sampler;
+@group(0) @binding(8) var<uniform> material: MaterialPBR;
+
+struct FragmentInput {
+    @location(0) shadowPos : vec4f,
+    @location(1) fragPos   : vec3f,
+    @location(2) fragNorm  : vec3f,
+    @location(3) uv        : vec2f,
+};
+
+fn getPBRMaterial(uv: vec2f) -> PBRMaterialData {
+    let texColor = textureSample(meshTexture, meshSampler, uv);
+    let baseColor = texColor.rgb * material.baseColorFactor.rgb;
+    let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);
+    let metallic = mrTex.b * material.metallicFactor;
+    let roughness = mrTex.g * material.roughnessFactor;
+    return PBRMaterialData(baseColor, metallic, roughness);
+}
+
+fn fresnelSchlick(cosTheta: f32, F0: vec3f) -> vec3f {
+    return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
+}
+
+fn distributionGGX(N: vec3f, H: vec3f, roughness: f32) -> f32 {
+    let a = roughness * roughness;
+    let a2 = a * a;
+    let NdotH = max(dot(N, H), 0.0);
+    let NdotH2 = NdotH * NdotH;
+    let denom = (NdotH2 * (a2 - 1.0) + 1.0);
+    return a2 / (PI * denom * denom);
+}
+
+fn geometrySchlickGGX(NdotV: f32, roughness: f32) -> f32 {
+    let r = (roughness + 1.0);
+    let k = (r * r) / 8.0;
+    return NdotV / (NdotV * (1.0 - k) + k);
+}
+
+fn geometrySmith(N: vec3f, V: vec3f, L: vec3f, roughness: f32) -> f32 {
+    let NdotV = max(dot(N, V), 0.0);
+    let NdotL = max(dot(N, L), 0.0);
+    return geometrySchlickGGX(NdotV, roughness) * geometrySchlickGGX(NdotL, roughness);
+}
+
+fn calculateSpotlightFactor(light: SpotLight, fragPos: vec3f) -> f32 {
+    let L = normalize(light.position - fragPos);
+    let theta = dot(L, normalize(-light.direction));
+    let epsilon = light.innerCutoff - light.outerCutoff;
+    return clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
+}
+
+fn computeSpotLight2(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, material: PBRMaterialData) -> vec3f {
+    let L = normalize(light.position - fragPos);
+    let NdotL = max(dot(N, L), 0.0);
+    if (NdotL <= 0.0) {
+        return vec3f(0.0);
+    }
+
+    let theta = dot(L, normalize(-light.direction));
+    let epsilon = light.innerCutoff - light.outerCutoff;
+    let coneAtten = clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
+    if (coneAtten <= 0.0) {
+        return vec3f(0.0);
+    }
+
+    // --- diffuse controlled by metallic ---
+    let kD = 1.0 - material.metallic;  // 1.0 → full diffuse, 0.0 → fully metallic
+    let lambert = kD * material.baseColor * light.color * light.intensity * NdotL;
+
+    // --- simple specular controlled by roughness ---
+    let H = normalize(L + V);
+    let shininess = mix(2.0, 128.0, 1.0 - material.roughness); // map roughness → exponent
+    let spec = pow(max(dot(N, H), 0.0), shininess);
+    let specular = light.color * spec * material.metallic; // only strong if metallic > 0
+
+    return (lambert + specular) * coneAtten;
+}
+// Debug hybrid spotlight
+fn computeSpotLight3(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, material: PBRMaterialData) -> vec3f {
+    let L = normalize(light.position - fragPos);
+    let NdotL = max(dot(N, L), 0.0);
+    if (NdotL <= 0.0) {
+        return vec3f(0.0);
+    }
+
+    let theta = dot(L, normalize(-light.direction));
+    let epsilon = light.innerCutoff - light.outerCutoff;
+    let coneAtten = clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
+
+    if (coneAtten <= 0.0) {
+        return vec3f(0.0);
+    }
+
+    // ---- baseline lambert ----
+    let lambert = material.baseColor * light.color * light.intensity * NdotL;
+
+    // ---- add a bit of specular safely ----
+    let H = normalize(L + V);
+    let spec = pow(max(dot(N, H), 0.0), 32.0); // simple Blinn-Phong
+    let specular = light.color * spec * 0.2;   // scaled so it doesn’t kill diffuse
+
+    // final mix
+    return (lambert + specular) * coneAtten;
+}
+
+fn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, lightDir: vec3f) -> f32 {
+    var visibility: f32 = 0.0;
+    let biasConstant: f32 = 0.001;
+    let slopeBias = max(0.002 * (1.0 - dot(normal, lightDir)), 0.0);
+    let bias = biasConstant + slopeBias;
+    let oneOverSize = 1.0 / (shadowDepthTextureSize * 0.5);
+    let offsets: array<vec2f, 9> = array<vec2f, 9>(
+        vec2(-1.0, -1.0), vec2(0.0, -1.0), vec2(1.0, -1.0),
+        vec2(-1.0,  0.0), vec2(0.0,  0.0), vec2(1.0,  0.0),
+        vec2(-1.0,  1.0), vec2(0.0,  1.0), vec2(1.0,  1.0)
+    );
+    for(var i: u32 = 0u; i < 9u; i = i + 1u) {
+        visibility += textureSampleCompare(
+            shadowMapArray, shadowSampler,
+            shadowUV + offsets[i] * oneOverSize,
+            layer, depthRef - bias
+        );
+    }
+    return visibility / 9.0;
+}
+
+@fragment
+fn main(input: FragmentInput) -> @location(0) vec4f {
+    let norm = normalize(input.fragNorm);
+    let viewDir = normalize(scene.cameraPos - input.fragPos);
+
+    // ✅ now we declare materialData
+    let materialData = getPBRMaterial(input.uv);
+
+    var lightContribution = vec3f(0.0);
+
+    for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
+        let sc = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);
+        let p  = sc.xyz / sc.w;
+        let uv = clamp(p.xy * 0.5 + vec2<f32>(0.5), vec2<f32>(0.0), vec2<f32>(1.0));
+        let depthRef = p.z * 0.5 + 0.5;
+
+        let lightDir = normalize(spotlights[i].position - input.fragPos);
+        let bias = spotlights[i].shadowBias;
+        let visibility = sampleShadow(uv, i32(i), depthRef - bias, norm, lightDir);
+        // let visibility = 1.0;
+        let contrib = computeSpotLight2(spotlights[i], norm, input.fragPos, viewDir, materialData);
+        lightContribution += contrib * visibility;
+    }
+
+    let texColor = textureSample(meshTexture, meshSampler, input.uv);
+    let finalColor = texColor.rgb * (scene.globalAmbient + lightContribution);
+    return vec4f(finalColor, 1.0);
+}`;
+
+},{}],38:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.fragmentWGSLPower = void 0;
+let fragmentWGSLPower = exports.fragmentWGSLPower = `override shadowDepthTextureSize: f32 = 1024.0;
+const PI: f32 = 3.141592653589793;
+
+struct Scene {
+    lightViewProjMatrix  : mat4x4f,
+    cameraViewProjMatrix : mat4x4f,
+    cameraPos            : vec3f,
+    padding2             : f32,
+    lightPos             : vec3f,
+    padding              : f32,
+    globalAmbient        : vec3f,
+    padding3             : f32,
+};
+
+struct SpotLight {
+    position      : vec3f,
+    _pad1         : f32,
+    direction     : vec3f,
+    _pad2         : f32,
+    innerCutoff   : f32,
+    outerCutoff   : f32,
+    intensity     : f32,
+    _pad3         : f32,
+    color         : vec3f,
+    _pad4         : f32,
+    range         : f32,
+    ambientFactor : f32,
+    shadowBias    : f32,
+    _pad5         : f32,
+    lightViewProj : mat4x4<f32>,
+};
+
+struct MaterialPBR {
+    baseColorFactor : vec4f,
+    metallicFactor  : f32,
+    roughnessFactor : f32,
+    _pad1           : f32,
+    _pad2           : f32,
+};
+
+struct PBRMaterialData {
+    baseColor : vec3f,
+    metallic  : f32,
+    roughness : f32,
+};
+
+const MAX_SPOTLIGHTS = 20u;
+
+@group(0) @binding(0) var<uniform> scene : Scene;
+@group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
+@group(0) @binding(2) var shadowSampler: sampler_comparison;
+@group(0) @binding(3) var meshTexture: texture_2d<f32>;
+@group(0) @binding(4) var meshSampler: sampler;
+@group(0) @binding(5) var<uniform> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
+
+// PBR textures
+@group(0) @binding(6) var metallicRoughnessTex: texture_2d<f32>;
+@group(0) @binding(7) var metallicRoughnessSampler: sampler;
+@group(0) @binding(8) var<uniform> material: MaterialPBR;
+
+struct FragmentInput {
+    @location(0) shadowPos : vec4f,
+    @location(1) fragPos   : vec3f,
+    @location(2) fragNorm  : vec3f,
+    @location(3) uv        : vec2f,
+};
+
+fn getPBRMaterial(uv: vec2f) -> PBRMaterialData {
+    let texColor = textureSample(meshTexture, meshSampler, uv);
+    let baseColor = texColor.rgb * material.baseColorFactor.rgb;
+    let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);
+    let metallic = mrTex.b * material.metallicFactor;
+    let roughness = mrTex.g * material.roughnessFactor;
+    return PBRMaterialData(baseColor, metallic, roughness);
+}
+
+fn fresnelSchlick(cosTheta: f32, F0: vec3f) -> vec3f {
+    return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
+}
+
+fn distributionGGX(N: vec3f, H: vec3f, roughness: f32) -> f32 {
+    let a = roughness * roughness;
+    let a2 = a * a;
+    let NdotH = max(dot(N, H), 0.0);
+    let NdotH2 = NdotH * NdotH;
+    let denom = (NdotH2 * (a2 - 1.0) + 1.0);
+    return a2 / (PI * denom * denom);
+}
+
+fn geometrySchlickGGX(NdotV: f32, roughness: f32) -> f32 {
+    let r = (roughness + 1.0);
+    let k = (r * r) / 8.0;
+    return NdotV / (NdotV * (1.0 - k) + k);
+}
+
+fn geometrySmith(N: vec3f, V: vec3f, L: vec3f, roughness: f32) -> f32 {
+    let NdotV = max(dot(N, V), 0.0);
+    let NdotL = max(dot(N, L), 0.0);
+    return geometrySchlickGGX(NdotV, roughness) * geometrySchlickGGX(NdotL, roughness);
+}
+
+fn calculateSpotlightFactor(light: SpotLight, fragPos: vec3f) -> f32 {
+    let L = normalize(light.position - fragPos);
+    let theta = dot(L, normalize(-light.direction));
+    let epsilon = light.innerCutoff - light.outerCutoff;
+    return clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
+}
+
+// PCF shadow sampling
+fn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, lightDir: vec3f) -> f32 {
+    var visibility: f32 = 0.0;
+    let biasConstant: f32 = 0.001;
+    let slopeBias = max(0.002 * (1.0 - dot(normal, lightDir)), 0.0);
+    let bias = biasConstant + slopeBias;
+    let oneOverSize = 1.0 / (shadowDepthTextureSize * 0.5);
+    let offsets: array<vec2f, 9> = array<vec2f, 9>(
+        vec2(-1.0, -1.0), vec2(0.0, -1.0), vec2(1.0, -1.0),
+        vec2(-1.0,  0.0), vec2(0.0,  0.0), vec2(1.0,  0.0),
+        vec2(-1.0,  1.0), vec2(0.0,  1.0), vec2(1.0,  1.0)
+    );
+    for(var i: u32 = 0u; i < 9u; i = i + 1u) {
+        visibility += textureSampleCompare(shadowMapArray, shadowSampler, shadowUV + offsets[i] * oneOverSize, layer, depthRef - bias);
+    }
+    return visibility / 9.0;
+}
+
+@fragment
+fn main(input: FragmentInput) -> @location(0) vec4f {
+    let materialData = getPBRMaterial(input.uv);
+    let N = normalize(input.fragNorm);
+    let V = normalize(scene.cameraPos - input.fragPos);
+    var Lo = vec3f(0.0);
+    for(var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
+        let L = normalize(spotlights[i].position - input.fragPos);
+        let H = normalize(V + L);
+        let distance = length(spotlights[i].position - input.fragPos);
+        let attenuation = clamp(1.0 - (distance / spotlights[i].range), 0.0, 1.0);
+        let radiance = spotlights[i].color * spotlights[i].intensity * attenuation;
+        let NDF = distributionGGX(N, H, materialData.roughness);
+        let G   = geometrySmith(N, V, L, materialData.roughness);
+        let F0 = mix(vec3f(0.04), materialData.baseColor, materialData.metallic);
+        let F  = fresnelSchlick(max(dot(H, V), 0.0), F0);
+        let kS = F;
+        let kD = (vec3f(1.0) - kS) * (1.0 - materialData.metallic);
+        let diffuse  = kD * materialData.baseColor / PI; // Lambertian diffuse // ??
+        let NdotL = max(dot(N, L), 0.0);
+        let specular = (NDF * G * F) / (4.0 * max(dot(N, V), 0.0) * NdotL + 0.001);
+        Lo += NdotL * spotlights[i].color * spotlights[i].intensity;
+    }
+    let ambient = scene.globalAmbient * materialData.baseColor;
+    var color = ambient + Lo;
+    return vec4f(color, 1.0);
+}
+`;
+
+// let N = normalize(input.fragNorm);
+// let L = normalize(spotlights[0].position - input.fragPos);
+// let NdotL = max(dot(N,L),0.0);
+// let radiance = spotlights[0].color * 10.0; // test high intensity
+// Lo += materialData.baseColor * radiance * NdotL;
+
+},{}],39:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -23730,7 +26786,7 @@ fn fragmentMain(input: VertexOutput) -> @location(0) vec4f {
   return vec4f(textureColor.rgb * lightColor, textureColor.a);
 }`;
 
-},{}],34:[function(require,module,exports){
+},{}],40:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -23830,7 +26886,7 @@ fn main(
   return output;
 }`;
 
-},{}],35:[function(require,module,exports){
+},{}],41:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -23858,7 +26914,7 @@ fn main(
 }
 `;
 
-},{}],36:[function(require,module,exports){
+},{}],42:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -23928,7 +26984,7 @@ class MatrixSounds {
 }
 exports.MatrixSounds = MatrixSounds;
 
-},{}],37:[function(require,module,exports){
+},{}],43:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -24551,8 +27607,11 @@ class MatrixEngineWGPU {
         for (const [meshIndex, mesh] of this.mainRenderBundle.entries()) {
           if (mesh.videoIsReady == 'NONE') {
             shadowPass.setBindGroup(0, light.getShadowBindGroup(mesh, meshIndex));
-            // shadowPass.setBindGroup(1, mesh.modelBindGroup); // ORI 
-            shadowPass.setBindGroup(1, light.getShadowBindGroup_bones(meshIndex)); // ORI 
+            // if(mesh.glb && mesh.glb.skinnedMeshNodes) {
+            // shadowPass.setBindGroup(1, light.getShadowBindGroup_bones(meshIndex));
+            // } else {
+            shadowPass.setBindGroup(1, mesh.modelBindGroup);
+            // }
             mesh.drawShadows(shadowPass, light);
           }
         }
@@ -24727,4 +27786,4 @@ class MatrixEngineWGPU {
 }
 exports.default = MatrixEngineWGPU;
 
-},{"./engine/ball.js":17,"./engine/cube.js":19,"./engine/engine.js":20,"./engine/lights.js":21,"./engine/loader-obj.js":22,"./engine/loaders/bvh.js":23,"./engine/mesh-obj.js":27,"./engine/utils.js":28,"./multilang/lang.js":29,"./physics/matrix-ammo.js":30,"./sounds/sounds.js":36,"wgpu-matrix":16}]},{},[1]);
+},{"./engine/ball.js":19,"./engine/cube.js":21,"./engine/engine.js":22,"./engine/lights.js":23,"./engine/loader-obj.js":24,"./engine/loaders/bvh.js":25,"./engine/mesh-obj.js":29,"./engine/utils.js":31,"./multilang/lang.js":32,"./physics/matrix-ammo.js":33,"./sounds/sounds.js":42,"wgpu-matrix":18}]},{},[3]);

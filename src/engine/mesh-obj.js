@@ -1,15 +1,17 @@
 import {mat4, vec3} from 'wgpu-matrix';
 import {Position, Rotation} from "./matrix-class";
-// import {vertexShadowWGSL} from '../shaders/vertexShadow.wgsl';
 import {fragmentWGSL} from '../shaders/fragment.wgsl';
+import {fragmentWGSLNoCut} from '../shaders/fragment.wgsl.noCut';
+import {fragmentWGSLPong} from '../shaders/fragment.wgsl.pong';
 import {vertexWGSL} from '../shaders/vertex.wgsl';
 import {degToRad, genName, LOG_FUNNY_SMALL} from './utils';
 import Materials from './materials';
 import {fragmentVideoWGSL} from '../shaders/fragment.video.wgsl';
+import {fragmentWGSLPower} from '../shaders/fragment.wgsl.power';
 
 export default class MEMeshObj extends Materials {
   constructor(canvas, device, context, o, inputHandler, globalAmbient, _glbFile = null, primitiveIndex = null, skinnedNodeIndex = null) {
-    super(device);
+    super(device, o.material);
     if(typeof o.name === 'undefined') o.name = genName(3);
     if(typeof o.raycast === 'undefined') {
       this.raycast = {enabled: false, radius: 2};
@@ -25,6 +27,8 @@ export default class MEMeshObj extends Materials {
     this.video = null;
     this.FINISH_VIDIO_INIT = false;
     this.globalAmbient = globalAmbient;
+    console.log('Material class arg:', o.material)
+    this.material = o.material;
 
     // Mesh stuff - for single mesh or t-posed (fiktive-first in loading order)
     this.mesh = o.mesh;
@@ -368,7 +372,7 @@ export default class MEMeshObj extends Materials {
         size: 176,
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
       });
-   // test
+   // test MUST BE IF
       this.uniformBufferBindGroupLayout = this.device.createBindGroupLayout({
         label: 'uniformBufferBindGroupLayout in mesh',
         entries: [
@@ -494,7 +498,9 @@ export default class MEMeshObj extends Materials {
         }
         // Apply scale if you have it, e.g.:
         // console.warn('what is csle comes from user level not glb ', this.scale)
-        mat4.scale(modelMatrix, [this.scale[0], this.scale[1], this.scale[2]], modelMatrix);
+        if (this.glb || this.objAnim) {
+          mat4.scale(modelMatrix, [this.scale[0], this.scale[1], this.scale[2]], modelMatrix);
+        }
         return modelMatrix;
       };
 
@@ -538,7 +544,7 @@ export default class MEMeshObj extends Materials {
       fragment: {
         entryPoint: 'main',
         module: this.device.createShaderModule({
-          code: (this.isVideo == true ? fragmentVideoWGSL : fragmentWGSL),
+          code: (this.isVideo == true ? fragmentVideoWGSL : this.getMaterial()),
         }),
         targets: [
           {
@@ -667,7 +673,7 @@ export default class MEMeshObj extends Materials {
     pass.drawIndexed(this.indexCount);
   }
 
-  drawElementsAnim = (renderPass) => {
+  drawElementsAnim = (renderPass, lightContainer) => {
     if(!this.sceneBindGroupForRender || !this.modelBindGroup) {console.log(' NULL 1'); return;}
     if(!this.objAnim.meshList[this.objAnim.id + this.objAnim.currentAni]) {console.log(' NULL 2'); return;}
 
@@ -678,7 +684,7 @@ export default class MEMeshObj extends Materials {
     if(this.isVideo == false) {
       let bindIndex = 2; // start after UBO & model
       for(const light of lightContainer) {
-        pass.setBindGroup(bindIndex++, light.getMainPassBindGroup(this));
+        renderPass.setBindGroup(bindIndex++, light.getMainPassBindGroup(this));
       }
     }
 
