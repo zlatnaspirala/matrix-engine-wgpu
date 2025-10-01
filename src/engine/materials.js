@@ -85,13 +85,21 @@ export default class Materials {
     ]);
 
     this.device.queue.writeBuffer(this.materialPBRBuffer, 0, materialArray.buffer);
+  }
 
-//     const defaultPBR = new Float32Array([
-//   1.0, 1.0, 1.0, 1.0, // baseColorFactor RGBA
-//   0.1,                // metallicFactor (plastic)
-//   0.5                 // roughnessFactor (semi glossy)
-// ]);
-// device.queue.writeBuffer(this.materialPBRBuffer, 0, defaultPBR.buffer);
+  setupMaterialPBR (metallicFactor) {
+    const baseColorFactor = [1.0, 1.0, 1.0, 1.0];
+    const roughnessFactor = 0.5;   // some gloss
+    const pad = [0.0, 0.0];
+    // Pack into Float32Array
+    const materialArray = new Float32Array([
+      ...baseColorFactor,
+      metallicFactor,
+      roughnessFactor,
+      ...pad
+    ]);
+
+    this.device.queue.writeBuffer(this.materialPBRBuffer, 0, materialArray.buffer);
   }
 
   updatePostFXMode(mode) {

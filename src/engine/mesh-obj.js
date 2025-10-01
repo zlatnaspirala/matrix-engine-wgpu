@@ -539,7 +539,7 @@ export default class MEMeshObj extends Materials {
       fragment: {
         entryPoint: 'main',
         module: this.device.createShaderModule({
-          code: (this.isVideo == true ? fragmentVideoWGSL : fragmentWGSLPong),
+          code: (this.isVideo == true ? fragmentVideoWGSL : fragmentWGSL),
         }),
         targets: [
           {
