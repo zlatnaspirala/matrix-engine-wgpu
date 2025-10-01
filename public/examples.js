@@ -187,13 +187,15 @@ function loadGLBLoader() {
       const path = 'res/meshes/glb/glb-test1.bvh';
       var glbFile = await fetch("res/meshes/glb/test.glb").then(res => res.arrayBuffer().then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, TEST_ANIM.device)));
       TEST_ANIM.addGlbObj({
-        // scale: [1,1,1],
+        material: {
+          type: 'power'
+        },
+        scale: [10, 10, 10],
         position: {
           x: 0,
           y: -4,
           z: -20
         },
-        scale: [5, 5, 5],
         name: 'firstGlb',
         texturesPaths: ['./res/meshes/glb/textures/mutant.png']
       }, null, glbFile);
@@ -330,6 +332,9 @@ var loadObjFile = function () {
         // console.log(`%c Loaded objs: ${key} `, LOG_MATRIX);
       }
       loadObjFile.addMeshObj({
+        material: {
+          type: 'pong'
+        },
         position: {
           x: 0,
           y: 2,
@@ -420,8 +425,8 @@ var loadObjsSequence = function () {
 
       // adapt
       app.lightContainer[0].position[2] = -20;
-      app.lightContainer[0].position[1] = 16;
-      app.lightContainer[0].intensity = 12;
+      app.lightContainer[0].position[1] = 25;
+      app.lightContainer[0].intensity = 10;
       (0, _loaderObj.downloadMeshes)({
         cube: "./res/meshes/blender/cube.obj"
       }, onGround, {
@@ -500,7 +505,7 @@ var loadObjsSequence = function () {
       loadObjFile.addMeshObj({
         position: {
           x: 0,
-          y: 0,
+          y: -1,
           z: -10
         },
         rotation: {
@@ -21572,6 +21577,9 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.default = void 0;
+var _fragment = require("../shaders/fragment.wgsl");
+var _fragmentWgsl = require("../shaders/fragment.wgsl.pong");
+var _fragmentWgsl2 = require("../shaders/fragment.wgsl.power");
 /**
  * @description
  * Created for matrix-engine-wgpu project.
@@ -21581,7 +21589,7 @@ exports.default = void 0;
  */
 
 class Materials {
-  constructor(device) {
+  constructor(device, material) {
     this.device = device;
     this.isVideo = false;
     this.videoIsReady = 'NONE';
@@ -21618,7 +21626,7 @@ class Materials {
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
     this.device.queue.writeBuffer(this.dummySpotlightUniformBuffer, 0, new Float32Array(20));
-    console.log('Material class ');
+
     // Create a 1x1 RGBA texture filled with white
     const mrDummyTex = this.device.createTexture({
       size: [1, 1, 1],
@@ -21655,6 +21663,24 @@ class Materials {
     const materialArray = new Float32Array([...baseColorFactor, metallicFactor, roughnessFactor, ...pad]);
     this.device.queue.writeBuffer(this.materialPBRBuffer, 0, materialArray.buffer);
   }
+
+  // material
+  getMaterial() {
+    if (this.material.type == 'standard') {
+      console.log('Material TYPE:', this.material.type);
+      return _fragment.fragmentWGSL;
+    } else if (this.material.type == 'pong') {
+      console.log('Material TYPE:', this.material.type);
+      return _fragmentWgsl.fragmentWGSLPong;
+    } else if (this.material.type == 'power') {
+      console.log('Material TYPE:', this.material.type);
+      return _fragmentWgsl2.fragmentWGSLPower;
+    }
+    console.warn('Unknown material type:', this.material?.type);
+    return _fragment.fragmentWGSL; // fallback
+  }
+
+  // not affect all fs
   setupMaterialPBR(metallicFactor) {
     const baseColorFactor = [1.0, 1.0, 1.0, 1.0];
     const roughnessFactor = 0.5; // some gloss
@@ -21985,7 +22011,7 @@ class Materials {
 }
 exports.default = Materials;
 
-},{}],32:[function(require,module,exports){
+},{"../shaders/fragment.wgsl":39,"../shaders/fragment.wgsl.pong":41,"../shaders/fragment.wgsl.power":42}],32:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -22241,7 +22267,7 @@ var _fragmentWgsl3 = require("../shaders/fragment.wgsl.power");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 class MEMeshObj extends _materials.default {
   constructor(canvas, device, context, o, inputHandler, globalAmbient, _glbFile = null, primitiveIndex = null, skinnedNodeIndex = null) {
-    super(device);
+    super(device, o.material);
     if (typeof o.name === 'undefined') o.name = (0, _utils.genName)(3);
     if (typeof o.raycast === 'undefined') {
       this.raycast = {
@@ -22260,6 +22286,8 @@ class MEMeshObj extends _materials.default {
     this.video = null;
     this.FINISH_VIDIO_INIT = false;
     this.globalAmbient = globalAmbient;
+    console.log('Material class arg:', o.material);
+    this.material = o.material;
 
     // Mesh stuff - for single mesh or t-posed (fiktive-first in loading order)
     this.mesh = o.mesh;
@@ -22696,7 +22724,9 @@ class MEMeshObj extends _materials.default {
         }
         // Apply scale if you have it, e.g.:
         // console.warn('what is csle comes from user level not glb ', this.scale)
-        _wgpuMatrix.mat4.scale(modelMatrix, [this.scale[0], this.scale[1], this.scale[2]], modelMatrix);
+        if (this.glb || this.objAnim) {
+          _wgpuMatrix.mat4.scale(modelMatrix, [this.scale[0], this.scale[1], this.scale[2]], modelMatrix);
+        }
         return modelMatrix;
       };
 
@@ -22735,7 +22765,7 @@ class MEMeshObj extends _materials.default {
       fragment: {
         entryPoint: 'main',
         module: this.device.createShaderModule({
-          code: this.isVideo == true ? _fragmentVideo.fragmentVideoWGSL : _fragmentWgsl3.fragmentWGSLPower
+          code: this.isVideo == true ? _fragmentVideo.fragmentVideoWGSL : this.getMaterial()
         }),
         targets: [{
           format: this.presentationFormat
@@ -25232,41 +25262,29 @@ fn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, light
 
 @fragment
 fn main(input: FragmentInput) -> @location(0) vec4f {
-
     let materialData = getPBRMaterial(input.uv);
     let N = normalize(input.fragNorm);
     let V = normalize(scene.cameraPos - input.fragPos);
     var Lo = vec3f(0.0);
-
     for(var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
         let L = normalize(spotlights[i].position - input.fragPos);
         let H = normalize(V + L);
         let distance = length(spotlights[i].position - input.fragPos);
         let attenuation = clamp(1.0 - (distance / spotlights[i].range), 0.0, 1.0);
         let radiance = spotlights[i].color * spotlights[i].intensity * attenuation;
-
         let NDF = distributionGGX(N, H, materialData.roughness);
         let G   = geometrySmith(N, V, L, materialData.roughness);
         let F0 = mix(vec3f(0.04), materialData.baseColor, materialData.metallic);
         let F  = fresnelSchlick(max(dot(H, V), 0.0), F0);
         let kS = F;
         let kD = (vec3f(1.0) - kS) * (1.0 - materialData.metallic);
+        let diffuse  = kD * materialData.baseColor / PI; // Lambertian diffuse // ??
         let NdotL = max(dot(N, L), 0.0);
         let specular = (NDF * G * F) / (4.0 * max(dot(N, V), 0.0) * NdotL + 0.001);
-
-        // shadow
-        let sc = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);
-        let p = sc.xyz / sc.w;
-        let uv = clamp(p.xy * 0.5 + vec2<f32>(0.5), vec2<f32>(0.0), vec2<f32>(1.0));
-        let depthRef = p.z * 0.5 + 0.5;
-        let visibility = sampleShadow(uv, i32(i), depthRef, N, L);
-
-        // Lo += visibility * (kD * materialData.baseColor / PI + specular) * radiance * NdotL;
         Lo += NdotL * spotlights[i].color * spotlights[i].intensity;
     }
-
     let ambient = scene.globalAmbient * materialData.baseColor;
-    let color = ambient + Lo;
+    var color = ambient + Lo;
     return vec4f(color, 1.0);
 }
 `;
@@ -25998,6 +26016,11 @@ class MatrixEngineWGPU {
     if (typeof o.texturesPaths === 'undefined') {
       o.texturesPaths = ['./res/textures/default.png'];
     }
+    if (typeof o.material === 'undefined') {
+      o.material = {
+        type: 'standard'
+      };
+    }
     if (typeof o.mainCameraParams === 'undefined') {
       o.mainCameraParams = this.mainCameraParams;
     }
@@ -26255,6 +26278,11 @@ class MatrixEngineWGPU {
     }
     if (typeof o.texturesPaths === 'undefined') {
       o.texturesPaths = ['./res/textures/default.png'];
+    }
+    if (typeof o.material === 'undefined') {
+      o.material = {
+        type: 'standard'
+      };
     }
     if (typeof o.mainCameraParams === 'undefined') {
       o.mainCameraParams = this.mainCameraParams;

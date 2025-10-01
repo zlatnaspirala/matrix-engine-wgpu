@@ -20,8 +20,8 @@ export var loadObjsSequence = function() {
 
       // adapt
       app.lightContainer[0].position[2] = -20;
-      app.lightContainer[0].position[1] = 16;
-      app.lightContainer[0].intensity = 12;
+      app.lightContainer[0].position[1] = 25;
+      app.lightContainer[0].intensity = 10;
 
       downloadMeshes({
         cube: "./res/meshes/blender/cube.obj",
@@ -96,7 +96,7 @@ export var loadObjsSequence = function() {
       }, 500)
 
       loadObjFile.addMeshObj({
-        position: {x: 0, y: 0, z: -10},
+        position: {x: 0, y: -1, z: -10},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
         texturesPaths: ['./res/meshes/blender/cube.png'],

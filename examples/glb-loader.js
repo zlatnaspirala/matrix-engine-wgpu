@@ -32,13 +32,12 @@ export function loadGLBLoader() {
         "res/meshes/glb/test.glb")
         .then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, TEST_ANIM.device)));
       TEST_ANIM.addGlbObj({
-        // scale: [1,1,1],
+        material: {type: 'power'},
+        scale: [10,10,10],
         position: {x: 0, y: -4, z: -20},
-        scale: [5, 5, 5],
         name: 'firstGlb',
         texturesPaths: ['./res/meshes/glb/textures/mutant.png'],
       }, null, glbFile);
-
 
       // loadBVH(path).then(async (BVHANIM) => {
       //   var glbFile = await fetch(

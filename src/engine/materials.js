@@ -1,3 +1,7 @@
+import {fragmentWGSL} from "../shaders/fragment.wgsl";
+import {fragmentWGSLPong} from "../shaders/fragment.wgsl.pong";
+import {fragmentWGSLPower} from "../shaders/fragment.wgsl.power";
+
 /**
  * @description
  * Created for matrix-engine-wgpu project.
@@ -7,7 +11,7 @@
  */
 
 export default class Materials {
-  constructor(device) {
+  constructor(device, material) {
     this.device = device;
     this.isVideo = false;
     this.videoIsReady = 'NONE';
@@ -40,7 +44,6 @@ export default class Materials {
     });
     this.device.queue.writeBuffer(this.dummySpotlightUniformBuffer, 0, new Float32Array(20));
 
-    console.log('Material class ')
     // Create a 1x1 RGBA texture filled with white
     const mrDummyTex = this.device.createTexture({
       size: [1, 1, 1],
@@ -83,11 +86,27 @@ export default class Materials {
       roughnessFactor,
       ...pad
     ]);
-
     this.device.queue.writeBuffer(this.materialPBRBuffer, 0, materialArray.buffer);
   }
 
-  setupMaterialPBR (metallicFactor) {
+  // material
+  getMaterial() {
+    if(this.material.type == 'standard') {
+      console.log('Material TYPE:', this.material.type);
+      return fragmentWGSL;
+    } else if(this.material.type == 'pong') {
+      console.log('Material TYPE:', this.material.type);
+      return fragmentWGSLPong;
+    } else if(this.material.type == 'power') {
+      console.log('Material TYPE:', this.material.type);
+      return fragmentWGSLPower;
+    }
+    console.warn('Unknown material type:', this.material?.type);
+    return fragmentWGSL; // fallback
+  }
+
+  // not affect all fs
+  setupMaterialPBR(metallicFactor) {
     const baseColorFactor = [1.0, 1.0, 1.0, 1.0];
     const roughnessFactor = 0.5;   // some gloss
     const pad = [0.0, 0.0];

@@ -11,7 +11,7 @@ import {fragmentWGSLPower} from '../shaders/fragment.wgsl.power';
 
 export default class MEMeshObj extends Materials {
   constructor(canvas, device, context, o, inputHandler, globalAmbient, _glbFile = null, primitiveIndex = null, skinnedNodeIndex = null) {
-    super(device);
+    super(device, o.material);
     if(typeof o.name === 'undefined') o.name = genName(3);
     if(typeof o.raycast === 'undefined') {
       this.raycast = {enabled: false, radius: 2};
@@ -27,6 +27,8 @@ export default class MEMeshObj extends Materials {
     this.video = null;
     this.FINISH_VIDIO_INIT = false;
     this.globalAmbient = globalAmbient;
+    console.log('Material class arg:', o.material)
+    this.material = o.material;
 
     // Mesh stuff - for single mesh or t-posed (fiktive-first in loading order)
     this.mesh = o.mesh;
@@ -496,7 +498,9 @@ export default class MEMeshObj extends Materials {
         }
         // Apply scale if you have it, e.g.:
         // console.warn('what is csle comes from user level not glb ', this.scale)
-        mat4.scale(modelMatrix, [this.scale[0], this.scale[1], this.scale[2]], modelMatrix);
+        if (this.glb || this.objAnim) {
+          mat4.scale(modelMatrix, [this.scale[0], this.scale[1], this.scale[2]], modelMatrix);
+        }
         return modelMatrix;
       };
 
@@ -540,7 +544,7 @@ export default class MEMeshObj extends Materials {
       fragment: {
         entryPoint: 'main',
         module: this.device.createShaderModule({
-          code: (this.isVideo == true ? fragmentVideoWGSL : fragmentWGSLPower),
+          code: (this.isVideo == true ? fragmentVideoWGSL : this.getMaterial()),
         }),
         targets: [
           {

@@ -192,7 +192,23 @@ loadObjFile.lightContainer[0].updater.push(light => {
 
 ### Materials
  With last glb feature materials become part of engine also.
- 
+
+material: {type: 'standard'}
+material: {type: 'pong'}
+material: {type: 'power'}
+
+ - Standard is fully supported with lights shadow cast down (not for anims yet)
+ - Pong 
+ - Power - no shadows cast
+
+```js
+// Also for addMeshObj
+TEST_ANIM.addGlbObj({
+material: {type: 'power'},
+...
+}, null, glbFile);
+```
+
 
 ### Object Interaction (Raycasting)
 
