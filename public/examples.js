@@ -156,6 +156,8 @@ var _utils = require("../src/engine/utils.js");
 var _bvh = require("../src/engine/loaders/bvh.js");
 var _webgpuGltf = require("../src/engine/loaders/webgpu-gltf.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
+// - Characters used from great maximo.com
+
 function loadGLBLoader() {
   let TEST_ANIM = new _world.default({
     useSingleRenderPass: true,
@@ -181,25 +183,59 @@ function loadGLBLoader() {
       (0, _loaderObj.downloadMeshes)({
         cube: "./res/meshes/blender/cube.obj"
       }, onGround, {
-        scale: [20, 1, 20]
+        scale: [120, 0.5, 120]
       });
-      // const path = 'https://raw.githubusercontent.com/zlatnaspirala/Matrix-Engine-BVH-test/main/javascript-bvh/example.bvh';
-      const path = 'res/meshes/glb/glb-test1.bvh';
-      var glbFile = await fetch("res/meshes/glb/test.glb").then(res => res.arrayBuffer().then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, TEST_ANIM.device)));
+
+      // var glbFile = await fetch(
+      //   "res/meshes/glb/test.glb")
+      //   .then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, TEST_ANIM.device)));
+      // TEST_ANIM.addGlbObj({
+      //   material: {type: 'power'},
+      //   scale: [10, 10, 10],
+      //   position: {x: 0, y: -4, z: -20},
+      //   name: 'firstGlb',
+      //   texturesPaths: ['./res/meshes/glb/textures/mutant.png'],
+      // }, null, glbFile);
+
+      var glbFile1 = await fetch("res/meshes/glb/test.glb").then(res => res.arrayBuffer().then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, TEST_ANIM.device)));
       TEST_ANIM.addGlbObj({
         material: {
-          type: 'power'
+          type: 'standard'
         },
         scale: [10, 10, 10],
         position: {
-          x: 0,
+          x: -20,
           y: -4,
           z: -20
         },
         name: 'firstGlb',
         texturesPaths: ['./res/meshes/glb/textures/mutant.png']
-      }, null, glbFile);
+      }, null, glbFile1);
 
+      // var glbFile2 = await fetch(
+      //   "res/meshes/glb/y-bot.glb")
+      //   .then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, TEST_ANIM.device)));
+      // TEST_ANIM.addGlbObj({
+      //   material: {type: 'power'},
+      //   scale: [10, 10, 10],
+      //   position: {x: 0, y: -4, z: -40},
+      //   name: 'YBOT',
+      //   texturesPaths: ['./res/meshes/glb/textures/mutant.png'],
+      // }, null, glbFile2);
+
+      //       var glbFile22 = await fetch(
+      //   "res/meshes/glb/y-bot.glb")
+      //   .then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, TEST_ANIM.device)));
+      // TEST_ANIM.addGlbObj({
+      //   material: {type: 'standard'},
+      //   scale: [10, 10, 10],
+      //   position: {x: -20, y: -4, z: -40},
+      //   name: 'YBOT',
+      //   texturesPaths: ['./res/meshes/glb/textures/mutant.png'],
+      // }, null, glbFile22);
+
+      // const path = 'https://raw.githubusercontent.com/zlatnaspirala/Matrix-Engine-BVH-test/main/javascript-bvh/example.bvh';
+      // const path = 'res/meshes/glb/glb-test1.bvh';
       // loadBVH(path).then(async (BVHANIM) => {
       //   var glbFile = await fetch(
       //     "res/meshes/glb/test.glb")
@@ -22285,7 +22321,7 @@ class MEMeshObj extends _materials.default {
     this.clearColor = "red";
     this.video = null;
     this.FINISH_VIDIO_INIT = false;
-    this.globalAmbient = globalAmbient;
+    this.globalAmbient = [...globalAmbient];
     console.log('Material class arg:', o.material);
     this.material = o.material;
 
@@ -22700,7 +22736,8 @@ class MEMeshObj extends _materials.default {
           // Light position + padding
           sceneData.set([spotLight.position[0], spotLight.position[1], spotLight.position[2], 0.0], 36);
           // Global ambient + padding
-          sceneData.set([this.globalAmbient[0], this.globalAmbient[1], this.globalAmbient[2], 0.0], 40);
+          // sceneData.set([this.globalAmbient[0], this.globalAmbient[1], this.globalAmbient[2], 0.0], 40);
+          sceneData.set([mesh.globalAmbient[0], mesh.globalAmbient[1], mesh.globalAmbient[2], 0.0], 40);
           if (mesh.glb && mesh.glb.skinnedMeshNodes) {
             mesh.glb.skinnedMeshNodes.forEach(skinnedMeshNode => {
               device.queue.writeBuffer(
@@ -26088,7 +26125,8 @@ class MatrixEngineWGPU {
         }
       };
     }
-    let myMesh1 = new _meshObj.default(this.canvas, this.device, this.context, o, this.inputHandler, this.globalAmbient);
+    let AM = this.globalAmbient.slice();
+    let myMesh1 = new _meshObj.default(this.canvas, this.device, this.context, o, this.inputHandler, AM);
     myMesh1.spotlightUniformBuffer = this.spotlightUniformBuffer;
     myMesh1.clearColor = clearColor;
     if (o.physics.enabled == true) {
@@ -26336,8 +26374,6 @@ class MatrixEngineWGPU {
     } else {
       alert('GLB not use objAnim (it is only for obj sequence). GLB use BVH skeletal for animation');
     }
-    // let myMesh1 = new MEMeshObj(this.canvas, this.device, this.context, o, this.inputHandler, this.globalAmbient);
-
     let skinnedNodeIndex = 0;
     for (const skinnedNode of glbFile.skinnedMeshNodes) {
       let c = 0;
@@ -26345,10 +26381,8 @@ class MatrixEngineWGPU {
         console.log(`count: ${c} primitive-glb: ${primitive}`);
         // primitive is mesh - probably with own material . material/texture per primitive
         // create scene object for each
-        // --
-        // 
         o.name = o.name + "-GLBGroup-" + c;
-        const bvhPlayer = new _bvh.BVHPlayer(o, BVHANIM, glbFile, c, skinnedNodeIndex, this.canvas, this.device, this.context, this.inputHandler, this.globalAmbient);
+        const bvhPlayer = new _bvh.BVHPlayer(o, BVHANIM, glbFile, c, skinnedNodeIndex, this.canvas, this.device, this.context, this.inputHandler, this.globalAmbient.slice());
         console.log(`bvhPlayer!!!!!: ${bvhPlayer}`);
         bvhPlayer.spotlightUniformBuffer = this.spotlightUniformBuffer;
         bvhPlayer.clearColor = clearColor;

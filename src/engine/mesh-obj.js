@@ -26,7 +26,7 @@ export default class MEMeshObj extends Materials {
     this.clearColor = "red";
     this.video = null;
     this.FINISH_VIDIO_INIT = false;
-    this.globalAmbient = globalAmbient;
+    this.globalAmbient = [...globalAmbient];
     console.log('Material class arg:', o.material)
     this.material = o.material;
 
@@ -458,7 +458,8 @@ export default class MEMeshObj extends Materials {
             36
           );
           // Global ambient + padding
-          sceneData.set([this.globalAmbient[0], this.globalAmbient[1], this.globalAmbient[2], 0.0], 40);
+          // sceneData.set([this.globalAmbient[0], this.globalAmbient[1], this.globalAmbient[2], 0.0], 40);
+          sceneData.set([mesh.globalAmbient[0], mesh.globalAmbient[1], mesh.globalAmbient[2], 0.0], 40);
           if(mesh.glb && mesh.glb.skinnedMeshNodes) {
             mesh.glb.skinnedMeshNodes.forEach((skinnedMeshNode) => {
               device.queue.writeBuffer(

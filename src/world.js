@@ -380,7 +380,9 @@ export default class MatrixEngineWGPU {
         }
       }
     }
-    let myMesh1 = new MEMeshObj(this.canvas, this.device, this.context, o, this.inputHandler, this.globalAmbient);
+
+    let AM = this.globalAmbient.slice();
+    let myMesh1 = new MEMeshObj(this.canvas, this.device, this.context, o, this.inputHandler, AM );
     myMesh1.spotlightUniformBuffer = this.spotlightUniformBuffer;
     myMesh1.clearColor = clearColor;
     if(o.physics.enabled == true) {
@@ -582,9 +584,6 @@ export default class MatrixEngineWGPU {
     } else {
       alert('GLB not use objAnim (it is only for obj sequence). GLB use BVH skeletal for animation');
     }
-    // let myMesh1 = new MEMeshObj(this.canvas, this.device, this.context, o, this.inputHandler, this.globalAmbient);
-
-
     let skinnedNodeIndex = 0;
     for(const skinnedNode of glbFile.skinnedMeshNodes) {
       let c = 0;
@@ -592,8 +591,6 @@ export default class MatrixEngineWGPU {
         console.log(`count: ${c} primitive-glb: ${primitive}`);
         // primitive is mesh - probably with own material . material/texture per primitive
         // create scene object for each
-        // --
-        // 
         o.name = o.name + "-GLBGroup-" + c;
         const bvhPlayer = new BVHPlayer(
           o,
@@ -605,7 +602,7 @@ export default class MatrixEngineWGPU {
           this.device,
           this.context,
           this.inputHandler,
-          this.globalAmbient);
+          this.globalAmbient.slice());
         console.log(`bvhPlayer!!!!!: ${bvhPlayer}`);
         bvhPlayer.spotlightUniformBuffer = this.spotlightUniformBuffer;
         bvhPlayer.clearColor = clearColor;

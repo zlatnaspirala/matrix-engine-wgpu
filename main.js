@@ -16,8 +16,8 @@ export let application = new MatrixEngineWGPU({
   application.addLight();
   console.log('light added.')
   application.lightContainer[0].outerCutoff = 0.5;
-  application.lightContainer[0].position[2] = -27;
-  application.lightContainer[0].intensity = 4;
+  application.lightContainer[0].position[2] = -10;
+  application.lightContainer[0].intensity = 2;
   application.lightContainer[0].target[2] = -25;
   application.lightContainer[0].position[1] = 9;
   application.globalAmbient[0] = 0.7;

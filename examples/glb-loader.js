@@ -4,6 +4,8 @@ import {LOG_FUNNY, LOG_INFO, LOG_MATRIX} from "../src/engine/utils.js";
 import {loadBVH} from "../src/engine/loaders/bvh.js";
 import {uploadGLBModel} from "../src/engine/loaders/webgpu-gltf.js";
 
+// - Characters used from great maximo.com
+
 export function loadGLBLoader() {
 
   let TEST_ANIM = new MatrixEngineWGPU({
@@ -24,21 +26,55 @@ export function loadGLBLoader() {
         app.cameras.WASD.position[1] = 3.76;
       }, 500)
 
-      downloadMeshes({cube: "./res/meshes/blender/cube.obj"}, onGround, {scale: [20, 1, 20]})
-      // const path = 'https://raw.githubusercontent.com/zlatnaspirala/Matrix-Engine-BVH-test/main/javascript-bvh/example.bvh';
-      const path = 'res/meshes/glb/glb-test1.bvh';
+      downloadMeshes({cube: "./res/meshes/blender/cube.obj"}, onGround, {scale: [120, 0.5, 120]})
 
-      var glbFile = await fetch(
+      // var glbFile = await fetch(
+      //   "res/meshes/glb/test.glb")
+      //   .then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, TEST_ANIM.device)));
+      // TEST_ANIM.addGlbObj({
+      //   material: {type: 'power'},
+      //   scale: [10, 10, 10],
+      //   position: {x: 0, y: -4, z: -20},
+      //   name: 'firstGlb',
+      //   texturesPaths: ['./res/meshes/glb/textures/mutant.png'],
+      // }, null, glbFile);
+
+      var glbFile1 = await fetch(
         "res/meshes/glb/test.glb")
         .then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, TEST_ANIM.device)));
       TEST_ANIM.addGlbObj({
-        material: {type: 'power'},
-        scale: [10,10,10],
-        position: {x: 0, y: -4, z: -20},
+        material: {type: 'standard'},
+        scale: [10, 10, 10],
+        position: {x: -20, y: -4, z: -20},
         name: 'firstGlb',
         texturesPaths: ['./res/meshes/glb/textures/mutant.png'],
-      }, null, glbFile);
+      }, null, glbFile1);
 
+
+      // var glbFile2 = await fetch(
+      //   "res/meshes/glb/y-bot.glb")
+      //   .then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, TEST_ANIM.device)));
+      // TEST_ANIM.addGlbObj({
+      //   material: {type: 'power'},
+      //   scale: [10, 10, 10],
+      //   position: {x: 0, y: -4, z: -40},
+      //   name: 'YBOT',
+      //   texturesPaths: ['./res/meshes/glb/textures/mutant.png'],
+      // }, null, glbFile2);
+
+      //       var glbFile22 = await fetch(
+      //   "res/meshes/glb/y-bot.glb")
+      //   .then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, TEST_ANIM.device)));
+      // TEST_ANIM.addGlbObj({
+      //   material: {type: 'standard'},
+      //   scale: [10, 10, 10],
+      //   position: {x: -20, y: -4, z: -40},
+      //   name: 'YBOT',
+      //   texturesPaths: ['./res/meshes/glb/textures/mutant.png'],
+      // }, null, glbFile22);
+
+      // const path = 'https://raw.githubusercontent.com/zlatnaspirala/Matrix-Engine-BVH-test/main/javascript-bvh/example.bvh';
+      // const path = 'res/meshes/glb/glb-test1.bvh';
       // loadBVH(path).then(async (BVHANIM) => {
       //   var glbFile = await fetch(
       //     "res/meshes/glb/test.glb")

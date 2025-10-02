@@ -540,6 +540,7 @@ You may use, modify, and sell projects based on this code — just keep this not
 - Raycasting logic and glb loader assisted by ChatGPT.
 - GLTF Loader: https://github.com/Twinklebear/webgpu-gltf, improved with chatgpt.
 - Music by <a href="https://pixabay.com/users/mfcc-28627740/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=274290">Mykola Sosin</a> from <a href="https://pixabay.com//?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=274290">Pixabay</a>
+- Characters used from great maximo.com
 
 ---
 
