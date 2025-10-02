@@ -58,22 +58,14 @@ export default class MEMeshObj extends Materials {
       );
       this.mesh.vertexNormals = normals;
       //UV
-      let binaryRoot = _glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex].texcoords[0];
-      // const byteOffset = binary.byteOffset || 0; // start of this view in the underlying ArrayBuffer
-      // const byteLength = binary.byteLength;
-      // const uvFloatArray = new Float32Array(binary.buffer, byteOffset, byteLength / 4);
-      // console.log('uvFloatArray', uvFloatArray);
-      // this.mesh.uvs = uvFloatArray;
-      // this.mesh.textures = uvFloatArray;
-      const accessor = binaryRoot; // your logged object
+      let accessor = _glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex].texcoords[0];
       const bufferView = accessor.view;
       const byteOffset = (bufferView.byteOffset || 0) + (accessor.byteOffset || 0);
       const count = accessor.count * 2; // VEC2 = 2 floats per vertex
       const uvFloatArray = new Float32Array(bufferView.buffer.buffer, byteOffset, count);
       this.mesh.uvs = uvFloatArray;
       this.mesh.textures = uvFloatArray;
-      // console.log('Correct UVs:', this.mesh.uvs);
-      // indices
+      // I
       let binaryI = _glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex].indices;
       const indicesView = binaryI.view;
       const indicesUint8 = indicesView.buffer;
@@ -116,12 +108,10 @@ export default class MEMeshObj extends Materials {
           weightsArray[i + 2] = 0; weightsArray[i + 3] = 0;
         }
       }
-
       for(let i = 0;i < weightsArray.length;i += 4) {
         const s = weightsArray[i] + weightsArray[i + 1] + weightsArray[i + 2] + weightsArray[i + 3];
         if(Math.abs(s - 1.0) > 0.001) console.warn("Weight not normalized!", i, s);
       }
-      // console.log('Normalized weightsArray', weightsArray);
       this.mesh.weightsBuffer = this.device.createBuffer({
         label: "weightsBuffer real data",
         size: weightsArray.byteLength,
@@ -130,10 +120,7 @@ export default class MEMeshObj extends Materials {
       });
       new Float32Array(this.mesh.weightsBuffer.getMappedRange()).set(weightsArray);
       this.mesh.weightsBuffer.unmap();
-
-      // Get JOINTS_0 accessor view from the GLB mesh
       let jointsView = _glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex].joints.view;
-      // console.warn('jointsView', jointsView);
       this.mesh.jointsView = jointsView;
       // Create typed array from the buffer (Uint16Array or Uint8Array depending on GLB)
       let jointsArray16 = new Uint16Array(

@@ -21529,7 +21529,7 @@ async function uploadGLBModel(buffer, device) {
       images.push(gpuImg);
     }
   }
-  console.log('what is IMAGE ', images);
+  console.log('IMAGES FROM GLB: ', images);
   // 6️⃣ Samplers, Textures, Materials
   const defaultSampler = new GLTFSampler({}, device);
   const samplers = (glbJsonData.samplers || []).map(s => new GLTFSampler(s, device));
@@ -22374,22 +22374,14 @@ class MEMeshObj extends _materials.default {
       const normals = new Float32Array(normalsUint8.buffer, byteOffsetN, byteLengthN / 4);
       this.mesh.vertexNormals = normals;
       //UV
-      let binaryRoot = _glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex].texcoords[0];
-      // const byteOffset = binary.byteOffset || 0; // start of this view in the underlying ArrayBuffer
-      // const byteLength = binary.byteLength;
-      // const uvFloatArray = new Float32Array(binary.buffer, byteOffset, byteLength / 4);
-      // console.log('uvFloatArray', uvFloatArray);
-      // this.mesh.uvs = uvFloatArray;
-      // this.mesh.textures = uvFloatArray;
-      const accessor = binaryRoot; // your logged object
+      let accessor = _glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex].texcoords[0];
       const bufferView = accessor.view;
       const byteOffset = (bufferView.byteOffset || 0) + (accessor.byteOffset || 0);
       const count = accessor.count * 2; // VEC2 = 2 floats per vertex
       const uvFloatArray = new Float32Array(bufferView.buffer.buffer, byteOffset, count);
       this.mesh.uvs = uvFloatArray;
       this.mesh.textures = uvFloatArray;
-      // console.log('Correct UVs:', this.mesh.uvs);
-      // indices
+      // I
       let binaryI = _glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex].indices;
       const indicesView = binaryI.view;
       const indicesUint8 = indicesView.buffer;
@@ -22441,7 +22433,6 @@ class MEMeshObj extends _materials.default {
         const s = weightsArray[i] + weightsArray[i + 1] + weightsArray[i + 2] + weightsArray[i + 3];
         if (Math.abs(s - 1.0) > 0.001) console.warn("Weight not normalized!", i, s);
       }
-      // console.log('Normalized weightsArray', weightsArray);
       this.mesh.weightsBuffer = this.device.createBuffer({
         label: "weightsBuffer real data",
         size: weightsArray.byteLength,
@@ -22450,10 +22441,7 @@ class MEMeshObj extends _materials.default {
       });
       new Float32Array(this.mesh.weightsBuffer.getMappedRange()).set(weightsArray);
       this.mesh.weightsBuffer.unmap();
-
-      // Get JOINTS_0 accessor view from the GLB mesh
       let jointsView = _glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex].joints.view;
-      // console.warn('jointsView', jointsView);
       this.mesh.jointsView = jointsView;
       // Create typed array from the buffer (Uint16Array or Uint8Array depending on GLB)
       let jointsArray16 = new Uint16Array(jointsView.buffer, jointsView.byteOffset || 0, jointsView.byteLength / 2 // in Uint16 elements
@@ -25463,11 +25451,9 @@ struct VertexOutput {
   @builtin(position) Position: vec4f,
 }
 
-// skinning helper
 fn skinVertex(pos: vec4f, nrm: vec3f, joints: vec4<u32>, weights: vec4f) -> SkinResult {
     var skinnedPos = vec4f(0.0);
     var skinnedNorm = vec3f(0.0);
-
     for (var i: u32 = 0u; i < 4u; i = i + 1u) {
         let jointIndex = joints[i];
         let w = weights[i];
@@ -25482,8 +25468,6 @@ fn skinVertex(pos: vec4f, nrm: vec3f, joints: vec4<u32>, weights: vec4f) -> Skin
           skinnedNorm += (boneMat3 * nrm) * w;
         }
     }
-
-    // return SkinResult(skinnedPos, normalize(skinnedNorm));
     return SkinResult(skinnedPos, skinnedNorm);
 }
 
@@ -25496,30 +25480,20 @@ fn main(
   @location(4) weights: vec4<f32>
 ) -> VertexOutput {
   var output : VertexOutput;
-
   var pos = vec4(position, 1.0);
   var nrm = normal;
-
-  // apply skinning
   let skinned = skinVertex(pos, nrm, joints, weights);
-
-  // transform to world
   let worldPos = model.modelMatrix * skinned.position;
-  // let worldPos =  skinned.position;
   let normalMatrix = mat3x3f(
     model.modelMatrix[0].xyz,
     model.modelMatrix[1].xyz,
     model.modelMatrix[2].xyz
   );
-
   output.Position = scene.cameraViewProjMatrix * worldPos;
   output.fragPos = worldPos.xyz;
-
   output.shadowPos = scene.lightViewProjMatrix * worldPos;
   output.fragNorm = normalize(normalMatrix * skinned.normal);
-  // output.fragNorm = skinned.normal;
   output.uv = uv;
-
   return output;
 }`;
 

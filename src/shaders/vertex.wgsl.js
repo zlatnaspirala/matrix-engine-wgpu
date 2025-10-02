@@ -31,11 +31,9 @@ struct VertexOutput {
   @builtin(position) Position: vec4f,
 }
 
-// skinning helper
 fn skinVertex(pos: vec4f, nrm: vec3f, joints: vec4<u32>, weights: vec4f) -> SkinResult {
     var skinnedPos = vec4f(0.0);
     var skinnedNorm = vec3f(0.0);
-
     for (var i: u32 = 0u; i < 4u; i = i + 1u) {
         let jointIndex = joints[i];
         let w = weights[i];
@@ -50,8 +48,6 @@ fn skinVertex(pos: vec4f, nrm: vec3f, joints: vec4<u32>, weights: vec4f) -> Skin
           skinnedNorm += (boneMat3 * nrm) * w;
         }
     }
-
-    // return SkinResult(skinnedPos, normalize(skinnedNorm));
     return SkinResult(skinnedPos, skinnedNorm);
 }
 
@@ -64,29 +60,19 @@ fn main(
   @location(4) weights: vec4<f32>
 ) -> VertexOutput {
   var output : VertexOutput;
-
   var pos = vec4(position, 1.0);
   var nrm = normal;
-
-  // apply skinning
   let skinned = skinVertex(pos, nrm, joints, weights);
-
-  // transform to world
   let worldPos = model.modelMatrix * skinned.position;
-  // let worldPos =  skinned.position;
   let normalMatrix = mat3x3f(
     model.modelMatrix[0].xyz,
     model.modelMatrix[1].xyz,
     model.modelMatrix[2].xyz
   );
-
   output.Position = scene.cameraViewProjMatrix * worldPos;
   output.fragPos = worldPos.xyz;
-
   output.shadowPos = scene.lightViewProjMatrix * worldPos;
   output.fragNorm = normalize(normalMatrix * skinned.normal);
-  // output.fragNorm = skinned.normal;
   output.uv = uv;
-
   return output;
-}`
+}`;
