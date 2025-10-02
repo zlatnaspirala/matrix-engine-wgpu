@@ -403,7 +403,7 @@ var loadObjFile = function () {
       }
       loadObjFile.addMeshObj({
         material: {
-          type: 'pong'
+          type: 'standard'
         },
         position: {
           x: 0,
@@ -430,6 +430,9 @@ var loadObjFile = function () {
         // raycast: { enabled: true , radius: 2 }
       });
       loadObjFile.addMeshObj({
+        material: {
+          type: 'standard'
+        },
         position: {
           x: 0,
           y: -1,
@@ -452,7 +455,6 @@ var loadObjFile = function () {
           enabled: false,
           geometry: "Sphere"
         }
-        // raycast: { enabled: true , radius: 2 }
       });
       var TEST = loadObjFile.getSceneObjectByName('cube2');
       console.log(`%c Test access scene ${TEST} object.`, _utils.LOG_MATRIX);
@@ -462,6 +464,7 @@ var loadObjFile = function () {
       loadObjFile.lightContainer[0].updater.push(light => {
         light.position[0] = light.behavior.setPath0();
       });
+      // loadObjFile.lightContainer[0].position[1] = 14;
     }
   });
   // just for dev

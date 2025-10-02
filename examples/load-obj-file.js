@@ -59,7 +59,7 @@ export var loadObjFile = function() {
         // console.log(`%c Loaded objs: ${key} `, LOG_MATRIX);
       }
       loadObjFile.addMeshObj({
-        material: {type: 'pong'},
+        material: { type: 'standard'},
         position: {x: 0, y: 2, z: -20},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
@@ -74,6 +74,7 @@ export var loadObjFile = function() {
       })
 
       loadObjFile.addMeshObj({
+        material: { type: 'standard'},
         position: {x: 0, y: -1, z: -20},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 111, z: 0},
@@ -83,8 +84,7 @@ export var loadObjFile = function() {
         physics: {
           enabled: false,
           geometry: "Sphere"
-        },
-        // raycast: { enabled: true , radius: 2 }
+        }
       })
 
       var TEST = loadObjFile.getSceneObjectByName('cube2');
@@ -96,6 +96,7 @@ export var loadObjFile = function() {
       loadObjFile.lightContainer[0].updater.push((light) => {
         light.position[0] = light.behavior.setPath0()
       })
+      // loadObjFile.lightContainer[0].position[1] = 14;
 
     }
   })
