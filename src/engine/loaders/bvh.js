@@ -110,7 +110,7 @@ export class BVHPlayer extends MEMeshObj {
 
   initInverseBindMatrices(skinIndex = 0) {
     const skin = this.glb.skins[skinIndex];
-    const invBindAccessorIndex = skin.inverseBindMatrices; // usually a number
+    const invBindAccessorIndex = skin.inverseBindMatrices; // number
     if(invBindAccessorIndex === undefined || invBindAccessorIndex === null) {
       console.warn('No inverseBindMatrices accessor for skin', skinIndex);
       return;
@@ -118,7 +118,6 @@ export class BVHPlayer extends MEMeshObj {
     const invBindArray = this.getAccessorArray(this.glb, invBindAccessorIndex);
     // ✅ store directly as typed array (one big contiguous Float32Array)
     this.inverseBindMatrices = invBindArray;
-    console.log('Inverse bind matrices loaded:', this.inverseBindMatrices.length, 'bones');
   }
 
   getNumberOfAnimation() {

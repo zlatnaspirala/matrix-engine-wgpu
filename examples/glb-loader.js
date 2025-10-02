@@ -47,8 +47,27 @@ export function loadGLBLoader() {
         scale: [10, 10, 10],
         position: {x: -20, y: -4, z: -20},
         name: 'firstGlb',
-        texturesPaths: ['./res/meshes/glb/textures/mutant.png'],
+        texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
       }, null, glbFile1);
+
+      downloadMeshes({
+        model3: "./res/meshes/glb/model3.obj",
+      }, (m) => {
+        TEST_ANIM.addMeshObj({
+          material: {type: 'standard'},
+          position: {x: 20, y: -5, z: -10},
+          rotation: {x: 0, y: 0, z: 0},
+          rotationSpeed: {x: 0, y: 0, z: 0},
+          texturesPaths: ['./res/meshes/glb/textures/mutant.png'],
+          name: 'model3',
+          mesh: m.model3,
+          physics: {
+            enabled: false,
+            mass: 0,
+            geometry: "Cube"
+          }
+        })
+      }, {scale: [10, 10, 10]})
 
 
       // var glbFile2 = await fetch(

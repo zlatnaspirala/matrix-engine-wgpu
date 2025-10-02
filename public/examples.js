@@ -209,8 +209,42 @@ function loadGLBLoader() {
           z: -20
         },
         name: 'firstGlb',
-        texturesPaths: ['./res/meshes/glb/textures/mutant.png']
+        texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png']
       }, null, glbFile1);
+      (0, _loaderObj.downloadMeshes)({
+        model3: "./res/meshes/glb/model3.obj"
+      }, m => {
+        TEST_ANIM.addMeshObj({
+          material: {
+            type: 'standard'
+          },
+          position: {
+            x: 20,
+            y: -5,
+            z: -10
+          },
+          rotation: {
+            x: 0,
+            y: 0,
+            z: 0
+          },
+          rotationSpeed: {
+            x: 0,
+            y: 0,
+            z: 0
+          },
+          texturesPaths: ['./res/meshes/glb/textures/mutant.png'],
+          name: 'model3',
+          mesh: m.model3,
+          physics: {
+            enabled: false,
+            mass: 0,
+            geometry: "Cube"
+          }
+        });
+      }, {
+        scale: [10, 10, 10]
+      });
 
       // var glbFile2 = await fetch(
       //   "res/meshes/glb/y-bot.glb")
@@ -20644,7 +20678,7 @@ class BVHPlayer extends _meshObj.default {
   }
   initInverseBindMatrices(skinIndex = 0) {
     const skin = this.glb.skins[skinIndex];
-    const invBindAccessorIndex = skin.inverseBindMatrices; // usually a number
+    const invBindAccessorIndex = skin.inverseBindMatrices; // number
     if (invBindAccessorIndex === undefined || invBindAccessorIndex === null) {
       console.warn('No inverseBindMatrices accessor for skin', skinIndex);
       return;
@@ -20652,7 +20686,6 @@ class BVHPlayer extends _meshObj.default {
     const invBindArray = this.getAccessorArray(this.glb, invBindAccessorIndex);
     // ✅ store directly as typed array (one big contiguous Float32Array)
     this.inverseBindMatrices = invBindArray;
-    console.log('Inverse bind matrices loaded:', this.inverseBindMatrices.length, 'bones');
   }
   getNumberOfAnimation() {
     let anim = this.glb.glbJsonData.animations[this.glb.animationIndex];
@@ -21511,7 +21544,7 @@ async function uploadGLBModel(buffer, device) {
   const meshes = (glbJsonData.meshes || []).map(mesh => {
     const primitives = mesh.primitives.map(prim => {
       const topology = prim.mode ?? GLTFRenderMode.TRIANGLES;
-
+      console.log('topology ', topology);
       // Indices
       let indices = null;
       if (prim.indices !== undefined) {
@@ -21662,14 +21695,12 @@ class Materials {
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
     this.device.queue.writeBuffer(this.dummySpotlightUniformBuffer, 0, new Float32Array(20));
-
     // Create a 1x1 RGBA texture filled with white
     const mrDummyTex = this.device.createTexture({
       size: [1, 1, 1],
-      format: 'rgba8unorm',
+      format: this.getFormat(),
       usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST
     });
-
     // Upload a single pixel
     const pixel = new Uint8Array([255, 255, 255, 255]); // white RGBA
     this.device.queue.writeTexture({
@@ -21682,14 +21713,12 @@ class Materials {
       magFilter: 'linear',
       minFilter: 'linear'
     });
-
     // 4 floats for baseColorFactor + 1 metallic + 1 roughness + 2 pad floats = 8 floats
     const materialPBRSize = 8 * 4; // 32 bytes
     this.materialPBRBuffer = this.device.createBuffer({
       size: materialPBRSize,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
-
     // Dummy values
     const baseColorFactor = [1.0, 1.0, 1.0, 1.0];
     const metallicFactor = 0.1; // diffuse like plastic
@@ -21699,8 +21728,6 @@ class Materials {
     const materialArray = new Float32Array([...baseColorFactor, metallicFactor, roughnessFactor, ...pad]);
     this.device.queue.writeBuffer(this.materialPBRBuffer, 0, materialArray.buffer);
   }
-
-  // material
   getMaterial() {
     if (this.material.type == 'standard') {
       console.log('Material TYPE:', this.material.type);
@@ -21715,13 +21742,20 @@ class Materials {
     console.warn('Unknown material type:', this.material?.type);
     return _fragment.fragmentWGSL; // fallback
   }
-
+  getFormat() {
+    if (this.material?.format == 'darker') {
+      return 'rgba8unorm-srgb';
+    } else if (this.material?.format == 'normal') {
+      return 'rgba8unorm';
+    } else {
+      return 'rgba8unorm';
+    }
+  }
   // not affect all fs
   setupMaterialPBR(metallicFactor) {
     const baseColorFactor = [1.0, 1.0, 1.0, 1.0];
     const roughnessFactor = 0.5; // some gloss
     const pad = [0.0, 0.0];
-    // Pack into Float32Array
     const materialArray = new Float32Array([...baseColorFactor, metallicFactor, roughnessFactor, ...pad]);
     this.device.queue.writeBuffer(this.materialPBRBuffer, 0, materialArray.buffer);
   }
@@ -21740,7 +21774,7 @@ class Materials {
       this.texture0 = this.device.createTexture({
         size: [imageBitmap.width, imageBitmap.height, 1],
         // REMOVED 1
-        format: 'rgba8unorm',
+        format: this.getFormat(),
         usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT
       });
       this.device.queue.copyExternalImageToTexture({
@@ -21856,7 +21890,7 @@ class Materials {
       });
       this.createBindGroupForRender();
       this.videoIsReady = 'YES';
-      console.log("✅video bind group");
+      console.log("✅video bind.");
     } else {
       this.externalTexture = this.device.importExternalTexture({
         source: this.video
@@ -21946,11 +21980,6 @@ class Materials {
     }
   }
   createLayoutForRender() {
-    // if(this.isVideo == true) {
-    //   console.info("✅ createLayoutForRender video [bglForRender]");
-    // } else {
-    //   console.info("✅ normal createLayoutForRender [bglForRender]");
-    // }
     let e = [{
       binding: 0,
       visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
@@ -22324,16 +22353,13 @@ class MEMeshObj extends _materials.default {
     this.globalAmbient = [...globalAmbient];
     console.log('Material class arg:', o.material);
     this.material = o.material;
-
     // Mesh stuff - for single mesh or t-posed (fiktive-first in loading order)
     this.mesh = o.mesh;
     if (_glbFile != null) {
       if (typeof this.mesh == 'undefined') {
-        // console.log('glb detected..create mesh obj.')
         this.mesh = {};
         this.mesh.feedFromRealGlb = true;
       }
-      // console.log('glb detected - name: ' + this.name + ' - skinnedNodeIndex:' + skinnedNodeIndex + " primitiveIndex:" + primitiveIndex)
       // V
       const verView = _glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex].positions.view;
       const byteOffsetV = verView.byteOffset || 0;
@@ -22348,12 +22374,21 @@ class MEMeshObj extends _materials.default {
       const normals = new Float32Array(normalsUint8.buffer, byteOffsetN, byteLengthN / 4);
       this.mesh.vertexNormals = normals;
       //UV
-      let binary = _glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex].texcoords[0].view.buffer;
-      const byteOffset = 0; // or from accessor
-      const byteLength = binary.byteLength;
-      const uvFloatArray = new Float32Array(binary.buffer, byteOffset, byteLength / 4);
+      let binaryRoot = _glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex].texcoords[0];
+      // const byteOffset = binary.byteOffset || 0; // start of this view in the underlying ArrayBuffer
+      // const byteLength = binary.byteLength;
+      // const uvFloatArray = new Float32Array(binary.buffer, byteOffset, byteLength / 4);
+      // console.log('uvFloatArray', uvFloatArray);
+      // this.mesh.uvs = uvFloatArray;
+      // this.mesh.textures = uvFloatArray;
+      const accessor = binaryRoot; // your logged object
+      const bufferView = accessor.view;
+      const byteOffset = (bufferView.byteOffset || 0) + (accessor.byteOffset || 0);
+      const count = accessor.count * 2; // VEC2 = 2 floats per vertex
+      const uvFloatArray = new Float32Array(bufferView.buffer.buffer, byteOffset, count);
       this.mesh.uvs = uvFloatArray;
-      this.mesh.textures = this.mesh.uvs;
+      this.mesh.textures = uvFloatArray;
+      // console.log('Correct UVs:', this.mesh.uvs);
       // indices
       let binaryI = _glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex].indices;
       const indicesView = binaryI.view;
@@ -22418,7 +22453,7 @@ class MEMeshObj extends _materials.default {
 
       // Get JOINTS_0 accessor view from the GLB mesh
       let jointsView = _glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex].joints.view;
-      console.warn('jointsView', jointsView);
+      // console.warn('jointsView', jointsView);
       this.mesh.jointsView = jointsView;
       // Create typed array from the buffer (Uint16Array or Uint8Array depending on GLB)
       let jointsArray16 = new Uint16Array(jointsView.buffer, jointsView.byteOffset || 0, jointsView.byteLength / 2 // in Uint16 elements
@@ -22427,10 +22462,9 @@ class MEMeshObj extends _materials.default {
       for (let i = 0; i < jointsArray16.length; i++) {
         jointsArray32[i] = jointsArray16[i];
       }
-      // const DUMMY = new Uint32Array((this.mesh.vertices.length / 3) * 4);
       // Create GPU buffer for joints
       this.mesh.jointsBuffer = this.device.createBuffer({
-        label: "jointsBuffer real data",
+        label: "jointsBuffer[real-data]",
         size: jointsArray32.byteLength,
         usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
         mappedAtCreation: true
@@ -22471,7 +22505,6 @@ class MEMeshObj extends _materials.default {
     this.rotation.rotationSpeed.z = o.rotationSpeed.z;
     this.scale = o.scale;
     // new dummy for skin mesh
-    // in MeshObj constructor or setup
     if (!this.joints) {
       const jointsData = new Uint32Array(this.mesh.vertices.length / 3 * 4);
       const jointsBuffer = this.device.createBuffer({
@@ -25784,12 +25817,13 @@ class MatrixEngineWGPU {
       Math.max(1, this.lightContainer.length);
       if (this.lightContainer.length == 0) {
         setTimeout(() => {
-          console.warn('Create now test...');
+          console.info('Create now test...');
           this.createMe();
         }, 800);
         return;
       }
-      console.warn('Create this.shadowTextureArray...');
+
+      // console.warn('Create this.shadowTextureArray...')
       this.shadowTextureArray = this.device.createTexture({
         label: `shadowTextureArray[GLOBAL] num of light ${numberOfLights}`,
         size: {

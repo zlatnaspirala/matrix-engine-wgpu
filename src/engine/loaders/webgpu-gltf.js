@@ -512,7 +512,7 @@ export async function uploadGLBModel(buffer, device) {
   const meshes = (glbJsonData.meshes || []).map(mesh => {
     const primitives = mesh.primitives.map(prim => {
       const topology = prim.mode ?? GLTFRenderMode.TRIANGLES;
-
+      console.log('topology ', topology)
       // Indices
       let indices = null;
       if(prim.indices !== undefined) {

@@ -181,13 +181,13 @@ export default class MatrixEngineWGPU {
       Math.max(1, this.lightContainer.length);
       if(this.lightContainer.length == 0) {
         setTimeout(() => {
-          console.warn('Create now test...')
+          console.info('Create now test...')
           this.createMe();
         }, 800);
         return;
       }
 
-      console.warn('Create this.shadowTextureArray...')
+      // console.warn('Create this.shadowTextureArray...')
       this.shadowTextureArray = this.device.createTexture({
         label: `shadowTextureArray[GLOBAL] num of light ${numberOfLights}`,
         size: {

@@ -43,14 +43,12 @@ export default class Materials {
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
     this.device.queue.writeBuffer(this.dummySpotlightUniformBuffer, 0, new Float32Array(20));
-
     // Create a 1x1 RGBA texture filled with white
     const mrDummyTex = this.device.createTexture({
       size: [1, 1, 1],
-      format: 'rgba8unorm',
+      format: this.getFormat(),
       usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST,
     });
-
     // Upload a single pixel
     const pixel = new Uint8Array([255, 255, 255, 255]); // white RGBA
     this.device.queue.writeTexture(
@@ -59,21 +57,17 @@ export default class Materials {
       {bytesPerRow: 4},
       [1, 1, 1]
     );
-
     this.metallicRoughnessTextureView = mrDummyTex.createView();
-
     this.metallicRoughnessSampler = this.device.createSampler({
       magFilter: 'linear',
       minFilter: 'linear',
     });
-
     // 4 floats for baseColorFactor + 1 metallic + 1 roughness + 2 pad floats = 8 floats
     const materialPBRSize = 8 * 4; // 32 bytes
     this.materialPBRBuffer = this.device.createBuffer({
       size: materialPBRSize,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
-
     // Dummy values
     const baseColorFactor = [1.0, 1.0, 1.0, 1.0];
     const metallicFactor = 0.1;    // diffuse like plastic
@@ -89,7 +83,6 @@ export default class Materials {
     this.device.queue.writeBuffer(this.materialPBRBuffer, 0, materialArray.buffer);
   }
 
-  // material
   getMaterial() {
     if(this.material.type == 'standard') {
       console.log('Material TYPE:', this.material.type);
@@ -105,19 +98,26 @@ export default class Materials {
     return fragmentWGSL; // fallback
   }
 
+  getFormat() {
+    if(this.material?.format == 'darker') {
+      return 'rgba8unorm-srgb';
+    } else if(this.material?.format == 'normal') {
+      return 'rgba8unorm';
+    } else {
+      return 'rgba8unorm';
+    }
+  }
   // not affect all fs
   setupMaterialPBR(metallicFactor) {
     const baseColorFactor = [1.0, 1.0, 1.0, 1.0];
     const roughnessFactor = 0.5;   // some gloss
     const pad = [0.0, 0.0];
-    // Pack into Float32Array
     const materialArray = new Float32Array([
       ...baseColorFactor,
       metallicFactor,
       roughnessFactor,
       ...pad
     ]);
-
     this.device.queue.writeBuffer(this.materialPBRBuffer, 0, materialArray.buffer);
   }
 
@@ -136,7 +136,7 @@ export default class Materials {
       const imageBitmap = await createImageBitmap(await response.blob());
       this.texture0 = this.device.createTexture({
         size: [imageBitmap.width, imageBitmap.height, 1], // REMOVED 1
-        format: 'rgba8unorm',
+        format: this.getFormat(),
         usage:
           GPUTextureUsage.TEXTURE_BINDING |
           GPUTextureUsage.COPY_DST |
@@ -248,7 +248,7 @@ export default class Materials {
       this.externalTexture = this.device.importExternalTexture({source: this.video});
       this.createBindGroupForRender();
       this.videoIsReady = 'YES';
-      console.log("✅video bind group");
+      console.log("✅video bind.");
     } else {
       this.externalTexture = this.device.importExternalTexture({source: this.video});
       this.createBindGroupForRender();
@@ -302,11 +302,6 @@ export default class Materials {
   }
 
   createLayoutForRender() {
-    // if(this.isVideo == true) {
-    //   console.info("✅ createLayoutForRender video [bglForRender]");
-    // } else {
-    //   console.info("✅ normal createLayoutForRender [bglForRender]");
-    // }
     let e = [
       {
         binding: 0,

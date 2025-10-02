@@ -29,16 +29,13 @@ export default class MEMeshObj extends Materials {
     this.globalAmbient = [...globalAmbient];
     console.log('Material class arg:', o.material)
     this.material = o.material;
-
     // Mesh stuff - for single mesh or t-posed (fiktive-first in loading order)
     this.mesh = o.mesh;
     if(_glbFile != null) {
       if(typeof this.mesh == 'undefined') {
-        // console.log('glb detected..create mesh obj.')
         this.mesh = {};
         this.mesh.feedFromRealGlb = true;
       }
-      // console.log('glb detected - name: ' + this.name + ' - skinnedNodeIndex:' + skinnedNodeIndex + " primitiveIndex:" + primitiveIndex)
       // V
       const verView = _glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex].positions.view;
       const byteOffsetV = verView.byteOffset || 0;
@@ -61,16 +58,21 @@ export default class MEMeshObj extends Materials {
       );
       this.mesh.vertexNormals = normals;
       //UV
-      let binary = _glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex].texcoords[0].view.buffer;
-      const byteOffset = 0; // or from accessor
-      const byteLength = binary.byteLength;
-      const uvFloatArray = new Float32Array(
-        binary.buffer,
-        byteOffset,
-        byteLength / 4
-      );
+      let binaryRoot = _glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex].texcoords[0];
+      // const byteOffset = binary.byteOffset || 0; // start of this view in the underlying ArrayBuffer
+      // const byteLength = binary.byteLength;
+      // const uvFloatArray = new Float32Array(binary.buffer, byteOffset, byteLength / 4);
+      // console.log('uvFloatArray', uvFloatArray);
+      // this.mesh.uvs = uvFloatArray;
+      // this.mesh.textures = uvFloatArray;
+      const accessor = binaryRoot; // your logged object
+      const bufferView = accessor.view;
+      const byteOffset = (bufferView.byteOffset || 0) + (accessor.byteOffset || 0);
+      const count = accessor.count * 2; // VEC2 = 2 floats per vertex
+      const uvFloatArray = new Float32Array(bufferView.buffer.buffer, byteOffset, count);
       this.mesh.uvs = uvFloatArray;
-      this.mesh.textures = this.mesh.uvs;
+      this.mesh.textures = uvFloatArray;
+      // console.log('Correct UVs:', this.mesh.uvs);
       // indices
       let binaryI = _glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex].indices;
       const indicesView = binaryI.view;
@@ -131,7 +133,7 @@ export default class MEMeshObj extends Materials {
 
       // Get JOINTS_0 accessor view from the GLB mesh
       let jointsView = _glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex].joints.view;
-      console.warn('jointsView', jointsView);
+      // console.warn('jointsView', jointsView);
       this.mesh.jointsView = jointsView;
       // Create typed array from the buffer (Uint16Array or Uint8Array depending on GLB)
       let jointsArray16 = new Uint16Array(
@@ -143,10 +145,9 @@ export default class MEMeshObj extends Materials {
       for(let i = 0;i < jointsArray16.length;i++) {
         jointsArray32[i] = jointsArray16[i];
       }
-      // const DUMMY = new Uint32Array((this.mesh.vertices.length / 3) * 4);
       // Create GPU buffer for joints
       this.mesh.jointsBuffer = this.device.createBuffer({
-        label: "jointsBuffer real data",
+        label: "jointsBuffer[real-data]",
         size: jointsArray32.byteLength,
         usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
         mappedAtCreation: true,
@@ -185,7 +186,6 @@ export default class MEMeshObj extends Materials {
     this.rotation.rotationSpeed.z = o.rotationSpeed.z;
     this.scale = o.scale;
     // new dummy for skin mesh
-    // in MeshObj constructor or setup
     if(!this.joints) {
       const jointsData = new Uint32Array((this.mesh.vertices.length / 3) * 4);
       const jointsBuffer = this.device.createBuffer({
@@ -372,7 +372,7 @@ export default class MEMeshObj extends Materials {
         size: 176,
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
       });
-   // test MUST BE IF
+      // test MUST BE IF
       this.uniformBufferBindGroupLayout = this.device.createBindGroupLayout({
         label: 'uniformBufferBindGroupLayout in mesh',
         entries: [
@@ -499,7 +499,7 @@ export default class MEMeshObj extends Materials {
         }
         // Apply scale if you have it, e.g.:
         // console.warn('what is csle comes from user level not glb ', this.scale)
-        if (this.glb || this.objAnim) {
+        if(this.glb || this.objAnim) {
           mat4.scale(modelMatrix, [this.scale[0], this.scale[1], this.scale[2]], modelMatrix);
         }
         return modelMatrix;
