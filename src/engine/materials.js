@@ -1,4 +1,5 @@
 import {fragmentWGSL} from "../shaders/fragment.wgsl";
+import {fragmentWGSLMetal} from "../shaders/fragment.wgsl.metal";
 import {fragmentWGSLPong} from "../shaders/fragment.wgsl.pong";
 import {fragmentWGSLPower} from "../shaders/fragment.wgsl.power";
 
@@ -93,6 +94,9 @@ export default class Materials {
     } else if(this.material.type == 'power') {
       console.log('Material TYPE:', this.material.type);
       return fragmentWGSLPower;
+    } else if(this.material.type == 'metal') {
+      console.log('Material TYPE:', this.material.type);
+      return fragmentWGSLMetal;
     }
     console.warn('Unknown material type:', this.material?.type);
     return fragmentWGSL; // fallback

@@ -143,7 +143,7 @@ var loadCameraTexture = function () {
 };
 exports.loadCameraTexture = loadCameraTexture;
 
-},{"../src/engine/loader-obj.js":28,"../src/engine/raycast.js":34,"../src/engine/utils.js":35,"../src/world.js":47}],3:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":28,"../src/engine/raycast.js":34,"../src/engine/utils.js":35,"../src/world.js":48}],3:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -216,7 +216,7 @@ function loadGLBLoader() {
       }, m => {
         TEST_ANIM.addMeshObj({
           material: {
-            type: 'standard'
+            type: 'metal'
           },
           position: {
             x: 20,
@@ -319,7 +319,7 @@ function loadGLBLoader() {
 
 // loadGLBLoader()
 
-},{"../src/engine/loader-obj.js":28,"../src/engine/loaders/bvh.js":29,"../src/engine/loaders/webgpu-gltf.js":30,"../src/engine/utils.js":35,"../src/world.js":47}],4:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":28,"../src/engine/loaders/bvh.js":29,"../src/engine/loaders/webgpu-gltf.js":30,"../src/engine/utils.js":35,"../src/world.js":48}],4:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -469,7 +469,7 @@ var loadObjFile = function () {
 };
 exports.loadObjFile = loadObjFile;
 
-},{"../src/engine/loader-obj.js":28,"../src/engine/utils.js":35,"../src/world.js":47}],5:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":28,"../src/engine/utils.js":35,"../src/world.js":48}],5:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -548,7 +548,7 @@ var loadObjsSequence = function () {
           z: 0
         },
         scale: [100, 100, 100],
-        texturesPaths: ['./res/meshes/blender/cube.png'],
+        texturesPaths: ['./res/meshes/blender/swat.png'],
         name: 'swat',
         mesh: m['swat-walk-pistol'],
         physics: {
@@ -605,7 +605,7 @@ var loadObjsSequence = function () {
 };
 exports.loadObjsSequence = loadObjsSequence;
 
-},{"../src/engine/loader-obj.js":28,"../src/engine/utils.js":35,"../src/world.js":47}],6:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":28,"../src/engine/utils.js":35,"../src/world.js":48}],6:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -669,7 +669,7 @@ var unlitTextures = function () {
 };
 exports.unlitTextures = unlitTextures;
 
-},{"../src/world.js":47}],7:[function(require,module,exports){
+},{"../src/world.js":48}],7:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -760,7 +760,7 @@ var loadVideoTexture = function () {
 };
 exports.loadVideoTexture = loadVideoTexture;
 
-},{"../src/engine/loader-obj.js":28,"../src/engine/raycast.js":34,"../src/engine/utils.js":35,"../src/world.js":47}],8:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":28,"../src/engine/raycast.js":34,"../src/engine/utils.js":35,"../src/world.js":48}],8:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -18961,7 +18961,7 @@ class MEBall {
 }
 exports.default = MEBall;
 
-},{"../shaders/shaders":43,"./engine":26,"./matrix-class":32,"wgpu-matrix":22}],24:[function(require,module,exports){
+},{"../shaders/shaders":44,"./engine":26,"./matrix-class":32,"wgpu-matrix":22}],24:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -19424,7 +19424,7 @@ class MECube {
 }
 exports.default = MECube;
 
-},{"../shaders/shaders":43,"./engine":26,"./matrix-class":32,"wgpu-matrix":22}],26:[function(require,module,exports){
+},{"../shaders/shaders":44,"./engine":26,"./matrix-class":32,"wgpu-matrix":22}],26:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -20087,7 +20087,7 @@ class SpotLight {
 }
 exports.SpotLight = SpotLight;
 
-},{"../shaders/vertexShadow.wgsl":45,"./behavior":24,"wgpu-matrix":22}],28:[function(require,module,exports){
+},{"../shaders/vertexShadow.wgsl":46,"./behavior":24,"wgpu-matrix":22}],28:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -21647,8 +21647,9 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.default = void 0;
 var _fragment = require("../shaders/fragment.wgsl");
-var _fragmentWgsl = require("../shaders/fragment.wgsl.pong");
-var _fragmentWgsl2 = require("../shaders/fragment.wgsl.power");
+var _fragmentWgsl = require("../shaders/fragment.wgsl.metal");
+var _fragmentWgsl2 = require("../shaders/fragment.wgsl.pong");
+var _fragmentWgsl3 = require("../shaders/fragment.wgsl.power");
 /**
  * @description
  * Created for matrix-engine-wgpu project.
@@ -21734,10 +21735,13 @@ class Materials {
       return _fragment.fragmentWGSL;
     } else if (this.material.type == 'pong') {
       console.log('Material TYPE:', this.material.type);
-      return _fragmentWgsl.fragmentWGSLPong;
+      return _fragmentWgsl2.fragmentWGSLPong;
     } else if (this.material.type == 'power') {
       console.log('Material TYPE:', this.material.type);
-      return _fragmentWgsl2.fragmentWGSLPower;
+      return _fragmentWgsl3.fragmentWGSLPower;
+    } else if (this.material.type == 'metal') {
+      console.log('Material TYPE:', this.material.type);
+      return _fragmentWgsl.fragmentWGSLMetal;
     }
     console.warn('Unknown material type:', this.material?.type);
     return _fragment.fragmentWGSL; // fallback
@@ -22076,7 +22080,7 @@ class Materials {
 }
 exports.default = Materials;
 
-},{"../shaders/fragment.wgsl":39,"../shaders/fragment.wgsl.pong":41,"../shaders/fragment.wgsl.power":42}],32:[function(require,module,exports){
+},{"../shaders/fragment.wgsl":39,"../shaders/fragment.wgsl.metal":40,"../shaders/fragment.wgsl.pong":42,"../shaders/fragment.wgsl.power":43}],32:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -22987,7 +22991,7 @@ class MEMeshObj extends _materials.default {
 }
 exports.default = MEMeshObj;
 
-},{"../shaders/fragment.video.wgsl":38,"../shaders/fragment.wgsl":39,"../shaders/fragment.wgsl.noCut":40,"../shaders/fragment.wgsl.pong":41,"../shaders/fragment.wgsl.power":42,"../shaders/vertex.wgsl":44,"./materials":31,"./matrix-class":32,"./utils":35,"wgpu-matrix":22}],34:[function(require,module,exports){
+},{"../shaders/fragment.video.wgsl":38,"../shaders/fragment.wgsl":39,"../shaders/fragment.wgsl.noCut":41,"../shaders/fragment.wgsl.pong":42,"../shaders/fragment.wgsl.power":43,"../shaders/vertex.wgsl":45,"./materials":31,"./matrix-class":32,"./utils":35,"wgpu-matrix":22}],34:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -24764,6 +24768,184 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
+exports.fragmentWGSLMetal = void 0;
+let fragmentWGSLMetal = exports.fragmentWGSLMetal = `override shadowDepthTextureSize: f32 = 1024.0;
+const PI: f32 = 3.141592653589793;
+
+struct Scene {
+    lightViewProjMatrix  : mat4x4f,
+    cameraViewProjMatrix : mat4x4f,
+    cameraPos            : vec3f,
+    padding2             : f32,
+    lightPos             : vec3f,
+    padding              : f32,
+    globalAmbient        : vec3f,
+    padding3             : f32,
+};
+
+struct SpotLight {
+    position      : vec3f,
+    _pad1         : f32,
+    direction     : vec3f,
+    _pad2         : f32,
+    innerCutoff   : f32,
+    outerCutoff   : f32,
+    intensity     : f32,
+    _pad3         : f32,
+    color         : vec3f,
+    _pad4         : f32,
+    range         : f32,
+    ambientFactor : f32,
+    shadowBias    : f32,
+    _pad5         : f32,
+    lightViewProj : mat4x4<f32>,
+};
+
+struct MaterialPBR {
+    baseColorFactor : vec4f,
+    metallicFactor  : f32,
+    roughnessFactor : f32,
+    _pad1           : f32,
+    _pad2           : f32,
+};
+
+struct PBRMaterialData {
+    baseColor : vec3f,
+    metallic  : f32,
+    roughness : f32,
+};
+
+const MAX_SPOTLIGHTS = 20u;
+
+@group(0) @binding(0) var<uniform> scene : Scene;
+@group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
+@group(0) @binding(2) var shadowSampler: sampler_comparison;
+@group(0) @binding(3) var meshTexture: texture_2d<f32>;
+@group(0) @binding(4) var meshSampler: sampler;
+@group(0) @binding(5) var<uniform> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
+
+// PBR textures
+@group(0) @binding(6) var metallicRoughnessTex: texture_2d<f32>;
+@group(0) @binding(7) var metallicRoughnessSampler: sampler;
+@group(0) @binding(8) var<uniform> material: MaterialPBR;
+
+struct FragmentInput {
+    @location(0) shadowPos : vec4f,
+    @location(1) fragPos   : vec3f,
+    @location(2) fragNorm  : vec3f,
+    @location(3) uv        : vec2f,
+};
+
+fn getPBRMaterial(uv: vec2f) -> PBRMaterialData {
+    let texColor = textureSample(meshTexture, meshSampler, uv);
+    let baseColor = texColor.rgb * material.baseColorFactor.rgb;
+    let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);
+    // let metallic = mrTex.b * material.metallicFactor;
+    // let roughness = mrTex.g * material.roughnessFactor;
+    let metallic = material.metallicFactor;
+    let roughness = material.roughnessFactor;
+    return PBRMaterialData(baseColor, metallic, roughness);
+}
+
+fn fresnelSchlick(cosTheta: f32, F0: vec3f) -> vec3f {
+    return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
+}
+
+fn distributionGGX(N: vec3f, H: vec3f, roughness: f32) -> f32 {
+    let a = roughness * roughness;
+    let a2 = a * a;
+    let NdotH = max(dot(N, H), 0.0);
+    let NdotH2 = NdotH * NdotH;
+    let denom = (NdotH2 * (a2 - 1.0) + 1.0);
+    return a2 / (PI * denom * denom);
+}
+
+fn geometrySchlickGGX(NdotV: f32, roughness: f32) -> f32 {
+    let r = (roughness + 1.0);
+    let k = (r * r) / 8.0;
+    return NdotV / (NdotV * (1.0 - k) + k);
+}
+
+fn geometrySmith(N: vec3f, V: vec3f, L: vec3f, roughness: f32) -> f32 {
+    let NdotV = max(dot(N, V), 0.0);
+    let NdotL = max(dot(N, L), 0.0);
+    return geometrySchlickGGX(NdotV, roughness) * geometrySchlickGGX(NdotL, roughness);
+}
+
+fn calculateSpotlightFactor(light: SpotLight, fragPos: vec3f) -> f32 {
+    let L = normalize(light.position - fragPos);
+    let theta = dot(L, normalize(-light.direction));
+    let epsilon = light.innerCutoff - light.outerCutoff;
+    return clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
+}
+
+// PCF shadow sampling
+fn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, lightDir: vec3f) -> f32 {
+    var visibility: f32 = 0.0;
+    let biasConstant: f32 = 0.001;
+    let slopeBias = max(0.002 * (1.0 - dot(normal, lightDir)), 0.0);
+    let bias = biasConstant + slopeBias;
+    let oneOverSize = 1.0 / (shadowDepthTextureSize * 0.5);
+    let offsets: array<vec2f, 9> = array<vec2f, 9>(
+        vec2(-1.0, -1.0), vec2(0.0, -1.0), vec2(1.0, -1.0),
+        vec2(-1.0,  0.0), vec2(0.0,  0.0), vec2(1.0,  0.0),
+        vec2(-1.0,  1.0), vec2(0.0,  1.0), vec2(1.0,  1.0)
+    );
+    for(var i: u32 = 0u; i < 9u; i = i + 1u) {
+        visibility += textureSampleCompare(shadowMapArray, shadowSampler, shadowUV + offsets[i] * oneOverSize, layer, depthRef - bias);
+    }
+    return visibility / 9.0;
+}
+
+@fragment
+fn main(input: FragmentInput) -> @location(0) vec4f {
+    let materialData = getPBRMaterial(input.uv);
+    let N = normalize(input.fragNorm);
+    let V = normalize(scene.cameraPos - input.fragPos);
+   var Lo = vec3f(0.0);
+  for(var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
+    let L = normalize(spotlights[i].position - input.fragPos);
+    let H = normalize(V + L);
+    let distance = length(spotlights[i].position - input.fragPos);
+    let attenuation = clamp(1.0 - (distance / spotlights[i].range), 0.0, 1.0);
+
+    let NdotL = max(dot(N, L), 0.0);
+
+    let radiance = spotlights[i].color * spotlights[i].intensity * attenuation;
+
+    let NDF = distributionGGX(N, H, materialData.roughness);
+    let G   = geometrySmith(N, V, L, materialData.roughness);
+    let F0 = mix(vec3f(0.04), materialData.baseColor, materialData.metallic);
+    let F  = fresnelSchlick(max(dot(H, V), 0.0), F0);
+
+    let kS = F;
+    let kD = (vec3f(1.0) - kS) * (1.0 - materialData.metallic);
+
+    let diffuse  = kD * materialData.baseColor / PI;
+    let specular = (NDF * G * F) / (4.0 * max(dot(N, V), 0.0) * NdotL + 0.001);
+
+    // Combine diffuse + specular and multiply by NdotL and radiance
+    Lo += (diffuse + specular) * radiance * NdotL;
+}
+
+let ambient = scene.globalAmbient * materialData.baseColor;
+var color = ambient + Lo;
+return vec4f(color, 1.0);
+}
+`;
+
+// let N = normalize(input.fragNorm);
+// let L = normalize(spotlights[0].position - input.fragPos);
+// let NdotL = max(dot(N,L),0.0);
+// let radiance = spotlights[0].color * 10.0; // test high intensity
+// Lo += materialData.baseColor * radiance * NdotL;
+
+},{}],41:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
 exports.fragmentWGSLNoCut = void 0;
 let fragmentWGSLNoCut = exports.fragmentWGSLNoCut = `override shadowDepthTextureSize: f32 = 1024.0;
 const PI: f32 = 3.141592653589793;
@@ -24965,7 +25147,7 @@ return vec4f(color, 1.0);
 // let radiance = spotlights[0].color * 10.0; // test high intensity
 // Lo += materialData.baseColor * radiance * NdotL;
 
-},{}],41:[function(require,module,exports){
+},{}],42:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -25185,7 +25367,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, 1.0);
 }`;
 
-},{}],42:[function(require,module,exports){
+},{}],43:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -25353,7 +25535,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 // let radiance = spotlights[0].color * 10.0; // test high intensity
 // Lo += materialData.baseColor * radiance * NdotL;
 
-},{}],43:[function(require,module,exports){
+},{}],44:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -25411,7 +25593,7 @@ fn fragmentMain(input: VertexOutput) -> @location(0) vec4f {
   return vec4f(textureColor.rgb * lightColor, textureColor.a);
 }`;
 
-},{}],44:[function(require,module,exports){
+},{}],45:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -25497,7 +25679,7 @@ fn main(
   return output;
 }`;
 
-},{}],45:[function(require,module,exports){
+},{}],46:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -25525,7 +25707,7 @@ fn main(
 }
 `;
 
-},{}],46:[function(require,module,exports){
+},{}],47:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -25595,7 +25777,7 @@ class MatrixSounds {
 }
 exports.MatrixSounds = MatrixSounds;
 
-},{}],47:[function(require,module,exports){
+},{}],48:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -26405,4 +26587,4 @@ class MatrixEngineWGPU {
 }
 exports.default = MatrixEngineWGPU;
 
-},{"./engine/ball.js":23,"./engine/cube.js":25,"./engine/engine.js":26,"./engine/lights.js":27,"./engine/loader-obj.js":28,"./engine/loaders/bvh.js":29,"./engine/mesh-obj.js":33,"./engine/utils.js":35,"./multilang/lang.js":36,"./physics/matrix-ammo.js":37,"./sounds/sounds.js":46,"wgpu-matrix":22}]},{},[1]);
+},{"./engine/ball.js":23,"./engine/cube.js":25,"./engine/engine.js":26,"./engine/lights.js":27,"./engine/loader-obj.js":28,"./engine/loaders/bvh.js":29,"./engine/mesh-obj.js":33,"./engine/utils.js":35,"./multilang/lang.js":36,"./physics/matrix-ammo.js":37,"./sounds/sounds.js":47,"wgpu-matrix":22}]},{},[1]);

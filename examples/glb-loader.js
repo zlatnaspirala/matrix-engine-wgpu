@@ -54,7 +54,7 @@ export function loadGLBLoader() {
         model3: "./res/meshes/glb/model3.obj",
       }, (m) => {
         TEST_ANIM.addMeshObj({
-          material: {type: 'standard'},
+          material: {type: 'metal'},
           position: {x: 20, y: -5, z: -10},
           rotation: {x: 0, y: 0, z: 0},
           rotationSpeed: {x: 0, y: 0, z: 0},
