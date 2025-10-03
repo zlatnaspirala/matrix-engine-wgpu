@@ -27,8 +27,13 @@ export default class MEMeshObj extends Materials {
     this.video = null;
     this.FINISH_VIDIO_INIT = false;
     this.globalAmbient = [...globalAmbient];
+    if (typeof o.material.useTextureFromGlb === 'undefined' ||
+        typeof o.material.useTextureFromGlb !== "boolean") {
+      o.material.useTextureFromGlb = false;
+    }
     console.log('Material class arg:', o.material)
     this.material = o.material;
+
     // Mesh stuff - for single mesh or t-posed (fiktive-first in loading order)
     this.mesh = o.mesh;
     if(_glbFile != null) {
@@ -142,6 +147,23 @@ export default class MEMeshObj extends Materials {
       // Upload the data to GPU
       new Uint32Array(this.mesh.jointsBuffer.getMappedRange()).set(jointsArray32);
       this.mesh.jointsBuffer.unmap();
+
+      if (this.material.useTextureFromGlb == true) {
+        console.log('get glb images ', _glbFile.glbJsonData.materials);
+        _glbFile.glbJsonData.materials.forEach(material => {
+          console.log('get material :' ,material);
+        });
+
+        _glbFile.glbJsonData.images.forEach(imgGpuTexture => {
+          console.log('get images :' ,imgGpuTexture);
+        });
+
+        
+        _glbFile.glbJsonData.glbTextures.forEach(glbTexture => {
+          console.log('get glbTextures :' ,glbTexture);
+        });
+
+      }
     } else {
       // obj files flow
       this.mesh.uvs = this.mesh.textures;

@@ -336,7 +336,7 @@ export default class MatrixEngineWGPU {
     if(typeof o.rotation === 'undefined') {o.rotation = {x: 0, y: 0, z: 0}}
     if(typeof o.rotationSpeed === 'undefined') {o.rotationSpeed = {x: 0, y: 0, z: 0}}
     if(typeof o.texturesPaths === 'undefined') {o.texturesPaths = ['./res/textures/default.png']}
-    if(typeof o.material === 'undefined') {o.material = { type: 'standard' }}
+    if(typeof o.material === 'undefined') {o.material = {type: 'standard'}}
     if(typeof o.mainCameraParams === 'undefined') {o.mainCameraParams = this.mainCameraParams}
     if(typeof o.scale === 'undefined') {o.scale = [1, 1, 1];}
     if(typeof o.raycast === 'undefined') {o.raycast = {enabled: false, radius: 2}}
@@ -382,7 +382,7 @@ export default class MatrixEngineWGPU {
     }
 
     let AM = this.globalAmbient.slice();
-    let myMesh1 = new MEMeshObj(this.canvas, this.device, this.context, o, this.inputHandler, AM );
+    let myMesh1 = new MEMeshObj(this.canvas, this.device, this.context, o, this.inputHandler, AM);
     myMesh1.spotlightUniformBuffer = this.spotlightUniformBuffer;
     myMesh1.clearColor = clearColor;
     if(o.physics.enabled == true) {
@@ -474,9 +474,9 @@ export default class MatrixEngineWGPU {
           if(mesh.videoIsReady == 'NONE') {
             shadowPass.setBindGroup(0, light.getShadowBindGroup(mesh, meshIndex));
             // if(mesh.glb && mesh.glb.skinnedMeshNodes) {
-              // shadowPass.setBindGroup(1, light.getShadowBindGroup_bones(meshIndex));
+            // shadowPass.setBindGroup(1, light.getShadowBindGroup_bones(meshIndex));
             // } else {
-              shadowPass.setBindGroup(1, mesh.modelBindGroup);
+            shadowPass.setBindGroup(1, mesh.modelBindGroup);
             // }
             mesh.drawShadows(shadowPass, light);
           }
@@ -555,7 +555,7 @@ export default class MatrixEngineWGPU {
     if(typeof o.rotation === 'undefined') {o.rotation = {x: 0, y: 0, z: 0}}
     if(typeof o.rotationSpeed === 'undefined') {o.rotationSpeed = {x: 0, y: 0, z: 0}}
     if(typeof o.texturesPaths === 'undefined') {o.texturesPaths = ['./res/textures/default.png']}
-    if(typeof o.material === 'undefined') {o.material = { type: 'standard' }}
+    if(typeof o.material === 'undefined') {o.material = {type: 'standard'}}
     if(typeof o.mainCameraParams === 'undefined') {o.mainCameraParams = this.mainCameraParams}
     if(typeof o.scale === 'undefined') {o.scale = [1, 1, 1];}
     if(typeof o.raycast === 'undefined') {o.raycast = {enabled: false, radius: 2}}
@@ -591,7 +591,7 @@ export default class MatrixEngineWGPU {
         console.log(`count: ${c} primitive-glb: ${primitive}`);
         // primitive is mesh - probably with own material . material/texture per primitive
         // create scene object for each
-        o.name = o.name + "-GLBGroup-" + c;
+        o.name = o.name + "-" + c;
         const bvhPlayer = new BVHPlayer(
           o,
           BVHANIM,
@@ -603,6 +603,7 @@ export default class MatrixEngineWGPU {
           this.context,
           this.inputHandler,
           this.globalAmbient.slice());
+        skinnedNodeIndex++;
         console.log(`bvhPlayer!!!!!: ${bvhPlayer}`);
         bvhPlayer.spotlightUniformBuffer = this.spotlightUniformBuffer;
         bvhPlayer.clearColor = clearColor;

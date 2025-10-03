@@ -3,8 +3,12 @@ import {downloadMeshes} from '../src/engine/loader-obj.js';
 import {LOG_FUNNY, LOG_INFO, LOG_MATRIX} from "../src/engine/utils.js";
 import {loadBVH} from "../src/engine/loaders/bvh.js";
 import {uploadGLBModel} from "../src/engine/loaders/webgpu-gltf.js";
-// - Characters used from great mixamo.com
-
+/**
+ * @Note
+ * “Character and animation assets from Mixamo,
+ * used under Adobe’s royalty‑free license. 
+ * Redistribution of raw assets is not permitted.”
+ **/
 export function loadGLBLoader() {
 
   let TEST_ANIM = new MatrixEngineWGPU({
@@ -27,69 +31,61 @@ export function loadGLBLoader() {
 
       downloadMeshes({cube: "./res/meshes/blender/cube.obj"}, onGround, {scale: [120, 0.5, 120]})
 
-      // var glbFile = await fetch(
-      //   "res/meshes/glb/test.glb")
-      //   .then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, TEST_ANIM.device)));
-      // TEST_ANIM.addGlbObj({
-      //   material: {type: 'power'},
-      //   scale: [10, 10, 10],
-      //   position: {x: 0, y: -4, z: -20},
-      //   name: 'firstGlb',
-      //   texturesPaths: ['./res/meshes/glb/textures/mutant.png'],
-      // }, null, glbFile);
-
-      var glbFile1 = await fetch(
-        "res/meshes/glb/test.glb")
-        .then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, TEST_ANIM.device)));
-      TEST_ANIM.addGlbObj({
-        material: {type: 'standard'},
-        scale: [10, 10, 10],
-        position: {x: -20, y: -4, z: -20},
-        name: 'firstGlb',
-        texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
-      }, null, glbFile1);
-
-      downloadMeshes({
-        model3: "./res/meshes/glb/model3.obj",
-      }, (m) => {
-        TEST_ANIM.addMeshObj({
-          material: {type: 'metal'},
-          position: {x: 20, y: -5, z: -10},
-          rotation: {x: 0, y: 0, z: 0},
-          rotationSpeed: {x: 0, y: 0, z: 0},
-          texturesPaths: ['./res/meshes/glb/textures/mutant.png'],
-          name: 'model3',
-          mesh: m.model3,
-          physics: {
-            enabled: false,
-            mass: 0,
-            geometry: "Cube"
-          }
-        })
-      }, {scale: [10, 10, 10]})
-
-
-      // var glbFile2 = await fetch(
-      //   "res/meshes/glb/y-bot.glb")
-      //   .then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, TEST_ANIM.device)));
-      // TEST_ANIM.addGlbObj({
-      //   material: {type: 'power'},
-      //   scale: [10, 10, 10],
-      //   position: {x: 0, y: -4, z: -40},
-      //   name: 'YBOT',
-      //   texturesPaths: ['./res/meshes/glb/textures/mutant.png'],
-      // }, null, glbFile2);
-
-      //       var glbFile22 = await fetch(
-      //   "res/meshes/glb/y-bot.glb")
-      //   .then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, TEST_ANIM.device)));
+      // // Monster1
+      // var glbFile01 = await fetch("res/meshes/glb/test.glb").then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, TEST_ANIM.device)));
       // TEST_ANIM.addGlbObj({
       //   material: {type: 'standard'},
       //   scale: [10, 10, 10],
-      //   position: {x: -20, y: -4, z: -40},
-      //   name: 'YBOT',
-      //   texturesPaths: ['./res/meshes/glb/textures/mutant.png'],
-      // }, null, glbFile22);
+      //   position: {x: 0, y: -4, z: -20},
+      //   name: 'firstGlb',
+      //   texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
+      // }, null, glbFile01);
+
+      // var glbFile02 = await fetch("res/meshes/glb/test.glb").then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, TEST_ANIM.device)));
+      // TEST_ANIM.addGlbObj({
+      //   material: {type: 'power'},
+      //   scale: [10, 10, 10],
+      //   position: {x: -20, y: -4, z: -20},
+      //   name: 'firstGlb',
+      //   texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
+      // }, null, glbFile02);
+
+      // var glbFile03 = await fetch("res/meshes/glb/test.glb").then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, TEST_ANIM.device)));
+      // TEST_ANIM.addGlbObj({
+      //   material: {type: 'pong'},
+      //   scale: [10, 10, 10],
+      //   position: {x: 20, y: -4, z: -20},
+      //   name: 'firstGlb',
+      //   texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
+      // }, null, glbFile03);
+
+      // woman
+      var glbFile11 = await fetch("res/meshes/glb/woman1.glb").then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, TEST_ANIM.device)));
+      TEST_ANIM.addGlbObj({
+        material: {type: 'standard', useTextureFromGlb: true},
+        scale: [10, 10, 10],
+        position: {x: 0, y: -4, z: -20},
+        name: 'firstGlb',
+        texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
+      }, null, glbFile11);
+
+      // var glbFile02 = await fetch("res/meshes/glb/test.glb").then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, TEST_ANIM.device)));
+      // TEST_ANIM.addGlbObj({
+      //   material: {type: 'power'},
+      //   scale: [10, 10, 10],
+      //   position: {x: -20, y: -4, z: -20},
+      //   name: 'firstGlb',
+      //   texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
+      // }, null, glbFile02);
+
+      // var glbFile03 = await fetch("res/meshes/glb/test.glb").then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, TEST_ANIM.device)));
+      // TEST_ANIM.addGlbObj({
+      //   material: {type: 'pong'},
+      //   scale: [10, 10, 10],
+      //   position: {x: 20, y: -4, z: -20},
+      //   name: 'firstGlb',
+      //   texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
+      // }, null, glbFile03);
 
       // const path = 'https://raw.githubusercontent.com/zlatnaspirala/Matrix-Engine-BVH-test/main/javascript-bvh/example.bvh';
       // const path = 'res/meshes/glb/glb-test1.bvh';
@@ -108,8 +104,6 @@ export function loadGLBLoader() {
 
     function onGround(m) {
       TEST_ANIM.addLight();
-      // TEST_ANIM.globalAmbient[1] = 1;
-
       TEST_ANIM.addMeshObj({
         position: {x: 0, y: -5, z: -10},
         rotation: {x: 0, y: 0, z: 0},
@@ -128,6 +122,5 @@ export function loadGLBLoader() {
   // just for dev
   window.app = TEST_ANIM;
 }
-
 
 // loadGLBLoader()

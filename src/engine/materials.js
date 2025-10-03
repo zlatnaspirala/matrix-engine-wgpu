@@ -259,10 +259,48 @@ export default class Materials {
     }
   }
 
+  getMaterialTexture(glb, materialIndex) {
+    const matDef = glb.glbJsonData.materials[materialIndex];
+
+    if(!matDef) {
+      console.warn('[engine] no material in glb...');
+      return null;
+    }
+
+    if(matDef.pbrMetallicRoughness?.baseColorTexture) {
+      const texIndex = matDef.pbrMetallicRoughness.baseColorTexture.index;
+      return glb.glbJsonData.glbTextures[texIndex].createView();
+    }
+
+    return null;
+  }
+  getMaterialTextureFromMaterial(material) {
+    if(!material || !material.pbrMetallicRoughness) return this.fallbackTextureView;
+
+    const texInfo = material.pbrMetallicRoughness.baseColorTexture;
+    if(!texInfo) return this.fallbackTextureView;
+
+    const texIndex = texInfo.index;
+    return this.glb.glbTextures[texIndex].createView();
+  }
+
   createBindGroupForRender() {
-    const textureResource = this.isVideo
+    let textureResource = this.isVideo
       ? this.externalTexture
       : this.texture0.createView();
+    // console.log('TEST TEX this.texture0 ', this.texture0);
+    if(this.material.useTextureFromGlb === true) {
+      console.log('TEST TEX material use from file ', this.name);
+      console.log('TEST TEX tex use from file ', this.glb.glbJsonData.images);
+      console.log('TEST TEX material use from file ', this.glb.glbJsonData.materials);
+      // 0 probably always for basicColor
+      const material = this.skinnedNode.mesh.primitives[0].material;
+      const textureView = material.baseColorTexture.imageView;
+      const sampler = material.baseColorTexture.sampler;
+      textureResource = textureView;
+      // this.getMaterialTexture(this.glb, 0);
+    }
+
     if(!textureResource || !this.sceneUniformBuffer || !this.shadowDepthTextureView) {
       if(!textureResource) console.warn("❗Missing res texture: ", textureResource);
       if(!this.sceneUniformBuffer) console.warn("❗Missing res: this.sceneUniformBuffer: ", this.sceneUniformBuffer);

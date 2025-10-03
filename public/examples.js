@@ -156,8 +156,12 @@ var _utils = require("../src/engine/utils.js");
 var _bvh = require("../src/engine/loaders/bvh.js");
 var _webgpuGltf = require("../src/engine/loaders/webgpu-gltf.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
-// - Characters used from great mixamo.com
-
+/**
+ * @Note
+ * “Character and animation assets from Mixamo,
+ * used under Adobe’s royalty‑free license. 
+ * Redistribution of raw assets is not permitted.”
+ **/
 function loadGLBLoader() {
   let TEST_ANIM = new _world.default({
     useSingleRenderPass: true,
@@ -186,87 +190,68 @@ function loadGLBLoader() {
         scale: [120, 0.5, 120]
       });
 
-      // var glbFile = await fetch(
-      //   "res/meshes/glb/test.glb")
-      //   .then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, TEST_ANIM.device)));
+      // // Monster1
+      // var glbFile01 = await fetch("res/meshes/glb/test.glb").then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, TEST_ANIM.device)));
       // TEST_ANIM.addGlbObj({
-      //   material: {type: 'power'},
+      //   material: {type: 'standard'},
       //   scale: [10, 10, 10],
       //   position: {x: 0, y: -4, z: -20},
       //   name: 'firstGlb',
-      //   texturesPaths: ['./res/meshes/glb/textures/mutant.png'],
-      // }, null, glbFile);
+      //   texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
+      // }, null, glbFile01);
 
-      var glbFile1 = await fetch("res/meshes/glb/test.glb").then(res => res.arrayBuffer().then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, TEST_ANIM.device)));
+      // var glbFile02 = await fetch("res/meshes/glb/test.glb").then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, TEST_ANIM.device)));
+      // TEST_ANIM.addGlbObj({
+      //   material: {type: 'power'},
+      //   scale: [10, 10, 10],
+      //   position: {x: -20, y: -4, z: -20},
+      //   name: 'firstGlb',
+      //   texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
+      // }, null, glbFile02);
+
+      // var glbFile03 = await fetch("res/meshes/glb/test.glb").then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, TEST_ANIM.device)));
+      // TEST_ANIM.addGlbObj({
+      //   material: {type: 'pong'},
+      //   scale: [10, 10, 10],
+      //   position: {x: 20, y: -4, z: -20},
+      //   name: 'firstGlb',
+      //   texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
+      // }, null, glbFile03);
+
+      // woman
+      var glbFile11 = await fetch("res/meshes/glb/woman1.glb").then(res => res.arrayBuffer().then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, TEST_ANIM.device)));
       TEST_ANIM.addGlbObj({
         material: {
-          type: 'standard'
+          type: 'standard',
+          useTextureFromGlb: true
         },
         scale: [10, 10, 10],
         position: {
-          x: -20,
+          x: 0,
           y: -4,
           z: -20
         },
         name: 'firstGlb',
         texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png']
-      }, null, glbFile1);
-      (0, _loaderObj.downloadMeshes)({
-        model3: "./res/meshes/glb/model3.obj"
-      }, m => {
-        TEST_ANIM.addMeshObj({
-          material: {
-            type: 'metal'
-          },
-          position: {
-            x: 20,
-            y: -5,
-            z: -10
-          },
-          rotation: {
-            x: 0,
-            y: 0,
-            z: 0
-          },
-          rotationSpeed: {
-            x: 0,
-            y: 0,
-            z: 0
-          },
-          texturesPaths: ['./res/meshes/glb/textures/mutant.png'],
-          name: 'model3',
-          mesh: m.model3,
-          physics: {
-            enabled: false,
-            mass: 0,
-            geometry: "Cube"
-          }
-        });
-      }, {
-        scale: [10, 10, 10]
-      });
+      }, null, glbFile11);
 
-      // var glbFile2 = await fetch(
-      //   "res/meshes/glb/y-bot.glb")
-      //   .then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, TEST_ANIM.device)));
+      // var glbFile02 = await fetch("res/meshes/glb/test.glb").then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, TEST_ANIM.device)));
       // TEST_ANIM.addGlbObj({
       //   material: {type: 'power'},
       //   scale: [10, 10, 10],
-      //   position: {x: 0, y: -4, z: -40},
-      //   name: 'YBOT',
-      //   texturesPaths: ['./res/meshes/glb/textures/mutant.png'],
-      // }, null, glbFile2);
+      //   position: {x: -20, y: -4, z: -20},
+      //   name: 'firstGlb',
+      //   texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
+      // }, null, glbFile02);
 
-      //       var glbFile22 = await fetch(
-      //   "res/meshes/glb/y-bot.glb")
-      //   .then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, TEST_ANIM.device)));
+      // var glbFile03 = await fetch("res/meshes/glb/test.glb").then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, TEST_ANIM.device)));
       // TEST_ANIM.addGlbObj({
-      //   material: {type: 'standard'},
+      //   material: {type: 'pong'},
       //   scale: [10, 10, 10],
-      //   position: {x: -20, y: -4, z: -40},
-      //   name: 'YBOT',
-      //   texturesPaths: ['./res/meshes/glb/textures/mutant.png'],
-      // }, null, glbFile22);
+      //   position: {x: 20, y: -4, z: -20},
+      //   name: 'firstGlb',
+      //   texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
+      // }, null, glbFile03);
 
       // const path = 'https://raw.githubusercontent.com/zlatnaspirala/Matrix-Engine-BVH-test/main/javascript-bvh/example.bvh';
       // const path = 'res/meshes/glb/glb-test1.bvh';
@@ -284,8 +269,6 @@ function loadGLBLoader() {
     });
     function onGround(m) {
       TEST_ANIM.addLight();
-      // TEST_ANIM.globalAmbient[1] = 1;
-
       TEST_ANIM.addMeshObj({
         position: {
           x: 0,
@@ -21527,6 +21510,7 @@ async function uploadGLBModel(buffer, device) {
       images.push(gpuImg);
     }
   }
+  glbJsonData.glbTextures = images;
   console.log('IMAGES FROM GLB: ', images);
   // 6️⃣ Samplers, Textures, Materials
   const defaultSampler = new GLTFSampler({}, device);
@@ -21900,8 +21884,39 @@ class Materials {
       this.createBindGroupForRender();
     }
   }
+  getMaterialTexture(glb, materialIndex) {
+    const matDef = glb.glbJsonData.materials[materialIndex];
+    if (!matDef) {
+      console.warn('[engine] no material in glb...');
+      return null;
+    }
+    if (matDef.pbrMetallicRoughness?.baseColorTexture) {
+      const texIndex = matDef.pbrMetallicRoughness.baseColorTexture.index;
+      return glb.glbJsonData.glbTextures[texIndex].createView();
+    }
+    return null;
+  }
+  getMaterialTextureFromMaterial(material) {
+    if (!material || !material.pbrMetallicRoughness) return this.fallbackTextureView;
+    const texInfo = material.pbrMetallicRoughness.baseColorTexture;
+    if (!texInfo) return this.fallbackTextureView;
+    const texIndex = texInfo.index;
+    return this.glb.glbTextures[texIndex].createView();
+  }
   createBindGroupForRender() {
-    const textureResource = this.isVideo ? this.externalTexture : this.texture0.createView();
+    let textureResource = this.isVideo ? this.externalTexture : this.texture0.createView();
+    // console.log('TEST TEX this.texture0 ', this.texture0);
+    if (this.material.useTextureFromGlb === true) {
+      console.log('TEST TEX material use from file ', this.name);
+      console.log('TEST TEX tex use from file ', this.glb.glbJsonData.images);
+      console.log('TEST TEX material use from file ', this.glb.glbJsonData.materials);
+      // 0 probably always for basicColor
+      const material = this.skinnedNode.mesh.primitives[0].material;
+      const textureView = material.baseColorTexture.imageView;
+      const sampler = material.baseColorTexture.sampler;
+      textureResource = textureView;
+      // this.getMaterialTexture(this.glb, 0);
+    }
     if (!textureResource || !this.sceneUniformBuffer || !this.shadowDepthTextureView) {
       if (!textureResource) console.warn("❗Missing res texture: ", textureResource);
       if (!this.sceneUniformBuffer) console.warn("❗Missing res: this.sceneUniformBuffer: ", this.sceneUniformBuffer);
@@ -22353,8 +22368,12 @@ class MEMeshObj extends _materials.default {
     this.video = null;
     this.FINISH_VIDIO_INIT = false;
     this.globalAmbient = [...globalAmbient];
+    if (typeof o.material.useTextureFromGlb === 'undefined' || typeof o.material.useTextureFromGlb !== "boolean") {
+      o.material.useTextureFromGlb = false;
+    }
     console.log('Material class arg:', o.material);
     this.material = o.material;
+
     // Mesh stuff - for single mesh or t-posed (fiktive-first in loading order)
     this.mesh = o.mesh;
     if (_glbFile != null) {
@@ -22462,6 +22481,18 @@ class MEMeshObj extends _materials.default {
       // Upload the data to GPU
       new Uint32Array(this.mesh.jointsBuffer.getMappedRange()).set(jointsArray32);
       this.mesh.jointsBuffer.unmap();
+      if (this.material.useTextureFromGlb == true) {
+        console.log('get glb images ', _glbFile.glbJsonData.materials);
+        _glbFile.glbJsonData.materials.forEach(material => {
+          console.log('get material :', material);
+        });
+        _glbFile.glbJsonData.images.forEach(imgGpuTexture => {
+          console.log('get images :', imgGpuTexture);
+        });
+        _glbFile.glbJsonData.glbTextures.forEach(glbTexture => {
+          console.log('get glbTextures :', glbTexture);
+        });
+      }
     } else {
       // obj files flow
       this.mesh.uvs = this.mesh.textures;
@@ -26569,8 +26600,9 @@ class MatrixEngineWGPU {
         console.log(`count: ${c} primitive-glb: ${primitive}`);
         // primitive is mesh - probably with own material . material/texture per primitive
         // create scene object for each
-        o.name = o.name + "-GLBGroup-" + c;
+        o.name = o.name + "-" + c;
         const bvhPlayer = new _bvh.BVHPlayer(o, BVHANIM, glbFile, c, skinnedNodeIndex, this.canvas, this.device, this.context, this.inputHandler, this.globalAmbient.slice());
+        skinnedNodeIndex++;
         console.log(`bvhPlayer!!!!!: ${bvhPlayer}`);
         bvhPlayer.spotlightUniformBuffer = this.spotlightUniformBuffer;
         bvhPlayer.clearColor = clearColor;
