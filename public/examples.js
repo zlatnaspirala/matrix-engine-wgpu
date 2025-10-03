@@ -26599,8 +26599,8 @@ class MatrixEngineWGPU {
       for (const primitive of skinnedNode.mesh.primitives) {
         console.log(`count: ${c} primitive-glb: ${primitive}`);
         // primitive is mesh - probably with own material . material/texture per primitive
-        // create scene object for each
-        o.name = o.name + "-" + c;
+        // create scene object for each skinnedNode
+        o.name = o.name + "-" + skinnedNode.name + '-' + c;
         const bvhPlayer = new _bvh.BVHPlayer(o, BVHANIM, glbFile, c, skinnedNodeIndex, this.canvas, this.device, this.context, this.inputHandler, this.globalAmbient.slice());
         skinnedNodeIndex++;
         console.log(`bvhPlayer!!!!!: ${bvhPlayer}`);
