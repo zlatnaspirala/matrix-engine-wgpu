@@ -156,7 +156,7 @@ var _utils = require("../src/engine/utils.js");
 var _bvh = require("../src/engine/loaders/bvh.js");
 var _webgpuGltf = require("../src/engine/loaders/webgpu-gltf.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
-// - Characters used from great maximo.com
+// - Characters used from great mixamo.com
 
 function loadGLBLoader() {
   let TEST_ANIM = new _world.default({
@@ -359,8 +359,6 @@ var loadObjFile = function () {
       }, onGround, {
         scale: [20, 1, 20]
       });
-
-      // loadObjFile.addLight();
     });
     function onGround(m) {
       setTimeout(() => {
@@ -368,7 +366,7 @@ var loadObjFile = function () {
         app.cameras.WASD.pitch = -0.49;
         app.cameras.WASD.position[2] = 0;
         app.cameras.WASD.position[1] = 3.76;
-      }, 500);
+      }, 600);
       loadObjFile.addMeshObj({
         position: {
           x: 0,
@@ -398,9 +396,6 @@ var loadObjFile = function () {
     }
     function onLoadObj(m) {
       loadObjFile.myLoadedMeshes = m;
-      for (var key in m) {
-        // console.log(`%c Loaded objs: ${key} `, LOG_MATRIX);
-      }
       loadObjFile.addMeshObj({
         material: {
           type: 'standard'
@@ -464,7 +459,7 @@ var loadObjFile = function () {
       loadObjFile.lightContainer[0].updater.push(light => {
         light.position[0] = light.behavior.setPath0();
       });
-      // loadObjFile.lightContainer[0].position[1] = 14;
+      loadObjFile.lightContainer[0].position[1] = 9;
     }
   });
   // just for dev

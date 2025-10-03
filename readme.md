@@ -540,7 +540,12 @@ You may use, modify, and sell projects based on this code — just keep this not
 - Raycasting logic and glb loader assisted by ChatGPT.
 - GLTF Loader: https://github.com/Twinklebear/webgpu-gltf, improved with chatgpt.
 - Music by <a href="https://pixabay.com/users/mfcc-28627740/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=274290">Mykola Sosin</a> from <a href="https://pixabay.com//?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=274290">Pixabay</a>
-- Characters used from great maximo.com
+- Characters used from great mixamo.com
+  -✅What you can do
+  You can use Mixamo characters and animations royalty-free in commercial, personal, or non‑profit projects (games, films, prints, etc.).You own your creations / how you use them.No requirement to credit Adobe / Mixamo (though allowed).
+  -🚫What you cannot do
+  You cannot redistribute or sell the raw Mixamo character or animation files “as is” (i.e. as standalone assets) to others.You can’t use Mixamo content to create a competing library of characters / animations (i.e. you can’t just package them and sell them to others).
+  You can’t use Mixamo’s content (or outputs) to train AI / machine learning models.
 
 ---
 

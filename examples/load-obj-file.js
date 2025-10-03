@@ -23,19 +23,15 @@ export var loadObjFile = function() {
         cube: "./res/meshes/blender/cube.obj",
       }, onGround,
         {scale: [20, 1, 20]})
-
-      // loadObjFile.addLight();
     })
 
     function onGround(m) {
-
       setTimeout(() => {
         app.cameras.WASD.yaw = -0.03;
         app.cameras.WASD.pitch = -0.49;
         app.cameras.WASD.position[2] = 0;
         app.cameras.WASD.position[1] = 3.76;
-      }, 500)
-
+      }, 600)
       loadObjFile.addMeshObj({
         position: {x: 0, y: -5, z: -10},
         rotation: {x: 0, y: 0, z: 0},
@@ -50,14 +46,10 @@ export var loadObjFile = function() {
         },
         // raycast: { enabled: true , radius: 2 }
       })
-
     }
 
     function onLoadObj(m) {
       loadObjFile.myLoadedMeshes = m;
-      for(var key in m) {
-        // console.log(`%c Loaded objs: ${key} `, LOG_MATRIX);
-      }
       loadObjFile.addMeshObj({
         material: { type: 'standard'},
         position: {x: 0, y: 2, z: -20},
@@ -96,7 +88,7 @@ export var loadObjFile = function() {
       loadObjFile.lightContainer[0].updater.push((light) => {
         light.position[0] = light.behavior.setPath0()
       })
-      // loadObjFile.lightContainer[0].position[1] = 14;
+      loadObjFile.lightContainer[0].position[1] = 9;
 
     }
   })

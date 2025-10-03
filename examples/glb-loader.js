@@ -3,8 +3,7 @@ import {downloadMeshes} from '../src/engine/loader-obj.js';
 import {LOG_FUNNY, LOG_INFO, LOG_MATRIX} from "../src/engine/utils.js";
 import {loadBVH} from "../src/engine/loaders/bvh.js";
 import {uploadGLBModel} from "../src/engine/loaders/webgpu-gltf.js";
-
-// - Characters used from great maximo.com
+// - Characters used from great mixamo.com
 
 export function loadGLBLoader() {
 
