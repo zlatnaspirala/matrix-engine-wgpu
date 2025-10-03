@@ -1,17 +1,13 @@
 import {mat4, vec3} from 'wgpu-matrix';
 import {Position, Rotation} from "./matrix-class";
-import {fragmentWGSL} from '../shaders/fragment.wgsl';
-import {fragmentWGSLNoCut} from '../shaders/fragment.wgsl.noCut';
-import {fragmentWGSLPong} from '../shaders/fragment.wgsl.pong';
 import {vertexWGSL} from '../shaders/vertex.wgsl';
 import {degToRad, genName, LOG_FUNNY_SMALL} from './utils';
 import Materials from './materials';
 import {fragmentVideoWGSL} from '../shaders/fragment.video.wgsl';
-import {fragmentWGSLPower} from '../shaders/fragment.wgsl.power';
 
 export default class MEMeshObj extends Materials {
   constructor(canvas, device, context, o, inputHandler, globalAmbient, _glbFile = null, primitiveIndex = null, skinnedNodeIndex = null) {
-    super(device, o.material);
+    super(device, o.material, _glbFile);
     if(typeof o.name === 'undefined') o.name = genName(3);
     if(typeof o.raycast === 'undefined') {
       this.raycast = {enabled: false, radius: 2};
@@ -20,6 +16,7 @@ export default class MEMeshObj extends Materials {
     }
     this.name = o.name;
     this.done = false;
+    this.canvas = canvas;
     this.device = device;
     this.context = context;
     this.entityArgPass = o.entityArgPass;
@@ -27,8 +24,8 @@ export default class MEMeshObj extends Materials {
     this.video = null;
     this.FINISH_VIDIO_INIT = false;
     this.globalAmbient = [...globalAmbient];
-    if (typeof o.material.useTextureFromGlb === 'undefined' ||
-        typeof o.material.useTextureFromGlb !== "boolean") {
+    if(typeof o.material.useTextureFromGlb === 'undefined' ||
+      typeof o.material.useTextureFromGlb !== "boolean") {
       o.material.useTextureFromGlb = false;
     }
     console.log('Material class arg:', o.material)
@@ -148,22 +145,24 @@ export default class MEMeshObj extends Materials {
       new Uint32Array(this.mesh.jointsBuffer.getMappedRange()).set(jointsArray32);
       this.mesh.jointsBuffer.unmap();
 
-      if (this.material.useTextureFromGlb == true) {
+      if(this.material.useTextureFromGlb == true) {
         console.log('get glb images ', _glbFile.glbJsonData.materials);
         _glbFile.glbJsonData.materials.forEach(material => {
-          console.log('get material :' ,material);
+          console.log('get material :', material);
         });
 
         _glbFile.glbJsonData.images.forEach(imgGpuTexture => {
-          console.log('get images :' ,imgGpuTexture);
+          console.log('get images :', imgGpuTexture);
         });
 
-        
+
         _glbFile.glbJsonData.glbTextures.forEach(glbTexture => {
-          console.log('get glbTextures :' ,glbTexture);
+          console.log('get glbTextures :', glbTexture);
         });
-
       }
+
+
+
     } else {
       // obj files flow
       this.mesh.uvs = this.mesh.textures;

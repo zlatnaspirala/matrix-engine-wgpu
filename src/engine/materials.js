@@ -1,5 +1,6 @@
 import {fragmentWGSL} from "../shaders/fragment.wgsl";
 import {fragmentWGSLMetal} from "../shaders/fragment.wgsl.metal";
+import {fragmentWGSLNormalMap} from "../shaders/fragment.wgsl.normalmap";
 import {fragmentWGSLPong} from "../shaders/fragment.wgsl.pong";
 import {fragmentWGSLPower} from "../shaders/fragment.wgsl.power";
 
@@ -7,13 +8,15 @@ import {fragmentWGSLPower} from "../shaders/fragment.wgsl.power";
  * @description
  * Created for matrix-engine-wgpu project.
  * MeshObj class estends Materials.
+ * @var material is engine meta data variable not real material object.
  * @author Nikola Lukic
  * @email zlatnaspirala@gmail.com
  */
-
 export default class Materials {
-  constructor(device, material) {
+  constructor(device, material, glb) {
     this.device = device;
+    this.glb = glb;
+    this.material = material;
     this.isVideo = false;
     this.videoIsReady = 'NONE';
     this.compareSampler = this.device.createSampler({
@@ -82,6 +85,43 @@ export default class Materials {
       ...pad
     ]);
     this.device.queue.writeBuffer(this.materialPBRBuffer, 0, materialArray.buffer);
+
+    if(this.material.type == 'normalmap') {
+      const normalTexInfo = this.glb.glbJsonData.materials[0].normalTexture;
+      if(normalTexInfo) {
+        const tex = this.glb.glbJsonData.glbTextures[normalTexInfo.index];
+        this.normalTextureView = tex.createView();
+        this.normalSampler = this.device.createSampler({
+          magFilter: 'linear',
+          minFilter: 'linear',
+        });
+        console.log('>>>>>>normalTexture>>>>>>>>', this.glb.glbJsonData.materials[0].normalTexture.index)
+      } else {
+        console.log('>>>ERRR >>>normalTexture>>>>>>>>')
+      }
+    } else {
+      console.log('>>DUMMY >>>normalTexture>>>>>>>>')
+      // dummy for normal map 1x1 neutral normal map
+      this.normalDummyTex = device.createTexture({
+        size: [1, 1, 1],
+        format: 'rgba8unorm',
+        usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST,
+      });
+      // RGBA value for neutral normal in tangent space
+      const neutralNormal = new Uint8Array([128, 128, 255, 255]);
+      this.device.queue.writeTexture(
+        {texture: this.normalDummyTex},
+        neutralNormal,
+        {bytesPerRow: 4},
+        [1, 1, 1]
+      );
+      // Create texture view & sampler
+      this.normalTextureView = this.normalDummyTex.createView();
+      this.normalSampler = this.device.createSampler({
+        magFilter: 'linear',
+        minFilter: 'linear',
+      });
+    }
   }
 
   getMaterial() {
@@ -97,6 +137,9 @@ export default class Materials {
     } else if(this.material.type == 'metal') {
       console.log('Material TYPE:', this.material.type);
       return fragmentWGSLMetal;
+    } else if(this.material.type == 'normalmap') {
+      console.log('Material TYPE:', this.material.type);
+      return fragmentWGSLNormalMap;
     }
     console.warn('Unknown material type:', this.material?.type);
     return fragmentWGSL; // fallback
@@ -338,6 +381,9 @@ export default class Materials {
           {binding: 6, resource: this.metallicRoughnessTextureView},
           {binding: 7, resource: this.metallicRoughnessSampler},
           {binding: 8, resource: {buffer: this.materialPBRBuffer}},
+          // NEW: dummy normal map
+          {binding: 9, resource: this.normalTextureView},
+          {binding: 10, resource: this.normalSampler},
         ],
       });
     }
@@ -429,9 +475,21 @@ export default class Materials {
             visibility: GPUShaderStage.FRAGMENT,
             buffer: {type: 'uniform'}
           },
+          {
+            binding: 9,
+            visibility: GPUShaderStage.FRAGMENT,
+            texture: {sampleType: 'float', viewDimension: '2d'},
+          },
+          {
+            binding: 10,
+            visibility: GPUShaderStage.FRAGMENT,
+            sampler: {type: 'filtering'}
+          }
         ])
     ];
-    // console.log("BG E : ", e)
+    console.log("BG E :  is used normal  ", this.material.type)
+    // if () {}
+
     this.bglForRender = this.device.createBindGroupLayout({label: 'bglForRender', entries: e, });
   }
 }

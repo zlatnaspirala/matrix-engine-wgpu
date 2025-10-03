@@ -62,7 +62,7 @@ export function loadGLBLoader() {
       // woman
       var glbFile11 = await fetch("res/meshes/glb/woman1.glb").then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, TEST_ANIM.device)));
       TEST_ANIM.addGlbObj({
-        material: {type: 'standard', useTextureFromGlb: true},
+        material: {type: 'normalmap', useTextureFromGlb: true},
         scale: [10, 10, 10],
         position: {x: 0, y: -4, z: -20},
         name: 'firstGlb',
