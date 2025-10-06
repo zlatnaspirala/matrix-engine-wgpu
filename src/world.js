@@ -181,7 +181,7 @@ export default class MatrixEngineWGPU {
       Math.max(1, this.lightContainer.length);
       if(this.lightContainer.length == 0) {
         setTimeout(() => {
-          console.info('Create now test...')
+          // console.info('Create now test...')
           this.createMe();
         }, 800);
         return;
@@ -588,7 +588,7 @@ export default class MatrixEngineWGPU {
     for(const skinnedNode of glbFile.skinnedMeshNodes) {
       let c = 0;
       for(const primitive of skinnedNode.mesh.primitives) {
-        console.log(`count: ${c} primitive-glb: ${primitive}`);
+        // console.log(`count: ${c} primitive-glb: ${primitive}`);
         // primitive is mesh - probably with own material . material/texture per primitive
         // create scene object for each skinnedNode
         o.name = o.name + "-" + skinnedNode.name + '-' + c;
@@ -604,7 +604,7 @@ export default class MatrixEngineWGPU {
           this.inputHandler,
           this.globalAmbient.slice());
         skinnedNodeIndex++;
-        console.log(`bvhPlayer!!!!!: ${bvhPlayer}`);
+        // console.log(`bvhPlayer!!!!!: ${bvhPlayer}`);
         bvhPlayer.spotlightUniformBuffer = this.spotlightUniformBuffer;
         bvhPlayer.clearColor = clearColor;
         // if(o.physics.enabled == true) {

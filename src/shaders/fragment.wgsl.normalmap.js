@@ -63,10 +63,11 @@ const MAX_SPOTLIGHTS = 20u;
 @group(0) @binding(10) var normalSampler: sampler;
 
 struct FragmentInput {
-    @location(0) shadowPos : vec4f,
-    @location(1) fragPos   : vec3f,
-    @location(2) fragNorm  : vec3f,
-    @location(3) uv        : vec2f,
+  @location(0) shadowPos : vec4f,
+  @location(1) fragPos   : vec3f,
+  @location(2) fragNorm  : vec3f,
+  @location(3) uv        : vec2f,
+  @location(4) tangent   : vec4f, // new
 };
 
 fn getNormalMap(uv: vec2f, N: vec3f) -> vec3f {
@@ -78,6 +79,13 @@ fn getNormalMap(uv: vec2f, N: vec3f) -> vec3f {
     // TODO: if you have TBN matrix, convert tangent-space → world-space
     // For now, assume fragNorm is already aligned (simple approx)
     return normalize(nTangent);
+}
+
+fn getNormalMap2(uv: vec2f, N: vec3f, T: vec3f, B: vec3f) -> vec3f {
+    let nSample = textureSample(normalTex, normalSampler, uv).rgb;
+    let nTangent = nSample * 2.0 - vec3f(1.0);
+    let worldNormal = normalize(T * nTangent.x + B * nTangent.y + N * nTangent.z);
+    return worldNormal;
 }
     
 fn getPBRMaterial(uv: vec2f) -> PBRMaterialData {
@@ -197,8 +205,10 @@ fn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, light
 @fragment
 fn main(input: FragmentInput) -> @location(0) vec4f {
     // let norm = normalize(input.fragNorm);
-    let geomNormal = normalize(input.fragNorm);
-    let norm = getNormalMap(input.uv, geomNormal);
+    let N = normalize(input.fragNorm);
+    let T = normalize(input.tangent.xyz);
+    let B = cross(N, T) * input.tangent.w; // handedness
+    let norm = getNormalMap2(input.uv, N, T, B);
 
     let viewDir = normalize(scene.cameraPos - input.fragPos);
 

@@ -4,6 +4,7 @@ import {vertexWGSL} from '../shaders/vertex.wgsl';
 import {degToRad, genName, LOG_FUNNY_SMALL} from './utils';
 import Materials from './materials';
 import {fragmentVideoWGSL} from '../shaders/fragment.video.wgsl';
+import {vertexWGSL_NM} from '../shaders/vertex.wgsl.normalmap';
 
 export default class MEMeshObj extends Materials {
   constructor(canvas, device, context, o, inputHandler, globalAmbient, _glbFile = null, primitiveIndex = null, skinnedNodeIndex = null) {
@@ -28,7 +29,7 @@ export default class MEMeshObj extends Materials {
       typeof o.material.useTextureFromGlb !== "boolean") {
       o.material.useTextureFromGlb = false;
     }
-    console.log('Material class arg:', o.material)
+    // console.log('Material class arg:', o.material)
     this.material = o.material;
 
     // Mesh stuff - for single mesh or t-posed (fiktive-first in loading order)
@@ -145,24 +146,62 @@ export default class MEMeshObj extends Materials {
       new Uint32Array(this.mesh.jointsBuffer.getMappedRange()).set(jointsArray32);
       this.mesh.jointsBuffer.unmap();
 
-      if(this.material.useTextureFromGlb == true) {
-        console.log('get glb images ', _glbFile.glbJsonData.materials);
-        _glbFile.glbJsonData.materials.forEach(material => {
-          console.log('get material :', material);
-        });
+      // TANGENTS
+      let tangentArray = null;
+      if(_glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex].tangents) {
+        const tangentView = _glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex].tangents.view;
+        const byteOffsetT = tangentView.byteOffset || 0;
+        const byteLengthT = tangentView.buffer.byteLength;
+        tangentArray = new Float32Array(
+          tangentView.buffer,
+          byteOffsetT,
+          byteLengthT / 4
+        );
+        this.mesh.tangents = tangentArray;
 
-        _glbFile.glbJsonData.images.forEach(imgGpuTexture => {
-          console.log('get images :', imgGpuTexture);
+        this.mesh.tangentsBuffer = this.device.createBuffer({
+          label: "tangentsBuffer[real-data]",
+          size: tangentArray.byteLength,
+          usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+          mappedAtCreation: true,
         });
-
-
-        _glbFile.glbJsonData.glbTextures.forEach(glbTexture => {
-          console.log('get glbTextures :', glbTexture);
+        new Float32Array(this.mesh.tangentsBuffer.getMappedRange()).set(tangentArray);
+        this.mesh.tangentsBuffer.unmap();
+      } else {
+        // 🟢 dummy fallback
+        const dummyTangents = new Float32Array(this.mesh.vertices.length / 3 * 4);
+        for(let i = 0;i < dummyTangents.length;i += 4) {
+          dummyTangents[i + 0] = 1.0; // T = (1,0,0)
+          dummyTangents[i + 1] = 0.0;
+          dummyTangents[i + 2] = 0.0;
+          dummyTangents[i + 3] = 1.0; // handedness
+        }
+        this.mesh.tangentsBuffer = this.device.createBuffer({
+          label: "tangentsBuffer dummy",
+          size: dummyTangents.byteLength,
+          usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+          mappedAtCreation: true,
         });
+        new Float32Array(this.mesh.tangentsBuffer.getMappedRange()).set(dummyTangents);
+        this.mesh.tangentsBuffer.unmap();
+        console.warn("GLTF primitive has no TANGENT attribute (normal map won’t work properly).");
       }
 
+      // if(this.material.useTextureFromGlb == true) {
+      //   console.log('get glb images ', _glbFile.glbJsonData.materials);
+      //   _glbFile.glbJsonData.materials.forEach(material => {
+      //     console.log('get material :', material);
+      //   });
+
+      //   _glbFile.glbJsonData.images.forEach(imgGpuTexture => {
+      //     console.log('get images :', imgGpuTexture);
+      //   });
 
 
+      //   _glbFile.glbJsonData.glbTextures.forEach(glbTexture => {
+      //     console.log('get glbTextures :', glbTexture);
+      //   });
+      // }
     } else {
       // obj files flow
       this.mesh.uvs = this.mesh.textures;
@@ -301,6 +340,10 @@ export default class MEMeshObj extends Materials {
         arrayStride: 4 * 4, // vec4<f32> = 4 * 4 bytes
         attributes: [{format: 'float32x4', offset: 0, shaderLocation: 4}]
       }
+
+      let tang = null;
+
+
       // if(this.mesh.feedFromRealGlb && this.mesh.feedFromRealGlb == true) {
       //   // console.log('it is GLB ')
       //   glbInfo = {
@@ -356,9 +399,22 @@ export default class MEMeshObj extends Materials {
           attributes: [{format: 'uint32x4', offset: 0, shaderLocation: 3}]
         },
         // weights
-        glbInfo
+        glbInfo,
       ];
 
+      if(this.mesh.tangentsBuffer) {
+        this.vertexBuffers.push({
+          arrayStride: 4 * 4, // vec4<f32> = 16 bytes
+          attributes: [
+            {shaderLocation: 5, format: "float32x4", offset: 0}
+          ]
+        });
+      } else {
+        // for non glb - non skinned use basic shaders
+      }
+
+      // Note: The frontFace and cullMode values have no effect on the 
+      // "point-list", "line-list", or "line-strip" topologies.
       this.primitive = {
         topology: 'triangle-list',
         cullMode: 'back', // typical for shadow passes
@@ -546,7 +602,7 @@ export default class MEMeshObj extends Materials {
       vertex: {
         entryPoint: 'main',
         module: this.device.createShaderModule({
-          code: vertexWGSL,
+          code: (this.material.type == 'normalmap') ? vertexWGSL_NM : vertexWGSL,
         }),
         buffers: this.vertexBuffers,
       },
@@ -678,6 +734,11 @@ export default class MEMeshObj extends Materials {
         pass.setVertexBuffer(4, this.weights.buffer); // new dummy
       }
     }
+
+    if(this.mesh.tangentsBuffer) {
+      pass.setVertexBuffer(5, this.mesh.tangentsBuffer);
+    }
+
     pass.setIndexBuffer(this.indexBuffer, 'uint16');
     pass.drawIndexed(this.indexCount);
   }

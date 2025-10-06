@@ -95,12 +95,11 @@ export default class Materials {
           magFilter: 'linear',
           minFilter: 'linear',
         });
-        console.log('>>>>>>normalTexture>>>>>>>>', this.glb.glbJsonData.materials[0].normalTexture.index)
       } else {
-        console.log('>>>ERRR >>>normalTexture>>>>>>>>')
+        // console.log('>>>ERRR >>>normalTexture>>')
       }
     } else {
-      console.log('>>DUMMY >>>normalTexture>>>>>>>>')
+      // console.log('>DUMMY>normalTexture>')
       // dummy for normal map 1x1 neutral normal map
       this.normalDummyTex = device.createTexture({
         size: [1, 1, 1],
@@ -125,20 +124,16 @@ export default class Materials {
   }
 
   getMaterial() {
+    // console.log('Material TYPE:', this.material.type);
     if(this.material.type == 'standard') {
-      console.log('Material TYPE:', this.material.type);
       return fragmentWGSL;
     } else if(this.material.type == 'pong') {
-      console.log('Material TYPE:', this.material.type);
       return fragmentWGSLPong;
     } else if(this.material.type == 'power') {
-      console.log('Material TYPE:', this.material.type);
       return fragmentWGSLPower;
     } else if(this.material.type == 'metal') {
-      console.log('Material TYPE:', this.material.type);
       return fragmentWGSLMetal;
     } else if(this.material.type == 'normalmap') {
-      console.log('Material TYPE:', this.material.type);
       return fragmentWGSLNormalMap;
     }
     console.warn('Unknown material type:', this.material?.type);
@@ -333,15 +328,12 @@ export default class Materials {
       : this.texture0.createView();
     // console.log('TEST TEX this.texture0 ', this.texture0);
     if(this.material.useTextureFromGlb === true) {
-      console.log('TEST TEX material use from file ', this.name);
-      console.log('TEST TEX tex use from file ', this.glb.glbJsonData.images);
-      console.log('TEST TEX material use from file ', this.glb.glbJsonData.materials);
+      // console.log('TEST TEX material use from file ', this.name);
       // 0 probably always for basicColor
       const material = this.skinnedNode.mesh.primitives[0].material;
       const textureView = material.baseColorTexture.imageView;
-      const sampler = material.baseColorTexture.sampler;
+      // const sampler = material.baseColorTexture.sampler;
       textureResource = textureView;
-      // this.getMaterialTexture(this.glb, 0);
     }
 
     if(!textureResource || !this.sceneUniformBuffer || !this.shadowDepthTextureView) {
@@ -487,9 +479,7 @@ export default class Materials {
           }
         ])
     ];
-    console.log("BG E :  is used normal  ", this.material.type)
-    // if () {}
-
+    // console.log("BG E :  is used normal  ", this.material.type)
     this.bglForRender = this.device.createBindGroupLayout({label: 'bglForRender', entries: e, });
   }
 }
