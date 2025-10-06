@@ -28,7 +28,7 @@ export function loadGLBLoader() {
         app.cameras.WASD.position[2] = 0;
         app.cameras.WASD.position[1] = 23;
       }, 2000)
- 
+
 
       downloadMeshes({cube: "./res/meshes/blender/cube.obj"}, onGround, {scale: [120, 0.5, 120]})
 
@@ -66,7 +66,7 @@ export function loadGLBLoader() {
         material: {type: 'normalmap', useTextureFromGlb: true},
         scale: [20, 20, 20],
         position: {x: 0, y: -4, z: -20},
-        name: 'firstGlb',
+        name: 'woman1',
         texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
       }, null, glbFile11);
 
@@ -75,7 +75,7 @@ export function loadGLBLoader() {
         material: {type: 'power', useTextureFromGlb: true},
         scale: [20, 20, 20],
         position: {x: -40, y: -4, z: -20},
-        name: 'firstGlb',
+        name: 'woman1',
         texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
       }, null, glbFile02);
 
@@ -84,9 +84,19 @@ export function loadGLBLoader() {
         material: {type: 'pong', useTextureFromGlb: true},
         scale: [20, 20, 20],
         position: {x: 40, y: -4, z: -20},
-        name: 'firstGlb',
+        name: 'woman1',
         texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
       }, null, glbFile03);
+
+
+      var glbFileWhouse = await fetch("res/meshes/glb/wood-house-1.glb").then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, TEST_ANIM.device)));
+      TEST_ANIM.addGlbObj({
+        material: {type: 'pong', useTextureFromGlb: true},
+        scale: [20, 20, 20],
+        position: {x: 40, y: -4, z: -20},
+        name: 'glbFileWhouse',
+        texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
+      }, null, glbFileWhouse);
 
       // this is future load and replace skeletal anim.
       // const path = 'https://raw.githubusercontent.com/zlatnaspirala/Matrix-Engine-BVH-test/main/javascript-bvh/example.bvh';
@@ -119,7 +129,7 @@ export function loadGLBLoader() {
           geometry: "Cube"
         },
       });
-      app.lightContainer[0].position[1]  = 25;
+      app.lightContainer[0].position[1] = 25;
     }
   })
   // just for dev

@@ -250,7 +250,7 @@ function loadGLBLoader() {
           y: -4,
           z: -20
         },
-        name: 'firstGlb',
+        name: 'woman1',
         texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png']
       }, null, glbFile11);
       var glbFile02 = await fetch("res/meshes/glb/woman1.glb").then(res => res.arrayBuffer().then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, TEST_ANIM.device)));
@@ -265,7 +265,7 @@ function loadGLBLoader() {
           y: -4,
           z: -20
         },
-        name: 'firstGlb',
+        name: 'woman1',
         texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png']
       }, null, glbFile02);
       var glbFile03 = await fetch("res/meshes/glb/woman1.glb").then(res => res.arrayBuffer().then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, TEST_ANIM.device)));
@@ -280,9 +280,24 @@ function loadGLBLoader() {
           y: -4,
           z: -20
         },
-        name: 'firstGlb',
+        name: 'woman1',
         texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png']
       }, null, glbFile03);
+      var glbFileWhouse = await fetch("res/meshes/glb/wood-house-1.glb").then(res => res.arrayBuffer().then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, TEST_ANIM.device)));
+      TEST_ANIM.addGlbObj({
+        material: {
+          type: 'pong',
+          useTextureFromGlb: true
+        },
+        scale: [20, 20, 20],
+        position: {
+          x: 40,
+          y: -4,
+          z: -20
+        },
+        name: 'glbFileWhouse',
+        texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png']
+      }, null, glbFileWhouse);
 
       // this is future load and replace skeletal anim.
       // const path = 'https://raw.githubusercontent.com/zlatnaspirala/Matrix-Engine-BVH-test/main/javascript-bvh/example.bvh';
