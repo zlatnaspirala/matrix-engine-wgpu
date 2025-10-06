@@ -443,7 +443,7 @@ export default class MatrixEngineWGPU {
         this.mainRenderBundle.forEach((meItem, index) => {
           meItem.position.update()
           meItem.updateModelUniformBuffer()
-          meItem.getTransformationMatrix(this.mainRenderBundle, light) // >check optisation
+          meItem.getTransformationMatrix(this.mainRenderBundle, light, index) // >check optisation
         })
       }
       if(this.matrixAmmo) this.matrixAmmo.updatePhysics();
@@ -610,7 +610,9 @@ export default class MatrixEngineWGPU {
         // if(o.physics.enabled == true) {
         //   this.matrixAmmo.addPhysics(myMesh1, o.physics)
         // }
-        this.mainRenderBundle.push(bvhPlayer);
+        // make it soft
+        setTimeout(() => {this.mainRenderBundle.push(bvhPlayer)}, 1000)
+        // this.mainRenderBundle.push(bvhPlayer)
         c++;
       }
     }
