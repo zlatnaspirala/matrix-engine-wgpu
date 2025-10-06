@@ -610,7 +610,9 @@ export default class MatrixEngineWGPU {
         // if(o.physics.enabled == true) {
         //   this.matrixAmmo.addPhysics(myMesh1, o.physics)
         // }
-        this.mainRenderBundle.push(bvhPlayer);
+        // make it soft
+        setTimeout(() => {this.mainRenderBundle.push(bvhPlayer)}, 1000)
+        // this.mainRenderBundle.push(bvhPlayer)
         c++;
       }
     }

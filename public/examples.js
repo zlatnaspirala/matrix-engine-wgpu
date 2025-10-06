@@ -22939,29 +22939,17 @@ class MEMeshObj extends _materials.default {
         const camera = this.cameras[this.mainCameraParams.type];
         if (index == 0) camera.update(dt, inputHandler());
         const camVP = _wgpuMatrix.mat4.multiply(camera.projectionMatrix, camera.view);
-        for (const mesh of mainRenderBundle) {
-          const sceneData = new Float32Array(44);
-          // Light VP
-          sceneData.set(spotLight.viewProjMatrix, 0);
-          // Camera VP
-          sceneData.set(camVP, 16);
-          // Camera position + padding
-          sceneData.set([camera.position.x, camera.position.y, camera.position.z, 0.0], 32);
-          // Light position + padding
-          sceneData.set([spotLight.position[0], spotLight.position[1], spotLight.position[2], 0.0], 36);
-          // Global ambient + padding
-          // sceneData.set([this.globalAmbient[0], this.globalAmbient[1], this.globalAmbient[2], 0.0], 40);
-          sceneData.set([mesh.globalAmbient[0], mesh.globalAmbient[1], mesh.globalAmbient[2], 0.0], 40);
-          if (mesh.glb && mesh.glb.skinnedMeshNodes) {
-            mesh.glb.skinnedMeshNodes.forEach(skinnedMeshNode => {
-              device.queue.writeBuffer(
-              // skinnedMeshNode.sceneUniformBuffer,
-              mesh.sceneUniformBuffer, 0, sceneData.buffer, sceneData.byteOffset, sceneData.byteLength);
-            });
-          } else {
-            device.queue.writeBuffer(mesh.sceneUniformBuffer, 0, sceneData.buffer, sceneData.byteOffset, sceneData.byteLength);
-          }
-        }
+        const sceneData = new Float32Array(44);
+        // Light VP
+        sceneData.set(spotLight.viewProjMatrix, 0);
+        // Camera VP
+        sceneData.set(camVP, 16);
+        // Camera position + padding
+        sceneData.set([camera.position.x, camera.position.y, camera.position.z, 0.0], 32);
+        // Light position + padding
+        sceneData.set([spotLight.position[0], spotLight.position[1], spotLight.position[2], 0.0], 36);
+        sceneData.set([this.globalAmbient[0], this.globalAmbient[1], this.globalAmbient[2], 0.0], 40);
+        device.queue.writeBuffer(this.sceneUniformBuffer, 0, sceneData.buffer, sceneData.byteOffset, sceneData.byteLength);
       };
       this.getModelMatrix = pos => {
         let modelMatrix = _wgpuMatrix.mat4.identity();
@@ -26921,7 +26909,11 @@ class MatrixEngineWGPU {
         // if(o.physics.enabled == true) {
         //   this.matrixAmmo.addPhysics(myMesh1, o.physics)
         // }
-        this.mainRenderBundle.push(bvhPlayer);
+        // make it soft
+        setTimeout(() => {
+          this.mainRenderBundle.push(bvhPlayer);
+        }, 1000);
+        // this.mainRenderBundle.push(bvhPlayer)
         c++;
       }
     }
