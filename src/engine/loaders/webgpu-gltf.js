@@ -166,7 +166,7 @@ export class GLTFAccessor {
 }
 
 export class GLTFPrimitive {
-  constructor(indices, positions, normals, texcoords, material, topology, weights, joints) {
+  constructor(indices, positions, normals, texcoords, material, topology, weights, joints, tangents) {
     this.indices = indices;
     this.positions = positions;
     this.normals = normals;
@@ -175,6 +175,7 @@ export class GLTFPrimitive {
     this.topology = topology;
     this.weights = weights;
     this.joints = joints;
+    this.tangents = tangents;
   }
 }
 
@@ -492,7 +493,7 @@ export async function uploadGLBModel(buffer, device) {
   }
 
   glbJsonData.glbTextures = images;
-  console.log('IMAGES FROM GLB: ', images)
+  // console.log('IMAGES FROM GLB: ', images)
   // 6️⃣ Samplers, Textures, Materials
   const defaultSampler = new GLTFSampler({}, device);
   const samplers = (glbJsonData.samplers || []).map(
@@ -513,7 +514,7 @@ export async function uploadGLBModel(buffer, device) {
   const meshes = (glbJsonData.meshes || []).map(mesh => {
     const primitives = mesh.primitives.map(prim => {
       const topology = prim.mode ?? GLTFRenderMode.TRIANGLES;
-      console.log('topology ', topology)
+      // console.log('topology ', topology)
       // Indices
       let indices = null;
       if(prim.indices !== undefined) {
@@ -526,6 +527,7 @@ export async function uploadGLBModel(buffer, device) {
       // Vertex attributes
       let positions = null,
         normals = null,
+        tangents = null,
         texcoords = [];
       let weights = null;
       let joints = null;
@@ -541,12 +543,13 @@ export async function uploadGLBModel(buffer, device) {
         } else if(attr.startsWith('TEXCOORD')) {
           texcoords.push(new GLTFAccessor(bufferViews[viewID], accessor));
         } else if(attr === 'WEIGHTS_0') {
-          console.log('WEIGHTS_0', prim.attributes['WEIGHTS_0'])
           weights = new GLTFAccessor(bufferViews[viewID], accessor, prim.attributes['WEIGHTS_0']);
         } else if(attr.startsWith('JOINTS')) {
           joints = new GLTFAccessor(bufferViews[viewID], accessor);
+        } else if (attr === 'TANGENT') {
+          tangents = new GLTFAccessor(bufferViews[viewID], accessor);
         } else {
-          console.log('unknow ', attr)
+          console.log('unknow-attr:', attr)
         }
       }
 
@@ -559,7 +562,8 @@ export async function uploadGLBModel(buffer, device) {
         material,
         topology,
         weights,
-        joints
+        joints,
+        tangents
       );
     });
     return new GLTFMesh(mesh.name, primitives);
@@ -609,7 +613,7 @@ export async function uploadGLBModel(buffer, device) {
     console.warn('No skins found — mesh not bound to skeleton');
   } else {
     skinnedMeshNodes.forEach(n => {
-      console.log('Mesh', n.mesh.name, 'uses skin index', n.skin);
+      // console.log('Mesh', n.mesh.name, 'uses skin index', n.skin);
       // Per-mesh uniform buffer (example)
       n.sceneUniformBuffer = device.createBuffer({
         size: 44 * 4,
