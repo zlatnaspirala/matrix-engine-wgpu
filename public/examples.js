@@ -22932,12 +22932,12 @@ class MEMeshObj extends _materials.default {
         }]
       });
       // Rotates the camera around the origin based on time.
-      this.getTransformationMatrix = (mainRenderBundle, spotLight) => {
+      this.getTransformationMatrix = (mainRenderBundle, spotLight, index) => {
         const now = Date.now();
         const dt = (now - this.lastFrameMS) / this.mainCameraParams.responseCoef;
         this.lastFrameMS = now;
         const camera = this.cameras[this.mainCameraParams.type];
-        camera.update(dt, inputHandler());
+        if (index == 0) camera.update(dt, inputHandler());
         const camVP = _wgpuMatrix.mat4.multiply(camera.projectionMatrix, camera.view);
         for (const mesh of mainRenderBundle) {
           const sceneData = new Float32Array(44);
@@ -26720,7 +26720,7 @@ class MatrixEngineWGPU {
         this.mainRenderBundle.forEach((meItem, index) => {
           meItem.position.update();
           meItem.updateModelUniformBuffer();
-          meItem.getTransformationMatrix(this.mainRenderBundle, light); // >check optisation
+          meItem.getTransformationMatrix(this.mainRenderBundle, light, index); // >check optisation
         });
       }
       if (this.matrixAmmo) this.matrixAmmo.updatePhysics();

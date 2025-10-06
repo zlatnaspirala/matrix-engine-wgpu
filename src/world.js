@@ -443,7 +443,7 @@ export default class MatrixEngineWGPU {
         this.mainRenderBundle.forEach((meItem, index) => {
           meItem.position.update()
           meItem.updateModelUniformBuffer()
-          meItem.getTransformationMatrix(this.mainRenderBundle, light) // >check optisation
+          meItem.getTransformationMatrix(this.mainRenderBundle, light, index) // >check optisation
         })
       }
       if(this.matrixAmmo) this.matrixAmmo.updatePhysics();
