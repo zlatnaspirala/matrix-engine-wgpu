@@ -29,11 +29,8 @@ export class Controller {
     canvas.addEventListener('mouseup', (e) => {
       if(this.selecting) {
         this.selecting = false;
-        console.log('what is start : ', this.dragStart)
-        console.log('what is end: ', this.dragEnd)
         this.selectCharactersInRect(this.dragStart, this.dragEnd);
         this.dragStart = this.dragEnd = null;
-
         setTimeout(() => {
           if(this.ctx) this.ctx.clearRect(0, 0, this.overlay.width, this.overlay.height);
         }, 100);

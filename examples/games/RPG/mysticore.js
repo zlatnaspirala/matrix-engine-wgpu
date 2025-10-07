@@ -24,6 +24,8 @@ let MYSTICORE = new MatrixEngineWGPU({
     let test1 = new Controller(MYSTICORE.canvas);
     MYSTICORE.RPG = test1;
 
+    app.cameras.WASD.movementSpeed = 100;
+
     setTimeout(() => {
       app.cameras.WASD.yaw = -0.03;
       app.cameras.WASD.pitch = -0.49;

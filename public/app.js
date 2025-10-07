@@ -40,8 +40,6 @@ class Controller {
     canvas.addEventListener('mouseup', e => {
       if (this.selecting) {
         this.selecting = false;
-        console.log('what is start : ', this.dragStart);
-        console.log('what is end: ', this.dragEnd);
         this.selectCharactersInRect(this.dragStart, this.dragEnd);
         this.dragStart = this.dragEnd = null;
         setTimeout(() => {
@@ -186,6 +184,7 @@ let MYSTICORE = new _world.default({
   addEventListener('AmmoReady', async () => {
     let test1 = new _controller.Controller(MYSTICORE.canvas);
     MYSTICORE.RPG = test1;
+    app.cameras.WASD.movementSpeed = 100;
     setTimeout(() => {
       app.cameras.WASD.yaw = -0.03;
       app.cameras.WASD.pitch = -0.49;
@@ -22359,6 +22358,34 @@ class MEMeshObj extends _materials.default {
         frontFace: 'ccw'
       };
 
+      // Selected effect
+      this.selectedBuffer = device.createBuffer({
+        size: 4,
+        // just one float
+        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+      });
+      this.selectedBindGroupLayout = device.createBindGroupLayout({
+        entries: [{
+          binding: 0,
+          visibility: GPUShaderStage.FRAGMENT,
+          buffer: {}
+        }]
+      });
+      this.selectedBindGroup = device.createBindGroup({
+        layout: this.selectedBindGroupLayout,
+        entries: [{
+          binding: 0,
+          resource: {
+            buffer: this.selectedBuffer
+          }
+        }]
+      });
+      this.setSelectedEffect = (selected = false) => {
+        this.device.queue.writeBuffer(this.selectedBuffer, 0, new Float32Array([selected ? 1.0 : 0.0]));
+      };
+      // 0 default
+      this.setSelectedEffect();
+
       // Create a bind group layout which holds the scene uniforms and
       // the texture+sampler for depth. We create it manually because the WebPU
       // implementation doesn't infer this from the shader (yet).
@@ -22499,7 +22526,7 @@ class MEMeshObj extends _materials.default {
       label: 'Mesh Pipeline ✅',
       layout: this.device.createPipelineLayout({
         label: 'createPipelineLayout Mesh',
-        bindGroupLayouts: [this.bglForRender, this.uniformBufferBindGroupLayout]
+        bindGroupLayouts: [this.bglForRender, this.uniformBufferBindGroupLayout, this.selectedBindGroupLayout]
       }),
       vertex: {
         entryPoint: 'main',
@@ -22605,6 +22632,11 @@ class MEMeshObj extends _materials.default {
       for (const light of lightContainer) {
         pass.setBindGroup(bindIndex++, light.getMainPassBindGroup(this));
       }
+    }
+
+    // --- Selection state (new)
+    if (this.selectedBindGroup) {
+      pass.setBindGroup(2, this.selectedBindGroup);
     }
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setVertexBuffer(1, this.vertexNormalsBuffer);
@@ -24299,6 +24331,9 @@ const MAX_SPOTLIGHTS = 20u;
 @group(0) @binding(7) var metallicRoughnessSampler: sampler;
 @group(0) @binding(8) var<uniform> material: MaterialPBR;
 
+// RPG or any other usage [selected obj effect]
+@group(2) @binding(0) var<uniform> uSelected : f32;
+
 struct FragmentInput {
     @location(0) shadowPos : vec4f,
     @location(1) fragPos   : vec3f,
@@ -24445,7 +24480,17 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     }
 
     let texColor = textureSample(meshTexture, meshSampler, input.uv);
-    let finalColor = texColor.rgb * (scene.globalAmbient + lightContribution);
+    var finalColor = texColor.rgb * (scene.globalAmbient + lightContribution);
+
+    let N = normalize(input.fragNorm);
+    let V = normalize(scene.cameraPos - input.fragPos);
+    let fresnel = pow(1.0 - max(dot(N, V), 0.0), 3.0);
+
+    if (uSelected > 0.5) {
+        let glowColor = vec3f(0.2, 0.8, 1.0);
+        finalColor += glowColor * fresnel * 0.1;
+    }
+
     return vec4f(finalColor, 1.0);
 }`;
 
