@@ -1,0 +1,53 @@
+# Blender 4.1.1 MTL File: 'tree-1.blend'
+# www.blender.org
+
+newmtl Material.001
+Ns 0.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.000000 0.000000 0.000000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+illum 1
+map_Kd C:/4.png
+map_d C:/4.png
+
+newmtl Material.002
+Ns 0.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.000000 0.000000 0.000000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+illum 1
+map_Kd C:/3.png
+map_d C:/3.png
+
+newmtl leaf
+Ns 0.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+illum 2
+map_Kd C:/leaf.png
+map_d C:/leaf.png
+
+newmtl leaf.001
+Ns 0.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+illum 2
+map_Kd C:/leaf2.png
+map_d C:/leaf2.png
+
+newmtl tree2
+Ka 1.000000 1.000000 1.000000
+Ks 0.140909 0.140909 0.140909
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 2
+map_Kd C:/tree2.low_Material_BaseColor.jpg
+map_Ns C:/tree2.low_Material_Roughness.jpg
+map_Bump -bm 1.000000 C:/tree2.low_Material_Normal.jpg
