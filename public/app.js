@@ -2148,7 +2148,7 @@ let application = exports.application = new _world.default({
 });
 window.app = application;
 
-},{"./examples/games/jamb/jamb.js":2,"./src/engine/loader-obj.js":24,"./src/engine/raycast.js":30,"./src/engine/utils.js":31,"./src/world.js":43}],4:[function(require,module,exports){
+},{"./examples/games/jamb/jamb.js":2,"./src/engine/loader-obj.js":24,"./src/engine/raycast.js":30,"./src/engine/utils.js":31,"./src/world.js":45}],4:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -20349,7 +20349,7 @@ class MEBall {
 }
 exports.default = MEBall;
 
-},{"../shaders/shaders":39,"./engine":22,"./matrix-class":28,"wgpu-matrix":18}],20:[function(require,module,exports){
+},{"../shaders/shaders":40,"./engine":22,"./matrix-class":28,"wgpu-matrix":18}],20:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -20812,7 +20812,7 @@ class MECube {
 }
 exports.default = MECube;
 
-},{"../shaders/shaders":39,"./engine":22,"./matrix-class":28,"wgpu-matrix":18}],22:[function(require,module,exports){
+},{"../shaders/shaders":40,"./engine":22,"./matrix-class":28,"wgpu-matrix":18}],22:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -21475,7 +21475,7 @@ class SpotLight {
 }
 exports.SpotLight = SpotLight;
 
-},{"../shaders/vertexShadow.wgsl":41,"./behavior":20,"wgpu-matrix":18}],24:[function(require,module,exports){
+},{"../shaders/vertexShadow.wgsl":43,"./behavior":20,"wgpu-matrix":18}],24:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -22066,7 +22066,7 @@ class BVHPlayer extends _meshObj.default {
   }
   initInverseBindMatrices(skinIndex = 0) {
     const skin = this.glb.skins[skinIndex];
-    const invBindAccessorIndex = skin.inverseBindMatrices; // usually a number
+    const invBindAccessorIndex = skin.inverseBindMatrices; // number
     if (invBindAccessorIndex === undefined || invBindAccessorIndex === null) {
       console.warn('No inverseBindMatrices accessor for skin', skinIndex);
       return;
@@ -22074,7 +22074,6 @@ class BVHPlayer extends _meshObj.default {
     const invBindArray = this.getAccessorArray(this.glb, invBindAccessorIndex);
     // ✅ store directly as typed array (one big contiguous Float32Array)
     this.inverseBindMatrices = invBindArray;
-    console.log('Inverse bind matrices loaded:', this.inverseBindMatrices.length, 'bones');
   }
   getNumberOfAnimation() {
     let anim = this.glb.glbJsonData.animations[this.glb.animationIndex];
@@ -22619,7 +22618,7 @@ class GLTFAccessor {
 }
 exports.GLTFAccessor = GLTFAccessor;
 class GLTFPrimitive {
-  constructor(indices, positions, normals, texcoords, material, topology, weights, joints) {
+  constructor(indices, positions, normals, texcoords, material, topology, weights, joints, tangents) {
     this.indices = indices;
     this.positions = positions;
     this.normals = normals;
@@ -22628,6 +22627,7 @@ class GLTFPrimitive {
     this.topology = topology;
     this.weights = weights;
     this.joints = joints;
+    this.tangents = tangents;
   }
 }
 exports.GLTFPrimitive = GLTFPrimitive;
@@ -22918,7 +22918,8 @@ async function uploadGLBModel(buffer, device) {
       images.push(gpuImg);
     }
   }
-  console.log('what is IMAGE ', images);
+  glbJsonData.glbTextures = images;
+  // console.log('IMAGES FROM GLB: ', images)
   // 6️⃣ Samplers, Textures, Materials
   const defaultSampler = new GLTFSampler({}, device);
   const samplers = (glbJsonData.samplers || []).map(s => new GLTFSampler(s, device));
@@ -22933,7 +22934,7 @@ async function uploadGLBModel(buffer, device) {
   const meshes = (glbJsonData.meshes || []).map(mesh => {
     const primitives = mesh.primitives.map(prim => {
       const topology = prim.mode ?? GLTFRenderMode.TRIANGLES;
-
+      // console.log('topology ', topology)
       // Indices
       let indices = null;
       if (prim.indices !== undefined) {
@@ -22946,6 +22947,7 @@ async function uploadGLBModel(buffer, device) {
       // Vertex attributes
       let positions = null,
         normals = null,
+        tangents = null,
         texcoords = [];
       let weights = null;
       let joints = null;
@@ -22961,16 +22963,17 @@ async function uploadGLBModel(buffer, device) {
         } else if (attr.startsWith('TEXCOORD')) {
           texcoords.push(new GLTFAccessor(bufferViews[viewID], accessor));
         } else if (attr === 'WEIGHTS_0') {
-          console.log('WEIGHTS_0', prim.attributes['WEIGHTS_0']);
           weights = new GLTFAccessor(bufferViews[viewID], accessor, prim.attributes['WEIGHTS_0']);
         } else if (attr.startsWith('JOINTS')) {
           joints = new GLTFAccessor(bufferViews[viewID], accessor);
+        } else if (attr === 'TANGENT') {
+          tangents = new GLTFAccessor(bufferViews[viewID], accessor);
         } else {
-          console.log('unknow ', attr);
+          console.log('unknow-attr:', attr);
         }
       }
       const material = prim.material !== undefined ? materials[prim.material] : defaultMaterial;
-      return new GLTFPrimitive(indices, positions, normals, texcoords, material, topology, weights, joints);
+      return new GLTFPrimitive(indices, positions, normals, texcoords, material, topology, weights, joints, tangents);
     });
     return new GLTFMesh(mesh.name, primitives);
   });
@@ -23016,7 +23019,7 @@ async function uploadGLBModel(buffer, device) {
     console.warn('No skins found — mesh not bound to skeleton');
   } else {
     skinnedMeshNodes.forEach(n => {
-      console.log('Mesh', n.mesh.name, 'uses skin index', n.skin);
+      // console.log('Mesh', n.mesh.name, 'uses skin index', n.skin);
       // Per-mesh uniform buffer (example)
       n.sceneUniformBuffer = device.createBuffer({
         size: 44 * 4,
@@ -23036,19 +23039,23 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.default = void 0;
 var _fragment = require("../shaders/fragment.wgsl");
-var _fragmentWgsl = require("../shaders/fragment.wgsl.pong");
-var _fragmentWgsl2 = require("../shaders/fragment.wgsl.power");
+var _fragmentWgsl = require("../shaders/fragment.wgsl.metal");
+var _fragmentWgsl2 = require("../shaders/fragment.wgsl.normalmap");
+var _fragmentWgsl3 = require("../shaders/fragment.wgsl.pong");
+var _fragmentWgsl4 = require("../shaders/fragment.wgsl.power");
 /**
  * @description
  * Created for matrix-engine-wgpu project.
  * MeshObj class estends Materials.
+ * @var material is engine meta data variable not real material object.
  * @author Nikola Lukic
  * @email zlatnaspirala@gmail.com
  */
-
 class Materials {
-  constructor(device, material) {
+  constructor(device, material, glb) {
     this.device = device;
+    this.glb = glb;
+    this.material = material;
     this.isVideo = false;
     this.videoIsReady = 'NONE';
     this.compareSampler = this.device.createSampler({
@@ -23084,14 +23091,12 @@ class Materials {
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
     this.device.queue.writeBuffer(this.dummySpotlightUniformBuffer, 0, new Float32Array(20));
-
     // Create a 1x1 RGBA texture filled with white
     const mrDummyTex = this.device.createTexture({
       size: [1, 1, 1],
-      format: 'rgba8unorm',
+      format: this.getFormat(),
       usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST
     });
-
     // Upload a single pixel
     const pixel = new Uint8Array([255, 255, 255, 255]); // white RGBA
     this.device.queue.writeTexture({
@@ -23104,14 +23109,12 @@ class Materials {
       magFilter: 'linear',
       minFilter: 'linear'
     });
-
     // 4 floats for baseColorFactor + 1 metallic + 1 roughness + 2 pad floats = 8 floats
     const materialPBRSize = 8 * 4; // 32 bytes
     this.materialPBRBuffer = this.device.createBuffer({
       size: materialPBRSize,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
-
     // Dummy values
     const baseColorFactor = [1.0, 1.0, 1.0, 1.0];
     const metallicFactor = 0.1; // diffuse like plastic
@@ -23120,30 +23123,71 @@ class Materials {
     // Pack into Float32Array
     const materialArray = new Float32Array([...baseColorFactor, metallicFactor, roughnessFactor, ...pad]);
     this.device.queue.writeBuffer(this.materialPBRBuffer, 0, materialArray.buffer);
+    if (this.material.type == 'normalmap') {
+      const normalTexInfo = this.glb.glbJsonData.materials[0].normalTexture;
+      if (normalTexInfo) {
+        const tex = this.glb.glbJsonData.glbTextures[normalTexInfo.index];
+        this.normalTextureView = tex.createView();
+        this.normalSampler = this.device.createSampler({
+          magFilter: 'linear',
+          minFilter: 'linear'
+        });
+      } else {
+        // console.log('>>>ERRR >>>normalTexture>>')
+      }
+    } else {
+      // console.log('>DUMMY>normalTexture>')
+      // dummy for normal map 1x1 neutral normal map
+      this.normalDummyTex = device.createTexture({
+        size: [1, 1, 1],
+        format: 'rgba8unorm',
+        usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST
+      });
+      // RGBA value for neutral normal in tangent space
+      const neutralNormal = new Uint8Array([128, 128, 255, 255]);
+      this.device.queue.writeTexture({
+        texture: this.normalDummyTex
+      }, neutralNormal, {
+        bytesPerRow: 4
+      }, [1, 1, 1]);
+      // Create texture view & sampler
+      this.normalTextureView = this.normalDummyTex.createView();
+      this.normalSampler = this.device.createSampler({
+        magFilter: 'linear',
+        minFilter: 'linear'
+      });
+    }
   }
-
-  // material
   getMaterial() {
+    // console.log('Material TYPE:', this.material.type);
     if (this.material.type == 'standard') {
-      console.log('Material TYPE:', this.material.type);
       return _fragment.fragmentWGSL;
     } else if (this.material.type == 'pong') {
-      console.log('Material TYPE:', this.material.type);
-      return _fragmentWgsl.fragmentWGSLPong;
+      return _fragmentWgsl3.fragmentWGSLPong;
     } else if (this.material.type == 'power') {
-      console.log('Material TYPE:', this.material.type);
-      return _fragmentWgsl2.fragmentWGSLPower;
+      return _fragmentWgsl4.fragmentWGSLPower;
+    } else if (this.material.type == 'metal') {
+      return _fragmentWgsl.fragmentWGSLMetal;
+    } else if (this.material.type == 'normalmap') {
+      return _fragmentWgsl2.fragmentWGSLNormalMap;
     }
     console.warn('Unknown material type:', this.material?.type);
     return _fragment.fragmentWGSL; // fallback
   }
-
+  getFormat() {
+    if (this.material?.format == 'darker') {
+      return 'rgba8unorm-srgb';
+    } else if (this.material?.format == 'normal') {
+      return 'rgba8unorm';
+    } else {
+      return 'rgba8unorm';
+    }
+  }
   // not affect all fs
   setupMaterialPBR(metallicFactor) {
     const baseColorFactor = [1.0, 1.0, 1.0, 1.0];
     const roughnessFactor = 0.5; // some gloss
     const pad = [0.0, 0.0];
-    // Pack into Float32Array
     const materialArray = new Float32Array([...baseColorFactor, metallicFactor, roughnessFactor, ...pad]);
     this.device.queue.writeBuffer(this.materialPBRBuffer, 0, materialArray.buffer);
   }
@@ -23162,7 +23206,7 @@ class Materials {
       this.texture0 = this.device.createTexture({
         size: [imageBitmap.width, imageBitmap.height, 1],
         // REMOVED 1
-        format: 'rgba8unorm',
+        format: this.getFormat(),
         usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT
       });
       this.device.queue.copyExternalImageToTexture({
@@ -23278,7 +23322,7 @@ class Materials {
       });
       this.createBindGroupForRender();
       this.videoIsReady = 'YES';
-      console.log("✅video bind group");
+      console.log("✅video bind.");
     } else {
       this.externalTexture = this.device.importExternalTexture({
         source: this.video
@@ -23286,8 +23330,36 @@ class Materials {
       this.createBindGroupForRender();
     }
   }
+  getMaterialTexture(glb, materialIndex) {
+    const matDef = glb.glbJsonData.materials[materialIndex];
+    if (!matDef) {
+      console.warn('[engine] no material in glb...');
+      return null;
+    }
+    if (matDef.pbrMetallicRoughness?.baseColorTexture) {
+      const texIndex = matDef.pbrMetallicRoughness.baseColorTexture.index;
+      return glb.glbJsonData.glbTextures[texIndex].createView();
+    }
+    return null;
+  }
+  getMaterialTextureFromMaterial(material) {
+    if (!material || !material.pbrMetallicRoughness) return this.fallbackTextureView;
+    const texInfo = material.pbrMetallicRoughness.baseColorTexture;
+    if (!texInfo) return this.fallbackTextureView;
+    const texIndex = texInfo.index;
+    return this.glb.glbTextures[texIndex].createView();
+  }
   createBindGroupForRender() {
-    const textureResource = this.isVideo ? this.externalTexture : this.texture0.createView();
+    let textureResource = this.isVideo ? this.externalTexture : this.texture0.createView();
+    // console.log('TEST TEX this.texture0 ', this.texture0);
+    if (this.material.useTextureFromGlb === true) {
+      // console.log('TEST TEX material use from file ', this.name);
+      // 0 probably always for basicColor
+      const material = this.skinnedNode.mesh.primitives[0].material;
+      const textureView = material.baseColorTexture.imageView;
+      // const sampler = material.baseColorTexture.sampler;
+      textureResource = textureView;
+    }
     if (!textureResource || !this.sceneUniformBuffer || !this.shadowDepthTextureView) {
       if (!textureResource) console.warn("❗Missing res texture: ", textureResource);
       if (!this.sceneUniformBuffer) console.warn("❗Missing res: this.sceneUniformBuffer: ", this.sceneUniformBuffer);
@@ -23363,16 +23435,19 @@ class Materials {
           resource: {
             buffer: this.materialPBRBuffer
           }
+        },
+        // NEW: dummy normal map
+        {
+          binding: 9,
+          resource: this.normalTextureView
+        }, {
+          binding: 10,
+          resource: this.normalSampler
         }]
       });
     }
   }
   createLayoutForRender() {
-    // if(this.isVideo == true) {
-    //   console.info("✅ createLayoutForRender video [bglForRender]");
-    // } else {
-    //   console.info("✅ normal createLayoutForRender [bglForRender]");
-    // }
     let e = [{
       binding: 0,
       visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
@@ -23459,8 +23534,21 @@ class Materials {
       buffer: {
         type: 'uniform'
       }
+    }, {
+      binding: 9,
+      visibility: GPUShaderStage.FRAGMENT,
+      texture: {
+        sampleType: 'float',
+        viewDimension: '2d'
+      }
+    }, {
+      binding: 10,
+      visibility: GPUShaderStage.FRAGMENT,
+      sampler: {
+        type: 'filtering'
+      }
     }])];
-    // console.log("BG E : ", e)
+    // console.log("BG E :  is used normal  ", this.material.type)
     this.bglForRender = this.device.createBindGroupLayout({
       label: 'bglForRender',
       entries: e
@@ -23469,7 +23557,7 @@ class Materials {
 }
 exports.default = Materials;
 
-},{"../shaders/fragment.wgsl":35,"../shaders/fragment.wgsl.pong":37,"../shaders/fragment.wgsl.power":38}],28:[function(require,module,exports){
+},{"../shaders/fragment.wgsl":35,"../shaders/fragment.wgsl.metal":36,"../shaders/fragment.wgsl.normalmap":37,"../shaders/fragment.wgsl.pong":38,"../shaders/fragment.wgsl.power":39}],28:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -23714,18 +23802,15 @@ Object.defineProperty(exports, "__esModule", {
 exports.default = void 0;
 var _wgpuMatrix = require("wgpu-matrix");
 var _matrixClass = require("./matrix-class");
-var _fragment = require("../shaders/fragment.wgsl");
-var _fragmentWgsl = require("../shaders/fragment.wgsl.noCut");
-var _fragmentWgsl2 = require("../shaders/fragment.wgsl.pong");
 var _vertex = require("../shaders/vertex.wgsl");
 var _utils = require("./utils");
 var _materials = _interopRequireDefault(require("./materials"));
 var _fragmentVideo = require("../shaders/fragment.video.wgsl");
-var _fragmentWgsl3 = require("../shaders/fragment.wgsl.power");
+var _vertexWgsl = require("../shaders/vertex.wgsl.normalmap");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 class MEMeshObj extends _materials.default {
   constructor(canvas, device, context, o, inputHandler, globalAmbient, _glbFile = null, primitiveIndex = null, skinnedNodeIndex = null) {
-    super(device, o.material);
+    super(device, o.material, _glbFile);
     if (typeof o.name === 'undefined') o.name = (0, _utils.genName)(3);
     if (typeof o.raycast === 'undefined') {
       this.raycast = {
@@ -23737,6 +23822,7 @@ class MEMeshObj extends _materials.default {
     }
     this.name = o.name;
     this.done = false;
+    this.canvas = canvas;
     this.device = device;
     this.context = context;
     this.entityArgPass = o.entityArgPass;
@@ -23744,18 +23830,19 @@ class MEMeshObj extends _materials.default {
     this.video = null;
     this.FINISH_VIDIO_INIT = false;
     this.globalAmbient = [...globalAmbient];
-    console.log('Material class arg:', o.material);
+    if (typeof o.material.useTextureFromGlb === 'undefined' || typeof o.material.useTextureFromGlb !== "boolean") {
+      o.material.useTextureFromGlb = false;
+    }
+    // console.log('Material class arg:', o.material)
     this.material = o.material;
 
     // Mesh stuff - for single mesh or t-posed (fiktive-first in loading order)
     this.mesh = o.mesh;
     if (_glbFile != null) {
       if (typeof this.mesh == 'undefined') {
-        // console.log('glb detected..create mesh obj.')
         this.mesh = {};
         this.mesh.feedFromRealGlb = true;
       }
-      // console.log('glb detected - name: ' + this.name + ' - skinnedNodeIndex:' + skinnedNodeIndex + " primitiveIndex:" + primitiveIndex)
       // V
       const verView = _glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex].positions.view;
       const byteOffsetV = verView.byteOffset || 0;
@@ -23770,13 +23857,14 @@ class MEMeshObj extends _materials.default {
       const normals = new Float32Array(normalsUint8.buffer, byteOffsetN, byteLengthN / 4);
       this.mesh.vertexNormals = normals;
       //UV
-      let binary = _glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex].texcoords[0].view.buffer;
-      const byteOffset = 0; // or from accessor
-      const byteLength = binary.byteLength;
-      const uvFloatArray = new Float32Array(binary.buffer, byteOffset, byteLength / 4);
+      let accessor = _glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex].texcoords[0];
+      const bufferView = accessor.view;
+      const byteOffset = (bufferView.byteOffset || 0) + (accessor.byteOffset || 0);
+      const count = accessor.count * 2; // VEC2 = 2 floats per vertex
+      const uvFloatArray = new Float32Array(bufferView.buffer.buffer, byteOffset, count);
       this.mesh.uvs = uvFloatArray;
-      this.mesh.textures = this.mesh.uvs;
-      // indices
+      this.mesh.textures = uvFloatArray;
+      // I
       let binaryI = _glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex].indices;
       const indicesView = binaryI.view;
       const indicesUint8 = indicesView.buffer;
@@ -23828,7 +23916,6 @@ class MEMeshObj extends _materials.default {
         const s = weightsArray[i] + weightsArray[i + 1] + weightsArray[i + 2] + weightsArray[i + 3];
         if (Math.abs(s - 1.0) > 0.001) console.warn("Weight not normalized!", i, s);
       }
-      // console.log('Normalized weightsArray', weightsArray);
       this.mesh.weightsBuffer = this.device.createBuffer({
         label: "weightsBuffer real data",
         size: weightsArray.byteLength,
@@ -23837,10 +23924,7 @@ class MEMeshObj extends _materials.default {
       });
       new Float32Array(this.mesh.weightsBuffer.getMappedRange()).set(weightsArray);
       this.mesh.weightsBuffer.unmap();
-
-      // Get JOINTS_0 accessor view from the GLB mesh
       let jointsView = _glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex].joints.view;
-      console.warn('jointsView', jointsView);
       this.mesh.jointsView = jointsView;
       // Create typed array from the buffer (Uint16Array or Uint8Array depending on GLB)
       let jointsArray16 = new Uint16Array(jointsView.buffer, jointsView.byteOffset || 0, jointsView.byteLength / 2 // in Uint16 elements
@@ -23849,10 +23933,9 @@ class MEMeshObj extends _materials.default {
       for (let i = 0; i < jointsArray16.length; i++) {
         jointsArray32[i] = jointsArray16[i];
       }
-      // const DUMMY = new Uint32Array((this.mesh.vertices.length / 3) * 4);
       // Create GPU buffer for joints
       this.mesh.jointsBuffer = this.device.createBuffer({
-        label: "jointsBuffer real data",
+        label: "jointsBuffer[real-data]",
         size: jointsArray32.byteLength,
         usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
         mappedAtCreation: true
@@ -23860,6 +23943,57 @@ class MEMeshObj extends _materials.default {
       // Upload the data to GPU
       new Uint32Array(this.mesh.jointsBuffer.getMappedRange()).set(jointsArray32);
       this.mesh.jointsBuffer.unmap();
+
+      // TANGENTS
+      let tangentArray = null;
+      if (_glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex].tangents) {
+        const tangentView = _glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex].tangents.view;
+        const byteOffsetT = tangentView.byteOffset || 0;
+        const byteLengthT = tangentView.buffer.byteLength;
+        tangentArray = new Float32Array(tangentView.buffer, byteOffsetT, byteLengthT / 4);
+        this.mesh.tangents = tangentArray;
+        this.mesh.tangentsBuffer = this.device.createBuffer({
+          label: "tangentsBuffer[real-data]",
+          size: tangentArray.byteLength,
+          usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+          mappedAtCreation: true
+        });
+        new Float32Array(this.mesh.tangentsBuffer.getMappedRange()).set(tangentArray);
+        this.mesh.tangentsBuffer.unmap();
+      } else {
+        // 🟢 dummy fallback
+        const dummyTangents = new Float32Array(this.mesh.vertices.length / 3 * 4);
+        for (let i = 0; i < dummyTangents.length; i += 4) {
+          dummyTangents[i + 0] = 1.0; // T = (1,0,0)
+          dummyTangents[i + 1] = 0.0;
+          dummyTangents[i + 2] = 0.0;
+          dummyTangents[i + 3] = 1.0; // handedness
+        }
+        this.mesh.tangentsBuffer = this.device.createBuffer({
+          label: "tangentsBuffer dummy",
+          size: dummyTangents.byteLength,
+          usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+          mappedAtCreation: true
+        });
+        new Float32Array(this.mesh.tangentsBuffer.getMappedRange()).set(dummyTangents);
+        this.mesh.tangentsBuffer.unmap();
+        console.warn("GLTF primitive has no TANGENT attribute (normal map won’t work properly).");
+      }
+
+      // if(this.material.useTextureFromGlb == true) {
+      //   console.log('get glb images ', _glbFile.glbJsonData.materials);
+      //   _glbFile.glbJsonData.materials.forEach(material => {
+      //     console.log('get material :', material);
+      //   });
+
+      //   _glbFile.glbJsonData.images.forEach(imgGpuTexture => {
+      //     console.log('get images :', imgGpuTexture);
+      //   });
+
+      //   _glbFile.glbJsonData.glbTextures.forEach(glbTexture => {
+      //     console.log('get glbTextures :', glbTexture);
+      //   });
+      // }
     } else {
       // obj files flow
       this.mesh.uvs = this.mesh.textures;
@@ -23893,7 +24027,6 @@ class MEMeshObj extends _materials.default {
     this.rotation.rotationSpeed.z = o.rotationSpeed.z;
     this.scale = o.scale;
     // new dummy for skin mesh
-    // in MeshObj constructor or setup
     if (!this.joints) {
       const jointsData = new Uint32Array(this.mesh.vertices.length / 3 * 4);
       const jointsBuffer = this.device.createBuffer({
@@ -24001,6 +24134,8 @@ class MEMeshObj extends _materials.default {
           shaderLocation: 4
         }]
       };
+      let tang = null;
+
       // if(this.mesh.feedFromRealGlb && this.mesh.feedFromRealGlb == true) {
       //   // console.log('it is GLB ')
       //   glbInfo = {
@@ -24053,6 +24188,22 @@ class MEMeshObj extends _materials.default {
       },
       // weights
       glbInfo];
+      if (this.mesh.tangentsBuffer) {
+        this.vertexBuffers.push({
+          arrayStride: 4 * 4,
+          // vec4<f32> = 16 bytes
+          attributes: [{
+            shaderLocation: 5,
+            format: "float32x4",
+            offset: 0
+          }]
+        });
+      } else {
+        // for non glb - non skinned use basic shaders
+      }
+
+      // Note: The frontFace and cullMode values have no effect on the 
+      // "point-list", "line-list", or "line-strip" topologies.
       this.primitive = {
         topology: 'triangle-list',
         cullMode: 'back',
@@ -24140,36 +24291,24 @@ class MEMeshObj extends _materials.default {
         }]
       });
       // Rotates the camera around the origin based on time.
-      this.getTransformationMatrix = (mainRenderBundle, spotLight) => {
+      this.getTransformationMatrix = (mainRenderBundle, spotLight, index) => {
         const now = Date.now();
         const dt = (now - this.lastFrameMS) / this.mainCameraParams.responseCoef;
         this.lastFrameMS = now;
         const camera = this.cameras[this.mainCameraParams.type];
-        camera.update(dt, inputHandler());
+        if (index == 0) camera.update(dt, inputHandler());
         const camVP = _wgpuMatrix.mat4.multiply(camera.projectionMatrix, camera.view);
-        for (const mesh of mainRenderBundle) {
-          const sceneData = new Float32Array(44);
-          // Light VP
-          sceneData.set(spotLight.viewProjMatrix, 0);
-          // Camera VP
-          sceneData.set(camVP, 16);
-          // Camera position + padding
-          sceneData.set([camera.position.x, camera.position.y, camera.position.z, 0.0], 32);
-          // Light position + padding
-          sceneData.set([spotLight.position[0], spotLight.position[1], spotLight.position[2], 0.0], 36);
-          // Global ambient + padding
-          // sceneData.set([this.globalAmbient[0], this.globalAmbient[1], this.globalAmbient[2], 0.0], 40);
-          sceneData.set([mesh.globalAmbient[0], mesh.globalAmbient[1], mesh.globalAmbient[2], 0.0], 40);
-          if (mesh.glb && mesh.glb.skinnedMeshNodes) {
-            mesh.glb.skinnedMeshNodes.forEach(skinnedMeshNode => {
-              device.queue.writeBuffer(
-              // skinnedMeshNode.sceneUniformBuffer,
-              mesh.sceneUniformBuffer, 0, sceneData.buffer, sceneData.byteOffset, sceneData.byteLength);
-            });
-          } else {
-            device.queue.writeBuffer(mesh.sceneUniformBuffer, 0, sceneData.buffer, sceneData.byteOffset, sceneData.byteLength);
-          }
-        }
+        const sceneData = new Float32Array(44);
+        // Light VP
+        sceneData.set(spotLight.viewProjMatrix, 0);
+        // Camera VP
+        sceneData.set(camVP, 16);
+        // Camera position + padding
+        sceneData.set([camera.position.x, camera.position.y, camera.position.z, 0.0], 32);
+        // Light position + padding
+        sceneData.set([spotLight.position[0], spotLight.position[1], spotLight.position[2], 0.0], 36);
+        sceneData.set([this.globalAmbient[0], this.globalAmbient[1], this.globalAmbient[2], 0.0], 40);
+        device.queue.writeBuffer(this.sceneUniformBuffer, 0, sceneData.buffer, sceneData.byteOffset, sceneData.byteLength);
       };
       this.getModelMatrix = pos => {
         let modelMatrix = _wgpuMatrix.mat4.identity();
@@ -24217,7 +24356,7 @@ class MEMeshObj extends _materials.default {
       vertex: {
         entryPoint: 'main',
         module: this.device.createShaderModule({
-          code: _vertex.vertexWGSL
+          code: this.material.type == 'normalmap' ? _vertexWgsl.vertexWGSL_NM : _vertex.vertexWGSL
         }),
         buffers: this.vertexBuffers
       },
@@ -24332,6 +24471,9 @@ class MEMeshObj extends _materials.default {
         pass.setVertexBuffer(4, this.weights.buffer); // new dummy
       }
     }
+    if (this.mesh.tangentsBuffer) {
+      pass.setVertexBuffer(5, this.mesh.tangentsBuffer);
+    }
     pass.setIndexBuffer(this.indexBuffer, 'uint16');
     pass.drawIndexed(this.indexCount);
   };
@@ -24388,7 +24530,7 @@ class MEMeshObj extends _materials.default {
 }
 exports.default = MEMeshObj;
 
-},{"../shaders/fragment.video.wgsl":34,"../shaders/fragment.wgsl":35,"../shaders/fragment.wgsl.noCut":36,"../shaders/fragment.wgsl.pong":37,"../shaders/fragment.wgsl.power":38,"../shaders/vertex.wgsl":40,"./materials":27,"./matrix-class":28,"./utils":31,"wgpu-matrix":18}],30:[function(require,module,exports){
+},{"../shaders/fragment.video.wgsl":34,"../shaders/vertex.wgsl":41,"../shaders/vertex.wgsl.normalmap":42,"./materials":27,"./matrix-class":28,"./utils":31,"wgpu-matrix":18}],30:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -26165,8 +26307,8 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.fragmentWGSLNoCut = void 0;
-let fragmentWGSLNoCut = exports.fragmentWGSLNoCut = `override shadowDepthTextureSize: f32 = 1024.0;
+exports.fragmentWGSLMetal = void 0;
+let fragmentWGSLMetal = exports.fragmentWGSLMetal = `override shadowDepthTextureSize: f32 = 1024.0;
 const PI: f32 = 3.141592653589793;
 
 struct Scene {
@@ -26237,8 +26379,10 @@ fn getPBRMaterial(uv: vec2f) -> PBRMaterialData {
     let texColor = textureSample(meshTexture, meshSampler, uv);
     let baseColor = texColor.rgb * material.baseColorFactor.rgb;
     let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);
-    let metallic = mrTex.b * material.metallicFactor;
-    let roughness = mrTex.g * material.roughnessFactor;
+    // let metallic = mrTex.b * material.metallicFactor;
+    // let roughness = mrTex.g * material.roughnessFactor;
+    let metallic = material.metallicFactor;
+    let roughness = material.roughnessFactor;
     return PBRMaterialData(baseColor, metallic, roughness);
 }
 
@@ -26294,69 +26438,38 @@ fn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, light
 
 @fragment
 fn main(input: FragmentInput) -> @location(0) vec4f {
-
-let materialData = getPBRMaterial(input.uv);
-let N = normalize(input.fragNorm);
-let V = normalize(scene.cameraPos - input.fragPos);
-
-var Lo = vec3f(0.0);
-
-for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
+    let materialData = getPBRMaterial(input.uv);
+    let N = normalize(input.fragNorm);
+    let V = normalize(scene.cameraPos - input.fragPos);
+   var Lo = vec3f(0.0);
+  for(var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
     let L = normalize(spotlights[i].position - input.fragPos);
+    let H = normalize(V + L);
+    let distance = length(spotlights[i].position - input.fragPos);
+    let attenuation = clamp(1.0 - (distance / spotlights[i].range), 0.0, 1.0);
+
     let NdotL = max(dot(N, L), 0.0);
 
-    // Shadow calculation
-    let sc       = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);
-    let p        = sc.xyz / sc.w;
-    let uv       = clamp(p.xy * 0.5 + vec2<f32>(0.5), vec2<f32>(0.0), vec2<f32>(1.0));
-    let depthRef = p.z * 0.5 + 0.5;
-    let bias     = spotlights[i].shadowBias;
+    let radiance = spotlights[i].color * spotlights[i].intensity * attenuation;
 
-    let visibility = sampleShadow(uv, i32(i), depthRef - bias, N, L);
+    let NDF = distributionGGX(N, H, materialData.roughness);
+    let G   = geometrySmith(N, V, L, materialData.roughness);
+    let F0 = mix(vec3f(0.04), materialData.baseColor, materialData.metallic);
+    let F  = fresnelSchlick(max(dot(H, V), 0.0), F0);
 
-    // Apply simple diffuse with shadow
-    Lo += NdotL * materialData.baseColor * spotlights[i].color * spotlights[i].intensity * visibility;
+    let kS = F;
+    let kD = (vec3f(1.0) - kS) * (1.0 - materialData.metallic);
+
+    let diffuse  = kD * materialData.baseColor / PI;
+    let specular = (NDF * G * F) / (4.0 * max(dot(N, V), 0.0) * NdotL + 0.001);
+
+    // Combine diffuse + specular and multiply by NdotL and radiance
+    Lo += (diffuse + specular) * radiance * NdotL;
 }
 
-// Add ambient
-let color = scene.globalAmbient * materialData.baseColor + Lo;
-
+let ambient = scene.globalAmbient * materialData.baseColor;
+var color = ambient + Lo;
 return vec4f(color, 1.0);
-    // let materialData = getPBRMaterial(input.uv);
-    // let N = normalize(input.fragNorm);
-    // let V = normalize(scene.cameraPos - input.fragPos);
-    // var Lo = vec3f(0.0);
-
-    // for(var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
-    //     let L = normalize(spotlights[i].position - input.fragPos);
-    //     let H = normalize(V + L);
-    //     let distance = length(spotlights[i].position - input.fragPos);
-    //     let attenuation = clamp(1.0 - (distance / spotlights[i].range), 0.0, 1.0);
-    //     let radiance = spotlights[i].color * spotlights[i].intensity * attenuation;
-
-    //     let NDF = distributionGGX(N, H, materialData.roughness);
-    //     let G   = geometrySmith(N, V, L, materialData.roughness);
-    //     let F0 = mix(vec3f(0.04), materialData.baseColor, materialData.metallic);
-    //     let F  = fresnelSchlick(max(dot(H, V), 0.0), F0);
-    //     let kS = F;
-    //     let kD = (vec3f(1.0) - kS) * (1.0 - materialData.metallic);
-    //     let NdotL = max(dot(N, L), 0.0);
-    //     let specular = (NDF * G * F) / (4.0 * max(dot(N, V), 0.0) * NdotL + 0.001);
-
-    //     // shadow
-    //     let sc = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);
-    //     let p = sc.xyz / sc.w;
-    //     let uv = clamp(p.xy * 0.5 + vec2<f32>(0.5), vec2<f32>(0.0), vec2<f32>(1.0));
-    //     let depthRef = p.z * 0.5 + 0.5;
-    //     let visibility = 1.0; //sampleShadow(uv, i32(i), depthRef, N, L);
-
-    //     // Lo += visibility * (kD * materialData.baseColor / PI + specular) * radiance * NdotL;
-    //     Lo += NdotL * spotlights[i].color * spotlights[i].intensity;
-    // }
-
-    // let ambient = scene.globalAmbient * materialData.baseColor;
-    // let color = ambient + Lo;
-    // return vec4f(color, 1.0);
 }
 `;
 
@@ -26367,6 +26480,251 @@ return vec4f(color, 1.0);
 // Lo += materialData.baseColor * radiance * NdotL;
 
 },{}],37:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.fragmentWGSLNormalMap = void 0;
+let fragmentWGSLNormalMap = exports.fragmentWGSLNormalMap = `
+override shadowDepthTextureSize: f32 = 1024.0;
+const PI: f32 = 3.141592653589793;
+
+struct Scene {
+    lightViewProjMatrix  : mat4x4f,
+    cameraViewProjMatrix : mat4x4f,
+    cameraPos            : vec3f,
+    padding2             : f32,
+    lightPos             : vec3f,
+    padding              : f32,
+    globalAmbient        : vec3f,
+    padding3             : f32,
+};
+
+struct SpotLight {
+    position      : vec3f,
+    _pad1         : f32,
+    direction     : vec3f,
+    _pad2         : f32,
+    innerCutoff   : f32,
+    outerCutoff   : f32,
+    intensity     : f32,
+    _pad3         : f32,
+    color         : vec3f,
+    _pad4         : f32,
+    range         : f32,
+    ambientFactor : f32,
+    shadowBias    : f32,
+    _pad5         : f32,
+    lightViewProj : mat4x4<f32>,
+};
+
+struct MaterialPBR {
+    baseColorFactor : vec4f,
+    metallicFactor  : f32,
+    roughnessFactor : f32,
+    _pad1           : f32,
+    _pad2           : f32,
+};
+
+struct PBRMaterialData {
+    baseColor : vec3f,
+    metallic  : f32,
+    roughness : f32,
+};
+
+const MAX_SPOTLIGHTS = 20u;
+
+@group(0) @binding(0) var<uniform> scene : Scene;
+@group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
+@group(0) @binding(2) var shadowSampler: sampler_comparison;
+@group(0) @binding(3) var meshTexture: texture_2d<f32>;
+@group(0) @binding(4) var meshSampler: sampler;
+@group(0) @binding(5) var<uniform> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
+
+// PBR textures
+@group(0) @binding(6) var metallicRoughnessTex: texture_2d<f32>;
+@group(0) @binding(7) var metallicRoughnessSampler: sampler;
+@group(0) @binding(8) var<uniform> material: MaterialPBR;
+// PBR normalmap
+@group(0) @binding(9) var normalTex: texture_2d<f32>;
+@group(0) @binding(10) var normalSampler: sampler;
+
+struct FragmentInput {
+  @location(0) shadowPos : vec4f,
+  @location(1) fragPos   : vec3f,
+  @location(2) fragNorm  : vec3f,
+  @location(3) uv        : vec2f,
+  @location(4) tangent   : vec4f, // new
+};
+
+fn getNormalMap(uv: vec2f, N: vec3f) -> vec3f {
+    // Sample normal map
+    let nSample = textureSample(normalTex, normalSampler, uv).rgb;
+    // Convert from [0,1] → [-1,1]
+    let nTangent = nSample * 2.0 - vec3f(1.0);
+    
+    // TODO: if you have TBN matrix, convert tangent-space → world-space
+    // For now, assume fragNorm is already aligned (simple approx)
+    return normalize(nTangent);
+}
+
+fn getNormalMap2(uv: vec2f, N: vec3f, T: vec3f, B: vec3f) -> vec3f {
+    let nSample = textureSample(normalTex, normalSampler, uv).rgb;
+    let nTangent = nSample * 2.0 - vec3f(1.0);
+    let worldNormal = normalize(T * nTangent.x + B * nTangent.y + N * nTangent.z);
+    return worldNormal;
+}
+    
+fn getPBRMaterial(uv: vec2f) -> PBRMaterialData {
+    let texColor = textureSample(meshTexture, meshSampler, uv);
+    let baseColor = texColor.rgb * material.baseColorFactor.rgb;
+    let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);
+    let metallic = mrTex.b * material.metallicFactor;
+    let roughness = mrTex.g * material.roughnessFactor;
+    return PBRMaterialData(baseColor, metallic, roughness);
+}
+
+fn fresnelSchlick(cosTheta: f32, F0: vec3f) -> vec3f {
+    return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
+}
+
+fn distributionGGX(N: vec3f, H: vec3f, roughness: f32) -> f32 {
+    let a = roughness * roughness;
+    let a2 = a * a;
+    let NdotH = max(dot(N, H), 0.0);
+    let NdotH2 = NdotH * NdotH;
+    let denom = (NdotH2 * (a2 - 1.0) + 1.0);
+    return a2 / (PI * denom * denom);
+}
+
+fn geometrySchlickGGX(NdotV: f32, roughness: f32) -> f32 {
+    let r = (roughness + 1.0);
+    let k = (r * r) / 8.0;
+    return NdotV / (NdotV * (1.0 - k) + k);
+}
+
+fn geometrySmith(N: vec3f, V: vec3f, L: vec3f, roughness: f32) -> f32 {
+    let NdotV = max(dot(N, V), 0.0);
+    let NdotL = max(dot(N, L), 0.0);
+    return geometrySchlickGGX(NdotV, roughness) * geometrySchlickGGX(NdotL, roughness);
+}
+
+fn calculateSpotlightFactor(light: SpotLight, fragPos: vec3f) -> f32 {
+    let L = normalize(light.position - fragPos);
+    let theta = dot(L, normalize(-light.direction));
+    let epsilon = light.innerCutoff - light.outerCutoff;
+    return clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
+}
+
+fn computeSpotLight2(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, material: PBRMaterialData) -> vec3f {
+    let L = normalize(light.position - fragPos);
+    let NdotL = max(dot(N, L), 0.0);
+    if (NdotL <= 0.0) {
+        return vec3f(0.0);
+    }
+    return material.baseColor * light.color * light.intensity * NdotL;
+    // return material.baseColor * light.color * light.intensity * NdotL;
+}
+
+fn computeSpotLight(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, material: PBRMaterialData) -> vec3f {
+    let L = normalize(light.position - fragPos);
+    let NdotL = max(dot(N, L), 0.0);
+
+    let theta = dot(L, normalize(-light.direction));
+    let epsilon = light.innerCutoff - light.outerCutoff;
+    var coneAtten = clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
+
+    // coneAtten = 1.0;
+    if (coneAtten <= 0.0 || NdotL <= 0.0) {
+        return vec3f(0.0);
+    }
+
+    let F0 = mix(vec3f(0.04), material.baseColor.rgb, vec3f(material.metallic));
+    let H = normalize(L + V);
+    let F = F0 + (1.0 - F0) * pow(1.0 - max(dot(H, V), 0.0), 5.0);
+
+    let alpha = material.roughness * material.roughness;
+    let NdotH = max(dot(N, H), 0.0);
+    let alpha2 = alpha * alpha;
+    let denom = (NdotH * NdotH * (alpha2 - 1.0) + 1.0);
+    let D = alpha2 / (PI * denom * denom + 1e-5);
+
+    let k = (alpha + 1.0) * (alpha + 1.0) / 8.0;
+    let NdotV = max(dot(N, V), 0.0);
+    let Gv = NdotV / (NdotV * (1.0 - k) + k);
+    let Gl = NdotL / (NdotL * (1.0 - k) + k);
+    let G = Gv * Gl;
+
+    let numerator = D * G * F;
+    let denominator = 4.0 * NdotV * NdotL + 1e-5;
+    let specular = numerator / denominator;
+
+    let kS = F;
+    let kD = (vec3f(1.0) - kS) * (1.0 - material.metallic);
+    let diffuse = kD * material.baseColor.rgb / PI;
+
+    let radiance = light.color * light.intensity;
+    // return (diffuse + specular) * radiance * NdotL * coneAtten;
+    return material.baseColor * light.color * light.intensity * NdotL * coneAtten;
+}
+
+fn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, lightDir: vec3f) -> f32 {
+    var visibility: f32 = 0.0;
+    let biasConstant: f32 = 0.001;
+    let slopeBias = max(0.002 * (1.0 - dot(normal, lightDir)), 0.0);
+    let bias = biasConstant + slopeBias;
+    let oneOverSize = 1.0 / (shadowDepthTextureSize * 0.5);
+    let offsets: array<vec2f, 9> = array<vec2f, 9>(
+        vec2(-1.0, -1.0), vec2(0.0, -1.0), vec2(1.0, -1.0),
+        vec2(-1.0,  0.0), vec2(0.0,  0.0), vec2(1.0,  0.0),
+        vec2(-1.0,  1.0), vec2(0.0,  1.0), vec2(1.0,  1.0)
+    );
+    for(var i: u32 = 0u; i < 9u; i = i + 1u) {
+        visibility += textureSampleCompare(
+            shadowMapArray, shadowSampler,
+            shadowUV + offsets[i] * oneOverSize,
+            layer, depthRef - bias
+        );
+    }
+    return visibility / 9.0;
+}
+
+@fragment
+fn main(input: FragmentInput) -> @location(0) vec4f {
+    // let norm = normalize(input.fragNorm);
+    let N = normalize(input.fragNorm);
+    let T = normalize(input.tangent.xyz);
+    let B = cross(N, T) * input.tangent.w; // handedness
+    let norm = getNormalMap2(input.uv, N, T, B);
+
+    let viewDir = normalize(scene.cameraPos - input.fragPos);
+
+    // ✅ now we declare materialData
+    let materialData = getPBRMaterial(input.uv);
+
+    var lightContribution = vec3f(0.0);
+
+    for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
+        let sc = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);
+        let p  = sc.xyz / sc.w;
+        let uv = clamp(p.xy * 0.5 + vec2<f32>(0.5), vec2<f32>(0.0), vec2<f32>(1.0));
+        let depthRef = p.z * 0.5 + 0.5;
+
+        let lightDir = normalize(spotlights[i].position - input.fragPos);
+        let bias = spotlights[i].shadowBias;
+        let visibility = sampleShadow(uv, i32(i), depthRef - bias, norm, lightDir);
+        // let visibility = 1.0;
+        let contrib = computeSpotLight(spotlights[i], norm, input.fragPos, viewDir, materialData);
+        lightContribution += contrib * visibility;
+    }
+
+    let texColor = textureSample(meshTexture, meshSampler, input.uv);
+    let finalColor = texColor.rgb * (scene.globalAmbient + lightContribution);
+    return vec4f(finalColor, 1.0);
+}`;
+
+},{}],38:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -26586,7 +26944,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, 1.0);
 }`;
 
-},{}],38:[function(require,module,exports){
+},{}],39:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -26754,7 +27112,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 // let radiance = spotlights[0].color * 10.0; // test high intensity
 // Lo += materialData.baseColor * radiance * NdotL;
 
-},{}],39:[function(require,module,exports){
+},{}],40:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -26812,7 +27170,7 @@ fn fragmentMain(input: VertexOutput) -> @location(0) vec4f {
   return vec4f(textureColor.rgb * lightColor, textureColor.a);
 }`;
 
-},{}],40:[function(require,module,exports){
+},{}],41:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -26852,11 +27210,9 @@ struct VertexOutput {
   @builtin(position) Position: vec4f,
 }
 
-// skinning helper
 fn skinVertex(pos: vec4f, nrm: vec3f, joints: vec4<u32>, weights: vec4f) -> SkinResult {
     var skinnedPos = vec4f(0.0);
     var skinnedNorm = vec3f(0.0);
-
     for (var i: u32 = 0u; i < 4u; i = i + 1u) {
         let jointIndex = joints[i];
         let w = weights[i];
@@ -26871,8 +27227,6 @@ fn skinVertex(pos: vec4f, nrm: vec3f, joints: vec4<u32>, weights: vec4f) -> Skin
           skinnedNorm += (boneMat3 * nrm) * w;
         }
     }
-
-    // return SkinResult(skinnedPos, normalize(skinnedNorm));
     return SkinResult(skinnedPos, skinnedNorm);
 }
 
@@ -26885,34 +27239,135 @@ fn main(
   @location(4) weights: vec4<f32>
 ) -> VertexOutput {
   var output : VertexOutput;
-
   var pos = vec4(position, 1.0);
   var nrm = normal;
-
-  // apply skinning
   let skinned = skinVertex(pos, nrm, joints, weights);
-
-  // transform to world
   let worldPos = model.modelMatrix * skinned.position;
-  // let worldPos =  skinned.position;
   let normalMatrix = mat3x3f(
     model.modelMatrix[0].xyz,
     model.modelMatrix[1].xyz,
     model.modelMatrix[2].xyz
   );
+  output.Position = scene.cameraViewProjMatrix * worldPos;
+  output.fragPos = worldPos.xyz;
+  output.shadowPos = scene.lightViewProjMatrix * worldPos;
+  output.fragNorm = normalize(normalMatrix * skinned.normal);
+  output.uv = uv;
+  return output;
+}`;
+
+},{}],42:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.vertexWGSL_NM = void 0;
+let vertexWGSL_NM = exports.vertexWGSL_NM = `const MAX_BONES = 100u;
+
+struct Scene {
+  lightViewProjMatrix: mat4x4f,
+  cameraViewProjMatrix: mat4x4f,
+  lightPos: vec3f,
+}
+
+struct Model {
+  modelMatrix: mat4x4f,
+}
+
+struct Bones {
+  boneMatrices : array<mat4x4f, MAX_BONES>
+}
+
+struct SkinResult {
+  position : vec4f,
+  normal   : vec3f,
+};
+
+@group(0) @binding(0) var<uniform> scene : Scene;
+@group(1) @binding(0) var<uniform> model : Model;
+@group(1) @binding(1) var<uniform> bones : Bones;
+
+struct VertexOutput {
+  @location(0) shadowPos: vec4f,
+  @location(1) fragPos: vec3f,
+  @location(2) fragNorm: vec3f,
+  @location(3) uv: vec2f,
+  @location(4) tangent: vec4f,      // NEW
+  @builtin(position) Position: vec4f,
+}
+
+fn skinVertex(pos: vec4f, nrm: vec3f, joints: vec4<u32>, weights: vec4f) -> SkinResult {
+    var skinnedPos = vec4f(0.0);
+    var skinnedNorm = vec3f(0.0);
+    for (var i: u32 = 0u; i < 4u; i = i + 1u) {
+        let jointIndex = joints[i];
+        let w = weights[i];
+        if (w > 0.0) {
+          let boneMat = bones.boneMatrices[jointIndex];
+          skinnedPos  += (boneMat * pos) * w;
+          let boneMat3 = mat3x3f(
+            boneMat[0].xyz,
+            boneMat[1].xyz,
+            boneMat[2].xyz
+          );
+          skinnedNorm += (boneMat3 * nrm) * w;
+        }
+    }
+    return SkinResult(skinnedPos, skinnedNorm);
+}
+
+@vertex
+fn main(
+  @location(0) position: vec3f,
+  @location(1) normal: vec3f,
+  @location(2) uv: vec2f,
+  @location(3) joints: vec4<u32>,
+  @location(4) weights: vec4<f32>,
+  @location(5) tangent: vec4f               // NEW
+) -> VertexOutput {
+  var output : VertexOutput;
+  
+  // Skin positions & normals
+  var pos = vec4(position, 1.0);
+  var nrm = normal;
+  let skinned = skinVertex(pos, nrm, joints, weights);
+
+  // Skin tangent
+  var skinnedTangent = vec3f(tangent.xyz);
+  for (var i: u32 = 0u; i < 4u; i = i + 1u) {
+      let jointIndex = joints[i];
+      let w = weights[i];
+      if (w > 0.0) {
+          let boneMat = bones.boneMatrices[jointIndex];
+          let boneMat3 = mat3x3f(
+              boneMat[0].xyz,
+              boneMat[1].xyz,
+              boneMat[2].xyz
+          );
+          skinnedTangent += (boneMat3 * tangent.xyz) * w;
+      }
+  }
+
+  // Transform to world space
+  let worldPos = model.modelMatrix * skinned.position;
+  let normalMatrix = mat3x3f(
+      model.modelMatrix[0].xyz,
+      model.modelMatrix[1].xyz,
+      model.modelMatrix[2].xyz
+  );
 
   output.Position = scene.cameraViewProjMatrix * worldPos;
   output.fragPos = worldPos.xyz;
-
   output.shadowPos = scene.lightViewProjMatrix * worldPos;
   output.fragNorm = normalize(normalMatrix * skinned.normal);
-  // output.fragNorm = skinned.normal;
   output.uv = uv;
+  output.tangent = vec4(normalize(skinnedTangent), tangent.w);  // OUTPUT tangent
 
   return output;
 }`;
 
-},{}],41:[function(require,module,exports){
+},{}],43:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -26940,7 +27395,7 @@ fn main(
 }
 `;
 
-},{}],42:[function(require,module,exports){
+},{}],44:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -27010,7 +27465,7 @@ class MatrixSounds {
 }
 exports.MatrixSounds = MatrixSounds;
 
-},{}],43:[function(require,module,exports){
+},{}],45:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -27206,12 +27661,13 @@ class MatrixEngineWGPU {
       Math.max(1, this.lightContainer.length);
       if (this.lightContainer.length == 0) {
         setTimeout(() => {
-          console.warn('Create now test...');
+          // console.info('Create now test...')
           this.createMe();
         }, 800);
         return;
       }
-      console.warn('Create this.shadowTextureArray...');
+
+      // console.warn('Create this.shadowTextureArray...')
       this.shadowTextureArray = this.device.createTexture({
         label: `shadowTextureArray[GLOBAL] num of light ${numberOfLights}`,
         size: {
@@ -27611,7 +28067,7 @@ class MatrixEngineWGPU {
         this.mainRenderBundle.forEach((meItem, index) => {
           meItem.position.update();
           meItem.updateModelUniformBuffer();
-          meItem.getTransformationMatrix(this.mainRenderBundle, light); // >check optisation
+          meItem.getTransformationMatrix(this.mainRenderBundle, light, index); // >check optisation
         });
       }
       if (this.matrixAmmo) this.matrixAmmo.updatePhysics();
@@ -27800,18 +28256,23 @@ class MatrixEngineWGPU {
     for (const skinnedNode of glbFile.skinnedMeshNodes) {
       let c = 0;
       for (const primitive of skinnedNode.mesh.primitives) {
-        console.log(`count: ${c} primitive-glb: ${primitive}`);
+        // console.log(`count: ${c} primitive-glb: ${primitive}`);
         // primitive is mesh - probably with own material . material/texture per primitive
-        // create scene object for each
-        o.name = o.name + "-GLBGroup-" + c;
+        // create scene object for each skinnedNode
+        o.name = o.name + "-" + skinnedNode.name + '-' + c;
         const bvhPlayer = new _bvh.BVHPlayer(o, BVHANIM, glbFile, c, skinnedNodeIndex, this.canvas, this.device, this.context, this.inputHandler, this.globalAmbient.slice());
-        console.log(`bvhPlayer!!!!!: ${bvhPlayer}`);
+        skinnedNodeIndex++;
+        // console.log(`bvhPlayer!!!!!: ${bvhPlayer}`);
         bvhPlayer.spotlightUniformBuffer = this.spotlightUniformBuffer;
         bvhPlayer.clearColor = clearColor;
         // if(o.physics.enabled == true) {
         //   this.matrixAmmo.addPhysics(myMesh1, o.physics)
         // }
-        this.mainRenderBundle.push(bvhPlayer);
+        // make it soft
+        setTimeout(() => {
+          this.mainRenderBundle.push(bvhPlayer);
+        }, 1000);
+        // this.mainRenderBundle.push(bvhPlayer)
         c++;
       }
     }
@@ -27819,4 +28280,4 @@ class MatrixEngineWGPU {
 }
 exports.default = MatrixEngineWGPU;
 
-},{"./engine/ball.js":19,"./engine/cube.js":21,"./engine/engine.js":22,"./engine/lights.js":23,"./engine/loader-obj.js":24,"./engine/loaders/bvh.js":25,"./engine/mesh-obj.js":29,"./engine/utils.js":31,"./multilang/lang.js":32,"./physics/matrix-ammo.js":33,"./sounds/sounds.js":42,"wgpu-matrix":18}]},{},[3]);
+},{"./engine/ball.js":19,"./engine/cube.js":21,"./engine/engine.js":22,"./engine/lights.js":23,"./engine/loader-obj.js":24,"./engine/loaders/bvh.js":25,"./engine/mesh-obj.js":29,"./engine/utils.js":31,"./multilang/lang.js":32,"./physics/matrix-ammo.js":33,"./sounds/sounds.js":44,"wgpu-matrix":18}]},{},[3]);
