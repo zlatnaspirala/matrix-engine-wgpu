@@ -198,7 +198,7 @@ let MYSTICORE = new _world.default({
     });
 
     // // Monster1
-    var glbFile01 = await fetch("res/meshes/glb/monster.glb").then(res => res.arrayBuffer().then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, MYSTICORE.device)));
+    var glbFile01 = await fetch("res/meshes/glb/woman1.glb").then(res => res.arrayBuffer().then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, MYSTICORE.device)));
     MYSTICORE.addGlbObj({
       material: {
         type: 'standard',

@@ -36,7 +36,7 @@ let MYSTICORE = new MatrixEngineWGPU({
     downloadMeshes({cube: "./res/meshes/blender/cube.obj"}, onGround, {scale: [120, 0.5, 120]})
 
     // // Monster1
-    var glbFile01 = await fetch("res/meshes/glb/monster.glb").then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, MYSTICORE.device)));
+    var glbFile01 = await fetch("res/meshes/glb/woman1.glb").then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, MYSTICORE.device)));
     MYSTICORE.addGlbObj({
       material: {type: 'standard', useTextureFromGlb: true},
       scale: [20, 20, 20],
