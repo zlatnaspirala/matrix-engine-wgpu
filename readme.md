@@ -403,7 +403,9 @@ export var loadObjsSequence = function () {
 💡 GLB binary loading bvh(rig)animations.
  - See examples glb-loader.js (build with npm run glb-loader)
  - Next update materials improvements!
- - No light affect for now.
+ - Light affect just for first frame or t-pose.
+ - For npm service import uploadGLBModel.
+
 
 ### 📽️ Video textures
 
