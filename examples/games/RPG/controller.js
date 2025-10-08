@@ -1,5 +1,6 @@
 import {computeWorldVertsAndAABB, touchCoordinate, rayIntersectsAABB, rayIntersectsSphere, getRayFromMouse2, getRayFromMouse} from "../../../src/engine/raycast.js";
 import {mat4, vec4} from "wgpu-matrix";
+import {byId} from "../../../src/engine/utils.js";
 
 export class Controller {
 
@@ -111,7 +112,15 @@ export class Controller {
       if(screen.x >= xMin && screen.x <= xMax && screen.y >= yMin && screen.y <= yMax) {
         if(this.ignoreList.includes(object.name)) continue;
         if(this.selected.includes(object)) continue;
+        object.setSelectedEffect(true);
         this.selected.push(object);
+        byId('hud-menu').dispatchEvent(new CustomEvent("onSelectCharacter", {detail: object.name} ))
+      } else {
+        if (this.selected.indexOf(object) !== -1) {
+           this.selected.splice(this.selected.indexOf(object),1)
+           // byId('hud-menu').dispatchEvent(new CustomEvent("onSelectCharacter", {detail: object.name} ))
+        }
+        object.setSelectedEffect(false);
       }
     }
     console.log("Selected:", this.selected.map(o => o.name));

@@ -3,6 +3,8 @@ import MatrixEngineWGPU from "../../../src/world.js";
 import {downloadMeshes} from '../../../src/engine/loader-obj.js';
 import {uploadGLBModel} from "../../../src/engine/loaders/webgpu-gltf.js";
 import {Controller} from "./controller.js";
+import {HUD} from "./hud.js";
+
 /**
  * @Note
  * “Character and animation assets from Mixamo,
@@ -21,8 +23,8 @@ let MYSTICORE = new MatrixEngineWGPU({
 
   addEventListener('AmmoReady', async () => {
 
-    let test1 = new Controller(MYSTICORE.canvas);
-    MYSTICORE.RPG = test1;
+    MYSTICORE.RPG = new Controller(MYSTICORE.canvas);
+    MYSTICORE.HUD = new HUD();
 
     app.cameras.WASD.movementSpeed = 100;
 
@@ -43,7 +45,7 @@ let MYSTICORE = new MatrixEngineWGPU({
       position: {x: 0, y: -4, z: -70},
       name: 'local-hero',
       texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
-      raycast: { enabled: true , radius: 1.5 }
+      raycast: {enabled: true, radius: 1.5}
     }, null, glbFile01);
 
     // var glbFile02 = await fetch("res/meshes/glb/monster.glb").then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, MYSTICORE.device)));
