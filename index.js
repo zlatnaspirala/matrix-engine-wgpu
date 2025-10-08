@@ -15,6 +15,7 @@ import {
   computeAABB
 } from "./src/engine/raycast.js";
 import {OSCILLATOR, SWITCHER} from "./src/engine/utils.js";
+import {uploadGLBModel} from "./src/engine/loaders/webgpu-gltf.js";
 
 var about = () => {
   console.info("Hi npm. matrix-engine for webgpu is ready...")
@@ -44,5 +45,6 @@ export {
   makeObjSeqArg,
   SWITCHER,
   OSCILLATOR,
+  uploadGLBModel,
   about
 }
