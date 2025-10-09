@@ -110,7 +110,7 @@ export class Controller {
         this.canvas
       );
       if(screen.x >= xMin && screen.x <= xMax && screen.y >= yMin && screen.y <= yMax) {
-        if(this.ignoreList.includes(object.name)) continue;
+        if (this.ignoreList.some(str => object.name.includes(str))) continue;
         if(this.selected.includes(object)) continue;
         object.setSelectedEffect(true);
         this.selected.push(object);

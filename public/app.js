@@ -4,6 +4,53 @@
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
+exports.Character = void 0;
+var _webgpuGltf = require("../../../src/engine/loaders/webgpu-gltf");
+class Character {
+  constructor(MYSTICORE, path) {
+    this.core = MYSTICORE;
+    this.loadLocalHero(path);
+  }
+  async loadLocalHero(p) {
+    try {
+      var glbFile01 = await fetch(p).then(res => res.arrayBuffer().then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, this.core.device)));
+      let test = this.core.addGlbObj({
+        material: {
+          type: 'standard',
+          useTextureFromGlb: true
+        },
+        scale: [20, 20, 20],
+        position: {
+          x: 0,
+          y: -4,
+          z: -170
+        },
+        name: 'local-hero',
+        texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
+        raycast: {
+          enabled: true,
+          radius: 1.5
+        }
+      }, null, glbFile01);
+
+      // make small async 
+      setTimeout(() => {
+        const heroe_bodies = app.mainRenderBundle.filter(obj => obj.name && obj.name.includes("local-hero"));
+        console.log(' heroe_bodies return ', heroe_bodies);
+      }, 1200);
+    } catch (err) {
+      throw err;
+    }
+  }
+}
+exports.Character = Character;
+
+},{"../../../src/engine/loaders/webgpu-gltf":29}],2:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
 exports.Controller = void 0;
 var _raycast = require("../../../src/engine/raycast.js");
 var _wgpuMatrix = require("wgpu-matrix");
@@ -120,7 +167,7 @@ class Controller {
       if (!object.position) continue;
       const screen = this.projectToScreen([object.position.x, object.position.y, object.position.z, 1.0], camera.view, camera.projectionMatrix, this.canvas);
       if (screen.x >= xMin && screen.x <= xMax && screen.y >= yMin && screen.y <= yMax) {
-        if (this.ignoreList.includes(object.name)) continue;
+        if (this.ignoreList.some(str => object.name.includes(str))) continue;
         if (this.selected.includes(object)) continue;
         object.setSelectedEffect(true);
         this.selected.push(object);
@@ -164,7 +211,7 @@ class Controller {
 }
 exports.Controller = Controller;
 
-},{"../../../src/engine/raycast.js":30,"../../../src/engine/utils.js":31,"wgpu-matrix":18}],2:[function(require,module,exports){
+},{"../../../src/engine/raycast.js":33,"../../../src/engine/utils.js":34,"wgpu-matrix":21}],3:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -221,15 +268,86 @@ class HUD {
 }
 exports.HUD = HUD;
 
-},{}],3:[function(require,module,exports){
+},{}],4:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.MEMapLoader = void 0;
+var _loaderObj = require("../../../src/engine/loader-obj.js");
+var _navMesh = _interopRequireDefault(require("./nav-mesh.js"));
+function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
+class MEMapLoader {
+  async loadNavMesh(navMapPath) {
+    try {
+      const response = await fetch(navMapPath);
+      const navData = await response.json();
+      const nav = new _navMesh.default(navData, {
+        scale: [10, 1, 10]
+      });
+      return nav;
+    } catch (err) {
+      throw err;
+    }
+  }
+  constructor(MYSTICORE, navMapPath) {
+    this.core = MYSTICORE;
+    this.loadNavMesh(navMapPath).then(e => {
+      console.log('navMap loaded...');
+      this.loadMainMap(); // <-- FIXED
+    });
+  }
+  onGround(m) {
+    this.core.addMeshObj({
+      position: {
+        x: 0,
+        y: -5,
+        z: -10
+      },
+      rotation: {
+        x: 0,
+        y: 0,
+        z: 0
+      },
+      rotationSpeed: {
+        x: 0,
+        y: 0,
+        z: 0
+      },
+      texturesPaths: ['./res/meshes/blender/cube.png'],
+      name: 'ground',
+      mesh: m.cube,
+      physics: {
+        enabled: false,
+        mass: 0,
+        geometry: "Cube"
+      }
+    });
+    // this.core.lightContainer[0].position[1] = 25;
+  }
+  loadMainMap() {
+    (0, _loaderObj.downloadMeshes)({
+      cube: "./res/meshes/maps-objs/map-1.obj"
+    }, this.onGround.bind(this), {
+      scale: [10, 1, 10]
+    });
+  }
+}
+exports.MEMapLoader = MEMapLoader;
+
+},{"../../../src/engine/loader-obj.js":27,"./nav-mesh.js":6}],5:[function(require,module,exports){
 "use strict";
 
 var _world = _interopRequireDefault(require("../../../src/world.js"));
-var _loaderObj = require("../../../src/engine/loader-obj.js");
 var _webgpuGltf = require("../../../src/engine/loaders/webgpu-gltf.js");
 var _controller = require("./controller.js");
 var _hud = require("./hud.js");
+var _mapLoader = require("./map-loader.js");
+var _characterBase = require("./characterBase.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
+// import {downloadMeshes} from '../../../src/engine/loader-obj.js';
+
 /**
  * @Note
  * “Character and animation assets from Mixamo,
@@ -260,32 +378,13 @@ let MYSTICORE = new _world.default({
       app.cameras.WASD.position[2] = 0;
       app.cameras.WASD.position[1] = 23;
     }, 2000);
-    (0, _loaderObj.downloadMeshes)({
-      cube: "./res/meshes/blender/cube.obj"
-    }, onGround, {
-      scale: [120, 0.5, 120]
-    });
 
-    // // Monster1
-    var glbFile01 = await fetch("res/meshes/glb/woman1.glb").then(res => res.arrayBuffer().then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, MYSTICORE.device)));
-    MYSTICORE.addGlbObj({
-      material: {
-        type: 'standard',
-        useTextureFromGlb: true
-      },
-      scale: [20, 20, 20],
-      position: {
-        x: 0,
-        y: -4,
-        z: -70
-      },
-      name: 'local-hero',
-      texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
-      raycast: {
-        enabled: true,
-        radius: 1.5
-      }
-    }, null, glbFile01);
+    // MAPs
+    MYSTICORE.mapLoader = new _mapLoader.MEMapLoader(MYSTICORE, "./res/meshes/nav-mesh/navmesh.json");
+    // downloadMeshes({cube: "./res/meshes/blender/cube.obj"}, onGround, {scale: [120, 0.5, 120]})
+
+    // LOCAL HERO
+    MYSTICORE.localHero = new _characterBase.Character(MYSTICORE, "res/meshes/glb/woman1.glb");
 
     // var glbFile02 = await fetch("res/meshes/glb/monster.glb").then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, MYSTICORE.device)));
     // MYSTICORE.addGlbObj({
@@ -295,76 +394,449 @@ let MYSTICORE = new _world.default({
     //   name: 'firstGlb',
     //   texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
     // }, null, glbFile02);
-
-    // var glbFile03 = await fetch("res/meshes/glb/monster.glb").then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, MYSTICORE.device)));
-    // MYSTICORE.addGlbObj({
-    //   material: {type: 'pong', useTextureFromGlb: true},
-    //   scale: [20, 20, 20],
-    //   position: {x: 40, y: -4, z: -70},
-    //   name: 'firstGlb',
-    //   texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
-    // }, null, glbFile03);
   });
-  function onGround(m) {
-    MYSTICORE.addLight();
-    MYSTICORE.addMeshObj({
-      position: {
-        x: 0,
-        y: -5,
-        z: -10
-      },
-      rotation: {
-        x: 0,
-        y: 0,
-        z: 0
-      },
-      rotationSpeed: {
-        x: 0,
-        y: 0,
-        z: 0
-      },
-      texturesPaths: ['./res/meshes/blender/cube.png'],
-      name: 'ground',
-      mesh: m.cube,
-      physics: {
-        enabled: false,
-        mass: 0,
-        geometry: "Cube"
-      }
-    });
-    app.lightContainer[0].position[1] = 25;
-  }
+  MYSTICORE.addLight();
 });
+
 // just for dev
 window.app = MYSTICORE;
 
-// let dragStart = null;
-// let dragEnd = null;
-// let selecting = false;
+},{"../../../src/engine/loaders/webgpu-gltf.js":29,"../../../src/world.js":48,"./characterBase.js":1,"./controller.js":2,"./hud.js":3,"./map-loader.js":4}],6:[function(require,module,exports){
+"use strict";
 
-// canvas.addEventListener('mousedown', (e) => {
-//     if(e.button === 2){ // right mouse
-//         selecting = true;
-//         dragStart = { x: e.clientX, y: e.clientY };
-//         dragEnd = { x: e.clientX, y: e.clientY };
-//     }
-// });
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = exports.MinHeap = void 0;
+exports.followPath = followPath;
+class NavMesh {
+  constructor(data, options = {}) {
+    // expects data.vertices = [[x,y,z],...]
+    // and data.polygons = [{ indices: [i0,i1,i2], neighbors: [...] }, ...]
+    const scale = options.scale ?? [1, 1, 1]; // default: no scaling
+    const sx = scale[0],
+      sy = scale[1],
+      sz = scale[2];
 
-// canvas.addEventListener('mousemove', (e) => {
-//     if(selecting){
-//         dragEnd = { x: e.clientX, y: e.clientY };
-//     }
-// });
+    // Apply scale to each vertex
+    this.vertices = data.vertices.map(v => [v[0] * sx, v[1] * sy, v[2] * sz]);
+    this.polygons = data.polygons.map(p => ({
+      indices: p.indices.slice(),
+      neighbors: (p.neighbors || []).slice()
+    }));
 
-// canvas.addEventListener('mouseup', (e) => {
-//     if(selecting){
-//         selecting = false;
-//         selectCharactersInRect(dragStart, dragEnd);
-//         dragStart = dragEnd = null;
-//     }
-// });
+    // Compute derived info
+    this._computeCenters();
+    this._buildEdgeMap();
+  }
+  _computeCenters() {
+    this.centers = this.polygons.map(poly => {
+      const vs = poly.indices.map(i => this.vertices[i]);
+      const cx = (vs[0][0] + vs[1][0] + vs[2][0]) / 3;
+      const cy = (vs[0][1] + vs[1][1] + vs[2][1]) / 3;
+      const cz = (vs[0][2] + vs[1][2] + vs[2][2]) / 3;
+      return [cx, cy, cz];
+    });
+  }
+  _edgeKey(a, b) {
+    return a < b ? `${a}_${b}` : `${b}_${a}`;
+  }
+  _buildEdgeMap() {
+    // map edgeKey -> array of {poly, aIndex, bIndex}
+    this.edgeMap = new Map();
+    this.polygons.forEach((poly, pi) => {
+      const indices = poly.indices;
+      for (let i = 0; i < indices.length; i++) {
+        const a = indices[i];
+        const b = indices[(i + 1) % indices.length];
+        const key = this._edgeKey(a, b);
+        if (!this.edgeMap.has(key)) this.edgeMap.set(key, []);
+        this.edgeMap.get(key).push({
+          poly: pi,
+          a,
+          b
+        });
+      }
+    });
+  }
 
-},{"../../../src/engine/loader-obj.js":24,"../../../src/engine/loaders/webgpu-gltf.js":26,"../../../src/world.js":45,"./controller.js":1,"./hud.js":2}],4:[function(require,module,exports){
+  // Point-in-triangle test in XZ plane using barycentric technique
+  _pointInTriXZ(pt, v0, v1, v2) {
+    const x = pt[0],
+      z = pt[2];
+    const ax = v0[0],
+      az = v0[2];
+    const bx = v1[0],
+      bz = v1[2];
+    const cx = v2[0],
+      cz = v2[2];
+    // vectors
+    const v0x = cx - ax,
+      v0z = cz - az;
+    const v1x = bx - ax,
+      v1z = bz - az;
+    const v2x = x - ax,
+      v2z = z - az;
+    const dot00 = v0x * v0x + v0z * v0z;
+    const dot01 = v0x * v1x + v0z * v1z;
+    const dot02 = v0x * v2x + v0z * v2z;
+    const dot11 = v1x * v1x + v1z * v1z;
+    const dot12 = v1x * v2x + v1z * v2z;
+    const denom = dot00 * dot11 - dot01 * dot01;
+    if (Math.abs(denom) < 1e-9) return false;
+    const u = (dot11 * dot02 - dot01 * dot12) / denom;
+    const v = (dot00 * dot12 - dot01 * dot02) / denom;
+    return u >= -1e-6 && v >= -1e-6 && u + v <= 1 + 1e-6;
+  }
+  findPolygonContainingPoint(point) {
+    // first try naive linear scan (ok for medium meshes). point = [x,y,z]
+    for (let i = 0; i < this.polygons.length; i++) {
+      const poly = this.polygons[i];
+      const v0 = this.vertices[poly.indices[0]];
+      const v1 = this.vertices[poly.indices[1]];
+      const v2 = this.vertices[poly.indices[2]];
+      if (this._pointInTriXZ(point, v0, v1, v2)) return i;
+    }
+    // fallback: return nearest polygon center
+    let best = 0;
+    let bestD = Infinity;
+    for (let i = 0; i < this.centers.length; i++) {
+      const c = this.centers[i];
+      const dx = c[0] - point[0];
+      const dz = c[2] - point[2];
+      const d = dx * dx + dz * dz;
+      if (d < bestD) {
+        bestD = d;
+        best = i;
+      }
+    }
+    return best;
+  }
+
+  // A* over polygon graph. returns list of polygon indices (inclusive)
+  _findPolyPath(startPoly, endPoly) {
+    if (startPoly === endPoly) return [startPoly];
+    const open = new MinHeap((a, b) => a.f - b.f);
+    const nodes = new Array(this.polygons.length);
+    for (let i = 0; i < nodes.length; i++) nodes[i] = {
+      g: Infinity,
+      h: 0,
+      f: Infinity,
+      parent: -1,
+      id: i
+    };
+    nodes[startPoly].g = 0;
+    nodes[startPoly].h = this._heuristic(startPoly, endPoly);
+    nodes[startPoly].f = nodes[startPoly].h;
+    open.push(nodes[startPoly]);
+    const closed = new Set();
+    while (!open.empty()) {
+      const current = open.pop();
+      if (current.id === endPoly) {
+        const path = [];
+        let cur = current;
+        while (cur) {
+          path.push(cur.id);
+          if (cur.parent === -1) break;
+          cur = nodes[cur.parent];
+        }
+        return path.reverse();
+      }
+      closed.add(current.id);
+      const neighbors = this.polygons[current.id].neighbors || [];
+      for (const nId of neighbors) {
+        if (closed.has(nId)) continue;
+        const tentativeG = current.g + this._edgeCost(current.id, nId);
+        const neigh = nodes[nId];
+        if (tentativeG < neigh.g) {
+          neigh.parent = current.id;
+          neigh.g = tentativeG;
+          neigh.h = this._heuristic(nId, endPoly);
+          neigh.f = neigh.g + neigh.h;
+          open.push(neigh);
+        }
+      }
+    }
+    return []; // no path
+  }
+  _heuristic(aIdx, bIdx) {
+    const a = this.centers[aIdx];
+    const b = this.centers[bIdx];
+    const dx = a[0] - b[0];
+    const dz = a[2] - b[2];
+    return Math.sqrt(dx * dx + dz * dz);
+  }
+  _edgeCost(aIdx, bIdx) {
+    // Euclidean distance between polygon centers
+    const a = this.centers[aIdx];
+    const b = this.centers[bIdx];
+    const dx = a[0] - b[0];
+    const dz = a[2] - b[2];
+    return Math.sqrt(dx * dx + dz * dz);
+  }
+
+  // build portal list (pair of points) between the sequence of polygons
+  _buildPortals(polyPath, startPoint, endPoint) {
+    // portals: array of {left:[x,y,z], right:[x,y,z]}
+    const portals = [];
+    for (let i = 0; i < polyPath.length - 1; i++) {
+      const aIdx = polyPath[i];
+      const bIdx = polyPath[i + 1];
+      // find shared edge between aIdx and bIdx
+      const pa = this.polygons[aIdx];
+      const pb = this.polygons[bIdx];
+      let shared = null;
+      for (let ia = 0; ia < pa.indices.length; ia++) {
+        const a0 = pa.indices[ia],
+          a1 = pa.indices[(ia + 1) % pa.indices.length];
+        const key = this._edgeKey(a0, a1);
+        const entries = this.edgeMap.get(key) || [];
+        for (const e of entries) {
+          if (e.poly === bIdx) {
+            // shared edge
+            shared = [this.vertices[a0], this.vertices[a1]];
+            break;
+          }
+        }
+        if (shared) break;
+      }
+      if (!shared) {
+        // fallback: use centers
+        const cA = this.centers[aIdx];
+        const cB = this.centers[bIdx];
+        portals.push({
+          left: cA.slice(),
+          right: cB.slice()
+        });
+      } else {
+        // ensure consistent ordering (left/right) in XZ relative to path direction
+        portals.push({
+          left: shared[0].slice(),
+          right: shared[1].slice()
+        });
+      }
+    }
+
+    // prepend start and append end as degenerate portals
+    portals.unshift({
+      left: startPoint.slice(),
+      right: startPoint.slice()
+    });
+    portals.push({
+      left: endPoint.slice(),
+      right: endPoint.slice()
+    });
+    return portals;
+  }
+
+  // Funnel algorithm (returns array of [x,y,z])
+  _stringPull(portals) {
+    // classic funnel over XZ plane
+    const portalLeft = portals.map(p => [p.left[0], p.left[2]]);
+    const portalRight = portals.map(p => [p.right[0], p.right[2]]);
+    const points = []; // result XZ
+    let apexIndex = 0,
+      leftIndex = 0,
+      rightIndex = 0;
+    let apex = portalLeft[0].slice();
+    let left = portalLeft[0].slice();
+    let right = portalRight[0].slice();
+    points.push([apex[0], apex[1]]); // x,z
+
+    function vecCross(a, b) {
+      return a[0] * b[1] - a[1] * b[0];
+    }
+    function sub(a, b) {
+      return [a[0] - b[0], a[1] - b[1]];
+    }
+    for (let i = 1; i < portalLeft.length; i++) {
+      const pLeft = portalLeft[i];
+      const pRight = portalRight[i];
+
+      // update right
+      const relRight = sub(pRight, apex);
+      const relRightCur = sub(right, apex);
+      if (vecCross(relRightCur, relRight) >= 0) {
+        // new right is more 'right' -> tighten
+        if (vecCross(sub(left, apex), relRight) > 0) {
+          // right crosses left -> advance apex to left
+          points.push([left[0], left[1]]);
+          apex = left.slice();
+          // reset indices
+          apexIndex = leftIndex;
+          leftIndex = apexIndex;
+          rightIndex = apexIndex;
+          left = apex.slice();
+          right = apex.slice();
+          i = apexIndex; // continue from apexIndex+1 next loop
+          continue;
+        }
+        right = pRight.slice();
+        rightIndex = i;
+      }
+
+      // update left
+      const relLeft = sub(pLeft, apex);
+      const relLeftCur = sub(left, apex);
+      if (vecCross(relLeftCur, relLeft) <= 0) {
+        // new left is more 'left' -> tighten
+        if (vecCross(sub(right, apex), relLeft) < 0) {
+          // left crosses right -> advance apex to right
+          points.push([right[0], right[1]]);
+          apex = right.slice();
+          apexIndex = rightIndex;
+          leftIndex = apexIndex;
+          rightIndex = apexIndex;
+          left = apex.slice();
+          right = apex.slice();
+          i = apexIndex;
+          continue;
+        }
+        left = pLeft.slice();
+        leftIndex = i;
+      }
+    }
+
+    // add goal
+    const lastPortal = portalLeft[portalLeft.length - 1];
+    points.push([lastPortal[0], lastPortal[1]]);
+
+    // convert back to [x,y,z] with Y taken from mesh average Y (or 0)
+    const out = points.map(xz => {
+      const x = xz[0],
+        z = xz[1];
+      // pick Y from nearest vertex on mesh (cheap approximation)
+      const y = this._sampleY(x, z);
+      return [x, y, z];
+    });
+    return out;
+  }
+  _sampleY(x, z) {
+    // sample Y using nearest vertex (cheap). If you have heightmap, use that.
+    let bestD = Infinity,
+      bestY = 0;
+    for (let i = 0; i < this.vertices.length; i++) {
+      const v = this.vertices[i];
+      const dx = v[0] - x,
+        dz = v[2] - z;
+      const d = dx * dx + dz * dz;
+      if (d < bestD) {
+        bestD = d;
+        bestY = v[1];
+      }
+    }
+    return bestY;
+  }
+
+  // Public API: returns an array of [x,y,z] waypoints or [] if unreachable
+  findPath(startPoint, endPoint) {
+    // startPoint and endPoint are [x,y,z]
+    const startPoly = this.findPolygonContainingPoint(startPoint);
+    const endPoly = this.findPolygonContainingPoint(endPoint);
+    if (startPoly === null || endPoly === null) return [];
+    const polyPath = this._findPolyPath(startPoly, endPoly);
+    if (!polyPath || polyPath.length === 0) return [];
+
+    // If polyPath is single poly, simply return [start,end]
+    if (polyPath.length === 1) {
+      return [[startPoint[0], this._sampleY(startPoint[0], startPoint[2]), startPoint[2]], [endPoint[0], this._sampleY(endPoint[0], endPoint[2]), endPoint[2]]];
+    }
+    const portals = this._buildPortals(polyPath, startPoint, endPoint);
+    const smooth = this._stringPull(portals);
+    // ensure first/last are exactly start/end
+    if (smooth.length > 0) {
+      smooth[0] = [startPoint[0], this._sampleY(startPoint[0], startPoint[2]), startPoint[2]];
+      smooth[smooth.length - 1] = [endPoint[0], this._sampleY(endPoint[0], endPoint[2]), endPoint[2]];
+    }
+    return smooth;
+  }
+
+  // Optional: clamp point into mesh (closest point on triangles) - simple nearest vertex fallback
+  closestPointOnMesh(point) {
+    // naive: return nearest vertex
+    let bestD = Infinity,
+      best = null;
+    for (const v of this.vertices) {
+      const dx = v[0] - point[0],
+        dy = v[1] - point[1],
+        dz = v[2] - point[2];
+      const d = dx * dx + dy * dy + dz * dz;
+      if (d < bestD) {
+        bestD = d;
+        best = v;
+      }
+    }
+    return best.slice();
+  }
+}
+
+/* ----------------- tiny MinHeap for A* ----------------- */
+exports.default = NavMesh;
+class MinHeap {
+  constructor(cmp) {
+    this.cmp = cmp || ((a, b) => a - b);
+    this.items = [];
+  }
+  push(v) {
+    this.items.push(v);
+    this._siftUp(this.items.length - 1);
+  }
+  pop() {
+    if (this.items.length === 0) return null;
+    const top = this.items[0];
+    const last = this.items.pop();
+    if (this.items.length > 0) {
+      this.items[0] = last;
+      this._siftDown(0);
+    }
+    return top;
+  }
+  empty() {
+    return this.items.length === 0;
+  }
+  _siftUp(i) {
+    while (i > 0) {
+      const p = Math.floor((i - 1) / 2);
+      if (this.cmp(this.items[i], this.items[p]) < 0) {
+        [this.items[i], this.items[p]] = [this.items[p], this.items[i]];
+        i = p;
+      } else break;
+    }
+  }
+  _siftDown(i) {
+    while (true) {
+      const l = 2 * i + 1,
+        r = 2 * i + 2;
+      let m = i;
+      if (l < this.items.length && this.cmp(this.items[l], this.items[m]) < 0) m = l;
+      if (r < this.items.length && this.cmp(this.items[r], this.items[m]) < 0) m = r;
+      if (m !== i) {
+        [this.items[i], this.items[m]] = [this.items[m], this.items[i]];
+        i = m;
+      } else break;
+    }
+  }
+}
+
+// helper to walk a path (sequential)
+exports.MinHeap = MinHeap;
+function followPath(position, path) {
+  if (!path || path.length === 0) return;
+  let idx = 0;
+  position.onTargetPositionReach = () => {
+    idx++;
+    if (idx < path.length) {
+      const p = path[idx];
+      position.translateByXZ(p[0], p[2]);
+    } else {
+      position.onTargetPositionReach = () => {};
+    }
+  };
+  // start
+  position.translateByXZ(path[0][0], path[0][2]);
+}
+
+},{}],7:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -374,7 +846,7 @@ exports.default = void 0;
 var _bvhLoader = require("./module/bvh-loader");
 var _default = exports.default = _bvhLoader.MEBvh;
 
-},{"./module/bvh-loader":5}],5:[function(require,module,exports){
+},{"./module/bvh-loader":8}],8:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -1063,7 +1535,7 @@ class MEBvh {
 }
 exports.MEBvh = MEBvh;
 
-},{"webgpu-matrix":17}],6:[function(require,module,exports){
+},{"webgpu-matrix":20}],9:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -1141,7 +1613,7 @@ function equals(a, b) {
   return Math.abs(a - b) <= tolerance * Math.max(1, Math.abs(a), Math.abs(b));
 }
 
-},{}],7:[function(require,module,exports){
+},{}],10:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -1170,7 +1642,7 @@ var vec4 = _interopRequireWildcard(require("./vec4.js"));
 exports.vec4 = vec4;
 function _interopRequireWildcard(e, t) { if ("function" == typeof WeakMap) var r = new WeakMap(), n = new WeakMap(); return (_interopRequireWildcard = function (e, t) { if (!t && e && e.__esModule) return e; var o, i, f = { __proto__: null, default: e }; if (null === e || "object" != typeof e && "function" != typeof e) return f; if (o = t ? n : r) { if (o.has(e)) return o.get(e); o.set(e, f); } for (const t in e) "default" !== t && {}.hasOwnProperty.call(e, t) && ((i = (o = Object.defineProperty) && Object.getOwnPropertyDescriptor(e, t)) && (i.get || i.set) ? o(f, t, i) : f[t] = e[t]); return f; })(e, t); }
 
-},{"./common.js":6,"./mat2.js":8,"./mat2d.js":9,"./mat3.js":10,"./mat4.js":11,"./quat.js":12,"./quat2.js":13,"./vec2.js":14,"./vec3.js":15,"./vec4.js":16}],8:[function(require,module,exports){
+},{"./common.js":9,"./mat2.js":11,"./mat2d.js":12,"./mat3.js":13,"./mat4.js":14,"./quat.js":15,"./quat2.js":16,"./vec2.js":17,"./vec3.js":18,"./vec4.js":19}],11:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -1632,7 +2104,7 @@ var mul = exports.mul = multiply;
  */
 var sub = exports.sub = subtract;
 
-},{"./common.js":6}],9:[function(require,module,exports){
+},{"./common.js":9}],12:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -2146,7 +2618,7 @@ var mul = exports.mul = multiply;
  */
 var sub = exports.sub = subtract;
 
-},{"./common.js":6}],10:[function(require,module,exports){
+},{"./common.js":9}],13:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -2958,7 +3430,7 @@ var mul = exports.mul = multiply;
  */
 var sub = exports.sub = subtract;
 
-},{"./common.js":6}],11:[function(require,module,exports){
+},{"./common.js":9}],14:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -4978,7 +5450,7 @@ var mul = exports.mul = multiply;
  */
 var sub = exports.sub = subtract;
 
-},{"./common.js":6}],12:[function(require,module,exports){
+},{"./common.js":9}],15:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -5761,7 +6233,7 @@ var setAxes = exports.setAxes = function () {
   };
 }();
 
-},{"./common.js":6,"./mat3.js":10,"./vec3.js":15,"./vec4.js":16}],13:[function(require,module,exports){
+},{"./common.js":9,"./mat3.js":13,"./vec3.js":18,"./vec4.js":19}],16:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -6634,7 +7106,7 @@ function equals(a, b) {
   return Math.abs(a0 - b0) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a0), Math.abs(b0)) && Math.abs(a1 - b1) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a1), Math.abs(b1)) && Math.abs(a2 - b2) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a2), Math.abs(b2)) && Math.abs(a3 - b3) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a3), Math.abs(b3)) && Math.abs(a4 - b4) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a4), Math.abs(b4)) && Math.abs(a5 - b5) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a5), Math.abs(b5)) && Math.abs(a6 - b6) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a6), Math.abs(b6)) && Math.abs(a7 - b7) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a7), Math.abs(b7));
 }
 
-},{"./common.js":6,"./mat4.js":11,"./quat.js":12}],14:[function(require,module,exports){
+},{"./common.js":9,"./mat4.js":14,"./quat.js":15}],17:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -7312,7 +7784,7 @@ var forEach = exports.forEach = function () {
   };
 }();
 
-},{"./common.js":6}],15:[function(require,module,exports){
+},{"./common.js":9}],18:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -8164,7 +8636,7 @@ var forEach = exports.forEach = function () {
   };
 }();
 
-},{"./common.js":6}],16:[function(require,module,exports){
+},{"./common.js":9}],19:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -8871,7 +9343,7 @@ var forEach = exports.forEach = function () {
   };
 }();
 
-},{"./common.js":6}],17:[function(require,module,exports){
+},{"./common.js":9}],20:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -12804,7 +13276,7 @@ function setDefaultType(ctor) {
   setDefaultType$1(ctor);
 }
 
-},{}],18:[function(require,module,exports){
+},{}],21:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -18151,7 +18623,7 @@ function setDefaultType(ctor) {
   setDefaultType$1(ctor);
 }
 
-},{}],19:[function(require,module,exports){
+},{}],22:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -18565,7 +19037,7 @@ class MEBall {
 }
 exports.default = MEBall;
 
-},{"../shaders/shaders":40,"./engine":22,"./matrix-class":28,"wgpu-matrix":18}],20:[function(require,module,exports){
+},{"../shaders/shaders":43,"./engine":25,"./matrix-class":31,"wgpu-matrix":21}],23:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -18603,7 +19075,7 @@ class Behavior {
 }
 exports.default = Behavior;
 
-},{"./utils":31}],21:[function(require,module,exports){
+},{"./utils":34}],24:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -19028,7 +19500,7 @@ class MECube {
 }
 exports.default = MECube;
 
-},{"../shaders/shaders":40,"./engine":22,"./matrix-class":28,"wgpu-matrix":18}],22:[function(require,module,exports){
+},{"../shaders/shaders":43,"./engine":25,"./matrix-class":31,"wgpu-matrix":21}],25:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -19450,7 +19922,7 @@ function createInputHandler(window, canvas) {
   };
 }
 
-},{"./utils":31,"wgpu-matrix":18}],23:[function(require,module,exports){
+},{"./utils":34,"wgpu-matrix":21}],26:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -19691,7 +20163,7 @@ class SpotLight {
 }
 exports.SpotLight = SpotLight;
 
-},{"../shaders/vertexShadow.wgsl":43,"./behavior":20,"wgpu-matrix":18}],24:[function(require,module,exports){
+},{"../shaders/vertexShadow.wgsl":46,"./behavior":23,"wgpu-matrix":21}],27:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -20159,7 +20631,7 @@ function play(nameAni) {
   this.playing = true;
 }
 
-},{}],25:[function(require,module,exports){
+},{}],28:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -20669,7 +21141,7 @@ class BVHPlayer extends _meshObj.default {
 }
 exports.BVHPlayer = BVHPlayer;
 
-},{"../mesh-obj":29,"./webgpu-gltf.js":26,"bvh-loader":4,"wgpu-matrix":18}],26:[function(require,module,exports){
+},{"../mesh-obj":32,"./webgpu-gltf.js":29,"bvh-loader":7,"wgpu-matrix":21}],29:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -21247,7 +21719,7 @@ async function uploadGLBModel(buffer, device) {
   return R;
 }
 
-},{"gl-matrix":7}],27:[function(require,module,exports){
+},{"gl-matrix":10}],30:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -21773,7 +22245,7 @@ class Materials {
 }
 exports.default = Materials;
 
-},{"../shaders/fragment.wgsl":35,"../shaders/fragment.wgsl.metal":36,"../shaders/fragment.wgsl.normalmap":37,"../shaders/fragment.wgsl.pong":38,"../shaders/fragment.wgsl.power":39}],28:[function(require,module,exports){
+},{"../shaders/fragment.wgsl":38,"../shaders/fragment.wgsl.metal":39,"../shaders/fragment.wgsl.normalmap":40,"../shaders/fragment.wgsl.pong":41,"../shaders/fragment.wgsl.power":42}],31:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -22009,7 +22481,7 @@ class Rotation {
 }
 exports.Rotation = Rotation;
 
-},{"./utils":31}],29:[function(require,module,exports){
+},{"./utils":34}],32:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -22779,7 +23251,7 @@ class MEMeshObj extends _materials.default {
 }
 exports.default = MEMeshObj;
 
-},{"../shaders/fragment.video.wgsl":34,"../shaders/vertex.wgsl":41,"../shaders/vertex.wgsl.normalmap":42,"./materials":27,"./matrix-class":28,"./utils":31,"wgpu-matrix":18}],30:[function(require,module,exports){
+},{"../shaders/fragment.video.wgsl":37,"../shaders/vertex.wgsl":44,"../shaders/vertex.wgsl.normalmap":45,"./materials":30,"./matrix-class":31,"./utils":34,"wgpu-matrix":21}],33:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -23032,7 +23504,7 @@ function addRaycastsAABBListener(canvasId = "canvas1") {
   });
 }
 
-},{"wgpu-matrix":18}],31:[function(require,module,exports){
+},{"wgpu-matrix":21}],34:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -23918,7 +24390,7 @@ function setupCanvasFilters(canvasId) {
   updateFilter(); // Initial
 }
 
-},{}],32:[function(require,module,exports){
+},{}],35:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -23958,7 +24430,7 @@ class MultiLang {
 }
 exports.MultiLang = MultiLang;
 
-},{"../engine/utils":31}],33:[function(require,module,exports){
+},{"../engine/utils":34}],36:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -24242,7 +24714,7 @@ class MatrixAmmo {
 }
 exports.default = MatrixAmmo;
 
-},{"../engine/utils":31}],34:[function(require,module,exports){
+},{"../engine/utils":34}],37:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -24332,7 +24804,7 @@ fn main(input : FragmentInput) -> @location(0) vec4f {
 }
 `;
 
-},{}],35:[function(require,module,exports){
+},{}],38:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -24563,7 +25035,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, 1.0);
 }`;
 
-},{}],36:[function(require,module,exports){
+},{}],39:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -24741,7 +25213,7 @@ return vec4f(color, 1.0);
 // let radiance = spotlights[0].color * 10.0; // test high intensity
 // Lo += materialData.baseColor * radiance * NdotL;
 
-},{}],37:[function(require,module,exports){
+},{}],40:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -24986,7 +25458,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, 1.0);
 }`;
 
-},{}],38:[function(require,module,exports){
+},{}],41:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -25206,7 +25678,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, 1.0);
 }`;
 
-},{}],39:[function(require,module,exports){
+},{}],42:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -25374,7 +25846,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 // let radiance = spotlights[0].color * 10.0; // test high intensity
 // Lo += materialData.baseColor * radiance * NdotL;
 
-},{}],40:[function(require,module,exports){
+},{}],43:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -25432,7 +25904,7 @@ fn fragmentMain(input: VertexOutput) -> @location(0) vec4f {
   return vec4f(textureColor.rgb * lightColor, textureColor.a);
 }`;
 
-},{}],41:[function(require,module,exports){
+},{}],44:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -25518,7 +25990,7 @@ fn main(
   return output;
 }`;
 
-},{}],42:[function(require,module,exports){
+},{}],45:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -25629,7 +26101,7 @@ fn main(
   return output;
 }`;
 
-},{}],43:[function(require,module,exports){
+},{}],46:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -25657,7 +26129,7 @@ fn main(
 }
 `;
 
-},{}],44:[function(require,module,exports){
+},{}],47:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -25727,7 +26199,7 @@ class MatrixSounds {
 }
 exports.MatrixSounds = MatrixSounds;
 
-},{}],45:[function(require,module,exports){
+},{}],48:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -26542,4 +27014,4 @@ class MatrixEngineWGPU {
 }
 exports.default = MatrixEngineWGPU;
 
-},{"./engine/ball.js":19,"./engine/cube.js":21,"./engine/engine.js":22,"./engine/lights.js":23,"./engine/loader-obj.js":24,"./engine/loaders/bvh.js":25,"./engine/mesh-obj.js":29,"./engine/utils.js":31,"./multilang/lang.js":32,"./physics/matrix-ammo.js":33,"./sounds/sounds.js":44,"wgpu-matrix":18}]},{},[3]);
+},{"./engine/ball.js":22,"./engine/cube.js":24,"./engine/engine.js":25,"./engine/lights.js":26,"./engine/loader-obj.js":27,"./engine/loaders/bvh.js":28,"./engine/mesh-obj.js":32,"./engine/utils.js":34,"./multilang/lang.js":35,"./physics/matrix-ammo.js":36,"./sounds/sounds.js":47,"wgpu-matrix":21}]},{},[5]);
