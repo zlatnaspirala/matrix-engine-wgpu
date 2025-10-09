@@ -836,38 +836,39 @@ function followPath(character, path) {
   let idx = 0;
   const pos = character.position;
   const rot = character.rotation;
+
+  // Recursive move
   function moveToNext() {
     if (idx >= path.length) {
-      character.onTargetPositionReach = () => {};
+      character.position.onTargetPositionReach = () => {};
       return;
     }
-    const p = path[idx];
+    const target = path[idx];
 
-    // --- Compute direction (XZ plane) ---
-    const dx = p[0] - pos.x;
-    const dz = p[2] - pos.z;
+    // --- Compute direction in XZ plane ---
+    const dx = target[0] - pos.x;
+    const dz = target[2] - pos.z;
 
-    // Character default faces -Z → use atan2(dx, dz)
+    // Character faces -Z → use atan2(dx, dz)
     let angleY = Math.atan2(dx, dz);
 
-    // Convert to degrees and normalize to [0, 360)
+    // Convert to degrees & normalize
     angleY = ((0, _utils.radToDeg)(angleY) + 360) % 360;
 
-    // --- Apply rotation ---
+    // --- Apply facing rotation ---
     rot.y = angleY;
 
-    // --- Move to waypoint ---
-    character.position.translateByXZ(p[0], p[2]);
+    // --- Move character ---
+    pos.translateByXZ(target[0], target[2]);
 
-    // --- Continue to next target on reach ---
-    character.onTargetPositionReach = () => {
-      console.log('onTargetPositionReach ');
+    // --- Wait for arrival ---
+    character.position.onTargetPositionReach = () => {
       idx++;
       moveToNext();
     };
   }
 
-  // start path following
+  // Start moving
   moveToNext();
 }
 function orientHeroToDirection(hero, dir) {
