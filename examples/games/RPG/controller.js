@@ -1,4 +1,4 @@
-import {computeWorldVertsAndAABB, touchCoordinate, rayIntersectsAABB, rayIntersectsSphere, getRayFromMouse2, getRayFromMouse} from "../../../src/engine/raycast.js";
+import {computeWorldVertsAndAABB, touchCoordinate, rayIntersectsAABB, rayIntersectsSphere, getRayFromMouse2, getRayFromMouse, addRaycastsListener} from "../../../src/engine/raycast.js";
 import {mat4, vec4} from "wgpu-matrix";
 import {byId} from "../../../src/engine/utils.js";
 import {followPath} from "./nav-mesh.js";
@@ -23,12 +23,8 @@ export class Controller {
         this.dragStart = {x: e.clientX, y: e.clientY};
         this.dragEnd = {x: e.clientX, y: e.clientY};
       } else if(e.button === 0) {
-        console.log('it is right what is heroe_bodies ', this.heroe_bodies);
-        console.log('it is right what is nav ', this.nav);
-        const start = [this.heroe_bodies[0].position.x, this.heroe_bodies[0].position.y, this.heroe_bodies[0].position.z];
-        const end = [ e.clientX, 0, e.clientY];
-        const path = this.nav.findPath(start, end);
-        followPath(this.heroe_bodies[0].position, path);
+        // console.log('it is right what is heroe_bodies ', this.heroe_bodies);
+        // console.log('it is right what is nav ', this.nav);
       }
     });
 
@@ -49,35 +45,37 @@ export class Controller {
       }
     });
 
-    canvas.addEventListener('click', (event) => {
-      console.warn(`Canvas click  ${event} `);
-      const camera = app.cameras.WASD;
-      const {rayOrigin, rayDirection} = getRayFromMouse2(event, this.canvas, camera);
-      for(const object of app.mainRenderBundle) {
-        const {boxMin, boxMax} = computeWorldVertsAndAABB(object);
-        if(object.raycast.enabled == true) {
-          if(rayIntersectsAABB(rayOrigin, rayDirection, boxMin, boxMax)) {
-            // console.log('AABB hit:', object.name);
-            canvas.dispatchEvent(new CustomEvent('ray.hit.event', {
-              detail: {hitObject: object},
-              rayOrigin: rayOrigin,
-              rayDirection: rayDirection
-            }));
-            if(touchCoordinate.stopOnFirstDetectedHit == true) {
-              break;
-            }
-          }
-        }
-      }
-    });
+    addRaycastsListener()
 
     canvas.addEventListener("ray.hit.event", (e) => {
-      console.log('ray.hit.event by x,y detected', e);
-      if(false) {
-        console.log('no hit in middle of game ...');
+      console.log('ray.hit.event detected', e);
+      const {hitObject, hitPoint, button} = e.detail;
+      if(!hitObject || !hitPoint) {
+        console.warn('No valid hit detected.');
         return;
       }
-      console.log("hit scene obj: ", e.detail.hitObject.name)
+      console.log("Hit object:", hitObject.name, "Button:", button);
+      // Only react to LEFT CLICK
+      if(button !== 0) return;
+      // Define start (hero position) and end (clicked point)
+      const hero = this.heroe_bodies[0];
+      const start = [hero.position.x, hero.position.y, hero.position.z];
+      const end = [hitPoint[0], hitPoint[1], hitPoint[2]];
+
+      console.log("Start:", start, "End:", end);
+
+      // --- find path on your navmesh ---
+      const path = this.nav.findPath(start, end);
+
+      if(!path || path.length === 0) {
+        console.warn('No valid path found.');
+        return;
+      }
+
+      console.log("Path:", path);
+
+      // --- move hero along path ---
+      followPath(hero, path);
     });
 
     this.canvas.addEventListener("contextmenu", (e) => {

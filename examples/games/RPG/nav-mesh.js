@@ -1,3 +1,5 @@
+import { degToRad, radToDeg } from "../../../src/engine/utils.js";
+
 export default class NavMesh {
   constructor(data, options = {}) {
     // expects data.vertices = [[x,y,z],...]
@@ -327,7 +329,6 @@ export default class NavMesh {
   }
 }
 
-/* ----------------- tiny MinHeap for A* ----------------- */
 export class MinHeap {
   constructor(cmp) {
     this.cmp = cmp || ((a, b) => a - b);
@@ -371,19 +372,59 @@ export class MinHeap {
   }
 }
 
-// helper to walk a path (sequential)
-export function followPath(position, path) {
-  if(!path || path.length === 0) return;
+export function followPath(character, path) {
+  if (!path || path.length === 0) return;
   let idx = 0;
-  position.onTargetPositionReach = () => {
-    idx++;
-    if(idx < path.length) {
-      const p = path[idx];
-      position.translateByXZ(p[0], p[2]);
-    } else {
-      position.onTargetPositionReach = () => {};
+
+  const pos = character.position;
+  const rot = character.rotation;
+
+  function moveToNext() {
+    if (idx >= path.length) {
+      character.onTargetPositionReach = () => {};
+      return;
     }
-  };
-  // start
-  position.translateByXZ(path[0][0], path[0][2]);
+
+    const p = path[idx];
+
+    // --- Compute direction (XZ plane) ---
+    const dx = p[0] - pos.x;
+    const dz = p[2] - pos.z;
+
+    // Character default faces -Z → use atan2(dx, dz)
+    let angleY = Math.atan2(dx, dz);
+
+    // Convert to degrees and normalize to [0, 360)
+    angleY = (radToDeg(angleY) + 360) % 360;
+
+    // --- Apply rotation ---
+    rot.y = angleY;
+
+    // --- Move to waypoint ---
+    character.position.translateByXZ(p[0], p[2]);
+
+    // --- Continue to next target on reach ---
+    character.onTargetPositionReach = () => {
+      console.log('onTargetPositionReach ')
+      idx++;
+      moveToNext();
+    };
+  }
+
+  // start path following
+  moveToNext();
+}
+
+export function orientHeroToDirection(hero, dir) {
+  // dir = normalized movement direction in world space [x, y, z]
+  // hero.forward = [0, 0, -1] by default
+  // Project direction onto XZ plane (ignore Y)
+  const flatDir = [dir[0], 0, dir[2]];
+  const len = Math.hypot(flatDir[0], flatDir[2]);
+  if (len < 0.0001) return;
+  flatDir[0] /= len; flatDir[2] /= len;
+  // Compute rotation angle around Y axis
+  const angle = Math.atan2(flatDir[0], flatDir[2]); // note X/Z order!
+  // Apply to hero
+  hero.rotation.y = angle; // in radians
 }
