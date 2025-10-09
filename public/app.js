@@ -4,2151 +4,875 @@
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.welcomeBoxHTML = exports.settingsBox = void 0;
-let settingsBox = exports.settingsBox = `
-<div style="">
-  <span style="font-size:170%" data-label="settings"></span>
-  <div style="justify-items: flex-end;margin:20px;" >
-    <div>
-      <span data-label="sounds"></span>
-      <label class="switch">
-        <input id="settingsAudios" type="checkbox">
-        <span class="sliderSwitch round"></span>
-      </label>
-    </div>
-      <div style="margin-top:20px;margin-bottom:15px;">
-        <span style="font-size: larger;margin-bottom:15px" data-label="graphics"></span>
-        <p></p>
-        <label>Anim speed:</label>
-        <select id="physicsSpeed" class="setting-select">
-          <option value="1">Slow</option>
-          <option value="2">Normal</option>
-          <option value="3">Fast</option>
-        </select>
-      </div>
+exports.Character = void 0;
+var _webgpuGltf = require("../../../src/engine/loaders/webgpu-gltf");
+class Character {
+  positionThrust = 0.85;
+  constructor(MYSTICORE, path) {
+    this.core = MYSTICORE;
+    this.heroe_bodies = [];
+    this.loadLocalHero(path);
+  }
+  async loadLocalHero(p) {
+    try {
+      var glbFile01 = await fetch(p).then(res => res.arrayBuffer().then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, this.core.device)));
+      this.core.addGlbObj({
+        material: {
+          type: 'standard',
+          useTextureFromGlb: true
+        },
+        scale: [20, 20, 20],
+        position: {
+          x: 0,
+          y: -4,
+          z: -220
+        },
+        name: 'local-hero',
+        texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
+        raycast: {
+          enabled: true,
+          radius: 1.5
+        }
+      }, null, glbFile01);
+      // make small async
+      setTimeout(() => {
+        this.heroe_bodies = app.mainRenderBundle.filter(obj => obj.name && obj.name.includes("local-hero"));
+        this.core.RPG.heroe_bodies = this.heroe_bodies;
+        this.core.RPG.heroe_bodies.forEach(subMesh => {
+          subMesh.position.thrust = 1;
+        });
+      }, 1200);
+    } catch (err) {
+      throw err;
+    }
+  }
+}
+exports.Character = Character;
 
-      <div>
-        <label>Blur:</label>
-        <select id="blurControl">
-          <option value="0px">Blur: 0</option>
-          <option value="1px">Blur: 1</option>
-          <option value="2px">Blur: 2</option>
-          <option value="3px">Blur: 3</option>
-        </select>
-      </div>
-
-      <div>
-      <label>Grayscale:</label>
-      <select id="grayscaleControl">
-        <option value="0%">Grayscale: 0%</option>
-        <option value="25%">Grayscale: 25%</option>
-        <option value="50%">Grayscale: 50%</option>
-        <option value="75%">Grayscale: 75%</option>
-        <option value="100%">Grayscale: 100%</option>
-      </select>
-      </div>
-      
-      <div>
-       <label>Brightness:</label>
-      <select id="brightnessControl">
-        <option value="100%">100%</option>
-        <option value="150%">150%</option>
-        <option value="200%">200%</option>
-      </select>
-      </div>
-      
-      <div>
-      <label>Contrast:</label>
-      <select id="contrastControl">
-        <option value="100%">100%</option>
-        <option value="150%">150%</option>
-        <option value="200%">200%</option>
-      </select>
-      </div>
-      
-      <div>
-      <label>Saturate:</label>
-      <select id="saturateControl">
-        <option value="100%">100%</option>
-        <option value="150%">150%</option>
-        <option value="200%">200%</option>
-      </select>
-     </div>
-      
-      <div>
-      <label>Sepia:</label>
-      <select id="sepiaControl">
-        <option value="0%">0%</option>
-        <option value="50%">50%</option>
-        <option value="100%">100%</option>
-      </select>
-     </div>
-      
-      <div>
-      <label>Invert:</label>
-      <select id="invertControl">
-        <option value="0%">0%</option>
-        <option value="50%">50%</option>
-        <option value="100%">100%</option>
-      </select>
-     </div>
-      
-      <div>
-      <label>Hue Rotate:</label>
-      <select id="hueControl">
-        <option value="0deg">0°</option>
-        <option value="90deg">90°</option>
-        <option value="180deg">180°</option>
-        <option value="270deg">270°</option>
-      </select>
-      </div>
- 
-    <div style="margin-top:20px;">
-      <button class="btn" onclick="app.myDom.hideSettings()">
-        <span data-label="hide"></span>
-      </button>
-    </div>
-
-    <img src="res/icons/512.png" style="position:absolute;left:10px;top:5%;width:300px;z-index:-1;"/>
-  </div>
-</div>`;
-let welcomeBoxHTML = exports.welcomeBoxHTML = `<span class="fancy-title" data-label="welcomeMsg"></span>
-     <a href="https://github.com/zlatnaspirala/matrix-engine-wgpu">zlatnaspirala/matrix-engine-wgpu</a><br><br>
-     <div style="display:flex;flex-direction:column;align-items: center;margin:20px;padding: 10px;">
-       <span style="width:100%" data-label="choosename"></span>
-       <input style="text-align: center;height:50px;font-size:100%;width:250px" class="fancy-label" type="text" value="Guest" />
-      </div>
-     <button id="startFromWelcome" class="btn" ><span style="font-size:30px;margin:15px;padding:10px" data-label="startGame"></span></button> <br>
-     <div><span class="fancy-label" data-label="changeLang"></span></div> 
-     <button class="btn" onclick="
-      app.label.loadMultilang('en').then(r => {
-        app.label.get = r;
-        app.label.update()
-      });
-     " ><span data-label="english"></span></button> 
-     <button class="btn" onclick="app.label.loadMultilang('sr').then(r => {
-        app.label.get = r
-        app.label.update() })" ><span data-label="serbian"></span></button> 
-    `;
-
-},{}],2:[function(require,module,exports){
+},{"../../../src/engine/loaders/webgpu-gltf":29}],2:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.myDom = exports.dices = void 0;
+exports.Controller = void 0;
+var _raycast = require("../../../src/engine/raycast.js");
+var _wgpuMatrix = require("wgpu-matrix");
 var _utils = require("../../../src/engine/utils.js");
-var _htmlContent = require("./html-content.js");
-let dices = exports.dices = {
-  C: 0,
-  STATUS: 'FREE_TO_PLAY',
-  R: {},
-  SAVED_DICES: {},
-  pickDice: function (dice) {
-    if (Object.keys(this.SAVED_DICES).length >= 5) {
-      console.log("⚠️ You can only select up to 5 dice!");
-      return; // prevent adding more
-    }
-    this.SAVED_DICES[dice] = this.R[dice];
-    this.refreshSelectedBox();
-  },
-  setStartUpPosition: () => {
-    // 
-    let currentIndex = 0;
-    for (var x = 1; x < 7; x++) {
-      app.matrixAmmo.getBodyByName('CubePhysics' + x).MEObject.position.setPosition(-5 + currentIndex * 5, 2, -15);
-    }
-  },
-  refreshSelectedBox: function (arg) {
-    let currentIndex = 0;
-    for (var key in this.SAVED_DICES) {
-      let B = app.matrixAmmo.getBodyByName(key);
-      this.deactivatePhysics(B);
-      const transform = new Ammo.btTransform();
-      transform.setIdentity();
-      transform.setOrigin(new Ammo.btVector3(0, 0, 0));
-      B.setWorldTransform(transform);
-      B.MEObject.position.setPosition(-5 + currentIndex, 5, -16);
-      currentIndex += 3;
-    }
-  },
-  deactivatePhysics: function (body) {
-    const CF_KINEMATIC_OBJECT = 2;
-    const DISABLE_DEACTIVATION = 4;
-    // 1. Remove from world
-    app.matrixAmmo.dynamicsWorld.removeRigidBody(body);
-    // 2. Set body to kinematic
-    const flags = body.getCollisionFlags();
-    body.setCollisionFlags(flags | CF_KINEMATIC_OBJECT);
-    body.setActivationState(DISABLE_DEACTIVATION); // no auto-wakeup
-    // 3. Clear motion
-    const zero = new Ammo.btVector3(0, 0, 0);
-    body.setLinearVelocity(zero);
-    body.setAngularVelocity(zero);
-    // 4. Reset transform to current position (optional — preserves pose)
-    const currentTransform = body.getWorldTransform();
-    body.setWorldTransform(currentTransform);
-    body.getMotionState().setWorldTransform(currentTransform);
-    // 5. Add back to physics world
-    app.matrixAmmo.dynamicsWorld.addRigidBody(body);
-    // 6. Mark it manually (logic flag)
-    body.isKinematic = true;
-  },
-  resetBodyAboveFloor: function (body, z = -14) {
-    const transform = new Ammo.btTransform();
-    transform.setIdentity();
-    transform.setOrigin(new Ammo.btVector3(-1 + Math.random(), 3, z));
-    body.setWorldTransform(transform);
-    body.getMotionState().setWorldTransform(transform);
-  },
-  activatePhysics: function (body) {
-    // 1. Make it dynamic again
-    body.setCollisionFlags(body.getCollisionFlags() & ~2); // remove kinematic
-    body.setActivationState(1); // ACTIVE_TAG
-    body.isKinematic = false;
-
-    // 2. Reset position ABOVE the floor — force it out of collision
-    // const newY = 3 + Math.random(); // ensure it’s above the floor
-    const transform = new Ammo.btTransform();
-    transform.setIdentity();
-    const newX = (Math.random() - 0.5) * 4; // spread from -2 to +2 on X
-    const newY = 3; // fixed height above floor
-    transform.setOrigin(new Ammo.btVector3(newX, newY, 0));
-    body.setWorldTransform(transform);
-
-    // 3. Clear velocities
-    body.setLinearVelocity(new Ammo.btVector3(0, 0, 0));
-    body.setAngularVelocity(new Ammo.btVector3(0, 0, 0));
-
-    // 4. Enable CCD (to prevent tunneling)
-    const size = 1; // cube side length
-    body.setCcdMotionThreshold(1e-7);
-    body.setCcdSweptSphereRadius(size * 0.5);
-
-    // Re-add to world if needed
-    // Optionally: remove and re-add if not responding
-    app.matrixAmmo.dynamicsWorld.removeRigidBody(body);
-    app.matrixAmmo.dynamicsWorld.addRigidBody(body);
-
-    // 5. Reactivate it
-    body.activate(true);
-    this.resetBodyAboveFloor(body);
-  },
-  activateAllDicesPhysics: function () {
-    this.getAllDices()
-    // .filter((item) => {
-    //   let test = app.matrixAmmo.getBodyByName(item.name)?.isKinematicObject();
-    //   if(test === true) {
-    //     return true;
-    //   } else {
-    //     return false;
-    //   }
-    // })
-    .forEach(dice => {
-      const body = app.matrixAmmo.getBodyByName(dice.name);
-      if (body) {
-        this.activatePhysics(body); // <--- FIX: pass the physics body, not the dice object
+var _navMesh = require("./nav-mesh.js");
+class Controller {
+  ignoreList = ['ground'];
+  selected = [];
+  nav = null;
+  heroe_bodies = null;
+  constructor(canvas) {
+    this.canvas = canvas;
+    this.dragStart = null;
+    this.dragEnd = null;
+    this.selecting = false;
+    canvas.addEventListener('mousedown', e => {
+      if (e.button === 2) {
+        // right mouse
+        this.selecting = true;
+        this.dragStart = {
+          x: e.clientX,
+          y: e.clientY
+        };
+        this.dragEnd = {
+          x: e.clientX,
+          y: e.clientY
+        };
+      } else if (e.button === 0) {
+        // console.log('it is right what is heroe_bodies ', this.heroe_bodies);
+        // console.log('it is right what is nav ', this.nav);
       }
     });
-  },
-  getAllDices: function () {
-    return app.mainRenderBundle.filter(item => item.name.indexOf("CubePhysics") !== -1);
-  },
-  getDiceByName: function (name) {
-    return app.mainRenderBundle.find(item => item.name === name);
-  },
-  checkAll: function () {
-    this.C++;
-    let activeRollingCount = 0;
-    let allReady = true;
-    for (let i = 1; i <= 6; i++) {
-      const key = "CubePhysics" + i;
-      if (key in this.SAVED_DICES) continue; // skip saved ones
-      activeRollingCount++; // count how many are still active
-      if (typeof this.R[key] === 'undefined') {
-        allReady = false;
-        break;
-      }
-    }
-    // Dynamic threshold: min wait time based on rolling dice
-    const minWait = Math.max(200, activeRollingCount * 200); // e.g. 1 die => 200, 5 dice => 1000, 6 dice => 1200
-    if (allReady && this.C > minWait) {
-      dispatchEvent(new CustomEvent('all-done', {
-        detail: {}
-      }));
-      this.C = 0;
-    }
-  },
-  validatePass: function () {
-    if (Object.keys(this.SAVED_DICES).length !== 5) {
-      console.log('%cBLOCK', _utils.LOG_FUNNY);
-      _utils.mb.error(`Must select (minimum) 5 dices before add results...`);
-      return false;
-    }
-    if (dices.STATUS != "FINISHED") {
-      console.log('%cBLOCK', _utils.LOG_FUNNY);
-      _utils.mb.error(`STATUS IS ${dices.STATUS}, please wait for results...`);
-      app.matrixSounds.play('block');
-      return false;
-    } else {
-      return true;
-    }
-  }
-};
-let myDom = exports.myDom = {
-  state: {
-    rowDown: []
-  },
-  memoNumberRow: [],
-  hideSettings: function () {
-    (0, _utils.byId)('blocker').style.display = 'none';
-    (0, _utils.byId)('messageBox').style.display = 'none';
-  },
-  createMenu: function () {
-    var root = document.createElement('div');
-    root.id = 'hud';
-    root.style.position = 'absolute';
-    root.style.right = '10%';
-    root.style.top = '10%';
-    var help = document.createElement('div');
-    help.id = 'HELP';
-    help.classList.add('btn');
-    help.innerHTML = `<span data-label="help"></span>`;
-    help.addEventListener('click', () => {
-      if ((0, _utils.byId)('helpBox').style.display != 'none') {
-        (0, _utils.byId)('helpBox').style.display = 'none';
-      } else {
-        (0, _utils.byId)('helpBox').style.display = 'block';
+    canvas.addEventListener('mousemove', e => {
+      if (this.selecting) {
+        this.dragEnd = {
+          x: e.clientX,
+          y: e.clientY
+        };
       }
     });
-    var table = document.createElement('div');
-    table.id = 'showHideTableDOM';
-    table.classList.add('btn');
-    table.innerHTML = `<span data-label="table"></span>`;
-    table.addEventListener('click', () => {
-      this.showHideJambTable();
+    canvas.addEventListener('mouseup', e => {
+      if (this.selecting) {
+        this.selecting = false;
+        this.selectCharactersInRect(this.dragStart, this.dragEnd);
+        this.dragStart = this.dragEnd = null;
+        setTimeout(() => {
+          if (this.ctx) this.ctx.clearRect(0, 0, this.overlay.width, this.overlay.height);
+        }, 100);
+      }
     });
-    var settings = document.createElement('div');
-    settings.id = 'settings';
-    settings.classList.add('btn');
-    settings.innerHTML = `<span data-label="settings"></span>`;
-    settings.addEventListener('click', () => {
-      if (document.getElementById('messageBox').getAttribute('data-loaded') != null) {
-        (0, _utils.byId)('blocker').style.display = 'flex';
-        (0, _utils.byId)('messageBox').style.display = 'unset';
+    (0, _raycast.addRaycastsListener)();
+    canvas.addEventListener("ray.hit.event", e => {
+      // console.log('ray.hit.event detected', e);
+      const {
+        hitObject,
+        hitPoint,
+        button
+      } = e.detail;
+      if (!hitObject || !hitPoint) {
+        console.warn('No valid hit detected.');
         return;
       }
-      (0, _utils.byId)('messageBox').innerHTML = _htmlContent.settingsBox;
-      (0, _utils.byId)('blocker').style.display = 'flex';
-      (0, _utils.byId)('messageBox').style.display = 'unset';
-      dispatchEvent(new CustomEvent('updateLang', {}));
-      (0, _utils.byId)('settingsAudios').click();
-      (0, _utils.byId)('settingsAudios').addEventListener('change', e => {
-        if (e.target.checked == true) {
-          app.matrixSounds.unmuteAll();
-        } else {
-          app.matrixSounds.muteAll();
-        }
-      });
-      (0, _utils.setupCanvasFilters)();
-      (0, _utils.byId)('messageBox').setAttribute('data-loaded', 'loaded');
-      document.getElementById('physicsSpeed').value = app.matrixAmmo.speedUpSimulation;
-      (0, _utils.byId)("physicsSpeed").addEventListener("change", e => {
-        app.matrixAmmo.speedUpSimulation = parseInt(e.target.value);
-      });
-    });
+      // console.log("Hit object:", hitObject.name, "Button:", button);
+      // Only react to LEFT CLICK
+      if (button !== 0) return;
+      // Define start (hero position) and end (clicked point)
+      const hero = this.heroe_bodies[0];
+      const start = [hero.position.x, hero.position.y, hero.position.z];
+      const end = [hitPoint[0], hitPoint[1], hitPoint[2]];
 
-    // test help
-    var helpBox = document.createElement('div');
-    helpBox.id = 'helpBox';
-    helpBox.style.position = 'absolute';
-    helpBox.style.right = '20%';
-    helpBox.style.zIndex = '2';
-    helpBox.style.top = '15%';
-    helpBox.style.width = '60%';
-    helpBox.style.height = '50%';
-    helpBox.style.fontSize = '100%';
-    helpBox.classList.add('btn');
-    helpBox.addEventListener('click', () => {
-      (0, _utils.byId)('helpBox').style.display = 'none';
+      // console.log("Start:", start, "End:", end);
+      // --- find path on your navmesh ---
+      const path = this.nav.findPath(start, end);
+      if (!path || path.length === 0) {
+        console.warn('No valid path found.');
+        return;
+      }
+      // console.log("Path:", path);
+      (0, _navMesh.followPath)(hero, path);
     });
-    document.body.appendChild(helpBox);
-    console.log('what is dom, ', (0, _utils.byId)('helpBox'));
-    (0, _utils.typeText)('helpBox', app.label.get.about, 10);
-    //
-    var roll = document.createElement('div');
-    roll.id = 'hud-roll';
-    roll.classList.add('btn');
-    roll.innerHTML = `<span data-label="roll"></span>`;
-    roll.addEventListener('click', () => {
-      app.ROLL();
+    this.canvas.addEventListener("contextmenu", e => {
+      e.preventDefault();
     });
-    var separator = document.createElement('div');
-    separator.innerHTML = `✨maximumroulette.com✨`;
-    root.append(settings);
-    root.append(table);
-    root.append(help);
-    root.append(separator);
-    root.append(roll);
-    document.body.appendChild(root);
+    this.activateVisualRect();
+  }
+  projectToScreen(worldPos, viewMatrix, projectionMatrix, canvas) {
+    // Convert world position to clip space
+    const world = [worldPos[0], worldPos[1], worldPos[2], 1.0];
 
-    // global access
-    // app.label.update()
-    dispatchEvent(new CustomEvent('updateLang', {}));
-  },
-  createBlocker: function () {
-    var root = document.createElement('div');
-    root.id = 'blocker';
-    var messageBox = document.createElement('div');
-    messageBox.id = 'messageBox';
+    // Multiply in correct order: clip = projection * view * world
+    const viewProj = _wgpuMatrix.mat4.multiply(projectionMatrix, viewMatrix);
+    const clip = _wgpuMatrix.vec4.transformMat4(world, viewProj);
 
-    // console.log('TEST', app.label.get)
-    messageBox.innerHTML = _htmlContent.welcomeBoxHTML;
-    let initialMsgBoxEvent = function () {
-      console.log('click on msgbox');
-      (0, _utils.byId)('messageBox').innerHTML = ``;
-      (0, _utils.byId)('blocker').style.display = 'none';
-      myDom.createMenu();
-      messageBox.removeEventListener('click', initialMsgBoxEvent);
-      document.querySelectorAll('.btn, .fancy-label, .fancy-title').forEach(el => {
-        el.addEventListener('mouseenter', () => {
-          app.matrixSounds.play('hover');
-        });
-      });
+    // Perform perspective divide
+    const ndcX = clip[0] / clip[3];
+    const ndcY = clip[1] / clip[3];
+
+    // Convert NDC (-1..1) to screen pixels
+    const screenX = (ndcX * 0.5 + 0.5) * canvas.width;
+    const screenY = (1 - (ndcY * 0.5 + 0.5)) * canvas.height;
+    return {
+      x: screenX,
+      y: screenY
     };
-    root.append(messageBox);
-    document.body.appendChild(root);
-    app.label.update();
-    document.querySelectorAll('.btn, .fancy-label, .fancy-title').forEach(el => {
-      el.addEventListener('mouseenter', () => {
-        app.matrixSounds.play('hover');
-      });
-    });
-    setTimeout(() => {
-      (0, _utils.byId)('startFromWelcome').addEventListener('click', initialMsgBoxEvent);
-    }, 200);
-  },
-  createJamb: function () {
-    var root = document.createElement('div');
-    root.id = 'jambTable';
-    root.style.position = 'absolute';
-    var dragHandler = document.createElement('div');
-    dragHandler.id = 'dragHandler';
-    dragHandler.classList.add('dragHandler');
-    dragHandler.innerHTML = "⇅ Drag";
-    root.append(dragHandler);
-    var rowHeader = document.createElement('div');
-    rowHeader.id = 'rowHeader';
-    rowHeader.style.top = '10px';
-    rowHeader.style.left = '10px';
-    rowHeader.style.width = '200px';
-    rowHeader.innerHTML = '<span data-label="cornerText"></span><span id="user-points">0</span>';
-    root.appendChild(rowHeader);
-    rowHeader.classList.add('fancy-label');
-    var rowDown = document.createElement('div');
-    rowDown.id = 'rowDown';
-    rowDown.style.top = '10px';
-    rowDown.style.left = '10px';
-    rowDown.style.width = '200px';
-    rowDown.innerHTML = '↓<span data-label="down"></span>';
-    rowDown.classList.add('fancy-label');
-    rowDown.classList.add('btn');
-    root.appendChild(rowDown);
-    var rowFree = document.createElement('div');
-    rowFree.id = 'rowFree';
-    rowFree.style.top = '10px';
-    rowFree.style.left = '10px';
-    rowFree.style.width = '200px';
-    rowFree.innerHTML = '↕<span data-label="free"></span>';
-    rowFree.classList.add('fancy-label');
-    rowFree.classList.add('btn');
-    root.appendChild(rowFree);
-    var rowUp = document.createElement('div');
-    rowUp.id = 'rowUp';
-    rowUp.style.top = '10px';
-    rowUp.style.left = '10px';
-    rowUp.style.width = '200px';
-    rowUp.innerHTML = '↑<span data-label="up"></span>';
-    rowUp.classList.add('fancy-label');
-    rowUp.classList.add('btn');
-    root.appendChild(rowUp);
-    var rowHand = document.createElement('div');
-    rowHand.id = 'rowHand';
-    rowHand.style.top = '10px';
-    rowHand.style.left = '10px';
-    rowHand.style.width = '200px';
-    rowHand.innerHTML = '<span data-label="hand"></span>';
-    rowHand.classList.add('fancy-label');
-    rowHand.classList.add('btn');
-    root.appendChild(rowHand);
-
-    // INJECT TABLE HEADER ROW
-    this.createLeftHeaderRow(rowHeader);
-    this.createRowDown(rowDown);
-    this.createRowFree(rowFree);
-    this.createRow(rowUp);
-    this.createRow(rowHand);
-    this.createSelectedBox();
-    document.body.appendChild(root);
-    // console.log('JambTable added.')
-  },
-  showHideJambTable: () => {
-    const panel = document.getElementById('jambTable');
-    if (panel.classList.contains('show')) {
-      panel.classList.remove('show');
-      panel.classList.add('hide');
-      // Delay actual hiding from layout to finish animation
-      setTimeout(() => {
-        panel.style.display = 'none';
-      }, 300);
-    } else {
-      panel.style.display = 'flex';
-      setTimeout(() => {
-        panel.classList.remove('hide');
-        panel.classList.add('show');
-      }, 10); // allow repaint
-    }
-  },
-  createSelectedBox: function () {
-    var topTitleDOM = document.createElement('div');
-    topTitleDOM.id = 'topTitleDOM';
-    topTitleDOM.style.width = 'auto';
-    topTitleDOM.style.position = 'absolute';
-    topTitleDOM.style.left = '35%';
-    topTitleDOM.style.fontSize = '175%';
-    topTitleDOM.style.top = '4%';
-    topTitleDOM.style.background = '#7d7d7d8c';
-    topTitleDOM.innerHTML = app.label.get.ready + ", " + app.userState.name + '.';
-    topTitleDOM.setAttribute('data-gamestatus', 'FREE');
-    document.body.appendChild(topTitleDOM);
-    addEventListener('updateTitle', e => {
-      (0, _utils.typeText)('topTitleDOM', e.detail.text);
-      topTitleDOM.setAttribute('data-gamestatus', e.detail.status);
-    });
-  },
-  createLeftHeaderRow: function (myRoot) {
-    for (var x = 1; x < 7; x++) {
-      var rowNumber = document.createElement('div');
-      rowNumber.id = 'rowNumber' + x;
-      rowNumber.style.top = '10px';
-      rowNumber.style.left = '10px';
-      rowNumber.style.width = 'auto';
-      rowNumber.style.background = '#7d7d7d8c';
-      rowNumber.innerHTML = `<span>${x}</span>`;
-      myRoot.appendChild(rowNumber);
-    }
-    var rowNumberSum = document.createElement('div');
-    rowNumberSum.id = 'H_rowNumberSum';
-    rowNumberSum.style.width = 'auto';
-    rowNumberSum.style.background = '#7d7d7d8c';
-    rowNumberSum.innerHTML = `Σ`;
-    myRoot.appendChild(rowNumberSum);
-    var rowMax = document.createElement('div');
-    rowMax.id = 'H_rowMax';
-    rowMax.style.width = 'auto';
-    rowMax.style.background = '#7d7d7d8c';
-    rowMax.innerHTML = `<span data-label="MAX"></span>`;
-    myRoot.appendChild(rowMax);
-    var rowMin = document.createElement('div');
-    rowMin.id = 'H_rowMax';
-    rowMin.style.width = 'auto';
-    rowMin.style.background = '#7d7d7d8c';
-    rowMin.innerHTML = `<span data-label="MIN"></span>`;
-    myRoot.appendChild(rowMin);
-    var rowMaxMinSum = document.createElement('div');
-    rowMaxMinSum.id = 'H_rowMaxMinSum';
-    rowMaxMinSum.style.width = 'auto';
-    rowMaxMinSum.style.background = '#7d7d7d8c';
-    rowMaxMinSum.innerHTML = `Σ`;
-    myRoot.appendChild(rowMaxMinSum);
-    var largeStraight = document.createElement('div');
-    largeStraight.id = 'H_largeStraight';
-    largeStraight.style.width = 'auto';
-    largeStraight.style.background = '#7d7d7d8c';
-    largeStraight.innerHTML = `<span data-label="straight"></span>`;
-    myRoot.appendChild(largeStraight);
-    var threeOfAKind = document.createElement('div');
-    threeOfAKind.id = 'H_threeOfAKind';
-    threeOfAKind.style.width = 'auto';
-    threeOfAKind.style.background = '#7d7d7d8c';
-    threeOfAKind.innerHTML = `<span data-label="threeOf"></span>`;
-    myRoot.appendChild(threeOfAKind);
-    var fullHouse = document.createElement('div');
-    fullHouse.id = 'H_fullHouse';
-    fullHouse.style.width = 'auto';
-    fullHouse.style.background = '#7d7d7d8c';
-    fullHouse.innerHTML = `<span data-label="fullhouse"></span>`;
-    myRoot.appendChild(fullHouse);
-    var poker = document.createElement('div');
-    poker.id = 'H_poker';
-    poker.style.width = 'auto';
-    poker.style.background = '#7d7d7d8c';
-    poker.innerHTML = `<span data-label="poker"></span>`;
-    myRoot.appendChild(poker);
-    var jamb = document.createElement('div');
-    jamb.id = 'H_jamb';
-    jamb.style.width = 'auto';
-    jamb.style.background = '#7d7d7d8c';
-    jamb.innerHTML = `<span data-label="jamb"></span>`;
-    myRoot.appendChild(jamb);
-    var rowSum = document.createElement('div');
-    rowSum.id = 'H_rowSum';
-    rowSum.style.width = 'auto';
-    rowSum.style.background = '#7d7d7d8c';
-    rowSum.innerHTML = `Σ`;
-    myRoot.appendChild(rowSum);
-    var rowSumFINAL = document.createElement('div');
-    rowSumFINAL.id = 'H_rowSumFINAL';
-    rowSumFINAL.style.width = 'auto';
-    rowSumFINAL.style.background = '#7d7d7d8c';
-    rowSumFINAL.innerHTML = `<spam data-label="final"></span>`;
-    myRoot.appendChild(rowSumFINAL);
-  },
-  createRow: function (myRoot) {
-    for (var x = 1; x < 7; x++) {
-      var rowNumber = document.createElement('div');
-      rowNumber.id = 'rowNumber' + x;
-      rowNumber.style.top = '10px';
-      rowNumber.style.left = '10px';
-      rowNumber.style.width = 'auto';
-      rowNumber.style.background = '#7d7d7d8c';
-      rowNumber.innerHTML = `-`;
-      rowNumber.addEventListener('click', () => {
-        console.log('LOG THIS ', this);
-        // works
-        // rowDown
-        if (this.state.rowDown.length == 0) {
-          console.log('it is no play yet in this row ', this);
-        }
-      });
-      myRoot.appendChild(rowNumber);
-    }
-    var rowNumberSum = document.createElement('div');
-    rowNumberSum.id = 'rowNumberSum';
-    rowNumberSum.style.width = 'auto';
-    rowNumberSum.style.background = '#7d7d7d8c';
-    rowNumberSum.innerHTML = `-`;
-    myRoot.appendChild(rowNumberSum);
-    var rowMax = document.createElement('div');
-    rowMax.id = 'rowMax';
-    rowMax.style.width = 'auto';
-    rowMax.style.background = '#7d7d7d8c';
-    rowMax.innerHTML = `-`;
-    myRoot.appendChild(rowMax);
-    var rowMin = document.createElement('div');
-    rowMin.id = 'rowMax';
-    rowMin.style.width = 'auto';
-    rowMin.style.background = '#7d7d7d8c';
-    rowMin.innerHTML = `-`;
-    myRoot.appendChild(rowMin);
-    var rowMaxMinSum = document.createElement('div');
-    rowMaxMinSum.id = 'rowMaxMinSum';
-    rowMaxMinSum.style.width = 'auto';
-    rowMaxMinSum.style.background = '#7d7d7d8c';
-    rowMaxMinSum.innerHTML = `-`;
-    myRoot.appendChild(rowMaxMinSum);
-    var largeStraight = document.createElement('div');
-    largeStraight.id = 'largeStraight';
-    largeStraight.style.width = 'auto';
-    largeStraight.style.background = '#7d7d7d8c';
-    largeStraight.innerHTML = `-`;
-    myRoot.appendChild(largeStraight);
-    var threeOfAKind = document.createElement('div');
-    threeOfAKind.id = 'down_threeOfAKind';
-    threeOfAKind.style.width = 'auto';
-    threeOfAKind.style.background = '#7d7d7d8c';
-    threeOfAKind.innerHTML = `-`;
-    myRoot.appendChild(threeOfAKind);
-    var fullHouse = document.createElement('div');
-    fullHouse.id = 'fullHouse';
-    fullHouse.style.width = 'auto';
-    fullHouse.style.background = '#7d7d7d8c';
-    fullHouse.innerHTML = `-`;
-    myRoot.appendChild(fullHouse);
-    var poker = document.createElement('div');
-    poker.id = 'poker';
-    poker.style.width = 'auto';
-    poker.style.background = '#7d7d7d8c';
-    poker.innerHTML = `-`;
-    myRoot.appendChild(poker);
-    var jamb = document.createElement('div');
-    jamb.id = 'jamb';
-    jamb.style.width = 'auto';
-    jamb.style.background = '#7d7d7d8c';
-    jamb.innerHTML = `-`;
-    myRoot.appendChild(jamb);
-    var rowSum = document.createElement('div');
-    rowSum.id = 'rowSum';
-    rowSum.style.width = 'auto';
-    rowSum.style.background = '#7d7d7d8c';
-    rowSum.innerHTML = `-`;
-    myRoot.appendChild(rowSum);
-  },
-  createRowFree: function (myRoot) {
-    for (var x = 1; x < 7; x++) {
-      var rowNumber = document.createElement('div');
-      rowNumber.id = 'free-rowNumber' + x;
-      rowNumber.style.top = '10px';
-      rowNumber.style.left = '10px';
-      rowNumber.style.width = 'auto';
-      rowNumber.style.background = '#7d7d7d8c';
-      rowNumber.innerHTML = `-`;
-      rowNumber.addEventListener('click', e => {
-        if (dices.validatePass() == false) return;
-        var getName = e.target.id;
-        getName = getName.replace('free-rowNumber', '');
-        var count23456 = 0;
-        for (let key in dices.SAVED_DICES) {
-          if (parseInt(dices.R[key]) == parseInt(getName)) {
-            count23456++;
-          }
-        }
-        this.state.rowDown.push(count23456 * parseInt(getName));
-        e.target.innerHTML = count23456 * parseInt(getName);
-        if (parseInt(getName) == 6) {
-          myDom.calcFreeNumbers();
-        }
-        dices.STATUS = "FREE_TO_PLAY";
-        dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
-      });
-      myRoot.appendChild(rowNumber);
-    }
-    var rowNumberSum = document.createElement('div');
-    rowNumberSum.id = 'free-rowNumberSum';
-    rowNumberSum.style.width = 'auto';
-    rowNumberSum.style.background = '#7d7d7d8c';
-    rowNumberSum.innerHTML = `-`;
-    myRoot.appendChild(rowNumberSum);
-    var rowMax = document.createElement('div');
-    rowMax.id = 'free-rowMax';
-    rowMax.style.width = 'auto';
-    rowMax.style.background = '#7d7d7d8c';
-    rowMax.innerHTML = `-`;
-    rowMax.addEventListener("click", this.calcFreeRowMax);
-    myRoot.appendChild(rowMax);
-    var rowMin = document.createElement('div');
-    rowMin.id = 'free-rowMin';
-    rowMin.style.width = 'auto';
-    rowMin.style.background = '#7d7d7d8c';
-    rowMin.innerHTML = `-`;
-    rowMin.addEventListener('click', this.calcFreeRowMin);
-    myRoot.appendChild(rowMin);
-    var rowMaxMinSum = document.createElement('div');
-    rowMaxMinSum.id = 'free-rowMaxMinSum';
-    rowMaxMinSum.style.width = 'auto';
-    rowMaxMinSum.style.background = '#7d7d7d8c';
-    rowMaxMinSum.innerHTML = `-`;
-    myRoot.appendChild(rowMaxMinSum);
-    var largeStraight = document.createElement('div');
-    largeStraight.id = 'free-largeStraight';
-    largeStraight.style.width = 'auto';
-    largeStraight.style.background = '#7d7d7d8c';
-    largeStraight.innerHTML = `-`;
-    largeStraight.addEventListener('click', this.attachFreeKenta);
-    myRoot.appendChild(largeStraight);
-    var threeOfAKind = document.createElement('div');
-    threeOfAKind.id = 'free-threeOfAKind';
-    threeOfAKind.style.width = 'auto';
-    threeOfAKind.style.background = '#7d7d7d8c';
-    threeOfAKind.innerHTML = `-`;
-    threeOfAKind.addEventListener('click', this.attachFreeTrilling);
-    myRoot.appendChild(threeOfAKind);
-    var fullHouse = document.createElement('div');
-    fullHouse.id = 'free-fullHouse';
-    fullHouse.style.width = 'auto';
-    fullHouse.style.background = '#7d7d7d8c';
-    fullHouse.innerHTML = `-`;
-    fullHouse.addEventListener('click', this.attachFreeFullHouse);
-    myRoot.appendChild(fullHouse);
-    var poker = document.createElement('div');
-    poker.id = 'free-poker';
-    poker.style.width = 'auto';
-    poker.style.background = '#7d7d7d8c';
-    poker.innerHTML = `-`;
-    poker.addEventListener('click', this.attachFreePoker);
-    myRoot.appendChild(poker);
-    var jamb = document.createElement('div');
-    jamb.id = 'free-jamb';
-    jamb.style.width = 'auto';
-    jamb.style.background = '#7d7d7d8c';
-    jamb.innerHTML = `-`;
-    jamb.addEventListener('click', this.attachFreeJamb);
-    myRoot.appendChild(jamb);
-    var rowSum = document.createElement('div');
-    rowSum.id = 'free-rowSum';
-    rowSum.style.width = 'auto';
-    rowSum.style.background = '#7d7d7d8c';
-    rowSum.innerHTML = `-`;
-    myRoot.appendChild(rowSum);
-  },
-  createRowDown: function (myRoot) {
-    for (var x = 1; x < 7; x++) {
-      var rowNumber = document.createElement('div');
-      rowNumber.id = 'down-rowNumber' + x;
-      rowNumber.style.top = '10px';
-      rowNumber.style.left = '10px';
-      rowNumber.style.width = 'auto';
-      rowNumber.style.background = '#7d7d7d8c';
-      rowNumber.style.cursor = 'pointer';
-      rowNumber.innerHTML = `-`;
-      this.memoNumberRow.push(rowNumber);
-      // initial
-      if (x == 1) {
-        rowNumber.classList.add('canPlay');
-      }
-      rowNumber.addEventListener('click', e => {
-        if (dices.validatePass() == false) return;
-        var getName = e.target.id;
-        getName = getName.replace('down-rowNumber', '');
-        if (this.state.rowDown.length == 0) {
-          console.log('LOG ', getName);
-          if (parseInt(getName) == 1) {
-            var count1 = 0;
-            for (let key in dices.SAVED_DICES) {
-              if (parseInt(dices.R[key]) == 1) {
-                console.log('yeap', dices.R);
-                count1++;
-              }
-            }
-            this.state.rowDown.push(count1);
-            e.target.innerHTML = count1;
-            e.target.classList.remove('canPlay');
-            this.memoNumberRow[1].classList.add('canPlay');
-            dices.STATUS = "FREE_TO_PLAY";
-            dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
-          } else {
-            console.log('BLOCK');
-          }
-        } else {
-          if (this.state.rowDown.length > 0) {
-            if (parseInt(getName) == this.state.rowDown.length + 1) {
-              console.log('moze za ', parseInt(getName));
-              var count23456 = 0;
-              for (let key in dices.SAVED_DICES) {
-                if (parseInt(dices.R[key]) == parseInt(getName)) {
-                  console.log('yeap', dices.R);
-                  count23456++;
-                }
-              }
-              this.state.rowDown.push(count23456 * parseInt(getName));
-              //
-              e.target.innerHTML = count23456 * parseInt(getName);
-              if (parseInt(getName) == 6) {
-                // calc sum
-                console.log('calc sum for numb ~ ');
-                //  this.state.rowDown.length + 1
-                myDom.calcDownNumbers();
-                e.target.classList.remove('canPlay');
-                this.rowMax.classList.add('canPlay');
-              } else {
-                e.target.classList.remove('canPlay');
-                this.memoNumberRow[parseInt(getName)].classList.add('canPlay');
-              }
-              dices.STATUS = "FREE_TO_PLAY";
-              dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
-            } else {
-              console.log('BLOCK');
-            }
-          }
-        }
-      });
-      myRoot.appendChild(rowNumber);
-    }
-    var rowNumberSum = document.createElement('div');
-    rowNumberSum.id = 'down-rowNumberSum';
-    rowNumberSum.style.width = 'auto';
-    rowNumberSum.style.background = '#7d7d7d8c';
-    rowNumberSum.innerHTML = `-`;
-    myRoot.appendChild(rowNumberSum);
-    var rowMax = document.createElement('div');
-    rowMax.id = 'down-rowMax';
-    rowMax.style.width = 'auto';
-    rowMax.style.background = '#7d7d7d8c';
-    rowMax.innerHTML = `-`;
-    myRoot.appendChild(rowMax);
-    this.rowMax = rowMax;
-    // this.rowMax.addEventListener("click", (e) => {
-    //   e.target.classList.remove('canPlay')
-    //   this.rowMin.classList.add('canPlay')
-    // })
-
-    var rowMin = document.createElement('div');
-    rowMin.id = 'down-rowMin';
-    rowMin.style.width = 'auto';
-    rowMin.style.background = '#7d7d7d8c';
-    rowMin.innerHTML = `-`;
-    // this.rowMin = rowMin;
-    myRoot.appendChild(rowMin);
-    var rowMaxMinSum = document.createElement('div');
-    rowMaxMinSum.id = 'down-rowMaxMinSum';
-    rowMaxMinSum.style.width = 'auto';
-    rowMaxMinSum.style.background = '#7d7d7d8c';
-    rowMaxMinSum.innerHTML = `-`;
-    myRoot.appendChild(rowMaxMinSum);
-    var largeStraight = document.createElement('div');
-    largeStraight.id = 'down-largeStraight';
-    largeStraight.style.width = 'auto';
-    largeStraight.style.background = '#7d7d7d8c';
-    largeStraight.innerHTML = `-`;
-    myRoot.appendChild(largeStraight);
-    var threeOfAKind = document.createElement('div');
-    threeOfAKind.id = 'down-threeOfAKind';
-    threeOfAKind.style.width = 'auto';
-    threeOfAKind.style.background = '#7d7d7d8c';
-    threeOfAKind.innerHTML = `-`;
-    myRoot.appendChild(threeOfAKind);
-    var fullHouse = document.createElement('div');
-    fullHouse.id = 'down-fullHouse';
-    fullHouse.style.width = 'auto';
-    fullHouse.style.background = '#7d7d7d8c';
-    fullHouse.innerHTML = `-`;
-    myRoot.appendChild(fullHouse);
-    var poker = document.createElement('div');
-    poker.id = 'down-poker';
-    poker.style.width = 'auto';
-    poker.style.background = '#7d7d7d8c';
-    poker.innerHTML = `-`;
-    myRoot.appendChild(poker);
-    var jamb = document.createElement('div');
-    jamb.id = 'down-jamb';
-    jamb.style.width = 'auto';
-    jamb.style.background = '#7d7d7d8c';
-    jamb.innerHTML = `-`;
-    myRoot.appendChild(jamb);
-    var rowSum = document.createElement('div');
-    rowSum.id = 'down-rowSum';
-    rowSum.style.width = 'auto';
-    rowSum.style.background = '#7d7d7d8c';
-    rowSum.innerHTML = `-`;
-    myRoot.appendChild(rowSum);
-  },
-  calcDownNumbers: function () {
-    var s = 0;
-    this.state.rowDown.forEach(i => {
-      console.log(parseFloat(i));
-      s += parseFloat(i);
-    });
-    (0, _utils.byId)('down-rowNumberSum').style.background = 'rgb(113 0 0 / 55%)';
-    (0, _utils.byId)('down-rowNumberSum').innerHTML = s;
-    // console.log('this.rowMax also set free to plat status', this.rowMax)
-    dices.STATUS = "FREE_TO_PLAY";
-    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
-    this.rowMax.addEventListener("click", this.calcDownRowMax);
-  },
-  // free row start
-
-  calcFreeNumbers: function () {
-    var s = 0;
-    this.state.rowDown.forEach(i => {
-      console.log(parseFloat(i));
-      s += parseFloat(i);
-    });
-    (0, _utils.byId)('free-rowNumberSum').style.background = 'rgb(113 0 0 / 55%)';
-    (0, _utils.byId)('free-rowNumberSum').innerHTML = s;
-    // console.log('this.rowMax also set free to plat status', this.rowMax)
-    dices.STATUS = "FREE_TO_PLAY";
-    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
-    (0, _utils.byId)('free-rowMax').addEventListener("click", this.calc);
-  },
-  calcFreeRowMax: e => {
-    if (dices.validatePass() == false) return;
-    var test = 0;
-    let keyLessNum = Object.keys(dices.R).reduce((key, v) => dices.R[v] < dices.R[key] ? v : key);
-    for (var key in dices.R) {
-      if (key != keyLessNum) {
-        test += parseFloat(dices.R[key]);
-      }
-    }
-    e.target.innerHTML = test;
-    // now attach next event.
-    dices.STATUS = "FREE_TO_PLAY";
-    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
-    (0, _utils.byId)('free-rowMax').removeEventListener("click", (void 0).calcFreeRowMax);
-  },
-  calcFreeRowMin: () => {
-    if (dices.validatePass() == false) return;
-    var maxTestKey = Object.keys(dices.R).reduce(function (a, b) {
-      return dices.R[a] > dices.R[b] ? a : b;
-    });
-    var test = 0;
-    for (var key in dices.R) {
-      if (key != maxTestKey) {
-        test += parseFloat(dices.R[key]);
+  }
+  selectCharactersInRect(start, end) {
+    const xMin = Math.min(start.x, end.x);
+    const xMax = Math.max(start.x, end.x);
+    const yMin = Math.min(start.y, end.y);
+    const yMax = Math.max(start.y, end.y);
+    const camera = app.cameras.WASD;
+    for (const object of app.mainRenderBundle) {
+      if (!object.position) continue;
+      const screen = this.projectToScreen([object.position.x, object.position.y, object.position.z, 1.0], camera.view, camera.projectionMatrix, this.canvas);
+      if (screen.x >= xMin && screen.x <= xMax && screen.y >= yMin && screen.y <= yMax) {
+        if (this.ignoreList.some(str => object.name.includes(str))) continue;
+        if (this.selected.includes(object)) continue;
+        object.setSelectedEffect(true);
+        this.selected.push(object);
+        (0, _utils.byId)('hud-menu').dispatchEvent(new CustomEvent("onSelectCharacter", {
+          detail: object.name
+        }));
       } else {
-        console.log('not calc dice ', dices.R[key]);
-      }
-    }
-    (0, _utils.byId)('free-rowMin').innerHTML = test;
-    (0, _utils.byId)('free-rowMin').removeEventListener('click', (void 0).calcFreeRowMin);
-    // calc max min dont forget rules for bonus +30
-    var SUMMINMAX = parseFloat((0, _utils.byId)('free-rowMax').innerHTML) - parseFloat((0, _utils.byId)('free-rowMin').innerHTML);
-    (0, _utils.byId)('free-rowMaxMinSum').innerHTML = SUMMINMAX;
-    myDom.incrasePoints(SUMMINMAX);
-    dices.STATUS = "FREE_TO_PLAY";
-    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
-  },
-  attachFreeKenta: function () {
-    if (dices.validatePass() == false) return;
-    console.log('Test free kenta :', dices.R);
-    var result = app.myDom.checkForDuplicate()[0];
-    var testArray = app.myDom.checkForDuplicate()[1];
-    console.log('TEST duplik: ' + result);
-    if (result.length == 2) {
-      console.log('TEST duplik less 3 : ' + result);
-      var locPrevent = false;
-      testArray.forEach((item, index, array) => {
-        if (result[0].value == item.value && locPrevent == false) {
-          console.log('detect by value item.value', item.value);
-          locPrevent = true;
-          array.splice(index, 1);
+        if (this.selected.indexOf(object) !== -1) {
+          this.selected.splice(this.selected.indexOf(object), 1);
+          // byId('hud-menu').dispatchEvent(new CustomEvent("onSelectCharacter", {detail: object.name} ))
         }
-      });
-      // if we catch  1 and 6 in same stack then it is not possible for kenta...
-      var test1 = false,
-        test6 = false;
-      testArray.forEach((item, index, array) => {
-        if (item.value == 1) {
-          test1 = true;
-        } else if (item.value == 6) {
-          test6 = true;
-        }
-      });
-      if (test1 == true && test6 == true) {
-        (0, _utils.byId)('free-largeStraight').innerHTML = `0`;
-      } else if (test1 == true) {
-        (0, _utils.byId)('free-largeStraight').innerHTML = 15 + 50;
-        myDom.incrasePoints(15 + 50);
-      } else if (test6 == true) {
-        (0, _utils.byId)('free-largeStraight').innerHTML = 20 + 50;
-        myDom.incrasePoints(20 + 50);
-      }
-    } else if (result < 2) {
-      (0, _utils.byId)('free-largeStraight').innerHTML = 66;
-      myDom.incrasePoints(66);
-    } else {
-      // zero value
-      (0, _utils.byId)('free-largeStraight').innerHTML = `0`;
-    }
-    (0, _utils.byId)('free-largeStraight').removeEventListener('click', this.attachFreeKenta);
-    dices.STATUS = "FREE_TO_PLAY";
-    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
-  },
-  attachFreeTrilling: function () {
-    if (dices.validatePass() == false) return;
-    var result = app.myDom.checkForDuplicate()[0];
-    // var testArray = app.myDom.checkForDuplicate()[1];
-    // console.log('DUPLICATE FOR TRILING ', result);
-    if (result.length > 2) {
-      var testWin = 0;
-      var TEST = app.myDom.checkForAllDuplicate();
-      console.log('DUPLICATE FOR TRILING TEST ', TEST);
-      for (var key in TEST) {
-        if (TEST[key] > 2) {
-          // win
-          var getDiceID = parseInt(key.replace('value__', ''));
-          testWin = getDiceID * 3;
-        }
-      }
-      console.log('DUPLICATE FOR TRILING 30 + TEST ', testWin);
-      if (testWin > 0) {
-        (0, _utils.byId)('free-threeOfAKind').innerHTML = 20 + testWin;
-        myDom.incrasePoints(20 + testWin);
-      }
-    } else {
-      (0, _utils.byId)('free-threeOfAKind').innerHTML = 0;
-    }
-    (0, _utils.byId)('free-threeOfAKind').removeEventListener('click', this.attachFreeTrilling);
-    dices.STATUS = "FREE_TO_PLAY";
-    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
-  },
-  attachFreeFullHouse: function () {
-    if (dices.validatePass() == false) return;
-    var TEST = app.myDom.checkForAllDuplicate();
-    // console.log('DUPLICATE FOR FULL HOUSE 30 + TEST ');
-    var win = 0;
-    var testPair = false;
-    var testTrilling = false;
-    var testWinPair = 0;
-    var testWinTrilling = 0;
-    for (var key in TEST) {
-      if (TEST[key] == 2) {
-        // win
-        var getDiceID = parseInt(key.replace('value__', ''));
-        testWinPair = getDiceID * 2;
-        testPair = true;
-      } else if (TEST[key] == 3) {
-        var getDiceID = parseInt(key.replace('value__', ''));
-        testWinTrilling = getDiceID * 3;
-        testTrilling = true;
+        object.setSelectedEffect(false);
       }
     }
-    if (testPair == true && testTrilling == true) {
-      win = testWinPair + testWinTrilling;
-      (0, _utils.byId)('free-fullHouse').innerHTML = win + 30;
-      myDom.incrasePoints(win + 30);
-    } else {
-      (0, _utils.byId)('free-fullHouse').innerHTML = 0;
-    }
-    (0, _utils.byId)('free-fullHouse').removeEventListener('click', this.attachFreeFullHouse);
-    dices.STATUS = "FREE_TO_PLAY";
-    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
-  },
-  attachFreePoker: function () {
-    if (dices.validatePass() == false) return;
-    var TEST = app.myDom.checkForAllDuplicate();
-    // console.log('DUPLICATE FOR poker 40 + TEST ');
-    for (var key in TEST) {
-      if (TEST[key] == 4 || TEST[key] > 4) {
-        var getDiceID = parseInt(key.replace('value__', ''));
-        var win = getDiceID * 4;
-        (0, _utils.byId)('free-poker').innerHTML = win + 40;
-        myDom.incrasePoints(win + 40);
+    console.log("Selected:", this.selected.map(o => o.name));
+  }
+  activateVisualRect() {
+    const overlay = document.createElement("canvas");
+    overlay.width = this.canvas.width;
+    overlay.height = this.canvas.height;
+    overlay.style.position = "absolute";
+    overlay.style.left = this.canvas.offsetLeft + "px";
+    overlay.style.top = this.canvas.offsetTop + "px";
+    this.canvas.parentNode.appendChild(overlay);
+    this.ctx = overlay.getContext("2d");
+    overlay.style.pointerEvents = "none";
+    this.overlay = overlay;
+    this.canvas.addEventListener("mousemove", e => {
+      if (this.selecting) {
+        this.dragEnd = {
+          x: e.clientX,
+          y: e.clientY
+        };
+        this.ctx.clearRect(0, 0, overlay.width, overlay.height);
+        this.ctx.strokeStyle = "rgba(0,255,0,0.8)";
+        this.ctx.lineWidth = 2.5;
+        this.ctx.strokeRect(this.dragStart.x, this.dragStart.y, this.dragEnd.x - this.dragStart.x, this.dragEnd.y - this.dragStart.y);
       }
-    }
-    (0, _utils.byId)('free-poker').removeEventListener('click', this.attachFreePoker);
-    dices.STATUS = "FREE_TO_PLAY";
-    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
-  },
-  attachFreeJamb: function () {
-    if (dices.validatePass() == false) return;
-    // console.log('<GAMEPLAY><FREE ROW IS FEELED>')
-    var TEST = app.myDom.checkForAllDuplicate();
-    for (var key in TEST) {
-      if (TEST[key] == 5) {
-        // win
-        var getDiceID = parseInt(key.replace('value__', ''));
-        var win = getDiceID * 5;
-        (0, _utils.byId)('free-poker').innerHTML = win + 50;
-        myDom.incrasePoints(win + 50);
-      }
-    }
-    (0, _utils.byId)('free-jamb').removeEventListener('click', this.attachFreeJamb);
-    dices.STATUS = "FREE_TO_PLAY";
-    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
-  },
-  // end of free row
-
-  calcDownRowMax: e => {
-    if (dices.validatePass() == false) return;
-    e.target.classList.remove('canPlay');
-    (0, _utils.byId)('down-rowMin').classList.add('canPlay');
-    var test = 0;
-    let keyLessNum = Object.keys(dices.R).reduce((key, v) => dices.R[v] < dices.R[key] ? v : key);
-    // console.log('FIND MIN DICE TO REMOVE FROM SUM ', keyLessNum);
-    for (var key in dices.SAVED_DICES) {
-      if (key != keyLessNum) {
-        test += parseFloat(dices.R[key]);
-      }
-    }
-    e.target.innerHTML = test;
-    // now attach next event.
-    dices.STATUS = "FREE_TO_PLAY";
-    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
-    (0, _utils.byId)('down-rowMax').removeEventListener("click", myDom.calcDownRowMax);
-    (0, _utils.byId)('down-rowMin').addEventListener('click', myDom.calcDownRowMin);
-  },
-  incrasePoints: function (arg) {
-    (0, _utils.byId)('user-points').innerHTML = parseInt((0, _utils.byId)('user-points').innerHTML) + parseInt(arg);
-  },
-  calcDownRowMin: () => {
-    if (dices.validatePass() == false) return;
-    (0, _utils.byId)('down-rowMin').classList.remove('canPlay');
-    console.log('MIN ENABLED');
-    var maxTestKey = Object.keys(dices.R).reduce(function (a, b) {
-      return dices.R[a] > dices.R[b] ? a : b;
-    });
-    var test = 0;
-    for (var key in dices.R) {
-      // if(key != maxTestKey) {
-      test += parseFloat(dices.R[key]);
-      // } else {
-      //   console.log('not calc dice ', dices.R[key])
-      // }
-    }
-    (0, _utils.byId)('down-rowMin').innerHTML = test;
-    (0, _utils.byId)('down-rowMin').removeEventListener('click', myDom.calcDownRowMin);
-    // calc max min dont forget rules for bonus +30
-    var SUMMINMAX = parseFloat((0, _utils.byId)('down-rowMax').innerHTML) - parseFloat((0, _utils.byId)('down-rowMin').innerHTML);
-    (0, _utils.byId)('down-rowMaxMinSum').innerHTML = SUMMINMAX;
-    myDom.incrasePoints(SUMMINMAX);
-    dices.STATUS = "FREE_TO_PLAY";
-    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
-    (0, _utils.byId)('down-largeStraight').classList.add('canPlay');
-    (0, _utils.byId)('down-largeStraight').addEventListener('click', myDom.attachKenta);
-    (0, _utils.byId)('down-rowMin').removeEventListener('click', myDom.calcDownRowMin);
-  },
-  checkForDuplicate: function () {
-    var testArray = [];
-    for (var key in dices.SAVED_DICES) {
-      var gen = {
-        myId: key,
-        value: dices.R[key]
-      };
-      testArray.push(gen);
-    }
-    var result = Object.values(testArray.reduce((c, v) => {
-      let k = v.value;
-      c[k] = c[k] || [];
-      c[k].push(v);
-      return c;
-    }, {})).reduce((c, v) => v.length > 1 ? c.concat(v) : c, []);
-    return [result, testArray];
-  },
-  checkForAllDuplicate: function () {
-    var testArray = [];
-    for (var key in dices.SAVED_DICES) {
-      var gen = {
-        myId: key,
-        value: dices.R[key]
-      };
-      testArray.push(gen);
-    }
-    // console.log('testArray ', testArray)
-    var result = Object.values(testArray.reduce((c, v) => {
-      let k = v.value;
-      c[k] = c[k] || [];
-      c[k].push(v);
-      return c;
-    }, {})).reduce((c, v) => v.length > 1 ? c.concat(v) : c, []);
-    var discret = {};
-    result.forEach((item, index, array) => {
-      if (typeof discret['value__' + item.value] === 'undefined') {
-        discret['value__' + item.value] = 1;
-      } else {
-        discret['value__' + item.value] += 1;
-      }
-    });
-    return discret;
-  },
-  attachKenta: function () {
-    console.log('Test kenta  ', dices.SAVED_DICES);
-    (0, _utils.byId)('down-largeStraight').classList.remove('canPlay');
-    var result = app.myDom.checkForDuplicate()[0];
-    var testArray = app.myDom.checkForDuplicate()[1];
-    console.log('TEST duplik: ' + result);
-    if (result.length > 0) {
-      console.log('TEST duplik l : ' + result);
-      var locPrevent = false;
-      testArray.forEach((item, index, array) => {
-        if (result[0].value == item.value && locPrevent == false) {
-          console.log('detect by value item.value', item.value);
-          locPrevent = true;
-          array.splice(index, 1);
-        }
-      });
-      (0, _utils.byId)('down-largeStraight').innerHTML = `0`;
-    } else if (result < 2) {
-      (0, _utils.byId)('down-largeStraight').innerHTML = 66;
-      myDom.incrasePoints(66);
-    } else {
-      // zero value
-      (0, _utils.byId)('down-largeStraight').innerHTML = `0`;
-    }
-    (0, _utils.byId)('down-threeOfAKind').addEventListener('click', myDom.attachDownTrilling);
-    (0, _utils.byId)('down-largeStraight').removeEventListener('click', myDom.attachKenta);
-    dices.STATUS = "FREE_TO_PLAY";
-    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
-  },
-  attachDownTrilling: function () {
-    var result = app.myDom.checkForDuplicate()[0];
-    // var testArray = app.myDom.checkForDuplicate()[1];
-    // console.log('DUPLICATE FOR TRILING ', result);
-    if (result.length > 2) {
-      var testWin = 0;
-      var TEST = app.myDom.checkForAllDuplicate();
-      console.log('DUPLICATE FOR TRILING TEST ', TEST);
-      for (var key in TEST) {
-        if (TEST[key] > 2) {
-          // win
-          var getDiceID = parseInt(key.replace('value__', ''));
-          testWin = getDiceID * 3;
-        }
-      }
-      console.log('DUPLICATE FOR TRILING 30 + TEST ', testWin);
-      (0, _utils.byId)('down-threeOfAKind').innerHTML = 20 + testWin;
-      myDom.incrasePoints(20 + testWin);
-    } else {
-      (0, _utils.byId)('down-threeOfAKind').innerHTML = 0;
-    }
-    (0, _utils.byId)('down-threeOfAKind').removeEventListener('click', myDom.attachDownTrilling);
-    (0, _utils.byId)('down-fullHouse').addEventListener('click', myDom.attachDownFullHouse);
-    dices.STATUS = "FREE_TO_PLAY";
-    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
-  },
-  attachDownFullHouse: function () {
-    var TEST = app.myDom.checkForAllDuplicate();
-    // console.log('DUPLICATE FOR FULL HOUSE 30 + TEST ');
-    var win = 0;
-    var testPair = false;
-    var testTrilling = false;
-    var testWinPair = 0;
-    var testWinTrilling = 0;
-    for (var key in TEST) {
-      if (TEST[key] == 2) {
-        // win
-        var getDiceID = parseInt(key.replace('value__', ''));
-        testWinPair = getDiceID * 2;
-        testPair = true;
-      } else if (TEST[key] == 3) {
-        var getDiceID = parseInt(key.replace('value__', ''));
-        testWinTrilling = getDiceID * 3;
-        testTrilling = true;
-      }
-    }
-    if (testPair == true && testTrilling == true) {
-      win = testWinPair + testWinTrilling;
-      (0, _utils.byId)('down-fullHouse').innerHTML = win + 30;
-      myDom.incrasePoints(win + 30);
-    } else {
-      (0, _utils.byId)('down-fullHouse').innerHTML = 0;
-    }
-    (0, _utils.byId)('down-poker').addEventListener('click', myDom.attachDownPoker);
-    (0, _utils.byId)('down-fullHouse').removeEventListener('click', myDom.attachDownFullHouse);
-    dices.STATUS = "FREE_TO_PLAY";
-    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
-  },
-  attachDownPoker: function () {
-    var TEST = app.myDom.checkForAllDuplicate();
-    // console.log('DUPLICATE FOR poker 40 + TEST ');
-    for (var key in TEST) {
-      if (TEST[key] == 4 || TEST[key] > 4) {
-        // win
-        var getDiceID = parseInt(key.replace('value__', ''));
-        var win = getDiceID * 4;
-        (0, _utils.byId)('down-poker').innerHTML = win + 40;
-        myDom.incrasePoints(win + 40);
-      }
-    }
-    (0, _utils.byId)('down-poker').removeEventListener('click', myDom.attachDownPoker);
-    (0, _utils.byId)('down-jamb').addEventListener('click', myDom.attachDownJamb);
-    dices.STATUS = "FREE_TO_PLAY";
-    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
-  },
-  attachDownJamb: function () {
-    (0, _utils.byId)('down-jamb').removeEventListener('click', myDom.attachDownJamb);
-    console.log('<GAMEPLAY><DOWN ROW IS FEELED>');
-    var TEST = app.myDom.checkForAllDuplicate();
-    for (var key in TEST) {
-      if (TEST[key] == 5 || TEST[key] > 5) {
-        // win
-        var getDiceID = parseInt(key.replace('value__', ''));
-        var win = getDiceID * 5;
-        (0, _utils.byId)('down-poker').innerHTML = win + 50;
-        myDom.incrasePoints(win + 50);
-      }
-    }
-    dices.STATUS = "FREE_TO_PLAY";
-    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
-  },
-  isDragging: false,
-  offsetX: 0,
-  offsetY: 0,
-  addDraggerForTable: () => {
-    (0, _utils.byId)('dragHandler').addEventListener('pointerdown', e => {
-      myDom.isDragging = true;
-      const rect = (0, _utils.byId)('jambTable').getBoundingClientRect();
-      myDom.offsetX = e.clientX - rect.left;
-      myDom.offsetY = e.clientY - rect.top;
-      (0, _utils.byId)('dragHandler').setPointerCapture(e.pointerId);
-    });
-    (0, _utils.byId)('dragHandler').addEventListener('pointermove', e => {
-      if (myDom.isDragging) {
-        (0, _utils.byId)('jambTable').style.left = `${e.clientX - myDom.offsetX}px`;
-        (0, _utils.byId)('jambTable').style.top = `${e.clientY - myDom.offsetY}px`;
-      }
-    });
-    (0, _utils.byId)('dragHandler').addEventListener('pointerup', e => {
-      myDom.isDragging = false;
-      (0, _utils.byId)('dragHandler').releasePointerCapture(e.pointerId);
     });
   }
-};
+}
+exports.Controller = Controller;
 
-},{"../../../src/engine/utils.js":31,"./html-content.js":1}],3:[function(require,module,exports){
+},{"../../../src/engine/raycast.js":33,"../../../src/engine/utils.js":34,"./nav-mesh.js":6,"wgpu-matrix":21}],3:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.application = void 0;
-var _world = _interopRequireDefault(require("./src/world.js"));
-var _loaderObj = require("./src/engine/loader-obj.js");
-var _utils = require("./src/engine/utils.js");
-var _jamb = require("./examples/games/jamb/jamb.js");
-var _raycast = require("./src/engine/raycast.js");
+exports.HUD = void 0;
+class HUD {
+  constructor() {
+    this.construct();
+  }
+  construct() {
+    // Create HUD container
+    const hud = document.createElement("div");
+    hud.id = "hud-menu";
+    // Style it
+    Object.assign(hud.style, {
+      position: "absolute",
+      bottom: "0",
+      left: "0",
+      width: "100%",
+      height: "20%",
+      backgroundColor: "rgba(0,0,0,0.5)",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-around",
+      color: "white",
+      fontFamily: "'Orbitron', sans-serif",
+      zIndex: "100",
+      padding: "10px",
+      boxSizing: "border-box"
+    });
+
+    // Example elements: a button and a score display
+    const actionBtn = document.createElement("button");
+    actionBtn.textContent = "Action";
+    hud.appendChild(actionBtn);
+    const selectedCharacters = document.createElement("span");
+    selectedCharacters.textContent = "selectedCharacters:[]";
+    hud.appendChild(selectedCharacters);
+    hud.addEventListener("onSelectCharacter", e => {
+      console.log('onSelectCharacter : ', e);
+      selectedCharacters.textContent = `selectedCharacters:[${e.detail}]`;
+    });
+
+    // Append to body (or the canvas container)
+    document.body.appendChild(hud);
+
+    // Optional: JS interaction
+    actionBtn.addEventListener("click", () => {
+      console.log("Action clicked!");
+      score.textContent = "Score: " + Math.floor(Math.random() * 100);
+    });
+  }
+}
+exports.HUD = HUD;
+
+},{}],4:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.MEMapLoader = void 0;
+var _loaderObj = require("../../../src/engine/loader-obj.js");
+var _navMesh = _interopRequireDefault(require("./nav-mesh.js"));
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
-let application = exports.application = new _world.default({
+class MEMapLoader {
+  async loadNavMesh(navMapPath) {
+    return new Promise(async (resolve, reject) => {
+      try {
+        const response = await fetch(navMapPath);
+        const navData = await response.json();
+        const nav = new _navMesh.default(navData, {
+          scale: [10, 1, 10]
+        });
+        resolve(nav);
+      } catch (err) {
+        reject(err);
+        throw err;
+      }
+    });
+  }
+  constructor(MYSTICORE, navMapPath) {
+    this.core = MYSTICORE;
+    this.loadNavMesh(navMapPath).then(e => {
+      console.log('navMap loaded...', e);
+      this.core.RPG.nav = e;
+      this.loadMainMap(); // <-- FIXED
+    });
+  }
+  onGround(m) {
+    this.core.addMeshObj({
+      position: {
+        x: 0,
+        y: -5,
+        z: -10
+      },
+      rotation: {
+        x: 0,
+        y: 0,
+        z: 0
+      },
+      rotationSpeed: {
+        x: 0,
+        y: 0,
+        z: 0
+      },
+      texturesPaths: ['./res/meshes/blender/cube.png'],
+      name: 'ground',
+      mesh: m.cube,
+      physics: {
+        enabled: false,
+        mass: 0,
+        geometry: "Cube"
+      },
+      raycast: {
+        enabled: true,
+        radius: 1.5
+      }
+    });
+    // this.core.lightContainer[0].position[1] = 25;
+  }
+  loadMainMap() {
+    (0, _loaderObj.downloadMeshes)({
+      cube: "./res/meshes/maps-objs/map-1.obj"
+    }, this.onGround.bind(this), {
+      scale: [10, 1, 10]
+    });
+  }
+}
+exports.MEMapLoader = MEMapLoader;
+
+},{"../../../src/engine/loader-obj.js":27,"./nav-mesh.js":6}],5:[function(require,module,exports){
+"use strict";
+
+var _world = _interopRequireDefault(require("../../../src/world.js"));
+var _webgpuGltf = require("../../../src/engine/loaders/webgpu-gltf.js");
+var _controller = require("./controller.js");
+var _hud = require("./hud.js");
+var _mapLoader = require("./map-loader.js");
+var _characterBase = require("./characterBase.js");
+function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
+// import {downloadMeshes} from '../../../src/engine/loader-obj.js';
+
+/**
+ * @Note
+ * “Character and animation assets from Mixamo,
+ * used under Adobe’s royalty‑free license. 
+ * Redistribution of raw assets is not permitted.”
+ **/
+let MYSTICORE = new _world.default({
   useSingleRenderPass: true,
   canvasSize: 'fullscreen',
   mainCameraParams: {
     type: 'WASD',
     responseCoef: 1000
+  },
+  clearColor: {
+    r: 0,
+    b: 0.122,
+    g: 0.122,
+    a: 1
   }
 }, () => {
-  application.addLight();
-  console.log('light added.');
-  application.lightContainer[0].outerCutoff = 0.5;
-  application.lightContainer[0].position[2] = -10;
-  application.lightContainer[0].intensity = 2;
-  application.lightContainer[0].target[2] = -25;
-  application.lightContainer[0].position[1] = 9;
-  application.globalAmbient[0] = 0.7;
-  application.globalAmbient[1] = 0.7;
-  application.globalAmbient[2] = 0.7;
-  const diceTexturePath = './res/meshes/jamb/dice.png';
+  addEventListener('AmmoReady', async () => {
+    MYSTICORE.RPG = new _controller.Controller(MYSTICORE.canvas);
+    MYSTICORE.HUD = new _hud.HUD();
+    app.cameras.WASD.movementSpeed = 100;
+    setTimeout(() => {
+      app.cameras.WASD.yaw = -0.03;
+      app.cameras.WASD.pitch = -0.49;
+      app.cameras.WASD.position[2] = 0;
+      app.cameras.WASD.position[1] = 23;
+    }, 2000);
 
-  // Dom operations
-  application.userState = {
-    name: 'Guest',
-    points: 0
-  };
-  application.myDom = _jamb.myDom;
-  _jamb.myDom.createJamb();
-  _jamb.myDom.addDraggerForTable();
-  _jamb.myDom.createBlocker();
-  application.dices = _jamb.dices;
-  application.activateDiceClickListener = null;
+    // MAPs
+    MYSTICORE.mapLoader = new _mapLoader.MEMapLoader(MYSTICORE, "./res/meshes/nav-mesh/navmesh.json");
+    // downloadMeshes({cube: "./res/meshes/blender/cube.obj"}, onGround, {scale: [120, 0.5, 120]})
 
-  // -------------------------
-  // TEST
-  application.matrixAmmo.detectTopFaceFromQuat = q => {
-    // Define based on *visual face* → object-space normal mapping
-    const faces = [{
-      face: 1,
-      vec: [0, 1, 0]
-    },
-    // top
-    {
-      face: 2,
-      vec: [0, -1, 0]
-    },
-    // bottom
-    {
-      face: 3,
-      vec: [0, 0, 1]
-    },
-    // front
-    {
-      face: 4,
-      vec: [0, 0, -1]
-    },
-    // back
-    {
-      face: 5,
-      vec: [1, 0, 0]
-    },
-    // right
-    {
-      face: 6,
-      vec: [-1, 0, 0]
-    } // left
-    ];
-    let maxDot = -Infinity;
-    let topFace = null;
-    for (const f of faces) {
-      const v = application.matrixAmmo.applyQuatToVec(q, f.vec);
-      const dot = v.y; // Compare with world up (0, 1, 0)
-      if (dot > maxDot) {
-        maxDot = dot;
-        topFace = f.face;
+    // LOCAL HERO
+    MYSTICORE.localHero = new _characterBase.Character(MYSTICORE, "res/meshes/glb/woman1.glb");
+
+    // var glbFile02 = await fetch("res/meshes/glb/monster.glb").then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, MYSTICORE.device)));
+    // MYSTICORE.addGlbObj({
+    //   material: {type: 'power', useTextureFromGlb: true},
+    //   scale: [20, 20, 20],
+    //   position: {x: -40, y: -4, z: -70},
+    //   name: 'firstGlb',
+    //   texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
+    // }, null, glbFile02);
+  });
+  MYSTICORE.addLight();
+});
+
+// just for dev
+window.app = MYSTICORE;
+
+},{"../../../src/engine/loaders/webgpu-gltf.js":29,"../../../src/world.js":48,"./characterBase.js":1,"./controller.js":2,"./hud.js":3,"./map-loader.js":4}],6:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = exports.MinHeap = void 0;
+exports.followPath = followPath;
+exports.orientHeroToDirection = orientHeroToDirection;
+var _utils = require("../../../src/engine/utils.js");
+class NavMesh {
+  constructor(data, options = {}) {
+    // expects data.vertices = [[x,y,z],...]
+    // and data.polygons = [{ indices: [i0,i1,i2], neighbors: [...] }, ...]
+    const scale = options.scale ?? [1, 1, 1]; // default: no scaling
+    const sx = scale[0],
+      sy = scale[1],
+      sz = scale[2];
+
+    // Apply scale to each vertex
+    this.vertices = data.vertices.map(v => [v[0] * sx, v[1] * sy, v[2] * sz]);
+    this.polygons = data.polygons.map(p => ({
+      indices: p.indices.slice(),
+      neighbors: (p.neighbors || []).slice()
+    }));
+
+    // Compute derived info
+    this._computeCenters();
+    this._buildEdgeMap();
+  }
+  _computeCenters() {
+    this.centers = this.polygons.map(poly => {
+      const vs = poly.indices.map(i => this.vertices[i]);
+      const cx = (vs[0][0] + vs[1][0] + vs[2][0]) / 3;
+      const cy = (vs[0][1] + vs[1][1] + vs[2][1]) / 3;
+      const cz = (vs[0][2] + vs[1][2] + vs[2][2]) / 3;
+      return [cx, cy, cz];
+    });
+  }
+  _edgeKey(a, b) {
+    return a < b ? `${a}_${b}` : `${b}_${a}`;
+  }
+  _buildEdgeMap() {
+    // map edgeKey -> array of {poly, aIndex, bIndex}
+    this.edgeMap = new Map();
+    this.polygons.forEach((poly, pi) => {
+      const indices = poly.indices;
+      for (let i = 0; i < indices.length; i++) {
+        const a = indices[i];
+        const b = indices[(i + 1) % indices.length];
+        const key = this._edgeKey(a, b);
+        if (!this.edgeMap.has(key)) this.edgeMap.set(key, []);
+        this.edgeMap.get(key).push({
+          poly: pi,
+          a,
+          b
+        });
+      }
+    });
+  }
+
+  // Point-in-triangle test in XZ plane using barycentric technique
+  _pointInTriXZ(pt, v0, v1, v2) {
+    const x = pt[0],
+      z = pt[2];
+    const ax = v0[0],
+      az = v0[2];
+    const bx = v1[0],
+      bz = v1[2];
+    const cx = v2[0],
+      cz = v2[2];
+    // vectors
+    const v0x = cx - ax,
+      v0z = cz - az;
+    const v1x = bx - ax,
+      v1z = bz - az;
+    const v2x = x - ax,
+      v2z = z - az;
+    const dot00 = v0x * v0x + v0z * v0z;
+    const dot01 = v0x * v1x + v0z * v1z;
+    const dot02 = v0x * v2x + v0z * v2z;
+    const dot11 = v1x * v1x + v1z * v1z;
+    const dot12 = v1x * v2x + v1z * v2z;
+    const denom = dot00 * dot11 - dot01 * dot01;
+    if (Math.abs(denom) < 1e-9) return false;
+    const u = (dot11 * dot02 - dot01 * dot12) / denom;
+    const v = (dot00 * dot12 - dot01 * dot02) / denom;
+    return u >= -1e-6 && v >= -1e-6 && u + v <= 1 + 1e-6;
+  }
+  findPolygonContainingPoint(point) {
+    // first try naive linear scan (ok for medium meshes). point = [x,y,z]
+    for (let i = 0; i < this.polygons.length; i++) {
+      const poly = this.polygons[i];
+      const v0 = this.vertices[poly.indices[0]];
+      const v1 = this.vertices[poly.indices[1]];
+      const v2 = this.vertices[poly.indices[2]];
+      if (this._pointInTriXZ(point, v0, v1, v2)) return i;
+    }
+    // fallback: return nearest polygon center
+    let best = 0;
+    let bestD = Infinity;
+    for (let i = 0; i < this.centers.length; i++) {
+      const c = this.centers[i];
+      const dx = c[0] - point[0];
+      const dz = c[2] - point[2];
+      const d = dx * dx + dz * dz;
+      if (d < bestD) {
+        bestD = d;
+        best = i;
       }
     }
-    return topFace;
-  };
-  application.matrixAmmo.applyQuatToVec = (q, vec) => {
-    const [x, y, z] = vec;
-    const qx = q.x(),
-      qy = q.y(),
-      qz = q.z(),
-      qw = q.w();
+    return best;
+  }
 
-    // Quaternion * vector * inverse(quaternion)
-    const ix = qw * x + qy * z - qz * y;
-    const iy = qw * y + qz * x - qx * z;
-    const iz = qw * z + qx * y - qy * x;
-    const iw = -qx * x - qy * y - qz * z;
-    return {
-      x: ix * qw + iw * -qx + iy * -qz - iz * -qy,
-      y: iy * qw + iw * -qy + iz * -qx - ix * -qz,
-      z: iz * qw + iw * -qz + ix * -qy - iy * -qx
+  // A* over polygon graph. returns list of polygon indices (inclusive)
+  _findPolyPath(startPoly, endPoly) {
+    if (startPoly === endPoly) return [startPoly];
+    const open = new MinHeap((a, b) => a.f - b.f);
+    const nodes = new Array(this.polygons.length);
+    for (let i = 0; i < nodes.length; i++) nodes[i] = {
+      g: Infinity,
+      h: 0,
+      f: Infinity,
+      parent: -1,
+      id: i
     };
-  };
-  // -------------------------
-  // This code must be on top (Physics)
-  application.matrixAmmo.detectCollision = function () {
-    this.lastRoll = '';
-    this.presentScore = '';
-    let dispatcher = this.dynamicsWorld.getDispatcher();
-    let numManifolds = dispatcher.getNumManifolds();
-    for (let i = 0; i < numManifolds; i++) {
-      let contactManifold = dispatcher.getManifoldByIndexInternal(i);
-      // let numContacts = contactManifold.getNumContacts();
-      if (this.ground.kB == contactManifold.getBody0().kB || this.ground.kB == contactManifold.getBody1().kB) {
-        // console.log(this.ground ,'GROUND IS IN CONTACT WHO IS BODY1 ', contactManifold.getBody1())
-        // CHECK ROTATION BEST WAY - VISAL PART IS NOT INTEREST NOW 
-        if (this.ground.kB == contactManifold.getBody0().kB) {
-          var MY_DICE_NAME = this.getNameByBody(contactManifold.getBody1());
-          var testR = contactManifold.getBody1().getWorldTransform().getRotation();
+    nodes[startPoly].g = 0;
+    nodes[startPoly].h = this._heuristic(startPoly, endPoly);
+    nodes[startPoly].f = nodes[startPoly].h;
+    open.push(nodes[startPoly]);
+    const closed = new Set();
+    while (!open.empty()) {
+      const current = open.pop();
+      if (current.id === endPoly) {
+        const path = [];
+        let cur = current;
+        while (cur) {
+          path.push(cur.id);
+          if (cur.parent === -1) break;
+          cur = nodes[cur.parent];
         }
-        if (this.ground.kB == contactManifold.getBody1().kB) {
-          var MY_DICE_NAME = this.getNameByBody(contactManifold.getBody0());
-          var testR = contactManifold.getBody0().getWorldTransform().getRotation();
+        return path.reverse();
+      }
+      closed.add(current.id);
+      const neighbors = this.polygons[current.id].neighbors || [];
+      for (const nId of neighbors) {
+        if (closed.has(nId)) continue;
+        const tentativeG = current.g + this._edgeCost(current.id, nId);
+        const neigh = nodes[nId];
+        if (tentativeG < neigh.g) {
+          neigh.parent = current.id;
+          neigh.g = tentativeG;
+          neigh.h = this._heuristic(nId, endPoly);
+          neigh.f = neigh.g + neigh.h;
+          open.push(neigh);
         }
-        var passed = false;
-        const face = application.matrixAmmo.detectTopFaceFromQuat(testR);
-        if (face) {
-          this.lastRoll = face.toString();
-          // Update score logic
-          dispatchEvent(new CustomEvent(`dice-${face}`, {
-            detail: {
-              result: `dice-${face}`,
-              cubeId: MY_DICE_NAME
-            }
-          }));
-        }
-        // if(Math.abs(testR.y()) < 0.00001) {
-        //   this.lastRoll = "3";
-        //   this.presentScore += 4;
-        //   passed = true;
-        // }
-        // if(Math.abs(testR.x()) < 0.00001) {
-        //   this.lastRoll = "5";
-        //   this.presentScore += 3;
-        //   passed = true;
-        // }
-        // if(testR.x().toString().substring(0, 5) == testR.y().toString().substring(1, 6)) {
-        //   this.lastRoll = "6";
-        //   this.presentScore += 2;
-        //   passed = true;
-        // }
-        // if(testR.x().toString().substring(0, 5) == testR.y().toString().substring(0, 5)) {
-        //   this.lastRoll = "2";
-        //   this.presentScore += 1;
-        //   passed = true;
-        // }
-        // if(testR.z().toString().substring(0, 5) == testR.y().toString().substring(1, 6)) {
-        //   this.lastRoll = "4";
-        //   this.presentScore += 6;
-        //   passed = true;
-        // }
-        // if(testR.z().toString().substring(0, 5) == testR.y().toString().substring(0, 5)) {
-        //   this.lastRoll = "1";
-        //   this.presentScore += 5;
-        //   passed = true;
-        // }
-        // if(passed == true) dispatchEvent(new CustomEvent(`dice-${this.lastRoll}`, {
-        //   detail: {
-        //     result: `dice-${this.lastRoll}`,
-        //     cubeId: MY_DICE_NAME
-        //   }
-        // }))
       }
     }
-  };
-  (0, _raycast.addRaycastListener)();
-  // addRaycastsAABBListener();
+    return []; // no path
+  }
+  _heuristic(aIdx, bIdx) {
+    const a = this.centers[aIdx];
+    const b = this.centers[bIdx];
+    const dx = a[0] - b[0];
+    const dz = a[2] - b[2];
+    return Math.sqrt(dx * dx + dz * dz);
+  }
+  _edgeCost(aIdx, bIdx) {
+    // Euclidean distance between polygon centers
+    const a = this.centers[aIdx];
+    const b = this.centers[bIdx];
+    const dx = a[0] - b[0];
+    const dz = a[2] - b[2];
+    return Math.sqrt(dx * dx + dz * dz);
+  }
 
-  application.canvas.addEventListener("ray.hit.event", e => {
-    console.log('ray.hit.event @@@@@@@@@@@@ detected');
-    if ((0, _utils.byId)('topTitleDOM') && (0, _utils.byId)('topTitleDOM').getAttribute('data-gamestatus') != 'FREE' && (0, _utils.byId)('topTitleDOM').getAttribute('data-gamestatus') != 'status-select') {
-      console.log('no hit in middle of game ...');
+  // build portal list (pair of points) between the sequence of polygons
+  _buildPortals(polyPath, startPoint, endPoint) {
+    // portals: array of {left:[x,y,z], right:[x,y,z]}
+    const portals = [];
+    for (let i = 0; i < polyPath.length - 1; i++) {
+      const aIdx = polyPath[i];
+      const bIdx = polyPath[i + 1];
+      // find shared edge between aIdx and bIdx
+      const pa = this.polygons[aIdx];
+      const pb = this.polygons[bIdx];
+      let shared = null;
+      for (let ia = 0; ia < pa.indices.length; ia++) {
+        const a0 = pa.indices[ia],
+          a1 = pa.indices[(ia + 1) % pa.indices.length];
+        const key = this._edgeKey(a0, a1);
+        const entries = this.edgeMap.get(key) || [];
+        for (const e of entries) {
+          if (e.poly === bIdx) {
+            // shared edge
+            shared = [this.vertices[a0], this.vertices[a1]];
+            break;
+          }
+        }
+        if (shared) break;
+      }
+      if (!shared) {
+        // fallback: use centers
+        const cA = this.centers[aIdx];
+        const cB = this.centers[bIdx];
+        portals.push({
+          left: cA.slice(),
+          right: cB.slice()
+        });
+      } else {
+        // ensure consistent ordering (left/right) in XZ relative to path direction
+        portals.push({
+          left: shared[0].slice(),
+          right: shared[1].slice()
+        });
+      }
+    }
+
+    // prepend start and append end as degenerate portals
+    portals.unshift({
+      left: startPoint.slice(),
+      right: startPoint.slice()
+    });
+    portals.push({
+      left: endPoint.slice(),
+      right: endPoint.slice()
+    });
+    return portals;
+  }
+
+  // Funnel algorithm (returns array of [x,y,z])
+  _stringPull(portals) {
+    // classic funnel over XZ plane
+    const portalLeft = portals.map(p => [p.left[0], p.left[2]]);
+    const portalRight = portals.map(p => [p.right[0], p.right[2]]);
+    const points = []; // result XZ
+    let apexIndex = 0,
+      leftIndex = 0,
+      rightIndex = 0;
+    let apex = portalLeft[0].slice();
+    let left = portalLeft[0].slice();
+    let right = portalRight[0].slice();
+    points.push([apex[0], apex[1]]); // x,z
+
+    function vecCross(a, b) {
+      return a[0] * b[1] - a[1] * b[0];
+    }
+    function sub(a, b) {
+      return [a[0] - b[0], a[1] - b[1]];
+    }
+    for (let i = 1; i < portalLeft.length; i++) {
+      const pLeft = portalLeft[i];
+      const pRight = portalRight[i];
+
+      // update right
+      const relRight = sub(pRight, apex);
+      const relRightCur = sub(right, apex);
+      if (vecCross(relRightCur, relRight) >= 0) {
+        // new right is more 'right' -> tighten
+        if (vecCross(sub(left, apex), relRight) > 0) {
+          // right crosses left -> advance apex to left
+          points.push([left[0], left[1]]);
+          apex = left.slice();
+          // reset indices
+          apexIndex = leftIndex;
+          leftIndex = apexIndex;
+          rightIndex = apexIndex;
+          left = apex.slice();
+          right = apex.slice();
+          i = apexIndex; // continue from apexIndex+1 next loop
+          continue;
+        }
+        right = pRight.slice();
+        rightIndex = i;
+      }
+
+      // update left
+      const relLeft = sub(pLeft, apex);
+      const relLeftCur = sub(left, apex);
+      if (vecCross(relLeftCur, relLeft) <= 0) {
+        // new left is more 'left' -> tighten
+        if (vecCross(sub(right, apex), relLeft) < 0) {
+          // left crosses right -> advance apex to right
+          points.push([right[0], right[1]]);
+          apex = right.slice();
+          apexIndex = rightIndex;
+          leftIndex = apexIndex;
+          rightIndex = apexIndex;
+          left = apex.slice();
+          right = apex.slice();
+          i = apexIndex;
+          continue;
+        }
+        left = pLeft.slice();
+        leftIndex = i;
+      }
+    }
+
+    // add goal
+    const lastPortal = portalLeft[portalLeft.length - 1];
+    points.push([lastPortal[0], lastPortal[1]]);
+
+    // convert back to [x,y,z] with Y taken from mesh average Y (or 0)
+    const out = points.map(xz => {
+      const x = xz[0],
+        z = xz[1];
+      // pick Y from nearest vertex on mesh (cheap approximation)
+      const y = this._sampleY(x, z);
+      return [x, y, z];
+    });
+    return out;
+  }
+  _sampleY(x, z) {
+    // sample Y using nearest vertex (cheap). If you have heightmap, use that.
+    let bestD = Infinity,
+      bestY = 0;
+    for (let i = 0; i < this.vertices.length; i++) {
+      const v = this.vertices[i];
+      const dx = v[0] - x,
+        dz = v[2] - z;
+      const d = dx * dx + dz * dz;
+      if (d < bestD) {
+        bestD = d;
+        bestY = v[1];
+      }
+    }
+    return bestY;
+  }
+
+  // Public API: returns an array of [x,y,z] waypoints or [] if unreachable
+  findPath(startPoint, endPoint) {
+    // startPoint and endPoint are [x,y,z]
+    const startPoly = this.findPolygonContainingPoint(startPoint);
+    const endPoly = this.findPolygonContainingPoint(endPoint);
+    if (startPoly === null || endPoly === null) return [];
+    const polyPath = this._findPolyPath(startPoly, endPoly);
+    if (!polyPath || polyPath.length === 0) return [];
+
+    // If polyPath is single poly, simply return [start,end]
+    if (polyPath.length === 1) {
+      return [[startPoint[0], this._sampleY(startPoint[0], startPoint[2]), startPoint[2]], [endPoint[0], this._sampleY(endPoint[0], endPoint[2]), endPoint[2]]];
+    }
+    const portals = this._buildPortals(polyPath, startPoint, endPoint);
+    const smooth = this._stringPull(portals);
+    // ensure first/last are exactly start/end
+    if (smooth.length > 0) {
+      smooth[0] = [startPoint[0], this._sampleY(startPoint[0], startPoint[2]), startPoint[2]];
+      smooth[smooth.length - 1] = [endPoint[0], this._sampleY(endPoint[0], endPoint[2]), endPoint[2]];
+    }
+    return smooth;
+  }
+
+  // Optional: clamp point into mesh (closest point on triangles) - simple nearest vertex fallback
+  closestPointOnMesh(point) {
+    // naive: return nearest vertex
+    let bestD = Infinity,
+      best = null;
+    for (const v of this.vertices) {
+      const dx = v[0] - point[0],
+        dy = v[1] - point[1],
+        dz = v[2] - point[2];
+      const d = dx * dx + dy * dy + dz * dz;
+      if (d < bestD) {
+        bestD = d;
+        best = v;
+      }
+    }
+    return best.slice();
+  }
+}
+exports.default = NavMesh;
+class MinHeap {
+  constructor(cmp) {
+    this.cmp = cmp || ((a, b) => a - b);
+    this.items = [];
+  }
+  push(v) {
+    this.items.push(v);
+    this._siftUp(this.items.length - 1);
+  }
+  pop() {
+    if (this.items.length === 0) return null;
+    const top = this.items[0];
+    const last = this.items.pop();
+    if (this.items.length > 0) {
+      this.items[0] = last;
+      this._siftDown(0);
+    }
+    return top;
+  }
+  empty() {
+    return this.items.length === 0;
+  }
+  _siftUp(i) {
+    while (i > 0) {
+      const p = Math.floor((i - 1) / 2);
+      if (this.cmp(this.items[i], this.items[p]) < 0) {
+        [this.items[i], this.items[p]] = [this.items[p], this.items[i]];
+        i = p;
+      } else break;
+    }
+  }
+  _siftDown(i) {
+    while (true) {
+      const l = 2 * i + 1,
+        r = 2 * i + 2;
+      let m = i;
+      if (l < this.items.length && this.cmp(this.items[l], this.items[m]) < 0) m = l;
+      if (r < this.items.length && this.cmp(this.items[r], this.items[m]) < 0) m = r;
+      if (m !== i) {
+        [this.items[i], this.items[m]] = [this.items[m], this.items[i]];
+        i = m;
+      } else break;
+    }
+  }
+}
+exports.MinHeap = MinHeap;
+function followPath(character, path) {
+  if (!path || path.length === 0) return;
+  let idx = 0;
+  const pos = character.position;
+  const rot = character.rotation;
+  // Recursive move
+  function moveToNext() {
+    if (idx >= path.length) {
+      character.position.onTargetPositionReach = () => {};
       return;
     }
-    if (application.dices.STATUS == "FREE_TO_PLAY") {
-      console.log("hit cube status free to play prevent pick. ", e.detail.hitObject.name);
-    } else if (application.dices.STATUS == "SELECT_DICES_1" || application.dices.STATUS == "SELECT_DICES_2" || application.dices.STATUS == "FINISHED") {
-      if (Object.keys(application.dices.SAVED_DICES).length >= 5) {
-        console.log("PREVENTED SELECT1/2 pick.", e.detail.hitObject.name);
-        return;
-      }
-      console.log("hit cube status SELECT1/2 pick.", e.detail.hitObject.name);
-      application.dices.pickDice(e.detail.hitObject.name);
-    }
-  });
-  addEventListener('mousemove', e => {
-    // console.log('only on click')
-  });
-
-  // Sounds
-  application.matrixSounds.createAudio('start', 'res/audios/start.mp3', 1);
-  application.matrixSounds.createAudio('block', 'res/audios/block.mp3', 6);
-  application.matrixSounds.createAudio('dice1', 'res/audios/dice1.mp3', 6);
-  application.matrixSounds.createAudio('dice2', 'res/audios/dice2.mp3', 6);
-  application.matrixSounds.createAudio('hover', 'res/audios/toggle_002.mp3', 3);
-  application.matrixSounds.createAudio('roll', 'res/audios/dice-roll.mp3', 2);
-  addEventListener('AmmoReady', () => {
-    app.matrixAmmo.speedUpSimulation = 2;
-    (0, _loaderObj.downloadMeshes)({
-      cube: "./res/meshes/jamb/dice.obj"
-    }, onLoadObj, {
-      scale: [1, 1, 1],
-      swap: [null]
-    });
-
-    // downloadMeshes({
-    //   star1: "./res/meshes/shapes/star1.obj",
-    // }, (m) => {
-
-    //   let o = {
-    //     scale: 2,
-    //     position: {x: 3, y: 0, z: -10},
-    //     rotation: {x: 0, y: 0, z: 0},
-    //     rotationSpeed: {x: 10, y: 0, z: 0},
-    //     texturesPaths: ['./res/textures/default.png']
-    //   };
-    // }, {scale: [11, 11, 11], swap: [null]})
-
-    (0, _loaderObj.downloadMeshes)({
-      bg: "./res/meshes/jamb/bg.obj"
-    }, onLoadObjFloor, {
-      scale: [3, 1, 3],
-      swap: [null]
-    });
-    (0, _loaderObj.downloadMeshes)({
-      mainTitle: "./res/meshes/jamb/jamb-title.obj"
-    }, onLoadObjOther, {
-      scale: [3, 2, 3],
-      swap: [null]
-    });
-    (0, _loaderObj.downloadMeshes)({
-      cube: "./res/meshes/jamb/dice.obj"
-    }, onLoadObjWallCenter, {
-      scale: [50, 10, 10],
-      swap: [null]
-    });
-    (0, _loaderObj.downloadMeshes)({
-      cube: "./res/meshes/jamb/dice.obj"
-    }, m => {
-      for (var key in m) {
-        // console.log(`%c Loaded objs -> : ${key} `, LOG_MATRIX);
-      }
-      // right
-      application.addMeshObj({
-        position: {
-          x: 25,
-          y: 5.5,
-          z: -25
-        },
-        rotation: {
-          x: 0,
-          y: -22,
-          z: 0
-        },
-        scale: [25, 10, 4],
-        texturesPaths: ['./res/meshes/jamb/text.png'],
-        name: 'wallRight',
-        mesh: m.cube,
-        physics: {
-          mass: 0,
-          enabled: true,
-          geometry: "Cube"
-        },
-        raycast: {
-          enabled: false,
-          radius: 2
-        }
-      });
-      application.addMeshObj({
-        position: {
-          x: -25,
-          y: 5.5,
-          z: -25
-        },
-        rotation: {
-          x: 0,
-          y: 22,
-          z: 0
-        },
-        scale: [25, 10, 4],
-        texturesPaths: ['./res/meshes/jamb/text.png'],
-        name: 'wallLeft',
-        mesh: m.cube,
-        physics: {
-          mass: 0,
-          enabled: true,
-          geometry: "Cube"
-        },
-        raycast: {
-          enabled: false,
-          radius: 2
-        }
-      });
-    }, {
-      scale: [25, 10, 4],
-      swap: [null]
-    });
-  });
-  function onLoadObjWallCenter(m) {
-    application.myLoadedMeshesWalls = m;
-    for (var key in m) {
-      // console.log(`%c Loaded objs -> : ${key} `, LOG_MATRIX);
-    }
-
-    // WALLS Center
-    application.addMeshObj({
-      position: {
-        x: 0,
-        y: 5,
-        z: -45
-      },
-      rotation: {
-        x: 0,
-        y: 0,
-        z: 0
-      },
-      scale: [50, 10, 10],
-      texturesPaths: ['./res/meshes/jamb/text.png'],
-      name: 'wallCenter',
-      mesh: m.cube,
-      physics: {
-        mass: 0,
-        enabled: true,
-        geometry: "Cube"
-      },
-      raycast: {
-        enabled: false,
-        radius: 2
-      }
-    });
-  }
-  function onLoadObjOther(m) {
-    application.myLoadedMeshes = m;
-    // Add logo text top
-    application.addMeshObj({
-      position: {
-        x: 0,
-        y: 6,
-        z: -15
-      },
-      rotation: {
-        x: 0,
-        y: 0,
-        z: 0
-      },
-      texturesPaths: ['./res/meshes/jamb/text.png'],
-      name: 'mainTitle',
-      mesh: m.mainTitle,
-      physics: {
-        mass: 0,
-        enabled: true,
-        geometry: "Cube"
-      },
-      raycast: {
-        enabled: false,
-        radius: 2
-      }
-    });
-    // application.cameras.WASD.pitch = 0.2
-    setTimeout(() => {
-      // app.cameras.WASD.velocity[1] = 18
-      console.log('set camera position with timeout...');
-      app.cameras.WASD.yaw = -6.21;
-      app.cameras.WASD.pitch = -0.32;
-      app.cameras.WASD.position[2] = 0;
-      app.cameras.WASD.position[1] = 3.76;
-      //                                             BODY              , x,  y, z, rotX, rotY, RotZ
-      app.matrixAmmo.setKinematicTransform(app.matrixAmmo.getBodyByName('mainTitle'), 0, 0, 0, 1);
-      app.matrixAmmo.setKinematicTransform(app.matrixAmmo.getBodyByName('bg'), 0, -10, 0, 0, 0, 0);
-      // Better access getBodyByName
-      // console.log(' app.matrixAmmo. ', app.matrixAmmo.getBodyByName('CubePhysics1'))
-    }, 1200);
-  }
-  function onLoadObjFloor(m) {
-    application.myLoadedMeshes = m;
-    application.addMeshObj({
-      scale: [10, 0.1, 0.1],
-      position: {
-        x: 0,
-        y: 6,
-        z: -10
-      },
-      rotation: {
-        x: 0,
-        y: 0,
-        z: 0
-      },
-      texturesPaths: ['./res/meshes/jamb/bg.png'],
-      name: 'bg',
-      mesh: m.bg,
-      physics: {
-        collide: false,
-        mass: 0,
-        enabled: true,
-        geometry: "Cube"
-      },
-      raycast: {
-        enabled: false,
-        radius: 2
-      }
-    });
-  }
-  function onLoadObj(m) {
-    application.myLoadedMeshes = m;
-    // Add dices
-    application.addMeshObj({
-      position: {
-        x: 0,
-        y: 6,
-        z: -10
-      },
-      rotation: {
-        x: 0,
-        y: 0,
-        z: 0
-      },
-      rotationSpeed: {
-        x: 0,
-        y: 0,
-        z: 0
-      },
-      texturesPaths: [diceTexturePath],
-      useUVShema4x2: true,
-      name: 'CubePhysics1',
-      mesh: m.cube,
-      raycast: {
-        enabled: true,
-        radius: 2
-      },
-      physics: {
-        enabled: true,
-        geometry: "Cube"
-      }
-    });
-    application.addMeshObj({
-      position: {
-        x: -5,
-        y: 4,
-        z: -14
-      },
-      rotation: {
-        x: 0,
-        y: 0,
-        z: 0
-      },
-      rotationSpeed: {
-        x: 0,
-        y: 0,
-        z: 0
-      },
-      texturesPaths: [diceTexturePath],
-      useUVShema4x2: true,
-      name: 'CubePhysics2',
-      mesh: m.cube,
-      raycast: {
-        enabled: true,
-        radius: 2
-      },
-      physics: {
-        enabled: true,
-        geometry: "Cube"
-      }
-    });
-    application.addMeshObj({
-      position: {
-        x: 4,
-        y: 8,
-        z: -10
-      },
-      rotation: {
-        x: 0,
-        y: 0,
-        z: 0
-      },
-      rotationSpeed: {
-        x: 0,
-        y: 0,
-        z: 0
-      },
-      texturesPaths: [diceTexturePath],
-      useUVShema4x2: true,
-      name: 'CubePhysics3',
-      mesh: m.cube,
-      raycast: {
-        enabled: true,
-        radius: 2
-      },
-      physics: {
-        enabled: true,
-        geometry: "Cube"
-      }
-    });
-    application.addMeshObj({
-      position: {
-        x: 3,
-        y: 4,
-        z: -10
-      },
-      rotation: {
-        x: 0,
-        y: 0,
-        z: 0
-      },
-      rotationSpeed: {
-        x: 0,
-        y: 0,
-        z: 0
-      },
-      texturesPaths: [diceTexturePath],
-      useUVShema4x2: true,
-      name: 'CubePhysics4',
-      mesh: m.cube,
-      raycast: {
-        enabled: true,
-        radius: 2
-      },
-      physics: {
-        enabled: true,
-        geometry: "Cube"
-      }
-    });
-    application.addMeshObj({
-      position: {
-        x: -2,
-        y: 4,
-        z: -13
-      },
-      rotation: {
-        x: 0,
-        y: 0,
-        z: 0
-      },
-      rotationSpeed: {
-        x: 0,
-        y: 0,
-        z: 0
-      },
-      texturesPaths: [diceTexturePath],
-      useUVShema4x2: true,
-      name: 'CubePhysics5',
-      mesh: m.cube,
-      raycast: {
-        enabled: true,
-        radius: 2
-      },
-      physics: {
-        enabled: true,
-        geometry: "Cube"
-      }
-    });
-    application.addMeshObj({
-      position: {
-        x: -4,
-        y: 6,
-        z: -9
-      },
-      rotation: {
-        x: 0,
-        y: 0,
-        z: 0
-      },
-      rotationSpeed: {
-        x: 0,
-        y: 0,
-        z: 0
-      },
-      texturesPaths: [diceTexturePath],
-      useUVShema4x2: true,
-      name: 'CubePhysics6',
-      mesh: m.cube,
-      raycast: {
-        enabled: true,
-        radius: 2
-      },
-      physics: {
-        enabled: true,
-        geometry: "Cube"
-      }
-    });
-    application.TOLERANCE = 0;
-    let allDiceDoneProcedure = () => {
-      console.log("ALL DONE", application.TOLERANCE);
-      application.TOLERANCE++;
-      if (application.TOLERANCE >= 1) {
-        removeEventListener('dice-1', dice1Click);
-        removeEventListener('dice-2', dice2Click);
-        removeEventListener('dice-3', dice3Click);
-        removeEventListener('dice-4', dice4Click);
-        removeEventListener('dice-5', dice5Click);
-        removeEventListener('dice-6', dice6Click);
-        console.log(`%cFINAL<preliminar> ${_jamb.dices.R}`, _utils.LOG_FUNNY);
-        application.TOLERANCE = 0;
-        console.log('se camera position 2');
-        app.cameras.WASD.yaw = 0.01;
-        app.cameras.WASD.pitch = -1.26;
-        app.cameras.WASD.position[2] = -18;
-        app.cameras.WASD.position[1] = 19;
-        // ??                                                     ?
-        if (_jamb.dices.STATUS == "FREE_TO_PLAY" || _jamb.dices.STATUS == "IN_PLAY") {
-          _jamb.dices.STATUS = "SELECT_DICES_1";
-          console.log(`%cStatus<SELECT_DICES_1>`, _utils.LOG_FUNNY);
-          setTimeout(() => {
-            dispatchEvent(new CustomEvent('updateTitle', {
-              detail: {
-                text: app.label.get.freetoroll,
-                status: 'FREE'
-              }
-            }));
-          }, 500);
-        } else if (_jamb.dices.STATUS == "SELECT_DICES_1") {
-          _jamb.dices.STATUS = "SELECT_DICES_2";
-          setTimeout(() => {
-            dispatchEvent(new CustomEvent('updateTitle', {
-              detail: {
-                text: app.label.get.freetoroll,
-                status: 'FREE'
-              }
-            }));
-          }, 500);
-          console.log(`%cStatus<SELECT_DICES_2>`, _utils.LOG_FUNNY);
-        } else if (_jamb.dices.STATUS == "SELECT_DICES_2") {
-          _jamb.dices.STATUS = "FINISHED";
-          console.log(`%cStatus<FINISHED>`, _utils.LOG_FUNNY);
-          dispatchEvent(new CustomEvent('updateTitle', {
-            detail: {
-              text: app.label.get.pick5,
-              status: 'status-select'
-            }
-          }));
-        }
-      }
-    };
-    addEventListener('all-done', allDiceDoneProcedure);
-    addEventListener('FREE_TO_PLAY', () => {
-      // Big reset
-      console.log(`%c<Big reset needed ...>`, _utils.LOG_FUNNY);
-      app.dices.SAVED_DICES = {};
-      app.dices.setStartUpPosition();
-      setTimeout(() => {
-        app.dices.activateAllDicesPhysics();
-      }, 1000);
-      console.log('se camera position 3');
-      app.cameras.WASD.yaw = 0;
-      app.cameras.WASD.pitch = 0;
-      app.cameras.WASD.position[2] = 0;
-      app.cameras.WASD.position[1] = 3.76;
-      dispatchEvent(new CustomEvent('updateTitle', {
-        detail: {
-          text: app.label.get.hand1,
-          status: 'FREE'
-        }
-      }));
-    });
-
-    // ACTIONS
-    let dice1Click = e => {
-      // console.info('DICE 1 click ?????????', e.detail)
-      _jamb.dices.R[e.detail.cubeId] = '1';
-      _jamb.dices.checkAll();
-    };
-    let dice2Click = e => {
-      // console.info('DICE 2', e.detail)
-      _jamb.dices.R[e.detail.cubeId] = '2';
-      _jamb.dices.checkAll();
-    };
-    let dice3Click = e => {
-      // console.info('DICE 3', e.detail)
-      _jamb.dices.R[e.detail.cubeId] = '3';
-      _jamb.dices.checkAll();
-    };
-    let dice4Click = e => {
-      // console.info('DICE 4', e.detail)
-      _jamb.dices.R[e.detail.cubeId] = '4';
-      _jamb.dices.checkAll();
-    };
-    let dice5Click = e => {
-      // console.info('DICE 5', e.detail)
-      _jamb.dices.R[e.detail.cubeId] = '5';
-      _jamb.dices.checkAll();
-    };
-    let dice6Click = e => {
-      // console.info('DICE 6', e.detail)
-      _jamb.dices.R[e.detail.cubeId] = '6';
-      _jamb.dices.checkAll();
-    };
-    function shootDice(x) {
-      setTimeout(() => {
-        app.matrixAmmo.getBodyByName(`CubePhysics${x}`).setAngularVelocity(new Ammo.btVector3((0, _utils.randomFloatFromTo)(3, 12), 9, 9));
-        app.matrixAmmo.getBodyByName(`CubePhysics${x}`).setLinearVelocity(new Ammo.btVector3((0, _utils.randomFloatFromTo)(-5, 5), 15, -20));
-        setTimeout(() => app.matrixSounds.play('roll'), 1500);
-      }, 200 * x);
-    }
-    application.activateDiceClickListener = index => {
-      index = parseInt(index);
-      switch (index) {
-        case 1:
-          addEventListener('dice-1', dice1Click);
-        case 2:
-          addEventListener('dice-2', dice2Click);
-        case 3:
-          addEventListener('dice-3', dice3Click);
-        case 4:
-          addEventListener('dice-4', dice4Click);
-        case 5:
-          addEventListener('dice-5', dice5Click);
-        case 6:
-          addEventListener('dice-6', dice6Click);
-      }
-    };
-    let rollProcedure = () => {
-      if (topTitleDOM.getAttribute('data-gamestatus') != 'FREE') {
-        console.log('validation fails...');
-        return;
-      }
-      if (_jamb.dices.STATUS == "FREE_TO_PLAY") {
-        app.matrixSounds.play('start');
-        _jamb.dices.STATUS = "IN_PLAY";
-        dispatchEvent(new CustomEvent('updateTitle', {
-          detail: {
-            text: app.label.get.hand1,
-            status: 'inplay'
-          }
-        }));
-        addEventListener('dice-1', dice1Click);
-        addEventListener('dice-2', dice2Click);
-        addEventListener('dice-3', dice3Click);
-        addEventListener('dice-4', dice4Click);
-        addEventListener('dice-5', dice5Click);
-        addEventListener('dice-6', dice6Click);
-        for (var x = 1; x < 7; x++) {
-          shootDice(x);
-        }
-      } else if (_jamb.dices.STATUS == "SELECT_DICES_1" || _jamb.dices.STATUS == "SELECT_DICES_2") {
-        // Now no selected dices still rolling
-        for (let i = 1; i <= 6; i++) {
-          const key = "CubePhysics" + i;
-          if (!(key in app.dices.SAVED_DICES)) {
-            console.log("Still in game last char is id : ", key[key.length - 1]);
-            application.activateDiceClickListener(parseInt(key[key.length - 1]));
-            shootDice(key[key.length - 1]);
-          } else {
-            console.log("??????????Still in game last char is id : ", key[key.length - 1]);
-            application.activateDiceClickListener(parseInt(key[key.length - 1]));
-          }
-        }
-        // ????
-        // application.activateDiceClickListener(1);
-
-        dispatchEvent(new CustomEvent('updateTitle', {
-          detail: {
-            text: _jamb.dices.STATUS == "SELECT_DICES_1" ? app.label.get.hand1 : app.label.get.hand2,
-            status: 'inplay'
-          }
-        }));
-      } else if (_jamb.dices.STATUS == "FINISHED") {
-        _utils.mb.error('No more roll...');
-        _utils.mb.show('Pick up 5 dices');
-      }
-    };
-    addEventListener('DICE.ROLL', rollProcedure);
-    app.ROLL = () => {
-      dispatchEvent(new CustomEvent('DICE.ROLL', {}));
+    const target = path[idx];
+    // --- Compute direction in XZ plane ---
+    const dx = target[0] - pos.x;
+    const dz = target[2] - pos.z;
+    // Character faces -Z → use atan2(dx, dz)
+    let angleY = Math.atan2(dx, dz);
+    // Convert to degrees & normalize
+    angleY = ((0, _utils.radToDeg)(angleY) + 360) % 360;
+    rot.y = angleY;
+    pos.translateByXZ(target[0], target[2]);
+    character.position.onTargetPositionReach = () => {
+      idx++;
+      moveToNext();
     };
   }
-});
-window.app = application;
+  moveToNext();
+}
+function orientHeroToDirection(hero, dir) {
+  // dir = normalized movement direction in world space [x, y, z]
+  // hero.forward = [0, 0, -1] by default
+  // Project direction onto XZ plane (ignore Y)
+  const flatDir = [dir[0], 0, dir[2]];
+  const len = Math.hypot(flatDir[0], flatDir[2]);
+  if (len < 0.0001) return;
+  flatDir[0] /= len;
+  flatDir[2] /= len;
+  // Compute rotation angle around Y axis
+  const angle = Math.atan2(flatDir[0], flatDir[2]); // note X/Z order!
+  // Apply to hero
+  hero.rotation.y = angle; // in radians
+}
 
-},{"./examples/games/jamb/jamb.js":2,"./src/engine/loader-obj.js":24,"./src/engine/raycast.js":30,"./src/engine/utils.js":31,"./src/world.js":45}],4:[function(require,module,exports){
+},{"../../../src/engine/utils.js":34}],7:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -2158,7 +882,7 @@ exports.default = void 0;
 var _bvhLoader = require("./module/bvh-loader");
 var _default = exports.default = _bvhLoader.MEBvh;
 
-},{"./module/bvh-loader":5}],5:[function(require,module,exports){
+},{"./module/bvh-loader":8}],8:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -2847,7 +1571,7 @@ class MEBvh {
 }
 exports.MEBvh = MEBvh;
 
-},{"webgpu-matrix":17}],6:[function(require,module,exports){
+},{"webgpu-matrix":20}],9:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -2925,7 +1649,7 @@ function equals(a, b) {
   return Math.abs(a - b) <= tolerance * Math.max(1, Math.abs(a), Math.abs(b));
 }
 
-},{}],7:[function(require,module,exports){
+},{}],10:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -2954,7 +1678,7 @@ var vec4 = _interopRequireWildcard(require("./vec4.js"));
 exports.vec4 = vec4;
 function _interopRequireWildcard(e, t) { if ("function" == typeof WeakMap) var r = new WeakMap(), n = new WeakMap(); return (_interopRequireWildcard = function (e, t) { if (!t && e && e.__esModule) return e; var o, i, f = { __proto__: null, default: e }; if (null === e || "object" != typeof e && "function" != typeof e) return f; if (o = t ? n : r) { if (o.has(e)) return o.get(e); o.set(e, f); } for (const t in e) "default" !== t && {}.hasOwnProperty.call(e, t) && ((i = (o = Object.defineProperty) && Object.getOwnPropertyDescriptor(e, t)) && (i.get || i.set) ? o(f, t, i) : f[t] = e[t]); return f; })(e, t); }
 
-},{"./common.js":6,"./mat2.js":8,"./mat2d.js":9,"./mat3.js":10,"./mat4.js":11,"./quat.js":12,"./quat2.js":13,"./vec2.js":14,"./vec3.js":15,"./vec4.js":16}],8:[function(require,module,exports){
+},{"./common.js":9,"./mat2.js":11,"./mat2d.js":12,"./mat3.js":13,"./mat4.js":14,"./quat.js":15,"./quat2.js":16,"./vec2.js":17,"./vec3.js":18,"./vec4.js":19}],11:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -3416,7 +2140,7 @@ var mul = exports.mul = multiply;
  */
 var sub = exports.sub = subtract;
 
-},{"./common.js":6}],9:[function(require,module,exports){
+},{"./common.js":9}],12:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -3930,7 +2654,7 @@ var mul = exports.mul = multiply;
  */
 var sub = exports.sub = subtract;
 
-},{"./common.js":6}],10:[function(require,module,exports){
+},{"./common.js":9}],13:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -4742,7 +3466,7 @@ var mul = exports.mul = multiply;
  */
 var sub = exports.sub = subtract;
 
-},{"./common.js":6}],11:[function(require,module,exports){
+},{"./common.js":9}],14:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -6762,7 +5486,7 @@ var mul = exports.mul = multiply;
  */
 var sub = exports.sub = subtract;
 
-},{"./common.js":6}],12:[function(require,module,exports){
+},{"./common.js":9}],15:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -7545,7 +6269,7 @@ var setAxes = exports.setAxes = function () {
   };
 }();
 
-},{"./common.js":6,"./mat3.js":10,"./vec3.js":15,"./vec4.js":16}],13:[function(require,module,exports){
+},{"./common.js":9,"./mat3.js":13,"./vec3.js":18,"./vec4.js":19}],16:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -8418,7 +7142,7 @@ function equals(a, b) {
   return Math.abs(a0 - b0) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a0), Math.abs(b0)) && Math.abs(a1 - b1) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a1), Math.abs(b1)) && Math.abs(a2 - b2) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a2), Math.abs(b2)) && Math.abs(a3 - b3) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a3), Math.abs(b3)) && Math.abs(a4 - b4) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a4), Math.abs(b4)) && Math.abs(a5 - b5) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a5), Math.abs(b5)) && Math.abs(a6 - b6) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a6), Math.abs(b6)) && Math.abs(a7 - b7) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a7), Math.abs(b7));
 }
 
-},{"./common.js":6,"./mat4.js":11,"./quat.js":12}],14:[function(require,module,exports){
+},{"./common.js":9,"./mat4.js":14,"./quat.js":15}],17:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -9096,7 +7820,7 @@ var forEach = exports.forEach = function () {
   };
 }();
 
-},{"./common.js":6}],15:[function(require,module,exports){
+},{"./common.js":9}],18:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -9948,7 +8672,7 @@ var forEach = exports.forEach = function () {
   };
 }();
 
-},{"./common.js":6}],16:[function(require,module,exports){
+},{"./common.js":9}],19:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -10655,7 +9379,7 @@ var forEach = exports.forEach = function () {
   };
 }();
 
-},{"./common.js":6}],17:[function(require,module,exports){
+},{"./common.js":9}],20:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -14588,7 +13312,7 @@ function setDefaultType(ctor) {
   setDefaultType$1(ctor);
 }
 
-},{}],18:[function(require,module,exports){
+},{}],21:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -19935,7 +18659,7 @@ function setDefaultType(ctor) {
   setDefaultType$1(ctor);
 }
 
-},{}],19:[function(require,module,exports){
+},{}],22:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -20349,7 +19073,7 @@ class MEBall {
 }
 exports.default = MEBall;
 
-},{"../shaders/shaders":40,"./engine":22,"./matrix-class":28,"wgpu-matrix":18}],20:[function(require,module,exports){
+},{"../shaders/shaders":43,"./engine":25,"./matrix-class":31,"wgpu-matrix":21}],23:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -20387,7 +19111,7 @@ class Behavior {
 }
 exports.default = Behavior;
 
-},{"./utils":31}],21:[function(require,module,exports){
+},{"./utils":34}],24:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -20812,7 +19536,7 @@ class MECube {
 }
 exports.default = MECube;
 
-},{"../shaders/shaders":40,"./engine":22,"./matrix-class":28,"wgpu-matrix":18}],22:[function(require,module,exports){
+},{"../shaders/shaders":43,"./engine":25,"./matrix-class":31,"wgpu-matrix":21}],25:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -21234,7 +19958,7 @@ function createInputHandler(window, canvas) {
   };
 }
 
-},{"./utils":31,"wgpu-matrix":18}],23:[function(require,module,exports){
+},{"./utils":34,"wgpu-matrix":21}],26:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -21475,7 +20199,7 @@ class SpotLight {
 }
 exports.SpotLight = SpotLight;
 
-},{"../shaders/vertexShadow.wgsl":43,"./behavior":20,"wgpu-matrix":18}],24:[function(require,module,exports){
+},{"../shaders/vertexShadow.wgsl":46,"./behavior":23,"wgpu-matrix":21}],27:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -21943,7 +20667,7 @@ function play(nameAni) {
   this.playing = true;
 }
 
-},{}],25:[function(require,module,exports){
+},{}],28:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -22453,7 +21177,7 @@ class BVHPlayer extends _meshObj.default {
 }
 exports.BVHPlayer = BVHPlayer;
 
-},{"../mesh-obj":29,"./webgpu-gltf.js":26,"bvh-loader":4,"wgpu-matrix":18}],26:[function(require,module,exports){
+},{"../mesh-obj":32,"./webgpu-gltf.js":29,"bvh-loader":7,"wgpu-matrix":21}],29:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -23031,7 +21755,7 @@ async function uploadGLBModel(buffer, device) {
   return R;
 }
 
-},{"gl-matrix":7}],27:[function(require,module,exports){
+},{"gl-matrix":10}],30:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -23557,7 +22281,7 @@ class Materials {
 }
 exports.default = Materials;
 
-},{"../shaders/fragment.wgsl":35,"../shaders/fragment.wgsl.metal":36,"../shaders/fragment.wgsl.normalmap":37,"../shaders/fragment.wgsl.pong":38,"../shaders/fragment.wgsl.power":39}],28:[function(require,module,exports){
+},{"../shaders/fragment.wgsl":38,"../shaders/fragment.wgsl.metal":39,"../shaders/fragment.wgsl.normalmap":40,"../shaders/fragment.wgsl.pong":41,"../shaders/fragment.wgsl.power":42}],31:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -23793,7 +22517,7 @@ class Rotation {
 }
 exports.Rotation = Rotation;
 
-},{"./utils":31}],29:[function(require,module,exports){
+},{"./utils":34}],32:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -24211,6 +22935,34 @@ class MEMeshObj extends _materials.default {
         frontFace: 'ccw'
       };
 
+      // Selected effect
+      this.selectedBuffer = device.createBuffer({
+        size: 4,
+        // just one float
+        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+      });
+      this.selectedBindGroupLayout = device.createBindGroupLayout({
+        entries: [{
+          binding: 0,
+          visibility: GPUShaderStage.FRAGMENT,
+          buffer: {}
+        }]
+      });
+      this.selectedBindGroup = device.createBindGroup({
+        layout: this.selectedBindGroupLayout,
+        entries: [{
+          binding: 0,
+          resource: {
+            buffer: this.selectedBuffer
+          }
+        }]
+      });
+      this.setSelectedEffect = (selected = false) => {
+        this.device.queue.writeBuffer(this.selectedBuffer, 0, new Float32Array([selected ? 1.0 : 0.0]));
+      };
+      // 0 default
+      this.setSelectedEffect();
+
       // Create a bind group layout which holds the scene uniforms and
       // the texture+sampler for depth. We create it manually because the WebPU
       // implementation doesn't infer this from the shader (yet).
@@ -24351,7 +23103,7 @@ class MEMeshObj extends _materials.default {
       label: 'Mesh Pipeline ✅',
       layout: this.device.createPipelineLayout({
         label: 'createPipelineLayout Mesh',
-        bindGroupLayouts: [this.bglForRender, this.uniformBufferBindGroupLayout]
+        bindGroupLayouts: [this.bglForRender, this.uniformBufferBindGroupLayout, this.selectedBindGroupLayout]
       }),
       vertex: {
         entryPoint: 'main',
@@ -24458,6 +23210,11 @@ class MEMeshObj extends _materials.default {
         pass.setBindGroup(bindIndex++, light.getMainPassBindGroup(this));
       }
     }
+
+    // --- Selection state (new)
+    if (this.selectedBindGroup) {
+      pass.setBindGroup(2, this.selectedBindGroup);
+    }
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setVertexBuffer(1, this.vertexNormalsBuffer);
     pass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
@@ -24530,36 +23287,27 @@ class MEMeshObj extends _materials.default {
 }
 exports.default = MEMeshObj;
 
-},{"../shaders/fragment.video.wgsl":34,"../shaders/vertex.wgsl":41,"../shaders/vertex.wgsl.normalmap":42,"./materials":27,"./matrix-class":28,"./utils":31,"wgpu-matrix":18}],30:[function(require,module,exports){
+},{"../shaders/fragment.video.wgsl":37,"../shaders/vertex.wgsl":44,"../shaders/vertex.wgsl.normalmap":45,"./materials":30,"./matrix-class":31,"./utils":34,"wgpu-matrix":21}],33:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.addRaycastListener = addRaycastListener;
-exports.addRaycastsAABBListener = addRaycastsAABBListener;
+exports.addRaycastsListener = addRaycastsListener;
 exports.computeAABB = computeAABB;
 exports.computeWorldVertsAndAABB = computeWorldVertsAndAABB;
 exports.getRayFromMouse = getRayFromMouse;
-exports.getRayFromMouse2 = getRayFromMouse2;
+exports.getRayFromMouse2 = void 0;
 exports.rayIntersectsAABB = rayIntersectsAABB;
 exports.rayIntersectsSphere = rayIntersectsSphere;
 exports.touchCoordinate = void 0;
 var _wgpuMatrix = require("wgpu-matrix");
 /**
- * @author Nikola Lukic
- * @email zlatnaspirala@gmail.com
- * @site https://maximumroulette.com
- * @Licence GPL v3
- * @credits chatgpt used for this script adaptation.
- * @Note matrix-engine-wgpu adaptation test
- * default for now:
- * app.cameras['WASD']
- * Only tested for WASD type of camera.
- * app is global - will be fixed in future
- */
+* MatrixEngine Raycaster (improved)
+* Author: Nikola Lukić
+* Version: 2.0
+*/
 
-let rayHitEvent;
 let touchCoordinate = exports.touchCoordinate = {
   enabled: false,
   x: 0,
@@ -24571,134 +23319,48 @@ function multiplyMatrixVector(matrix, vector) {
 }
 function getRayFromMouse(event, canvas, camera) {
   const rect = canvas.getBoundingClientRect();
-  let x = (event.clientX - rect.left) / rect.width * 2 - 1;
-  let y = (event.clientY - rect.top) / rect.height * 2 - 1;
-  y = -y; // flip Y only (WebGPU NDC)
+  const x = (event.clientX - rect.left) / rect.width * 2 - 1;
+  const y = -((event.clientY - rect.top) / rect.height * 2 - 1); // flip Y (WebGPU NDC)
 
-  const aspect = canvas.width / canvas.height;
-  camera.projectionMatrix = _wgpuMatrix.mat4.perspective(2 * Math.PI / 5, aspect, 0.1, 1000);
+  // Use precomputed projection if available
   const invProjection = _wgpuMatrix.mat4.inverse(camera.projectionMatrix);
   const invView = _wgpuMatrix.mat4.inverse(camera.view);
-
-  // NDC -> clip -> eye -> world
-  let clip = [x, y, 1, 1];
+  const clip = [x, y, 1, 1];
   let eye = _wgpuMatrix.vec4.transformMat4(clip, invProjection);
-  eye = [eye[0], eye[1], -1, 0]; // direction in view space
-
-  let worldDir = _wgpuMatrix.vec4.transformMat4(eye, invView);
-  const rayDirection = _wgpuMatrix.vec3.normalize([worldDir[0], worldDir[1], worldDir[2]]);
+  eye = [eye[0], eye[1], -1, 0];
+  const worldDir4 = _wgpuMatrix.vec4.transformMat4(eye, invView);
+  const rayDirection = _wgpuMatrix.vec3.normalize([worldDir4[0], worldDir4[1], worldDir4[2]]);
   const rayOrigin = [...camera.position];
   return {
     rayOrigin,
-    rayDirection
+    rayDirection,
+    screen: {
+      x,
+      y
+    }
   };
 }
-// export function getRayFromMouse(event, canvas, camera) {
-//   const rect = canvas.getBoundingClientRect();
-//   let x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-//   let y = ((event.clientY - rect.top) / rect.height) * 2 - 1;
-//   // simple invert
-//   x = -x;
-//   y = -y;
-//   const fov = Math.PI / 4;
-//   const aspect = canvas.width / canvas.height;
-//   const near = 0.1;
-//   const far = 1000;
-//   camera.projectionMatrix = mat4.perspective((2 * Math.PI) / 5, aspect, 1, 1000.0);
-//   const invProjection = mat4.inverse(camera.projectionMatrix);
-//   const invView = mat4.inverse(camera.view);
-//   const ndc = [x, y, 1, 1];
-//   let worldPos = multiplyMatrixVector(invProjection, ndc);
-//   worldPos = multiplyMatrixVector(invView, worldPos);
-//   let world;
-//   if(worldPos[3] !== 0) {
-//     world = [
-//       worldPos[0] / worldPos[3],
-//       worldPos[2] / worldPos[3],
-//       worldPos[1] / worldPos[3]
-//     ];
-//   } else {
-//     console.log("[raycaster]special case 0.");
-//     world = [
-//       worldPos[0],
-//       worldPos[1],
-//       worldPos[2]
-//     ];
-//   }
-//   const rayOrigin = [camera.position[0], camera.position[1], camera.position[2]];
-//   const rayDirection = vec3.normalize(vec3.subtract(world, rayOrigin));
-//   rayDirection[2] = -rayDirection[2];
-//   return {rayOrigin, rayDirection};
-// }
 
-function getRayFromMouse2(event, canvas, camera) {
-  const rect = canvas.getBoundingClientRect();
-  let x = (event.clientX - rect.left) / rect.width * 2 - 1;
-  let y = (event.clientY - rect.top) / rect.height * 2 - 1;
-  // simple invert
-  y = -y;
-  const fov = Math.PI / 4;
-  const aspect = canvas.width / canvas.height;
-  const near = 0.1;
-  const far = 1000;
-  camera.projectionMatrix = _wgpuMatrix.mat4.perspective(2 * Math.PI / 5, aspect, 1, 1000.0);
-  const invProjection = _wgpuMatrix.mat4.inverse(camera.projectionMatrix);
-  const invView = _wgpuMatrix.mat4.inverse(camera.view);
-  const ndc = [x, y, 1, 1];
-  let worldPos = multiplyMatrixVector(invProjection, ndc);
-  worldPos = multiplyMatrixVector(invView, worldPos);
-  let world;
-  if (worldPos[3] !== 0) {
-    world = [worldPos[0] / worldPos[3], worldPos[1] / worldPos[3], worldPos[2] / worldPos[3]];
-  } else {
-    console.log("[raycaster]special case 0.");
-    world = [worldPos[0], worldPos[1], worldPos[2]];
-  }
-  const rayOrigin = [camera.position[0], camera.position[1], camera.position[2]];
-  const rayDirection = _wgpuMatrix.vec3.normalize(_wgpuMatrix.vec3.subtract(world, rayOrigin));
-  return {
-    rayOrigin,
-    rayDirection
-  };
-}
+// Backward compatibility alias
+const getRayFromMouse2 = exports.getRayFromMouse2 = getRayFromMouse;
 function rayIntersectsSphere(rayOrigin, rayDirection, sphereCenter, sphereRadius) {
-  const pos = [sphereCenter.x, sphereCenter.y, sphereCenter.z];
-  const oc = _wgpuMatrix.vec3.subtract(rayOrigin, pos);
+  const center = [sphereCenter.x, sphereCenter.y, sphereCenter.z];
+  const oc = _wgpuMatrix.vec3.subtract(rayOrigin, center);
   const a = _wgpuMatrix.vec3.dot(rayDirection, rayDirection);
   const b = 2.0 * _wgpuMatrix.vec3.dot(oc, rayDirection);
   const c = _wgpuMatrix.vec3.dot(oc, oc) - sphereRadius * sphereRadius;
   const discriminant = b * b - 4 * a * c;
-  return discriminant > 0;
+  if (discriminant < 0) return null;
+  const t = (-b - Math.sqrt(discriminant)) / (2.0 * a);
+  if (t < 0) return null;
+  const hitPoint = _wgpuMatrix.vec3.add(rayOrigin, _wgpuMatrix.vec3.mulScalar(rayDirection, t));
+  const hitNormal = _wgpuMatrix.vec3.normalize(_wgpuMatrix.vec3.subtract(hitPoint, center));
+  return {
+    t,
+    hitPoint,
+    hitNormal
+  };
 }
-function addRaycastListener(canvasId = "canvas1") {
-  let canvasDom = document.getElementById(canvasId);
-  canvasDom.addEventListener('click', event => {
-    let camera = app.cameras.WASD;
-    const {
-      rayOrigin,
-      rayDirection
-    } = getRayFromMouse(event, canvasDom, camera);
-    for (const object of app.mainRenderBundle) {
-      if (object.raycast.enabled == true) {
-        if (rayIntersectsSphere(rayOrigin, rayDirection, object.position, object.raycast.radius)) {
-          // Just like in matrix-engine webGL version "ray.hit.event"
-          canvasDom.dispatchEvent(new CustomEvent('ray.hit.event', {
-            detail: {
-              hitObject: object,
-              rayOrigin: rayOrigin,
-              rayDirection: rayDirection
-            }
-          }));
-          if (touchCoordinate.stopOnFirstDetectedHit == true) {
-            break;
-          }
-        }
-      }
-    }
-  });
-}
-
-// Compute AABB from flat vertices array [x,y,z, x,y,z, ...]
 function computeAABB(vertices) {
   const min = [Infinity, Infinity, Infinity];
   const max = [-Infinity, -Infinity, -Infinity];
@@ -24713,7 +23375,7 @@ function computeAABB(vertices) {
   return [min, max];
 }
 
-// Ray-AABB intersection using slabs method
+// Ray-AABB intersection returning distance (slab method)
 function rayIntersectsAABB(rayOrigin, rayDirection, boxMin, boxMax) {
   let tmin = (boxMin[0] - rayOrigin[0]) / rayDirection[0];
   let tmax = (boxMax[0] - rayOrigin[0]) / rayDirection[0];
@@ -24721,22 +23383,27 @@ function rayIntersectsAABB(rayOrigin, rayDirection, boxMin, boxMax) {
   let tymin = (boxMin[1] - rayOrigin[1]) / rayDirection[1];
   let tymax = (boxMax[1] - rayOrigin[1]) / rayDirection[1];
   if (tymin > tymax) [tymin, tymax] = [tymax, tymin];
-  if (tmin > tymax || tymin > tmax) return false;
+  if (tmin > tymax || tymin > tmax) return null;
   if (tymin > tmin) tmin = tymin;
   if (tymax < tmax) tmax = tymax;
   let tzmin = (boxMin[2] - rayOrigin[2]) / rayDirection[2];
   let tzmax = (boxMax[2] - rayOrigin[2]) / rayDirection[2];
   if (tzmin > tzmax) [tzmin, tzmax] = [tzmax, tzmin];
-  if (tmin > tzmax || tzmin > tmax) return false;
-  return true;
+  if (tmin > tzmax || tzmin > tmax) return null;
+  const t = Math.max(tmin, 0.0);
+  const hitPoint = _wgpuMatrix.vec3.add(rayOrigin, _wgpuMatrix.vec3.mulScalar(rayDirection, t));
+  return {
+    t,
+    hitPoint
+  };
 }
 function computeWorldVertsAndAABB(object) {
   const modelMatrix = object.getModelMatrix(object.position);
   const worldVerts = [];
   for (let i = 0; i < object.mesh.vertices.length; i += 3) {
-    const local = _wgpuMatrix.vec3.fromValues(object.mesh.vertices[i], object.mesh.vertices[i + 1], object.mesh.vertices[i + 2]);
-    const world = _wgpuMatrix.vec3.transformMat4(local, modelMatrix); // OK
-    worldVerts.push(world[0], world[1], world[2]);
+    const local = [object.mesh.vertices[i], object.mesh.vertices[i + 1], object.mesh.vertices[i + 2]];
+    const world = _wgpuMatrix.vec3.transformMat4(local, modelMatrix);
+    worldVerts.push(...world);
   }
   const [boxMin, boxMax] = computeAABB(worldVerts);
   return {
@@ -24746,44 +23413,63 @@ function computeWorldVertsAndAABB(object) {
     boxMax
   };
 }
-function addRaycastsAABBListener(canvasId = "canvas1") {
-  const canvasDom = document.getElementById(canvasId);
-  if (!canvasDom) {
-    console.warn(`Canvas with id ${canvasId} not found`);
+
+// 🧠 Dispatch rich event
+function dispatchRayHitEvent(canvas, data) {
+  canvas.dispatchEvent(new CustomEvent("ray.hit.event", {
+    detail: data
+  }));
+}
+function addRaycastsListener(canvasId = "canvas1") {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) {
+    console.warn(`[Raycaster] Canvas with id '${canvasId}' not found.`);
     return;
   }
-  canvasDom.addEventListener('click', event => {
-    console.warn(`Canvas click  ${event} `);
+  canvas.addEventListener("click", event => {
     const camera = app.cameras.WASD;
     const {
       rayOrigin,
-      rayDirection
-    } = getRayFromMouse2(event, canvasDom, camera);
+      rayDirection,
+      screen
+    } = getRayFromMouse(event, canvas, camera);
+    let closestHit = null;
     for (const object of app.mainRenderBundle) {
+      if (!object.raycast?.enabled) continue;
       const {
         boxMin,
         boxMax
       } = computeWorldVertsAndAABB(object);
-      if (object.raycast.enabled == true) {
-        if (rayIntersectsAABB(rayOrigin, rayDirection, boxMin, boxMax)) {
-          // console.log('AABB hit:', object.name);
-          canvasDom.dispatchEvent(new CustomEvent('ray.hit.event', {
-            detail: {
-              hitObject: object
-            },
-            rayOrigin: rayOrigin,
-            rayDirection: rayDirection
-          }));
-          if (touchCoordinate.stopOnFirstDetectedHit == true) {
-            break;
-          }
-        }
+      const hitAABB = rayIntersectsAABB(rayOrigin, rayDirection, boxMin, boxMax);
+      if (!hitAABB) continue;
+      const sphereHit = rayIntersectsSphere(rayOrigin, rayDirection, object.position, object.raycast.radius);
+      const hit = sphereHit || hitAABB;
+      if (hit && (!closestHit || hit.t < closestHit.t)) {
+        closestHit = {
+          ...hit,
+          hitObject: object
+        };
+        if (touchCoordinate.stopOnFirstDetectedHit) break;
       }
+    }
+    if (closestHit) {
+      dispatchRayHitEvent(canvas, {
+        hitObject: closestHit.hitObject,
+        hitPoint: closestHit.hitPoint,
+        hitNormal: closestHit.hitNormal || null,
+        hitDistance: closestHit.t,
+        rayOrigin,
+        rayDirection,
+        screenCoords: screen,
+        camera,
+        timestamp: performance.now(),
+        button: event.button
+      });
     }
   });
 }
 
-},{"wgpu-matrix":18}],31:[function(require,module,exports){
+},{"wgpu-matrix":21}],34:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -25669,7 +24355,7 @@ function setupCanvasFilters(canvasId) {
   updateFilter(); // Initial
 }
 
-},{}],32:[function(require,module,exports){
+},{}],35:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -25709,7 +24395,7 @@ class MultiLang {
 }
 exports.MultiLang = MultiLang;
 
-},{"../engine/utils":31}],33:[function(require,module,exports){
+},{"../engine/utils":34}],36:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -25993,7 +24679,7 @@ class MatrixAmmo {
 }
 exports.default = MatrixAmmo;
 
-},{"../engine/utils":31}],34:[function(require,module,exports){
+},{"../engine/utils":34}],37:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -26083,7 +24769,7 @@ fn main(input : FragmentInput) -> @location(0) vec4f {
 }
 `;
 
-},{}],35:[function(require,module,exports){
+},{}],38:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -26150,6 +24836,9 @@ const MAX_SPOTLIGHTS = 20u;
 @group(0) @binding(6) var metallicRoughnessTex: texture_2d<f32>;
 @group(0) @binding(7) var metallicRoughnessSampler: sampler;
 @group(0) @binding(8) var<uniform> material: MaterialPBR;
+
+// RPG or any other usage [selected obj effect]
+@group(2) @binding(0) var<uniform> uSelected : f32;
 
 struct FragmentInput {
     @location(0) shadowPos : vec4f,
@@ -26297,11 +24986,21 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     }
 
     let texColor = textureSample(meshTexture, meshSampler, input.uv);
-    let finalColor = texColor.rgb * (scene.globalAmbient + lightContribution);
+    var finalColor = texColor.rgb * (scene.globalAmbient + lightContribution);
+
+    let N = normalize(input.fragNorm);
+    let V = normalize(scene.cameraPos - input.fragPos);
+    let fresnel = pow(1.0 - max(dot(N, V), 0.0), 3.0);
+
+    if (uSelected > 0.5) {
+        let glowColor = vec3f(0.2, 0.8, 1.0);
+        finalColor += glowColor * fresnel * 0.1;
+    }
+
     return vec4f(finalColor, 1.0);
 }`;
 
-},{}],36:[function(require,module,exports){
+},{}],39:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -26479,7 +25178,7 @@ return vec4f(color, 1.0);
 // let radiance = spotlights[0].color * 10.0; // test high intensity
 // Lo += materialData.baseColor * radiance * NdotL;
 
-},{}],37:[function(require,module,exports){
+},{}],40:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -26724,7 +25423,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, 1.0);
 }`;
 
-},{}],38:[function(require,module,exports){
+},{}],41:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -26944,7 +25643,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, 1.0);
 }`;
 
-},{}],39:[function(require,module,exports){
+},{}],42:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -27112,7 +25811,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 // let radiance = spotlights[0].color * 10.0; // test high intensity
 // Lo += materialData.baseColor * radiance * NdotL;
 
-},{}],40:[function(require,module,exports){
+},{}],43:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -27170,7 +25869,7 @@ fn fragmentMain(input: VertexOutput) -> @location(0) vec4f {
   return vec4f(textureColor.rgb * lightColor, textureColor.a);
 }`;
 
-},{}],41:[function(require,module,exports){
+},{}],44:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -27256,7 +25955,7 @@ fn main(
   return output;
 }`;
 
-},{}],42:[function(require,module,exports){
+},{}],45:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -27367,7 +26066,7 @@ fn main(
   return output;
 }`;
 
-},{}],43:[function(require,module,exports){
+},{}],46:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -27395,7 +26094,7 @@ fn main(
 }
 `;
 
-},{}],44:[function(require,module,exports){
+},{}],47:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -27465,7 +26164,7 @@ class MatrixSounds {
 }
 exports.MatrixSounds = MatrixSounds;
 
-},{}],45:[function(require,module,exports){
+},{}],48:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -28280,4 +26979,4 @@ class MatrixEngineWGPU {
 }
 exports.default = MatrixEngineWGPU;
 
-},{"./engine/ball.js":19,"./engine/cube.js":21,"./engine/engine.js":22,"./engine/lights.js":23,"./engine/loader-obj.js":24,"./engine/loaders/bvh.js":25,"./engine/mesh-obj.js":29,"./engine/utils.js":31,"./multilang/lang.js":32,"./physics/matrix-ammo.js":33,"./sounds/sounds.js":44,"wgpu-matrix":18}]},{},[3]);
+},{"./engine/ball.js":22,"./engine/cube.js":24,"./engine/engine.js":25,"./engine/lights.js":26,"./engine/loader-obj.js":27,"./engine/loaders/bvh.js":28,"./engine/mesh-obj.js":32,"./engine/utils.js":34,"./multilang/lang.js":35,"./physics/matrix-ammo.js":36,"./sounds/sounds.js":47,"wgpu-matrix":21}]},{},[5]);

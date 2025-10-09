@@ -59,6 +59,9 @@ const MAX_SPOTLIGHTS = 20u;
 @group(0) @binding(7) var metallicRoughnessSampler: sampler;
 @group(0) @binding(8) var<uniform> material: MaterialPBR;
 
+// RPG or any other usage [selected obj effect]
+@group(2) @binding(0) var<uniform> uSelected : f32;
+
 struct FragmentInput {
     @location(0) shadowPos : vec4f,
     @location(1) fragPos   : vec3f,
@@ -205,6 +208,16 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     }
 
     let texColor = textureSample(meshTexture, meshSampler, input.uv);
-    let finalColor = texColor.rgb * (scene.globalAmbient + lightContribution);
+    var finalColor = texColor.rgb * (scene.globalAmbient + lightContribution);
+
+    let N = normalize(input.fragNorm);
+    let V = normalize(scene.cameraPos - input.fragPos);
+    let fresnel = pow(1.0 - max(dot(N, V), 0.0), 3.0);
+
+    if (uSelected > 0.5) {
+        let glowColor = vec3f(0.2, 0.8, 1.0);
+        finalColor += glowColor * fresnel * 0.1;
+    }
+
     return vec4f(finalColor, 1.0);
 }`;

@@ -1,6 +1,6 @@
 {
   "name": "matrix-engine-wgpu",
-  "version": "1.5.5",
+  "version": "1.5.6",
   "description": "normalmap added, Fixed shadows casting vs camera/video texture, webGPU powered pwa application. Crazy fast rendering with AmmoJS physics support. Simple raycaster hit object added.",
   "main": "index.js",
   "scripts": {
@@ -10,6 +10,7 @@
     "empty": "watchify empty.js -p [esmify --noImplicitAny] -o public/empty.js",
     "build.jamb": "browserify main.js -p esmify > public/app.js",
     "glb-loader": "watchify ./examples/glb-loader.js -p [esmify --noImplicitAny] -o public/app.js",
+    "rpg": "watchify ./examples/games/RPG/mysticore.js -p [esmify --noImplicitAny] -o public/app.js",
     "build-all": "npm run main-worker | npm run examples | npm run main | npm run empty",
     "hosts": "http-server ./public/ -p 3000"
   },

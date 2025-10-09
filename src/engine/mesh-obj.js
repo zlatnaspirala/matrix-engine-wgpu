@@ -421,6 +421,29 @@ export default class MEMeshObj extends Materials {
         frontFace: 'ccw'
       }
 
+      // Selected effect
+      this.selectedBuffer = device.createBuffer({
+        size: 4, // just one float
+        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+      });
+
+      this.selectedBindGroupLayout = device.createBindGroupLayout({
+        entries: [
+          {binding: 0, visibility: GPUShaderStage.FRAGMENT, buffer: {}},
+        ],
+      });
+
+      this.selectedBindGroup = device.createBindGroup({
+        layout: this.selectedBindGroupLayout,
+        entries: [{binding: 0, resource: {buffer: this.selectedBuffer}}],
+      });
+
+      this.setSelectedEffect = (selected = false) => {
+        this.device.queue.writeBuffer(this.selectedBuffer, 0, new Float32Array([selected ? 1.0 : 0.0]));
+      };
+      // 0 default
+      this.setSelectedEffect();
+
       // Create a bind group layout which holds the scene uniforms and
       // the texture+sampler for depth. We create it manually because the WebPU
       // implementation doesn't infer this from the shader (yet).
@@ -574,7 +597,10 @@ export default class MEMeshObj extends Materials {
       label: 'Mesh Pipeline ✅',
       layout: this.device.createPipelineLayout({
         label: 'createPipelineLayout Mesh',
-        bindGroupLayouts: [this.bglForRender, this.uniformBufferBindGroupLayout],
+        bindGroupLayouts: [
+          this.bglForRender,
+          this.uniformBufferBindGroupLayout,
+          this.selectedBindGroupLayout],
       }),
       vertex: {
         entryPoint: 'main',
@@ -698,6 +724,12 @@ export default class MEMeshObj extends Materials {
         pass.setBindGroup(bindIndex++, light.getMainPassBindGroup(this));
       }
     }
+
+    // --- Selection state (new)
+    if(this.selectedBindGroup) {
+      pass.setBindGroup(2, this.selectedBindGroup);
+    }
+
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setVertexBuffer(1, this.vertexNormalsBuffer);
     pass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
