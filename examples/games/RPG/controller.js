@@ -48,13 +48,13 @@ export class Controller {
     addRaycastsListener()
 
     canvas.addEventListener("ray.hit.event", (e) => {
-      console.log('ray.hit.event detected', e);
+      // console.log('ray.hit.event detected', e);
       const {hitObject, hitPoint, button} = e.detail;
       if(!hitObject || !hitPoint) {
         console.warn('No valid hit detected.');
         return;
       }
-      console.log("Hit object:", hitObject.name, "Button:", button);
+      // console.log("Hit object:", hitObject.name, "Button:", button);
       // Only react to LEFT CLICK
       if(button !== 0) return;
       // Define start (hero position) and end (clicked point)
@@ -62,19 +62,11 @@ export class Controller {
       const start = [hero.position.x, hero.position.y, hero.position.z];
       const end = [hitPoint[0], hitPoint[1], hitPoint[2]];
 
-      console.log("Start:", start, "End:", end);
-
+      // console.log("Start:", start, "End:", end);
       // --- find path on your navmesh ---
       const path = this.nav.findPath(start, end);
-
-      if(!path || path.length === 0) {
-        console.warn('No valid path found.');
-        return;
-      }
-
-      console.log("Path:", path);
-
-      // --- move hero along path ---
+      if(!path || path.length === 0) {console.warn('No valid path found.'); return;}
+      // console.log("Path:", path);
       followPath(hero, path);
     });
 
