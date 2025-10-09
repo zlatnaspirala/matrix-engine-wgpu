@@ -4,6 +4,7 @@ import {uploadGLBModel} from "../../../src/engine/loaders/webgpu-gltf";
 export class Character {
   constructor(MYSTICORE, path) {
     this.core = MYSTICORE;
+    this.heroe_bodies = [];
     this.loadLocalHero(path);
   }
 
@@ -13,7 +14,7 @@ export class Character {
       let test = this.core.addGlbObj({
         material: {type: 'standard', useTextureFromGlb: true},
         scale: [20, 20, 20],
-        position: {x: 0, y: -4, z: -170},
+        position: {x: 0, y: -4, z: -220},
         name: 'local-hero',
         texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
         raycast: {enabled: true, radius: 1.5}
@@ -21,10 +22,11 @@ export class Character {
       
       // make small async 
       setTimeout(() => {
-        const heroe_bodies = app.mainRenderBundle.filter(obj =>
+        this.heroe_bodies = app.mainRenderBundle.filter(obj =>
           obj.name && obj.name.includes("local-hero")
         );
-        console.log(' heroe_bodies return ', heroe_bodies)
+        console.log(' this.heroe_bodies   ', this.heroe_bodies)
+        this.core.RPG.heroe_bodies =  this.heroe_bodies;
       }, 1200)
 
     } catch(err) {

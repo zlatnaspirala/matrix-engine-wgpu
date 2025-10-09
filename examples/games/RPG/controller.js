@@ -1,11 +1,15 @@
 import {computeWorldVertsAndAABB, touchCoordinate, rayIntersectsAABB, rayIntersectsSphere, getRayFromMouse2, getRayFromMouse} from "../../../src/engine/raycast.js";
 import {mat4, vec4} from "wgpu-matrix";
 import {byId} from "../../../src/engine/utils.js";
+import {followPath} from "./nav-mesh.js";
 
 export class Controller {
 
   ignoreList = ['ground'];
   selected = [];
+
+  nav = null;
+  heroe_bodies = null;
 
   constructor(canvas) {
     this.canvas = canvas;
@@ -18,6 +22,13 @@ export class Controller {
         this.selecting = true;
         this.dragStart = {x: e.clientX, y: e.clientY};
         this.dragEnd = {x: e.clientX, y: e.clientY};
+      } else if(e.button === 0) {
+        console.log('it is right what is heroe_bodies ', this.heroe_bodies);
+        console.log('it is right what is nav ', this.nav);
+        const start = [this.heroe_bodies[0].position.x, this.heroe_bodies[0].position.y, this.heroe_bodies[0].position.z];
+        const end = [ e.clientX, 0, e.clientY];
+        const path = this.nav.findPath(start, end);
+        followPath(this.heroe_bodies[0].position, path);
       }
     });
 
@@ -110,15 +121,15 @@ export class Controller {
         this.canvas
       );
       if(screen.x >= xMin && screen.x <= xMax && screen.y >= yMin && screen.y <= yMax) {
-        if (this.ignoreList.some(str => object.name.includes(str))) continue;
+        if(this.ignoreList.some(str => object.name.includes(str))) continue;
         if(this.selected.includes(object)) continue;
         object.setSelectedEffect(true);
         this.selected.push(object);
-        byId('hud-menu').dispatchEvent(new CustomEvent("onSelectCharacter", {detail: object.name} ))
+        byId('hud-menu').dispatchEvent(new CustomEvent("onSelectCharacter", {detail: object.name}))
       } else {
-        if (this.selected.indexOf(object) !== -1) {
-           this.selected.splice(this.selected.indexOf(object),1)
-           // byId('hud-menu').dispatchEvent(new CustomEvent("onSelectCharacter", {detail: object.name} ))
+        if(this.selected.indexOf(object) !== -1) {
+          this.selected.splice(this.selected.indexOf(object), 1)
+          // byId('hud-menu').dispatchEvent(new CustomEvent("onSelectCharacter", {detail: object.name} ))
         }
         object.setSelectedEffect(false);
       }

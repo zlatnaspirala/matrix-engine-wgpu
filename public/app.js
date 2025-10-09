@@ -9,6 +9,7 @@ var _webgpuGltf = require("../../../src/engine/loaders/webgpu-gltf");
 class Character {
   constructor(MYSTICORE, path) {
     this.core = MYSTICORE;
+    this.heroe_bodies = [];
     this.loadLocalHero(path);
   }
   async loadLocalHero(p) {
@@ -23,7 +24,7 @@ class Character {
         position: {
           x: 0,
           y: -4,
-          z: -170
+          z: -220
         },
         name: 'local-hero',
         texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
@@ -35,8 +36,9 @@ class Character {
 
       // make small async 
       setTimeout(() => {
-        const heroe_bodies = app.mainRenderBundle.filter(obj => obj.name && obj.name.includes("local-hero"));
-        console.log(' heroe_bodies return ', heroe_bodies);
+        this.heroe_bodies = app.mainRenderBundle.filter(obj => obj.name && obj.name.includes("local-hero"));
+        console.log(' this.heroe_bodies   ', this.heroe_bodies);
+        this.core.RPG.heroe_bodies = this.heroe_bodies;
       }, 1200);
     } catch (err) {
       throw err;
@@ -55,9 +57,12 @@ exports.Controller = void 0;
 var _raycast = require("../../../src/engine/raycast.js");
 var _wgpuMatrix = require("wgpu-matrix");
 var _utils = require("../../../src/engine/utils.js");
+var _navMesh = require("./nav-mesh.js");
 class Controller {
   ignoreList = ['ground'];
   selected = [];
+  nav = null;
+  heroe_bodies = null;
   constructor(canvas) {
     this.canvas = canvas;
     this.dragStart = null;
@@ -75,6 +80,13 @@ class Controller {
           x: e.clientX,
           y: e.clientY
         };
+      } else if (e.button === 0) {
+        console.log('it is right what is heroe_bodies ', this.heroe_bodies);
+        console.log('it is right what is nav ', this.nav);
+        const start = [this.heroe_bodies[0].position.x, this.heroe_bodies[0].position.y, this.heroe_bodies[0].position.z];
+        const end = [e.clientX, 0, e.clientY];
+        const path = this.nav.findPath(start, end);
+        (0, _navMesh.followPath)(this.heroe_bodies[0].position, path);
       }
     });
     canvas.addEventListener('mousemove', e => {
@@ -211,7 +223,7 @@ class Controller {
 }
 exports.Controller = Controller;
 
-},{"../../../src/engine/raycast.js":33,"../../../src/engine/utils.js":34,"wgpu-matrix":21}],3:[function(require,module,exports){
+},{"../../../src/engine/raycast.js":33,"../../../src/engine/utils.js":34,"./nav-mesh.js":6,"wgpu-matrix":21}],3:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -280,21 +292,25 @@ var _navMesh = _interopRequireDefault(require("./nav-mesh.js"));
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 class MEMapLoader {
   async loadNavMesh(navMapPath) {
-    try {
-      const response = await fetch(navMapPath);
-      const navData = await response.json();
-      const nav = new _navMesh.default(navData, {
-        scale: [10, 1, 10]
-      });
-      return nav;
-    } catch (err) {
-      throw err;
-    }
+    return new Promise(async (resolve, reject) => {
+      try {
+        const response = await fetch(navMapPath);
+        const navData = await response.json();
+        const nav = new _navMesh.default(navData, {
+          scale: [10, 1, 10]
+        });
+        resolve(nav);
+      } catch (err) {
+        reject(err);
+        throw err;
+      }
+    });
   }
   constructor(MYSTICORE, navMapPath) {
     this.core = MYSTICORE;
     this.loadNavMesh(navMapPath).then(e => {
-      console.log('navMap loaded...');
+      console.log('navMap loaded...', e);
+      this.core.RPG.nav = e;
       this.loadMainMap(); // <-- FIXED
     });
   }

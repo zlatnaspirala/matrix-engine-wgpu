@@ -4,20 +4,24 @@ import NavMesh from "./nav-mesh.js";
 export class MEMapLoader {
 
   async loadNavMesh(navMapPath) {
-    try {
-      const response = await fetch(navMapPath);
-      const navData = await response.json();
-      const nav = new NavMesh(navData, {scale : [10, 1, 10]});
-      return nav;
-    } catch(err) {
-      throw err;
-    }
+    return new Promise(async (resolve, reject) => {
+      try {
+        const response = await fetch(navMapPath);
+        const navData = await response.json();
+        const nav = new NavMesh(navData, {scale: [10, 1, 10]});
+        resolve(nav);
+      } catch(err) {
+        reject(err);
+        throw err;
+      }
+    })
   }
 
   constructor(MYSTICORE, navMapPath) {
     this.core = MYSTICORE;
     this.loadNavMesh(navMapPath).then((e) => {
-      console.log('navMap loaded...');
+      console.log('navMap loaded...', e);
+      this.core.RPG.nav = e;
       this.loadMainMap(); // <-- FIXED
     });
   }
