@@ -137,7 +137,7 @@ class Controller {
       }
     });
     canvas.addEventListener("ray.hit.event", e => {
-      console.log('ray.hit.event by x,y detected');
+      console.log('ray.hit.event by x,y detected', e);
       if (false) {
         console.log('no hit in middle of game ...');
         return;
@@ -338,6 +338,10 @@ class MEMapLoader {
         enabled: false,
         mass: 0,
         geometry: "Cube"
+      },
+      raycast: {
+        enabled: true,
+        radius: 1.5
       }
     });
     // this.core.lightContainer[0].position[1] = 25;

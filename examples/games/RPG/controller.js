@@ -72,7 +72,7 @@ export class Controller {
     });
 
     canvas.addEventListener("ray.hit.event", (e) => {
-      console.log('ray.hit.event by x,y detected');
+      console.log('ray.hit.event by x,y detected', e);
       if(false) {
         console.log('no hit in middle of game ...');
         return;

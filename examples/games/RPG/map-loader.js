@@ -39,6 +39,7 @@ export class MEMapLoader {
         mass: 0,
         geometry: "Cube"
       },
+      raycast: {enabled: true, radius: 1.5}
     });
     // this.core.lightContainer[0].position[1] = 25;
   }
