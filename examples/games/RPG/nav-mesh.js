@@ -1,4 +1,4 @@
-import { degToRad, radToDeg } from "../../../src/engine/utils.js";
+import { radToDeg } from "../../../src/engine/utils.js";
 
 export default class NavMesh {
   constructor(data, options = {}) {
@@ -374,44 +374,30 @@ export class MinHeap {
 
 export function followPath(character, path) {
   if (!path || path.length === 0) return;
-
   let idx = 0;
   const pos = character.position;
   const rot = character.rotation;
-
   // Recursive move
   function moveToNext() {
     if (idx >= path.length) {
       character.position.onTargetPositionReach = () => {};
       return;
     }
-
     const target = path[idx];
-
     // --- Compute direction in XZ plane ---
     const dx = target[0] - pos.x;
     const dz = target[2] - pos.z;
-
     // Character faces -Z → use atan2(dx, dz)
     let angleY = Math.atan2(dx, dz);
-
     // Convert to degrees & normalize
     angleY = (radToDeg(angleY) + 360) % 360;
-
-    // --- Apply facing rotation ---
     rot.y = angleY;
-
-    // --- Move character ---
     pos.translateByXZ(target[0], target[2]);
-
-    // --- Wait for arrival ---
     character.position.onTargetPositionReach = () => {
       idx++;
       moveToNext();
     };
   }
-
-  // Start moving
   moveToNext();
 }
 

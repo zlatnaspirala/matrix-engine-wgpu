@@ -1,10 +1,15 @@
+/**
+ * @description
+ * IMPORTANT this is not javascript browser code.
+ * This is NODE.JS script.
+ * @usage
+ * node gen-nav-mesh.js some.obj
+ */
 import fs from "fs";
 
-// --- 1. Parse minimal OBJ data (vertices + faces) ---
 function parseOBJ(text) {
   const vertices = [];
   const faces = [];
-
   for (const line of text.split("\n")) {
     const parts = line.trim().split(/\s+/);
     if (parts[0] === "v") {
@@ -19,11 +24,10 @@ function parseOBJ(text) {
       faces.push(indices);
     }
   }
-
   return { vertices, faces };
 }
 
-// --- 2. Compute adjacency between polygons ---
+// Compute adjacency between polygons
 function computeAdjacency(faces, vertices) {
   const edges = new Map();
   const polys = faces.map((indices) => ({
@@ -57,18 +61,16 @@ function computeAdjacency(faces, vertices) {
   return polys;
 }
 
-// --- 3. Main Execution ---
 function convertOBJToNavMesh(inputPath, outputPath) {
   const text = fs.readFileSync(inputPath, "utf8");
   const { vertices, faces } = parseOBJ(text);
   const polygons = computeAdjacency(faces, vertices);
-
   const data = { vertices, polygons };
   fs.writeFileSync(outputPath, JSON.stringify(data, null, 2));
   console.log(`✅ NavMesh exported: ${outputPath}`);
 }
 
-// --- 4. Run via CLI ---
+// Run via CLI
 const input = process.argv[2];
 const output = process.argv[3] || "navmesh.json";
 
@@ -78,5 +80,3 @@ if (!input) {
 }
 
 convertOBJToNavMesh(input, output);
-
-// node convert-navmesh.js navmesh.obj

@@ -836,7 +836,6 @@ function followPath(character, path) {
   let idx = 0;
   const pos = character.position;
   const rot = character.rotation;
-
   // Recursive move
   function moveToNext() {
     if (idx >= path.length) {
@@ -844,31 +843,20 @@ function followPath(character, path) {
       return;
     }
     const target = path[idx];
-
     // --- Compute direction in XZ plane ---
     const dx = target[0] - pos.x;
     const dz = target[2] - pos.z;
-
     // Character faces -Z → use atan2(dx, dz)
     let angleY = Math.atan2(dx, dz);
-
     // Convert to degrees & normalize
     angleY = ((0, _utils.radToDeg)(angleY) + 360) % 360;
-
-    // --- Apply facing rotation ---
     rot.y = angleY;
-
-    // --- Move character ---
     pos.translateByXZ(target[0], target[2]);
-
-    // --- Wait for arrival ---
     character.position.onTargetPositionReach = () => {
       idx++;
       moveToNext();
     };
   }
-
-  // Start moving
   moveToNext();
 }
 function orientHeroToDirection(hero, dir) {
