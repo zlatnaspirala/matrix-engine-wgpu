@@ -64,6 +64,7 @@
     "hit-3d-object",
     "hit-object",
     "webgpu-obj-loader",
-    "webgpu-fps"
+    "webgpu-fps",
+    "navigation-mesh"
   ]
 }
