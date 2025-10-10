@@ -54,9 +54,15 @@ export class Controller {
         console.warn('No valid hit detected.');
         return;
       }
-      // console.log("Hit object:", hitObject.name, "Button:", button);
+      console.log("Hit object:", hitObject.name, "Button:", button);
       // Only react to LEFT CLICK
-      if(button !== 0 || this.heroe_bodies === null) return;
+      if(button !== 0 || this.heroe_bodies === null ||
+         !this.selected.includes(this.heroe_bodies[0]) 
+      ) {
+        // not hero but maybe other creaps . based on selected....
+        return;
+      }
+
       // Define start (hero position) and end (clicked point)
       const hero = this.heroe_bodies[0];
       let heroSword = null;

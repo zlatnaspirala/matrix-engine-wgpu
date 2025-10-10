@@ -8,58 +8,88 @@ export const HERO_ARCHETYPES = {
     moveSpeed: 1.0,
     attackSpeed: 1.0,
     hpRegenMult: 1.2,
-    mpRegenMult: 0.9,
-  },
-  Mage: {
-    hpMult: 0.8,
-    manaMult: 1.4,
-    attackMult: 0.9,
-    armorMult: 0.8,
-    moveSpeed: 1.05,
-    attackSpeed: 0.95,
-    hpRegenMult: 0.8,
-    mpRegenMult: 1.4,
-  },
-  Assassin: {
-    hpMult: 0.9,
-    manaMult: 1.0,
-    attackMult: 1.3,
-    armorMult: 0.7,
-    moveSpeed: 1.2,
-    attackSpeed: 1.3,
-    hpRegenMult: 1.0,
-    mpRegenMult: 1.0,
+    manaRegenMult: 0.8
   },
   Tank: {
-    hpMult: 1.5,
-    manaMult: 0.7,
+    hpMult: 1.6,
+    manaMult: 0.6,
     attackMult: 0.9,
     armorMult: 1.5,
     moveSpeed: 0.9,
-    attackSpeed: 0.9,
+    attackSpeed: 0.8,
     hpRegenMult: 1.4,
-    mpRegenMult: 0.7,
+    manaRegenMult: 0.7
+  },
+  Assassin: {
+    hpMult: 0.9,
+    manaMult: 0.9,
+    attackMult: 1.5,
+    armorMult: 0.8,
+    moveSpeed: 1.3,
+    attackSpeed: 1.4,
+    hpRegenMult: 0.9,
+    manaRegenMult: 0.9
+  },
+  Mage: {
+    hpMult: 0.8,
+    manaMult: 1.5,
+    attackMult: 0.9,
+    armorMult: 0.7,
+    moveSpeed: 1.0,
+    attackSpeed: 0.9,
+    hpRegenMult: 0.8,
+    manaRegenMult: 1.5
+  },
+  Support: {
+    hpMult: 1.0,
+    manaMult: 1.2,
+    attackMult: 0.8,
+    armorMult: 1.0,
+    moveSpeed: 1.0,
+    attackSpeed: 1.0,
+    hpRegenMult: 1.2,
+    manaRegenMult: 1.2
   },
   Ranger: {
     hpMult: 1.0,
     manaMult: 1.0,
     attackMult: 1.2,
     armorMult: 0.9,
-    moveSpeed: 1.1,
-    attackSpeed: 1.15,
+    moveSpeed: 1.2,
+    attackSpeed: 1.2,
     hpRegenMult: 1.0,
-    mpRegenMult: 1.0,
+    manaRegenMult: 1.0
   },
-  Support: {
-    hpMult: 1.0,
-    manaMult: 1.3,
+  Summoner: {
+    hpMult: 0.9,
+    manaMult: 1.4,
     attackMult: 0.8,
     armorMult: 0.9,
     moveSpeed: 1.0,
     attackSpeed: 0.9,
-    hpRegenMult: 1.1,
-    mpRegenMult: 1.3,
+    hpRegenMult: 1.0,
+    manaRegenMult: 1.4
   },
+  Necromancer: {
+    hpMult: 0.9,
+    manaMult: 1.4,
+    attackMult: 0.9,
+    armorMult: 0.8,
+    moveSpeed: 1.0,
+    attackSpeed: 0.9,
+    hpRegenMult: 0.9,
+    manaRegenMult: 1.4
+  },
+  Engineer: {
+    hpMult: 1.1,
+    manaMult: 1.0,
+    attackMult: 1.0,
+    armorMult: 1.1,
+    moveSpeed: 1.0,
+    attackSpeed: 1.0,
+    hpRegenMult: 1.0,
+    manaRegenMult: 1.0
+  }
 };
 
 export class HeroProps {
@@ -237,25 +267,35 @@ export class HeroProps {
 
 // --- Extend base HeroProps
 export class Hero extends HeroProps {
-  constructor(name, archetype = "Warrior") {
+  constructor(name, archetypes = ["Warrior"]) {
     super(name);
-    this.archetype = archetype;
+    this.archetypes = archetypes.slice(0, 2); // limit to 2
     this.applyArchetypeStats();
   }
 
   applyArchetypeStats() {
-    const type = HERO_ARCHETYPES[this.archetype];
-    if(!type) return;
+    if(!this.archetypes || this.archetypes.length === 0) return;
 
-    // Apply multipliers to current stats
-    this.hp *= type.hpMult;
-    this.mana *= type.manaMult;
-    this.attack *= type.attackMult;
-    this.armor *= type.armorMult;
-    this.moveSpeed *= type.moveSpeed;
-    this.attackSpeed *= type.attackSpeed;
-    this.hpRegen *= type.hpRegenMult;
-    this.mpRegen *= type.mpRegenMult;
+    let typeData;
+
+    if(this.archetypes.length === 2) {
+      typeData = mergeArchetypes(this.archetypes[0], this.archetypes[1]);
+    } else {
+      typeData = HERO_ARCHETYPES[this.archetypes[0]];
+    }
+
+    if(!typeData) return;
+
+    this.hp *= typeData.hpMult;
+    this.mana *= typeData.manaMult;
+    this.attack *= typeData.attackMult;
+    this.armor *= typeData.armorMult;
+    this.moveSpeed *= typeData.moveSpeed;
+    this.attackSpeed *= typeData.attackSpeed;
+    this.hpRegen *= typeData.hpRegenMult;
+    this.mpRegen *= typeData.manaRegenMult;
+
+    this._mergedArchetype = typeData._mergedFrom || this.archetypes;
   }
 
   // Override updateStats to include archetype scaling
@@ -263,4 +303,34 @@ export class Hero extends HeroProps {
     super.updateStats();
     this.applyArchetypeStats();
   }
+}
+
+export const HERO_PROFILES = {
+  MariaSword: {
+    baseArchetypes: ["Warrior", "Mage"],
+    colorTheme: ["gold", "orange"],
+    weapon: "Sword",
+    abilities: ["Solar Dash", "Radiant Ascend", "Luminous Counter", "Solar Bloom"]
+  }
+};
+
+export function mergeArchetypes(typeA, typeB) {
+  if(!HERO_ARCHETYPES[typeA] || !HERO_ARCHETYPES[typeB]) {
+    console.warn(`Invalid archetype(s): ${typeA}, ${typeB}`);
+    return HERO_ARCHETYPES[typeA] || HERO_ARCHETYPES[typeB];
+  }
+
+  const a = HERO_ARCHETYPES[typeA];
+  const b = HERO_ARCHETYPES[typeB];
+  const merged = {};
+
+  // Average their multipliers (or tweak with weights if needed)
+  for(const key in a) {
+    if(typeof a[key] === "number" && typeof b[key] === "number") {
+      merged[key] = (a[key] + b[key]) / 2;
+    }
+  }
+
+  merged._mergedFrom = [typeA, typeB];
+  return merged;
 }

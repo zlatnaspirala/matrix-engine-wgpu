@@ -251,6 +251,54 @@ export class HUD {
       selectedCharacters.textContent = `selectedCharacters:[${e.detail}]`;
     });
 
+    const hudDesription = document.createElement("div");
+    hudDesription.id = "hudDesription";
+    // Style it
+    Object.assign(hudDesription.style, {
+      width: "60%",
+      height: "100%",
+      backgroundColor: "rgba(0,0,0,0.5)",
+      // display: "flex",
+      border: "solid 1px red",
+      alignItems: "center",
+      justifyContent: "space-around",
+      color: "white",
+      fontFamily: "'Orbitron', sans-serif",
+      zIndex: "100",
+      padding: "10px",
+      boxSizing: "border-box"
+    });
+
+    const hudDesriptionText = document.createElement("div");
+    hudDesriptionText.id = "hudDesription";
+    // Style it
+    Object.assign(hudDesriptionText.style, {
+      width: "100%",
+      height: "100%",
+      aspectRatio: "1 / 1",
+      border: "2px solid #aaa",
+      borderRadius: "6px",
+      background: "linear-gradient(145deg, #444, #222)",
+      boxShadow:
+        "inset 2px 2px 5px rgba(0,0,0,0.6), inset -2px -2px 5px rgba(255,255,255,0.1)",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      color: "#ccc",
+      fontSize: "12px",
+      cursor: "pointer",
+      transition: "all 0.2s ease-in-out",
+      backgroundSize: "contain",
+      backgroundRepeat: "no-repeat",
+      backgroundPosition: "center",
+    });
+
+
+    hudDesription.appendChild(hudDesriptionText);
+    hud.appendChild(hudDesription);
+
+
+    // right
     const hudItems = document.createElement("div");
     hudItems.id = "hudLeftBox";
     Object.assign(hudItems.style, {
@@ -268,14 +316,13 @@ export class HUD {
       boxSizing: "border-box"
     });
 
-
     // === Inventory Grid (2x3) ===
     const inventoryGrid = document.createElement("div");
     inventoryGrid.id = "inventoryGrid";
     Object.assign(inventoryGrid.style, {
       display: "grid",
-      gridTemplateColumns: "repeat(3, 1fr)", // 3 columns
-      gridTemplateRows: "repeat(2, 1fr)",    // 2 rows
+      gridTemplateColumns: "repeat(3, 1fr)",
+      gridTemplateRows: "repeat(2, 1fr)",
       // gap: "10px",
       width: "100%",
       height: "100%",
@@ -326,7 +373,6 @@ export class HUD {
 
     // Add grid to hudItems
     hudItems.appendChild(inventoryGrid);
-
 
     hud.appendChild(hudItems);
 

@@ -134,9 +134,13 @@ class Controller {
         console.warn('No valid hit detected.');
         return;
       }
-      // console.log("Hit object:", hitObject.name, "Button:", button);
+      console.log("Hit object:", hitObject.name, "Button:", button);
       // Only react to LEFT CLICK
-      if (button !== 0 || this.heroe_bodies === null) return;
+      if (button !== 0 || this.heroe_bodies === null || !this.selected.includes(this.heroe_bodies[0])) {
+        // not hero but maybe other creaps . based on selected....
+        return;
+      }
+
       // Define start (hero position) and end (clicked point)
       const hero = this.heroe_bodies[0];
       let heroSword = null;
@@ -238,7 +242,8 @@ exports.Controller = Controller;
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.HeroProps = exports.Hero = exports.HERO_ARCHETYPES = void 0;
+exports.HeroProps = exports.Hero = exports.HERO_PROFILES = exports.HERO_ARCHETYPES = void 0;
+exports.mergeArchetypes = mergeArchetypes;
 // --- Core archetype definitions
 const HERO_ARCHETYPES = exports.HERO_ARCHETYPES = {
   Warrior: {
@@ -249,57 +254,87 @@ const HERO_ARCHETYPES = exports.HERO_ARCHETYPES = {
     moveSpeed: 1.0,
     attackSpeed: 1.0,
     hpRegenMult: 1.2,
-    mpRegenMult: 0.9
-  },
-  Mage: {
-    hpMult: 0.8,
-    manaMult: 1.4,
-    attackMult: 0.9,
-    armorMult: 0.8,
-    moveSpeed: 1.05,
-    attackSpeed: 0.95,
-    hpRegenMult: 0.8,
-    mpRegenMult: 1.4
-  },
-  Assassin: {
-    hpMult: 0.9,
-    manaMult: 1.0,
-    attackMult: 1.3,
-    armorMult: 0.7,
-    moveSpeed: 1.2,
-    attackSpeed: 1.3,
-    hpRegenMult: 1.0,
-    mpRegenMult: 1.0
+    manaRegenMult: 0.8
   },
   Tank: {
-    hpMult: 1.5,
-    manaMult: 0.7,
+    hpMult: 1.6,
+    manaMult: 0.6,
     attackMult: 0.9,
     armorMult: 1.5,
     moveSpeed: 0.9,
-    attackSpeed: 0.9,
+    attackSpeed: 0.8,
     hpRegenMult: 1.4,
-    mpRegenMult: 0.7
+    manaRegenMult: 0.7
+  },
+  Assassin: {
+    hpMult: 0.9,
+    manaMult: 0.9,
+    attackMult: 1.5,
+    armorMult: 0.8,
+    moveSpeed: 1.3,
+    attackSpeed: 1.4,
+    hpRegenMult: 0.9,
+    manaRegenMult: 0.9
+  },
+  Mage: {
+    hpMult: 0.8,
+    manaMult: 1.5,
+    attackMult: 0.9,
+    armorMult: 0.7,
+    moveSpeed: 1.0,
+    attackSpeed: 0.9,
+    hpRegenMult: 0.8,
+    manaRegenMult: 1.5
+  },
+  Support: {
+    hpMult: 1.0,
+    manaMult: 1.2,
+    attackMult: 0.8,
+    armorMult: 1.0,
+    moveSpeed: 1.0,
+    attackSpeed: 1.0,
+    hpRegenMult: 1.2,
+    manaRegenMult: 1.2
   },
   Ranger: {
     hpMult: 1.0,
     manaMult: 1.0,
     attackMult: 1.2,
     armorMult: 0.9,
-    moveSpeed: 1.1,
-    attackSpeed: 1.15,
+    moveSpeed: 1.2,
+    attackSpeed: 1.2,
     hpRegenMult: 1.0,
-    mpRegenMult: 1.0
+    manaRegenMult: 1.0
   },
-  Support: {
-    hpMult: 1.0,
-    manaMult: 1.3,
+  Summoner: {
+    hpMult: 0.9,
+    manaMult: 1.4,
     attackMult: 0.8,
     armorMult: 0.9,
     moveSpeed: 1.0,
     attackSpeed: 0.9,
-    hpRegenMult: 1.1,
-    mpRegenMult: 1.3
+    hpRegenMult: 1.0,
+    manaRegenMult: 1.4
+  },
+  Necromancer: {
+    hpMult: 0.9,
+    manaMult: 1.4,
+    attackMult: 0.9,
+    armorMult: 0.8,
+    moveSpeed: 1.0,
+    attackSpeed: 0.9,
+    hpRegenMult: 0.9,
+    manaRegenMult: 1.4
+  },
+  Engineer: {
+    hpMult: 1.1,
+    manaMult: 1.0,
+    attackMult: 1.0,
+    armorMult: 1.1,
+    moveSpeed: 1.0,
+    attackSpeed: 1.0,
+    hpRegenMult: 1.0,
+    manaRegenMult: 1.0
   }
 };
 class HeroProps {
@@ -590,24 +625,29 @@ class HeroProps {
 // --- Extend base HeroProps
 exports.HeroProps = HeroProps;
 class Hero extends HeroProps {
-  constructor(name, archetype = "Warrior") {
+  constructor(name, archetypes = ["Warrior"]) {
     super(name);
-    this.archetype = archetype;
+    this.archetypes = archetypes.slice(0, 2); // limit to 2
     this.applyArchetypeStats();
   }
   applyArchetypeStats() {
-    const type = HERO_ARCHETYPES[this.archetype];
-    if (!type) return;
-
-    // Apply multipliers to current stats
-    this.hp *= type.hpMult;
-    this.mana *= type.manaMult;
-    this.attack *= type.attackMult;
-    this.armor *= type.armorMult;
-    this.moveSpeed *= type.moveSpeed;
-    this.attackSpeed *= type.attackSpeed;
-    this.hpRegen *= type.hpRegenMult;
-    this.mpRegen *= type.mpRegenMult;
+    if (!this.archetypes || this.archetypes.length === 0) return;
+    let typeData;
+    if (this.archetypes.length === 2) {
+      typeData = mergeArchetypes(this.archetypes[0], this.archetypes[1]);
+    } else {
+      typeData = HERO_ARCHETYPES[this.archetypes[0]];
+    }
+    if (!typeData) return;
+    this.hp *= typeData.hpMult;
+    this.mana *= typeData.manaMult;
+    this.attack *= typeData.attackMult;
+    this.armor *= typeData.armorMult;
+    this.moveSpeed *= typeData.moveSpeed;
+    this.attackSpeed *= typeData.attackSpeed;
+    this.hpRegen *= typeData.hpRegenMult;
+    this.mpRegen *= typeData.manaRegenMult;
+    this._mergedArchetype = typeData._mergedFrom || this.archetypes;
   }
 
   // Override updateStats to include archetype scaling
@@ -617,6 +657,32 @@ class Hero extends HeroProps {
   }
 }
 exports.Hero = Hero;
+const HERO_PROFILES = exports.HERO_PROFILES = {
+  MariaSword: {
+    baseArchetypes: ["Warrior", "Mage"],
+    colorTheme: ["gold", "orange"],
+    weapon: "Sword",
+    abilities: ["Solar Dash", "Radiant Ascend", "Luminous Counter", "Solar Bloom"]
+  }
+};
+function mergeArchetypes(typeA, typeB) {
+  if (!HERO_ARCHETYPES[typeA] || !HERO_ARCHETYPES[typeB]) {
+    console.warn(`Invalid archetype(s): ${typeA}, ${typeB}`);
+    return HERO_ARCHETYPES[typeA] || HERO_ARCHETYPES[typeB];
+  }
+  const a = HERO_ARCHETYPES[typeA];
+  const b = HERO_ARCHETYPES[typeB];
+  const merged = {};
+
+  // Average their multipliers (or tweak with weights if needed)
+  for (const key in a) {
+    if (typeof a[key] === "number" && typeof b[key] === "number") {
+      merged[key] = (a[key] + b[key]) / 2;
+    }
+  }
+  merged._mergedFrom = [typeA, typeB];
+  return merged;
+}
 
 },{}],4:[function(require,module,exports){
 "use strict";
@@ -863,6 +929,49 @@ class HUD {
       console.log('onSelectCharacter : ', e);
       selectedCharacters.textContent = `selectedCharacters:[${e.detail}]`;
     });
+    const hudDesription = document.createElement("div");
+    hudDesription.id = "hudDesription";
+    // Style it
+    Object.assign(hudDesription.style, {
+      width: "60%",
+      height: "100%",
+      backgroundColor: "rgba(0,0,0,0.5)",
+      // display: "flex",
+      border: "solid 1px red",
+      alignItems: "center",
+      justifyContent: "space-around",
+      color: "white",
+      fontFamily: "'Orbitron', sans-serif",
+      zIndex: "100",
+      padding: "10px",
+      boxSizing: "border-box"
+    });
+    const hudDesriptionText = document.createElement("div");
+    hudDesriptionText.id = "hudDesription";
+    // Style it
+    Object.assign(hudDesriptionText.style, {
+      width: "100%",
+      height: "100%",
+      aspectRatio: "1 / 1",
+      border: "2px solid #aaa",
+      borderRadius: "6px",
+      background: "linear-gradient(145deg, #444, #222)",
+      boxShadow: "inset 2px 2px 5px rgba(0,0,0,0.6), inset -2px -2px 5px rgba(255,255,255,0.1)",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      color: "#ccc",
+      fontSize: "12px",
+      cursor: "pointer",
+      transition: "all 0.2s ease-in-out",
+      backgroundSize: "contain",
+      backgroundRepeat: "no-repeat",
+      backgroundPosition: "center"
+    });
+    hudDesription.appendChild(hudDesriptionText);
+    hud.appendChild(hudDesription);
+
+    // right
     const hudItems = document.createElement("div");
     hudItems.id = "hudLeftBox";
     Object.assign(hudItems.style, {
@@ -886,9 +995,7 @@ class HUD {
     Object.assign(inventoryGrid.style, {
       display: "grid",
       gridTemplateColumns: "repeat(3, 1fr)",
-      // 3 columns
       gridTemplateRows: "repeat(2, 1fr)",
-      // 2 rows
       // gap: "10px",
       width: "100%",
       height: "100%",
