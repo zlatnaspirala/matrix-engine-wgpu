@@ -1,7 +1,6 @@
 
 import MatrixEngineWGPU from "../../../src/world.js";
-// import {downloadMeshes} from '../../../src/engine/loader-obj.js';
-import {uploadGLBModel} from "../../../src/engine/loaders/webgpu-gltf.js";
+// import {uploadGLBModel} from "../../../src/engine/loaders/webgpu-gltf.js";
 import {Controller} from "./controller.js";
 import {HUD} from "./hud.js";
 import {MEMapLoader} from "./map-loader.js";
@@ -39,10 +38,12 @@ let MYSTICORE = new MatrixEngineWGPU({
 
     // MAPs
     MYSTICORE.mapLoader = new MEMapLoader(MYSTICORE, "./res/meshes/nav-mesh/navmesh.json");
-    // downloadMeshes({cube: "./res/meshes/blender/cube.obj"}, onGround, {scale: [120, 0.5, 120]})
 
     // LOCAL HERO
-    MYSTICORE.localHero = new Character(MYSTICORE, "res/meshes/glb/woman1.glb");
+    MYSTICORE.localHero = new Character(
+      MYSTICORE,
+      "res/meshes/glb/woman1.glb",
+      'local-hero', "Warrior");
 
     // var glbFile02 = await fetch("res/meshes/glb/monster.glb").then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, MYSTICORE.device)));
     // MYSTICORE.addGlbObj({
@@ -52,9 +53,7 @@ let MYSTICORE = new MatrixEngineWGPU({
     //   name: 'firstGlb',
     //   texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
     // }, null, glbFile02);
-
   })
-
   MYSTICORE.addLight();
 })
 

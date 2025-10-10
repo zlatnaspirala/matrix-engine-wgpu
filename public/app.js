@@ -6,9 +6,12 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.Character = void 0;
 var _webgpuGltf = require("../../../src/engine/loaders/webgpu-gltf");
-class Character {
+var _hero = require("./hero");
+class Character extends _hero.Hero {
   positionThrust = 0.85;
-  constructor(MYSTICORE, path) {
+  constructor(MYSTICORE, path, name = 'local-hero', archetype = "Warrior") {
+    super(name, archetype);
+    this.name = name;
     this.core = MYSTICORE;
     this.heroe_bodies = [];
     this.loadLocalHero(path);
@@ -27,7 +30,7 @@ class Character {
           y: -4,
           z: -220
         },
-        name: 'local-hero',
+        name: this.name,
         texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
         raycast: {
           enabled: true,
@@ -36,7 +39,7 @@ class Character {
       }, null, glbFile01);
       // make small async
       setTimeout(() => {
-        this.heroe_bodies = app.mainRenderBundle.filter(obj => obj.name && obj.name.includes("local-hero"));
+        this.heroe_bodies = app.mainRenderBundle.filter(obj => obj.name && obj.name.includes(this.name));
         this.core.RPG.heroe_bodies = this.heroe_bodies;
         this.core.RPG.heroe_bodies.forEach(subMesh => {
           subMesh.position.thrust = 1;
@@ -49,7 +52,7 @@ class Character {
 }
 exports.Character = Character;
 
-},{"../../../src/engine/loaders/webgpu-gltf":29}],2:[function(require,module,exports){
+},{"../../../src/engine/loaders/webgpu-gltf":30,"./hero":3}],2:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -119,8 +122,9 @@ class Controller {
       }
       // console.log("Hit object:", hitObject.name, "Button:", button);
       // Only react to LEFT CLICK
-      if (button !== 0) return;
+      if (button !== 0 || this.heroe_bodies === null) return;
       // Define start (hero position) and end (clicked point)
+
       const hero = this.heroe_bodies[0];
       const start = [hero.position.x, hero.position.y, hero.position.z];
       const end = [hitPoint[0], hitPoint[1], hitPoint[2]];
@@ -214,7 +218,393 @@ class Controller {
 }
 exports.Controller = Controller;
 
-},{"../../../src/engine/raycast.js":33,"../../../src/engine/utils.js":34,"./nav-mesh.js":6,"wgpu-matrix":21}],3:[function(require,module,exports){
+},{"../../../src/engine/raycast.js":34,"../../../src/engine/utils.js":35,"./nav-mesh.js":7,"wgpu-matrix":22}],3:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.HeroProps = exports.Hero = exports.HERO_ARCHETYPES = void 0;
+// --- Core archetype definitions
+const HERO_ARCHETYPES = exports.HERO_ARCHETYPES = {
+  Warrior: {
+    hpMult: 1.2,
+    manaMult: 0.8,
+    attackMult: 1.1,
+    armorMult: 1.2,
+    moveSpeed: 1.0,
+    attackSpeed: 1.0,
+    hpRegenMult: 1.2,
+    mpRegenMult: 0.9
+  },
+  Mage: {
+    hpMult: 0.8,
+    manaMult: 1.4,
+    attackMult: 0.9,
+    armorMult: 0.8,
+    moveSpeed: 1.05,
+    attackSpeed: 0.95,
+    hpRegenMult: 0.8,
+    mpRegenMult: 1.4
+  },
+  Assassin: {
+    hpMult: 0.9,
+    manaMult: 1.0,
+    attackMult: 1.3,
+    armorMult: 0.7,
+    moveSpeed: 1.2,
+    attackSpeed: 1.3,
+    hpRegenMult: 1.0,
+    mpRegenMult: 1.0
+  },
+  Tank: {
+    hpMult: 1.5,
+    manaMult: 0.7,
+    attackMult: 0.9,
+    armorMult: 1.5,
+    moveSpeed: 0.9,
+    attackSpeed: 0.9,
+    hpRegenMult: 1.4,
+    mpRegenMult: 0.7
+  },
+  Ranger: {
+    hpMult: 1.0,
+    manaMult: 1.0,
+    attackMult: 1.2,
+    armorMult: 0.9,
+    moveSpeed: 1.1,
+    attackSpeed: 1.15,
+    hpRegenMult: 1.0,
+    mpRegenMult: 1.0
+  },
+  Support: {
+    hpMult: 1.0,
+    manaMult: 1.3,
+    attackMult: 0.8,
+    armorMult: 0.9,
+    moveSpeed: 1.0,
+    attackSpeed: 0.9,
+    hpRegenMult: 1.1,
+    mpRegenMult: 1.3
+  }
+};
+class HeroProps {
+  constructor(name) {
+    this.name = name;
+    this.levels = [{
+      level: 1,
+      xp: 100,
+      hp: 500,
+      mana: 300,
+      attack: 40,
+      armor: 5,
+      moveSpeed: 4.0,
+      attackSpeed: 1.0,
+      hpRegen: 2.0,
+      mpRegen: 1.0,
+      abilityPoints: 1
+    }, {
+      level: 2,
+      xp: 200,
+      hp: 570,
+      mana: 345,
+      attack: 46,
+      armor: 5.5,
+      moveSpeed: 4.05,
+      attackSpeed: 1.05,
+      hpRegen: 2.25,
+      mpRegen: 1.15,
+      abilityPoints: 2
+    }, {
+      level: 3,
+      xp: 350,
+      hp: 645,
+      mana: 395,
+      attack: 52,
+      armor: 6,
+      moveSpeed: 4.10,
+      attackSpeed: 1.10,
+      hpRegen: 2.52,
+      mpRegen: 1.31,
+      abilityPoints: 3
+    }, {
+      level: 4,
+      xp: 500,
+      hp: 725,
+      mana: 450,
+      attack: 58,
+      armor: 6.5,
+      moveSpeed: 4.15,
+      attackSpeed: 1.16,
+      hpRegen: 2.81,
+      mpRegen: 1.49,
+      abilityPoints: 4
+    }, {
+      level: 5,
+      xp: 700,
+      hp: 810,
+      mana: 510,
+      attack: 65,
+      armor: 7,
+      moveSpeed: 4.20,
+      attackSpeed: 1.23,
+      hpRegen: 3.13,
+      mpRegen: 1.68,
+      abilityPoints: 5
+    }, {
+      level: 6,
+      xp: 900,
+      hp: 900,
+      mana: 575,
+      attack: 72,
+      armor: 7.5,
+      moveSpeed: 4.25,
+      attackSpeed: 1.31,
+      hpRegen: 3.48,
+      mpRegen: 1.88,
+      abilityPoints: 6
+    }, {
+      level: 7,
+      xp: 1150,
+      hp: 995,
+      mana: 645,
+      attack: 80,
+      armor: 8,
+      moveSpeed: 4.30,
+      attackSpeed: 1.40,
+      hpRegen: 3.85,
+      mpRegen: 2.10,
+      abilityPoints: 7
+    }, {
+      level: 8,
+      xp: 1400,
+      hp: 1095,
+      mana: 720,
+      attack: 88,
+      armor: 8.5,
+      moveSpeed: 4.35,
+      attackSpeed: 1.50,
+      hpRegen: 4.25,
+      mpRegen: 2.33,
+      abilityPoints: 8
+    }, {
+      level: 9,
+      xp: 1700,
+      hp: 1200,
+      mana: 800,
+      attack: 97,
+      armor: 9,
+      moveSpeed: 4.40,
+      attackSpeed: 1.61,
+      hpRegen: 4.68,
+      mpRegen: 2.58,
+      abilityPoints: 9
+    }, {
+      level: 10,
+      xp: null,
+      hp: 1310,
+      mana: 885,
+      attack: 107,
+      armor: 9.5,
+      moveSpeed: 4.45,
+      attackSpeed: 1.73,
+      hpRegen: 5.13,
+      mpRegen: 2.84,
+      abilityPoints: 10
+    }];
+    this.currentLevel = 1;
+    this.currentXP = 0;
+    this.gold = 0;
+    this.baseXP = 100;
+    this.baseGold = 200;
+
+    // --- Multipliers
+    this.xpMultiplier = {
+      stronger: 0.1,
+      weaker: 0.2
+    };
+    this.goldMultiplier = 50;
+
+    // --- Maximum level difference for XP
+    this.maxLevelDiffForXP = 3;
+    this.abilities = [{
+      name: "Spell 1",
+      level: 1,
+      maxLevel: 4
+    }, {
+      name: "Spell 2",
+      level: 0,
+      maxLevel: 4
+    }, {
+      name: "Spell 3",
+      level: 0,
+      maxLevel: 4
+    }, {
+      name: "Ultimate",
+      level: 0,
+      maxLevel: 1
+    }];
+    this.updateStats();
+  }
+
+  // --- Update stats
+  updateStats() {
+    const lvlData = this.levels[this.currentLevel - 1];
+    if (!lvlData) return;
+    Object.assign(this, {
+      hp: lvlData.hp,
+      mana: lvlData.mana,
+      attack: lvlData.attack,
+      armor: lvlData.armor,
+      moveSpeed: lvlData.moveSpeed,
+      attackSpeed: lvlData.attackSpeed,
+      hpRegen: lvlData.hpRegen,
+      mpRegen: lvlData.mpRegen,
+      abilityPoints: lvlData.abilityPoints
+    });
+  }
+
+  // --- Kill enemy: only enemyLevel argument
+  killEnemy(enemyLevel) {
+    if (enemyLevel < 1) enemyLevel = 1;
+    const levelDiff = this.currentLevel - enemyLevel;
+
+    // --- XP calculation with cap for weak enemies
+    let earnedXP = 0;
+    if (levelDiff < this.maxLevelDiffForXP) {
+      if (enemyLevel >= this.currentLevel) {
+        earnedXP = this.baseXP * (1 + this.xpMultiplier.stronger * (enemyLevel - this.currentLevel));
+      } else {
+        earnedXP = this.baseXP * (1 - this.xpMultiplier.weaker * (this.currentLevel - enemyLevel));
+      }
+      earnedXP = Math.round(Math.max(0, earnedXP));
+    }
+
+    // --- Gold reward
+    const goldReward = this.baseGold + enemyLevel * this.goldMultiplier;
+    this.currentXP += earnedXP;
+    this.gold += goldReward;
+    console.log(`${this.name} killed Lv${enemyLevel} enemy: +${earnedXP} XP, +${goldReward} gold`);
+    this.checkLevelUp();
+  }
+
+  // --- Automatic level-up
+  checkLevelUp() {
+    while (this.currentLevel < 10) {
+      const nextLevelXP = this.levels[this.currentLevel - 1].xp;
+      if (this.currentXP >= nextLevelXP) {
+        this.currentLevel++;
+        console.log(`${this.name} leveled up! Now level ${this.currentLevel}`);
+        this.updateStats();
+        this.currentXP -= nextLevelXP;
+      } else break;
+    }
+  }
+
+  // --- Upgrade abilities
+  upgradeAbility(spellIndex) {
+    const spell = this.abilities[spellIndex];
+    if (!spell) return false;
+    if (spell.level < spell.maxLevel && this.abilityPoints > 0) {
+      spell.level++;
+      this.abilityPoints--;
+      console.log(`${this.name} upgraded ${spell.name} to level ${spell.level}`);
+      return true;
+    }
+    return false;
+  }
+
+  // --- Get / Set stats
+  getStat(statName) {
+    return this[statName] ?? null;
+  }
+  setStat(statName, value) {
+    if (this.hasOwnProperty(statName)) {
+      this[statName] = value;
+      return true;
+    }
+    return false;
+  }
+
+  // --- Debug print
+  debugPrint() {
+    console.table({
+      level: this.currentLevel,
+      xp: this.currentXP,
+      gold: this.gold,
+      hp: this.hp,
+      mana: this.mana,
+      attack: this.attack,
+      armor: this.armor,
+      moveSpeed: this.moveSpeed,
+      attackSpeed: this.attackSpeed,
+      hpRegen: this.hpRegen,
+      mpRegen: this.mpRegen,
+      abilityPoints: this.abilityPoints,
+      abilities: this.abilities.map(a => `${a.name} (Lv ${a.level})`).join(", ")
+    });
+  }
+  showUpgradeableAbilities() {
+    if (this.abilityPoints <= 0) {
+      console.log(`${this.name} has no ability points to spend.`);
+      return [];
+    }
+    const upgradeable = this.abilities.map((spell, index) => ({
+      ...spell,
+      index
+    })).filter(spell => spell.level < spell.maxLevel);
+    if (upgradeable.length === 0) {
+      console.log(`${this.name} has no spells left to upgrade.`);
+      return [];
+    }
+    console.log(`${this.name} has ${this.abilityPoints} ability point(s) available.`);
+    console.log("Upgradeable spells:");
+    upgradeable.forEach(spell => {
+      console.log(`  [${spell.index}] ${spell.name} (Lv ${spell.level}/${spell.maxLevel})`);
+    });
+    return upgradeable;
+  }
+
+  // --- Upgrade a spell by name (optional convenience)
+  upgradeAbilityByName(spellName) {
+    const spellIndex = this.abilities.findIndex(s => s.name === spellName);
+    if (spellIndex === -1) return false;
+    return this.upgradeAbility(spellIndex);
+  }
+}
+
+// --- Extend base HeroProps
+exports.HeroProps = HeroProps;
+class Hero extends HeroProps {
+  constructor(name, archetype = "Warrior") {
+    super(name);
+    this.archetype = archetype;
+    this.applyArchetypeStats();
+  }
+  applyArchetypeStats() {
+    const type = HERO_ARCHETYPES[this.archetype];
+    if (!type) return;
+
+    // Apply multipliers to current stats
+    this.hp *= type.hpMult;
+    this.mana *= type.manaMult;
+    this.attack *= type.attackMult;
+    this.armor *= type.armorMult;
+    this.moveSpeed *= type.moveSpeed;
+    this.attackSpeed *= type.attackSpeed;
+    this.hpRegen *= type.hpRegenMult;
+    this.mpRegen *= type.mpRegenMult;
+  }
+
+  // Override updateStats to include archetype scaling
+  updateStats() {
+    super.updateStats();
+    this.applyArchetypeStats();
+  }
+}
+exports.Hero = Hero;
+
+},{}],4:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -246,32 +636,240 @@ class HUD {
       padding: "10px",
       boxSizing: "border-box"
     });
+    const hudLeftBox = document.createElement("div");
+    hudLeftBox.id = "hudLeftBox";
+    // Style it
+    Object.assign(hudLeftBox.style, {
+      width: "20%",
+      height: "100%",
+      backgroundColor: "rgba(0,0,0,0.5)",
+      // display: "flex",
+      border: "solid 1px red",
+      alignItems: "center",
+      justifyContent: "space-around",
+      color: "white",
+      fontFamily: "'Orbitron', sans-serif",
+      zIndex: "100",
+      padding: "10px",
+      boxSizing: "border-box"
+    });
+    hud.appendChild(hudLeftBox);
+    const hudCenter = document.createElement("div");
+    hudCenter.id = "hudCenter";
+    // Style it
+    Object.assign(hudCenter.style, {
+      width: "100%",
+      height: "100%",
+      backgroundColor: "rgba(0,0,0,0.5)",
+      display: "flex",
+      flexDirection: "column",
+      border: "solid 1px green",
+      alignItems: "center",
+      justifyContent: "space-around",
+      color: "white",
+      fontFamily: "'Orbitron', sans-serif",
+      zIndex: "100",
+      padding: "0",
+      boxSizing: "border-box"
+    });
+    const hudMagicHOlder = document.createElement("div");
+    hudMagicHOlder.id = "hudMagicHOlder";
+    // Style it
+    Object.assign(hudMagicHOlder.style, {
+      width: "80%",
+      maxWidth: "300px",
+      minWidth: "150px",
+      aspectRatio: "4 / 1",
+      // ensures grid is 4 wide and 1 tall
+      backgroundColor: "rgba(0, 0, 0, 0.4)",
+      display: "grid",
+      gridTemplateColumns: "repeat(4, 1fr)",
+      gap: "12px",
+      border: "1px solid gray",
+      borderRadius: "10px",
+      padding: "2px",
+      boxSizing: "border-box",
+      zIndex: "100",
+      fontFamily: "'Orbitron', sans-serif",
+      backdropFilter: "blur(6px)",
+      boxShadow: "0 -2px 10px rgba(0,0,0,0.4)",
+      justifyContent: "center",
+      alignItems: "center"
+    });
 
-    // Example elements: a button and a score display
-    const actionBtn = document.createElement("button");
-    actionBtn.textContent = "Action";
-    hud.appendChild(actionBtn);
+    // === Create 4 square magic slots ===
+    for (let i = 0; i < 4; i++) {
+      const slot = document.createElement("div");
+      slot.className = "magic-slot";
+      Object.assign(slot.style, {
+        aspectRatio: "1 / 1",
+        // ensures square shape
+        width: "100%",
+        border: "2px solid #888",
+        borderRadius: "8px",
+        background: "linear-gradient(145deg, #444, #222)",
+        boxShadow: "inset 2px 2px 5px rgba(0,0,0,0.6), inset -2px -2px 5px rgba(255,255,255,0.1)",
+        transition: "all 0.2s ease-in-out",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        color: "#ccc",
+        fontSize: "14px",
+        cursor: "pointer"
+      });
+
+      // Hover effect
+      slot.addEventListener("mouseenter", () => {
+        slot.style.border = "2px solid #0ff";
+        slot.style.boxShadow = "0 0 10px rgba(0,255,255,0.5), inset 2px 2px 5px rgba(0,0,0,0.6)";
+      });
+      slot.addEventListener("mouseleave", () => {
+        slot.style.border = "2px solid #888";
+        slot.style.boxShadow = "inset 2px 2px 5px rgba(0,0,0,0.6), inset -2px -2px 5px rgba(255,255,255,0.1)";
+      });
+      slot.textContent = "Empty";
+      hudMagicHOlder.appendChild(slot);
+    }
+    hudCenter.appendChild(hudMagicHOlder);
+
+    // ---------------------------------------
+    // HP 
+    // ---------------------------------------
+    const hudHP = document.createElement("div");
+    hudHP.id = "hudHP";
+    Object.assign(hudHP.style, {
+      width: "40%",
+      height: "10%",
+      backgroundColor: "rgba(0,0,0,0.5)",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-around",
+      color: "white",
+      fontFamily: "'Orbitron', sans-serif",
+      zIndex: "100",
+      padding: "10px",
+      boxSizing: "border-box"
+    });
+
+    // Inner HP bar
+    const hpBar = document.createElement("div");
+    Object.assign(hpBar.style, {
+      height: "100%",
+      width: "100%",
+      height: "20px",
+      background: "linear-gradient(90deg, lime, green)",
+      transition: "width 0.3s ease-in-out",
+      borderRadius: "7px 7px 7px 7px",
+      boxShadow: "inset 0 0 10px #0f0"
+    });
+    hudHP.appendChild(hpBar);
+
+    // HP text overlay
+    const hpText = document.createElement("div");
+    Object.assign(hpText.style, {
+      position: "absolute",
+      width: "100%",
+      textAlign: "center",
+      color: "white",
+      fontWeight: "bold",
+      textShadow: "0 0 5px black",
+      pointerEvents: "none"
+    });
+    hpText.textContent = "HP: 100%";
+    hudHP.appendChild(hpText);
+    hudCenter.appendChild(hudHP);
+    window.addEventListener("setHP", e => {
+      const clamped = Math.max(0, Math.min(100, e.detail.HP));
+      hpBar.style.width = clamped + "%";
+      hpText.textContent = `HP: ${clamped}%`;
+    });
+
+    // ---------------------------------------
+    // MANA
+    // ---------------------------------------
+    const hudMANA = document.createElement("div");
+    hudMANA.id = "hudMANA";
+    // Style it
+    Object.assign(hudMANA.style, {
+      width: "40%",
+      height: "10%",
+      backgroundColor: "rgba(0,0,0,0.5)",
+      display: "flex",
+      // border: "solid 5px blue",
+      alignItems: "center",
+      justifyContent: "space-around",
+      color: "white",
+      fontFamily: "'Orbitron', sans-serif",
+      zIndex: "100",
+      padding: "10px",
+      boxSizing: "border-box"
+    });
+    hudCenter.appendChild(hudMANA);
+
+    // Inner HP bar
+    const hudMANABar = document.createElement("div");
+    Object.assign(hudMANABar.style, {
+      height: "100%",
+      width: "100%",
+      height: "20px",
+      background: "linear-gradient(90deg, rgba(0, 162, 255, 1), blue)",
+      transition: "width 0.3s ease-in-out",
+      borderRadius: "7px 7px 7px 7px",
+      boxShadow: "inset 0 0 10px rgba(0, 162, 255, 1)"
+    });
+    hudMANA.appendChild(hudMANABar);
+
+    // HP text overlay
+    const MANAhpText = document.createElement("div");
+    Object.assign(MANAhpText.style, {
+      position: "absolute",
+      width: "100%",
+      textAlign: "center",
+      color: "white",
+      fontWeight: "bold",
+      textShadow: "0 0 5px black",
+      pointerEvents: "none"
+    });
+    MANAhpText.textContent = "HP: 100%";
+    hudMANA.appendChild(MANAhpText);
+    window.addEventListener("setMANA", e => {
+      const clamped = Math.max(0, Math.min(100, e.detail.HP));
+      hpBar.style.width = clamped + "%";
+      hpText.textContent = `MANA: ${clamped}%`;
+    });
+    hud.appendChild(hudCenter);
+
+    // left box
     const selectedCharacters = document.createElement("span");
     selectedCharacters.textContent = "selectedCharacters:[]";
-    hud.appendChild(selectedCharacters);
+    hudLeftBox.appendChild(selectedCharacters);
     hud.addEventListener("onSelectCharacter", e => {
       console.log('onSelectCharacter : ', e);
       selectedCharacters.textContent = `selectedCharacters:[${e.detail}]`;
     });
-
-    // Append to body (or the canvas container)
-    document.body.appendChild(hud);
-
-    // Optional: JS interaction
-    actionBtn.addEventListener("click", () => {
-      console.log("Action clicked!");
-      score.textContent = "Score: " + Math.floor(Math.random() * 100);
+    const hudItems = document.createElement("div");
+    hudItems.id = "hudLeftBox";
+    Object.assign(hudItems.style, {
+      width: "20%",
+      height: "100%",
+      backgroundColor: "rgba(0,0,0,0.5)",
+      display: "flex",
+      border: "solid 1px yellow",
+      alignItems: "center",
+      justifyContent: "space-around",
+      color: "white",
+      fontFamily: "'Orbitron', sans-serif",
+      zIndex: "100",
+      padding: "10px",
+      boxSizing: "border-box"
     });
+    hud.appendChild(hudItems);
+    document.body.appendChild(hud);
   }
 }
 exports.HUD = HUD;
 
-},{}],4:[function(require,module,exports){
+},{}],5:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -347,17 +945,16 @@ class MEMapLoader {
 }
 exports.MEMapLoader = MEMapLoader;
 
-},{"../../../src/engine/loader-obj.js":27,"./nav-mesh.js":6}],5:[function(require,module,exports){
+},{"../../../src/engine/loader-obj.js":28,"./nav-mesh.js":7}],6:[function(require,module,exports){
 "use strict";
 
 var _world = _interopRequireDefault(require("../../../src/world.js"));
-var _webgpuGltf = require("../../../src/engine/loaders/webgpu-gltf.js");
 var _controller = require("./controller.js");
 var _hud = require("./hud.js");
 var _mapLoader = require("./map-loader.js");
 var _characterBase = require("./characterBase.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
-// import {downloadMeshes} from '../../../src/engine/loader-obj.js';
+// import {uploadGLBModel} from "../../../src/engine/loaders/webgpu-gltf.js";
 
 /**
  * @Note
@@ -392,10 +989,9 @@ let MYSTICORE = new _world.default({
 
     // MAPs
     MYSTICORE.mapLoader = new _mapLoader.MEMapLoader(MYSTICORE, "./res/meshes/nav-mesh/navmesh.json");
-    // downloadMeshes({cube: "./res/meshes/blender/cube.obj"}, onGround, {scale: [120, 0.5, 120]})
 
     // LOCAL HERO
-    MYSTICORE.localHero = new _characterBase.Character(MYSTICORE, "res/meshes/glb/woman1.glb");
+    MYSTICORE.localHero = new _characterBase.Character(MYSTICORE, "res/meshes/glb/woman1.glb", 'local-hero', "Warrior");
 
     // var glbFile02 = await fetch("res/meshes/glb/monster.glb").then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, MYSTICORE.device)));
     // MYSTICORE.addGlbObj({
@@ -412,7 +1008,7 @@ let MYSTICORE = new _world.default({
 // just for dev
 window.app = MYSTICORE;
 
-},{"../../../src/engine/loaders/webgpu-gltf.js":29,"../../../src/world.js":48,"./characterBase.js":1,"./controller.js":2,"./hud.js":3,"./map-loader.js":4}],6:[function(require,module,exports){
+},{"../../../src/world.js":49,"./characterBase.js":1,"./controller.js":2,"./hud.js":4,"./map-loader.js":5}],7:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -872,7 +1468,7 @@ function orientHeroToDirection(hero, dir) {
   hero.rotation.y = angle; // in radians
 }
 
-},{"../../../src/engine/utils.js":34}],7:[function(require,module,exports){
+},{"../../../src/engine/utils.js":35}],8:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -882,7 +1478,7 @@ exports.default = void 0;
 var _bvhLoader = require("./module/bvh-loader");
 var _default = exports.default = _bvhLoader.MEBvh;
 
-},{"./module/bvh-loader":8}],8:[function(require,module,exports){
+},{"./module/bvh-loader":9}],9:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -1571,7 +2167,7 @@ class MEBvh {
 }
 exports.MEBvh = MEBvh;
 
-},{"webgpu-matrix":20}],9:[function(require,module,exports){
+},{"webgpu-matrix":21}],10:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -1649,7 +2245,7 @@ function equals(a, b) {
   return Math.abs(a - b) <= tolerance * Math.max(1, Math.abs(a), Math.abs(b));
 }
 
-},{}],10:[function(require,module,exports){
+},{}],11:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -1678,7 +2274,7 @@ var vec4 = _interopRequireWildcard(require("./vec4.js"));
 exports.vec4 = vec4;
 function _interopRequireWildcard(e, t) { if ("function" == typeof WeakMap) var r = new WeakMap(), n = new WeakMap(); return (_interopRequireWildcard = function (e, t) { if (!t && e && e.__esModule) return e; var o, i, f = { __proto__: null, default: e }; if (null === e || "object" != typeof e && "function" != typeof e) return f; if (o = t ? n : r) { if (o.has(e)) return o.get(e); o.set(e, f); } for (const t in e) "default" !== t && {}.hasOwnProperty.call(e, t) && ((i = (o = Object.defineProperty) && Object.getOwnPropertyDescriptor(e, t)) && (i.get || i.set) ? o(f, t, i) : f[t] = e[t]); return f; })(e, t); }
 
-},{"./common.js":9,"./mat2.js":11,"./mat2d.js":12,"./mat3.js":13,"./mat4.js":14,"./quat.js":15,"./quat2.js":16,"./vec2.js":17,"./vec3.js":18,"./vec4.js":19}],11:[function(require,module,exports){
+},{"./common.js":10,"./mat2.js":12,"./mat2d.js":13,"./mat3.js":14,"./mat4.js":15,"./quat.js":16,"./quat2.js":17,"./vec2.js":18,"./vec3.js":19,"./vec4.js":20}],12:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -2140,7 +2736,7 @@ var mul = exports.mul = multiply;
  */
 var sub = exports.sub = subtract;
 
-},{"./common.js":9}],12:[function(require,module,exports){
+},{"./common.js":10}],13:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -2654,7 +3250,7 @@ var mul = exports.mul = multiply;
  */
 var sub = exports.sub = subtract;
 
-},{"./common.js":9}],13:[function(require,module,exports){
+},{"./common.js":10}],14:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -3466,7 +4062,7 @@ var mul = exports.mul = multiply;
  */
 var sub = exports.sub = subtract;
 
-},{"./common.js":9}],14:[function(require,module,exports){
+},{"./common.js":10}],15:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -5486,7 +6082,7 @@ var mul = exports.mul = multiply;
  */
 var sub = exports.sub = subtract;
 
-},{"./common.js":9}],15:[function(require,module,exports){
+},{"./common.js":10}],16:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -6269,7 +6865,7 @@ var setAxes = exports.setAxes = function () {
   };
 }();
 
-},{"./common.js":9,"./mat3.js":13,"./vec3.js":18,"./vec4.js":19}],16:[function(require,module,exports){
+},{"./common.js":10,"./mat3.js":14,"./vec3.js":19,"./vec4.js":20}],17:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -7142,7 +7738,7 @@ function equals(a, b) {
   return Math.abs(a0 - b0) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a0), Math.abs(b0)) && Math.abs(a1 - b1) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a1), Math.abs(b1)) && Math.abs(a2 - b2) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a2), Math.abs(b2)) && Math.abs(a3 - b3) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a3), Math.abs(b3)) && Math.abs(a4 - b4) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a4), Math.abs(b4)) && Math.abs(a5 - b5) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a5), Math.abs(b5)) && Math.abs(a6 - b6) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a6), Math.abs(b6)) && Math.abs(a7 - b7) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a7), Math.abs(b7));
 }
 
-},{"./common.js":9,"./mat4.js":14,"./quat.js":15}],17:[function(require,module,exports){
+},{"./common.js":10,"./mat4.js":15,"./quat.js":16}],18:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -7820,7 +8416,7 @@ var forEach = exports.forEach = function () {
   };
 }();
 
-},{"./common.js":9}],18:[function(require,module,exports){
+},{"./common.js":10}],19:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -8672,7 +9268,7 @@ var forEach = exports.forEach = function () {
   };
 }();
 
-},{"./common.js":9}],19:[function(require,module,exports){
+},{"./common.js":10}],20:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -9379,7 +9975,7 @@ var forEach = exports.forEach = function () {
   };
 }();
 
-},{"./common.js":9}],20:[function(require,module,exports){
+},{"./common.js":10}],21:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -13312,7 +13908,7 @@ function setDefaultType(ctor) {
   setDefaultType$1(ctor);
 }
 
-},{}],21:[function(require,module,exports){
+},{}],22:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -18659,7 +19255,7 @@ function setDefaultType(ctor) {
   setDefaultType$1(ctor);
 }
 
-},{}],22:[function(require,module,exports){
+},{}],23:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -19073,7 +19669,7 @@ class MEBall {
 }
 exports.default = MEBall;
 
-},{"../shaders/shaders":43,"./engine":25,"./matrix-class":31,"wgpu-matrix":21}],23:[function(require,module,exports){
+},{"../shaders/shaders":44,"./engine":26,"./matrix-class":32,"wgpu-matrix":22}],24:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -19111,7 +19707,7 @@ class Behavior {
 }
 exports.default = Behavior;
 
-},{"./utils":34}],24:[function(require,module,exports){
+},{"./utils":35}],25:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -19536,7 +20132,7 @@ class MECube {
 }
 exports.default = MECube;
 
-},{"../shaders/shaders":43,"./engine":25,"./matrix-class":31,"wgpu-matrix":21}],25:[function(require,module,exports){
+},{"../shaders/shaders":44,"./engine":26,"./matrix-class":32,"wgpu-matrix":22}],26:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -19958,7 +20554,7 @@ function createInputHandler(window, canvas) {
   };
 }
 
-},{"./utils":34,"wgpu-matrix":21}],26:[function(require,module,exports){
+},{"./utils":35,"wgpu-matrix":22}],27:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -20199,7 +20795,7 @@ class SpotLight {
 }
 exports.SpotLight = SpotLight;
 
-},{"../shaders/vertexShadow.wgsl":46,"./behavior":23,"wgpu-matrix":21}],27:[function(require,module,exports){
+},{"../shaders/vertexShadow.wgsl":47,"./behavior":24,"wgpu-matrix":22}],28:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -20667,7 +21263,7 @@ function play(nameAni) {
   this.playing = true;
 }
 
-},{}],28:[function(require,module,exports){
+},{}],29:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -21177,7 +21773,7 @@ class BVHPlayer extends _meshObj.default {
 }
 exports.BVHPlayer = BVHPlayer;
 
-},{"../mesh-obj":32,"./webgpu-gltf.js":29,"bvh-loader":7,"wgpu-matrix":21}],29:[function(require,module,exports){
+},{"../mesh-obj":33,"./webgpu-gltf.js":30,"bvh-loader":8,"wgpu-matrix":22}],30:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -21755,7 +22351,7 @@ async function uploadGLBModel(buffer, device) {
   return R;
 }
 
-},{"gl-matrix":10}],30:[function(require,module,exports){
+},{"gl-matrix":11}],31:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -22281,7 +22877,7 @@ class Materials {
 }
 exports.default = Materials;
 
-},{"../shaders/fragment.wgsl":38,"../shaders/fragment.wgsl.metal":39,"../shaders/fragment.wgsl.normalmap":40,"../shaders/fragment.wgsl.pong":41,"../shaders/fragment.wgsl.power":42}],31:[function(require,module,exports){
+},{"../shaders/fragment.wgsl":39,"../shaders/fragment.wgsl.metal":40,"../shaders/fragment.wgsl.normalmap":41,"../shaders/fragment.wgsl.pong":42,"../shaders/fragment.wgsl.power":43}],32:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -22517,7 +23113,7 @@ class Rotation {
 }
 exports.Rotation = Rotation;
 
-},{"./utils":34}],32:[function(require,module,exports){
+},{"./utils":35}],33:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -23287,7 +23883,7 @@ class MEMeshObj extends _materials.default {
 }
 exports.default = MEMeshObj;
 
-},{"../shaders/fragment.video.wgsl":37,"../shaders/vertex.wgsl":44,"../shaders/vertex.wgsl.normalmap":45,"./materials":30,"./matrix-class":31,"./utils":34,"wgpu-matrix":21}],33:[function(require,module,exports){
+},{"../shaders/fragment.video.wgsl":38,"../shaders/vertex.wgsl":45,"../shaders/vertex.wgsl.normalmap":46,"./materials":31,"./matrix-class":32,"./utils":35,"wgpu-matrix":22}],34:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -23469,7 +24065,7 @@ function addRaycastsListener(canvasId = "canvas1") {
   });
 }
 
-},{"wgpu-matrix":21}],34:[function(require,module,exports){
+},{"wgpu-matrix":22}],35:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -24355,7 +24951,7 @@ function setupCanvasFilters(canvasId) {
   updateFilter(); // Initial
 }
 
-},{}],35:[function(require,module,exports){
+},{}],36:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -24395,7 +24991,7 @@ class MultiLang {
 }
 exports.MultiLang = MultiLang;
 
-},{"../engine/utils":34}],36:[function(require,module,exports){
+},{"../engine/utils":35}],37:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -24679,7 +25275,7 @@ class MatrixAmmo {
 }
 exports.default = MatrixAmmo;
 
-},{"../engine/utils":34}],37:[function(require,module,exports){
+},{"../engine/utils":35}],38:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -24769,7 +25365,7 @@ fn main(input : FragmentInput) -> @location(0) vec4f {
 }
 `;
 
-},{}],38:[function(require,module,exports){
+},{}],39:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -25000,7 +25596,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, 1.0);
 }`;
 
-},{}],39:[function(require,module,exports){
+},{}],40:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -25178,7 +25774,7 @@ return vec4f(color, 1.0);
 // let radiance = spotlights[0].color * 10.0; // test high intensity
 // Lo += materialData.baseColor * radiance * NdotL;
 
-},{}],40:[function(require,module,exports){
+},{}],41:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -25423,7 +26019,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, 1.0);
 }`;
 
-},{}],41:[function(require,module,exports){
+},{}],42:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -25643,7 +26239,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, 1.0);
 }`;
 
-},{}],42:[function(require,module,exports){
+},{}],43:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -25811,7 +26407,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 // let radiance = spotlights[0].color * 10.0; // test high intensity
 // Lo += materialData.baseColor * radiance * NdotL;
 
-},{}],43:[function(require,module,exports){
+},{}],44:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -25869,7 +26465,7 @@ fn fragmentMain(input: VertexOutput) -> @location(0) vec4f {
   return vec4f(textureColor.rgb * lightColor, textureColor.a);
 }`;
 
-},{}],44:[function(require,module,exports){
+},{}],45:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -25955,7 +26551,7 @@ fn main(
   return output;
 }`;
 
-},{}],45:[function(require,module,exports){
+},{}],46:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -26066,7 +26662,7 @@ fn main(
   return output;
 }`;
 
-},{}],46:[function(require,module,exports){
+},{}],47:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -26094,7 +26690,7 @@ fn main(
 }
 `;
 
-},{}],47:[function(require,module,exports){
+},{}],48:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -26164,7 +26760,7 @@ class MatrixSounds {
 }
 exports.MatrixSounds = MatrixSounds;
 
-},{}],48:[function(require,module,exports){
+},{}],49:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -26979,4 +27575,4 @@ class MatrixEngineWGPU {
 }
 exports.default = MatrixEngineWGPU;
 
-},{"./engine/ball.js":22,"./engine/cube.js":24,"./engine/engine.js":25,"./engine/lights.js":26,"./engine/loader-obj.js":27,"./engine/loaders/bvh.js":28,"./engine/mesh-obj.js":32,"./engine/utils.js":34,"./multilang/lang.js":35,"./physics/matrix-ammo.js":36,"./sounds/sounds.js":47,"wgpu-matrix":21}]},{},[5]);
+},{"./engine/ball.js":23,"./engine/cube.js":25,"./engine/engine.js":26,"./engine/lights.js":27,"./engine/loader-obj.js":28,"./engine/loaders/bvh.js":29,"./engine/mesh-obj.js":33,"./engine/utils.js":35,"./multilang/lang.js":36,"./physics/matrix-ammo.js":37,"./sounds/sounds.js":48,"wgpu-matrix":22}]},{},[6]);

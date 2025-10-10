@@ -56,8 +56,9 @@ export class Controller {
       }
       // console.log("Hit object:", hitObject.name, "Button:", button);
       // Only react to LEFT CLICK
-      if(button !== 0) return;
+      if(button !== 0 || this.heroe_bodies === null) return;
       // Define start (hero position) and end (clicked point)
+
       const hero = this.heroe_bodies[0];
       const start = [hero.position.x, hero.position.y, hero.position.z];
       const end = [hitPoint[0], hitPoint[1], hitPoint[2]];
