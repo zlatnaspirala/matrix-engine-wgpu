@@ -58,7 +58,6 @@ export class Controller {
       // Only react to LEFT CLICK
       if(button !== 0 || this.heroe_bodies === null) return;
       // Define start (hero position) and end (clicked point)
-
       const hero = this.heroe_bodies[0];
       let heroSword = null;
       if (this.heroe_bodies.length == 2) {
@@ -66,12 +65,8 @@ export class Controller {
       }
       const start = [hero.position.x, hero.position.y, hero.position.z];
       const end = [hitPoint[0], hitPoint[1], hitPoint[2]];
-
-      // console.log("Start:", start, "End:", end);
-      // --- find path on your navmesh ---
       const path = this.nav.findPath(start, end);
       if(!path || path.length === 0) {console.warn('No valid path found.'); return;}
-      // console.log("Path:", path);
       followPath(hero, path);
       followPath(heroSword, path);
     });

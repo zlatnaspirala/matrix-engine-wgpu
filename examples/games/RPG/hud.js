@@ -92,7 +92,7 @@ export class HUD {
     for(let i = 0;i < 4;i++) {
       const slot = document.createElement("div");
       slot.className = "magic-slot-test";
-      slot.id=`magic-slot-${i}`;
+      slot.id = `magic-slot-${i}`;
       Object.assign(slot.style, {
         aspectRatio: "1 / 1", // ensures square shape
         width: "100%",
@@ -254,7 +254,7 @@ export class HUD {
     const hudItems = document.createElement("div");
     hudItems.id = "hudLeftBox";
     Object.assign(hudItems.style, {
-      width: "20%",
+      width: "30%",
       height: "100%",
       backgroundColor: "rgba(0,0,0,0.5)",
       display: "flex",
@@ -264,10 +264,72 @@ export class HUD {
       color: "white",
       fontFamily: "'Orbitron', sans-serif",
       zIndex: "100",
-      padding: "10px",
+      padding: "1px",
       boxSizing: "border-box"
     });
+
+
+    // === Inventory Grid (2x3) ===
+    const inventoryGrid = document.createElement("div");
+    inventoryGrid.id = "inventoryGrid";
+    Object.assign(inventoryGrid.style, {
+      display: "grid",
+      gridTemplateColumns: "repeat(3, 1fr)", // 3 columns
+      gridTemplateRows: "repeat(2, 1fr)",    // 2 rows
+      // gap: "10px",
+      width: "100%",
+      height: "100%",
+      padding: "5px",
+      boxSizing: "border-box",
+    });
+
+    // === Create 6 inventory slots ===
+    for(let i = 0;i < 6;i++) {
+      const slot = document.createElement("div");
+      slot.className = "inventory-slot";
+
+      Object.assign(slot.style, {
+        aspectRatio: "1 / 1",
+        width: "90%",
+        border: "2px solid #aaa",
+        borderRadius: "6px",
+        background: "linear-gradient(145deg, #444, #222)",
+        boxShadow:
+          "inset 2px 2px 5px rgba(0,0,0,0.6), inset -2px -2px 5px rgba(255,255,255,0.1)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        color: "#ccc",
+        fontSize: "12px",
+        cursor: "pointer",
+        transition: "all 0.2s ease-in-out",
+        backgroundSize: "contain",
+        backgroundRepeat: "no-repeat",
+        backgroundPosition: "center",
+      });
+
+      // Hover effect
+      slot.addEventListener("mouseenter", () => {
+        slot.style.border = "2px solid #ff0";
+        slot.style.boxShadow =
+          "0 0 10px rgba(255,255,0,0.5), inset 2px 2px 5px rgba(0,0,0,0.6)";
+      });
+      slot.addEventListener("mouseleave", () => {
+        slot.style.border = "2px solid #aaa";
+        slot.style.boxShadow =
+          "inset 2px 2px 5px rgba(0,0,0,0.6), inset -2px -2px 5px rgba(255,255,255,0.1)";
+      });
+
+      slot.textContent = "Empty";
+      inventoryGrid.appendChild(slot);
+    }
+
+    // Add grid to hudItems
+    hudItems.appendChild(inventoryGrid);
+
+
     hud.appendChild(hudItems);
+
     document.body.appendChild(hud);
   }
 
