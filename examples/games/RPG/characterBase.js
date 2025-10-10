@@ -1,16 +1,31 @@
 import {uploadGLBModel} from "../../../src/engine/loaders/webgpu-gltf";
+import {byId} from "../../../src/engine/utils";
 import {Hero} from "./hero";
 
 export class Character extends Hero {
 
   positionThrust = 0.85;
 
-  constructor(MYSTICORE, path, name = 'local-hero', archetype = "Warrior") {
+  constructor(MYSTICORE, path, name = 'hero-maria', archetype = "Support") {
     super(name, archetype);
     this.name = name;
     this.core = MYSTICORE;
     this.heroe_bodies = [];
     this.loadLocalHero(path);
+    this.setupHUDForHero(name);
+  }
+
+  setupHUDForHero (name) {
+    if (name == 'hero-maria') {
+      byId('magic-slot-0').style.background = 'url("./res/textures/rpg/magics/maria-sword-1.png")';
+      byId('magic-slot-0').style.backgroundRepeat ="round";
+      byId('magic-slot-1').style.background = 'url("./res/textures/rpg/magics/maria-sword-2.png")';
+      byId('magic-slot-1').style.backgroundRepeat ="round";
+      byId('magic-slot-2').style.background = 'url("./res/textures/rpg/magics/maria-sword-3.png")';
+      byId('magic-slot-2').style.backgroundRepeat ="round";
+      byId('magic-slot-3').style.background = 'url("./res/textures/rpg/magics/maria-sword-4.png")';
+      byId('magic-slot-3').style.backgroundRepeat ="round";
+    }
   }
 
   async loadLocalHero(p) {

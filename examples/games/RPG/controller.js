@@ -60,6 +60,10 @@ export class Controller {
       // Define start (hero position) and end (clicked point)
 
       const hero = this.heroe_bodies[0];
+      let heroSword = null;
+      if (this.heroe_bodies.length == 2) {
+        heroSword = this.heroe_bodies[1];
+      }
       const start = [hero.position.x, hero.position.y, hero.position.z];
       const end = [hitPoint[0], hitPoint[1], hitPoint[2]];
 
@@ -69,6 +73,7 @@ export class Controller {
       if(!path || path.length === 0) {console.warn('No valid path found.'); return;}
       // console.log("Path:", path);
       followPath(hero, path);
+      followPath(heroSword, path);
     });
 
     this.canvas.addEventListener("contextmenu", (e) => {

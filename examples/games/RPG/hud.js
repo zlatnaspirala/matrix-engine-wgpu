@@ -91,8 +91,8 @@ export class HUD {
     // === Create 4 square magic slots ===
     for(let i = 0;i < 4;i++) {
       const slot = document.createElement("div");
-      slot.className = "magic-slot";
-
+      slot.className = "magic-slot-test";
+      slot.id=`magic-slot-${i}`;
       Object.assign(slot.style, {
         aspectRatio: "1 / 1", // ensures square shape
         width: "100%",
@@ -108,6 +108,7 @@ export class HUD {
         color: "#ccc",
         fontSize: "14px",
         cursor: "pointer",
+        backgroundRepeat: "round"
       });
 
       // Hover effect

@@ -43,7 +43,7 @@ let MYSTICORE = new MatrixEngineWGPU({
     MYSTICORE.localHero = new Character(
       MYSTICORE,
       "res/meshes/glb/woman1.glb",
-      'local-hero', "Warrior");
+      'hero-maria', "Warrior");
 
     // var glbFile02 = await fetch("res/meshes/glb/monster.glb").then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, MYSTICORE.device)));
     // MYSTICORE.addGlbObj({

@@ -6,15 +6,29 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.Character = void 0;
 var _webgpuGltf = require("../../../src/engine/loaders/webgpu-gltf");
+var _utils = require("../../../src/engine/utils");
 var _hero = require("./hero");
 class Character extends _hero.Hero {
   positionThrust = 0.85;
-  constructor(MYSTICORE, path, name = 'local-hero', archetype = "Warrior") {
+  constructor(MYSTICORE, path, name = 'hero-maria', archetype = "Support") {
     super(name, archetype);
     this.name = name;
     this.core = MYSTICORE;
     this.heroe_bodies = [];
     this.loadLocalHero(path);
+    this.setupHUDForHero(name);
+  }
+  setupHUDForHero(name) {
+    if (name == 'hero-maria') {
+      (0, _utils.byId)('magic-slot-0').style.background = 'url("./res/textures/rpg/magics/maria-sword-1.png")';
+      (0, _utils.byId)('magic-slot-0').style.backgroundRepeat = "round";
+      (0, _utils.byId)('magic-slot-1').style.background = 'url("./res/textures/rpg/magics/maria-sword-2.png")';
+      (0, _utils.byId)('magic-slot-1').style.backgroundRepeat = "round";
+      (0, _utils.byId)('magic-slot-2').style.background = 'url("./res/textures/rpg/magics/maria-sword-3.png")';
+      (0, _utils.byId)('magic-slot-2').style.backgroundRepeat = "round";
+      (0, _utils.byId)('magic-slot-3').style.background = 'url("./res/textures/rpg/magics/maria-sword-4.png")';
+      (0, _utils.byId)('magic-slot-3').style.backgroundRepeat = "round";
+    }
   }
   async loadLocalHero(p) {
     try {
@@ -52,7 +66,7 @@ class Character extends _hero.Hero {
 }
 exports.Character = Character;
 
-},{"../../../src/engine/loaders/webgpu-gltf":30,"./hero":3}],2:[function(require,module,exports){
+},{"../../../src/engine/loaders/webgpu-gltf":30,"../../../src/engine/utils":35,"./hero":3}],2:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -126,6 +140,10 @@ class Controller {
       // Define start (hero position) and end (clicked point)
 
       const hero = this.heroe_bodies[0];
+      let heroSword = null;
+      if (this.heroe_bodies.length == 2) {
+        heroSword = this.heroe_bodies[1];
+      }
       const start = [hero.position.x, hero.position.y, hero.position.z];
       const end = [hitPoint[0], hitPoint[1], hitPoint[2]];
 
@@ -138,6 +156,7 @@ class Controller {
       }
       // console.log("Path:", path);
       (0, _navMesh.followPath)(hero, path);
+      (0, _navMesh.followPath)(heroSword, path);
     });
     this.canvas.addEventListener("contextmenu", e => {
       e.preventDefault();
@@ -700,7 +719,8 @@ class HUD {
     // === Create 4 square magic slots ===
     for (let i = 0; i < 4; i++) {
       const slot = document.createElement("div");
-      slot.className = "magic-slot";
+      slot.className = "magic-slot-test";
+      slot.id = `magic-slot-${i}`;
       Object.assign(slot.style, {
         aspectRatio: "1 / 1",
         // ensures square shape
@@ -715,7 +735,8 @@ class HUD {
         justifyContent: "center",
         color: "#ccc",
         fontSize: "14px",
-        cursor: "pointer"
+        cursor: "pointer",
+        backgroundRepeat: "round"
       });
 
       // Hover effect
@@ -991,7 +1012,7 @@ let MYSTICORE = new _world.default({
     MYSTICORE.mapLoader = new _mapLoader.MEMapLoader(MYSTICORE, "./res/meshes/nav-mesh/navmesh.json");
 
     // LOCAL HERO
-    MYSTICORE.localHero = new _characterBase.Character(MYSTICORE, "res/meshes/glb/woman1.glb", 'local-hero', "Warrior");
+    MYSTICORE.localHero = new _characterBase.Character(MYSTICORE, "res/meshes/glb/woman1.glb", 'hero-maria', "Warrior");
 
     // var glbFile02 = await fetch("res/meshes/glb/monster.glb").then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, MYSTICORE.device)));
     // MYSTICORE.addGlbObj({
