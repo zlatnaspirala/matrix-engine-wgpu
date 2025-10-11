@@ -5,6 +5,7 @@ import {Controller} from "./controller.js";
 import {HUD} from "./hud.js";
 import {MEMapLoader} from "./map-loader.js";
 import {Character} from "./characterBase.js";
+import {HERO_PROFILES} from "./hero.js";
 
 /**
  * @Note

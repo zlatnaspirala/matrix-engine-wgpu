@@ -167,6 +167,16 @@ export default class MatrixEngineWGPU {
         depthClearValue: 1.0,
       },
     };
+
+    // trail effect
+    //  new
+    const depthTexture = this.device.createTexture({
+      size: [this.canvas.width, this.canvas.height],
+      format: "depth24plus",
+      usage: GPUTextureUsage.RENDER_ATTACHMENT,
+    });
+
+    this.depthTextureViewTrail = depthTexture.createView();
   }
   createTexArrayForShadows() {
     let numberOfLights = this.lightContainer.length;
@@ -487,15 +497,13 @@ export default class MatrixEngineWGPU {
       this.mainRenderPassDesc.colorAttachments[0].view = currentTextureView;
       let pass = commandEncoder.beginRenderPass(this.mainRenderPassDesc);
       // Loop over each mesh
+      let now, deltaTime;
       for(const mesh of this.mainRenderBundle) {
         if(mesh.update) {
-
-          const now = performance.now() / 1000; // seconds
-          const deltaTime = now - (this.lastTime || now);
+          now = performance.now() / 1000; // seconds
+          deltaTime = now - (this.lastTime || now);
           this.lastTime = now;
-
           mesh.update(deltaTime); // glb
-          // mesh.updateBones()
         }
         pass.setPipeline(mesh.pipeline);
         if(!mesh.sceneBindGroupForRender || (mesh.FINISH_VIDIO_INIT == false && mesh.isVideo == true)) {
@@ -514,6 +522,30 @@ export default class MatrixEngineWGPU {
         mesh.drawElements(pass, this.lightContainer);
       }
       pass.end();
+
+      // transparent trails pass (load color, load depth)
+      const transPassDesc = {
+        colorAttachments: [{view: currentTextureView, loadOp: 'load', storeOp: 'store'}],
+        depthStencilAttachment: {view: this.depthTextureViewTrail, depthLoadOp: 'load', depthStoreOp: 'store'}
+      };
+      const transPass = commandEncoder.beginRenderPass(transPassDesc);
+
+      for(const mesh of this.mainRenderBundle) {
+        if(mesh.effects && mesh.effects.trail) {
+          mesh.effects.trail.addPointIfMoved([mesh.position.x, mesh.position.y, mesh.position.z]);
+          mesh.effects.trail.update(this.cameras.WASD, now, mesh);
+
+          transPass.setPipeline(mesh.effects.trail.pipeline);
+          transPass.setBindGroup(0, mesh.effects.trail.bindGroup);
+          transPass.setVertexBuffer(0, mesh.effects.trail.vertexBuffer);
+          transPass.setIndexBuffer(mesh.effects.trail.indexBuffer, 'uint16');
+          transPass.drawIndexed(mesh.effects.trail.indexCount, 1, 0, 0, 0);
+
+          // mesh.effects.trail.draw(transPass)
+        }
+      }
+      transPass.end();
+
       this.device.queue.submit([commandEncoder.finish()]);
       requestAnimationFrame(this.frame);
     } catch(err) {
@@ -559,6 +591,13 @@ export default class MatrixEngineWGPU {
     if(typeof o.mainCameraParams === 'undefined') {o.mainCameraParams = this.mainCameraParams}
     if(typeof o.scale === 'undefined') {o.scale = [1, 1, 1];}
     if(typeof o.raycast === 'undefined') {o.raycast = {enabled: false, radius: 2}}
+
+    if(typeof o.trails === 'undefined') {
+      o.trails = {enabled: false};
+    } else {
+      // o.trails = {enabled: true};
+    }
+
     o.entityArgPass = this.entityArgPass;
     o.cameras = this.cameras;
     if(typeof o.physics === 'undefined') {

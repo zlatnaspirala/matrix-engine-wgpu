@@ -14,7 +14,7 @@ export class Character extends Hero {
     this.loadLocalHero(path);
     this.setupHUDForHero(name);
     // standard effect plugins
-    this.effects = {};
+    // this.effects = {};
   }
 
   setupHUDForHero(name) {
@@ -39,7 +39,8 @@ export class Character extends Hero {
         position: {x: 0, y: -4, z: -220},
         name: this.name,
         texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
-        raycast: {enabled: true, radius: 1.5}
+        raycast: {enabled: true, radius: 1.5},
+        trails: {enabled: true}
       }, null, glbFile01);
       // make small async
       setTimeout(() => {

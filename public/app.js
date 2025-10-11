@@ -18,7 +18,7 @@ class Character extends _hero.Hero {
     this.loadLocalHero(path);
     this.setupHUDForHero(name);
     // standard effect plugins
-    this.effects = {};
+    // this.effects = {};
   }
   setupHUDForHero(name) {
     if (name == 'hero-maria') {
@@ -51,6 +51,9 @@ class Character extends _hero.Hero {
         raycast: {
           enabled: true,
           radius: 1.5
+        },
+        trails: {
+          enabled: true
         }
       }, null, glbFile01);
       // make small async
@@ -68,7 +71,7 @@ class Character extends _hero.Hero {
 }
 exports.Character = Character;
 
-},{"../../../src/engine/loaders/webgpu-gltf":30,"../../../src/engine/utils":35,"./hero":3}],2:[function(require,module,exports){
+},{"../../../src/engine/loaders/webgpu-gltf":31,"../../../src/engine/utils":36,"./hero":4}],2:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -238,7 +241,246 @@ class Controller {
 }
 exports.Controller = Controller;
 
-},{"../../../src/engine/raycast.js":34,"../../../src/engine/utils.js":35,"./nav-mesh.js":7,"wgpu-matrix":22}],3:[function(require,module,exports){
+},{"../../../src/engine/raycast.js":35,"../../../src/engine/utils.js":36,"./nav-mesh.js":8,"wgpu-matrix":23}],3:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.TrailEffect = void 0;
+var _wgpuMatrix = require("wgpu-matrix");
+var _trail = require("../../../../src/shaders/standalone/trail.vertex");
+// import {trailFragment} from "../../../../src/shaders/standalone/trail.fragment";
+
+class TrailEffect {
+  constructor(device, format, mesh, useBlending = true) {
+    this.parentMesh = mesh;
+    this.device = device;
+    this.format = format;
+    this.useBlending = useBlending;
+    this.vertexBuffer = mesh.vertexBuffer;
+    this._initPipeline(mesh.modelUniformBuffer);
+    this._initBuffers();
+    this._initTrailData();
+  }
+  async _initPipeline(modelUniformBuffer) {
+    // BOTH FRAGMENT ALSO 
+    const shaderModule = this.device.createShaderModule({
+      code: _trail.trailVertex
+    });
+
+    // --- Camera + Trail uniforms ---
+    this.cameraBuffer = this.device.createBuffer({
+      size: 64,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    this.trailParamsBuffer = this.device.createBuffer({
+      size: 32,
+      // vec4 + 3 floats (padded)
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    this.indexBuffer = this.parentMesh.indexBuffer;
+    this.indexCount = this.parentMesh.indexCount;
+    const bindGroupLayout = this.device.createBindGroupLayout({
+      label: "bindGroupLayout for trails",
+      entries: [{
+        binding: 0,
+        visibility: GPUShaderStage.VERTEX,
+        buffer: {}
+      },
+      // camera
+      {
+        binding: 1,
+        visibility: GPUShaderStage.VERTEX,
+        buffer: {}
+      }, {
+        binding: 2,
+        visibility: GPUShaderStage.FRAGMENT | GPUShaderStage.VERTEX,
+        buffer: {}
+      }]
+    });
+    this.modelBuffer = this.device.createBuffer({
+      label: "modelBuffer for trails",
+      size: 64,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    this.bindGroup = this.device.createBindGroup({
+      label: "bindGroup for trails",
+      layout: bindGroupLayout,
+      entries: [{
+        binding: 0,
+        resource: {
+          buffer: this.cameraBuffer
+        }
+      }, {
+        binding: 1,
+        resource: {
+          buffer: modelUniformBuffer
+        }
+      }, {
+        binding: 2,
+        resource: {
+          buffer: this.trailParamsBuffer
+        }
+      }]
+    });
+    const blendConfig = undefined;
+    // const blendConfig = {
+    //   color: {srcFactor: 'one', dstFactor: 'one', operation: 'add'},
+    //   alpha: {srcFactor: 'one', dstFactor: 'one', operation: 'add'},
+    // };
+
+    const pipelineLayout = this.device.createPipelineLayout({
+      label: "pipelineLayout for trails",
+      bindGroupLayouts: [bindGroupLayout]
+    });
+    this.pipeline = this.device.createRenderPipeline({
+      label: "pipeline for trails",
+      layout: pipelineLayout,
+      vertex: {
+        module: shaderModule,
+        entryPoint: "vsMain",
+        buffers: [{
+          arrayStride: 5 * 4,
+          // 5 floats per vertex
+          attributes: [{
+            shaderLocation: 0,
+            offset: 0,
+            format: "float32x3"
+          },
+          // position
+          {
+            shaderLocation: 1,
+            offset: 3 * 4,
+            format: "float32x2"
+          } // uv
+          ]
+        }]
+      },
+      fragment: {
+        module: shaderModule,
+        entryPoint: "fsMain",
+        targets: [{
+          format: this.format,
+          blend: blendConfig
+        }]
+      },
+      primitive: {
+        topology: "triangle-list" // "triangle-strip",
+      },
+      depthStencil: {
+        depthWriteEnabled: false,
+        depthCompare: "always",
+        format: "depth24plus"
+      }
+    });
+  }
+  _initBuffers() {
+    // Simple trail geometry (quad strip)
+    // const vertices = new Float32Array([
+    //   // x, y, z,   u, v
+    //   -0.1, 0, 0, 0, 0,
+    //   0.1, 0, 0, 1, 0,
+    //   -0.1, 0, 1, 0, 1,
+    //   0.1, 0, 1, 1, 1,
+    // ]);
+    // const vertices = new Float32Array([
+    //   -0.5, -0.5, 0, 0, 0,
+    //   0.5, -0.5, 0, 1, 0,
+    //   -0.5, 0.5, 0, 0, 1,
+    //   0.5, 0.5, 0, 1, 1,
+    // ]);
+
+    // this.vertexBuffer = this.device.createBuffer({
+    //   size: vertices.byteLength,
+    //   usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+    //   mappedAtCreation: true,
+    // });
+    // new Float32Array(this.vertexBuffer.getMappedRange()).set(vertices);
+    // this.vertexBuffer.unmap();
+  }
+
+  // 🌀 store dynamic trail points
+  _initTrailData() {
+    this.maxPoints = 32; // max trail points
+    this.trailPoints = []; // store positions
+    this.lastPos = [0, 0, 0];
+    this.minDist = 0.05; // minimum movement to add new point
+    this.segmentCount = 0; // number of quads
+
+    this.trailPoints.push([...this.lastPos]);
+  }
+  addPointIfMoved(pos) {
+    const dx = pos[0] - this.lastPos[0];
+    const dy = pos[1] - this.lastPos[1];
+    const dz = pos[2] - this.lastPos[2];
+    const distSq = dx * dx + dy * dy + dz * dz;
+    if (distSq > this.minDist * this.minDist) {
+      this.trailPoints.push([...pos]);
+      if (this.trailPoints.length > this.maxPoints) this.trailPoints.shift();
+
+      // this.lastPos = [...pos];
+      this._updateBuffers();
+    }
+  }
+  _updateBuffers() {
+    if (this.trailPoints.length < 2) return;
+    let verts = [];
+    let indices = [];
+    let idx = 0;
+    for (let i = 0; i < this.trailPoints.length - 1; i++) {
+      const p1 = this.trailPoints[i];
+      const p2 = this.trailPoints[i + 1];
+
+      // two vertices per point pair (quad strip)
+      verts.push(p1[0] - 0.05, p1[1], p1[2], 0, 0, p1[0] + 0.05, p1[1], p1[2], 1, 0, p2[0] - 0.05, p2[1], p2[2], 0, 1, p2[0] + 0.05, p2[1], p2[2], 1, 1);
+
+      // 6 indices per quad
+      indices.push(idx, idx + 1, idx + 2, idx + 2, idx + 1, idx + 3);
+      idx += 4;
+    }
+    const vertArray = new Float32Array(verts);
+    const indexArray = new Uint16Array(indices);
+
+    // --- recreate vertex buffer if needed
+    if (!this.vertexBuffer || vertArray.byteLength > this.vertexBuffer.size) {
+      this.vertexBuffer = this.device.createBuffer({
+        size: vertArray.byteLength,
+        usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
+      });
+    }
+    this.device.queue.writeBuffer(this.vertexBuffer, 0, vertArray);
+
+    // --- recreate index buffer if needed
+    if (!this.indexBuffer || indexArray.byteLength > this.indexBuffer.size) {
+      this.indexBuffer = this.device.createBuffer({
+        size: indexArray.byteLength,
+        usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST
+      });
+    }
+    this.device.queue.writeBuffer(this.indexBuffer, 0, indexArray);
+    this.segmentCount = indices.length / 6; // number of quads
+  }
+  update(camera, time, mesh, color = [0.2, 0.7, 1.0, 1.0], fadeLength = 11.2) {
+    const viewProjMatrix = _wgpuMatrix.mat4.multiply(camera.projectionMatrix, camera.view, _wgpuMatrix.mat4.create());
+    // this.device.queue.writeBuffer(this.modelUniformBuffer, 0, mesh.modelMatrix);
+    this.device.queue.writeBuffer(this.cameraBuffer, 0, viewProjMatrix);
+    // Update trail params
+    const data = new Float32Array([...color, fadeLength, time, 0, 0]);
+    this.device.queue.writeBuffer(this.trailParamsBuffer, 0, data.buffer);
+  }
+
+  // 🔄 Switch blend ON/OFF dynamically
+  toggleBlend(useBlend) {
+    if (this.useBlending !== useBlend) {
+      this.useBlending = useBlend;
+      this._initPipeline(); // rebuild pipeline with new blend config
+    }
+  }
+}
+exports.TrailEffect = TrailEffect;
+
+},{"../../../../src/shaders/standalone/trail.vertex":46,"wgpu-matrix":23}],4:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -698,7 +940,7 @@ function mergeArchetypesWeighted(typeA, typeB, weightA = 0.7) {
   return merged;
 }
 
-},{}],4:[function(require,module,exports){
+},{}],5:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -1061,7 +1303,7 @@ class HUD {
 }
 exports.HUD = HUD;
 
-},{}],5:[function(require,module,exports){
+},{}],6:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -1137,7 +1379,7 @@ class MEMapLoader {
 }
 exports.MEMapLoader = MEMapLoader;
 
-},{"../../../src/engine/loader-obj.js":28,"./nav-mesh.js":7}],6:[function(require,module,exports){
+},{"../../../src/engine/loader-obj.js":29,"./nav-mesh.js":8}],7:[function(require,module,exports){
 "use strict";
 
 var _world = _interopRequireDefault(require("../../../src/world.js"));
@@ -1145,6 +1387,7 @@ var _controller = require("./controller.js");
 var _hud = require("./hud.js");
 var _mapLoader = require("./map-loader.js");
 var _characterBase = require("./characterBase.js");
+var _hero = require("./hero.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 // import {uploadGLBModel} from "../../../src/engine/loaders/webgpu-gltf.js";
 
@@ -1183,7 +1426,7 @@ let MYSTICORE = new _world.default({
     MYSTICORE.mapLoader = new _mapLoader.MEMapLoader(MYSTICORE, "./res/meshes/nav-mesh/navmesh.json");
 
     // LOCAL HERO
-    MYSTICORE.localHero = new _characterBase.Character(MYSTICORE, "res/meshes/glb/woman1.glb", 'MariaSword', HERO_PROFILES.MariaSword.baseArchetypes);
+    MYSTICORE.localHero = new _characterBase.Character(MYSTICORE, "res/meshes/glb/woman1.glb", 'MariaSword', _hero.HERO_PROFILES.MariaSword.baseArchetypes);
   });
   MYSTICORE.addLight();
 });
@@ -1191,7 +1434,7 @@ let MYSTICORE = new _world.default({
 // just for dev
 window.app = MYSTICORE;
 
-},{"../../../src/world.js":49,"./characterBase.js":1,"./controller.js":2,"./hud.js":4,"./map-loader.js":5}],7:[function(require,module,exports){
+},{"../../../src/world.js":51,"./characterBase.js":1,"./controller.js":2,"./hero.js":4,"./hud.js":5,"./map-loader.js":6}],8:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -1651,7 +1894,7 @@ function orientHeroToDirection(hero, dir) {
   hero.rotation.y = angle; // in radians
 }
 
-},{"../../../src/engine/utils.js":35}],8:[function(require,module,exports){
+},{"../../../src/engine/utils.js":36}],9:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -1661,7 +1904,7 @@ exports.default = void 0;
 var _bvhLoader = require("./module/bvh-loader");
 var _default = exports.default = _bvhLoader.MEBvh;
 
-},{"./module/bvh-loader":9}],9:[function(require,module,exports){
+},{"./module/bvh-loader":10}],10:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -2350,7 +2593,7 @@ class MEBvh {
 }
 exports.MEBvh = MEBvh;
 
-},{"webgpu-matrix":21}],10:[function(require,module,exports){
+},{"webgpu-matrix":22}],11:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -2428,7 +2671,7 @@ function equals(a, b) {
   return Math.abs(a - b) <= tolerance * Math.max(1, Math.abs(a), Math.abs(b));
 }
 
-},{}],11:[function(require,module,exports){
+},{}],12:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -2457,7 +2700,7 @@ var vec4 = _interopRequireWildcard(require("./vec4.js"));
 exports.vec4 = vec4;
 function _interopRequireWildcard(e, t) { if ("function" == typeof WeakMap) var r = new WeakMap(), n = new WeakMap(); return (_interopRequireWildcard = function (e, t) { if (!t && e && e.__esModule) return e; var o, i, f = { __proto__: null, default: e }; if (null === e || "object" != typeof e && "function" != typeof e) return f; if (o = t ? n : r) { if (o.has(e)) return o.get(e); o.set(e, f); } for (const t in e) "default" !== t && {}.hasOwnProperty.call(e, t) && ((i = (o = Object.defineProperty) && Object.getOwnPropertyDescriptor(e, t)) && (i.get || i.set) ? o(f, t, i) : f[t] = e[t]); return f; })(e, t); }
 
-},{"./common.js":10,"./mat2.js":12,"./mat2d.js":13,"./mat3.js":14,"./mat4.js":15,"./quat.js":16,"./quat2.js":17,"./vec2.js":18,"./vec3.js":19,"./vec4.js":20}],12:[function(require,module,exports){
+},{"./common.js":11,"./mat2.js":13,"./mat2d.js":14,"./mat3.js":15,"./mat4.js":16,"./quat.js":17,"./quat2.js":18,"./vec2.js":19,"./vec3.js":20,"./vec4.js":21}],13:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -2919,7 +3162,7 @@ var mul = exports.mul = multiply;
  */
 var sub = exports.sub = subtract;
 
-},{"./common.js":10}],13:[function(require,module,exports){
+},{"./common.js":11}],14:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -3433,7 +3676,7 @@ var mul = exports.mul = multiply;
  */
 var sub = exports.sub = subtract;
 
-},{"./common.js":10}],14:[function(require,module,exports){
+},{"./common.js":11}],15:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -4245,7 +4488,7 @@ var mul = exports.mul = multiply;
  */
 var sub = exports.sub = subtract;
 
-},{"./common.js":10}],15:[function(require,module,exports){
+},{"./common.js":11}],16:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -6265,7 +6508,7 @@ var mul = exports.mul = multiply;
  */
 var sub = exports.sub = subtract;
 
-},{"./common.js":10}],16:[function(require,module,exports){
+},{"./common.js":11}],17:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -7048,7 +7291,7 @@ var setAxes = exports.setAxes = function () {
   };
 }();
 
-},{"./common.js":10,"./mat3.js":14,"./vec3.js":19,"./vec4.js":20}],17:[function(require,module,exports){
+},{"./common.js":11,"./mat3.js":15,"./vec3.js":20,"./vec4.js":21}],18:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -7921,7 +8164,7 @@ function equals(a, b) {
   return Math.abs(a0 - b0) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a0), Math.abs(b0)) && Math.abs(a1 - b1) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a1), Math.abs(b1)) && Math.abs(a2 - b2) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a2), Math.abs(b2)) && Math.abs(a3 - b3) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a3), Math.abs(b3)) && Math.abs(a4 - b4) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a4), Math.abs(b4)) && Math.abs(a5 - b5) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a5), Math.abs(b5)) && Math.abs(a6 - b6) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a6), Math.abs(b6)) && Math.abs(a7 - b7) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a7), Math.abs(b7));
 }
 
-},{"./common.js":10,"./mat4.js":15,"./quat.js":16}],18:[function(require,module,exports){
+},{"./common.js":11,"./mat4.js":16,"./quat.js":17}],19:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -8599,7 +8842,7 @@ var forEach = exports.forEach = function () {
   };
 }();
 
-},{"./common.js":10}],19:[function(require,module,exports){
+},{"./common.js":11}],20:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -9451,7 +9694,7 @@ var forEach = exports.forEach = function () {
   };
 }();
 
-},{"./common.js":10}],20:[function(require,module,exports){
+},{"./common.js":11}],21:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -10158,7 +10401,7 @@ var forEach = exports.forEach = function () {
   };
 }();
 
-},{"./common.js":10}],21:[function(require,module,exports){
+},{"./common.js":11}],22:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -14091,7 +14334,7 @@ function setDefaultType(ctor) {
   setDefaultType$1(ctor);
 }
 
-},{}],22:[function(require,module,exports){
+},{}],23:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -19438,7 +19681,7 @@ function setDefaultType(ctor) {
   setDefaultType$1(ctor);
 }
 
-},{}],23:[function(require,module,exports){
+},{}],24:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -19852,7 +20095,7 @@ class MEBall {
 }
 exports.default = MEBall;
 
-},{"../shaders/shaders":44,"./engine":26,"./matrix-class":32,"wgpu-matrix":22}],24:[function(require,module,exports){
+},{"../shaders/shaders":45,"./engine":27,"./matrix-class":33,"wgpu-matrix":23}],25:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -19890,7 +20133,7 @@ class Behavior {
 }
 exports.default = Behavior;
 
-},{"./utils":35}],25:[function(require,module,exports){
+},{"./utils":36}],26:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -20315,7 +20558,7 @@ class MECube {
 }
 exports.default = MECube;
 
-},{"../shaders/shaders":44,"./engine":26,"./matrix-class":32,"wgpu-matrix":22}],26:[function(require,module,exports){
+},{"../shaders/shaders":45,"./engine":27,"./matrix-class":33,"wgpu-matrix":23}],27:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -20737,7 +20980,7 @@ function createInputHandler(window, canvas) {
   };
 }
 
-},{"./utils":35,"wgpu-matrix":22}],27:[function(require,module,exports){
+},{"./utils":36,"wgpu-matrix":23}],28:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -20978,7 +21221,7 @@ class SpotLight {
 }
 exports.SpotLight = SpotLight;
 
-},{"../shaders/vertexShadow.wgsl":47,"./behavior":24,"wgpu-matrix":22}],28:[function(require,module,exports){
+},{"../shaders/vertexShadow.wgsl":49,"./behavior":25,"wgpu-matrix":23}],29:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -21446,7 +21689,7 @@ function play(nameAni) {
   this.playing = true;
 }
 
-},{}],29:[function(require,module,exports){
+},{}],30:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -21956,7 +22199,7 @@ class BVHPlayer extends _meshObj.default {
 }
 exports.BVHPlayer = BVHPlayer;
 
-},{"../mesh-obj":33,"./webgpu-gltf.js":30,"bvh-loader":8,"wgpu-matrix":22}],30:[function(require,module,exports){
+},{"../mesh-obj":34,"./webgpu-gltf.js":31,"bvh-loader":9,"wgpu-matrix":23}],31:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -22534,7 +22777,7 @@ async function uploadGLBModel(buffer, device) {
   return R;
 }
 
-},{"gl-matrix":11}],31:[function(require,module,exports){
+},{"gl-matrix":12}],32:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -23060,7 +23303,7 @@ class Materials {
 }
 exports.default = Materials;
 
-},{"../shaders/fragment.wgsl":39,"../shaders/fragment.wgsl.metal":40,"../shaders/fragment.wgsl.normalmap":41,"../shaders/fragment.wgsl.pong":42,"../shaders/fragment.wgsl.power":43}],32:[function(require,module,exports){
+},{"../shaders/fragment.wgsl":40,"../shaders/fragment.wgsl.metal":41,"../shaders/fragment.wgsl.normalmap":42,"../shaders/fragment.wgsl.pong":43,"../shaders/fragment.wgsl.power":44}],33:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -23296,7 +23539,7 @@ class Rotation {
 }
 exports.Rotation = Rotation;
 
-},{"./utils":35}],33:[function(require,module,exports){
+},{"./utils":36}],34:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -23310,6 +23553,7 @@ var _utils = require("./utils");
 var _materials = _interopRequireDefault(require("./materials"));
 var _fragmentVideo = require("../shaders/fragment.video.wgsl");
 var _vertexWgsl = require("../shaders/vertex.wgsl.normalmap");
+var _trails = require("../../examples/games/RPG/effects/trails");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 class MEMeshObj extends _materials.default {
   constructor(canvas, device, context, o, inputHandler, globalAmbient, _glbFile = null, primitiveIndex = null, skinnedNodeIndex = null) {
@@ -23322,6 +23566,15 @@ class MEMeshObj extends _materials.default {
       };
     } else {
       this.raycast = o.raycast;
+    }
+    if (typeof o.trails === 'undefined') {
+      this.trails = {
+        enabled: false
+      };
+    } else {
+      this.trails = {
+        enabled: true
+      };
     }
     this.name = o.name;
     this.done = false;
@@ -23821,6 +24074,18 @@ class MEMeshObj extends _materials.default {
           }
         }]
       });
+
+      // trails bonus
+
+      // TEST - OPTIONS ON BASE MESHOBJ LEVEL
+      this.effects = {};
+      if (this.trails.enabled === true) {
+        let pf = navigator.gpu.getPreferredCanvasFormat();
+        this.effects.trail = new _trails.TrailEffect(device, pf, this, true);
+      }
+
+      // end
+
       // Rotates the camera around the origin based on time.
       this.getTransformationMatrix = (mainRenderBundle, spotLight, index) => {
         const now = Date.now();
@@ -23875,10 +24140,6 @@ class MEMeshObj extends _materials.default {
         this.updateMeshListBuffers();
       }
     });
-
-    // TEST - OPTIONS
-    let pf = navigator.gpu.getPreferredCanvasFormat();
-    this.effects.trail = new TrailEffect(device, pf, true);
   }
   setupPipeline = () => {
     this.createBindGroupForRender();
@@ -24070,7 +24331,7 @@ class MEMeshObj extends _materials.default {
 }
 exports.default = MEMeshObj;
 
-},{"../shaders/fragment.video.wgsl":38,"../shaders/vertex.wgsl":45,"../shaders/vertex.wgsl.normalmap":46,"./materials":31,"./matrix-class":32,"./utils":35,"wgpu-matrix":22}],34:[function(require,module,exports){
+},{"../../examples/games/RPG/effects/trails":3,"../shaders/fragment.video.wgsl":39,"../shaders/vertex.wgsl":47,"../shaders/vertex.wgsl.normalmap":48,"./materials":32,"./matrix-class":33,"./utils":36,"wgpu-matrix":23}],35:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -24252,7 +24513,7 @@ function addRaycastsListener(canvasId = "canvas1") {
   });
 }
 
-},{"wgpu-matrix":22}],35:[function(require,module,exports){
+},{"wgpu-matrix":23}],36:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -25138,7 +25399,7 @@ function setupCanvasFilters(canvasId) {
   updateFilter(); // Initial
 }
 
-},{}],36:[function(require,module,exports){
+},{}],37:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -25178,7 +25439,7 @@ class MultiLang {
 }
 exports.MultiLang = MultiLang;
 
-},{"../engine/utils":35}],37:[function(require,module,exports){
+},{"../engine/utils":36}],38:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -25462,7 +25723,7 @@ class MatrixAmmo {
 }
 exports.default = MatrixAmmo;
 
-},{"../engine/utils":35}],38:[function(require,module,exports){
+},{"../engine/utils":36}],39:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -25552,7 +25813,7 @@ fn main(input : FragmentInput) -> @location(0) vec4f {
 }
 `;
 
-},{}],39:[function(require,module,exports){
+},{}],40:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -25783,7 +26044,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, 1.0);
 }`;
 
-},{}],40:[function(require,module,exports){
+},{}],41:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -25961,7 +26222,7 @@ return vec4f(color, 1.0);
 // let radiance = spotlights[0].color * 10.0; // test high intensity
 // Lo += materialData.baseColor * radiance * NdotL;
 
-},{}],41:[function(require,module,exports){
+},{}],42:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -26206,7 +26467,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, 1.0);
 }`;
 
-},{}],42:[function(require,module,exports){
+},{}],43:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -26426,7 +26687,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, 1.0);
 }`;
 
-},{}],43:[function(require,module,exports){
+},{}],44:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -26594,7 +26855,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 // let radiance = spotlights[0].color * 10.0; // test high intensity
 // Lo += materialData.baseColor * radiance * NdotL;
 
-},{}],44:[function(require,module,exports){
+},{}],45:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -26652,7 +26913,90 @@ fn fragmentMain(input: VertexOutput) -> @location(0) vec4f {
   return vec4f(textureColor.rgb * lightColor, textureColor.a);
 }`;
 
-},{}],45:[function(require,module,exports){
+},{}],46:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.trailVertex = void 0;
+const trailVertex = exports.trailVertex = `struct Camera {
+  viewProjMatrix : mat4x4<f32>,
+};
+@group(0) @binding(0) var<uniform> camera : Camera;
+
+struct Model {
+  modelMatrix : mat4x4<f32>,
+};
+@group(0) @binding(1) var<uniform> model : Model;
+
+// layout: vec3 color, float alpha, float time, float length, padding (packed to 32 bytes)
+struct TrailUniform {
+  color : vec3<f32>,
+  alpha : f32,
+  time  : f32,
+  length: f32,
+  _pad  : f32, // pad to 32 bytes (optional)
+};
+@group(0) @binding(2) var<uniform> trail : TrailUniform;
+
+// vertex input
+struct VertexInput {
+  @location(0) position : vec3<f32>, // local-space vertex (already placed in world-space or local)
+  @location(1) uv       : vec2<f32>, // uv.x = along (0..1), uv.y = side/taper (0..1)
+};
+
+// vertex -> fragment
+struct VSOut {
+  @builtin(position) Position : vec4<f32>,
+  @location(0) v_uv          : vec2<f32>,
+  @location(1) v_worldPos    : vec3<f32>,
+};
+
+@vertex
+fn vsMain(input : VertexInput) -> VSOut {
+  var out : VSOut;
+
+  // apply model -> world
+  // let worldPos4 = model.modelMatrix * vec4<f32>(input.position, 1.0);
+  let worldPos4 = vec4<f32>(input.position, 1.0);
+  let worldPos3 = worldPos4.xyz;
+
+  // final clip-space position
+  out.Position = camera.viewProjMatrix * worldPos4;
+
+  out.v_uv = input.uv;
+  out.v_worldPos = worldPos3;
+
+  return out;
+}
+
+@fragment
+fn fsMain(in: VSOut) -> @location(0) vec4<f32> {
+  // basic along-segment fade (uv.x = 0 head -> 1 tail)
+  let along = in.v_uv.x;
+  let side  = in.v_uv.y; // 0..1 across ribbon
+
+  // fade exponent - tweak to taste
+  let lengthFade = pow(1.0 - clamp(along, 0.0, 1.0), 1.6);
+
+  // radial/taper across ribbon (center brighter, edges softer)
+  // assume uv.y 0..1 where 0.5 is center; adapt if your uv mapping differs
+  let centerDist = abs(side - 0.5) * 2.0; // 0 at center, 1 at edge
+  let sideFade = smoothstep(1.0, 0.0, centerDist); // soft falloff to edges
+
+  // optional time-based pulse
+  let pulse = 0.5 + 0.5 * sin(trail.time * 6.0);
+
+  // final color and alpha
+  let col = trail.color * (lengthFade * sideFade * (pulse * 0.7 + 0.3));
+  let a = trail.alpha * lengthFade * sideFade;
+
+  // return emissive RGBA (for additive blending pipeline)
+  return vec4<f32>(col, a);
+}`;
+
+},{}],47:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -26738,7 +27082,7 @@ fn main(
   return output;
 }`;
 
-},{}],46:[function(require,module,exports){
+},{}],48:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -26849,7 +27193,7 @@ fn main(
   return output;
 }`;
 
-},{}],47:[function(require,module,exports){
+},{}],49:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -26877,7 +27221,7 @@ fn main(
 }
 `;
 
-},{}],48:[function(require,module,exports){
+},{}],50:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -26947,7 +27291,7 @@ class MatrixSounds {
 }
 exports.MatrixSounds = MatrixSounds;
 
-},{}],49:[function(require,module,exports){
+},{}],51:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -27130,6 +27474,15 @@ class MatrixEngineWGPU {
         depthClearValue: 1.0
       }
     };
+
+    // trail effect
+    //  new
+    const depthTexture = this.device.createTexture({
+      size: [this.canvas.width, this.canvas.height],
+      format: "depth24plus",
+      usage: GPUTextureUsage.RENDER_ATTACHMENT
+    });
+    this.depthTextureViewTrail = depthTexture.createView();
   }
   createTexArrayForShadows() {
     let numberOfLights = this.lightContainer.length;
@@ -27591,13 +27944,13 @@ class MatrixEngineWGPU {
       this.mainRenderPassDesc.colorAttachments[0].view = currentTextureView;
       let pass = commandEncoder.beginRenderPass(this.mainRenderPassDesc);
       // Loop over each mesh
+      let now, deltaTime;
       for (const mesh of this.mainRenderBundle) {
         if (mesh.update) {
-          const now = performance.now() / 1000; // seconds
-          const deltaTime = now - (this.lastTime || now);
+          now = performance.now() / 1000; // seconds
+          deltaTime = now - (this.lastTime || now);
           this.lastTime = now;
           mesh.update(deltaTime); // glb
-          // mesh.updateBones()
         }
         pass.setPipeline(mesh.pipeline);
         if (!mesh.sceneBindGroupForRender || mesh.FINISH_VIDIO_INIT == false && mesh.isVideo == true) {
@@ -27616,6 +27969,35 @@ class MatrixEngineWGPU {
         mesh.drawElements(pass, this.lightContainer);
       }
       pass.end();
+
+      // transparent trails pass (load color, load depth)
+      const transPassDesc = {
+        colorAttachments: [{
+          view: currentTextureView,
+          loadOp: 'load',
+          storeOp: 'store'
+        }],
+        depthStencilAttachment: {
+          view: this.depthTextureViewTrail,
+          depthLoadOp: 'load',
+          depthStoreOp: 'store'
+        }
+      };
+      const transPass = commandEncoder.beginRenderPass(transPassDesc);
+      for (const mesh of this.mainRenderBundle) {
+        if (mesh.effects && mesh.effects.trail) {
+          mesh.effects.trail.addPointIfMoved([mesh.position.x, mesh.position.y, mesh.position.z]);
+          mesh.effects.trail.update(this.cameras.WASD, now, mesh);
+          transPass.setPipeline(mesh.effects.trail.pipeline);
+          transPass.setBindGroup(0, mesh.effects.trail.bindGroup);
+          transPass.setVertexBuffer(0, mesh.effects.trail.vertexBuffer);
+          transPass.setIndexBuffer(mesh.effects.trail.indexBuffer, 'uint16');
+          transPass.drawIndexed(mesh.effects.trail.indexCount, 1, 0, 0, 0);
+
+          // mesh.effects.trail.draw(transPass)
+        }
+      }
+      transPass.end();
       this.device.queue.submit([commandEncoder.finish()]);
       requestAnimationFrame(this.frame);
     } catch (err) {
@@ -27694,6 +28076,13 @@ class MatrixEngineWGPU {
         radius: 2
       };
     }
+    if (typeof o.trails === 'undefined') {
+      o.trails = {
+        enabled: false
+      };
+    } else {
+      // o.trails = {enabled: true};
+    }
     o.entityArgPass = this.entityArgPass;
     o.cameras = this.cameras;
     if (typeof o.physics === 'undefined') {
@@ -27762,4 +28151,4 @@ class MatrixEngineWGPU {
 }
 exports.default = MatrixEngineWGPU;
 
-},{"./engine/ball.js":23,"./engine/cube.js":25,"./engine/engine.js":26,"./engine/lights.js":27,"./engine/loader-obj.js":28,"./engine/loaders/bvh.js":29,"./engine/mesh-obj.js":33,"./engine/utils.js":35,"./multilang/lang.js":36,"./physics/matrix-ammo.js":37,"./sounds/sounds.js":48,"wgpu-matrix":22}]},{},[6]);
+},{"./engine/ball.js":24,"./engine/cube.js":26,"./engine/engine.js":27,"./engine/lights.js":28,"./engine/loader-obj.js":29,"./engine/loaders/bvh.js":30,"./engine/mesh-obj.js":34,"./engine/utils.js":36,"./multilang/lang.js":37,"./physics/matrix-ammo.js":38,"./sounds/sounds.js":50,"wgpu-matrix":23}]},{},[7]);

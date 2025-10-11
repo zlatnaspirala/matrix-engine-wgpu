@@ -5,6 +5,7 @@ import {degToRad, genName, LOG_FUNNY_SMALL} from './utils';
 import Materials from './materials';
 import {fragmentVideoWGSL} from '../shaders/fragment.video.wgsl';
 import {vertexWGSL_NM} from '../shaders/vertex.wgsl.normalmap';
+import {TrailEffect} from '../../examples/games/RPG/effects/trails';
 
 export default class MEMeshObj extends Materials {
   constructor(canvas, device, context, o, inputHandler, globalAmbient, _glbFile = null, primitiveIndex = null, skinnedNodeIndex = null) {
@@ -15,6 +16,13 @@ export default class MEMeshObj extends Materials {
     } else {
       this.raycast = o.raycast;
     }
+
+    if(typeof o.trails === 'undefined') {
+      this.trails = {enabled: false};
+    } else {
+      this.trails = {enabled: true};
+    }
+
     this.name = o.name;
     this.done = false;
     this.canvas = canvas;
@@ -520,6 +528,19 @@ export default class MEMeshObj extends Materials {
           {binding: 1, visibility: GPUShaderStage.FRAGMENT, sampler: {type: 'comparison'}},
         ],
       });
+
+      // trails bonus
+
+      // TEST - OPTIONS ON BASE MESHOBJ LEVEL
+      this.effects = {};
+
+      if(this.trails.enabled === true) {
+        let pf = navigator.gpu.getPreferredCanvasFormat();
+        this.effects.trail = new TrailEffect(device, pf, this, true);
+      }
+
+      // end
+
       // Rotates the camera around the origin based on time.
       this.getTransformationMatrix = (mainRenderBundle, spotLight, index) => {
         const now = Date.now();
@@ -589,12 +610,6 @@ export default class MEMeshObj extends Materials {
         this.updateMeshListBuffers();
       }
     })
-
-
-    // TEST - OPTIONS
-    let pf = navigator.gpu.getPreferredCanvasFormat();
-    this.effects.trail = new TrailEffect(device, pf, true);
-
   }
 
   setupPipeline = () => {
