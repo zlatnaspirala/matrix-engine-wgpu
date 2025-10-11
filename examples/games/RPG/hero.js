@@ -334,3 +334,18 @@ export function mergeArchetypes(typeA, typeB) {
   merged._mergedFrom = [typeA, typeB];
   return merged;
 }
+
+// not used now
+export function mergeArchetypesWeighted(typeA, typeB, weightA = 0.7) {
+  const a = HERO_ARCHETYPES[typeA];
+  const b = HERO_ARCHETYPES[typeB];
+  const wB = 1 - weightA;
+  const merged = {};
+
+  for (const key in a)
+    if (typeof a[key] === "number" && typeof b[key] === "number")
+      merged[key] = a[key] * weightA + b[key] * wB;
+
+  merged._mergedFrom = [typeA, typeB];
+  return merged;
+}

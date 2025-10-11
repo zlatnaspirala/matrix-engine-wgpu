@@ -43,16 +43,8 @@ let MYSTICORE = new MatrixEngineWGPU({
     MYSTICORE.localHero = new Character(
       MYSTICORE,
       "res/meshes/glb/woman1.glb",
-      'hero-maria', "Warrior");
+      'MariaSword', HERO_PROFILES.MariaSword.baseArchetypes);
 
-    // var glbFile02 = await fetch("res/meshes/glb/monster.glb").then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, MYSTICORE.device)));
-    // MYSTICORE.addGlbObj({
-    //   material: {type: 'power', useTextureFromGlb: true},
-    //   scale: [20, 20, 20],
-    //   position: {x: -40, y: -4, z: -70},
-    //   name: 'firstGlb',
-    //   texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
-    // }, null, glbFile02);
   })
   MYSTICORE.addLight();
 })

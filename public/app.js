@@ -10,13 +10,15 @@ var _utils = require("../../../src/engine/utils");
 var _hero = require("./hero");
 class Character extends _hero.Hero {
   positionThrust = 0.85;
-  constructor(MYSTICORE, path, name = 'hero-maria', archetype = "Support") {
-    super(name, archetype);
+  constructor(MYSTICORE, path, name = 'hero-maria', archetypes = ["Warrior", "Mage"]) {
+    super(name, archetypes);
     this.name = name;
     this.core = MYSTICORE;
     this.heroe_bodies = [];
     this.loadLocalHero(path);
     this.setupHUDForHero(name);
+    // standard effect plugins
+    this.effects = {};
   }
   setupHUDForHero(name) {
     if (name == 'hero-maria') {
@@ -244,6 +246,7 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.HeroProps = exports.Hero = exports.HERO_PROFILES = exports.HERO_ARCHETYPES = void 0;
 exports.mergeArchetypes = mergeArchetypes;
+exports.mergeArchetypesWeighted = mergeArchetypesWeighted;
 // --- Core archetype definitions
 const HERO_ARCHETYPES = exports.HERO_ARCHETYPES = {
   Warrior: {
@@ -680,6 +683,17 @@ function mergeArchetypes(typeA, typeB) {
       merged[key] = (a[key] + b[key]) / 2;
     }
   }
+  merged._mergedFrom = [typeA, typeB];
+  return merged;
+}
+
+// not used now
+function mergeArchetypesWeighted(typeA, typeB, weightA = 0.7) {
+  const a = HERO_ARCHETYPES[typeA];
+  const b = HERO_ARCHETYPES[typeB];
+  const wB = 1 - weightA;
+  const merged = {};
+  for (const key in a) if (typeof a[key] === "number" && typeof b[key] === "number") merged[key] = a[key] * weightA + b[key] * wB;
   merged._mergedFrom = [typeA, typeB];
   return merged;
 }
@@ -1169,16 +1183,7 @@ let MYSTICORE = new _world.default({
     MYSTICORE.mapLoader = new _mapLoader.MEMapLoader(MYSTICORE, "./res/meshes/nav-mesh/navmesh.json");
 
     // LOCAL HERO
-    MYSTICORE.localHero = new _characterBase.Character(MYSTICORE, "res/meshes/glb/woman1.glb", 'hero-maria', "Warrior");
-
-    // var glbFile02 = await fetch("res/meshes/glb/monster.glb").then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, MYSTICORE.device)));
-    // MYSTICORE.addGlbObj({
-    //   material: {type: 'power', useTextureFromGlb: true},
-    //   scale: [20, 20, 20],
-    //   position: {x: -40, y: -4, z: -70},
-    //   name: 'firstGlb',
-    //   texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
-    // }, null, glbFile02);
+    MYSTICORE.localHero = new _characterBase.Character(MYSTICORE, "res/meshes/glb/woman1.glb", 'MariaSword', HERO_PROFILES.MariaSword.baseArchetypes);
   });
   MYSTICORE.addLight();
 });
@@ -23870,6 +23875,10 @@ class MEMeshObj extends _materials.default {
         this.updateMeshListBuffers();
       }
     });
+
+    // TEST - OPTIONS
+    let pf = navigator.gpu.getPreferredCanvasFormat();
+    this.effects.trail = new TrailEffect(device, pf, true);
   }
   setupPipeline = () => {
     this.createBindGroupForRender();

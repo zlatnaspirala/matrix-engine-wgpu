@@ -589,6 +589,12 @@ export default class MEMeshObj extends Materials {
         this.updateMeshListBuffers();
       }
     })
+
+
+    // TEST - OPTIONS
+    let pf = navigator.gpu.getPreferredCanvasFormat();
+    this.effects.trail = new TrailEffect(device, pf, true);
+
   }
 
   setupPipeline = () => {

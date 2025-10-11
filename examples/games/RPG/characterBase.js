@@ -6,25 +6,27 @@ export class Character extends Hero {
 
   positionThrust = 0.85;
 
-  constructor(MYSTICORE, path, name = 'hero-maria', archetype = "Support") {
-    super(name, archetype);
+  constructor(MYSTICORE, path, name = 'hero-maria', archetypes = ["Warrior", "Mage"]) {
+    super(name, archetypes);
     this.name = name;
     this.core = MYSTICORE;
     this.heroe_bodies = [];
     this.loadLocalHero(path);
     this.setupHUDForHero(name);
+    // standard effect plugins
+    this.effects = {};
   }
 
-  setupHUDForHero (name) {
-    if (name == 'hero-maria') {
+  setupHUDForHero(name) {
+    if(name == 'hero-maria') {
       byId('magic-slot-0').style.background = 'url("./res/textures/rpg/magics/maria-sword-1.png")';
-      byId('magic-slot-0').style.backgroundRepeat ="round";
+      byId('magic-slot-0').style.backgroundRepeat = "round";
       byId('magic-slot-1').style.background = 'url("./res/textures/rpg/magics/maria-sword-2.png")';
-      byId('magic-slot-1').style.backgroundRepeat ="round";
+      byId('magic-slot-1').style.backgroundRepeat = "round";
       byId('magic-slot-2').style.background = 'url("./res/textures/rpg/magics/maria-sword-3.png")';
-      byId('magic-slot-2').style.backgroundRepeat ="round";
+      byId('magic-slot-2').style.backgroundRepeat = "round";
       byId('magic-slot-3').style.background = 'url("./res/textures/rpg/magics/maria-sword-4.png")';
-      byId('magic-slot-3').style.backgroundRepeat ="round";
+      byId('magic-slot-3').style.backgroundRepeat = "round";
     }
   }
 
