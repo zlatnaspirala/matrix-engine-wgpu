@@ -12,11 +12,13 @@ export class TrailEffect {
   _initPipeline() {
     //------------------------
     // Vertex data: simple quad
+
+    let S = 10;
     const vertexData = new Float32Array([
-      -0.5, 0.5, 0.0,  // top-left
-       0.5, 0.5, 0.0,  // top-right
-      -0.5,-0.5, 0.0,  // bottom-left
-       0.5,-0.5, 0.0,  // bottom-right
+      -0.5*S, 0.5*S, 0.0*S,  // top-left
+       0.5*S, 0.5*S, 0.0*S,  // top-right
+      -0.1*S,-0.1*S, 0.0*S,  // bottom-left
+       0.1*S,-0.1*S, 0.0*S,  // bottom-right
     ]);
 
     const uvData = new Float32Array([

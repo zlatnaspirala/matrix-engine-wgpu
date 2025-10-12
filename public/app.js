@@ -259,13 +259,15 @@ class TrailEffect {
   _initPipeline() {
     //------------------------
     // Vertex data: simple quad
-    const vertexData = new Float32Array([-0.5, 0.5, 0.0,
+
+    let S = 10;
+    const vertexData = new Float32Array([-0.5 * S, 0.5 * S, 0.0 * S,
     // top-left
-    0.5, 0.5, 0.0,
+    0.5 * S, 0.5 * S, 0.0 * S,
     // top-right
-    -0.5, -0.5, 0.0,
+    -0.1 * S, -0.1 * S, 0.0 * S,
     // bottom-left
-    0.5, -0.5, 0.0 // bottom-right
+    0.1 * S, -0.1 * S, 0.0 * S // bottom-right
     ]);
     const uvData = new Float32Array([0, 0, 1, 0, 0, 1, 1, 1]);
     const indexData = new Uint16Array([0, 2, 1, 1, 2, 3]);
@@ -27862,11 +27864,9 @@ class MatrixEngineWGPU {
         const trail = mesh.effects.trail;
         // var t = mesh.getModelMatrix(mesh.position)
         // mat4.transpose(t, t); // temporary test
-        const objPos = mesh.position; // should be {x,y,z}
-        // create model matrix for trail
+        const objPos = mesh.position;
         const modelMatrix = _wgpuMatrix.mat4.identity();
-        _wgpuMatrix.mat4.translate(modelMatrix, [objPos.x, objPos.y, objPos.z], modelMatrix);
-        // draw the trail at object position
+        _wgpuMatrix.mat4.translate(modelMatrix, [objPos.x, objPos.y + 60, objPos.z], modelMatrix);
         trail.draw(transPass, viewProjMatrix, modelMatrix);
       }
       transPass.end();

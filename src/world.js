@@ -540,14 +540,11 @@ export default class MatrixEngineWGPU {
         const trail = mesh.effects.trail;
         // var t = mesh.getModelMatrix(mesh.position)
         // mat4.transpose(t, t); // temporary test
-        const objPos = mesh.position; // should be {x,y,z}
-        // create model matrix for trail
+        const objPos = mesh.position;
         const modelMatrix = mat4.identity();
-        mat4.translate(modelMatrix, [objPos.x, objPos.y, objPos.z], modelMatrix);
-        // draw the trail at object position
+        mat4.translate(modelMatrix, [objPos.x, objPos.y + 60, objPos.z], modelMatrix);
         trail.draw(transPass, viewProjMatrix, modelMatrix);
       }
-
 
       transPass.end();
       this.device.queue.submit([commandEncoder.finish()]);
