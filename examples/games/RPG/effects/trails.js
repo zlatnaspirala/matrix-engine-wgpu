@@ -1,238 +1,140 @@
 import {mat4} from "wgpu-matrix";
 import {trailVertex} from "../../../../src/shaders/standalone/trail.vertex";
-// import {trailFragment} from "../../../../src/shaders/standalone/trail.fragment";
+// bith vert and fragment
 
 export class TrailEffect {
   constructor(device, format, mesh, useBlending = true) {
-    this.parentMesh = mesh;
     this.device = device;
     this.format = format;
+    this.mesh = mesh;
     this.useBlending = useBlending;
-
-    this.vertexBuffer = mesh.vertexBuffer;
-
-    this._initPipeline(mesh.modelUniformBuffer);
-    this._initBuffers();
-    this._initTrailData();
+    this.maxGhosts = 1;
+    this.ghosts = [];
+    this.ghostSpawnInterval = 0.56;
+    this.lastGhostTime = 0;
+    this.fadeLength = 20.5;
+    this._initPipeline();
   }
 
-  async _initPipeline(modelUniformBuffer) {
-    // BOTH FRAGMENT ALSO 
+  async _initPipeline() {
     const shaderModule = this.device.createShaderModule({code: trailVertex});
 
-    // --- Camera + Trail uniforms ---
     this.cameraBuffer = this.device.createBuffer({
       size: 64,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
 
-    this.trailParamsBuffer = this.device.createBuffer({
-      size: 32, // vec4 + 3 floats (padded)
+    this.modelBuffer = this.device.createBuffer({
+      size: 64, // must be 256 bytes
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
 
-    this.indexBuffer = this.parentMesh.indexBuffer;
-    this.indexCount = this.parentMesh.indexCount;
+    this.trailParamsBuffer = this.device.createBuffer({
+      size: 32,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+    });
 
     const bindGroupLayout = this.device.createBindGroupLayout({
-      label: "bindGroupLayout for trails",
       entries: [
-        {binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {}}, // camera
+        {binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {}},
         {binding: 1, visibility: GPUShaderStage.VERTEX, buffer: {}},
-        {binding: 2, visibility: GPUShaderStage.FRAGMENT | GPUShaderStage.VERTEX, buffer: {}}
-      ],
-    });
-
-    this.modelBuffer = this.device.createBuffer({
-      label: "modelBuffer for trails",
-      size: 64,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+        {binding: 2, visibility: GPUShaderStage.FRAGMENT | GPUShaderStage.VERTEX, buffer: {}},
+      ]
     });
 
     this.bindGroup = this.device.createBindGroup({
-      label: "bindGroup for trails",
       layout: bindGroupLayout,
       entries: [
         {binding: 0, resource: {buffer: this.cameraBuffer}},
-        {binding: 1, resource: {buffer: modelUniformBuffer}},
+        // {binding: 1, resource: {buffer: this.modelBuffer}},
+        {binding: 1, resource: {buffer: this.mesh.modelUniformBuffer}},
         {binding: 2, resource: {buffer: this.trailParamsBuffer}},
-      ],
+      ]
     });
 
-    const blendConfig = undefined;
-    // const blendConfig = {
+    const pipelineLayout = this.device.createPipelineLayout({bindGroupLayouts: [bindGroupLayout]});
+
+    // const blend = {
     //   color: {srcFactor: 'one', dstFactor: 'one', operation: 'add'},
     //   alpha: {srcFactor: 'one', dstFactor: 'one', operation: 'add'},
     // };
-
-    const pipelineLayout = this.device.createPipelineLayout({
-      label: "pipelineLayout for trails",
-      bindGroupLayouts: [bindGroupLayout],
-    });
+    const blend = {
+      color: {srcFactor: 'one', dstFactor: 'zero', operation: 'add'},
+      alpha: {srcFactor: 'one', dstFactor: 'zero', operation: 'add'},
+    };
 
     this.pipeline = this.device.createRenderPipeline({
-      label: "pipeline for trails",
       layout: pipelineLayout,
       vertex: {
         module: shaderModule,
-        entryPoint: "vsMain",
+        entryPoint: 'vsMain',
         buffers: [
+          // vertex buffer 0 = positions
           {
-            arrayStride: 5 * 4, // 5 floats per vertex
+            arrayStride: Float32Array.BYTES_PER_ELEMENT * 3,
             attributes: [
               {shaderLocation: 0, offset: 0, format: "float32x3"}, // position
-              {shaderLocation: 1, offset: 3 * 4, format: "float32x2"}, // uv
-            ],
+            ]
           },
-        ],
+          // vertex buffer 1 = UVs
+          {
+            arrayStride: Float32Array.BYTES_PER_ELEMENT * 2,
+            attributes: [
+              {shaderLocation: 1, offset: 0, format: "float32x2"}, // uv
+            ]
+          }
+        ]
       },
       fragment: {
         module: shaderModule,
-        entryPoint: "fsMain",
-        targets: [
-          {
-            format: this.format,
-            blend: blendConfig,
-          },
-        ],
+        entryPoint: 'fsMain',
+        targets: [{format: this.format, blend}]
       },
-      primitive: {
-        topology: "triangle-list",// "triangle-strip",
-      },
-      depthStencil: {
-        depthWriteEnabled: false,
-        depthCompare: "always",
-        format: "depth24plus",
-      },
+      primitive: {topology: 'triangle-list'},
+      depthStencil: {depthWriteEnabled: true, depthCompare: 'always', format: 'depth24plus'},
     });
-
-
-
   }
 
-  _initBuffers() {
-    // Simple trail geometry (quad strip)
-    // const vertices = new Float32Array([
-    //   // x, y, z,   u, v
-    //   -0.1, 0, 0, 0, 0,
-    //   0.1, 0, 0, 1, 0,
-    //   -0.1, 0, 1, 0, 1,
-    //   0.1, 0, 1, 1, 1,
-    // ]);
-    // const vertices = new Float32Array([
-    //   -0.5, -0.5, 0, 0, 0,
-    //   0.5, -0.5, 0, 1, 0,
-    //   -0.5, 0.5, 0, 0, 1,
-    //   0.5, 0.5, 0, 1, 1,
-    // ]);
-
-    // this.vertexBuffer = this.device.createBuffer({
-    //   size: vertices.byteLength,
-    //   usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
-    //   mappedAtCreation: true,
-    // });
-    // new Float32Array(this.vertexBuffer.getMappedRange()).set(vertices);
-    // this.vertexBuffer.unmap();
-
-
+  addGhost(modelMatrix, now) {
+    if(this.ghosts.length > 0 && now - this.lastGhostTime < this.ghostSpawnInterval) return;
+    this.lastGhostTime = now;
+    if(this.ghosts.length >= this.maxGhosts) this.ghosts.shift();
+    this.ghosts.push({modelMatrix: new Float32Array(modelMatrix), spawnTime: now});
   }
 
-  // 🌀 store dynamic trail points
-  _initTrailData() {
-    this.maxPoints = 32;       // max trail points
-    this.trailPoints = [];      // store positions
-    this.lastPos = [0, 0, 0];
-    this.minDist = 0.05;        // minimum movement to add new point
-    this.segmentCount = 0;      // number of quads
+  draw(pass, cameraMatrix, now) {
 
-    this.trailPoints.push([...this.lastPos]);
-  }
+    this.device.queue.writeBuffer(this.cameraBuffer, 0, cameraMatrix);
 
-  addPointIfMoved(pos) {
-    const dx = pos[0] - this.lastPos[0];
-    const dy = pos[1] - this.lastPos[1];
-    const dz = pos[2] - this.lastPos[2];
-    const distSq = dx * dx + dy * dy + dz * dz;
+    pass.setPipeline(this.pipeline);
 
-    if(distSq > this.minDist * this.minDist) {
-      this.trailPoints.push([...pos]);
-      if(this.trailPoints.length > this.maxPoints)
-        this.trailPoints.shift();
+    pass.setVertexBuffer(0, this.mesh.vertexBuffer);
+    pass.setVertexBuffer(1, this.mesh.vertexTexCoordsBuffer);
 
-      // this.lastPos = [...pos];
-        this._updateBuffers();
-    }
-  }
+        pass.setBindGroup(0, this.bindGroup);
+    pass.setIndexBuffer(this.mesh.indexBuffer, 'uint16');
+    // for(const ghost of this.ghosts){
+    // pad matrix to 256 bytes
+    // const paddedMatrix = new Float32Array(64);
+    // paddedMatrix.set(ghost.modelMatrix);
+    //  mat4.transpose(paddedMatrix, paddedMatrix);
+    // this.device.queue.writeBuffer(this.modelBuffer, 0, paddedMatrix);
+    // update trail params
+    // const trailData = new Float32Array([0, 0, 0, 0, this.fadeLength, performance.now() / 1000, performance.now() / 122, 0]);
 
-  _updateBuffers() {
-    if(this.trailPoints.length < 2) return;
 
-    let verts = [];
-    let indices = [];
-    let idx = 0;
+    const trailData = new Float32Array([
+      0, 0, 0, 0,      // padding
+      110.0,         // fadeLength
+      now,          // now
+      now*2,
+      0
+    ]);
 
-    for(let i = 0;i < this.trailPoints.length - 1;i++) {
-      const p1 = this.trailPoints[i];
-      const p2 = this.trailPoints[i + 1];
+    this.device.queue.writeBuffer(this.trailParamsBuffer, 0, trailData);
 
-      // two vertices per point pair (quad strip)
-      verts.push(
-        p1[0] - 0.05, p1[1], p1[2], 0, 0,
-        p1[0] + 0.05, p1[1], p1[2], 1, 0,
-        p2[0] - 0.05, p2[1], p2[2], 0, 1,
-        p2[0] + 0.05, p2[1], p2[2], 1, 1
-      );
+    pass.drawIndexed(this.mesh.indexCount);
+    // }
 
-      // 6 indices per quad
-      indices.push(
-        idx, idx + 1, idx + 2,
-        idx + 2, idx + 1, idx + 3
-      );
-      idx += 4;
-    }
-
-    const vertArray = new Float32Array(verts);
-    const indexArray = new Uint16Array(indices);
-
-    // --- recreate vertex buffer if needed
-    if(!this.vertexBuffer || vertArray.byteLength > this.vertexBuffer.size) {
-      this.vertexBuffer = this.device.createBuffer({
-        size: vertArray.byteLength,
-        usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
-      });
-    }
-    this.device.queue.writeBuffer(this.vertexBuffer, 0, vertArray);
-
-    // --- recreate index buffer if needed
-    if(!this.indexBuffer || indexArray.byteLength > this.indexBuffer.size) {
-      this.indexBuffer = this.device.createBuffer({
-        size: indexArray.byteLength,
-        usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST,
-      });
-    }
-    this.device.queue.writeBuffer(this.indexBuffer, 0, indexArray);
-
-    this.segmentCount = indices.length / 6; // number of quads
-  }
-
-  update(camera, time, mesh, color = [0.2, 0.7, 1.0, 1.0], fadeLength = 11.2) {
-    const viewProjMatrix = mat4.multiply(
-      camera.projectionMatrix,
-      camera.view,
-      mat4.create(),
-    );
-    // this.device.queue.writeBuffer(this.modelUniformBuffer, 0, mesh.modelMatrix);
-    this.device.queue.writeBuffer(this.cameraBuffer, 0, viewProjMatrix);
-    // Update trail params
-    const data = new Float32Array([...color, fadeLength, time, 0, 0]);
-    this.device.queue.writeBuffer(this.trailParamsBuffer, 0, data.buffer);
-  }
-
-  // 🔄 Switch blend ON/OFF dynamically
-  toggleBlend(useBlend) {
-    if(this.useBlending !== useBlend) {
-      this.useBlending = useBlend;
-      this._initPipeline(); // rebuild pipeline with new blend config
-    }
   }
 }

@@ -8,68 +8,62 @@ struct Model {
 };
 @group(0) @binding(1) var<uniform> model : Model;
 
-// layout: vec3 color, float alpha, float time, float length, padding (packed to 32 bytes)
 struct TrailUniform {
-  color : vec3<f32>,
-  alpha : f32,
-  time  : f32,
-  length: f32,
-  _pad  : f32, // pad to 32 bytes (optional)
+  _pad0     : vec4<f32>,
+  fadeLength: f32,
+  now       : f32,
+  startTime : f32,
+  _pad1     : f32,
 };
 @group(0) @binding(2) var<uniform> trail : TrailUniform;
 
-// vertex input
+ 
 struct VertexInput {
-  @location(0) position : vec3<f32>, // local-space vertex (already placed in world-space or local)
-  @location(1) uv       : vec2<f32>, // uv.x = along (0..1), uv.y = side/taper (0..1)
+  @location(0) position : vec3<f32>,
+  @location(1) uv       : vec2<f32>,
 };
 
-// vertex -> fragment
+
 struct VSOut {
   @builtin(position) Position : vec4<f32>,
-  @location(0) v_uv          : vec2<f32>,
-  @location(1) v_worldPos    : vec3<f32>,
+  @location(0) v_uv : vec2<f32>,
+  @location(1) v_age: f32,
 };
 
 @vertex
 fn vsMain(input : VertexInput) -> VSOut {
   var out : VSOut;
 
-  // apply model -> world
-  // let worldPos4 = model.modelMatrix * vec4<f32>(input.position, 1.0);
-  let worldPos4 = vec4<f32>(input.position, 1.0);
-  let worldPos3 = worldPos4.xyz;
+  // multiply vertex by ghost model matrix
+  let worldPos = model.modelMatrix * vec4<f32>(input.position, 1.0);
 
-  // final clip-space position
-  out.Position = camera.viewProjMatrix * worldPos4;
-
+  out.Position = camera.viewProjMatrix * worldPos;
   out.v_uv = input.uv;
-  out.v_worldPos = worldPos3;
+  out.v_age = trail.now - trail.startTime;
 
   return out;
 }
 
 @fragment
-fn fsMain(in: VSOut) -> @location(0) vec4<f32> {
-  // basic along-segment fade (uv.x = 0 head -> 1 tail)
-  let along = in.v_uv.x;
-  let side  = in.v_uv.y; // 0..1 across ribbon
+fn fsMain(input: VSOut) -> @location(0) vec4<f32> {
+  // let age = input.v_age;
+  // let fadeTime = clamp(1.0 - (age / trail.fadeLength), 0.0, 1.0);
 
-  // fade exponent - tweak to taste
-  let lengthFade = pow(1.0 - clamp(along, 0.0, 1.0), 1.6);
+  let age = input.v_age; // now - spawnTime
+let fadeTime = clamp(1.0 - age / trail.fadeLength, 0.0, 1.0);
 
-  // radial/taper across ribbon (center brighter, edges softer)
-  // assume uv.y 0..1 where 0.5 is center; adapt if your uv mapping differs
-  let centerDist = abs(side - 0.5) * 2.0; // 0 at center, 1 at edge
-  let sideFade = smoothstep(1.0, 0.0, centerDist); // soft falloff to edges
+  let along = input.v_uv.x;
+  let lengthFade = pow(1.0 - clamp(along, 0.0, 1.0), 1.4);
 
-  // optional time-based pulse
-  let pulse = 0.5 + 0.5 * sin(trail.time * 6.0);
+  let side = input.v_uv.y;
+  let centerDist = abs(side - 0.5) * 2.0;
+  let sideFade = smoothstep(1.0, 0.0, centerDist);
 
-  // final color and alpha
-  let col = trail.color * (lengthFade * sideFade * (pulse * 0.7 + 0.3));
-  let a = trail.alpha * lengthFade * sideFade;
+  let baseColor = vec3<f32>(0.2, 0.7, 1.0);
+  // let fade = fadeTime * lengthFade * sideFade;
+  // return vec4<f32>(baseColor * fade, fade);
 
-  // return emissive RGBA (for additive blending pipeline)
-  return vec4<f32>(col, a);
+  let fade = lengthFade * sideFade; // no fadeTime
+  //  return vec4<f32>(baseColor * fade, fade);
+    return vec4<f32>(0.2, 0.7, 1.0, 1.0); // solid color
 }`;

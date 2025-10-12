@@ -530,22 +530,25 @@ export default class MatrixEngineWGPU {
       };
       const transPass = commandEncoder.beginRenderPass(transPassDesc);
 
+      // before loop: compute now & lifetime
+      now = performance.now() / 1000;
+      const ghostLifetime = 2.2; // seconds
+      const viewProjMatrix = mat4.multiply(this.cameras.WASD.projectionMatrix, this.cameras.WASD.view, mat4.create());
+
       for(const mesh of this.mainRenderBundle) {
-        if(mesh.effects && mesh.effects.trail) {
-          mesh.effects.trail.addPointIfMoved([mesh.position.x, mesh.position.y, mesh.position.z]);
-          mesh.effects.trail.update(this.cameras.WASD, now, mesh);
+        if(!(mesh.effects && mesh.effects.trail)) continue;
+        const trail = mesh.effects.trail;
+        // var t = mesh.getModelMatrix(mesh.position)
+        // mat4.transpose(t, t); // temporary test
+        const t = mesh.getModelMatrix(mesh.position); // new array
+        const ghostMatrix = new Float32Array(t);      // clone values
+        // mat4.transpose(ghostMatrix, ghostMatrix);
+        trail.addGhost( ghostMatrix, now)
+        trail.draw(transPass, t,now);
 
-          transPass.setPipeline(mesh.effects.trail.pipeline);
-          transPass.setBindGroup(0, mesh.effects.trail.bindGroup);
-          transPass.setVertexBuffer(0, mesh.effects.trail.vertexBuffer);
-          transPass.setIndexBuffer(mesh.effects.trail.indexBuffer, 'uint16');
-          transPass.drawIndexed(mesh.effects.trail.indexCount, 1, 0, 0, 0);
-
-          // mesh.effects.trail.draw(transPass)
-        }
+        trail.ghosts = trail.ghosts.filter(g => now - g.spawnTime <= ghostLifetime);
       }
       transPass.end();
-
       this.device.queue.submit([commandEncoder.finish()]);
       requestAnimationFrame(this.frame);
     } catch(err) {
