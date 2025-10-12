@@ -372,10 +372,10 @@ class TrailEffect {
       }
     });
   }
-  draw(pass, cameraMatrix) {
+  draw(pass, cameraMatrix, modelMatrix) {
     // Write uniforms
     this.device.queue.writeBuffer(this.cameraBuffer, 0, cameraMatrix);
-    this.device.queue.writeBuffer(this.modelBuffer, 0, new Float32Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]));
+    this.device.queue.writeBuffer(this.modelBuffer, 0, modelMatrix);
 
     // Draw
     pass.setPipeline(this.pipeline);
@@ -27856,16 +27856,18 @@ class MatrixEngineWGPU {
       // before loop: compute now & lifetime
       // now = performance.now() / 1000;
       // const ghostLifetime = 2.2; // seconds
-      const viewProjMatrix = _wgpuMatrix.mat4.multiply(this.cameras.WASD.projectionMatrix, this.cameras.WASD.view, _wgpuMatrix.mat4.create());
+      const viewProjMatrix = _wgpuMatrix.mat4.multiply(this.cameras.WASD.projectionMatrix, this.cameras.WASD.view, _wgpuMatrix.mat4.identity());
       for (const mesh of this.mainRenderBundle) {
         if (!(mesh.effects && mesh.effects.trail)) continue;
         const trail = mesh.effects.trail;
         // var t = mesh.getModelMatrix(mesh.position)
         // mat4.transpose(t, t); // temporary test
-        // const t = mesh.getModelMatrix(mesh.position); // new array
-        // const ghostMatrix = new Float32Array(t);      // clone values
-        //  mat4.transpose(ghostMatrix, viewProjMatrix);
-        trail.draw(transPass, viewProjMatrix);
+        const objPos = mesh.position; // should be {x,y,z}
+        // create model matrix for trail
+        const modelMatrix = _wgpuMatrix.mat4.identity();
+        _wgpuMatrix.mat4.translate(modelMatrix, [objPos.x, objPos.y, objPos.z], modelMatrix);
+        // draw the trail at object position
+        trail.draw(transPass, viewProjMatrix, modelMatrix);
       }
       transPass.end();
       this.device.queue.submit([commandEncoder.finish()]);

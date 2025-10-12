@@ -99,15 +99,10 @@ export class TrailEffect {
     });
   }
 
-  draw(pass, cameraMatrix) {
+  draw(pass, cameraMatrix, modelMatrix) {
     // Write uniforms
     this.device.queue.writeBuffer(this.cameraBuffer, 0, cameraMatrix);
-    this.device.queue.writeBuffer(this.modelBuffer, 0, new Float32Array([
-      1,0,0,0,
-      0,1,0,0,
-      0,0,1,0,
-      0,0,0,1
-    ]));
+    this.device.queue.writeBuffer(this.modelBuffer, 0, modelMatrix);
 
     // Draw
     pass.setPipeline(this.pipeline);

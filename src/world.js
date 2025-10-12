@@ -533,19 +533,22 @@ export default class MatrixEngineWGPU {
       // before loop: compute now & lifetime
       // now = performance.now() / 1000;
       // const ghostLifetime = 2.2; // seconds
-      const viewProjMatrix = mat4.multiply(this.cameras.WASD.projectionMatrix, this.cameras.WASD.view, mat4.create());
+      const viewProjMatrix = mat4.multiply(this.cameras.WASD.projectionMatrix, this.cameras.WASD.view, mat4.identity());
 
       for(const mesh of this.mainRenderBundle) {
         if(!(mesh.effects && mesh.effects.trail)) continue;
         const trail = mesh.effects.trail;
         // var t = mesh.getModelMatrix(mesh.position)
         // mat4.transpose(t, t); // temporary test
-        // const t = mesh.getModelMatrix(mesh.position); // new array
-        // const ghostMatrix = new Float32Array(t);      // clone values
-        //  mat4.transpose(ghostMatrix, viewProjMatrix);
-        trail.draw(transPass, viewProjMatrix);
- 
+        const objPos = mesh.position; // should be {x,y,z}
+        // create model matrix for trail
+        const modelMatrix = mat4.identity();
+        mat4.translate(modelMatrix, [objPos.x, objPos.y, objPos.z], modelMatrix);
+        // draw the trail at object position
+        trail.draw(transPass, viewProjMatrix, modelMatrix);
       }
+
+
       transPass.end();
       this.device.queue.submit([commandEncoder.finish()]);
       requestAnimationFrame(this.frame);
