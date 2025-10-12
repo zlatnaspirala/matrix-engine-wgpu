@@ -1,6 +1,6 @@
 import {uploadGLBModel} from "../../../src/engine/loaders/webgpu-gltf";
 import {byId} from "../../../src/engine/utils";
-import {Hero} from "./hero";
+import {Hero, HERO_PROFILES} from "./hero";
 
 export class Character extends Hero {
 

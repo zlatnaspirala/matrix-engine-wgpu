@@ -249,39 +249,56 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.TrailEffect = void 0;
 var _wgpuMatrix = require("wgpu-matrix");
-var _trail = require("../../../../src/shaders/standalone/trail.vertex");
-// bith vert and fragment
-
+var _trailVertex = require("../../../../src/shaders/standalone/trail.vertex.js");
 class TrailEffect {
-  constructor(device, format, mesh, useBlending = true) {
+  constructor(device, format) {
     this.device = device;
     this.format = format;
-    this.mesh = mesh;
-    this.useBlending = useBlending;
-    this.maxGhosts = 1;
-    this.ghosts = [];
-    this.ghostSpawnInterval = 0.56;
-    this.lastGhostTime = 0;
-    this.fadeLength = 20.5;
     this._initPipeline();
   }
-  async _initPipeline() {
-    const shaderModule = this.device.createShaderModule({
-      code: _trail.trailVertex
+  _initPipeline() {
+    //------------------------
+    // Vertex data: simple quad
+    const vertexData = new Float32Array([-0.5, 0.5, 0.0,
+    // top-left
+    0.5, 0.5, 0.0,
+    // top-right
+    -0.5, -0.5, 0.0,
+    // bottom-left
+    0.5, -0.5, 0.0 // bottom-right
+    ]);
+    const uvData = new Float32Array([0, 0, 1, 0, 0, 1, 1, 1]);
+    const indexData = new Uint16Array([0, 2, 1, 1, 2, 3]);
+
+    // GPU buffers
+    this.vertexBuffer = this.device.createBuffer({
+      size: vertexData.byteLength,
+      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
     });
+    this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
+    this.uvBuffer = this.device.createBuffer({
+      size: uvData.byteLength,
+      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
+    });
+    this.device.queue.writeBuffer(this.uvBuffer, 0, uvData);
+    this.indexBuffer = this.device.createBuffer({
+      size: Math.ceil(indexData.byteLength / 4) * 4,
+      usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST
+    });
+    this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
+    this.indexCount = indexData.length;
+
+    // Uniforms: camera & model
     this.cameraBuffer = this.device.createBuffer({
       size: 64,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
     this.modelBuffer = this.device.createBuffer({
       size: 64,
-      // must be 256 bytes
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
-    this.trailParamsBuffer = this.device.createBuffer({
-      size: 32,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
+
+    // Bind group layout
     const bindGroupLayout = this.device.createBindGroupLayout({
       entries: [{
         binding: 0,
@@ -290,10 +307,6 @@ class TrailEffect {
       }, {
         binding: 1,
         visibility: GPUShaderStage.VERTEX,
-        buffer: {}
-      }, {
-        binding: 2,
-        visibility: GPUShaderStage.FRAGMENT | GPUShaderStage.VERTEX,
         buffer: {}
       }]
     });
@@ -304,73 +317,49 @@ class TrailEffect {
         resource: {
           buffer: this.cameraBuffer
         }
-      },
-      // {binding: 1, resource: {buffer: this.modelBuffer}},
-      {
+      }, {
         binding: 1,
         resource: {
-          buffer: this.mesh.modelUniformBuffer
-        }
-      }, {
-        binding: 2,
-        resource: {
-          buffer: this.trailParamsBuffer
+          buffer: this.modelBuffer
         }
       }]
     });
+
+    // Shader
+    const shaderModule = this.device.createShaderModule({
+      code: _trailVertex.trailVertex
+    });
+
+    // Pipeline
     const pipelineLayout = this.device.createPipelineLayout({
       bindGroupLayouts: [bindGroupLayout]
     });
-
-    // const blend = {
-    //   color: {srcFactor: 'one', dstFactor: 'one', operation: 'add'},
-    //   alpha: {srcFactor: 'one', dstFactor: 'one', operation: 'add'},
-    // };
-    const blend = {
-      color: {
-        srcFactor: 'one',
-        dstFactor: 'zero',
-        operation: 'add'
-      },
-      alpha: {
-        srcFactor: 'one',
-        dstFactor: 'zero',
-        operation: 'add'
-      }
-    };
     this.pipeline = this.device.createRenderPipeline({
       layout: pipelineLayout,
       vertex: {
         module: shaderModule,
         entryPoint: 'vsMain',
-        buffers: [
-        // vertex buffer 0 = positions
-        {
-          arrayStride: Float32Array.BYTES_PER_ELEMENT * 3,
+        buffers: [{
+          arrayStride: 3 * 4,
           attributes: [{
             shaderLocation: 0,
             offset: 0,
-            format: "float32x3"
-          } // position
-          ]
-        },
-        // vertex buffer 1 = UVs
-        {
-          arrayStride: Float32Array.BYTES_PER_ELEMENT * 2,
+            format: 'float32x3'
+          }]
+        }, {
+          arrayStride: 2 * 4,
           attributes: [{
             shaderLocation: 1,
             offset: 0,
-            format: "float32x2"
-          } // uv
-          ]
+            format: 'float32x2'
+          }]
         }]
       },
       fragment: {
         module: shaderModule,
         entryPoint: 'fsMain',
         targets: [{
-          format: this.format,
-          blend
+          format: this.format
         }]
       },
       primitive: {
@@ -383,46 +372,23 @@ class TrailEffect {
       }
     });
   }
-  addGhost(modelMatrix, now) {
-    if (this.ghosts.length > 0 && now - this.lastGhostTime < this.ghostSpawnInterval) return;
-    this.lastGhostTime = now;
-    if (this.ghosts.length >= this.maxGhosts) this.ghosts.shift();
-    this.ghosts.push({
-      modelMatrix: new Float32Array(modelMatrix),
-      spawnTime: now
-    });
-  }
-  draw(pass, cameraMatrix, now) {
+  draw(pass, cameraMatrix) {
+    // Write uniforms
     this.device.queue.writeBuffer(this.cameraBuffer, 0, cameraMatrix);
-    pass.setPipeline(this.pipeline);
-    pass.setVertexBuffer(0, this.mesh.vertexBuffer);
-    pass.setVertexBuffer(1, this.mesh.vertexTexCoordsBuffer);
-    pass.setBindGroup(0, this.bindGroup);
-    pass.setIndexBuffer(this.mesh.indexBuffer, 'uint16');
-    // for(const ghost of this.ghosts){
-    // pad matrix to 256 bytes
-    // const paddedMatrix = new Float32Array(64);
-    // paddedMatrix.set(ghost.modelMatrix);
-    //  mat4.transpose(paddedMatrix, paddedMatrix);
-    // this.device.queue.writeBuffer(this.modelBuffer, 0, paddedMatrix);
-    // update trail params
-    // const trailData = new Float32Array([0, 0, 0, 0, this.fadeLength, performance.now() / 1000, performance.now() / 122, 0]);
+    this.device.queue.writeBuffer(this.modelBuffer, 0, new Float32Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]));
 
-    const trailData = new Float32Array([0, 0, 0, 0,
-    // padding
-    110.0,
-    // fadeLength
-    now,
-    // now
-    now * 2, 0]);
-    this.device.queue.writeBuffer(this.trailParamsBuffer, 0, trailData);
-    pass.drawIndexed(this.mesh.indexCount);
-    // }
+    // Draw
+    pass.setPipeline(this.pipeline);
+    pass.setBindGroup(0, this.bindGroup);
+    pass.setVertexBuffer(0, this.vertexBuffer);
+    pass.setVertexBuffer(1, this.uvBuffer);
+    pass.setIndexBuffer(this.indexBuffer, 'uint16');
+    pass.drawIndexed(this.indexCount);
   }
 }
 exports.TrailEffect = TrailEffect;
 
-},{"../../../../src/shaders/standalone/trail.vertex":46,"wgpu-matrix":23}],4:[function(require,module,exports){
+},{"../../../../src/shaders/standalone/trail.vertex.js":46,"wgpu-matrix":23}],4:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -26862,7 +26828,9 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.trailVertex = void 0;
-const trailVertex = exports.trailVertex = `struct Camera {
+const trailVertex = exports.trailVertex = `
+
+struct Camera {
   viewProjMatrix : mat4x4<f32>,
 };
 @group(0) @binding(0) var<uniform> camera : Camera;
@@ -26872,64 +26840,28 @@ struct Model {
 };
 @group(0) @binding(1) var<uniform> model : Model;
 
-struct TrailUniform {
-  _pad0     : vec4<f32>,
-  fadeLength: f32,
-  now       : f32,
-  startTime : f32,
-  _pad1     : f32,
-};
-@group(0) @binding(2) var<uniform> trail : TrailUniform;
-
- 
 struct VertexInput {
   @location(0) position : vec3<f32>,
   @location(1) uv       : vec2<f32>,
 };
 
-
 struct VSOut {
   @builtin(position) Position : vec4<f32>,
   @location(0) v_uv : vec2<f32>,
-  @location(1) v_age: f32,
 };
 
 @vertex
 fn vsMain(input : VertexInput) -> VSOut {
   var out : VSOut;
-
-  // multiply vertex by ghost model matrix
-  let worldPos = model.modelMatrix * vec4<f32>(input.position, 1.0);
-
+  let worldPos = model.modelMatrix * vec4<f32>(input.position,1.0);
   out.Position = camera.viewProjMatrix * worldPos;
   out.v_uv = input.uv;
-  out.v_age = trail.now - trail.startTime;
-
   return out;
 }
 
 @fragment
-fn fsMain(input: VSOut) -> @location(0) vec4<f32> {
-  // let age = input.v_age;
-  // let fadeTime = clamp(1.0 - (age / trail.fadeLength), 0.0, 1.0);
-
-  let age = input.v_age; // now - spawnTime
-let fadeTime = clamp(1.0 - age / trail.fadeLength, 0.0, 1.0);
-
-  let along = input.v_uv.x;
-  let lengthFade = pow(1.0 - clamp(along, 0.0, 1.0), 1.4);
-
-  let side = input.v_uv.y;
-  let centerDist = abs(side - 0.5) * 2.0;
-  let sideFade = smoothstep(1.0, 0.0, centerDist);
-
-  let baseColor = vec3<f32>(0.2, 0.7, 1.0);
-  // let fade = fadeTime * lengthFade * sideFade;
-  // return vec4<f32>(baseColor * fade, fade);
-
-  let fade = lengthFade * sideFade; // no fadeTime
-  //  return vec4<f32>(baseColor * fade, fade);
-    return vec4<f32>(0.2, 0.7, 1.0, 1.0); // solid color
+fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
+  return vec4<f32>(0.2,0.7,1.0,1.0);
 }`;
 
 },{}],47:[function(require,module,exports){
@@ -27922,20 +27854,18 @@ class MatrixEngineWGPU {
       const transPass = commandEncoder.beginRenderPass(transPassDesc);
 
       // before loop: compute now & lifetime
-      now = performance.now() / 1000;
-      const ghostLifetime = 2.2; // seconds
+      // now = performance.now() / 1000;
+      // const ghostLifetime = 2.2; // seconds
       const viewProjMatrix = _wgpuMatrix.mat4.multiply(this.cameras.WASD.projectionMatrix, this.cameras.WASD.view, _wgpuMatrix.mat4.create());
       for (const mesh of this.mainRenderBundle) {
         if (!(mesh.effects && mesh.effects.trail)) continue;
         const trail = mesh.effects.trail;
         // var t = mesh.getModelMatrix(mesh.position)
         // mat4.transpose(t, t); // temporary test
-        const t = mesh.getModelMatrix(mesh.position); // new array
-        const ghostMatrix = new Float32Array(t); // clone values
-        // mat4.transpose(ghostMatrix, ghostMatrix);
-        trail.addGhost(ghostMatrix, now);
-        trail.draw(transPass, t, now);
-        trail.ghosts = trail.ghosts.filter(g => now - g.spawnTime <= ghostLifetime);
+        // const t = mesh.getModelMatrix(mesh.position); // new array
+        // const ghostMatrix = new Float32Array(t);      // clone values
+        //  mat4.transpose(ghostMatrix, viewProjMatrix);
+        trail.draw(transPass, viewProjMatrix);
       }
       transPass.end();
       this.device.queue.submit([commandEncoder.finish()]);

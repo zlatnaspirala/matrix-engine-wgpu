@@ -1,44 +1,68 @@
 import {mat4} from "wgpu-matrix";
-import {trailVertex} from "../../../../src/shaders/standalone/trail.vertex";
-// bith vert and fragment
+import { trailVertex } from "../../../../src/shaders/standalone/trail.vertex.js"; 
+
 
 export class TrailEffect {
-  constructor(device, format, mesh, useBlending = true) {
+  constructor(device, format) {
     this.device = device;
     this.format = format;
-    this.mesh = mesh;
-    this.useBlending = useBlending;
-    this.maxGhosts = 1;
-    this.ghosts = [];
-    this.ghostSpawnInterval = 0.56;
-    this.lastGhostTime = 0;
-    this.fadeLength = 20.5;
     this._initPipeline();
   }
 
-  async _initPipeline() {
-    const shaderModule = this.device.createShaderModule({code: trailVertex});
+  _initPipeline() {
+    //------------------------
+    // Vertex data: simple quad
+    const vertexData = new Float32Array([
+      -0.5, 0.5, 0.0,  // top-left
+       0.5, 0.5, 0.0,  // top-right
+      -0.5,-0.5, 0.0,  // bottom-left
+       0.5,-0.5, 0.0,  // bottom-right
+    ]);
 
+    const uvData = new Float32Array([
+      0,0, 1,0, 0,1, 1,1
+    ]);
+
+    const indexData = new Uint16Array([
+      0,2,1,
+      1,2,3
+    ]);
+
+    // GPU buffers
+    this.vertexBuffer = this.device.createBuffer({
+      size: vertexData.byteLength,
+      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
+    });
+    this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
+
+    this.uvBuffer = this.device.createBuffer({
+      size: uvData.byteLength,
+      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
+    });
+    this.device.queue.writeBuffer(this.uvBuffer, 0, uvData);
+
+    this.indexBuffer = this.device.createBuffer({
+      size: Math.ceil(indexData.byteLength / 4) * 4,
+      usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST
+    });
+    this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
+    this.indexCount = indexData.length;
+
+    // Uniforms: camera & model
     this.cameraBuffer = this.device.createBuffer({
       size: 64,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
-
     this.modelBuffer = this.device.createBuffer({
-      size: 64, // must be 256 bytes
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+      size: 64,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
 
-    this.trailParamsBuffer = this.device.createBuffer({
-      size: 32,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-    });
-
+    // Bind group layout
     const bindGroupLayout = this.device.createBindGroupLayout({
       entries: [
         {binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {}},
         {binding: 1, visibility: GPUShaderStage.VERTEX, buffer: {}},
-        {binding: 2, visibility: GPUShaderStage.FRAGMENT | GPUShaderStage.VERTEX, buffer: {}},
       ]
     });
 
@@ -46,95 +70,51 @@ export class TrailEffect {
       layout: bindGroupLayout,
       entries: [
         {binding: 0, resource: {buffer: this.cameraBuffer}},
-        // {binding: 1, resource: {buffer: this.modelBuffer}},
-        {binding: 1, resource: {buffer: this.mesh.modelUniformBuffer}},
-        {binding: 2, resource: {buffer: this.trailParamsBuffer}},
+        {binding: 1, resource: {buffer: this.modelBuffer}},
       ]
     });
 
+    // Shader
+    const shaderModule = this.device.createShaderModule({code: trailVertex});
+
+    // Pipeline
     const pipelineLayout = this.device.createPipelineLayout({bindGroupLayouts: [bindGroupLayout]});
-
-    // const blend = {
-    //   color: {srcFactor: 'one', dstFactor: 'one', operation: 'add'},
-    //   alpha: {srcFactor: 'one', dstFactor: 'one', operation: 'add'},
-    // };
-    const blend = {
-      color: {srcFactor: 'one', dstFactor: 'zero', operation: 'add'},
-      alpha: {srcFactor: 'one', dstFactor: 'zero', operation: 'add'},
-    };
-
     this.pipeline = this.device.createRenderPipeline({
       layout: pipelineLayout,
       vertex: {
         module: shaderModule,
         entryPoint: 'vsMain',
         buffers: [
-          // vertex buffer 0 = positions
-          {
-            arrayStride: Float32Array.BYTES_PER_ELEMENT * 3,
-            attributes: [
-              {shaderLocation: 0, offset: 0, format: "float32x3"}, // position
-            ]
-          },
-          // vertex buffer 1 = UVs
-          {
-            arrayStride: Float32Array.BYTES_PER_ELEMENT * 2,
-            attributes: [
-              {shaderLocation: 1, offset: 0, format: "float32x2"}, // uv
-            ]
-          }
+          {arrayStride: 3*4, attributes:[{shaderLocation:0,offset:0,format:'float32x3'}]},
+          {arrayStride: 2*4, attributes:[{shaderLocation:1,offset:0,format:'float32x2'}]}
         ]
       },
       fragment: {
         module: shaderModule,
         entryPoint: 'fsMain',
-        targets: [{format: this.format, blend}]
+        targets: [{format: this.format}]
       },
-      primitive: {topology: 'triangle-list'},
-      depthStencil: {depthWriteEnabled: true, depthCompare: 'always', format: 'depth24plus'},
+      primitive: {topology:'triangle-list'},
+      depthStencil: {depthWriteEnabled:true, depthCompare:'always', format:'depth24plus'}
     });
   }
 
-  addGhost(modelMatrix, now) {
-    if(this.ghosts.length > 0 && now - this.lastGhostTime < this.ghostSpawnInterval) return;
-    this.lastGhostTime = now;
-    if(this.ghosts.length >= this.maxGhosts) this.ghosts.shift();
-    this.ghosts.push({modelMatrix: new Float32Array(modelMatrix), spawnTime: now});
-  }
-
-  draw(pass, cameraMatrix, now) {
-
+  draw(pass, cameraMatrix) {
+    // Write uniforms
     this.device.queue.writeBuffer(this.cameraBuffer, 0, cameraMatrix);
+    this.device.queue.writeBuffer(this.modelBuffer, 0, new Float32Array([
+      1,0,0,0,
+      0,1,0,0,
+      0,0,1,0,
+      0,0,0,1
+    ]));
 
+    // Draw
     pass.setPipeline(this.pipeline);
-
-    pass.setVertexBuffer(0, this.mesh.vertexBuffer);
-    pass.setVertexBuffer(1, this.mesh.vertexTexCoordsBuffer);
-
-        pass.setBindGroup(0, this.bindGroup);
-    pass.setIndexBuffer(this.mesh.indexBuffer, 'uint16');
-    // for(const ghost of this.ghosts){
-    // pad matrix to 256 bytes
-    // const paddedMatrix = new Float32Array(64);
-    // paddedMatrix.set(ghost.modelMatrix);
-    //  mat4.transpose(paddedMatrix, paddedMatrix);
-    // this.device.queue.writeBuffer(this.modelBuffer, 0, paddedMatrix);
-    // update trail params
-    // const trailData = new Float32Array([0, 0, 0, 0, this.fadeLength, performance.now() / 1000, performance.now() / 122, 0]);
-
-
-    const trailData = new Float32Array([
-      0, 0, 0, 0,      // padding
-      110.0,         // fadeLength
-      now,          // now
-      now*2,
-      0
-    ]);
-
-    this.device.queue.writeBuffer(this.trailParamsBuffer, 0, trailData);
-
-    pass.drawIndexed(this.mesh.indexCount);
-    // }
-
+    pass.setBindGroup(0, this.bindGroup);
+    pass.setVertexBuffer(0, this.vertexBuffer);
+    pass.setVertexBuffer(1, this.uvBuffer);
+    pass.setIndexBuffer(this.indexBuffer, 'uint16');
+    pass.drawIndexed(this.indexCount);
   }
 }
