@@ -1,7 +1,7 @@
 import MEBvh from "bvh-loader";
 import {mat4, vec3, quat} from "wgpu-matrix";
 import {GLTFBuffer} from "./webgpu-gltf.js";
-import MEMeshObjInstances from "../mesh-obj-instances.js";
+import MEMeshObjInstances from "../instanced/mesh-obj-instances.js";
 
 // export var animBVH = new MEBvh();
 

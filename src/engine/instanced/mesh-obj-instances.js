@@ -1,13 +1,13 @@
 import {mat4, vec3} from 'wgpu-matrix';
-import {Position, Rotation} from "./matrix-class";
-import {vertexWGSL} from '../shaders/vertex.wgsl';
-import {degToRad, genName, LOG_FUNNY_SMALL} from './utils';
-import Materials from './materials';
-import {fragmentVideoWGSL} from '../shaders/fragment.video.wgsl';
-import {vertexWGSL_NM} from '../shaders/vertex.wgsl.normalmap';
-import {PointerEffect} from './effects/pointerEffect';
+import {Position, Rotation} from "../matrix-class";
+import {degToRad, genName, LOG_FUNNY_SMALL} from '../utils';
+import {fragmentVideoWGSL} from '../../shaders/fragment.video.wgsl';
+import {vertexWGSL_NM} from '../../shaders/vertex.wgsl.normalmap';
+import {PointerEffect} from '../effects/pointerEffect';
+import MaterialsInstanced from './materials-instanced';
+import {vertexWGSLInstanced} from '../../shaders/instanced/vertex.instanced.wgsl';
 
-export default class MEMeshObjInstances extends Materials {
+export default class MEMeshObjInstances extends MaterialsInstanced {
   constructor(canvas, device, context, o, inputHandler, globalAmbient, _glbFile = null, primitiveIndex = null, skinnedNodeIndex = null) {
     super(device, o.material, _glbFile);
     if(typeof o.name === 'undefined') o.name = genName(3);
@@ -623,7 +623,7 @@ export default class MEMeshObjInstances extends Materials {
       vertex: {
         entryPoint: 'main',
         module: this.device.createShaderModule({
-          code: (this.material.type == 'normalmap') ? vertexWGSL_NM : vertexWGSL,
+          code: (this.material.type == 'normalmap') ? vertexWGSL_NM : vertexWGSLInstanced,
         }),
         buffers: this.vertexBuffers,
       },
@@ -752,7 +752,7 @@ export default class MEMeshObjInstances extends Materials {
     pass.setVertexBuffer(1, this.vertexNormalsBuffer);
     pass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
     if(this.joints) {
-      if(this.constructor.name === "BVHPlayer") {
+      if(this.constructor.name === "BVHPlayer" || this.constructor.name === "BVHPlayerInstances") {
         pass.setVertexBuffer(3, this.mesh.jointsBuffer);  // real
         pass.setVertexBuffer(4, this.mesh.weightsBuffer); //real
       } else {
