@@ -424,52 +424,54 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
       this.createLayoutForRender();
 
 
-      // EDIT 
+      // EDIT INSTANCED PART
+
+      this.instanceTargets = [];    // per-instance target transforms
+      this.lerpSpeed = 1; // tweak for smoothness
+
       this.maxInstances = 5;
       this.instanceCount = 2;
       const floatsPerInstance = 16 + 4;
+
+      for(var x = 0;x < this.maxInstances;x++) {
+        this.instanceTargets.push({
+          index: x,
+          position : [0,0,0],
+          scale:[1,1,1],
+          color: [0.6, 0.8, 1.0, 0.4]
+        })
+      }
+
       this.instanceData = new Float32Array(this.instanceCount * floatsPerInstance);
       this.instanceBuffer = device.createBuffer({
         size: this.instanceData.byteLength,
         usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
       });
 
-      // Keep individual model matrices for easier manipulation
-      this.modelMatrices = Array.from({length: this.maxInstances}, () =>
-        mat4.identity()
-      );
 
       this.updateInstanceData = (modelMatrix) => {
         // original
         this.instanceData.set(modelMatrix, 0);
         this.instanceData.set([1, 1, 1, 1], 16); // normal color
-
         // ghost
-        const ghost = new Float32Array(modelMatrix);
-        ghost[0] *= 1.02; ghost[5] *= 1.02; ghost[10] *= 1.02; ghost[14] += 0.05;
-        this.instanceData.set(ghost, 20);
-        this.instanceData.set([0.6, 0.8, 1.0, 0.4], 36); // blue translucent
+        for(var i = 1;i < this.instanceCount;i++) {
+          const ghost = new Float32Array(modelMatrix);
+          //scale
+          ghost[0] *= this.instanceTargets[i].scale[0]; 
+          ghost[5] *= this.instanceTargets[i].scale[1]; 
+          ghost[10] *= this.instanceTargets[i].scale[2]; 
 
+          ghost[12] += this.instanceTargets[i].position[0];  // X offset
+          ghost[13] += this.instanceTargets[i].position[1];  // Y offset
+          ghost[14] += this.instanceTargets[i].position[2];  // Z offset
+          this.instanceData.set(ghost, 20 * i);
+          this.instanceData.set(this.instanceTargets[i], 36); // blue translucent
+        }
         device.queue.writeBuffer(this.instanceBuffer, 0, this.instanceData);
       }
 
       //
-      this.updateInstance = (modelMatrix, index=0, color = [1, 1, 1, 1]) => {
-        if(index < 0 || index >= this.maxInstances) return;
-
-        const stride = 20; // 16 floats for mat4 + 4 floats for color
-        const offset = stride * index;
-
-        // Write matrix
-        this.instanceData.set(modelMatrix, offset);
-
-        // Write color
-        this.instanceData.set(color, offset + 16);
-
-        // Push to GPU
-        device.queue.writeBuffer(this.instanceBuffer, 0, this.instanceData);
-      }
-      //
+      // end of instanced
       this.modelUniformBuffer = this.device.createBuffer({
         size: 4 * 16, // 4x4 matrix
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,

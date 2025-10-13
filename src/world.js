@@ -461,6 +461,9 @@ export default class MatrixEngineWGPU {
       }
       if(this.matrixAmmo) this.matrixAmmo.updatePhysics();
 
+      
+      let now, deltaTime;
+
       for(let i = 0;i < this.lightContainer.length;i++) {
         const light = this.lightContainer[i];
         let ViewPerLightRenderShadowPass = this.shadowTextureArray.createView({
@@ -482,10 +485,12 @@ export default class MatrixEngineWGPU {
           }
         });
 
+        now = performance.now() / 1000; // seconds
         // shadowPass.setPipeline(light.shadowPipeline);
         for(const [meshIndex, mesh] of this.mainRenderBundle.entries()) {
           if(mesh instanceof BVHPlayerInstances) {
             mesh.updateInstanceData(mesh.getModelMatrix(mesh.position))
+            // mesh.updateInstances(now);
             shadowPass.setPipeline(light.shadowPipelineInstanced);
           } else {
             // must be base meshObj
@@ -512,7 +517,7 @@ export default class MatrixEngineWGPU {
       this.mainRenderPassDesc.colorAttachments[0].view = currentTextureView;
       let pass = commandEncoder.beginRenderPass(this.mainRenderPassDesc);
       // Loop over each mesh
-      let now, deltaTime;
+
       for(const mesh of this.mainRenderBundle) {
         if(mesh.update) {
           now = performance.now() / 1000; // seconds
