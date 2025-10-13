@@ -536,11 +536,11 @@ export default class MEMeshObj extends Materials {
 
       if(this.pointerEffect.enabled === true) {
         let pf = navigator.gpu.getPreferredCanvasFormat();
-        this.effects.trail = new PointerEffect(device, pf, this, true);
+        this.effects.pointer = new PointerEffect(device, pf, this, true);
       }
 
       // end
-
+      
       // Rotates the camera around the origin based on time.
       this.getTransformationMatrix = (mainRenderBundle, spotLight, index) => {
         const now = Date.now();

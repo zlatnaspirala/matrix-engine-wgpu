@@ -23990,7 +23990,7 @@ class MEMeshObj extends _materials.default {
       this.effects = {};
       if (this.pointerEffect.enabled === true) {
         let pf = navigator.gpu.getPreferredCanvasFormat();
-        this.effects.trail = new _pointerEffect.PointerEffect(device, pf, this, true);
+        this.effects.pointer = new _pointerEffect.PointerEffect(device, pf, this, true);
       }
 
       // end
@@ -27359,7 +27359,7 @@ class MatrixEngineWGPU {
       }
     };
 
-    // trail effect
+    // pointer effect
     //  new
     const depthTexture = this.device.createTexture({
       size: [this.canvas.width, this.canvas.height],
@@ -27870,12 +27870,12 @@ class MatrixEngineWGPU {
       const transPass = commandEncoder.beginRenderPass(transPassDesc);
       const viewProjMatrix = _wgpuMatrix.mat4.multiply(this.cameras.WASD.projectionMatrix, this.cameras.WASD.view, _wgpuMatrix.mat4.identity());
       for (const mesh of this.mainRenderBundle) {
-        if (!(mesh.effects && mesh.effects.trail)) continue;
-        const trail = mesh.effects.trail;
+        if (!(mesh.effects && mesh.effects.pointer)) continue;
+        const pointer = mesh.effects.pointer;
         const objPos = mesh.position;
         const modelMatrix = _wgpuMatrix.mat4.identity();
         _wgpuMatrix.mat4.translate(modelMatrix, [objPos.x, objPos.y + 60, objPos.z], modelMatrix);
-        trail.draw(transPass, viewProjMatrix, modelMatrix);
+        pointer.draw(transPass, viewProjMatrix, modelMatrix);
       }
       transPass.end();
       this.device.queue.submit([commandEncoder.finish()]);
