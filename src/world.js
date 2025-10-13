@@ -529,24 +529,17 @@ export default class MatrixEngineWGPU {
         depthStencilAttachment: {view: this.depthTextureViewTrail, depthLoadOp: 'load', depthStoreOp: 'store'}
       };
       const transPass = commandEncoder.beginRenderPass(transPassDesc);
-
-      // before loop: compute now & lifetime
-      // now = performance.now() / 1000;
-      // const ghostLifetime = 2.2; // seconds
       const viewProjMatrix = mat4.multiply(this.cameras.WASD.projectionMatrix, this.cameras.WASD.view, mat4.identity());
-
       for(const mesh of this.mainRenderBundle) {
         if(!(mesh.effects && mesh.effects.trail)) continue;
         const trail = mesh.effects.trail;
-        // var t = mesh.getModelMatrix(mesh.position)
-        // mat4.transpose(t, t); // temporary test
         const objPos = mesh.position;
         const modelMatrix = mat4.identity();
         mat4.translate(modelMatrix, [objPos.x, objPos.y + 60, objPos.z], modelMatrix);
         trail.draw(transPass, viewProjMatrix, modelMatrix);
       }
-
       transPass.end();
+
       this.device.queue.submit([commandEncoder.finish()]);
       requestAnimationFrame(this.frame);
     } catch(err) {

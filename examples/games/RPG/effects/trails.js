@@ -1,8 +1,7 @@
 import {mat4} from "wgpu-matrix";
 import { trailVertex } from "../../../../src/shaders/standalone/trail.vertex.js"; 
 
-
-export class TrailEffect {
+export class PointerEffect {
   constructor(device, format) {
     this.device = device;
     this.format = format;
@@ -10,9 +9,7 @@ export class TrailEffect {
   }
 
   _initPipeline() {
-    //------------------------
     // Vertex data: simple quad
-
     let S = 10;
     const vertexData = new Float32Array([
       -0.5*S, 0.5*S, 0.0*S,  // top-left

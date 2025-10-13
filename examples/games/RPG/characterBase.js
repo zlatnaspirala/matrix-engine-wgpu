@@ -13,8 +13,6 @@ export class Character extends Hero {
     this.heroe_bodies = [];
     this.loadLocalHero(path);
     this.setupHUDForHero(name);
-    // standard effect plugins
-    // this.effects = {};
   }
 
   setupHUDForHero(name) {

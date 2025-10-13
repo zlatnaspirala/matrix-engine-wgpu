@@ -1,4 +1,5 @@
 import {downloadMeshes} from "../../../src/engine/loader-obj.js";
+import {LOG_FUNNY_SMALL} from "../../../src/engine/utils.js";
 import NavMesh from "./nav-mesh.js";
 
 export class MEMapLoader {
@@ -20,7 +21,7 @@ export class MEMapLoader {
   constructor(MYSTICORE, navMapPath) {
     this.core = MYSTICORE;
     this.loadNavMesh(navMapPath).then((e) => {
-      console.log('navMap loaded...', e);
+      console.log(`%cnavMap loaded.${e}`, LOG_FUNNY_SMALL);
       this.core.RPG.nav = e;
       this.loadMainMap(); // <-- FIXED
     });

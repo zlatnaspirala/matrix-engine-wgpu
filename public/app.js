@@ -17,8 +17,6 @@ class Character extends _hero.Hero {
     this.heroe_bodies = [];
     this.loadLocalHero(path);
     this.setupHUDForHero(name);
-    // standard effect plugins
-    // this.effects = {};
   }
   setupHUDForHero(name) {
     if (name == 'hero-maria') {
@@ -247,19 +245,17 @@ exports.Controller = Controller;
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.TrailEffect = void 0;
+exports.PointerEffect = void 0;
 var _wgpuMatrix = require("wgpu-matrix");
 var _trailVertex = require("../../../../src/shaders/standalone/trail.vertex.js");
-class TrailEffect {
+class PointerEffect {
   constructor(device, format) {
     this.device = device;
     this.format = format;
     this._initPipeline();
   }
   _initPipeline() {
-    //------------------------
     // Vertex data: simple quad
-
     let S = 10;
     const vertexData = new Float32Array([-0.5 * S, 0.5 * S, 0.0 * S,
     // top-left
@@ -388,7 +384,7 @@ class TrailEffect {
     pass.drawIndexed(this.indexCount);
   }
 }
-exports.TrailEffect = TrailEffect;
+exports.PointerEffect = PointerEffect;
 
 },{"../../../../src/shaders/standalone/trail.vertex.js":46,"wgpu-matrix":23}],4:[function(require,module,exports){
 "use strict";
@@ -399,7 +395,11 @@ Object.defineProperty(exports, "__esModule", {
 exports.HeroProps = exports.Hero = exports.HERO_PROFILES = exports.HERO_ARCHETYPES = void 0;
 exports.mergeArchetypes = mergeArchetypes;
 exports.mergeArchetypesWeighted = mergeArchetypesWeighted;
-// --- Core archetype definitions
+/**
+ * @description
+ * Hero based classes
+ * Core of RPG type of game.
+ */
 const HERO_ARCHETYPES = exports.HERO_ARCHETYPES = {
   Warrior: {
     hpMult: 1.2,
@@ -776,8 +776,6 @@ class HeroProps {
     return this.upgradeAbility(spellIndex);
   }
 }
-
-// --- Extend base HeroProps
 exports.HeroProps = HeroProps;
 class Hero extends HeroProps {
   constructor(name, archetypes = ["Warrior"]) {
@@ -1221,6 +1219,7 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.MEMapLoader = void 0;
 var _loaderObj = require("../../../src/engine/loader-obj.js");
+var _utils = require("../../../src/engine/utils.js");
 var _navMesh = _interopRequireDefault(require("./nav-mesh.js"));
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 class MEMapLoader {
@@ -1242,7 +1241,7 @@ class MEMapLoader {
   constructor(MYSTICORE, navMapPath) {
     this.core = MYSTICORE;
     this.loadNavMesh(navMapPath).then(e => {
-      console.log('navMap loaded...', e);
+      console.log(`%cnavMap loaded.${e}`, _utils.LOG_FUNNY_SMALL);
       this.core.RPG.nav = e;
       this.loadMainMap(); // <-- FIXED
     });
@@ -1289,7 +1288,7 @@ class MEMapLoader {
 }
 exports.MEMapLoader = MEMapLoader;
 
-},{"../../../src/engine/loader-obj.js":29,"./nav-mesh.js":8}],7:[function(require,module,exports){
+},{"../../../src/engine/loader-obj.js":29,"../../../src/engine/utils.js":36,"./nav-mesh.js":8}],7:[function(require,module,exports){
 "use strict";
 
 var _world = _interopRequireDefault(require("../../../src/world.js"));
@@ -23991,7 +23990,7 @@ class MEMeshObj extends _materials.default {
       this.effects = {};
       if (this.trails.enabled === true) {
         let pf = navigator.gpu.getPreferredCanvasFormat();
-        this.effects.trail = new _trails.TrailEffect(device, pf, this, true);
+        this.effects.trail = new _trails.PointerEffect(device, pf, this, true);
       }
 
       // end
@@ -26831,7 +26830,6 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.trailVertex = void 0;
 const trailVertex = exports.trailVertex = `
-
 struct Camera {
   viewProjMatrix : mat4x4<f32>,
 };
@@ -27854,16 +27852,10 @@ class MatrixEngineWGPU {
         }
       };
       const transPass = commandEncoder.beginRenderPass(transPassDesc);
-
-      // before loop: compute now & lifetime
-      // now = performance.now() / 1000;
-      // const ghostLifetime = 2.2; // seconds
       const viewProjMatrix = _wgpuMatrix.mat4.multiply(this.cameras.WASD.projectionMatrix, this.cameras.WASD.view, _wgpuMatrix.mat4.identity());
       for (const mesh of this.mainRenderBundle) {
         if (!(mesh.effects && mesh.effects.trail)) continue;
         const trail = mesh.effects.trail;
-        // var t = mesh.getModelMatrix(mesh.position)
-        // mat4.transpose(t, t); // temporary test
         const objPos = mesh.position;
         const modelMatrix = _wgpuMatrix.mat4.identity();
         _wgpuMatrix.mat4.translate(modelMatrix, [objPos.x, objPos.y + 60, objPos.z], modelMatrix);

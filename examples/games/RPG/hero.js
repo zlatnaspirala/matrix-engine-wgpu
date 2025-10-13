@@ -1,4 +1,8 @@
-// --- Core archetype definitions
+/**
+ * @description
+ * Hero based classes
+ * Core of RPG type of game.
+ */
 export const HERO_ARCHETYPES = {
   Warrior: {
     hpMult: 1.2,
@@ -265,7 +269,6 @@ export class HeroProps {
   }
 }
 
-// --- Extend base HeroProps
 export class Hero extends HeroProps {
   constructor(name, archetypes = ["Warrior"]) {
     super(name);
