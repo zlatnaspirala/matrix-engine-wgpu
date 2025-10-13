@@ -30,5 +30,21 @@ fn vsMain(input : VertexInput) -> VSOut {
 
 @fragment
 fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
-  return vec4<f32>(0.2,0.7,1.0,1.0);
+  // Center the UVs (0.0–1.0 → -1.0–1.0)
+  let uv = input.v_uv * 2.0 - vec2<f32>(1.0, 1.0);
+
+  // Distance from center
+  let dist = length(uv);
+
+  // Glow falloff
+  let glow = exp(-dist * 1.0); // try values 3.0–6.0 for tighter glow
+
+  // Gradient color (inner bright → outer dim)
+  let baseColor = vec3<f32>(0.2, 0.7, 1.0);
+  let glowColor = vec3<f32>(0.7, 0.9, 1.0);
+
+  // Blend based on glow strength
+  let color = mix(baseColor, glowColor, glow) * glow;
+
+  return vec4<f32>(color, 1.0);
 }`;
