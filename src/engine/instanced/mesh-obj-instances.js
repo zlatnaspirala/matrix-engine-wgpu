@@ -427,19 +427,22 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
       // EDIT INSTANCED PART
 
       this.instanceTargets = [];    // per-instance target transforms
-      this.lerpSpeed = 1; // tweak for smoothness
+      this.lerpSpeed = 0.05; // tweak for smoothness
 
       this.maxInstances = 5;
       this.instanceCount = 2;
       const floatsPerInstance = 16 + 4;
 
-      for(var x = 0;x < this.maxInstances;x++) {
+
+      for(let x = 0;x < this.maxInstances;x++) {
         this.instanceTargets.push({
           index: x,
-          position : [0,0,0],
-          scale:[1,1,1],
-          color: [0.6, 0.8, 1.0, 0.4]
-        })
+          position: [0, 0, 0],
+          currentPosition: [0, 0, 0],
+          scale: [1, 1, 1],
+          currentScale: [1, 1, 1],
+          color: [0.6, 0.8, 1.0, 0.4],
+        });
       }
 
       this.instanceData = new Float32Array(this.instanceCount * floatsPerInstance);
@@ -450,25 +453,38 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
 
 
       this.updateInstanceData = (modelMatrix) => {
-        // original
+        // original (base instance)
         this.instanceData.set(modelMatrix, 0);
-        this.instanceData.set([1, 1, 1, 1], 16); // normal color
-        // ghost
-        for(var i = 1;i < this.instanceCount;i++) {
-          const ghost = new Float32Array(modelMatrix);
-          //scale
-          ghost[0] *= this.instanceTargets[i].scale[0]; 
-          ghost[5] *= this.instanceTargets[i].scale[1]; 
-          ghost[10] *= this.instanceTargets[i].scale[2]; 
+        this.instanceData.set([1, 1, 1, 1], 16);
 
-          ghost[12] += this.instanceTargets[i].position[0];  // X offset
-          ghost[13] += this.instanceTargets[i].position[1];  // Y offset
-          ghost[14] += this.instanceTargets[i].position[2];  // Z offset
-          this.instanceData.set(ghost, 20 * i);
-          this.instanceData.set(this.instanceTargets[i], 36); // blue translucent
+        // instanced clones
+        for(let i = 1;i < this.instanceCount;i++) {
+          const t = this.instanceTargets[i];
+          const ghost = new Float32Array(modelMatrix);
+
+          // --- Smooth interpolate position
+          for(let j = 0;j < 3;j++) {
+            t.currentPosition[j] += (t.position[j] - t.currentPosition[j]) * this.lerpSpeed;
+            t.currentScale[j] += (t.scale[j] - t.currentScale[j]) * this.lerpSpeed;
+          }
+
+          // Apply smoothed transforms
+          ghost[0] *= t.currentScale[0];
+          ghost[5] *= t.currentScale[1];
+          ghost[10] *= t.currentScale[2];
+
+          ghost[12] += t.currentPosition[0]; // X
+          ghost[13] += t.currentPosition[1]; // Y
+          ghost[14] += t.currentPosition[2]; // Z
+
+          // Write instance matrix + color
+          const offset = 20 * i;
+          this.instanceData.set(ghost, offset);
+          this.instanceData.set(t.color, offset + 16);
         }
+
         device.queue.writeBuffer(this.instanceBuffer, 0, this.instanceData);
-      }
+      };
 
       //
       // end of instanced
