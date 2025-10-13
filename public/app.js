@@ -1196,7 +1196,7 @@ let MYSTICORE = new _world.default({
 // just for dev
 window.app = MYSTICORE;
 
-},{"../../../src/world.js":56,"./characterBase.js":1,"./controller.js":2,"./hero.js":3,"./hud.js":4,"./map-loader.js":5}],7:[function(require,module,exports){
+},{"../../../src/world.js":57,"./characterBase.js":1,"./controller.js":2,"./hero.js":3,"./hud.js":4,"./map-loader.js":5}],7:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -19857,7 +19857,7 @@ class MEBall {
 }
 exports.default = MEBall;
 
-},{"../shaders/shaders":50,"./engine":27,"./matrix-class":36,"wgpu-matrix":22}],24:[function(require,module,exports){
+},{"../shaders/shaders":51,"./engine":27,"./matrix-class":36,"wgpu-matrix":22}],24:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -20320,7 +20320,7 @@ class MECube {
 }
 exports.default = MECube;
 
-},{"../shaders/shaders":50,"./engine":27,"./matrix-class":36,"wgpu-matrix":22}],26:[function(require,module,exports){
+},{"../shaders/shaders":51,"./engine":27,"./matrix-class":36,"wgpu-matrix":22}],26:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -20475,7 +20475,7 @@ class PointerEffect {
 }
 exports.PointerEffect = PointerEffect;
 
-},{"../../shaders/standalone/pointer.effect.js":51,"wgpu-matrix":22}],27:[function(require,module,exports){
+},{"../../shaders/standalone/pointer.effect.js":52,"wgpu-matrix":22}],27:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -21435,11 +21435,13 @@ var _wgpuMatrix = require("wgpu-matrix");
 var _matrixClass = require("../matrix-class");
 var _utils = require("../utils");
 var _fragmentVideo = require("../../shaders/fragment.video.wgsl");
-var _vertexWgsl = require("../../shaders/vertex.wgsl.normalmap");
 var _pointerEffect = require("../effects/pointerEffect");
 var _materialsInstanced = _interopRequireDefault(require("./materials-instanced"));
 var _vertexInstanced = require("../../shaders/instanced/vertex.instanced.wgsl");
+var _bvhInstaced = require("../loaders/bvh-instaced");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
+// import {vertexWGSL_NM} from '../../shaders/vertex.wgsl.normalmap';
+
 class MEMeshObjInstances extends _materialsInstanced.default {
   constructor(canvas, device, context, o, inputHandler, globalAmbient, _glbFile = null, primitiveIndex = null, skinnedNodeIndex = null) {
     super(device, o.material, _glbFile);
@@ -21620,26 +21622,10 @@ class MEMeshObjInstances extends _materialsInstanced.default {
         this.mesh.tangentsBuffer.unmap();
         console.warn("GLTF primitive has no TANGENT attribute (normal map won’t work properly).");
       }
-
-      // if(this.material.useTextureFromGlb == true) {
-      //   console.log('get glb images ', _glbFile.glbJsonData.materials);
-      //   _glbFile.glbJsonData.materials.forEach(material => {
-      //     console.log('get material :', material);
-      //   });
-
-      //   _glbFile.glbJsonData.images.forEach(imgGpuTexture => {
-      //     console.log('get images :', imgGpuTexture);
-      //   });
-
-      //   _glbFile.glbJsonData.glbTextures.forEach(glbTexture => {
-      //     console.log('get glbTextures :', glbTexture);
-      //   });
-      // }
     } else {
-      // obj files flow
       this.mesh.uvs = this.mesh.textures;
     }
-    console.log(`%c Mesh loaded: ${o.name}`, _utils.LOG_FUNNY_SMALL);
+    console.log(`%cMesh: ${o.name}`, _utils.LOG_FUNNY_SMALL);
     // ObjSequence animation
     if (typeof o.objAnim !== 'undefined' && o.objAnim != null) {
       this.objAnim = o.objAnim;
@@ -21775,23 +21761,6 @@ class MEMeshObjInstances extends _materialsInstanced.default {
           shaderLocation: 4
         }]
       };
-      let tang = null;
-
-      // if(this.mesh.feedFromRealGlb && this.mesh.feedFromRealGlb == true) {
-      //   // console.log('it is GLB ')
-      //   glbInfo = {
-      //     arrayStride: 4 * 4, // vec4<f32> = 4 * 4 bytes
-      //     attributes: [{format: 'float32x4', offset: 0, shaderLocation: 4}]
-      //   }
-      // } else {
-      //   // console.log('it is not  GLB ')
-      //   glbInfo = {
-      //     arrayStride: 4 * 4, // vec4<f32> = 4 * 4 bytes
-      //     attributes: [{format: 'float32x4', offset: 0, shaderLocation: 4}]
-      //   }
-      // }
-      // Create some common descriptors used for both the shadow pipeline
-      // and the color rendering pipeline.
       this.vertexBuffers = [{
         arrayStride: Float32Array.BYTES_PER_ELEMENT * 3,
         attributes: [{
@@ -21832,7 +21801,6 @@ class MEMeshObjInstances extends _materialsInstanced.default {
       if (this.mesh.tangentsBuffer) {
         this.vertexBuffers.push({
           arrayStride: 4 * 4,
-          // vec4<f32> = 16 bytes
           attributes: [{
             shaderLocation: 5,
             format: "float32x4",
@@ -21884,6 +21852,54 @@ class MEMeshObjInstances extends _materialsInstanced.default {
       // the texture+sampler for depth. We create it manually because the WebPU
       // implementation doesn't infer this from the shader (yet).
       this.createLayoutForRender();
+
+      // EDIT 
+      this.maxInstances = 5;
+      this.instanceCount = 2;
+      const floatsPerInstance = 16 + 4;
+      this.instanceData = new Float32Array(this.instanceCount * floatsPerInstance);
+      this.instanceBuffer = device.createBuffer({
+        size: this.instanceData.byteLength,
+        usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
+      });
+
+      // Keep individual model matrices for easier manipulation
+      this.modelMatrices = Array.from({
+        length: this.maxInstances
+      }, () => _wgpuMatrix.mat4.identity());
+      this.updateInstanceData = modelMatrix => {
+        // original
+        this.instanceData.set(modelMatrix, 0);
+        this.instanceData.set([1, 1, 1, 1], 16); // normal color
+
+        // ghost
+        const ghost = new Float32Array(modelMatrix);
+        ghost[0] *= 1.02;
+        ghost[5] *= 1.02;
+        ghost[10] *= 1.02;
+        ghost[14] += 0.05;
+        this.instanceData.set(ghost, 20);
+        this.instanceData.set([0.6, 0.8, 1.0, 0.4], 36); // blue translucent
+
+        device.queue.writeBuffer(this.instanceBuffer, 0, this.instanceData);
+      };
+
+      //
+      this.updateInstance = (modelMatrix, index = 0, color = [1, 1, 1, 1]) => {
+        if (index < 0 || index >= this.maxInstances) return;
+        const stride = 20; // 16 floats for mat4 + 4 floats for color
+        const offset = stride * index;
+
+        // Write matrix
+        this.instanceData.set(modelMatrix, offset);
+
+        // Write color
+        this.instanceData.set(color, offset + 16);
+
+        // Push to GPU
+        device.queue.writeBuffer(this.instanceBuffer, 0, this.instanceData);
+      };
+      //
       this.modelUniformBuffer = this.device.createBuffer({
         size: 4 * 16,
         // 4x4 matrix
@@ -21894,9 +21910,26 @@ class MEMeshObjInstances extends _materialsInstanced.default {
         size: 176,
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
       });
+
       // test MUST BE IF
+      this.uniformBufferBindGroupLayoutInstanced = this.device.createBindGroupLayout({
+        label: 'uniformBufferBindGroupLayout in mesh [instanced]',
+        entries: [{
+          binding: 0,
+          visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
+          buffer: {
+            type: "read-only-storage"
+          }
+        }, {
+          binding: 1,
+          visibility: GPUShaderStage.VERTEX,
+          buffer: {
+            type: 'uniform'
+          }
+        }]
+      });
       this.uniformBufferBindGroupLayout = this.device.createBindGroupLayout({
-        label: 'uniformBufferBindGroupLayout in mesh',
+        label: 'uniformBufferBindGroupLayout in mesh [regular]',
         entries: [{
           binding: 0,
           visibility: GPUShaderStage.VERTEX,
@@ -21932,10 +21965,29 @@ class MEMeshObjInstances extends _materialsInstanced.default {
       this.modelBindGroup = this.device.createBindGroup({
         label: 'modelBindGroup in mesh',
         layout: this.uniformBufferBindGroupLayout,
-        entries: [{
+        entries: [
+        //
+        {
           binding: 0,
           resource: {
             buffer: this.modelUniformBuffer
+          }
+        }, {
+          binding: 1,
+          resource: {
+            buffer: this.bonesBuffer
+          }
+        }]
+      });
+      this.modelBindGroupInstanced = this.device.createBindGroup({
+        label: 'modelBindGroup in mesh [instanced]',
+        layout: this.uniformBufferBindGroupLayoutInstanced,
+        entries: [
+        //
+        {
+          binding: 0,
+          resource: {
+            buffer: this.instanceBuffer
           }
         }, {
           binding: 1,
@@ -22008,9 +22060,15 @@ class MEMeshObjInstances extends _materialsInstanced.default {
       };
 
       // looks like affect on transformations for now const 0
-      const modelMatrix = _wgpuMatrix.mat4.translation([0, 0, 0]);
-      const modelData = modelMatrix;
-      this.device.queue.writeBuffer(this.modelUniformBuffer, 0, modelData.buffer, modelData.byteOffset, modelData.byteLength);
+      // const modelMatrix = mat4.translation([0, 0, 0]);
+      // const modelData = modelMatrix;
+      // this.device.queue.writeBuffer(
+      //   this.modelUniformBuffer,
+      //   0,
+      //   modelData.buffer,
+      //   modelData.byteOffset,
+      //   modelData.byteLength
+      // );
       this.done = true;
       try {
         this.setupPipeline();
@@ -22030,12 +22088,12 @@ class MEMeshObjInstances extends _materialsInstanced.default {
       label: 'Mesh Pipeline ✅',
       layout: this.device.createPipelineLayout({
         label: 'createPipelineLayout Mesh',
-        bindGroupLayouts: [this.bglForRender, this.uniformBufferBindGroupLayout, this.selectedBindGroupLayout]
+        bindGroupLayouts: [this.bglForRender, this.uniformBufferBindGroupLayoutInstanced, this.selectedBindGroupLayout]
       }),
       vertex: {
         entryPoint: 'main',
         module: this.device.createShaderModule({
-          code: this.material.type == 'normalmap' ? _vertexWgsl.vertexWGSL_NM : _vertexInstanced.vertexWGSLInstanced
+          code: _vertexInstanced.vertexWGSLInstanced
         }),
         buffers: this.vertexBuffers
       },
@@ -22061,10 +22119,16 @@ class MEMeshObjInstances extends _materialsInstanced.default {
     console.log('✅Set Pipeline done');
   };
   updateModelUniformBuffer = () => {
-    if (this.done == false) return;
+    // if(this.done == false) return;
     // Per-object model matrix only
-    const modelMatrix = this.getModelMatrix(this.position);
-    this.device.queue.writeBuffer(this.modelUniformBuffer, 0, modelMatrix.buffer, modelMatrix.byteOffset, modelMatrix.byteLength);
+    // const modelMatrix = this.getModelMatrix(this.position);
+    // this.device.queue.writeBuffer(
+    //   this.modelUniformBuffer,
+    //   0,
+    //   modelMatrix.buffer,
+    //   modelMatrix.byteOffset,
+    //   modelMatrix.byteLength
+    // );
   };
   createGPUBuffer(dataArray, usage) {
     if (!dataArray || typeof dataArray.length !== 'number') {
@@ -22127,18 +22191,20 @@ class MEMeshObjInstances extends _materialsInstanced.default {
     if (this.isVideo) {
       this.updateVideoTexture();
     }
-    // Bind per-mesh uniforms
-    pass.setBindGroup(0, this.sceneBindGroupForRender); // camera/light UBOs
-    pass.setBindGroup(1, this.modelBindGroup); // mesh transforms/textures
+    pass.setBindGroup(0, this.sceneBindGroupForRender);
+    if (this instanceof _bvhInstaced.BVHPlayerInstances) {
+      pass.setBindGroup(1, this.modelBindGroupInstanced);
+    } else {
+      pass.setBindGroup(1, this.modelBindGroup);
+    }
+
     // Bind each light’s shadow texture & sampler
     if (this.isVideo == false) {
-      let bindIndex = 2; // start after UBO & model
+      let bindIndex = 2;
       for (const light of lightContainer) {
         pass.setBindGroup(bindIndex++, light.getMainPassBindGroup(this));
       }
     }
-
-    // --- Selection state (new)
     if (this.selectedBindGroup) {
       pass.setBindGroup(2, this.selectedBindGroup);
     }
@@ -22150,7 +22216,6 @@ class MEMeshObjInstances extends _materialsInstanced.default {
         pass.setVertexBuffer(3, this.mesh.jointsBuffer); // real
         pass.setVertexBuffer(4, this.mesh.weightsBuffer); //real
       } else {
-        // dummy
         pass.setVertexBuffer(3, this.joints.buffer); // new dummy
         pass.setVertexBuffer(4, this.weights.buffer); // new dummy
       }
@@ -22159,7 +22224,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
       pass.setVertexBuffer(5, this.mesh.tangentsBuffer);
     }
     pass.setIndexBuffer(this.indexBuffer, 'uint16');
-    pass.drawIndexed(this.indexCount);
+    pass.drawIndexed(this.indexCount, this.instanceCount, 0, 0, 0);
   };
   drawElementsAnim = (renderPass, lightContainer) => {
     if (!this.sceneBindGroupForRender || !this.modelBindGroup) {
@@ -22204,17 +22269,21 @@ class MEMeshObjInstances extends _materialsInstanced.default {
       }
     }
   };
-  drawShadows = (shadowPass, light) => {
+  drawShadows = shadowPass => {
     shadowPass.setVertexBuffer(0, this.vertexBuffer);
     shadowPass.setVertexBuffer(1, this.vertexNormalsBuffer);
     shadowPass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
     shadowPass.setIndexBuffer(this.indexBuffer, 'uint16');
-    shadowPass.drawIndexed(this.indexCount);
+    if (this instanceof _bvhInstaced.BVHPlayerInstances) {
+      shadowPass.drawIndexed(this.indexCount, this.instanceCount, 0, 0, 0);
+    } else {
+      shadowPass.drawIndexed(this.indexCount);
+    }
   };
 }
 exports.default = MEMeshObjInstances;
 
-},{"../../shaders/fragment.video.wgsl":42,"../../shaders/instanced/vertex.instanced.wgsl":49,"../../shaders/vertex.wgsl.normalmap":53,"../effects/pointerEffect":26,"../matrix-class":36,"../utils":39,"./materials-instanced":28,"wgpu-matrix":22}],30:[function(require,module,exports){
+},{"../../shaders/fragment.video.wgsl":42,"../../shaders/instanced/vertex.instanced.wgsl":49,"../effects/pointerEffect":26,"../loaders/bvh-instaced":32,"../matrix-class":36,"../utils":39,"./materials-instanced":28,"wgpu-matrix":22}],30:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -22224,6 +22293,7 @@ exports.SpotLight = void 0;
 var _wgpuMatrix = require("wgpu-matrix");
 var _vertexShadow = require("../shaders/vertexShadow.wgsl");
 var _behavior = _interopRequireDefault(require("./behavior"));
+var _vertexShadowInstanced = require("../shaders/instanced/vertexShadow.instanced.wgsl");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 /**
  * @description
@@ -22377,15 +22447,59 @@ class SpotLight {
         }
       }]
     });
+    this.modelBindGroupLayoutInstanced = this.device.createBindGroupLayout({
+      label: 'modelBindGroupLayout in light [for skinned] [instanced]',
+      entries: [{
+        binding: 0,
+        visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
+        buffer: {
+          type: "read-only-storage"
+        }
+      }, {
+        binding: 1,
+        visibility: GPUShaderStage.VERTEX,
+        buffer: {
+          type: 'uniform'
+        }
+      }]
+    });
     this.shadowPipeline = this.device.createRenderPipeline({
       label: 'shadowPipeline per light',
       layout: this.device.createPipelineLayout({
-        label: 'createPipelineLayout - uniformBufferBindGroupLayout light',
+        label: 'createPipelineLayout - uniformBufferBindGroupLayout light [regular]',
         bindGroupLayouts: [this.uniformBufferBindGroupLayout, this.modelBindGroupLayout]
       }),
       vertex: {
         module: this.device.createShaderModule({
           code: _vertexShadow.vertexShadowWGSL
+        }),
+        buffers: [{
+          arrayStride: 12,
+          // 3 * 4 bytes (vec3f)
+          attributes: [{
+            shaderLocation: 0,
+            // must match @location(0) in vertex shader
+            offset: 0,
+            format: "float32x3"
+          }]
+        }]
+      },
+      depthStencil: {
+        depthWriteEnabled: true,
+        depthCompare: 'less',
+        format: 'depth32float'
+      },
+      primitive: this.primitive
+    });
+    this.shadowPipelineInstanced = this.device.createRenderPipeline({
+      label: 'shadowPipeline [instanced] per light',
+      layout: this.device.createPipelineLayout({
+        label: 'createPipelineLayout - uniformBufferBindGroupLayout light [instanced]',
+        bindGroupLayouts: [this.uniformBufferBindGroupLayout, this.modelBindGroupLayoutInstanced]
+      }),
+      vertex: {
+        module: this.device.createShaderModule({
+          code: _vertexShadowInstanced.vertexShadowWGSLInstanced
         }),
         buffers: [{
           arrayStride: 12,
@@ -22455,7 +22569,7 @@ class SpotLight {
 }
 exports.SpotLight = SpotLight;
 
-},{"../shaders/vertexShadow.wgsl":54,"./behavior":24,"wgpu-matrix":22}],31:[function(require,module,exports){
+},{"../shaders/instanced/vertexShadow.instanced.wgsl":50,"../shaders/vertexShadow.wgsl":55,"./behavior":24,"wgpu-matrix":22}],31:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -25751,7 +25865,7 @@ class MEMeshObj extends _materials.default {
       });
       // test MUST BE IF
       this.uniformBufferBindGroupLayout = this.device.createBindGroupLayout({
-        label: 'uniformBufferBindGroupLayout in mesh',
+        label: 'uniformBufferBindGroupLayout in mesh regular',
         entries: [{
           binding: 0,
           visibility: GPUShaderStage.VERTEX,
@@ -26069,7 +26183,7 @@ class MEMeshObj extends _materials.default {
 }
 exports.default = MEMeshObj;
 
-},{"../shaders/fragment.video.wgsl":42,"../shaders/vertex.wgsl":52,"../shaders/vertex.wgsl.normalmap":53,"./effects/pointerEffect":26,"./materials":35,"./matrix-class":36,"./utils":39,"wgpu-matrix":22}],38:[function(require,module,exports){
+},{"../shaders/fragment.video.wgsl":42,"../shaders/vertex.wgsl":53,"../shaders/vertex.wgsl.normalmap":54,"./effects/pointerEffect":26,"./materials":35,"./matrix-class":36,"./utils":39,"wgpu-matrix":22}],38:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -28839,6 +28953,7 @@ struct Scene {
   lightPos: vec3f,
 }
 
+// not in use
 struct Model {
   modelMatrix: mat4x4f,
 }
@@ -28852,8 +28967,13 @@ struct SkinResult {
   normal   : vec3f,
 };
 
+struct InstanceData {
+    model     : mat4x4<f32>,
+    colorMult : vec4<f32>,
+};
+
 @group(0) @binding(0) var<uniform> scene : Scene;
-@group(1) @binding(0) var<uniform> model : Model;
+@group(1) @binding(0) var<storage, read> instances : array<InstanceData>;
 @group(1) @binding(1) var<uniform> bones : Bones;
 
 struct VertexOutput {
@@ -28890,18 +29010,28 @@ fn main(
   @location(1) normal: vec3f,
   @location(2) uv: vec2f,
   @location(3) joints: vec4<u32>,
-  @location(4) weights: vec4<f32>
+  @location(4) weights: vec4<f32>,
+  @builtin(instance_index) instId: u32
 ) -> VertexOutput {
+
+  let inst = instances[instId];
+
   var output : VertexOutput;
   var pos = vec4(position, 1.0);
   var nrm = normal;
   let skinned = skinVertex(pos, nrm, joints, weights);
-  let worldPos = model.modelMatrix * skinned.position;
+
+
+  // let worldPos = model.modelMatrix * skinned.position;
+  let worldPos = inst.model * skinned.position;
+
+  // build normal matrix from instance transform
   let normalMatrix = mat3x3f(
-    model.modelMatrix[0].xyz,
-    model.modelMatrix[1].xyz,
-    model.modelMatrix[2].xyz
+    inst.model[0].xyz,
+    inst.model[1].xyz,
+    inst.model[2].xyz
   );
+
   output.Position = scene.cameraViewProjMatrix * worldPos;
   output.fragPos = worldPos.xyz;
   output.shadowPos = scene.lightViewProjMatrix * worldPos;
@@ -28911,6 +29041,43 @@ fn main(
 }`;
 
 },{}],50:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.vertexShadowWGSLInstanced = void 0;
+let vertexShadowWGSLInstanced = exports.vertexShadowWGSLInstanced = `struct Scene {
+  lightViewProjMatrix: mat4x4f,
+  cameraViewProjMatrix: mat4x4f,
+  lightPos: vec3f,
+}
+
+// keep it for switch on end
+struct Model {
+  modelMatrix: mat4x4f,
+}
+
+struct InstanceData {
+  model : mat4x4<f32>,
+};
+
+@group(0) @binding(0) var<uniform> scene : Scene;
+// @group(1) @binding(0) var<uniform> model : Model;
+@group(1) @binding(0) var<storage, read> instances : array<InstanceData>;
+
+@vertex
+fn main(
+  @location(0) position: vec3f,
+  @builtin(instance_index) instId: u32
+) -> @builtin(position) vec4f {
+   let worldPos = instances[instId].model * vec4(position, 1.0);
+  return scene.lightViewProjMatrix * worldPos;
+  // return scene.lightViewProjMatrix * model.modelMatrix * vec4(position, 1);
+}
+`;
+
+},{}],51:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -28968,7 +29135,7 @@ fn fragmentMain(input: VertexOutput) -> @location(0) vec4f {
   return vec4f(textureColor.rgb * lightColor, textureColor.a);
 }`;
 
-},{}],51:[function(require,module,exports){
+},{}],52:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -29026,7 +29193,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
   return vec4<f32>(color, 1.0);
 }`;
 
-},{}],52:[function(require,module,exports){
+},{}],53:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -29112,7 +29279,7 @@ fn main(
   return output;
 }`;
 
-},{}],53:[function(require,module,exports){
+},{}],54:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -29223,7 +29390,7 @@ fn main(
   return output;
 }`;
 
-},{}],54:[function(require,module,exports){
+},{}],55:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -29251,7 +29418,7 @@ fn main(
 }
 `;
 
-},{}],55:[function(require,module,exports){
+},{}],56:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -29321,7 +29488,7 @@ class MatrixSounds {
 }
 exports.MatrixSounds = MatrixSounds;
 
-},{}],56:[function(require,module,exports){
+},{}],57:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -29957,14 +30124,26 @@ class MatrixEngineWGPU {
             depthClearValue: 1.0
           }
         });
-        shadowPass.setPipeline(light.shadowPipeline);
+
+        // shadowPass.setPipeline(light.shadowPipeline);
         for (const [meshIndex, mesh] of this.mainRenderBundle.entries()) {
+          if (mesh instanceof _bvhInstaced.BVHPlayerInstances) {
+            mesh.updateInstanceData(mesh.getModelMatrix(mesh.position));
+            shadowPass.setPipeline(light.shadowPipelineInstanced);
+          } else {
+            // must be base meshObj
+            shadowPass.setPipeline(light.shadowPipeline);
+          }
           if (mesh.videoIsReady == 'NONE') {
             shadowPass.setBindGroup(0, light.getShadowBindGroup(mesh, meshIndex));
             // if(mesh.glb && mesh.glb.skinnedMeshNodes) {
             // shadowPass.setBindGroup(1, light.getShadowBindGroup_bones(meshIndex));
             // } else {
-            shadowPass.setBindGroup(1, mesh.modelBindGroup);
+            if (mesh instanceof _bvhInstaced.BVHPlayerInstances) {
+              shadowPass.setBindGroup(1, mesh.modelBindGroupInstanced);
+            } else {
+              shadowPass.setBindGroup(1, mesh.modelBindGroup);
+            }
             // }
             mesh.drawShadows(shadowPass, light);
           }
@@ -30293,4 +30472,4 @@ class MatrixEngineWGPU {
 }
 exports.default = MatrixEngineWGPU;
 
-},{"./engine/ball.js":23,"./engine/cube.js":25,"./engine/engine.js":27,"./engine/lights.js":30,"./engine/loader-obj.js":31,"./engine/loaders/bvh-instaced.js":32,"./engine/loaders/bvh.js":33,"./engine/mesh-obj.js":37,"./engine/utils.js":39,"./multilang/lang.js":40,"./physics/matrix-ammo.js":41,"./sounds/sounds.js":55,"wgpu-matrix":22}]},{},[6]);
+},{"./engine/ball.js":23,"./engine/cube.js":25,"./engine/engine.js":27,"./engine/lights.js":30,"./engine/loader-obj.js":31,"./engine/loaders/bvh-instaced.js":32,"./engine/loaders/bvh.js":33,"./engine/mesh-obj.js":37,"./engine/utils.js":39,"./multilang/lang.js":40,"./physics/matrix-ammo.js":41,"./sounds/sounds.js":56,"wgpu-matrix":22}]},{},[6]);

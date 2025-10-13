@@ -11,7 +11,9 @@ import {MatrixSounds} from "./sounds/sounds.js";
 import {play} from "./engine/loader-obj.js";
 import {SpotLight} from "./engine/lights.js";
 import {BVHPlayer} from "./engine/loaders/bvh.js";
+
 import {BVHPlayerInstances} from "./engine/loaders/bvh-instaced.js";
+
 
 /**
  * @description
@@ -480,14 +482,26 @@ export default class MatrixEngineWGPU {
           }
         });
 
-        shadowPass.setPipeline(light.shadowPipeline);
+        // shadowPass.setPipeline(light.shadowPipeline);
         for(const [meshIndex, mesh] of this.mainRenderBundle.entries()) {
+          if(mesh instanceof BVHPlayerInstances) {
+            mesh.updateInstanceData(mesh.getModelMatrix(mesh.position))
+            shadowPass.setPipeline(light.shadowPipelineInstanced);
+          } else {
+            // must be base meshObj
+            shadowPass.setPipeline(light.shadowPipeline);
+          }
+
           if(mesh.videoIsReady == 'NONE') {
             shadowPass.setBindGroup(0, light.getShadowBindGroup(mesh, meshIndex));
             // if(mesh.glb && mesh.glb.skinnedMeshNodes) {
             // shadowPass.setBindGroup(1, light.getShadowBindGroup_bones(meshIndex));
             // } else {
-            shadowPass.setBindGroup(1, mesh.modelBindGroup);
+            if(mesh instanceof BVHPlayerInstances) {
+              shadowPass.setBindGroup(1, mesh.modelBindGroupInstanced);
+            } else {
+              shadowPass.setBindGroup(1, mesh.modelBindGroup);
+            }
             // }
             mesh.drawShadows(shadowPass, light);
           }

@@ -6,6 +6,7 @@ struct Scene {
   lightPos: vec3f,
 }
 
+// not in use
 struct Model {
   modelMatrix: mat4x4f,
 }
@@ -19,8 +20,13 @@ struct SkinResult {
   normal   : vec3f,
 };
 
+struct InstanceData {
+    model     : mat4x4<f32>,
+    colorMult : vec4<f32>,
+};
+
 @group(0) @binding(0) var<uniform> scene : Scene;
-@group(1) @binding(0) var<uniform> model : Model;
+@group(1) @binding(0) var<storage, read> instances : array<InstanceData>;
 @group(1) @binding(1) var<uniform> bones : Bones;
 
 struct VertexOutput {
@@ -57,18 +63,28 @@ fn main(
   @location(1) normal: vec3f,
   @location(2) uv: vec2f,
   @location(3) joints: vec4<u32>,
-  @location(4) weights: vec4<f32>
+  @location(4) weights: vec4<f32>,
+  @builtin(instance_index) instId: u32
 ) -> VertexOutput {
+
+  let inst = instances[instId];
+
   var output : VertexOutput;
   var pos = vec4(position, 1.0);
   var nrm = normal;
   let skinned = skinVertex(pos, nrm, joints, weights);
-  let worldPos = model.modelMatrix * skinned.position;
+
+
+  // let worldPos = model.modelMatrix * skinned.position;
+  let worldPos = inst.model * skinned.position;
+
+  // build normal matrix from instance transform
   let normalMatrix = mat3x3f(
-    model.modelMatrix[0].xyz,
-    model.modelMatrix[1].xyz,
-    model.modelMatrix[2].xyz
+    inst.model[0].xyz,
+    inst.model[1].xyz,
+    inst.model[2].xyz
   );
+
   output.Position = scene.cameraViewProjMatrix * worldPos;
   output.fragPos = worldPos.xyz;
   output.shadowPos = scene.lightViewProjMatrix * worldPos;

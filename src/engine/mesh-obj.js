@@ -469,7 +469,7 @@ export default class MEMeshObj extends Materials {
       });
       // test MUST BE IF
       this.uniformBufferBindGroupLayout = this.device.createBindGroupLayout({
-        label: 'uniformBufferBindGroupLayout in mesh',
+        label: 'uniformBufferBindGroupLayout in mesh regular',
         entries: [
           {
             binding: 0,
