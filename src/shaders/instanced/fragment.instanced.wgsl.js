@@ -67,6 +67,7 @@ struct FragmentInput {
     @location(1) fragPos   : vec3f,
     @location(2) fragNorm  : vec3f,
     @location(3) uv        : vec2f,
+    @location(4) colorMult : vec4f,
 };
 
 fn getPBRMaterial(uv: vec2f) -> PBRMaterialData {
@@ -219,5 +220,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
         finalColor += glowColor * fresnel * 0.1;
     }
 
-    return vec4f(finalColor, 1.0);
+    let alpha = input.colorMult.a; // use alpha for blending
+    // vec4f(finalColor, alpha);
+    return vec4f(finalColor, alpha);
 }`;

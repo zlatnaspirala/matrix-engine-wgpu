@@ -485,12 +485,11 @@ export default class MatrixEngineWGPU {
           }
         });
 
-        now = performance.now() / 1000; // seconds
+        now = performance.now() / 1000;
         // shadowPass.setPipeline(light.shadowPipeline);
         for(const [meshIndex, mesh] of this.mainRenderBundle.entries()) {
           if(mesh instanceof BVHPlayerInstances) {
             mesh.updateInstanceData(mesh.getModelMatrix(mesh.position))
-            // mesh.updateInstances(now);
             shadowPass.setPipeline(light.shadowPipelineInstanced);
           } else {
             // must be base meshObj

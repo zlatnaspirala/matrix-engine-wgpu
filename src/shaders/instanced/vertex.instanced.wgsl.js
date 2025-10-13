@@ -34,6 +34,7 @@ struct VertexOutput {
   @location(1) fragPos: vec3f,
   @location(2) fragNorm: vec3f,
   @location(3) uv: vec2f,
+  @location(4) colorMult: vec4f,
   @builtin(position) Position: vec4f,
 }
 
@@ -90,5 +91,6 @@ fn main(
   output.shadowPos = scene.lightViewProjMatrix * worldPos;
   output.fragNorm = normalize(normalMatrix * skinned.normal);
   output.uv = uv;
+  output.colorMult = inst.colorMult;
   return output;
 }`;

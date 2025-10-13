@@ -21440,8 +21440,6 @@ var _materialsInstanced = _interopRequireDefault(require("./materials-instanced"
 var _vertexInstanced = require("../../shaders/instanced/vertex.instanced.wgsl");
 var _bvhInstaced = require("../loaders/bvh-instaced");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
-// import {vertexWGSL_NM} from '../../shaders/vertex.wgsl.normalmap';
-
 class MEMeshObjInstances extends _materialsInstanced.default {
   constructor(canvas, device, context, o, inputHandler, globalAmbient, _glbFile = null, primitiveIndex = null, skinnedNodeIndex = null) {
     super(device, o.material, _glbFile);
@@ -21854,10 +21852,8 @@ class MEMeshObjInstances extends _materialsInstanced.default {
       this.createLayoutForRender();
 
       // EDIT INSTANCED PART
-
-      this.instanceTargets = []; // per-instance target transforms
-      this.lerpSpeed = 0.05; // tweak for smoothness
-
+      this.instanceTargets = [];
+      this.lerpSpeed = 0.05;
       this.maxInstances = 5;
       this.instanceCount = 2;
       const floatsPerInstance = 16 + 4;
@@ -21885,17 +21881,16 @@ class MEMeshObjInstances extends _materialsInstanced.default {
         for (let i = 1; i < this.instanceCount; i++) {
           const t = this.instanceTargets[i];
           const ghost = new Float32Array(modelMatrix);
-
           // --- Smooth interpolate position
           for (let j = 0; j < 3; j++) {
             t.currentPosition[j] += (t.position[j] - t.currentPosition[j]) * this.lerpSpeed;
             t.currentScale[j] += (t.scale[j] - t.currentScale[j]) * this.lerpSpeed;
           }
-
           // Apply smoothed transforms
           ghost[0] *= t.currentScale[0];
           ghost[5] *= t.currentScale[1];
           ghost[10] *= t.currentScale[2];
+          // pos
           ghost[12] += t.currentPosition[0]; // X
           ghost[13] += t.currentPosition[1]; // Y
           ghost[14] += t.currentPosition[2]; // Z
@@ -21907,9 +21902,18 @@ class MEMeshObjInstances extends _materialsInstanced.default {
         }
         device.queue.writeBuffer(this.instanceBuffer, 0, this.instanceData);
       };
-
-      //
+      this.updateInstances = newCount => {
+        if (newCount > this.maxInstances) {
+          console.error(`Instance count ${newCount} exceeds buffer max ${this.maxInstances}`);
+          return;
+        }
+        this.instanceCount = newCount;
+        this.instanceData = new Float32Array(this.instanceCount * floatsPerInstance);
+        let m = this.getModelMatrix(this.position);
+        this.updateInstanceData(m);
+      };
       // end of instanced
+
       this.modelUniformBuffer = this.device.createBuffer({
         size: 4 * 16,
         // 4x4 matrix
@@ -22094,8 +22098,8 @@ class MEMeshObjInstances extends _materialsInstanced.default {
   }
   setupPipeline = () => {
     this.createBindGroupForRender();
-    this.pipeline = this.device.createRenderPipeline({
-      label: 'Mesh Pipeline ✅',
+    const baseDesc = {
+      label: 'Mesh Pipeline Base',
       layout: this.device.createPipelineLayout({
         label: 'createPipelineLayout Mesh',
         bindGroupLayouts: [this.bglForRender, this.uniformBufferBindGroupLayoutInstanced, this.selectedBindGroupLayout]
@@ -22112,9 +22116,6 @@ class MEMeshObjInstances extends _materialsInstanced.default {
         module: this.device.createShaderModule({
           code: this.isVideo == true ? _fragmentVideo.fragmentVideoWGSL : this.getMaterial()
         }),
-        targets: [{
-          format: this.presentationFormat
-        }],
         constants: {
           shadowDepthTextureSize: this.shadowDepthTextureSize
         }
@@ -22125,8 +22126,51 @@ class MEMeshObjInstances extends _materialsInstanced.default {
         format: 'depth24plus'
       },
       primitive: this.primitive
+    };
+
+    // --- Normal (no blending)
+    this.pipeline = this.device.createRenderPipeline({
+      ...baseDesc,
+      label: 'Mesh Pipeline Opaque ✅',
+      fragment: {
+        ...baseDesc.fragment,
+        targets: [{
+          format: this.presentationFormat,
+          blend: undefined
+        }]
+      }
     });
-    console.log('✅Set Pipeline done');
+
+    // --- Blended (alpha)
+    this.pipelineBlended = this.device.createRenderPipeline({
+      ...baseDesc,
+      label: 'Mesh Pipeline Blended ✅',
+      fragment: {
+        ...baseDesc.fragment,
+        targets: [{
+          format: this.presentationFormat,
+          blend: {
+            color: {
+              srcFactor: 'src-alpha',
+              dstFactor: 'one-minus-src-alpha',
+              operation: 'add'
+            },
+            alpha: {
+              srcFactor: 'one',
+              dstFactor: 'one-minus-src-alpha',
+              operation: 'add'
+            }
+          }
+        }]
+      },
+      depthStencil: {
+        depthWriteEnabled: false,
+        // <<< disable depth write for transparency
+        depthCompare: 'less',
+        format: 'depth24plus'
+      }
+    });
+    console.log('✅ Set up both pipelines done');
   };
   updateModelUniformBuffer = () => {
     // if(this.done == false) return;
@@ -22234,7 +22278,12 @@ class MEMeshObjInstances extends _materialsInstanced.default {
       pass.setVertexBuffer(5, this.mesh.tangentsBuffer);
     }
     pass.setIndexBuffer(this.indexBuffer, 'uint16');
-    pass.drawIndexed(this.indexCount, this.instanceCount, 0, 0, 0);
+    // pass.drawIndexed(this.indexCount, this.instanceCount, 0, 0, 0);
+    pass.drawIndexed(this.indexCount, 1, 0, 0, 0);
+
+    // pipelineBlended
+    pass.setPipeline(this.pipelineBlended);
+    pass.drawIndexed(this.indexCount, 1, 0, 0, 1); // 1 instance = object 1
   };
   drawElementsAnim = (renderPass, lightContainer) => {
     if (!this.sceneBindGroupForRender || !this.modelBindGroup) {
@@ -28793,6 +28842,7 @@ struct FragmentInput {
     @location(1) fragPos   : vec3f,
     @location(2) fragNorm  : vec3f,
     @location(3) uv        : vec2f,
+    @location(4) colorMult : vec4f,
 };
 
 fn getPBRMaterial(uv: vec2f) -> PBRMaterialData {
@@ -28945,7 +28995,9 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
         finalColor += glowColor * fresnel * 0.1;
     }
 
-    return vec4f(finalColor, 1.0);
+    let alpha = input.colorMult.a; // use alpha for blending
+    // vec4f(finalColor, alpha);
+    return vec4f(finalColor, alpha);
 }`;
 
 },{}],49:[function(require,module,exports){
@@ -28991,6 +29043,7 @@ struct VertexOutput {
   @location(1) fragPos: vec3f,
   @location(2) fragNorm: vec3f,
   @location(3) uv: vec2f,
+  @location(4) colorMult: vec4f,
   @builtin(position) Position: vec4f,
 }
 
@@ -29047,6 +29100,7 @@ fn main(
   output.shadowPos = scene.lightViewProjMatrix * worldPos;
   output.fragNorm = normalize(normalMatrix * skinned.normal);
   output.uv = uv;
+  output.colorMult = inst.colorMult;
   return output;
 }`;
 
@@ -30135,12 +30189,11 @@ class MatrixEngineWGPU {
             depthClearValue: 1.0
           }
         });
-        now = performance.now() / 1000; // seconds
+        now = performance.now() / 1000;
         // shadowPass.setPipeline(light.shadowPipeline);
         for (const [meshIndex, mesh] of this.mainRenderBundle.entries()) {
           if (mesh instanceof _bvhInstaced.BVHPlayerInstances) {
             mesh.updateInstanceData(mesh.getModelMatrix(mesh.position));
-            // mesh.updateInstances(now);
             shadowPass.setPipeline(light.shadowPipelineInstanced);
           } else {
             // must be base meshObj
