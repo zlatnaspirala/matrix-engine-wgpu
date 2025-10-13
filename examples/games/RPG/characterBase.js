@@ -38,7 +38,7 @@ export class Character extends Hero {
         name: this.name,
         texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
         raycast: {enabled: true, radius: 1.5},
-        trails: {enabled: true}
+        pointerEffect: {enabled: true}
       }, null, glbFile01);
       // make small async
       setTimeout(() => {

@@ -1,4 +1,4 @@
-export const trailVertex = `
+export const pointerEffect = `
 struct Camera {
   viewProjMatrix : mat4x4<f32>,
 };

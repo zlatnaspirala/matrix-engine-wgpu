@@ -523,7 +523,7 @@ export default class MatrixEngineWGPU {
       }
       pass.end();
 
-      // transparent trails pass (load color, load depth)
+      // transparent pointerEffect pass (load color, load depth)
       const transPassDesc = {
         colorAttachments: [{view: currentTextureView, loadOp: 'load', storeOp: 'store'}],
         depthStencilAttachment: {view: this.depthTextureViewTrail, depthLoadOp: 'load', depthStoreOp: 'store'}
@@ -586,10 +586,10 @@ export default class MatrixEngineWGPU {
     if(typeof o.scale === 'undefined') {o.scale = [1, 1, 1];}
     if(typeof o.raycast === 'undefined') {o.raycast = {enabled: false, radius: 2}}
 
-    if(typeof o.trails === 'undefined') {
-      o.trails = {enabled: false};
+    if(typeof o.pointerEffect === 'undefined') {
+      o.pointerEffect = {enabled: false};
     } else {
-      // o.trails = {enabled: true};
+      // o.pointerEffect = {enabled: true};
     }
 
     o.entityArgPass = this.entityArgPass;

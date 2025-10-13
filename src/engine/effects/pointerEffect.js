@@ -1,5 +1,5 @@
 import {mat4} from "wgpu-matrix";
-import { trailVertex } from "../../../../src/shaders/standalone/trail.vertex.js"; 
+import { pointerEffect } from "../../shaders/standalone/pointer.effect.js"; 
 
 export class PointerEffect {
   constructor(device, format) {
@@ -74,7 +74,7 @@ export class PointerEffect {
     });
 
     // Shader
-    const shaderModule = this.device.createShaderModule({code: trailVertex});
+    const shaderModule = this.device.createShaderModule({code: pointerEffect});
 
     // Pipeline
     const pipelineLayout = this.device.createPipelineLayout({bindGroupLayouts: [bindGroupLayout]});

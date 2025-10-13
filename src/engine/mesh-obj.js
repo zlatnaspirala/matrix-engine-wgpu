@@ -5,7 +5,7 @@ import {degToRad, genName, LOG_FUNNY_SMALL} from './utils';
 import Materials from './materials';
 import {fragmentVideoWGSL} from '../shaders/fragment.video.wgsl';
 import {vertexWGSL_NM} from '../shaders/vertex.wgsl.normalmap';
-import {PointerEffect} from '../../examples/games/RPG/effects/trails';
+import {PointerEffect} from './effects/pointerEffect';
 
 export default class MEMeshObj extends Materials {
   constructor(canvas, device, context, o, inputHandler, globalAmbient, _glbFile = null, primitiveIndex = null, skinnedNodeIndex = null) {
@@ -17,10 +17,10 @@ export default class MEMeshObj extends Materials {
       this.raycast = o.raycast;
     }
 
-    if(typeof o.trails === 'undefined') {
-      this.trails = {enabled: false};
+    if(typeof o.pointerEffect === 'undefined') {
+      this.pointerEffect = {enabled: false};
     } else {
-      this.trails = {enabled: true};
+      this.pointerEffect = {enabled: true};
     }
 
     this.name = o.name;
@@ -529,12 +529,12 @@ export default class MEMeshObj extends Materials {
         ],
       });
 
-      // trails bonus
+      // pointerEffect bonus
 
       // TEST - OPTIONS ON BASE MESHOBJ LEVEL
       this.effects = {};
 
-      if(this.trails.enabled === true) {
+      if(this.pointerEffect.enabled === true) {
         let pf = navigator.gpu.getPreferredCanvasFormat();
         this.effects.trail = new PointerEffect(device, pf, this, true);
       }

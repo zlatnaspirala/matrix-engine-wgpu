@@ -50,7 +50,7 @@ class Character extends _hero.Hero {
           enabled: true,
           radius: 1.5
         },
-        trails: {
+        pointerEffect: {
           enabled: true
         }
       }, null, glbFile01);
@@ -69,7 +69,7 @@ class Character extends _hero.Hero {
 }
 exports.Character = Character;
 
-},{"../../../src/engine/loaders/webgpu-gltf":31,"../../../src/engine/utils":36,"./hero":4}],2:[function(require,module,exports){
+},{"../../../src/engine/loaders/webgpu-gltf":31,"../../../src/engine/utils":36,"./hero":3}],2:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -239,154 +239,7 @@ class Controller {
 }
 exports.Controller = Controller;
 
-},{"../../../src/engine/raycast.js":35,"../../../src/engine/utils.js":36,"./nav-mesh.js":8,"wgpu-matrix":23}],3:[function(require,module,exports){
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.PointerEffect = void 0;
-var _wgpuMatrix = require("wgpu-matrix");
-var _trailVertex = require("../../../../src/shaders/standalone/trail.vertex.js");
-class PointerEffect {
-  constructor(device, format) {
-    this.device = device;
-    this.format = format;
-    this._initPipeline();
-  }
-  _initPipeline() {
-    // Vertex data: simple quad
-    let S = 10;
-    const vertexData = new Float32Array([-0.5 * S, 0.5 * S, 0.0 * S,
-    // top-left
-    0.5 * S, 0.5 * S, 0.0 * S,
-    // top-right
-    -0.1 * S, -0.1 * S, 0.0 * S,
-    // bottom-left
-    0.1 * S, -0.1 * S, 0.0 * S // bottom-right
-    ]);
-    const uvData = new Float32Array([0, 0, 1, 0, 0, 1, 1, 1]);
-    const indexData = new Uint16Array([0, 2, 1, 1, 2, 3]);
-
-    // GPU buffers
-    this.vertexBuffer = this.device.createBuffer({
-      size: vertexData.byteLength,
-      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
-    });
-    this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
-    this.uvBuffer = this.device.createBuffer({
-      size: uvData.byteLength,
-      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
-    });
-    this.device.queue.writeBuffer(this.uvBuffer, 0, uvData);
-    this.indexBuffer = this.device.createBuffer({
-      size: Math.ceil(indexData.byteLength / 4) * 4,
-      usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST
-    });
-    this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
-    this.indexCount = indexData.length;
-
-    // Uniforms: camera & model
-    this.cameraBuffer = this.device.createBuffer({
-      size: 64,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
-    this.modelBuffer = this.device.createBuffer({
-      size: 64,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
-
-    // Bind group layout
-    const bindGroupLayout = this.device.createBindGroupLayout({
-      entries: [{
-        binding: 0,
-        visibility: GPUShaderStage.VERTEX,
-        buffer: {}
-      }, {
-        binding: 1,
-        visibility: GPUShaderStage.VERTEX,
-        buffer: {}
-      }]
-    });
-    this.bindGroup = this.device.createBindGroup({
-      layout: bindGroupLayout,
-      entries: [{
-        binding: 0,
-        resource: {
-          buffer: this.cameraBuffer
-        }
-      }, {
-        binding: 1,
-        resource: {
-          buffer: this.modelBuffer
-        }
-      }]
-    });
-
-    // Shader
-    const shaderModule = this.device.createShaderModule({
-      code: _trailVertex.trailVertex
-    });
-
-    // Pipeline
-    const pipelineLayout = this.device.createPipelineLayout({
-      bindGroupLayouts: [bindGroupLayout]
-    });
-    this.pipeline = this.device.createRenderPipeline({
-      layout: pipelineLayout,
-      vertex: {
-        module: shaderModule,
-        entryPoint: 'vsMain',
-        buffers: [{
-          arrayStride: 3 * 4,
-          attributes: [{
-            shaderLocation: 0,
-            offset: 0,
-            format: 'float32x3'
-          }]
-        }, {
-          arrayStride: 2 * 4,
-          attributes: [{
-            shaderLocation: 1,
-            offset: 0,
-            format: 'float32x2'
-          }]
-        }]
-      },
-      fragment: {
-        module: shaderModule,
-        entryPoint: 'fsMain',
-        targets: [{
-          format: this.format
-        }]
-      },
-      primitive: {
-        topology: 'triangle-list'
-      },
-      depthStencil: {
-        depthWriteEnabled: true,
-        depthCompare: 'always',
-        format: 'depth24plus'
-      }
-    });
-  }
-  draw(pass, cameraMatrix, modelMatrix) {
-    // Write uniforms
-    this.device.queue.writeBuffer(this.cameraBuffer, 0, cameraMatrix);
-    this.device.queue.writeBuffer(this.modelBuffer, 0, modelMatrix);
-
-    // Draw
-    pass.setPipeline(this.pipeline);
-    pass.setBindGroup(0, this.bindGroup);
-    pass.setVertexBuffer(0, this.vertexBuffer);
-    pass.setVertexBuffer(1, this.uvBuffer);
-    pass.setIndexBuffer(this.indexBuffer, 'uint16');
-    pass.drawIndexed(this.indexCount);
-  }
-}
-exports.PointerEffect = PointerEffect;
-
-},{"../../../../src/shaders/standalone/trail.vertex.js":46,"wgpu-matrix":23}],4:[function(require,module,exports){
+},{"../../../src/engine/raycast.js":35,"../../../src/engine/utils.js":36,"./nav-mesh.js":7,"wgpu-matrix":22}],3:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -848,7 +701,7 @@ function mergeArchetypesWeighted(typeA, typeB, weightA = 0.7) {
   return merged;
 }
 
-},{}],5:[function(require,module,exports){
+},{}],4:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -1211,7 +1064,7 @@ class HUD {
 }
 exports.HUD = HUD;
 
-},{}],6:[function(require,module,exports){
+},{}],5:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -1288,7 +1141,7 @@ class MEMapLoader {
 }
 exports.MEMapLoader = MEMapLoader;
 
-},{"../../../src/engine/loader-obj.js":29,"../../../src/engine/utils.js":36,"./nav-mesh.js":8}],7:[function(require,module,exports){
+},{"../../../src/engine/loader-obj.js":29,"../../../src/engine/utils.js":36,"./nav-mesh.js":7}],6:[function(require,module,exports){
 "use strict";
 
 var _world = _interopRequireDefault(require("../../../src/world.js"));
@@ -1343,7 +1196,7 @@ let MYSTICORE = new _world.default({
 // just for dev
 window.app = MYSTICORE;
 
-},{"../../../src/world.js":51,"./characterBase.js":1,"./controller.js":2,"./hero.js":4,"./hud.js":5,"./map-loader.js":6}],8:[function(require,module,exports){
+},{"../../../src/world.js":51,"./characterBase.js":1,"./controller.js":2,"./hero.js":3,"./hud.js":4,"./map-loader.js":5}],7:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -1803,7 +1656,7 @@ function orientHeroToDirection(hero, dir) {
   hero.rotation.y = angle; // in radians
 }
 
-},{"../../../src/engine/utils.js":36}],9:[function(require,module,exports){
+},{"../../../src/engine/utils.js":36}],8:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -1813,7 +1666,7 @@ exports.default = void 0;
 var _bvhLoader = require("./module/bvh-loader");
 var _default = exports.default = _bvhLoader.MEBvh;
 
-},{"./module/bvh-loader":10}],10:[function(require,module,exports){
+},{"./module/bvh-loader":9}],9:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -2502,7 +2355,7 @@ class MEBvh {
 }
 exports.MEBvh = MEBvh;
 
-},{"webgpu-matrix":22}],11:[function(require,module,exports){
+},{"webgpu-matrix":21}],10:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -2580,7 +2433,7 @@ function equals(a, b) {
   return Math.abs(a - b) <= tolerance * Math.max(1, Math.abs(a), Math.abs(b));
 }
 
-},{}],12:[function(require,module,exports){
+},{}],11:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -2609,7 +2462,7 @@ var vec4 = _interopRequireWildcard(require("./vec4.js"));
 exports.vec4 = vec4;
 function _interopRequireWildcard(e, t) { if ("function" == typeof WeakMap) var r = new WeakMap(), n = new WeakMap(); return (_interopRequireWildcard = function (e, t) { if (!t && e && e.__esModule) return e; var o, i, f = { __proto__: null, default: e }; if (null === e || "object" != typeof e && "function" != typeof e) return f; if (o = t ? n : r) { if (o.has(e)) return o.get(e); o.set(e, f); } for (const t in e) "default" !== t && {}.hasOwnProperty.call(e, t) && ((i = (o = Object.defineProperty) && Object.getOwnPropertyDescriptor(e, t)) && (i.get || i.set) ? o(f, t, i) : f[t] = e[t]); return f; })(e, t); }
 
-},{"./common.js":11,"./mat2.js":13,"./mat2d.js":14,"./mat3.js":15,"./mat4.js":16,"./quat.js":17,"./quat2.js":18,"./vec2.js":19,"./vec3.js":20,"./vec4.js":21}],13:[function(require,module,exports){
+},{"./common.js":10,"./mat2.js":12,"./mat2d.js":13,"./mat3.js":14,"./mat4.js":15,"./quat.js":16,"./quat2.js":17,"./vec2.js":18,"./vec3.js":19,"./vec4.js":20}],12:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -3071,7 +2924,7 @@ var mul = exports.mul = multiply;
  */
 var sub = exports.sub = subtract;
 
-},{"./common.js":11}],14:[function(require,module,exports){
+},{"./common.js":10}],13:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -3585,7 +3438,7 @@ var mul = exports.mul = multiply;
  */
 var sub = exports.sub = subtract;
 
-},{"./common.js":11}],15:[function(require,module,exports){
+},{"./common.js":10}],14:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -4397,7 +4250,7 @@ var mul = exports.mul = multiply;
  */
 var sub = exports.sub = subtract;
 
-},{"./common.js":11}],16:[function(require,module,exports){
+},{"./common.js":10}],15:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -6417,7 +6270,7 @@ var mul = exports.mul = multiply;
  */
 var sub = exports.sub = subtract;
 
-},{"./common.js":11}],17:[function(require,module,exports){
+},{"./common.js":10}],16:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -7200,7 +7053,7 @@ var setAxes = exports.setAxes = function () {
   };
 }();
 
-},{"./common.js":11,"./mat3.js":15,"./vec3.js":20,"./vec4.js":21}],18:[function(require,module,exports){
+},{"./common.js":10,"./mat3.js":14,"./vec3.js":19,"./vec4.js":20}],17:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -8073,7 +7926,7 @@ function equals(a, b) {
   return Math.abs(a0 - b0) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a0), Math.abs(b0)) && Math.abs(a1 - b1) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a1), Math.abs(b1)) && Math.abs(a2 - b2) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a2), Math.abs(b2)) && Math.abs(a3 - b3) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a3), Math.abs(b3)) && Math.abs(a4 - b4) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a4), Math.abs(b4)) && Math.abs(a5 - b5) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a5), Math.abs(b5)) && Math.abs(a6 - b6) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a6), Math.abs(b6)) && Math.abs(a7 - b7) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a7), Math.abs(b7));
 }
 
-},{"./common.js":11,"./mat4.js":16,"./quat.js":17}],19:[function(require,module,exports){
+},{"./common.js":10,"./mat4.js":15,"./quat.js":16}],18:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -8751,7 +8604,7 @@ var forEach = exports.forEach = function () {
   };
 }();
 
-},{"./common.js":11}],20:[function(require,module,exports){
+},{"./common.js":10}],19:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -9603,7 +9456,7 @@ var forEach = exports.forEach = function () {
   };
 }();
 
-},{"./common.js":11}],21:[function(require,module,exports){
+},{"./common.js":10}],20:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -10310,7 +10163,7 @@ var forEach = exports.forEach = function () {
   };
 }();
 
-},{"./common.js":11}],22:[function(require,module,exports){
+},{"./common.js":10}],21:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -14243,7 +14096,7 @@ function setDefaultType(ctor) {
   setDefaultType$1(ctor);
 }
 
-},{}],23:[function(require,module,exports){
+},{}],22:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -19590,7 +19443,7 @@ function setDefaultType(ctor) {
   setDefaultType$1(ctor);
 }
 
-},{}],24:[function(require,module,exports){
+},{}],23:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -20004,7 +19857,7 @@ class MEBall {
 }
 exports.default = MEBall;
 
-},{"../shaders/shaders":45,"./engine":27,"./matrix-class":33,"wgpu-matrix":23}],25:[function(require,module,exports){
+},{"../shaders/shaders":45,"./engine":27,"./matrix-class":33,"wgpu-matrix":22}],24:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -20042,7 +19895,7 @@ class Behavior {
 }
 exports.default = Behavior;
 
-},{"./utils":36}],26:[function(require,module,exports){
+},{"./utils":36}],25:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -20467,7 +20320,154 @@ class MECube {
 }
 exports.default = MECube;
 
-},{"../shaders/shaders":45,"./engine":27,"./matrix-class":33,"wgpu-matrix":23}],27:[function(require,module,exports){
+},{"../shaders/shaders":45,"./engine":27,"./matrix-class":33,"wgpu-matrix":22}],26:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.PointerEffect = void 0;
+var _wgpuMatrix = require("wgpu-matrix");
+var _pointerEffect = require("../../shaders/standalone/pointer.effect.js");
+class PointerEffect {
+  constructor(device, format) {
+    this.device = device;
+    this.format = format;
+    this._initPipeline();
+  }
+  _initPipeline() {
+    // Vertex data: simple quad
+    let S = 10;
+    const vertexData = new Float32Array([-0.5 * S, 0.5 * S, 0.0 * S,
+    // top-left
+    0.5 * S, 0.5 * S, 0.0 * S,
+    // top-right
+    -0.1 * S, -0.1 * S, 0.0 * S,
+    // bottom-left
+    0.1 * S, -0.1 * S, 0.0 * S // bottom-right
+    ]);
+    const uvData = new Float32Array([0, 0, 1, 0, 0, 1, 1, 1]);
+    const indexData = new Uint16Array([0, 2, 1, 1, 2, 3]);
+
+    // GPU buffers
+    this.vertexBuffer = this.device.createBuffer({
+      size: vertexData.byteLength,
+      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
+    });
+    this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
+    this.uvBuffer = this.device.createBuffer({
+      size: uvData.byteLength,
+      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
+    });
+    this.device.queue.writeBuffer(this.uvBuffer, 0, uvData);
+    this.indexBuffer = this.device.createBuffer({
+      size: Math.ceil(indexData.byteLength / 4) * 4,
+      usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST
+    });
+    this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
+    this.indexCount = indexData.length;
+
+    // Uniforms: camera & model
+    this.cameraBuffer = this.device.createBuffer({
+      size: 64,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    this.modelBuffer = this.device.createBuffer({
+      size: 64,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+
+    // Bind group layout
+    const bindGroupLayout = this.device.createBindGroupLayout({
+      entries: [{
+        binding: 0,
+        visibility: GPUShaderStage.VERTEX,
+        buffer: {}
+      }, {
+        binding: 1,
+        visibility: GPUShaderStage.VERTEX,
+        buffer: {}
+      }]
+    });
+    this.bindGroup = this.device.createBindGroup({
+      layout: bindGroupLayout,
+      entries: [{
+        binding: 0,
+        resource: {
+          buffer: this.cameraBuffer
+        }
+      }, {
+        binding: 1,
+        resource: {
+          buffer: this.modelBuffer
+        }
+      }]
+    });
+
+    // Shader
+    const shaderModule = this.device.createShaderModule({
+      code: _pointerEffect.pointerEffect
+    });
+
+    // Pipeline
+    const pipelineLayout = this.device.createPipelineLayout({
+      bindGroupLayouts: [bindGroupLayout]
+    });
+    this.pipeline = this.device.createRenderPipeline({
+      layout: pipelineLayout,
+      vertex: {
+        module: shaderModule,
+        entryPoint: 'vsMain',
+        buffers: [{
+          arrayStride: 3 * 4,
+          attributes: [{
+            shaderLocation: 0,
+            offset: 0,
+            format: 'float32x3'
+          }]
+        }, {
+          arrayStride: 2 * 4,
+          attributes: [{
+            shaderLocation: 1,
+            offset: 0,
+            format: 'float32x2'
+          }]
+        }]
+      },
+      fragment: {
+        module: shaderModule,
+        entryPoint: 'fsMain',
+        targets: [{
+          format: this.format
+        }]
+      },
+      primitive: {
+        topology: 'triangle-list'
+      },
+      depthStencil: {
+        depthWriteEnabled: true,
+        depthCompare: 'always',
+        format: 'depth24plus'
+      }
+    });
+  }
+  draw(pass, cameraMatrix, modelMatrix) {
+    // Write uniforms
+    this.device.queue.writeBuffer(this.cameraBuffer, 0, cameraMatrix);
+    this.device.queue.writeBuffer(this.modelBuffer, 0, modelMatrix);
+
+    // Draw
+    pass.setPipeline(this.pipeline);
+    pass.setBindGroup(0, this.bindGroup);
+    pass.setVertexBuffer(0, this.vertexBuffer);
+    pass.setVertexBuffer(1, this.uvBuffer);
+    pass.setIndexBuffer(this.indexBuffer, 'uint16');
+    pass.drawIndexed(this.indexCount);
+  }
+}
+exports.PointerEffect = PointerEffect;
+
+},{"../../shaders/standalone/pointer.effect.js":46,"wgpu-matrix":22}],27:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -20889,7 +20889,7 @@ function createInputHandler(window, canvas) {
   };
 }
 
-},{"./utils":36,"wgpu-matrix":23}],28:[function(require,module,exports){
+},{"./utils":36,"wgpu-matrix":22}],28:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -21130,7 +21130,7 @@ class SpotLight {
 }
 exports.SpotLight = SpotLight;
 
-},{"../shaders/vertexShadow.wgsl":49,"./behavior":25,"wgpu-matrix":23}],29:[function(require,module,exports){
+},{"../shaders/vertexShadow.wgsl":49,"./behavior":24,"wgpu-matrix":22}],29:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -22108,7 +22108,7 @@ class BVHPlayer extends _meshObj.default {
 }
 exports.BVHPlayer = BVHPlayer;
 
-},{"../mesh-obj":34,"./webgpu-gltf.js":31,"bvh-loader":9,"wgpu-matrix":23}],31:[function(require,module,exports){
+},{"../mesh-obj":34,"./webgpu-gltf.js":31,"bvh-loader":8,"wgpu-matrix":22}],31:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -22686,7 +22686,7 @@ async function uploadGLBModel(buffer, device) {
   return R;
 }
 
-},{"gl-matrix":12}],32:[function(require,module,exports){
+},{"gl-matrix":11}],32:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -23462,7 +23462,7 @@ var _utils = require("./utils");
 var _materials = _interopRequireDefault(require("./materials"));
 var _fragmentVideo = require("../shaders/fragment.video.wgsl");
 var _vertexWgsl = require("../shaders/vertex.wgsl.normalmap");
-var _trails = require("../../examples/games/RPG/effects/trails");
+var _pointerEffect = require("./effects/pointerEffect");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 class MEMeshObj extends _materials.default {
   constructor(canvas, device, context, o, inputHandler, globalAmbient, _glbFile = null, primitiveIndex = null, skinnedNodeIndex = null) {
@@ -23476,12 +23476,12 @@ class MEMeshObj extends _materials.default {
     } else {
       this.raycast = o.raycast;
     }
-    if (typeof o.trails === 'undefined') {
-      this.trails = {
+    if (typeof o.pointerEffect === 'undefined') {
+      this.pointerEffect = {
         enabled: false
       };
     } else {
-      this.trails = {
+      this.pointerEffect = {
         enabled: true
       };
     }
@@ -23984,13 +23984,13 @@ class MEMeshObj extends _materials.default {
         }]
       });
 
-      // trails bonus
+      // pointerEffect bonus
 
       // TEST - OPTIONS ON BASE MESHOBJ LEVEL
       this.effects = {};
-      if (this.trails.enabled === true) {
+      if (this.pointerEffect.enabled === true) {
         let pf = navigator.gpu.getPreferredCanvasFormat();
-        this.effects.trail = new _trails.PointerEffect(device, pf, this, true);
+        this.effects.trail = new _pointerEffect.PointerEffect(device, pf, this, true);
       }
 
       // end
@@ -24240,7 +24240,7 @@ class MEMeshObj extends _materials.default {
 }
 exports.default = MEMeshObj;
 
-},{"../../examples/games/RPG/effects/trails":3,"../shaders/fragment.video.wgsl":39,"../shaders/vertex.wgsl":47,"../shaders/vertex.wgsl.normalmap":48,"./materials":32,"./matrix-class":33,"./utils":36,"wgpu-matrix":23}],35:[function(require,module,exports){
+},{"../shaders/fragment.video.wgsl":39,"../shaders/vertex.wgsl":47,"../shaders/vertex.wgsl.normalmap":48,"./effects/pointerEffect":26,"./materials":32,"./matrix-class":33,"./utils":36,"wgpu-matrix":22}],35:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -24422,7 +24422,7 @@ function addRaycastsListener(canvasId = "canvas1") {
   });
 }
 
-},{"wgpu-matrix":23}],36:[function(require,module,exports){
+},{"wgpu-matrix":22}],36:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -26828,8 +26828,8 @@ fn fragmentMain(input: VertexOutput) -> @location(0) vec4f {
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.trailVertex = void 0;
-const trailVertex = exports.trailVertex = `
+exports.pointerEffect = void 0;
+const pointerEffect = exports.pointerEffect = `
 struct Camera {
   viewProjMatrix : mat4x4<f32>,
 };
@@ -27838,7 +27838,7 @@ class MatrixEngineWGPU {
       }
       pass.end();
 
-      // transparent trails pass (load color, load depth)
+      // transparent pointerEffect pass (load color, load depth)
       const transPassDesc = {
         colorAttachments: [{
           view: currentTextureView,
@@ -27940,12 +27940,12 @@ class MatrixEngineWGPU {
         radius: 2
       };
     }
-    if (typeof o.trails === 'undefined') {
-      o.trails = {
+    if (typeof o.pointerEffect === 'undefined') {
+      o.pointerEffect = {
         enabled: false
       };
     } else {
-      // o.trails = {enabled: true};
+      // o.pointerEffect = {enabled: true};
     }
     o.entityArgPass = this.entityArgPass;
     o.cameras = this.cameras;
@@ -28015,4 +28015,4 @@ class MatrixEngineWGPU {
 }
 exports.default = MatrixEngineWGPU;
 
-},{"./engine/ball.js":24,"./engine/cube.js":26,"./engine/engine.js":27,"./engine/lights.js":28,"./engine/loader-obj.js":29,"./engine/loaders/bvh.js":30,"./engine/mesh-obj.js":34,"./engine/utils.js":36,"./multilang/lang.js":37,"./physics/matrix-ammo.js":38,"./sounds/sounds.js":50,"wgpu-matrix":23}]},{},[7]);
+},{"./engine/ball.js":23,"./engine/cube.js":25,"./engine/engine.js":27,"./engine/lights.js":28,"./engine/loader-obj.js":29,"./engine/loaders/bvh.js":30,"./engine/mesh-obj.js":34,"./engine/utils.js":36,"./multilang/lang.js":37,"./physics/matrix-ammo.js":38,"./sounds/sounds.js":50,"wgpu-matrix":22}]},{},[6]);
