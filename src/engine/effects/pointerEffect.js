@@ -1,5 +1,5 @@
 import {mat4} from "wgpu-matrix";
-import { pointerEffect } from "../../shaders/standalone/pointer.effect.js"; 
+import {pointerEffect} from "../../shaders/standalone/pointer.effect.js";
 
 export class PointerEffect {
   constructor(device, format) {
@@ -12,19 +12,19 @@ export class PointerEffect {
     // Vertex data: simple quad
     let S = 10;
     const vertexData = new Float32Array([
-      -0.5*S, 0.5*S, 0.0*S,  // top-left
-       0.5*S, 0.5*S, 0.0*S,  // top-right
-      -0.1*S,-0.1*S, 0.0*S,  // bottom-left
-       0.1*S,-0.1*S, 0.0*S,  // bottom-right
+      -0.5 * S, 0.5 * S, 0.0 * S,  // top-left
+      0.5 * S, 0.5 * S, 0.0 * S,  // top-right
+      -0.1 * S, -0.1 * S, 0.0 * S,  // bottom-left
+      0.1 * S, -0.1 * S, 0.0 * S,  // bottom-right
     ]);
 
     const uvData = new Float32Array([
-      0,0, 1,0, 0,1, 1,1
+      0, 0, 1, 0, 0, 1, 1, 1
     ]);
 
     const indexData = new Uint16Array([
-      0,2,1,
-      1,2,3
+      0, 2, 1,
+      1, 2, 3
     ]);
 
     // GPU buffers
@@ -84,8 +84,8 @@ export class PointerEffect {
         module: shaderModule,
         entryPoint: 'vsMain',
         buffers: [
-          {arrayStride: 3*4, attributes:[{shaderLocation:0,offset:0,format:'float32x3'}]},
-          {arrayStride: 2*4, attributes:[{shaderLocation:1,offset:0,format:'float32x2'}]}
+          {arrayStride: 3 * 4, attributes: [{shaderLocation: 0, offset: 0, format: 'float32x3'}]},
+          {arrayStride: 2 * 4, attributes: [{shaderLocation: 1, offset: 0, format: 'float32x2'}]}
         ]
       },
       fragment: {
@@ -93,8 +93,8 @@ export class PointerEffect {
         entryPoint: 'fsMain',
         targets: [{format: this.format}]
       },
-      primitive: {topology:'triangle-list'},
-      depthStencil: {depthWriteEnabled:true, depthCompare:'always', format:'depth24plus'}
+      primitive: {topology: 'triangle-list'},
+      depthStencil: {depthWriteEnabled: true, depthCompare: 'always', format: 'depth24plus'}
     });
   }
 
@@ -110,5 +110,14 @@ export class PointerEffect {
     pass.setVertexBuffer(1, this.uvBuffer);
     pass.setIndexBuffer(this.indexBuffer, 'uint16');
     pass.drawIndexed(this.indexCount);
+  }
+
+  render(transPass, mesh, viewProjMatrix) {
+      // if(!(mesh.effects && mesh.effects.pointer)) return;
+      const pointer = mesh.effects.pointer;
+      const objPos = mesh.position;
+      const modelMatrix = mat4.identity();
+      mat4.translate(modelMatrix, [objPos.x, objPos.y + 60, objPos.z], modelMatrix);
+      pointer.draw(transPass, viewProjMatrix, modelMatrix);
   }
 }

@@ -532,11 +532,7 @@ export default class MatrixEngineWGPU {
       const viewProjMatrix = mat4.multiply(this.cameras.WASD.projectionMatrix, this.cameras.WASD.view, mat4.identity());
       for(const mesh of this.mainRenderBundle) {
         if(!(mesh.effects && mesh.effects.pointer)) continue;
-        const pointer = mesh.effects.pointer;
-        const objPos = mesh.position;
-        const modelMatrix = mat4.identity();
-        mat4.translate(modelMatrix, [objPos.x, objPos.y + 60, objPos.z], modelMatrix);
-        pointer.draw(transPass, viewProjMatrix, modelMatrix);
+        mesh.effects.pointer.render(transPass, mesh, viewProjMatrix)
       }
       transPass.end();
 

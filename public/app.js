@@ -20464,6 +20464,14 @@ class PointerEffect {
     pass.setIndexBuffer(this.indexBuffer, 'uint16');
     pass.drawIndexed(this.indexCount);
   }
+  render(transPass, mesh, viewProjMatrix) {
+    // if(!(mesh.effects && mesh.effects.pointer)) return;
+    const pointer = mesh.effects.pointer;
+    const objPos = mesh.position;
+    const modelMatrix = _wgpuMatrix.mat4.identity();
+    _wgpuMatrix.mat4.translate(modelMatrix, [objPos.x, objPos.y + 60, objPos.z], modelMatrix);
+    pointer.draw(transPass, viewProjMatrix, modelMatrix);
+  }
 }
 exports.PointerEffect = PointerEffect;
 
@@ -27871,11 +27879,7 @@ class MatrixEngineWGPU {
       const viewProjMatrix = _wgpuMatrix.mat4.multiply(this.cameras.WASD.projectionMatrix, this.cameras.WASD.view, _wgpuMatrix.mat4.identity());
       for (const mesh of this.mainRenderBundle) {
         if (!(mesh.effects && mesh.effects.pointer)) continue;
-        const pointer = mesh.effects.pointer;
-        const objPos = mesh.position;
-        const modelMatrix = _wgpuMatrix.mat4.identity();
-        _wgpuMatrix.mat4.translate(modelMatrix, [objPos.x, objPos.y + 60, objPos.z], modelMatrix);
-        pointer.draw(transPass, viewProjMatrix, modelMatrix);
+        mesh.effects.pointer.render(transPass, mesh, viewProjMatrix);
       }
       transPass.end();
       this.device.queue.submit([commandEncoder.finish()]);
