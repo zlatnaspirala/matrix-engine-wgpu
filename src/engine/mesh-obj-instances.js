@@ -7,7 +7,7 @@ import {fragmentVideoWGSL} from '../shaders/fragment.video.wgsl';
 import {vertexWGSL_NM} from '../shaders/vertex.wgsl.normalmap';
 import {PointerEffect} from './effects/pointerEffect';
 
-export default class MEMeshObj extends Materials {
+export default class MEMeshObjInstances extends Materials {
   constructor(canvas, device, context, o, inputHandler, globalAmbient, _glbFile = null, primitiveIndex = null, skinnedNodeIndex = null) {
     super(device, o.material, _glbFile);
     if(typeof o.name === 'undefined') o.name = genName(3);

@@ -33,7 +33,7 @@ class Character extends _hero.Hero {
   async loadLocalHero(p) {
     try {
       var glbFile01 = await fetch(p).then(res => res.arrayBuffer().then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, this.core.device)));
-      this.core.addGlbObj({
+      this.core.addGlbObjInctance({
         material: {
           type: 'standard',
           useTextureFromGlb: true
@@ -69,7 +69,7 @@ class Character extends _hero.Hero {
 }
 exports.Character = Character;
 
-},{"../../../src/engine/loaders/webgpu-gltf":31,"../../../src/engine/utils":36,"./hero":3}],2:[function(require,module,exports){
+},{"../../../src/engine/loaders/webgpu-gltf":32,"../../../src/engine/utils":38,"./hero":3}],2:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -239,7 +239,7 @@ class Controller {
 }
 exports.Controller = Controller;
 
-},{"../../../src/engine/raycast.js":35,"../../../src/engine/utils.js":36,"./nav-mesh.js":7,"wgpu-matrix":22}],3:[function(require,module,exports){
+},{"../../../src/engine/raycast.js":37,"../../../src/engine/utils.js":38,"./nav-mesh.js":7,"wgpu-matrix":22}],3:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -1141,7 +1141,7 @@ class MEMapLoader {
 }
 exports.MEMapLoader = MEMapLoader;
 
-},{"../../../src/engine/loader-obj.js":29,"../../../src/engine/utils.js":36,"./nav-mesh.js":7}],6:[function(require,module,exports){
+},{"../../../src/engine/loader-obj.js":29,"../../../src/engine/utils.js":38,"./nav-mesh.js":7}],6:[function(require,module,exports){
 "use strict";
 
 var _world = _interopRequireDefault(require("../../../src/world.js"));
@@ -1196,7 +1196,7 @@ let MYSTICORE = new _world.default({
 // just for dev
 window.app = MYSTICORE;
 
-},{"../../../src/world.js":51,"./characterBase.js":1,"./controller.js":2,"./hero.js":3,"./hud.js":4,"./map-loader.js":5}],7:[function(require,module,exports){
+},{"../../../src/world.js":53,"./characterBase.js":1,"./controller.js":2,"./hero.js":3,"./hud.js":4,"./map-loader.js":5}],7:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -1656,7 +1656,7 @@ function orientHeroToDirection(hero, dir) {
   hero.rotation.y = angle; // in radians
 }
 
-},{"../../../src/engine/utils.js":36}],8:[function(require,module,exports){
+},{"../../../src/engine/utils.js":38}],8:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -19857,7 +19857,7 @@ class MEBall {
 }
 exports.default = MEBall;
 
-},{"../shaders/shaders":45,"./engine":27,"./matrix-class":33,"wgpu-matrix":22}],24:[function(require,module,exports){
+},{"../shaders/shaders":47,"./engine":27,"./matrix-class":34,"wgpu-matrix":22}],24:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -19895,7 +19895,7 @@ class Behavior {
 }
 exports.default = Behavior;
 
-},{"./utils":36}],25:[function(require,module,exports){
+},{"./utils":38}],25:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -20320,7 +20320,7 @@ class MECube {
 }
 exports.default = MECube;
 
-},{"../shaders/shaders":45,"./engine":27,"./matrix-class":33,"wgpu-matrix":22}],26:[function(require,module,exports){
+},{"../shaders/shaders":47,"./engine":27,"./matrix-class":34,"wgpu-matrix":22}],26:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -20475,7 +20475,7 @@ class PointerEffect {
 }
 exports.PointerEffect = PointerEffect;
 
-},{"../../shaders/standalone/pointer.effect.js":46,"wgpu-matrix":22}],27:[function(require,module,exports){
+},{"../../shaders/standalone/pointer.effect.js":48,"wgpu-matrix":22}],27:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -20897,7 +20897,7 @@ function createInputHandler(window, canvas) {
   };
 }
 
-},{"./utils":36,"wgpu-matrix":22}],28:[function(require,module,exports){
+},{"./utils":38,"wgpu-matrix":22}],28:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -21138,7 +21138,7 @@ class SpotLight {
 }
 exports.SpotLight = SpotLight;
 
-},{"../shaders/vertexShadow.wgsl":49,"./behavior":24,"wgpu-matrix":22}],29:[function(require,module,exports){
+},{"../shaders/vertexShadow.wgsl":51,"./behavior":24,"wgpu-matrix":22}],29:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -21607,6 +21607,512 @@ function play(nameAni) {
 }
 
 },{}],30:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.BVHPlayerInstances = void 0;
+var _bvhLoader = _interopRequireDefault(require("bvh-loader"));
+var _wgpuMatrix = require("wgpu-matrix");
+var _webgpuGltf = require("./webgpu-gltf.js");
+var _meshObjInstances = _interopRequireDefault(require("../mesh-obj-instances.js"));
+function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
+// export var animBVH = new MEBvh();
+
+// export let loadBVH = (path) => {
+//   return new Promise((resolve, reject) => {
+//     animBVH.parse_file(path).then(() => {
+//       console.info("plot_hierarchy no function")
+//       animBVH.plot_hierarchy();
+//       var r = animBVH.frame_pose(0);
+//       // Not in use at the moment next feature - change skeletal or indipended new class.
+//       // console.log("FINAL P => ", r[0].length)
+//       // console.log("FINAL R => ", r[1].length)
+//       var KEYS = animBVH.joint_names();
+//       for(var x = 0;x < r[0].length;x++) {
+//         // console.log("->" + KEYS[x] + "-> position: " + r[0][x] + " rotation: " + r[1][x]);
+//       }
+//       var all = animBVH.all_frame_poses();
+//       // console.log("Final All -> ", all);
+//       resolve(animBVH);
+//     }).catch((err) => {reject(err)});
+//   })
+// }
+
+/**
+ * @description
+ * Skinning basic done animation can be changed with animation index.
+ * Holder for GLB model with skinning.
+ * @param {GLBModel} glb - Your loaded GLB
+ * @param {Object} bvhBones - Mapping of boneName → BVH bone data
+ * @param {GPUDevice} device - WebGPU device
+ * @credits Chatgpt assist here.
+ */
+class BVHPlayerInstances extends _meshObjInstances.default {
+  constructor(o, bvh, glb, primitiveIndex, skinnedNodeIndex, canvas, device, context, inputHandler, globalAmbient) {
+    super(canvas, device, context, o, inputHandler, globalAmbient, glb, primitiveIndex, skinnedNodeIndex);
+    // bvh arg not actula at the moment
+    this.bvh = {};
+    this.glb = glb;
+    this.currentFrame = 0;
+    this.fps = 30;
+    this.timeAccumulator = 0;
+    // debug
+    this.scaleBoneTest = 1;
+    this.primitiveIndex = primitiveIndex;
+    if (!this.bvh.sharedState) {
+      this.bvh.sharedState = {
+        currentFrame: 0,
+        timeAccumulator: 0
+      };
+    }
+    this.sharedState = this.bvh.sharedState;
+    // Reference to the skinned node containing all bones
+    this.skinnedNode = this.glb.skinnedMeshNodes[skinnedNodeIndex];
+    // console.log('this.skinnedNode', this.skinnedNode)
+    this.nodeWorldMatrices = Array.from({
+      length: this.glb.nodes.length
+    }, () => _wgpuMatrix.mat4.identity());
+    this.startTime = performance.now() / 1000; // seconds - anim speed control
+    this.MAX_BONES = 100; // predefined
+    this.skeleton = []; // array of joint node indices
+    this.animationSpeed = 1000;
+    this.inverseBindMatrices = []; // Float32Array for each joint
+    this.initInverseBindMatrices();
+    this.makeSkeletal();
+  }
+  makeSkeletal() {
+    let skin = this.glb.skins[0];
+    const accessorIndex = skin.inverseBindMatrices;
+    if (accessorIndex == null) {
+      console.warn("No inverseBindMatrices, using identity matrices");
+    }
+    // 1. Load all inverse bind matrices once
+    const invBindArray = this.inverseBindMatrices; // set earlier by initInverseBindMatrices()
+    // 2. Build skeleton array from skin.joints only
+    this.skeleton = skin.joints.slice(); // direct copy of indices
+    // 3. Assign inverseBindMatrix to each joint node correctly
+    for (let i = 0; i < skin.joints.length; i++) {
+      const jointIndex = skin.joints[i];
+      const jointNode = this.glb.nodes[jointIndex];
+      // assign only to bone nodes
+      jointNode.inverseBindMatrix = invBindArray.slice(i * 16, (i + 1) * 16);
+      // decompose node’s transform once (if not already)
+      if (!jointNode.transform) {
+        jointNode.transform = new Float32Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
+      }
+      if (!jointNode.translation || !jointNode.rotation || !jointNode.scale) {
+        const {
+          translation,
+          rotation,
+          scale
+        } = this.decomposeMatrix(jointNode.transform);
+        jointNode.translation = translation;
+        jointNode.rotation = rotation;
+        jointNode.scale = scale;
+      }
+    }
+    // 4. For mesh nodes or armature parent nodes, leave them alone
+    // what is animation , check is it more - we look for Armature by defoult 
+    // frendly blender
+    this.glb.animationIndex = 0;
+    for (let j = 0; j < this.glb.glbJsonData.animations.length; j++) {
+      if (this.glb.glbJsonData.animations[j].name.indexOf('Armature') !== -1) {
+        this.glb.animationIndex = j;
+      }
+    }
+  }
+  initInverseBindMatrices(skinIndex = 0) {
+    const skin = this.glb.skins[skinIndex];
+    const invBindAccessorIndex = skin.inverseBindMatrices; // number
+    if (invBindAccessorIndex === undefined || invBindAccessorIndex === null) {
+      console.warn('No inverseBindMatrices accessor for skin', skinIndex);
+      return;
+    }
+    const invBindArray = this.getAccessorArray(this.glb, invBindAccessorIndex);
+    // ✅ store directly as typed array (one big contiguous Float32Array)
+    this.inverseBindMatrices = invBindArray;
+  }
+  getNumberOfAnimation() {
+    let anim = this.glb.glbJsonData.animations[this.glb.animationIndex];
+    const sampler = anim.samplers[0];
+    const inputAccessor = this.glb.glbJsonData.accessors[sampler.input];
+    const numFrames = inputAccessor.count;
+    return numFrames;
+  }
+  update(deltaTime) {
+    const frameTime = 1 / this.fps;
+    this.sharedState.timeAccumulator += deltaTime;
+    while (this.sharedState.timeAccumulator >= frameTime) {
+      this.sharedState.currentFrame = (this.sharedState.currentFrame + 1) % this.getNumberOfAnimation();
+      this.sharedState.timeAccumulator -= frameTime;
+    }
+    // const frame = this.sharedState.currentFrame;
+    const currentTime = performance.now() / this.animationSpeed - this.startTime;
+    const boneMatrices = new Float32Array(this.MAX_BONES * 16);
+    if (this.glb.glbJsonData.animations && this.glb.glbJsonData.animations.length > 0) {
+      this.updateSingleBoneCubeAnimation(this.glb.glbJsonData.animations[this.glb.animationIndex], this.glb.nodes, currentTime, boneMatrices);
+    }
+  }
+  getAccessorArray(glb, accessorIndex) {
+    const accessor = glb.glbJsonData.accessors[accessorIndex];
+    const bufferView = glb.glbJsonData.bufferViews[accessor.bufferView];
+    const byteOffset = (bufferView.byteOffset || 0) + (accessor.byteOffset || 0);
+    const byteLength = accessor.count * this.getNumComponents(accessor.type) * (accessor.componentType === 5126 ? 4 : 2); // adjust per type
+    const bufferDef = glb.glbBinaryBuffer;
+    // ✅ now just slice:
+    const slice = this.getBufferSlice(bufferDef, byteOffset, byteLength);
+    switch (accessor.componentType) {
+      case 5126:
+        // FLOAT
+        return new Float32Array(slice);
+      case 5123:
+        // UNSIGNED_SHORT
+        return new Uint16Array(slice);
+      case 5121:
+        // UNSIGNED_BYTE
+        return new Uint8Array(slice);
+      default:
+        throw new Error("Unsupported componentType: " + accessor.componentType);
+    }
+  }
+  getAccessorTypeForChannel(path) {
+    switch (path) {
+      case "translation":
+        return "VEC3";
+      case "rotation":
+        return "VEC4";
+      case "scale":
+        return "VEC3";
+      case "weights":
+        return "VECN";
+      // if needed
+      default:
+        throw new Error("Unknown channel path: " + path);
+    }
+  }
+  getNumComponents(type) {
+    switch (type) {
+      case "SCALAR":
+        return 1;
+      case "VEC2":
+        return 2;
+      case "VEC3":
+        return 3;
+      case "VEC4":
+        return 4;
+      case "MAT4":
+        return 16;
+      default:
+        throw new Error("Unknown type: " + type);
+    }
+  }
+  getComponentSize(componentType) {
+    switch (componentType) {
+      case 5126:
+        return 4;
+      // float32
+      case 5123:
+        return 2;
+      // uint16
+      case 5121:
+        return 1;
+      // uint8
+      default:
+        throw new Error("Unknown componentType: " + componentType);
+    }
+  }
+
+  /**
+   *  @description
+   *  Get a typed slice of the raw binary buffer from glTF buffer definitions.
+   * @param {Object} bufferDef - the glTF buffer definition (usually gltfJson.buffers[0])
+   * @param {Number} byteOffset - byte offset into the buffer
+   * @param {Number} byteLength - byte length to slice
+   * @returns {ArrayBuffer} sliced array buffer
+   **/
+  getBufferSlice(bufferDef, byteOffset, byteLength) {
+    // GLTFBuffer instance:
+    if (bufferDef instanceof _webgpuGltf.GLTFBuffer) {
+      // Use .arrayBuffer + .byteOffset:
+      return bufferDef.arrayBuffer.slice(bufferDef.byteOffset + (byteOffset || 0), bufferDef.byteOffset + (byteOffset || 0) + byteLength);
+    }
+
+    // Already have a raw ArrayBuffer:
+    if (bufferDef instanceof ArrayBuffer) {
+      return bufferDef.slice(byteOffset, byteOffset + byteLength);
+    }
+
+    // Some loaders store it as .data or ._data:
+    if (bufferDef && bufferDef.data instanceof ArrayBuffer) {
+      return bufferDef.data.slice(byteOffset, byteOffset + byteLength);
+    }
+    if (bufferDef && bufferDef._data instanceof ArrayBuffer) {
+      return bufferDef._data.slice(byteOffset, byteOffset + byteLength);
+    }
+    throw new Error("No binary data found in GLB buffer[0]");
+  }
+
+  // --- helpers
+  lerpVec(a, b, t) {
+    return a.map((v, i) => v * (1 - t) + b[i] * t);
+  }
+
+  // Example quaternion slerp (a,b = [x,y,z,w])
+  quatSlerp(a, b, t) {
+    // naive slerp for small demo, normalize result
+    let dot = a[0] * b[0] + a[1] * b[1] + a[2] * b[2] + a[3] * b[3];
+    if (dot < 0) {
+      b = b.map(v => -v);
+      dot = -dot;
+    }
+    if (dot > 0.9995) return lerpVec(a, b, t);
+    const theta0 = Math.acos(dot);
+    const theta = theta0 * t;
+    const sinTheta = Math.sin(theta);
+    const sinTheta0 = Math.sin(theta0);
+    const s0 = Math.cos(theta) - dot * sinTheta / sinTheta0;
+    const s1 = sinTheta / sinTheta0;
+    return a.map((v, i) => s0 * v + s1 * b[i]);
+  }
+
+  // naive quaternion to 4x4 matrix
+  quatToMat4(q) {
+    const [x, y, z, w] = q;
+    const xx = x * x,
+      yy = y * y,
+      zz = z * z;
+    const xy = x * y,
+      xz = x * z,
+      yz = y * z,
+      wx = w * x,
+      wy = w * y,
+      wz = w * z;
+    return new Float32Array([1 - 2 * (yy + zz), 2 * (xy + wz), 2 * (xz - wy), 0, 2 * (xy - wz), 1 - 2 * (xx + zz), 2 * (yz + wx), 0, 2 * (xz + wy), 2 * (yz - wx), 1 - 2 * (xx + yy), 0, 0, 0, 0, 1]);
+  }
+
+  // Compose TRS to a 4×4
+  composeMatrix(translation, rotationQuat, scale) {
+    const m = _wgpuMatrix.mat4.identity();
+    _wgpuMatrix.mat4.translate(m, translation, m);
+    const rot = _wgpuMatrix.mat4.fromQuat(rotationQuat);
+    _wgpuMatrix.mat4.multiply(m, rot, m);
+    _wgpuMatrix.mat4.scale(m, scale, m);
+    return m;
+
+    // const m = mat4.identity();
+    // mat4.translate(m, translation, m);
+    // const rot = mat4.fromQuat(rotationQuat);
+    // mat4.multiply(m, rot, m);
+    // mat4.scale(m, scale, m);
+
+    // // Flip Y globally
+    // const flipY = mat4.identity();
+    // mat4.scale(flipY, [1, 1, -1], flipY);
+    // mat4.multiply(m, flipY, m);
+
+    // return m;
+  }
+  decomposeMatrix(m) {
+    // m is column-major: indices:
+    // [ m0 m4 m8  m12
+    //   m1 m5 m9  m13
+    //   m2 m6 m10 m14
+    //   m3 m7 m11 m15 ]
+    const t = new Float32Array([m[12], m[13], m[14]]);
+
+    // Extract the 3 column vectors (upper-left 3x3)
+    const cx = [m[0], m[1], m[2]];
+    const cy = [m[4], m[5], m[6]];
+    const cz = [m[8], m[9], m[10]];
+
+    // Lengths = scales
+    const len = v => Math.hypot(v[0], v[1], v[2]);
+    let sx = len(cx),
+      sy = len(cy),
+      sz = len(cz);
+
+    // If any scale nearly zero, avoid divide-by-zero
+    if (sx === 0) sx = 1.0;
+    if (sy === 0) sy = 1.0;
+    if (sz === 0) sz = 1.0;
+
+    // Normalize columns to produce a pure rotation matrix
+    const r00 = m[0] / sx,
+      r01 = m[4] / sy,
+      r02 = m[8] / sz;
+    const r10 = m[1] / sx,
+      r11 = m[5] / sy,
+      r12 = m[9] / sz;
+    const r20 = m[2] / sx,
+      r21 = m[6] / sy,
+      r22 = m[10] / sz;
+
+    // Fix negative-scale (reflection) case: if determinant < 0, flip sign of one scale and corresponding column
+    const det3 = r00 * (r11 * r22 - r12 * r21) - r01 * (r10 * r22 - r12 * r20) + r02 * (r10 * r21 - r11 * r20);
+    if (det3 < 0) {
+      // flip Z
+      sz = -sz;
+      // flip third column sign
+      // multiply cz by -1 => r02,r12,r22 *= -1
+      // recompute normalized r* accordingly:
+      // since we only need a valid rotation matrix for quaternion conversion,
+      // just invert the third column
+      // (alternatively flip sx or sy—this is a convention choice)
+      // Here we flip the third column:
+      // r02 = -r02; r12 = -r12; r22 = -r22;
+    }
+
+    // Build quaternion from rotation matrix (r00..r22)
+    // Using standard conversion (column-major rotation)
+    const trace = r00 + r11 + r22;
+    let qx, qy, qz, qw;
+    if (trace > 0.00001) {
+      const s = Math.sqrt(trace + 1.0) * 2; // s=4*qw
+      qw = 0.25 * s;
+      qx = (r21 - r12) / s;
+      qy = (r02 - r20) / s;
+      qz = (r10 - r01) / s;
+    } else if (r00 > r11 && r00 > r22) {
+      const s = Math.sqrt(1.0 + r00 - r11 - r22) * 2; // s=4*qx
+      qw = (r21 - r12) / s;
+      qx = 0.25 * s;
+      qy = (r01 + r10) / s;
+      qz = (r02 + r20) / s;
+    } else if (r11 > r22) {
+      const s = Math.sqrt(1.0 + r11 - r00 - r22) * 2; // s=4*qy
+      qw = (r02 - r20) / s;
+      qx = (r01 + r10) / s;
+      qy = 0.25 * s;
+      qz = (r12 + r21) / s;
+    } else {
+      const s = Math.sqrt(1.0 + r22 - r00 - r11) * 2; // s=4*qz
+      qw = (r10 - r01) / s;
+      qx = (r02 + r20) / s;
+      qy = (r12 + r21) / s;
+      qz = 0.25 * s;
+    }
+    const rot = new Float32Array([qx, qy, qz, qw]);
+    const scale = new Float32Array([sx, sy, sz]);
+    return {
+      translation: t,
+      rotation: rot,
+      scale: scale
+    };
+  }
+  slerp(q0, q1, t, out) {
+    let dot = q0[0] * q1[0] + q0[1] * q1[1] + q0[2] * q1[2] + q0[3] * q1[3];
+    if (dot < 0) {
+      dot = -dot;
+      q1 = [-q1[0], -q1[1], -q1[2], -q1[3]];
+    }
+    if (dot > 0.9995) {
+      // linear
+      for (let i = 0; i < 4; i++) out[i] = q0[i] + t * (q1[i] - q0[i]);
+      // normalize
+      const len = Math.hypot(...out);
+      for (let i = 0; i < 4; i++) out[i] /= len;
+      return;
+    }
+    const theta0 = Math.acos(dot);
+    const theta = theta0 * t;
+    const sinTheta = Math.sin(theta);
+    const sinTheta0 = Math.sin(theta0);
+    const s0 = Math.cos(theta) - dot * sinTheta / sinTheta0;
+    const s1 = sinTheta / sinTheta0;
+    for (let i = 0; i < 4; i++) {
+      out[i] = s0 * q0[i] + s1 * q1[i];
+    }
+  }
+  updateSingleBoneCubeAnimation(glbAnimation, nodes, time, boneMatrices) {
+    const channels = glbAnimation.channels;
+    const samplers = glbAnimation.samplers;
+    // --- Map channels per node for faster lookup
+    const nodeChannels = new Map();
+    for (const channel of channels) {
+      if (!nodeChannels.has(channel.target.node)) nodeChannels.set(channel.target.node, []);
+      nodeChannels.get(channel.target.node).push(channel);
+    }
+    for (let j = 0; j < this.skeleton.length; j++) {
+      const nodeIndex = this.skeleton[j];
+      const node = nodes[nodeIndex];
+
+      // --- Initialize node TRS if needed
+      if (!node.translation) node.translation = new Float32Array([0, 0, 0]);
+      if (!node.rotation) node.rotation = _wgpuMatrix.quat.create();
+      if (!node.scale) node.scale = new Float32Array([1, 1, 1]);
+
+      // --- Keep original TRS for additive animation
+      if (!node.originalTranslation) node.originalTranslation = node.translation.slice();
+      if (!node.originalRotation) node.originalRotation = node.rotation.slice();
+      if (!node.originalScale) node.originalScale = node.scale.slice();
+      const channelsForNode = nodeChannels.get(nodeIndex) || [];
+      for (const channel of channelsForNode) {
+        const path = channel.target.path; // "translation" | "rotation" | "scale"
+        const sampler = samplers[channel.sampler];
+        // --- Get input/output arrays
+        const inputTimes = this.getAccessorArray(this.glb, sampler.input);
+        const outputArray = this.getAccessorArray(this.glb, sampler.output);
+        const numComponents = path === "rotation" ? 4 : 3;
+        // --- Find keyframe interval
+        const animTime = time % inputTimes[inputTimes.length - 1];
+        let i = 0;
+        while (i < inputTimes.length - 1 && inputTimes[i + 1] <= animTime) i++;
+        const t0 = inputTimes[i];
+        const t1 = inputTimes[Math.min(i + 1, inputTimes.length - 1)];
+        const factor = t1 !== t0 ? (animTime - t0) / (t1 - t0) : 0;
+        // --- Interpolated keyframe values
+        const v0 = outputArray.subarray(i * numComponents, (i + 1) * numComponents);
+        const v1 = outputArray.subarray(Math.min(i + 1, inputTimes.length - 1) * numComponents, Math.min(i + 2, inputTimes.length) * numComponents);
+        // --- Apply animation
+        if (path === "translation") {
+          for (let k = 0; k < 3; k++) node.translation[k] = v0[k] * (1 - factor) + v1[k] * factor;
+        } else if (path === "scale") {
+          for (let k = 0; k < 3; k++) node.scale[k] = v0[k] * (1 - factor) + v1[k] * factor;
+        } else if (path === "rotation") {
+          this.slerp(v0, v1, factor, node.rotation);
+        }
+      }
+      // --- Recompose local transform
+      node.transform = this.composeMatrix(node.translation, node.rotation, node.scale);
+    }
+    const computeWorld = nodeIndex => {
+      const node = nodes[nodeIndex];
+      if (!node.worldMatrix) node.worldMatrix = _wgpuMatrix.mat4.create();
+      let parentWorld = node.parent !== null ? nodes[node.parent].worldMatrix : null;
+      if (parentWorld) {
+        // multiply parent * local
+        _wgpuMatrix.mat4.multiply(parentWorld, node.transform, node.worldMatrix);
+      } else {
+        _wgpuMatrix.mat4.copy(node.transform, node.worldMatrix);
+      }
+
+      // maybe no need to exist...
+      _wgpuMatrix.mat4.scale(node.worldMatrix, [this.scaleBoneTest, this.scaleBoneTest, this.scaleBoneTest], node.worldMatrix);
+      if (node.children) {
+        for (const childIndex of node.children) computeWorld(childIndex);
+      }
+    };
+    for (let i = 0; i < nodes.length; i++) {
+      if (nodes[i].parent === null || nodes[i].parent === undefined) {
+        computeWorld(i);
+      }
+    }
+    for (let j = 0; j < this.skeleton.length; j++) {
+      const jointNode = nodes[this.skeleton[j]];
+      const finalMat = _wgpuMatrix.mat4.create();
+      _wgpuMatrix.mat4.multiply(jointNode.worldMatrix, jointNode.inverseBindMatrix, finalMat);
+      boneMatrices.set(finalMat, j * 16);
+    }
+    // --- Upload to GPU
+    this.device.queue.writeBuffer(this.bonesBuffer, 0, boneMatrices);
+    return boneMatrices;
+  }
+}
+exports.BVHPlayerInstances = BVHPlayerInstances;
+
+},{"../mesh-obj-instances.js":35,"./webgpu-gltf.js":32,"bvh-loader":8,"wgpu-matrix":22}],31:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -22116,7 +22622,7 @@ class BVHPlayer extends _meshObj.default {
 }
 exports.BVHPlayer = BVHPlayer;
 
-},{"../mesh-obj":34,"./webgpu-gltf.js":31,"bvh-loader":8,"wgpu-matrix":22}],31:[function(require,module,exports){
+},{"../mesh-obj":36,"./webgpu-gltf.js":32,"bvh-loader":8,"wgpu-matrix":22}],32:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -22694,7 +23200,7 @@ async function uploadGLBModel(buffer, device) {
   return R;
 }
 
-},{"gl-matrix":11}],32:[function(require,module,exports){
+},{"gl-matrix":11}],33:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -23220,7 +23726,7 @@ class Materials {
 }
 exports.default = Materials;
 
-},{"../shaders/fragment.wgsl":40,"../shaders/fragment.wgsl.metal":41,"../shaders/fragment.wgsl.normalmap":42,"../shaders/fragment.wgsl.pong":43,"../shaders/fragment.wgsl.power":44}],33:[function(require,module,exports){
+},{"../shaders/fragment.wgsl":42,"../shaders/fragment.wgsl.metal":43,"../shaders/fragment.wgsl.normalmap":44,"../shaders/fragment.wgsl.pong":45,"../shaders/fragment.wgsl.power":46}],34:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -23456,7 +23962,797 @@ class Rotation {
 }
 exports.Rotation = Rotation;
 
-},{"./utils":36}],34:[function(require,module,exports){
+},{"./utils":38}],35:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+var _wgpuMatrix = require("wgpu-matrix");
+var _matrixClass = require("./matrix-class");
+var _vertex = require("../shaders/vertex.wgsl");
+var _utils = require("./utils");
+var _materials = _interopRequireDefault(require("./materials"));
+var _fragmentVideo = require("../shaders/fragment.video.wgsl");
+var _vertexWgsl = require("../shaders/vertex.wgsl.normalmap");
+var _pointerEffect = require("./effects/pointerEffect");
+function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
+class MEMeshObjInstances extends _materials.default {
+  constructor(canvas, device, context, o, inputHandler, globalAmbient, _glbFile = null, primitiveIndex = null, skinnedNodeIndex = null) {
+    super(device, o.material, _glbFile);
+    if (typeof o.name === 'undefined') o.name = (0, _utils.genName)(3);
+    if (typeof o.raycast === 'undefined') {
+      this.raycast = {
+        enabled: false,
+        radius: 2
+      };
+    } else {
+      this.raycast = o.raycast;
+    }
+    if (typeof o.pointerEffect === 'undefined') {
+      this.pointerEffect = {
+        enabled: false
+      };
+    } else {
+      this.pointerEffect = {
+        enabled: true
+      };
+    }
+    this.name = o.name;
+    this.done = false;
+    this.canvas = canvas;
+    this.device = device;
+    this.context = context;
+    this.entityArgPass = o.entityArgPass;
+    this.clearColor = "red";
+    this.video = null;
+    this.FINISH_VIDIO_INIT = false;
+    this.globalAmbient = [...globalAmbient];
+    if (typeof o.material.useTextureFromGlb === 'undefined' || typeof o.material.useTextureFromGlb !== "boolean") {
+      o.material.useTextureFromGlb = false;
+    }
+    // console.log('Material class arg:', o.material)
+    this.material = o.material;
+
+    // Mesh stuff - for single mesh or t-posed (fiktive-first in loading order)
+    this.mesh = o.mesh;
+    if (_glbFile != null) {
+      if (typeof this.mesh == 'undefined') {
+        this.mesh = {};
+        this.mesh.feedFromRealGlb = true;
+      }
+      // V
+      const verView = _glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex].positions.view;
+      const byteOffsetV = verView.byteOffset || 0;
+      const byteLengthV = verView.buffer.byteLength;
+      const vertices = new Float32Array(verView.buffer.buffer, byteOffsetV, byteLengthV / 4);
+      this.mesh.vertices = vertices;
+      //N
+      const norView = _glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex].normals.view;
+      const normalsUint8 = norView.buffer;
+      const byteOffsetN = norView.byteOffset || 0; // if your loader provides it
+      const byteLengthN = normalsUint8.byteLength;
+      const normals = new Float32Array(normalsUint8.buffer, byteOffsetN, byteLengthN / 4);
+      this.mesh.vertexNormals = normals;
+      //UV
+      let accessor = _glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex].texcoords[0];
+      const bufferView = accessor.view;
+      const byteOffset = (bufferView.byteOffset || 0) + (accessor.byteOffset || 0);
+      const count = accessor.count * 2; // VEC2 = 2 floats per vertex
+      const uvFloatArray = new Float32Array(bufferView.buffer.buffer, byteOffset, count);
+      this.mesh.uvs = uvFloatArray;
+      this.mesh.textures = uvFloatArray;
+      // I
+      let binaryI = _glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex].indices;
+      const indicesView = binaryI.view;
+      const indicesUint8 = indicesView.buffer;
+      const byteOffsetI = indicesView.byteOffset || 0;
+      const byteLengthI = indicesUint8.byteLength;
+      // Decide on type from accessor.componentType
+      // (5121 = UNSIGNED_BYTE, 5123 = UNSIGNED_SHORT, 5125 = UNSIGNED_INT)
+      let indicesArray;
+      switch (binaryI.componentType) {
+        case 5121:
+          // UNSIGNED_BYTE
+          indicesArray = new Uint8Array(indicesUint8.buffer, byteOffsetI, byteLengthI);
+          break;
+        case 5123:
+          // UNSIGNED_SHORT
+          indicesArray = new Uint16Array(indicesUint8.buffer, byteOffsetI, byteLengthI / 2);
+          break;
+        case 5125:
+          // UNSIGNED_INT
+          indicesArray = new Uint32Array(indicesUint8.buffer, byteOffsetI, byteLengthI / 4);
+          break;
+        default:
+          throw new Error("Unknown index componentType");
+      }
+      this.mesh.indices = indicesArray;
+      // W
+      let weightsView = _glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex].weights.view;
+      this.mesh.weightsView = weightsView;
+      let primitive = _glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex];
+      let finalRoundedWeights = this.getAccessorArray(_glbFile, primitive.weights.weightsAccessIndex);
+      const weightsArray = finalRoundedWeights;
+      // Normalize each group of 4
+      for (let i = 0; i < weightsArray.length; i += 4) {
+        const sum = weightsArray[i] + weightsArray[i + 1] + weightsArray[i + 2] + weightsArray[i + 3];
+        if (sum > 0) {
+          const inv = 1 / sum;
+          weightsArray[i] *= inv;
+          weightsArray[i + 1] *= inv;
+          weightsArray[i + 2] *= inv;
+          weightsArray[i + 3] *= inv;
+        } else {
+          weightsArray[i] = 1;
+          weightsArray[i + 1] = 0;
+          weightsArray[i + 2] = 0;
+          weightsArray[i + 3] = 0;
+        }
+      }
+      for (let i = 0; i < weightsArray.length; i += 4) {
+        const s = weightsArray[i] + weightsArray[i + 1] + weightsArray[i + 2] + weightsArray[i + 3];
+        if (Math.abs(s - 1.0) > 0.001) console.warn("Weight not normalized!", i, s);
+      }
+      this.mesh.weightsBuffer = this.device.createBuffer({
+        label: "weightsBuffer real data",
+        size: weightsArray.byteLength,
+        usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+        mappedAtCreation: true
+      });
+      new Float32Array(this.mesh.weightsBuffer.getMappedRange()).set(weightsArray);
+      this.mesh.weightsBuffer.unmap();
+      let jointsView = _glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex].joints.view;
+      this.mesh.jointsView = jointsView;
+      // Create typed array from the buffer (Uint16Array or Uint8Array depending on GLB)
+      let jointsArray16 = new Uint16Array(jointsView.buffer, jointsView.byteOffset || 0, jointsView.byteLength / 2 // in Uint16 elements
+      );
+      const jointsArray32 = new Uint32Array(jointsArray16.length);
+      for (let i = 0; i < jointsArray16.length; i++) {
+        jointsArray32[i] = jointsArray16[i];
+      }
+      // Create GPU buffer for joints
+      this.mesh.jointsBuffer = this.device.createBuffer({
+        label: "jointsBuffer[real-data]",
+        size: jointsArray32.byteLength,
+        usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+        mappedAtCreation: true
+      });
+      // Upload the data to GPU
+      new Uint32Array(this.mesh.jointsBuffer.getMappedRange()).set(jointsArray32);
+      this.mesh.jointsBuffer.unmap();
+
+      // TANGENTS
+      let tangentArray = null;
+      if (_glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex].tangents) {
+        const tangentView = _glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex].tangents.view;
+        const byteOffsetT = tangentView.byteOffset || 0;
+        const byteLengthT = tangentView.buffer.byteLength;
+        tangentArray = new Float32Array(tangentView.buffer, byteOffsetT, byteLengthT / 4);
+        this.mesh.tangents = tangentArray;
+        this.mesh.tangentsBuffer = this.device.createBuffer({
+          label: "tangentsBuffer[real-data]",
+          size: tangentArray.byteLength,
+          usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+          mappedAtCreation: true
+        });
+        new Float32Array(this.mesh.tangentsBuffer.getMappedRange()).set(tangentArray);
+        this.mesh.tangentsBuffer.unmap();
+      } else {
+        // 🟢 dummy fallback
+        const dummyTangents = new Float32Array(this.mesh.vertices.length / 3 * 4);
+        for (let i = 0; i < dummyTangents.length; i += 4) {
+          dummyTangents[i + 0] = 1.0; // T = (1,0,0)
+          dummyTangents[i + 1] = 0.0;
+          dummyTangents[i + 2] = 0.0;
+          dummyTangents[i + 3] = 1.0; // handedness
+        }
+        this.mesh.tangentsBuffer = this.device.createBuffer({
+          label: "tangentsBuffer dummy",
+          size: dummyTangents.byteLength,
+          usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+          mappedAtCreation: true
+        });
+        new Float32Array(this.mesh.tangentsBuffer.getMappedRange()).set(dummyTangents);
+        this.mesh.tangentsBuffer.unmap();
+        console.warn("GLTF primitive has no TANGENT attribute (normal map won’t work properly).");
+      }
+
+      // if(this.material.useTextureFromGlb == true) {
+      //   console.log('get glb images ', _glbFile.glbJsonData.materials);
+      //   _glbFile.glbJsonData.materials.forEach(material => {
+      //     console.log('get material :', material);
+      //   });
+
+      //   _glbFile.glbJsonData.images.forEach(imgGpuTexture => {
+      //     console.log('get images :', imgGpuTexture);
+      //   });
+
+      //   _glbFile.glbJsonData.glbTextures.forEach(glbTexture => {
+      //     console.log('get glbTextures :', glbTexture);
+      //   });
+      // }
+    } else {
+      // obj files flow
+      this.mesh.uvs = this.mesh.textures;
+    }
+    console.log(`%c Mesh loaded: ${o.name}`, _utils.LOG_FUNNY_SMALL);
+    // ObjSequence animation
+    if (typeof o.objAnim !== 'undefined' && o.objAnim != null) {
+      this.objAnim = o.objAnim;
+      for (var key in this.objAnim.animations) {
+        if (key != 'active') this.objAnim.animations[key].speedCounter = 0;
+      }
+      console.log(`%c Mesh objAnim exist: ${o.objAnim}`, _utils.LOG_FUNNY_SMALL);
+      this.drawElements = this.drawElementsAnim;
+    }
+    this.inputHandler = inputHandler;
+    this.cameras = o.cameras;
+    this.mainCameraParams = {
+      type: o.mainCameraParams.type,
+      responseCoef: o.mainCameraParams.responseCoef
+    };
+    this.lastFrameMS = 0;
+    this.texturesPaths = [];
+    o.texturesPaths.forEach(t => {
+      this.texturesPaths.push(t);
+    });
+    this.presentationFormat = navigator.gpu.getPreferredCanvasFormat();
+    this.position = new _matrixClass.Position(o.position.x, o.position.y, o.position.z);
+    this.rotation = new _matrixClass.Rotation(o.rotation.x, o.rotation.y, o.rotation.z);
+    this.rotation.rotationSpeed.x = o.rotationSpeed.x;
+    this.rotation.rotationSpeed.y = o.rotationSpeed.y;
+    this.rotation.rotationSpeed.z = o.rotationSpeed.z;
+    this.scale = o.scale;
+    // new dummy for skin mesh
+    if (!this.joints) {
+      const jointsData = new Uint32Array(this.mesh.vertices.length / 3 * 4);
+      const jointsBuffer = this.device.createBuffer({
+        label: "jointsBuffer",
+        size: jointsData.byteLength,
+        usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+        mappedAtCreation: true
+      });
+      new Uint32Array(jointsBuffer.getMappedRange()).set(jointsData);
+      jointsBuffer.unmap();
+      this.joints = {
+        data: jointsData,
+        buffer: jointsBuffer,
+        stride: 16 // vec4<u32>
+      };
+      const numVerts = this.mesh.vertices.length / 3;
+      // Weights data (vec4<f32>) – default all weight to bone 0
+      const weightsData = new Float32Array(numVerts * 4);
+      for (let i = 0; i < numVerts; i++) {
+        weightsData[i * 4 + 0] = 1.0; // 100% influence of bone 0
+        weightsData[i * 4 + 1] = 0.0;
+        weightsData[i * 4 + 2] = 0.0;
+        weightsData[i * 4 + 3] = 0.0;
+      }
+      // GPU buffer
+      const weightsBuffer = this.device.createBuffer({
+        label: "weightsBuffer dummy",
+        size: weightsData.byteLength,
+        usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+        mappedAtCreation: true
+      });
+      new Float32Array(weightsBuffer.getMappedRange()).set(weightsData);
+      weightsBuffer.unmap();
+      this.weights = {
+        data: weightsData,
+        buffer: weightsBuffer,
+        stride: 16 // vec4<f32>
+      };
+    }
+    this.runProgram = () => {
+      return new Promise(async resolve => {
+        this.shadowDepthTextureSize = 1024;
+        this.modelViewProjectionMatrix = _wgpuMatrix.mat4.create();
+        this.loadTex0(this.texturesPaths).then(() => {
+          resolve();
+        });
+      });
+    };
+    this.runProgram().then(() => {
+      this.context.configure({
+        device: this.device,
+        format: this.presentationFormat,
+        alphaMode: 'premultiplied'
+      });
+
+      // Create the model vertex buffer.
+      this.vertexBuffer = this.device.createBuffer({
+        size: this.mesh.vertices.length * Float32Array.BYTES_PER_ELEMENT,
+        usage: GPUBufferUsage.VERTEX,
+        mappedAtCreation: true
+      });
+      {
+        new Float32Array(this.vertexBuffer.getMappedRange()).set(this.mesh.vertices);
+        this.vertexBuffer.unmap();
+      }
+
+      // Create the model vertex buffer.
+      this.vertexNormalsBuffer = this.device.createBuffer({
+        size: this.mesh.vertexNormals.length * Float32Array.BYTES_PER_ELEMENT,
+        usage: GPUBufferUsage.VERTEX,
+        mappedAtCreation: true
+      });
+      {
+        new Float32Array(this.vertexNormalsBuffer.getMappedRange()).set(this.mesh.vertexNormals);
+        this.vertexNormalsBuffer.unmap();
+      }
+      this.vertexTexCoordsBuffer = this.device.createBuffer({
+        size: this.mesh.textures.length * Float32Array.BYTES_PER_ELEMENT,
+        usage: GPUBufferUsage.VERTEX,
+        mappedAtCreation: true
+      });
+      {
+        new Float32Array(this.vertexTexCoordsBuffer.getMappedRange()).set(this.mesh.textures);
+        this.vertexTexCoordsBuffer.unmap();
+      }
+
+      // Create the model index buffer.
+      this.indexCount = this.mesh.indices.length;
+      const indexCount = this.mesh.indices.length;
+      const size = Math.ceil(indexCount * Uint16Array.BYTES_PER_ELEMENT / 4) * 4;
+      this.indexBuffer = this.device.createBuffer({
+        size,
+        usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST,
+        mappedAtCreation: true
+      });
+      new Uint16Array(this.indexBuffer.getMappedRange()).set(this.mesh.indices);
+      this.indexBuffer.unmap();
+      this.indexCount = indexCount;
+      let glbInfo = {
+        arrayStride: 4 * 4,
+        // vec4<f32> = 4 * 4 bytes
+        attributes: [{
+          format: 'float32x4',
+          offset: 0,
+          shaderLocation: 4
+        }]
+      };
+      let tang = null;
+
+      // if(this.mesh.feedFromRealGlb && this.mesh.feedFromRealGlb == true) {
+      //   // console.log('it is GLB ')
+      //   glbInfo = {
+      //     arrayStride: 4 * 4, // vec4<f32> = 4 * 4 bytes
+      //     attributes: [{format: 'float32x4', offset: 0, shaderLocation: 4}]
+      //   }
+      // } else {
+      //   // console.log('it is not  GLB ')
+      //   glbInfo = {
+      //     arrayStride: 4 * 4, // vec4<f32> = 4 * 4 bytes
+      //     attributes: [{format: 'float32x4', offset: 0, shaderLocation: 4}]
+      //   }
+      // }
+      // Create some common descriptors used for both the shadow pipeline
+      // and the color rendering pipeline.
+      this.vertexBuffers = [{
+        arrayStride: Float32Array.BYTES_PER_ELEMENT * 3,
+        attributes: [{
+          // position
+          shaderLocation: 0,
+          offset: 0,
+          format: "float32x3"
+        }]
+      }, {
+        arrayStride: Float32Array.BYTES_PER_ELEMENT * 3,
+        attributes: [{
+          // normal
+          shaderLocation: 1,
+          offset: 0,
+          format: "float32x3"
+        }]
+      }, {
+        arrayStride: Float32Array.BYTES_PER_ELEMENT * 2,
+        attributes: [{
+          // uvs
+          shaderLocation: 2,
+          offset: 0,
+          format: "float32x2"
+        }]
+      },
+      // joint indices
+      {
+        arrayStride: 4 * 4,
+        // vec4<u32> = 4 * 4 bytes
+        attributes: [{
+          format: 'uint32x4',
+          offset: 0,
+          shaderLocation: 3
+        }]
+      },
+      // weights
+      glbInfo];
+      if (this.mesh.tangentsBuffer) {
+        this.vertexBuffers.push({
+          arrayStride: 4 * 4,
+          // vec4<f32> = 16 bytes
+          attributes: [{
+            shaderLocation: 5,
+            format: "float32x4",
+            offset: 0
+          }]
+        });
+      } else {
+        // for non glb - non skinned use basic shaders
+      }
+
+      // Note: The frontFace and cullMode values have no effect on the 
+      // "point-list", "line-list", or "line-strip" topologies.
+      this.primitive = {
+        topology: 'triangle-list',
+        cullMode: 'back',
+        // typical for shadow passes
+        frontFace: 'ccw'
+      };
+
+      // Selected effect
+      this.selectedBuffer = device.createBuffer({
+        size: 4,
+        // just one float
+        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+      });
+      this.selectedBindGroupLayout = device.createBindGroupLayout({
+        entries: [{
+          binding: 0,
+          visibility: GPUShaderStage.FRAGMENT,
+          buffer: {}
+        }]
+      });
+      this.selectedBindGroup = device.createBindGroup({
+        layout: this.selectedBindGroupLayout,
+        entries: [{
+          binding: 0,
+          resource: {
+            buffer: this.selectedBuffer
+          }
+        }]
+      });
+      this.setSelectedEffect = (selected = false) => {
+        this.device.queue.writeBuffer(this.selectedBuffer, 0, new Float32Array([selected ? 1.0 : 0.0]));
+      };
+      // 0 default
+      this.setSelectedEffect();
+
+      // Create a bind group layout which holds the scene uniforms and
+      // the texture+sampler for depth. We create it manually because the WebPU
+      // implementation doesn't infer this from the shader (yet).
+      this.createLayoutForRender();
+      this.modelUniformBuffer = this.device.createBuffer({
+        size: 4 * 16,
+        // 4x4 matrix
+        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+      });
+      this.sceneUniformBuffer = this.device.createBuffer({
+        label: 'sceneUniformBuffer per mesh',
+        size: 176,
+        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+      });
+      // test MUST BE IF
+      this.uniformBufferBindGroupLayout = this.device.createBindGroupLayout({
+        label: 'uniformBufferBindGroupLayout in mesh',
+        entries: [{
+          binding: 0,
+          visibility: GPUShaderStage.VERTEX,
+          buffer: {
+            type: 'uniform'
+          }
+        }, {
+          binding: 1,
+          visibility: GPUShaderStage.VERTEX,
+          buffer: {
+            type: 'uniform'
+          }
+        }]
+      });
+
+      // dummy for non skin mesh like this class
+      function alignTo256(n) {
+        return Math.ceil(n / 256) * 256;
+      }
+      let MAX_BONES = 100;
+      this.MAX_BONES = MAX_BONES;
+      this.bonesBuffer = device.createBuffer({
+        label: "bonesBuffer",
+        size: alignTo256(64 * MAX_BONES),
+        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+      });
+      const bones = new Float32Array(this.MAX_BONES * 16);
+      for (let i = 0; i < this.MAX_BONES; i++) {
+        // identity matrices
+        bones.set([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1], i * 16);
+      }
+      this.device.queue.writeBuffer(this.bonesBuffer, 0, bones);
+      this.modelBindGroup = this.device.createBindGroup({
+        label: 'modelBindGroup in mesh',
+        layout: this.uniformBufferBindGroupLayout,
+        entries: [{
+          binding: 0,
+          resource: {
+            buffer: this.modelUniformBuffer
+          }
+        }, {
+          binding: 1,
+          resource: {
+            buffer: this.bonesBuffer
+          }
+        }]
+      });
+      this.mainPassBindGroupLayout = this.device.createBindGroupLayout({
+        entries: [{
+          binding: 0,
+          visibility: GPUShaderStage.FRAGMENT,
+          texture: {
+            sampleType: 'depth'
+          }
+        }, {
+          binding: 1,
+          visibility: GPUShaderStage.FRAGMENT,
+          sampler: {
+            type: 'comparison'
+          }
+        }]
+      });
+
+      // pointerEffect bonus
+      // TEST - OPTIONS ON BASE MESHOBJ LEVEL
+      this.effects = {};
+      if (this.pointerEffect.enabled === true) {
+        let pf = navigator.gpu.getPreferredCanvasFormat();
+        this.effects.pointer = new _pointerEffect.PointerEffect(device, pf, this, true);
+      }
+      // end
+
+      // Rotates the camera around the origin based on time.
+      this.getTransformationMatrix = (mainRenderBundle, spotLight, index) => {
+        const now = Date.now();
+        const dt = (now - this.lastFrameMS) / this.mainCameraParams.responseCoef;
+        this.lastFrameMS = now;
+        const camera = this.cameras[this.mainCameraParams.type];
+        if (index == 0) camera.update(dt, inputHandler());
+        const camVP = _wgpuMatrix.mat4.multiply(camera.projectionMatrix, camera.view);
+        const sceneData = new Float32Array(44);
+        // Light VP
+        sceneData.set(spotLight.viewProjMatrix, 0);
+        // Camera VP
+        sceneData.set(camVP, 16);
+        // Camera position + padding
+        sceneData.set([camera.position.x, camera.position.y, camera.position.z, 0.0], 32);
+        // Light position + padding
+        sceneData.set([spotLight.position[0], spotLight.position[1], spotLight.position[2], 0.0], 36);
+        sceneData.set([this.globalAmbient[0], this.globalAmbient[1], this.globalAmbient[2], 0.0], 40);
+        device.queue.writeBuffer(this.sceneUniformBuffer, 0, sceneData.buffer, sceneData.byteOffset, sceneData.byteLength);
+      };
+      this.getModelMatrix = pos => {
+        let modelMatrix = _wgpuMatrix.mat4.identity();
+        _wgpuMatrix.mat4.translate(modelMatrix, [pos.x, pos.y, pos.z], modelMatrix);
+        if (this.itIsPhysicsBody) {
+          _wgpuMatrix.mat4.rotate(modelMatrix, [this.rotation.axis.x, this.rotation.axis.y, this.rotation.axis.z], (0, _utils.degToRad)(this.rotation.angle), modelMatrix);
+        } else {
+          _wgpuMatrix.mat4.rotateX(modelMatrix, this.rotation.getRotX(), modelMatrix);
+          _wgpuMatrix.mat4.rotateY(modelMatrix, this.rotation.getRotY(), modelMatrix);
+          _wgpuMatrix.mat4.rotateZ(modelMatrix, this.rotation.getRotZ(), modelMatrix);
+        }
+        // Apply scale if you have it, e.g.:
+        // console.warn('what is csle comes from user level not glb ', this.scale)
+        if (this.glb || this.objAnim) {
+          _wgpuMatrix.mat4.scale(modelMatrix, [this.scale[0], this.scale[1], this.scale[2]], modelMatrix);
+        }
+        return modelMatrix;
+      };
+
+      // looks like affect on transformations for now const 0
+      const modelMatrix = _wgpuMatrix.mat4.translation([0, 0, 0]);
+      const modelData = modelMatrix;
+      this.device.queue.writeBuffer(this.modelUniformBuffer, 0, modelData.buffer, modelData.byteOffset, modelData.byteLength);
+      this.done = true;
+      try {
+        this.setupPipeline();
+      } catch (err) {
+        console.log('err in create pipeline in init ', err);
+      }
+    }).then(() => {
+      if (typeof this.objAnim !== 'undefined' && this.objAnim !== null) {
+        console.log('after all updateMeshListBuffers...');
+        this.updateMeshListBuffers();
+      }
+    });
+  }
+  setupPipeline = () => {
+    this.createBindGroupForRender();
+    this.pipeline = this.device.createRenderPipeline({
+      label: 'Mesh Pipeline ✅',
+      layout: this.device.createPipelineLayout({
+        label: 'createPipelineLayout Mesh',
+        bindGroupLayouts: [this.bglForRender, this.uniformBufferBindGroupLayout, this.selectedBindGroupLayout]
+      }),
+      vertex: {
+        entryPoint: 'main',
+        module: this.device.createShaderModule({
+          code: this.material.type == 'normalmap' ? _vertexWgsl.vertexWGSL_NM : _vertex.vertexWGSL
+        }),
+        buffers: this.vertexBuffers
+      },
+      fragment: {
+        entryPoint: 'main',
+        module: this.device.createShaderModule({
+          code: this.isVideo == true ? _fragmentVideo.fragmentVideoWGSL : this.getMaterial()
+        }),
+        targets: [{
+          format: this.presentationFormat
+        }],
+        constants: {
+          shadowDepthTextureSize: this.shadowDepthTextureSize
+        }
+      },
+      depthStencil: {
+        depthWriteEnabled: true,
+        depthCompare: 'less',
+        format: 'depth24plus'
+      },
+      primitive: this.primitive
+    });
+    console.log('✅Set Pipeline done');
+  };
+  updateModelUniformBuffer = () => {
+    if (this.done == false) return;
+    // Per-object model matrix only
+    const modelMatrix = this.getModelMatrix(this.position);
+    this.device.queue.writeBuffer(this.modelUniformBuffer, 0, modelMatrix.buffer, modelMatrix.byteOffset, modelMatrix.byteLength);
+  };
+  createGPUBuffer(dataArray, usage) {
+    if (!dataArray || typeof dataArray.length !== 'number') {
+      throw new Error('Invalid data array passed to createGPUBuffer');
+    }
+    const size = dataArray.length * dataArray.BYTES_PER_ELEMENT;
+    if (!Number.isFinite(size) || size <= 0) {
+      throw new Error(`Invalid buffer size: ${size}`);
+    }
+    const buffer = this.device.createBuffer({
+      size,
+      usage,
+      mappedAtCreation: true
+    });
+    const writeArray = dataArray.constructor === Float32Array ? new Float32Array(buffer.getMappedRange()) : new Uint16Array(buffer.getMappedRange());
+    writeArray.set(dataArray);
+    buffer.unmap();
+    return buffer;
+  }
+  updateMeshListBuffers() {
+    for (const key in this.objAnim.meshList) {
+      const mesh = this.objAnim.meshList[key];
+      mesh.vertexBuffer = this.device.createBuffer({
+        size: mesh.vertices.length * Float32Array.BYTES_PER_ELEMENT,
+        usage: GPUBufferUsage.VERTEX,
+        mappedAtCreation: true
+      });
+      new Float32Array(mesh.vertexBuffer.getMappedRange()).set(mesh.vertices);
+      mesh.vertexBuffer.unmap();
+      // Normals
+      mesh.vertexNormalsBuffer = this.device.createBuffer({
+        size: mesh.vertexNormals.length * Float32Array.BYTES_PER_ELEMENT,
+        usage: GPUBufferUsage.VERTEX,
+        mappedAtCreation: true
+      });
+      new Float32Array(mesh.vertexNormalsBuffer.getMappedRange()).set(mesh.vertexNormals);
+      mesh.vertexNormalsBuffer.unmap();
+      // UVs
+      mesh.vertexTexCoordsBuffer = this.device.createBuffer({
+        size: mesh.textures.length * Float32Array.BYTES_PER_ELEMENT,
+        usage: GPUBufferUsage.VERTEX,
+        mappedAtCreation: true
+      });
+      new Float32Array(mesh.vertexTexCoordsBuffer.getMappedRange()).set(mesh.textures);
+      mesh.vertexTexCoordsBuffer.unmap();
+      // Indices
+      const indexCount = mesh.indices.length;
+      const indexSize = Math.ceil(indexCount * Uint16Array.BYTES_PER_ELEMENT / 4) * 4;
+      mesh.indexBuffer = this.device.createBuffer({
+        size: indexSize,
+        usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST,
+        mappedAtCreation: true
+      });
+      new Uint16Array(mesh.indexBuffer.getMappedRange()).set(mesh.indices);
+      mesh.indexBuffer.unmap();
+      mesh.indexCount = indexCount;
+    }
+  }
+  drawElements = (pass, lightContainer) => {
+    if (this.isVideo) {
+      this.updateVideoTexture();
+    }
+    // Bind per-mesh uniforms
+    pass.setBindGroup(0, this.sceneBindGroupForRender); // camera/light UBOs
+    pass.setBindGroup(1, this.modelBindGroup); // mesh transforms/textures
+    // Bind each light’s shadow texture & sampler
+    if (this.isVideo == false) {
+      let bindIndex = 2; // start after UBO & model
+      for (const light of lightContainer) {
+        pass.setBindGroup(bindIndex++, light.getMainPassBindGroup(this));
+      }
+    }
+
+    // --- Selection state (new)
+    if (this.selectedBindGroup) {
+      pass.setBindGroup(2, this.selectedBindGroup);
+    }
+    pass.setVertexBuffer(0, this.vertexBuffer);
+    pass.setVertexBuffer(1, this.vertexNormalsBuffer);
+    pass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
+    if (this.joints) {
+      if (this.constructor.name === "BVHPlayer") {
+        pass.setVertexBuffer(3, this.mesh.jointsBuffer); // real
+        pass.setVertexBuffer(4, this.mesh.weightsBuffer); //real
+      } else {
+        // dummy
+        pass.setVertexBuffer(3, this.joints.buffer); // new dummy
+        pass.setVertexBuffer(4, this.weights.buffer); // new dummy
+      }
+    }
+    if (this.mesh.tangentsBuffer) {
+      pass.setVertexBuffer(5, this.mesh.tangentsBuffer);
+    }
+    pass.setIndexBuffer(this.indexBuffer, 'uint16');
+    pass.drawIndexed(this.indexCount);
+  };
+  drawElementsAnim = (renderPass, lightContainer) => {
+    if (!this.sceneBindGroupForRender || !this.modelBindGroup) {
+      console.log(' NULL 1');
+      return;
+    }
+    if (!this.objAnim.meshList[this.objAnim.id + this.objAnim.currentAni]) {
+      console.log(' NULL 2');
+      return;
+    }
+    renderPass.setBindGroup(0, this.sceneBindGroupForRender);
+    renderPass.setBindGroup(1, this.modelBindGroup);
+    const mesh = this.objAnim.meshList[this.objAnim.id + this.objAnim.currentAni];
+    if (this.isVideo == false) {
+      let bindIndex = 2; // start after UBO & model
+      for (const light of lightContainer) {
+        renderPass.setBindGroup(bindIndex++, light.getMainPassBindGroup(this));
+      }
+    }
+    renderPass.setVertexBuffer(0, mesh.vertexBuffer);
+    renderPass.setVertexBuffer(1, mesh.vertexNormalsBuffer);
+    renderPass.setVertexBuffer(2, mesh.vertexTexCoordsBuffer);
+    if (this.constructor.name === "BVHPlayer") {
+      renderPass.setVertexBuffer(3, this.mesh.jointsBuffer); // real
+      renderPass.setVertexBuffer(4, this.mesh.weightsBuffer); // real
+    } else {
+      // dummy
+      renderPass.setVertexBuffer(3, this.joints.buffer); // dummy
+      renderPass.setVertexBuffer(4, this.weights.buffer); // dummy
+    }
+    renderPass.setIndexBuffer(mesh.indexBuffer, 'uint16');
+    renderPass.drawIndexed(mesh.indexCount);
+    if (this.objAnim.playing == true) {
+      if (this.objAnim.animations[this.objAnim.animations.active].speedCounter >= this.objAnim.animations[this.objAnim.animations.active].speed) {
+        this.objAnim.currentAni++;
+        this.objAnim.animations[this.objAnim.animations.active].speedCounter = 0;
+      } else {
+        this.objAnim.animations[this.objAnim.animations.active].speedCounter++;
+      }
+      if (this.objAnim.currentAni >= this.objAnim.animations[this.objAnim.animations.active].to) {
+        this.objAnim.currentAni = this.objAnim.animations[this.objAnim.animations.active].from;
+      }
+    }
+  };
+  drawShadows = (shadowPass, light) => {
+    shadowPass.setVertexBuffer(0, this.vertexBuffer);
+    shadowPass.setVertexBuffer(1, this.vertexNormalsBuffer);
+    shadowPass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
+    shadowPass.setIndexBuffer(this.indexBuffer, 'uint16');
+    shadowPass.drawIndexed(this.indexCount);
+  };
+}
+exports.default = MEMeshObjInstances;
+
+},{"../shaders/fragment.video.wgsl":41,"../shaders/vertex.wgsl":49,"../shaders/vertex.wgsl.normalmap":50,"./effects/pointerEffect":26,"./materials":33,"./matrix-class":34,"./utils":38,"wgpu-matrix":22}],36:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -23993,14 +25289,12 @@ class MEMeshObj extends _materials.default {
       });
 
       // pointerEffect bonus
-
       // TEST - OPTIONS ON BASE MESHOBJ LEVEL
       this.effects = {};
       if (this.pointerEffect.enabled === true) {
         let pf = navigator.gpu.getPreferredCanvasFormat();
         this.effects.pointer = new _pointerEffect.PointerEffect(device, pf, this, true);
       }
-
       // end
 
       // Rotates the camera around the origin based on time.
@@ -24248,7 +25542,7 @@ class MEMeshObj extends _materials.default {
 }
 exports.default = MEMeshObj;
 
-},{"../shaders/fragment.video.wgsl":39,"../shaders/vertex.wgsl":47,"../shaders/vertex.wgsl.normalmap":48,"./effects/pointerEffect":26,"./materials":32,"./matrix-class":33,"./utils":36,"wgpu-matrix":22}],35:[function(require,module,exports){
+},{"../shaders/fragment.video.wgsl":41,"../shaders/vertex.wgsl":49,"../shaders/vertex.wgsl.normalmap":50,"./effects/pointerEffect":26,"./materials":33,"./matrix-class":34,"./utils":38,"wgpu-matrix":22}],37:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -24430,7 +25724,7 @@ function addRaycastsListener(canvasId = "canvas1") {
   });
 }
 
-},{"wgpu-matrix":22}],36:[function(require,module,exports){
+},{"wgpu-matrix":22}],38:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -25316,7 +26610,7 @@ function setupCanvasFilters(canvasId) {
   updateFilter(); // Initial
 }
 
-},{}],37:[function(require,module,exports){
+},{}],39:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -25356,7 +26650,7 @@ class MultiLang {
 }
 exports.MultiLang = MultiLang;
 
-},{"../engine/utils":36}],38:[function(require,module,exports){
+},{"../engine/utils":38}],40:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -25640,7 +26934,7 @@ class MatrixAmmo {
 }
 exports.default = MatrixAmmo;
 
-},{"../engine/utils":36}],39:[function(require,module,exports){
+},{"../engine/utils":38}],41:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -25730,7 +27024,7 @@ fn main(input : FragmentInput) -> @location(0) vec4f {
 }
 `;
 
-},{}],40:[function(require,module,exports){
+},{}],42:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -25961,7 +27255,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, 1.0);
 }`;
 
-},{}],41:[function(require,module,exports){
+},{}],43:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -26139,7 +27433,7 @@ return vec4f(color, 1.0);
 // let radiance = spotlights[0].color * 10.0; // test high intensity
 // Lo += materialData.baseColor * radiance * NdotL;
 
-},{}],42:[function(require,module,exports){
+},{}],44:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -26384,7 +27678,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, 1.0);
 }`;
 
-},{}],43:[function(require,module,exports){
+},{}],45:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -26604,7 +27898,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, 1.0);
 }`;
 
-},{}],44:[function(require,module,exports){
+},{}],46:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -26772,7 +28066,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 // let radiance = spotlights[0].color * 10.0; // test high intensity
 // Lo += materialData.baseColor * radiance * NdotL;
 
-},{}],45:[function(require,module,exports){
+},{}],47:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -26830,7 +28124,7 @@ fn fragmentMain(input: VertexOutput) -> @location(0) vec4f {
   return vec4f(textureColor.rgb * lightColor, textureColor.a);
 }`;
 
-},{}],46:[function(require,module,exports){
+},{}],48:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -26888,7 +28182,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
   return vec4<f32>(color, 1.0);
 }`;
 
-},{}],47:[function(require,module,exports){
+},{}],49:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -26974,7 +28268,7 @@ fn main(
   return output;
 }`;
 
-},{}],48:[function(require,module,exports){
+},{}],50:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -27085,7 +28379,7 @@ fn main(
   return output;
 }`;
 
-},{}],49:[function(require,module,exports){
+},{}],51:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -27113,7 +28407,7 @@ fn main(
 }
 `;
 
-},{}],50:[function(require,module,exports){
+},{}],52:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -27183,7 +28477,7 @@ class MatrixSounds {
 }
 exports.MatrixSounds = MatrixSounds;
 
-},{}],51:[function(require,module,exports){
+},{}],53:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -27202,6 +28496,7 @@ var _sounds = require("./sounds/sounds.js");
 var _loaderObj = require("./engine/loader-obj.js");
 var _lights = require("./engine/lights.js");
 var _bvh = require("./engine/loaders/bvh.js");
+var _bvhInstaced = require("./engine/loaders/bvh-instaced.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 /**
  * @description
@@ -28032,7 +29327,126 @@ class MatrixEngineWGPU {
       }
     }
   };
+
+  // NEW TEST INSTANCED DRAWS
+  addGlbObjInctance = (o, BVHANIM, glbFile, clearColor = this.options.clearColor) => {
+    if (typeof o.name === 'undefined') {
+      o.name = (0, _utils.genName)(9);
+    }
+    if (typeof o.position === 'undefined') {
+      o.position = {
+        x: 0,
+        y: 0,
+        z: -4
+      };
+    }
+    if (typeof o.rotation === 'undefined') {
+      o.rotation = {
+        x: 0,
+        y: 0,
+        z: 0
+      };
+    }
+    if (typeof o.rotationSpeed === 'undefined') {
+      o.rotationSpeed = {
+        x: 0,
+        y: 0,
+        z: 0
+      };
+    }
+    if (typeof o.texturesPaths === 'undefined') {
+      o.texturesPaths = ['./res/textures/default.png'];
+    }
+    if (typeof o.material === 'undefined') {
+      o.material = {
+        type: 'standard'
+      };
+    }
+    if (typeof o.mainCameraParams === 'undefined') {
+      o.mainCameraParams = this.mainCameraParams;
+    }
+    if (typeof o.scale === 'undefined') {
+      o.scale = [1, 1, 1];
+    }
+    if (typeof o.raycast === 'undefined') {
+      o.raycast = {
+        enabled: false,
+        radius: 2
+      };
+    }
+    if (typeof o.pointerEffect === 'undefined') {
+      o.pointerEffect = {
+        enabled: false
+      };
+    } else {
+      // o.pointerEffect = {enabled: true};
+    }
+    o.entityArgPass = this.entityArgPass;
+    o.cameras = this.cameras;
+    if (typeof o.physics === 'undefined') {
+      o.physics = {
+        scale: [1, 1, 1],
+        enabled: true,
+        geometry: "Sphere",
+        //                   must be fixed<<
+        radius: typeof o.scale == Number ? o.scale : o.scale[0],
+        name: o.name,
+        rotation: o.rotation
+      };
+    }
+    if (typeof o.physics.enabled === 'undefined') {
+      o.physics.enabled = true;
+    }
+    if (typeof o.physics.geometry === 'undefined') {
+      o.physics.geometry = "Cube";
+    }
+    if (typeof o.physics.radius === 'undefined') {
+      o.physics.radius = o.scale;
+    }
+    if (typeof o.physics.mass === 'undefined') {
+      o.physics.mass = 1;
+    }
+    if (typeof o.physics.name === 'undefined') {
+      o.physics.name = o.name;
+    }
+    if (typeof o.physics.scale === 'undefined') {
+      o.physics.scale = o.scale;
+    }
+    if (typeof o.physics.rotation === 'undefined') {
+      o.physics.rotation = o.rotation;
+    }
+    o.physics.position = o.position;
+    if (typeof o.objAnim == 'undefined' || typeof o.objAnim == null) {
+      o.objAnim = null;
+    } else {
+      alert('GLB not use objAnim (it is only for obj sequence). GLB use BVH skeletal for animation');
+    }
+    let skinnedNodeIndex = 0;
+    for (const skinnedNode of glbFile.skinnedMeshNodes) {
+      let c = 0;
+      for (const primitive of skinnedNode.mesh.primitives) {
+        // console.log(`count: ${c} primitive-glb: ${primitive}`);
+        // primitive is mesh - probably with own material . material/texture per primitive
+        // create scene object for each skinnedNode
+        o.name = o.name + "-" + skinnedNode.name + '-' + c;
+        const bvhPlayer = new _bvhInstaced.BVHPlayerInstances(o, BVHANIM, glbFile, c, skinnedNodeIndex, this.canvas, this.device, this.context, this.inputHandler, this.globalAmbient.slice());
+        skinnedNodeIndex++;
+        // console.log(`bvhPlayer!!!!!: ${bvhPlayer}`);
+        bvhPlayer.spotlightUniformBuffer = this.spotlightUniformBuffer;
+        bvhPlayer.clearColor = clearColor;
+        // if(o.physics.enabled == true) {
+        //   this.matrixAmmo.addPhysics(myMesh1, o.physics)
+        // }
+        // make it soft
+        setTimeout(() => {
+          this.mainRenderBundle.push(bvhPlayer);
+        }, 1000);
+        // this.mainRenderBundle.push(bvhPlayer)
+        c++;
+      }
+    }
+  };
 }
 exports.default = MatrixEngineWGPU;
 
-},{"./engine/ball.js":23,"./engine/cube.js":25,"./engine/engine.js":27,"./engine/lights.js":28,"./engine/loader-obj.js":29,"./engine/loaders/bvh.js":30,"./engine/mesh-obj.js":34,"./engine/utils.js":36,"./multilang/lang.js":37,"./physics/matrix-ammo.js":38,"./sounds/sounds.js":50,"wgpu-matrix":22}]},{},[6]);
+},{"./engine/ball.js":23,"./engine/cube.js":25,"./engine/engine.js":27,"./engine/lights.js":28,"./engine/loader-obj.js":29,"./engine/loaders/bvh-instaced.js":30,"./engine/loaders/bvh.js":31,"./engine/mesh-obj.js":36,"./engine/utils.js":38,"./multilang/lang.js":39,"./physics/matrix-ammo.js":40,"./sounds/sounds.js":52,"wgpu-matrix":22}]},{},[6]);

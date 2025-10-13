@@ -31,7 +31,7 @@ export class Character extends Hero {
   async loadLocalHero(p) {
     try {
       var glbFile01 = await fetch(p).then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, this.core.device)));
-      this.core.addGlbObj({
+      this.core.addGlbObjInctance({
         material: {type: 'standard', useTextureFromGlb: true},
         scale: [20, 20, 20],
         position: {x: 0, y: -4, z: -220},

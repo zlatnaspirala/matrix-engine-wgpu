@@ -11,6 +11,7 @@ import {MatrixSounds} from "./sounds/sounds.js";
 import {play} from "./engine/loader-obj.js";
 import {SpotLight} from "./engine/lights.js";
 import {BVHPlayer} from "./engine/loaders/bvh.js";
+import {BVHPlayerInstances} from "./engine/loaders/bvh-instaced.js";
 
 /**
  * @description
@@ -622,6 +623,83 @@ export default class MatrixEngineWGPU {
         // create scene object for each skinnedNode
         o.name = o.name + "-" + skinnedNode.name + '-' + c;
         const bvhPlayer = new BVHPlayer(
+          o,
+          BVHANIM,
+          glbFile,
+          c,
+          skinnedNodeIndex,
+          this.canvas,
+          this.device,
+          this.context,
+          this.inputHandler,
+          this.globalAmbient.slice());
+        skinnedNodeIndex++;
+        // console.log(`bvhPlayer!!!!!: ${bvhPlayer}`);
+        bvhPlayer.spotlightUniformBuffer = this.spotlightUniformBuffer;
+        bvhPlayer.clearColor = clearColor;
+        // if(o.physics.enabled == true) {
+        //   this.matrixAmmo.addPhysics(myMesh1, o.physics)
+        // }
+        // make it soft
+        setTimeout(() => {this.mainRenderBundle.push(bvhPlayer)}, 1000)
+        // this.mainRenderBundle.push(bvhPlayer)
+        c++;
+      }
+    }
+  }
+
+  // NEW TEST INSTANCED DRAWS
+  addGlbObjInctance = (o, BVHANIM, glbFile, clearColor = this.options.clearColor) => {
+    if(typeof o.name === 'undefined') {o.name = genName(9)}
+    if(typeof o.position === 'undefined') {o.position = {x: 0, y: 0, z: -4}}
+    if(typeof o.rotation === 'undefined') {o.rotation = {x: 0, y: 0, z: 0}}
+    if(typeof o.rotationSpeed === 'undefined') {o.rotationSpeed = {x: 0, y: 0, z: 0}}
+    if(typeof o.texturesPaths === 'undefined') {o.texturesPaths = ['./res/textures/default.png']}
+    if(typeof o.material === 'undefined') {o.material = {type: 'standard'}}
+    if(typeof o.mainCameraParams === 'undefined') {o.mainCameraParams = this.mainCameraParams}
+    if(typeof o.scale === 'undefined') {o.scale = [1, 1, 1];}
+    if(typeof o.raycast === 'undefined') {o.raycast = {enabled: false, radius: 2}}
+
+    if(typeof o.pointerEffect === 'undefined') {
+      o.pointerEffect = {enabled: false};
+    } else {
+      // o.pointerEffect = {enabled: true};
+    }
+
+    o.entityArgPass = this.entityArgPass;
+    o.cameras = this.cameras;
+    if(typeof o.physics === 'undefined') {
+      o.physics = {
+        scale: [1, 1, 1],
+        enabled: true,
+        geometry: "Sphere",//                   must be fixed<<
+        radius: (typeof o.scale == Number ? o.scale : o.scale[0]),
+        name: o.name,
+        rotation: o.rotation
+      }
+    }
+    if(typeof o.physics.enabled === 'undefined') {o.physics.enabled = true}
+    if(typeof o.physics.geometry === 'undefined') {o.physics.geometry = "Cube"}
+    if(typeof o.physics.radius === 'undefined') {o.physics.radius = o.scale}
+    if(typeof o.physics.mass === 'undefined') {o.physics.mass = 1;}
+    if(typeof o.physics.name === 'undefined') {o.physics.name = o.name;}
+    if(typeof o.physics.scale === 'undefined') {o.physics.scale = o.scale;}
+    if(typeof o.physics.rotation === 'undefined') {o.physics.rotation = o.rotation;}
+    o.physics.position = o.position;
+    if(typeof o.objAnim == 'undefined' || typeof o.objAnim == null) {
+      o.objAnim = null;
+    } else {
+      alert('GLB not use objAnim (it is only for obj sequence). GLB use BVH skeletal for animation');
+    }
+    let skinnedNodeIndex = 0;
+    for(const skinnedNode of glbFile.skinnedMeshNodes) {
+      let c = 0;
+      for(const primitive of skinnedNode.mesh.primitives) {
+        // console.log(`count: ${c} primitive-glb: ${primitive}`);
+        // primitive is mesh - probably with own material . material/texture per primitive
+        // create scene object for each skinnedNode
+        o.name = o.name + "-" + skinnedNode.name + '-' + c;
+        const bvhPlayer = new BVHPlayerInstances(
           o,
           BVHANIM,
           glbFile,
