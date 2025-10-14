@@ -736,17 +736,16 @@ export default class MEMeshObj extends Materials {
       this.updateVideoTexture();
     }
     // Bind per-mesh uniforms
-    pass.setBindGroup(0, this.sceneBindGroupForRender); // camera/light UBOs
-    pass.setBindGroup(1, this.modelBindGroup);          // mesh transforms/textures
-    // Bind each light’s shadow texture & sampler
+    pass.setBindGroup(0, this.sceneBindGroupForRender);
+    pass.setBindGroup(1, this.modelBindGroup);
     if(this.isVideo == false) {
-      let bindIndex = 2; // start after UBO & model
+      let bindIndex = 2;
       for(const light of lightContainer) {
         pass.setBindGroup(bindIndex++, light.getMainPassBindGroup(this));
       }
     }
 
-    // --- Selection state (new)
+    // probably no need i forgot on ambient - very similar
     if(this.selectedBindGroup) {
       pass.setBindGroup(2, this.selectedBindGroup);
     }
@@ -782,13 +781,12 @@ export default class MEMeshObj extends Materials {
     const mesh = this.objAnim.meshList[this.objAnim.id + this.objAnim.currentAni];
 
     if(this.isVideo == false) {
-      let bindIndex = 2; // start after UBO & model
+      let bindIndex = 2;
       for(const light of lightContainer) {
         renderPass.setBindGroup(bindIndex++, light.getMainPassBindGroup(this));
       }
     }
 
-        // --- Selection state (new)
     if(this.selectedBindGroup) {
       renderPass.setBindGroup(2, this.selectedBindGroup);
     }

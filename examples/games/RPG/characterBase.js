@@ -1,5 +1,5 @@
 import {uploadGLBModel} from "../../../src/engine/loaders/webgpu-gltf";
-import {byId} from "../../../src/engine/utils";
+import {byId, LOG_MATRIX} from "../../../src/engine/utils";
 import {Hero, HERO_PROFILES} from "./hero";
 
 export class Character extends Hero {
@@ -8,6 +8,7 @@ export class Character extends Hero {
 
   constructor(MYSTICORE, path, name = 'hero-maria', archetypes = ["Warrior", "Mage"]) {
     super(name, archetypes);
+    console.info(`%cLOADING hero name : ${name}`, LOG_MATRIX)
     this.name = name;
     this.core = MYSTICORE;
     this.heroe_bodies = [];
@@ -16,6 +17,7 @@ export class Character extends Hero {
   }
 
   setupHUDForHero(name) {
+    console.info(`%cLOADING hero name : ${name}`, LOG_MATRIX)
     if(name == 'hero-maria') {
       byId('magic-slot-0').style.background = 'url("./res/textures/rpg/magics/maria-sword-1.png")';
       byId('magic-slot-0').style.backgroundRepeat = "round";

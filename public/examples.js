@@ -21304,7 +21304,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
         format: 'depth24plus'
       }
     });
-    console.log('✅ Set up both pipelines done');
+    console.log('✅Pipelines done');
   };
   updateModelUniformBuffer = () => {
     // if(this.done == false) return;
@@ -23838,9 +23838,8 @@ var _fragmentWgsl3 = require("../shaders/fragment.wgsl.pong");
 var _fragmentWgsl4 = require("../shaders/fragment.wgsl.power");
 /**
  * @description
- * Created for matrix-engine-wgpu project.
- * MeshObj class estends Materials.
- * @var material is engine meta data variable not real material object.
+ * Created for matrix-engine-wgpu project. MeshObj class estends Materials.
+ * @variable material is engine meta data variable not real material object.
  * @author Nikola Lukic
  * @email zlatnaspirala@gmail.com
  */
@@ -24146,7 +24145,6 @@ class Materials {
     let textureResource = this.isVideo ? this.externalTexture : this.texture0.createView();
     // console.log('TEST TEX this.texture0 ', this.texture0);
     if (this.material.useTextureFromGlb === true) {
-      // console.log('TEST TEX material use from file ', this.name);
       // 0 probably always for basicColor
       const material = this.skinnedNode.mesh.primitives[0].material;
       const textureView = material.baseColorTexture.imageView;
@@ -25295,17 +25293,16 @@ class MEMeshObj extends _materials.default {
       this.updateVideoTexture();
     }
     // Bind per-mesh uniforms
-    pass.setBindGroup(0, this.sceneBindGroupForRender); // camera/light UBOs
-    pass.setBindGroup(1, this.modelBindGroup); // mesh transforms/textures
-    // Bind each light’s shadow texture & sampler
+    pass.setBindGroup(0, this.sceneBindGroupForRender);
+    pass.setBindGroup(1, this.modelBindGroup);
     if (this.isVideo == false) {
-      let bindIndex = 2; // start after UBO & model
+      let bindIndex = 2;
       for (const light of lightContainer) {
         pass.setBindGroup(bindIndex++, light.getMainPassBindGroup(this));
       }
     }
 
-    // --- Selection state (new)
+    // probably no need i forgot on ambient - very similar
     if (this.selectedBindGroup) {
       pass.setBindGroup(2, this.selectedBindGroup);
     }
@@ -25341,13 +25338,11 @@ class MEMeshObj extends _materials.default {
     renderPass.setBindGroup(1, this.modelBindGroup);
     const mesh = this.objAnim.meshList[this.objAnim.id + this.objAnim.currentAni];
     if (this.isVideo == false) {
-      let bindIndex = 2; // start after UBO & model
+      let bindIndex = 2;
       for (const light of lightContainer) {
         renderPass.setBindGroup(bindIndex++, light.getMainPassBindGroup(this));
       }
     }
-
-    // --- Selection state (new)
     if (this.selectedBindGroup) {
       renderPass.setBindGroup(2, this.selectedBindGroup);
     }
