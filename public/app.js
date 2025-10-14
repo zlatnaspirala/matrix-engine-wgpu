@@ -22245,6 +22245,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
       // EDIT INSTANCED PART
       this.instanceTargets = [];
       this.lerpSpeed = 0.05;
+      this.lerpSpeedAlpha = 0.05;
       this.maxInstances = 5;
       this.instanceCount = 2;
       this.floatsPerInstance = 16 + 4;
@@ -22255,7 +22256,8 @@ class MEMeshObjInstances extends _materialsInstanced.default {
           currentPosition: [0, 0, 0],
           scale: [1, 1, 1],
           currentScale: [1, 1, 1],
-          color: [0.6, 0.8, 1.0, 0.4]
+          color: [0.6, 0.8, 1.0, 0.4],
+          currentColor: [0.6, 0.8, 1.0, 0.4]
         });
       }
       this.instanceData = new Float32Array(this.instanceCount * this.floatsPerInstance);
@@ -22276,6 +22278,10 @@ class MEMeshObjInstances extends _materialsInstanced.default {
           for (let j = 0; j < 3; j++) {
             t.currentPosition[j] += (t.position[j] - t.currentPosition[j]) * this.lerpSpeed;
             t.currentScale[j] += (t.scale[j] - t.currentScale[j]) * this.lerpSpeed;
+            t.currentColor[j] += (t.color[j] - t.currentColor[j]) * this.lerpSpeed;
+            if (j == 2) {
+              t.currentColor[j + 1] += (t.color[j + 1] - t.currentColor[j + 1]) * this.lerpSpeedAlpha;
+            }
           }
           // Apply smoothed transforms
           ghost[0] *= t.currentScale[0];
@@ -22286,10 +22292,14 @@ class MEMeshObjInstances extends _materialsInstanced.default {
           ghost[13] += t.currentPosition[1]; // Y
           ghost[14] += t.currentPosition[2]; // Z
 
+          // t.color[0] += t.currentColor[0]//r;
+          // t.color[1] += t.currentColor[1]//r;
+          // t.color[2] += t.currentColor[2]//r;
+          // t.color[3] += t.currentColor[3]//r;
           // Write instance matrix + color
           const offset = 20 * i;
           this.instanceData.set(ghost, offset);
-          this.instanceData.set(t.color, offset + 16);
+          this.instanceData.set(t.currentColor, offset + 16);
         }
         device.queue.writeBuffer(this.instanceBuffer, 0, this.instanceData);
       };
@@ -22438,15 +22448,12 @@ class MEMeshObjInstances extends _materialsInstanced.default {
           }
         }]
       });
-
-      // 
       this.effects = {};
       if (this.pointerEffect && this.pointerEffect.enabled === true) {
         let pf = navigator.gpu.getPreferredCanvasFormat();
         this.effects.pointer = new _pointerEffect.PointerEffect(device, pf, this, true);
         this.effects.ballEffect = new _gen.GenGeo(device, pf, 'sphere');
       }
-      // end
 
       // Rotates the camera around the origin based on time.
       this.getTransformationMatrix = (mainRenderBundle, spotLight, index) => {
