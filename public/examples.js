@@ -24618,10 +24618,6 @@ class MEMeshObj extends _materials.default {
       this.pointerEffect = {
         enabled: false
       };
-    } else {
-      this.pointerEffect = {
-        enabled: true
-      };
     }
     this.name = o.name;
     this.done = false;
@@ -25128,7 +25124,7 @@ class MEMeshObj extends _materials.default {
       // pointerEffect bonus
       // TEST - OPTIONS ON BASE MESHOBJ LEVEL
       this.effects = {};
-      if (this.pointerEffect.enabled === true) {
+      if (this.pointerEffect && this.pointerEffect.enabled === true) {
         let pf = navigator.gpu.getPreferredCanvasFormat();
         this.effects.pointer = new _pointerEffect.PointerEffect(device, pf, this, true);
       }
@@ -29490,8 +29486,6 @@ class MatrixEngineWGPU {
       o.pointerEffect = {
         enabled: false
       };
-    } else {
-      // o.pointerEffect = {enabled: true};
     }
     o.entityArgPass = this.entityArgPass;
     o.cameras = this.cameras;
@@ -29609,8 +29603,6 @@ class MatrixEngineWGPU {
       o.pointerEffect = {
         enabled: false
       };
-    } else {
-      // o.pointerEffect = {enabled: true};
     }
     o.entityArgPass = this.entityArgPass;
     o.cameras = this.cameras;

@@ -503,6 +503,16 @@ This is static file storage.
 
 🎲 The first full app example will be a WebGPU-powered **Jamb 3d deluxe** game.
 
+
+## RPG game WIP
+
+  Features done:
+   - Navigation mesh
+   - Hero class
+   - GLB animations
+
+<img width="860" height="640" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/RPG.png?raw=true" />
+
 ---
 
 ## Live Demos & Dev Links

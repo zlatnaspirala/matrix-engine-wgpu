@@ -17,11 +17,7 @@ export default class MEMeshObj extends Materials {
       this.raycast = o.raycast;
     }
 
-    if(typeof o.pointerEffect === 'undefined') {
-      this.pointerEffect = {enabled: false};
-    } else {
-      this.pointerEffect = {enabled: true};
-    }
+    if(typeof o.pointerEffect === 'undefined') {this.pointerEffect = {enabled: false};}
 
     this.name = o.name;
     this.done = false;
@@ -535,7 +531,7 @@ export default class MEMeshObj extends Materials {
       // pointerEffect bonus
       // TEST - OPTIONS ON BASE MESHOBJ LEVEL
       this.effects = {};
-      if(this.pointerEffect.enabled === true) {
+      if(this.pointerEffect && this.pointerEffect.enabled === true) {
         let pf = navigator.gpu.getPreferredCanvasFormat();
         this.effects.pointer = new PointerEffect(device, pf, this, true);
       }

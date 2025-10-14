@@ -461,7 +461,7 @@ export default class MatrixEngineWGPU {
       }
       if(this.matrixAmmo) this.matrixAmmo.updatePhysics();
 
-      
+
       let now, deltaTime;
 
       for(let i = 0;i < this.lightContainer.length;i++) {
@@ -600,12 +600,7 @@ export default class MatrixEngineWGPU {
     if(typeof o.mainCameraParams === 'undefined') {o.mainCameraParams = this.mainCameraParams}
     if(typeof o.scale === 'undefined') {o.scale = [1, 1, 1];}
     if(typeof o.raycast === 'undefined') {o.raycast = {enabled: false, radius: 2}}
-
-    if(typeof o.pointerEffect === 'undefined') {
-      o.pointerEffect = {enabled: false};
-    } else {
-      // o.pointerEffect = {enabled: true};
-    }
+    if(typeof o.pointerEffect === 'undefined') {o.pointerEffect = {enabled: false};}
 
     o.entityArgPass = this.entityArgPass;
     o.cameras = this.cameras;
@@ -677,12 +672,7 @@ export default class MatrixEngineWGPU {
     if(typeof o.mainCameraParams === 'undefined') {o.mainCameraParams = this.mainCameraParams}
     if(typeof o.scale === 'undefined') {o.scale = [1, 1, 1];}
     if(typeof o.raycast === 'undefined') {o.raycast = {enabled: false, radius: 2}}
-
-    if(typeof o.pointerEffect === 'undefined') {
-      o.pointerEffect = {enabled: false};
-    } else {
-      // o.pointerEffect = {enabled: true};
-    }
+    if(typeof o.pointerEffect === 'undefined') {o.pointerEffect = {enabled: false};}
 
     o.entityArgPass = this.entityArgPass;
     o.cameras = this.cameras;
