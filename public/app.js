@@ -56,7 +56,7 @@ class Character extends _hero.Hero {
           enabled: true
         }
       }, null, glbFile01);
-      // make small async
+      // make small async - cooking glbs files 
       setTimeout(() => {
         this.heroe_bodies = app.mainRenderBundle.filter(obj => obj.name && obj.name.includes(this.name));
         this.core.RPG.heroe_bodies = this.heroe_bodies;
@@ -20331,15 +20331,14 @@ Object.defineProperty(exports, "__esModule", {
 exports.GenGeo = void 0;
 var _geometryFactory = require("../geometry-factory.js");
 var _wgpuMatrix = require("wgpu-matrix");
-var _pointerEffect = require("../../shaders/standalone/pointer.effect.js");
 var _geoInstanced = require("../../shaders/standalone/geo.instanced.js");
+// import {pointerEffect} from "../../shaders/standalone/pointer.effect.js";
+
 class GenGeo {
-  constructor(device, format, type = "sphere") {
+  constructor(device, format, type = "sphere", scale = 1) {
     this.device = device;
     this.format = format;
-
-    // Get geometry
-    const geom = _geometryFactory.GeometryFactory.create(type, 2);
+    const geom = _geometryFactory.GeometryFactory.create(type, scale);
     this.vertexData = geom.positions;
     this.uvData = geom.uvs;
     this.indexData = geom.indices;
@@ -20351,7 +20350,6 @@ class GenGeo {
       uvData,
       indexData
     } = this;
-
     // GPU buffers
     this.vertexBuffer = this.device.createBuffer({
       size: vertexData.byteLength,
@@ -20369,8 +20367,6 @@ class GenGeo {
     });
     this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
     this.indexCount = indexData.length;
-
-    // Uniforms: camera & model
     this.cameraBuffer = this.device.createBuffer({
       size: 64,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
@@ -20391,14 +20387,10 @@ class GenGeo {
       });
     }
     this.instanceData = new Float32Array(this.instanceCount * this.floatsPerInstance);
-
-    // for instanced
     this.modelBuffer = this.device.createBuffer({
       size: this.instanceData.byteLength,
       usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
     });
-
-    // Bind group layout
     const bindGroupLayout = this.device.createBindGroupLayout({
       entries: [{
         binding: 0,
@@ -20426,13 +20418,9 @@ class GenGeo {
         }
       }]
     });
-
-    // Shader
     const shaderModule = this.device.createShaderModule({
       code: _geoInstanced.geoInstancedEffect
     });
-
-    // Pipeline
     const pipelineLayout = this.device.createPipelineLayout({
       bindGroupLayouts: [bindGroupLayout]
     });
@@ -20481,49 +20469,43 @@ class GenGeo {
       },
       depthStencil: {
         depthWriteEnabled: false,
-        depthCompare: 'always',
+        depthCompare: 'less-equal',
         format: 'depth24plus'
       }
     });
   }
-  updateInstanceData = modelMatrix => {
-    for (let i = 0; i < this.instanceCount; i++) {
+  updateInstanceData = baseModelMatrix => {
+    const count = Math.min(this.instanceCount, this.maxInstances);
+    for (let i = 0; i < count; i++) {
       const t = this.instanceTargets[i];
-      const ghost = new Float32Array(modelMatrix);
-      // --- Smooth interpolate position
+      // smooth interpolation of position & scale
       for (let j = 0; j < 3; j++) {
         t.currentPosition[j] += (t.position[j] - t.currentPosition[j]) * this.lerpSpeed;
         t.currentScale[j] += (t.scale[j] - t.currentScale[j]) * this.lerpSpeed;
       }
-      // Apply smoothed transforms
-      ghost[0] *= t.currentScale[0];
-      ghost[5] *= t.currentScale[1];
-      ghost[10] *= t.currentScale[2];
-      // pos
-      ghost[12] += t.currentPosition[0]; // X
-      ghost[13] += t.currentPosition[1]; // Y
-      ghost[14] += t.currentPosition[2]; // Z
-
-      // Write instance matrix + color
-      const offset = 20 * i;
-      this.instanceData.set(ghost, offset);
+      const local = _wgpuMatrix.mat4.identity();
+      _wgpuMatrix.mat4.translate(local, t.currentPosition, local);
+      _wgpuMatrix.mat4.scale(local, t.currentScale, local);
+      const finalMat = _wgpuMatrix.mat4.identity();
+      _wgpuMatrix.mat4.multiply(baseModelMatrix, local, finalMat);
+      const offset = i * this.floatsPerInstance;
+      this.instanceData.set(finalMat, offset);
       this.instanceData.set(t.color, offset + 16);
     }
-    this.device.queue.writeBuffer(this.modelBuffer, 0, this.instanceData);
+    // IMPORTANT: upload ONLY the active range of floats to GPU to avoid leftover instances
+    const activeFloatCount = count * this.floatsPerInstance;
+    const activeBytes = activeFloatCount * 4;
+    // .subarray(0, activeFloatCount) ensures we don't upload garbage beyond instanceCount
+    this.device.queue.writeBuffer(this.modelBuffer, 0, this.instanceData.subarray(0, activeFloatCount));
   };
   draw(pass, cameraMatrix) {
     this.device.queue.writeBuffer(this.cameraBuffer, 0, cameraMatrix);
-    // Draw
     pass.setPipeline(this.pipeline);
     pass.setBindGroup(0, this.bindGroup);
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setVertexBuffer(1, this.uvBuffer);
     pass.setIndexBuffer(this.indexBuffer, 'uint16');
-    // pass.drawIndexed(this.indexCount);
-    // pass.drawIndexed(this.indexCount, this.instanceCount);
-    for (var ins = 0; ins < this.instanceCount; ins++) {
-      pass.drawIndexed(this.indexCount, 1, 0, 0, ins);
-    }
+    pass.drawIndexed(this.indexCount, this.instanceCount);
   }
   render(transPass, mesh, viewProjMatrix) {
     const pointer = mesh.effects.pointer;
@@ -20532,7 +20514,7 @@ class GenGeo {
 }
 exports.GenGeo = GenGeo;
 
-},{"../../shaders/standalone/geo.instanced.js":54,"../../shaders/standalone/pointer.effect.js":55,"../geometry-factory.js":29,"wgpu-matrix":22}],27:[function(require,module,exports){
+},{"../../shaders/standalone/geo.instanced.js":54,"../geometry-factory.js":29,"wgpu-matrix":22}],27:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -21883,10 +21865,8 @@ class MEMeshObjInstances extends _materialsInstanced.default {
     } else {
       this.raycast = o.raycast;
     }
-    console.info('WHAT IS [MEMeshObjInstances]', o.pointerEffect);
+    // console.info('WHAT IS [MEMeshObjInstances]', o.pointerEffect)
     this.pointerEffect = o.pointerEffect;
-    // this.pointerEffect = {enabled: true};
-
     this.name = o.name;
     this.done = false;
     this.canvas = canvas;
@@ -30251,8 +30231,7 @@ class MatrixEngineWGPU {
       }
     };
 
-    // pointer effect
-    //  new
+    // pointer effect-not in use
     const depthTexture = this.device.createTexture({
       size: [this.canvas.width, this.canvas.height],
       format: "depth24plus",
@@ -30767,9 +30746,10 @@ class MatrixEngineWGPU {
           storeOp: 'store'
         }],
         depthStencilAttachment: {
-          view: this.depthTextureViewTrail,
+          view: this.mainDepthView,
           depthLoadOp: 'load',
-          depthStoreOp: 'store'
+          depthStoreOp: 'store',
+          depthClearValue: 1.0
         }
       };
       const transPass = commandEncoder.beginRenderPass(transPassDesc);

@@ -171,8 +171,7 @@ export default class MatrixEngineWGPU {
       },
     };
 
-    // pointer effect
-    //  new
+    // pointer effect-not in use
     const depthTexture = this.device.createTexture({
       size: [this.canvas.width, this.canvas.height],
       format: "depth24plus",
@@ -545,13 +544,18 @@ export default class MatrixEngineWGPU {
       // transparent pointerEffect pass (load color, load depth)
       const transPassDesc = {
         colorAttachments: [{view: currentTextureView, loadOp: 'load', storeOp: 'store'}],
-        depthStencilAttachment: {view: this.depthTextureViewTrail, depthLoadOp: 'load', depthStoreOp: 'store'}
+        depthStencilAttachment: {
+          view: this.mainDepthView,
+          depthLoadOp: 'load',
+          depthStoreOp: 'store',
+          depthClearValue: 1.0,
+        }
       };
       const transPass = commandEncoder.beginRenderPass(transPassDesc);
       const viewProjMatrix = mat4.multiply(this.cameras.WASD.projectionMatrix, this.cameras.WASD.view, mat4.identity());
       for(const mesh of this.mainRenderBundle) {
         if(!(mesh.effects && mesh.effects.pointer)) continue;
-        if (mesh.effects.pointer.updateInstanceData) mesh.effects.pointer.updateInstanceData(mesh.getModelMatrix(mesh.position));
+        if(mesh.effects.pointer.updateInstanceData) mesh.effects.pointer.updateInstanceData(mesh.getModelMatrix(mesh.position));
         mesh.effects.pointer.render(transPass, mesh, viewProjMatrix)
       }
       transPass.end();
@@ -710,7 +714,7 @@ export default class MatrixEngineWGPU {
         o.name = o.name + "-" + skinnedNode.name + '-' + c;
 
         // maybe later add logic from constructor
-        if (skinnedNodeIndex==0) {} else {
+        if(skinnedNodeIndex == 0) {} else {
           o.pointerEffect = {enabled: false};
         }
 

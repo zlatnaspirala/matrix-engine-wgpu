@@ -17,13 +17,8 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
     } else {
       this.raycast = o.raycast;
     }
-
- 
-      console.info('WHAT IS [MEMeshObjInstances]', o.pointerEffect)
-      this.pointerEffect = o.pointerEffect;
-      // this.pointerEffect = {enabled: true};
- 
-
+    // console.info('WHAT IS [MEMeshObjInstances]', o.pointerEffect)
+    this.pointerEffect = o.pointerEffect;
     this.name = o.name;
     this.done = false;
     this.canvas = canvas;
