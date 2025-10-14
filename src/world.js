@@ -708,6 +708,15 @@ export default class MatrixEngineWGPU {
         // primitive is mesh - probably with own material . material/texture per primitive
         // create scene object for each skinnedNode
         o.name = o.name + "-" + skinnedNode.name + '-' + c;
+
+        // maybe later add logic from constructor
+        if (skinnedNodeIndex==0) {
+          console.warn('YYYYYYYYYYYYYYYYY',      o.pointerEffect)
+        } else {
+          o.pointerEffect = {enabled: false};
+          console.warn('XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',      o.pointerEffect)
+        }
+
         const bvhPlayer = new BVHPlayerInstances(
           o,
           BVHANIM,

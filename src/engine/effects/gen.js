@@ -163,20 +163,9 @@ export class GenGeo {
     pass.setIndexBuffer(this.indexBuffer, 'uint16');
     // pass.drawIndexed(this.indexCount);
     // pass.drawIndexed(this.indexCount, this.instanceCount);
-
-
-    // pass.drawIndexed(this.indexCount, 1, 0, 0, 0);
-
-    // pipelineBlended
-    // pass.setPipeline(this.pipelineBlended);
-
-    for(var ins = 1;ins < this.instanceCount;ins++) {
+    for(var ins = 0;ins < this.instanceCount;ins++) {
       pass.drawIndexed(this.indexCount, 1, 0, 0, ins);
     }
-
-    // for(var ins = 0;ins < this.instanceCount;ins++) {
-    //   pass.drawIndexed(this.indexCount, 1, 0, 0, ins);
-    // }
   }
 
   render(transPass, mesh, viewProjMatrix) {

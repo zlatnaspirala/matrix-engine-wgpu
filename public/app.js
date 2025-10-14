@@ -20521,19 +20521,9 @@ class GenGeo {
     pass.setIndexBuffer(this.indexBuffer, 'uint16');
     // pass.drawIndexed(this.indexCount);
     // pass.drawIndexed(this.indexCount, this.instanceCount);
-
-    // pass.drawIndexed(this.indexCount, 1, 0, 0, 0);
-
-    // pipelineBlended
-    // pass.setPipeline(this.pipelineBlended);
-
-    for (var ins = 1; ins < this.instanceCount; ins++) {
+    for (var ins = 0; ins < this.instanceCount; ins++) {
       pass.drawIndexed(this.indexCount, 1, 0, 0, ins);
     }
-
-    // for(var ins = 0;ins < this.instanceCount;ins++) {
-    //   pass.drawIndexed(this.indexCount, 1, 0, 0, ins);
-    // }
   }
   render(transPass, mesh, viewProjMatrix) {
     const pointer = mesh.effects.pointer;
@@ -21893,15 +21883,10 @@ class MEMeshObjInstances extends _materialsInstanced.default {
     } else {
       this.raycast = o.raycast;
     }
-    if (typeof o.pointerEffect === 'undefined') {
-      this.pointerEffect = {
-        enabled: false
-      };
-    } else {
-      this.pointerEffect = {
-        enabled: true
-      };
-    }
+    console.info('WHAT IS [MEMeshObjInstances]', o.pointerEffect);
+    this.pointerEffect = o.pointerEffect;
+    // this.pointerEffect = {enabled: true};
+
     this.name = o.name;
     this.done = false;
     this.canvas = canvas;
@@ -22490,9 +22475,9 @@ class MEMeshObjInstances extends _materialsInstanced.default {
       });
 
       // pointerEffect bonus
-      // TEST - OPTIONS ON BASE MESHOBJ LEVEL
+      // TEST123 - OPTIONS ON BASE MESHOBJ LEVEL
       this.effects = {};
-      if (this.pointerEffect.enabled === true) {
+      if (this.pointerEffect && this.pointerEffect.enabled === true) {
         let pf = navigator.gpu.getPreferredCanvasFormat();
         // this.effects.pointer = new PointerEffect(device, pf, this, true);
         this.effects.pointer = new _gen.GenGeo(device, pf, 'sphere');
@@ -31043,6 +31028,16 @@ class MatrixEngineWGPU {
         // primitive is mesh - probably with own material . material/texture per primitive
         // create scene object for each skinnedNode
         o.name = o.name + "-" + skinnedNode.name + '-' + c;
+
+        // maybe later add logic from constructor
+        if (skinnedNodeIndex == 0) {
+          console.warn('YYYYYYYYYYYYYYYYY', o.pointerEffect);
+        } else {
+          o.pointerEffect = {
+            enabled: false
+          };
+          console.warn('XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX', o.pointerEffect);
+        }
         const bvhPlayer = new _bvhInstaced.BVHPlayerInstances(o, BVHANIM, glbFile, c, skinnedNodeIndex, this.canvas, this.device, this.context, this.inputHandler, this.globalAmbient.slice());
         skinnedNodeIndex++;
         // console.log(`bvhPlayer!!!!!: ${bvhPlayer}`);
