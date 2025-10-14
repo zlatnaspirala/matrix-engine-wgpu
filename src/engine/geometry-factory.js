@@ -46,7 +46,7 @@ export class GeometryFactory {
     return {positions,uvs, i};
   }
 
-  static sphere(R=1, seg=16){
+  static sphere(R=0.1, seg=16){
     const p=[],uv=[],ind=[];
     for(let y=0;y<=seg;y++){
       const v=y/seg,θ=v*Math.PI;

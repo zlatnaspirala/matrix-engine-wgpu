@@ -4,12 +4,12 @@ import {pointerEffect} from "../../shaders/standalone/pointer.effect.js";
 import {geoInstancedEffect} from "../../shaders/standalone/geo.instanced.js";
 
 export class GenGeo {
-  constructor(device, format, type = "quad") {
+  constructor(device, format, type = "sphere") {
     this.device = device;
     this.format = format;
 
     // Get geometry
-    const geom = GeometryFactory.create(type, 10);
+    const geom = GeometryFactory.create(type, 2);
 
     this.vertexData = geom.positions;
     this.uvData = geom.uvs;
@@ -105,10 +105,24 @@ export class GenGeo {
       fragment: {
         module: shaderModule,
         entryPoint: 'fsMain',
-        targets: [{format: this.format}]
+        targets: [{
+          format: this.format,
+          blend: {
+            color: {
+              srcFactor: 'src-alpha',
+              dstFactor: 'one-minus-src-alpha',
+              operation: 'add',
+            },
+            alpha: {
+              srcFactor: 'one',
+              dstFactor: 'one-minus-src-alpha',
+              operation: 'add',
+            },
+          },
+        }]
       },
       primitive: {topology: 'triangle-list'},
-      depthStencil: {depthWriteEnabled: true, depthCompare: 'always', format: 'depth24plus'}
+      depthStencil: {depthWriteEnabled: false, depthCompare: 'always', format: 'depth24plus'}
     });
   }
 
@@ -148,12 +162,21 @@ export class GenGeo {
     pass.setVertexBuffer(1, this.uvBuffer);
     pass.setIndexBuffer(this.indexBuffer, 'uint16');
     // pass.drawIndexed(this.indexCount);
-    pass.drawIndexed(this.indexCount, this.instanceCount);
+    // pass.drawIndexed(this.indexCount, this.instanceCount);
+
+
+    // pass.drawIndexed(this.indexCount, 1, 0, 0, 0);
+
+    // pipelineBlended
+    // pass.setPipeline(this.pipelineBlended);
+
+    for(var ins = 1;ins < this.instanceCount;ins++) {
+      pass.drawIndexed(this.indexCount, 1, 0, 0, ins);
+    }
 
     // for(var ins = 0;ins < this.instanceCount;ins++) {
     //   pass.drawIndexed(this.indexCount, 1, 0, 0, ins);
     // }
- 
   }
 
   render(transPass, mesh, viewProjMatrix) {

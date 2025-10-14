@@ -20334,12 +20334,12 @@ var _wgpuMatrix = require("wgpu-matrix");
 var _pointerEffect = require("../../shaders/standalone/pointer.effect.js");
 var _geoInstanced = require("../../shaders/standalone/geo.instanced.js");
 class GenGeo {
-  constructor(device, format, type = "quad") {
+  constructor(device, format, type = "sphere") {
     this.device = device;
     this.format = format;
 
     // Get geometry
-    const geom = _geometryFactory.GeometryFactory.create(type, 10);
+    const geom = _geometryFactory.GeometryFactory.create(type, 2);
     this.vertexData = geom.positions;
     this.uvData = geom.uvs;
     this.indexData = geom.indices;
@@ -20461,14 +20461,26 @@ class GenGeo {
         module: shaderModule,
         entryPoint: 'fsMain',
         targets: [{
-          format: this.format
+          format: this.format,
+          blend: {
+            color: {
+              srcFactor: 'src-alpha',
+              dstFactor: 'one-minus-src-alpha',
+              operation: 'add'
+            },
+            alpha: {
+              srcFactor: 'one',
+              dstFactor: 'one-minus-src-alpha',
+              operation: 'add'
+            }
+          }
         }]
       },
       primitive: {
         topology: 'triangle-list'
       },
       depthStencil: {
-        depthWriteEnabled: true,
+        depthWriteEnabled: false,
         depthCompare: 'always',
         format: 'depth24plus'
       }
@@ -20508,7 +20520,16 @@ class GenGeo {
     pass.setVertexBuffer(1, this.uvBuffer);
     pass.setIndexBuffer(this.indexBuffer, 'uint16');
     // pass.drawIndexed(this.indexCount);
-    pass.drawIndexed(this.indexCount, this.instanceCount);
+    // pass.drawIndexed(this.indexCount, this.instanceCount);
+
+    // pass.drawIndexed(this.indexCount, 1, 0, 0, 0);
+
+    // pipelineBlended
+    // pass.setPipeline(this.pipelineBlended);
+
+    for (var ins = 1; ins < this.instanceCount; ins++) {
+      pass.drawIndexed(this.indexCount, 1, 0, 0, ins);
+    }
 
     // for(var ins = 0;ins < this.instanceCount;ins++) {
     //   pass.drawIndexed(this.indexCount, 1, 0, 0, ins);
@@ -21162,7 +21183,7 @@ class GeometryFactory {
       i
     };
   }
-  static sphere(R = 1, seg = 16) {
+  static sphere(R = 0.1, seg = 16) {
     const p = [],
       uv = [],
       ind = [];
@@ -22474,7 +22495,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
       if (this.pointerEffect.enabled === true) {
         let pf = navigator.gpu.getPreferredCanvasFormat();
         // this.effects.pointer = new PointerEffect(device, pf, this, true);
-        this.effects.pointer = new _gen.GenGeo(device, pf, 'thunder');
+        this.effects.pointer = new _gen.GenGeo(device, pf, 'sphere');
       }
       // end
 

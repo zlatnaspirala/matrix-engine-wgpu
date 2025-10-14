@@ -595,7 +595,7 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
       if(this.pointerEffect.enabled === true) {
         let pf = navigator.gpu.getPreferredCanvasFormat();
         // this.effects.pointer = new PointerEffect(device, pf, this, true);
-        this.effects.pointer = new GenGeo(device, pf, 'thunder');
+        this.effects.pointer = new GenGeo(device, pf, 'sphere');
       }
       // end
 
