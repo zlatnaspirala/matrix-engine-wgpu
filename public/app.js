@@ -12,6 +12,7 @@ class Character extends _hero.Hero {
   positionThrust = 0.85;
   constructor(MYSTICORE, path, name = 'hero-maria', archetypes = ["Warrior", "Mage"]) {
     super(name, archetypes);
+    console.info(`%cLOADING hero name : ${name}`, _utils.LOG_MATRIX);
     this.name = name;
     this.core = MYSTICORE;
     this.heroe_bodies = [];
@@ -19,6 +20,7 @@ class Character extends _hero.Hero {
     this.setupHUDForHero(name);
   }
   setupHUDForHero(name) {
+    console.info(`%cLOADING hero name : ${name}`, _utils.LOG_MATRIX);
     if (name == 'hero-maria') {
       (0, _utils.byId)('magic-slot-0').style.background = 'url("./res/textures/rpg/magics/maria-sword-1.png")';
       (0, _utils.byId)('magic-slot-0').style.backgroundRepeat = "round";
@@ -22011,6 +22013,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
         }]
       });
       this.mainPassBindGroupLayout = this.device.createBindGroupLayout({
+        label: 'mainPassBindGroupLayout mesh [instaced]',
         entries: [{
           binding: 0,
           visibility: GPUShaderStage.FRAGMENT,
@@ -22170,7 +22173,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
         format: 'depth24plus'
       }
     });
-    console.log('✅ Set up both pipelines done');
+    console.log('✅Pipelines done');
   };
   updateModelUniformBuffer = () => {
     // if(this.done == false) return;
@@ -24704,9 +24707,8 @@ var _fragmentWgsl3 = require("../shaders/fragment.wgsl.pong");
 var _fragmentWgsl4 = require("../shaders/fragment.wgsl.power");
 /**
  * @description
- * Created for matrix-engine-wgpu project.
- * MeshObj class estends Materials.
- * @var material is engine meta data variable not real material object.
+ * Created for matrix-engine-wgpu project. MeshObj class estends Materials.
+ * @variable material is engine meta data variable not real material object.
  * @author Nikola Lukic
  * @email zlatnaspirala@gmail.com
  */
@@ -25012,7 +25014,6 @@ class Materials {
     let textureResource = this.isVideo ? this.externalTexture : this.texture0.createView();
     // console.log('TEST TEX this.texture0 ', this.texture0);
     if (this.material.useTextureFromGlb === true) {
-      // console.log('TEST TEX material use from file ', this.name);
       // 0 probably always for basicColor
       const material = this.skinnedNode.mesh.primitives[0].material;
       const textureView = material.baseColorTexture.imageView;
@@ -25031,6 +25032,7 @@ class Materials {
     if (this.isVideo == true) {
       // console.info("✅ video sceneBindGroupForRender");
       this.sceneBindGroupForRender = this.device.createBindGroup({
+        label: 'sceneBindGroupForRender [video]',
         layout: this.bglForRender,
         entries: [{
           binding: 0,
@@ -25060,6 +25062,7 @@ class Materials {
       if (this.video.paused == true) this.video.play();
     } else {
       this.sceneBindGroupForRender = this.device.createBindGroup({
+        label: 'sceneBindGroupForRender [mesh][materials]',
         layout: this.bglForRender,
         entries: [{
           binding: 0,
@@ -25484,10 +25487,6 @@ class MEMeshObj extends _materials.default {
       this.pointerEffect = {
         enabled: false
       };
-    } else {
-      this.pointerEffect = {
-        enabled: true
-      };
     }
     this.name = o.name;
     this.done = false;
@@ -25887,6 +25886,7 @@ class MEMeshObj extends _materials.default {
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
       });
       this.selectedBindGroupLayout = device.createBindGroupLayout({
+        label: 'selectedBindGroupLayout mesh',
         entries: [{
           binding: 0,
           visibility: GPUShaderStage.FRAGMENT,
@@ -25894,6 +25894,7 @@ class MEMeshObj extends _materials.default {
         }]
       });
       this.selectedBindGroup = device.createBindGroup({
+        label: 'selectedBindGroup mesh',
         layout: this.selectedBindGroupLayout,
         entries: [{
           binding: 0,
@@ -25973,6 +25974,7 @@ class MEMeshObj extends _materials.default {
         }]
       });
       this.mainPassBindGroupLayout = this.device.createBindGroupLayout({
+        label: 'mainPassBindGroupLayout mesh',
         entries: [{
           binding: 0,
           visibility: GPUShaderStage.FRAGMENT,
@@ -25991,7 +25993,7 @@ class MEMeshObj extends _materials.default {
       // pointerEffect bonus
       // TEST - OPTIONS ON BASE MESHOBJ LEVEL
       this.effects = {};
-      if (this.pointerEffect.enabled === true) {
+      if (this.pointerEffect && this.pointerEffect.enabled === true) {
         let pf = navigator.gpu.getPreferredCanvasFormat();
         this.effects.pointer = new _pointerEffect.PointerEffect(device, pf, this, true);
       }
@@ -26156,17 +26158,16 @@ class MEMeshObj extends _materials.default {
       this.updateVideoTexture();
     }
     // Bind per-mesh uniforms
-    pass.setBindGroup(0, this.sceneBindGroupForRender); // camera/light UBOs
-    pass.setBindGroup(1, this.modelBindGroup); // mesh transforms/textures
-    // Bind each light’s shadow texture & sampler
+    pass.setBindGroup(0, this.sceneBindGroupForRender);
+    pass.setBindGroup(1, this.modelBindGroup);
     if (this.isVideo == false) {
-      let bindIndex = 2; // start after UBO & model
+      let bindIndex = 2;
       for (const light of lightContainer) {
         pass.setBindGroup(bindIndex++, light.getMainPassBindGroup(this));
       }
     }
 
-    // --- Selection state (new)
+    // probably no need i forgot on ambient - very similar
     if (this.selectedBindGroup) {
       pass.setBindGroup(2, this.selectedBindGroup);
     }
@@ -26202,21 +26203,28 @@ class MEMeshObj extends _materials.default {
     renderPass.setBindGroup(1, this.modelBindGroup);
     const mesh = this.objAnim.meshList[this.objAnim.id + this.objAnim.currentAni];
     if (this.isVideo == false) {
-      let bindIndex = 2; // start after UBO & model
+      let bindIndex = 2;
       for (const light of lightContainer) {
         renderPass.setBindGroup(bindIndex++, light.getMainPassBindGroup(this));
       }
+    }
+    if (this.selectedBindGroup) {
+      renderPass.setBindGroup(2, this.selectedBindGroup);
     }
     renderPass.setVertexBuffer(0, mesh.vertexBuffer);
     renderPass.setVertexBuffer(1, mesh.vertexNormalsBuffer);
     renderPass.setVertexBuffer(2, mesh.vertexTexCoordsBuffer);
     if (this.constructor.name === "BVHPlayer") {
-      renderPass.setVertexBuffer(3, this.mesh.jointsBuffer); // real
-      renderPass.setVertexBuffer(4, this.mesh.weightsBuffer); // real
+      // real
+      renderPass.setVertexBuffer(3, this.mesh.jointsBuffer);
+      renderPass.setVertexBuffer(4, this.mesh.weightsBuffer);
     } else {
       // dummy
-      renderPass.setVertexBuffer(3, this.joints.buffer); // dummy
-      renderPass.setVertexBuffer(4, this.weights.buffer); // dummy
+      renderPass.setVertexBuffer(3, this.joints.buffer);
+      renderPass.setVertexBuffer(4, this.weights.buffer);
+    }
+    if (this.mesh.tangentsBuffer) {
+      renderPass.setVertexBuffer(5, this.mesh.tangentsBuffer);
     }
     renderPass.setIndexBuffer(mesh.indexBuffer, 'uint16');
     renderPass.drawIndexed(mesh.indexCount);
@@ -30347,8 +30355,6 @@ class MatrixEngineWGPU {
       o.pointerEffect = {
         enabled: false
       };
-    } else {
-      // o.pointerEffect = {enabled: true};
     }
     o.entityArgPass = this.entityArgPass;
     o.cameras = this.cameras;
@@ -30466,8 +30472,6 @@ class MatrixEngineWGPU {
       o.pointerEffect = {
         enabled: false
       };
-    } else {
-      // o.pointerEffect = {enabled: true};
     }
     o.entityArgPass = this.entityArgPass;
     o.cameras = this.cameras;
