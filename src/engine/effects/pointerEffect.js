@@ -27,7 +27,6 @@ export class PointerEffect {
       1, 2, 3
     ]);
 
-    // GPU buffers
     this.vertexBuffer = this.device.createBuffer({
       size: vertexData.byteLength,
       usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
@@ -47,7 +46,6 @@ export class PointerEffect {
     this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
     this.indexCount = indexData.length;
 
-    // Uniforms: camera & model
     this.cameraBuffer = this.device.createBuffer({
       size: 64,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
@@ -57,7 +55,6 @@ export class PointerEffect {
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
 
-    // Bind group layout
     const bindGroupLayout = this.device.createBindGroupLayout({
       entries: [
         {binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {}},
@@ -73,10 +70,8 @@ export class PointerEffect {
       ]
     });
 
-    // Shader
     const shaderModule = this.device.createShaderModule({code: pointerEffect});
 
-    // Pipeline
     const pipelineLayout = this.device.createPipelineLayout({bindGroupLayouts: [bindGroupLayout]});
     this.pipeline = this.device.createRenderPipeline({
       layout: pipelineLayout,
@@ -99,11 +94,8 @@ export class PointerEffect {
   }
 
   draw(pass, cameraMatrix, modelMatrix) {
-    // Write uniforms
     this.device.queue.writeBuffer(this.cameraBuffer, 0, cameraMatrix);
     this.device.queue.writeBuffer(this.modelBuffer, 0, modelMatrix);
-
-    // Draw
     pass.setPipeline(this.pipeline);
     pass.setBindGroup(0, this.bindGroup);
     pass.setVertexBuffer(0, this.vertexBuffer);
@@ -113,11 +105,9 @@ export class PointerEffect {
   }
 
   render(transPass, mesh, viewProjMatrix) {
-      // if(!(mesh.effects && mesh.effects.pointer)) return;
-      const pointer = mesh.effects.pointer;
       const objPos = mesh.position;
       const modelMatrix = mat4.identity();
       mat4.translate(modelMatrix, [objPos.x, objPos.y + 60, objPos.z], modelMatrix);
-      pointer.draw(transPass, viewProjMatrix, modelMatrix);
+      this.draw(transPass, viewProjMatrix, modelMatrix);
   }
 }

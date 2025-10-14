@@ -554,9 +554,11 @@ export default class MatrixEngineWGPU {
       const transPass = commandEncoder.beginRenderPass(transPassDesc);
       const viewProjMatrix = mat4.multiply(this.cameras.WASD.projectionMatrix, this.cameras.WASD.view, mat4.identity());
       for(const mesh of this.mainRenderBundle) {
-        if(!(mesh.effects && mesh.effects.pointer)) continue;
-        if(mesh.effects.pointer.updateInstanceData) mesh.effects.pointer.updateInstanceData(mesh.getModelMatrix(mesh.position));
-        mesh.effects.pointer.render(transPass, mesh, viewProjMatrix)
+        if(mesh.effects) Object.keys(mesh.effects).forEach(effect_ => {
+          const effect = mesh.effects[effect_];
+          if(effect.updateInstanceData) effect.updateInstanceData(mesh.getModelMatrix(mesh.position));
+          effect.render(transPass, mesh, viewProjMatrix)
+        });
       }
       transPass.end();
 
@@ -702,7 +704,7 @@ export default class MatrixEngineWGPU {
     if(typeof o.objAnim == 'undefined' || typeof o.objAnim == null) {
       o.objAnim = null;
     } else {
-      alert('GLB not use objAnim (it is only for obj sequence). GLB use BVH skeletal for animation');
+      console.warn('GLB not use objAnim (it is only for obj sequence). GLB use BVH skeletal for animation');
     }
     let skinnedNodeIndex = 0;
     for(const skinnedNode of glbFile.skinnedMeshNodes) {
@@ -712,12 +714,11 @@ export default class MatrixEngineWGPU {
         // primitive is mesh - probably with own material . material/texture per primitive
         // create scene object for each skinnedNode
         o.name = o.name + "-" + skinnedNode.name + '-' + c;
-
         // maybe later add logic from constructor
+        // always fisrt sub mesh(skinnedmeg-vert group how comes from loaders)
         if(skinnedNodeIndex == 0) {} else {
           o.pointerEffect = {enabled: false};
         }
-
         const bvhPlayer = new BVHPlayerInstances(
           o,
           BVHANIM,
@@ -738,7 +739,6 @@ export default class MatrixEngineWGPU {
         // }
         // make it soft
         setTimeout(() => {this.mainRenderBundle.push(bvhPlayer)}, 1000)
-        // this.mainRenderBundle.push(bvhPlayer)
         c++;
       }
     }

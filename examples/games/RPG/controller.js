@@ -23,8 +23,7 @@ export class Controller {
         this.dragStart = {x: e.clientX, y: e.clientY};
         this.dragEnd = {x: e.clientX, y: e.clientY};
       } else if(e.button === 0) {
-        // console.log('it is right what is heroe_bodies ', this.heroe_bodies);
-        // console.log('it is right what is nav ', this.nav);
+        // empty
       }
     });
 
@@ -45,7 +44,7 @@ export class Controller {
       }
     });
 
-    addRaycastsListener()
+    addRaycastsListener();
 
     canvas.addEventListener("ray.hit.event", (e) => {
       // console.log('ray.hit.event detected', e);

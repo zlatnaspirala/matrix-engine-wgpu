@@ -6,7 +6,7 @@ export class Character extends Hero {
 
   positionThrust = 0.85;
 
-  constructor(MYSTICORE, path, name = 'hero-maria', archetypes = ["Warrior", "Mage"]) {
+  constructor(MYSTICORE, path, name = 'MariaSword', archetypes = ["Warrior", "Mage"]) {
     super(name, archetypes);
     console.info(`%cLOADING hero name : ${name}`, LOG_MATRIX)
     this.name = name;
@@ -18,7 +18,7 @@ export class Character extends Hero {
 
   setupHUDForHero(name) {
     console.info(`%cLOADING hero name : ${name}`, LOG_MATRIX)
-    if(name == 'hero-maria') {
+    if(name == 'MariaSword') {
       byId('magic-slot-0').style.background = 'url("./res/textures/rpg/magics/maria-sword-1.png")';
       byId('magic-slot-0').style.backgroundRepeat = "round";
       byId('magic-slot-1').style.background = 'url("./res/textures/rpg/magics/maria-sword-2.png")';

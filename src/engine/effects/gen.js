@@ -1,6 +1,5 @@
 import {GeometryFactory} from "../geometry-factory.js";
 import {mat4} from "wgpu-matrix";
-// import {pointerEffect} from "../../shaders/standalone/pointer.effect.js";
 import {geoInstancedEffect} from "../../shaders/standalone/geo.instanced.js";
 
 export class GenGeo {
@@ -151,7 +150,6 @@ export class GenGeo {
   }
 
   render(transPass, mesh, viewProjMatrix) {
-    const pointer = mesh.effects.pointer;
-    pointer.draw(transPass, viewProjMatrix);
+    this.draw(transPass, viewProjMatrix);
   }
 }

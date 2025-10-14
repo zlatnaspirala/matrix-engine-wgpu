@@ -10,7 +10,7 @@ var _utils = require("../../../src/engine/utils");
 var _hero = require("./hero");
 class Character extends _hero.Hero {
   positionThrust = 0.85;
-  constructor(MYSTICORE, path, name = 'hero-maria', archetypes = ["Warrior", "Mage"]) {
+  constructor(MYSTICORE, path, name = 'MariaSword', archetypes = ["Warrior", "Mage"]) {
     super(name, archetypes);
     console.info(`%cLOADING hero name : ${name}`, _utils.LOG_MATRIX);
     this.name = name;
@@ -21,7 +21,7 @@ class Character extends _hero.Hero {
   }
   setupHUDForHero(name) {
     console.info(`%cLOADING hero name : ${name}`, _utils.LOG_MATRIX);
-    if (name == 'hero-maria') {
+    if (name == 'MariaSword') {
       (0, _utils.byId)('magic-slot-0').style.background = 'url("./res/textures/rpg/magics/maria-sword-1.png")';
       (0, _utils.byId)('magic-slot-0').style.backgroundRepeat = "round";
       (0, _utils.byId)('magic-slot-1').style.background = 'url("./res/textures/rpg/magics/maria-sword-2.png")';
@@ -105,8 +105,7 @@ class Controller {
           y: e.clientY
         };
       } else if (e.button === 0) {
-        // console.log('it is right what is heroe_bodies ', this.heroe_bodies);
-        // console.log('it is right what is nav ', this.nav);
+        // empty
       }
     });
     canvas.addEventListener('mousemove', e => {
@@ -20332,8 +20331,6 @@ exports.GenGeo = void 0;
 var _geometryFactory = require("../geometry-factory.js");
 var _wgpuMatrix = require("wgpu-matrix");
 var _geoInstanced = require("../../shaders/standalone/geo.instanced.js");
-// import {pointerEffect} from "../../shaders/standalone/pointer.effect.js";
-
 class GenGeo {
   constructor(device, format, type = "sphere", scale = 1) {
     this.device = device;
@@ -20508,8 +20505,7 @@ class GenGeo {
     pass.drawIndexed(this.indexCount, this.instanceCount);
   }
   render(transPass, mesh, viewProjMatrix) {
-    const pointer = mesh.effects.pointer;
-    pointer.draw(transPass, viewProjMatrix);
+    this.draw(transPass, viewProjMatrix);
   }
 }
 exports.GenGeo = GenGeo;
@@ -20542,8 +20538,6 @@ class PointerEffect {
     ]);
     const uvData = new Float32Array([0, 0, 1, 0, 0, 1, 1, 1]);
     const indexData = new Uint16Array([0, 2, 1, 1, 2, 3]);
-
-    // GPU buffers
     this.vertexBuffer = this.device.createBuffer({
       size: vertexData.byteLength,
       usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
@@ -20560,8 +20554,6 @@ class PointerEffect {
     });
     this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
     this.indexCount = indexData.length;
-
-    // Uniforms: camera & model
     this.cameraBuffer = this.device.createBuffer({
       size: 64,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
@@ -20570,8 +20562,6 @@ class PointerEffect {
       size: 64,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
-
-    // Bind group layout
     const bindGroupLayout = this.device.createBindGroupLayout({
       entries: [{
         binding: 0,
@@ -20597,13 +20587,9 @@ class PointerEffect {
         }
       }]
     });
-
-    // Shader
     const shaderModule = this.device.createShaderModule({
       code: _pointerEffect.pointerEffect
     });
-
-    // Pipeline
     const pipelineLayout = this.device.createPipelineLayout({
       bindGroupLayouts: [bindGroupLayout]
     });
@@ -20646,11 +20632,8 @@ class PointerEffect {
     });
   }
   draw(pass, cameraMatrix, modelMatrix) {
-    // Write uniforms
     this.device.queue.writeBuffer(this.cameraBuffer, 0, cameraMatrix);
     this.device.queue.writeBuffer(this.modelBuffer, 0, modelMatrix);
-
-    // Draw
     pass.setPipeline(this.pipeline);
     pass.setBindGroup(0, this.bindGroup);
     pass.setVertexBuffer(0, this.vertexBuffer);
@@ -20659,12 +20642,10 @@ class PointerEffect {
     pass.drawIndexed(this.indexCount);
   }
   render(transPass, mesh, viewProjMatrix) {
-    // if(!(mesh.effects && mesh.effects.pointer)) return;
-    const pointer = mesh.effects.pointer;
     const objPos = mesh.position;
     const modelMatrix = _wgpuMatrix.mat4.identity();
     _wgpuMatrix.mat4.translate(modelMatrix, [objPos.x, objPos.y + 60, objPos.z], modelMatrix);
-    pointer.draw(transPass, viewProjMatrix, modelMatrix);
+    this.draw(transPass, viewProjMatrix, modelMatrix);
   }
 }
 exports.PointerEffect = PointerEffect;
@@ -22454,13 +22435,12 @@ class MEMeshObjInstances extends _materialsInstanced.default {
         }]
       });
 
-      // pointerEffect bonus
-      // TEST123 - OPTIONS ON BASE MESHOBJ LEVEL
+      // 
       this.effects = {};
       if (this.pointerEffect && this.pointerEffect.enabled === true) {
         let pf = navigator.gpu.getPreferredCanvasFormat();
-        // this.effects.pointer = new PointerEffect(device, pf, this, true);
-        this.effects.pointer = new _gen.GenGeo(device, pf, 'sphere');
+        this.effects.pointer = new _pointerEffect.PointerEffect(device, pf, this, true);
+        this.effects.ballEffect = new _gen.GenGeo(device, pf, 'sphere');
       }
       // end
 
@@ -30755,9 +30735,11 @@ class MatrixEngineWGPU {
       const transPass = commandEncoder.beginRenderPass(transPassDesc);
       const viewProjMatrix = _wgpuMatrix.mat4.multiply(this.cameras.WASD.projectionMatrix, this.cameras.WASD.view, _wgpuMatrix.mat4.identity());
       for (const mesh of this.mainRenderBundle) {
-        if (!(mesh.effects && mesh.effects.pointer)) continue;
-        if (mesh.effects.pointer.updateInstanceData) mesh.effects.pointer.updateInstanceData(mesh.getModelMatrix(mesh.position));
-        mesh.effects.pointer.render(transPass, mesh, viewProjMatrix);
+        if (mesh.effects) Object.keys(mesh.effects).forEach(effect_ => {
+          const effect = mesh.effects[effect_];
+          if (effect.updateInstanceData) effect.updateInstanceData(mesh.getModelMatrix(mesh.position));
+          effect.render(transPass, mesh, viewProjMatrix);
+        });
       }
       transPass.end();
       this.device.queue.submit([commandEncoder.finish()]);
@@ -30998,7 +30980,7 @@ class MatrixEngineWGPU {
     if (typeof o.objAnim == 'undefined' || typeof o.objAnim == null) {
       o.objAnim = null;
     } else {
-      alert('GLB not use objAnim (it is only for obj sequence). GLB use BVH skeletal for animation');
+      console.warn('GLB not use objAnim (it is only for obj sequence). GLB use BVH skeletal for animation');
     }
     let skinnedNodeIndex = 0;
     for (const skinnedNode of glbFile.skinnedMeshNodes) {
@@ -31008,8 +30990,8 @@ class MatrixEngineWGPU {
         // primitive is mesh - probably with own material . material/texture per primitive
         // create scene object for each skinnedNode
         o.name = o.name + "-" + skinnedNode.name + '-' + c;
-
         // maybe later add logic from constructor
+        // always fisrt sub mesh(skinnedmeg-vert group how comes from loaders)
         if (skinnedNodeIndex == 0) {} else {
           o.pointerEffect = {
             enabled: false
@@ -31027,7 +31009,6 @@ class MatrixEngineWGPU {
         setTimeout(() => {
           this.mainRenderBundle.push(bvhPlayer);
         }, 1000);
-        // this.mainRenderBundle.push(bvhPlayer)
         c++;
       }
     }

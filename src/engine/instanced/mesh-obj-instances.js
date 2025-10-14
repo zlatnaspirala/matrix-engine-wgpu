@@ -584,13 +584,12 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
         ],
       });
 
-      // pointerEffect bonus
-      // TEST123 - OPTIONS ON BASE MESHOBJ LEVEL
+      // 
       this.effects = {};
       if(this.pointerEffect && this.pointerEffect.enabled === true) {
         let pf = navigator.gpu.getPreferredCanvasFormat();
-        // this.effects.pointer = new PointerEffect(device, pf, this, true);
-        this.effects.pointer = new GenGeo(device, pf, 'sphere');
+        this.effects.pointer = new PointerEffect(device, pf, this, true);
+        this.effects.ballEffect = new GenGeo(device, pf, 'sphere');
       }
       // end
 
