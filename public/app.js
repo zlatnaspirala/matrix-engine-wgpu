@@ -31030,13 +31030,10 @@ class MatrixEngineWGPU {
         o.name = o.name + "-" + skinnedNode.name + '-' + c;
 
         // maybe later add logic from constructor
-        if (skinnedNodeIndex == 0) {
-          console.warn('YYYYYYYYYYYYYYYYY', o.pointerEffect);
-        } else {
+        if (skinnedNodeIndex == 0) {} else {
           o.pointerEffect = {
             enabled: false
           };
-          console.warn('XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX', o.pointerEffect);
         }
         const bvhPlayer = new _bvhInstaced.BVHPlayerInstances(o, BVHANIM, glbFile, c, skinnedNodeIndex, this.canvas, this.device, this.context, this.inputHandler, this.globalAmbient.slice());
         skinnedNodeIndex++;

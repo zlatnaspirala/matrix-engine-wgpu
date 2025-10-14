@@ -710,11 +710,8 @@ export default class MatrixEngineWGPU {
         o.name = o.name + "-" + skinnedNode.name + '-' + c;
 
         // maybe later add logic from constructor
-        if (skinnedNodeIndex==0) {
-          console.warn('YYYYYYYYYYYYYYYYY',      o.pointerEffect)
-        } else {
+        if (skinnedNodeIndex==0) {} else {
           o.pointerEffect = {enabled: false};
-          console.warn('XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',      o.pointerEffect)
         }
 
         const bvhPlayer = new BVHPlayerInstances(
