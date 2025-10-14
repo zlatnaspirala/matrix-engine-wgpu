@@ -21144,6 +21144,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
         }]
       });
       this.mainPassBindGroupLayout = this.device.createBindGroupLayout({
+        label: 'mainPassBindGroupLayout mesh [instaced]',
         entries: [{
           binding: 0,
           visibility: GPUShaderStage.FRAGMENT,
@@ -24164,6 +24165,7 @@ class Materials {
     if (this.isVideo == true) {
       // console.info("✅ video sceneBindGroupForRender");
       this.sceneBindGroupForRender = this.device.createBindGroup({
+        label: 'sceneBindGroupForRender [video]',
         layout: this.bglForRender,
         entries: [{
           binding: 0,
@@ -24193,6 +24195,7 @@ class Materials {
       if (this.video.paused == true) this.video.play();
     } else {
       this.sceneBindGroupForRender = this.device.createBindGroup({
+        label: 'sceneBindGroupForRender [mesh][materials]',
         layout: this.bglForRender,
         entries: [{
           binding: 0,
@@ -25020,6 +25023,7 @@ class MEMeshObj extends _materials.default {
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
       });
       this.selectedBindGroupLayout = device.createBindGroupLayout({
+        label: 'selectedBindGroupLayout mesh',
         entries: [{
           binding: 0,
           visibility: GPUShaderStage.FRAGMENT,
@@ -25027,6 +25031,7 @@ class MEMeshObj extends _materials.default {
         }]
       });
       this.selectedBindGroup = device.createBindGroup({
+        label: 'selectedBindGroup mesh',
         layout: this.selectedBindGroupLayout,
         entries: [{
           binding: 0,
@@ -25106,6 +25111,7 @@ class MEMeshObj extends _materials.default {
         }]
       });
       this.mainPassBindGroupLayout = this.device.createBindGroupLayout({
+        label: 'mainPassBindGroupLayout mesh',
         entries: [{
           binding: 0,
           visibility: GPUShaderStage.FRAGMENT,
@@ -25340,16 +25346,25 @@ class MEMeshObj extends _materials.default {
         renderPass.setBindGroup(bindIndex++, light.getMainPassBindGroup(this));
       }
     }
+
+    // --- Selection state (new)
+    if (this.selectedBindGroup) {
+      renderPass.setBindGroup(2, this.selectedBindGroup);
+    }
     renderPass.setVertexBuffer(0, mesh.vertexBuffer);
     renderPass.setVertexBuffer(1, mesh.vertexNormalsBuffer);
     renderPass.setVertexBuffer(2, mesh.vertexTexCoordsBuffer);
     if (this.constructor.name === "BVHPlayer") {
-      renderPass.setVertexBuffer(3, this.mesh.jointsBuffer); // real
-      renderPass.setVertexBuffer(4, this.mesh.weightsBuffer); // real
+      // real
+      renderPass.setVertexBuffer(3, this.mesh.jointsBuffer);
+      renderPass.setVertexBuffer(4, this.mesh.weightsBuffer);
     } else {
       // dummy
-      renderPass.setVertexBuffer(3, this.joints.buffer); // dummy
-      renderPass.setVertexBuffer(4, this.weights.buffer); // dummy
+      renderPass.setVertexBuffer(3, this.joints.buffer);
+      renderPass.setVertexBuffer(4, this.weights.buffer);
+    }
+    if (this.mesh.tangentsBuffer) {
+      renderPass.setVertexBuffer(5, this.mesh.tangentsBuffer);
     }
     renderPass.setIndexBuffer(mesh.indexBuffer, 'uint16');
     renderPass.drawIndexed(mesh.indexCount);

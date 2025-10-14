@@ -436,12 +436,14 @@ export default class MEMeshObj extends Materials {
       });
 
       this.selectedBindGroupLayout = device.createBindGroupLayout({
+        label: 'selectedBindGroupLayout mesh',
         entries: [
           {binding: 0, visibility: GPUShaderStage.FRAGMENT, buffer: {}},
         ],
       });
 
       this.selectedBindGroup = device.createBindGroup({
+        label: 'selectedBindGroup mesh',
         layout: this.selectedBindGroupLayout,
         entries: [{binding: 0, resource: {buffer: this.selectedBuffer}}],
       });
@@ -523,6 +525,7 @@ export default class MEMeshObj extends Materials {
       });
 
       this.mainPassBindGroupLayout = this.device.createBindGroupLayout({
+        label: 'mainPassBindGroupLayout mesh',
         entries: [
           {binding: 0, visibility: GPUShaderStage.FRAGMENT, texture: {sampleType: 'depth'}},
           {binding: 1, visibility: GPUShaderStage.FRAGMENT, sampler: {type: 'comparison'}},
@@ -785,17 +788,27 @@ export default class MEMeshObj extends Materials {
       }
     }
 
+        // --- Selection state (new)
+    if(this.selectedBindGroup) {
+      renderPass.setBindGroup(2, this.selectedBindGroup);
+    }
+
     renderPass.setVertexBuffer(0, mesh.vertexBuffer);
     renderPass.setVertexBuffer(1, mesh.vertexNormalsBuffer);
     renderPass.setVertexBuffer(2, mesh.vertexTexCoordsBuffer);
 
     if(this.constructor.name === "BVHPlayer") {
-      renderPass.setVertexBuffer(3, this.mesh.jointsBuffer); // real
-      renderPass.setVertexBuffer(4, this.mesh.weightsBuffer);// real
+      // real
+      renderPass.setVertexBuffer(3, this.mesh.jointsBuffer);
+      renderPass.setVertexBuffer(4, this.mesh.weightsBuffer);
     } else {
       // dummy
-      renderPass.setVertexBuffer(3, this.joints.buffer);  // dummy
-      renderPass.setVertexBuffer(4, this.weights.buffer); // dummy
+      renderPass.setVertexBuffer(3, this.joints.buffer);
+      renderPass.setVertexBuffer(4, this.weights.buffer);
+    }
+
+    if(this.mesh.tangentsBuffer) {
+      renderPass.setVertexBuffer(5, this.mesh.tangentsBuffer);
     }
 
     renderPass.setIndexBuffer(mesh.indexBuffer, 'uint16');

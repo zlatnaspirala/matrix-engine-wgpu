@@ -568,6 +568,7 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
       });
 
       this.mainPassBindGroupLayout = this.device.createBindGroupLayout({
+        label:'mainPassBindGroupLayout mesh [instaced]',
         entries: [
           {binding: 0, visibility: GPUShaderStage.FRAGMENT, texture: {sampleType: 'depth'}},
           {binding: 1, visibility: GPUShaderStage.FRAGMENT, sampler: {type: 'comparison'}},

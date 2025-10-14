@@ -348,6 +348,7 @@ export default class Materials {
     if(this.isVideo == true) {
       // console.info("✅ video sceneBindGroupForRender");
       this.sceneBindGroupForRender = this.device.createBindGroup({
+        label: 'sceneBindGroupForRender [video]',
         layout: this.bglForRender,
         entries: [
           {binding: 0, resource: {buffer: this.sceneUniformBuffer}, },
@@ -362,6 +363,7 @@ export default class Materials {
       if(this.video.paused == true) this.video.play();
     } else {
       this.sceneBindGroupForRender = this.device.createBindGroup({
+        label: 'sceneBindGroupForRender [mesh][materials]',
         layout: this.bglForRender,
         entries: [
           {binding: 0, resource: {buffer: this.sceneUniformBuffer}, },
