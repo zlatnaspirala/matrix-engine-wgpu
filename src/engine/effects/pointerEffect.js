@@ -5,6 +5,9 @@ export class PointerEffect {
   constructor(device, format) {
     this.device = device;
     this.format = format;
+
+    // fiktive 
+    this.enabled = true;
     this._initPipeline();
   }
 

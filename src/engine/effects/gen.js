@@ -3,13 +3,14 @@ import {mat4} from "wgpu-matrix";
 import {geoInstancedEffect} from "../../shaders/standalone/geo.instanced.js";
 
 export class GenGeo {
-  constructor(device, format, type = "sphere", scale=1) {
+  constructor(device, format, type = "sphere", scale = 1) {
     this.device = device;
     this.format = format;
     const geom = GeometryFactory.create(type, scale);
     this.vertexData = geom.positions;
     this.uvData = geom.uvs;
     this.indexData = geom.indices;
+    this.enabled = true;
     this._initPipeline();
   }
 
