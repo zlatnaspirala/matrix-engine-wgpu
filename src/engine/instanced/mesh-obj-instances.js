@@ -6,6 +6,7 @@ import {PointerEffect} from '../effects/pointerEffect';
 import MaterialsInstanced from './materials-instanced';
 import {vertexWGSLInstanced} from '../../shaders/instanced/vertex.instanced.wgsl';
 import {BVHPlayerInstances} from '../loaders/bvh-instaced';
+import {GenGeo} from '../effects/gen';
 
 export default class MEMeshObjInstances extends MaterialsInstanced {
   constructor(canvas, device, context, o, inputHandler, globalAmbient, _glbFile = null, primitiveIndex = null, skinnedNodeIndex = null) {
@@ -427,7 +428,7 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
       this.lerpSpeed = 0.05;
       this.maxInstances = 5;
       this.instanceCount = 2;
-      const floatsPerInstance = 16 + 4;
+      this.floatsPerInstance = 16 + 4;
 
       for(let x = 0;x < this.maxInstances;x++) {
         this.instanceTargets.push({
@@ -440,7 +441,7 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
         });
       }
 
-      this.instanceData = new Float32Array(this.instanceCount * floatsPerInstance);
+      this.instanceData = new Float32Array(this.instanceCount * this.floatsPerInstance);
       this.instanceBuffer = device.createBuffer({
         size: this.instanceData.byteLength,
         usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
@@ -483,9 +484,22 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
           return;
         }
         this.instanceCount = newCount;
-        this.instanceData = new Float32Array(this.instanceCount * floatsPerInstance);
+        this.instanceData = new Float32Array(this.instanceCount * this.floatsPerInstance);
+        this.instanceBuffer = device.createBuffer({
+          size: this.instanceData.byteLength,
+          usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
+        });
         let m = this.getModelMatrix(this.position);
         this.updateInstanceData(m);
+
+        this.modelBindGroupInstanced = this.device.createBindGroup({
+          label: 'modelBindGroup in mesh [instanced]',
+          layout: this.uniformBufferBindGroupLayoutInstanced,
+          entries: [ //
+            {binding: 0, resource: {buffer: this.instanceBuffer, }},
+            {binding: 1, resource: {buffer: this.bonesBuffer}}
+          ],
+        });
       };
       // end of instanced
 
@@ -568,7 +582,7 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
       });
 
       this.mainPassBindGroupLayout = this.device.createBindGroupLayout({
-        label:'mainPassBindGroupLayout mesh [instaced]',
+        label: 'mainPassBindGroupLayout mesh [instaced]',
         entries: [
           {binding: 0, visibility: GPUShaderStage.FRAGMENT, texture: {sampleType: 'depth'}},
           {binding: 1, visibility: GPUShaderStage.FRAGMENT, sampler: {type: 'comparison'}},
@@ -580,7 +594,8 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
       this.effects = {};
       if(this.pointerEffect.enabled === true) {
         let pf = navigator.gpu.getPreferredCanvasFormat();
-        this.effects.pointer = new PointerEffect(device, pf, this, true);
+        // this.effects.pointer = new PointerEffect(device, pf, this, true);
+        this.effects.pointer = new GenGeo(device, pf, 'thunder');
       }
       // end
 
@@ -859,7 +874,10 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
 
     // pipelineBlended
     pass.setPipeline(this.pipelineBlended);
-    pass.drawIndexed(this.indexCount, 1, 0, 0, 1); // 1 instance = object 1
+
+    for(var ins = 1;ins < this.instanceCount;ins++) {
+      pass.drawIndexed(this.indexCount, 1, 0, 0, ins);
+    }
   }
 
   drawElementsAnim = (renderPass, lightContainer) => {

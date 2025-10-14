@@ -19,7 +19,7 @@
 ## Description
 
 This project is a work-in-progress WebGPU engine inspired by the original **matrix-engine** for WebGL.
-It uses the `wgpu-matrix` npm package as a modern replacement for `gl-matrix` to handle model-view-projection matrices.
+It uses the `wgpu-matrix` npm package as a replacement for `gl-matrix` to handle model-view-projection matrices.
 
 Published on npm as: **`matrix-engine-wgpu`**
 
@@ -405,6 +405,30 @@ export var loadObjsSequence = function () {
  - Next update materials improvements!
  - Light affect just for first frame or t-pose.
  - For npm service import uploadGLBModel.
+
+Must powerfull call is new class MEMeshObjInstances.
+You can add instanced draws and modify basic color for each individualy also 
+transformation good for fantazy game dev.
+
+Example:
+```js
+   var glbFile01 = await fetch(p).then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, this.core.device)));
+      this.core.addGlbObjInctance({
+        material: {type: 'standard', useTextureFromGlb: true},
+        scale: [20, 20, 20],
+        position: {x: 0, y: -4, z: -220},
+        name: this.name,
+        texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
+        raycast: {enabled: true, radius: 1.5},
+        pointerEffect: {enabled: true}
+      }, null, glbFile01);
+
+// access  - index -0 is BASE MESH ! I added maxLimit = 5 you can change this from engine source.
+// added lepr smoot translate , also color+.
+app.mainRenderBundle[1].instanceTargets[1].position[2] = 10;
+// This recreate buffer it is not for loop call space 
+app.mainRenderBundle[1].updateInstances(5)
+```
 
 
 ### 📽️ Video textures
