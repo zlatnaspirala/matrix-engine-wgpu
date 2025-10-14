@@ -42,7 +42,7 @@ export class Character extends Hero {
         raycast: {enabled: true, radius: 1.5},
         pointerEffect: {enabled: true}
       }, null, glbFile01);
-      // make small async
+      // make small async - cooking glbs files 
       setTimeout(() => {
         this.heroe_bodies = app.mainRenderBundle.filter(obj =>
           obj.name && obj.name.includes(this.name)
