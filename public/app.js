@@ -1082,6 +1082,7 @@ function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e
  * Map Loader controls first light
  */
 class MEMapLoader {
+  collectionOfTree1 = [];
   async loadNavMesh(navMapPath) {
     return new Promise(async (resolve, reject) => {
       try {
@@ -1235,7 +1236,8 @@ class MEMapLoader {
         enabled: false
       }
     }, null, glbFile01);
-    console.log("test !!!!!!!!!!!!!!!" + this.core.getSceneObjectByName('tree1'));
+    this.collectionOfTree1 = this.core.mainRenderBundle.filter(o => o.name.indexOf('tree') != -1);
+    console.log("test !!!!!!!!!!!!!!!" + this.core.mainRenderBundle.filter(o => o.name.indexOf('tree') != -1));
   }
 }
 exports.MEMapLoader = MEMapLoader;

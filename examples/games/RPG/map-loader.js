@@ -9,6 +9,8 @@ import NavMesh from "./nav-mesh.js";
  */
 export class MEMapLoader {
 
+  collectionOfTree1 = [];
+
   async loadNavMesh(navMapPath) {
     return new Promise(async (resolve, reject) => {
       try {
@@ -82,11 +84,11 @@ export class MEMapLoader {
       },
       raycast: {enabled: true, radius: 1.5}
     });
-    
-    setTimeout(()=> { 
+
+    setTimeout(() => {
       app.getSceneObjectByName('tree1-leaf2.001-0').position.y = 50
 
-     }, 200)
+    }, 200)
   }
 
   async loadMainMap() {
@@ -97,18 +99,21 @@ export class MEMapLoader {
     //   tree12: "./res/meshes/maps-objs/tree12.obj"
     // }, this.onTree.bind(this), {scale: [12, 12, 12]});
 
-      var glbFile01 = await fetch('./res/meshes/maps-objs/tree.glb').then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, this.core.device)));
-          this.core.addGlbObjInctance({
-            material: {type: 'standard', useTextureFromGlb: true},
-            scale: [20, 20, 20],
-            position: {x: 0, y: -14, z: -220},
-            name: 'tree1',
-            texturesPaths: ['./res/meshes/maps-objs/textures/green.png'],
-            raycast: {enabled: true, radius: 1.5},
-            pointerEffect: {enabled: false}
-          }, null, glbFile01);
+    var glbFile01 = await fetch('./res/meshes/maps-objs/tree.glb').then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, this.core.device)));
+    this.core.addGlbObjInctance({
+      material: {type: 'standard', useTextureFromGlb: true},
+      scale: [20, 20, 20],
+      position: {x: 0, y: -14, z: -220},
+      name: 'tree1',
+      texturesPaths: ['./res/meshes/maps-objs/textures/green.png'],
+      raycast: {enabled: true, radius: 1.5},
+      pointerEffect: {enabled: false}
+    }, null, glbFile01);
 
-          console.log("test !!!!!!!!!!!!!!!" + this.core.getSceneObjectByName('tree1'))
+    this.collectionOfTree1 = this.core.mainRenderBundle.filter((o => o.name.indexOf('tree') != -1));
+
+
+    console.log("test !!!!!!!!!!!!!!!" + this.core.mainRenderBundle.filter((o => o.name.indexOf('tree') != -1)))
 
 
   }
