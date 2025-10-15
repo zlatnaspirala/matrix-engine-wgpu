@@ -43,7 +43,7 @@ class Character extends _hero.Hero {
         scale: [20, 20, 20],
         position: {
           x: 0,
-          y: -4,
+          y: -23,
           z: -220
         },
         name: this.name,
@@ -356,7 +356,7 @@ class HeroProps {
       mana: 300,
       attack: 40,
       armor: 5,
-      moveSpeed: 4.0,
+      moveSpeed: 1.0,
       attackSpeed: 1.0,
       hpRegen: 2.0,
       mpRegen: 1.0,
@@ -368,7 +368,7 @@ class HeroProps {
       mana: 345,
       attack: 46,
       armor: 5.5,
-      moveSpeed: 4.05,
+      moveSpeed: 1.05,
       attackSpeed: 1.05,
       hpRegen: 2.25,
       mpRegen: 1.15,
@@ -380,7 +380,7 @@ class HeroProps {
       mana: 395,
       attack: 52,
       armor: 6,
-      moveSpeed: 4.10,
+      moveSpeed: 1.10,
       attackSpeed: 1.10,
       hpRegen: 2.52,
       mpRegen: 1.31,
@@ -392,7 +392,7 @@ class HeroProps {
       mana: 450,
       attack: 58,
       armor: 6.5,
-      moveSpeed: 4.15,
+      moveSpeed: 1.15,
       attackSpeed: 1.16,
       hpRegen: 2.81,
       mpRegen: 1.49,
@@ -404,7 +404,7 @@ class HeroProps {
       mana: 510,
       attack: 65,
       armor: 7,
-      moveSpeed: 4.20,
+      moveSpeed: 1.20,
       attackSpeed: 1.23,
       hpRegen: 3.13,
       mpRegen: 1.68,
@@ -416,7 +416,7 @@ class HeroProps {
       mana: 575,
       attack: 72,
       armor: 7.5,
-      moveSpeed: 4.25,
+      moveSpeed: 1.25,
       attackSpeed: 1.31,
       hpRegen: 3.48,
       mpRegen: 1.88,
@@ -428,7 +428,7 @@ class HeroProps {
       mana: 645,
       attack: 80,
       armor: 8,
-      moveSpeed: 4.30,
+      moveSpeed: 1.30,
       attackSpeed: 1.40,
       hpRegen: 3.85,
       mpRegen: 2.10,
@@ -440,7 +440,7 @@ class HeroProps {
       mana: 720,
       attack: 88,
       armor: 8.5,
-      moveSpeed: 4.35,
+      moveSpeed: 1.35,
       attackSpeed: 1.50,
       hpRegen: 4.25,
       mpRegen: 2.33,
@@ -452,7 +452,7 @@ class HeroProps {
       mana: 800,
       attack: 97,
       armor: 9,
-      moveSpeed: 4.40,
+      moveSpeed: 1.40,
       attackSpeed: 1.61,
       hpRegen: 4.68,
       mpRegen: 2.58,
@@ -464,7 +464,7 @@ class HeroProps {
       mana: 885,
       attack: 107,
       armor: 9.5,
-      moveSpeed: 4.45,
+      moveSpeed: 1.45,
       attackSpeed: 1.73,
       hpRegen: 5.13,
       mpRegen: 2.84,
@@ -1220,11 +1220,11 @@ class MEMapLoader {
         type: 'standard',
         useTextureFromGlb: true
       },
-      scale: [20, 20, 20],
+      scale: [(0, _utils.randomIntFromTo)(10, 15), (0, _utils.randomIntFromTo)(10, 15), (0, _utils.randomIntFromTo)(10, 15)],
       position: {
-        x: 0,
-        y: -14,
-        z: -220
+        x: -500,
+        y: -35,
+        z: -500
       },
       name: 'tree1',
       texturesPaths: ['./res/meshes/maps-objs/textures/green.png'],
@@ -1236,8 +1236,33 @@ class MEMapLoader {
         enabled: false
       }
     }, null, glbFile01);
-    this.collectionOfTree1 = this.core.mainRenderBundle.filter(o => o.name.indexOf('tree') != -1);
-    console.log("test !!!!!!!!!!!!!!!" + this.core.mainRenderBundle.filter(o => o.name.indexOf('tree') != -1));
+
+    // console.log("test !!!!!!!!!!!!!!!" + this.core.mainRenderBundle.filter((o => o.name.indexOf('tree') != -1)))
+    setTimeout(() => {
+      this.collectionOfTree1 = this.core.mainRenderBundle.filter(o => o.name.indexOf('tree') != -1);
+      setTimeout(() => {
+        this.addInstancing();
+      }, 100);
+    }, 1000);
+  }
+  addInstancing() {
+    const spacing = 150;
+    this.collectionOfTree1.forEach(partOftree => {
+      const gridSize = Math.ceil(Math.sqrt(partOftree.instanceTargets.length));
+      console.log("partOftree.maxInstance -> " + partOftree.maxInstances);
+      partOftree.updateMaxInstances(9);
+      partOftree.updateInstances(9);
+      partOftree.instanceTargets.forEach((instance, index) => {
+        const row = Math.floor(index / gridSize);
+        const col = index % gridSize;
+        instance.position[0] = col * spacing + (0, _utils.randomIntFromTo)(0, 20);
+        instance.position[2] = row * spacing + (0, _utils.randomIntFromTo)(0, 20);
+        instance.color[3] = 1;
+        instance.color[0] = (0, _utils.randomFloatFromTo)(0, 5);
+        instance.color[1] = (0, _utils.randomFloatFromTo)(0, 5);
+        instance.color[2] = (0, _utils.randomFloatFromTo)(0, 5);
+      });
+    });
   }
 }
 exports.MEMapLoader = MEMapLoader;
@@ -20887,7 +20912,7 @@ class WASDCamera extends CameraBase {
       this.position = position;
       this.canvas = options.canvas;
       this.aspect = options.canvas.width / options.canvas.height;
-      this.setProjection(2 * Math.PI / 5, this.aspect, 1, 1000);
+      this.setProjection(2 * Math.PI / 5, this.aspect, 1, 2000);
       // console.log(`%cCamera constructor : ${position}`, LOG_INFO);
     }
   }
@@ -22433,6 +22458,20 @@ class MEMeshObjInstances extends _materialsInstanced.default {
             }
           }]
         });
+      };
+      this.updateMaxInstances = newMax => {
+        this.maxInstances = newMax;
+        for (let x = 0; x < this.maxInstances; x++) {
+          this.instanceTargets.push({
+            index: x,
+            position: [0, 0, 0],
+            currentPosition: [0, 0, 0],
+            scale: [1, 1, 1],
+            currentScale: [1, 1, 1],
+            color: [0.6, 0.8, 1.0, 0.4],
+            currentColor: [0.6, 0.8, 1.0, 0.4]
+          });
+        }
       };
       // end of instanced
 
@@ -29516,6 +29555,9 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     let texColor = textureSample(meshTexture, meshSampler, input.uv);
     var finalColor = texColor.rgb * (scene.globalAmbient + lightContribution);
 
+    // Apply per-instance tint
+    finalColor *= input.colorMult.rgb;
+
     let N = normalize(input.fragNorm);
     let V = normalize(scene.cameraPos - input.fragPos);
     let fresnel = pow(1.0 - max(dot(N, V), 0.0), 3.0);
@@ -29526,7 +29568,6 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     }
 
     let alpha = input.colorMult.a; // use alpha for blending
-    // vec4f(finalColor, alpha);
     return vec4f(finalColor, alpha);
 }`;
 

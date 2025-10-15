@@ -1,6 +1,6 @@
 import {downloadMeshes} from "../../../src/engine/loader-obj.js";
 import {uploadGLBModel} from "../../../src/engine/loaders/webgpu-gltf.js";
-import {LOG_FUNNY_SMALL} from "../../../src/engine/utils.js";
+import {LOG_FUNNY_SMALL, randomFloatFromTo, randomIntFromTo} from "../../../src/engine/utils.js";
 import NavMesh from "./nav-mesh.js";
 
 /**
@@ -102,20 +102,43 @@ export class MEMapLoader {
     var glbFile01 = await fetch('./res/meshes/maps-objs/tree.glb').then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, this.core.device)));
     this.core.addGlbObjInctance({
       material: {type: 'standard', useTextureFromGlb: true},
-      scale: [20, 20, 20],
-      position: {x: 0, y: -14, z: -220},
+      scale: [randomIntFromTo(10,15), randomIntFromTo(10,15), randomIntFromTo(10,15)],
+      position: {x: -500, y: -35, z: -500},
       name: 'tree1',
       texturesPaths: ['./res/meshes/maps-objs/textures/green.png'],
       raycast: {enabled: true, radius: 1.5},
       pointerEffect: {enabled: false}
     }, null, glbFile01);
 
-    this.collectionOfTree1 = this.core.mainRenderBundle.filter((o => o.name.indexOf('tree') != -1));
-
-
-    console.log("test !!!!!!!!!!!!!!!" + this.core.mainRenderBundle.filter((o => o.name.indexOf('tree') != -1)))
-
-
+    // console.log("test !!!!!!!!!!!!!!!" + this.core.mainRenderBundle.filter((o => o.name.indexOf('tree') != -1)))
+    setTimeout(() => {
+      this.collectionOfTree1 = this.core.mainRenderBundle.filter((o => o.name.indexOf('tree') != -1));
+      setTimeout(() => {
+        this.addInstancing()
+      }, 100)
+    }, 1000)
   }
 
+  addInstancing() {
+    const spacing = 150;
+    this.collectionOfTree1.forEach((partOftree) => {
+      const gridSize = Math.ceil(Math.sqrt(partOftree.instanceTargets.length));
+      console.log("partOftree.maxInstance -> " + partOftree.maxInstances);
+      partOftree.updateMaxInstances(9);
+      partOftree.updateInstances(9);
+
+      partOftree.instanceTargets.forEach((instance, index) => {
+        const row = Math.floor(index / gridSize);
+        const col = index % gridSize;
+
+        instance.position[0] = col * spacing + randomIntFromTo(0,20);
+        instance.position[2] = row * spacing + randomIntFromTo(0,20);
+        instance.color[3] = 1;
+        instance.color[0] = randomFloatFromTo(0, 5);
+        instance.color[1] = randomFloatFromTo(0, 5);
+        instance.color[2] = randomFloatFromTo(0, 5);
+      })
+
+    })
+  }
 }

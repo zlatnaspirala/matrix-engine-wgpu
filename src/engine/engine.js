@@ -127,7 +127,7 @@ export class WASDCamera extends CameraBase {
       this.position = position;
       this.canvas = options.canvas;
       this.aspect = options.canvas.width / options.canvas.height;
-      this.setProjection((2 * Math.PI) / 5, this.aspect, 1, 1000);
+      this.setProjection((2 * Math.PI) / 5, this.aspect, 1, 2000);
       // console.log(`%cCamera constructor : ${position}`, LOG_INFO);
     }
   }

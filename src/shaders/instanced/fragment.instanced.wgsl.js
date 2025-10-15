@@ -211,6 +211,9 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     let texColor = textureSample(meshTexture, meshSampler, input.uv);
     var finalColor = texColor.rgb * (scene.globalAmbient + lightContribution);
 
+    // Apply per-instance tint
+    finalColor *= input.colorMult.rgb;
+
     let N = normalize(input.fragNorm);
     let V = normalize(scene.cameraPos - input.fragPos);
     let fresnel = pow(1.0 - max(dot(N, V), 0.0), 3.0);
@@ -221,6 +224,5 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     }
 
     let alpha = input.colorMult.a; // use alpha for blending
-    // vec4f(finalColor, alpha);
     return vec4f(finalColor, alpha);
 }`;

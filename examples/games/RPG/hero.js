@@ -101,16 +101,16 @@ export class HeroProps {
     this.name = name;
 
     this.levels = [
-      {level: 1, xp: 100, hp: 500, mana: 300, attack: 40, armor: 5, moveSpeed: 4.0, attackSpeed: 1.0, hpRegen: 2.0, mpRegen: 1.0, abilityPoints: 1},
-      {level: 2, xp: 200, hp: 570, mana: 345, attack: 46, armor: 5.5, moveSpeed: 4.05, attackSpeed: 1.05, hpRegen: 2.25, mpRegen: 1.15, abilityPoints: 2},
-      {level: 3, xp: 350, hp: 645, mana: 395, attack: 52, armor: 6, moveSpeed: 4.10, attackSpeed: 1.10, hpRegen: 2.52, mpRegen: 1.31, abilityPoints: 3},
-      {level: 4, xp: 500, hp: 725, mana: 450, attack: 58, armor: 6.5, moveSpeed: 4.15, attackSpeed: 1.16, hpRegen: 2.81, mpRegen: 1.49, abilityPoints: 4},
-      {level: 5, xp: 700, hp: 810, mana: 510, attack: 65, armor: 7, moveSpeed: 4.20, attackSpeed: 1.23, hpRegen: 3.13, mpRegen: 1.68, abilityPoints: 5},
-      {level: 6, xp: 900, hp: 900, mana: 575, attack: 72, armor: 7.5, moveSpeed: 4.25, attackSpeed: 1.31, hpRegen: 3.48, mpRegen: 1.88, abilityPoints: 6},
-      {level: 7, xp: 1150, hp: 995, mana: 645, attack: 80, armor: 8, moveSpeed: 4.30, attackSpeed: 1.40, hpRegen: 3.85, mpRegen: 2.10, abilityPoints: 7},
-      {level: 8, xp: 1400, hp: 1095, mana: 720, attack: 88, armor: 8.5, moveSpeed: 4.35, attackSpeed: 1.50, hpRegen: 4.25, mpRegen: 2.33, abilityPoints: 8},
-      {level: 9, xp: 1700, hp: 1200, mana: 800, attack: 97, armor: 9, moveSpeed: 4.40, attackSpeed: 1.61, hpRegen: 4.68, mpRegen: 2.58, abilityPoints: 9},
-      {level: 10, xp: null, hp: 1310, mana: 885, attack: 107, armor: 9.5, moveSpeed: 4.45, attackSpeed: 1.73, hpRegen: 5.13, mpRegen: 2.84, abilityPoints: 10}
+      {level: 1, xp: 100, hp: 500, mana: 300, attack: 40, armor: 5, moveSpeed: 1.0, attackSpeed: 1.0, hpRegen: 2.0, mpRegen: 1.0, abilityPoints: 1},
+      {level: 2, xp: 200, hp: 570, mana: 345, attack: 46, armor: 5.5, moveSpeed: 1.05, attackSpeed: 1.05, hpRegen: 2.25, mpRegen: 1.15, abilityPoints: 2},
+      {level: 3, xp: 350, hp: 645, mana: 395, attack: 52, armor: 6, moveSpeed: 1.10, attackSpeed: 1.10, hpRegen: 2.52, mpRegen: 1.31, abilityPoints: 3},
+      {level: 4, xp: 500, hp: 725, mana: 450, attack: 58, armor: 6.5, moveSpeed: 1.15, attackSpeed: 1.16, hpRegen: 2.81, mpRegen: 1.49, abilityPoints: 4},
+      {level: 5, xp: 700, hp: 810, mana: 510, attack: 65, armor: 7, moveSpeed: 1.20, attackSpeed: 1.23, hpRegen: 3.13, mpRegen: 1.68, abilityPoints: 5},
+      {level: 6, xp: 900, hp: 900, mana: 575, attack: 72, armor: 7.5, moveSpeed: 1.25, attackSpeed: 1.31, hpRegen: 3.48, mpRegen: 1.88, abilityPoints: 6},
+      {level: 7, xp: 1150, hp: 995, mana: 645, attack: 80, armor: 8, moveSpeed: 1.30, attackSpeed: 1.40, hpRegen: 3.85, mpRegen: 2.10, abilityPoints: 7},
+      {level: 8, xp: 1400, hp: 1095, mana: 720, attack: 88, armor: 8.5, moveSpeed: 1.35, attackSpeed: 1.50, hpRegen: 4.25, mpRegen: 2.33, abilityPoints: 8},
+      {level: 9, xp: 1700, hp: 1200, mana: 800, attack: 97, armor: 9, moveSpeed: 1.40, attackSpeed: 1.61, hpRegen: 4.68, mpRegen: 2.58, abilityPoints: 9},
+      {level: 10, xp: null, hp: 1310, mana: 885, attack: 107, armor: 9.5, moveSpeed: 1.45, attackSpeed: 1.73, hpRegen: 5.13, mpRegen: 2.84, abilityPoints: 10}
     ];
 
     this.currentLevel = 1;

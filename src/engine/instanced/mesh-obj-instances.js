@@ -458,9 +458,9 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
             t.currentPosition[j] += (t.position[j] - t.currentPosition[j]) * this.lerpSpeed;
             t.currentScale[j] += (t.scale[j] - t.currentScale[j]) * this.lerpSpeed;
             t.currentColor[j] += (t.color[j] - t.currentColor[j]) * this.lerpSpeed;
-            if (j==2) {
-                t.currentColor[j+1] += (t.color[j+1] - t.currentColor[j+1]) * this.lerpSpeedAlpha;
-            } 
+            if(j == 2) {
+              t.currentColor[j + 1] += (t.color[j + 1] - t.currentColor[j + 1]) * this.lerpSpeedAlpha;
+            }
           }
           // Apply smoothed transforms
           ghost[0] *= t.currentScale[0];
@@ -506,6 +506,21 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
           ],
         });
       };
+
+      this.updateMaxInstances = (newMax) => {
+        this.maxInstances = newMax;
+        for(let x = 0;x < this.maxInstances;x++) {
+          this.instanceTargets.push({
+            index: x,
+            position: [0, 0, 0],
+            currentPosition: [0, 0, 0],
+            scale: [1, 1, 1],
+            currentScale: [1, 1, 1],
+            color: [0.6, 0.8, 1.0, 0.4],
+            currentColor: [0.6, 0.8, 1.0, 0.4],
+          });
+        }
+      }
       // end of instanced
 
       this.modelUniformBuffer = this.device.createBuffer({
