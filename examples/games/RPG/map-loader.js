@@ -92,21 +92,21 @@ export class MEMapLoader {
   async loadMainMap() {
     downloadMeshes({cube: "./res/meshes/maps-objs/map-1.obj"}, this.onGround.bind(this), {scale: [10, 10, 10]});
 
-    downloadMeshes({
-      tree11: "./res/meshes/maps-objs/tree1.obj",
-      tree12: "./res/meshes/maps-objs/tree12.obj"
-    }, this.onTree.bind(this), {scale: [12, 12, 12]});
+    // downloadMeshes({
+    //   tree11: "./res/meshes/maps-objs/tree1.obj",
+    //   tree12: "./res/meshes/maps-objs/tree12.obj"
+    // }, this.onTree.bind(this), {scale: [12, 12, 12]});
 
-      // var glbFile01 = await fetch('./res/meshes/maps-objs/tree.glb').then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, this.core.device)));
-      //     this.core.addGlbObjInctance({
-      //       material: {type: 'standard', useTextureFromGlb: false},
-      //       scale: [20, 20, 20],
-      //       position: {x: 0, y: -4, z: -220},
-      //       name: 'tree1',
-      //       texturesPaths: ['./res/meshes/maps-objs/textures/green.png'],
-      //       raycast: {enabled: true, radius: 1.5},
-      //       pointerEffect: {enabled: false}
-      //     }, null, glbFile01);
+      var glbFile01 = await fetch('./res/meshes/maps-objs/tree.glb').then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, this.core.device)));
+          this.core.addGlbObjInctance({
+            material: {type: 'standard', useTextureFromGlb: true},
+            scale: [20, 20, 20],
+            position: {x: 0, y: -4, z: -220},
+            name: 'tree1',
+            texturesPaths: ['./res/meshes/maps-objs/textures/green.png'],
+            raycast: {enabled: true, radius: 1.5},
+            pointerEffect: {enabled: false}
+          }, null, glbFile01);
 
   }
 

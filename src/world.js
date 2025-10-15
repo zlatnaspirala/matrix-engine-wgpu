@@ -556,7 +556,7 @@ export default class MatrixEngineWGPU {
       for(const mesh of this.mainRenderBundle) {
         if(mesh.effects) Object.keys(mesh.effects).forEach(effect_ => {
           const effect = mesh.effects[effect_];
-          if (effect.enabled == false) return;
+          if(effect.enabled == false) return;
           if(effect.updateInstanceData) effect.updateInstanceData(mesh.getModelMatrix(mesh.position));
           effect.render(transPass, mesh, viewProjMatrix)
         });
@@ -707,6 +707,7 @@ export default class MatrixEngineWGPU {
     } else {
       console.warn('GLB not use objAnim (it is only for obj sequence). GLB use BVH skeletal for animation');
     }
+    console.warn('GLB  )))))))))))))))))))))))glbFile.skinnedMeshNodes', glbFile.skinnedMeshNodes);
     let skinnedNodeIndex = 0;
     for(const skinnedNode of glbFile.skinnedMeshNodes) {
       let c = 0;
@@ -731,7 +732,6 @@ export default class MatrixEngineWGPU {
           this.context,
           this.inputHandler,
           this.globalAmbient.slice());
-        skinnedNodeIndex++;
         // console.log(`bvhPlayer!!!!!: ${bvhPlayer}`);
         bvhPlayer.spotlightUniformBuffer = this.spotlightUniformBuffer;
         bvhPlayer.clearColor = clearColor;
@@ -739,9 +739,10 @@ export default class MatrixEngineWGPU {
         //   this.matrixAmmo.addPhysics(myMesh1, o.physics)
         // }
         // make it soft
-        setTimeout(() => {this.mainRenderBundle.push(bvhPlayer)}, 1000)
+        setTimeout(() => {this.mainRenderBundle.push(bvhPlayer)}, 200)
         c++;
       }
+      skinnedNodeIndex++;
     }
   }
 }
