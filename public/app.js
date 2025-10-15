@@ -5,6 +5,7 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.Character = void 0;
+var _wgpuMatrix = require("wgpu-matrix");
 var _webgpuGltf = require("../../../src/engine/loaders/webgpu-gltf");
 var _utils = require("../../../src/engine/utils");
 var _hero = require("./hero");
@@ -12,7 +13,7 @@ class Character extends _hero.Hero {
   positionThrust = 0.85;
   constructor(MYSTICORE, path, name = 'MariaSword', archetypes = ["Warrior", "Mage"]) {
     super(name, archetypes);
-    console.info(`%cLOADING hero name : ${name}`, _utils.LOG_MATRIX);
+    // console.info(`%cLOADING hero name : ${name}`, LOG_MATRIX)
     this.name = name;
     this.core = MYSTICORE;
     this.heroe_bodies = [];
@@ -61,17 +62,67 @@ class Character extends _hero.Hero {
         this.heroe_bodies = app.mainRenderBundle.filter(obj => obj.name && obj.name.includes(this.name));
         this.core.RPG.heroe_bodies = this.heroe_bodies;
         this.core.RPG.heroe_bodies.forEach(subMesh => {
-          subMesh.position.thrust = 1;
+          subMesh.position.thrust = this.moveSpeed;
+          subMesh.glb.animationIndex = 0;
+          console.info(`%cLOADING hero name : ${subMesh}`, _utils.LOG_MATRIX);
         });
+        this.attachEvents();
       }, 1200);
     } catch (err) {
       throw err;
     }
   }
+  setWalk() {
+    this.core.RPG.heroe_bodies.forEach(subMesh => {
+      subMesh.glb.animationIndex = 0;
+      console.info(`%cLOADING hero name : ${subMesh}`, _utils.LOG_MATRIX);
+    });
+  }
+  setSalute() {
+    this.core.RPG.heroe_bodies.forEach(subMesh => {
+      subMesh.glb.animationIndex = 1;
+      console.info(`%cLOADING hero name : ${subMesh}`, _utils.LOG_MATRIX);
+    });
+  }
+  setAnimation() {}
+  attachEvents() {
+    addEventListener('attack-magic0', e => {
+      console.log(e.detail);
+      this.core.RPG.heroe_bodies.forEach(subMesh => {
+        this.setSalute();
+        // level0 have only one instance - more level more instance in visuals context
+        console.info(`%cLOADING hero ghostPos`, _utils.LOG_MATRIX);
+        const distance = 80.0; // how far in front of hero
+        const lift = 0.5;
+        // --- rotation.y in degrees → radians
+        const yawRad = (subMesh.rotation.y || 0) * Math.PI / 180;
+        // --- local forward vector (relative to hero)
+        const forward = _wgpuMatrix.vec3.normalize([Math.sin(yawRad),
+        // x
+        0,
+        // y
+        Math.cos(yawRad) // z (rig faces -Z)
+        ]);
+
+        // --- compute ghost local offset
+        const ghostOffset = _wgpuMatrix.vec3.mulScalar(forward, distance);
+        ghostOffset[1] += lift;
+
+        // --- apply to local instance position
+        subMesh.instanceTargets[1].position = ghostOffset;
+        setTimeout(() => {
+          subMesh.instanceTargets[1].position[0] = 0;
+          subMesh.instanceTargets[1].position[2] = 0;
+          console.log("?? ", this.setWalk);
+          this.setWalk();
+        }, 1300);
+      });
+    });
+  }
 }
 exports.Character = Character;
 
-},{"../../../src/engine/loaders/webgpu-gltf":36,"../../../src/engine/utils":41,"./hero":3}],2:[function(require,module,exports){
+},{"../../../src/engine/loaders/webgpu-gltf":36,"../../../src/engine/utils":41,"./hero":3,"wgpu-matrix":22}],2:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -827,7 +878,19 @@ class HUD {
         slot.style.border = "2px solid #888";
         slot.style.boxShadow = "inset 2px 2px 5px rgba(0,0,0,0.6), inset -2px -2px 5px rgba(255,255,255,0.1)";
       });
-      slot.textContent = "Empty";
+      slot.textContent = "locked";
+      slot.addEventListener("mousedown", e => {
+        console.log('---------------------------------------');
+        slot.style.border = "2px solid #888";
+        slot.style.boxShadow = "inset 2px 2px 5px rgba(0,0,0,0.6), inset -2px -2px 5px rgba(255,255,255,0.1)";
+        dispatchEvent(new CustomEvent(`attack-magic${i}`, {
+          detail: {
+            source: 'hero',
+            magicType: 1,
+            level: 1
+          }
+        }));
+      });
       hudMagicHOlder.appendChild(slot);
     }
     hudCenter.appendChild(hudMagicHOlder);
@@ -1258,9 +1321,9 @@ class MEMapLoader {
         instance.position[0] = col * spacing + (0, _utils.randomIntFromTo)(0, 20);
         instance.position[2] = row * spacing + (0, _utils.randomIntFromTo)(0, 20);
         instance.color[3] = 1;
-        instance.color[0] = (0, _utils.randomFloatFromTo)(0, 5);
-        instance.color[1] = (0, _utils.randomFloatFromTo)(0, 5);
-        instance.color[2] = (0, _utils.randomFloatFromTo)(0, 5);
+        instance.color[0] = (0, _utils.randomFloatFromTo)(0.5, 5);
+        instance.color[1] = (0, _utils.randomFloatFromTo)(0, 1);
+        instance.color[2] = (0, _utils.randomFloatFromTo)(0, 1);
       });
     });
   }

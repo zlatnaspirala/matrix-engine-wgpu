@@ -124,7 +124,17 @@ export class HUD {
           "inset 2px 2px 5px rgba(0,0,0,0.6), inset -2px -2px 5px rgba(255,255,255,0.1)";
       });
 
-      slot.textContent = "Empty";
+      slot.textContent = "locked";
+
+      slot.addEventListener("mousedown", (e) => {
+        console.log('---------------------------------------')
+        slot.style.border = "2px solid #888";
+        slot.style.boxShadow =
+          "inset 2px 2px 5px rgba(0,0,0,0.6), inset -2px -2px 5px rgba(255,255,255,0.1)";
+          dispatchEvent(new CustomEvent(`attack-magic${i}`, 
+             {detail: { source: 'hero', magicType: 1 , level: 1} }))
+      });
+
       hudMagicHOlder.appendChild(slot);
     }
 

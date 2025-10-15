@@ -134,9 +134,9 @@ export class MEMapLoader {
         instance.position[0] = col * spacing + randomIntFromTo(0,20);
         instance.position[2] = row * spacing + randomIntFromTo(0,20);
         instance.color[3] = 1;
-        instance.color[0] = randomFloatFromTo(0, 5);
-        instance.color[1] = randomFloatFromTo(0, 5);
-        instance.color[2] = randomFloatFromTo(0, 5);
+        instance.color[0] = randomFloatFromTo(0.5, 5);
+        instance.color[1] = randomFloatFromTo(0, 1);
+        instance.color[2] = randomFloatFromTo(0, 1);
       })
 
     })
