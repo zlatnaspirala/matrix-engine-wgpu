@@ -707,7 +707,7 @@ export default class MatrixEngineWGPU {
     } else {
       console.warn('GLB not use objAnim (it is only for obj sequence). GLB use BVH skeletal for animation');
     }
-    console.warn('GLB  )))))))))))))))))))))))glbFile.skinnedMeshNodes', glbFile.skinnedMeshNodes);
+
     let skinnedNodeIndex = 0;
     for(const skinnedNode of glbFile.skinnedMeshNodes) {
       let c = 0;
@@ -715,7 +715,7 @@ export default class MatrixEngineWGPU {
         // console.log(`count: ${c} primitive-glb: ${primitive}`);
         // primitive is mesh - probably with own material . material/texture per primitive
         // create scene object for each skinnedNode
-        o.name = o.name + "-" + skinnedNode.name + '-' + c;
+        o.name = o.name + "_" + skinnedNode.name;
         // maybe later add logic from constructor
         // always fisrt sub mesh(skinnedmeg-vert group how comes from loaders)
         if(skinnedNodeIndex == 0) {} else {

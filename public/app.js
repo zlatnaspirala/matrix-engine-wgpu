@@ -1222,7 +1222,7 @@ class MEMapLoader {
       scale: [20, 20, 20],
       position: {
         x: 0,
-        y: -4,
+        y: -14,
         z: -220
       },
       name: 'tree1',
@@ -1235,6 +1235,7 @@ class MEMapLoader {
         enabled: false
       }
     }, null, glbFile01);
+    console.log("test !!!!!!!!!!!!!!!" + this.core.getSceneObjectByName('tree1'));
   }
 }
 exports.MEMapLoader = MEMapLoader;
@@ -31094,7 +31095,6 @@ class MatrixEngineWGPU {
     } else {
       console.warn('GLB not use objAnim (it is only for obj sequence). GLB use BVH skeletal for animation');
     }
-    console.warn('GLB  )))))))))))))))))))))))glbFile.skinnedMeshNodes', glbFile.skinnedMeshNodes);
     let skinnedNodeIndex = 0;
     for (const skinnedNode of glbFile.skinnedMeshNodes) {
       let c = 0;
@@ -31102,7 +31102,7 @@ class MatrixEngineWGPU {
         // console.log(`count: ${c} primitive-glb: ${primitive}`);
         // primitive is mesh - probably with own material . material/texture per primitive
         // create scene object for each skinnedNode
-        o.name = o.name + "-" + skinnedNode.name + '-' + c;
+        o.name = o.name + "_" + skinnedNode.name;
         // maybe later add logic from constructor
         // always fisrt sub mesh(skinnedmeg-vert group how comes from loaders)
         if (skinnedNodeIndex == 0) {} else {

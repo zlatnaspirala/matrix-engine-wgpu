@@ -101,12 +101,15 @@ export class MEMapLoader {
           this.core.addGlbObjInctance({
             material: {type: 'standard', useTextureFromGlb: true},
             scale: [20, 20, 20],
-            position: {x: 0, y: -4, z: -220},
+            position: {x: 0, y: -14, z: -220},
             name: 'tree1',
             texturesPaths: ['./res/meshes/maps-objs/textures/green.png'],
             raycast: {enabled: true, radius: 1.5},
             pointerEffect: {enabled: false}
           }, null, glbFile01);
+
+          console.log("test !!!!!!!!!!!!!!!" + this.core.getSceneObjectByName('tree1'))
+
 
   }
 
