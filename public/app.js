@@ -1073,9 +1073,14 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.MEMapLoader = void 0;
 var _loaderObj = require("../../../src/engine/loader-obj.js");
+var _webgpuGltf = require("../../../src/engine/loaders/webgpu-gltf.js");
 var _utils = require("../../../src/engine/utils.js");
 var _navMesh = _interopRequireDefault(require("./nav-mesh.js"));
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
+/**
+ * @description
+ * Map Loader controls first light
+ */
 class MEMapLoader {
   async loadNavMesh(navMapPath) {
     return new Promise(async (resolve, reject) => {
@@ -1117,7 +1122,7 @@ class MEMapLoader {
         y: 0,
         z: 0
       },
-      texturesPaths: ['./res/meshes/blender/cube.png'],
+      texturesPaths: ['./res/meshes/maps-objs/textures/map-bg.png'],
       name: 'ground',
       mesh: m.cube,
       physics: {
@@ -1130,19 +1135,100 @@ class MEMapLoader {
         radius: 1.5
       }
     });
-    // this.core.lightContainer[0].position[1] = 25;
+    this.core.lightContainer[0].position[1] = 100;
+    this.core.lightContainer[0].intesity = 10;
   }
-  loadMainMap() {
+  onTree(m) {
+    this.core.addMeshObj({
+      position: {
+        x: 0,
+        y: -5,
+        z: -10
+      },
+      rotation: {
+        x: 0,
+        y: 0,
+        z: 0
+      },
+      rotationSpeed: {
+        x: 0,
+        y: 0,
+        z: 0
+      },
+      texturesPaths: ['./res/meshes/maps-objs/textures/stablo.jpg'],
+      name: 'tree11',
+      mesh: m.tree11,
+      physics: {
+        enabled: false,
+        mass: 0,
+        geometry: "Cube"
+      },
+      raycast: {
+        enabled: false,
+        radius: 1.5
+      }
+    });
+    this.core.addMeshObj({
+      position: {
+        x: 0,
+        y: -5,
+        z: -10
+      },
+      rotation: {
+        x: 0,
+        y: 0,
+        z: 0
+      },
+      rotationSpeed: {
+        x: 0,
+        y: 0,
+        z: 0
+      },
+      texturesPaths: ['./res/meshes/maps-objs/textures/green.png'],
+      name: 'tree12',
+      mesh: m.tree12,
+      physics: {
+        enabled: false,
+        mass: 0,
+        geometry: "Cube"
+      },
+      raycast: {
+        enabled: true,
+        radius: 1.5
+      }
+    });
+    setTimeout(() => {
+      app.getSceneObjectByName('tree1-leaf2.001-0').position.y = 50;
+    }, 200);
+  }
+  async loadMainMap() {
     (0, _loaderObj.downloadMeshes)({
       cube: "./res/meshes/maps-objs/map-1.obj"
     }, this.onGround.bind(this), {
-      scale: [10, 1, 10]
+      scale: [10, 10, 10]
     });
+    (0, _loaderObj.downloadMeshes)({
+      tree11: "./res/meshes/maps-objs/tree1.obj",
+      tree12: "./res/meshes/maps-objs/tree12.obj"
+    }, this.onTree.bind(this), {
+      scale: [12, 12, 12]
+    });
+
+    // var glbFile01 = await fetch('./res/meshes/maps-objs/tree.glb').then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, this.core.device)));
+    //     this.core.addGlbObjInctance({
+    //       material: {type: 'standard', useTextureFromGlb: false},
+    //       scale: [20, 20, 20],
+    //       position: {x: 0, y: -4, z: -220},
+    //       name: 'tree1',
+    //       texturesPaths: ['./res/meshes/maps-objs/textures/green.png'],
+    //       raycast: {enabled: true, radius: 1.5},
+    //       pointerEffect: {enabled: false}
+    //     }, null, glbFile01);
   }
 }
 exports.MEMapLoader = MEMapLoader;
 
-},{"../../../src/engine/loader-obj.js":33,"../../../src/engine/utils.js":41,"./nav-mesh.js":7}],6:[function(require,module,exports){
+},{"../../../src/engine/loader-obj.js":33,"../../../src/engine/loaders/webgpu-gltf.js":36,"../../../src/engine/utils.js":41,"./nav-mesh.js":7}],6:[function(require,module,exports){
 "use strict";
 
 var _world = _interopRequireDefault(require("../../../src/world.js"));
@@ -24932,7 +25018,8 @@ class GLTFTexture {
 }
 exports.GLTFTexture = GLTFTexture;
 class GLBModel {
-  constructor(nodes, skins, skinnedMeshNodes, glbJsonData, glbBinaryBuffer) {
+  constructor(nodes, skins, skinnedMeshNodes, glbJsonData, glbBinaryBuffer, noSkinMeshNodes) {
+    this.noSkinMeshNodes = noSkinMeshNodes;
     this.nodes = nodes;
     this.skins = skins;
     this.skinnedMeshNodes = skinnedMeshNodes;
@@ -25096,8 +25183,10 @@ async function uploadGLBModel(buffer, device) {
     if (node.parent === undefined) node.parent = null;
   }
   const skinnedMeshNodes = nodes.filter(n => n.mesh && n.skin !== undefined);
+  let noSkinMeshNodes = null;
   if (skinnedMeshNodes.length === 0) {
     console.warn('No skins found — mesh not bound to skeleton');
+    noSkinMeshNodes = nodes.filter(n => n.mesh);
   } else {
     skinnedMeshNodes.forEach(n => {
       // console.log('Mesh', n.mesh.name, 'uses skin index', n.skin);
@@ -25108,7 +25197,7 @@ async function uploadGLBModel(buffer, device) {
       });
     });
   }
-  let R = new GLBModel(nodes, skins, skinnedMeshNodes, glbJsonData, glbBinaryBuffer);
+  let R = new GLBModel(nodes, skins, skinnedMeshNodes, glbJsonData, glbBinaryBuffer, noSkinMeshNodes);
   return R;
 }
 

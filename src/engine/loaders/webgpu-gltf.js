@@ -156,7 +156,7 @@ export class GLTFAccessor {
     if(accessor['byteOffset'] !== undefined) {
       this.byteOffset = accessor['byteOffset'];
     }
-    if (weightsAccessIndex) this.weightsAccessIndex = weightsAccessIndex;
+    if(weightsAccessIndex) this.weightsAccessIndex = weightsAccessIndex;
   }
 
   get byteStride() {
@@ -417,7 +417,8 @@ export class GLTFTexture {
 }
 
 export class GLBModel {
-  constructor(nodes, skins, skinnedMeshNodes, glbJsonData, glbBinaryBuffer) {
+  constructor(nodes, skins, skinnedMeshNodes, glbJsonData, glbBinaryBuffer,noSkinMeshNodes) {
+    this.noSkinMeshNodes = noSkinMeshNodes;
     this.nodes = nodes;
     this.skins = skins;
     this.skinnedMeshNodes = skinnedMeshNodes;
@@ -546,7 +547,7 @@ export async function uploadGLBModel(buffer, device) {
           weights = new GLTFAccessor(bufferViews[viewID], accessor, prim.attributes['WEIGHTS_0']);
         } else if(attr.startsWith('JOINTS')) {
           joints = new GLTFAccessor(bufferViews[viewID], accessor);
-        } else if (attr === 'TANGENT') {
+        } else if(attr === 'TANGENT') {
           tangents = new GLTFAccessor(bufferViews[viewID], accessor);
         } else {
           console.log('unknow-attr:', attr)
@@ -609,8 +610,11 @@ export async function uploadGLBModel(buffer, device) {
   const skinnedMeshNodes = nodes.filter(
     n => n.mesh && n.skin !== undefined
   );
+  let noSkinMeshNodes = null;
+
   if(skinnedMeshNodes.length === 0) {
     console.warn('No skins found — mesh not bound to skeleton');
+    noSkinMeshNodes = nodes.filter(n => n.mesh);
   } else {
     skinnedMeshNodes.forEach(n => {
       // console.log('Mesh', n.mesh.name, 'uses skin index', n.skin);
@@ -621,6 +625,6 @@ export async function uploadGLBModel(buffer, device) {
       });
     });
   }
-  let R = new GLBModel(nodes, skins, skinnedMeshNodes, glbJsonData, glbBinaryBuffer)
+  let R = new GLBModel(nodes, skins, skinnedMeshNodes, glbJsonData, glbBinaryBuffer, noSkinMeshNodes)
   return R;
 }
