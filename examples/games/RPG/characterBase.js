@@ -46,7 +46,9 @@ export class Character extends Hero {
         pointerEffect: {
           enabled: true,
           pointer: true,
-          energyBar: true
+          energyBar: true,
+          flameEffect: false,
+          flameEmitter: true
         }
       }, null, glbFile01);
       // make small async - cooking glbs files 

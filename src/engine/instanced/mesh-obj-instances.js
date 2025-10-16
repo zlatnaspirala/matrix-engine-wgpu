@@ -9,6 +9,8 @@ import {BVHPlayerInstances} from '../loaders/bvh-instaced';
 import {GenGeo} from '../effects/gen';
 import {HPBarEffect} from '../effects/energy-bar';
 import {MANABarEffect} from '../effects/mana-bar';
+import {FlameEffect} from '../effects/flame';
+import {FlameEmitter} from '../effects/flame-emmiter';
 
 export default class MEMeshObjInstances extends MaterialsInstanced {
   constructor(canvas, device, context, o, inputHandler, globalAmbient, _glbFile = null, primitiveIndex = null, skinnedNodeIndex = null) {
@@ -624,6 +626,12 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
         if(typeof this.pointerEffect.energyBar !== 'undefined' && this.pointerEffect.energyBar == true) {
           this.effects.energyBar = new HPBarEffect(device, pf);
           this.effects.manaBar = new MANABarEffect(device, pf);
+        }
+        if(typeof this.pointerEffect.flameEffect !== 'undefined' && this.pointerEffect.flameEffect == true) {
+          this.effects.flameEffect = new FlameEffect(device, pf);
+        }
+        if(typeof this.pointerEffect.flameEmitter !== 'undefined' && this.pointerEffect.flameEmitter == true) {
+          this.effects.flameEmitter = new FlameEmitter(device, pf);
         }
       }
 
