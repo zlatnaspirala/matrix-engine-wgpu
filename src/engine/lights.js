@@ -1,6 +1,7 @@
 import {mat4, vec3} from 'wgpu-matrix';
 import {vertexShadowWGSL} from '../shaders/vertexShadow.wgsl';
 import Behavior from './behavior';
+import {vertexShadowWGSLInstanced} from '../shaders/instanced/vertexShadow.instanced.wgsl';
 
 /**
  * @description
@@ -188,10 +189,18 @@ export class SpotLight {
       ]
     });
 
+    this.modelBindGroupLayoutInstanced = this.device.createBindGroupLayout({
+      label: 'modelBindGroupLayout in light [for skinned] [instanced]',
+      entries: [
+        {binding: 0, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: {type: "read-only-storage"}},
+        {binding: 1, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}, },
+      ],
+    });
+ 
     this.shadowPipeline = this.device.createRenderPipeline({
       label: 'shadowPipeline per light',
       layout: this.device.createPipelineLayout({
-        label: 'createPipelineLayout - uniformBufferBindGroupLayout light',
+        label: 'createPipelineLayout - uniformBufferBindGroupLayout light [regular]',
         bindGroupLayouts: [
           this.uniformBufferBindGroupLayout,
           this.modelBindGroupLayout,
@@ -200,6 +209,40 @@ export class SpotLight {
       vertex: {
         module: this.device.createShaderModule({
           code: vertexShadowWGSL,
+        }),
+        buffers: [
+          {
+            arrayStride: 12, // 3 * 4 bytes (vec3f)
+            attributes: [
+              {
+                shaderLocation: 0, // must match @location(0) in vertex shader
+                offset: 0,
+                format: "float32x3",
+              },
+            ],
+          },
+        ]
+      },
+      depthStencil: {
+        depthWriteEnabled: true,
+        depthCompare: 'less',
+        format: 'depth32float',
+      },
+      primitive: this.primitive,
+    });
+
+    this.shadowPipelineInstanced = this.device.createRenderPipeline({
+      label: 'shadowPipeline [instanced] per light',
+      layout: this.device.createPipelineLayout({
+        label: 'createPipelineLayout - uniformBufferBindGroupLayout light [instanced]',
+        bindGroupLayouts: [
+          this.uniformBufferBindGroupLayout,
+          this.modelBindGroupLayoutInstanced,
+        ],
+      }),
+      vertex: {
+        module: this.device.createShaderModule({
+          code: vertexShadowWGSLInstanced,
         }),
         buffers: [
           {

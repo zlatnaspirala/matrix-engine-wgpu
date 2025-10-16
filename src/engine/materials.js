@@ -6,9 +6,8 @@ import {fragmentWGSLPower} from "../shaders/fragment.wgsl.power";
 
 /**
  * @description
- * Created for matrix-engine-wgpu project.
- * MeshObj class estends Materials.
- * @var material is engine meta data variable not real material object.
+ * Created for matrix-engine-wgpu project. MeshObj class estends Materials.
+ * @variable material is engine meta data variable not real material object.
  * @author Nikola Lukic
  * @email zlatnaspirala@gmail.com
  */
@@ -328,7 +327,6 @@ export default class Materials {
       : this.texture0.createView();
     // console.log('TEST TEX this.texture0 ', this.texture0);
     if(this.material.useTextureFromGlb === true) {
-      // console.log('TEST TEX material use from file ', this.name);
       // 0 probably always for basicColor
       const material = this.skinnedNode.mesh.primitives[0].material;
       const textureView = material.baseColorTexture.imageView;
@@ -348,6 +346,7 @@ export default class Materials {
     if(this.isVideo == true) {
       // console.info("✅ video sceneBindGroupForRender");
       this.sceneBindGroupForRender = this.device.createBindGroup({
+        label: 'sceneBindGroupForRender [video]',
         layout: this.bglForRender,
         entries: [
           {binding: 0, resource: {buffer: this.sceneUniformBuffer}, },
@@ -362,6 +361,7 @@ export default class Materials {
       if(this.video.paused == true) this.video.play();
     } else {
       this.sceneBindGroupForRender = this.device.createBindGroup({
+        label: 'sceneBindGroupForRender [mesh][materials]',
         layout: this.bglForRender,
         entries: [
           {binding: 0, resource: {buffer: this.sceneUniformBuffer}, },

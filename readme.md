@@ -2,7 +2,7 @@
 
 **Author:** Nikola Lukić
 📧 [zlatnaspirala@gmail.com](mailto:zlatnaspirala@gmail.com)
-📅 2025
+📅 Version: 1.6.0             2025
 
 ---
 
@@ -19,7 +19,7 @@
 ## Description
 
 This project is a work-in-progress WebGPU engine inspired by the original **matrix-engine** for WebGL.
-It uses the `wgpu-matrix` npm package as a modern replacement for `gl-matrix` to handle model-view-projection matrices.
+It uses the `wgpu-matrix` npm package as a replacement for `gl-matrix` to handle model-view-projection matrices.
 
 Published on npm as: **`matrix-engine-wgpu`**
 
@@ -406,6 +406,36 @@ export var loadObjsSequence = function () {
  - Light affect just for first frame or t-pose.
  - For npm service import uploadGLBModel.
 
+From 1.6.0 glb support multi skinned mesh + mutli primitives cases.
+
+Limitation:
+glb loader not handled for non animation case. Use obj loader for static mesh.
+
+Must powerfull call is new class MEMeshObjInstances.
+MEMeshObj is good now for optimised call(less conditionals).
+You can add instanced draws and modify basic color for each individualy also 
+transformation good for fantazy or any game dev.
+
+Example:
+```js
+   var glbFile01 = await fetch(p).then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, this.core.device)));
+      this.core.addGlbObjInctance({
+        material: {type: 'standard', useTextureFromGlb: true},
+        scale: [20, 20, 20],
+        position: {x: 0, y: -4, z: -220},
+        name: this.name,
+        texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
+        raycast: {enabled: true, radius: 1.5},
+        pointerEffect: {enabled: true}
+      }, null, glbFile01);
+
+// access  - index -0 is BASE MESH ! I added maxLimit = 5 you can change this from engine source.
+// added lepr smoot translate , also color+.
+app.mainRenderBundle[1].instanceTargets[1].position[2] = 10;
+// This recreate buffer it is not for loop call space 
+app.mainRenderBundle[1].updateInstances(5)
+```
+
 
 ### 📽️ Video textures
 
@@ -502,6 +532,16 @@ This is static file storage.
 ## Proof of Concept
 
 🎲 The first full app example will be a WebGPU-powered **Jamb 3d deluxe** game.
+
+
+## RPG game WIP
+
+  Features done:
+   - Navigation mesh
+   - Hero class
+   - GLB animations
+
+<img width="860" height="640" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/RPG.png?raw=true" />
 
 ---
 

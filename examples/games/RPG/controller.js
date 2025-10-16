@@ -23,8 +23,7 @@ export class Controller {
         this.dragStart = {x: e.clientX, y: e.clientY};
         this.dragEnd = {x: e.clientX, y: e.clientY};
       } else if(e.button === 0) {
-        // console.log('it is right what is heroe_bodies ', this.heroe_bodies);
-        // console.log('it is right what is nav ', this.nav);
+        // empty
       }
     });
 
@@ -45,7 +44,7 @@ export class Controller {
       }
     });
 
-    addRaycastsListener()
+    addRaycastsListener();
 
     canvas.addEventListener("ray.hit.event", (e) => {
       // console.log('ray.hit.event detected', e);
@@ -54,20 +53,27 @@ export class Controller {
         console.warn('No valid hit detected.');
         return;
       }
-      // console.log("Hit object:", hitObject.name, "Button:", button);
+      console.log("Hit object:", hitObject.name, "Button:", button);
       // Only react to LEFT CLICK
-      if(button !== 0) return;
+      if(button !== 0 || this.heroe_bodies === null ||
+         !this.selected.includes(this.heroe_bodies[0]) 
+      ) {
+        // not hero but maybe other creaps . based on selected....
+        return;
+      }
+
       // Define start (hero position) and end (clicked point)
       const hero = this.heroe_bodies[0];
+      let heroSword = null;
+      if (this.heroe_bodies.length == 2) {
+        heroSword = this.heroe_bodies[1];
+      }
       const start = [hero.position.x, hero.position.y, hero.position.z];
       const end = [hitPoint[0], hitPoint[1], hitPoint[2]];
-
-      // console.log("Start:", start, "End:", end);
-      // --- find path on your navmesh ---
       const path = this.nav.findPath(start, end);
       if(!path || path.length === 0) {console.warn('No valid path found.'); return;}
-      // console.log("Path:", path);
       followPath(hero, path);
+      followPath(heroSword, path);
     });
 
     this.canvas.addEventListener("contextmenu", (e) => {

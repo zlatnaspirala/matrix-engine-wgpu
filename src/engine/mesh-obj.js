@@ -5,6 +5,7 @@ import {degToRad, genName, LOG_FUNNY_SMALL} from './utils';
 import Materials from './materials';
 import {fragmentVideoWGSL} from '../shaders/fragment.video.wgsl';
 import {vertexWGSL_NM} from '../shaders/vertex.wgsl.normalmap';
+import {PointerEffect} from './effects/pointerEffect';
 
 export default class MEMeshObj extends Materials {
   constructor(canvas, device, context, o, inputHandler, globalAmbient, _glbFile = null, primitiveIndex = null, skinnedNodeIndex = null) {
@@ -15,6 +16,9 @@ export default class MEMeshObj extends Materials {
     } else {
       this.raycast = o.raycast;
     }
+
+    if(typeof o.pointerEffect === 'undefined') {this.pointerEffect = {enabled: false};}
+
     this.name = o.name;
     this.done = false;
     this.canvas = canvas;
@@ -428,12 +432,14 @@ export default class MEMeshObj extends Materials {
       });
 
       this.selectedBindGroupLayout = device.createBindGroupLayout({
+        label: 'selectedBindGroupLayout mesh',
         entries: [
           {binding: 0, visibility: GPUShaderStage.FRAGMENT, buffer: {}},
         ],
       });
 
       this.selectedBindGroup = device.createBindGroup({
+        label: 'selectedBindGroup mesh',
         layout: this.selectedBindGroupLayout,
         entries: [{binding: 0, resource: {buffer: this.selectedBuffer}}],
       });
@@ -461,7 +467,7 @@ export default class MEMeshObj extends Materials {
       });
       // test MUST BE IF
       this.uniformBufferBindGroupLayout = this.device.createBindGroupLayout({
-        label: 'uniformBufferBindGroupLayout in mesh',
+        label: 'uniformBufferBindGroupLayout in mesh regular',
         entries: [
           {
             binding: 0,
@@ -515,11 +521,22 @@ export default class MEMeshObj extends Materials {
       });
 
       this.mainPassBindGroupLayout = this.device.createBindGroupLayout({
+        label: 'mainPassBindGroupLayout mesh',
         entries: [
           {binding: 0, visibility: GPUShaderStage.FRAGMENT, texture: {sampleType: 'depth'}},
           {binding: 1, visibility: GPUShaderStage.FRAGMENT, sampler: {type: 'comparison'}},
         ],
       });
+
+      // pointerEffect bonus
+      // TEST - OPTIONS ON BASE MESHOBJ LEVEL
+      this.effects = {};
+      if(this.pointerEffect && this.pointerEffect.enabled === true) {
+        let pf = navigator.gpu.getPreferredCanvasFormat();
+        this.effects.pointer = new PointerEffect(device, pf, this, true);
+      }
+      // end
+
       // Rotates the camera around the origin based on time.
       this.getTransformationMatrix = (mainRenderBundle, spotLight, index) => {
         const now = Date.now();
@@ -715,17 +732,16 @@ export default class MEMeshObj extends Materials {
       this.updateVideoTexture();
     }
     // Bind per-mesh uniforms
-    pass.setBindGroup(0, this.sceneBindGroupForRender); // camera/light UBOs
-    pass.setBindGroup(1, this.modelBindGroup);          // mesh transforms/textures
-    // Bind each light’s shadow texture & sampler
+    pass.setBindGroup(0, this.sceneBindGroupForRender);
+    pass.setBindGroup(1, this.modelBindGroup);
     if(this.isVideo == false) {
-      let bindIndex = 2; // start after UBO & model
+      let bindIndex = 2;
       for(const light of lightContainer) {
         pass.setBindGroup(bindIndex++, light.getMainPassBindGroup(this));
       }
     }
 
-    // --- Selection state (new)
+    // probably no need i forgot on ambient - very similar
     if(this.selectedBindGroup) {
       pass.setBindGroup(2, this.selectedBindGroup);
     }
@@ -761,10 +777,14 @@ export default class MEMeshObj extends Materials {
     const mesh = this.objAnim.meshList[this.objAnim.id + this.objAnim.currentAni];
 
     if(this.isVideo == false) {
-      let bindIndex = 2; // start after UBO & model
+      let bindIndex = 2;
       for(const light of lightContainer) {
         renderPass.setBindGroup(bindIndex++, light.getMainPassBindGroup(this));
       }
+    }
+
+    if(this.selectedBindGroup) {
+      renderPass.setBindGroup(2, this.selectedBindGroup);
     }
 
     renderPass.setVertexBuffer(0, mesh.vertexBuffer);
@@ -772,12 +792,17 @@ export default class MEMeshObj extends Materials {
     renderPass.setVertexBuffer(2, mesh.vertexTexCoordsBuffer);
 
     if(this.constructor.name === "BVHPlayer") {
-      renderPass.setVertexBuffer(3, this.mesh.jointsBuffer); // real
-      renderPass.setVertexBuffer(4, this.mesh.weightsBuffer);// real
+      // real
+      renderPass.setVertexBuffer(3, this.mesh.jointsBuffer);
+      renderPass.setVertexBuffer(4, this.mesh.weightsBuffer);
     } else {
       // dummy
-      renderPass.setVertexBuffer(3, this.joints.buffer);  // dummy
-      renderPass.setVertexBuffer(4, this.weights.buffer); // dummy
+      renderPass.setVertexBuffer(3, this.joints.buffer);
+      renderPass.setVertexBuffer(4, this.weights.buffer);
+    }
+
+    if(this.mesh.tangentsBuffer) {
+      renderPass.setVertexBuffer(5, this.mesh.tangentsBuffer);
     }
 
     renderPass.setIndexBuffer(mesh.indexBuffer, 'uint16');
