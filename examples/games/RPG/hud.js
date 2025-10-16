@@ -1,6 +1,7 @@
 
 export class HUD {
-  constructor() {
+  constructor(localHero) {
+    this.localHero = localHero;
     this.construct();
   }
 
@@ -8,7 +9,6 @@ export class HUD {
     // Create HUD container
     const hud = document.createElement("div");
     hud.id = "hud-menu";
-    // Style it
     Object.assign(hud.style, {
       position: "absolute",
       bottom: "0",
@@ -28,7 +28,7 @@ export class HUD {
 
     const hudLeftBox = document.createElement("div");
     hudLeftBox.id = "hudLeftBox";
-    // Style it
+
     Object.assign(hudLeftBox.style, {
       width: "20%",
       height: "100%",
@@ -48,7 +48,7 @@ export class HUD {
 
     const hudCenter = document.createElement("div");
     hudCenter.id = "hudCenter";
-    // Style it
+
     Object.assign(hudCenter.style, {
       width: "100%",
       height: "100%",
@@ -66,12 +66,12 @@ export class HUD {
     });
     const hudMagicHOlder = document.createElement("div");
     hudMagicHOlder.id = "hudMagicHOlder";
-    // Style it
+
     Object.assign(hudMagicHOlder.style, {
       width: "80%",
       maxWidth: "300px",
       minWidth: "150px",
-      aspectRatio: "4 / 1", // ensures grid is 4 wide and 1 tall
+      aspectRatio: "4 / 1",
       backgroundColor: "rgba(0, 0, 0, 0.4)",
       display: "grid",
       gridTemplateColumns: "repeat(4, 1fr)",
@@ -88,13 +88,12 @@ export class HUD {
       alignItems: "center",
     });
 
-    // === Create 4 square magic slots ===
     for(let i = 0;i < 4;i++) {
       const slot = document.createElement("div");
       slot.className = "magic-slot-test";
       slot.id = `magic-slot-${i}`;
       Object.assign(slot.style, {
-        aspectRatio: "1 / 1", // ensures square shape
+        aspectRatio: "1 / 1",
         width: "100%",
         border: "2px solid #888",
         borderRadius: "8px",
@@ -111,7 +110,6 @@ export class HUD {
         backgroundRepeat: "round"
       });
 
-      // Hover effect
       slot.addEventListener("mouseenter", () => {
         slot.style.border = "2px solid #0ff";
         slot.style.boxShadow =
@@ -132,15 +130,11 @@ export class HUD {
         slot.style.boxShadow =
           "inset 2px 2px 5px rgba(0,0,0,0.6), inset -2px -2px 5px rgba(255,255,255,0.1)";
           dispatchEvent(new CustomEvent(`attack-magic${i}`, 
-             {detail: { source: 'hero', magicType: 1 , level: 1} }))
+             {detail: { source: 'hero', magicType: i , level: 1} }))
       });
-
       hudMagicHOlder.appendChild(slot);
     }
-
     hudCenter.appendChild(hudMagicHOlder);
-
-
     // ---------------------------------------
     // HP 
     // ---------------------------------------
@@ -200,7 +194,7 @@ export class HUD {
     // ---------------------------------------
     const hudMANA = document.createElement("div");
     hudMANA.id = "hudMANA";
-    // Style it
+
     Object.assign(hudMANA.style, {
       width: "40%",
       height: "10%",
@@ -251,7 +245,6 @@ export class HUD {
     })
 
     hud.appendChild(hudCenter);
-
     // left box
     const selectedCharacters = document.createElement("span");
     selectedCharacters.textContent = "selectedCharacters:[]";
@@ -263,7 +256,7 @@ export class HUD {
 
     const hudDesription = document.createElement("div");
     hudDesription.id = "hudDesription";
-    // Style it
+
     Object.assign(hudDesription.style, {
       width: "60%",
       height: "100%",
@@ -281,7 +274,7 @@ export class HUD {
 
     const hudDesriptionText = document.createElement("div");
     hudDesriptionText.id = "hudDesription";
-    // Style it
+
     Object.assign(hudDesriptionText.style, {
       width: "100%",
       height: "100%",
@@ -303,10 +296,8 @@ export class HUD {
       backgroundPosition: "center",
     });
 
-
     hudDesription.appendChild(hudDesriptionText);
     hud.appendChild(hudDesription);
-
 
     // right
     const hudItems = document.createElement("div");
@@ -326,7 +317,6 @@ export class HUD {
       boxSizing: "border-box"
     });
 
-    // === Inventory Grid (2x3) ===
     const inventoryGrid = document.createElement("div");
     inventoryGrid.id = "inventoryGrid";
     Object.assign(inventoryGrid.style, {
@@ -340,7 +330,6 @@ export class HUD {
       boxSizing: "border-box",
     });
 
-    // === Create 6 inventory slots ===
     for(let i = 0;i < 6;i++) {
       const slot = document.createElement("div");
       slot.className = "inventory-slot";
@@ -383,9 +372,7 @@ export class HUD {
 
     // Add grid to hudItems
     hudItems.appendChild(inventoryGrid);
-
     hud.appendChild(hudItems);
-
     document.body.appendChild(hud);
   }
 

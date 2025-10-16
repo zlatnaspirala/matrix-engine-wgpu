@@ -1,2 +1,7 @@
 *.blender
 *.blend1
+public/res/meshes/nav-mesh/*.blend
+public/res/meshes/jamb/*.blend
+public/res/meshes/maps-objs/*.blend
+public/res/meshes/glb/*.blend
+public/res/meshes/blender/*.blend

@@ -2,7 +2,7 @@
 
 **Author:** Nikola Lukić
 📧 [zlatnaspirala@gmail.com](mailto:zlatnaspirala@gmail.com)
-📅 2025
+📅 Version: 1.6.0             2025
 
 ---
 
@@ -409,11 +409,12 @@ export var loadObjsSequence = function () {
 From 1.6.0 glb support multi skinned mesh + mutli primitives cases.
 
 Limitation:
-glb loader not handled for non animation case. Use obj for static mesh.
+glb loader not handled for non animation case. Use obj loader for static mesh.
 
 Must powerfull call is new class MEMeshObjInstances.
+MEMeshObj is good now for optimised call(less conditionals).
 You can add instanced draws and modify basic color for each individualy also 
-transformation good for fantazy game dev.
+transformation good for fantazy or any game dev.
 
 Example:
 ```js

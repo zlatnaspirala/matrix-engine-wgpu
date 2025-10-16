@@ -26,8 +26,6 @@ let MYSTICORE = new MatrixEngineWGPU({
   addEventListener('AmmoReady', async () => {
 
     MYSTICORE.RPG = new Controller(MYSTICORE.canvas);
-    MYSTICORE.HUD = new HUD();
-
     app.cameras.WASD.movementSpeed = 100;
 
     setTimeout(() => {
@@ -45,6 +43,8 @@ let MYSTICORE = new MatrixEngineWGPU({
       MYSTICORE,
       "res/meshes/glb/woman1.glb",
       'MariaSword', HERO_PROFILES.MariaSword.baseArchetypes);
+
+    MYSTICORE.HUD = new HUD(MYSTICORE.localHero);
 
   })
   MYSTICORE.addLight();
