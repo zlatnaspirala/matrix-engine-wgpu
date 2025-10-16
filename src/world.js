@@ -113,6 +113,8 @@ export default class MatrixEngineWGPU {
     });
 
     this.context = canvas.getContext('webgpu');
+    // this.context = canvas.getContext('webgpu', { alphaMode: 'opaque' });
+    // this.context = canvas.getContext('webgpu', { alphaMode: 'premultiplied' });
     const devicePixelRatio = window.devicePixelRatio;
     canvas.width = canvas.clientWidth * devicePixelRatio;
     canvas.height = canvas.clientHeight * devicePixelRatio;
@@ -557,7 +559,8 @@ export default class MatrixEngineWGPU {
         if(mesh.effects) Object.keys(mesh.effects).forEach(effect_ => {
           const effect = mesh.effects[effect_];
           if(effect.enabled == false) return;
-          if(effect.updateInstanceData) effect.updateInstanceData(mesh.getModelMatrix(mesh.position));
+          let md = mesh.getModelMatrix(mesh.position);
+          if(effect.updateInstanceData) effect.updateInstanceData(md);
           effect.render(transPass, mesh, viewProjMatrix)
         });
       }
@@ -680,8 +683,13 @@ export default class MatrixEngineWGPU {
     if(typeof o.mainCameraParams === 'undefined') {o.mainCameraParams = this.mainCameraParams}
     if(typeof o.scale === 'undefined') {o.scale = [1, 1, 1];}
     if(typeof o.raycast === 'undefined') {o.raycast = {enabled: false, radius: 2}}
-    if(typeof o.pointerEffect === 'undefined') {o.pointerEffect = {enabled: false};}
-
+    if(typeof o.pointerEffect === 'undefined') {
+      o.pointerEffect = {
+        enabled: false,
+        pointer: false,
+        ballEffect: false
+      };
+    }
     o.entityArgPass = this.entityArgPass;
     o.cameras = this.cameras;
     if(typeof o.physics === 'undefined') {
