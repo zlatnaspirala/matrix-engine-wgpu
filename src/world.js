@@ -680,8 +680,13 @@ export default class MatrixEngineWGPU {
     if(typeof o.mainCameraParams === 'undefined') {o.mainCameraParams = this.mainCameraParams}
     if(typeof o.scale === 'undefined') {o.scale = [1, 1, 1];}
     if(typeof o.raycast === 'undefined') {o.raycast = {enabled: false, radius: 2}}
-    if(typeof o.pointerEffect === 'undefined') {o.pointerEffect = {enabled: false};}
-
+    if(typeof o.pointerEffect === 'undefined') {
+      o.pointerEffect = {
+        enabled: false,
+        pointer: false,
+        ballEffect: false
+      };
+    }
     o.entityArgPass = this.entityArgPass;
     o.cameras = this.cameras;
     if(typeof o.physics === 'undefined') {

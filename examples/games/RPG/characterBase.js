@@ -15,7 +15,8 @@ export class Character extends Hero {
     this.core = MYSTICORE;
     this.heroe_bodies = [];
     this.loadLocalHero(path);
-    this.setupHUDForHero(name);
+    // async
+    setTimeout(() => this.setupHUDForHero(name) , 500)
   }
 
   setupHUDForHero(name) {
@@ -42,7 +43,11 @@ export class Character extends Hero {
         name: this.name,
         texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
         raycast: {enabled: true, radius: 1.5},
-        pointerEffect: {enabled: true}
+        pointerEffect: {
+          enabled: true,
+          pointer: true,
+          energyBar: true
+        }
       }, null, glbFile01);
       // make small async - cooking glbs files 
       setTimeout(() => {

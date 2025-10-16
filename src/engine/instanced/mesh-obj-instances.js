@@ -7,6 +7,8 @@ import MaterialsInstanced from './materials-instanced';
 import {vertexWGSLInstanced} from '../../shaders/instanced/vertex.instanced.wgsl';
 import {BVHPlayerInstances} from '../loaders/bvh-instaced';
 import {GenGeo} from '../effects/gen';
+import {HPBarEffect} from '../effects/energy-bar';
+import {MANABarEffect} from '../effects/mana-bar';
 
 export default class MEMeshObjInstances extends MaterialsInstanced {
   constructor(canvas, device, context, o, inputHandler, globalAmbient, _glbFile = null, primitiveIndex = null, skinnedNodeIndex = null) {
@@ -17,7 +19,7 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
     } else {
       this.raycast = o.raycast;
     }
-    // console.info('WHAT IS [MEMeshObjInstances]', o.pointerEffect)
+    console.info('WHAT IS [MEMeshObjInstances]', o.pointerEffect)
     this.pointerEffect = o.pointerEffect;
     this.name = o.name;
     this.done = false;
@@ -610,10 +612,19 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
       });
 
       this.effects = {};
+      console.log('>>>>>>>>>>>>>EFFECTS>>>>>>>>>>>>>>>>>>>>>>>')
       if(this.pointerEffect && this.pointerEffect.enabled === true) {
         let pf = navigator.gpu.getPreferredCanvasFormat();
-        this.effects.pointer = new PointerEffect(device, pf, this, true);
-        this.effects.ballEffect = new GenGeo(device, pf, 'sphere');
+        if(typeof this.pointerEffect.pointer !== 'undefined' && this.pointerEffect.pointer == true) {
+          this.effects.pointer = new PointerEffect(device, pf, this, true);
+        }
+        if(typeof this.pointerEffect.ballEffect !== 'undefined' && this.pointerEffect.ballEffect == true) {
+          this.effects.ballEffect = new GenGeo(device, pf, 'sphere');
+        }
+        if(typeof this.pointerEffect.energyBar !== 'undefined' && this.pointerEffect.energyBar == true) {
+          this.effects.energyBar = new HPBarEffect(device, pf);
+          this.effects.manaBar = new MANABarEffect(device, pf);
+        }
       }
 
       // Rotates the camera around the origin based on time.
