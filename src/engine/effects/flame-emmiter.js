@@ -1,7 +1,6 @@
-import {mat4, vec3} from "wgpu-matrix";
-import {flameEffect} from "../../shaders/flame-effect/flameEffect";
-import {randomIntFromTo} from "../utils";
+import {mat4} from "wgpu-matrix";
 import {flameEffectInstance} from "../../shaders/flame-effect/flame-instanced";
+import {randomFloatFromTo} from "../utils";
 
 export class FlameEmitter {
   constructor(device, format, maxParticles = 20) {
@@ -10,45 +9,57 @@ export class FlameEmitter {
     this.time = 0;
     this.intensity = 3.0;
     this.enabled = true;
-
     this.maxParticles = maxParticles;
     this.instanceTargets = [];
-    // this.floatsPerInstance = 16 + 4; // 16 for mat4 + 4 for color/intensity
     this.floatsPerInstance = 24;
     this.instanceData = new Float32Array(maxParticles * this.floatsPerInstance);
-
-    // initialize particles
+    this.smoothFlickeringScale = 0.1;
+    this.maxY = 1.9;
+    this.minY = 0;
     for(let i = 0;i < maxParticles;i++) {
       this.instanceTargets.push({
-        position: [
-          (Math.random() - 0.5) * 12.0,   // X spread
-          Math.random() * 2.0,            // small Y offset
-          (Math.random() - 0.5) * 12.0    // Z spread
-        ],
+        position: [0, 0, 0],
         currentPosition: [0, 0, 0],
-        scale: [
-          0.6 + Math.random() * 1.2,      // small width
-          1.5 + Math.random() * 3.0,      // taller height
-          1
-        ],
-        currentScale: [0, 0, 0],
-        color: [1, 0.1 + Math.random() * 0.3, 0, 1],
-        time: Math.random() * 5.0,
-        intensity: 1.0 + Math.random() * 2.0,
-        riseSpeed: 0.2 + Math.random() * 0.8
+        scale: [1, 1, 1],
+        currentScale: [1, 1, 1],
+        rotation: 0.1,
+        color: [1, 0.3, 0, 0.1],
+        time: 1,
+        intensity: 1,
+        riseSpeed: 1
       });
     }
 
     this._initPipeline();
   }
 
-  _initPipeline() {
-    const S = 1;
+  recreateVertexData(S) {
     const vertexData = new Float32Array([
-      -0.5 * S, 0.5 * S, 0,
-      0.5 * S, 0.5 * S, 0,
-      -0.5 * S, -0.5 * S, 0,
-      0.5 * S, -0.5 * S, 0,
+      -0.4 * S, 0.5 * S, 0.0 * S,
+      0.4 * S, 0.5 * S, 0.0 * S,
+      -0.2 * S, -0.5 * S, 0.0 * S,
+      0.2 * S, -0.5 * S, 0.0 * S,
+    ]);
+    this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
+  }
+
+  recreateVertexDataRND(S) {
+    const vertexData = new Float32Array([
+      -randomFloatFromTo(0.1, 0.8) * S, randomFloatFromTo(0.4, 0.6) * S, 0.0 * S,
+      randomFloatFromTo(0.1, 0.8) * S, randomFloatFromTo(0.4, 0.6) * S, 0.0 * S,
+      -randomFloatFromTo(0.1, 0.4) * S, -randomFloatFromTo(0.4, 0.6) * S, 0.0 * S,
+      randomFloatFromTo(0.1, 0.4) * S, -randomFloatFromTo(0.4, 0.6) * S, 0.0 * S,
+    ]);
+    this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
+  }
+
+  _initPipeline() {
+    const S = 5;
+    const vertexData = new Float32Array([
+      -0.4 * S, 0.5 * S, 0.0 * S,   // top-left (wider)
+      0.4 * S, 0.5 * S, 0.0 * S,   // top-right (wider)
+      -0.2 * S, -0.5 * S, 0.0 * S,  // bottom-left (narrow)
+      0.2 * S, -0.5 * S, 0.0 * S,  // bottom-right (narrow)
     ]);
 
     const uvData = new Float32Array([0, 1, 1, 1, 0, 0, 1, 0]);
@@ -114,51 +125,24 @@ export class FlameEmitter {
         targets: [{format: this.format}]
       },
       primitive: {topology: "triangle-list"},
-      depthStencil: {depthWriteEnabled: false, depthCompare: "always", format: "depth24plus"},
+      depthStencil: {depthWriteEnabled: false, depthCompare: "less", format: "depth24plus"},
       blend: {
-        color: {srcFactor: "src-alpha", dstFactor: "one", operation: "add"},
-        alpha: {srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add"}
+        // color: {srcFactor: "src-alpha", dstFactor: "one", operation: "add"},
+        // alpha: {srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add"}
+        color: {
+          srcFactor: 'src-alpha',
+          dstFactor: 'one-minus-src-alpha',
+          operation: 'add',
+        },
+        alpha: {
+          srcFactor: 'one',
+          dstFactor: 'one-minus-src-alpha',
+          operation: 'add',
+        },
       }
     });
   }
 
-  // updateInstanceData = (baseModelMatrix) => {
-
-  //   if(typeof baseModelMatrix !== 'undefined') {
-  //     //  console.log('baseModelMatrix, local, finalMat', baseModelMatrix, local, finalMat)
-  //     this.baseModelMatrix = baseModelMatrix;
-  //   }
-
-  //   const count = Math.min(this.instanceTargets.length, this.maxParticles);
-  //   for(let i = 0;i < count;i++) {
-  //     const t = this.instanceTargets[i];
-
-  //     // interpolate smoothly
-  //     for(let j = 0;j < 3;j++) {
-  //       t.currentPosition[j] += (t.position[j] - t.currentPosition[j]) * 0.1;
-  //       t.currentScale[j] += (t.scale[j] - t.currentScale[j]) * 0.1;
-  //     }
-
-  //     const local = mat4.identity();
-  //     mat4.translate(local, t.currentPosition, local);
-  //     mat4.scale(local, t.currentScale, local);
-
-  //     const finalMat = mat4.identity();
-  //     if(typeof baseModelMatrix === 'undefined' || typeof local === 'undefined') {
-  //       // console.log('baseModelMatrix, local, finalMat', baseModelMatrix, local, finalMat)
-  //       // HOT FIX
-  //       baseModelMatrix = this.baseModelMatrix;
-  //     }
-  //     mat4.multiply(baseModelMatrix, local, finalMat);
-
-  //     const offset = i * this.floatsPerInstance;
-  //     this.instanceData.set(finalMat, offset);
-  //     this.instanceData.set(t.color, offset + 16);
-  //   }
-
-  //   // upload active particles
-  //   this.device.queue.writeBuffer(this.modelBuffer, 0, this.instanceData.subarray(0, count * this.floatsPerInstance));
-  // }
 
   updateInstanceData = (baseModelMatrix) => {
     const count = Math.min(this.instanceTargets.length, this.maxParticles);
@@ -166,14 +150,16 @@ export class FlameEmitter {
     for(let i = 0;i < count;i++) {
       const t = this.instanceTargets[i];
 
-      // smooth interpolation if you want (optional)
+      // Smooth interpolation
       for(let j = 0;j < 3;j++) {
         t.currentPosition[j] += (t.position[j] - t.currentPosition[j]) * 0.12;
         t.currentScale[j] += (t.scale[j] - t.currentScale[j]) * 0.12;
       }
 
+      // Build local matrix: translate → rotate → scale
       const local = mat4.identity();
       mat4.translate(local, t.currentPosition, local);
+      mat4.rotateY(local, t.rotation, local);
       mat4.scale(local, t.currentScale, local);
 
       const finalMat = mat4.identity();
@@ -184,37 +170,43 @@ export class FlameEmitter {
       // Write mat4 (16 floats)
       this.instanceData.set(finalMat, offset);
 
-      // Write time vec4 at offsets offset+16..offset+19
-      const timeOffset = offset + 16;
-      this.instanceData[timeOffset + 0] = t.time;
-      this.instanceData[timeOffset + 1] = 0.0;
-      this.instanceData[timeOffset + 2] = 0.0;
-      this.instanceData[timeOffset + 3] = 0.0;
+      // time vec4
+      this.instanceData.set([t.time, 0, 0, 0], offset + 16);
 
-      // Write intensity vec4 at offsets offset+20..offset+23
-      const intenOffset = offset + 20;
-      this.instanceData[intenOffset + 0] = t.intensity;
-      this.instanceData[intenOffset + 1] = 0.0;
-      this.instanceData[intenOffset + 2] = 0.0;
-      this.instanceData[intenOffset + 3] = 0.0;
+      // intensity vec4
+      this.instanceData.set([t.intensity, 0, 0, 0], offset + 20);
     }
 
-    // Upload only the active floats
-    const activeFloatCount = count * this.floatsPerInstance;
-    this.device.queue.writeBuffer(this.modelBuffer, 0, this.instanceData.subarray(0, activeFloatCount));
+    this.device.queue.writeBuffer(
+      this.modelBuffer,
+      0,
+      this.instanceData.subarray(0, count * this.floatsPerInstance)
+    );
   }
 
-  render(pass, mesh, viewProjMatrix, dt = 0.00016) {
+  render(pass, mesh, viewProjMatrix, dt = 0.1) {
+    // update global time
     this.time += dt;
 
-    // spawn/move particles
     for(const p of this.instanceTargets) {
-      p.position[1] += dt;
-      p.scale[0] = p.scale[1] = 12.5 + Math.random() * 0.5; // flicker
-    }
+      // Move upward with individual speed
+      p.position[1] += dt * p.riseSpeed;
 
+      // Reset if too high
+      if(p.position[1] > this.maxY) {
+        p.position[1] = this.minY + Math.random() * 0.5;
+        p.position[0] = (Math.random() - 0.5) * 0.2;
+        p.position[2] = (Math.random() - 0.5) * 0.2;
+        p.riseSpeed = 0.2 + Math.random() * 1.0;
+      }
+      // Smooth flickering scale
+      p.scale[0] = p.scale[1] = this.smoothFlickeringScale + Math.sin(this.time * 2.0 + p.position[1]) * 0.1;
+      p.rotation += dt * 2.0;
+    }
+    // write camera
     this.device.queue.writeBuffer(this.cameraBuffer, 0, viewProjMatrix);
 
+    // draw instanced
     pass.setPipeline(this.pipeline);
     pass.setBindGroup(0, this.bindGroup);
     pass.setVertexBuffer(0, this.vertexBuffer);

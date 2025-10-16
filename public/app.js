@@ -20667,9 +20667,8 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.FlameEmitter = void 0;
 var _wgpuMatrix = require("wgpu-matrix");
-var _flameEffect = require("../../shaders/flame-effect/flameEffect");
-var _utils = require("../utils");
 var _flameInstanced = require("../../shaders/flame-effect/flame-instanced");
+var _utils = require("../utils");
 class FlameEmitter {
   constructor(device, format, maxParticles = 20) {
     this.device = device;
@@ -20679,37 +20678,44 @@ class FlameEmitter {
     this.enabled = true;
     this.maxParticles = maxParticles;
     this.instanceTargets = [];
-    // this.floatsPerInstance = 16 + 4; // 16 for mat4 + 4 for color/intensity
     this.floatsPerInstance = 24;
     this.instanceData = new Float32Array(maxParticles * this.floatsPerInstance);
-
-    // initialize particles
+    this.smoothFlickeringScale = 0.1;
+    this.maxY = 1.9;
+    this.minY = 0;
     for (let i = 0; i < maxParticles; i++) {
       this.instanceTargets.push({
-        position: [(Math.random() - 0.5) * 12.0,
-        // X spread
-        Math.random() * 2.0,
-        // small Y offset
-        (Math.random() - 0.5) * 12.0 // Z spread
-        ],
+        position: [0, 0, 0],
         currentPosition: [0, 0, 0],
-        scale: [0.6 + Math.random() * 1.2,
-        // small width
-        1.5 + Math.random() * 3.0,
-        // taller height
-        1],
-        currentScale: [0, 0, 0],
-        color: [1, 0.1 + Math.random() * 0.3, 0, 1],
-        time: Math.random() * 5.0,
-        intensity: 1.0 + Math.random() * 2.0,
-        riseSpeed: 0.2 + Math.random() * 0.8
+        scale: [1, 1, 1],
+        currentScale: [1, 1, 1],
+        rotation: 0.1,
+        color: [1, 0.3, 0, 0.1],
+        time: 1,
+        intensity: 1,
+        riseSpeed: 1
       });
     }
     this._initPipeline();
   }
+  recreateVertexData(S) {
+    const vertexData = new Float32Array([-0.4 * S, 0.5 * S, 0.0 * S, 0.4 * S, 0.5 * S, 0.0 * S, -0.2 * S, -0.5 * S, 0.0 * S, 0.2 * S, -0.5 * S, 0.0 * S]);
+    this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
+  }
+  recreateVertexDataRND(S) {
+    const vertexData = new Float32Array([-(0, _utils.randomFloatFromTo)(0.1, 0.8) * S, (0, _utils.randomFloatFromTo)(0.4, 0.6) * S, 0.0 * S, (0, _utils.randomFloatFromTo)(0.1, 0.8) * S, (0, _utils.randomFloatFromTo)(0.4, 0.6) * S, 0.0 * S, -(0, _utils.randomFloatFromTo)(0.1, 0.4) * S, -(0, _utils.randomFloatFromTo)(0.4, 0.6) * S, 0.0 * S, (0, _utils.randomFloatFromTo)(0.1, 0.4) * S, -(0, _utils.randomFloatFromTo)(0.4, 0.6) * S, 0.0 * S]);
+    this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
+  }
   _initPipeline() {
-    const S = 1;
-    const vertexData = new Float32Array([-0.5 * S, 0.5 * S, 0, 0.5 * S, 0.5 * S, 0, -0.5 * S, -0.5 * S, 0, 0.5 * S, -0.5 * S, 0]);
+    const S = 5;
+    const vertexData = new Float32Array([-0.4 * S, 0.5 * S, 0.0 * S,
+    // top-left (wider)
+    0.4 * S, 0.5 * S, 0.0 * S,
+    // top-right (wider)
+    -0.2 * S, -0.5 * S, 0.0 * S,
+    // bottom-left (narrow)
+    0.2 * S, -0.5 * S, 0.0 * S // bottom-right (narrow)
+    ]);
     const uvData = new Float32Array([0, 1, 1, 1, 0, 0, 1, 0]);
     const indexData = new Uint16Array([0, 2, 1, 1, 2, 3]);
     this.vertexBuffer = this.device.createBuffer({
@@ -20804,74 +20810,40 @@ class FlameEmitter {
       },
       depthStencil: {
         depthWriteEnabled: false,
-        depthCompare: "always",
+        depthCompare: "less",
         format: "depth24plus"
       },
       blend: {
+        // color: {srcFactor: "src-alpha", dstFactor: "one", operation: "add"},
+        // alpha: {srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add"}
         color: {
-          srcFactor: "src-alpha",
-          dstFactor: "one",
-          operation: "add"
+          srcFactor: 'src-alpha',
+          dstFactor: 'one-minus-src-alpha',
+          operation: 'add'
         },
         alpha: {
-          srcFactor: "one",
-          dstFactor: "one-minus-src-alpha",
-          operation: "add"
+          srcFactor: 'one',
+          dstFactor: 'one-minus-src-alpha',
+          operation: 'add'
         }
       }
     });
   }
-
-  // updateInstanceData = (baseModelMatrix) => {
-
-  //   if(typeof baseModelMatrix !== 'undefined') {
-  //     //  console.log('baseModelMatrix, local, finalMat', baseModelMatrix, local, finalMat)
-  //     this.baseModelMatrix = baseModelMatrix;
-  //   }
-
-  //   const count = Math.min(this.instanceTargets.length, this.maxParticles);
-  //   for(let i = 0;i < count;i++) {
-  //     const t = this.instanceTargets[i];
-
-  //     // interpolate smoothly
-  //     for(let j = 0;j < 3;j++) {
-  //       t.currentPosition[j] += (t.position[j] - t.currentPosition[j]) * 0.1;
-  //       t.currentScale[j] += (t.scale[j] - t.currentScale[j]) * 0.1;
-  //     }
-
-  //     const local = mat4.identity();
-  //     mat4.translate(local, t.currentPosition, local);
-  //     mat4.scale(local, t.currentScale, local);
-
-  //     const finalMat = mat4.identity();
-  //     if(typeof baseModelMatrix === 'undefined' || typeof local === 'undefined') {
-  //       // console.log('baseModelMatrix, local, finalMat', baseModelMatrix, local, finalMat)
-  //       // HOT FIX
-  //       baseModelMatrix = this.baseModelMatrix;
-  //     }
-  //     mat4.multiply(baseModelMatrix, local, finalMat);
-
-  //     const offset = i * this.floatsPerInstance;
-  //     this.instanceData.set(finalMat, offset);
-  //     this.instanceData.set(t.color, offset + 16);
-  //   }
-
-  //   // upload active particles
-  //   this.device.queue.writeBuffer(this.modelBuffer, 0, this.instanceData.subarray(0, count * this.floatsPerInstance));
-  // }
-
   updateInstanceData = baseModelMatrix => {
     const count = Math.min(this.instanceTargets.length, this.maxParticles);
     for (let i = 0; i < count; i++) {
       const t = this.instanceTargets[i];
 
-      // smooth interpolation if you want (optional)
+      // Smooth interpolation
       for (let j = 0; j < 3; j++) {
         t.currentPosition[j] += (t.position[j] - t.currentPosition[j]) * 0.12;
         t.currentScale[j] += (t.scale[j] - t.currentScale[j]) * 0.12;
       }
+
+      // Build local matrix: translate → rotate → scale
       const local = _wgpuMatrix.mat4.identity();
       _wgpuMatrix.mat4.translate(local, t.currentPosition, local);
+      _wgpuMatrix.mat4.rotateY(local, t.rotation, local);
       _wgpuMatrix.mat4.scale(local, t.currentScale, local);
       const finalMat = _wgpuMatrix.mat4.identity();
       _wgpuMatrix.mat4.multiply(baseModelMatrix, local, finalMat);
@@ -20880,34 +20852,36 @@ class FlameEmitter {
       // Write mat4 (16 floats)
       this.instanceData.set(finalMat, offset);
 
-      // Write time vec4 at offsets offset+16..offset+19
-      const timeOffset = offset + 16;
-      this.instanceData[timeOffset + 0] = t.time;
-      this.instanceData[timeOffset + 1] = 0.0;
-      this.instanceData[timeOffset + 2] = 0.0;
-      this.instanceData[timeOffset + 3] = 0.0;
+      // time vec4
+      this.instanceData.set([t.time, 0, 0, 0], offset + 16);
 
-      // Write intensity vec4 at offsets offset+20..offset+23
-      const intenOffset = offset + 20;
-      this.instanceData[intenOffset + 0] = t.intensity;
-      this.instanceData[intenOffset + 1] = 0.0;
-      this.instanceData[intenOffset + 2] = 0.0;
-      this.instanceData[intenOffset + 3] = 0.0;
+      // intensity vec4
+      this.instanceData.set([t.intensity, 0, 0, 0], offset + 20);
     }
-
-    // Upload only the active floats
-    const activeFloatCount = count * this.floatsPerInstance;
-    this.device.queue.writeBuffer(this.modelBuffer, 0, this.instanceData.subarray(0, activeFloatCount));
+    this.device.queue.writeBuffer(this.modelBuffer, 0, this.instanceData.subarray(0, count * this.floatsPerInstance));
   };
-  render(pass, mesh, viewProjMatrix, dt = 0.00016) {
+  render(pass, mesh, viewProjMatrix, dt = 0.1) {
+    // update global time
     this.time += dt;
-
-    // spawn/move particles
     for (const p of this.instanceTargets) {
-      p.position[1] += dt;
-      p.scale[0] = p.scale[1] = 12.5 + Math.random() * 0.5; // flicker
+      // Move upward with individual speed
+      p.position[1] += dt * p.riseSpeed;
+
+      // Reset if too high
+      if (p.position[1] > this.maxY) {
+        p.position[1] = this.minY + Math.random() * 0.5;
+        p.position[0] = (Math.random() - 0.5) * 0.2;
+        p.position[2] = (Math.random() - 0.5) * 0.2;
+        p.riseSpeed = 0.2 + Math.random() * 1.0;
+      }
+      // Smooth flickering scale
+      p.scale[0] = p.scale[1] = this.smoothFlickeringScale + Math.sin(this.time * 2.0 + p.position[1]) * 0.1;
+      p.rotation += dt * 2.0;
     }
+    // write camera
     this.device.queue.writeBuffer(this.cameraBuffer, 0, viewProjMatrix);
+
+    // draw instanced
     pass.setPipeline(this.pipeline);
     pass.setBindGroup(0, this.bindGroup);
     pass.setVertexBuffer(0, this.vertexBuffer);
@@ -20921,7 +20895,7 @@ class FlameEmitter {
 }
 exports.FlameEmitter = FlameEmitter;
 
-},{"../../shaders/flame-effect/flame-instanced":49,"../../shaders/flame-effect/flameEffect":50,"../utils":45,"wgpu-matrix":22}],28:[function(require,module,exports){
+},{"../../shaders/flame-effect/flame-instanced":49,"../utils":45,"wgpu-matrix":22}],28:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -29183,8 +29157,7 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.flameEffect = void 0;
-const flameEffect = exports.flameEffect = /* wgsl */`
-struct Camera {
+const flameEffect = exports.flameEffect = /* wgsl */`struct Camera {
   viewProj : mat4x4<f32>
 };
 @group(0) @binding(0) var<uniform> camera : Camera;
@@ -29207,19 +29180,18 @@ struct VSOut {
   @location(0) uv : vec2<f32>,
   @location(1) time : f32,
   @location(2) intensity : f32,
-  @interpolate(flat) @location(3) instanceIdx : u32,
 };
 
 @vertex
 fn vsMain(input : VSIn) -> VSOut {
   var output : VSOut;
   let data = modelDataArray[input.instanceIdx];
+
   let worldPos = data.model * vec4<f32>(input.position, 1.0);
   output.position = camera.viewProj * worldPos;
   output.uv = input.uv;
   output.time = data.time.x;
   output.intensity = data.intensity.x;
-  output.instanceIdx = input.instanceIdx;
   return output;
 }
 
@@ -29241,31 +29213,28 @@ fn noise(p : vec2<f32>) -> f32 {
 
 @fragment
 fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
-  // Add slight phase offset per instance
-  let idOffset = f32(input.instanceIdx) * 0.37;
-  let t = input.time * 2.0 + idOffset;
-
   var uv = input.uv;
-  // Make flame “move upward”
+  let t = input.time * 2.0;
+
+  // Animate upward
   uv.y += t * 0.4;
-  // Slight horizontal offset
-  uv.x += sin(t * 0.7 + f32(input.instanceIdx)) * 0.1;
+  uv.x += sin(t * 0.7) * 0.1;
 
   var n = noise(uv * 6.0 + vec2<f32>(0.0, t * 0.8));
-  n = pow(n, 3.0); // Sharpen flame noise
+  n = pow(n, 3.0); // sharper flame texture
 
-  // Flame color gradient
+  let baseColor = input.color.rgb;
   let intensity = input.intensity;
-  var color = vec3<f32>(
-    n * 2.5,
-    n * (1.2 + 0.4 * sin(idOffset)),
-    n * 0.25
-  );
-  color *= intensity;
+  let alphaBase = input.color.a;
 
-  // Glow and transparency
-  let alpha = smoothstep(0.1, 0.6, n);
-  return vec4<f32>(color, alpha);
+  // color and intensity modulation
+  var finalColor = baseColor * n * intensity;
+
+  // smooth alpha mask
+  let alpha = smoothstep(0.1, 0.7, n) * alphaBase;
+
+  // output with premultiplied color (for additive/soft blending)
+  return vec4<f32>(finalColor * alpha, alpha);
 }
 `;
 
@@ -31380,6 +31349,8 @@ class MatrixEngineWGPU {
       extensions: ["ray_tracing"]
     });
     this.context = canvas.getContext('webgpu');
+    // this.context = canvas.getContext('webgpu', { alphaMode: 'opaque' });
+    // this.context = canvas.getContext('webgpu', { alphaMode: 'premultiplied' });
     const devicePixelRatio = window.devicePixelRatio;
     canvas.width = canvas.clientWidth * devicePixelRatio;
     canvas.height = canvas.clientHeight * devicePixelRatio;
@@ -31959,7 +31930,8 @@ class MatrixEngineWGPU {
         if (mesh.effects) Object.keys(mesh.effects).forEach(effect_ => {
           const effect = mesh.effects[effect_];
           if (effect.enabled == false) return;
-          if (effect.updateInstanceData) effect.updateInstanceData(mesh.getModelMatrix(mesh.position));
+          let md = mesh.getModelMatrix(mesh.position);
+          if (effect.updateInstanceData) effect.updateInstanceData(md);
           effect.render(transPass, mesh, viewProjMatrix);
         });
       }

@@ -1,5 +1,4 @@
-export const flameEffect = /* wgsl */`
-struct Camera {
+export const flameEffect = /* wgsl */`struct Camera {
   viewProj : mat4x4<f32>
 };
 @group(0) @binding(0) var<uniform> camera : Camera;
@@ -22,19 +21,18 @@ struct VSOut {
   @location(0) uv : vec2<f32>,
   @location(1) time : f32,
   @location(2) intensity : f32,
-  @interpolate(flat) @location(3) instanceIdx : u32,
 };
 
 @vertex
 fn vsMain(input : VSIn) -> VSOut {
   var output : VSOut;
   let data = modelDataArray[input.instanceIdx];
+
   let worldPos = data.model * vec4<f32>(input.position, 1.0);
   output.position = camera.viewProj * worldPos;
   output.uv = input.uv;
   output.time = data.time.x;
   output.intensity = data.intensity.x;
-  output.instanceIdx = input.instanceIdx;
   return output;
 }
 
@@ -56,30 +54,27 @@ fn noise(p : vec2<f32>) -> f32 {
 
 @fragment
 fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
-  // Add slight phase offset per instance
-  let idOffset = f32(input.instanceIdx) * 0.37;
-  let t = input.time * 2.0 + idOffset;
-
   var uv = input.uv;
-  // Make flame “move upward”
+  let t = input.time * 2.0;
+
+  // Animate upward
   uv.y += t * 0.4;
-  // Slight horizontal offset
-  uv.x += sin(t * 0.7 + f32(input.instanceIdx)) * 0.1;
+  uv.x += sin(t * 0.7) * 0.1;
 
   var n = noise(uv * 6.0 + vec2<f32>(0.0, t * 0.8));
-  n = pow(n, 3.0); // Sharpen flame noise
+  n = pow(n, 3.0); // sharper flame texture
 
-  // Flame color gradient
+  let baseColor = input.color.rgb;
   let intensity = input.intensity;
-  var color = vec3<f32>(
-    n * 2.5,
-    n * (1.2 + 0.4 * sin(idOffset)),
-    n * 0.25
-  );
-  color *= intensity;
+  let alphaBase = input.color.a;
 
-  // Glow and transparency
-  let alpha = smoothstep(0.1, 0.6, n);
-  return vec4<f32>(color, alpha);
+  // color and intensity modulation
+  var finalColor = baseColor * n * intensity;
+
+  // smooth alpha mask
+  let alpha = smoothstep(0.1, 0.7, n) * alphaBase;
+
+  // output with premultiplied color (for additive/soft blending)
+  return vec4<f32>(finalColor * alpha, alpha);
 }
 `;
