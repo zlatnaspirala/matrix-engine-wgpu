@@ -1,6 +1,6 @@
 import {mat4} from "wgpu-matrix";
 import {flameEffectInstance} from "../../shaders/flame-effect/flame-instanced";
-import {randomFloatFromTo} from "../utils";
+import {randomFloatFromTo, randomIntFromTo} from "../utils";
 
 export class FlameEmitter {
   constructor(device, format, maxParticles = 20) {
@@ -56,12 +56,11 @@ export class FlameEmitter {
   _initPipeline() {
     const S = 5;
     const vertexData = new Float32Array([
-      -0.4 * S, 0.5 * S, 0.0 * S,   // top-left (wider)
-      0.4 * S, 0.5 * S, 0.0 * S,   // top-right (wider)
-      -0.2 * S, -0.5 * S, 0.0 * S,  // bottom-left (narrow)
-      0.2 * S, -0.5 * S, 0.0 * S,  // bottom-right (narrow)
+      -0.2 * S, -0.5 * S, 0.0 * S,
+      0.2 * S, -0.5 * S, 0.0 * S,
+      -0.4 * S, 0.5 * S, 0.0 * S,
+      0.4 * S, 0.5 * S, 0.0 * S,
     ]);
-
     const uvData = new Float32Array([0, 1, 1, 1, 0, 0, 1, 0]);
     const indexData = new Uint16Array([0, 2, 1, 1, 2, 3]);
 
@@ -143,37 +142,25 @@ export class FlameEmitter {
     });
   }
 
-
   updateInstanceData = (baseModelMatrix) => {
     const count = Math.min(this.instanceTargets.length, this.maxParticles);
-
     for(let i = 0;i < count;i++) {
       const t = this.instanceTargets[i];
-
       // Smooth interpolation
       for(let j = 0;j < 3;j++) {
         t.currentPosition[j] += (t.position[j] - t.currentPosition[j]) * 0.12;
         t.currentScale[j] += (t.scale[j] - t.currentScale[j]) * 0.12;
       }
-
       // Build local matrix: translate → rotate → scale
       const local = mat4.identity();
       mat4.translate(local, t.currentPosition, local);
       mat4.rotateY(local, t.rotation, local);
       mat4.scale(local, t.currentScale, local);
-
       const finalMat = mat4.identity();
       mat4.multiply(baseModelMatrix, local, finalMat);
-
       const offset = i * this.floatsPerInstance;
-
-      // Write mat4 (16 floats)
       this.instanceData.set(finalMat, offset);
-
-      // time vec4
       this.instanceData.set([t.time, 0, 0, 0], offset + 16);
-
-      // intensity vec4
       this.instanceData.set([t.intensity, 0, 0, 0], offset + 20);
     }
 
@@ -187,26 +174,19 @@ export class FlameEmitter {
   render(pass, mesh, viewProjMatrix, dt = 0.1) {
     // update global time
     this.time += dt;
-
     for(const p of this.instanceTargets) {
-      // Move upward with individual speed
       p.position[1] += dt * p.riseSpeed;
-
       // Reset if too high
       if(p.position[1] > this.maxY) {
         p.position[1] = this.minY + Math.random() * 0.5;
         p.position[0] = (Math.random() - 0.5) * 0.2;
-        p.position[2] = (Math.random() - 0.5) * 0.2;
+        p.position[2] = (Math.random() - 0.5) * 0.2 + 0.1;
         p.riseSpeed = 0.2 + Math.random() * 1.0;
       }
-      // Smooth flickering scale
       p.scale[0] = p.scale[1] = this.smoothFlickeringScale + Math.sin(this.time * 2.0 + p.position[1]) * 0.1;
-      p.rotation += dt * 2.0;
+      p.rotation += dt * randomIntFromTo(3, 15);
     }
-    // write camera
     this.device.queue.writeBuffer(this.cameraBuffer, 0, viewProjMatrix);
-
-    // draw instanced
     pass.setPipeline(this.pipeline);
     pass.setBindGroup(0, this.bindGroup);
     pass.setVertexBuffer(0, this.vertexBuffer);
