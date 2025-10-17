@@ -11,13 +11,15 @@ export class Controller {
   nav = null;
   heroe_bodies = null;
 
-  constructor(canvas) {
-    this.canvas = canvas;
+  constructor(core) {
+    this.core = core;
+    this.canvas = this.core.canvas;
+
     this.dragStart = null;
     this.dragEnd = null;
     this.selecting = false;
 
-    canvas.addEventListener('mousedown', (e) => {
+    this.canvas.addEventListener('mousedown', (e) => {
       if(e.button === 2) { // right m
         this.selecting = true;
         this.dragStart = {x: e.clientX, y: e.clientY};
@@ -25,13 +27,13 @@ export class Controller {
       }
     });
 
-    canvas.addEventListener('mousemove', (e) => {
+    this.canvas.addEventListener('mousemove', (e) => {
       if(this.selecting) {
         this.dragEnd = {x: e.clientX, y: e.clientY};
       }
     });
 
-    canvas.addEventListener('mouseup', (e) => {
+    this.canvas.addEventListener('mouseup', (e) => {
       if(this.selecting) {
         this.selecting = false;
         this.selectCharactersInRect(this.dragStart, this.dragEnd);
@@ -45,7 +47,7 @@ export class Controller {
     addRaycastsListener(undefined, 'click');
     // addRaycastsListener(undefined, 'mousemove');
 
-    canvas.addEventListener("ray.hit.event.mm", (e) => {
+    this.canvas.addEventListener("ray.hit.event.mm", (e) => {
       // console.log('ray.hit.event detected', e);
       const {hitObject, hitPoint, button, eventName} = e.detail;
       if(!hitObject || !hitPoint) {
@@ -55,7 +57,7 @@ export class Controller {
       // console.log("Hit object eventName :", eventName, "Button:", button);
     })
 
-    canvas.addEventListener("ray.hit.event", (e) => {
+    this.canvas.addEventListener("ray.hit.event", (e) => {
       // console.log('ray.hit.event detected', e);
       const {hitObject, hitPoint, button, eventName} = e.detail;
       // if(!hitObject || !hitPoint) {
@@ -86,8 +88,8 @@ export class Controller {
       const end = [hitPoint[0], hitPoint[1], hitPoint[2]];
       const path = this.nav.findPath(start, end);
       if(!path || path.length === 0) {console.warn('No valid path found.'); return;}
-      followPath(hero, path);
-      followPath(heroSword, path);
+      followPath(hero, path, this.core);
+      followPath(heroSword, path, this.core);
     });
 
     this.canvas.addEventListener("contextmenu", (e) => {

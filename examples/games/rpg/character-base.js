@@ -67,7 +67,7 @@ export class Character extends Hero {
           obj.name && obj.name.includes(this.name)
         );
         this.core.RPG.heroe_bodies = this.heroe_bodies;
-        this.core.RPG.heroe_bodies.forEach(subMesh => {
+        this.core.RPG.heroe_bodies.forEach((subMesh, id) => {
           subMesh.position.thrust = this.moveSpeed;
           subMesh.glb.animationIndex = 0;
           // adapt manual if blender is not setup
@@ -78,6 +78,9 @@ export class Character extends Hero {
             if(a.name == 'salute') this.heroAnimationArrange.salute = index;
             if(a.name == 'attack') this.heroAnimationArrange.attack = index;
           })
+
+          // if (id == 0) this.core.collisionSystem.register(`local${id}`, subMesh.position, 2.0);
+          this.core.collisionSystem.register(`local${id}`, subMesh.position, 2.0, 'local_hero');
         });
 
         app.localHero.heroe_bodies[0].effects.flameEmitter.recreateVertexDataRND(1)

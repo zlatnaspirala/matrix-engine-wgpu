@@ -11,8 +11,9 @@ export class Enemie {
   }
 
   constructor(o) {
-    this.core= o.core;
+    this.core = o.core;
     this.loadEnemyHero(o)
+    return this;
   }
 
   loadEnemyHero = async (o) => {
@@ -36,7 +37,7 @@ export class Enemie {
         this.heroe_bodies = app.mainRenderBundle.filter(obj =>
           obj.name && obj.name.includes(o.name)
         );
-        this.heroe_bodies.forEach(subMesh => {
+        this.heroe_bodies.forEach((subMesh, idx) => {
           subMesh.position.thrust = this.moveSpeed;
           subMesh.glb.animationIndex = 0;
           // adapt manual if blender is not setup
@@ -46,11 +47,11 @@ export class Enemie {
             if(a.name == 'walk') this.heroAnimationArrange.walk = index;
             if(a.name == 'salute') this.heroAnimationArrange.salute = index;
             if(a.name == 'attack') this.heroAnimationArrange.attack = index;
-          })
+          });
+          // maybe will help - remote net players no nedd to collide in other remote user gamaplay
+          this.core.collisionSystem.register('enemy' + idx, subMesh.position, 2.0, 'enemies');
         });
-        // app.localHero.heroe_bodies[0].effects.flameEmitter.recreateVertexDataRND(1)
-        // this.attachEvents()
-      }, 1200)
+      }, 1600)
     } catch(err) {throw err;}
   }
 

@@ -455,12 +455,13 @@ export default class MatrixEngineWGPU {
       for(const light of this.lightContainer) {
         light.update()
         this.mainRenderBundle.forEach((meItem, index) => {
-          meItem.position.update()
+          // meItem.position.update()
           meItem.updateModelUniformBuffer()
           meItem.getTransformationMatrix(this.mainRenderBundle, light, index) // >check optisation
         })
       }
       if(this.matrixAmmo) this.matrixAmmo.updatePhysics();
+
 
 
       let now, deltaTime;
@@ -519,6 +520,7 @@ export default class MatrixEngineWGPU {
       // Loop over each mesh
 
       for(const mesh of this.mainRenderBundle) {
+        mesh.position.update()
         if(mesh.update) {
           now = performance.now() / 1000; // seconds
           deltaTime = now - (this.lastTime || now);
@@ -542,6 +544,10 @@ export default class MatrixEngineWGPU {
         mesh.drawElements(pass, this.lightContainer);
       }
       pass.end();
+
+      // 3) resolve collisions AFTER positions changed
+      if(this.collisionSystem) this.collisionSystem.update();
+      // 4) render / send network updates / animations etc
 
       // transparent pointerEffect pass (load color, load depth)
       const transPassDesc = {

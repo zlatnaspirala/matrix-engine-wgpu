@@ -1,12 +1,11 @@
-
 import MatrixEngineWGPU from "../../../src/world.js";
-// import {uploadGLBModel} from "../../../src/engine/loaders/webgpu-gltf.js";
 import {Controller} from "./controller.js";
 import {HUD} from "./hud.js";
 import {MEMapLoader} from "./map-loader.js";
 import {Character} from "./character-base.js";
 import {HERO_PROFILES} from "./hero.js";
-import {Enemie} from "./enemy-character.js";
+import {EnemiesManager} from "./enemies-manager.js";
+import {CollisionSystem} from "../../../src/engine/collision-sub-system.js";
 
 /**
  * @Note
@@ -25,12 +24,11 @@ let mysticore = new MatrixEngineWGPU({
 }, () => {
 
   addEventListener('AmmoReady', async () => {
-
-    mysticore.RPG = new Controller(mysticore.canvas);
+    mysticore.RPG = new Controller(mysticore);
     app.cameras.WASD.movementSpeed = 100;
-    // MAPs
+
     mysticore.mapLoader = new MEMapLoader(mysticore, "./res/meshes/nav-mesh/navmesh.json");
-    // LOCAL HERO
+
     mysticore.localHero = new Character(
       mysticore,
       "res/meshes/glb/woman1.glb",
@@ -43,18 +41,10 @@ let mysticore = new MatrixEngineWGPU({
       app.cameras.WASD.position[1] = 23;
     }, 2000)
 
-    // new enemy characters
-    mysticore.enemies = new Enemie(
-      {
-        core: mysticore,
-        // core: mysticore,
-        name: 'Slayzer',
-        path: 'res/meshes/glb/monster.glb'
-      }
-    );
+    mysticore.enemies = new EnemiesManager(mysticore);
+
+    mysticore.collisionSystem = new CollisionSystem(mysticore)
   })
   mysticore.addLight();
 })
-
-// just for dev
 window.app = mysticore;

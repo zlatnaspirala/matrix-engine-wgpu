@@ -1,4 +1,4 @@
-import { radToDeg } from "../../../src/engine/utils.js";
+import {radToDeg} from "../../../src/engine/utils.js";
 
 export default class NavMesh {
   constructor(data, options = {}) {
@@ -372,14 +372,14 @@ export class MinHeap {
   }
 }
 
-export function followPath(character, path) {
-  if (!path || path.length === 0) return;
+export function followPath(character, path, core) {
+  if(!path || path.length === 0) return;
   let idx = 0;
   const pos = character.position;
   const rot = character.rotation;
   // Recursive move
   function moveToNext() {
-    if (idx >= path.length) {
+    if(idx >= path.length) {
       character.position.onTargetPositionReach = () => {};
       return;
     }
@@ -392,7 +392,7 @@ export function followPath(character, path) {
     // Convert to degrees & normalize
     angleY = (radToDeg(angleY) + 360) % 360;
     rot.y = angleY;
-    pos.translateByXZ(target[0], target[2]);
+    pos.translateByXZ(target[0], target[2])
     character.position.onTargetPositionReach = () => {
       idx++;
       moveToNext();
@@ -401,17 +401,91 @@ export function followPath(character, path) {
   moveToNext();
 }
 
-
 export function orientHeroToDirection(hero, dir) {
   // dir = normalized movement direction in world space [x, y, z]
   // hero.forward = [0, 0, -1] by default
   // Project direction onto XZ plane (ignore Y)
   const flatDir = [dir[0], 0, dir[2]];
   const len = Math.hypot(flatDir[0], flatDir[2]);
-  if (len < 0.0001) return;
+  if(len < 0.0001) return;
   flatDir[0] /= len; flatDir[2] /= len;
   // Compute rotation angle around Y axis
   const angle = Math.atan2(flatDir[0], flatDir[2]); // note X/Z order!
   // Apply to hero
   hero.rotation.y = angle; // in radians
+}
+
+export function applySoftPush(a, b, minDistance = 1.0, pushStrength = 0.5) {
+  // Compute difference in XZ plane
+  const dx = b.position.x - a.position.x;
+  const dz = b.position.z - a.position.z;
+  const distSq = dx * dx + dz * dz;
+  const minDistSq = minDistance * minDistance;
+
+  if(distSq < minDistSq && distSq > 0.00001) {
+    const dist = Math.sqrt(distSq);
+    const overlap = minDistance - dist;
+
+    // Normalize direction
+    const nx = dx / dist;
+    const nz = dz / dist;
+
+    // Apply half push to each hero (equal reaction)
+    const push = overlap * 0.5 * pushStrength;
+    a.position.x -= nx * push;
+    a.position.z -= nz * push;
+    b.position.x += nx * push;
+    b.position.z += nz * push;
+  }
+}
+
+// collision-utils.js
+export function resolvePairRepulsion(Apos, Bpos, minDistance = 1.0, pushStrength = 0.5) {
+  // Apos and Bpos are Position instances (with x,z,targetX,targetZ)
+  const dx = Bpos.x - Apos.x;
+  const dz = Bpos.z - Apos.z;
+  const distSq = dx*dx + dz*dz;
+  const minDistSq = minDistance * minDistance;
+
+  if (distSq < minDistSq && distSq > 1e-8) {
+    const dist = Math.sqrt(distSq);
+    const overlap = minDistance - dist;
+
+    // normalized dir from A -> B
+    const nx = dx / dist;
+    const nz = dz / dist;
+
+    // compute push for each (equal reaction)
+    const totalPush = overlap * pushStrength;
+    const pushA = totalPush * 0.5;
+    const pushB = totalPush * 0.5;
+
+    // move them apart
+    Apos.x -= nx * pushA;
+    Apos.z -= nz * pushA;
+    Bpos.x += nx * pushB;
+    Bpos.z += nz * pushB;
+
+    // keep target in sync so update() won't pull them back
+    Apos.targetX = Apos.x;
+    Apos.targetZ = Apos.z;
+    Bpos.targetX = Bpos.x;
+    Bpos.targetZ = Bpos.z;
+
+    // also cancel inMove if you want them to pause instead of re-targeting
+    // Apos.inMove = false; Bpos.inMove = false;
+
+    return true;
+  }
+
+  // exact overlap (practically same point) -> small jitter to separate
+  if (distSq <= 1e-8) {
+    const jitter = 0.01;
+    Apos.x += (Math.random() - 0.5) * jitter;
+    Apos.z += (Math.random() - 0.5) * jitter;
+    Apos.targetX = Apos.x; Apos.targetZ = Apos.z;
+    return true;
+  }
+
+  return false;
 }
