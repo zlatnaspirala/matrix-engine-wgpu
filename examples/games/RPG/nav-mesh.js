@@ -415,29 +415,29 @@ export function orientHeroToDirection(hero, dir) {
   hero.rotation.y = angle; // in radians
 }
 
-export function applySoftPush(a, b, minDistance = 1.0, pushStrength = 0.5) {
-  // Compute difference in XZ plane
-  const dx = b.position.x - a.position.x;
-  const dz = b.position.z - a.position.z;
-  const distSq = dx * dx + dz * dz;
-  const minDistSq = minDistance * minDistance;
+// export function applySoftPush(a, b, minDistance = 1.0, pushStrength = 0.5) {
+//   // Compute difference in XZ plane
+//   const dx = b.position.x - a.position.x;
+//   const dz = b.position.z - a.position.z;
+//   const distSq = dx * dx + dz * dz;
+//   const minDistSq = minDistance * minDistance;
 
-  if(distSq < minDistSq && distSq > 0.00001) {
-    const dist = Math.sqrt(distSq);
-    const overlap = minDistance - dist;
+//   if(distSq < minDistSq && distSq > 0.00001) {
+//     const dist = Math.sqrt(distSq);
+//     const overlap = minDistance - dist;
 
-    // Normalize direction
-    const nx = dx / dist;
-    const nz = dz / dist;
+//     // Normalize direction
+//     const nx = dx / dist;
+//     const nz = dz / dist;
 
-    // Apply half push to each hero (equal reaction)
-    const push = overlap * 0.5 * pushStrength;
-    a.position.x -= nx * push;
-    a.position.z -= nz * push;
-    b.position.x += nx * push;
-    b.position.z += nz * push;
-  }
-}
+//     // Apply half push to each hero (equal reaction)
+//     const push = overlap * 0.5 * pushStrength;
+//     a.position.x -= nx * push;
+//     a.position.z -= nz * push;
+//     b.position.x += nx * push;
+//     b.position.z += nz * push;
+//   }
+// }
 
 // collision-utils.js
 export function resolvePairRepulsion(Apos, Bpos, minDistance = 1.0, pushStrength = 0.5) {

@@ -972,6 +972,7 @@ class HUD {
   constructor(localHero) {
     this.localHero = localHero;
     this.construct();
+    this.setCursor();
   }
   construct() {
     // Create HUD container
@@ -1066,7 +1067,7 @@ class HUD {
         justifyContent: "center",
         color: "#ccc",
         fontSize: "14px",
-        cursor: "pointer",
+        cursor: "url('./res/icons/default.png') 0 0, auto",
         backgroundRepeat: "round"
       });
       slot.addEventListener("mouseenter", () => {
@@ -1237,7 +1238,7 @@ class HUD {
       justifyContent: "center",
       color: "#ccc",
       fontSize: "12px",
-      cursor: "pointer",
+      cursor: "url('./res/icons/default.png') 0 0, auto",
       transition: "all 0.2s ease-in-out",
       backgroundSize: "contain",
       backgroundRepeat: "no-repeat",
@@ -1290,7 +1291,7 @@ class HUD {
         justifyContent: "center",
         color: "#ccc",
         fontSize: "12px",
-        cursor: "pointer",
+        cursor: "url('./res/icons/default.png') 0 0, auto",
         transition: "all 0.2s ease-in-out",
         backgroundSize: "contain",
         backgroundRepeat: "no-repeat",
@@ -1314,6 +1315,9 @@ class HUD {
     hudItems.appendChild(inventoryGrid);
     hud.appendChild(hudItems);
     document.body.appendChild(hud);
+  }
+  setCursor() {
+    document.body.style.cursor = "url('./res/icons/default.png') 0 0, auto";
   }
 }
 exports.HUD = HUD;
@@ -1577,9 +1581,7 @@ window.app = mysticore;
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.MinHeap = void 0;
-exports.applySoftPush = applySoftPush;
-exports.default = void 0;
+exports.default = exports.MinHeap = void 0;
 exports.followPath = followPath;
 exports.orientHeroToDirection = orientHeroToDirection;
 exports.resolvePairRepulsion = resolvePairRepulsion;
@@ -2033,28 +2035,30 @@ function orientHeroToDirection(hero, dir) {
   // Apply to hero
   hero.rotation.y = angle; // in radians
 }
-function applySoftPush(a, b, minDistance = 1.0, pushStrength = 0.5) {
-  // Compute difference in XZ plane
-  const dx = b.position.x - a.position.x;
-  const dz = b.position.z - a.position.z;
-  const distSq = dx * dx + dz * dz;
-  const minDistSq = minDistance * minDistance;
-  if (distSq < minDistSq && distSq > 0.00001) {
-    const dist = Math.sqrt(distSq);
-    const overlap = minDistance - dist;
 
-    // Normalize direction
-    const nx = dx / dist;
-    const nz = dz / dist;
+// export function applySoftPush(a, b, minDistance = 1.0, pushStrength = 0.5) {
+//   // Compute difference in XZ plane
+//   const dx = b.position.x - a.position.x;
+//   const dz = b.position.z - a.position.z;
+//   const distSq = dx * dx + dz * dz;
+//   const minDistSq = minDistance * minDistance;
 
-    // Apply half push to each hero (equal reaction)
-    const push = overlap * 0.5 * pushStrength;
-    a.position.x -= nx * push;
-    a.position.z -= nz * push;
-    b.position.x += nx * push;
-    b.position.z += nz * push;
-  }
-}
+//   if(distSq < minDistSq && distSq > 0.00001) {
+//     const dist = Math.sqrt(distSq);
+//     const overlap = minDistance - dist;
+
+//     // Normalize direction
+//     const nx = dx / dist;
+//     const nz = dz / dist;
+
+//     // Apply half push to each hero (equal reaction)
+//     const push = overlap * 0.5 * pushStrength;
+//     a.position.x -= nx * push;
+//     a.position.z -= nz * push;
+//     b.position.x += nx * push;
+//     b.position.z += nz * push;
+//   }
+// }
 
 // collision-utils.js
 function resolvePairRepulsion(Apos, Bpos, minDistance = 1.0, pushStrength = 0.5) {
@@ -20356,8 +20360,9 @@ Object.defineProperty(exports, "__esModule", {
 exports.CollisionSystem = void 0;
 var _navMesh = require("../../examples/games/rpg/nav-mesh");
 class CollisionSystem {
-  constructor(core) {
-    this.entries = []; // {id, pos, radius, group}
+  constructor() {
+    this.entries = [];
+    // {id, pos, radius, group}
   }
   register(id, positionInstance, radius = 0.6, group = "default") {
     this.entries.push({
@@ -20376,8 +20381,6 @@ class CollisionSystem {
       for (let j = i + 1; j < n; j++) {
         const A = this.entries[i];
         const B = this.entries[j];
-
-        // 🧩 Skip self-collision (same hero/group)
         if (A.group === B.group) continue;
         const minDist = A.radius + B.radius;
         (0, _navMesh.resolvePairRepulsion)(A.pos, B.pos, minDist, 1.0);
