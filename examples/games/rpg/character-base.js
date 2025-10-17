@@ -56,8 +56,7 @@ export class Character extends Hero {
           energyBar: true,
           flameEffect: false,
           flameEmitter: true,
-          circlePlane: false,
-
+          circlePlane: true,
           circlePlaneTex: true,
           circlePlaneTexPath: './res/textures/rpg/symbols/star.png',
         }

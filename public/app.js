@@ -67,7 +67,7 @@ class Character extends _hero.Hero {
           energyBar: true,
           flameEffect: false,
           flameEmitter: true,
-          circlePlane: false,
+          circlePlane: true,
           circlePlaneTex: true,
           circlePlaneTexPath: './res/textures/rpg/symbols/star.png'
         }
@@ -202,7 +202,7 @@ class Controller {
     this.selecting = false;
     canvas.addEventListener('mousedown', e => {
       if (e.button === 2) {
-        // right mouse
+        // right m
         this.selecting = true;
         this.dragStart = {
           x: e.clientX,
@@ -212,8 +212,6 @@ class Controller {
           x: e.clientX,
           y: e.clientY
         };
-      } else if (e.button === 0) {
-        // empty
       }
     });
     canvas.addEventListener('mousemove', e => {
@@ -234,19 +232,39 @@ class Controller {
         }, 100);
       }
     });
-    (0, _raycast.addRaycastsListener)();
-    canvas.addEventListener("ray.hit.event", e => {
+    (0, _raycast.addRaycastsListener)(undefined, 'click');
+    // addRaycastsListener(undefined, 'mousemove');
+
+    canvas.addEventListener("ray.hit.event.mm", e => {
       // console.log('ray.hit.event detected', e);
       const {
         hitObject,
         hitPoint,
-        button
+        button,
+        eventName
       } = e.detail;
       if (!hitObject || !hitPoint) {
         console.warn('No valid hit detected.');
         return;
       }
-      console.log("Hit object:", hitObject.name, "Button:", button);
+      // console.log("Hit object eventName :", eventName, "Button:", button);
+    });
+    canvas.addEventListener("ray.hit.event", e => {
+      // console.log('ray.hit.event detected', e);
+      const {
+        hitObject,
+        hitPoint,
+        button,
+        eventName
+      } = e.detail;
+      // if(!hitObject || !hitPoint) {
+      //   console.warn('No valid hit detected.');
+      //   return;
+      // }
+      // console.log("Hit object eventName :", e.detail.hitObject.name);
+      // if (eventName !== 'click') {
+      //   return;
+      // }
       // Only react to LEFT CLICK
       if (button !== 0 || this.heroe_bodies === null || !this.selected.includes(this.heroe_bodies[0])) {
         // not hero but maybe other creaps . based on selected....
@@ -392,7 +410,7 @@ class Enemie {
         pointerEffect: {
           enabled: true,
           energyBar: true,
-          flameEmitter: true
+          circlePlane: true // simple for enemies
         }
       }, null, glbFile01);
       // make small async - cooking glbs files
@@ -21228,6 +21246,9 @@ class GenGeoTexture {
     this.uvData = geom.uvs;
     this.indexData = geom.indices;
     this.enabled = true;
+    this.rotateEffect = true;
+    this.rotateEffectSpeed = 10.5;
+    this.rotateAngle = 0;
     this.loadTexture(path).then(() => {
       this._initPipeline();
     });
@@ -21401,6 +21422,9 @@ class GenGeoTexture {
     });
   }
   updateInstanceData = baseModelMatrix => {
+    if (this.rotateEffect) {
+      this.rotateAngle = (this.rotateAngle ?? 0) + this.rotateEffectSpeed; // accumulate rotation
+    }
     const count = Math.min(this.instanceCount, this.maxInstances);
     for (let i = 0; i < count; i++) {
       const t = this.instanceTargets[i];
@@ -21410,6 +21434,9 @@ class GenGeoTexture {
         t.currentScale[j] += (t.scale[j] - t.currentScale[j]) * this.lerpSpeed;
       }
       const local = _wgpuMatrix.mat4.identity();
+      if (this.rotateEffect == true) {
+        _wgpuMatrix.mat4.rotateY(local, this.rotateAngle, local);
+      }
       _wgpuMatrix.mat4.translate(local, t.currentPosition, local);
       _wgpuMatrix.mat4.scale(local, t.currentScale, local);
       const finalMat = _wgpuMatrix.mat4.identity();
@@ -23834,7 +23861,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
           this.effects.circlePlane = new _gen.GenGeo(device, pf, 'circlePlane');
         }
         if (typeof this.pointerEffect.circlePlaneTex !== 'undefined' && this.pointerEffect.circlePlaneTex == true) {
-          this.effects.circlePlane = new _genTex.GenGeoTexture(device, pf, 'circlePlane', this.pointerEffect.circlePlaneTexPath);
+          this.effects.circlePlaneTex = new _genTex.GenGeoTexture(device, pf, 'ring', this.pointerEffect.circlePlaneTexPath);
         }
       }
 
@@ -28184,17 +28211,23 @@ function computeWorldVertsAndAABB(object) {
 
 // 🧠 Dispatch rich event
 function dispatchRayHitEvent(canvas, data) {
-  canvas.dispatchEvent(new CustomEvent("ray.hit.event", {
-    detail: data
-  }));
+  if (data.eventName == 'click') {
+    canvas.dispatchEvent(new CustomEvent("ray.hit.event", {
+      detail: data
+    }));
+  } else {
+    canvas.dispatchEvent(new CustomEvent("ray.hit.event.mm", {
+      detail: data
+    }));
+  }
 }
-function addRaycastsListener(canvasId = "canvas1") {
+function addRaycastsListener(canvasId = "canvas1", eventName = 'click') {
   const canvas = document.getElementById(canvasId);
   if (!canvas) {
     console.warn(`[Raycaster] Canvas with id '${canvasId}' not found.`);
     return;
   }
-  canvas.addEventListener("click", event => {
+  canvas.addEventListener(eventName, event => {
     const camera = app.cameras.WASD;
     const {
       rayOrigin,
@@ -28231,7 +28264,8 @@ function addRaycastsListener(canvasId = "canvas1") {
         screenCoords: screen,
         camera,
         timestamp: performance.now(),
-        button: event.button
+        button: event.button,
+        eventName: eventName
       });
     }
   });

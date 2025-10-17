@@ -11,6 +11,10 @@ export class GenGeoTexture {
     this.uvData = geom.uvs;
     this.indexData = geom.indices;
     this.enabled = true;
+
+    this.rotateEffect = true;
+    this.rotateEffectSpeed = 10.5;
+    this.rotateAngle = 0;
     this.loadTexture(path).then(() => {
       this._initPipeline();
     })
@@ -150,6 +154,9 @@ export class GenGeoTexture {
   }
 
   updateInstanceData = (baseModelMatrix) => {
+    if(this.rotateEffect) {
+      this.rotateAngle = (this.rotateAngle ?? 0) + this.rotateEffectSpeed; // accumulate rotation
+    }
     const count = Math.min(this.instanceCount, this.maxInstances);
     for(let i = 0;i < count;i++) {
       const t = this.instanceTargets[i];
@@ -159,7 +166,15 @@ export class GenGeoTexture {
         t.currentScale[j] += (t.scale[j] - t.currentScale[j]) * this.lerpSpeed;
       }
       const local = mat4.identity();
+
+      if(this.rotateEffect == true) {
+
+        mat4.rotateY(local, this.rotateAngle, local);
+      }
+
       mat4.translate(local, t.currentPosition, local);
+      
+
       mat4.scale(local, t.currentScale, local);
       const finalMat = mat4.identity();
       mat4.multiply(baseModelMatrix, local, finalMat);

@@ -28,7 +28,7 @@ export class Enemie {
         pointerEffect: {
           enabled: true,
           energyBar: true,
-          flameEmitter: true
+          circlePlane: true // simple for enemies
         }
       }, null, glbFile01);
       // make small async - cooking glbs files

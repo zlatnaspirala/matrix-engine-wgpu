@@ -18,12 +18,10 @@ export class Controller {
     this.selecting = false;
 
     canvas.addEventListener('mousedown', (e) => {
-      if(e.button === 2) { // right mouse
+      if(e.button === 2) { // right m
         this.selecting = true;
         this.dragStart = {x: e.clientX, y: e.clientY};
         this.dragEnd = {x: e.clientX, y: e.clientY};
-      } else if(e.button === 0) {
-        // empty
       }
     });
 
@@ -44,16 +42,30 @@ export class Controller {
       }
     });
 
-    addRaycastsListener();
+    addRaycastsListener(undefined, 'click');
+    // addRaycastsListener(undefined, 'mousemove');
 
-    canvas.addEventListener("ray.hit.event", (e) => {
+    canvas.addEventListener("ray.hit.event.mm", (e) => {
       // console.log('ray.hit.event detected', e);
-      const {hitObject, hitPoint, button} = e.detail;
+      const {hitObject, hitPoint, button, eventName} = e.detail;
       if(!hitObject || !hitPoint) {
         console.warn('No valid hit detected.');
         return;
       }
-      console.log("Hit object:", hitObject.name, "Button:", button);
+      // console.log("Hit object eventName :", eventName, "Button:", button);
+    })
+
+    canvas.addEventListener("ray.hit.event", (e) => {
+      // console.log('ray.hit.event detected', e);
+      const {hitObject, hitPoint, button, eventName} = e.detail;
+      // if(!hitObject || !hitPoint) {
+      //   console.warn('No valid hit detected.');
+      //   return;
+      // }
+      // console.log("Hit object eventName :", e.detail.hitObject.name);
+      // if (eventName !== 'click') {
+      //   return;
+      // }
       // Only react to LEFT CLICK
       if(button !== 0 || this.heroe_bodies === null ||
          !this.selected.includes(this.heroe_bodies[0]) 
