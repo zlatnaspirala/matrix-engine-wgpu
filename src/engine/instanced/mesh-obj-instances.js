@@ -11,6 +11,7 @@ import {HPBarEffect} from '../effects/energy-bar';
 import {MANABarEffect} from '../effects/mana-bar';
 import {FlameEffect} from '../effects/flame';
 import {FlameEmitter} from '../effects/flame-emmiter';
+import {GenGeoTexture} from '../effects/gen-tex';
 
 export default class MEMeshObjInstances extends MaterialsInstanced {
   constructor(canvas, device, context, o, inputHandler, globalAmbient, _glbFile = null, primitiveIndex = null, skinnedNodeIndex = null) {
@@ -614,7 +615,7 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
       });
 
       this.effects = {};
-      console.log('>>>>>>>>>>>>>EFFECTS>>>>>>>>>>>>>>>>>>>>>>>')
+      // console.log('>>>>>>>>>>>>>EFFECTS>>>>>>>>>>>>>>>>>>>>>>>')
       if(this.pointerEffect && this.pointerEffect.enabled === true) {
         let pf = navigator.gpu.getPreferredCanvasFormat();
         if(typeof this.pointerEffect.pointer !== 'undefined' && this.pointerEffect.pointer == true) {
@@ -632,6 +633,12 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
         }
         if(typeof this.pointerEffect.flameEmitter !== 'undefined' && this.pointerEffect.flameEmitter == true) {
           this.effects.flameEmitter = new FlameEmitter(device, pf);
+        }
+        if(typeof this.pointerEffect.circlePlane !== 'undefined' && this.pointerEffect.circlePlane == true) {
+          this.effects.circlePlane = new GenGeo(device, pf, 'circlePlane');
+        }
+        if(typeof this.pointerEffect.circlePlaneTex !== 'undefined' && this.pointerEffect.circlePlaneTex == true) {
+          this.effects.circlePlane = new GenGeoTexture(device, pf, 'circlePlane', this.pointerEffect.circlePlaneTexPath);
         }
       }
 

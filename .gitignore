@@ -1,1 +1,3 @@
 node_modules/
+public/res/meshes/glb/**.blend*
+public/res/meshes/glb/maria_arhive/*.blend

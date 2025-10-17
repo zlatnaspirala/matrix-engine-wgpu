@@ -16,6 +16,9 @@ export class FlameEmitter {
     this.smoothFlickeringScale = 0.1;
     this.maxY = 1.9;
     this.minY = 0;
+    this.swap0 = 0;
+    this.swap1 = 1;
+    this.swap2 = 2;
     for(let i = 0;i < maxParticles;i++) {
       this.instanceTargets.push({
         position: [0, 0, 0],
@@ -175,15 +178,15 @@ export class FlameEmitter {
     // update global time
     this.time += dt;
     for(const p of this.instanceTargets) {
-      p.position[1] += dt * p.riseSpeed;
+      p.position[this.swap1] += dt * p.riseSpeed;
       // Reset if too high
-      if(p.position[1] > this.maxY) {
-        p.position[1] = this.minY + Math.random() * 0.5;
-        p.position[0] = (Math.random() - 0.5) * 0.2;
-        p.position[2] = (Math.random() - 0.5) * 0.2 + 0.1;
+      if(p.position[this.swap1] > this.maxY) {
+        p.position[this.swap1] = this.minY + Math.random() * 0.5;
+        p.position[this.swap0] = (Math.random() - 0.5) * 0.2;
+        p.position[this.swap2] = (Math.random() - 0.5) * 0.2 + 0.1;
         p.riseSpeed = 0.2 + Math.random() * 1.0;
       }
-      p.scale[0] = p.scale[1] = this.smoothFlickeringScale + Math.sin(this.time * 2.0 + p.position[1]) * 0.1;
+      p.scale[0] = p.scale[1] = this.smoothFlickeringScale + Math.sin(this.time * 2.0 + p.position[this.swap1]) * 0.1;
       p.rotation += dt * randomIntFromTo(3, 15);
     }
     this.device.queue.writeBuffer(this.cameraBuffer, 0, viewProjMatrix);

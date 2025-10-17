@@ -25,8 +25,8 @@ export class MEMapLoader {
     })
   }
 
-  constructor(MYSTICORE, navMapPath) {
-    this.core = MYSTICORE;
+  constructor(mysticore, navMapPath) {
+    this.core = mysticore;
     this.loadNavMesh(navMapPath).then((e) => {
       console.log(`%cnavMap loaded.${e}`, LOG_FUNNY_SMALL);
       this.core.RPG.nav = e;

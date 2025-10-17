@@ -68,6 +68,8 @@ export class Controller {
       if (this.heroe_bodies.length == 2) {
         heroSword = this.heroe_bodies[1];
       }
+
+      dispatchEvent(new CustomEvent('set-walk'));
       const start = [hero.position.x, hero.position.y, hero.position.z];
       const end = [hitPoint[0], hitPoint[1], hitPoint[2]];
       const path = this.nav.findPath(start, end);

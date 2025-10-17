@@ -4,8 +4,9 @@ import MatrixEngineWGPU from "../../../src/world.js";
 import {Controller} from "./controller.js";
 import {HUD} from "./hud.js";
 import {MEMapLoader} from "./map-loader.js";
-import {Character} from "./characterBase.js";
+import {Character} from "./character-base.js";
 import {HERO_PROFILES} from "./hero.js";
+import {Enemie} from "./enemy-character.js";
 
 /**
  * @Note
@@ -13,7 +14,7 @@ import {HERO_PROFILES} from "./hero.js";
  * used under Adobe’s royalty‑free license. 
  * Redistribution of raw assets is not permitted.”
  **/
-let MYSTICORE = new MatrixEngineWGPU({
+let mysticore = new MatrixEngineWGPU({
   useSingleRenderPass: true,
   canvasSize: 'fullscreen',
   mainCameraParams: {
@@ -25,9 +26,16 @@ let MYSTICORE = new MatrixEngineWGPU({
 
   addEventListener('AmmoReady', async () => {
 
-    MYSTICORE.RPG = new Controller(MYSTICORE.canvas);
+    mysticore.RPG = new Controller(mysticore.canvas);
     app.cameras.WASD.movementSpeed = 100;
-
+    // MAPs
+    mysticore.mapLoader = new MEMapLoader(mysticore, "./res/meshes/nav-mesh/navmesh.json");
+    // LOCAL HERO
+    mysticore.localHero = new Character(
+      mysticore,
+      "res/meshes/glb/woman1.glb",
+      'MariaSword', HERO_PROFILES.MariaSword.baseArchetypes);
+    mysticore.HUD = new HUD(mysticore.localHero);
     setTimeout(() => {
       app.cameras.WASD.yaw = -0.03;
       app.cameras.WASD.pitch = -0.49;
@@ -35,20 +43,18 @@ let MYSTICORE = new MatrixEngineWGPU({
       app.cameras.WASD.position[1] = 23;
     }, 2000)
 
-    // MAPs
-    MYSTICORE.mapLoader = new MEMapLoader(MYSTICORE, "./res/meshes/nav-mesh/navmesh.json");
-
-    // LOCAL HERO
-    MYSTICORE.localHero = new Character(
-      MYSTICORE,
-      "res/meshes/glb/woman1.glb",
-      'MariaSword', HERO_PROFILES.MariaSword.baseArchetypes);
-
-    MYSTICORE.HUD = new HUD(MYSTICORE.localHero);
-
+    // new enemy characters
+    mysticore.enemies = new Enemie(
+      {
+        core: mysticore,
+        // core: mysticore,
+        name: 'Slayzer',
+        path: 'res/meshes/glb/monster.glb'
+      }
+    );
   })
-  MYSTICORE.addLight();
+  mysticore.addLight();
 })
 
 // just for dev
-window.app = MYSTICORE;
+window.app = mysticore;
