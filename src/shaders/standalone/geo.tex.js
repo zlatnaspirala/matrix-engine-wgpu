@@ -42,19 +42,18 @@ fn vsMain(input : VertexInput, @builtin(instance_index) instanceIndex : u32) -> 
 // === FRAGMENT STAGE =======================================================
 @fragment
 fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
-  // Sample the texture
   let texColor = textureSample(myTexture, mySampler, input.v_uv);
 
-  // Your existing glow logic, slightly tuned to mix with texture alpha
   let uv = input.v_uv * 2.0 - vec2<f32>(1.0, 1.0);
   let dist = length(uv);
   let glow = exp(-dist * 1.2);
   let glowColor = mix(vec3<f32>(0.2, 0.7, 1.0), vec3<f32>(0.8, 0.95, 1.0), glow);
 
-  // Combine texture and glow, tint by instance color
-  var finalRGB = glowColor * texColor.rgb * input.v_color.rgb;
-  var finalAlpha = texColor.a * input.v_color.a * glow;
+  // More balanced color blending:
+  let baseRGB = texColor.rgb * glowColor;
+  let tintedRGB = mix(baseRGB, input.v_color.rgb, 0.8); // 0.8 gives strong tint influence
+  let finalAlpha = texColor.a * input.v_color.a * glow;
 
-  return vec4<f32>(finalRGB, finalAlpha);
+  return vec4<f32>(tintedRGB, finalAlpha);
 }
 `;
