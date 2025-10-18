@@ -282,7 +282,14 @@ export class HeroProps {
     defender.hp = Math.max(0, defender.hp - damage);
     // --- Sync energy bar (0 → 1)
     const progress = Math.max(0, Math.min(1, defender.hp / this.getHPMax()));
-    dispatchEvent(new CustomEvent(`onDamage-${defender.name}`, {detail: progress}) )
+    dispatchEvent(new CustomEvent(`onDamage-${defender.name}`,
+      {
+        detail: {
+          progress: progress,
+          attacker: attacker,
+          defenderLevel: this.currentLevel
+        }
+      }))
     return {damage, crit: crit > 1.0};
   }
 }

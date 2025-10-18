@@ -54,7 +54,9 @@ export class Enemie extends Hero {
             if(a.name == 'attack') this.heroAnimationArrange.attack = index;
           });
           // maybe will help - remote net players no nedd to collide in other remote user gamaplay
-          this.core.collisionSystem.register('enemy' + idx, subMesh.position, 2.0, 'enemies');
+          // this.core.collisionSystem.register((o.name + idx), subMesh.position, 15.0, 'enemies');
+          // dont care for multi sub mesh now
+          if(idx == 0) this.core.collisionSystem.register((o.name), subMesh.position, 15.0, 'enemies');
         });
       }, 1600)
     } catch(err) {throw err;}
@@ -95,10 +97,25 @@ export class Enemie extends Hero {
     });
   }
 
+  setStartUpPosition() {
+    this.heroe_bodies.forEach((subMesh, idx) => {
+      subMesh.position.setPosition(0,-23,0)
+    })
+  }
+
   attachEvents() {
     addEventListener(`onDamage-${this.name}`, (e) => {
       console.info(`%c hero damage ${e.detail}`, LOG_MATRIX)
-        this.heroe_bodies[0].effects.energyBar.setProgress(e.detail);
+      this.heroe_bodies[0].effects.energyBar.setProgress(e.detail.progress);
+      // if detail is 0
+      if(e.detail.progress == 0) {
+        this.setDead();
+        console.info(`%c hero dead [${this.name}], attacker[${e.detail.attacker}]`, LOG_MATRIX)
+        setTimeout(() => {
+          this.setStartUpPosition()
+        }, 2000)
+        e.detail.attacker.killEnemy(e.detail.defenderLevel);
+      }
     });
   }
 

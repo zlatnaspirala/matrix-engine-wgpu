@@ -83,15 +83,17 @@ export class Controller {
         // console.log("Hit object:", e.detail.hitObject.name);
         // console.log("[R CLICK MOUS ]Moment for attact event but walk to the distanve and attach object:",
         // this.core.localHero.heroe_bodies[0]);
-        // FOr now without check is it enemy make distance check
-        // for any LH vs other entity need to exist check distance
+        // FOr now without check is it enemiy 
+        // fro any LH vs other entity need to exist check distance
         const LH = this.core.localHero.heroe_bodies[0];
         console.log("Hit object VS LH DISTANCE : ", this.distance3D(LH.position, e.detail.hitObject.position))
+        // after all check is it eneimy
+        this.core.localHero.heroFocusAttackOn = e.detail.hitObject;
 
         let testDistance = this.distance3D(LH.position, e.detail.hitObject.position);
         // 37 LIMIT FOR ATTACH
         if (testDistance < this.distanceForAction) {
-          console.log("LOCALHERO ATTACH : this.core.localHero.setAttack", this.core.localHero.setAttack)
+          console.log("this.core.localHero.setAttack [e.detail.hitObject]")
           this.core.localHero.setAttack(e.detail.hitObject);
           return;
         }

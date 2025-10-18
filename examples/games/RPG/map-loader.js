@@ -94,11 +94,6 @@ export class MEMapLoader {
   async loadMainMap() {
     downloadMeshes({cube: "./res/meshes/maps-objs/map-1.obj"}, this.onGround.bind(this), {scale: [10, 10, 10]});
 
-    // downloadMeshes({
-    //   tree11: "./res/meshes/maps-objs/tree1.obj",
-    //   tree12: "./res/meshes/maps-objs/tree12.obj"
-    // }, this.onTree.bind(this), {scale: [12, 12, 12]});
-
     var glbFile01 = await fetch('./res/meshes/maps-objs/tree.glb').then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, this.core.device)));
     this.core.addGlbObjInctance({
       material: {type: 'standard', useTextureFromGlb: true},
@@ -110,35 +105,49 @@ export class MEMapLoader {
       pointerEffect: {enabled: false}
     }, null, glbFile01);
 
-    // console.log("test !!!!!!!!!!!!!!!" + this.core.mainRenderBundle.filter((o => o.name.indexOf('tree') != -1)))
     setTimeout(() => {
       this.collectionOfTree1 = this.core.mainRenderBundle.filter((o => o.name.indexOf('tree') != -1));
       setTimeout(() => {
-        this.addInstancing()
+        this.addInstancing();
       }, 100)
     }, 1000)
   }
 
   addInstancing() {
-    const spacing = 150;
-    this.collectionOfTree1.forEach((partOftree) => {
-      const gridSize = Math.ceil(Math.sqrt(partOftree.instanceTargets.length));
-      console.log("partOftree.maxInstance -> " + partOftree.maxInstances);
-      partOftree.updateMaxInstances(9);
-      partOftree.updateInstances(9);
+  const spacing = 150;
+  const clusterOffsets = [
+    [0, 0],
+    [700, 0],
+    [0, 700],
+    [700, 700]
+  ];
 
-      partOftree.instanceTargets.forEach((instance, index) => {
-        const row = Math.floor(index / gridSize);
-        const col = index % gridSize;
+  this.collectionOfTree1.forEach((partOftree) => {
+    const treesPerCluster = 9;
+    const gridSize = Math.ceil(Math.sqrt(treesPerCluster));
+    const totalInstances = treesPerCluster * clusterOffsets.length;
 
-        instance.position[0] = col * spacing + randomIntFromTo(0,20);
-        instance.position[2] = row * spacing + randomIntFromTo(0,20);
+    partOftree.updateMaxInstances(totalInstances);
+    partOftree.updateInstances(totalInstances);
+
+    let instanceIndex = 0;
+
+    for (const [offsetX, offsetZ] of clusterOffsets) {
+      for (let i = 0; i < treesPerCluster; i++) {
+        const row = Math.floor(i / gridSize);
+        const col = i % gridSize;
+        const instance = partOftree.instanceTargets[instanceIndex++];
+
+        instance.position[0] = offsetX + col * spacing + randomIntFromTo(0, 20);
+        instance.position[2] = offsetZ + row * spacing + randomIntFromTo(0, 20);
+        instance.position[1] = 0;
+
         instance.color[3] = 1;
-        instance.color[0] = randomFloatFromTo(0.5, 5);
-        instance.color[1] = randomFloatFromTo(0, 1);
-        instance.color[2] = randomFloatFromTo(0, 1);
-      })
-
-    })
+        instance.color[0] = randomFloatFromTo(0.5, 2.0);
+        instance.color[1] = randomFloatFromTo(0.7, 1.0);
+        instance.color[2] = randomFloatFromTo(0.5, 0.9);
+      }
+    }
+  });
   }
 }

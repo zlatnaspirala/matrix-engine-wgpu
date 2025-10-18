@@ -87,9 +87,10 @@ class Character extends _hero.Hero {
             if (a.name == 'walk') this.heroAnimationArrange.walk = index;
             if (a.name == 'salute') this.heroAnimationArrange.salute = index;
             if (a.name == 'attack') this.heroAnimationArrange.attack = index;
+            if (a.name == 'idle') this.heroAnimationArrange.idle = index;
           });
           if (id == 0) subMesh.sharedState.emitAnimationEvent = true;
-          this.core.collisionSystem.register(`local${id}`, subMesh.position, 2.0, 'local_hero');
+          this.core.collisionSystem.register(`local${id}`, subMesh.position, 15.0, 'local_hero');
         });
         app.localHero.heroe_bodies[0].effects.flameEmitter.recreateVertexDataRND(1);
         this.attachEvents();
@@ -179,32 +180,37 @@ class Character extends _hero.Hero {
     addEventListener('set-salute', () => {
       this.setSalute();
     });
-
+    addEventListener('close-distance', e => {
+      console.log('close distance - ', e.detail.A);
+      if (this.heroFocusAttackOn.name.indexOf(e.detail.A.id) != -1) {
+        this.setAttack(this.heroFocusAttackOn);
+      }
+      // this.x = this.targetX;
+      // this.y = this.targetY;
+      // this.z = this.targetZ;
+      // this.inMove = false;
+      // this.onTargetPositionReach();
+    });
     // must be sync with networking... in future
     // -------------------------------------------
-    // const eventNameAttach = 'attack';
     // console.log('ANIMATION END INITIAL NAME ', this.name)
     addEventListener(`animationEnd-${this.name}`, e => {
       // CHECK DISTANCE
       if (e.detail.animationName != 'attack') {
+        // future
         return;
       }
       console.log('ANIMATION END START:', e.detail.animationName);
-      // this.heroFocusAttackOn
       if (this.heroFocusAttackOn == null) {
-        console.log('ANIMATION END RETURN ', e.detail);
+        this.setIdle();
         return;
       }
       this.core.enemies.enemies.forEach(enemy => {
-        // --------------
-        // OK ENEMY IS DAMAGED
         if (this.heroFocusAttackOn.name.indexOf(enemy.name) != -1) {
           let tt = this.core.RPG.distance3D(this.heroe_bodies[0].position, this.heroFocusAttackOn.position);
-          console.log('enemy ONLY FOCUSED NOW :', this.heroFocusAttackOn.name);
           if (tt < this.core.RPG.distanceForAction) {
-            // OK ENEMY IS DAMAGED
-            //  calcDamage
-            console.log('ATTACK DAMAGE CALC ', tt);
+            console.log('Attack on :', this.heroFocusAttackOn.name);
+            console.log('%c ATTACK DAMAGE CALC ', _utils.LOG_MATRIX);
             this.calcDamage(this, enemy);
           }
         }
@@ -309,14 +315,16 @@ class Controller {
         // console.log("Hit object:", e.detail.hitObject.name);
         // console.log("[R CLICK MOUS ]Moment for attact event but walk to the distanve and attach object:",
         // this.core.localHero.heroe_bodies[0]);
-        // FOr now without check is it enemy make distance check
-        // for any LH vs other entity need to exist check distance
+        // FOr now without check is it enemiy 
+        // fro any LH vs other entity need to exist check distance
         const LH = this.core.localHero.heroe_bodies[0];
         console.log("Hit object VS LH DISTANCE : ", this.distance3D(LH.position, e.detail.hitObject.position));
+        // after all check is it eneimy
+        this.core.localHero.heroFocusAttackOn = e.detail.hitObject;
         let testDistance = this.distance3D(LH.position, e.detail.hitObject.position);
         // 37 LIMIT FOR ATTACH
         if (testDistance < this.distanceForAction) {
-          console.log("LOCALHERO ATTACH : this.core.localHero.setAttack", this.core.localHero.setAttack);
+          console.log("this.core.localHero.setAttack [e.detail.hitObject]");
           this.core.localHero.setAttack(e.detail.hitObject);
           return;
         }
@@ -522,7 +530,9 @@ class Enemie extends _hero.Hero {
             if (a.name == 'attack') this.heroAnimationArrange.attack = index;
           });
           // maybe will help - remote net players no nedd to collide in other remote user gamaplay
-          this.core.collisionSystem.register('enemy' + idx, subMesh.position, 2.0, 'enemies');
+          // this.core.collisionSystem.register((o.name + idx), subMesh.position, 15.0, 'enemies');
+          // dont care for multi sub mesh now
+          if (idx == 0) this.core.collisionSystem.register(o.name, subMesh.position, 15.0, 'enemies');
         });
       }, 1600);
     } catch (err) {
@@ -559,10 +569,24 @@ class Enemie extends _hero.Hero {
       console.info(`%chero attack`, _utils.LOG_MATRIX);
     });
   }
+  setStartUpPosition() {
+    this.heroe_bodies.forEach((subMesh, idx) => {
+      subMesh.position.setPosition(0, -23, 0);
+    });
+  }
   attachEvents() {
     addEventListener(`onDamage-${this.name}`, e => {
       console.info(`%c hero damage ${e.detail}`, _utils.LOG_MATRIX);
-      this.heroe_bodies[0].effects.energyBar.setProgress(e.detail);
+      this.heroe_bodies[0].effects.energyBar.setProgress(e.detail.progress);
+      // if detail is 0
+      if (e.detail.progress == 0) {
+        this.setDead();
+        console.info(`%c hero dead [${this.name}], attacker[${e.detail.attacker}]`, _utils.LOG_MATRIX);
+        setTimeout(() => {
+          this.setStartUpPosition();
+        }, 2000);
+        e.detail.attacker.killEnemy(e.detail.defenderLevel);
+      }
     });
   }
 }
@@ -973,7 +997,11 @@ class HeroProps {
     // --- Sync energy bar (0 → 1)
     const progress = Math.max(0, Math.min(1, defender.hp / this.getHPMax()));
     dispatchEvent(new CustomEvent(`onDamage-${defender.name}`, {
-      detail: progress
+      detail: {
+        progress: progress,
+        attacker: attacker,
+        defenderLevel: this.currentLevel
+      }
     }));
     return {
       damage,
@@ -1567,12 +1595,6 @@ class MEMapLoader {
     }, this.onGround.bind(this), {
       scale: [10, 10, 10]
     });
-
-    // downloadMeshes({
-    //   tree11: "./res/meshes/maps-objs/tree1.obj",
-    //   tree12: "./res/meshes/maps-objs/tree12.obj"
-    // }, this.onTree.bind(this), {scale: [12, 12, 12]});
-
     var glbFile01 = await fetch('./res/meshes/maps-objs/tree.glb').then(res => res.arrayBuffer().then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, this.core.device)));
     this.core.addGlbObjInctance({
       material: {
@@ -1595,8 +1617,6 @@ class MEMapLoader {
         enabled: false
       }
     }, null, glbFile01);
-
-    // console.log("test !!!!!!!!!!!!!!!" + this.core.mainRenderBundle.filter((o => o.name.indexOf('tree') != -1)))
     setTimeout(() => {
       this.collectionOfTree1 = this.core.mainRenderBundle.filter(o => o.name.indexOf('tree') != -1);
       setTimeout(() => {
@@ -1606,21 +1626,28 @@ class MEMapLoader {
   }
   addInstancing() {
     const spacing = 150;
+    const clusterOffsets = [[0, 0], [700, 0], [0, 700], [700, 700]];
     this.collectionOfTree1.forEach(partOftree => {
-      const gridSize = Math.ceil(Math.sqrt(partOftree.instanceTargets.length));
-      console.log("partOftree.maxInstance -> " + partOftree.maxInstances);
-      partOftree.updateMaxInstances(9);
-      partOftree.updateInstances(9);
-      partOftree.instanceTargets.forEach((instance, index) => {
-        const row = Math.floor(index / gridSize);
-        const col = index % gridSize;
-        instance.position[0] = col * spacing + (0, _utils.randomIntFromTo)(0, 20);
-        instance.position[2] = row * spacing + (0, _utils.randomIntFromTo)(0, 20);
-        instance.color[3] = 1;
-        instance.color[0] = (0, _utils.randomFloatFromTo)(0.5, 5);
-        instance.color[1] = (0, _utils.randomFloatFromTo)(0, 1);
-        instance.color[2] = (0, _utils.randomFloatFromTo)(0, 1);
-      });
+      const treesPerCluster = 9;
+      const gridSize = Math.ceil(Math.sqrt(treesPerCluster));
+      const totalInstances = treesPerCluster * clusterOffsets.length;
+      partOftree.updateMaxInstances(totalInstances);
+      partOftree.updateInstances(totalInstances);
+      let instanceIndex = 0;
+      for (const [offsetX, offsetZ] of clusterOffsets) {
+        for (let i = 0; i < treesPerCluster; i++) {
+          const row = Math.floor(i / gridSize);
+          const col = i % gridSize;
+          const instance = partOftree.instanceTargets[instanceIndex++];
+          instance.position[0] = offsetX + col * spacing + (0, _utils.randomIntFromTo)(0, 20);
+          instance.position[2] = offsetZ + row * spacing + (0, _utils.randomIntFromTo)(0, 20);
+          instance.position[1] = 0;
+          instance.color[3] = 1;
+          instance.color[0] = (0, _utils.randomFloatFromTo)(0.5, 2.0);
+          instance.color[1] = (0, _utils.randomFloatFromTo)(0.7, 1.0);
+          instance.color[2] = (0, _utils.randomFloatFromTo)(0.5, 0.9);
+        }
+      }
     });
   }
 }
@@ -2112,12 +2139,8 @@ function followPath(character, path, core) {
     const dz = target[2] - pos.z;
     // Character faces -Z → use atan2(dx, dz)
     let angleY = Math.atan2(dx, dz);
-    // Convert to degrees & normalize
     angleY = ((0, _utils.radToDeg)(angleY) + 360) % 360;
     rot.y = angleY;
-
-    //
-
     pos.translateByXZ(target[0], target[2]);
     character.position.onTargetPositionReach = () => {
       idx++;
@@ -2166,7 +2189,7 @@ function orientHeroToDirection(hero, dir) {
 // }
 
 // collision-utils.js
-function resolvePairRepulsion(Apos, Bpos, minDistance = 1.0, pushStrength = 0.5) {
+function resolvePairRepulsion(Apos, Bpos, minDistance = 30.0, pushStrength = 0.5) {
   // Apos and Bpos are Position instances (with x,z,targetX,targetZ)
   const dx = Bpos.x - Apos.x;
   const dz = Bpos.z - Apos.z;
@@ -2175,31 +2198,25 @@ function resolvePairRepulsion(Apos, Bpos, minDistance = 1.0, pushStrength = 0.5)
   if (distSq < minDistSq && distSq > 1e-8) {
     const dist = Math.sqrt(distSq);
     const overlap = minDistance - dist;
-
     // normalized dir from A -> B
     const nx = dx / dist;
     const nz = dz / dist;
-
     // compute push for each (equal reaction)
     const totalPush = overlap * pushStrength;
     const pushA = totalPush * 0.5;
     const pushB = totalPush * 0.5;
-
     // move them apart
     Apos.x -= nx * pushA;
     Apos.z -= nz * pushA;
     Bpos.x += nx * pushB;
     Bpos.z += nz * pushB;
-
     // keep target in sync so update() won't pull them back
     Apos.targetX = Apos.x;
     Apos.targetZ = Apos.z;
     Bpos.targetX = Bpos.x;
     Bpos.targetZ = Bpos.z;
-
     // also cancel inMove if you want them to pause instead of re-targeting
     // Apos.inMove = false; Bpos.inMove = false;
-
     return true;
   }
 
@@ -20488,7 +20505,16 @@ class CollisionSystem {
         const B = this.entries[j];
         if (A.group === B.group) continue;
         const minDist = A.radius + B.radius;
-        (0, _navMesh.resolvePairRepulsion)(A.pos, B.pos, minDist, 1.0);
+        const testCollide = (0, _navMesh.resolvePairRepulsion)(A.pos, B.pos, minDist, 1.0);
+        if (testCollide) {
+          // console.log('test collide' + A + " vs " + B);
+          dispatchEvent(new CustomEvent('close-distance', {
+            detail: {
+              A: A,
+              B: B
+            }
+          }));
+        }
       }
     }
   }

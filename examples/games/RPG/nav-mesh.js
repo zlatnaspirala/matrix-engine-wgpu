@@ -389,12 +389,8 @@ export function followPath(character, path, core) {
     const dz = target[2] - pos.z;
     // Character faces -Z → use atan2(dx, dz)
     let angleY = Math.atan2(dx, dz);
-    // Convert to degrees & normalize
     angleY = (radToDeg(angleY) + 360) % 360;
     rot.y = angleY;
-
-    //
-
     pos.translateByXZ(target[0], target[2])
     character.position.onTargetPositionReach = () => {
       idx++;
@@ -443,7 +439,7 @@ export function orientHeroToDirection(hero, dir) {
 // }
 
 // collision-utils.js
-export function resolvePairRepulsion(Apos, Bpos, minDistance = 1.0, pushStrength = 0.5) {
+export function resolvePairRepulsion(Apos, Bpos, minDistance = 30.0, pushStrength = 0.5) {
   // Apos and Bpos are Position instances (with x,z,targetX,targetZ)
   const dx = Bpos.x - Apos.x;
   const dz = Bpos.z - Apos.z;
@@ -453,31 +449,25 @@ export function resolvePairRepulsion(Apos, Bpos, minDistance = 1.0, pushStrength
   if (distSq < minDistSq && distSq > 1e-8) {
     const dist = Math.sqrt(distSq);
     const overlap = minDistance - dist;
-
     // normalized dir from A -> B
     const nx = dx / dist;
     const nz = dz / dist;
-
     // compute push for each (equal reaction)
     const totalPush = overlap * pushStrength;
     const pushA = totalPush * 0.5;
     const pushB = totalPush * 0.5;
-
     // move them apart
     Apos.x -= nx * pushA;
     Apos.z -= nz * pushA;
     Bpos.x += nx * pushB;
     Bpos.z += nz * pushB;
-
     // keep target in sync so update() won't pull them back
     Apos.targetX = Apos.x;
     Apos.targetZ = Apos.z;
     Bpos.targetX = Bpos.x;
     Bpos.targetZ = Bpos.z;
-
     // also cancel inMove if you want them to pause instead of re-targeting
     // Apos.inMove = false; Bpos.inMove = false;
-
     return true;
   }
 
@@ -489,6 +479,5 @@ export function resolvePairRepulsion(Apos, Bpos, minDistance = 1.0, pushStrength
     Apos.targetX = Apos.x; Apos.targetZ = Apos.z;
     return true;
   }
-
   return false;
 }

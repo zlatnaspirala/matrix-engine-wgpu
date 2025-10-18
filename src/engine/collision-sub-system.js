@@ -21,7 +21,14 @@ export class CollisionSystem {
         const B = this.entries[j];
         if (A.group === B.group) continue;
         const minDist = A.radius + B.radius;
-        resolvePairRepulsion(A.pos, B.pos, minDist, 1.0);
+        const testCollide = resolvePairRepulsion(A.pos, B.pos, minDist, 1.0);
+        if (testCollide) {
+          // console.log('test collide' + A + " vs " + B);
+          dispatchEvent(new CustomEvent('close-distance', {detail: {
+             A: A,
+             B: B
+          }}))
+        }
       }
     }
   }
