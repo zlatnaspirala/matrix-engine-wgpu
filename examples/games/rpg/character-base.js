@@ -15,6 +15,8 @@ export class Character extends Hero {
     idle: null
   };
 
+  heroFocusAttackOn = null;
+
   constructor(mysticore, path, name = 'MariaSword', archetypes = ["Warrior", "Mage"]) {
     super(name, archetypes);
     // console.info(`%cLOADING hero name : ${name}`, LOG_MATRIX)
@@ -79,7 +81,7 @@ export class Character extends Hero {
             if(a.name == 'attack') this.heroAnimationArrange.attack = index;
           })
 
-          // if (id == 0) this.core.collisionSystem.register(`local${id}`, subMesh.position, 2.0);
+          if(id == 0) subMesh.sharedState.emitAnimationEvent = true;
           this.core.collisionSystem.register(`local${id}`, subMesh.position, 2.0, 'local_hero');
         });
 
@@ -117,7 +119,8 @@ export class Character extends Hero {
       console.info(`%chero idle`, LOG_MATRIX)
     });
   }
-  setAttack() {
+  setAttack(on) {
+    this.heroFocusAttackOn = on;
     this.core.RPG.heroe_bodies.forEach(subMesh => {
       subMesh.glb.animationIndex = this.heroAnimationArrange.attack;
       console.info(`%chero attack`, LOG_MATRIX)
@@ -178,5 +181,43 @@ export class Character extends Hero {
     addEventListener('set-salute', () => {
       this.setSalute();
     })
+
+    // must be sync with networking... in future
+    // -------------------------------------------
+    // const eventNameAttach = 'attack';
+    // console.log('ANIMATION END INITIAL NAME ', this.name)
+    addEventListener(`animationEnd-${this.name}`, (e) => {
+      // CHECK DISTANCE
+      if (e.detail.animationName != 'attack') {
+
+        return;
+      }
+
+      console.log('ANIMATION END START:', e.detail.animationName)
+      // this.heroFocusAttackOn
+      if(this.heroFocusAttackOn == null) {
+        console.log('ANIMATION END RETURN ', e.detail)
+        return;
+      }
+
+      this.core.enemies.enemies.forEach((enemy) => {
+        // --------------
+        // OK ENEMY IS DAMAGED
+        if(this.heroFocusAttackOn.name.indexOf(enemy.name) != -1) {
+          let tt = this.core.RPG.distance3D(
+            this.heroe_bodies[0].position,
+            this.heroFocusAttackOn.position);
+          console.log('enemy ONLY FOCUSED NOW :', this.heroFocusAttackOn.name)
+          if(tt < this.core.RPG.distanceForAction) {
+            // OK ENEMY IS DAMAGED
+            //  calcDamage
+            console.log('ATTACK DAMAGE CALC ', tt)
+            this.calcDamage(this, enemy);
+          }
+        }
+
+      })
+    })
+    // -------------------------------------------
   }
 }

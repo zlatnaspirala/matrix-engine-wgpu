@@ -9,7 +9,10 @@ export class Controller {
   selected = [];
 
   nav = null;
+  // ONLY LOCAL
   heroe_bodies = null;
+
+  distanceForAction = 36;
 
   constructor(core) {
     this.core = core;
@@ -47,15 +50,18 @@ export class Controller {
     addRaycastsListener(undefined, 'click');
     // addRaycastsListener(undefined, 'mousemove');
 
-    this.canvas.addEventListener("ray.hit.event.mm", (e) => {
-      // console.log('ray.hit.event detected', e);
-      const {hitObject, hitPoint, button, eventName} = e.detail;
-      if(!hitObject || !hitPoint) {
-        console.warn('No valid hit detected.');
-        return;
-      }
-      // console.log("Hit object eventName :", eventName, "Button:", button);
-    })
+    //
+
+    // for now - performance problem
+    // this.canvas.addEventListener("ray.hit.event.mm", (e) => {
+    //   // console.log('ray.hit.event detected', e);
+    //   const {hitObject, hitPoint, button, eventName} = e.detail;
+    //   if(!hitObject || !hitPoint) {
+    //     console.warn('No valid hit detected.');
+    //     return;
+    //   }
+    //   // console.log("Hit object eventName :", eventName, "Button:", button);
+    // })
 
     this.canvas.addEventListener("ray.hit.event", (e) => {
       // console.log('ray.hit.event detected', e);
@@ -64,22 +70,42 @@ export class Controller {
       //   console.warn('No valid hit detected.');
       //   return;
       // }
-      // console.log("Hit object eventName :", e.detail.hitObject.name);
-      // if (eventName !== 'click') {
-      //   return;
-      // }
+
+      if(button == 0 && e.detail.hitObject.name != 'ground' &&
+          e.detail.hitObject.name !== this.heroe_bodies[0].name
+      ) {
+
+        if (this.heroe_bodies.length == 2) {
+          if (e.detail.hitObject.name == this.heroe_bodies[1].name) {
+            return;
+          }
+        }
+        // console.log("Hit object:", e.detail.hitObject.name);
+        // console.log("[R CLICK MOUS ]Moment for attact event but walk to the distanve and attach object:",
+        // this.core.localHero.heroe_bodies[0]);
+        // FOr now without check is it enemy make distance check
+        // for any LH vs other entity need to exist check distance
+        const LH = this.core.localHero.heroe_bodies[0];
+        console.log("Hit object VS LH DISTANCE : ", this.distance3D(LH.position, e.detail.hitObject.position))
+
+        let testDistance = this.distance3D(LH.position, e.detail.hitObject.position);
+        // 37 LIMIT FOR ATTACH
+        if (testDistance < this.distanceForAction) {
+          console.log("LOCALHERO ATTACH : this.core.localHero.setAttack", this.core.localHero.setAttack)
+          this.core.localHero.setAttack(e.detail.hitObject);
+          return;
+        }
+      }
       // Only react to LEFT CLICK
       if(button !== 0 || this.heroe_bodies === null ||
-         !this.selected.includes(this.heroe_bodies[0]) 
-      ) {
+        !this.selected.includes(this.heroe_bodies[0])) {
         // not hero but maybe other creaps . based on selected....
         return;
       }
-
       // Define start (hero position) and end (clicked point)
       const hero = this.heroe_bodies[0];
       let heroSword = null;
-      if (this.heroe_bodies.length == 2) {
+      if(this.heroe_bodies.length == 2) {
         heroSword = this.heroe_bodies[1];
       }
 
@@ -175,6 +201,13 @@ export class Controller {
         );
       }
     });
+  }
+
+  distance3D(a, b) {
+    const dx = a.x - b.x;
+    const dy = a.y - b.y;
+    const dz = a.z - b.z;
+    return Math.sqrt(dx * dx + dy * dy + dz * dz);
   }
 
 }

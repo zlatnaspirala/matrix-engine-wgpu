@@ -1,6 +1,8 @@
 import {uploadGLBModel} from "../../../src/engine/loaders/webgpu-gltf";
+import {LOG_MATRIX} from "../../../src/engine/utils";
+import {Hero} from "./hero";
 
-export class Enemie {
+export class Enemie extends Hero {
 
   heroAnimationArrange = {
     dead: null,
@@ -10,9 +12,12 @@ export class Enemie {
     idle: null
   }
 
-  constructor(o) {
+  constructor(o, archetypes = ["Warrior"]) {
+    super(o.name, archetypes);
+    this.name = o.name;
     this.core = o.core;
-    this.loadEnemyHero(o)
+    this.loadEnemyHero(o);
+    this.attachEvents();
     return this;
   }
 
@@ -87,6 +92,13 @@ export class Enemie {
     this.heroe_bodies.forEach(subMesh => {
       subMesh.glb.animationIndex = this.heroAnimationArrange.attack;
       console.info(`%chero attack`, LOG_MATRIX)
+    });
+  }
+
+  attachEvents() {
+    addEventListener(`onDamage-${this.name}`, (e) => {
+      console.info(`%c hero damage ${e.detail}`, LOG_MATRIX)
+        this.heroe_bodies[0].effects.energyBar.setProgress(e.detail);
     });
   }
 

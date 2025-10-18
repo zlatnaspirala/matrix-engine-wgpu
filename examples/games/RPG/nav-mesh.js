@@ -392,6 +392,9 @@ export function followPath(character, path, core) {
     // Convert to degrees & normalize
     angleY = (radToDeg(angleY) + 360) % 360;
     rot.y = angleY;
+
+    //
+
     pos.translateByXZ(target[0], target[2])
     character.position.onTargetPositionReach = () => {
       idx++;

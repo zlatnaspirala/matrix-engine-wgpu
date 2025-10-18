@@ -18,6 +18,7 @@ class Character extends _hero.Hero {
     attack: null,
     idle: null
   };
+  heroFocusAttackOn = null;
   constructor(mysticore, path, name = 'MariaSword', archetypes = ["Warrior", "Mage"]) {
     super(name, archetypes);
     // console.info(`%cLOADING hero name : ${name}`, LOG_MATRIX)
@@ -87,8 +88,7 @@ class Character extends _hero.Hero {
             if (a.name == 'salute') this.heroAnimationArrange.salute = index;
             if (a.name == 'attack') this.heroAnimationArrange.attack = index;
           });
-
-          // if (id == 0) this.core.collisionSystem.register(`local${id}`, subMesh.position, 2.0);
+          if (id == 0) subMesh.sharedState.emitAnimationEvent = true;
           this.core.collisionSystem.register(`local${id}`, subMesh.position, 2.0, 'local_hero');
         });
         app.localHero.heroe_bodies[0].effects.flameEmitter.recreateVertexDataRND(1);
@@ -122,7 +122,8 @@ class Character extends _hero.Hero {
       console.info(`%chero idle`, _utils.LOG_MATRIX);
     });
   }
-  setAttack() {
+  setAttack(on) {
+    this.heroFocusAttackOn = on;
     this.core.RPG.heroe_bodies.forEach(subMesh => {
       subMesh.glb.animationIndex = this.heroAnimationArrange.attack;
       console.info(`%chero attack`, _utils.LOG_MATRIX);
@@ -178,6 +179,38 @@ class Character extends _hero.Hero {
     addEventListener('set-salute', () => {
       this.setSalute();
     });
+
+    // must be sync with networking... in future
+    // -------------------------------------------
+    // const eventNameAttach = 'attack';
+    // console.log('ANIMATION END INITIAL NAME ', this.name)
+    addEventListener(`animationEnd-${this.name}`, e => {
+      // CHECK DISTANCE
+      if (e.detail.animationName != 'attack') {
+        return;
+      }
+      console.log('ANIMATION END START:', e.detail.animationName);
+      // this.heroFocusAttackOn
+      if (this.heroFocusAttackOn == null) {
+        console.log('ANIMATION END RETURN ', e.detail);
+        return;
+      }
+      this.core.enemies.enemies.forEach(enemy => {
+        // --------------
+        // OK ENEMY IS DAMAGED
+        if (this.heroFocusAttackOn.name.indexOf(enemy.name) != -1) {
+          let tt = this.core.RPG.distance3D(this.heroe_bodies[0].position, this.heroFocusAttackOn.position);
+          console.log('enemy ONLY FOCUSED NOW :', this.heroFocusAttackOn.name);
+          if (tt < this.core.RPG.distanceForAction) {
+            // OK ENEMY IS DAMAGED
+            //  calcDamage
+            console.log('ATTACK DAMAGE CALC ', tt);
+            this.calcDamage(this, enemy);
+          }
+        }
+      });
+    });
+    // -------------------------------------------
   }
 }
 exports.Character = Character;
@@ -197,7 +230,9 @@ class Controller {
   ignoreList = ['ground'];
   selected = [];
   nav = null;
+  // ONLY LOCAL
   heroe_bodies = null;
+  distanceForAction = 36;
   constructor(core) {
     this.core = core;
     this.canvas = this.core.canvas;
@@ -239,20 +274,19 @@ class Controller {
     (0, _raycast.addRaycastsListener)(undefined, 'click');
     // addRaycastsListener(undefined, 'mousemove');
 
-    this.canvas.addEventListener("ray.hit.event.mm", e => {
-      // console.log('ray.hit.event detected', e);
-      const {
-        hitObject,
-        hitPoint,
-        button,
-        eventName
-      } = e.detail;
-      if (!hitObject || !hitPoint) {
-        console.warn('No valid hit detected.');
-        return;
-      }
-      // console.log("Hit object eventName :", eventName, "Button:", button);
-    });
+    //
+
+    // for now - performance problem
+    // this.canvas.addEventListener("ray.hit.event.mm", (e) => {
+    //   // console.log('ray.hit.event detected', e);
+    //   const {hitObject, hitPoint, button, eventName} = e.detail;
+    //   if(!hitObject || !hitPoint) {
+    //     console.warn('No valid hit detected.');
+    //     return;
+    //   }
+    //   // console.log("Hit object eventName :", eventName, "Button:", button);
+    // })
+
     this.canvas.addEventListener("ray.hit.event", e => {
       // console.log('ray.hit.event detected', e);
       const {
@@ -265,16 +299,33 @@ class Controller {
       //   console.warn('No valid hit detected.');
       //   return;
       // }
-      // console.log("Hit object eventName :", e.detail.hitObject.name);
-      // if (eventName !== 'click') {
-      //   return;
-      // }
+
+      if (button == 0 && e.detail.hitObject.name != 'ground' && e.detail.hitObject.name !== this.heroe_bodies[0].name) {
+        if (this.heroe_bodies.length == 2) {
+          if (e.detail.hitObject.name == this.heroe_bodies[1].name) {
+            return;
+          }
+        }
+        // console.log("Hit object:", e.detail.hitObject.name);
+        // console.log("[R CLICK MOUS ]Moment for attact event but walk to the distanve and attach object:",
+        // this.core.localHero.heroe_bodies[0]);
+        // FOr now without check is it enemy make distance check
+        // for any LH vs other entity need to exist check distance
+        const LH = this.core.localHero.heroe_bodies[0];
+        console.log("Hit object VS LH DISTANCE : ", this.distance3D(LH.position, e.detail.hitObject.position));
+        let testDistance = this.distance3D(LH.position, e.detail.hitObject.position);
+        // 37 LIMIT FOR ATTACH
+        if (testDistance < this.distanceForAction) {
+          console.log("LOCALHERO ATTACH : this.core.localHero.setAttack", this.core.localHero.setAttack);
+          this.core.localHero.setAttack(e.detail.hitObject);
+          return;
+        }
+      }
       // Only react to LEFT CLICK
       if (button !== 0 || this.heroe_bodies === null || !this.selected.includes(this.heroe_bodies[0])) {
         // not hero but maybe other creaps . based on selected....
         return;
       }
-
       // Define start (hero position) and end (clicked point)
       const hero = this.heroe_bodies[0];
       let heroSword = null;
@@ -368,6 +419,12 @@ class Controller {
       }
     });
   }
+  distance3D(a, b) {
+    const dx = a.x - b.x;
+    const dy = a.y - b.y;
+    const dz = a.z - b.z;
+    return Math.sqrt(dx * dx + dy * dy + dz * dz);
+  }
 }
 exports.Controller = Controller;
 
@@ -384,13 +441,14 @@ class EnemiesManager {
   constructor(core) {
     this.core = core;
     this.loadBySumOgPlayers();
-    console.log('Enemies manager', core);
+    console.log('Enemies manager:', core);
   }
-  // MAke possible to play 3x3 4x4 or 5x5
+  // Make possible to play 3x3 4x4 or 5x5 ...
   loadBySumOgPlayers() {
     this.enemies.push(new _enemyCharacter.Enemie({
       core: this.core,
       name: 'Slayzer',
+      archetypes: ["Warrior"],
       path: 'res/meshes/glb/monster.glb'
     }));
   }
@@ -405,7 +463,9 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.Enemie = void 0;
 var _webgpuGltf = require("../../../src/engine/loaders/webgpu-gltf");
-class Enemie {
+var _utils = require("../../../src/engine/utils");
+var _hero = require("./hero");
+class Enemie extends _hero.Hero {
   heroAnimationArrange = {
     dead: null,
     walk: null,
@@ -413,9 +473,12 @@ class Enemie {
     attack: null,
     idle: null
   };
-  constructor(o) {
+  constructor(o, archetypes = ["Warrior"]) {
+    super(o.name, archetypes);
+    this.name = o.name;
     this.core = o.core;
     this.loadEnemyHero(o);
+    this.attachEvents();
     return this;
   }
   loadEnemyHero = async o => {
@@ -469,37 +532,43 @@ class Enemie {
   setWalk() {
     this.heroe_bodies.forEach(subMesh => {
       subMesh.glb.animationIndex = this.heroAnimationArrange.walk;
-      console.info(`%chero walk`, LOG_MATRIX);
+      console.info(`%chero walk`, _utils.LOG_MATRIX);
     });
   }
   setSalute() {
     this.heroe_bodies.forEach(subMesh => {
       subMesh.glb.animationIndex = this.heroAnimationArrange.salute;
-      console.info(`%chero salute`, LOG_MATRIX);
+      console.info(`%chero salute`, _utils.LOG_MATRIX);
     });
   }
   setDead() {
     this.heroe_bodies.forEach(subMesh => {
       subMesh.glb.animationIndex = this.heroAnimationArrange.dead;
-      console.info(`%chero dead`, LOG_MATRIX);
+      console.info(`%chero dead`, _utils.LOG_MATRIX);
     });
   }
   setIdle() {
     this.heroe_bodies.forEach(subMesh => {
       subMesh.glb.animationIndex = this.heroAnimationArrange.idle;
-      console.info(`%chero idle`, LOG_MATRIX);
+      console.info(`%chero idle`, _utils.LOG_MATRIX);
     });
   }
   setAttack() {
     this.heroe_bodies.forEach(subMesh => {
       subMesh.glb.animationIndex = this.heroAnimationArrange.attack;
-      console.info(`%chero attack`, LOG_MATRIX);
+      console.info(`%chero attack`, _utils.LOG_MATRIX);
+    });
+  }
+  attachEvents() {
+    addEventListener(`onDamage-${this.name}`, e => {
+      console.info(`%c hero damage ${e.detail}`, _utils.LOG_MATRIX);
+      this.heroe_bodies[0].effects.energyBar.setProgress(e.detail);
     });
   }
 }
 exports.Enemie = Enemie;
 
-},{"../../../src/engine/loaders/webgpu-gltf":45}],5:[function(require,module,exports){
+},{"../../../src/engine/loaders/webgpu-gltf":45,"../../../src/engine/utils":50,"./hero":5}],5:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -888,6 +957,29 @@ class HeroProps {
     if (spellIndex === -1) return false;
     return this.upgradeAbility(spellIndex);
   }
+
+  // attack NORMAL
+  calcDamage(attacker, defender, abilityMultiplier = 1.0, critChance = 1, critMult = 1) {
+    // Use attack from your current scaled stats
+    const baseAttack = attacker.attack;
+    // Optional: magic abilities could use mana or another stat later
+    const base = baseAttack * abilityMultiplier;
+    // Critical hit roll - not for now
+    const crit = Math.random() < critChance ? critMult : 1.0;
+    // Damage reduced by armor
+    const damage = Math.max(0, base * crit - defender.armor);
+    // Apply damage
+    defender.hp = Math.max(0, defender.hp - damage);
+    // --- Sync energy bar (0 → 1)
+    const progress = Math.max(0, Math.min(1, defender.hp / this.getHPMax()));
+    dispatchEvent(new CustomEvent(`onDamage-${defender.name}`, {
+      detail: progress
+    }));
+    return {
+      damage,
+      crit: crit > 1.0
+    };
+  }
 }
 exports.HeroProps = HeroProps;
 class Hero extends HeroProps {
@@ -914,6 +1006,16 @@ class Hero extends HeroProps {
     this.hpRegen *= typeData.hpRegenMult;
     this.mpRegen *= typeData.manaRegenMult;
     this._mergedArchetype = typeData._mergedFrom || this.archetypes;
+  }
+  getHPMax() {
+    let typeData;
+    if (this.archetypes.length === 2) {
+      typeData = mergeArchetypes(this.archetypes[0], this.archetypes[1]);
+    } else {
+      typeData = HERO_ARCHETYPES[this.archetypes[0]];
+    }
+    this.baseHp = this.levels[this.currentLevel - 1].hp;
+    return this.baseHp * typeData.hpMult;
   }
 
   // Override updateStats to include archetype scaling
@@ -2013,6 +2115,9 @@ function followPath(character, path, core) {
     // Convert to degrees & normalize
     angleY = ((0, _utils.radToDeg)(angleY) + 360) % 360;
     rot.y = angleY;
+
+    //
+
     pos.translateByXZ(target[0], target[2]);
     character.position.onTargetPositionReach = () => {
       idx++;
@@ -25075,13 +25180,13 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.BVHPlayerInstances = void 0;
-var _bvhLoader = _interopRequireDefault(require("bvh-loader"));
 var _wgpuMatrix = require("wgpu-matrix");
 var _webgpuGltf = require("./webgpu-gltf.js");
 var _meshObjInstances = _interopRequireDefault(require("../instanced/mesh-obj-instances.js"));
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
-// export var animBVH = new MEBvh();
+// import MEBvh from "bvh-loader";
 
+// export var animBVH = new MEBvh();
 // export let loadBVH = (path) => {
 //   return new Promise((resolve, reject) => {
 //     animBVH.parse_file(path).then(() => {
@@ -25125,8 +25230,11 @@ class BVHPlayerInstances extends _meshObjInstances.default {
     this.primitiveIndex = primitiveIndex;
     if (!this.bvh.sharedState) {
       this.bvh.sharedState = {
+        emitAnimationEvent: false,
+        animationStarted: false,
         currentFrame: 0,
-        timeAccumulator: 0
+        timeAccumulator: 0,
+        animationFinished: false
       };
     }
     this.sharedState = this.bvh.sharedState;
@@ -25193,24 +25301,53 @@ class BVHPlayerInstances extends _meshObjInstances.default {
       return;
     }
     const invBindArray = this.getAccessorArray(this.glb, invBindAccessorIndex);
-    // ✅ store directly as typed array (one big contiguous Float32Array)
     this.inverseBindMatrices = invBindArray;
   }
-  getNumberOfAnimation() {
-    let anim = this.glb.glbJsonData.animations[this.glb.animationIndex];
-    const sampler = anim.samplers[0];
-    const inputAccessor = this.glb.glbJsonData.accessors[sampler.input];
-    const numFrames = inputAccessor.count;
-    return numFrames;
+  getNumberOfFramesCurAni() {
+    const anim = this.glb.glbJsonData.animations[this.glb.animationIndex];
+    let maxFrames = 0;
+    for (const sampler of anim.samplers) {
+      const inputAccessor = this.glb.glbJsonData.accessors[sampler.input];
+      if (inputAccessor.count > maxFrames) maxFrames = inputAccessor.count;
+    }
+    return maxFrames;
+  }
+  getAnimationLength(animation) {
+    let maxTime = 0;
+    for (const channel of animation.channels) {
+      const sampler = animation.samplers[channel.sampler];
+      const inputTimes = this.getAccessorArray(this.glb, sampler.input);
+      const lastTime = inputTimes[inputTimes.length - 1];
+      if (lastTime > maxTime) maxTime = lastTime;
+    }
+    return maxTime;
   }
   update(deltaTime) {
     const frameTime = 1 / this.fps;
     this.sharedState.timeAccumulator += deltaTime;
     while (this.sharedState.timeAccumulator >= frameTime) {
-      this.sharedState.currentFrame = (this.sharedState.currentFrame + 1) % this.getNumberOfAnimation();
+      this.sharedState.currentFrame = (this.sharedState.currentFrame + 1) % this.getNumberOfFramesCurAni();
       this.sharedState.timeAccumulator -= frameTime;
     }
-    // const frame = this.sharedState.currentFrame;
+    // const test = this.getNumberOfFramesCurAni();
+    var inTime = this.getAnimationLength(this.glb.glbJsonData.animations[this.glb.animationIndex]);
+    if (this.sharedState.animationStarted == false && this.sharedState.emitAnimationEvent == true) {
+      this.sharedState.animationStarted = true;
+      setTimeout(() => {
+        this.sharedState.animationStarted = false;
+        // specific rule for naming (some from blender source)
+        let n = this.name;
+        if (this.name.indexOf('_') != -1) {
+          n = this.name.split('_')[0];
+        }
+        // console.info(`animationEnd-${n}`)
+        dispatchEvent(new CustomEvent(`animationEnd-${n}`, {
+          detail: {
+            animationName: this.glb.glbJsonData.animations[this.glb.animationIndex].name
+          }
+        }));
+      }, inTime * 1000);
+    }
     const currentTime = performance.now() / this.animationSpeed - this.startTime;
     const boneMatrices = new Float32Array(this.MAX_BONES * 16);
     if (this.glb.glbJsonData.animations && this.glb.glbJsonData.animations.length > 0) {
@@ -25574,7 +25711,7 @@ class BVHPlayerInstances extends _meshObjInstances.default {
 }
 exports.BVHPlayerInstances = BVHPlayerInstances;
 
-},{"../instanced/mesh-obj-instances.js":40,"./webgpu-gltf.js":45,"bvh-loader":11,"wgpu-matrix":25}],44:[function(require,module,exports){
+},{"../instanced/mesh-obj-instances.js":40,"./webgpu-gltf.js":45,"wgpu-matrix":25}],44:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -25706,7 +25843,7 @@ class BVHPlayer extends _meshObj.default {
     // ✅ store directly as typed array (one big contiguous Float32Array)
     this.inverseBindMatrices = invBindArray;
   }
-  getNumberOfAnimation() {
+  getNumberOfFramesCurAni() {
     let anim = this.glb.glbJsonData.animations[this.glb.animationIndex];
     const sampler = anim.samplers[0];
     const inputAccessor = this.glb.glbJsonData.accessors[sampler.input];
@@ -25717,7 +25854,7 @@ class BVHPlayer extends _meshObj.default {
     const frameTime = 1 / this.fps;
     this.sharedState.timeAccumulator += deltaTime;
     while (this.sharedState.timeAccumulator >= frameTime) {
-      this.sharedState.currentFrame = (this.sharedState.currentFrame + 1) % this.getNumberOfAnimation();
+      this.sharedState.currentFrame = (this.sharedState.currentFrame + 1) % this.getNumberOfFramesCurAni();
       this.sharedState.timeAccumulator -= frameTime;
     }
     // const frame = this.sharedState.currentFrame;
