@@ -380,6 +380,7 @@ export function followPath(character, path, core) {
   // Recursive move
   function moveToNext() {
     if(idx >= path.length) {
+      dispatchEvent(new CustomEvent('onTargetPositionReach', {detail: 'test'}));
       character.position.onTargetPositionReach = () => {};
       return;
     }
@@ -443,10 +444,10 @@ export function resolvePairRepulsion(Apos, Bpos, minDistance = 30.0, pushStrengt
   // Apos and Bpos are Position instances (with x,z,targetX,targetZ)
   const dx = Bpos.x - Apos.x;
   const dz = Bpos.z - Apos.z;
-  const distSq = dx*dx + dz*dz;
+  const distSq = dx * dx + dz * dz;
   const minDistSq = minDistance * minDistance;
 
-  if (distSq < minDistSq && distSq > 1e-8) {
+  if(distSq < minDistSq && distSq > 1e-8) {
     const dist = Math.sqrt(distSq);
     const overlap = minDistance - dist;
     // normalized dir from A -> B
@@ -472,7 +473,7 @@ export function resolvePairRepulsion(Apos, Bpos, minDistance = 30.0, pushStrengt
   }
 
   // exact overlap (practically same point) -> small jitter to separate
-  if (distSq <= 1e-8) {
+  if(distSq <= 1e-8) {
     const jitter = 0.01;
     Apos.x += (Math.random() - 0.5) * jitter;
     Apos.z += (Math.random() - 0.5) * jitter;

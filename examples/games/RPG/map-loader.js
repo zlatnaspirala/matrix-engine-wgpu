@@ -1,3 +1,4 @@
+import {GenGeo} from "../../../src/engine/effects/gen.js";
 import {downloadMeshes} from "../../../src/engine/loader-obj.js";
 import {uploadGLBModel} from "../../../src/engine/loaders/webgpu-gltf.js";
 import {LOG_FUNNY_SMALL, randomFloatFromTo, randomIntFromTo} from "../../../src/engine/utils.js";
@@ -102,7 +103,9 @@ export class MEMapLoader {
       name: 'tree1',
       texturesPaths: ['./res/meshes/maps-objs/textures/green.png'],
       raycast: {enabled: true, radius: 1.5},
-      pointerEffect: {enabled: false}
+      pointerEffect: {
+        enabled: true,
+      }
     }, null, glbFile01);
 
     setTimeout(() => {
@@ -123,6 +126,8 @@ export class MEMapLoader {
   ];
 
   this.collectionOfTree1.forEach((partOftree) => {
+ 
+
     const treesPerCluster = 9;
     const gridSize = Math.ceil(Math.sqrt(treesPerCluster));
     const totalInstances = treesPerCluster * clusterOffsets.length;

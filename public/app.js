@@ -19,6 +19,7 @@ class Character extends _hero.Hero {
     idle: null
   };
   heroFocusAttackOn = null;
+  mouseTarget = null;
   constructor(mysticore, path, name = 'MariaSword', archetypes = ["Warrior", "Mage"]) {
     super(name, archetypes);
     // console.info(`%cLOADING hero name : ${name}`, LOG_MATRIX)
@@ -73,8 +74,38 @@ class Character extends _hero.Hero {
           circlePlaneTexPath: './res/textures/rpg/symbols/star.png'
         }
       }, null, glbFile01);
-      // make small async - cooking glbs files 
+
+      // -------------------------
+
+      // poenter mouse click
+      var glbFile02 = await fetch('./res/meshes/glb/ring1.glb').then(res => res.arrayBuffer().then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, this.core.device)));
+      this.core.addGlbObjInctance({
+        material: {
+          type: 'standard',
+          useTextureFromGlb: false
+        },
+        scale: [20, 20, 20],
+        position: {
+          x: 0,
+          y: -24,
+          z: -220
+        },
+        name: 'mouseTarget',
+        texturesPaths: ['./res/textures/default.png'],
+        raycast: {
+          enabled: false,
+          radius: 1.5
+        },
+        pointerEffect: {
+          enabled: true,
+          circlePlane: true
+        }
+      }, null, glbFile02);
+      // ---------
+
+      // make small async - cooking glbs files  mouseTarget_Circle
       setTimeout(() => {
+        this.mouseTarget = app.getSceneObjectByName('mouseTarget_Circle');
         this.heroe_bodies = app.mainRenderBundle.filter(obj => obj.name && obj.name.includes(this.name));
         this.core.RPG.heroe_bodies = this.heroe_bodies;
         this.core.RPG.heroe_bodies.forEach((subMesh, id) => {
@@ -94,7 +125,7 @@ class Character extends _hero.Hero {
         });
         app.localHero.heroe_bodies[0].effects.flameEmitter.recreateVertexDataRND(1);
         this.attachEvents();
-      }, 1200);
+      }, 1400);
     } catch (err) {
       throw err;
     }
@@ -169,7 +200,7 @@ class Character extends _hero.Hero {
       this.setWalk();
     });
     addEventListener('set-idle', () => {
-      this.setIdle();
+      // this.setIdle();
     });
     addEventListener('set-attach', () => {
       this.setAttach();
@@ -182,9 +213,11 @@ class Character extends _hero.Hero {
     });
     addEventListener('close-distance', e => {
       console.log('close distance - ', e.detail.A);
-      if (this.heroFocusAttackOn.name.indexOf(e.detail.A.id) != -1) {
+      if (this.heroFocusAttackOn && this.heroFocusAttackOn.name.indexOf(e.detail.A.id) != -1) {
         this.setAttack(this.heroFocusAttackOn);
       }
+      // still attack
+      this.setAttack(this.heroFocusAttackOn);
       // this.x = this.targetX;
       // this.y = this.targetY;
       // this.z = this.targetZ;
@@ -198,10 +231,13 @@ class Character extends _hero.Hero {
       // CHECK DISTANCE
       if (e.detail.animationName != 'attack') {
         // future
+        // console.log('it is not attack + ')
+        // // if(this.heroFocusAttackOn == null) { ?? maybe
+        // this.setIdle();
         return;
       }
-      console.log('ANIMATION END START:', e.detail.animationName);
       if (this.heroFocusAttackOn == null) {
+        console.log('ANIMATION END setIdle:', e.detail.animationName);
         this.setIdle();
         return;
       }
@@ -216,6 +252,26 @@ class Character extends _hero.Hero {
         }
       });
     });
+    addEventListener('onTargetPositionReach', e => {
+      console.log("Target pos reached. setIdle", e.detail);
+      // for now only local hero
+      if (this.heroFocusAttackOn == null) {
+        this.setIdle();
+      }
+    });
+    addEventListener('onMouseTarget', e => {
+      // for now only local hero
+      if (this.core.RPG.selected.includes(this.heroe_bodies[0])) {
+        console.log("onMouseTarget POS >>>>>", e.detail.type);
+        this.mouseTarget.position.setPosition(e.detail.x, this.mouseTarget.position.y, e.detail.z);
+        if (e.detail.type == "attach") {
+          this.mouseTarget.effects.circlePlane.instanceTargets[0].color = [1, 0, 0, 0.9];
+        } else {
+          this.mouseTarget.effects.circlePlane.instanceTargets[0].color = [0.6, 0.8, 1, 0.4];
+        }
+      }
+    });
+
     // -------------------------------------------
   }
 }
@@ -233,7 +289,7 @@ var _wgpuMatrix = require("wgpu-matrix");
 var _utils = require("../../../src/engine/utils.js");
 var _navMesh = require("./nav-mesh.js");
 class Controller {
-  ignoreList = ['ground'];
+  ignoreList = ['ground', 'mouseTarget_Circle'];
   selected = [];
   nav = null;
   // ONLY LOCAL
@@ -257,7 +313,7 @@ class Controller {
           x: e.clientX,
           y: e.clientY
         };
-      }
+      } // else if(e.button === 0) { }
     });
     this.canvas.addEventListener('mousemove', e => {
       if (this.selecting) {
@@ -301,12 +357,31 @@ class Controller {
         button,
         eventName
       } = e.detail;
-      // if(!hitObject || !hitPoint) {
-      //   console.warn('No valid hit detected.');
-      //   return;
-      // }
-
-      if (button == 0 && e.detail.hitObject.name != 'ground' && e.detail.hitObject.name !== this.heroe_bodies[0].name) {
+      if (e.detail.hitObject.name == 'ground') {
+        console.warn('ground detected.');
+        dispatchEvent(new CustomEvent(`onMouseTarget`, {
+          detail: {
+            type: 'normal',
+            x: hitPoint[0],
+            y: hitPoint[1],
+            z: hitPoint[2]
+          }
+        }));
+        this.core.localHero.heroFocusAttackOn = null;
+      } else if (this.core.enemies.isEnemy(e.detail.hitObject.name)) {
+        dispatchEvent(new CustomEvent(`onMouseTarget`, {
+          detail: {
+            type: 'attach',
+            x: e.detail.hitObject.position.x,
+            // hitPoint[0], blocked by colision observer
+            y: e.detail.hitObject.position.y,
+            z: e.detail.hitObject.position.z
+          }
+        }));
+      }
+      if (button == 0 && e.detail.hitObject.name != 'ground' && e.detail.hitObject.name !== this.heroe_bodies[0].name //&& 
+      // e.detail.hitObject.name !== this.heroe_bodies[1].name
+      ) {
         if (this.heroe_bodies.length == 2) {
           if (e.detail.hitObject.name == this.heroe_bodies[1].name) {
             return;
@@ -331,6 +406,7 @@ class Controller {
       }
       // Only react to LEFT CLICK
       if (button !== 0 || this.heroe_bodies === null || !this.selected.includes(this.heroe_bodies[0])) {
+        console.log(" no local here ");
         // not hero but maybe other creaps . based on selected....
         return;
       }
@@ -459,6 +535,12 @@ class EnemiesManager {
       archetypes: ["Warrior"],
       path: 'res/meshes/glb/monster.glb'
     }));
+  }
+  isEnemy(name) {
+    console.log('<isENMIES> ', name);
+    let test = this.enemies.filter(obj => obj.name && name.includes(obj.name));
+    if (test.length == 0) return false;
+    return true;
   }
 }
 exports.EnemiesManager = EnemiesManager;
@@ -1043,7 +1125,7 @@ class Hero extends HeroProps {
       typeData = HERO_ARCHETYPES[this.archetypes[0]];
     }
     this.baseHp = this.levels[this.currentLevel - 1].hp;
-    return this.baseHp * typeData.hpMult;
+    return this.baseHp; // * typeData.hpMult; ???
   }
 
   // Override updateStats to include archetype scaling
@@ -1459,6 +1541,7 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.MEMapLoader = void 0;
+var _gen = require("../../../src/engine/effects/gen.js");
 var _loaderObj = require("../../../src/engine/loader-obj.js");
 var _webgpuGltf = require("../../../src/engine/loaders/webgpu-gltf.js");
 var _utils = require("../../../src/engine/utils.js");
@@ -1614,7 +1697,7 @@ class MEMapLoader {
         radius: 1.5
       },
       pointerEffect: {
-        enabled: false
+        enabled: true
       }
     }, null, glbFile01);
     setTimeout(() => {
@@ -1653,7 +1736,7 @@ class MEMapLoader {
 }
 exports.MEMapLoader = MEMapLoader;
 
-},{"../../../src/engine/loader-obj.js":42,"../../../src/engine/loaders/webgpu-gltf.js":45,"../../../src/engine/utils.js":50,"./nav-mesh.js":9}],8:[function(require,module,exports){
+},{"../../../src/engine/effects/gen.js":34,"../../../src/engine/loader-obj.js":42,"../../../src/engine/loaders/webgpu-gltf.js":45,"../../../src/engine/utils.js":50,"./nav-mesh.js":9}],8:[function(require,module,exports){
 "use strict";
 
 var _world = _interopRequireDefault(require("../../../src/world.js"));
@@ -2130,6 +2213,9 @@ function followPath(character, path, core) {
   // Recursive move
   function moveToNext() {
     if (idx >= path.length) {
+      dispatchEvent(new CustomEvent('onTargetPositionReach', {
+        detail: 'test'
+      }));
       character.position.onTargetPositionReach = () => {};
       return;
     }

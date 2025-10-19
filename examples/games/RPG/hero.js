@@ -334,7 +334,7 @@ export class Hero extends HeroProps {
       typeData = HERO_ARCHETYPES[this.archetypes[0]];
     }
     this.baseHp = this.levels[this.currentLevel - 1].hp;
-    return this.baseHp * typeData.hpMult;
+    return this.baseHp; // * typeData.hpMult; ???
   }
 
   // Override updateStats to include archetype scaling

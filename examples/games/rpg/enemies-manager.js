@@ -18,4 +18,13 @@ export class EnemiesManager {
       }
     ))
   }
+
+  isEnemy(name) {
+    console.log('<isENMIES> ', name)
+    let test = this.enemies.filter(obj =>
+      obj.name && name.includes(obj.name)
+    );
+    if (test.length == 0) return false;
+    return true;
+  }
 }

@@ -16,6 +16,7 @@ export class Character extends Hero {
   };
 
   heroFocusAttackOn = null;
+  mouseTarget = null;
 
   constructor(mysticore, path, name = 'MariaSword', archetypes = ["Warrior", "Mage"]) {
     super(name, archetypes);
@@ -63,8 +64,29 @@ export class Character extends Hero {
           circlePlaneTexPath: './res/textures/rpg/symbols/star.png',
         }
       }, null, glbFile01);
-      // make small async - cooking glbs files 
+
+      // -------------------------
+
+      // poenter mouse click
+      var glbFile02 = await fetch('./res/meshes/glb/ring1.glb').then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, this.core.device)));
+      this.core.addGlbObjInctance({
+        material: {type: 'standard', useTextureFromGlb: false},
+        scale: [20, 20, 20],
+        position: {x: 0, y: -24, z: -220},
+        name: 'mouseTarget',
+        texturesPaths: ['./res/textures/default.png'],
+        raycast: {enabled: false, radius: 1.5},
+        pointerEffect: {
+          enabled: true,
+          circlePlane: true,
+        }
+      }, null, glbFile02);
+      // ---------
+
+      // make small async - cooking glbs files  mouseTarget_Circle
       setTimeout(() => {
+
+        this.mouseTarget = app.getSceneObjectByName('mouseTarget_Circle');
         this.heroe_bodies = app.mainRenderBundle.filter(obj =>
           obj.name && obj.name.includes(this.name)
         );
@@ -87,9 +109,9 @@ export class Character extends Hero {
         });
 
         app.localHero.heroe_bodies[0].effects.flameEmitter.recreateVertexDataRND(1)
-
         this.attachEvents()
-      }, 1200)
+      }, 1400)
+
     } catch(err) {throw err;}
   }
 
@@ -127,7 +149,6 @@ export class Character extends Hero {
       console.info(`%chero attack`, LOG_MATRIX)
     });
   }
-
 
   attachEvents() {
     addEventListener('attack-magic0', (e) => {
@@ -171,7 +192,7 @@ export class Character extends Hero {
       this.setWalk();
     })
     addEventListener('set-idle', () => {
-      this.setIdle();
+      // this.setIdle();
     })
     addEventListener('set-attach', () => {
       this.setAttach();
@@ -183,12 +204,13 @@ export class Character extends Hero {
       this.setSalute();
     })
 
-
     addEventListener('close-distance', (e) => {
       console.log('close distance - ', e.detail.A)
-      if(this.heroFocusAttackOn.name.indexOf(e.detail.A.id) != -1) {
+      if(this.heroFocusAttackOn && this.heroFocusAttackOn.name.indexOf(e.detail.A.id) != -1) {
         this.setAttack(this.heroFocusAttackOn);
       }
+      // still attack
+        this.setAttack(this.heroFocusAttackOn);
       // this.x = this.targetX;
       // this.y = this.targetY;
       // this.z = this.targetZ;
@@ -202,10 +224,14 @@ export class Character extends Hero {
       // CHECK DISTANCE
       if(e.detail.animationName != 'attack') {
         // future
+        // console.log('it is not attack + ')
+        // // if(this.heroFocusAttackOn == null) { ?? maybe
+        // this.setIdle();
         return;
       }
-      console.log('ANIMATION END START:', e.detail.animationName)
+
       if(this.heroFocusAttackOn == null) {
+        console.log('ANIMATION END setIdle:', e.detail.animationName)
         this.setIdle();
         return;
       }
@@ -215,7 +241,6 @@ export class Character extends Hero {
           let tt = this.core.RPG.distance3D(
             this.heroe_bodies[0].position,
             this.heroFocusAttackOn.position);
-          
           if(tt < this.core.RPG.distanceForAction) {
             console.log('Attack on :', this.heroFocusAttackOn.name)
             console.log('%c ATTACK DAMAGE CALC ', LOG_MATRIX)
@@ -224,6 +249,28 @@ export class Character extends Hero {
         }
       })
     })
+
+    addEventListener('onTargetPositionReach', (e) => {
+      console.log("Target pos reached. setIdle", e.detail);
+      // for now only local hero
+      if(this.heroFocusAttackOn == null) {
+        this.setIdle();
+      }
+    })
+
+    addEventListener('onMouseTarget', (e) => {
+      // for now only local hero
+      if(this.core.RPG.selected.includes(this.heroe_bodies[0])) {
+        console.log("onMouseTarget POS >>>>>", e.detail.type);
+        this.mouseTarget.position.setPosition(e.detail.x, this.mouseTarget.position.y, e.detail.z)
+        if(e.detail.type == "attach") {
+          this.mouseTarget.effects.circlePlane.instanceTargets[0].color = [1, 0, 0, 0.9];
+        } else {
+          this.mouseTarget.effects.circlePlane.instanceTargets[0].color = [0.6, 0.8, 1, 0.4];
+        }
+      }
+    })
+
     // -------------------------------------------
   }
 }

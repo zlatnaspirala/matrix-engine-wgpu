@@ -5,7 +5,7 @@ import {followPath} from "./nav-mesh.js";
 
 export class Controller {
 
-  ignoreList = ['ground'];
+  ignoreList = ['ground', 'mouseTarget_Circle'];
   selected = [];
 
   nav = null;
@@ -27,7 +27,7 @@ export class Controller {
         this.selecting = true;
         this.dragStart = {x: e.clientX, y: e.clientY};
         this.dragEnd = {x: e.clientX, y: e.clientY};
-      }
+      }  // else if(e.button === 0) { }
     });
 
     this.canvas.addEventListener('mousemove', (e) => {
@@ -66,17 +66,35 @@ export class Controller {
     this.canvas.addEventListener("ray.hit.event", (e) => {
       // console.log('ray.hit.event detected', e);
       const {hitObject, hitPoint, button, eventName} = e.detail;
-      // if(!hitObject || !hitPoint) {
-      //   console.warn('No valid hit detected.');
-      //   return;
-      // }
+      if(e.detail.hitObject.name == 'ground') {
+        console.warn('ground detected.');
+        dispatchEvent(new CustomEvent(`onMouseTarget`, {
+          detail: {
+            type: 'normal',
+            x: hitPoint[0],
+            y: hitPoint[1],
+            z: hitPoint[2]
+          }
+        }));
+        this.core.localHero.heroFocusAttackOn = null;
+      } else if(this.core.enemies.isEnemy(e.detail.hitObject.name)) {
+        dispatchEvent(new CustomEvent(`onMouseTarget`, {
+          detail: {
+            type: 'attach',
+            x: e.detail.hitObject.position.x,// hitPoint[0], blocked by colision observer
+            y: e.detail.hitObject.position.y,
+            z: e.detail.hitObject.position.z
+          }
+        }));
+      }
 
       if(button == 0 && e.detail.hitObject.name != 'ground' &&
-          e.detail.hitObject.name !== this.heroe_bodies[0].name
+        e.detail.hitObject.name !== this.heroe_bodies[0].name //&& 
+        // e.detail.hitObject.name !== this.heroe_bodies[1].name
       ) {
 
-        if (this.heroe_bodies.length == 2) {
-          if (e.detail.hitObject.name == this.heroe_bodies[1].name) {
+        if(this.heroe_bodies.length == 2) {
+          if(e.detail.hitObject.name == this.heroe_bodies[1].name) {
             return;
           }
         }
@@ -92,7 +110,7 @@ export class Controller {
 
         let testDistance = this.distance3D(LH.position, e.detail.hitObject.position);
         // 37 LIMIT FOR ATTACH
-        if (testDistance < this.distanceForAction) {
+        if(testDistance < this.distanceForAction) {
           console.log("this.core.localHero.setAttack [e.detail.hitObject]")
           this.core.localHero.setAttack(e.detail.hitObject);
           return;
@@ -101,6 +119,7 @@ export class Controller {
       // Only react to LEFT CLICK
       if(button !== 0 || this.heroe_bodies === null ||
         !this.selected.includes(this.heroe_bodies[0])) {
+        console.log(" no local here ")
         // not hero but maybe other creaps . based on selected....
         return;
       }
