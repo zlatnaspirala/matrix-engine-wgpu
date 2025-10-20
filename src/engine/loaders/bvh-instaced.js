@@ -1,10 +1,8 @@
-import MEBvh from "bvh-loader";
+// import MEBvh from "bvh-loader";
 import {mat4, vec3, quat} from "wgpu-matrix";
 import {GLTFBuffer} from "./webgpu-gltf.js";
 import MEMeshObjInstances from "../instanced/mesh-obj-instances.js";
-
 // export var animBVH = new MEBvh();
-
 // export let loadBVH = (path) => {
 //   return new Promise((resolve, reject) => {
 //     animBVH.parse_file(path).then(() => {
@@ -46,7 +44,15 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
     // debug
     this.scaleBoneTest = 1;
     this.primitiveIndex = primitiveIndex;
-    if(!this.bvh.sharedState) {this.bvh.sharedState = {currentFrame: 0, timeAccumulator: 0};}
+    if(!this.bvh.sharedState) {
+      this.bvh.sharedState = {
+        emitAnimationEvent: false,
+        animationStarted: false,
+        currentFrame: 0,
+        timeAccumulator: 0,
+        animationFinished: false
+      };
+    }
     this.sharedState = this.bvh.sharedState;
     // Reference to the skinned node containing all bones
     this.skinnedNode = this.glb.skinnedMeshNodes[skinnedNodeIndex];
@@ -115,26 +121,56 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
       return;
     }
     const invBindArray = this.getAccessorArray(this.glb, invBindAccessorIndex);
-    // ✅ store directly as typed array (one big contiguous Float32Array)
     this.inverseBindMatrices = invBindArray;
   }
 
-  getNumberOfAnimation() {
-    let anim = this.glb.glbJsonData.animations[this.glb.animationIndex]
-    const sampler = anim.samplers[0];
-    const inputAccessor = this.glb.glbJsonData.accessors[sampler.input];
-    const numFrames = inputAccessor.count;
-    return numFrames;
+  getNumberOfFramesCurAni() {
+    const anim = this.glb.glbJsonData.animations[this.glb.animationIndex];
+    let maxFrames = 0;
+    for(const sampler of anim.samplers) {
+      const inputAccessor = this.glb.glbJsonData.accessors[sampler.input];
+      if(inputAccessor.count > maxFrames) maxFrames = inputAccessor.count;
+    }
+    return maxFrames;
+  }
+
+  getAnimationLength(animation) {
+    let maxTime = 0;
+    for(const channel of animation.channels) {
+      const sampler = animation.samplers[channel.sampler];
+      const inputTimes = this.getAccessorArray(this.glb, sampler.input);
+      const lastTime = inputTimes[inputTimes.length - 1];
+      if(lastTime > maxTime) maxTime = lastTime;
+    }
+    return maxTime;
   }
 
   update(deltaTime) {
     const frameTime = 1 / this.fps;
     this.sharedState.timeAccumulator += deltaTime;
     while(this.sharedState.timeAccumulator >= frameTime) {
-      this.sharedState.currentFrame = (this.sharedState.currentFrame + 1) % this.getNumberOfAnimation();
+      this.sharedState.currentFrame = (this.sharedState.currentFrame + 1) % this.getNumberOfFramesCurAni();
       this.sharedState.timeAccumulator -= frameTime;
     }
-    // const frame = this.sharedState.currentFrame;
+    // const test = this.getNumberOfFramesCurAni();
+    var inTime = this.getAnimationLength(this.glb.glbJsonData.animations[this.glb.animationIndex])
+    if(this.sharedState.animationStarted == false && this.sharedState.emitAnimationEvent == true) {
+      this.sharedState.animationStarted = true;
+      setTimeout(() => {
+        this.sharedState.animationStarted = false;
+        // specific rule for naming (some from blender source)
+        let n = this.name;
+        if(this.name.indexOf('_') != -1) {
+          n = this.name.split('_')[0];
+        }
+        // console.info(`animationEnd-${n}`)
+        dispatchEvent(new CustomEvent(`animationEnd-${n}`, {
+          detail: {
+            animationName: this.glb.glbJsonData.animations[this.glb.animationIndex].name
+          }
+        }))
+      }, inTime * 1000)
+    }
     const currentTime = performance.now() / this.animationSpeed - this.startTime;
     const boneMatrices = new Float32Array(this.MAX_BONES * 16);
     if(this.glb.glbJsonData.animations && this.glb.glbJsonData.animations.length > 0) {

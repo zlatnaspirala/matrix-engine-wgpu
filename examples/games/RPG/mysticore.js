@@ -1,11 +1,11 @@
-
 import MatrixEngineWGPU from "../../../src/world.js";
-// import {uploadGLBModel} from "../../../src/engine/loaders/webgpu-gltf.js";
 import {Controller} from "./controller.js";
 import {HUD} from "./hud.js";
 import {MEMapLoader} from "./map-loader.js";
-import {Character} from "./characterBase.js";
+import {Character} from "./character-base.js";
 import {HERO_PROFILES} from "./hero.js";
+import {EnemiesManager} from "./enemies-manager.js";
+import {CollisionSystem} from "../../../src/engine/collision-sub-system.js";
 
 /**
  * @Note
@@ -13,42 +13,38 @@ import {HERO_PROFILES} from "./hero.js";
  * used under Adobe’s royalty‑free license. 
  * Redistribution of raw assets is not permitted.”
  **/
-let MYSTICORE = new MatrixEngineWGPU({
+let mysticore = new MatrixEngineWGPU({
   useSingleRenderPass: true,
   canvasSize: 'fullscreen',
   mainCameraParams: {
-    type: 'WASD',
+    type: 'RPG',
     responseCoef: 1000
   },
   clearColor: {r: 0, b: 0.122, g: 0.122, a: 1}
 }, () => {
 
   addEventListener('AmmoReady', async () => {
+    mysticore.RPG = new Controller(mysticore);
+    app.cameras.RPG.movementSpeed = 100;
 
-    MYSTICORE.RPG = new Controller(MYSTICORE.canvas);
-    app.cameras.WASD.movementSpeed = 100;
+    mysticore.mapLoader = new MEMapLoader(mysticore, "./res/meshes/nav-mesh/navmesh.json");
 
-    setTimeout(() => {
-      app.cameras.WASD.yaw = -0.03;
-      app.cameras.WASD.pitch = -0.49;
-      app.cameras.WASD.position[2] = 0;
-      app.cameras.WASD.position[1] = 23;
-    }, 2000)
-
-    // MAPs
-    MYSTICORE.mapLoader = new MEMapLoader(MYSTICORE, "./res/meshes/nav-mesh/navmesh.json");
-
-    // LOCAL HERO
-    MYSTICORE.localHero = new Character(
-      MYSTICORE,
+    mysticore.localHero = new Character(
+      mysticore,
       "res/meshes/glb/woman1.glb",
       'MariaSword', HERO_PROFILES.MariaSword.baseArchetypes);
+    mysticore.HUD = new HUD(mysticore.localHero);
+    setTimeout(() => {
+      // app.cameras.RPG.yaw = -0.03;
+      // app.cameras.RPG.pitch = -0.49;
+      // app.cameras.RPG.position[2] = 0;
+      app.cameras.RPG.position[1] = 100;
+    }, 2000)
 
-    MYSTICORE.HUD = new HUD(MYSTICORE.localHero);
+    mysticore.enemies = new EnemiesManager(mysticore);
 
+    mysticore.collisionSystem = new CollisionSystem(mysticore)
   })
-  MYSTICORE.addLight();
+  mysticore.addLight();
 })
-
-// just for dev
-window.app = MYSTICORE;
+window.app = mysticore;

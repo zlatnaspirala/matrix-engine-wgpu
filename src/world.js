@@ -1,7 +1,7 @@
 import {mat4, vec3} from "wgpu-matrix";
 import MEBall from "./engine/ball.js";
 import MECube from './engine/cube.js';
-import {ArcballCamera, WASDCamera} from "./engine/engine.js";
+import {ArcballCamera, RPGCamera, WASDCamera} from "./engine/engine.js";
 import {createInputHandler} from "./engine/engine.js";
 import MEMeshObj from "./engine/mesh-obj.js";
 import MatrixAmmo from "./physics/matrix-ammo.js";
@@ -11,9 +11,7 @@ import {MatrixSounds} from "./sounds/sounds.js";
 import {play} from "./engine/loader-obj.js";
 import {SpotLight} from "./engine/lights.js";
 import {BVHPlayer} from "./engine/loaders/bvh.js";
-
 import {BVHPlayerInstances} from "./engine/loaders/bvh-instaced.js";
-
 
 /**
  * @description
@@ -90,6 +88,7 @@ export default class MatrixEngineWGPU {
     this.cameras = {
       arcball: new ArcballCamera({position: initialCameraPosition}),
       WASD: new WASDCamera({position: initialCameraPosition, canvas: canvas}),
+      RPG: new RPGCamera({position: initialCameraPosition, canvas: canvas}),
     };
 
     this.label = new MultiLang()
@@ -113,6 +112,8 @@ export default class MatrixEngineWGPU {
     });
 
     this.context = canvas.getContext('webgpu');
+    // this.context = canvas.getContext('webgpu', { alphaMode: 'opaque' });
+    // this.context = canvas.getContext('webgpu', { alphaMode: 'premultiplied' });
     const devicePixelRatio = window.devicePixelRatio;
     canvas.width = canvas.clientWidth * devicePixelRatio;
     canvas.height = canvas.clientHeight * devicePixelRatio;
@@ -453,12 +454,13 @@ export default class MatrixEngineWGPU {
       for(const light of this.lightContainer) {
         light.update()
         this.mainRenderBundle.forEach((meItem, index) => {
-          meItem.position.update()
+          // meItem.position.update()
           meItem.updateModelUniformBuffer()
           meItem.getTransformationMatrix(this.mainRenderBundle, light, index) // >check optisation
         })
       }
       if(this.matrixAmmo) this.matrixAmmo.updatePhysics();
+
 
 
       let now, deltaTime;
@@ -517,6 +519,7 @@ export default class MatrixEngineWGPU {
       // Loop over each mesh
 
       for(const mesh of this.mainRenderBundle) {
+        mesh.position.update()
         if(mesh.update) {
           now = performance.now() / 1000; // seconds
           deltaTime = now - (this.lastTime || now);
@@ -541,6 +544,10 @@ export default class MatrixEngineWGPU {
       }
       pass.end();
 
+      // 3) resolve collisions AFTER positions changed
+      if(this.collisionSystem) this.collisionSystem.update();
+      // 4) render / send network updates / animations etc
+
       // transparent pointerEffect pass (load color, load depth)
       const transPassDesc = {
         colorAttachments: [{view: currentTextureView, loadOp: 'load', storeOp: 'store'}],
@@ -552,12 +559,14 @@ export default class MatrixEngineWGPU {
         }
       };
       const transPass = commandEncoder.beginRenderPass(transPassDesc);
-      const viewProjMatrix = mat4.multiply(this.cameras.WASD.projectionMatrix, this.cameras.WASD.view, mat4.identity());
+      const viewProjMatrix = mat4.multiply(this.cameras[this.mainCameraParams.type].projectionMatrix,
+        this.cameras[this.mainCameraParams.type].view, mat4.identity());
       for(const mesh of this.mainRenderBundle) {
         if(mesh.effects) Object.keys(mesh.effects).forEach(effect_ => {
           const effect = mesh.effects[effect_];
           if(effect.enabled == false) return;
-          if(effect.updateInstanceData) effect.updateInstanceData(mesh.getModelMatrix(mesh.position));
+          let md = mesh.getModelMatrix(mesh.position);
+          if(effect.updateInstanceData) effect.updateInstanceData(md);
           effect.render(transPass, mesh, viewProjMatrix)
         });
       }
@@ -680,8 +689,13 @@ export default class MatrixEngineWGPU {
     if(typeof o.mainCameraParams === 'undefined') {o.mainCameraParams = this.mainCameraParams}
     if(typeof o.scale === 'undefined') {o.scale = [1, 1, 1];}
     if(typeof o.raycast === 'undefined') {o.raycast = {enabled: false, radius: 2}}
-    if(typeof o.pointerEffect === 'undefined') {o.pointerEffect = {enabled: false};}
-
+    if(typeof o.pointerEffect === 'undefined') {
+      o.pointerEffect = {
+        enabled: false,
+        pointer: false,
+        ballEffect: false
+      };
+    }
     o.entityArgPass = this.entityArgPass;
     o.cameras = this.cameras;
     if(typeof o.physics === 'undefined') {

@@ -267,6 +267,31 @@ export class HeroProps {
     if(spellIndex === -1) return false;
     return this.upgradeAbility(spellIndex);
   }
+
+  // attack NORMAL
+  calcDamage(attacker, defender, abilityMultiplier = 1.0, critChance = 1, critMult = 1) {
+    // Use attack from your current scaled stats
+    const baseAttack = attacker.attack;
+    // Optional: magic abilities could use mana or another stat later
+    const base = baseAttack * abilityMultiplier;
+    // Critical hit roll - not for now
+    const crit = Math.random() < critChance ? critMult : 1.0;
+    // Damage reduced by armor
+    const damage = Math.max(0, (base * crit) - defender.armor);
+    // Apply damage
+    defender.hp = Math.max(0, defender.hp - damage);
+    // --- Sync energy bar (0 → 1)
+    const progress = Math.max(0, Math.min(1, defender.hp / this.getHPMax()));
+    dispatchEvent(new CustomEvent(`onDamage-${defender.name}`,
+      {
+        detail: {
+          progress: progress,
+          attacker: attacker,
+          defenderLevel: this.currentLevel
+        }
+      }))
+    return {damage, crit: crit > 1.0};
+  }
 }
 
 export class Hero extends HeroProps {
@@ -299,6 +324,17 @@ export class Hero extends HeroProps {
     this.mpRegen *= typeData.manaRegenMult;
 
     this._mergedArchetype = typeData._mergedFrom || this.archetypes;
+  }
+
+  getHPMax() {
+    let typeData;
+    if(this.archetypes.length === 2) {
+      typeData = mergeArchetypes(this.archetypes[0], this.archetypes[1]);
+    } else {
+      typeData = HERO_ARCHETYPES[this.archetypes[0]];
+    }
+    this.baseHp = this.levels[this.currentLevel - 1].hp;
+    return this.baseHp; // * typeData.hpMult; ???
   }
 
   // Override updateStats to include archetype scaling
@@ -345,8 +381,8 @@ export function mergeArchetypesWeighted(typeA, typeB, weightA = 0.7) {
   const wB = 1 - weightA;
   const merged = {};
 
-  for (const key in a)
-    if (typeof a[key] === "number" && typeof b[key] === "number")
+  for(const key in a)
+    if(typeof a[key] === "number" && typeof b[key] === "number")
       merged[key] = a[key] * weightA + b[key] * wB;
 
   merged._mergedFrom = [typeA, typeB];

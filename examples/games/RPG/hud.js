@@ -3,6 +3,7 @@ export class HUD {
   constructor(localHero) {
     this.localHero = localHero;
     this.construct();
+    this.setCursor();
   }
 
   construct() {
@@ -106,7 +107,7 @@ export class HUD {
         justifyContent: "center",
         color: "#ccc",
         fontSize: "14px",
-        cursor: "pointer",
+        cursor: "url('./res/icons/default.png') 0 0, auto",
         backgroundRepeat: "round"
       });
 
@@ -289,7 +290,7 @@ export class HUD {
       justifyContent: "center",
       color: "#ccc",
       fontSize: "12px",
-      cursor: "pointer",
+      cursor: "url('./res/icons/default.png') 0 0, auto",
       transition: "all 0.2s ease-in-out",
       backgroundSize: "contain",
       backgroundRepeat: "no-repeat",
@@ -347,7 +348,7 @@ export class HUD {
         justifyContent: "center",
         color: "#ccc",
         fontSize: "12px",
-        cursor: "pointer",
+        cursor: "url('./res/icons/default.png') 0 0, auto",
         transition: "all 0.2s ease-in-out",
         backgroundSize: "contain",
         backgroundRepeat: "no-repeat",
@@ -374,6 +375,10 @@ export class HUD {
     hudItems.appendChild(inventoryGrid);
     hud.appendChild(hudItems);
     document.body.appendChild(hud);
+  }
+
+  setCursor() {
+    document.body.style.cursor = "url('./res/icons/default.png') 0 0, auto";
   }
 
 }

@@ -120,7 +120,7 @@ export class BVHPlayer extends MEMeshObj {
     this.inverseBindMatrices = invBindArray;
   }
 
-  getNumberOfAnimation() {
+  getNumberOfFramesCurAni() {
     let anim = this.glb.glbJsonData.animations[this.glb.animationIndex]
     const sampler = anim.samplers[0];
     const inputAccessor = this.glb.glbJsonData.accessors[sampler.input];
@@ -132,7 +132,7 @@ export class BVHPlayer extends MEMeshObj {
     const frameTime = 1 / this.fps;
     this.sharedState.timeAccumulator += deltaTime;
     while(this.sharedState.timeAccumulator >= frameTime) {
-      this.sharedState.currentFrame = (this.sharedState.currentFrame + 1) % this.getNumberOfAnimation();
+      this.sharedState.currentFrame = (this.sharedState.currentFrame + 1) % this.getNumberOfFramesCurAni();
       this.sharedState.timeAccumulator -= frameTime;
     }
     // const frame = this.sharedState.currentFrame;

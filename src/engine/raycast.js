@@ -1,10 +1,10 @@
- /**
- * MatrixEngine Raycaster (improved)
- * Author: Nikola Lukić
- * Version: 2.0
- */
+/**
+* MatrixEngine Raycaster (improved)
+* Author: Nikola Lukić
+* Version: 2.0
+*/
 
-import { mat4, vec3, vec4 } from "wgpu-matrix";
+import {mat4, vec3, vec4} from "wgpu-matrix";
 
 export let touchCoordinate = {
   enabled: false,
@@ -32,7 +32,7 @@ export function getRayFromMouse(event, canvas, camera) {
   const worldDir4 = vec4.transformMat4(eye, invView);
   const rayDirection = vec3.normalize([worldDir4[0], worldDir4[1], worldDir4[2]]);
   const rayOrigin = [...camera.position];
-  return { rayOrigin, rayDirection, screen: { x, y } };
+  return {rayOrigin, rayDirection, screen: {x, y}};
 }
 
 // Backward compatibility alias
@@ -46,19 +46,19 @@ export function rayIntersectsSphere(rayOrigin, rayDirection, sphereCenter, spher
   const c = vec3.dot(oc, oc) - sphereRadius * sphereRadius;
   const discriminant = b * b - 4 * a * c;
 
-  if (discriminant < 0) return null;
+  if(discriminant < 0) return null;
   const t = (-b - Math.sqrt(discriminant)) / (2.0 * a);
-  if (t < 0) return null;
+  if(t < 0) return null;
 
   const hitPoint = vec3.add(rayOrigin, vec3.mulScalar(rayDirection, t));
   const hitNormal = vec3.normalize(vec3.subtract(hitPoint, center));
-  return { t, hitPoint, hitNormal };
+  return {t, hitPoint, hitNormal};
 }
 
 export function computeAABB(vertices) {
   const min = [Infinity, Infinity, Infinity];
   const max = [-Infinity, -Infinity, -Infinity];
-  for (let i = 0; i < vertices.length; i += 3) {
+  for(let i = 0;i < vertices.length;i += 3) {
     min[0] = Math.min(min[0], vertices[i]);
     min[1] = Math.min(min[1], vertices[i + 1]);
     min[2] = Math.min(min[2], vertices[i + 2]);
@@ -73,72 +73,76 @@ export function computeAABB(vertices) {
 export function rayIntersectsAABB(rayOrigin, rayDirection, boxMin, boxMax) {
   let tmin = (boxMin[0] - rayOrigin[0]) / rayDirection[0];
   let tmax = (boxMax[0] - rayOrigin[0]) / rayDirection[0];
-  if (tmin > tmax) [tmin, tmax] = [tmax, tmin];
+  if(tmin > tmax) [tmin, tmax] = [tmax, tmin];
 
   let tymin = (boxMin[1] - rayOrigin[1]) / rayDirection[1];
   let tymax = (boxMax[1] - rayOrigin[1]) / rayDirection[1];
-  if (tymin > tymax) [tymin, tymax] = [tymax, tymin];
+  if(tymin > tymax) [tymin, tymax] = [tymax, tymin];
 
-  if (tmin > tymax || tymin > tmax) return null;
-  if (tymin > tmin) tmin = tymin;
-  if (tymax < tmax) tmax = tymax;
+  if(tmin > tymax || tymin > tmax) return null;
+  if(tymin > tmin) tmin = tymin;
+  if(tymax < tmax) tmax = tymax;
 
   let tzmin = (boxMin[2] - rayOrigin[2]) / rayDirection[2];
   let tzmax = (boxMax[2] - rayOrigin[2]) / rayDirection[2];
-  if (tzmin > tzmax) [tzmin, tzmax] = [tzmax, tzmin];
+  if(tzmin > tzmax) [tzmin, tzmax] = [tzmax, tzmin];
 
-  if (tmin > tzmax || tzmin > tmax) return null;
+  if(tmin > tzmax || tzmin > tmax) return null;
   const t = Math.max(tmin, 0.0);
   const hitPoint = vec3.add(rayOrigin, vec3.mulScalar(rayDirection, t));
-  return { t, hitPoint };
+  return {t, hitPoint};
 }
 
 export function computeWorldVertsAndAABB(object) {
   const modelMatrix = object.getModelMatrix(object.position);
   const worldVerts = [];
-  for (let i = 0; i < object.mesh.vertices.length; i += 3) {
+  for(let i = 0;i < object.mesh.vertices.length;i += 3) {
     const local = [object.mesh.vertices[i], object.mesh.vertices[i + 1], object.mesh.vertices[i + 2]];
     const world = vec3.transformMat4(local, modelMatrix);
     worldVerts.push(...world);
   }
   const [boxMin, boxMax] = computeAABB(worldVerts);
-  return { modelMatrix, worldVerts, boxMin, boxMax };
-}
- 
-// 🧠 Dispatch rich event
-function dispatchRayHitEvent(canvas, data) {
-  canvas.dispatchEvent(new CustomEvent("ray.hit.event", { detail: data }));
+  return {modelMatrix, worldVerts, boxMin, boxMax};
 }
 
-export function addRaycastsListener(canvasId = "canvas1") {
+// 🧠 Dispatch rich event
+function dispatchRayHitEvent(canvas, data) {
+  if (data.eventName == 'click') {
+    canvas.dispatchEvent(new CustomEvent("ray.hit.event", {detail: data}));
+  } else {
+    canvas.dispatchEvent(new CustomEvent("ray.hit.event.mm", {detail: data}));
+  }
+}
+
+export function addRaycastsListener(canvasId = "canvas1", eventName = 'click') {
   const canvas = document.getElementById(canvasId);
-  if (!canvas) {
+  if(!canvas) {
     console.warn(`[Raycaster] Canvas with id '${canvasId}' not found.`);
     return;
   }
 
-  canvas.addEventListener("click", (event) => {
-    const camera = app.cameras.WASD;
-    const { rayOrigin, rayDirection, screen } = getRayFromMouse(event, canvas, camera);
+  canvas.addEventListener(eventName, (event) => {
+    const camera = app.cameras[app.mainCameraParams.type];
+    const {rayOrigin, rayDirection, screen} = getRayFromMouse(event, canvas, camera);
     let closestHit = null;
 
-    for (const object of app.mainRenderBundle) {
-      if (!object.raycast?.enabled) continue;
+    for(const object of app.mainRenderBundle) {
+      if(!object.raycast?.enabled) continue;
 
-      const { boxMin, boxMax } = computeWorldVertsAndAABB(object);
+      const {boxMin, boxMax} = computeWorldVertsAndAABB(object);
       const hitAABB = rayIntersectsAABB(rayOrigin, rayDirection, boxMin, boxMax);
-      if (!hitAABB) continue;
+      if(!hitAABB) continue;
 
       const sphereHit = rayIntersectsSphere(rayOrigin, rayDirection, object.position, object.raycast.radius);
       const hit = sphereHit || hitAABB;
 
-      if (hit && (!closestHit || hit.t < closestHit.t)) {
-        closestHit = { ...hit, hitObject: object };
-        if (touchCoordinate.stopOnFirstDetectedHit) break;
+      if(hit && (!closestHit || hit.t < closestHit.t)) {
+        closestHit = {...hit, hitObject: object};
+        if(touchCoordinate.stopOnFirstDetectedHit) break;
       }
     }
 
-    if (closestHit) {
+    if(closestHit) {
       dispatchRayHitEvent(canvas, {
         hitObject: closestHit.hitObject,
         hitPoint: closestHit.hitPoint,
@@ -149,7 +153,8 @@ export function addRaycastsListener(canvasId = "canvas1") {
         screenCoords: screen,
         camera,
         timestamp: performance.now(),
-        button: event.button
+        button: event.button,
+        eventName: eventName
       });
     }
   });
