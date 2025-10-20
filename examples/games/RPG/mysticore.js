@@ -17,7 +17,7 @@ let mysticore = new MatrixEngineWGPU({
   useSingleRenderPass: true,
   canvasSize: 'fullscreen',
   mainCameraParams: {
-    type: 'WASD',
+    type: 'RPG',
     responseCoef: 1000
   },
   clearColor: {r: 0, b: 0.122, g: 0.122, a: 1}
@@ -25,7 +25,7 @@ let mysticore = new MatrixEngineWGPU({
 
   addEventListener('AmmoReady', async () => {
     mysticore.RPG = new Controller(mysticore);
-    app.cameras.WASD.movementSpeed = 100;
+    app.cameras.RPG.movementSpeed = 100;
 
     mysticore.mapLoader = new MEMapLoader(mysticore, "./res/meshes/nav-mesh/navmesh.json");
 
@@ -35,10 +35,10 @@ let mysticore = new MatrixEngineWGPU({
       'MariaSword', HERO_PROFILES.MariaSword.baseArchetypes);
     mysticore.HUD = new HUD(mysticore.localHero);
     setTimeout(() => {
-      app.cameras.WASD.yaw = -0.03;
-      app.cameras.WASD.pitch = -0.49;
-      app.cameras.WASD.position[2] = 0;
-      app.cameras.WASD.position[1] = 23;
+      // app.cameras.RPG.yaw = -0.03;
+      // app.cameras.RPG.pitch = -0.49;
+      // app.cameras.RPG.position[2] = 0;
+      app.cameras.RPG.position[1] = 100;
     }, 2000)
 
     mysticore.enemies = new EnemiesManager(mysticore);

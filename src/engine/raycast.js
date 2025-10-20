@@ -122,7 +122,7 @@ export function addRaycastsListener(canvasId = "canvas1", eventName = 'click') {
   }
 
   canvas.addEventListener(eventName, (event) => {
-    const camera = app.cameras.WASD;
+    const camera = app.cameras[app.mainCameraParams.type];
     const {rayOrigin, rayDirection, screen} = getRayFromMouse(event, canvas, camera);
     let closestHit = null;
 

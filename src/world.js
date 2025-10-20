@@ -1,7 +1,7 @@
 import {mat4, vec3} from "wgpu-matrix";
 import MEBall from "./engine/ball.js";
 import MECube from './engine/cube.js';
-import {ArcballCamera, WASDCamera} from "./engine/engine.js";
+import {ArcballCamera, RPGCamera, WASDCamera} from "./engine/engine.js";
 import {createInputHandler} from "./engine/engine.js";
 import MEMeshObj from "./engine/mesh-obj.js";
 import MatrixAmmo from "./physics/matrix-ammo.js";
@@ -11,9 +11,7 @@ import {MatrixSounds} from "./sounds/sounds.js";
 import {play} from "./engine/loader-obj.js";
 import {SpotLight} from "./engine/lights.js";
 import {BVHPlayer} from "./engine/loaders/bvh.js";
-
 import {BVHPlayerInstances} from "./engine/loaders/bvh-instaced.js";
-
 
 /**
  * @description
@@ -90,6 +88,7 @@ export default class MatrixEngineWGPU {
     this.cameras = {
       arcball: new ArcballCamera({position: initialCameraPosition}),
       WASD: new WASDCamera({position: initialCameraPosition, canvas: canvas}),
+      RPG: new RPGCamera({position: initialCameraPosition, canvas: canvas}),
     };
 
     this.label = new MultiLang()
@@ -560,7 +559,8 @@ export default class MatrixEngineWGPU {
         }
       };
       const transPass = commandEncoder.beginRenderPass(transPassDesc);
-      const viewProjMatrix = mat4.multiply(this.cameras.WASD.projectionMatrix, this.cameras.WASD.view, mat4.identity());
+      const viewProjMatrix = mat4.multiply(this.cameras[this.mainCameraParams.type].projectionMatrix,
+        this.cameras[this.mainCameraParams.type].view, mat4.identity());
       for(const mesh of this.mainRenderBundle) {
         if(mesh.effects) Object.keys(mesh.effects).forEach(effect_ => {
           const effect = mesh.effects[effect_];

@@ -457,7 +457,9 @@ class Controller {
     const xMax = Math.max(start.x, end.x);
     const yMin = Math.min(start.y, end.y);
     const yMax = Math.max(start.y, end.y);
-    const camera = app.cameras.WASD;
+
+    // const camera = app.cameras.WASD;
+    const camera = app.cameras.RPG;
     for (const object of app.mainRenderBundle) {
       if (!object.position) continue;
       const screen = this.projectToScreen([object.position.x, object.position.y, object.position.z, 1.0], camera.view, camera.projectionMatrix, this.canvas);
@@ -1758,7 +1760,7 @@ let mysticore = new _world.default({
   useSingleRenderPass: true,
   canvasSize: 'fullscreen',
   mainCameraParams: {
-    type: 'WASD',
+    type: 'RPG',
     responseCoef: 1000
   },
   clearColor: {
@@ -1770,15 +1772,15 @@ let mysticore = new _world.default({
 }, () => {
   addEventListener('AmmoReady', async () => {
     mysticore.RPG = new _controller.Controller(mysticore);
-    app.cameras.WASD.movementSpeed = 100;
+    app.cameras.RPG.movementSpeed = 100;
     mysticore.mapLoader = new _mapLoader.MEMapLoader(mysticore, "./res/meshes/nav-mesh/navmesh.json");
     mysticore.localHero = new _characterBase.Character(mysticore, "res/meshes/glb/woman1.glb", 'MariaSword', _hero.HERO_PROFILES.MariaSword.baseArchetypes);
     mysticore.HUD = new _hud.HUD(mysticore.localHero);
     setTimeout(() => {
-      app.cameras.WASD.yaw = -0.03;
-      app.cameras.WASD.pitch = -0.49;
-      app.cameras.WASD.position[2] = 0;
-      app.cameras.WASD.position[1] = 23;
+      // app.cameras.RPG.yaw = -0.03;
+      // app.cameras.RPG.pitch = -0.49;
+      // app.cameras.RPG.position[2] = 0;
+      app.cameras.RPG.position[1] = 100;
     }, 2000);
     mysticore.enemies = new _enemiesManager.EnemiesManager(mysticore);
     mysticore.collisionSystem = new _collisionSubSystem.CollisionSystem(mysticore);
@@ -22324,7 +22326,7 @@ exports.PointerEffect = PointerEffect;
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.WASDCamera = exports.ArcballCamera = void 0;
+exports.WASDCamera = exports.RPGCamera = exports.ArcballCamera = void 0;
 exports.createInputHandler = createInputHandler;
 var _wgpuMatrix = require("wgpu-matrix");
 var _utils = require("./utils");
@@ -22739,6 +22741,125 @@ function createInputHandler(window, canvas) {
     return out;
   };
 }
+
+///////////////////
+
+/// test camera 
+class RPGCamera extends CameraBase {
+  // The camera absolute pitch angle
+  pitch = 0;
+  // The camera absolute yaw angle
+  yaw = 0;
+
+  // The movement veloicty readonly
+  velocity_ = _wgpuMatrix.vec3.create();
+
+  // Speed multiplier for camera movement
+  movementSpeed = 10;
+
+  // Speed multiplier for camera rotation
+  rotationSpeed = 1;
+
+  // Movement velocity drag coeffient [0 .. 1]
+  // 0: Continues forever
+  // 1: Instantly stops moving
+  frictionCoefficient = 0.99;
+
+  // Returns velocity vector
+  get velocity() {
+    return this.velocity_;
+  }
+  // Assigns `vec` to the velocity vector
+  set velocity(vec) {
+    _wgpuMatrix.vec3.copy(vec, this.velocity_);
+  }
+  setProjection(fov = 2 * Math.PI / 5, aspect = 1, near = 1, far = 1000) {
+    this.projectionMatrix = _wgpuMatrix.mat4.perspective(fov, aspect, near, far);
+  }
+  constructor(options) {
+    super();
+    if (options && (options.position || options.target)) {
+      const position = options.position ?? _wgpuMatrix.vec3.create(0, 0, 0);
+      const target = options.target ?? _wgpuMatrix.vec3.create(0, 0, 0);
+      const forward = _wgpuMatrix.vec3.normalize(_wgpuMatrix.vec3.sub(target, position));
+      this.recalculateAngles(forward);
+      this.position = position;
+      this.canvas = options.canvas;
+      this.aspect = options.canvas.width / options.canvas.height;
+      this.setProjection(2 * Math.PI / 5, this.aspect, 1, 2000);
+      // console.log(`%cCamera constructor : ${position}`, LOG_INFO);
+    }
+  }
+
+  // Returns the camera matrix
+  get matrix() {
+    return super.matrix;
+  }
+
+  // Assigns `mat` to the camera matrix, and recalcuates the camera angles
+  set matrix(mat) {
+    super.matrix = mat;
+    this.recalculateAngles(this.back);
+  }
+  update(deltaTime, input) {
+    const sign = (positive, negative) => (positive ? 1 : 0) - (negative ? 1 : 0);
+    // Apply the delta rotation to the pitch and yaw angles
+    this.yaw = 0; //-= input.analog.x * deltaTime * this.rotationSpeed;
+    this.pitch = -0.88; //  -= input.analog.y * deltaTime * this.rotationSpeed;
+    // this.yaw = -0.03;
+    // this.pitch = -0.49;
+    // // Wrap yaw between [0° .. 360°], just to prevent large accumulation.
+    this.yaw = mod(this.yaw, Math.PI * 2);
+    // // Clamp pitch between [-90° .. +90°] to prevent somersaults.
+    this.pitch = clamp(this.pitch, -Math.PI / 2, Math.PI / 2);
+
+    // Save the current position, as we're about to rebuild the camera matrix.
+    let position = _wgpuMatrix.vec3.copy(this.position);
+
+    // Reconstruct the camera's rotation, and store into the camera matrix.
+    super.matrix = _wgpuMatrix.mat4.rotateX(_wgpuMatrix.mat4.rotationY(this.yaw), this.pitch);
+    // super.matrix = mat4.rotateX(mat4.rotationY(this.yaw), -this.pitch);
+    // super.matrix = mat4.rotateY(mat4.rotateX(this.pitch), this.yaw);
+
+    // Calculate the new target velocity
+    const digital = input.digital;
+    const deltaRight = sign(digital.right, digital.left);
+    const deltaUp = sign(digital.up, digital.down);
+    const targetVelocity = _wgpuMatrix.vec3.create();
+    const deltaBack = sign(digital.backward, digital.forward);
+    if (deltaBack == -1) {
+      console.log(deltaBack + "  deltaBack ");
+      position[2] += -10;
+    } else if (deltaBack == 1) {
+      console.log(deltaBack + "  deltaBack ");
+      position[2] += 10;
+    }
+    _wgpuMatrix.vec3.addScaled(targetVelocity, this.right, deltaRight, targetVelocity);
+    _wgpuMatrix.vec3.addScaled(targetVelocity, this.up, deltaUp, targetVelocity);
+
+    //
+    // vec3.addScaled(targetVelocity, this.back, deltaBack, targetVelocity);
+    _wgpuMatrix.vec3.normalize(targetVelocity, targetVelocity);
+    _wgpuMatrix.vec3.mulScalar(targetVelocity, this.movementSpeed, targetVelocity);
+
+    // Mix new target velocity
+    this.velocity = lerp(targetVelocity, this.velocity, Math.pow(1 - this.frictionCoefficient, deltaTime));
+
+    // Integrate velocity to calculate new position
+    this.position = _wgpuMatrix.vec3.addScaled(position, this.velocity, deltaTime);
+
+    // Invert the camera matrix to build the view matrix
+    this.view = _wgpuMatrix.mat4.invert(this.matrix);
+    return this.view;
+  }
+
+  // Recalculates the yaw and pitch values from a directional vector
+  recalculateAngles(dir) {
+    this.yaw = Math.atan2(dir[0], dir[2]);
+    this.pitch = -Math.asin(dir[1]);
+  }
+}
+exports.RPGCamera = RPGCamera;
 
 },{"./utils":50,"wgpu-matrix":25}],38:[function(require,module,exports){
 "use strict";
@@ -28617,7 +28738,7 @@ function addRaycastsListener(canvasId = "canvas1", eventName = 'click') {
     return;
   }
   canvas.addEventListener(eventName, event => {
-    const camera = app.cameras.WASD;
+    const camera = app.cameras[app.mainCameraParams.type];
     const {
       rayOrigin,
       rayDirection,
@@ -32254,6 +32375,10 @@ class MatrixEngineWGPU {
       WASD: new _engine.WASDCamera({
         position: initialCameraPosition,
         canvas: canvas
+      }),
+      RPG: new _engine.RPGCamera({
+        position: initialCameraPosition,
+        canvas: canvas
       })
     };
     this.label = new _lang.MultiLang();
@@ -32862,7 +32987,7 @@ class MatrixEngineWGPU {
         }
       };
       const transPass = commandEncoder.beginRenderPass(transPassDesc);
-      const viewProjMatrix = _wgpuMatrix.mat4.multiply(this.cameras.WASD.projectionMatrix, this.cameras.WASD.view, _wgpuMatrix.mat4.identity());
+      const viewProjMatrix = _wgpuMatrix.mat4.multiply(this.cameras[this.mainCameraParams.type].projectionMatrix, this.cameras[this.mainCameraParams.type].view, _wgpuMatrix.mat4.identity());
       for (const mesh of this.mainRenderBundle) {
         if (mesh.effects) Object.keys(mesh.effects).forEach(effect_ => {
           const effect = mesh.effects[effect_];

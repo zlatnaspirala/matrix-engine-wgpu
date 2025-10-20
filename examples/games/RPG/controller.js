@@ -170,7 +170,10 @@ export class Controller {
     const xMax = Math.max(start.x, end.x);
     const yMin = Math.min(start.y, end.y);
     const yMax = Math.max(start.y, end.y);
-    const camera = app.cameras.WASD;
+
+    // const camera = app.cameras.WASD;
+    const camera = app.cameras.RPG;
+
     for(const object of app.mainRenderBundle) {
       if(!object.position) continue;
       const screen = this.projectToScreen(
