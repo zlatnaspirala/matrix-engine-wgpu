@@ -136,16 +136,15 @@ class Character extends _hero.Hero {
     }
   }
   setWalk() {
-    console.log('set walk base ');
     this.core.RPG.heroe_bodies.forEach(subMesh => {
       subMesh.glb.animationIndex = this.heroAnimationArrange.walk;
-      console.info(`%chero walk`, _utils.LOG_MATRIX);
+      // console.info(`%chero walk`, LOG_MATRIX)
     });
   }
   setSalute() {
     this.core.RPG.heroe_bodies.forEach(subMesh => {
       subMesh.glb.animationIndex = this.heroAnimationArrange.salute;
-      console.info(`%chero salute`, _utils.LOG_MATRIX);
+      // console.info(`%chero salute`, LOG_MATRIX)
     });
   }
   setDead() {
@@ -155,10 +154,9 @@ class Character extends _hero.Hero {
     });
   }
   setIdle() {
-    console.log('set idle base ');
     this.core.RPG.heroe_bodies.forEach(subMesh => {
       subMesh.glb.animationIndex = this.heroAnimationArrange.idle;
-      console.info(`%chero idle`, _utils.LOG_MATRIX);
+      // console.info(`%chero idle`, LOG_MATRIX)
     });
   }
   setAttack(on) {
@@ -22814,6 +22812,12 @@ class RPGCamera extends CameraBase {
       //  console.log("  follow : " + this.followMe.x)
       this.position[0] = this.followMe.x;
       this.position[2] = this.followMe.z + this.followMeOffset;
+
+      //
+      app.lightContainer[0].position[0] = this.followMe.x;
+      app.lightContainer[0].position[2] = this.followMe.z;
+      app.lightContainer[0].target[0] = this.followMe.x;
+      app.lightContainer[0].target[2] = this.followMe.z;
     }
     let position = _wgpuMatrix.vec3.copy(this.position);
     // Reconstruct the camera's rotation, and store into the camera matrix.

@@ -120,17 +120,16 @@ export class Character extends Hero {
   }
 
   setWalk() {
-    console.log('set walk base ')
     this.core.RPG.heroe_bodies.forEach(subMesh => {
       subMesh.glb.animationIndex = this.heroAnimationArrange.walk;
-      console.info(`%chero walk`, LOG_MATRIX)
+      // console.info(`%chero walk`, LOG_MATRIX)
     });
   }
 
   setSalute() {
     this.core.RPG.heroe_bodies.forEach(subMesh => {
       subMesh.glb.animationIndex = this.heroAnimationArrange.salute;
-      console.info(`%chero salute`, LOG_MATRIX)
+      // console.info(`%chero salute`, LOG_MATRIX)
     });
   }
 
@@ -142,10 +141,9 @@ export class Character extends Hero {
   }
 
   setIdle() {
-    console.log('set idle base ')
     this.core.RPG.heroe_bodies.forEach(subMesh => {
       subMesh.glb.animationIndex = this.heroAnimationArrange.idle;
-      console.info(`%chero idle`, LOG_MATRIX)
+      // console.info(`%chero idle`, LOG_MATRIX)
     });
   }
   setAttack(on) {
