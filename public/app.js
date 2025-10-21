@@ -1629,8 +1629,8 @@ class MEMapLoader {
         radius: 1.5
       }
     });
-    this.core.lightContainer[0].position[1] = 100;
-    this.core.lightContainer[0].intesity = 10;
+    this.core.lightContainer[0].position[1] = 170;
+    this.core.lightContainer[0].intesity = 1;
   }
   onTree(m) {
     this.core.addMeshObj({
@@ -1793,8 +1793,6 @@ let mysticore = new _world.default({
 }, () => {
   addEventListener('AmmoReady', async () => {
     addEventListener('local-hero-bodies-ready', () => {
-      // app.cameras.WASD.movementSpeed = 100;
-
       app.cameras.RPG.position[1] = 130;
       app.cameras.RPG.followMe = mysticore.localHero.heroe_bodies[0].position;
     });
@@ -22808,12 +22806,11 @@ class RPGCamera extends CameraBase {
     // // Clamp pitch between [-90° .. +90°] to prevent somersaults.
     this.pitch = clamp(this.pitch, -Math.PI / 2, Math.PI / 2);
     // Save the current position, as we're about to rebuild the camera matrix.
-    if (this.followMe != null) {
+    if (this.followMe != null && this.followMe.inMove === true) {
       //  console.log("  follow : " + this.followMe.x)
+      // if player not move allow mouse explore map 
       this.position[0] = this.followMe.x;
       this.position[2] = this.followMe.z + this.followMeOffset;
-
-      //
       app.lightContainer[0].position[0] = this.followMe.x;
       app.lightContainer[0].position[2] = this.followMe.z;
       app.lightContainer[0].target[0] = this.followMe.x;
@@ -22830,12 +22827,12 @@ class RPGCamera extends CameraBase {
     const deltaBack = sign(digital.backward, digital.forward);
     // older then follow
     if (deltaBack == -1) {
-      console.log(deltaBack + "  deltaBack ");
+      // console.log(deltaBack + "  deltaBack ")
       position[2] += -10;
     } else if (deltaBack == 1) {
-      console.log(deltaBack + "  deltaBack ");
       position[2] += 10;
     }
+    position[0] += deltaRight * 10;
     _wgpuMatrix.vec3.addScaled(targetVelocity, this.right, deltaRight, targetVelocity);
     _wgpuMatrix.vec3.addScaled(targetVelocity, this.up, deltaUp, targetVelocity);
     _wgpuMatrix.vec3.normalize(targetVelocity, targetVelocity);
@@ -32875,9 +32872,8 @@ class MatrixEngineWGPU {
       for (const light of this.lightContainer) {
         light.update();
         this.mainRenderBundle.forEach((meItem, index) => {
-          // meItem.position.update()
           meItem.updateModelUniformBuffer();
-          meItem.getTransformationMatrix(this.mainRenderBundle, light, index); // >check optisation
+          meItem.getTransformationMatrix(this.mainRenderBundle, light, index);
         });
       }
       if (this.matrixAmmo) this.matrixAmmo.updatePhysics();

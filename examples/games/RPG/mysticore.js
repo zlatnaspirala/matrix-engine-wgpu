@@ -26,9 +26,6 @@ let mysticore = new MatrixEngineWGPU({
   addEventListener('AmmoReady', async () => {
 
     addEventListener('local-hero-bodies-ready', () => {
-
-      // app.cameras.WASD.movementSpeed = 100;
-
       app.cameras.RPG.position[1] = 130;
       app.cameras.RPG.followMe = mysticore.localHero.heroe_bodies[0].position;
     })

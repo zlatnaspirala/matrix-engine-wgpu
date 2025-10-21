@@ -472,18 +472,15 @@ export class RPGCamera extends CameraBase {
     // // Clamp pitch between [-90° .. +90°] to prevent somersaults.
     this.pitch = clamp(this.pitch, -Math.PI / 2, Math.PI / 2);
     // Save the current position, as we're about to rebuild the camera matrix.
-    if(this.followMe != null) {
+    if(this.followMe != null && this.followMe.inMove === true) {
       //  console.log("  follow : " + this.followMe.x)
+      // if player not move allow mouse explore map 
       this.position[0] = this.followMe.x;
       this.position[2] = this.followMe.z + this.followMeOffset;
-
-      //
       app.lightContainer[0].position[0] = this.followMe.x;
       app.lightContainer[0].position[2] = this.followMe.z;
-
       app.lightContainer[0].target[0] = this.followMe.x;
       app.lightContainer[0].target[2] = this.followMe.z;
-
     }
     let position = vec3.copy(this.position);
     // Reconstruct the camera's rotation, and store into the camera matrix.
@@ -496,12 +493,12 @@ export class RPGCamera extends CameraBase {
     const deltaBack = sign(digital.backward, digital.forward);
     // older then follow
     if(deltaBack == -1) {
-      console.log(deltaBack + "  deltaBack ")
+      // console.log(deltaBack + "  deltaBack ")
       position[2] += -10;
     } else if(deltaBack == 1) {
-      console.log(deltaBack + "  deltaBack ")
       position[2] += 10;
     }
+    position[0] += deltaRight * 10;
     vec3.addScaled(targetVelocity, this.right, deltaRight, targetVelocity);
     vec3.addScaled(targetVelocity, this.up, deltaUp, targetVelocity);
     vec3.normalize(targetVelocity, targetVelocity);

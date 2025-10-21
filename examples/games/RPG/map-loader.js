@@ -51,8 +51,8 @@ export class MEMapLoader {
       raycast: {enabled: true, radius: 1.5}
     });
 
-    this.core.lightContainer[0].position[1] = 100;
-    this.core.lightContainer[0].intesity = 10;
+    this.core.lightContainer[0].position[1] = 170;
+    this.core.lightContainer[0].intesity = 1;
   }
 
   onTree(m) {
