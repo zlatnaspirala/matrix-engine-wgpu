@@ -41,6 +41,8 @@ class Character extends _hero.Hero {
       (0, _utils.byId)('magic-slot-2').style.backgroundRepeat = "round";
       (0, _utils.byId)('magic-slot-3').style.background = 'url("./res/textures/rpg/magics/maria-sword-4.png")';
       (0, _utils.byId)('magic-slot-3').style.backgroundRepeat = "round";
+      (0, _utils.byId)('hudLeftBox').style.background = "url('./res/textures/rpg/hero-image/maria.png')  center center / cover no-repeat";
+      // byId('heroProfile').src = './res/textures/rpg/hero-image/maria.png';
     }
   }
   async loadLocalHero(p) {
@@ -55,7 +57,7 @@ class Character extends _hero.Hero {
         position: {
           x: 0,
           y: -23,
-          z: -220
+          z: -0
         },
         name: this.name,
         texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
@@ -1218,10 +1220,9 @@ class HUD {
     const hudLeftBox = document.createElement("div");
     hudLeftBox.id = "hudLeftBox";
     Object.assign(hudLeftBox.style, {
-      width: "20%",
+      width: "30%",
       height: "100%",
-      backgroundColor: "rgba(0,0,0,0.5)",
-      // display: "flex",
+      background: "rgba(0,0,0,0.5)",
       border: "solid 1px red",
       alignItems: "center",
       justifyContent: "space-around",
@@ -1229,7 +1230,8 @@ class HUD {
       fontFamily: "'Orbitron', sans-serif",
       zIndex: "100",
       padding: "10px",
-      boxSizing: "border-box"
+      boxSizing: "border-box",
+      overflow: 'hidden'
     });
     hud.appendChild(hudLeftBox);
     const hudCenter = document.createElement("div");
@@ -1422,12 +1424,23 @@ class HUD {
     hud.appendChild(hudCenter);
     // left box
     const selectedCharacters = document.createElement("span");
-    selectedCharacters.textContent = "selectedCharacters:[]";
+    selectedCharacters.textContent = "HERO";
     hudLeftBox.appendChild(selectedCharacters);
     hud.addEventListener("onSelectCharacter", e => {
       console.log('onSelectCharacter : ', e);
-      selectedCharacters.textContent = `selectedCharacters:[${e.detail}]`;
+      let n = '';
+      if (e.detail.indexOf('_') != -1) {
+        n = e.detail.split('_')[0];
+      }
+      selectedCharacters.textContent = `${n}`;
     });
+
+    // const heroProfile = document.createElement("img");
+    // heroProfile.id = 'heroProfile';
+    // heroProfile.src = "";
+    // hudLeftBox.appendChild(heroProfile);
+    //
+
     const hudDesription = document.createElement("div");
     hudDesription.id = "hudDesription";
     Object.assign(hudDesription.style, {
@@ -1475,6 +1488,9 @@ class HUD {
       width: "30%",
       height: "100%",
       backgroundColor: "rgba(0,0,0,0.5)",
+      backgroundPosition: 'center center',
+      backgroundRepeat: 'no-repeat',
+      backgroundSize: 'auto',
       display: "flex",
       border: "solid 1px yellow",
       alignItems: "center",
@@ -1779,6 +1795,8 @@ let mysticore = new _world.default({
 }, () => {
   addEventListener('AmmoReady', async () => {
     addEventListener('local-hero-bodies-ready', () => {
+      // app.cameras.WASD.movementSpeed = 100;
+
       app.cameras.RPG.position[1] = 130;
       app.cameras.RPG.followMe = mysticore.localHero.heroe_bodies[0].position;
     });
@@ -22738,26 +22756,16 @@ function createInputHandler(window, canvas) {
 }
 class RPGCamera extends CameraBase {
   followMe = null;
-
-  // The camera absolute pitch angle
   pitch = 0;
-  // The camera absolute yaw angle
   yaw = 0;
-
-  // The movement veloicty readonly
   velocity_ = _wgpuMatrix.vec3.create();
-
-  // Speed multiplier for camera movement
   movementSpeed = 10;
-
-  // Speed multiplier for camera rotation
   rotationSpeed = 1;
-
+  followMeOffset = 150; // << mobile adaptation needed after all...
   // Movement velocity drag coeffient [0 .. 1]
   // 0: Continues forever
   // 1: Instantly stops moving
   frictionCoefficient = 0.99;
-
   // Returns velocity vector
   get velocity() {
     return this.velocity_;
@@ -22783,8 +22791,6 @@ class RPGCamera extends CameraBase {
       // console.log(`%cCamera constructor : ${position}`, LOG_INFO);
     }
   }
-
-  // Returns the camera matrix
   get matrix() {
     return super.matrix;
   }
@@ -22807,20 +22813,16 @@ class RPGCamera extends CameraBase {
     if (this.followMe != null) {
       //  console.log("  follow : " + this.followMe.x)
       this.position[0] = this.followMe.x;
-      this.position[2] = this.followMe.z + 70;
+      this.position[2] = this.followMe.z + this.followMeOffset;
     }
     let position = _wgpuMatrix.vec3.copy(this.position);
     // Reconstruct the camera's rotation, and store into the camera matrix.
     super.matrix = _wgpuMatrix.mat4.rotateX(_wgpuMatrix.mat4.rotationY(this.yaw), this.pitch);
-    // super.matrix = mat4.rotateX(mat4.rotationY(this.yaw), -this.pitch);
-    // super.matrix = mat4.rotateY(mat4.rotateX(this.pitch), this.yaw);
-
     // Calculate the new target velocity
     const digital = input.digital;
     const deltaRight = sign(digital.right, digital.left);
     const deltaUp = sign(digital.up, digital.down);
     const targetVelocity = _wgpuMatrix.vec3.create();
-    //   position[2] += -10;
     const deltaBack = sign(digital.backward, digital.forward);
     // older then follow
     if (deltaBack == -1) {
@@ -22832,19 +22834,13 @@ class RPGCamera extends CameraBase {
     }
     _wgpuMatrix.vec3.addScaled(targetVelocity, this.right, deltaRight, targetVelocity);
     _wgpuMatrix.vec3.addScaled(targetVelocity, this.up, deltaUp, targetVelocity);
-    // vec3.addScaled(targetVelocity, this.back, deltaBack, targetVelocity);
     _wgpuMatrix.vec3.normalize(targetVelocity, targetVelocity);
     _wgpuMatrix.vec3.mulScalar(targetVelocity, this.movementSpeed, targetVelocity);
-    // Mix new target velocity
     this.velocity = lerp(targetVelocity, this.velocity, Math.pow(1 - this.frictionCoefficient, deltaTime));
-    // Integrate velocity to calculate new position
     this.position = _wgpuMatrix.vec3.addScaled(position, this.velocity, deltaTime);
-    // Invert the camera matrix to build the view matrix
     this.view = _wgpuMatrix.mat4.invert(this.matrix);
     return this.view;
   }
-
-  // Recalculates the yaw and pitch values from a directional vector
   recalculateAngles(dir) {
     this.yaw = Math.atan2(dir[0], dir[2]);
     this.pitch = -Math.asin(dir[1]);

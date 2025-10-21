@@ -31,10 +31,9 @@ export class HUD {
     hudLeftBox.id = "hudLeftBox";
 
     Object.assign(hudLeftBox.style, {
-      width: "20%",
+      width: "30%",
       height: "100%",
-      backgroundColor: "rgba(0,0,0,0.5)",
-      // display: "flex",
+      background: "rgba(0,0,0,0.5)",
       border: "solid 1px red",
       alignItems: "center",
       justifyContent: "space-around",
@@ -42,7 +41,8 @@ export class HUD {
       fontFamily: "'Orbitron', sans-serif",
       zIndex: "100",
       padding: "10px",
-      boxSizing: "border-box"
+      boxSizing: "border-box",
+      overflow: 'hidden'
     });
 
     hud.appendChild(hudLeftBox);
@@ -248,12 +248,22 @@ export class HUD {
     hud.appendChild(hudCenter);
     // left box
     const selectedCharacters = document.createElement("span");
-    selectedCharacters.textContent = "selectedCharacters:[]";
+    selectedCharacters.textContent = "HERO";
     hudLeftBox.appendChild(selectedCharacters);
     hud.addEventListener("onSelectCharacter", (e) => {
       console.log('onSelectCharacter : ', e)
-      selectedCharacters.textContent = `selectedCharacters:[${e.detail}]`;
+      let n = '';
+      if (e.detail.indexOf('_') != -1 ) {
+        n = e.detail.split('_')[0];
+      }
+      selectedCharacters.textContent = `${n}`;
     });
+
+    // const heroProfile = document.createElement("img");
+    // heroProfile.id = 'heroProfile';
+    // heroProfile.src = "";
+    // hudLeftBox.appendChild(heroProfile);
+    //
 
     const hudDesription = document.createElement("div");
     hudDesription.id = "hudDesription";
@@ -307,6 +317,9 @@ export class HUD {
       width: "30%",
       height: "100%",
       backgroundColor: "rgba(0,0,0,0.5)",
+      backgroundPosition: 'center center',
+      backgroundRepeat: 'no-repeat',
+      backgroundSize: 'auto',
       display: "flex",
       border: "solid 1px yellow",
       alignItems: "center",

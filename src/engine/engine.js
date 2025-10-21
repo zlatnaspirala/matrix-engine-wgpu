@@ -412,28 +412,17 @@ export function createInputHandler(window, canvas) {
 }
 
 export class RPGCamera extends CameraBase {
-
   followMe = null;
-
-  // The camera absolute pitch angle
   pitch = 0;
-  // The camera absolute yaw angle
   yaw = 0;
-
-  // The movement veloicty readonly
   velocity_ = vec3.create();
-
-  // Speed multiplier for camera movement
   movementSpeed = 10;
-
-  // Speed multiplier for camera rotation
   rotationSpeed = 1;
-
+  followMeOffset = 150; // << mobile adaptation needed after all...
   // Movement velocity drag coeffient [0 .. 1]
   // 0: Continues forever
   // 1: Instantly stops moving
   frictionCoefficient = 0.99;
-
   // Returns velocity vector
   get velocity() {
     return this.velocity_;
@@ -462,7 +451,6 @@ export class RPGCamera extends CameraBase {
     }
   }
 
-  // Returns the camera matrix
   get matrix() {
     return super.matrix;
   }
@@ -487,22 +475,16 @@ export class RPGCamera extends CameraBase {
         if (this.followMe != null) {
         //  console.log("  follow : " + this.followMe.x)
         this.position[0] = this.followMe.x;
-        this.position[2] = this.followMe.z + 70;
+        this.position[2] = this.followMe.z + this.followMeOffset;
     }
     let position = vec3.copy(this.position);
     // Reconstruct the camera's rotation, and store into the camera matrix.
     super.matrix = mat4.rotateX(mat4.rotationY(this.yaw), this.pitch);
-    // super.matrix = mat4.rotateX(mat4.rotationY(this.yaw), -this.pitch);
-    // super.matrix = mat4.rotateY(mat4.rotateX(this.pitch), this.yaw);
-
-
-
     // Calculate the new target velocity
     const digital = input.digital;
     const deltaRight = sign(digital.right, digital.left);
     const deltaUp = sign(digital.up, digital.down);
     const targetVelocity = vec3.create();
-    //   position[2] += -10;
     const deltaBack = sign(digital.backward, digital.forward);
     // older then follow
     if(deltaBack == -1) {
@@ -512,26 +494,20 @@ export class RPGCamera extends CameraBase {
       console.log(deltaBack + "  deltaBack ")
       position[2] += 10;
     }
-
     vec3.addScaled(targetVelocity, this.right, deltaRight, targetVelocity);
     vec3.addScaled(targetVelocity, this.up, deltaUp, targetVelocity);
-    // vec3.addScaled(targetVelocity, this.back, deltaBack, targetVelocity);
     vec3.normalize(targetVelocity, targetVelocity);
     vec3.mulScalar(targetVelocity, this.movementSpeed, targetVelocity);
-    // Mix new target velocity
     this.velocity = lerp(
       targetVelocity,
       this.velocity,
       Math.pow(1 - this.frictionCoefficient, deltaTime)
     );
-    // Integrate velocity to calculate new position
     this.position = vec3.addScaled(position, this.velocity, deltaTime);
-    // Invert the camera matrix to build the view matrix
     this.view = mat4.invert(this.matrix);
     return this.view;
   }
 
-  // Recalculates the yaw and pitch values from a directional vector
   recalculateAngles(dir) {
     this.yaw = Math.atan2(dir[0], dir[2]);
     this.pitch = -Math.asin(dir[1]);

@@ -40,6 +40,10 @@ export class Character extends Hero {
       byId('magic-slot-2').style.backgroundRepeat = "round";
       byId('magic-slot-3').style.background = 'url("./res/textures/rpg/magics/maria-sword-4.png")';
       byId('magic-slot-3').style.backgroundRepeat = "round";
+
+      byId('hudLeftBox').style.background = "url('./res/textures/rpg/hero-image/maria.png')  center center / cover no-repeat";
+      // byId('heroProfile').src = './res/textures/rpg/hero-image/maria.png';
+
     }
   }
 
@@ -49,7 +53,7 @@ export class Character extends Hero {
       this.core.addGlbObjInctance({
         material: {type: 'standard', useTextureFromGlb: true},
         scale: [20, 20, 20],
-        position: {x: 0, y: -23, z: -220},
+        position: {x: 0, y: -23, z: -0},
         name: this.name,
         texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
         raycast: {enabled: true, radius: 1.5},
