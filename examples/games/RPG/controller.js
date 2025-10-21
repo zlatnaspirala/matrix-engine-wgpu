@@ -67,7 +67,7 @@ export class Controller {
       // console.log('ray.hit.event detected', e);
       const {hitObject, hitPoint, button, eventName} = e.detail;
       if(e.detail.hitObject.name == 'ground') {
-        console.warn('ground detected.');
+        // console.warn('ground detected.');
         dispatchEvent(new CustomEvent(`onMouseTarget`, {
           detail: {
             type: 'normal',

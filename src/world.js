@@ -454,14 +454,11 @@ export default class MatrixEngineWGPU {
       for(const light of this.lightContainer) {
         light.update()
         this.mainRenderBundle.forEach((meItem, index) => {
-          // meItem.position.update()
           meItem.updateModelUniformBuffer()
-          meItem.getTransformationMatrix(this.mainRenderBundle, light, index) // >check optisation
+          meItem.getTransformationMatrix(this.mainRenderBundle, light, index)
         })
       }
       if(this.matrixAmmo) this.matrixAmmo.updatePhysics();
-
-
 
       let now, deltaTime;
 

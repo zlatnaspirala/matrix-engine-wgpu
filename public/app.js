@@ -125,12 +125,16 @@ class Character extends _hero.Hero {
         });
         app.localHero.heroe_bodies[0].effects.flameEmitter.recreateVertexDataRND(1);
         this.attachEvents();
-      }, 1400);
+        dispatchEvent(new CustomEvent('local-hero-bodies-ready', {
+          detail: "This is not sync - 99% works"
+        }));
+      }, 1500);
     } catch (err) {
       throw err;
     }
   }
   setWalk() {
+    console.log('set walk base ');
     this.core.RPG.heroe_bodies.forEach(subMesh => {
       subMesh.glb.animationIndex = this.heroAnimationArrange.walk;
       console.info(`%chero walk`, _utils.LOG_MATRIX);
@@ -149,6 +153,7 @@ class Character extends _hero.Hero {
     });
   }
   setIdle() {
+    console.log('set idle base ');
     this.core.RPG.heroe_bodies.forEach(subMesh => {
       subMesh.glb.animationIndex = this.heroAnimationArrange.idle;
       console.info(`%chero idle`, _utils.LOG_MATRIX);
@@ -197,10 +202,12 @@ class Character extends _hero.Hero {
 
     // Events HERO MOVMENTS
     addEventListener('set-walk', () => {
+      console.log('set walk 1 ');
       this.setWalk();
     });
     addEventListener('set-idle', () => {
-      // this.setIdle();
+      console.log('set idle 1 ');
+      this.setIdle();
     });
     addEventListener('set-attach', () => {
       this.setAttach();
@@ -358,7 +365,7 @@ class Controller {
         eventName
       } = e.detail;
       if (e.detail.hitObject.name == 'ground') {
-        console.warn('ground detected.');
+        // console.warn('ground detected.');
         dispatchEvent(new CustomEvent(`onMouseTarget`, {
           detail: {
             type: 'normal',
@@ -22741,11 +22748,9 @@ function createInputHandler(window, canvas) {
     return out;
   };
 }
-
-///////////////////
-
-/// test camera 
 class RPGCamera extends CameraBase {
+  followMe = null;
+
   // The camera absolute pitch angle
   pitch = 0;
   // The camera absolute yaw angle
@@ -22806,16 +22811,17 @@ class RPGCamera extends CameraBase {
     // Apply the delta rotation to the pitch and yaw angles
     this.yaw = 0; //-= input.analog.x * deltaTime * this.rotationSpeed;
     this.pitch = -0.88; //  -= input.analog.y * deltaTime * this.rotationSpeed;
-    // this.yaw = -0.03;
-    // this.pitch = -0.49;
     // // Wrap yaw between [0° .. 360°], just to prevent large accumulation.
     this.yaw = mod(this.yaw, Math.PI * 2);
     // // Clamp pitch between [-90° .. +90°] to prevent somersaults.
     this.pitch = clamp(this.pitch, -Math.PI / 2, Math.PI / 2);
-
     // Save the current position, as we're about to rebuild the camera matrix.
+    if (this.followMe != null) {
+      //  console.log("  follow : " + this.followMe.x)
+      this.position[0] = this.followMe.x;
+      this.position[2] = this.followMe.z + 70;
+    }
     let position = _wgpuMatrix.vec3.copy(this.position);
-
     // Reconstruct the camera's rotation, and store into the camera matrix.
     super.matrix = _wgpuMatrix.mat4.rotateX(_wgpuMatrix.mat4.rotationY(this.yaw), this.pitch);
     // super.matrix = mat4.rotateX(mat4.rotationY(this.yaw), -this.pitch);
@@ -22826,7 +22832,9 @@ class RPGCamera extends CameraBase {
     const deltaRight = sign(digital.right, digital.left);
     const deltaUp = sign(digital.up, digital.down);
     const targetVelocity = _wgpuMatrix.vec3.create();
+    //   position[2] += -10;
     const deltaBack = sign(digital.backward, digital.forward);
+    // older then follow
     if (deltaBack == -1) {
       console.log(deltaBack + "  deltaBack ");
       position[2] += -10;
@@ -22836,18 +22844,13 @@ class RPGCamera extends CameraBase {
     }
     _wgpuMatrix.vec3.addScaled(targetVelocity, this.right, deltaRight, targetVelocity);
     _wgpuMatrix.vec3.addScaled(targetVelocity, this.up, deltaUp, targetVelocity);
-
-    //
     // vec3.addScaled(targetVelocity, this.back, deltaBack, targetVelocity);
     _wgpuMatrix.vec3.normalize(targetVelocity, targetVelocity);
     _wgpuMatrix.vec3.mulScalar(targetVelocity, this.movementSpeed, targetVelocity);
-
     // Mix new target velocity
     this.velocity = lerp(targetVelocity, this.velocity, Math.pow(1 - this.frictionCoefficient, deltaTime));
-
     // Integrate velocity to calculate new position
     this.position = _wgpuMatrix.vec3.addScaled(position, this.velocity, deltaTime);
-
     // Invert the camera matrix to build the view matrix
     this.view = _wgpuMatrix.mat4.invert(this.matrix);
     return this.view;
@@ -32884,9 +32887,8 @@ class MatrixEngineWGPU {
       for (const light of this.lightContainer) {
         light.update();
         this.mainRenderBundle.forEach((meItem, index) => {
-          // meItem.position.update()
           meItem.updateModelUniformBuffer();
-          meItem.getTransformationMatrix(this.mainRenderBundle, light, index); // >check optisation
+          meItem.getTransformationMatrix(this.mainRenderBundle, light, index);
         });
       }
       if (this.matrixAmmo) this.matrixAmmo.updatePhysics();

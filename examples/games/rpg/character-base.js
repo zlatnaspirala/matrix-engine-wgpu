@@ -85,7 +85,6 @@ export class Character extends Hero {
 
       // make small async - cooking glbs files  mouseTarget_Circle
       setTimeout(() => {
-
         this.mouseTarget = app.getSceneObjectByName('mouseTarget_Circle');
         this.heroe_bodies = app.mainRenderBundle.filter(obj =>
           obj.name && obj.name.includes(this.name)
@@ -103,19 +102,21 @@ export class Character extends Hero {
             if(a.name == 'attack') this.heroAnimationArrange.attack = index;
             if(a.name == 'idle') this.heroAnimationArrange.idle = index;
           })
-
           if(id == 0) subMesh.sharedState.emitAnimationEvent = true;
           this.core.collisionSystem.register(`local${id}`, subMesh.position, 15.0, 'local_hero');
         });
-
         app.localHero.heroe_bodies[0].effects.flameEmitter.recreateVertexDataRND(1)
-        this.attachEvents()
-      }, 1400)
+        this.attachEvents();
+        dispatchEvent(new CustomEvent('local-hero-bodies-ready', {
+          detail: "This is not sync - 99% works"
+        }))
+      }, 1500)
 
     } catch(err) {throw err;}
   }
 
   setWalk() {
+    console.log('set walk base ')
     this.core.RPG.heroe_bodies.forEach(subMesh => {
       subMesh.glb.animationIndex = this.heroAnimationArrange.walk;
       console.info(`%chero walk`, LOG_MATRIX)
@@ -137,6 +138,7 @@ export class Character extends Hero {
   }
 
   setIdle() {
+    console.log('set idle base ')
     this.core.RPG.heroe_bodies.forEach(subMesh => {
       subMesh.glb.animationIndex = this.heroAnimationArrange.idle;
       console.info(`%chero idle`, LOG_MATRIX)
@@ -189,10 +191,12 @@ export class Character extends Hero {
 
     // Events HERO MOVMENTS
     addEventListener('set-walk', () => {
+      console.log('set walk 1 ')
       this.setWalk();
     })
     addEventListener('set-idle', () => {
-      // this.setIdle();
+      console.log('set idle 1 ')
+      this.setIdle();
     })
     addEventListener('set-attach', () => {
       this.setAttach();
