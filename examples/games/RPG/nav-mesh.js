@@ -2,24 +2,18 @@ import {radToDeg} from "../../../src/engine/utils.js";
 
 export default class NavMesh {
   constructor(data, options = {}) {
-    // expects data.vertices = [[x,y,z],...]
-    // and data.polygons = [{ indices: [i0,i1,i2], neighbors: [...] }, ...]
-    const scale = options.scale ?? [1, 1, 1]; // default: no scaling
+    const scale = options.scale ?? [1, 1, 1];
     const sx = scale[0], sy = scale[1], sz = scale[2];
-
     // Apply scale to each vertex
     this.vertices = data.vertices.map(v => [
       v[0] * sx,
       v[1] * sy,
       v[2] * sz
     ]);
-
     this.polygons = data.polygons.map(p => ({
       indices: p.indices.slice(),
       neighbors: (p.neighbors || []).slice()
     }));
-
-    // Compute derived info
     this._computeCenters();
     this._buildEdgeMap();
   }
@@ -218,7 +212,6 @@ export default class NavMesh {
     for(let i = 1;i < portalLeft.length;i++) {
       const pLeft = portalLeft[i];
       const pRight = portalRight[i];
-
       // update right
       const relRight = sub(pRight, apex);
       const relRightCur = sub(right, apex);
@@ -234,13 +227,12 @@ export default class NavMesh {
           rightIndex = apexIndex;
           left = apex.slice();
           right = apex.slice();
-          i = apexIndex; // continue from apexIndex+1 next loop
+          i = apexIndex;
           continue;
         }
         right = pRight.slice();
         rightIndex = i;
       }
-
       // update left
       const relLeft = sub(pLeft, apex);
       const relLeftCur = sub(left, apex);
@@ -262,11 +254,9 @@ export default class NavMesh {
         leftIndex = i;
       }
     }
-
     // add goal
     const lastPortal = portalLeft[portalLeft.length - 1];
     points.push([lastPortal[0], lastPortal[1]]);
-
     // convert back to [x,y,z] with Y taken from mesh average Y (or 0)
     const out = points.map(xz => {
       const x = xz[0], z = xz[1];
@@ -274,7 +264,6 @@ export default class NavMesh {
       const y = this._sampleY(x, z);
       return [x, y, z];
     });
-
     return out;
   }
 
@@ -372,39 +361,73 @@ export class MinHeap {
   }
 }
 
+const MIN_DIST = 0.1;
+
 export function followPath(character, path, core) {
-  if(!path || path.length === 0) return;
+   if (!path || path.length === 0) return;
+
   let idx = 0;
   const pos = character.position;
   const rot = character.rotation;
-  // Recursive move
+  const MIN_DIST = 0.001;
+  const ROTATION_SPEED = 5; // adjust for smoother/slower rotation
+
+  // --- Smoothly rotate toward a target angle ---
+  function smoothRotate(current, target, deltaTime) {
+    let diff = target - current;
+    // Normalize angle difference to [-180, 180]
+    diff = ((diff + 540) % 360) - 180;
+    return current + diff * Math.min(1, deltaTime * ROTATION_SPEED);
+  }
+
+  // --- Recursive movement ---
   function moveToNext() {
-    if(idx >= path.length) {
-      dispatchEvent(new CustomEvent('onTargetPositionReach', {detail: 'test'}));
+    if (idx >= path.length) {
+      dispatchEvent(new CustomEvent('onTargetPositionReach', { detail: 'test' }));
       character.position.onTargetPositionReach = () => {};
       return;
     }
     const target = path[idx];
-    // --- Compute direction in XZ plane ---
     const dx = target[0] - pos.x;
     const dz = target[2] - pos.z;
-    // Character faces -Z → use atan2(dx, dz)
-    let angleY = Math.atan2(dx, dz);
-    angleY = (radToDeg(angleY) + 360) % 360;
-    rot.y = angleY;
-    pos.translateByXZ(target[0], target[2])
+    const dist = Math.sqrt(dx * dx + dz * dz);
+    // --- Skip points that are too close ---
+    if (dist < MIN_DIST) {
+      idx++;
+      moveToNext();
+      return;
+    }
+    // --- Compute target facing direction (Y rotation) ---
+    let targetAngleY = Math.atan2(dx, dz);
+    targetAngleY = (radToDeg(targetAngleY) + 360) % 360;
+    // --- Smooth rotation (optional deltaTime if you have it) ---
+    const deltaTime = core?.deltaTime || 0.016; // fallback ~60fps
+    rot.y = smoothRotate(rot.y, targetAngleY, deltaTime);
+    // --- Move toward next target ---
+    pos.translateByXZ(target[0], target[2]);
+    // When position reaches target:
     character.position.onTargetPositionReach = () => {
       idx++;
       moveToNext();
     };
   }
+  // --- Initialize rotation toward the first valid point ---
+  const firstTarget = path.find((p) => {
+    const dx = p[0] - pos.x;
+    const dz = p[2] - pos.z;
+    return Math.sqrt(dx * dx + dz * dz) >= MIN_DIST;
+  });
+
+  if (firstTarget) {
+    const dx = firstTarget[0] - pos.x;
+    const dz = firstTarget[2] - pos.z;
+    let initialAngleY = Math.atan2(dx, dz);
+    rot.y = (radToDeg(initialAngleY) + 360) % 360;
+  }
   moveToNext();
 }
 
 export function orientHeroToDirection(hero, dir) {
-  // dir = normalized movement direction in world space [x, y, z]
-  // hero.forward = [0, 0, -1] by default
-  // Project direction onto XZ plane (ignore Y)
   const flatDir = [dir[0], 0, dir[2]];
   const len = Math.hypot(flatDir[0], flatDir[2]);
   if(len < 0.0001) return;
@@ -415,63 +438,30 @@ export function orientHeroToDirection(hero, dir) {
   hero.rotation.y = angle; // in radians
 }
 
-// export function applySoftPush(a, b, minDistance = 1.0, pushStrength = 0.5) {
-//   // Compute difference in XZ plane
-//   const dx = b.position.x - a.position.x;
-//   const dz = b.position.z - a.position.z;
-//   const distSq = dx * dx + dz * dz;
-//   const minDistSq = minDistance * minDistance;
-
-//   if(distSq < minDistSq && distSq > 0.00001) {
-//     const dist = Math.sqrt(distSq);
-//     const overlap = minDistance - dist;
-
-//     // Normalize direction
-//     const nx = dx / dist;
-//     const nz = dz / dist;
-
-//     // Apply half push to each hero (equal reaction)
-//     const push = overlap * 0.5 * pushStrength;
-//     a.position.x -= nx * push;
-//     a.position.z -= nz * push;
-//     b.position.x += nx * push;
-//     b.position.z += nz * push;
-//   }
-// }
-
-// collision-utils.js
 export function resolvePairRepulsion(Apos, Bpos, minDistance = 30.0, pushStrength = 0.5) {
   // Apos and Bpos are Position instances (with x,z,targetX,targetZ)
   const dx = Bpos.x - Apos.x;
   const dz = Bpos.z - Apos.z;
   const distSq = dx * dx + dz * dz;
   const minDistSq = minDistance * minDistance;
-
   if(distSq < minDistSq && distSq > 1e-8) {
     const dist = Math.sqrt(distSq);
     const overlap = minDistance - dist;
-    // normalized dir from A -> B
     const nx = dx / dist;
     const nz = dz / dist;
-    // compute push for each (equal reaction)
     const totalPush = overlap * pushStrength;
     const pushA = totalPush * 0.5;
     const pushB = totalPush * 0.5;
-    // move them apart
     Apos.x -= nx * pushA;
     Apos.z -= nz * pushA;
     Bpos.x += nx * pushB;
     Bpos.z += nz * pushB;
-    // keep target in sync so update() won't pull them back
     Apos.targetX = Apos.x;
     Apos.targetZ = Apos.z;
     Bpos.targetX = Bpos.x;
     Bpos.targetZ = Bpos.z;
-    // also cancel inMove if you want them to pause instead of re-targeting
-    // Apos.inMove = false; Bpos.inMove = false;
     return true;
   }
-
   // exact overlap (practically same point) -> small jitter to separate
   if(distSq <= 1e-8) {
     const jitter = 0.01;
