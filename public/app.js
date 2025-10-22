@@ -77,9 +77,7 @@ class Character extends _hero.Hero {
         }
       }, null, glbFile01);
 
-      // -------------------------
-
-      // poenter mouse click
+      // Poenter mouse click
       var glbFile02 = await fetch('./res/meshes/glb/ring1.glb').then(res => res.arrayBuffer().then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, this.core.device)));
       this.core.addGlbObjInctance({
         material: {
@@ -127,6 +125,8 @@ class Character extends _hero.Hero {
         });
         app.localHero.heroe_bodies[0].effects.flameEmitter.recreateVertexDataRND(1);
         this.attachEvents();
+        // important
+        app.localHero.heroe_bodies[1].position = app.localHero.heroe_bodies[0].position;
         dispatchEvent(new CustomEvent('local-hero-bodies-ready', {
           detail: "This is not sync - 99% works"
         }));
@@ -168,12 +168,12 @@ class Character extends _hero.Hero {
   }
   attachEvents() {
     addEventListener('attack-magic0', e => {
+      this.setSalute();
       console.log(e.detail);
       this.core.RPG.heroe_bodies.forEach(subMesh => {
-        this.setSalute();
         // level0 have only one instance - more level more instance in visuals context
         console.info(`%cLOADING hero ghostPos`, _utils.LOG_MATRIX);
-        const distance = 80.0; // how far in front of hero
+        const distance = 100.0; // how far in front of hero
         const lift = 0.5;
         // --- rotation.y in degrees → radians
         const yawRad = (subMesh.rotation.y || 0) * Math.PI / 180;
@@ -194,7 +194,7 @@ class Character extends _hero.Hero {
         setTimeout(() => {
           subMesh.instanceTargets[1].position[0] = 0;
           subMesh.instanceTargets[1].position[2] = 0;
-          console.log("?? ", this.setWalk);
+          console.log("? ", this.setWalk);
           this.setWalk();
         }, 1300);
       });
@@ -202,11 +202,9 @@ class Character extends _hero.Hero {
 
     // Events HERO MOVMENTS
     addEventListener('set-walk', () => {
-      console.log('set walk 1 ');
       this.setWalk();
     });
     addEventListener('set-idle', () => {
-      console.log('set idle 1 ');
       this.setIdle();
     });
     addEventListener('set-attach', () => {
@@ -219,57 +217,69 @@ class Character extends _hero.Hero {
       this.setSalute();
     });
     addEventListener('close-distance', e => {
-      console.log('close distance - ', e.detail.A);
+      console.info('close distance with:', e.detail.A);
       if (this.heroFocusAttackOn && this.heroFocusAttackOn.name.indexOf(e.detail.A.id) != -1) {
-        this.setAttack(this.heroFocusAttackOn);
+        // this.setAttack(this.heroFocusAttackOn);
       }
       // still attack
       this.setAttack(this.heroFocusAttackOn);
-      // this.x = this.targetX;
-      // this.y = this.targetY;
-      // this.z = this.targetZ;
-      // this.inMove = false;
-      // this.onTargetPositionReach();
     });
+
     // must be sync with networking... in future
     // -------------------------------------------
     // console.log('ANIMATION END INITIAL NAME ', this.name)
     addEventListener(`animationEnd-${this.name}`, e => {
       // CHECK DISTANCE
       if (e.detail.animationName != 'attack') {
-        // future
-        // console.log('it is not attack + ')
         // // if(this.heroFocusAttackOn == null) { ?? maybe
         // this.setIdle();
         return;
       }
       if (this.heroFocusAttackOn == null) {
-        console.log('ANIMATION END setIdle:', e.detail.animationName);
-        this.setIdle();
-        return;
-      }
-      this.core.enemies.enemies.forEach(enemy => {
-        if (this.heroFocusAttackOn.name.indexOf(enemy.name) != -1) {
-          let tt = this.core.RPG.distance3D(this.heroe_bodies[0].position, this.heroFocusAttackOn.position);
+        console.info('FOCUS ON GROUND BUT COLLIDE WITH ENEMY-ANIMATION END setIdle:', e.detail.animationName);
+        let isEnemiesClose = false; // on close distance 
+        this.core.enemies.enemies.forEach(enemy => {
+          let tt = this.core.RPG.distance3D(this.heroe_bodies[0].position, enemy.heroe_bodies[0].position);
           if (tt < this.core.RPG.distanceForAction) {
-            console.log('Attack on :', this.heroFocusAttackOn.name);
-            console.log('%c ATTACK DAMAGE CALC ', _utils.LOG_MATRIX);
+            console.log(`%c ATTACK DAMAGE ${enemy.heroe_bodies[0].name}`, _utils.LOG_MATRIX);
+            isEnemiesClose = true;
             this.calcDamage(this, enemy);
           }
-        }
-      });
+        });
+        if (isEnemiesClose == false) this.setIdle();
+        return;
+      } else {
+        // Focus on enemy
+        this.core.enemies.enemies.forEach(enemy => {
+          if (this.heroFocusAttackOn.name.indexOf(enemy.name) != -1) {
+            let tt = this.core.RPG.distance3D(this.heroe_bodies[0].position, this.heroFocusAttackOn.position);
+            if (tt < this.core.RPG.distanceForAction) {
+              console.log(`%c ATTACK DAMAGE ${enemy.heroe_bodies[0].name}`, _utils.LOG_MATRIX);
+              this.calcDamage(this, enemy);
+            }
+          }
+        });
+      }
     });
     addEventListener('onTargetPositionReach', e => {
-      console.log("Target pos reached. setIdle", e.detail);
       // for now only local hero
       if (this.heroFocusAttackOn == null) {
-        this.setIdle();
+        let isEnemiesClose = false; // on close distance 
+        this.core.enemies.enemies.forEach(enemy => {
+          let tt = this.core.RPG.distance3D(this.heroe_bodies[0].position, enemy.heroe_bodies[0].position);
+          if (tt < this.core.RPG.distanceForAction) {
+            console.log(`%c ATTACK DAMAGE ${enemy.heroe_bodies[0].name}`, _utils.LOG_MATRIX);
+            isEnemiesClose = true;
+            this.calcDamage(this, enemy);
+          }
+        });
+        if (isEnemiesClose == false) this.setIdle();
       }
     });
     addEventListener('onMouseTarget', e => {
       // for now only local hero
       if (this.core.RPG.selected.includes(this.heroe_bodies[0])) {
-        console.log("onMouseTarget POS >>>>>", e.detail.type);
+        // console.log("onMouseTarget POS:", e.detail.type);
         this.mouseTarget.position.setPosition(e.detail.x, this.mouseTarget.position.y, e.detail.z);
         if (e.detail.type == "attach") {
           this.mouseTarget.effects.circlePlane.instanceTargets[0].color = [1, 0, 0, 0.9];
@@ -278,8 +288,6 @@ class Character extends _hero.Hero {
         }
       }
     });
-
-    // -------------------------------------------
   }
 }
 exports.Character = Character;
@@ -375,6 +383,7 @@ class Controller {
           }
         }));
         this.core.localHero.heroFocusAttackOn = null;
+        // return;
       } else if (this.core.enemies.isEnemy(e.detail.hitObject.name)) {
         dispatchEvent(new CustomEvent(`onMouseTarget`, {
           detail: {
@@ -391,6 +400,7 @@ class Controller {
       ) {
         if (this.heroe_bodies.length == 2) {
           if (e.detail.hitObject.name == this.heroe_bodies[1].name) {
+            console.log("Hit object  SELF SLICKED :", e.detail.hitObject.name);
             return;
           }
         }
@@ -531,24 +541,45 @@ exports.EnemiesManager = void 0;
 var _enemyCharacter = require("./enemy-character");
 class EnemiesManager {
   enemies = [];
+  creeps = [];
   constructor(core) {
     this.core = core;
-    this.loadBySumOgPlayers();
+    this.loadBySumOfPlayers();
     console.log('Enemies manager:', core);
   }
   // Make possible to play 3x3 4x4 or 5x5 ...
-  loadBySumOgPlayers() {
+  loadBySumOfPlayers() {
     this.enemies.push(new _enemyCharacter.Enemie({
       core: this.core,
       name: 'Slayzer',
       archetypes: ["Warrior"],
-      path: 'res/meshes/glb/monster.glb'
+      path: 'res/meshes/glb/monster.glb',
+      position: {
+        x: 0,
+        y: -23,
+        z: -260
+      }
+    }));
+    this.creeps.push(new _enemyCharacter.Enemie({
+      core: this.core,
+      name: 'abot',
+      archetypes: ["creep"],
+      path: 'res/meshes/glb/bot.glb',
+      position: {
+        x: 0,
+        y: -23,
+        z: -110
+      }
     }));
   }
   isEnemy(name) {
-    console.log('<isENMIES> ', name);
     let test = this.enemies.filter(obj => obj.name && name.includes(obj.name));
-    if (test.length == 0) return false;
+    let test2 = this.creeps.filter(obj => obj.name && name.includes(obj.name));
+    if (test2.length == 0 && test.length == 0) {
+      console.log('<isENMIES - creeps or enemy heros> NO', name);
+      return false;
+    }
+    console.log('<isENMIES - creeps or enemy heros> YES', name);
     return true;
   }
 }
@@ -589,21 +620,16 @@ class Enemie extends _hero.Hero {
           useTextureFromGlb: true
         },
         scale: [20, 20, 20],
-        position: {
-          x: 0,
-          y: -23,
-          z: -150
-        },
+        position: o.position,
         name: o.name,
         texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
         raycast: {
           enabled: true,
-          radius: 1.5
+          radius: 1.1
         },
         pointerEffect: {
           enabled: true,
-          energyBar: true,
-          circlePlane: true // simple for enemies
+          energyBar: true
         }
       }, null, glbFile01);
       // make small async - cooking glbs files
@@ -625,6 +651,7 @@ class Enemie extends _hero.Hero {
           // dont care for multi sub mesh now
           if (idx == 0) this.core.collisionSystem.register(o.name, subMesh.position, 15.0, 'enemies');
         });
+        this.setStartUpPosition();
       }, 1600);
     } catch (err) {
       throw err;
@@ -787,6 +814,16 @@ const HERO_ARCHETYPES = exports.HERO_ARCHETYPES = {
     attackSpeed: 1.0,
     hpRegenMult: 1.0,
     manaRegenMult: 1.0
+  },
+  creep: {
+    hpMult: 1,
+    manaMult: 1,
+    attackMult: 1,
+    armorMult: 1,
+    moveSpeed: 1,
+    attackSpeed: 1,
+    hpRegenMult: 1,
+    manaRegenMult: 1
   }
 };
 class HeroProps {
@@ -1687,7 +1724,7 @@ class MEMapLoader {
         geometry: "Cube"
       },
       raycast: {
-        enabled: true,
+        enabled: false,
         radius: 1.5
       }
     });
@@ -20604,7 +20641,7 @@ class CollisionSystem {
         const minDist = A.radius + B.radius;
         const testCollide = (0, _navMesh.resolvePairRepulsion)(A.pos, B.pos, minDist, 1.0);
         if (testCollide) {
-          // console.log('test collide' + A + " vs " + B);
+          console.log('collide A ' + A + " vs B " + B);
           dispatchEvent(new CustomEvent('close-distance', {
             detail: {
               A: A,
@@ -22763,6 +22800,12 @@ class RPGCamera extends CameraBase {
   // 1: Instantly stops moving
   frictionCoefficient = 0.99;
   // Returns velocity vector
+
+  // Inside your camera control init
+  scrollY = 0;
+  minY = 50.5; // minimum camera height
+  maxY = 135.0; // maximum camera height
+  scrollSpeed = 1;
   get velocity() {
     return this.velocity_;
   }
@@ -22785,6 +22828,15 @@ class RPGCamera extends CameraBase {
       this.aspect = options.canvas.width / options.canvas.height;
       this.setProjection(2 * Math.PI / 5, this.aspect, 1, 2000);
       // console.log(`%cCamera constructor : ${position}`, LOG_INFO);
+
+      this.mousRollInAction = false;
+      addEventListener('wheel', e => {
+        // Scroll up = zoom out / higher Y
+        this.mousRollInAction = true;
+        this.scrollY -= e.deltaY * this.scrollSpeed * 0.01;
+        // Clamp to range
+        this.scrollY = Math.max(this.minY, Math.min(this.maxY, this.scrollY));
+      });
     }
   }
   get matrix() {
@@ -22806,8 +22858,10 @@ class RPGCamera extends CameraBase {
     // // Clamp pitch between [-90° .. +90°] to prevent somersaults.
     this.pitch = clamp(this.pitch, -Math.PI / 2, Math.PI / 2);
     // Save the current position, as we're about to rebuild the camera matrix.
-    if (this.followMe != null && this.followMe.inMove === true) {
+    if (this.followMe != null && this.followMe.inMove === true || this.mousRollInAction == true) {
       //  console.log("  follow : " + this.followMe.x)
+
+      this.followMeOffset = this.scrollY;
       // if player not move allow mouse explore map 
       this.position[0] = this.followMe.x;
       this.position[2] = this.followMe.z + this.followMeOffset;
@@ -22815,7 +22869,10 @@ class RPGCamera extends CameraBase {
       app.lightContainer[0].position[2] = this.followMe.z;
       app.lightContainer[0].target[0] = this.followMe.x;
       app.lightContainer[0].target[2] = this.followMe.z;
+      this.mousRollInAction = false;
     }
+    const smoothFactor = 0.1;
+    this.position[1] += (this.scrollY - this.position[1]) * smoothFactor;
     let position = _wgpuMatrix.vec3.copy(this.position);
     // Reconstruct the camera's rotation, and store into the camera matrix.
     super.matrix = _wgpuMatrix.mat4.rotateX(_wgpuMatrix.mat4.rotationY(this.yaw), this.pitch);

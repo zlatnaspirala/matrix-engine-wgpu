@@ -93,6 +93,17 @@ export const HERO_ARCHETYPES = {
     attackSpeed: 1.0,
     hpRegenMult: 1.0,
     manaRegenMult: 1.0
+  },
+
+  creep: {
+    hpMult: 1,
+    manaMult: 1,
+    attackMult: 1,
+    armorMult: 1,
+    moveSpeed: 1,
+    attackSpeed: 1,
+    hpRegenMult: 1,
+    manaRegenMult: 1
   }
 };
 

@@ -27,14 +27,13 @@ export class Enemie extends Hero {
       this.core.addGlbObjInctance({
         material: {type: 'standard', useTextureFromGlb: true},
         scale: [20, 20, 20],
-        position: {x: 0, y: -23, z: -150},
+        position: o.position,
         name: o.name,
         texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
-        raycast: {enabled: true, radius: 1.5},
+        raycast: {enabled: true, radius: 1.1},
         pointerEffect: {
           enabled: true,
-          energyBar: true,
-          circlePlane: true // simple for enemies
+          energyBar: true
         }
       }, null, glbFile01);
       // make small async - cooking glbs files
@@ -58,6 +57,9 @@ export class Enemie extends Hero {
           // dont care for multi sub mesh now
           if(idx == 0) this.core.collisionSystem.register((o.name), subMesh.position, 15.0, 'enemies');
         });
+
+        this.setStartUpPosition();
+
       }, 1600)
     } catch(err) {throw err;}
   }

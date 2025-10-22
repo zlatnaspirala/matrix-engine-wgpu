@@ -83,7 +83,7 @@ export class MEMapLoader {
         mass: 0,
         geometry: "Cube"
       },
-      raycast: {enabled: true, radius: 1.5}
+      raycast: {enabled: false, radius: 1.5}
     });
 
     setTimeout(() => {

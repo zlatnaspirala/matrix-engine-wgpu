@@ -43,7 +43,6 @@ export class Character extends Hero {
 
       byId('hudLeftBox').style.background = "url('./res/textures/rpg/hero-image/maria.png')  center center / cover no-repeat";
       // byId('heroProfile').src = './res/textures/rpg/hero-image/maria.png';
-
     }
   }
 
@@ -69,9 +68,7 @@ export class Character extends Hero {
         }
       }, null, glbFile01);
 
-      // -------------------------
-
-      // poenter mouse click
+      // Poenter mouse click
       var glbFile02 = await fetch('./res/meshes/glb/ring1.glb').then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, this.core.device)));
       this.core.addGlbObjInctance({
         material: {type: 'standard', useTextureFromGlb: false},
@@ -111,11 +108,12 @@ export class Character extends Hero {
         });
         app.localHero.heroe_bodies[0].effects.flameEmitter.recreateVertexDataRND(1)
         this.attachEvents();
+        // important
+        app.localHero.heroe_bodies[1].position = app.localHero.heroe_bodies[0].position;
         dispatchEvent(new CustomEvent('local-hero-bodies-ready', {
           detail: "This is not sync - 99% works"
         }))
-      }, 1500)
-
+      }, 1500);
     } catch(err) {throw err;}
   }
 
@@ -156,13 +154,12 @@ export class Character extends Hero {
 
   attachEvents() {
     addEventListener('attack-magic0', (e) => {
+      this.setSalute();
       console.log(e.detail);
-
       this.core.RPG.heroe_bodies.forEach(subMesh => {
-        this.setSalute();
         // level0 have only one instance - more level more instance in visuals context
         console.info(`%cLOADING hero ghostPos`, LOG_MATRIX)
-        const distance = 80.0;  // how far in front of hero
+        const distance = 100.0;  // how far in front of hero
         const lift = 0.5;
         // --- rotation.y in degrees → radians
         const yawRad = (subMesh.rotation.y || 0) * Math.PI / 180;
@@ -183,8 +180,7 @@ export class Character extends Hero {
         setTimeout(() => {
           subMesh.instanceTargets[1].position[0] = 0;
           subMesh.instanceTargets[1].position[2] = 0;
-
-          console.log("?? ", this.setWalk)
+          console.log("? ", this.setWalk)
           this.setWalk()
         }, 1300)
       });
@@ -193,11 +189,9 @@ export class Character extends Hero {
 
     // Events HERO MOVMENTS
     addEventListener('set-walk', () => {
-      console.log('set walk 1 ')
       this.setWalk();
     })
     addEventListener('set-idle', () => {
-      console.log('set idle 1 ')
       this.setIdle();
     })
     addEventListener('set-attach', () => {
@@ -211,63 +205,79 @@ export class Character extends Hero {
     })
 
     addEventListener('close-distance', (e) => {
-      console.log('close distance - ', e.detail.A)
+      console.info('close distance with:', e.detail.A)
       if(this.heroFocusAttackOn && this.heroFocusAttackOn.name.indexOf(e.detail.A.id) != -1) {
-        this.setAttack(this.heroFocusAttackOn);
+        // this.setAttack(this.heroFocusAttackOn);
       }
       // still attack
-        this.setAttack(this.heroFocusAttackOn);
-      // this.x = this.targetX;
-      // this.y = this.targetY;
-      // this.z = this.targetZ;
-      // this.inMove = false;
-      // this.onTargetPositionReach();
+      this.setAttack(this.heroFocusAttackOn);
     })
+
     // must be sync with networking... in future
     // -------------------------------------------
     // console.log('ANIMATION END INITIAL NAME ', this.name)
     addEventListener(`animationEnd-${this.name}`, (e) => {
       // CHECK DISTANCE
       if(e.detail.animationName != 'attack') {
-        // future
-        // console.log('it is not attack + ')
         // // if(this.heroFocusAttackOn == null) { ?? maybe
         // this.setIdle();
         return;
       }
 
       if(this.heroFocusAttackOn == null) {
-        console.log('ANIMATION END setIdle:', e.detail.animationName)
-        this.setIdle();
-        return;
-      }
-
-      this.core.enemies.enemies.forEach((enemy) => {
-        if(this.heroFocusAttackOn.name.indexOf(enemy.name) != -1) {
+        console.info('FOCUS ON GROUND BUT COLLIDE WITH ENEMY-ANIMATION END setIdle:', e.detail.animationName)
+        let isEnemiesClose = false; // on close distance 
+        this.core.enemies.enemies.forEach((enemy) => {
           let tt = this.core.RPG.distance3D(
             this.heroe_bodies[0].position,
-            this.heroFocusAttackOn.position);
+            enemy.heroe_bodies[0].position);
           if(tt < this.core.RPG.distanceForAction) {
-            console.log('Attack on :', this.heroFocusAttackOn.name)
-            console.log('%c ATTACK DAMAGE CALC ', LOG_MATRIX)
+            console.log(`%c ATTACK DAMAGE ${enemy.heroe_bodies[0].name}`, LOG_MATRIX)
+            isEnemiesClose = true;
             this.calcDamage(this, enemy);
           }
-        }
-      })
+        })
+        if(isEnemiesClose == false) this.setIdle();
+        return;
+      }
+      else {
+        // Focus on enemy
+        this.core.enemies.enemies.forEach((enemy) => {
+          if(this.heroFocusAttackOn.name.indexOf(enemy.name) != -1) {
+            let tt = this.core.RPG.distance3D(
+              this.heroe_bodies[0].position,
+              this.heroFocusAttackOn.position);
+            if(tt < this.core.RPG.distanceForAction) {
+              console.log(`%c ATTACK DAMAGE ${enemy.heroe_bodies[0].name}`, LOG_MATRIX)
+              this.calcDamage(this, enemy);
+            }
+          }
+        })
+      }
     })
 
     addEventListener('onTargetPositionReach', (e) => {
-      console.log("Target pos reached. setIdle", e.detail);
       // for now only local hero
       if(this.heroFocusAttackOn == null) {
-        this.setIdle();
+        let isEnemiesClose = false; // on close distance 
+        this.core.enemies.enemies.forEach((enemy) => {
+          let tt = this.core.RPG.distance3D(
+            this.heroe_bodies[0].position,
+            enemy.heroe_bodies[0].position);
+          if(tt < this.core.RPG.distanceForAction) {
+            console.log(`%c ATTACK DAMAGE ${enemy.heroe_bodies[0].name}`, LOG_MATRIX)
+            isEnemiesClose = true;
+            this.calcDamage(this, enemy);
+          }
+        })
+        if(isEnemiesClose == false) this.setIdle();
       }
     })
 
     addEventListener('onMouseTarget', (e) => {
       // for now only local hero
       if(this.core.RPG.selected.includes(this.heroe_bodies[0])) {
-        console.log("onMouseTarget POS >>>>>", e.detail.type);
+        // console.log("onMouseTarget POS:", e.detail.type);
         this.mouseTarget.position.setPosition(e.detail.x, this.mouseTarget.position.y, e.detail.z)
         if(e.detail.type == "attach") {
           this.mouseTarget.effects.circlePlane.instanceTargets[0].color = [1, 0, 0, 0.9];
@@ -276,7 +286,5 @@ export class Character extends Hero {
         }
       }
     })
-
-    // -------------------------------------------
   }
 }

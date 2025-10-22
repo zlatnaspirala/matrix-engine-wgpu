@@ -23,7 +23,7 @@ export class CollisionSystem {
         const minDist = A.radius + B.radius;
         const testCollide = resolvePairRepulsion(A.pos, B.pos, minDist, 1.0);
         if (testCollide) {
-          // console.log('test collide' + A + " vs " + B);
+          console.log('collide A ' + A + " vs B " + B);
           dispatchEvent(new CustomEvent('close-distance', {detail: {
              A: A,
              B: B

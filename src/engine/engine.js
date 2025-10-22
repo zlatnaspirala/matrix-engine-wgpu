@@ -424,6 +424,15 @@ export class RPGCamera extends CameraBase {
   // 1: Instantly stops moving
   frictionCoefficient = 0.99;
   // Returns velocity vector
+
+  // Inside your camera control init
+  scrollY = 0;
+  minY = 50.5;   // minimum camera height
+  maxY = 135.0;   // maximum camera height
+  scrollSpeed = 1;
+
+
+
   get velocity() {
     return this.velocity_;
   }
@@ -448,6 +457,16 @@ export class RPGCamera extends CameraBase {
       this.aspect = options.canvas.width / options.canvas.height;
       this.setProjection((2 * Math.PI) / 5, this.aspect, 1, 2000);
       // console.log(`%cCamera constructor : ${position}`, LOG_INFO);
+
+      this.mousRollInAction = false;
+      addEventListener('wheel', (e) => {
+        // Scroll up = zoom out / higher Y
+        this.mousRollInAction = true;
+        this.scrollY -= e.deltaY * this.scrollSpeed * 0.01;
+        // Clamp to range
+        this.scrollY = Math.max(this.minY, Math.min(this.maxY, this.scrollY));
+        
+      });
     }
   }
 
@@ -472,8 +491,12 @@ export class RPGCamera extends CameraBase {
     // // Clamp pitch between [-90° .. +90°] to prevent somersaults.
     this.pitch = clamp(this.pitch, -Math.PI / 2, Math.PI / 2);
     // Save the current position, as we're about to rebuild the camera matrix.
-    if(this.followMe != null && this.followMe.inMove === true) {
+    if(this.followMe != null && this.followMe.inMove === true ||
+        this.mousRollInAction == true
+    ) {
       //  console.log("  follow : " + this.followMe.x)
+
+      this.followMeOffset = this.scrollY;
       // if player not move allow mouse explore map 
       this.position[0] = this.followMe.x;
       this.position[2] = this.followMe.z + this.followMeOffset;
@@ -481,7 +504,14 @@ export class RPGCamera extends CameraBase {
       app.lightContainer[0].position[2] = this.followMe.z;
       app.lightContainer[0].target[0] = this.followMe.x;
       app.lightContainer[0].target[2] = this.followMe.z;
+
+      this.mousRollInAction = false;
     }
+
+     
+     const smoothFactor = 0.1;
+     this.position[1] += (this.scrollY - this.position[1]) * smoothFactor;
+
     let position = vec3.copy(this.position);
     // Reconstruct the camera's rotation, and store into the camera matrix.
     super.matrix = mat4.rotateX(mat4.rotationY(this.yaw), this.pitch);
