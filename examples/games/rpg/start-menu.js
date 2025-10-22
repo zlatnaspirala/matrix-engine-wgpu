@@ -184,9 +184,12 @@ let mysticoreStartSceen = new MatrixEngineWGPU({
 
     function updateDesc() {
       byId('desc').innerHTML = app.heros[(app.selectedHero)].desc;
-
-      byId('desc').innerHTML += "ARCHETYPES:" + HERO_ARCHETYPES[app.heros[(app.selectedHero)].type]
+      let C = HERO_ARCHETYPES[app.heros[(app.selectedHero)].type];
       
+      for (let key in C) {
+        byId('desc').innerHTML += ` 
+          <span style="color:blue"> ${key} </span> : <span style="color:red">${C[key]} </span>`;
+      }
     }
 
     hud.appendChild(previusBtn);

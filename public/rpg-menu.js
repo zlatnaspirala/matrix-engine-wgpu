@@ -698,7 +698,11 @@ let mysticoreStartSceen = new _world.default({
     });
     function updateDesc() {
       (0, _utils.byId)('desc').innerHTML = app.heros[app.selectedHero].desc;
-      (0, _utils.byId)('desc').innerHTML += "ARCHETYPES:" + _hero.HERO_ARCHETYPES[app.heros[app.selectedHero].type];
+      let C = _hero.HERO_ARCHETYPES[app.heros[app.selectedHero].type];
+      for (let key in C) {
+        (0, _utils.byId)('desc').innerHTML += ` 
+          <span style="color:blue"> ${key} </span> : <span style="color:red">${C[key]} </span>`;
+      }
     }
     hud.appendChild(previusBtn);
     hud.appendChild(desc);
