@@ -229,6 +229,9 @@ export class ArcballCamera extends CameraBase {
   // 1: Instantly stops spinning
   frictionCoefficient = 0.999;
 
+  setProjection(fov = (2 * Math.PI) / 5, aspect = 1, near = 1, far = 1000) {
+    this.projectionMatrix = mat4.perspective(fov, aspect, near, far);
+  }
   // Construtor
   constructor(options) {
     super();
@@ -236,6 +239,9 @@ export class ArcballCamera extends CameraBase {
       this.position = options.position;
       this.distance = vec3.len(this.position);
       this.back = vec3.normalize(this.position);
+
+      this.setProjection((2 * Math.PI) / 5, this.aspect, 1, 2000);
+
       this.recalcuateRight();
       this.recalcuateUp();
     }
@@ -465,7 +471,7 @@ export class RPGCamera extends CameraBase {
         this.scrollY -= e.deltaY * this.scrollSpeed * 0.01;
         // Clamp to range
         this.scrollY = Math.max(this.minY, Math.min(this.maxY, this.scrollY));
-        
+
       });
     }
   }
@@ -492,7 +498,7 @@ export class RPGCamera extends CameraBase {
     this.pitch = clamp(this.pitch, -Math.PI / 2, Math.PI / 2);
     // Save the current position, as we're about to rebuild the camera matrix.
     if(this.followMe != null && this.followMe.inMove === true ||
-        this.mousRollInAction == true
+      this.mousRollInAction == true
     ) {
       //  console.log("  follow : " + this.followMe.x)
 
@@ -508,9 +514,9 @@ export class RPGCamera extends CameraBase {
       this.mousRollInAction = false;
     }
 
-     
-     const smoothFactor = 0.1;
-     this.position[1] += (this.scrollY - this.position[1]) * smoothFactor;
+
+    const smoothFactor = 0.1;
+    this.position[1] += (this.scrollY - this.position[1]) * smoothFactor;
 
     let position = vec3.copy(this.position);
     // Reconstruct the camera's rotation, and store into the camera matrix.
