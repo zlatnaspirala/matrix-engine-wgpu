@@ -104,12 +104,12 @@ const HERO_ARCHETYPES = exports.HERO_ARCHETYPES = {
     manaRegenMult: 1.0
   },
   creep: {
-    hpMult: 1,
+    hpMult: 0.6,
     manaMult: 1,
     attackMult: 1,
     armorMult: 1,
-    moveSpeed: 1,
-    attackSpeed: 1,
+    moveSpeed: 0.95,
+    attackSpeed: 0.8,
     hpRegenMult: 1,
     manaRegenMult: 1
   }
@@ -538,10 +538,11 @@ let mysticoreStartSceen = new _world.default({
   mysticoreStartSceen.heroByBody = [];
   mysticoreStartSceen.selectedHero = 0;
   mysticoreStartSceen.lock = false;
+  let heros = null;
   addEventListener('AmmoReady', async () => {
-    let heros = [{
+    heros = [{
       type: "Warrior",
-      name: 'Maria',
+      name: 'MariaSword',
       path: "res/meshes/glb/woman1.glb",
       desc: mysticoreStartSceen.label.get.mariasword
     }, {
@@ -551,9 +552,9 @@ let mysticoreStartSceen = new _world.default({
       desc: mysticoreStartSceen.label.get.slayzer
     }, {
       type: "Warrior",
-      name: 'Bot',
+      name: 'Steelborn',
       path: "res/meshes/glb/bot.glb",
-      desc: mysticoreStartSceen.label.get.mariasword
+      desc: mysticoreStartSceen.label.get.steelborn
     }];
     mysticoreStartSceen.heros = heros;
 
@@ -606,6 +607,12 @@ let mysticoreStartSceen = new _world.default({
           hero0[0].effects.flameEmitter.instanceTargets.forEach((p, i, array) => {
             array[i].color = [0, 0, 0, 0.7];
           });
+          if (x == 2) {
+            console.log('TEST------');
+            hero0.forEach((p, i, array) => {
+              array[i].globalAmbient = [6, 6, 6];
+            });
+          }
         }
         app.lightContainer[0].position[2] = 10;
         app.lightContainer[0].position[1] = 50;
@@ -617,6 +624,7 @@ let mysticoreStartSceen = new _world.default({
   mysticoreStartSceen.addLight();
   function createHUDMEnu() {
     document.body.style.cursor = "url('./res/icons/default.png') 0 0, auto";
+    (0, _utils.byId)('canvas1').style.pointerEvents = 'none';
     const hud = document.createElement("div");
     hud.id = "hud-menu";
     Object.assign(hud.style, {
@@ -688,13 +696,13 @@ let mysticoreStartSceen = new _world.default({
     const desc = document.createElement("div");
     desc.id = 'desc';
     Object.assign(desc.style, {
-      // display: 'flex',
+      display: 'flex',
+      flexDirection: 'column',
       width: "300px",
       textAlign: "center",
       color: 'c4deff',
       fontWeight: "bold",
       textShadow: "0 0 5px black"
-      // pointerEvents: "none",
     });
     desc.textContent = "HERO INFO";
     const previusBtn = document.createElement("button");
@@ -745,7 +753,7 @@ let mysticoreStartSceen = new _world.default({
       let C = _hero.HERO_ARCHETYPES[app.heros[app.selectedHero].type];
       for (let key in C) {
         (0, _utils.byId)('desc').innerHTML += ` 
-         <div style='font-size: 12px;display: inline-flex;'>
+         <div style='font-size: 15px;display: inline-flex;justify-content:space-between'>
            <span style="color:#00e2ff"> ${key} </span> : <span style="color:red">${C[key]} </span>
           </div>
         `;
@@ -773,6 +781,11 @@ let mysticoreStartSceen = new _world.default({
     startBtn.textContent = "start";
     startBtn.addEventListener('click', () => {
       console.log('START', app.selectedHero);
+      _utils.LS.set('player', {
+        hero: heros[app.selectedHero].name,
+        path: heros[app.selectedHero].path
+      });
+      location.assign('rpg-game.html');
     });
     hud.appendChild(previusBtn);
     hud.appendChild(desc);
@@ -27015,7 +27028,7 @@ exports.default = MEMeshObj;
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.LOG_WARN = exports.LOG_MATRIX = exports.LOG_INFO = exports.LOG_FUNNY_SMALL = exports.LOG_FUNNY = void 0;
+exports.LS = exports.LOG_WARN = exports.LOG_MATRIX = exports.LOG_INFO = exports.LOG_FUNNY_SMALL = exports.LOG_FUNNY = void 0;
 exports.ORBIT = ORBIT;
 exports.ORBIT_FROM_ARRAY = ORBIT_FROM_ARRAY;
 exports.OSCILLATOR = OSCILLATOR;
@@ -27894,6 +27907,48 @@ function setupCanvasFilters(canvasId) {
   });
   updateFilter(); // Initial
 }
+
+/**
+ * @description
+ * // Save an object
+    Storage.set('playerData', { name: 'Slayzer', hp: 120, mana: 80 });
+
+    // Load it back
+    const player = Storage.get('playerData');
+    console.log(player.name); // "Slayzer"
+
+    // Check if exists
+    if (Storage.has('playerData')) console.log('Found!');
+
+    // Remove one
+    Storage.remove('playerData');
+
+    // Clear all localStorage
+    Storage.clear();
+ */
+const LS = exports.LS = {
+  set(key, value) {
+    localStorage.setItem(key, JSON.stringify(value));
+  },
+  get(key, defaultValue = null) {
+    const item = localStorage.getItem(key);
+    try {
+      return item ? JSON.parse(item) : defaultValue;
+    } catch (e) {
+      console.warn(`Error parsing localStorage key "${key}"`, e);
+      return defaultValue;
+    }
+  },
+  has(key) {
+    return localStorage.getItem(key) !== null;
+  },
+  remove(key) {
+    localStorage.removeItem(key);
+  },
+  clear() {
+    localStorage.clear();
+  }
+};
 
 },{}],41:[function(require,module,exports){
 "use strict";
@@ -30155,19 +30210,39 @@ fn vsMain(input : VertexInput, @builtin(instance_index) instanceIndex : u32) -> 
 // === FRAGMENT STAGE =======================================================
 @fragment
 fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
-  let texColor = textureSample(myTexture, mySampler, input.v_uv);
+
+ // Adjust UV scaling and offset here
+  let uvScale = vec2<f32>(1.3, 1.3);   // < 1.0 = zoom out (more texture visible)
+  let uvOffset = vec2<f32>(0.01, 0.01); // move the texture slightly
+  
+  let adjustedUV = input.v_uv * uvScale + uvOffset;
+
+  let texColor = textureSample(myTexture, mySampler, adjustedUV);
 
   let uv = input.v_uv * 2.0 - vec2<f32>(1.0, 1.0);
   let dist = length(uv);
   let glow = exp(-dist * 1.2);
   let glowColor = mix(vec3<f32>(0.2, 0.7, 1.0), vec3<f32>(0.8, 0.95, 1.0), glow);
 
-  // More balanced color blending:
   let baseRGB = texColor.rgb * glowColor;
-  let tintedRGB = mix(baseRGB, input.v_color.rgb, 0.8); // 0.8 gives strong tint influence
+  let tintedRGB = mix(baseRGB, input.v_color.rgb, 0.8);
   let finalAlpha = texColor.a * input.v_color.a * glow;
 
   return vec4<f32>(tintedRGB, finalAlpha);
+
+  // let texColor = textureSample(myTexture, mySampler, input.v_uv);
+
+  // let uv = input.v_uv * 2.0 - vec2<f32>(1.0, 1.0);
+  // let dist = length(uv);
+  // let glow = exp(-dist * 1.2);
+  // let glowColor = mix(vec3<f32>(0.2, 0.7, 1.0), vec3<f32>(0.8, 0.95, 1.0), glow);
+
+  // // More balanced color blending:
+  // let baseRGB = texColor.rgb * glowColor;
+  // let tintedRGB = mix(baseRGB, input.v_color.rgb, 0.8); // 0.8 gives strong tint influence
+  // let finalAlpha = texColor.a * input.v_color.a * glow;
+
+  // return vec4<f32>(tintedRGB, finalAlpha);
 }
 `;
 

@@ -6,6 +6,7 @@ import {Character} from "./character-base.js";
 import {HERO_PROFILES} from "./hero.js";
 import {EnemiesManager} from "./enemies-manager.js";
 import {CollisionSystem} from "../../../src/engine/collision-sub-system.js";
+import {LS} from "../../../src/engine/utils.js";
 
 /**
  * @Note
@@ -23,8 +24,15 @@ let mysticore = new MatrixEngineWGPU({
   clearColor: {r: 0, b: 0.122, g: 0.122, a: 1}
 }, () => {
 
+  let player = {};
+
   addEventListener('AmmoReady', async () => {
 
+    if (!LS.has('player')) {
+      alert('nnnnn')
+    }
+
+    player.data = LS.get('player');
     addEventListener('local-hero-bodies-ready', () => {
       app.cameras.RPG.position[1] = 130;
       app.cameras.RPG.followMe = mysticore.localHero.heroe_bodies[0].position;
@@ -35,13 +43,13 @@ let mysticore = new MatrixEngineWGPU({
     mysticore.mapLoader = new MEMapLoader(mysticore, "./res/meshes/nav-mesh/navmesh.json");
     mysticore.localHero = new Character(
       mysticore,
-      "res/meshes/glb/woman1.glb",
-      'MariaSword', HERO_PROFILES.MariaSword.baseArchetypes);
-    mysticore.HUD = new HUD(mysticore.localHero);
-    mysticore.enemies = new EnemiesManager(mysticore);
-    mysticore.collisionSystem = new CollisionSystem(mysticore);
-    // setTimeout(() => {   // }, 3000);
-  })
-  mysticore.addLight();
+      player.data.path,
+      player.data.hero, HERO_PROFILES.MariaSword.baseArchetypes);
+  mysticore.HUD = new HUD(mysticore.localHero);
+  mysticore.enemies = new EnemiesManager(mysticore);
+  mysticore.collisionSystem = new CollisionSystem(mysticore);
+  // setTimeout(() => {   // }, 3000);
+})
+mysticore.addLight();
 })
 window.app = mysticore;

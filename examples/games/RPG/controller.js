@@ -127,18 +127,14 @@ export class Controller {
       }
       // Define start (hero position) and end (clicked point)
       const hero = this.heroe_bodies[0];
-      let heroSword = null;
-      if(this.heroe_bodies.length == 2) {
-        heroSword = this.heroe_bodies[1];
-      }
-
       dispatchEvent(new CustomEvent('set-walk'));
       const start = [hero.position.x, hero.position.y, hero.position.z];
       const end = [hitPoint[0], hitPoint[1], hitPoint[2]];
       const path = this.nav.findPath(start, end);
       if(!path || path.length === 0) {console.warn('No valid path found.'); return;}
-      followPath(hero, path, this.core);
-      followPath(heroSword, path, this.core);
+      for (var x=0; x < this.heroe_bodies.length;x++) {
+        followPath(this.heroe_bodies[x], path, this.core);
+      }
     });
 
     this.canvas.addEventListener("contextmenu", (e) => {

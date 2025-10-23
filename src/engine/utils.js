@@ -700,14 +700,14 @@ export let mb = {
     mb.c++;
   },
   error: function(content) {
-    if (mb.root()== null) return;
+    if(mb.root() == null) return;
     mb.root().classList.remove("success")
     mb.root().classList.add("error")
     mb.root().classList.add("fadeInDown");
     mb.show(content, 'err');
   },
   success: function(content) {
-    if (mb.root()== null) return;
+    if(mb.root() == null) return;
     mb.root().classList.remove("error")
     mb.root().classList.add("success")
     mb.root().classList.add("fadeInDown");
@@ -720,10 +720,10 @@ const typingStates = new Map();
 
 export function typeText(elementId, htmlString, delay = 50) {
   const el = document.getElementById(elementId);
-  if (!el) return;
+  if(!el) return;
 
   // If an existing typing is running for this element, cancel it
-  if (typingStates.has(elementId)) {
+  if(typingStates.has(elementId)) {
     clearTimeout(typingStates.get(elementId).timeoutId);
     typingStates.delete(elementId);
   }
@@ -736,10 +736,10 @@ export function typeText(elementId, htmlString, delay = 50) {
   const queue = [];
 
   function flatten(node) {
-    if (node.nodeType === Node.TEXT_NODE) {
-      queue.push({ type: 'text', text: node.textContent });
-    } else if (node.nodeType === Node.ELEMENT_NODE) {
-      if (node.tagName.toLowerCase() === 'img') {
+    if(node.nodeType === Node.TEXT_NODE) {
+      queue.push({type: 'text', text: node.textContent});
+    } else if(node.nodeType === Node.ELEMENT_NODE) {
+      if(node.tagName.toLowerCase() === 'img') {
         queue.push({
           type: 'img',
           src: node.getAttribute('src'),
@@ -751,42 +751,42 @@ export function typeText(elementId, htmlString, delay = 50) {
           tag: node.tagName.toLowerCase(),
           attributes: Object.fromEntries([...node.attributes].map(attr => [attr.name, attr.value]))
         });
-        for (const child of node.childNodes) flatten(child);
-        queue.push({ type: 'end' });
+        for(const child of node.childNodes) flatten(child);
+        queue.push({type: 'end'});
       }
     }
   }
 
-  for (const node of tempEl.childNodes) flatten(node);
+  for(const node of tempEl.childNodes) flatten(node);
 
   let stack = [];
   let currentElement = el;
 
   function typeNextChar() {
-    if (queue.length === 0) {
+    if(queue.length === 0) {
       typingStates.delete(elementId); // Cleanup after finish
       return;
     }
 
     const item = queue[0];
 
-    if (item.type === 'text') {
-      if (!item.index) item.index = 0;
+    if(item.type === 'text') {
+      if(!item.index) item.index = 0;
 
       const ch = item.text[item.index];
-      if (ch === '\n') {
+      if(ch === '\n') {
         currentElement.appendChild(document.createElement('br'));
       } else {
         currentElement.appendChild(document.createTextNode(ch));
       }
 
       item.index++;
-      if (item.index >= item.text.length) queue.shift();
+      if(item.index >= item.text.length) queue.shift();
 
-    } else if (item.type === 'element') {
+    } else if(item.type === 'element') {
       const newEl = document.createElement(item.tag);
-      if (item.attributes) {
-        for (let [key, val] of Object.entries(item.attributes)) {
+      if(item.attributes) {
+        for(let [key, val] of Object.entries(item.attributes)) {
           newEl.setAttribute(key, val);
         }
       }
@@ -795,11 +795,11 @@ export function typeText(elementId, htmlString, delay = 50) {
       currentElement = newEl;
       queue.shift();
 
-    } else if (item.type === 'end') {
+    } else if(item.type === 'end') {
       currentElement = stack.pop();
       queue.shift();
 
-    } else if (item.type === 'img') {
+    } else if(item.type === 'img') {
       const img = document.createElement('img');
       img.src = item.src;
       img.alt = item.alt;
@@ -811,7 +811,7 @@ export function typeText(elementId, htmlString, delay = 50) {
 
     // Schedule next step and store timeoutId for control
     const timeoutId = setTimeout(typeNextChar, delay);
-    typingStates.set(elementId, { timeoutId });
+    typingStates.set(elementId, {timeoutId});
   }
 
   typeNextChar();
@@ -871,3 +871,49 @@ export function setupCanvasFilters(canvasId) {
 
   updateFilter(); // Initial
 }
+
+/**
+ * @description
+ * // Save an object
+    Storage.set('playerData', { name: 'Slayzer', hp: 120, mana: 80 });
+
+    // Load it back
+    const player = Storage.get('playerData');
+    console.log(player.name); // "Slayzer"
+
+    // Check if exists
+    if (Storage.has('playerData')) console.log('Found!');
+
+    // Remove one
+    Storage.remove('playerData');
+
+    // Clear all localStorage
+    Storage.clear();
+ */
+export const LS = {
+  set(key, value) {
+    localStorage.setItem(key, JSON.stringify(value));
+  },
+
+  get(key, defaultValue = null) {
+    const item = localStorage.getItem(key);
+    try {
+      return item ? JSON.parse(item) : defaultValue;
+    } catch(e) {
+      console.warn(`Error parsing localStorage key "${key}"`, e);
+      return defaultValue;
+    }
+  },
+
+  has(key) {
+    return localStorage.getItem(key) !== null;
+  },
+
+  remove(key) {
+    localStorage.removeItem(key);
+  },
+
+  clear() {
+    localStorage.clear();
+  }
+};

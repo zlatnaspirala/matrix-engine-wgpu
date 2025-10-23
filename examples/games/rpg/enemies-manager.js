@@ -10,15 +10,15 @@ export class EnemiesManager {
   }
   // Make possible to play 3x3 4x4 or 5x5 ...
   loadBySumOfPlayers() {
-    this.enemies.push(new Enemie(
-      {
-        core: this.core,
-        name: 'Slayzer',
-        archetypes: ["Warrior"],
-        path: 'res/meshes/glb/monster.glb',
-        position : {x: 0, y: -23, z: -260}
-      }
-    ));
+    // this.enemies.push(new Enemie(
+    //   {
+    //     core: this.core,
+    //     name: 'Slayzer',
+    //     archetypes: ["Warrior"],
+    //     path: 'res/meshes/glb/monster.glb',
+    //     position : {x: 0, y: -23, z: -260}
+    //   }
+    // ));
     this.creeps.push(
       new Enemie(
         {

@@ -119,6 +119,66 @@ export class Enemie extends Hero {
         e.detail.attacker.killEnemy(e.detail.defenderLevel);
       }
     });
+
+
+        addEventListener(`animationEnd-${this.name}`, (e) => {
+      // CHECK DISTANCE
+      if(e.detail.animationName != 'attack') {
+        // // if(this.heroFocusAttackOn == null) { ?? maybe
+
+        if(e.detail.animationName != 'attack') {
+          //
+          
+        }
+        // this.setIdle();
+        return;
+      }
+
+      if(this.heroFocusAttackOn == null) {
+        console.info('FOCUS ON GROUND BUT COLLIDE WITH ENEMY-ANIMATION END setIdle:', e.detail.animationName)
+        let isEnemiesClose = false; // on close distance 
+        this.core.enemies.enemies.forEach((enemy) => {
+          let tt = this.core.RPG.distance3D(
+            this.heroe_bodies[0].position,
+            enemy.heroe_bodies[0].position);
+          if(tt < this.core.RPG.distanceForAction) {
+            console.log(`%c ATTACK DAMAGE ${enemy.heroe_bodies[0].name}`, LOG_MATRIX)
+            isEnemiesClose = true;
+            this.calcDamage(this, enemy);
+          }
+        })
+        if(isEnemiesClose == false) this.setIdle();
+        return;
+      }
+      else {
+        // Focus on enemy vs creeps !!!
+        if (this.core.enemies.enemies.length >0) this.core.enemies.enemies.forEach((enemy) => {
+          if(this.heroFocusAttackOn.name.indexOf(enemy.name) != -1) {
+            let tt = this.core.RPG.distance3D(
+              this.heroe_bodies[0].position,
+              this.heroFocusAttackOn.position);
+            if(tt < this.core.RPG.distanceForAction) {
+              console.log(`%c ATTACK DAMAGE ${enemy.heroe_bodies[0].name}`, LOG_MATRIX)
+              this.calcDamage(this, enemy);
+              return;
+            }
+          }
+        })
+
+        if (this.core.enemies.creeps.length >0) this.core.enemies.creeps.forEach((enemy) => {
+          if(this.heroFocusAttackOn.name.indexOf(enemy.name) != -1) {
+            let tt = this.core.RPG.distance3D(
+              this.heroe_bodies[0].position,
+              this.heroFocusAttackOn.position);
+            if(tt < this.core.RPG.distanceForAction) {
+              console.log(`%c ATTACK DAMAGE ${enemy.heroe_bodies[0].name}`, LOG_MATRIX)
+              this.calcDamage(this, enemy);
+            }
+          }
+        })
+      }
+    })
+
   }
 
 }

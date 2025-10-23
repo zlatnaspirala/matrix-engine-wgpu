@@ -1,5 +1,5 @@
 import {uploadGLBModel} from "../../../src/engine/loaders/webgpu-gltf.js";
-import {byId} from "../../../src/engine/utils.js";
+import {byId, LS} from "../../../src/engine/utils.js";
 import MatrixEngineWGPU from "../../../src/world.js";
 import {HERO_ARCHETYPES} from "./hero.js";
 
@@ -23,12 +23,18 @@ let mysticoreStartSceen = new MatrixEngineWGPU({
   mysticoreStartSceen.selectedHero = 0;
   mysticoreStartSceen.lock = false;
 
+  let heros = null;
   addEventListener('AmmoReady', async () => {
 
-    let heros = [
-      {type: "Warrior", name: 'Maria', path: "res/meshes/glb/woman1.glb", desc: mysticoreStartSceen.label.get.mariasword},
+    heros = [
+      {
+        type: "Warrior",
+        name: 'MariaSword',
+        path: "res/meshes/glb/woman1.glb",
+        desc: mysticoreStartSceen.label.get.mariasword
+      },
       {type: "Warrior", name: 'Slayzer', path: "res/meshes/glb/monster.glb", desc: mysticoreStartSceen.label.get.slayzer},
-      {type: "Warrior", name: 'Bot', path: "res/meshes/glb/bot.glb", desc: mysticoreStartSceen.label.get.mariasword},
+      {type: "Warrior", name: 'Steelborn', path: "res/meshes/glb/bot.glb", desc: mysticoreStartSceen.label.get.steelborn},
     ];
 
     mysticoreStartSceen.heros = heros;
@@ -76,6 +82,14 @@ let mysticoreStartSceen = new MatrixEngineWGPU({
           hero0[0].effects.flameEmitter.instanceTargets.forEach((p, i, array) => {
             array[i].color = [0, 0, 0, 0.7];
           })
+
+          if (x==2) {
+            console.log('TEST------')
+            hero0.forEach((p , i , array) => {
+              array[i].globalAmbient = [6,6,6];
+            })
+            
+          }
         }
 
         app.lightContainer[0].position[2] = 10;
@@ -95,6 +109,7 @@ let mysticoreStartSceen = new MatrixEngineWGPU({
   function createHUDMEnu() {
 
     document.body.style.cursor = "url('./res/icons/default.png') 0 0, auto";
+    byId('canvas1').style.pointerEvents = 'none';
 
     const hud = document.createElement("div");
     hud.id = "hud-menu";
@@ -178,13 +193,13 @@ let mysticoreStartSceen = new MatrixEngineWGPU({
     const desc = document.createElement("div");
     desc.id = 'desc';
     Object.assign(desc.style, {
-      // display: 'flex',
+      display: 'flex',
+      flexDirection: 'column',
       width: "300px",
       textAlign: "center",
       color: 'c4deff',
       fontWeight: "bold",
       textShadow: "0 0 5px black",
-      // pointerEvents: "none",
     });
     desc.textContent = "HERO INFO";
 
@@ -242,7 +257,7 @@ let mysticoreStartSceen = new MatrixEngineWGPU({
 
       for(let key in C) {
         byId('desc').innerHTML += ` 
-         <div style='font-size: 12px;display: inline-flex;'>
+         <div style='font-size: 15px;display: inline-flex;justify-content:space-between'>
            <span style="color:#00e2ff"> ${key} </span> : <span style="color:red">${C[key]} </span>
           </div>
         `;
@@ -272,6 +287,12 @@ let mysticoreStartSceen = new MatrixEngineWGPU({
     startBtn.textContent = "start";
     startBtn.addEventListener('click', () => {
       console.log('START', app.selectedHero)
+      LS.set('player', {
+        hero: heros[app.selectedHero].name,
+        path: heros[app.selectedHero].path
+      })
+
+      location.assign('rpg-game.html');
     });
 
     hud.appendChild(previusBtn);

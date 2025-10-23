@@ -31,19 +31,13 @@ export class Character extends Hero {
 
   setupHUDForHero(name) {
     console.info(`%cLOADING hero name : ${name}`, LOG_MATRIX)
-    if(name == 'MariaSword') {
-      byId('magic-slot-0').style.background = 'url("./res/textures/rpg/magics/maria-sword-1.png")';
-      byId('magic-slot-0').style.backgroundRepeat = "round";
-      byId('magic-slot-1').style.background = 'url("./res/textures/rpg/magics/maria-sword-2.png")';
-      byId('magic-slot-1').style.backgroundRepeat = "round";
-      byId('magic-slot-2').style.background = 'url("./res/textures/rpg/magics/maria-sword-3.png")';
-      byId('magic-slot-2').style.backgroundRepeat = "round";
-      byId('magic-slot-3').style.background = 'url("./res/textures/rpg/magics/maria-sword-4.png")';
-      byId('magic-slot-3').style.backgroundRepeat = "round";
-
-      byId('hudLeftBox').style.background = "url('./res/textures/rpg/hero-image/maria.png')  center center / cover no-repeat";
-      // byId('heroProfile').src = './res/textures/rpg/hero-image/maria.png';
-    }
+    // if(name == 'MariaSword') {
+      for (var x = 1; x < 5; x++) {
+        byId(`magic-slot-${x-1}`).style.background = `url("./res/textures/rpg/magics/${name.toLowerCase()}-${x}.png")`;
+        byId(`magic-slot-${x-1}`).style.backgroundRepeat = "round";
+      }
+      byId('hudLeftBox').style.background = `url('./res/textures/rpg/hero-image/${name.toLowerCase()}.png')  center center / cover no-repeat`;
+      byId('hudDesription').innerHTML = app.label.get.mariasword;  
   }
 
   async loadLocalHero(p) {
@@ -62,9 +56,9 @@ export class Character extends Hero {
           energyBar: true,
           flameEffect: false,
           flameEmitter: true,
-          circlePlane: true,
+          circlePlane: false,
           circlePlaneTex: true,
-          circlePlaneTexPath: './res/textures/rpg/symbols/star.png',
+          circlePlaneTexPath: './res/textures/rpg/magics/mariasword-2.png',
         }
       }, null, glbFile01);
 
@@ -86,6 +80,9 @@ export class Character extends Hero {
 
       // make small async - cooking glbs files  mouseTarget_Circle
       setTimeout(() => {
+
+          console.info(`%c ANimation: !!!!!!!!!!!!!!!`, LOG_MATRIX)
+
         this.mouseTarget = app.getSceneObjectByName('mouseTarget_Circle');
         this.heroe_bodies = app.mainRenderBundle.filter(obj =>
           obj.name && obj.name.includes(this.name)
@@ -107,13 +104,30 @@ export class Character extends Hero {
           this.core.collisionSystem.register(`local${id}`, subMesh.position, 15.0, 'local_hero');
         });
         app.localHero.heroe_bodies[0].effects.flameEmitter.recreateVertexDataRND(1)
+
+        // adapt
+
+        app.localHero.heroe_bodies[0].globalAmbient = [1,1,1,1];
+        console.log('app.local', app.localHero.name);
+        if (app.localHero.name == 'Slayzer') {
+          app.localHero.heroe_bodies[0].globalAmbient = [2,2,3,1];
+        } else if (app.localHero.name == '') {
+          app.localHero.heroe_bodies[0].globalAmbient = [12,12,12,1]
+        }
+        
         this.attachEvents();
-        // important
-        app.localHero.heroe_bodies[1].position = app.localHero.heroe_bodies[0].position;
+        // important !!
+        // if(app.localHero.heroe_bodies.length > 1) {
+        //   app.localHero.heroe_bodies[1].position = app.localHero.heroe_bodies[0].position;
+        // }
+        for (var x =0; x< app.localHero.heroe_bodies.length;x++){
+          if (x>0) app.localHero.heroe_bodies[x].position = app.localHero.heroe_bodies[0].position;
+        }
+
         dispatchEvent(new CustomEvent('local-hero-bodies-ready', {
           detail: "This is not sync - 99% works"
         }))
-      }, 1500);
+      }, 2500);
     } catch(err) {throw err;}
   }
 
@@ -242,7 +256,20 @@ export class Character extends Hero {
       }
       else {
         // Focus on enemy
-        this.core.enemies.enemies.forEach((enemy) => {
+        if (this.core.enemies.enemies.length >0) this.core.enemies.enemies.forEach((enemy) => {
+          if(this.heroFocusAttackOn.name.indexOf(enemy.name) != -1) {
+            let tt = this.core.RPG.distance3D(
+              this.heroe_bodies[0].position,
+              this.heroFocusAttackOn.position);
+            if(tt < this.core.RPG.distanceForAction) {
+              console.log(`%c ATTACK DAMAGE ${enemy.heroe_bodies[0].name}`, LOG_MATRIX)
+              this.calcDamage(this, enemy);
+              return;
+            }
+          }
+        })
+
+        if (this.core.enemies.creeps.length >0) this.core.enemies.creeps.forEach((enemy) => {
           if(this.heroFocusAttackOn.name.indexOf(enemy.name) != -1) {
             let tt = this.core.RPG.distance3D(
               this.heroe_bodies[0].position,
