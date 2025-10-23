@@ -589,6 +589,9 @@ You may use, modify, and sell projects based on this code — just keep this not
   You cannot redistribute or sell the raw Mixamo character or animation files “as is” (i.e. as standalone assets) to others.You can’t use Mixamo content to create a competing library of characters / animations (i.e. you can’t just package them and sell them to others).
   You can’t use Mixamo’s content (or outputs) to train AI / machine learning models.
 
+ - Used free assets from great https://craftpix.net
+   Magic icons : https://craftpix.net/freebies/free-rpg-splash-game-512x512-icons/
+ 
 ---
 
 ### BSD 3-Clause License (from WebGPU Samples)

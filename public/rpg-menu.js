@@ -600,6 +600,12 @@ let mysticoreStartSceen = new _world.default({
         for (var x = 0; x < heros.length; x++) {
           let hero0 = app.mainRenderBundle.filter(obj => obj.name.indexOf(heros[x].name) != -1);
           app.heroByBody.push(hero0);
+          if (x == 0) {
+            hero0[0].effects.circlePlane.instanceTargets[0].color = [1, 0, 2, 1];
+          }
+          hero0[0].effects.flameEmitter.instanceTargets.forEach((p, i, array) => {
+            array[i].color = [0, 0, 0, 0.7];
+          });
         }
         app.lightContainer[0].position[2] = 10;
         app.lightContainer[0].position[1] = 50;
@@ -610,6 +616,7 @@ let mysticoreStartSceen = new _world.default({
   });
   mysticoreStartSceen.addLight();
   function createHUDMEnu() {
+    document.body.style.cursor = "url('./res/icons/default.png') 0 0, auto";
     const hud = document.createElement("div");
     hud.id = "hud-menu";
     Object.assign(hud.style, {
@@ -618,27 +625,33 @@ let mysticoreStartSceen = new _world.default({
       left: "0",
       width: "100%",
       height: "35%",
-      backgroundColor: "rgba(169, 169, 169, 0.5)",
+      backgroundColor: "rgba(60, 60, 60, 1)",
       display: "flex",
       alignItems: "center",
       justifyContent: "space-around",
       color: "white",
       fontFamily: "'Orbitron', sans-serif",
       zIndex: "1",
+      fontSize: '20px',
       padding: "10px",
       boxSizing: "border-box"
     });
     const nextBtn = document.createElement("button");
     Object.assign(nextBtn.style, {
       // position: "absolute",
-      width: "200px",
+      width: "80px",
       textAlign: "center",
       color: "white",
       fontWeight: "bold",
-      textShadow: "0 0 5px black"
-      // pointerEvents: "none",
+      textShadow: "0 0 2px black",
+      // color: '#eaff00',
+      // background: '#aca8a8',
+      height: "40px",
+      fontSize: '16px',
+      borderRadius: '120px',
+      cursor: 'pointer'
     });
-    nextBtn.textContent = "NEXT>>";
+    nextBtn.textContent = "NEXT";
     nextBtn.addEventListener('click', () => {
       if (app.selectedHero >= app.heroByBody.length - 1 || app.lock == true) {
         console.log('NEXTBLOCKED ', app.selectedHero);
@@ -652,6 +665,22 @@ let mysticoreStartSceen = new _world.default({
           heroBodie.position.onTargetPositionReach = () => {
             app.lock = false;
           };
+
+          // custom adapt 
+          if (indexRoot == 0) {
+            heroBodie.globalAmbient = [1, 1, 1];
+          } else if (indexRoot == 1) {
+            heroBodie.globalAmbient = [2, 2.5, 2];
+          } else if (indexRoot == 2) {
+            heroBodie.globalAmbient = [4, 4, 4];
+          }
+          if (heroBodie.effects.circlePlane) {
+            if (indexRoot == app.selectedHero) {
+              heroBodie.effects.circlePlane.instanceTargets[0].color = [1, 0, 2, 1];
+            } else {
+              heroBodie.effects.circlePlane.instanceTargets[0].color = [0.6, 0.8, 1, 0.4];
+            }
+          }
         });
       });
       updateDesc();
@@ -659,9 +688,10 @@ let mysticoreStartSceen = new _world.default({
     const desc = document.createElement("div");
     desc.id = 'desc';
     Object.assign(desc.style, {
-      width: "200px",
+      // display: 'flex',
+      width: "300px",
       textAlign: "center",
-      color: "white",
+      color: 'c4deff',
       fontWeight: "bold",
       textShadow: "0 0 5px black"
       // pointerEvents: "none",
@@ -670,14 +700,19 @@ let mysticoreStartSceen = new _world.default({
     const previusBtn = document.createElement("button");
     Object.assign(previusBtn.style, {
       // position: "absolute",
-      width: "200px",
+      width: "80px",
       textAlign: "center",
       color: "white",
       fontWeight: "bold",
-      textShadow: "0 0 5px black"
-      // pointerEvents: "none",
+      textShadow: "0 0 2px black",
+      // color: '#eaff00',
+      // background: '#aca8a8',
+      height: "40px",
+      fontSize: '16px',
+      borderRadius: '120px',
+      cursor: 'pointer'
     });
-    previusBtn.textContent = "<<BACK";
+    previusBtn.textContent = "BACK";
     previusBtn.addEventListener('click', () => {
       console.log('TEST previusBtn mysticoreStartSceen.selectedHero', app.selectedHero);
       if (app.selectedHero < 1 || app.lock == true) {
@@ -692,21 +727,57 @@ let mysticoreStartSceen = new _world.default({
           heroBodie.position.onTargetPositionReach = () => {
             app.lock = false;
           };
+          if (heroBodie.effects.circlePlane) {
+            if (indexRoot == app.selectedHero) {
+              heroBodie.effects.circlePlane.instanceTargets[0].color = [1, 0, 2, 1];
+            } else {
+              heroBodie.effects.circlePlane.instanceTargets[0].color = [0.6, 0.8, 1, 0.4];
+            }
+          }
         });
       });
       updateDesc();
     });
     function updateDesc() {
-      (0, _utils.byId)('desc').innerHTML = app.heros[app.selectedHero].desc;
+      (0, _utils.byId)('desc').innerHTML = `
+        <div style='height:130px;'> ${app.heros[app.selectedHero].desc}</div>
+        `;
       let C = _hero.HERO_ARCHETYPES[app.heros[app.selectedHero].type];
       for (let key in C) {
         (0, _utils.byId)('desc').innerHTML += ` 
-          <span style="color:blue"> ${key} </span> : <span style="color:red">${C[key]} </span>`;
+         <div style='font-size: 12px;display: inline-flex;'>
+           <span style="color:#00e2ff"> ${key} </span> : <span style="color:red">${C[key]} </span>
+          </div>
+        `;
       }
     }
+
+    //
+    const startBtn = document.createElement("button");
+    Object.assign(startBtn.style, {
+      position: "absolute",
+      bottom: '70px',
+      right: '120px',
+      width: "200px",
+      textAlign: "center",
+      color: "white",
+      fontWeight: "bold",
+      textShadow: "0 0 2px black",
+      color: '#ffffffff',
+      background: '#000000ff',
+      height: "40px",
+      fontSize: '16px',
+      borderRadius: '120px',
+      cursor: 'pointer'
+    });
+    startBtn.textContent = "start";
+    startBtn.addEventListener('click', () => {
+      console.log('START', app.selectedHero);
+    });
     hud.appendChild(previusBtn);
     hud.appendChild(desc);
     hud.appendChild(nextBtn);
+    hud.appendChild(startBtn);
     document.body.appendChild(hud);
     updateDesc();
   }
@@ -19559,7 +19630,7 @@ class FlameEmitter {
     this.enabled = true;
     this.maxParticles = maxParticles;
     this.instanceTargets = [];
-    this.floatsPerInstance = 24;
+    this.floatsPerInstance = 28;
     this.instanceData = new Float32Array(maxParticles * this.floatsPerInstance);
     this.smoothFlickeringScale = 0.1;
     this.maxY = 1.9;
@@ -19723,9 +19794,10 @@ class FlameEmitter {
       const finalMat = _wgpuMatrix.mat4.identity();
       _wgpuMatrix.mat4.multiply(baseModelMatrix, local, finalMat);
       const offset = i * this.floatsPerInstance;
-      this.instanceData.set(finalMat, offset);
-      this.instanceData.set([t.time, 0, 0, 0], offset + 16);
-      this.instanceData.set([t.intensity, 0, 0, 0], offset + 20);
+      this.instanceData.set(finalMat, offset); // 0..15
+      this.instanceData.set([t.time, 0, 0, 0], offset + 16); // 16..19
+      this.instanceData.set([t.intensity, 0, 0, 0], offset + 20); // 20..23
+      this.instanceData.set([t.color[0], t.color[1], t.color[2], t.color[3] ?? 1.0], offset + 24); // 24..27
     }
     this.device.queue.writeBuffer(this.modelBuffer, 0, this.instanceData.subarray(0, count * this.floatsPerInstance));
   };
@@ -28210,6 +28282,7 @@ struct ModelData {
   model : mat4x4<f32>,
   time : vec4<f32>,       // x = time
   intensity : vec4<f32>,  // x = intensity
+  color : vec4<f32>,      // rgba color
 };
 @group(0) @binding(1) var<storage, read> modelDataArray : array<ModelData>;
 
@@ -28224,7 +28297,7 @@ struct VSOut {
   @location(0) uv : vec2<f32>,
   @location(1) time : f32,
   @location(2) intensity : f32,
-  @location(3) @interpolate(flat) instanceIdx : u32,  // flat interpolation required
+  @location(3) @interpolate(flat) instanceIdx : u32,
 };
 
 @vertex
@@ -28236,11 +28309,11 @@ fn vsMain(input : VSIn) -> VSOut {
   output.uv = input.uv;
   output.time = modelData.time.x;
   output.intensity = modelData.intensity.x;
-  output.instanceIdx = input.instanceIdx; // pass to fragment
+  output.instanceIdx = input.instanceIdx;
   return output;
 }
 
-// Simple procedural flame noise
+// Simple procedural flame noise (value in 0..1)
 fn hash(n : vec2<f32>) -> f32 {
   return fract(sin(dot(n, vec2<f32>(12.9898, 78.233))) * 43758.5453);
 }
@@ -28256,19 +28329,26 @@ fn noise(p : vec2<f32>) -> f32 {
   );
 }
 
-// Flame color gradient: black → red → orange → yellow → white
+// Flame color gradient: black -> red -> orange -> yellow -> white
 fn flameColor(n: f32) -> vec3<f32> {
   if (n < 0.3) {
     return vec3<f32>(n * 3.0, 0.0, 0.0);               // dark red
   } else if (n < 0.6) {
-    return vec3<f32>(1.0, (n-0.3)*3.33, 0.0);          // red → orange
+    return vec3<f32>(1.0, (n - 0.3) * 3.33, 0.0);      // red -> orange
   } else {
-    return vec3<f32>(1.0, 1.0, (n-0.6)*2.5);           // orange → yellow → white
+    return vec3<f32>(1.0, 1.0, (n - 0.6) * 2.5);       // orange -> yellow -> white
   }
 }
 
 @fragment
 fn fsMain(in : VSOut) -> @location(0) vec4<f32> {
+  // Read per-instance data
+  let modelData = modelDataArray[in.instanceIdx];
+  let baseColor = modelData.color.xyz;
+  let instanceAlpha = modelData.color.w;
+  let instIntensity = max(0.0, modelData.intensity.x);
+
+  // time with small instance offset
   let t = in.time * 2.0 + f32(in.instanceIdx) * 0.13;
 
   var uv = in.uv;
@@ -28276,17 +28356,36 @@ fn fsMain(in : VSOut) -> @location(0) vec4<f32> {
 
   // procedural noise
   var n = noise(uv * 5.0 + vec2<f32>(0.0, t * 0.5));
-  n = pow(n, 3.0); // sharpen
+  // keep some brightness: milder sharpening than pow(n,3)
+  n = pow(n, 1.5);
 
-  // flame color mapping
-  let r = n * 1.5 + n * 0.5 * sin(t * 3.0);       // red dominant
-  let g = n * 0.8 * cos(t * 2.0);                 // green flicker
-  let b = n * 0.2 + n * 0.1 * sin(t * 1.5);      // small blue component
+  // base flame color from gradient
+  let grad = flameColor(n);
 
-  var color = vec3<f32>(r, g, b) * in.intensity;
+  let userColor = modelData.color.xyz;
 
-  // soft alpha based on noise
-  let alpha = smoothstep(0.0, 0.5, n);
+  // mix ratio (0.0 = pure red, 1.0 = user color)
+  let mixFactor = 0.5;
+  let mixedColor = mix(grad, userColor, mixFactor);
+
+  // flicker multipliers (shifted into positive range)
+  let flickR = 0.7 + 0.3 * sin(t * 3.0); // 0.4 .. 1.0
+  let flickG = 0.6 + 0.4 * cos(t * 2.0); // 0.2 .. 1.0
+  let flickB = 0.8 + 0.2 * sin(t * 1.5); // 0.6 .. 1.0
+
+  // combine gradient with per-instance baseColor and flicker
+  // var color = grad * baseColor * vec3<f32>(flickR, flickG, flickB);
+  var color = mixedColor * vec3<f32>(flickR, flickG, flickB);
+
+  // apply instance/global intensity
+  color = color * instIntensity;
+
+  // soft alpha based on noise and instance alpha
+  var alpha = smoothstep(0.0, 0.6, n) * instanceAlpha * instIntensity;
+
+  // final clamp to avoid negative or NaN values
+  color = clamp(color, vec3<f32>(0.0), vec3<f32>(10.0)); // allow HDR-like values for additive blending
+  alpha = clamp(alpha, 0.0, 1.0);
 
   return vec4<f32>(color, alpha);
 }

@@ -26,9 +26,9 @@ let mysticoreStartSceen = new MatrixEngineWGPU({
   addEventListener('AmmoReady', async () => {
 
     let heros = [
-      {type: "Warrior" , name: 'Maria', path: "res/meshes/glb/woman1.glb", desc: mysticoreStartSceen.label.get.mariasword},
-      {type: "Warrior" , name: 'Slayzer', path: "res/meshes/glb/monster.glb", desc: mysticoreStartSceen.label.get.slayzer},
-      {type: "Warrior" , name: 'Bot', path: "res/meshes/glb/bot.glb", desc: mysticoreStartSceen.label.get.mariasword},
+      {type: "Warrior", name: 'Maria', path: "res/meshes/glb/woman1.glb", desc: mysticoreStartSceen.label.get.mariasword},
+      {type: "Warrior", name: 'Slayzer', path: "res/meshes/glb/monster.glb", desc: mysticoreStartSceen.label.get.slayzer},
+      {type: "Warrior", name: 'Bot', path: "res/meshes/glb/bot.glb", desc: mysticoreStartSceen.label.get.mariasword},
     ];
 
     mysticoreStartSceen.heros = heros;
@@ -70,6 +70,12 @@ let mysticoreStartSceen = new MatrixEngineWGPU({
         for(var x = 0;x < heros.length;x++) {
           let hero0 = app.mainRenderBundle.filter((obj) => obj.name.indexOf(heros[x].name) != -1)
           app.heroByBody.push(hero0);
+          if(x == 0) {
+            hero0[0].effects.circlePlane.instanceTargets[0].color = [1, 0, 2, 1];
+          }
+          hero0[0].effects.flameEmitter.instanceTargets.forEach((p, i, array) => {
+            array[i].color = [0, 0, 0, 0.7];
+          })
         }
 
         app.lightContainer[0].position[2] = 10;
@@ -87,6 +93,9 @@ let mysticoreStartSceen = new MatrixEngineWGPU({
 
 
   function createHUDMEnu() {
+
+    document.body.style.cursor = "url('./res/icons/default.png') 0 0, auto";
+
     const hud = document.createElement("div");
     hud.id = "hud-menu";
     Object.assign(hud.style, {
@@ -95,13 +104,14 @@ let mysticoreStartSceen = new MatrixEngineWGPU({
       left: "0",
       width: "100%",
       height: "35%",
-      backgroundColor: "rgba(169, 169, 169, 0.5)",
+      backgroundColor: "rgba(60, 60, 60, 1)",
       display: "flex",
       alignItems: "center",
       justifyContent: "space-around",
       color: "white",
       fontFamily: "'Orbitron', sans-serif",
       zIndex: "1",
+      fontSize: '20px',
       padding: "10px",
       boxSizing: "border-box"
     });
@@ -109,14 +119,19 @@ let mysticoreStartSceen = new MatrixEngineWGPU({
     const nextBtn = document.createElement("button");
     Object.assign(nextBtn.style, {
       // position: "absolute",
-      width: "200px",
+      width: "80px",
       textAlign: "center",
       color: "white",
       fontWeight: "bold",
-      textShadow: "0 0 5px black",
-      // pointerEvents: "none",
+      textShadow: "0 0 2px black",
+      // color: '#eaff00',
+      // background: '#aca8a8',
+      height: "40px",
+      fontSize: '16px',
+      borderRadius: '120px',
+      cursor: 'pointer'
     });
-    nextBtn.textContent = "NEXT>>";
+    nextBtn.textContent = "NEXT";
     nextBtn.addEventListener('click', () => {
       if(app.selectedHero >= app.heroByBody.length - 1 || app.lock == true) {
         console.log('NEXTBLOCKED ', app.selectedHero)
@@ -131,8 +146,30 @@ let mysticoreStartSceen = new MatrixEngineWGPU({
           heroBodie.position.onTargetPositionReach = () => {
             app.lock = false;
           }
+
+          // custom adapt 
+          if(indexRoot == 0) {
+            heroBodie.globalAmbient = [1, 1, 1];
+          } else if(indexRoot == 1) {
+            heroBodie.globalAmbient = [2, 2.5, 2];
+          } else if(indexRoot == 2) {
+            heroBodie.globalAmbient = [4, 4, 4];
+          }
+
+          if(heroBodie.effects.circlePlane) {
+            if(indexRoot == app.selectedHero) {
+              heroBodie.effects.circlePlane.instanceTargets[0].color = [1, 0, 2, 1];
+            } else {
+              heroBodie.effects.circlePlane.instanceTargets[0].color = [0.6, 0.8, 1, 0.4];
+            }
+          }
+
         })
       })
+
+
+
+
       updateDesc()
 
     });
@@ -141,9 +178,10 @@ let mysticoreStartSceen = new MatrixEngineWGPU({
     const desc = document.createElement("div");
     desc.id = 'desc';
     Object.assign(desc.style, {
-      width: "200px",
+      // display: 'flex',
+      width: "300px",
       textAlign: "center",
-      color: "white",
+      color: 'c4deff',
       fontWeight: "bold",
       textShadow: "0 0 5px black",
       // pointerEvents: "none",
@@ -153,14 +191,19 @@ let mysticoreStartSceen = new MatrixEngineWGPU({
     const previusBtn = document.createElement("button");
     Object.assign(previusBtn.style, {
       // position: "absolute",
-      width: "200px",
+      width: "80px",
       textAlign: "center",
       color: "white",
       fontWeight: "bold",
-      textShadow: "0 0 5px black",
-      // pointerEvents: "none",
+      textShadow: "0 0 2px black",
+      // color: '#eaff00',
+      // background: '#aca8a8',
+      height: "40px",
+      fontSize: '16px',
+      borderRadius: '120px',
+      cursor: 'pointer'
     });
-    previusBtn.textContent = "<<BACK";
+    previusBtn.textContent = "BACK";
 
     previusBtn.addEventListener('click', () => {
       console.log('TEST previusBtn mysticoreStartSceen.selectedHero', app.selectedHero)
@@ -175,7 +218,16 @@ let mysticoreStartSceen = new MatrixEngineWGPU({
           heroBodie.position.translateByX(-app.selectedHero * 50 + indexRoot * 50)
           heroBodie.position.onTargetPositionReach = () => {
             app.lock = false;
+          };
+
+          if(heroBodie.effects.circlePlane) {
+            if(indexRoot == app.selectedHero) {
+              heroBodie.effects.circlePlane.instanceTargets[0].color = [1, 0, 2, 1];
+            } else {
+              heroBodie.effects.circlePlane.instanceTargets[0].color = [0.6, 0.8, 1, 0.4];
+            }
           }
+
         })
       })
       updateDesc()
@@ -183,21 +235,51 @@ let mysticoreStartSceen = new MatrixEngineWGPU({
 
 
     function updateDesc() {
-      byId('desc').innerHTML = app.heros[(app.selectedHero)].desc;
+      byId('desc').innerHTML = `
+        <div style='height:130px;'> ${app.heros[(app.selectedHero)].desc}</div>
+        `;
       let C = HERO_ARCHETYPES[app.heros[(app.selectedHero)].type];
-      
-      for (let key in C) {
+
+      for(let key in C) {
         byId('desc').innerHTML += ` 
-          <span style="color:blue"> ${key} </span> : <span style="color:red">${C[key]} </span>`;
+         <div style='font-size: 12px;display: inline-flex;'>
+           <span style="color:#00e2ff"> ${key} </span> : <span style="color:red">${C[key]} </span>
+          </div>
+        `;
       }
     }
+
+
+
+    //
+    const startBtn = document.createElement("button");
+    Object.assign(startBtn.style, {
+      position: "absolute",
+      bottom: '70px',
+      right: '120px',
+      width: "200px",
+      textAlign: "center",
+      color: "white",
+      fontWeight: "bold",
+      textShadow: "0 0 2px black",
+      color: '#ffffffff',
+      background: '#000000ff',
+      height: "40px",
+      fontSize: '16px',
+      borderRadius: '120px',
+      cursor: 'pointer'
+    });
+    startBtn.textContent = "start";
+    startBtn.addEventListener('click', () => {
+      console.log('START', app.selectedHero)
+    });
 
     hud.appendChild(previusBtn);
     hud.appendChild(desc);
     hud.appendChild(nextBtn);
+    hud.appendChild(startBtn);
     document.body.appendChild(hud);
-
-    updateDesc()
+    updateDesc();
   }
 })
 window.app = mysticoreStartSceen;
