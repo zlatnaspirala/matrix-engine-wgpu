@@ -222,9 +222,9 @@ class Character extends _hero.Hero {
     app.localHero.frendlyLocal.creeps.forEach((creep, index) => {
       if (creep.creepFocusAttackOn != null) {
         console.log('[creep.creepFocusAttackOn] is on action chech for small interval again....!', creep);
-        setTimeout(() => {
-          this.navigateCreeps();
-        }, 5000);
+        // setTimeout(() => {
+        //   this.navigateCreeps();
+        // }, 5000)
         return;
       }
       creep.firstPoint = [-653.83, -26.62, -612.95];
