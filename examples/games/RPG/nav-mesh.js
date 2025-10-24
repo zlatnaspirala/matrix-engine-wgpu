@@ -383,7 +383,10 @@ export function followPath(character, path, core) {
   // --- Recursive movement ---
   function moveToNext() {
     if (idx >= path.length) {
-      dispatchEvent(new CustomEvent('onTargetPositionReach', { detail: 'test' }));
+      dispatchEvent(new CustomEvent('onTargetPositionReach', { detail: {
+        name: character.name,
+        body: character
+      } }));
       character.position.onTargetPositionReach = () => {};
       return;
     }

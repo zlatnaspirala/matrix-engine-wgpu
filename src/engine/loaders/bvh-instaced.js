@@ -127,6 +127,10 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
   getNumberOfFramesCurAni() {
     const anim = this.glb.glbJsonData.animations[this.glb.animationIndex];
     let maxFrames = 0;
+    if (typeof anim == 'undefined') {
+      console.log('[anim undefined]', this.name)
+      return 1;
+    }
     for(const sampler of anim.samplers) {
       const inputAccessor = this.glb.glbJsonData.accessors[sampler.input];
       if(inputAccessor.count > maxFrames) maxFrames = inputAccessor.count;

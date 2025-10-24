@@ -2,7 +2,7 @@ import {uploadGLBModel} from "../../../src/engine/loaders/webgpu-gltf";
 import {LOG_MATRIX} from "../../../src/engine/utils";
 import {Hero} from "./hero";
 
-export class Enemie extends Hero {
+export class Creep extends Hero {
 
   heroAnimationArrange = {
     dead: null,
@@ -12,16 +12,19 @@ export class Enemie extends Hero {
     idle: null
   }
 
-  constructor(o, archetypes = ["Warrior"]) {
+  creepFocusAttackOn = null;
+
+  constructor(o, archetypes = ["creep"], group = "enemy") {
     super(o.name, archetypes);
     this.name = o.name;
     this.core = o.core;
-    this.loadEnemyHero(o);
+    this.group = group;
+    this.loadCreeps(o);
     this.attachEvents();
     return this;
   }
 
-  loadEnemyHero = async (o) => {
+  loadCreeps = async (o) => {
     try {
       var glbFile01 = await fetch(o.path).then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, this.core.device)));
       this.core.addGlbObjInctance({
@@ -51,11 +54,12 @@ export class Enemie extends Hero {
             if(a.name == 'walk') this.heroAnimationArrange.walk = index;
             if(a.name == 'salute') this.heroAnimationArrange.salute = index;
             if(a.name == 'attack') this.heroAnimationArrange.attack = index;
+            if(a.name == 'idle') this.heroAnimationArrange.idle = index;
           });
           // maybe will help - remote net players no nedd to collide in other remote user gamaplay
           // this.core.collisionSystem.register((o.name + idx), subMesh.position, 15.0, 'enemies');
           // dont care for multi sub mesh now
-          if(idx == 0) this.core.collisionSystem.register((o.name), subMesh.position, 15.0, 'enemies');
+          if(idx == 0) this.core.collisionSystem.register((o.name), subMesh.position, 15.0, this.group);
         });
 
         this.setStartUpPosition();
@@ -63,7 +67,6 @@ export class Enemie extends Hero {
       }, 1600)
     } catch(err) {throw err;}
   }
-
 
   setWalk() {
     this.heroe_bodies.forEach(subMesh => {
@@ -92,6 +95,7 @@ export class Enemie extends Hero {
       console.info(`%chero idle`, LOG_MATRIX)
     });
   }
+
   setAttack() {
     this.heroe_bodies.forEach(subMesh => {
       subMesh.glb.animationIndex = this.heroAnimationArrange.attack;
@@ -101,12 +105,11 @@ export class Enemie extends Hero {
 
   setStartUpPosition() {
     this.heroe_bodies.forEach((subMesh, idx) => {
-      subMesh.position.setPosition(-700, -23, 0);
+      subMesh.position.setPosition(0, -23, 0)
     })
   }
 
   attachEvents() {
-
     addEventListener(`onDamage-${this.name}`, (e) => {
       console.info(`%c hero damage ${e.detail}`, LOG_MATRIX)
       this.heroe_bodies[0].effects.energyBar.setProgress(e.detail.progress);
@@ -120,6 +123,57 @@ export class Enemie extends Hero {
         e.detail.attacker.killEnemy(e.detail.defenderLevel);
       }
     });
+
+    addEventListener(`animationEnd-${this.name}`, (e) => {
+      // CHECK DISTANCE
+      if(e.detail.animationName != 'attack' && this.creepFocusAttackOn == null) {
+        return;
+      }
+
+      if(this.creepFocusAttackOn == null) {
+        console.info('FOCUS ON GROUND BUT COLLIDE WITH ENEMY-ANIMATION END setIdle:', e.detail.animationName)
+        let isEnemiesClose = false; // on close distance 
+        this.core.enemies.enemies.forEach((enemy) => {
+          let tt = this.core.RPG.distance3D(
+            this.heroe_bodies[0].position,
+            enemy.heroe_bodies[0].position);
+          if(tt < this.core.RPG.distanceForAction) {
+            console.log(`%c ATTACK DAMAGE ${enemy.heroe_bodies[0].name}`, LOG_MATRIX)
+            isEnemiesClose = true;
+            this.calcDamage(this, enemy);
+          }
+        })
+        if(isEnemiesClose == false) this.setIdle();
+        return;
+      }
+      else {
+        // Focus on enemy vs creeps !!!
+        if(this.core.enemies.enemies.length > 0) this.core.enemies.enemies.forEach((enemy) => {
+          if(this.creepFocusAttackOn.name.indexOf(enemy.name) != -1) {
+            let tt = this.core.RPG.distance3D(
+              this.heroe_bodies[0].position,
+              this.creepFocusAttackOn.position);
+            if(tt < this.core.RPG.distanceForAction) {
+              console.log(`%c ATTACK DAMAGE ${enemy.heroe_bodies[0].name}`, LOG_MATRIX)
+              this.calcDamage(this, enemy);
+              return;
+            }
+          }
+        })
+
+        if(this.core.enemies.creeps.length > 0) this.core.enemies.creeps.forEach((enemy) => {
+          if(this.creepFocusAttackOn.name.indexOf(enemy.name) != -1) {
+            let tt = this.core.RPG.distance3D(
+              this.heroe_bodies[0].position,
+              this.creepFocusAttackOn.position);
+            if(tt < this.core.RPG.distanceForAction) {
+              console.log(`%c ATTACK DAMAGE ${enemy.heroe_bodies[0].name}`, LOG_MATRIX)
+              this.calcDamage(this, enemy);
+            }
+          }
+        })
+      }
+    })
 
   }
 

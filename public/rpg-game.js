@@ -9,9 +9,22 @@ var _wgpuMatrix = require("wgpu-matrix");
 var _webgpuGltf = require("../../../src/engine/loaders/webgpu-gltf");
 var _utils = require("../../../src/engine/utils");
 var _hero = require("./hero");
+var _creepCharacter = require("./creep-character");
+var _navMesh = require("./nav-mesh");
 class Character extends _hero.Hero {
-  positionThrust = 0.85;
+  frendlyLocal = {
+    heroes: [],
+    creeps: []
+  };
+  creepThrust = 0.85;
   heroAnimationArrange = {
+    dead: null,
+    walk: null,
+    salute: null,
+    attack: null,
+    idle: null
+  };
+  frendlyCreepAnimationArrange = {
     dead: null,
     walk: null,
     salute: null,
@@ -26,6 +39,7 @@ class Character extends _hero.Hero {
     this.name = name;
     this.core = mysticore;
     this.heroe_bodies = [];
+    this.loadFrendlyCreeps();
     this.loadLocalHero(path);
     // async
     setTimeout(() => this.setupHUDForHero(name), 500);
@@ -39,6 +53,41 @@ class Character extends _hero.Hero {
     }
     (0, _utils.byId)('hudLeftBox').style.background = `url('./res/textures/rpg/hero-image/${name.toLowerCase()}.png')  center center / cover no-repeat`;
     (0, _utils.byId)('hudDesription').innerHTML = app.label.get.mariasword;
+  }
+  async loadFrendlyCreeps() {
+    this.frendlyLocal.creeps.push(new _creepCharacter.Creep({
+      core: this.core,
+      name: 'frendly-creeps0',
+      archetypes: ["creep"],
+      path: 'res/meshes/glb/bot.glb',
+      position: {
+        x: 0,
+        y: -23,
+        z: 1000
+      }
+    }, ['creep'], 'frendly'));
+    this.frendlyLocal.creeps.push(new _creepCharacter.Creep({
+      core: this.core,
+      name: 'frendly-creeps1',
+      archetypes: ["creep"],
+      path: 'res/meshes/glb/bot.glb',
+      position: {
+        x: 150,
+        y: -23,
+        z: 1200
+      }
+    }, ['creep'], 'frendly'));
+    this.frendlyLocal.creeps.push(new _creepCharacter.Creep({
+      core: this.core,
+      name: 'frendly-creeps2',
+      archetypes: ["creep"],
+      path: 'res/meshes/glb/bot.glb',
+      position: {
+        x: 100,
+        y: -23,
+        z: 1400
+      } // not work init
+    }, ['creep'], 'frendly'));
   }
   async loadLocalHero(p) {
     try {
@@ -97,10 +146,9 @@ class Character extends _hero.Hero {
         }
       }, null, glbFile02);
       // ---------
-
       // make small async - cooking glbs files  mouseTarget_Circle
       setTimeout(() => {
-        console.info(`%c ANimation: !!!!!!!!!!!!!!!`, _utils.LOG_MATRIX);
+        console.info(`%cAnimation...`, _utils.LOG_MATRIX);
         this.mouseTarget = app.getSceneObjectByName('mouseTarget_Circle');
         this.heroe_bodies = app.mainRenderBundle.filter(obj => obj.name && obj.name.includes(this.name));
         this.core.RPG.heroe_bodies = this.heroe_bodies;
@@ -120,16 +168,14 @@ class Character extends _hero.Hero {
           this.core.collisionSystem.register(`local${id}`, subMesh.position, 15.0, 'local_hero');
         });
         app.localHero.heroe_bodies[0].effects.flameEmitter.recreateVertexDataRND(1);
-
         // adapt
-
         app.localHero.heroe_bodies[0].globalAmbient = [1, 1, 1, 1];
-        console.log('app.local', app.localHero.name);
         if (app.localHero.name == 'Slayzer') {
           app.localHero.heroe_bodies[0].globalAmbient = [2, 2, 3, 1];
         } else if (app.localHero.name == '') {
           app.localHero.heroe_bodies[0].globalAmbient = [12, 12, 12, 1];
         }
+        app.localHero.setAllCreepsAtStartPos();
         this.attachEvents();
         // important !!
         // if(app.localHero.heroe_bodies.length > 1) {
@@ -141,10 +187,50 @@ class Character extends _hero.Hero {
         dispatchEvent(new CustomEvent('local-hero-bodies-ready', {
           detail: "This is not sync - 99% works"
         }));
-      }, 2500);
+      }, 3500);
     } catch (err) {
       throw err;
     }
+  }
+  setAllCreepsAtStartPos() {
+    // console.info(`%c setAllCreepsAtStartPos:  ??????????????????????`, LOG_MATRIX)
+    this.frendlyLocal.creeps.forEach((subMesh_, id) => {
+      let subMesh = subMesh_.heroe_bodies[0];
+      subMesh.position.thrust = subMesh_.moveSpeed;
+      subMesh.glb.animationIndex = 0;
+      // adapt manual if blender is not setup
+      subMesh.glb.glbJsonData.animations.forEach((a, index) => {
+        // console.info(`%c ANimation: ${a.name} index ${index}`, LOG_MATRIX)
+        if (a.name == 'dead') this.frendlyCreepAnimationArrange.dead = index;
+        if (a.name == 'walk') this.frendlyCreepAnimationArrange.walk = index;
+        if (a.name == 'salute') this.frendlyCreepAnimationArrange.salute = index;
+        if (a.name == 'attack') this.frendlyCreepAnimationArrange.attack = index;
+        if (a.name == 'idle') this.frendlyCreepAnimationArrange.idle = index;
+      });
+      if (id == 0) subMesh.sharedState.emitAnimationEvent = true;
+      // this.core.collisionSystem.register(`local${id}`, subMesh.position, 15.0, 'local_hero');
+    });
+    app.localHero.frendlyLocal.creeps.forEach((creep, index) => {
+      // console.log('app.local creep ', creep.heroe_bodies[0].glb.glbJsonData.animations);
+      creep.heroe_bodies[0].position.setPosition(-750 + index * 50, -23, 800 + index * 50);
+    });
+    setTimeout(() => {
+      app.localHero.frendlyLocal.creeps.forEach((creep, index) => {
+        // console.log('start up ', creep);
+        creep.firstPoint = [-653.83, -26.62, -612.95];
+        creep.finalPoint = [702, -26, -737];
+        const start = [creep.heroe_bodies[0].position.x, creep.heroe_bodies[0].position.y, creep.heroe_bodies[0].position.z];
+        const end = [creep.firstPoint[0], creep.firstPoint[1], creep.firstPoint[2]];
+        const endFinal = [creep.finalPoint[0], creep.finalPoint[1], creep.finalPoint[2]];
+        const path = this.core.RPG.nav.findPath(start, end);
+        if (!path || path.length === 0) {
+          console.warn('No valid path found.');
+          return;
+        }
+        this.setWalkCreep(index);
+        (0, _navMesh.followPath)(creep.heroe_bodies[0], path, this.core);
+      });
+    }, 1000);
   }
   setWalk() {
     this.core.RPG.heroe_bodies.forEach(subMesh => {
@@ -176,6 +262,18 @@ class Character extends _hero.Hero {
       subMesh.glb.animationIndex = this.heroAnimationArrange.attack;
       console.info(`%chero attack`, _utils.LOG_MATRIX);
     });
+  }
+  setWalkCreep(creepIndex) {
+    // console.info(`%c  FRENDLE CREEP SET  walk!!!!!!!!!!!!!!!!!!!!!`, LOG_MATRIX)
+    this.frendlyLocal.creeps[creepIndex].heroe_bodies[0].glb.animationIndex = this.frendlyCreepAnimationArrange.walk;
+    //   this.frendlyLocal.creeps.forEach(subMesh => {
+    //   subMesh.glb.animationIndex = this.heroAnimationArrange.walk;
+    //   // console.info(`%chero walk`, LOG_MATRIX)
+    // });
+  }
+  setAttackCreep(creepIndex) {
+    console.info(`%c  FRENDLE CREEP attack enemy   !!`, _utils.LOG_MATRIX);
+    this.frendlyLocal.creeps[creepIndex].heroe_bodies[0].glb.animationIndex = this.frendlyCreepAnimationArrange.attack;
   }
   attachEvents() {
     addEventListener('attack-magic0', e => {
@@ -210,8 +308,7 @@ class Character extends _hero.Hero {
         }, 1300);
       });
     });
-
-    // Events HERO MOVMENTS
+    // Events HERO pos
     addEventListener('set-walk', () => {
       this.setWalk();
     });
@@ -228,23 +325,51 @@ class Character extends _hero.Hero {
       this.setSalute();
     });
     addEventListener('close-distance', e => {
-      console.info('close distance with:', e.detail.A);
-      if (this.heroFocusAttackOn && this.heroFocusAttackOn.name.indexOf(e.detail.A.id) != -1) {
-        // this.setAttack(this.heroFocusAttackOn);
+      if (e.detail.A.id.indexOf('frendly') != -1 && e.detail.B.id.indexOf('frendly') != -1 || e.detail.A.group == "local_hero" && e.detail.B.id.indexOf('frendly') != -1 || e.detail.A.group == "frendly" && e.detail.B.group == "local_hero") {
+        console.info('close distance BOTH FRENDLY :', e.detail.A);
+        return;
       }
-      // still attack
-      this.setAttack(this.heroFocusAttackOn);
+
+      // nisu 2 local creeps
+      if (e.detail.A.group == "enemies") {
+        console.info('close distance A is enemies:', e.detail.A.group);
+        if (e.detail.B.group == "frendly") {
+          //------------------ BLOCK
+          let lc = app.localHero.frendlyLocal.creeps.filter(localCreep => localCreep.name == e.detail.B.id)[0];
+          lc.creepFocusAttackOn = app.enemies.enemies.filter(enemy => enemy.name == e.detail.A.id)[0];
+          app.localHero.setAttackCreep(e.detail.B.id[e.detail.B.id.length - 1]);
+          console.info('close distance B is frendly:', e.detail.A.group);
+        }
+      } else if (e.detail.A.group == "frendly") {
+        console.info('close distance A is frendly:', e.detail.A.group);
+        if (e.detail.B.group == "enemies") {
+          console.info('close distance B is enemies:', e.detail.A.group);
+          //------------------
+          //------------------ BLOCK
+          let lc = app.localHero.frendlyLocal.creeps.filter(localCreep => localCreep.name == e.detail.A.id)[0];
+          lc.creepFocusAttackOn = app.enemies.enemies.filter(enemy => enemy.name == e.detail.B.id)[0];
+          app.localHero.setAttackCreep(e.detail.A.id[e.detail.A.id.length - 1]);
+          console.info('close distance A is frendly:', e.detail.A.group);
+        }
+      }
+      // if(this.heroFocusAttackOn && this.heroFocusAttackOn.name.indexOf(e.detail.A.id) != -1) {
+      //   // this.setAttack(this.heroFocusAttackOn);
+      // }
+      if (e.detail.A.group == 'local_hero' || e.detail.B.group == 'local_hero') {
+        // probably friend - works only got creeps < 10 for now
+        this.setAttack(this.heroFocusAttackOn);
+      }
     });
 
     // must be sync with networking... in future
     // -------------------------------------------
-    // console.log('ANIMATION END INITIAL NAME ', this.name)
     addEventListener(`animationEnd-${this.name}`, e => {
+      // console.log('ANIMATION END INITIAL NAME ', this.name)
       // CHECK DISTANCE
       if (e.detail.animationName != 'attack') {
-        // // if(this.heroFocusAttackOn == null) { ?? maybe
-        // this.setIdle();
+        //--------------------------------
         return;
+        //--------------------------------
       }
       if (this.heroFocusAttackOn == null) {
         console.info('FOCUS ON GROUND BUT COLLIDE WITH ENEMY-ANIMATION END setIdle:', e.detail.animationName);
@@ -283,6 +408,42 @@ class Character extends _hero.Hero {
       }
     });
     addEventListener('onTargetPositionReach', e => {
+      // console.log(`%[character base ???] conTargetPositionReach: ${e.detail.name}`, LOG_MATRIX)
+      // frendly-creeps
+      if (e.detail.name.indexOf('frendly-creep') != -1) {
+        let getName = e.detail.name.split('_')[0];
+        let t = app.localHero.frendlyLocal.creeps.filter(obj => obj.name == getName);
+        let test = e.detail.body.position.z - t[0].firstPoint[2];
+        if (test > 20) {
+          // got to first point  t[0] for now only  one sub mesh per creep...
+          console.log('SEND TO FIRTS POINT POINT', t[0].firstPoint);
+          const start = [t[0].heroe_bodies[0].position.x, t[0].heroe_bodies[0].position.y, t[0].heroe_bodies[0].position.z];
+          const path = this.core.RPG.nav.findPath(start, t[0].firstPoint);
+          if (!path || path.length === 0) {
+            console.warn('No valid path found.');
+            return;
+          }
+          // getName[getName.length-1] becouse for now creekps have sum < 10
+          setTimeout(() => (0, _navMesh.followPath)(t[0].heroe_bodies[0], path, app), 1000);
+          this.setWalkCreep(getName[getName.length - 1]);
+        } else {
+          // got ot final
+          console.log('SEND TO last POINT POINT', t[0].finalPoint);
+          const start = [t[0].heroe_bodies[0].position.x, t[0].heroe_bodies[0].position.y, t[0].heroe_bodies[0].position.z];
+          const path = this.core.RPG.nav.findPath(start, t[0].finalPoint);
+          if (!path || path.length === 0) {
+            console.warn('No valid path found.');
+            return;
+          }
+          // getName[getName.length-1] becouse for now creekps have sum < 10
+          setTimeout(() => (0, _navMesh.followPath)(t[0].heroe_bodies[0], path, app), 1000);
+          this.setWalkCreep(getName[getName.length - 1]);
+        }
+        //--------------------------------
+        return;
+        //--------------------------------
+      }
+
       // for now only local hero
       if (this.heroFocusAttackOn == null) {
         let isEnemiesClose = false; // on close distance 
@@ -298,7 +459,6 @@ class Character extends _hero.Hero {
       }
     });
     addEventListener('onMouseTarget', e => {
-      // for now only local hero
       if (this.core.RPG.selected.includes(this.heroe_bodies[0])) {
         // console.log("onMouseTarget POS:", e.detail.type);
         this.mouseTarget.position.setPosition(e.detail.x, this.mouseTarget.position.y, e.detail.z);
@@ -313,7 +473,7 @@ class Character extends _hero.Hero {
 }
 exports.Character = Character;
 
-},{"../../../src/engine/loaders/webgpu-gltf":45,"../../../src/engine/utils":50,"./hero":5,"wgpu-matrix":25}],2:[function(require,module,exports){
+},{"../../../src/engine/loaders/webgpu-gltf":46,"../../../src/engine/utils":51,"./creep-character":3,"./hero":6,"./nav-mesh":10,"wgpu-matrix":26}],2:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -377,12 +537,6 @@ class Controller {
     // for now - performance problem
     // this.canvas.addEventListener("ray.hit.event.mm", (e) => {
     //   // console.log('ray.hit.event detected', e);
-    //   const {hitObject, hitPoint, button, eventName} = e.detail;
-    //   if(!hitObject || !hitPoint) {
-    //     console.warn('No valid hit detected.');
-    //     return;
-    //   }
-    //   // console.log("Hit object eventName :", eventName, "Button:", button);
     // })
 
     this.canvas.addEventListener("ray.hit.event", e => {
@@ -394,7 +548,7 @@ class Controller {
         eventName
       } = e.detail;
       if (e.detail.hitObject.name == 'ground') {
-        // console.warn('ground detected.');
+        console.warn('>>>>>> COLLECT HERE .');
         dispatchEvent(new CustomEvent(`onMouseTarget`, {
           detail: {
             type: 'normal',
@@ -415,21 +569,17 @@ class Controller {
             z: e.detail.hitObject.position.z
           }
         }));
+      } else {
+        // must be frendly objs
+        return;
       }
-      if (button == 0 && e.detail.hitObject.name != 'ground' && e.detail.hitObject.name !== this.heroe_bodies[0].name //&& 
-      // e.detail.hitObject.name !== this.heroe_bodies[1].name
-      ) {
+      if (button == 0 && e.detail.hitObject.name != 'ground' && e.detail.hitObject.name !== this.heroe_bodies[0].name) {
         if (this.heroe_bodies.length == 2) {
           if (e.detail.hitObject.name == this.heroe_bodies[1].name) {
             console.log("Hit object  SELF SLICKED :", e.detail.hitObject.name);
             return;
           }
         }
-        // console.log("Hit object:", e.detail.hitObject.name);
-        // console.log("[R CLICK MOUS ]Moment for attact event but walk to the distanve and attach object:",
-        // this.core.localHero.heroe_bodies[0]);
-        // FOr now without check is it enemiy 
-        // fro any LH vs other entity need to exist check distance
         const LH = this.core.localHero.heroe_bodies[0];
         console.log("Hit object VS LH DISTANCE : ", this.distance3D(LH.position, e.detail.hitObject.position));
         // after all check is it eneimy
@@ -458,9 +608,11 @@ class Controller {
         console.warn('No valid path found.');
         return;
       }
-      for (var x = 0; x < this.heroe_bodies.length; x++) {
-        (0, _navMesh.followPath)(this.heroe_bodies[x], path, this.core);
-      }
+      // no need if position = position of root
+      // for (var x=0; x < this.heroe_bodies.length;x++) {
+      //   followPath(this.heroe_bodies[x], path, this.core);
+      // }
+      (0, _navMesh.followPath)(this.heroe_bodies[0], path, this.core);
     });
     this.canvas.addEventListener("contextmenu", e => {
       e.preventDefault();
@@ -549,13 +701,183 @@ class Controller {
 }
 exports.Controller = Controller;
 
-},{"../../../src/engine/raycast.js":49,"../../../src/engine/utils.js":50,"./nav-mesh.js":9,"wgpu-matrix":25}],3:[function(require,module,exports){
+},{"../../../src/engine/raycast.js":50,"../../../src/engine/utils.js":51,"./nav-mesh.js":10,"wgpu-matrix":26}],3:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.Creep = void 0;
+var _webgpuGltf = require("../../../src/engine/loaders/webgpu-gltf");
+var _utils = require("../../../src/engine/utils");
+var _hero = require("./hero");
+class Creep extends _hero.Hero {
+  heroAnimationArrange = {
+    dead: null,
+    walk: null,
+    salute: null,
+    attack: null,
+    idle: null
+  };
+  creepFocusAttackOn = null;
+  constructor(o, archetypes = ["creep"], group = "enemy") {
+    super(o.name, archetypes);
+    this.name = o.name;
+    this.core = o.core;
+    this.group = group;
+    this.loadCreeps(o);
+    this.attachEvents();
+    return this;
+  }
+  loadCreeps = async o => {
+    try {
+      var glbFile01 = await fetch(o.path).then(res => res.arrayBuffer().then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, this.core.device)));
+      this.core.addGlbObjInctance({
+        material: {
+          type: 'standard',
+          useTextureFromGlb: true
+        },
+        scale: [20, 20, 20],
+        position: o.position,
+        name: o.name,
+        texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
+        raycast: {
+          enabled: true,
+          radius: 1.1
+        },
+        pointerEffect: {
+          enabled: true,
+          energyBar: true
+        }
+      }, null, glbFile01);
+      // make small async - cooking glbs files
+      setTimeout(() => {
+        this.heroe_bodies = app.mainRenderBundle.filter(obj => obj.name && obj.name.includes(o.name));
+        this.heroe_bodies.forEach((subMesh, idx) => {
+          subMesh.position.thrust = this.moveSpeed;
+          subMesh.glb.animationIndex = 0;
+          // adapt manual if blender is not setup
+          subMesh.glb.glbJsonData.animations.forEach((a, index) => {
+            // console.info(`%c ANimation: ${a.name} index ${index}`, LOG_MATRIX)
+            if (a.name == 'dead') this.heroAnimationArrange.dead = index;
+            if (a.name == 'walk') this.heroAnimationArrange.walk = index;
+            if (a.name == 'salute') this.heroAnimationArrange.salute = index;
+            if (a.name == 'attack') this.heroAnimationArrange.attack = index;
+            if (a.name == 'idle') this.heroAnimationArrange.idle = index;
+          });
+          // maybe will help - remote net players no nedd to collide in other remote user gamaplay
+          // this.core.collisionSystem.register((o.name + idx), subMesh.position, 15.0, 'enemies');
+          // dont care for multi sub mesh now
+          if (idx == 0) this.core.collisionSystem.register(o.name, subMesh.position, 15.0, this.group);
+        });
+        this.setStartUpPosition();
+      }, 1600);
+    } catch (err) {
+      throw err;
+    }
+  };
+  setWalk() {
+    this.heroe_bodies.forEach(subMesh => {
+      subMesh.glb.animationIndex = this.heroAnimationArrange.walk;
+      console.info(`%chero walk`, _utils.LOG_MATRIX);
+    });
+  }
+  setSalute() {
+    this.heroe_bodies.forEach(subMesh => {
+      subMesh.glb.animationIndex = this.heroAnimationArrange.salute;
+      console.info(`%chero salute`, _utils.LOG_MATRIX);
+    });
+  }
+  setDead() {
+    this.heroe_bodies.forEach(subMesh => {
+      subMesh.glb.animationIndex = this.heroAnimationArrange.dead;
+      console.info(`%chero dead`, _utils.LOG_MATRIX);
+    });
+  }
+  setIdle() {
+    this.heroe_bodies.forEach(subMesh => {
+      subMesh.glb.animationIndex = this.heroAnimationArrange.idle;
+      console.info(`%chero idle`, _utils.LOG_MATRIX);
+    });
+  }
+  setAttack() {
+    this.heroe_bodies.forEach(subMesh => {
+      subMesh.glb.animationIndex = this.heroAnimationArrange.attack;
+      console.info(`%chero attack`, _utils.LOG_MATRIX);
+    });
+  }
+  setStartUpPosition() {
+    this.heroe_bodies.forEach((subMesh, idx) => {
+      subMesh.position.setPosition(0, -23, 0);
+    });
+  }
+  attachEvents() {
+    addEventListener(`onDamage-${this.name}`, e => {
+      console.info(`%c hero damage ${e.detail}`, _utils.LOG_MATRIX);
+      this.heroe_bodies[0].effects.energyBar.setProgress(e.detail.progress);
+      // if detail is 0
+      if (e.detail.progress == 0) {
+        this.setDead();
+        console.info(`%c hero dead [${this.name}], attacker[${e.detail.attacker}]`, _utils.LOG_MATRIX);
+        setTimeout(() => {
+          this.setStartUpPosition();
+        }, 2000);
+        e.detail.attacker.killEnemy(e.detail.defenderLevel);
+      }
+    });
+    addEventListener(`animationEnd-${this.name}`, e => {
+      // CHECK DISTANCE
+      if (e.detail.animationName != 'attack' && this.creepFocusAttackOn == null) {
+        return;
+      }
+      if (this.creepFocusAttackOn == null) {
+        console.info('FOCUS ON GROUND BUT COLLIDE WITH ENEMY-ANIMATION END setIdle:', e.detail.animationName);
+        let isEnemiesClose = false; // on close distance 
+        this.core.enemies.enemies.forEach(enemy => {
+          let tt = this.core.RPG.distance3D(this.heroe_bodies[0].position, enemy.heroe_bodies[0].position);
+          if (tt < this.core.RPG.distanceForAction) {
+            console.log(`%c ATTACK DAMAGE ${enemy.heroe_bodies[0].name}`, _utils.LOG_MATRIX);
+            isEnemiesClose = true;
+            this.calcDamage(this, enemy);
+          }
+        });
+        if (isEnemiesClose == false) this.setIdle();
+        return;
+      } else {
+        // Focus on enemy vs creeps !!!
+        if (this.core.enemies.enemies.length > 0) this.core.enemies.enemies.forEach(enemy => {
+          if (this.creepFocusAttackOn.name.indexOf(enemy.name) != -1) {
+            let tt = this.core.RPG.distance3D(this.heroe_bodies[0].position, this.creepFocusAttackOn.position);
+            if (tt < this.core.RPG.distanceForAction) {
+              console.log(`%c ATTACK DAMAGE ${enemy.heroe_bodies[0].name}`, _utils.LOG_MATRIX);
+              this.calcDamage(this, enemy);
+              return;
+            }
+          }
+        });
+        if (this.core.enemies.creeps.length > 0) this.core.enemies.creeps.forEach(enemy => {
+          if (this.creepFocusAttackOn.name.indexOf(enemy.name) != -1) {
+            let tt = this.core.RPG.distance3D(this.heroe_bodies[0].position, this.creepFocusAttackOn.position);
+            if (tt < this.core.RPG.distanceForAction) {
+              console.log(`%c ATTACK DAMAGE ${enemy.heroe_bodies[0].name}`, _utils.LOG_MATRIX);
+              this.calcDamage(this, enemy);
+            }
+          }
+        });
+      }
+    });
+  }
+}
+exports.Creep = Creep;
+
+},{"../../../src/engine/loaders/webgpu-gltf":46,"../../../src/engine/utils":51,"./hero":6}],4:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.EnemiesManager = void 0;
+var _creepCharacter = require("./creep-character");
 var _enemyCharacter = require("./enemy-character");
 class EnemiesManager {
   enemies = [];
@@ -567,41 +889,55 @@ class EnemiesManager {
   }
   // Make possible to play 3x3 4x4 or 5x5 ...
   loadBySumOfPlayers() {
-    // this.enemies.push(new Enemie(
-    //   {
-    //     core: this.core,
-    //     name: 'Slayzer',
-    //     archetypes: ["Warrior"],
-    //     path: 'res/meshes/glb/monster.glb',
-    //     position : {x: 0, y: -23, z: -260}
-    //   }
-    // ));
-    this.creeps.push(new _enemyCharacter.Enemie({
+    this.enemies.push(new _enemyCharacter.Enemie({
       core: this.core,
-      name: 'abot',
-      archetypes: ["creep"],
-      path: 'res/meshes/glb/bot.glb',
+      name: 'Slayzer',
+      archetypes: ["Warrior"],
+      path: 'res/meshes/glb/monster.glb',
       position: {
-        x: 0,
+        x: -653.83,
         y: -23,
-        z: -110
-      }
+        z: 0
+      } //, -26.62, -612.95
     }));
+    // this.creeps.push(new Creep({
+    //   core: this.core,
+    //   name: 'enemy-creep0',
+    //   archetypes: ["creep"],
+    //   path: 'res/meshes/glb/bot.glb',
+    //   position: {x: 0, y: -0, z: -1310}
+    // }));
+    // this.creeps.push(new Creep({
+    //   core: this.core,
+    //   name: 'enemy-creep1',
+    //   archetypes: ["creep"],
+    //   path: 'res/meshes/glb/bot.glb',
+    //   position: {x: 100, y: -23, z: -1410}
+    // }))
+    // this.creeps.push(new Creep({
+    //   core: this.core,
+    //   name: 'enemy-creep2',
+    //   archetypes: ["creep"],
+    //   path: 'res/meshes/glb/bot.glb',
+    //   position: {x: 150, y: -23, z: -1510}
+    // }))
   }
+
+  // this func use external isEnemy but for localhero not enemy vs enemy
   isEnemy(name) {
     let test = this.enemies.filter(obj => obj.name && name.includes(obj.name));
     let test2 = this.creeps.filter(obj => obj.name && name.includes(obj.name));
     if (test2.length == 0 && test.length == 0) {
-      console.log('<isENMIES - creeps or enemy heros> NO', name);
+      console.log('<isENMIES-creeps or enemy heros> NO', name);
       return false;
     }
-    console.log('<isENMIES - creeps or enemy heros> YES', name);
+    console.log('<isENMIES-creeps or enemy heros> YES', name);
     return true;
   }
 }
 exports.EnemiesManager = EnemiesManager;
 
-},{"./enemy-character":4}],4:[function(require,module,exports){
+},{"./creep-character":3,"./enemy-character":5}],5:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -705,7 +1041,7 @@ class Enemie extends _hero.Hero {
   }
   setStartUpPosition() {
     this.heroe_bodies.forEach((subMesh, idx) => {
-      subMesh.position.setPosition(0, -23, 0);
+      subMesh.position.setPosition(-700, -23, 0);
     });
   }
   attachEvents() {
@@ -722,58 +1058,11 @@ class Enemie extends _hero.Hero {
         e.detail.attacker.killEnemy(e.detail.defenderLevel);
       }
     });
-    addEventListener(`animationEnd-${this.name}`, e => {
-      // CHECK DISTANCE
-      if (e.detail.animationName != 'attack') {
-        // // if(this.heroFocusAttackOn == null) { ?? maybe
-
-        if (e.detail.animationName != 'attack') {
-          //
-        }
-        // this.setIdle();
-        return;
-      }
-      if (this.heroFocusAttackOn == null) {
-        console.info('FOCUS ON GROUND BUT COLLIDE WITH ENEMY-ANIMATION END setIdle:', e.detail.animationName);
-        let isEnemiesClose = false; // on close distance 
-        this.core.enemies.enemies.forEach(enemy => {
-          let tt = this.core.RPG.distance3D(this.heroe_bodies[0].position, enemy.heroe_bodies[0].position);
-          if (tt < this.core.RPG.distanceForAction) {
-            console.log(`%c ATTACK DAMAGE ${enemy.heroe_bodies[0].name}`, _utils.LOG_MATRIX);
-            isEnemiesClose = true;
-            this.calcDamage(this, enemy);
-          }
-        });
-        if (isEnemiesClose == false) this.setIdle();
-        return;
-      } else {
-        // Focus on enemy vs creeps !!!
-        if (this.core.enemies.enemies.length > 0) this.core.enemies.enemies.forEach(enemy => {
-          if (this.heroFocusAttackOn.name.indexOf(enemy.name) != -1) {
-            let tt = this.core.RPG.distance3D(this.heroe_bodies[0].position, this.heroFocusAttackOn.position);
-            if (tt < this.core.RPG.distanceForAction) {
-              console.log(`%c ATTACK DAMAGE ${enemy.heroe_bodies[0].name}`, _utils.LOG_MATRIX);
-              this.calcDamage(this, enemy);
-              return;
-            }
-          }
-        });
-        if (this.core.enemies.creeps.length > 0) this.core.enemies.creeps.forEach(enemy => {
-          if (this.heroFocusAttackOn.name.indexOf(enemy.name) != -1) {
-            let tt = this.core.RPG.distance3D(this.heroe_bodies[0].position, this.heroFocusAttackOn.position);
-            if (tt < this.core.RPG.distanceForAction) {
-              console.log(`%c ATTACK DAMAGE ${enemy.heroe_bodies[0].name}`, _utils.LOG_MATRIX);
-              this.calcDamage(this, enemy);
-            }
-          }
-        });
-      }
-    });
   }
 }
 exports.Enemie = Enemie;
 
-},{"../../../src/engine/loaders/webgpu-gltf":45,"../../../src/engine/utils":50,"./hero":5}],5:[function(require,module,exports){
+},{"../../../src/engine/loaders/webgpu-gltf":46,"../../../src/engine/utils":51,"./hero":6}],6:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -883,8 +1172,8 @@ const HERO_ARCHETYPES = exports.HERO_ARCHETYPES = {
     manaMult: 1,
     attackMult: 1,
     armorMult: 1,
-    moveSpeed: 0.95,
-    attackSpeed: 0.8,
+    moveSpeed: 0.3,
+    attackSpeed: 0.5,
     hpRegenMult: 1,
     manaRegenMult: 1
   }
@@ -1282,7 +1571,7 @@ function mergeArchetypesWeighted(typeA, typeB, weightA = 0.7) {
   return merged;
 }
 
-},{}],6:[function(require,module,exports){
+},{}],7:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -1657,7 +1946,7 @@ class HUD {
 }
 exports.HUD = HUD;
 
-},{}],7:[function(require,module,exports){
+},{}],8:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -1859,7 +2148,7 @@ class MEMapLoader {
 }
 exports.MEMapLoader = MEMapLoader;
 
-},{"../../../src/engine/effects/gen.js":34,"../../../src/engine/loader-obj.js":42,"../../../src/engine/loaders/webgpu-gltf.js":45,"../../../src/engine/utils.js":50,"./nav-mesh.js":9}],8:[function(require,module,exports){
+},{"../../../src/engine/effects/gen.js":35,"../../../src/engine/loader-obj.js":43,"../../../src/engine/loaders/webgpu-gltf.js":46,"../../../src/engine/utils.js":51,"./nav-mesh.js":10}],9:[function(require,module,exports){
 "use strict";
 
 var _world = _interopRequireDefault(require("../../../src/world.js"));
@@ -1915,7 +2204,7 @@ let mysticore = new _world.default({
 });
 window.app = mysticore;
 
-},{"../../../src/engine/collision-sub-system.js":28,"../../../src/engine/utils.js":50,"../../../src/world.js":73,"./character-base.js":1,"./controller.js":2,"./enemies-manager.js":3,"./hero.js":5,"./hud.js":6,"./map-loader.js":7}],9:[function(require,module,exports){
+},{"../../../src/engine/collision-sub-system.js":29,"../../../src/engine/utils.js":51,"../../../src/world.js":74,"./character-base.js":1,"./controller.js":2,"./enemies-manager.js":4,"./hero.js":6,"./hud.js":7,"./map-loader.js":8}],10:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -2345,7 +2634,10 @@ function followPath(character, path, core) {
   function moveToNext() {
     if (idx >= path.length) {
       dispatchEvent(new CustomEvent('onTargetPositionReach', {
-        detail: 'test'
+        detail: {
+          name: character.name,
+          body: character
+        }
       }));
       character.position.onTargetPositionReach = () => {};
       return;
@@ -2435,9 +2727,9 @@ function resolvePairRepulsion(Apos, Bpos, minDistance = 30.0, pushStrength = 0.5
   return false;
 }
 
-},{"../../../src/engine/utils.js":50}],10:[function(require,module,exports){
-arguments[4][9][0].apply(exports,arguments)
-},{"../../../src/engine/utils.js":50,"dup":9}],11:[function(require,module,exports){
+},{"../../../src/engine/utils.js":51}],11:[function(require,module,exports){
+arguments[4][10][0].apply(exports,arguments)
+},{"../../../src/engine/utils.js":51,"dup":10}],12:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -2447,7 +2739,7 @@ exports.default = void 0;
 var _bvhLoader = require("./module/bvh-loader");
 var _default = exports.default = _bvhLoader.MEBvh;
 
-},{"./module/bvh-loader":12}],12:[function(require,module,exports){
+},{"./module/bvh-loader":13}],13:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -3136,7 +3428,7 @@ class MEBvh {
 }
 exports.MEBvh = MEBvh;
 
-},{"webgpu-matrix":24}],13:[function(require,module,exports){
+},{"webgpu-matrix":25}],14:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -3214,7 +3506,7 @@ function equals(a, b) {
   return Math.abs(a - b) <= tolerance * Math.max(1, Math.abs(a), Math.abs(b));
 }
 
-},{}],14:[function(require,module,exports){
+},{}],15:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -3243,7 +3535,7 @@ var vec4 = _interopRequireWildcard(require("./vec4.js"));
 exports.vec4 = vec4;
 function _interopRequireWildcard(e, t) { if ("function" == typeof WeakMap) var r = new WeakMap(), n = new WeakMap(); return (_interopRequireWildcard = function (e, t) { if (!t && e && e.__esModule) return e; var o, i, f = { __proto__: null, default: e }; if (null === e || "object" != typeof e && "function" != typeof e) return f; if (o = t ? n : r) { if (o.has(e)) return o.get(e); o.set(e, f); } for (const t in e) "default" !== t && {}.hasOwnProperty.call(e, t) && ((i = (o = Object.defineProperty) && Object.getOwnPropertyDescriptor(e, t)) && (i.get || i.set) ? o(f, t, i) : f[t] = e[t]); return f; })(e, t); }
 
-},{"./common.js":13,"./mat2.js":15,"./mat2d.js":16,"./mat3.js":17,"./mat4.js":18,"./quat.js":19,"./quat2.js":20,"./vec2.js":21,"./vec3.js":22,"./vec4.js":23}],15:[function(require,module,exports){
+},{"./common.js":14,"./mat2.js":16,"./mat2d.js":17,"./mat3.js":18,"./mat4.js":19,"./quat.js":20,"./quat2.js":21,"./vec2.js":22,"./vec3.js":23,"./vec4.js":24}],16:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -3705,7 +3997,7 @@ var mul = exports.mul = multiply;
  */
 var sub = exports.sub = subtract;
 
-},{"./common.js":13}],16:[function(require,module,exports){
+},{"./common.js":14}],17:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -4219,7 +4511,7 @@ var mul = exports.mul = multiply;
  */
 var sub = exports.sub = subtract;
 
-},{"./common.js":13}],17:[function(require,module,exports){
+},{"./common.js":14}],18:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -5031,7 +5323,7 @@ var mul = exports.mul = multiply;
  */
 var sub = exports.sub = subtract;
 
-},{"./common.js":13}],18:[function(require,module,exports){
+},{"./common.js":14}],19:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -7051,7 +7343,7 @@ var mul = exports.mul = multiply;
  */
 var sub = exports.sub = subtract;
 
-},{"./common.js":13}],19:[function(require,module,exports){
+},{"./common.js":14}],20:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -7834,7 +8126,7 @@ var setAxes = exports.setAxes = function () {
   };
 }();
 
-},{"./common.js":13,"./mat3.js":17,"./vec3.js":22,"./vec4.js":23}],20:[function(require,module,exports){
+},{"./common.js":14,"./mat3.js":18,"./vec3.js":23,"./vec4.js":24}],21:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -8707,7 +8999,7 @@ function equals(a, b) {
   return Math.abs(a0 - b0) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a0), Math.abs(b0)) && Math.abs(a1 - b1) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a1), Math.abs(b1)) && Math.abs(a2 - b2) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a2), Math.abs(b2)) && Math.abs(a3 - b3) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a3), Math.abs(b3)) && Math.abs(a4 - b4) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a4), Math.abs(b4)) && Math.abs(a5 - b5) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a5), Math.abs(b5)) && Math.abs(a6 - b6) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a6), Math.abs(b6)) && Math.abs(a7 - b7) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a7), Math.abs(b7));
 }
 
-},{"./common.js":13,"./mat4.js":18,"./quat.js":19}],21:[function(require,module,exports){
+},{"./common.js":14,"./mat4.js":19,"./quat.js":20}],22:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -9385,7 +9677,7 @@ var forEach = exports.forEach = function () {
   };
 }();
 
-},{"./common.js":13}],22:[function(require,module,exports){
+},{"./common.js":14}],23:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -10237,7 +10529,7 @@ var forEach = exports.forEach = function () {
   };
 }();
 
-},{"./common.js":13}],23:[function(require,module,exports){
+},{"./common.js":14}],24:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -10944,7 +11236,7 @@ var forEach = exports.forEach = function () {
   };
 }();
 
-},{"./common.js":13}],24:[function(require,module,exports){
+},{"./common.js":14}],25:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -14877,7 +15169,7 @@ function setDefaultType(ctor) {
   setDefaultType$1(ctor);
 }
 
-},{}],25:[function(require,module,exports){
+},{}],26:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -20224,7 +20516,7 @@ function setDefaultType(ctor) {
   setDefaultType$1(ctor);
 }
 
-},{}],26:[function(require,module,exports){
+},{}],27:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -20638,7 +20930,7 @@ class MEBall {
 }
 exports.default = MEBall;
 
-},{"../shaders/shaders":65,"./engine":37,"./matrix-class":47,"wgpu-matrix":25}],27:[function(require,module,exports){
+},{"../shaders/shaders":66,"./engine":38,"./matrix-class":48,"wgpu-matrix":26}],28:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -20676,7 +20968,7 @@ class Behavior {
 }
 exports.default = Behavior;
 
-},{"./utils":50}],28:[function(require,module,exports){
+},{"./utils":51}],29:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -20724,7 +21016,7 @@ class CollisionSystem {
 }
 exports.CollisionSystem = CollisionSystem;
 
-},{"../../examples/games/rpg/nav-mesh":10}],29:[function(require,module,exports){
+},{"../../examples/games/rpg/nav-mesh":11}],30:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -21149,7 +21441,7 @@ class MECube {
 }
 exports.default = MECube;
 
-},{"../shaders/shaders":65,"./engine":37,"./matrix-class":47,"wgpu-matrix":25}],30:[function(require,module,exports){
+},{"../shaders/shaders":66,"./engine":38,"./matrix-class":48,"wgpu-matrix":26}],31:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -21312,7 +21604,7 @@ class HPBarEffect {
 }
 exports.HPBarEffect = HPBarEffect;
 
-},{"../../shaders/energy-bars/energy-bar-shader.js":53,"wgpu-matrix":25}],31:[function(require,module,exports){
+},{"../../shaders/energy-bars/energy-bar-shader.js":54,"wgpu-matrix":26}],32:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -21531,7 +21823,7 @@ class FlameEmitter {
 }
 exports.FlameEmitter = FlameEmitter;
 
-},{"../../shaders/flame-effect/flame-instanced":54,"../utils":50,"wgpu-matrix":25}],32:[function(require,module,exports){
+},{"../../shaders/flame-effect/flame-instanced":55,"../utils":51,"wgpu-matrix":26}],33:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -21702,7 +21994,7 @@ class FlameEffect {
 }
 exports.FlameEffect = FlameEffect;
 
-},{"../../shaders/flame-effect/flameEffect":55,"wgpu-matrix":25}],33:[function(require,module,exports){
+},{"../../shaders/flame-effect/flameEffect":56,"wgpu-matrix":26}],34:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -21940,7 +22232,7 @@ class GenGeoTexture {
 }
 exports.GenGeoTexture = GenGeoTexture;
 
-},{"../../shaders/standalone/geo.tex.js":67,"../geometry-factory.js":38,"wgpu-matrix":25}],34:[function(require,module,exports){
+},{"../../shaders/standalone/geo.tex.js":68,"../geometry-factory.js":39,"wgpu-matrix":26}],35:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -22130,7 +22422,7 @@ class GenGeo {
 }
 exports.GenGeo = GenGeo;
 
-},{"../../shaders/standalone/geo.instanced.js":66,"../geometry-factory.js":38,"wgpu-matrix":25}],35:[function(require,module,exports){
+},{"../../shaders/standalone/geo.instanced.js":67,"../geometry-factory.js":39,"wgpu-matrix":26}],36:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -22293,7 +22585,7 @@ class MANABarEffect {
 }
 exports.MANABarEffect = MANABarEffect;
 
-},{"../../shaders/energy-bars/energy-bar-shader.js":53,"wgpu-matrix":25}],36:[function(require,module,exports){
+},{"../../shaders/energy-bars/energy-bar-shader.js":54,"wgpu-matrix":26}],37:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -22436,7 +22728,7 @@ class PointerEffect {
 }
 exports.PointerEffect = PointerEffect;
 
-},{"../../shaders/standalone/pointer.effect.js":68,"wgpu-matrix":25}],37:[function(require,module,exports){
+},{"../../shaders/standalone/pointer.effect.js":69,"wgpu-matrix":26}],38:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -22979,7 +23271,7 @@ class RPGCamera extends CameraBase {
 }
 exports.RPGCamera = RPGCamera;
 
-},{"./utils":50,"wgpu-matrix":25}],38:[function(require,module,exports){
+},{"./utils":51,"wgpu-matrix":26}],39:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -23260,7 +23552,7 @@ class GeometryFactory {
 }
 exports.GeometryFactory = GeometryFactory;
 
-},{}],39:[function(require,module,exports){
+},{}],40:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -23787,7 +24079,7 @@ class MaterialsInstanced {
 }
 exports.default = MaterialsInstanced;
 
-},{"../../shaders/fragment.wgsl":57,"../../shaders/fragment.wgsl.metal":58,"../../shaders/fragment.wgsl.normalmap":59,"../../shaders/fragment.wgsl.pong":60,"../../shaders/fragment.wgsl.power":61,"../../shaders/instanced/fragment.instanced.wgsl":62}],40:[function(require,module,exports){
+},{"../../shaders/fragment.wgsl":58,"../../shaders/fragment.wgsl.metal":59,"../../shaders/fragment.wgsl.normalmap":60,"../../shaders/fragment.wgsl.pong":61,"../../shaders/fragment.wgsl.power":62,"../../shaders/instanced/fragment.instanced.wgsl":63}],41:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -24770,7 +25062,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
 }
 exports.default = MEMeshObjInstances;
 
-},{"../../shaders/fragment.video.wgsl":56,"../../shaders/instanced/vertex.instanced.wgsl":63,"../effects/energy-bar":30,"../effects/flame":32,"../effects/flame-emmiter":31,"../effects/gen":34,"../effects/gen-tex":33,"../effects/mana-bar":35,"../effects/pointerEffect":36,"../loaders/bvh-instaced":43,"../matrix-class":47,"../utils":50,"./materials-instanced":39,"wgpu-matrix":25}],41:[function(require,module,exports){
+},{"../../shaders/fragment.video.wgsl":57,"../../shaders/instanced/vertex.instanced.wgsl":64,"../effects/energy-bar":31,"../effects/flame":33,"../effects/flame-emmiter":32,"../effects/gen":35,"../effects/gen-tex":34,"../effects/mana-bar":36,"../effects/pointerEffect":37,"../loaders/bvh-instaced":44,"../matrix-class":48,"../utils":51,"./materials-instanced":40,"wgpu-matrix":26}],42:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -25056,7 +25348,7 @@ class SpotLight {
 }
 exports.SpotLight = SpotLight;
 
-},{"../shaders/instanced/vertexShadow.instanced.wgsl":64,"../shaders/vertexShadow.wgsl":71,"./behavior":27,"wgpu-matrix":25}],42:[function(require,module,exports){
+},{"../shaders/instanced/vertexShadow.instanced.wgsl":65,"../shaders/vertexShadow.wgsl":72,"./behavior":28,"wgpu-matrix":26}],43:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -25524,7 +25816,7 @@ function play(nameAni) {
   this.playing = true;
 }
 
-},{}],43:[function(require,module,exports){
+},{}],44:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -25657,6 +25949,10 @@ class BVHPlayerInstances extends _meshObjInstances.default {
   getNumberOfFramesCurAni() {
     const anim = this.glb.glbJsonData.animations[this.glb.animationIndex];
     let maxFrames = 0;
+    if (typeof anim == 'undefined') {
+      console.log('[anim undefined]', this.name);
+      return 1;
+    }
     for (const sampler of anim.samplers) {
       const inputAccessor = this.glb.glbJsonData.accessors[sampler.input];
       if (inputAccessor.count > maxFrames) maxFrames = inputAccessor.count;
@@ -26062,7 +26358,7 @@ class BVHPlayerInstances extends _meshObjInstances.default {
 }
 exports.BVHPlayerInstances = BVHPlayerInstances;
 
-},{"../instanced/mesh-obj-instances.js":40,"./webgpu-gltf.js":45,"wgpu-matrix":25}],44:[function(require,module,exports){
+},{"../instanced/mesh-obj-instances.js":41,"./webgpu-gltf.js":46,"wgpu-matrix":26}],45:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -26572,7 +26868,7 @@ class BVHPlayer extends _meshObj.default {
 }
 exports.BVHPlayer = BVHPlayer;
 
-},{"../mesh-obj":48,"./webgpu-gltf.js":45,"bvh-loader":11,"wgpu-matrix":25}],45:[function(require,module,exports){
+},{"../mesh-obj":49,"./webgpu-gltf.js":46,"bvh-loader":12,"wgpu-matrix":26}],46:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -27153,7 +27449,7 @@ async function uploadGLBModel(buffer, device) {
   return R;
 }
 
-},{"gl-matrix":14}],46:[function(require,module,exports){
+},{"gl-matrix":15}],47:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -27679,7 +27975,7 @@ class Materials {
 }
 exports.default = Materials;
 
-},{"../shaders/fragment.wgsl":57,"../shaders/fragment.wgsl.metal":58,"../shaders/fragment.wgsl.normalmap":59,"../shaders/fragment.wgsl.pong":60,"../shaders/fragment.wgsl.power":61}],47:[function(require,module,exports){
+},{"../shaders/fragment.wgsl":58,"../shaders/fragment.wgsl.metal":59,"../shaders/fragment.wgsl.normalmap":60,"../shaders/fragment.wgsl.pong":61,"../shaders/fragment.wgsl.power":62}],48:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -27915,7 +28211,7 @@ class Rotation {
 }
 exports.Rotation = Rotation;
 
-},{"./utils":50}],48:[function(require,module,exports){
+},{"./utils":51}],49:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -28710,7 +29006,7 @@ class MEMeshObj extends _materials.default {
 }
 exports.default = MEMeshObj;
 
-},{"../shaders/fragment.video.wgsl":56,"../shaders/vertex.wgsl":69,"../shaders/vertex.wgsl.normalmap":70,"./effects/pointerEffect":36,"./materials":46,"./matrix-class":47,"./utils":50,"wgpu-matrix":25}],49:[function(require,module,exports){
+},{"../shaders/fragment.video.wgsl":57,"../shaders/vertex.wgsl":70,"../shaders/vertex.wgsl.normalmap":71,"./effects/pointerEffect":37,"./materials":47,"./matrix-class":48,"./utils":51,"wgpu-matrix":26}],50:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -28899,7 +29195,7 @@ function addRaycastsListener(canvasId = "canvas1", eventName = 'click') {
   });
 }
 
-},{"wgpu-matrix":25}],50:[function(require,module,exports){
+},{"wgpu-matrix":26}],51:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -29827,7 +30123,7 @@ const LS = exports.LS = {
   }
 };
 
-},{}],51:[function(require,module,exports){
+},{}],52:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -29867,7 +30163,7 @@ class MultiLang {
 }
 exports.MultiLang = MultiLang;
 
-},{"../engine/utils":50}],52:[function(require,module,exports){
+},{"../engine/utils":51}],53:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30151,7 +30447,7 @@ class MatrixAmmo {
 }
 exports.default = MatrixAmmo;
 
-},{"../engine/utils":50}],53:[function(require,module,exports){
+},{"../engine/utils":51}],54:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30197,7 +30493,7 @@ fn fsMain(in : VertexOutput) -> @location(0) vec4f {
 }
 `;
 
-},{}],54:[function(require,module,exports){
+},{}],55:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30323,7 +30619,7 @@ fn fsMain(in : VSOut) -> @location(0) vec4<f32> {
 }
 `;
 
-},{}],55:[function(require,module,exports){
+},{}],56:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30411,7 +30707,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
 }
 `;
 
-},{}],56:[function(require,module,exports){
+},{}],57:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30501,7 +30797,7 @@ fn main(input : FragmentInput) -> @location(0) vec4f {
 }
 `;
 
-},{}],57:[function(require,module,exports){
+},{}],58:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30732,7 +31028,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, 1.0);
 }`;
 
-},{}],58:[function(require,module,exports){
+},{}],59:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30910,7 +31206,7 @@ return vec4f(color, 1.0);
 // let radiance = spotlights[0].color * 10.0; // test high intensity
 // Lo += materialData.baseColor * radiance * NdotL;
 
-},{}],59:[function(require,module,exports){
+},{}],60:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -31155,7 +31451,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, 1.0);
 }`;
 
-},{}],60:[function(require,module,exports){
+},{}],61:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -31375,7 +31671,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, 1.0);
 }`;
 
-},{}],61:[function(require,module,exports){
+},{}],62:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -31543,7 +31839,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 // let radiance = spotlights[0].color * 10.0; // test high intensity
 // Lo += materialData.baseColor * radiance * NdotL;
 
-},{}],62:[function(require,module,exports){
+},{}],63:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -31779,7 +32075,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, alpha);
 }`;
 
-},{}],63:[function(require,module,exports){
+},{}],64:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -31883,7 +32179,7 @@ fn main(
   return output;
 }`;
 
-},{}],64:[function(require,module,exports){
+},{}],65:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -31920,7 +32216,7 @@ fn main(
 }
 `;
 
-},{}],65:[function(require,module,exports){
+},{}],66:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -31978,7 +32274,7 @@ fn fragmentMain(input: VertexOutput) -> @location(0) vec4f {
   return vec4f(textureColor.rgb * lightColor, textureColor.a);
 }`;
 
-},{}],66:[function(require,module,exports){
+},{}],67:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -32036,7 +32332,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
 }
 `;
 
-},{}],67:[function(require,module,exports){
+},{}],68:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -32123,7 +32419,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
 }
 `;
 
-},{}],68:[function(require,module,exports){
+},{}],69:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -32181,7 +32477,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
   return vec4<f32>(color, 1.0);
 }`;
 
-},{}],69:[function(require,module,exports){
+},{}],70:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -32267,7 +32563,7 @@ fn main(
   return output;
 }`;
 
-},{}],70:[function(require,module,exports){
+},{}],71:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -32378,7 +32674,7 @@ fn main(
   return output;
 }`;
 
-},{}],71:[function(require,module,exports){
+},{}],72:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -32406,7 +32702,7 @@ fn main(
 }
 `;
 
-},{}],72:[function(require,module,exports){
+},{}],73:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -32476,7 +32772,7 @@ class MatrixSounds {
 }
 exports.MatrixSounds = MatrixSounds;
 
-},{}],73:[function(require,module,exports){
+},{}],74:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -33480,4 +33776,4 @@ class MatrixEngineWGPU {
 }
 exports.default = MatrixEngineWGPU;
 
-},{"./engine/ball.js":26,"./engine/cube.js":29,"./engine/engine.js":37,"./engine/lights.js":41,"./engine/loader-obj.js":42,"./engine/loaders/bvh-instaced.js":43,"./engine/loaders/bvh.js":44,"./engine/mesh-obj.js":48,"./engine/utils.js":50,"./multilang/lang.js":51,"./physics/matrix-ammo.js":52,"./sounds/sounds.js":72,"wgpu-matrix":25}]},{},[8]);
+},{"./engine/ball.js":27,"./engine/cube.js":30,"./engine/engine.js":38,"./engine/lights.js":42,"./engine/loader-obj.js":43,"./engine/loaders/bvh-instaced.js":44,"./engine/loaders/bvh.js":45,"./engine/mesh-obj.js":49,"./engine/utils.js":51,"./multilang/lang.js":52,"./physics/matrix-ammo.js":53,"./sounds/sounds.js":73,"wgpu-matrix":26}]},{},[9]);
