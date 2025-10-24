@@ -172,7 +172,7 @@ class Character extends _hero.Hero {
         app.localHero.heroe_bodies[0].globalAmbient = [1, 1, 1, 1];
         if (app.localHero.name == 'Slayzer') {
           app.localHero.heroe_bodies[0].globalAmbient = [2, 2, 3, 1];
-        } else if (app.localHero.name == '') {
+        } else if (app.localHero.name == 'Steelborn') {
           app.localHero.heroe_bodies[0].globalAmbient = [12, 12, 12, 1];
         }
         app.localHero.setAllCreepsAtStartPos();
@@ -633,11 +633,11 @@ class Controller {
         console.warn('No valid path found.');
         return;
       }
-      // no need if position = position of root
-      // for (var x=0; x < this.heroe_bodies.length;x++) {
-      //   followPath(this.heroe_bodies[x], path, this.core);
-      // }
-      (0, _navMesh.followPath)(this.heroe_bodies[0], path, this.core);
+      // no need if position = position of root ??? test last bug track
+      for (var x = 0; x < this.heroe_bodies.length; x++) {
+        (0, _navMesh.followPath)(this.heroe_bodies[x], path, this.core);
+      }
+      // followPath(this.heroe_bodies[0], path, this.core);
     });
     this.canvas.addEventListener("contextmenu", e => {
       e.preventDefault();
@@ -782,13 +782,21 @@ class Creep extends _hero.Hero {
           subMesh.glb.animationIndex = 0;
           // adapt manual if blender is not setup
           subMesh.glb.glbJsonData.animations.forEach((a, index) => {
-            // console.info(`%c ANimation: ${a.name} index ${index}`, LOG_MATRIX)
+            console.info(`%c ANimation: ${a.name} index ${index}`, _utils.LOG_MATRIX);
             if (a.name == 'dead') this.heroAnimationArrange.dead = index;
             if (a.name == 'walk') this.heroAnimationArrange.walk = index;
             if (a.name == 'salute') this.heroAnimationArrange.salute = index;
             if (a.name == 'attack') this.heroAnimationArrange.attack = index;
             if (a.name == 'idle') this.heroAnimationArrange.idle = index;
           });
+
+          // adapt
+          subMesh.globalAmbient = [1, 1, 1, 1];
+          if (this.name == 'Slayzer') {
+            subMesh.globalAmbient = [2, 2, 3, 1];
+          } else if (this.name.indexOf('frendly-creeps') != -1) {
+            subMesh.globalAmbient = [12, 12, 12, 1];
+          }
           // maybe will help - remote net players no nedd to collide in other remote user gamaplay
           // this.core.collisionSystem.register((o.name + idx), subMesh.position, 15.0, 'enemies');
           // dont care for multi sub mesh now
@@ -932,7 +940,7 @@ class EnemiesManager {
   loadBySumOfPlayers() {
     this.enemies.push(new _enemyCharacter.Enemie({
       core: this.core,
-      name: 'Slayzer',
+      name: 'SLZEnemy',
       archetypes: ["Warrior"],
       path: 'res/meshes/glb/monster.glb',
       position: {
@@ -1033,12 +1041,17 @@ class Enemie extends _hero.Hero {
           subMesh.glb.animationIndex = 0;
           // adapt manual if blender is not setup
           subMesh.glb.glbJsonData.animations.forEach((a, index) => {
-            // console.info(`%c ANimation: ${a.name} index ${index}`, LOG_MATRIX)
+            //  console.info(`%c ANimation: ${a.name} index ${index}`, LOG_MATRIX)
             if (a.name == 'dead') this.heroAnimationArrange.dead = index;
             if (a.name == 'walk') this.heroAnimationArrange.walk = index;
             if (a.name == 'salute') this.heroAnimationArrange.salute = index;
             if (a.name == 'attack') this.heroAnimationArrange.attack = index;
+            if (a.name == 'idle') this.heroAnimationArrange.idle = index;
           });
+          // adapt
+          if (this.name == 'Slayzer') {
+            subMesh.globalAmbient = [2, 2, 3, 1];
+          }
           // maybe will help - remote net players no nedd to collide in other remote user gamaplay
           // this.core.collisionSystem.register((o.name + idx), subMesh.position, 15.0, 'enemies');
           // dont care for multi sub mesh now

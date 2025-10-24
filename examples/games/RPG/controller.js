@@ -116,11 +116,11 @@ export class Controller {
       const end = [hitPoint[0], hitPoint[1], hitPoint[2]];
       const path = this.nav.findPath(start, end);
       if(!path || path.length === 0) {console.warn('No valid path found.'); return;}
-      // no need if position = position of root
-      // for (var x=0; x < this.heroe_bodies.length;x++) {
-      //   followPath(this.heroe_bodies[x], path, this.core);
-      // }
-      followPath(this.heroe_bodies[0], path, this.core);
+      // no need if position = position of root ??? test last bug track
+      for (var x=0; x < this.heroe_bodies.length;x++) {
+        followPath(this.heroe_bodies[x], path, this.core);
+      }
+      // followPath(this.heroe_bodies[0], path, this.core);
     });
 
     this.canvas.addEventListener("contextmenu", (e) => {

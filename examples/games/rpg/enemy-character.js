@@ -46,12 +46,17 @@ export class Enemie extends Hero {
           subMesh.glb.animationIndex = 0;
           // adapt manual if blender is not setup
           subMesh.glb.glbJsonData.animations.forEach((a, index) => {
-            // console.info(`%c ANimation: ${a.name} index ${index}`, LOG_MATRIX)
+          //  console.info(`%c ANimation: ${a.name} index ${index}`, LOG_MATRIX)
             if(a.name == 'dead') this.heroAnimationArrange.dead = index;
             if(a.name == 'walk') this.heroAnimationArrange.walk = index;
             if(a.name == 'salute') this.heroAnimationArrange.salute = index;
             if(a.name == 'attack') this.heroAnimationArrange.attack = index;
+            if(a.name == 'idle') this.heroAnimationArrange.idle = index;
           });
+          // adapt
+          if(this.name == 'Slayzer') {
+            subMesh.globalAmbient = [2, 2, 3, 1];
+          } 
           // maybe will help - remote net players no nedd to collide in other remote user gamaplay
           // this.core.collisionSystem.register((o.name + idx), subMesh.position, 15.0, 'enemies');
           // dont care for multi sub mesh now

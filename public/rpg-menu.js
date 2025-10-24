@@ -108,8 +108,8 @@ const HERO_ARCHETYPES = exports.HERO_ARCHETYPES = {
     manaMult: 1,
     attackMult: 1,
     armorMult: 1,
-    moveSpeed: 0.95,
-    attackSpeed: 0.8,
+    moveSpeed: 0.3,
+    attackSpeed: 0.5,
     hpRegenMult: 1,
     manaRegenMult: 1
   }
@@ -310,6 +310,9 @@ class HeroProps {
     const goldReward = this.baseGold + enemyLevel * this.goldMultiplier;
     this.currentXP += earnedXP;
     this.gold += goldReward;
+
+    // for creep any way - rule if they kill hero
+    // maybe some smlall reward... checkLevelUp
     console.log(`${this.name} killed Lv${enemyLevel} enemy: +${earnedXP} XP, +${goldReward} gold`);
     this.checkLevelUp();
   }
@@ -22133,7 +22136,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
     } else {
       this.raycast = o.raycast;
     }
-    console.info('WHAT IS [MEMeshObjInstances]', o.pointerEffect);
+    // console.info('WHAT IS [MEMeshObjInstances]', o.pointerEffect)
     this.pointerEffect = o.pointerEffect;
     this.name = o.name;
     this.done = false;
@@ -23969,6 +23972,10 @@ class BVHPlayerInstances extends _meshObjInstances.default {
   getNumberOfFramesCurAni() {
     const anim = this.glb.glbJsonData.animations[this.glb.animationIndex];
     let maxFrames = 0;
+    if (typeof anim == 'undefined') {
+      console.log('[anim undefined]', this.name);
+      return 1;
+    }
     for (const sampler of anim.samplers) {
       const inputAccessor = this.glb.glbJsonData.accessors[sampler.input];
       if (inputAccessor.count > maxFrames) maxFrames = inputAccessor.count;
@@ -24003,7 +24010,6 @@ class BVHPlayerInstances extends _meshObjInstances.default {
         if (this.name.indexOf('_') != -1) {
           n = this.name.split('_')[0];
         }
-        // console.info(`animationEnd-${n}`)
         dispatchEvent(new CustomEvent(`animationEnd-${n}`, {
           detail: {
             animationName: this.glb.glbJsonData.animations[this.glb.animationIndex].name

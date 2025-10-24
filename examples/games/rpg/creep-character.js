@@ -48,13 +48,21 @@ export class Creep extends Hero {
           subMesh.glb.animationIndex = 0;
           // adapt manual if blender is not setup
           subMesh.glb.glbJsonData.animations.forEach((a, index) => {
-            // console.info(`%c ANimation: ${a.name} index ${index}`, LOG_MATRIX)
+             console.info(`%c ANimation: ${a.name} index ${index}`, LOG_MATRIX)
             if(a.name == 'dead') this.heroAnimationArrange.dead = index;
             if(a.name == 'walk') this.heroAnimationArrange.walk = index;
             if(a.name == 'salute') this.heroAnimationArrange.salute = index;
             if(a.name == 'attack') this.heroAnimationArrange.attack = index;
             if(a.name == 'idle') this.heroAnimationArrange.idle = index;
           });
+
+          // adapt
+          subMesh.globalAmbient = [1, 1, 1, 1];
+          if(this.name == 'Slayzer') {
+            subMesh.globalAmbient = [2, 2, 3, 1];
+          } else if(this.name.indexOf('frendly-creeps') != -1) {
+            subMesh.globalAmbient = [12, 12, 12, 1];
+          }
           // maybe will help - remote net players no nedd to collide in other remote user gamaplay
           // this.core.collisionSystem.register((o.name + idx), subMesh.position, 15.0, 'enemies');
           // dont care for multi sub mesh now
@@ -139,12 +147,12 @@ export class Creep extends Hero {
             console.log(`%c ATTACK DAMAGE ${enemy.heroe_bodies[0].name}`, LOG_MATRIX)
             isEnemiesClose = true;
             this.calcDamage(this, enemy);
-          }  else {
-              // leave it go creep to your goals... NOT TESTED !!!!
-              console.log(`%c this.creepFocusAttackOn = null; NO ATTACK clear `, LOG_MATRIX)
-              this.creepFocusAttackOn = null;
-              dispatchEvent(new CustomEvent('navigate-frendly-creeps', {detail: 'test'}))
-            }
+          } else {
+            // leave it go creep to your goals... NOT TESTED !!!!
+            console.log(`%c this.creepFocusAttackOn = null; NO ATTACK clear `, LOG_MATRIX)
+            this.creepFocusAttackOn = null;
+            dispatchEvent(new CustomEvent('navigate-frendly-creeps', {detail: 'test'}))
+          }
         })
         // if(isEnemiesClose == false) this.setIdle();
         return;

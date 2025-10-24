@@ -13,7 +13,7 @@ export class EnemiesManager {
     this.enemies.push(new Enemie(
       {
         core: this.core,
-        name: 'Slayzer',
+        name: 'SLZEnemy',
         archetypes: ["Warrior"],
         path: 'res/meshes/glb/monster.glb',
         position: {x: -653.83, y: -23, z: 0} //, -26.62, -612.95
