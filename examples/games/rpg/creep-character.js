@@ -61,9 +61,7 @@ export class Creep extends Hero {
           // dont care for multi sub mesh now
           if(idx == 0) this.core.collisionSystem.register((o.name), subMesh.position, 15.0, this.group);
         });
-
         this.setStartUpPosition();
-
       }, 1600)
     } catch(err) {throw err;}
   }
@@ -141,7 +139,12 @@ export class Creep extends Hero {
             console.log(`%c ATTACK DAMAGE ${enemy.heroe_bodies[0].name}`, LOG_MATRIX)
             isEnemiesClose = true;
             this.calcDamage(this, enemy);
-          }
+          }  else {
+              // leave it go creep to your goals... NOT TESTED !!!!
+              console.log(`%c this.creepFocusAttackOn = null; NO ATTACK clear `, LOG_MATRIX)
+              this.creepFocusAttackOn = null;
+              dispatchEvent(new CustomEvent('navigate-frendly-creeps', {detail: 'test'}))
+            }
         })
         if(isEnemiesClose == false) this.setIdle();
         return;
@@ -152,11 +155,16 @@ export class Creep extends Hero {
           if(this.creepFocusAttackOn.name.indexOf(enemy.name) != -1) {
             let tt = this.core.RPG.distance3D(
               this.heroe_bodies[0].position,
-              this.creepFocusAttackOn.position);
+              this.creepFocusAttackOn.heroe_bodies[0].position);
             if(tt < this.core.RPG.distanceForAction) {
               console.log(`%c ATTACK DAMAGE ${enemy.heroe_bodies[0].name}`, LOG_MATRIX)
               this.calcDamage(this, enemy);
               return;
+            } else {
+              // leave it go creep to your goals...
+              console.log(`%c this.creepFocusAttackOn = null; NO ATTACK clear `, LOG_MATRIX)
+              this.creepFocusAttackOn = null;
+              dispatchEvent(new CustomEvent('navigate-frendly-creeps', {detail: 'test'}))
             }
           }
         })
@@ -169,6 +177,9 @@ export class Creep extends Hero {
             if(tt < this.core.RPG.distanceForAction) {
               console.log(`%c ATTACK DAMAGE ${enemy.heroe_bodies[0].name}`, LOG_MATRIX)
               this.calcDamage(this, enemy);
+            } else {
+              // leave it go creep to your goals...
+              this.creepFocusAttackOn = null;
             }
           }
         })

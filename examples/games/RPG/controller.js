@@ -49,9 +49,6 @@ export class Controller {
 
     addRaycastsListener(undefined, 'click');
     // addRaycastsListener(undefined, 'mousemove');
-
-    //
-
     // for now - performance problem
     // this.canvas.addEventListener("ray.hit.event.mm", (e) => {
     //   // console.log('ray.hit.event detected', e);

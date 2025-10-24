@@ -215,22 +215,31 @@ class Character extends _hero.Hero {
       creep.heroe_bodies[0].position.setPosition(-750 + index * 50, -23, 800 + index * 50);
     });
     setTimeout(() => {
-      app.localHero.frendlyLocal.creeps.forEach((creep, index) => {
-        // console.log('start up ', creep);
-        creep.firstPoint = [-653.83, -26.62, -612.95];
-        creep.finalPoint = [702, -26, -737];
-        const start = [creep.heroe_bodies[0].position.x, creep.heroe_bodies[0].position.y, creep.heroe_bodies[0].position.z];
-        const end = [creep.firstPoint[0], creep.firstPoint[1], creep.firstPoint[2]];
-        const endFinal = [creep.finalPoint[0], creep.finalPoint[1], creep.finalPoint[2]];
-        const path = this.core.RPG.nav.findPath(start, end);
-        if (!path || path.length === 0) {
-          console.warn('No valid path found.');
-          return;
-        }
-        this.setWalkCreep(index);
-        (0, _navMesh.followPath)(creep.heroe_bodies[0], path, this.core);
-      });
+      this.navigateCreeps();
     }, 1000);
+  }
+  navigateCreeps() {
+    app.localHero.frendlyLocal.creeps.forEach((creep, index) => {
+      if (creep.creepFocusAttackOn != null) {
+        console.log('[creep.creepFocusAttackOn] is on action chech for small interval again....!', creep);
+        setTimeout(() => {
+          this.navigateCreeps();
+        }, 5000);
+        return;
+      }
+      creep.firstPoint = [-653.83, -26.62, -612.95];
+      creep.finalPoint = [702, -26, -737];
+      const start = [creep.heroe_bodies[0].position.x, creep.heroe_bodies[0].position.y, creep.heroe_bodies[0].position.z];
+      const end = [creep.firstPoint[0], creep.firstPoint[1], creep.firstPoint[2]];
+      const endFinal = [creep.finalPoint[0], creep.finalPoint[1], creep.finalPoint[2]];
+      const path = this.core.RPG.nav.findPath(start, end);
+      if (!path || path.length === 0) {
+        console.warn('No valid path found.');
+        return;
+      }
+      this.setWalkCreep(index);
+      (0, _navMesh.followPath)(creep.heroe_bodies[0], path, this.core);
+    });
   }
   setWalk() {
     this.core.RPG.heroe_bodies.forEach(subMesh => {
@@ -264,12 +273,7 @@ class Character extends _hero.Hero {
     });
   }
   setWalkCreep(creepIndex) {
-    // console.info(`%c  FRENDLE CREEP SET  walk!!!!!!!!!!!!!!!!!!!!!`, LOG_MATRIX)
     this.frendlyLocal.creeps[creepIndex].heroe_bodies[0].glb.animationIndex = this.frendlyCreepAnimationArrange.walk;
-    //   this.frendlyLocal.creeps.forEach(subMesh => {
-    //   subMesh.glb.animationIndex = this.heroAnimationArrange.walk;
-    //   // console.info(`%chero walk`, LOG_MATRIX)
-    // });
   }
   setAttackCreep(creepIndex) {
     console.info(`%c  FRENDLE CREEP attack enemy   !!`, _utils.LOG_MATRIX);
@@ -326,7 +330,7 @@ class Character extends _hero.Hero {
     });
     addEventListener('close-distance', e => {
       if (e.detail.A.id.indexOf('frendly') != -1 && e.detail.B.id.indexOf('frendly') != -1 || e.detail.A.group == "local_hero" && e.detail.B.id.indexOf('frendly') != -1 || e.detail.A.group == "frendly" && e.detail.B.group == "local_hero") {
-        console.info('close distance BOTH FRENDLY :', e.detail.A);
+        // console.info('close distance BOTH FRENDLY :', e.detail.A)
         return;
       }
 
@@ -408,11 +412,15 @@ class Character extends _hero.Hero {
       }
     });
     addEventListener('onTargetPositionReach', e => {
-      // console.log(`%[character base ???] conTargetPositionReach: ${e.detail.name}`, LOG_MATRIX)
       // frendly-creeps
       if (e.detail.name.indexOf('frendly-creep') != -1) {
         let getName = e.detail.name.split('_')[0];
         let t = app.localHero.frendlyLocal.creeps.filter(obj => obj.name == getName);
+        if (t[0].creepFocusAttackOn != null) {
+          console.log(`%[character base ?] onTargetPositionReach 
+          cjeck creepFocusAttackOn : ${t[0].creepFocusAttackOn}`, _utils.LOG_MATRIX);
+          return;
+        }
         let test = e.detail.body.position.z - t[0].firstPoint[2];
         if (test > 20) {
           // got to first point  t[0] for now only  one sub mesh per creep...
@@ -468,6 +476,9 @@ class Character extends _hero.Hero {
           this.mouseTarget.effects.circlePlane.instanceTargets[0].color = [0.6, 0.8, 1, 0.4];
         }
       }
+    });
+    addEventListener('navigate-frendly-creeps', () => {
+      this.navigateCreeps();
     });
   }
 }
@@ -531,9 +542,6 @@ class Controller {
     });
     (0, _raycast.addRaycastsListener)(undefined, 'click');
     // addRaycastsListener(undefined, 'mousemove');
-
-    //
-
     // for now - performance problem
     // this.canvas.addEventListener("ray.hit.event.mm", (e) => {
     //   // console.log('ray.hit.event detected', e);
@@ -839,6 +847,13 @@ class Creep extends _hero.Hero {
             console.log(`%c ATTACK DAMAGE ${enemy.heroe_bodies[0].name}`, _utils.LOG_MATRIX);
             isEnemiesClose = true;
             this.calcDamage(this, enemy);
+          } else {
+            // leave it go creep to your goals... NOT TESTED !!!!
+            console.log(`%c this.creepFocusAttackOn = null; NO ATTACK clear `, _utils.LOG_MATRIX);
+            this.creepFocusAttackOn = null;
+            dispatchEvent(new CustomEvent('navigate-frendly-creeps', {
+              detail: 'test'
+            }));
           }
         });
         if (isEnemiesClose == false) this.setIdle();
@@ -847,11 +862,18 @@ class Creep extends _hero.Hero {
         // Focus on enemy vs creeps !!!
         if (this.core.enemies.enemies.length > 0) this.core.enemies.enemies.forEach(enemy => {
           if (this.creepFocusAttackOn.name.indexOf(enemy.name) != -1) {
-            let tt = this.core.RPG.distance3D(this.heroe_bodies[0].position, this.creepFocusAttackOn.position);
+            let tt = this.core.RPG.distance3D(this.heroe_bodies[0].position, this.creepFocusAttackOn.heroe_bodies[0].position);
             if (tt < this.core.RPG.distanceForAction) {
               console.log(`%c ATTACK DAMAGE ${enemy.heroe_bodies[0].name}`, _utils.LOG_MATRIX);
               this.calcDamage(this, enemy);
               return;
+            } else {
+              // leave it go creep to your goals...
+              console.log(`%c this.creepFocusAttackOn = null; NO ATTACK clear `, _utils.LOG_MATRIX);
+              this.creepFocusAttackOn = null;
+              dispatchEvent(new CustomEvent('navigate-frendly-creeps', {
+                detail: 'test'
+              }));
             }
           }
         });
@@ -861,6 +883,9 @@ class Creep extends _hero.Hero {
             if (tt < this.core.RPG.distanceForAction) {
               console.log(`%c ATTACK DAMAGE ${enemy.heroe_bodies[0].name}`, _utils.LOG_MATRIX);
               this.calcDamage(this, enemy);
+            } else {
+              // leave it go creep to your goals...
+              this.creepFocusAttackOn = null;
             }
           }
         });
@@ -20979,7 +21004,6 @@ var _navMesh = require("../../examples/games/rpg/nav-mesh");
 class CollisionSystem {
   constructor() {
     this.entries = [];
-    // {id, pos, radius, group}
   }
   register(id, positionInstance, radius = 0.6, group = "default") {
     this.entries.push({
@@ -21002,7 +21026,7 @@ class CollisionSystem {
         const minDist = A.radius + B.radius;
         const testCollide = (0, _navMesh.resolvePairRepulsion)(A.pos, B.pos, minDist, 1.0);
         if (testCollide) {
-          console.log('collide A ' + A + " vs B " + B);
+          // console.log('collide A ' + A + " vs B " + B);
           dispatchEvent(new CustomEvent('close-distance', {
             detail: {
               A: A,

@@ -192,19 +192,30 @@ export class Character extends Hero {
     })
 
     setTimeout(() => {
-      app.localHero.frendlyLocal.creeps.forEach((creep, index) => {
-        // console.log('start up ', creep);
-        creep.firstPoint = [-653.83, -26.62, -612.95];
-        creep.finalPoint = [702, -26, -737];
-        const start = [creep.heroe_bodies[0].position.x, creep.heroe_bodies[0].position.y, creep.heroe_bodies[0].position.z];
-        const end = [creep.firstPoint[0], creep.firstPoint[1], creep.firstPoint[2]];
-        const endFinal = [creep.finalPoint[0], creep.finalPoint[1], creep.finalPoint[2]];
-        const path = this.core.RPG.nav.findPath(start, end);
-        if(!path || path.length === 0) {console.warn('No valid path found.'); return;}
-        this.setWalkCreep(index);
-        followPath(creep.heroe_bodies[0], path, this.core);
-      })
+      this.navigateCreeps();
     }, 1000)
+  }
+
+  navigateCreeps() {
+    app.localHero.frendlyLocal.creeps.forEach((creep, index) => {
+      if(creep.creepFocusAttackOn != null) {
+        console.log('[creep.creepFocusAttackOn] is on action chech for small interval again....!', creep);
+        setTimeout(() => {
+          this.navigateCreeps();
+        }, 5000)
+        return;
+      }
+
+      creep.firstPoint = [-653.83, -26.62, -612.95];
+      creep.finalPoint = [702, -26, -737];
+      const start = [creep.heroe_bodies[0].position.x, creep.heroe_bodies[0].position.y, creep.heroe_bodies[0].position.z];
+      const end = [creep.firstPoint[0], creep.firstPoint[1], creep.firstPoint[2]];
+      const endFinal = [creep.finalPoint[0], creep.finalPoint[1], creep.finalPoint[2]];
+      const path = this.core.RPG.nav.findPath(start, end);
+      if(!path || path.length === 0) {console.warn('No valid path found.'); return;}
+      this.setWalkCreep(index);
+      followPath(creep.heroe_bodies[0], path, this.core);
+    })
   }
 
   setWalk() {
@@ -244,12 +255,7 @@ export class Character extends Hero {
   }
 
   setWalkCreep(creepIndex) {
-    // console.info(`%c  FRENDLE CREEP SET  walk!!!!!!!!!!!!!!!!!!!!!`, LOG_MATRIX)
     this.frendlyLocal.creeps[creepIndex].heroe_bodies[0].glb.animationIndex = this.frendlyCreepAnimationArrange.walk;
-    //   this.frendlyLocal.creeps.forEach(subMesh => {
-    //   subMesh.glb.animationIndex = this.heroAnimationArrange.walk;
-    //   // console.info(`%chero walk`, LOG_MATRIX)
-    // });
   }
 
   setAttackCreep(creepIndex) {
@@ -313,7 +319,7 @@ export class Character extends Hero {
       if((e.detail.A.id.indexOf('frendly') != -1 && e.detail.B.id.indexOf('frendly') != -1) ||
         (e.detail.A.group == "local_hero" && e.detail.B.id.indexOf('frendly') != -1) ||
         (e.detail.A.group == "frendly" && e.detail.B.group == "local_hero")) {
-        console.info('close distance BOTH FRENDLY :', e.detail.A)
+        // console.info('close distance BOTH FRENDLY :', e.detail.A)
         return;
       }
 
@@ -406,11 +412,16 @@ export class Character extends Hero {
     })
 
     addEventListener('onTargetPositionReach', (e) => {
-      // console.log(`%[character base ???] conTargetPositionReach: ${e.detail.name}`, LOG_MATRIX)
       // frendly-creeps
       if(e.detail.name.indexOf('frendly-creep') != -1) {
         let getName = e.detail.name.split('_')[0];
         let t = app.localHero.frendlyLocal.creeps.filter((obj) => obj.name == getName);
+        if(t[0].creepFocusAttackOn != null) {
+          console.log(`%[character base ?] onTargetPositionReach 
+          cjeck creepFocusAttackOn : ${t[0].creepFocusAttackOn}`, LOG_MATRIX)
+          return;
+        }
+
         let test = e.detail.body.position.z - t[0].firstPoint[2];
         if(test > 20) {
           // got to first point  t[0] for now only  one sub mesh per creep...
@@ -463,6 +474,10 @@ export class Character extends Hero {
           this.mouseTarget.effects.circlePlane.instanceTargets[0].color = [0.6, 0.8, 1, 0.4];
         }
       }
+    })
+
+    addEventListener('navigate-frendly-creeps', () => {
+      this.navigateCreeps()
     })
   }
 }
