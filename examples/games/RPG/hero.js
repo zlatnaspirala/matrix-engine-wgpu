@@ -189,6 +189,8 @@ export class HeroProps {
     this.currentXP += earnedXP;
     this.gold += goldReward;
 
+    // for creep any way - rule if they kill hero
+    // maybe some smlall reward... checkLevelUp
     console.log(`${this.name} killed Lv${enemyLevel} enemy: +${earnedXP} XP, +${goldReward} gold`);
     this.checkLevelUp();
   }

@@ -207,7 +207,9 @@ class Character extends _hero.Hero {
         if (a.name == 'attack') this.frendlyCreepAnimationArrange.attack = index;
         if (a.name == 'idle') this.frendlyCreepAnimationArrange.idle = index;
       });
-      if (id == 0) subMesh.sharedState.emitAnimationEvent = true;
+      // if(id == 0) subMesh.sharedState.emitAnimationEvent = true;
+      // all single skin mesh
+      subMesh.sharedState.emitAnimationEvent = true;
       // this.core.collisionSystem.register(`local${id}`, subMesh.position, 15.0, 'local_hero');
     });
     app.localHero.frendlyLocal.creeps.forEach((creep, index) => {
@@ -221,10 +223,8 @@ class Character extends _hero.Hero {
   navigateCreeps() {
     app.localHero.frendlyLocal.creeps.forEach((creep, index) => {
       if (creep.creepFocusAttackOn != null) {
-        console.log('[creep.creepFocusAttackOn] is on action chech for small interval again....!', creep);
-        // setTimeout(() => {
-        //   this.navigateCreeps();
-        // }, 5000)
+        // console.log('[creep.creepFocusAttackOn] is on action chech for small interval again....!', creep);
+        this.navigateCreep(creep);
         return;
       }
       creep.firstPoint = [-653.83, -26.62, -612.95];
@@ -240,6 +240,23 @@ class Character extends _hero.Hero {
       this.setWalkCreep(index);
       (0, _navMesh.followPath)(creep.heroe_bodies[0], path, this.core);
     });
+  }
+  navigateCreep(creep) {
+    if (creep.creepFocusAttackOn != null) {
+      return;
+    }
+    creep.firstPoint = [-653.83, -26.62, -612.95];
+    creep.finalPoint = [702, -26, -737];
+    const start = [creep.heroe_bodies[0].position.x, creep.heroe_bodies[0].position.y, creep.heroe_bodies[0].position.z];
+    const end = [creep.firstPoint[0], creep.firstPoint[1], creep.firstPoint[2]];
+    const endFinal = [creep.finalPoint[0], creep.finalPoint[1], creep.finalPoint[2]];
+    const path = this.core.RPG.nav.findPath(start, end);
+    if (!path || path.length === 0) {
+      console.warn('No valid path found.');
+      return;
+    }
+    this.setWalkCreep(index);
+    (0, _navMesh.followPath)(creep.heroe_bodies[0], path, this.core);
   }
   setWalk() {
     this.core.RPG.heroe_bodies.forEach(subMesh => {
@@ -276,7 +293,7 @@ class Character extends _hero.Hero {
     this.frendlyLocal.creeps[creepIndex].heroe_bodies[0].glb.animationIndex = this.frendlyCreepAnimationArrange.walk;
   }
   setAttackCreep(creepIndex) {
-    console.info(`%c  FRENDLE CREEP attack enemy   !!`, _utils.LOG_MATRIX);
+    console.info(`%cFrendly creep attack enemy!`, _utils.LOG_MATRIX);
     this.frendlyLocal.creeps[creepIndex].heroe_bodies[0].glb.animationIndex = this.frendlyCreepAnimationArrange.attack;
   }
   attachEvents() {
@@ -376,12 +393,12 @@ class Character extends _hero.Hero {
         //--------------------------------
       }
       if (this.heroFocusAttackOn == null) {
-        console.info('FOCUS ON GROUND BUT COLLIDE WITH ENEMY-ANIMATION END setIdle:', e.detail.animationName);
+        // console.info('test collide...', e.detail.animationName)
         let isEnemiesClose = false; // on close distance 
         this.core.enemies.enemies.forEach(enemy => {
           let tt = this.core.RPG.distance3D(this.heroe_bodies[0].position, enemy.heroe_bodies[0].position);
           if (tt < this.core.RPG.distanceForAction) {
-            console.log(`%c ATTACK DAMAGE ${enemy.heroe_bodies[0].name}`, _utils.LOG_MATRIX);
+            console.log(`%cATTACK DAMAGE ${enemy.heroe_bodies[0].name}`, _utils.LOG_MATRIX);
             isEnemiesClose = true;
             this.calcDamage(this, enemy);
           }
@@ -394,7 +411,7 @@ class Character extends _hero.Hero {
           if (this.heroFocusAttackOn.name.indexOf(enemy.name) != -1) {
             let tt = this.core.RPG.distance3D(this.heroe_bodies[0].position, this.heroFocusAttackOn.position);
             if (tt < this.core.RPG.distanceForAction) {
-              console.log(`%c ATTACK DAMAGE ${enemy.heroe_bodies[0].name}`, _utils.LOG_MATRIX);
+              console.log(`%cATTACK DAMAGE ${enemy.heroe_bodies[0].name}`, _utils.LOG_MATRIX);
               this.calcDamage(this, enemy);
               return;
             }
@@ -424,7 +441,7 @@ class Character extends _hero.Hero {
         let test = e.detail.body.position.z - t[0].firstPoint[2];
         if (test > 20) {
           // got to first point  t[0] for now only  one sub mesh per creep...
-          console.log('SEND TO FIRTS POINT POINT', t[0].firstPoint);
+          // console.log('SEND TO FIRTS POINT POINT', t[0].firstPoint)
           const start = [t[0].heroe_bodies[0].position.x, t[0].heroe_bodies[0].position.y, t[0].heroe_bodies[0].position.z];
           const path = this.core.RPG.nav.findPath(start, t[0].firstPoint);
           if (!path || path.length === 0) {
@@ -436,7 +453,7 @@ class Character extends _hero.Hero {
           this.setWalkCreep(getName[getName.length - 1]);
         } else {
           // got ot final
-          console.log('SEND TO last POINT POINT', t[0].finalPoint);
+          // console.log('SEND TO last POINT POINT', t[0].finalPoint)
           const start = [t[0].heroe_bodies[0].position.x, t[0].heroe_bodies[0].position.y, t[0].heroe_bodies[0].position.z];
           const path = this.core.RPG.nav.findPath(start, t[0].finalPoint);
           if (!path || path.length === 0) {
@@ -734,7 +751,6 @@ class Creep extends _hero.Hero {
     this.core = o.core;
     this.group = group;
     this.loadCreeps(o);
-    this.attachEvents();
     return this;
   }
   loadCreeps = async o => {
@@ -779,7 +795,8 @@ class Creep extends _hero.Hero {
           if (idx == 0) this.core.collisionSystem.register(o.name, subMesh.position, 15.0, this.group);
         });
         this.setStartUpPosition();
-      }, 1600);
+        this.attachEvents();
+      }, 1700);
     } catch (err) {
       throw err;
     }
@@ -821,12 +838,12 @@ class Creep extends _hero.Hero {
   }
   attachEvents() {
     addEventListener(`onDamage-${this.name}`, e => {
-      console.info(`%c hero damage ${e.detail}`, _utils.LOG_MATRIX);
+      console.info(`%frendly creep damage ${e.detail}`, _utils.LOG_MATRIX);
       this.heroe_bodies[0].effects.energyBar.setProgress(e.detail.progress);
       // if detail is 0
       if (e.detail.progress == 0) {
         this.setDead();
-        console.info(`%c hero dead [${this.name}], attacker[${e.detail.attacker}]`, _utils.LOG_MATRIX);
+        console.info(`%cfrendly creep dead [${this.name}], attacker[${e.detail.attacker}]`, _utils.LOG_MATRIX);
         setTimeout(() => {
           this.setStartUpPosition();
         }, 2000);
@@ -856,7 +873,7 @@ class Creep extends _hero.Hero {
             }));
           }
         });
-        if (isEnemiesClose == false) this.setIdle();
+        // if(isEnemiesClose == false) this.setIdle();
         return;
       } else {
         // Focus on enemy vs creeps !!!
@@ -864,12 +881,12 @@ class Creep extends _hero.Hero {
           if (this.creepFocusAttackOn.name.indexOf(enemy.name) != -1) {
             let tt = this.core.RPG.distance3D(this.heroe_bodies[0].position, this.creepFocusAttackOn.heroe_bodies[0].position);
             if (tt < this.core.RPG.distanceForAction) {
-              console.log(`%c ATTACK DAMAGE ${enemy.heroe_bodies[0].name}`, _utils.LOG_MATRIX);
+              console.log(`%cATTACK DAMAGE ${enemy.heroe_bodies[0].name}`, _utils.LOG_MATRIX);
               this.calcDamage(this, enemy);
               return;
             } else {
               // leave it go creep to your goals...
-              console.log(`%c this.creepFocusAttackOn = null; NO ATTACK clear `, _utils.LOG_MATRIX);
+              console.log(`%cNO ATTACK GO ...`, _utils.LOG_MATRIX);
               this.creepFocusAttackOn = null;
               dispatchEvent(new CustomEvent('navigate-frendly-creeps', {
                 detail: 'test'
@@ -910,7 +927,6 @@ class EnemiesManager {
   constructor(core) {
     this.core = core;
     this.loadBySumOfPlayers();
-    console.log('Enemies manager:', core);
   }
   // Make possible to play 3x3 4x4 or 5x5 ...
   loadBySumOfPlayers() {
@@ -1028,7 +1044,7 @@ class Enemie extends _hero.Hero {
           // dont care for multi sub mesh now
           if (idx == 0) this.core.collisionSystem.register(o.name, subMesh.position, 15.0, 'enemies');
         });
-        this.setStartUpPosition();
+        this.setStartUpPositionTest();
       }, 1600);
     } catch (err) {
       throw err;
@@ -1064,9 +1080,15 @@ class Enemie extends _hero.Hero {
       console.info(`%chero attack`, _utils.LOG_MATRIX);
     });
   }
-  setStartUpPosition() {
+  setStartUpPositionTest() {
     this.heroe_bodies.forEach((subMesh, idx) => {
       subMesh.position.setPosition(-700, -23, 0);
+    });
+    this.setStartUpPositionTest = this.setStartUpPosition;
+  }
+  setStartUpPosition() {
+    this.heroe_bodies.forEach((subMesh, idx) => {
+      subMesh.position.setPosition(700, -23, 600);
     });
   }
   attachEvents() {
@@ -1079,7 +1101,7 @@ class Enemie extends _hero.Hero {
         console.info(`%c hero dead [${this.name}], attacker[${e.detail.attacker}]`, _utils.LOG_MATRIX);
         setTimeout(() => {
           this.setStartUpPosition();
-        }, 2000);
+        }, 1600);
         e.detail.attacker.killEnemy(e.detail.defenderLevel);
       }
     });
@@ -1399,6 +1421,9 @@ class HeroProps {
     const goldReward = this.baseGold + enemyLevel * this.goldMultiplier;
     this.currentXP += earnedXP;
     this.gold += goldReward;
+
+    // for creep any way - rule if they kill hero
+    // maybe some smlall reward... checkLevelUp
     console.log(`${this.name} killed Lv${enemyLevel} enemy: +${earnedXP} XP, +${goldReward} gold`);
     this.checkLevelUp();
   }
@@ -24137,7 +24162,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
     } else {
       this.raycast = o.raycast;
     }
-    console.info('WHAT IS [MEMeshObjInstances]', o.pointerEffect);
+    // console.info('WHAT IS [MEMeshObjInstances]', o.pointerEffect)
     this.pointerEffect = o.pointerEffect;
     this.name = o.name;
     this.done = false;
@@ -26011,7 +26036,6 @@ class BVHPlayerInstances extends _meshObjInstances.default {
         if (this.name.indexOf('_') != -1) {
           n = this.name.split('_')[0];
         }
-        // console.info(`animationEnd-${n}`)
         dispatchEvent(new CustomEvent(`animationEnd-${n}`, {
           detail: {
             animationName: this.glb.glbJsonData.animations[this.glb.animationIndex].name

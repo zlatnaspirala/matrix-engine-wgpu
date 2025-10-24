@@ -167,7 +167,6 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
         if(this.name.indexOf('_') != -1) {
           n = this.name.split('_')[0];
         }
-        // console.info(`animationEnd-${n}`)
         dispatchEvent(new CustomEvent(`animationEnd-${n}`, {
           detail: {
             animationName: this.glb.glbJsonData.animations[this.glb.animationIndex].name

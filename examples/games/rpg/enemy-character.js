@@ -58,7 +58,7 @@ export class Enemie extends Hero {
           if(idx == 0) this.core.collisionSystem.register((o.name), subMesh.position, 15.0, 'enemies');
         });
 
-        this.setStartUpPosition();
+        this.setStartUpPositionTest();
 
       }, 1600)
     } catch(err) {throw err;}
@@ -99,9 +99,17 @@ export class Enemie extends Hero {
     });
   }
 
-  setStartUpPosition() {
+  setStartUpPositionTest() {
     this.heroe_bodies.forEach((subMesh, idx) => {
       subMesh.position.setPosition(-700, -23, 0);
+    })
+
+    this.setStartUpPositionTest = this.setStartUpPosition;
+  }
+
+  setStartUpPosition() {
+    this.heroe_bodies.forEach((subMesh, idx) => {
+      subMesh.position.setPosition(700, -23, 600);
     })
   }
 
@@ -116,7 +124,7 @@ export class Enemie extends Hero {
         console.info(`%c hero dead [${this.name}], attacker[${e.detail.attacker}]`, LOG_MATRIX)
         setTimeout(() => {
           this.setStartUpPosition()
-        }, 2000)
+        }, 1600)
         e.detail.attacker.killEnemy(e.detail.defenderLevel);
       }
     });

@@ -7,7 +7,6 @@ export class EnemiesManager {
   constructor(core) {
     this.core = core;
     this.loadBySumOfPlayers();
-    console.log('Enemies manager:', core)
   }
   // Make possible to play 3x3 4x4 or 5x5 ...
   loadBySumOfPlayers() {

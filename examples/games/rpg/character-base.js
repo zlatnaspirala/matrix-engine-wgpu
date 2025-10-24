@@ -182,7 +182,9 @@ export class Character extends Hero {
         if(a.name == 'attack') this.frendlyCreepAnimationArrange.attack = index;
         if(a.name == 'idle') this.frendlyCreepAnimationArrange.idle = index;
       })
-      if(id == 0) subMesh.sharedState.emitAnimationEvent = true;
+      // if(id == 0) subMesh.sharedState.emitAnimationEvent = true;
+      // all single skin mesh
+      subMesh.sharedState.emitAnimationEvent = true;
       // this.core.collisionSystem.register(`local${id}`, subMesh.position, 15.0, 'local_hero');
     });
 
@@ -199,13 +201,10 @@ export class Character extends Hero {
   navigateCreeps() {
     app.localHero.frendlyLocal.creeps.forEach((creep, index) => {
       if(creep.creepFocusAttackOn != null) {
-        console.log('[creep.creepFocusAttackOn] is on action chech for small interval again....!', creep);
-        // setTimeout(() => {
-        //   this.navigateCreeps();
-        // }, 5000)
+        // console.log('[creep.creepFocusAttackOn] is on action chech for small interval again....!', creep);
+        this.navigateCreep(creep);
         return;
       }
-
       creep.firstPoint = [-653.83, -26.62, -612.95];
       creep.finalPoint = [702, -26, -737];
       const start = [creep.heroe_bodies[0].position.x, creep.heroe_bodies[0].position.y, creep.heroe_bodies[0].position.z];
@@ -216,6 +215,21 @@ export class Character extends Hero {
       this.setWalkCreep(index);
       followPath(creep.heroe_bodies[0], path, this.core);
     })
+  }
+
+  navigateCreep(creep) {
+    if(creep.creepFocusAttackOn != null) {
+      return;
+    }
+    creep.firstPoint = [-653.83, -26.62, -612.95];
+    creep.finalPoint = [702, -26, -737];
+    const start = [creep.heroe_bodies[0].position.x, creep.heroe_bodies[0].position.y, creep.heroe_bodies[0].position.z];
+    const end = [creep.firstPoint[0], creep.firstPoint[1], creep.firstPoint[2]];
+    const endFinal = [creep.finalPoint[0], creep.finalPoint[1], creep.finalPoint[2]];
+    const path = this.core.RPG.nav.findPath(start, end);
+    if(!path || path.length === 0) {console.warn('No valid path found.'); return;}
+    this.setWalkCreep(index);
+    followPath(creep.heroe_bodies[0], path, this.core);
   }
 
   setWalk() {
@@ -259,7 +273,7 @@ export class Character extends Hero {
   }
 
   setAttackCreep(creepIndex) {
-    console.info(`%c  FRENDLE CREEP attack enemy   !!`, LOG_MATRIX)
+    console.info(`%cFrendly creep attack enemy!`, LOG_MATRIX)
     this.frendlyLocal.creeps[creepIndex].heroe_bodies[0].glb.animationIndex = this.frendlyCreepAnimationArrange.attack;
   }
 
@@ -367,14 +381,14 @@ export class Character extends Hero {
         //--------------------------------
       }
       if(this.heroFocusAttackOn == null) {
-        console.info('FOCUS ON GROUND BUT COLLIDE WITH ENEMY-ANIMATION END setIdle:', e.detail.animationName)
+        // console.info('test collide...', e.detail.animationName)
         let isEnemiesClose = false; // on close distance 
         this.core.enemies.enemies.forEach((enemy) => {
           let tt = this.core.RPG.distance3D(
             this.heroe_bodies[0].position,
             enemy.heroe_bodies[0].position);
           if(tt < this.core.RPG.distanceForAction) {
-            console.log(`%c ATTACK DAMAGE ${enemy.heroe_bodies[0].name}`, LOG_MATRIX)
+            console.log(`%cATTACK DAMAGE ${enemy.heroe_bodies[0].name}`, LOG_MATRIX)
             isEnemiesClose = true;
             this.calcDamage(this, enemy);
           }
@@ -390,7 +404,7 @@ export class Character extends Hero {
               this.heroe_bodies[0].position,
               this.heroFocusAttackOn.position);
             if(tt < this.core.RPG.distanceForAction) {
-              console.log(`%c ATTACK DAMAGE ${enemy.heroe_bodies[0].name}`, LOG_MATRIX)
+              console.log(`%cATTACK DAMAGE ${enemy.heroe_bodies[0].name}`, LOG_MATRIX)
               this.calcDamage(this, enemy);
               return;
             }
@@ -425,7 +439,7 @@ export class Character extends Hero {
         let test = e.detail.body.position.z - t[0].firstPoint[2];
         if(test > 20) {
           // got to first point  t[0] for now only  one sub mesh per creep...
-          console.log('SEND TO FIRTS POINT POINT', t[0].firstPoint)
+          // console.log('SEND TO FIRTS POINT POINT', t[0].firstPoint)
           const start = [t[0].heroe_bodies[0].position.x, t[0].heroe_bodies[0].position.y, t[0].heroe_bodies[0].position.z];
           const path = this.core.RPG.nav.findPath(start, t[0].firstPoint);
           if(!path || path.length === 0) {console.warn('No valid path found.'); return;}
@@ -434,7 +448,7 @@ export class Character extends Hero {
           this.setWalkCreep(getName[getName.length - 1]);
         } else {
           // got ot final
-          console.log('SEND TO last POINT POINT', t[0].finalPoint)
+          // console.log('SEND TO last POINT POINT', t[0].finalPoint)
           const start = [t[0].heroe_bodies[0].position.x, t[0].heroe_bodies[0].position.y, t[0].heroe_bodies[0].position.z];
           const path = this.core.RPG.nav.findPath(start, t[0].finalPoint);
           if(!path || path.length === 0) {console.warn('No valid path found.'); return;}
