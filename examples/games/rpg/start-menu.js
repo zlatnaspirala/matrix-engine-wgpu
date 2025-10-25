@@ -23,9 +23,13 @@ let mysticoreStartSceen = new MatrixEngineWGPU({
   mysticoreStartSceen.selectedHero = 0;
   mysticoreStartSceen.lock = false;
 
+  mysticore.matrixSounds.createAudio('music', 'res/audios/rpg/wizard-rider.mp3', 1)
+  mysticore.matrixSounds.createAudio('win1', 'res/audios/rpg/feel.mp3', 2);
+
   let heros = null;
   addEventListener('AmmoReady', async () => {
 
+    app.matrixSounds.play('music');
     heros = [
       {
         type: "Warrior",
@@ -83,12 +87,12 @@ let mysticoreStartSceen = new MatrixEngineWGPU({
             array[i].color = [0, 0, 0, 0.7];
           })
 
-          if (x==2) {
+          if(x == 2) {
             console.log('TEST------')
-            hero0.forEach((p , i , array) => {
-              array[i].globalAmbient = [6,6,6];
+            hero0.forEach((p, i, array) => {
+              array[i].globalAmbient = [6, 6, 6];
             })
-            
+
           }
         }
 

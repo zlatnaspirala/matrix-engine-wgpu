@@ -206,6 +206,23 @@ export class HeroProps {
         this.currentXP -= nextLevelXP;
       } else break;
     }
+
+    // emit for hud
+    dispatchEvent(new CustomEvent('stats-localhero', {
+      detail: {
+        gold: this.gold,
+        currentLevel: this.currentLevel,
+        xp: this.currentXP,
+        hp: this.hp,
+        mana: this.mana,
+        attack: this.attack,
+        armor: this.armor,
+        moveSpeed: this.moveSpeed,
+        attackSpeed: this.attackSpeed,
+        hpRegen: this.hpRegen,
+        mpRegen: this.mpRegen,
+      }
+    }))
   }
 
   // --- Upgrade abilities

@@ -9,11 +9,21 @@ import {CollisionSystem} from "../../../src/engine/collision-sub-system.js";
 import {LS} from "../../../src/engine/utils.js";
 
 /**
+ * @description
+ * This is main root dep file.
+ * All start from here.
  * @Note
  * “Character and animation assets from Mixamo,
  * used under Adobe’s royalty‑free license. 
  * Redistribution of raw assets is not permitted.”
  **/
+
+// Prevent no inputs cases
+if(!LS.has('player')) {
+  // alert('No no');
+  location.assign('google.com')
+}
+
 let mysticore = new MatrixEngineWGPU({
   useSingleRenderPass: true,
   canvasSize: 'fullscreen',
@@ -26,11 +36,13 @@ let mysticore = new MatrixEngineWGPU({
 
   let player = {};
 
+  // Audios
+  mysticore.matrixSounds.createAudio('music', 'res/audios/rpg/music.mp3', 1)
+  mysticore.matrixSounds.createAudio('win1', 'res/audios/rpg/feel.mp3', 2);
+
   addEventListener('AmmoReady', async () => {
 
-    if (!LS.has('player')) {
-      alert('nnnnn')
-    }
+    app.matrixSounds.audios.music.loop = true;
 
     player.data = LS.get('player');
     addEventListener('local-hero-bodies-ready', () => {
@@ -45,11 +57,12 @@ let mysticore = new MatrixEngineWGPU({
       mysticore,
       player.data.path,
       player.data.hero, HERO_PROFILES.MariaSword.baseArchetypes);
-  mysticore.HUD = new HUD(mysticore.localHero);
-  mysticore.enemies = new EnemiesManager(mysticore);
-  mysticore.collisionSystem = new CollisionSystem(mysticore);
-  // setTimeout(() => {   // }, 3000);
-})
-mysticore.addLight();
+    mysticore.HUD = new HUD(mysticore.localHero);
+    mysticore.enemies = new EnemiesManager(mysticore);
+    mysticore.collisionSystem = new CollisionSystem(mysticore);
+    // setTimeout(() => {   // }, 3000);
+    app.matrixSounds.play('music');
+  })
+  mysticore.addLight();
 })
 window.app = mysticore;

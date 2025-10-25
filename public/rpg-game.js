@@ -33,6 +33,7 @@ class Character extends _hero.Hero {
   };
   heroFocusAttackOn = null;
   mouseTarget = null;
+  gold = 100;
   constructor(mysticore, path, name = 'MariaSword', archetypes = ["Warrior", "Mage"]) {
     super(name, archetypes);
     // console.info(`%cLOADING hero name : ${name}`, LOG_MATRIX)
@@ -496,6 +497,9 @@ class Character extends _hero.Hero {
     });
     addEventListener('navigate-frendly-creeps', () => {
       this.navigateCreeps();
+    });
+    addEventListener('updateLocalHeroGold', e => {
+      this.gold += e.detail.gold;
     });
   }
 }
@@ -1452,6 +1456,23 @@ class HeroProps {
         this.currentXP -= nextLevelXP;
       } else break;
     }
+
+    // emit for hud
+    dispatchEvent(new CustomEvent('stats-localhero', {
+      detail: {
+        gold: this.gold,
+        currentLevel: this.currentLevel,
+        xp: this.currentXP,
+        hp: this.hp,
+        mana: this.mana,
+        attack: this.attack,
+        armor: this.armor,
+        moveSpeed: this.moveSpeed,
+        attackSpeed: this.attackSpeed,
+        hpRegen: this.hpRegen,
+        mpRegen: this.mpRegen
+      }
+    }));
   }
 
   // --- Upgrade abilities
@@ -1641,6 +1662,7 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.HUD = void 0;
+var _utils = require("../../../src/engine/utils.js");
 class HUD {
   constructor(localHero) {
     this.localHero = localHero;
@@ -1684,6 +1706,98 @@ class HUD {
       overflow: 'hidden'
     });
     hud.appendChild(hudLeftBox);
+
+    // - Stats
+    const statsDom = document.createElement("div");
+    statsDom.id = "statsDom";
+    Object.assign(statsDom.style, {
+      display: "flex",
+      flexDirection: "column",
+      width: "12%",
+      height: "100%",
+      background: "rgba(0,0,0,0.5)",
+      // border: "solid 1px red",
+      alignItems: "center",
+      justifyContent: "space-around",
+      color: "white",
+      fontFamily: "'Orbitron', sans-serif",
+      zIndex: "100",
+      padding: "1px",
+      margin: '0',
+      boxSizing: "border-box",
+      overflow: 'hidden',
+      fontSize: '9px'
+    });
+    hud.appendChild(statsDom);
+    const statsDomValue = document.createElement("div");
+    statsDomValue.id = "statsDomValue";
+    Object.assign(statsDomValue.style, {
+      display: "flex",
+      flexDirection: "column",
+      width: "12%",
+      height: "100%",
+      background: "rgba(0,0,0,0.5)",
+      // border: "solid 1px red",
+      alignItems: "center",
+      justifyContent: "space-around",
+      color: "white",
+      fontFamily: "'Orbitron', sans-serif",
+      zIndex: "100",
+      padding: "1px",
+      margin: '0',
+      boxSizing: "border-box",
+      overflow: 'hidden',
+      fontSize: '9px'
+    });
+    hud.appendChild(statsDomValue);
+    let props = ["currentLevel", "hp", "mana", "gold", "mpRegen", "hpRegen", "moveSpeed", "attackSpeed", "armor", "attack"];
+    addEventListener('stats-localhero', e => {
+      console.log('STATS UPDATE DOM ', e.detail);
+      for (var x = 0; x < props.length; x++) {
+        (0, _utils.byId)('stats-' + props[x]).innerHTML = e.detail[props[x]].toFixed(2);
+      }
+      console.log('STATS UPDATE DOM ', e.detail);
+    });
+    for (var x = 0; x < props.length; x++) {
+      const statsDomItem = document.createElement("div");
+      statsDomItem.id = `statsLabel-${props[x]}`;
+      statsDomItem.innerHTML = props[x] + ":";
+      Object.assign(statsDomItem.style, {
+        // width: "10%",
+        // height: "100%",
+        background: "rgba(0,0,0,0.5)",
+        // border: "solid 1px red",
+        alignItems: "center",
+        justifyContent: "space-around",
+        color: "white",
+        fontFamily: "'Orbitron', sans-serif",
+        zIndex: "100",
+        margin: '0',
+        boxSizing: "border-box",
+        overflow: 'hidden'
+      });
+      statsDom.appendChild(statsDomItem);
+      const statsDomItemValue = document.createElement("div");
+      statsDomItemValue.id = `stats-${props[x]}`;
+      statsDomItemValue.innerHTML = "" + app.localHero[props[x]];
+      Object.assign(statsDomItemValue.style, {
+        // width: "10%",
+        // height: "100%",
+        background: "rgba(0,0,0,0.5)",
+        // border: "solid 1px red",
+        alignItems: "center",
+        justifyContent: "space-around",
+        color: "white",
+        fontFamily: "'Orbitron', sans-serif",
+        zIndex: "100",
+        margin: '0',
+        boxSizing: "border-box",
+        overflow: 'hidden'
+      });
+      statsDomValue.appendChild(statsDomItemValue);
+    }
+    //----------------------
+
     const hudCenter = document.createElement("div");
     hudCenter.id = "hudCenter";
     Object.assign(hudCenter.style, {
@@ -1751,9 +1865,13 @@ class HUD {
         slot.style.border = "2px solid #888";
         slot.style.boxShadow = "inset 2px 2px 5px rgba(0,0,0,0.6), inset -2px -2px 5px rgba(255,255,255,0.1)";
       });
-      slot.textContent = "locked";
+      slot.innerHTML = "locked";
       slot.addEventListener("mousedown", e => {
-        console.log('---------------------------------------');
+        if (e.target.innerHTML == 'locked') {
+          console.info('it is locked ...');
+          return;
+        }
+        console.log('------------------MAGIC---------------------');
         slot.style.border = "2px solid #888";
         slot.style.boxShadow = "inset 2px 2px 5px rgba(0,0,0,0.6), inset -2px -2px 5px rgba(255,255,255,0.1)";
         dispatchEvent(new CustomEvent(`attack-magic${i}`, {
@@ -1933,7 +2051,7 @@ class HUD {
 
     // right
     const hudItems = document.createElement("div");
-    hudItems.id = "hudLeftBox";
+    hudItems.id = "hudItems";
     Object.assign(hudItems.style, {
       width: "30%",
       height: "100%",
@@ -2009,7 +2127,7 @@ class HUD {
 }
 exports.HUD = HUD;
 
-},{}],8:[function(require,module,exports){
+},{"../../../src/engine/utils.js":51}],8:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -2225,11 +2343,20 @@ var _collisionSubSystem = require("../../../src/engine/collision-sub-system.js")
 var _utils = require("../../../src/engine/utils.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 /**
+ * @description
+ * This is main root dep file.
+ * All start from here.
  * @Note
  * “Character and animation assets from Mixamo,
  * used under Adobe’s royalty‑free license. 
  * Redistribution of raw assets is not permitted.”
  **/
+
+// Prevent no inputs cases
+if (!_utils.LS.has('player')) {
+  // alert('No no');
+  location.assign('google.com');
+}
 let mysticore = new _world.default({
   useSingleRenderPass: true,
   canvasSize: 'fullscreen',
@@ -2245,10 +2372,12 @@ let mysticore = new _world.default({
   }
 }, () => {
   let player = {};
+
+  // Audios
+  mysticore.matrixSounds.createAudio('music', 'res/audios/rpg/music.mp3', 1);
+  mysticore.matrixSounds.createAudio('win1', 'res/audios/rpg/feel.mp3', 2);
   addEventListener('AmmoReady', async () => {
-    if (!_utils.LS.has('player')) {
-      alert('nnnnn');
-    }
+    app.matrixSounds.audios.music.loop = true;
     player.data = _utils.LS.get('player');
     addEventListener('local-hero-bodies-ready', () => {
       app.cameras.RPG.position[1] = 130;
@@ -2262,6 +2391,7 @@ let mysticore = new _world.default({
     mysticore.enemies = new _enemiesManager.EnemiesManager(mysticore);
     mysticore.collisionSystem = new _collisionSubSystem.CollisionSystem(mysticore);
     // setTimeout(() => {   // }, 3000);
+    app.matrixSounds.play('music');
   });
   mysticore.addLight();
 });

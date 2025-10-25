@@ -33,6 +33,8 @@ export class Character extends Hero {
   heroFocusAttackOn = null;
   mouseTarget = null;
 
+  gold = 100;
+
   constructor(mysticore, path, name = 'MariaSword', archetypes = ["Warrior", "Mage"]) {
     super(name, archetypes);
     // console.info(`%cLOADING hero name : ${name}`, LOG_MATRIX)
@@ -492,6 +494,10 @@ export class Character extends Hero {
 
     addEventListener('navigate-frendly-creeps', () => {
       this.navigateCreeps()
+    })
+
+    addEventListener('updateLocalHeroGold', (e) => {
+      this.gold += e.detail.gold;
     })
   }
 }
