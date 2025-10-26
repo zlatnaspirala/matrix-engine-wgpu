@@ -48,7 +48,7 @@ export class Creep extends Hero {
           subMesh.glb.animationIndex = 0;
           // adapt manual if blender is not setup
           subMesh.glb.glbJsonData.animations.forEach((a, index) => {
-            console.info(`%c Animation loading for creeps: ${a.name} index ${index}`, LOG_MATRIX)
+            // console.info(`%c Animation loading for creeps: ${a.name} index ${index}`, LOG_MATRIX)
             if(a.name == 'dead') this.heroAnimationArrange.dead = index;
             if(a.name == 'walk') this.heroAnimationArrange.walk = index;
             if(a.name == 'salute') this.heroAnimationArrange.salute = index;

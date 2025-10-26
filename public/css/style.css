@@ -709,3 +709,111 @@ option {
   font-size: 12px;
   line-height: 20px;
 }
+
+#matrix-net {
+	position: absolute;
+	display: none;
+	overflow: hidden;
+	top: 0;
+	height: 100%;
+	width: 60vw;
+	font-family: stormfaze;
+	background-color: crimson;
+}
+
+@-webkit-keyframes showByVetical {
+	0% {
+		background-color: rgba(155, 101, 10, 0.95);
+		height: 75px;
+	}
+
+	50% {
+		background-color: rgba(238, 65, 13, 0.95);
+		height: 50vh;
+		opacity: 0.5;
+	}
+
+	100% {
+		background-color: rgb(200, 54, 9);
+		height: 100vh;
+		opacity: 1;
+	}
+}
+
+/* Standard syntax */
+@keyframes showByVetical {
+	0% {
+		background-color: rgba(155, 101, 10, 0.95);
+		height: 75px;
+	}
+
+	50% {
+		background-color: rgba(224, 64, 43, 0.95);
+		height: 50vh;
+		opacity: 0.5;
+	}
+
+	100% {
+		background-color: rgb(200, 54, 9);
+		height: 100vh;
+		opacity: 1;
+	}
+}
+
+/* Safari 4.0 - 8.0 */
+@-webkit-keyframes hideByVetical {
+	0% {
+		background-color: rgba(255, 166, 11, 0.95);
+		height: 100vh;
+	}
+
+	50% {
+		background-color: rgba(255, 166, 11, 0.95);
+		height: 50vh;
+		opacity: 0.5;
+	}
+
+	100% {
+		background-color: rgba(0, 0, 0, 0.95);
+		height: 35px;
+		opacity: 0.2;
+	}
+}
+
+/* Standard syntax */
+@keyframes hideByVetical {
+	0% {
+		background-color: rgba(255, 166, 11, 0.95);
+		height: 100vh;
+	}
+
+	50% {
+		background-color: rgba(255, 166, 11, 0.95);
+		height: 50vh;
+		opacity: 0.5;
+	}
+
+	100% {
+		background-color: rgba(0, 0, 0, 0.95);
+		height: 40px;
+		opacity: 0.2;
+	}
+}
+
+.show-by-vertical {
+	-webkit-animation-fill-mode: forwards;
+	-webkit-animation-name: showByVetical;
+	-webkit-animation-duration: 1.2s;
+	animation-fill-mode: forwards;
+	animation-name: showByVetical;
+	animation-duration: 1.2s;
+}
+
+.hide-by-vertical {
+	-webkit-animation-fill-mode: forwards;
+	-webkit-animation-name: hideByVetical;
+	-webkit-animation-duration: 1.2s;
+	animation-fill-mode: forwards;
+	animation-name: hideByVetical;
+	animation-duration: 1.2s;
+}

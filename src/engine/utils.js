@@ -917,3 +917,13 @@ export const LS = {
     localStorage.clear();
   }
 };
+
+export const jsonHeaders = new Headers({
+	"Content-Type": "application/json",
+	"Accept": "application/json",
+});
+
+export const htmlHeader = new Headers({
+	"Content-Type": "text/html",
+	"Accept": "text/plain",
+});

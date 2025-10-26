@@ -7,6 +7,7 @@ import {HERO_PROFILES} from "./hero.js";
 import {EnemiesManager} from "./enemies-manager.js";
 import {CollisionSystem} from "../../../src/engine/collision-sub-system.js";
 import {LS} from "../../../src/engine/utils.js";
+import {MatrixStream} from "../../../src/engine/networking/net.js";
 
 /**
  * @description
@@ -38,6 +39,16 @@ let mysticore = new MatrixEngineWGPU({
   // Audios
   mysticore.matrixSounds.createAudio('music', 'res/audios/rpg/music.mp3', 1)
   mysticore.matrixSounds.createAudio('win1', 'res/audios/rpg/feel.mp3', 2);
+
+  // test
+  mysticore.net = new MatrixStream({
+    active: true,
+    domain: 'maximumroulette.com',
+    port: 2020,
+    sessionName: 'mysticore-free-for-all',
+    resolution: '160x240'
+  });
+  //
 
   addEventListener('AmmoReady', async () => {
 
