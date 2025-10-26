@@ -1,4 +1,5 @@
 import {uploadGLBModel} from "../../../src/engine/loaders/webgpu-gltf.js";
+import {MatrixStream} from "../../../src/engine/networking/net.js";
 import {byId, LS} from "../../../src/engine/utils.js";
 import MatrixEngineWGPU from "../../../src/world.js";
 import {HERO_ARCHETYPES} from "./hero.js";
@@ -23,10 +24,21 @@ let mysticoreStartSceen = new MatrixEngineWGPU({
   mysticoreStartSceen.selectedHero = 0;
   mysticoreStartSceen.lock = false;
 
-  mysticore.matrixSounds.createAudio('music', 'res/audios/rpg/wizard-rider.mp3', 1)
-  mysticore.matrixSounds.createAudio('win1', 'res/audios/rpg/feel.mp3', 2);
+  mysticoreStartSceen.matrixSounds.createAudio('music', 'res/audios/rpg/wizard-rider.mp3', 1)
+  mysticoreStartSceen.matrixSounds.createAudio('win1', 'res/audios/rpg/feel.mp3', 2);
 
   let heros = null;
+
+  // test
+  mysticoreStartSceen.net = new MatrixStream({
+    active: true,
+    domain: 'maximumroulette.com',
+    port: 2020,
+    sessionName: 'mysticore-free-for-all-start',
+    resolution: '160x240'
+  });
+  //
+
   addEventListener('AmmoReady', async () => {
 
     app.matrixSounds.play('music');

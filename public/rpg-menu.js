@@ -328,6 +328,23 @@ class HeroProps {
         this.currentXP -= nextLevelXP;
       } else break;
     }
+
+    // emit for hud
+    dispatchEvent(new CustomEvent('stats-localhero', {
+      detail: {
+        gold: this.gold,
+        currentLevel: this.currentLevel,
+        xp: this.currentXP,
+        hp: this.hp,
+        mana: this.mana,
+        attack: this.attack,
+        armor: this.armor,
+        moveSpeed: this.moveSpeed,
+        attackSpeed: this.attackSpeed,
+        hpRegen: this.hpRegen,
+        mpRegen: this.mpRegen
+      }
+    }));
   }
 
   // --- Upgrade abilities
@@ -514,6 +531,7 @@ function mergeArchetypesWeighted(typeA, typeB, weightA = 0.7) {
 "use strict";
 
 var _webgpuGltf = require("../../../src/engine/loaders/webgpu-gltf.js");
+var _net = require("../../../src/engine/networking/net.js");
 var _utils = require("../../../src/engine/utils.js");
 var _world = _interopRequireDefault(require("../../../src/world.js"));
 var _hero = require("./hero.js");
@@ -541,8 +559,22 @@ let mysticoreStartSceen = new _world.default({
   mysticoreStartSceen.heroByBody = [];
   mysticoreStartSceen.selectedHero = 0;
   mysticoreStartSceen.lock = false;
+  mysticoreStartSceen.matrixSounds.createAudio('music', 'res/audios/rpg/wizard-rider.mp3', 1);
+  mysticoreStartSceen.matrixSounds.createAudio('win1', 'res/audios/rpg/feel.mp3', 2);
   let heros = null;
+
+  // test
+  mysticoreStartSceen.net = new _net.MatrixStream({
+    active: true,
+    domain: 'maximumroulette.com',
+    port: 2020,
+    sessionName: 'mysticore-free-for-all-start',
+    resolution: '160x240'
+  });
+  //
+
   addEventListener('AmmoReady', async () => {
+    app.matrixSounds.play('music');
     heros = [{
       type: "Warrior",
       name: 'MariaSword',
@@ -800,7 +832,7 @@ let mysticoreStartSceen = new _world.default({
 });
 window.app = mysticoreStartSceen;
 
-},{"../../../src/engine/loaders/webgpu-gltf.js":36,"../../../src/engine/utils.js":40,"../../../src/world.js":63,"./hero.js":1}],3:[function(require,module,exports){
+},{"../../../src/engine/loaders/webgpu-gltf.js":36,"../../../src/engine/networking/net.js":41,"../../../src/engine/utils.js":42,"../../../src/world.js":65,"./hero.js":1}],3:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -19001,7 +19033,7 @@ class MEBall {
 }
 exports.default = MEBall;
 
-},{"../shaders/shaders":55,"./engine":28,"./matrix-class":38,"wgpu-matrix":17}],19:[function(require,module,exports){
+},{"../shaders/shaders":57,"./engine":28,"./matrix-class":38,"wgpu-matrix":17}],19:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -19039,7 +19071,7 @@ class Behavior {
 }
 exports.default = Behavior;
 
-},{"./utils":40}],20:[function(require,module,exports){
+},{"./utils":42}],20:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -19464,7 +19496,7 @@ class MECube {
 }
 exports.default = MECube;
 
-},{"../shaders/shaders":55,"./engine":28,"./matrix-class":38,"wgpu-matrix":17}],21:[function(require,module,exports){
+},{"../shaders/shaders":57,"./engine":28,"./matrix-class":38,"wgpu-matrix":17}],21:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -19627,7 +19659,7 @@ class HPBarEffect {
 }
 exports.HPBarEffect = HPBarEffect;
 
-},{"../../shaders/energy-bars/energy-bar-shader.js":43,"wgpu-matrix":17}],22:[function(require,module,exports){
+},{"../../shaders/energy-bars/energy-bar-shader.js":45,"wgpu-matrix":17}],22:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -19846,7 +19878,7 @@ class FlameEmitter {
 }
 exports.FlameEmitter = FlameEmitter;
 
-},{"../../shaders/flame-effect/flame-instanced":44,"../utils":40,"wgpu-matrix":17}],23:[function(require,module,exports){
+},{"../../shaders/flame-effect/flame-instanced":46,"../utils":42,"wgpu-matrix":17}],23:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -20017,7 +20049,7 @@ class FlameEffect {
 }
 exports.FlameEffect = FlameEffect;
 
-},{"../../shaders/flame-effect/flameEffect":45,"wgpu-matrix":17}],24:[function(require,module,exports){
+},{"../../shaders/flame-effect/flameEffect":47,"wgpu-matrix":17}],24:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -20255,7 +20287,7 @@ class GenGeoTexture {
 }
 exports.GenGeoTexture = GenGeoTexture;
 
-},{"../../shaders/standalone/geo.tex.js":57,"../geometry-factory.js":29,"wgpu-matrix":17}],25:[function(require,module,exports){
+},{"../../shaders/standalone/geo.tex.js":59,"../geometry-factory.js":29,"wgpu-matrix":17}],25:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -20445,7 +20477,7 @@ class GenGeo {
 }
 exports.GenGeo = GenGeo;
 
-},{"../../shaders/standalone/geo.instanced.js":56,"../geometry-factory.js":29,"wgpu-matrix":17}],26:[function(require,module,exports){
+},{"../../shaders/standalone/geo.instanced.js":58,"../geometry-factory.js":29,"wgpu-matrix":17}],26:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -20608,7 +20640,7 @@ class MANABarEffect {
 }
 exports.MANABarEffect = MANABarEffect;
 
-},{"../../shaders/energy-bars/energy-bar-shader.js":43,"wgpu-matrix":17}],27:[function(require,module,exports){
+},{"../../shaders/energy-bars/energy-bar-shader.js":45,"wgpu-matrix":17}],27:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -20751,7 +20783,7 @@ class PointerEffect {
 }
 exports.PointerEffect = PointerEffect;
 
-},{"../../shaders/standalone/pointer.effect.js":58,"wgpu-matrix":17}],28:[function(require,module,exports){
+},{"../../shaders/standalone/pointer.effect.js":60,"wgpu-matrix":17}],28:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -21294,7 +21326,7 @@ class RPGCamera extends CameraBase {
 }
 exports.RPGCamera = RPGCamera;
 
-},{"./utils":40,"wgpu-matrix":17}],29:[function(require,module,exports){
+},{"./utils":42,"wgpu-matrix":17}],29:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -22102,7 +22134,7 @@ class MaterialsInstanced {
 }
 exports.default = MaterialsInstanced;
 
-},{"../../shaders/fragment.wgsl":47,"../../shaders/fragment.wgsl.metal":48,"../../shaders/fragment.wgsl.normalmap":49,"../../shaders/fragment.wgsl.pong":50,"../../shaders/fragment.wgsl.power":51,"../../shaders/instanced/fragment.instanced.wgsl":52}],31:[function(require,module,exports){
+},{"../../shaders/fragment.wgsl":49,"../../shaders/fragment.wgsl.metal":50,"../../shaders/fragment.wgsl.normalmap":51,"../../shaders/fragment.wgsl.pong":52,"../../shaders/fragment.wgsl.power":53,"../../shaders/instanced/fragment.instanced.wgsl":54}],31:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -22300,7 +22332,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
     } else {
       this.mesh.uvs = this.mesh.textures;
     }
-    console.log(`%cMesh: ${o.name}`, _utils.LOG_FUNNY_SMALL);
+    // console.log(`%cMesh: ${o.name}`, LOG_FUNNY_SMALL);
     // ObjSequence animation
     if (typeof o.objAnim !== 'undefined' && o.objAnim != null) {
       this.objAnim = o.objAnim;
@@ -23085,7 +23117,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
 }
 exports.default = MEMeshObjInstances;
 
-},{"../../shaders/fragment.video.wgsl":46,"../../shaders/instanced/vertex.instanced.wgsl":53,"../effects/energy-bar":21,"../effects/flame":23,"../effects/flame-emmiter":22,"../effects/gen":25,"../effects/gen-tex":24,"../effects/mana-bar":26,"../effects/pointerEffect":27,"../loaders/bvh-instaced":34,"../matrix-class":38,"../utils":40,"./materials-instanced":30,"wgpu-matrix":17}],32:[function(require,module,exports){
+},{"../../shaders/fragment.video.wgsl":48,"../../shaders/instanced/vertex.instanced.wgsl":55,"../effects/energy-bar":21,"../effects/flame":23,"../effects/flame-emmiter":22,"../effects/gen":25,"../effects/gen-tex":24,"../effects/mana-bar":26,"../effects/pointerEffect":27,"../loaders/bvh-instaced":34,"../matrix-class":38,"../utils":42,"./materials-instanced":30,"wgpu-matrix":17}],32:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -23371,7 +23403,7 @@ class SpotLight {
 }
 exports.SpotLight = SpotLight;
 
-},{"../shaders/instanced/vertexShadow.instanced.wgsl":54,"../shaders/vertexShadow.wgsl":61,"./behavior":19,"wgpu-matrix":17}],33:[function(require,module,exports){
+},{"../shaders/instanced/vertexShadow.instanced.wgsl":56,"../shaders/vertexShadow.wgsl":63,"./behavior":19,"wgpu-matrix":17}],33:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -23951,7 +23983,7 @@ class BVHPlayerInstances extends _meshObjInstances.default {
     }
     // 4. For mesh nodes or armature parent nodes, leave them alone
     // what is animation , check is it more - we look for Armature by defoult 
-    // frendly blender
+    // friendly blender
     this.glb.animationIndex = 0;
     for (let j = 0; j < this.glb.glbJsonData.animations.length; j++) {
       if (this.glb.glbJsonData.animations[j].name.indexOf('Armature') !== -1) {
@@ -24493,7 +24525,7 @@ class BVHPlayer extends _meshObj.default {
     }
     // 4. For mesh nodes or armature parent nodes, leave them alone
     // what is animation , check is it more - we look for Armature by defoult 
-    // frendly blender
+    // friendly blender
     this.glb.animationIndex = 0;
     for (let j = 0; j < this.glb.glbJsonData.animations.length; j++) {
       if (this.glb.glbJsonData.animations[j].name.indexOf('Armature') !== -1) {
@@ -25997,7 +26029,7 @@ class Materials {
 }
 exports.default = Materials;
 
-},{"../shaders/fragment.wgsl":47,"../shaders/fragment.wgsl.metal":48,"../shaders/fragment.wgsl.normalmap":49,"../shaders/fragment.wgsl.pong":50,"../shaders/fragment.wgsl.power":51}],38:[function(require,module,exports){
+},{"../shaders/fragment.wgsl":49,"../shaders/fragment.wgsl.metal":50,"../shaders/fragment.wgsl.normalmap":51,"../shaders/fragment.wgsl.pong":52,"../shaders/fragment.wgsl.power":53}],38:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -26233,7 +26265,7 @@ class Rotation {
 }
 exports.Rotation = Rotation;
 
-},{"./utils":40}],39:[function(require,module,exports){
+},{"./utils":42}],39:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -27028,7 +27060,652 @@ class MEMeshObj extends _materials.default {
 }
 exports.default = MEMeshObj;
 
-},{"../shaders/fragment.video.wgsl":46,"../shaders/vertex.wgsl":59,"../shaders/vertex.wgsl.normalmap":60,"./effects/pointerEffect":27,"./materials":37,"./matrix-class":38,"./utils":40,"wgpu-matrix":17}],40:[function(require,module,exports){
+},{"../shaders/fragment.video.wgsl":48,"../shaders/vertex.wgsl":61,"../shaders/vertex.wgsl.normalmap":62,"./effects/pointerEffect":27,"./materials":37,"./matrix-class":38,"./utils":42,"wgpu-matrix":17}],40:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.REDLOG = exports.NETLOG = exports.BIGLOG = exports.ANYLOG = void 0;
+exports.byId = byId;
+exports.checkBtnsForce = checkBtnsForce;
+exports.checkBtnsRecordings = checkBtnsRecordings;
+exports.clearEventsTextarea = clearEventsTextarea;
+exports.clearHttpTextarea = clearHttpTextarea;
+exports.closeSession = closeSession;
+exports.deleteRecording = deleteRecording;
+exports.enableBtn = enableBtn;
+exports.events = void 0;
+exports.fetchAll = fetchAll;
+exports.fetchInfo = fetchInfo;
+exports.forceDisconnect = forceDisconnect;
+exports.forceUnpublish = forceUnpublish;
+exports.getRecording = getRecording;
+exports.getToken = getToken;
+exports.httpRequest = httpRequest;
+exports.joinSession = joinSession;
+exports.leaveSession = leaveSession;
+exports.listRecordings = listRecordings;
+exports.netConfig = void 0;
+exports.pushEvent = pushEvent;
+exports.removeUser = removeUser;
+exports.session = void 0;
+exports.startRecording = startRecording;
+exports.stopRecording = stopRecording;
+exports.updateNumVideos = updateNumVideos;
+const netConfig = exports.netConfig = {
+  NETWORKING_DOMAIN: '',
+  NETWORKING_PORT: '2020'
+};
+function byId(d) {
+  return document.getElementById(d);
+}
+;
+var BIGLOG = exports.BIGLOG = "color: #55fd53;font-size:20px;text-shadow: 0px 0px 5px #f4fd63, -1px -1px 5px orange";
+var REDLOG = exports.REDLOG = "color: lime;font-size:15px;text-shadow: 0px 0px 5px red, -2px -2px 5px orangered";
+var NETLOG = exports.NETLOG = "color: orange;font-size:15px;text-shadow: 0px 0px 1px red, 0px 0px 5px orangered";
+var ANYLOG = exports.ANYLOG = "color: yellow;font-size:15px;text-shadow: 1px 1px 4px red, 0px 0px 2px orangered";
+var OV;
+var numVideos = 0;
+var sessionName;
+var token;
+var session;
+function joinSession(options) {
+  if (typeof options === 'undefined') {
+    options = {
+      resolution: '320x240'
+    };
+  }
+  console.log('resolution:', options.resolution);
+  document.getElementById("join-btn").disabled = true;
+  document.getElementById("join-btn").innerHTML = "Joining...";
+  getToken(function () {
+    OV = new OpenVidu();
+    window.OV = OV;
+    exports.session = session = OV.initSession();
+    session.on('connectionCreated', event => {
+      console.log(`connectionCreated ${event.connection.connectionId}`);
+      dispatchEvent(new CustomEvent('onConnectionCreated', {
+        detail: event
+      }));
+      pushEvent(event);
+    });
+    session.on('connectionDestroyed', e => {
+      console.log(`Connection destroyed ${e.connection.connectionId}`);
+      dispatchEvent(new CustomEvent('connectionDestroyed', {
+        detail: {
+          connectionId: e.connection.connectionId,
+          event: e
+        }
+      }));
+      // byId("pwa-container-2").style.display = "none";
+      pushEvent(e);
+    });
+
+    // On every new Stream received...
+    session.on('streamCreated', event => {
+      pushEvent(event);
+      console.log(`%c [onStreamCreated] ${event.stream.streamId}`);
+      setTimeout(() => {
+        console.log(`%c REMOTE STREAM READY [] ${byId("remote-video-" + event.stream.streamId)}`, BIGLOG);
+      }, 2000);
+      dispatchEvent(new CustomEvent('onStreamCreated', {
+        detail: {
+          event: event,
+          msg: `[connectionId][${event.stream.connection.connectionId}]`
+        }
+      }));
+      // Subscribe to the Stream to receive it
+      // HTML video will be appended to element with 'video-container' id
+      var subscriber = session.subscribe(event.stream, 'video-container');
+      // When the HTML video has been appended to DOM...
+      subscriber.on('videoElementCreated', event => {
+        dispatchEvent(new CustomEvent(`videoElementCreatedSubscriber`, {
+          detail: event
+        }));
+        // Add a new HTML element for the user's name and nickname over its video
+        updateNumVideos(1);
+      });
+
+      // When the HTML video has been appended to DOM...
+      subscriber.on('videoElementDestroyed', event => {
+        pushEvent(event);
+        // Add a new HTML element for the user's name and nickname over its video
+        updateNumVideos(-1);
+      });
+
+      // When the subscriber stream has started playing media...
+      subscriber.on('streamPlaying', event => {
+        dispatchEvent(new CustomEvent('streamPlaying', {
+          detail: event
+        }));
+      });
+    });
+    session.on('streamDestroyed', event => {
+      // alert(event);
+      pushEvent(event);
+    });
+    session.on('sessionDisconnected', event => {
+      console.log("Session Disconected", event);
+      // byId("pwa-container-2").style.display = "none";
+      pushEvent(event);
+      if (event.reason !== 'disconnect') {
+        removeUser();
+      }
+      if (event.reason !== 'sessionClosedByServer') {
+        exports.session = session = null;
+        numVideos = 0;
+        // $('#join').show();
+        byId('join').style.display = 'block';
+        byId('session').style.display = 'none';
+      }
+    });
+    session.on('recordingStarted', event => {
+      pushEvent(event);
+    });
+    session.on('recordingStopped', event => {
+      pushEvent(event);
+    });
+
+    // On every asynchronous exception...
+    session.on('exception', exception => {
+      console.warn(exception);
+    });
+    dispatchEvent(new CustomEvent(`setupSessionObject`, {
+      detail: session
+    }));
+    session.connect(token).then(() => {
+      byId('session-title').innerText = sessionName;
+      byId('join').style.display = 'none';
+      byId('session').style.display = 'block';
+      var publisher = OV.initPublisher('video-container', {
+        audioSource: undefined,
+        // The source of audio. If undefined default microphone
+        videoSource: undefined,
+        // The source of video. If undefined default webcam
+        publishAudio: true,
+        // Whether you want to start publishing with your audio unmuted or not
+        publishVideo: true,
+        // Whether you want to start publishing with your video enabled or not
+        resolution: options.resolution,
+        // The resolution of your video
+        frameRate: 30,
+        // The frame rate of your video
+        insertMode: 'APPEND',
+        // How the video is inserted in the target element 'video-container'
+        mirror: false // Whether to mirror your local video or not
+      });
+      publisher.on('accessAllowed', event => {
+        pushEvent({
+          type: 'accessAllowed'
+        });
+      });
+      publisher.on('accessDenied', event => {
+        pushEvent(event);
+      });
+      publisher.on('accessDialogOpened', event => {
+        pushEvent({
+          type: 'accessDialogOpened'
+        });
+      });
+      publisher.on('accessDialogClosed', event => {
+        pushEvent({
+          type: 'accessDialogClosed'
+        });
+      });
+
+      // When the publisher stream has started playing media...
+      publisher.on('streamCreated', event => {
+        dispatchEvent(new CustomEvent(`LOCAL-STREAM-READY`, {
+          detail: event.stream
+        }));
+        console.log(`%c LOCAL STREAM READY ${event.stream.connection.connectionId}`, BIGLOG);
+        // if(document.getElementById("pwa-container-1").style.display != 'none') {
+        // 	document.getElementById("pwa-container-1").style.display = 'none';
+        // }
+        pushEvent(event);
+      });
+
+      // When our HTML video has been added to DOM...
+      publisher.on('videoElementCreated', event => {
+        dispatchEvent(new CustomEvent(`videoElementCreated`, {
+          detail: event
+        }));
+        updateNumVideos(1);
+        console.log('NOT FIXED MUTE event.element, ', event.element);
+        event.element.mute = true;
+        // $(event.element).prop('muted', true); // Mute local video
+      });
+
+      // When the HTML video has been appended to DOM...
+      publisher.on('videoElementDestroyed', event => {
+        dispatchEvent(new CustomEvent(`videoElementDestroyed`, {
+          detail: event
+        }));
+        pushEvent(event);
+        updateNumVideos(-1);
+      });
+
+      // When the publisher stream has started playing media...
+      publisher.on('streamPlaying', event => {
+        console.log("publisher.on streamPlaying");
+        // if(document.getElementById("pwa-container-1").style.display != 'none') {
+        // 	document.getElementById("pwa-container-1").style.display = 'none';
+        // }
+        // pushEvent(event);
+      });
+      session.publish(publisher);
+      // console.log('SESSION CREATE NOW ', session)
+    }).catch(error => {
+      console.warn('Error connecting to the session:', error.code, error.message);
+      enableBtn();
+    });
+    return false;
+  });
+}
+function leaveSession() {
+  session.disconnect();
+  enableBtn();
+}
+
+/* OPENVIDU METHODS */
+
+function enableBtn() {
+  document.getElementById("join-btn").disabled = false;
+  document.getElementById("join-btn").innerHTML = "Join!";
+}
+
+/* APPLICATION REST METHODS */
+
+function getToken(callback) {
+  sessionName = byId("sessionName").value;
+  httpRequest('POST', 'https://' + netConfig.NETWORKING_DOMAIN + ':' + netConfig.NETWORKING_PORT + '/api/get-token', {
+    sessionName: sessionName
+  }, 'Request of TOKEN gone WRONG:', res => {
+    token = res[0];
+    console.log('Excellent (TOKEN:' + token + ')');
+    callback(token);
+  });
+}
+function removeUser() {
+  httpRequest('POST', 'https://' + netConfig.NETWORKING_DOMAIN + ':' + netConfig.NETWORKING_PORT + '/api/remove-user', {
+    sessionName: sessionName,
+    token: token
+  }, 'User couldn\'t be removed from session', res => {
+    console.warn("You have been removed from session " + sessionName);
+  });
+}
+function closeSession() {
+  httpRequest('DELETE', 'https://' + netConfig.NETWORKING_DOMAIN + ':' + netConfig.NETWORKING_PORT + '/api/close-session', {
+    sessionName: sessionName
+  }, 'Session couldn\'t be closed', res => {
+    console.warn("Session " + sessionName + " has been closed");
+  });
+}
+function fetchInfo() {
+  httpRequest('POST', 'https://' + netConfig.NETWORKING_DOMAIN + ':' + netConfig.NETWORKING_PORT + '/api/fetch-info', {
+    sessionName: sessionName
+  }, 'Session couldn\'t be fetched', res => {
+    console.warn("Session fetched");
+    byId('textarea-http').innerText = JSON.stringify(res, null, "\t");
+  });
+}
+function fetchAll() {
+  httpRequest('GET', 'https://' + netConfig.NETWORKING_DOMAIN + ':' + netConfig.NETWORKING_PORT + '/api/fetch-all', {}, 'All session info couldn\'t be fetched', res => {
+    console.warn("All session fetched");
+    byId('textarea-http').innerText = JSON.stringify(res, null, "\t");
+  });
+}
+function forceDisconnect() {
+  httpRequest('DELETE', 'https://' + netConfig.NETWORKING_DOMAIN + ':' + netConfig.NETWORKING_PORT + '/api/force-disconnect', {
+    sessionName: sessionName,
+    connectionId: document.getElementById('forceValue').value
+  }, 'Connection couldn\'t be closed', res => {
+    console.warn("Connection has been closed");
+  });
+}
+function forceUnpublish() {
+  httpRequest('DELETE', 'https://' + netConfig.NETWORKING_DOMAIN + ':' + netConfig.NETWORKING_PORT + '/api/force-unpublish', {
+    sessionName: sessionName,
+    streamId: document.getElementById('forceValue').value
+  }, 'Stream couldn\'t be closed', res => {
+    console.warn("Stream has been closed");
+  });
+}
+function httpRequest(method, url, body, errorMsg, callback) {
+  byId('textarea-http').innerText = '';
+  var http = new XMLHttpRequest();
+  http.open(method, url, true);
+  http.setRequestHeader('Content-type', 'application/json');
+  http.addEventListener('readystatechange', processRequest, false);
+  http.send(JSON.stringify(body));
+  function processRequest() {
+    if (http.readyState == 4) {
+      if (http.status == 200) {
+        try {
+          callback(JSON.parse(http.responseText));
+        } catch (e) {
+          callback(e);
+        }
+      } else {
+        console.warn(errorMsg + ' (' + http.status + ')');
+        console.warn(http.responseText);
+        byId('textarea-http').innerText = errorMsg + ": HTTP " + http.status + " (" + http.responseText + ")";
+      }
+    }
+  }
+}
+function startRecording() {
+  // not fixed 
+  var outputMode = $('input[name=outputMode]:checked').val();
+  var hasAudio = $('#has-audio-checkbox').prop('checked');
+  var hasVideo = $('#has-video-checkbox').prop('checked');
+  httpRequest('POST', 'api/recording/start', {
+    session: session.sessionId,
+    outputMode: outputMode,
+    hasAudio: hasAudio,
+    hasVideo: hasVideo
+  }, 'Start recording WRONG', res => {
+    console.log(res);
+    document.getElementById('forceRecordingId').value = res.id;
+    checkBtnsRecordings();
+    byId('textarea-http').innerText = JSON.stringify(res, null, "\t");
+  });
+}
+function stopRecording() {
+  var forceRecordingId = document.getElementById('forceRecordingId').value;
+  httpRequest('POST', 'api/recording/stop', {
+    recording: forceRecordingId
+  }, 'Stop recording WRONG', res => {
+    console.log(res);
+    $('#textarea-http').text(JSON.stringify(res, null, "\t"));
+  });
+}
+function deleteRecording() {
+  var forceRecordingId = document.getElementById('forceRecordingId').value;
+  httpRequest('DELETE', 'api/recording/delete', {
+    recording: forceRecordingId
+  }, 'Delete recording WRONG', res => {
+    console.log("DELETE ok");
+    byId('textarea-http').innerText = "DELETE ok";
+  });
+}
+function getRecording() {
+  var forceRecordingId = document.getElementById('forceRecordingId').value;
+  httpRequest('GET', 'api/recording/get/' + forceRecordingId, {}, 'Get recording WRONG', res => {
+    console.log(res);
+    byId('textarea-http').innerText = JSON.stringify(res, null, "\t");
+  });
+}
+function listRecordings() {
+  httpRequest('GET', 'api/recording/list', {}, 'List recordings WRONG', res => {
+    console.log(res);
+    byId('textarea-http').innerText = JSON.stringify(res, null, "\t");
+  });
+}
+
+/* APPLICATION REST METHODS */
+/* APPLICATION BROWSER METHODS */
+var events = exports.events = '';
+window.onbeforeunload = function () {
+  if (session) {
+    removeUser();
+    leaveSession();
+  }
+};
+function updateNumVideos(i) {
+  numVideos += i;
+  var coll = document.getElementsByTagName('video');
+  for (var x = 0; x < coll.length; x++) {
+    coll.classList = '';
+  }
+  for (var x = 0; x < coll.length; x++) {
+    coll.classList = '';
+    switch (numVideos) {
+      case 1:
+        coll[x].classList.add('two');
+        break;
+      case 2:
+        coll[x].classList.add('two');
+        break;
+      case 3:
+        coll[x].classList.add('three');
+        break;
+      case 4:
+        coll[x].classList.add('four');
+        break;
+    }
+  }
+}
+function checkBtnsForce() {
+  if (document.getElementById("forceValue").value === "") {
+    document.getElementById('buttonForceUnpublish').disabled = true;
+    document.getElementById('buttonForceDisconnect').disabled = true;
+  } else {
+    document.getElementById('buttonForceUnpublish').disabled = false;
+    document.getElementById('buttonForceDisconnect').disabled = false;
+  }
+}
+function checkBtnsRecordings() {
+  if (document.getElementById("forceRecordingId").value === "") {
+    document.getElementById('buttonGetRecording').disaevents$bled = true;
+    document.getElementById('buttonStopRecording').disabled = true;
+    document.getElementById('buttonDeleteRecording').disabled = true;
+  } else {
+    document.getElementById('buttonGetRecording').disabled = false;
+    document.getElementById('buttonStopRecording').disabled = false;
+    document.getElementById('buttonDeleteRecording').disabled = false;
+  }
+}
+function pushEvent(event) {
+  exports.events = events = events + ((!events ? '' : '\n') + event.type);
+  byId('textarea-events').innerText = events;
+  // console.info("EVENT: ", events)
+}
+function clearHttpTextarea() {
+  byId('textarea-http').innerText = '';
+}
+function clearEventsTextarea() {
+  byId('textarea-events').innerText = '';
+  exports.events = events = '';
+}
+
+},{}],41:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.activateNet2 = exports.MatrixStream = void 0;
+var _utils = require("../utils");
+var _matrixStream = require("./matrix-stream");
+/**
+ * Main instance for matrix-stream
+ * Same logic like all others implementation
+ * with openvidu/kurento server.
+ * 
+ * You can use old networking if you wanna 
+ * full control (MultiRtc3 like in matrix-engine old versions)
+ */
+class MatrixStream {
+  connection = null;
+  session = null;
+  constructor(arg) {
+    if (typeof arg === 'undefined') {
+      throw console.error('MatrixStream constructor must have argument : { domain: <DOMAIN_NAME> , port: <NUMBER> }');
+    }
+    _matrixStream.netConfig.NETWORKING_DOMAIN = arg.domain;
+    _matrixStream.netConfig.NETWORKING_PORT = arg.port;
+    _matrixStream.netConfig.sessionName = arg.sessionName;
+    _matrixStream.netConfig.resolution = arg.resolution;
+    _utils.scriptManager.LOAD('./networking/openvidu-browser-2.20.0.js', undefined, undefined, undefined, () => {
+      setTimeout(() => {
+        this.loadNetHTML();
+      }, 2500);
+    });
+  }
+  loadNetHTML() {
+    fetch("./networking/broadcaster2.html", {
+      headers: _utils.htmlHeader
+    }).then(res => {
+      return res.text();
+    }).then(html => {
+      var popupUI = (0, _matrixStream.byId)("matrix-net");
+      popupUI.style = 'display: block;';
+      popupUI.innerHTML = html;
+      this.joinSessionUI = (0, _matrixStream.byId)("join-btn");
+      this.buttonCloseSession = (0, _matrixStream.byId)('buttonCloseSession');
+      this.buttonLeaveSession = (0, _matrixStream.byId)('buttonLeaveSession');
+      (0, _matrixStream.byId)("sessionName").value = _matrixStream.netConfig.sessionName;
+      this.sessionName = (0, _matrixStream.byId)("sessionName");
+      console.log('[CHANNEL]' + this.sessionName.value);
+      this.attachEvents();
+      console.log(`%c MatrixStream constructed.`, _matrixStream.BIGLOG);
+    });
+  }
+  attachEvents() {
+    addEventListener(`LOCAL-STREAM-READY`, e => {
+      console.log('LOCAL-STREAM-READY ', e.detail.connection);
+      this.connection = e.detail.connection;
+      var CHANNEL = _matrixStream.netConfig.sessionName;
+      // console.log("ONLY ONES CHANNEL =>", CHANNEL);
+      this.connection.send = netArg => {
+        this.session.signal({
+          data: JSON.stringify(netArg),
+          to: [],
+          type: CHANNEL
+        }).then(() => {
+          // console.log('emit all successfully');
+        }).catch(error => {
+          console.error("Erro signal => ", error);
+        });
+      };
+    });
+    addEventListener('setupSessionObject', e => {
+      console.log("setupSessionObject=>", e.detail);
+      this.session = e.detail;
+      this.session.on(`signal:${_matrixStream.netConfig.sessionName}`, e => {
+        if (this.connection.connectionId == e.from.connectionId) {
+          //
+        } else {
+          this.multiPlayer.update(e);
+        }
+      });
+    });
+    this.joinSessionUI.addEventListener('click', () => {
+      console.log(`%c JOIN SESSION [${_matrixStream.netConfig.resolution}] `, _matrixStream.REDLOG);
+      (0, _matrixStream.joinSession)({
+        resolution: _matrixStream.netConfig.resolution
+      });
+    });
+    this.buttonCloseSession.addEventListener('click', _matrixStream.closeSession);
+    this.buttonLeaveSession.addEventListener('click', () => {
+      console.log(`%c LEAVE SESSION`, _matrixStream.REDLOG);
+      (0, _matrixStream.removeUser)();
+      (0, _matrixStream.leaveSession)();
+    });
+    (0, _matrixStream.byId)('netHeaderTitle').addEventListener('click', this.domManipulation.hideNetPanel);
+    setTimeout(() => dispatchEvent(new CustomEvent('net-ready', {})), 1000);
+  }
+  multiPlayer = {
+    root: this,
+    init(rtcEvent) {
+      console.log("rtcEvent add new net object -> ", rtcEvent);
+      dispatchEvent(new CustomEvent('net-new-user', {
+        detail: {
+          data: rtcEvent
+        }
+      }));
+    },
+    update(e) {
+      e.data = JSON.parse(e.data);
+      dispatchEvent(new CustomEvent('network-data', {
+        detail: e.data
+      }));
+      // console.log('INFO UPDATE', e);
+      if (e.data.netPos) {
+        if (App.scene[e.data.netObjId]) {
+          if (e.data.netPos.x) App.scene[e.data.netObjId].position.SetX(e.data.netPos.x, 'noemit');
+          if (e.data.netPos.y) App.scene[e.data.netObjId].position.SetY(e.data.netPos.y, 'noemit');
+          if (e.data.netPos.z) App.scene[e.data.netObjId].position.SetZ(e.data.netPos.z, 'noemit');
+        }
+      } else if (e.data.netRot) {
+        // console.log('ROT INFO UPDATE', e);
+        if (e.data.netRot.x) App.scene[e.data.netObjId].rotation.rotx = e.data.netRot.x;
+        if (e.data.netRot.y) App.scene[e.data.netObjId].rotation.roty = e.data.netRot.y;
+        if (e.data.netRot.z) App.scene[e.data.netObjId].rotation.rotz = e.data.netRot.z;
+      } else if (e.data.netScale) {
+        // console.log('netScale INFO UPDATE', e);
+        if (e.data.netScale.x) App.scene[e.data.netObjId].geometry.setScaleByX(e.data.netScale.x, 'noemit');
+        if (e.data.netScale.y) App.scene[e.data.netObjId].geometry.setScaleByY(e.data.netScale.y, 'noemit');
+        if (e.data.netScale.z) App.scene[e.data.netObjId].geometry.setScaleByZ(e.data.netScale.z, 'noemit');
+        if (e.data.netScale.scale) App.scene[e.data.netObjId].geometry.setScale(e.data.netScale.scale, 'noemit');
+      } else if (e.data.texScaleFactor) {
+        // console.log('texScaleFactor INFO UPDATE', e);
+        if (e.data.texScaleFactor.newScaleFactror) {
+          App.scene[e.data.netObjId].geometry.setTexCoordScaleFactor(e.data.texScaleFactor.newScaleFactror, 'noemit');
+        }
+      } else if (e.data.spitz) {
+        if (e.data.spitz.newValueFloat) {
+          App.scene[e.data.netObjId].geometry.setSpitz(e.data.spitz.newValueFloat, 'noemit');
+        }
+      }
+    },
+    /**
+     * If someone leaves all client actions is here
+     * - remove from scene
+     * - clear object from netObject_x
+     */
+    leaveGamePlay(rtcEvent) {
+      console.info("rtcEvent LEAVE GAME: ", rtcEvent.userid);
+      dispatchEvent(new CustomEvent('net.remove-user', {
+        detail: {
+          data: rtcEvent
+        }
+      }));
+    }
+  };
+  domManipulation = {
+    hideNetPanel: () => {
+      if ((0, _matrixStream.byId)('matrix-net').classList.contains('hide-by-vertical')) {
+        (0, _matrixStream.byId)('matrix-net').classList.remove('hide-by-vertical');
+        (0, _matrixStream.byId)('matrix-net').classList.add('show-by-vertical');
+        (0, _matrixStream.byId)('netHeaderTitle').innerText = 'HIDE';
+      } else {
+        (0, _matrixStream.byId)('matrix-net').classList.remove('show-by-vertical');
+        (0, _matrixStream.byId)('matrix-net').classList.add('hide-by-vertical');
+        (0, _matrixStream.byId)('netHeaderTitle').innerText = 'SHOW';
+      }
+    }
+  };
+}
+exports.MatrixStream = MatrixStream;
+let activateNet2 = sessionOption => {
+  console.info(`%cNetworking2 [openvidu/kurento server] params: ${sessionOption}`, CS3);
+  // -----------------------
+  // Make run
+  // -----------------------
+  if (typeof sessionOption === 'undefined') {
+    var sessionOption = {};
+    sessionOption.sessionName = 'matrix-engine-random';
+    sessionOption.resolution = '160x240';
+    sessionOption.active = true;
+    sessionOption.domain = 'maximumroulette.com';
+    sessionOption.port = 2020;
+  }
+  net = new MatrixStream({
+    domain: t.networking2.domain,
+    port: t.networking2.port,
+    sessionName: sessionOption.sessionName,
+    resolution: sessionOption.resolution
+  });
+  addEventListener(`onTitle`, e => {
+    document.title = e.detail;
+  });
+};
+exports.activateNet2 = activateNet2;
+
+},{"../utils":42,"./matrix-stream":40}],42:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -27046,7 +27723,7 @@ exports.genName = genName;
 exports.getAxisRot = getAxisRot;
 exports.getAxisRot2 = getAxisRot2;
 exports.getAxisRot3 = getAxisRot3;
-exports.mb = exports.mat4 = void 0;
+exports.mb = exports.mat4 = exports.jsonHeaders = exports.htmlHeader = void 0;
 exports.quaternion_rotation_matrix = quaternion_rotation_matrix;
 exports.radToDeg = radToDeg;
 exports.randomFloatFromTo = randomFloatFromTo;
@@ -27955,8 +28632,16 @@ const LS = exports.LS = {
     localStorage.clear();
   }
 };
+const jsonHeaders = exports.jsonHeaders = new Headers({
+  "Content-Type": "application/json",
+  "Accept": "application/json"
+});
+const htmlHeader = exports.htmlHeader = new Headers({
+  "Content-Type": "text/html",
+  "Accept": "text/plain"
+});
 
-},{}],41:[function(require,module,exports){
+},{}],43:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -27996,7 +28681,7 @@ class MultiLang {
 }
 exports.MultiLang = MultiLang;
 
-},{"../engine/utils":40}],42:[function(require,module,exports){
+},{"../engine/utils":42}],44:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -28280,7 +28965,7 @@ class MatrixAmmo {
 }
 exports.default = MatrixAmmo;
 
-},{"../engine/utils":40}],43:[function(require,module,exports){
+},{"../engine/utils":42}],45:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -28326,7 +29011,7 @@ fn fsMain(in : VertexOutput) -> @location(0) vec4f {
 }
 `;
 
-},{}],44:[function(require,module,exports){
+},{}],46:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -28452,7 +29137,7 @@ fn fsMain(in : VSOut) -> @location(0) vec4<f32> {
 }
 `;
 
-},{}],45:[function(require,module,exports){
+},{}],47:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -28540,7 +29225,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
 }
 `;
 
-},{}],46:[function(require,module,exports){
+},{}],48:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -28630,7 +29315,7 @@ fn main(input : FragmentInput) -> @location(0) vec4f {
 }
 `;
 
-},{}],47:[function(require,module,exports){
+},{}],49:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -28861,7 +29546,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, 1.0);
 }`;
 
-},{}],48:[function(require,module,exports){
+},{}],50:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -29039,7 +29724,7 @@ return vec4f(color, 1.0);
 // let radiance = spotlights[0].color * 10.0; // test high intensity
 // Lo += materialData.baseColor * radiance * NdotL;
 
-},{}],49:[function(require,module,exports){
+},{}],51:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -29284,7 +29969,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, 1.0);
 }`;
 
-},{}],50:[function(require,module,exports){
+},{}],52:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -29504,7 +30189,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, 1.0);
 }`;
 
-},{}],51:[function(require,module,exports){
+},{}],53:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -29672,7 +30357,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 // let radiance = spotlights[0].color * 10.0; // test high intensity
 // Lo += materialData.baseColor * radiance * NdotL;
 
-},{}],52:[function(require,module,exports){
+},{}],54:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -29908,7 +30593,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, alpha);
 }`;
 
-},{}],53:[function(require,module,exports){
+},{}],55:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30012,7 +30697,7 @@ fn main(
   return output;
 }`;
 
-},{}],54:[function(require,module,exports){
+},{}],56:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30049,7 +30734,7 @@ fn main(
 }
 `;
 
-},{}],55:[function(require,module,exports){
+},{}],57:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30107,7 +30792,7 @@ fn fragmentMain(input: VertexOutput) -> @location(0) vec4f {
   return vec4f(textureColor.rgb * lightColor, textureColor.a);
 }`;
 
-},{}],56:[function(require,module,exports){
+},{}],58:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30165,7 +30850,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
 }
 `;
 
-},{}],57:[function(require,module,exports){
+},{}],59:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30252,7 +30937,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
 }
 `;
 
-},{}],58:[function(require,module,exports){
+},{}],60:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30310,7 +30995,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
   return vec4<f32>(color, 1.0);
 }`;
 
-},{}],59:[function(require,module,exports){
+},{}],61:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30396,7 +31081,7 @@ fn main(
   return output;
 }`;
 
-},{}],60:[function(require,module,exports){
+},{}],62:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30507,7 +31192,7 @@ fn main(
   return output;
 }`;
 
-},{}],61:[function(require,module,exports){
+},{}],63:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30535,7 +31220,7 @@ fn main(
 }
 `;
 
-},{}],62:[function(require,module,exports){
+},{}],64:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30605,7 +31290,7 @@ class MatrixSounds {
 }
 exports.MatrixSounds = MatrixSounds;
 
-},{}],63:[function(require,module,exports){
+},{}],65:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -31336,7 +32021,7 @@ class MatrixEngineWGPU {
       this.device.queue.submit([commandEncoder.finish()]);
       requestAnimationFrame(this.frame);
     } catch (err) {
-      console.log('%cLoop(err):' + err + " info : " + err.stack, _utils.LOG_WARN);
+      // console.log('%cLoop(err):' + err + " info : " + err.stack, LOG_WARN)
       requestAnimationFrame(this.frame);
     }
   };
@@ -31609,4 +32294,4 @@ class MatrixEngineWGPU {
 }
 exports.default = MatrixEngineWGPU;
 
-},{"./engine/ball.js":18,"./engine/cube.js":20,"./engine/engine.js":28,"./engine/lights.js":32,"./engine/loader-obj.js":33,"./engine/loaders/bvh-instaced.js":34,"./engine/loaders/bvh.js":35,"./engine/mesh-obj.js":39,"./engine/utils.js":40,"./multilang/lang.js":41,"./physics/matrix-ammo.js":42,"./sounds/sounds.js":62,"wgpu-matrix":17}]},{},[2]);
+},{"./engine/ball.js":18,"./engine/cube.js":20,"./engine/engine.js":28,"./engine/lights.js":32,"./engine/loader-obj.js":33,"./engine/loaders/bvh-instaced.js":34,"./engine/loaders/bvh.js":35,"./engine/mesh-obj.js":39,"./engine/utils.js":42,"./multilang/lang.js":43,"./physics/matrix-ammo.js":44,"./sounds/sounds.js":64,"wgpu-matrix":17}]},{},[2]);
