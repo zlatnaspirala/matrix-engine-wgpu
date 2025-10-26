@@ -42,18 +42,38 @@ fn vsMain(input : VertexInput, @builtin(instance_index) instanceIndex : u32) -> 
 // === FRAGMENT STAGE =======================================================
 @fragment
 fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
-  let texColor = textureSample(myTexture, mySampler, input.v_uv);
+
+ // Adjust UV scaling and offset here
+  let uvScale = vec2<f32>(1.3, 1.3);   // < 1.0 = zoom out (more texture visible)
+  let uvOffset = vec2<f32>(0.01, 0.01); // move the texture slightly
+  
+  let adjustedUV = input.v_uv * uvScale + uvOffset;
+
+  let texColor = textureSample(myTexture, mySampler, adjustedUV);
 
   let uv = input.v_uv * 2.0 - vec2<f32>(1.0, 1.0);
   let dist = length(uv);
   let glow = exp(-dist * 1.2);
   let glowColor = mix(vec3<f32>(0.2, 0.7, 1.0), vec3<f32>(0.8, 0.95, 1.0), glow);
 
-  // More balanced color blending:
   let baseRGB = texColor.rgb * glowColor;
-  let tintedRGB = mix(baseRGB, input.v_color.rgb, 0.8); // 0.8 gives strong tint influence
+  let tintedRGB = mix(baseRGB, input.v_color.rgb, 0.8);
   let finalAlpha = texColor.a * input.v_color.a * glow;
 
   return vec4<f32>(tintedRGB, finalAlpha);
+
+  // let texColor = textureSample(myTexture, mySampler, input.v_uv);
+
+  // let uv = input.v_uv * 2.0 - vec2<f32>(1.0, 1.0);
+  // let dist = length(uv);
+  // let glow = exp(-dist * 1.2);
+  // let glowColor = mix(vec3<f32>(0.2, 0.7, 1.0), vec3<f32>(0.8, 0.95, 1.0), glow);
+
+  // // More balanced color blending:
+  // let baseRGB = texColor.rgb * glowColor;
+  // let tintedRGB = mix(baseRGB, input.v_color.rgb, 0.8); // 0.8 gives strong tint influence
+  // let finalAlpha = texColor.a * input.v_color.a * glow;
+
+  // return vec4<f32>(tintedRGB, finalAlpha);
 }
 `;

@@ -166,15 +166,10 @@ export class GenGeoTexture {
         t.currentScale[j] += (t.scale[j] - t.currentScale[j]) * this.lerpSpeed;
       }
       const local = mat4.identity();
-
       if(this.rotateEffect == true) {
-
         mat4.rotateY(local, this.rotateAngle, local);
       }
-
       mat4.translate(local, t.currentPosition, local);
-      
-
       mat4.scale(local, t.currentScale, local);
       const finalMat = mat4.identity();
       mat4.multiply(baseModelMatrix, local, finalMat);

@@ -11,7 +11,7 @@ export class FlameEmitter {
     this.enabled = true;
     this.maxParticles = maxParticles;
     this.instanceTargets = [];
-    this.floatsPerInstance = 24;
+    this.floatsPerInstance = 28;
     this.instanceData = new Float32Array(maxParticles * this.floatsPerInstance);
     this.smoothFlickeringScale = 0.1;
     this.maxY = 1.9;
@@ -162,9 +162,11 @@ export class FlameEmitter {
       const finalMat = mat4.identity();
       mat4.multiply(baseModelMatrix, local, finalMat);
       const offset = i * this.floatsPerInstance;
-      this.instanceData.set(finalMat, offset);
-      this.instanceData.set([t.time, 0, 0, 0], offset + 16);
-      this.instanceData.set([t.intensity, 0, 0, 0], offset + 20);
+
+      this.instanceData.set(finalMat, offset);               // 0..15
+      this.instanceData.set([t.time, 0, 0, 0], offset + 16); // 16..19
+      this.instanceData.set([t.intensity, 0, 0, 0], offset + 20); // 20..23
+      this.instanceData.set([t.color[0], t.color[1], t.color[2], t.color[3] ?? 1.0], offset + 24); // 24..27
     }
 
     this.device.queue.writeBuffer(

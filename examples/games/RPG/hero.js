@@ -93,6 +93,17 @@ export const HERO_ARCHETYPES = {
     attackSpeed: 1.0,
     hpRegenMult: 1.0,
     manaRegenMult: 1.0
+  },
+
+  creep: {
+    hpMult: 0.6,
+    manaMult: 1,
+    attackMult: 1,
+    armorMult: 1,
+    moveSpeed: 0.3,
+    attackSpeed: 0.5,
+    hpRegenMult: 1,
+    manaRegenMult: 1
   }
 };
 
@@ -178,6 +189,8 @@ export class HeroProps {
     this.currentXP += earnedXP;
     this.gold += goldReward;
 
+    // for creep any way - rule if they kill hero
+    // maybe some smlall reward... checkLevelUp
     console.log(`${this.name} killed Lv${enemyLevel} enemy: +${earnedXP} XP, +${goldReward} gold`);
     this.checkLevelUp();
   }
@@ -193,6 +206,23 @@ export class HeroProps {
         this.currentXP -= nextLevelXP;
       } else break;
     }
+
+    // emit for hud
+    dispatchEvent(new CustomEvent('stats-localhero', {
+      detail: {
+        gold: this.gold,
+        currentLevel: this.currentLevel,
+        xp: this.currentXP,
+        hp: this.hp,
+        mana: this.mana,
+        attack: this.attack,
+        armor: this.armor,
+        moveSpeed: this.moveSpeed,
+        attackSpeed: this.attackSpeed,
+        hpRegen: this.hpRegen,
+        mpRegen: this.mpRegen,
+      }
+    }))
   }
 
   // --- Upgrade abilities

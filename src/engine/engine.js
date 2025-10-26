@@ -229,6 +229,9 @@ export class ArcballCamera extends CameraBase {
   // 1: Instantly stops spinning
   frictionCoefficient = 0.999;
 
+  setProjection(fov = (2 * Math.PI) / 5, aspect = 1, near = 1, far = 1000) {
+    this.projectionMatrix = mat4.perspective(fov, aspect, near, far);
+  }
   // Construtor
   constructor(options) {
     super();
@@ -236,6 +239,9 @@ export class ArcballCamera extends CameraBase {
       this.position = options.position;
       this.distance = vec3.len(this.position);
       this.back = vec3.normalize(this.position);
+
+      this.setProjection((2 * Math.PI) / 5, this.aspect, 1, 2000);
+
       this.recalcuateRight();
       this.recalcuateUp();
     }
@@ -411,36 +417,28 @@ export function createInputHandler(window, canvas) {
   };
 }
 
-
-///////////////////
-
-
-
-
-
-
-/// test camera 
 export class RPGCamera extends CameraBase {
-  // The camera absolute pitch angle
+  followMe = null;
   pitch = 0;
-  // The camera absolute yaw angle
   yaw = 0;
-
-  // The movement veloicty readonly
   velocity_ = vec3.create();
-
-  // Speed multiplier for camera movement
   movementSpeed = 10;
-
-  // Speed multiplier for camera rotation
   rotationSpeed = 1;
-
+  followMeOffset = 150; // << mobile adaptation needed after all...
   // Movement velocity drag coeffient [0 .. 1]
   // 0: Continues forever
   // 1: Instantly stops moving
   frictionCoefficient = 0.99;
-
   // Returns velocity vector
+
+  // Inside your camera control init
+  scrollY = 0;
+  minY = 50.5;   // minimum camera height
+  maxY = 135.0;   // maximum camera height
+  scrollSpeed = 1;
+
+
+
   get velocity() {
     return this.velocity_;
   }
@@ -465,10 +463,19 @@ export class RPGCamera extends CameraBase {
       this.aspect = options.canvas.width / options.canvas.height;
       this.setProjection((2 * Math.PI) / 5, this.aspect, 1, 2000);
       // console.log(`%cCamera constructor : ${position}`, LOG_INFO);
+
+      this.mousRollInAction = false;
+      addEventListener('wheel', (e) => {
+        // Scroll up = zoom out / higher Y
+        this.mousRollInAction = true;
+        this.scrollY -= e.deltaY * this.scrollSpeed * 0.01;
+        // Clamp to range
+        this.scrollY = Math.max(this.minY, Math.min(this.maxY, this.scrollY));
+
+      });
     }
   }
 
-  // Returns the camera matrix
   get matrix() {
     return super.matrix;
   }
@@ -485,60 +492,63 @@ export class RPGCamera extends CameraBase {
     // Apply the delta rotation to the pitch and yaw angles
     this.yaw = 0;//-= input.analog.x * deltaTime * this.rotationSpeed;
     this.pitch = -0.88;//  -= input.analog.y * deltaTime * this.rotationSpeed;
-    // this.yaw = -0.03;
-    // this.pitch = -0.49;
     // // Wrap yaw between [0° .. 360°], just to prevent large accumulation.
     this.yaw = mod(this.yaw, Math.PI * 2);
     // // Clamp pitch between [-90° .. +90°] to prevent somersaults.
     this.pitch = clamp(this.pitch, -Math.PI / 2, Math.PI / 2);
-
     // Save the current position, as we're about to rebuild the camera matrix.
-    let position = vec3.copy(this.position);
+    if(this.followMe != null && this.followMe.inMove === true ||
+      this.mousRollInAction == true
+    ) {
+      //  console.log("  follow : " + this.followMe.x)
 
+      this.followMeOffset = this.scrollY;
+      // if player not move allow mouse explore map 
+      this.position[0] = this.followMe.x;
+      this.position[2] = this.followMe.z + this.followMeOffset;
+      app.lightContainer[0].position[0] = this.followMe.x;
+      app.lightContainer[0].position[2] = this.followMe.z;
+      app.lightContainer[0].target[0] = this.followMe.x;
+      app.lightContainer[0].target[2] = this.followMe.z;
+
+      this.mousRollInAction = false;
+    }
+
+
+    const smoothFactor = 0.1;
+    this.position[1] += (this.scrollY - this.position[1]) * smoothFactor;
+
+    let position = vec3.copy(this.position);
     // Reconstruct the camera's rotation, and store into the camera matrix.
     super.matrix = mat4.rotateX(mat4.rotationY(this.yaw), this.pitch);
-    // super.matrix = mat4.rotateX(mat4.rotationY(this.yaw), -this.pitch);
-    // super.matrix = mat4.rotateY(mat4.rotateX(this.pitch), this.yaw);
-
     // Calculate the new target velocity
     const digital = input.digital;
     const deltaRight = sign(digital.right, digital.left);
     const deltaUp = sign(digital.up, digital.down);
     const targetVelocity = vec3.create();
-
     const deltaBack = sign(digital.backward, digital.forward);
+    // older then follow
     if(deltaBack == -1) {
-      console.log(deltaBack + "  deltaBack ")
+      // console.log(deltaBack + "  deltaBack ")
       position[2] += -10;
     } else if(deltaBack == 1) {
-      console.log(deltaBack + "  deltaBack ")
       position[2] += 10;
     }
-
+    position[0] += deltaRight * 10;
     vec3.addScaled(targetVelocity, this.right, deltaRight, targetVelocity);
     vec3.addScaled(targetVelocity, this.up, deltaUp, targetVelocity);
-
-    //
-    // vec3.addScaled(targetVelocity, this.back, deltaBack, targetVelocity);
     vec3.normalize(targetVelocity, targetVelocity);
     vec3.mulScalar(targetVelocity, this.movementSpeed, targetVelocity);
-
-    // Mix new target velocity
     this.velocity = lerp(
       targetVelocity,
       this.velocity,
       Math.pow(1 - this.frictionCoefficient, deltaTime)
     );
-
-    // Integrate velocity to calculate new position
     this.position = vec3.addScaled(position, this.velocity, deltaTime);
-
-    // Invert the camera matrix to build the view matrix
     this.view = mat4.invert(this.matrix);
     return this.view;
   }
 
-  // Recalculates the yaw and pitch values from a directional vector
   recalculateAngles(dir) {
     this.yaw = Math.atan2(dir[0], dir[2]);
     this.pitch = -Math.asin(dir[1]);

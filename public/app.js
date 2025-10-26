@@ -41,6 +41,8 @@ class Character extends _hero.Hero {
       (0, _utils.byId)('magic-slot-2').style.backgroundRepeat = "round";
       (0, _utils.byId)('magic-slot-3').style.background = 'url("./res/textures/rpg/magics/maria-sword-4.png")';
       (0, _utils.byId)('magic-slot-3').style.backgroundRepeat = "round";
+      (0, _utils.byId)('hudLeftBox').style.background = "url('./res/textures/rpg/hero-image/maria.png')  center center / cover no-repeat";
+      // byId('heroProfile').src = './res/textures/rpg/hero-image/maria.png';
     }
   }
   async loadLocalHero(p) {
@@ -55,7 +57,7 @@ class Character extends _hero.Hero {
         position: {
           x: 0,
           y: -23,
-          z: -220
+          z: -0
         },
         name: this.name,
         texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
@@ -75,9 +77,7 @@ class Character extends _hero.Hero {
         }
       }, null, glbFile01);
 
-      // -------------------------
-
-      // poenter mouse click
+      // Poenter mouse click
       var glbFile02 = await fetch('./res/meshes/glb/ring1.glb').then(res => res.arrayBuffer().then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, this.core.device)));
       this.core.addGlbObjInctance({
         material: {
@@ -125,7 +125,12 @@ class Character extends _hero.Hero {
         });
         app.localHero.heroe_bodies[0].effects.flameEmitter.recreateVertexDataRND(1);
         this.attachEvents();
-      }, 1400);
+        // important
+        app.localHero.heroe_bodies[1].position = app.localHero.heroe_bodies[0].position;
+        dispatchEvent(new CustomEvent('local-hero-bodies-ready', {
+          detail: "This is not sync - 99% works"
+        }));
+      }, 1500);
     } catch (err) {
       throw err;
     }
@@ -133,13 +138,13 @@ class Character extends _hero.Hero {
   setWalk() {
     this.core.RPG.heroe_bodies.forEach(subMesh => {
       subMesh.glb.animationIndex = this.heroAnimationArrange.walk;
-      console.info(`%chero walk`, _utils.LOG_MATRIX);
+      // console.info(`%chero walk`, LOG_MATRIX)
     });
   }
   setSalute() {
     this.core.RPG.heroe_bodies.forEach(subMesh => {
       subMesh.glb.animationIndex = this.heroAnimationArrange.salute;
-      console.info(`%chero salute`, _utils.LOG_MATRIX);
+      // console.info(`%chero salute`, LOG_MATRIX)
     });
   }
   setDead() {
@@ -151,7 +156,7 @@ class Character extends _hero.Hero {
   setIdle() {
     this.core.RPG.heroe_bodies.forEach(subMesh => {
       subMesh.glb.animationIndex = this.heroAnimationArrange.idle;
-      console.info(`%chero idle`, _utils.LOG_MATRIX);
+      // console.info(`%chero idle`, LOG_MATRIX)
     });
   }
   setAttack(on) {
@@ -163,12 +168,12 @@ class Character extends _hero.Hero {
   }
   attachEvents() {
     addEventListener('attack-magic0', e => {
+      this.setSalute();
       console.log(e.detail);
       this.core.RPG.heroe_bodies.forEach(subMesh => {
-        this.setSalute();
         // level0 have only one instance - more level more instance in visuals context
         console.info(`%cLOADING hero ghostPos`, _utils.LOG_MATRIX);
-        const distance = 80.0; // how far in front of hero
+        const distance = 100.0; // how far in front of hero
         const lift = 0.5;
         // --- rotation.y in degrees → radians
         const yawRad = (subMesh.rotation.y || 0) * Math.PI / 180;
@@ -189,7 +194,7 @@ class Character extends _hero.Hero {
         setTimeout(() => {
           subMesh.instanceTargets[1].position[0] = 0;
           subMesh.instanceTargets[1].position[2] = 0;
-          console.log("?? ", this.setWalk);
+          console.log("? ", this.setWalk);
           this.setWalk();
         }, 1300);
       });
@@ -200,7 +205,7 @@ class Character extends _hero.Hero {
       this.setWalk();
     });
     addEventListener('set-idle', () => {
-      // this.setIdle();
+      this.setIdle();
     });
     addEventListener('set-attach', () => {
       this.setAttach();
@@ -212,57 +217,69 @@ class Character extends _hero.Hero {
       this.setSalute();
     });
     addEventListener('close-distance', e => {
-      console.log('close distance - ', e.detail.A);
+      console.info('close distance with:', e.detail.A);
       if (this.heroFocusAttackOn && this.heroFocusAttackOn.name.indexOf(e.detail.A.id) != -1) {
-        this.setAttack(this.heroFocusAttackOn);
+        // this.setAttack(this.heroFocusAttackOn);
       }
       // still attack
       this.setAttack(this.heroFocusAttackOn);
-      // this.x = this.targetX;
-      // this.y = this.targetY;
-      // this.z = this.targetZ;
-      // this.inMove = false;
-      // this.onTargetPositionReach();
     });
+
     // must be sync with networking... in future
     // -------------------------------------------
     // console.log('ANIMATION END INITIAL NAME ', this.name)
     addEventListener(`animationEnd-${this.name}`, e => {
       // CHECK DISTANCE
       if (e.detail.animationName != 'attack') {
-        // future
-        // console.log('it is not attack + ')
         // // if(this.heroFocusAttackOn == null) { ?? maybe
         // this.setIdle();
         return;
       }
       if (this.heroFocusAttackOn == null) {
-        console.log('ANIMATION END setIdle:', e.detail.animationName);
-        this.setIdle();
-        return;
-      }
-      this.core.enemies.enemies.forEach(enemy => {
-        if (this.heroFocusAttackOn.name.indexOf(enemy.name) != -1) {
-          let tt = this.core.RPG.distance3D(this.heroe_bodies[0].position, this.heroFocusAttackOn.position);
+        console.info('FOCUS ON GROUND BUT COLLIDE WITH ENEMY-ANIMATION END setIdle:', e.detail.animationName);
+        let isEnemiesClose = false; // on close distance 
+        this.core.enemies.enemies.forEach(enemy => {
+          let tt = this.core.RPG.distance3D(this.heroe_bodies[0].position, enemy.heroe_bodies[0].position);
           if (tt < this.core.RPG.distanceForAction) {
-            console.log('Attack on :', this.heroFocusAttackOn.name);
-            console.log('%c ATTACK DAMAGE CALC ', _utils.LOG_MATRIX);
+            console.log(`%c ATTACK DAMAGE ${enemy.heroe_bodies[0].name}`, _utils.LOG_MATRIX);
+            isEnemiesClose = true;
             this.calcDamage(this, enemy);
           }
-        }
-      });
+        });
+        if (isEnemiesClose == false) this.setIdle();
+        return;
+      } else {
+        // Focus on enemy
+        this.core.enemies.enemies.forEach(enemy => {
+          if (this.heroFocusAttackOn.name.indexOf(enemy.name) != -1) {
+            let tt = this.core.RPG.distance3D(this.heroe_bodies[0].position, this.heroFocusAttackOn.position);
+            if (tt < this.core.RPG.distanceForAction) {
+              console.log(`%c ATTACK DAMAGE ${enemy.heroe_bodies[0].name}`, _utils.LOG_MATRIX);
+              this.calcDamage(this, enemy);
+            }
+          }
+        });
+      }
     });
     addEventListener('onTargetPositionReach', e => {
-      console.log("Target pos reached. setIdle", e.detail);
       // for now only local hero
       if (this.heroFocusAttackOn == null) {
-        this.setIdle();
+        let isEnemiesClose = false; // on close distance 
+        this.core.enemies.enemies.forEach(enemy => {
+          let tt = this.core.RPG.distance3D(this.heroe_bodies[0].position, enemy.heroe_bodies[0].position);
+          if (tt < this.core.RPG.distanceForAction) {
+            console.log(`%c ATTACK DAMAGE ${enemy.heroe_bodies[0].name}`, _utils.LOG_MATRIX);
+            isEnemiesClose = true;
+            this.calcDamage(this, enemy);
+          }
+        });
+        if (isEnemiesClose == false) this.setIdle();
       }
     });
     addEventListener('onMouseTarget', e => {
       // for now only local hero
       if (this.core.RPG.selected.includes(this.heroe_bodies[0])) {
-        console.log("onMouseTarget POS >>>>>", e.detail.type);
+        // console.log("onMouseTarget POS:", e.detail.type);
         this.mouseTarget.position.setPosition(e.detail.x, this.mouseTarget.position.y, e.detail.z);
         if (e.detail.type == "attach") {
           this.mouseTarget.effects.circlePlane.instanceTargets[0].color = [1, 0, 0, 0.9];
@@ -271,8 +288,6 @@ class Character extends _hero.Hero {
         }
       }
     });
-
-    // -------------------------------------------
   }
 }
 exports.Character = Character;
@@ -358,7 +373,7 @@ class Controller {
         eventName
       } = e.detail;
       if (e.detail.hitObject.name == 'ground') {
-        console.warn('ground detected.');
+        // console.warn('ground detected.');
         dispatchEvent(new CustomEvent(`onMouseTarget`, {
           detail: {
             type: 'normal',
@@ -368,6 +383,7 @@ class Controller {
           }
         }));
         this.core.localHero.heroFocusAttackOn = null;
+        // return;
       } else if (this.core.enemies.isEnemy(e.detail.hitObject.name)) {
         dispatchEvent(new CustomEvent(`onMouseTarget`, {
           detail: {
@@ -384,6 +400,7 @@ class Controller {
       ) {
         if (this.heroe_bodies.length == 2) {
           if (e.detail.hitObject.name == this.heroe_bodies[1].name) {
+            console.log("Hit object  SELF SLICKED :", e.detail.hitObject.name);
             return;
           }
         }
@@ -524,24 +541,45 @@ exports.EnemiesManager = void 0;
 var _enemyCharacter = require("./enemy-character");
 class EnemiesManager {
   enemies = [];
+  creeps = [];
   constructor(core) {
     this.core = core;
-    this.loadBySumOgPlayers();
+    this.loadBySumOfPlayers();
     console.log('Enemies manager:', core);
   }
   // Make possible to play 3x3 4x4 or 5x5 ...
-  loadBySumOgPlayers() {
+  loadBySumOfPlayers() {
     this.enemies.push(new _enemyCharacter.Enemie({
       core: this.core,
       name: 'Slayzer',
       archetypes: ["Warrior"],
-      path: 'res/meshes/glb/monster.glb'
+      path: 'res/meshes/glb/monster.glb',
+      position: {
+        x: 0,
+        y: -23,
+        z: -260
+      }
+    }));
+    this.creeps.push(new _enemyCharacter.Enemie({
+      core: this.core,
+      name: 'abot',
+      archetypes: ["creep"],
+      path: 'res/meshes/glb/bot.glb',
+      position: {
+        x: 0,
+        y: -23,
+        z: -110
+      }
     }));
   }
   isEnemy(name) {
-    console.log('<isENMIES> ', name);
     let test = this.enemies.filter(obj => obj.name && name.includes(obj.name));
-    if (test.length == 0) return false;
+    let test2 = this.creeps.filter(obj => obj.name && name.includes(obj.name));
+    if (test2.length == 0 && test.length == 0) {
+      console.log('<isENMIES - creeps or enemy heros> NO', name);
+      return false;
+    }
+    console.log('<isENMIES - creeps or enemy heros> YES', name);
     return true;
   }
 }
@@ -582,21 +620,16 @@ class Enemie extends _hero.Hero {
           useTextureFromGlb: true
         },
         scale: [20, 20, 20],
-        position: {
-          x: 0,
-          y: -23,
-          z: -150
-        },
+        position: o.position,
         name: o.name,
         texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
         raycast: {
           enabled: true,
-          radius: 1.5
+          radius: 1.1
         },
         pointerEffect: {
           enabled: true,
-          energyBar: true,
-          circlePlane: true // simple for enemies
+          energyBar: true
         }
       }, null, glbFile01);
       // make small async - cooking glbs files
@@ -618,6 +651,7 @@ class Enemie extends _hero.Hero {
           // dont care for multi sub mesh now
           if (idx == 0) this.core.collisionSystem.register(o.name, subMesh.position, 15.0, 'enemies');
         });
+        this.setStartUpPosition();
       }, 1600);
     } catch (err) {
       throw err;
@@ -780,6 +814,16 @@ const HERO_ARCHETYPES = exports.HERO_ARCHETYPES = {
     attackSpeed: 1.0,
     hpRegenMult: 1.0,
     manaRegenMult: 1.0
+  },
+  creep: {
+    hpMult: 1,
+    manaMult: 1,
+    attackMult: 1,
+    armorMult: 1,
+    moveSpeed: 1,
+    attackSpeed: 1,
+    hpRegenMult: 1,
+    manaRegenMult: 1
   }
 };
 class HeroProps {
@@ -1211,10 +1255,9 @@ class HUD {
     const hudLeftBox = document.createElement("div");
     hudLeftBox.id = "hudLeftBox";
     Object.assign(hudLeftBox.style, {
-      width: "20%",
+      width: "30%",
       height: "100%",
-      backgroundColor: "rgba(0,0,0,0.5)",
-      // display: "flex",
+      background: "rgba(0,0,0,0.5)",
       border: "solid 1px red",
       alignItems: "center",
       justifyContent: "space-around",
@@ -1222,7 +1265,8 @@ class HUD {
       fontFamily: "'Orbitron', sans-serif",
       zIndex: "100",
       padding: "10px",
-      boxSizing: "border-box"
+      boxSizing: "border-box",
+      overflow: 'hidden'
     });
     hud.appendChild(hudLeftBox);
     const hudCenter = document.createElement("div");
@@ -1415,12 +1459,23 @@ class HUD {
     hud.appendChild(hudCenter);
     // left box
     const selectedCharacters = document.createElement("span");
-    selectedCharacters.textContent = "selectedCharacters:[]";
+    selectedCharacters.textContent = "HERO";
     hudLeftBox.appendChild(selectedCharacters);
     hud.addEventListener("onSelectCharacter", e => {
       console.log('onSelectCharacter : ', e);
-      selectedCharacters.textContent = `selectedCharacters:[${e.detail}]`;
+      let n = '';
+      if (e.detail.indexOf('_') != -1) {
+        n = e.detail.split('_')[0];
+      }
+      selectedCharacters.textContent = `${n}`;
     });
+
+    // const heroProfile = document.createElement("img");
+    // heroProfile.id = 'heroProfile';
+    // heroProfile.src = "";
+    // hudLeftBox.appendChild(heroProfile);
+    //
+
     const hudDesription = document.createElement("div");
     hudDesription.id = "hudDesription";
     Object.assign(hudDesription.style, {
@@ -1468,6 +1523,9 @@ class HUD {
       width: "30%",
       height: "100%",
       backgroundColor: "rgba(0,0,0,0.5)",
+      backgroundPosition: 'center center',
+      backgroundRepeat: 'no-repeat',
+      backgroundSize: 'auto',
       display: "flex",
       border: "solid 1px yellow",
       alignItems: "center",
@@ -1608,8 +1666,8 @@ class MEMapLoader {
         radius: 1.5
       }
     });
-    this.core.lightContainer[0].position[1] = 100;
-    this.core.lightContainer[0].intesity = 10;
+    this.core.lightContainer[0].position[1] = 170;
+    this.core.lightContainer[0].intesity = 1;
   }
   onTree(m) {
     this.core.addMeshObj({
@@ -1666,7 +1724,7 @@ class MEMapLoader {
         geometry: "Cube"
       },
       raycast: {
-        enabled: true,
+        enabled: false,
         radius: 1.5
       }
     });
@@ -1771,19 +1829,18 @@ let mysticore = new _world.default({
   }
 }, () => {
   addEventListener('AmmoReady', async () => {
+    addEventListener('local-hero-bodies-ready', () => {
+      app.cameras.RPG.position[1] = 130;
+      app.cameras.RPG.followMe = mysticore.localHero.heroe_bodies[0].position;
+    });
     mysticore.RPG = new _controller.Controller(mysticore);
     app.cameras.RPG.movementSpeed = 100;
     mysticore.mapLoader = new _mapLoader.MEMapLoader(mysticore, "./res/meshes/nav-mesh/navmesh.json");
     mysticore.localHero = new _characterBase.Character(mysticore, "res/meshes/glb/woman1.glb", 'MariaSword', _hero.HERO_PROFILES.MariaSword.baseArchetypes);
     mysticore.HUD = new _hud.HUD(mysticore.localHero);
-    setTimeout(() => {
-      // app.cameras.RPG.yaw = -0.03;
-      // app.cameras.RPG.pitch = -0.49;
-      // app.cameras.RPG.position[2] = 0;
-      app.cameras.RPG.position[1] = 100;
-    }, 2000);
     mysticore.enemies = new _enemiesManager.EnemiesManager(mysticore);
     mysticore.collisionSystem = new _collisionSubSystem.CollisionSystem(mysticore);
+    // setTimeout(() => {   // }, 3000);
   });
   mysticore.addLight();
 });
@@ -1802,21 +1859,16 @@ exports.resolvePairRepulsion = resolvePairRepulsion;
 var _utils = require("../../../src/engine/utils.js");
 class NavMesh {
   constructor(data, options = {}) {
-    // expects data.vertices = [[x,y,z],...]
-    // and data.polygons = [{ indices: [i0,i1,i2], neighbors: [...] }, ...]
-    const scale = options.scale ?? [1, 1, 1]; // default: no scaling
+    const scale = options.scale ?? [1, 1, 1];
     const sx = scale[0],
       sy = scale[1],
       sz = scale[2];
-
     // Apply scale to each vertex
     this.vertices = data.vertices.map(v => [v[0] * sx, v[1] * sy, v[2] * sz]);
     this.polygons = data.polygons.map(p => ({
       indices: p.indices.slice(),
       neighbors: (p.neighbors || []).slice()
     }));
-
-    // Compute derived info
     this._computeCenters();
     this._buildEdgeMap();
   }
@@ -2043,7 +2095,6 @@ class NavMesh {
     for (let i = 1; i < portalLeft.length; i++) {
       const pLeft = portalLeft[i];
       const pRight = portalRight[i];
-
       // update right
       const relRight = sub(pRight, apex);
       const relRightCur = sub(right, apex);
@@ -2059,13 +2110,12 @@ class NavMesh {
           rightIndex = apexIndex;
           left = apex.slice();
           right = apex.slice();
-          i = apexIndex; // continue from apexIndex+1 next loop
+          i = apexIndex;
           continue;
         }
         right = pRight.slice();
         rightIndex = i;
       }
-
       // update left
       const relLeft = sub(pLeft, apex);
       const relLeftCur = sub(left, apex);
@@ -2087,11 +2137,9 @@ class NavMesh {
         leftIndex = i;
       }
     }
-
     // add goal
     const lastPortal = portalLeft[portalLeft.length - 1];
     points.push([lastPortal[0], lastPortal[1]]);
-
     // convert back to [x,y,z] with Y taken from mesh average Y (or 0)
     const out = points.map(xz => {
       const x = xz[0],
@@ -2207,12 +2255,24 @@ class MinHeap {
   }
 }
 exports.MinHeap = MinHeap;
+const MIN_DIST = 0.1;
 function followPath(character, path, core) {
   if (!path || path.length === 0) return;
   let idx = 0;
   const pos = character.position;
   const rot = character.rotation;
-  // Recursive move
+  const MIN_DIST = 0.001;
+  const ROTATION_SPEED = 5; // adjust for smoother/slower rotation
+
+  // --- Smoothly rotate toward a target angle ---
+  function smoothRotate(current, target, deltaTime) {
+    let diff = target - current;
+    // Normalize angle difference to [-180, 180]
+    diff = (diff + 540) % 360 - 180;
+    return current + diff * Math.min(1, deltaTime * ROTATION_SPEED);
+  }
+
+  // --- Recursive movement ---
   function moveToNext() {
     if (idx >= path.length) {
       dispatchEvent(new CustomEvent('onTargetPositionReach', {
@@ -2222,25 +2282,44 @@ function followPath(character, path, core) {
       return;
     }
     const target = path[idx];
-    // --- Compute direction in XZ plane ---
     const dx = target[0] - pos.x;
     const dz = target[2] - pos.z;
-    // Character faces -Z → use atan2(dx, dz)
-    let angleY = Math.atan2(dx, dz);
-    angleY = ((0, _utils.radToDeg)(angleY) + 360) % 360;
-    rot.y = angleY;
+    const dist = Math.sqrt(dx * dx + dz * dz);
+    // --- Skip points that are too close ---
+    if (dist < MIN_DIST) {
+      idx++;
+      moveToNext();
+      return;
+    }
+    // --- Compute target facing direction (Y rotation) ---
+    let targetAngleY = Math.atan2(dx, dz);
+    targetAngleY = ((0, _utils.radToDeg)(targetAngleY) + 360) % 360;
+    // --- Smooth rotation (optional deltaTime if you have it) ---
+    const deltaTime = core?.deltaTime || 0.016; // fallback ~60fps
+    rot.y = smoothRotate(rot.y, targetAngleY, deltaTime);
+    // --- Move toward next target ---
     pos.translateByXZ(target[0], target[2]);
+    // When position reaches target:
     character.position.onTargetPositionReach = () => {
       idx++;
       moveToNext();
     };
   }
+  // --- Initialize rotation toward the first valid point ---
+  const firstTarget = path.find(p => {
+    const dx = p[0] - pos.x;
+    const dz = p[2] - pos.z;
+    return Math.sqrt(dx * dx + dz * dz) >= MIN_DIST;
+  });
+  if (firstTarget) {
+    const dx = firstTarget[0] - pos.x;
+    const dz = firstTarget[2] - pos.z;
+    let initialAngleY = Math.atan2(dx, dz);
+    rot.y = ((0, _utils.radToDeg)(initialAngleY) + 360) % 360;
+  }
   moveToNext();
 }
 function orientHeroToDirection(hero, dir) {
-  // dir = normalized movement direction in world space [x, y, z]
-  // hero.forward = [0, 0, -1] by default
-  // Project direction onto XZ plane (ignore Y)
   const flatDir = [dir[0], 0, dir[2]];
   const len = Math.hypot(flatDir[0], flatDir[2]);
   if (len < 0.0001) return;
@@ -2251,32 +2330,6 @@ function orientHeroToDirection(hero, dir) {
   // Apply to hero
   hero.rotation.y = angle; // in radians
 }
-
-// export function applySoftPush(a, b, minDistance = 1.0, pushStrength = 0.5) {
-//   // Compute difference in XZ plane
-//   const dx = b.position.x - a.position.x;
-//   const dz = b.position.z - a.position.z;
-//   const distSq = dx * dx + dz * dz;
-//   const minDistSq = minDistance * minDistance;
-
-//   if(distSq < minDistSq && distSq > 0.00001) {
-//     const dist = Math.sqrt(distSq);
-//     const overlap = minDistance - dist;
-
-//     // Normalize direction
-//     const nx = dx / dist;
-//     const nz = dz / dist;
-
-//     // Apply half push to each hero (equal reaction)
-//     const push = overlap * 0.5 * pushStrength;
-//     a.position.x -= nx * push;
-//     a.position.z -= nz * push;
-//     b.position.x += nx * push;
-//     b.position.z += nz * push;
-//   }
-// }
-
-// collision-utils.js
 function resolvePairRepulsion(Apos, Bpos, minDistance = 30.0, pushStrength = 0.5) {
   // Apos and Bpos are Position instances (with x,z,targetX,targetZ)
   const dx = Bpos.x - Apos.x;
@@ -2286,28 +2339,21 @@ function resolvePairRepulsion(Apos, Bpos, minDistance = 30.0, pushStrength = 0.5
   if (distSq < minDistSq && distSq > 1e-8) {
     const dist = Math.sqrt(distSq);
     const overlap = minDistance - dist;
-    // normalized dir from A -> B
     const nx = dx / dist;
     const nz = dz / dist;
-    // compute push for each (equal reaction)
     const totalPush = overlap * pushStrength;
     const pushA = totalPush * 0.5;
     const pushB = totalPush * 0.5;
-    // move them apart
     Apos.x -= nx * pushA;
     Apos.z -= nz * pushA;
     Bpos.x += nx * pushB;
     Bpos.z += nz * pushB;
-    // keep target in sync so update() won't pull them back
     Apos.targetX = Apos.x;
     Apos.targetZ = Apos.z;
     Bpos.targetX = Bpos.x;
     Bpos.targetZ = Bpos.z;
-    // also cancel inMove if you want them to pause instead of re-targeting
-    // Apos.inMove = false; Bpos.inMove = false;
     return true;
   }
-
   // exact overlap (practically same point) -> small jitter to separate
   if (distSq <= 1e-8) {
     const jitter = 0.01;
@@ -20595,7 +20641,7 @@ class CollisionSystem {
         const minDist = A.radius + B.radius;
         const testCollide = (0, _navMesh.resolvePairRepulsion)(A.pos, B.pos, minDist, 1.0);
         if (testCollide) {
-          // console.log('test collide' + A + " vs " + B);
+          console.log('collide A ' + A + " vs B " + B);
           dispatchEvent(new CustomEvent('close-distance', {
             detail: {
               A: A,
@@ -22741,31 +22787,25 @@ function createInputHandler(window, canvas) {
     return out;
   };
 }
-
-///////////////////
-
-/// test camera 
 class RPGCamera extends CameraBase {
-  // The camera absolute pitch angle
+  followMe = null;
   pitch = 0;
-  // The camera absolute yaw angle
   yaw = 0;
-
-  // The movement veloicty readonly
   velocity_ = _wgpuMatrix.vec3.create();
-
-  // Speed multiplier for camera movement
   movementSpeed = 10;
-
-  // Speed multiplier for camera rotation
   rotationSpeed = 1;
-
+  followMeOffset = 150; // << mobile adaptation needed after all...
   // Movement velocity drag coeffient [0 .. 1]
   // 0: Continues forever
   // 1: Instantly stops moving
   frictionCoefficient = 0.99;
-
   // Returns velocity vector
+
+  // Inside your camera control init
+  scrollY = 0;
+  minY = 50.5; // minimum camera height
+  maxY = 135.0; // maximum camera height
+  scrollSpeed = 1;
   get velocity() {
     return this.velocity_;
   }
@@ -22788,10 +22828,17 @@ class RPGCamera extends CameraBase {
       this.aspect = options.canvas.width / options.canvas.height;
       this.setProjection(2 * Math.PI / 5, this.aspect, 1, 2000);
       // console.log(`%cCamera constructor : ${position}`, LOG_INFO);
+
+      this.mousRollInAction = false;
+      addEventListener('wheel', e => {
+        // Scroll up = zoom out / higher Y
+        this.mousRollInAction = true;
+        this.scrollY -= e.deltaY * this.scrollSpeed * 0.01;
+        // Clamp to range
+        this.scrollY = Math.max(this.minY, Math.min(this.maxY, this.scrollY));
+      });
     }
   }
-
-  // Returns the camera matrix
   get matrix() {
     return super.matrix;
   }
@@ -22806,54 +22853,52 @@ class RPGCamera extends CameraBase {
     // Apply the delta rotation to the pitch and yaw angles
     this.yaw = 0; //-= input.analog.x * deltaTime * this.rotationSpeed;
     this.pitch = -0.88; //  -= input.analog.y * deltaTime * this.rotationSpeed;
-    // this.yaw = -0.03;
-    // this.pitch = -0.49;
     // // Wrap yaw between [0° .. 360°], just to prevent large accumulation.
     this.yaw = mod(this.yaw, Math.PI * 2);
     // // Clamp pitch between [-90° .. +90°] to prevent somersaults.
     this.pitch = clamp(this.pitch, -Math.PI / 2, Math.PI / 2);
-
     // Save the current position, as we're about to rebuild the camera matrix.
-    let position = _wgpuMatrix.vec3.copy(this.position);
+    if (this.followMe != null && this.followMe.inMove === true || this.mousRollInAction == true) {
+      //  console.log("  follow : " + this.followMe.x)
 
+      this.followMeOffset = this.scrollY;
+      // if player not move allow mouse explore map 
+      this.position[0] = this.followMe.x;
+      this.position[2] = this.followMe.z + this.followMeOffset;
+      app.lightContainer[0].position[0] = this.followMe.x;
+      app.lightContainer[0].position[2] = this.followMe.z;
+      app.lightContainer[0].target[0] = this.followMe.x;
+      app.lightContainer[0].target[2] = this.followMe.z;
+      this.mousRollInAction = false;
+    }
+    const smoothFactor = 0.1;
+    this.position[1] += (this.scrollY - this.position[1]) * smoothFactor;
+    let position = _wgpuMatrix.vec3.copy(this.position);
     // Reconstruct the camera's rotation, and store into the camera matrix.
     super.matrix = _wgpuMatrix.mat4.rotateX(_wgpuMatrix.mat4.rotationY(this.yaw), this.pitch);
-    // super.matrix = mat4.rotateX(mat4.rotationY(this.yaw), -this.pitch);
-    // super.matrix = mat4.rotateY(mat4.rotateX(this.pitch), this.yaw);
-
     // Calculate the new target velocity
     const digital = input.digital;
     const deltaRight = sign(digital.right, digital.left);
     const deltaUp = sign(digital.up, digital.down);
     const targetVelocity = _wgpuMatrix.vec3.create();
     const deltaBack = sign(digital.backward, digital.forward);
+    // older then follow
     if (deltaBack == -1) {
-      console.log(deltaBack + "  deltaBack ");
+      // console.log(deltaBack + "  deltaBack ")
       position[2] += -10;
     } else if (deltaBack == 1) {
-      console.log(deltaBack + "  deltaBack ");
       position[2] += 10;
     }
+    position[0] += deltaRight * 10;
     _wgpuMatrix.vec3.addScaled(targetVelocity, this.right, deltaRight, targetVelocity);
     _wgpuMatrix.vec3.addScaled(targetVelocity, this.up, deltaUp, targetVelocity);
-
-    //
-    // vec3.addScaled(targetVelocity, this.back, deltaBack, targetVelocity);
     _wgpuMatrix.vec3.normalize(targetVelocity, targetVelocity);
     _wgpuMatrix.vec3.mulScalar(targetVelocity, this.movementSpeed, targetVelocity);
-
-    // Mix new target velocity
     this.velocity = lerp(targetVelocity, this.velocity, Math.pow(1 - this.frictionCoefficient, deltaTime));
-
-    // Integrate velocity to calculate new position
     this.position = _wgpuMatrix.vec3.addScaled(position, this.velocity, deltaTime);
-
-    // Invert the camera matrix to build the view matrix
     this.view = _wgpuMatrix.mat4.invert(this.matrix);
     return this.view;
   }
-
-  // Recalculates the yaw and pitch values from a directional vector
   recalculateAngles(dir) {
     this.yaw = Math.atan2(dir[0], dir[2]);
     this.pitch = -Math.asin(dir[1]);
@@ -32884,9 +32929,8 @@ class MatrixEngineWGPU {
       for (const light of this.lightContainer) {
         light.update();
         this.mainRenderBundle.forEach((meItem, index) => {
-          // meItem.position.update()
           meItem.updateModelUniformBuffer();
-          meItem.getTransformationMatrix(this.mainRenderBundle, light, index); // >check optisation
+          meItem.getTransformationMatrix(this.mainRenderBundle, light, index);
         });
       }
       if (this.matrixAmmo) this.matrixAmmo.updatePhysics();

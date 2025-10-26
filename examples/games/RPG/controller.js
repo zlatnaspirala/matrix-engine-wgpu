@@ -49,25 +49,16 @@ export class Controller {
 
     addRaycastsListener(undefined, 'click');
     // addRaycastsListener(undefined, 'mousemove');
-
-    //
-
     // for now - performance problem
     // this.canvas.addEventListener("ray.hit.event.mm", (e) => {
     //   // console.log('ray.hit.event detected', e);
-    //   const {hitObject, hitPoint, button, eventName} = e.detail;
-    //   if(!hitObject || !hitPoint) {
-    //     console.warn('No valid hit detected.');
-    //     return;
-    //   }
-    //   // console.log("Hit object eventName :", eventName, "Button:", button);
     // })
 
     this.canvas.addEventListener("ray.hit.event", (e) => {
       // console.log('ray.hit.event detected', e);
       const {hitObject, hitPoint, button, eventName} = e.detail;
       if(e.detail.hitObject.name == 'ground') {
-        console.warn('ground detected.');
+        console.warn('>>>>>> COLLECT HERE .');
         dispatchEvent(new CustomEvent(`onMouseTarget`, {
           detail: {
             type: 'normal',
@@ -77,6 +68,7 @@ export class Controller {
           }
         }));
         this.core.localHero.heroFocusAttackOn = null;
+        // return;
       } else if(this.core.enemies.isEnemy(e.detail.hitObject.name)) {
         dispatchEvent(new CustomEvent(`onMouseTarget`, {
           detail: {
@@ -86,28 +78,24 @@ export class Controller {
             z: e.detail.hitObject.position.z
           }
         }));
+      } else {
+        // for now
+        dispatchEvent(new CustomEvent('navigate-friendly-creeps', {detail: 'test'}))
+        // must be friendly objs
+        return;
       }
-
       if(button == 0 && e.detail.hitObject.name != 'ground' &&
-        e.detail.hitObject.name !== this.heroe_bodies[0].name //&& 
-        // e.detail.hitObject.name !== this.heroe_bodies[1].name
-      ) {
-
+        e.detail.hitObject.name !== this.heroe_bodies[0].name) {
         if(this.heroe_bodies.length == 2) {
           if(e.detail.hitObject.name == this.heroe_bodies[1].name) {
+            console.log("Hit object  SELF SLICKED :", e.detail.hitObject.name);
             return;
           }
         }
-        // console.log("Hit object:", e.detail.hitObject.name);
-        // console.log("[R CLICK MOUS ]Moment for attact event but walk to the distanve and attach object:",
-        // this.core.localHero.heroe_bodies[0]);
-        // FOr now without check is it enemiy 
-        // fro any LH vs other entity need to exist check distance
         const LH = this.core.localHero.heroe_bodies[0];
         console.log("Hit object VS LH DISTANCE : ", this.distance3D(LH.position, e.detail.hitObject.position))
         // after all check is it eneimy
         this.core.localHero.heroFocusAttackOn = e.detail.hitObject;
-
         let testDistance = this.distance3D(LH.position, e.detail.hitObject.position);
         // 37 LIMIT FOR ATTACH
         if(testDistance < this.distanceForAction) {
@@ -125,18 +113,16 @@ export class Controller {
       }
       // Define start (hero position) and end (clicked point)
       const hero = this.heroe_bodies[0];
-      let heroSword = null;
-      if(this.heroe_bodies.length == 2) {
-        heroSword = this.heroe_bodies[1];
-      }
-
       dispatchEvent(new CustomEvent('set-walk'));
       const start = [hero.position.x, hero.position.y, hero.position.z];
       const end = [hitPoint[0], hitPoint[1], hitPoint[2]];
       const path = this.nav.findPath(start, end);
       if(!path || path.length === 0) {console.warn('No valid path found.'); return;}
-      followPath(hero, path, this.core);
-      followPath(heroSword, path, this.core);
+      // no need if position = position of root ??? test last bug track
+      for(var x = 0;x < this.heroe_bodies.length;x++) {
+        followPath(this.heroe_bodies[x], path, this.core);
+      }
+      // followPath(this.heroe_bodies[0], path, this.core);
     });
 
     this.canvas.addEventListener("contextmenu", (e) => {

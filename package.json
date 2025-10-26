@@ -10,7 +10,8 @@
     "empty": "watchify empty.js -p [esmify --noImplicitAny] -o public/empty.js",
     "build.jamb": "browserify main.js -p esmify > public/app.js",
     "glb-loader": "watchify ./examples/glb-loader.js -p [esmify --noImplicitAny] -o public/app.js",
-    "rpg": "watchify ./examples/games/RPG/mysticore.js -p [esmify --noImplicitAny] -o public/app.js",
+    "rpg": "watchify ./examples/games/RPG/mysticore.js -p [esmify --noImplicitAny] -o public/rpg-game.js",
+    "rpg-menu": "watchify ./examples/games/RPG/start-menu.js -p [esmify --noImplicitAny] -o public/rpg-menu.js",
     "build-all": "npm run main-worker | npm run examples | npm run main | npm run empty",
     "hosts": "http-server ./public/ -p 3000"
   },

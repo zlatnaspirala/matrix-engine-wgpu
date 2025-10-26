@@ -104,7 +104,7 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
     }
     // 4. For mesh nodes or armature parent nodes, leave them alone
     // what is animation , check is it more - we look for Armature by defoult 
-    // frendly blender
+    // friendly blender
     this.glb.animationIndex = 0;
     for(let j = 0;j < this.glb.glbJsonData.animations.length;j++) {
       if(this.glb.glbJsonData.animations[j].name.indexOf('Armature') !== -1) {
@@ -127,6 +127,10 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
   getNumberOfFramesCurAni() {
     const anim = this.glb.glbJsonData.animations[this.glb.animationIndex];
     let maxFrames = 0;
+    if (typeof anim == 'undefined') {
+      console.log('[anim undefined]', this.name)
+      return 1;
+    }
     for(const sampler of anim.samplers) {
       const inputAccessor = this.glb.glbJsonData.accessors[sampler.input];
       if(inputAccessor.count > maxFrames) maxFrames = inputAccessor.count;
@@ -163,7 +167,6 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
         if(this.name.indexOf('_') != -1) {
           n = this.name.split('_')[0];
         }
-        // console.info(`animationEnd-${n}`)
         dispatchEvent(new CustomEvent(`animationEnd-${n}`, {
           detail: {
             animationName: this.glb.glbJsonData.animations[this.glb.animationIndex].name

@@ -51,8 +51,28 @@ export class MEMapLoader {
       raycast: {enabled: true, radius: 1.5}
     });
 
-    this.core.lightContainer[0].position[1] = 100;
-    this.core.lightContainer[0].intesity = 10;
+    this.core.addMeshObj({
+      // material: {type: 'standard', useTextureFromGlb: true},
+      scale: [5, 5, 5],
+      position: {x: -750, y: -35, z: 720},
+      name: 'friendly-tower',
+      mesh: m.tower,
+      texturesPaths: ['./res/textures/rpg/magics/2.png'],
+      // texturesPaths: ['./res/meshes/maps-objs/textures/map-bg.png'],
+      raycast: {enabled: true, radius: 1.5},
+      physics: {
+        enabled: false,
+        mass: 0,
+        geometry: "Cube"
+      },
+    });
+
+
+    let t = this.core.mainRenderBundle.filter((r) => r.name.indexOf('friendly-tower') != -1)[0];
+    this.core.collisionSystem.register(`friendly-tower`, t.position, 15.0, 'tower');
+
+    this.core.lightContainer[0].position[1] = 170;
+    this.core.lightContainer[0].intesity = 1;
   }
 
   onTree(m) {
@@ -83,7 +103,7 @@ export class MEMapLoader {
         mass: 0,
         geometry: "Cube"
       },
-      raycast: {enabled: true, radius: 1.5}
+      raycast: {enabled: false, radius: 1.5}
     });
 
     setTimeout(() => {
@@ -93,12 +113,15 @@ export class MEMapLoader {
   }
 
   async loadMainMap() {
-    downloadMeshes({cube: "./res/meshes/maps-objs/map-1.obj"}, this.onGround.bind(this), {scale: [10, 10, 10]});
+    downloadMeshes({
+      cube: "./res/meshes/maps-objs/map-1.obj",
+      tower: "./res/meshes/env/tower.obj"
+    }, this.onGround.bind(this), {scale: [10, 10, 10]});
 
     var glbFile01 = await fetch('./res/meshes/maps-objs/tree.glb').then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, this.core.device)));
     this.core.addGlbObjInctance({
       material: {type: 'standard', useTextureFromGlb: true},
-      scale: [randomIntFromTo(10,15), randomIntFromTo(10,15), randomIntFromTo(10,15)],
+      scale: [randomIntFromTo(10, 15), randomIntFromTo(10, 15), randomIntFromTo(10, 15)],
       position: {x: -500, y: -35, z: -500},
       name: 'tree1',
       texturesPaths: ['./res/meshes/maps-objs/textures/green.png'],
@@ -108,6 +131,8 @@ export class MEMapLoader {
       }
     }, null, glbFile01);
 
+    // console.log('>>>>>>>>>>>>>>>>>>>>>>>>')
+    //-------------------
     setTimeout(() => {
       this.collectionOfTree1 = this.core.mainRenderBundle.filter((o => o.name.indexOf('tree') != -1));
       setTimeout(() => {
@@ -117,42 +142,42 @@ export class MEMapLoader {
   }
 
   addInstancing() {
-  const spacing = 150;
-  const clusterOffsets = [
-    [0, 0],
-    [700, 0],
-    [0, 700],
-    [700, 700]
-  ];
+    const spacing = 150;
+    const clusterOffsets = [
+      [0, 0],
+      [700, 0],
+      [0, 700],
+      [700, 700]
+    ];
 
-  this.collectionOfTree1.forEach((partOftree) => {
- 
+    this.collectionOfTree1.forEach((partOftree) => {
 
-    const treesPerCluster = 9;
-    const gridSize = Math.ceil(Math.sqrt(treesPerCluster));
-    const totalInstances = treesPerCluster * clusterOffsets.length;
 
-    partOftree.updateMaxInstances(totalInstances);
-    partOftree.updateInstances(totalInstances);
+      const treesPerCluster = 9;
+      const gridSize = Math.ceil(Math.sqrt(treesPerCluster));
+      const totalInstances = treesPerCluster * clusterOffsets.length;
 
-    let instanceIndex = 0;
+      partOftree.updateMaxInstances(totalInstances);
+      partOftree.updateInstances(totalInstances);
 
-    for (const [offsetX, offsetZ] of clusterOffsets) {
-      for (let i = 0; i < treesPerCluster; i++) {
-        const row = Math.floor(i / gridSize);
-        const col = i % gridSize;
-        const instance = partOftree.instanceTargets[instanceIndex++];
+      let instanceIndex = 0;
 
-        instance.position[0] = offsetX + col * spacing + randomIntFromTo(0, 20);
-        instance.position[2] = offsetZ + row * spacing + randomIntFromTo(0, 20);
-        instance.position[1] = 0;
+      for(const [offsetX, offsetZ] of clusterOffsets) {
+        for(let i = 0;i < treesPerCluster;i++) {
+          const row = Math.floor(i / gridSize);
+          const col = i % gridSize;
+          const instance = partOftree.instanceTargets[instanceIndex++];
 
-        instance.color[3] = 1;
-        instance.color[0] = randomFloatFromTo(0.5, 2.0);
-        instance.color[1] = randomFloatFromTo(0.7, 1.0);
-        instance.color[2] = randomFloatFromTo(0.5, 0.9);
+          instance.position[0] = offsetX + col * spacing + randomIntFromTo(0, 20);
+          instance.position[2] = offsetZ + row * spacing + randomIntFromTo(0, 20);
+          instance.position[1] = 0;
+
+          instance.color[3] = 1;
+          instance.color[0] = randomFloatFromTo(0.5, 2.0);
+          instance.color[1] = randomFloatFromTo(0.7, 1.0);
+          instance.color[2] = randomFloatFromTo(0.5, 0.9);
+        }
       }
-    }
-  });
+    });
   }
 }

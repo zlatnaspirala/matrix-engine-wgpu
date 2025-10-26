@@ -1,3 +1,4 @@
+import {byId} from "../../../src/engine/utils.js";
 
 export class HUD {
   constructor(localHero) {
@@ -31,10 +32,9 @@ export class HUD {
     hudLeftBox.id = "hudLeftBox";
 
     Object.assign(hudLeftBox.style, {
-      width: "20%",
+      width: "30%",
       height: "100%",
-      backgroundColor: "rgba(0,0,0,0.5)",
-      // display: "flex",
+      background: "rgba(0,0,0,0.5)",
       border: "solid 1px red",
       alignItems: "center",
       justifyContent: "space-around",
@@ -42,10 +42,123 @@ export class HUD {
       fontFamily: "'Orbitron', sans-serif",
       zIndex: "100",
       padding: "10px",
-      boxSizing: "border-box"
+      boxSizing: "border-box",
+      overflow: 'hidden'
     });
 
     hud.appendChild(hudLeftBox);
+
+    // - Stats
+    const statsDom = document.createElement("div");
+    statsDom.id = "statsDom";
+
+    Object.assign(statsDom.style, {
+      display: "flex",
+      flexDirection: "column",
+      width: "12%",
+      height: "100%",
+      background: "rgba(0,0,0,0.5)",
+      // border: "solid 1px red",
+      alignItems: "center",
+      justifyContent: "space-around",
+      color: "white",
+      fontFamily: "'Orbitron', sans-serif",
+      zIndex: "100",
+      padding: "1px",
+      margin: '0',
+      boxSizing: "border-box",
+      overflow: 'hidden',
+      fontSize: '9px',
+    });
+
+    hud.appendChild(statsDom);
+
+    const statsDomValue = document.createElement("div");
+    statsDomValue.id = "statsDomValue";
+
+    Object.assign(statsDomValue.style, {
+      display: "flex",
+      flexDirection: "column",
+      width: "12%",
+      height: "100%",
+      background: "rgba(0,0,0,0.5)",
+      // border: "solid 1px red",
+      alignItems: "center",
+      justifyContent: "space-around",
+      color: "white",
+      fontFamily: "'Orbitron', sans-serif",
+      zIndex: "100",
+      padding: "1px",
+      margin: '0',
+      boxSizing: "border-box",
+      overflow: 'hidden',
+      fontSize: '9px',
+    });
+
+    hud.appendChild(statsDomValue);
+
+    let props = [
+      "currentLevel",
+      "hp",
+      "mana",
+      "gold",
+      "mpRegen",
+      "hpRegen",
+      "moveSpeed",
+      "attackSpeed",
+      "armor",
+      "attack"
+    ];
+
+    addEventListener('stats-localhero', (e) => {
+      console.log('STATS UPDATE DOM ', e.detail)
+      for(var x = 0;x < props.length;x++) {
+        byId('stats-' + props[x]).innerHTML =  e.detail[props[x]].toFixed(2);
+      }
+      console.log('STATS UPDATE DOM ', e.detail)
+    })
+
+    for(var x = 0;x < props.length;x++) {
+      const statsDomItem = document.createElement("div");
+      statsDomItem.id = `statsLabel-${props[x]}`;
+      statsDomItem.innerHTML = props[x] + ":";
+      Object.assign(statsDomItem.style, {
+        // width: "10%",
+        // height: "100%",
+        background: "rgba(0,0,0,0.5)",
+        // border: "solid 1px red",
+        alignItems: "center",
+        justifyContent: "space-around",
+        color: "white",
+        fontFamily: "'Orbitron', sans-serif",
+        zIndex: "100",
+        margin: '0',
+        boxSizing: "border-box",
+        overflow: 'hidden'
+      });
+      statsDom.appendChild(statsDomItem);
+
+      const statsDomItemValue = document.createElement("div");
+      statsDomItemValue.id = `stats-${props[x]}`;
+      statsDomItemValue.innerHTML = "" + app.localHero[props[x]];
+      Object.assign(statsDomItemValue.style, {
+        // width: "10%",
+        // height: "100%",
+        background: "rgba(0,0,0,0.5)",
+        // border: "solid 1px red",
+        alignItems: "center",
+        justifyContent: "space-around",
+        color: "white",
+        fontFamily: "'Orbitron', sans-serif",
+        zIndex: "100",
+        margin: '0',
+        boxSizing: "border-box",
+        overflow: 'hidden'
+      });
+      statsDomValue.appendChild(statsDomItemValue);
+    }
+    //----------------------
+
 
     const hudCenter = document.createElement("div");
     hudCenter.id = "hudCenter";
@@ -123,15 +236,22 @@ export class HUD {
           "inset 2px 2px 5px rgba(0,0,0,0.6), inset -2px -2px 5px rgba(255,255,255,0.1)";
       });
 
-      slot.textContent = "locked";
+      slot.innerHTML = "locked";
 
       slot.addEventListener("mousedown", (e) => {
-        console.log('---------------------------------------')
+
+        if(e.target.innerHTML == 'locked') {
+          console.info('it is locked ...')
+          return;
+        }
+        console.log('------------------MAGIC---------------------')
         slot.style.border = "2px solid #888";
         slot.style.boxShadow =
           "inset 2px 2px 5px rgba(0,0,0,0.6), inset -2px -2px 5px rgba(255,255,255,0.1)";
-          dispatchEvent(new CustomEvent(`attack-magic${i}`, 
-             {detail: { source: 'hero', magicType: i , level: 1} }))
+
+
+        dispatchEvent(new CustomEvent(`attack-magic${i}`,
+          {detail: {source: 'hero', magicType: i, level: 1}}))
       });
       hudMagicHOlder.appendChild(slot);
     }
@@ -248,12 +368,22 @@ export class HUD {
     hud.appendChild(hudCenter);
     // left box
     const selectedCharacters = document.createElement("span");
-    selectedCharacters.textContent = "selectedCharacters:[]";
+    selectedCharacters.textContent = "HERO";
     hudLeftBox.appendChild(selectedCharacters);
     hud.addEventListener("onSelectCharacter", (e) => {
       console.log('onSelectCharacter : ', e)
-      selectedCharacters.textContent = `selectedCharacters:[${e.detail}]`;
+      let n = '';
+      if(e.detail.indexOf('_') != -1) {
+        n = e.detail.split('_')[0];
+      }
+      selectedCharacters.textContent = `${n}`;
     });
+
+    // const heroProfile = document.createElement("img");
+    // heroProfile.id = 'heroProfile';
+    // heroProfile.src = "";
+    // hudLeftBox.appendChild(heroProfile);
+    //
 
     const hudDesription = document.createElement("div");
     hudDesription.id = "hudDesription";
@@ -302,11 +432,14 @@ export class HUD {
 
     // right
     const hudItems = document.createElement("div");
-    hudItems.id = "hudLeftBox";
+    hudItems.id = "hudItems";
     Object.assign(hudItems.style, {
       width: "30%",
       height: "100%",
       backgroundColor: "rgba(0,0,0,0.5)",
+      backgroundPosition: 'center center',
+      backgroundRepeat: 'no-repeat',
+      backgroundSize: 'auto',
       display: "flex",
       border: "solid 1px yellow",
       alignItems: "center",

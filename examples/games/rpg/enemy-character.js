@@ -27,14 +27,13 @@ export class Enemie extends Hero {
       this.core.addGlbObjInctance({
         material: {type: 'standard', useTextureFromGlb: true},
         scale: [20, 20, 20],
-        position: {x: 0, y: -23, z: -150},
+        position: o.position,
         name: o.name,
         texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
-        raycast: {enabled: true, radius: 1.5},
+        raycast: {enabled: true, radius: 1.1},
         pointerEffect: {
           enabled: true,
-          energyBar: true,
-          circlePlane: true // simple for enemies
+          energyBar: true
         }
       }, null, glbFile01);
       // make small async - cooking glbs files
@@ -47,17 +46,25 @@ export class Enemie extends Hero {
           subMesh.glb.animationIndex = 0;
           // adapt manual if blender is not setup
           subMesh.glb.glbJsonData.animations.forEach((a, index) => {
-            // console.info(`%c ANimation: ${a.name} index ${index}`, LOG_MATRIX)
+          //  console.info(`%c ANimation: ${a.name} index ${index}`, LOG_MATRIX)
             if(a.name == 'dead') this.heroAnimationArrange.dead = index;
             if(a.name == 'walk') this.heroAnimationArrange.walk = index;
             if(a.name == 'salute') this.heroAnimationArrange.salute = index;
             if(a.name == 'attack') this.heroAnimationArrange.attack = index;
+            if(a.name == 'idle') this.heroAnimationArrange.idle = index;
           });
+          // adapt
+          if(this.name == 'Slayzer') {
+            subMesh.globalAmbient = [2, 2, 3, 1];
+          } 
           // maybe will help - remote net players no nedd to collide in other remote user gamaplay
           // this.core.collisionSystem.register((o.name + idx), subMesh.position, 15.0, 'enemies');
           // dont care for multi sub mesh now
           if(idx == 0) this.core.collisionSystem.register((o.name), subMesh.position, 15.0, 'enemies');
         });
+
+        this.setStartUpPositionTest();
+
       }, 1600)
     } catch(err) {throw err;}
   }
@@ -97,13 +104,22 @@ export class Enemie extends Hero {
     });
   }
 
+  setStartUpPositionTest() {
+    this.heroe_bodies.forEach((subMesh, idx) => {
+      subMesh.position.setPosition(-700, -23, 0);
+    })
+
+    this.setStartUpPositionTest = this.setStartUpPosition;
+  }
+
   setStartUpPosition() {
     this.heroe_bodies.forEach((subMesh, idx) => {
-      subMesh.position.setPosition(0,-23,0)
+      subMesh.position.setPosition(700, -23, -700);
     })
   }
 
   attachEvents() {
+
     addEventListener(`onDamage-${this.name}`, (e) => {
       console.info(`%c hero damage ${e.detail}`, LOG_MATRIX)
       this.heroe_bodies[0].effects.energyBar.setProgress(e.detail.progress);
@@ -113,10 +129,11 @@ export class Enemie extends Hero {
         console.info(`%c hero dead [${this.name}], attacker[${e.detail.attacker}]`, LOG_MATRIX)
         setTimeout(() => {
           this.setStartUpPosition()
-        }, 2000)
+        }, 1600)
         e.detail.attacker.killEnemy(e.detail.defenderLevel);
       }
     });
+
   }
 
 }
