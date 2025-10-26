@@ -104,7 +104,7 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
     }
     // 4. For mesh nodes or armature parent nodes, leave them alone
     // what is animation , check is it more - we look for Armature by defoult 
-    // frendly blender
+    // friendly blender
     this.glb.animationIndex = 0;
     for(let j = 0;j < this.glb.glbJsonData.animations.length;j++) {
       if(this.glb.glbJsonData.animations[j].name.indexOf('Armature') !== -1) {

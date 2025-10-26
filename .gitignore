@@ -4,3 +4,4 @@ public/res/meshes/glb/**.blend1
 public/res/meshes/glb/maria_arhive/*.blend
 public/res/meshes/glb/maria_arhive/*.blend1
 public/res/meshes/env/arc-kula12.blend
+*.blend1

@@ -60,7 +60,7 @@ export class Creep extends Hero {
           subMesh.globalAmbient = [1, 1, 1, 1];
           if(this.name == 'Slayzer') {
             subMesh.globalAmbient = [2, 2, 3, 1];
-          } else if(this.name.indexOf('frendly-creeps') != -1) {
+          } else if(this.name.indexOf('friendly-creeps') != -1) {
             subMesh.globalAmbient = [12, 12, 12, 1];
           }
           // maybe will help - remote net players no nedd to collide in other remote user gamaplay
@@ -117,12 +117,12 @@ export class Creep extends Hero {
 
   attachEvents() {
     addEventListener(`onDamage-${this.name}`, (e) => {
-      console.info(`%frendly creep damage ${e.detail}`, LOG_MATRIX)
+      console.info(`%friendly creep damage ${e.detail}`, LOG_MATRIX)
       this.heroe_bodies[0].effects.energyBar.setProgress(e.detail.progress);
       // if detail is 0
       if(e.detail.progress == 0) {
         this.setDead();
-        console.info(`%cfrendly creep dead [${this.name}], attacker[${e.detail.attacker}]`, LOG_MATRIX)
+        console.info(`%cfriendly creep dead [${this.name}], attacker[${e.detail.attacker}]`, LOG_MATRIX)
         setTimeout(() => {
           this.setStartUpPosition()
         }, 2000)
@@ -151,7 +151,7 @@ export class Creep extends Hero {
             // leave it go creep to your goals... NOT TESTED !!!!
             console.log(`%c this.creepFocusAttackOn = null; NO ATTACK clear `, LOG_MATRIX)
             this.creepFocusAttackOn = null;
-            dispatchEvent(new CustomEvent('navigate-frendly-creeps', {detail: 'test'}))
+            dispatchEvent(new CustomEvent('navigate-friendly-creeps', {detail: 'test'}))
           }
         })
         // if(isEnemiesClose == false) this.setIdle();
@@ -172,7 +172,7 @@ export class Creep extends Hero {
               // leave it go creep to your goals...
               console.log(`%cNO ATTACK GO ...`, LOG_MATRIX)
               this.creepFocusAttackOn = null;
-              dispatchEvent(new CustomEvent('navigate-frendly-creeps', {detail: 'test'}))
+              dispatchEvent(new CustomEvent('navigate-friendly-creeps', {detail: 'test'}))
             }
           }
         })

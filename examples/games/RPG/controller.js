@@ -79,7 +79,7 @@ export class Controller {
           }
         }));
       } else {
-        // must be frendly objs
+        // must be friendly objs
         return;
       }
       if(button == 0 && e.detail.hitObject.name != 'ground' &&
