@@ -202,11 +202,9 @@ export class Character extends Hero {
 
   navigateCreeps() {
     app.localHero.friendlyLocal.creeps.forEach((creep, index) => {
-
-        this.navigateCreep(creep, index);
+      this.navigateCreep(creep, index);
       if(creep.creepFocusAttackOn != null) {
         // console.log('[creep.creepFocusAttackOn] is on action chech for small interval again....!', creep);
-      
         return;
       }
       // creep.firstPoint = [-653.83, -26.62, -612.95];
@@ -452,8 +450,8 @@ export class Character extends Hero {
             this.setWalkCreep(getName[getName.length - 1]);
             followPath(t[0].heroe_bodies[0], path, app)
           }, 1000)
-          
-          
+
+
         } else {
           // got ot final
           // console.log('SEND TO last POINT POINT', t[0].finalPoint)
@@ -465,7 +463,7 @@ export class Character extends Hero {
             followPath(t[0].heroe_bodies[0], path, app)
             this.setWalkCreep(getName[getName.length - 1]);
           }, 1000)
-          
+
         }
         //--------------------------------
         return;
