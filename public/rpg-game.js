@@ -1105,7 +1105,7 @@ class Enemie extends _hero.Hero {
   }
   setStartUpPosition() {
     this.heroe_bodies.forEach((subMesh, idx) => {
-      subMesh.position.setPosition(700, -23, 600);
+      subMesh.position.setPosition(700, -23, -700);
     });
   }
   attachEvents() {
@@ -2203,9 +2203,9 @@ class MEMapLoader {
       // material: {type: 'standard', useTextureFromGlb: true},
       scale: [5, 5, 5],
       position: {
-        x: -0,
+        x: -750,
         y: -35,
-        z: -120
+        z: 720
       },
       name: 'friendly-tower',
       mesh: m.tower,
@@ -2221,7 +2221,8 @@ class MEMapLoader {
         geometry: "Cube"
       }
     });
-    this.core.collisionSystem.register(`friendly-tower0`, subMesh.position, 15.0, 'tower');
+    let t = this.core.mainRenderBundle.filter(r => r.name.indexOf('friendly-tower') != -1)[0];
+    this.core.collisionSystem.register(`friendly-tower`, t.position, 15.0, 'tower');
     this.core.lightContainer[0].position[1] = 170;
     this.core.lightContainer[0].intesity = 1;
   }

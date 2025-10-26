@@ -114,7 +114,7 @@ export class Enemie extends Hero {
 
   setStartUpPosition() {
     this.heroe_bodies.forEach((subMesh, idx) => {
-      subMesh.position.setPosition(700, -23, 600);
+      subMesh.position.setPosition(700, -23, -700);
     })
   }
 
