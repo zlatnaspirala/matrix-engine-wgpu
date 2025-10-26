@@ -200,7 +200,8 @@ export class Creep extends Hero {
 
       } else {
 
-        // FROM ENEMY VIEW
+        console.log('Enter for enemy  LOGIC ....this.group  ', this.group )
+        // FROM ENEMY VIEW  THIS IS HARD CODE RELA COMMAND FOR NENEMY OBJS COMES FROM NETWORKING
         if(this.creepFocusAttackOn == null) {
           console.info('FOCUS ON GROUND BUT COLLIDE WITH ENEMY-ANIMATION END setIdle:', e.detail.animationName)
           let isEnemiesClose = false; // on close distance 
@@ -215,7 +216,7 @@ export class Creep extends Hero {
             } else {
               console.log(`%c this.creepFocusAttackOn = null; NO ATTACK clear `, LOG_MATRIX)
               this.creepFocusAttackOn = null;
-              dispatchEvent(new CustomEvent('navigate-friendly-creeps', {detail: 'test'}))
+              dispatchEvent(new CustomEvent('navigate-enemy-creeps', {detail: 'test'}))
             }
           })
           // if(isEnemiesClose == false) this.setIdle();
@@ -223,7 +224,7 @@ export class Creep extends Hero {
         }
         else {
           // Focus on enemy vs creeps !!!
-          if(this.core.enemies.enemies.length > 0) this.core.enemies.enemies.forEach((enemy) => {
+          if(this.core.localHero.friendlyLocal.heroes.length > 0) this.core.localHero.friendlyLocal.heroes.forEach((enemy) => {
             if(this.creepFocusAttackOn.name.indexOf(enemy.name) != -1) {
               let tt = this.core.RPG.distance3D(
                 this.heroe_bodies[0].position,
@@ -241,7 +242,7 @@ export class Creep extends Hero {
             }
           })
 
-          if(this.core.enemies.creeps.length > 0) this.core.enemies.creeps.forEach((enemy) => {
+          if(this.core.localHero.friendlyLocal.creeps.length > 0) this.core.localHero.friendlyLocal.creeps.forEach((enemy) => {
             if(this.creepFocusAttackOn.name.indexOf(enemy.name) != -1) {
               let tt = this.core.RPG.distance3D(
                 this.heroe_bodies[0].position,
