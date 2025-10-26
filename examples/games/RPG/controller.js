@@ -79,6 +79,8 @@ export class Controller {
           }
         }));
       } else {
+        // for now
+        dispatchEvent(new CustomEvent('navigate-friendly-creeps', {detail: 'test'}))
         // must be friendly objs
         return;
       }
@@ -117,7 +119,7 @@ export class Controller {
       const path = this.nav.findPath(start, end);
       if(!path || path.length === 0) {console.warn('No valid path found.'); return;}
       // no need if position = position of root ??? test last bug track
-      for (var x=0; x < this.heroe_bodies.length;x++) {
+      for(var x = 0;x < this.heroe_bodies.length;x++) {
         followPath(this.heroe_bodies[x], path, this.core);
       }
       // followPath(this.heroe_bodies[0], path, this.core);
