@@ -38,10 +38,68 @@ let mysticoreStartSceen = new MatrixEngineWGPU({
     resolution: '160x240',
     isDataOnly: true
   });
-  //
+
+  mysticoreStartSceen.MINIMUM_PLAYERS = 2;
+
+  mysticoreStartSceen.setWaitingList = () => {
+    // access net doms who comes with broadcaster2.html
+    const waitingForOthersDOM = document.createElement("div");
+    waitingForOthersDOM.id = "waitingForOthersDOM";
+    Object.assign(waitingForOthersDOM.style, {
+      flexFlow: 'wrap',
+      width: "100%",
+      height: "35%",
+      backgroundColor: "rgba(60, 60, 60, 1)",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-around",
+      color: "white",
+      fontFamily: "'Orbitron', sans-serif",
+      zIndex: "1",
+      fontSize: '20px',
+      padding: "10px",
+      boxSizing: "border-box"
+    });
+    byId('session-header').appendChild(waitingForOthersDOM);
+  }
+
+  // keep simple all networking code on top level
+  // all job will be done with no account for now.
+
+  addEventListener('net-ready', () => {
+    console.log('setWaitingList');
+    mysticoreStartSceen.setWaitingList();
+  });
+
+  addEventListener('connectionDestroyed', (e) => {
+    if(byId(e.detail.connectionId)) {
+      byId(`waiting-${e.detail.connectionId}`).remove();
+    }
+  });
+
+  addEventListener("onConnectionCreated", (e) => {
+    console.log('newconn : created', e.detail);
+    let newPlayer = document.createElement('div');
+    newPlayer.innerHTML = `Player: ${e.detail.connection.connectionId}`;
+    newPlayer.id = `waiting-${e.detail.connection.connectionId}`;
+    byId('waitingForOthersDOM').appendChild(newPlayer);
+
+    let testParty = document.querySelectorAll('[id*="waiting-"]');
+    console.info('Test number of players:', testParty);
+    if(testParty.length >= mysticoreStartSceen.MINIMUM_PLAYERS) {
+      LS.set('player', {
+        hero: heros[app.selectedHero].name,
+        path: heros[app.selectedHero].path
+      })
+      location.assign('rpg-game.html');
+    }
+  })
+
+  addEventListener('only-data-receive', (e) => {
+    console.log('<data-receive>', e)
+  })
 
   addEventListener('AmmoReady', async () => {
-
     app.matrixSounds.play('music');
     heros = [
       {
@@ -101,20 +159,13 @@ let mysticoreStartSceen = new MatrixEngineWGPU({
           })
 
           if(x == 2) {
-            console.log('TEST------')
             hero0.forEach((p, i, array) => {
               array[i].globalAmbient = [6, 6, 6];
             })
-
           }
         }
-
         app.lightContainer[0].position[2] = 10;
         app.lightContainer[0].position[1] = 50;
-
-
-
-
       }, 2500)
     }
     loadHeros();
@@ -122,9 +173,7 @@ let mysticoreStartSceen = new MatrixEngineWGPU({
   })
   mysticoreStartSceen.addLight();
 
-
   function createHUDMEnu() {
-
     document.body.style.cursor = "url('./res/icons/default.png') 0 0, auto";
     byId('canvas1').style.pointerEvents = 'none';
 
@@ -178,7 +227,6 @@ let mysticoreStartSceen = new MatrixEngineWGPU({
           heroBodie.position.onTargetPositionReach = () => {
             app.lock = false;
           }
-
           // custom adapt 
           if(indexRoot == 0) {
             heroBodie.globalAmbient = [1, 1, 1];
@@ -195,15 +243,9 @@ let mysticoreStartSceen = new MatrixEngineWGPU({
               heroBodie.effects.circlePlane.instanceTargets[0].color = [0.6, 0.8, 1, 0.4];
             }
           }
-
         })
       })
-
-
-
-
-      updateDesc()
-
+      updateDesc();
     });
 
 
@@ -281,9 +323,6 @@ let mysticoreStartSceen = new MatrixEngineWGPU({
       }
     }
 
-
-
-    //
     const startBtn = document.createElement("button");
     Object.assign(startBtn.style, {
       position: "absolute",
@@ -302,14 +341,19 @@ let mysticoreStartSceen = new MatrixEngineWGPU({
       cursor: 'pointer'
     });
     startBtn.textContent = "start";
-    startBtn.addEventListener('click', () => {
+    startBtn.addEventListener('click', (e) => {
       console.log('START', app.selectedHero)
-      LS.set('player', {
-        hero: heros[app.selectedHero].name,
-        path: heros[app.selectedHero].path
-      })
 
-      location.assign('rpg-game.html');
+      if(app.net.connection == null) {
+        console.log('app.net.connection is null let join gameplay sesion... Wait list.', app.selectedHero)
+        byId('join-btn').click();
+        e.target.innerHTML = 'Waiting for others...';
+        e.target.disabled = true;
+        return;
+      } else {
+        console.log('app.net.connection is not null...', app.selectedHero)
+        return;
+      }
     });
 
     hud.appendChild(previusBtn);

@@ -27,9 +27,7 @@ export class MatrixStream {
       setTimeout(() => {this.loadNetHTML()}, 2500)
     });
 
-    addEventListener("onConnectionCreated", (e) => {
-      console.log('newconn:created', e.detail);
-    })
+    // addEventListener("onConnectionCreated", (e) => {console.log('newconn:created', e.detail);})
   }
 
   loadNetHTML() {
@@ -55,7 +53,7 @@ export class MatrixStream {
       this.session.signal({
         data: JSON.stringify(netArg),
         to: [],
-        type: netConfig.sessionName
+        type: netConfig.sessionName + "-data"
       }).then(() => {
         // console.log('emit all successfully');
       }).catch(error => {
@@ -86,12 +84,17 @@ export class MatrixStream {
       this.session = e.detail;
       this.connection = e.detail.connection;
       this.session.on(`signal:${netConfig.sessionName}`, (e) => {
-        console.log("SIGBAL RECEIVE=>", e.detail);
+        console.log("SIGBAL SYS RECEIVE=>", e);
         // if(this.connection.connectionId == e.from.connectionId) {
         //   //
         // } else {
         //   // this.multiPlayer.update(e);
         // }
+      });
+      this.session.on(`signal:${netConfig.sessionName}-data`, (e) => {
+        // console.log("SIGBAL DATA RECEIVE=>", e);
+        dispatchEvent(new CustomEvent('only-data-receive', {detail : e}))
+        // if(this.connection.connectionId == e.from.connectionId) {}
       });
     })
 
@@ -103,7 +106,9 @@ export class MatrixStream {
       })
     })
 
-    this.buttonCloseSession.addEventListener('click', closeSession)
+    this.buttonCloseSession.remove();
+    // this.buttonCloseSession.addEventListener('click', closeSession);
+
     this.buttonLeaveSession.addEventListener('click', () => {
       console.log(`%c LEAVE SESSION`, REDLOG)
       removeUser()
@@ -111,7 +116,7 @@ export class MatrixStream {
     })
 
     byId('netHeaderTitle').addEventListener('click', this.domManipulation.hideNetPanel)
-    setTimeout(() => dispatchEvent(new CustomEvent('net-ready', {})), 1000)
+    setTimeout(() => dispatchEvent(new CustomEvent('net-ready', {})), 100)
   }
 
   multiPlayer = {
@@ -141,7 +146,7 @@ export class MatrixStream {
         // if(e.data.netScale.y) App.scene[e.data.netObjId].geometry.setScaleByY(e.data.netScale.y, 'noemit');
         // if(e.data.netScale.z) App.scene[e.data.netObjId].geometry.setScaleByZ(e.data.netScale.z, 'noemit');
         // if(e.data.netScale.scale) App.scene[e.data.netObjId].geometry.setScale(e.data.netScale.scale, 'noemit');
-      }  
+      }
     },
     /**
      * If someone leaves all client actions is here

@@ -572,8 +572,60 @@ let mysticoreStartSceen = new _world.default({
     resolution: '160x240',
     isDataOnly: true
   });
-  //
+  mysticoreStartSceen.MINIMUM_PLAYERS = 2;
+  mysticoreStartSceen.setWaitingList = () => {
+    // access net doms who comes with broadcaster2.html
+    const waitingForOthersDOM = document.createElement("div");
+    waitingForOthersDOM.id = "waitingForOthersDOM";
+    Object.assign(waitingForOthersDOM.style, {
+      flexFlow: 'wrap',
+      width: "100%",
+      height: "35%",
+      backgroundColor: "rgba(60, 60, 60, 1)",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-around",
+      color: "white",
+      fontFamily: "'Orbitron', sans-serif",
+      zIndex: "1",
+      fontSize: '20px',
+      padding: "10px",
+      boxSizing: "border-box"
+    });
+    (0, _utils.byId)('session-header').appendChild(waitingForOthersDOM);
+  };
 
+  // keep simple all networking code on top level
+  // all job will be done with no account for now.
+
+  addEventListener('net-ready', () => {
+    console.log('setWaitingList');
+    mysticoreStartSceen.setWaitingList();
+  });
+  addEventListener('connectionDestroyed', e => {
+    if ((0, _utils.byId)(e.detail.connectionId)) {
+      (0, _utils.byId)(`waiting-${e.detail.connectionId}`).remove();
+    }
+  });
+  addEventListener("onConnectionCreated", e => {
+    console.log('newconn : created', e.detail);
+    let newPlayer = document.createElement('div');
+    newPlayer.innerHTML = `Player: ${e.detail.connection.connectionId}`;
+    newPlayer.id = `waiting-${e.detail.connection.connectionId}`;
+    (0, _utils.byId)('waitingForOthersDOM').appendChild(newPlayer);
+    let testParty = document.querySelectorAll('[id*="waiting-"]');
+    console.info('Test number of players:', testParty);
+    if (testParty.length >= mysticoreStartSceen.MINIMUM_PLAYERS) {
+      _utils.LS.set('player', {
+        hero: heros[app.selectedHero].name,
+        path: heros[app.selectedHero].path
+      });
+      location.assign('rpg-game.html');
+    }
+  });
+  addEventListener('only-data-receive', e => {
+    console.log('<data-receive>', e);
+  });
   addEventListener('AmmoReady', async () => {
     app.matrixSounds.play('music');
     heros = [{
@@ -644,7 +696,6 @@ let mysticoreStartSceen = new _world.default({
             array[i].color = [0, 0, 0, 0.7];
           });
           if (x == 2) {
-            console.log('TEST------');
             hero0.forEach((p, i, array) => {
               array[i].globalAmbient = [6, 6, 6];
             });
@@ -709,7 +760,6 @@ let mysticoreStartSceen = new _world.default({
           heroBodie.position.onTargetPositionReach = () => {
             app.lock = false;
           };
-
           // custom adapt 
           if (indexRoot == 0) {
             heroBodie.globalAmbient = [1, 1, 1];
@@ -795,8 +845,6 @@ let mysticoreStartSceen = new _world.default({
         `;
       }
     }
-
-    //
     const startBtn = document.createElement("button");
     Object.assign(startBtn.style, {
       position: "absolute",
@@ -815,13 +863,18 @@ let mysticoreStartSceen = new _world.default({
       cursor: 'pointer'
     });
     startBtn.textContent = "start";
-    startBtn.addEventListener('click', () => {
+    startBtn.addEventListener('click', e => {
       console.log('START', app.selectedHero);
-      _utils.LS.set('player', {
-        hero: heros[app.selectedHero].name,
-        path: heros[app.selectedHero].path
-      });
-      location.assign('rpg-game.html');
+      if (app.net.connection == null) {
+        console.log('app.net.connection is null let join gameplay sesion... Wait list.', app.selectedHero);
+        (0, _utils.byId)('join-btn').click();
+        e.target.innerHTML = 'Waiting for others...';
+        e.target.disabled = true;
+        return;
+      } else {
+        console.log('app.net.connection is not null...', app.selectedHero);
+        return;
+      }
     });
     hud.appendChild(previusBtn);
     hud.appendChild(desc);
@@ -27566,9 +27619,8 @@ class MatrixStream {
         this.loadNetHTML();
       }, 2500);
     });
-    addEventListener("onConnectionCreated", e => {
-      console.log('newconn:created', e.detail);
-    });
+
+    // addEventListener("onConnectionCreated", (e) => {console.log('newconn:created', e.detail);})
   }
   loadNetHTML() {
     fetch("./networking/broadcaster2.html", {
@@ -27595,7 +27647,7 @@ class MatrixStream {
       this.session.signal({
         data: JSON.stringify(netArg),
         to: [],
-        type: _matrixStream.netConfig.sessionName
+        type: _matrixStream.netConfig.sessionName + "-data"
       }).then(() => {
         // console.log('emit all successfully');
       }).catch(error => {
@@ -27624,12 +27676,19 @@ class MatrixStream {
       this.session = e.detail;
       this.connection = e.detail.connection;
       this.session.on(`signal:${_matrixStream.netConfig.sessionName}`, e => {
-        console.log("SIGBAL RECEIVE=>", e.detail);
+        console.log("SIGBAL SYS RECEIVE=>", e);
         // if(this.connection.connectionId == e.from.connectionId) {
         //   //
         // } else {
         //   // this.multiPlayer.update(e);
         // }
+      });
+      this.session.on(`signal:${_matrixStream.netConfig.sessionName}-data`, e => {
+        // console.log("SIGBAL DATA RECEIVE=>", e);
+        dispatchEvent(new CustomEvent('only-data-receive', {
+          detail: e
+        }));
+        // if(this.connection.connectionId == e.from.connectionId) {}
       });
     });
     this.joinSessionUI.addEventListener('click', () => {
@@ -27639,14 +27698,16 @@ class MatrixStream {
         isDataOnly: _matrixStream.netConfig.isDataOnly
       });
     });
-    this.buttonCloseSession.addEventListener('click', _matrixStream.closeSession);
+    this.buttonCloseSession.remove();
+    // this.buttonCloseSession.addEventListener('click', closeSession);
+
     this.buttonLeaveSession.addEventListener('click', () => {
       console.log(`%c LEAVE SESSION`, _matrixStream.REDLOG);
       (0, _matrixStream.removeUser)();
       (0, _matrixStream.leaveSession)();
     });
     (0, _matrixStream.byId)('netHeaderTitle').addEventListener('click', this.domManipulation.hideNetPanel);
-    setTimeout(() => dispatchEvent(new CustomEvent('net-ready', {})), 1000);
+    setTimeout(() => dispatchEvent(new CustomEvent('net-ready', {})), 100);
   }
   multiPlayer = {
     root: this,
