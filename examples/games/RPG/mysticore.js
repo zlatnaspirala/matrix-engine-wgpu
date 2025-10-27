@@ -50,10 +50,31 @@ let mysticore = new MatrixEngineWGPU({
     sessionName: 'mysticore-free-for-all',
     resolution: '160x240'
   });
-  //
 
   addEventListener('AmmoReady', async () => {
 
+    // NET
+    addEventListener('net-ready', () => {
+      console.log('net-ready');
+    });
+
+    addEventListener('connectionDestroyed', (e) => {
+      console.log('connectionDestroyed , bad bad...');
+      if(byId(e.detail.connectionId)) { }
+    });
+
+    addEventListener("onConnectionCreated", (e) => {
+      console.log('newconn : created', e.detail);
+      let newPlayer = document.createElement('div');
+      newPlayer.innerHTML = `Player: ${e.detail.connection.connectionId}`;
+      newPlayer.id = `waiting-${e.detail.connection.connectionId}`;
+      //-- 
+    })
+
+    addEventListener('only-data-receive', (e) => {
+      console.log('<data-receive>', e)
+    })
+    // END NET
     app.matrixSounds.audios.music.loop = true;
 
     player.data = LS.get('player');

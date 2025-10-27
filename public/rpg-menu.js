@@ -27677,18 +27677,27 @@ class MatrixStream {
       this.connection = e.detail.connection;
       this.session.on(`signal:${_matrixStream.netConfig.sessionName}`, e => {
         console.log("SIGBAL SYS RECEIVE=>", e);
-        // if(this.connection.connectionId == e.from.connectionId) {
-        //   //
-        // } else {
-        //   // this.multiPlayer.update(e);
-        // }
+        if (this.connection.connectionId == e.from.connectionId) {
+          // avoid - option
+          dispatchEvent(new CustomEvent('self-msg', {
+            detail: e
+          }));
+        } else {
+          this.multiPlayer.update(e);
+        }
       });
       this.session.on(`signal:${_matrixStream.netConfig.sessionName}-data`, e => {
         // console.log("SIGBAL DATA RECEIVE=>", e);
-        dispatchEvent(new CustomEvent('only-data-receive', {
-          detail: e
-        }));
-        // if(this.connection.connectionId == e.from.connectionId) {}
+        console.log("SIGBAL DATA RECEIVE LOW LEVEL TEST OWN MESG =>", e);
+        if (this.connection.connectionId == e.from.connectionId) {
+          dispatchEvent(new CustomEvent('self-msg-data', {
+            detail: e
+          }));
+        } else {
+          dispatchEvent(new CustomEvent('only-data-receive', {
+            detail: e
+          }));
+        }
       });
     });
     this.joinSessionUI.addEventListener('click', () => {
