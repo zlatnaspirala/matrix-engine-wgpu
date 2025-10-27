@@ -29374,7 +29374,8 @@ exports.stopRecording = stopRecording;
 exports.updateNumVideos = updateNumVideos;
 const netConfig = exports.netConfig = {
   NETWORKING_DOMAIN: '',
-  NETWORKING_PORT: '2020'
+  NETWORKING_PORT: '2020',
+  isDataOnly: false
 };
 function byId(d) {
   return document.getElementById(d);
@@ -29420,50 +29421,69 @@ function joinSession(options) {
       // byId("pwa-container-2").style.display = "none";
       pushEvent(e);
     });
-
-    // On every new Stream received...
-    session.on('streamCreated', event => {
-      pushEvent(event);
-      console.log(`%c [onStreamCreated] ${event.stream.streamId}`);
-      setTimeout(() => {
-        console.log(`%c REMOTE STREAM READY [] ${byId("remote-video-" + event.stream.streamId)}`, BIGLOG);
-      }, 2000);
-      dispatchEvent(new CustomEvent('onStreamCreated', {
-        detail: {
-          event: event,
-          msg: `[connectionId][${event.stream.connection.connectionId}]`
-        }
-      }));
-      // Subscribe to the Stream to receive it
-      // HTML video will be appended to element with 'video-container' id
-      var subscriber = session.subscribe(event.stream, 'video-container');
-      // When the HTML video has been appended to DOM...
-      subscriber.on('videoElementCreated', event => {
-        dispatchEvent(new CustomEvent(`videoElementCreatedSubscriber`, {
-          detail: event
-        }));
-        // Add a new HTML element for the user's name and nickname over its video
-        updateNumVideos(1);
-      });
-
-      // When the HTML video has been appended to DOM...
-      subscriber.on('videoElementDestroyed', event => {
+    if (!options.isDataOnly) {
+      // On every new Stream received...
+      session.on('streamCreated', event => {
         pushEvent(event);
-        // Add a new HTML element for the user's name and nickname over its video
-        updateNumVideos(-1);
-      });
-
-      // When the subscriber stream has started playing media...
-      subscriber.on('streamPlaying', event => {
-        dispatchEvent(new CustomEvent('streamPlaying', {
-          detail: event
+        console.log(`%c [onStreamCreated] ${event.stream.streamId}`);
+        setTimeout(() => {
+          console.log(`%c REMOTE STREAM READY [] ${byId("remote-video-" + event.stream.streamId)}`, BIGLOG);
+        }, 2000);
+        dispatchEvent(new CustomEvent('onStreamCreated', {
+          detail: {
+            event: event,
+            msg: `[connectionId][${event.stream.connection.connectionId}]`
+          }
         }));
+        // Subscribe to the Stream to receive it
+        // HTML video will be appended to element with 'video-container' id
+        var subscriber = session.subscribe(event.stream, 'video-container');
+        // When the HTML video has been appended to DOM...
+        subscriber.on('videoElementCreated', event => {
+          dispatchEvent(new CustomEvent(`videoElementCreatedSubscriber`, {
+            detail: event
+          }));
+          // Add a new HTML element for the user's name and nickname over its video
+          updateNumVideos(1);
+        });
+
+        // When the HTML video has been appended to DOM...
+        subscriber.on('videoElementDestroyed', event => {
+          pushEvent(event);
+          // Add a new HTML element for the user's name and nickname over its video
+          updateNumVideos(-1);
+        });
+
+        // When the subscriber stream has started playing media...
+        subscriber.on('streamPlaying', event => {
+          dispatchEvent(new CustomEvent('streamPlaying', {
+            detail: event
+          }));
+        });
       });
-    });
-    session.on('streamDestroyed', event => {
-      // alert(event);
-      pushEvent(event);
-    });
+      session.on('streamDestroyed', event => {
+        // alert(event);
+        pushEvent(event);
+      });
+    } else {
+      // data
+      session.on('streamCreated', event => {
+        const subscriber = session.subscribe(event.stream, "subscriber");
+        subscriber.on('streamPlaying', () => {
+          const pc = subscriber.stream.getRTCPeerConnection();
+          pc.ondatachannel = ev => {
+            const channel = ev.channel;
+            console.log('Remote data channel:', channel.label);
+            channel.onmessage = msgEvent => {
+              console.log('Message received:', msgEvent.data);
+            };
+            channel.onopen = () => {
+              console.log('Data channel open (remote)');
+            };
+          };
+        });
+      });
+    }
     session.on('sessionDisconnected', event => {
       console.log("Session Disconected", event);
       // byId("pwa-container-2").style.display = "none";
@@ -29479,12 +29499,14 @@ function joinSession(options) {
         byId('session').style.display = 'none';
       }
     });
-    session.on('recordingStarted', event => {
-      pushEvent(event);
-    });
-    session.on('recordingStopped', event => {
-      pushEvent(event);
-    });
+
+    // session.on('recordingStarted', event => {
+    //   pushEvent(event);
+    // });
+
+    // session.on('recordingStopped', event => {
+    //   pushEvent(event);
+    // });
 
     // On every asynchronous exception...
     session.on('exception', exception => {
@@ -29493,92 +29515,135 @@ function joinSession(options) {
     dispatchEvent(new CustomEvent(`setupSessionObject`, {
       detail: session
     }));
-    session.connect(token).then(() => {
-      byId('session-title').innerText = sessionName;
-      byId('join').style.display = 'none';
-      byId('session').style.display = 'block';
-      var publisher = OV.initPublisher('video-container', {
-        audioSource: undefined,
-        // The source of audio. If undefined default microphone
-        videoSource: undefined,
-        // The source of video. If undefined default webcam
-        publishAudio: true,
-        // Whether you want to start publishing with your audio unmuted or not
-        publishVideo: true,
-        // Whether you want to start publishing with your video enabled or not
-        resolution: options.resolution,
-        // The resolution of your video
-        frameRate: 30,
-        // The frame rate of your video
-        insertMode: 'APPEND',
-        // How the video is inserted in the target element 'video-container'
-        mirror: false // Whether to mirror your local video or not
-      });
-      publisher.on('accessAllowed', event => {
-        pushEvent({
-          type: 'accessAllowed'
+    if (!netConfig.isDataOnly === true) {
+      session.connect(token).then(() => {
+        byId('session-title').innerText = sessionName;
+        byId('join').style.display = 'none';
+        byId('session').style.display = 'block';
+        var publisher = OV.initPublisher('video-container', {
+          audioSource: netConfig.isDataOnly ? false : undefined,
+          // The source of audio. If undefined default microphone
+          videoSource: netConfig.isDataOnly ? false : undefined,
+          // The source of video. If undefined default webcam
+          publishAudio: !netConfig.isDataOnly,
+          // Whether you want to start publishing with your audio unmuted or not
+          publishVideo: !netConfig.isDataOnly,
+          // Whether you want to start publishing with your video enabled or not
+          resolution: options.resolution,
+          // The resolution of your video
+          frameRate: 30,
+          // The frame rate of your video
+          insertMode: 'APPEND',
+          // How the video is inserted in the target element 'video-container'
+          mirror: false // Whether to mirror your local video or not
         });
-      });
-      publisher.on('accessDenied', event => {
-        pushEvent(event);
-      });
-      publisher.on('accessDialogOpened', event => {
-        pushEvent({
-          type: 'accessDialogOpened'
+        publisher.on('accessAllowed', event => {
+          pushEvent({
+            type: 'accessAllowed'
+          });
         });
-      });
-      publisher.on('accessDialogClosed', event => {
-        pushEvent({
-          type: 'accessDialogClosed'
+        publisher.on('accessDenied', event => {
+          pushEvent(event);
         });
-      });
+        publisher.on('accessDialogOpened', event => {
+          pushEvent({
+            type: 'accessDialogOpened'
+          });
+        });
+        publisher.on('accessDialogClosed', event => {
+          pushEvent({
+            type: 'accessDialogClosed'
+          });
+        });
 
-      // When the publisher stream has started playing media...
-      publisher.on('streamCreated', event => {
-        dispatchEvent(new CustomEvent(`LOCAL-STREAM-READY`, {
-          detail: event.stream
-        }));
-        console.log(`%c LOCAL STREAM READY ${event.stream.connection.connectionId}`, BIGLOG);
-        // if(document.getElementById("pwa-container-1").style.display != 'none') {
-        // 	document.getElementById("pwa-container-1").style.display = 'none';
-        // }
-        pushEvent(event);
-      });
+        // When the publisher stream has started playing media...
+        publisher.on('streamCreated', event => {
+          dispatchEvent(new CustomEvent(`LOCAL-STREAM-READY`, {
+            detail: event.stream
+          }));
+          console.log(`%c LOCAL STREAM READY ${event.stream.connection.connectionId}`, BIGLOG);
+          // if(document.getElementById("pwa-container-1").style.display != 'none') {
+          // 	document.getElementById("pwa-container-1").style.display = 'none';
+          // }
+          pushEvent(event);
+        });
 
-      // When our HTML video has been added to DOM...
-      publisher.on('videoElementCreated', event => {
-        dispatchEvent(new CustomEvent(`videoElementCreated`, {
-          detail: event
-        }));
-        updateNumVideos(1);
-        console.log('NOT FIXED MUTE event.element, ', event.element);
-        event.element.mute = true;
-        // $(event.element).prop('muted', true); // Mute local video
-      });
+        // When our HTML video has been added to DOM...
+        publisher.on('videoElementCreated', event => {
+          dispatchEvent(new CustomEvent(`videoElementCreated`, {
+            detail: event
+          }));
+          updateNumVideos(1);
+          console.log('NOT FIXED MUTE event.element, ', event.element);
+          event.element.mute = true;
+          // $(event.element).prop('muted', true); // Mute local video
+        });
 
-      // When the HTML video has been appended to DOM...
-      publisher.on('videoElementDestroyed', event => {
-        dispatchEvent(new CustomEvent(`videoElementDestroyed`, {
-          detail: event
-        }));
-        pushEvent(event);
-        updateNumVideos(-1);
-      });
+        // When the HTML video has been appended to DOM...
+        publisher.on('videoElementDestroyed', event => {
+          dispatchEvent(new CustomEvent(`videoElementDestroyed`, {
+            detail: event
+          }));
+          pushEvent(event);
+          updateNumVideos(-1);
+        });
 
-      // When the publisher stream has started playing media...
-      publisher.on('streamPlaying', event => {
-        console.log("publisher.on streamPlaying");
-        // if(document.getElementById("pwa-container-1").style.display != 'none') {
-        // 	document.getElementById("pwa-container-1").style.display = 'none';
-        // }
-        // pushEvent(event);
+        // When the publisher stream has started playing media...
+        publisher.on('streamPlaying', event => {
+          console.log("publisher.on streamPlaying");
+          // if(document.getElementById("pwa-container-1").style.display != 'none') {
+          // 	document.getElementById("pwa-container-1").style.display = 'none';
+          // }
+          // pushEvent(event);
+        });
+        session.publish(publisher);
+      }).catch(error => {
+        console.warn('Error connecting to the session:', error.code, error.message);
+        enableBtn();
       });
-      session.publish(publisher);
-      // console.log('SESSION CREATE NOW ', session)
-    }).catch(error => {
-      console.warn('Error connecting to the session:', error.code, error.message);
-      enableBtn();
-    });
+    } else {
+      session.connect(token, "USER_DATA").then(() => {
+        byId('session-title').innerText = sessionName;
+        byId('join').style.display = 'none';
+        byId('session').style.display = 'block';
+        console.log('ONLY DATA ', session);
+        const silentTrack = function () {
+          const ctx = new AudioContext();
+          const oscillator = ctx.createOscillator();
+          const dst = oscillator.connect(ctx.createMediaStreamDestination());
+          oscillator.start();
+          return dst.stream.getAudioTracks()[0];
+        }();
+
+        // const publisher = OV.initPublisher(netConfig.sessionName);
+        const publisher = OV.initPublisher(undefined, {
+          audioSource: silentTrack,
+          // dummy track
+          videoSource: false,
+          publishAudio: false,
+          publishVideo: false
+        });
+
+        // Wait until the WebRTC layer is ready
+        publisher.on('streamCreated', () => {
+          const pc = publisher.stream.getRTCPeerConnection();
+          console.log('PeerConnection ready:', pc);
+
+          // Create your custom DataChannel here
+          const dc = pc.createDataChannel('game-data', {
+            ordered: false
+          });
+          dc.onopen = () => {
+            console.log('DataChannel ready');
+            dc.send('hello from publisher!');
+          };
+        });
+        session.publish(publisher);
+      }).catch(error => {
+        console.warn('Error connecting to the session:', error.code, error.message);
+        enableBtn();
+      });
+    }
     return false;
   });
 }
@@ -29817,6 +29882,7 @@ class MatrixStream {
     _matrixStream.netConfig.NETWORKING_PORT = arg.port;
     _matrixStream.netConfig.sessionName = arg.sessionName;
     _matrixStream.netConfig.resolution = arg.resolution;
+    _matrixStream.netConfig.isDataOnly = arg.isDataOnly;
     _utils.scriptManager.LOAD('./networking/openvidu-browser-2.20.0.js', undefined, undefined, undefined, () => {
       setTimeout(() => {
         this.loadNetHTML();
@@ -29843,6 +29909,21 @@ class MatrixStream {
     });
   }
   attachEvents() {
+    console.log('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>');
+    // just for data only test 
+    this.sendOnlyData = netArg => {
+      this.session.signal({
+        data: JSON.stringify(netArg),
+        to: [],
+        type: _matrixStream.netConfig.sessionName
+      }).then(() => {
+        // console.log('emit all successfully');
+      }).catch(error => {
+        console.error("Erro signal => ", error);
+      });
+    };
+    //
+
     addEventListener(`LOCAL-STREAM-READY`, e => {
       console.log('LOCAL-STREAM-READY ', e.detail.connection);
       this.connection = e.detail.connection;
@@ -29864,17 +29945,19 @@ class MatrixStream {
       console.log("setupSessionObject=>", e.detail);
       this.session = e.detail;
       this.session.on(`signal:${_matrixStream.netConfig.sessionName}`, e => {
+        console.log("SIGBAL RECEIVE=>", e.detail);
         if (this.connection.connectionId == e.from.connectionId) {
           //
         } else {
-          this.multiPlayer.update(e);
+          // this.multiPlayer.update(e);
         }
       });
     });
     this.joinSessionUI.addEventListener('click', () => {
       console.log(`%c JOIN SESSION [${_matrixStream.netConfig.resolution}] `, _matrixStream.REDLOG);
       (0, _matrixStream.joinSession)({
-        resolution: _matrixStream.netConfig.resolution
+        resolution: _matrixStream.netConfig.resolution,
+        isDataOnly: _matrixStream.netConfig.isDataOnly
       });
     });
     this.buttonCloseSession.addEventListener('click', _matrixStream.closeSession);

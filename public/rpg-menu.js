@@ -569,7 +569,8 @@ let mysticoreStartSceen = new _world.default({
     domain: 'maximumroulette.com',
     port: 2020,
     sessionName: 'mysticore-free-for-all-start',
-    resolution: '160x240'
+    resolution: '160x240',
+    isDataOnly: true
   });
   //
 
@@ -27095,7 +27096,8 @@ exports.stopRecording = stopRecording;
 exports.updateNumVideos = updateNumVideos;
 const netConfig = exports.netConfig = {
   NETWORKING_DOMAIN: '',
-  NETWORKING_PORT: '2020'
+  NETWORKING_PORT: '2020',
+  isDataOnly: false
 };
 function byId(d) {
   return document.getElementById(d);
@@ -27116,7 +27118,7 @@ function joinSession(options) {
       resolution: '320x240'
     };
   }
-  console.log('resolution:', options.resolution);
+  // console.log('resolution:', options.resolution);
   document.getElementById("join-btn").disabled = true;
   document.getElementById("join-btn").innerHTML = "Joining...";
   getToken(function () {
@@ -27141,50 +27143,57 @@ function joinSession(options) {
       // byId("pwa-container-2").style.display = "none";
       pushEvent(e);
     });
-
-    // On every new Stream received...
-    session.on('streamCreated', event => {
-      pushEvent(event);
-      console.log(`%c [onStreamCreated] ${event.stream.streamId}`);
-      setTimeout(() => {
-        console.log(`%c REMOTE STREAM READY [] ${byId("remote-video-" + event.stream.streamId)}`, BIGLOG);
-      }, 2000);
-      dispatchEvent(new CustomEvent('onStreamCreated', {
-        detail: {
-          event: event,
-          msg: `[connectionId][${event.stream.connection.connectionId}]`
-        }
-      }));
-      // Subscribe to the Stream to receive it
-      // HTML video will be appended to element with 'video-container' id
-      var subscriber = session.subscribe(event.stream, 'video-container');
-      // When the HTML video has been appended to DOM...
-      subscriber.on('videoElementCreated', event => {
-        dispatchEvent(new CustomEvent(`videoElementCreatedSubscriber`, {
-          detail: event
-        }));
-        // Add a new HTML element for the user's name and nickname over its video
-        updateNumVideos(1);
-      });
-
-      // When the HTML video has been appended to DOM...
-      subscriber.on('videoElementDestroyed', event => {
+    if (!options.isDataOnly) {
+      // On every new Stream received...
+      session.on('streamCreated', event => {
         pushEvent(event);
-        // Add a new HTML element for the user's name and nickname over its video
-        updateNumVideos(-1);
-      });
-
-      // When the subscriber stream has started playing media...
-      subscriber.on('streamPlaying', event => {
-        dispatchEvent(new CustomEvent('streamPlaying', {
-          detail: event
+        console.log(`%c [onStreamCreated] ${event.stream.streamId}`);
+        setTimeout(() => {
+          console.log(`%c REMOTE STREAM READY [] ${byId("remote-video-" + event.stream.streamId)}`, BIGLOG);
+        }, 2000);
+        dispatchEvent(new CustomEvent('onStreamCreated', {
+          detail: {
+            event: event,
+            msg: `[connectionId][${event.stream.connection.connectionId}]`
+          }
         }));
+        // Subscribe to the Stream to receive it
+        // HTML video will be appended to element with 'video-container' id
+        var subscriber = session.subscribe(event.stream, 'video-container');
+        // When the HTML video has been appended to DOM...
+        subscriber.on('videoElementCreated', event => {
+          dispatchEvent(new CustomEvent(`videoElementCreatedSubscriber`, {
+            detail: event
+          }));
+          // Add a new HTML element for the user's name and nickname over its video
+          updateNumVideos(1);
+        });
+
+        // When the HTML video has been appended to DOM...
+        subscriber.on('videoElementDestroyed', event => {
+          pushEvent(event);
+          // Add a new HTML element for the user's name and nickname over its video
+          updateNumVideos(-1);
+        });
+
+        // When the subscriber stream has started playing media...
+        subscriber.on('streamPlaying', event => {
+          dispatchEvent(new CustomEvent('streamPlaying', {
+            detail: event
+          }));
+        });
       });
-    });
-    session.on('streamDestroyed', event => {
-      // alert(event);
-      pushEvent(event);
-    });
+      session.on('streamDestroyed', event => {
+        // alert(event);
+        pushEvent(event);
+      });
+    } else {
+      // data
+      session.on('streamCreated', event => {
+        const subscriber = session.subscribe(event.stream, "subscriber");
+        console.log("USER DATA: " + event.stream.connection.data);
+      });
+    }
     session.on('sessionDisconnected', event => {
       console.log("Session Disconected", event);
       // byId("pwa-container-2").style.display = "none";
@@ -27200,12 +27209,14 @@ function joinSession(options) {
         byId('session').style.display = 'none';
       }
     });
-    session.on('recordingStarted', event => {
-      pushEvent(event);
-    });
-    session.on('recordingStopped', event => {
-      pushEvent(event);
-    });
+
+    // session.on('recordingStarted', event => {
+    //   pushEvent(event);
+    // });
+
+    // session.on('recordingStopped', event => {
+    //   pushEvent(event);
+    // });
 
     // On every asynchronous exception...
     session.on('exception', exception => {
@@ -27214,92 +27225,103 @@ function joinSession(options) {
     dispatchEvent(new CustomEvent(`setupSessionObject`, {
       detail: session
     }));
-    session.connect(token).then(() => {
-      byId('session-title').innerText = sessionName;
-      byId('join').style.display = 'none';
-      byId('session').style.display = 'block';
-      var publisher = OV.initPublisher('video-container', {
-        audioSource: undefined,
-        // The source of audio. If undefined default microphone
-        videoSource: undefined,
-        // The source of video. If undefined default webcam
-        publishAudio: true,
-        // Whether you want to start publishing with your audio unmuted or not
-        publishVideo: true,
-        // Whether you want to start publishing with your video enabled or not
-        resolution: options.resolution,
-        // The resolution of your video
-        frameRate: 30,
-        // The frame rate of your video
-        insertMode: 'APPEND',
-        // How the video is inserted in the target element 'video-container'
-        mirror: false // Whether to mirror your local video or not
-      });
-      publisher.on('accessAllowed', event => {
-        pushEvent({
-          type: 'accessAllowed'
+    if (!netConfig.isDataOnly === true) {
+      session.connect(token).then(() => {
+        byId('session-title').innerText = sessionName;
+        byId('join').style.display = 'none';
+        byId('session').style.display = 'block';
+        var publisher = OV.initPublisher('video-container', {
+          audioSource: netConfig.isDataOnly ? false : undefined,
+          // The source of audio. If undefined default microphone
+          videoSource: netConfig.isDataOnly ? false : undefined,
+          // The source of video. If undefined default webcam
+          publishAudio: !netConfig.isDataOnly,
+          // Whether you want to start publishing with your audio unmuted or not
+          publishVideo: !netConfig.isDataOnly,
+          // Whether you want to start publishing with your video enabled or not
+          resolution: options.resolution,
+          // The resolution of your video
+          frameRate: 30,
+          // The frame rate of your video
+          insertMode: 'APPEND',
+          // How the video is inserted in the target element 'video-container'
+          mirror: false // Whether to mirror your local video or not
         });
-      });
-      publisher.on('accessDenied', event => {
-        pushEvent(event);
-      });
-      publisher.on('accessDialogOpened', event => {
-        pushEvent({
-          type: 'accessDialogOpened'
+        publisher.on('accessAllowed', event => {
+          pushEvent({
+            type: 'accessAllowed'
+          });
         });
-      });
-      publisher.on('accessDialogClosed', event => {
-        pushEvent({
-          type: 'accessDialogClosed'
+        publisher.on('accessDenied', event => {
+          pushEvent(event);
         });
-      });
+        publisher.on('accessDialogOpened', event => {
+          pushEvent({
+            type: 'accessDialogOpened'
+          });
+        });
+        publisher.on('accessDialogClosed', event => {
+          pushEvent({
+            type: 'accessDialogClosed'
+          });
+        });
 
-      // When the publisher stream has started playing media...
-      publisher.on('streamCreated', event => {
-        dispatchEvent(new CustomEvent(`LOCAL-STREAM-READY`, {
-          detail: event.stream
-        }));
-        console.log(`%c LOCAL STREAM READY ${event.stream.connection.connectionId}`, BIGLOG);
-        // if(document.getElementById("pwa-container-1").style.display != 'none') {
-        // 	document.getElementById("pwa-container-1").style.display = 'none';
-        // }
-        pushEvent(event);
-      });
+        // When the publisher stream has started playing media...
+        publisher.on('streamCreated', event => {
+          dispatchEvent(new CustomEvent(`LOCAL-STREAM-READY`, {
+            detail: event.stream
+          }));
+          console.log(`%c LOCAL STREAM READY ${event.stream.connection.connectionId}`, BIGLOG);
+          // if(document.getElementById("pwa-container-1").style.display != 'none') {
+          // 	document.getElementById("pwa-container-1").style.display = 'none';
+          // }
+          pushEvent(event);
+        });
 
-      // When our HTML video has been added to DOM...
-      publisher.on('videoElementCreated', event => {
-        dispatchEvent(new CustomEvent(`videoElementCreated`, {
-          detail: event
-        }));
-        updateNumVideos(1);
-        console.log('NOT FIXED MUTE event.element, ', event.element);
-        event.element.mute = true;
-        // $(event.element).prop('muted', true); // Mute local video
-      });
+        // When our HTML video has been added to DOM...
+        publisher.on('videoElementCreated', event => {
+          dispatchEvent(new CustomEvent(`videoElementCreated`, {
+            detail: event
+          }));
+          updateNumVideos(1);
+          console.log('NOT FIXED MUTE event.element, ', event.element);
+          event.element.mute = true;
+          // $(event.element).prop('muted', true); // Mute local video
+        });
 
-      // When the HTML video has been appended to DOM...
-      publisher.on('videoElementDestroyed', event => {
-        dispatchEvent(new CustomEvent(`videoElementDestroyed`, {
-          detail: event
-        }));
-        pushEvent(event);
-        updateNumVideos(-1);
-      });
+        // When the HTML video has been appended to DOM...
+        publisher.on('videoElementDestroyed', event => {
+          dispatchEvent(new CustomEvent(`videoElementDestroyed`, {
+            detail: event
+          }));
+          pushEvent(event);
+          updateNumVideos(-1);
+        });
 
-      // When the publisher stream has started playing media...
-      publisher.on('streamPlaying', event => {
-        console.log("publisher.on streamPlaying");
-        // if(document.getElementById("pwa-container-1").style.display != 'none') {
-        // 	document.getElementById("pwa-container-1").style.display = 'none';
-        // }
-        // pushEvent(event);
+        // When the publisher stream has started playing media...
+        publisher.on('streamPlaying', event => {
+          console.log("publisher.on streamPlaying");
+          // if(document.getElementById("pwa-container-1").style.display != 'none') {
+          // 	document.getElementById("pwa-container-1").style.display = 'none';
+          // }
+          // pushEvent(event);
+        });
+        session.publish(publisher);
+      }).catch(error => {
+        console.warn('Error connecting to the session:', error.code, error.message);
+        enableBtn();
       });
-      session.publish(publisher);
-      // console.log('SESSION CREATE NOW ', session)
-    }).catch(error => {
-      console.warn('Error connecting to the session:', error.code, error.message);
-      enableBtn();
-    });
+    } else {
+      session.connect(token, "USER_DATA").then(() => {
+        byId('session-title').innerText = sessionName;
+        byId('join').style.display = 'none';
+        byId('session').style.display = 'block';
+        console.log('[ONLY DATA]', session);
+      }).catch(error => {
+        console.warn('Error connecting to the session:', error.code, error.message);
+        enableBtn();
+      });
+    }
     return false;
   });
 }
@@ -27538,10 +27560,14 @@ class MatrixStream {
     _matrixStream.netConfig.NETWORKING_PORT = arg.port;
     _matrixStream.netConfig.sessionName = arg.sessionName;
     _matrixStream.netConfig.resolution = arg.resolution;
+    _matrixStream.netConfig.isDataOnly = arg.isDataOnly;
     _utils.scriptManager.LOAD('./networking/openvidu-browser-2.20.0.js', undefined, undefined, undefined, () => {
       setTimeout(() => {
         this.loadNetHTML();
       }, 2500);
+    });
+    addEventListener("onConnectionCreated", e => {
+      console.log('newconn:created', e.detail);
     });
   }
   loadNetHTML() {
@@ -27564,6 +27590,18 @@ class MatrixStream {
     });
   }
   attachEvents() {
+    // just for data only test 
+    this.sendOnlyData = netArg => {
+      this.session.signal({
+        data: JSON.stringify(netArg),
+        to: [],
+        type: _matrixStream.netConfig.sessionName
+      }).then(() => {
+        // console.log('emit all successfully');
+      }).catch(error => {
+        console.error("Erro signal => ", error);
+      });
+    };
     addEventListener(`LOCAL-STREAM-READY`, e => {
       console.log('LOCAL-STREAM-READY ', e.detail.connection);
       this.connection = e.detail.connection;
@@ -27584,18 +27622,21 @@ class MatrixStream {
     addEventListener('setupSessionObject', e => {
       console.log("setupSessionObject=>", e.detail);
       this.session = e.detail;
+      this.connection = e.detail.connection;
       this.session.on(`signal:${_matrixStream.netConfig.sessionName}`, e => {
-        if (this.connection.connectionId == e.from.connectionId) {
-          //
-        } else {
-          this.multiPlayer.update(e);
-        }
+        console.log("SIGBAL RECEIVE=>", e.detail);
+        // if(this.connection.connectionId == e.from.connectionId) {
+        //   //
+        // } else {
+        //   // this.multiPlayer.update(e);
+        // }
       });
     });
     this.joinSessionUI.addEventListener('click', () => {
       console.log(`%c JOIN SESSION [${_matrixStream.netConfig.resolution}] `, _matrixStream.REDLOG);
       (0, _matrixStream.joinSession)({
-        resolution: _matrixStream.netConfig.resolution
+        resolution: _matrixStream.netConfig.resolution,
+        isDataOnly: _matrixStream.netConfig.isDataOnly
       });
     });
     this.buttonCloseSession.addEventListener('click', _matrixStream.closeSession);
@@ -27619,36 +27660,25 @@ class MatrixStream {
     },
     update(e) {
       e.data = JSON.parse(e.data);
-      dispatchEvent(new CustomEvent('network-data', {
-        detail: e.data
-      }));
-      // console.log('INFO UPDATE', e);
+      // dispatchEvent(new CustomEvent('network-data', {detail: e.data}))
+      console.log('REMOTE UPDATE::::', e);
       if (e.data.netPos) {
         if (App.scene[e.data.netObjId]) {
-          if (e.data.netPos.x) App.scene[e.data.netObjId].position.SetX(e.data.netPos.x, 'noemit');
-          if (e.data.netPos.y) App.scene[e.data.netObjId].position.SetY(e.data.netPos.y, 'noemit');
-          if (e.data.netPos.z) App.scene[e.data.netObjId].position.SetZ(e.data.netPos.z, 'noemit');
+          // if(e.data.netPos.x) App.scene[e.data.netObjId].position.SetX(e.data.netPos.x, 'noemit');
+          // if(e.data.netPos.y) App.scene[e.data.netObjId].position.SetY(e.data.netPos.y, 'noemit');
+          // if(e.data.netPos.z) App.scene[e.data.netObjId].position.SetZ(e.data.netPos.z, 'noemit');
         }
       } else if (e.data.netRot) {
         // console.log('ROT INFO UPDATE', e);
-        if (e.data.netRot.x) App.scene[e.data.netObjId].rotation.rotx = e.data.netRot.x;
-        if (e.data.netRot.y) App.scene[e.data.netObjId].rotation.roty = e.data.netRot.y;
-        if (e.data.netRot.z) App.scene[e.data.netObjId].rotation.rotz = e.data.netRot.z;
+        // if(e.data.netRot.x) App.scene[e.data.netObjId].rotation.rotx = e.data.netRot.x;
+        // if(e.data.netRot.y) App.scene[e.data.netObjId].rotation.roty = e.data.netRot.y;
+        // if(e.data.netRot.z) App.scene[e.data.netObjId].rotation.rotz = e.data.netRot.z;
       } else if (e.data.netScale) {
         // console.log('netScale INFO UPDATE', e);
-        if (e.data.netScale.x) App.scene[e.data.netObjId].geometry.setScaleByX(e.data.netScale.x, 'noemit');
-        if (e.data.netScale.y) App.scene[e.data.netObjId].geometry.setScaleByY(e.data.netScale.y, 'noemit');
-        if (e.data.netScale.z) App.scene[e.data.netObjId].geometry.setScaleByZ(e.data.netScale.z, 'noemit');
-        if (e.data.netScale.scale) App.scene[e.data.netObjId].geometry.setScale(e.data.netScale.scale, 'noemit');
-      } else if (e.data.texScaleFactor) {
-        // console.log('texScaleFactor INFO UPDATE', e);
-        if (e.data.texScaleFactor.newScaleFactror) {
-          App.scene[e.data.netObjId].geometry.setTexCoordScaleFactor(e.data.texScaleFactor.newScaleFactror, 'noemit');
-        }
-      } else if (e.data.spitz) {
-        if (e.data.spitz.newValueFloat) {
-          App.scene[e.data.netObjId].geometry.setSpitz(e.data.spitz.newValueFloat, 'noemit');
-        }
+        // if(e.data.netScale.x) App.scene[e.data.netObjId].geometry.setScaleByX(e.data.netScale.x, 'noemit');
+        // if(e.data.netScale.y) App.scene[e.data.netObjId].geometry.setScaleByY(e.data.netScale.y, 'noemit');
+        // if(e.data.netScale.z) App.scene[e.data.netObjId].geometry.setScaleByZ(e.data.netScale.z, 'noemit');
+        // if(e.data.netScale.scale) App.scene[e.data.netObjId].geometry.setScale(e.data.netScale.scale, 'noemit');
       }
     },
     /**

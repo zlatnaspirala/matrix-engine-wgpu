@@ -35,7 +35,8 @@ let mysticoreStartSceen = new MatrixEngineWGPU({
     domain: 'maximumroulette.com',
     port: 2020,
     sessionName: 'mysticore-free-for-all-start',
-    resolution: '160x240'
+    resolution: '160x240',
+    isDataOnly: true
   });
   //
 

@@ -22,9 +22,14 @@ export class MatrixStream {
     netConfig.NETWORKING_PORT = arg.port;
     netConfig.sessionName = arg.sessionName;
     netConfig.resolution = arg.resolution;
+    netConfig.isDataOnly = arg.isDataOnly;
     scriptManager.LOAD('./networking/openvidu-browser-2.20.0.js', undefined, undefined, undefined, () => {
       setTimeout(() => {this.loadNetHTML()}, 2500)
     });
+
+    addEventListener("onConnectionCreated", (e) => {
+      console.log('newconn:created', e.detail);
+    })
   }
 
   loadNetHTML() {
@@ -45,6 +50,18 @@ export class MatrixStream {
   }
 
   attachEvents() {
+    // just for data only test 
+    this.sendOnlyData = (netArg) => {
+      this.session.signal({
+        data: JSON.stringify(netArg),
+        to: [],
+        type: netConfig.sessionName
+      }).then(() => {
+        // console.log('emit all successfully');
+      }).catch(error => {
+        console.error("Erro signal => ", error);
+      });
+    }
 
     addEventListener(`LOCAL-STREAM-READY`, (e) => {
       console.log('LOCAL-STREAM-READY ', e.detail.connection)
@@ -67,19 +84,25 @@ export class MatrixStream {
     addEventListener('setupSessionObject', (e) => {
       console.log("setupSessionObject=>", e.detail);
       this.session = e.detail;
+      this.connection = e.detail.connection;
       this.session.on(`signal:${netConfig.sessionName}`, (e) => {
-        if(this.connection.connectionId == e.from.connectionId) {
-          //
-        } else {
-          this.multiPlayer.update(e);
-        }
+        console.log("SIGBAL RECEIVE=>", e.detail);
+        // if(this.connection.connectionId == e.from.connectionId) {
+        //   //
+        // } else {
+        //   // this.multiPlayer.update(e);
+        // }
       });
     })
 
     this.joinSessionUI.addEventListener('click', () => {
       console.log(`%c JOIN SESSION [${netConfig.resolution}] `, REDLOG)
-      joinSession({resolution: netConfig.resolution})
+      joinSession({
+        resolution: netConfig.resolution,
+        isDataOnly: netConfig.isDataOnly
+      })
     })
+
     this.buttonCloseSession.addEventListener('click', closeSession)
     this.buttonLeaveSession.addEventListener('click', () => {
       console.log(`%c LEAVE SESSION`, REDLOG)
@@ -88,7 +111,6 @@ export class MatrixStream {
     })
 
     byId('netHeaderTitle').addEventListener('click', this.domManipulation.hideNetPanel)
-
     setTimeout(() => dispatchEvent(new CustomEvent('net-ready', {})), 1000)
   }
 
@@ -100,35 +122,26 @@ export class MatrixStream {
     },
     update(e) {
       e.data = JSON.parse(e.data);
-      dispatchEvent(new CustomEvent('network-data', {detail: e.data}))
-      // console.log('INFO UPDATE', e);
+      // dispatchEvent(new CustomEvent('network-data', {detail: e.data}))
+      console.log('REMOTE UPDATE::::', e);
       if(e.data.netPos) {
         if(App.scene[e.data.netObjId]) {
-          if(e.data.netPos.x) App.scene[e.data.netObjId].position.SetX(e.data.netPos.x, 'noemit');
-          if(e.data.netPos.y) App.scene[e.data.netObjId].position.SetY(e.data.netPos.y, 'noemit');
-          if(e.data.netPos.z) App.scene[e.data.netObjId].position.SetZ(e.data.netPos.z, 'noemit');
+          // if(e.data.netPos.x) App.scene[e.data.netObjId].position.SetX(e.data.netPos.x, 'noemit');
+          // if(e.data.netPos.y) App.scene[e.data.netObjId].position.SetY(e.data.netPos.y, 'noemit');
+          // if(e.data.netPos.z) App.scene[e.data.netObjId].position.SetZ(e.data.netPos.z, 'noemit');
         }
       } else if(e.data.netRot) {
         // console.log('ROT INFO UPDATE', e);
-        if(e.data.netRot.x) App.scene[e.data.netObjId].rotation.rotx = e.data.netRot.x;
-        if(e.data.netRot.y) App.scene[e.data.netObjId].rotation.roty = e.data.netRot.y;
-        if(e.data.netRot.z) App.scene[e.data.netObjId].rotation.rotz = e.data.netRot.z;
+        // if(e.data.netRot.x) App.scene[e.data.netObjId].rotation.rotx = e.data.netRot.x;
+        // if(e.data.netRot.y) App.scene[e.data.netObjId].rotation.roty = e.data.netRot.y;
+        // if(e.data.netRot.z) App.scene[e.data.netObjId].rotation.rotz = e.data.netRot.z;
       } else if(e.data.netScale) {
         // console.log('netScale INFO UPDATE', e);
-        if(e.data.netScale.x) App.scene[e.data.netObjId].geometry.setScaleByX(e.data.netScale.x, 'noemit');
-        if(e.data.netScale.y) App.scene[e.data.netObjId].geometry.setScaleByY(e.data.netScale.y, 'noemit');
-        if(e.data.netScale.z) App.scene[e.data.netObjId].geometry.setScaleByZ(e.data.netScale.z, 'noemit');
-        if(e.data.netScale.scale) App.scene[e.data.netObjId].geometry.setScale(e.data.netScale.scale, 'noemit');
-      } else if(e.data.texScaleFactor) {
-        // console.log('texScaleFactor INFO UPDATE', e);
-        if(e.data.texScaleFactor.newScaleFactror) {
-          App.scene[e.data.netObjId].geometry.setTexCoordScaleFactor(e.data.texScaleFactor.newScaleFactror, 'noemit');
-        }
-      } else if(e.data.spitz) {
-        if(e.data.spitz.newValueFloat) {
-          App.scene[e.data.netObjId].geometry.setSpitz(e.data.spitz.newValueFloat, 'noemit');
-        }
-      }
+        // if(e.data.netScale.x) App.scene[e.data.netObjId].geometry.setScaleByX(e.data.netScale.x, 'noemit');
+        // if(e.data.netScale.y) App.scene[e.data.netObjId].geometry.setScaleByY(e.data.netScale.y, 'noemit');
+        // if(e.data.netScale.z) App.scene[e.data.netObjId].geometry.setScaleByZ(e.data.netScale.z, 'noemit');
+        // if(e.data.netScale.scale) App.scene[e.data.netObjId].geometry.setScale(e.data.netScale.scale, 'noemit');
+      }  
     },
     /**
      * If someone leaves all client actions is here
