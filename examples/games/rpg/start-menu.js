@@ -265,7 +265,14 @@ let mysticoreStartSceen = new MatrixEngineWGPU({
       borderRadius: '120px',
       cursor: 'pointer'
     });
-    nextBtn.textContent = "NEXT";
+    nextBtn.classList.add('buttonMatrix');
+    nextBtn.innerHTML = `
+      <div class="button-outer">
+        <div class="button-inner">
+          <span id='nextBtn'>NEXT</span>
+        </div>
+      </div>
+    `;
     nextBtn.addEventListener('click', () => {
       if(app.selectedHero >= app.heroByBody.length - 1 || app.lock == true) {
         console.log('NEXTBLOCKED ', app.selectedHero)
@@ -274,9 +281,9 @@ let mysticoreStartSceen = new MatrixEngineWGPU({
       app.lock = true;
       app.selectedHero++;
       // ADD
-      if (app.net.session.connection != null)app.net.sendOnlyData({
+      if(app.net.session) if(app.net.session.connection != null) app.net.sendOnlyData({
         selectHeroIndex: app.selectedHero
-      })
+      });
 
       app.heroByBody.forEach((sceneObj, indexRoot) => {
         sceneObj.forEach((heroBodie) => {
@@ -334,7 +341,15 @@ let mysticoreStartSceen = new MatrixEngineWGPU({
       borderRadius: '120px',
       cursor: 'pointer'
     });
-    previusBtn.textContent = "BACK";
+
+    previusBtn.classList.add('buttonMatrix');
+    previusBtn.innerHTML = `
+      <div class="button-outer">
+        <div class="button-inner">
+          <span id='previusBtnText'>BACK</span>
+        </div>
+      </div>
+    `;
 
     previusBtn.addEventListener('click', () => {
       console.log('TEST previusBtn mysticoreStartSceen.selectedHero', app.selectedHero)
@@ -346,7 +361,7 @@ let mysticoreStartSceen = new MatrixEngineWGPU({
       app.selectedHero--;
 
 
-      if (app.net.session.connection != null) app.net.sendOnlyData({
+      if(app.net.session) if(app.net.session.connection != null) app.net.sendOnlyData({
         selectHeroIndex: app.selectedHero
       })
 
@@ -398,19 +413,26 @@ let mysticoreStartSceen = new MatrixEngineWGPU({
       textShadow: "0 0 2px black",
       color: '#ffffffff',
       background: '#000000ff',
-      height: "40px",
       fontSize: '16px',
-      borderRadius: '120px',
-      cursor: 'pointer'
+      borderRadius: '120px'
     });
-    startBtn.textContent = "start";
+    startBtn.classList.add('buttonMatrix');
+
+    startBtn.innerHTML = `
+      <div class="button-outer">
+        <div class="button-inner">
+          <span id='startBtnText'>PLAY</span>
+        </div>
+      </div>
+    `;
     startBtn.addEventListener('click', (e) => {
       console.log('START', app.selectedHero)
 
       if(app.net.connection == null) {
         console.log('app.net.connection is null let join gameplay sesion... Wait list.', app.selectedHero)
         byId('join-btn').click();
-        e.target.innerHTML = 'Waiting for others...';
+        byId("startBtnText").innerHTML = 'Waiting for others...';
+        // e.target.innerHTML = 'Waiting for others...';
         e.target.disabled = true;
         return;
       } else {
