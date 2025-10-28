@@ -58,10 +58,47 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
     }
     return name;
   }
-  // const events = new EventSource('/forestOfHollowBlood/events');
-  // events.onmessage = (event) => {
-  //   console.log('Server event:', JSON.parse(event.data))
-  // };
+
+  function checkHeroStatus() {
+    // app.net.session.remoteConnections.forEach((remoteConn) => {
+    //   console.log(" test remote conn ", remoteConn.connectionId)
+    // });
+    let isUsed = false;
+    document.querySelectorAll('[data-hero-index]').forEach((elem) => {
+      const index = elem.getAttribute('data-hero-index');
+      console.log('Hero element:', elem, 'Index:', index);
+      if (index == app.selectedHero){
+        isUsed = true;
+      }
+    });
+    return isUsed;
+  }
+
+  function determinateSelection() {
+
+    if (checkHeroStatus() == true) {
+      console.log("hero used keep graphics no send ")
+      return;
+    }
+
+    if(app.net.session.connection != null) app.net.sendOnlyData({
+      selectHeroIndex: app.selectedHero
+    });
+    // fix for local
+    if(byId(`waiting-img-${app.net.session.connection.connectionId}`)) {
+      byId(`waiting-img-${app.net.session.connection.connectionId}`).src =
+        `./res/textures/rpg/hero-image/${handleHeroImage(app.selectedHero)}.png`;
+      heroImage.setAttribute('data-hero-index', app.selectedHero);
+    } else {
+      let heroImage = document.createElement('img');
+      heroImage.setAttribute('data-hero-index', app.selectedHero);
+      heroImage.id = `waiting-img-${app.net.session.connection.connectionId}`;
+      heroImage.width = '64';
+      heroImage.height = '64';
+      heroImage.src = `./res/textures/rpg/hero-image/${handleHeroImage(app.selectedHero)}.png`
+      byId(`waiting-${app.net.session.connection.connectionId}`).appendChild(heroImage);
+    }
+  }
 
   addEventListener('check-gameplay-channel', (e) => {
     let info = e.detail;
@@ -150,6 +187,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
 
     let testParty = document.querySelectorAll('[id*="waiting-"]');
     console.info('Test number of players:', testParty);
+
     if(testParty.length >= forestOfHollowBloodStartSceen.MINIMUM_PLAYERS) {
       LS.set('player', {
         hero: heros[app.selectedHero].name,
@@ -309,21 +347,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
       console.log('app.selectedHero::: ', app.selectedHero)
       // Fix on remote 
       if(app.net.session) {
-        if(app.net.session.connection != null) app.net.sendOnlyData({
-          selectHeroIndex: app.selectedHero
-        });
-        // fix for local
-        if(byId(`waiting-img-${app.net.session.connection.connectionId}`)) {
-          byId(`waiting-img-${app.net.session.connection.connectionId}`).src =
-            `./res/textures/rpg/hero-image/${handleHeroImage(app.selectedHero)}.png`
-        } else {
-          let heroImage = document.createElement('img');
-          heroImage.id = `waiting-img-${app.net.session.connection.connectionId}`;
-          heroImage.width = '64';
-          heroImage.height = '64';
-          heroImage.src = `./res/textures/rpg/hero-image/${handleHeroImage(app.selectedHero)}.png`
-          byId(`waiting-${app.net.session.connection.connectionId}`).appendChild(heroImage);
-        }
+        determinateSelection();
       }
 
       app.heroByBody.forEach((sceneObj, indexRoot) => {
@@ -401,17 +425,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
           selectHeroIndex: app.selectedHero
         });
         // fix for local
-        if(byId(`waiting-img-${app.net.session.connection.connectionId}`)) {
-          byId(`waiting-img-${app.net.session.connection.connectionId}`).src =
-            `./res/textures/rpg/hero-image/${handleHeroImage(app.selectedHero)}.png`
-        } else {
-          let heroImage = document.createElement('img');
-          heroImage.id = `waiting-img-${app.net.session.connection.connectionId}`;
-          heroImage.width = '64';
-          heroImage.height = '64';
-          heroImage.src = `./res/textures/rpg/hero-image/${handleHeroImage(app.selectedHero)}.png`
-          byId(`waiting-${app.net.session.connection.connectionId}`).appendChild(heroImage);
-        }
+        determinateSelection();
       }
 
       app.heroByBody.forEach((sceneObj, indexRoot) => {
@@ -476,13 +490,11 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
       </div>
     `;
     startBtn.addEventListener('click', (e) => {
-      console.log('START', app.selectedHero)
-
+      // console.log('START', app.selectedHero)
       if(app.net.connection == null) {
         console.log('app.net.connection is null let join gameplay sesion... Wait list.', app.selectedHero)
         byId('join-btn').click();
         byId("startBtnText").innerHTML = 'Waiting for others...';
-        // e.target.innerHTML = 'Waiting for others...';
         e.target.disabled = true;
         return;
       } else {
