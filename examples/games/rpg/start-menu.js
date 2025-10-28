@@ -18,7 +18,7 @@ import {HERO_ARCHETYPES} from "./hero.js";
  * matching/waiting list players or get status of public channel
  * (game-play channel).
  **/
-let mysticoreStartSceen = new MatrixEngineWGPU({
+let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
   useSingleRenderPass: true,
   canvasSize: 'fullscreen',
   mainCameraParams: {
@@ -26,28 +26,39 @@ let mysticoreStartSceen = new MatrixEngineWGPU({
     responseCoef: 1000
   },
   clearColor: {r: 0, b: 0.122, g: 0.122, a: 1}
-}, (mysticoreStartSceen) => {
+}, (forestOfHollowBloodStartSceen) => {
 
-  mysticoreStartSceen.heroByBody = [];
-  mysticoreStartSceen.selectedHero = 0;
-  mysticoreStartSceen.lock = false;
+  forestOfHollowBloodStartSceen.heroByBody = [];
+  forestOfHollowBloodStartSceen.selectedHero = 0;
+  forestOfHollowBloodStartSceen.lock = false;
 
   // Audios
-  mysticoreStartSceen.matrixSounds.createAudio('music', 'res/audios/rpg/wizard-rider.mp3', 1)
-  mysticoreStartSceen.matrixSounds.createAudio('win1', 'res/audios/rpg/feel.mp3', 2);
+  forestOfHollowBloodStartSceen.matrixSounds.createAudio('music', 'res/audios/rpg/wizard-rider.mp3', 1)
+  forestOfHollowBloodStartSceen.matrixSounds.createAudio('win1', 'res/audios/rpg/feel.mp3', 2);
   let heros = null;
 
   // Networking
-  mysticoreStartSceen.net = new MatrixStream({
+  forestOfHollowBloodStartSceen.net = new MatrixStream({
     active: true,
     domain: 'maximumroulette.com',
     port: 2020,
-    sessionName: 'mysticore-free-for-all-start',
+    sessionName: 'forestOfHollowBlood-free-for-all-start',
     resolution: '160x240',
     isDataOnly: true
   });
 
-  // const events = new EventSource('/mysticore/events');
+  function handleHeroImage(selectHeroIndex) {
+    let name;
+    if(selectHeroIndex == 0) {
+      name = 'mariasword';
+    } else if(selectHeroIndex == 1) {
+      name = 'slayzer';
+    } else if(selectHeroIndex == 2) {
+      name = 'slayzer';
+    }
+    return name;
+  }
+  // const events = new EventSource('/forestOfHollowBlood/events');
   // events.onmessage = (event) => {
   //   console.log('Server event:', JSON.parse(event.data))
   // };
@@ -66,9 +77,9 @@ let mysticoreStartSceen = new MatrixEngineWGPU({
     }
   })
 
-  mysticoreStartSceen.MINIMUM_PLAYERS = 4;
+  forestOfHollowBloodStartSceen.MINIMUM_PLAYERS = 4;
 
-  mysticoreStartSceen.setWaitingList = () => {
+  forestOfHollowBloodStartSceen.setWaitingList = () => {
     // access net doms who comes with broadcaster2.html
     const waitingForOthersDOM = document.createElement("div");
     waitingForOthersDOM.id = "waitingForOthersDOM";
@@ -108,7 +119,7 @@ let mysticoreStartSceen = new MatrixEngineWGPU({
       boxSizing: "border-box"
     });
     byId('netHeader').appendChild(onlineUsers);
-    app.net.fetchInfo('mysticore-free-for-all');
+    app.net.fetchInfo('forestOfHollowBlood-free-for-all');
   }
 
   if(document.querySelector('.form-group')) document.querySelector('.form-group').style.display = 'none';
@@ -116,12 +127,12 @@ let mysticoreStartSceen = new MatrixEngineWGPU({
   // all job will be done with no account for now.
   addEventListener('net-ready', () => {
     document.querySelector('.form-group').style.display = 'none';
-    byId("caller-title").innerHTML = `MYSTiCORE`;
+    byId("caller-title").innerHTML = `forestOfHollowBlood`;
     byId("sessionName").disabled = true;
 
-    mysticoreStartSceen.setWaitingList();
+    forestOfHollowBloodStartSceen.setWaitingList();
     // check game-play channel
-    app.net.fetchInfo('mysticore-free-for-all');
+    app.net.fetchInfo('forestOfHollowBlood-free-for-all');
   });
 
   addEventListener('connectionDestroyed', (e) => {
@@ -139,7 +150,7 @@ let mysticoreStartSceen = new MatrixEngineWGPU({
 
     let testParty = document.querySelectorAll('[id*="waiting-"]');
     console.info('Test number of players:', testParty);
-    if(testParty.length >= mysticoreStartSceen.MINIMUM_PLAYERS) {
+    if(testParty.length >= forestOfHollowBloodStartSceen.MINIMUM_PLAYERS) {
       LS.set('player', {
         hero: heros[app.selectedHero].name,
         path: heros[app.selectedHero].path
@@ -149,7 +160,24 @@ let mysticoreStartSceen = new MatrixEngineWGPU({
   })
 
   addEventListener('only-data-receive', (e) => {
-    console.log('<data-receive>', e)
+
+    let t = JSON.parse(e.detail.data)
+
+    if(t) {
+      console.log(`<data-receive From ${e.detail.from} data:${t.selectHeroIndex}`);
+      let name = handleHeroImage(t.selectHeroIndex);
+      if(byId(`waiting-img-${e.detail.from.connectionId}`)) {
+        byId(`waiting-img-${e.detail.from.connectionId}`).src = `./res/textures/rpg/hero-image/${name.toLowerCase()}.png`
+      } else {
+        let heroImage = document.createElement('img');
+        heroImage.id = `waiting-img-${e.detail.from.connectionId}`;
+        heroImage.width = '64';
+        heroImage.height = '64';
+        heroImage.src = `./res/textures/rpg/hero-image/${name.toLowerCase()}.png`
+        byId(`waiting-${e.detail.from.connectionId}`).appendChild(heroImage);
+      }
+    }
+
   })
 
   addEventListener('AmmoReady', async () => {
@@ -159,20 +187,20 @@ let mysticoreStartSceen = new MatrixEngineWGPU({
         type: "Warrior",
         name: 'MariaSword',
         path: "res/meshes/glb/woman1.glb",
-        desc: mysticoreStartSceen.label.get.mariasword
+        desc: forestOfHollowBloodStartSceen.label.get.mariasword
       },
-      {type: "Warrior", name: 'Slayzer', path: "res/meshes/glb/monster.glb", desc: mysticoreStartSceen.label.get.slayzer},
-      {type: "Warrior", name: 'Steelborn', path: "res/meshes/glb/bot.glb", desc: mysticoreStartSceen.label.get.steelborn},
+      {type: "Warrior", name: 'Slayzer', path: "res/meshes/glb/monster.glb", desc: forestOfHollowBloodStartSceen.label.get.slayzer},
+      {type: "Warrior", name: 'Steelborn', path: "res/meshes/glb/bot.glb", desc: forestOfHollowBloodStartSceen.label.get.steelborn},
     ];
 
-    mysticoreStartSceen.heros = heros;
+    forestOfHollowBloodStartSceen.heros = heros;
 
     // helper
     async function loadHeros() {
       for(var x = 0;x < heros.length;x++) {
         var glbFile01 = await fetch(heros[x].path).then(
           res => res.arrayBuffer().then(buf => uploadGLBModel(buf, app.device)));
-        mysticoreStartSceen.addGlbObjInctance({
+        forestOfHollowBloodStartSceen.addGlbObjInctance({
           material: {type: 'standard', useTextureFromGlb: true},
           scale: [20, 20, 20],
           position: {x: 0 + x * 50, y: 0, z: -10},
@@ -193,7 +221,7 @@ let mysticoreStartSceen = new MatrixEngineWGPU({
 
       setTimeout(() => {
 
-        mysticoreStartSceen.cameras.WASD.position = [0, 14, 52];
+        forestOfHollowBloodStartSceen.cameras.WASD.position = [0, 14, 52];
         app.cameras.WASD.pitch = -0.13;
         app.cameras.WASD.yaw = 0;
         app.mainRenderBundle.forEach((sceneObj) => {
@@ -224,7 +252,7 @@ let mysticoreStartSceen = new MatrixEngineWGPU({
     loadHeros();
     createHUDMEnu();
   })
-  mysticoreStartSceen.addLight();
+  forestOfHollowBloodStartSceen.addLight();
 
   function createHUDMEnu() {
     document.body.style.cursor = "url('./res/icons/default.png') 0 0, auto";
@@ -262,8 +290,6 @@ let mysticoreStartSceen = new MatrixEngineWGPU({
       // background: '#aca8a8',
       height: "40px",
       fontSize: '16px',
-      borderRadius: '120px',
-      cursor: 'pointer'
     });
     nextBtn.classList.add('buttonMatrix');
     nextBtn.innerHTML = `
@@ -280,10 +306,25 @@ let mysticoreStartSceen = new MatrixEngineWGPU({
       }
       app.lock = true;
       app.selectedHero++;
-      // ADD
-      if(app.net.session) if(app.net.session.connection != null) app.net.sendOnlyData({
-        selectHeroIndex: app.selectedHero
-      });
+      console.log('app.selectedHero::: ', app.selectedHero)
+      // Fix on remote 
+      if(app.net.session) {
+        if(app.net.session.connection != null) app.net.sendOnlyData({
+          selectHeroIndex: app.selectedHero
+        });
+        // fix for local
+        if(byId(`waiting-img-${app.net.session.connection.connectionId}`)) {
+          byId(`waiting-img-${app.net.session.connection.connectionId}`).src =
+            `./res/textures/rpg/hero-image/${handleHeroImage(app.selectedHero)}.png`
+        } else {
+          let heroImage = document.createElement('img');
+          heroImage.id = `waiting-img-${app.net.session.connection.connectionId}`;
+          heroImage.width = '64';
+          heroImage.height = '64';
+          heroImage.src = `./res/textures/rpg/hero-image/${handleHeroImage(app.selectedHero)}.png`
+          byId(`waiting-${app.net.session.connection.connectionId}`).appendChild(heroImage);
+        }
+      }
 
       app.heroByBody.forEach((sceneObj, indexRoot) => {
         sceneObj.forEach((heroBodie) => {
@@ -328,18 +369,13 @@ let mysticoreStartSceen = new MatrixEngineWGPU({
 
     const previusBtn = document.createElement("button");
     Object.assign(previusBtn.style, {
-      // position: "absolute",
       width: "80px",
       textAlign: "center",
       color: "white",
       fontWeight: "bold",
       textShadow: "0 0 2px black",
-      // color: '#eaff00',
-      // background: '#aca8a8',
       height: "40px",
-      fontSize: '16px',
-      borderRadius: '120px',
-      cursor: 'pointer'
+      fontSize: '16px'
     });
 
     previusBtn.classList.add('buttonMatrix');
@@ -352,7 +388,7 @@ let mysticoreStartSceen = new MatrixEngineWGPU({
     `;
 
     previusBtn.addEventListener('click', () => {
-      console.log('TEST previusBtn mysticoreStartSceen.selectedHero', app.selectedHero)
+      console.log('TEST previusBtn forestOfHollowBloodStartSceen.selectedHero', app.selectedHero)
       if(app.selectedHero < 1 || app.lock == true) {
         console.log('BLOCKED ', app.selectedHero)
         return;
@@ -360,10 +396,23 @@ let mysticoreStartSceen = new MatrixEngineWGPU({
       app.lock = true;
       app.selectedHero--;
 
-
-      if(app.net.session) if(app.net.session.connection != null) app.net.sendOnlyData({
-        selectHeroIndex: app.selectedHero
-      })
+      if(app.net.session) {
+        if(app.net.session.connection != null) app.net.sendOnlyData({
+          selectHeroIndex: app.selectedHero
+        });
+        // fix for local
+        if(byId(`waiting-img-${app.net.session.connection.connectionId}`)) {
+          byId(`waiting-img-${app.net.session.connection.connectionId}`).src =
+            `./res/textures/rpg/hero-image/${handleHeroImage(app.selectedHero)}.png`
+        } else {
+          let heroImage = document.createElement('img');
+          heroImage.id = `waiting-img-${app.net.session.connection.connectionId}`;
+          heroImage.width = '64';
+          heroImage.height = '64';
+          heroImage.src = `./res/textures/rpg/hero-image/${handleHeroImage(app.selectedHero)}.png`
+          byId(`waiting-${app.net.session.connection.connectionId}`).appendChild(heroImage);
+        }
+      }
 
       app.heroByBody.forEach((sceneObj, indexRoot) => {
         sceneObj.forEach((heroBodie) => {
@@ -404,9 +453,10 @@ let mysticoreStartSceen = new MatrixEngineWGPU({
     const startBtn = document.createElement("button");
     Object.assign(startBtn.style, {
       position: "absolute",
-      bottom: '70px',
+      bottom: '20px',
       right: '120px',
-      width: "200px",
+      width: "250px",
+      height: "60px",
       textAlign: "center",
       color: "white",
       fontWeight: "bold",
@@ -414,7 +464,7 @@ let mysticoreStartSceen = new MatrixEngineWGPU({
       color: '#ffffffff',
       background: '#000000ff',
       fontSize: '16px',
-      borderRadius: '120px'
+      cursor: 'url(./res/icons/default.png) 0 0, auto'
     });
     startBtn.classList.add('buttonMatrix');
 
@@ -449,4 +499,4 @@ let mysticoreStartSceen = new MatrixEngineWGPU({
     updateDesc();
   }
 })
-window.app = mysticoreStartSceen;
+window.app = forestOfHollowBloodStartSceen;

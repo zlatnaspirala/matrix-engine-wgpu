@@ -35,11 +35,11 @@ export class Character extends Hero {
 
   gold = 100;
 
-  constructor(mysticore, path, name = 'MariaSword', archetypes = ["Warrior", "Mage"]) {
+  constructor(forestOfHollowBlood, path, name = 'MariaSword', archetypes = ["Warrior", "Mage"]) {
     super(name, archetypes);
     // console.info(`%cLOADING hero name : ${name}`, LOG_MATRIX)
     this.name = name;
-    this.core = mysticore;
+    this.core = forestOfHollowBlood;
     this.heroe_bodies = [];
     this.loadfriendlyCreeps();
     this.loadLocalHero(path);

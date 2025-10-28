@@ -26,8 +26,8 @@ export class MEMapLoader {
     })
   }
 
-  constructor(mysticore, navMapPath) {
-    this.core = mysticore;
+  constructor(forestOfHollowBlood, navMapPath) {
+    this.core = forestOfHollowBlood;
     this.loadNavMesh(navMapPath).then((e) => {
       console.log(`%cnavMap loaded.${e}`, LOG_FUNNY_SMALL);
       this.core.RPG.nav = e;

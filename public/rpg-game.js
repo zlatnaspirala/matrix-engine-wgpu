@@ -34,11 +34,11 @@ class Character extends _hero.Hero {
   heroFocusAttackOn = null;
   mouseTarget = null;
   gold = 100;
-  constructor(mysticore, path, name = 'MariaSword', archetypes = ["Warrior", "Mage"]) {
+  constructor(forestOfHollowBlood, path, name = 'MariaSword', archetypes = ["Warrior", "Mage"]) {
     super(name, archetypes);
     // console.info(`%cLOADING hero name : ${name}`, LOG_MATRIX)
     this.name = name;
-    this.core = mysticore;
+    this.core = forestOfHollowBlood;
     this.heroe_bodies = [];
     this.loadfriendlyCreeps();
     this.loadLocalHero(path);
@@ -2265,8 +2265,8 @@ class MEMapLoader {
       }
     });
   }
-  constructor(mysticore, navMapPath) {
-    this.core = mysticore;
+  constructor(forestOfHollowBlood, navMapPath) {
+    this.core = forestOfHollowBlood;
     this.loadNavMesh(navMapPath).then(e => {
       console.log(`%cnavMap loaded.${e}`, _utils.LOG_FUNNY_SMALL);
       this.core.RPG.nav = e;
@@ -2491,7 +2491,7 @@ if (!_utils.LS.has('player')) {
   // alert('No no');
   location.assign('google.com');
 }
-let mysticore = new _world.default({
+let forestOfHollowBlood = new _world.default({
   useSingleRenderPass: true,
   canvasSize: 'fullscreen',
   mainCameraParams: {
@@ -2509,15 +2509,15 @@ let mysticore = new _world.default({
     username: "guest"
   };
   // Audios
-  mysticore.matrixSounds.createAudio('music', 'res/audios/rpg/music.mp3', 1);
-  mysticore.matrixSounds.createAudio('win1', 'res/audios/rpg/feel.mp3', 2);
+  forestOfHollowBlood.matrixSounds.createAudio('music', 'res/audios/rpg/music.mp3', 1);
+  forestOfHollowBlood.matrixSounds.createAudio('win1', 'res/audios/rpg/feel.mp3', 2);
 
   // test
-  mysticore.net = new _net.MatrixStream({
+  forestOfHollowBlood.net = new _net.MatrixStream({
     active: true,
     domain: 'maximumroulette.com',
     port: 2020,
-    sessionName: 'mysticore-free-for-all',
+    sessionName: 'forestOfHollowBlood-free-for-all',
     resolution: '160x240'
   });
   addEventListener('AmmoReady', async () => {
@@ -2544,20 +2544,20 @@ let mysticore = new _world.default({
     player.data = _utils.LS.get('player');
     addEventListener('local-hero-bodies-ready', () => {
       app.cameras.RPG.position[1] = 130;
-      app.cameras.RPG.followMe = mysticore.localHero.heroe_bodies[0].position;
+      app.cameras.RPG.followMe = forestOfHollowBlood.localHero.heroe_bodies[0].position;
     });
-    mysticore.RPG = new _controller.Controller(mysticore);
+    forestOfHollowBlood.RPG = new _controller.Controller(forestOfHollowBlood);
     app.cameras.RPG.movementSpeed = 100;
-    mysticore.mapLoader = new _mapLoader.MEMapLoader(mysticore, "./res/meshes/nav-mesh/navmesh.json");
-    mysticore.localHero = new _characterBase.Character(mysticore, player.data.path, player.data.hero, _hero.HERO_PROFILES.MariaSword.baseArchetypes);
-    mysticore.HUD = new _hud.HUD(mysticore.localHero);
-    mysticore.enemies = new _enemiesManager.EnemiesManager(mysticore);
-    mysticore.collisionSystem = new _collisionSubSystem.CollisionSystem(mysticore);
+    forestOfHollowBlood.mapLoader = new _mapLoader.MEMapLoader(forestOfHollowBlood, "./res/meshes/nav-mesh/navmesh.json");
+    forestOfHollowBlood.localHero = new _characterBase.Character(forestOfHollowBlood, player.data.path, player.data.hero, _hero.HERO_PROFILES.MariaSword.baseArchetypes);
+    forestOfHollowBlood.HUD = new _hud.HUD(forestOfHollowBlood.localHero);
+    forestOfHollowBlood.enemies = new _enemiesManager.EnemiesManager(forestOfHollowBlood);
+    forestOfHollowBlood.collisionSystem = new _collisionSubSystem.CollisionSystem(forestOfHollowBlood);
     app.matrixSounds.play('music');
   });
-  mysticore.addLight();
+  forestOfHollowBlood.addLight();
 });
-window.app = mysticore;
+window.app = forestOfHollowBlood;
 
 },{"../../../src/engine/collision-sub-system.js":29,"../../../src/engine/networking/matrix-stream.js":50,"../../../src/engine/networking/net.js":51,"../../../src/engine/utils.js":53,"../../../src/world.js":76,"./character-base.js":1,"./controller.js":2,"./enemies-manager.js":4,"./hero.js":6,"./hud.js":7,"./map-loader.js":8}],10:[function(require,module,exports){
 "use strict";
@@ -29922,7 +29922,7 @@ class MatrixStream {
       // this.connection = e.detail.connection; // not same for data !!
       this.session.on(`signal:${_matrixStream.netConfig.sessionName}`, e => {
         console.log("SIGBAL SYS RECEIVE=>", e);
-        if (this.connection.connectionId == e.from.connectionId) {
+        if (this.session.connection.connectionId == e.from.connectionId) {
           // avoid - option
           dispatchEvent(new CustomEvent('self-msg', {
             detail: e
@@ -29934,7 +29934,7 @@ class MatrixStream {
       this.session.on(`signal:${_matrixStream.netConfig.sessionName}-data`, e => {
         // console.log("SIGBAL DATA RECEIVE=>", e);
         console.log("SIGBAL DATA RECEIVE LOW LEVEL TEST OWN MESG =>", e);
-        if (this.connection.connectionId == e.from.connectionId) {
+        if (this.session.connection.connectionId == e.from.connectionId) {
           dispatchEvent(new CustomEvent('self-msg-data', {
             detail: e
           }));

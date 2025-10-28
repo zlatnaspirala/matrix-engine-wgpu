@@ -26,7 +26,7 @@ if(!LS.has('player')) {
   location.assign('google.com');
 }
 
-let mysticore = new MatrixEngineWGPU({
+let forestOfHollowBlood = new MatrixEngineWGPU({
   useSingleRenderPass: true,
   canvasSize: 'fullscreen',
   mainCameraParams: {
@@ -40,15 +40,15 @@ let mysticore = new MatrixEngineWGPU({
     username: "guest"
   };
   // Audios
-  mysticore.matrixSounds.createAudio('music', 'res/audios/rpg/music.mp3', 1)
-  mysticore.matrixSounds.createAudio('win1', 'res/audios/rpg/feel.mp3', 2);
+  forestOfHollowBlood.matrixSounds.createAudio('music', 'res/audios/rpg/music.mp3', 1)
+  forestOfHollowBlood.matrixSounds.createAudio('win1', 'res/audios/rpg/feel.mp3', 2);
 
   // test
-  mysticore.net = new MatrixStream({
+  forestOfHollowBlood.net = new MatrixStream({
     active: true,
     domain: 'maximumroulette.com',
     port: 2020,
-    sessionName: 'mysticore-free-for-all',
+    sessionName: 'forestOfHollowBlood-free-for-all',
     resolution: '160x240'
   });
 
@@ -82,26 +82,26 @@ let mysticore = new MatrixEngineWGPU({
 
     addEventListener('local-hero-bodies-ready', () => {
       app.cameras.RPG.position[1] = 130;
-      app.cameras.RPG.followMe = mysticore.localHero.heroe_bodies[0].position;
+      app.cameras.RPG.followMe = forestOfHollowBlood.localHero.heroe_bodies[0].position;
     })
-    mysticore.RPG = new Controller(mysticore);
+    forestOfHollowBlood.RPG = new Controller(forestOfHollowBlood);
     app.cameras.RPG.movementSpeed = 100;
 
-    mysticore.mapLoader = new MEMapLoader(mysticore, "./res/meshes/nav-mesh/navmesh.json");
+    forestOfHollowBlood.mapLoader = new MEMapLoader(forestOfHollowBlood, "./res/meshes/nav-mesh/navmesh.json");
 
-    mysticore.localHero = new Character(
-      mysticore,
+    forestOfHollowBlood.localHero = new Character(
+      forestOfHollowBlood,
       player.data.path,
       player.data.hero, HERO_PROFILES.MariaSword.baseArchetypes);
 
-    mysticore.HUD = new HUD(mysticore.localHero);
+    forestOfHollowBlood.HUD = new HUD(forestOfHollowBlood.localHero);
 
-    mysticore.enemies = new EnemiesManager(mysticore);
+    forestOfHollowBlood.enemies = new EnemiesManager(forestOfHollowBlood);
 
-    mysticore.collisionSystem = new CollisionSystem(mysticore);
+    forestOfHollowBlood.collisionSystem = new CollisionSystem(forestOfHollowBlood);
 
     app.matrixSounds.play('music');
   })
-  mysticore.addLight();
+  forestOfHollowBlood.addLight();
 })
-window.app = mysticore;
+window.app = forestOfHollowBlood;

@@ -550,7 +550,7 @@ function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e
  * matching/waiting list players or get status of public channel
  * (game-play channel).
  **/
-let mysticoreStartSceen = new _world.default({
+let forestOfHollowBloodStartSceen = new _world.default({
   useSingleRenderPass: true,
   canvasSize: 'fullscreen',
   mainCameraParams: {
@@ -563,27 +563,37 @@ let mysticoreStartSceen = new _world.default({
     g: 0.122,
     a: 1
   }
-}, mysticoreStartSceen => {
-  mysticoreStartSceen.heroByBody = [];
-  mysticoreStartSceen.selectedHero = 0;
-  mysticoreStartSceen.lock = false;
+}, forestOfHollowBloodStartSceen => {
+  forestOfHollowBloodStartSceen.heroByBody = [];
+  forestOfHollowBloodStartSceen.selectedHero = 0;
+  forestOfHollowBloodStartSceen.lock = false;
 
   // Audios
-  mysticoreStartSceen.matrixSounds.createAudio('music', 'res/audios/rpg/wizard-rider.mp3', 1);
-  mysticoreStartSceen.matrixSounds.createAudio('win1', 'res/audios/rpg/feel.mp3', 2);
+  forestOfHollowBloodStartSceen.matrixSounds.createAudio('music', 'res/audios/rpg/wizard-rider.mp3', 1);
+  forestOfHollowBloodStartSceen.matrixSounds.createAudio('win1', 'res/audios/rpg/feel.mp3', 2);
   let heros = null;
 
   // Networking
-  mysticoreStartSceen.net = new _net.MatrixStream({
+  forestOfHollowBloodStartSceen.net = new _net.MatrixStream({
     active: true,
     domain: 'maximumroulette.com',
     port: 2020,
-    sessionName: 'mysticore-free-for-all-start',
+    sessionName: 'forestOfHollowBlood-free-for-all-start',
     resolution: '160x240',
     isDataOnly: true
   });
-
-  // const events = new EventSource('/mysticore/events');
+  function handleHeroImage(selectHeroIndex) {
+    let name;
+    if (selectHeroIndex == 0) {
+      name = 'mariasword';
+    } else if (selectHeroIndex == 1) {
+      name = 'slayzer';
+    } else if (selectHeroIndex == 2) {
+      name = 'slayzer';
+    }
+    return name;
+  }
+  // const events = new EventSource('/forestOfHollowBlood/events');
   // events.onmessage = (event) => {
   //   console.log('Server event:', JSON.parse(event.data))
   // };
@@ -601,8 +611,8 @@ let mysticoreStartSceen = new _world.default({
       (0, _utils.byId)("onlineUsers").innerHTML = `GamePlay:${info.connections.numberOfElements}`;
     }
   });
-  mysticoreStartSceen.MINIMUM_PLAYERS = 4;
-  mysticoreStartSceen.setWaitingList = () => {
+  forestOfHollowBloodStartSceen.MINIMUM_PLAYERS = 4;
+  forestOfHollowBloodStartSceen.setWaitingList = () => {
     // access net doms who comes with broadcaster2.html
     const waitingForOthersDOM = document.createElement("div");
     waitingForOthersDOM.id = "waitingForOthersDOM";
@@ -640,18 +650,18 @@ let mysticoreStartSceen = new _world.default({
       boxSizing: "border-box"
     });
     (0, _utils.byId)('netHeader').appendChild(onlineUsers);
-    app.net.fetchInfo('mysticore-free-for-all');
+    app.net.fetchInfo('forestOfHollowBlood-free-for-all');
   };
   if (document.querySelector('.form-group')) document.querySelector('.form-group').style.display = 'none';
   // keep simple all networking code on top level
   // all job will be done with no account for now.
   addEventListener('net-ready', () => {
     document.querySelector('.form-group').style.display = 'none';
-    (0, _utils.byId)("caller-title").innerHTML = `MYSTiCORE`;
+    (0, _utils.byId)("caller-title").innerHTML = `forestOfHollowBlood`;
     (0, _utils.byId)("sessionName").disabled = true;
-    mysticoreStartSceen.setWaitingList();
+    forestOfHollowBloodStartSceen.setWaitingList();
     // check game-play channel
-    app.net.fetchInfo('mysticore-free-for-all');
+    app.net.fetchInfo('forestOfHollowBlood-free-for-all');
   });
   addEventListener('connectionDestroyed', e => {
     if ((0, _utils.byId)(e.detail.connectionId)) {
@@ -666,7 +676,7 @@ let mysticoreStartSceen = new _world.default({
     (0, _utils.byId)('waitingForOthersDOM').appendChild(newPlayer);
     let testParty = document.querySelectorAll('[id*="waiting-"]');
     console.info('Test number of players:', testParty);
-    if (testParty.length >= mysticoreStartSceen.MINIMUM_PLAYERS) {
+    if (testParty.length >= forestOfHollowBloodStartSceen.MINIMUM_PLAYERS) {
       _utils.LS.set('player', {
         hero: heros[app.selectedHero].name,
         path: heros[app.selectedHero].path
@@ -675,7 +685,21 @@ let mysticoreStartSceen = new _world.default({
     }
   });
   addEventListener('only-data-receive', e => {
-    console.log('<data-receive>', e);
+    let t = JSON.parse(e.detail.data);
+    if (t) {
+      console.log(`<data-receive From ${e.detail.from} data:${t.selectHeroIndex}`);
+      let name = handleHeroImage(t.selectHeroIndex);
+      if ((0, _utils.byId)(`waiting-img-${e.detail.from.connectionId}`)) {
+        (0, _utils.byId)(`waiting-img-${e.detail.from.connectionId}`).src = `./res/textures/rpg/hero-image/${name.toLowerCase()}.png`;
+      } else {
+        let heroImage = document.createElement('img');
+        heroImage.id = `waiting-img-${e.detail.from.connectionId}`;
+        heroImage.width = '64';
+        heroImage.height = '64';
+        heroImage.src = `./res/textures/rpg/hero-image/${name.toLowerCase()}.png`;
+        (0, _utils.byId)(`waiting-${e.detail.from.connectionId}`).appendChild(heroImage);
+      }
+    }
   });
   addEventListener('AmmoReady', async () => {
     app.matrixSounds.play('music');
@@ -683,25 +707,25 @@ let mysticoreStartSceen = new _world.default({
       type: "Warrior",
       name: 'MariaSword',
       path: "res/meshes/glb/woman1.glb",
-      desc: mysticoreStartSceen.label.get.mariasword
+      desc: forestOfHollowBloodStartSceen.label.get.mariasword
     }, {
       type: "Warrior",
       name: 'Slayzer',
       path: "res/meshes/glb/monster.glb",
-      desc: mysticoreStartSceen.label.get.slayzer
+      desc: forestOfHollowBloodStartSceen.label.get.slayzer
     }, {
       type: "Warrior",
       name: 'Steelborn',
       path: "res/meshes/glb/bot.glb",
-      desc: mysticoreStartSceen.label.get.steelborn
+      desc: forestOfHollowBloodStartSceen.label.get.steelborn
     }];
-    mysticoreStartSceen.heros = heros;
+    forestOfHollowBloodStartSceen.heros = heros;
 
     // helper
     async function loadHeros() {
       for (var x = 0; x < heros.length; x++) {
         var glbFile01 = await fetch(heros[x].path).then(res => res.arrayBuffer().then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, app.device)));
-        mysticoreStartSceen.addGlbObjInctance({
+        forestOfHollowBloodStartSceen.addGlbObjInctance({
           material: {
             type: 'standard',
             useTextureFromGlb: true
@@ -730,7 +754,7 @@ let mysticoreStartSceen = new _world.default({
         }, null, glbFile01);
       }
       setTimeout(() => {
-        mysticoreStartSceen.cameras.WASD.position = [0, 14, 52];
+        forestOfHollowBloodStartSceen.cameras.WASD.position = [0, 14, 52];
         app.cameras.WASD.pitch = -0.13;
         app.cameras.WASD.yaw = 0;
         app.mainRenderBundle.forEach(sceneObj => {
@@ -759,7 +783,7 @@ let mysticoreStartSceen = new _world.default({
     loadHeros();
     createHUDMEnu();
   });
-  mysticoreStartSceen.addLight();
+  forestOfHollowBloodStartSceen.addLight();
   function createHUDMEnu() {
     document.body.style.cursor = "url('./res/icons/default.png') 0 0, auto";
     (0, _utils.byId)('canvas1').style.pointerEvents = 'none';
@@ -793,9 +817,7 @@ let mysticoreStartSceen = new _world.default({
       // color: '#eaff00',
       // background: '#aca8a8',
       height: "40px",
-      fontSize: '16px',
-      borderRadius: '120px',
-      cursor: 'pointer'
+      fontSize: '16px'
     });
     nextBtn.classList.add('buttonMatrix');
     nextBtn.innerHTML = `
@@ -812,10 +834,24 @@ let mysticoreStartSceen = new _world.default({
       }
       app.lock = true;
       app.selectedHero++;
-      // ADD
-      if (app.net.session) if (app.net.session.connection != null) app.net.sendOnlyData({
-        selectHeroIndex: app.selectedHero
-      });
+      console.log('app.selectedHero::: ', app.selectedHero);
+      // Fix on remote 
+      if (app.net.session) {
+        if (app.net.session.connection != null) app.net.sendOnlyData({
+          selectHeroIndex: app.selectedHero
+        });
+        // fix for local
+        if ((0, _utils.byId)(`waiting-img-${app.net.session.connection.connectionId}`)) {
+          (0, _utils.byId)(`waiting-img-${app.net.session.connection.connectionId}`).src = `./res/textures/rpg/hero-image/${handleHeroImage(app.selectedHero)}.png`;
+        } else {
+          let heroImage = document.createElement('img');
+          heroImage.id = `waiting-img-${app.net.session.connection.connectionId}`;
+          heroImage.width = '64';
+          heroImage.height = '64';
+          heroImage.src = `./res/textures/rpg/hero-image/${handleHeroImage(app.selectedHero)}.png`;
+          (0, _utils.byId)(`waiting-${app.net.session.connection.connectionId}`).appendChild(heroImage);
+        }
+      }
       app.heroByBody.forEach((sceneObj, indexRoot) => {
         sceneObj.forEach(heroBodie => {
           heroBodie.position.translateByX(-50 * app.selectedHero + indexRoot * 50);
@@ -855,18 +891,13 @@ let mysticoreStartSceen = new _world.default({
     desc.textContent = "HERO INFO";
     const previusBtn = document.createElement("button");
     Object.assign(previusBtn.style, {
-      // position: "absolute",
       width: "80px",
       textAlign: "center",
       color: "white",
       fontWeight: "bold",
       textShadow: "0 0 2px black",
-      // color: '#eaff00',
-      // background: '#aca8a8',
       height: "40px",
-      fontSize: '16px',
-      borderRadius: '120px',
-      cursor: 'pointer'
+      fontSize: '16px'
     });
     previusBtn.classList.add('buttonMatrix');
     previusBtn.innerHTML = `
@@ -877,16 +908,29 @@ let mysticoreStartSceen = new _world.default({
       </div>
     `;
     previusBtn.addEventListener('click', () => {
-      console.log('TEST previusBtn mysticoreStartSceen.selectedHero', app.selectedHero);
+      console.log('TEST previusBtn forestOfHollowBloodStartSceen.selectedHero', app.selectedHero);
       if (app.selectedHero < 1 || app.lock == true) {
         console.log('BLOCKED ', app.selectedHero);
         return;
       }
       app.lock = true;
       app.selectedHero--;
-      if (app.net.session) if (app.net.session.connection != null) app.net.sendOnlyData({
-        selectHeroIndex: app.selectedHero
-      });
+      if (app.net.session) {
+        if (app.net.session.connection != null) app.net.sendOnlyData({
+          selectHeroIndex: app.selectedHero
+        });
+        // fix for local
+        if ((0, _utils.byId)(`waiting-img-${app.net.session.connection.connectionId}`)) {
+          (0, _utils.byId)(`waiting-img-${app.net.session.connection.connectionId}`).src = `./res/textures/rpg/hero-image/${handleHeroImage(app.selectedHero)}.png`;
+        } else {
+          let heroImage = document.createElement('img');
+          heroImage.id = `waiting-img-${app.net.session.connection.connectionId}`;
+          heroImage.width = '64';
+          heroImage.height = '64';
+          heroImage.src = `./res/textures/rpg/hero-image/${handleHeroImage(app.selectedHero)}.png`;
+          (0, _utils.byId)(`waiting-${app.net.session.connection.connectionId}`).appendChild(heroImage);
+        }
+      }
       app.heroByBody.forEach((sceneObj, indexRoot) => {
         sceneObj.forEach(heroBodie => {
           heroBodie.position.translateByX(-app.selectedHero * 50 + indexRoot * 50);
@@ -920,9 +964,10 @@ let mysticoreStartSceen = new _world.default({
     const startBtn = document.createElement("button");
     Object.assign(startBtn.style, {
       position: "absolute",
-      bottom: '70px',
+      bottom: '20px',
       right: '120px',
-      width: "200px",
+      width: "250px",
+      height: "60px",
       textAlign: "center",
       color: "white",
       fontWeight: "bold",
@@ -930,7 +975,7 @@ let mysticoreStartSceen = new _world.default({
       color: '#ffffffff',
       background: '#000000ff',
       fontSize: '16px',
-      borderRadius: '120px'
+      cursor: 'url(./res/icons/default.png) 0 0, auto'
     });
     startBtn.classList.add('buttonMatrix');
     startBtn.innerHTML = `
@@ -962,7 +1007,7 @@ let mysticoreStartSceen = new _world.default({
     updateDesc();
   }
 });
-window.app = mysticoreStartSceen;
+window.app = forestOfHollowBloodStartSceen;
 
 },{"../../../src/engine/loaders/webgpu-gltf.js":36,"../../../src/engine/networking/net.js":41,"../../../src/engine/utils.js":42,"../../../src/world.js":65,"./hero.js":1}],3:[function(require,module,exports){
 "use strict";
@@ -27764,7 +27809,7 @@ class MatrixStream {
       this.connection = e.detail.connection;
       this.session.on(`signal:${_matrixStream.netConfig.sessionName}`, e => {
         console.log("SIGBAL SYS RECEIVE=>", e);
-        if (this.connection.connectionId == e.from.connectionId) {
+        if (this.session.connection.connectionId == e.from.connectionId) {
           // avoid - option
           dispatchEvent(new CustomEvent('self-msg', {
             detail: e
@@ -27776,7 +27821,7 @@ class MatrixStream {
       this.session.on(`signal:${_matrixStream.netConfig.sessionName}-data`, e => {
         // console.log("SIGBAL DATA RECEIVE=>", e);
         console.log("SIGBAL DATA RECEIVE LOW LEVEL TEST OWN MESG =>", e);
-        if (this.connection.connectionId == e.from.connectionId) {
+        if (this.session.connection.connectionId == e.from.connectionId) {
           dispatchEvent(new CustomEvent('self-msg-data', {
             detail: e
           }));

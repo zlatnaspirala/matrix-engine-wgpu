@@ -86,7 +86,7 @@ export class MatrixStream {
       this.connection = e.detail.connection;
       this.session.on(`signal:${netConfig.sessionName}`, (e) => {
         console.log("SIGBAL SYS RECEIVE=>", e);
-        if(this.connection.connectionId == e.from.connectionId) {
+        if(this.session.connection.connectionId == e.from.connectionId) {
           // avoid - option
           dispatchEvent(new CustomEvent('self-msg', {detail: e}));
         } else {
@@ -96,7 +96,7 @@ export class MatrixStream {
       this.session.on(`signal:${netConfig.sessionName}-data`, (e) => {
         // console.log("SIGBAL DATA RECEIVE=>", e);
         console.log("SIGBAL DATA RECEIVE LOW LEVEL TEST OWN MESG =>", e);
-        if(this.connection.connectionId == e.from.connectionId) {
+        if(this.session.connection.connectionId == e.from.connectionId) {
           dispatchEvent(new CustomEvent('self-msg-data', {detail: e}));
         } else {
           dispatchEvent(new CustomEvent('only-data-receive', {detail: e}))
