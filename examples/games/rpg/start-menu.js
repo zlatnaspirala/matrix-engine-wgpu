@@ -9,6 +9,14 @@ import {HERO_ARCHETYPES} from "./hero.js";
  * “Character and animation assets from Mixamo,
  * used under Adobe’s royalty‑free license. 
  * Redistribution of raw assets is not permitted.”
+ * 
+ * @Note 
+ * All @zlatnaspirala software use networking based
+ * on openvidu/kurento media server(webRTC).
+ * Node.js used for middleware.
+ * Server Events API also used for helping in creation of
+ * matching/waiting list players or get status of public channel
+ * (game-play channel).
  **/
 let mysticoreStartSceen = new MatrixEngineWGPU({
   useSingleRenderPass: true,
@@ -24,12 +32,12 @@ let mysticoreStartSceen = new MatrixEngineWGPU({
   mysticoreStartSceen.selectedHero = 0;
   mysticoreStartSceen.lock = false;
 
+  // Audios
   mysticoreStartSceen.matrixSounds.createAudio('music', 'res/audios/rpg/wizard-rider.mp3', 1)
   mysticoreStartSceen.matrixSounds.createAudio('win1', 'res/audios/rpg/feel.mp3', 2);
-
   let heros = null;
 
-  // test
+  // Networking
   mysticoreStartSceen.net = new MatrixStream({
     active: true,
     domain: 'maximumroulette.com',
@@ -39,7 +47,26 @@ let mysticoreStartSceen = new MatrixEngineWGPU({
     isDataOnly: true
   });
 
-  mysticoreStartSceen.MINIMUM_PLAYERS = 2;
+  // const events = new EventSource('/mysticore/events');
+  // events.onmessage = (event) => {
+  //   console.log('Server event:', JSON.parse(event.data))
+  // };
+
+  addEventListener('check-gameplay-channel', (e) => {
+    let info = e.detail;
+    console.log('check-gameplay-channel ', info)
+    if(info.status) {
+      console.log('check-gameplay-channel ', info.status)
+      console.log('check-gameplay-channel [url] ', info.url)
+      byId("onlineUsers").innerHTML = `GamePlay:Free`;
+    } else {
+      let info = JSON.parse(e.detail);
+      console.log('check-gameplay-channel ', info.connections.numberOfElements)
+      byId("onlineUsers").innerHTML = `GamePlay:${info.connections.numberOfElements}`;
+    }
+  })
+
+  mysticoreStartSceen.MINIMUM_PLAYERS = 4;
 
   mysticoreStartSceen.setWaitingList = () => {
     // access net doms who comes with broadcaster2.html
@@ -61,14 +88,40 @@ let mysticoreStartSceen = new MatrixEngineWGPU({
       boxSizing: "border-box"
     });
     byId('session-header').appendChild(waitingForOthersDOM);
+
+
+    const onlineUsers = document.createElement("div");
+    onlineUsers.id = "onlineUsers";
+    Object.assign(onlineUsers.style, {
+      flexFlow: 'wrap',
+      width: "100%",
+      height: "35%",
+      backgroundColor: "rgba(60, 60, 60, 1)",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-around",
+      color: "white",
+      fontFamily: "'Orbitron', sans-serif",
+      zIndex: "1",
+      fontSize: '20px',
+      padding: "10px",
+      boxSizing: "border-box"
+    });
+    byId('netHeader').appendChild(onlineUsers);
+    app.net.fetchInfo('mysticore-free-for-all');
   }
 
+  if(document.querySelector('.form-group')) document.querySelector('.form-group').style.display = 'none';
   // keep simple all networking code on top level
   // all job will be done with no account for now.
-
   addEventListener('net-ready', () => {
-    console.log('setWaitingList');
+    document.querySelector('.form-group').style.display = 'none';
+    byId("caller-title").innerHTML = `MYSTiCORE`;
+    byId("sessionName").disabled = true;
+
     mysticoreStartSceen.setWaitingList();
+    // check game-play channel
+    app.net.fetchInfo('mysticore-free-for-all');
   });
 
   addEventListener('connectionDestroyed', (e) => {
@@ -220,6 +273,10 @@ let mysticoreStartSceen = new MatrixEngineWGPU({
       }
       app.lock = true;
       app.selectedHero++;
+      // ADD
+      if (app.net.session.connection != null)app.net.sendOnlyData({
+        selectHeroIndex: app.selectedHero
+      })
 
       app.heroByBody.forEach((sceneObj, indexRoot) => {
         sceneObj.forEach((heroBodie) => {
@@ -287,6 +344,12 @@ let mysticoreStartSceen = new MatrixEngineWGPU({
       }
       app.lock = true;
       app.selectedHero--;
+
+
+      if (app.net.session.connection != null) app.net.sendOnlyData({
+        selectHeroIndex: app.selectedHero
+      })
+
       app.heroByBody.forEach((sceneObj, indexRoot) => {
         sceneObj.forEach((heroBodie) => {
           heroBodie.position.translateByX(-app.selectedHero * 50 + indexRoot * 50)

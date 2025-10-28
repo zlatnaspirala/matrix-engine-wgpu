@@ -1,5 +1,5 @@
 import {scriptManager, htmlHeader} from "../utils";
-import {BIGLOG, byId, closeSession, joinSession, leaveSession, netConfig, REDLOG, removeUser} from "./matrix-stream";
+import {BIGLOG, byId, closeSession, fetchInfo, joinSession, leaveSession, netConfig, REDLOG, removeUser} from "./matrix-stream";
 
 /**
  * Main instance for matrix-stream
@@ -48,6 +48,7 @@ export class MatrixStream {
   }
 
   attachEvents() {
+    this.fetchInfo = fetchInfo;
     // just for data only test 
     this.sendOnlyData = (netArg) => {
       this.session.signal({

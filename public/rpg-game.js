@@ -2474,6 +2474,7 @@ var _enemiesManager = require("./enemies-manager.js");
 var _collisionSubSystem = require("../../../src/engine/collision-sub-system.js");
 var _utils = require("../../../src/engine/utils.js");
 var _net = require("../../../src/engine/networking/net.js");
+var _matrixStream = require("../../../src/engine/networking/matrix-stream.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 /**
  * @description
@@ -2526,7 +2527,7 @@ let mysticore = new _world.default({
     });
     addEventListener('connectionDestroyed', e => {
       console.log('connectionDestroyed , bad bad...');
-      if (byId(e.detail.connectionId)) {}
+      if ((0, _matrixStream.byId)(e.detail.connectionId)) {}
     });
     addEventListener("onConnectionCreated", e => {
       console.log('newconn : created', e.detail);
@@ -2558,7 +2559,7 @@ let mysticore = new _world.default({
 });
 window.app = mysticore;
 
-},{"../../../src/engine/collision-sub-system.js":29,"../../../src/engine/networking/net.js":51,"../../../src/engine/utils.js":53,"../../../src/world.js":76,"./character-base.js":1,"./controller.js":2,"./enemies-manager.js":4,"./hero.js":6,"./hud.js":7,"./map-loader.js":8}],10:[function(require,module,exports){
+},{"../../../src/engine/collision-sub-system.js":29,"../../../src/engine/networking/matrix-stream.js":50,"../../../src/engine/networking/net.js":51,"../../../src/engine/utils.js":53,"../../../src/world.js":76,"./character-base.js":1,"./controller.js":2,"./enemies-manager.js":4,"./hero.js":6,"./hud.js":7,"./map-loader.js":8}],10:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -29918,7 +29919,7 @@ class MatrixStream {
     addEventListener('setupSessionObject', e => {
       console.log("setupSessionObject=>", e.detail);
       this.session = e.detail;
-      this.connection = e.detail.connection;
+      // this.connection = e.detail.connection; // not same for data !!
       this.session.on(`signal:${_matrixStream.netConfig.sessionName}`, e => {
         console.log("SIGBAL SYS RECEIVE=>", e);
         if (this.connection.connectionId == e.from.connectionId) {

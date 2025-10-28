@@ -275,15 +275,16 @@ export function closeSession() {
   );
 }
 
-export function fetchInfo() {
+export function fetchInfo(sessionName) {
   httpRequest('POST',
     'https://' + netConfig.NETWORKING_DOMAIN + ':' + netConfig.NETWORKING_PORT + '/api/fetch-info', {
     sessionName: sessionName
   },
     'Session couldn\'t be fetched',
     res => {
-      console.warn("Session fetched");
-      byId('textarea-http').innerText = JSON.stringify(res, null, "\t");
+      console.info("Session fetched");
+      dispatchEvent(new CustomEvent('check-gameplay-channel', {detail: JSON.stringify(res, null, "\t")}))
+      // byId('textarea-http').innerText = JSON.stringify(res, null, "\t");
     }
   );
 }
@@ -346,7 +347,12 @@ export function httpRequest(method, url, body, errorMsg, callback) {
         }
       } else {
         console.warn(errorMsg + ' (' + http.status + ')');
-        console.warn(http.responseText);
+        if (url.indexOf('fetch-info') != -1) dispatchEvent(new CustomEvent('check-gameplay-channel', {
+          detail: {
+            status: 'free',
+            url: url
+          }
+        }))
         byId('textarea-http').innerText = errorMsg + ": HTTP " + http.status + " (" + http.responseText + ")";
       }
     }

@@ -202,16 +202,6 @@ span {
   border: solid #0c2540 3px;
 }
 
-#matrix-net {
-  position: absolute;
-  display: none;
-  right: 0;
-  height: 100%;
-  width: 40vh;
-  font-family: stormfaze;
-  background-color: crimson;
-}
-
 .timeLine {
   display: flex;
   position: absolute;
@@ -712,11 +702,12 @@ option {
 
 #matrix-net {
 	position: absolute;
+  right: 0;
 	display: none;
 	overflow: hidden;
 	top: 0;
 	height: 100%;
-	width: 60vw;
+	width: 30vw;
 	font-family: stormfaze;
 	background-color: crimson;
 }

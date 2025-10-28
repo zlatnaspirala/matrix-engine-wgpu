@@ -8,6 +8,7 @@ import {EnemiesManager} from "./enemies-manager.js";
 import {CollisionSystem} from "../../../src/engine/collision-sub-system.js";
 import {LS} from "../../../src/engine/utils.js";
 import {MatrixStream} from "../../../src/engine/networking/net.js";
+import {byId} from "../../../src/engine/networking/matrix-stream.js";
 
 /**
  * @description

@@ -541,6 +541,14 @@ function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e
  * “Character and animation assets from Mixamo,
  * used under Adobe’s royalty‑free license. 
  * Redistribution of raw assets is not permitted.”
+ * 
+ * @Note 
+ * All @zlatnaspirala software use networking based
+ * on openvidu/kurento media server(webRTC).
+ * Node.js used for middleware.
+ * Server Events API also used for helping in creation of
+ * matching/waiting list players or get status of public channel
+ * (game-play channel).
  **/
 let mysticoreStartSceen = new _world.default({
   useSingleRenderPass: true,
@@ -559,11 +567,13 @@ let mysticoreStartSceen = new _world.default({
   mysticoreStartSceen.heroByBody = [];
   mysticoreStartSceen.selectedHero = 0;
   mysticoreStartSceen.lock = false;
+
+  // Audios
   mysticoreStartSceen.matrixSounds.createAudio('music', 'res/audios/rpg/wizard-rider.mp3', 1);
   mysticoreStartSceen.matrixSounds.createAudio('win1', 'res/audios/rpg/feel.mp3', 2);
   let heros = null;
 
-  // test
+  // Networking
   mysticoreStartSceen.net = new _net.MatrixStream({
     active: true,
     domain: 'maximumroulette.com',
@@ -572,7 +582,26 @@ let mysticoreStartSceen = new _world.default({
     resolution: '160x240',
     isDataOnly: true
   });
-  mysticoreStartSceen.MINIMUM_PLAYERS = 2;
+
+  // const events = new EventSource('/mysticore/events');
+  // events.onmessage = (event) => {
+  //   console.log('Server event:', JSON.parse(event.data))
+  // };
+
+  addEventListener('check-gameplay-channel', e => {
+    let info = e.detail;
+    console.log('check-gameplay-channel ', info);
+    if (info.status) {
+      console.log('check-gameplay-channel ', info.status);
+      console.log('check-gameplay-channel [url] ', info.url);
+      (0, _utils.byId)("onlineUsers").innerHTML = `GamePlay:Free`;
+    } else {
+      let info = JSON.parse(e.detail);
+      console.log('check-gameplay-channel ', info.connections.numberOfElements);
+      (0, _utils.byId)("onlineUsers").innerHTML = `GamePlay:${info.connections.numberOfElements}`;
+    }
+  });
+  mysticoreStartSceen.MINIMUM_PLAYERS = 4;
   mysticoreStartSceen.setWaitingList = () => {
     // access net doms who comes with broadcaster2.html
     const waitingForOthersDOM = document.createElement("div");
@@ -593,14 +622,36 @@ let mysticoreStartSceen = new _world.default({
       boxSizing: "border-box"
     });
     (0, _utils.byId)('session-header').appendChild(waitingForOthersDOM);
+    const onlineUsers = document.createElement("div");
+    onlineUsers.id = "onlineUsers";
+    Object.assign(onlineUsers.style, {
+      flexFlow: 'wrap',
+      width: "100%",
+      height: "35%",
+      backgroundColor: "rgba(60, 60, 60, 1)",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-around",
+      color: "white",
+      fontFamily: "'Orbitron', sans-serif",
+      zIndex: "1",
+      fontSize: '20px',
+      padding: "10px",
+      boxSizing: "border-box"
+    });
+    (0, _utils.byId)('netHeader').appendChild(onlineUsers);
+    app.net.fetchInfo('mysticore-free-for-all');
   };
-
+  if (document.querySelector('.form-group')) document.querySelector('.form-group').style.display = 'none';
   // keep simple all networking code on top level
   // all job will be done with no account for now.
-
   addEventListener('net-ready', () => {
-    console.log('setWaitingList');
+    document.querySelector('.form-group').style.display = 'none';
+    (0, _utils.byId)("caller-title").innerHTML = `MYSTiCORE`;
+    (0, _utils.byId)("sessionName").disabled = true;
     mysticoreStartSceen.setWaitingList();
+    // check game-play channel
+    app.net.fetchInfo('mysticore-free-for-all');
   });
   addEventListener('connectionDestroyed', e => {
     if ((0, _utils.byId)(e.detail.connectionId)) {
@@ -624,7 +675,11 @@ let mysticoreStartSceen = new _world.default({
     }
   });
   addEventListener('only-data-receive', e => {
-    console.log('<data-receive>', e);
+    console.log('<data-receive from >', e.detail.from);
+
+    console.log('<data-receive>', e.detail.data);
+    let T = JSON.parse(e.detail.data)
+    console.log('<data-receive>', T);
   });
   addEventListener('AmmoReady', async () => {
     app.matrixSounds.play('music');
@@ -754,6 +809,10 @@ let mysticoreStartSceen = new _world.default({
       }
       app.lock = true;
       app.selectedHero++;
+      // ADD
+      if (app.net.session.connection != null) app.net.sendOnlyData({
+        selectHeroIndex: app.selectedHero
+      });
       app.heroByBody.forEach((sceneObj, indexRoot) => {
         sceneObj.forEach(heroBodie => {
           heroBodie.position.translateByX(-50 * app.selectedHero + indexRoot * 50);
@@ -815,6 +874,9 @@ let mysticoreStartSceen = new _world.default({
       }
       app.lock = true;
       app.selectedHero--;
+      if (app.net.session.connection != null) app.net.sendOnlyData({
+        selectHeroIndex: app.selectedHero
+      });
       app.heroByBody.forEach((sceneObj, indexRoot) => {
         sceneObj.forEach(heroBodie => {
           heroBodie.position.translateByX(-app.selectedHero * 50 + indexRoot * 50);
@@ -27369,7 +27431,8 @@ function joinSession(options) {
         byId('session-title').innerText = sessionName;
         byId('join').style.display = 'none';
         byId('session').style.display = 'block';
-        console.log('[ONLY DATA]', session);
+        console.log('setup connection obj.[ONLY DATA]', session);
+        app.net.connection = session.connection;
       }).catch(error => {
         console.warn('Error connecting to the session:', error.code, error.message);
         enableBtn();
@@ -27417,12 +27480,15 @@ function closeSession() {
     console.warn("Session " + sessionName + " has been closed");
   });
 }
-function fetchInfo() {
+function fetchInfo(sessionName) {
   httpRequest('POST', 'https://' + netConfig.NETWORKING_DOMAIN + ':' + netConfig.NETWORKING_PORT + '/api/fetch-info', {
     sessionName: sessionName
   }, 'Session couldn\'t be fetched', res => {
-    console.warn("Session fetched");
-    byId('textarea-http').innerText = JSON.stringify(res, null, "\t");
+    console.info("Session fetched");
+    dispatchEvent(new CustomEvent('check-gameplay-channel', {
+      detail: JSON.stringify(res, null, "\t")
+    }));
+    // byId('textarea-http').innerText = JSON.stringify(res, null, "\t");
   });
 }
 function fetchAll() {
@@ -27464,7 +27530,12 @@ function httpRequest(method, url, body, errorMsg, callback) {
         }
       } else {
         console.warn(errorMsg + ' (' + http.status + ')');
-        console.warn(http.responseText);
+        if (url.indexOf('fetch-info') != -1) dispatchEvent(new CustomEvent('check-gameplay-channel', {
+          detail: {
+            status: 'free',
+            url: url
+          }
+        }));
         byId('textarea-http').innerText = errorMsg + ": HTTP " + http.status + " (" + http.responseText + ")";
       }
     }
@@ -27642,6 +27713,7 @@ class MatrixStream {
     });
   }
   attachEvents() {
+    this.fetchInfo = _matrixStream.fetchInfo;
     // just for data only test 
     this.sendOnlyData = netArg => {
       this.session.signal({
