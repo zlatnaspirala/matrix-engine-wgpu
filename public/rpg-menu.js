@@ -537,18 +537,25 @@ var _world = _interopRequireDefault(require("../../../src/world.js"));
 var _hero = require("./hero.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 /**
+ * @name forestOfHollowBloodStartSceen
  * @Note
  * “Character and animation assets from Mixamo,
  * used under Adobe’s royalty‑free license. 
  * Redistribution of raw assets is not permitted.”
  * 
  * @Note 
+ * This is startup main instance for menu screen adn for the game.
  * All @zlatnaspirala software use networking based
  * on openvidu/kurento media server(webRTC).
  * Node.js used for middleware.
  * Server Events API also used for helping in creation of
  * matching/waiting list players or get status of public channel
  * (game-play channel).
+ * 
+ * @note
+ * Only last non selected hero player will get 
+ * first free hero in selection action next/back.
+ * For now. Next better varian can be timer solution.
  **/
 let forestOfHollowBloodStartSceen = new _world.default({
   useSingleRenderPass: true,
@@ -617,19 +624,65 @@ let forestOfHollowBloodStartSceen = new _world.default({
       selectHeroIndex: app.selectedHero
     });
     // fix for local
-    if ((0, _utils.byId)(`waiting-img-${app.net.session.connection.connectionId}`)) {
-      let heroImage = (0, _utils.byId)(`waiting-img-${app.net.session.connection.connectionId}`);
+    if ((0, _utils.byId)(`waithero-img-${app.net.session.connection.connectionId}`)) {
+      let heroImage = (0, _utils.byId)(`waithero-img-${app.net.session.connection.connectionId}`);
       heroImage.src = `./res/textures/rpg/hero-image/${handleHeroImage(app.selectedHero)}.png`;
       heroImage.setAttribute('data-hero-index', app.selectedHero);
     } else {
       let heroImage = document.createElement('img');
       heroImage.setAttribute('data-hero-index', app.selectedHero);
-      heroImage.id = `waiting-img-${app.net.session.connection.connectionId}`;
+      heroImage.id = `waithero-img-${app.net.session.connection.connectionId}`;
       heroImage.width = '64';
       heroImage.height = '64';
       heroImage.src = `./res/textures/rpg/hero-image/${handleHeroImage(app.selectedHero)}.png`;
       (0, _utils.byId)(`waiting-${app.net.session.connection.connectionId}`).appendChild(heroImage);
     }
+    // Only last non selected hero player will get 
+    // first free hero in selection action next/back.
+    // For now.
+    if (isAllSelected() == true) {
+      gotoGamePlay();
+    }
+  }
+  function isAllSelected() {
+    let sumParty = document.querySelectorAll('[id*="waiting-"]');
+    let testSelection = document.querySelectorAll('[id*="waithero-img-"]');
+    console.info(testSelection, ' testSelection vs Number of players:', sumParty);
+    if (sumParty.length == forestOfHollowBloodStartSceen.MINIMUM_PLAYERS) {
+      // good all are still here
+      if (testSelection.length == forestOfHollowBloodStartSceen.MINIMUM_PLAYERS) {
+        // good all selected hero !PLAY!
+        return true;
+      } else {
+        _utils.mb.error(`No selection hero for all players...`);
+        return false;
+      }
+    } else {
+      _utils.mb.error(`No enough players...`);
+      return false;
+    }
+  }
+  function gotoGamePlay() {
+    // check again !
+    // let sumParty = document.querySelectorAll('[id*="waiting-"]');
+    // let testSelection = document.querySelectorAll('[id*="waithero-img-"]');
+    // console.info(testSelection, ' testSelection vs Number of players:', sumParty);
+    // if(testParty.length == forestOfHollowBloodStartSceen.MINIMUM_PLAYERS) {
+    //   // good all are still here
+    //   if(testSelection.length == forestOfHollowBloodStartSceen.MINIMUM_PLAYERS) {
+    // good all selected hero !PLAY!
+    _utils.LS.set('player', {
+      hero: heros[app.selectedHero].name,
+      path: heros[app.selectedHero].path
+    });
+    location.assign('rpg-game.html');
+    //   } else {
+    //     mb.error(`No selection hero for all players...`)
+    //   }
+    // } else {
+    //   mb.error(`No enough players...`)
+    //   return;
+    // }
   }
   addEventListener('check-gameplay-channel', e => {
     let info = e.detail;
@@ -709,12 +762,19 @@ let forestOfHollowBloodStartSceen = new _world.default({
     (0, _utils.byId)('waitingForOthersDOM').appendChild(newPlayer);
     let testParty = document.querySelectorAll('[id*="waiting-"]');
     console.info('Test number of players:', testParty);
-    if (testParty.length >= forestOfHollowBloodStartSceen.MINIMUM_PLAYERS) {
-      _utils.LS.set('player', {
-        hero: heros[app.selectedHero].name,
-        path: heros[app.selectedHero].path
-      });
-      location.assign('rpg-game.html');
+    if (testParty.length == forestOfHollowBloodStartSceen.MINIMUM_PLAYERS) {
+      // when all choose hero goto play
+      _utils.mb.success(`
+          Consensus is reached. Party${forestOfHollowBloodStartSceen.MINIMUM_PLAYERS}
+          When all player select hero gameplay starts.
+        `);
+      // setTimeout(() => gotoGamePlay(), 10000)
+    } else if (testParty.length < forestOfHollowBloodStartSceen.MINIMUM_PLAYERS) {
+      _utils.mb.success(`Player ${e.detail.connection.connectionId} joined party.Select your hero and wait for other...`);
+    } else if (testParty.length > forestOfHollowBloodStartSceen.MINIMUM_PLAYERS) {
+      if (e.detail.connection.connectionId == app.net.session.connection.connectionId) {
+        _utils.mb.success(`Max players is reached.Please wait for next party...`);
+      }
     }
   });
   addEventListener('only-data-receive', e => {
@@ -722,13 +782,13 @@ let forestOfHollowBloodStartSceen = new _world.default({
     if (t) {
       console.log(`<data-receive From ${e.detail.from} data:${t.selectHeroIndex}`);
       let name = handleHeroImage(t.selectHeroIndex);
-      let heroImage = (0, _utils.byId)(`waiting-img-${e.detail.from.connectionId}`);
+      let heroImage = (0, _utils.byId)(`waithero-img-${e.detail.from.connectionId}`);
       if (heroImage) {
         heroImage.src = `./res/textures/rpg/hero-image/${name.toLowerCase()}.png`;
         heroImage.setAttribute('data-hero-index', t.selectHeroIndex);
       } else {
         let heroImage = document.createElement('img');
-        heroImage.id = `waiting-img-${e.detail.from.connectionId}`;
+        heroImage.id = `waithero-img-${e.detail.from.connectionId}`;
         heroImage.width = '64';
         heroImage.height = '64';
         heroImage.src = `./res/textures/rpg/hero-image/${name.toLowerCase()}.png`;
@@ -753,6 +813,11 @@ let forestOfHollowBloodStartSceen = new _world.default({
       type: "Warrior",
       name: 'Steelborn',
       path: "res/meshes/glb/bot.glb",
+      desc: forestOfHollowBloodStartSceen.label.get.steelborn
+    }, {
+      type: "Warrior",
+      name: 'Warrok',
+      path: "res/meshes/glb/warrok.glb",
       desc: forestOfHollowBloodStartSceen.label.get.steelborn
     }];
     forestOfHollowBloodStartSceen.heros = heros;
@@ -822,6 +887,7 @@ let forestOfHollowBloodStartSceen = new _world.default({
   forestOfHollowBloodStartSceen.addLight();
   function createHUDMEnu() {
     document.body.style.cursor = "url('./res/icons/default.png') 0 0, auto";
+    document.addEventListener("contextmenu", event => event.preventDefault());
     (0, _utils.byId)('canvas1').style.pointerEvents = 'none';
     const hud = document.createElement("div");
     hud.id = "hud-menu";
@@ -850,8 +916,6 @@ let forestOfHollowBloodStartSceen = new _world.default({
       color: "white",
       fontWeight: "bold",
       textShadow: "0 0 2px black",
-      // color: '#eaff00',
-      // background: '#aca8a8',
       height: "40px",
       fontSize: '16px'
     });
@@ -933,16 +997,12 @@ let forestOfHollowBloodStartSceen = new _world.default({
     previusBtn.addEventListener('click', () => {
       console.log('TEST previusBtn forestOfHollowBloodStartSceen.selectedHero', app.selectedHero);
       if (app.selectedHero < 1 || app.lock == true) {
-        console.log('BLOCKED ', app.selectedHero);
+        // console.log('BLOCKED', app.selectedHero)
         return;
       }
       app.lock = true;
       app.selectedHero--;
       if (app.net.session) {
-        // if(app.net.session.connection != null) app.net.sendOnlyData({
-        //   selectHeroIndex: app.selectedHero
-        // });
-        // fix for local
         determinateSelection();
       }
       app.heroByBody.forEach((sceneObj, indexRoot) => {
@@ -970,7 +1030,7 @@ let forestOfHollowBloodStartSceen = new _world.default({
       for (let key in C) {
         (0, _utils.byId)('desc').innerHTML += ` 
          <div style='font-size: 15px;display: inline-flex;justify-content:space-between'>
-           <span style="color:#00e2ff"> ${key} </span> : <span style="color:red">${C[key]} </span>
+           <span style="color:#00e2ff"> ${key} </span> : <span style="color:#02e2ff">${C[key]} </span>
           </div>
         `;
       }
@@ -981,7 +1041,7 @@ let forestOfHollowBloodStartSceen = new _world.default({
       bottom: '20px',
       right: '120px',
       width: "250px",
-      height: "60px",
+      height: "54px",
       textAlign: "center",
       color: "white",
       fontWeight: "bold",
@@ -1008,7 +1068,7 @@ let forestOfHollowBloodStartSceen = new _world.default({
         e.target.disabled = true;
         return;
       } else {
-        console.log('app.net.connection is not null...', app.selectedHero);
+        console.log('nothing...', app.selectedHero);
         return;
       }
     });
