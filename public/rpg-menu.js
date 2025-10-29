@@ -818,7 +818,12 @@ let forestOfHollowBloodStartSceen = new _world.default({
       type: "Warrior",
       name: 'Warrok',
       path: "res/meshes/glb/warrok.glb",
-      desc: forestOfHollowBloodStartSceen.label.get.steelborn
+      desc: forestOfHollowBloodStartSceen.label.get.warrok
+    }, {
+      type: "Warrior",
+      name: 'Skeletonz',
+      path: "res/meshes/glb/skeletonz.glb",
+      desc: forestOfHollowBloodStartSceen.label.get.skeletonz
     }];
     forestOfHollowBloodStartSceen.heros = heros;
 
@@ -871,9 +876,9 @@ let forestOfHollowBloodStartSceen = new _world.default({
           hero0[0].effects.flameEmitter.instanceTargets.forEach((p, i, array) => {
             array[i].color = [0, 0, 0, 0.7];
           });
-          if (x == 2) {
+          if (x == 2 || x == 3) {
             hero0.forEach((p, i, array) => {
-              array[i].globalAmbient = [6, 6, 6];
+              array[i].globalAmbient = [16, 16, 16];
             });
           }
         }
@@ -892,7 +897,7 @@ let forestOfHollowBloodStartSceen = new _world.default({
     const hud = document.createElement("div");
     hud.id = "hud-menu";
     Object.assign(hud.style, {
-      position: "absolute",
+      position: "fixed",
       bottom: "0",
       left: "0",
       width: "100%",
@@ -1037,7 +1042,7 @@ let forestOfHollowBloodStartSceen = new _world.default({
     }
     const startBtn = document.createElement("button");
     Object.assign(startBtn.style, {
-      position: "absolute",
+      position: "fixed",
       bottom: '20px',
       right: '120px',
       width: "250px",
@@ -1072,6 +1077,57 @@ let forestOfHollowBloodStartSceen = new _world.default({
         return;
       }
     });
+
+    //about
+    forestOfHollowBloodStartSceen.showAbout = () => {
+      (0, _utils.byId)('helpBox').style.display = 'block';
+      (0, _utils.typeText)('helpBox', app.label.get.aboutRPG, 10);
+    };
+    var helpBox = document.createElement('div');
+    helpBox.id = 'helpBox';
+    helpBox.style.position = 'fixed';
+    helpBox.style.right = '20%';
+    helpBox.style.display = 'none';
+    helpBox.style.zIndex = '2';
+    helpBox.style.top = '15%';
+    helpBox.style.width = '60%';
+    helpBox.style.height = '50%';
+    helpBox.style.fontSize = '100%';
+    helpBox.classList.add('btn');
+    helpBox.addEventListener('click', () => {
+      (0, _utils.byId)('helpBox').style.display = 'none';
+    });
+    document.body.appendChild(helpBox);
+    const aboutBtn = document.createElement("button");
+    Object.assign(aboutBtn.style, {
+      position: "fixed",
+      bottom: '20px',
+      left: '120px',
+      width: "150px",
+      height: "54px",
+      textAlign: "center",
+      color: "white",
+      fontWeight: "bold",
+      textShadow: "0 0 2px black",
+      color: '#ffffffff',
+      background: '#000000ff',
+      fontSize: '16px',
+      cursor: 'url(./res/icons/default.png) 0 0, auto',
+      pointerEvents: 'auto'
+    });
+    aboutBtn.classList.add('buttonMatrix');
+    aboutBtn.innerHTML = `
+      <div class="button-outer">
+        <div class="button-inner">
+          <span data-label='aboutword'>ABOUT</span>
+        </div>
+      </div>
+    `;
+    aboutBtn.addEventListener('click', e => app.showAbout());
+    hud.appendChild(aboutBtn);
+    console.log('help dom, ', (0, _utils.byId)('helpBox'));
+
+    //
     hud.appendChild(previusBtn);
     hud.appendChild(desc);
     hud.appendChild(nextBtn);
