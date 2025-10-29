@@ -65,10 +65,11 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
     // });
     let isUsed = false;
     document.querySelectorAll('[data-hero-index]').forEach((elem) => {
-      const index = elem.getAttribute('data-hero-index');
-      console.log('Hero element:', elem, 'Index:', index);
-      if (index == app.selectedHero){
+      let index = parseInt(elem.getAttribute('data-hero-index'));
+      console.log(app.selectedHero, ' app.selectedHero VS Index:', index);
+      if(index == app.selectedHero) {
         isUsed = true;
+        console.log('Hero element: Index: TRUE !!!!!', index);
       }
     });
     return isUsed;
@@ -76,7 +77,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
 
   function determinateSelection() {
 
-    if (checkHeroStatus() == true) {
+    if(checkHeroStatus() == true) {
       console.log("hero used keep graphics no send ")
       return;
     }
@@ -86,7 +87,8 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
     });
     // fix for local
     if(byId(`waiting-img-${app.net.session.connection.connectionId}`)) {
-      byId(`waiting-img-${app.net.session.connection.connectionId}`).src =
+      let heroImage = byId(`waiting-img-${app.net.session.connection.connectionId}`);
+      heroImage.src =
         `./res/textures/rpg/hero-image/${handleHeroImage(app.selectedHero)}.png`;
       heroImage.setAttribute('data-hero-index', app.selectedHero);
     } else {
@@ -198,24 +200,23 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
   })
 
   addEventListener('only-data-receive', (e) => {
-
-    let t = JSON.parse(e.detail.data)
-
+    let t = JSON.parse(e.detail.data);
     if(t) {
       console.log(`<data-receive From ${e.detail.from} data:${t.selectHeroIndex}`);
       let name = handleHeroImage(t.selectHeroIndex);
-      if(byId(`waiting-img-${e.detail.from.connectionId}`)) {
-        byId(`waiting-img-${e.detail.from.connectionId}`).src = `./res/textures/rpg/hero-image/${name.toLowerCase()}.png`
+      let heroImage = byId(`waiting-img-${e.detail.from.connectionId}`);
+      if(heroImage) {
+        heroImage.src = `./res/textures/rpg/hero-image/${name.toLowerCase()}.png`;
+        heroImage.setAttribute('data-hero-index', t.selectHeroIndex);
       } else {
         let heroImage = document.createElement('img');
         heroImage.id = `waiting-img-${e.detail.from.connectionId}`;
-        heroImage.width = '64';
-        heroImage.height = '64';
-        heroImage.src = `./res/textures/rpg/hero-image/${name.toLowerCase()}.png`
+        heroImage.width = '64'; heroImage.height = '64';
+        heroImage.src = `./res/textures/rpg/hero-image/${name.toLowerCase()}.png`;
+        heroImage.setAttribute('data-hero-index', t.selectHeroIndex);
         byId(`waiting-${e.detail.from.connectionId}`).appendChild(heroImage);
       }
     }
-
   })
 
   addEventListener('AmmoReady', async () => {
@@ -421,9 +422,9 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
       app.selectedHero--;
 
       if(app.net.session) {
-        if(app.net.session.connection != null) app.net.sendOnlyData({
-          selectHeroIndex: app.selectedHero
-        });
+        // if(app.net.session.connection != null) app.net.sendOnlyData({
+        //   selectHeroIndex: app.selectedHero
+        // });
         // fix for local
         determinateSelection();
       }

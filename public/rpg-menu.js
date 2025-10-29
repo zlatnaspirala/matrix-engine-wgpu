@@ -599,10 +599,11 @@ let forestOfHollowBloodStartSceen = new _world.default({
     // });
     let isUsed = false;
     document.querySelectorAll('[data-hero-index]').forEach(elem => {
-      const index = elem.getAttribute('data-hero-index');
-      console.log('Hero element:', elem, 'Index:', index);
+      let index = parseInt(elem.getAttribute('data-hero-index'));
+      console.log(app.selectedHero, ' app.selectedHero VS Index:', index);
       if (index == app.selectedHero) {
         isUsed = true;
+        console.log('Hero element: Index: TRUE !!!!!', index);
       }
     });
     return isUsed;
@@ -617,7 +618,8 @@ let forestOfHollowBloodStartSceen = new _world.default({
     });
     // fix for local
     if ((0, _utils.byId)(`waiting-img-${app.net.session.connection.connectionId}`)) {
-      (0, _utils.byId)(`waiting-img-${app.net.session.connection.connectionId}`).src = `./res/textures/rpg/hero-image/${handleHeroImage(app.selectedHero)}.png`;
+      let heroImage = (0, _utils.byId)(`waiting-img-${app.net.session.connection.connectionId}`);
+      heroImage.src = `./res/textures/rpg/hero-image/${handleHeroImage(app.selectedHero)}.png`;
       heroImage.setAttribute('data-hero-index', app.selectedHero);
     } else {
       let heroImage = document.createElement('img');
@@ -720,14 +722,17 @@ let forestOfHollowBloodStartSceen = new _world.default({
     if (t) {
       console.log(`<data-receive From ${e.detail.from} data:${t.selectHeroIndex}`);
       let name = handleHeroImage(t.selectHeroIndex);
-      if ((0, _utils.byId)(`waiting-img-${e.detail.from.connectionId}`)) {
-        (0, _utils.byId)(`waiting-img-${e.detail.from.connectionId}`).src = `./res/textures/rpg/hero-image/${name.toLowerCase()}.png`;
+      let heroImage = (0, _utils.byId)(`waiting-img-${e.detail.from.connectionId}`);
+      if (heroImage) {
+        heroImage.src = `./res/textures/rpg/hero-image/${name.toLowerCase()}.png`;
+        heroImage.setAttribute('data-hero-index', t.selectHeroIndex);
       } else {
         let heroImage = document.createElement('img');
         heroImage.id = `waiting-img-${e.detail.from.connectionId}`;
         heroImage.width = '64';
         heroImage.height = '64';
         heroImage.src = `./res/textures/rpg/hero-image/${name.toLowerCase()}.png`;
+        heroImage.setAttribute('data-hero-index', t.selectHeroIndex);
         (0, _utils.byId)(`waiting-${e.detail.from.connectionId}`).appendChild(heroImage);
       }
     }
@@ -934,9 +939,9 @@ let forestOfHollowBloodStartSceen = new _world.default({
       app.lock = true;
       app.selectedHero--;
       if (app.net.session) {
-        if (app.net.session.connection != null) app.net.sendOnlyData({
-          selectHeroIndex: app.selectedHero
-        });
+        // if(app.net.session.connection != null) app.net.sendOnlyData({
+        //   selectHeroIndex: app.selectedHero
+        // });
         // fix for local
         determinateSelection();
       }
