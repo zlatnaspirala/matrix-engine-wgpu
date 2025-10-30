@@ -918,6 +918,33 @@ export const LS = {
   }
 };
 
+export const SS = {
+  set(key, value) {
+    sessionStorage.setItem(key, JSON.stringify(value));
+  },
+
+  get(key, defaultValue = null) {
+    const item = sessionStorage.getItem(key);
+    try {
+      return item ? JSON.parse(item) : defaultValue;
+    } catch(e) {
+      console.warn(`Error parsing sessionStorage key "${key}"`, e);
+      return defaultValue;
+    }
+  },
+
+  has(key) {
+    return sessionStorage.getItem(key) !== null;
+  },
+
+  remove(key) {
+    sessionStorage.removeItem(key);
+  },
+
+  clear() {
+    sessionStorage.clear();
+  }
+};
 export const jsonHeaders = new Headers({
 	"Content-Type": "application/json",
 	"Accept": "application/json",

@@ -43,7 +43,7 @@ class Character extends _hero.Hero {
     this.loadfriendlyCreeps();
     this.loadLocalHero(path);
     // async
-    setTimeout(() => this.setupHUDForHero(name), 500);
+    setTimeout(() => this.setupHUDForHero(name), 1000);
   }
   setupHUDForHero(name) {
     console.info(`%cLOADING hero name : ${name}`, _utils.LOG_MATRIX);
@@ -53,7 +53,7 @@ class Character extends _hero.Hero {
       (0, _utils.byId)(`magic-slot-${x - 1}`).style.backgroundRepeat = "round";
     }
     (0, _utils.byId)('hudLeftBox').style.background = `url('./res/textures/rpg/hero-image/${name.toLowerCase()}.png')  center center / cover no-repeat`;
-    (0, _utils.byId)('hudDesription').innerHTML = app.label.get.mariasword;
+    (0, _utils.byId)('hudDesriptionText').innerHTML = app.label.get[name.toLowerCase()];
   }
   async loadfriendlyCreeps() {
     this.friendlyLocal.creeps.push(new _creepCharacter.Creep({
@@ -1238,13 +1238,14 @@ var _controller = require("./controller.js");
 var _hud = require("./hud.js");
 var _mapLoader = require("./map-loader.js");
 var _characterBase = require("./character-base.js");
-var _hero = require("./hero.js");
 var _enemiesManager = require("./enemies-manager.js");
 var _collisionSubSystem = require("../../../src/engine/collision-sub-system.js");
 var _utils = require("../../../src/engine/utils.js");
 var _net = require("../../../src/engine/networking/net.js");
 var _matrixStream = require("../../../src/engine/networking/matrix-stream.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
+// import {HERO_PROFILES} from "./hero.js";
+
 /**
  * @description
  * This is main root dep file.
@@ -1275,8 +1276,7 @@ let forestOfHollowBlood = new _world.default({
   }
 }, () => {
   forestOfHollowBlood.player = {
-    username: "guest",
-    team: ''
+    username: "guest"
   };
 
   // Audios
@@ -1312,7 +1312,7 @@ let forestOfHollowBlood = new _world.default({
     });
     // END NET
     app.matrixSounds.audios.music.loop = true;
-    player.data = _utils.LS.get('player');
+    forestOfHollowBlood.player.data = _utils.SS.get('player');
     addEventListener('local-hero-bodies-ready', () => {
       app.cameras.RPG.position[1] = 130;
       app.cameras.RPG.followMe = forestOfHollowBlood.localHero.heroe_bodies[0].position;
@@ -1320,7 +1320,8 @@ let forestOfHollowBlood = new _world.default({
     forestOfHollowBlood.RPG = new _controller.Controller(forestOfHollowBlood);
     app.cameras.RPG.movementSpeed = 100;
     forestOfHollowBlood.mapLoader = new _mapLoader.MEMapLoader(forestOfHollowBlood, "./res/meshes/nav-mesh/navmesh.json");
-    forestOfHollowBlood.localHero = new _characterBase.Character(forestOfHollowBlood, player.data.path, player.data.hero, _hero.HERO_PROFILES.MariaSword.baseArchetypes);
+    // fix arg later !
+    forestOfHollowBlood.localHero = new _characterBase.Character(forestOfHollowBlood, forestOfHollowBlood.player.data.path, forestOfHollowBlood.player.data.hero, [forestOfHollowBlood.player.data.archetypes]);
     forestOfHollowBlood.HUD = new _hud.HUD(forestOfHollowBlood.localHero);
     forestOfHollowBlood.enemies = new _enemiesManager.EnemiesManager(forestOfHollowBlood);
     forestOfHollowBlood.collisionSystem = new _collisionSubSystem.CollisionSystem(forestOfHollowBlood);
@@ -1330,7 +1331,7 @@ let forestOfHollowBlood = new _world.default({
 });
 window.app = forestOfHollowBlood;
 
-},{"../../../src/engine/collision-sub-system.js":29,"../../../src/engine/networking/matrix-stream.js":50,"../../../src/engine/networking/net.js":51,"../../../src/engine/utils.js":53,"../../../src/world.js":76,"./character-base.js":1,"./controller.js":2,"./enemies-manager.js":4,"./hero.js":7,"./hud.js":8,"./map-loader.js":9}],7:[function(require,module,exports){
+},{"../../../src/engine/collision-sub-system.js":29,"../../../src/engine/networking/matrix-stream.js":50,"../../../src/engine/networking/net.js":51,"../../../src/engine/utils.js":53,"../../../src/world.js":76,"./character-base.js":1,"./controller.js":2,"./enemies-manager.js":4,"./hud.js":8,"./map-loader.js":9}],7:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -1899,7 +1900,7 @@ class HUD {
       width: "30%",
       height: "100%",
       background: "rgba(0,0,0,0.5)",
-      border: "solid 1px red",
+      border: "1px solid #353535",
       alignItems: "center",
       justifyContent: "space-around",
       color: "white",
@@ -1967,10 +1968,8 @@ class HUD {
       statsDomItem.id = `statsLabel-${props[x]}`;
       statsDomItem.innerHTML = props[x] + ":";
       Object.assign(statsDomItem.style, {
-        // width: "10%",
-        // height: "100%",
         background: "rgba(0,0,0,0.5)",
-        // border: "solid 1px red",
+        border: "1px solid #353535",
         alignItems: "center",
         justifyContent: "space-around",
         color: "white",
@@ -1985,10 +1984,8 @@ class HUD {
       statsDomItemValue.id = `stats-${props[x]}`;
       statsDomItemValue.innerHTML = "" + app.localHero[props[x]];
       Object.assign(statsDomItemValue.style, {
-        // width: "10%",
-        // height: "100%",
         background: "rgba(0,0,0,0.5)",
-        // border: "solid 1px red",
+        border: "1px solid #353535",
         alignItems: "center",
         justifyContent: "space-around",
         color: "white",
@@ -2010,7 +2007,7 @@ class HUD {
       backgroundColor: "rgba(0,0,0,0.5)",
       display: "flex",
       flexDirection: "column",
-      border: "solid 1px green",
+      border: "1px solid #353535",
       alignItems: "center",
       justifyContent: "space-around",
       color: "white",
@@ -2030,7 +2027,7 @@ class HUD {
       display: "grid",
       gridTemplateColumns: "repeat(4, 1fr)",
       gap: "12px",
-      border: "1px solid gray",
+      border: "1px solid #353535",
       borderRadius: "10px",
       padding: "2px",
       boxSizing: "border-box",
@@ -2048,7 +2045,7 @@ class HUD {
       Object.assign(slot.style, {
         aspectRatio: "1 / 1",
         width: "100%",
-        border: "2px solid #888",
+        border: "1px solid #353535",
         borderRadius: "8px",
         background: "linear-gradient(145deg, #444, #222)",
         boxShadow: "inset 2px 2px 5px rgba(0,0,0,0.6), inset -2px -2px 5px rgba(255,255,255,0.1)",
@@ -2220,7 +2217,8 @@ class HUD {
       height: "100%",
       backgroundColor: "rgba(0,0,0,0.5)",
       // display: "flex",
-      border: "solid 1px red",
+      border: "1px solid #353535",
+      borderLeft: "none",
       alignItems: "center",
       justifyContent: "space-around",
       color: "white",
@@ -2264,7 +2262,7 @@ class HUD {
       backgroundRepeat: 'no-repeat',
       backgroundSize: 'auto',
       display: "flex",
-      border: "solid 1px yellow",
+      border: "1px solid #353535",
       alignItems: "center",
       justifyContent: "space-around",
       color: "white",
@@ -2522,15 +2520,10 @@ class MEMapLoader {
         enabled: true
       }
     }, null, glbFile01);
-
-    // console.log('>>>>>>>>>>>>>>>>>>>>>>>>')
-    //-------------------
     setTimeout(() => {
       this.collectionOfTree1 = this.core.mainRenderBundle.filter(o => o.name.indexOf('tree') != -1);
-      setTimeout(() => {
-        this.addInstancing();
-      }, 100);
-    }, 1000);
+      setTimeout(() => this.addInstancing(), 100);
+    }, 2000);
   }
   addInstancing() {
     const spacing = 150;
@@ -30260,6 +30253,7 @@ exports.LS = exports.LOG_WARN = exports.LOG_MATRIX = exports.LOG_INFO = exports.
 exports.ORBIT = ORBIT;
 exports.ORBIT_FROM_ARRAY = ORBIT_FROM_ARRAY;
 exports.OSCILLATOR = OSCILLATOR;
+exports.SS = void 0;
 exports.SWITCHER = SWITCHER;
 exports.byId = void 0;
 exports.createAppEvent = createAppEvent;
@@ -31178,6 +31172,29 @@ const LS = exports.LS = {
   },
   clear() {
     localStorage.clear();
+  }
+};
+const SS = exports.SS = {
+  set(key, value) {
+    sessionStorage.setItem(key, JSON.stringify(value));
+  },
+  get(key, defaultValue = null) {
+    const item = sessionStorage.getItem(key);
+    try {
+      return item ? JSON.parse(item) : defaultValue;
+    } catch (e) {
+      console.warn(`Error parsing sessionStorage key "${key}"`, e);
+      return defaultValue;
+    }
+  },
+  has(key) {
+    return sessionStorage.getItem(key) !== null;
+  },
+  remove(key) {
+    sessionStorage.removeItem(key);
+  },
+  clear() {
+    sessionStorage.clear();
   }
 };
 const jsonHeaders = exports.jsonHeaders = new Headers({

@@ -44,7 +44,7 @@ export class Character extends Hero {
     this.loadfriendlyCreeps();
     this.loadLocalHero(path);
     // async
-    setTimeout(() => this.setupHUDForHero(name), 500)
+    setTimeout(() => this.setupHUDForHero(name), 1000)
   }
 
   setupHUDForHero(name) {
@@ -55,7 +55,7 @@ export class Character extends Hero {
       byId(`magic-slot-${x - 1}`).style.backgroundRepeat = "round";
     }
     byId('hudLeftBox').style.background = `url('./res/textures/rpg/hero-image/${name.toLowerCase()}.png')  center center / cover no-repeat`;
-    byId('hudDesription').innerHTML = app.label.get.mariasword;
+    byId('hudDesriptionText').innerHTML = app.label.get[name.toLowerCase()];
   }
 
   async loadfriendlyCreeps() {

@@ -3,10 +3,10 @@ import {Controller} from "./controller.js";
 import {HUD} from "./hud.js";
 import {MEMapLoader} from "./map-loader.js";
 import {Character} from "./character-base.js";
-import {HERO_PROFILES} from "./hero.js";
+// import {HERO_PROFILES} from "./hero.js";
 import {EnemiesManager} from "./enemies-manager.js";
 import {CollisionSystem} from "../../../src/engine/collision-sub-system.js";
-import {LS} from "../../../src/engine/utils.js";
+import {LS, SS} from "../../../src/engine/utils.js";
 import {MatrixStream} from "../../../src/engine/networking/net.js";
 import {byId} from "../../../src/engine/networking/matrix-stream.js";
 
@@ -37,10 +37,9 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
 }, () => {
 
   forestOfHollowBlood.player = {
-    username: "guest",
-    team: ''
+    username: "guest"
   };
-  
+
   // Audios
   forestOfHollowBlood.matrixSounds.createAudio('music', 'res/audios/rpg/music.mp3', 1)
   forestOfHollowBlood.matrixSounds.createAudio('win1', 'res/audios/rpg/feel.mp3', 2);
@@ -63,7 +62,7 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
 
     addEventListener('connectionDestroyed', (e) => {
       console.log('connectionDestroyed , bad bad...');
-      if(byId(e.detail.connectionId)) { }
+      if(byId(e.detail.connectionId)) {}
     });
 
     addEventListener("onConnectionCreated", (e) => {
@@ -80,7 +79,7 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
     // END NET
     app.matrixSounds.audios.music.loop = true;
 
-    player.data = LS.get('player');
+    forestOfHollowBlood.player.data = SS.get('player');
 
     addEventListener('local-hero-bodies-ready', () => {
       app.cameras.RPG.position[1] = 130;
@@ -90,11 +89,10 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
     app.cameras.RPG.movementSpeed = 100;
 
     forestOfHollowBlood.mapLoader = new MEMapLoader(forestOfHollowBlood, "./res/meshes/nav-mesh/navmesh.json");
-
+    // fix arg later !
     forestOfHollowBlood.localHero = new Character(
-      forestOfHollowBlood,
-      player.data.path,
-      player.data.hero, HERO_PROFILES.MariaSword.baseArchetypes);
+      forestOfHollowBlood, forestOfHollowBlood.player.data.path,
+      forestOfHollowBlood.player.data.hero, [forestOfHollowBlood.player.data.archetypes]);
 
     forestOfHollowBlood.HUD = new HUD(forestOfHollowBlood.localHero);
 

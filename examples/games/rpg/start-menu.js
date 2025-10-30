@@ -1,6 +1,6 @@
 import {uploadGLBModel} from "../../../src/engine/loaders/webgpu-gltf.js";
 import {MatrixStream} from "../../../src/engine/networking/net.js";
-import {byId, isOdd, LS, mb, typeText} from "../../../src/engine/utils.js";
+import {byId, isOdd, LS, SS, mb, typeText} from "../../../src/engine/utils.js";
 import MatrixEngineWGPU from "../../../src/world.js";
 import {HERO_ARCHETYPES} from "./hero.js";
 
@@ -139,7 +139,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
     // first free hero in selection action next/back.
     // For now.
     if(isAllSelected() == true) {
-      gotoGamePlay();
+      forestOfHollowBloodStartSceen.gotoGamePlay();
     }
   }
 
@@ -163,30 +163,26 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
   }
 
   forestOfHollowBloodStartSceen.gotoGamePlay = () => {
-    // check again !
-    // let sumParty = document.querySelectorAll('[id*="waiting-"]');
-    // let testSelection = document.querySelectorAll('[id*="waithero-img-"]');
-    // console.info(testSelection, ' testSelection vs Number of players:', sumParty);
-    // if(testParty.length == forestOfHollowBloodStartSceen.MINIMUM_PLAYERS) {
-    //   // good all are still here
-    //   if(testSelection.length == forestOfHollowBloodStartSceen.MINIMUM_PLAYERS) {
-    // good all selected hero !PLAY!
-    console.log('test ::  byId(`waiting-${app.net.session.connection.connectionId}`) ', byId(`waiting-${app.net.session.connection.connectionId}`));
-
+    // check again ! good all selected hero !PLAY!
+    console.log('...', byId(`waiting-${app.net.session.connection.connectionId}`));
     LS.set('player', {
       hero: heros[app.selectedHero].name,
       path: heros[app.selectedHero].path,
-      team: ''
+      archetypes: heros[app.selectedHero].type,
+      team: byId(`waiting-${app.net.session.connection.connectionId}`).getAttribute('data-hero-team'),
+      data: Date.now()
     })
-    // location.assign('rpg-game.html');
-
-    //   } else {
-    //     mb.error(`No selection hero for all players...`)
-    //   }
-    // } else {
-    //   mb.error(`No enough players...`)
-    //   return;
-    // }
+    SS.set('player', {
+      hero: heros[app.selectedHero].name,
+      path: heros[app.selectedHero].path,
+      archetypes: heros[app.selectedHero].type,
+      team: byId(`waiting-${app.net.session.connection.connectionId}`).getAttribute('data-hero-team'),
+      data: Date.now()
+    })
+    forestOfHollowBloodStartSceen.net.sendOnlyData({
+      type: 'start'
+    })
+    location.assign('rpg-game.html');
   }
 
   addEventListener('check-gameplay-channel', (e) => {
@@ -203,7 +199,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
     }
   })
 
-  forestOfHollowBloodStartSceen.MINIMUM_PLAYERS = 4;
+  forestOfHollowBloodStartSceen.MINIMUM_PLAYERS = 2;
 
   forestOfHollowBloodStartSceen.setWaitingList = () => {
     // access net doms who comes with broadcaster2.html
@@ -322,6 +318,8 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
       } else if(t.type == 'team-notify') {
         console.log(`<data-receive From ${e.detail.from.connectionId} team:${t.team}  ${byId(`waiting-${e.detail.from.connectionId}`)}`);
         byId(`${e.detail.from.connectionId}-title`).innerHTML = `Player:${e.detail.from.connectionId} Team:${t.team}`;
+      } else if(t.type == 'start') {
+        location.assign('rpg-game.html');
       }
     }
   })
@@ -331,10 +329,10 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
     heros = [
       {type: "Warrior", name: 'MariaSword', path: "res/meshes/glb/woman1.glb", desc: forestOfHollowBloodStartSceen.label.get.mariasword},
       {type: "Warrior", name: 'Slayzer', path: "res/meshes/glb/monster.glb", desc: forestOfHollowBloodStartSceen.label.get.slayzer},
-      {type: "Warrior", name: 'Steelborn', path: "res/meshes/glb/bot.glb", desc: forestOfHollowBloodStartSceen.label.get.steelborn},
-      {type: "Warrior", name: 'Warrok', path: "res/meshes/glb/warrok.glb", desc: forestOfHollowBloodStartSceen.label.get.warrok},
-      {type: "Warrior", name: 'Skeletonz', path: "res/meshes/glb/skeletonz.glb", desc: forestOfHollowBloodStartSceen.label.get.skeletonz},
-      {type: "Warrior", name: 'Erika', path: "res/meshes/glb/erika.glb", desc: forestOfHollowBloodStartSceen.label.get.skeletonz},
+      {type: "Tank", name: 'Steelborn', path: "res/meshes/glb/bot.glb", desc: forestOfHollowBloodStartSceen.label.get.steelborn},
+      {type: "Mage", name: 'Warrok', path: "res/meshes/glb/warrok.glb", desc: forestOfHollowBloodStartSceen.label.get.warrok},
+      {type: "Necromancer", name: 'Skeletonz', path: "res/meshes/glb/skeletonz.glb", desc: forestOfHollowBloodStartSceen.label.get.skeletonz},
+      {type: "Assassin", name: 'Erika', path: "res/meshes/glb/erika.glb", desc: forestOfHollowBloodStartSceen.label.get.skeletonz},
     ];
 
     forestOfHollowBloodStartSceen.heros = heros;
@@ -707,16 +705,17 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
         counter.textContent = "Let the game begin!";
         bar.style.boxShadow = "0 0 30px #00ff99";
 
-        setTimeout(()=> {
-           loader.remove();
-        } , 250)
+        setTimeout(() => {
+          loader.remove();
+        }, 250)
       }
     }
 
-     setTimeout(() => {
+    setTimeout(() => {
       bar = document.getElementById('progressBar');
       counter = document.getElementById('counter');
-      fakeProgress()}, 300);
+      fakeProgress()
+    }, 300);
 
     //
     hud.appendChild(previusBtn);

@@ -35,7 +35,7 @@ export class HUD {
       width: "30%",
       height: "100%",
       background: "rgba(0,0,0,0.5)",
-      border: "solid 1px red",
+      border: "1px solid #353535",
       alignItems: "center",
       justifyContent: "space-around",
       color: "white",
@@ -113,7 +113,7 @@ export class HUD {
     addEventListener('stats-localhero', (e) => {
       console.log('STATS UPDATE DOM ', e.detail)
       for(var x = 0;x < props.length;x++) {
-        byId('stats-' + props[x]).innerHTML =  e.detail[props[x]].toFixed(2);
+        byId('stats-' + props[x]).innerHTML = e.detail[props[x]].toFixed(2);
       }
       console.log('STATS UPDATE DOM ', e.detail)
     })
@@ -123,10 +123,8 @@ export class HUD {
       statsDomItem.id = `statsLabel-${props[x]}`;
       statsDomItem.innerHTML = props[x] + ":";
       Object.assign(statsDomItem.style, {
-        // width: "10%",
-        // height: "100%",
         background: "rgba(0,0,0,0.5)",
-        // border: "solid 1px red",
+        border: "1px solid #353535",
         alignItems: "center",
         justifyContent: "space-around",
         color: "white",
@@ -142,10 +140,8 @@ export class HUD {
       statsDomItemValue.id = `stats-${props[x]}`;
       statsDomItemValue.innerHTML = "" + app.localHero[props[x]];
       Object.assign(statsDomItemValue.style, {
-        // width: "10%",
-        // height: "100%",
         background: "rgba(0,0,0,0.5)",
-        // border: "solid 1px red",
+        border: "1px solid #353535",
         alignItems: "center",
         justifyContent: "space-around",
         color: "white",
@@ -169,7 +165,7 @@ export class HUD {
       backgroundColor: "rgba(0,0,0,0.5)",
       display: "flex",
       flexDirection: "column",
-      border: "solid 1px green",
+      border: "1px solid #353535",
       alignItems: "center",
       justifyContent: "space-around",
       color: "white",
@@ -190,7 +186,7 @@ export class HUD {
       display: "grid",
       gridTemplateColumns: "repeat(4, 1fr)",
       gap: "12px",
-      border: "1px solid gray",
+      border: "1px solid #353535",
       borderRadius: "10px",
       padding: "2px",
       boxSizing: "border-box",
@@ -209,7 +205,7 @@ export class HUD {
       Object.assign(slot.style, {
         aspectRatio: "1 / 1",
         width: "100%",
-        border: "2px solid #888",
+        border: "1px solid #353535",
         borderRadius: "8px",
         background: "linear-gradient(145deg, #444, #222)",
         boxShadow:
@@ -393,7 +389,8 @@ export class HUD {
       height: "100%",
       backgroundColor: "rgba(0,0,0,0.5)",
       // display: "flex",
-      border: "solid 1px red",
+      border: "1px solid #353535",
+      borderLeft: "none",
       alignItems: "center",
       justifyContent: "space-around",
       color: "white",
@@ -441,7 +438,7 @@ export class HUD {
       backgroundRepeat: 'no-repeat',
       backgroundSize: 'auto',
       display: "flex",
-      border: "solid 1px yellow",
+      border: "1px solid #353535",
       alignItems: "center",
       justifyContent: "space-around",
       color: "white",

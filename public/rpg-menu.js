@@ -672,7 +672,7 @@ let forestOfHollowBloodStartSceen = new _world.default({
     // first free hero in selection action next/back.
     // For now.
     if (isAllSelected() == true) {
-      gotoGamePlay();
+      forestOfHollowBloodStartSceen.gotoGamePlay();
     }
   }
   function isAllSelected() {
@@ -694,29 +694,26 @@ let forestOfHollowBloodStartSceen = new _world.default({
     }
   }
   forestOfHollowBloodStartSceen.gotoGamePlay = () => {
-    // check again !
-    // let sumParty = document.querySelectorAll('[id*="waiting-"]');
-    // let testSelection = document.querySelectorAll('[id*="waithero-img-"]');
-    // console.info(testSelection, ' testSelection vs Number of players:', sumParty);
-    // if(testParty.length == forestOfHollowBloodStartSceen.MINIMUM_PLAYERS) {
-    //   // good all are still here
-    //   if(testSelection.length == forestOfHollowBloodStartSceen.MINIMUM_PLAYERS) {
-    // good all selected hero !PLAY!
-    console.log('test ::  byId(`waiting-${app.net.session.connection.connectionId}`) ', (0, _utils.byId)(`waiting-${app.net.session.connection.connectionId}`));
+    // check again ! good all selected hero !PLAY!
+    console.log('...', (0, _utils.byId)(`waiting-${app.net.session.connection.connectionId}`));
     _utils.LS.set('player', {
       hero: heros[app.selectedHero].name,
       path: heros[app.selectedHero].path,
-      team: ''
+      archetypes: heros[app.selectedHero].type,
+      team: (0, _utils.byId)(`waiting-${app.net.session.connection.connectionId}`).getAttribute('data-hero-team'),
+      data: Date.now()
     });
-    // location.assign('rpg-game.html');
-
-    //   } else {
-    //     mb.error(`No selection hero for all players...`)
-    //   }
-    // } else {
-    //   mb.error(`No enough players...`)
-    //   return;
-    // }
+    _utils.SS.set('player', {
+      hero: heros[app.selectedHero].name,
+      path: heros[app.selectedHero].path,
+      archetypes: heros[app.selectedHero].type,
+      team: (0, _utils.byId)(`waiting-${app.net.session.connection.connectionId}`).getAttribute('data-hero-team'),
+      data: Date.now()
+    });
+    forestOfHollowBloodStartSceen.net.sendOnlyData({
+      type: 'start'
+    });
+    location.assign('rpg-game.html');
   };
   addEventListener('check-gameplay-channel', e => {
     let info = e.detail;
@@ -731,7 +728,7 @@ let forestOfHollowBloodStartSceen = new _world.default({
       (0, _utils.byId)("onlineUsers").innerHTML = `GamePlay:${info.connections.numberOfElements}`;
     }
   });
-  forestOfHollowBloodStartSceen.MINIMUM_PLAYERS = 4;
+  forestOfHollowBloodStartSceen.MINIMUM_PLAYERS = 2;
   forestOfHollowBloodStartSceen.setWaitingList = () => {
     // access net doms who comes with broadcaster2.html
     const waitingForOthersDOM = document.createElement("div");
@@ -847,6 +844,8 @@ let forestOfHollowBloodStartSceen = new _world.default({
       } else if (t.type == 'team-notify') {
         console.log(`<data-receive From ${e.detail.from.connectionId} team:${t.team}  ${(0, _utils.byId)(`waiting-${e.detail.from.connectionId}`)}`);
         (0, _utils.byId)(`${e.detail.from.connectionId}-title`).innerHTML = `Player:${e.detail.from.connectionId} Team:${t.team}`;
+      } else if (t.type == 'start') {
+        location.assign('rpg-game.html');
       }
     }
   });
@@ -863,22 +862,22 @@ let forestOfHollowBloodStartSceen = new _world.default({
       path: "res/meshes/glb/monster.glb",
       desc: forestOfHollowBloodStartSceen.label.get.slayzer
     }, {
-      type: "Warrior",
+      type: "Tank",
       name: 'Steelborn',
       path: "res/meshes/glb/bot.glb",
       desc: forestOfHollowBloodStartSceen.label.get.steelborn
     }, {
-      type: "Warrior",
+      type: "Mage",
       name: 'Warrok',
       path: "res/meshes/glb/warrok.glb",
       desc: forestOfHollowBloodStartSceen.label.get.warrok
     }, {
-      type: "Warrior",
+      type: "Necromancer",
       name: 'Skeletonz',
       path: "res/meshes/glb/skeletonz.glb",
       desc: forestOfHollowBloodStartSceen.label.get.skeletonz
     }, {
-      type: "Warrior",
+      type: "Assassin",
       name: 'Erika',
       path: "res/meshes/glb/erika.glb",
       desc: forestOfHollowBloodStartSceen.label.get.skeletonz
@@ -28198,6 +28197,7 @@ exports.LS = exports.LOG_WARN = exports.LOG_MATRIX = exports.LOG_INFO = exports.
 exports.ORBIT = ORBIT;
 exports.ORBIT_FROM_ARRAY = ORBIT_FROM_ARRAY;
 exports.OSCILLATOR = OSCILLATOR;
+exports.SS = void 0;
 exports.SWITCHER = SWITCHER;
 exports.byId = void 0;
 exports.createAppEvent = createAppEvent;
@@ -29116,6 +29116,29 @@ const LS = exports.LS = {
   },
   clear() {
     localStorage.clear();
+  }
+};
+const SS = exports.SS = {
+  set(key, value) {
+    sessionStorage.setItem(key, JSON.stringify(value));
+  },
+  get(key, defaultValue = null) {
+    const item = sessionStorage.getItem(key);
+    try {
+      return item ? JSON.parse(item) : defaultValue;
+    } catch (e) {
+      console.warn(`Error parsing sessionStorage key "${key}"`, e);
+      return defaultValue;
+    }
+  },
+  has(key) {
+    return sessionStorage.getItem(key) !== null;
+  },
+  remove(key) {
+    sessionStorage.removeItem(key);
+  },
+  clear() {
+    sessionStorage.clear();
   }
 };
 const jsonHeaders = exports.jsonHeaders = new Headers({
