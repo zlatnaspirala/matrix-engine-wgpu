@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+
+<style>
+  html, body {
+  width: 100dvw;
+  height: 100dvh;
+  overflow: hidden;
+}
+</style>
+<body style="margin:0; background:black; cursor:crosshair;">
+<canvas id="c" width="1920" height="1080"
+ style="width:100dvw; height:100dvh; background:rgba(255,0,0,0.2)"></canvas>
+<script>
+const ctx = c.getContext('2d');
+window.addEventListener('mousemove', e => {
+  ctx.clearRect(0,0,c.width,c.height);
+  ctx.fillStyle = 'lime';
+  ctx.fillRect(e.clientX-5, e.clientY-5, 10, 10);
+  document.title = e.clientY + " / " + window.visualViewport.height;
+});
+</script>
+</body>
+</html>

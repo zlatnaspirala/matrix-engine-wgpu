@@ -506,7 +506,7 @@ class Character extends _hero.Hero {
 }
 exports.Character = Character;
 
-},{"../../../src/engine/loaders/webgpu-gltf":46,"../../../src/engine/utils":53,"./creep-character":3,"./hero":6,"./nav-mesh":10,"wgpu-matrix":26}],2:[function(require,module,exports){
+},{"../../../src/engine/loaders/webgpu-gltf":46,"../../../src/engine/utils":53,"./creep-character":3,"./hero":7,"./nav-mesh":10,"wgpu-matrix":26}],2:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -988,7 +988,7 @@ class Creep extends _hero.Hero {
 }
 exports.Creep = Creep;
 
-},{"../../../src/engine/loaders/webgpu-gltf":46,"../../../src/engine/utils":53,"./hero":6}],4:[function(require,module,exports){
+},{"../../../src/engine/loaders/webgpu-gltf":46,"../../../src/engine/utils":53,"./hero":7}],4:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -1230,7 +1230,107 @@ class Enemie extends _hero.Hero {
 }
 exports.Enemie = Enemie;
 
-},{"../../../src/engine/loaders/webgpu-gltf":46,"../../../src/engine/utils":53,"./hero":6}],6:[function(require,module,exports){
+},{"../../../src/engine/loaders/webgpu-gltf":46,"../../../src/engine/utils":53,"./hero":7}],6:[function(require,module,exports){
+"use strict";
+
+var _world = _interopRequireDefault(require("../../../src/world.js"));
+var _controller = require("./controller.js");
+var _hud = require("./hud.js");
+var _mapLoader = require("./map-loader.js");
+var _characterBase = require("./character-base.js");
+var _hero = require("./hero.js");
+var _enemiesManager = require("./enemies-manager.js");
+var _collisionSubSystem = require("../../../src/engine/collision-sub-system.js");
+var _utils = require("../../../src/engine/utils.js");
+var _net = require("../../../src/engine/networking/net.js");
+var _matrixStream = require("../../../src/engine/networking/matrix-stream.js");
+function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
+/**
+ * @description
+ * This is main root dep file.
+ * All start from here.
+ * @Note
+ * “Character and animation assets from Mixamo,
+ * used under Adobe’s royalty‑free license. 
+ * Redistribution of raw assets is not permitted.”
+ **/
+
+// Prevent no inputs cases
+if (!_utils.LS.has('player')) {
+  // alert('No no');
+  location.assign('google.com');
+}
+let forestOfHollowBlood = new _world.default({
+  useSingleRenderPass: true,
+  canvasSize: 'fullscreen',
+  mainCameraParams: {
+    type: 'RPG',
+    responseCoef: 1000
+  },
+  clearColor: {
+    r: 0,
+    b: 0.122,
+    g: 0.122,
+    a: 1
+  }
+}, () => {
+  forestOfHollowBlood.player = {
+    username: "guest",
+    team: ''
+  };
+
+  // Audios
+  forestOfHollowBlood.matrixSounds.createAudio('music', 'res/audios/rpg/music.mp3', 1);
+  forestOfHollowBlood.matrixSounds.createAudio('win1', 'res/audios/rpg/feel.mp3', 2);
+
+  // test
+  forestOfHollowBlood.net = new _net.MatrixStream({
+    active: true,
+    domain: 'maximumroulette.com',
+    port: 2020,
+    sessionName: 'forestOfHollowBlood-free-for-all',
+    resolution: '160x240'
+  });
+  addEventListener('AmmoReady', async () => {
+    // NET
+    addEventListener('net-ready', () => {
+      console.log('net-ready');
+    });
+    addEventListener('connectionDestroyed', e => {
+      console.log('connectionDestroyed , bad bad...');
+      if ((0, _matrixStream.byId)(e.detail.connectionId)) {}
+    });
+    addEventListener("onConnectionCreated", e => {
+      console.log('newconn : created', e.detail);
+      let newPlayer = document.createElement('div');
+      newPlayer.innerHTML = `Player: ${e.detail.connection.connectionId}`;
+      newPlayer.id = `waiting-${e.detail.connection.connectionId}`;
+      //-- 
+    });
+    addEventListener('only-data-receive', e => {
+      console.log('<data-receive>', e);
+    });
+    // END NET
+    app.matrixSounds.audios.music.loop = true;
+    player.data = _utils.LS.get('player');
+    addEventListener('local-hero-bodies-ready', () => {
+      app.cameras.RPG.position[1] = 130;
+      app.cameras.RPG.followMe = forestOfHollowBlood.localHero.heroe_bodies[0].position;
+    });
+    forestOfHollowBlood.RPG = new _controller.Controller(forestOfHollowBlood);
+    app.cameras.RPG.movementSpeed = 100;
+    forestOfHollowBlood.mapLoader = new _mapLoader.MEMapLoader(forestOfHollowBlood, "./res/meshes/nav-mesh/navmesh.json");
+    forestOfHollowBlood.localHero = new _characterBase.Character(forestOfHollowBlood, player.data.path, player.data.hero, _hero.HERO_PROFILES.MariaSword.baseArchetypes);
+    forestOfHollowBlood.HUD = new _hud.HUD(forestOfHollowBlood.localHero);
+    forestOfHollowBlood.enemies = new _enemiesManager.EnemiesManager(forestOfHollowBlood);
+    forestOfHollowBlood.collisionSystem = new _collisionSubSystem.CollisionSystem(forestOfHollowBlood);
+    app.matrixSounds.play('music');
+  });
+  forestOfHollowBlood.addLight();
+});
+window.app = forestOfHollowBlood;
+
+},{"../../../src/engine/collision-sub-system.js":29,"../../../src/engine/networking/matrix-stream.js":50,"../../../src/engine/networking/net.js":51,"../../../src/engine/utils.js":53,"../../../src/world.js":76,"./character-base.js":1,"./controller.js":2,"./enemies-manager.js":4,"./hero.js":7,"./hud.js":8,"./map-loader.js":9}],7:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -1759,7 +1859,7 @@ function mergeArchetypesWeighted(typeA, typeB, weightA = 0.7) {
   return merged;
 }
 
-},{}],7:[function(require,module,exports){
+},{}],8:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -2231,7 +2331,7 @@ class HUD {
 }
 exports.HUD = HUD;
 
-},{"../../../src/engine/utils.js":53}],8:[function(require,module,exports){
+},{"../../../src/engine/utils.js":53}],9:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -2461,105 +2561,7 @@ class MEMapLoader {
 }
 exports.MEMapLoader = MEMapLoader;
 
-},{"../../../src/engine/effects/gen.js":35,"../../../src/engine/loader-obj.js":43,"../../../src/engine/loaders/webgpu-gltf.js":46,"../../../src/engine/utils.js":53,"./nav-mesh.js":10}],9:[function(require,module,exports){
-"use strict";
-
-var _world = _interopRequireDefault(require("../../../src/world.js"));
-var _controller = require("./controller.js");
-var _hud = require("./hud.js");
-var _mapLoader = require("./map-loader.js");
-var _characterBase = require("./character-base.js");
-var _hero = require("./hero.js");
-var _enemiesManager = require("./enemies-manager.js");
-var _collisionSubSystem = require("../../../src/engine/collision-sub-system.js");
-var _utils = require("../../../src/engine/utils.js");
-var _net = require("../../../src/engine/networking/net.js");
-var _matrixStream = require("../../../src/engine/networking/matrix-stream.js");
-function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
-/**
- * @description
- * This is main root dep file.
- * All start from here.
- * @Note
- * “Character and animation assets from Mixamo,
- * used under Adobe’s royalty‑free license. 
- * Redistribution of raw assets is not permitted.”
- **/
-
-// Prevent no inputs cases
-if (!_utils.LS.has('player')) {
-  // alert('No no');
-  location.assign('google.com');
-}
-let forestOfHollowBlood = new _world.default({
-  useSingleRenderPass: true,
-  canvasSize: 'fullscreen',
-  mainCameraParams: {
-    type: 'RPG',
-    responseCoef: 1000
-  },
-  clearColor: {
-    r: 0,
-    b: 0.122,
-    g: 0.122,
-    a: 1
-  }
-}, () => {
-  let player = {
-    username: "guest"
-  };
-  // Audios
-  forestOfHollowBlood.matrixSounds.createAudio('music', 'res/audios/rpg/music.mp3', 1);
-  forestOfHollowBlood.matrixSounds.createAudio('win1', 'res/audios/rpg/feel.mp3', 2);
-
-  // test
-  forestOfHollowBlood.net = new _net.MatrixStream({
-    active: true,
-    domain: 'maximumroulette.com',
-    port: 2020,
-    sessionName: 'forestOfHollowBlood-free-for-all',
-    resolution: '160x240'
-  });
-  addEventListener('AmmoReady', async () => {
-    // NET
-    addEventListener('net-ready', () => {
-      console.log('net-ready');
-    });
-    addEventListener('connectionDestroyed', e => {
-      console.log('connectionDestroyed , bad bad...');
-      if ((0, _matrixStream.byId)(e.detail.connectionId)) {}
-    });
-    addEventListener("onConnectionCreated", e => {
-      console.log('newconn : created', e.detail);
-      let newPlayer = document.createElement('div');
-      newPlayer.innerHTML = `Player: ${e.detail.connection.connectionId}`;
-      newPlayer.id = `waiting-${e.detail.connection.connectionId}`;
-      //-- 
-    });
-    addEventListener('only-data-receive', e => {
-      console.log('<data-receive>', e);
-    });
-    // END NET
-    app.matrixSounds.audios.music.loop = true;
-    player.data = _utils.LS.get('player');
-    addEventListener('local-hero-bodies-ready', () => {
-      app.cameras.RPG.position[1] = 130;
-      app.cameras.RPG.followMe = forestOfHollowBlood.localHero.heroe_bodies[0].position;
-    });
-    forestOfHollowBlood.RPG = new _controller.Controller(forestOfHollowBlood);
-    app.cameras.RPG.movementSpeed = 100;
-    forestOfHollowBlood.mapLoader = new _mapLoader.MEMapLoader(forestOfHollowBlood, "./res/meshes/nav-mesh/navmesh.json");
-    forestOfHollowBlood.localHero = new _characterBase.Character(forestOfHollowBlood, player.data.path, player.data.hero, _hero.HERO_PROFILES.MariaSword.baseArchetypes);
-    forestOfHollowBlood.HUD = new _hud.HUD(forestOfHollowBlood.localHero);
-    forestOfHollowBlood.enemies = new _enemiesManager.EnemiesManager(forestOfHollowBlood);
-    forestOfHollowBlood.collisionSystem = new _collisionSubSystem.CollisionSystem(forestOfHollowBlood);
-    app.matrixSounds.play('music');
-  });
-  forestOfHollowBlood.addLight();
-});
-window.app = forestOfHollowBlood;
-
-},{"../../../src/engine/collision-sub-system.js":29,"../../../src/engine/networking/matrix-stream.js":50,"../../../src/engine/networking/net.js":51,"../../../src/engine/utils.js":53,"../../../src/world.js":76,"./character-base.js":1,"./controller.js":2,"./enemies-manager.js":4,"./hero.js":6,"./hud.js":7,"./map-loader.js":8}],10:[function(require,module,exports){
+},{"../../../src/engine/effects/gen.js":35,"../../../src/engine/loader-obj.js":43,"../../../src/engine/loaders/webgpu-gltf.js":46,"../../../src/engine/utils.js":53,"./nav-mesh.js":10}],10:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -29662,12 +29664,15 @@ function closeSession() {
     console.warn("Session " + sessionName + " has been closed");
   });
 }
-function fetchInfo() {
+function fetchInfo(sessionName) {
   httpRequest('POST', 'https://' + netConfig.NETWORKING_DOMAIN + ':' + netConfig.NETWORKING_PORT + '/api/fetch-info', {
     sessionName: sessionName
   }, 'Session couldn\'t be fetched', res => {
-    console.warn("Session fetched");
-    byId('textarea-http').innerText = JSON.stringify(res, null, "\t");
+    console.info("Session fetched");
+    dispatchEvent(new CustomEvent('check-gameplay-channel', {
+      detail: JSON.stringify(res, null, "\t")
+    }));
+    // byId('textarea-http').innerText = JSON.stringify(res, null, "\t");
   });
 }
 function fetchAll() {
@@ -29709,7 +29714,12 @@ function httpRequest(method, url, body, errorMsg, callback) {
         }
       } else {
         console.warn(errorMsg + ' (' + http.status + ')');
-        console.warn(http.responseText);
+        if (url.indexOf('fetch-info') != -1) dispatchEvent(new CustomEvent('check-gameplay-channel', {
+          detail: {
+            status: 'free',
+            url: url
+          }
+        }));
         byId('textarea-http').innerText = errorMsg + ": HTTP " + http.status + " (" + http.responseText + ")";
       }
     }
@@ -29887,6 +29897,7 @@ class MatrixStream {
     });
   }
   attachEvents() {
+    this.fetchInfo = _matrixStream.fetchInfo;
     // just for data only test 
     this.sendOnlyData = netArg => {
       this.session.signal({
@@ -29919,7 +29930,7 @@ class MatrixStream {
     addEventListener('setupSessionObject', e => {
       console.log("setupSessionObject=>", e.detail);
       this.session = e.detail;
-      // this.connection = e.detail.connection; // not same for data !!
+      this.connection = e.detail.connection;
       this.session.on(`signal:${_matrixStream.netConfig.sessionName}`, e => {
         console.log("SIGBAL SYS RECEIVE=>", e);
         if (this.session.connection.connectionId == e.from.connectionId) {
@@ -30257,7 +30268,10 @@ exports.genName = genName;
 exports.getAxisRot = getAxisRot;
 exports.getAxisRot2 = getAxisRot2;
 exports.getAxisRot3 = getAxisRot3;
-exports.mb = exports.mat4 = exports.jsonHeaders = exports.htmlHeader = void 0;
+exports.htmlHeader = void 0;
+exports.isEven = isEven;
+exports.isOdd = isOdd;
+exports.mb = exports.mat4 = exports.jsonHeaders = void 0;
 exports.quaternion_rotation_matrix = quaternion_rotation_matrix;
 exports.radToDeg = radToDeg;
 exports.randomFloatFromTo = randomFloatFromTo;
@@ -31174,6 +31188,12 @@ const htmlHeader = exports.htmlHeader = new Headers({
   "Content-Type": "text/html",
   "Accept": "text/plain"
 });
+function isEven(n) {
+  return n % 2 === 0;
+}
+function isOdd(n) {
+  return n % 2 !== 0;
+}
 
 },{}],54:[function(require,module,exports){
 "use strict";
@@ -34828,4 +34848,4 @@ class MatrixEngineWGPU {
 }
 exports.default = MatrixEngineWGPU;
 
-},{"./engine/ball.js":27,"./engine/cube.js":30,"./engine/engine.js":38,"./engine/lights.js":42,"./engine/loader-obj.js":43,"./engine/loaders/bvh-instaced.js":44,"./engine/loaders/bvh.js":45,"./engine/mesh-obj.js":49,"./engine/utils.js":53,"./multilang/lang.js":54,"./physics/matrix-ammo.js":55,"./sounds/sounds.js":75,"wgpu-matrix":26}]},{},[9]);
+},{"./engine/ball.js":27,"./engine/cube.js":30,"./engine/engine.js":38,"./engine/lights.js":42,"./engine/loader-obj.js":43,"./engine/loaders/bvh-instaced.js":44,"./engine/loaders/bvh.js":45,"./engine/mesh-obj.js":49,"./engine/utils.js":53,"./multilang/lang.js":54,"./physics/matrix-ammo.js":55,"./sounds/sounds.js":75,"wgpu-matrix":26}]},{},[6]);

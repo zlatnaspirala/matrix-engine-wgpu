@@ -927,3 +927,11 @@ export const htmlHeader = new Headers({
 	"Content-Type": "text/html",
 	"Accept": "text/plain",
 });
+
+export function isEven(n) {
+  return n % 2 === 0;
+}
+
+export function isOdd(n) {
+  return n % 2 !== 0;
+}

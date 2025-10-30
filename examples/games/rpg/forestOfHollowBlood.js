@@ -36,9 +36,11 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
   clearColor: {r: 0, b: 0.122, g: 0.122, a: 1}
 }, () => {
 
-  let player = {
-    username: "guest"
+  forestOfHollowBlood.player = {
+    username: "guest",
+    team: ''
   };
+  
   // Audios
   forestOfHollowBlood.matrixSounds.createAudio('music', 'res/audios/rpg/music.mp3', 1)
   forestOfHollowBlood.matrixSounds.createAudio('win1', 'res/audios/rpg/feel.mp3', 2);

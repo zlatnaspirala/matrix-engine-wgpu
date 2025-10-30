@@ -559,7 +559,11 @@ function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e
  **/
 let forestOfHollowBloodStartSceen = new _world.default({
   useSingleRenderPass: true,
-  canvasSize: 'fullscreen',
+  canvasSize: {
+    w: window.visualViewport.width,
+    h: window.visualViewport.height + 100
+  },
+  //'fullscreen',
   mainCameraParams: {
     type: 'WASD',
     responseCoef: 1000
@@ -615,12 +619,26 @@ let forestOfHollowBloodStartSceen = new _world.default({
     });
     return isUsed;
   }
+  function determinateTeam() {
+    console.log('check remote conn.app.net.session.remoteConnections.size..', app.net.session.remoteConnections.size);
+    if (app.net.session.remoteConnections.size == 0) {
+      // Rule - even -> south team odd -> north team
+      return "SOUTH";
+    } else {
+      if ((0, _utils.isOdd)(app.net.session.remoteConnections.size) == true) {
+        return "NORTH";
+      } else {
+        return "SOUTH";
+      }
+    }
+  }
   function determinateSelection() {
     if (checkHeroStatus() == true) {
       console.log("hero used keep graphics no send ");
       return;
     }
     if (app.net.session.connection != null) app.net.sendOnlyData({
+      type: "selectHeroIndex",
       selectHeroIndex: app.selectedHero
     });
     // fix for local
@@ -662,7 +680,7 @@ let forestOfHollowBloodStartSceen = new _world.default({
       return false;
     }
   }
-  function gotoGamePlay() {
+  forestOfHollowBloodStartSceen.gotoGamePlay = () => {
     // check again !
     // let sumParty = document.querySelectorAll('[id*="waiting-"]');
     // let testSelection = document.querySelectorAll('[id*="waithero-img-"]');
@@ -671,11 +689,14 @@ let forestOfHollowBloodStartSceen = new _world.default({
     //   // good all are still here
     //   if(testSelection.length == forestOfHollowBloodStartSceen.MINIMUM_PLAYERS) {
     // good all selected hero !PLAY!
+    console.log('test ::  byId(`waiting-${app.net.session.connection.connectionId}`) ', (0, _utils.byId)(`waiting-${app.net.session.connection.connectionId}`));
     _utils.LS.set('player', {
       hero: heros[app.selectedHero].name,
-      path: heros[app.selectedHero].path
+      path: heros[app.selectedHero].path,
+      team: ''
     });
-    location.assign('rpg-game.html');
+    // location.assign('rpg-game.html');
+
     //   } else {
     //     mb.error(`No selection hero for all players...`)
     //   }
@@ -683,7 +704,7 @@ let forestOfHollowBloodStartSceen = new _world.default({
     //   mb.error(`No enough players...`)
     //   return;
     // }
-  }
+  };
   addEventListener('check-gameplay-channel', e => {
     let info = e.detail;
     console.log('check-gameplay-channel ', info);
@@ -742,6 +763,7 @@ let forestOfHollowBloodStartSceen = new _world.default({
   // keep simple all networking code on top level
   // all job will be done with no account for now.
   addEventListener('net-ready', () => {
+    (0, _utils.byId)('matrix-net').style.opacity = '0.75';
     document.querySelector('.form-group').style.display = 'none';
     (0, _utils.byId)("caller-title").innerHTML = `forestOfHollowBlood`;
     (0, _utils.byId)("sessionName").disabled = true;
@@ -757,7 +779,19 @@ let forestOfHollowBloodStartSceen = new _world.default({
   addEventListener("onConnectionCreated", e => {
     console.log('newconn : created', e.detail);
     let newPlayer = document.createElement('div');
-    newPlayer.innerHTML = `Player: ${e.detail.connection.connectionId}`;
+    if (app.net.session.connection.connectionId == e.detail.connection.connectionId) {
+      console.log('newconn : created [LOCAL] determinate team');
+      let team = determinateTeam();
+      newPlayer.setAttribute('data-hero-team', team);
+      newPlayer.innerHTML = `<div id="${e.detail.connection.connectionId}-title" >Player:${e.detail.connection.connectionId} Team:${team}</div>`;
+      setTimeout(() => app.net.sendOnlyData({
+        type: "team-notify",
+        team: team
+      }), 1000);
+    } else {
+      newPlayer.innerHTML = `<div id="${e.detail.connection.connectionId}-title" >Player:${e.detail.connection.connectionId}</div>`;
+    }
+    // newPlayer.innerHTML = `Player:${e.detail.connection.connectionId} Team:${team}`;
     newPlayer.id = `waiting-${e.detail.connection.connectionId}`;
     (0, _utils.byId)('waitingForOthersDOM').appendChild(newPlayer);
     let testParty = document.querySelectorAll('[id*="waiting-"]');
@@ -780,20 +814,25 @@ let forestOfHollowBloodStartSceen = new _world.default({
   addEventListener('only-data-receive', e => {
     let t = JSON.parse(e.detail.data);
     if (t) {
-      console.log(`<data-receive From ${e.detail.from} data:${t.selectHeroIndex}`);
-      let name = handleHeroImage(t.selectHeroIndex);
-      let heroImage = (0, _utils.byId)(`waithero-img-${e.detail.from.connectionId}`);
-      if (heroImage) {
-        heroImage.src = `./res/textures/rpg/hero-image/${name.toLowerCase()}.png`;
-        heroImage.setAttribute('data-hero-index', t.selectHeroIndex);
-      } else {
-        let heroImage = document.createElement('img');
-        heroImage.id = `waithero-img-${e.detail.from.connectionId}`;
-        heroImage.width = '64';
-        heroImage.height = '64';
-        heroImage.src = `./res/textures/rpg/hero-image/${name.toLowerCase()}.png`;
-        heroImage.setAttribute('data-hero-index', t.selectHeroIndex);
-        (0, _utils.byId)(`waiting-${e.detail.from.connectionId}`).appendChild(heroImage);
+      if (t.type == 'selectHeroIndex') {
+        console.log(`<data-receive From ${e.detail.from} data:${t.selectHeroIndex}`);
+        let name = handleHeroImage(t.selectHeroIndex);
+        let heroImage = (0, _utils.byId)(`waithero-img-${e.detail.from.connectionId}`);
+        if (heroImage) {
+          heroImage.src = `./res/textures/rpg/hero-image/${name.toLowerCase()}.png`;
+          heroImage.setAttribute('data-hero-index', t.selectHeroIndex);
+        } else {
+          let heroImage = document.createElement('img');
+          heroImage.id = `waithero-img-${e.detail.from.connectionId}`;
+          heroImage.width = '64';
+          heroImage.height = '64';
+          heroImage.src = `./res/textures/rpg/hero-image/${name.toLowerCase()}.png`;
+          heroImage.setAttribute('data-hero-index', t.selectHeroIndex);
+          (0, _utils.byId)(`waiting-${e.detail.from.connectionId}`).appendChild(heroImage);
+        }
+      } else if (t.type == 'team-notify') {
+        console.log(`<data-receive From ${e.detail.from.connectionId} team:${t.team}  ${(0, _utils.byId)(`waiting-${e.detail.from.connectionId}`)}`);
+        (0, _utils.byId)(`${e.detail.from.connectionId}-title`).innerHTML = `Player:${e.detail.from.connectionId} Team:${t.team}`;
       }
     }
   });
@@ -1043,7 +1082,7 @@ let forestOfHollowBloodStartSceen = new _world.default({
     const startBtn = document.createElement("button");
     Object.assign(startBtn.style, {
       position: "fixed",
-      bottom: '20px',
+      bottom: '40px',
       right: '120px',
       width: "250px",
       height: "54px",
@@ -1101,7 +1140,7 @@ let forestOfHollowBloodStartSceen = new _world.default({
     const aboutBtn = document.createElement("button");
     Object.assign(aboutBtn.style, {
       position: "fixed",
-      bottom: '20px',
+      bottom: '40px',
       left: '120px',
       width: "150px",
       height: "54px",
@@ -28084,7 +28123,10 @@ exports.genName = genName;
 exports.getAxisRot = getAxisRot;
 exports.getAxisRot2 = getAxisRot2;
 exports.getAxisRot3 = getAxisRot3;
-exports.mb = exports.mat4 = exports.jsonHeaders = exports.htmlHeader = void 0;
+exports.htmlHeader = void 0;
+exports.isEven = isEven;
+exports.isOdd = isOdd;
+exports.mb = exports.mat4 = exports.jsonHeaders = void 0;
 exports.quaternion_rotation_matrix = quaternion_rotation_matrix;
 exports.radToDeg = radToDeg;
 exports.randomFloatFromTo = randomFloatFromTo;
@@ -29001,6 +29043,12 @@ const htmlHeader = exports.htmlHeader = new Headers({
   "Content-Type": "text/html",
   "Accept": "text/plain"
 });
+function isEven(n) {
+  return n % 2 === 0;
+}
+function isOdd(n) {
+  return n % 2 !== 0;
+}
 
 },{}],43:[function(require,module,exports){
 "use strict";

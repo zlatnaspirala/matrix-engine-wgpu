@@ -9,7 +9,7 @@
   src: url(../../public/res/fonts/wargames.ttf);
 }
 
-body {
+html, body {
   color: white;
   background-color: #95003d;
   font-family: "stormfaze";
@@ -17,6 +17,7 @@ body {
   margin: 0;
   padding: 0;
   overflow: hidden;
+  height: 100dvh;
   text-align: center;
 
   -webkit-user-select: none;
@@ -28,10 +29,17 @@ body {
 
   -webkit-text-stroke-width: 1px;
   -webkit-text-stroke-color: rgba(0, 0, 0, 0.575);
+
+  cursor: url(../res/icons/default.png) 0 0, auto;
+}
+
+div {
+  cursor: url(../res/icons/default.png) 0 0, auto;
 }
 
 .meBody {
   font-family: stormfaze;
+  cursor: url(../res/icons/default.png) 0 0, auto;
 }
 
 .noselection {
@@ -813,7 +821,7 @@ new dom effect from
     all: unset;
     -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
     position: relative;
-    border-radius: 999vw;
+    border-radius: 50%;
     background-color: rgba(0, 0, 0, 0.75);
     box-shadow: -0.15em -0.15em 0.15em -0.075em rgba(5, 5, 5, 0.25),
         0.0375em 0.0375em 0.0675em 0 rgba(5, 5, 5, 0.1);

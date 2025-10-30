@@ -10,6 +10,7 @@ export class EnemiesManager {
   }
   // Make possible to play 3x3 4x4 or 5x5 ...
   loadBySumOfPlayers() {
+
     this.enemies.push(new Enemie(
       {
         core: this.core,
@@ -19,6 +20,7 @@ export class EnemiesManager {
         position: {x: -653.83, y: -23, z: 0} //, -26.62, -612.95
       }
     ));
+
     this.creeps.push(new Creep({
       core: this.core,
       name: 'enemy-creep0',
