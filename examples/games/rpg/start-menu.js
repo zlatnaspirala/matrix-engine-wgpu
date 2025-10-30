@@ -55,13 +55,18 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
   });
 
   function handleHeroImage(selectHeroIndex) {
-    let name;
+    // func exist in case of changinf hero names...
+    let name = 'no-name';
     if(selectHeroIndex == 0) {
       name = 'mariasword';
     } else if(selectHeroIndex == 1) {
       name = 'slayzer';
     } else if(selectHeroIndex == 2) {
       name = 'slayzer';
+    } else if(selectHeroIndex == 3) {
+      name = 'warrok';
+    } else if(selectHeroIndex == 4) {
+      name = 'skeletonz';
     }
     return name;
   }
@@ -103,10 +108,18 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
       return;
     }
 
-    if(app.net.session.connection != null) app.net.sendOnlyData({
-      type: "selectHeroIndex",
-      selectHeroIndex: app.selectedHero
-    });
+    if(app.net.session.connection != null) {
+      console.log("Test team data moment", byId(`waiting-${app.net.session.connection.connectionId}`).getAttribute('data-hero-team'))
+      let testDom = byId(`waiting-${app.net.session.connection.connectionId}`).getAttribute('data-hero-team');
+      if(typeof testDom != 'string') {
+        console.low('Potencial error not handled....')
+      }
+      app.net.sendOnlyData({
+        type: "selectHeroIndex",
+        selectHeroIndex: app.selectedHero,
+        team: testDom
+      });
+    }
     // fix for local
     if(byId(`waithero-img-${app.net.session.connection.connectionId}`)) {
       let heroImage = byId(`waithero-img-${app.net.session.connection.connectionId}`);
@@ -262,22 +275,19 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
       let team = determinateTeam();
       newPlayer.setAttribute('data-hero-team', team);
       newPlayer.innerHTML = `<div id="${e.detail.connection.connectionId}-title" >Player:${e.detail.connection.connectionId} Team:${team}</div>`;
-      setTimeout(() => app.net.sendOnlyData({type: "team-notify", team: team}), 1000);
+      setTimeout(() => app.net.sendOnlyData({type: "team-notify", team: team}), 1500);
     } else {
       newPlayer.innerHTML = `<div id="${e.detail.connection.connectionId}-title" >Player:${e.detail.connection.connectionId}</div>`;
     }
-    // newPlayer.innerHTML = `Player:${e.detail.connection.connectionId} Team:${team}`;
     newPlayer.id = `waiting-${e.detail.connection.connectionId}`;
     byId('waitingForOthersDOM').appendChild(newPlayer);
     let testParty = document.querySelectorAll('[id*="waiting-"]');
     console.info('Test number of players:', testParty);
     if(testParty.length == forestOfHollowBloodStartSceen.MINIMUM_PLAYERS) {
       // when all choose hero goto play
-      mb.success(`
-          Consensus is reached. Party${forestOfHollowBloodStartSceen.MINIMUM_PLAYERS}
+      mb.success(`Consensus is reached. Party${forestOfHollowBloodStartSceen.MINIMUM_PLAYERS}
           When all player select hero gameplay starts.
-        `)
-      // setTimeout(() => gotoGamePlay(), 10000)
+        `);
     } else if(testParty.length < forestOfHollowBloodStartSceen.MINIMUM_PLAYERS) {
       mb.success(`Player ${e.detail.connection.connectionId} joined party.Select your hero and wait for other...`);
     } else if(testParty.length > forestOfHollowBloodStartSceen.MINIMUM_PLAYERS) {
@@ -304,6 +314,10 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
           heroImage.src = `./res/textures/rpg/hero-image/${name.toLowerCase()}.png`;
           heroImage.setAttribute('data-hero-index', t.selectHeroIndex);
           byId(`waiting-${e.detail.from.connectionId}`).appendChild(heroImage);
+          // also add team for initial user problem case...
+          if(t.team) {
+            byId(`${e.detail.from.connectionId}-title`).innerHTML = `Player:${e.detail.from.connectionId} Team:${t.team}`;
+          }
         }
       } else if(t.type == 'team-notify') {
         console.log(`<data-receive From ${e.detail.from.connectionId} team:${t.team}  ${byId(`waiting-${e.detail.from.connectionId}`)}`);
@@ -320,6 +334,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
       {type: "Warrior", name: 'Steelborn', path: "res/meshes/glb/bot.glb", desc: forestOfHollowBloodStartSceen.label.get.steelborn},
       {type: "Warrior", name: 'Warrok', path: "res/meshes/glb/warrok.glb", desc: forestOfHollowBloodStartSceen.label.get.warrok},
       {type: "Warrior", name: 'Skeletonz', path: "res/meshes/glb/skeletonz.glb", desc: forestOfHollowBloodStartSceen.label.get.skeletonz},
+      {type: "Warrior", name: 'Erika', path: "res/meshes/glb/erika.glb", desc: forestOfHollowBloodStartSceen.label.get.skeletonz},
     ];
 
     forestOfHollowBloodStartSceen.heros = heros;
@@ -330,7 +345,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
         var glbFile01 = await fetch(heros[x].path).then(
           res => res.arrayBuffer().then(buf => uploadGLBModel(buf, app.device)));
         forestOfHollowBloodStartSceen.addGlbObjInctance({
-          material: {type: 'standard', useTextureFromGlb: true},
+          material: (x == 2 ? {type: 'power', useTextureFromGlb: true} : {type: 'standard', useTextureFromGlb: true}),
           scale: [20, 20, 20],
           position: {x: 0 + x * 50, y: 0, z: -10},
           name: heros[x].name,
@@ -365,18 +380,30 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
             hero0[0].effects.circlePlane.instanceTargets[0].color = [1, 0, 2, 1];
           }
           hero0[0].effects.flameEmitter.instanceTargets.forEach((p, i, array) => {
-            array[i].color = [0, 0, 0, 0.7];
+            array[i].color = [0, 1, 0, 0.7];
           })
 
-          if(x == 2 || x == 3) {
+          if(x == 2) {
             hero0.forEach((p, i, array) => {
-              array[i].globalAmbient = [16, 16, 16];
+              array[i].globalAmbient = [11, 11, 1];
+            })
+          }
+          if(x == 3 || x ==5) {
+            hero0.forEach((p, i, array) => {
+              array[i].globalAmbient = [10, 10, 10];
+              array[i].effects.flameEmitter.smoothFlickeringScale = 0.005;
+            })
+          }
+          if(x == 4) {
+            hero0.forEach((p, i, array) => {
+              array[i].globalAmbient = [6, 6, 8];
             })
           }
         }
         app.lightContainer[0].position[2] = 10;
         app.lightContainer[0].position[1] = 50;
-      }, 2500)
+        app.lightContainer[0].intensity = 1.4;
+      }, 3000);
     }
     loadHeros();
     createHUDMEnu();
@@ -443,14 +470,6 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
           heroBodie.position.translateByX(-50 * app.selectedHero + indexRoot * 50)
           heroBodie.position.onTargetPositionReach = () => {
             app.lock = false;
-          }
-          // custom adapt 
-          if(indexRoot == 0) {
-            heroBodie.globalAmbient = [1, 1, 1];
-          } else if(indexRoot == 1) {
-            heroBodie.globalAmbient = [2, 2.5, 2];
-          } else if(indexRoot == 2) {
-            heroBodie.globalAmbient = [4, 4, 4];
           }
 
           if(heroBodie.effects.circlePlane) {
