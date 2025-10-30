@@ -388,7 +388,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
               array[i].globalAmbient = [11, 11, 1];
             })
           }
-          if(x == 3 || x ==5) {
+          if(x == 3 || x == 5) {
             hero0.forEach((p, i, array) => {
               array[i].globalAmbient = [10, 10, 10];
               array[i].effects.flameEmitter.smoothFlickeringScale = 0.005;
@@ -656,7 +656,67 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
     `;
     aboutBtn.addEventListener('click', (e) => app.showAbout());
     hud.appendChild(aboutBtn);
-    console.log('help dom, ', byId('helpBox'))
+
+    const loader = document.createElement("div");
+    Object.assign(loader.style, {
+      position: "fixed",
+      display: 'flex',
+      bottom: '0',
+      left: '0',
+      width: "100vw",
+      height: "100vh",
+      textAlign: "center",
+      color: "white",
+      zIndex: 10,
+      fontWeight: "bold",
+      textShadow: "0 0 2px black",
+      color: '#ffffffff',
+      background: '#000000ff',
+      fontSize: '16px',
+      cursor: 'url(./res/icons/default.png) 0 0, auto',
+      pointerEvents: 'auto'
+    });
+    // loader.classList.add('buttonMatrix');
+    loader.innerHTML = `
+      <div class="loader">
+        <div class="progress-container">
+          <div class="progress-bar" id="progressBar"></div>
+          </div>
+        <div class="counter" id="counter">0%</div>
+      </div>
+    `;
+    loader.addEventListener('click', (e) => {
+      app.matrixSounds.play('music');
+    });
+    hud.appendChild(loader);
+    // console.log('help dom, ', byId('helpBox'))
+
+    let progress = 0;
+    let bar = null;
+    let counter = null;
+
+    function fakeProgress() {
+      if(progress < 100) {
+        // Random step to look "non-linear"
+        progress += Math.random() * 5;
+        if(progress > 100) progress = 100;
+        bar.style.width = progress + '%';
+        counter.textContent = Math.floor(progress) + '%';
+        setTimeout(fakeProgress, 80 + Math.random() * 150);
+      } else {
+        counter.textContent = "Let the game begin!";
+        bar.style.boxShadow = "0 0 30px #00ff99";
+
+        setTimeout(()=> {
+           loader.remove();
+        } , 250)
+      }
+    }
+
+     setTimeout(() => {
+      bar = document.getElementById('progressBar');
+      counter = document.getElementById('counter');
+      fakeProgress()}, 300);
 
     //
     hud.appendChild(previusBtn);
