@@ -95,7 +95,15 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
 
     forestOfHollowBlood.HUD = new HUD(forestOfHollowBlood.localHero);
 
-    forestOfHollowBlood.enemies = new EnemiesManager(forestOfHollowBlood);
+    // fix arg also 
+    if (forestOfHollowBlood.player.data.team == 'SOUTH') {
+      forestOfHollowBlood.player.data.enemyTeam = 'NORTH';
+      forestOfHollowBlood.enemies = new EnemiesManager(forestOfHollowBlood, 'NORTH');
+    } else {
+      forestOfHollowBlood.player.data.enemyTeam = 'SOUTH';
+      forestOfHollowBlood.enemies = new EnemiesManager(forestOfHollowBlood, 'SOUTH');
+    }
+    
 
     forestOfHollowBlood.collisionSystem = new CollisionSystem(forestOfHollowBlood);
 

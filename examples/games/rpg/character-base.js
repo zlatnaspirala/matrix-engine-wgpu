@@ -4,6 +4,7 @@ import {byId, LOG_MATRIX} from "../../../src/engine/utils";
 import {Hero, HERO_PROFILES} from "./hero";
 import {Creep} from "./creep-character";
 import {followPath} from "./nav-mesh";
+import {startUpPositions} from "./static";
 
 export class Character extends Hero {
 
@@ -37,14 +38,16 @@ export class Character extends Hero {
 
   constructor(forestOfHollowBlood, path, name = 'MariaSword', archetypes = ["Warrior", "Mage"]) {
     super(name, archetypes);
-    // console.info(`%cLOADING hero name : ${name}`, LOG_MATRIX)
+    console.info(`%cLOADING local hero name : ${name}`, LOG_MATRIX)
+    console.info(`%cLOADING local hero forestOfHollowBlood.player.data : ${forestOfHollowBlood.player.data}`, LOG_MATRIX)
+
     this.name = name;
     this.core = forestOfHollowBlood;
     this.heroe_bodies = [];
     this.loadfriendlyCreeps();
     this.loadLocalHero(path);
     // async
-    setTimeout(() => this.setupHUDForHero(name), 1000)
+    setTimeout(() => this.setupHUDForHero(name), 1000);
   }
 
   setupHUDForHero(name) {
@@ -64,21 +67,21 @@ export class Character extends Hero {
       name: 'friendly-creeps0',
       archetypes: ["creep"],
       path: 'res/meshes/glb/bot.glb',
-      position: {x: 0, y: -23, z: 1000}
+      position: {x: 0, y: -23, z: 0}
     }, ['creep'], 'friendly'));
     this.friendlyLocal.creeps.push(new Creep({
       core: this.core,
       name: 'friendly-creeps1',
       archetypes: ["creep"],
       path: 'res/meshes/glb/bot.glb',
-      position: {x: 150, y: -23, z: 1200}
+      position: {x: 150, y: -23, z: 0}
     }, ['creep'], 'friendly'));
     this.friendlyLocal.creeps.push(new Creep({
       core: this.core,
       name: 'friendly-creeps2',
       archetypes: ["creep"],
       path: 'res/meshes/glb/bot.glb',
-      position: {x: 100, y: -23, z: 1400} // not work init
+      position: {x: 100, y: -23, z: 0}
     }, ['creep'], 'friendly'));
   }
 
@@ -88,7 +91,9 @@ export class Character extends Hero {
       this.core.addGlbObjInctance({
         material: {type: 'standard', useTextureFromGlb: true},
         scale: [20, 20, 20],
-        position: {x: 0, y: -23, z: -0},
+        position: {x: startUpPositions[this.core.player.data.team][0],
+                   y: startUpPositions[this.core.player.data.team][1],
+                   z: startUpPositions[this.core.player.data.team][2]},
         name: this.name,
         texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
         raycast: {enabled: true, radius: 1.5},
@@ -153,12 +158,8 @@ export class Character extends Hero {
         }
 
         app.localHero.setAllCreepsAtStartPos();
-
         this.attachEvents();
-        // important !!
-        // if(app.localHero.heroe_bodies.length > 1) {
-        //   app.localHero.heroe_bodies[1].position = app.localHero.heroe_bodies[0].position;
-        // }
+        // important!!
         for(var x = 0;x < app.localHero.heroe_bodies.length;x++) {
           if(x > 0) app.localHero.heroe_bodies[x].position = app.localHero.heroe_bodies[0].position;
         }
@@ -191,8 +192,10 @@ export class Character extends Hero {
     });
 
     app.localHero.friendlyLocal.creeps.forEach((creep, index) => {
-      // console.log('app.local creep ', creep.heroe_bodies[0].glb.glbJsonData.animations);
-      creep.heroe_bodies[0].position.setPosition(-750 + index * 50, -23, 800 + index * 50);
+      creep.heroe_bodies[0].position.setPosition(
+        startUpPositions[this.core.player.data.team][0] + index * 50,
+        startUpPositions[this.core.player.data.team][1],
+        startUpPositions[this.core.player.data.team][2] + index * 50);
     })
 
     setTimeout(() => {

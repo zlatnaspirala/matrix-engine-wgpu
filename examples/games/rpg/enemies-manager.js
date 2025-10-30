@@ -4,8 +4,9 @@ import {Enemie} from "./enemy-character";
 export class EnemiesManager {
   enemies = [];
   creeps = [];
-  constructor(core) {
+  constructor(core, team) {
     this.core = core;
+    this.team = team;
     this.loadBySumOfPlayers();
   }
   // Make possible to play 3x3 4x4 or 5x5 ...
@@ -26,21 +27,21 @@ export class EnemiesManager {
       name: 'enemy-creep0',
       archetypes: ["creep"],
       path: 'res/meshes/glb/bot.glb',
-      position: {x: 0, y: -0, z: -1310}
+      position: {x: 0, y: -23, z: -0}
     }, ['creep'], 'enemy'));
     this.creeps.push(new Creep({
       core: this.core,
       name: 'enemy-creep1',
       archetypes: ["creep"],
       path: 'res/meshes/glb/bot.glb',
-      position: {x: 100, y: -23, z: -1410}
+      position: {x: 100, y: -23, z: -0}
     }, ['creep'], 'enemy'))
     this.creeps.push(new Creep({
       core: this.core,
       name: 'enemy-creep2',
       archetypes: ["creep"],
       path: 'res/meshes/glb/bot.glb',
-      position: {x: 150, y: -23, z: -1510}
+      position: {x: 150, y: -23, z: -0}
     }, ['creep'], 'enemy'))
 
     setTimeout(() => {
