@@ -3,7 +3,6 @@ import {Controller} from "./controller.js";
 import {HUD} from "./hud.js";
 import {MEMapLoader} from "./map-loader.js";
 import {Character} from "./character-base.js";
-// import {HERO_PROFILES} from "./hero.js";
 import {EnemiesManager} from "./enemies-manager.js";
 import {CollisionSystem} from "../../../src/engine/collision-sub-system.js";
 import {LS, SS} from "../../../src/engine/utils.js";
@@ -70,7 +69,6 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
       let newPlayer = document.createElement('div');
       newPlayer.innerHTML = `Player: ${e.detail.connection.connectionId}`;
       newPlayer.id = `waiting-${e.detail.connection.connectionId}`;
-      //-- 
     })
 
     addEventListener('only-data-receive', (e) => {
@@ -78,15 +76,16 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
     })
 
     app.matrixSounds.audios.music.loop = true;
-
     forestOfHollowBlood.player.data = SS.get('player');
 
     addEventListener('local-hero-bodies-ready', () => {
       app.cameras.RPG.position[1] = 130;
+      app.cameras.RPG.movementSpeed = 100;
       app.cameras.RPG.followMe = forestOfHollowBlood.localHero.heroe_bodies[0].position;
+      app.cameras.RPG.mousRollInAction = true;
     })
     forestOfHollowBlood.RPG = new Controller(forestOfHollowBlood);
-    app.cameras.RPG.movementSpeed = 100;
+
 
     forestOfHollowBlood.mapLoader = new MEMapLoader(forestOfHollowBlood, "./res/meshes/nav-mesh/navmesh.json");
     // fix arg later !

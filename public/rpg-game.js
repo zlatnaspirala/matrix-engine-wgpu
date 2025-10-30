@@ -1244,8 +1244,6 @@ var _utils = require("../../../src/engine/utils.js");
 var _net = require("../../../src/engine/networking/net.js");
 var _matrixStream = require("../../../src/engine/networking/matrix-stream.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
-// import {HERO_PROFILES} from "./hero.js";
-
 /**
  * @description
  * This is main root dep file.
@@ -1305,7 +1303,6 @@ let forestOfHollowBlood = new _world.default({
       let newPlayer = document.createElement('div');
       newPlayer.innerHTML = `Player: ${e.detail.connection.connectionId}`;
       newPlayer.id = `waiting-${e.detail.connection.connectionId}`;
-      //-- 
     });
     addEventListener('only-data-receive', e => {
       console.log('<data-receive>', e);
@@ -1314,10 +1311,11 @@ let forestOfHollowBlood = new _world.default({
     forestOfHollowBlood.player.data = _utils.SS.get('player');
     addEventListener('local-hero-bodies-ready', () => {
       app.cameras.RPG.position[1] = 130;
+      app.cameras.RPG.movementSpeed = 100;
       app.cameras.RPG.followMe = forestOfHollowBlood.localHero.heroe_bodies[0].position;
+      app.cameras.RPG.mousRollInAction = true;
     });
     forestOfHollowBlood.RPG = new _controller.Controller(forestOfHollowBlood);
-    app.cameras.RPG.movementSpeed = 100;
     forestOfHollowBlood.mapLoader = new _mapLoader.MEMapLoader(forestOfHollowBlood, "./res/meshes/nav-mesh/navmesh.json");
     // fix arg later !
     forestOfHollowBlood.localHero = new _characterBase.Character(forestOfHollowBlood, forestOfHollowBlood.player.data.path, forestOfHollowBlood.player.data.hero, [forestOfHollowBlood.player.data.archetypes]);
@@ -1888,7 +1886,7 @@ class HUD {
       justifyContent: "space-around",
       color: "white",
       fontFamily: "'Orbitron', sans-serif",
-      zIndex: "100",
+      zIndex: "15",
       padding: "10px",
       boxSizing: "border-box"
     });
@@ -1903,7 +1901,7 @@ class HUD {
       justifyContent: "space-around",
       color: "white",
       fontFamily: "'Orbitron', sans-serif",
-      zIndex: "100",
+      zIndex: "15",
       padding: "10px",
       boxSizing: "border-box",
       overflow: 'hidden'
@@ -1923,7 +1921,7 @@ class HUD {
       justifyContent: "space-around",
       color: "white",
       fontFamily: "'Orbitron', sans-serif",
-      zIndex: "100",
+      zIndex: "15",
       padding: "1px",
       margin: '0',
       boxSizing: "border-box",
@@ -1943,7 +1941,7 @@ class HUD {
       justifyContent: "space-around",
       color: "white",
       fontFamily: "'Orbitron', sans-serif",
-      zIndex: "100",
+      zIndex: "15",
       padding: "1px",
       margin: '0',
       boxSizing: "border-box",
@@ -1970,7 +1968,7 @@ class HUD {
         justifyContent: "space-around",
         color: "white",
         fontFamily: "'Orbitron', sans-serif",
-        zIndex: "100",
+        zIndex: "15",
         margin: '0',
         boxSizing: "border-box",
         overflow: 'hidden'
@@ -1986,7 +1984,7 @@ class HUD {
         justifyContent: "space-around",
         color: "white",
         fontFamily: "'Orbitron', sans-serif",
-        zIndex: "100",
+        zIndex: "15",
         margin: '0',
         boxSizing: "border-box",
         overflow: 'hidden'
@@ -2006,7 +2004,7 @@ class HUD {
       justifyContent: "space-around",
       color: "white",
       fontFamily: "'Orbitron', sans-serif",
-      zIndex: "100",
+      zIndex: "15",
       padding: "0",
       boxSizing: "border-box"
     });
@@ -2025,7 +2023,7 @@ class HUD {
       borderRadius: "10px",
       padding: "2px",
       boxSizing: "border-box",
-      zIndex: "100",
+      zIndex: "15",
       fontFamily: "'Orbitron', sans-serif",
       backdropFilter: "blur(6px)",
       boxShadow: "0 -2px 10px rgba(0,0,0,0.4)",
@@ -2092,7 +2090,7 @@ class HUD {
       justifyContent: "space-around",
       color: "white",
       fontFamily: "'Orbitron', sans-serif",
-      zIndex: "100",
+      zIndex: "15",
       padding: "10px",
       boxSizing: "border-box"
     });
@@ -2143,7 +2141,7 @@ class HUD {
       justifyContent: "space-around",
       color: "white",
       fontFamily: "'Orbitron', sans-serif",
-      zIndex: "100",
+      zIndex: "15",
       padding: "10px",
       boxSizing: "border-box"
     });
@@ -2205,7 +2203,7 @@ class HUD {
       justifyContent: "space-around",
       color: "white",
       fontFamily: "'Orbitron', sans-serif",
-      zIndex: "100",
+      zIndex: "15",
       padding: "10px",
       boxSizing: "border-box"
     });
@@ -2249,7 +2247,7 @@ class HUD {
       justifyContent: "space-around",
       color: "white",
       fontFamily: "'Orbitron', sans-serif",
-      zIndex: "100",
+      zIndex: "15",
       padding: "1px",
       boxSizing: "border-box"
     });
@@ -2298,6 +2296,64 @@ class HUD {
       slot.textContent = "Empty";
       inventoryGrid.appendChild(slot);
     }
+    const loader = document.createElement("div");
+    Object.assign(loader.style, {
+      position: "fixed",
+      display: 'flex',
+      bottom: '0',
+      left: '0',
+      width: "100vw",
+      height: "100vh",
+      textAlign: "center",
+      color: "white",
+      zIndex: 21,
+      fontWeight: "bold",
+      textShadow: "0 0 2px black",
+      color: '#ffffffff',
+      background: '#000000ff',
+      fontSize: '16px',
+      cursor: 'url(./res/icons/default.png) 0 0, auto',
+      pointerEvents: 'auto'
+    });
+    // loader.classList.add('buttonMatrix');
+    loader.innerHTML = `
+      <div class="loader">
+        <div class="progress-container">
+          <div class="progress-bar" id="progressBar"></div>
+          </div>
+        <div class="counter" id="counter">0%</div>
+      </div>
+    `;
+    loader.addEventListener('click', e => {
+      app.matrixSounds.play('music');
+    });
+    hud.appendChild(loader);
+    let progress = 0;
+    let bar = null;
+    let counter = null;
+    function fakeProgress() {
+      if (progress < 100) {
+        // Random step to look "non-linear"
+        progress += Math.random() * 5;
+        if (progress > 100) progress = 100;
+        bar.style.width = progress + '%';
+        counter.textContent = "Prepare gameplay " + Math.floor(progress) + '%';
+        setTimeout(fakeProgress, 80 + Math.random() * 150);
+      } else {
+        counter.textContent = "Let the game begin!";
+        bar.style.boxShadow = "0 0 30px #00ff99";
+        setTimeout(() => {
+          loader.remove();
+          bar = null;
+          counter = null;
+        }, 250);
+      }
+    }
+    setTimeout(() => {
+      bar = document.getElementById('progressBar');
+      counter = document.getElementById('counter');
+      fakeProgress();
+    }, 300);
 
     // Add grid to hudItems
     hudItems.appendChild(inventoryGrid);
@@ -23454,11 +23510,11 @@ function createInputHandler(window, canvas) {
     }
   });
   canvas.addEventListener('wheel', e => {
-    if ((e.buttons & 1) !== 0) {
-      analog.zoom += Math.sign(e.deltaY);
-      e.preventDefault();
-      e.stopPropagation();
-    }
+    // if((e.buttons & 1) !== 0) {
+    //   analog.zoom += Math.sign(e.deltaY);
+    //   e.preventDefault();
+    //   e.stopPropagation();
+    // }
   }, {
     passive: false
   });
@@ -23497,7 +23553,7 @@ class RPGCamera extends CameraBase {
   // Returns velocity vector
 
   // Inside your camera control init
-  scrollY = 0;
+  scrollY = 50;
   minY = 50.5; // minimum camera height
   maxY = 135.0; // maximum camera height
   scrollSpeed = 1;

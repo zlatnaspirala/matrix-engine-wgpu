@@ -22,7 +22,7 @@ export class HUD {
       justifyContent: "space-around",
       color: "white",
       fontFamily: "'Orbitron', sans-serif",
-      zIndex: "100",
+      zIndex: "15",
       padding: "10px",
       boxSizing: "border-box"
     });
@@ -39,7 +39,7 @@ export class HUD {
       justifyContent: "space-around",
       color: "white",
       fontFamily: "'Orbitron', sans-serif",
-      zIndex: "100",
+      zIndex: "15",
       padding: "10px",
       boxSizing: "border-box",
       overflow: 'hidden'
@@ -61,7 +61,7 @@ export class HUD {
       justifyContent: "space-around",
       color: "white",
       fontFamily: "'Orbitron', sans-serif",
-      zIndex: "100",
+      zIndex: "15",
       padding: "1px",
       margin: '0',
       boxSizing: "border-box",
@@ -84,7 +84,7 @@ export class HUD {
       justifyContent: "space-around",
       color: "white",
       fontFamily: "'Orbitron', sans-serif",
-      zIndex: "100",
+      zIndex: "15",
       padding: "1px",
       margin: '0',
       boxSizing: "border-box",
@@ -126,7 +126,7 @@ export class HUD {
         justifyContent: "space-around",
         color: "white",
         fontFamily: "'Orbitron', sans-serif",
-        zIndex: "100",
+        zIndex: "15",
         margin: '0',
         boxSizing: "border-box",
         overflow: 'hidden'
@@ -143,7 +143,7 @@ export class HUD {
         justifyContent: "space-around",
         color: "white",
         fontFamily: "'Orbitron', sans-serif",
-        zIndex: "100",
+        zIndex: "15",
         margin: '0',
         boxSizing: "border-box",
         overflow: 'hidden'
@@ -164,7 +164,7 @@ export class HUD {
       justifyContent: "space-around",
       color: "white",
       fontFamily: "'Orbitron', sans-serif",
-      zIndex: "100",
+      zIndex: "15",
       padding: "0",
       boxSizing: "border-box",
     });
@@ -184,7 +184,7 @@ export class HUD {
       borderRadius: "10px",
       padding: "2px",
       boxSizing: "border-box",
-      zIndex: "100",
+      zIndex: "15",
       fontFamily: "'Orbitron', sans-serif",
       backdropFilter: "blur(6px)",
       boxShadow: "0 -2px 10px rgba(0,0,0,0.4)",
@@ -256,7 +256,7 @@ export class HUD {
       justifyContent: "space-around",
       color: "white",
       fontFamily: "'Orbitron', sans-serif",
-      zIndex: "100",
+      zIndex: "15",
       padding: "10px",
       boxSizing: "border-box"
     });
@@ -308,7 +308,7 @@ export class HUD {
       justifyContent: "space-around",
       color: "white",
       fontFamily: "'Orbitron', sans-serif",
-      zIndex: "100",
+      zIndex: "15",
       padding: "10px",
       boxSizing: "border-box"
     });
@@ -373,7 +373,7 @@ export class HUD {
       justifyContent: "space-around",
       color: "white",
       fontFamily: "'Orbitron', sans-serif",
-      zIndex: "100",
+      zIndex: "15",
       padding: "10px",
       boxSizing: "border-box"
     });
@@ -420,7 +420,7 @@ export class HUD {
       justifyContent: "space-around",
       color: "white",
       fontFamily: "'Orbitron', sans-serif",
-      zIndex: "100",
+      zIndex: "15",
       padding: "1px",
       boxSizing: "border-box"
     });
@@ -474,6 +474,69 @@ export class HUD {
       slot.textContent = "Empty";
       inventoryGrid.appendChild(slot);
     }
+
+    const loader = document.createElement("div");
+    Object.assign(loader.style, {
+      position: "fixed",
+      display: 'flex',
+      bottom: '0',
+      left: '0',
+      width: "100vw",
+      height: "100vh",
+      textAlign: "center",
+      color: "white",
+      zIndex: 21,
+      fontWeight: "bold",
+      textShadow: "0 0 2px black",
+      color: '#ffffffff',
+      background: '#000000ff',
+      fontSize: '16px',
+      cursor: 'url(./res/icons/default.png) 0 0, auto',
+      pointerEvents: 'auto'
+    });
+    // loader.classList.add('buttonMatrix');
+    loader.innerHTML = `
+      <div class="loader">
+        <div class="progress-container">
+          <div class="progress-bar" id="progressBar"></div>
+          </div>
+        <div class="counter" id="counter">0%</div>
+      </div>
+    `;
+    loader.addEventListener('click', (e) => {
+      app.matrixSounds.play('music');
+    });
+    hud.appendChild(loader);
+
+    let progress = 0;
+    let bar = null;
+    let counter = null;
+    function fakeProgress() {
+      if(progress < 100) {
+        // Random step to look "non-linear"
+        progress += Math.random() * 5;
+        if(progress > 100) progress = 100;
+        bar.style.width = progress + '%';
+        counter.textContent = "Prepare gameplay " + Math.floor(progress) + '%';
+        setTimeout(fakeProgress, 80 + Math.random() * 150);
+      } else {
+        counter.textContent = "Let the game begin!";
+        bar.style.boxShadow = "0 0 30px #00ff99";
+        setTimeout(() => {
+          loader.remove();
+          bar = null;
+          counter = null;
+        }, 250)
+      }
+    }
+
+    setTimeout(() => {
+      bar = document.getElementById('progressBar');
+      counter = document.getElementById('counter');
+      fakeProgress()
+    }, 300);
+
+
 
     // Add grid to hudItems
     hudItems.appendChild(inventoryGrid);
