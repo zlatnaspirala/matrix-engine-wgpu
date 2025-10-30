@@ -21,7 +21,7 @@ import {byId} from "../../../src/engine/networking/matrix-stream.js";
  **/
 
 // Prevent no inputs cases
-if(!LS.has('player')) {
+if(!SS.has('player')) {
   // alert('No no');
   location.assign('google.com');
 }
@@ -76,7 +76,7 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
     addEventListener('only-data-receive', (e) => {
       console.log('<data-receive>', e)
     })
-    // END NET
+
     app.matrixSounds.audios.music.loop = true;
 
     forestOfHollowBlood.player.data = SS.get('player');
