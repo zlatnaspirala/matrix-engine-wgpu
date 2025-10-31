@@ -23,7 +23,7 @@ export class MatrixStream {
     netConfig.sessionName = arg.sessionName;
     netConfig.resolution = arg.resolution;
     netConfig.isDataOnly = arg.isDataOnly;
-    if (arg.customData) netConfig.customData = arg.customData;
+    if(arg.customData) netConfig.customData = arg.customData;
     scriptManager.LOAD('./networking/openvidu-browser-2.20.0.js', undefined, undefined, undefined, () => {
       setTimeout(() => {this.loadNetHTML()}, 2500)
     });
@@ -69,7 +69,7 @@ export class MatrixStream {
       this.session.signal({
         data: JSON.stringify(netArg),
         to: [],
-        type:  netConfig.sessionName
+        type: netConfig.sessionName
       }).then(() => {
         console.log('.');
       }).catch(error => {
@@ -143,21 +143,20 @@ export class MatrixStream {
   multiPlayer = {
     root: this,
     init(rtcEvent) {
-      console.log("rtcEvent add new net object -> ", rtcEvent);
-      // dispatchEvent(new CustomEvent('net-new-user', {detail: {data: rtcEvent}}))
+      // console.log("rtcEvent add new net object -> ", rtcEvent);
     },
     update(e) {
       e.data = JSON.parse(e.data);
-      // dispatchEvent(new CustomEvent('network-data', {detail: e.data}))
-       console.log('REMOTE UPDATE::::', e);
+      console.log('REMOTE UPDATE::::', e);
       if(e.data.netPos) {
         if(app.getSceneObjectByName(e.data.sceneName)) {
-          app.getSceneObjectByName(e.data.sceneName).position.setPosition(e.data.netPos.x,e.data.netPos.y,e.data.netPos.z);
+          app.getSceneObjectByName(e.data.sceneName).position.setPosition(e.data.netPos.x, e.data.netPos.y, e.data.netPos.z);
         }
-      } else if(e.data.netRot) {
-        
+      } else if(e.data.netRotY) {
+        app.getSceneObjectByName(e.data.sceneName).rotation.y = e.data.netRotY;
+      } else if(e.data.animationIndex) {
+        app.getSceneObjectByName(e.data.sceneName).glb.animationIndex = e.data.animationIndex;
       }
-        else if(e.data.netScale) {}
     },
     /**
      * If someone leaves all client actions is here
@@ -165,8 +164,8 @@ export class MatrixStream {
      * - clear object from netObject_x
      */
     leaveGamePlay(rtcEvent) {
-      console.info("rtcEvent LEAVE GAME: ", rtcEvent.userid);
-      dispatchEvent(new CustomEvent('net.remove-user', {detail: {data: rtcEvent}}))
+      // console.info("rtcEvent LEAVE GAME: ", rtcEvent.userid);
+      // dispatchEvent(new CustomEvent('net.remove-user', {detail: {data: rtcEvent}}))
     }
   };
 

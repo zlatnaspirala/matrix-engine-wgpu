@@ -91,9 +91,11 @@ export class Character extends Hero {
       this.core.addGlbObjInctance({
         material: {type: 'standard', useTextureFromGlb: true},
         scale: [20, 20, 20],
-        position: {x: startUpPositions[this.core.player.data.team][0],
-                   y: startUpPositions[this.core.player.data.team][1],
-                   z: startUpPositions[this.core.player.data.team][2]},
+        position: {
+          x: startUpPositions[this.core.player.data.team][0],
+          y: startUpPositions[this.core.player.data.team][1],
+          z: startUpPositions[this.core.player.data.team][2]
+        },
         name: this.name,
         texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
         raycast: {enabled: true, radius: 1.5},
@@ -151,9 +153,7 @@ export class Character extends Hero {
         app.localHero.heroe_bodies[0].effects.flameEmitter.recreateVertexDataRND(1);
 
 
-        // activete net pos emit - becouse uniq name of hero body set net id by scene obj name simple
-        // app.localHero.heroe_bodies[0].position.netObject = app.net.session.connection.connectionId;
-        app.localHero.heroe_bodies[0].position.netObject = app.localHero.heroe_bodies[0].name;
+
 
         // adapt
         app.localHero.heroe_bodies[0].globalAmbient = [1, 1, 1, 1];
@@ -167,8 +167,20 @@ export class Character extends Hero {
         this.attachEvents();
         // important!!
         for(var x = 0;x < app.localHero.heroe_bodies.length;x++) {
-          if(x > 0) app.localHero.heroe_bodies[x].position = app.localHero.heroe_bodies[0].position;
+          if(x > 0) {
+            app.localHero.heroe_bodies[x].position = app.localHero.heroe_bodies[0].position;
+            // app.localHero.heroe_bodies[x].position.setPosition = app.localHero.heroe_bodies[0].position.setPosition;
+            app.localHero.heroe_bodies[x].rotation = app.localHero.heroe_bodies[0].rotation;
+          }
         }
+
+        // activete net pos emit - becouse uniq name of hero body set net id by scene obj name simple
+        // app.localHero.heroe_bodies[0].position.netObject = app.net.session.connection.connectionId;
+        app.localHero.heroe_bodies[0].position.netObject = app.localHero.heroe_bodies[0].name;
+
+        // for now net view for rot is axis separated
+        app.localHero.heroe_bodies[0].rotation.emitY = app.localHero.heroe_bodies[0].name;
+
         dispatchEvent(new CustomEvent('local-hero-bodies-ready', {
           detail: `This is not sync - 99% works`
         }))
@@ -236,9 +248,13 @@ export class Character extends Hero {
   }
 
   setWalk() {
-    this.core.RPG.heroe_bodies.forEach(subMesh => {
+    this.core.RPG.heroe_bodies.forEach((subMesh , index )=> {
       subMesh.glb.animationIndex = this.heroAnimationArrange.walk;
       // console.info(`%chero walk`, LOG_MATRIX)
+      if (index == 0) app.net.send({
+        sceneName: subMesh.name,
+        animationIndex: subMesh.glb.animationIndex
+      })
     });
   }
 
@@ -257,9 +273,13 @@ export class Character extends Hero {
   }
 
   setIdle() {
-    this.core.RPG.heroe_bodies.forEach(subMesh => {
+    this.core.RPG.heroe_bodies.forEach((subMesh, index) => {
       subMesh.glb.animationIndex = this.heroAnimationArrange.idle;
       // console.info(`%chero idle`, LOG_MATRIX)
+            if (index == 0) app.net.send({
+        sceneName: subMesh.name,
+        animationIndex: subMesh.glb.animationIndex
+      })
     });
   }
 

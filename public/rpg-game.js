@@ -172,10 +172,6 @@ class Character extends _hero.Hero {
         });
         app.localHero.heroe_bodies[0].effects.flameEmitter.recreateVertexDataRND(1);
 
-        // activete net pos emit - becouse uniq name of hero body set net id by scene obj name simple
-        // app.localHero.heroe_bodies[0].position.netObject = app.net.session.connection.connectionId;
-        app.localHero.heroe_bodies[0].position.netObject = app.localHero.heroe_bodies[0].name;
-
         // adapt
         app.localHero.heroe_bodies[0].globalAmbient = [1, 1, 1, 1];
         if (app.localHero.name == 'Slayzer') {
@@ -187,8 +183,19 @@ class Character extends _hero.Hero {
         this.attachEvents();
         // important!!
         for (var x = 0; x < app.localHero.heroe_bodies.length; x++) {
-          if (x > 0) app.localHero.heroe_bodies[x].position = app.localHero.heroe_bodies[0].position;
+          if (x > 0) {
+            app.localHero.heroe_bodies[x].position = app.localHero.heroe_bodies[0].position;
+            // app.localHero.heroe_bodies[x].position.setPosition = app.localHero.heroe_bodies[0].position.setPosition;
+            app.localHero.heroe_bodies[x].rotation = app.localHero.heroe_bodies[0].rotation;
+          }
         }
+
+        // activete net pos emit - becouse uniq name of hero body set net id by scene obj name simple
+        // app.localHero.heroe_bodies[0].position.netObject = app.net.session.connection.connectionId;
+        app.localHero.heroe_bodies[0].position.netObject = app.localHero.heroe_bodies[0].name;
+
+        // for now net view for rot is axis separated
+        app.localHero.heroe_bodies[0].rotation.emitY = app.localHero.heroe_bodies[0].name;
         dispatchEvent(new CustomEvent('local-hero-bodies-ready', {
           detail: `This is not sync - 99% works`
         }));
@@ -252,9 +259,13 @@ class Character extends _hero.Hero {
     (0, _navMesh.followPath)(creep.heroe_bodies[0], path, this.core);
   }
   setWalk() {
-    this.core.RPG.heroe_bodies.forEach(subMesh => {
+    this.core.RPG.heroe_bodies.forEach((subMesh, index) => {
       subMesh.glb.animationIndex = this.heroAnimationArrange.walk;
       // console.info(`%chero walk`, LOG_MATRIX)
+      if (index == 0) app.net.send({
+        sceneName: subMesh.name,
+        animationIndex: subMesh.glb.animationIndex
+      });
     });
   }
   setSalute() {
@@ -270,9 +281,13 @@ class Character extends _hero.Hero {
     });
   }
   setIdle() {
-    this.core.RPG.heroe_bodies.forEach(subMesh => {
+    this.core.RPG.heroe_bodies.forEach((subMesh, index) => {
       subMesh.glb.animationIndex = this.heroAnimationArrange.idle;
       // console.info(`%chero idle`, LOG_MATRIX)
+      if (index == 0) app.net.send({
+        sceneName: subMesh.name,
+        animationIndex: subMesh.glb.animationIndex
+      });
     });
   }
   setAttack(on) {
@@ -1165,6 +1180,12 @@ class Enemie extends _hero.Hero {
           if (idx == 0) this.core.collisionSystem.register(o.name, subMesh.position, 15.0, 'enemies');
         });
         this.setStartUpPosition();
+        for (var x = 0; x < this.heroe_bodies.length; x++) {
+          if (x > 0) {
+            this.heroe_bodies[x].position = this.heroe_bodies[0].position;
+            this.heroe_bodies[x].rotation = this.heroe_bodies[0].rotation;
+          }
+        }
       }, 1600);
     } catch (err) {
       throw err;
@@ -28434,6 +28455,8 @@ class Position {
     // Not in use for nwo this is from matrix-engine project [nameUniq]
     this.nameUniq = null; // not in use
     this.netObject = null;
+    this.netTolerance = 1;
+    this.netTolerance__ = 0;
     if (typeof x == 'undefined') x = 0;
     if (typeof y == 'undefined') y = 0;
     if (typeof z == 'undefined') z = 0;
@@ -28499,33 +28522,41 @@ class Position {
         this.y += this.velY;
         this.z += this.velZ;
         if (this.netObject != null) {
-          // global space bad but for now - can be injected maybe 
-          app.net.send({
-            sceneName: this.netObject,
-            netPos: {
-              x: this.x,
-              y: this.y,
-              z: this.z
-            }
-          });
+          if (this.netTolerance__ > this.netTolerance) {
+            app.net.send({
+              sceneName: this.netObject,
+              netPos: {
+                x: this.x,
+                y: this.y,
+                z: this.z
+              }
+            });
+            this.netTolerance__ = 0;
+          } else {
+            this.netTolerance__++;
+          }
         }
-        // // from me
-        // if(net && net.connection && typeof em === 'undefined' && App.scene[this.nameUniq].net.enable == true) net.connection.send({
-        //   netPos: {x: this.x, y: this.y, z: this.z},
-        //   netObjId: this.nameUniq,
-        // });
       } else {
         this.x = this.targetX;
         this.y = this.targetY;
         this.z = this.targetZ;
         this.inMove = false;
         this.onTargetPositionReach();
-
-        // // from me
-        // if(net && net.connection && typeof em === 'undefined' && App.scene[this.nameUniq].net.enable == true) net.connection.send({
-        //   netPos: {x: this.x, y: this.y, z: this.z},
-        //   netObjId: this.nameUniq,
-        // });
+        if (this.netObject != null) {
+          if (this.netTolerance__ > this.netTolerance) {
+            app.net.send({
+              sceneName: this.netObject,
+              netPos: {
+                x: this.x,
+                y: this.y,
+                z: this.z
+              }
+            });
+            this.netTolerance__ = 0;
+          } else {
+            this.netTolerance__++;
+          }
+        }
       }
     }
   }
@@ -28536,34 +28567,16 @@ class Position {
     this.x = newx;
     this.targetX = newx;
     this.inMove = false;
-
-    // if(net && net.connection && typeof em === 'undefined' &&
-    //   App.scene[this.nameUniq].net && App.scene[this.nameUniq].net.enable == true) {
-    //   net.connection.send({
-    //     netPos: {x: this.x, y: this.y, z: this.z},
-    //     netObjId: this.nameUniq,
-    //   });
-    // }
   }
   SetY(newy, em) {
     this.y = newy;
     this.targetY = newy;
     this.inMove = false;
-    // if(net && net.connection && typeof em === 'undefined' &&
-    //   App.scene[this.nameUniq].net && App.scene[this.nameUniq].net.enable == true) net.connection.send({
-    //     netPos: {x: this.x, y: this.y, z: this.z},
-    //     netObjId: this.nameUniq,
-    //   });
   }
   SetZ(newz, em) {
     this.z = newz;
     this.targetZ = newz;
     this.inMove = false;
-    // if(net && net.connection && typeof em === 'undefined' &&
-    //   App.scene[this.nameUniq].net && App.scene[this.nameUniq].net.enable == true) net.connection.send({
-    //     netPos: {x: this.x, y: this.y, z: this.z},
-    //     netObjId: this.nameUniq,
-    //   });
   }
   get X() {
     return parseFloat(this.x);
@@ -28582,13 +28595,6 @@ class Position {
     this.targetY = newy;
     this.targetZ = newz;
     this.inMove = false;
-
-    // from me
-    // if(App.scene[this.nameUniq] && net && net.connection && typeof em === 'undefined' &&
-    //   App.scene[this.nameUniq].net && App.scene[this.nameUniq].net.enable == true) net.connection.send({
-    //     netPos: {x: this.x, y: this.y, z: this.z},
-    //     netObjId: this.nameUniq,
-    //   });
   }
 }
 exports.Position = Position;
@@ -28596,12 +28602,18 @@ class Rotation {
   constructor(x, y, z) {
     // Not in use for nwo this is from matrix-engine project [nameUniq]
     this.nameUniq = null;
+    this.emitX = null;
+    this.emitY = null;
+    this.emitZ = null;
     if (typeof x == 'undefined') x = 0;
     if (typeof y == 'undefined') y = 0;
     if (typeof z == 'undefined') z = 0;
     this.x = x;
     this.y = y;
     this.z = z;
+    this.netx = x;
+    this.nety = y;
+    this.netz = z;
     this.rotationSpeed = {
       x: 0,
       y: 0,
@@ -28643,6 +28655,13 @@ class Rotation {
   }
   getRotY() {
     if (this.rotationSpeed.y == 0) {
+      if (this.nety != this.y && this.emitY) {
+        app.net.send({
+          sceneName: this.emitY,
+          netRotY: this.y
+        });
+      }
+      this.nety = this.y;
       return (0, _utils.degToRad)(this.y);
     } else {
       this.y = this.y + this.rotationSpeed.y * 0.001;
@@ -30086,18 +30105,20 @@ class MatrixStream {
   multiPlayer = {
     root: this,
     init(rtcEvent) {
-      console.log("rtcEvent add new net object -> ", rtcEvent);
-      // dispatchEvent(new CustomEvent('net-new-user', {detail: {data: rtcEvent}}))
+      // console.log("rtcEvent add new net object -> ", rtcEvent);
     },
     update(e) {
       e.data = JSON.parse(e.data);
-      // dispatchEvent(new CustomEvent('network-data', {detail: e.data}))
       console.log('REMOTE UPDATE::::', e);
       if (e.data.netPos) {
         if (app.getSceneObjectByName(e.data.sceneName)) {
           app.getSceneObjectByName(e.data.sceneName).position.setPosition(e.data.netPos.x, e.data.netPos.y, e.data.netPos.z);
         }
-      } else if (e.data.netRot) {} else if (e.data.netScale) {}
+      } else if (e.data.netRotY) {
+        app.getSceneObjectByName(e.data.sceneName).rotation.y = e.data.netRotY;
+      } else if (e.data.animationIndex) {
+        app.getSceneObjectByName(e.data.sceneName).glb.animationIndex = e.data.animationIndex;
+      }
     },
     /**
      * If someone leaves all client actions is here
@@ -30105,12 +30126,8 @@ class MatrixStream {
      * - clear object from netObject_x
      */
     leaveGamePlay(rtcEvent) {
-      console.info("rtcEvent LEAVE GAME: ", rtcEvent.userid);
-      dispatchEvent(new CustomEvent('net.remove-user', {
-        detail: {
-          data: rtcEvent
-        }
-      }));
+      // console.info("rtcEvent LEAVE GAME: ", rtcEvent.userid);
+      // dispatchEvent(new CustomEvent('net.remove-user', {detail: {data: rtcEvent}}))
     }
   };
   domManipulation = {

@@ -24,7 +24,7 @@ export class Enemie extends Hero {
 
   loadEnemyHero = async (o) => {
     try {
-         console.info(`%chero enemy path  ${o.path}`, LOG_MATRIX)
+      console.info(`%chero enemy path  ${o.path}`, LOG_MATRIX)
       var glbFile01 = await fetch(o.path).then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, this.core.device)));
       this.core.addGlbObjInctance({
         material: {type: 'standard', useTextureFromGlb: true},
@@ -67,7 +67,14 @@ export class Enemie extends Hero {
 
         this.setStartUpPosition();
 
-      }, 1600)
+        for(var x = 0;x < this.heroe_bodies.length;x++) {
+          if(x > 0) {
+            this.heroe_bodies[x].position = this.heroe_bodies[0].position;
+            this.heroe_bodies[x].rotation = this.heroe_bodies[0].rotation;
+          }
+        }
+
+      }, 1600);
     } catch(err) {throw err;}
   }
 
@@ -76,6 +83,7 @@ export class Enemie extends Hero {
     this.heroe_bodies.forEach(subMesh => {
       subMesh.glb.animationIndex = this.heroAnimationArrange.walk;
       console.info(`%chero walk`, LOG_MATRIX)
+
     });
   }
 
@@ -105,6 +113,7 @@ export class Enemie extends Hero {
       subMesh.glb.animationIndex = this.heroAnimationArrange.attack;
       console.info(`%chero attack`, LOG_MATRIX)
     });
+ 
   }
 
   setStartUpPosition() {
