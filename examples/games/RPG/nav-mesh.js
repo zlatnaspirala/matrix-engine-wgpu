@@ -364,7 +364,7 @@ export class MinHeap {
 const MIN_DIST = 0.1;
 
 export function followPath(character, path, core) {
-   if (!path || path.length === 0) return;
+  if(!path || path.length === 0) return;
 
   let idx = 0;
   const pos = character.position;
@@ -382,11 +382,13 @@ export function followPath(character, path, core) {
 
   // --- Recursive movement ---
   function moveToNext() {
-    if (idx >= path.length) {
-      dispatchEvent(new CustomEvent('onTargetPositionReach', { detail: {
-        name: character.name,
-        body: character
-      } }));
+    if(idx >= path.length) {
+      dispatchEvent(new CustomEvent('onTargetPositionReach', {
+        detail: {
+          name: character.name,
+          body: character
+        }
+      }));
       character.position.onTargetPositionReach = () => {};
       return;
     }
@@ -395,7 +397,7 @@ export function followPath(character, path, core) {
     const dz = target[2] - pos.z;
     const dist = Math.sqrt(dx * dx + dz * dz);
     // --- Skip points that are too close ---
-    if (dist < MIN_DIST) {
+    if(dist < MIN_DIST) {
       idx++;
       moveToNext();
       return;
@@ -421,7 +423,7 @@ export function followPath(character, path, core) {
     return Math.sqrt(dx * dx + dz * dz) >= MIN_DIST;
   });
 
-  if (firstTarget) {
+  if(firstTarget) {
     const dx = firstTarget[0] - pos.x;
     const dz = firstTarget[2] - pos.z;
     let initialAngleY = Math.atan2(dx, dz);
@@ -463,6 +465,30 @@ export function resolvePairRepulsion(Apos, Bpos, minDistance = 30.0, pushStrengt
     Apos.targetZ = Apos.z;
     Bpos.targetX = Bpos.x;
     Bpos.targetZ = Bpos.z;
+
+    if(Apos.netObject != null) {
+      if(Apos.netTolerance__ > Apos.netTolerance) {
+        app.net.send({
+          sceneName: Apos.netObject,
+          netPos: {x: Apos.x, y: Apos.y, z: Apos.z},
+        })
+        Apos.netTolerance__ = 0;
+      } else {
+        Apos.netTolerance__++;
+      }
+    }
+
+    if(Bpos.netObject != null) {
+      if(Bpos.netTolerance__ > Bpos.netTolerance) {
+        app.net.send({
+          sceneName: Bpos.netObject,
+          netPos: {x: Bpos.x, y: Bpos.y, z: Bpos.z},
+        })
+        Bpos.netTolerance__ = 0;
+      } else {
+        Bpos.netTolerance__++;
+      }
+    }
     return true;
   }
   // exact overlap (practically same point) -> small jitter to separate

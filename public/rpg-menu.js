@@ -28130,9 +28130,7 @@ class MatrixStream {
   }
   multiPlayer = {
     root: this,
-    init(rtcEvent) {
-      // console.log("rtcEvent add new net object -> ", rtcEvent);
-    },
+    init() {},
     update(e) {
       e.data = JSON.parse(e.data);
       console.log('REMOTE UPDATE::::', e);
@@ -28150,15 +28148,7 @@ class MatrixStream {
         app.getSceneObjectByName(e.data.sceneName).glb.animationIndex = e.data.animationIndex;
       }
     },
-    /**
-     * If someone leaves all client actions is here
-     * - remove from scene
-     * - clear object from netObject_x
-     */
-    leaveGamePlay(rtcEvent) {
-      // console.info("rtcEvent LEAVE GAME: ", rtcEvent.userid);
-      // dispatchEvent(new CustomEvent('net.remove-user', {detail: {data: rtcEvent}}))
-    }
+    leaveGamePlay() {}
   };
   domManipulation = {
     hideNetPanel: () => {

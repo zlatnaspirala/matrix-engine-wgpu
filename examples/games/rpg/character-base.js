@@ -453,13 +453,14 @@ export class Character extends Hero {
         let getName = e.detail.name.split('_')[0];
         let t = app.localHero.friendlyLocal.creeps.filter((obj) => obj.name == getName);
         if(t[0].creepFocusAttackOn != null) {
-          console.log(`%[character base ?] onTargetPositionReach 
-          cjeck creepFocusAttackOn : ${t[0].creepFocusAttackOn}`, LOG_MATRIX)
+          console.log(`%[character base]onTargetPositionReach 
+           creepFocusAttackOn : ${t[0].creepFocusAttackOn}`, LOG_MATRIX)
           return;
         }
 
-        let test = e.detail.body.position.z - t[0].firstPoint[2];
-        if(test > 20) {
+        let testz = e.detail.body.position.z - t[0].firstPoint[2];
+        let testx = e.detail.body.position.x - t[0].firstPoint[0];
+        if(Math.abs(testz) > 15 && Math.abs(testx) > 15) {
           // got to first point  t[0] for now only  one sub mesh per creep...
           // console.log('SEND TO FIRTS POINT POINT', t[0].firstPoint)
           const start = [t[0].heroe_bodies[0].position.x, t[0].heroe_bodies[0].position.y, t[0].heroe_bodies[0].position.z];
@@ -469,9 +470,7 @@ export class Character extends Hero {
           setTimeout(() => {
             this.setWalkCreep(getName[getName.length - 1]);
             followPath(t[0].heroe_bodies[0], path, app)
-          }, 1000)
-
-
+          }, 1000);
         } else {
           // got ot final
           console.log('SEND TO last POINT POINT to the enemy home....', t[0].finalPoint)
@@ -479,11 +478,11 @@ export class Character extends Hero {
           const path = this.core.RPG.nav.findPath(start, t[0].finalPoint);
           if(!path || path.length === 0) {console.warn('No valid path found.'); return;}
           // getName[getName.length-1] becouse for now creekps have sum < 10
+          // at the end finalPoint will be point of enemy base!
           setTimeout(() => {
             followPath(t[0].heroe_bodies[0], path, app)
             this.setWalkCreep(getName[getName.length - 1]);
-          }, 1000)
-
+          }, 1000);
         }
         //--------------------------------
         return;

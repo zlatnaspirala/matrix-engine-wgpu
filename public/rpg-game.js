@@ -441,12 +441,13 @@ class Character extends _hero.Hero {
         let getName = e.detail.name.split('_')[0];
         let t = app.localHero.friendlyLocal.creeps.filter(obj => obj.name == getName);
         if (t[0].creepFocusAttackOn != null) {
-          console.log(`%[character base ?] onTargetPositionReach 
-          cjeck creepFocusAttackOn : ${t[0].creepFocusAttackOn}`, _utils.LOG_MATRIX);
+          console.log(`%[character base]onTargetPositionReach 
+           creepFocusAttackOn : ${t[0].creepFocusAttackOn}`, _utils.LOG_MATRIX);
           return;
         }
-        let test = e.detail.body.position.z - t[0].firstPoint[2];
-        if (test > 20) {
+        let testz = e.detail.body.position.z - t[0].firstPoint[2];
+        let testx = e.detail.body.position.x - t[0].firstPoint[0];
+        if (Math.abs(testz) > 15 && Math.abs(testx) > 15) {
           // got to first point  t[0] for now only  one sub mesh per creep...
           // console.log('SEND TO FIRTS POINT POINT', t[0].firstPoint)
           const start = [t[0].heroe_bodies[0].position.x, t[0].heroe_bodies[0].position.y, t[0].heroe_bodies[0].position.z];
@@ -470,6 +471,7 @@ class Character extends _hero.Hero {
             return;
           }
           // getName[getName.length-1] becouse for now creekps have sum < 10
+          // at the end finalPoint will be point of enemy base!
           setTimeout(() => {
             (0, _navMesh.followPath)(t[0].heroe_bodies[0], path, app);
             this.setWalkCreep(getName[getName.length - 1]);
@@ -3150,6 +3152,36 @@ function resolvePairRepulsion(Apos, Bpos, minDistance = 30.0, pushStrength = 0.5
     Apos.targetZ = Apos.z;
     Bpos.targetX = Bpos.x;
     Bpos.targetZ = Bpos.z;
+    if (Apos.netObject != null) {
+      if (Apos.netTolerance__ > Apos.netTolerance) {
+        app.net.send({
+          sceneName: Apos.netObject,
+          netPos: {
+            x: Apos.x,
+            y: Apos.y,
+            z: Apos.z
+          }
+        });
+        Apos.netTolerance__ = 0;
+      } else {
+        Apos.netTolerance__++;
+      }
+    }
+    if (Bpos.netObject != null) {
+      if (Bpos.netTolerance__ > Bpos.netTolerance) {
+        app.net.send({
+          sceneName: Bpos.netObject,
+          netPos: {
+            x: Bpos.x,
+            y: Bpos.y,
+            z: Bpos.z
+          }
+        });
+        Bpos.netTolerance__ = 0;
+      } else {
+        Bpos.netTolerance__++;
+      }
+    }
     return true;
   }
   // exact overlap (practically same point) -> small jitter to separate
@@ -30104,9 +30136,7 @@ class MatrixStream {
   }
   multiPlayer = {
     root: this,
-    init(rtcEvent) {
-      // console.log("rtcEvent add new net object -> ", rtcEvent);
-    },
+    init() {},
     update(e) {
       e.data = JSON.parse(e.data);
       console.log('REMOTE UPDATE::::', e);
@@ -30124,15 +30154,7 @@ class MatrixStream {
         app.getSceneObjectByName(e.data.sceneName).glb.animationIndex = e.data.animationIndex;
       }
     },
-    /**
-     * If someone leaves all client actions is here
-     * - remove from scene
-     * - clear object from netObject_x
-     */
-    leaveGamePlay(rtcEvent) {
-      // console.info("rtcEvent LEAVE GAME: ", rtcEvent.userid);
-      // dispatchEvent(new CustomEvent('net.remove-user', {detail: {data: rtcEvent}}))
-    }
+    leaveGamePlay() {}
   };
   domManipulation = {
     hideNetPanel: () => {
