@@ -30116,6 +30116,10 @@ class MatrixStream {
         }
       } else if (e.data.netRotY) {
         app.getSceneObjectByName(e.data.sceneName).rotation.y = e.data.netRotY;
+      } else if (e.data.netRotX) {
+        app.getSceneObjectByName(e.data.sceneName).rotation.x = e.data.netRotX;
+      } else if (e.data.netRotZ) {
+        app.getSceneObjectByName(e.data.sceneName).rotation.z = e.data.netRotZ;
       } else if (e.data.animationIndex) {
         app.getSceneObjectByName(e.data.sceneName).glb.animationIndex = e.data.animationIndex;
       }
