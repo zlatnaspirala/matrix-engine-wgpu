@@ -1,6 +1,7 @@
 import {uploadGLBModel} from "../../../src/engine/loaders/webgpu-gltf";
 import {LOG_MATRIX} from "../../../src/engine/utils";
 import {Hero} from "./hero";
+import {startUpPositions} from "./static";
 
 export class Enemie extends Hero {
 
@@ -46,7 +47,7 @@ export class Enemie extends Hero {
           subMesh.glb.animationIndex = 0;
           // adapt manual if blender is not setup
           subMesh.glb.glbJsonData.animations.forEach((a, index) => {
-          //  console.info(`%c ANimation: ${a.name} index ${index}`, LOG_MATRIX)
+            //  console.info(`%c ANimation: ${a.name} index ${index}`, LOG_MATRIX)
             if(a.name == 'dead') this.heroAnimationArrange.dead = index;
             if(a.name == 'walk') this.heroAnimationArrange.walk = index;
             if(a.name == 'salute') this.heroAnimationArrange.salute = index;
@@ -56,14 +57,14 @@ export class Enemie extends Hero {
           // adapt
           if(this.name == 'Slayzer') {
             subMesh.globalAmbient = [2, 2, 3, 1];
-          } 
+          }
           // maybe will help - remote net players no nedd to collide in other remote user gamaplay
           // this.core.collisionSystem.register((o.name + idx), subMesh.position, 15.0, 'enemies');
           // dont care for multi sub mesh now
           if(idx == 0) this.core.collisionSystem.register((o.name), subMesh.position, 15.0, 'enemies');
         });
 
-        this.setStartUpPositionTest();
+        this.setStartUpPosition();
 
       }, 1600)
     } catch(err) {throw err;}
@@ -97,6 +98,7 @@ export class Enemie extends Hero {
       console.info(`%chero idle`, LOG_MATRIX)
     });
   }
+
   setAttack() {
     this.heroe_bodies.forEach(subMesh => {
       subMesh.glb.animationIndex = this.heroAnimationArrange.attack;
@@ -104,17 +106,13 @@ export class Enemie extends Hero {
     });
   }
 
-  setStartUpPositionTest() {
-    this.heroe_bodies.forEach((subMesh, idx) => {
-      subMesh.position.setPosition(-700, -23, 0);
-    })
-
-    this.setStartUpPositionTest = this.setStartUpPosition;
-  }
-
   setStartUpPosition() {
     this.heroe_bodies.forEach((subMesh, idx) => {
-      subMesh.position.setPosition(700, -23, -700);
+      subMesh.position.setPosition(
+        startUpPositions[app.player.data.enemyTeam][0],
+        startUpPositions[app.player.data.enemyTeam][1],
+        startUpPositions[app.player.data.enemyTeam][2]
+      )
     })
   }
 

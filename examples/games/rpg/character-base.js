@@ -4,7 +4,7 @@ import {byId, LOG_MATRIX} from "../../../src/engine/utils";
 import {Hero, HERO_PROFILES} from "./hero";
 import {Creep} from "./creep-character";
 import {followPath} from "./nav-mesh";
-import {startUpPositions} from "./static";
+import {creepPoints, startUpPositions} from "./static";
 
 export class Character extends Hero {
 
@@ -204,21 +204,13 @@ export class Character extends Hero {
   }
 
   navigateCreeps() {
+    console.log('[navigateCreeps() CALL!');
     app.localHero.friendlyLocal.creeps.forEach((creep, index) => {
       this.navigateCreep(creep, index);
       if(creep.creepFocusAttackOn != null) {
-        // console.log('[creep.creepFocusAttackOn] is on action chech for small interval again....!', creep);
+        console.log('[navigateCreeps()][friendlyLocal][creep.creepFocusAttackOn] is on action chech for small interval again....!', creep);
         return;
       }
-      // creep.firstPoint = [-653.83, -26.62, -612.95];
-      // creep.finalPoint = [702, -26, -737];
-      // const start = [creep.heroe_bodies[0].position.x, creep.heroe_bodies[0].position.y, creep.heroe_bodies[0].position.z];
-      // const end = [creep.firstPoint[0], creep.firstPoint[1], creep.firstPoint[2]];
-      // const endFinal = [creep.finalPoint[0], creep.finalPoint[1], creep.finalPoint[2]];
-      // const path = this.core.RPG.nav.findPath(start, end);
-      // if(!path || path.length === 0) {console.warn('No valid path found.'); return;}
-      // this.setWalkCreep(index);
-      // followPath(creep.heroe_bodies[0], path, this.core);
     })
   }
 
@@ -226,8 +218,8 @@ export class Character extends Hero {
     if(creep.creepFocusAttackOn != null) {
       return;
     }
-    creep.firstPoint = [-653.83, -26.62, -612.95];
-    creep.finalPoint = [702, -26, -737];
+    creep.firstPoint = creepPoints[this.core.player.data.team].firstPoint;
+    creep.finalPoint = creepPoints[this.core.player.data.team].finalPoint;
     const start = [creep.heroe_bodies[0].position.x, creep.heroe_bodies[0].position.y, creep.heroe_bodies[0].position.z];
     const end = [creep.firstPoint[0], creep.firstPoint[1], creep.firstPoint[2]];
     const endFinal = [creep.finalPoint[0], creep.finalPoint[1], creep.finalPoint[2]];
@@ -457,7 +449,7 @@ export class Character extends Hero {
 
         } else {
           // got ot final
-          // console.log('SEND TO last POINT POINT', t[0].finalPoint)
+          console.log('SEND TO last POINT POINT to the enemy home....', t[0].finalPoint)
           const start = [t[0].heroe_bodies[0].position.x, t[0].heroe_bodies[0].position.y, t[0].heroe_bodies[0].position.z];
           const path = this.core.RPG.nav.findPath(start, t[0].finalPoint);
           if(!path || path.length === 0) {console.warn('No valid path found.'); return;}

@@ -91,12 +91,12 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
     console.log('check remote conn.app.net.session.remoteConnections.size..', app.net.session.remoteConnections.size);
     if(app.net.session.remoteConnections.size == 0) {
       // Rule - even -> south team odd -> north team
-      return "SOUTH";
+      return "south";
     } else {
       if(isOdd(app.net.session.remoteConnections.size) == true) {
-        return "NORTH";
+        return "north";
       } else {
-        return "SOUTH";
+        return "south";
       }
     }
   }

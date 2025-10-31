@@ -20,7 +20,8 @@ import {byId} from "../../../src/engine/networking/matrix-stream.js";
  **/
 
 // Prevent no inputs cases
-if(!SS.has('player')) {
+// in prodc SS in dev LS
+if(!SS.has('player') || !LS.has('player')) {
   // alert('No no');
   location.assign('google.com');
 }
@@ -76,7 +77,10 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
     })
 
     app.matrixSounds.audios.music.loop = true;
-    forestOfHollowBlood.player.data = SS.get('player');
+    // prod
+    // forestOfHollowBlood.player.data = SS.get('player');
+    // dev
+    forestOfHollowBlood.player.data = LS.get('player');
 
     addEventListener('local-hero-bodies-ready', () => {
       app.cameras.RPG.position[1] = 130;
@@ -85,7 +89,6 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
       app.cameras.RPG.mousRollInAction = true;
     })
     forestOfHollowBlood.RPG = new Controller(forestOfHollowBlood);
-
 
     forestOfHollowBlood.mapLoader = new MEMapLoader(forestOfHollowBlood, "./res/meshes/nav-mesh/navmesh.json");
     // fix arg later !
@@ -96,12 +99,12 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
     forestOfHollowBlood.HUD = new HUD(forestOfHollowBlood.localHero);
 
     // fix arg also 
-    if (forestOfHollowBlood.player.data.team == 'SOUTH') {
-      forestOfHollowBlood.player.data.enemyTeam = 'NORTH';
-      forestOfHollowBlood.enemies = new EnemiesManager(forestOfHollowBlood, 'NORTH');
+    if (forestOfHollowBlood.player.data.team == 'south') {
+      forestOfHollowBlood.player.data.enemyTeam = 'north';
+      forestOfHollowBlood.enemies = new EnemiesManager(forestOfHollowBlood, 'north');
     } else {
-      forestOfHollowBlood.player.data.enemyTeam = 'SOUTH';
-      forestOfHollowBlood.enemies = new EnemiesManager(forestOfHollowBlood, 'SOUTH');
+      forestOfHollowBlood.player.data.enemyTeam = 'south';
+      forestOfHollowBlood.enemies = new EnemiesManager(forestOfHollowBlood, 'south');
     }
     
 

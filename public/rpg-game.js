@@ -220,29 +220,21 @@ class Character extends _hero.Hero {
     }, 1000);
   }
   navigateCreeps() {
+    console.log('[navigateCreeps() CALL!');
     app.localHero.friendlyLocal.creeps.forEach((creep, index) => {
       this.navigateCreep(creep, index);
       if (creep.creepFocusAttackOn != null) {
-        // console.log('[creep.creepFocusAttackOn] is on action chech for small interval again....!', creep);
+        console.log('[navigateCreeps()][friendlyLocal][creep.creepFocusAttackOn] is on action chech for small interval again....!', creep);
         return;
       }
-      // creep.firstPoint = [-653.83, -26.62, -612.95];
-      // creep.finalPoint = [702, -26, -737];
-      // const start = [creep.heroe_bodies[0].position.x, creep.heroe_bodies[0].position.y, creep.heroe_bodies[0].position.z];
-      // const end = [creep.firstPoint[0], creep.firstPoint[1], creep.firstPoint[2]];
-      // const endFinal = [creep.finalPoint[0], creep.finalPoint[1], creep.finalPoint[2]];
-      // const path = this.core.RPG.nav.findPath(start, end);
-      // if(!path || path.length === 0) {console.warn('No valid path found.'); return;}
-      // this.setWalkCreep(index);
-      // followPath(creep.heroe_bodies[0], path, this.core);
     });
   }
   navigateCreep(creep, index) {
     if (creep.creepFocusAttackOn != null) {
       return;
     }
-    creep.firstPoint = [-653.83, -26.62, -612.95];
-    creep.finalPoint = [702, -26, -737];
+    creep.firstPoint = _static.creepPoints[this.core.player.data.team].firstPoint;
+    creep.finalPoint = _static.creepPoints[this.core.player.data.team].finalPoint;
     const start = [creep.heroe_bodies[0].position.x, creep.heroe_bodies[0].position.y, creep.heroe_bodies[0].position.z];
     const end = [creep.firstPoint[0], creep.firstPoint[1], creep.firstPoint[2]];
     const endFinal = [creep.finalPoint[0], creep.finalPoint[1], creep.finalPoint[2]];
@@ -451,7 +443,7 @@ class Character extends _hero.Hero {
           }, 1000);
         } else {
           // got ot final
-          // console.log('SEND TO last POINT POINT', t[0].finalPoint)
+          console.log('SEND TO last POINT POINT to the enemy home....', t[0].finalPoint);
           const start = [t[0].heroe_bodies[0].position.x, t[0].heroe_bodies[0].position.y, t[0].heroe_bodies[0].position.z];
           const path = this.core.RPG.nav.findPath(start, t[0].finalPoint);
           if (!path || path.length === 0) {
@@ -1102,6 +1094,7 @@ exports.Enemie = void 0;
 var _webgpuGltf = require("../../../src/engine/loaders/webgpu-gltf");
 var _utils = require("../../../src/engine/utils");
 var _hero = require("./hero");
+var _static = require("./static");
 class Enemie extends _hero.Hero {
   heroAnimationArrange = {
     dead: null,
@@ -1163,7 +1156,7 @@ class Enemie extends _hero.Hero {
           // dont care for multi sub mesh now
           if (idx == 0) this.core.collisionSystem.register(o.name, subMesh.position, 15.0, 'enemies');
         });
-        this.setStartUpPositionTest();
+        this.setStartUpPosition();
       }, 1600);
     } catch (err) {
       throw err;
@@ -1199,15 +1192,9 @@ class Enemie extends _hero.Hero {
       console.info(`%chero attack`, _utils.LOG_MATRIX);
     });
   }
-  setStartUpPositionTest() {
-    this.heroe_bodies.forEach((subMesh, idx) => {
-      subMesh.position.setPosition(-700, -23, 0);
-    });
-    this.setStartUpPositionTest = this.setStartUpPosition;
-  }
   setStartUpPosition() {
     this.heroe_bodies.forEach((subMesh, idx) => {
-      subMesh.position.setPosition(700, -23, -700);
+      subMesh.position.setPosition(_static.startUpPositions[app.player.data.enemyTeam][0], _static.startUpPositions[app.player.data.enemyTeam][1], _static.startUpPositions[app.player.data.enemyTeam][2]);
     });
   }
   attachEvents() {
@@ -1228,7 +1215,7 @@ class Enemie extends _hero.Hero {
 }
 exports.Enemie = Enemie;
 
-},{"../../../src/engine/loaders/webgpu-gltf":47,"../../../src/engine/utils":54,"./hero":7}],6:[function(require,module,exports){
+},{"../../../src/engine/loaders/webgpu-gltf":47,"../../../src/engine/utils":54,"./hero":7,"./static":11}],6:[function(require,module,exports){
 "use strict";
 
 var _world = _interopRequireDefault(require("../../../src/world.js"));
@@ -1253,7 +1240,8 @@ function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e
  **/
 
 // Prevent no inputs cases
-if (!_utils.SS.has('player')) {
+// in prodc SS in dev LS
+if (!_utils.SS.has('player') || !_utils.LS.has('player')) {
   // alert('No no');
   location.assign('google.com');
 }
@@ -1306,7 +1294,10 @@ let forestOfHollowBlood = new _world.default({
       console.log('<data-receive>', e);
     });
     app.matrixSounds.audios.music.loop = true;
-    forestOfHollowBlood.player.data = _utils.SS.get('player');
+    // prod
+    // forestOfHollowBlood.player.data = SS.get('player');
+    // dev
+    forestOfHollowBlood.player.data = _utils.LS.get('player');
     addEventListener('local-hero-bodies-ready', () => {
       app.cameras.RPG.position[1] = 130;
       app.cameras.RPG.movementSpeed = 100;
@@ -1320,12 +1311,12 @@ let forestOfHollowBlood = new _world.default({
     forestOfHollowBlood.HUD = new _hud.HUD(forestOfHollowBlood.localHero);
 
     // fix arg also 
-    if (forestOfHollowBlood.player.data.team == 'SOUTH') {
-      forestOfHollowBlood.player.data.enemyTeam = 'NORTH';
-      forestOfHollowBlood.enemies = new _enemiesManager.EnemiesManager(forestOfHollowBlood, 'NORTH');
+    if (forestOfHollowBlood.player.data.team == 'south') {
+      forestOfHollowBlood.player.data.enemyTeam = 'north';
+      forestOfHollowBlood.enemies = new _enemiesManager.EnemiesManager(forestOfHollowBlood, 'north');
     } else {
-      forestOfHollowBlood.player.data.enemyTeam = 'SOUTH';
-      forestOfHollowBlood.enemies = new _enemiesManager.EnemiesManager(forestOfHollowBlood, 'SOUTH');
+      forestOfHollowBlood.player.data.enemyTeam = 'south';
+      forestOfHollowBlood.enemies = new _enemiesManager.EnemiesManager(forestOfHollowBlood, 'south');
     }
     forestOfHollowBlood.collisionSystem = new _collisionSubSystem.CollisionSystem(forestOfHollowBlood);
     app.matrixSounds.play('music');
@@ -3126,10 +3117,22 @@ function resolvePairRepulsion(Apos, Bpos, minDistance = 30.0, pushStrength = 0.5
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.startUpPositions = void 0;
+exports.startUpPositions = exports.creepPoints = void 0;
+// No change data type
+
 const startUpPositions = exports.startUpPositions = {
-  SOUTH: [-800, -23, 800],
-  NORTH: [800, -23, -800]
+  south: [-800, -23, 800],
+  north: [800, -23, -800]
+};
+const creepPoints = exports.creepPoints = {
+  south: {
+    firstPoint: [-653.83, -23, -612.95],
+    finalPoint: [700, -23, -737]
+  },
+  north: {
+    firstPoint: [-653.83, -23, -612.95],
+    finalPoint: [-700, -23, 737]
+  }
 };
 
 },{}],12:[function(require,module,exports){
