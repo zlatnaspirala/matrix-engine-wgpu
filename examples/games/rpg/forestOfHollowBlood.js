@@ -5,7 +5,7 @@ import {MEMapLoader} from "./map-loader.js";
 import {Character} from "./character-base.js";
 import {EnemiesManager} from "./enemies-manager.js";
 import {CollisionSystem} from "../../../src/engine/collision-sub-system.js";
-import {LS, SS} from "../../../src/engine/utils.js";
+import {LS, SS, urlQuery} from "../../../src/engine/utils.js";
 import {MatrixStream} from "../../../src/engine/networking/net.js";
 import {byId} from "../../../src/engine/networking/matrix-stream.js";
 
@@ -44,21 +44,50 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
   forestOfHollowBlood.matrixSounds.createAudio('music', 'res/audios/rpg/music.mp3', 1)
   forestOfHollowBlood.matrixSounds.createAudio('win1', 'res/audios/rpg/feel.mp3', 2);
 
-  // test
-  forestOfHollowBlood.net = new MatrixStream({
-    active: true,
-    domain: 'maximumroulette.com',
-    port: 2020,
-    sessionName: 'forestOfHollowBlood-free-for-all',
-    resolution: '160x240'
+  addEventListener('AmmoReady', async () => {
+
+        // prod
+    forestOfHollowBlood.player.data = SS.get('player');
+    // dev
+    // forestOfHollowBlood.player.data = LS.get('player');
+
+    // test
+    forestOfHollowBlood.net = new MatrixStream({
+      active: true,
+      domain: 'maximumroulette.com',
+      port: 2020,
+      sessionName: 'forestOfHollowBlood-free-for-all',
+      resolution: '160x240',
+      isDataOnly: (urlQuery.camera || urlQuery.audio ? false : true),
+      customData: forestOfHollowBlood.player.data
   });
 
-  addEventListener('AmmoReady', async () => {
+    forestOfHollowBlood.net.virtualEmiter = null;
+
+    app.matrixSounds.audios.music.loop = true;
+
 
     // NET
     addEventListener('net-ready', () => {
       console.log('net-ready');
+
+
+      // fix arg also 
+      if(forestOfHollowBlood.player.data.team == 'south') {
+        forestOfHollowBlood.player.data.enemyTeam = 'north';
+        forestOfHollowBlood.enemies = new EnemiesManager(forestOfHollowBlood, 'north');
+
+      } else {
+        forestOfHollowBlood.player.data.enemyTeam = 'south';
+        forestOfHollowBlood.enemies = new EnemiesManager(forestOfHollowBlood, 'south');
+
+      }
+
+
+
     });
+
+
 
     addEventListener('connectionDestroyed', (e) => {
       console.log('connectionDestroyed , bad bad...');
@@ -66,27 +95,45 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
     });
 
     addEventListener("onConnectionCreated", (e) => {
-      console.log('newconn : created', e.detail);
-      let newPlayer = document.createElement('div');
-      newPlayer.innerHTML = `Player: ${e.detail.connection.connectionId}`;
-      newPlayer.id = `waiting-${e.detail.connection.connectionId}`;
+
+      if(e.detail.connection.connectionId == app.net.session.connection.connectionId) {
+        let newPlayer = document.createElement('div');
+        newPlayer.innerHTML = `Local Player: ${e.detail.connection.connectionId}`;
+        newPlayer.id = `local-${e.detail.connection.connectionId}`;
+        byId('matrix-net').appendChild(newPlayer);
+      } else {
+        let newPlayer = document.createElement('div');
+        newPlayer.innerHTML = `remote Player: ${e.detail.connection.connectionId}`;
+        newPlayer.id = `remote-${e.detail.connection.connectionId}`;
+        byId('matrix-net').appendChild(newPlayer);
+
+        if(forestOfHollowBlood.net.virtualEmiter == null) {
+          // only one - first remote (it meas in theory best remote play net response time)
+          forestOfHollowBlood.net.virtualEmiter = e.detail.connection.connectionId;
+        }
+        //
+        let testCustomData = JSON.parse(e.detail.connection.data)
+        console.log('[gameplay]testCustomData[newconn]', testCustomData);
+        // let hero0 = app.mainRenderBundle.filter((obj) => obj.name.indexOf(testCustomData.hero) != -1)
+        console.log('[gameplay]testCustomData[newconn] get mesh data from : ', testCustomData.mesh);
+        forestOfHollowBlood.enemies.loadEnemyHero(testCustomData);
+      }
+
     })
 
     addEventListener('only-data-receive', (e) => {
       console.log('<data-receive>', e)
     })
 
-    app.matrixSounds.audios.music.loop = true;
-    // prod
-    // forestOfHollowBlood.player.data = SS.get('player');
-    // dev
-    forestOfHollowBlood.player.data = LS.get('player');
-
     addEventListener('local-hero-bodies-ready', () => {
       app.cameras.RPG.position[1] = 130;
       app.cameras.RPG.movementSpeed = 100;
       app.cameras.RPG.followMe = forestOfHollowBlood.localHero.heroe_bodies[0].position;
       app.cameras.RPG.mousRollInAction = true;
+
+
+      // automatic
+      byId('join-btn').click();
     })
     forestOfHollowBlood.RPG = new Controller(forestOfHollowBlood);
 
@@ -98,18 +145,7 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
 
     forestOfHollowBlood.HUD = new HUD(forestOfHollowBlood.localHero);
 
-    // fix arg also 
-    if (forestOfHollowBlood.player.data.team == 'south') {
-      forestOfHollowBlood.player.data.enemyTeam = 'north';
-      forestOfHollowBlood.enemies = new EnemiesManager(forestOfHollowBlood, 'north');
-    } else {
-      forestOfHollowBlood.player.data.enemyTeam = 'south';
-      forestOfHollowBlood.enemies = new EnemiesManager(forestOfHollowBlood, 'south');
-    }
-    
-
     forestOfHollowBlood.collisionSystem = new CollisionSystem(forestOfHollowBlood);
-
     app.matrixSounds.play('music');
   })
   forestOfHollowBlood.addLight();

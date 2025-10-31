@@ -7,21 +7,24 @@ export class EnemiesManager {
   constructor(core, team) {
     this.core = core;
     this.team = team;
-    this.loadBySumOfPlayers();
+    this.loadCreeps();
   }
-  // Make possible to play 3x3 4x4 or 5x5 ...
-  loadBySumOfPlayers() {
 
+  loadEnemyHero(o) {
     this.enemies.push(new Enemie(
       {
         core: this.core,
-        name: 'SLZEnemy',
-        archetypes: ["Warrior"],
-        path: 'res/meshes/glb/monster.glb',
-        position: {x: -653.83, y: -23, z: 0} //, -26.62, -612.95
+        name: o.hero,
+        archetypes: o.archetypes,
+        path: o.path,
+        position: {x: 0, y: -23, z: 0}
       }
     ));
 
+  }
+  // Make possible to play 3x3 4x4 or 5x5 ...
+  loadCreeps() {
+    console.log('ENEMY HERO NET FEATURE', app.net.session)
     this.creeps.push(new Creep({
       core: this.core,
       name: 'enemy-creep0',
@@ -72,7 +75,7 @@ export class EnemiesManager {
         // }
         // if(idx == 0) this.core.collisionSystem.register((o.name), subMesh.position, 15.0, this.group);
       });
- 
+
     }, 1700)
   }
 

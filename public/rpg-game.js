@@ -171,6 +171,11 @@ class Character extends _hero.Hero {
           this.core.collisionSystem.register(`local${id}`, subMesh.position, 15.0, 'local_hero');
         });
         app.localHero.heroe_bodies[0].effects.flameEmitter.recreateVertexDataRND(1);
+
+        // activete net pos emit - becouse uniq name of hero body set net id by scene obj name simple
+        // app.localHero.heroe_bodies[0].position.netObject = app.net.session.connection.connectionId;
+        app.localHero.heroe_bodies[0].position.netObject = app.localHero.heroe_bodies[0].name;
+
         // adapt
         app.localHero.heroe_bodies[0].globalAmbient = [1, 1, 1, 1];
         if (app.localHero.name == 'Slayzer') {
@@ -185,7 +190,7 @@ class Character extends _hero.Hero {
           if (x > 0) app.localHero.heroe_bodies[x].position = app.localHero.heroe_bodies[0].position;
         }
         dispatchEvent(new CustomEvent('local-hero-bodies-ready', {
-          detail: "This is not sync - 99% works"
+          detail: `This is not sync - 99% works`
         }));
       }, 3500);
     } catch (err) {
@@ -341,7 +346,6 @@ class Character extends _hero.Hero {
 
       // nisu 2 local creeps
       if (e.detail.A.group == "enemies") {
-        console.info('close distance A is enemies:', e.detail.A.group);
         if (e.detail.B.group == "friendly") {
           //------------------ BLOCK
           let lc = app.localHero.friendlyLocal.creeps.filter(localCreep => localCreep.name == e.detail.B.id)[0];
@@ -350,7 +354,7 @@ class Character extends _hero.Hero {
           console.info('close distance B is friendly:', e.detail.A.group);
         }
       } else if (e.detail.A.group == "friendly") {
-        console.info('close distance A is friendly:', e.detail.A.group);
+        // console.info('close distance A is friendly:', e.detail.A.group)
         if (e.detail.B.group == "enemies") {
           console.info('close distance B is enemies:', e.detail.A.group);
           //------------------
@@ -842,7 +846,7 @@ class Creep extends _hero.Hero {
   setStartUpPosition() {
     if (this.group == 'enemy') {
       this.heroe_bodies.forEach((subMesh, idx) => {
-        subMesh.position.setPosition(_static.startUpPositions[this.core.player.data.team][0], _static.startUpPositions[this.core.player.data.team][1], _static.startUpPositions[this.core.player.data.team][2]);
+        subMesh.position.setPosition(_static.startUpPositions[this.core.player.data.enemyTeam][0], _static.startUpPositions[this.core.player.data.enemyTeam][1], _static.startUpPositions[this.core.player.data.enemyTeam][2]);
       });
     }
   }
@@ -992,21 +996,24 @@ class EnemiesManager {
   constructor(core, team) {
     this.core = core;
     this.team = team;
-    this.loadBySumOfPlayers();
+    this.loadCreeps();
   }
-  // Make possible to play 3x3 4x4 or 5x5 ...
-  loadBySumOfPlayers() {
+  loadEnemyHero(o) {
     this.enemies.push(new _enemyCharacter.Enemie({
       core: this.core,
-      name: 'SLZEnemy',
-      archetypes: ["Warrior"],
-      path: 'res/meshes/glb/monster.glb',
+      name: o.hero,
+      archetypes: o.archetypes,
+      path: o.path,
       position: {
-        x: -653.83,
+        x: 0,
         y: -23,
         z: 0
-      } //, -26.62, -612.95
+      }
     }));
+  }
+  // Make possible to play 3x3 4x4 or 5x5 ...
+  loadCreeps() {
+    console.log('ENEMY HERO NET FEATURE', app.net.session);
     this.creeps.push(new _creepCharacter.Creep({
       core: this.core,
       name: 'enemy-creep0',
@@ -1113,6 +1120,7 @@ class Enemie extends _hero.Hero {
   }
   loadEnemyHero = async o => {
     try {
+      console.info(`%chero enemy path  ${o.path}`, _utils.LOG_MATRIX);
       var glbFile01 = await fetch(o.path).then(res => res.arrayBuffer().then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, this.core.device)));
       this.core.addGlbObjInctance({
         material: {
@@ -1266,58 +1274,82 @@ let forestOfHollowBlood = new _world.default({
   // Audios
   forestOfHollowBlood.matrixSounds.createAudio('music', 'res/audios/rpg/music.mp3', 1);
   forestOfHollowBlood.matrixSounds.createAudio('win1', 'res/audios/rpg/feel.mp3', 2);
-
-  // test
-  forestOfHollowBlood.net = new _net.MatrixStream({
-    active: true,
-    domain: 'maximumroulette.com',
-    port: 2020,
-    sessionName: 'forestOfHollowBlood-free-for-all',
-    resolution: '160x240'
-  });
   addEventListener('AmmoReady', async () => {
+    // prod
+    forestOfHollowBlood.player.data = _utils.SS.get('player');
+    // dev
+    // forestOfHollowBlood.player.data = LS.get('player');
+
+    // test
+    forestOfHollowBlood.net = new _net.MatrixStream({
+      active: true,
+      domain: 'maximumroulette.com',
+      port: 2020,
+      sessionName: 'forestOfHollowBlood-free-for-all',
+      resolution: '160x240',
+      isDataOnly: _utils.urlQuery.camera || _utils.urlQuery.audio ? false : true,
+      customData: forestOfHollowBlood.player.data
+    });
+    forestOfHollowBlood.net.virtualEmiter = null;
+    app.matrixSounds.audios.music.loop = true;
+
     // NET
     addEventListener('net-ready', () => {
       console.log('net-ready');
+
+      // fix arg also 
+      if (forestOfHollowBlood.player.data.team == 'south') {
+        forestOfHollowBlood.player.data.enemyTeam = 'north';
+        forestOfHollowBlood.enemies = new _enemiesManager.EnemiesManager(forestOfHollowBlood, 'north');
+      } else {
+        forestOfHollowBlood.player.data.enemyTeam = 'south';
+        forestOfHollowBlood.enemies = new _enemiesManager.EnemiesManager(forestOfHollowBlood, 'south');
+      }
     });
     addEventListener('connectionDestroyed', e => {
       console.log('connectionDestroyed , bad bad...');
       if ((0, _matrixStream.byId)(e.detail.connectionId)) {}
     });
     addEventListener("onConnectionCreated", e => {
-      console.log('newconn : created', e.detail);
-      let newPlayer = document.createElement('div');
-      newPlayer.innerHTML = `Player: ${e.detail.connection.connectionId}`;
-      newPlayer.id = `waiting-${e.detail.connection.connectionId}`;
+      if (e.detail.connection.connectionId == app.net.session.connection.connectionId) {
+        let newPlayer = document.createElement('div');
+        newPlayer.innerHTML = `Local Player: ${e.detail.connection.connectionId}`;
+        newPlayer.id = `local-${e.detail.connection.connectionId}`;
+        (0, _matrixStream.byId)('matrix-net').appendChild(newPlayer);
+      } else {
+        let newPlayer = document.createElement('div');
+        newPlayer.innerHTML = `remote Player: ${e.detail.connection.connectionId}`;
+        newPlayer.id = `remote-${e.detail.connection.connectionId}`;
+        (0, _matrixStream.byId)('matrix-net').appendChild(newPlayer);
+        if (forestOfHollowBlood.net.virtualEmiter == null) {
+          // only one - first remote (it meas in theory best remote play net response time)
+          forestOfHollowBlood.net.virtualEmiter = e.detail.connection.connectionId;
+        }
+        //
+        let testCustomData = JSON.parse(e.detail.connection.data);
+        console.log('[gameplay]testCustomData[newconn]', testCustomData);
+        // let hero0 = app.mainRenderBundle.filter((obj) => obj.name.indexOf(testCustomData.hero) != -1)
+        console.log('[gameplay]testCustomData[newconn] get mesh data from : ', testCustomData.mesh);
+        forestOfHollowBlood.enemies.loadEnemyHero(testCustomData);
+      }
     });
     addEventListener('only-data-receive', e => {
       console.log('<data-receive>', e);
     });
-    app.matrixSounds.audios.music.loop = true;
-    // prod
-    // forestOfHollowBlood.player.data = SS.get('player');
-    // dev
-    forestOfHollowBlood.player.data = _utils.LS.get('player');
     addEventListener('local-hero-bodies-ready', () => {
       app.cameras.RPG.position[1] = 130;
       app.cameras.RPG.movementSpeed = 100;
       app.cameras.RPG.followMe = forestOfHollowBlood.localHero.heroe_bodies[0].position;
       app.cameras.RPG.mousRollInAction = true;
+
+      // automatic
+      (0, _matrixStream.byId)('join-btn').click();
     });
     forestOfHollowBlood.RPG = new _controller.Controller(forestOfHollowBlood);
     forestOfHollowBlood.mapLoader = new _mapLoader.MEMapLoader(forestOfHollowBlood, "./res/meshes/nav-mesh/navmesh.json");
     // fix arg later !
     forestOfHollowBlood.localHero = new _characterBase.Character(forestOfHollowBlood, forestOfHollowBlood.player.data.path, forestOfHollowBlood.player.data.hero, [forestOfHollowBlood.player.data.archetypes]);
     forestOfHollowBlood.HUD = new _hud.HUD(forestOfHollowBlood.localHero);
-
-    // fix arg also 
-    if (forestOfHollowBlood.player.data.team == 'south') {
-      forestOfHollowBlood.player.data.enemyTeam = 'north';
-      forestOfHollowBlood.enemies = new _enemiesManager.EnemiesManager(forestOfHollowBlood, 'north');
-    } else {
-      forestOfHollowBlood.player.data.enemyTeam = 'south';
-      forestOfHollowBlood.enemies = new _enemiesManager.EnemiesManager(forestOfHollowBlood, 'south');
-    }
     forestOfHollowBlood.collisionSystem = new _collisionSubSystem.CollisionSystem(forestOfHollowBlood);
     app.matrixSounds.play('music');
   });
@@ -28400,7 +28432,8 @@ class Position {
   constructor(x, y, z) {
     // console.log('TEST TYTPOF ', x)
     // Not in use for nwo this is from matrix-engine project [nameUniq]
-    this.nameUniq = null;
+    this.nameUniq = null; // not in use
+    this.netObject = null;
     if (typeof x == 'undefined') x = 0;
     if (typeof y == 'undefined') y = 0;
     if (typeof z == 'undefined') z = 0;
@@ -28465,7 +28498,17 @@ class Position {
         this.x += this.velX;
         this.y += this.velY;
         this.z += this.velZ;
-
+        if (this.netObject != null) {
+          // global space bad but for now - can be injected maybe 
+          app.net.send({
+            sceneName: this.netObject,
+            netPos: {
+              x: this.x,
+              y: this.y,
+              z: this.z
+            }
+          });
+        }
         // // from me
         // if(net && net.connection && typeof em === 'undefined' && App.scene[this.nameUniq].net.enable == true) net.connection.send({
         //   netPos: {x: this.x, y: this.y, z: this.z},
@@ -29663,7 +29706,9 @@ function joinSession(options) {
         enableBtn();
       });
     } else {
-      session.connect(token, "USER_DATA").then(() => {
+      // in future some meta data can be added here -> on conn created event
+      console.log("netConfig", netConfig.customData);
+      session.connect(token, netConfig.customData).then(() => {
         byId('session-title').innerText = sessionName;
         byId('join').style.display = 'none';
         byId('session').style.display = 'block';
@@ -29920,6 +29965,7 @@ class MatrixStream {
     _matrixStream.netConfig.sessionName = arg.sessionName;
     _matrixStream.netConfig.resolution = arg.resolution;
     _matrixStream.netConfig.isDataOnly = arg.isDataOnly;
+    if (arg.customData) _matrixStream.netConfig.customData = arg.customData;
     _utils.scriptManager.LOAD('./networking/openvidu-browser-2.20.0.js', undefined, undefined, undefined, () => {
       setTimeout(() => {
         this.loadNetHTML();
@@ -29961,6 +30007,20 @@ class MatrixStream {
         console.error("Erro signal => ", error);
       });
     };
+
+    // this is duplicate for two cases with camera or only data
+    // this only data case - send system emit with session name channel
+    this.send = netArg => {
+      this.session.signal({
+        data: JSON.stringify(netArg),
+        to: [],
+        type: _matrixStream.netConfig.sessionName
+      }).then(() => {
+        console.log('.');
+      }).catch(error => {
+        console.error("Erro signal => ", error);
+      });
+    };
     addEventListener(`LOCAL-STREAM-READY`, e => {
       console.log('LOCAL-STREAM-READY ', e.detail.connection);
       this.connection = e.detail.connection;
@@ -29983,12 +30043,10 @@ class MatrixStream {
       this.session = e.detail;
       this.connection = e.detail.connection;
       this.session.on(`signal:${_matrixStream.netConfig.sessionName}`, e => {
-        console.log("SIGBAL SYS RECEIVE=>", e);
+        // console.log("SIGBAL SYS RECEIVE=>", e);
         if (this.session.connection.connectionId == e.from.connectionId) {
           // avoid - option
-          dispatchEvent(new CustomEvent('self-msg', {
-            detail: e
-          }));
+          // dispatchEvent(new CustomEvent('self-msg', {detail: e}));
         } else {
           this.multiPlayer.update(e);
         }
@@ -30029,34 +30087,17 @@ class MatrixStream {
     root: this,
     init(rtcEvent) {
       console.log("rtcEvent add new net object -> ", rtcEvent);
-      dispatchEvent(new CustomEvent('net-new-user', {
-        detail: {
-          data: rtcEvent
-        }
-      }));
+      // dispatchEvent(new CustomEvent('net-new-user', {detail: {data: rtcEvent}}))
     },
     update(e) {
       e.data = JSON.parse(e.data);
       // dispatchEvent(new CustomEvent('network-data', {detail: e.data}))
       console.log('REMOTE UPDATE::::', e);
       if (e.data.netPos) {
-        if (App.scene[e.data.netObjId]) {
-          // if(e.data.netPos.x) App.scene[e.data.netObjId].position.SetX(e.data.netPos.x, 'noemit');
-          // if(e.data.netPos.y) App.scene[e.data.netObjId].position.SetY(e.data.netPos.y, 'noemit');
-          // if(e.data.netPos.z) App.scene[e.data.netObjId].position.SetZ(e.data.netPos.z, 'noemit');
+        if (app.getSceneObjectByName(e.data.sceneName)) {
+          app.getSceneObjectByName(e.data.sceneName).position.setPosition(e.data.netPos.x, e.data.netPos.y, e.data.netPos.z);
         }
-      } else if (e.data.netRot) {
-        // console.log('ROT INFO UPDATE', e);
-        // if(e.data.netRot.x) App.scene[e.data.netObjId].rotation.rotx = e.data.netRot.x;
-        // if(e.data.netRot.y) App.scene[e.data.netObjId].rotation.roty = e.data.netRot.y;
-        // if(e.data.netRot.z) App.scene[e.data.netObjId].rotation.rotz = e.data.netRot.z;
-      } else if (e.data.netScale) {
-        // console.log('netScale INFO UPDATE', e);
-        // if(e.data.netScale.x) App.scene[e.data.netObjId].geometry.setScaleByX(e.data.netScale.x, 'noemit');
-        // if(e.data.netScale.y) App.scene[e.data.netObjId].geometry.setScaleByY(e.data.netScale.y, 'noemit');
-        // if(e.data.netScale.z) App.scene[e.data.netObjId].geometry.setScaleByZ(e.data.netScale.z, 'noemit');
-        // if(e.data.netScale.scale) App.scene[e.data.netObjId].geometry.setScale(e.data.netScale.scale, 'noemit');
-      }
+      } else if (e.data.netRot) {} else if (e.data.netScale) {}
     },
     /**
      * If someone leaves all client actions is here

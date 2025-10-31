@@ -24,6 +24,7 @@ export class Enemie extends Hero {
 
   loadEnemyHero = async (o) => {
     try {
+         console.info(`%chero enemy path  ${o.path}`, LOG_MATRIX)
       var glbFile01 = await fetch(o.path).then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, this.core.device)));
       this.core.addGlbObjInctance({
         material: {type: 'standard', useTextureFromGlb: true},

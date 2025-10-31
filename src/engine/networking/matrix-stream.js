@@ -204,7 +204,10 @@ export function joinSession(options) {
         });
 
     } else {
-      session.connect(token, "USER_DATA")
+      // in future some meta data can be added here -> on conn created event
+      console.log("netConfig", netConfig.customData)
+
+      session.connect(token, netConfig.customData)
         .then(() => {
           byId('session-title').innerText = sessionName;
           byId('join').style.display = 'none';

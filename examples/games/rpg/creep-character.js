@@ -114,10 +114,10 @@ export class Creep extends Hero {
     if(this.group == 'enemy') {
       this.heroe_bodies.forEach((subMesh, idx) => {
         subMesh.position.setPosition(
-          startUpPositions[this.core.player.data.team][0],
-          startUpPositions[this.core.player.data.team][1],
-          startUpPositions[this.core.player.data.team][2]);
-      })
+          startUpPositions[this.core.player.data.enemyTeam][0],
+          startUpPositions[this.core.player.data.enemyTeam][1],
+          startUpPositions[this.core.player.data.enemyTeam][2]);
+      });
     }
   }
 

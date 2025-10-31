@@ -162,26 +162,30 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
     }
   }
 
-  forestOfHollowBloodStartSceen.gotoGamePlay = () => {
+  forestOfHollowBloodStartSceen.gotoGamePlay = (preventEmit) => {
     // check again ! good all selected hero !PLAY!
     console.log('...', byId(`waiting-${app.net.session.connection.connectionId}`));
     LS.set('player', {
+      mesh: heros[app.selectedHero].meshName,
       hero: heros[app.selectedHero].name,
       path: heros[app.selectedHero].path,
-      archetypes: heros[app.selectedHero].type,
+      archetypes: [heros[app.selectedHero].type],
       team: byId(`waiting-${app.net.session.connection.connectionId}`).getAttribute('data-hero-team'),
       data: Date.now()
     })
     SS.set('player', {
+      mesh: heros[app.selectedHero].meshName,
       hero: heros[app.selectedHero].name,
       path: heros[app.selectedHero].path,
-      archetypes: heros[app.selectedHero].type,
+      archetypes: [heros[app.selectedHero].type],
       team: byId(`waiting-${app.net.session.connection.connectionId}`).getAttribute('data-hero-team'),
       data: Date.now()
     })
-    forestOfHollowBloodStartSceen.net.sendOnlyData({
+
+    if (typeof preventEmit === 'undefined') forestOfHollowBloodStartSceen.net.sendOnlyData({
       type: 'start'
     })
+
     location.assign('rpg-game.html');
   }
 
@@ -319,7 +323,8 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
         console.log(`<data-receive From ${e.detail.from.connectionId} team:${t.team}  ${byId(`waiting-${e.detail.from.connectionId}`)}`);
         byId(`${e.detail.from.connectionId}-title`).innerHTML = `Player:${e.detail.from.connectionId} Team:${t.team}`;
       } else if(t.type == 'start') {
-        location.assign('rpg-game.html');
+        // HERE_
+        forestOfHollowBloodStartSceen.gotoGamePlay("no emit");
       }
     }
   })
@@ -374,6 +379,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
         for(var x = 0;x < heros.length;x++) {
           let hero0 = app.mainRenderBundle.filter((obj) => obj.name.indexOf(heros[x].name) != -1)
           app.heroByBody.push(hero0);
+          heros[x].meshName = hero0[0].name;
           if(x == 0) {
             hero0[0].effects.circlePlane.instanceTargets[0].color = [1, 0, 2, 1];
           }

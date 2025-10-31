@@ -23,6 +23,7 @@ export class MatrixStream {
     netConfig.sessionName = arg.sessionName;
     netConfig.resolution = arg.resolution;
     netConfig.isDataOnly = arg.isDataOnly;
+    if (arg.customData) netConfig.customData = arg.customData;
     scriptManager.LOAD('./networking/openvidu-browser-2.20.0.js', undefined, undefined, undefined, () => {
       setTimeout(() => {this.loadNetHTML()}, 2500)
     });
@@ -43,7 +44,7 @@ export class MatrixStream {
         this.sessionName = byId("sessionName");
         console.log('[CHANNEL]' + this.sessionName.value)
         this.attachEvents()
-        console.log(`%c MatrixStream constructed.`, BIGLOG)
+        console.log(`%c MatrixStream constructed.`, BIGLOG);
       });
   }
 
@@ -57,6 +58,20 @@ export class MatrixStream {
         type: netConfig.sessionName + "-data"
       }).then(() => {
         // console.log('emit all successfully');
+      }).catch(error => {
+        console.error("Erro signal => ", error);
+      });
+    }
+
+    // this is duplicate for two cases with camera or only data
+    // this only data case - send system emit with session name channel
+    this.send = (netArg) => {
+      this.session.signal({
+        data: JSON.stringify(netArg),
+        to: [],
+        type:  netConfig.sessionName
+      }).then(() => {
+        console.log('.');
       }).catch(error => {
         console.error("Erro signal => ", error);
       });
@@ -85,10 +100,10 @@ export class MatrixStream {
       this.session = e.detail;
       this.connection = e.detail.connection;
       this.session.on(`signal:${netConfig.sessionName}`, (e) => {
-        console.log("SIGBAL SYS RECEIVE=>", e);
+        // console.log("SIGBAL SYS RECEIVE=>", e);
         if(this.session.connection.connectionId == e.from.connectionId) {
           // avoid - option
-          dispatchEvent(new CustomEvent('self-msg', {detail: e}));
+          // dispatchEvent(new CustomEvent('self-msg', {detail: e}));
         } else {
           this.multiPlayer.update(e);
         }
@@ -129,30 +144,20 @@ export class MatrixStream {
     root: this,
     init(rtcEvent) {
       console.log("rtcEvent add new net object -> ", rtcEvent);
-      dispatchEvent(new CustomEvent('net-new-user', {detail: {data: rtcEvent}}))
+      // dispatchEvent(new CustomEvent('net-new-user', {detail: {data: rtcEvent}}))
     },
     update(e) {
       e.data = JSON.parse(e.data);
       // dispatchEvent(new CustomEvent('network-data', {detail: e.data}))
-      console.log('REMOTE UPDATE::::', e);
+       console.log('REMOTE UPDATE::::', e);
       if(e.data.netPos) {
-        if(App.scene[e.data.netObjId]) {
-          // if(e.data.netPos.x) App.scene[e.data.netObjId].position.SetX(e.data.netPos.x, 'noemit');
-          // if(e.data.netPos.y) App.scene[e.data.netObjId].position.SetY(e.data.netPos.y, 'noemit');
-          // if(e.data.netPos.z) App.scene[e.data.netObjId].position.SetZ(e.data.netPos.z, 'noemit');
+        if(app.getSceneObjectByName(e.data.sceneName)) {
+          app.getSceneObjectByName(e.data.sceneName).position.setPosition(e.data.netPos.x,e.data.netPos.y,e.data.netPos.z);
         }
       } else if(e.data.netRot) {
-        // console.log('ROT INFO UPDATE', e);
-        // if(e.data.netRot.x) App.scene[e.data.netObjId].rotation.rotx = e.data.netRot.x;
-        // if(e.data.netRot.y) App.scene[e.data.netObjId].rotation.roty = e.data.netRot.y;
-        // if(e.data.netRot.z) App.scene[e.data.netObjId].rotation.rotz = e.data.netRot.z;
-      } else if(e.data.netScale) {
-        // console.log('netScale INFO UPDATE', e);
-        // if(e.data.netScale.x) App.scene[e.data.netObjId].geometry.setScaleByX(e.data.netScale.x, 'noemit');
-        // if(e.data.netScale.y) App.scene[e.data.netObjId].geometry.setScaleByY(e.data.netScale.y, 'noemit');
-        // if(e.data.netScale.z) App.scene[e.data.netObjId].geometry.setScaleByZ(e.data.netScale.z, 'noemit');
-        // if(e.data.netScale.scale) App.scene[e.data.netObjId].geometry.setScale(e.data.netScale.scale, 'noemit');
+        
       }
+        else if(e.data.netScale) {}
     },
     /**
      * If someone leaves all client actions is here

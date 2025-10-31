@@ -11,7 +11,8 @@ export class Position {
 	constructor(x, y, z) {
 		// console.log('TEST TYTPOF ', x)
 		// Not in use for nwo this is from matrix-engine project [nameUniq]
-		this.nameUniq = null;
+		this.nameUniq = null; // not in use
+    this.netObject = null;
 
 		if(typeof x == 'undefined') x = 0;
 		if(typeof y == 'undefined') y = 0;
@@ -90,6 +91,13 @@ export class Position {
 				this.y += this.velY;
 				this.z += this.velZ;
 
+        if (this.netObject != null) {
+          // global space bad but for now - can be injected maybe 
+          app.net.send({
+            sceneName: this.netObject,
+            netPos: {x: this.x, y: this.y, z: this.z},
+          })
+        }
 				// // from me
 				// if(net && net.connection && typeof em === 'undefined' && App.scene[this.nameUniq].net.enable == true) net.connection.send({
 				//   netPos: {x: this.x, y: this.y, z: this.z},

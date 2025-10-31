@@ -628,12 +628,12 @@ let forestOfHollowBloodStartSceen = new _world.default({
     console.log('check remote conn.app.net.session.remoteConnections.size..', app.net.session.remoteConnections.size);
     if (app.net.session.remoteConnections.size == 0) {
       // Rule - even -> south team odd -> north team
-      return "SOUTH";
+      return "south";
     } else {
       if ((0, _utils.isOdd)(app.net.session.remoteConnections.size) == true) {
-        return "NORTH";
+        return "north";
       } else {
-        return "SOUTH";
+        return "south";
       }
     }
   }
@@ -693,24 +693,26 @@ let forestOfHollowBloodStartSceen = new _world.default({
       return false;
     }
   }
-  forestOfHollowBloodStartSceen.gotoGamePlay = () => {
+  forestOfHollowBloodStartSceen.gotoGamePlay = preventEmit => {
     // check again ! good all selected hero !PLAY!
     console.log('...', (0, _utils.byId)(`waiting-${app.net.session.connection.connectionId}`));
     _utils.LS.set('player', {
+      mesh: heros[app.selectedHero].meshName,
       hero: heros[app.selectedHero].name,
       path: heros[app.selectedHero].path,
-      archetypes: heros[app.selectedHero].type,
+      archetypes: [heros[app.selectedHero].type],
       team: (0, _utils.byId)(`waiting-${app.net.session.connection.connectionId}`).getAttribute('data-hero-team'),
       data: Date.now()
     });
     _utils.SS.set('player', {
+      mesh: heros[app.selectedHero].meshName,
       hero: heros[app.selectedHero].name,
       path: heros[app.selectedHero].path,
-      archetypes: heros[app.selectedHero].type,
+      archetypes: [heros[app.selectedHero].type],
       team: (0, _utils.byId)(`waiting-${app.net.session.connection.connectionId}`).getAttribute('data-hero-team'),
       data: Date.now()
     });
-    forestOfHollowBloodStartSceen.net.sendOnlyData({
+    if (typeof preventEmit === 'undefined') forestOfHollowBloodStartSceen.net.sendOnlyData({
       type: 'start'
     });
     location.assign('rpg-game.html');
@@ -845,7 +847,8 @@ let forestOfHollowBloodStartSceen = new _world.default({
         console.log(`<data-receive From ${e.detail.from.connectionId} team:${t.team}  ${(0, _utils.byId)(`waiting-${e.detail.from.connectionId}`)}`);
         (0, _utils.byId)(`${e.detail.from.connectionId}-title`).innerHTML = `Player:${e.detail.from.connectionId} Team:${t.team}`;
       } else if (t.type == 'start') {
-        location.assign('rpg-game.html');
+        // HERE_
+        forestOfHollowBloodStartSceen.gotoGamePlay("no emit");
       }
     }
   });
@@ -930,6 +933,7 @@ let forestOfHollowBloodStartSceen = new _world.default({
         for (var x = 0; x < heros.length; x++) {
           let hero0 = app.mainRenderBundle.filter(obj => obj.name.indexOf(heros[x].name) != -1);
           app.heroByBody.push(hero0);
+          heros[x].meshName = hero0[0].name;
           if (x == 0) {
             hero0[0].effects.circlePlane.instanceTargets[0].color = [1, 0, 2, 1];
           }
@@ -26475,7 +26479,8 @@ class Position {
   constructor(x, y, z) {
     // console.log('TEST TYTPOF ', x)
     // Not in use for nwo this is from matrix-engine project [nameUniq]
-    this.nameUniq = null;
+    this.nameUniq = null; // not in use
+    this.netObject = null;
     if (typeof x == 'undefined') x = 0;
     if (typeof y == 'undefined') y = 0;
     if (typeof z == 'undefined') z = 0;
@@ -26540,7 +26545,17 @@ class Position {
         this.x += this.velX;
         this.y += this.velY;
         this.z += this.velZ;
-
+        if (this.netObject != null) {
+          // global space bad but for now - can be injected maybe 
+          app.net.send({
+            sceneName: this.netObject,
+            netPos: {
+              x: this.x,
+              y: this.y,
+              z: this.z
+            }
+          });
+        }
         // // from me
         // if(net && net.connection && typeof em === 'undefined' && App.scene[this.nameUniq].net.enable == true) net.connection.send({
         //   netPos: {x: this.x, y: this.y, z: this.z},
@@ -27738,7 +27753,9 @@ function joinSession(options) {
         enableBtn();
       });
     } else {
-      session.connect(token, "USER_DATA").then(() => {
+      // in future some meta data can be added here -> on conn created event
+      console.log("netConfig", netConfig.customData);
+      session.connect(token, netConfig.customData).then(() => {
         byId('session-title').innerText = sessionName;
         byId('join').style.display = 'none';
         byId('session').style.display = 'block';
@@ -27995,6 +28012,7 @@ class MatrixStream {
     _matrixStream.netConfig.sessionName = arg.sessionName;
     _matrixStream.netConfig.resolution = arg.resolution;
     _matrixStream.netConfig.isDataOnly = arg.isDataOnly;
+    if (arg.customData) _matrixStream.netConfig.customData = arg.customData;
     _utils.scriptManager.LOAD('./networking/openvidu-browser-2.20.0.js', undefined, undefined, undefined, () => {
       setTimeout(() => {
         this.loadNetHTML();
@@ -28036,6 +28054,20 @@ class MatrixStream {
         console.error("Erro signal => ", error);
       });
     };
+
+    // this is duplicate for two cases with camera or only data
+    // this only data case - send system emit with session name channel
+    this.send = netArg => {
+      this.session.signal({
+        data: JSON.stringify(netArg),
+        to: [],
+        type: _matrixStream.netConfig.sessionName
+      }).then(() => {
+        console.log('.');
+      }).catch(error => {
+        console.error("Erro signal => ", error);
+      });
+    };
     addEventListener(`LOCAL-STREAM-READY`, e => {
       console.log('LOCAL-STREAM-READY ', e.detail.connection);
       this.connection = e.detail.connection;
@@ -28058,12 +28090,10 @@ class MatrixStream {
       this.session = e.detail;
       this.connection = e.detail.connection;
       this.session.on(`signal:${_matrixStream.netConfig.sessionName}`, e => {
-        console.log("SIGBAL SYS RECEIVE=>", e);
+        // console.log("SIGBAL SYS RECEIVE=>", e);
         if (this.session.connection.connectionId == e.from.connectionId) {
           // avoid - option
-          dispatchEvent(new CustomEvent('self-msg', {
-            detail: e
-          }));
+          // dispatchEvent(new CustomEvent('self-msg', {detail: e}));
         } else {
           this.multiPlayer.update(e);
         }
@@ -28104,34 +28134,17 @@ class MatrixStream {
     root: this,
     init(rtcEvent) {
       console.log("rtcEvent add new net object -> ", rtcEvent);
-      dispatchEvent(new CustomEvent('net-new-user', {
-        detail: {
-          data: rtcEvent
-        }
-      }));
+      // dispatchEvent(new CustomEvent('net-new-user', {detail: {data: rtcEvent}}))
     },
     update(e) {
       e.data = JSON.parse(e.data);
       // dispatchEvent(new CustomEvent('network-data', {detail: e.data}))
       console.log('REMOTE UPDATE::::', e);
       if (e.data.netPos) {
-        if (App.scene[e.data.netObjId]) {
-          // if(e.data.netPos.x) App.scene[e.data.netObjId].position.SetX(e.data.netPos.x, 'noemit');
-          // if(e.data.netPos.y) App.scene[e.data.netObjId].position.SetY(e.data.netPos.y, 'noemit');
-          // if(e.data.netPos.z) App.scene[e.data.netObjId].position.SetZ(e.data.netPos.z, 'noemit');
+        if (app.getSceneObjectByName(e.data.sceneName)) {
+          app.getSceneObjectByName(e.data.sceneName).position.setPosition(e.data.netPos.x, e.data.netPos.y, e.data.netPos.z);
         }
-      } else if (e.data.netRot) {
-        // console.log('ROT INFO UPDATE', e);
-        // if(e.data.netRot.x) App.scene[e.data.netObjId].rotation.rotx = e.data.netRot.x;
-        // if(e.data.netRot.y) App.scene[e.data.netObjId].rotation.roty = e.data.netRot.y;
-        // if(e.data.netRot.z) App.scene[e.data.netObjId].rotation.rotz = e.data.netRot.z;
-      } else if (e.data.netScale) {
-        // console.log('netScale INFO UPDATE', e);
-        // if(e.data.netScale.x) App.scene[e.data.netObjId].geometry.setScaleByX(e.data.netScale.x, 'noemit');
-        // if(e.data.netScale.y) App.scene[e.data.netObjId].geometry.setScaleByY(e.data.netScale.y, 'noemit');
-        // if(e.data.netScale.z) App.scene[e.data.netObjId].geometry.setScaleByZ(e.data.netScale.z, 'noemit');
-        // if(e.data.netScale.scale) App.scene[e.data.netObjId].geometry.setScale(e.data.netScale.scale, 'noemit');
-      }
+      } else if (e.data.netRot) {} else if (e.data.netScale) {}
     },
     /**
      * If someone leaves all client actions is here

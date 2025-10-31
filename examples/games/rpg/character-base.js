@@ -148,7 +148,13 @@ export class Character extends Hero {
           this.core.collisionSystem.register(`local${id}`, subMesh.position, 15.0, 'local_hero');
         });
 
-        app.localHero.heroe_bodies[0].effects.flameEmitter.recreateVertexDataRND(1)
+        app.localHero.heroe_bodies[0].effects.flameEmitter.recreateVertexDataRND(1);
+
+
+        // activete net pos emit - becouse uniq name of hero body set net id by scene obj name simple
+        // app.localHero.heroe_bodies[0].position.netObject = app.net.session.connection.connectionId;
+        app.localHero.heroe_bodies[0].position.netObject = app.localHero.heroe_bodies[0].name;
+
         // adapt
         app.localHero.heroe_bodies[0].globalAmbient = [1, 1, 1, 1];
         if(app.localHero.name == 'Slayzer') {
@@ -164,7 +170,7 @@ export class Character extends Hero {
           if(x > 0) app.localHero.heroe_bodies[x].position = app.localHero.heroe_bodies[0].position;
         }
         dispatchEvent(new CustomEvent('local-hero-bodies-ready', {
-          detail: "This is not sync - 99% works"
+          detail: `This is not sync - 99% works`
         }))
       }, 3500);
     } catch(err) {throw err;}
@@ -336,7 +342,6 @@ export class Character extends Hero {
 
       // nisu 2 local creeps
       if(e.detail.A.group == "enemies") {
-        console.info('close distance A is enemies:', e.detail.A.group)
         if(e.detail.B.group == "friendly") {
           //------------------ BLOCK
           let lc = app.localHero.friendlyLocal.creeps.filter((localCreep) => localCreep.name == e.detail.B.id)[0];
@@ -346,7 +351,7 @@ export class Character extends Hero {
           console.info('close distance B is friendly:', e.detail.A.group)
         }
       } else if(e.detail.A.group == "friendly") {
-        console.info('close distance A is friendly:', e.detail.A.group)
+        // console.info('close distance A is friendly:', e.detail.A.group)
         if(e.detail.B.group == "enemies") {
           console.info('close distance B is enemies:', e.detail.A.group)
           //------------------
