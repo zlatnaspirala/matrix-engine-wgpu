@@ -28184,7 +28184,7 @@ let activateNet2 = sessionOption => {
     sessionName: sessionOption.sessionName,
     resolution: sessionOption.resolution
   });
-  addEventListener(`onTitle`, e => {
+  addEventListener(`setTitle`, e => {
     document.title = e.detail;
   });
 };

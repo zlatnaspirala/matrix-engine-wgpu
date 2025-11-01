@@ -199,7 +199,7 @@ export let activateNet2 = (sessionOption) => {
     resolution: sessionOption.resolution
   })
 
-  addEventListener(`onTitle`, (e) => {
+  addEventListener(`setTitle`, (e) => {
     document.title = e.detail;
   })
 };

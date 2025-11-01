@@ -574,12 +574,6 @@ class Controller {
       }
     });
     (0, _raycast.addRaycastsListener)(undefined, 'click');
-    // addRaycastsListener(undefined, 'mousemove');
-    // for now - performance problem
-    // this.canvas.addEventListener("ray.hit.event.mm", (e) => {
-    //   // console.log('ray.hit.event detected', e);
-    // })
-
     this.canvas.addEventListener("ray.hit.event", e => {
       // console.log('ray.hit.event detected', e);
       const {
@@ -589,7 +583,6 @@ class Controller {
         eventName
       } = e.detail;
       if (e.detail.hitObject.name == 'ground') {
-        console.warn('>>>>>> COLLECT HERE .');
         dispatchEvent(new CustomEvent(`onMouseTarget`, {
           detail: {
             type: 'normal',
@@ -663,6 +656,53 @@ class Controller {
       e.preventDefault();
     });
     this.activateVisualRect();
+    let hiddenAt = null;
+    if (location.hostname.indexOf('localhost') !== -1) {
+      console.log('Security stuff activated');
+      console.log = function () {};
+      // Security stuff
+      if (window.innerHeight < window.outerHeight) {
+        let test = window.outerHeight - window.innerHeight;
+        // 87 person comp case -> addressbar ~~~
+        if (test > 100) {
+          console.log('BAN', test);
+        }
+      }
+      if (window.innerWidth < window.outerWidth) {
+        let testW = window.outerWidth - window.innerWidth;
+        if (testW > 100) {
+          console.log('BAN', testW);
+        }
+      }
+      window.addEventListener('keydown', e => {
+        if (e.code == "F12") {
+          e.preventDefault();
+          _utils.mb.error(`
+            You are interest in Forest Of hollow blood. See <a href='https://github.com/zlatnapirala'>Github Source</a>
+            You can download for free project and test it into localhost.
+            `);
+          console.log(`%c[keydown opened] ${e}`, _utils.LOG_MATRIX);
+          return false;
+        }
+      });
+      document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "visible") {
+          if (hiddenAt !== null) {
+            const now = Date.now();
+            const hiddenDuration = (now - hiddenAt) / 1000;
+            if (parseFloat(hiddenDuration.toFixed(2)) > 1) {
+              console.log(`🟢⚠️ Tab was hidden for ${hiddenDuration.toFixed(2)} sec.`);
+              document.title = document.title.replace('🟢', '🟡');
+            }
+            hiddenAt = null; // reset
+          } else {
+            console.log("🟢 Tab is visible — first activation.");
+          }
+        } else {
+          hiddenAt = Date.now();
+        }
+      });
+    }
   }
   projectToScreen(worldPos, viewMatrix, projectionMatrix, canvas) {
     // Convert world position to clip space
@@ -1298,12 +1338,7 @@ let forestOfHollowBlood = new _world.default({
   forestOfHollowBlood.matrixSounds.createAudio('music', 'res/audios/rpg/music.mp3', 1);
   forestOfHollowBlood.matrixSounds.createAudio('win1', 'res/audios/rpg/feel.mp3', 2);
   addEventListener('AmmoReady', async () => {
-    // prod
     forestOfHollowBlood.player.data = _utils.SS.get('player');
-    // dev
-    // forestOfHollowBlood.player.data = LS.get('player');
-
-    // test
     forestOfHollowBlood.net = new _net.MatrixStream({
       active: true,
       domain: 'maximumroulette.com',
@@ -1315,12 +1350,9 @@ let forestOfHollowBlood = new _world.default({
     });
     forestOfHollowBlood.net.virtualEmiter = null;
     app.matrixSounds.audios.music.loop = true;
-
-    // NET
     addEventListener('net-ready', () => {
-      console.log('net-ready');
-
-      // fix arg also 
+      // console.log('net-ready');
+      // fix arg also
       if (forestOfHollowBlood.player.data.team == 'south') {
         forestOfHollowBlood.player.data.enemyTeam = 'north';
         forestOfHollowBlood.enemies = new _enemiesManager.EnemiesManager(forestOfHollowBlood, 'north');
@@ -1330,8 +1362,11 @@ let forestOfHollowBlood = new _world.default({
       }
     });
     addEventListener('connectionDestroyed', e => {
-      console.log('connectionDestroyed , bad bad...');
-      if ((0, _matrixStream.byId)(e.detail.connectionId)) {}
+      console.log('connectionDestroyed , bad bad.');
+      if ((0, _matrixStream.byId)('remote-' + e.detail.connectionId)) {
+        (0, _matrixStream.byId)('remote-' + e.detail.connectionId).remove();
+        //....
+      }
     });
     addEventListener("onConnectionCreated", e => {
       if (e.detail.connection.connectionId == app.net.session.connection.connectionId) {
@@ -1339,21 +1374,19 @@ let forestOfHollowBlood = new _world.default({
         newPlayer.innerHTML = `Local Player: ${e.detail.connection.connectionId}`;
         newPlayer.id = `local-${e.detail.connection.connectionId}`;
         (0, _matrixStream.byId)('matrix-net').appendChild(newPlayer);
+        document.title = forestOfHollowBlood.label.get.titleBan;
       } else {
         let newPlayer = document.createElement('div');
         newPlayer.innerHTML = `remote Player: ${e.detail.connection.connectionId}`;
         newPlayer.id = `remote-${e.detail.connection.connectionId}`;
         (0, _matrixStream.byId)('matrix-net').appendChild(newPlayer);
         if (forestOfHollowBlood.net.virtualEmiter == null) {
-          // only one - first remote (it meas in theory best remote play net response time)
+          // only one - first remote (it means in theory 'best remote player network response time')
           forestOfHollowBlood.net.virtualEmiter = e.detail.connection.connectionId;
         }
-        //
-        let testCustomData = JSON.parse(e.detail.connection.data);
-        console.log('[gameplay]testCustomData[newconn]', testCustomData);
-        // let hero0 = app.mainRenderBundle.filter((obj) => obj.name.indexOf(testCustomData.hero) != -1)
-        console.log('[gameplay]testCustomData[newconn] get mesh data from : ', testCustomData.mesh);
-        forestOfHollowBlood.enemies.loadEnemyHero(testCustomData);
+        let d = JSON.parse(e.detail.connection.data);
+        console.log('testCustomData[newconn]', d);
+        forestOfHollowBlood.enemies.loadEnemyHero(d);
       }
     });
     addEventListener('only-data-receive', e => {
@@ -1364,13 +1397,12 @@ let forestOfHollowBlood = new _world.default({
       app.cameras.RPG.movementSpeed = 100;
       app.cameras.RPG.followMe = forestOfHollowBlood.localHero.heroe_bodies[0].position;
       app.cameras.RPG.mousRollInAction = true;
-
       // automatic
       (0, _matrixStream.byId)('join-btn').click();
     });
     forestOfHollowBlood.RPG = new _controller.Controller(forestOfHollowBlood);
     forestOfHollowBlood.mapLoader = new _mapLoader.MEMapLoader(forestOfHollowBlood, "./res/meshes/nav-mesh/navmesh.json");
-    // fix arg later !
+    // fix arg later!
     forestOfHollowBlood.localHero = new _characterBase.Character(forestOfHollowBlood, forestOfHollowBlood.player.data.path, forestOfHollowBlood.player.data.hero, [forestOfHollowBlood.player.data.archetypes]);
     forestOfHollowBlood.HUD = new _hud.HUD(forestOfHollowBlood.localHero);
     forestOfHollowBlood.collisionSystem = new _collisionSubSystem.CollisionSystem(forestOfHollowBlood);
@@ -30190,7 +30222,7 @@ let activateNet2 = sessionOption => {
     sessionName: sessionOption.sessionName,
     resolution: sessionOption.resolution
   });
-  addEventListener(`onTitle`, e => {
+  addEventListener(`setTitle`, e => {
     document.title = e.detail;
   });
 };

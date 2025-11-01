@@ -46,12 +46,8 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
 
   addEventListener('AmmoReady', async () => {
 
-        // prod
     forestOfHollowBlood.player.data = SS.get('player');
-    // dev
-    // forestOfHollowBlood.player.data = LS.get('player');
 
-    // test
     forestOfHollowBlood.net = new MatrixStream({
       active: true,
       domain: 'maximumroulette.com',
@@ -60,65 +56,51 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
       resolution: '160x240',
       isDataOnly: (urlQuery.camera || urlQuery.audio ? false : true),
       customData: forestOfHollowBlood.player.data
-  });
+    });
 
     forestOfHollowBlood.net.virtualEmiter = null;
-
     app.matrixSounds.audios.music.loop = true;
 
-
-    // NET
     addEventListener('net-ready', () => {
-      console.log('net-ready');
-
-
-      // fix arg also 
+      // console.log('net-ready');
+      // fix arg also
       if(forestOfHollowBlood.player.data.team == 'south') {
         forestOfHollowBlood.player.data.enemyTeam = 'north';
         forestOfHollowBlood.enemies = new EnemiesManager(forestOfHollowBlood, 'north');
-
       } else {
         forestOfHollowBlood.player.data.enemyTeam = 'south';
         forestOfHollowBlood.enemies = new EnemiesManager(forestOfHollowBlood, 'south');
-
       }
-
-
-
     });
 
-
-
     addEventListener('connectionDestroyed', (e) => {
-      console.log('connectionDestroyed , bad bad...');
-      if(byId(e.detail.connectionId)) {}
+      console.log('connectionDestroyed , bad bad.');
+      if(byId('remote-' +e.detail.connectionId)) {
+        byId('remote-' +e.detail.connectionId).remove();
+        //....
+      }
     });
 
     addEventListener("onConnectionCreated", (e) => {
-
       if(e.detail.connection.connectionId == app.net.session.connection.connectionId) {
         let newPlayer = document.createElement('div');
         newPlayer.innerHTML = `Local Player: ${e.detail.connection.connectionId}`;
         newPlayer.id = `local-${e.detail.connection.connectionId}`;
         byId('matrix-net').appendChild(newPlayer);
+        document.title = forestOfHollowBlood.label.get.titleBan;
       } else {
         let newPlayer = document.createElement('div');
         newPlayer.innerHTML = `remote Player: ${e.detail.connection.connectionId}`;
         newPlayer.id = `remote-${e.detail.connection.connectionId}`;
         byId('matrix-net').appendChild(newPlayer);
-
         if(forestOfHollowBlood.net.virtualEmiter == null) {
-          // only one - first remote (it meas in theory best remote play net response time)
+          // only one - first remote (it means in theory 'best remote player network response time')
           forestOfHollowBlood.net.virtualEmiter = e.detail.connection.connectionId;
         }
-        //
-        let testCustomData = JSON.parse(e.detail.connection.data)
-        console.log('[gameplay]testCustomData[newconn]', testCustomData);
-        // let hero0 = app.mainRenderBundle.filter((obj) => obj.name.indexOf(testCustomData.hero) != -1)
-        console.log('[gameplay]testCustomData[newconn] get mesh data from : ', testCustomData.mesh);
-        forestOfHollowBlood.enemies.loadEnemyHero(testCustomData);
+        let d = JSON.parse(e.detail.connection.data)
+        console.log('testCustomData[newconn]', d);
+        forestOfHollowBlood.enemies.loadEnemyHero(d);
       }
-
     })
 
     addEventListener('only-data-receive', (e) => {
@@ -130,15 +112,14 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
       app.cameras.RPG.movementSpeed = 100;
       app.cameras.RPG.followMe = forestOfHollowBlood.localHero.heroe_bodies[0].position;
       app.cameras.RPG.mousRollInAction = true;
-
-
       // automatic
       byId('join-btn').click();
-    })
+    });
+
     forestOfHollowBlood.RPG = new Controller(forestOfHollowBlood);
 
     forestOfHollowBlood.mapLoader = new MEMapLoader(forestOfHollowBlood, "./res/meshes/nav-mesh/navmesh.json");
-    // fix arg later !
+    // fix arg later!
     forestOfHollowBlood.localHero = new Character(
       forestOfHollowBlood, forestOfHollowBlood.player.data.path,
       forestOfHollowBlood.player.data.hero, [forestOfHollowBlood.player.data.archetypes]);
