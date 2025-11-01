@@ -20,11 +20,11 @@ class Character extends _hero.Hero {
   };
   heroFocusAttackOn = null;
   mouseTarget = null;
-  constructor(mysticore, path, name = 'MariaSword', archetypes = ["Warrior", "Mage"]) {
+  constructor(forestOfHollowBlood, path, name = 'MariaSword', archetypes = ["Warrior", "Mage"]) {
     super(name, archetypes);
     // console.info(`%cLOADING hero name : ${name}`, LOG_MATRIX)
     this.name = name;
-    this.core = mysticore;
+    this.core = forestOfHollowBlood;
     this.heroe_bodies = [];
     this.loadLocalHero(path);
     // async
@@ -1628,8 +1628,8 @@ class MEMapLoader {
       }
     });
   }
-  constructor(mysticore, navMapPath) {
-    this.core = mysticore;
+  constructor(forestOfHollowBlood, navMapPath) {
+    this.core = forestOfHollowBlood;
     this.loadNavMesh(navMapPath).then(e => {
       console.log(`%cnavMap loaded.${e}`, _utils.LOG_FUNNY_SMALL);
       this.core.RPG.nav = e;
@@ -1814,7 +1814,7 @@ function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e
  * used under Adobe’s royalty‑free license. 
  * Redistribution of raw assets is not permitted.”
  **/
-let mysticore = new _world.default({
+let forestOfHollowBlood = new _world.default({
   useSingleRenderPass: true,
   canvasSize: 'fullscreen',
   mainCameraParams: {
@@ -1831,20 +1831,20 @@ let mysticore = new _world.default({
   addEventListener('AmmoReady', async () => {
     addEventListener('local-hero-bodies-ready', () => {
       app.cameras.RPG.position[1] = 130;
-      app.cameras.RPG.followMe = mysticore.localHero.heroe_bodies[0].position;
+      app.cameras.RPG.followMe = forestOfHollowBlood.localHero.heroe_bodies[0].position;
     });
-    mysticore.RPG = new _controller.Controller(mysticore);
+    forestOfHollowBlood.RPG = new _controller.Controller(forestOfHollowBlood);
     app.cameras.RPG.movementSpeed = 100;
-    mysticore.mapLoader = new _mapLoader.MEMapLoader(mysticore, "./res/meshes/nav-mesh/navmesh.json");
-    mysticore.localHero = new _characterBase.Character(mysticore, "res/meshes/glb/woman1.glb", 'MariaSword', _hero.HERO_PROFILES.MariaSword.baseArchetypes);
-    mysticore.HUD = new _hud.HUD(mysticore.localHero);
-    mysticore.enemies = new _enemiesManager.EnemiesManager(mysticore);
-    mysticore.collisionSystem = new _collisionSubSystem.CollisionSystem(mysticore);
+    forestOfHollowBlood.mapLoader = new _mapLoader.MEMapLoader(forestOfHollowBlood, "./res/meshes/nav-mesh/navmesh.json");
+    forestOfHollowBlood.localHero = new _characterBase.Character(forestOfHollowBlood, "res/meshes/glb/woman1.glb", 'MariaSword', _hero.HERO_PROFILES.MariaSword.baseArchetypes);
+    forestOfHollowBlood.HUD = new _hud.HUD(forestOfHollowBlood.localHero);
+    forestOfHollowBlood.enemies = new _enemiesManager.EnemiesManager(forestOfHollowBlood);
+    forestOfHollowBlood.collisionSystem = new _collisionSubSystem.CollisionSystem(forestOfHollowBlood);
     // setTimeout(() => {   // }, 3000);
   });
-  mysticore.addLight();
+  forestOfHollowBlood.addLight();
 });
-window.app = mysticore;
+window.app = forestOfHollowBlood;
 
 },{"../../../src/engine/collision-sub-system.js":28,"../../../src/world.js":73,"./character-base.js":1,"./controller.js":2,"./enemies-manager.js":3,"./hero.js":5,"./hud.js":6,"./map-loader.js":7}],9:[function(require,module,exports){
 "use strict";

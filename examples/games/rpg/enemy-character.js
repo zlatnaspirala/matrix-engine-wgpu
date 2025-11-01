@@ -1,6 +1,7 @@
 import {uploadGLBModel} from "../../../src/engine/loaders/webgpu-gltf";
 import {LOG_MATRIX} from "../../../src/engine/utils";
 import {Hero} from "./hero";
+import {startUpPositions} from "./static";
 
 export class Enemie extends Hero {
 
@@ -23,6 +24,7 @@ export class Enemie extends Hero {
 
   loadEnemyHero = async (o) => {
     try {
+      console.info(`%chero enemy path  ${o.path}`, LOG_MATRIX)
       var glbFile01 = await fetch(o.path).then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, this.core.device)));
       this.core.addGlbObjInctance({
         material: {type: 'standard', useTextureFromGlb: true},
@@ -46,7 +48,7 @@ export class Enemie extends Hero {
           subMesh.glb.animationIndex = 0;
           // adapt manual if blender is not setup
           subMesh.glb.glbJsonData.animations.forEach((a, index) => {
-          //  console.info(`%c ANimation: ${a.name} index ${index}`, LOG_MATRIX)
+            //  console.info(`%c ANimation: ${a.name} index ${index}`, LOG_MATRIX)
             if(a.name == 'dead') this.heroAnimationArrange.dead = index;
             if(a.name == 'walk') this.heroAnimationArrange.walk = index;
             if(a.name == 'salute') this.heroAnimationArrange.salute = index;
@@ -56,16 +58,23 @@ export class Enemie extends Hero {
           // adapt
           if(this.name == 'Slayzer') {
             subMesh.globalAmbient = [2, 2, 3, 1];
-          } 
+          }
           // maybe will help - remote net players no nedd to collide in other remote user gamaplay
           // this.core.collisionSystem.register((o.name + idx), subMesh.position, 15.0, 'enemies');
           // dont care for multi sub mesh now
           if(idx == 0) this.core.collisionSystem.register((o.name), subMesh.position, 15.0, 'enemies');
         });
 
-        this.setStartUpPositionTest();
+        this.setStartUpPosition();
 
-      }, 1600)
+        for(var x = 0;x < this.heroe_bodies.length;x++) {
+          if(x > 0) {
+            this.heroe_bodies[x].position = this.heroe_bodies[0].position;
+            this.heroe_bodies[x].rotation = this.heroe_bodies[0].rotation;
+          }
+        }
+
+      }, 1600);
     } catch(err) {throw err;}
   }
 
@@ -74,6 +83,7 @@ export class Enemie extends Hero {
     this.heroe_bodies.forEach(subMesh => {
       subMesh.glb.animationIndex = this.heroAnimationArrange.walk;
       console.info(`%chero walk`, LOG_MATRIX)
+
     });
   }
 
@@ -97,24 +107,22 @@ export class Enemie extends Hero {
       console.info(`%chero idle`, LOG_MATRIX)
     });
   }
+
   setAttack() {
     this.heroe_bodies.forEach(subMesh => {
       subMesh.glb.animationIndex = this.heroAnimationArrange.attack;
       console.info(`%chero attack`, LOG_MATRIX)
     });
-  }
-
-  setStartUpPositionTest() {
-    this.heroe_bodies.forEach((subMesh, idx) => {
-      subMesh.position.setPosition(-700, -23, 0);
-    })
-
-    this.setStartUpPositionTest = this.setStartUpPosition;
+ 
   }
 
   setStartUpPosition() {
     this.heroe_bodies.forEach((subMesh, idx) => {
-      subMesh.position.setPosition(700, -23, -700);
+      subMesh.position.setPosition(
+        startUpPositions[app.player.data.enemyTeam][0],
+        startUpPositions[app.player.data.enemyTeam][1],
+        startUpPositions[app.player.data.enemyTeam][2]
+      )
     })
   }
 

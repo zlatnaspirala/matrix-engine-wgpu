@@ -26,8 +26,8 @@ export class MEMapLoader {
     })
   }
 
-  constructor(mysticore, navMapPath) {
-    this.core = mysticore;
+  constructor(forestOfHollowBlood, navMapPath) {
+    this.core = forestOfHollowBlood;
     this.loadNavMesh(navMapPath).then((e) => {
       console.log(`%cnavMap loaded.${e}`, LOG_FUNNY_SMALL);
       this.core.RPG.nav = e;
@@ -130,15 +130,10 @@ export class MEMapLoader {
         enabled: true,
       }
     }, null, glbFile01);
-
-    // console.log('>>>>>>>>>>>>>>>>>>>>>>>>')
-    //-------------------
     setTimeout(() => {
       this.collectionOfTree1 = this.core.mainRenderBundle.filter((o => o.name.indexOf('tree') != -1));
-      setTimeout(() => {
-        this.addInstancing();
-      }, 100)
-    }, 1000)
+      setTimeout(() => this.addInstancing(), 100)
+    }, 2000)
   }
 
   addInstancing() {
@@ -151,8 +146,6 @@ export class MEMapLoader {
     ];
 
     this.collectionOfTree1.forEach((partOftree) => {
-
-
       const treesPerCluster = 9;
       const gridSize = Math.ceil(Math.sqrt(treesPerCluster));
       const totalInstances = treesPerCluster * clusterOffsets.length;

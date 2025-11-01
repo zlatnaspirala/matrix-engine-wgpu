@@ -917,3 +917,48 @@ export const LS = {
     localStorage.clear();
   }
 };
+
+export const SS = {
+  set(key, value) {
+    sessionStorage.setItem(key, JSON.stringify(value));
+  },
+
+  get(key, defaultValue = null) {
+    const item = sessionStorage.getItem(key);
+    try {
+      return item ? JSON.parse(item) : defaultValue;
+    } catch(e) {
+      console.warn(`Error parsing sessionStorage key "${key}"`, e);
+      return defaultValue;
+    }
+  },
+
+  has(key) {
+    return sessionStorage.getItem(key) !== null;
+  },
+
+  remove(key) {
+    sessionStorage.removeItem(key);
+  },
+
+  clear() {
+    sessionStorage.clear();
+  }
+};
+export const jsonHeaders = new Headers({
+	"Content-Type": "application/json",
+	"Accept": "application/json",
+});
+
+export const htmlHeader = new Headers({
+	"Content-Type": "text/html",
+	"Accept": "text/plain",
+});
+
+export function isEven(n) {
+  return n % 2 === 0;
+}
+
+export function isOdd(n) {
+  return n % 2 !== 0;
+}

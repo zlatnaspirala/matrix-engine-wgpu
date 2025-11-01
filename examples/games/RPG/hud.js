@@ -8,7 +8,6 @@ export class HUD {
   }
 
   construct() {
-    // Create HUD container
     const hud = document.createElement("div");
     hud.id = "hud-menu";
     Object.assign(hud.style, {
@@ -23,7 +22,7 @@ export class HUD {
       justifyContent: "space-around",
       color: "white",
       fontFamily: "'Orbitron', sans-serif",
-      zIndex: "100",
+      zIndex: "15",
       padding: "10px",
       boxSizing: "border-box"
     });
@@ -35,12 +34,12 @@ export class HUD {
       width: "30%",
       height: "100%",
       background: "rgba(0,0,0,0.5)",
-      border: "solid 1px red",
+      border: "1px solid #353535",
       alignItems: "center",
       justifyContent: "space-around",
       color: "white",
       fontFamily: "'Orbitron', sans-serif",
-      zIndex: "100",
+      zIndex: "15",
       padding: "10px",
       boxSizing: "border-box",
       overflow: 'hidden'
@@ -58,12 +57,11 @@ export class HUD {
       width: "12%",
       height: "100%",
       background: "rgba(0,0,0,0.5)",
-      // border: "solid 1px red",
       alignItems: "center",
       justifyContent: "space-around",
       color: "white",
       fontFamily: "'Orbitron', sans-serif",
-      zIndex: "100",
+      zIndex: "15",
       padding: "1px",
       margin: '0',
       boxSizing: "border-box",
@@ -82,12 +80,11 @@ export class HUD {
       width: "12%",
       height: "100%",
       background: "rgba(0,0,0,0.5)",
-      // border: "solid 1px red",
       alignItems: "center",
       justifyContent: "space-around",
       color: "white",
       fontFamily: "'Orbitron', sans-serif",
-      zIndex: "100",
+      zIndex: "15",
       padding: "1px",
       margin: '0',
       boxSizing: "border-box",
@@ -113,7 +110,7 @@ export class HUD {
     addEventListener('stats-localhero', (e) => {
       console.log('STATS UPDATE DOM ', e.detail)
       for(var x = 0;x < props.length;x++) {
-        byId('stats-' + props[x]).innerHTML =  e.detail[props[x]].toFixed(2);
+        byId('stats-' + props[x]).innerHTML = e.detail[props[x]].toFixed(2);
       }
       console.log('STATS UPDATE DOM ', e.detail)
     })
@@ -123,15 +120,13 @@ export class HUD {
       statsDomItem.id = `statsLabel-${props[x]}`;
       statsDomItem.innerHTML = props[x] + ":";
       Object.assign(statsDomItem.style, {
-        // width: "10%",
-        // height: "100%",
         background: "rgba(0,0,0,0.5)",
-        // border: "solid 1px red",
+        border: "1px solid #353535",
         alignItems: "center",
         justifyContent: "space-around",
         color: "white",
         fontFamily: "'Orbitron', sans-serif",
-        zIndex: "100",
+        zIndex: "15",
         margin: '0',
         boxSizing: "border-box",
         overflow: 'hidden'
@@ -142,39 +137,34 @@ export class HUD {
       statsDomItemValue.id = `stats-${props[x]}`;
       statsDomItemValue.innerHTML = "" + app.localHero[props[x]];
       Object.assign(statsDomItemValue.style, {
-        // width: "10%",
-        // height: "100%",
         background: "rgba(0,0,0,0.5)",
-        // border: "solid 1px red",
+        border: "1px solid #353535",
         alignItems: "center",
         justifyContent: "space-around",
         color: "white",
         fontFamily: "'Orbitron', sans-serif",
-        zIndex: "100",
+        zIndex: "15",
         margin: '0',
         boxSizing: "border-box",
         overflow: 'hidden'
       });
       statsDomValue.appendChild(statsDomItemValue);
     }
-    //----------------------
-
 
     const hudCenter = document.createElement("div");
     hudCenter.id = "hudCenter";
-
     Object.assign(hudCenter.style, {
       width: "100%",
       height: "100%",
       backgroundColor: "rgba(0,0,0,0.5)",
       display: "flex",
       flexDirection: "column",
-      border: "solid 1px green",
+      border: "1px solid #353535",
       alignItems: "center",
       justifyContent: "space-around",
       color: "white",
       fontFamily: "'Orbitron', sans-serif",
-      zIndex: "100",
+      zIndex: "15",
       padding: "0",
       boxSizing: "border-box",
     });
@@ -190,11 +180,11 @@ export class HUD {
       display: "grid",
       gridTemplateColumns: "repeat(4, 1fr)",
       gap: "12px",
-      border: "1px solid gray",
+      border: "1px solid #353535",
       borderRadius: "10px",
       padding: "2px",
       boxSizing: "border-box",
-      zIndex: "100",
+      zIndex: "15",
       fontFamily: "'Orbitron', sans-serif",
       backdropFilter: "blur(6px)",
       boxShadow: "0 -2px 10px rgba(0,0,0,0.4)",
@@ -209,7 +199,7 @@ export class HUD {
       Object.assign(slot.style, {
         aspectRatio: "1 / 1",
         width: "100%",
-        border: "2px solid #888",
+        border: "1px solid #353535",
         borderRadius: "8px",
         background: "linear-gradient(145deg, #444, #222)",
         boxShadow:
@@ -239,7 +229,6 @@ export class HUD {
       slot.innerHTML = "locked";
 
       slot.addEventListener("mousedown", (e) => {
-
         if(e.target.innerHTML == 'locked') {
           console.info('it is locked ...')
           return;
@@ -249,16 +238,13 @@ export class HUD {
         slot.style.boxShadow =
           "inset 2px 2px 5px rgba(0,0,0,0.6), inset -2px -2px 5px rgba(255,255,255,0.1)";
 
-
         dispatchEvent(new CustomEvent(`attack-magic${i}`,
           {detail: {source: 'hero', magicType: i, level: 1}}))
       });
       hudMagicHOlder.appendChild(slot);
     }
     hudCenter.appendChild(hudMagicHOlder);
-    // ---------------------------------------
     // HP 
-    // ---------------------------------------
     const hudHP = document.createElement("div");
     hudHP.id = "hudHP";
     Object.assign(hudHP.style, {
@@ -270,7 +256,7 @@ export class HUD {
       justifyContent: "space-around",
       color: "white",
       fontFamily: "'Orbitron', sans-serif",
-      zIndex: "100",
+      zIndex: "15",
       padding: "10px",
       boxSizing: "border-box"
     });
@@ -301,18 +287,14 @@ export class HUD {
     });
     hpText.textContent = "HP: 100%";
     hudHP.appendChild(hpText);
-
     hudCenter.appendChild(hudHP);
-
     window.addEventListener("setHP", (e) => {
       const clamped = Math.max(0, Math.min(100, e.detail.HP));
       hpBar.style.width = clamped + "%";
       hpText.textContent = `HP: ${clamped}%`;
     })
 
-    // ---------------------------------------
     // MANA
-    // ---------------------------------------
     const hudMANA = document.createElement("div");
     hudMANA.id = "hudMANA";
 
@@ -326,7 +308,7 @@ export class HUD {
       justifyContent: "space-around",
       color: "white",
       fontFamily: "'Orbitron', sans-serif",
-      zIndex: "100",
+      zIndex: "15",
       padding: "10px",
       boxSizing: "border-box"
     });
@@ -379,36 +361,29 @@ export class HUD {
       selectedCharacters.textContent = `${n}`;
     });
 
-    // const heroProfile = document.createElement("img");
-    // heroProfile.id = 'heroProfile';
-    // heroProfile.src = "";
-    // hudLeftBox.appendChild(heroProfile);
-    //
-
     const hudDesription = document.createElement("div");
     hudDesription.id = "hudDesription";
-
     Object.assign(hudDesription.style, {
       width: "60%",
       height: "100%",
       backgroundColor: "rgba(0,0,0,0.5)",
-      // display: "flex",
-      border: "solid 1px red",
+      border: "1px solid #353535",
+      borderLeft: "none",
       alignItems: "center",
       justifyContent: "space-around",
       color: "white",
       fontFamily: "'Orbitron', sans-serif",
-      zIndex: "100",
+      zIndex: "15",
       padding: "10px",
       boxSizing: "border-box"
     });
 
     const hudDesriptionText = document.createElement("div");
-    hudDesriptionText.id = "hudDesription";
-
+    hudDesriptionText.id = "hudDesriptionText";
     Object.assign(hudDesriptionText.style, {
-      width: "100%",
-      height: "100%",
+      width: '90%',
+      height: '80%',
+      padding: '5% 5% 5% 5%',
       aspectRatio: "1 / 1",
       border: "2px solid #aaa",
       borderRadius: "6px",
@@ -416,7 +391,7 @@ export class HUD {
       boxShadow:
         "inset 2px 2px 5px rgba(0,0,0,0.6), inset -2px -2px 5px rgba(255,255,255,0.1)",
       display: "flex",
-      alignItems: "center",
+      // alignItems: "center",
       justifyContent: "center",
       color: "#ccc",
       fontSize: "12px",
@@ -429,7 +404,6 @@ export class HUD {
 
     hudDesription.appendChild(hudDesriptionText);
     hud.appendChild(hudDesription);
-
     // right
     const hudItems = document.createElement("div");
     hudItems.id = "hudItems";
@@ -441,12 +415,12 @@ export class HUD {
       backgroundRepeat: 'no-repeat',
       backgroundSize: 'auto',
       display: "flex",
-      border: "solid 1px yellow",
+      border: "1px solid #353535",
       alignItems: "center",
       justifyContent: "space-around",
       color: "white",
       fontFamily: "'Orbitron', sans-serif",
-      zIndex: "100",
+      zIndex: "15",
       padding: "1px",
       boxSizing: "border-box"
     });
@@ -474,8 +448,7 @@ export class HUD {
         border: "2px solid #aaa",
         borderRadius: "6px",
         background: "linear-gradient(145deg, #444, #222)",
-        boxShadow:
-          "inset 2px 2px 5px rgba(0,0,0,0.6), inset -2px -2px 5px rgba(255,255,255,0.1)",
+        boxShadow: "inset 2px 2px 5px rgba(0,0,0,0.6), inset -2px -2px 5px rgba(255,255,255,0.1)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -487,7 +460,6 @@ export class HUD {
         backgroundRepeat: "no-repeat",
         backgroundPosition: "center",
       });
-
       // Hover effect
       slot.addEventListener("mouseenter", () => {
         slot.style.border = "2px solid #ff0";
@@ -499,10 +471,72 @@ export class HUD {
         slot.style.boxShadow =
           "inset 2px 2px 5px rgba(0,0,0,0.6), inset -2px -2px 5px rgba(255,255,255,0.1)";
       });
-
       slot.textContent = "Empty";
       inventoryGrid.appendChild(slot);
     }
+
+    const loader = document.createElement("div");
+    Object.assign(loader.style, {
+      position: "fixed",
+      display: 'flex',
+      bottom: '0',
+      left: '0',
+      width: "100vw",
+      height: "100vh",
+      textAlign: "center",
+      color: "white",
+      zIndex: 21,
+      fontWeight: "bold",
+      textShadow: "0 0 2px black",
+      color: '#ffffffff',
+      background: '#000000ff',
+      fontSize: '16px',
+      cursor: 'url(./res/icons/default.png) 0 0, auto',
+      pointerEvents: 'auto'
+    });
+    // loader.classList.add('buttonMatrix');
+    loader.innerHTML = `
+      <div class="loader">
+        <div class="progress-container">
+          <div class="progress-bar" id="progressBar"></div>
+          </div>
+        <div class="counter" id="counter">0%</div>
+      </div>
+    `;
+    loader.addEventListener('click', (e) => {
+      app.matrixSounds.play('music');
+    });
+    hud.appendChild(loader);
+
+    let progress = 0;
+    let bar = null;
+    let counter = null;
+    function fakeProgress() {
+      if(progress < 100) {
+        // Random step to look "non-linear"
+        progress += Math.random() * 5;
+        if(progress > 100) progress = 100;
+        bar.style.width = progress + '%';
+        counter.textContent = "Prepare gameplay " + Math.floor(progress) + '%';
+        setTimeout(fakeProgress, 80 + Math.random() * 150);
+      } else {
+        counter.textContent = "Let the game begin!";
+        bar.style.boxShadow = "0 0 30px #00ff99";
+        setTimeout(() => {
+          loader.remove();
+          bar = null;
+          counter = null;
+        }, 250)
+      }
+    }
+
+    setTimeout(() => {
+      bar = document.getElementById('progressBar');
+      counter = document.getElementById('counter');
+      fakeProgress()
+    }, 300);
+
+
 
     // Add grid to hudItems
     hudItems.appendChild(inventoryGrid);

@@ -1,6 +1,7 @@
 import {uploadGLBModel} from "../../../src/engine/loaders/webgpu-gltf";
 import {LOG_MATRIX} from "../../../src/engine/utils";
 import {Hero} from "./hero";
+import {startUpPositions} from "./static";
 
 export class Creep extends Hero {
 
@@ -48,7 +49,7 @@ export class Creep extends Hero {
           subMesh.glb.animationIndex = 0;
           // adapt manual if blender is not setup
           subMesh.glb.glbJsonData.animations.forEach((a, index) => {
-            console.info(`%c Animation loading for creeps: ${a.name} index ${index}`, LOG_MATRIX)
+            // console.info(`%c Animation loading for creeps: ${a.name} index ${index}`, LOG_MATRIX)
             if(a.name == 'dead') this.heroAnimationArrange.dead = index;
             if(a.name == 'walk') this.heroAnimationArrange.walk = index;
             if(a.name == 'salute') this.heroAnimationArrange.salute = index;
@@ -58,9 +59,7 @@ export class Creep extends Hero {
 
           // adapt
           subMesh.globalAmbient = [1, 1, 1, 1];
-          if(this.name == 'Slayzer') {
-            subMesh.globalAmbient = [2, 2, 3, 1];
-          } else if(this.name.indexOf('friendly-creeps') != -1) {
+          if(this.name.indexOf('friendly-creeps') != -1) {
             subMesh.globalAmbient = [12, 12, 12, 1];
           } else if(this.name.indexOf('enemy-creeps') != -1) {
             subMesh.globalAmbient = [12, 1, 1, 1];
@@ -114,8 +113,11 @@ export class Creep extends Hero {
   setStartUpPosition() {
     if(this.group == 'enemy') {
       this.heroe_bodies.forEach((subMesh, idx) => {
-        subMesh.position.setPosition(700, -23, -700);
-      })
+        subMesh.position.setPosition(
+          startUpPositions[this.core.player.data.enemyTeam][0],
+          startUpPositions[this.core.player.data.enemyTeam][1],
+          startUpPositions[this.core.player.data.enemyTeam][2]);
+      });
     }
   }
 
@@ -200,7 +202,7 @@ export class Creep extends Hero {
 
       } else {
 
-        console.log('Enter for enemy  LOGIC ....this.group  ', this.group )
+        console.log('Enter for enemy  LOGIC ....this.group  ', this.group)
         // FROM ENEMY VIEW  THIS IS HARD CODE RELA COMMAND FOR NENEMY OBJS COMES FROM NETWORKING
         if(this.creepFocusAttackOn == null) {
           console.info('FOCUS ON GROUND BUT COLLIDE WITH ENEMY-ANIMATION END setIdle:', e.detail.animationName)

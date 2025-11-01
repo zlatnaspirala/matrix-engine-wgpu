@@ -389,11 +389,11 @@ export function createInputHandler(window, canvas) {
   });
 
   canvas.addEventListener('wheel', (e) => {
-    if((e.buttons & 1) !== 0) {
-      analog.zoom += Math.sign(e.deltaY);
-      e.preventDefault();
-      e.stopPropagation();
-    }
+    // if((e.buttons & 1) !== 0) {
+    //   analog.zoom += Math.sign(e.deltaY);
+    //   e.preventDefault();
+    //   e.stopPropagation();
+    // }
   }, {passive: false});
 
   return () => {
@@ -432,7 +432,7 @@ export class RPGCamera extends CameraBase {
   // Returns velocity vector
 
   // Inside your camera control init
-  scrollY = 0;
+  scrollY = 50;
   minY = 50.5;   // minimum camera height
   maxY = 135.0;   // maximum camera height
   scrollSpeed = 1;
@@ -471,7 +471,6 @@ export class RPGCamera extends CameraBase {
         this.scrollY -= e.deltaY * this.scrollSpeed * 0.01;
         // Clamp to range
         this.scrollY = Math.max(this.minY, Math.min(this.maxY, this.scrollY));
-
       });
     }
   }

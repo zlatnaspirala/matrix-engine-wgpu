@@ -4,6 +4,7 @@ import {byId, LOG_MATRIX} from "../../../src/engine/utils";
 import {Hero, HERO_PROFILES} from "./hero";
 import {Creep} from "./creep-character";
 import {followPath} from "./nav-mesh";
+import {creepPoints, startUpPositions} from "./static";
 
 export class Character extends Hero {
 
@@ -35,16 +36,18 @@ export class Character extends Hero {
 
   gold = 100;
 
-  constructor(mysticore, path, name = 'MariaSword', archetypes = ["Warrior", "Mage"]) {
+  constructor(forestOfHollowBlood, path, name = 'MariaSword', archetypes = ["Warrior", "Mage"]) {
     super(name, archetypes);
-    // console.info(`%cLOADING hero name : ${name}`, LOG_MATRIX)
+    console.info(`%cLOADING local hero name : ${name}`, LOG_MATRIX)
+    console.info(`%cLOADING local hero forestOfHollowBlood.player.data : ${forestOfHollowBlood.player.data}`, LOG_MATRIX)
+
     this.name = name;
-    this.core = mysticore;
+    this.core = forestOfHollowBlood;
     this.heroe_bodies = [];
     this.loadfriendlyCreeps();
     this.loadLocalHero(path);
     // async
-    setTimeout(() => this.setupHUDForHero(name), 500)
+    setTimeout(() => this.setupHUDForHero(name), 1000);
   }
 
   setupHUDForHero(name) {
@@ -55,7 +58,7 @@ export class Character extends Hero {
       byId(`magic-slot-${x - 1}`).style.backgroundRepeat = "round";
     }
     byId('hudLeftBox').style.background = `url('./res/textures/rpg/hero-image/${name.toLowerCase()}.png')  center center / cover no-repeat`;
-    byId('hudDesription').innerHTML = app.label.get.mariasword;
+    byId('hudDesriptionText').innerHTML = app.label.get[name.toLowerCase()];
   }
 
   async loadfriendlyCreeps() {
@@ -64,21 +67,21 @@ export class Character extends Hero {
       name: 'friendly-creeps0',
       archetypes: ["creep"],
       path: 'res/meshes/glb/bot.glb',
-      position: {x: 0, y: -23, z: 1000}
+      position: {x: 0, y: -23, z: 0}
     }, ['creep'], 'friendly'));
     this.friendlyLocal.creeps.push(new Creep({
       core: this.core,
       name: 'friendly-creeps1',
       archetypes: ["creep"],
       path: 'res/meshes/glb/bot.glb',
-      position: {x: 150, y: -23, z: 1200}
+      position: {x: 150, y: -23, z: 0}
     }, ['creep'], 'friendly'));
     this.friendlyLocal.creeps.push(new Creep({
       core: this.core,
       name: 'friendly-creeps2',
       archetypes: ["creep"],
       path: 'res/meshes/glb/bot.glb',
-      position: {x: 100, y: -23, z: 1400} // not work init
+      position: {x: 100, y: -23, z: 0}
     }, ['creep'], 'friendly'));
   }
 
@@ -88,7 +91,11 @@ export class Character extends Hero {
       this.core.addGlbObjInctance({
         material: {type: 'standard', useTextureFromGlb: true},
         scale: [20, 20, 20],
-        position: {x: 0, y: -23, z: -0},
+        position: {
+          x: startUpPositions[this.core.player.data.team][0],
+          y: startUpPositions[this.core.player.data.team][1],
+          z: startUpPositions[this.core.player.data.team][2]
+        },
         name: this.name,
         texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
         raycast: {enabled: true, radius: 1.5},
@@ -132,7 +139,7 @@ export class Character extends Hero {
           subMesh.glb.animationIndex = 0;
           // adapt manual if blender is not setup
           subMesh.glb.glbJsonData.animations.forEach((a, index) => {
-            console.info(`%c ANimation: ${a.name} index ${index}`, LOG_MATRIX)
+            // console.info(`%c ANimation: ${a.name} index ${index}`, LOG_MATRIX)
             if(a.name == 'dead') this.heroAnimationArrange.dead = index;
             if(a.name == 'walk') this.heroAnimationArrange.walk = index;
             if(a.name == 'salute') this.heroAnimationArrange.salute = index;
@@ -143,7 +150,11 @@ export class Character extends Hero {
           this.core.collisionSystem.register(`local${id}`, subMesh.position, 15.0, 'local_hero');
         });
 
-        app.localHero.heroe_bodies[0].effects.flameEmitter.recreateVertexDataRND(1)
+        app.localHero.heroe_bodies[0].effects.flameEmitter.recreateVertexDataRND(1);
+
+
+
+
         // adapt
         app.localHero.heroe_bodies[0].globalAmbient = [1, 1, 1, 1];
         if(app.localHero.name == 'Slayzer') {
@@ -153,17 +164,25 @@ export class Character extends Hero {
         }
 
         app.localHero.setAllCreepsAtStartPos();
-
         this.attachEvents();
-        // important !!
-        // if(app.localHero.heroe_bodies.length > 1) {
-        //   app.localHero.heroe_bodies[1].position = app.localHero.heroe_bodies[0].position;
-        // }
+        // important!!
         for(var x = 0;x < app.localHero.heroe_bodies.length;x++) {
-          if(x > 0) app.localHero.heroe_bodies[x].position = app.localHero.heroe_bodies[0].position;
+          if(x > 0) {
+            app.localHero.heroe_bodies[x].position = app.localHero.heroe_bodies[0].position;
+            // app.localHero.heroe_bodies[x].position.setPosition = app.localHero.heroe_bodies[0].position.setPosition;
+            app.localHero.heroe_bodies[x].rotation = app.localHero.heroe_bodies[0].rotation;
+          }
         }
+
+        // activete net pos emit - becouse uniq name of hero body set net id by scene obj name simple
+        // app.localHero.heroe_bodies[0].position.netObject = app.net.session.connection.connectionId;
+        app.localHero.heroe_bodies[0].position.netObject = app.localHero.heroe_bodies[0].name;
+
+        // for now net view for rot is axis separated
+        app.localHero.heroe_bodies[0].rotation.emitY = app.localHero.heroe_bodies[0].name;
+
         dispatchEvent(new CustomEvent('local-hero-bodies-ready', {
-          detail: "This is not sync - 99% works"
+          detail: `This is not sync - 99% works`
         }))
       }, 3500);
     } catch(err) {throw err;}
@@ -191,8 +210,10 @@ export class Character extends Hero {
     });
 
     app.localHero.friendlyLocal.creeps.forEach((creep, index) => {
-      // console.log('app.local creep ', creep.heroe_bodies[0].glb.glbJsonData.animations);
-      creep.heroe_bodies[0].position.setPosition(-750 + index * 50, -23, 800 + index * 50);
+      creep.heroe_bodies[0].position.setPosition(
+        startUpPositions[this.core.player.data.team][0] + index * 50,
+        startUpPositions[this.core.player.data.team][1],
+        startUpPositions[this.core.player.data.team][2] + index * 50);
     })
 
     setTimeout(() => {
@@ -201,21 +222,13 @@ export class Character extends Hero {
   }
 
   navigateCreeps() {
+    console.log('[navigateCreeps() CALL!');
     app.localHero.friendlyLocal.creeps.forEach((creep, index) => {
       this.navigateCreep(creep, index);
       if(creep.creepFocusAttackOn != null) {
-        // console.log('[creep.creepFocusAttackOn] is on action chech for small interval again....!', creep);
+        console.log('[navigateCreeps()][friendlyLocal][creep.creepFocusAttackOn] is on action chech for small interval again....!', creep);
         return;
       }
-      // creep.firstPoint = [-653.83, -26.62, -612.95];
-      // creep.finalPoint = [702, -26, -737];
-      // const start = [creep.heroe_bodies[0].position.x, creep.heroe_bodies[0].position.y, creep.heroe_bodies[0].position.z];
-      // const end = [creep.firstPoint[0], creep.firstPoint[1], creep.firstPoint[2]];
-      // const endFinal = [creep.finalPoint[0], creep.finalPoint[1], creep.finalPoint[2]];
-      // const path = this.core.RPG.nav.findPath(start, end);
-      // if(!path || path.length === 0) {console.warn('No valid path found.'); return;}
-      // this.setWalkCreep(index);
-      // followPath(creep.heroe_bodies[0], path, this.core);
     })
   }
 
@@ -223,8 +236,8 @@ export class Character extends Hero {
     if(creep.creepFocusAttackOn != null) {
       return;
     }
-    creep.firstPoint = [-653.83, -26.62, -612.95];
-    creep.finalPoint = [702, -26, -737];
+    creep.firstPoint = creepPoints[this.core.player.data.team].firstPoint;
+    creep.finalPoint = creepPoints[this.core.player.data.team].finalPoint;
     const start = [creep.heroe_bodies[0].position.x, creep.heroe_bodies[0].position.y, creep.heroe_bodies[0].position.z];
     const end = [creep.firstPoint[0], creep.firstPoint[1], creep.firstPoint[2]];
     const endFinal = [creep.finalPoint[0], creep.finalPoint[1], creep.finalPoint[2]];
@@ -235,9 +248,13 @@ export class Character extends Hero {
   }
 
   setWalk() {
-    this.core.RPG.heroe_bodies.forEach(subMesh => {
+    this.core.RPG.heroe_bodies.forEach((subMesh , index )=> {
       subMesh.glb.animationIndex = this.heroAnimationArrange.walk;
       // console.info(`%chero walk`, LOG_MATRIX)
+      if (index == 0) app.net.send({
+        sceneName: subMesh.name,
+        animationIndex: subMesh.glb.animationIndex
+      })
     });
   }
 
@@ -256,9 +273,13 @@ export class Character extends Hero {
   }
 
   setIdle() {
-    this.core.RPG.heroe_bodies.forEach(subMesh => {
+    this.core.RPG.heroe_bodies.forEach((subMesh, index) => {
       subMesh.glb.animationIndex = this.heroAnimationArrange.idle;
       // console.info(`%chero idle`, LOG_MATRIX)
+            if (index == 0) app.net.send({
+        sceneName: subMesh.name,
+        animationIndex: subMesh.glb.animationIndex
+      })
     });
   }
 
@@ -341,7 +362,6 @@ export class Character extends Hero {
 
       // nisu 2 local creeps
       if(e.detail.A.group == "enemies") {
-        console.info('close distance A is enemies:', e.detail.A.group)
         if(e.detail.B.group == "friendly") {
           //------------------ BLOCK
           let lc = app.localHero.friendlyLocal.creeps.filter((localCreep) => localCreep.name == e.detail.B.id)[0];
@@ -351,7 +371,7 @@ export class Character extends Hero {
           console.info('close distance B is friendly:', e.detail.A.group)
         }
       } else if(e.detail.A.group == "friendly") {
-        console.info('close distance A is friendly:', e.detail.A.group)
+        // console.info('close distance A is friendly:', e.detail.A.group)
         if(e.detail.B.group == "enemies") {
           console.info('close distance B is enemies:', e.detail.A.group)
           //------------------
@@ -433,13 +453,14 @@ export class Character extends Hero {
         let getName = e.detail.name.split('_')[0];
         let t = app.localHero.friendlyLocal.creeps.filter((obj) => obj.name == getName);
         if(t[0].creepFocusAttackOn != null) {
-          console.log(`%[character base ?] onTargetPositionReach 
-          cjeck creepFocusAttackOn : ${t[0].creepFocusAttackOn}`, LOG_MATRIX)
+          console.log(`%[character base]onTargetPositionReach 
+           creepFocusAttackOn : ${t[0].creepFocusAttackOn}`, LOG_MATRIX)
           return;
         }
 
-        let test = e.detail.body.position.z - t[0].firstPoint[2];
-        if(test > 20) {
+        let testz = e.detail.body.position.z - t[0].firstPoint[2];
+        let testx = e.detail.body.position.x - t[0].firstPoint[0];
+        if(Math.abs(testz) > 15 && Math.abs(testx) > 15) {
           // got to first point  t[0] for now only  one sub mesh per creep...
           // console.log('SEND TO FIRTS POINT POINT', t[0].firstPoint)
           const start = [t[0].heroe_bodies[0].position.x, t[0].heroe_bodies[0].position.y, t[0].heroe_bodies[0].position.z];
@@ -449,21 +470,19 @@ export class Character extends Hero {
           setTimeout(() => {
             this.setWalkCreep(getName[getName.length - 1]);
             followPath(t[0].heroe_bodies[0], path, app)
-          }, 1000)
-
-
+          }, 1000);
         } else {
           // got ot final
-          // console.log('SEND TO last POINT POINT', t[0].finalPoint)
+          console.log('SEND TO last POINT POINT to the enemy home....', t[0].finalPoint)
           const start = [t[0].heroe_bodies[0].position.x, t[0].heroe_bodies[0].position.y, t[0].heroe_bodies[0].position.z];
           const path = this.core.RPG.nav.findPath(start, t[0].finalPoint);
           if(!path || path.length === 0) {console.warn('No valid path found.'); return;}
           // getName[getName.length-1] becouse for now creekps have sum < 10
+          // at the end finalPoint will be point of enemy base!
           setTimeout(() => {
             followPath(t[0].heroe_bodies[0], path, app)
             this.setWalkCreep(getName[getName.length - 1]);
-          }, 1000)
-
+          }, 1000);
         }
         //--------------------------------
         return;
