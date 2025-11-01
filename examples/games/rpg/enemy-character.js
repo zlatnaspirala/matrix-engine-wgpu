@@ -1,6 +1,7 @@
 import {uploadGLBModel} from "../../../src/engine/loaders/webgpu-gltf";
 import {LOG_MATRIX} from "../../../src/engine/utils";
 import {Hero} from "./hero";
+import {followPath} from "./nav-mesh";
 import {startUpPositions} from "./static";
 
 export class Enemie extends Hero {
@@ -83,7 +84,6 @@ export class Enemie extends Hero {
     this.heroe_bodies.forEach(subMesh => {
       subMesh.glb.animationIndex = this.heroAnimationArrange.walk;
       console.info(`%chero walk`, LOG_MATRIX)
-
     });
   }
 
@@ -113,7 +113,7 @@ export class Enemie extends Hero {
       subMesh.glb.animationIndex = this.heroAnimationArrange.attack;
       console.info(`%chero attack`, LOG_MATRIX)
     });
- 
+
   }
 
   setStartUpPosition() {
@@ -142,6 +142,18 @@ export class Enemie extends Hero {
       }
     });
 
+  }
+
+  remoteNav(newPath) {
+    if(this.heroFocusAttackOn != null) {
+      return;
+    }
+    const start = [this.heroe_bodies[0].position.x, this.heroe_bodies[0].position.y, this.heroe_bodies[0].position.z];
+    const end = [newPath[0], newPath[1], newPath[2]];
+    const path = this.core.RPG.nav.findPath(start, end);
+    if(!path || path.length === 0) {console.warn('No valid path found.'); return;}
+    this.setWalk();
+    followPath(this.heroe_bodies[0], path, this.core);
   }
 
 }

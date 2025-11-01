@@ -110,6 +110,11 @@ export class Controller {
       dispatchEvent(new CustomEvent('set-walk'));
       const start = [hero.position.x, hero.position.y, hero.position.z];
       const end = [hitPoint[0], hitPoint[1], hitPoint[2]];
+      // app.net.send({
+      //   heroName: app.localHero.name,
+      //   sceneName: hero.name,
+      //   followPath: {start: start, end: end},
+      // })
       const path = this.nav.findPath(start, end);
       if(!path || path.length === 0) {console.warn('No valid path found.'); return;}
       // no need if position = position of root ??? test last bug track
@@ -127,15 +132,16 @@ export class Controller {
 
     let hiddenAt = null;
 
-    if(location.hostname.indexOf('localhost') !== -1) {
+    if(location.hostname.indexOf('localhost') == -1) {
       console.log('Security stuff activated');
-      console.log = function(){};
+      console.log = function() {};
       // Security stuff
       if(window.innerHeight < window.outerHeight) {
         let test = window.outerHeight - window.innerHeight;
         // 87 person comp case -> addressbar ~~~
         if(test > 100) {
           console.log('BAN', test);
+          location.assign('https://google.com');
         }
       }
 
@@ -143,6 +149,7 @@ export class Controller {
         let testW = window.outerWidth - window.innerWidth;
         if(testW > 100) {
           console.log('BAN', testW);
+          location.assign('https://google.com');
         }
       }
 

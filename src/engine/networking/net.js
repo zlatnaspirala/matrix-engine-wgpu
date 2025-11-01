@@ -142,7 +142,7 @@ export class MatrixStream {
 
   multiPlayer = {
     root: this,
-    init() {},
+    onFollowPath(e) {},
     update(e) {
       e.data = JSON.parse(e.data);
       console.log('REMOTE UPDATE::::', e);
@@ -158,7 +158,13 @@ export class MatrixStream {
         app.getSceneObjectByName(e.data.sceneName).rotation.z = e.data.netRotZ;
       } else if(e.data.animationIndex) {
         app.getSceneObjectByName(e.data.sceneName).glb.animationIndex = e.data.animationIndex;
+      } else if (e.data.followPath) {
+          this.onFollowPath(e);
       }
+
+      // add custom option
+    
+
     },
     leaveGamePlay() {}
   };

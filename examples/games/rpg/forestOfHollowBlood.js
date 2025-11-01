@@ -78,6 +78,7 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
       if(byId('remote-' +e.detail.connectionId)) {
         byId('remote-' +e.detail.connectionId).remove();
         //....
+        mb.error(`Player ${e.detail.connectionId} disconnected...`);
       }
     });
 

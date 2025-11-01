@@ -173,12 +173,20 @@ export class Character extends Hero {
             app.localHero.heroe_bodies[x].rotation = app.localHero.heroe_bodies[0].rotation;
           }
         }
-
         // activete net pos emit - becouse uniq name of hero body set net id by scene obj name simple
         // app.localHero.heroe_bodies[0].position.netObject = app.net.session.connection.connectionId;
+        // not top solution - for now . High cost - precision good.
+        // Still better send follow path - with combination with fix set on collide.
         app.localHero.heroe_bodies[0].position.netObject = app.localHero.heroe_bodies[0].name;
 
-        // for now net view for rot is axis separated
+        // DISABLED
+        // app.net.multiPlayer.onFollowPath = (e) => {
+        //   console.log('e.data.followPath.start' , e.data.followPath.start)
+        //   let remoteEnemy = this.core.enemies.enemies.find((enemy => enemy.name === e.data.heroName))
+        //   remoteEnemy.remoteNav(e.data.followPath.end);
+        // }
+
+        // for now net view for rot is axis separated - cost is ok for orientaion remote pass
         app.localHero.heroe_bodies[0].rotation.emitY = app.localHero.heroe_bodies[0].name;
 
         dispatchEvent(new CustomEvent('local-hero-bodies-ready', {
@@ -248,10 +256,10 @@ export class Character extends Hero {
   }
 
   setWalk() {
-    this.core.RPG.heroe_bodies.forEach((subMesh , index )=> {
+    this.core.RPG.heroe_bodies.forEach((subMesh, index) => {
       subMesh.glb.animationIndex = this.heroAnimationArrange.walk;
       // console.info(`%chero walk`, LOG_MATRIX)
-      if (index == 0) app.net.send({
+      if(index == 0) app.net.send({
         sceneName: subMesh.name,
         animationIndex: subMesh.glb.animationIndex
       })
@@ -262,13 +270,21 @@ export class Character extends Hero {
     this.core.RPG.heroe_bodies.forEach(subMesh => {
       subMesh.glb.animationIndex = this.heroAnimationArrange.salute;
       // console.info(`%chero salute`, LOG_MATRIX)
+      if(index == 0) app.net.send({
+        sceneName: subMesh.name,
+        animationIndex: subMesh.glb.animationIndex
+      })
     });
   }
 
   setDead() {
     this.core.RPG.heroe_bodies.forEach(subMesh => {
       subMesh.glb.animationIndex = this.heroAnimationArrange.dead;
-      console.info(`%chero dead`, LOG_MATRIX)
+      if(index == 0) app.net.send({
+        sceneName: subMesh.name,
+        animationIndex: subMesh.glb.animationIndex
+      })
+      // console.info(`%chero dead`, LOG_MATRIX)
     });
   }
 
@@ -276,7 +292,7 @@ export class Character extends Hero {
     this.core.RPG.heroe_bodies.forEach((subMesh, index) => {
       subMesh.glb.animationIndex = this.heroAnimationArrange.idle;
       // console.info(`%chero idle`, LOG_MATRIX)
-            if (index == 0) app.net.send({
+      if(index == 0) app.net.send({
         sceneName: subMesh.name,
         animationIndex: subMesh.glb.animationIndex
       })
@@ -287,7 +303,11 @@ export class Character extends Hero {
     this.heroFocusAttackOn = on;
     this.core.RPG.heroe_bodies.forEach(subMesh => {
       subMesh.glb.animationIndex = this.heroAnimationArrange.attack;
-      console.info(`%chero attack`, LOG_MATRIX)
+      // console.info(`%chero attack`, LOG_MATRIX)
+      if(index == 0) app.net.send({
+        sceneName: subMesh.name,
+        animationIndex: subMesh.glb.animationIndex
+      })
     });
   }
 
@@ -341,8 +361,8 @@ export class Character extends Hero {
     addEventListener('set-idle', () => {
       this.setIdle();
     })
-    addEventListener('set-attach', () => {
-      this.setAttach();
+    addEventListener('set-attack', () => {
+      this.setAttack();
     })
     addEventListener('set-dead', () => {
       this.setDead();

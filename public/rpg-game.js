@@ -189,12 +189,20 @@ class Character extends _hero.Hero {
             app.localHero.heroe_bodies[x].rotation = app.localHero.heroe_bodies[0].rotation;
           }
         }
-
         // activete net pos emit - becouse uniq name of hero body set net id by scene obj name simple
         // app.localHero.heroe_bodies[0].position.netObject = app.net.session.connection.connectionId;
+        // not top solution - for now . High cost - precision good.
+        // Still better send follow path - with combination with fix set on collide.
         app.localHero.heroe_bodies[0].position.netObject = app.localHero.heroe_bodies[0].name;
 
-        // for now net view for rot is axis separated
+        // DISABLED
+        // app.net.multiPlayer.onFollowPath = (e) => {
+        //   console.log('e.data.followPath.start' , e.data.followPath.start)
+        //   let remoteEnemy = this.core.enemies.enemies.find((enemy => enemy.name === e.data.heroName))
+        //   remoteEnemy.remoteNav(e.data.followPath.end);
+        // }
+
+        // for now net view for rot is axis separated - cost is ok for orientaion remote pass
         app.localHero.heroe_bodies[0].rotation.emitY = app.localHero.heroe_bodies[0].name;
         dispatchEvent(new CustomEvent('local-hero-bodies-ready', {
           detail: `This is not sync - 99% works`
@@ -272,12 +280,20 @@ class Character extends _hero.Hero {
     this.core.RPG.heroe_bodies.forEach(subMesh => {
       subMesh.glb.animationIndex = this.heroAnimationArrange.salute;
       // console.info(`%chero salute`, LOG_MATRIX)
+      if (index == 0) app.net.send({
+        sceneName: subMesh.name,
+        animationIndex: subMesh.glb.animationIndex
+      });
     });
   }
   setDead() {
     this.core.RPG.heroe_bodies.forEach(subMesh => {
       subMesh.glb.animationIndex = this.heroAnimationArrange.dead;
-      console.info(`%chero dead`, _utils.LOG_MATRIX);
+      if (index == 0) app.net.send({
+        sceneName: subMesh.name,
+        animationIndex: subMesh.glb.animationIndex
+      });
+      // console.info(`%chero dead`, LOG_MATRIX)
     });
   }
   setIdle() {
@@ -294,7 +310,11 @@ class Character extends _hero.Hero {
     this.heroFocusAttackOn = on;
     this.core.RPG.heroe_bodies.forEach(subMesh => {
       subMesh.glb.animationIndex = this.heroAnimationArrange.attack;
-      console.info(`%chero attack`, _utils.LOG_MATRIX);
+      // console.info(`%chero attack`, LOG_MATRIX)
+      if (index == 0) app.net.send({
+        sceneName: subMesh.name,
+        animationIndex: subMesh.glb.animationIndex
+      });
     });
   }
   setWalkCreep(creepIndex) {
@@ -344,8 +364,8 @@ class Character extends _hero.Hero {
     addEventListener('set-idle', () => {
       this.setIdle();
     });
-    addEventListener('set-attach', () => {
-      this.setAttach();
+    addEventListener('set-attack', () => {
+      this.setAttack();
     });
     addEventListener('set-dead', () => {
       this.setDead();
@@ -641,6 +661,11 @@ class Controller {
       dispatchEvent(new CustomEvent('set-walk'));
       const start = [hero.position.x, hero.position.y, hero.position.z];
       const end = [hitPoint[0], hitPoint[1], hitPoint[2]];
+      // app.net.send({
+      //   heroName: app.localHero.name,
+      //   sceneName: hero.name,
+      //   followPath: {start: start, end: end},
+      // })
       const path = this.nav.findPath(start, end);
       if (!path || path.length === 0) {
         console.warn('No valid path found.');
@@ -657,7 +682,7 @@ class Controller {
     });
     this.activateVisualRect();
     let hiddenAt = null;
-    if (location.hostname.indexOf('localhost') !== -1) {
+    if (location.hostname.indexOf('localhost') == -1) {
       console.log('Security stuff activated');
       console.log = function () {};
       // Security stuff
@@ -666,12 +691,14 @@ class Controller {
         // 87 person comp case -> addressbar ~~~
         if (test > 100) {
           console.log('BAN', test);
+          location.assign('https://google.com');
         }
       }
       if (window.innerWidth < window.outerWidth) {
         let testW = window.outerWidth - window.innerWidth;
         if (testW > 100) {
           console.log('BAN', testW);
+          location.assign('https://google.com');
         }
       }
       window.addEventListener('keydown', e => {
@@ -1158,6 +1185,7 @@ exports.Enemie = void 0;
 var _webgpuGltf = require("../../../src/engine/loaders/webgpu-gltf");
 var _utils = require("../../../src/engine/utils");
 var _hero = require("./hero");
+var _navMesh = require("./nav-mesh");
 var _static = require("./static");
 class Enemie extends _hero.Hero {
   heroAnimationArrange = {
@@ -1283,10 +1311,24 @@ class Enemie extends _hero.Hero {
       }
     });
   }
+  remoteNav(newPath) {
+    if (this.heroFocusAttackOn != null) {
+      return;
+    }
+    const start = [this.heroe_bodies[0].position.x, this.heroe_bodies[0].position.y, this.heroe_bodies[0].position.z];
+    const end = [newPath[0], newPath[1], newPath[2]];
+    const path = this.core.RPG.nav.findPath(start, end);
+    if (!path || path.length === 0) {
+      console.warn('No valid path found.');
+      return;
+    }
+    this.setWalk();
+    (0, _navMesh.followPath)(this.heroe_bodies[0], path, this.core);
+  }
 }
 exports.Enemie = Enemie;
 
-},{"../../../src/engine/loaders/webgpu-gltf":47,"../../../src/engine/utils":54,"./hero":7,"./static":11}],6:[function(require,module,exports){
+},{"../../../src/engine/loaders/webgpu-gltf":47,"../../../src/engine/utils":54,"./hero":7,"./nav-mesh":10,"./static":11}],6:[function(require,module,exports){
 "use strict";
 
 var _world = _interopRequireDefault(require("../../../src/world.js"));
@@ -1366,6 +1408,7 @@ let forestOfHollowBlood = new _world.default({
       if ((0, _matrixStream.byId)('remote-' + e.detail.connectionId)) {
         (0, _matrixStream.byId)('remote-' + e.detail.connectionId).remove();
         //....
+        mb.error(`Player ${e.detail.connectionId} disconnected...`);
       }
     });
     addEventListener("onConnectionCreated", e => {
@@ -30168,7 +30211,7 @@ class MatrixStream {
   }
   multiPlayer = {
     root: this,
-    init() {},
+    onFollowPath(e) {},
     update(e) {
       e.data = JSON.parse(e.data);
       console.log('REMOTE UPDATE::::', e);
@@ -30184,7 +30227,11 @@ class MatrixStream {
         app.getSceneObjectByName(e.data.sceneName).rotation.z = e.data.netRotZ;
       } else if (e.data.animationIndex) {
         app.getSceneObjectByName(e.data.sceneName).glb.animationIndex = e.data.animationIndex;
+      } else if (e.data.followPath) {
+        this.onFollowPath(e);
       }
+
+      // add custom option
     },
     leaveGamePlay() {}
   };
