@@ -277,7 +277,7 @@ class Character extends _hero.Hero {
     });
   }
   setSalute() {
-    this.core.RPG.heroe_bodies.forEach(subMesh => {
+    this.core.RPG.heroe_bodies.forEach((subMesh, index) => {
       subMesh.glb.animationIndex = this.heroAnimationArrange.salute;
       // console.info(`%chero salute`, LOG_MATRIX)
       if (index == 0) app.net.send({
@@ -287,7 +287,7 @@ class Character extends _hero.Hero {
     });
   }
   setDead() {
-    this.core.RPG.heroe_bodies.forEach(subMesh => {
+    this.core.RPG.heroe_bodies.forEach((subMesh, index) => {
       subMesh.glb.animationIndex = this.heroAnimationArrange.dead;
       if (index == 0) app.net.send({
         sceneName: subMesh.name,
@@ -310,8 +310,8 @@ class Character extends _hero.Hero {
     this.heroFocusAttackOn = on;
     this.core.RPG.heroe_bodies.forEach(subMesh => {
       subMesh.glb.animationIndex = this.heroAnimationArrange.attack;
-      // console.info(`%chero attack`, LOG_MATRIX)
-      if (index == 0) app.net.send({
+      console.info(`%c ${subMesh.name} BEFORE SEND attack index ${subMesh.glb.animationIndex}`, _utils.LOG_MATRIX);
+      app.net.send({
         sceneName: subMesh.name,
         animationIndex: subMesh.glb.animationIndex
       });
@@ -936,12 +936,12 @@ class Creep extends _hero.Hero {
   }
   attachEvents() {
     addEventListener(`onDamage-${this.name}`, e => {
-      console.info(`%friendly creep damage ${e.detail}`, _utils.LOG_MATRIX);
+      console.info(`% creep damage ${e.detail}`, _utils.LOG_MATRIX);
       this.heroe_bodies[0].effects.energyBar.setProgress(e.detail.progress);
       // if detail is 0
       if (e.detail.progress == 0) {
         this.setDead();
-        console.info(`%cfriendly creep dead [${this.name}], attacker[${e.detail.attacker}]`, _utils.LOG_MATRIX);
+        console.info(`%c creep dead [${this.name}], attacker[${e.detail.attacker}]`, _utils.LOG_MATRIX);
         setTimeout(() => {
           this.setStartUpPosition();
         }, 2000);
@@ -1298,19 +1298,27 @@ class Enemie extends _hero.Hero {
   }
   attachEvents() {
     addEventListener(`onDamage-${this.name}`, e => {
-      console.info(`%c hero damage ${e.detail}`, _utils.LOG_MATRIX);
+      console.info(`%c remote[enemy] hero damage ${e.detail}`, _utils.LOG_MATRIX);
       this.heroe_bodies[0].effects.energyBar.setProgress(e.detail.progress);
+      this.core.net.sendOnlyData({
+        type: "damage",
+        defenderName: e.detail.defender,
+        attackerName: e.detail.attacker,
+        hp: e.detail.hp,
+        progress: progress
+      });
       // if detail is 0
       if (e.detail.progress == 0) {
         this.setDead();
         console.info(`%c hero dead [${this.name}], attacker[${e.detail.attacker}]`, _utils.LOG_MATRIX);
         setTimeout(() => {
           this.setStartUpPosition();
-        }, 1600);
-        e.detail.attacker.killEnemy(e.detail.defenderLevel);
+        }, 1500);
       }
     });
   }
+
+  // not in use for now
   remoteNav(newPath) {
     if (this.heroFocusAttackOn != null) {
       return;
@@ -1341,6 +1349,7 @@ var _collisionSubSystem = require("../../../src/engine/collision-sub-system.js")
 var _utils = require("../../../src/engine/utils.js");
 var _net = require("../../../src/engine/networking/net.js");
 var _matrixStream = require("../../../src/engine/networking/matrix-stream.js");
+var _static = require("./static.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 /**
  * @description
@@ -1434,6 +1443,30 @@ let forestOfHollowBlood = new _world.default({
     });
     addEventListener('only-data-receive', e => {
       console.log('<data-receive>', e);
+      if (e.detail.from.connectionId == app.net.session.connection.connectionId) {
+        console.log('<data-receive damage for local hero !>', d);
+      }
+      let d = JSON.parse(e.detail.data);
+      if (d.type = "damage") {
+        // string
+        console.log('<data-receive damage for >', d.defenderName);
+        let IsEnemyHeroObj = forestOfHollowBlood.enemies.enemies.find(enemy => enemy.name === d.defenderName);
+        if (IsEnemyHeroObj) {
+          console.log('<data-receive damage for IsEnemyHeroObj >', IsEnemyHeroObj);
+          const progress = Math.max(0, Math.min(1, d.hp / IsEnemyHeroObj.getHPMax()));
+          IsEnemyHeroObj.heroe_bodies[0].effects.energyBar.setProgress(progress);
+          //..
+        } else if (app.localHero.name == d.defenderName) {
+          console.log('<data-receive damage for LOCAL HERO >');
+          const progress = Math.max(0, Math.min(1, d.hp / app.localHero.getHPMax()));
+          app.localHero.heroe_bodies[0].effects.energyBar.setProgress(progress);
+          if (d.hp == 0 || progress == 0) {
+            // local hero dead
+            app.localHero.setDead();
+            app.localHero.heroe_bodies[0].position.setPosition(_static.startUpPositions[(void 0).core.player.data.team][0], _static.startUpPositions[(void 0).core.player.data.team][1], _static.startUpPositions[(void 0).core.player.data.team][2]);
+          }
+        }
+      }
     });
     addEventListener('local-hero-bodies-ready', () => {
       app.cameras.RPG.position[1] = 130;
@@ -1455,7 +1488,7 @@ let forestOfHollowBlood = new _world.default({
 });
 window.app = forestOfHollowBlood;
 
-},{"../../../src/engine/collision-sub-system.js":30,"../../../src/engine/networking/matrix-stream.js":51,"../../../src/engine/networking/net.js":52,"../../../src/engine/utils.js":54,"../../../src/world.js":77,"./character-base.js":1,"./controller.js":2,"./enemies-manager.js":4,"./hud.js":8,"./map-loader.js":9}],7:[function(require,module,exports){
+},{"../../../src/engine/collision-sub-system.js":30,"../../../src/engine/networking/matrix-stream.js":51,"../../../src/engine/networking/net.js":52,"../../../src/engine/utils.js":54,"../../../src/world.js":77,"./character-base.js":1,"./controller.js":2,"./enemies-manager.js":4,"./hud.js":8,"./map-loader.js":9,"./static.js":11}],7:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -1892,8 +1925,10 @@ class HeroProps {
     dispatchEvent(new CustomEvent(`onDamage-${defender.name}`, {
       detail: {
         progress: progress,
-        attacker: attacker,
-        defenderLevel: this.currentLevel
+        attacker: attacker.name,
+        defenderLevel: defender.currentLevel,
+        defender: defender.name,
+        hp: defender.hp
       }
     }));
     return {
@@ -30214,18 +30249,18 @@ class MatrixStream {
     onFollowPath(e) {},
     update(e) {
       e.data = JSON.parse(e.data);
-      console.log('REMOTE UPDATE::::', e);
+      // console.log('REMOTE UPDATE::::', e);
       if (e.data.netPos) {
         if (app.getSceneObjectByName(e.data.sceneName)) {
           app.getSceneObjectByName(e.data.sceneName).position.setPosition(e.data.netPos.x, e.data.netPos.y, e.data.netPos.z);
         }
-      } else if (e.data.netRotY) {
+      } else if (e.data.netRotY || e.data.netRotY == 0) {
         app.getSceneObjectByName(e.data.sceneName).rotation.y = e.data.netRotY;
       } else if (e.data.netRotX) {
         app.getSceneObjectByName(e.data.sceneName).rotation.x = e.data.netRotX;
       } else if (e.data.netRotZ) {
         app.getSceneObjectByName(e.data.sceneName).rotation.z = e.data.netRotZ;
-      } else if (e.data.animationIndex) {
+      } else if (e.data.animationIndex || e.data.animationIndex == 0) {
         app.getSceneObjectByName(e.data.sceneName).glb.animationIndex = e.data.animationIndex;
       } else if (e.data.followPath) {
         this.onFollowPath(e);

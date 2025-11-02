@@ -123,12 +123,12 @@ export class Creep extends Hero {
 
   attachEvents() {
     addEventListener(`onDamage-${this.name}`, (e) => {
-      console.info(`%friendly creep damage ${e.detail}`, LOG_MATRIX)
+      console.info(`% creep damage ${e.detail}`, LOG_MATRIX)
       this.heroe_bodies[0].effects.energyBar.setProgress(e.detail.progress);
       // if detail is 0
       if(e.detail.progress == 0) {
         this.setDead();
-        console.info(`%cfriendly creep dead [${this.name}], attacker[${e.detail.attacker}]`, LOG_MATRIX)
+        console.info(`%c creep dead [${this.name}], attacker[${e.detail.attacker}]`, LOG_MATRIX)
         setTimeout(() => {
           this.setStartUpPosition()
         }, 2000)

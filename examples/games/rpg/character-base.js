@@ -267,7 +267,7 @@ export class Character extends Hero {
   }
 
   setSalute() {
-    this.core.RPG.heroe_bodies.forEach(subMesh => {
+    this.core.RPG.heroe_bodies.forEach((subMesh, index) => {
       subMesh.glb.animationIndex = this.heroAnimationArrange.salute;
       // console.info(`%chero salute`, LOG_MATRIX)
       if(index == 0) app.net.send({
@@ -278,7 +278,7 @@ export class Character extends Hero {
   }
 
   setDead() {
-    this.core.RPG.heroe_bodies.forEach(subMesh => {
+    this.core.RPG.heroe_bodies.forEach((subMesh, index) => {
       subMesh.glb.animationIndex = this.heroAnimationArrange.dead;
       if(index == 0) app.net.send({
         sceneName: subMesh.name,
@@ -303,8 +303,8 @@ export class Character extends Hero {
     this.heroFocusAttackOn = on;
     this.core.RPG.heroe_bodies.forEach(subMesh => {
       subMesh.glb.animationIndex = this.heroAnimationArrange.attack;
-      // console.info(`%chero attack`, LOG_MATRIX)
-      if(index == 0) app.net.send({
+      console.info(`%c ${subMesh.name} BEFORE SEND attack index ${subMesh.glb.animationIndex}`, LOG_MATRIX)
+      app.net.send({
         sceneName: subMesh.name,
         animationIndex: subMesh.glb.animationIndex
       })

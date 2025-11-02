@@ -435,8 +435,10 @@ class HeroProps {
     dispatchEvent(new CustomEvent(`onDamage-${defender.name}`, {
       detail: {
         progress: progress,
-        attacker: attacker,
-        defenderLevel: this.currentLevel
+        attacker: attacker.name,
+        defenderLevel: defender.currentLevel,
+        defender: defender.name,
+        hp: defender.hp
       }
     }));
     return {
@@ -28133,18 +28135,18 @@ class MatrixStream {
     onFollowPath(e) {},
     update(e) {
       e.data = JSON.parse(e.data);
-      console.log('REMOTE UPDATE::::', e);
+      // console.log('REMOTE UPDATE::::', e);
       if (e.data.netPos) {
         if (app.getSceneObjectByName(e.data.sceneName)) {
           app.getSceneObjectByName(e.data.sceneName).position.setPosition(e.data.netPos.x, e.data.netPos.y, e.data.netPos.z);
         }
-      } else if (e.data.netRotY) {
+      } else if (e.data.netRotY || e.data.netRotY == 0) {
         app.getSceneObjectByName(e.data.sceneName).rotation.y = e.data.netRotY;
       } else if (e.data.netRotX) {
         app.getSceneObjectByName(e.data.sceneName).rotation.x = e.data.netRotX;
       } else if (e.data.netRotZ) {
         app.getSceneObjectByName(e.data.sceneName).rotation.z = e.data.netRotZ;
-      } else if (e.data.animationIndex) {
+      } else if (e.data.animationIndex || e.data.animationIndex == 0) {
         app.getSceneObjectByName(e.data.sceneName).glb.animationIndex = e.data.animationIndex;
       } else if (e.data.followPath) {
         this.onFollowPath(e);

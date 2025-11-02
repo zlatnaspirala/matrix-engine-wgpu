@@ -8,6 +8,7 @@ import {CollisionSystem} from "../../../src/engine/collision-sub-system.js";
 import {LS, SS, urlQuery} from "../../../src/engine/utils.js";
 import {MatrixStream} from "../../../src/engine/networking/net.js";
 import {byId} from "../../../src/engine/networking/matrix-stream.js";
+import {startUpPositions} from "./static.js";
 
 /**
  * @description
@@ -75,8 +76,8 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
 
     addEventListener('connectionDestroyed', (e) => {
       console.log('connectionDestroyed , bad bad.');
-      if(byId('remote-' +e.detail.connectionId)) {
-        byId('remote-' +e.detail.connectionId).remove();
+      if(byId('remote-' + e.detail.connectionId)) {
+        byId('remote-' + e.detail.connectionId).remove();
         //....
         mb.error(`Player ${e.detail.connectionId} disconnected...`);
       }
@@ -106,6 +107,34 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
 
     addEventListener('only-data-receive', (e) => {
       console.log('<data-receive>', e)
+      if(e.detail.from.connectionId == app.net.session.connection.connectionId) {
+        console.log('<data-receive damage for local hero !>', d)
+      }
+      let d = JSON.parse(e.detail.data);
+      if(d.type = "damage") {
+        // string
+        console.log('<data-receive damage for >', d.defenderName);
+        let IsEnemyHeroObj = forestOfHollowBlood.enemies.enemies.find((enemy) => enemy.name === d.defenderName)
+        if(IsEnemyHeroObj) {
+          console.log('<data-receive damage for IsEnemyHeroObj >', IsEnemyHeroObj);
+          const progress = Math.max(0, Math.min(1, d.hp / IsEnemyHeroObj.getHPMax()));
+          IsEnemyHeroObj.heroe_bodies[0].effects.energyBar.setProgress(progress);
+          //..
+        } else if(app.localHero.name == d.defenderName) {
+          console.log('<data-receive damage for LOCAL HERO >');
+          const progress = Math.max(0, Math.min(1, d.hp / app.localHero.getHPMax()));
+          app.localHero.heroe_bodies[0].effects.energyBar.setProgress(progress);
+          if(d.hp == 0 || progress == 0) {
+            // local hero dead
+            app.localHero.setDead();
+            app.localHero.heroe_bodies[0].position.setPosition(
+              startUpPositions[this.core.player.data.team][0],
+              startUpPositions[this.core.player.data.team][1],
+              startUpPositions[this.core.player.data.team][2]
+            );
+          }
+        }
+      }
     })
 
     addEventListener('local-hero-bodies-ready', () => {

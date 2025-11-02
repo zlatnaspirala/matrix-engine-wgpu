@@ -67,14 +67,12 @@ export class Enemie extends Hero {
         });
 
         this.setStartUpPosition();
-
         for(var x = 0;x < this.heroe_bodies.length;x++) {
           if(x > 0) {
             this.heroe_bodies[x].position = this.heroe_bodies[0].position;
             this.heroe_bodies[x].rotation = this.heroe_bodies[0].rotation;
           }
         }
-
       }, 1600);
     } catch(err) {throw err;}
   }
@@ -127,23 +125,28 @@ export class Enemie extends Hero {
   }
 
   attachEvents() {
-
     addEventListener(`onDamage-${this.name}`, (e) => {
-      console.info(`%c hero damage ${e.detail}`, LOG_MATRIX)
+      console.info(`%c remote[enemy] hero damage ${e.detail}`, LOG_MATRIX)
       this.heroe_bodies[0].effects.energyBar.setProgress(e.detail.progress);
+      this.core.net.sendOnlyData({
+        type: "damage",
+        defenderName:  e.detail.defender,
+        attackerName:  e.detail.attacker,
+        hp: e.detail.hp,
+        progress: progress
+      });
       // if detail is 0
       if(e.detail.progress == 0) {
         this.setDead();
         console.info(`%c hero dead [${this.name}], attacker[${e.detail.attacker}]`, LOG_MATRIX)
         setTimeout(() => {
-          this.setStartUpPosition()
-        }, 1600)
-        e.detail.attacker.killEnemy(e.detail.defenderLevel);
+          this.setStartUpPosition();
+        }, 1500);
       }
     });
-
   }
 
+  // not in use for now
   remoteNav(newPath) {
     if(this.heroFocusAttackOn != null) {
       return;
@@ -155,5 +158,4 @@ export class Enemie extends Hero {
     this.setWalk();
     followPath(this.heroe_bodies[0], path, this.core);
   }
-
 }
