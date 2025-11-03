@@ -882,17 +882,21 @@ class Creep extends _hero.Hero {
           subMesh.globalAmbient = [1, 1, 1, 1];
           if (this.name.indexOf('friendly_creeps') != -1) {
             subMesh.globalAmbient = [12, 12, 12, 1];
-          } else if (this.name.indexOf('enemy_creeps') != -1) {
+          } else if (this.name.indexOf('enemy_creep') != -1) {
             subMesh.globalAmbient = [12, 1, 1, 1];
           }
 
           //
           if (this.group == 'friendly') {
-            console.log('It is friendly creep use emit net');
-            subMesh.position.netObject = app.localHero.heroe_bodies[0].name;
-            subMesh.position.remoteName = app.localHero.heroe_bodies[0].name;
-            //remoteName
-            subMesh.rotation.emitY = app.localHero.heroe_bodies[0].name;
+            if (idx == 0) {
+              subMesh.position.netObject = subMesh.name;
+              let t = subMesh.name.replace('friendly_creeps', 'enemy_creep');
+              console.log('It is friendly creep use emit net', t);
+              console.log('It is friendly creep use emit net test subMesh.name', subMesh.name);
+              subMesh.position.remoteName = t;
+              subMesh.rotation.emitY = subMesh.name;
+              subMesh.rotation.remoteName = t;
+            }
           } else if (this.group == 'enemy') {
             //
           }
@@ -942,6 +946,10 @@ class Creep extends _hero.Hero {
     if (this.group == 'enemy') {
       this.heroe_bodies.forEach((subMesh, idx) => {
         subMesh.position.setPosition(_static.startUpPositions[this.core.player.data.enemyTeam][0], _static.startUpPositions[this.core.player.data.enemyTeam][1], _static.startUpPositions[this.core.player.data.enemyTeam][2]);
+      });
+    } else {
+      this.heroe_bodies.forEach((subMesh, idx) => {
+        subMesh.position.setPosition(_static.startUpPositions[this.core.player.data.team][0], _static.startUpPositions[this.core.player.data.team][1], _static.startUpPositions[this.core.player.data.team][2]);
       });
     }
   }
@@ -1425,7 +1433,7 @@ let forestOfHollowBlood = new _world.default({
       if ((0, _matrixStream.byId)('remote-' + e.detail.connectionId)) {
         (0, _matrixStream.byId)('remote-' + e.detail.connectionId).remove();
         //....
-        mb.error(`Player ${e.detail.connectionId} disconnected...`);
+        _utils.mb.error(`Player ${e.detail.connectionId} disconnected...`);
       }
     });
     addEventListener("onConnectionCreated", e => {
@@ -2608,30 +2616,26 @@ class MEMapLoader {
         radius: 1.5
       }
     });
-    this.core.addMeshObj({
-      // material: {type: 'standard', useTextureFromGlb: true},
-      scale: [5, 5, 5],
-      position: {
-        x: -750,
-        y: -35,
-        z: 720
-      },
-      name: 'friendly-tower',
-      mesh: m.tower,
-      texturesPaths: ['./res/textures/rpg/magics/2.png'],
-      // texturesPaths: ['./res/meshes/maps-objs/textures/map-bg.png'],
-      raycast: {
-        enabled: true,
-        radius: 1.5
-      },
-      physics: {
-        enabled: false,
-        mass: 0,
-        geometry: "Cube"
-      }
-    });
-    let t = this.core.mainRenderBundle.filter(r => r.name.indexOf('friendly-tower') != -1)[0];
-    this.core.collisionSystem.register(`friendly-tower`, t.position, 15.0, 'tower');
+
+    // this.core.addMeshObj({
+    //   // material: {type: 'standard', useTextureFromGlb: true},
+    //   scale: [5, 5, 5],
+    //   position: {x: -750, y: -35, z: 720},
+    //   name: 'friendly-tower',
+    //   mesh: m.tower,
+    //   texturesPaths: ['./res/textures/rpg/magics/2.png'],
+    //   // texturesPaths: ['./res/meshes/maps-objs/textures/map-bg.png'],
+    //   raycast: {enabled: true, radius: 1.5},
+    //   physics: {
+    //     enabled: false,
+    //     mass: 0,
+    //     geometry: "Cube"
+    //   },
+    // });
+
+    // let t = this.core.mainRenderBundle.filter((r) => r.name.indexOf('friendly-tower') != -1)[0];
+    // this.core.collisionSystem.register(`friendly-tower`, t.position, 15.0, 'tower');
+
     this.core.lightContainer[0].position[1] = 170;
     this.core.lightContainer[0].intesity = 1;
   }
@@ -30278,7 +30282,7 @@ class MatrixStream {
       e.data = JSON.parse(e.data);
       // console.log('REMOTE UPDATE::::', e);
       if (e.data.netPos) {
-        if (app.getSceneObjectByName(e.data.remoteName)) {
+        if (app.getSceneObjectByName(e.data.remoteName != null)) {
           app.getSceneObjectByName(e.data.remoteName).position.setPosition(e.data.netPos.x, e.data.netPos.y, e.data.netPos.z);
         } else {
           app.getSceneObjectByName(e.data.sceneName).position.setPosition(e.data.netPos.x, e.data.netPos.y, e.data.netPos.z);

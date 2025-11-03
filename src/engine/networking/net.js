@@ -147,7 +147,7 @@ export class MatrixStream {
       e.data = JSON.parse(e.data);
       // console.log('REMOTE UPDATE::::', e);
       if(e.data.netPos) {
-        if(app.getSceneObjectByName(e.data.remoteName)) {
+        if(app.getSceneObjectByName(e.data.remoteName != null)) {
           app.getSceneObjectByName(e.data.remoteName).position.setPosition(e.data.netPos.x, e.data.netPos.y, e.data.netPos.z);
         } else {
           app.getSceneObjectByName(e.data.sceneName).position.setPosition(e.data.netPos.x, e.data.netPos.y, e.data.netPos.z);

@@ -61,17 +61,21 @@ export class Creep extends Hero {
           subMesh.globalAmbient = [1, 1, 1, 1];
           if(this.name.indexOf('friendly_creeps') != -1) {
             subMesh.globalAmbient = [12, 12, 12, 1];
-          } else if(this.name.indexOf('enemy_creeps') != -1) {
+          } else if(this.name.indexOf('enemy_creep') != -1) {
             subMesh.globalAmbient = [12, 1, 1, 1];
           }
 
           //
           if(this.group == 'friendly') {
-            console.log('It is friendly creep use emit net')
-            subMesh.position.netObject = app.localHero.heroe_bodies[0].name;
-            subMesh.position.remoteName = app.localHero.heroe_bodies[0].name;
-            //remoteName
-            subMesh.rotation.emitY = app.localHero.heroe_bodies[0].name;
+            if(idx == 0) {
+              subMesh.position.netObject = subMesh.name;
+              let t = subMesh.name.replace('friendly_creeps', 'enemy_creep')
+              console.log('It is friendly creep use emit net', t)
+              console.log('It is friendly creep use emit net test subMesh.name', subMesh.name)
+              subMesh.position.remoteName = t;
+              subMesh.rotation.emitY = subMesh.name;
+              subMesh.rotation.remoteName = t;
+            }
           } else if(this.group == 'enemy') {
             //
           }
@@ -128,6 +132,13 @@ export class Creep extends Hero {
           startUpPositions[this.core.player.data.enemyTeam][0],
           startUpPositions[this.core.player.data.enemyTeam][1],
           startUpPositions[this.core.player.data.enemyTeam][2]);
+      });
+    } else {
+      this.heroe_bodies.forEach((subMesh, idx) => {
+        subMesh.position.setPosition(
+          startUpPositions[this.core.player.data.team][0],
+          startUpPositions[this.core.player.data.team][1],
+          startUpPositions[this.core.player.data.team][2]);
       });
     }
   }

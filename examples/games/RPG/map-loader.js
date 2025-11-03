@@ -51,25 +51,25 @@ export class MEMapLoader {
       raycast: {enabled: true, radius: 1.5}
     });
 
-    this.core.addMeshObj({
-      // material: {type: 'standard', useTextureFromGlb: true},
-      scale: [5, 5, 5],
-      position: {x: -750, y: -35, z: 720},
-      name: 'friendly-tower',
-      mesh: m.tower,
-      texturesPaths: ['./res/textures/rpg/magics/2.png'],
-      // texturesPaths: ['./res/meshes/maps-objs/textures/map-bg.png'],
-      raycast: {enabled: true, radius: 1.5},
-      physics: {
-        enabled: false,
-        mass: 0,
-        geometry: "Cube"
-      },
-    });
+    // this.core.addMeshObj({
+    //   // material: {type: 'standard', useTextureFromGlb: true},
+    //   scale: [5, 5, 5],
+    //   position: {x: -750, y: -35, z: 720},
+    //   name: 'friendly-tower',
+    //   mesh: m.tower,
+    //   texturesPaths: ['./res/textures/rpg/magics/2.png'],
+    //   // texturesPaths: ['./res/meshes/maps-objs/textures/map-bg.png'],
+    //   raycast: {enabled: true, radius: 1.5},
+    //   physics: {
+    //     enabled: false,
+    //     mass: 0,
+    //     geometry: "Cube"
+    //   },
+    // });
 
 
-    let t = this.core.mainRenderBundle.filter((r) => r.name.indexOf('friendly-tower') != -1)[0];
-    this.core.collisionSystem.register(`friendly-tower`, t.position, 15.0, 'tower');
+    // let t = this.core.mainRenderBundle.filter((r) => r.name.indexOf('friendly-tower') != -1)[0];
+    // this.core.collisionSystem.register(`friendly-tower`, t.position, 15.0, 'tower');
 
     this.core.lightContainer[0].position[1] = 170;
     this.core.lightContainer[0].intesity = 1;

@@ -5,7 +5,7 @@ import {MEMapLoader} from "./map-loader.js";
 import {Character} from "./character-base.js";
 import {EnemiesManager} from "./enemies-manager.js";
 import {CollisionSystem} from "../../../src/engine/collision-sub-system.js";
-import {LS, SS, urlQuery} from "../../../src/engine/utils.js";
+import {LS, mb, SS, urlQuery} from "../../../src/engine/utils.js";
 import {MatrixStream} from "../../../src/engine/networking/net.js";
 import {byId} from "../../../src/engine/networking/matrix-stream.js";
 import {startUpPositions} from "./static.js";
