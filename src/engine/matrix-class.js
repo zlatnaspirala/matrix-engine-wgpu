@@ -11,7 +11,7 @@ export class Position {
   constructor(x, y, z) {
     // console.log('TEST TYTPOF ', x)
     // Not in use for nwo this is from matrix-engine project [nameUniq]
-    this.nameUniq = null; // not in use
+    this.remoteName = null; // not in use
     this.netObject = null;
 
     this.netTolerance = 1;
@@ -96,6 +96,7 @@ export class Position {
         if(this.netObject != null) {
           if(this.netTolerance__ > this.netTolerance) {
             app.net.send({
+              remoteName: this.remoteName,
               sceneName: this.netObject,
               netPos: {x: this.x, y: this.y, z: this.z},
             })
@@ -113,6 +114,7 @@ export class Position {
         if(this.netObject != null) {
           if(this.netTolerance__ > this.netTolerance) {
             app.net.send({
+              remoteName: this.remoteName,
               sceneName: this.netObject,
               netPos: {x: this.x, y: this.y, z: this.z},
             })
@@ -173,7 +175,7 @@ export class Position {
 export class Rotation {
   constructor(x, y, z) {
     // Not in use for nwo this is from matrix-engine project [nameUniq]
-    this.nameUniq = null;
+    this.remoteName = null;
     this.emitX = null;
     this.emitY = null;
     this.emitZ = null;
@@ -217,6 +219,14 @@ export class Rotation {
 
   getRotX() {
     if(this.rotationSpeed.x == 0) {
+      if(this.netx != this.x && this.emitX) {
+        app.net.send({
+          remoteName: this.remoteName,
+          sceneName: this.emitX,
+          netRotX: this.x
+        })
+      }
+      this.netx = this.x;
       return degToRad(this.x);
     } else {
       this.x = this.x + this.rotationSpeed.x * 0.001;
@@ -228,6 +238,7 @@ export class Rotation {
     if(this.rotationSpeed.y == 0) {
       if(this.nety != this.y && this.emitY) {
         app.net.send({
+          remoteName: this.remoteName,
           sceneName: this.emitY,
           netRotY: this.y
         })
@@ -242,6 +253,14 @@ export class Rotation {
 
   getRotZ() {
     if(this.rotationSpeed.z == 0) {
+      if(this.netz != this.z && this.emitZ) {
+        app.net.send({
+          remoteName: this.remoteName,
+          sceneName: this.emitZ,
+          netRotZ: this.z
+        })
+      }
+      this.nety = this.y;
       return degToRad(this.z);
     } else {
       this.z = this.z + this.rotationSpeed.z * 0.001;

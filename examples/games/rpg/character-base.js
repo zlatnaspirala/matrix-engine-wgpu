@@ -64,21 +64,21 @@ export class Character extends Hero {
   async loadfriendlyCreeps() {
     this.friendlyLocal.creeps.push(new Creep({
       core: this.core,
-      name: 'friendly-creeps0',
+      name: 'friendly_creeps0',
       archetypes: ["creep"],
       path: 'res/meshes/glb/bot.glb',
       position: {x: 0, y: -23, z: 0}
     }, ['creep'], 'friendly'));
     this.friendlyLocal.creeps.push(new Creep({
       core: this.core,
-      name: 'friendly-creeps1',
+      name: 'friendly_creeps1',
       archetypes: ["creep"],
       path: 'res/meshes/glb/bot.glb',
       position: {x: 150, y: -23, z: 0}
     }, ['creep'], 'friendly'));
     this.friendlyLocal.creeps.push(new Creep({
       core: this.core,
-      name: 'friendly-creeps2',
+      name: 'friendly_creeps2',
       archetypes: ["creep"],
       path: 'res/meshes/glb/bot.glb',
       position: {x: 100, y: -23, z: 0}
@@ -468,7 +468,7 @@ export class Character extends Hero {
     })
 
     addEventListener('onTargetPositionReach', (e) => {
-      // friendly-creeps
+      // friendly_creeps
       if(e.detail.name.indexOf('friendly-creep') != -1) {
         let getName = e.detail.name.split('_')[0];
         let t = app.localHero.friendlyLocal.creeps.filter((obj) => obj.name == getName);
@@ -538,7 +538,7 @@ export class Character extends Hero {
       }
     })
 
-    addEventListener('navigate-friendly-creeps', () => {
+    addEventListener('navigate-friendly_creeps', () => {
       this.navigateCreeps()
     })
 

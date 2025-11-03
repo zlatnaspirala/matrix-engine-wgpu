@@ -128,9 +128,9 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
             // local hero dead
             app.localHero.setDead();
             app.localHero.heroe_bodies[0].position.setPosition(
-              startUpPositions[this.core.player.data.team][0],
-              startUpPositions[this.core.player.data.team][1],
-              startUpPositions[this.core.player.data.team][2]
+              startUpPositions[forestOfHollowBlood.player.data.team][0],
+              startUpPositions[forestOfHollowBlood.player.data.team][1],
+              startUpPositions[forestOfHollowBlood.player.data.team][2]
             );
           }
         }

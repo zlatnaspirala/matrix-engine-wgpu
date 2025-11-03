@@ -74,7 +74,7 @@ export class Controller {
         }));
       } else {
         // for now
-        dispatchEvent(new CustomEvent('navigate-friendly-creeps', {detail: 'test'}))
+        dispatchEvent(new CustomEvent('navigate-friendly_creeps', {detail: 'test'}))
         // must be friendly objs
         return;
       }

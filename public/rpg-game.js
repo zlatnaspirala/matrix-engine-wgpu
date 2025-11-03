@@ -60,7 +60,7 @@ class Character extends _hero.Hero {
   async loadfriendlyCreeps() {
     this.friendlyLocal.creeps.push(new _creepCharacter.Creep({
       core: this.core,
-      name: 'friendly-creeps0',
+      name: 'friendly_creeps0',
       archetypes: ["creep"],
       path: 'res/meshes/glb/bot.glb',
       position: {
@@ -71,7 +71,7 @@ class Character extends _hero.Hero {
     }, ['creep'], 'friendly'));
     this.friendlyLocal.creeps.push(new _creepCharacter.Creep({
       core: this.core,
-      name: 'friendly-creeps1',
+      name: 'friendly_creeps1',
       archetypes: ["creep"],
       path: 'res/meshes/glb/bot.glb',
       position: {
@@ -82,7 +82,7 @@ class Character extends _hero.Hero {
     }, ['creep'], 'friendly'));
     this.friendlyLocal.creeps.push(new _creepCharacter.Creep({
       core: this.core,
-      name: 'friendly-creeps2',
+      name: 'friendly_creeps2',
       archetypes: ["creep"],
       path: 'res/meshes/glb/bot.glb',
       position: {
@@ -456,7 +456,7 @@ class Character extends _hero.Hero {
       }
     });
     addEventListener('onTargetPositionReach', e => {
-      // friendly-creeps
+      // friendly_creeps
       if (e.detail.name.indexOf('friendly-creep') != -1) {
         let getName = e.detail.name.split('_')[0];
         let t = app.localHero.friendlyLocal.creeps.filter(obj => obj.name == getName);
@@ -527,7 +527,7 @@ class Character extends _hero.Hero {
         }
       }
     });
-    addEventListener('navigate-friendly-creeps', () => {
+    addEventListener('navigate-friendly_creeps', () => {
       this.navigateCreeps();
     });
     addEventListener('updateLocalHeroGold', e => {
@@ -625,7 +625,7 @@ class Controller {
         }));
       } else {
         // for now
-        dispatchEvent(new CustomEvent('navigate-friendly-creeps', {
+        dispatchEvent(new CustomEvent('navigate-friendly_creeps', {
           detail: 'test'
         }));
         // must be friendly objs
@@ -880,10 +880,21 @@ class Creep extends _hero.Hero {
 
           // adapt
           subMesh.globalAmbient = [1, 1, 1, 1];
-          if (this.name.indexOf('friendly-creeps') != -1) {
+          if (this.name.indexOf('friendly_creeps') != -1) {
             subMesh.globalAmbient = [12, 12, 12, 1];
-          } else if (this.name.indexOf('enemy-creeps') != -1) {
+          } else if (this.name.indexOf('enemy_creeps') != -1) {
             subMesh.globalAmbient = [12, 1, 1, 1];
+          }
+
+          //
+          if (this.group == 'friendly') {
+            console.log('It is friendly creep use emit net');
+            subMesh.position.netObject = app.localHero.heroe_bodies[0].name;
+            subMesh.position.remoteName = app.localHero.heroe_bodies[0].name;
+            //remoteName
+            subMesh.rotation.emitY = app.localHero.heroe_bodies[0].name;
+          } else if (this.group == 'enemy') {
+            //
           }
           // maybe will help - remote net players no nedd to collide in other remote user gamaplay
           // this.core.collisionSystem.register((o.name + idx), subMesh.position, 15.0, 'enemies');
@@ -966,7 +977,7 @@ class Creep extends _hero.Hero {
             } else {
               console.log(`%c this.creepFocusAttackOn = null; NO ATTACK clear `, _utils.LOG_MATRIX);
               this.creepFocusAttackOn = null;
-              dispatchEvent(new CustomEvent('navigate-friendly-creeps', {
+              dispatchEvent(new CustomEvent('navigate-friendly_creeps', {
                 detail: 'test'
               }));
             }
@@ -986,7 +997,7 @@ class Creep extends _hero.Hero {
                 // leave it go creep to your goals...
                 console.log(`%cNO ATTACK GO ...`, _utils.LOG_MATRIX);
                 this.creepFocusAttackOn = null;
-                dispatchEvent(new CustomEvent('navigate-friendly-creeps', {
+                dispatchEvent(new CustomEvent('navigate-friendly_creeps', {
                   detail: 'test'
                 }));
               }
@@ -1020,9 +1031,6 @@ class Creep extends _hero.Hero {
             } else {
               console.log(`%c this.creepFocusAttackOn = null; NO ATTACK clear `, _utils.LOG_MATRIX);
               this.creepFocusAttackOn = null;
-              dispatchEvent(new CustomEvent('navigate-enemy-creeps', {
-                detail: 'test'
-              }));
             }
           });
           // if(isEnemiesClose == false) this.setIdle();
@@ -1040,7 +1048,7 @@ class Creep extends _hero.Hero {
                 // leave it go creep to your goals...
                 console.log(`%cNO ATTACK GO ...`, _utils.LOG_MATRIX);
                 this.creepFocusAttackOn = null;
-                dispatchEvent(new CustomEvent('navigate-friendly-creeps', {
+                dispatchEvent(new CustomEvent('navigate-friendly_creeps', {
                   detail: 'test'
                 }));
               }
@@ -1100,7 +1108,7 @@ class EnemiesManager {
     console.log('ENEMY HERO NET FEATURE', app.net.session);
     this.creeps.push(new _creepCharacter.Creep({
       core: this.core,
-      name: 'enemy-creep0',
+      name: 'enemy_creep0',
       archetypes: ["creep"],
       path: 'res/meshes/glb/bot.glb',
       position: {
@@ -1111,7 +1119,7 @@ class EnemiesManager {
     }, ['creep'], 'enemy'));
     this.creeps.push(new _creepCharacter.Creep({
       core: this.core,
-      name: 'enemy-creep1',
+      name: 'enemy_creep1',
       archetypes: ["creep"],
       path: 'res/meshes/glb/bot.glb',
       position: {
@@ -1122,7 +1130,7 @@ class EnemiesManager {
     }, ['creep'], 'enemy'));
     this.creeps.push(new _creepCharacter.Creep({
       core: this.core,
-      name: 'enemy-creep2',
+      name: 'enemy_creep2',
       archetypes: ["creep"],
       path: 'res/meshes/glb/bot.glb',
       position: {
@@ -1153,7 +1161,7 @@ class EnemiesManager {
         // subMesh.globalAmbient = [1, 1, 1, 1];
         // if(this.name == 'Slayzer') {
         //   subMesh.globalAmbient = [2, 2, 3, 1];
-        // } else if(this.name.indexOf('friendly-creeps') != -1) {
+        // } else if(this.name.indexOf('friendly_creeps') != -1) {
         //   subMesh.globalAmbient = [12, 12, 12, 1];
         // }
         // if(idx == 0) this.core.collisionSystem.register((o.name), subMesh.position, 15.0, this.group);
@@ -1305,7 +1313,7 @@ class Enemie extends _hero.Hero {
         defenderName: e.detail.defender,
         attackerName: e.detail.attacker,
         hp: e.detail.hp,
-        progress: progress
+        progress: e.detail.progress
       });
       // if detail is 0
       if (e.detail.progress == 0) {
@@ -1463,7 +1471,7 @@ let forestOfHollowBlood = new _world.default({
           if (d.hp == 0 || progress == 0) {
             // local hero dead
             app.localHero.setDead();
-            app.localHero.heroe_bodies[0].position.setPosition(_static.startUpPositions[(void 0).core.player.data.team][0], _static.startUpPositions[(void 0).core.player.data.team][1], _static.startUpPositions[(void 0).core.player.data.team][2]);
+            app.localHero.heroe_bodies[0].position.setPosition(_static.startUpPositions[forestOfHollowBlood.player.data.team][0], _static.startUpPositions[forestOfHollowBlood.player.data.team][1], _static.startUpPositions[forestOfHollowBlood.player.data.team][2]);
           }
         }
       }
@@ -28595,7 +28603,7 @@ class Position {
   constructor(x, y, z) {
     // console.log('TEST TYTPOF ', x)
     // Not in use for nwo this is from matrix-engine project [nameUniq]
-    this.nameUniq = null; // not in use
+    this.remoteName = null; // not in use
     this.netObject = null;
     this.netTolerance = 1;
     this.netTolerance__ = 0;
@@ -28666,6 +28674,7 @@ class Position {
         if (this.netObject != null) {
           if (this.netTolerance__ > this.netTolerance) {
             app.net.send({
+              remoteName: this.remoteName,
               sceneName: this.netObject,
               netPos: {
                 x: this.x,
@@ -28687,6 +28696,7 @@ class Position {
         if (this.netObject != null) {
           if (this.netTolerance__ > this.netTolerance) {
             app.net.send({
+              remoteName: this.remoteName,
               sceneName: this.netObject,
               netPos: {
                 x: this.x,
@@ -28743,7 +28753,7 @@ exports.Position = Position;
 class Rotation {
   constructor(x, y, z) {
     // Not in use for nwo this is from matrix-engine project [nameUniq]
-    this.nameUniq = null;
+    this.remoteName = null;
     this.emitX = null;
     this.emitY = null;
     this.emitZ = null;
@@ -28789,6 +28799,14 @@ class Rotation {
   }
   getRotX() {
     if (this.rotationSpeed.x == 0) {
+      if (this.netx != this.x && this.emitX) {
+        app.net.send({
+          remoteName: this.remoteName,
+          sceneName: this.emitX,
+          netRotX: this.x
+        });
+      }
+      this.netx = this.x;
       return (0, _utils.degToRad)(this.x);
     } else {
       this.x = this.x + this.rotationSpeed.x * 0.001;
@@ -28799,6 +28817,7 @@ class Rotation {
     if (this.rotationSpeed.y == 0) {
       if (this.nety != this.y && this.emitY) {
         app.net.send({
+          remoteName: this.remoteName,
           sceneName: this.emitY,
           netRotY: this.y
         });
@@ -28812,6 +28831,14 @@ class Rotation {
   }
   getRotZ() {
     if (this.rotationSpeed.z == 0) {
+      if (this.netz != this.z && this.emitZ) {
+        app.net.send({
+          remoteName: this.remoteName,
+          sceneName: this.emitZ,
+          netRotZ: this.z
+        });
+      }
+      this.nety = this.y;
       return (0, _utils.degToRad)(this.z);
     } else {
       this.z = this.z + this.rotationSpeed.z * 0.001;

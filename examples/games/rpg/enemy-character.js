@@ -133,7 +133,7 @@ export class Enemie extends Hero {
         defenderName:  e.detail.defender,
         attackerName:  e.detail.attacker,
         hp: e.detail.hp,
-        progress: progress
+        progress: e.detail.progress
       });
       // if detail is 0
       if(e.detail.progress == 0) {

@@ -59,10 +59,21 @@ export class Creep extends Hero {
 
           // adapt
           subMesh.globalAmbient = [1, 1, 1, 1];
-          if(this.name.indexOf('friendly-creeps') != -1) {
+          if(this.name.indexOf('friendly_creeps') != -1) {
             subMesh.globalAmbient = [12, 12, 12, 1];
-          } else if(this.name.indexOf('enemy-creeps') != -1) {
+          } else if(this.name.indexOf('enemy_creeps') != -1) {
             subMesh.globalAmbient = [12, 1, 1, 1];
+          }
+
+          //
+          if(this.group == 'friendly') {
+            console.log('It is friendly creep use emit net')
+            subMesh.position.netObject = app.localHero.heroe_bodies[0].name;
+            subMesh.position.remoteName = app.localHero.heroe_bodies[0].name;
+            //remoteName
+            subMesh.rotation.emitY = app.localHero.heroe_bodies[0].name;
+          } else if(this.group == 'enemy') {
+            //
           }
           // maybe will help - remote net players no nedd to collide in other remote user gamaplay
           // this.core.collisionSystem.register((o.name + idx), subMesh.position, 15.0, 'enemies');
@@ -158,7 +169,7 @@ export class Creep extends Hero {
             } else {
               console.log(`%c this.creepFocusAttackOn = null; NO ATTACK clear `, LOG_MATRIX)
               this.creepFocusAttackOn = null;
-              dispatchEvent(new CustomEvent('navigate-friendly-creeps', {detail: 'test'}))
+              dispatchEvent(new CustomEvent('navigate-friendly_creeps', {detail: 'test'}))
             }
           })
           // if(isEnemiesClose == false) this.setIdle();
@@ -179,7 +190,7 @@ export class Creep extends Hero {
                 // leave it go creep to your goals...
                 console.log(`%cNO ATTACK GO ...`, LOG_MATRIX)
                 this.creepFocusAttackOn = null;
-                dispatchEvent(new CustomEvent('navigate-friendly-creeps', {detail: 'test'}))
+                dispatchEvent(new CustomEvent('navigate-friendly_creeps', {detail: 'test'}))
               }
             }
           })
@@ -218,7 +229,6 @@ export class Creep extends Hero {
             } else {
               console.log(`%c this.creepFocusAttackOn = null; NO ATTACK clear `, LOG_MATRIX)
               this.creepFocusAttackOn = null;
-              dispatchEvent(new CustomEvent('navigate-enemy-creeps', {detail: 'test'}))
             }
           })
           // if(isEnemiesClose == false) this.setIdle();
@@ -239,7 +249,7 @@ export class Creep extends Hero {
                 // leave it go creep to your goals...
                 console.log(`%cNO ATTACK GO ...`, LOG_MATRIX)
                 this.creepFocusAttackOn = null;
-                dispatchEvent(new CustomEvent('navigate-friendly-creeps', {detail: 'test'}))
+                dispatchEvent(new CustomEvent('navigate-friendly_creeps', {detail: 'test'}))
               }
             }
           })

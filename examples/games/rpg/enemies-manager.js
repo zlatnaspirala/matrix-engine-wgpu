@@ -27,21 +27,21 @@ export class EnemiesManager {
     console.log('ENEMY HERO NET FEATURE', app.net.session)
     this.creeps.push(new Creep({
       core: this.core,
-      name: 'enemy-creep0',
+      name: 'enemy_creep0',
       archetypes: ["creep"],
       path: 'res/meshes/glb/bot.glb',
       position: {x: 0, y: -23, z: -0}
     }, ['creep'], 'enemy'));
     this.creeps.push(new Creep({
       core: this.core,
-      name: 'enemy-creep1',
+      name: 'enemy_creep1',
       archetypes: ["creep"],
       path: 'res/meshes/glb/bot.glb',
       position: {x: 100, y: -23, z: -0}
     }, ['creep'], 'enemy'))
     this.creeps.push(new Creep({
       core: this.core,
-      name: 'enemy-creep2',
+      name: 'enemy_creep2',
       archetypes: ["creep"],
       path: 'res/meshes/glb/bot.glb',
       position: {x: 150, y: -23, z: -0}
@@ -70,7 +70,7 @@ export class EnemiesManager {
         // subMesh.globalAmbient = [1, 1, 1, 1];
         // if(this.name == 'Slayzer') {
         //   subMesh.globalAmbient = [2, 2, 3, 1];
-        // } else if(this.name.indexOf('friendly-creeps') != -1) {
+        // } else if(this.name.indexOf('friendly_creeps') != -1) {
         //   subMesh.globalAmbient = [12, 12, 12, 1];
         // }
         // if(idx == 0) this.core.collisionSystem.register((o.name), subMesh.position, 15.0, this.group);
