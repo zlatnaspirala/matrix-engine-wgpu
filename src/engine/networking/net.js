@@ -147,17 +147,19 @@ export class MatrixStream {
       e.data = JSON.parse(e.data);
       // console.log('REMOTE UPDATE::::', e);
       if(e.data.netPos) {
-        if(app.getSceneObjectByName(e.data.sceneName)) {
+        if(app.getSceneObjectByName(e.data.remoteName)) {
+          app.getSceneObjectByName(e.data.remoteName).position.setPosition(e.data.netPos.x, e.data.netPos.y, e.data.netPos.z);
+        } else {
           app.getSceneObjectByName(e.data.sceneName).position.setPosition(e.data.netPos.x, e.data.netPos.y, e.data.netPos.z);
         }
       } else if(e.data.netRotY || e.data.netRotY == 0) {
-        app.getSceneObjectByName(e.data.sceneName).rotation.y = e.data.netRotY;
+        app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).rotation.y = e.data.netRotY;
       } else if(e.data.netRotX) {
-        app.getSceneObjectByName(e.data.sceneName).rotation.x = e.data.netRotX;
+        app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).rotation.x = e.data.netRotX;
       } else if(e.data.netRotZ) {
-        app.getSceneObjectByName(e.data.sceneName).rotation.z = e.data.netRotZ;
+        app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).rotation.z = e.data.netRotZ;
       } else if(e.data.animationIndex || e.data.animationIndex == 0) {
-        app.getSceneObjectByName(e.data.sceneName).glb.animationIndex = e.data.animationIndex;
+        app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).glb.animationIndex = e.data.animationIndex;
       } else if (e.data.followPath) {
           this.onFollowPath(e);
       }
