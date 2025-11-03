@@ -149,11 +149,7 @@ export class Character extends Hero {
           if(id == 0) subMesh.sharedState.emitAnimationEvent = true;
           this.core.collisionSystem.register(`local${id}`, subMesh.position, 15.0, 'local_hero');
         });
-
         app.localHero.heroe_bodies[0].effects.flameEmitter.recreateVertexDataRND(1);
-
-
-
 
         // adapt
         app.localHero.heroe_bodies[0].globalAmbient = [1, 1, 1, 1];
@@ -169,16 +165,13 @@ export class Character extends Hero {
         for(var x = 0;x < app.localHero.heroe_bodies.length;x++) {
           if(x > 0) {
             app.localHero.heroe_bodies[x].position = app.localHero.heroe_bodies[0].position;
-            // app.localHero.heroe_bodies[x].position.setPosition = app.localHero.heroe_bodies[0].position.setPosition;
             app.localHero.heroe_bodies[x].rotation = app.localHero.heroe_bodies[0].rotation;
           }
         }
         // activete net pos emit - becouse uniq name of hero body set net id by scene obj name simple
         // app.localHero.heroe_bodies[0].position.netObject = app.net.session.connection.connectionId;
         // not top solution - for now . High cost - precision good.
-        // Still better send follow path - with combination with fix set on collide.
         app.localHero.heroe_bodies[0].position.netObject = app.localHero.heroe_bodies[0].name;
-
         // DISABLED
         // app.net.multiPlayer.onFollowPath = (e) => {
         //   console.log('e.data.followPath.start' , e.data.followPath.start)
@@ -188,7 +181,6 @@ export class Character extends Hero {
 
         // for now net view for rot is axis separated - cost is ok for orientaion remote pass
         app.localHero.heroe_bodies[0].rotation.emitY = app.localHero.heroe_bodies[0].name;
-
         dispatchEvent(new CustomEvent('local-hero-bodies-ready', {
           detail: `This is not sync - 99% works`
         }))
@@ -453,14 +445,14 @@ export class Character extends Hero {
           }
         })
 
-        if(this.core.enemies.creeps.length > 0) this.core.enemies.creeps.forEach((enemy) => {
-          if(this.heroFocusAttackOn.name.indexOf(enemy.name) != -1) {
+        if(this.core.enemies.creeps.length > 0) this.core.enemies.creeps.forEach((creep) => {
+          if(this.heroFocusAttackOn.name.indexOf(creep.name) != -1) {
             let tt = this.core.RPG.distance3D(
               this.heroe_bodies[0].position,
               this.heroFocusAttackOn.position);
             if(tt < this.core.RPG.distanceForAction) {
-              console.log(`%c ATTACK DAMAGE ${enemy.heroe_bodies[0].name}`, LOG_MATRIX)
-              this.calcDamage(this, enemy);
+              console.log(`%c ATTACK DAMAGE ${creep.heroe_bodies[0].name}`, LOG_MATRIX)
+              this.calcDamage(this, creep);
             }
           }
         })
@@ -509,6 +501,10 @@ export class Character extends Hero {
         //--------------------------------
       }
 
+       if(e.detail.name.indexOf('enemy-creep') != -1) {
+         console.log(`%c enemy-creep  onTargetPositionReach do nothing.`, LOG_MATRIX)
+        return;
+       }
       // for now only local hero
       if(this.heroFocusAttackOn == null) {
         let isEnemiesClose = false; // on close distance 
