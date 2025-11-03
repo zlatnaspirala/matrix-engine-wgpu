@@ -75,9 +75,6 @@ export class Creep extends Hero {
               subMesh.rotation.emitY = subMesh.name;
               subMesh.rotation.remoteName = t;
             }
-          } else if(this.group == 'enemy') {
-            //
-            console.log('It is ENEMY creep must be 3x ...')
           }
           // maybe will help - remote net players no nedd to collide in other remote user gamaplay
           // this.core.collisionSystem.register((o.name + idx), subMesh.position, 15.0, 'enemies');
@@ -158,72 +155,72 @@ export class Creep extends Hero {
       }
     });
 
-
-    if(this.group != 'enemy') addEventListener(`animationEnd-${this.name}`, (e) => {
+    // HARD CODE FIX ---------------------------------------------------------sword
+    if(this.group != 'enemy') addEventListener(`animationEnd-${this.heroe_bodies[0].name}`, (e) => {
       // CHECK DISTANCE
       if(e.detail.animationName != 'attack' && this.creepFocusAttackOn == null) {
         return;
       }
 
-      // if(this.group == "friendly") {
+      if(this.group == "friendly") {
 
-      if(this.creepFocusAttackOn == null) {
-        console.info('FOCUS ON GROUND BUT COLLIDE WITH ENEMY-ANIMATION END setIdle:', e.detail.animationName)
-        let isEnemiesClose = false; // on close distance 
-        this.core.enemies.enemies.forEach((enemy) => {
-          let tt = this.core.RPG.distance3D(
-            this.heroe_bodies[0].position,
-            enemy.heroe_bodies[0].position);
-          if(tt < this.core.RPG.distanceForAction) {
-            console.log(`%c ATTACK DAMAGE ${enemy.heroe_bodies[0].name}`, LOG_MATRIX)
-            isEnemiesClose = true;
-            this.calcDamage(this, enemy);
-          } else {
-            console.log(`%c this.creepFocusAttackOn = null; NO ATTACK clear `, LOG_MATRIX)
-            this.creepFocusAttackOn = null;
-            dispatchEvent(new CustomEvent('navigate-friendly_creeps', {detail: 'test'}))
-          }
-        })
-        // if(isEnemiesClose == false) this.setIdle();
-        return;
-      }
-      else {
-        // Focus on enemy vs creeps !!!
-        if(this.core.enemies.enemies.length > 0) this.core.enemies.enemies.forEach((enemy) => {
-          if(this.creepFocusAttackOn.name.indexOf(enemy.name) != -1) {
+        if(this.creepFocusAttackOn == null) {
+          console.info('FOCUS ON GROUND BUT COLLIDE WITH ENEMY-ANIMATION END setIdle:', e.detail.animationName)
+          let isEnemiesClose = false; // on close distance 
+          this.core.enemies.enemies.forEach((enemy) => {
             let tt = this.core.RPG.distance3D(
               this.heroe_bodies[0].position,
-              this.creepFocusAttackOn.heroe_bodies[0].position);
+              enemy.heroe_bodies[0].position);
             if(tt < this.core.RPG.distanceForAction) {
-              console.log(`%c [creep] ATTACK DAMAGE ON ${enemy.heroe_bodies[0].name}`, LOG_MATRIX)
+              console.log(`%c ATTACK DAMAGE ${enemy.heroe_bodies[0].name}`, LOG_MATRIX)
+              isEnemiesClose = true;
               this.calcDamage(this, enemy);
-              return;
             } else {
-              // leave it go creep to your goals...
-              console.log(`%c[creep] navigate-friendly_creeps...`, LOG_MATRIX)
+              console.log(`%c this.creepFocusAttackOn = null; NO ATTACK clear `, LOG_MATRIX)
               this.creepFocusAttackOn = null;
               dispatchEvent(new CustomEvent('navigate-friendly_creeps', {detail: 'test'}))
             }
-          }
-        })
-
-        if(this.core.enemies.creeps.length > 0) this.core.enemies.creeps.forEach((enemy) => {
-          if(this.creepFocusAttackOn.name.indexOf(enemy.name) != -1) {
-            let tt = this.core.RPG.distance3D(
-              this.heroe_bodies[0].position,
-              this.creepFocusAttackOn.position);
-            if(tt < this.core.RPG.distanceForAction) {
-              console.log(`%c ATTACK DAMAGE ${enemy.heroe_bodies[0].name}`, LOG_MATRIX)
-              this.calcDamage(this, enemy);
-            } else {
-              // leave it go creep to your goals...
-              this.creepFocusAttackOn = null;
+          })
+          // if(isEnemiesClose == false) this.setIdle();
+          return;
+        }
+        else {
+          // Focus on enemy vs creeps !!!
+          if(this.core.enemies.enemies.length > 0) this.core.enemies.enemies.forEach((enemy) => {
+            if(this.creepFocusAttackOn.name.indexOf(enemy.name) != -1) {
+              let tt = this.core.RPG.distance3D(
+                this.heroe_bodies[0].position,
+                this.creepFocusAttackOn.heroe_bodies[0].position);
+              if(tt < this.core.RPG.distanceForAction) {
+                console.log(`%c [creep] ATTACK DAMAGE ON ${enemy.heroe_bodies[0].name}`, LOG_MATRIX)
+                this.calcDamage(this, enemy);
+                return;
+              } else {
+                // leave it go creep to your goals...
+                console.log(`%c[creep] navigate-friendly_creeps...`, LOG_MATRIX)
+                this.creepFocusAttackOn = null;
+                dispatchEvent(new CustomEvent('navigate-friendly_creeps', {detail: 'test'}))
+              }
             }
-          }
-        })
-      }
+          })
 
-      // }  
+          if(this.core.enemies.creeps.length > 0) this.core.enemies.creeps.forEach((creep) => {
+            if(this.creepFocusAttackOn.name.indexOf(creep.name) != -1) {
+              let tt = this.core.RPG.distance3D(
+                this.heroe_bodies[0].position,
+                this.creepFocusAttackOn.heroe_bodies[0].position);
+              if(tt < this.core.RPG.distanceForAction) {
+                console.log(`%c creep ATTACK DAMAGE ${creep.heroe_bodies[0].name}`, LOG_MATRIX)
+                this.calcDamage(this, creep);
+              } else {
+                // leave it go creep to your goals...
+                this.creepFocusAttackOn = null;
+              }
+            }
+          })
+        }
+
+      }
 
     })
 

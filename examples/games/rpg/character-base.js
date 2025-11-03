@@ -184,7 +184,7 @@ export class Character extends Hero {
         dispatchEvent(new CustomEvent('local-hero-bodies-ready', {
           detail: `This is not sync - 99% works`
         }))
-      }, 3500);
+      }, 4000);
     } catch(err) {throw err;}
   }
 
@@ -304,11 +304,25 @@ export class Character extends Hero {
   }
 
   setWalkCreep(creepIndex) {
+    if(this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].glb.animationIndex != this.friendlyCreepAnimationArrange.walk) {
+      app.net.send({
+        remoteName: this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].position.remoteName,
+        sceneName: 'not in use',
+        animationIndex: this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].glb.animationIndex
+      })
+    }
     this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].glb.animationIndex = this.friendlyCreepAnimationArrange.walk;
   }
 
   setAttackCreep(creepIndex) {
     console.info(`%cfriendly creep attack enemy!`, LOG_MATRIX)
+    if(this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].glb.animationIndex != this.friendlyCreepAnimationArrange.attack) {
+      app.net.send({
+        remoteName: this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].position.remoteName,
+        sceneName: 'not in use',
+        animationIndex: this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].glb.animationIndex
+      })
+    }
     this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].glb.animationIndex = this.friendlyCreepAnimationArrange.attack;
   }
 
@@ -364,33 +378,38 @@ export class Character extends Hero {
     })
 
     addEventListener('close-distance', (e) => {
-
+      // console.info('close distance :', e.detail)
       if((e.detail.A.id.indexOf('friendly') != -1 && e.detail.B.id.indexOf('friendly') != -1) ||
         (e.detail.A.group == "local_hero" && e.detail.B.id.indexOf('friendly') != -1) ||
         (e.detail.A.group == "friendly" && e.detail.B.group == "local_hero")) {
         // console.info('close distance BOTH friendly :', e.detail.A)
         return;
       }
-
       // nisu 2 local creeps
-      if(e.detail.A.group == "enemies") {
+      if(e.detail.A.group == "enemy") {
         if(e.detail.B.group == "friendly") {
           //------------------ BLOCK
           let lc = app.localHero.friendlyLocal.creeps.filter((localCreep) => localCreep.name == e.detail.B.id)[0];
           lc.creepFocusAttackOn =
             app.enemies.enemies.filter((enemy) => enemy.name == e.detail.A.id)[0];
+          if(lc.creepFocusAttackOn === undefined) {
+            lc.creepFocusAttackOn = app.enemies.creeps.filter((creep) => creep.name == e.detail.B.id)[0];
+          }
           app.localHero.setAttackCreep(e.detail.B.id[e.detail.B.id.length - 1]);
           console.info('close distance B is friendly:', e.detail.A.group)
         }
       } else if(e.detail.A.group == "friendly") {
         // console.info('close distance A is friendly:', e.detail.A.group)
-        if(e.detail.B.group == "enemies") {
+        if(e.detail.B.group == "enemy") {
           console.info('close distance B is enemies:', e.detail.A.group)
           //------------------
           //------------------ BLOCK
           let lc = app.localHero.friendlyLocal.creeps.filter((localCreep) => localCreep.name == e.detail.A.id)[0];
           lc.creepFocusAttackOn =
             app.enemies.enemies.filter((enemy) => enemy.name == e.detail.B.id)[0];
+          if(lc.creepFocusAttackOn == undefined) {
+            lc.creepFocusAttackOn = app.enemies.creeps.filter((creep) => creep.name == e.detail.B.id)[0];
+          }
           app.localHero.setAttackCreep(e.detail.A.id[e.detail.A.id.length - 1]);
           console.info('close distance A is friendly:', e.detail.A.group)
         }
@@ -501,10 +520,12 @@ export class Character extends Hero {
         //--------------------------------
       }
 
-       if(e.detail.name.indexOf('enemy-creep') != -1) {
-         console.log(`%c enemy-creep  onTargetPositionReach do nothing.`, LOG_MATRIX)
-        return;
-       }
+      // if(e.detail.name.indexOf('enemy-creep') != -1) {
+      //   // console.log(`%c enemy-creep  onTargetPositionReach do nothing.`, LOG_MATRIX)
+      //   return;
+      // }
+
+
       // for now only local hero
       if(this.heroFocusAttackOn == null) {
         let isEnemiesClose = false; // on close distance 

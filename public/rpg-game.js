@@ -204,7 +204,7 @@ class Character extends _hero.Hero {
         dispatchEvent(new CustomEvent('local-hero-bodies-ready', {
           detail: `This is not sync - 99% works`
         }));
-      }, 3500);
+      }, 4000);
     } catch (err) {
       throw err;
     }
@@ -315,10 +315,24 @@ class Character extends _hero.Hero {
     });
   }
   setWalkCreep(creepIndex) {
+    if (this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].glb.animationIndex != this.friendlyCreepAnimationArrange.walk) {
+      app.net.send({
+        remoteName: this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].position.remoteName,
+        sceneName: 'not in use',
+        animationIndex: this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].glb.animationIndex
+      });
+    }
     this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].glb.animationIndex = this.friendlyCreepAnimationArrange.walk;
   }
   setAttackCreep(creepIndex) {
     console.info(`%cfriendly creep attack enemy!`, _utils.LOG_MATRIX);
+    if (this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].glb.animationIndex != this.friendlyCreepAnimationArrange.attack) {
+      app.net.send({
+        remoteName: this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].position.remoteName,
+        sceneName: 'not in use',
+        animationIndex: this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].glb.animationIndex
+      });
+    }
     this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].glb.animationIndex = this.friendlyCreepAnimationArrange.attack;
   }
   attachEvents() {
@@ -371,28 +385,34 @@ class Character extends _hero.Hero {
       this.setSalute();
     });
     addEventListener('close-distance', e => {
+      // console.info('close distance :', e.detail)
       if (e.detail.A.id.indexOf('friendly') != -1 && e.detail.B.id.indexOf('friendly') != -1 || e.detail.A.group == "local_hero" && e.detail.B.id.indexOf('friendly') != -1 || e.detail.A.group == "friendly" && e.detail.B.group == "local_hero") {
         // console.info('close distance BOTH friendly :', e.detail.A)
         return;
       }
-
       // nisu 2 local creeps
-      if (e.detail.A.group == "enemies") {
+      if (e.detail.A.group == "enemy") {
         if (e.detail.B.group == "friendly") {
           //------------------ BLOCK
           let lc = app.localHero.friendlyLocal.creeps.filter(localCreep => localCreep.name == e.detail.B.id)[0];
           lc.creepFocusAttackOn = app.enemies.enemies.filter(enemy => enemy.name == e.detail.A.id)[0];
+          if (lc.creepFocusAttackOn === undefined) {
+            lc.creepFocusAttackOn = app.enemies.creeps.filter(creep => creep.name == e.detail.B.id)[0];
+          }
           app.localHero.setAttackCreep(e.detail.B.id[e.detail.B.id.length - 1]);
           console.info('close distance B is friendly:', e.detail.A.group);
         }
       } else if (e.detail.A.group == "friendly") {
         // console.info('close distance A is friendly:', e.detail.A.group)
-        if (e.detail.B.group == "enemies") {
+        if (e.detail.B.group == "enemy") {
           console.info('close distance B is enemies:', e.detail.A.group);
           //------------------
           //------------------ BLOCK
           let lc = app.localHero.friendlyLocal.creeps.filter(localCreep => localCreep.name == e.detail.A.id)[0];
           lc.creepFocusAttackOn = app.enemies.enemies.filter(enemy => enemy.name == e.detail.B.id)[0];
+          if (lc.creepFocusAttackOn == undefined) {
+            lc.creepFocusAttackOn = app.enemies.creeps.filter(creep => creep.name == e.detail.B.id)[0];
+          }
           app.localHero.setAttackCreep(e.detail.A.id[e.detail.A.id.length - 1]);
           console.info('close distance A is friendly:', e.detail.A.group);
         }
@@ -498,10 +518,12 @@ class Character extends _hero.Hero {
         return;
         //--------------------------------
       }
-      if (e.detail.name.indexOf('enemy-creep') != -1) {
-        console.log(`%c enemy-creep  onTargetPositionReach do nothing.`, _utils.LOG_MATRIX);
-        return;
-      }
+
+      // if(e.detail.name.indexOf('enemy-creep') != -1) {
+      //   // console.log(`%c enemy-creep  onTargetPositionReach do nothing.`, LOG_MATRIX)
+      //   return;
+      // }
+
       // for now only local hero
       if (this.heroFocusAttackOn == null) {
         let isEnemiesClose = false; // on close distance 
@@ -896,9 +918,6 @@ class Creep extends _hero.Hero {
               subMesh.rotation.emitY = subMesh.name;
               subMesh.rotation.remoteName = t;
             }
-          } else if (this.group == 'enemy') {
-            //
-            console.log('It is ENEMY creep must be 3x ...');
           }
           // maybe will help - remote net players no nedd to collide in other remote user gamaplay
           // this.core.collisionSystem.register((o.name + idx), subMesh.position, 15.0, 'enemies');
@@ -967,67 +986,66 @@ class Creep extends _hero.Hero {
         e.detail.attacker.killEnemy(e.detail.defenderLevel);
       }
     });
-    if (this.group != 'enemy') addEventListener(`animationEnd-${this.name}`, e => {
+
+    // HARD CODE FIX ---------------------------------------------------------sword
+    if (this.group != 'enemy') addEventListener(`animationEnd-${this.heroe_bodies[0].name}`, e => {
       // CHECK DISTANCE
       if (e.detail.animationName != 'attack' && this.creepFocusAttackOn == null) {
         return;
       }
-
-      // if(this.group == "friendly") {
-
-      if (this.creepFocusAttackOn == null) {
-        console.info('FOCUS ON GROUND BUT COLLIDE WITH ENEMY-ANIMATION END setIdle:', e.detail.animationName);
-        let isEnemiesClose = false; // on close distance 
-        this.core.enemies.enemies.forEach(enemy => {
-          let tt = this.core.RPG.distance3D(this.heroe_bodies[0].position, enemy.heroe_bodies[0].position);
-          if (tt < this.core.RPG.distanceForAction) {
-            console.log(`%c ATTACK DAMAGE ${enemy.heroe_bodies[0].name}`, _utils.LOG_MATRIX);
-            isEnemiesClose = true;
-            this.calcDamage(this, enemy);
-          } else {
-            console.log(`%c this.creepFocusAttackOn = null; NO ATTACK clear `, _utils.LOG_MATRIX);
-            this.creepFocusAttackOn = null;
-            dispatchEvent(new CustomEvent('navigate-friendly_creeps', {
-              detail: 'test'
-            }));
-          }
-        });
-        // if(isEnemiesClose == false) this.setIdle();
-        return;
-      } else {
-        // Focus on enemy vs creeps !!!
-        if (this.core.enemies.enemies.length > 0) this.core.enemies.enemies.forEach(enemy => {
-          if (this.creepFocusAttackOn.name.indexOf(enemy.name) != -1) {
-            let tt = this.core.RPG.distance3D(this.heroe_bodies[0].position, this.creepFocusAttackOn.heroe_bodies[0].position);
+      if (this.group == "friendly") {
+        if (this.creepFocusAttackOn == null) {
+          console.info('FOCUS ON GROUND BUT COLLIDE WITH ENEMY-ANIMATION END setIdle:', e.detail.animationName);
+          let isEnemiesClose = false; // on close distance 
+          this.core.enemies.enemies.forEach(enemy => {
+            let tt = this.core.RPG.distance3D(this.heroe_bodies[0].position, enemy.heroe_bodies[0].position);
             if (tt < this.core.RPG.distanceForAction) {
-              console.log(`%c [creep] ATTACK DAMAGE ON ${enemy.heroe_bodies[0].name}`, _utils.LOG_MATRIX);
+              console.log(`%c ATTACK DAMAGE ${enemy.heroe_bodies[0].name}`, _utils.LOG_MATRIX);
+              isEnemiesClose = true;
               this.calcDamage(this, enemy);
-              return;
             } else {
-              // leave it go creep to your goals...
-              console.log(`%c[creep] navigate-friendly_creeps...`, _utils.LOG_MATRIX);
+              console.log(`%c this.creepFocusAttackOn = null; NO ATTACK clear `, _utils.LOG_MATRIX);
               this.creepFocusAttackOn = null;
               dispatchEvent(new CustomEvent('navigate-friendly_creeps', {
                 detail: 'test'
               }));
             }
-          }
-        });
-        if (this.core.enemies.creeps.length > 0) this.core.enemies.creeps.forEach(enemy => {
-          if (this.creepFocusAttackOn.name.indexOf(enemy.name) != -1) {
-            let tt = this.core.RPG.distance3D(this.heroe_bodies[0].position, this.creepFocusAttackOn.position);
-            if (tt < this.core.RPG.distanceForAction) {
-              console.log(`%c ATTACK DAMAGE ${enemy.heroe_bodies[0].name}`, _utils.LOG_MATRIX);
-              this.calcDamage(this, enemy);
-            } else {
-              // leave it go creep to your goals...
-              this.creepFocusAttackOn = null;
+          });
+          // if(isEnemiesClose == false) this.setIdle();
+          return;
+        } else {
+          // Focus on enemy vs creeps !!!
+          if (this.core.enemies.enemies.length > 0) this.core.enemies.enemies.forEach(enemy => {
+            if (this.creepFocusAttackOn.name.indexOf(enemy.name) != -1) {
+              let tt = this.core.RPG.distance3D(this.heroe_bodies[0].position, this.creepFocusAttackOn.heroe_bodies[0].position);
+              if (tt < this.core.RPG.distanceForAction) {
+                console.log(`%c [creep] ATTACK DAMAGE ON ${enemy.heroe_bodies[0].name}`, _utils.LOG_MATRIX);
+                this.calcDamage(this, enemy);
+                return;
+              } else {
+                // leave it go creep to your goals...
+                console.log(`%c[creep] navigate-friendly_creeps...`, _utils.LOG_MATRIX);
+                this.creepFocusAttackOn = null;
+                dispatchEvent(new CustomEvent('navigate-friendly_creeps', {
+                  detail: 'test'
+                }));
+              }
             }
-          }
-        });
+          });
+          if (this.core.enemies.creeps.length > 0) this.core.enemies.creeps.forEach(creep => {
+            if (this.creepFocusAttackOn.name.indexOf(creep.name) != -1) {
+              let tt = this.core.RPG.distance3D(this.heroe_bodies[0].position, this.creepFocusAttackOn.heroe_bodies[0].position);
+              if (tt < this.core.RPG.distanceForAction) {
+                console.log(`%c creep ATTACK DAMAGE ${creep.heroe_bodies[0].name}`, _utils.LOG_MATRIX);
+                this.calcDamage(this, creep);
+              } else {
+                // leave it go creep to your goals...
+                this.creepFocusAttackOn = null;
+              }
+            }
+          });
+        }
       }
-
-      // }  
     });
   }
 }
@@ -3226,36 +3244,32 @@ function resolvePairRepulsion(Apos, Bpos, minDistance = 30.0, pushStrength = 0.5
     Apos.targetZ = Apos.z;
     Bpos.targetX = Bpos.x;
     Bpos.targetZ = Bpos.z;
-    if (Apos.netObject != null) {
-      if (Apos.netTolerance__ > Apos.netTolerance) {
-        app.net.send({
-          sceneName: Apos.netObject,
-          netPos: {
-            x: Apos.x,
-            y: Apos.y,
-            z: Apos.z
-          }
-        });
-        Apos.netTolerance__ = 0;
-      } else {
-        Apos.netTolerance__++;
-      }
-    }
-    if (Bpos.netObject != null) {
-      if (Bpos.netTolerance__ > Bpos.netTolerance) {
-        app.net.send({
-          sceneName: Bpos.netObject,
-          netPos: {
-            x: Bpos.x,
-            y: Bpos.y,
-            z: Bpos.z
-          }
-        });
-        Bpos.netTolerance__ = 0;
-      } else {
-        Bpos.netTolerance__++;
-      }
-    }
+
+    // if(Apos.netObject != null) {
+    //   if(Apos.netTolerance__ > Apos.netTolerance) {
+    //     app.net.send({
+    //       remoteName: Apos.remoteName,
+    //       sceneName: Apos.netObject,
+    //       netPos: {x: Apos.x, y: Apos.y, z: Apos.z},
+    //     })
+    //     Apos.netTolerance__ = 0;
+    //   } else {
+    //     Apos.netTolerance__++;
+    //   }
+    // }
+
+    // if(Bpos.netObject != null) {
+    //   if(Bpos.netTolerance__ > Bpos.netTolerance) {
+    //     app.net.send({
+    //       remoteName: Bpos.remoteName,
+    //       sceneName: Bpos.netObject,
+    //       netPos: {x: Bpos.x, y: Bpos.y, z: Bpos.z},
+    //     })
+    //     Bpos.netTolerance__ = 0;
+    //   } else {
+    //     Bpos.netTolerance__++;
+    //   }
+    // }
     return true;
   }
   // exact overlap (practically same point) -> small jitter to separate
@@ -26549,11 +26563,11 @@ class BVHPlayerInstances extends _meshObjInstances.default {
       setTimeout(() => {
         this.sharedState.animationStarted = false;
         // specific rule for naming (some from blender source)
-        let n = this.name;
-        if (this.name.indexOf('_') != -1) {
-          n = this.name.split('_')[0];
-        }
-        dispatchEvent(new CustomEvent(`animationEnd-${n}`, {
+        // let n = this.name;
+        // if(this.name.indexOf('_') != -1) {
+        //   n = this.name.split('_')[0];
+        // }
+        dispatchEvent(new CustomEvent(`animationEnd-${this.name}`, {
           detail: {
             animationName: this.glb.glbJsonData.animations[this.glb.animationIndex].name
           }
@@ -30235,7 +30249,7 @@ class MatrixStream {
       // console.log('REMOTE UPDATE::::', e);
       if (e.data.netPos) {
         if (e.data.remoteName != null) {
-          console.log('REMOTE UPDATE:::remote:', e);
+          // console.log('REMOTE UPDATE:::remote:', e);
           app.getSceneObjectByName(e.data.remoteName).position.setPosition(e.data.netPos.x, e.data.netPos.y, e.data.netPos.z);
         } else {
           app.getSceneObjectByName(e.data.sceneName).position.setPosition(e.data.netPos.x, e.data.netPos.y, e.data.netPos.z);

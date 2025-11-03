@@ -466,29 +466,31 @@ export function resolvePairRepulsion(Apos, Bpos, minDistance = 30.0, pushStrengt
     Bpos.targetX = Bpos.x;
     Bpos.targetZ = Bpos.z;
 
-    if(Apos.netObject != null) {
-      if(Apos.netTolerance__ > Apos.netTolerance) {
-        app.net.send({
-          sceneName: Apos.netObject,
-          netPos: {x: Apos.x, y: Apos.y, z: Apos.z},
-        })
-        Apos.netTolerance__ = 0;
-      } else {
-        Apos.netTolerance__++;
-      }
-    }
+    // if(Apos.netObject != null) {
+    //   if(Apos.netTolerance__ > Apos.netTolerance) {
+    //     app.net.send({
+    //       remoteName: Apos.remoteName,
+    //       sceneName: Apos.netObject,
+    //       netPos: {x: Apos.x, y: Apos.y, z: Apos.z},
+    //     })
+    //     Apos.netTolerance__ = 0;
+    //   } else {
+    //     Apos.netTolerance__++;
+    //   }
+    // }
 
-    if(Bpos.netObject != null) {
-      if(Bpos.netTolerance__ > Bpos.netTolerance) {
-        app.net.send({
-          sceneName: Bpos.netObject,
-          netPos: {x: Bpos.x, y: Bpos.y, z: Bpos.z},
-        })
-        Bpos.netTolerance__ = 0;
-      } else {
-        Bpos.netTolerance__++;
-      }
-    }
+    // if(Bpos.netObject != null) {
+    //   if(Bpos.netTolerance__ > Bpos.netTolerance) {
+    //     app.net.send({
+    //       remoteName: Bpos.remoteName,
+    //       sceneName: Bpos.netObject,
+    //       netPos: {x: Bpos.x, y: Bpos.y, z: Bpos.z},
+    //     })
+    //     Bpos.netTolerance__ = 0;
+    //   } else {
+    //     Bpos.netTolerance__++;
+    //   }
+    // }
     return true;
   }
   // exact overlap (practically same point) -> small jitter to separate
