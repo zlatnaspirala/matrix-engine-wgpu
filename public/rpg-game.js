@@ -1437,10 +1437,16 @@ let forestOfHollowBlood = new _world.default({
         // string
         console.log('<data-receive damage for >', d.defenderName);
         let IsEnemyHeroObj = forestOfHollowBlood.enemies.enemies.find(enemy => enemy.name === d.defenderName);
+        let IsEnemyCreepObj = forestOfHollowBlood.enemies.creeps.find(creep => creep.name === d.defenderName);
         if (IsEnemyHeroObj) {
           console.log('<data-receive damage for IsEnemyHeroObj >', IsEnemyHeroObj);
           const progress = Math.max(0, Math.min(1, d.hp / IsEnemyHeroObj.getHPMax()));
           IsEnemyHeroObj.heroe_bodies[0].effects.energyBar.setProgress(progress);
+          //..
+        } else if (IsEnemyCreepObj) {
+          console.log('<data-receive damage for IsEnemyCreepObj >', IsEnemyCreepObj);
+          const progress = Math.max(0, Math.min(1, d.hp / IsEnemyCreepObj.getHPMax()));
+          IsEnemyCreepObj.heroe_bodies[0].effects.energyBar.setProgress(progress);
           //..
         } else if (app.localHero.name == d.defenderName) {
           console.log('<data-receive damage for LOCAL HERO >');
