@@ -1466,9 +1466,20 @@ let forestOfHollowBlood = new _world.default({
           app.localHero.friendlyLocal.creeps[getCreepByIndex].heroe_bodies[0].effects.energyBar.setProgress(d.progress);
           if (d.progress == 0) {
             app.localHero.friendlyLocal.creeps[getCreepByIndex].setDead();
-            app.localHero.friendlyLocal.creeps[getCreepByIndex].setStartUpPosition();
-            app.localHero.friendlyLocal.creeps[getCreepByIndex].gotoFinal = false;
-            app.localHero.friendlyLocal.creeps[getCreepByIndex].heroe_bodies[0].effects.energyBar.setProgress(1);
+            setTimeout(() => {
+              app.localHero.friendlyLocal.creeps[getCreepByIndex].setStartUpPosition();
+              app.localHero.friendlyLocal.creeps[getCreepByIndex].gotoFinal = false;
+              app.localHero.friendlyLocal.creeps[getCreepByIndex].heroe_bodies[0].effects.energyBar.setProgress(1);
+            }, 1000);
+
+            //  SEND ENERGY BATR PROGREEs
+            // this.core.net.sendOnlyData({
+            //   type: "damage-creep",
+            //   defenderName: e.detail.defender,
+            //   defenderTeam: this.team,
+            //   hp: e.detail.hp,
+            //   progress: e.detail.progress
+            // });
           }
         }
       }

@@ -159,7 +159,6 @@ export class Creep extends Hero {
         progress: e.detail.progress
       });
 
-
       // if detail is 0
       if(e.detail.progress == 0) {
         this.setDead();
