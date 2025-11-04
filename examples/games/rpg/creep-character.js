@@ -162,13 +162,13 @@ export class Creep extends Hero {
       // if detail is 0
       if(e.detail.progress == 0) {
         this.setDead();
-        console.info(`%c creep dead [${this.name}], attacker[${e.detail.attacker}]`, LOG_MATRIX)
+        console.info(`%cCreep dead [${this.name}], attacker[${e.detail.attacker}]`, LOG_MATRIX);
         setTimeout(() => {
           this.setStartUpPosition();
           this.setWalk();
+          this.gotoFinal = false;
+          this.heroe_bodies[0].effects.energyBar.setProgress(1);
         }, 2000);
-        // e.detail.attacker.killEnemy(e.detail.defenderLevel);
-
       }
     });
 
@@ -182,18 +182,18 @@ export class Creep extends Hero {
         if(this.group == "friendly") {
 
           if(this.creepFocusAttackOn == null) {
-            console.info('FOCUS ON GROUND BUT COLLIDE WITH ENEMY-ANIMATION END setIdle:', e.detail.animationName)
+            // console.info('setIdle:', e.detail.animationName)
             let isEnemiesClose = false; // on close distance 
             this.core.enemies.enemies.forEach((enemy) => {
               let tt = this.core.RPG.distance3D(
                 this.heroe_bodies[0].position,
                 enemy.heroe_bodies[0].position);
               if(tt < this.core.RPG.distanceForAction) {
-                console.log(`%c ATTACK DAMAGE ${enemy.heroe_bodies[0].name}`, LOG_MATRIX)
+                // console.log(`%c ATTACK DAMAGE ${enemy.heroe_bodies[0].name}`, LOG_MATRIX)
                 isEnemiesClose = true;
                 this.calcDamage(this, enemy);
               } else {
-                console.log(`%c creepFocusAttackOn = null; (fcreep vs enemy hero)(navigate-friendly_creeps1) `, LOG_MATRIX)
+                // console.log(`%c creepFocusAttackOn = null; (fcreep vs enemy hero)(navigate-friendly_creeps1) `, LOG_MATRIX)
                 this.creepFocusAttackOn = null;
                 dispatchEvent(new CustomEvent('navigate-friendly_creeps', {detail: {
                   localCreepNav: this,
@@ -212,12 +212,12 @@ export class Creep extends Hero {
                   this.heroe_bodies[0].position,
                   this.creepFocusAttackOn.heroe_bodies[0].position);
                 if(tt < this.core.RPG.distanceForAction) {
-                  console.log(`%c [creep] ATTACK DAMAGE ON ${enemy.heroe_bodies[0].name}`, LOG_MATRIX)
+                  // console.log(`%c [creep] ATTACK DAMAGE ON ${enemy.heroe_bodies[0].name}`, LOG_MATRIX)
                   this.calcDamage(this, enemy);
                   return;
                 } else {
                   // leave it go creep to your goals...
-                  console.log(`%c creepFocusAttackOn != null; (fcreep vs enemy hero)(navigate-friendly_creeps2) `, LOG_MATRIX)
+                  // console.log(`%c creepFocusAttackOn != null; (fcreep vs enemy hero)(navigate-friendly_creeps2) `, LOG_MATRIX)
                   this.creepFocusAttackOn = null;
                   dispatchEvent(new CustomEvent('navigate-friendly_creeps', {detail: 'test'}))
                 }
@@ -230,11 +230,11 @@ export class Creep extends Hero {
                   this.heroe_bodies[0].position,
                   this.creepFocusAttackOn.heroe_bodies[0].position);
                 if(tt < this.core.RPG.distanceForAction) {
-                  console.log(`%c creep ATTACK DAMAGE ${creep.heroe_bodies[0].name}`, LOG_MATRIX)
+                  // console.log(`%c creep ATTACK DAMAGE ${creep.heroe_bodies[0].name}`, LOG_MATRIX)
                   this.calcDamage(this, creep);
                 } else {
                   // leave it go creep to your goals...
-                  console.log(`%c creepFocusAttackOn = null; (fcreep vs creeps)(navigate-friendly_creeps3) `, LOG_MATRIX)
+                  // console.log(`%c creepFocusAttackOn = null; (fcreep vs creeps)(navigate-friendly_creeps3) `, LOG_MATRIX)
                   this.creepFocusAttackOn = null;
                   dispatchEvent(new CustomEvent('navigate-friendly_creeps', {detail: 'test'}))
                 }

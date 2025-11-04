@@ -211,24 +211,20 @@ export class Character extends Hero {
 
     app.localHero.friendlyLocal.creeps.forEach((creep, index) => {
       creep.heroe_bodies[0].position.setPosition(
-        startUpPositions[this.core.player.data.team][0] + index * 50,
+        startUpPositions[this.core.player.data.team][0] + (index+1) * 50,
         startUpPositions[this.core.player.data.team][1],
-        startUpPositions[this.core.player.data.team][2] + index * 50);
+        startUpPositions[this.core.player.data.team][2] + (index+1) * 50);
     })
 
     setTimeout(() => {
       this.navigateCreeps();
-    }, 1000)
+    }, 3000);
   }
 
   navigateCreeps() {
-    console.log('[navigateCreeps() CALL!');
+    // console.log('navigateCreeps()');
     app.localHero.friendlyLocal.creeps.forEach((creep, index) => {
       this.navigateCreep(creep, index);
-      // if(creep.creepFocusAttackOn != null) {
-      //   console.log('[navigateCreeps()][friendlyLocal][creep.creepFocusAttackOn] is on action chech for small interval again....!', creep);
-      //   return;
-      // }
     })
   }
 
@@ -241,19 +237,16 @@ export class Character extends Hero {
 
   navigateCreep(creep, index) {
     if(creep.creepFocusAttackOn != null) {
-      console.log('test attacher nuuu return ');
+      // console.log('test attacher nuuu return ');
       return;
     }
-
     creep.firstPoint = creepPoints[this.core.player.data.team].firstPoint;
     creep.finalPoint = creepPoints[this.core.player.data.team].finalPoint;
     const start = [creep.heroe_bodies[0].position.x, creep.heroe_bodies[0].position.y, creep.heroe_bodies[0].position.z];
     let test = this.distance3DArrayInput(creep.firstPoint, start);
-    console.log('test POINT ' + test);
     if(test < 20) {
       creep.gotoFinal = true;
     }
-
     const end = [creep.firstPoint[0], creep.firstPoint[1], creep.firstPoint[2]];
     const endFinal = [creep.finalPoint[0], creep.finalPoint[1], creep.finalPoint[2]];
 
@@ -267,8 +260,6 @@ export class Character extends Hero {
     } else {
       path = this.core.RPG.nav.findPath(start, end);
     }
-
-
     if(!path || path.length === 0) {console.warn('No valid path found.'); return;}
     this.setWalkCreep(index);
     followPath(creep.heroe_bodies[0], path, this.core);
@@ -452,10 +443,7 @@ export class Character extends Hero {
       }
     })
 
-    // must be sync with networking... in future
-    // -------------------------------------------
     addEventListener(`animationEnd-${this.heroe_bodies[0].name}`, (e) => {
-      // console.log('ANIMATION END INITIAL NAME !!!!!!!!!!!!!!!!', this.name)
       // CHECK DISTANCE
       if(e.detail.animationName != 'attack') {
         //--------------------------------
@@ -463,7 +451,7 @@ export class Character extends Hero {
         //--------------------------------
       }
       if(this.heroFocusAttackOn == null) {
-        console.info('animationEnd [heroFocusAttackOn == null ]', e.detail.animationName)
+        // console.info('animationEnd [heroFocusAttackOn == null ]', e.detail.animationName)
         let isEnemiesClose = false; // on close distance 
         this.core.enemies.enemies.forEach((enemy) => {
           if(enemy.heroe_bodies) {
@@ -471,7 +459,7 @@ export class Character extends Hero {
               this.heroe_bodies[0].position,
               enemy.heroe_bodies[0].position);
             if(tt < this.core.RPG.distanceForAction) {
-              console.log(`%c ATTACK DAMAGE ${enemy.heroe_bodies[0].name}`, LOG_MATRIX)
+              console.log(`%cATTACK DAMAGE ${enemy.heroe_bodies[0].name}`, LOG_MATRIX)
               isEnemiesClose = true;
               this.calcDamage(this, enemy);
             }
@@ -501,7 +489,7 @@ export class Character extends Hero {
               this.heroe_bodies[0].position,
               this.heroFocusAttackOn.position);
             if(tt < this.core.RPG.distanceForAction) {
-              console.log(`%c ATTACK DAMAGE [lhero on creep] ${creep.heroe_bodies[0].name}`, LOG_MATRIX)
+              console.log(`%cATTACK DAMAGE [lhero on creep] ${creep.heroe_bodies[0].name}`, LOG_MATRIX)
               this.calcDamage(this, creep);
             }
           }
@@ -509,14 +497,15 @@ export class Character extends Hero {
       }
     })
 
+    // This is common for all kineamtic bodies
     addEventListener('onTargetPositionReach', (e) => {
-      // friendly_creeps
+
       if(e.detail.name.indexOf('friendly-creep') != -1) {
         let getName = e.detail.name.split('_')[0];
         let t = app.localHero.friendlyLocal.creeps.filter((obj) => obj.name == getName);
         if(t[0].creepFocusAttackOn != null) {
-          console.log(`%[character base]onTargetPositionReach 
-           creepFocusAttackOn : ${t[0].creepFocusAttackOn}`, LOG_MATRIX)
+          // console.log(`%[character base]onTargetPositionReach 
+          //  creepFocusAttackOn : ${t[0].creepFocusAttackOn}`, LOG_MATRIX)
           return;
         }
 
@@ -524,7 +513,6 @@ export class Character extends Hero {
         let testx = e.detail.body.position.x - t[0].firstPoint[0];
         if(testz > 15 && testx > 15) {
           // got to first point  t[0] for now only  one sub mesh per creep...
-          // console.log('SEND TO FIRTS POINT POINT', t[0].firstPoint)
           const start = [t[0].heroe_bodies[0].position.x, t[0].heroe_bodies[0].position.y, t[0].heroe_bodies[0].position.z];
           const path = this.core.RPG.nav.findPath(start, t[0].firstPoint);
           if(!path || path.length === 0) {console.warn('No valid path found.'); return;}
@@ -535,8 +523,8 @@ export class Character extends Hero {
             followPath(t[0].heroe_bodies[0], path, app)
           }, 1000);
         } else {
-          // got ot final
-          console.log('SEND TO last POINT POINT to the enemy home....', t[0].finalPoint)
+          // goto final
+          // console.log('SEND TO last POINT POINT to the enemy home....', t[0].finalPoint)
           const start = [t[0].heroe_bodies[0].position.x, t[0].heroe_bodies[0].position.y, t[0].heroe_bodies[0].position.z];
           const path = this.core.RPG.nav.findPath(start, t[0].finalPoint);
           if(!path || path.length === 0) {console.warn('No valid path found.'); return;}

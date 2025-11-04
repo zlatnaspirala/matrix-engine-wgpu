@@ -133,11 +133,13 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
           if(d.hp == 0 || progress == 0) {
             // local hero dead
             app.localHero.setDead();
-            app.localHero.heroe_bodies[0].position.setPosition(
-              startUpPositions[forestOfHollowBlood.player.data.team][0],
-              startUpPositions[forestOfHollowBlood.player.data.team][1],
-              startUpPositions[forestOfHollowBlood.player.data.team][2]
-            );
+            setTimeout(() => {
+              app.localHero.heroe_bodies[0].position.setPosition(
+                startUpPositions[forestOfHollowBlood.player.data.team][0],
+                startUpPositions[forestOfHollowBlood.player.data.team][1],
+                startUpPositions[forestOfHollowBlood.player.data.team][2]
+              );
+            }, 1000);
           }
         }
       } else if("damage-creep") {

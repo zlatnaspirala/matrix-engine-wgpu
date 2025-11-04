@@ -1,6 +1,6 @@
 
 export const startUpPositions = {
-  south: [-800, -23, 800],
+  south: [-750, -23, 860],
   north: [800, -23, -800]
 }
 
