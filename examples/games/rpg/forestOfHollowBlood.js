@@ -9,7 +9,7 @@ import {LS, mb, SS, urlQuery} from "../../../src/engine/utils.js";
 import {MatrixStream} from "../../../src/engine/networking/net.js";
 import {byId} from "../../../src/engine/networking/matrix-stream.js";
 import {startUpPositions} from "./static.js";
-
+import {MatrixTTS} from "./tts.js";
 /**
  * @description
  * This is main root dep file.
@@ -36,6 +36,8 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
   },
   clearColor: {r: 0, b: 0.122, g: 0.122, a: 1}
 }, () => {
+
+  forestOfHollowBlood.tts = new MatrixTTS();
 
   forestOfHollowBlood.player = {
     username: "guest"

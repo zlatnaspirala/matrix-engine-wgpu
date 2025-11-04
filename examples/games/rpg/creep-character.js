@@ -167,6 +167,7 @@ export class Creep extends Hero {
           this.setStartUpPosition();
           this.setWalk();
           this.gotoFinal = false;
+          this.hp = 300;
           this.heroe_bodies[0].effects.energyBar.setProgress(1);
         }, 2000);
       }

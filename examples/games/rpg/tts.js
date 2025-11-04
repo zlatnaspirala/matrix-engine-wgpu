@@ -5,6 +5,10 @@
  */
 export class MatrixTTS {
 
+  constructor() {
+    // this.loadVoices()
+  }
+
   loadVoices = () => {
     return new Promise(resolve => {
       let voices = speechSynthesis.getVoices();
@@ -58,9 +62,9 @@ export class MatrixTTS {
     if(!('speechSynthesis' in window)) {
       throw new Error('Web Speech API not supported in this browser.');
     }
-    const voices = await loadVoices();
-    const voice = chooseVoice(voices, lang);
-    const chunks = splitIntoChunks(text);
+    const voices = await this.loadVoices();
+    const voice = this.chooseVoice(voices, lang);
+    const chunks = this.splitIntoChunks(text);
     return new Promise((resolve, reject) => {
       let index = 0;
       function speakNext() {
@@ -101,7 +105,7 @@ export class MatrixTTS {
   async speak(text) {
     return new Promise(async(resolve, reject) => {
       try {
-        await speakNatural(text, {lang: 'en-US', rate: 0.95, pitch: 1.02});
+        await this.speakNatural(text, {lang: 'en-US', rate: 0.95, pitch: 1.02});
         resolve('Finished speaking');
       } catch(e) {
         reject('TTS error');

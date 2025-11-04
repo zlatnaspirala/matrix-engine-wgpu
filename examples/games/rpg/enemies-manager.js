@@ -23,7 +23,6 @@ export class EnemiesManager {
   }
   // Make possible to play 3x3 4x4 or 5x5 ...
   loadCreeps() {
-    console.log('ENEMY HERO NET FEATURE', app.net.session)
     this.creeps.push(new Creep({
       core: this.core,
       name: 'enemy_creep0',
@@ -31,23 +30,22 @@ export class EnemiesManager {
       path: 'res/meshes/glb/bot.glb',
       position: {x: 0, y: -23, z: -0}
     }, ['creep'], 'enemy', app.player.data.enemyTeam));
-    // this.creeps.push(new Creep({
-    //   core: this.core,
-    //   name: 'enemy_creep1',
-    //   archetypes: ["creep"],
-    //   path: 'res/meshes/glb/bot.glb',
-    //   position: {x: 100, y: -23, z: -0}
-    // }, ['creep'], 'enemy', app.player.data.enemyTeam))
-    // this.creeps.push(new Creep({
-    //   core: this.core,
-    //   name: 'enemy_creep2',
-    //   archetypes: ["creep"],
-    //   path: 'res/meshes/glb/bot.glb',
-    //   position: {x: 150, y: -23, z: -0}
-    // }, ['creep'], 'enemy', app.player.data.enemyTeam))
+    this.creeps.push(new Creep({
+      core: this.core,
+      name: 'enemy_creep1',
+      archetypes: ["creep"],
+      path: 'res/meshes/glb/bot.glb',
+      position: {x: 100, y: -23, z: -0}
+    }, ['creep'], 'enemy', app.player.data.enemyTeam))
+    this.creeps.push(new Creep({
+      core: this.core,
+      name: 'enemy_creep2',
+      archetypes: ["creep"],
+      path: 'res/meshes/glb/bot.glb',
+      position: {x: 150, y: -23, z: -0}
+    }, ['creep'], 'enemy', app.player.data.enemyTeam))
   }
 
-  // this func use external isEnemy but for localhero not enemy vs enemy
   isEnemy(name) {
     let test = this.enemies.filter(obj => obj.name && name.includes(obj.name));
     let test2 = this.creeps.filter(obj => obj.name && name.includes(obj.name));
