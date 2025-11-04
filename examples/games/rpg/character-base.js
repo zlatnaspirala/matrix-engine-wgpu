@@ -68,21 +68,21 @@ export class Character extends Hero {
       archetypes: ["creep"],
       path: 'res/meshes/glb/bot.glb',
       position: {x: 0, y: -23, z: 0}
-    }, ['creep'], 'friendly'));
-    this.friendlyLocal.creeps.push(new Creep({
-      core: this.core,
-      name: 'friendly_creeps1',
-      archetypes: ["creep"],
-      path: 'res/meshes/glb/bot.glb',
-      position: {x: 150, y: -23, z: 0}
-    }, ['creep'], 'friendly'));
-    this.friendlyLocal.creeps.push(new Creep({
-      core: this.core,
-      name: 'friendly_creeps2',
-      archetypes: ["creep"],
-      path: 'res/meshes/glb/bot.glb',
-      position: {x: 100, y: -23, z: 0}
-    }, ['creep'], 'friendly'));
+    }, ['creep'], 'friendly', app.player.data.team));
+    // this.friendlyLocal.creeps.push(new Creep({
+    //   core: this.core,
+    //   name: 'friendly_creeps1',
+    //   archetypes: ["creep"],
+    //   path: 'res/meshes/glb/bot.glb',
+    //   position: {x: 150, y: -23, z: 0}
+    // }, ['creep'], 'friendly', app.player.data.team));
+    // this.friendlyLocal.creeps.push(new Creep({
+    //   core: this.core,
+    //   name: 'friendly_creeps2',
+    //   archetypes: ["creep"],
+    //   path: 'res/meshes/glb/bot.glb',
+    //   position: {x: 100, y: -23, z: 0}
+    // }, ['creep'], 'friendly', app.player.data.team));
   }
 
   async loadLocalHero(p) {
@@ -304,6 +304,7 @@ export class Character extends Hero {
   }
 
   setWalkCreep(creepIndex) {
+     console.info(`%cfriendly setWalkCreep!`, LOG_MATRIX)
     if(this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].glb.animationIndex != this.friendlyCreepAnimationArrange.walk) {
       app.net.send({
         remoteName: this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].position.remoteName,
@@ -396,12 +397,12 @@ export class Character extends Hero {
             lc.creepFocusAttackOn = app.enemies.creeps.filter((creep) => creep.name == e.detail.B.id)[0];
           }
           app.localHero.setAttackCreep(e.detail.B.id[e.detail.B.id.length - 1]);
-          console.info('close distance B is friendly:', e.detail.A.group)
+          console.info('creep vs creep ')
         }
       } else if(e.detail.A.group == "friendly") {
         // console.info('close distance A is friendly:', e.detail.A.group)
         if(e.detail.B.group == "enemy") {
-          console.info('close distance B is enemies:', e.detail.A.group)
+          // console.info('close distance B is enemies:', e.detail.A.group)
           //------------------
           //------------------ BLOCK
           let lc = app.localHero.friendlyLocal.creeps.filter((localCreep) => localCreep.name == e.detail.A.id)[0];
@@ -411,7 +412,8 @@ export class Character extends Hero {
             lc.creepFocusAttackOn = app.enemies.creeps.filter((creep) => creep.name == e.detail.B.id)[0];
           }
           app.localHero.setAttackCreep(e.detail.A.id[e.detail.A.id.length - 1]);
-          console.info('close distance A is friendly:', e.detail.A.group)
+          console.info('creep vs creep ')
+          // console.info('close distance A is friendly:', e.detail.A.group)
         }
       }
       // if(this.heroFocusAttackOn && this.heroFocusAttackOn.name.indexOf(e.detail.A.id) != -1) {
@@ -425,8 +427,8 @@ export class Character extends Hero {
 
     // must be sync with networking... in future
     // -------------------------------------------
-    addEventListener(`animationEnd-${this.name}`, (e) => {
-      // console.log('ANIMATION END INITIAL NAME ', this.name)
+    addEventListener(`animationEnd-${this.heroe_bodies[0].name}`, (e) => {
+      console.log('ANIMATION END INITIAL NAME !!!!!!!!!!!!!!!!', this.name)
       // CHECK DISTANCE
       if(e.detail.animationName != 'attack') {
         //--------------------------------
@@ -434,7 +436,7 @@ export class Character extends Hero {
         //--------------------------------
       }
       if(this.heroFocusAttackOn == null) {
-        // console.info('test collide...', e.detail.animationName)
+        console.info('animationEnd test collide. [heroFocusAttackOn == null ]..', e.detail.animationName)
         let isEnemiesClose = false; // on close distance 
         this.core.enemies.enemies.forEach((enemy) => {
           let tt = this.core.RPG.distance3D(

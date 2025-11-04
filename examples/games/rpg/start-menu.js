@@ -6,6 +6,14 @@ import {HERO_ARCHETYPES} from "./hero.js";
 
 /**
  * @name forestOfHollowBloodStartSceen
+ * 
+ * @licence
+ * Creative Commons Attribution 4.0 International (CC BY 4.0)
+ * You are free to share and adapt this project, provided that you give appropriate credit.
+ * Attribution requirement:
+ * Include the following notice (with working link) in any distributed version or about page:
+ * 
+ * "Forest Of Hollow Blood — an RPG example made with MatrixEngineWGPU (https://github.com/zlatnaspirala/matrix-engine-wgpu)"
  * @Note
  * “Character and animation assets from Mixamo,
  * used under Adobe’s royalty‑free license. 
@@ -27,12 +35,12 @@ import {HERO_ARCHETYPES} from "./hero.js";
  **/
 let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
   useSingleRenderPass: true,
-  canvasSize: {w: window.visualViewport.width, h: window.visualViewport.height + 100},//'fullscreen',
+  canvasSize: 'fullscreen', // {w: window.visualViewport.width, h: window.visualViewport.height }
   mainCameraParams: {
     type: 'WASD',
     responseCoef: 1000
   },
-  clearColor: {r: 0, b: 0.122, g: 0.122, a: 1}
+  clearColor: {r: 0, b: 0.1, g: 0.1, a: 1}
 }, (forestOfHollowBloodStartSceen) => {
 
   forestOfHollowBloodStartSceen.heroByBody = [];
@@ -42,6 +50,10 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
   // Audios
   forestOfHollowBloodStartSceen.matrixSounds.createAudio('music', 'res/audios/rpg/wizard-rider.mp3', 1)
   forestOfHollowBloodStartSceen.matrixSounds.createAudio('win1', 'res/audios/rpg/feel.mp3', 2);
+
+  forestOfHollowBloodStartSceen.matrixSounds.createAudio('hover', 'res/audios/kenney/mp3/click3.mp3', 2);
+  forestOfHollowBloodStartSceen.matrixSounds.createAudio('feel', 'res/audios/rpg/feel.mp3', 2);
+
   let heros = null;
 
   // Networking
@@ -104,7 +116,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
   function determinateSelection() {
 
     if(checkHeroStatus() == true) {
-      console.log("hero used keep graphics no send ")
+      console.log("hero used keep graphics no send ");
       return;
     }
 
@@ -182,7 +194,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
       data: Date.now()
     })
 
-    if (typeof preventEmit === 'undefined') forestOfHollowBloodStartSceen.net.sendOnlyData({
+    if(typeof preventEmit === 'undefined') forestOfHollowBloodStartSceen.net.sendOnlyData({
       type: 'start'
     })
 
@@ -597,12 +609,12 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
       </div>
     `;
     startBtn.addEventListener('click', (e) => {
-      // console.log('START', app.selectedHero)
       if(app.net.connection == null) {
-        console.log('app.net.connection is null let join gameplay sesion... Wait list.', app.selectedHero)
+        // console.log('app.net.connection is null let join gameplay sesion... Wait list.', app.selectedHero)
         byId('join-btn').click();
         byId("startBtnText").innerHTML = 'Waiting for others...';
         e.target.disabled = true;
+        app.matrixSounds.play('feel');
         return;
       } else {
         console.log('nothing...', app.selectedHero)
@@ -662,6 +674,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
     hud.appendChild(aboutBtn);
 
     const loader = document.createElement("div");
+    loader.id = 'loader';
     Object.assign(loader.style, {
       position: "fixed",
       display: 'flex',
@@ -678,9 +691,9 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
       background: '#000000ff',
       fontSize: '16px',
       cursor: 'url(./res/icons/default.png) 0 0, auto',
-      pointerEvents: 'auto'
+      pointerEvents: 'auto',
+      filter: 'grayscale(1)'
     });
-    // loader.classList.add('buttonMatrix');
     loader.innerHTML = `
       <div class="loader">
         <div class="progress-container">
@@ -689,31 +702,25 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
         <div class="counter" id="counter">0%</div>
       </div>
     `;
-    loader.addEventListener('click', (e) => {
-      app.matrixSounds.play('music');
-    });
+    loader.addEventListener('click', (e) => {app.matrixSounds.play('music');});
     hud.appendChild(loader);
-    // console.log('help dom, ', byId('helpBox'))
 
     let progress = 0;
     let bar = null;
     let counter = null;
-
     function fakeProgress() {
       if(progress < 100) {
-        // Random step to look "non-linear"
         progress += Math.random() * 5;
         if(progress > 100) progress = 100;
         bar.style.width = progress + '%';
         counter.textContent = Math.floor(progress) + '%';
+        let grayEffect = 30 / progress;
+        byId('loader').style.filter = `grayscale(${grayEffect})`;
         setTimeout(fakeProgress, 80 + Math.random() * 150);
       } else {
         counter.textContent = "Let the game begin!";
         bar.style.boxShadow = "0 0 30px #00ff99";
-
-        setTimeout(() => {
-          loader.remove();
-        }, 250)
+        setTimeout(() => {loader.remove();}, 250)
       }
     }
 
@@ -723,13 +730,28 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
       fakeProgress()
     }, 300);
 
-    //
     hud.appendChild(previusBtn);
     hud.appendChild(desc);
     hud.appendChild(nextBtn);
     hud.appendChild(startBtn);
     document.body.appendChild(hud);
     updateDesc();
+
+
+    document.querySelectorAll('.buttonMatrix').forEach(el => {
+      el.addEventListener('mouseenter', () => {
+        app.matrixSounds.play('hover');
+      });
+    });
+
+    function firstClick() {
+      console.log('ONLCE ')
+      app.matrixSounds.play('music');
+      removeEventListener('click', firstClick);
+    }
+    addEventListener('click', firstClick);
+
+
   }
 })
 window.app = forestOfHollowBloodStartSceen;

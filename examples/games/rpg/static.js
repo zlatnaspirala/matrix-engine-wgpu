@@ -1,6 +1,4 @@
 
-// No change data type
-
 export const startUpPositions = {
   south: [-800, -23, 800],
   north: [800, -23, -800]

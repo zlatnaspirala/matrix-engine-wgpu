@@ -111,7 +111,7 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
         console.log('<data-receive damage for local hero !>', d)
       }
       let d = JSON.parse(e.detail.data);
-      if(d.type = "damage") {
+      if(d.type == "damage") {
         // string
         console.log('<data-receive damage for >', d.defenderName);
         let IsEnemyHeroObj = forestOfHollowBlood.enemies.enemies.find((enemy) => enemy.name === d.defenderName);
@@ -139,6 +139,20 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
               startUpPositions[forestOfHollowBlood.player.data.team][2]
             );
           }
+        }
+      } else if ("damage-creep") {
+        console.log('<data-receive damage creep team:', d.defenderTeam);
+        // true always 
+        if (app.player.data.team == d.defenderTeam) {
+          // get last char from string defenderName
+          let getCreepByIndex = parseInt(d.defenderName[d.defenderName.length-1]);
+          app.localHero.friendlyLocal.creeps[getCreepByIndex]
+            .heroe_bodies[0].effects.energyBar.setProgress(d.progress);
+          if (d.progress == 0) {
+            app.localHero.friendlyLocal.creeps[getCreepByIndex].setDead();
+            app.localHero.friendlyLocal.creeps[getCreepByIndex].setStartUpPosition();
+          }
+
         }
       }
     })

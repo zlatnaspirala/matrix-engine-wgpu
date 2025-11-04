@@ -540,6 +540,14 @@ var _hero = require("./hero.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 /**
  * @name forestOfHollowBloodStartSceen
+ * 
+ * @licence
+ * Creative Commons Attribution 4.0 International (CC BY 4.0)
+ * You are free to share and adapt this project, provided that you give appropriate credit.
+ * Attribution requirement:
+ * Include the following notice (with working link) in any distributed version or about page:
+ * 
+ * "Forest Of Hollow Blood — an RPG example made with MatrixEngineWGPU (https://github.com/zlatnaspirala/matrix-engine-wgpu)"
  * @Note
  * “Character and animation assets from Mixamo,
  * used under Adobe’s royalty‑free license. 
@@ -561,19 +569,16 @@ function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e
  **/
 let forestOfHollowBloodStartSceen = new _world.default({
   useSingleRenderPass: true,
-  canvasSize: {
-    w: window.visualViewport.width,
-    h: window.visualViewport.height + 100
-  },
-  //'fullscreen',
+  canvasSize: 'fullscreen',
+  // {w: window.visualViewport.width, h: window.visualViewport.height }
   mainCameraParams: {
     type: 'WASD',
     responseCoef: 1000
   },
   clearColor: {
     r: 0,
-    b: 0.122,
-    g: 0.122,
+    b: 0.1,
+    g: 0.1,
     a: 1
   }
 }, forestOfHollowBloodStartSceen => {
@@ -584,6 +589,8 @@ let forestOfHollowBloodStartSceen = new _world.default({
   // Audios
   forestOfHollowBloodStartSceen.matrixSounds.createAudio('music', 'res/audios/rpg/wizard-rider.mp3', 1);
   forestOfHollowBloodStartSceen.matrixSounds.createAudio('win1', 'res/audios/rpg/feel.mp3', 2);
+  forestOfHollowBloodStartSceen.matrixSounds.createAudio('hover', 'res/audios/kenney/mp3/click3.mp3', 2);
+  forestOfHollowBloodStartSceen.matrixSounds.createAudio('feel', 'res/audios/rpg/feel.mp3', 2);
   let heros = null;
 
   // Networking
@@ -1135,12 +1142,12 @@ let forestOfHollowBloodStartSceen = new _world.default({
       </div>
     `;
     startBtn.addEventListener('click', e => {
-      // console.log('START', app.selectedHero)
       if (app.net.connection == null) {
-        console.log('app.net.connection is null let join gameplay sesion... Wait list.', app.selectedHero);
+        // console.log('app.net.connection is null let join gameplay sesion... Wait list.', app.selectedHero)
         (0, _utils.byId)('join-btn').click();
         (0, _utils.byId)("startBtnText").innerHTML = 'Waiting for others...';
         e.target.disabled = true;
+        app.matrixSounds.play('feel');
         return;
       } else {
         console.log('nothing...', app.selectedHero);
@@ -1196,6 +1203,7 @@ let forestOfHollowBloodStartSceen = new _world.default({
     aboutBtn.addEventListener('click', e => app.showAbout());
     hud.appendChild(aboutBtn);
     const loader = document.createElement("div");
+    loader.id = 'loader';
     Object.assign(loader.style, {
       position: "fixed",
       display: 'flex',
@@ -1212,9 +1220,9 @@ let forestOfHollowBloodStartSceen = new _world.default({
       background: '#000000ff',
       fontSize: '16px',
       cursor: 'url(./res/icons/default.png) 0 0, auto',
-      pointerEvents: 'auto'
+      pointerEvents: 'auto',
+      filter: 'grayscale(1)'
     });
-    // loader.classList.add('buttonMatrix');
     loader.innerHTML = `
       <div class="loader">
         <div class="progress-container">
@@ -1227,18 +1235,17 @@ let forestOfHollowBloodStartSceen = new _world.default({
       app.matrixSounds.play('music');
     });
     hud.appendChild(loader);
-    // console.log('help dom, ', byId('helpBox'))
-
     let progress = 0;
     let bar = null;
     let counter = null;
     function fakeProgress() {
       if (progress < 100) {
-        // Random step to look "non-linear"
         progress += Math.random() * 5;
         if (progress > 100) progress = 100;
         bar.style.width = progress + '%';
         counter.textContent = Math.floor(progress) + '%';
+        let grayEffect = 30 / progress;
+        (0, _utils.byId)('loader').style.filter = `grayscale(${grayEffect})`;
         setTimeout(fakeProgress, 80 + Math.random() * 150);
       } else {
         counter.textContent = "Let the game begin!";
@@ -1253,14 +1260,23 @@ let forestOfHollowBloodStartSceen = new _world.default({
       counter = document.getElementById('counter');
       fakeProgress();
     }, 300);
-
-    //
     hud.appendChild(previusBtn);
     hud.appendChild(desc);
     hud.appendChild(nextBtn);
     hud.appendChild(startBtn);
     document.body.appendChild(hud);
     updateDesc();
+    document.querySelectorAll('.buttonMatrix').forEach(el => {
+      el.addEventListener('mouseenter', () => {
+        app.matrixSounds.play('hover');
+      });
+    });
+    function firstClick() {
+      console.log('ONLCE ');
+      app.matrixSounds.play('music');
+      removeEventListener('click', firstClick);
+    }
+    addEventListener('click', firstClick);
   }
 });
 window.app = forestOfHollowBloodStartSceen;
@@ -24471,11 +24487,11 @@ class BVHPlayerInstances extends _meshObjInstances.default {
       setTimeout(() => {
         this.sharedState.animationStarted = false;
         // specific rule for naming (some from blender source)
-        let n = this.name;
-        if (this.name.indexOf('_') != -1) {
-          n = this.name.split('_')[0];
-        }
-        dispatchEvent(new CustomEvent(`animationEnd-${n}`, {
+        // let n = this.name;
+        // if(this.name.indexOf('_') != -1) {
+        //   n = this.name.split('_')[0];
+        // }
+        dispatchEvent(new CustomEvent(`animationEnd-${this.name}`, {
           detail: {
             animationName: this.glb.glbJsonData.animations[this.glb.animationIndex].name
           }
@@ -26481,7 +26497,7 @@ class Position {
   constructor(x, y, z) {
     // console.log('TEST TYTPOF ', x)
     // Not in use for nwo this is from matrix-engine project [nameUniq]
-    this.nameUniq = null; // not in use
+    this.remoteName = null; // not in use
     this.netObject = null;
     this.netTolerance = 1;
     this.netTolerance__ = 0;
@@ -26552,6 +26568,7 @@ class Position {
         if (this.netObject != null) {
           if (this.netTolerance__ > this.netTolerance) {
             app.net.send({
+              remoteName: this.remoteName,
               sceneName: this.netObject,
               netPos: {
                 x: this.x,
@@ -26573,6 +26590,7 @@ class Position {
         if (this.netObject != null) {
           if (this.netTolerance__ > this.netTolerance) {
             app.net.send({
+              remoteName: this.remoteName,
               sceneName: this.netObject,
               netPos: {
                 x: this.x,
@@ -26629,7 +26647,7 @@ exports.Position = Position;
 class Rotation {
   constructor(x, y, z) {
     // Not in use for nwo this is from matrix-engine project [nameUniq]
-    this.nameUniq = null;
+    this.remoteName = null;
     this.emitX = null;
     this.emitY = null;
     this.emitZ = null;
@@ -26675,6 +26693,14 @@ class Rotation {
   }
   getRotX() {
     if (this.rotationSpeed.x == 0) {
+      if (this.netx != this.x && this.emitX) {
+        app.net.send({
+          remoteName: this.remoteName,
+          sceneName: this.emitX,
+          netRotX: this.x
+        });
+      }
+      this.netx = this.x;
       return (0, _utils.degToRad)(this.x);
     } else {
       this.x = this.x + this.rotationSpeed.x * 0.001;
@@ -26685,6 +26711,7 @@ class Rotation {
     if (this.rotationSpeed.y == 0) {
       if (this.nety != this.y && this.emitY) {
         app.net.send({
+          remoteName: this.remoteName,
           sceneName: this.emitY,
           netRotY: this.y
         });
@@ -26698,6 +26725,14 @@ class Rotation {
   }
   getRotZ() {
     if (this.rotationSpeed.z == 0) {
+      if (this.netz != this.z && this.emitZ) {
+        app.net.send({
+          remoteName: this.remoteName,
+          sceneName: this.emitZ,
+          netRotZ: this.z
+        });
+      }
+      this.nety = this.y;
       return (0, _utils.degToRad)(this.z);
     } else {
       this.z = this.z + this.rotationSpeed.z * 0.001;
@@ -28137,17 +28172,20 @@ class MatrixStream {
       e.data = JSON.parse(e.data);
       // console.log('REMOTE UPDATE::::', e);
       if (e.data.netPos) {
-        if (app.getSceneObjectByName(e.data.sceneName)) {
+        if (e.data.remoteName != null) {
+          // console.log('REMOTE UPDATE:::remote:', e);
+          app.getSceneObjectByName(e.data.remoteName).position.setPosition(e.data.netPos.x, e.data.netPos.y, e.data.netPos.z);
+        } else {
           app.getSceneObjectByName(e.data.sceneName).position.setPosition(e.data.netPos.x, e.data.netPos.y, e.data.netPos.z);
         }
       } else if (e.data.netRotY || e.data.netRotY == 0) {
-        app.getSceneObjectByName(e.data.sceneName).rotation.y = e.data.netRotY;
+        app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).rotation.y = e.data.netRotY;
       } else if (e.data.netRotX) {
-        app.getSceneObjectByName(e.data.sceneName).rotation.x = e.data.netRotX;
+        app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).rotation.x = e.data.netRotX;
       } else if (e.data.netRotZ) {
-        app.getSceneObjectByName(e.data.sceneName).rotation.z = e.data.netRotZ;
+        app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).rotation.z = e.data.netRotZ;
       } else if (e.data.animationIndex || e.data.animationIndex == 0) {
-        app.getSceneObjectByName(e.data.sceneName).glb.animationIndex = e.data.animationIndex;
+        app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).glb.animationIndex = e.data.animationIndex;
       } else if (e.data.followPath) {
         this.onFollowPath(e);
       }
