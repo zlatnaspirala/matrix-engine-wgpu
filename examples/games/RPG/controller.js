@@ -74,6 +74,7 @@ export class Controller {
         }));
       } else {
         // for now
+        console.log("navigate friendly_creeps creep from controller :", e.detail.hitObject.name);
         dispatchEvent(new CustomEvent('navigate-friendly_creeps', {detail: 'test'}))
         // must be friendly objs
         return;

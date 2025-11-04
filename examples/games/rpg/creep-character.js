@@ -197,9 +197,12 @@ export class Creep extends Hero {
                 isEnemiesClose = true;
                 this.calcDamage(this, enemy);
               } else {
-                console.log(`%c this.creepFocusAttackOn = null; NO ATTACK clear `, LOG_MATRIX)
+                console.log(`%c creepFocusAttackOn = null; (fcreep vs enemy hero)(navigate-friendly_creeps1) `, LOG_MATRIX)
                 this.creepFocusAttackOn = null;
-                dispatchEvent(new CustomEvent('navigate-friendly_creeps', {detail: 'test'}))
+                dispatchEvent(new CustomEvent('navigate-friendly_creeps', {detail: {
+                  localCreepNav: this,
+                  index: this.name[this.name.length-1]
+                }}))
               }
             })
             // if(isEnemiesClose == false) this.setIdle();
@@ -218,7 +221,7 @@ export class Creep extends Hero {
                   return;
                 } else {
                   // leave it go creep to your goals...
-                  console.log(`%c[creep] navigate-friendly_creeps...`, LOG_MATRIX)
+                  console.log(`%c creepFocusAttackOn != null; (fcreep vs enemy hero)(navigate-friendly_creeps2) `, LOG_MATRIX)
                   this.creepFocusAttackOn = null;
                   dispatchEvent(new CustomEvent('navigate-friendly_creeps', {detail: 'test'}))
                 }
@@ -235,17 +238,15 @@ export class Creep extends Hero {
                   this.calcDamage(this, creep);
                 } else {
                   // leave it go creep to your goals...
+                  console.log(`%c creepFocusAttackOn = null; (fcreep vs creeps)(navigate-friendly_creeps3) `, LOG_MATRIX)
                   this.creepFocusAttackOn = null;
+                  dispatchEvent(new CustomEvent('navigate-friendly_creeps', {detail: 'test'}))
                 }
               }
             })
           }
-
         }
-
       })
     }
-
   }
-
 }

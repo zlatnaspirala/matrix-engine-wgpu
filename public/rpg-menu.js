@@ -28186,8 +28186,6 @@ class MatrixStream {
         app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).rotation.z = e.data.netRotZ;
       } else if (e.data.animationIndex || e.data.animationIndex == 0) {
         app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).glb.animationIndex = e.data.animationIndex;
-      } else if (e.data.followPath) {
-        this.onFollowPath(e);
       }
 
       // add custom option
