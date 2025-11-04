@@ -165,12 +165,9 @@ export class Creep extends Hero {
         this.setDead();
         console.info(`%c creep dead [${this.name}], attacker[${e.detail.attacker}]`, LOG_MATRIX)
         setTimeout(() => {
-          this.setStartUpPosition()
+          this.setStartUpPosition();
+          this.setWalk();
         }, 2000);
-
-
-
-
         // e.detail.attacker.killEnemy(e.detail.defenderLevel);
 
       }

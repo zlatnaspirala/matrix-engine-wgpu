@@ -225,11 +225,18 @@ export class Character extends Hero {
     console.log('[navigateCreeps() CALL!');
     app.localHero.friendlyLocal.creeps.forEach((creep, index) => {
       this.navigateCreep(creep, index);
-      if(creep.creepFocusAttackOn != null) {
-        console.log('[navigateCreeps()][friendlyLocal][creep.creepFocusAttackOn] is on action chech for small interval again....!', creep);
-        return;
-      }
+      // if(creep.creepFocusAttackOn != null) {
+      //   console.log('[navigateCreeps()][friendlyLocal][creep.creepFocusAttackOn] is on action chech for small interval again....!', creep);
+      //   return;
+      // }
     })
+  }
+
+  distance3DArrayInput(a, b) {
+    const dx = a[0] - b[0];
+    const dy = a[1] - b[1];
+    const dz = a[2] - b[2];
+    return Math.sqrt(dx * dx + dy * dy + dz * dz);
   }
 
   navigateCreep(creep, index) {
@@ -237,12 +244,31 @@ export class Character extends Hero {
       console.log('test attacher nuuu return ');
       return;
     }
+
     creep.firstPoint = creepPoints[this.core.player.data.team].firstPoint;
     creep.finalPoint = creepPoints[this.core.player.data.team].finalPoint;
     const start = [creep.heroe_bodies[0].position.x, creep.heroe_bodies[0].position.y, creep.heroe_bodies[0].position.z];
+    let test = this.distance3DArrayInput(creep.firstPoint, start);
+    console.log('test POINT ' + test);
+    if(test < 20) {
+      creep.gotoFinal = true;
+    }
+
     const end = [creep.firstPoint[0], creep.firstPoint[1], creep.firstPoint[2]];
     const endFinal = [creep.finalPoint[0], creep.finalPoint[1], creep.finalPoint[2]];
-    const path = this.core.RPG.nav.findPath(start, end);
+
+    let path;
+    if(creep.gotoFinal) {
+      if(creep.gotoFinal == true) {
+        path = this.core.RPG.nav.findPath(start, endFinal);
+      } else {
+        path = this.core.RPG.nav.findPath(start, end);
+      }
+    } else {
+      path = this.core.RPG.nav.findPath(start, end);
+    }
+
+
     if(!path || path.length === 0) {console.warn('No valid path found.'); return;}
     this.setWalkCreep(index);
     followPath(creep.heroe_bodies[0], path, this.core);
@@ -277,7 +303,7 @@ export class Character extends Hero {
         sceneName: subMesh.name,
         animationIndex: subMesh.glb.animationIndex
       })
-      // console.info(`%chero dead`, LOG_MATRIX)
+      console.info(`%chero dead`, LOG_MATRIX)
     });
   }
 
@@ -307,25 +333,25 @@ export class Character extends Hero {
   setWalkCreep(creepIndex) {
     console.info(`%cfriendly setWalkCreep!`, LOG_MATRIX)
     if(this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].glb.animationIndex != this.friendlyCreepAnimationArrange.walk) {
+      this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].glb.animationIndex = this.friendlyCreepAnimationArrange.walk;
       app.net.send({
         remoteName: this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].position.remoteName,
         sceneName: 'not in use',
         animationIndex: this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].glb.animationIndex
       })
     }
-    this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].glb.animationIndex = this.friendlyCreepAnimationArrange.walk;
   }
 
   setAttackCreep(creepIndex) {
     console.info(`%cfriendly creep attack enemy!`, LOG_MATRIX)
     if(this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].glb.animationIndex != this.friendlyCreepAnimationArrange.attack) {
+      this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].glb.animationIndex = this.friendlyCreepAnimationArrange.attack;
       app.net.send({
         remoteName: this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].position.remoteName,
         sceneName: 'not in use',
         animationIndex: this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].glb.animationIndex
       })
     }
-    this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].glb.animationIndex = this.friendlyCreepAnimationArrange.attack;
   }
 
   attachEvents() {
@@ -440,13 +466,15 @@ export class Character extends Hero {
         console.info('animationEnd [heroFocusAttackOn == null ]', e.detail.animationName)
         let isEnemiesClose = false; // on close distance 
         this.core.enemies.enemies.forEach((enemy) => {
-          let tt = this.core.RPG.distance3D(
-            this.heroe_bodies[0].position,
-            enemy.heroe_bodies[0].position);
-          if(tt < this.core.RPG.distanceForAction) {
-            console.log(`%c ATTACK DAMAGE ${enemy.heroe_bodies[0].name}`, LOG_MATRIX)
-            isEnemiesClose = true;
-            this.calcDamage(this, enemy);
+          if(enemy.heroe_bodies) {
+            let tt = this.core.RPG.distance3D(
+              this.heroe_bodies[0].position,
+              enemy.heroe_bodies[0].position);
+            if(tt < this.core.RPG.distanceForAction) {
+              console.log(`%c ATTACK DAMAGE ${enemy.heroe_bodies[0].name}`, LOG_MATRIX)
+              isEnemiesClose = true;
+              this.calcDamage(this, enemy);
+            }
           }
         })
         if(isEnemiesClose == false) this.setIdle();
