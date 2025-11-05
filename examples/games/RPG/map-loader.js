@@ -73,10 +73,10 @@ export class MEMapLoader {
         enabled: true,
         energyBar: true,
         flameEffect: false,
-        flameEmitter: true,
-        circlePlane: false,
-        circlePlaneTex: true,
-        circlePlaneTexPath: './res/textures/rpg/magics/mariasword-2.png',
+        // flameEmitter: true,
+        // circlePlane: false,
+        // circlePlaneTex: true,
+        // circlePlaneTexPath: './res/textures/rpg/magics/mariasword-2.png',
       }
     }, null, glbFile01);
 
@@ -87,9 +87,9 @@ export class MEMapLoader {
       scale: [14, 13, 14],
       rotation: {x: 0, y: 90, z: 0},
       position: {
-        x: -780,
+        x: -1000,
         y: -10,
-        z: 950
+        z: 850
       },
       name: 'rocks2',
       texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
@@ -97,11 +97,7 @@ export class MEMapLoader {
       pointerEffect: {
         enabled: true,
         energyBar: true,
-        flameEffect: false,
-        flameEmitter: true,
-        circlePlane: false,
-        circlePlaneTex: true,
-        circlePlaneTexPath: './res/textures/rpg/magics/mariasword-2.png',
+        flameEffect: false
       }
     }, null, glbFile01);
 
@@ -260,20 +256,15 @@ export class MEMapLoader {
       rock.updateInstances(NUM2);
       for(var x = 0;x < NUM2;x++) {
         let instance;
-        if(x == 0) {
-          instance = rock.instanceTargets[x];
-          instance.position[0] = 200;
-          instance.position[2] = 0;
-          instance.position[1] = 0;
-        } else if(x < 8) {
+         if(x < 8) {
           instance = rock.instanceTargets[x];
           instance.position[0] = 0;
-          instance.position[2] = -2200 + x * 250;
+          instance.position[2] = -2000 + x * 250;
           instance.position[1] = 0;
         } else if(x < 16) {
           instance = rock.instanceTargets[x];
-          instance.position[0] = 2500;
-          instance.position[2] = -2200 + (x-8) * 250;
+          instance.position[0] = 1900;
+          instance.position[2] = -1800 + (x-8) * 250;
           instance.position[1] = 0;
         } 
 
