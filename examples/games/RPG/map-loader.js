@@ -53,16 +53,17 @@ export class MEMapLoader {
     });
 
 
-    console.log('FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF',  startUpPositions['south'][0])
+    console.log('FFFFFFFFFFFFFFFFFFFROCKFFFFFFFFFFFFFF',  startUpPositions['south'][0])
     // wood-house-1
-    var glbFile01 = await fetch('./res/meshes/glb/wood-house-1.glb').then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, this.core.device)));
+    //https://sketchfab.com/search?features=downloadable&licenses=7c23a1ba438d4306920229c12afcb5f9&licenses=322a749bcfa841b29dff1e8a1bb74b0b&q=rock&type=models
+    var glbFile01 = await fetch('./res/meshes/env/rocks/rock1.glb').then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, this.core.device)));
     this.core.addGlbObjInctance({
-      material: {type: 'standard', useTextureFromGlb: true},
-      scale: [20, 20, 20],
+      material: {type: 'power', useTextureFromGlb: true},
+      scale: [10, 10, 10],
       position: {
         x: startUpPositions['south'][0],
         y: startUpPositions['south'][1],
-        z: startUpPositions['south'][2]
+        z: 0
       },
       name: 'homeBase',
       texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
@@ -77,6 +78,7 @@ export class MEMapLoader {
         circlePlaneTexPath: './res/textures/rpg/magics/mariasword-2.png',
       }
     }, null, glbFile01);
+
 
 
     // let t = this.core.mainRenderBundle.filter((r) => r.name.indexOf('friendly-tower') != -1)[0];

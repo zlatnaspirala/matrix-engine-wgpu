@@ -2617,19 +2617,20 @@ class MEMapLoader {
         radius: 1.5
       }
     });
-    console.log('FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF', _static.startUpPositions['south'][0]);
+    console.log('FFFFFFFFFFFFFFFFFFFROCKFFFFFFFFFFFFFF', _static.startUpPositions['south'][0]);
     // wood-house-1
-    var glbFile01 = await fetch('./res/meshes/glb/wood-house-1.glb').then(res => res.arrayBuffer().then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, this.core.device)));
+    //https://sketchfab.com/search?features=downloadable&licenses=7c23a1ba438d4306920229c12afcb5f9&licenses=322a749bcfa841b29dff1e8a1bb74b0b&q=rock&type=models
+    var glbFile01 = await fetch('./res/meshes/env/rocks/rock1.glb').then(res => res.arrayBuffer().then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, this.core.device)));
     this.core.addGlbObjInctance({
       material: {
-        type: 'standard',
+        type: 'power',
         useTextureFromGlb: true
       },
-      scale: [20, 20, 20],
+      scale: [10, 10, 10],
       position: {
         x: _static.startUpPositions['south'][0],
         y: _static.startUpPositions['south'][1],
-        z: _static.startUpPositions['south'][2]
+        z: 0
       },
       name: 'homeBase',
       texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
