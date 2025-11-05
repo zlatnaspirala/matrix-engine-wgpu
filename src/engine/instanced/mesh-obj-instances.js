@@ -34,6 +34,9 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
     this.video = null;
     this.FINISH_VIDIO_INIT = false;
     this.globalAmbient = [...globalAmbient];
+
+    this.blendInstanced = false;
+
     if(typeof o.material.useTextureFromGlb === 'undefined' ||
       typeof o.material.useTextureFromGlb !== "boolean") {
       o.material.useTextureFromGlb = false;
@@ -916,7 +919,8 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
     pass.drawIndexed(this.indexCount, 1, 0, 0, 0);
 
     // pipelineBlended
-    pass.setPipeline(this.pipelineBlended);
+    if (this.blendInstanced == true) pass.setPipeline(this.pipelineBlended)
+      else pass.setPipeline(this.pipeline);
 
     for(var ins = 1;ins < this.instanceCount;ins++) {
       pass.drawIndexed(this.indexCount, 1, 0, 0, ins);

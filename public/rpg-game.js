@@ -2564,6 +2564,7 @@ function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e
  */
 class MEMapLoader {
   collectionOfTree1 = [];
+  collectionOfRocks = [];
   async loadNavMesh(navMapPath) {
     return new Promise(async (resolve, reject) => {
       try {
@@ -2617,25 +2618,26 @@ class MEMapLoader {
         radius: 1.5
       }
     });
-    console.log('FFFFFFFFFFFFFFFFFFFROCKFFFFFFFFFFFFFF', _static.startUpPositions['south'][0]);
+
+    // console.log('FFFFFFFFFFFFFFFFFFFROCKFFFFFFFFFFFFFF', startUpPositions['south'][0])
     // wood-house-1
     //https://sketchfab.com/search?features=downloadable&licenses=7c23a1ba438d4306920229c12afcb5f9&licenses=322a749bcfa841b29dff1e8a1bb74b0b&q=rock&type=models
     var glbFile01 = await fetch('./res/meshes/env/rocks/rock1.glb').then(res => res.arrayBuffer().then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, this.core.device)));
     this.core.addGlbObjInctance({
       material: {
-        type: 'power',
+        type: 'standard',
         useTextureFromGlb: true
       },
-      scale: [10, 10, 10],
+      scale: [14, 13, 14],
       position: {
-        x: _static.startUpPositions['south'][0],
-        y: _static.startUpPositions['south'][1],
-        z: 0
+        x: -780,
+        y: -10,
+        z: 950
       },
-      name: 'homeBase',
+      name: 'rocks1',
       texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
       raycast: {
-        enabled: true,
+        enabled: false,
         radius: 1.5
       },
       pointerEffect: {
@@ -2649,10 +2651,54 @@ class MEMapLoader {
       }
     }, null, glbFile01);
 
-    // let t = this.core.mainRenderBundle.filter((r) => r.name.indexOf('friendly-tower') != -1)[0];
-    // this.core.collisionSystem.register(`friendly-tower`, t.position, 15.0, 'tower');
-
-    this.core.lightContainer[0].position[1] = 170;
+    // on engine level must be upgraded "add rotation for instanced objs... on meshObjInstanced class..."
+    // FOr now i will use another scene obj but same loaded data - that ok
+    this.core.addGlbObjInctance({
+      material: {
+        type: 'standard',
+        useTextureFromGlb: true
+      },
+      scale: [14, 13, 14],
+      rotation: {
+        x: 0,
+        y: 90,
+        z: 0
+      },
+      position: {
+        x: -780,
+        y: -10,
+        z: 950
+      },
+      name: 'rocks2',
+      texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
+      raycast: {
+        enabled: false,
+        radius: 1.5
+      },
+      pointerEffect: {
+        enabled: true,
+        energyBar: true,
+        flameEffect: false,
+        flameEmitter: true,
+        circlePlane: false,
+        circlePlaneTex: true,
+        circlePlaneTexPath: './res/textures/rpg/magics/mariasword-2.png'
+      }
+    }, null, glbFile01);
+    setTimeout(() => {
+      this.collectionOfRocks = this.core.mainRenderBundle.filter(item => item.name.indexOf('rocks1') != -1);
+      this.collectionOfRocks.forEach(item => {
+        item.globalAmbient = [10, 10, 10];
+        // this.core.collisionSystem.register(`rock1`, item.position, 15.0, 'rock');
+      });
+      this.collectionOfRocks2 = this.core.mainRenderBundle.filter(item => item.name.indexOf('rocks2') != -1);
+      this.collectionOfRocks2.forEach(item => {
+        item.globalAmbient = [10, 10, 10];
+        // this.core.collisionSystem.register(`rock1`, item.position, 15.0, 'rock');
+      });
+      this.addInstancingRock();
+    }, 1500);
+    this.core.lightContainer[0].position[1] = 175;
     this.core.lightContainer[0].intesity = 1;
   }
   onTree(m) {
@@ -2750,7 +2796,7 @@ class MEMapLoader {
     setTimeout(() => {
       this.collectionOfTree1 = this.core.mainRenderBundle.filter(o => o.name.indexOf('tree') != -1);
       setTimeout(() => this.addInstancing(), 100);
-    }, 2000);
+    }, 2500);
   }
   addInstancing() {
     const spacing = 150;
@@ -2775,6 +2821,64 @@ class MEMapLoader {
           instance.color[1] = (0, _utils.randomFloatFromTo)(0.7, 1.0);
           instance.color[2] = (0, _utils.randomFloatFromTo)(0.5, 0.9);
         }
+      }
+    });
+  }
+  addInstancingRock() {
+    const NUM = 16;
+    this.collectionOfRocks.forEach(rock => {
+      rock.updateMaxInstances(NUM);
+      rock.updateInstances(NUM);
+      for (var x = 0; x < NUM; x++) {
+        let instance;
+        if (x == 0) {
+          instance = rock.instanceTargets[x];
+          instance.position[0] = 200;
+          instance.position[2] = 0;
+          instance.position[1] = 0;
+        } else if (x < 8) {
+          instance = rock.instanceTargets[x];
+          instance.position[0] = x * 250;
+          instance.position[2] = 0;
+          instance.position[1] = 0;
+        } else if (x < 16) {
+          instance = rock.instanceTargets[x];
+          instance.position[0] = (x - 8) * 250;
+          instance.position[2] = -2000;
+          instance.position[1] = 0;
+        }
+        instance.color[3] = 1;
+        instance.color[0] = 1;
+        instance.color[1] = 1;
+        instance.color[2] = 1;
+      }
+    });
+    const NUM2 = 16;
+    this.collectionOfRocks2.forEach(rock => {
+      rock.updateMaxInstances(NUM2);
+      rock.updateInstances(NUM2);
+      for (var x = 0; x < NUM2; x++) {
+        let instance;
+        if (x == 0) {
+          instance = rock.instanceTargets[x];
+          instance.position[0] = 200;
+          instance.position[2] = 0;
+          instance.position[1] = 0;
+        } else if (x < 8) {
+          instance = rock.instanceTargets[x];
+          instance.position[0] = 0;
+          instance.position[2] = -2200 + x * 250;
+          instance.position[1] = 0;
+        } else if (x < 16) {
+          instance = rock.instanceTargets[x];
+          instance.position[0] = 2500;
+          instance.position[2] = -2200 + (x - 8) * 250;
+          instance.position[1] = 0;
+        }
+        instance.color[3] = 1;
+        instance.color[0] = 1;
+        instance.color[1] = 1;
+        instance.color[2] = 1;
       }
     });
   }
@@ -24842,6 +24946,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
     this.video = null;
     this.FINISH_VIDIO_INIT = false;
     this.globalAmbient = [...globalAmbient];
+    this.blendInstanced = false;
     if (typeof o.material.useTextureFromGlb === 'undefined' || typeof o.material.useTextureFromGlb !== "boolean") {
       o.material.useTextureFromGlb = false;
     }
@@ -25717,7 +25822,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
     pass.drawIndexed(this.indexCount, 1, 0, 0, 0);
 
     // pipelineBlended
-    pass.setPipeline(this.pipelineBlended);
+    if (this.blendInstanced == true) pass.setPipeline(this.pipelineBlended);else pass.setPipeline(this.pipeline);
     for (var ins = 1; ins < this.instanceCount; ins++) {
       pass.drawIndexed(this.indexCount, 1, 0, 0, ins);
     }

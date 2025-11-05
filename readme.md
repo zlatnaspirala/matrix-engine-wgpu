@@ -612,12 +612,27 @@ Performance for Jamb game:
 
 <img width="860" height="640" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/performance.png?raw=true" />
 
-## License
+Special licence for RPG example:
+
+```
+Creative Commons Attribution 4.0 International (CC BY 4.0)
+
+You are free to share and adapt this project, provided that you give appropriate credit.
+Attribution requirement:
+Include the following notice (with working link) in any distributed version or about page:
+
+"Forest Of Hollow Blood — an RPG example made with MatrixEngineWGPU (https://github.com/zlatnaspirala/matrix-engine-wgpu)"
+
+```
+
+
+## License && Credits
 
 ### Usage Note
 
-You may use, modify, and sell projects based on this code — just keep this notice and included references intact.
+You may use, modify, and sell projects based on this code — just keep this notice and included references intact (whole licence paragraph).
 
+You need just to copy paste this text to about form on your web page or any other type of app.
 ---
 
 ### Attribution & Credits
