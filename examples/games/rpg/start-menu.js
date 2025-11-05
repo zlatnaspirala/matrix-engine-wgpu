@@ -289,7 +289,25 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
       let team = determinateTeam();
       newPlayer.setAttribute('data-hero-team', team);
       newPlayer.innerHTML = `<div id="${e.detail.connection.connectionId}-title" >Player:${e.detail.connection.connectionId} Team:${team}</div>`;
-      setTimeout(() => app.net.sendOnlyData({type: "team-notify", team: team}), 1500);
+      setTimeout(() => {
+
+        //---------- test
+        if(app.net.session.connection != null) {
+          console.log("Test team data moment", byId(`waiting-${app.net.session.connection.connectionId}`).getAttribute('data-hero-team'))
+          let testDom = byId(`waiting-${app.net.session.connection.connectionId}`).getAttribute('data-hero-team');
+          if(typeof testDom != 'string') {
+            console.low('Potencial error not handled....')
+          }
+          app.net.sendOnlyData({
+            type: "selectHeroIndex",
+            selectHeroIndex: app.selectedHero,
+            team: testDom
+          });
+        }
+        //----------
+
+        app.net.sendOnlyData({type: "team-notify", team: team})
+      }, 2000);
     } else {
       newPlayer.innerHTML = `<div id="${e.detail.connection.connectionId}-title" >Player:${e.detail.connection.connectionId}</div>`;
     }

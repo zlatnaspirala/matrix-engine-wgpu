@@ -3,6 +3,7 @@ import {downloadMeshes} from "../../../src/engine/loader-obj.js";
 import {uploadGLBModel} from "../../../src/engine/loaders/webgpu-gltf.js";
 import {LOG_FUNNY_SMALL, randomFloatFromTo, randomIntFromTo} from "../../../src/engine/utils.js";
 import NavMesh from "./nav-mesh.js";
+import {startUpPositions} from "./static.js";
 
 /**
  * @description
@@ -35,7 +36,7 @@ export class MEMapLoader {
     });
   }
 
-  onGround(m) {
+  async onGround(m) {
     this.core.addMeshObj({
       position: {x: 0, y: -5, z: -10},
       rotation: {x: 0, y: 0, z: 0},
@@ -51,25 +52,31 @@ export class MEMapLoader {
       raycast: {enabled: true, radius: 1.5}
     });
 
-    // this.core.addMeshObj({
-    //   // material: {type: 'standard', useTextureFromGlb: true},
-    //   scale: [5, 5, 5],
-    //   position: {x: -750, y: -35, z: 720},
-    //   name: 'friendly-tower',
-    //   mesh: m.tower,
-    //   texturesPaths: ['./res/textures/rpg/magics/2.png'],
-    //   // texturesPaths: ['./res/meshes/maps-objs/textures/map-bg.png'],
-    //   raycast: {enabled: true, radius: 1.5},
-    //   physics: {
-    //     enabled: false,
-    //     mass: 0,
-    //     geometry: "Cube"
-    //   },
-    //   pointerEffect: {
-    //     enabled: true,
-    //     flameEffect: true,
-    //   }
-    // });
+
+    console.log('FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF',  startUpPositions['south'][0])
+    // wood-house-1
+    var glbFile01 = await fetch('./res/meshes/glb/wood-house-1.glb').then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, this.core.device)));
+    this.core.addGlbObjInctance({
+      material: {type: 'standard', useTextureFromGlb: true},
+      scale: [20, 20, 20],
+      position: {
+        x: startUpPositions['south'][0],
+        y: startUpPositions['south'][1],
+        z: startUpPositions['south'][2]
+      },
+      name: 'homeBase',
+      texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
+      raycast: {enabled: true, radius: 1.5},
+      pointerEffect: {
+        enabled: true,
+        energyBar: true,
+        flameEffect: false,
+        flameEmitter: true,
+        circlePlane: false,
+        circlePlaneTex: true,
+        circlePlaneTexPath: './res/textures/rpg/magics/mariasword-2.png',
+      }
+    }, null, glbFile01);
 
 
     // let t = this.core.mainRenderBundle.filter((r) => r.name.indexOf('friendly-tower') != -1)[0];
