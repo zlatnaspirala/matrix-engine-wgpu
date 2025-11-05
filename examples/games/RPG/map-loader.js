@@ -65,6 +65,10 @@ export class MEMapLoader {
     //     mass: 0,
     //     geometry: "Cube"
     //   },
+    //   pointerEffect: {
+    //     enabled: true,
+    //     flameEffect: true,
+    //   }
     // });
 
 

@@ -2631,6 +2631,10 @@ class MEMapLoader {
     //     mass: 0,
     //     geometry: "Cube"
     //   },
+    //   pointerEffect: {
+    //     enabled: true,
+    //     flameEffect: true,
+    //   }
     // });
 
     // let t = this.core.mainRenderBundle.filter((r) => r.name.indexOf('friendly-tower') != -1)[0];
