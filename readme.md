@@ -2,7 +2,7 @@
 
 **Author:** Nikola Lukić
 📧 [zlatnaspirala@gmail.com](mailto:zlatnaspirala@gmail.com)
-📅 Version: 1.6.0             2025
+📅 Version: 1.6.0 2025
 
 ---
 
@@ -63,6 +63,8 @@ Published on npm as: **`matrix-engine-wgpu`**
 ---
 
 ### Camera Options
+
+For now translation is only with `WASD` keyboard keys.
 
 Supported types: `WASD`, `arcball`
 
@@ -174,13 +176,15 @@ app.lightContainer[0];
 ```
 
 Small behavior object.
- - For now just one ocs0 object
- Everytime if called than updated (light.position[0] = light.behavior.setPath0())
+
+- For now just one ocs0 object
+  Everytime if called than updated (light.position[0] = light.behavior.setPath0())
   behavior.setOsc0(min, max, step);
-  app.lightContainer[0].behavior.osc0.on_maximum_value = function() {/* what ever*/};
-  app.lightContainer[0].behavior.osc0.on_minimum_value = function() {/* what ever*/};
+  app.lightContainer[0].behavior.osc0.on_maximum_value = function() {/_ what ever_/};
+  app.lightContainer[0].behavior.osc0.on_minimum_value = function() {/_ what ever_/};
 
 Make light move by x.
+
 ```js
 loadObjFile.addLight();
 loadObjFile.lightContainer[0].behavior.setOsc0(-1, 1, 0.01);
@@ -191,15 +195,16 @@ loadObjFile.lightContainer[0].updater.push(light => {
 ```
 
 ### Materials
- With last glb feature materials become part of engine also.
+
+With last glb feature materials become part of engine also.
 
 material: {type: 'standard'}
 material: {type: 'pong'}
 material: {type: 'power'}
 
- - Standard is fully supported with lights shadow cast down (not for anims yet)
- - Pong 
- - Power - no shadows cast
+- Standard is fully supported with lights shadow cast down (not for anims yet)
+- Pong
+- Power - no shadows cast
 
 ```js
 // Also for addMeshObj
@@ -208,7 +213,6 @@ material: {type: 'power'},
 ...
 }, null, glbFile);
 ```
-
 
 ### Object Interaction (Raycasting)
 
@@ -401,10 +405,11 @@ export var loadObjsSequence = function () {
 ```
 
 💡 GLB binary loading bvh(rig)animations.
- - See examples glb-loader.js (build with npm run glb-loader)
- - Next update materials improvements!
- - Light affect just for first frame or t-pose.
- - For npm service import uploadGLBModel.
+
+- See examples glb-loader.js (build with npm run glb-loader)
+- Next update materials improvements!
+- Light affect just for first frame or t-pose.
+- For npm service import uploadGLBModel.
 
 From 1.6.0 glb support multi skinned mesh + mutli primitives cases.
 
@@ -413,29 +418,35 @@ glb loader not handled for non animation case. Use obj loader for static mesh.
 
 Must powerfull call is new class MEMeshObjInstances.
 MEMeshObj is good now for optimised call(less conditionals).
-You can add instanced draws and modify basic color for each individualy also 
+You can add instanced draws and modify basic color for each individualy also
 transformation good for fantazy or any game dev.
 
 Example:
+
 ```js
-   var glbFile01 = await fetch(p).then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, this.core.device)));
-      this.core.addGlbObjInctance({
-        material: {type: 'standard', useTextureFromGlb: true},
-        scale: [20, 20, 20],
-        position: {x: 0, y: -4, z: -220},
-        name: this.name,
-        texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
-        raycast: {enabled: true, radius: 1.5},
-        pointerEffect: {enabled: true}
-      }, null, glbFile01);
+var glbFile01 = await fetch(p).then(res =>
+  res.arrayBuffer().then(buf => uploadGLBModel(buf, this.core.device))
+);
+this.core.addGlbObjInctance(
+  {
+    material: {type: "standard", useTextureFromGlb: true},
+    scale: [20, 20, 20],
+    position: {x: 0, y: -4, z: -220},
+    name: this.name,
+    texturesPaths: ["./res/meshes/glb/textures/mutant_origin.png"],
+    raycast: {enabled: true, radius: 1.5},
+    pointerEffect: {enabled: true},
+  },
+  null,
+  glbFile01
+);
 
 // access  - index -0 is BASE MESH ! I added maxLimit = 5 you can change this from engine source.
 // added lepr smoot translate , also color+.
 app.mainRenderBundle[1].instanceTargets[1].position[2] = 10;
-// This recreate buffer it is not for loop call space 
-app.mainRenderBundle[1].updateInstances(5)
+// This recreate buffer it is not for loop call space
+app.mainRenderBundle[1].updateInstances(5);
 ```
-
 
 ### 📽️ Video textures
 
@@ -483,9 +494,48 @@ Will be fixxed in next update.
 Dimension (TextureViewDimension::e2DArray) of [TextureView of Texture "shadowTextureArray[GLOBAL] num of light 1"] doesn't match the expected dimension (TextureViewDimension::e2D).
 ```
 
+## Networking
+
+From 1.7.0 engine powered by networking. Used kurento&Openvidu server for backend.
+Very goot for handling streams, channels etc...
+
+See example code at `./examples/games/rpg/`
+
+Buildin net sync basic:
+Lets say app is engine root object and net is networking object.
+webRTC tech with openvidu server middleware server
+
+```js
+app.net = new MatrixStream({
+  active: true,
+  domain: "maximumroulette.com",
+  port: 2020,
+  sessionName: "forestOfHollowBlood-free-for-all",
+  resolution: "160x240",
+  isDataOnly: urlQuery.camera || urlQuery.audio ? false : true,
+  customData: forestOfHollowBlood.player.data,
+});
+
+// `customData` if you wanna pass some extra meta data on connection-created event
+// No need always camera and mic we can use is like data signaling only.
+```
+
+How to use buildin network operations:
+
+```js
+// Activate emiting remote position, on remote side adapted on scene object with same name
+sceneObject.position.netObject = sceneObject[0].name;
+// For now net view for rot is axis separated - cost is ok for orientaion remote pass
+sceneObject.rotation.emitY = sceneObject.name;
+// If you need oposite remote/local situation. For example:
+// you friendly object is enemy object at remote machine that just setup another flag
+sceneObject.position.netObject = sceneObject[0].name; // we still need this setup!
+sceneObject.position.remoteName = sceneObjecOposite[0].name;
+```
+
 ## About URLParams
 
-Buildin Url Param check for multiLang.
+Buildin Url Param check for multiLang. MultiLang feature is also buildin options.
 
 ```js
 urlQuery.lang;
@@ -533,13 +583,13 @@ This is static file storage.
 
 🎲 The first full app example will be a WebGPU-powered **Jamb 3d deluxe** game.
 
-
 ## RPG game WIP
 
-  Features done:
-   - Navigation mesh
-   - Hero class
-   - GLB animations
+Features done:
+
+- Navigation mesh
+- Hero class
+- GLB animations
 
 <img width="860" height="640" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/RPG.png?raw=true" />
 
@@ -558,10 +608,9 @@ This is static file storage.
 
 ---
 
-Performance for Jamb game: 
+Performance for Jamb game:
 
 <img width="860" height="640" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/performance.png?raw=true" />
-
 
 ## License
 
@@ -589,13 +638,14 @@ You may use, modify, and sell projects based on this code — just keep this not
   You cannot redistribute or sell the raw Mixamo character or animation files “as is” (i.e. as standalone assets) to others.You can’t use Mixamo content to create a competing library of characters / animations (i.e. you can’t just package them and sell them to others).
   You can’t use Mixamo’s content (or outputs) to train AI / machine learning models.
 
- - Used free assets from great https://craftpix.net
-   Magic icons : https://craftpix.net/freebies/free-rpg-splash-game-512x512-icons/
+- Used free assets from great https://craftpix.net
+  Magic icons : https://craftpix.net/freebies/free-rpg-splash-game-512x512-icons/
 
- - For background music in rpg template used:
-   Music by <a href="https://pixabay.com/users/sonican-38947841/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=379413">Dvir Silverstone</a> from <a href="https://pixabay.com//?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=379413">Pixabay</a>
-   Sound Effect by <a href="https://pixabay.com/users/freesound_crunchpixstudio-49769582/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=384915">Crunchpix Studio</a> from <a href="https://pixabay.com//?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=384915">Pixabay</a>
-   Music by <a href="https://pixabay.com/users/emmraan-24732583/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=280277">Emmraan</a> from <a href="https://pixabay.com//?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=280277">Pixabay</a>
+- For background music in rpg template used:
+  Music by <a href="https://pixabay.com/users/sonican-38947841/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=379413">Dvir Silverstone</a> from <a href="https://pixabay.com//?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=379413">Pixabay</a>
+  Sound Effect by <a href="https://pixabay.com/users/freesound_crunchpixstudio-49769582/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=384915">Crunchpix Studio</a> from <a href="https://pixabay.com//?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=384915">Pixabay</a>
+  Music by <a href="https://pixabay.com/users/emmraan-24732583/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=280277">Emmraan</a> from <a href="https://pixabay.com//?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=280277">Pixabay</a>
+
 ---
 
 ### BSD 3-Clause License (from WebGPU Samples)

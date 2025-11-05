@@ -4,2371 +4,2151 @@
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.Character = void 0;
-var _wgpuMatrix = require("wgpu-matrix");
-var _webgpuGltf = require("../../../src/engine/loaders/webgpu-gltf");
-var _utils = require("../../../src/engine/utils");
-var _hero = require("./hero");
-class Character extends _hero.Hero {
-  positionThrust = 0.85;
-  heroAnimationArrange = {
-    dead: null,
-    walk: null,
-    salute: null,
-    attack: null,
-    idle: null
-  };
-  heroFocusAttackOn = null;
-  mouseTarget = null;
-  constructor(mysticore, path, name = 'MariaSword', archetypes = ["Warrior", "Mage"]) {
-    super(name, archetypes);
-    // console.info(`%cLOADING hero name : ${name}`, LOG_MATRIX)
-    this.name = name;
-    this.core = mysticore;
-    this.heroe_bodies = [];
-    this.loadLocalHero(path);
-    // async
-    setTimeout(() => this.setupHUDForHero(name), 500);
-  }
-  setupHUDForHero(name) {
-    console.info(`%cLOADING hero name : ${name}`, _utils.LOG_MATRIX);
-    if (name == 'MariaSword') {
-      (0, _utils.byId)('magic-slot-0').style.background = 'url("./res/textures/rpg/magics/maria-sword-1.png")';
-      (0, _utils.byId)('magic-slot-0').style.backgroundRepeat = "round";
-      (0, _utils.byId)('magic-slot-1').style.background = 'url("./res/textures/rpg/magics/maria-sword-2.png")';
-      (0, _utils.byId)('magic-slot-1').style.backgroundRepeat = "round";
-      (0, _utils.byId)('magic-slot-2').style.background = 'url("./res/textures/rpg/magics/maria-sword-3.png")';
-      (0, _utils.byId)('magic-slot-2').style.backgroundRepeat = "round";
-      (0, _utils.byId)('magic-slot-3').style.background = 'url("./res/textures/rpg/magics/maria-sword-4.png")';
-      (0, _utils.byId)('magic-slot-3').style.backgroundRepeat = "round";
-      (0, _utils.byId)('hudLeftBox').style.background = "url('./res/textures/rpg/hero-image/maria.png')  center center / cover no-repeat";
-      // byId('heroProfile').src = './res/textures/rpg/hero-image/maria.png';
-    }
-  }
-  async loadLocalHero(p) {
-    try {
-      var glbFile01 = await fetch(p).then(res => res.arrayBuffer().then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, this.core.device)));
-      this.core.addGlbObjInctance({
-        material: {
-          type: 'standard',
-          useTextureFromGlb: true
-        },
-        scale: [20, 20, 20],
-        position: {
-          x: 0,
-          y: -23,
-          z: -0
-        },
-        name: this.name,
-        texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
-        raycast: {
-          enabled: true,
-          radius: 1.5
-        },
-        pointerEffect: {
-          enabled: true,
-          pointer: true,
-          energyBar: true,
-          flameEffect: false,
-          flameEmitter: true,
-          circlePlane: true,
-          circlePlaneTex: true,
-          circlePlaneTexPath: './res/textures/rpg/symbols/star.png'
-        }
-      }, null, glbFile01);
+exports.welcomeBoxHTML = exports.settingsBox = void 0;
+let settingsBox = exports.settingsBox = `
+<div style="">
+  <span style="font-size:170%" data-label="settings"></span>
+  <div style="justify-items: flex-end;margin:20px;" >
+    <div>
+      <span data-label="sounds"></span>
+      <label class="switch">
+        <input id="settingsAudios" type="checkbox">
+        <span class="sliderSwitch round"></span>
+      </label>
+    </div>
+      <div style="margin-top:20px;margin-bottom:15px;">
+        <span style="font-size: larger;margin-bottom:15px" data-label="graphics"></span>
+        <p></p>
+        <label>Anim speed:</label>
+        <select id="physicsSpeed" class="setting-select">
+          <option value="1">Slow</option>
+          <option value="2">Normal</option>
+          <option value="3">Fast</option>
+        </select>
+      </div>
 
-      // Poenter mouse click
-      var glbFile02 = await fetch('./res/meshes/glb/ring1.glb').then(res => res.arrayBuffer().then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, this.core.device)));
-      this.core.addGlbObjInctance({
-        material: {
-          type: 'standard',
-          useTextureFromGlb: false
-        },
-        scale: [20, 20, 20],
-        position: {
-          x: 0,
-          y: -24,
-          z: -220
-        },
-        name: 'mouseTarget',
-        texturesPaths: ['./res/textures/default.png'],
-        raycast: {
-          enabled: false,
-          radius: 1.5
-        },
-        pointerEffect: {
-          enabled: true,
-          circlePlane: true
-        }
-      }, null, glbFile02);
-      // ---------
+      <div>
+        <label>Blur:</label>
+        <select id="blurControl">
+          <option value="0px">Blur: 0</option>
+          <option value="1px">Blur: 1</option>
+          <option value="2px">Blur: 2</option>
+          <option value="3px">Blur: 3</option>
+        </select>
+      </div>
 
-      // make small async - cooking glbs files  mouseTarget_Circle
-      setTimeout(() => {
-        this.mouseTarget = app.getSceneObjectByName('mouseTarget_Circle');
-        this.heroe_bodies = app.mainRenderBundle.filter(obj => obj.name && obj.name.includes(this.name));
-        this.core.RPG.heroe_bodies = this.heroe_bodies;
-        this.core.RPG.heroe_bodies.forEach((subMesh, id) => {
-          subMesh.position.thrust = this.moveSpeed;
-          subMesh.glb.animationIndex = 0;
-          // adapt manual if blender is not setup
-          subMesh.glb.glbJsonData.animations.forEach((a, index) => {
-            console.info(`%c ANimation: ${a.name} index ${index}`, _utils.LOG_MATRIX);
-            if (a.name == 'dead') this.heroAnimationArrange.dead = index;
-            if (a.name == 'walk') this.heroAnimationArrange.walk = index;
-            if (a.name == 'salute') this.heroAnimationArrange.salute = index;
-            if (a.name == 'attack') this.heroAnimationArrange.attack = index;
-            if (a.name == 'idle') this.heroAnimationArrange.idle = index;
-          });
-          if (id == 0) subMesh.sharedState.emitAnimationEvent = true;
-          this.core.collisionSystem.register(`local${id}`, subMesh.position, 15.0, 'local_hero');
-        });
-        app.localHero.heroe_bodies[0].effects.flameEmitter.recreateVertexDataRND(1);
-        this.attachEvents();
-        // important
-        app.localHero.heroe_bodies[1].position = app.localHero.heroe_bodies[0].position;
-        dispatchEvent(new CustomEvent('local-hero-bodies-ready', {
-          detail: "This is not sync - 99% works"
-        }));
-      }, 1500);
-    } catch (err) {
-      throw err;
-    }
-  }
-  setWalk() {
-    this.core.RPG.heroe_bodies.forEach(subMesh => {
-      subMesh.glb.animationIndex = this.heroAnimationArrange.walk;
-      // console.info(`%chero walk`, LOG_MATRIX)
-    });
-  }
-  setSalute() {
-    this.core.RPG.heroe_bodies.forEach(subMesh => {
-      subMesh.glb.animationIndex = this.heroAnimationArrange.salute;
-      // console.info(`%chero salute`, LOG_MATRIX)
-    });
-  }
-  setDead() {
-    this.core.RPG.heroe_bodies.forEach(subMesh => {
-      subMesh.glb.animationIndex = this.heroAnimationArrange.dead;
-      console.info(`%chero dead`, _utils.LOG_MATRIX);
-    });
-  }
-  setIdle() {
-    this.core.RPG.heroe_bodies.forEach(subMesh => {
-      subMesh.glb.animationIndex = this.heroAnimationArrange.idle;
-      // console.info(`%chero idle`, LOG_MATRIX)
-    });
-  }
-  setAttack(on) {
-    this.heroFocusAttackOn = on;
-    this.core.RPG.heroe_bodies.forEach(subMesh => {
-      subMesh.glb.animationIndex = this.heroAnimationArrange.attack;
-      console.info(`%chero attack`, _utils.LOG_MATRIX);
-    });
-  }
-  attachEvents() {
-    addEventListener('attack-magic0', e => {
-      this.setSalute();
-      console.log(e.detail);
-      this.core.RPG.heroe_bodies.forEach(subMesh => {
-        // level0 have only one instance - more level more instance in visuals context
-        console.info(`%cLOADING hero ghostPos`, _utils.LOG_MATRIX);
-        const distance = 100.0; // how far in front of hero
-        const lift = 0.5;
-        // --- rotation.y in degrees → radians
-        const yawRad = (subMesh.rotation.y || 0) * Math.PI / 180;
-        // --- local forward vector (relative to hero)
-        const forward = _wgpuMatrix.vec3.normalize([Math.sin(yawRad),
-        // x
-        0,
-        // y
-        Math.cos(yawRad) // z (rig faces -Z)
-        ]);
+      <div>
+      <label>Grayscale:</label>
+      <select id="grayscaleControl">
+        <option value="0%">Grayscale: 0%</option>
+        <option value="25%">Grayscale: 25%</option>
+        <option value="50%">Grayscale: 50%</option>
+        <option value="75%">Grayscale: 75%</option>
+        <option value="100%">Grayscale: 100%</option>
+      </select>
+      </div>
+      
+      <div>
+       <label>Brightness:</label>
+      <select id="brightnessControl">
+        <option value="100%">100%</option>
+        <option value="150%">150%</option>
+        <option value="200%">200%</option>
+      </select>
+      </div>
+      
+      <div>
+      <label>Contrast:</label>
+      <select id="contrastControl">
+        <option value="100%">100%</option>
+        <option value="150%">150%</option>
+        <option value="200%">200%</option>
+      </select>
+      </div>
+      
+      <div>
+      <label>Saturate:</label>
+      <select id="saturateControl">
+        <option value="100%">100%</option>
+        <option value="150%">150%</option>
+        <option value="200%">200%</option>
+      </select>
+     </div>
+      
+      <div>
+      <label>Sepia:</label>
+      <select id="sepiaControl">
+        <option value="0%">0%</option>
+        <option value="50%">50%</option>
+        <option value="100%">100%</option>
+      </select>
+     </div>
+      
+      <div>
+      <label>Invert:</label>
+      <select id="invertControl">
+        <option value="0%">0%</option>
+        <option value="50%">50%</option>
+        <option value="100%">100%</option>
+      </select>
+     </div>
+      
+      <div>
+      <label>Hue Rotate:</label>
+      <select id="hueControl">
+        <option value="0deg">0°</option>
+        <option value="90deg">90°</option>
+        <option value="180deg">180°</option>
+        <option value="270deg">270°</option>
+      </select>
+      </div>
+ 
+    <div style="margin-top:20px;">
+      <button class="btn" onclick="app.myDom.hideSettings()">
+        <span data-label="hide"></span>
+      </button>
+    </div>
 
-        // --- compute ghost local offset
-        const ghostOffset = _wgpuMatrix.vec3.mulScalar(forward, distance);
-        ghostOffset[1] += lift;
-
-        // --- apply to local instance position
-        subMesh.instanceTargets[1].position = ghostOffset;
-        setTimeout(() => {
-          subMesh.instanceTargets[1].position[0] = 0;
-          subMesh.instanceTargets[1].position[2] = 0;
-          console.log("? ", this.setWalk);
-          this.setWalk();
-        }, 1300);
+    <img src="res/icons/512.png" style="position:absolute;left:10px;top:5%;width:300px;z-index:-1;"/>
+  </div>
+</div>`;
+let welcomeBoxHTML = exports.welcomeBoxHTML = `<span class="fancy-title" data-label="welcomeMsg"></span>
+     <a href="https://github.com/zlatnaspirala/matrix-engine-wgpu">zlatnaspirala/matrix-engine-wgpu</a><br><br>
+     <div style="display:flex;flex-direction:column;align-items: center;margin:20px;padding: 10px;">
+       <span style="width:100%" data-label="choosename"></span>
+       <input style="text-align: center;height:50px;font-size:100%;width:250px" class="fancy-label" type="text" value="Guest" />
+      </div>
+     <button id="startFromWelcome" class="btn" ><span style="font-size:30px;margin:15px;padding:10px" data-label="startGame"></span></button> <br>
+     <div><span class="fancy-label" data-label="changeLang"></span></div> 
+     <button class="btn" onclick="
+      app.label.loadMultilang('en').then(r => {
+        app.label.get = r;
+        app.label.update()
       });
-    });
+     " ><span data-label="english"></span></button> 
+     <button class="btn" onclick="app.label.loadMultilang('sr').then(r => {
+        app.label.get = r
+        app.label.update() })" ><span data-label="serbian"></span></button> 
+    `;
 
-    // Events HERO MOVMENTS
-    addEventListener('set-walk', () => {
-      this.setWalk();
-    });
-    addEventListener('set-idle', () => {
-      this.setIdle();
-    });
-    addEventListener('set-attach', () => {
-      this.setAttach();
-    });
-    addEventListener('set-dead', () => {
-      this.setDead();
-    });
-    addEventListener('set-salute', () => {
-      this.setSalute();
-    });
-    addEventListener('close-distance', e => {
-      console.info('close distance with:', e.detail.A);
-      if (this.heroFocusAttackOn && this.heroFocusAttackOn.name.indexOf(e.detail.A.id) != -1) {
-        // this.setAttack(this.heroFocusAttackOn);
-      }
-      // still attack
-      this.setAttack(this.heroFocusAttackOn);
-    });
-
-    // must be sync with networking... in future
-    // -------------------------------------------
-    // console.log('ANIMATION END INITIAL NAME ', this.name)
-    addEventListener(`animationEnd-${this.name}`, e => {
-      // CHECK DISTANCE
-      if (e.detail.animationName != 'attack') {
-        // // if(this.heroFocusAttackOn == null) { ?? maybe
-        // this.setIdle();
-        return;
-      }
-      if (this.heroFocusAttackOn == null) {
-        console.info('FOCUS ON GROUND BUT COLLIDE WITH ENEMY-ANIMATION END setIdle:', e.detail.animationName);
-        let isEnemiesClose = false; // on close distance 
-        this.core.enemies.enemies.forEach(enemy => {
-          let tt = this.core.RPG.distance3D(this.heroe_bodies[0].position, enemy.heroe_bodies[0].position);
-          if (tt < this.core.RPG.distanceForAction) {
-            console.log(`%c ATTACK DAMAGE ${enemy.heroe_bodies[0].name}`, _utils.LOG_MATRIX);
-            isEnemiesClose = true;
-            this.calcDamage(this, enemy);
-          }
-        });
-        if (isEnemiesClose == false) this.setIdle();
-        return;
-      } else {
-        // Focus on enemy
-        this.core.enemies.enemies.forEach(enemy => {
-          if (this.heroFocusAttackOn.name.indexOf(enemy.name) != -1) {
-            let tt = this.core.RPG.distance3D(this.heroe_bodies[0].position, this.heroFocusAttackOn.position);
-            if (tt < this.core.RPG.distanceForAction) {
-              console.log(`%c ATTACK DAMAGE ${enemy.heroe_bodies[0].name}`, _utils.LOG_MATRIX);
-              this.calcDamage(this, enemy);
-            }
-          }
-        });
-      }
-    });
-    addEventListener('onTargetPositionReach', e => {
-      // for now only local hero
-      if (this.heroFocusAttackOn == null) {
-        let isEnemiesClose = false; // on close distance 
-        this.core.enemies.enemies.forEach(enemy => {
-          let tt = this.core.RPG.distance3D(this.heroe_bodies[0].position, enemy.heroe_bodies[0].position);
-          if (tt < this.core.RPG.distanceForAction) {
-            console.log(`%c ATTACK DAMAGE ${enemy.heroe_bodies[0].name}`, _utils.LOG_MATRIX);
-            isEnemiesClose = true;
-            this.calcDamage(this, enemy);
-          }
-        });
-        if (isEnemiesClose == false) this.setIdle();
-      }
-    });
-    addEventListener('onMouseTarget', e => {
-      // for now only local hero
-      if (this.core.RPG.selected.includes(this.heroe_bodies[0])) {
-        // console.log("onMouseTarget POS:", e.detail.type);
-        this.mouseTarget.position.setPosition(e.detail.x, this.mouseTarget.position.y, e.detail.z);
-        if (e.detail.type == "attach") {
-          this.mouseTarget.effects.circlePlane.instanceTargets[0].color = [1, 0, 0, 0.9];
-        } else {
-          this.mouseTarget.effects.circlePlane.instanceTargets[0].color = [0.6, 0.8, 1, 0.4];
-        }
-      }
-    });
-  }
-}
-exports.Character = Character;
-
-},{"../../../src/engine/loaders/webgpu-gltf":45,"../../../src/engine/utils":50,"./hero":5,"wgpu-matrix":25}],2:[function(require,module,exports){
+},{}],2:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.Controller = void 0;
-var _raycast = require("../../../src/engine/raycast.js");
-var _wgpuMatrix = require("wgpu-matrix");
+exports.myDom = exports.dices = void 0;
 var _utils = require("../../../src/engine/utils.js");
-var _navMesh = require("./nav-mesh.js");
-class Controller {
-  ignoreList = ['ground', 'mouseTarget_Circle'];
-  selected = [];
-  nav = null;
-  // ONLY LOCAL
-  heroe_bodies = null;
-  distanceForAction = 36;
-  constructor(core) {
-    this.core = core;
-    this.canvas = this.core.canvas;
-    this.dragStart = null;
-    this.dragEnd = null;
-    this.selecting = false;
-    this.canvas.addEventListener('mousedown', e => {
-      if (e.button === 2) {
-        // right m
-        this.selecting = true;
-        this.dragStart = {
-          x: e.clientX,
-          y: e.clientY
-        };
-        this.dragEnd = {
-          x: e.clientX,
-          y: e.clientY
-        };
-      } // else if(e.button === 0) { }
-    });
-    this.canvas.addEventListener('mousemove', e => {
-      if (this.selecting) {
-        this.dragEnd = {
-          x: e.clientX,
-          y: e.clientY
-        };
-      }
-    });
-    this.canvas.addEventListener('mouseup', e => {
-      if (this.selecting) {
-        this.selecting = false;
-        this.selectCharactersInRect(this.dragStart, this.dragEnd);
-        this.dragStart = this.dragEnd = null;
-        setTimeout(() => {
-          if (this.ctx) this.ctx.clearRect(0, 0, this.overlay.width, this.overlay.height);
-        }, 100);
-      }
-    });
-    (0, _raycast.addRaycastsListener)(undefined, 'click');
-    // addRaycastsListener(undefined, 'mousemove');
+var _htmlContent = require("./html-content.js");
+let dices = exports.dices = {
+  C: 0,
+  STATUS: 'FREE_TO_PLAY',
+  R: {},
+  SAVED_DICES: {},
+  pickDice: function (dice) {
+    if (Object.keys(this.SAVED_DICES).length >= 5) {
+      console.log("⚠️ You can only select up to 5 dice!");
+      return; // prevent adding more
+    }
+    this.SAVED_DICES[dice] = this.R[dice];
+    this.refreshSelectedBox();
+  },
+  setStartUpPosition: () => {
+    // 
+    let currentIndex = 0;
+    for (var x = 1; x < 7; x++) {
+      app.matrixAmmo.getBodyByName('CubePhysics' + x).MEObject.position.setPosition(-5 + currentIndex * 5, 2, -15);
+    }
+  },
+  refreshSelectedBox: function (arg) {
+    let currentIndex = 0;
+    for (var key in this.SAVED_DICES) {
+      let B = app.matrixAmmo.getBodyByName(key);
+      this.deactivatePhysics(B);
+      const transform = new Ammo.btTransform();
+      transform.setIdentity();
+      transform.setOrigin(new Ammo.btVector3(0, 0, 0));
+      B.setWorldTransform(transform);
+      B.MEObject.position.setPosition(-5 + currentIndex, 5, -16);
+      currentIndex += 3;
+    }
+  },
+  deactivatePhysics: function (body) {
+    const CF_KINEMATIC_OBJECT = 2;
+    const DISABLE_DEACTIVATION = 4;
+    // 1. Remove from world
+    app.matrixAmmo.dynamicsWorld.removeRigidBody(body);
+    // 2. Set body to kinematic
+    const flags = body.getCollisionFlags();
+    body.setCollisionFlags(flags | CF_KINEMATIC_OBJECT);
+    body.setActivationState(DISABLE_DEACTIVATION); // no auto-wakeup
+    // 3. Clear motion
+    const zero = new Ammo.btVector3(0, 0, 0);
+    body.setLinearVelocity(zero);
+    body.setAngularVelocity(zero);
+    // 4. Reset transform to current position (optional — preserves pose)
+    const currentTransform = body.getWorldTransform();
+    body.setWorldTransform(currentTransform);
+    body.getMotionState().setWorldTransform(currentTransform);
+    // 5. Add back to physics world
+    app.matrixAmmo.dynamicsWorld.addRigidBody(body);
+    // 6. Mark it manually (logic flag)
+    body.isKinematic = true;
+  },
+  resetBodyAboveFloor: function (body, z = -14) {
+    const transform = new Ammo.btTransform();
+    transform.setIdentity();
+    transform.setOrigin(new Ammo.btVector3(-1 + Math.random(), 3, z));
+    body.setWorldTransform(transform);
+    body.getMotionState().setWorldTransform(transform);
+  },
+  activatePhysics: function (body) {
+    // 1. Make it dynamic again
+    body.setCollisionFlags(body.getCollisionFlags() & ~2); // remove kinematic
+    body.setActivationState(1); // ACTIVE_TAG
+    body.isKinematic = false;
 
-    //
+    // 2. Reset position ABOVE the floor — force it out of collision
+    // const newY = 3 + Math.random(); // ensure it’s above the floor
+    const transform = new Ammo.btTransform();
+    transform.setIdentity();
+    const newX = (Math.random() - 0.5) * 4; // spread from -2 to +2 on X
+    const newY = 3; // fixed height above floor
+    transform.setOrigin(new Ammo.btVector3(newX, newY, 0));
+    body.setWorldTransform(transform);
 
-    // for now - performance problem
-    // this.canvas.addEventListener("ray.hit.event.mm", (e) => {
-    //   // console.log('ray.hit.event detected', e);
-    //   const {hitObject, hitPoint, button, eventName} = e.detail;
-    //   if(!hitObject || !hitPoint) {
-    //     console.warn('No valid hit detected.');
-    //     return;
+    // 3. Clear velocities
+    body.setLinearVelocity(new Ammo.btVector3(0, 0, 0));
+    body.setAngularVelocity(new Ammo.btVector3(0, 0, 0));
+
+    // 4. Enable CCD (to prevent tunneling)
+    const size = 1; // cube side length
+    body.setCcdMotionThreshold(1e-7);
+    body.setCcdSweptSphereRadius(size * 0.5);
+
+    // Re-add to world if needed
+    // Optionally: remove and re-add if not responding
+    app.matrixAmmo.dynamicsWorld.removeRigidBody(body);
+    app.matrixAmmo.dynamicsWorld.addRigidBody(body);
+
+    // 5. Reactivate it
+    body.activate(true);
+    this.resetBodyAboveFloor(body);
+  },
+  activateAllDicesPhysics: function () {
+    this.getAllDices()
+    // .filter((item) => {
+    //   let test = app.matrixAmmo.getBodyByName(item.name)?.isKinematicObject();
+    //   if(test === true) {
+    //     return true;
+    //   } else {
+    //     return false;
     //   }
-    //   // console.log("Hit object eventName :", eventName, "Button:", button);
     // })
-
-    this.canvas.addEventListener("ray.hit.event", e => {
-      // console.log('ray.hit.event detected', e);
-      const {
-        hitObject,
-        hitPoint,
-        button,
-        eventName
-      } = e.detail;
-      if (e.detail.hitObject.name == 'ground') {
-        // console.warn('ground detected.');
-        dispatchEvent(new CustomEvent(`onMouseTarget`, {
-          detail: {
-            type: 'normal',
-            x: hitPoint[0],
-            y: hitPoint[1],
-            z: hitPoint[2]
-          }
-        }));
-        this.core.localHero.heroFocusAttackOn = null;
-        // return;
-      } else if (this.core.enemies.isEnemy(e.detail.hitObject.name)) {
-        dispatchEvent(new CustomEvent(`onMouseTarget`, {
-          detail: {
-            type: 'attach',
-            x: e.detail.hitObject.position.x,
-            // hitPoint[0], blocked by colision observer
-            y: e.detail.hitObject.position.y,
-            z: e.detail.hitObject.position.z
-          }
-        }));
+    .forEach(dice => {
+      const body = app.matrixAmmo.getBodyByName(dice.name);
+      if (body) {
+        this.activatePhysics(body); // <--- FIX: pass the physics body, not the dice object
       }
-      if (button == 0 && e.detail.hitObject.name != 'ground' && e.detail.hitObject.name !== this.heroe_bodies[0].name //&& 
-      // e.detail.hitObject.name !== this.heroe_bodies[1].name
-      ) {
-        if (this.heroe_bodies.length == 2) {
-          if (e.detail.hitObject.name == this.heroe_bodies[1].name) {
-            console.log("Hit object  SELF SLICKED :", e.detail.hitObject.name);
-            return;
-          }
-        }
-        // console.log("Hit object:", e.detail.hitObject.name);
-        // console.log("[R CLICK MOUS ]Moment for attact event but walk to the distanve and attach object:",
-        // this.core.localHero.heroe_bodies[0]);
-        // FOr now without check is it enemiy 
-        // fro any LH vs other entity need to exist check distance
-        const LH = this.core.localHero.heroe_bodies[0];
-        console.log("Hit object VS LH DISTANCE : ", this.distance3D(LH.position, e.detail.hitObject.position));
-        // after all check is it eneimy
-        this.core.localHero.heroFocusAttackOn = e.detail.hitObject;
-        let testDistance = this.distance3D(LH.position, e.detail.hitObject.position);
-        // 37 LIMIT FOR ATTACH
-        if (testDistance < this.distanceForAction) {
-          console.log("this.core.localHero.setAttack [e.detail.hitObject]");
-          this.core.localHero.setAttack(e.detail.hitObject);
-          return;
-        }
-      }
-      // Only react to LEFT CLICK
-      if (button !== 0 || this.heroe_bodies === null || !this.selected.includes(this.heroe_bodies[0])) {
-        console.log(" no local here ");
-        // not hero but maybe other creaps . based on selected....
-        return;
-      }
-      // Define start (hero position) and end (clicked point)
-      const hero = this.heroe_bodies[0];
-      let heroSword = null;
-      if (this.heroe_bodies.length == 2) {
-        heroSword = this.heroe_bodies[1];
-      }
-      dispatchEvent(new CustomEvent('set-walk'));
-      const start = [hero.position.x, hero.position.y, hero.position.z];
-      const end = [hitPoint[0], hitPoint[1], hitPoint[2]];
-      const path = this.nav.findPath(start, end);
-      if (!path || path.length === 0) {
-        console.warn('No valid path found.');
-        return;
-      }
-      (0, _navMesh.followPath)(hero, path, this.core);
-      (0, _navMesh.followPath)(heroSword, path, this.core);
     });
-    this.canvas.addEventListener("contextmenu", e => {
-      e.preventDefault();
-    });
-    this.activateVisualRect();
-  }
-  projectToScreen(worldPos, viewMatrix, projectionMatrix, canvas) {
-    // Convert world position to clip space
-    const world = [worldPos[0], worldPos[1], worldPos[2], 1.0];
-
-    // Multiply in correct order: clip = projection * view * world
-    const viewProj = _wgpuMatrix.mat4.multiply(projectionMatrix, viewMatrix);
-    const clip = _wgpuMatrix.vec4.transformMat4(world, viewProj);
-
-    // Perform perspective divide
-    const ndcX = clip[0] / clip[3];
-    const ndcY = clip[1] / clip[3];
-
-    // Convert NDC (-1..1) to screen pixels
-    const screenX = (ndcX * 0.5 + 0.5) * canvas.width;
-    const screenY = (1 - (ndcY * 0.5 + 0.5)) * canvas.height;
-    return {
-      x: screenX,
-      y: screenY
-    };
-  }
-  selectCharactersInRect(start, end) {
-    const xMin = Math.min(start.x, end.x);
-    const xMax = Math.max(start.x, end.x);
-    const yMin = Math.min(start.y, end.y);
-    const yMax = Math.max(start.y, end.y);
-
-    // const camera = app.cameras.WASD;
-    const camera = app.cameras.RPG;
-    for (const object of app.mainRenderBundle) {
-      if (!object.position) continue;
-      const screen = this.projectToScreen([object.position.x, object.position.y, object.position.z, 1.0], camera.view, camera.projectionMatrix, this.canvas);
-      if (screen.x >= xMin && screen.x <= xMax && screen.y >= yMin && screen.y <= yMax) {
-        if (this.ignoreList.some(str => object.name.includes(str))) continue;
-        if (this.selected.includes(object)) continue;
-        object.setSelectedEffect(true);
-        this.selected.push(object);
-        (0, _utils.byId)('hud-menu').dispatchEvent(new CustomEvent("onSelectCharacter", {
-          detail: object.name
-        }));
-      } else {
-        if (this.selected.indexOf(object) !== -1) {
-          this.selected.splice(this.selected.indexOf(object), 1);
-          // byId('hud-menu').dispatchEvent(new CustomEvent("onSelectCharacter", {detail: object.name} ))
-        }
-        object.setSelectedEffect(false);
+  },
+  getAllDices: function () {
+    return app.mainRenderBundle.filter(item => item.name.indexOf("CubePhysics") !== -1);
+  },
+  getDiceByName: function (name) {
+    return app.mainRenderBundle.find(item => item.name === name);
+  },
+  checkAll: function () {
+    this.C++;
+    let activeRollingCount = 0;
+    let allReady = true;
+    for (let i = 1; i <= 6; i++) {
+      const key = "CubePhysics" + i;
+      if (key in this.SAVED_DICES) continue; // skip saved ones
+      activeRollingCount++; // count how many are still active
+      if (typeof this.R[key] === 'undefined') {
+        allReady = false;
+        break;
       }
     }
-    console.log("Selected:", this.selected.map(o => o.name));
-  }
-  activateVisualRect() {
-    const overlay = document.createElement("canvas");
-    overlay.width = this.canvas.width;
-    overlay.height = this.canvas.height;
-    overlay.style.position = "absolute";
-    overlay.style.left = this.canvas.offsetLeft + "px";
-    overlay.style.top = this.canvas.offsetTop + "px";
-    this.canvas.parentNode.appendChild(overlay);
-    this.ctx = overlay.getContext("2d");
-    overlay.style.pointerEvents = "none";
-    this.overlay = overlay;
-    this.canvas.addEventListener("mousemove", e => {
-      if (this.selecting) {
-        this.dragEnd = {
-          x: e.clientX,
-          y: e.clientY
-        };
-        this.ctx.clearRect(0, 0, overlay.width, overlay.height);
-        this.ctx.strokeStyle = "rgba(0,255,0,0.8)";
-        this.ctx.lineWidth = 2.5;
-        this.ctx.strokeRect(this.dragStart.x, this.dragStart.y, this.dragEnd.x - this.dragStart.x, this.dragEnd.y - this.dragStart.y);
-      }
-    });
-  }
-  distance3D(a, b) {
-    const dx = a.x - b.x;
-    const dy = a.y - b.y;
-    const dz = a.z - b.z;
-    return Math.sqrt(dx * dx + dy * dy + dz * dz);
-  }
-}
-exports.Controller = Controller;
-
-},{"../../../src/engine/raycast.js":49,"../../../src/engine/utils.js":50,"./nav-mesh.js":9,"wgpu-matrix":25}],3:[function(require,module,exports){
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.EnemiesManager = void 0;
-var _enemyCharacter = require("./enemy-character");
-class EnemiesManager {
-  enemies = [];
-  creeps = [];
-  constructor(core) {
-    this.core = core;
-    this.loadBySumOfPlayers();
-    console.log('Enemies manager:', core);
-  }
-  // Make possible to play 3x3 4x4 or 5x5 ...
-  loadBySumOfPlayers() {
-    this.enemies.push(new _enemyCharacter.Enemie({
-      core: this.core,
-      name: 'Slayzer',
-      archetypes: ["Warrior"],
-      path: 'res/meshes/glb/monster.glb',
-      position: {
-        x: 0,
-        y: -23,
-        z: -260
-      }
-    }));
-    this.creeps.push(new _enemyCharacter.Enemie({
-      core: this.core,
-      name: 'abot',
-      archetypes: ["creep"],
-      path: 'res/meshes/glb/bot.glb',
-      position: {
-        x: 0,
-        y: -23,
-        z: -110
-      }
-    }));
-  }
-  isEnemy(name) {
-    let test = this.enemies.filter(obj => obj.name && name.includes(obj.name));
-    let test2 = this.creeps.filter(obj => obj.name && name.includes(obj.name));
-    if (test2.length == 0 && test.length == 0) {
-      console.log('<isENMIES - creeps or enemy heros> NO', name);
+    // Dynamic threshold: min wait time based on rolling dice
+    const minWait = Math.max(200, activeRollingCount * 200); // e.g. 1 die => 200, 5 dice => 1000, 6 dice => 1200
+    if (allReady && this.C > minWait) {
+      dispatchEvent(new CustomEvent('all-done', {
+        detail: {}
+      }));
+      this.C = 0;
+    }
+  },
+  validatePass: function () {
+    if (Object.keys(this.SAVED_DICES).length !== 5) {
+      console.log('%cBLOCK', _utils.LOG_FUNNY);
+      _utils.mb.error(`Must select (minimum) 5 dices before add results...`);
       return false;
     }
-    console.log('<isENMIES - creeps or enemy heros> YES', name);
-    return true;
-  }
-}
-exports.EnemiesManager = EnemiesManager;
-
-},{"./enemy-character":4}],4:[function(require,module,exports){
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.Enemie = void 0;
-var _webgpuGltf = require("../../../src/engine/loaders/webgpu-gltf");
-var _utils = require("../../../src/engine/utils");
-var _hero = require("./hero");
-class Enemie extends _hero.Hero {
-  heroAnimationArrange = {
-    dead: null,
-    walk: null,
-    salute: null,
-    attack: null,
-    idle: null
-  };
-  constructor(o, archetypes = ["Warrior"]) {
-    super(o.name, archetypes);
-    this.name = o.name;
-    this.core = o.core;
-    this.loadEnemyHero(o);
-    this.attachEvents();
-    return this;
-  }
-  loadEnemyHero = async o => {
-    try {
-      var glbFile01 = await fetch(o.path).then(res => res.arrayBuffer().then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, this.core.device)));
-      this.core.addGlbObjInctance({
-        material: {
-          type: 'standard',
-          useTextureFromGlb: true
-        },
-        scale: [20, 20, 20],
-        position: o.position,
-        name: o.name,
-        texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
-        raycast: {
-          enabled: true,
-          radius: 1.1
-        },
-        pointerEffect: {
-          enabled: true,
-          energyBar: true
-        }
-      }, null, glbFile01);
-      // make small async - cooking glbs files
-      setTimeout(() => {
-        this.heroe_bodies = app.mainRenderBundle.filter(obj => obj.name && obj.name.includes(o.name));
-        this.heroe_bodies.forEach((subMesh, idx) => {
-          subMesh.position.thrust = this.moveSpeed;
-          subMesh.glb.animationIndex = 0;
-          // adapt manual if blender is not setup
-          subMesh.glb.glbJsonData.animations.forEach((a, index) => {
-            // console.info(`%c ANimation: ${a.name} index ${index}`, LOG_MATRIX)
-            if (a.name == 'dead') this.heroAnimationArrange.dead = index;
-            if (a.name == 'walk') this.heroAnimationArrange.walk = index;
-            if (a.name == 'salute') this.heroAnimationArrange.salute = index;
-            if (a.name == 'attack') this.heroAnimationArrange.attack = index;
-          });
-          // maybe will help - remote net players no nedd to collide in other remote user gamaplay
-          // this.core.collisionSystem.register((o.name + idx), subMesh.position, 15.0, 'enemies');
-          // dont care for multi sub mesh now
-          if (idx == 0) this.core.collisionSystem.register(o.name, subMesh.position, 15.0, 'enemies');
-        });
-        this.setStartUpPosition();
-      }, 1600);
-    } catch (err) {
-      throw err;
+    if (dices.STATUS != "FINISHED") {
+      console.log('%cBLOCK', _utils.LOG_FUNNY);
+      _utils.mb.error(`STATUS IS ${dices.STATUS}, please wait for results...`);
+      app.matrixSounds.play('block');
+      return false;
+    } else {
+      return true;
     }
-  };
-  setWalk() {
-    this.heroe_bodies.forEach(subMesh => {
-      subMesh.glb.animationIndex = this.heroAnimationArrange.walk;
-      console.info(`%chero walk`, _utils.LOG_MATRIX);
-    });
-  }
-  setSalute() {
-    this.heroe_bodies.forEach(subMesh => {
-      subMesh.glb.animationIndex = this.heroAnimationArrange.salute;
-      console.info(`%chero salute`, _utils.LOG_MATRIX);
-    });
-  }
-  setDead() {
-    this.heroe_bodies.forEach(subMesh => {
-      subMesh.glb.animationIndex = this.heroAnimationArrange.dead;
-      console.info(`%chero dead`, _utils.LOG_MATRIX);
-    });
-  }
-  setIdle() {
-    this.heroe_bodies.forEach(subMesh => {
-      subMesh.glb.animationIndex = this.heroAnimationArrange.idle;
-      console.info(`%chero idle`, _utils.LOG_MATRIX);
-    });
-  }
-  setAttack() {
-    this.heroe_bodies.forEach(subMesh => {
-      subMesh.glb.animationIndex = this.heroAnimationArrange.attack;
-      console.info(`%chero attack`, _utils.LOG_MATRIX);
-    });
-  }
-  setStartUpPosition() {
-    this.heroe_bodies.forEach((subMesh, idx) => {
-      subMesh.position.setPosition(0, -23, 0);
-    });
-  }
-  attachEvents() {
-    addEventListener(`onDamage-${this.name}`, e => {
-      console.info(`%c hero damage ${e.detail}`, _utils.LOG_MATRIX);
-      this.heroe_bodies[0].effects.energyBar.setProgress(e.detail.progress);
-      // if detail is 0
-      if (e.detail.progress == 0) {
-        this.setDead();
-        console.info(`%c hero dead [${this.name}], attacker[${e.detail.attacker}]`, _utils.LOG_MATRIX);
-        setTimeout(() => {
-          this.setStartUpPosition();
-        }, 2000);
-        e.detail.attacker.killEnemy(e.detail.defenderLevel);
-      }
-    });
-  }
-}
-exports.Enemie = Enemie;
-
-},{"../../../src/engine/loaders/webgpu-gltf":45,"../../../src/engine/utils":50,"./hero":5}],5:[function(require,module,exports){
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.HeroProps = exports.Hero = exports.HERO_PROFILES = exports.HERO_ARCHETYPES = void 0;
-exports.mergeArchetypes = mergeArchetypes;
-exports.mergeArchetypesWeighted = mergeArchetypesWeighted;
-/**
- * @description
- * Hero based classes
- * Core of RPG type of game.
- */
-const HERO_ARCHETYPES = exports.HERO_ARCHETYPES = {
-  Warrior: {
-    hpMult: 1.2,
-    manaMult: 0.8,
-    attackMult: 1.1,
-    armorMult: 1.2,
-    moveSpeed: 1.0,
-    attackSpeed: 1.0,
-    hpRegenMult: 1.2,
-    manaRegenMult: 0.8
-  },
-  Tank: {
-    hpMult: 1.6,
-    manaMult: 0.6,
-    attackMult: 0.9,
-    armorMult: 1.5,
-    moveSpeed: 0.9,
-    attackSpeed: 0.8,
-    hpRegenMult: 1.4,
-    manaRegenMult: 0.7
-  },
-  Assassin: {
-    hpMult: 0.9,
-    manaMult: 0.9,
-    attackMult: 1.5,
-    armorMult: 0.8,
-    moveSpeed: 1.3,
-    attackSpeed: 1.4,
-    hpRegenMult: 0.9,
-    manaRegenMult: 0.9
-  },
-  Mage: {
-    hpMult: 0.8,
-    manaMult: 1.5,
-    attackMult: 0.9,
-    armorMult: 0.7,
-    moveSpeed: 1.0,
-    attackSpeed: 0.9,
-    hpRegenMult: 0.8,
-    manaRegenMult: 1.5
-  },
-  Support: {
-    hpMult: 1.0,
-    manaMult: 1.2,
-    attackMult: 0.8,
-    armorMult: 1.0,
-    moveSpeed: 1.0,
-    attackSpeed: 1.0,
-    hpRegenMult: 1.2,
-    manaRegenMult: 1.2
-  },
-  Ranger: {
-    hpMult: 1.0,
-    manaMult: 1.0,
-    attackMult: 1.2,
-    armorMult: 0.9,
-    moveSpeed: 1.2,
-    attackSpeed: 1.2,
-    hpRegenMult: 1.0,
-    manaRegenMult: 1.0
-  },
-  Summoner: {
-    hpMult: 0.9,
-    manaMult: 1.4,
-    attackMult: 0.8,
-    armorMult: 0.9,
-    moveSpeed: 1.0,
-    attackSpeed: 0.9,
-    hpRegenMult: 1.0,
-    manaRegenMult: 1.4
-  },
-  Necromancer: {
-    hpMult: 0.9,
-    manaMult: 1.4,
-    attackMult: 0.9,
-    armorMult: 0.8,
-    moveSpeed: 1.0,
-    attackSpeed: 0.9,
-    hpRegenMult: 0.9,
-    manaRegenMult: 1.4
-  },
-  Engineer: {
-    hpMult: 1.1,
-    manaMult: 1.0,
-    attackMult: 1.0,
-    armorMult: 1.1,
-    moveSpeed: 1.0,
-    attackSpeed: 1.0,
-    hpRegenMult: 1.0,
-    manaRegenMult: 1.0
-  },
-  creep: {
-    hpMult: 1,
-    manaMult: 1,
-    attackMult: 1,
-    armorMult: 1,
-    moveSpeed: 1,
-    attackSpeed: 1,
-    hpRegenMult: 1,
-    manaRegenMult: 1
   }
 };
-class HeroProps {
-  constructor(name) {
-    this.name = name;
-    this.levels = [{
-      level: 1,
-      xp: 100,
-      hp: 500,
-      mana: 300,
-      attack: 40,
-      armor: 5,
-      moveSpeed: 1.0,
-      attackSpeed: 1.0,
-      hpRegen: 2.0,
-      mpRegen: 1.0,
-      abilityPoints: 1
-    }, {
-      level: 2,
-      xp: 200,
-      hp: 570,
-      mana: 345,
-      attack: 46,
-      armor: 5.5,
-      moveSpeed: 1.05,
-      attackSpeed: 1.05,
-      hpRegen: 2.25,
-      mpRegen: 1.15,
-      abilityPoints: 2
-    }, {
-      level: 3,
-      xp: 350,
-      hp: 645,
-      mana: 395,
-      attack: 52,
-      armor: 6,
-      moveSpeed: 1.10,
-      attackSpeed: 1.10,
-      hpRegen: 2.52,
-      mpRegen: 1.31,
-      abilityPoints: 3
-    }, {
-      level: 4,
-      xp: 500,
-      hp: 725,
-      mana: 450,
-      attack: 58,
-      armor: 6.5,
-      moveSpeed: 1.15,
-      attackSpeed: 1.16,
-      hpRegen: 2.81,
-      mpRegen: 1.49,
-      abilityPoints: 4
-    }, {
-      level: 5,
-      xp: 700,
-      hp: 810,
-      mana: 510,
-      attack: 65,
-      armor: 7,
-      moveSpeed: 1.20,
-      attackSpeed: 1.23,
-      hpRegen: 3.13,
-      mpRegen: 1.68,
-      abilityPoints: 5
-    }, {
-      level: 6,
-      xp: 900,
-      hp: 900,
-      mana: 575,
-      attack: 72,
-      armor: 7.5,
-      moveSpeed: 1.25,
-      attackSpeed: 1.31,
-      hpRegen: 3.48,
-      mpRegen: 1.88,
-      abilityPoints: 6
-    }, {
-      level: 7,
-      xp: 1150,
-      hp: 995,
-      mana: 645,
-      attack: 80,
-      armor: 8,
-      moveSpeed: 1.30,
-      attackSpeed: 1.40,
-      hpRegen: 3.85,
-      mpRegen: 2.10,
-      abilityPoints: 7
-    }, {
-      level: 8,
-      xp: 1400,
-      hp: 1095,
-      mana: 720,
-      attack: 88,
-      armor: 8.5,
-      moveSpeed: 1.35,
-      attackSpeed: 1.50,
-      hpRegen: 4.25,
-      mpRegen: 2.33,
-      abilityPoints: 8
-    }, {
-      level: 9,
-      xp: 1700,
-      hp: 1200,
-      mana: 800,
-      attack: 97,
-      armor: 9,
-      moveSpeed: 1.40,
-      attackSpeed: 1.61,
-      hpRegen: 4.68,
-      mpRegen: 2.58,
-      abilityPoints: 9
-    }, {
-      level: 10,
-      xp: null,
-      hp: 1310,
-      mana: 885,
-      attack: 107,
-      armor: 9.5,
-      moveSpeed: 1.45,
-      attackSpeed: 1.73,
-      hpRegen: 5.13,
-      mpRegen: 2.84,
-      abilityPoints: 10
-    }];
-    this.currentLevel = 1;
-    this.currentXP = 0;
-    this.gold = 0;
-    this.baseXP = 100;
-    this.baseGold = 200;
-
-    // --- Multipliers
-    this.xpMultiplier = {
-      stronger: 0.1,
-      weaker: 0.2
-    };
-    this.goldMultiplier = 50;
-
-    // --- Maximum level difference for XP
-    this.maxLevelDiffForXP = 3;
-    this.abilities = [{
-      name: "Spell 1",
-      level: 1,
-      maxLevel: 4
-    }, {
-      name: "Spell 2",
-      level: 0,
-      maxLevel: 4
-    }, {
-      name: "Spell 3",
-      level: 0,
-      maxLevel: 4
-    }, {
-      name: "Ultimate",
-      level: 0,
-      maxLevel: 1
-    }];
-    this.updateStats();
-  }
-
-  // --- Update stats
-  updateStats() {
-    const lvlData = this.levels[this.currentLevel - 1];
-    if (!lvlData) return;
-    Object.assign(this, {
-      hp: lvlData.hp,
-      mana: lvlData.mana,
-      attack: lvlData.attack,
-      armor: lvlData.armor,
-      moveSpeed: lvlData.moveSpeed,
-      attackSpeed: lvlData.attackSpeed,
-      hpRegen: lvlData.hpRegen,
-      mpRegen: lvlData.mpRegen,
-      abilityPoints: lvlData.abilityPoints
-    });
-  }
-
-  // --- Kill enemy: only enemyLevel argument
-  killEnemy(enemyLevel) {
-    if (enemyLevel < 1) enemyLevel = 1;
-    const levelDiff = this.currentLevel - enemyLevel;
-
-    // --- XP calculation with cap for weak enemies
-    let earnedXP = 0;
-    if (levelDiff < this.maxLevelDiffForXP) {
-      if (enemyLevel >= this.currentLevel) {
-        earnedXP = this.baseXP * (1 + this.xpMultiplier.stronger * (enemyLevel - this.currentLevel));
+let myDom = exports.myDom = {
+  state: {
+    rowDown: []
+  },
+  memoNumberRow: [],
+  hideSettings: function () {
+    (0, _utils.byId)('blocker').style.display = 'none';
+    (0, _utils.byId)('messageBox').style.display = 'none';
+  },
+  createMenu: function () {
+    var root = document.createElement('div');
+    root.id = 'hud';
+    root.style.position = 'absolute';
+    root.style.right = '10%';
+    root.style.top = '10%';
+    var help = document.createElement('div');
+    help.id = 'HELP';
+    help.classList.add('btn');
+    help.innerHTML = `<span data-label="help"></span>`;
+    help.addEventListener('click', () => {
+      if ((0, _utils.byId)('helpBox').style.display != 'none') {
+        (0, _utils.byId)('helpBox').style.display = 'none';
       } else {
-        earnedXP = this.baseXP * (1 - this.xpMultiplier.weaker * (this.currentLevel - enemyLevel));
+        (0, _utils.byId)('helpBox').style.display = 'block';
       }
-      earnedXP = Math.round(Math.max(0, earnedXP));
-    }
-
-    // --- Gold reward
-    const goldReward = this.baseGold + enemyLevel * this.goldMultiplier;
-    this.currentXP += earnedXP;
-    this.gold += goldReward;
-    console.log(`${this.name} killed Lv${enemyLevel} enemy: +${earnedXP} XP, +${goldReward} gold`);
-    this.checkLevelUp();
-  }
-
-  // --- Automatic level-up
-  checkLevelUp() {
-    while (this.currentLevel < 10) {
-      const nextLevelXP = this.levels[this.currentLevel - 1].xp;
-      if (this.currentXP >= nextLevelXP) {
-        this.currentLevel++;
-        console.log(`${this.name} leveled up! Now level ${this.currentLevel}`);
-        this.updateStats();
-        this.currentXP -= nextLevelXP;
-      } else break;
-    }
-  }
-
-  // --- Upgrade abilities
-  upgradeAbility(spellIndex) {
-    const spell = this.abilities[spellIndex];
-    if (!spell) return false;
-    if (spell.level < spell.maxLevel && this.abilityPoints > 0) {
-      spell.level++;
-      this.abilityPoints--;
-      console.log(`${this.name} upgraded ${spell.name} to level ${spell.level}`);
-      return true;
-    }
-    return false;
-  }
-
-  // --- Get / Set stats
-  getStat(statName) {
-    return this[statName] ?? null;
-  }
-  setStat(statName, value) {
-    if (this.hasOwnProperty(statName)) {
-      this[statName] = value;
-      return true;
-    }
-    return false;
-  }
-
-  // --- Debug print
-  debugPrint() {
-    console.table({
-      level: this.currentLevel,
-      xp: this.currentXP,
-      gold: this.gold,
-      hp: this.hp,
-      mana: this.mana,
-      attack: this.attack,
-      armor: this.armor,
-      moveSpeed: this.moveSpeed,
-      attackSpeed: this.attackSpeed,
-      hpRegen: this.hpRegen,
-      mpRegen: this.mpRegen,
-      abilityPoints: this.abilityPoints,
-      abilities: this.abilities.map(a => `${a.name} (Lv ${a.level})`).join(", ")
     });
-  }
-  showUpgradeableAbilities() {
-    if (this.abilityPoints <= 0) {
-      console.log(`${this.name} has no ability points to spend.`);
-      return [];
-    }
-    const upgradeable = this.abilities.map((spell, index) => ({
-      ...spell,
-      index
-    })).filter(spell => spell.level < spell.maxLevel);
-    if (upgradeable.length === 0) {
-      console.log(`${this.name} has no spells left to upgrade.`);
-      return [];
-    }
-    console.log(`${this.name} has ${this.abilityPoints} ability point(s) available.`);
-    console.log("Upgradeable spells:");
-    upgradeable.forEach(spell => {
-      console.log(`  [${spell.index}] ${spell.name} (Lv ${spell.level}/${spell.maxLevel})`);
+    var table = document.createElement('div');
+    table.id = 'showHideTableDOM';
+    table.classList.add('btn');
+    table.innerHTML = `<span data-label="table"></span>`;
+    table.addEventListener('click', () => {
+      this.showHideJambTable();
     });
-    return upgradeable;
-  }
-
-  // --- Upgrade a spell by name (optional convenience)
-  upgradeAbilityByName(spellName) {
-    const spellIndex = this.abilities.findIndex(s => s.name === spellName);
-    if (spellIndex === -1) return false;
-    return this.upgradeAbility(spellIndex);
-  }
-
-  // attack NORMAL
-  calcDamage(attacker, defender, abilityMultiplier = 1.0, critChance = 1, critMult = 1) {
-    // Use attack from your current scaled stats
-    const baseAttack = attacker.attack;
-    // Optional: magic abilities could use mana or another stat later
-    const base = baseAttack * abilityMultiplier;
-    // Critical hit roll - not for now
-    const crit = Math.random() < critChance ? critMult : 1.0;
-    // Damage reduced by armor
-    const damage = Math.max(0, base * crit - defender.armor);
-    // Apply damage
-    defender.hp = Math.max(0, defender.hp - damage);
-    // --- Sync energy bar (0 → 1)
-    const progress = Math.max(0, Math.min(1, defender.hp / this.getHPMax()));
-    dispatchEvent(new CustomEvent(`onDamage-${defender.name}`, {
-      detail: {
-        progress: progress,
-        attacker: attacker,
-        defenderLevel: this.currentLevel
+    var settings = document.createElement('div');
+    settings.id = 'settings';
+    settings.classList.add('btn');
+    settings.innerHTML = `<span data-label="settings"></span>`;
+    settings.addEventListener('click', () => {
+      if (document.getElementById('messageBox').getAttribute('data-loaded') != null) {
+        (0, _utils.byId)('blocker').style.display = 'flex';
+        (0, _utils.byId)('messageBox').style.display = 'unset';
+        return;
       }
-    }));
-    return {
-      damage,
-      crit: crit > 1.0
-    };
-  }
-}
-exports.HeroProps = HeroProps;
-class Hero extends HeroProps {
-  constructor(name, archetypes = ["Warrior"]) {
-    super(name);
-    this.archetypes = archetypes.slice(0, 2); // limit to 2
-    this.applyArchetypeStats();
-  }
-  applyArchetypeStats() {
-    if (!this.archetypes || this.archetypes.length === 0) return;
-    let typeData;
-    if (this.archetypes.length === 2) {
-      typeData = mergeArchetypes(this.archetypes[0], this.archetypes[1]);
-    } else {
-      typeData = HERO_ARCHETYPES[this.archetypes[0]];
-    }
-    if (!typeData) return;
-    this.hp *= typeData.hpMult;
-    this.mana *= typeData.manaMult;
-    this.attack *= typeData.attackMult;
-    this.armor *= typeData.armorMult;
-    this.moveSpeed *= typeData.moveSpeed;
-    this.attackSpeed *= typeData.attackSpeed;
-    this.hpRegen *= typeData.hpRegenMult;
-    this.mpRegen *= typeData.manaRegenMult;
-    this._mergedArchetype = typeData._mergedFrom || this.archetypes;
-  }
-  getHPMax() {
-    let typeData;
-    if (this.archetypes.length === 2) {
-      typeData = mergeArchetypes(this.archetypes[0], this.archetypes[1]);
-    } else {
-      typeData = HERO_ARCHETYPES[this.archetypes[0]];
-    }
-    this.baseHp = this.levels[this.currentLevel - 1].hp;
-    return this.baseHp; // * typeData.hpMult; ???
-  }
-
-  // Override updateStats to include archetype scaling
-  updateStats() {
-    super.updateStats();
-    this.applyArchetypeStats();
-  }
-}
-exports.Hero = Hero;
-const HERO_PROFILES = exports.HERO_PROFILES = {
-  MariaSword: {
-    baseArchetypes: ["Warrior", "Mage"],
-    colorTheme: ["gold", "orange"],
-    weapon: "Sword",
-    abilities: ["Solar Dash", "Radiant Ascend", "Luminous Counter", "Solar Bloom"]
-  }
-};
-function mergeArchetypes(typeA, typeB) {
-  if (!HERO_ARCHETYPES[typeA] || !HERO_ARCHETYPES[typeB]) {
-    console.warn(`Invalid archetype(s): ${typeA}, ${typeB}`);
-    return HERO_ARCHETYPES[typeA] || HERO_ARCHETYPES[typeB];
-  }
-  const a = HERO_ARCHETYPES[typeA];
-  const b = HERO_ARCHETYPES[typeB];
-  const merged = {};
-
-  // Average their multipliers (or tweak with weights if needed)
-  for (const key in a) {
-    if (typeof a[key] === "number" && typeof b[key] === "number") {
-      merged[key] = (a[key] + b[key]) / 2;
-    }
-  }
-  merged._mergedFrom = [typeA, typeB];
-  return merged;
-}
-
-// not used now
-function mergeArchetypesWeighted(typeA, typeB, weightA = 0.7) {
-  const a = HERO_ARCHETYPES[typeA];
-  const b = HERO_ARCHETYPES[typeB];
-  const wB = 1 - weightA;
-  const merged = {};
-  for (const key in a) if (typeof a[key] === "number" && typeof b[key] === "number") merged[key] = a[key] * weightA + b[key] * wB;
-  merged._mergedFrom = [typeA, typeB];
-  return merged;
-}
-
-},{}],6:[function(require,module,exports){
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.HUD = void 0;
-class HUD {
-  constructor(localHero) {
-    this.localHero = localHero;
-    this.construct();
-    this.setCursor();
-  }
-  construct() {
-    // Create HUD container
-    const hud = document.createElement("div");
-    hud.id = "hud-menu";
-    Object.assign(hud.style, {
-      position: "absolute",
-      bottom: "0",
-      left: "0",
-      width: "100%",
-      height: "20%",
-      backgroundColor: "rgba(0,0,0,0.5)",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "space-around",
-      color: "white",
-      fontFamily: "'Orbitron', sans-serif",
-      zIndex: "100",
-      padding: "10px",
-      boxSizing: "border-box"
-    });
-    const hudLeftBox = document.createElement("div");
-    hudLeftBox.id = "hudLeftBox";
-    Object.assign(hudLeftBox.style, {
-      width: "30%",
-      height: "100%",
-      background: "rgba(0,0,0,0.5)",
-      border: "solid 1px red",
-      alignItems: "center",
-      justifyContent: "space-around",
-      color: "white",
-      fontFamily: "'Orbitron', sans-serif",
-      zIndex: "100",
-      padding: "10px",
-      boxSizing: "border-box",
-      overflow: 'hidden'
-    });
-    hud.appendChild(hudLeftBox);
-    const hudCenter = document.createElement("div");
-    hudCenter.id = "hudCenter";
-    Object.assign(hudCenter.style, {
-      width: "100%",
-      height: "100%",
-      backgroundColor: "rgba(0,0,0,0.5)",
-      display: "flex",
-      flexDirection: "column",
-      border: "solid 1px green",
-      alignItems: "center",
-      justifyContent: "space-around",
-      color: "white",
-      fontFamily: "'Orbitron', sans-serif",
-      zIndex: "100",
-      padding: "0",
-      boxSizing: "border-box"
-    });
-    const hudMagicHOlder = document.createElement("div");
-    hudMagicHOlder.id = "hudMagicHOlder";
-    Object.assign(hudMagicHOlder.style, {
-      width: "80%",
-      maxWidth: "300px",
-      minWidth: "150px",
-      aspectRatio: "4 / 1",
-      backgroundColor: "rgba(0, 0, 0, 0.4)",
-      display: "grid",
-      gridTemplateColumns: "repeat(4, 1fr)",
-      gap: "12px",
-      border: "1px solid gray",
-      borderRadius: "10px",
-      padding: "2px",
-      boxSizing: "border-box",
-      zIndex: "100",
-      fontFamily: "'Orbitron', sans-serif",
-      backdropFilter: "blur(6px)",
-      boxShadow: "0 -2px 10px rgba(0,0,0,0.4)",
-      justifyContent: "center",
-      alignItems: "center"
-    });
-    for (let i = 0; i < 4; i++) {
-      const slot = document.createElement("div");
-      slot.className = "magic-slot-test";
-      slot.id = `magic-slot-${i}`;
-      Object.assign(slot.style, {
-        aspectRatio: "1 / 1",
-        width: "100%",
-        border: "2px solid #888",
-        borderRadius: "8px",
-        background: "linear-gradient(145deg, #444, #222)",
-        boxShadow: "inset 2px 2px 5px rgba(0,0,0,0.6), inset -2px -2px 5px rgba(255,255,255,0.1)",
-        transition: "all 0.2s ease-in-out",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        color: "#ccc",
-        fontSize: "14px",
-        cursor: "url('./res/icons/default.png') 0 0, auto",
-        backgroundRepeat: "round"
+      (0, _utils.byId)('messageBox').innerHTML = _htmlContent.settingsBox;
+      (0, _utils.byId)('blocker').style.display = 'flex';
+      (0, _utils.byId)('messageBox').style.display = 'unset';
+      dispatchEvent(new CustomEvent('updateLang', {}));
+      (0, _utils.byId)('settingsAudios').click();
+      (0, _utils.byId)('settingsAudios').addEventListener('change', e => {
+        if (e.target.checked == true) {
+          app.matrixSounds.unmuteAll();
+        } else {
+          app.matrixSounds.muteAll();
+        }
       });
-      slot.addEventListener("mouseenter", () => {
-        slot.style.border = "2px solid #0ff";
-        slot.style.boxShadow = "0 0 10px rgba(0,255,255,0.5), inset 2px 2px 5px rgba(0,0,0,0.6)";
+      (0, _utils.setupCanvasFilters)();
+      (0, _utils.byId)('messageBox').setAttribute('data-loaded', 'loaded');
+      document.getElementById('physicsSpeed').value = app.matrixAmmo.speedUpSimulation;
+      (0, _utils.byId)("physicsSpeed").addEventListener("change", e => {
+        app.matrixAmmo.speedUpSimulation = parseInt(e.target.value);
       });
-      slot.addEventListener("mouseleave", () => {
-        slot.style.border = "2px solid #888";
-        slot.style.boxShadow = "inset 2px 2px 5px rgba(0,0,0,0.6), inset -2px -2px 5px rgba(255,255,255,0.1)";
-      });
-      slot.textContent = "locked";
-      slot.addEventListener("mousedown", e => {
-        console.log('---------------------------------------');
-        slot.style.border = "2px solid #888";
-        slot.style.boxShadow = "inset 2px 2px 5px rgba(0,0,0,0.6), inset -2px -2px 5px rgba(255,255,255,0.1)";
-        dispatchEvent(new CustomEvent(`attack-magic${i}`, {
-          detail: {
-            source: 'hero',
-            magicType: i,
-            level: 1
-          }
-        }));
-      });
-      hudMagicHOlder.appendChild(slot);
-    }
-    hudCenter.appendChild(hudMagicHOlder);
-    // ---------------------------------------
-    // HP 
-    // ---------------------------------------
-    const hudHP = document.createElement("div");
-    hudHP.id = "hudHP";
-    Object.assign(hudHP.style, {
-      width: "40%",
-      height: "10%",
-      backgroundColor: "rgba(0,0,0,0.5)",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "space-around",
-      color: "white",
-      fontFamily: "'Orbitron', sans-serif",
-      zIndex: "100",
-      padding: "10px",
-      boxSizing: "border-box"
     });
 
-    // Inner HP bar
-    const hpBar = document.createElement("div");
-    Object.assign(hpBar.style, {
-      height: "100%",
-      width: "100%",
-      height: "20px",
-      background: "linear-gradient(90deg, lime, green)",
-      transition: "width 0.3s ease-in-out",
-      borderRadius: "7px 7px 7px 7px",
-      boxShadow: "inset 0 0 10px #0f0"
+    // test help
+    var helpBox = document.createElement('div');
+    helpBox.id = 'helpBox';
+    helpBox.style.position = 'absolute';
+    helpBox.style.right = '20%';
+    helpBox.style.zIndex = '2';
+    helpBox.style.top = '15%';
+    helpBox.style.width = '60%';
+    helpBox.style.height = '50%';
+    helpBox.style.fontSize = '100%';
+    helpBox.classList.add('btn');
+    helpBox.addEventListener('click', () => {
+      (0, _utils.byId)('helpBox').style.display = 'none';
     });
-    hudHP.appendChild(hpBar);
-
-    // HP text overlay
-    const hpText = document.createElement("div");
-    Object.assign(hpText.style, {
-      position: "absolute",
-      width: "100%",
-      textAlign: "center",
-      color: "white",
-      fontWeight: "bold",
-      textShadow: "0 0 5px black",
-      pointerEvents: "none"
-    });
-    hpText.textContent = "HP: 100%";
-    hudHP.appendChild(hpText);
-    hudCenter.appendChild(hudHP);
-    window.addEventListener("setHP", e => {
-      const clamped = Math.max(0, Math.min(100, e.detail.HP));
-      hpBar.style.width = clamped + "%";
-      hpText.textContent = `HP: ${clamped}%`;
-    });
-
-    // ---------------------------------------
-    // MANA
-    // ---------------------------------------
-    const hudMANA = document.createElement("div");
-    hudMANA.id = "hudMANA";
-    Object.assign(hudMANA.style, {
-      width: "40%",
-      height: "10%",
-      backgroundColor: "rgba(0,0,0,0.5)",
-      display: "flex",
-      // border: "solid 5px blue",
-      alignItems: "center",
-      justifyContent: "space-around",
-      color: "white",
-      fontFamily: "'Orbitron', sans-serif",
-      zIndex: "100",
-      padding: "10px",
-      boxSizing: "border-box"
-    });
-    hudCenter.appendChild(hudMANA);
-
-    // Inner HP bar
-    const hudMANABar = document.createElement("div");
-    Object.assign(hudMANABar.style, {
-      height: "100%",
-      width: "100%",
-      height: "20px",
-      background: "linear-gradient(90deg, rgba(0, 162, 255, 1), blue)",
-      transition: "width 0.3s ease-in-out",
-      borderRadius: "7px 7px 7px 7px",
-      boxShadow: "inset 0 0 10px rgba(0, 162, 255, 1)"
-    });
-    hudMANA.appendChild(hudMANABar);
-
-    // HP text overlay
-    const MANAhpText = document.createElement("div");
-    Object.assign(MANAhpText.style, {
-      position: "absolute",
-      width: "100%",
-      textAlign: "center",
-      color: "white",
-      fontWeight: "bold",
-      textShadow: "0 0 5px black",
-      pointerEvents: "none"
-    });
-    MANAhpText.textContent = "HP: 100%";
-    hudMANA.appendChild(MANAhpText);
-    window.addEventListener("setMANA", e => {
-      const clamped = Math.max(0, Math.min(100, e.detail.HP));
-      hpBar.style.width = clamped + "%";
-      hpText.textContent = `MANA: ${clamped}%`;
-    });
-    hud.appendChild(hudCenter);
-    // left box
-    const selectedCharacters = document.createElement("span");
-    selectedCharacters.textContent = "HERO";
-    hudLeftBox.appendChild(selectedCharacters);
-    hud.addEventListener("onSelectCharacter", e => {
-      console.log('onSelectCharacter : ', e);
-      let n = '';
-      if (e.detail.indexOf('_') != -1) {
-        n = e.detail.split('_')[0];
-      }
-      selectedCharacters.textContent = `${n}`;
-    });
-
-    // const heroProfile = document.createElement("img");
-    // heroProfile.id = 'heroProfile';
-    // heroProfile.src = "";
-    // hudLeftBox.appendChild(heroProfile);
+    document.body.appendChild(helpBox);
+    console.log('what is dom, ', (0, _utils.byId)('helpBox'));
+    (0, _utils.typeText)('helpBox', app.label.get.about, 10);
     //
-
-    const hudDesription = document.createElement("div");
-    hudDesription.id = "hudDesription";
-    Object.assign(hudDesription.style, {
-      width: "60%",
-      height: "100%",
-      backgroundColor: "rgba(0,0,0,0.5)",
-      // display: "flex",
-      border: "solid 1px red",
-      alignItems: "center",
-      justifyContent: "space-around",
-      color: "white",
-      fontFamily: "'Orbitron', sans-serif",
-      zIndex: "100",
-      padding: "10px",
-      boxSizing: "border-box"
+    var roll = document.createElement('div');
+    roll.id = 'hud-roll';
+    roll.classList.add('btn');
+    roll.innerHTML = `<span data-label="roll"></span>`;
+    roll.addEventListener('click', () => {
+      app.ROLL();
     });
-    const hudDesriptionText = document.createElement("div");
-    hudDesriptionText.id = "hudDesription";
-    Object.assign(hudDesriptionText.style, {
-      width: "100%",
-      height: "100%",
-      aspectRatio: "1 / 1",
-      border: "2px solid #aaa",
-      borderRadius: "6px",
-      background: "linear-gradient(145deg, #444, #222)",
-      boxShadow: "inset 2px 2px 5px rgba(0,0,0,0.6), inset -2px -2px 5px rgba(255,255,255,0.1)",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      color: "#ccc",
-      fontSize: "12px",
-      cursor: "url('./res/icons/default.png') 0 0, auto",
-      transition: "all 0.2s ease-in-out",
-      backgroundSize: "contain",
-      backgroundRepeat: "no-repeat",
-      backgroundPosition: "center"
-    });
-    hudDesription.appendChild(hudDesriptionText);
-    hud.appendChild(hudDesription);
+    var separator = document.createElement('div');
+    separator.innerHTML = `✨maximumroulette.com✨`;
+    root.append(settings);
+    root.append(table);
+    root.append(help);
+    root.append(separator);
+    root.append(roll);
+    document.body.appendChild(root);
 
-    // right
-    const hudItems = document.createElement("div");
-    hudItems.id = "hudLeftBox";
-    Object.assign(hudItems.style, {
-      width: "30%",
-      height: "100%",
-      backgroundColor: "rgba(0,0,0,0.5)",
-      backgroundPosition: 'center center',
-      backgroundRepeat: 'no-repeat',
-      backgroundSize: 'auto',
-      display: "flex",
-      border: "solid 1px yellow",
-      alignItems: "center",
-      justifyContent: "space-around",
-      color: "white",
-      fontFamily: "'Orbitron', sans-serif",
-      zIndex: "100",
-      padding: "1px",
-      boxSizing: "border-box"
-    });
-    const inventoryGrid = document.createElement("div");
-    inventoryGrid.id = "inventoryGrid";
-    Object.assign(inventoryGrid.style, {
-      display: "grid",
-      gridTemplateColumns: "repeat(3, 1fr)",
-      gridTemplateRows: "repeat(2, 1fr)",
-      // gap: "10px",
-      width: "100%",
-      height: "100%",
-      padding: "5px",
-      boxSizing: "border-box"
-    });
-    for (let i = 0; i < 6; i++) {
-      const slot = document.createElement("div");
-      slot.className = "inventory-slot";
-      Object.assign(slot.style, {
-        aspectRatio: "1 / 1",
-        width: "90%",
-        border: "2px solid #aaa",
-        borderRadius: "6px",
-        background: "linear-gradient(145deg, #444, #222)",
-        boxShadow: "inset 2px 2px 5px rgba(0,0,0,0.6), inset -2px -2px 5px rgba(255,255,255,0.1)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        color: "#ccc",
-        fontSize: "12px",
-        cursor: "url('./res/icons/default.png') 0 0, auto",
-        transition: "all 0.2s ease-in-out",
-        backgroundSize: "contain",
-        backgroundRepeat: "no-repeat",
-        backgroundPosition: "center"
-      });
+    // global access
+    // app.label.update()
+    dispatchEvent(new CustomEvent('updateLang', {}));
+  },
+  createBlocker: function () {
+    var root = document.createElement('div');
+    root.id = 'blocker';
+    var messageBox = document.createElement('div');
+    messageBox.id = 'messageBox';
 
-      // Hover effect
-      slot.addEventListener("mouseenter", () => {
-        slot.style.border = "2px solid #ff0";
-        slot.style.boxShadow = "0 0 10px rgba(255,255,0,0.5), inset 2px 2px 5px rgba(0,0,0,0.6)";
-      });
-      slot.addEventListener("mouseleave", () => {
-        slot.style.border = "2px solid #aaa";
-        slot.style.boxShadow = "inset 2px 2px 5px rgba(0,0,0,0.6), inset -2px -2px 5px rgba(255,255,255,0.1)";
-      });
-      slot.textContent = "Empty";
-      inventoryGrid.appendChild(slot);
-    }
-
-    // Add grid to hudItems
-    hudItems.appendChild(inventoryGrid);
-    hud.appendChild(hudItems);
-    document.body.appendChild(hud);
-  }
-  setCursor() {
-    document.body.style.cursor = "url('./res/icons/default.png') 0 0, auto";
-  }
-}
-exports.HUD = HUD;
-
-},{}],7:[function(require,module,exports){
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.MEMapLoader = void 0;
-var _gen = require("../../../src/engine/effects/gen.js");
-var _loaderObj = require("../../../src/engine/loader-obj.js");
-var _webgpuGltf = require("../../../src/engine/loaders/webgpu-gltf.js");
-var _utils = require("../../../src/engine/utils.js");
-var _navMesh = _interopRequireDefault(require("./nav-mesh.js"));
-function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
-/**
- * @description
- * Map Loader controls first light
- */
-class MEMapLoader {
-  collectionOfTree1 = [];
-  async loadNavMesh(navMapPath) {
-    return new Promise(async (resolve, reject) => {
-      try {
-        const response = await fetch(navMapPath);
-        const navData = await response.json();
-        const nav = new _navMesh.default(navData, {
-          scale: [10, 1, 10]
+    // console.log('TEST', app.label.get)
+    messageBox.innerHTML = _htmlContent.welcomeBoxHTML;
+    let initialMsgBoxEvent = function () {
+      console.log('click on msgbox');
+      (0, _utils.byId)('messageBox').innerHTML = ``;
+      (0, _utils.byId)('blocker').style.display = 'none';
+      myDom.createMenu();
+      messageBox.removeEventListener('click', initialMsgBoxEvent);
+      document.querySelectorAll('.btn, .fancy-label, .fancy-title').forEach(el => {
+        el.addEventListener('mouseenter', () => {
+          app.matrixSounds.play('hover');
         });
-        resolve(nav);
-      } catch (err) {
-        reject(err);
-        throw err;
-      }
-    });
-  }
-  constructor(mysticore, navMapPath) {
-    this.core = mysticore;
-    this.loadNavMesh(navMapPath).then(e => {
-      console.log(`%cnavMap loaded.${e}`, _utils.LOG_FUNNY_SMALL);
-      this.core.RPG.nav = e;
-      this.loadMainMap(); // <-- FIXED
-    });
-  }
-  onGround(m) {
-    this.core.addMeshObj({
-      position: {
-        x: 0,
-        y: -5,
-        z: -10
-      },
-      rotation: {
-        x: 0,
-        y: 0,
-        z: 0
-      },
-      rotationSpeed: {
-        x: 0,
-        y: 0,
-        z: 0
-      },
-      texturesPaths: ['./res/meshes/maps-objs/textures/map-bg.png'],
-      name: 'ground',
-      mesh: m.cube,
-      physics: {
-        enabled: false,
-        mass: 0,
-        geometry: "Cube"
-      },
-      raycast: {
-        enabled: true,
-        radius: 1.5
-      }
-    });
-    this.core.lightContainer[0].position[1] = 170;
-    this.core.lightContainer[0].intesity = 1;
-  }
-  onTree(m) {
-    this.core.addMeshObj({
-      position: {
-        x: 0,
-        y: -5,
-        z: -10
-      },
-      rotation: {
-        x: 0,
-        y: 0,
-        z: 0
-      },
-      rotationSpeed: {
-        x: 0,
-        y: 0,
-        z: 0
-      },
-      texturesPaths: ['./res/meshes/maps-objs/textures/stablo.jpg'],
-      name: 'tree11',
-      mesh: m.tree11,
-      physics: {
-        enabled: false,
-        mass: 0,
-        geometry: "Cube"
-      },
-      raycast: {
-        enabled: false,
-        radius: 1.5
-      }
-    });
-    this.core.addMeshObj({
-      position: {
-        x: 0,
-        y: -5,
-        z: -10
-      },
-      rotation: {
-        x: 0,
-        y: 0,
-        z: 0
-      },
-      rotationSpeed: {
-        x: 0,
-        y: 0,
-        z: 0
-      },
-      texturesPaths: ['./res/meshes/maps-objs/textures/green.png'],
-      name: 'tree12',
-      mesh: m.tree12,
-      physics: {
-        enabled: false,
-        mass: 0,
-        geometry: "Cube"
-      },
-      raycast: {
-        enabled: false,
-        radius: 1.5
-      }
+      });
+    };
+    root.append(messageBox);
+    document.body.appendChild(root);
+    app.label.update();
+    document.querySelectorAll('.btn, .fancy-label, .fancy-title').forEach(el => {
+      el.addEventListener('mouseenter', () => {
+        app.matrixSounds.play('hover');
+      });
     });
     setTimeout(() => {
-      app.getSceneObjectByName('tree1-leaf2.001-0').position.y = 50;
+      (0, _utils.byId)('startFromWelcome').addEventListener('click', initialMsgBoxEvent);
     }, 200);
-  }
-  async loadMainMap() {
-    (0, _loaderObj.downloadMeshes)({
-      cube: "./res/meshes/maps-objs/map-1.obj"
-    }, this.onGround.bind(this), {
-      scale: [10, 10, 10]
-    });
-    var glbFile01 = await fetch('./res/meshes/maps-objs/tree.glb').then(res => res.arrayBuffer().then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, this.core.device)));
-    this.core.addGlbObjInctance({
-      material: {
-        type: 'standard',
-        useTextureFromGlb: true
-      },
-      scale: [(0, _utils.randomIntFromTo)(10, 15), (0, _utils.randomIntFromTo)(10, 15), (0, _utils.randomIntFromTo)(10, 15)],
-      position: {
-        x: -500,
-        y: -35,
-        z: -500
-      },
-      name: 'tree1',
-      texturesPaths: ['./res/meshes/maps-objs/textures/green.png'],
-      raycast: {
-        enabled: true,
-        radius: 1.5
-      },
-      pointerEffect: {
-        enabled: true
-      }
-    }, null, glbFile01);
-    setTimeout(() => {
-      this.collectionOfTree1 = this.core.mainRenderBundle.filter(o => o.name.indexOf('tree') != -1);
+  },
+  createJamb: function () {
+    var root = document.createElement('div');
+    root.id = 'jambTable';
+    root.style.position = 'absolute';
+    var dragHandler = document.createElement('div');
+    dragHandler.id = 'dragHandler';
+    dragHandler.classList.add('dragHandler');
+    dragHandler.innerHTML = "⇅ Drag";
+    root.append(dragHandler);
+    var rowHeader = document.createElement('div');
+    rowHeader.id = 'rowHeader';
+    rowHeader.style.top = '10px';
+    rowHeader.style.left = '10px';
+    rowHeader.style.width = '200px';
+    rowHeader.innerHTML = '<span data-label="cornerText"></span><span id="user-points">0</span>';
+    root.appendChild(rowHeader);
+    rowHeader.classList.add('fancy-label');
+    var rowDown = document.createElement('div');
+    rowDown.id = 'rowDown';
+    rowDown.style.top = '10px';
+    rowDown.style.left = '10px';
+    rowDown.style.width = '200px';
+    rowDown.innerHTML = '↓<span data-label="down"></span>';
+    rowDown.classList.add('fancy-label');
+    rowDown.classList.add('btn');
+    root.appendChild(rowDown);
+    var rowFree = document.createElement('div');
+    rowFree.id = 'rowFree';
+    rowFree.style.top = '10px';
+    rowFree.style.left = '10px';
+    rowFree.style.width = '200px';
+    rowFree.innerHTML = '↕<span data-label="free"></span>';
+    rowFree.classList.add('fancy-label');
+    rowFree.classList.add('btn');
+    root.appendChild(rowFree);
+    var rowUp = document.createElement('div');
+    rowUp.id = 'rowUp';
+    rowUp.style.top = '10px';
+    rowUp.style.left = '10px';
+    rowUp.style.width = '200px';
+    rowUp.innerHTML = '↑<span data-label="up"></span>';
+    rowUp.classList.add('fancy-label');
+    rowUp.classList.add('btn');
+    root.appendChild(rowUp);
+    var rowHand = document.createElement('div');
+    rowHand.id = 'rowHand';
+    rowHand.style.top = '10px';
+    rowHand.style.left = '10px';
+    rowHand.style.width = '200px';
+    rowHand.innerHTML = '<span data-label="hand"></span>';
+    rowHand.classList.add('fancy-label');
+    rowHand.classList.add('btn');
+    root.appendChild(rowHand);
+
+    // INJECT TABLE HEADER ROW
+    this.createLeftHeaderRow(rowHeader);
+    this.createRowDown(rowDown);
+    this.createRowFree(rowFree);
+    this.createRow(rowUp);
+    this.createRow(rowHand);
+    this.createSelectedBox();
+    document.body.appendChild(root);
+    // console.log('JambTable added.')
+  },
+  showHideJambTable: () => {
+    const panel = document.getElementById('jambTable');
+    if (panel.classList.contains('show')) {
+      panel.classList.remove('show');
+      panel.classList.add('hide');
+      // Delay actual hiding from layout to finish animation
       setTimeout(() => {
-        this.addInstancing();
-      }, 100);
-    }, 1000);
-  }
-  addInstancing() {
-    const spacing = 150;
-    const clusterOffsets = [[0, 0], [700, 0], [0, 700], [700, 700]];
-    this.collectionOfTree1.forEach(partOftree => {
-      const treesPerCluster = 9;
-      const gridSize = Math.ceil(Math.sqrt(treesPerCluster));
-      const totalInstances = treesPerCluster * clusterOffsets.length;
-      partOftree.updateMaxInstances(totalInstances);
-      partOftree.updateInstances(totalInstances);
-      let instanceIndex = 0;
-      for (const [offsetX, offsetZ] of clusterOffsets) {
-        for (let i = 0; i < treesPerCluster; i++) {
-          const row = Math.floor(i / gridSize);
-          const col = i % gridSize;
-          const instance = partOftree.instanceTargets[instanceIndex++];
-          instance.position[0] = offsetX + col * spacing + (0, _utils.randomIntFromTo)(0, 20);
-          instance.position[2] = offsetZ + row * spacing + (0, _utils.randomIntFromTo)(0, 20);
-          instance.position[1] = 0;
-          instance.color[3] = 1;
-          instance.color[0] = (0, _utils.randomFloatFromTo)(0.5, 2.0);
-          instance.color[1] = (0, _utils.randomFloatFromTo)(0.7, 1.0);
-          instance.color[2] = (0, _utils.randomFloatFromTo)(0.5, 0.9);
+        panel.style.display = 'none';
+      }, 300);
+    } else {
+      panel.style.display = 'flex';
+      setTimeout(() => {
+        panel.classList.remove('hide');
+        panel.classList.add('show');
+      }, 10); // allow repaint
+    }
+  },
+  createSelectedBox: function () {
+    var topTitleDOM = document.createElement('div');
+    topTitleDOM.id = 'topTitleDOM';
+    topTitleDOM.style.width = 'auto';
+    topTitleDOM.style.position = 'absolute';
+    topTitleDOM.style.left = '35%';
+    topTitleDOM.style.fontSize = '175%';
+    topTitleDOM.style.top = '4%';
+    topTitleDOM.style.background = '#7d7d7d8c';
+    topTitleDOM.innerHTML = app.label.get.ready + ", " + app.userState.name + '.';
+    topTitleDOM.setAttribute('data-gamestatus', 'FREE');
+    document.body.appendChild(topTitleDOM);
+    addEventListener('updateTitle', e => {
+      (0, _utils.typeText)('topTitleDOM', e.detail.text);
+      topTitleDOM.setAttribute('data-gamestatus', e.detail.status);
+    });
+  },
+  createLeftHeaderRow: function (myRoot) {
+    for (var x = 1; x < 7; x++) {
+      var rowNumber = document.createElement('div');
+      rowNumber.id = 'rowNumber' + x;
+      rowNumber.style.top = '10px';
+      rowNumber.style.left = '10px';
+      rowNumber.style.width = 'auto';
+      rowNumber.style.background = '#7d7d7d8c';
+      rowNumber.innerHTML = `<span>${x}</span>`;
+      myRoot.appendChild(rowNumber);
+    }
+    var rowNumberSum = document.createElement('div');
+    rowNumberSum.id = 'H_rowNumberSum';
+    rowNumberSum.style.width = 'auto';
+    rowNumberSum.style.background = '#7d7d7d8c';
+    rowNumberSum.innerHTML = `Σ`;
+    myRoot.appendChild(rowNumberSum);
+    var rowMax = document.createElement('div');
+    rowMax.id = 'H_rowMax';
+    rowMax.style.width = 'auto';
+    rowMax.style.background = '#7d7d7d8c';
+    rowMax.innerHTML = `<span data-label="MAX"></span>`;
+    myRoot.appendChild(rowMax);
+    var rowMin = document.createElement('div');
+    rowMin.id = 'H_rowMax';
+    rowMin.style.width = 'auto';
+    rowMin.style.background = '#7d7d7d8c';
+    rowMin.innerHTML = `<span data-label="MIN"></span>`;
+    myRoot.appendChild(rowMin);
+    var rowMaxMinSum = document.createElement('div');
+    rowMaxMinSum.id = 'H_rowMaxMinSum';
+    rowMaxMinSum.style.width = 'auto';
+    rowMaxMinSum.style.background = '#7d7d7d8c';
+    rowMaxMinSum.innerHTML = `Σ`;
+    myRoot.appendChild(rowMaxMinSum);
+    var largeStraight = document.createElement('div');
+    largeStraight.id = 'H_largeStraight';
+    largeStraight.style.width = 'auto';
+    largeStraight.style.background = '#7d7d7d8c';
+    largeStraight.innerHTML = `<span data-label="straight"></span>`;
+    myRoot.appendChild(largeStraight);
+    var threeOfAKind = document.createElement('div');
+    threeOfAKind.id = 'H_threeOfAKind';
+    threeOfAKind.style.width = 'auto';
+    threeOfAKind.style.background = '#7d7d7d8c';
+    threeOfAKind.innerHTML = `<span data-label="threeOf"></span>`;
+    myRoot.appendChild(threeOfAKind);
+    var fullHouse = document.createElement('div');
+    fullHouse.id = 'H_fullHouse';
+    fullHouse.style.width = 'auto';
+    fullHouse.style.background = '#7d7d7d8c';
+    fullHouse.innerHTML = `<span data-label="fullhouse"></span>`;
+    myRoot.appendChild(fullHouse);
+    var poker = document.createElement('div');
+    poker.id = 'H_poker';
+    poker.style.width = 'auto';
+    poker.style.background = '#7d7d7d8c';
+    poker.innerHTML = `<span data-label="poker"></span>`;
+    myRoot.appendChild(poker);
+    var jamb = document.createElement('div');
+    jamb.id = 'H_jamb';
+    jamb.style.width = 'auto';
+    jamb.style.background = '#7d7d7d8c';
+    jamb.innerHTML = `<span data-label="jamb"></span>`;
+    myRoot.appendChild(jamb);
+    var rowSum = document.createElement('div');
+    rowSum.id = 'H_rowSum';
+    rowSum.style.width = 'auto';
+    rowSum.style.background = '#7d7d7d8c';
+    rowSum.innerHTML = `Σ`;
+    myRoot.appendChild(rowSum);
+    var rowSumFINAL = document.createElement('div');
+    rowSumFINAL.id = 'H_rowSumFINAL';
+    rowSumFINAL.style.width = 'auto';
+    rowSumFINAL.style.background = '#7d7d7d8c';
+    rowSumFINAL.innerHTML = `<spam data-label="final"></span>`;
+    myRoot.appendChild(rowSumFINAL);
+  },
+  createRow: function (myRoot) {
+    for (var x = 1; x < 7; x++) {
+      var rowNumber = document.createElement('div');
+      rowNumber.id = 'rowNumber' + x;
+      rowNumber.style.top = '10px';
+      rowNumber.style.left = '10px';
+      rowNumber.style.width = 'auto';
+      rowNumber.style.background = '#7d7d7d8c';
+      rowNumber.innerHTML = `-`;
+      rowNumber.addEventListener('click', () => {
+        console.log('LOG THIS ', this);
+        // works
+        // rowDown
+        if (this.state.rowDown.length == 0) {
+          console.log('it is no play yet in this row ', this);
+        }
+      });
+      myRoot.appendChild(rowNumber);
+    }
+    var rowNumberSum = document.createElement('div');
+    rowNumberSum.id = 'rowNumberSum';
+    rowNumberSum.style.width = 'auto';
+    rowNumberSum.style.background = '#7d7d7d8c';
+    rowNumberSum.innerHTML = `-`;
+    myRoot.appendChild(rowNumberSum);
+    var rowMax = document.createElement('div');
+    rowMax.id = 'rowMax';
+    rowMax.style.width = 'auto';
+    rowMax.style.background = '#7d7d7d8c';
+    rowMax.innerHTML = `-`;
+    myRoot.appendChild(rowMax);
+    var rowMin = document.createElement('div');
+    rowMin.id = 'rowMax';
+    rowMin.style.width = 'auto';
+    rowMin.style.background = '#7d7d7d8c';
+    rowMin.innerHTML = `-`;
+    myRoot.appendChild(rowMin);
+    var rowMaxMinSum = document.createElement('div');
+    rowMaxMinSum.id = 'rowMaxMinSum';
+    rowMaxMinSum.style.width = 'auto';
+    rowMaxMinSum.style.background = '#7d7d7d8c';
+    rowMaxMinSum.innerHTML = `-`;
+    myRoot.appendChild(rowMaxMinSum);
+    var largeStraight = document.createElement('div');
+    largeStraight.id = 'largeStraight';
+    largeStraight.style.width = 'auto';
+    largeStraight.style.background = '#7d7d7d8c';
+    largeStraight.innerHTML = `-`;
+    myRoot.appendChild(largeStraight);
+    var threeOfAKind = document.createElement('div');
+    threeOfAKind.id = 'down_threeOfAKind';
+    threeOfAKind.style.width = 'auto';
+    threeOfAKind.style.background = '#7d7d7d8c';
+    threeOfAKind.innerHTML = `-`;
+    myRoot.appendChild(threeOfAKind);
+    var fullHouse = document.createElement('div');
+    fullHouse.id = 'fullHouse';
+    fullHouse.style.width = 'auto';
+    fullHouse.style.background = '#7d7d7d8c';
+    fullHouse.innerHTML = `-`;
+    myRoot.appendChild(fullHouse);
+    var poker = document.createElement('div');
+    poker.id = 'poker';
+    poker.style.width = 'auto';
+    poker.style.background = '#7d7d7d8c';
+    poker.innerHTML = `-`;
+    myRoot.appendChild(poker);
+    var jamb = document.createElement('div');
+    jamb.id = 'jamb';
+    jamb.style.width = 'auto';
+    jamb.style.background = '#7d7d7d8c';
+    jamb.innerHTML = `-`;
+    myRoot.appendChild(jamb);
+    var rowSum = document.createElement('div');
+    rowSum.id = 'rowSum';
+    rowSum.style.width = 'auto';
+    rowSum.style.background = '#7d7d7d8c';
+    rowSum.innerHTML = `-`;
+    myRoot.appendChild(rowSum);
+  },
+  createRowFree: function (myRoot) {
+    for (var x = 1; x < 7; x++) {
+      var rowNumber = document.createElement('div');
+      rowNumber.id = 'free-rowNumber' + x;
+      rowNumber.style.top = '10px';
+      rowNumber.style.left = '10px';
+      rowNumber.style.width = 'auto';
+      rowNumber.style.background = '#7d7d7d8c';
+      rowNumber.innerHTML = `-`;
+      rowNumber.addEventListener('click', e => {
+        if (dices.validatePass() == false) return;
+        var getName = e.target.id;
+        getName = getName.replace('free-rowNumber', '');
+        var count23456 = 0;
+        for (let key in dices.SAVED_DICES) {
+          if (parseInt(dices.R[key]) == parseInt(getName)) {
+            count23456++;
+          }
+        }
+        this.state.rowDown.push(count23456 * parseInt(getName));
+        e.target.innerHTML = count23456 * parseInt(getName);
+        if (parseInt(getName) == 6) {
+          myDom.calcFreeNumbers();
+        }
+        dices.STATUS = "FREE_TO_PLAY";
+        dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
+      });
+      myRoot.appendChild(rowNumber);
+    }
+    var rowNumberSum = document.createElement('div');
+    rowNumberSum.id = 'free-rowNumberSum';
+    rowNumberSum.style.width = 'auto';
+    rowNumberSum.style.background = '#7d7d7d8c';
+    rowNumberSum.innerHTML = `-`;
+    myRoot.appendChild(rowNumberSum);
+    var rowMax = document.createElement('div');
+    rowMax.id = 'free-rowMax';
+    rowMax.style.width = 'auto';
+    rowMax.style.background = '#7d7d7d8c';
+    rowMax.innerHTML = `-`;
+    rowMax.addEventListener("click", this.calcFreeRowMax);
+    myRoot.appendChild(rowMax);
+    var rowMin = document.createElement('div');
+    rowMin.id = 'free-rowMin';
+    rowMin.style.width = 'auto';
+    rowMin.style.background = '#7d7d7d8c';
+    rowMin.innerHTML = `-`;
+    rowMin.addEventListener('click', this.calcFreeRowMin);
+    myRoot.appendChild(rowMin);
+    var rowMaxMinSum = document.createElement('div');
+    rowMaxMinSum.id = 'free-rowMaxMinSum';
+    rowMaxMinSum.style.width = 'auto';
+    rowMaxMinSum.style.background = '#7d7d7d8c';
+    rowMaxMinSum.innerHTML = `-`;
+    myRoot.appendChild(rowMaxMinSum);
+    var largeStraight = document.createElement('div');
+    largeStraight.id = 'free-largeStraight';
+    largeStraight.style.width = 'auto';
+    largeStraight.style.background = '#7d7d7d8c';
+    largeStraight.innerHTML = `-`;
+    largeStraight.addEventListener('click', this.attachFreeKenta);
+    myRoot.appendChild(largeStraight);
+    var threeOfAKind = document.createElement('div');
+    threeOfAKind.id = 'free-threeOfAKind';
+    threeOfAKind.style.width = 'auto';
+    threeOfAKind.style.background = '#7d7d7d8c';
+    threeOfAKind.innerHTML = `-`;
+    threeOfAKind.addEventListener('click', this.attachFreeTrilling);
+    myRoot.appendChild(threeOfAKind);
+    var fullHouse = document.createElement('div');
+    fullHouse.id = 'free-fullHouse';
+    fullHouse.style.width = 'auto';
+    fullHouse.style.background = '#7d7d7d8c';
+    fullHouse.innerHTML = `-`;
+    fullHouse.addEventListener('click', this.attachFreeFullHouse);
+    myRoot.appendChild(fullHouse);
+    var poker = document.createElement('div');
+    poker.id = 'free-poker';
+    poker.style.width = 'auto';
+    poker.style.background = '#7d7d7d8c';
+    poker.innerHTML = `-`;
+    poker.addEventListener('click', this.attachFreePoker);
+    myRoot.appendChild(poker);
+    var jamb = document.createElement('div');
+    jamb.id = 'free-jamb';
+    jamb.style.width = 'auto';
+    jamb.style.background = '#7d7d7d8c';
+    jamb.innerHTML = `-`;
+    jamb.addEventListener('click', this.attachFreeJamb);
+    myRoot.appendChild(jamb);
+    var rowSum = document.createElement('div');
+    rowSum.id = 'free-rowSum';
+    rowSum.style.width = 'auto';
+    rowSum.style.background = '#7d7d7d8c';
+    rowSum.innerHTML = `-`;
+    myRoot.appendChild(rowSum);
+  },
+  createRowDown: function (myRoot) {
+    for (var x = 1; x < 7; x++) {
+      var rowNumber = document.createElement('div');
+      rowNumber.id = 'down-rowNumber' + x;
+      rowNumber.style.top = '10px';
+      rowNumber.style.left = '10px';
+      rowNumber.style.width = 'auto';
+      rowNumber.style.background = '#7d7d7d8c';
+      rowNumber.style.cursor = 'pointer';
+      rowNumber.innerHTML = `-`;
+      this.memoNumberRow.push(rowNumber);
+      // initial
+      if (x == 1) {
+        rowNumber.classList.add('canPlay');
+      }
+      rowNumber.addEventListener('click', e => {
+        if (dices.validatePass() == false) return;
+        var getName = e.target.id;
+        getName = getName.replace('down-rowNumber', '');
+        if (this.state.rowDown.length == 0) {
+          console.log('LOG ', getName);
+          if (parseInt(getName) == 1) {
+            var count1 = 0;
+            for (let key in dices.SAVED_DICES) {
+              if (parseInt(dices.R[key]) == 1) {
+                console.log('yeap', dices.R);
+                count1++;
+              }
+            }
+            this.state.rowDown.push(count1);
+            e.target.innerHTML = count1;
+            e.target.classList.remove('canPlay');
+            this.memoNumberRow[1].classList.add('canPlay');
+            dices.STATUS = "FREE_TO_PLAY";
+            dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
+          } else {
+            console.log('BLOCK');
+          }
+        } else {
+          if (this.state.rowDown.length > 0) {
+            if (parseInt(getName) == this.state.rowDown.length + 1) {
+              console.log('moze za ', parseInt(getName));
+              var count23456 = 0;
+              for (let key in dices.SAVED_DICES) {
+                if (parseInt(dices.R[key]) == parseInt(getName)) {
+                  console.log('yeap', dices.R);
+                  count23456++;
+                }
+              }
+              this.state.rowDown.push(count23456 * parseInt(getName));
+              //
+              e.target.innerHTML = count23456 * parseInt(getName);
+              if (parseInt(getName) == 6) {
+                // calc sum
+                console.log('calc sum for numb ~ ');
+                //  this.state.rowDown.length + 1
+                myDom.calcDownNumbers();
+                e.target.classList.remove('canPlay');
+                this.rowMax.classList.add('canPlay');
+              } else {
+                e.target.classList.remove('canPlay');
+                this.memoNumberRow[parseInt(getName)].classList.add('canPlay');
+              }
+              dices.STATUS = "FREE_TO_PLAY";
+              dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
+            } else {
+              console.log('BLOCK');
+            }
+          }
+        }
+      });
+      myRoot.appendChild(rowNumber);
+    }
+    var rowNumberSum = document.createElement('div');
+    rowNumberSum.id = 'down-rowNumberSum';
+    rowNumberSum.style.width = 'auto';
+    rowNumberSum.style.background = '#7d7d7d8c';
+    rowNumberSum.innerHTML = `-`;
+    myRoot.appendChild(rowNumberSum);
+    var rowMax = document.createElement('div');
+    rowMax.id = 'down-rowMax';
+    rowMax.style.width = 'auto';
+    rowMax.style.background = '#7d7d7d8c';
+    rowMax.innerHTML = `-`;
+    myRoot.appendChild(rowMax);
+    this.rowMax = rowMax;
+    // this.rowMax.addEventListener("click", (e) => {
+    //   e.target.classList.remove('canPlay')
+    //   this.rowMin.classList.add('canPlay')
+    // })
+
+    var rowMin = document.createElement('div');
+    rowMin.id = 'down-rowMin';
+    rowMin.style.width = 'auto';
+    rowMin.style.background = '#7d7d7d8c';
+    rowMin.innerHTML = `-`;
+    // this.rowMin = rowMin;
+    myRoot.appendChild(rowMin);
+    var rowMaxMinSum = document.createElement('div');
+    rowMaxMinSum.id = 'down-rowMaxMinSum';
+    rowMaxMinSum.style.width = 'auto';
+    rowMaxMinSum.style.background = '#7d7d7d8c';
+    rowMaxMinSum.innerHTML = `-`;
+    myRoot.appendChild(rowMaxMinSum);
+    var largeStraight = document.createElement('div');
+    largeStraight.id = 'down-largeStraight';
+    largeStraight.style.width = 'auto';
+    largeStraight.style.background = '#7d7d7d8c';
+    largeStraight.innerHTML = `-`;
+    myRoot.appendChild(largeStraight);
+    var threeOfAKind = document.createElement('div');
+    threeOfAKind.id = 'down-threeOfAKind';
+    threeOfAKind.style.width = 'auto';
+    threeOfAKind.style.background = '#7d7d7d8c';
+    threeOfAKind.innerHTML = `-`;
+    myRoot.appendChild(threeOfAKind);
+    var fullHouse = document.createElement('div');
+    fullHouse.id = 'down-fullHouse';
+    fullHouse.style.width = 'auto';
+    fullHouse.style.background = '#7d7d7d8c';
+    fullHouse.innerHTML = `-`;
+    myRoot.appendChild(fullHouse);
+    var poker = document.createElement('div');
+    poker.id = 'down-poker';
+    poker.style.width = 'auto';
+    poker.style.background = '#7d7d7d8c';
+    poker.innerHTML = `-`;
+    myRoot.appendChild(poker);
+    var jamb = document.createElement('div');
+    jamb.id = 'down-jamb';
+    jamb.style.width = 'auto';
+    jamb.style.background = '#7d7d7d8c';
+    jamb.innerHTML = `-`;
+    myRoot.appendChild(jamb);
+    var rowSum = document.createElement('div');
+    rowSum.id = 'down-rowSum';
+    rowSum.style.width = 'auto';
+    rowSum.style.background = '#7d7d7d8c';
+    rowSum.innerHTML = `-`;
+    myRoot.appendChild(rowSum);
+  },
+  calcDownNumbers: function () {
+    var s = 0;
+    this.state.rowDown.forEach(i => {
+      console.log(parseFloat(i));
+      s += parseFloat(i);
+    });
+    (0, _utils.byId)('down-rowNumberSum').style.background = 'rgb(113 0 0 / 55%)';
+    (0, _utils.byId)('down-rowNumberSum').innerHTML = s;
+    // console.log('this.rowMax also set free to plat status', this.rowMax)
+    dices.STATUS = "FREE_TO_PLAY";
+    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
+    this.rowMax.addEventListener("click", this.calcDownRowMax);
+  },
+  // free row start
+
+  calcFreeNumbers: function () {
+    var s = 0;
+    this.state.rowDown.forEach(i => {
+      console.log(parseFloat(i));
+      s += parseFloat(i);
+    });
+    (0, _utils.byId)('free-rowNumberSum').style.background = 'rgb(113 0 0 / 55%)';
+    (0, _utils.byId)('free-rowNumberSum').innerHTML = s;
+    // console.log('this.rowMax also set free to plat status', this.rowMax)
+    dices.STATUS = "FREE_TO_PLAY";
+    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
+    (0, _utils.byId)('free-rowMax').addEventListener("click", this.calc);
+  },
+  calcFreeRowMax: e => {
+    if (dices.validatePass() == false) return;
+    var test = 0;
+    let keyLessNum = Object.keys(dices.R).reduce((key, v) => dices.R[v] < dices.R[key] ? v : key);
+    for (var key in dices.R) {
+      if (key != keyLessNum) {
+        test += parseFloat(dices.R[key]);
+      }
+    }
+    e.target.innerHTML = test;
+    // now attach next event.
+    dices.STATUS = "FREE_TO_PLAY";
+    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
+    (0, _utils.byId)('free-rowMax').removeEventListener("click", (void 0).calcFreeRowMax);
+  },
+  calcFreeRowMin: () => {
+    if (dices.validatePass() == false) return;
+    var maxTestKey = Object.keys(dices.R).reduce(function (a, b) {
+      return dices.R[a] > dices.R[b] ? a : b;
+    });
+    var test = 0;
+    for (var key in dices.R) {
+      if (key != maxTestKey) {
+        test += parseFloat(dices.R[key]);
+      } else {
+        console.log('not calc dice ', dices.R[key]);
+      }
+    }
+    (0, _utils.byId)('free-rowMin').innerHTML = test;
+    (0, _utils.byId)('free-rowMin').removeEventListener('click', (void 0).calcFreeRowMin);
+    // calc max min dont forget rules for bonus +30
+    var SUMMINMAX = parseFloat((0, _utils.byId)('free-rowMax').innerHTML) - parseFloat((0, _utils.byId)('free-rowMin').innerHTML);
+    (0, _utils.byId)('free-rowMaxMinSum').innerHTML = SUMMINMAX;
+    myDom.incrasePoints(SUMMINMAX);
+    dices.STATUS = "FREE_TO_PLAY";
+    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
+  },
+  attachFreeKenta: function () {
+    if (dices.validatePass() == false) return;
+    console.log('Test free kenta :', dices.R);
+    var result = app.myDom.checkForDuplicate()[0];
+    var testArray = app.myDom.checkForDuplicate()[1];
+    console.log('TEST duplik: ' + result);
+    if (result.length == 2) {
+      console.log('TEST duplik less 3 : ' + result);
+      var locPrevent = false;
+      testArray.forEach((item, index, array) => {
+        if (result[0].value == item.value && locPrevent == false) {
+          console.log('detect by value item.value', item.value);
+          locPrevent = true;
+          array.splice(index, 1);
+        }
+      });
+      // if we catch  1 and 6 in same stack then it is not possible for kenta...
+      var test1 = false,
+        test6 = false;
+      testArray.forEach((item, index, array) => {
+        if (item.value == 1) {
+          test1 = true;
+        } else if (item.value == 6) {
+          test6 = true;
+        }
+      });
+      if (test1 == true && test6 == true) {
+        (0, _utils.byId)('free-largeStraight').innerHTML = `0`;
+      } else if (test1 == true) {
+        (0, _utils.byId)('free-largeStraight').innerHTML = 15 + 50;
+        myDom.incrasePoints(15 + 50);
+      } else if (test6 == true) {
+        (0, _utils.byId)('free-largeStraight').innerHTML = 20 + 50;
+        myDom.incrasePoints(20 + 50);
+      }
+    } else if (result < 2) {
+      (0, _utils.byId)('free-largeStraight').innerHTML = 66;
+      myDom.incrasePoints(66);
+    } else {
+      // zero value
+      (0, _utils.byId)('free-largeStraight').innerHTML = `0`;
+    }
+    (0, _utils.byId)('free-largeStraight').removeEventListener('click', this.attachFreeKenta);
+    dices.STATUS = "FREE_TO_PLAY";
+    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
+  },
+  attachFreeTrilling: function () {
+    if (dices.validatePass() == false) return;
+    var result = app.myDom.checkForDuplicate()[0];
+    // var testArray = app.myDom.checkForDuplicate()[1];
+    // console.log('DUPLICATE FOR TRILING ', result);
+    if (result.length > 2) {
+      var testWin = 0;
+      var TEST = app.myDom.checkForAllDuplicate();
+      console.log('DUPLICATE FOR TRILING TEST ', TEST);
+      for (var key in TEST) {
+        if (TEST[key] > 2) {
+          // win
+          var getDiceID = parseInt(key.replace('value__', ''));
+          testWin = getDiceID * 3;
         }
       }
+      console.log('DUPLICATE FOR TRILING 30 + TEST ', testWin);
+      if (testWin > 0) {
+        (0, _utils.byId)('free-threeOfAKind').innerHTML = 20 + testWin;
+        myDom.incrasePoints(20 + testWin);
+      }
+    } else {
+      (0, _utils.byId)('free-threeOfAKind').innerHTML = 0;
+    }
+    (0, _utils.byId)('free-threeOfAKind').removeEventListener('click', this.attachFreeTrilling);
+    dices.STATUS = "FREE_TO_PLAY";
+    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
+  },
+  attachFreeFullHouse: function () {
+    if (dices.validatePass() == false) return;
+    var TEST = app.myDom.checkForAllDuplicate();
+    // console.log('DUPLICATE FOR FULL HOUSE 30 + TEST ');
+    var win = 0;
+    var testPair = false;
+    var testTrilling = false;
+    var testWinPair = 0;
+    var testWinTrilling = 0;
+    for (var key in TEST) {
+      if (TEST[key] == 2) {
+        // win
+        var getDiceID = parseInt(key.replace('value__', ''));
+        testWinPair = getDiceID * 2;
+        testPair = true;
+      } else if (TEST[key] == 3) {
+        var getDiceID = parseInt(key.replace('value__', ''));
+        testWinTrilling = getDiceID * 3;
+        testTrilling = true;
+      }
+    }
+    if (testPair == true && testTrilling == true) {
+      win = testWinPair + testWinTrilling;
+      (0, _utils.byId)('free-fullHouse').innerHTML = win + 30;
+      myDom.incrasePoints(win + 30);
+    } else {
+      (0, _utils.byId)('free-fullHouse').innerHTML = 0;
+    }
+    (0, _utils.byId)('free-fullHouse').removeEventListener('click', this.attachFreeFullHouse);
+    dices.STATUS = "FREE_TO_PLAY";
+    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
+  },
+  attachFreePoker: function () {
+    if (dices.validatePass() == false) return;
+    var TEST = app.myDom.checkForAllDuplicate();
+    // console.log('DUPLICATE FOR poker 40 + TEST ');
+    for (var key in TEST) {
+      if (TEST[key] == 4 || TEST[key] > 4) {
+        var getDiceID = parseInt(key.replace('value__', ''));
+        var win = getDiceID * 4;
+        (0, _utils.byId)('free-poker').innerHTML = win + 40;
+        myDom.incrasePoints(win + 40);
+      }
+    }
+    (0, _utils.byId)('free-poker').removeEventListener('click', this.attachFreePoker);
+    dices.STATUS = "FREE_TO_PLAY";
+    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
+  },
+  attachFreeJamb: function () {
+    if (dices.validatePass() == false) return;
+    // console.log('<GAMEPLAY><FREE ROW IS FEELED>')
+    var TEST = app.myDom.checkForAllDuplicate();
+    for (var key in TEST) {
+      if (TEST[key] == 5) {
+        // win
+        var getDiceID = parseInt(key.replace('value__', ''));
+        var win = getDiceID * 5;
+        (0, _utils.byId)('free-poker').innerHTML = win + 50;
+        myDom.incrasePoints(win + 50);
+      }
+    }
+    (0, _utils.byId)('free-jamb').removeEventListener('click', this.attachFreeJamb);
+    dices.STATUS = "FREE_TO_PLAY";
+    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
+  },
+  // end of free row
+
+  calcDownRowMax: e => {
+    if (dices.validatePass() == false) return;
+    e.target.classList.remove('canPlay');
+    (0, _utils.byId)('down-rowMin').classList.add('canPlay');
+    var test = 0;
+    let keyLessNum = Object.keys(dices.R).reduce((key, v) => dices.R[v] < dices.R[key] ? v : key);
+    // console.log('FIND MIN DICE TO REMOVE FROM SUM ', keyLessNum);
+    for (var key in dices.SAVED_DICES) {
+      if (key != keyLessNum) {
+        test += parseFloat(dices.R[key]);
+      }
+    }
+    e.target.innerHTML = test;
+    // now attach next event.
+    dices.STATUS = "FREE_TO_PLAY";
+    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
+    (0, _utils.byId)('down-rowMax').removeEventListener("click", myDom.calcDownRowMax);
+    (0, _utils.byId)('down-rowMin').addEventListener('click', myDom.calcDownRowMin);
+  },
+  incrasePoints: function (arg) {
+    (0, _utils.byId)('user-points').innerHTML = parseInt((0, _utils.byId)('user-points').innerHTML) + parseInt(arg);
+  },
+  calcDownRowMin: () => {
+    if (dices.validatePass() == false) return;
+    (0, _utils.byId)('down-rowMin').classList.remove('canPlay');
+    console.log('MIN ENABLED');
+    var maxTestKey = Object.keys(dices.R).reduce(function (a, b) {
+      return dices.R[a] > dices.R[b] ? a : b;
+    });
+    var test = 0;
+    for (var key in dices.R) {
+      // if(key != maxTestKey) {
+      test += parseFloat(dices.R[key]);
+      // } else {
+      //   console.log('not calc dice ', dices.R[key])
+      // }
+    }
+    (0, _utils.byId)('down-rowMin').innerHTML = test;
+    (0, _utils.byId)('down-rowMin').removeEventListener('click', myDom.calcDownRowMin);
+    // calc max min dont forget rules for bonus +30
+    var SUMMINMAX = parseFloat((0, _utils.byId)('down-rowMax').innerHTML) - parseFloat((0, _utils.byId)('down-rowMin').innerHTML);
+    (0, _utils.byId)('down-rowMaxMinSum').innerHTML = SUMMINMAX;
+    myDom.incrasePoints(SUMMINMAX);
+    dices.STATUS = "FREE_TO_PLAY";
+    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
+    (0, _utils.byId)('down-largeStraight').classList.add('canPlay');
+    (0, _utils.byId)('down-largeStraight').addEventListener('click', myDom.attachKenta);
+    (0, _utils.byId)('down-rowMin').removeEventListener('click', myDom.calcDownRowMin);
+  },
+  checkForDuplicate: function () {
+    var testArray = [];
+    for (var key in dices.SAVED_DICES) {
+      var gen = {
+        myId: key,
+        value: dices.R[key]
+      };
+      testArray.push(gen);
+    }
+    var result = Object.values(testArray.reduce((c, v) => {
+      let k = v.value;
+      c[k] = c[k] || [];
+      c[k].push(v);
+      return c;
+    }, {})).reduce((c, v) => v.length > 1 ? c.concat(v) : c, []);
+    return [result, testArray];
+  },
+  checkForAllDuplicate: function () {
+    var testArray = [];
+    for (var key in dices.SAVED_DICES) {
+      var gen = {
+        myId: key,
+        value: dices.R[key]
+      };
+      testArray.push(gen);
+    }
+    // console.log('testArray ', testArray)
+    var result = Object.values(testArray.reduce((c, v) => {
+      let k = v.value;
+      c[k] = c[k] || [];
+      c[k].push(v);
+      return c;
+    }, {})).reduce((c, v) => v.length > 1 ? c.concat(v) : c, []);
+    var discret = {};
+    result.forEach((item, index, array) => {
+      if (typeof discret['value__' + item.value] === 'undefined') {
+        discret['value__' + item.value] = 1;
+      } else {
+        discret['value__' + item.value] += 1;
+      }
+    });
+    return discret;
+  },
+  attachKenta: function () {
+    console.log('Test kenta  ', dices.SAVED_DICES);
+    (0, _utils.byId)('down-largeStraight').classList.remove('canPlay');
+    var result = app.myDom.checkForDuplicate()[0];
+    var testArray = app.myDom.checkForDuplicate()[1];
+    console.log('TEST duplik: ' + result);
+    if (result.length > 0) {
+      console.log('TEST duplik l : ' + result);
+      var locPrevent = false;
+      testArray.forEach((item, index, array) => {
+        if (result[0].value == item.value && locPrevent == false) {
+          console.log('detect by value item.value', item.value);
+          locPrevent = true;
+          array.splice(index, 1);
+        }
+      });
+      (0, _utils.byId)('down-largeStraight').innerHTML = `0`;
+    } else if (result < 2) {
+      (0, _utils.byId)('down-largeStraight').innerHTML = 66;
+      myDom.incrasePoints(66);
+    } else {
+      // zero value
+      (0, _utils.byId)('down-largeStraight').innerHTML = `0`;
+    }
+    (0, _utils.byId)('down-threeOfAKind').addEventListener('click', myDom.attachDownTrilling);
+    (0, _utils.byId)('down-largeStraight').removeEventListener('click', myDom.attachKenta);
+    dices.STATUS = "FREE_TO_PLAY";
+    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
+  },
+  attachDownTrilling: function () {
+    var result = app.myDom.checkForDuplicate()[0];
+    // var testArray = app.myDom.checkForDuplicate()[1];
+    // console.log('DUPLICATE FOR TRILING ', result);
+    if (result.length > 2) {
+      var testWin = 0;
+      var TEST = app.myDom.checkForAllDuplicate();
+      console.log('DUPLICATE FOR TRILING TEST ', TEST);
+      for (var key in TEST) {
+        if (TEST[key] > 2) {
+          // win
+          var getDiceID = parseInt(key.replace('value__', ''));
+          testWin = getDiceID * 3;
+        }
+      }
+      console.log('DUPLICATE FOR TRILING 30 + TEST ', testWin);
+      (0, _utils.byId)('down-threeOfAKind').innerHTML = 20 + testWin;
+      myDom.incrasePoints(20 + testWin);
+    } else {
+      (0, _utils.byId)('down-threeOfAKind').innerHTML = 0;
+    }
+    (0, _utils.byId)('down-threeOfAKind').removeEventListener('click', myDom.attachDownTrilling);
+    (0, _utils.byId)('down-fullHouse').addEventListener('click', myDom.attachDownFullHouse);
+    dices.STATUS = "FREE_TO_PLAY";
+    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
+  },
+  attachDownFullHouse: function () {
+    var TEST = app.myDom.checkForAllDuplicate();
+    // console.log('DUPLICATE FOR FULL HOUSE 30 + TEST ');
+    var win = 0;
+    var testPair = false;
+    var testTrilling = false;
+    var testWinPair = 0;
+    var testWinTrilling = 0;
+    for (var key in TEST) {
+      if (TEST[key] == 2) {
+        // win
+        var getDiceID = parseInt(key.replace('value__', ''));
+        testWinPair = getDiceID * 2;
+        testPair = true;
+      } else if (TEST[key] == 3) {
+        var getDiceID = parseInt(key.replace('value__', ''));
+        testWinTrilling = getDiceID * 3;
+        testTrilling = true;
+      }
+    }
+    if (testPair == true && testTrilling == true) {
+      win = testWinPair + testWinTrilling;
+      (0, _utils.byId)('down-fullHouse').innerHTML = win + 30;
+      myDom.incrasePoints(win + 30);
+    } else {
+      (0, _utils.byId)('down-fullHouse').innerHTML = 0;
+    }
+    (0, _utils.byId)('down-poker').addEventListener('click', myDom.attachDownPoker);
+    (0, _utils.byId)('down-fullHouse').removeEventListener('click', myDom.attachDownFullHouse);
+    dices.STATUS = "FREE_TO_PLAY";
+    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
+  },
+  attachDownPoker: function () {
+    var TEST = app.myDom.checkForAllDuplicate();
+    // console.log('DUPLICATE FOR poker 40 + TEST ');
+    for (var key in TEST) {
+      if (TEST[key] == 4 || TEST[key] > 4) {
+        // win
+        var getDiceID = parseInt(key.replace('value__', ''));
+        var win = getDiceID * 4;
+        (0, _utils.byId)('down-poker').innerHTML = win + 40;
+        myDom.incrasePoints(win + 40);
+      }
+    }
+    (0, _utils.byId)('down-poker').removeEventListener('click', myDom.attachDownPoker);
+    (0, _utils.byId)('down-jamb').addEventListener('click', myDom.attachDownJamb);
+    dices.STATUS = "FREE_TO_PLAY";
+    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
+  },
+  attachDownJamb: function () {
+    (0, _utils.byId)('down-jamb').removeEventListener('click', myDom.attachDownJamb);
+    console.log('<GAMEPLAY><DOWN ROW IS FEELED>');
+    var TEST = app.myDom.checkForAllDuplicate();
+    for (var key in TEST) {
+      if (TEST[key] == 5 || TEST[key] > 5) {
+        // win
+        var getDiceID = parseInt(key.replace('value__', ''));
+        var win = getDiceID * 5;
+        (0, _utils.byId)('down-poker').innerHTML = win + 50;
+        myDom.incrasePoints(win + 50);
+      }
+    }
+    dices.STATUS = "FREE_TO_PLAY";
+    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
+  },
+  isDragging: false,
+  offsetX: 0,
+  offsetY: 0,
+  addDraggerForTable: () => {
+    (0, _utils.byId)('dragHandler').addEventListener('pointerdown', e => {
+      myDom.isDragging = true;
+      const rect = (0, _utils.byId)('jambTable').getBoundingClientRect();
+      myDom.offsetX = e.clientX - rect.left;
+      myDom.offsetY = e.clientY - rect.top;
+      (0, _utils.byId)('dragHandler').setPointerCapture(e.pointerId);
+    });
+    (0, _utils.byId)('dragHandler').addEventListener('pointermove', e => {
+      if (myDom.isDragging) {
+        (0, _utils.byId)('jambTable').style.left = `${e.clientX - myDom.offsetX}px`;
+        (0, _utils.byId)('jambTable').style.top = `${e.clientY - myDom.offsetY}px`;
+      }
+    });
+    (0, _utils.byId)('dragHandler').addEventListener('pointerup', e => {
+      myDom.isDragging = false;
+      (0, _utils.byId)('dragHandler').releasePointerCapture(e.pointerId);
     });
   }
-}
-exports.MEMapLoader = MEMapLoader;
+};
 
-},{"../../../src/engine/effects/gen.js":34,"../../../src/engine/loader-obj.js":42,"../../../src/engine/loaders/webgpu-gltf.js":45,"../../../src/engine/utils.js":50,"./nav-mesh.js":9}],8:[function(require,module,exports){
+},{"../../../src/engine/utils.js":42,"./html-content.js":1}],3:[function(require,module,exports){
 "use strict";
 
-var _world = _interopRequireDefault(require("../../../src/world.js"));
-var _controller = require("./controller.js");
-var _hud = require("./hud.js");
-var _mapLoader = require("./map-loader.js");
-var _characterBase = require("./character-base.js");
-var _hero = require("./hero.js");
-var _enemiesManager = require("./enemies-manager.js");
-var _collisionSubSystem = require("../../../src/engine/collision-sub-system.js");
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.application = void 0;
+var _world = _interopRequireDefault(require("./src/world.js"));
+var _loaderObj = require("./src/engine/loader-obj.js");
+var _utils = require("./src/engine/utils.js");
+var _jamb = require("./examples/games/jamb/jamb.js");
+var _raycast = require("./src/engine/raycast.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
-/**
- * @Note
- * “Character and animation assets from Mixamo,
- * used under Adobe’s royalty‑free license. 
- * Redistribution of raw assets is not permitted.”
- **/
-let mysticore = new _world.default({
+let application = exports.application = new _world.default({
   useSingleRenderPass: true,
   canvasSize: 'fullscreen',
   mainCameraParams: {
-    type: 'RPG',
+    type: 'WASD',
     responseCoef: 1000
-  },
-  clearColor: {
-    r: 0,
-    b: 0.122,
-    g: 0.122,
-    a: 1
   }
 }, () => {
-  addEventListener('AmmoReady', async () => {
-    addEventListener('local-hero-bodies-ready', () => {
-      app.cameras.RPG.position[1] = 130;
-      app.cameras.RPG.followMe = mysticore.localHero.heroe_bodies[0].position;
-    });
-    mysticore.RPG = new _controller.Controller(mysticore);
-    app.cameras.RPG.movementSpeed = 100;
-    mysticore.mapLoader = new _mapLoader.MEMapLoader(mysticore, "./res/meshes/nav-mesh/navmesh.json");
-    mysticore.localHero = new _characterBase.Character(mysticore, "res/meshes/glb/woman1.glb", 'MariaSword', _hero.HERO_PROFILES.MariaSword.baseArchetypes);
-    mysticore.HUD = new _hud.HUD(mysticore.localHero);
-    mysticore.enemies = new _enemiesManager.EnemiesManager(mysticore);
-    mysticore.collisionSystem = new _collisionSubSystem.CollisionSystem(mysticore);
-    // setTimeout(() => {   // }, 3000);
-  });
-  mysticore.addLight();
-});
-window.app = mysticore;
+  application.addLight();
+  console.log('light added.');
+  application.lightContainer[0].outerCutoff = 0.5;
+  application.lightContainer[0].position[2] = -10;
+  application.lightContainer[0].intensity = 2;
+  application.lightContainer[0].target[2] = -25;
+  application.lightContainer[0].position[1] = 9;
+  application.globalAmbient[0] = 0.7;
+  application.globalAmbient[1] = 0.7;
+  application.globalAmbient[2] = 0.7;
+  const diceTexturePath = './res/meshes/jamb/dice.png';
 
-},{"../../../src/engine/collision-sub-system.js":28,"../../../src/world.js":73,"./character-base.js":1,"./controller.js":2,"./enemies-manager.js":3,"./hero.js":5,"./hud.js":6,"./map-loader.js":7}],9:[function(require,module,exports){
-"use strict";
+  // Dom operations
+  application.userState = {
+    name: 'Guest',
+    points: 0
+  };
+  application.myDom = _jamb.myDom;
+  _jamb.myDom.createJamb();
+  _jamb.myDom.addDraggerForTable();
+  _jamb.myDom.createBlocker();
+  application.dices = _jamb.dices;
+  application.activateDiceClickListener = null;
 
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.default = exports.MinHeap = void 0;
-exports.followPath = followPath;
-exports.orientHeroToDirection = orientHeroToDirection;
-exports.resolvePairRepulsion = resolvePairRepulsion;
-var _utils = require("../../../src/engine/utils.js");
-class NavMesh {
-  constructor(data, options = {}) {
-    const scale = options.scale ?? [1, 1, 1];
-    const sx = scale[0],
-      sy = scale[1],
-      sz = scale[2];
-    // Apply scale to each vertex
-    this.vertices = data.vertices.map(v => [v[0] * sx, v[1] * sy, v[2] * sz]);
-    this.polygons = data.polygons.map(p => ({
-      indices: p.indices.slice(),
-      neighbors: (p.neighbors || []).slice()
-    }));
-    this._computeCenters();
-    this._buildEdgeMap();
-  }
-  _computeCenters() {
-    this.centers = this.polygons.map(poly => {
-      const vs = poly.indices.map(i => this.vertices[i]);
-      const cx = (vs[0][0] + vs[1][0] + vs[2][0]) / 3;
-      const cy = (vs[0][1] + vs[1][1] + vs[2][1]) / 3;
-      const cz = (vs[0][2] + vs[1][2] + vs[2][2]) / 3;
-      return [cx, cy, cz];
-    });
-  }
-  _edgeKey(a, b) {
-    return a < b ? `${a}_${b}` : `${b}_${a}`;
-  }
-  _buildEdgeMap() {
-    // map edgeKey -> array of {poly, aIndex, bIndex}
-    this.edgeMap = new Map();
-    this.polygons.forEach((poly, pi) => {
-      const indices = poly.indices;
-      for (let i = 0; i < indices.length; i++) {
-        const a = indices[i];
-        const b = indices[(i + 1) % indices.length];
-        const key = this._edgeKey(a, b);
-        if (!this.edgeMap.has(key)) this.edgeMap.set(key, []);
-        this.edgeMap.get(key).push({
-          poly: pi,
-          a,
-          b
-        });
-      }
-    });
-  }
-
-  // Point-in-triangle test in XZ plane using barycentric technique
-  _pointInTriXZ(pt, v0, v1, v2) {
-    const x = pt[0],
-      z = pt[2];
-    const ax = v0[0],
-      az = v0[2];
-    const bx = v1[0],
-      bz = v1[2];
-    const cx = v2[0],
-      cz = v2[2];
-    // vectors
-    const v0x = cx - ax,
-      v0z = cz - az;
-    const v1x = bx - ax,
-      v1z = bz - az;
-    const v2x = x - ax,
-      v2z = z - az;
-    const dot00 = v0x * v0x + v0z * v0z;
-    const dot01 = v0x * v1x + v0z * v1z;
-    const dot02 = v0x * v2x + v0z * v2z;
-    const dot11 = v1x * v1x + v1z * v1z;
-    const dot12 = v1x * v2x + v1z * v2z;
-    const denom = dot00 * dot11 - dot01 * dot01;
-    if (Math.abs(denom) < 1e-9) return false;
-    const u = (dot11 * dot02 - dot01 * dot12) / denom;
-    const v = (dot00 * dot12 - dot01 * dot02) / denom;
-    return u >= -1e-6 && v >= -1e-6 && u + v <= 1 + 1e-6;
-  }
-  findPolygonContainingPoint(point) {
-    // first try naive linear scan (ok for medium meshes). point = [x,y,z]
-    for (let i = 0; i < this.polygons.length; i++) {
-      const poly = this.polygons[i];
-      const v0 = this.vertices[poly.indices[0]];
-      const v1 = this.vertices[poly.indices[1]];
-      const v2 = this.vertices[poly.indices[2]];
-      if (this._pointInTriXZ(point, v0, v1, v2)) return i;
-    }
-    // fallback: return nearest polygon center
-    let best = 0;
-    let bestD = Infinity;
-    for (let i = 0; i < this.centers.length; i++) {
-      const c = this.centers[i];
-      const dx = c[0] - point[0];
-      const dz = c[2] - point[2];
-      const d = dx * dx + dz * dz;
-      if (d < bestD) {
-        bestD = d;
-        best = i;
+  // -------------------------
+  // TEST
+  application.matrixAmmo.detectTopFaceFromQuat = q => {
+    // Define based on *visual face* → object-space normal mapping
+    const faces = [{
+      face: 1,
+      vec: [0, 1, 0]
+    },
+    // top
+    {
+      face: 2,
+      vec: [0, -1, 0]
+    },
+    // bottom
+    {
+      face: 3,
+      vec: [0, 0, 1]
+    },
+    // front
+    {
+      face: 4,
+      vec: [0, 0, -1]
+    },
+    // back
+    {
+      face: 5,
+      vec: [1, 0, 0]
+    },
+    // right
+    {
+      face: 6,
+      vec: [-1, 0, 0]
+    } // left
+    ];
+    let maxDot = -Infinity;
+    let topFace = null;
+    for (const f of faces) {
+      const v = application.matrixAmmo.applyQuatToVec(q, f.vec);
+      const dot = v.y; // Compare with world up (0, 1, 0)
+      if (dot > maxDot) {
+        maxDot = dot;
+        topFace = f.face;
       }
     }
-    return best;
-  }
+    return topFace;
+  };
+  application.matrixAmmo.applyQuatToVec = (q, vec) => {
+    const [x, y, z] = vec;
+    const qx = q.x(),
+      qy = q.y(),
+      qz = q.z(),
+      qw = q.w();
 
-  // A* over polygon graph. returns list of polygon indices (inclusive)
-  _findPolyPath(startPoly, endPoly) {
-    if (startPoly === endPoly) return [startPoly];
-    const open = new MinHeap((a, b) => a.f - b.f);
-    const nodes = new Array(this.polygons.length);
-    for (let i = 0; i < nodes.length; i++) nodes[i] = {
-      g: Infinity,
-      h: 0,
-      f: Infinity,
-      parent: -1,
-      id: i
+    // Quaternion * vector * inverse(quaternion)
+    const ix = qw * x + qy * z - qz * y;
+    const iy = qw * y + qz * x - qx * z;
+    const iz = qw * z + qx * y - qy * x;
+    const iw = -qx * x - qy * y - qz * z;
+    return {
+      x: ix * qw + iw * -qx + iy * -qz - iz * -qy,
+      y: iy * qw + iw * -qy + iz * -qx - ix * -qz,
+      z: iz * qw + iw * -qz + ix * -qy - iy * -qx
     };
-    nodes[startPoly].g = 0;
-    nodes[startPoly].h = this._heuristic(startPoly, endPoly);
-    nodes[startPoly].f = nodes[startPoly].h;
-    open.push(nodes[startPoly]);
-    const closed = new Set();
-    while (!open.empty()) {
-      const current = open.pop();
-      if (current.id === endPoly) {
-        const path = [];
-        let cur = current;
-        while (cur) {
-          path.push(cur.id);
-          if (cur.parent === -1) break;
-          cur = nodes[cur.parent];
+  };
+  // -------------------------
+  // This code must be on top (Physics)
+  application.matrixAmmo.detectCollision = function () {
+    this.lastRoll = '';
+    this.presentScore = '';
+    let dispatcher = this.dynamicsWorld.getDispatcher();
+    let numManifolds = dispatcher.getNumManifolds();
+    for (let i = 0; i < numManifolds; i++) {
+      let contactManifold = dispatcher.getManifoldByIndexInternal(i);
+      // let numContacts = contactManifold.getNumContacts();
+      if (this.ground.kB == contactManifold.getBody0().kB || this.ground.kB == contactManifold.getBody1().kB) {
+        // console.log(this.ground ,'GROUND IS IN CONTACT WHO IS BODY1 ', contactManifold.getBody1())
+        // CHECK ROTATION BEST WAY - VISAL PART IS NOT INTEREST NOW 
+        if (this.ground.kB == contactManifold.getBody0().kB) {
+          var MY_DICE_NAME = this.getNameByBody(contactManifold.getBody1());
+          var testR = contactManifold.getBody1().getWorldTransform().getRotation();
         }
-        return path.reverse();
-      }
-      closed.add(current.id);
-      const neighbors = this.polygons[current.id].neighbors || [];
-      for (const nId of neighbors) {
-        if (closed.has(nId)) continue;
-        const tentativeG = current.g + this._edgeCost(current.id, nId);
-        const neigh = nodes[nId];
-        if (tentativeG < neigh.g) {
-          neigh.parent = current.id;
-          neigh.g = tentativeG;
-          neigh.h = this._heuristic(nId, endPoly);
-          neigh.f = neigh.g + neigh.h;
-          open.push(neigh);
+        if (this.ground.kB == contactManifold.getBody1().kB) {
+          var MY_DICE_NAME = this.getNameByBody(contactManifold.getBody0());
+          var testR = contactManifold.getBody0().getWorldTransform().getRotation();
         }
+        var passed = false;
+        const face = application.matrixAmmo.detectTopFaceFromQuat(testR);
+        if (face) {
+          this.lastRoll = face.toString();
+          // Update score logic
+          dispatchEvent(new CustomEvent(`dice-${face}`, {
+            detail: {
+              result: `dice-${face}`,
+              cubeId: MY_DICE_NAME
+            }
+          }));
+        }
+        // if(Math.abs(testR.y()) < 0.00001) {
+        //   this.lastRoll = "3";
+        //   this.presentScore += 4;
+        //   passed = true;
+        // }
+        // if(Math.abs(testR.x()) < 0.00001) {
+        //   this.lastRoll = "5";
+        //   this.presentScore += 3;
+        //   passed = true;
+        // }
+        // if(testR.x().toString().substring(0, 5) == testR.y().toString().substring(1, 6)) {
+        //   this.lastRoll = "6";
+        //   this.presentScore += 2;
+        //   passed = true;
+        // }
+        // if(testR.x().toString().substring(0, 5) == testR.y().toString().substring(0, 5)) {
+        //   this.lastRoll = "2";
+        //   this.presentScore += 1;
+        //   passed = true;
+        // }
+        // if(testR.z().toString().substring(0, 5) == testR.y().toString().substring(1, 6)) {
+        //   this.lastRoll = "4";
+        //   this.presentScore += 6;
+        //   passed = true;
+        // }
+        // if(testR.z().toString().substring(0, 5) == testR.y().toString().substring(0, 5)) {
+        //   this.lastRoll = "1";
+        //   this.presentScore += 5;
+        //   passed = true;
+        // }
+        // if(passed == true) dispatchEvent(new CustomEvent(`dice-${this.lastRoll}`, {
+        //   detail: {
+        //     result: `dice-${this.lastRoll}`,
+        //     cubeId: MY_DICE_NAME
+        //   }
+        // }))
       }
     }
-    return []; // no path
-  }
-  _heuristic(aIdx, bIdx) {
-    const a = this.centers[aIdx];
-    const b = this.centers[bIdx];
-    const dx = a[0] - b[0];
-    const dz = a[2] - b[2];
-    return Math.sqrt(dx * dx + dz * dz);
-  }
-  _edgeCost(aIdx, bIdx) {
-    // Euclidean distance between polygon centers
-    const a = this.centers[aIdx];
-    const b = this.centers[bIdx];
-    const dx = a[0] - b[0];
-    const dz = a[2] - b[2];
-    return Math.sqrt(dx * dx + dz * dz);
-  }
+  };
+  (0, _raycast.addRaycastsListener)();
+  // addRaycastsAABBListener();
 
-  // build portal list (pair of points) between the sequence of polygons
-  _buildPortals(polyPath, startPoint, endPoint) {
-    // portals: array of {left:[x,y,z], right:[x,y,z]}
-    const portals = [];
-    for (let i = 0; i < polyPath.length - 1; i++) {
-      const aIdx = polyPath[i];
-      const bIdx = polyPath[i + 1];
-      // find shared edge between aIdx and bIdx
-      const pa = this.polygons[aIdx];
-      const pb = this.polygons[bIdx];
-      let shared = null;
-      for (let ia = 0; ia < pa.indices.length; ia++) {
-        const a0 = pa.indices[ia],
-          a1 = pa.indices[(ia + 1) % pa.indices.length];
-        const key = this._edgeKey(a0, a1);
-        const entries = this.edgeMap.get(key) || [];
-        for (const e of entries) {
-          if (e.poly === bIdx) {
-            // shared edge
-            shared = [this.vertices[a0], this.vertices[a1]];
-            break;
+  application.canvas.addEventListener("ray.hit.event", e => {
+    console.log('ray.hit.event @@@@@@@@@@@@ detected');
+    if ((0, _utils.byId)('topTitleDOM') && (0, _utils.byId)('topTitleDOM').getAttribute('data-gamestatus') != 'FREE' && (0, _utils.byId)('topTitleDOM').getAttribute('data-gamestatus') != 'status-select') {
+      console.log('no hit in middle of game ...');
+      return;
+    }
+    if (application.dices.STATUS == "FREE_TO_PLAY") {
+      console.log("hit cube status free to play prevent pick. ", e.detail.hitObject.name);
+    } else if (application.dices.STATUS == "SELECT_DICES_1" || application.dices.STATUS == "SELECT_DICES_2" || application.dices.STATUS == "FINISHED") {
+      if (Object.keys(application.dices.SAVED_DICES).length >= 5) {
+        console.log("PREVENTED SELECT1/2 pick.", e.detail.hitObject.name);
+        return;
+      }
+      console.log("hit cube status SELECT1/2 pick.", e.detail.hitObject.name);
+      application.dices.pickDice(e.detail.hitObject.name);
+    }
+  });
+  addEventListener('mousemove', e => {
+    // console.log('only on click')
+  });
+
+  // Sounds
+  application.matrixSounds.createAudio('start', 'res/audios/start.mp3', 1);
+  application.matrixSounds.createAudio('block', 'res/audios/block.mp3', 6);
+  application.matrixSounds.createAudio('dice1', 'res/audios/dice1.mp3', 6);
+  application.matrixSounds.createAudio('dice2', 'res/audios/dice2.mp3', 6);
+  application.matrixSounds.createAudio('hover', 'res/audios/toggle_002.mp3', 3);
+  application.matrixSounds.createAudio('roll', 'res/audios/dice-roll.mp3', 2);
+  addEventListener('AmmoReady', () => {
+    app.matrixAmmo.speedUpSimulation = 2;
+    (0, _loaderObj.downloadMeshes)({
+      cube: "./res/meshes/jamb/dice.obj"
+    }, onLoadObj, {
+      scale: [1, 1, 1],
+      swap: [null]
+    });
+
+    // downloadMeshes({
+    //   star1: "./res/meshes/shapes/star1.obj",
+    // }, (m) => {
+
+    //   let o = {
+    //     scale: 2,
+    //     position: {x: 3, y: 0, z: -10},
+    //     rotation: {x: 0, y: 0, z: 0},
+    //     rotationSpeed: {x: 10, y: 0, z: 0},
+    //     texturesPaths: ['./res/textures/default.png']
+    //   };
+    // }, {scale: [11, 11, 11], swap: [null]})
+
+    (0, _loaderObj.downloadMeshes)({
+      bg: "./res/meshes/jamb/bg.obj"
+    }, onLoadObjFloor, {
+      scale: [3, 1, 3],
+      swap: [null]
+    });
+    (0, _loaderObj.downloadMeshes)({
+      mainTitle: "./res/meshes/jamb/jamb-title.obj"
+    }, onLoadObjOther, {
+      scale: [3, 2, 3],
+      swap: [null]
+    });
+    (0, _loaderObj.downloadMeshes)({
+      cube: "./res/meshes/jamb/dice.obj"
+    }, onLoadObjWallCenter, {
+      scale: [50, 10, 10],
+      swap: [null]
+    });
+    (0, _loaderObj.downloadMeshes)({
+      cube: "./res/meshes/jamb/dice.obj"
+    }, m => {
+      for (var key in m) {
+        // console.log(`%c Loaded objs -> : ${key} `, LOG_MATRIX);
+      }
+      // right
+      application.addMeshObj({
+        position: {
+          x: 25,
+          y: 5.5,
+          z: -25
+        },
+        rotation: {
+          x: 0,
+          y: -22,
+          z: 0
+        },
+        scale: [25, 10, 4],
+        texturesPaths: ['./res/meshes/jamb/text.png'],
+        name: 'wallRight',
+        mesh: m.cube,
+        physics: {
+          mass: 0,
+          enabled: true,
+          geometry: "Cube"
+        },
+        raycast: {
+          enabled: false,
+          radius: 2
+        }
+      });
+      application.addMeshObj({
+        position: {
+          x: -25,
+          y: 5.5,
+          z: -25
+        },
+        rotation: {
+          x: 0,
+          y: 22,
+          z: 0
+        },
+        scale: [25, 10, 4],
+        texturesPaths: ['./res/meshes/jamb/text.png'],
+        name: 'wallLeft',
+        mesh: m.cube,
+        physics: {
+          mass: 0,
+          enabled: true,
+          geometry: "Cube"
+        },
+        raycast: {
+          enabled: false,
+          radius: 2
+        }
+      });
+    }, {
+      scale: [25, 10, 4],
+      swap: [null]
+    });
+  });
+  function onLoadObjWallCenter(m) {
+    application.myLoadedMeshesWalls = m;
+    for (var key in m) {
+      // console.log(`%c Loaded objs -> : ${key} `, LOG_MATRIX);
+    }
+
+    // WALLS Center
+    application.addMeshObj({
+      position: {
+        x: 0,
+        y: 5,
+        z: -45
+      },
+      rotation: {
+        x: 0,
+        y: 0,
+        z: 0
+      },
+      scale: [50, 10, 10],
+      texturesPaths: ['./res/meshes/jamb/text.png'],
+      name: 'wallCenter',
+      mesh: m.cube,
+      physics: {
+        mass: 0,
+        enabled: true,
+        geometry: "Cube"
+      },
+      raycast: {
+        enabled: false,
+        radius: 2
+      }
+    });
+  }
+  function onLoadObjOther(m) {
+    application.myLoadedMeshes = m;
+    // Add logo text top
+    application.addMeshObj({
+      position: {
+        x: 0,
+        y: 6,
+        z: -15
+      },
+      rotation: {
+        x: 0,
+        y: 0,
+        z: 0
+      },
+      texturesPaths: ['./res/meshes/jamb/text.png'],
+      name: 'mainTitle',
+      mesh: m.mainTitle,
+      physics: {
+        mass: 0,
+        enabled: true,
+        geometry: "Cube"
+      },
+      raycast: {
+        enabled: false,
+        radius: 2
+      }
+    });
+    // application.cameras.WASD.pitch = 0.2
+    setTimeout(() => {
+      // app.cameras.WASD.velocity[1] = 18
+      console.log('set camera position with timeout...');
+      app.cameras.WASD.yaw = -6.21;
+      app.cameras.WASD.pitch = -0.32;
+      app.cameras.WASD.position[2] = 0;
+      app.cameras.WASD.position[1] = 3.76;
+      //                                             BODY              , x,  y, z, rotX, rotY, RotZ
+      app.matrixAmmo.setKinematicTransform(app.matrixAmmo.getBodyByName('mainTitle'), 0, 0, 0, 1);
+      app.matrixAmmo.setKinematicTransform(app.matrixAmmo.getBodyByName('bg'), 0, -10, 0, 0, 0, 0);
+      // Better access getBodyByName
+      // console.log(' app.matrixAmmo. ', app.matrixAmmo.getBodyByName('CubePhysics1'))
+    }, 1200);
+  }
+  function onLoadObjFloor(m) {
+    application.myLoadedMeshes = m;
+    application.addMeshObj({
+      scale: [10, 0.1, 0.1],
+      position: {
+        x: 0,
+        y: 6,
+        z: -10
+      },
+      rotation: {
+        x: 0,
+        y: 0,
+        z: 0
+      },
+      texturesPaths: ['./res/meshes/jamb/bg.png'],
+      name: 'bg',
+      mesh: m.bg,
+      physics: {
+        collide: false,
+        mass: 0,
+        enabled: true,
+        geometry: "Cube"
+      },
+      raycast: {
+        enabled: false,
+        radius: 2
+      }
+    });
+  }
+  function onLoadObj(m) {
+    application.myLoadedMeshes = m;
+    // Add dices
+    application.addMeshObj({
+      position: {
+        x: 0,
+        y: 6,
+        z: -10
+      },
+      rotation: {
+        x: 0,
+        y: 0,
+        z: 0
+      },
+      rotationSpeed: {
+        x: 0,
+        y: 0,
+        z: 0
+      },
+      texturesPaths: [diceTexturePath],
+      useUVShema4x2: true,
+      name: 'CubePhysics1',
+      mesh: m.cube,
+      raycast: {
+        enabled: true,
+        radius: 2
+      },
+      physics: {
+        enabled: true,
+        geometry: "Cube"
+      }
+    });
+    application.addMeshObj({
+      position: {
+        x: -5,
+        y: 4,
+        z: -14
+      },
+      rotation: {
+        x: 0,
+        y: 0,
+        z: 0
+      },
+      rotationSpeed: {
+        x: 0,
+        y: 0,
+        z: 0
+      },
+      texturesPaths: [diceTexturePath],
+      useUVShema4x2: true,
+      name: 'CubePhysics2',
+      mesh: m.cube,
+      raycast: {
+        enabled: true,
+        radius: 2
+      },
+      physics: {
+        enabled: true,
+        geometry: "Cube"
+      }
+    });
+    application.addMeshObj({
+      position: {
+        x: 4,
+        y: 8,
+        z: -10
+      },
+      rotation: {
+        x: 0,
+        y: 0,
+        z: 0
+      },
+      rotationSpeed: {
+        x: 0,
+        y: 0,
+        z: 0
+      },
+      texturesPaths: [diceTexturePath],
+      useUVShema4x2: true,
+      name: 'CubePhysics3',
+      mesh: m.cube,
+      raycast: {
+        enabled: true,
+        radius: 2
+      },
+      physics: {
+        enabled: true,
+        geometry: "Cube"
+      }
+    });
+    application.addMeshObj({
+      position: {
+        x: 3,
+        y: 4,
+        z: -10
+      },
+      rotation: {
+        x: 0,
+        y: 0,
+        z: 0
+      },
+      rotationSpeed: {
+        x: 0,
+        y: 0,
+        z: 0
+      },
+      texturesPaths: [diceTexturePath],
+      useUVShema4x2: true,
+      name: 'CubePhysics4',
+      mesh: m.cube,
+      raycast: {
+        enabled: true,
+        radius: 2
+      },
+      physics: {
+        enabled: true,
+        geometry: "Cube"
+      }
+    });
+    application.addMeshObj({
+      position: {
+        x: -2,
+        y: 4,
+        z: -13
+      },
+      rotation: {
+        x: 0,
+        y: 0,
+        z: 0
+      },
+      rotationSpeed: {
+        x: 0,
+        y: 0,
+        z: 0
+      },
+      texturesPaths: [diceTexturePath],
+      useUVShema4x2: true,
+      name: 'CubePhysics5',
+      mesh: m.cube,
+      raycast: {
+        enabled: true,
+        radius: 2
+      },
+      physics: {
+        enabled: true,
+        geometry: "Cube"
+      }
+    });
+    application.addMeshObj({
+      position: {
+        x: -4,
+        y: 6,
+        z: -9
+      },
+      rotation: {
+        x: 0,
+        y: 0,
+        z: 0
+      },
+      rotationSpeed: {
+        x: 0,
+        y: 0,
+        z: 0
+      },
+      texturesPaths: [diceTexturePath],
+      useUVShema4x2: true,
+      name: 'CubePhysics6',
+      mesh: m.cube,
+      raycast: {
+        enabled: true,
+        radius: 2
+      },
+      physics: {
+        enabled: true,
+        geometry: "Cube"
+      }
+    });
+    application.TOLERANCE = 0;
+    let allDiceDoneProcedure = () => {
+      console.log("ALL DONE", application.TOLERANCE);
+      application.TOLERANCE++;
+      if (application.TOLERANCE >= 1) {
+        removeEventListener('dice-1', dice1Click);
+        removeEventListener('dice-2', dice2Click);
+        removeEventListener('dice-3', dice3Click);
+        removeEventListener('dice-4', dice4Click);
+        removeEventListener('dice-5', dice5Click);
+        removeEventListener('dice-6', dice6Click);
+        console.log(`%cFINAL<preliminar> ${_jamb.dices.R}`, _utils.LOG_FUNNY);
+        application.TOLERANCE = 0;
+        console.log('se camera position 2');
+        app.cameras.WASD.yaw = 0.01;
+        app.cameras.WASD.pitch = -1.26;
+        app.cameras.WASD.position[2] = -18;
+        app.cameras.WASD.position[1] = 19;
+        // ??                                                     ?
+        if (_jamb.dices.STATUS == "FREE_TO_PLAY" || _jamb.dices.STATUS == "IN_PLAY") {
+          _jamb.dices.STATUS = "SELECT_DICES_1";
+          console.log(`%cStatus<SELECT_DICES_1>`, _utils.LOG_FUNNY);
+          setTimeout(() => {
+            dispatchEvent(new CustomEvent('updateTitle', {
+              detail: {
+                text: app.label.get.freetoroll,
+                status: 'FREE'
+              }
+            }));
+          }, 500);
+        } else if (_jamb.dices.STATUS == "SELECT_DICES_1") {
+          _jamb.dices.STATUS = "SELECT_DICES_2";
+          setTimeout(() => {
+            dispatchEvent(new CustomEvent('updateTitle', {
+              detail: {
+                text: app.label.get.freetoroll,
+                status: 'FREE'
+              }
+            }));
+          }, 500);
+          console.log(`%cStatus<SELECT_DICES_2>`, _utils.LOG_FUNNY);
+        } else if (_jamb.dices.STATUS == "SELECT_DICES_2") {
+          _jamb.dices.STATUS = "FINISHED";
+          console.log(`%cStatus<FINISHED>`, _utils.LOG_FUNNY);
+          dispatchEvent(new CustomEvent('updateTitle', {
+            detail: {
+              text: app.label.get.pick5,
+              status: 'status-select'
+            }
+          }));
+        }
+      }
+    };
+    addEventListener('all-done', allDiceDoneProcedure);
+    addEventListener('FREE_TO_PLAY', () => {
+      // Big reset
+      console.log(`%c<Big reset needed ...>`, _utils.LOG_FUNNY);
+      app.dices.SAVED_DICES = {};
+      app.dices.setStartUpPosition();
+      setTimeout(() => {
+        app.dices.activateAllDicesPhysics();
+      }, 1000);
+      console.log('se camera position 3');
+      app.cameras.WASD.yaw = 0;
+      app.cameras.WASD.pitch = 0;
+      app.cameras.WASD.position[2] = 0;
+      app.cameras.WASD.position[1] = 3.76;
+      dispatchEvent(new CustomEvent('updateTitle', {
+        detail: {
+          text: app.label.get.hand1,
+          status: 'FREE'
+        }
+      }));
+    });
+
+    // ACTIONS
+    let dice1Click = e => {
+      // console.info('DICE 1 click ?????????', e.detail)
+      _jamb.dices.R[e.detail.cubeId] = '1';
+      _jamb.dices.checkAll();
+    };
+    let dice2Click = e => {
+      // console.info('DICE 2', e.detail)
+      _jamb.dices.R[e.detail.cubeId] = '2';
+      _jamb.dices.checkAll();
+    };
+    let dice3Click = e => {
+      // console.info('DICE 3', e.detail)
+      _jamb.dices.R[e.detail.cubeId] = '3';
+      _jamb.dices.checkAll();
+    };
+    let dice4Click = e => {
+      // console.info('DICE 4', e.detail)
+      _jamb.dices.R[e.detail.cubeId] = '4';
+      _jamb.dices.checkAll();
+    };
+    let dice5Click = e => {
+      // console.info('DICE 5', e.detail)
+      _jamb.dices.R[e.detail.cubeId] = '5';
+      _jamb.dices.checkAll();
+    };
+    let dice6Click = e => {
+      // console.info('DICE 6', e.detail)
+      _jamb.dices.R[e.detail.cubeId] = '6';
+      _jamb.dices.checkAll();
+    };
+    function shootDice(x) {
+      setTimeout(() => {
+        app.matrixAmmo.getBodyByName(`CubePhysics${x}`).setAngularVelocity(new Ammo.btVector3((0, _utils.randomFloatFromTo)(3, 12), 9, 9));
+        app.matrixAmmo.getBodyByName(`CubePhysics${x}`).setLinearVelocity(new Ammo.btVector3((0, _utils.randomFloatFromTo)(-5, 5), 15, -20));
+        setTimeout(() => app.matrixSounds.play('roll'), 1500);
+      }, 200 * x);
+    }
+    application.activateDiceClickListener = index => {
+      index = parseInt(index);
+      switch (index) {
+        case 1:
+          addEventListener('dice-1', dice1Click);
+        case 2:
+          addEventListener('dice-2', dice2Click);
+        case 3:
+          addEventListener('dice-3', dice3Click);
+        case 4:
+          addEventListener('dice-4', dice4Click);
+        case 5:
+          addEventListener('dice-5', dice5Click);
+        case 6:
+          addEventListener('dice-6', dice6Click);
+      }
+    };
+    let rollProcedure = () => {
+      if (topTitleDOM.getAttribute('data-gamestatus') != 'FREE') {
+        console.log('validation fails...');
+        return;
+      }
+      if (_jamb.dices.STATUS == "FREE_TO_PLAY") {
+        app.matrixSounds.play('start');
+        _jamb.dices.STATUS = "IN_PLAY";
+        dispatchEvent(new CustomEvent('updateTitle', {
+          detail: {
+            text: app.label.get.hand1,
+            status: 'inplay'
+          }
+        }));
+        addEventListener('dice-1', dice1Click);
+        addEventListener('dice-2', dice2Click);
+        addEventListener('dice-3', dice3Click);
+        addEventListener('dice-4', dice4Click);
+        addEventListener('dice-5', dice5Click);
+        addEventListener('dice-6', dice6Click);
+        for (var x = 1; x < 7; x++) {
+          shootDice(x);
+        }
+      } else if (_jamb.dices.STATUS == "SELECT_DICES_1" || _jamb.dices.STATUS == "SELECT_DICES_2") {
+        // Now no selected dices still rolling
+        for (let i = 1; i <= 6; i++) {
+          const key = "CubePhysics" + i;
+          if (!(key in app.dices.SAVED_DICES)) {
+            console.log("Still in game last char is id : ", key[key.length - 1]);
+            application.activateDiceClickListener(parseInt(key[key.length - 1]));
+            shootDice(key[key.length - 1]);
+          } else {
+            console.log("??????????Still in game last char is id : ", key[key.length - 1]);
+            application.activateDiceClickListener(parseInt(key[key.length - 1]));
           }
         }
-        if (shared) break;
+        // ????
+        // application.activateDiceClickListener(1);
+
+        dispatchEvent(new CustomEvent('updateTitle', {
+          detail: {
+            text: _jamb.dices.STATUS == "SELECT_DICES_1" ? app.label.get.hand1 : app.label.get.hand2,
+            status: 'inplay'
+          }
+        }));
+      } else if (_jamb.dices.STATUS == "FINISHED") {
+        _utils.mb.error('No more roll...');
+        _utils.mb.show('Pick up 5 dices');
       }
-      if (!shared) {
-        // fallback: use centers
-        const cA = this.centers[aIdx];
-        const cB = this.centers[bIdx];
-        portals.push({
-          left: cA.slice(),
-          right: cB.slice()
-        });
-      } else {
-        // ensure consistent ordering (left/right) in XZ relative to path direction
-        portals.push({
-          left: shared[0].slice(),
-          right: shared[1].slice()
-        });
-      }
-    }
-
-    // prepend start and append end as degenerate portals
-    portals.unshift({
-      left: startPoint.slice(),
-      right: startPoint.slice()
-    });
-    portals.push({
-      left: endPoint.slice(),
-      right: endPoint.slice()
-    });
-    return portals;
-  }
-
-  // Funnel algorithm (returns array of [x,y,z])
-  _stringPull(portals) {
-    // classic funnel over XZ plane
-    const portalLeft = portals.map(p => [p.left[0], p.left[2]]);
-    const portalRight = portals.map(p => [p.right[0], p.right[2]]);
-    const points = []; // result XZ
-    let apexIndex = 0,
-      leftIndex = 0,
-      rightIndex = 0;
-    let apex = portalLeft[0].slice();
-    let left = portalLeft[0].slice();
-    let right = portalRight[0].slice();
-    points.push([apex[0], apex[1]]); // x,z
-
-    function vecCross(a, b) {
-      return a[0] * b[1] - a[1] * b[0];
-    }
-    function sub(a, b) {
-      return [a[0] - b[0], a[1] - b[1]];
-    }
-    for (let i = 1; i < portalLeft.length; i++) {
-      const pLeft = portalLeft[i];
-      const pRight = portalRight[i];
-      // update right
-      const relRight = sub(pRight, apex);
-      const relRightCur = sub(right, apex);
-      if (vecCross(relRightCur, relRight) >= 0) {
-        // new right is more 'right' -> tighten
-        if (vecCross(sub(left, apex), relRight) > 0) {
-          // right crosses left -> advance apex to left
-          points.push([left[0], left[1]]);
-          apex = left.slice();
-          // reset indices
-          apexIndex = leftIndex;
-          leftIndex = apexIndex;
-          rightIndex = apexIndex;
-          left = apex.slice();
-          right = apex.slice();
-          i = apexIndex;
-          continue;
-        }
-        right = pRight.slice();
-        rightIndex = i;
-      }
-      // update left
-      const relLeft = sub(pLeft, apex);
-      const relLeftCur = sub(left, apex);
-      if (vecCross(relLeftCur, relLeft) <= 0) {
-        // new left is more 'left' -> tighten
-        if (vecCross(sub(right, apex), relLeft) < 0) {
-          // left crosses right -> advance apex to right
-          points.push([right[0], right[1]]);
-          apex = right.slice();
-          apexIndex = rightIndex;
-          leftIndex = apexIndex;
-          rightIndex = apexIndex;
-          left = apex.slice();
-          right = apex.slice();
-          i = apexIndex;
-          continue;
-        }
-        left = pLeft.slice();
-        leftIndex = i;
-      }
-    }
-    // add goal
-    const lastPortal = portalLeft[portalLeft.length - 1];
-    points.push([lastPortal[0], lastPortal[1]]);
-    // convert back to [x,y,z] with Y taken from mesh average Y (or 0)
-    const out = points.map(xz => {
-      const x = xz[0],
-        z = xz[1];
-      // pick Y from nearest vertex on mesh (cheap approximation)
-      const y = this._sampleY(x, z);
-      return [x, y, z];
-    });
-    return out;
-  }
-  _sampleY(x, z) {
-    // sample Y using nearest vertex (cheap). If you have heightmap, use that.
-    let bestD = Infinity,
-      bestY = 0;
-    for (let i = 0; i < this.vertices.length; i++) {
-      const v = this.vertices[i];
-      const dx = v[0] - x,
-        dz = v[2] - z;
-      const d = dx * dx + dz * dz;
-      if (d < bestD) {
-        bestD = d;
-        bestY = v[1];
-      }
-    }
-    return bestY;
-  }
-
-  // Public API: returns an array of [x,y,z] waypoints or [] if unreachable
-  findPath(startPoint, endPoint) {
-    // startPoint and endPoint are [x,y,z]
-    const startPoly = this.findPolygonContainingPoint(startPoint);
-    const endPoly = this.findPolygonContainingPoint(endPoint);
-    if (startPoly === null || endPoly === null) return [];
-    const polyPath = this._findPolyPath(startPoly, endPoly);
-    if (!polyPath || polyPath.length === 0) return [];
-
-    // If polyPath is single poly, simply return [start,end]
-    if (polyPath.length === 1) {
-      return [[startPoint[0], this._sampleY(startPoint[0], startPoint[2]), startPoint[2]], [endPoint[0], this._sampleY(endPoint[0], endPoint[2]), endPoint[2]]];
-    }
-    const portals = this._buildPortals(polyPath, startPoint, endPoint);
-    const smooth = this._stringPull(portals);
-    // ensure first/last are exactly start/end
-    if (smooth.length > 0) {
-      smooth[0] = [startPoint[0], this._sampleY(startPoint[0], startPoint[2]), startPoint[2]];
-      smooth[smooth.length - 1] = [endPoint[0], this._sampleY(endPoint[0], endPoint[2]), endPoint[2]];
-    }
-    return smooth;
-  }
-
-  // Optional: clamp point into mesh (closest point on triangles) - simple nearest vertex fallback
-  closestPointOnMesh(point) {
-    // naive: return nearest vertex
-    let bestD = Infinity,
-      best = null;
-    for (const v of this.vertices) {
-      const dx = v[0] - point[0],
-        dy = v[1] - point[1],
-        dz = v[2] - point[2];
-      const d = dx * dx + dy * dy + dz * dz;
-      if (d < bestD) {
-        bestD = d;
-        best = v;
-      }
-    }
-    return best.slice();
-  }
-}
-exports.default = NavMesh;
-class MinHeap {
-  constructor(cmp) {
-    this.cmp = cmp || ((a, b) => a - b);
-    this.items = [];
-  }
-  push(v) {
-    this.items.push(v);
-    this._siftUp(this.items.length - 1);
-  }
-  pop() {
-    if (this.items.length === 0) return null;
-    const top = this.items[0];
-    const last = this.items.pop();
-    if (this.items.length > 0) {
-      this.items[0] = last;
-      this._siftDown(0);
-    }
-    return top;
-  }
-  empty() {
-    return this.items.length === 0;
-  }
-  _siftUp(i) {
-    while (i > 0) {
-      const p = Math.floor((i - 1) / 2);
-      if (this.cmp(this.items[i], this.items[p]) < 0) {
-        [this.items[i], this.items[p]] = [this.items[p], this.items[i]];
-        i = p;
-      } else break;
-    }
-  }
-  _siftDown(i) {
-    while (true) {
-      const l = 2 * i + 1,
-        r = 2 * i + 2;
-      let m = i;
-      if (l < this.items.length && this.cmp(this.items[l], this.items[m]) < 0) m = l;
-      if (r < this.items.length && this.cmp(this.items[r], this.items[m]) < 0) m = r;
-      if (m !== i) {
-        [this.items[i], this.items[m]] = [this.items[m], this.items[i]];
-        i = m;
-      } else break;
-    }
-  }
-}
-exports.MinHeap = MinHeap;
-const MIN_DIST = 0.1;
-function followPath(character, path, core) {
-  if (!path || path.length === 0) return;
-  let idx = 0;
-  const pos = character.position;
-  const rot = character.rotation;
-  const MIN_DIST = 0.001;
-  const ROTATION_SPEED = 5; // adjust for smoother/slower rotation
-
-  // --- Smoothly rotate toward a target angle ---
-  function smoothRotate(current, target, deltaTime) {
-    let diff = target - current;
-    // Normalize angle difference to [-180, 180]
-    diff = (diff + 540) % 360 - 180;
-    return current + diff * Math.min(1, deltaTime * ROTATION_SPEED);
-  }
-
-  // --- Recursive movement ---
-  function moveToNext() {
-    if (idx >= path.length) {
-      dispatchEvent(new CustomEvent('onTargetPositionReach', {
-        detail: 'test'
-      }));
-      character.position.onTargetPositionReach = () => {};
-      return;
-    }
-    const target = path[idx];
-    const dx = target[0] - pos.x;
-    const dz = target[2] - pos.z;
-    const dist = Math.sqrt(dx * dx + dz * dz);
-    // --- Skip points that are too close ---
-    if (dist < MIN_DIST) {
-      idx++;
-      moveToNext();
-      return;
-    }
-    // --- Compute target facing direction (Y rotation) ---
-    let targetAngleY = Math.atan2(dx, dz);
-    targetAngleY = ((0, _utils.radToDeg)(targetAngleY) + 360) % 360;
-    // --- Smooth rotation (optional deltaTime if you have it) ---
-    const deltaTime = core?.deltaTime || 0.016; // fallback ~60fps
-    rot.y = smoothRotate(rot.y, targetAngleY, deltaTime);
-    // --- Move toward next target ---
-    pos.translateByXZ(target[0], target[2]);
-    // When position reaches target:
-    character.position.onTargetPositionReach = () => {
-      idx++;
-      moveToNext();
+    };
+    addEventListener('DICE.ROLL', rollProcedure);
+    app.ROLL = () => {
+      dispatchEvent(new CustomEvent('DICE.ROLL', {}));
     };
   }
-  // --- Initialize rotation toward the first valid point ---
-  const firstTarget = path.find(p => {
-    const dx = p[0] - pos.x;
-    const dz = p[2] - pos.z;
-    return Math.sqrt(dx * dx + dz * dz) >= MIN_DIST;
-  });
-  if (firstTarget) {
-    const dx = firstTarget[0] - pos.x;
-    const dz = firstTarget[2] - pos.z;
-    let initialAngleY = Math.atan2(dx, dz);
-    rot.y = ((0, _utils.radToDeg)(initialAngleY) + 360) % 360;
-  }
-  moveToNext();
-}
-function orientHeroToDirection(hero, dir) {
-  const flatDir = [dir[0], 0, dir[2]];
-  const len = Math.hypot(flatDir[0], flatDir[2]);
-  if (len < 0.0001) return;
-  flatDir[0] /= len;
-  flatDir[2] /= len;
-  // Compute rotation angle around Y axis
-  const angle = Math.atan2(flatDir[0], flatDir[2]); // note X/Z order!
-  // Apply to hero
-  hero.rotation.y = angle; // in radians
-}
-function resolvePairRepulsion(Apos, Bpos, minDistance = 30.0, pushStrength = 0.5) {
-  // Apos and Bpos are Position instances (with x,z,targetX,targetZ)
-  const dx = Bpos.x - Apos.x;
-  const dz = Bpos.z - Apos.z;
-  const distSq = dx * dx + dz * dz;
-  const minDistSq = minDistance * minDistance;
-  if (distSq < minDistSq && distSq > 1e-8) {
-    const dist = Math.sqrt(distSq);
-    const overlap = minDistance - dist;
-    const nx = dx / dist;
-    const nz = dz / dist;
-    const totalPush = overlap * pushStrength;
-    const pushA = totalPush * 0.5;
-    const pushB = totalPush * 0.5;
-    Apos.x -= nx * pushA;
-    Apos.z -= nz * pushA;
-    Bpos.x += nx * pushB;
-    Bpos.z += nz * pushB;
-    Apos.targetX = Apos.x;
-    Apos.targetZ = Apos.z;
-    Bpos.targetX = Bpos.x;
-    Bpos.targetZ = Bpos.z;
-    return true;
-  }
-  // exact overlap (practically same point) -> small jitter to separate
-  if (distSq <= 1e-8) {
-    const jitter = 0.01;
-    Apos.x += (Math.random() - 0.5) * jitter;
-    Apos.z += (Math.random() - 0.5) * jitter;
-    Apos.targetX = Apos.x;
-    Apos.targetZ = Apos.z;
-    return true;
-  }
-  return false;
-}
+});
+window.app = application;
 
-},{"../../../src/engine/utils.js":50}],10:[function(require,module,exports){
-arguments[4][9][0].apply(exports,arguments)
-},{"../../../src/engine/utils.js":50,"dup":9}],11:[function(require,module,exports){
+},{"./examples/games/jamb/jamb.js":2,"./src/engine/loader-obj.js":34,"./src/engine/raycast.js":41,"./src/engine/utils.js":42,"./src/world.js":65}],4:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -2378,7 +2158,7 @@ exports.default = void 0;
 var _bvhLoader = require("./module/bvh-loader");
 var _default = exports.default = _bvhLoader.MEBvh;
 
-},{"./module/bvh-loader":12}],12:[function(require,module,exports){
+},{"./module/bvh-loader":5}],5:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -3067,7 +2847,7 @@ class MEBvh {
 }
 exports.MEBvh = MEBvh;
 
-},{"webgpu-matrix":24}],13:[function(require,module,exports){
+},{"webgpu-matrix":17}],6:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -3145,7 +2925,7 @@ function equals(a, b) {
   return Math.abs(a - b) <= tolerance * Math.max(1, Math.abs(a), Math.abs(b));
 }
 
-},{}],14:[function(require,module,exports){
+},{}],7:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -3174,7 +2954,7 @@ var vec4 = _interopRequireWildcard(require("./vec4.js"));
 exports.vec4 = vec4;
 function _interopRequireWildcard(e, t) { if ("function" == typeof WeakMap) var r = new WeakMap(), n = new WeakMap(); return (_interopRequireWildcard = function (e, t) { if (!t && e && e.__esModule) return e; var o, i, f = { __proto__: null, default: e }; if (null === e || "object" != typeof e && "function" != typeof e) return f; if (o = t ? n : r) { if (o.has(e)) return o.get(e); o.set(e, f); } for (const t in e) "default" !== t && {}.hasOwnProperty.call(e, t) && ((i = (o = Object.defineProperty) && Object.getOwnPropertyDescriptor(e, t)) && (i.get || i.set) ? o(f, t, i) : f[t] = e[t]); return f; })(e, t); }
 
-},{"./common.js":13,"./mat2.js":15,"./mat2d.js":16,"./mat3.js":17,"./mat4.js":18,"./quat.js":19,"./quat2.js":20,"./vec2.js":21,"./vec3.js":22,"./vec4.js":23}],15:[function(require,module,exports){
+},{"./common.js":6,"./mat2.js":8,"./mat2d.js":9,"./mat3.js":10,"./mat4.js":11,"./quat.js":12,"./quat2.js":13,"./vec2.js":14,"./vec3.js":15,"./vec4.js":16}],8:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -3636,7 +3416,7 @@ var mul = exports.mul = multiply;
  */
 var sub = exports.sub = subtract;
 
-},{"./common.js":13}],16:[function(require,module,exports){
+},{"./common.js":6}],9:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -4150,7 +3930,7 @@ var mul = exports.mul = multiply;
  */
 var sub = exports.sub = subtract;
 
-},{"./common.js":13}],17:[function(require,module,exports){
+},{"./common.js":6}],10:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -4962,7 +4742,7 @@ var mul = exports.mul = multiply;
  */
 var sub = exports.sub = subtract;
 
-},{"./common.js":13}],18:[function(require,module,exports){
+},{"./common.js":6}],11:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -6982,7 +6762,7 @@ var mul = exports.mul = multiply;
  */
 var sub = exports.sub = subtract;
 
-},{"./common.js":13}],19:[function(require,module,exports){
+},{"./common.js":6}],12:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -7765,7 +7545,7 @@ var setAxes = exports.setAxes = function () {
   };
 }();
 
-},{"./common.js":13,"./mat3.js":17,"./vec3.js":22,"./vec4.js":23}],20:[function(require,module,exports){
+},{"./common.js":6,"./mat3.js":10,"./vec3.js":15,"./vec4.js":16}],13:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -8638,7 +8418,7 @@ function equals(a, b) {
   return Math.abs(a0 - b0) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a0), Math.abs(b0)) && Math.abs(a1 - b1) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a1), Math.abs(b1)) && Math.abs(a2 - b2) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a2), Math.abs(b2)) && Math.abs(a3 - b3) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a3), Math.abs(b3)) && Math.abs(a4 - b4) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a4), Math.abs(b4)) && Math.abs(a5 - b5) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a5), Math.abs(b5)) && Math.abs(a6 - b6) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a6), Math.abs(b6)) && Math.abs(a7 - b7) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a7), Math.abs(b7));
 }
 
-},{"./common.js":13,"./mat4.js":18,"./quat.js":19}],21:[function(require,module,exports){
+},{"./common.js":6,"./mat4.js":11,"./quat.js":12}],14:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -9316,7 +9096,7 @@ var forEach = exports.forEach = function () {
   };
 }();
 
-},{"./common.js":13}],22:[function(require,module,exports){
+},{"./common.js":6}],15:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -10168,7 +9948,7 @@ var forEach = exports.forEach = function () {
   };
 }();
 
-},{"./common.js":13}],23:[function(require,module,exports){
+},{"./common.js":6}],16:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -10875,7 +10655,7 @@ var forEach = exports.forEach = function () {
   };
 }();
 
-},{"./common.js":13}],24:[function(require,module,exports){
+},{"./common.js":6}],17:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -14808,7 +14588,7 @@ function setDefaultType(ctor) {
   setDefaultType$1(ctor);
 }
 
-},{}],25:[function(require,module,exports){
+},{}],18:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -20155,7 +19935,7 @@ function setDefaultType(ctor) {
   setDefaultType$1(ctor);
 }
 
-},{}],26:[function(require,module,exports){
+},{}],19:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -20569,7 +20349,7 @@ class MEBall {
 }
 exports.default = MEBall;
 
-},{"../shaders/shaders":65,"./engine":37,"./matrix-class":47,"wgpu-matrix":25}],27:[function(require,module,exports){
+},{"../shaders/shaders":57,"./engine":29,"./matrix-class":39,"wgpu-matrix":18}],20:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -20607,55 +20387,7 @@ class Behavior {
 }
 exports.default = Behavior;
 
-},{"./utils":50}],28:[function(require,module,exports){
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.CollisionSystem = void 0;
-var _navMesh = require("../../examples/games/rpg/nav-mesh");
-class CollisionSystem {
-  constructor() {
-    this.entries = [];
-    // {id, pos, radius, group}
-  }
-  register(id, positionInstance, radius = 0.6, group = "default") {
-    this.entries.push({
-      id,
-      pos: positionInstance,
-      radius,
-      group
-    });
-  }
-  unregister(id) {
-    this.entries = this.entries.filter(e => e.id !== id);
-  }
-  update() {
-    const n = this.entries.length;
-    for (let i = 0; i < n; i++) {
-      for (let j = i + 1; j < n; j++) {
-        const A = this.entries[i];
-        const B = this.entries[j];
-        if (A.group === B.group) continue;
-        const minDist = A.radius + B.radius;
-        const testCollide = (0, _navMesh.resolvePairRepulsion)(A.pos, B.pos, minDist, 1.0);
-        if (testCollide) {
-          console.log('collide A ' + A + " vs B " + B);
-          dispatchEvent(new CustomEvent('close-distance', {
-            detail: {
-              A: A,
-              B: B
-            }
-          }));
-        }
-      }
-    }
-  }
-}
-exports.CollisionSystem = CollisionSystem;
-
-},{"../../examples/games/rpg/nav-mesh":10}],29:[function(require,module,exports){
+},{"./utils":42}],21:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -21080,7 +20812,7 @@ class MECube {
 }
 exports.default = MECube;
 
-},{"../shaders/shaders":65,"./engine":37,"./matrix-class":47,"wgpu-matrix":25}],30:[function(require,module,exports){
+},{"../shaders/shaders":57,"./engine":29,"./matrix-class":39,"wgpu-matrix":18}],22:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -21243,7 +20975,7 @@ class HPBarEffect {
 }
 exports.HPBarEffect = HPBarEffect;
 
-},{"../../shaders/energy-bars/energy-bar-shader.js":53,"wgpu-matrix":25}],31:[function(require,module,exports){
+},{"../../shaders/energy-bars/energy-bar-shader.js":45,"wgpu-matrix":18}],23:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -21262,7 +20994,7 @@ class FlameEmitter {
     this.enabled = true;
     this.maxParticles = maxParticles;
     this.instanceTargets = [];
-    this.floatsPerInstance = 24;
+    this.floatsPerInstance = 28;
     this.instanceData = new Float32Array(maxParticles * this.floatsPerInstance);
     this.smoothFlickeringScale = 0.1;
     this.maxY = 1.9;
@@ -21426,9 +21158,10 @@ class FlameEmitter {
       const finalMat = _wgpuMatrix.mat4.identity();
       _wgpuMatrix.mat4.multiply(baseModelMatrix, local, finalMat);
       const offset = i * this.floatsPerInstance;
-      this.instanceData.set(finalMat, offset);
-      this.instanceData.set([t.time, 0, 0, 0], offset + 16);
-      this.instanceData.set([t.intensity, 0, 0, 0], offset + 20);
+      this.instanceData.set(finalMat, offset); // 0..15
+      this.instanceData.set([t.time, 0, 0, 0], offset + 16); // 16..19
+      this.instanceData.set([t.intensity, 0, 0, 0], offset + 20); // 20..23
+      this.instanceData.set([t.color[0], t.color[1], t.color[2], t.color[3] ?? 1.0], offset + 24); // 24..27
     }
     this.device.queue.writeBuffer(this.modelBuffer, 0, this.instanceData.subarray(0, count * this.floatsPerInstance));
   };
@@ -21461,7 +21194,7 @@ class FlameEmitter {
 }
 exports.FlameEmitter = FlameEmitter;
 
-},{"../../shaders/flame-effect/flame-instanced":54,"../utils":50,"wgpu-matrix":25}],32:[function(require,module,exports){
+},{"../../shaders/flame-effect/flame-instanced":46,"../utils":42,"wgpu-matrix":18}],24:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -21632,7 +21365,7 @@ class FlameEffect {
 }
 exports.FlameEffect = FlameEffect;
 
-},{"../../shaders/flame-effect/flameEffect":55,"wgpu-matrix":25}],33:[function(require,module,exports){
+},{"../../shaders/flame-effect/flameEffect":47,"wgpu-matrix":18}],25:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -21870,7 +21603,7 @@ class GenGeoTexture {
 }
 exports.GenGeoTexture = GenGeoTexture;
 
-},{"../../shaders/standalone/geo.tex.js":67,"../geometry-factory.js":38,"wgpu-matrix":25}],34:[function(require,module,exports){
+},{"../../shaders/standalone/geo.tex.js":59,"../geometry-factory.js":30,"wgpu-matrix":18}],26:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -22060,7 +21793,7 @@ class GenGeo {
 }
 exports.GenGeo = GenGeo;
 
-},{"../../shaders/standalone/geo.instanced.js":66,"../geometry-factory.js":38,"wgpu-matrix":25}],35:[function(require,module,exports){
+},{"../../shaders/standalone/geo.instanced.js":58,"../geometry-factory.js":30,"wgpu-matrix":18}],27:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -22223,7 +21956,7 @@ class MANABarEffect {
 }
 exports.MANABarEffect = MANABarEffect;
 
-},{"../../shaders/energy-bars/energy-bar-shader.js":53,"wgpu-matrix":25}],36:[function(require,module,exports){
+},{"../../shaders/energy-bars/energy-bar-shader.js":45,"wgpu-matrix":18}],28:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -22366,7 +22099,7 @@ class PointerEffect {
 }
 exports.PointerEffect = PointerEffect;
 
-},{"../../shaders/standalone/pointer.effect.js":68,"wgpu-matrix":25}],37:[function(require,module,exports){
+},{"../../shaders/standalone/pointer.effect.js":60,"wgpu-matrix":18}],29:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -22595,7 +22328,9 @@ class ArcballCamera extends CameraBase {
   // 0: Spins forever
   // 1: Instantly stops spinning
   frictionCoefficient = 0.999;
-
+  setProjection(fov = 2 * Math.PI / 5, aspect = 1, near = 1, far = 1000) {
+    this.projectionMatrix = _wgpuMatrix.mat4.perspective(fov, aspect, near, far);
+  }
   // Construtor
   constructor(options) {
     super();
@@ -22603,6 +22338,7 @@ class ArcballCamera extends CameraBase {
       this.position = options.position;
       this.distance = _wgpuMatrix.vec3.len(this.position);
       this.back = _wgpuMatrix.vec3.normalize(this.position);
+      this.setProjection(2 * Math.PI / 5, this.aspect, 1, 2000);
       this.recalcuateRight();
       this.recalcuateUp();
     }
@@ -22759,11 +22495,11 @@ function createInputHandler(window, canvas) {
     }
   });
   canvas.addEventListener('wheel', e => {
-    if ((e.buttons & 1) !== 0) {
-      analog.zoom += Math.sign(e.deltaY);
-      e.preventDefault();
-      e.stopPropagation();
-    }
+    // if((e.buttons & 1) !== 0) {
+    //   analog.zoom += Math.sign(e.deltaY);
+    //   e.preventDefault();
+    //   e.stopPropagation();
+    // }
   }, {
     passive: false
   });
@@ -22802,7 +22538,7 @@ class RPGCamera extends CameraBase {
   // Returns velocity vector
 
   // Inside your camera control init
-  scrollY = 0;
+  scrollY = 50;
   minY = 50.5; // minimum camera height
   maxY = 135.0; // maximum camera height
   scrollSpeed = 1;
@@ -22906,7 +22642,7 @@ class RPGCamera extends CameraBase {
 }
 exports.RPGCamera = RPGCamera;
 
-},{"./utils":50,"wgpu-matrix":25}],38:[function(require,module,exports){
+},{"./utils":42,"wgpu-matrix":18}],30:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -23187,7 +22923,7 @@ class GeometryFactory {
 }
 exports.GeometryFactory = GeometryFactory;
 
-},{}],39:[function(require,module,exports){
+},{}],31:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -23714,7 +23450,7 @@ class MaterialsInstanced {
 }
 exports.default = MaterialsInstanced;
 
-},{"../../shaders/fragment.wgsl":57,"../../shaders/fragment.wgsl.metal":58,"../../shaders/fragment.wgsl.normalmap":59,"../../shaders/fragment.wgsl.pong":60,"../../shaders/fragment.wgsl.power":61,"../../shaders/instanced/fragment.instanced.wgsl":62}],40:[function(require,module,exports){
+},{"../../shaders/fragment.wgsl":49,"../../shaders/fragment.wgsl.metal":50,"../../shaders/fragment.wgsl.normalmap":51,"../../shaders/fragment.wgsl.pong":52,"../../shaders/fragment.wgsl.power":53,"../../shaders/instanced/fragment.instanced.wgsl":54}],32:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -23748,7 +23484,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
     } else {
       this.raycast = o.raycast;
     }
-    console.info('WHAT IS [MEMeshObjInstances]', o.pointerEffect);
+    // console.info('WHAT IS [MEMeshObjInstances]', o.pointerEffect)
     this.pointerEffect = o.pointerEffect;
     this.name = o.name;
     this.done = false;
@@ -23912,7 +23648,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
     } else {
       this.mesh.uvs = this.mesh.textures;
     }
-    console.log(`%cMesh: ${o.name}`, _utils.LOG_FUNNY_SMALL);
+    // console.log(`%cMesh: ${o.name}`, LOG_FUNNY_SMALL);
     // ObjSequence animation
     if (typeof o.objAnim !== 'undefined' && o.objAnim != null) {
       this.objAnim = o.objAnim;
@@ -24697,7 +24433,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
 }
 exports.default = MEMeshObjInstances;
 
-},{"../../shaders/fragment.video.wgsl":56,"../../shaders/instanced/vertex.instanced.wgsl":63,"../effects/energy-bar":30,"../effects/flame":32,"../effects/flame-emmiter":31,"../effects/gen":34,"../effects/gen-tex":33,"../effects/mana-bar":35,"../effects/pointerEffect":36,"../loaders/bvh-instaced":43,"../matrix-class":47,"../utils":50,"./materials-instanced":39,"wgpu-matrix":25}],41:[function(require,module,exports){
+},{"../../shaders/fragment.video.wgsl":48,"../../shaders/instanced/vertex.instanced.wgsl":55,"../effects/energy-bar":22,"../effects/flame":24,"../effects/flame-emmiter":23,"../effects/gen":26,"../effects/gen-tex":25,"../effects/mana-bar":27,"../effects/pointerEffect":28,"../loaders/bvh-instaced":35,"../matrix-class":39,"../utils":42,"./materials-instanced":31,"wgpu-matrix":18}],33:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -24983,7 +24719,7 @@ class SpotLight {
 }
 exports.SpotLight = SpotLight;
 
-},{"../shaders/instanced/vertexShadow.instanced.wgsl":64,"../shaders/vertexShadow.wgsl":71,"./behavior":27,"wgpu-matrix":25}],42:[function(require,module,exports){
+},{"../shaders/instanced/vertexShadow.instanced.wgsl":56,"../shaders/vertexShadow.wgsl":63,"./behavior":20,"wgpu-matrix":18}],34:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -25451,7 +25187,7 @@ function play(nameAni) {
   this.playing = true;
 }
 
-},{}],43:[function(require,module,exports){
+},{}],35:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -25563,7 +25299,7 @@ class BVHPlayerInstances extends _meshObjInstances.default {
     }
     // 4. For mesh nodes or armature parent nodes, leave them alone
     // what is animation , check is it more - we look for Armature by defoult 
-    // frendly blender
+    // friendly blender
     this.glb.animationIndex = 0;
     for (let j = 0; j < this.glb.glbJsonData.animations.length; j++) {
       if (this.glb.glbJsonData.animations[j].name.indexOf('Armature') !== -1) {
@@ -25584,6 +25320,10 @@ class BVHPlayerInstances extends _meshObjInstances.default {
   getNumberOfFramesCurAni() {
     const anim = this.glb.glbJsonData.animations[this.glb.animationIndex];
     let maxFrames = 0;
+    if (typeof anim == 'undefined') {
+      console.log('[anim undefined]', this.name);
+      return 1;
+    }
     for (const sampler of anim.samplers) {
       const inputAccessor = this.glb.glbJsonData.accessors[sampler.input];
       if (inputAccessor.count > maxFrames) maxFrames = inputAccessor.count;
@@ -25614,12 +25354,11 @@ class BVHPlayerInstances extends _meshObjInstances.default {
       setTimeout(() => {
         this.sharedState.animationStarted = false;
         // specific rule for naming (some from blender source)
-        let n = this.name;
-        if (this.name.indexOf('_') != -1) {
-          n = this.name.split('_')[0];
-        }
-        // console.info(`animationEnd-${n}`)
-        dispatchEvent(new CustomEvent(`animationEnd-${n}`, {
+        // let n = this.name;
+        // if(this.name.indexOf('_') != -1) {
+        //   n = this.name.split('_')[0];
+        // }
+        dispatchEvent(new CustomEvent(`animationEnd-${this.name}`, {
           detail: {
             animationName: this.glb.glbJsonData.animations[this.glb.animationIndex].name
           }
@@ -25989,7 +25728,7 @@ class BVHPlayerInstances extends _meshObjInstances.default {
 }
 exports.BVHPlayerInstances = BVHPlayerInstances;
 
-},{"../instanced/mesh-obj-instances.js":40,"./webgpu-gltf.js":45,"wgpu-matrix":25}],44:[function(require,module,exports){
+},{"../instanced/mesh-obj-instances.js":32,"./webgpu-gltf.js":37,"wgpu-matrix":18}],36:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -26102,7 +25841,7 @@ class BVHPlayer extends _meshObj.default {
     }
     // 4. For mesh nodes or armature parent nodes, leave them alone
     // what is animation , check is it more - we look for Armature by defoult 
-    // frendly blender
+    // friendly blender
     this.glb.animationIndex = 0;
     for (let j = 0; j < this.glb.glbJsonData.animations.length; j++) {
       if (this.glb.glbJsonData.animations[j].name.indexOf('Armature') !== -1) {
@@ -26499,7 +26238,7 @@ class BVHPlayer extends _meshObj.default {
 }
 exports.BVHPlayer = BVHPlayer;
 
-},{"../mesh-obj":48,"./webgpu-gltf.js":45,"bvh-loader":11,"wgpu-matrix":25}],45:[function(require,module,exports){
+},{"../mesh-obj":40,"./webgpu-gltf.js":37,"bvh-loader":4,"wgpu-matrix":18}],37:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -27080,7 +26819,7 @@ async function uploadGLBModel(buffer, device) {
   return R;
 }
 
-},{"gl-matrix":14}],46:[function(require,module,exports){
+},{"gl-matrix":7}],38:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -27606,7 +27345,7 @@ class Materials {
 }
 exports.default = Materials;
 
-},{"../shaders/fragment.wgsl":57,"../shaders/fragment.wgsl.metal":58,"../shaders/fragment.wgsl.normalmap":59,"../shaders/fragment.wgsl.pong":60,"../shaders/fragment.wgsl.power":61}],47:[function(require,module,exports){
+},{"../shaders/fragment.wgsl":49,"../shaders/fragment.wgsl.metal":50,"../shaders/fragment.wgsl.normalmap":51,"../shaders/fragment.wgsl.pong":52,"../shaders/fragment.wgsl.power":53}],39:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -27625,7 +27364,10 @@ class Position {
   constructor(x, y, z) {
     // console.log('TEST TYTPOF ', x)
     // Not in use for nwo this is from matrix-engine project [nameUniq]
-    this.nameUniq = null;
+    this.remoteName = null; // not in use
+    this.netObject = null;
+    this.netTolerance = 1;
+    this.netTolerance__ = 0;
     if (typeof x == 'undefined') x = 0;
     if (typeof y == 'undefined') y = 0;
     if (typeof z == 'undefined') z = 0;
@@ -27690,24 +27432,44 @@ class Position {
         this.x += this.velX;
         this.y += this.velY;
         this.z += this.velZ;
-
-        // // from me
-        // if(net && net.connection && typeof em === 'undefined' && App.scene[this.nameUniq].net.enable == true) net.connection.send({
-        //   netPos: {x: this.x, y: this.y, z: this.z},
-        //   netObjId: this.nameUniq,
-        // });
+        if (this.netObject != null) {
+          if (this.netTolerance__ > this.netTolerance) {
+            app.net.send({
+              remoteName: this.remoteName,
+              sceneName: this.netObject,
+              netPos: {
+                x: this.x,
+                y: this.y,
+                z: this.z
+              }
+            });
+            this.netTolerance__ = 0;
+          } else {
+            this.netTolerance__++;
+          }
+        }
       } else {
         this.x = this.targetX;
         this.y = this.targetY;
         this.z = this.targetZ;
         this.inMove = false;
         this.onTargetPositionReach();
-
-        // // from me
-        // if(net && net.connection && typeof em === 'undefined' && App.scene[this.nameUniq].net.enable == true) net.connection.send({
-        //   netPos: {x: this.x, y: this.y, z: this.z},
-        //   netObjId: this.nameUniq,
-        // });
+        if (this.netObject != null) {
+          if (this.netTolerance__ > this.netTolerance) {
+            app.net.send({
+              remoteName: this.remoteName,
+              sceneName: this.netObject,
+              netPos: {
+                x: this.x,
+                y: this.y,
+                z: this.z
+              }
+            });
+            this.netTolerance__ = 0;
+          } else {
+            this.netTolerance__++;
+          }
+        }
       }
     }
   }
@@ -27718,34 +27480,16 @@ class Position {
     this.x = newx;
     this.targetX = newx;
     this.inMove = false;
-
-    // if(net && net.connection && typeof em === 'undefined' &&
-    //   App.scene[this.nameUniq].net && App.scene[this.nameUniq].net.enable == true) {
-    //   net.connection.send({
-    //     netPos: {x: this.x, y: this.y, z: this.z},
-    //     netObjId: this.nameUniq,
-    //   });
-    // }
   }
   SetY(newy, em) {
     this.y = newy;
     this.targetY = newy;
     this.inMove = false;
-    // if(net && net.connection && typeof em === 'undefined' &&
-    //   App.scene[this.nameUniq].net && App.scene[this.nameUniq].net.enable == true) net.connection.send({
-    //     netPos: {x: this.x, y: this.y, z: this.z},
-    //     netObjId: this.nameUniq,
-    //   });
   }
   SetZ(newz, em) {
     this.z = newz;
     this.targetZ = newz;
     this.inMove = false;
-    // if(net && net.connection && typeof em === 'undefined' &&
-    //   App.scene[this.nameUniq].net && App.scene[this.nameUniq].net.enable == true) net.connection.send({
-    //     netPos: {x: this.x, y: this.y, z: this.z},
-    //     netObjId: this.nameUniq,
-    //   });
   }
   get X() {
     return parseFloat(this.x);
@@ -27764,26 +27508,25 @@ class Position {
     this.targetY = newy;
     this.targetZ = newz;
     this.inMove = false;
-
-    // from me
-    // if(App.scene[this.nameUniq] && net && net.connection && typeof em === 'undefined' &&
-    //   App.scene[this.nameUniq].net && App.scene[this.nameUniq].net.enable == true) net.connection.send({
-    //     netPos: {x: this.x, y: this.y, z: this.z},
-    //     netObjId: this.nameUniq,
-    //   });
   }
 }
 exports.Position = Position;
 class Rotation {
   constructor(x, y, z) {
     // Not in use for nwo this is from matrix-engine project [nameUniq]
-    this.nameUniq = null;
+    this.remoteName = null;
+    this.emitX = null;
+    this.emitY = null;
+    this.emitZ = null;
     if (typeof x == 'undefined') x = 0;
     if (typeof y == 'undefined') y = 0;
     if (typeof z == 'undefined') z = 0;
     this.x = x;
     this.y = y;
     this.z = z;
+    this.netx = x;
+    this.nety = y;
+    this.netz = z;
     this.rotationSpeed = {
       x: 0,
       y: 0,
@@ -27817,6 +27560,14 @@ class Rotation {
   }
   getRotX() {
     if (this.rotationSpeed.x == 0) {
+      if (this.netx != this.x && this.emitX) {
+        app.net.send({
+          remoteName: this.remoteName,
+          sceneName: this.emitX,
+          netRotX: this.x
+        });
+      }
+      this.netx = this.x;
       return (0, _utils.degToRad)(this.x);
     } else {
       this.x = this.x + this.rotationSpeed.x * 0.001;
@@ -27825,6 +27576,14 @@ class Rotation {
   }
   getRotY() {
     if (this.rotationSpeed.y == 0) {
+      if (this.nety != this.y && this.emitY) {
+        app.net.send({
+          remoteName: this.remoteName,
+          sceneName: this.emitY,
+          netRotY: this.y
+        });
+      }
+      this.nety = this.y;
       return (0, _utils.degToRad)(this.y);
     } else {
       this.y = this.y + this.rotationSpeed.y * 0.001;
@@ -27833,6 +27592,14 @@ class Rotation {
   }
   getRotZ() {
     if (this.rotationSpeed.z == 0) {
+      if (this.netz != this.z && this.emitZ) {
+        app.net.send({
+          remoteName: this.remoteName,
+          sceneName: this.emitZ,
+          netRotZ: this.z
+        });
+      }
+      this.nety = this.y;
       return (0, _utils.degToRad)(this.z);
     } else {
       this.z = this.z + this.rotationSpeed.z * 0.001;
@@ -27842,7 +27609,7 @@ class Rotation {
 }
 exports.Rotation = Rotation;
 
-},{"./utils":50}],48:[function(require,module,exports){
+},{"./utils":42}],40:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -28637,7 +28404,7 @@ class MEMeshObj extends _materials.default {
 }
 exports.default = MEMeshObj;
 
-},{"../shaders/fragment.video.wgsl":56,"../shaders/vertex.wgsl":69,"../shaders/vertex.wgsl.normalmap":70,"./effects/pointerEffect":36,"./materials":46,"./matrix-class":47,"./utils":50,"wgpu-matrix":25}],49:[function(require,module,exports){
+},{"../shaders/fragment.video.wgsl":48,"../shaders/vertex.wgsl":61,"../shaders/vertex.wgsl.normalmap":62,"./effects/pointerEffect":28,"./materials":38,"./matrix-class":39,"./utils":42,"wgpu-matrix":18}],41:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -28826,16 +28593,17 @@ function addRaycastsListener(canvasId = "canvas1", eventName = 'click') {
   });
 }
 
-},{"wgpu-matrix":25}],50:[function(require,module,exports){
+},{"wgpu-matrix":18}],42:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.LOG_WARN = exports.LOG_MATRIX = exports.LOG_INFO = exports.LOG_FUNNY_SMALL = exports.LOG_FUNNY = void 0;
+exports.LS = exports.LOG_WARN = exports.LOG_MATRIX = exports.LOG_INFO = exports.LOG_FUNNY_SMALL = exports.LOG_FUNNY = void 0;
 exports.ORBIT = ORBIT;
 exports.ORBIT_FROM_ARRAY = ORBIT_FROM_ARRAY;
 exports.OSCILLATOR = OSCILLATOR;
+exports.SS = void 0;
 exports.SWITCHER = SWITCHER;
 exports.byId = void 0;
 exports.createAppEvent = createAppEvent;
@@ -28844,7 +28612,10 @@ exports.genName = genName;
 exports.getAxisRot = getAxisRot;
 exports.getAxisRot2 = getAxisRot2;
 exports.getAxisRot3 = getAxisRot3;
-exports.mb = exports.mat4 = void 0;
+exports.htmlHeader = void 0;
+exports.isEven = isEven;
+exports.isOdd = isOdd;
+exports.mb = exports.mat4 = exports.jsonHeaders = void 0;
 exports.quaternion_rotation_matrix = quaternion_rotation_matrix;
 exports.radToDeg = radToDeg;
 exports.randomFloatFromTo = randomFloatFromTo;
@@ -29712,7 +29483,86 @@ function setupCanvasFilters(canvasId) {
   updateFilter(); // Initial
 }
 
-},{}],51:[function(require,module,exports){
+/**
+ * @description
+ * // Save an object
+    Storage.set('playerData', { name: 'Slayzer', hp: 120, mana: 80 });
+
+    // Load it back
+    const player = Storage.get('playerData');
+    console.log(player.name); // "Slayzer"
+
+    // Check if exists
+    if (Storage.has('playerData')) console.log('Found!');
+
+    // Remove one
+    Storage.remove('playerData');
+
+    // Clear all localStorage
+    Storage.clear();
+ */
+const LS = exports.LS = {
+  set(key, value) {
+    localStorage.setItem(key, JSON.stringify(value));
+  },
+  get(key, defaultValue = null) {
+    const item = localStorage.getItem(key);
+    try {
+      return item ? JSON.parse(item) : defaultValue;
+    } catch (e) {
+      console.warn(`Error parsing localStorage key "${key}"`, e);
+      return defaultValue;
+    }
+  },
+  has(key) {
+    return localStorage.getItem(key) !== null;
+  },
+  remove(key) {
+    localStorage.removeItem(key);
+  },
+  clear() {
+    localStorage.clear();
+  }
+};
+const SS = exports.SS = {
+  set(key, value) {
+    sessionStorage.setItem(key, JSON.stringify(value));
+  },
+  get(key, defaultValue = null) {
+    const item = sessionStorage.getItem(key);
+    try {
+      return item ? JSON.parse(item) : defaultValue;
+    } catch (e) {
+      console.warn(`Error parsing sessionStorage key "${key}"`, e);
+      return defaultValue;
+    }
+  },
+  has(key) {
+    return sessionStorage.getItem(key) !== null;
+  },
+  remove(key) {
+    sessionStorage.removeItem(key);
+  },
+  clear() {
+    sessionStorage.clear();
+  }
+};
+const jsonHeaders = exports.jsonHeaders = new Headers({
+  "Content-Type": "application/json",
+  "Accept": "application/json"
+});
+const htmlHeader = exports.htmlHeader = new Headers({
+  "Content-Type": "text/html",
+  "Accept": "text/plain"
+});
+function isEven(n) {
+  return n % 2 === 0;
+}
+function isOdd(n) {
+  return n % 2 !== 0;
+}
+
+},{}],43:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -29752,7 +29602,7 @@ class MultiLang {
 }
 exports.MultiLang = MultiLang;
 
-},{"../engine/utils":50}],52:[function(require,module,exports){
+},{"../engine/utils":42}],44:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30036,7 +29886,7 @@ class MatrixAmmo {
 }
 exports.default = MatrixAmmo;
 
-},{"../engine/utils":50}],53:[function(require,module,exports){
+},{"../engine/utils":42}],45:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30082,7 +29932,7 @@ fn fsMain(in : VertexOutput) -> @location(0) vec4f {
 }
 `;
 
-},{}],54:[function(require,module,exports){
+},{}],46:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30099,6 +29949,7 @@ struct ModelData {
   model : mat4x4<f32>,
   time : vec4<f32>,       // x = time
   intensity : vec4<f32>,  // x = intensity
+  color : vec4<f32>,      // rgba color
 };
 @group(0) @binding(1) var<storage, read> modelDataArray : array<ModelData>;
 
@@ -30113,7 +29964,7 @@ struct VSOut {
   @location(0) uv : vec2<f32>,
   @location(1) time : f32,
   @location(2) intensity : f32,
-  @location(3) @interpolate(flat) instanceIdx : u32,  // flat interpolation required
+  @location(3) @interpolate(flat) instanceIdx : u32,
 };
 
 @vertex
@@ -30125,11 +29976,11 @@ fn vsMain(input : VSIn) -> VSOut {
   output.uv = input.uv;
   output.time = modelData.time.x;
   output.intensity = modelData.intensity.x;
-  output.instanceIdx = input.instanceIdx; // pass to fragment
+  output.instanceIdx = input.instanceIdx;
   return output;
 }
 
-// Simple procedural flame noise
+// Simple procedural flame noise (value in 0..1)
 fn hash(n : vec2<f32>) -> f32 {
   return fract(sin(dot(n, vec2<f32>(12.9898, 78.233))) * 43758.5453);
 }
@@ -30145,19 +29996,26 @@ fn noise(p : vec2<f32>) -> f32 {
   );
 }
 
-// Flame color gradient: black → red → orange → yellow → white
+// Flame color gradient: black -> red -> orange -> yellow -> white
 fn flameColor(n: f32) -> vec3<f32> {
   if (n < 0.3) {
     return vec3<f32>(n * 3.0, 0.0, 0.0);               // dark red
   } else if (n < 0.6) {
-    return vec3<f32>(1.0, (n-0.3)*3.33, 0.0);          // red → orange
+    return vec3<f32>(1.0, (n - 0.3) * 3.33, 0.0);      // red -> orange
   } else {
-    return vec3<f32>(1.0, 1.0, (n-0.6)*2.5);           // orange → yellow → white
+    return vec3<f32>(1.0, 1.0, (n - 0.6) * 2.5);       // orange -> yellow -> white
   }
 }
 
 @fragment
 fn fsMain(in : VSOut) -> @location(0) vec4<f32> {
+  // Read per-instance data
+  let modelData = modelDataArray[in.instanceIdx];
+  let baseColor = modelData.color.xyz;
+  let instanceAlpha = modelData.color.w;
+  let instIntensity = max(0.0, modelData.intensity.x);
+
+  // time with small instance offset
   let t = in.time * 2.0 + f32(in.instanceIdx) * 0.13;
 
   var uv = in.uv;
@@ -30165,23 +30023,42 @@ fn fsMain(in : VSOut) -> @location(0) vec4<f32> {
 
   // procedural noise
   var n = noise(uv * 5.0 + vec2<f32>(0.0, t * 0.5));
-  n = pow(n, 3.0); // sharpen
+  // keep some brightness: milder sharpening than pow(n,3)
+  n = pow(n, 1.5);
 
-  // flame color mapping
-  let r = n * 1.5 + n * 0.5 * sin(t * 3.0);       // red dominant
-  let g = n * 0.8 * cos(t * 2.0);                 // green flicker
-  let b = n * 0.2 + n * 0.1 * sin(t * 1.5);      // small blue component
+  // base flame color from gradient
+  let grad = flameColor(n);
 
-  var color = vec3<f32>(r, g, b) * in.intensity;
+  let userColor = modelData.color.xyz;
 
-  // soft alpha based on noise
-  let alpha = smoothstep(0.0, 0.5, n);
+  // mix ratio (0.0 = pure red, 1.0 = user color)
+  let mixFactor = 0.5;
+  let mixedColor = mix(grad, userColor, mixFactor);
+
+  // flicker multipliers (shifted into positive range)
+  let flickR = 0.7 + 0.3 * sin(t * 3.0); // 0.4 .. 1.0
+  let flickG = 0.6 + 0.4 * cos(t * 2.0); // 0.2 .. 1.0
+  let flickB = 0.8 + 0.2 * sin(t * 1.5); // 0.6 .. 1.0
+
+  // combine gradient with per-instance baseColor and flicker
+  // var color = grad * baseColor * vec3<f32>(flickR, flickG, flickB);
+  var color = mixedColor * vec3<f32>(flickR, flickG, flickB);
+
+  // apply instance/global intensity
+  color = color * instIntensity;
+
+  // soft alpha based on noise and instance alpha
+  var alpha = smoothstep(0.0, 0.6, n) * instanceAlpha * instIntensity;
+
+  // final clamp to avoid negative or NaN values
+  color = clamp(color, vec3<f32>(0.0), vec3<f32>(10.0)); // allow HDR-like values for additive blending
+  alpha = clamp(alpha, 0.0, 1.0);
 
   return vec4<f32>(color, alpha);
 }
 `;
 
-},{}],55:[function(require,module,exports){
+},{}],47:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30269,7 +30146,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
 }
 `;
 
-},{}],56:[function(require,module,exports){
+},{}],48:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30359,7 +30236,7 @@ fn main(input : FragmentInput) -> @location(0) vec4f {
 }
 `;
 
-},{}],57:[function(require,module,exports){
+},{}],49:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30590,7 +30467,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, 1.0);
 }`;
 
-},{}],58:[function(require,module,exports){
+},{}],50:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30768,7 +30645,7 @@ return vec4f(color, 1.0);
 // let radiance = spotlights[0].color * 10.0; // test high intensity
 // Lo += materialData.baseColor * radiance * NdotL;
 
-},{}],59:[function(require,module,exports){
+},{}],51:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -31013,7 +30890,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, 1.0);
 }`;
 
-},{}],60:[function(require,module,exports){
+},{}],52:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -31233,7 +31110,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, 1.0);
 }`;
 
-},{}],61:[function(require,module,exports){
+},{}],53:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -31401,7 +31278,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 // let radiance = spotlights[0].color * 10.0; // test high intensity
 // Lo += materialData.baseColor * radiance * NdotL;
 
-},{}],62:[function(require,module,exports){
+},{}],54:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -31637,7 +31514,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, alpha);
 }`;
 
-},{}],63:[function(require,module,exports){
+},{}],55:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -31741,7 +31618,7 @@ fn main(
   return output;
 }`;
 
-},{}],64:[function(require,module,exports){
+},{}],56:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -31778,7 +31655,7 @@ fn main(
 }
 `;
 
-},{}],65:[function(require,module,exports){
+},{}],57:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -31836,7 +31713,7 @@ fn fragmentMain(input: VertexOutput) -> @location(0) vec4f {
   return vec4f(textureColor.rgb * lightColor, textureColor.a);
 }`;
 
-},{}],66:[function(require,module,exports){
+},{}],58:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -31894,7 +31771,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
 }
 `;
 
-},{}],67:[function(require,module,exports){
+},{}],59:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -31945,23 +31822,43 @@ fn vsMain(input : VertexInput, @builtin(instance_index) instanceIndex : u32) -> 
 // === FRAGMENT STAGE =======================================================
 @fragment
 fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
-  let texColor = textureSample(myTexture, mySampler, input.v_uv);
+
+ // Adjust UV scaling and offset here
+  let uvScale = vec2<f32>(1.3, 1.3);   // < 1.0 = zoom out (more texture visible)
+  let uvOffset = vec2<f32>(0.01, 0.01); // move the texture slightly
+  
+  let adjustedUV = input.v_uv * uvScale + uvOffset;
+
+  let texColor = textureSample(myTexture, mySampler, adjustedUV);
 
   let uv = input.v_uv * 2.0 - vec2<f32>(1.0, 1.0);
   let dist = length(uv);
   let glow = exp(-dist * 1.2);
   let glowColor = mix(vec3<f32>(0.2, 0.7, 1.0), vec3<f32>(0.8, 0.95, 1.0), glow);
 
-  // More balanced color blending:
   let baseRGB = texColor.rgb * glowColor;
-  let tintedRGB = mix(baseRGB, input.v_color.rgb, 0.8); // 0.8 gives strong tint influence
+  let tintedRGB = mix(baseRGB, input.v_color.rgb, 0.8);
   let finalAlpha = texColor.a * input.v_color.a * glow;
 
   return vec4<f32>(tintedRGB, finalAlpha);
+
+  // let texColor = textureSample(myTexture, mySampler, input.v_uv);
+
+  // let uv = input.v_uv * 2.0 - vec2<f32>(1.0, 1.0);
+  // let dist = length(uv);
+  // let glow = exp(-dist * 1.2);
+  // let glowColor = mix(vec3<f32>(0.2, 0.7, 1.0), vec3<f32>(0.8, 0.95, 1.0), glow);
+
+  // // More balanced color blending:
+  // let baseRGB = texColor.rgb * glowColor;
+  // let tintedRGB = mix(baseRGB, input.v_color.rgb, 0.8); // 0.8 gives strong tint influence
+  // let finalAlpha = texColor.a * input.v_color.a * glow;
+
+  // return vec4<f32>(tintedRGB, finalAlpha);
 }
 `;
 
-},{}],68:[function(require,module,exports){
+},{}],60:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -32019,7 +31916,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
   return vec4<f32>(color, 1.0);
 }`;
 
-},{}],69:[function(require,module,exports){
+},{}],61:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -32105,7 +32002,7 @@ fn main(
   return output;
 }`;
 
-},{}],70:[function(require,module,exports){
+},{}],62:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -32216,7 +32113,7 @@ fn main(
   return output;
 }`;
 
-},{}],71:[function(require,module,exports){
+},{}],63:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -32244,7 +32141,7 @@ fn main(
 }
 `;
 
-},{}],72:[function(require,module,exports){
+},{}],64:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -32314,7 +32211,7 @@ class MatrixSounds {
 }
 exports.MatrixSounds = MatrixSounds;
 
-},{}],73:[function(require,module,exports){
+},{}],65:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -33045,7 +32942,7 @@ class MatrixEngineWGPU {
       this.device.queue.submit([commandEncoder.finish()]);
       requestAnimationFrame(this.frame);
     } catch (err) {
-      console.log('%cLoop(err):' + err + " info : " + err.stack, _utils.LOG_WARN);
+      // console.log('%cLoop(err):' + err + " info : " + err.stack, LOG_WARN)
       requestAnimationFrame(this.frame);
     }
   };
@@ -33318,4 +33215,4 @@ class MatrixEngineWGPU {
 }
 exports.default = MatrixEngineWGPU;
 
-},{"./engine/ball.js":26,"./engine/cube.js":29,"./engine/engine.js":37,"./engine/lights.js":41,"./engine/loader-obj.js":42,"./engine/loaders/bvh-instaced.js":43,"./engine/loaders/bvh.js":44,"./engine/mesh-obj.js":48,"./engine/utils.js":50,"./multilang/lang.js":51,"./physics/matrix-ammo.js":52,"./sounds/sounds.js":72,"wgpu-matrix":25}]},{},[8]);
+},{"./engine/ball.js":19,"./engine/cube.js":21,"./engine/engine.js":29,"./engine/lights.js":33,"./engine/loader-obj.js":34,"./engine/loaders/bvh-instaced.js":35,"./engine/loaders/bvh.js":36,"./engine/mesh-obj.js":40,"./engine/utils.js":42,"./multilang/lang.js":43,"./physics/matrix-ammo.js":44,"./sounds/sounds.js":64,"wgpu-matrix":18}]},{},[3]);

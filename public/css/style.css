@@ -1,7 +1,7 @@
 @font-face {
   font-family: stormfaze;
   src: url(../../public/res/fonts/stormfaze.ttf),
-       url(../res/fonts/stormfaze.ttf);
+    url(../res/fonts/stormfaze.ttf);
 }
 
 @font-face {
@@ -9,6 +9,7 @@
   src: url(../../public/res/fonts/wargames.ttf);
 }
 
+html,
 body {
   color: white;
   background-color: #95003d;
@@ -17,6 +18,7 @@ body {
   margin: 0;
   padding: 0;
   overflow: hidden;
+  height: 100dvh;
   text-align: center;
 
   -webkit-user-select: none;
@@ -28,10 +30,17 @@ body {
 
   -webkit-text-stroke-width: 1px;
   -webkit-text-stroke-color: rgba(0, 0, 0, 0.575);
+
+  cursor: url(../res/icons/default.png) 0 0, auto;
+}
+
+div {
+  cursor: url(../res/icons/default.png) 0 0, auto;
 }
 
 .meBody {
   font-family: stormfaze;
+  cursor: url(../res/icons/default.png) 0 0, auto;
 }
 
 .noselection {
@@ -144,10 +153,6 @@ iframe {
   min-width: 550px !important;
 }
 
-div {
-  cursor: default;
-}
-
 .header {
   text-shadow: 0px 0px 14px #ffd52e;
   background-color: black;
@@ -185,7 +190,6 @@ textarea {
 }
 
 span {
-  cursor: inherit;
   width: 100px;
 }
 
@@ -200,16 +204,6 @@ span {
   text-align: center;
   align-items: center;
   border: solid #0c2540 3px;
-}
-
-#matrix-net {
-  position: absolute;
-  display: none;
-  right: 0;
-  height: 100%;
-  width: 40vh;
-  font-family: stormfaze;
-  background-color: crimson;
 }
 
 .timeLine {
@@ -277,7 +271,7 @@ p {
   border: 2px solid #00ffff;
   border-radius: 12px;
   box-shadow: 0 0 10px #00ffff44, 0 0 20px #00ffff22 inset;
-  cursor: pointer;
+  /* cursor: pointer; */
   transition: all 0.25s ease-in-out;
   display: inline-block;
   text-align: center;
@@ -667,7 +661,7 @@ option {
   top: 15%;
   left: 2%;
   width: 370px;
-  transform:  scale(1); 
+  transform: scale(1);
   /* translate(-50%, -50%) */
   background: rgba(0, 0, 0, 0.9);
   border: 2px solid #0ff;
@@ -682,13 +676,13 @@ option {
 #jambTable.show {
   display: flex;
   transform: scale(1);
-   /* translate(-50%, -50%) */
+  /* translate(-50%, -50%) */
   opacity: 1;
 }
 
 /* Hidden state */
 #jambTable.hide {
-  transform:  scale(0);
+  transform: scale(0);
   /* translate(-50%, -50%) */
   opacity: 0;
   pointer-events: none;
@@ -708,4 +702,297 @@ option {
   text-align: center;
   font-size: 12px;
   line-height: 20px;
+}
+
+#matrix-net {
+  position: absolute;
+  right: 0;
+  display: none;
+  overflow: hidden;
+  top: 0;
+  height: 100%;
+  width: 30vw;
+  font-family: stormfaze;
+  background-color: crimson;
+}
+
+@-webkit-keyframes showByVetical {
+  0% {
+    background-color: rgba(155, 101, 10, 0.95);
+    height: 75px;
+  }
+
+  50% {
+    background-color: rgba(238, 65, 13, 0.95);
+    height: 50vh;
+    opacity: 0.5;
+  }
+
+  100% {
+    background-color: rgb(200, 54, 9);
+    height: 100vh;
+    opacity: 1;
+  }
+}
+
+/* Standard syntax */
+@keyframes showByVetical {
+  0% {
+    background-color: rgba(155, 101, 10, 0.95);
+    height: 75px;
+  }
+
+  50% {
+    background-color: rgba(224, 64, 43, 0.95);
+    height: 50vh;
+    opacity: 0.5;
+  }
+
+  100% {
+    background-color: rgb(200, 54, 9);
+    height: 100vh;
+    opacity: 1;
+  }
+}
+
+/* Safari 4.0 - 8.0 */
+@-webkit-keyframes hideByVetical {
+  0% {
+    background-color: rgba(255, 166, 11, 0.95);
+    height: 100vh;
+  }
+
+  50% {
+    background-color: rgba(255, 166, 11, 0.95);
+    height: 50vh;
+    opacity: 0.5;
+  }
+
+  100% {
+    background-color: rgba(0, 0, 0, 0.95);
+    height: 35px;
+    opacity: 0.2;
+  }
+}
+
+/* Standard syntax */
+@keyframes hideByVetical {
+  0% {
+    background-color: rgba(255, 166, 11, 0.95);
+    height: 100vh;
+  }
+
+  50% {
+    background-color: rgba(255, 166, 11, 0.95);
+    height: 50vh;
+    opacity: 0.5;
+  }
+
+  100% {
+    background-color: rgba(0, 0, 0, 0.95);
+    height: 40px;
+    opacity: 0.2;
+  }
+}
+
+.show-by-vertical {
+  -webkit-animation-fill-mode: forwards;
+  -webkit-animation-name: showByVetical;
+  -webkit-animation-duration: 1.2s;
+  animation-fill-mode: forwards;
+  animation-name: showByVetical;
+  animation-duration: 1.2s;
+}
+
+.hide-by-vertical {
+  -webkit-animation-fill-mode: forwards;
+  -webkit-animation-name: hideByVetical;
+  -webkit-animation-duration: 1.2s;
+  animation-fill-mode: forwards;
+  animation-name: hideByVetical;
+  animation-duration: 1.2s;
+}
+
+/*
+new dom effect from
+
+*/
+
+.buttonMatrix {
+  all: unset;
+  -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+  position: relative;
+  border-radius: 50%;
+  background-color: rgba(0, 0, 0, 0.75);
+  box-shadow: -0.15em -0.15em 0.15em -0.075em rgba(5, 5, 5, 0.25),
+    0.0375em 0.0375em 0.0675em 0 rgba(5, 5, 5, 0.1);
+}
+
+.buttonMatrix::after {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  width: calc(100% + 0.3em);
+  height: calc(100% + 0.3em);
+  top: -0.15em;
+  left: -0.15em;
+  border-radius: 10px;
+  background: linear-gradient(-135deg,
+      rgba(5, 5, 5, 0.5),
+      transparent 20%,
+      transparent 100%);
+  filter: blur(0.0125em);
+  opacity: 0.25;
+  mix-blend-mode: multiply;
+}
+
+.buttonMatrix .button-outer {
+  position: relative;
+  z-index: 1;
+  border-radius: 10px;
+  transition: box-shadow 300ms ease;
+  will-change: box-shadow;
+  box-shadow: 0 0.05em 0.05em -0.01em rgba(5, 5, 5, 1),
+    0 0.01em 0.01em -0.01em rgba(5, 5, 5, 0.5),
+    0.15em 0.3em 0.1em -0.01em rgba(5, 5, 5, 0.25);
+}
+
+.buttonMatrix:hover .button-outer {
+  box-shadow: 0 0 0 0 rgba(5, 5, 5, 1), 0 0 0 0 rgba(5, 5, 5, 0.5),
+    0 0 0 0 rgba(5, 5, 5, 0.25);
+}
+
+.button-inner {
+  --inset: 0.035em;
+  position: relative;
+  z-index: 1;
+  border-radius: 10px;
+  padding: 1em 1em;
+  background-image: linear-gradient(135deg,
+      rgba(230, 230, 230, 1),
+      rgba(180, 180, 180, 1));
+  transition: box-shadow 300ms ease, clip-path 250ms ease,
+    background-image 250ms ease, transform 250ms ease;
+  will-change: box-shadow, clip-path, background-image, transform;
+  overflow: clip;
+  clip-path: inset(0 0 0 0 round 7px);
+  box-shadow:
+    /* 1 */
+    0 0 0 0 inset rgba(5, 5, 5, 0.1),
+    /* 2 */
+    -0.05em -0.05em 0.05em 0 inset rgba(5, 5, 5, 0.25),
+    /* 3 */
+    0 0 0 0 inset rgba(5, 5, 5, 0.1),
+    /* 4 */
+    0 0 0.05em 0.2em inset rgba(255, 255, 255, 0.25),
+    /* 5 */
+    0.025em 0.05em 0.1em 0 inset rgba(255, 255, 255, 1),
+    /* 6 */
+    0.12em 0.12em 0.12em inset rgba(255, 255, 255, 0.25),
+    /* 7 */
+    -0.075em -0.25em 0.25em 0.1em inset rgba(5, 5, 5, 0.25);
+}
+
+.buttonMatrix:hover .button-inner {
+  clip-path: inset(clamp(1px, 0.0625em, 2px) clamp(1px, 0.0625em, 2px) clamp(1px, 0.0625em, 2px) clamp(1px, 0.0625em, 2px) round 8px);
+  box-shadow:
+    /* 1 */
+    0.1em 0.15em 0.05em 0 inset rgba(5, 5, 5, 0.75),
+    /* 2 */
+    -0.025em -0.03em 0.05em 0.025em inset rgba(5, 5, 5, 0.5),
+    /* 3 */
+    0.25em 0.25em 0.2em 0 inset rgba(5, 5, 5, 0.5),
+    /* 4 */
+    0 0 0.05em 0.5em inset rgba(255, 255, 255, 0.15),
+    /* 5 */
+    0 0 0 0 inset rgba(255, 255, 255, 1),
+    /* 6 */
+    0.12em 0.12em 0.12em inset rgba(255, 255, 255, 0.25),
+    /* 7 */
+    -0.075em -0.12em 0.2em 0.1em inset rgba(5, 5, 5, 0.25);
+}
+
+.buttonMatrix .button-inner span {
+  position: relative;
+  z-index: 4;
+  font-family: "Inter", sans-serif;
+  letter-spacing: -0.05em;
+  font-weight: 500;
+  color: rgba(0, 0, 0, 0);
+  background-image: linear-gradient(135deg,
+      rgba(25, 25, 25, 1),
+      rgba(75, 75, 75, 1));
+  -webkit-background-clip: text;
+  background-clip: text;
+  transition: transform 250ms ease;
+  /* display: block; */
+  will-change: transform;
+  text-shadow: rgba(0, 0, 0, 0.1) 0 0 0.1em;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+.buttonMatrix:hover .button-inner span {
+  transform: scale(0.975);
+}
+
+.buttonMatrix:active .button-inner {
+  transform: scale(0.975);
+}
+
+.loader {
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: cover;
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  background-image: url('../res/textures/rpg/logo.png');
+  vertical-align: middle;
+  flex-flow: column-reverse;
+  text-align: center;
+  align-items: anchor-center;
+}
+
+.progress-container {
+  width: 80%;
+  max-width: 600px;
+  opacity: 0.5;
+  height: 18px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 2px solid #ff2b2b;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 0 15px rgba(255, 0, 0, 0.5);
+  position: relative;
+  margin-bottom: 7%;
+}
+
+.progress-bar {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #ff2b2b, #ffcc00, #00ff88);
+  background-size: 300% 100%;
+  animation: gradientShift 2s infinite linear;
+  box-shadow: 0 0 20px #ff0000;
+  transition: width 0.2s ease-out;
+}
+
+@keyframes gradientShift {
+  0% {
+    background-position: 0% 50%;
+  }
+
+  100% {
+    background-position: 100% 50%;
+  }
+}
+
+.counter {
+  margin-top: 20px;
+  font-size: 24px;
+  letter-spacing: 2px;
+  text-shadow: 0 0 10px #ff0000;
 }

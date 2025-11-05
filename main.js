@@ -2,7 +2,7 @@ import MatrixEngineWGPU from "./src/world.js";
 import {downloadMeshes} from './src/engine/loader-obj.js';
 import {byId, LOG_FUNNY, LOG_INFO, LOG_MATRIX, mb, randomFloatFromTo, randomIntFromTo} from "./src/engine/utils.js";
 import {dices, myDom} from "./examples/games/jamb/jamb.js";
-import {addRaycastsAABBListener, addRaycastListener, touchCoordinate, rayIntersectsSphere, getRayFromMouse} from "./src/engine/raycast.js";
+import {addRaycastsAABBListener, addRaycastsListener, touchCoordinate, rayIntersectsSphere, getRayFromMouse} from "./src/engine/raycast.js";
 
 export let application = new MatrixEngineWGPU({
   useSingleRenderPass: true,
@@ -152,7 +152,7 @@ export let application = new MatrixEngineWGPU({
     }
   }
 
-  addRaycastListener();
+  addRaycastsListener();
   // addRaycastsAABBListener();
 
   application.canvas.addEventListener("ray.hit.event", (e) => {

@@ -328,6 +328,23 @@ class HeroProps {
         this.currentXP -= nextLevelXP;
       } else break;
     }
+
+    // emit for hud
+    dispatchEvent(new CustomEvent('stats-localhero', {
+      detail: {
+        gold: this.gold,
+        currentLevel: this.currentLevel,
+        xp: this.currentXP,
+        hp: this.hp,
+        mana: this.mana,
+        attack: this.attack,
+        armor: this.armor,
+        moveSpeed: this.moveSpeed,
+        attackSpeed: this.attackSpeed,
+        hpRegen: this.hpRegen,
+        mpRegen: this.mpRegen
+      }
+    }));
   }
 
   // --- Upgrade abilities
@@ -418,8 +435,10 @@ class HeroProps {
     dispatchEvent(new CustomEvent(`onDamage-${defender.name}`, {
       detail: {
         progress: progress,
-        attacker: attacker,
-        defenderLevel: this.currentLevel
+        attacker: attacker.name,
+        defenderLevel: defender.currentLevel,
+        defender: defender.name,
+        hp: defender.hp
       }
     }));
     return {
@@ -514,59 +533,398 @@ function mergeArchetypesWeighted(typeA, typeB, weightA = 0.7) {
 "use strict";
 
 var _webgpuGltf = require("../../../src/engine/loaders/webgpu-gltf.js");
+var _net = require("../../../src/engine/networking/net.js");
 var _utils = require("../../../src/engine/utils.js");
 var _world = _interopRequireDefault(require("../../../src/world.js"));
 var _hero = require("./hero.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 /**
+ * @name forestOfHollowBloodStartSceen
+ * 
+ * @licence
+ * Creative Commons Attribution 4.0 International (CC BY 4.0)
+ * You are free to share and adapt this project, provided that you give appropriate credit.
+ * Attribution requirement:
+ * Include the following notice (with working link) in any distributed version or about page:
+ * 
+ * "Forest Of Hollow Blood — an RPG example made with MatrixEngineWGPU (https://github.com/zlatnaspirala/matrix-engine-wgpu)"
  * @Note
  * “Character and animation assets from Mixamo,
  * used under Adobe’s royalty‑free license. 
  * Redistribution of raw assets is not permitted.”
+ * 
+ * @Note 
+ * This is startup main instance for menu screen adn for the game.
+ * All @zlatnaspirala software use networking based
+ * on openvidu/kurento media server(webRTC).
+ * Node.js used for middleware.
+ * Server Events API also used for helping in creation of
+ * matching/waiting list players or get status of public channel
+ * (game-play channel).
+ * 
+ * @note
+ * Only last non selected hero player will get 
+ * first free hero in selection action next/back.
+ * For now. Next better varian can be timer solution.
  **/
-let mysticoreStartSceen = new _world.default({
+let forestOfHollowBloodStartSceen = new _world.default({
   useSingleRenderPass: true,
   canvasSize: 'fullscreen',
+  // {w: window.visualViewport.width, h: window.visualViewport.height }
   mainCameraParams: {
     type: 'WASD',
     responseCoef: 1000
   },
   clearColor: {
     r: 0,
-    b: 0.122,
-    g: 0.122,
+    b: 0.1,
+    g: 0.1,
     a: 1
   }
-}, mysticoreStartSceen => {
-  mysticoreStartSceen.heroByBody = [];
-  mysticoreStartSceen.selectedHero = 0;
-  mysticoreStartSceen.lock = false;
+}, forestOfHollowBloodStartSceen => {
+  forestOfHollowBloodStartSceen.heroByBody = [];
+  forestOfHollowBloodStartSceen.selectedHero = 0;
+  forestOfHollowBloodStartSceen.lock = false;
+
+  // Audios
+  forestOfHollowBloodStartSceen.matrixSounds.createAudio('music', 'res/audios/rpg/wizard-rider.mp3', 1);
+  forestOfHollowBloodStartSceen.matrixSounds.createAudio('click1', 'res/audios/click1.mp3', 1);
+  app.matrixSounds.audios.click1.volume = 0.2;
+  forestOfHollowBloodStartSceen.matrixSounds.createAudio('hover', 'res/audios/kenney/mp3/click3.mp3', 2);
+  forestOfHollowBloodStartSceen.matrixSounds.createAudio('feel', 'res/audios/rpg/feel.mp3', 2);
   let heros = null;
+
+  // Networking
+  forestOfHollowBloodStartSceen.net = new _net.MatrixStream({
+    active: true,
+    domain: 'maximumroulette.com',
+    port: 2020,
+    sessionName: 'forestOfHollowBlood-free-for-all-start',
+    resolution: '160x240',
+    isDataOnly: true
+  });
+  function handleHeroImage(selectHeroIndex) {
+    // func exist in case of changinf hero names...
+    let name = 'no-name';
+    if (selectHeroIndex == 0) {
+      name = 'mariasword';
+    } else if (selectHeroIndex == 1) {
+      name = 'slayzer';
+    } else if (selectHeroIndex == 2) {
+      name = 'slayzer';
+    } else if (selectHeroIndex == 3) {
+      name = 'warrok';
+    } else if (selectHeroIndex == 4) {
+      name = 'skeletonz';
+    }
+    return name;
+  }
+  function checkHeroStatus() {
+    // app.net.session.remoteConnections.forEach((remoteConn) => {
+    //   console.log(" test remote conn ", remoteConn.connectionId)
+    // });
+    let isUsed = false;
+    document.querySelectorAll('[data-hero-index]').forEach(elem => {
+      let index = parseInt(elem.getAttribute('data-hero-index'));
+      console.log(app.selectedHero, ' app.selectedHero VS Index:', index);
+      if (index == app.selectedHero) {
+        isUsed = true;
+        console.log('Hero element: Index: TRUE !!!!!', index);
+      }
+    });
+    return isUsed;
+  }
+  function determinateTeam() {
+    console.log('check remote conn.app.net.session.remoteConnections.size..', app.net.session.remoteConnections.size);
+    if (app.net.session.remoteConnections.size == 0) {
+      // Rule - even -> south team odd -> north team
+      return "south";
+    } else {
+      if ((0, _utils.isOdd)(app.net.session.remoteConnections.size) == true) {
+        return "north";
+      } else {
+        return "south";
+      }
+    }
+  }
+  function determinateSelection() {
+    if (checkHeroStatus() == true) {
+      console.log("hero used keep graphics no send ");
+      return;
+    }
+    if (app.net.session.connection != null) {
+      console.log("Test team data moment", (0, _utils.byId)(`waiting-${app.net.session.connection.connectionId}`).getAttribute('data-hero-team'));
+      let testDom = (0, _utils.byId)(`waiting-${app.net.session.connection.connectionId}`).getAttribute('data-hero-team');
+      if (typeof testDom != 'string') {
+        console.low('Potencial error not handled....');
+      }
+      app.net.sendOnlyData({
+        type: "selectHeroIndex",
+        selectHeroIndex: app.selectedHero,
+        team: testDom
+      });
+    }
+    // fix for local
+    if ((0, _utils.byId)(`waithero-img-${app.net.session.connection.connectionId}`)) {
+      let heroImage = (0, _utils.byId)(`waithero-img-${app.net.session.connection.connectionId}`);
+      heroImage.src = `./res/textures/rpg/hero-image/${handleHeroImage(app.selectedHero)}.png`;
+      heroImage.setAttribute('data-hero-index', app.selectedHero);
+    } else {
+      let heroImage = document.createElement('img');
+      heroImage.setAttribute('data-hero-index', app.selectedHero);
+      heroImage.id = `waithero-img-${app.net.session.connection.connectionId}`;
+      heroImage.width = '64';
+      heroImage.height = '64';
+      heroImage.src = `./res/textures/rpg/hero-image/${handleHeroImage(app.selectedHero)}.png`;
+      (0, _utils.byId)(`waiting-${app.net.session.connection.connectionId}`).appendChild(heroImage);
+    }
+    // Only last non selected hero player will get 
+    // first free hero in selection action next/back.
+    // For now.
+    if (isAllSelected() == true) {
+      forestOfHollowBloodStartSceen.gotoGamePlay();
+    }
+  }
+  function isAllSelected() {
+    let sumParty = document.querySelectorAll('[id*="waiting-"]');
+    let testSelection = document.querySelectorAll('[id*="waithero-img-"]');
+    console.info(testSelection, ' testSelection vs Number of players:', sumParty);
+    if (sumParty.length == forestOfHollowBloodStartSceen.MINIMUM_PLAYERS) {
+      // good all are still here
+      if (testSelection.length == forestOfHollowBloodStartSceen.MINIMUM_PLAYERS) {
+        // good all selected hero !PLAY!
+        return true;
+      } else {
+        _utils.mb.error(`No selection hero for all players...`);
+        return false;
+      }
+    } else {
+      _utils.mb.error(`No enough players...`);
+      return false;
+    }
+  }
+  forestOfHollowBloodStartSceen.gotoGamePlay = preventEmit => {
+    setTimeout(() => {
+      // check again ! good all selected hero !PLAY!
+      // console.log('...', byId(`waiting-${app.net.session.connection.connectionId}`));
+      _utils.LS.set('player', {
+        mesh: heros[app.selectedHero].meshName,
+        hero: heros[app.selectedHero].name,
+        path: heros[app.selectedHero].path,
+        archetypes: [heros[app.selectedHero].type],
+        team: (0, _utils.byId)(`waiting-${app.net.session.connection.connectionId}`).getAttribute('data-hero-team'),
+        data: Date.now()
+      });
+      _utils.SS.set('player', {
+        mesh: heros[app.selectedHero].meshName,
+        hero: heros[app.selectedHero].name,
+        path: heros[app.selectedHero].path,
+        archetypes: [heros[app.selectedHero].type],
+        team: (0, _utils.byId)(`waiting-${app.net.session.connection.connectionId}`).getAttribute('data-hero-team'),
+        data: Date.now()
+      });
+      if (typeof preventEmit === 'undefined') forestOfHollowBloodStartSceen.net.sendOnlyData({
+        type: 'start'
+      });
+      location.assign('rpg-game.html');
+    }, 1000);
+  };
+  addEventListener('check-gameplay-channel', e => {
+    let info = e.detail;
+    console.log('check-gameplay-channel ', info);
+    if (info.status) {
+      console.log('check-gameplay-channel ', info.status);
+      console.log('check-gameplay-channel [url] ', info.url);
+      (0, _utils.byId)("onlineUsers").innerHTML = `GamePlay:Free`;
+    } else {
+      let info = JSON.parse(e.detail);
+      console.log('check-gameplay-channel ', info.connections.numberOfElements);
+      (0, _utils.byId)("onlineUsers").innerHTML = `GamePlay:${info.connections.numberOfElements}`;
+    }
+  });
+  forestOfHollowBloodStartSceen.MINIMUM_PLAYERS = 2;
+  forestOfHollowBloodStartSceen.setWaitingList = () => {
+    // access net doms who comes with broadcaster2.html
+    const waitingForOthersDOM = document.createElement("div");
+    waitingForOthersDOM.id = "waitingForOthersDOM";
+    Object.assign(waitingForOthersDOM.style, {
+      flexFlow: 'wrap',
+      width: "100%",
+      height: "35%",
+      backgroundColor: "rgba(60, 60, 60, 1)",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-around",
+      color: "white",
+      fontFamily: "'Orbitron', sans-serif",
+      zIndex: "1",
+      fontSize: '20px',
+      padding: "10px",
+      boxSizing: "border-box"
+    });
+    (0, _utils.byId)('session-header').appendChild(waitingForOthersDOM);
+    const onlineUsers = document.createElement("div");
+    onlineUsers.id = "onlineUsers";
+    Object.assign(onlineUsers.style, {
+      flexFlow: 'wrap',
+      width: "100%",
+      height: "35%",
+      backgroundColor: "rgba(60, 60, 60, 1)",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-around",
+      color: "white",
+      fontFamily: "'Orbitron', sans-serif",
+      zIndex: "1",
+      fontSize: '20px',
+      padding: "10px",
+      boxSizing: "border-box"
+    });
+    (0, _utils.byId)('netHeader').appendChild(onlineUsers);
+    app.net.fetchInfo('forestOfHollowBlood-free-for-all');
+  };
+  if (document.querySelector('.form-group')) document.querySelector('.form-group').style.display = 'none';
+  // keep simple all networking code on top level
+  // all job will be done with no account for now.
+  addEventListener('net-ready', () => {
+    (0, _utils.byId)('matrix-net').style.opacity = '0.75';
+    document.querySelector('.form-group').style.display = 'none';
+    (0, _utils.byId)("caller-title").innerHTML = `forestOfHollowBlood`;
+    (0, _utils.byId)("sessionName").disabled = true;
+    forestOfHollowBloodStartSceen.setWaitingList();
+    // check game-play channel
+    app.net.fetchInfo('forestOfHollowBlood-free-for-all');
+  });
+  addEventListener('connectionDestroyed', e => {
+    if ((0, _utils.byId)(e.detail.connectionId)) {
+      (0, _utils.byId)(`waiting-${e.detail.connectionId}`).remove();
+    }
+  });
+  addEventListener("onConnectionCreated", e => {
+    console.log('newconn : created', e.detail);
+    let newPlayer = document.createElement('div');
+    if (app.net.session.connection.connectionId == e.detail.connection.connectionId) {
+      console.log('newconn : created [LOCAL] determinate team');
+      let team = determinateTeam();
+      newPlayer.setAttribute('data-hero-team', team);
+      newPlayer.innerHTML = `<div id="${e.detail.connection.connectionId}-title" >Player:${e.detail.connection.connectionId} Team:${team}</div>`;
+      setTimeout(() => {
+        //---------- test
+        if (app.net.session.connection != null) {
+          console.log("Test team data moment", (0, _utils.byId)(`waiting-${app.net.session.connection.connectionId}`).getAttribute('data-hero-team'));
+          let testDom = (0, _utils.byId)(`waiting-${app.net.session.connection.connectionId}`).getAttribute('data-hero-team');
+          if (typeof testDom != 'string') {
+            console.low('Potencial error not handled....');
+          }
+          app.net.sendOnlyData({
+            type: "selectHeroIndex",
+            selectHeroIndex: app.selectedHero,
+            team: testDom
+          });
+        }
+        //----------
+
+        app.net.sendOnlyData({
+          type: "team-notify",
+          team: team
+        });
+      }, 2000);
+    } else {
+      newPlayer.innerHTML = `<div id="${e.detail.connection.connectionId}-title" >Player:${e.detail.connection.connectionId}</div>`;
+    }
+    newPlayer.id = `waiting-${e.detail.connection.connectionId}`;
+    (0, _utils.byId)('waitingForOthersDOM').appendChild(newPlayer);
+    let testParty = document.querySelectorAll('[id*="waiting-"]');
+    console.info('Test number of players:', testParty);
+    if (testParty.length == forestOfHollowBloodStartSceen.MINIMUM_PLAYERS) {
+      // when all choose hero goto play
+      _utils.mb.success(`Consensus is reached. Party${forestOfHollowBloodStartSceen.MINIMUM_PLAYERS}
+          When all player select hero gameplay starts.
+        `);
+    } else if (testParty.length < forestOfHollowBloodStartSceen.MINIMUM_PLAYERS) {
+      _utils.mb.success(`Player ${e.detail.connection.connectionId} joined party.Select your hero and wait for other...`);
+    } else if (testParty.length > forestOfHollowBloodStartSceen.MINIMUM_PLAYERS) {
+      if (e.detail.connection.connectionId == app.net.session.connection.connectionId) {
+        _utils.mb.success(`Max players is reached.Please wait for next party...`);
+      }
+    }
+  });
+  addEventListener('only-data-receive', e => {
+    let t = JSON.parse(e.detail.data);
+    if (t) {
+      if (t.type == 'selectHeroIndex') {
+        console.log(`<data-receive From ${e.detail.from} data:${t.selectHeroIndex}`);
+        let name = handleHeroImage(t.selectHeroIndex);
+        let heroImage = (0, _utils.byId)(`waithero-img-${e.detail.from.connectionId}`);
+        if (heroImage) {
+          heroImage.src = `./res/textures/rpg/hero-image/${name.toLowerCase()}.png`;
+          heroImage.setAttribute('data-hero-index', t.selectHeroIndex);
+        } else {
+          let heroImage = document.createElement('img');
+          heroImage.id = `waithero-img-${e.detail.from.connectionId}`;
+          heroImage.width = '64';
+          heroImage.height = '64';
+          heroImage.src = `./res/textures/rpg/hero-image/${name.toLowerCase()}.png`;
+          heroImage.setAttribute('data-hero-index', t.selectHeroIndex);
+          (0, _utils.byId)(`waiting-${e.detail.from.connectionId}`).appendChild(heroImage);
+          // also add team for initial user problem case...
+          if (t.team) {
+            (0, _utils.byId)(`${e.detail.from.connectionId}-title`).innerHTML = `Player:${e.detail.from.connectionId} Team:${t.team}`;
+          }
+        }
+      } else if (t.type == 'team-notify') {
+        console.log(`<data-receive From ${e.detail.from.connectionId} team:${t.team}  ${(0, _utils.byId)(`waiting-${e.detail.from.connectionId}`)}`);
+        (0, _utils.byId)(`${e.detail.from.connectionId}-title`).innerHTML = `Player:${e.detail.from.connectionId} Team:${t.team}`;
+      } else if (t.type == 'start') {
+        // HERE_
+        forestOfHollowBloodStartSceen.gotoGamePlay("no emit");
+      }
+    }
+  });
   addEventListener('AmmoReady', async () => {
+    app.matrixSounds.play('music');
     heros = [{
       type: "Warrior",
       name: 'MariaSword',
       path: "res/meshes/glb/woman1.glb",
-      desc: mysticoreStartSceen.label.get.mariasword
+      desc: forestOfHollowBloodStartSceen.label.get.mariasword
     }, {
       type: "Warrior",
       name: 'Slayzer',
       path: "res/meshes/glb/monster.glb",
-      desc: mysticoreStartSceen.label.get.slayzer
+      desc: forestOfHollowBloodStartSceen.label.get.slayzer
     }, {
-      type: "Warrior",
+      type: "Tank",
       name: 'Steelborn',
       path: "res/meshes/glb/bot.glb",
-      desc: mysticoreStartSceen.label.get.steelborn
+      desc: forestOfHollowBloodStartSceen.label.get.steelborn
+    }, {
+      type: "Mage",
+      name: 'Warrok',
+      path: "res/meshes/glb/warrok.glb",
+      desc: forestOfHollowBloodStartSceen.label.get.warrok
+    }, {
+      type: "Necromancer",
+      name: 'Skeletonz',
+      path: "res/meshes/glb/skeletonz.glb",
+      desc: forestOfHollowBloodStartSceen.label.get.skeletonz
+    }, {
+      type: "Assassin",
+      name: 'Erika',
+      path: "res/meshes/glb/erika.glb",
+      desc: forestOfHollowBloodStartSceen.label.get.skeletonz
     }];
-    mysticoreStartSceen.heros = heros;
+    forestOfHollowBloodStartSceen.heros = heros;
 
     // helper
     async function loadHeros() {
       for (var x = 0; x < heros.length; x++) {
         var glbFile01 = await fetch(heros[x].path).then(res => res.arrayBuffer().then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, app.device)));
-        mysticoreStartSceen.addGlbObjInctance({
-          material: {
+        forestOfHollowBloodStartSceen.addGlbObjInctance({
+          material: x == 2 ? {
+            type: 'power',
+            useTextureFromGlb: true
+          } : {
             type: 'standard',
             useTextureFromGlb: true
           },
@@ -594,7 +952,7 @@ let mysticoreStartSceen = new _world.default({
         }, null, glbFile01);
       }
       setTimeout(() => {
-        mysticoreStartSceen.cameras.WASD.position = [0, 14, 52];
+        forestOfHollowBloodStartSceen.cameras.WASD.position = [0, 14, 52];
         app.cameras.WASD.pitch = -0.13;
         app.cameras.WASD.yaw = 0;
         app.mainRenderBundle.forEach(sceneObj => {
@@ -604,34 +962,47 @@ let mysticoreStartSceen = new _world.default({
         for (var x = 0; x < heros.length; x++) {
           let hero0 = app.mainRenderBundle.filter(obj => obj.name.indexOf(heros[x].name) != -1);
           app.heroByBody.push(hero0);
+          heros[x].meshName = hero0[0].name;
           if (x == 0) {
             hero0[0].effects.circlePlane.instanceTargets[0].color = [1, 0, 2, 1];
           }
           hero0[0].effects.flameEmitter.instanceTargets.forEach((p, i, array) => {
-            array[i].color = [0, 0, 0, 0.7];
+            array[i].color = [0, 1, 0, 0.7];
           });
           if (x == 2) {
-            console.log('TEST------');
             hero0.forEach((p, i, array) => {
-              array[i].globalAmbient = [6, 6, 6];
+              array[i].globalAmbient = [11, 11, 1];
+            });
+          }
+          if (x == 3 || x == 5) {
+            hero0.forEach((p, i, array) => {
+              array[i].globalAmbient = [10, 10, 10];
+              array[i].effects.flameEmitter.smoothFlickeringScale = 0.005;
+            });
+          }
+          if (x == 4) {
+            hero0.forEach((p, i, array) => {
+              array[i].globalAmbient = [6, 6, 8];
             });
           }
         }
         app.lightContainer[0].position[2] = 10;
         app.lightContainer[0].position[1] = 50;
-      }, 2500);
+        app.lightContainer[0].intensity = 1.4;
+      }, 3000);
     }
     loadHeros();
     createHUDMEnu();
   });
-  mysticoreStartSceen.addLight();
+  forestOfHollowBloodStartSceen.addLight();
   function createHUDMEnu() {
     document.body.style.cursor = "url('./res/icons/default.png') 0 0, auto";
+    document.addEventListener("contextmenu", event => event.preventDefault());
     (0, _utils.byId)('canvas1').style.pointerEvents = 'none';
     const hud = document.createElement("div");
     hud.id = "hud-menu";
     Object.assign(hud.style, {
-      position: "absolute",
+      position: "fixed",
       bottom: "0",
       left: "0",
       width: "100%",
@@ -655,14 +1026,17 @@ let mysticoreStartSceen = new _world.default({
       color: "white",
       fontWeight: "bold",
       textShadow: "0 0 2px black",
-      // color: '#eaff00',
-      // background: '#aca8a8',
       height: "40px",
-      fontSize: '16px',
-      borderRadius: '120px',
-      cursor: 'pointer'
+      fontSize: '16px'
     });
-    nextBtn.textContent = "NEXT";
+    nextBtn.classList.add('buttonMatrix');
+    nextBtn.innerHTML = `
+      <div class="button-outer">
+        <div class="button-inner">
+          <span id='nextBtn'>NEXT</span>
+        </div>
+      </div>
+    `;
     nextBtn.addEventListener('click', () => {
       if (app.selectedHero >= app.heroByBody.length - 1 || app.lock == true) {
         console.log('NEXTBLOCKED ', app.selectedHero);
@@ -670,21 +1044,17 @@ let mysticoreStartSceen = new _world.default({
       }
       app.lock = true;
       app.selectedHero++;
+      console.log('app.selectedHero::: ', app.selectedHero);
+      // Fix on remote 
+      if (app.net.session) {
+        determinateSelection();
+      }
       app.heroByBody.forEach((sceneObj, indexRoot) => {
         sceneObj.forEach(heroBodie => {
           heroBodie.position.translateByX(-50 * app.selectedHero + indexRoot * 50);
           heroBodie.position.onTargetPositionReach = () => {
             app.lock = false;
           };
-
-          // custom adapt 
-          if (indexRoot == 0) {
-            heroBodie.globalAmbient = [1, 1, 1];
-          } else if (indexRoot == 1) {
-            heroBodie.globalAmbient = [2, 2.5, 2];
-          } else if (indexRoot == 2) {
-            heroBodie.globalAmbient = [4, 4, 4];
-          }
           if (heroBodie.effects.circlePlane) {
             if (indexRoot == app.selectedHero) {
               heroBodie.effects.circlePlane.instanceTargets[0].color = [1, 0, 2, 1];
@@ -695,6 +1065,7 @@ let mysticoreStartSceen = new _world.default({
         });
       });
       updateDesc();
+      app.matrixSounds.play('click1');
     });
     const desc = document.createElement("div");
     desc.id = 'desc';
@@ -710,28 +1081,33 @@ let mysticoreStartSceen = new _world.default({
     desc.textContent = "HERO INFO";
     const previusBtn = document.createElement("button");
     Object.assign(previusBtn.style, {
-      // position: "absolute",
       width: "80px",
       textAlign: "center",
       color: "white",
       fontWeight: "bold",
       textShadow: "0 0 2px black",
-      // color: '#eaff00',
-      // background: '#aca8a8',
       height: "40px",
-      fontSize: '16px',
-      borderRadius: '120px',
-      cursor: 'pointer'
+      fontSize: '16px'
     });
-    previusBtn.textContent = "BACK";
+    previusBtn.classList.add('buttonMatrix');
+    previusBtn.innerHTML = `
+      <div class="button-outer">
+        <div class="button-inner">
+          <span id='previusBtnText'>BACK</span>
+        </div>
+      </div>
+    `;
     previusBtn.addEventListener('click', () => {
-      console.log('TEST previusBtn mysticoreStartSceen.selectedHero', app.selectedHero);
+      console.log('TEST previusBtn forestOfHollowBloodStartSceen.selectedHero', app.selectedHero);
       if (app.selectedHero < 1 || app.lock == true) {
-        console.log('BLOCKED ', app.selectedHero);
+        // console.log('BLOCKED', app.selectedHero)
         return;
       }
       app.lock = true;
       app.selectedHero--;
+      if (app.net.session) {
+        determinateSelection();
+      }
       app.heroByBody.forEach((sceneObj, indexRoot) => {
         sceneObj.forEach(heroBodie => {
           heroBodie.position.translateByX(-app.selectedHero * 50 + indexRoot * 50);
@@ -748,6 +1124,7 @@ let mysticoreStartSceen = new _world.default({
         });
       });
       updateDesc();
+      app.matrixSounds.play('click1');
     });
     function updateDesc() {
       (0, _utils.byId)('desc').innerHTML = `
@@ -757,50 +1134,176 @@ let mysticoreStartSceen = new _world.default({
       for (let key in C) {
         (0, _utils.byId)('desc').innerHTML += ` 
          <div style='font-size: 15px;display: inline-flex;justify-content:space-between'>
-           <span style="color:#00e2ff"> ${key} </span> : <span style="color:red">${C[key]} </span>
+           <span style="color:#00e2ff"> ${key} </span> : <span style="color:#02e2ff">${C[key]} </span>
           </div>
         `;
       }
     }
-
-    //
     const startBtn = document.createElement("button");
     Object.assign(startBtn.style, {
-      position: "absolute",
-      bottom: '70px',
+      position: "fixed",
+      bottom: '40px',
       right: '120px',
-      width: "200px",
+      width: "250px",
+      height: "54px",
       textAlign: "center",
       color: "white",
       fontWeight: "bold",
       textShadow: "0 0 2px black",
       color: '#ffffffff',
       background: '#000000ff',
-      height: "40px",
       fontSize: '16px',
-      borderRadius: '120px',
-      cursor: 'pointer'
+      cursor: 'url(./res/icons/default.png) 0 0, auto'
     });
-    startBtn.textContent = "start";
-    startBtn.addEventListener('click', () => {
-      console.log('START', app.selectedHero);
-      _utils.LS.set('player', {
-        hero: heros[app.selectedHero].name,
-        path: heros[app.selectedHero].path
-      });
-      location.assign('rpg-game.html');
+    startBtn.classList.add('buttonMatrix');
+    startBtn.innerHTML = `
+      <div class="button-outer">
+        <div class="button-inner">
+          <span id='startBtnText'>PLAY</span>
+        </div>
+      </div>
+    `;
+    startBtn.addEventListener('click', e => {
+      if (app.net.connection == null) {
+        // console.log('app.net.connection is null let join gameplay sesion... Wait list.', app.selectedHero)
+        (0, _utils.byId)('join-btn').click();
+        (0, _utils.byId)("startBtnText").innerHTML = 'Waiting for others...';
+        e.target.disabled = true;
+        app.matrixSounds.play('feel');
+        return;
+      } else {
+        console.log('nothing...', app.selectedHero);
+        return;
+      }
     });
+
+    //about
+    forestOfHollowBloodStartSceen.showAbout = () => {
+      (0, _utils.byId)('helpBox').style.display = 'block';
+      (0, _utils.typeText)('helpBox', app.label.get.aboutRPG, 10);
+    };
+    var helpBox = document.createElement('div');
+    helpBox.id = 'helpBox';
+    helpBox.style.position = 'fixed';
+    helpBox.style.right = '20%';
+    helpBox.style.display = 'none';
+    helpBox.style.zIndex = '2';
+    helpBox.style.top = '15%';
+    helpBox.style.width = '60%';
+    helpBox.style.height = '50%';
+    helpBox.style.fontSize = '100%';
+    helpBox.classList.add('btn');
+    helpBox.addEventListener('click', () => {
+      (0, _utils.byId)('helpBox').style.display = 'none';
+    });
+    document.body.appendChild(helpBox);
+    const aboutBtn = document.createElement("button");
+    Object.assign(aboutBtn.style, {
+      position: "fixed",
+      bottom: '40px',
+      left: '120px',
+      width: "150px",
+      height: "54px",
+      textAlign: "center",
+      color: "white",
+      fontWeight: "bold",
+      textShadow: "0 0 2px black",
+      color: '#ffffffff',
+      background: '#000000ff',
+      fontSize: '16px',
+      cursor: 'url(./res/icons/default.png) 0 0, auto',
+      pointerEvents: 'auto'
+    });
+    aboutBtn.classList.add('buttonMatrix');
+    aboutBtn.innerHTML = `
+      <div class="button-outer">
+        <div class="button-inner">
+          <span data-label='aboutword'>ABOUT</span>
+        </div>
+      </div>
+    `;
+    aboutBtn.addEventListener('click', e => app.showAbout());
+    hud.appendChild(aboutBtn);
+    const loader = document.createElement("div");
+    loader.id = 'loader';
+    Object.assign(loader.style, {
+      position: "fixed",
+      display: 'flex',
+      bottom: '0',
+      left: '0',
+      width: "100vw",
+      height: "100vh",
+      textAlign: "center",
+      color: "white",
+      zIndex: 10,
+      fontWeight: "bold",
+      textShadow: "0 0 2px black",
+      color: '#ffffffff',
+      background: '#000000ff',
+      fontSize: '16px',
+      cursor: 'url(./res/icons/default.png) 0 0, auto',
+      pointerEvents: 'auto',
+      filter: 'grayscale(1)'
+    });
+    loader.innerHTML = `
+      <div class="loader">
+        <div class="progress-container">
+          <div class="progress-bar" id="progressBar"></div>
+          </div>
+        <div class="counter" id="counter">0%</div>
+      </div>
+    `;
+    loader.addEventListener('click', e => {
+      app.matrixSounds.play('music');
+    });
+    hud.appendChild(loader);
+    let progress = 0;
+    let bar = null;
+    let counter = null;
+    function fakeProgress() {
+      if (progress < 100) {
+        progress += Math.random() * 5;
+        if (progress > 100) progress = 100;
+        bar.style.width = progress + '%';
+        counter.textContent = Math.floor(progress) + '%';
+        let grayEffect = 30 / progress;
+        (0, _utils.byId)('loader').style.filter = `grayscale(${grayEffect})`;
+        setTimeout(fakeProgress, 80 + Math.random() * 150);
+      } else {
+        counter.textContent = "Let the game begin!";
+        bar.style.boxShadow = "0 0 30px #00ff99";
+        setTimeout(() => {
+          loader.remove();
+        }, 250);
+      }
+    }
+    setTimeout(() => {
+      bar = document.getElementById('progressBar');
+      counter = document.getElementById('counter');
+      fakeProgress();
+    }, 300);
     hud.appendChild(previusBtn);
     hud.appendChild(desc);
     hud.appendChild(nextBtn);
     hud.appendChild(startBtn);
     document.body.appendChild(hud);
     updateDesc();
+    document.querySelectorAll('.buttonMatrix').forEach(el => {
+      el.addEventListener('mouseenter', () => {
+        app.matrixSounds.play('hover');
+      });
+    });
+    function firstClick() {
+      console.log('ONLCE ');
+      app.matrixSounds.play('music');
+      removeEventListener('click', firstClick);
+    }
+    addEventListener('click', firstClick);
   }
 });
-window.app = mysticoreStartSceen;
+window.app = forestOfHollowBloodStartSceen;
 
-},{"../../../src/engine/loaders/webgpu-gltf.js":36,"../../../src/engine/utils.js":40,"../../../src/world.js":63,"./hero.js":1}],3:[function(require,module,exports){
+},{"../../../src/engine/loaders/webgpu-gltf.js":36,"../../../src/engine/networking/net.js":41,"../../../src/engine/utils.js":42,"../../../src/world.js":65,"./hero.js":1}],3:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -19001,7 +19504,7 @@ class MEBall {
 }
 exports.default = MEBall;
 
-},{"../shaders/shaders":55,"./engine":28,"./matrix-class":38,"wgpu-matrix":17}],19:[function(require,module,exports){
+},{"../shaders/shaders":57,"./engine":28,"./matrix-class":38,"wgpu-matrix":17}],19:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -19039,7 +19542,7 @@ class Behavior {
 }
 exports.default = Behavior;
 
-},{"./utils":40}],20:[function(require,module,exports){
+},{"./utils":42}],20:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -19464,7 +19967,7 @@ class MECube {
 }
 exports.default = MECube;
 
-},{"../shaders/shaders":55,"./engine":28,"./matrix-class":38,"wgpu-matrix":17}],21:[function(require,module,exports){
+},{"../shaders/shaders":57,"./engine":28,"./matrix-class":38,"wgpu-matrix":17}],21:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -19627,7 +20130,7 @@ class HPBarEffect {
 }
 exports.HPBarEffect = HPBarEffect;
 
-},{"../../shaders/energy-bars/energy-bar-shader.js":43,"wgpu-matrix":17}],22:[function(require,module,exports){
+},{"../../shaders/energy-bars/energy-bar-shader.js":45,"wgpu-matrix":17}],22:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -19846,7 +20349,7 @@ class FlameEmitter {
 }
 exports.FlameEmitter = FlameEmitter;
 
-},{"../../shaders/flame-effect/flame-instanced":44,"../utils":40,"wgpu-matrix":17}],23:[function(require,module,exports){
+},{"../../shaders/flame-effect/flame-instanced":46,"../utils":42,"wgpu-matrix":17}],23:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -20017,7 +20520,7 @@ class FlameEffect {
 }
 exports.FlameEffect = FlameEffect;
 
-},{"../../shaders/flame-effect/flameEffect":45,"wgpu-matrix":17}],24:[function(require,module,exports){
+},{"../../shaders/flame-effect/flameEffect":47,"wgpu-matrix":17}],24:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -20255,7 +20758,7 @@ class GenGeoTexture {
 }
 exports.GenGeoTexture = GenGeoTexture;
 
-},{"../../shaders/standalone/geo.tex.js":57,"../geometry-factory.js":29,"wgpu-matrix":17}],25:[function(require,module,exports){
+},{"../../shaders/standalone/geo.tex.js":59,"../geometry-factory.js":29,"wgpu-matrix":17}],25:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -20445,7 +20948,7 @@ class GenGeo {
 }
 exports.GenGeo = GenGeo;
 
-},{"../../shaders/standalone/geo.instanced.js":56,"../geometry-factory.js":29,"wgpu-matrix":17}],26:[function(require,module,exports){
+},{"../../shaders/standalone/geo.instanced.js":58,"../geometry-factory.js":29,"wgpu-matrix":17}],26:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -20608,7 +21111,7 @@ class MANABarEffect {
 }
 exports.MANABarEffect = MANABarEffect;
 
-},{"../../shaders/energy-bars/energy-bar-shader.js":43,"wgpu-matrix":17}],27:[function(require,module,exports){
+},{"../../shaders/energy-bars/energy-bar-shader.js":45,"wgpu-matrix":17}],27:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -20751,7 +21254,7 @@ class PointerEffect {
 }
 exports.PointerEffect = PointerEffect;
 
-},{"../../shaders/standalone/pointer.effect.js":58,"wgpu-matrix":17}],28:[function(require,module,exports){
+},{"../../shaders/standalone/pointer.effect.js":60,"wgpu-matrix":17}],28:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -21147,11 +21650,11 @@ function createInputHandler(window, canvas) {
     }
   });
   canvas.addEventListener('wheel', e => {
-    if ((e.buttons & 1) !== 0) {
-      analog.zoom += Math.sign(e.deltaY);
-      e.preventDefault();
-      e.stopPropagation();
-    }
+    // if((e.buttons & 1) !== 0) {
+    //   analog.zoom += Math.sign(e.deltaY);
+    //   e.preventDefault();
+    //   e.stopPropagation();
+    // }
   }, {
     passive: false
   });
@@ -21190,7 +21693,7 @@ class RPGCamera extends CameraBase {
   // Returns velocity vector
 
   // Inside your camera control init
-  scrollY = 0;
+  scrollY = 50;
   minY = 50.5; // minimum camera height
   maxY = 135.0; // maximum camera height
   scrollSpeed = 1;
@@ -21294,7 +21797,7 @@ class RPGCamera extends CameraBase {
 }
 exports.RPGCamera = RPGCamera;
 
-},{"./utils":40,"wgpu-matrix":17}],29:[function(require,module,exports){
+},{"./utils":42,"wgpu-matrix":17}],29:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -22102,7 +22605,7 @@ class MaterialsInstanced {
 }
 exports.default = MaterialsInstanced;
 
-},{"../../shaders/fragment.wgsl":47,"../../shaders/fragment.wgsl.metal":48,"../../shaders/fragment.wgsl.normalmap":49,"../../shaders/fragment.wgsl.pong":50,"../../shaders/fragment.wgsl.power":51,"../../shaders/instanced/fragment.instanced.wgsl":52}],31:[function(require,module,exports){
+},{"../../shaders/fragment.wgsl":49,"../../shaders/fragment.wgsl.metal":50,"../../shaders/fragment.wgsl.normalmap":51,"../../shaders/fragment.wgsl.pong":52,"../../shaders/fragment.wgsl.power":53,"../../shaders/instanced/fragment.instanced.wgsl":54}],31:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -22300,7 +22803,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
     } else {
       this.mesh.uvs = this.mesh.textures;
     }
-    console.log(`%cMesh: ${o.name}`, _utils.LOG_FUNNY_SMALL);
+    // console.log(`%cMesh: ${o.name}`, LOG_FUNNY_SMALL);
     // ObjSequence animation
     if (typeof o.objAnim !== 'undefined' && o.objAnim != null) {
       this.objAnim = o.objAnim;
@@ -23085,7 +23588,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
 }
 exports.default = MEMeshObjInstances;
 
-},{"../../shaders/fragment.video.wgsl":46,"../../shaders/instanced/vertex.instanced.wgsl":53,"../effects/energy-bar":21,"../effects/flame":23,"../effects/flame-emmiter":22,"../effects/gen":25,"../effects/gen-tex":24,"../effects/mana-bar":26,"../effects/pointerEffect":27,"../loaders/bvh-instaced":34,"../matrix-class":38,"../utils":40,"./materials-instanced":30,"wgpu-matrix":17}],32:[function(require,module,exports){
+},{"../../shaders/fragment.video.wgsl":48,"../../shaders/instanced/vertex.instanced.wgsl":55,"../effects/energy-bar":21,"../effects/flame":23,"../effects/flame-emmiter":22,"../effects/gen":25,"../effects/gen-tex":24,"../effects/mana-bar":26,"../effects/pointerEffect":27,"../loaders/bvh-instaced":34,"../matrix-class":38,"../utils":42,"./materials-instanced":30,"wgpu-matrix":17}],32:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -23371,7 +23874,7 @@ class SpotLight {
 }
 exports.SpotLight = SpotLight;
 
-},{"../shaders/instanced/vertexShadow.instanced.wgsl":54,"../shaders/vertexShadow.wgsl":61,"./behavior":19,"wgpu-matrix":17}],33:[function(require,module,exports){
+},{"../shaders/instanced/vertexShadow.instanced.wgsl":56,"../shaders/vertexShadow.wgsl":63,"./behavior":19,"wgpu-matrix":17}],33:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -23951,7 +24454,7 @@ class BVHPlayerInstances extends _meshObjInstances.default {
     }
     // 4. For mesh nodes or armature parent nodes, leave them alone
     // what is animation , check is it more - we look for Armature by defoult 
-    // frendly blender
+    // friendly blender
     this.glb.animationIndex = 0;
     for (let j = 0; j < this.glb.glbJsonData.animations.length; j++) {
       if (this.glb.glbJsonData.animations[j].name.indexOf('Armature') !== -1) {
@@ -24006,11 +24509,11 @@ class BVHPlayerInstances extends _meshObjInstances.default {
       setTimeout(() => {
         this.sharedState.animationStarted = false;
         // specific rule for naming (some from blender source)
-        let n = this.name;
-        if (this.name.indexOf('_') != -1) {
-          n = this.name.split('_')[0];
-        }
-        dispatchEvent(new CustomEvent(`animationEnd-${n}`, {
+        // let n = this.name;
+        // if(this.name.indexOf('_') != -1) {
+        //   n = this.name.split('_')[0];
+        // }
+        dispatchEvent(new CustomEvent(`animationEnd-${this.name}`, {
           detail: {
             animationName: this.glb.glbJsonData.animations[this.glb.animationIndex].name
           }
@@ -24493,7 +24996,7 @@ class BVHPlayer extends _meshObj.default {
     }
     // 4. For mesh nodes or armature parent nodes, leave them alone
     // what is animation , check is it more - we look for Armature by defoult 
-    // frendly blender
+    // friendly blender
     this.glb.animationIndex = 0;
     for (let j = 0; j < this.glb.glbJsonData.animations.length; j++) {
       if (this.glb.glbJsonData.animations[j].name.indexOf('Armature') !== -1) {
@@ -25997,7 +26500,7 @@ class Materials {
 }
 exports.default = Materials;
 
-},{"../shaders/fragment.wgsl":47,"../shaders/fragment.wgsl.metal":48,"../shaders/fragment.wgsl.normalmap":49,"../shaders/fragment.wgsl.pong":50,"../shaders/fragment.wgsl.power":51}],38:[function(require,module,exports){
+},{"../shaders/fragment.wgsl":49,"../shaders/fragment.wgsl.metal":50,"../shaders/fragment.wgsl.normalmap":51,"../shaders/fragment.wgsl.pong":52,"../shaders/fragment.wgsl.power":53}],38:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -26016,7 +26519,10 @@ class Position {
   constructor(x, y, z) {
     // console.log('TEST TYTPOF ', x)
     // Not in use for nwo this is from matrix-engine project [nameUniq]
-    this.nameUniq = null;
+    this.remoteName = null; // not in use
+    this.netObject = null;
+    this.netTolerance = 1;
+    this.netTolerance__ = 0;
     if (typeof x == 'undefined') x = 0;
     if (typeof y == 'undefined') y = 0;
     if (typeof z == 'undefined') z = 0;
@@ -26081,24 +26587,44 @@ class Position {
         this.x += this.velX;
         this.y += this.velY;
         this.z += this.velZ;
-
-        // // from me
-        // if(net && net.connection && typeof em === 'undefined' && App.scene[this.nameUniq].net.enable == true) net.connection.send({
-        //   netPos: {x: this.x, y: this.y, z: this.z},
-        //   netObjId: this.nameUniq,
-        // });
+        if (this.netObject != null) {
+          if (this.netTolerance__ > this.netTolerance) {
+            app.net.send({
+              remoteName: this.remoteName,
+              sceneName: this.netObject,
+              netPos: {
+                x: this.x,
+                y: this.y,
+                z: this.z
+              }
+            });
+            this.netTolerance__ = 0;
+          } else {
+            this.netTolerance__++;
+          }
+        }
       } else {
         this.x = this.targetX;
         this.y = this.targetY;
         this.z = this.targetZ;
         this.inMove = false;
         this.onTargetPositionReach();
-
-        // // from me
-        // if(net && net.connection && typeof em === 'undefined' && App.scene[this.nameUniq].net.enable == true) net.connection.send({
-        //   netPos: {x: this.x, y: this.y, z: this.z},
-        //   netObjId: this.nameUniq,
-        // });
+        if (this.netObject != null) {
+          if (this.netTolerance__ > this.netTolerance) {
+            app.net.send({
+              remoteName: this.remoteName,
+              sceneName: this.netObject,
+              netPos: {
+                x: this.x,
+                y: this.y,
+                z: this.z
+              }
+            });
+            this.netTolerance__ = 0;
+          } else {
+            this.netTolerance__++;
+          }
+        }
       }
     }
   }
@@ -26109,34 +26635,16 @@ class Position {
     this.x = newx;
     this.targetX = newx;
     this.inMove = false;
-
-    // if(net && net.connection && typeof em === 'undefined' &&
-    //   App.scene[this.nameUniq].net && App.scene[this.nameUniq].net.enable == true) {
-    //   net.connection.send({
-    //     netPos: {x: this.x, y: this.y, z: this.z},
-    //     netObjId: this.nameUniq,
-    //   });
-    // }
   }
   SetY(newy, em) {
     this.y = newy;
     this.targetY = newy;
     this.inMove = false;
-    // if(net && net.connection && typeof em === 'undefined' &&
-    //   App.scene[this.nameUniq].net && App.scene[this.nameUniq].net.enable == true) net.connection.send({
-    //     netPos: {x: this.x, y: this.y, z: this.z},
-    //     netObjId: this.nameUniq,
-    //   });
   }
   SetZ(newz, em) {
     this.z = newz;
     this.targetZ = newz;
     this.inMove = false;
-    // if(net && net.connection && typeof em === 'undefined' &&
-    //   App.scene[this.nameUniq].net && App.scene[this.nameUniq].net.enable == true) net.connection.send({
-    //     netPos: {x: this.x, y: this.y, z: this.z},
-    //     netObjId: this.nameUniq,
-    //   });
   }
   get X() {
     return parseFloat(this.x);
@@ -26155,26 +26663,25 @@ class Position {
     this.targetY = newy;
     this.targetZ = newz;
     this.inMove = false;
-
-    // from me
-    // if(App.scene[this.nameUniq] && net && net.connection && typeof em === 'undefined' &&
-    //   App.scene[this.nameUniq].net && App.scene[this.nameUniq].net.enable == true) net.connection.send({
-    //     netPos: {x: this.x, y: this.y, z: this.z},
-    //     netObjId: this.nameUniq,
-    //   });
   }
 }
 exports.Position = Position;
 class Rotation {
   constructor(x, y, z) {
     // Not in use for nwo this is from matrix-engine project [nameUniq]
-    this.nameUniq = null;
+    this.remoteName = null;
+    this.emitX = null;
+    this.emitY = null;
+    this.emitZ = null;
     if (typeof x == 'undefined') x = 0;
     if (typeof y == 'undefined') y = 0;
     if (typeof z == 'undefined') z = 0;
     this.x = x;
     this.y = y;
     this.z = z;
+    this.netx = x;
+    this.nety = y;
+    this.netz = z;
     this.rotationSpeed = {
       x: 0,
       y: 0,
@@ -26208,6 +26715,14 @@ class Rotation {
   }
   getRotX() {
     if (this.rotationSpeed.x == 0) {
+      if (this.netx != this.x && this.emitX) {
+        app.net.send({
+          remoteName: this.remoteName,
+          sceneName: this.emitX,
+          netRotX: this.x
+        });
+      }
+      this.netx = this.x;
       return (0, _utils.degToRad)(this.x);
     } else {
       this.x = this.x + this.rotationSpeed.x * 0.001;
@@ -26216,6 +26731,14 @@ class Rotation {
   }
   getRotY() {
     if (this.rotationSpeed.y == 0) {
+      if (this.nety != this.y && this.emitY) {
+        app.net.send({
+          remoteName: this.remoteName,
+          sceneName: this.emitY,
+          netRotY: this.y
+        });
+      }
+      this.nety = this.y;
       return (0, _utils.degToRad)(this.y);
     } else {
       this.y = this.y + this.rotationSpeed.y * 0.001;
@@ -26224,6 +26747,14 @@ class Rotation {
   }
   getRotZ() {
     if (this.rotationSpeed.z == 0) {
+      if (this.netz != this.z && this.emitZ) {
+        app.net.send({
+          remoteName: this.remoteName,
+          sceneName: this.emitZ,
+          netRotZ: this.z
+        });
+      }
+      this.nety = this.y;
       return (0, _utils.degToRad)(this.z);
     } else {
       this.z = this.z + this.rotationSpeed.z * 0.001;
@@ -26233,7 +26764,7 @@ class Rotation {
 }
 exports.Rotation = Rotation;
 
-},{"./utils":40}],39:[function(require,module,exports){
+},{"./utils":42}],39:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -27028,7 +27559,703 @@ class MEMeshObj extends _materials.default {
 }
 exports.default = MEMeshObj;
 
-},{"../shaders/fragment.video.wgsl":46,"../shaders/vertex.wgsl":59,"../shaders/vertex.wgsl.normalmap":60,"./effects/pointerEffect":27,"./materials":37,"./matrix-class":38,"./utils":40,"wgpu-matrix":17}],40:[function(require,module,exports){
+},{"../shaders/fragment.video.wgsl":48,"../shaders/vertex.wgsl":61,"../shaders/vertex.wgsl.normalmap":62,"./effects/pointerEffect":27,"./materials":37,"./matrix-class":38,"./utils":42,"wgpu-matrix":17}],40:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.REDLOG = exports.NETLOG = exports.BIGLOG = exports.ANYLOG = void 0;
+exports.byId = byId;
+exports.checkBtnsForce = checkBtnsForce;
+exports.checkBtnsRecordings = checkBtnsRecordings;
+exports.clearEventsTextarea = clearEventsTextarea;
+exports.clearHttpTextarea = clearHttpTextarea;
+exports.closeSession = closeSession;
+exports.deleteRecording = deleteRecording;
+exports.enableBtn = enableBtn;
+exports.events = void 0;
+exports.fetchAll = fetchAll;
+exports.fetchInfo = fetchInfo;
+exports.forceDisconnect = forceDisconnect;
+exports.forceUnpublish = forceUnpublish;
+exports.getRecording = getRecording;
+exports.getToken = getToken;
+exports.httpRequest = httpRequest;
+exports.joinSession = joinSession;
+exports.leaveSession = leaveSession;
+exports.listRecordings = listRecordings;
+exports.netConfig = void 0;
+exports.pushEvent = pushEvent;
+exports.removeUser = removeUser;
+exports.session = void 0;
+exports.startRecording = startRecording;
+exports.stopRecording = stopRecording;
+exports.updateNumVideos = updateNumVideos;
+const netConfig = exports.netConfig = {
+  NETWORKING_DOMAIN: '',
+  NETWORKING_PORT: '2020',
+  isDataOnly: false
+};
+function byId(d) {
+  return document.getElementById(d);
+}
+;
+var BIGLOG = exports.BIGLOG = "color: #55fd53;font-size:20px;text-shadow: 0px 0px 5px #f4fd63, -1px -1px 5px orange";
+var REDLOG = exports.REDLOG = "color: lime;font-size:15px;text-shadow: 0px 0px 5px red, -2px -2px 5px orangered";
+var NETLOG = exports.NETLOG = "color: orange;font-size:15px;text-shadow: 0px 0px 1px red, 0px 0px 5px orangered";
+var ANYLOG = exports.ANYLOG = "color: yellow;font-size:15px;text-shadow: 1px 1px 4px red, 0px 0px 2px orangered";
+var OV;
+var numVideos = 0;
+var sessionName;
+var token;
+var session;
+function joinSession(options) {
+  if (typeof options === 'undefined') {
+    options = {
+      resolution: '320x240'
+    };
+  }
+  // console.log('resolution:', options.resolution);
+  document.getElementById("join-btn").disabled = true;
+  document.getElementById("join-btn").innerHTML = "Joining...";
+  getToken(function () {
+    OV = new OpenVidu();
+    window.OV = OV;
+    exports.session = session = OV.initSession();
+    session.on('connectionCreated', event => {
+      console.log(`connectionCreated ${event.connection.connectionId}`);
+      dispatchEvent(new CustomEvent('onConnectionCreated', {
+        detail: event
+      }));
+      pushEvent(event);
+    });
+    session.on('connectionDestroyed', e => {
+      console.log(`Connection destroyed ${e.connection.connectionId}`);
+      dispatchEvent(new CustomEvent('connectionDestroyed', {
+        detail: {
+          connectionId: e.connection.connectionId,
+          event: e
+        }
+      }));
+      // byId("pwa-container-2").style.display = "none";
+      pushEvent(e);
+    });
+    if (!options.isDataOnly) {
+      // On every new Stream received...
+      session.on('streamCreated', event => {
+        pushEvent(event);
+        console.log(`%c [onStreamCreated] ${event.stream.streamId}`);
+        setTimeout(() => {
+          console.log(`%c REMOTE STREAM READY [] ${byId("remote-video-" + event.stream.streamId)}`, BIGLOG);
+        }, 2000);
+        dispatchEvent(new CustomEvent('onStreamCreated', {
+          detail: {
+            event: event,
+            msg: `[connectionId][${event.stream.connection.connectionId}]`
+          }
+        }));
+        // Subscribe to the Stream to receive it
+        // HTML video will be appended to element with 'video-container' id
+        var subscriber = session.subscribe(event.stream, 'video-container');
+        // When the HTML video has been appended to DOM...
+        subscriber.on('videoElementCreated', event => {
+          dispatchEvent(new CustomEvent(`videoElementCreatedSubscriber`, {
+            detail: event
+          }));
+          // Add a new HTML element for the user's name and nickname over its video
+          updateNumVideos(1);
+        });
+
+        // When the HTML video has been appended to DOM...
+        subscriber.on('videoElementDestroyed', event => {
+          pushEvent(event);
+          // Add a new HTML element for the user's name and nickname over its video
+          updateNumVideos(-1);
+        });
+
+        // When the subscriber stream has started playing media...
+        subscriber.on('streamPlaying', event => {
+          dispatchEvent(new CustomEvent('streamPlaying', {
+            detail: event
+          }));
+        });
+      });
+      session.on('streamDestroyed', event => {
+        // alert(event);
+        pushEvent(event);
+      });
+    } else {
+      // data
+      session.on('streamCreated', event => {
+        const subscriber = session.subscribe(event.stream, "subscriber");
+        console.log("USER DATA: " + event.stream.connection.data);
+      });
+    }
+    session.on('sessionDisconnected', event => {
+      console.log("Session Disconected", event);
+      // byId("pwa-container-2").style.display = "none";
+      pushEvent(event);
+      if (event.reason !== 'disconnect') {
+        removeUser();
+      }
+      if (event.reason !== 'sessionClosedByServer') {
+        exports.session = session = null;
+        numVideos = 0;
+        // $('#join').show();
+        byId('join').style.display = 'block';
+        byId('session').style.display = 'none';
+      }
+    });
+
+    // session.on('recordingStarted', event => {
+    //   pushEvent(event);
+    // });
+
+    // session.on('recordingStopped', event => {
+    //   pushEvent(event);
+    // });
+
+    // On every asynchronous exception...
+    session.on('exception', exception => {
+      console.warn(exception);
+    });
+    dispatchEvent(new CustomEvent(`setupSessionObject`, {
+      detail: session
+    }));
+    if (!netConfig.isDataOnly === true) {
+      session.connect(token).then(() => {
+        byId('session-title').innerText = sessionName;
+        byId('join').style.display = 'none';
+        byId('session').style.display = 'block';
+        var publisher = OV.initPublisher('video-container', {
+          audioSource: netConfig.isDataOnly ? false : undefined,
+          // The source of audio. If undefined default microphone
+          videoSource: netConfig.isDataOnly ? false : undefined,
+          // The source of video. If undefined default webcam
+          publishAudio: !netConfig.isDataOnly,
+          // Whether you want to start publishing with your audio unmuted or not
+          publishVideo: !netConfig.isDataOnly,
+          // Whether you want to start publishing with your video enabled or not
+          resolution: options.resolution,
+          // The resolution of your video
+          frameRate: 30,
+          // The frame rate of your video
+          insertMode: 'APPEND',
+          // How the video is inserted in the target element 'video-container'
+          mirror: false // Whether to mirror your local video or not
+        });
+        publisher.on('accessAllowed', event => {
+          pushEvent({
+            type: 'accessAllowed'
+          });
+        });
+        publisher.on('accessDenied', event => {
+          pushEvent(event);
+        });
+        publisher.on('accessDialogOpened', event => {
+          pushEvent({
+            type: 'accessDialogOpened'
+          });
+        });
+        publisher.on('accessDialogClosed', event => {
+          pushEvent({
+            type: 'accessDialogClosed'
+          });
+        });
+
+        // When the publisher stream has started playing media...
+        publisher.on('streamCreated', event => {
+          dispatchEvent(new CustomEvent(`LOCAL-STREAM-READY`, {
+            detail: event.stream
+          }));
+          console.log(`%c LOCAL STREAM READY ${event.stream.connection.connectionId}`, BIGLOG);
+          // if(document.getElementById("pwa-container-1").style.display != 'none') {
+          // 	document.getElementById("pwa-container-1").style.display = 'none';
+          // }
+          pushEvent(event);
+        });
+
+        // When our HTML video has been added to DOM...
+        publisher.on('videoElementCreated', event => {
+          dispatchEvent(new CustomEvent(`videoElementCreated`, {
+            detail: event
+          }));
+          updateNumVideos(1);
+          console.log('NOT FIXED MUTE event.element, ', event.element);
+          event.element.mute = true;
+          // $(event.element).prop('muted', true); // Mute local video
+        });
+
+        // When the HTML video has been appended to DOM...
+        publisher.on('videoElementDestroyed', event => {
+          dispatchEvent(new CustomEvent(`videoElementDestroyed`, {
+            detail: event
+          }));
+          pushEvent(event);
+          updateNumVideos(-1);
+        });
+
+        // When the publisher stream has started playing media...
+        publisher.on('streamPlaying', event => {
+          console.log("publisher.on streamPlaying");
+          // if(document.getElementById("pwa-container-1").style.display != 'none') {
+          // 	document.getElementById("pwa-container-1").style.display = 'none';
+          // }
+          // pushEvent(event);
+        });
+        session.publish(publisher);
+      }).catch(error => {
+        console.warn('Error connecting to the session:', error.code, error.message);
+        enableBtn();
+      });
+    } else {
+      // in future some meta data can be added here -> on conn created event
+      console.log("netConfig", netConfig.customData);
+      session.connect(token, netConfig.customData).then(() => {
+        byId('session-title').innerText = sessionName;
+        byId('join').style.display = 'none';
+        byId('session').style.display = 'block';
+        console.log('[ONLY DATA]', session);
+      }).catch(error => {
+        console.warn('Error connecting to the session:', error.code, error.message);
+        enableBtn();
+      });
+    }
+    return false;
+  });
+}
+function leaveSession() {
+  session.disconnect();
+  enableBtn();
+}
+
+/* OPENVIDU METHODS */
+
+function enableBtn() {
+  document.getElementById("join-btn").disabled = false;
+  document.getElementById("join-btn").innerHTML = "Join!";
+}
+
+/* APPLICATION REST METHODS */
+
+function getToken(callback) {
+  sessionName = byId("sessionName").value;
+  httpRequest('POST', 'https://' + netConfig.NETWORKING_DOMAIN + ':' + netConfig.NETWORKING_PORT + '/api/get-token', {
+    sessionName: sessionName
+  }, 'Request of TOKEN gone WRONG:', res => {
+    token = res[0];
+    console.log('Excellent (TOKEN:' + token + ')');
+    callback(token);
+  });
+}
+function removeUser() {
+  httpRequest('POST', 'https://' + netConfig.NETWORKING_DOMAIN + ':' + netConfig.NETWORKING_PORT + '/api/remove-user', {
+    sessionName: sessionName,
+    token: token
+  }, 'User couldn\'t be removed from session', res => {
+    console.warn("You have been removed from session " + sessionName);
+  });
+}
+function closeSession() {
+  httpRequest('DELETE', 'https://' + netConfig.NETWORKING_DOMAIN + ':' + netConfig.NETWORKING_PORT + '/api/close-session', {
+    sessionName: sessionName
+  }, 'Session couldn\'t be closed', res => {
+    console.warn("Session " + sessionName + " has been closed");
+  });
+}
+function fetchInfo(sessionName) {
+  httpRequest('POST', 'https://' + netConfig.NETWORKING_DOMAIN + ':' + netConfig.NETWORKING_PORT + '/api/fetch-info', {
+    sessionName: sessionName
+  }, 'Session couldn\'t be fetched', res => {
+    console.info("Session fetched");
+    dispatchEvent(new CustomEvent('check-gameplay-channel', {
+      detail: JSON.stringify(res, null, "\t")
+    }));
+    // byId('textarea-http').innerText = JSON.stringify(res, null, "\t");
+  });
+}
+function fetchAll() {
+  httpRequest('GET', 'https://' + netConfig.NETWORKING_DOMAIN + ':' + netConfig.NETWORKING_PORT + '/api/fetch-all', {}, 'All session info couldn\'t be fetched', res => {
+    console.warn("All session fetched");
+    byId('textarea-http').innerText = JSON.stringify(res, null, "\t");
+  });
+}
+function forceDisconnect() {
+  httpRequest('DELETE', 'https://' + netConfig.NETWORKING_DOMAIN + ':' + netConfig.NETWORKING_PORT + '/api/force-disconnect', {
+    sessionName: sessionName,
+    connectionId: document.getElementById('forceValue').value
+  }, 'Connection couldn\'t be closed', res => {
+    console.warn("Connection has been closed");
+  });
+}
+function forceUnpublish() {
+  httpRequest('DELETE', 'https://' + netConfig.NETWORKING_DOMAIN + ':' + netConfig.NETWORKING_PORT + '/api/force-unpublish', {
+    sessionName: sessionName,
+    streamId: document.getElementById('forceValue').value
+  }, 'Stream couldn\'t be closed', res => {
+    console.warn("Stream has been closed");
+  });
+}
+function httpRequest(method, url, body, errorMsg, callback) {
+  byId('textarea-http').innerText = '';
+  var http = new XMLHttpRequest();
+  http.open(method, url, true);
+  http.setRequestHeader('Content-type', 'application/json');
+  http.addEventListener('readystatechange', processRequest, false);
+  http.send(JSON.stringify(body));
+  function processRequest() {
+    if (http.readyState == 4) {
+      if (http.status == 200) {
+        try {
+          callback(JSON.parse(http.responseText));
+        } catch (e) {
+          callback(e);
+        }
+      } else {
+        console.warn(errorMsg + ' (' + http.status + ')');
+        if (url.indexOf('fetch-info') != -1) dispatchEvent(new CustomEvent('check-gameplay-channel', {
+          detail: {
+            status: 'free',
+            url: url
+          }
+        }));
+        byId('textarea-http').innerText = errorMsg + ": HTTP " + http.status + " (" + http.responseText + ")";
+      }
+    }
+  }
+}
+function startRecording() {
+  // not fixed 
+  var outputMode = $('input[name=outputMode]:checked').val();
+  var hasAudio = $('#has-audio-checkbox').prop('checked');
+  var hasVideo = $('#has-video-checkbox').prop('checked');
+  httpRequest('POST', 'api/recording/start', {
+    session: session.sessionId,
+    outputMode: outputMode,
+    hasAudio: hasAudio,
+    hasVideo: hasVideo
+  }, 'Start recording WRONG', res => {
+    console.log(res);
+    document.getElementById('forceRecordingId').value = res.id;
+    checkBtnsRecordings();
+    byId('textarea-http').innerText = JSON.stringify(res, null, "\t");
+  });
+}
+function stopRecording() {
+  var forceRecordingId = document.getElementById('forceRecordingId').value;
+  httpRequest('POST', 'api/recording/stop', {
+    recording: forceRecordingId
+  }, 'Stop recording WRONG', res => {
+    console.log(res);
+    $('#textarea-http').text(JSON.stringify(res, null, "\t"));
+  });
+}
+function deleteRecording() {
+  var forceRecordingId = document.getElementById('forceRecordingId').value;
+  httpRequest('DELETE', 'api/recording/delete', {
+    recording: forceRecordingId
+  }, 'Delete recording WRONG', res => {
+    console.log("DELETE ok");
+    byId('textarea-http').innerText = "DELETE ok";
+  });
+}
+function getRecording() {
+  var forceRecordingId = document.getElementById('forceRecordingId').value;
+  httpRequest('GET', 'api/recording/get/' + forceRecordingId, {}, 'Get recording WRONG', res => {
+    console.log(res);
+    byId('textarea-http').innerText = JSON.stringify(res, null, "\t");
+  });
+}
+function listRecordings() {
+  httpRequest('GET', 'api/recording/list', {}, 'List recordings WRONG', res => {
+    console.log(res);
+    byId('textarea-http').innerText = JSON.stringify(res, null, "\t");
+  });
+}
+
+/* APPLICATION REST METHODS */
+/* APPLICATION BROWSER METHODS */
+var events = exports.events = '';
+window.onbeforeunload = function () {
+  if (session) {
+    removeUser();
+    leaveSession();
+  }
+};
+function updateNumVideos(i) {
+  numVideos += i;
+  var coll = document.getElementsByTagName('video');
+  for (var x = 0; x < coll.length; x++) {
+    coll.classList = '';
+  }
+  for (var x = 0; x < coll.length; x++) {
+    coll.classList = '';
+    switch (numVideos) {
+      case 1:
+        coll[x].classList.add('two');
+        break;
+      case 2:
+        coll[x].classList.add('two');
+        break;
+      case 3:
+        coll[x].classList.add('three');
+        break;
+      case 4:
+        coll[x].classList.add('four');
+        break;
+    }
+  }
+}
+function checkBtnsForce() {
+  if (document.getElementById("forceValue").value === "") {
+    document.getElementById('buttonForceUnpublish').disabled = true;
+    document.getElementById('buttonForceDisconnect').disabled = true;
+  } else {
+    document.getElementById('buttonForceUnpublish').disabled = false;
+    document.getElementById('buttonForceDisconnect').disabled = false;
+  }
+}
+function checkBtnsRecordings() {
+  if (document.getElementById("forceRecordingId").value === "") {
+    document.getElementById('buttonGetRecording').disaevents$bled = true;
+    document.getElementById('buttonStopRecording').disabled = true;
+    document.getElementById('buttonDeleteRecording').disabled = true;
+  } else {
+    document.getElementById('buttonGetRecording').disabled = false;
+    document.getElementById('buttonStopRecording').disabled = false;
+    document.getElementById('buttonDeleteRecording').disabled = false;
+  }
+}
+function pushEvent(event) {
+  exports.events = events = events + ((!events ? '' : '\n') + event.type);
+  byId('textarea-events').innerText = events;
+  // console.info("EVENT: ", events)
+}
+function clearHttpTextarea() {
+  byId('textarea-http').innerText = '';
+}
+function clearEventsTextarea() {
+  byId('textarea-events').innerText = '';
+  exports.events = events = '';
+}
+
+},{}],41:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.activateNet2 = exports.MatrixStream = void 0;
+var _utils = require("../utils");
+var _matrixStream = require("./matrix-stream");
+/**
+ * Main instance for matrix-stream
+ * Same logic like all others implementation
+ * with openvidu/kurento server.
+ * 
+ * You can use old networking if you wanna 
+ * full control (MultiRtc3 like in matrix-engine old versions)
+ */
+class MatrixStream {
+  connection = null;
+  session = null;
+  constructor(arg) {
+    if (typeof arg === 'undefined') {
+      throw console.error('MatrixStream constructor must have argument : { domain: <DOMAIN_NAME> , port: <NUMBER> }');
+    }
+    _matrixStream.netConfig.NETWORKING_DOMAIN = arg.domain;
+    _matrixStream.netConfig.NETWORKING_PORT = arg.port;
+    _matrixStream.netConfig.sessionName = arg.sessionName;
+    _matrixStream.netConfig.resolution = arg.resolution;
+    _matrixStream.netConfig.isDataOnly = arg.isDataOnly;
+    if (arg.customData) _matrixStream.netConfig.customData = arg.customData;
+    _utils.scriptManager.LOAD('./networking/openvidu-browser-2.20.0.js', undefined, undefined, undefined, () => {
+      setTimeout(() => {
+        this.loadNetHTML();
+      }, 2500);
+    });
+
+    // addEventListener("onConnectionCreated", (e) => {console.log('newconn:created', e.detail);})
+  }
+  loadNetHTML() {
+    fetch("./networking/broadcaster2.html", {
+      headers: _utils.htmlHeader
+    }).then(res => {
+      return res.text();
+    }).then(html => {
+      var popupUI = (0, _matrixStream.byId)("matrix-net");
+      popupUI.style = 'display: block;';
+      popupUI.innerHTML = html;
+      this.joinSessionUI = (0, _matrixStream.byId)("join-btn");
+      this.buttonCloseSession = (0, _matrixStream.byId)('buttonCloseSession');
+      this.buttonLeaveSession = (0, _matrixStream.byId)('buttonLeaveSession');
+      (0, _matrixStream.byId)("sessionName").value = _matrixStream.netConfig.sessionName;
+      this.sessionName = (0, _matrixStream.byId)("sessionName");
+      console.log('[CHANNEL]' + this.sessionName.value);
+      this.attachEvents();
+      console.log(`%c MatrixStream constructed.`, _matrixStream.BIGLOG);
+    });
+  }
+  attachEvents() {
+    this.fetchInfo = _matrixStream.fetchInfo;
+    // just for data only test 
+    this.sendOnlyData = netArg => {
+      this.session.signal({
+        data: JSON.stringify(netArg),
+        to: [],
+        type: _matrixStream.netConfig.sessionName + "-data"
+      }).then(() => {
+        // console.log('emit all successfully');
+      }).catch(error => {
+        console.error("Erro signal => ", error);
+      });
+    };
+
+    // this is duplicate for two cases with camera or only data
+    // this only data case - send system emit with session name channel
+    this.send = netArg => {
+      this.session.signal({
+        data: JSON.stringify(netArg),
+        to: [],
+        type: _matrixStream.netConfig.sessionName
+      }).then(() => {
+        console.log('.');
+      }).catch(error => {
+        console.error("Erro signal => ", error);
+      });
+    };
+    addEventListener(`LOCAL-STREAM-READY`, e => {
+      console.log('LOCAL-STREAM-READY ', e.detail.connection);
+      this.connection = e.detail.connection;
+      var CHANNEL = _matrixStream.netConfig.sessionName;
+      // console.log("ONLY ONES CHANNEL =>", CHANNEL);
+      this.connection.send = netArg => {
+        this.session.signal({
+          data: JSON.stringify(netArg),
+          to: [],
+          type: CHANNEL
+        }).then(() => {
+          // console.log('emit all successfully');
+        }).catch(error => {
+          console.error("Erro signal => ", error);
+        });
+      };
+    });
+    addEventListener('setupSessionObject', e => {
+      console.log("setupSessionObject=>", e.detail);
+      this.session = e.detail;
+      this.connection = e.detail.connection;
+      this.session.on(`signal:${_matrixStream.netConfig.sessionName}`, e => {
+        // console.log("SIGBAL SYS RECEIVE=>", e);
+        if (this.session.connection.connectionId == e.from.connectionId) {
+          // avoid - option
+          // dispatchEvent(new CustomEvent('self-msg', {detail: e}));
+        } else {
+          this.multiPlayer.update(e);
+        }
+      });
+      this.session.on(`signal:${_matrixStream.netConfig.sessionName}-data`, e => {
+        // console.log("SIGBAL DATA RECEIVE=>", e);
+        console.log("SIGBAL DATA RECEIVE LOW LEVEL TEST OWN MESG =>", e);
+        if (this.session.connection.connectionId == e.from.connectionId) {
+          dispatchEvent(new CustomEvent('self-msg-data', {
+            detail: e
+          }));
+        } else {
+          dispatchEvent(new CustomEvent('only-data-receive', {
+            detail: e
+          }));
+        }
+      });
+    });
+    this.joinSessionUI.addEventListener('click', () => {
+      console.log(`%c JOIN SESSION [${_matrixStream.netConfig.resolution}] `, _matrixStream.REDLOG);
+      (0, _matrixStream.joinSession)({
+        resolution: _matrixStream.netConfig.resolution,
+        isDataOnly: _matrixStream.netConfig.isDataOnly
+      });
+    });
+    this.buttonCloseSession.remove();
+    // this.buttonCloseSession.addEventListener('click', closeSession);
+
+    this.buttonLeaveSession.addEventListener('click', () => {
+      console.log(`%c LEAVE SESSION`, _matrixStream.REDLOG);
+      (0, _matrixStream.removeUser)();
+      (0, _matrixStream.leaveSession)();
+    });
+    (0, _matrixStream.byId)('netHeaderTitle').addEventListener('click', this.domManipulation.hideNetPanel);
+    setTimeout(() => dispatchEvent(new CustomEvent('net-ready', {})), 100);
+  }
+  multiPlayer = {
+    root: this,
+    onFollowPath(e) {},
+    update(e) {
+      e.data = JSON.parse(e.data);
+      try {
+        // console.log('REMOTE UPDATE::::', e);
+        if (e.data.netPos) {
+          if (e.data.remoteName != null) {
+            app.getSceneObjectByName(e.data.remoteName).position.setPosition(e.data.netPos.x, e.data.netPos.y, e.data.netPos.z);
+          } else {
+            app.getSceneObjectByName(e.data.sceneName).position.setPosition(e.data.netPos.x, e.data.netPos.y, e.data.netPos.z);
+          }
+        } else if (e.data.netRotY || e.data.netRotY == 0) {
+          app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).rotation.y = e.data.netRotY;
+        } else if (e.data.netRotX) {
+          app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).rotation.x = e.data.netRotX;
+        } else if (e.data.netRotZ) {
+          app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).rotation.z = e.data.netRotZ;
+        } else if (e.data.animationIndex || e.data.animationIndex == 0) {
+          app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).glb.animationIndex = e.data.animationIndex;
+        }
+      } catch (err) {
+        console.info('mp-update-err:', err);
+      }
+    },
+    leaveGamePlay() {}
+  };
+  domManipulation = {
+    hideNetPanel: () => {
+      if ((0, _matrixStream.byId)('matrix-net').classList.contains('hide-by-vertical')) {
+        (0, _matrixStream.byId)('matrix-net').classList.remove('hide-by-vertical');
+        (0, _matrixStream.byId)('matrix-net').classList.add('show-by-vertical');
+        (0, _matrixStream.byId)('netHeaderTitle').innerText = 'HIDE';
+      } else {
+        (0, _matrixStream.byId)('matrix-net').classList.remove('show-by-vertical');
+        (0, _matrixStream.byId)('matrix-net').classList.add('hide-by-vertical');
+        (0, _matrixStream.byId)('netHeaderTitle').innerText = 'SHOW';
+      }
+    }
+  };
+}
+exports.MatrixStream = MatrixStream;
+let activateNet2 = sessionOption => {
+  console.info(`%cNetworking2 [openvidu/kurento server] params: ${sessionOption}`, CS3);
+  // -----------------------
+  // Make run
+  // -----------------------
+  if (typeof sessionOption === 'undefined') {
+    var sessionOption = {};
+    sessionOption.sessionName = 'matrix-engine-random';
+    sessionOption.resolution = '160x240';
+    sessionOption.active = true;
+    sessionOption.domain = 'maximumroulette.com';
+    sessionOption.port = 2020;
+  }
+  net = new MatrixStream({
+    domain: t.networking2.domain,
+    port: t.networking2.port,
+    sessionName: sessionOption.sessionName,
+    resolution: sessionOption.resolution
+  });
+  addEventListener(`setTitle`, e => {
+    document.title = e.detail;
+  });
+};
+exports.activateNet2 = activateNet2;
+
+},{"../utils":42,"./matrix-stream":40}],42:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -27038,6 +28265,7 @@ exports.LS = exports.LOG_WARN = exports.LOG_MATRIX = exports.LOG_INFO = exports.
 exports.ORBIT = ORBIT;
 exports.ORBIT_FROM_ARRAY = ORBIT_FROM_ARRAY;
 exports.OSCILLATOR = OSCILLATOR;
+exports.SS = void 0;
 exports.SWITCHER = SWITCHER;
 exports.byId = void 0;
 exports.createAppEvent = createAppEvent;
@@ -27046,7 +28274,10 @@ exports.genName = genName;
 exports.getAxisRot = getAxisRot;
 exports.getAxisRot2 = getAxisRot2;
 exports.getAxisRot3 = getAxisRot3;
-exports.mb = exports.mat4 = void 0;
+exports.htmlHeader = void 0;
+exports.isEven = isEven;
+exports.isOdd = isOdd;
+exports.mb = exports.mat4 = exports.jsonHeaders = void 0;
 exports.quaternion_rotation_matrix = quaternion_rotation_matrix;
 exports.radToDeg = radToDeg;
 exports.randomFloatFromTo = randomFloatFromTo;
@@ -27955,8 +29186,45 @@ const LS = exports.LS = {
     localStorage.clear();
   }
 };
+const SS = exports.SS = {
+  set(key, value) {
+    sessionStorage.setItem(key, JSON.stringify(value));
+  },
+  get(key, defaultValue = null) {
+    const item = sessionStorage.getItem(key);
+    try {
+      return item ? JSON.parse(item) : defaultValue;
+    } catch (e) {
+      console.warn(`Error parsing sessionStorage key "${key}"`, e);
+      return defaultValue;
+    }
+  },
+  has(key) {
+    return sessionStorage.getItem(key) !== null;
+  },
+  remove(key) {
+    sessionStorage.removeItem(key);
+  },
+  clear() {
+    sessionStorage.clear();
+  }
+};
+const jsonHeaders = exports.jsonHeaders = new Headers({
+  "Content-Type": "application/json",
+  "Accept": "application/json"
+});
+const htmlHeader = exports.htmlHeader = new Headers({
+  "Content-Type": "text/html",
+  "Accept": "text/plain"
+});
+function isEven(n) {
+  return n % 2 === 0;
+}
+function isOdd(n) {
+  return n % 2 !== 0;
+}
 
-},{}],41:[function(require,module,exports){
+},{}],43:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -27996,7 +29264,7 @@ class MultiLang {
 }
 exports.MultiLang = MultiLang;
 
-},{"../engine/utils":40}],42:[function(require,module,exports){
+},{"../engine/utils":42}],44:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -28280,7 +29548,7 @@ class MatrixAmmo {
 }
 exports.default = MatrixAmmo;
 
-},{"../engine/utils":40}],43:[function(require,module,exports){
+},{"../engine/utils":42}],45:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -28326,7 +29594,7 @@ fn fsMain(in : VertexOutput) -> @location(0) vec4f {
 }
 `;
 
-},{}],44:[function(require,module,exports){
+},{}],46:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -28452,7 +29720,7 @@ fn fsMain(in : VSOut) -> @location(0) vec4<f32> {
 }
 `;
 
-},{}],45:[function(require,module,exports){
+},{}],47:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -28540,7 +29808,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
 }
 `;
 
-},{}],46:[function(require,module,exports){
+},{}],48:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -28630,7 +29898,7 @@ fn main(input : FragmentInput) -> @location(0) vec4f {
 }
 `;
 
-},{}],47:[function(require,module,exports){
+},{}],49:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -28861,7 +30129,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, 1.0);
 }`;
 
-},{}],48:[function(require,module,exports){
+},{}],50:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -29039,7 +30307,7 @@ return vec4f(color, 1.0);
 // let radiance = spotlights[0].color * 10.0; // test high intensity
 // Lo += materialData.baseColor * radiance * NdotL;
 
-},{}],49:[function(require,module,exports){
+},{}],51:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -29284,7 +30552,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, 1.0);
 }`;
 
-},{}],50:[function(require,module,exports){
+},{}],52:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -29504,7 +30772,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, 1.0);
 }`;
 
-},{}],51:[function(require,module,exports){
+},{}],53:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -29672,7 +30940,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 // let radiance = spotlights[0].color * 10.0; // test high intensity
 // Lo += materialData.baseColor * radiance * NdotL;
 
-},{}],52:[function(require,module,exports){
+},{}],54:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -29908,7 +31176,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, alpha);
 }`;
 
-},{}],53:[function(require,module,exports){
+},{}],55:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30012,7 +31280,7 @@ fn main(
   return output;
 }`;
 
-},{}],54:[function(require,module,exports){
+},{}],56:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30049,7 +31317,7 @@ fn main(
 }
 `;
 
-},{}],55:[function(require,module,exports){
+},{}],57:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30107,7 +31375,7 @@ fn fragmentMain(input: VertexOutput) -> @location(0) vec4f {
   return vec4f(textureColor.rgb * lightColor, textureColor.a);
 }`;
 
-},{}],56:[function(require,module,exports){
+},{}],58:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30165,7 +31433,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
 }
 `;
 
-},{}],57:[function(require,module,exports){
+},{}],59:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30252,7 +31520,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
 }
 `;
 
-},{}],58:[function(require,module,exports){
+},{}],60:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30310,7 +31578,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
   return vec4<f32>(color, 1.0);
 }`;
 
-},{}],59:[function(require,module,exports){
+},{}],61:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30396,7 +31664,7 @@ fn main(
   return output;
 }`;
 
-},{}],60:[function(require,module,exports){
+},{}],62:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30507,7 +31775,7 @@ fn main(
   return output;
 }`;
 
-},{}],61:[function(require,module,exports){
+},{}],63:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30535,7 +31803,7 @@ fn main(
 }
 `;
 
-},{}],62:[function(require,module,exports){
+},{}],64:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30605,7 +31873,7 @@ class MatrixSounds {
 }
 exports.MatrixSounds = MatrixSounds;
 
-},{}],63:[function(require,module,exports){
+},{}],65:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -31336,7 +32604,7 @@ class MatrixEngineWGPU {
       this.device.queue.submit([commandEncoder.finish()]);
       requestAnimationFrame(this.frame);
     } catch (err) {
-      console.log('%cLoop(err):' + err + " info : " + err.stack, _utils.LOG_WARN);
+      // console.log('%cLoop(err):' + err + " info : " + err.stack, LOG_WARN)
       requestAnimationFrame(this.frame);
     }
   };
@@ -31609,4 +32877,4 @@ class MatrixEngineWGPU {
 }
 exports.default = MatrixEngineWGPU;
 
-},{"./engine/ball.js":18,"./engine/cube.js":20,"./engine/engine.js":28,"./engine/lights.js":32,"./engine/loader-obj.js":33,"./engine/loaders/bvh-instaced.js":34,"./engine/loaders/bvh.js":35,"./engine/mesh-obj.js":39,"./engine/utils.js":40,"./multilang/lang.js":41,"./physics/matrix-ammo.js":42,"./sounds/sounds.js":62,"wgpu-matrix":17}]},{},[2]);
+},{"./engine/ball.js":18,"./engine/cube.js":20,"./engine/engine.js":28,"./engine/lights.js":32,"./engine/loader-obj.js":33,"./engine/loaders/bvh-instaced.js":34,"./engine/loaders/bvh.js":35,"./engine/mesh-obj.js":39,"./engine/utils.js":42,"./multilang/lang.js":43,"./physics/matrix-ammo.js":44,"./sounds/sounds.js":64,"wgpu-matrix":17}]},{},[2]);

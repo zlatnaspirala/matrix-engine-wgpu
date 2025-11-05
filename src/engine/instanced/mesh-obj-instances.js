@@ -198,7 +198,7 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
     } else {
       this.mesh.uvs = this.mesh.textures;
     }
-    console.log(`%cMesh: ${o.name}`, LOG_FUNNY_SMALL);
+    // console.log(`%cMesh: ${o.name}`, LOG_FUNNY_SMALL);
     // ObjSequence animation
     if(typeof o.objAnim !== 'undefined' && o.objAnim != null) {
       this.objAnim = o.objAnim;

@@ -1,6 +1,8 @@
 import {uploadGLBModel} from "../../../src/engine/loaders/webgpu-gltf";
 import {LOG_MATRIX} from "../../../src/engine/utils";
 import {Hero} from "./hero";
+import {followPath} from "./nav-mesh";
+import {startUpPositions} from "./static";
 
 export class Enemie extends Hero {
 
@@ -23,6 +25,7 @@ export class Enemie extends Hero {
 
   loadEnemyHero = async (o) => {
     try {
+      console.info(`%chero enemy path  ${o.path}`, LOG_MATRIX)
       var glbFile01 = await fetch(o.path).then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, this.core.device)));
       this.core.addGlbObjInctance({
         material: {type: 'standard', useTextureFromGlb: true},
@@ -46,7 +49,7 @@ export class Enemie extends Hero {
           subMesh.glb.animationIndex = 0;
           // adapt manual if blender is not setup
           subMesh.glb.glbJsonData.animations.forEach((a, index) => {
-          //  console.info(`%c ANimation: ${a.name} index ${index}`, LOG_MATRIX)
+            //  console.info(`%c ANimation: ${a.name} index ${index}`, LOG_MATRIX)
             if(a.name == 'dead') this.heroAnimationArrange.dead = index;
             if(a.name == 'walk') this.heroAnimationArrange.walk = index;
             if(a.name == 'salute') this.heroAnimationArrange.salute = index;
@@ -56,16 +59,21 @@ export class Enemie extends Hero {
           // adapt
           if(this.name == 'Slayzer') {
             subMesh.globalAmbient = [2, 2, 3, 1];
-          } 
+          }
           // maybe will help - remote net players no nedd to collide in other remote user gamaplay
           // this.core.collisionSystem.register((o.name + idx), subMesh.position, 15.0, 'enemies');
           // dont care for multi sub mesh now
           if(idx == 0) this.core.collisionSystem.register((o.name), subMesh.position, 15.0, 'enemies');
         });
 
-        this.setStartUpPositionTest();
-
-      }, 1600)
+        this.setStartUpPosition();
+        for(var x = 0;x < this.heroe_bodies.length;x++) {
+          if(x > 0) {
+            this.heroe_bodies[x].position = this.heroe_bodies[0].position;
+            this.heroe_bodies[x].rotation = this.heroe_bodies[0].rotation;
+          }
+        }
+      }, 1600);
     } catch(err) {throw err;}
   }
 
@@ -97,43 +105,44 @@ export class Enemie extends Hero {
       console.info(`%chero idle`, LOG_MATRIX)
     });
   }
+
   setAttack() {
     this.heroe_bodies.forEach(subMesh => {
       subMesh.glb.animationIndex = this.heroAnimationArrange.attack;
       console.info(`%chero attack`, LOG_MATRIX)
     });
-  }
 
-  setStartUpPositionTest() {
-    this.heroe_bodies.forEach((subMesh, idx) => {
-      subMesh.position.setPosition(-700, -23, 0);
-    })
-
-    this.setStartUpPositionTest = this.setStartUpPosition;
   }
 
   setStartUpPosition() {
     this.heroe_bodies.forEach((subMesh, idx) => {
-      subMesh.position.setPosition(700, -23, -700);
+      subMesh.position.setPosition(
+        startUpPositions[app.player.data.enemyTeam][0],
+        startUpPositions[app.player.data.enemyTeam][1],
+        startUpPositions[app.player.data.enemyTeam][2]
+      )
     })
   }
 
   attachEvents() {
-
     addEventListener(`onDamage-${this.name}`, (e) => {
-      console.info(`%c hero damage ${e.detail}`, LOG_MATRIX)
+      console.info(`%c remote[enemy] hero damage ${e.detail}`, LOG_MATRIX)
       this.heroe_bodies[0].effects.energyBar.setProgress(e.detail.progress);
+      this.core.net.sendOnlyData({
+        type: "damage",
+        defenderName:  e.detail.defender,
+        attackerName:  e.detail.attacker,
+        hp: e.detail.hp,
+        progress: e.detail.progress
+      });
       // if detail is 0
       if(e.detail.progress == 0) {
         this.setDead();
         console.info(`%c hero dead [${this.name}], attacker[${e.detail.attacker}]`, LOG_MATRIX)
         setTimeout(() => {
-          this.setStartUpPosition()
-        }, 1600)
-        e.detail.attacker.killEnemy(e.detail.defenderLevel);
+          this.setStartUpPosition();
+        }, 1500);
       }
     });
-
   }
-
 }

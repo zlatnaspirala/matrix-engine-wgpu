@@ -1,6 +1,6 @@
 import {computeWorldVertsAndAABB, touchCoordinate, rayIntersectsAABB, rayIntersectsSphere, getRayFromMouse2, getRayFromMouse, addRaycastsListener} from "../../../src/engine/raycast.js";
 import {mat4, vec4} from "wgpu-matrix";
-import {byId} from "../../../src/engine/utils.js";
+import {byId, LOG_MATRIX, mb} from "../../../src/engine/utils.js";
 import {followPath} from "./nav-mesh.js";
 
 export class Controller {
@@ -48,17 +48,11 @@ export class Controller {
     });
 
     addRaycastsListener(undefined, 'click');
-    // addRaycastsListener(undefined, 'mousemove');
-    // for now - performance problem
-    // this.canvas.addEventListener("ray.hit.event.mm", (e) => {
-    //   // console.log('ray.hit.event detected', e);
-    // })
 
     this.canvas.addEventListener("ray.hit.event", (e) => {
       // console.log('ray.hit.event detected', e);
       const {hitObject, hitPoint, button, eventName} = e.detail;
       if(e.detail.hitObject.name == 'ground') {
-        console.warn('>>>>>> COLLECT HERE .');
         dispatchEvent(new CustomEvent(`onMouseTarget`, {
           detail: {
             type: 'normal',
@@ -80,7 +74,8 @@ export class Controller {
         }));
       } else {
         // for now
-        dispatchEvent(new CustomEvent('navigate-friendly-creeps', {detail: 'test'}))
+        console.log("navigate friendly_creeps creep from controller :", e.detail.hitObject.name);
+        dispatchEvent(new CustomEvent('navigate-friendly_creeps', {detail: 'test'}))
         // must be friendly objs
         return;
       }
@@ -116,6 +111,11 @@ export class Controller {
       dispatchEvent(new CustomEvent('set-walk'));
       const start = [hero.position.x, hero.position.y, hero.position.z];
       const end = [hitPoint[0], hitPoint[1], hitPoint[2]];
+      // app.net.send({
+      //   heroName: app.localHero.name,
+      //   sceneName: hero.name,
+      //   followPath: {start: start, end: end},
+      // })
       const path = this.nav.findPath(start, end);
       if(!path || path.length === 0) {console.warn('No valid path found.'); return;}
       // no need if position = position of root ??? test last bug track
@@ -129,7 +129,61 @@ export class Controller {
       e.preventDefault();
     });
 
-    this.activateVisualRect()
+    this.activateVisualRect();
+
+    let hiddenAt = null;
+
+    if(location.hostname.indexOf('localhost') == -1) {
+      console.log('Security stuff activated');
+      console.log = function() {};
+      // Security stuff
+      if(window.innerHeight < window.outerHeight) {
+        let test = window.outerHeight - window.innerHeight;
+        // 87 person comp case -> addressbar ~~~
+        if(test > 100) {
+          console.log('BAN', test);
+          location.assign('https://google.com');
+        }
+      }
+
+      if(window.innerWidth < window.outerWidth) {
+        let testW = window.outerWidth - window.innerWidth;
+        if(testW > 100) {
+          console.log('BAN', testW);
+          location.assign('https://google.com');
+        }
+      }
+
+      window.addEventListener('keydown', (e) => {
+        if(e.code == "F12") {
+          e.preventDefault();
+          mb.error(`
+            You are interest in Forest Of hollow blood. See <a href='https://github.com/zlatnapirala'>Github Source</a>
+            You can download for free project and test it into localhost.
+            `)
+          console.log(`%c[keydown opened] ${e}`, LOG_MATRIX)
+          return false;
+        }
+      });
+
+      document.addEventListener("visibilitychange", () => {
+        if(document.visibilityState === "visible") {
+          if(hiddenAt !== null) {
+            const now = Date.now();
+            const hiddenDuration = (now - hiddenAt) / 1000;
+            if(parseFloat(hiddenDuration.toFixed(2)) > 1) {
+              console.log(`🟢⚠️ Tab was hidden for ${hiddenDuration.toFixed(2)} sec.`);
+              document.title = document.title.replace('🟢', '🟡')
+            }
+            hiddenAt = null; // reset
+          } else {
+            console.log("🟢 Tab is visible — first activation.");
+          }
+        } else {
+          hiddenAt = Date.now();
+        }
+      });
+    }
   }
 
   projectToScreen(worldPos, viewMatrix, projectionMatrix, canvas) {
