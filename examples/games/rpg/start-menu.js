@@ -49,8 +49,8 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
 
   // Audios
   forestOfHollowBloodStartSceen.matrixSounds.createAudio('music', 'res/audios/rpg/wizard-rider.mp3', 1)
-  forestOfHollowBloodStartSceen.matrixSounds.createAudio('win1', 'res/audios/rpg/feel.mp3', 2);
-
+  forestOfHollowBloodStartSceen.matrixSounds.createAudio('click1', 'res/audios/click1.mp3', 1);
+  app.matrixSounds.audios.click1.volume = 0.2;
   forestOfHollowBloodStartSceen.matrixSounds.createAudio('hover', 'res/audios/kenney/mp3/click3.mp3', 2);
   forestOfHollowBloodStartSceen.matrixSounds.createAudio('feel', 'res/audios/rpg/feel.mp3', 2);
 
@@ -175,30 +175,32 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
   }
 
   forestOfHollowBloodStartSceen.gotoGamePlay = (preventEmit) => {
-    // check again ! good all selected hero !PLAY!
-    console.log('...', byId(`waiting-${app.net.session.connection.connectionId}`));
-    LS.set('player', {
-      mesh: heros[app.selectedHero].meshName,
-      hero: heros[app.selectedHero].name,
-      path: heros[app.selectedHero].path,
-      archetypes: [heros[app.selectedHero].type],
-      team: byId(`waiting-${app.net.session.connection.connectionId}`).getAttribute('data-hero-team'),
-      data: Date.now()
-    })
-    SS.set('player', {
-      mesh: heros[app.selectedHero].meshName,
-      hero: heros[app.selectedHero].name,
-      path: heros[app.selectedHero].path,
-      archetypes: [heros[app.selectedHero].type],
-      team: byId(`waiting-${app.net.session.connection.connectionId}`).getAttribute('data-hero-team'),
-      data: Date.now()
-    })
+    setTimeout(() => {
+      // check again ! good all selected hero !PLAY!
+      // console.log('...', byId(`waiting-${app.net.session.connection.connectionId}`));
+      LS.set('player', {
+        mesh: heros[app.selectedHero].meshName,
+        hero: heros[app.selectedHero].name,
+        path: heros[app.selectedHero].path,
+        archetypes: [heros[app.selectedHero].type],
+        team: byId(`waiting-${app.net.session.connection.connectionId}`).getAttribute('data-hero-team'),
+        data: Date.now()
+      })
+      SS.set('player', {
+        mesh: heros[app.selectedHero].meshName,
+        hero: heros[app.selectedHero].name,
+        path: heros[app.selectedHero].path,
+        archetypes: [heros[app.selectedHero].type],
+        team: byId(`waiting-${app.net.session.connection.connectionId}`).getAttribute('data-hero-team'),
+        data: Date.now()
+      })
 
-    if(typeof preventEmit === 'undefined') forestOfHollowBloodStartSceen.net.sendOnlyData({
-      type: 'start'
-    })
+      if(typeof preventEmit === 'undefined') forestOfHollowBloodStartSceen.net.sendOnlyData({
+        type: 'start'
+      })
 
-    location.assign('rpg-game.html');
+      location.assign('rpg-game.html');
+    }, 1000);
   }
 
   addEventListener('check-gameplay-channel', (e) => {
@@ -498,6 +500,8 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
         })
       })
       updateDesc();
+
+      app.matrixSounds.play('click1');
     });
 
 
@@ -564,7 +568,8 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
 
         })
       })
-      updateDesc()
+      updateDesc();
+      app.matrixSounds.play('click1');
     });
 
 

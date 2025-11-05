@@ -102,10 +102,10 @@ export class MatrixTTS {
     });
   }
 
-  async speak(text) {
+  async speak(text, rate= 0.95, pitch = 1.0) {
     return new Promise(async(resolve, reject) => {
       try {
-        await this.speakNatural(text, {lang: 'en-US', rate: 0.95, pitch: 1.02});
+        await this.speakNatural(text, {lang: 'en-US', rate: rate, pitch: pitch});
         resolve('Finished speaking');
       } catch(e) {
         reject('TTS error');

@@ -1391,6 +1391,9 @@ let forestOfHollowBlood = new _world.default({
         forestOfHollowBlood.player.data.enemyTeam = 'south';
         forestOfHollowBlood.enemies = new _enemiesManager.EnemiesManager(forestOfHollowBlood, 'south');
       }
+      (0, _matrixStream.byId)('buttonLeaveSession').addEventListener('click', () => {
+        location.assign("rpg-menu.html");
+      });
     });
     addEventListener('connectionDestroyed', e => {
       console.log('connectionDestroyed , bad bad.');
@@ -3408,13 +3411,13 @@ class MatrixTTS {
       speakNext();
     });
   }
-  async speak(text) {
+  async speak(text, rate = 0.95, pitch = 1.0) {
     return new Promise(async (resolve, reject) => {
       try {
         await this.speakNatural(text, {
           lang: 'en-US',
-          rate: 0.95,
-          pitch: 1.02
+          rate: rate,
+          pitch: pitch
         });
         resolve('Finished speaking');
       } catch (e) {

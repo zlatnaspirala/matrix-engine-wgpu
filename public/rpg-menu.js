@@ -588,7 +588,8 @@ let forestOfHollowBloodStartSceen = new _world.default({
 
   // Audios
   forestOfHollowBloodStartSceen.matrixSounds.createAudio('music', 'res/audios/rpg/wizard-rider.mp3', 1);
-  forestOfHollowBloodStartSceen.matrixSounds.createAudio('win1', 'res/audios/rpg/feel.mp3', 2);
+  forestOfHollowBloodStartSceen.matrixSounds.createAudio('click1', 'res/audios/click1.mp3', 1);
+  app.matrixSounds.audios.click1.volume = 0.2;
   forestOfHollowBloodStartSceen.matrixSounds.createAudio('hover', 'res/audios/kenney/mp3/click3.mp3', 2);
   forestOfHollowBloodStartSceen.matrixSounds.createAudio('feel', 'res/audios/rpg/feel.mp3', 2);
   let heros = null;
@@ -703,28 +704,30 @@ let forestOfHollowBloodStartSceen = new _world.default({
     }
   }
   forestOfHollowBloodStartSceen.gotoGamePlay = preventEmit => {
-    // check again ! good all selected hero !PLAY!
-    console.log('...', (0, _utils.byId)(`waiting-${app.net.session.connection.connectionId}`));
-    _utils.LS.set('player', {
-      mesh: heros[app.selectedHero].meshName,
-      hero: heros[app.selectedHero].name,
-      path: heros[app.selectedHero].path,
-      archetypes: [heros[app.selectedHero].type],
-      team: (0, _utils.byId)(`waiting-${app.net.session.connection.connectionId}`).getAttribute('data-hero-team'),
-      data: Date.now()
-    });
-    _utils.SS.set('player', {
-      mesh: heros[app.selectedHero].meshName,
-      hero: heros[app.selectedHero].name,
-      path: heros[app.selectedHero].path,
-      archetypes: [heros[app.selectedHero].type],
-      team: (0, _utils.byId)(`waiting-${app.net.session.connection.connectionId}`).getAttribute('data-hero-team'),
-      data: Date.now()
-    });
-    if (typeof preventEmit === 'undefined') forestOfHollowBloodStartSceen.net.sendOnlyData({
-      type: 'start'
-    });
-    location.assign('rpg-game.html');
+    setTimeout(() => {
+      // check again ! good all selected hero !PLAY!
+      // console.log('...', byId(`waiting-${app.net.session.connection.connectionId}`));
+      _utils.LS.set('player', {
+        mesh: heros[app.selectedHero].meshName,
+        hero: heros[app.selectedHero].name,
+        path: heros[app.selectedHero].path,
+        archetypes: [heros[app.selectedHero].type],
+        team: (0, _utils.byId)(`waiting-${app.net.session.connection.connectionId}`).getAttribute('data-hero-team'),
+        data: Date.now()
+      });
+      _utils.SS.set('player', {
+        mesh: heros[app.selectedHero].meshName,
+        hero: heros[app.selectedHero].name,
+        path: heros[app.selectedHero].path,
+        archetypes: [heros[app.selectedHero].type],
+        team: (0, _utils.byId)(`waiting-${app.net.session.connection.connectionId}`).getAttribute('data-hero-team'),
+        data: Date.now()
+      });
+      if (typeof preventEmit === 'undefined') forestOfHollowBloodStartSceen.net.sendOnlyData({
+        type: 'start'
+      });
+      location.assign('rpg-game.html');
+    }, 1000);
   };
   addEventListener('check-gameplay-channel', e => {
     let info = e.detail;
@@ -1045,6 +1048,7 @@ let forestOfHollowBloodStartSceen = new _world.default({
         });
       });
       updateDesc();
+      app.matrixSounds.play('click1');
     });
     const desc = document.createElement("div");
     desc.id = 'desc';
@@ -1103,6 +1107,7 @@ let forestOfHollowBloodStartSceen = new _world.default({
         });
       });
       updateDesc();
+      app.matrixSounds.play('click1');
     });
     function updateDesc() {
       (0, _utils.byId)('desc').innerHTML = `
@@ -28170,25 +28175,26 @@ class MatrixStream {
     onFollowPath(e) {},
     update(e) {
       e.data = JSON.parse(e.data);
-      // console.log('REMOTE UPDATE::::', e);
-      if (e.data.netPos) {
-        if (e.data.remoteName != null) {
-          // console.log('REMOTE UPDATE:::remote:', e);
-          app.getSceneObjectByName(e.data.remoteName).position.setPosition(e.data.netPos.x, e.data.netPos.y, e.data.netPos.z);
-        } else {
-          app.getSceneObjectByName(e.data.sceneName).position.setPosition(e.data.netPos.x, e.data.netPos.y, e.data.netPos.z);
+      try {
+        // console.log('REMOTE UPDATE::::', e);
+        if (e.data.netPos) {
+          if (e.data.remoteName != null) {
+            app.getSceneObjectByName(e.data.remoteName).position.setPosition(e.data.netPos.x, e.data.netPos.y, e.data.netPos.z);
+          } else {
+            app.getSceneObjectByName(e.data.sceneName).position.setPosition(e.data.netPos.x, e.data.netPos.y, e.data.netPos.z);
+          }
+        } else if (e.data.netRotY || e.data.netRotY == 0) {
+          app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).rotation.y = e.data.netRotY;
+        } else if (e.data.netRotX) {
+          app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).rotation.x = e.data.netRotX;
+        } else if (e.data.netRotZ) {
+          app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).rotation.z = e.data.netRotZ;
+        } else if (e.data.animationIndex || e.data.animationIndex == 0) {
+          app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).glb.animationIndex = e.data.animationIndex;
         }
-      } else if (e.data.netRotY || e.data.netRotY == 0) {
-        app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).rotation.y = e.data.netRotY;
-      } else if (e.data.netRotX) {
-        app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).rotation.x = e.data.netRotX;
-      } else if (e.data.netRotZ) {
-        app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).rotation.z = e.data.netRotZ;
-      } else if (e.data.animationIndex || e.data.animationIndex == 0) {
-        app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).glb.animationIndex = e.data.animationIndex;
+      } catch (err) {
+        console.info('mp-update-err:', err);
       }
-
-      // add custom option
     },
     leaveGamePlay() {}
   };

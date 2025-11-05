@@ -74,6 +74,10 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
         forestOfHollowBlood.player.data.enemyTeam = 'south';
         forestOfHollowBlood.enemies = new EnemiesManager(forestOfHollowBlood, 'south');
       }
+
+      byId('buttonLeaveSession').addEventListener('click', () => {
+        location.assign("rpg-menu.html");
+      });
     });
 
     addEventListener('connectionDestroyed', (e) => {
