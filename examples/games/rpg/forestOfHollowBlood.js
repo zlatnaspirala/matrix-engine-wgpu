@@ -22,6 +22,11 @@ import {MatrixTTS} from "./tts.js";
 
 // Prevent no inputs cases
 // in prodc SS in dev LS
+
+// set orientation  in animation end hero
+// setup HP after setDead
+
+
 if(!SS.has('player') || !LS.has('player')) {
   // alert('No no');
   location.assign('google.com');

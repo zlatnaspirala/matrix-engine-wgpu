@@ -740,7 +740,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
     let counter = null;
     function fakeProgress() {
       if(progress < 100) {
-        progress += Math.random() * 5;
+        progress += Math.random() * 3.5;
         if(progress > 100) progress = 100;
         bar.style.width = progress + '%';
         counter.textContent = Math.floor(progress) + '%';

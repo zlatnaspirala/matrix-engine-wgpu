@@ -582,6 +582,12 @@ let forestOfHollowBloodStartSceen = new _world.default({
     a: 1
   }
 }, forestOfHollowBloodStartSceen => {
+  // let FS =  new FullscreenManager();
+  // window.addEventListener(() => {
+  //   console.log('FS')
+  //   FS.toggle();
+  // })
+
   forestOfHollowBloodStartSceen.heroByBody = [];
   forestOfHollowBloodStartSceen.selectedHero = 0;
   forestOfHollowBloodStartSceen.lock = false;
@@ -1262,7 +1268,7 @@ let forestOfHollowBloodStartSceen = new _world.default({
     let counter = null;
     function fakeProgress() {
       if (progress < 100) {
-        progress += Math.random() * 5;
+        progress += Math.random() * 3.5;
         if (progress > 100) progress = 100;
         bar.style.width = progress + '%';
         counter.textContent = Math.floor(progress) + '%';
@@ -22651,6 +22657,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
     this.video = null;
     this.FINISH_VIDIO_INIT = false;
     this.globalAmbient = [...globalAmbient];
+    this.blendInstanced = false;
     if (typeof o.material.useTextureFromGlb === 'undefined' || typeof o.material.useTextureFromGlb !== "boolean") {
       o.material.useTextureFromGlb = false;
     }
@@ -23526,7 +23533,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
     pass.drawIndexed(this.indexCount, 1, 0, 0, 0);
 
     // pipelineBlended
-    pass.setPipeline(this.pipelineBlended);
+    if (this.blendInstanced == true) pass.setPipeline(this.pipelineBlended);else pass.setPipeline(this.pipeline);
     for (var ins = 1; ins < this.instanceCount; ins++) {
       pass.drawIndexed(this.indexCount, 1, 0, 0, ins);
     }
@@ -28261,7 +28268,7 @@ exports.activateNet2 = activateNet2;
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.LS = exports.LOG_WARN = exports.LOG_MATRIX = exports.LOG_INFO = exports.LOG_FUNNY_SMALL = exports.LOG_FUNNY = void 0;
+exports.LS = exports.LOG_WARN = exports.LOG_MATRIX = exports.LOG_INFO = exports.LOG_FUNNY_SMALL = exports.LOG_FUNNY = exports.FullscreenManagerElement = exports.FullscreenManager = void 0;
 exports.ORBIT = ORBIT;
 exports.ORBIT_FROM_ARRAY = ORBIT_FROM_ARRAY;
 exports.OSCILLATOR = OSCILLATOR;
@@ -29223,6 +29230,55 @@ function isEven(n) {
 function isOdd(n) {
   return n % 2 !== 0;
 }
+class FullscreenManagerElement {
+  constructor(targetElement = document.documentElement) {
+    this.target = targetElement;
+  }
+  isFullscreen() {
+    return !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement);
+  }
+  request() {
+    const el = this.target;
+    return el.requestFullscreen?.() || el.webkitRequestFullscreen?.() || el.mozRequestFullScreen?.() || el.msRequestFullscreen?.();
+  }
+  exit() {
+    return document.exitFullscreen?.() || document.webkitExitFullscreen?.() || document.mozCancelFullScreen?.() || document.msExitFullscreen?.();
+  }
+  toggle() {
+    if (this.isFullscreen()) return this.exit();
+    return this.request();
+  }
+  onChange(callback) {
+    ["fullscreenchange", "webkitfullscreenchange", "mozfullscreenchange", "MSFullscreenChange"].forEach(evt => document.addEventListener(evt, () => {
+      callback(this.isFullscreen(), this.target);
+    }));
+  }
+}
+exports.FullscreenManagerElement = FullscreenManagerElement;
+class FullscreenManager {
+  constructor() {
+    this.target = document.documentElement; // fullscreen whole page / window
+  }
+  isFullscreen() {
+    return !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement);
+  }
+  request() {
+    const el = this.target;
+    return el.requestFullscreen?.() || el.webkitRequestFullscreen?.() || el.mozRequestFullScreen?.() || el.msRequestFullscreen?.();
+  }
+  exit() {
+    return document.exitFullscreen?.() || document.webkitExitFullscreen?.() || document.mozCancelFullScreen?.() || document.msExitFullscreen?.();
+  }
+  toggle() {
+    return this.isFullscreen() ? this.exit() : this.request();
+  }
+  onChange(callback) {
+    ["fullscreenchange", "webkitfullscreenchange", "mozfullscreenchange", "MSFullscreenChange"].forEach(evt => document.addEventListener(evt, () => {
+      callback(this.isFullscreen());
+    }));
+  }
+}
+exports.FullscreenManager = FullscreenManager;
 
 },{}],43:[function(require,module,exports){
 "use strict";

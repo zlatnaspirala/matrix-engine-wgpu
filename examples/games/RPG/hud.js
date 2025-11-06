@@ -514,10 +514,12 @@ export class HUD {
     function fakeProgress() {
       if(progress < 100) {
         // Random step to look "non-linear"
-        progress += Math.random() * 5;
+        progress += Math.random() * 4;
         if(progress > 100) progress = 100;
         bar.style.width = progress + '%';
         counter.textContent = "Prepare gameplay " + Math.floor(progress) + '%';
+        let grayEffect = 30 / progress;
+        loader.style.filter = `grayscale(${grayEffect})`;
         setTimeout(fakeProgress, 80 + Math.random() * 150);
       } else {
         counter.textContent = "Let the game begin!";
