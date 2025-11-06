@@ -2619,8 +2619,6 @@ class MEMapLoader {
       }
     });
 
-    // console.log('FFFFFFFFFFFFFFFFFFFROCKFFFFFFFFFFFFFF', startUpPositions['south'][0])
-    // wood-house-1
     //https://sketchfab.com/search?features=downloadable&licenses=7c23a1ba438d4306920229c12afcb5f9&licenses=322a749bcfa841b29dff1e8a1bb74b0b&q=rock&type=models
     var glbFile01 = await fetch('./res/meshes/env/rocks/rock1.glb').then(res => res.arrayBuffer().then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, this.core.device)));
     this.core.addGlbObjInctance({
@@ -2641,13 +2639,7 @@ class MEMapLoader {
         radius: 1.5
       },
       pointerEffect: {
-        enabled: true,
-        energyBar: true,
-        flameEffect: false
-        // flameEmitter: true,
-        // circlePlane: false,
-        // circlePlaneTex: true,
-        // circlePlaneTexPath: './res/textures/rpg/magics/mariasword-2.png',
+        enabled: true
       }
     }, null, glbFile01);
 
@@ -2677,7 +2669,6 @@ class MEMapLoader {
       },
       pointerEffect: {
         enabled: true,
-        energyBar: true,
         flameEffect: false
       }
     }, null, glbFile01);
@@ -2693,7 +2684,7 @@ class MEMapLoader {
         // this.core.collisionSystem.register(`rock1`, item.position, 15.0, 'rock');
       });
       this.addInstancingRock();
-    }, 1500);
+    }, 2000);
     this.core.lightContainer[0].position[1] = 175;
     this.core.lightContainer[0].intesity = 1;
   }
@@ -2798,6 +2789,7 @@ class MEMapLoader {
     const spacing = 150;
     const clusterOffsets = [[0, 0], [700, 0], [0, 700], [700, 700]];
     this.collectionOfTree1.forEach(partOftree => {
+      partOftree.globalAmbient = [(0, _utils.randomIntFromTo)(5, 15), (0, _utils.randomIntFromTo)(5, 15), (0, _utils.randomIntFromTo)(5, 15)];
       const treesPerCluster = 9;
       const gridSize = Math.ceil(Math.sqrt(treesPerCluster));
       const totalInstances = treesPerCluster * clusterOffsets.length;
@@ -2846,7 +2838,7 @@ class MEMapLoader {
         instance.color[3] = 1;
         instance.color[0] = 1;
         instance.color[1] = 1;
-        instance.color[2] = 1;
+        instance.color[2] = (0, _utils.randomIntFromTo)(1, 1.5);
       }
     });
     const NUM2 = 16;
@@ -2857,12 +2849,12 @@ class MEMapLoader {
         let instance;
         if (x < 8) {
           instance = rock.instanceTargets[x];
-          instance.position[0] = 0;
+          instance.position[0] = -50;
           instance.position[2] = -2000 + x * 250;
           instance.position[1] = 0;
         } else if (x < 16) {
           instance = rock.instanceTargets[x];
-          instance.position[0] = 1900;
+          instance.position[0] = 1950;
           instance.position[2] = -1800 + (x - 8) * 250;
           instance.position[1] = 0;
         }
@@ -30737,7 +30729,7 @@ function addRaycastsListener(canvasId = "canvas1", eventName = 'click') {
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.LS = exports.LOG_WARN = exports.LOG_MATRIX = exports.LOG_INFO = exports.LOG_FUNNY_SMALL = exports.LOG_FUNNY = void 0;
+exports.LS = exports.LOG_WARN = exports.LOG_MATRIX = exports.LOG_INFO = exports.LOG_FUNNY_SMALL = exports.LOG_FUNNY = exports.FullscreenManagerElement = exports.FullscreenManager = void 0;
 exports.ORBIT = ORBIT;
 exports.ORBIT_FROM_ARRAY = ORBIT_FROM_ARRAY;
 exports.OSCILLATOR = OSCILLATOR;
@@ -31699,6 +31691,55 @@ function isEven(n) {
 function isOdd(n) {
   return n % 2 !== 0;
 }
+class FullscreenManagerElement {
+  constructor(targetElement = document.documentElement) {
+    this.target = targetElement;
+  }
+  isFullscreen() {
+    return !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement);
+  }
+  request() {
+    const el = this.target;
+    return el.requestFullscreen?.() || el.webkitRequestFullscreen?.() || el.mozRequestFullScreen?.() || el.msRequestFullscreen?.();
+  }
+  exit() {
+    return document.exitFullscreen?.() || document.webkitExitFullscreen?.() || document.mozCancelFullScreen?.() || document.msExitFullscreen?.();
+  }
+  toggle() {
+    if (this.isFullscreen()) return this.exit();
+    return this.request();
+  }
+  onChange(callback) {
+    ["fullscreenchange", "webkitfullscreenchange", "mozfullscreenchange", "MSFullscreenChange"].forEach(evt => document.addEventListener(evt, () => {
+      callback(this.isFullscreen(), this.target);
+    }));
+  }
+}
+exports.FullscreenManagerElement = FullscreenManagerElement;
+class FullscreenManager {
+  constructor() {
+    this.target = document.documentElement; // fullscreen whole page / window
+  }
+  isFullscreen() {
+    return !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement);
+  }
+  request() {
+    const el = this.target;
+    return el.requestFullscreen?.() || el.webkitRequestFullscreen?.() || el.mozRequestFullScreen?.() || el.msRequestFullscreen?.();
+  }
+  exit() {
+    return document.exitFullscreen?.() || document.webkitExitFullscreen?.() || document.mozCancelFullScreen?.() || document.msExitFullscreen?.();
+  }
+  toggle() {
+    return this.isFullscreen() ? this.exit() : this.request();
+  }
+  onChange(callback) {
+    ["fullscreenchange", "webkitfullscreenchange", "mozfullscreenchange", "MSFullscreenChange"].forEach(evt => document.addEventListener(evt, () => {
+      callback(this.isFullscreen());
+    }));
+  }
+}
+exports.FullscreenManager = FullscreenManager;
 
 },{}],56:[function(require,module,exports){
 "use strict";

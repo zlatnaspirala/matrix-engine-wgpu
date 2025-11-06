@@ -53,9 +53,6 @@ export class MEMapLoader {
       raycast: {enabled: true, radius: 1.5}
     });
 
-
-    // console.log('FFFFFFFFFFFFFFFFFFFROCKFFFFFFFFFFFFFF', startUpPositions['south'][0])
-    // wood-house-1
     //https://sketchfab.com/search?features=downloadable&licenses=7c23a1ba438d4306920229c12afcb5f9&licenses=322a749bcfa841b29dff1e8a1bb74b0b&q=rock&type=models
     var glbFile01 = await fetch('./res/meshes/env/rocks/rock1.glb').then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, this.core.device)));
     this.core.addGlbObjInctance({
@@ -70,13 +67,7 @@ export class MEMapLoader {
       texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
       raycast: {enabled: false, radius: 1.5},
       pointerEffect: {
-        enabled: true,
-        energyBar: true,
-        flameEffect: false,
-        // flameEmitter: true,
-        // circlePlane: false,
-        // circlePlaneTex: true,
-        // circlePlaneTexPath: './res/textures/rpg/magics/mariasword-2.png',
+        enabled: true
       }
     }, null, glbFile01);
 
@@ -96,7 +87,6 @@ export class MEMapLoader {
       raycast: {enabled: false, radius: 1.5},
       pointerEffect: {
         enabled: true,
-        energyBar: true,
         flameEffect: false
       }
     }, null, glbFile01);
@@ -113,7 +103,7 @@ export class MEMapLoader {
         // this.core.collisionSystem.register(`rock1`, item.position, 15.0, 'rock');
       })
       this.addInstancingRock();
-    }, 1500);
+    }, 2000);
 
     this.core.lightContainer[0].position[1] = 175;
     this.core.lightContainer[0].intesity = 1;
@@ -190,6 +180,9 @@ export class MEMapLoader {
     ];
 
     this.collectionOfTree1.forEach((partOftree) => {
+
+      partOftree.globalAmbient = [ randomIntFromTo(5, 15),randomIntFromTo(5, 15),randomIntFromTo(5, 15)];
+
       const treesPerCluster = 9;
       const gridSize = Math.ceil(Math.sqrt(treesPerCluster));
       const totalInstances = treesPerCluster * clusterOffsets.length;
@@ -245,7 +238,7 @@ export class MEMapLoader {
         instance.color[3] = 1;
         instance.color[0] = 1;
         instance.color[1] = 1;
-        instance.color[2] = 1;
+        instance.color[2] = randomIntFromTo(1, 1.5);
       }
     });
 
@@ -258,12 +251,12 @@ export class MEMapLoader {
         let instance;
          if(x < 8) {
           instance = rock.instanceTargets[x];
-          instance.position[0] = 0;
+          instance.position[0] = -50;
           instance.position[2] = -2000 + x * 250;
           instance.position[1] = 0;
         } else if(x < 16) {
           instance = rock.instanceTargets[x];
-          instance.position[0] = 1900;
+          instance.position[0] = 1950;
           instance.position[2] = -1800 + (x-8) * 250;
           instance.position[1] = 0;
         } 

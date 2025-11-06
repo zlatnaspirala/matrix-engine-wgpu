@@ -43,6 +43,13 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
   clearColor: {r: 0, b: 0.1, g: 0.1, a: 1}
 }, (forestOfHollowBloodStartSceen) => {
 
+  // let FS =  new FullscreenManager();
+  // window.addEventListener(() => {
+  //   console.log('FS')
+  //   FS.toggle();
+  // })
+  
+
   forestOfHollowBloodStartSceen.heroByBody = [];
   forestOfHollowBloodStartSceen.selectedHero = 0;
   forestOfHollowBloodStartSceen.lock = false;
