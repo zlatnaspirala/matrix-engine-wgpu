@@ -31769,6 +31769,7 @@ class MultiLang {
     });
   };
   loadMultilang = async function (lang = 'en') {
+    if (lang == 'rs') lang = 'sr'; // exc
     lang = 'res/multilang/' + lang + '.json';
     console.info(`%cMultilang: ${lang}`, _utils.LOG_MATRIX);
     try {

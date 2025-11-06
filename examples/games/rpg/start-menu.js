@@ -20,7 +20,7 @@ import {HERO_ARCHETYPES} from "./hero.js";
  * Redistribution of raw assets is not permitted.”
  * 
  * @Note 
- * This is startup main instance for menu screen adn for the game.
+ * This is startup main instance for menu screen and for the game.
  * All @zlatnaspirala software use networking based
  * on openvidu/kurento media server(webRTC).
  * Node.js used for middleware.
@@ -449,11 +449,11 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
       }, 3000);
     }
     loadHeros();
-    createHUDMEnu();
+    createHUDMenu();
   })
   forestOfHollowBloodStartSceen.addLight();
 
-  function createHUDMEnu() {
+  function createHUDMenu() {
     document.body.style.cursor = "url('./res/icons/default.png') 0 0, auto";
     document.addEventListener("contextmenu", event => event.preventDefault());
     byId('canvas1').style.pointerEvents = 'none';
@@ -493,7 +493,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
     nextBtn.innerHTML = `
       <div class="button-outer">
         <div class="button-inner">
-          <span id='nextBtn'>NEXT</span>
+          <span id='nextBtn'>${app.label.get.next}</span>
         </div>
       </div>
     `;
@@ -558,7 +558,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
     previusBtn.innerHTML = `
       <div class="button-outer">
         <div class="button-inner">
-          <span id='previusBtnText'>BACK</span>
+          <span id='previusBtnText'>${app.label.get.back}</span>
         </div>
       </div>
     `;
@@ -634,7 +634,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
     startBtn.innerHTML = `
       <div class="button-outer">
         <div class="button-inner">
-          <span id='startBtnText'>PLAY</span>
+          <span id='startBtnText'>${app.label.get.play}</span>
         </div>
       </div>
     `;
@@ -642,7 +642,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
       if(app.net.connection == null) {
         // console.log('app.net.connection is null let join gameplay sesion... Wait list.', app.selectedHero)
         byId('join-btn').click();
-        byId("startBtnText").innerHTML = 'Waiting for others...';
+        byId("startBtnText").innerHTML = app.label.get.waiting_for_others;
         e.target.disabled = true;
         app.matrixSounds.play('feel');
         return;
@@ -696,7 +696,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
     aboutBtn.innerHTML = `
       <div class="button-outer">
         <div class="button-inner">
-          <span data-label='aboutword'>ABOUT</span>
+          <span data-label='aboutword'>${app.label.get.about_}</span>
         </div>
       </div>
     `;
@@ -748,7 +748,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
         byId('loader').style.filter = `grayscale(${grayEffect})`;
         setTimeout(fakeProgress, 80 + Math.random() * 150);
       } else {
-        counter.textContent = "Let the game begin!";
+        counter.textContent = app.label.get.letthegame;
         bar.style.boxShadow = "0 0 30px #00ff99";
         setTimeout(() => {loader.remove();}, 250)
       }
@@ -775,13 +775,11 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
     });
 
     function firstClick() {
-      console.log('ONLCE ')
+      // add here after - fs force
       app.matrixSounds.play('music');
       removeEventListener('click', firstClick);
     }
     addEventListener('click', firstClick);
-
-
   }
 })
 window.app = forestOfHollowBloodStartSceen;
