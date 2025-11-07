@@ -643,6 +643,10 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
         if(typeof this.pointerEffect.circlePlaneTex !== 'undefined' && this.pointerEffect.circlePlaneTex == true) {
           this.effects.circlePlaneTex = new GenGeoTexture(device, pf, 'ring', this.pointerEffect.circlePlaneTexPath);
         }
+
+        if(typeof this.pointerEffect.circle !== 'undefined' && this.pointerEffect.circlePlaneTexPath !== 'undefined') {
+          this.effects.circle = new GenGeoTexture(device, pf, 'circle', this.pointerEffect.circlePlaneTexPath);
+        }
       }
 
       // Rotates the camera around the origin based on time.
@@ -919,8 +923,8 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
     pass.drawIndexed(this.indexCount, 1, 0, 0, 0);
 
     // pipelineBlended
-    if (this.blendInstanced == true) pass.setPipeline(this.pipelineBlended)
-      else pass.setPipeline(this.pipeline);
+    if(this.blendInstanced == true) pass.setPipeline(this.pipelineBlended)
+    else pass.setPipeline(this.pipeline);
 
     for(var ins = 1;ins < this.instanceCount;ins++) {
       pass.drawIndexed(this.indexCount, 1, 0, 0, ins);

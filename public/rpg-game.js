@@ -120,7 +120,7 @@ class Character extends _hero.Hero {
           flameEmitter: true,
           circlePlane: false,
           circlePlaneTex: true,
-          circlePlaneTexPath: './res/textures/rpg/magics/mariasword-2.png'
+          circlePlaneTexPath: './res/textures/star1.png'
         }
       }, null, glbFile01);
 
@@ -145,7 +145,9 @@ class Character extends _hero.Hero {
         },
         pointerEffect: {
           enabled: true,
-          circlePlane: true
+          // circlePlane: true,
+          circlePlaneTex: true,
+          circlePlaneTexPath: './res/textures/star1.png'
         }
       }, null, glbFile02);
       // ---------
@@ -153,6 +155,9 @@ class Character extends _hero.Hero {
       setTimeout(() => {
         console.info(`%cAnimation...`, _utils.LOG_MATRIX);
         this.mouseTarget = app.getSceneObjectByName('mouseTarget_Circle');
+        this.mouseTarget.animationSpeed = 20000;
+        app.localHero.mouseTarget.instanceTargets[1].position[1] = 1;
+        app.localHero.mouseTarget.instanceTargets[1].scale = [0.4, 0.4, 0.4];
         this.heroe_bodies = app.mainRenderBundle.filter(obj => obj.name && obj.name.includes(this.name));
         this.core.RPG.heroe_bodies = this.heroe_bodies;
         this.core.RPG.heroe_bodies.forEach((subMesh, id) => {
@@ -180,6 +185,7 @@ class Character extends _hero.Hero {
           app.localHero.heroe_bodies[0].globalAmbient = [12, 12, 12, 1];
         }
         app.localHero.setAllCreepsAtStartPos();
+        app.localHero.heroe_bodies[0].effects.circlePlaneTex.rotateEffectSpeed = 0.1;
         this.attachEvents();
         // important!!
         for (var x = 0; x < app.localHero.heroe_bodies.length; x++) {
@@ -2545,6 +2551,9 @@ class HUD {
     document.body.appendChild(hud);
   }
   setCursor() {
+    // alert('cur')
+    // AnimatedCursor
+
     document.body.style.cursor = "url('./res/icons/default.png') 0 0, auto";
   }
 }
@@ -2663,7 +2672,7 @@ class MEMapLoader {
         z: 0
       },
       position: {
-        x: -1000,
+        x: -1040,
         y: -10,
         z: 850
       },
@@ -2678,6 +2687,71 @@ class MEMapLoader {
         flameEffect: false
       }
     }, null, glbFile01);
+
+    // TEST
+    var glbFile02 = await fetch('./res/meshes/env/rocks/cyber.glb').then(res => res.arrayBuffer().then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, this.core.device)));
+    this.core.addGlbObjInctance({
+      material: {
+        type: 'standard',
+        useTextureFromGlb: true
+      },
+      scale: [1, 1, 1],
+      rotation: {
+        x: 0,
+        y: 90,
+        z: 0
+      },
+      position: {
+        x: -900,
+        y: -10,
+        z: 930
+      },
+      name: 'homebase',
+      texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
+      raycast: {
+        enabled: false,
+        radius: 1.5
+      },
+      pointerEffect: {
+        enabled: true,
+        flameEffect: false
+      }
+    }, null, glbFile02);
+    var glbFile03 = await fetch('./res/meshes/env/rocks/home.glb').then(res => res.arrayBuffer().then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, this.core.device)));
+    this.core.addGlbObjInctance({
+      material: {
+        type: 'standard',
+        useTextureFromGlb: true
+      },
+      scale: [15, 15, 15],
+      rotation: {
+        x: 0,
+        y: 90,
+        z: 0
+      },
+      position: {
+        x: -800,
+        y: -20,
+        z: 830
+      },
+      name: 'tron_',
+      texturesPaths: ['./res/textures/star1.png'],
+      raycast: {
+        enabled: false,
+        radius: 1.5
+      },
+      pointerEffect: {
+        enabled: true,
+        pointer: false,
+        energyBar: true,
+        flameEffect: false,
+        flameEmitter: false,
+        circlePlane: false,
+        circlePlaneTex: false,
+        circle: true,
+        circlePlaneTexPath: './res/textures/star1.png'
+      }
+    }, null, glbFile03);
     setTimeout(() => {
       this.collectionOfRocks = this.core.mainRenderBundle.filter(item => item.name.indexOf('rocks1') != -1);
       this.collectionOfRocks.forEach(item => {
@@ -2690,6 +2764,12 @@ class MEMapLoader {
         // this.core.collisionSystem.register(`rock1`, item.position, 15.0, 'rock');
       });
       this.addInstancingRock();
+
+      // remove after
+      app.homebase = this.core.mainRenderBundle.filter(item => item.name.indexOf('homebase') != -1)[0];
+      app.homebase.globalAmbient = [16, 2, 1];
+      app.tron = this.core.mainRenderBundle.filter(item => item.name.indexOf('tron_') != -1)[0];
+      app.tron.globalAmbient = [2, 2, 2];
     }, 2000);
     this.core.lightContainer[0].position[1] = 175;
     this.core.lightContainer[0].intesity = 1;
@@ -22824,7 +22904,7 @@ class GenGeoTexture {
     this.indexData = geom.indices;
     this.enabled = true;
     this.rotateEffect = true;
-    this.rotateEffectSpeed = 10.5;
+    this.rotateEffectSpeed = 10;
     this.rotateAngle = 0;
     this.loadTexture(path).then(() => {
       this._initPipeline();
@@ -23001,6 +23081,9 @@ class GenGeoTexture {
   updateInstanceData = baseModelMatrix => {
     if (this.rotateEffect) {
       this.rotateAngle = (this.rotateAngle ?? 0) + this.rotateEffectSpeed; // accumulate rotation
+      if (this.rotateAngle >= 360) {
+        this.rotateAngle = 0;
+      }
     }
     const count = Math.min(this.instanceCount, this.maxInstances);
     for (let i = 0; i < count; i++) {
@@ -24207,7 +24290,7 @@ class GeometryFactory {
       indices: new Uint16Array(ind)
     };
   }
-  static circle(R = 1, seg = 32) {
+  static circleBACKUP(R = 1, seg = 32) {
     const p = [0, 0, 0],
       uv = [0.5, 0.5],
       ind = [];
@@ -24221,6 +24304,35 @@ class GeometryFactory {
       positions: new Float32Array(p),
       uvs: new Float32Array(uv),
       indices: new Uint16Array(ind)
+    };
+  }
+  static circle(radius = 1, segments = 64) {
+    const positions = [0, 0, 0]; // center
+    const uvs = [0.5, 0.5]; // center UV
+    const indices = [];
+
+    // create outer vertices
+    for (let i = 0; i <= segments; i++) {
+      const angle = i / segments * Math.PI * 2;
+      const x = Math.cos(angle) * radius;
+      const y = Math.sin(angle) * radius;
+      positions.push(x, y, 0);
+      // map to circular UV range [0,1]
+      uvs.push((x / radius + 1) / 2, (y / radius + 1) / 2);
+      if (i > 0) {
+        // center = 0, connect previous outer vertex with current outer vertex
+        indices.push(0, i, i + 1);
+      }
+    }
+
+    // close the circle (last triangle connects to first outer vertex)
+    // we already pushed (segments + 1) outer vertices, so last index = segments + 1
+    // but first outer vertex is index 1
+    indices.push(0, segments + 1, 1);
+    return {
+      positions: new Float32Array(positions),
+      uvs: new Float32Array(uvs),
+      indices: new Uint16Array(indices)
     };
   }
   static diamond(S = 1) {
@@ -25561,6 +25673,9 @@ class MEMeshObjInstances extends _materialsInstanced.default {
         }
         if (typeof this.pointerEffect.circlePlaneTex !== 'undefined' && this.pointerEffect.circlePlaneTex == true) {
           this.effects.circlePlaneTex = new _genTex.GenGeoTexture(device, pf, 'ring', this.pointerEffect.circlePlaneTexPath);
+        }
+        if (typeof this.pointerEffect.circle !== 'undefined' && this.pointerEffect.circlePlaneTexPath !== 'undefined') {
+          this.effects.circle = new _genTex.GenGeoTexture(device, pf, 'circle', this.pointerEffect.circlePlaneTexPath);
         }
       }
 
@@ -34013,7 +34128,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
   let uvScale = vec2<f32>(1.3, 1.3);   // < 1.0 = zoom out (more texture visible)
   let uvOffset = vec2<f32>(0.01, 0.01); // move the texture slightly
   
-  let adjustedUV = input.v_uv * uvScale + uvOffset;
+  let adjustedUV = input.v_uv; // * uvScale + uvOffset; // make it like ring !
 
   let texColor = textureSample(myTexture, mySampler, adjustedUV);
 

@@ -44,12 +44,12 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
   clearColor: {r: 0, b: 0.1, g: 0.1, a: 1}
 }, (forestOfHollowBloodStartSceen) => {
 
-  forestOfHollowBloodStartSceen.FS =  new FullscreenManager();
+  forestOfHollowBloodStartSceen.FS = new FullscreenManager();
   // window.addEventListener(() => {
   //   console.log('FS')
   //   FS.toggle();
   // })
-  
+
 
   forestOfHollowBloodStartSceen.heroByBody = [];
   forestOfHollowBloodStartSceen.selectedHero = 0;
@@ -402,7 +402,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
             flameEmitter: true,
             circlePlane: true,
             circlePlaneTex: true,
-            circlePlaneTexPath: './res/textures/rpg/symbols/star.png',
+            circlePlaneTexPath: './res/textures/star1.png',
           }
         }, null, glbFile01);
       }
@@ -441,7 +441,8 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
           }
           if(x == 6) {
             hero0.forEach((p, i, array) => {
-              array[i].globalAmbient = [9, 9, 9];
+              // alert(array[i].globalAmbient)
+              array[i].globalAmbient = [21, 11, 11];
             })
           }
         }

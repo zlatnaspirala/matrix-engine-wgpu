@@ -78,7 +78,7 @@ export class MEMapLoader {
       scale: [14, 13, 14],
       rotation: {x: 0, y: 90, z: 0},
       position: {
-        x: -1000,
+        x: -1040,
         y: -10,
         z: 850
       },
@@ -90,6 +90,53 @@ export class MEMapLoader {
         flameEffect: false
       }
     }, null, glbFile01);
+
+    // TEST
+    var glbFile02 = await fetch('./res/meshes/env/rocks/cyber.glb').then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, this.core.device)));
+    this.core.addGlbObjInctance({
+      material: {type: 'standard', useTextureFromGlb: true},
+      scale: [1, 1, 1],
+      rotation: {x: 0, y: 90, z: 0},
+      position: {
+        x: -900,
+        y: -10,
+        z: 930
+      },
+      name: 'homebase',
+      texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
+      raycast: {enabled: false, radius: 1.5},
+      pointerEffect: {
+        enabled: true,
+        flameEffect: false
+      }
+    }, null, glbFile02);
+
+
+    var glbFile03 = await fetch('./res/meshes/env/rocks/home.glb').then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, this.core.device)));
+    this.core.addGlbObjInctance({
+      material: {type: 'standard', useTextureFromGlb: true},
+      scale: [15, 15, 15],
+      rotation: {x: 0, y: 90, z: 0},
+      position: {
+        x: -800,
+        y: -20,
+        z: 830
+      },
+      name: 'tron_',
+      texturesPaths: ['./res/textures/star1.png'],
+      raycast: {enabled: false, radius: 1.5},
+      pointerEffect: {
+        enabled: true,
+        pointer: false,
+        energyBar: true,
+        flameEffect: false,
+        flameEmitter: false,
+        circlePlane: false,
+        circlePlaneTex: false,
+        circle: true,
+        circlePlaneTexPath: './res/textures/star1.png',
+      }
+    }, null, glbFile03);
 
     setTimeout(() => {
       this.collectionOfRocks = this.core.mainRenderBundle.filter((item) => item.name.indexOf('rocks1') != -1);
@@ -103,6 +150,13 @@ export class MEMapLoader {
         // this.core.collisionSystem.register(`rock1`, item.position, 15.0, 'rock');
       })
       this.addInstancingRock();
+
+      // remove after
+      app.homebase = this.core.mainRenderBundle.filter((item) => item.name.indexOf('homebase') != -1)[0];
+      app.homebase.globalAmbient = [16, 2, 1];
+
+      app.tron = this.core.mainRenderBundle.filter((item) => item.name.indexOf('tron_') != -1)[0];
+      app.tron.globalAmbient = [2, 2, 2];
     }, 2000);
 
     this.core.lightContainer[0].position[1] = 175;
@@ -181,7 +235,7 @@ export class MEMapLoader {
 
     this.collectionOfTree1.forEach((partOftree) => {
 
-      partOftree.globalAmbient = [ randomIntFromTo(5, 15),randomIntFromTo(5, 15),randomIntFromTo(5, 15)];
+      partOftree.globalAmbient = [randomIntFromTo(5, 15), randomIntFromTo(5, 15), randomIntFromTo(5, 15)];
 
       const treesPerCluster = 9;
       const gridSize = Math.ceil(Math.sqrt(treesPerCluster));
@@ -233,7 +287,7 @@ export class MEMapLoader {
           instance.position[0] = (x - 8) * 250;
           instance.position[2] = -2000;
           instance.position[1] = 0;
-        } 
+        }
 
         instance.color[3] = 1;
         instance.color[0] = 1;
@@ -249,7 +303,7 @@ export class MEMapLoader {
       rock.updateInstances(NUM2);
       for(var x = 0;x < NUM2;x++) {
         let instance;
-         if(x < 8) {
+        if(x < 8) {
           instance = rock.instanceTargets[x];
           instance.position[0] = -50;
           instance.position[2] = -2000 + x * 250;
@@ -257,9 +311,9 @@ export class MEMapLoader {
         } else if(x < 16) {
           instance = rock.instanceTargets[x];
           instance.position[0] = 1950;
-          instance.position[2] = -1800 + (x-8) * 250;
+          instance.position[2] = -1800 + (x - 8) * 250;
           instance.position[1] = 0;
-        } 
+        }
 
         instance.color[3] = 1;
         instance.color[0] = 1;

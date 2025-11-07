@@ -959,7 +959,7 @@ let forestOfHollowBloodStartSceen = new _world.default({
             flameEmitter: true,
             circlePlane: true,
             circlePlaneTex: true,
-            circlePlaneTexPath: './res/textures/rpg/symbols/star.png'
+            circlePlaneTexPath: './res/textures/star1.png'
           }
         }, null, glbFile01);
       }
@@ -994,7 +994,8 @@ let forestOfHollowBloodStartSceen = new _world.default({
           }
           if (x == 6) {
             hero0.forEach((p, i, array) => {
-              array[i].globalAmbient = [9, 9, 9];
+              // alert(array[i].globalAmbient)
+              array[i].globalAmbient = [21, 11, 11];
             });
           }
         }
@@ -20566,7 +20567,7 @@ class GenGeoTexture {
     this.indexData = geom.indices;
     this.enabled = true;
     this.rotateEffect = true;
-    this.rotateEffectSpeed = 10.5;
+    this.rotateEffectSpeed = 10;
     this.rotateAngle = 0;
     this.loadTexture(path).then(() => {
       this._initPipeline();
@@ -20743,6 +20744,9 @@ class GenGeoTexture {
   updateInstanceData = baseModelMatrix => {
     if (this.rotateEffect) {
       this.rotateAngle = (this.rotateAngle ?? 0) + this.rotateEffectSpeed; // accumulate rotation
+      if (this.rotateAngle >= 360) {
+        this.rotateAngle = 0;
+      }
     }
     const count = Math.min(this.instanceCount, this.maxInstances);
     for (let i = 0; i < count; i++) {
@@ -21949,7 +21953,7 @@ class GeometryFactory {
       indices: new Uint16Array(ind)
     };
   }
-  static circle(R = 1, seg = 32) {
+  static circleBACKUP(R = 1, seg = 32) {
     const p = [0, 0, 0],
       uv = [0.5, 0.5],
       ind = [];
@@ -21963,6 +21967,35 @@ class GeometryFactory {
       positions: new Float32Array(p),
       uvs: new Float32Array(uv),
       indices: new Uint16Array(ind)
+    };
+  }
+  static circle(radius = 1, segments = 64) {
+    const positions = [0, 0, 0]; // center
+    const uvs = [0.5, 0.5]; // center UV
+    const indices = [];
+
+    // create outer vertices
+    for (let i = 0; i <= segments; i++) {
+      const angle = i / segments * Math.PI * 2;
+      const x = Math.cos(angle) * radius;
+      const y = Math.sin(angle) * radius;
+      positions.push(x, y, 0);
+      // map to circular UV range [0,1]
+      uvs.push((x / radius + 1) / 2, (y / radius + 1) / 2);
+      if (i > 0) {
+        // center = 0, connect previous outer vertex with current outer vertex
+        indices.push(0, i, i + 1);
+      }
+    }
+
+    // close the circle (last triangle connects to first outer vertex)
+    // we already pushed (segments + 1) outer vertices, so last index = segments + 1
+    // but first outer vertex is index 1
+    indices.push(0, segments + 1, 1);
+    return {
+      positions: new Float32Array(positions),
+      uvs: new Float32Array(uvs),
+      indices: new Uint16Array(indices)
     };
   }
   static diamond(S = 1) {
@@ -23303,6 +23336,9 @@ class MEMeshObjInstances extends _materialsInstanced.default {
         }
         if (typeof this.pointerEffect.circlePlaneTex !== 'undefined' && this.pointerEffect.circlePlaneTex == true) {
           this.effects.circlePlaneTex = new _genTex.GenGeoTexture(device, pf, 'ring', this.pointerEffect.circlePlaneTexPath);
+        }
+        if (typeof this.pointerEffect.circle !== 'undefined' && this.pointerEffect.circlePlaneTexPath !== 'undefined') {
+          this.effects.circle = new _genTex.GenGeoTexture(device, pf, 'circle', this.pointerEffect.circlePlaneTexPath);
         }
       }
 
@@ -31620,7 +31656,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
   let uvScale = vec2<f32>(1.3, 1.3);   // < 1.0 = zoom out (more texture visible)
   let uvOffset = vec2<f32>(0.01, 0.01); // move the texture slightly
   
-  let adjustedUV = input.v_uv * uvScale + uvOffset;
+  let adjustedUV = input.v_uv; // * uvScale + uvOffset; // make it like ring !
 
   let texColor = textureSample(myTexture, mySampler, adjustedUV);
 

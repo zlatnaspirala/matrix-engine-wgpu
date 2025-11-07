@@ -2,7 +2,7 @@ import {geoInstancedTexEffect} from "../../shaders/standalone/geo.tex.js";
 import {GeometryFactory} from "../geometry-factory.js";
 import {mat4} from "wgpu-matrix";
 
-export class GenGeoTexture {
+export class GenGeoTexture2 {
   constructor(device, format, type = "sphere", path, scale = 1) {
     this.device = device;
     this.format = format;

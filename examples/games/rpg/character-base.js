@@ -107,7 +107,7 @@ export class Character extends Hero {
           flameEmitter: true,
           circlePlane: false,
           circlePlaneTex: true,
-          circlePlaneTexPath: './res/textures/rpg/magics/mariasword-2.png',
+          circlePlaneTexPath: './res/textures/star1.png',
         }
       }, null, glbFile01);
 
@@ -122,7 +122,9 @@ export class Character extends Hero {
         raycast: {enabled: false, radius: 1.5},
         pointerEffect: {
           enabled: true,
-          circlePlane: true,
+          // circlePlane: true,
+          circlePlaneTex: true,
+          circlePlaneTexPath: './res/textures/star1.png',
         }
       }, null, glbFile02);
       // ---------
@@ -130,6 +132,10 @@ export class Character extends Hero {
       setTimeout(() => {
         console.info(`%cAnimation...`, LOG_MATRIX)
         this.mouseTarget = app.getSceneObjectByName('mouseTarget_Circle');
+        this.mouseTarget.animationSpeed = 20000;
+        app.localHero.mouseTarget.instanceTargets[1].position[1] =1;
+        app.localHero.mouseTarget.instanceTargets[1].scale = [0.4,0.4,0.4];
+        
         this.heroe_bodies = app.mainRenderBundle.filter(obj =>
           obj.name && obj.name.includes(this.name)
         );
@@ -160,6 +166,9 @@ export class Character extends Hero {
         }
 
         app.localHero.setAllCreepsAtStartPos();
+
+        app.localHero.heroe_bodies[0].effects.circlePlaneTex.rotateEffectSpeed = 0.1;
+
         this.attachEvents();
         // important!!
         for(var x = 0;x < app.localHero.heroe_bodies.length;x++) {
