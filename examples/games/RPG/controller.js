@@ -125,6 +125,10 @@ export class Controller {
       // followPath(this.heroe_bodies[0], path, this.core);
     });
 
+    document.body.addEventListener("contextmenu", (e) => {
+      e.preventDefault();
+    });
+
     this.canvas.addEventListener("contextmenu", (e) => {
       e.preventDefault();
     });

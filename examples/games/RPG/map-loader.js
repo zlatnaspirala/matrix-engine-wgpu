@@ -1,3 +1,4 @@
+import {GenGeoTexture2} from "../../../src/engine/effects/gen-tex2.js";
 import {GenGeo} from "../../../src/engine/effects/gen.js";
 import {downloadMeshes} from "../../../src/engine/loader-obj.js";
 import {uploadGLBModel} from "../../../src/engine/loaders/webgpu-gltf.js";
@@ -127,14 +128,7 @@ export class MEMapLoader {
       raycast: {enabled: false, radius: 1.5},
       pointerEffect: {
         enabled: true,
-        pointer: false,
         energyBar: true,
-        flameEffect: false,
-        flameEmitter: false,
-        circlePlane: false,
-        circlePlaneTex: false,
-        circle: true,
-        circlePlaneTexPath: './res/textures/star1.png',
       }
     }, null, glbFile03);
 
@@ -157,6 +151,21 @@ export class MEMapLoader {
 
       app.tron = this.core.mainRenderBundle.filter((item) => item.name.indexOf('tron_') != -1)[0];
       app.tron.globalAmbient = [2, 2, 2];
+
+      // this.pointerEffect.circlePlaneTexPath
+      app.tron.effects.circle = new GenGeoTexture2(app.device, app.tron.presentationFormat, 'circle2', './res/textures/star1.png' );
+      app.tron.effects.circle.rotateEffectSpeed = 0.01;
+      
+      this.core.collisionSystem.register(`rock3`,  app.tron.position, 25.0, 'rock');
+
+      setTimeout(() => {
+        app.tron.effects.circle.instanceTargets[0].position = [0,6,0];
+        app.tron.effects.circle.instanceTargets[1].position = [0,6,0];
+        app.tron.effects.circle.instanceTargets[0].color = [2,0.1,0,0.5];
+        app.tron.effects.circle.instanceTargets[1].color = [1,1,1,0.11];
+      }, 5000)
+      // circlePlaneTexPath: './res/textures/star1.png',
+
     }, 2000);
 
     this.core.lightContainer[0].position[1] = 175;

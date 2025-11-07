@@ -571,9 +571,9 @@ export class Character extends Hero {
         // console.log("onMouseTarget POS:", e.detail.type);
         this.mouseTarget.position.setPosition(e.detail.x, this.mouseTarget.position.y, e.detail.z)
         if(e.detail.type == "attach") {
-          this.mouseTarget.effects.circlePlane.instanceTargets[0].color = [1, 0, 0, 0.9];
+          this.mouseTarget.effects.circlePlaneTex.instanceTargets[0].color = [1, 0, 0, 0.9];
         } else {
-          this.mouseTarget.effects.circlePlane.instanceTargets[0].color = [0.6, 0.8, 1, 0.4];
+          this.mouseTarget.effects.circlePlaneTex.instanceTargets[0].color = [0.6, 0.8, 1, 0.4];
         }
       }
     })

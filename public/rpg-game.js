@@ -561,9 +561,9 @@ class Character extends _hero.Hero {
         // console.log("onMouseTarget POS:", e.detail.type);
         this.mouseTarget.position.setPosition(e.detail.x, this.mouseTarget.position.y, e.detail.z);
         if (e.detail.type == "attach") {
-          this.mouseTarget.effects.circlePlane.instanceTargets[0].color = [1, 0, 0, 0.9];
+          this.mouseTarget.effects.circlePlaneTex.instanceTargets[0].color = [1, 0, 0, 0.9];
         } else {
-          this.mouseTarget.effects.circlePlane.instanceTargets[0].color = [0.6, 0.8, 1, 0.4];
+          this.mouseTarget.effects.circlePlaneTex.instanceTargets[0].color = [0.6, 0.8, 1, 0.4];
         }
       }
     });
@@ -722,6 +722,9 @@ class Controller {
         (0, _navMesh.followPath)(this.heroe_bodies[x], path, this.core);
       }
       // followPath(this.heroe_bodies[0], path, this.core);
+    });
+    document.body.addEventListener("contextmenu", e => {
+      e.preventDefault();
     });
     this.canvas.addEventListener("contextmenu", e => {
       e.preventDefault();
@@ -1293,7 +1296,12 @@ class Enemie extends _hero.Hero {
   }
   setStartUpPosition() {
     this.heroe_bodies.forEach((subMesh, idx) => {
-      subMesh.position.setPosition(_static.startUpPositions[app.player.data.enemyTeam][0], _static.startUpPositions[app.player.data.enemyTeam][1], _static.startUpPositions[app.player.data.enemyTeam][2]);
+      subMesh.position.setPosition(_static.startUpPositions[app.player.data.enemyTeam][0], _static.startUpPositions[app.player.data.enemyTeam][1], _static.startUpPositions[app.player.data.enemyTeam][2]
+
+      // startUpPositions[app.player.data.team][0],
+      // startUpPositions[app.player.data.team][1],
+      // startUpPositions[app.player.data.team][2]
+      );
     });
   }
   attachEvents() {
@@ -1411,6 +1419,11 @@ let forestOfHollowBlood = new _world.default({
         (0, _matrixStream.byId)('remote-' + e.detail.connectionId).remove();
         //....
         _utils.mb.error(`Player ${e.detail.connectionId} disconnected...`);
+        let getPlayerMesh = JSON.parse(e.detail.event.connection.data).mesh;
+        let disPlayer = forestOfHollowBlood.getSceneObjectByName(getPlayerMesh);
+        _utils.mb.error(`Player ${e.detail.connectionId} disconnected..${disPlayer}.`);
+        // 
+        disPlayer.position.setPosition(0, 20, 0);
       }
     });
     addEventListener("onConnectionCreated", e => {
@@ -1434,6 +1447,30 @@ let forestOfHollowBlood = new _world.default({
         forestOfHollowBlood.enemies.loadEnemyHero(d);
       }
     });
+    addEventListener('self-msg-data', e => {
+      let d = JSON.parse(e.detail.data);
+      console.log('<data-receive self>', d);
+      if (d.type == "damage") {
+        // string
+        console.log('<data-receive damage for >', d.defenderName);
+        let IsEnemyHeroObj = forestOfHollowBlood.enemies.enemies.find(enemy => enemy.name === d.defenderName);
+        let IsEnemyCreepObj = forestOfHollowBlood.enemies.creeps.find(creep => creep.name === d.defenderName);
+        if (IsEnemyHeroObj) {
+          console.log('<data-receive damage for IsEnemyHeroObj >', IsEnemyHeroObj);
+          const progress = Math.max(0, Math.min(1, d.hp / IsEnemyHeroObj.getHPMax()));
+          IsEnemyHeroObj.heroe_bodies[0].effects.energyBar.setProgress(progress);
+          console.log('<data-receive damage IsEnemyHeroObj progress >', progress);
+          if (progress == 0) {
+            if (app.localHero.name == d.attackerName) {
+              console.log('<data-receive damage KILL by local >', d.attackerName);
+              app.localHero.killEnemy(1);
+            }
+          }
+
+          //..
+        }
+      }
+    });
     addEventListener('only-data-receive', e => {
       console.log('<data-receive>', e);
       if (e.detail.from.connectionId == app.net.session.connection.connectionId) {
@@ -1449,6 +1486,14 @@ let forestOfHollowBlood = new _world.default({
           console.log('<data-receive damage for IsEnemyHeroObj >', IsEnemyHeroObj);
           const progress = Math.max(0, Math.min(1, d.hp / IsEnemyHeroObj.getHPMax()));
           IsEnemyHeroObj.heroe_bodies[0].effects.energyBar.setProgress(progress);
+          console.log('<data-receive damage IsEnemyHeroObj progress >', progress);
+          if (progress == 0) {
+            if (app.localHero.name == d.attackerName) {
+              console.log('<data-receive damage KILL by local >', d.attackerName);
+              app.localHero.killEnemy(1);
+            }
+          }
+
           //..
         } else if (IsEnemyCreepObj) {
           console.log('<data-receive damage for IsEnemyCreepObj >', IsEnemyCreepObj);
@@ -2566,6 +2611,7 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.MEMapLoader = void 0;
+var _genTex = require("../../../src/engine/effects/gen-tex2.js");
 var _gen = require("../../../src/engine/effects/gen.js");
 var _loaderObj = require("../../../src/engine/loader-obj.js");
 var _webgpuGltf = require("../../../src/engine/loaders/webgpu-gltf.js");
@@ -2742,14 +2788,7 @@ class MEMapLoader {
       },
       pointerEffect: {
         enabled: true,
-        pointer: false,
-        energyBar: true,
-        flameEffect: false,
-        flameEmitter: false,
-        circlePlane: false,
-        circlePlaneTex: false,
-        circle: true,
-        circlePlaneTexPath: './res/textures/star1.png'
+        energyBar: true
       }
     }, null, glbFile03);
     setTimeout(() => {
@@ -2770,6 +2809,18 @@ class MEMapLoader {
       app.homebase.globalAmbient = [16, 2, 1];
       app.tron = this.core.mainRenderBundle.filter(item => item.name.indexOf('tron_') != -1)[0];
       app.tron.globalAmbient = [2, 2, 2];
+
+      // this.pointerEffect.circlePlaneTexPath
+      app.tron.effects.circle = new _genTex.GenGeoTexture2(app.device, app.tron.presentationFormat, 'circle2', './res/textures/star1.png');
+      app.tron.effects.circle.rotateEffectSpeed = 0.01;
+      this.core.collisionSystem.register(`rock3`, app.tron.position, 25.0, 'rock');
+      setTimeout(() => {
+        app.tron.effects.circle.instanceTargets[0].position = [0, 6, 0];
+        app.tron.effects.circle.instanceTargets[1].position = [0, 6, 0];
+        app.tron.effects.circle.instanceTargets[0].color = [2, 0.1, 0, 0.5];
+        app.tron.effects.circle.instanceTargets[1].color = [1, 1, 1, 0.11];
+      }, 5000);
+      // circlePlaneTexPath: './res/textures/star1.png',
     }, 2000);
     this.core.lightContainer[0].position[1] = 175;
     this.core.lightContainer[0].intesity = 1;
@@ -2954,7 +3005,7 @@ class MEMapLoader {
 }
 exports.MEMapLoader = MEMapLoader;
 
-},{"../../../src/engine/effects/gen.js":38,"../../../src/engine/loader-obj.js":46,"../../../src/engine/loaders/webgpu-gltf.js":49,"../../../src/engine/utils.js":56,"./nav-mesh.js":10,"./static.js":11}],10:[function(require,module,exports){
+},{"../../../src/engine/effects/gen-tex2.js":37,"../../../src/engine/effects/gen.js":38,"../../../src/engine/loader-obj.js":46,"../../../src/engine/loaders/webgpu-gltf.js":49,"../../../src/engine/utils.js":56,"./nav-mesh.js":10,"./static.js":11}],10:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {

@@ -91,6 +91,13 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
         byId('remote-' + e.detail.connectionId).remove();
         //....
         mb.error(`Player ${e.detail.connectionId} disconnected...`);
+
+        let getPlayerMesh = JSON.parse(e.detail.event.connection.data).mesh;
+        let disPlayer = forestOfHollowBlood.getSceneObjectByName(getPlayerMesh);
+        mb.error(`Player ${e.detail.connectionId} disconnected..${disPlayer}.`);
+        // 
+        disPlayer.position.setPosition(0,20,0);
+
       }
     });
 
@@ -116,6 +123,31 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
       }
     })
 
+    addEventListener('self-msg-data', (e) => {
+
+      let d = JSON.parse(e.detail.data);
+      console.log('<data-receive self>', d);
+      if(d.type == "damage") {
+        // string
+        console.log('<data-receive damage for >', d.defenderName);
+        let IsEnemyHeroObj = forestOfHollowBlood.enemies.enemies.find((enemy) => enemy.name === d.defenderName);
+        let IsEnemyCreepObj = forestOfHollowBlood.enemies.creeps.find((creep) => creep.name === d.defenderName);
+        if(IsEnemyHeroObj) {
+          console.log('<data-receive damage for IsEnemyHeroObj >', IsEnemyHeroObj);
+          const progress = Math.max(0, Math.min(1, d.hp / IsEnemyHeroObj.getHPMax()));
+          IsEnemyHeroObj.heroe_bodies[0].effects.energyBar.setProgress(progress);
+          console.log('<data-receive damage IsEnemyHeroObj progress >', progress);
+          if(progress == 0) {
+            if(app.localHero.name == d.attackerName) {
+              console.log('<data-receive damage KILL by local >', d.attackerName);
+              app.localHero.killEnemy(1);
+            }
+          }
+
+          //..
+        }
+      }
+    })
     addEventListener('only-data-receive', (e) => {
       console.log('<data-receive>', e)
       if(e.detail.from.connectionId == app.net.session.connection.connectionId) {
@@ -131,6 +163,14 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
           console.log('<data-receive damage for IsEnemyHeroObj >', IsEnemyHeroObj);
           const progress = Math.max(0, Math.min(1, d.hp / IsEnemyHeroObj.getHPMax()));
           IsEnemyHeroObj.heroe_bodies[0].effects.energyBar.setProgress(progress);
+          console.log('<data-receive damage IsEnemyHeroObj progress >', progress);
+          if(progress == 0) {
+            if(app.localHero.name == d.attackerName) {
+              console.log('<data-receive damage KILL by local >', d.attackerName);
+              app.localHero.killEnemy(1);
+            }
+          }
+
           //..
         } else if(IsEnemyCreepObj) {
           console.log('<data-receive damage for IsEnemyCreepObj >', IsEnemyCreepObj);
