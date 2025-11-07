@@ -455,7 +455,13 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
   forestOfHollowBloodStartSceen.addLight();
 
   function createHUDMenu() {
+
+    // forestOfHollowBloodStartSceen.animatedCursor = new AnimatedCursor({
+    //   path: "",
+    //   loop: false
+    // })
     document.body.style.cursor = "url('./res/icons/default.png') 0 0, auto";
+
     document.addEventListener("contextmenu", event => event.preventDefault());
     byId('canvas1').style.pointerEvents = 'none';
 
