@@ -582,7 +582,7 @@ let forestOfHollowBloodStartSceen = new _world.default({
     a: 1
   }
 }, forestOfHollowBloodStartSceen => {
-  // let FS =  new FullscreenManager();
+  forestOfHollowBloodStartSceen.FS = new _utils.FullscreenManager();
   // window.addEventListener(() => {
   //   console.log('FS')
   //   FS.toggle();
@@ -1304,8 +1304,14 @@ let forestOfHollowBloodStartSceen = new _world.default({
         app.matrixSounds.play('hover');
       });
     });
+
+    /**
+     * @description
+     * Important moment for sys browser stuff
+     */
     function firstClick() {
       // add here after - fs force
+      // app.FS.request();
       app.matrixSounds.play('music');
       removeEventListener('click', firstClick);
     }

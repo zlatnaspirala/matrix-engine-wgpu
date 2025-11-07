@@ -1,6 +1,6 @@
 import {uploadGLBModel} from "../../../src/engine/loaders/webgpu-gltf.js";
 import {MatrixStream} from "../../../src/engine/networking/net.js";
-import {byId, isOdd, LS, SS, mb, typeText} from "../../../src/engine/utils.js";
+import {byId, isOdd, LS, SS, mb, typeText, FullscreenManager} from "../../../src/engine/utils.js";
 import MatrixEngineWGPU from "../../../src/world.js";
 import {HERO_ARCHETYPES} from "./hero.js";
 
@@ -43,7 +43,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
   clearColor: {r: 0, b: 0.1, g: 0.1, a: 1}
 }, (forestOfHollowBloodStartSceen) => {
 
-  // let FS =  new FullscreenManager();
+  forestOfHollowBloodStartSceen.FS =  new FullscreenManager();
   // window.addEventListener(() => {
   //   console.log('FS')
   //   FS.toggle();
@@ -775,8 +775,13 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
       });
     });
 
+    /**
+     * @description
+     * Important moment for sys browser stuff
+     */
     function firstClick() {
       // add here after - fs force
+      // app.FS.request();
       app.matrixSounds.play('music');
       removeEventListener('click', firstClick);
     }
