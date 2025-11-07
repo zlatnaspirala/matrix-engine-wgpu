@@ -497,7 +497,7 @@ Dimension (TextureViewDimension::e2DArray) of [TextureView of Texture "shadowTex
 ## Networking
 
 From 1.7.0 engine powered by networking. Used kurento&Openvidu server for backend.
-Very goot for handling streams, channels etc...
+Very good for handling streams, channels etc...
 
 See example code at `./examples/games/rpg/`
 
