@@ -12,6 +12,7 @@ import {MANABarEffect} from '../effects/mana-bar';
 import {FlameEffect} from '../effects/flame';
 import {FlameEmitter} from '../effects/flame-emmiter';
 import {GenGeoTexture} from '../effects/gen-tex';
+import {GenGeoTexture2} from '../effects/gen-tex2';
 
 export default class MEMeshObjInstances extends MaterialsInstanced {
   constructor(canvas, device, context, o, inputHandler, globalAmbient, _glbFile = null, primitiveIndex = null, skinnedNodeIndex = null) {
@@ -645,7 +646,7 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
         }
 
         if(typeof this.pointerEffect.circle !== 'undefined' && this.pointerEffect.circlePlaneTexPath !== 'undefined') {
-          this.effects.circle = new GenGeoTexture(device, pf, 'circle', this.pointerEffect.circlePlaneTexPath);
+          this.effects.circle = new GenGeoTexture2(device, pf, 'circle2', this.pointerEffect.circlePlaneTexPath);
         }
       }
 

@@ -8,6 +8,7 @@ export class GeometryFactory {
       case "pyramid": return GeometryFactory.pyramid(size);
       case "star": return GeometryFactory.star(size);
       case "circle": return GeometryFactory.circle(size, segments);
+      case "circle2": return GeometryFactory.circle2(size, segments);
       case "diamond": return GeometryFactory.diamond(size);
       case "rock": return GeometryFactory.rock(size, options.detail || 3);
       case "meteor": return GeometryFactory.meteor(size, options.detail || 6);
@@ -90,7 +91,7 @@ export class GeometryFactory {
     return {positions: new Float32Array(v), uvs: new Float32Array(uv), indices: new Uint16Array(ind)};
   }
 
-  static circleBACKUP(R = 1, seg = 32) {
+  static circle(R = 1, seg = 32) {
     const p = [0, 0, 0], uv = [0.5, 0.5], ind = [];
     for(let i = 0;i <= seg;i++) {
       const a = i / seg * Math.PI * 2;
@@ -101,7 +102,7 @@ export class GeometryFactory {
     return {positions: new Float32Array(p), uvs: new Float32Array(uv), indices: new Uint16Array(ind)};
   }
 
-  static circle(radius = 1, segments = 64) {
+  static circle2(radius = 1, segments = 64) {
     const positions = [0, 0, 0]; // center
     const uvs = [0.5, 0.5];      // center UV
     const indices = [];

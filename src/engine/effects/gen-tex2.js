@@ -50,53 +50,68 @@ export class GenGeoTexture2 {
 
   _initPipeline() {
     const {vertexData, uvData, indexData} = this;
-    // GPU buffers
-    this.vertexBuffer = this.device.createBuffer({
-      size: vertexData.byteLength,
-      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
-    });
-    this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
 
-    this.uvBuffer = this.device.createBuffer({
-      size: uvData.byteLength,
-      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
-    });
-    this.device.queue.writeBuffer(this.uvBuffer, 0, uvData);
+  // --- POSITION BUFFER (aligned)
+  this.vertexBuffer = this.device.createBuffer({
+    size: Math.ceil(vertexData.byteLength / 4) * 4,
+    usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
+  });
+  this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
 
-    this.indexBuffer = this.device.createBuffer({
-      size: Math.ceil(indexData.byteLength / 4) * 4,
-      usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST
-    });
+  // --- UV BUFFER (aligned)
+  this.uvBuffer = this.device.createBuffer({
+    size: Math.ceil(uvData.byteLength / 4) * 4,
+    usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
+  });
+  this.device.queue.writeBuffer(this.uvBuffer, 0, uvData);
+
+  // --- INDEX BUFFER (aligned)
+  const alignedIndexSize = Math.ceil(indexData.byteLength / 4) * 4;
+  this.indexBuffer = this.device.createBuffer({
+    size: alignedIndexSize,
+    usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST
+  });
+
+  // Create a temporary padded buffer if necessary
+  if (indexData.byteLength !== alignedIndexSize) {
+    const tmp = new Uint8Array(alignedIndexSize);
+    tmp.set(new Uint8Array(indexData.buffer));
+    this.device.queue.writeBuffer(this.indexBuffer, 0, tmp);
+  } else {
     this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
-    this.indexCount = indexData.length;
+  }
 
-    this.cameraBuffer = this.device.createBuffer({
-      size: 64,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+  this.indexCount = indexData.length;
+
+  // --- rest of your setup (no change)
+  this.cameraBuffer = this.device.createBuffer({
+    size: 64,
+    usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+  });
+
+  this.instanceTargets = [];
+  this.lerpSpeed = 0.05;
+  this.maxInstances = 5;
+  this.instanceCount = 2;
+  this.floatsPerInstance = 16 + 4;
+
+  for (let x = 0; x < this.maxInstances; x++) {
+    this.instanceTargets.push({
+      index: x,
+      position: [0, 0, 0],
+      currentPosition: [0, 0, 0],
+      scale: [1, 1, 1],
+      currentScale: [1, 1, 1],
+      color: [0.6, 0.8, 1.0, 0.4],
     });
+  }
 
-    this.instanceTargets = [];
-    this.lerpSpeed = 0.05;
-    this.maxInstances = 5;
-    this.instanceCount = 2;
-    this.floatsPerInstance = 16 + 4;
+  this.instanceData = new Float32Array(this.instanceCount * this.floatsPerInstance);
+  this.modelBuffer = this.device.createBuffer({
+    size: Math.ceil(this.instanceData.byteLength / 4) * 4,
+    usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
+  });
 
-    for(let x = 0;x < this.maxInstances;x++) {
-      this.instanceTargets.push({
-        index: x,
-        position: [0, 0, 0],
-        currentPosition: [0, 0, 0],
-        scale: [1, 1, 1],
-        currentScale: [1, 1, 1],
-        color: [0.6, 0.8, 1.0, 0.4],
-      });
-    }
-    this.instanceData = new Float32Array(this.instanceCount * this.floatsPerInstance);
-
-    this.modelBuffer = this.device.createBuffer({
-      size: this.instanceData.byteLength,
-      usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
-    });
 
     const bindGroupLayout = this.device.createBindGroupLayout({
       entries: [
