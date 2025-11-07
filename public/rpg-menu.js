@@ -895,7 +895,7 @@ let forestOfHollowBloodStartSceen = new _world.default({
       path: "res/meshes/glb/woman1.glb",
       desc: forestOfHollowBloodStartSceen.label.get.mariasword
     }, {
-      type: "Warrior",
+      type: "Ranger",
       name: 'Slayzer',
       path: "res/meshes/glb/monster.glb",
       desc: forestOfHollowBloodStartSceen.label.get.slayzer
@@ -918,7 +918,12 @@ let forestOfHollowBloodStartSceen = new _world.default({
       type: "Assassin",
       name: 'Erika',
       path: "res/meshes/glb/erika.glb",
-      desc: forestOfHollowBloodStartSceen.label.get.skeletonz
+      desc: forestOfHollowBloodStartSceen.label.get.erika
+    }, {
+      type: "Support",
+      name: 'Arrisa',
+      path: "res/meshes/glb/arissa.glb",
+      desc: forestOfHollowBloodStartSceen.label.get.arissa
     }];
     forestOfHollowBloodStartSceen.heros = heros;
 
