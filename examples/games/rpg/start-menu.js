@@ -439,9 +439,9 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
               array[i].effects.flameEmitter.smoothFlickeringScale = 0.005;
             })
           }
-          if(x == 4) {
+          if(x == 6) {
             hero0.forEach((p, i, array) => {
-              array[i].globalAmbient = [6, 6, 8];
+              array[i].globalAmbient = [9, 9, 9];
             })
           }
         }
@@ -458,8 +458,8 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
   function createHUDMenu() {
 
     forestOfHollowBloodStartSceen.animatedCursor = new AnimatedCursor({
-      path: "./res/icons/",
-      frameCount: 2,
+      path: "./res/icons/seq1/",
+      frameCount: 7,
       speed: 80,
       loop: true
     })
