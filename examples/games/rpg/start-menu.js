@@ -3,6 +3,7 @@ import {MatrixStream} from "../../../src/engine/networking/net.js";
 import {byId, isOdd, LS, SS, mb, typeText, FullscreenManager} from "../../../src/engine/utils.js";
 import MatrixEngineWGPU from "../../../src/world.js";
 import {HERO_ARCHETYPES} from "./hero.js";
+import {AnimatedCursor} from "../../../src/engine/plugin/animated-cursor/animated-cursor.js";
 
 /**
  * @name forestOfHollowBloodStartSceen
@@ -456,11 +457,15 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
 
   function createHUDMenu() {
 
-    // forestOfHollowBloodStartSceen.animatedCursor = new AnimatedCursor({
-    //   path: "",
-    //   loop: false
-    // })
-    document.body.style.cursor = "url('./res/icons/default.png') 0 0, auto";
+    forestOfHollowBloodStartSceen.animatedCursor = new AnimatedCursor({
+      path: "./res/icons/",
+      frameCount: 2,
+      speed: 80,
+      loop: true
+    })
+
+    forestOfHollowBloodStartSceen.animatedCursor.start();
+    // document.body.style.cursor = "url('./res/icons/default.png') 0 0, auto";
 
     document.addEventListener("contextmenu", event => event.preventDefault());
     byId('canvas1').style.pointerEvents = 'none';

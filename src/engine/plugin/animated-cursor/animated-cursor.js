@@ -1,4 +1,4 @@
-class AnimatedCursor {
+export class AnimatedCursor {
   constructor(options = {}) {
     this.path = options.path || './res/icons/';
     this.frameCount = options.frameCount || 8; // number of PNGs
