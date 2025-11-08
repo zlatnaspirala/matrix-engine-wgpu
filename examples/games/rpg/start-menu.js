@@ -384,7 +384,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
       {type: "Mage", name: 'Warrok', path: "res/meshes/glb/warrok.glb", desc: forestOfHollowBloodStartSceen.label.get.warrok},
       {type: "Necromancer", name: 'Skeletonz', path: "res/meshes/glb/skeletonz.glb", desc: forestOfHollowBloodStartSceen.label.get.skeletonz},
       {type: "Assassin", name: 'Erika', path: "res/meshes/glb/erika.glb", desc: forestOfHollowBloodStartSceen.label.get.erika},
-      {type: "Support", name: 'Arrisa', path: "res/meshes/glb/arissa.glb", desc: forestOfHollowBloodStartSceen.label.get.arissa},
+      {type: "Support", name: 'Arissa', path: "res/meshes/glb/arissa.glb", desc: forestOfHollowBloodStartSceen.label.get.arissa},
     ];
 
     forestOfHollowBloodStartSceen.heros = heros;

@@ -1553,6 +1553,22 @@ let forestOfHollowBlood = new _world.default({
     forestOfHollowBlood.mapLoader = new _mapLoader.MEMapLoader(forestOfHollowBlood, "./res/meshes/nav-mesh/navmesh.json");
     // fix arg later!
     forestOfHollowBlood.localHero = new _characterBase.Character(forestOfHollowBlood, forestOfHollowBlood.player.data.path, forestOfHollowBlood.player.data.hero, [forestOfHollowBlood.player.data.archetypes]);
+
+    // const inv = new Inventory(hero);
+
+    // inv.addItem("ring of strength", {
+    //   effects: {attack: 1.1} // +10% attack
+    // });
+
+    // inv.addItem("mana amulet", {
+    //   effects: {mana: 1.25} // +25% mana
+    // });
+
+    // setTimeout(() => {
+    //   inv.removeItem("ring of strength");
+    //   inv.debugPrint();
+    // }, 5000);
+
     forestOfHollowBlood.HUD = new _hud.HUD(forestOfHollowBlood.localHero);
     forestOfHollowBlood.collisionSystem = new _collisionSubSystem.CollisionSystem(forestOfHollowBlood);
     app.matrixSounds.play('music');

@@ -928,7 +928,7 @@ let forestOfHollowBloodStartSceen = new _world.default({
       desc: forestOfHollowBloodStartSceen.label.get.erika
     }, {
       type: "Support",
-      name: 'Arrisa',
+      name: 'Arissa',
       path: "res/meshes/glb/arissa.glb",
       desc: forestOfHollowBloodStartSceen.label.get.arissa
     }];

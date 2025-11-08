@@ -244,6 +244,22 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
       forestOfHollowBlood, forestOfHollowBlood.player.data.path,
       forestOfHollowBlood.player.data.hero, [forestOfHollowBlood.player.data.archetypes]);
 
+
+    // const inv = new Inventory(hero);
+
+    // inv.addItem("ring of strength", {
+    //   effects: {attack: 1.1} // +10% attack
+    // });
+
+    // inv.addItem("mana amulet", {
+    //   effects: {mana: 1.25} // +25% mana
+    // });
+
+    // setTimeout(() => {
+    //   inv.removeItem("ring of strength");
+    //   inv.debugPrint();
+    // }, 5000);
+
     forestOfHollowBlood.HUD = new HUD(forestOfHollowBlood.localHero);
 
     forestOfHollowBlood.collisionSystem = new CollisionSystem(forestOfHollowBlood);
