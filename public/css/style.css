@@ -388,7 +388,7 @@ p {
   user-select: none;
   /* Standard syntax */
   background: rgb(2, 0, 36);
-  background: radial-gradient(circle, rgba(2, 0, 36, 1) 0%, rgba(9, 81, 121, 0.8463760504201681) 34%, rgba(0, 212, 255, 1) 100%);
+  /* background: radial-gradient(circle, rgba(2, 0, 36, 1) 0%, rgba(9, 81, 121, 0.8463760504201681) 34%, rgba(0, 212, 255, 1) 100%); */
 }
 
 .msg-box {
@@ -444,7 +444,7 @@ p {
   -webkit-text-stroke-width: 1px;
   -webkit-text-stroke-color: black;
 
-  background: linear-gradient(270deg, #ff0270, #02c5ff);
+  background: linear-gradient(270deg, #8e8e8e, #65757a);
   background-size: 50% 50%;
 
   -webkit-animation: AnimationName 2s ease infinite;
