@@ -94,7 +94,7 @@ export const HERO_ARCHETYPES = {
     hpRegenMult: 1.0,
     manaRegenMult: 1.0
   },
-
+  // special for creeps
   creep: {
     hpMult: 0.6,
     manaMult: 1,

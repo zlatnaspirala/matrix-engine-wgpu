@@ -103,6 +103,7 @@ const HERO_ARCHETYPES = exports.HERO_ARCHETYPES = {
     hpRegenMult: 1.0,
     manaRegenMult: 1.0
   },
+  // special for creeps
   creep: {
     hpMult: 0.6,
     manaMult: 1,
@@ -626,16 +627,13 @@ let forestOfHollowBloodStartSceen = new _world.default({
     return name;
   }
   function checkHeroStatus() {
-    // app.net.session.remoteConnections.forEach((remoteConn) => {
-    //   console.log(" test remote conn ", remoteConn.connectionId)
-    // });
     let isUsed = false;
     document.querySelectorAll('[data-hero-index]').forEach(elem => {
       let index = parseInt(elem.getAttribute('data-hero-index'));
       console.log(app.selectedHero, ' app.selectedHero VS Index:', index);
       if (index == app.selectedHero) {
         isUsed = true;
-        console.log('Hero element: Index: TRUE !!!!!', index);
+        console.log('Hero element: used ...', index);
       }
     });
     return isUsed;
@@ -743,7 +741,7 @@ let forestOfHollowBloodStartSceen = new _world.default({
       console.log('check-gameplay-channel [url] ', info.url);
       (0, _utils.byId)("onlineUsers").innerHTML = `GamePlay:Free`;
       forestOfHollowBloodStartSceen.gamePlayStatus = "free";
-      (0, _utils.byId)('startBtnText').innerHTML = app.label.get.waiting_for_others;
+      (0, _utils.byId)('startBtnText').innerHTML = app.label.get.play;
       (0, _utils.byId)("startBtnText").style.color = 'rgba(0, 0, 0, 0)';
       clearInterval(forestOfHollowBloodStartSceen.gamePlayStatusTimer);
       forestOfHollowBloodStartSceen.gamePlayStatusTimer = null;
@@ -838,13 +836,11 @@ let forestOfHollowBloodStartSceen = new _world.default({
             selectHeroIndex: app.selectedHero,
             team: testDom
           });
+          app.net.sendOnlyData({
+            type: "team-notify",
+            team: team
+          });
         }
-        //----------
-
-        app.net.sendOnlyData({
-          type: "team-notify",
-          team: team
-        });
       }, 2000);
     } else {
       newPlayer.innerHTML = `<div id="${e.detail.connection.connectionId}-title" >Player:${e.detail.connection.connectionId}</div>`;
@@ -1194,6 +1190,7 @@ let forestOfHollowBloodStartSceen = new _world.default({
         </div>
       </div>
     `;
+    forestOfHollowBloodStartSceen.notifyHeroSelectionTimer = null;
     startBtn.addEventListener('click', e => {
       if (app.net.connection == null) {
         if (forestOfHollowBloodStartSceen.gamePlayStatus != "free") {
@@ -1205,6 +1202,13 @@ let forestOfHollowBloodStartSceen = new _world.default({
         (0, _utils.byId)("startBtnText").innerHTML = app.label.get.waiting_for_others;
         e.target.disabled = true;
         app.matrixSounds.play('feel');
+
+        // test - for late users notify again 
+        app.notifyHeroSelectionTimer = setInterval(() => {
+          // not tested
+          console.log('determinateSelection called !!!!');
+          determinateSelection();
+        }, 10000);
         return;
       } else {
         console.log('nothing...', app.selectedHero);

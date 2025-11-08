@@ -92,16 +92,13 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
   }
 
   function checkHeroStatus() {
-    // app.net.session.remoteConnections.forEach((remoteConn) => {
-    //   console.log(" test remote conn ", remoteConn.connectionId)
-    // });
     let isUsed = false;
     document.querySelectorAll('[data-hero-index]').forEach((elem) => {
       let index = parseInt(elem.getAttribute('data-hero-index'));
       console.log(app.selectedHero, ' app.selectedHero VS Index:', index);
       if(index == app.selectedHero) {
         isUsed = true;
-        console.log('Hero element: Index: TRUE !!!!!', index);
+        console.log('Hero element: used ...', index);
       }
     });
     return isUsed;
@@ -219,7 +216,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
       console.log('check-gameplay-channel [url] ', info.url)
       byId("onlineUsers").innerHTML = `GamePlay:Free`;
       forestOfHollowBloodStartSceen.gamePlayStatus = "free";
-      byId('startBtnText').innerHTML = app.label.get.waiting_for_others;
+      byId('startBtnText').innerHTML = app.label.get.play;
       byId("startBtnText").style.color = 'rgba(0, 0, 0, 0)';
       clearInterval(forestOfHollowBloodStartSceen.gamePlayStatusTimer);
       forestOfHollowBloodStartSceen.gamePlayStatusTimer = null;
@@ -322,10 +319,8 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
             selectHeroIndex: app.selectedHero,
             team: testDom
           });
+          app.net.sendOnlyData({type: "team-notify", team: team})
         }
-        //----------
-
-        app.net.sendOnlyData({type: "team-notify", team: team})
       }, 2000);
     } else {
       newPlayer.innerHTML = `<div id="${e.detail.connection.connectionId}-title" >Player:${e.detail.connection.connectionId}</div>`;
@@ -662,6 +657,10 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
         </div>
       </div>
     `;
+
+
+    forestOfHollowBloodStartSceen.notifyHeroSelectionTimer = null;
+
     startBtn.addEventListener('click', (e) => {
       if(app.net.connection == null) {
         if(forestOfHollowBloodStartSceen.gamePlayStatus != "free") {
@@ -673,6 +672,14 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
         byId("startBtnText").innerHTML = app.label.get.waiting_for_others;
         e.target.disabled = true;
         app.matrixSounds.play('feel');
+
+        // test - for late users notify again 
+        app.notifyHeroSelectionTimer = setInterval(() => {
+          // not tested
+          console.log('determinateSelection called !!!!')
+           determinateSelection();
+        },10000);
+
         return;
       } else {
         console.log('nothing...', app.selectedHero)

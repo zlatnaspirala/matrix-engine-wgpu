@@ -110,6 +110,8 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
         byId('matrix-net').appendChild(newPlayer);
         document.title = forestOfHollowBlood.label.get.titleBan;
       } else {
+        //--------------------------------------------------------
+        // 
         let newPlayer = document.createElement('div');
         newPlayer.innerHTML = `remote Player: ${e.detail.connection.connectionId}`;
         newPlayer.id = `remote-${e.detail.connection.connectionId}`;
@@ -119,7 +121,7 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
           forestOfHollowBlood.net.virtualEmiter = e.detail.connection.connectionId;
         }
         let d = JSON.parse(e.detail.connection.data)
-        console.log('testCustomData[newconn]', d);
+        console.log(' [][][][][newconn] ', d);
         forestOfHollowBlood.enemies.loadEnemyHero(d);
       }
     })
