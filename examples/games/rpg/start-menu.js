@@ -4,6 +4,7 @@ import {byId, isOdd, LS, SS, mb, typeText, FullscreenManager} from "../../../src
 import MatrixEngineWGPU from "../../../src/world.js";
 import {HERO_ARCHETYPES} from "./hero.js";
 import {AnimatedCursor} from "../../../src/engine/plugin/animated-cursor/animated-cursor.js";
+import {fetchAll, fetchInfo} from "../../../src/engine/networking/matrix-stream.js";
 
 /**
  * @name forestOfHollowBloodStartSceen
@@ -45,11 +46,10 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
 }, (forestOfHollowBloodStartSceen) => {
 
   forestOfHollowBloodStartSceen.FS = new FullscreenManager();
-  // window.addEventListener(() => {
-  //   console.log('FS')
-  //   FS.toggle();
-  // })
 
+  forestOfHollowBloodStartSceen.gamePlayStatus = null;
+  // in future replace with server event solution
+  forestOfHollowBloodStartSceen.gamePlayStatusTimer = null;
 
   forestOfHollowBloodStartSceen.heroByBody = [];
   forestOfHollowBloodStartSceen.selectedHero = 0;
@@ -218,10 +218,21 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
       console.log('check-gameplay-channel ', info.status)
       console.log('check-gameplay-channel [url] ', info.url)
       byId("onlineUsers").innerHTML = `GamePlay:Free`;
+      forestOfHollowBloodStartSceen.gamePlayStatus = "free";
+      byId('startBtnText').innerHTML = app.label.get.waiting_for_others;
+      byId("startBtnText").style.color = 'rgba(0, 0, 0, 0)';
+      clearInterval(forestOfHollowBloodStartSceen.gamePlayStatusTimer);
+      forestOfHollowBloodStartSceen.gamePlayStatusTimer = null;
     } else {
       let info = JSON.parse(e.detail);
       console.log('check-gameplay-channel ', info.connections.numberOfElements)
-      byId("onlineUsers").innerHTML = `GamePlay:${info.connections.numberOfElements}`;
+      byId("onlineUsers").innerHTML = `${app.label.get.alreadyingame}:${info.connections.numberOfElements}`;
+      forestOfHollowBloodStartSceen.gamePlayStatus = "used";
+      byId('startBtnText').innerHTML = `${app.label.get.gameplaychannel}:${app.label.get.used}`;
+      byId("startBtnText").style.color = 'rgb(255 53 53)';
+      forestOfHollowBloodStartSceen.gamePlayStatusTimer = setInterval(() => {
+        app.net.fetchInfo('forestOfHollowBlood-free-for-all');
+      }, 30000);
     }
   })
 
@@ -653,6 +664,10 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
     `;
     startBtn.addEventListener('click', (e) => {
       if(app.net.connection == null) {
+        if(forestOfHollowBloodStartSceen.gamePlayStatus != "free") {
+          mb.show(app.label.get.gameplayused);
+          return;
+        }
         // console.log('app.net.connection is null let join gameplay sesion... Wait list.', app.selectedHero)
         byId('join-btn').click();
         byId("startBtnText").innerHTML = app.label.get.waiting_for_others;

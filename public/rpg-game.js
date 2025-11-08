@@ -1419,11 +1419,11 @@ let forestOfHollowBlood = new _world.default({
         (0, _matrixStream.byId)('remote-' + e.detail.connectionId).remove();
         //....
         _utils.mb.error(`Player ${e.detail.connectionId} disconnected...`);
-        let getPlayerMesh = JSON.parse(e.detail.event.connection.data).mesh;
-        let disPlayer = forestOfHollowBlood.getSceneObjectByName(getPlayerMesh);
+        let getPlayer = JSON.parse(e.detail.event.connection.data);
+        let disPlayer = forestOfHollowBlood.getSceneObjectByName(getPlayer.mesh);
         _utils.mb.error(`Player ${e.detail.connectionId} disconnected..${disPlayer}.`);
-        // 
-        disPlayer.position.setPosition(0, 20, 0);
+        // back to base for now
+        disPlayer.position.setPosition(_static.startUpPositions[getPlayer.team][0], _static.startUpPositions[getPlayer.team][1], _static.startUpPositions[getPlayer.team][2]);
       }
     });
     addEventListener("onConnectionCreated", e => {

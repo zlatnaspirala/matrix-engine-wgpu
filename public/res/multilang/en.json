@@ -43,6 +43,9 @@
   "about_": "About",
   "next": "Next",
   "back": "Back",
+  "used": "used",
+  "gameplaychannel":"gameplay channel",
+  "alreadyingame": "Already in game:",
   "waiting_for_others": "Waiting for others...",
   "titleBan":"✭Ban 🟢🟢🟢",
   "aboutRPG": "Forest Of Hollow Blood Made in MatrixEngineWGPU webGPU engine. Open source part can be found in engine repo <a href='https://github.com/zlatnaspirala/matrix-engine-wgpu'> @zlatnaspirala Github.com </a>. Music by Mykola Sosin from Pixabay Characters used from great mixamo.com -✅What you can do You can use Mixamo characters and animations royalty-free in commercial, personal, or non‑profit projects (games, films, prints, etc.).You own your creations / how you use them.No requirement to credit Adobe / Mixamo (though allowed). -🚫What you cannot do You cannot redistribute or sell the raw Mixamo character or animation files “as is” (i.e. as standalone assets) to others.You can’t use Mixamo content to create a competing library of characters / animations (i.e. you can’t just package them and sell them to others). You can’t use Mixamo’s content (or outputs) to train AI / machine learning models. Used free assets from great https://craftpix.net Magic icons : https://craftpix.net/freebies/free-rpg-splash-game-512x512-icons/ For background music in rpg template used: Music by Dvir Silverstone from Pixabay Sound Effect by Crunchpix Studio from Pixabay Music by Emmraan from Pixabay . Logo includes the official WebGPU logo. WebGPU logo by W3C Licensed under Creative Commons Attribution 4.0 .   'Ruined rock fence' (https://skfb.ly/6RLwN) by VladNeko is licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/).",
@@ -52,5 +55,7 @@
   "warrok": "Warrok — a fierce brute forged in battle, wielding raw strength and unbreakable will.",
   "skeletonz": "Skeletonz — a restless warrior of bone and shadow, risen again to fight without fear.",
   "erika": "Erika moves like a shadow: quiet, precise and watchful. She carries one dark arrow — simple, deadly and personal.",
-  "arissa": "Arissa hides her power behind calm eyes and empty hands. No blade or staff—only the swirling dark orbs she conjures when the fight begins."
+  "arissa": "Arissa hides her power behind calm eyes and empty hands. No blade or staff—only the swirling dark orbs she conjures when the fight begins.",
+
+  "gameplayused":"Forest Of Hollow Blood for now have only one channel for gameplay. Please wait for current party end..."
 }

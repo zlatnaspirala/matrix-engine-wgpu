@@ -538,6 +538,7 @@ var _utils = require("../../../src/engine/utils.js");
 var _world = _interopRequireDefault(require("../../../src/world.js"));
 var _hero = require("./hero.js");
 var _animatedCursor = require("../../../src/engine/plugin/animated-cursor/animated-cursor.js");
+var _matrixStream = require("../../../src/engine/networking/matrix-stream.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 /**
  * @name forestOfHollowBloodStartSceen
@@ -584,11 +585,9 @@ let forestOfHollowBloodStartSceen = new _world.default({
   }
 }, forestOfHollowBloodStartSceen => {
   forestOfHollowBloodStartSceen.FS = new _utils.FullscreenManager();
-  // window.addEventListener(() => {
-  //   console.log('FS')
-  //   FS.toggle();
-  // })
-
+  forestOfHollowBloodStartSceen.gamePlayStatus = null;
+  // in future replace with server event solution
+  forestOfHollowBloodStartSceen.gamePlayStatusTimer = null;
   forestOfHollowBloodStartSceen.heroByBody = [];
   forestOfHollowBloodStartSceen.selectedHero = 0;
   forestOfHollowBloodStartSceen.lock = false;
@@ -743,10 +742,21 @@ let forestOfHollowBloodStartSceen = new _world.default({
       console.log('check-gameplay-channel ', info.status);
       console.log('check-gameplay-channel [url] ', info.url);
       (0, _utils.byId)("onlineUsers").innerHTML = `GamePlay:Free`;
+      forestOfHollowBloodStartSceen.gamePlayStatus = "free";
+      (0, _utils.byId)('startBtnText').innerHTML = app.label.get.waiting_for_others;
+      (0, _utils.byId)("startBtnText").style.color = 'rgba(0, 0, 0, 0)';
+      clearInterval(forestOfHollowBloodStartSceen.gamePlayStatusTimer);
+      forestOfHollowBloodStartSceen.gamePlayStatusTimer = null;
     } else {
       let info = JSON.parse(e.detail);
       console.log('check-gameplay-channel ', info.connections.numberOfElements);
-      (0, _utils.byId)("onlineUsers").innerHTML = `GamePlay:${info.connections.numberOfElements}`;
+      (0, _utils.byId)("onlineUsers").innerHTML = `${app.label.get.alreadyingame}:${info.connections.numberOfElements}`;
+      forestOfHollowBloodStartSceen.gamePlayStatus = "used";
+      (0, _utils.byId)('startBtnText').innerHTML = `${app.label.get.gameplaychannel}:${app.label.get.used}`;
+      (0, _utils.byId)("startBtnText").style.color = 'rgb(255 53 53)';
+      forestOfHollowBloodStartSceen.gamePlayStatusTimer = setInterval(() => {
+        app.net.fetchInfo('forestOfHollowBlood-free-for-all');
+      }, 30000);
     }
   });
   forestOfHollowBloodStartSceen.MINIMUM_PLAYERS = 2;
@@ -1186,6 +1196,10 @@ let forestOfHollowBloodStartSceen = new _world.default({
     `;
     startBtn.addEventListener('click', e => {
       if (app.net.connection == null) {
+        if (forestOfHollowBloodStartSceen.gamePlayStatus != "free") {
+          _utils.mb.show(app.label.get.gameplayused);
+          return;
+        }
         // console.log('app.net.connection is null let join gameplay sesion... Wait list.', app.selectedHero)
         (0, _utils.byId)('join-btn').click();
         (0, _utils.byId)("startBtnText").innerHTML = app.label.get.waiting_for_others;
@@ -1330,7 +1344,7 @@ let forestOfHollowBloodStartSceen = new _world.default({
 });
 window.app = forestOfHollowBloodStartSceen;
 
-},{"../../../src/engine/loaders/webgpu-gltf.js":37,"../../../src/engine/networking/net.js":42,"../../../src/engine/plugin/animated-cursor/animated-cursor.js":43,"../../../src/engine/utils.js":44,"../../../src/world.js":67,"./hero.js":1}],3:[function(require,module,exports){
+},{"../../../src/engine/loaders/webgpu-gltf.js":37,"../../../src/engine/networking/matrix-stream.js":41,"../../../src/engine/networking/net.js":42,"../../../src/engine/plugin/animated-cursor/animated-cursor.js":43,"../../../src/engine/utils.js":44,"../../../src/world.js":67,"./hero.js":1}],3:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {

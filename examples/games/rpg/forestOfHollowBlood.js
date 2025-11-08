@@ -91,13 +91,14 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
         byId('remote-' + e.detail.connectionId).remove();
         //....
         mb.error(`Player ${e.detail.connectionId} disconnected...`);
-
-        let getPlayerMesh = JSON.parse(e.detail.event.connection.data).mesh;
-        let disPlayer = forestOfHollowBlood.getSceneObjectByName(getPlayerMesh);
+        let getPlayer = JSON.parse(e.detail.event.connection.data);
+        let disPlayer = forestOfHollowBlood.getSceneObjectByName(getPlayer.mesh);
         mb.error(`Player ${e.detail.connectionId} disconnected..${disPlayer}.`);
-        // 
-        disPlayer.position.setPosition(0,20,0);
-
+        // back to base for now
+        disPlayer.position.setPosition(
+          startUpPositions[getPlayer.team][0],
+          startUpPositions[getPlayer.team][1],
+          startUpPositions[getPlayer.team][2]);
       }
     });
 
