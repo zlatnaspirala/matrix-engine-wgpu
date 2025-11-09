@@ -582,7 +582,7 @@ class Character extends _hero.Hero {
 }
 exports.Character = Character;
 
-},{"../../../src/engine/loaders/webgpu-gltf":49,"../../../src/engine/utils":56,"./creep-character":3,"./hero":7,"./nav-mesh":10,"./static":11,"wgpu-matrix":28}],2:[function(require,module,exports){
+},{"../../../src/engine/loaders/webgpu-gltf":50,"../../../src/engine/utils":57,"./creep-character":3,"./hero":7,"./nav-mesh":11,"./static":12,"wgpu-matrix":29}],2:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -862,7 +862,7 @@ class Controller {
 }
 exports.Controller = Controller;
 
-},{"../../../src/engine/raycast.js":55,"../../../src/engine/utils.js":56,"./nav-mesh.js":10,"wgpu-matrix":28}],3:[function(require,module,exports){
+},{"../../../src/engine/raycast.js":56,"../../../src/engine/utils.js":57,"./nav-mesh.js":11,"wgpu-matrix":29}],3:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -1101,7 +1101,7 @@ class Creep extends _hero.Hero {
 }
 exports.Creep = Creep;
 
-},{"../../../src/engine/loaders/webgpu-gltf":49,"../../../src/engine/utils":56,"./hero":7,"./static":11}],4:[function(require,module,exports){
+},{"../../../src/engine/loaders/webgpu-gltf":50,"../../../src/engine/utils":57,"./hero":7,"./static":12}],4:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -1328,7 +1328,7 @@ class Enemie extends _hero.Hero {
 }
 exports.Enemie = Enemie;
 
-},{"../../../src/engine/loaders/webgpu-gltf":49,"../../../src/engine/utils":56,"./hero":7,"./nav-mesh":10,"./static":11}],6:[function(require,module,exports){
+},{"../../../src/engine/loaders/webgpu-gltf":50,"../../../src/engine/utils":57,"./hero":7,"./nav-mesh":11,"./static":12}],6:[function(require,module,exports){
 "use strict";
 
 var _world = _interopRequireDefault(require("../../../src/world.js"));
@@ -1343,6 +1343,7 @@ var _net = require("../../../src/engine/networking/net.js");
 var _matrixStream = require("../../../src/engine/networking/matrix-stream.js");
 var _static = require("./static.js");
 var _tts = require("./tts.js");
+var _marketplace = require("./marketplace.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 /**
  * @description
@@ -1553,6 +1554,7 @@ let forestOfHollowBlood = new _world.default({
     forestOfHollowBlood.mapLoader = new _mapLoader.MEMapLoader(forestOfHollowBlood, "./res/meshes/nav-mesh/navmesh.json");
     // fix arg later!
     forestOfHollowBlood.localHero = new _characterBase.Character(forestOfHollowBlood, forestOfHollowBlood.player.data.path, forestOfHollowBlood.player.data.hero, [forestOfHollowBlood.player.data.archetypes]);
+    forestOfHollowBlood.marketPlace = new _marketplace.Marketplace();
 
     // const inv = new Inventory(hero);
 
@@ -1577,7 +1579,7 @@ let forestOfHollowBlood = new _world.default({
 });
 window.app = forestOfHollowBlood;
 
-},{"../../../src/engine/collision-sub-system.js":31,"../../../src/engine/networking/matrix-stream.js":53,"../../../src/engine/networking/net.js":54,"../../../src/engine/utils.js":56,"../../../src/world.js":79,"./character-base.js":1,"./controller.js":2,"./enemies-manager.js":4,"./hud.js":8,"./map-loader.js":9,"./static.js":11,"./tts.js":12}],7:[function(require,module,exports){
+},{"../../../src/engine/collision-sub-system.js":32,"../../../src/engine/networking/matrix-stream.js":54,"../../../src/engine/networking/net.js":55,"../../../src/engine/utils.js":57,"../../../src/world.js":80,"./character-base.js":1,"./controller.js":2,"./enemies-manager.js":4,"./hud.js":8,"./map-loader.js":9,"./marketplace.js":10,"./static.js":12,"./tts.js":13}],7:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -2623,7 +2625,7 @@ class HUD {
 }
 exports.HUD = HUD;
 
-},{"../../../src/engine/utils.js":56}],9:[function(require,module,exports){
+},{"../../../src/engine/utils.js":57}],9:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -3024,7 +3026,556 @@ class MEMapLoader {
 }
 exports.MEMapLoader = MEMapLoader;
 
-},{"../../../src/engine/effects/gen-tex2.js":37,"../../../src/engine/effects/gen.js":38,"../../../src/engine/loader-obj.js":46,"../../../src/engine/loaders/webgpu-gltf.js":49,"../../../src/engine/utils.js":56,"./nav-mesh.js":10,"./static.js":11}],10:[function(require,module,exports){
+},{"../../../src/engine/effects/gen-tex2.js":38,"../../../src/engine/effects/gen.js":39,"../../../src/engine/loader-obj.js":47,"../../../src/engine/loaders/webgpu-gltf.js":50,"../../../src/engine/utils.js":57,"./nav-mesh.js":11,"./static.js":12}],10:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.Marketplace = void 0;
+class Marketplace {
+  constructor() {
+    this.items = this._generateItems();
+    this.createHud();
+  }
+  createHud() {
+    var box = document.createElement('div');
+    box.id = 'marketplace';
+    box.style.position = 'fixed';
+    box.style.right = '0';
+    box.style.display = 'flex';
+    box.style.flexDirection = 'row';
+    box.style.flexWrap = 'wrap';
+    box.style.zIndex = '2';
+    box.style.top = '0';
+    box.style.width = '70%';
+    box.style.height = '80%';
+    box.style.fontSize = '50%';
+    box.style.paddingLeft = `30px`;
+    box.classList.add('btn');
+    box.classList.add('btn3');
+    var boxRightTitleBar = document.createElement('div');
+    boxRightTitleBar.id = 'marketplace-boxRightTitleBar';
+    boxRightTitleBar.style.position = 'absolute';
+    boxRightTitleBar.style.left = '0';
+    boxRightTitleBar.style.width = '50px';
+    boxRightTitleBar.style.fontSize = '20px';
+    boxRightTitleBar.style.height = '-webkit-fill-available';
+    boxRightTitleBar.style.marginLeft = `-30px`;
+    boxRightTitleBar.innerHTML = 'Invertory';
+    boxRightTitleBar.classList.add('vertical-text');
+    box.appendChild(boxRightTitleBar);
+    box.addEventListener('click', e => {
+      if (box.classList.contains('show-by-right')) {
+        box.classList.remove('show-by-right');
+        box.classList.add('hide-by-right');
+      } else {
+        box.classList.add('show-by-right');
+        box.classList.remove('hide-by-right');
+      }
+      console.log("*********");
+    });
+    this.items.forEach(i => {
+      var itemDOM = document.createElement('div');
+      itemDOM.innerHTML = `
+        <div style="width:100px;">
+          <img class="invertoryItem" src='${i.path}' /> 
+          <div>name: ${i.name} price: ${i.price} ${i.description}</div>
+        </div>`;
+      itemDOM.addEventListener('click', e => {
+        console.log("*********");
+      });
+      box.appendChild(itemDOM);
+    });
+    document.body.appendChild(box);
+  }
+
+  // --- Player buys an item if it’s purchasable
+  buy(hero, itemName) {
+    const item = this.items.find(i => i.name === itemName);
+    if (!item) return console.warn("Item not found in market!");
+    if (item.level > 1) return console.warn("Only level 1 items can be bought!");
+    if (hero.gold < item.price) return console.warn("Not enough gold!");
+    hero.gold -= item.price;
+    hero.inventory.addItem(item.name, {
+      effects: item.effects
+    });
+    console.log(`💰 ${hero.name} bought ${item.name} for ${item.price} gold.`);
+  }
+
+  // --- Sell item for half price
+  sell(hero, itemName) {
+    const item = this.items.find(i => i.name === itemName);
+    if (!item) return console.warn("Item not found in market!");
+    hero.gold += Math.floor(item.price / 2);
+    hero.inventory.removeItem(itemName);
+    console.log(`📦 ${hero.name} sold ${item.name} for ${Math.floor(item.price / 2)} gold.`);
+  }
+
+  // --- Print shop table
+  showMarket() {
+    console.table(this.items.map(i => ({
+      Name: i.name,
+      Level: i.level,
+      Price: i.price,
+      Description: i.description
+    })));
+  }
+
+  // --- All items database
+  _generateItems() {
+    return [
+    // LEVEL 1 — BASIC ITEMS (30)
+    {
+      name: "Gladius Ignis",
+      level: 1,
+      price: 120,
+      effects: {
+        attack: 1.1
+      },
+      description: "A forged sword imbued with faint fire energy.",
+      path: "./res/textures/rpg/invertory/aether-fortis.png"
+    }, {
+      name: "Aqua Orbis",
+      level: 1,
+      price: 110,
+      effects: {
+        mana: 1.15
+      },
+      description: "A small orb that resonates with water spirits.",
+      path: "./res/textures/rpg/invertory/aether-fortis.png"
+    }, {
+      name: "Terra Clavis",
+      level: 1,
+      price: 90,
+      effects: {
+        hp: 1.05
+      },
+      description: "An ancient stone amulet of endurance.",
+      path: "./res/textures/rpg/invertory/aether-fortis.png"
+    }, {
+      name: "Ventus Pluma",
+      level: 1,
+      price: 100,
+      effects: {
+        speed: 1.1
+      },
+      description: "A feather of the northern wind.",
+      path: "./res/textures/rpg/invertory/aether-fortis.png"
+    }, {
+      name: "Ferrum Anulus",
+      level: 1,
+      price: 80,
+      effects: {
+        defense: 1.1
+      },
+      description: "A simple iron ring engraved with runes.",
+      path: "./res/textures/rpg/invertory/aether-fortis.png"
+    }, {
+      name: "Luna Gemma",
+      level: 1,
+      price: 130,
+      effects: {
+        mana: 1.2
+      },
+      description: "A moonlit gem that glows in the dark.",
+      path: "./res/textures/rpg/invertory/aether-fortis.png"
+    }, {
+      name: "Sol Corona",
+      level: 1,
+      price: 140,
+      effects: {
+        attack: 1.15
+      },
+      description: "A golden emblem of the solar knights.",
+      path: "./res/textures/rpg/invertory/aether-fortis.png"
+    }, {
+      name: "Umbra Vellum",
+      level: 1,
+      price: 95,
+      effects: {
+        stealth: 1.2
+      },
+      description: "A dark fabric that absorbs light.",
+      path: "./res/textures/rpg/invertory/aether-fortis.png"
+    }, {
+      name: "Vita Flos",
+      level: 1,
+      price: 85,
+      effects: {
+        hp: 1.1
+      },
+      description: "A rare flower symbolizing life and rebirth.",
+      path: "./res/textures/rpg/invertory/aether-fortis.png"
+    }, {
+      name: "Glacies Sigil",
+      level: 1,
+      price: 100,
+      effects: {
+        defense: 1.15
+      },
+      description: "A sigil of frozen power.",
+      path: "./res/textures/rpg/invertory/aether-fortis.png"
+    }, {
+      name: "Ignis Scutum",
+      level: 1,
+      price: 120,
+      effects: {
+        defense: 1.2
+      },
+      description: "A small fire-warding shield.",
+      path: "./res/textures/rpg/invertory/aether-fortis.png"
+    }, {
+      name: "Sanguis Orb",
+      level: 1,
+      price: 130,
+      effects: {
+        hp: 1.15
+      },
+      description: "A pulsating orb of crimson light.",
+      path: "./res/textures/rpg/invertory/aether-fortis.png"
+    }, {
+      name: "Arbor Blade",
+      level: 1,
+      price: 90,
+      effects: {
+        attack: 1.08
+      },
+      description: "A wooden blade carved from the elder tree.",
+      path: "./res/textures/rpg/invertory/aether-fortis.png"
+    }, {
+      name: "Mare Pearl",
+      level: 1,
+      price: 150,
+      effects: {
+        mana: 1.3
+      },
+      description: "A rare pearl blessed by sea spirits.",
+      path: "./res/textures/rpg/invertory/aether-fortis.png"
+    }, {
+      name: "Vox Chime",
+      level: 1,
+      price: 70,
+      effects: {
+        speed: 1.05
+      },
+      description: "A charm that hums with sound magic.",
+      path: "./res/textures/rpg/invertory/aether-fortis.png"
+    }, {
+      name: "Tenebris Fang",
+      level: 1,
+      price: 110,
+      effects: {
+        attack: 1.12
+      },
+      description: "A dark fang of unknown beast origin.",
+      path: "./res/textures/rpg/invertory/aether-fortis.png"
+    }, {
+      name: "Lux Feather",
+      level: 1,
+      price: 100,
+      effects: {
+        mana: 1.1
+      },
+      description: "A radiant feather from a holy bird.",
+      path: "./res/textures/rpg/invertory/aether-fortis.png"
+    }, {
+      name: "Fulgur Stone",
+      level: 1,
+      price: 95,
+      effects: {
+        attack: 1.1
+      },
+      description: "A crackling shard of lightning essence.",
+      path: "./res/textures/rpg/invertory/aether-fortis.png"
+    }, {
+      name: "Silva Heart",
+      level: 1,
+      price: 80,
+      effects: {
+        hp: 1.07
+      },
+      description: "A seed pulsing with natural energy.",
+      path: "./res/textures/rpg/invertory/aether-fortis.png"
+    }, {
+      name: "Noctis Band",
+      level: 1,
+      price: 120,
+      effects: {
+        stealth: 1.3
+      },
+      description: "A ring that vanishes under moonlight.",
+      path: "./res/textures/rpg/invertory/aether-fortis.png"
+    }, {
+      name: "Rosa Thorn",
+      level: 1,
+      price: 100,
+      effects: {
+        attack: 1.05,
+        hp: 1.05
+      },
+      description: "A rose stem hardened into a piercing thorn.",
+      path: "./res/textures/rpg/invertory/aether-fortis.png"
+    }, {
+      name: "Caelum Dust",
+      level: 1,
+      price: 110,
+      effects: {
+        mana: 1.1,
+        speed: 1.05
+      },
+      description: "Sky dust collected from high-altitude clouds.",
+      path: "./res/textures/rpg/invertory/aether-fortis.png"
+    }, {
+      name: "Ignifur Cape",
+      level: 1,
+      price: 125,
+      effects: {
+        defense: 1.1,
+        attack: 1.05
+      },
+      description: "A cape woven with fire-resistant fur.",
+      path: "./res/textures/rpg/invertory/aether-fortis.png"
+    }, {
+      name: "Gelum Pendant",
+      level: 1,
+      price: 95,
+      effects: {
+        defense: 1.1
+      },
+      description: "Pendant of icy serenity.",
+      path: "./res/textures/rpg/invertory/aether-fortis.png"
+    }, {
+      name: "Mortis Bone",
+      level: 1,
+      price: 140,
+      effects: {
+        attack: 1.15,
+        hp: 1.1
+      },
+      description: "A cursed relic bone from ancient warrior.",
+      path: "./res/textures/rpg/invertory/aether-fortis.png"
+    }, {
+      name: "Aether Scale",
+      level: 1,
+      price: 115,
+      effects: {
+        mana: 1.2
+      },
+      description: "Dragon scale imbued with aether magic.",
+      path: "./res/textures/rpg/invertory/aether-fortis.png"
+    }, {
+      name: "Flamma Crystal",
+      level: 1,
+      price: 130,
+      effects: {
+        attack: 1.1
+      },
+      description: "A molten crystal of flame essence.",
+      path: "./res/textures/rpg/invertory/aether-fortis.png"
+    }, {
+      name: "Spirit Charm",
+      level: 1,
+      price: 85,
+      effects: {
+        mana: 1.1,
+        speed: 1.1
+      },
+      description: "Charm of wandering spirits.",
+      path: "./res/textures/rpg/invertory/aether-fortis.png"
+    }, {
+      name: "Ardent Vine",
+      level: 1,
+      price: 80,
+      effects: {
+        hp: 1.05,
+        defense: 1.05
+      },
+      description: "Vine that strengthens when worn.",
+      path: "./res/textures/rpg/invertory/aether-fortis.png"
+    }, {
+      name: "Oculus Tempus",
+      level: 1,
+      price: 150,
+      effects: {
+        speed: 1.2
+      },
+      description: "An eye-shaped amulet bending time perception.",
+      path: "./res/textures/rpg/invertory/aether-fortis.png"
+    },
+    // LEVEL 2 — CRAFTED ITEMS (10)
+    {
+      name: "Corona Ignifera",
+      level: 2,
+      price: 0,
+      from: ["Sol Corona", "Flamma Crystal"],
+      effects: {
+        attack: 1.25,
+        defense: 1.1
+      },
+      description: "Crown of blazing flame and golden radiance.",
+      path: "./res/textures/rpg/invertory/aether-fortis.png"
+    }, {
+      name: "Aqua Sanctum",
+      level: 2,
+      price: 0,
+      from: ["Mare Pearl", "Luna Gemma"],
+      effects: {
+        mana: 1.35,
+        defense: 1.1
+      },
+      description: "Holy water relic radiating calm energy.",
+      path: "./res/textures/rpg/invertory/aether-fortis.png"
+    }, {
+      name: "Umbra Silens",
+      level: 2,
+      price: 0,
+      from: ["Umbra Vellum", "Noctis Band"],
+      effects: {
+        stealth: 1.5
+      },
+      description: "Veil of perfect silence and darkness.",
+      path: "./res/textures/rpg/invertory/aether-fortis.png"
+    }, {
+      name: "Terra Fortis",
+      level: 2,
+      price: 0,
+      from: ["Terra Clavis", "Ardent Vine", "Silva Heart"],
+      effects: {
+        hp: 1.3,
+        defense: 1.2
+      },
+      description: "Roots and stone fused into living armor.",
+      path: "./res/textures/rpg/invertory/aether-fortis.png"
+    }, {
+      name: "Ventus Aegis",
+      level: 2,
+      price: 0,
+      from: ["Ventus Pluma", "Ignifur Cape"],
+      effects: {
+        speed: 1.25,
+        defense: 1.15
+      },
+      description: "A shield that dances with the wind.",
+      path: "./res/textures/rpg/invertory/aether-fortis.png"
+    }, {
+      name: "Ferrum Lux",
+      level: 2,
+      price: 0,
+      from: ["Ferrum Anulus", "Lux Feather"],
+      effects: {
+        defense: 1.25,
+        mana: 1.1
+      },
+      description: "Iron enchanted by celestial light.",
+      path: "./res/textures/rpg/invertory/aether-fortis.png"
+    }, {
+      name: "Sanguis Vita",
+      level: 2,
+      price: 0,
+      from: ["Sanguis Orb", "Vita Flos"],
+      effects: {
+        hp: 1.4
+      },
+      description: "Blood and life entwined in crimson bloom.",
+      path: "./res/textures/rpg/invertory/aether-fortis.png"
+    }, {
+      name: "Tenebris Vox",
+      level: 2,
+      price: 0,
+      from: ["Tenebris Fang", "Vox Chime"],
+      effects: {
+        attack: 1.2,
+        stealth: 1.2
+      },
+      description: "A cursed chime that roars like the abyss.",
+      path: "./res/textures/rpg/invertory/aether-fortis.png"
+    }, {
+      name: "Aether Gladius",
+      level: 2,
+      price: 0,
+      from: ["Gladius Ignis", "Aether Scale"],
+      effects: {
+        attack: 1.3,
+        mana: 1.1
+      },
+      description: "A sword wreathed in spectral energy.",
+      path: "./res/textures/rpg/invertory/aether-fortis.png"
+    }, {
+      name: "Fulgur Mortis",
+      level: 2,
+      price: 0,
+      from: ["Fulgur Stone", "Mortis Bone"],
+      effects: {
+        attack: 1.25,
+        speed: 1.15
+      },
+      description: "Lightning fused with death’s essence.",
+      path: "./res/textures/rpg/invertory/aether-fortis.png"
+    },
+    // LEVEL 3 — ADVANCED ITEMS (5)
+    {
+      name: "Corona Umbra",
+      level: 3,
+      price: 0,
+      from: ["Umbra Silens", "Corona Ignifera", "Tenebris Vox"],
+      effects: {
+        attack: 1.4,
+        stealth: 1.3
+      },
+      description: "Crown of the night sun, radiating power and darkness.",
+      path: "./res/textures/rpg/invertory/aether-fortis.png"
+    }, {
+      name: "Terra Sanctum",
+      level: 3,
+      price: 0,
+      from: ["Terra Fortis", "Aqua Sanctum"],
+      effects: {
+        hp: 1.5,
+        defense: 1.3
+      },
+      description: "The sacred earth that sustains all life.",
+      path: "./res/textures/rpg/invertory/aether-fortis.png"
+    }, {
+      name: "Aether Fortis",
+      level: 3,
+      price: 0,
+      from: ["Aether Gladius", "Ferrum Lux"],
+      effects: {
+        attack: 1.35,
+        mana: 1.25
+      },
+      description: "Forged in light and aetheric flame.",
+      path: "./res/textures/rpg/invertory/aether-fortis.png"
+    }, {
+      name: "Vita Mindza",
+      level: 3,
+      price: 0,
+      from: ["Sanguis Vita", "Ventus Aegis"],
+      effects: {
+        hp: 1.4,
+        speed: 1.2
+      },
+      description: "The living crown of vitality and wind.",
+      path: "./res/textures/rpg/invertory/vita-mindza.png"
+    }, {
+      name: "Mortis Ultima",
+      level: 3,
+      price: 0,
+      from: ["Fulgur Mortis", "Corona Umbra", "Aether Fortis"],
+      effects: {
+        attack: 1.6,
+        mana: 1.2,
+        stealth: 1.3
+      },
+      description: "Legendary artifact combining death, storm, and shadow.",
+      path: "./res/textures/rpg/invertory/mortis-ultima.png"
+    }];
+  }
+}
+exports.Marketplace = Marketplace;
+
+},{}],11:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -3548,7 +4099,7 @@ function resolvePairRepulsion(Apos, Bpos, minDistance = 30.0, pushStrength = 0.5
   return false;
 }
 
-},{"../../../src/engine/utils.js":56}],11:[function(require,module,exports){
+},{"../../../src/engine/utils.js":57}],12:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -3570,7 +4121,7 @@ const creepPoints = exports.creepPoints = {
   }
 };
 
-},{}],12:[function(require,module,exports){
+},{}],13:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -3688,9 +4239,9 @@ class MatrixTTS {
 }
 exports.MatrixTTS = MatrixTTS;
 
-},{}],13:[function(require,module,exports){
-arguments[4][10][0].apply(exports,arguments)
-},{"../../../src/engine/utils.js":56,"dup":10}],14:[function(require,module,exports){
+},{}],14:[function(require,module,exports){
+arguments[4][11][0].apply(exports,arguments)
+},{"../../../src/engine/utils.js":57,"dup":11}],15:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -3700,7 +4251,7 @@ exports.default = void 0;
 var _bvhLoader = require("./module/bvh-loader");
 var _default = exports.default = _bvhLoader.MEBvh;
 
-},{"./module/bvh-loader":15}],15:[function(require,module,exports){
+},{"./module/bvh-loader":16}],16:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -4389,7 +4940,7 @@ class MEBvh {
 }
 exports.MEBvh = MEBvh;
 
-},{"webgpu-matrix":27}],16:[function(require,module,exports){
+},{"webgpu-matrix":28}],17:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -4467,7 +5018,7 @@ function equals(a, b) {
   return Math.abs(a - b) <= tolerance * Math.max(1, Math.abs(a), Math.abs(b));
 }
 
-},{}],17:[function(require,module,exports){
+},{}],18:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -4496,7 +5047,7 @@ var vec4 = _interopRequireWildcard(require("./vec4.js"));
 exports.vec4 = vec4;
 function _interopRequireWildcard(e, t) { if ("function" == typeof WeakMap) var r = new WeakMap(), n = new WeakMap(); return (_interopRequireWildcard = function (e, t) { if (!t && e && e.__esModule) return e; var o, i, f = { __proto__: null, default: e }; if (null === e || "object" != typeof e && "function" != typeof e) return f; if (o = t ? n : r) { if (o.has(e)) return o.get(e); o.set(e, f); } for (const t in e) "default" !== t && {}.hasOwnProperty.call(e, t) && ((i = (o = Object.defineProperty) && Object.getOwnPropertyDescriptor(e, t)) && (i.get || i.set) ? o(f, t, i) : f[t] = e[t]); return f; })(e, t); }
 
-},{"./common.js":16,"./mat2.js":18,"./mat2d.js":19,"./mat3.js":20,"./mat4.js":21,"./quat.js":22,"./quat2.js":23,"./vec2.js":24,"./vec3.js":25,"./vec4.js":26}],18:[function(require,module,exports){
+},{"./common.js":17,"./mat2.js":19,"./mat2d.js":20,"./mat3.js":21,"./mat4.js":22,"./quat.js":23,"./quat2.js":24,"./vec2.js":25,"./vec3.js":26,"./vec4.js":27}],19:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -4958,7 +5509,7 @@ var mul = exports.mul = multiply;
  */
 var sub = exports.sub = subtract;
 
-},{"./common.js":16}],19:[function(require,module,exports){
+},{"./common.js":17}],20:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -5472,7 +6023,7 @@ var mul = exports.mul = multiply;
  */
 var sub = exports.sub = subtract;
 
-},{"./common.js":16}],20:[function(require,module,exports){
+},{"./common.js":17}],21:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -6284,7 +6835,7 @@ var mul = exports.mul = multiply;
  */
 var sub = exports.sub = subtract;
 
-},{"./common.js":16}],21:[function(require,module,exports){
+},{"./common.js":17}],22:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -8304,7 +8855,7 @@ var mul = exports.mul = multiply;
  */
 var sub = exports.sub = subtract;
 
-},{"./common.js":16}],22:[function(require,module,exports){
+},{"./common.js":17}],23:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -9087,7 +9638,7 @@ var setAxes = exports.setAxes = function () {
   };
 }();
 
-},{"./common.js":16,"./mat3.js":20,"./vec3.js":25,"./vec4.js":26}],23:[function(require,module,exports){
+},{"./common.js":17,"./mat3.js":21,"./vec3.js":26,"./vec4.js":27}],24:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -9960,7 +10511,7 @@ function equals(a, b) {
   return Math.abs(a0 - b0) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a0), Math.abs(b0)) && Math.abs(a1 - b1) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a1), Math.abs(b1)) && Math.abs(a2 - b2) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a2), Math.abs(b2)) && Math.abs(a3 - b3) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a3), Math.abs(b3)) && Math.abs(a4 - b4) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a4), Math.abs(b4)) && Math.abs(a5 - b5) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a5), Math.abs(b5)) && Math.abs(a6 - b6) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a6), Math.abs(b6)) && Math.abs(a7 - b7) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a7), Math.abs(b7));
 }
 
-},{"./common.js":16,"./mat4.js":21,"./quat.js":22}],24:[function(require,module,exports){
+},{"./common.js":17,"./mat4.js":22,"./quat.js":23}],25:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -10638,7 +11189,7 @@ var forEach = exports.forEach = function () {
   };
 }();
 
-},{"./common.js":16}],25:[function(require,module,exports){
+},{"./common.js":17}],26:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -11490,7 +12041,7 @@ var forEach = exports.forEach = function () {
   };
 }();
 
-},{"./common.js":16}],26:[function(require,module,exports){
+},{"./common.js":17}],27:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -12197,7 +12748,7 @@ var forEach = exports.forEach = function () {
   };
 }();
 
-},{"./common.js":16}],27:[function(require,module,exports){
+},{"./common.js":17}],28:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -16130,7 +16681,7 @@ function setDefaultType(ctor) {
   setDefaultType$1(ctor);
 }
 
-},{}],28:[function(require,module,exports){
+},{}],29:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -21477,7 +22028,7 @@ function setDefaultType(ctor) {
   setDefaultType$1(ctor);
 }
 
-},{}],29:[function(require,module,exports){
+},{}],30:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -21891,7 +22442,7 @@ class MEBall {
 }
 exports.default = MEBall;
 
-},{"../shaders/shaders":71,"./engine":41,"./matrix-class":51,"wgpu-matrix":28}],30:[function(require,module,exports){
+},{"../shaders/shaders":72,"./engine":42,"./matrix-class":52,"wgpu-matrix":29}],31:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -21929,7 +22480,7 @@ class Behavior {
 }
 exports.default = Behavior;
 
-},{"./utils":56}],31:[function(require,module,exports){
+},{"./utils":57}],32:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -21976,7 +22527,7 @@ class CollisionSystem {
 }
 exports.CollisionSystem = CollisionSystem;
 
-},{"../../examples/games/rpg/nav-mesh":13}],32:[function(require,module,exports){
+},{"../../examples/games/rpg/nav-mesh":14}],33:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -22401,7 +22952,7 @@ class MECube {
 }
 exports.default = MECube;
 
-},{"../shaders/shaders":71,"./engine":41,"./matrix-class":51,"wgpu-matrix":28}],33:[function(require,module,exports){
+},{"../shaders/shaders":72,"./engine":42,"./matrix-class":52,"wgpu-matrix":29}],34:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -22564,7 +23115,7 @@ class HPBarEffect {
 }
 exports.HPBarEffect = HPBarEffect;
 
-},{"../../shaders/energy-bars/energy-bar-shader.js":59,"wgpu-matrix":28}],34:[function(require,module,exports){
+},{"../../shaders/energy-bars/energy-bar-shader.js":60,"wgpu-matrix":29}],35:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -22783,7 +23334,7 @@ class FlameEmitter {
 }
 exports.FlameEmitter = FlameEmitter;
 
-},{"../../shaders/flame-effect/flame-instanced":60,"../utils":56,"wgpu-matrix":28}],35:[function(require,module,exports){
+},{"../../shaders/flame-effect/flame-instanced":61,"../utils":57,"wgpu-matrix":29}],36:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -22954,7 +23505,7 @@ class FlameEffect {
 }
 exports.FlameEffect = FlameEffect;
 
-},{"../../shaders/flame-effect/flameEffect":61,"wgpu-matrix":28}],36:[function(require,module,exports){
+},{"../../shaders/flame-effect/flameEffect":62,"wgpu-matrix":29}],37:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -23195,7 +23746,7 @@ class GenGeoTexture {
 }
 exports.GenGeoTexture = GenGeoTexture;
 
-},{"../../shaders/standalone/geo.tex.js":73,"../geometry-factory.js":42,"wgpu-matrix":28}],37:[function(require,module,exports){
+},{"../../shaders/standalone/geo.tex.js":74,"../geometry-factory.js":43,"wgpu-matrix":29}],38:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -23452,7 +24003,7 @@ class GenGeoTexture2 {
 }
 exports.GenGeoTexture2 = GenGeoTexture2;
 
-},{"../../shaders/standalone/geo.tex.js":73,"../geometry-factory.js":42,"wgpu-matrix":28}],38:[function(require,module,exports){
+},{"../../shaders/standalone/geo.tex.js":74,"../geometry-factory.js":43,"wgpu-matrix":29}],39:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -23642,7 +24193,7 @@ class GenGeo {
 }
 exports.GenGeo = GenGeo;
 
-},{"../../shaders/standalone/geo.instanced.js":72,"../geometry-factory.js":42,"wgpu-matrix":28}],39:[function(require,module,exports){
+},{"../../shaders/standalone/geo.instanced.js":73,"../geometry-factory.js":43,"wgpu-matrix":29}],40:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -23805,7 +24356,7 @@ class MANABarEffect {
 }
 exports.MANABarEffect = MANABarEffect;
 
-},{"../../shaders/energy-bars/energy-bar-shader.js":59,"wgpu-matrix":28}],40:[function(require,module,exports){
+},{"../../shaders/energy-bars/energy-bar-shader.js":60,"wgpu-matrix":29}],41:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -23948,7 +24499,7 @@ class PointerEffect {
 }
 exports.PointerEffect = PointerEffect;
 
-},{"../../shaders/standalone/pointer.effect.js":74,"wgpu-matrix":28}],41:[function(require,module,exports){
+},{"../../shaders/standalone/pointer.effect.js":75,"wgpu-matrix":29}],42:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -24491,7 +25042,7 @@ class RPGCamera extends CameraBase {
 }
 exports.RPGCamera = RPGCamera;
 
-},{"./utils":56,"wgpu-matrix":28}],42:[function(require,module,exports){
+},{"./utils":57,"wgpu-matrix":29}],43:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -24803,7 +25354,7 @@ class GeometryFactory {
 }
 exports.GeometryFactory = GeometryFactory;
 
-},{}],43:[function(require,module,exports){
+},{}],44:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -25330,7 +25881,7 @@ class MaterialsInstanced {
 }
 exports.default = MaterialsInstanced;
 
-},{"../../shaders/fragment.wgsl":63,"../../shaders/fragment.wgsl.metal":64,"../../shaders/fragment.wgsl.normalmap":65,"../../shaders/fragment.wgsl.pong":66,"../../shaders/fragment.wgsl.power":67,"../../shaders/instanced/fragment.instanced.wgsl":68}],44:[function(require,module,exports){
+},{"../../shaders/fragment.wgsl":64,"../../shaders/fragment.wgsl.metal":65,"../../shaders/fragment.wgsl.normalmap":66,"../../shaders/fragment.wgsl.pong":67,"../../shaders/fragment.wgsl.power":68,"../../shaders/instanced/fragment.instanced.wgsl":69}],45:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -26318,7 +26869,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
 }
 exports.default = MEMeshObjInstances;
 
-},{"../../shaders/fragment.video.wgsl":62,"../../shaders/instanced/vertex.instanced.wgsl":69,"../effects/energy-bar":33,"../effects/flame":35,"../effects/flame-emmiter":34,"../effects/gen":38,"../effects/gen-tex":36,"../effects/gen-tex2":37,"../effects/mana-bar":39,"../effects/pointerEffect":40,"../loaders/bvh-instaced":47,"../matrix-class":51,"../utils":56,"./materials-instanced":43,"wgpu-matrix":28}],45:[function(require,module,exports){
+},{"../../shaders/fragment.video.wgsl":63,"../../shaders/instanced/vertex.instanced.wgsl":70,"../effects/energy-bar":34,"../effects/flame":36,"../effects/flame-emmiter":35,"../effects/gen":39,"../effects/gen-tex":37,"../effects/gen-tex2":38,"../effects/mana-bar":40,"../effects/pointerEffect":41,"../loaders/bvh-instaced":48,"../matrix-class":52,"../utils":57,"./materials-instanced":44,"wgpu-matrix":29}],46:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -26604,7 +27155,7 @@ class SpotLight {
 }
 exports.SpotLight = SpotLight;
 
-},{"../shaders/instanced/vertexShadow.instanced.wgsl":70,"../shaders/vertexShadow.wgsl":77,"./behavior":30,"wgpu-matrix":28}],46:[function(require,module,exports){
+},{"../shaders/instanced/vertexShadow.instanced.wgsl":71,"../shaders/vertexShadow.wgsl":78,"./behavior":31,"wgpu-matrix":29}],47:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -27072,7 +27623,7 @@ function play(nameAni) {
   this.playing = true;
 }
 
-},{}],47:[function(require,module,exports){
+},{}],48:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -27613,7 +28164,7 @@ class BVHPlayerInstances extends _meshObjInstances.default {
 }
 exports.BVHPlayerInstances = BVHPlayerInstances;
 
-},{"../instanced/mesh-obj-instances.js":44,"./webgpu-gltf.js":49,"wgpu-matrix":28}],48:[function(require,module,exports){
+},{"../instanced/mesh-obj-instances.js":45,"./webgpu-gltf.js":50,"wgpu-matrix":29}],49:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -28123,7 +28674,7 @@ class BVHPlayer extends _meshObj.default {
 }
 exports.BVHPlayer = BVHPlayer;
 
-},{"../mesh-obj":52,"./webgpu-gltf.js":49,"bvh-loader":14,"wgpu-matrix":28}],49:[function(require,module,exports){
+},{"../mesh-obj":53,"./webgpu-gltf.js":50,"bvh-loader":15,"wgpu-matrix":29}],50:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -28704,7 +29255,7 @@ async function uploadGLBModel(buffer, device) {
   return R;
 }
 
-},{"gl-matrix":17}],50:[function(require,module,exports){
+},{"gl-matrix":18}],51:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -29230,7 +29781,7 @@ class Materials {
 }
 exports.default = Materials;
 
-},{"../shaders/fragment.wgsl":63,"../shaders/fragment.wgsl.metal":64,"../shaders/fragment.wgsl.normalmap":65,"../shaders/fragment.wgsl.pong":66,"../shaders/fragment.wgsl.power":67}],51:[function(require,module,exports){
+},{"../shaders/fragment.wgsl":64,"../shaders/fragment.wgsl.metal":65,"../shaders/fragment.wgsl.normalmap":66,"../shaders/fragment.wgsl.pong":67,"../shaders/fragment.wgsl.power":68}],52:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -29494,7 +30045,7 @@ class Rotation {
 }
 exports.Rotation = Rotation;
 
-},{"./utils":56}],52:[function(require,module,exports){
+},{"./utils":57}],53:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30289,7 +30840,7 @@ class MEMeshObj extends _materials.default {
 }
 exports.default = MEMeshObj;
 
-},{"../shaders/fragment.video.wgsl":62,"../shaders/vertex.wgsl":75,"../shaders/vertex.wgsl.normalmap":76,"./effects/pointerEffect":40,"./materials":50,"./matrix-class":51,"./utils":56,"wgpu-matrix":28}],53:[function(require,module,exports){
+},{"../shaders/fragment.video.wgsl":63,"../shaders/vertex.wgsl":76,"../shaders/vertex.wgsl.normalmap":77,"./effects/pointerEffect":41,"./materials":51,"./matrix-class":52,"./utils":57,"wgpu-matrix":29}],54:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30770,7 +31321,7 @@ function clearEventsTextarea() {
   exports.events = events = '';
 }
 
-},{}],54:[function(require,module,exports){
+},{}],55:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30985,7 +31536,7 @@ let activateNet2 = sessionOption => {
 };
 exports.activateNet2 = activateNet2;
 
-},{"../utils":56,"./matrix-stream":53}],55:[function(require,module,exports){
+},{"../utils":57,"./matrix-stream":54}],56:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -31174,7 +31725,7 @@ function addRaycastsListener(canvasId = "canvas1", eventName = 'click') {
   });
 }
 
-},{"wgpu-matrix":28}],56:[function(require,module,exports){
+},{"wgpu-matrix":29}],57:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -32192,7 +32743,7 @@ class FullscreenManager {
 }
 exports.FullscreenManager = FullscreenManager;
 
-},{}],57:[function(require,module,exports){
+},{}],58:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -32233,7 +32784,7 @@ class MultiLang {
 }
 exports.MultiLang = MultiLang;
 
-},{"../engine/utils":56}],58:[function(require,module,exports){
+},{"../engine/utils":57}],59:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -32517,7 +33068,7 @@ class MatrixAmmo {
 }
 exports.default = MatrixAmmo;
 
-},{"../engine/utils":56}],59:[function(require,module,exports){
+},{"../engine/utils":57}],60:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -32563,7 +33114,7 @@ fn fsMain(in : VertexOutput) -> @location(0) vec4f {
 }
 `;
 
-},{}],60:[function(require,module,exports){
+},{}],61:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -32689,7 +33240,7 @@ fn fsMain(in : VSOut) -> @location(0) vec4<f32> {
 }
 `;
 
-},{}],61:[function(require,module,exports){
+},{}],62:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -32777,7 +33328,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
 }
 `;
 
-},{}],62:[function(require,module,exports){
+},{}],63:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -32867,7 +33418,7 @@ fn main(input : FragmentInput) -> @location(0) vec4f {
 }
 `;
 
-},{}],63:[function(require,module,exports){
+},{}],64:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -33098,7 +33649,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, 1.0);
 }`;
 
-},{}],64:[function(require,module,exports){
+},{}],65:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -33276,7 +33827,7 @@ return vec4f(color, 1.0);
 // let radiance = spotlights[0].color * 10.0; // test high intensity
 // Lo += materialData.baseColor * radiance * NdotL;
 
-},{}],65:[function(require,module,exports){
+},{}],66:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -33521,7 +34072,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, 1.0);
 }`;
 
-},{}],66:[function(require,module,exports){
+},{}],67:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -33741,7 +34292,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, 1.0);
 }`;
 
-},{}],67:[function(require,module,exports){
+},{}],68:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -33909,7 +34460,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 // let radiance = spotlights[0].color * 10.0; // test high intensity
 // Lo += materialData.baseColor * radiance * NdotL;
 
-},{}],68:[function(require,module,exports){
+},{}],69:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -34145,7 +34696,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, alpha);
 }`;
 
-},{}],69:[function(require,module,exports){
+},{}],70:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -34249,7 +34800,7 @@ fn main(
   return output;
 }`;
 
-},{}],70:[function(require,module,exports){
+},{}],71:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -34286,7 +34837,7 @@ fn main(
 }
 `;
 
-},{}],71:[function(require,module,exports){
+},{}],72:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -34344,7 +34895,7 @@ fn fragmentMain(input: VertexOutput) -> @location(0) vec4f {
   return vec4f(textureColor.rgb * lightColor, textureColor.a);
 }`;
 
-},{}],72:[function(require,module,exports){
+},{}],73:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -34402,7 +34953,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
 }
 `;
 
-},{}],73:[function(require,module,exports){
+},{}],74:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -34489,7 +35040,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
 }
 `;
 
-},{}],74:[function(require,module,exports){
+},{}],75:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -34547,7 +35098,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
   return vec4<f32>(color, 1.0);
 }`;
 
-},{}],75:[function(require,module,exports){
+},{}],76:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -34633,7 +35184,7 @@ fn main(
   return output;
 }`;
 
-},{}],76:[function(require,module,exports){
+},{}],77:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -34744,7 +35295,7 @@ fn main(
   return output;
 }`;
 
-},{}],77:[function(require,module,exports){
+},{}],78:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -34772,7 +35323,7 @@ fn main(
 }
 `;
 
-},{}],78:[function(require,module,exports){
+},{}],79:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -34842,7 +35393,7 @@ class MatrixSounds {
 }
 exports.MatrixSounds = MatrixSounds;
 
-},{}],79:[function(require,module,exports){
+},{}],80:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -35846,4 +36397,4 @@ class MatrixEngineWGPU {
 }
 exports.default = MatrixEngineWGPU;
 
-},{"./engine/ball.js":29,"./engine/cube.js":32,"./engine/engine.js":41,"./engine/lights.js":45,"./engine/loader-obj.js":46,"./engine/loaders/bvh-instaced.js":47,"./engine/loaders/bvh.js":48,"./engine/mesh-obj.js":52,"./engine/utils.js":56,"./multilang/lang.js":57,"./physics/matrix-ammo.js":58,"./sounds/sounds.js":78,"wgpu-matrix":28}]},{},[6]);
+},{"./engine/ball.js":30,"./engine/cube.js":33,"./engine/engine.js":42,"./engine/lights.js":46,"./engine/loader-obj.js":47,"./engine/loaders/bvh-instaced.js":48,"./engine/loaders/bvh.js":49,"./engine/mesh-obj.js":53,"./engine/utils.js":57,"./multilang/lang.js":58,"./physics/matrix-ammo.js":59,"./sounds/sounds.js":79,"wgpu-matrix":29}]},{},[6]);

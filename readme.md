@@ -670,6 +670,8 @@ You need just to copy paste this text to about form on your web page or any othe
 
   "Fantasy Rock" (https://skfb.ly/oHZSq) by lalune is licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/).
   
+  Invertory images
+  https://djinnbestiary.itch.io/ancient-oddities-vol-1-13-free-potions
 
 ---
 

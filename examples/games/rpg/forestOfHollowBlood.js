@@ -10,6 +10,8 @@ import {MatrixStream} from "../../../src/engine/networking/net.js";
 import {byId} from "../../../src/engine/networking/matrix-stream.js";
 import {startUpPositions} from "./static.js";
 import {MatrixTTS} from "./tts.js";
+import {Marketplace} from "./marketplace.js";
+
 /**
  * @description
  * This is main root dep file.
@@ -244,6 +246,7 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
       forestOfHollowBlood, forestOfHollowBlood.player.data.path,
       forestOfHollowBlood.player.data.hero, [forestOfHollowBlood.player.data.archetypes]);
 
+      forestOfHollowBlood.marketPlace = new Marketplace();
 
     // const inv = new Inventory(hero);
 

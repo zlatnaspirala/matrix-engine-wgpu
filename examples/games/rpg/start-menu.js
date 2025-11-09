@@ -233,7 +233,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
     }
   })
 
-  forestOfHollowBloodStartSceen.MINIMUM_PLAYERS = 4;
+  forestOfHollowBloodStartSceen.MINIMUM_PLAYERS = 2;
 
   forestOfHollowBloodStartSceen.setWaitingList = () => {
     // access net doms who comes with broadcaster2.html

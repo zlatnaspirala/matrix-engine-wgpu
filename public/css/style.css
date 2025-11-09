@@ -278,10 +278,18 @@ p {
 }
 
 .btn:hover {
-  background: #00ffff22;
+  background: #00ffff78;
   box-shadow: 0 0 20px #00ffffaa, 0 0 30px #00ffff55 inset;
   color: #ffffff;
   transform: scale(1.05);
+}
+
+.btn3 {}
+.btn3:hover {
+  background: #5d5d5d81;
+  box-shadow: 0 0 20px #00ffffaa, 0 0 30px #00ffff55 inset;
+  color: #ffffff;
+  transform: scale(1.02);
 }
 
 .btn span::before {
@@ -995,4 +1003,110 @@ new dom effect from
   font-size: 24px;
   letter-spacing: 2px;
   text-shadow: 0 0 10px #ff0000;
+}
+
+.invertoryItem {
+  width: 50px;
+  height: auto;
+}
+
+
+@-webkit-keyframes showByRight {
+  0% {
+    /* background-color: rgba(155, 101, 10, 0.95); */
+    right: -65%;
+  }
+
+  50% {
+    /* background-color: rgba(238, 65, 13, 0.95); */
+    right: -30%;
+    opacity: 0.5;
+  }
+
+  100% {
+    /* background-color: rgb(200, 54, 9); */
+    right: 0px;
+    opacity: 1;
+  }
+}
+
+/* Standard syntax */
+@keyframes showByRight {
+  0% {
+    /* background-color: rgba(155, 101, 10, 0.95); */
+    right: -65%;
+  }
+
+  50% {
+    /* background-color: rgba(224, 64, 43, 0.95); */
+    right: -30%;
+    opacity: 0.7;
+  }
+
+  100% {
+    /* background-color: rgb(200, 54, 9); */
+    right: 0px;
+    opacity: 1;
+  }
+}
+
+/* Safari 4.0 - 8.0 */
+@-webkit-keyframes hideByRight {
+  0% {
+    /* background-color: rgba(255, 166, 11, 0.95); */
+    right: 0;
+  }
+
+  50% {
+    /* background-color: rgba(255, 166, 11, 0.95); */
+    right: -30%;
+    opacity: 0.7;
+  }
+
+  100% {
+    /* background-color: rgba(0, 0, 0, 0.95); */
+    right: -65%;
+    opacity: 0.6;
+  }
+}
+
+/* Standard syntax */
+@keyframes hideByRight {
+  0% {
+    right: 0;
+  }
+
+  50% {
+    right: -30%;
+    opacity: 0.7;
+  }
+
+  100% {
+    /* background-color: rgba(0, 0, 0, 0.95); */
+    right: -65%;
+    opacity: 0.6;
+  }
+}
+
+.show-by-right {
+  -webkit-animation-fill-mode: forwards;
+  -webkit-animation-name: showByRight;
+  -webkit-animation-duration: 1.2s;
+  animation-fill-mode: forwards;
+  animation-name: showByRight;
+  animation-duration: 1.2s;
+}
+
+.hide-by-right {
+  -webkit-animation-fill-mode: forwards;
+  -webkit-animation-name: hideByRight;
+  -webkit-animation-duration: 1.2s;
+  animation-fill-mode: forwards;
+  animation-name: hideByRight;
+  animation-duration: 1.2s;
+}
+
+.vertical-text {
+  writing-mode: vertical-lr; /* or vertical-lr */
+  text-orientation: upright;
 }
