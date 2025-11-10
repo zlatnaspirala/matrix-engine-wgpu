@@ -3048,10 +3048,11 @@ class Marketplace {
     box.style.flexWrap = 'wrap';
     box.style.zIndex = '2';
     box.style.top = '0';
-    box.style.width = '70%';
+    box.style.width = '50%';
     box.style.height = '80%';
     box.style.fontSize = '50%';
-    box.style.paddingLeft = `30px`;
+    box.style.paddingLeft = '30px';
+    box.style.overflowY = 'scroll';
     box.classList.add('btn');
     box.classList.add('btn3');
     var boxRightTitleBar = document.createElement('div');
@@ -3061,9 +3062,10 @@ class Marketplace {
     boxRightTitleBar.style.width = '50px';
     boxRightTitleBar.style.fontSize = '20px';
     boxRightTitleBar.style.height = '-webkit-fill-available';
-    boxRightTitleBar.style.marginLeft = `-30px`;
+    // boxRightTitleBar.style.marginLeft = `-30px`;
     boxRightTitleBar.innerHTML = 'Invertory';
     boxRightTitleBar.classList.add('vertical-text');
+    box.classList.add('hide-by-right');
     box.appendChild(boxRightTitleBar);
     box.addEventListener('click', e => {
       if (box.classList.contains('show-by-right')) {
@@ -3078,9 +3080,12 @@ class Marketplace {
     this.items.forEach(i => {
       var itemDOM = document.createElement('div');
       itemDOM.innerHTML = `
-        <div style="width:100px;">
+        <div style="" class="itemDOM">
           <img class="invertoryItem" src='${i.path}' /> 
-          <div>name: ${i.name} price: ${i.price} ${i.description}</div>
+
+
+          <div>name: ${i.name} price: ${i.price == 0 ? "Cant be buyed only constructed from basic item." : i.price} ${i.description}</div>
+
         </div>`;
       itemDOM.addEventListener('click', e => {
         console.log("*********");
@@ -3251,7 +3256,7 @@ class Marketplace {
         mana: 1.3
       },
       description: "A rare pearl blessed by sea spirits.",
-      path: "./res/textures/rpg/invertory/aether-fortis.png"
+      path: "./res/textures/rpg/invertory/mare-pearl.png"
     }, {
       name: "Vox Chime",
       level: 1,
@@ -3260,7 +3265,7 @@ class Marketplace {
         speed: 1.05
       },
       description: "A charm that hums with sound magic.",
-      path: "./res/textures/rpg/invertory/aether-fortis.png"
+      path: "./res/textures/rpg/invertory/vox-chime.png"
     }, {
       name: "Tenebris Fang",
       level: 1,
@@ -3269,7 +3274,7 @@ class Marketplace {
         attack: 1.12
       },
       description: "A dark fang of unknown beast origin.",
-      path: "./res/textures/rpg/invertory/aether-fortis.png"
+      path: "./res/textures/rpg/invertory/tenebris-fang.png"
     }, {
       name: "Lux Feather",
       level: 1,
@@ -3278,7 +3283,7 @@ class Marketplace {
         mana: 1.1
       },
       description: "A radiant feather from a holy bird.",
-      path: "./res/textures/rpg/invertory/aether-fortis.png"
+      path: "./res/textures/rpg/invertory/lux-feather.png"
     }, {
       name: "Fulgur Stone",
       level: 1,
@@ -3287,7 +3292,7 @@ class Marketplace {
         attack: 1.1
       },
       description: "A crackling shard of lightning essence.",
-      path: "./res/textures/rpg/invertory/aether-fortis.png"
+      path: "./res/textures/rpg/invertory/fulgur-stone.png"
     }, {
       name: "Silva Heart",
       level: 1,
@@ -3296,7 +3301,7 @@ class Marketplace {
         hp: 1.07
       },
       description: "A seed pulsing with natural energy.",
-      path: "./res/textures/rpg/invertory/aether-fortis.png"
+      path: "./res/textures/rpg/invertory/silva-heart.png"
     }, {
       name: "Noctis Band",
       level: 1,
@@ -3305,7 +3310,7 @@ class Marketplace {
         stealth: 1.3
       },
       description: "A ring that vanishes under moonlight.",
-      path: "./res/textures/rpg/invertory/aether-fortis.png"
+      path: "./res/textures/rpg/invertory/noctis-band.png"
     }, {
       name: "Rosa Thorn",
       level: 1,
@@ -3315,7 +3320,7 @@ class Marketplace {
         hp: 1.05
       },
       description: "A rose stem hardened into a piercing thorn.",
-      path: "./res/textures/rpg/invertory/aether-fortis.png"
+      path: "./res/textures/rpg/invertory/rosa-thorn.png"
     }, {
       name: "Caelum Dust",
       level: 1,
@@ -3325,7 +3330,7 @@ class Marketplace {
         speed: 1.05
       },
       description: "Sky dust collected from high-altitude clouds.",
-      path: "./res/textures/rpg/invertory/aether-fortis.png"
+      path: "./res/textures/rpg/invertory/caelum-dust.png"
     }, {
       name: "Ignifur Cape",
       level: 1,
@@ -3335,7 +3340,7 @@ class Marketplace {
         attack: 1.05
       },
       description: "A cape woven with fire-resistant fur.",
-      path: "./res/textures/rpg/invertory/aether-fortis.png"
+      path: "./res/textures/rpg/invertory/ignifur-cape.png"
     }, {
       name: "Gelum Pendant",
       level: 1,
@@ -3344,7 +3349,7 @@ class Marketplace {
         defense: 1.1
       },
       description: "Pendant of icy serenity.",
-      path: "./res/textures/rpg/invertory/aether-fortis.png"
+      path: "./res/textures/rpg/invertory/gelum-fendant.png"
     }, {
       name: "Mortis Bone",
       level: 1,
@@ -3354,7 +3359,7 @@ class Marketplace {
         hp: 1.1
       },
       description: "A cursed relic bone from ancient warrior.",
-      path: "./res/textures/rpg/invertory/aether-fortis.png"
+      path: "./res/textures/rpg/invertory/mortis-bone.png"
     }, {
       name: "Aether Scale",
       level: 1,
@@ -3363,7 +3368,7 @@ class Marketplace {
         mana: 1.2
       },
       description: "Dragon scale imbued with aether magic.",
-      path: "./res/textures/rpg/invertory/aether-fortis.png"
+      path: "./res/textures/rpg/invertory/aether-scale.png"
     }, {
       name: "Flamma Crystal",
       level: 1,
@@ -3372,7 +3377,7 @@ class Marketplace {
         attack: 1.1
       },
       description: "A molten crystal of flame essence.",
-      path: "./res/textures/rpg/invertory/aether-fortis.png"
+      path: "./res/textures/rpg/invertory/flamma-crystal.png"
     }, {
       name: "Spirit Charm",
       level: 1,
@@ -3382,7 +3387,7 @@ class Marketplace {
         speed: 1.1
       },
       description: "Charm of wandering spirits.",
-      path: "./res/textures/rpg/invertory/aether-fortis.png"
+      path: "./res/textures/rpg/invertory/spirit-charm.png"
     }, {
       name: "Ardent Vine",
       level: 1,
@@ -3392,7 +3397,7 @@ class Marketplace {
         defense: 1.05
       },
       description: "Vine that strengthens when worn.",
-      path: "./res/textures/rpg/invertory/aether-fortis.png"
+      path: "./res/textures/rpg/invertory/ardent-vine.png"
     }, {
       name: "Oculus Tempus",
       level: 1,
@@ -3401,7 +3406,7 @@ class Marketplace {
         speed: 1.2
       },
       description: "An eye-shaped amulet bending time perception.",
-      path: "./res/textures/rpg/invertory/aether-fortis.png"
+      path: "./res/textures/rpg/invertory/oculus-tempus.png"
     },
     // LEVEL 2 — CRAFTED ITEMS (10)
     {
@@ -3414,7 +3419,7 @@ class Marketplace {
         defense: 1.1
       },
       description: "Crown of blazing flame and golden radiance.",
-      path: "./res/textures/rpg/invertory/aether-fortis.png"
+      path: "./res/textures/rpg/invertory/corona-ignifera.png"
     }, {
       name: "Aqua Sanctum",
       level: 2,
@@ -3425,7 +3430,7 @@ class Marketplace {
         defense: 1.1
       },
       description: "Holy water relic radiating calm energy.",
-      path: "./res/textures/rpg/invertory/aether-fortis.png"
+      path: "./res/textures/rpg/invertory/aqua-sanctum.png"
     }, {
       name: "Umbra Silens",
       level: 2,
@@ -3435,7 +3440,7 @@ class Marketplace {
         stealth: 1.5
       },
       description: "Veil of perfect silence and darkness.",
-      path: "./res/textures/rpg/invertory/aether-fortis.png"
+      path: "./res/textures/rpg/invertory/umbra-silens.png"
     }, {
       name: "Terra Fortis",
       level: 2,
@@ -3446,7 +3451,7 @@ class Marketplace {
         defense: 1.2
       },
       description: "Roots and stone fused into living armor.",
-      path: "./res/textures/rpg/invertory/aether-fortis.png"
+      path: "./res/textures/rpg/invertory/terra-fortis.png"
     }, {
       name: "Ventus Aegis",
       level: 2,
@@ -3457,7 +3462,7 @@ class Marketplace {
         defense: 1.15
       },
       description: "A shield that dances with the wind.",
-      path: "./res/textures/rpg/invertory/aether-fortis.png"
+      path: "./res/textures/rpg/invertory/ventus-aegis.png"
     }, {
       name: "Ferrum Lux",
       level: 2,
@@ -3468,7 +3473,7 @@ class Marketplace {
         mana: 1.1
       },
       description: "Iron enchanted by celestial light.",
-      path: "./res/textures/rpg/invertory/aether-fortis.png"
+      path: "./res/textures/rpg/invertory/ferrum-lux.png"
     }, {
       name: "Sanguis Vita",
       level: 2,
@@ -3478,8 +3483,10 @@ class Marketplace {
         hp: 1.4
       },
       description: "Blood and life entwined in crimson bloom.",
-      path: "./res/textures/rpg/invertory/aether-fortis.png"
-    }, {
+      path: "./res/textures/rpg/invertory/sanguis-vita.png"
+    },
+    //<<<<<<
+    {
       name: "Tenebris Vox",
       level: 2,
       price: 0,
@@ -3489,7 +3496,7 @@ class Marketplace {
         stealth: 1.2
       },
       description: "A cursed chime that roars like the abyss.",
-      path: "./res/textures/rpg/invertory/aether-fortis.png"
+      path: "./res/textures/rpg/invertory/tenebris-vox.png"
     }, {
       name: "Aether Gladius",
       level: 2,
@@ -3500,7 +3507,7 @@ class Marketplace {
         mana: 1.1
       },
       description: "A sword wreathed in spectral energy.",
-      path: "./res/textures/rpg/invertory/aether-fortis.png"
+      path: "./res/textures/rpg/invertory/aether-gladius.png"
     }, {
       name: "Fulgur Mortis",
       level: 2,
@@ -3511,7 +3518,7 @@ class Marketplace {
         speed: 1.15
       },
       description: "Lightning fused with death’s essence.",
-      path: "./res/textures/rpg/invertory/aether-fortis.png"
+      path: "./res/textures/rpg/invertory/fulgur-mortis.png"
     },
     // LEVEL 3 — ADVANCED ITEMS (5)
     {
@@ -3524,7 +3531,7 @@ class Marketplace {
         stealth: 1.3
       },
       description: "Crown of the night sun, radiating power and darkness.",
-      path: "./res/textures/rpg/invertory/aether-fortis.png"
+      path: "./res/textures/rpg/invertory/corona-umbra.png"
     }, {
       name: "Terra Sanctum",
       level: 3,
@@ -3535,7 +3542,7 @@ class Marketplace {
         defense: 1.3
       },
       description: "The sacred earth that sustains all life.",
-      path: "./res/textures/rpg/invertory/aether-fortis.png"
+      path: "./res/textures/rpg/invertory/terra-sanctum.png"
     }, {
       name: "Aether Fortis",
       level: 3,

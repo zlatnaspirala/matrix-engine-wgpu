@@ -285,6 +285,7 @@ p {
 }
 
 .btn3 {}
+
 .btn3:hover {
   background: #5d5d5d81;
   box-shadow: 0 0 20px #00ffffaa, 0 0 30px #00ffff55 inset;
@@ -1014,18 +1015,12 @@ new dom effect from
 @-webkit-keyframes showByRight {
   0% {
     /* background-color: rgba(155, 101, 10, 0.95); */
-    right: -65%;
-  }
-
-  50% {
-    /* background-color: rgba(238, 65, 13, 0.95); */
-    right: -30%;
-    opacity: 0.5;
+    right: -47%;
   }
 
   100% {
     /* background-color: rgb(200, 54, 9); */
-    right: 0px;
+    right: -5%;
     opacity: 1;
   }
 }
@@ -1034,18 +1029,12 @@ new dom effect from
 @keyframes showByRight {
   0% {
     /* background-color: rgba(155, 101, 10, 0.95); */
-    right: -65%;
-  }
-
-  50% {
-    /* background-color: rgba(224, 64, 43, 0.95); */
-    right: -30%;
-    opacity: 0.7;
+    right: -47%;
   }
 
   100% {
     /* background-color: rgb(200, 54, 9); */
-    right: 0px;
+    right: -5%;
     opacity: 1;
   }
 }
@@ -1054,18 +1043,12 @@ new dom effect from
 @-webkit-keyframes hideByRight {
   0% {
     /* background-color: rgba(255, 166, 11, 0.95); */
-    right: 0;
-  }
-
-  50% {
-    /* background-color: rgba(255, 166, 11, 0.95); */
-    right: -30%;
-    opacity: 0.7;
+    right: -5%;
   }
 
   100% {
     /* background-color: rgba(0, 0, 0, 0.95); */
-    right: -65%;
+    right: -47%;
     opacity: 0.6;
   }
 }
@@ -1073,22 +1056,21 @@ new dom effect from
 /* Standard syntax */
 @keyframes hideByRight {
   0% {
-    right: 0;
-  }
-
-  50% {
-    right: -30%;
-    opacity: 0.7;
+    right: -5%;
   }
 
   100% {
     /* background-color: rgba(0, 0, 0, 0.95); */
-    right: -65%;
+    right: -47%;
     opacity: 0.6;
   }
 }
 
 .show-by-right {
+  -webkit-scrollbar {
+    width: 25px;
+  }
+
   -webkit-animation-fill-mode: forwards;
   -webkit-animation-name: showByRight;
   -webkit-animation-duration: 1.2s;
@@ -1098,6 +1080,10 @@ new dom effect from
 }
 
 .hide-by-right {
+  -webkit-scrollbar {
+    width: 25px;
+  }
+
   -webkit-animation-fill-mode: forwards;
   -webkit-animation-name: hideByRight;
   -webkit-animation-duration: 1.2s;
@@ -1107,6 +1093,24 @@ new dom effect from
 }
 
 .vertical-text {
-  writing-mode: vertical-lr; /* or vertical-lr */
+  writing-mode: vertical-lr;
+  /* or vertical-lr */
   text-orientation: upright;
+}
+
+
+.itemDOM {
+  width: 100px;
+  background: black;
+  height: 100%;
+
+  transition: transform 0.3s ease;
+  transform-origin: center center;
+
+}
+
+.itemDOM:hover {
+  background: rgb(255, 255, 255);
+  color: rgb(0, 0, 0) !important;
+  transform: scale(1.10);
 }
