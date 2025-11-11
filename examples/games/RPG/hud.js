@@ -465,14 +465,11 @@ export class HUD {
       slot.addEventListener("mouseenter", (e) => {
         slot.style.border = "2px solid #ff0";
         slot.style.boxShadow = "0 0 10px rgba(255,255,0,0.5), inset 2px 2px 5px rgba(0,0,0,0.6)";
-        if (e.currentTarget.childNodes.length < 3) {
-          return;
-        }
+        if (e.currentTarget.childNodes.length < 3) { return; }
         let getDesc =
           e.currentTarget.childNodes[1].getAttribute('data-name') + " : " +
-          e.currentTarget.childNodes[1].getAttribute('data-desc') + " Props: " +
+          e.currentTarget.childNodes[1].getAttribute('data-desc') + " \n Props: " +
           e.currentTarget.childNodes[1].getAttribute('data-effects');
-        // console.log(getDesc);
         byId('hudDesriptionText').innerText = getDesc;
       });
       slot.addEventListener("mouseleave", () => {
@@ -484,7 +481,6 @@ export class HUD {
       inventoryGrid.appendChild(slot);
     }
 
-    // new
     addEventListener('hero-invertory-update', (e) => {
       console.log('hero-invertory-update', e.detail)
       e.detail.items.forEach((item, index) => {
@@ -500,7 +496,7 @@ export class HUD {
                data-name="${item.name}" 
                data-desc="${item.description}" 
                data-effects="${effectsString}" 
-               width="50px" 
+               width="50px" style="min-height: 50px;max-height:55px;"
                src="${item.path}" />
           `;
           console.log('hero-invertory-update item', item)

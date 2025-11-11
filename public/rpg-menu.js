@@ -643,7 +643,7 @@ let forestOfHollowBloodStartSceen = new _world.default({
     } else if (selectHeroIndex == 1) {
       name = 'slayzer';
     } else if (selectHeroIndex == 2) {
-      name = 'slayzer';
+      name = 'steelborn';
     } else if (selectHeroIndex == 3) {
       name = 'warrok';
     } else if (selectHeroIndex == 4) {
@@ -652,16 +652,15 @@ let forestOfHollowBloodStartSceen = new _world.default({
     return name;
   }
   function checkHeroStatus() {
-    let isUsed = false;
+    const indices = [];
     document.querySelectorAll('[data-hero-index]').forEach(elem => {
-      let index = parseInt(elem.getAttribute('data-hero-index'));
-      console.log(app.selectedHero, ' app.selectedHero VS Index:', index);
-      if (index == app.selectedHero) {
-        isUsed = true;
-        console.log('Hero element: used ...', index);
-      }
+      const index = parseInt(elem.getAttribute('data-hero-index'));
+      indices.push(index);
     });
-    return isUsed;
+
+    // check if any value appears more than once
+    const hasDuplicate = indices.some((val, i) => indices.indexOf(val) !== i);
+    return hasDuplicate;
   }
   function determinateTeam() {
     console.log('check remote conn.app.net.session.remoteConnections.size..', app.net.session.remoteConnections.size);
@@ -714,6 +713,7 @@ let forestOfHollowBloodStartSceen = new _world.default({
       forestOfHollowBloodStartSceen.gotoGamePlay();
     }
   }
+  forestOfHollowBloodStartSceen.determinateSelection = determinateSelection;
   function isAllSelected() {
     let sumParty = document.querySelectorAll('[id*="waiting-"]');
     let testSelection = document.querySelectorAll('[id*="waithero-img-"]');
@@ -782,7 +782,7 @@ let forestOfHollowBloodStartSceen = new _world.default({
       }, 30000);
     }
   });
-  forestOfHollowBloodStartSceen.MINIMUM_PLAYERS = 2;
+  forestOfHollowBloodStartSceen.MINIMUM_PLAYERS = 3;
   forestOfHollowBloodStartSceen.setWaitingList = () => {
     // access net doms who comes with broadcaster2.html
     const waitingForOthersDOM = document.createElement("div");
@@ -836,15 +836,14 @@ let forestOfHollowBloodStartSceen = new _world.default({
     app.net.fetchInfo('forestOfHollowBlood-free-for-all');
   });
   addEventListener('connectionDestroyed', e => {
-    if ((0, _utils.byId)(e.detail.connectionId)) {
-      (0, _utils.byId)(`waiting-${e.detail.connectionId}`).remove();
-    }
+    (0, _utils.byId)(`waiting-${e.detail.connectionId}`).remove();
   });
   addEventListener("onConnectionCreated", e => {
     console.log('newconn : created', e.detail);
     let newPlayer = document.createElement('div');
     if (app.net.session.connection.connectionId == e.detail.connection.connectionId) {
       console.log('newconn : created [LOCAL] determinate team');
+      document.title = app.net.session.connection.connectionId;
       let team = determinateTeam();
       newPlayer.setAttribute('data-hero-team', team);
       newPlayer.innerHTML = `<div id="${e.detail.connection.connectionId}-title" >Player:${e.detail.connection.connectionId} Team:${team}</div>`;
@@ -1033,7 +1032,7 @@ let forestOfHollowBloodStartSceen = new _world.default({
         app.lightContainer[0].position[2] = 10;
         app.lightContainer[0].position[1] = 50;
         app.lightContainer[0].intensity = 1.4;
-      }, 3000);
+      }, 4000);
     }
     loadHeros();
     createHUDMenu();
@@ -1231,7 +1230,7 @@ let forestOfHollowBloodStartSceen = new _world.default({
         // test - for late users notify again 
         app.notifyHeroSelectionTimer = setInterval(() => {
           // not tested
-          console.log('determinateSelection called !!!!');
+          console.log('determinateSelection called 10 sec !');
           determinateSelection();
         }, 10000);
         return;

@@ -133,9 +133,9 @@ export class Character extends Hero {
         console.info(`%cAnimation...`, LOG_MATRIX)
         this.mouseTarget = app.getSceneObjectByName('mouseTarget_Circle');
         this.mouseTarget.animationSpeed = 20000;
-        app.localHero.mouseTarget.instanceTargets[1].position[1] =1;
-        app.localHero.mouseTarget.instanceTargets[1].scale = [0.4,0.4,0.4];
-        
+        app.localHero.mouseTarget.instanceTargets[1].position[1] = 1;
+        app.localHero.mouseTarget.instanceTargets[1].scale = [0.4, 0.4, 0.4];
+
         this.heroe_bodies = app.mainRenderBundle.filter(obj =>
           obj.name && obj.name.includes(this.name)
         );
@@ -197,6 +197,22 @@ export class Character extends Hero {
     } catch(err) {throw err;}
   }
 
+  async loadFriendlyHero(p) {
+    try {
+      this.friendlyLocal.heroes.push(new FriendlyHero(
+        {
+          core: this.core,
+          name: o.hero,
+          archetypes: o.archetypes,
+          path: o.path,
+          position: {x: 0, y: -23, z: 0}
+        }
+      ));
+    } catch(err) {
+      console.error(err);
+    }
+  }
+
   setAllCreepsAtStartPos() {
     // console.info(`%c setAllCreepsAtStartPos:  ??????????????????????`, LOG_MATRIX)
     this.friendlyLocal.creeps.forEach((subMesh_, id) => {
@@ -220,9 +236,9 @@ export class Character extends Hero {
 
     app.localHero.friendlyLocal.creeps.forEach((creep, index) => {
       creep.heroe_bodies[0].position.setPosition(
-        startUpPositions[this.core.player.data.team][0] + (index+1) * 50,
+        startUpPositions[this.core.player.data.team][0] + (index + 1) * 50,
         startUpPositions[this.core.player.data.team][1],
-        startUpPositions[this.core.player.data.team][2] + (index+1) * 50);
+        startUpPositions[this.core.player.data.team][2] + (index + 1) * 50);
     })
 
     setTimeout(() => {

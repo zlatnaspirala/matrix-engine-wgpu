@@ -82,7 +82,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
     } else if(selectHeroIndex == 1) {
       name = 'slayzer';
     } else if(selectHeroIndex == 2) {
-      name = 'slayzer';
+      name = 'steelborn';
     } else if(selectHeroIndex == 3) {
       name = 'warrok';
     } else if(selectHeroIndex == 4) {
@@ -92,16 +92,17 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
   }
 
   function checkHeroStatus() {
-    let isUsed = false;
-    document.querySelectorAll('[data-hero-index]').forEach((elem) => {
-      let index = parseInt(elem.getAttribute('data-hero-index'));
-      console.log(app.selectedHero, ' app.selectedHero VS Index:', index);
-      if(index == app.selectedHero) {
-        isUsed = true;
-        console.log('Hero element: used ...', index);
-      }
+    const indices = [];
+
+    document.querySelectorAll('[data-hero-index]').forEach(elem => {
+      const index = parseInt(elem.getAttribute('data-hero-index'));
+      indices.push(index);
     });
-    return isUsed;
+
+    // check if any value appears more than once
+    const hasDuplicate = indices.some((val, i) => indices.indexOf(val) !== i);
+
+    return hasDuplicate;
   }
 
   function determinateTeam() {
@@ -159,6 +160,8 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
       forestOfHollowBloodStartSceen.gotoGamePlay();
     }
   }
+
+  forestOfHollowBloodStartSceen.determinateSelection = determinateSelection;
 
   function isAllSelected() {
     let sumParty = document.querySelectorAll('[id*="waiting-"]');
@@ -233,7 +236,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
     }
   })
 
-  forestOfHollowBloodStartSceen.MINIMUM_PLAYERS = 2;
+  forestOfHollowBloodStartSceen.MINIMUM_PLAYERS = 3;
 
   forestOfHollowBloodStartSceen.setWaitingList = () => {
     // access net doms who comes with broadcaster2.html
@@ -292,9 +295,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
   });
 
   addEventListener('connectionDestroyed', (e) => {
-    if(byId(e.detail.connectionId)) {
-      byId(`waiting-${e.detail.connectionId}`).remove();
-    }
+    byId(`waiting-${e.detail.connectionId}`).remove();
   });
 
   addEventListener("onConnectionCreated", (e) => {
@@ -302,6 +303,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
     let newPlayer = document.createElement('div');
     if(app.net.session.connection.connectionId == e.detail.connection.connectionId) {
       console.log('newconn : created [LOCAL] determinate team');
+      document.title = app.net.session.connection.connectionId;
       let team = determinateTeam();
       newPlayer.setAttribute('data-hero-team', team);
       newPlayer.innerHTML = `<div id="${e.detail.connection.connectionId}-title" >Player:${e.detail.connection.connectionId} Team:${team}</div>`;
@@ -455,7 +457,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
         app.lightContainer[0].position[2] = 10;
         app.lightContainer[0].position[1] = 50;
         app.lightContainer[0].intensity = 1.4;
-      }, 3000);
+      }, 4000);
     }
     loadHeros();
     createHUDMenu();
@@ -676,9 +678,9 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
         // test - for late users notify again 
         app.notifyHeroSelectionTimer = setInterval(() => {
           // not tested
-          console.log('determinateSelection called !!!!')
-           determinateSelection();
-        },10000);
+          console.log('determinateSelection called 10 sec !')
+          determinateSelection();
+        }, 10000);
 
         return;
       } else {

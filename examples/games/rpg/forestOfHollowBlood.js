@@ -23,16 +23,12 @@ import {Inventory} from "./invertoryManager.js";
  * Redistribution of raw assets is not permitted.”
  **/
 
-// Prevent no inputs cases
-// in prodc SS in dev LS
-
 // set orientation  in animation end hero
 // setup HP after setDead
 
-
 if(!SS.has('player') || !LS.has('player')) {
-  // alert('No no');
-  location.assign('google.com');
+  location.href = 'https://google.com';
+  // location.assign('https://google.com');
 }
 
 let forestOfHollowBlood = new MatrixEngineWGPU({
@@ -93,6 +89,8 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
       if(byId('remote-' + e.detail.connectionId)) {
         byId('remote-' + e.detail.connectionId).remove();
         //....
+        // waiting-con_TjR2efh53j
+        // byId('waiting-' + e.detail.connectionId).remove();
         mb.error(`Player ${e.detail.connectionId} disconnected...`);
         let getPlayer = JSON.parse(e.detail.event.connection.data);
         let disPlayer = forestOfHollowBlood.getSceneObjectByName(getPlayer.mesh);
@@ -114,7 +112,6 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
         document.title = forestOfHollowBlood.label.get.titleBan;
       } else {
         //--------------------------------------------------------
-        // 
         let newPlayer = document.createElement('div');
         newPlayer.innerHTML = `remote Player: ${e.detail.connection.connectionId}`;
         newPlayer.id = `remote-${e.detail.connection.connectionId}`;
@@ -124,8 +121,26 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
           forestOfHollowBlood.net.virtualEmiter = e.detail.connection.connectionId;
         }
         let d = JSON.parse(e.detail.connection.data)
-        console.log(' [][][][][newconn] ', d);
-        forestOfHollowBlood.enemies.loadEnemyHero(d);
+        console.log('[new enemy hero]', d);
+
+        if (d.team == app.player.data.team) {
+          // friendly
+          forestOfHollowBlood.
+        } else {
+          forestOfHollowBlood.enemies.loadEnemyHero(d);
+        }
+        // 
+        //  {
+        //     "mesh": "MariaSword_Maria",
+        //     "hero": "MariaSword",
+        //     "path": "res/meshes/glb/woman1.glb",
+        //     "archetypes": [
+        //         "Warrior"
+        //     ],
+        //     "team": "north",
+        //     "data": 1762888866712,
+        //     "enemyTeam": "south"
+        // }
       }
     })
 
@@ -249,6 +264,8 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
 
     forestOfHollowBlood.localHero.inventory = new Inventory(forestOfHollowBlood.localHero);
     forestOfHollowBlood.marketPlace = new Marketplace(forestOfHollowBlood.localHero);
+    forestOfHollowBlood.marketPlace.mb = mb;
+    forestOfHollowBlood.marketPlace.label = forestOfHollowBlood.label;
     forestOfHollowBlood.localHero.inventory.loadAllRules(forestOfHollowBlood.marketPlace._generateItems());
 
     forestOfHollowBlood.HUD = new HUD(forestOfHollowBlood.localHero);

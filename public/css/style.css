@@ -389,6 +389,7 @@ p {
 }
 
 #msgBox {
+  z-index: 10;
   text-shadow: 0px 4px 4px #282828;
   -webkit-user-select: none;
   /* Safari */
@@ -1015,7 +1016,7 @@ new dom effect from
 @-webkit-keyframes showByRight {
   0% {
     /* background-color: rgba(155, 101, 10, 0.95); */
-    right: -48%;
+    right: -52%;
   }
 
   100% {
@@ -1029,7 +1030,7 @@ new dom effect from
 @keyframes showByRight {
   0% {
     /* background-color: rgba(155, 101, 10, 0.95); */
-    right: -48%;
+    right: -52%;
   }
 
   100% {
@@ -1048,7 +1049,7 @@ new dom effect from
 
   100% {
     /* background-color: rgba(0, 0, 0, 0.95); */
-    right: -48%;
+    right: -52%;
     opacity: 0.6;
   }
 }
@@ -1061,7 +1062,7 @@ new dom effect from
 
   100% {
     /* background-color: rgba(0, 0, 0, 0.95); */
-    right: -48%;
+    right: -52%;
     opacity: 0.6;
   }
 }

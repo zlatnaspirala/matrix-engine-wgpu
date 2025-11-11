@@ -57,8 +57,8 @@ export class Marketplace {
       itemDOM.id = i.name;
       itemDOM.innerHTML = `
         <div style="" class="itemDOM">
-          <img class="invertoryItem" src='${i.path}' /> 
-          <div>name: ${i.name} price: ${i.price == 0 ? "Cant be buyed only constructed from basic item." : i.price} ${i.description}</div>
+          <img class="invertoryItem" src='${i.path}' />
+          <div>name: ${i.name} price: ${i.price == 0 ? "<span style='color:red;' >Cant be buyed only constructed from basic item.</span>" : i.price} ${i.description}</div>
         </div>`;
       itemDOM.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -76,7 +76,11 @@ export class Marketplace {
     const item = this.items.find(i => i.name === itemName);
     if(!item) return console.warn("Item not found in market!");
     if(item.level > 1) return console.warn("Only level 1 items can be bought!");
-    if(this.hero.gold < item.price) return console.warn("Not enough gold!");
+    if(this.hero.gold < item.price) {
+      this.mb.show(this.label.get.nogold)
+      console.warn("Not enough gold!")
+      return;
+    }
 
     this.hero.gold -= item.price;
     this.hero.inventory.addItem(item.name,
