@@ -66,7 +66,7 @@ export class HUD {
       margin: '0',
       boxSizing: "border-box",
       overflow: 'hidden',
-      fontSize: '9px',
+      fontSize: '10px',
     });
 
     hud.appendChild(statsDom);
@@ -89,7 +89,7 @@ export class HUD {
       margin: '0',
       boxSizing: "border-box",
       overflow: 'hidden',
-      fontSize: '9px',
+      fontSize: '10px',
     });
 
     hud.appendChild(statsDomValue);
@@ -108,11 +108,11 @@ export class HUD {
     ];
 
     addEventListener('stats-localhero', (e) => {
-      console.log('STATS UPDATE DOM ', e.detail)
+      
       for(var x = 0;x < props.length;x++) {
+        console.log('STATS UPDATE DOM ', e.detail[props[x]].toFixed(2))
         byId('stats-' + props[x]).innerHTML = e.detail[props[x]].toFixed(2);
       }
-      console.log('STATS UPDATE DOM ', e.detail)
     })
 
     for(var x = 0;x < props.length;x++) {
@@ -441,6 +441,7 @@ export class HUD {
     for(let i = 0;i < 6;i++) {
       const slot = document.createElement("div");
       slot.className = "inventory-slot";
+      slot.id = `inventory-slot-${i}`;
 
       Object.assign(slot.style, {
         aspectRatio: "1 / 1",
@@ -461,10 +462,18 @@ export class HUD {
         backgroundPosition: "center",
       });
       // Hover effect
-      slot.addEventListener("mouseenter", () => {
+      slot.addEventListener("mouseenter", (e) => {
         slot.style.border = "2px solid #ff0";
-        slot.style.boxShadow =
-          "0 0 10px rgba(255,255,0,0.5), inset 2px 2px 5px rgba(0,0,0,0.6)";
+        slot.style.boxShadow = "0 0 10px rgba(255,255,0,0.5), inset 2px 2px 5px rgba(0,0,0,0.6)";
+        if (e.currentTarget.childNodes.length < 3) {
+          return;
+        }
+        let getDesc =
+          e.currentTarget.childNodes[1].getAttribute('data-name') + " : " +
+          e.currentTarget.childNodes[1].getAttribute('data-desc') + " Props: " +
+          e.currentTarget.childNodes[1].getAttribute('data-effects');
+        // console.log(getDesc);
+        byId('hudDesriptionText').innerText = getDesc;
       });
       slot.addEventListener("mouseleave", () => {
         slot.style.border = "2px solid #aaa";
@@ -474,6 +483,30 @@ export class HUD {
       slot.textContent = "Empty";
       inventoryGrid.appendChild(slot);
     }
+
+    // new
+    addEventListener('hero-invertory-update', (e) => {
+      console.log('hero-invertory-update', e.detail)
+      e.detail.items.forEach((item, index) => {
+        if(item != null) {
+          const effectsString = item.effects
+            ? Object.entries(item.effects)
+              .map(([key, value]) => `${key}: ${value}`)
+              .join(', ')
+            : 'None';
+
+          byId(`inventory-slot-${index}`).innerHTML = `
+            <img 
+               data-name="${item.name}" 
+               data-desc="${item.description}" 
+               data-effects="${effectsString}" 
+               width="50px" 
+               src="${item.path}" />
+          `;
+          console.log('hero-invertory-update item', item)
+        }
+      })
+    })
 
     const loader = document.createElement("div");
     Object.assign(loader.style, {

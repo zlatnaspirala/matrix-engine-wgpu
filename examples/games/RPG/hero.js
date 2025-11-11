@@ -145,25 +145,52 @@ export class HeroProps {
       {name: "Ultimate", level: 0, maxLevel: 1}
     ];
 
+    this.invertoryBonus = {
+      hp: 1,
+      mana: 1,
+      attack: 1,
+      armor: 1,
+      moveSpeed: 1,
+      attackSpeed: 1,
+      hpRegen: 1,
+      mpRegen: 1
+    };
     this.updateStats();
   }
 
-  // --- Update stats
   updateStats() {
     const lvlData = this.levels[this.currentLevel - 1];
     if(!lvlData) return;
 
+    console.log('updateStats: armor ', this.invertoryBonus.armor)
+
     Object.assign(this, {
-      hp: lvlData.hp,
-      mana: lvlData.mana,
-      attack: lvlData.attack,
-      armor: lvlData.armor,
-      moveSpeed: lvlData.moveSpeed,
-      attackSpeed: lvlData.attackSpeed,
-      hpRegen: lvlData.hpRegen,
-      mpRegen: lvlData.mpRegen,
+      hp: lvlData.hp * this.invertoryBonus.hp,
+      mana: lvlData.mana * this.invertoryBonus.mana,
+      attack: lvlData.attack * this.invertoryBonus.attack,
+      armor: lvlData.armor * this.invertoryBonus.armor,
+      moveSpeed: lvlData.moveSpeed * this.invertoryBonus.moveSpeed,
+      attackSpeed: lvlData.attackSpeed * this.invertoryBonus.attackSpeed,
+      hpRegen: lvlData.hpRegen * this.invertoryBonus.hpRegen,
+      mpRegen: lvlData.mpRegen * this.invertoryBonus.mpRegen,
       abilityPoints: lvlData.abilityPoints
     });
+
+    dispatchEvent(new CustomEvent('stats-localhero', {
+      detail: {
+        gold: this.gold,
+        currentLevel: this.currentLevel,
+        xp: this.currentXP,
+        hp: this.hp,
+        mana: this.mana,
+        attack: this.attack,
+        armor: this.armor,
+        moveSpeed: this.moveSpeed,
+        attackSpeed: this.attackSpeed,
+        hpRegen: this.hpRegen,
+        mpRegen: this.mpRegen,
+      }
+    }))
   }
 
   // --- Kill enemy: only enemyLevel argument
@@ -208,21 +235,21 @@ export class HeroProps {
     }
 
     // emit for hud
-    dispatchEvent(new CustomEvent('stats-localhero', {
-      detail: {
-        gold: this.gold,
-        currentLevel: this.currentLevel,
-        xp: this.currentXP,
-        hp: this.hp,
-        mana: this.mana,
-        attack: this.attack,
-        armor: this.armor,
-        moveSpeed: this.moveSpeed,
-        attackSpeed: this.attackSpeed,
-        hpRegen: this.hpRegen,
-        mpRegen: this.mpRegen,
-      }
-    }))
+    // dispatchEvent(new CustomEvent('stats-localhero', {
+    //   detail: {
+    //     gold: this.gold,
+    //     currentLevel: this.currentLevel,
+    //     xp: this.currentXP,
+    //     hp: this.hp,
+    //     mana: this.mana,
+    //     attack: this.attack,
+    //     armor: this.armor,
+    //     moveSpeed: this.moveSpeed,
+    //     attackSpeed: this.attackSpeed,
+    //     hpRegen: this.hpRegen,
+    //     mpRegen: this.mpRegen,
+    //   }
+    // }))
   }
 
   // --- Upgrade abilities
@@ -318,7 +345,7 @@ export class HeroProps {
           progress: progress,
           attacker: attacker.name,
           defenderLevel: defender.currentLevel,
-          defender : defender.name,
+          defender: defender.name,
           hp: defender.hp
         }
       }))
@@ -373,6 +400,7 @@ export class Hero extends HeroProps {
   updateStats() {
     super.updateStats();
     this.applyArchetypeStats();
+    console.log('Override updateStats to include archetype scaling ....')
   }
 }
 

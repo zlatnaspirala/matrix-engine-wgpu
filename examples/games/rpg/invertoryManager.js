@@ -11,36 +11,42 @@ export class Inventory {
     this.slots = new Array(size).fill(null);
     this.craftingRules = [];
     this.activeTimers = new Map();
-
-    this._dispatchUpdate();
   }
 
   // --- Add crafting rule
   addCraftingRule(requiredItems, resultItem) {
-    this.craftingRules.push({ requiredItems, resultItem });
+    this.craftingRules.push({requiredItems, resultItem});
+  }
+
+  loadAllRules (allLevel2_3) {
+    let onlyConstructable = allLevel2_3.filter((item) => typeof item.from !== 'undefined');
+    onlyConstructable.forEach((item , index, array) => {
+      console.log(item.name + " from " + item.from);
+      this.addCraftingRule(item.from, item);
+    });
   }
 
   // --- Add item (supports stacking + timed items + effects)
-  addItem(name, { quantity = 1, duration = null, effects = null } = {}) {
+  addItem(name, {quantity = 1, duration = null, effects = null, path = null, description = ""} = {}) {
     const existingSlot = this.slots.find(s => s && s.name === name);
 
-    if (existingSlot && !duration) {
+    if(existingSlot && !duration) {
       existingSlot.quantity += quantity;
     } else {
       const emptyIndex = this.slots.findIndex(s => s === null);
-      if (emptyIndex === -1) {
+      if(emptyIndex === -1) {
         console.warn("Inventory is full!");
         return false;
       }
 
-      const newItem = { name, quantity, createdAt: Date.now(), duration, effects };
+      const newItem = {name, quantity, createdAt: Date.now(), duration, effects, path, description};
       this.slots[emptyIndex] = newItem;
 
       // Apply effects immediately
-      if (effects) this._applyEffects(effects, true);
+      if(effects) this._applyEffects(effects, true);
 
       // Time-limited logic
-      if (duration) {
+      if(duration) {
         const timerId = setTimeout(() => {
           this.removeItem(name, quantity);
           this.activeTimers.delete(name);
@@ -51,7 +57,6 @@ export class Inventory {
     }
 
     console.log(`🧩 Added item "${name}" x${quantity}`);
-    this._dispatchUpdate();
     this._checkCraftingRules();
     this._dispatchHeroUpdate();
     return true;
@@ -60,34 +65,33 @@ export class Inventory {
   // --- Remove item and reverse effects
   removeItem(name, quantity = 1) {
     const slotIndex = this.slots.findIndex(s => s && s.name === name);
-    if (slotIndex === -1) return false;
+    if(slotIndex === -1) return false;
 
     const slot = this.slots[slotIndex];
     slot.quantity -= quantity;
 
-    if (slot.effects) {
+    if(slot.effects) {
       this._applyEffects(slot.effects, false); // reverse effect
     }
 
-    if (slot.quantity <= 0) {
+    if(slot.quantity <= 0) {
       this.slots[slotIndex] = null;
       console.log(`❌ Removed item "${name}"`);
     }
 
-    if (this.activeTimers.has(name)) {
+    if(this.activeTimers.has(name)) {
       clearTimeout(this.activeTimers.get(name));
       this.activeTimers.delete(name);
     }
 
-    this._dispatchUpdate();
     this._dispatchHeroUpdate();
     return true;
   }
 
   // --- Apply or reverse item effects on hero
   _applyEffects(effects, isAdding = true) {
-    for (const [key, multiplier] of Object.entries(effects)) {
-      if (this.hero[key] !== undefined && typeof this.hero[key] === "number") {
+    for(const [key, multiplier] of Object.entries(effects)) {
+      if(this.hero[key] !== undefined && typeof this.hero[key] === "number") {
         const factor = isAdding ? multiplier : 1 / multiplier;
         this.hero[key] *= factor;
       }
@@ -96,39 +100,33 @@ export class Inventory {
 
   // --- Crafting
   _checkCraftingRules() {
-    for (const rule of this.craftingRules) {
+    for(const rule of this.craftingRules) {
       const hasAll = rule.requiredItems.every(item =>
         this.slots.some(slot => slot && slot.name === item)
       );
-      if (hasAll) {
+      if(hasAll) {
         rule.requiredItems.forEach(item => this.removeItem(item, 1));
-        this.addItem(rule.resultItem);
-        console.log(`✨ Crafted new item: "${rule.resultItem}"`);
+        this.addItem(rule.resultItem.name, {effects: rule.resultItem.effects, path: rule.resultItem.path, 
+            description: rule.resultItem.description
+        });
+        console.log(`✨ Crafted new item: "${rule.resultItem.name}"`);
         return;
       }
     }
   }
 
-  // --- Event helpers
   _dispatchHeroUpdate() {
-    dispatchEvent(
-      new CustomEvent("hero-stats-update", {
-        detail: {
-          hero: this.hero.name,
-          hp: this.hero.hp,
-          mana: this.hero.mana,
-          attack: this.hero.attack,
-          items: this.slots.filter(i => i).map(i => i.name)
+    this.slots.forEach((item, index) => {
+      if(item != null) for(var key in item.effects) {
+        if(this.hero[key]) {
+          console.log(key + '  -< effects props exist in hero base class -  value: ', item.effects[key]);
+          this.hero.invertoryBonus[key] *= item.effects[key];
         }
-      })
-    );
-  }
+      }
+    });
 
-  _dispatchUpdate() {
-    dispatchEvent(
-      new CustomEvent("inventory-update", {
-        detail: { hero: this.hero.name, items: this.slots }
-      })
+    this.hero.updateStats();
+    dispatchEvent(new CustomEvent("hero-invertory-update", {detail: {items: this.slots}})
     );
   }
 
@@ -146,12 +144,11 @@ export class Inventory {
 
   clear() {
     this.slots.forEach(slot => {
-      if (slot && slot.effects) this._applyEffects(slot.effects, false);
+      if(slot && slot.effects) this._applyEffects(slot.effects, false);
     });
     this.slots.fill(null);
     this.activeTimers.forEach(t => clearTimeout(t));
     this.activeTimers.clear();
-    this._dispatchUpdate();
     this._dispatchHeroUpdate();
     console.log("🧹 Inventory cleared");
   }

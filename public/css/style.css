@@ -1015,12 +1015,12 @@ new dom effect from
 @-webkit-keyframes showByRight {
   0% {
     /* background-color: rgba(155, 101, 10, 0.95); */
-    right: -47%;
+    right: -48%;
   }
 
   100% {
     /* background-color: rgb(200, 54, 9); */
-    right: -5%;
+    right: -4%;
     opacity: 1;
   }
 }
@@ -1029,12 +1029,12 @@ new dom effect from
 @keyframes showByRight {
   0% {
     /* background-color: rgba(155, 101, 10, 0.95); */
-    right: -47%;
+    right: -48%;
   }
 
   100% {
     /* background-color: rgb(200, 54, 9); */
-    right: -5%;
+    right: -4%;
     opacity: 1;
   }
 }
@@ -1043,12 +1043,12 @@ new dom effect from
 @-webkit-keyframes hideByRight {
   0% {
     /* background-color: rgba(255, 166, 11, 0.95); */
-    right: -5%;
+    right: -4%;
   }
 
   100% {
     /* background-color: rgba(0, 0, 0, 0.95); */
-    right: -47%;
+    right: -48%;
     opacity: 0.6;
   }
 }
@@ -1056,12 +1056,12 @@ new dom effect from
 /* Standard syntax */
 @keyframes hideByRight {
   0% {
-    right: -5%;
+    right: -4%;
   }
 
   100% {
     /* background-color: rgba(0, 0, 0, 0.95); */
-    right: -47%;
+    right: -48%;
     opacity: 0.6;
   }
 }
@@ -1100,6 +1100,7 @@ new dom effect from
 
 
 .itemDOM {
+  z-index: 2;
   width: 100px;
   background: black;
   height: 100%;

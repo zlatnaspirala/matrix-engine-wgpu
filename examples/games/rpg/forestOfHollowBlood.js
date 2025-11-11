@@ -11,6 +11,7 @@ import {byId} from "../../../src/engine/networking/matrix-stream.js";
 import {startUpPositions} from "./static.js";
 import {MatrixTTS} from "./tts.js";
 import {Marketplace} from "./marketplace.js";
+import {Inventory} from "./invertoryManager.js";
 
 /**
  * @description
@@ -44,7 +45,7 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
   clearColor: {r: 0, b: 0.122, g: 0.122, a: 1}
 }, () => {
 
-  forestOfHollowBlood.tts = new MatrixTTS();
+  // forestOfHollowBlood.tts = new MatrixTTS();
 
   forestOfHollowBlood.player = {
     username: "guest"
@@ -246,22 +247,9 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
       forestOfHollowBlood, forestOfHollowBlood.player.data.path,
       forestOfHollowBlood.player.data.hero, [forestOfHollowBlood.player.data.archetypes]);
 
-      forestOfHollowBlood.marketPlace = new Marketplace();
-
-    // const inv = new Inventory(hero);
-
-    // inv.addItem("ring of strength", {
-    //   effects: {attack: 1.1} // +10% attack
-    // });
-
-    // inv.addItem("mana amulet", {
-    //   effects: {mana: 1.25} // +25% mana
-    // });
-
-    // setTimeout(() => {
-    //   inv.removeItem("ring of strength");
-    //   inv.debugPrint();
-    // }, 5000);
+    forestOfHollowBlood.localHero.inventory = new Inventory(forestOfHollowBlood.localHero);
+    forestOfHollowBlood.marketPlace = new Marketplace(forestOfHollowBlood.localHero);
+    forestOfHollowBlood.localHero.inventory.loadAllRules(forestOfHollowBlood.marketPlace._generateItems());
 
     forestOfHollowBlood.HUD = new HUD(forestOfHollowBlood.localHero);
 

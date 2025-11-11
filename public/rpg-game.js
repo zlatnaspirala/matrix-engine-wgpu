@@ -582,7 +582,7 @@ class Character extends _hero.Hero {
 }
 exports.Character = Character;
 
-},{"../../../src/engine/loaders/webgpu-gltf":50,"../../../src/engine/utils":57,"./creep-character":3,"./hero":7,"./nav-mesh":11,"./static":12,"wgpu-matrix":29}],2:[function(require,module,exports){
+},{"../../../src/engine/loaders/webgpu-gltf":51,"../../../src/engine/utils":58,"./creep-character":3,"./hero":7,"./nav-mesh":12,"./static":13,"wgpu-matrix":30}],2:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -862,7 +862,7 @@ class Controller {
 }
 exports.Controller = Controller;
 
-},{"../../../src/engine/raycast.js":56,"../../../src/engine/utils.js":57,"./nav-mesh.js":11,"wgpu-matrix":29}],3:[function(require,module,exports){
+},{"../../../src/engine/raycast.js":57,"../../../src/engine/utils.js":58,"./nav-mesh.js":12,"wgpu-matrix":30}],3:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -1101,7 +1101,7 @@ class Creep extends _hero.Hero {
 }
 exports.Creep = Creep;
 
-},{"../../../src/engine/loaders/webgpu-gltf":50,"../../../src/engine/utils":57,"./hero":7,"./static":12}],4:[function(require,module,exports){
+},{"../../../src/engine/loaders/webgpu-gltf":51,"../../../src/engine/utils":58,"./hero":7,"./static":13}],4:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -1328,7 +1328,7 @@ class Enemie extends _hero.Hero {
 }
 exports.Enemie = Enemie;
 
-},{"../../../src/engine/loaders/webgpu-gltf":50,"../../../src/engine/utils":57,"./hero":7,"./nav-mesh":11,"./static":12}],6:[function(require,module,exports){
+},{"../../../src/engine/loaders/webgpu-gltf":51,"../../../src/engine/utils":58,"./hero":7,"./nav-mesh":12,"./static":13}],6:[function(require,module,exports){
 "use strict";
 
 var _world = _interopRequireDefault(require("../../../src/world.js"));
@@ -1344,6 +1344,7 @@ var _matrixStream = require("../../../src/engine/networking/matrix-stream.js");
 var _static = require("./static.js");
 var _tts = require("./tts.js");
 var _marketplace = require("./marketplace.js");
+var _invertoryManager = require("./invertoryManager.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 /**
  * @description
@@ -1379,7 +1380,8 @@ let forestOfHollowBlood = new _world.default({
     a: 1
   }
 }, () => {
-  forestOfHollowBlood.tts = new _tts.MatrixTTS();
+  // forestOfHollowBlood.tts = new MatrixTTS();
+
   forestOfHollowBlood.player = {
     username: "guest"
   };
@@ -1554,23 +1556,9 @@ let forestOfHollowBlood = new _world.default({
     forestOfHollowBlood.mapLoader = new _mapLoader.MEMapLoader(forestOfHollowBlood, "./res/meshes/nav-mesh/navmesh.json");
     // fix arg later!
     forestOfHollowBlood.localHero = new _characterBase.Character(forestOfHollowBlood, forestOfHollowBlood.player.data.path, forestOfHollowBlood.player.data.hero, [forestOfHollowBlood.player.data.archetypes]);
-    forestOfHollowBlood.marketPlace = new _marketplace.Marketplace();
-
-    // const inv = new Inventory(hero);
-
-    // inv.addItem("ring of strength", {
-    //   effects: {attack: 1.1} // +10% attack
-    // });
-
-    // inv.addItem("mana amulet", {
-    //   effects: {mana: 1.25} // +25% mana
-    // });
-
-    // setTimeout(() => {
-    //   inv.removeItem("ring of strength");
-    //   inv.debugPrint();
-    // }, 5000);
-
+    forestOfHollowBlood.localHero.inventory = new _invertoryManager.Inventory(forestOfHollowBlood.localHero);
+    forestOfHollowBlood.marketPlace = new _marketplace.Marketplace(forestOfHollowBlood.localHero);
+    forestOfHollowBlood.localHero.inventory.loadAllRules(forestOfHollowBlood.marketPlace._generateItems());
     forestOfHollowBlood.HUD = new _hud.HUD(forestOfHollowBlood.localHero);
     forestOfHollowBlood.collisionSystem = new _collisionSubSystem.CollisionSystem(forestOfHollowBlood);
     app.matrixSounds.play('music');
@@ -1579,7 +1567,7 @@ let forestOfHollowBlood = new _world.default({
 });
 window.app = forestOfHollowBlood;
 
-},{"../../../src/engine/collision-sub-system.js":32,"../../../src/engine/networking/matrix-stream.js":54,"../../../src/engine/networking/net.js":55,"../../../src/engine/utils.js":57,"../../../src/world.js":80,"./character-base.js":1,"./controller.js":2,"./enemies-manager.js":4,"./hud.js":8,"./map-loader.js":9,"./marketplace.js":10,"./static.js":12,"./tts.js":13}],7:[function(require,module,exports){
+},{"../../../src/engine/collision-sub-system.js":33,"../../../src/engine/networking/matrix-stream.js":55,"../../../src/engine/networking/net.js":56,"../../../src/engine/utils.js":58,"../../../src/world.js":81,"./character-base.js":1,"./controller.js":2,"./enemies-manager.js":4,"./hud.js":8,"./invertoryManager.js":9,"./map-loader.js":10,"./marketplace.js":11,"./static.js":13,"./tts.js":14}],7:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -1852,24 +1840,48 @@ class HeroProps {
       level: 0,
       maxLevel: 1
     }];
+    this.invertoryBonus = {
+      hp: 1,
+      mana: 1,
+      attack: 1,
+      armor: 1,
+      moveSpeed: 1,
+      attackSpeed: 1,
+      hpRegen: 1,
+      mpRegen: 1
+    };
     this.updateStats();
   }
-
-  // --- Update stats
   updateStats() {
     const lvlData = this.levels[this.currentLevel - 1];
     if (!lvlData) return;
+    console.log('updateStats: armor ', this.invertoryBonus.armor);
     Object.assign(this, {
-      hp: lvlData.hp,
-      mana: lvlData.mana,
-      attack: lvlData.attack,
-      armor: lvlData.armor,
-      moveSpeed: lvlData.moveSpeed,
-      attackSpeed: lvlData.attackSpeed,
-      hpRegen: lvlData.hpRegen,
-      mpRegen: lvlData.mpRegen,
+      hp: lvlData.hp * this.invertoryBonus.hp,
+      mana: lvlData.mana * this.invertoryBonus.mana,
+      attack: lvlData.attack * this.invertoryBonus.attack,
+      armor: lvlData.armor * this.invertoryBonus.armor,
+      moveSpeed: lvlData.moveSpeed * this.invertoryBonus.moveSpeed,
+      attackSpeed: lvlData.attackSpeed * this.invertoryBonus.attackSpeed,
+      hpRegen: lvlData.hpRegen * this.invertoryBonus.hpRegen,
+      mpRegen: lvlData.mpRegen * this.invertoryBonus.mpRegen,
       abilityPoints: lvlData.abilityPoints
     });
+    dispatchEvent(new CustomEvent('stats-localhero', {
+      detail: {
+        gold: this.gold,
+        currentLevel: this.currentLevel,
+        xp: this.currentXP,
+        hp: this.hp,
+        mana: this.mana,
+        attack: this.attack,
+        armor: this.armor,
+        moveSpeed: this.moveSpeed,
+        attackSpeed: this.attackSpeed,
+        hpRegen: this.hpRegen,
+        mpRegen: this.mpRegen
+      }
+    }));
   }
 
   // --- Kill enemy: only enemyLevel argument
@@ -1912,21 +1924,21 @@ class HeroProps {
     }
 
     // emit for hud
-    dispatchEvent(new CustomEvent('stats-localhero', {
-      detail: {
-        gold: this.gold,
-        currentLevel: this.currentLevel,
-        xp: this.currentXP,
-        hp: this.hp,
-        mana: this.mana,
-        attack: this.attack,
-        armor: this.armor,
-        moveSpeed: this.moveSpeed,
-        attackSpeed: this.attackSpeed,
-        hpRegen: this.hpRegen,
-        mpRegen: this.mpRegen
-      }
-    }));
+    // dispatchEvent(new CustomEvent('stats-localhero', {
+    //   detail: {
+    //     gold: this.gold,
+    //     currentLevel: this.currentLevel,
+    //     xp: this.currentXP,
+    //     hp: this.hp,
+    //     mana: this.mana,
+    //     attack: this.attack,
+    //     armor: this.armor,
+    //     moveSpeed: this.moveSpeed,
+    //     attackSpeed: this.attackSpeed,
+    //     hpRegen: this.hpRegen,
+    //     mpRegen: this.mpRegen,
+    //   }
+    // }))
   }
 
   // --- Upgrade abilities
@@ -2070,6 +2082,7 @@ class Hero extends HeroProps {
   updateStats() {
     super.updateStats();
     this.applyArchetypeStats();
+    console.log('Override updateStats to include archetype scaling ....');
   }
 }
 exports.Hero = Hero;
@@ -2180,7 +2193,7 @@ class HUD {
       margin: '0',
       boxSizing: "border-box",
       overflow: 'hidden',
-      fontSize: '9px'
+      fontSize: '10px'
     });
     hud.appendChild(statsDom);
     const statsDomValue = document.createElement("div");
@@ -2200,16 +2213,15 @@ class HUD {
       margin: '0',
       boxSizing: "border-box",
       overflow: 'hidden',
-      fontSize: '9px'
+      fontSize: '10px'
     });
     hud.appendChild(statsDomValue);
     let props = ["currentLevel", "hp", "mana", "gold", "mpRegen", "hpRegen", "moveSpeed", "attackSpeed", "armor", "attack"];
     addEventListener('stats-localhero', e => {
-      console.log('STATS UPDATE DOM ', e.detail);
       for (var x = 0; x < props.length; x++) {
+        console.log('STATS UPDATE DOM ', e.detail[props[x]].toFixed(2));
         (0, _utils.byId)('stats-' + props[x]).innerHTML = e.detail[props[x]].toFixed(2);
       }
-      console.log('STATS UPDATE DOM ', e.detail);
     });
     for (var x = 0; x < props.length; x++) {
       const statsDomItem = document.createElement("div");
@@ -2520,6 +2532,7 @@ class HUD {
     for (let i = 0; i < 6; i++) {
       const slot = document.createElement("div");
       slot.className = "inventory-slot";
+      slot.id = `inventory-slot-${i}`;
       Object.assign(slot.style, {
         aspectRatio: "1 / 1",
         width: "90%",
@@ -2539,9 +2552,15 @@ class HUD {
         backgroundPosition: "center"
       });
       // Hover effect
-      slot.addEventListener("mouseenter", () => {
+      slot.addEventListener("mouseenter", e => {
         slot.style.border = "2px solid #ff0";
         slot.style.boxShadow = "0 0 10px rgba(255,255,0,0.5), inset 2px 2px 5px rgba(0,0,0,0.6)";
+        if (e.currentTarget.childNodes.length < 3) {
+          return;
+        }
+        let getDesc = e.currentTarget.childNodes[1].getAttribute('data-name') + " : " + e.currentTarget.childNodes[1].getAttribute('data-desc') + " Props: " + e.currentTarget.childNodes[1].getAttribute('data-effects');
+        // console.log(getDesc);
+        (0, _utils.byId)('hudDesriptionText').innerText = getDesc;
       });
       slot.addEventListener("mouseleave", () => {
         slot.style.border = "2px solid #aaa";
@@ -2550,6 +2569,25 @@ class HUD {
       slot.textContent = "Empty";
       inventoryGrid.appendChild(slot);
     }
+
+    // new
+    addEventListener('hero-invertory-update', e => {
+      console.log('hero-invertory-update', e.detail);
+      e.detail.items.forEach((item, index) => {
+        if (item != null) {
+          const effectsString = item.effects ? Object.entries(item.effects).map(([key, value]) => `${key}: ${value}`).join(', ') : 'None';
+          (0, _utils.byId)(`inventory-slot-${index}`).innerHTML = `
+            <img 
+               data-name="${item.name}" 
+               data-desc="${item.description}" 
+               data-effects="${effectsString}" 
+               width="50px" 
+               src="${item.path}" />
+          `;
+          console.log('hero-invertory-update item', item);
+        }
+      });
+    });
     const loader = document.createElement("div");
     Object.assign(loader.style, {
       position: "fixed",
@@ -2625,7 +2663,177 @@ class HUD {
 }
 exports.HUD = HUD;
 
-},{"../../../src/engine/utils.js":57}],9:[function(require,module,exports){
+},{"../../../src/engine/utils.js":58}],9:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.Inventory = void 0;
+/**
+ * @description
+ * Hero invertory (Local)
+ * Advanced Inventory system for RPG heroes.
+ * Supports stacking, crafting, and time-limited items.
+ */
+class Inventory {
+  constructor(hero, size = 6) {
+    this.hero = hero;
+    this.size = size;
+    this.slots = new Array(size).fill(null);
+    this.craftingRules = [];
+    this.activeTimers = new Map();
+  }
+
+  // --- Add crafting rule
+  addCraftingRule(requiredItems, resultItem) {
+    this.craftingRules.push({
+      requiredItems,
+      resultItem
+    });
+  }
+  loadAllRules(allLevel2_3) {
+    let onlyConstructable = allLevel2_3.filter(item => typeof item.from !== 'undefined');
+    onlyConstructable.forEach((item, index, array) => {
+      console.log(item.name + " from " + item.from);
+      this.addCraftingRule(item.from, item);
+    });
+  }
+
+  // --- Add item (supports stacking + timed items + effects)
+  addItem(name, {
+    quantity = 1,
+    duration = null,
+    effects = null,
+    path = null,
+    description = ""
+  } = {}) {
+    const existingSlot = this.slots.find(s => s && s.name === name);
+    if (existingSlot && !duration) {
+      existingSlot.quantity += quantity;
+    } else {
+      const emptyIndex = this.slots.findIndex(s => s === null);
+      if (emptyIndex === -1) {
+        console.warn("Inventory is full!");
+        return false;
+      }
+      const newItem = {
+        name,
+        quantity,
+        createdAt: Date.now(),
+        duration,
+        effects,
+        path,
+        description
+      };
+      this.slots[emptyIndex] = newItem;
+
+      // Apply effects immediately
+      if (effects) this._applyEffects(effects, true);
+
+      // Time-limited logic
+      if (duration) {
+        const timerId = setTimeout(() => {
+          this.removeItem(name, quantity);
+          this.activeTimers.delete(name);
+          console.log(`⏳ Item "${name}" expired and removed.`);
+        }, duration);
+        this.activeTimers.set(name, timerId);
+      }
+    }
+    console.log(`🧩 Added item "${name}" x${quantity}`);
+    this._checkCraftingRules();
+    this._dispatchHeroUpdate();
+    return true;
+  }
+
+  // --- Remove item and reverse effects
+  removeItem(name, quantity = 1) {
+    const slotIndex = this.slots.findIndex(s => s && s.name === name);
+    if (slotIndex === -1) return false;
+    const slot = this.slots[slotIndex];
+    slot.quantity -= quantity;
+    if (slot.effects) {
+      this._applyEffects(slot.effects, false); // reverse effect
+    }
+    if (slot.quantity <= 0) {
+      this.slots[slotIndex] = null;
+      console.log(`❌ Removed item "${name}"`);
+    }
+    if (this.activeTimers.has(name)) {
+      clearTimeout(this.activeTimers.get(name));
+      this.activeTimers.delete(name);
+    }
+    this._dispatchHeroUpdate();
+    return true;
+  }
+
+  // --- Apply or reverse item effects on hero
+  _applyEffects(effects, isAdding = true) {
+    for (const [key, multiplier] of Object.entries(effects)) {
+      if (this.hero[key] !== undefined && typeof this.hero[key] === "number") {
+        const factor = isAdding ? multiplier : 1 / multiplier;
+        this.hero[key] *= factor;
+      }
+    }
+  }
+
+  // --- Crafting
+  _checkCraftingRules() {
+    for (const rule of this.craftingRules) {
+      const hasAll = rule.requiredItems.every(item => this.slots.some(slot => slot && slot.name === item));
+      if (hasAll) {
+        rule.requiredItems.forEach(item => this.removeItem(item, 1));
+        this.addItem(rule.resultItem.name, {
+          effects: rule.resultItem.effects,
+          path: rule.resultItem.path,
+          description: rule.resultItem.description
+        });
+        console.log(`✨ Crafted new item: "${rule.resultItem.name}"`);
+        return;
+      }
+    }
+  }
+  _dispatchHeroUpdate() {
+    this.slots.forEach((item, index) => {
+      if (item != null) for (var key in item.effects) {
+        if (this.hero[key]) {
+          console.log(key + '  -< effects props exist in hero base class -  value: ', item.effects[key]);
+          this.hero.invertoryBonus[key] *= item.effects[key];
+        }
+      }
+    });
+    this.hero.updateStats();
+    dispatchEvent(new CustomEvent("hero-invertory-update", {
+      detail: {
+        items: this.slots
+      }
+    }));
+  }
+
+  // --- Debug print
+  debugPrint() {
+    console.table(this.slots.map((slot, i) => ({
+      Slot: i + 1,
+      Item: slot ? slot.name : "Empty",
+      Quantity: slot ? slot.quantity : "-",
+      Duration: slot?.duration ? `${slot.duration / 1000}s` : "∞"
+    })));
+  }
+  clear() {
+    this.slots.forEach(slot => {
+      if (slot && slot.effects) this._applyEffects(slot.effects, false);
+    });
+    this.slots.fill(null);
+    this.activeTimers.forEach(t => clearTimeout(t));
+    this.activeTimers.clear();
+    this._dispatchHeroUpdate();
+    console.log("🧹 Inventory cleared");
+  }
+}
+exports.Inventory = Inventory;
+
+},{}],10:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -3026,7 +3234,7 @@ class MEMapLoader {
 }
 exports.MEMapLoader = MEMapLoader;
 
-},{"../../../src/engine/effects/gen-tex2.js":38,"../../../src/engine/effects/gen.js":39,"../../../src/engine/loader-obj.js":47,"../../../src/engine/loaders/webgpu-gltf.js":50,"../../../src/engine/utils.js":57,"./nav-mesh.js":11,"./static.js":12}],10:[function(require,module,exports){
+},{"../../../src/engine/effects/gen-tex2.js":39,"../../../src/engine/effects/gen.js":40,"../../../src/engine/loader-obj.js":48,"../../../src/engine/loaders/webgpu-gltf.js":51,"../../../src/engine/utils.js":58,"./nav-mesh.js":12,"./static.js":13}],11:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -3034,7 +3242,8 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.Marketplace = void 0;
 class Marketplace {
-  constructor() {
+  constructor(hero) {
+    this.hero = hero;
     this.items = this._generateItems();
     this.createHud();
   }
@@ -3067,6 +3276,9 @@ class Marketplace {
     boxRightTitleBar.classList.add('vertical-text');
     box.classList.add('hide-by-right');
     box.appendChild(boxRightTitleBar);
+    box.addEventListener("wheel", function (e) {
+      e.stopPropagation();
+    });
     box.addEventListener('click', e => {
       if (box.classList.contains('show-by-right')) {
         box.classList.remove('show-by-right');
@@ -3075,20 +3287,20 @@ class Marketplace {
         box.classList.add('show-by-right');
         box.classList.remove('hide-by-right');
       }
-      console.log("*********");
+      // console.log("*********");
     });
     this.items.forEach(i => {
       var itemDOM = document.createElement('div');
+      itemDOM.id = i.name;
       itemDOM.innerHTML = `
         <div style="" class="itemDOM">
           <img class="invertoryItem" src='${i.path}' /> 
-
-
           <div>name: ${i.name} price: ${i.price == 0 ? "Cant be buyed only constructed from basic item." : i.price} ${i.description}</div>
-
         </div>`;
       itemDOM.addEventListener('click', e => {
-        console.log("*********");
+        e.stopPropagation();
+        console.log("invertory:", e.currentTarget.id);
+        this.buy(e.currentTarget.id);
       });
       box.appendChild(itemDOM);
     });
@@ -3096,25 +3308,27 @@ class Marketplace {
   }
 
   // --- Player buys an item if it’s purchasable
-  buy(hero, itemName) {
+  buy(itemName) {
     const item = this.items.find(i => i.name === itemName);
     if (!item) return console.warn("Item not found in market!");
     if (item.level > 1) return console.warn("Only level 1 items can be bought!");
-    if (hero.gold < item.price) return console.warn("Not enough gold!");
-    hero.gold -= item.price;
-    hero.inventory.addItem(item.name, {
-      effects: item.effects
+    if (this.hero.gold < item.price) return console.warn("Not enough gold!");
+    this.hero.gold -= item.price;
+    this.hero.inventory.addItem(item.name, {
+      effects: item.effects,
+      path: item.path,
+      description: item.description
     });
-    console.log(`💰 ${hero.name} bought ${item.name} for ${item.price} gold.`);
+    console.log(`💰 ${this.hero.name} bought ${item.name} for ${item.price} gold.`);
   }
 
   // --- Sell item for half price
-  sell(hero, itemName) {
+  sell(itemName) {
     const item = this.items.find(i => i.name === itemName);
     if (!item) return console.warn("Item not found in market!");
-    hero.gold += Math.floor(item.price / 2);
-    hero.inventory.removeItem(itemName);
-    console.log(`📦 ${hero.name} sold ${item.name} for ${Math.floor(item.price / 2)} gold.`);
+    this.hero.gold += Math.floor(item.price / 2);
+    this.hero.inventory.removeItem(itemName);
+    console.log(`📦 ${this.hero.name} sold ${item.name} for ${Math.floor(item.price / 2)} gold.`);
   }
 
   // --- Print shop table
@@ -3136,7 +3350,7 @@ class Marketplace {
       level: 1,
       price: 120,
       effects: {
-        attack: 1.1
+        attackSpeed: 1.1
       },
       description: "A forged sword imbued with faint fire energy.",
       path: "./res/textures/rpg/invertory/aether-fortis.png"
@@ -3163,7 +3377,7 @@ class Marketplace {
       level: 1,
       price: 100,
       effects: {
-        speed: 1.1
+        moveSpeed: 1.1
       },
       description: "A feather of the northern wind.",
       path: "./res/textures/rpg/invertory/aether-fortis.png"
@@ -3172,7 +3386,7 @@ class Marketplace {
       level: 1,
       price: 80,
       effects: {
-        defense: 1.1
+        armor: 1.1
       },
       description: "A simple iron ring engraved with runes.",
       path: "./res/textures/rpg/invertory/aether-fortis.png"
@@ -3190,7 +3404,7 @@ class Marketplace {
       level: 1,
       price: 140,
       effects: {
-        attack: 1.15
+        attackSpeed: 1.15
       },
       description: "A golden emblem of the solar knights.",
       path: "./res/textures/rpg/invertory/aether-fortis.png"
@@ -3217,7 +3431,7 @@ class Marketplace {
       level: 1,
       price: 100,
       effects: {
-        defense: 1.15
+        armor: 1.15
       },
       description: "A sigil of frozen power.",
       path: "./res/textures/rpg/invertory/aether-fortis.png"
@@ -3226,7 +3440,7 @@ class Marketplace {
       level: 1,
       price: 120,
       effects: {
-        defense: 1.2
+        armor: 1.2
       },
       description: "A small fire-warding shield.",
       path: "./res/textures/rpg/invertory/aether-fortis.png"
@@ -3244,7 +3458,7 @@ class Marketplace {
       level: 1,
       price: 90,
       effects: {
-        attack: 1.08
+        attackSpeed: 1.08
       },
       description: "A wooden blade carved from the elder tree.",
       path: "./res/textures/rpg/invertory/aether-fortis.png"
@@ -3262,7 +3476,7 @@ class Marketplace {
       level: 1,
       price: 70,
       effects: {
-        speed: 1.05
+        moveSpeed: 1.05
       },
       description: "A charm that hums with sound magic.",
       path: "./res/textures/rpg/invertory/vox-chime.png"
@@ -3271,7 +3485,7 @@ class Marketplace {
       level: 1,
       price: 110,
       effects: {
-        attack: 1.12
+        attackSpeed: 1.12
       },
       description: "A dark fang of unknown beast origin.",
       path: "./res/textures/rpg/invertory/tenebris-fang.png"
@@ -3289,7 +3503,7 @@ class Marketplace {
       level: 1,
       price: 95,
       effects: {
-        attack: 1.1
+        attackSpeed: 1.1
       },
       description: "A crackling shard of lightning essence.",
       path: "./res/textures/rpg/invertory/fulgur-stone.png"
@@ -3316,7 +3530,7 @@ class Marketplace {
       level: 1,
       price: 100,
       effects: {
-        attack: 1.05,
+        attackSpeed: 1.05,
         hp: 1.05
       },
       description: "A rose stem hardened into a piercing thorn.",
@@ -3327,7 +3541,7 @@ class Marketplace {
       price: 110,
       effects: {
         mana: 1.1,
-        speed: 1.05
+        moveSpeed: 1.05
       },
       description: "Sky dust collected from high-altitude clouds.",
       path: "./res/textures/rpg/invertory/caelum-dust.png"
@@ -3336,8 +3550,8 @@ class Marketplace {
       level: 1,
       price: 125,
       effects: {
-        defense: 1.1,
-        attack: 1.05
+        armor: 1.1,
+        attackSpeed: 1.05
       },
       description: "A cape woven with fire-resistant fur.",
       path: "./res/textures/rpg/invertory/ignifur-cape.png"
@@ -3346,7 +3560,7 @@ class Marketplace {
       level: 1,
       price: 95,
       effects: {
-        defense: 1.1
+        armor: 1.1
       },
       description: "Pendant of icy serenity.",
       path: "./res/textures/rpg/invertory/gelum-fendant.png"
@@ -3355,7 +3569,7 @@ class Marketplace {
       level: 1,
       price: 140,
       effects: {
-        attack: 1.15,
+        attackSpeed: 1.15,
         hp: 1.1
       },
       description: "A cursed relic bone from ancient warrior.",
@@ -3374,7 +3588,7 @@ class Marketplace {
       level: 1,
       price: 130,
       effects: {
-        attack: 1.1
+        attackSpeed: 1.1
       },
       description: "A molten crystal of flame essence.",
       path: "./res/textures/rpg/invertory/flamma-crystal.png"
@@ -3384,7 +3598,7 @@ class Marketplace {
       price: 85,
       effects: {
         mana: 1.1,
-        speed: 1.1
+        moveSpeed: 1.1
       },
       description: "Charm of wandering spirits.",
       path: "./res/textures/rpg/invertory/spirit-charm.png"
@@ -3394,7 +3608,7 @@ class Marketplace {
       price: 80,
       effects: {
         hp: 1.05,
-        defense: 1.05
+        armor: 1.05
       },
       description: "Vine that strengthens when worn.",
       path: "./res/textures/rpg/invertory/ardent-vine.png"
@@ -3403,7 +3617,7 @@ class Marketplace {
       level: 1,
       price: 150,
       effects: {
-        speed: 1.2
+        moveSpeed: 1.2
       },
       description: "An eye-shaped amulet bending time perception.",
       path: "./res/textures/rpg/invertory/oculus-tempus.png"
@@ -3415,8 +3629,8 @@ class Marketplace {
       price: 0,
       from: ["Sol Corona", "Flamma Crystal"],
       effects: {
-        attack: 1.25,
-        defense: 1.1
+        attackSpeed: 1.25,
+        armor: 1.1
       },
       description: "Crown of blazing flame and golden radiance.",
       path: "./res/textures/rpg/invertory/corona-ignifera.png"
@@ -3427,7 +3641,7 @@ class Marketplace {
       from: ["Mare Pearl", "Luna Gemma"],
       effects: {
         mana: 1.35,
-        defense: 1.1
+        armor: 1.1
       },
       description: "Holy water relic radiating calm energy.",
       path: "./res/textures/rpg/invertory/aqua-sanctum.png"
@@ -3448,7 +3662,7 @@ class Marketplace {
       from: ["Terra Clavis", "Ardent Vine", "Silva Heart"],
       effects: {
         hp: 1.3,
-        defense: 1.2
+        armor: 1.2
       },
       description: "Roots and stone fused into living armor.",
       path: "./res/textures/rpg/invertory/terra-fortis.png"
@@ -3458,8 +3672,8 @@ class Marketplace {
       price: 0,
       from: ["Ventus Pluma", "Ignifur Cape"],
       effects: {
-        speed: 1.25,
-        defense: 1.15
+        moveSpeed: 1.25,
+        armor: 1.15
       },
       description: "A shield that dances with the wind.",
       path: "./res/textures/rpg/invertory/ventus-aegis.png"
@@ -3469,7 +3683,7 @@ class Marketplace {
       price: 0,
       from: ["Ferrum Anulus", "Lux Feather"],
       effects: {
-        defense: 1.25,
+        armor: 1.25,
         mana: 1.1
       },
       description: "Iron enchanted by celestial light.",
@@ -3492,7 +3706,7 @@ class Marketplace {
       price: 0,
       from: ["Tenebris Fang", "Vox Chime"],
       effects: {
-        attack: 1.2,
+        attackSpeed: 1.2,
         stealth: 1.2
       },
       description: "A cursed chime that roars like the abyss.",
@@ -3503,7 +3717,7 @@ class Marketplace {
       price: 0,
       from: ["Gladius Ignis", "Aether Scale"],
       effects: {
-        attack: 1.3,
+        attackSpeed: 1.3,
         mana: 1.1
       },
       description: "A sword wreathed in spectral energy.",
@@ -3514,8 +3728,8 @@ class Marketplace {
       price: 0,
       from: ["Fulgur Stone", "Mortis Bone"],
       effects: {
-        attack: 1.25,
-        speed: 1.15
+        attackSpeed: 1.25,
+        moveSpeed: 1.15
       },
       description: "Lightning fused with death’s essence.",
       path: "./res/textures/rpg/invertory/fulgur-mortis.png"
@@ -3527,7 +3741,7 @@ class Marketplace {
       price: 0,
       from: ["Umbra Silens", "Corona Ignifera", "Tenebris Vox"],
       effects: {
-        attack: 1.4,
+        attackSpeed: 1.4,
         stealth: 1.3
       },
       description: "Crown of the night sun, radiating power and darkness.",
@@ -3539,7 +3753,7 @@ class Marketplace {
       from: ["Terra Fortis", "Aqua Sanctum"],
       effects: {
         hp: 1.5,
-        defense: 1.3
+        armor: 1.3
       },
       description: "The sacred earth that sustains all life.",
       path: "./res/textures/rpg/invertory/terra-sanctum.png"
@@ -3549,7 +3763,7 @@ class Marketplace {
       price: 0,
       from: ["Aether Gladius", "Ferrum Lux"],
       effects: {
-        attack: 1.35,
+        attackSpeed: 1.35,
         mana: 1.25
       },
       description: "Forged in light and aetheric flame.",
@@ -3561,7 +3775,7 @@ class Marketplace {
       from: ["Sanguis Vita", "Ventus Aegis"],
       effects: {
         hp: 1.4,
-        speed: 1.2
+        moveSpeed: 1.2
       },
       description: "The living crown of vitality and wind.",
       path: "./res/textures/rpg/invertory/vita-mindza.png"
@@ -3571,7 +3785,7 @@ class Marketplace {
       price: 0,
       from: ["Fulgur Mortis", "Corona Umbra", "Aether Fortis"],
       effects: {
-        attack: 1.6,
+        attackSpeed: 1.6,
         mana: 1.2,
         stealth: 1.3
       },
@@ -3582,7 +3796,7 @@ class Marketplace {
 }
 exports.Marketplace = Marketplace;
 
-},{}],11:[function(require,module,exports){
+},{}],12:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -4106,7 +4320,7 @@ function resolvePairRepulsion(Apos, Bpos, minDistance = 30.0, pushStrength = 0.5
   return false;
 }
 
-},{"../../../src/engine/utils.js":57}],12:[function(require,module,exports){
+},{"../../../src/engine/utils.js":58}],13:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -4128,7 +4342,7 @@ const creepPoints = exports.creepPoints = {
   }
 };
 
-},{}],13:[function(require,module,exports){
+},{}],14:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -4246,9 +4460,9 @@ class MatrixTTS {
 }
 exports.MatrixTTS = MatrixTTS;
 
-},{}],14:[function(require,module,exports){
-arguments[4][11][0].apply(exports,arguments)
-},{"../../../src/engine/utils.js":57,"dup":11}],15:[function(require,module,exports){
+},{}],15:[function(require,module,exports){
+arguments[4][12][0].apply(exports,arguments)
+},{"../../../src/engine/utils.js":58,"dup":12}],16:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -4258,7 +4472,7 @@ exports.default = void 0;
 var _bvhLoader = require("./module/bvh-loader");
 var _default = exports.default = _bvhLoader.MEBvh;
 
-},{"./module/bvh-loader":16}],16:[function(require,module,exports){
+},{"./module/bvh-loader":17}],17:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -4947,7 +5161,7 @@ class MEBvh {
 }
 exports.MEBvh = MEBvh;
 
-},{"webgpu-matrix":28}],17:[function(require,module,exports){
+},{"webgpu-matrix":29}],18:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -5025,7 +5239,7 @@ function equals(a, b) {
   return Math.abs(a - b) <= tolerance * Math.max(1, Math.abs(a), Math.abs(b));
 }
 
-},{}],18:[function(require,module,exports){
+},{}],19:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -5054,7 +5268,7 @@ var vec4 = _interopRequireWildcard(require("./vec4.js"));
 exports.vec4 = vec4;
 function _interopRequireWildcard(e, t) { if ("function" == typeof WeakMap) var r = new WeakMap(), n = new WeakMap(); return (_interopRequireWildcard = function (e, t) { if (!t && e && e.__esModule) return e; var o, i, f = { __proto__: null, default: e }; if (null === e || "object" != typeof e && "function" != typeof e) return f; if (o = t ? n : r) { if (o.has(e)) return o.get(e); o.set(e, f); } for (const t in e) "default" !== t && {}.hasOwnProperty.call(e, t) && ((i = (o = Object.defineProperty) && Object.getOwnPropertyDescriptor(e, t)) && (i.get || i.set) ? o(f, t, i) : f[t] = e[t]); return f; })(e, t); }
 
-},{"./common.js":17,"./mat2.js":19,"./mat2d.js":20,"./mat3.js":21,"./mat4.js":22,"./quat.js":23,"./quat2.js":24,"./vec2.js":25,"./vec3.js":26,"./vec4.js":27}],19:[function(require,module,exports){
+},{"./common.js":18,"./mat2.js":20,"./mat2d.js":21,"./mat3.js":22,"./mat4.js":23,"./quat.js":24,"./quat2.js":25,"./vec2.js":26,"./vec3.js":27,"./vec4.js":28}],20:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -5516,7 +5730,7 @@ var mul = exports.mul = multiply;
  */
 var sub = exports.sub = subtract;
 
-},{"./common.js":17}],20:[function(require,module,exports){
+},{"./common.js":18}],21:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -6030,7 +6244,7 @@ var mul = exports.mul = multiply;
  */
 var sub = exports.sub = subtract;
 
-},{"./common.js":17}],21:[function(require,module,exports){
+},{"./common.js":18}],22:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -6842,7 +7056,7 @@ var mul = exports.mul = multiply;
  */
 var sub = exports.sub = subtract;
 
-},{"./common.js":17}],22:[function(require,module,exports){
+},{"./common.js":18}],23:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -8862,7 +9076,7 @@ var mul = exports.mul = multiply;
  */
 var sub = exports.sub = subtract;
 
-},{"./common.js":17}],23:[function(require,module,exports){
+},{"./common.js":18}],24:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -9645,7 +9859,7 @@ var setAxes = exports.setAxes = function () {
   };
 }();
 
-},{"./common.js":17,"./mat3.js":21,"./vec3.js":26,"./vec4.js":27}],24:[function(require,module,exports){
+},{"./common.js":18,"./mat3.js":22,"./vec3.js":27,"./vec4.js":28}],25:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -10518,7 +10732,7 @@ function equals(a, b) {
   return Math.abs(a0 - b0) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a0), Math.abs(b0)) && Math.abs(a1 - b1) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a1), Math.abs(b1)) && Math.abs(a2 - b2) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a2), Math.abs(b2)) && Math.abs(a3 - b3) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a3), Math.abs(b3)) && Math.abs(a4 - b4) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a4), Math.abs(b4)) && Math.abs(a5 - b5) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a5), Math.abs(b5)) && Math.abs(a6 - b6) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a6), Math.abs(b6)) && Math.abs(a7 - b7) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a7), Math.abs(b7));
 }
 
-},{"./common.js":17,"./mat4.js":22,"./quat.js":23}],25:[function(require,module,exports){
+},{"./common.js":18,"./mat4.js":23,"./quat.js":24}],26:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -11196,7 +11410,7 @@ var forEach = exports.forEach = function () {
   };
 }();
 
-},{"./common.js":17}],26:[function(require,module,exports){
+},{"./common.js":18}],27:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -12048,7 +12262,7 @@ var forEach = exports.forEach = function () {
   };
 }();
 
-},{"./common.js":17}],27:[function(require,module,exports){
+},{"./common.js":18}],28:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -12755,7 +12969,7 @@ var forEach = exports.forEach = function () {
   };
 }();
 
-},{"./common.js":17}],28:[function(require,module,exports){
+},{"./common.js":18}],29:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -16688,7 +16902,7 @@ function setDefaultType(ctor) {
   setDefaultType$1(ctor);
 }
 
-},{}],29:[function(require,module,exports){
+},{}],30:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -22035,7 +22249,7 @@ function setDefaultType(ctor) {
   setDefaultType$1(ctor);
 }
 
-},{}],30:[function(require,module,exports){
+},{}],31:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -22449,7 +22663,7 @@ class MEBall {
 }
 exports.default = MEBall;
 
-},{"../shaders/shaders":72,"./engine":42,"./matrix-class":52,"wgpu-matrix":29}],31:[function(require,module,exports){
+},{"../shaders/shaders":73,"./engine":43,"./matrix-class":53,"wgpu-matrix":30}],32:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -22487,7 +22701,7 @@ class Behavior {
 }
 exports.default = Behavior;
 
-},{"./utils":57}],32:[function(require,module,exports){
+},{"./utils":58}],33:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -22534,7 +22748,7 @@ class CollisionSystem {
 }
 exports.CollisionSystem = CollisionSystem;
 
-},{"../../examples/games/rpg/nav-mesh":14}],33:[function(require,module,exports){
+},{"../../examples/games/rpg/nav-mesh":15}],34:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -22959,7 +23173,7 @@ class MECube {
 }
 exports.default = MECube;
 
-},{"../shaders/shaders":72,"./engine":42,"./matrix-class":52,"wgpu-matrix":29}],34:[function(require,module,exports){
+},{"../shaders/shaders":73,"./engine":43,"./matrix-class":53,"wgpu-matrix":30}],35:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -23122,7 +23336,7 @@ class HPBarEffect {
 }
 exports.HPBarEffect = HPBarEffect;
 
-},{"../../shaders/energy-bars/energy-bar-shader.js":60,"wgpu-matrix":29}],35:[function(require,module,exports){
+},{"../../shaders/energy-bars/energy-bar-shader.js":61,"wgpu-matrix":30}],36:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -23341,7 +23555,7 @@ class FlameEmitter {
 }
 exports.FlameEmitter = FlameEmitter;
 
-},{"../../shaders/flame-effect/flame-instanced":61,"../utils":57,"wgpu-matrix":29}],36:[function(require,module,exports){
+},{"../../shaders/flame-effect/flame-instanced":62,"../utils":58,"wgpu-matrix":30}],37:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -23512,7 +23726,7 @@ class FlameEffect {
 }
 exports.FlameEffect = FlameEffect;
 
-},{"../../shaders/flame-effect/flameEffect":62,"wgpu-matrix":29}],37:[function(require,module,exports){
+},{"../../shaders/flame-effect/flameEffect":63,"wgpu-matrix":30}],38:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -23753,7 +23967,7 @@ class GenGeoTexture {
 }
 exports.GenGeoTexture = GenGeoTexture;
 
-},{"../../shaders/standalone/geo.tex.js":74,"../geometry-factory.js":43,"wgpu-matrix":29}],38:[function(require,module,exports){
+},{"../../shaders/standalone/geo.tex.js":75,"../geometry-factory.js":44,"wgpu-matrix":30}],39:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -24010,7 +24224,7 @@ class GenGeoTexture2 {
 }
 exports.GenGeoTexture2 = GenGeoTexture2;
 
-},{"../../shaders/standalone/geo.tex.js":74,"../geometry-factory.js":43,"wgpu-matrix":29}],39:[function(require,module,exports){
+},{"../../shaders/standalone/geo.tex.js":75,"../geometry-factory.js":44,"wgpu-matrix":30}],40:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -24200,7 +24414,7 @@ class GenGeo {
 }
 exports.GenGeo = GenGeo;
 
-},{"../../shaders/standalone/geo.instanced.js":73,"../geometry-factory.js":43,"wgpu-matrix":29}],40:[function(require,module,exports){
+},{"../../shaders/standalone/geo.instanced.js":74,"../geometry-factory.js":44,"wgpu-matrix":30}],41:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -24363,7 +24577,7 @@ class MANABarEffect {
 }
 exports.MANABarEffect = MANABarEffect;
 
-},{"../../shaders/energy-bars/energy-bar-shader.js":60,"wgpu-matrix":29}],41:[function(require,module,exports){
+},{"../../shaders/energy-bars/energy-bar-shader.js":61,"wgpu-matrix":30}],42:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -24506,7 +24720,7 @@ class PointerEffect {
 }
 exports.PointerEffect = PointerEffect;
 
-},{"../../shaders/standalone/pointer.effect.js":75,"wgpu-matrix":29}],42:[function(require,module,exports){
+},{"../../shaders/standalone/pointer.effect.js":76,"wgpu-matrix":30}],43:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -25049,7 +25263,7 @@ class RPGCamera extends CameraBase {
 }
 exports.RPGCamera = RPGCamera;
 
-},{"./utils":57,"wgpu-matrix":29}],43:[function(require,module,exports){
+},{"./utils":58,"wgpu-matrix":30}],44:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -25361,7 +25575,7 @@ class GeometryFactory {
 }
 exports.GeometryFactory = GeometryFactory;
 
-},{}],44:[function(require,module,exports){
+},{}],45:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -25888,7 +26102,7 @@ class MaterialsInstanced {
 }
 exports.default = MaterialsInstanced;
 
-},{"../../shaders/fragment.wgsl":64,"../../shaders/fragment.wgsl.metal":65,"../../shaders/fragment.wgsl.normalmap":66,"../../shaders/fragment.wgsl.pong":67,"../../shaders/fragment.wgsl.power":68,"../../shaders/instanced/fragment.instanced.wgsl":69}],45:[function(require,module,exports){
+},{"../../shaders/fragment.wgsl":65,"../../shaders/fragment.wgsl.metal":66,"../../shaders/fragment.wgsl.normalmap":67,"../../shaders/fragment.wgsl.pong":68,"../../shaders/fragment.wgsl.power":69,"../../shaders/instanced/fragment.instanced.wgsl":70}],46:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -26876,7 +27090,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
 }
 exports.default = MEMeshObjInstances;
 
-},{"../../shaders/fragment.video.wgsl":63,"../../shaders/instanced/vertex.instanced.wgsl":70,"../effects/energy-bar":34,"../effects/flame":36,"../effects/flame-emmiter":35,"../effects/gen":39,"../effects/gen-tex":37,"../effects/gen-tex2":38,"../effects/mana-bar":40,"../effects/pointerEffect":41,"../loaders/bvh-instaced":48,"../matrix-class":52,"../utils":57,"./materials-instanced":44,"wgpu-matrix":29}],46:[function(require,module,exports){
+},{"../../shaders/fragment.video.wgsl":64,"../../shaders/instanced/vertex.instanced.wgsl":71,"../effects/energy-bar":35,"../effects/flame":37,"../effects/flame-emmiter":36,"../effects/gen":40,"../effects/gen-tex":38,"../effects/gen-tex2":39,"../effects/mana-bar":41,"../effects/pointerEffect":42,"../loaders/bvh-instaced":49,"../matrix-class":53,"../utils":58,"./materials-instanced":45,"wgpu-matrix":30}],47:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -27162,7 +27376,7 @@ class SpotLight {
 }
 exports.SpotLight = SpotLight;
 
-},{"../shaders/instanced/vertexShadow.instanced.wgsl":71,"../shaders/vertexShadow.wgsl":78,"./behavior":31,"wgpu-matrix":29}],47:[function(require,module,exports){
+},{"../shaders/instanced/vertexShadow.instanced.wgsl":72,"../shaders/vertexShadow.wgsl":79,"./behavior":32,"wgpu-matrix":30}],48:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -27630,7 +27844,7 @@ function play(nameAni) {
   this.playing = true;
 }
 
-},{}],48:[function(require,module,exports){
+},{}],49:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -28171,7 +28385,7 @@ class BVHPlayerInstances extends _meshObjInstances.default {
 }
 exports.BVHPlayerInstances = BVHPlayerInstances;
 
-},{"../instanced/mesh-obj-instances.js":45,"./webgpu-gltf.js":50,"wgpu-matrix":29}],49:[function(require,module,exports){
+},{"../instanced/mesh-obj-instances.js":46,"./webgpu-gltf.js":51,"wgpu-matrix":30}],50:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -28681,7 +28895,7 @@ class BVHPlayer extends _meshObj.default {
 }
 exports.BVHPlayer = BVHPlayer;
 
-},{"../mesh-obj":53,"./webgpu-gltf.js":50,"bvh-loader":15,"wgpu-matrix":29}],50:[function(require,module,exports){
+},{"../mesh-obj":54,"./webgpu-gltf.js":51,"bvh-loader":16,"wgpu-matrix":30}],51:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -29262,7 +29476,7 @@ async function uploadGLBModel(buffer, device) {
   return R;
 }
 
-},{"gl-matrix":18}],51:[function(require,module,exports){
+},{"gl-matrix":19}],52:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -29788,7 +30002,7 @@ class Materials {
 }
 exports.default = Materials;
 
-},{"../shaders/fragment.wgsl":64,"../shaders/fragment.wgsl.metal":65,"../shaders/fragment.wgsl.normalmap":66,"../shaders/fragment.wgsl.pong":67,"../shaders/fragment.wgsl.power":68}],52:[function(require,module,exports){
+},{"../shaders/fragment.wgsl":65,"../shaders/fragment.wgsl.metal":66,"../shaders/fragment.wgsl.normalmap":67,"../shaders/fragment.wgsl.pong":68,"../shaders/fragment.wgsl.power":69}],53:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30052,7 +30266,7 @@ class Rotation {
 }
 exports.Rotation = Rotation;
 
-},{"./utils":57}],53:[function(require,module,exports){
+},{"./utils":58}],54:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30847,7 +31061,7 @@ class MEMeshObj extends _materials.default {
 }
 exports.default = MEMeshObj;
 
-},{"../shaders/fragment.video.wgsl":63,"../shaders/vertex.wgsl":76,"../shaders/vertex.wgsl.normalmap":77,"./effects/pointerEffect":41,"./materials":51,"./matrix-class":52,"./utils":57,"wgpu-matrix":29}],54:[function(require,module,exports){
+},{"../shaders/fragment.video.wgsl":64,"../shaders/vertex.wgsl":77,"../shaders/vertex.wgsl.normalmap":78,"./effects/pointerEffect":42,"./materials":52,"./matrix-class":53,"./utils":58,"wgpu-matrix":30}],55:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -31328,7 +31542,7 @@ function clearEventsTextarea() {
   exports.events = events = '';
 }
 
-},{}],55:[function(require,module,exports){
+},{}],56:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -31543,7 +31757,7 @@ let activateNet2 = sessionOption => {
 };
 exports.activateNet2 = activateNet2;
 
-},{"../utils":57,"./matrix-stream":54}],56:[function(require,module,exports){
+},{"../utils":58,"./matrix-stream":55}],57:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -31732,7 +31946,7 @@ function addRaycastsListener(canvasId = "canvas1", eventName = 'click') {
   });
 }
 
-},{"wgpu-matrix":29}],57:[function(require,module,exports){
+},{"wgpu-matrix":30}],58:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -32750,7 +32964,7 @@ class FullscreenManager {
 }
 exports.FullscreenManager = FullscreenManager;
 
-},{}],58:[function(require,module,exports){
+},{}],59:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -32791,7 +33005,7 @@ class MultiLang {
 }
 exports.MultiLang = MultiLang;
 
-},{"../engine/utils":57}],59:[function(require,module,exports){
+},{"../engine/utils":58}],60:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -33075,7 +33289,7 @@ class MatrixAmmo {
 }
 exports.default = MatrixAmmo;
 
-},{"../engine/utils":57}],60:[function(require,module,exports){
+},{"../engine/utils":58}],61:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -33121,7 +33335,7 @@ fn fsMain(in : VertexOutput) -> @location(0) vec4f {
 }
 `;
 
-},{}],61:[function(require,module,exports){
+},{}],62:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -33247,7 +33461,7 @@ fn fsMain(in : VSOut) -> @location(0) vec4<f32> {
 }
 `;
 
-},{}],62:[function(require,module,exports){
+},{}],63:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -33335,7 +33549,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
 }
 `;
 
-},{}],63:[function(require,module,exports){
+},{}],64:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -33425,7 +33639,7 @@ fn main(input : FragmentInput) -> @location(0) vec4f {
 }
 `;
 
-},{}],64:[function(require,module,exports){
+},{}],65:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -33656,7 +33870,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, 1.0);
 }`;
 
-},{}],65:[function(require,module,exports){
+},{}],66:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -33834,7 +34048,7 @@ return vec4f(color, 1.0);
 // let radiance = spotlights[0].color * 10.0; // test high intensity
 // Lo += materialData.baseColor * radiance * NdotL;
 
-},{}],66:[function(require,module,exports){
+},{}],67:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -34079,7 +34293,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, 1.0);
 }`;
 
-},{}],67:[function(require,module,exports){
+},{}],68:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -34299,7 +34513,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, 1.0);
 }`;
 
-},{}],68:[function(require,module,exports){
+},{}],69:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -34467,7 +34681,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 // let radiance = spotlights[0].color * 10.0; // test high intensity
 // Lo += materialData.baseColor * radiance * NdotL;
 
-},{}],69:[function(require,module,exports){
+},{}],70:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -34703,7 +34917,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, alpha);
 }`;
 
-},{}],70:[function(require,module,exports){
+},{}],71:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -34807,7 +35021,7 @@ fn main(
   return output;
 }`;
 
-},{}],71:[function(require,module,exports){
+},{}],72:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -34844,7 +35058,7 @@ fn main(
 }
 `;
 
-},{}],72:[function(require,module,exports){
+},{}],73:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -34902,7 +35116,7 @@ fn fragmentMain(input: VertexOutput) -> @location(0) vec4f {
   return vec4f(textureColor.rgb * lightColor, textureColor.a);
 }`;
 
-},{}],73:[function(require,module,exports){
+},{}],74:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -34960,7 +35174,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
 }
 `;
 
-},{}],74:[function(require,module,exports){
+},{}],75:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -35047,7 +35261,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
 }
 `;
 
-},{}],75:[function(require,module,exports){
+},{}],76:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -35105,7 +35319,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
   return vec4<f32>(color, 1.0);
 }`;
 
-},{}],76:[function(require,module,exports){
+},{}],77:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -35191,7 +35405,7 @@ fn main(
   return output;
 }`;
 
-},{}],77:[function(require,module,exports){
+},{}],78:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -35302,7 +35516,7 @@ fn main(
   return output;
 }`;
 
-},{}],78:[function(require,module,exports){
+},{}],79:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -35330,7 +35544,7 @@ fn main(
 }
 `;
 
-},{}],79:[function(require,module,exports){
+},{}],80:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -35400,7 +35614,7 @@ class MatrixSounds {
 }
 exports.MatrixSounds = MatrixSounds;
 
-},{}],80:[function(require,module,exports){
+},{}],81:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -36404,4 +36618,4 @@ class MatrixEngineWGPU {
 }
 exports.default = MatrixEngineWGPU;
 
-},{"./engine/ball.js":30,"./engine/cube.js":33,"./engine/engine.js":42,"./engine/lights.js":46,"./engine/loader-obj.js":47,"./engine/loaders/bvh-instaced.js":48,"./engine/loaders/bvh.js":49,"./engine/mesh-obj.js":53,"./engine/utils.js":57,"./multilang/lang.js":58,"./physics/matrix-ammo.js":59,"./sounds/sounds.js":79,"wgpu-matrix":29}]},{},[6]);
+},{"./engine/ball.js":31,"./engine/cube.js":34,"./engine/engine.js":43,"./engine/lights.js":47,"./engine/loader-obj.js":48,"./engine/loaders/bvh-instaced.js":49,"./engine/loaders/bvh.js":50,"./engine/mesh-obj.js":54,"./engine/utils.js":58,"./multilang/lang.js":59,"./physics/matrix-ammo.js":60,"./sounds/sounds.js":80,"wgpu-matrix":30}]},{},[6]);
