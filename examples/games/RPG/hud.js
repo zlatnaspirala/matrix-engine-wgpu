@@ -575,9 +575,7 @@ export class HUD {
   }
 
   setCursor() {
-    // alert('cur')
     // AnimatedCursor
-
     document.body.style.cursor = "url('./res/icons/default.png') 0 0, auto";
   }
 

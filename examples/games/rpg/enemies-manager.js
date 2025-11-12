@@ -23,7 +23,7 @@ export class EnemiesManager {
   }
   // Make possible to play 3x3 4x4 or 5x5 ...
   loadCreeps() {
-    console.log('loadCreeps() !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
+    // console.log('loadCreeps() !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
     this.creeps.push(new Creep({
       core: this.core,
       name: 'enemy_creep0',

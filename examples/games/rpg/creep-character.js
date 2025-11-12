@@ -66,17 +66,20 @@ export class Creep extends Hero {
             subMesh.globalAmbient = [12, 1, 1, 1];
           }
 
-          //
           if(this.group == 'friendly') {
             if(idx == 0) {
-              // MUST BE ONLY FOR - 
-              // FIRST TEAM HERO
-              subMesh.position.netObject = subMesh.name;
-              let t = subMesh.name.replace('friendly_creeps', 'enemy_creep');
-              console.log('It is friendly creep use emit net', t);
-              subMesh.position.remoteName = t;
-              subMesh.rotation.emitY = subMesh.name;
-              subMesh.rotation.remoteName = t;
+              if (this.core.net.virtualEmiter == this.core.net.session.connection.connectionId) {
+                // MUST BE ONLY FOR - // FIRST TEAM HERO
+                subMesh.position.netObject = subMesh.name;
+                let t = subMesh.name.replace('friendly_creeps', 'enemy_creep');
+                console.log('It is friendly creep use emit net', t);
+                // alert('It is friendly creep use emit net')
+
+                subMesh.position.remoteName = t;
+                subMesh.rotation.emitY = subMesh.name;
+                
+                subMesh.rotation.remoteName = t;
+              }
             }
           }
           // maybe will help - remote net players no nedd to collide in other remote user gamaplay
@@ -198,10 +201,12 @@ export class Creep extends Hero {
               } else {
                 // console.log(`%c creepFocusAttackOn = null; (fcreep vs enemy hero)(navigate-friendly_creeps1) `, LOG_MATRIX)
                 this.creepFocusAttackOn = null;
-                dispatchEvent(new CustomEvent('navigate-friendly_creeps', {detail: {
-                  localCreepNav: this,
-                  index: this.name[this.name.length-1]
-                }}))
+                dispatchEvent(new CustomEvent('navigate-friendly_creeps', {
+                  detail: {
+                    localCreepNav: this,
+                    index: this.name[this.name.length - 1]
+                  }
+                }))
               }
             })
             // if(isEnemiesClose == false) this.setIdle();

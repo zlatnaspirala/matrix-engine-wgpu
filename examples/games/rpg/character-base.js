@@ -45,7 +45,7 @@ export class Character extends Hero {
     this.name = name;
     this.core = forestOfHollowBlood;
     this.heroe_bodies = [];
-    this.loadfriendlyCreeps();
+    // this.loadfriendlyCreeps();
     this.loadLocalHero(path);
     // async
     setTimeout(() => this.setupHUDForHero(name), 1000);
@@ -63,7 +63,7 @@ export class Character extends Hero {
   }
 
   async loadfriendlyCreeps() {
-       console.info(`%cLOADING loadfriendlyCreeps !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! : `, LOG_MATRIX)
+    console.info(`%cLOADING loadfriendlyCreeps !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! : `, LOG_MATRIX)
     this.friendlyLocal.creeps.push(new Creep({
       core: this.core,
       name: 'friendly_creeps0',
@@ -85,6 +85,13 @@ export class Character extends Hero {
       path: 'res/meshes/glb/bot.glb',
       position: {x: 100, y: -23, z: 0}
     }, ['creep'], 'friendly', app.player.data.team));
+
+    setTimeout(() => {
+      while(typeof app.localHero.friendlyLocal.creeps[0].heroe_bodies[0] == 'undefined') {
+        console.info('wait')
+      }
+      app.localHero.setAllCreepsAtStartPos();
+    }, 4000)
   }
 
   async loadLocalHero(p) {
@@ -157,8 +164,8 @@ export class Character extends Hero {
           if(id == 0) subMesh.sharedState.emitAnimationEvent = true;
           this.core.collisionSystem.register(`local${id}`, subMesh.position, 15.0, 'local_hero');
         });
-        if (app.localHero.heroe_bodies[0].effects) {
-        app.localHero.heroe_bodies[0].effects.flameEmitter.recreateVertexDataRND(1);
+        if(app.localHero.heroe_bodies[0].effects) {
+          app.localHero.heroe_bodies[0].effects.flameEmitter.recreateVertexDataRND(1);
         } else {
           alert(`what is app.localHero.heroe_bodies[0] ${app.localHero.heroe_bodies[0]} `);
         }
@@ -171,9 +178,11 @@ export class Character extends Hero {
           app.localHero.heroe_bodies[0].globalAmbient = [12, 12, 12, 1]
         }
 
-        app.localHero.setAllCreepsAtStartPos();
+        // app.localHero.setAllCreepsAtStartPos();
 
         app.localHero.heroe_bodies[0].effects.circlePlaneTex.rotateEffectSpeed = 0.1;
+
+        // this.loadfriendlyCreeps();
 
         this.attachEvents();
         // important!!
@@ -204,7 +213,7 @@ export class Character extends Hero {
 
   async loadFriendlyHero(p) {
     //     console.log('loadCreeps() !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
-        console.log('loadFriendlyHero() !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
+    console.log('loadFriendlyHero() !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
     try {
       this.friendlyLocal.heroes.push(new FriendlyHero(
         {
@@ -221,7 +230,7 @@ export class Character extends Hero {
   }
 
   setAllCreepsAtStartPos() {
-    // console.info(`%c setAllCreepsAtStartPos:  ??????????????????????`, LOG_MATRIX)
+    console.info(`%c setAllCreepsAtStartPos:  ??????????????????????`, LOG_MATRIX)
     this.friendlyLocal.creeps.forEach((subMesh_, id) => {
       let subMesh = subMesh_.heroe_bodies[0];
       subMesh.position.thrust = subMesh_.moveSpeed;
@@ -236,7 +245,7 @@ export class Character extends Hero {
         if(a.name == 'idle') this.friendlyCreepAnimationArrange.idle = index;
       })
       // if(id == 0) subMesh.sharedState.emitAnimationEvent = true;
-      // all single skin mesh
+      // all single skin mesh ??????????????????????????????????? ask for emitter
       subMesh.sharedState.emitAnimationEvent = true;
       // this.core.collisionSystem.register(`local${id}`, subMesh.position, 15.0, 'local_hero');
     });

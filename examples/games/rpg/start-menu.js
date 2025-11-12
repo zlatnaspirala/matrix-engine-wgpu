@@ -452,7 +452,6 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
           }
           if(x == 6) {
             hero0.forEach((p, i, array) => {
-              // alert(array[i].globalAmbient)
               array[i].globalAmbient = [21, 11, 11];
             })
           }

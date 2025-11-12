@@ -1025,7 +1025,6 @@ let forestOfHollowBloodStartSceen = new _world.default({
           }
           if (x == 6) {
             hero0.forEach((p, i, array) => {
-              // alert(array[i].globalAmbient)
               array[i].globalAmbient = [21, 11, 11];
             });
           }
@@ -28048,7 +28047,6 @@ function joinSession(options) {
         });
       });
       session.on('streamDestroyed', event => {
-        // alert(event);
         pushEvent(event);
       });
     } else {
@@ -28550,7 +28548,7 @@ class MatrixStream {
       (0, _matrixStream.leaveSession)();
     });
     (0, _matrixStream.byId)('netHeaderTitle').addEventListener('click', this.domManipulation.hideNetPanel);
-    setTimeout(() => dispatchEvent(new CustomEvent('net-ready', {})), 200);
+    setTimeout(() => dispatchEvent(new CustomEvent('net-ready', {})), 2500);
   }
   multiPlayer = {
     root: this,

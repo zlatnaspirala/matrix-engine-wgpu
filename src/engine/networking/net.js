@@ -136,7 +136,8 @@ export class MatrixStream {
     })
 
     byId('netHeaderTitle').addEventListener('click', this.domManipulation.hideNetPanel)
-    setTimeout(() => dispatchEvent(new CustomEvent('net-ready', {})), 200)
+
+    setTimeout(() => dispatchEvent(new CustomEvent('net-ready', {})), 2500)
   }
 
   multiPlayer = {
@@ -161,8 +162,8 @@ export class MatrixStream {
         } else if(e.data.animationIndex || e.data.animationIndex == 0) {
           app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).glb.animationIndex = e.data.animationIndex;
         }
-      } catch (err) {
-        console.info('mp-update-err:',err);
+      } catch(err) {
+        console.info('mp-update-err:', err);
       }
     },
     leaveGamePlay() {}

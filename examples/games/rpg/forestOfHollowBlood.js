@@ -105,25 +105,27 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
     });
 
     addEventListener("onConnectionCreated", (e) => {
-
-      // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-      // e.detail.connection.session.remoteConnections   
-
-      for(const [key, value] of e.detail.connection.session.remoteConnections.entries()) {
-        console.log('Key:', key, 'Value:', value);
-      }
+      // e.detail.connection.session.remoteConnections
       const remoteCons = Array.from(e.detail.connection.session.remoteConnections.entries());
       if(e.detail.connection.session.remoteConnections.size == 0) {
         // FIRST BE EMITER
-        // <<<<<<<<<<<<<<<
         if(forestOfHollowBlood.net.virtualEmiter == null) {
-          console.log('[I AM EMITTER FOR NEUTRALS]', d);
+          console.log('[- Absolute first I AM EMITTER FOR NEUTRALS virtualEmiter set1 ]');
           forestOfHollowBlood.net.virtualEmiter = e.detail.connection.connectionId;
         }
       } else {
-        for (var x=0;x< remoteCons.length; x++) {
-          console.log('[EMITTER FOR NEUTRALS] remoteCons[x]', remoteCons[x]);
-          remoteCons[x]
+        // If present same team than emitter is active ...
+        let isSameTeamAlready = false;
+        for(var x = 0;x < remoteCons.length;x++) {
+
+          if(forestOfHollowBlood.player.data.team == JSON.parse(remoteCons[x][1].data).team) {
+            console.log('[EMITTER FOR NEUTRALS]  already present team player .', remoteCons[x]);
+            isSameTeamAlready = true;
+          }
+        }
+        if(isSameTeamAlready == false) {
+          console.log('[EMITTER FOR NEUTRALS] virtualEmiter set2 [x]', remoteCons[x]);
+          forestOfHollowBlood.net.virtualEmiter = e.detail.connection.connectionId;
         }
       }
 
@@ -134,6 +136,8 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
         byId('matrix-net').appendChild(newPlayer);
         document.title = forestOfHollowBlood.label.get.titleBan;
 
+        // local
+        forestOfHollowBlood.localHero.loadfriendlyCreeps();
       } else {
         //--------------------------------------------------------
         let newPlayer = document.createElement('div');
@@ -142,15 +146,29 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
         byId('matrix-net').appendChild(newPlayer);
         let d = JSON.parse(e.detail.connection.data)
         if(d.team == app.player.data.team) {
-          // friendly
-          console.log('[new Friendly hero]', d);
-          forestOfHollowBlood.localHero.loadFriendlyHero(d);
+          // for case on refresh CRITICAL !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+          // for case on refresh CRITICAL !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+          // console.log('[new Friendly hero]', d);
+          // d.mesh 
+          let testIfExistAlready = app.mainRenderBundle.filter(obj =>
+            obj.name && obj.name.includes(d.mesh));
+          if(testIfExistAlready.length > 0) {
+            console.log('[new Friendly hero already exist do nothing]', d);
+          } else {
+            forestOfHollowBlood.localHero.loadFriendlyHero(d);
+          }
         } else {
-          console.log('[new enemy hero]', d);
-          forestOfHollowBlood.enemies.loadEnemyHero(d);
+          let testIfExistAlready = app.mainRenderBundle.filter(obj =>
+            obj.name && obj.name.includes(d.mesh));
+          if(testIfExistAlready.length > 0) {
+            console.log('[new enemy hero already exist do nothing]', d);
+          } else {
+            // console.log('[new enemy hero]', d);
+            forestOfHollowBlood.enemies.loadEnemyHero(d);
+          }
         }
       }
-    })
+    });
 
     addEventListener('self-msg-data', (e) => {
 
@@ -176,7 +194,8 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
           //..
         }
       }
-    })
+    });
+
     addEventListener('only-data-receive', (e) => {
       console.log('<data-receive>', e)
       if(e.detail.from.connectionId == app.net.session.connection.connectionId) {

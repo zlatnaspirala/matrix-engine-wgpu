@@ -43,7 +43,7 @@ class Character extends _hero.Hero {
     this.name = name;
     this.core = forestOfHollowBlood;
     this.heroe_bodies = [];
-    this.loadfriendlyCreeps();
+    // this.loadfriendlyCreeps();
     this.loadLocalHero(path);
     // async
     setTimeout(() => this.setupHUDForHero(name), 1000);
@@ -93,6 +93,12 @@ class Character extends _hero.Hero {
         z: 0
       }
     }, ['creep'], 'friendly', app.player.data.team));
+    setTimeout(() => {
+      while (typeof app.localHero.friendlyLocal.creeps[0].heroe_bodies[0] == 'undefined') {
+        console.info('wait');
+      }
+      app.localHero.setAllCreepsAtStartPos();
+    }, 4000);
   }
   async loadLocalHero(p) {
     try {
@@ -190,8 +196,13 @@ class Character extends _hero.Hero {
         } else if (app.localHero.name == 'Steelborn') {
           app.localHero.heroe_bodies[0].globalAmbient = [12, 12, 12, 1];
         }
-        app.localHero.setAllCreepsAtStartPos();
+
+        // app.localHero.setAllCreepsAtStartPos();
+
         app.localHero.heroe_bodies[0].effects.circlePlaneTex.rotateEffectSpeed = 0.1;
+
+        // this.loadfriendlyCreeps();
+
         this.attachEvents();
         // important!!
         for (var x = 0; x < app.localHero.heroe_bodies.length; x++) {
@@ -240,7 +251,7 @@ class Character extends _hero.Hero {
     }
   }
   setAllCreepsAtStartPos() {
-    // console.info(`%c setAllCreepsAtStartPos:  ??????????????????????`, LOG_MATRIX)
+    console.info(`%c setAllCreepsAtStartPos:  ??????????????????????`, _utils.LOG_MATRIX);
     this.friendlyLocal.creeps.forEach((subMesh_, id) => {
       let subMesh = subMesh_.heroe_bodies[0];
       subMesh.position.thrust = subMesh_.moveSpeed;
@@ -255,7 +266,7 @@ class Character extends _hero.Hero {
         if (a.name == 'idle') this.friendlyCreepAnimationArrange.idle = index;
       });
       // if(id == 0) subMesh.sharedState.emitAnimationEvent = true;
-      // all single skin mesh
+      // all single skin mesh ??????????????????????????????????? ask for emitter
       subMesh.sharedState.emitAnimationEvent = true;
       // this.core.collisionSystem.register(`local${id}`, subMesh.position, 15.0, 'local_hero');
     });
@@ -959,18 +970,19 @@ class Creep extends _hero.Hero {
           } else if (this.name.indexOf('enemy_creep') != -1) {
             subMesh.globalAmbient = [12, 1, 1, 1];
           }
-
-          //
           if (this.group == 'friendly') {
             if (idx == 0) {
-              // MUST BE ONLY FOR - 
-              // FIRST TEAM HERO
-              subMesh.position.netObject = subMesh.name;
-              let t = subMesh.name.replace('friendly_creeps', 'enemy_creep');
-              console.log('It is friendly creep use emit net', t);
-              subMesh.position.remoteName = t;
-              subMesh.rotation.emitY = subMesh.name;
-              subMesh.rotation.remoteName = t;
+              if (this.core.net.virtualEmiter == this.core.net.session.connection.connectionId) {
+                // MUST BE ONLY FOR - // FIRST TEAM HERO
+                subMesh.position.netObject = subMesh.name;
+                let t = subMesh.name.replace('friendly_creeps', 'enemy_creep');
+                console.log('It is friendly creep use emit net', t);
+                // alert('It is friendly creep use emit net')
+
+                subMesh.position.remoteName = t;
+                subMesh.rotation.emitY = subMesh.name;
+                subMesh.rotation.remoteName = t;
+              }
             }
           }
           // maybe will help - remote net players no nedd to collide in other remote user gamaplay
@@ -1159,7 +1171,7 @@ class EnemiesManager {
   }
   // Make possible to play 3x3 4x4 or 5x5 ...
   loadCreeps() {
-    console.log('loadCreeps() !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
+    // console.log('loadCreeps() !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
     this.creeps.push(new _creepCharacter.Creep({
       core: this.core,
       name: 'enemy_creep0',
@@ -1457,24 +1469,26 @@ let forestOfHollowBlood = new _world.default({
       }
     });
     addEventListener("onConnectionCreated", e => {
-      // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-      // e.detail.connection.session.remoteConnections   
-
-      for (const [key, value] of e.detail.connection.session.remoteConnections.entries()) {
-        console.log('Key:', key, 'Value:', value);
-      }
+      // e.detail.connection.session.remoteConnections
       const remoteCons = Array.from(e.detail.connection.session.remoteConnections.entries());
       if (e.detail.connection.session.remoteConnections.size == 0) {
         // FIRST BE EMITER
-        // <<<<<<<<<<<<<<<
         if (forestOfHollowBlood.net.virtualEmiter == null) {
-          console.log('[I AM EMITTER FOR NEUTRALS]', d);
+          console.log('[- Absolute first I AM EMITTER FOR NEUTRALS virtualEmiter set1 ]');
           forestOfHollowBlood.net.virtualEmiter = e.detail.connection.connectionId;
         }
       } else {
+        // If present same team than emitter is active ...
+        let isSameTeamAlready = false;
         for (var x = 0; x < remoteCons.length; x++) {
-          console.log('[EMITTER FOR NEUTRALS] remoteCons[x]', remoteCons[x]);
-          remoteCons[x];
+          if (forestOfHollowBlood.player.data.team == JSON.parse(remoteCons[x][1].data).team) {
+            console.log('[EMITTER FOR NEUTRALS]  already present team player .', remoteCons[x]);
+            isSameTeamAlready = true;
+          }
+        }
+        if (isSameTeamAlready == false) {
+          console.log('[EMITTER FOR NEUTRALS] virtualEmiter set2 [x]', remoteCons[x]);
+          forestOfHollowBlood.net.virtualEmiter = e.detail.connection.connectionId;
         }
       }
       if (e.detail.connection.connectionId == app.net.session.connection.connectionId) {
@@ -1483,6 +1497,9 @@ let forestOfHollowBlood = new _world.default({
         newPlayer.id = `local-${e.detail.connection.connectionId}`;
         (0, _matrixStream.byId)('matrix-net').appendChild(newPlayer);
         document.title = forestOfHollowBlood.label.get.titleBan;
+
+        // local
+        forestOfHollowBlood.localHero.loadfriendlyCreeps();
       } else {
         //--------------------------------------------------------
         let newPlayer = document.createElement('div');
@@ -1491,12 +1508,24 @@ let forestOfHollowBlood = new _world.default({
         (0, _matrixStream.byId)('matrix-net').appendChild(newPlayer);
         let d = JSON.parse(e.detail.connection.data);
         if (d.team == app.player.data.team) {
-          // friendly
-          console.log('[new Friendly hero]', d);
-          forestOfHollowBlood.localHero.loadFriendlyHero(d);
+          // for case on refresh CRITICAL !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+          // for case on refresh CRITICAL !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+          // console.log('[new Friendly hero]', d);
+          // d.mesh 
+          let testIfExistAlready = app.mainRenderBundle.filter(obj => obj.name && obj.name.includes(d.mesh));
+          if (testIfExistAlready.length > 0) {
+            console.log('[new Friendly hero already exist do nothing]', d);
+          } else {
+            forestOfHollowBlood.localHero.loadFriendlyHero(d);
+          }
         } else {
-          console.log('[new enemy hero]', d);
-          forestOfHollowBlood.enemies.loadEnemyHero(d);
+          let testIfExistAlready = app.mainRenderBundle.filter(obj => obj.name && obj.name.includes(d.mesh));
+          if (testIfExistAlready.length > 0) {
+            console.log('[new enemy hero already exist do nothing]', d);
+          } else {
+            // console.log('[new enemy hero]', d);
+            forestOfHollowBlood.enemies.loadEnemyHero(d);
+          }
         }
       }
     });
@@ -2869,9 +2898,7 @@ class HUD {
     document.body.appendChild(hud);
   }
   setCursor() {
-    // alert('cur')
     // AnimatedCursor
-
     document.body.style.cursor = "url('./res/icons/default.png') 0 0, auto";
   }
 }
@@ -31402,7 +31429,6 @@ function joinSession(options) {
         });
       });
       session.on('streamDestroyed', event => {
-        // alert(event);
         pushEvent(event);
       });
     } else {
@@ -31904,7 +31930,7 @@ class MatrixStream {
       (0, _matrixStream.leaveSession)();
     });
     (0, _matrixStream.byId)('netHeaderTitle').addEventListener('click', this.domManipulation.hideNetPanel);
-    setTimeout(() => dispatchEvent(new CustomEvent('net-ready', {})), 200);
+    setTimeout(() => dispatchEvent(new CustomEvent('net-ready', {})), 2500);
   }
   multiPlayer = {
     root: this,

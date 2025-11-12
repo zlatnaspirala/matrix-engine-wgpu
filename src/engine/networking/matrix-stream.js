@@ -77,7 +77,6 @@ export function joinSession(options) {
       });
 
       session.on('streamDestroyed', event => {
-        // alert(event);
         pushEvent(event);
       });
     } else {
