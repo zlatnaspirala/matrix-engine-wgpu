@@ -400,7 +400,7 @@ export class Hero extends HeroProps {
   updateStats() {
     super.updateStats();
     this.applyArchetypeStats();
-    console.log('Override updateStats to include archetype scaling ....')
+    // console.log('Override updateStats to include archetype scaling ....')
   }
 }
 

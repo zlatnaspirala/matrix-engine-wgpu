@@ -44,11 +44,11 @@ export class FriendlyHero extends Hero {
         this.heroe_bodies = app.mainRenderBundle.filter(obj =>
           obj.name && obj.name.includes(o.name)
         );
-        this.heroe_bodies.forEach((subMesh, idx) => {
+        this.heroe_bodies.forEach((subMesh, idx, array) => {
           subMesh.position.thrust = this.moveSpeed;
           subMesh.glb.animationIndex = 0;
           // adapt manual if blender is not setup
-          subMesh.glb.glbJsonData.animations.forEach((a, index, array) => {
+          subMesh.glb.glbJsonData.animations.forEach((a, index) => {
             //  console.info(`%c ANimation: ${a.name} index ${index}`, LOG_MATRIX)
             if(a.name == 'dead') this.heroAnimationArrange.dead = index;
             if(a.name == 'walk') this.heroAnimationArrange.walk = index;
@@ -63,8 +63,8 @@ export class FriendlyHero extends Hero {
 
           // this is optimisation very important - no emit per sub mesh - calc on client part.
           if(idx > 0) {
-            array[index].position = array[0].position;
-            array[index].rotation = array[0].rotation;
+            array[idx].position = array[0].position;
+            array[idx].rotation = array[0].rotation;
           }
 
           // maybe will help - remote net players no nedd to collide in other remote user gamaplay

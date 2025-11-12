@@ -69,7 +69,8 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
     app.matrixSounds.audios.music.loop = true;
 
     addEventListener('net-ready', () => {
-      // console.log('net-ready');
+      console.log('net-ready ----------------------------------------------------');
+      // >>>>>>>>>>>>>>>>>>>>>>>>
       // fix arg also
       if(forestOfHollowBlood.player.data.team == 'south') {
         forestOfHollowBlood.player.data.enemyTeam = 'north';
@@ -104,29 +105,48 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
     });
 
     addEventListener("onConnectionCreated", (e) => {
+
+      // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+      // e.detail.connection.session.remoteConnections   
+
+      for(const [key, value] of e.detail.connection.session.remoteConnections.entries()) {
+        console.log('Key:', key, 'Value:', value);
+      }
+      const remoteCons = Array.from(e.detail.connection.session.remoteConnections.entries());
+      if(e.detail.connection.session.remoteConnections.size == 0) {
+        // FIRST BE EMITER
+        // <<<<<<<<<<<<<<<
+        if(forestOfHollowBlood.net.virtualEmiter == null) {
+          console.log('[I AM EMITTER FOR NEUTRALS]', d);
+          forestOfHollowBlood.net.virtualEmiter = e.detail.connection.connectionId;
+        }
+      } else {
+        for (var x=0;x< remoteCons.length; x++) {
+          console.log('[EMITTER FOR NEUTRALS] remoteCons[x]', remoteCons[x]);
+          remoteCons[x]
+        }
+      }
+
       if(e.detail.connection.connectionId == app.net.session.connection.connectionId) {
         let newPlayer = document.createElement('div');
         newPlayer.innerHTML = `Local Player: ${e.detail.connection.connectionId}`;
         newPlayer.id = `local-${e.detail.connection.connectionId}`;
         byId('matrix-net').appendChild(newPlayer);
         document.title = forestOfHollowBlood.label.get.titleBan;
+
       } else {
         //--------------------------------------------------------
         let newPlayer = document.createElement('div');
         newPlayer.innerHTML = `remote Player: ${e.detail.connection.connectionId}`;
         newPlayer.id = `remote-${e.detail.connection.connectionId}`;
         byId('matrix-net').appendChild(newPlayer);
-        if(forestOfHollowBlood.net.virtualEmiter == null) {
-          // only one - first remote (it means in theory 'best remote player network response time')
-          forestOfHollowBlood.net.virtualEmiter = e.detail.connection.connectionId;
-        }
         let d = JSON.parse(e.detail.connection.data)
-        console.log('[new enemy hero]', d);
-
         if(d.team == app.player.data.team) {
           // friendly
+          console.log('[new Friendly hero]', d);
           forestOfHollowBlood.localHero.loadFriendlyHero(d);
         } else {
+          console.log('[new enemy hero]', d);
           forestOfHollowBlood.enemies.loadEnemyHero(d);
         }
       }

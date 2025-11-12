@@ -69,6 +69,8 @@ export class Creep extends Hero {
           //
           if(this.group == 'friendly') {
             if(idx == 0) {
+              // MUST BE ONLY FOR - 
+              // FIRST TEAM HERO
               subMesh.position.netObject = subMesh.name;
               let t = subMesh.name.replace('friendly_creeps', 'enemy_creep');
               console.log('It is friendly creep use emit net', t);

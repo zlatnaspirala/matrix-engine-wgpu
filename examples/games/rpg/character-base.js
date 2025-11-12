@@ -63,6 +63,7 @@ export class Character extends Hero {
   }
 
   async loadfriendlyCreeps() {
+       console.info(`%cLOADING loadfriendlyCreeps !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! : `, LOG_MATRIX)
     this.friendlyLocal.creeps.push(new Creep({
       core: this.core,
       name: 'friendly_creeps0',
@@ -202,6 +203,8 @@ export class Character extends Hero {
   }
 
   async loadFriendlyHero(p) {
+    //     console.log('loadCreeps() !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
+        console.log('loadFriendlyHero() !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
     try {
       this.friendlyLocal.heroes.push(new FriendlyHero(
         {

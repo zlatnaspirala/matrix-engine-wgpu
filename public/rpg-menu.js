@@ -513,7 +513,7 @@ class Hero extends HeroProps {
   updateStats() {
     super.updateStats();
     this.applyArchetypeStats();
-    console.log('Override updateStats to include archetype scaling ....');
+    // console.log('Override updateStats to include archetype scaling ....')
   }
 }
 exports.Hero = Hero;
@@ -28522,8 +28522,7 @@ class MatrixStream {
         }
       });
       this.session.on(`signal:${_matrixStream.netConfig.sessionName}-data`, e => {
-        // console.log("SIGBAL DATA RECEIVE=>", e);
-        console.log("SIGBAL DATA RECEIVE LOW LEVEL TEST OWN MESG =>", e);
+        // console.log("SIGBAL DATA RECEIVE LOW LEVEL TEST OWN MESG =>", e);
         if (this.session.connection.connectionId == e.from.connectionId) {
           dispatchEvent(new CustomEvent('self-msg-data', {
             detail: e
@@ -28551,7 +28550,7 @@ class MatrixStream {
       (0, _matrixStream.leaveSession)();
     });
     (0, _matrixStream.byId)('netHeaderTitle').addEventListener('click', this.domManipulation.hideNetPanel);
-    setTimeout(() => dispatchEvent(new CustomEvent('net-ready', {})), 100);
+    setTimeout(() => dispatchEvent(new CustomEvent('net-ready', {})), 200);
   }
   multiPlayer = {
     root: this,

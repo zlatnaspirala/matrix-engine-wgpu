@@ -109,8 +109,7 @@ export class MatrixStream {
         }
       });
       this.session.on(`signal:${netConfig.sessionName}-data`, (e) => {
-        // console.log("SIGBAL DATA RECEIVE=>", e);
-        console.log("SIGBAL DATA RECEIVE LOW LEVEL TEST OWN MESG =>", e);
+        // console.log("SIGBAL DATA RECEIVE LOW LEVEL TEST OWN MESG =>", e);
         if(this.session.connection.connectionId == e.from.connectionId) {
           dispatchEvent(new CustomEvent('self-msg-data', {detail: e}));
         } else {
@@ -137,7 +136,7 @@ export class MatrixStream {
     })
 
     byId('netHeaderTitle').addEventListener('click', this.domManipulation.hideNetPanel)
-    setTimeout(() => dispatchEvent(new CustomEvent('net-ready', {})), 100)
+    setTimeout(() => dispatchEvent(new CustomEvent('net-ready', {})), 200)
   }
 
   multiPlayer = {

@@ -59,6 +59,7 @@ class Character extends _hero.Hero {
     (0, _utils.byId)('hudDesriptionText').innerHTML = app.label.get[name.toLowerCase()];
   }
   async loadfriendlyCreeps() {
+    console.info(`%cLOADING loadfriendlyCreeps !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! : `, _utils.LOG_MATRIX);
     this.friendlyLocal.creeps.push(new _creepCharacter.Creep({
       core: this.core,
       name: 'friendly_creeps0',
@@ -220,6 +221,8 @@ class Character extends _hero.Hero {
     }
   }
   async loadFriendlyHero(p) {
+    //     console.log('loadCreeps() !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
+    console.log('loadFriendlyHero() !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
     try {
       this.friendlyLocal.heroes.push(new _friendlyCharacter.FriendlyHero({
         core: this.core,
@@ -960,6 +963,8 @@ class Creep extends _hero.Hero {
           //
           if (this.group == 'friendly') {
             if (idx == 0) {
+              // MUST BE ONLY FOR - 
+              // FIRST TEAM HERO
               subMesh.position.netObject = subMesh.name;
               let t = subMesh.name.replace('friendly_creeps', 'enemy_creep');
               console.log('It is friendly creep use emit net', t);
@@ -1154,6 +1159,7 @@ class EnemiesManager {
   }
   // Make possible to play 3x3 4x4 or 5x5 ...
   loadCreeps() {
+    console.log('loadCreeps() !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
     this.creeps.push(new _creepCharacter.Creep({
       core: this.core,
       name: 'enemy_creep0',
@@ -1421,7 +1427,8 @@ let forestOfHollowBlood = new _world.default({
     forestOfHollowBlood.net.virtualEmiter = null;
     app.matrixSounds.audios.music.loop = true;
     addEventListener('net-ready', () => {
-      // console.log('net-ready');
+      console.log('net-ready ----------------------------------------------------');
+      // >>>>>>>>>>>>>>>>>>>>>>>>
       // fix arg also
       if (forestOfHollowBlood.player.data.team == 'south') {
         forestOfHollowBlood.player.data.enemyTeam = 'north';
@@ -1450,6 +1457,26 @@ let forestOfHollowBlood = new _world.default({
       }
     });
     addEventListener("onConnectionCreated", e => {
+      // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+      // e.detail.connection.session.remoteConnections   
+
+      for (const [key, value] of e.detail.connection.session.remoteConnections.entries()) {
+        console.log('Key:', key, 'Value:', value);
+      }
+      const remoteCons = Array.from(e.detail.connection.session.remoteConnections.entries());
+      if (e.detail.connection.session.remoteConnections.size == 0) {
+        // FIRST BE EMITER
+        // <<<<<<<<<<<<<<<
+        if (forestOfHollowBlood.net.virtualEmiter == null) {
+          console.log('[I AM EMITTER FOR NEUTRALS]', d);
+          forestOfHollowBlood.net.virtualEmiter = e.detail.connection.connectionId;
+        }
+      } else {
+        for (var x = 0; x < remoteCons.length; x++) {
+          console.log('[EMITTER FOR NEUTRALS] remoteCons[x]', remoteCons[x]);
+          remoteCons[x];
+        }
+      }
       if (e.detail.connection.connectionId == app.net.session.connection.connectionId) {
         let newPlayer = document.createElement('div');
         newPlayer.innerHTML = `Local Player: ${e.detail.connection.connectionId}`;
@@ -1462,16 +1489,13 @@ let forestOfHollowBlood = new _world.default({
         newPlayer.innerHTML = `remote Player: ${e.detail.connection.connectionId}`;
         newPlayer.id = `remote-${e.detail.connection.connectionId}`;
         (0, _matrixStream.byId)('matrix-net').appendChild(newPlayer);
-        if (forestOfHollowBlood.net.virtualEmiter == null) {
-          // only one - first remote (it means in theory 'best remote player network response time')
-          forestOfHollowBlood.net.virtualEmiter = e.detail.connection.connectionId;
-        }
         let d = JSON.parse(e.detail.connection.data);
-        console.log('[new enemy hero]', d);
         if (d.team == app.player.data.team) {
           // friendly
+          console.log('[new Friendly hero]', d);
           forestOfHollowBlood.localHero.loadFriendlyHero(d);
         } else {
+          console.log('[new enemy hero]', d);
           forestOfHollowBlood.enemies.loadEnemyHero(d);
         }
       }
@@ -1656,11 +1680,11 @@ class FriendlyHero extends _hero.Hero {
       // make small async - cooking glbs files
       setTimeout(() => {
         this.heroe_bodies = app.mainRenderBundle.filter(obj => obj.name && obj.name.includes(o.name));
-        this.heroe_bodies.forEach((subMesh, idx) => {
+        this.heroe_bodies.forEach((subMesh, idx, array) => {
           subMesh.position.thrust = this.moveSpeed;
           subMesh.glb.animationIndex = 0;
           // adapt manual if blender is not setup
-          subMesh.glb.glbJsonData.animations.forEach((a, index, array) => {
+          subMesh.glb.glbJsonData.animations.forEach((a, index) => {
             //  console.info(`%c ANimation: ${a.name} index ${index}`, LOG_MATRIX)
             if (a.name == 'dead') this.heroAnimationArrange.dead = index;
             if (a.name == 'walk') this.heroAnimationArrange.walk = index;
@@ -1675,8 +1699,8 @@ class FriendlyHero extends _hero.Hero {
 
           // this is optimisation very important - no emit per sub mesh - calc on client part.
           if (idx > 0) {
-            array[index].position = array[0].position;
-            array[index].rotation = array[0].rotation;
+            array[idx].position = array[0].position;
+            array[idx].rotation = array[0].rotation;
           }
 
           // maybe will help - remote net players no nedd to collide in other remote user gamaplay
@@ -2275,7 +2299,7 @@ class Hero extends HeroProps {
   updateStats() {
     super.updateStats();
     this.applyArchetypeStats();
-    console.log('Override updateStats to include archetype scaling ....');
+    // console.log('Override updateStats to include archetype scaling ....')
   }
 }
 exports.Hero = Hero;
@@ -31852,8 +31876,7 @@ class MatrixStream {
         }
       });
       this.session.on(`signal:${_matrixStream.netConfig.sessionName}-data`, e => {
-        // console.log("SIGBAL DATA RECEIVE=>", e);
-        console.log("SIGBAL DATA RECEIVE LOW LEVEL TEST OWN MESG =>", e);
+        // console.log("SIGBAL DATA RECEIVE LOW LEVEL TEST OWN MESG =>", e);
         if (this.session.connection.connectionId == e.from.connectionId) {
           dispatchEvent(new CustomEvent('self-msg-data', {
             detail: e
@@ -31881,7 +31904,7 @@ class MatrixStream {
       (0, _matrixStream.leaveSession)();
     });
     (0, _matrixStream.byId)('netHeaderTitle').addEventListener('click', this.domManipulation.hideNetPanel);
-    setTimeout(() => dispatchEvent(new CustomEvent('net-ready', {})), 100);
+    setTimeout(() => dispatchEvent(new CustomEvent('net-ready', {})), 200);
   }
   multiPlayer = {
     root: this,
