@@ -121,10 +121,6 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
 
   function determinateSelection() {
 
-    if(checkHeroStatus() == true) {
-      console.log("hero used keep graphics no send ");
-      return;
-    }
 
     if(app.net.session.connection != null) {
       console.log("Test team data moment", byId(`waiting-${app.net.session.connection.connectionId}`).getAttribute('data-hero-team'))
@@ -156,6 +152,13 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
     // Only last non selected hero player will get 
     // first free hero in selection action next/back.
     // For now.
+
+    if(checkHeroStatus() == true) {
+      console.log("hero used keep graphics no send ");
+      return;
+    }
+
+
     if(isAllSelected() == true) {
       forestOfHollowBloodStartSceen.gotoGamePlay();
     }
@@ -527,7 +530,9 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
       app.selectedHero++;
       console.log('app.selectedHero::: ', app.selectedHero)
       // Fix on remote 
-      if(app.net.session) {determinateSelection()}
+      if(app.net.session) {
+        determinateSelection();
+      }
 
       app.heroByBody.forEach((sceneObj, indexRoot) => {
         sceneObj.forEach((heroBodie) => {

@@ -108,9 +108,8 @@ export class HUD {
     ];
 
     addEventListener('stats-localhero', (e) => {
-      
+      // console.log('STATS UPDATE DOM ', e.detail[props[x]].toFixed(2))
       for(var x = 0;x < props.length;x++) {
-        console.log('STATS UPDATE DOM ', e.detail[props[x]].toFixed(2))
         byId('stats-' + props[x]).innerHTML = e.detail[props[x]].toFixed(2);
       }
     })

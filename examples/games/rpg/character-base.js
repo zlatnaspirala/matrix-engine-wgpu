@@ -5,6 +5,7 @@ import {Hero, HERO_PROFILES} from "./hero";
 import {Creep} from "./creep-character";
 import {followPath} from "./nav-mesh";
 import {creepPoints, startUpPositions} from "./static";
+import {FriendlyHero} from "./friendly-character";
 
 export class Character extends Hero {
 
@@ -155,7 +156,11 @@ export class Character extends Hero {
           if(id == 0) subMesh.sharedState.emitAnimationEvent = true;
           this.core.collisionSystem.register(`local${id}`, subMesh.position, 15.0, 'local_hero');
         });
+        if (app.localHero.heroe_bodies[0].effects) {
         app.localHero.heroe_bodies[0].effects.flameEmitter.recreateVertexDataRND(1);
+        } else {
+          alert(`what is app.localHero.heroe_bodies[0] ${app.localHero.heroe_bodies[0]} `);
+        }
 
         // adapt
         app.localHero.heroe_bodies[0].globalAmbient = [1, 1, 1, 1];
@@ -187,13 +192,12 @@ export class Character extends Hero {
         //   let remoteEnemy = this.core.enemies.enemies.find((enemy => enemy.name === e.data.heroName))
         //   remoteEnemy.remoteNav(e.data.followPath.end);
         // }
-
         // for now net view for rot is axis separated - cost is ok for orientaion remote pass
         app.localHero.heroe_bodies[0].rotation.emitY = app.localHero.heroe_bodies[0].name;
         dispatchEvent(new CustomEvent('local-hero-bodies-ready', {
           detail: `This is not sync - 99% works`
         }))
-      }, 4000);
+      }, 5000); // return to 2 -3 - testing on 3-4 on same computer
     } catch(err) {throw err;}
   }
 
@@ -202,9 +206,9 @@ export class Character extends Hero {
       this.friendlyLocal.heroes.push(new FriendlyHero(
         {
           core: this.core,
-          name: o.hero,
-          archetypes: o.archetypes,
-          path: o.path,
+          name: p.hero,
+          archetypes: p.archetypes,
+          path: p.path,
           position: {x: 0, y: -23, z: 0}
         }
       ));

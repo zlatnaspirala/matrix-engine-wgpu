@@ -676,10 +676,6 @@ let forestOfHollowBloodStartSceen = new _world.default({
     }
   }
   function determinateSelection() {
-    if (checkHeroStatus() == true) {
-      console.log("hero used keep graphics no send ");
-      return;
-    }
     if (app.net.session.connection != null) {
       console.log("Test team data moment", (0, _utils.byId)(`waiting-${app.net.session.connection.connectionId}`).getAttribute('data-hero-team'));
       let testDom = (0, _utils.byId)(`waiting-${app.net.session.connection.connectionId}`).getAttribute('data-hero-team');
@@ -709,6 +705,11 @@ let forestOfHollowBloodStartSceen = new _world.default({
     // Only last non selected hero player will get 
     // first free hero in selection action next/back.
     // For now.
+
+    if (checkHeroStatus() == true) {
+      console.log("hero used keep graphics no send ");
+      return;
+    }
     if (isAllSelected() == true) {
       forestOfHollowBloodStartSceen.gotoGamePlay();
     }

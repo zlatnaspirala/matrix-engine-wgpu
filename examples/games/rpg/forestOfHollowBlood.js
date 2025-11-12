@@ -123,24 +123,12 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
         let d = JSON.parse(e.detail.connection.data)
         console.log('[new enemy hero]', d);
 
-        if (d.team == app.player.data.team) {
+        if(d.team == app.player.data.team) {
           // friendly
-          forestOfHollowBlood.
+          forestOfHollowBlood.localHero.loadFriendlyHero(d);
         } else {
           forestOfHollowBlood.enemies.loadEnemyHero(d);
         }
-        // 
-        //  {
-        //     "mesh": "MariaSword_Maria",
-        //     "hero": "MariaSword",
-        //     "path": "res/meshes/glb/woman1.glb",
-        //     "archetypes": [
-        //         "Warrior"
-        //     ],
-        //     "team": "north",
-        //     "data": 1762888866712,
-        //     "enemyTeam": "south"
-        // }
       }
     })
 
@@ -180,7 +168,18 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
         console.log('<data-receive damage for >', d.defenderName);
         let IsEnemyHeroObj = forestOfHollowBlood.enemies.enemies.find((enemy) => enemy.name === d.defenderName);
         let IsEnemyCreepObj = forestOfHollowBlood.enemies.creeps.find((creep) => creep.name === d.defenderName);
-        if(IsEnemyHeroObj) {
+
+        // new
+        let IsFriendlyHeroObj = forestOfHollowBlood.localHero.friendlyLocal.heroes.find((fhero) => fhero.name === d.defenderName);
+
+        if(IsFriendlyHeroObj) {
+          //
+          console.log('<data-receive damage for IsFriendlyHeroObj >', IsFriendlyHeroObj);
+          const progress = Math.max(0, Math.min(1, d.hp / IsFriendlyHeroObj.getHPMax()));
+          IsFriendlyHeroObj.heroe_bodies[0].effects.energyBar.setProgress(progress);
+          console.log('<data-receive damage IsFriendlyHeroObj progress >', progress);
+
+        } else if(IsEnemyHeroObj) {
           console.log('<data-receive damage for IsEnemyHeroObj >', IsEnemyHeroObj);
           const progress = Math.max(0, Math.min(1, d.hp / IsEnemyHeroObj.getHPMax()));
           IsEnemyHeroObj.heroe_bodies[0].effects.energyBar.setProgress(progress);

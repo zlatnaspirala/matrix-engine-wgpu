@@ -21,7 +21,7 @@ export class Inventory {
   loadAllRules (allLevel2_3) {
     let onlyConstructable = allLevel2_3.filter((item) => typeof item.from !== 'undefined');
     onlyConstructable.forEach((item , index, array) => {
-      console.log(item.name + " from " + item.from);
+      // console.log(item.name + " from " + item.from);
       this.addCraftingRule(item.from, item);
     });
   }

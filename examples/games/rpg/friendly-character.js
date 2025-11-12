@@ -1,7 +1,7 @@
 import {uploadGLBModel} from "../../../src/engine/loaders/webgpu-gltf";
 import {LOG_MATRIX} from "../../../src/engine/utils";
 import {Hero} from "./hero";
-import {followPath} from "./nav-mesh";
+// import {followPath} from "./nav-mesh";
 import {startUpPositions} from "./static";
 
 export class FriendlyHero extends Hero {
@@ -48,7 +48,7 @@ export class FriendlyHero extends Hero {
           subMesh.position.thrust = this.moveSpeed;
           subMesh.glb.animationIndex = 0;
           // adapt manual if blender is not setup
-          subMesh.glb.glbJsonData.animations.forEach((a, index) => {
+          subMesh.glb.glbJsonData.animations.forEach((a, index, array) => {
             //  console.info(`%c ANimation: ${a.name} index ${index}`, LOG_MATRIX)
             if(a.name == 'dead') this.heroAnimationArrange.dead = index;
             if(a.name == 'walk') this.heroAnimationArrange.walk = index;
@@ -60,10 +60,22 @@ export class FriendlyHero extends Hero {
           if(this.name == 'Slayzer') {
             subMesh.globalAmbient = [2, 2, 3, 1];
           }
+
+          // this is optimisation very important - no emit per sub mesh - calc on client part.
+          if(idx > 0) {
+            array[index].position = array[0].position;
+            array[index].rotation = array[0].rotation;
+          }
+
           // maybe will help - remote net players no nedd to collide in other remote user gamaplay
           // this.core.collisionSystem.register((o.name + idx), subMesh.position, 15.0, 'enemies');
           // dont care for multi sub mesh now
-          if(idx == 0) this.core.collisionSystem.register((o.name), subMesh.position, 15.0, 'enemies');
+          if(idx == 0) {
+            subMesh.position.netObject = subMesh.name;
+            // for now net view for rot is axis separated - cost is ok for orientaion remote pass
+            subMesh.rotation.emitY = subMesh.name;
+            this.core.collisionSystem.register((o.name), subMesh.position, 15.0, 'friendly');
+          }
         });
 
         this.setStartUpPosition();
