@@ -28458,7 +28458,8 @@ class MatrixStream {
       this.sessionName = (0, _matrixStream.byId)("sessionName");
       console.log('[CHANNEL]' + this.sessionName.value);
       this.attachEvents();
-      console.log(`%c MatrixStream constructed.`, _matrixStream.BIGLOG);
+      this.closeSession = _matrixStream.closeSession;
+      console.log(`%cMatrixStream constructed.`, _matrixStream.BIGLOG);
     });
   }
   attachEvents() {
@@ -28543,7 +28544,7 @@ class MatrixStream {
     // this.buttonCloseSession.addEventListener('click', closeSession);
 
     this.buttonLeaveSession.addEventListener('click', () => {
-      console.log(`%c LEAVE SESSION`, _matrixStream.REDLOG);
+      console.log(`%cLEAVE SESSION`, _matrixStream.REDLOG);
       (0, _matrixStream.removeUser)();
       (0, _matrixStream.leaveSession)();
     });
@@ -28558,11 +28559,7 @@ class MatrixStream {
       try {
         // console.log('REMOTE UPDATE::::', e);
         if (e.data.netPos) {
-          if (e.data.remoteName != null) {
-            app.getSceneObjectByName(e.data.remoteName).position.setPosition(e.data.netPos.x, e.data.netPos.y, e.data.netPos.z);
-          } else {
-            app.getSceneObjectByName(e.data.sceneName).position.setPosition(e.data.netPos.x, e.data.netPos.y, e.data.netPos.z);
-          }
+          app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).position.setPosition(e.data.netPos.x, e.data.netPos.y, e.data.netPos.z);
         } else if (e.data.netRotY || e.data.netRotY == 0) {
           app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).rotation.y = e.data.netRotY;
         } else if (e.data.netRotX) {

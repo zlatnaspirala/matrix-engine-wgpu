@@ -42,9 +42,10 @@ export class MatrixStream {
         this.buttonLeaveSession = byId('buttonLeaveSession');
         byId("sessionName").value = netConfig.sessionName;
         this.sessionName = byId("sessionName");
-        console.log('[CHANNEL]' + this.sessionName.value)
-        this.attachEvents()
-        console.log(`%c MatrixStream constructed.`, BIGLOG);
+        console.log('[CHANNEL]' + this.sessionName.value);
+        this.attachEvents();
+        this.closeSession = closeSession;
+        console.log(`%cMatrixStream constructed.`, BIGLOG);
       });
   }
 
@@ -130,9 +131,9 @@ export class MatrixStream {
     // this.buttonCloseSession.addEventListener('click', closeSession);
 
     this.buttonLeaveSession.addEventListener('click', () => {
-      console.log(`%c LEAVE SESSION`, REDLOG)
-      removeUser()
-      leaveSession()
+      console.log(`%cLEAVE SESSION`, REDLOG)
+      removeUser();
+      leaveSession();
     })
 
     byId('netHeaderTitle').addEventListener('click', this.domManipulation.hideNetPanel)
@@ -148,11 +149,7 @@ export class MatrixStream {
       try {
         // console.log('REMOTE UPDATE::::', e);
         if(e.data.netPos) {
-          if(e.data.remoteName != null) {
-            app.getSceneObjectByName(e.data.remoteName).position.setPosition(e.data.netPos.x, e.data.netPos.y, e.data.netPos.z);
-          } else {
-            app.getSceneObjectByName(e.data.sceneName).position.setPosition(e.data.netPos.x, e.data.netPos.y, e.data.netPos.z);
-          }
+          app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).position.setPosition(e.data.netPos.x, e.data.netPos.y, e.data.netPos.z);
         } else if(e.data.netRotY || e.data.netRotY == 0) {
           app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).rotation.y = e.data.netRotY;
         } else if(e.data.netRotX) {

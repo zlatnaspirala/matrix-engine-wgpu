@@ -74,10 +74,8 @@ export class Creep extends Hero {
                 let t = subMesh.name.replace('friendly_creeps', 'enemy_creep');
                 console.log('It is friendly creep use emit net', t);
                 // alert('It is friendly creep use emit net')
-
                 subMesh.position.remoteName = t;
                 subMesh.rotation.emitY = subMesh.name;
-                
                 subMesh.rotation.remoteName = t;
               }
             }
@@ -89,7 +87,7 @@ export class Creep extends Hero {
         });
         this.setStartUpPosition();
         this.attachEvents();
-      }, 1700)
+      }, 2500);
     } catch(err) {throw err;}
   }
 

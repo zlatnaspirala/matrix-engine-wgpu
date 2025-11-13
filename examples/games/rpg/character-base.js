@@ -87,8 +87,8 @@ export class Character extends Hero {
     }, ['creep'], 'friendly', app.player.data.team));
 
     setTimeout(() => {
-      while(typeof app.localHero.friendlyLocal.creeps[0].heroe_bodies[0] == 'undefined') {
-        console.info('wait')
+      while(typeof app.localHero.friendlyLocal.creeps[2] == 'undefined') {
+        console.info('wait.............')
       }
       app.localHero.setAllCreepsAtStartPos();
     }, 4000)
@@ -207,7 +207,7 @@ export class Character extends Hero {
         dispatchEvent(new CustomEvent('local-hero-bodies-ready', {
           detail: `This is not sync - 99% works`
         }))
-      }, 5000); // return to 2 -3 - testing on 3-4 on same computer
+      }, 6000); // return to 2 -3 - testing on 3-4 on same computer
     } catch(err) {throw err;}
   }
 
@@ -230,7 +230,7 @@ export class Character extends Hero {
   }
 
   setAllCreepsAtStartPos() {
-    console.info(`%c setAllCreepsAtStartPos:  ??????????????????????`, LOG_MATRIX)
+    console.info(`%c setAllCreepsAtStartPos...`, LOG_MATRIX)
     this.friendlyLocal.creeps.forEach((subMesh_, id) => {
       let subMesh = subMesh_.heroe_bodies[0];
       subMesh.position.thrust = subMesh_.moveSpeed;
@@ -258,7 +258,10 @@ export class Character extends Hero {
     })
 
     setTimeout(() => {
-      this.navigateCreeps();
+      if (this.core.net.virtualEmiter != null) {
+        console.info(`%c virtualEmiter:  ??????????????????????`, LOG_MATRIX)
+        this.navigateCreeps();
+      }
     }, 3000);
   }
 

@@ -94,8 +94,8 @@ class Character extends _hero.Hero {
       }
     }, ['creep'], 'friendly', app.player.data.team));
     setTimeout(() => {
-      while (typeof app.localHero.friendlyLocal.creeps[0].heroe_bodies[0] == 'undefined') {
-        console.info('wait');
+      while (typeof app.localHero.friendlyLocal.creeps[2] == 'undefined') {
+        console.info('wait.............');
       }
       app.localHero.setAllCreepsAtStartPos();
     }, 4000);
@@ -226,7 +226,7 @@ class Character extends _hero.Hero {
         dispatchEvent(new CustomEvent('local-hero-bodies-ready', {
           detail: `This is not sync - 99% works`
         }));
-      }, 5000); // return to 2 -3 - testing on 3-4 on same computer
+      }, 6000); // return to 2 -3 - testing on 3-4 on same computer
     } catch (err) {
       throw err;
     }
@@ -251,7 +251,7 @@ class Character extends _hero.Hero {
     }
   }
   setAllCreepsAtStartPos() {
-    console.info(`%c setAllCreepsAtStartPos:  ??????????????????????`, _utils.LOG_MATRIX);
+    console.info(`%c setAllCreepsAtStartPos...`, _utils.LOG_MATRIX);
     this.friendlyLocal.creeps.forEach((subMesh_, id) => {
       let subMesh = subMesh_.heroe_bodies[0];
       subMesh.position.thrust = subMesh_.moveSpeed;
@@ -274,7 +274,10 @@ class Character extends _hero.Hero {
       creep.heroe_bodies[0].position.setPosition(_static.startUpPositions[this.core.player.data.team][0] + (index + 1) * 50, _static.startUpPositions[this.core.player.data.team][1], _static.startUpPositions[this.core.player.data.team][2] + (index + 1) * 50);
     });
     setTimeout(() => {
-      this.navigateCreeps();
+      if (this.core.net.virtualEmiter != null) {
+        console.info(`%c virtualEmiter:  ??????????????????????`, _utils.LOG_MATRIX);
+        this.navigateCreeps();
+      }
     }, 3000);
   }
   navigateCreeps() {
@@ -978,7 +981,6 @@ class Creep extends _hero.Hero {
                 let t = subMesh.name.replace('friendly_creeps', 'enemy_creep');
                 console.log('It is friendly creep use emit net', t);
                 // alert('It is friendly creep use emit net')
-
                 subMesh.position.remoteName = t;
                 subMesh.rotation.emitY = subMesh.name;
                 subMesh.rotation.remoteName = t;
@@ -992,7 +994,7 @@ class Creep extends _hero.Hero {
         });
         this.setStartUpPosition();
         this.attachEvents();
-      }, 1700);
+      }, 2500);
     } catch (err) {
       throw err;
     }
@@ -1440,7 +1442,6 @@ let forestOfHollowBlood = new _world.default({
     app.matrixSounds.audios.music.loop = true;
     addEventListener('net-ready', () => {
       console.log('net-ready ----------------------------------------------------');
-      // >>>>>>>>>>>>>>>>>>>>>>>>
       // fix arg also
       if (forestOfHollowBlood.player.data.team == 'south') {
         forestOfHollowBlood.player.data.enemyTeam = 'north';
@@ -1454,11 +1455,17 @@ let forestOfHollowBlood = new _world.default({
       });
     });
     addEventListener('connectionDestroyed', e => {
-      console.log('connectionDestroyed , bad bad.');
+      console.log('connectionDestroyed , bad bad . end of game.');
+      /**
+       * @note
+       * For now actual is most simple way 
+       * Destroy game session if any player disconnected.
+       * Later : after adding DB backend account session
+       * add negative BAN flag for players who leave gameplay.
+       */
       if ((0, _matrixStream.byId)('remote-' + e.detail.connectionId)) {
         (0, _matrixStream.byId)('remote-' + e.detail.connectionId).remove();
         //....
-        // waiting-con_TjR2efh53j
         // byId('waiting-' + e.detail.connectionId).remove();
         _utils.mb.error(`Player ${e.detail.connectionId} disconnected...`);
         let getPlayer = JSON.parse(e.detail.event.connection.data);
@@ -1467,15 +1474,25 @@ let forestOfHollowBlood = new _world.default({
         // back to base for now
         disPlayer.position.setPosition(_static.startUpPositions[getPlayer.team][0], _static.startUpPositions[getPlayer.team][1], _static.startUpPositions[getPlayer.team][2]);
       }
+      setTimeout(() => {
+        app.net.closeSession();
+        location.assign("rpg-menu.html");
+      }, 4000);
     });
     addEventListener("onConnectionCreated", e => {
       // e.detail.connection.session.remoteConnections
       const remoteCons = Array.from(e.detail.connection.session.remoteConnections.entries());
+      const isLocal = e.detail.connection.connectionId == app.net.session.connection.connectionId;
+      console.log('[onConnectionCreated] remoteCons.length: ' + remoteCons.length);
+      console.log('[onConnectionCreated] isLocal :' + isLocal);
+      console.log('[onConnectionCreated] e.detail.connection.session.remoteConnections.size :' + e.detail.connection.session.remoteConnections.size);
+      console.log('[onConnectionCreated] isLocal :' + isLocal);
       if (e.detail.connection.session.remoteConnections.size == 0) {
         // FIRST BE EMITER
-        if (forestOfHollowBlood.net.virtualEmiter == null) {
-          console.log('[- Absolute first I AM EMITTER FOR NEUTRALS virtualEmiter set1 ]');
+        if (forestOfHollowBlood.net.virtualEmiter == null && isLocal) {
+          console.log('[- Absolute first I AM EMITTER FOR NEUTRALS virtualEmiter set1 ]', e.detail.connection.connectionId);
           forestOfHollowBlood.net.virtualEmiter = e.detail.connection.connectionId;
+          document.title = "VE " + app.net.session.connection.connectionId;
         }
       } else {
         // If present same team than emitter is active ...
@@ -1486,9 +1503,12 @@ let forestOfHollowBlood = new _world.default({
             isSameTeamAlready = true;
           }
         }
-        if (isSameTeamAlready == false) {
+        if (isSameTeamAlready == false && isLocal == true) {
           console.log('[EMITTER FOR NEUTRALS] virtualEmiter set2 [x]', remoteCons[x]);
           forestOfHollowBlood.net.virtualEmiter = e.detail.connection.connectionId;
+          document.title = "VE " + app.net.session.connection.connectionId;
+        } else {
+          // document.title = app.net.session.connection.connectionId;
         }
       }
       if (e.detail.connection.connectionId == app.net.session.connection.connectionId) {
@@ -1496,7 +1516,8 @@ let forestOfHollowBlood = new _world.default({
         newPlayer.innerHTML = `Local Player: ${e.detail.connection.connectionId}`;
         newPlayer.id = `local-${e.detail.connection.connectionId}`;
         (0, _matrixStream.byId)('matrix-net').appendChild(newPlayer);
-        document.title = forestOfHollowBlood.label.get.titleBan;
+        // document.title = forestOfHollowBlood.label.get.titleBan;
+        // document.title = app.net.session.connection.connectionId;
 
         // local
         forestOfHollowBlood.localHero.loadfriendlyCreeps();
@@ -31840,7 +31861,8 @@ class MatrixStream {
       this.sessionName = (0, _matrixStream.byId)("sessionName");
       console.log('[CHANNEL]' + this.sessionName.value);
       this.attachEvents();
-      console.log(`%c MatrixStream constructed.`, _matrixStream.BIGLOG);
+      this.closeSession = _matrixStream.closeSession;
+      console.log(`%cMatrixStream constructed.`, _matrixStream.BIGLOG);
     });
   }
   attachEvents() {
@@ -31925,7 +31947,7 @@ class MatrixStream {
     // this.buttonCloseSession.addEventListener('click', closeSession);
 
     this.buttonLeaveSession.addEventListener('click', () => {
-      console.log(`%c LEAVE SESSION`, _matrixStream.REDLOG);
+      console.log(`%cLEAVE SESSION`, _matrixStream.REDLOG);
       (0, _matrixStream.removeUser)();
       (0, _matrixStream.leaveSession)();
     });
@@ -31940,11 +31962,7 @@ class MatrixStream {
       try {
         // console.log('REMOTE UPDATE::::', e);
         if (e.data.netPos) {
-          if (e.data.remoteName != null) {
-            app.getSceneObjectByName(e.data.remoteName).position.setPosition(e.data.netPos.x, e.data.netPos.y, e.data.netPos.z);
-          } else {
-            app.getSceneObjectByName(e.data.sceneName).position.setPosition(e.data.netPos.x, e.data.netPos.y, e.data.netPos.z);
-          }
+          app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).position.setPosition(e.data.netPos.x, e.data.netPos.y, e.data.netPos.z);
         } else if (e.data.netRotY || e.data.netRotY == 0) {
           app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).rotation.y = e.data.netRotY;
         } else if (e.data.netRotX) {

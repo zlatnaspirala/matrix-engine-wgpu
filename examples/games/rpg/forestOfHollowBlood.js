@@ -70,7 +70,6 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
 
     addEventListener('net-ready', () => {
       console.log('net-ready ----------------------------------------------------');
-      // >>>>>>>>>>>>>>>>>>>>>>>>
       // fix arg also
       if(forestOfHollowBlood.player.data.team == 'south') {
         forestOfHollowBlood.player.data.enemyTeam = 'north';
@@ -86,11 +85,17 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
     });
 
     addEventListener('connectionDestroyed', (e) => {
-      console.log('connectionDestroyed , bad bad.');
+      console.log('connectionDestroyed , bad bad . end of game.');
+      /**
+       * @note
+       * For now actual is most simple way 
+       * Destroy game session if any player disconnected.
+       * Later : after adding DB backend account session
+       * add negative BAN flag for players who leave gameplay.
+       */
       if(byId('remote-' + e.detail.connectionId)) {
         byId('remote-' + e.detail.connectionId).remove();
         //....
-        // waiting-con_TjR2efh53j
         // byId('waiting-' + e.detail.connectionId).remove();
         mb.error(`Player ${e.detail.connectionId} disconnected...`);
         let getPlayer = JSON.parse(e.detail.event.connection.data);
@@ -102,39 +107,56 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
           startUpPositions[getPlayer.team][1],
           startUpPositions[getPlayer.team][2]);
       }
+
+      setTimeout(() => {
+        app.net.closeSession();
+        location.assign("rpg-menu.html");
+      }, 4000);
     });
 
     addEventListener("onConnectionCreated", (e) => {
       // e.detail.connection.session.remoteConnections
       const remoteCons = Array.from(e.detail.connection.session.remoteConnections.entries());
+      
+      const isLocal = e.detail.connection.connectionId == app.net.session.connection.connectionId;
+      console.log('[onConnectionCreated] remoteCons.length: ' + remoteCons.length );
+      console.log('[onConnectionCreated] isLocal :' + isLocal);
+      console.log('[onConnectionCreated] e.detail.connection.session.remoteConnections.size :' + e.detail.connection.session.remoteConnections.size);
+      console.log('[onConnectionCreated] isLocal :' + isLocal);
       if(e.detail.connection.session.remoteConnections.size == 0) {
         // FIRST BE EMITER
-        if(forestOfHollowBlood.net.virtualEmiter == null) {
-          console.log('[- Absolute first I AM EMITTER FOR NEUTRALS virtualEmiter set1 ]');
+        if(forestOfHollowBlood.net.virtualEmiter == null && isLocal) {
+          console.log('[- Absolute first I AM EMITTER FOR NEUTRALS virtualEmiter set1 ]' , e.detail.connection.connectionId);
           forestOfHollowBlood.net.virtualEmiter = e.detail.connection.connectionId;
+          document.title = "VE " + app.net.session.connection.connectionId;
         }
-      } else {
+      }
+       else {
         // If present same team than emitter is active ...
         let isSameTeamAlready = false;
         for(var x = 0;x < remoteCons.length;x++) {
-
           if(forestOfHollowBlood.player.data.team == JSON.parse(remoteCons[x][1].data).team) {
             console.log('[EMITTER FOR NEUTRALS]  already present team player .', remoteCons[x]);
             isSameTeamAlready = true;
           }
         }
-        if(isSameTeamAlready == false) {
+        if(isSameTeamAlready == false && isLocal == true) {
           console.log('[EMITTER FOR NEUTRALS] virtualEmiter set2 [x]', remoteCons[x]);
           forestOfHollowBlood.net.virtualEmiter = e.detail.connection.connectionId;
+          document.title = "VE " + app.net.session.connection.connectionId;
+        } else {
+          // document.title = app.net.session.connection.connectionId;
         }
-      }
+
+       }
 
       if(e.detail.connection.connectionId == app.net.session.connection.connectionId) {
         let newPlayer = document.createElement('div');
         newPlayer.innerHTML = `Local Player: ${e.detail.connection.connectionId}`;
         newPlayer.id = `local-${e.detail.connection.connectionId}`;
         byId('matrix-net').appendChild(newPlayer);
-        document.title = forestOfHollowBlood.label.get.titleBan;
+        // document.title = forestOfHollowBlood.label.get.titleBan;
+        // document.title = app.net.session.connection.connectionId;
 
         // local
         forestOfHollowBlood.localHero.loadfriendlyCreeps();
