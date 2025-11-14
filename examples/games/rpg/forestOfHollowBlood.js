@@ -22,13 +22,10 @@ import {Inventory} from "./invertoryManager.js";
  * used under Adobe’s royalty‑free license. 
  * Redistribution of raw assets is not permitted.”
  **/
-
 // set orientation  in animation end hero
 // setup HP after setDead
-
 if(!SS.has('player') || !LS.has('player')) {
   location.href = 'https://google.com';
-  // location.assign('https://google.com');
 }
 
 let forestOfHollowBlood = new MatrixEngineWGPU({
@@ -66,11 +63,33 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
     });
 
     forestOfHollowBlood.net.virtualEmiter = null;
+
+    forestOfHollowBlood.player.remoteByTeam = {
+      south: [],
+      north: []
+    };
+
     app.matrixSounds.audios.music.loop = true;
 
     addEventListener('net-ready', () => {
       console.log('net-ready ----------------------------------------------------');
+
+      console.log('forestOfHollowBlood.player.data.numOfPlayers', forestOfHollowBlood.player.data.numOfPlayers);
+
+      console.log('net-ready ----------------------------------------------------');
+
       // fix arg also
+      setTimeout(() => {
+        console.log(' NOW LOAD CREEPS ');
+        forestOfHollowBlood.loadEnemyCreeps();
+      }, 1000);
+
+      byId('buttonLeaveSession').addEventListener('click', () => {
+        location.assign("rpg-menu.html");
+      });
+    });
+
+    forestOfHollowBlood.loadEnemyCreeps = () => {
       if(forestOfHollowBlood.player.data.team == 'south') {
         forestOfHollowBlood.player.data.enemyTeam = 'north';
         forestOfHollowBlood.enemies = new EnemiesManager(forestOfHollowBlood, 'north');
@@ -78,11 +97,7 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
         forestOfHollowBlood.player.data.enemyTeam = 'south';
         forestOfHollowBlood.enemies = new EnemiesManager(forestOfHollowBlood, 'south');
       }
-
-      byId('buttonLeaveSession').addEventListener('click', () => {
-        location.assign("rpg-menu.html");
-      });
-    });
+    }
 
     addEventListener('connectionDestroyed', (e) => {
       console.log('connectionDestroyed , bad bad . end of game.');
@@ -109,35 +124,53 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
       }
 
       setTimeout(() => {
-        app.net.closeSession();
+        // app.net.closeSession();
+        app.net.buttonLeaveSession.click();
         location.assign("rpg-menu.html");
       }, 4000);
     });
 
     addEventListener("onConnectionCreated", (e) => {
-      // e.detail.connection.session.remoteConnections
       const remoteCons = Array.from(e.detail.connection.session.remoteConnections.entries());
-      
+      if(remoteCons.length == (forestOfHollowBlood.player.data.numOfPlayers - 1)) {
+        console.log(' -------------------GAME PLAYERS REACHED ALL PLAYERS---------------------------------');
+        // remo
+
+        console.log(' -------------------GAME PLAYERS REACHED ALL PLAYERS---------------------------------');
+
+        // test again here for hackers
+      }
+
       const isLocal = e.detail.connection.connectionId == app.net.session.connection.connectionId;
-      console.log('[onConnectionCreated] remoteCons.length: ' + remoteCons.length );
+      console.log('[onConnectionCreated] remoteCons.length: ' + remoteCons.length);
       console.log('[onConnectionCreated] isLocal :' + isLocal);
       console.log('[onConnectionCreated] e.detail.connection.session.remoteConnections.size :' + e.detail.connection.session.remoteConnections.size);
       console.log('[onConnectionCreated] isLocal :' + isLocal);
       if(e.detail.connection.session.remoteConnections.size == 0) {
         // FIRST BE EMITER
         if(forestOfHollowBlood.net.virtualEmiter == null && isLocal) {
-          console.log('[- Absolute first I AM EMITTER FOR NEUTRALS virtualEmiter set1 ]' , e.detail.connection.connectionId);
+          console.log('[- Absolute first I AM EMITTER FOR NEUTRALS virtualEmiter set1 ]', e.detail.connection.connectionId);
           forestOfHollowBlood.net.virtualEmiter = e.detail.connection.connectionId;
           document.title = "VE " + app.net.session.connection.connectionId;
         }
       }
-       else {
+      else {
         // If present same team than emitter is active ...
         let isSameTeamAlready = false;
         for(var x = 0;x < remoteCons.length;x++) {
-          if(forestOfHollowBlood.player.data.team == JSON.parse(remoteCons[x][1].data).team) {
-            console.log('[EMITTER FOR NEUTRALS]  already present team player .', remoteCons[x]);
+          let currentRemoteConn = JSON.parse(remoteCons[x][1].data);
+          if(forestOfHollowBlood.player.data.team == currentRemoteConn.team) {
+            // 0 is string connId 1 is full connec objc 
+            console.log('[COLLECT teams >>>>>>local>>>>>>>]  already present team player .', remoteCons[x]);
             isSameTeamAlready = true;
+            forestOfHollowBlood.player.remoteByTeam[forestOfHollowBlood.player.data.team].push(
+              remoteCons[x][0]
+            );
+          } else {
+            console.log('[COLLECT teams >>>>>>enemy>>>>>>>]  already present team player .', remoteCons[x]);
+            forestOfHollowBlood.player.remoteByTeam[currentRemoteConn.team].push(
+              remoteCons[x][0]
+            );
           }
         }
         if(isSameTeamAlready == false && isLocal == true) {
@@ -148,7 +181,7 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
           // document.title = app.net.session.connection.connectionId;
         }
 
-       }
+      }
 
       if(e.detail.connection.connectionId == app.net.session.connection.connectionId) {
         let newPlayer = document.createElement('div');
@@ -177,7 +210,7 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
           if(testIfExistAlready.length > 0) {
             console.log('[new Friendly hero already exist do nothing]', d);
           } else {
-            forestOfHollowBlood.localHero.loadFriendlyHero(d);
+            app.localHero.loadFriendlyHero(d);
           }
         } else {
           let testIfExistAlready = app.mainRenderBundle.filter(obj =>
@@ -186,7 +219,7 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
             console.log('[new enemy hero already exist do nothing]', d);
           } else {
             // console.log('[new enemy hero]', d);
-            forestOfHollowBlood.enemies.loadEnemyHero(d);
+            app.enemies.loadEnemyHero(d);
           }
         }
       }

@@ -94,11 +94,12 @@ class Character extends _hero.Hero {
       }
     }, ['creep'], 'friendly', app.player.data.team));
     setTimeout(() => {
-      while (typeof app.localHero.friendlyLocal.creeps[2] == 'undefined') {
-        console.info('wait.............');
-      }
+      // while(typeof app.localHero.friendlyLocal.creeps[2] == 'undefined') {
+      //   console.info('wait.............')
+      // }
+      console.info('setAllCreepsAtStartPos');
       app.localHero.setAllCreepsAtStartPos();
-    }, 4000);
+    }, 15000);
   }
   async loadLocalHero(p) {
     try {
@@ -250,36 +251,36 @@ class Character extends _hero.Hero {
       console.error(err);
     }
   }
-  setAllCreepsAtStartPos() {
-    console.info(`%c setAllCreepsAtStartPos...`, _utils.LOG_MATRIX);
-    this.friendlyLocal.creeps.forEach((subMesh_, id) => {
-      let subMesh = subMesh_.heroe_bodies[0];
-      subMesh.position.thrust = subMesh_.moveSpeed;
-      subMesh.glb.animationIndex = 0;
-      // adapt manual if blender is not setup
-      subMesh.glb.glbJsonData.animations.forEach((a, index) => {
-        // console.info(`%c ANimation: ${a.name} index ${index}`, LOG_MATRIX)
-        if (a.name == 'dead') this.friendlyCreepAnimationArrange.dead = index;
-        if (a.name == 'walk') this.friendlyCreepAnimationArrange.walk = index;
-        if (a.name == 'salute') this.friendlyCreepAnimationArrange.salute = index;
-        if (a.name == 'attack') this.friendlyCreepAnimationArrange.attack = index;
-        if (a.name == 'idle') this.friendlyCreepAnimationArrange.idle = index;
-      });
-      // if(id == 0) subMesh.sharedState.emitAnimationEvent = true;
-      // all single skin mesh ??????????????????????????????????? ask for emitter
-      subMesh.sharedState.emitAnimationEvent = true;
-      // this.core.collisionSystem.register(`local${id}`, subMesh.position, 15.0, 'local_hero');
-    });
-    app.localHero.friendlyLocal.creeps.forEach((creep, index) => {
-      creep.heroe_bodies[0].position.setPosition(_static.startUpPositions[this.core.player.data.team][0] + (index + 1) * 50, _static.startUpPositions[this.core.player.data.team][1], _static.startUpPositions[this.core.player.data.team][2] + (index + 1) * 50);
-    });
+  setAllCreepsAtStartPos = () => {
     setTimeout(() => {
+      console.info(`%c setAllCreepsAtStartPos...`, _utils.LOG_MATRIX);
+      this.friendlyLocal.creeps.forEach((subMesh_, id) => {
+        let subMesh = subMesh_.heroe_bodies[0];
+        subMesh.position.thrust = subMesh_.moveSpeed;
+        subMesh.glb.animationIndex = 0;
+        // adapt manual if blender is not setup
+        subMesh.glb.glbJsonData.animations.forEach((a, index) => {
+          // console.info(`%c ANimation: ${a.name} index ${index}`, LOG_MATRIX)
+          if (a.name == 'dead') this.friendlyCreepAnimationArrange.dead = index;
+          if (a.name == 'walk') this.friendlyCreepAnimationArrange.walk = index;
+          if (a.name == 'salute') this.friendlyCreepAnimationArrange.salute = index;
+          if (a.name == 'attack') this.friendlyCreepAnimationArrange.attack = index;
+          if (a.name == 'idle') this.friendlyCreepAnimationArrange.idle = index;
+        });
+        // if(id == 0) subMesh.sharedState.emitAnimationEvent = true;
+        // all single skin mesh ??????????????????????????????????? ask for emitter
+        subMesh.sharedState.emitAnimationEvent = true;
+        // this.core.collisionSystem.register(`local${id}`, subMesh.position, 15.0, 'local_hero');
+      });
+      app.localHero.friendlyLocal.creeps.forEach((creep, index) => {
+        creep.heroe_bodies[0].position.setPosition(_static.startUpPositions[this.core.player.data.team][0] + (index + 1) * 50, _static.startUpPositions[this.core.player.data.team][1], _static.startUpPositions[this.core.player.data.team][2] + (index + 1) * 50);
+      });
       if (this.core.net.virtualEmiter != null) {
-        console.info(`%c virtualEmiter:  ??????????????????????`, _utils.LOG_MATRIX);
+        console.info(`%c virtualEmiter use navigateCreeps `, _utils.LOG_MATRIX);
         this.navigateCreeps();
       }
     }, 3000);
-  }
+  };
   navigateCreeps() {
     // console.log('navigateCreeps()');
     app.localHero.friendlyLocal.creeps.forEach((creep, index) => {
@@ -378,22 +379,22 @@ class Character extends _hero.Hero {
     console.info(`%cfriendly setWalkCreep!`, _utils.LOG_MATRIX);
     if (this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].glb.animationIndex != this.friendlyCreepAnimationArrange.walk) {
       this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].glb.animationIndex = this.friendlyCreepAnimationArrange.walk;
-      app.net.send({
-        remoteName: this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].position.remoteName,
-        sceneName: 'not in use',
-        animationIndex: this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].glb.animationIndex
-      });
+      // app.net.send({
+      //   remoteName: this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].position.remoteName,
+      //   sceneName: 'not in use',
+      //   animationIndex: this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].glb.animationIndex
+      // })
     }
   }
   setAttackCreep(creepIndex) {
     console.info(`%cfriendly creep attack enemy!`, _utils.LOG_MATRIX);
     if (this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].glb.animationIndex != this.friendlyCreepAnimationArrange.attack) {
       this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].glb.animationIndex = this.friendlyCreepAnimationArrange.attack;
-      app.net.send({
-        remoteName: this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].position.remoteName,
-        sceneName: 'not in use',
-        animationIndex: this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].glb.animationIndex
-      });
+      // app.net.send({
+      //   remoteName: this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].position.remoteName,
+      //   sceneName: 'not in use',
+      //   animationIndex: this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].glb.animationIndex
+      // })
     }
   }
   attachEvents() {
@@ -708,10 +709,14 @@ class Controller {
         }));
       } else {
         // for now
-        console.log("navigate friendly_creeps creep from controller :", e.detail.hitObject.name);
-        dispatchEvent(new CustomEvent('navigate-friendly_creeps', {
-          detail: 'test'
-        }));
+
+        if (app.net.virtualEmiter != null) {
+          console.log("only emiter - navigate friendly_creeps creep from controller :", e.detail.hitObject.name);
+          dispatchEvent(new CustomEvent('navigate-friendly_creeps', {
+            detail: 'test'
+          }));
+        }
+
         // must be friendly objs
         return;
       }
@@ -926,10 +931,10 @@ class Creep extends _hero.Hero {
     this.core = o.core;
     this.group = group;
     this.team = team;
-    this.loadCreeps(o);
+    this.loadCreep(o);
     return this;
   }
-  loadCreeps = async o => {
+  loadCreep = async o => {
     try {
       var glbFile01 = await fetch(o.path).then(res => res.arrayBuffer().then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, this.core.device)));
       this.core.addGlbObjInctance({
@@ -973,13 +978,15 @@ class Creep extends _hero.Hero {
           } else if (this.name.indexOf('enemy_creep') != -1) {
             subMesh.globalAmbient = [12, 1, 1, 1];
           }
-          if (this.group == 'friendly') {
+          if (this.group == 'friendly' && this.name.indexOf('friendly_creeps') != -1) {
             if (idx == 0) {
               if (this.core.net.virtualEmiter == this.core.net.session.connection.connectionId) {
-                // MUST BE ONLY FOR - // FIRST TEAM HERO
+                // MUST BE ONLY FOR - // FIRST TEAM 
+                subMesh.position.teams[0] = app.player.remoteByTeam[app.player.data.team]; // this.core.player.data.team;
+                subMesh.position.teams[1] = app.player.remoteByTeam[app.player.data.enemyTeam]; // this.core.player.data.team;
                 subMesh.position.netObject = subMesh.name;
                 let t = subMesh.name.replace('friendly_creeps', 'enemy_creep');
-                console.log('It is friendly creep use emit net', t);
+                console.log('It is friendly creep use emit    subMesh.position.teams[0] ', subMesh.position.teams[0]);
                 // alert('It is friendly creep use emit net')
                 subMesh.position.remoteName = t;
                 subMesh.rotation.emitY = subMesh.name;
@@ -994,7 +1001,13 @@ class Creep extends _hero.Hero {
         });
         this.setStartUpPosition();
         this.attachEvents();
-      }, 2500);
+        setTimeout(() => {
+          if (this.core.net.virtualEmiter != null) {
+            console.info(`%c virtualEmiter:  ?from creep func ?????????????????????`, _utils.LOG_MATRIX);
+            app.localHero.navigateCreeps();
+          }
+        }, 3000);
+      }, 2700);
     } catch (err) {
       throw err;
     }
@@ -1396,13 +1409,10 @@ function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e
  * used under Adobe’s royalty‑free license. 
  * Redistribution of raw assets is not permitted.”
  **/
-
 // set orientation  in animation end hero
 // setup HP after setDead
-
 if (!_utils.SS.has('player') || !_utils.LS.has('player')) {
   location.href = 'https://google.com';
-  // location.assign('https://google.com');
 }
 let forestOfHollowBlood = new _world.default({
   useSingleRenderPass: true,
@@ -1439,10 +1449,26 @@ let forestOfHollowBlood = new _world.default({
       customData: forestOfHollowBlood.player.data
     });
     forestOfHollowBlood.net.virtualEmiter = null;
+    forestOfHollowBlood.player.remoteByTeam = {
+      south: [],
+      north: []
+    };
     app.matrixSounds.audios.music.loop = true;
     addEventListener('net-ready', () => {
       console.log('net-ready ----------------------------------------------------');
+      console.log('forestOfHollowBlood.player.data.numOfPlayers', forestOfHollowBlood.player.data.numOfPlayers);
+      console.log('net-ready ----------------------------------------------------');
+
       // fix arg also
+      setTimeout(() => {
+        console.log(' NOW LOAD CREEPS ');
+        forestOfHollowBlood.loadEnemyCreeps();
+      }, 1000);
+      (0, _matrixStream.byId)('buttonLeaveSession').addEventListener('click', () => {
+        location.assign("rpg-menu.html");
+      });
+    });
+    forestOfHollowBlood.loadEnemyCreeps = () => {
       if (forestOfHollowBlood.player.data.team == 'south') {
         forestOfHollowBlood.player.data.enemyTeam = 'north';
         forestOfHollowBlood.enemies = new _enemiesManager.EnemiesManager(forestOfHollowBlood, 'north');
@@ -1450,10 +1476,7 @@ let forestOfHollowBlood = new _world.default({
         forestOfHollowBlood.player.data.enemyTeam = 'south';
         forestOfHollowBlood.enemies = new _enemiesManager.EnemiesManager(forestOfHollowBlood, 'south');
       }
-      (0, _matrixStream.byId)('buttonLeaveSession').addEventListener('click', () => {
-        location.assign("rpg-menu.html");
-      });
-    });
+    };
     addEventListener('connectionDestroyed', e => {
       console.log('connectionDestroyed , bad bad . end of game.');
       /**
@@ -1475,13 +1498,21 @@ let forestOfHollowBlood = new _world.default({
         disPlayer.position.setPosition(_static.startUpPositions[getPlayer.team][0], _static.startUpPositions[getPlayer.team][1], _static.startUpPositions[getPlayer.team][2]);
       }
       setTimeout(() => {
-        app.net.closeSession();
+        // app.net.closeSession();
+        app.net.buttonLeaveSession.click();
         location.assign("rpg-menu.html");
       }, 4000);
     });
     addEventListener("onConnectionCreated", e => {
-      // e.detail.connection.session.remoteConnections
       const remoteCons = Array.from(e.detail.connection.session.remoteConnections.entries());
+      if (remoteCons.length == forestOfHollowBlood.player.data.numOfPlayers - 1) {
+        console.log(' -------------------GAME PLAYERS REACHED ALL PLAYERS---------------------------------');
+        // remo
+
+        console.log(' -------------------GAME PLAYERS REACHED ALL PLAYERS---------------------------------');
+
+        // test again here for hackers
+      }
       const isLocal = e.detail.connection.connectionId == app.net.session.connection.connectionId;
       console.log('[onConnectionCreated] remoteCons.length: ' + remoteCons.length);
       console.log('[onConnectionCreated] isLocal :' + isLocal);
@@ -1498,9 +1529,15 @@ let forestOfHollowBlood = new _world.default({
         // If present same team than emitter is active ...
         let isSameTeamAlready = false;
         for (var x = 0; x < remoteCons.length; x++) {
-          if (forestOfHollowBlood.player.data.team == JSON.parse(remoteCons[x][1].data).team) {
-            console.log('[EMITTER FOR NEUTRALS]  already present team player .', remoteCons[x]);
+          let currentRemoteConn = JSON.parse(remoteCons[x][1].data);
+          if (forestOfHollowBlood.player.data.team == currentRemoteConn.team) {
+            // 0 is string connId 1 is full connec objc 
+            console.log('[COLLECT teams >>>>>>local>>>>>>>]  already present team player .', remoteCons[x]);
             isSameTeamAlready = true;
+            forestOfHollowBlood.player.remoteByTeam[forestOfHollowBlood.player.data.team].push(remoteCons[x][0]);
+          } else {
+            console.log('[COLLECT teams >>>>>>enemy>>>>>>>]  already present team player .', remoteCons[x]);
+            forestOfHollowBlood.player.remoteByTeam[currentRemoteConn.team].push(remoteCons[x][0]);
           }
         }
         if (isSameTeamAlready == false && isLocal == true) {
@@ -1537,7 +1574,7 @@ let forestOfHollowBlood = new _world.default({
           if (testIfExistAlready.length > 0) {
             console.log('[new Friendly hero already exist do nothing]', d);
           } else {
-            forestOfHollowBlood.localHero.loadFriendlyHero(d);
+            app.localHero.loadFriendlyHero(d);
           }
         } else {
           let testIfExistAlready = app.mainRenderBundle.filter(obj => obj.name && obj.name.includes(d.mesh));
@@ -1545,7 +1582,7 @@ let forestOfHollowBlood = new _world.default({
             console.log('[new enemy hero already exist do nothing]', d);
           } else {
             // console.log('[new enemy hero]', d);
-            forestOfHollowBlood.enemies.loadEnemyHero(d);
+            app.enemies.loadEnemyHero(d);
           }
         }
       }
@@ -30286,9 +30323,10 @@ var _utils = require("./utils");
 class Position {
   constructor(x, y, z) {
     // console.log('TEST TYTPOF ', x)
-    // Not in use for nwo this is from matrix-engine project [nameUniq]
-    this.remoteName = null; // not in use
+    this.remoteName = null;
     this.netObject = null;
+    this.toRemote = [];
+    this.teams = [];
     this.netTolerance = 1;
     this.netTolerance__ = 0;
     if (typeof x == 'undefined') x = 0;
@@ -30357,15 +30395,49 @@ class Position {
         this.z += this.velZ;
         if (this.netObject != null) {
           if (this.netTolerance__ > this.netTolerance) {
-            app.net.send({
-              remoteName: this.remoteName,
-              sceneName: this.netObject,
-              netPos: {
-                x: this.x,
-                y: this.y,
-                z: this.z
-              }
-            });
+            if (this.teams.length == 0) {
+              app.net.send({
+                toRemote: this.toRemote,
+                // default null
+                remoteName: this.remoteName,
+                // default null
+                sceneName: this.netObject,
+                netPos: {
+                  x: this.x,
+                  y: this.y,
+                  z: this.z
+                }
+              });
+            } else {
+              // logic is only for two team - index 0 is local !!!
+              app.net.send({
+                team: this.teams[0],
+                toRemote: this.teams[0],
+                // default null remote conns
+                // remoteName: this.remoteName,
+                sceneName: this.netObject,
+                // origin scene name to receive
+                netPos: {
+                  x: this.x,
+                  y: this.y,
+                  z: this.z
+                }
+              });
+              app.net.send({
+                team: this.teams[1],
+                toRemote: this.teams[1],
+                // default null remote conns
+                remoteName: this.remoteName,
+                // to enemy players
+                sceneName: this.netObject,
+                // now not important
+                netPos: {
+                  x: this.x,
+                  y: this.y,
+                  z: this.z
+                }
+              });
+            }
             this.netTolerance__ = 0;
           } else {
             this.netTolerance__++;
@@ -30379,15 +30451,50 @@ class Position {
         this.onTargetPositionReach();
         if (this.netObject != null) {
           if (this.netTolerance__ > this.netTolerance) {
-            app.net.send({
-              remoteName: this.remoteName,
-              sceneName: this.netObject,
-              netPos: {
-                x: this.x,
-                y: this.y,
-                z: this.z
-              }
-            });
+            // 
+            if (this.teams.length == 0) {
+              app.net.send({
+                toRemote: this.toRemote,
+                // default null
+                remoteName: this.remoteName,
+                // default null
+                sceneName: this.netObject,
+                netPos: {
+                  x: this.x,
+                  y: this.y,
+                  z: this.z
+                }
+              });
+            } else {
+              // logic is only for two team - index 0 is local !!!
+              app.net.send({
+                team: this.teams[0],
+                toRemote: this.teams[0],
+                // default null remote conns
+                // remoteName: this.remoteName,
+                sceneName: this.netObject,
+                // origin scene name to receive
+                netPos: {
+                  x: this.x,
+                  y: this.y,
+                  z: this.z
+                }
+              });
+              app.net.send({
+                team: this.teams[1],
+                toRemote: this.teams[1],
+                // default null remote conns
+                remoteName: this.remoteName,
+                // to enemy players
+                sceneName: this.netObject,
+                // now not important
+                netPos: {
+                  x: this.x,
+                  y: this.y,
+                  z: this.z
+                }
+              });
+            }
             this.netTolerance__ = 0;
           } else {
             this.netTolerance__++;

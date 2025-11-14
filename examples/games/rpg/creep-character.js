@@ -21,11 +21,11 @@ export class Creep extends Hero {
     this.core = o.core;
     this.group = group;
     this.team = team;
-    this.loadCreeps(o);
+    this.loadCreep(o);
     return this;
   }
 
-  loadCreeps = async (o) => {
+  loadCreep = async (o) => {
     try {
       var glbFile01 = await fetch(o.path).then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, this.core.device)));
       this.core.addGlbObjInctance({
@@ -66,13 +66,15 @@ export class Creep extends Hero {
             subMesh.globalAmbient = [12, 1, 1, 1];
           }
 
-          if(this.group == 'friendly') {
+          if(this.group == 'friendly' && this.name.indexOf('friendly_creeps') != -1) {
             if(idx == 0) {
-              if (this.core.net.virtualEmiter == this.core.net.session.connection.connectionId) {
-                // MUST BE ONLY FOR - // FIRST TEAM HERO
+              if(this.core.net.virtualEmiter == this.core.net.session.connection.connectionId) {
+                // MUST BE ONLY FOR - // FIRST TEAM 
+                subMesh.position.teams[0] = app.player.remoteByTeam[app.player.data.team]; // this.core.player.data.team;
+                subMesh.position.teams[1] = app.player.remoteByTeam[app.player.data.enemyTeam]; // this.core.player.data.team;
                 subMesh.position.netObject = subMesh.name;
                 let t = subMesh.name.replace('friendly_creeps', 'enemy_creep');
-                console.log('It is friendly creep use emit net', t);
+                console.log('It is friendly creep use emit    subMesh.position.teams[0] ', subMesh.position.teams[0]);
                 // alert('It is friendly creep use emit net')
                 subMesh.position.remoteName = t;
                 subMesh.rotation.emitY = subMesh.name;
@@ -87,7 +89,14 @@ export class Creep extends Hero {
         });
         this.setStartUpPosition();
         this.attachEvents();
-      }, 2500);
+
+        setTimeout(() => {
+          if(this.core.net.virtualEmiter != null) {
+            console.info(`%c virtualEmiter:  ?from creep func ?????????????????????`, LOG_MATRIX)
+            app.localHero.navigateCreeps();
+          }
+        }, 3000);
+      }, 2700);
     } catch(err) {throw err;}
   }
 

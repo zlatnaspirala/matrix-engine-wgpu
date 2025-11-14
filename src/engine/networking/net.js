@@ -64,15 +64,13 @@ export class MatrixStream {
       });
     }
 
-    // this is duplicate for two cases with camera or only data
-    // this only data case - send system emit with session name channel
     this.send = (netArg) => {
       this.session.signal({
         data: JSON.stringify(netArg),
-        to: [],
+        to: (netArg.toRemote ? netArg.toRemote : []),
         type: netConfig.sessionName
       }).then(() => {
-        console.log('.');
+        console.log('netArg.toRemote:' ,netArg.toRemote);
       }).catch(error => {
         console.error("Erro signal => ", error);
       });

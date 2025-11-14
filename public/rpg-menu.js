@@ -743,7 +743,8 @@ let forestOfHollowBloodStartSceen = new _world.default({
         path: heros[app.selectedHero].path,
         archetypes: [heros[app.selectedHero].type],
         team: (0, _utils.byId)(`waiting-${app.net.session.connection.connectionId}`).getAttribute('data-hero-team'),
-        data: Date.now()
+        data: Date.now(),
+        numOfPlayers: forestOfHollowBloodStartSceen.MINIMUM_PLAYERS
       });
       _utils.SS.set('player', {
         mesh: heros[app.selectedHero].meshName,
@@ -751,7 +752,8 @@ let forestOfHollowBloodStartSceen = new _world.default({
         path: heros[app.selectedHero].path,
         archetypes: [heros[app.selectedHero].type],
         team: (0, _utils.byId)(`waiting-${app.net.session.connection.connectionId}`).getAttribute('data-hero-team'),
-        data: Date.now()
+        data: Date.now(),
+        numOfPlayers: forestOfHollowBloodStartSceen.MINIMUM_PLAYERS
       });
       if (typeof preventEmit === 'undefined') forestOfHollowBloodStartSceen.net.sendOnlyData({
         type: 'start'
@@ -26883,9 +26885,10 @@ var _utils = require("./utils");
 class Position {
   constructor(x, y, z) {
     // console.log('TEST TYTPOF ', x)
-    // Not in use for nwo this is from matrix-engine project [nameUniq]
-    this.remoteName = null; // not in use
+    this.remoteName = null;
     this.netObject = null;
+    this.toRemote = [];
+    this.teams = [];
     this.netTolerance = 1;
     this.netTolerance__ = 0;
     if (typeof x == 'undefined') x = 0;
@@ -26954,15 +26957,49 @@ class Position {
         this.z += this.velZ;
         if (this.netObject != null) {
           if (this.netTolerance__ > this.netTolerance) {
-            app.net.send({
-              remoteName: this.remoteName,
-              sceneName: this.netObject,
-              netPos: {
-                x: this.x,
-                y: this.y,
-                z: this.z
-              }
-            });
+            if (this.teams.length == 0) {
+              app.net.send({
+                toRemote: this.toRemote,
+                // default null
+                remoteName: this.remoteName,
+                // default null
+                sceneName: this.netObject,
+                netPos: {
+                  x: this.x,
+                  y: this.y,
+                  z: this.z
+                }
+              });
+            } else {
+              // logic is only for two team - index 0 is local !!!
+              app.net.send({
+                team: this.teams[0],
+                toRemote: this.teams[0],
+                // default null remote conns
+                // remoteName: this.remoteName,
+                sceneName: this.netObject,
+                // origin scene name to receive
+                netPos: {
+                  x: this.x,
+                  y: this.y,
+                  z: this.z
+                }
+              });
+              app.net.send({
+                team: this.teams[1],
+                toRemote: this.teams[1],
+                // default null remote conns
+                remoteName: this.remoteName,
+                // to enemy players
+                sceneName: this.netObject,
+                // now not important
+                netPos: {
+                  x: this.x,
+                  y: this.y,
+                  z: this.z
+                }
+              });
+            }
             this.netTolerance__ = 0;
           } else {
             this.netTolerance__++;
@@ -26976,15 +27013,50 @@ class Position {
         this.onTargetPositionReach();
         if (this.netObject != null) {
           if (this.netTolerance__ > this.netTolerance) {
-            app.net.send({
-              remoteName: this.remoteName,
-              sceneName: this.netObject,
-              netPos: {
-                x: this.x,
-                y: this.y,
-                z: this.z
-              }
-            });
+            // 
+            if (this.teams.length == 0) {
+              app.net.send({
+                toRemote: this.toRemote,
+                // default null
+                remoteName: this.remoteName,
+                // default null
+                sceneName: this.netObject,
+                netPos: {
+                  x: this.x,
+                  y: this.y,
+                  z: this.z
+                }
+              });
+            } else {
+              // logic is only for two team - index 0 is local !!!
+              app.net.send({
+                team: this.teams[0],
+                toRemote: this.teams[0],
+                // default null remote conns
+                // remoteName: this.remoteName,
+                sceneName: this.netObject,
+                // origin scene name to receive
+                netPos: {
+                  x: this.x,
+                  y: this.y,
+                  z: this.z
+                }
+              });
+              app.net.send({
+                team: this.teams[1],
+                toRemote: this.teams[1],
+                // default null remote conns
+                remoteName: this.remoteName,
+                // to enemy players
+                sceneName: this.netObject,
+                // now not important
+                netPos: {
+                  x: this.x,
+                  y: this.y,
+                  z: this.z
+                }
+              });
+            }
             this.netTolerance__ = 0;
           } else {
             this.netTolerance__++;
@@ -28476,16 +28548,13 @@ class MatrixStream {
         console.error("Erro signal => ", error);
       });
     };
-
-    // this is duplicate for two cases with camera or only data
-    // this only data case - send system emit with session name channel
     this.send = netArg => {
       this.session.signal({
         data: JSON.stringify(netArg),
-        to: [],
+        to: netArg.toRemote ? netArg.toRemote : [],
         type: _matrixStream.netConfig.sessionName
       }).then(() => {
-        console.log('.');
+        console.log('netArg.toRemote:', netArg.toRemote);
       }).catch(error => {
         console.error("Erro signal => ", error);
       });
