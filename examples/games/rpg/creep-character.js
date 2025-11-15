@@ -47,7 +47,7 @@ export class Creep extends Hero {
         console.log('good')
       }).catch(() => {
         console.log('catch')
-        setTimeout(() => {this.asyncHelper(this.o);}, 2000)
+        setTimeout(() => {this.asyncHelper(this.o);}, 3000);
       });
 
     } catch(err) {throw err;}

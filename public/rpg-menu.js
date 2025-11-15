@@ -28559,7 +28559,7 @@ class MatrixStream {
         to: to,
         type: _matrixStream.netConfig.sessionName
       }).then(() => {
-        console.log('netArg.toRemote:', netArg.toRemote);
+        // console.log('netArg.toRemote:' , netArg.toRemote);
       }).catch(error => {
         console.error("Erro signal => ", error);
       });

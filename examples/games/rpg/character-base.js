@@ -89,15 +89,21 @@ export class Character extends Hero {
     setTimeout(() => {
       // console.info('setAllCreepsAtStartPos')
       app.localHero.setAllCreepsAtStartPos().then(() => {
-        console.log('passed in first')
+        console.log('passed in 1')
       }).catch(() => {
         setTimeout(() => {
           app.localHero.setAllCreepsAtStartPos().then(() => {
-            console.log('passed in socound')
+            console.log('passed in 2')
           }).catch(() => {
-            alert('FAILD');
+            setTimeout(() => {
+              app.localHero.setAllCreepsAtStartPos().then(() => {
+                console.log('passed in 3')
+              }).catch(() => {
+                alert('FAILD');
+              })
+            }, 7000)
           })
-        }, 5000)
+        }, 7000)
       });
     }, 15000);
 

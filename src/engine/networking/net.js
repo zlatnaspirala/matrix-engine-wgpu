@@ -72,7 +72,7 @@ export class MatrixStream {
         to: to,
         type: netConfig.sessionName
       }).then(() => {
-        console.log('netArg.toRemote:' , netArg.toRemote);
+        // console.log('netArg.toRemote:' , netArg.toRemote);
       }).catch(error => {
         console.error("Erro signal => ", error);
       });
