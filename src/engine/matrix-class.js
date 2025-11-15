@@ -107,16 +107,17 @@ export class Position {
             } else {
 
               // logic is only for two team - index 0 is local !!!
-              app.net.send({
-                team: this.teams[0],
+              if (this.teams[0].length > 0) app.net.send({
+                // team: this.teams[0],
                 toRemote: this.teams[0], // default null remote conns
                 // remoteName: this.remoteName,
                 sceneName: this.netObject, // origin scene name to receive
                 netPos: {x: this.x, y: this.y, z: this.z},
               });
 
-              app.net.send({
-                team: this.teams[1],
+              // remove if (this.teams[1].length > 0)  after alll this is only for CASE OF SUM PLAYER 3 FOR TEST ONLY
+              if (this.teams[1].length > 0) app.net.send({
+                // team: this.teams[1],
                 toRemote: this.teams[1], // default null remote conns
                 remoteName: this.remoteName, // to enemy players
                 sceneName: this.netObject, // now not important
@@ -151,16 +152,16 @@ export class Position {
             } else {
 
               // logic is only for two team - index 0 is local !!!
-              app.net.send({
-                team: this.teams[0],
+              if (this.teams[0].length > 0) app.net.send({
+                // team: this.teams[0],
                 toRemote: this.teams[0], // default null remote conns
                 // remoteName: this.remoteName,
                 sceneName: this.netObject, // origin scene name to receive
                 netPos: {x: this.x, y: this.y, z: this.z},
               });
 
-              app.net.send({
-                team: this.teams[1],
+              if (this.teams[1].length > 0) app.net.send({
+                // team: this.teams[1],
                 toRemote: this.teams[1], // default null remote conns
                 remoteName: this.remoteName, // to enemy players
                 sceneName: this.netObject, // now not important

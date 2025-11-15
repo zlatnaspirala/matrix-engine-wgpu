@@ -1455,9 +1455,11 @@ let forestOfHollowBlood = new _world.default({
     };
     app.matrixSounds.audios.music.loop = true;
     addEventListener('net-ready', () => {
-      console.log('net-ready ----------------------------------------------------');
-      console.log('forestOfHollowBlood.player.data.numOfPlayers', forestOfHollowBlood.player.data.numOfPlayers);
-      console.log('net-ready ----------------------------------------------------');
+      // console.log('net-ready ----------------------------------------------------');
+
+      // console.log('forestOfHollowBlood.player.data.numOfPlayers', forestOfHollowBlood.player.data.numOfPlayers);
+
+      // console.log('net-ready ----------------------------------------------------');
 
       // fix arg also
       setTimeout(() => {
@@ -1506,22 +1508,20 @@ let forestOfHollowBlood = new _world.default({
     addEventListener("onConnectionCreated", e => {
       const remoteCons = Array.from(e.detail.connection.session.remoteConnections.entries());
       if (remoteCons.length == forestOfHollowBlood.player.data.numOfPlayers - 1) {
-        console.log(' -------------------GAME PLAYERS REACHED ALL PLAYERS---------------------------------');
+        // console.log(' -------------------GAME PLAYERS REACHED ALL PLAYERS---------------------------------');
         // remo
-
         console.log(' -------------------GAME PLAYERS REACHED ALL PLAYERS---------------------------------');
-
         // test again here for hackers
       }
       const isLocal = e.detail.connection.connectionId == app.net.session.connection.connectionId;
-      console.log('[onConnectionCreated] remoteCons.length: ' + remoteCons.length);
-      console.log('[onConnectionCreated] isLocal :' + isLocal);
-      console.log('[onConnectionCreated] e.detail.connection.session.remoteConnections.size :' + e.detail.connection.session.remoteConnections.size);
-      console.log('[onConnectionCreated] isLocal :' + isLocal);
+      // console.log('[onConnectionCreated] remoteCons.length: ' + remoteCons.length);
+      // console.log('[onConnectionCreated] isLocal :' + isLocal);
+      // console.log('[onConnectionCreated] e.detail.connection.session.remoteConnections.size :' + e.detail.connection.session.remoteConnections.size);
+      // console.log('[onConnectionCreated] isLocal :' + isLocal);
       if (e.detail.connection.session.remoteConnections.size == 0) {
         // FIRST BE EMITER
         if (forestOfHollowBlood.net.virtualEmiter == null && isLocal) {
-          console.log('[- Absolute first I AM EMITTER FOR NEUTRALS virtualEmiter set1 ]', e.detail.connection.connectionId);
+          // console.log('[- Absolute first I AM EMITTER FOR NEUTRALS virtualEmiter set1 ]', e.detail.connection.connectionId);
           forestOfHollowBlood.net.virtualEmiter = e.detail.connection.connectionId;
           document.title = "VE " + app.net.session.connection.connectionId;
         }
@@ -1532,12 +1532,16 @@ let forestOfHollowBlood = new _world.default({
           let currentRemoteConn = JSON.parse(remoteCons[x][1].data);
           if (forestOfHollowBlood.player.data.team == currentRemoteConn.team) {
             // 0 is string connId 1 is full connec objc 
-            console.log('[COLLECT teams >>>>>>local>>>>>>>]  already present team player .', remoteCons[x]);
+            // console.log('[COLLECT teams >>>>>>local>>>>>>>]  already present team player .', remoteCons[x]);
             isSameTeamAlready = true;
-            forestOfHollowBlood.player.remoteByTeam[forestOfHollowBlood.player.data.team].push(remoteCons[x][0]);
+            if (forestOfHollowBlood.player.remoteByTeam[forestOfHollowBlood.player.data.team].indexOf(remoteCons[x][0]) == -1) {
+              forestOfHollowBlood.player.remoteByTeam[forestOfHollowBlood.player.data.team].push(remoteCons[x][0]);
+            }
           } else {
-            console.log('[COLLECT teams >>>>>>enemy>>>>>>>]  already present team player .', remoteCons[x]);
-            forestOfHollowBlood.player.remoteByTeam[currentRemoteConn.team].push(remoteCons[x][0]);
+            // console.log('[COLLECT teams >>>>>>enemy>>>>>>>]  already present team player .', remoteCons[x]);
+            if (forestOfHollowBlood.player.remoteByTeam[currentRemoteConn.team].indexOf(remoteCons[x][0]) == -1) {
+              forestOfHollowBlood.player.remoteByTeam[currentRemoteConn.team].push(remoteCons[x][0]);
+            }
           }
         }
         if (isSameTeamAlready == false && isLocal == true) {
@@ -30410,8 +30414,8 @@ class Position {
               });
             } else {
               // logic is only for two team - index 0 is local !!!
-              app.net.send({
-                team: this.teams[0],
+              if (this.teams[0].length > 0) app.net.send({
+                // team: this.teams[0],
                 toRemote: this.teams[0],
                 // default null remote conns
                 // remoteName: this.remoteName,
@@ -30423,8 +30427,10 @@ class Position {
                   z: this.z
                 }
               });
-              app.net.send({
-                team: this.teams[1],
+
+              // remove if (this.teams[1].length > 0)  after alll this is only for CASE OF SUM PLAYER 3 FOR TEST ONLY
+              if (this.teams[1].length > 0) app.net.send({
+                // team: this.teams[1],
                 toRemote: this.teams[1],
                 // default null remote conns
                 remoteName: this.remoteName,
@@ -30467,8 +30473,8 @@ class Position {
               });
             } else {
               // logic is only for two team - index 0 is local !!!
-              app.net.send({
-                team: this.teams[0],
+              if (this.teams[0].length > 0) app.net.send({
+                // team: this.teams[0],
                 toRemote: this.teams[0],
                 // default null remote conns
                 // remoteName: this.remoteName,
@@ -30480,8 +30486,8 @@ class Position {
                   z: this.z
                 }
               });
-              app.net.send({
-                team: this.teams[1],
+              if (this.teams[1].length > 0) app.net.send({
+                // team: this.teams[1],
                 toRemote: this.teams[1],
                 // default null remote conns
                 remoteName: this.remoteName,
@@ -31986,16 +31992,13 @@ class MatrixStream {
         console.error("Erro signal => ", error);
       });
     };
-
-    // this is duplicate for two cases with camera or only data
-    // this only data case - send system emit with session name channel
     this.send = netArg => {
       this.session.signal({
         data: JSON.stringify(netArg),
-        to: [],
+        to: netArg.toRemote ? netArg.toRemote : [],
         type: _matrixStream.netConfig.sessionName
       }).then(() => {
-        console.log('.');
+        console.log('netArg.toRemote:', netArg.toRemote);
       }).catch(error => {
         console.error("Erro signal => ", error);
       });
