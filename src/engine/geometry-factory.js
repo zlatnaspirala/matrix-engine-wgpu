@@ -8,6 +8,7 @@ export class GeometryFactory {
       case "pyramid": return GeometryFactory.pyramid(size);
       case "star": return GeometryFactory.star(size);
       case "circle": return GeometryFactory.circle(size, segments);
+      case "circle2": return GeometryFactory.circle2(size, segments);
       case "diamond": return GeometryFactory.diamond(size);
       case "rock": return GeometryFactory.rock(size, options.detail || 3);
       case "meteor": return GeometryFactory.meteor(size, options.detail || 6);
@@ -99,6 +100,38 @@ export class GeometryFactory {
       if(i > 1) ind.push(0, i - 1, i);
     }
     return {positions: new Float32Array(p), uvs: new Float32Array(uv), indices: new Uint16Array(ind)};
+  }
+
+  static circle2(radius = 1, segments = 64) {
+    const positions = [0, 0, 0]; // center
+    const uvs = [0.5, 0.5];      // center UV
+    const indices = [];
+
+    // create outer vertices
+    for(let i = 0;i <= segments;i++) {
+      const angle = (i / segments) * Math.PI * 2;
+      const x = Math.cos(angle) * radius;
+      const y = Math.sin(angle) * radius;
+      positions.push(x, y, 0);
+      // map to circular UV range [0,1]
+      uvs.push((x / radius + 1) / 2, (y / radius + 1) / 2);
+
+      if(i > 0) {
+        // center = 0, connect previous outer vertex with current outer vertex
+        indices.push(0, i, i + 1);
+      }
+    }
+
+    // close the circle (last triangle connects to first outer vertex)
+    // we already pushed (segments + 1) outer vertices, so last index = segments + 1
+    // but first outer vertex is index 1
+    indices.push(0, segments + 1, 1);
+
+    return {
+      positions: new Float32Array(positions),
+      uvs: new Float32Array(uvs),
+      indices: new Uint16Array(indices)
+    };
   }
 
   static diamond(S = 1) {

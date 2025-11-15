@@ -120,6 +120,10 @@ export class Enemie extends Hero {
         startUpPositions[app.player.data.enemyTeam][0],
         startUpPositions[app.player.data.enemyTeam][1],
         startUpPositions[app.player.data.enemyTeam][2]
+
+        // startUpPositions[app.player.data.team][0],
+        // startUpPositions[app.player.data.team][1],
+        // startUpPositions[app.player.data.team][2]
       )
     })
   }
@@ -130,8 +134,8 @@ export class Enemie extends Hero {
       this.heroe_bodies[0].effects.energyBar.setProgress(e.detail.progress);
       this.core.net.sendOnlyData({
         type: "damage",
-        defenderName:  e.detail.defender,
-        attackerName:  e.detail.attacker,
+        defenderName: e.detail.defender,
+        attackerName: e.detail.attacker,
         hp: e.detail.hp,
         progress: e.detail.progress
       });

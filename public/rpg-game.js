@@ -12,6 +12,7 @@ var _hero = require("./hero");
 var _creepCharacter = require("./creep-character");
 var _navMesh = require("./nav-mesh");
 var _static = require("./static");
+var _friendlyCharacter = require("./friendly-character");
 class Character extends _hero.Hero {
   friendlyLocal = {
     heroes: [],
@@ -42,10 +43,10 @@ class Character extends _hero.Hero {
     this.name = name;
     this.core = forestOfHollowBlood;
     this.heroe_bodies = [];
-    this.loadfriendlyCreeps();
     this.loadLocalHero(path);
+    this.loadfriendlyCreeps();
     // async
-    setTimeout(() => this.setupHUDForHero(name), 1000);
+    setTimeout(() => this.setupHUDForHero(name), 1100);
   }
   setupHUDForHero(name) {
     console.info(`%cLOADING hero name : ${name}`, _utils.LOG_MATRIX);
@@ -91,6 +92,26 @@ class Character extends _hero.Hero {
         z: 0
       }
     }, ['creep'], 'friendly', app.player.data.team));
+    setTimeout(() => {
+      // console.info('setAllCreepsAtStartPos')
+      app.localHero.setAllCreepsAtStartPos().then(() => {
+        console.log('passed in 1');
+      }).catch(() => {
+        setTimeout(() => {
+          app.localHero.setAllCreepsAtStartPos().then(() => {
+            console.log('passed in 2');
+          }).catch(() => {
+            setTimeout(() => {
+              app.localHero.setAllCreepsAtStartPos().then(() => {
+                console.log('passed in 3');
+              }).catch(() => {
+                alert('FAILD');
+              });
+            }, 7000);
+          });
+        }, 7000);
+      });
+    }, 15000);
   }
   async loadLocalHero(p) {
     try {
@@ -120,7 +141,7 @@ class Character extends _hero.Hero {
           flameEmitter: true,
           circlePlane: false,
           circlePlaneTex: true,
-          circlePlaneTexPath: './res/textures/rpg/magics/mariasword-2.png'
+          circlePlaneTexPath: './res/textures/star1.png'
         }
       }, null, glbFile01);
 
@@ -145,14 +166,34 @@ class Character extends _hero.Hero {
         },
         pointerEffect: {
           enabled: true,
-          circlePlane: true
+          // circlePlane: true,
+          circlePlaneTex: true,
+          circlePlaneTexPath: './res/textures/star1.png'
         }
       }, null, glbFile02);
       // ---------
       // make small async - cooking glbs files  mouseTarget_Circle
+      this.setupHero().then(() => {
+        //
+      }).catch(() => {
+        this.setupHero().then(() => {}).catch(() => {});
+      });
+    } catch (err) {
+      throw err;
+    }
+  }
+  setupHero() {
+    return new Promise((resolve, reject) => {
       setTimeout(() => {
-        console.info(`%cAnimation...`, _utils.LOG_MATRIX);
+        console.info(`%cAnimation setup...`, _utils.LOG_MATRIX);
         this.mouseTarget = app.getSceneObjectByName('mouseTarget_Circle');
+        this.mouseTarget.animationSpeed = 20000;
+        if (typeof app.localHero.mouseTarget.instanceTargets === 'undefined') {
+          reject();
+          return;
+        }
+        app.localHero.mouseTarget.instanceTargets[1].position[1] = 1;
+        app.localHero.mouseTarget.instanceTargets[1].scale = [0.4, 0.4, 0.4];
         this.heroe_bodies = app.mainRenderBundle.filter(obj => obj.name && obj.name.includes(this.name));
         this.core.RPG.heroe_bodies = this.heroe_bodies;
         this.core.RPG.heroe_bodies.forEach((subMesh, id) => {
@@ -170,7 +211,11 @@ class Character extends _hero.Hero {
           if (id == 0) subMesh.sharedState.emitAnimationEvent = true;
           this.core.collisionSystem.register(`local${id}`, subMesh.position, 15.0, 'local_hero');
         });
-        app.localHero.heroe_bodies[0].effects.flameEmitter.recreateVertexDataRND(1);
+        if (app.localHero.heroe_bodies[0].effects) {
+          app.localHero.heroe_bodies[0].effects.flameEmitter.recreateVertexDataRND(1);
+        } else {
+          alert(`what is app.localHero.heroe_bodies[0] ${app.localHero.heroe_bodies[0]} `);
+        }
 
         // adapt
         app.localHero.heroe_bodies[0].globalAmbient = [1, 1, 1, 1];
@@ -179,9 +224,9 @@ class Character extends _hero.Hero {
         } else if (app.localHero.name == 'Steelborn') {
           app.localHero.heroe_bodies[0].globalAmbient = [12, 12, 12, 1];
         }
-        app.localHero.setAllCreepsAtStartPos();
+        app.localHero.heroe_bodies[0].effects.circlePlaneTex.rotateEffectSpeed = 0.1;
         this.attachEvents();
-        // important!!
+        // important!
         for (var x = 0; x < app.localHero.heroe_bodies.length; x++) {
           if (x > 0) {
             app.localHero.heroe_bodies[x].position = app.localHero.heroe_bodies[0].position;
@@ -198,44 +243,70 @@ class Character extends _hero.Hero {
         //   let remoteEnemy = this.core.enemies.enemies.find((enemy => enemy.name === e.data.heroName))
         //   remoteEnemy.remoteNav(e.data.followPath.end);
         // }
-
         // for now net view for rot is axis separated - cost is ok for orientaion remote pass
         app.localHero.heroe_bodies[0].rotation.emitY = app.localHero.heroe_bodies[0].name;
         dispatchEvent(new CustomEvent('local-hero-bodies-ready', {
           detail: `This is not sync - 99% works`
         }));
-      }, 4000);
+      }, 5000); // return to 2 -3 - testing on 3-4 on same computer
+    });
+  }
+  async loadFriendlyHero(p) {
+    try {
+      this.friendlyLocal.heroes.push(new _friendlyCharacter.FriendlyHero({
+        core: this.core,
+        name: p.hero,
+        archetypes: p.archetypes,
+        path: p.path,
+        position: {
+          x: 0,
+          y: -23,
+          z: 0
+        }
+      }));
     } catch (err) {
-      throw err;
+      console.error(err);
     }
   }
-  setAllCreepsAtStartPos() {
-    // console.info(`%c setAllCreepsAtStartPos:  ??????????????????????`, LOG_MATRIX)
-    this.friendlyLocal.creeps.forEach((subMesh_, id) => {
-      let subMesh = subMesh_.heroe_bodies[0];
-      subMesh.position.thrust = subMesh_.moveSpeed;
-      subMesh.glb.animationIndex = 0;
-      // adapt manual if blender is not setup
-      subMesh.glb.glbJsonData.animations.forEach((a, index) => {
-        // console.info(`%c ANimation: ${a.name} index ${index}`, LOG_MATRIX)
-        if (a.name == 'dead') this.friendlyCreepAnimationArrange.dead = index;
-        if (a.name == 'walk') this.friendlyCreepAnimationArrange.walk = index;
-        if (a.name == 'salute') this.friendlyCreepAnimationArrange.salute = index;
-        if (a.name == 'attack') this.friendlyCreepAnimationArrange.attack = index;
-        if (a.name == 'idle') this.friendlyCreepAnimationArrange.idle = index;
-      });
-      // if(id == 0) subMesh.sharedState.emitAnimationEvent = true;
-      // all single skin mesh
-      subMesh.sharedState.emitAnimationEvent = true;
-      // this.core.collisionSystem.register(`local${id}`, subMesh.position, 15.0, 'local_hero');
+  setAllCreepsAtStartPos = () => {
+    return new Promise((resolve, reject) => {
+      try {
+        this.friendlyLocal.creeps.forEach(subMesh_ => {
+          if (typeof subMesh_.heroe_bodies === 'undefined') {
+            reject();
+            return;
+          }
+        });
+        // console.info(`%c promise pass setAllCreepsAtStartPos...`, LOG_MATRIX)
+        this.friendlyLocal.creeps.forEach((subMesh_, id) => {
+          let subMesh = subMesh_.heroe_bodies[0];
+          subMesh.position.thrust = subMesh_.moveSpeed;
+          subMesh.glb.animationIndex = 0;
+          // adapt manual if blender is not setup
+          subMesh.glb.glbJsonData.animations.forEach((a, index) => {
+            // console.info(`%c ANimation: ${a.name} index ${index}`, LOG_MATRIX)
+            if (a.name == 'dead') this.friendlyCreepAnimationArrange.dead = index;
+            if (a.name == 'walk') this.friendlyCreepAnimationArrange.walk = index;
+            if (a.name == 'salute') this.friendlyCreepAnimationArrange.salute = index;
+            if (a.name == 'attack') this.friendlyCreepAnimationArrange.attack = index;
+            if (a.name == 'idle') this.friendlyCreepAnimationArrange.idle = index;
+          });
+          // if(id == 0) subMesh.sharedState.emitAnimationEvent = true;
+          // this.core.collisionSystem.register(`local${id}`, subMesh.position, 15.0, 'local_hero');
+        });
+        app.localHero.friendlyLocal.creeps.forEach((creep, index) => {
+          creep.heroe_bodies[0].position.setPosition(_static.startUpPositions[this.core.player.data.team][0] + (index + 1) * 50, _static.startUpPositions[this.core.player.data.team][1], _static.startUpPositions[this.core.player.data.team][2] + (index + 1) * 50);
+        });
+        resolve();
+        // if(this.core.net.virtualEmiter != null) {
+        //   console.info(`%c virtualEmiter use navigateCreeps `, LOG_MATRIX)
+        //   this.navigateCreeps();
+        // }
+      } catch (err) {
+        console.info('errr in ', err);
+      }
     });
-    app.localHero.friendlyLocal.creeps.forEach((creep, index) => {
-      creep.heroe_bodies[0].position.setPosition(_static.startUpPositions[this.core.player.data.team][0] + (index + 1) * 50, _static.startUpPositions[this.core.player.data.team][1], _static.startUpPositions[this.core.player.data.team][2] + (index + 1) * 50);
-    });
-    setTimeout(() => {
-      this.navigateCreeps();
-    }, 3000);
-  }
+  };
   navigateCreeps() {
     // console.log('navigateCreeps()');
     app.localHero.friendlyLocal.creeps.forEach((creep, index) => {
@@ -334,22 +405,41 @@ class Character extends _hero.Hero {
     console.info(`%cfriendly setWalkCreep!`, _utils.LOG_MATRIX);
     if (this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].glb.animationIndex != this.friendlyCreepAnimationArrange.walk) {
       this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].glb.animationIndex = this.friendlyCreepAnimationArrange.walk;
-      app.net.send({
-        remoteName: this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].position.remoteName,
-        sceneName: 'not in use',
+      // app.net.send({
+      //   remoteName: this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].position.remoteName,
+      //   sceneName: 'not in use',
+      //   animationIndex: this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].glb.animationIndex
+      // })
+      if (this.core.net.virtualEmiter == null) {
+        return;
+      }
+      if (this.teams[0].length > 0) app.net.send({
+        toRemote: this.teams[0],
+        // default null remote conns
+        sceneName: this.netObject,
+        // origin scene name to receive
+        animationIndex: this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].glb.animationIndex
+      });
+      if (this.teams[1].length > 0) app.net.send({
+        toRemote: this.teams[1],
+        // default null remote conns
+        remoteName: this.remoteName,
+        // to enemy players
+        sceneName: this.netObject,
+        // now not important
         animationIndex: this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].glb.animationIndex
       });
     }
   }
   setAttackCreep(creepIndex) {
-    console.info(`%cfriendly creep attack enemy!`, _utils.LOG_MATRIX);
+    // console.info(`%cfriendly creep attack enemy!`, LOG_MATRIX)
     if (this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].glb.animationIndex != this.friendlyCreepAnimationArrange.attack) {
       this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].glb.animationIndex = this.friendlyCreepAnimationArrange.attack;
-      app.net.send({
-        remoteName: this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].position.remoteName,
-        sceneName: 'not in use',
-        animationIndex: this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].glb.animationIndex
-      });
+      // app.net.send({
+      //   remoteName: this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].position.remoteName,
+      //   sceneName: 'not in use',
+      //   animationIndex: this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].glb.animationIndex
+      // })
     }
   }
   attachEvents() {
@@ -417,7 +507,7 @@ class Character extends _hero.Hero {
             lc.creepFocusAttackOn = app.enemies.creeps.filter(creep => creep.name == e.detail.B.id)[0];
           }
           app.localHero.setAttackCreep(e.detail.B.id[e.detail.B.id.length - 1]);
-          console.info('creep vs creep ');
+          // console.info('creep vs creep ')
         }
       } else if (e.detail.A.group == "friendly") {
         // console.info('close distance A is friendly:', e.detail.A.group)
@@ -431,7 +521,7 @@ class Character extends _hero.Hero {
             lc.creepFocusAttackOn = app.enemies.creeps.filter(creep => creep.name == e.detail.B.id)[0];
           }
           app.localHero.setAttackCreep(e.detail.A.id[e.detail.A.id.length - 1]);
-          console.info('creep vs creep ');
+          // console.info('creep vs creep ')
           // console.info('close distance A is friendly:', e.detail.A.group)
         }
       }
@@ -555,9 +645,9 @@ class Character extends _hero.Hero {
         // console.log("onMouseTarget POS:", e.detail.type);
         this.mouseTarget.position.setPosition(e.detail.x, this.mouseTarget.position.y, e.detail.z);
         if (e.detail.type == "attach") {
-          this.mouseTarget.effects.circlePlane.instanceTargets[0].color = [1, 0, 0, 0.9];
+          this.mouseTarget.effects.circlePlaneTex.instanceTargets[0].color = [1, 0, 0, 0.9];
         } else {
-          this.mouseTarget.effects.circlePlane.instanceTargets[0].color = [0.6, 0.8, 1, 0.4];
+          this.mouseTarget.effects.circlePlaneTex.instanceTargets[0].color = [0.6, 0.8, 1, 0.4];
         }
       }
     });
@@ -576,7 +666,7 @@ class Character extends _hero.Hero {
 }
 exports.Character = Character;
 
-},{"../../../src/engine/loaders/webgpu-gltf":48,"../../../src/engine/utils":55,"./creep-character":3,"./hero":7,"./nav-mesh":10,"./static":11,"wgpu-matrix":28}],2:[function(require,module,exports){
+},{"../../../src/engine/loaders/webgpu-gltf":52,"../../../src/engine/utils":59,"./creep-character":3,"./friendly-character":7,"./hero":8,"./nav-mesh":13,"./static":14,"wgpu-matrix":31}],2:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -664,10 +754,14 @@ class Controller {
         }));
       } else {
         // for now
-        console.log("navigate friendly_creeps creep from controller :", e.detail.hitObject.name);
-        dispatchEvent(new CustomEvent('navigate-friendly_creeps', {
-          detail: 'test'
-        }));
+
+        if (app.net.virtualEmiter != null) {
+          console.log("only emiter - navigate friendly_creeps creep from controller :", e.detail.hitObject.name);
+          dispatchEvent(new CustomEvent('navigate-friendly_creeps', {
+            detail: 'test'
+          }));
+        }
+
         // must be friendly objs
         return;
       }
@@ -716,6 +810,9 @@ class Controller {
         (0, _navMesh.followPath)(this.heroe_bodies[x], path, this.core);
       }
       // followPath(this.heroe_bodies[0], path, this.core);
+    });
+    document.body.addEventListener("contextmenu", e => {
+      e.preventDefault();
     });
     this.canvas.addEventListener("contextmenu", e => {
       e.preventDefault();
@@ -853,7 +950,7 @@ class Controller {
 }
 exports.Controller = Controller;
 
-},{"../../../src/engine/raycast.js":54,"../../../src/engine/utils.js":55,"./nav-mesh.js":10,"wgpu-matrix":28}],3:[function(require,module,exports){
+},{"../../../src/engine/raycast.js":58,"../../../src/engine/utils.js":59,"./nav-mesh.js":13,"wgpu-matrix":31}],3:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -879,10 +976,11 @@ class Creep extends _hero.Hero {
     this.core = o.core;
     this.group = group;
     this.team = team;
-    this.loadCreeps(o);
+    this.loadCreep(o);
     return this;
   }
-  loadCreeps = async o => {
+  loadCreep = async o => {
+    this.o = o;
     try {
       var glbFile01 = await fetch(o.path).then(res => res.arrayBuffer().then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, this.core.device)));
       this.core.addGlbObjInctance({
@@ -904,8 +1002,27 @@ class Creep extends _hero.Hero {
         }
       }, null, glbFile01);
       // make small async - cooking glbs files
+
+      this.asyncHelper(this.o).then(() => {
+        console.log('good');
+      }).catch(() => {
+        console.log('catch');
+        setTimeout(() => {
+          this.asyncHelper(this.o);
+        }, 3000);
+      });
+    } catch (err) {
+      throw err;
+    }
+  };
+  asyncHelper = async o => {
+    return new Promise((resolve, reject) => {
       setTimeout(() => {
         this.heroe_bodies = app.mainRenderBundle.filter(obj => obj.name && obj.name.includes(o.name));
+        if (this.heroe_bodies.length == 0 || this.core.net.session == null) {
+          reject();
+          return;
+        }
         this.heroe_bodies.forEach((subMesh, idx) => {
           subMesh.position.thrust = this.moveSpeed;
           subMesh.glb.animationIndex = 0;
@@ -918,7 +1035,6 @@ class Creep extends _hero.Hero {
             if (a.name == 'attack') this.heroAnimationArrange.attack = index;
             if (a.name == 'idle') this.heroAnimationArrange.idle = index;
           });
-
           // adapt
           subMesh.globalAmbient = [1, 1, 1, 1];
           if (this.name.indexOf('friendly_creeps') != -1) {
@@ -926,29 +1042,34 @@ class Creep extends _hero.Hero {
           } else if (this.name.indexOf('enemy_creep') != -1) {
             subMesh.globalAmbient = [12, 1, 1, 1];
           }
-
-          //
-          if (this.group == 'friendly') {
+          if (this.group == 'friendly' && this.name.indexOf('friendly_creeps') != -1) {
             if (idx == 0) {
-              subMesh.position.netObject = subMesh.name;
-              let t = subMesh.name.replace('friendly_creeps', 'enemy_creep');
-              console.log('It is friendly creep use emit net', t);
-              subMesh.position.remoteName = t;
-              subMesh.rotation.emitY = subMesh.name;
-              subMesh.rotation.remoteName = t;
+              if (this.core.net.virtualEmiter == this.core.net.session.connection.connectionId) {
+                subMesh.position.teams[0] = app.player.remoteByTeam[app.player.data.team];
+                subMesh.position.teams[1] = app.player.remoteByTeam[app.player.data.enemyTeam];
+                subMesh.position.netObject = subMesh.name;
+                let t = subMesh.name.replace('friendly_creeps', 'enemy_creep');
+                // console.log('It is friendly creep use emit    subMesh.position.teams[0] ', subMesh.position.teams[0]);
+                subMesh.position.remoteName = t;
+                subMesh.rotation.emitY = subMesh.name;
+                subMesh.rotation.remoteName = t;
+                subMesh.sharedState.emitAnimationEvent = true;
+              }
             }
           }
-          // maybe will help - remote net players no nedd to collide in other remote user gamaplay
-          // this.core.collisionSystem.register((o.name + idx), subMesh.position, 15.0, 'enemies');
-          // dont care for multi sub mesh now
           if (idx == 0) this.core.collisionSystem.register(o.name, subMesh.position, 15.0, this.group);
         });
         this.setStartUpPosition();
         this.attachEvents();
-      }, 1700);
-    } catch (err) {
-      throw err;
-    }
+        resolve();
+        setTimeout(() => {
+          if (this.core.net.virtualEmiter != null) {
+            console.info(`%c virtualEmiter navigateCreeps : `, _utils.LOG_MATRIX);
+            app.localHero.navigateCreeps();
+          }
+        }, 3000);
+      }, 9000);
+    });
   };
   setWalk() {
     this.heroe_bodies.forEach(subMesh => {
@@ -1092,7 +1213,7 @@ class Creep extends _hero.Hero {
 }
 exports.Creep = Creep;
 
-},{"../../../src/engine/loaders/webgpu-gltf":48,"../../../src/engine/utils":55,"./hero":7,"./static":11}],4:[function(require,module,exports){
+},{"../../../src/engine/loaders/webgpu-gltf":52,"../../../src/engine/utils":59,"./hero":8,"./static":14}],4:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -1124,6 +1245,7 @@ class EnemiesManager {
   }
   // Make possible to play 3x3 4x4 or 5x5 ...
   loadCreeps() {
+    // console.log('loadCreeps() !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
     this.creeps.push(new _creepCharacter.Creep({
       core: this.core,
       name: 'enemy_creep0',
@@ -1287,7 +1409,12 @@ class Enemie extends _hero.Hero {
   }
   setStartUpPosition() {
     this.heroe_bodies.forEach((subMesh, idx) => {
-      subMesh.position.setPosition(_static.startUpPositions[app.player.data.enemyTeam][0], _static.startUpPositions[app.player.data.enemyTeam][1], _static.startUpPositions[app.player.data.enemyTeam][2]);
+      subMesh.position.setPosition(_static.startUpPositions[app.player.data.enemyTeam][0], _static.startUpPositions[app.player.data.enemyTeam][1], _static.startUpPositions[app.player.data.enemyTeam][2]
+
+      // startUpPositions[app.player.data.team][0],
+      // startUpPositions[app.player.data.team][1],
+      // startUpPositions[app.player.data.team][2]
+      );
     });
   }
   attachEvents() {
@@ -1314,7 +1441,7 @@ class Enemie extends _hero.Hero {
 }
 exports.Enemie = Enemie;
 
-},{"../../../src/engine/loaders/webgpu-gltf":48,"../../../src/engine/utils":55,"./hero":7,"./nav-mesh":10,"./static":11}],6:[function(require,module,exports){
+},{"../../../src/engine/loaders/webgpu-gltf":52,"../../../src/engine/utils":59,"./hero":8,"./nav-mesh":13,"./static":14}],6:[function(require,module,exports){
 "use strict";
 
 var _world = _interopRequireDefault(require("../../../src/world.js"));
@@ -1329,6 +1456,8 @@ var _net = require("../../../src/engine/networking/net.js");
 var _matrixStream = require("../../../src/engine/networking/matrix-stream.js");
 var _static = require("./static.js");
 var _tts = require("./tts.js");
+var _marketplace = require("./marketplace.js");
+var _invertoryManager = require("./invertoryManager.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 /**
  * @description
@@ -1339,14 +1468,14 @@ function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e
  * used under Adobe’s royalty‑free license. 
  * Redistribution of raw assets is not permitted.”
  **/
+// set orientation  in animation end hero
+// setup HP after setDead
 
-// Prevent no inputs cases
-// in prodc SS in dev LS
 if (!_utils.SS.has('player') || !_utils.LS.has('player')) {
-  // alert('No no');
-  location.assign('google.com');
+  location.href = 'https://google.com';
 }
 let forestOfHollowBlood = new _world.default({
+  dontUsePhysics: true,
   useSingleRenderPass: true,
   canvasSize: 'fullscreen',
   mainCameraParams: {
@@ -1360,7 +1489,8 @@ let forestOfHollowBlood = new _world.default({
     a: 1
   }
 }, () => {
-  forestOfHollowBlood.tts = new _tts.MatrixTTS();
+  // forestOfHollowBlood.tts = new MatrixTTS();
+
   forestOfHollowBlood.player = {
     username: "guest"
   };
@@ -1368,143 +1498,398 @@ let forestOfHollowBlood = new _world.default({
   // Audios
   forestOfHollowBlood.matrixSounds.createAudio('music', 'res/audios/rpg/music.mp3', 1);
   forestOfHollowBlood.matrixSounds.createAudio('win1', 'res/audios/rpg/feel.mp3', 2);
-  addEventListener('AmmoReady', async () => {
-    forestOfHollowBlood.player.data = _utils.SS.get('player');
-    forestOfHollowBlood.net = new _net.MatrixStream({
-      active: true,
-      domain: 'maximumroulette.com',
-      port: 2020,
-      sessionName: 'forestOfHollowBlood-free-for-all',
-      resolution: '160x240',
-      isDataOnly: _utils.urlQuery.camera || _utils.urlQuery.audio ? false : true,
-      customData: forestOfHollowBlood.player.data
-    });
-    forestOfHollowBlood.net.virtualEmiter = null;
-    app.matrixSounds.audios.music.loop = true;
-    addEventListener('net-ready', () => {
-      // console.log('net-ready');
-      // fix arg also
-      if (forestOfHollowBlood.player.data.team == 'south') {
-        forestOfHollowBlood.player.data.enemyTeam = 'north';
-        forestOfHollowBlood.enemies = new _enemiesManager.EnemiesManager(forestOfHollowBlood, 'north');
-      } else {
-        forestOfHollowBlood.player.data.enemyTeam = 'south';
-        forestOfHollowBlood.enemies = new _enemiesManager.EnemiesManager(forestOfHollowBlood, 'south');
-      }
-      (0, _matrixStream.byId)('buttonLeaveSession').addEventListener('click', () => {
-        location.assign("rpg-menu.html");
-      });
-    });
-    addEventListener('connectionDestroyed', e => {
-      console.log('connectionDestroyed , bad bad.');
-      if ((0, _matrixStream.byId)('remote-' + e.detail.connectionId)) {
-        (0, _matrixStream.byId)('remote-' + e.detail.connectionId).remove();
-        //....
-        _utils.mb.error(`Player ${e.detail.connectionId} disconnected...`);
-      }
-    });
-    addEventListener("onConnectionCreated", e => {
-      if (e.detail.connection.connectionId == app.net.session.connection.connectionId) {
-        let newPlayer = document.createElement('div');
-        newPlayer.innerHTML = `Local Player: ${e.detail.connection.connectionId}`;
-        newPlayer.id = `local-${e.detail.connection.connectionId}`;
-        (0, _matrixStream.byId)('matrix-net').appendChild(newPlayer);
-        document.title = forestOfHollowBlood.label.get.titleBan;
-      } else {
-        let newPlayer = document.createElement('div');
-        newPlayer.innerHTML = `remote Player: ${e.detail.connection.connectionId}`;
-        newPlayer.id = `remote-${e.detail.connection.connectionId}`;
-        (0, _matrixStream.byId)('matrix-net').appendChild(newPlayer);
-        if (forestOfHollowBlood.net.virtualEmiter == null) {
-          // only one - first remote (it means in theory 'best remote player network response time')
-          forestOfHollowBlood.net.virtualEmiter = e.detail.connection.connectionId;
-        }
-        let d = JSON.parse(e.detail.connection.data);
-        console.log('testCustomData[newconn]', d);
-        forestOfHollowBlood.enemies.loadEnemyHero(d);
-      }
-    });
-    addEventListener('only-data-receive', e => {
-      console.log('<data-receive>', e);
-      if (e.detail.from.connectionId == app.net.session.connection.connectionId) {
-        console.log('<data-receive damage for local hero !>', d);
-      }
-      let d = JSON.parse(e.detail.data);
-      if (d.type == "damage") {
-        // string
-        console.log('<data-receive damage for >', d.defenderName);
-        let IsEnemyHeroObj = forestOfHollowBlood.enemies.enemies.find(enemy => enemy.name === d.defenderName);
-        let IsEnemyCreepObj = forestOfHollowBlood.enemies.creeps.find(creep => creep.name === d.defenderName);
-        if (IsEnemyHeroObj) {
-          console.log('<data-receive damage for IsEnemyHeroObj >', IsEnemyHeroObj);
-          const progress = Math.max(0, Math.min(1, d.hp / IsEnemyHeroObj.getHPMax()));
-          IsEnemyHeroObj.heroe_bodies[0].effects.energyBar.setProgress(progress);
-          //..
-        } else if (IsEnemyCreepObj) {
-          console.log('<data-receive damage for IsEnemyCreepObj >', IsEnemyCreepObj);
-          const progress = Math.max(0, Math.min(1, d.hp / IsEnemyCreepObj.getHPMax()));
-          IsEnemyCreepObj.heroe_bodies[0].effects.energyBar.setProgress(progress);
-          //..
-        } else if (app.localHero.name == d.defenderName) {
-          console.log('<data-receive damage for LOCAL HERO >');
-          const progress = Math.max(0, Math.min(1, d.hp / app.localHero.getHPMax()));
-          app.localHero.heroe_bodies[0].effects.energyBar.setProgress(progress);
-          if (d.hp == 0 || progress == 0) {
-            // local hero dead
-            app.localHero.setDead();
-            setTimeout(() => {
-              app.localHero.heroe_bodies[0].position.setPosition(_static.startUpPositions[forestOfHollowBlood.player.data.team][0], _static.startUpPositions[forestOfHollowBlood.player.data.team][1], _static.startUpPositions[forestOfHollowBlood.player.data.team][2]);
-            }, 1000);
-          }
-        }
-      } else if ("damage-creep") {
-        console.log('<data-receive damage creep team:', d.defenderTeam);
-        // true always
-        if (app.player.data.team == d.defenderTeam) {
-          // get last char from string defenderName
-          let getCreepByIndex = parseInt(d.defenderName[d.defenderName.length - 1]);
-          app.localHero.friendlyLocal.creeps[getCreepByIndex].heroe_bodies[0].effects.energyBar.setProgress(d.progress);
-          if (d.progress == 0) {
-            app.localHero.friendlyLocal.creeps[getCreepByIndex].setDead();
-            setTimeout(() => {
-              app.localHero.friendlyLocal.creeps[getCreepByIndex].setStartUpPosition();
-              app.localHero.friendlyLocal.creeps[getCreepByIndex].gotoFinal = false;
-              app.localHero.friendlyLocal.creeps[getCreepByIndex].heroe_bodies[0].effects.energyBar.setProgress(1);
-            }, 1000);
 
-            //  SEND ENERGY BATR PROGREEs
-            // this.core.net.sendOnlyData({
-            //   type: "damage-creep",
-            //   defenderName: e.detail.defender,
-            //   defenderTeam: this.team,
-            //   hp: e.detail.hp,
-            //   progress: e.detail.progress
-            // });
+  // addEventListener('AmmoReady', async () => {})
+  forestOfHollowBlood.player.data = _utils.SS.get('player');
+  forestOfHollowBlood.net = new _net.MatrixStream({
+    active: true,
+    domain: 'maximumroulette.com',
+    port: 2020,
+    sessionName: 'forestOfHollowBlood-free-for-all',
+    resolution: '160x240',
+    isDataOnly: _utils.urlQuery.camera || _utils.urlQuery.audio ? false : true,
+    customData: forestOfHollowBlood.player.data
+  });
+  forestOfHollowBlood.net.virtualEmiter = null;
+  forestOfHollowBlood.player.remoteByTeam = {
+    south: [],
+    north: []
+  };
+  app.matrixSounds.audios.music.loop = true;
+  addEventListener('net-ready', () => {
+    (0, _matrixStream.byId)('join-btn').click();
+    forestOfHollowBlood.loadEnemyCreeps();
+    (0, _matrixStream.byId)('buttonLeaveSession').addEventListener('click', () => {
+      location.assign("rpg-menu.html");
+    });
+  });
+  forestOfHollowBlood.loadEnemyCreeps = () => {
+    if (forestOfHollowBlood.player.data.team == 'south') {
+      forestOfHollowBlood.player.data.enemyTeam = 'north';
+      forestOfHollowBlood.enemies = new _enemiesManager.EnemiesManager(forestOfHollowBlood, 'north');
+    } else {
+      forestOfHollowBlood.player.data.enemyTeam = 'south';
+      forestOfHollowBlood.enemies = new _enemiesManager.EnemiesManager(forestOfHollowBlood, 'south');
+    }
+  };
+  addEventListener('connectionDestroyed', e => {
+    console.log('connectionDestroyed - end of game.');
+    /**
+     * @note
+     * For now actual is most simple way 
+     * Destroy game session if any player disconnected.
+     * Later : after adding DB backend account session
+     * add negative BAN flag for players who leave gameplay.
+     */
+    if ((0, _matrixStream.byId)('remote-' + e.detail.connectionId)) {
+      (0, _matrixStream.byId)('remote-' + e.detail.connectionId).remove();
+      // byId('waiting-' + e.detail.connectionId).remove();
+      _utils.mb.error(`Player ${e.detail.connectionId} disconnected...`);
+      let getPlayer = JSON.parse(e.detail.event.connection.data);
+      let disPlayer = forestOfHollowBlood.getSceneObjectByName(getPlayer.mesh);
+      _utils.mb.error(`Player ${e.detail.connectionId} disconnected..${disPlayer}.`);
+      // back to base for now
+      disPlayer.position.setPosition(_static.startUpPositions[getPlayer.team][0], _static.startUpPositions[getPlayer.team][1], _static.startUpPositions[getPlayer.team][2]);
+    }
+    setTimeout(() => {
+      // app.net.closeSession();
+      app.net.buttonLeaveSession.click();
+      location.assign("rpg-menu.html");
+    }, 4000);
+  });
+  addEventListener("onConnectionCreated", e => {
+    const remoteCons = Array.from(e.detail.connection.session.remoteConnections.entries());
+    // if(remoteCons.length == (forestOfHollowBlood.player.data.numOfPlayers - 1)) {}
+    const isLocal = e.detail.connection.connectionId == app.net.session.connection.connectionId;
+    if (e.detail.connection.session.remoteConnections.size == 0) {
+      if (forestOfHollowBlood.net.virtualEmiter == null && isLocal) {
+        forestOfHollowBlood.net.virtualEmiter = e.detail.connection.connectionId;
+        document.title = "VE " + app.net.session.connection.connectionId;
+      }
+    } else {
+      // If present same team than emitter is active ...
+      let isSameTeamAlready = false;
+      for (var x = 0; x < remoteCons.length; x++) {
+        let currentRemoteConn = JSON.parse(remoteCons[x][1].data);
+        if (forestOfHollowBlood.player.data.team == currentRemoteConn.team) {
+          isSameTeamAlready = true;
+          if (forestOfHollowBlood.player.remoteByTeam[forestOfHollowBlood.player.data.team].indexOf(remoteCons[x][1]) == -1) {
+            forestOfHollowBlood.player.remoteByTeam[forestOfHollowBlood.player.data.team].push(remoteCons[x][1]);
+          }
+        } else {
+          if (forestOfHollowBlood.player.remoteByTeam[currentRemoteConn.team].indexOf(remoteCons[x][1]) == -1) {
+            forestOfHollowBlood.player.remoteByTeam[currentRemoteConn.team].push(remoteCons[x][1]);
           }
         }
       }
-    });
-    addEventListener('local-hero-bodies-ready', () => {
-      app.cameras.RPG.position[1] = 130;
-      app.cameras.RPG.movementSpeed = 100;
-      app.cameras.RPG.followMe = forestOfHollowBlood.localHero.heroe_bodies[0].position;
-      app.cameras.RPG.mousRollInAction = true;
-      // automatic
-      (0, _matrixStream.byId)('join-btn').click();
-    });
-    forestOfHollowBlood.RPG = new _controller.Controller(forestOfHollowBlood);
-    forestOfHollowBlood.mapLoader = new _mapLoader.MEMapLoader(forestOfHollowBlood, "./res/meshes/nav-mesh/navmesh.json");
-    // fix arg later!
-    forestOfHollowBlood.localHero = new _characterBase.Character(forestOfHollowBlood, forestOfHollowBlood.player.data.path, forestOfHollowBlood.player.data.hero, [forestOfHollowBlood.player.data.archetypes]);
-    forestOfHollowBlood.HUD = new _hud.HUD(forestOfHollowBlood.localHero);
-    forestOfHollowBlood.collisionSystem = new _collisionSubSystem.CollisionSystem(forestOfHollowBlood);
-    app.matrixSounds.play('music');
+      if (isSameTeamAlready == false && isLocal == true) {
+        forestOfHollowBlood.net.virtualEmiter = e.detail.connection.connectionId;
+        document.title = "VE " + app.net.session.connection.connectionId;
+      }
+    }
+    if (e.detail.connection.connectionId == app.net.session.connection.connectionId) {
+      let newPlayer = document.createElement('div');
+      newPlayer.innerHTML = `Local Player: ${e.detail.connection.connectionId}`;
+      newPlayer.id = `local-${e.detail.connection.connectionId}`;
+      (0, _matrixStream.byId)('matrix-net').appendChild(newPlayer);
+      // document.title = forestOfHollowBlood.label.get.titleBan;
+      // document.title = app.net.session.connection.connectionId;
+    } else {
+      let newPlayer = document.createElement('div');
+      newPlayer.innerHTML = `remote Player: ${e.detail.connection.connectionId}`;
+      newPlayer.id = `remote-${e.detail.connection.connectionId}`;
+      (0, _matrixStream.byId)('matrix-net').appendChild(newPlayer);
+      let d = JSON.parse(e.detail.connection.data);
+      if (d.team == app.player.data.team) {
+        let testIfExistAlready = app.mainRenderBundle.filter(obj => obj.name && obj.name.includes(d.mesh));
+        if (testIfExistAlready.length == 0) {
+          app.localHero.loadFriendlyHero(d);
+        }
+      } else {
+        let testIfExistAlready = app.mainRenderBundle.filter(obj => obj.name && obj.name.includes(d.mesh));
+        if (testIfExistAlready.length > 0) {
+          console.log('[new enemy hero already exist do nothing]', d);
+        } else {
+          app.enemies.loadEnemyHero(d);
+        }
+      }
+    }
   });
+  addEventListener('self-msg-data', e => {
+    let d = JSON.parse(e.detail.data);
+    console.log('<data-receive self>', d);
+    if (d.type == "damage") {
+      let IsEnemyHeroObj = forestOfHollowBlood.enemies.enemies.find(enemy => enemy.name === d.defenderName);
+      let IsEnemyCreepObj = forestOfHollowBlood.enemies.creeps.find(creep => creep.name === d.defenderName);
+      if (IsEnemyHeroObj) {
+        console.log('<data-receive damage for IsEnemyHeroObj >', IsEnemyHeroObj);
+        const progress = Math.max(0, Math.min(1, d.hp / IsEnemyHeroObj.getHPMax()));
+        IsEnemyHeroObj.heroe_bodies[0].effects.energyBar.setProgress(progress);
+        console.log('<data-receive damage IsEnemyHeroObj progress >', progress);
+        if (progress == 0) {
+          if (app.localHero.name == d.attackerName) {
+            console.log('<data-receive damage KILL by local >', d.attackerName);
+            app.localHero.killEnemy(1);
+          }
+        }
+        //..
+      }
+    }
+  });
+  addEventListener('only-data-receive', e => {
+    // console.log('<data-receive>', e)
+    if (e.detail.from.connectionId == app.net.session.connection.connectionId) {
+      console.log('<data-receive damage for local hero !!!>', d);
+    }
+    let d = JSON.parse(e.detail.data);
+    if (d.type == "damage") {
+      // string
+      console.log('<data-receive damage for >', d.defenderName);
+      let IsEnemyHeroObj = forestOfHollowBlood.enemies.enemies.find(enemy => enemy.name === d.defenderName);
+      let IsEnemyCreepObj = forestOfHollowBlood.enemies.creeps.find(creep => creep.name === d.defenderName);
+      // new
+      let IsFriendlyHeroObj = forestOfHollowBlood.localHero.friendlyLocal.heroes.find(fhero => fhero.name === d.defenderName);
+      if (IsFriendlyHeroObj) {
+        // console.log('<data-receive damage for IsFriendlyHeroObj >', IsFriendlyHeroObj);
+        const progress = Math.max(0, Math.min(1, d.hp / IsFriendlyHeroObj.getHPMax()));
+        IsFriendlyHeroObj.heroe_bodies[0].effects.energyBar.setProgress(progress);
+        console.log('<data-receive damage IsFriendlyHeroObj progress >', progress);
+      } else if (IsEnemyHeroObj) {
+        // console.log('<data-receive damage for IsEnemyHeroObj >', IsEnemyHeroObj);
+        const progress = Math.max(0, Math.min(1, d.hp / IsEnemyHeroObj.getHPMax()));
+        IsEnemyHeroObj.heroe_bodies[0].effects.energyBar.setProgress(progress);
+        console.log('<data-receive damage IsEnemyHeroObj progress >', progress);
+        if (progress == 0) {
+          if (app.localHero.name == d.attackerName) {
+            console.log('<data-receive damage KILL by local >', d.attackerName);
+            app.localHero.killEnemy(1);
+          }
+        }
+        //..
+      } else if (IsEnemyCreepObj) {
+        console.log('<data-receive damage for IsEnemyCreepObj >', IsEnemyCreepObj);
+        const progress = Math.max(0, Math.min(1, d.hp / IsEnemyCreepObj.getHPMax()));
+        IsEnemyCreepObj.heroe_bodies[0].effects.energyBar.setProgress(progress);
+        //..
+      } else if (app.localHero.name == d.defenderName) {
+        console.log('<data-receive damage for LOCAL HERO >');
+        const progress = Math.max(0, Math.min(1, d.hp / app.localHero.getHPMax()));
+        app.localHero.heroe_bodies[0].effects.energyBar.setProgress(progress);
+        if (d.hp == 0 || progress == 0) {
+          // local hero dead
+          app.localHero.setDead();
+          setTimeout(() => {
+            app.localHero.heroe_bodies[0].position.setPosition(_static.startUpPositions[forestOfHollowBlood.player.data.team][0], _static.startUpPositions[forestOfHollowBlood.player.data.team][1], _static.startUpPositions[forestOfHollowBlood.player.data.team][2]);
+          }, 1000);
+        }
+      }
+    } else if ("damage-creep") {
+      console.log('<data-receive damage creep team:', d.defenderTeam);
+      // true always
+      if (app.player.data.team == d.defenderTeam) {
+        // get last char from string defenderName
+        let getCreepByIndex = parseInt(d.defenderName[d.defenderName.length - 1]);
+        app.localHero.friendlyLocal.creeps[getCreepByIndex].heroe_bodies[0].effects.energyBar.setProgress(d.progress);
+        if (d.progress == 0) {
+          app.localHero.friendlyLocal.creeps[getCreepByIndex].setDead();
+          setTimeout(() => {
+            app.localHero.friendlyLocal.creeps[getCreepByIndex].setStartUpPosition();
+            app.localHero.friendlyLocal.creeps[getCreepByIndex].gotoFinal = false;
+            app.localHero.friendlyLocal.creeps[getCreepByIndex].heroe_bodies[0].effects.energyBar.setProgress(1);
+          }, 1000);
+
+          //  SEND ENERGY BATR PROGREEs
+          // this.core.net.sendOnlyData({
+          //   type: "damage-creep",
+          //   defenderName: e.detail.defender,
+          //   defenderTeam: this.team,
+          //   hp: e.detail.hp,
+          //   progress: e.detail.progress
+          // });
+        }
+      }
+    }
+  });
+  addEventListener('local-hero-bodies-ready', () => {
+    app.cameras.RPG.position[1] = 130;
+    app.cameras.RPG.movementSpeed = 100;
+    app.cameras.RPG.followMe = forestOfHollowBlood.localHero.heroe_bodies[0].position;
+    app.cameras.RPG.mousRollInAction = true;
+  });
+  forestOfHollowBlood.RPG = new _controller.Controller(forestOfHollowBlood);
+  forestOfHollowBlood.mapLoader = new _mapLoader.MEMapLoader(forestOfHollowBlood, "./res/meshes/nav-mesh/navmesh.json");
+  forestOfHollowBlood.localHero = new _characterBase.Character(forestOfHollowBlood, forestOfHollowBlood.player.data.path, forestOfHollowBlood.player.data.hero, [forestOfHollowBlood.player.data.archetypes]);
+  forestOfHollowBlood.localHero.inventory = new _invertoryManager.Inventory(forestOfHollowBlood.localHero);
+  forestOfHollowBlood.marketPlace = new _marketplace.Marketplace(forestOfHollowBlood.localHero);
+  forestOfHollowBlood.marketPlace.mb = _utils.mb;
+  forestOfHollowBlood.marketPlace.label = forestOfHollowBlood.label;
+  forestOfHollowBlood.localHero.inventory.loadAllRules(forestOfHollowBlood.marketPlace._generateItems());
+  forestOfHollowBlood.HUD = new _hud.HUD(forestOfHollowBlood.localHero);
+  forestOfHollowBlood.collisionSystem = new _collisionSubSystem.CollisionSystem(forestOfHollowBlood);
+  app.matrixSounds.play('music');
   forestOfHollowBlood.addLight();
 });
 window.app = forestOfHollowBlood;
 
-},{"../../../src/engine/collision-sub-system.js":31,"../../../src/engine/networking/matrix-stream.js":52,"../../../src/engine/networking/net.js":53,"../../../src/engine/utils.js":55,"../../../src/world.js":78,"./character-base.js":1,"./controller.js":2,"./enemies-manager.js":4,"./hud.js":8,"./map-loader.js":9,"./static.js":11,"./tts.js":12}],7:[function(require,module,exports){
+},{"../../../src/engine/collision-sub-system.js":34,"../../../src/engine/networking/matrix-stream.js":56,"../../../src/engine/networking/net.js":57,"../../../src/engine/utils.js":59,"../../../src/world.js":82,"./character-base.js":1,"./controller.js":2,"./enemies-manager.js":4,"./hud.js":9,"./invertoryManager.js":10,"./map-loader.js":11,"./marketplace.js":12,"./static.js":14,"./tts.js":15}],7:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.FriendlyHero = void 0;
+var _webgpuGltf = require("../../../src/engine/loaders/webgpu-gltf");
+var _utils = require("../../../src/engine/utils");
+var _hero = require("./hero");
+var _static = require("./static");
+// import {followPath} from "./nav-mesh";
+
+class FriendlyHero extends _hero.Hero {
+  heroAnimationArrange = {
+    dead: null,
+    walk: null,
+    salute: null,
+    attack: null,
+    idle: null
+  };
+  constructor(o, archetypes = ["Warrior"]) {
+    super(o.name, archetypes);
+    this.name = o.name;
+    this.core = o.core;
+    this.loadFriendlyHero(o);
+    this.attachEvents();
+    return this;
+  }
+  loadFriendlyHero = async o => {
+    try {
+      console.info(`%chero friendly path  ${o.path}`, _utils.LOG_MATRIX);
+      var glbFile01 = await fetch(o.path).then(res => res.arrayBuffer().then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, this.core.device)));
+      this.core.addGlbObjInctance({
+        material: {
+          type: 'standard',
+          useTextureFromGlb: true
+        },
+        scale: [20, 20, 20],
+        position: o.position,
+        name: o.name,
+        texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
+        raycast: {
+          enabled: true,
+          radius: 1.1
+        },
+        pointerEffect: {
+          enabled: true,
+          energyBar: true
+        }
+      }, null, glbFile01);
+      // make small async - cooking glbs files
+      setTimeout(() => {
+        this.heroe_bodies = app.mainRenderBundle.filter(obj => obj.name && obj.name.includes(o.name));
+        this.heroe_bodies.forEach((subMesh, idx, array) => {
+          subMesh.position.thrust = this.moveSpeed;
+          subMesh.glb.animationIndex = 0;
+          // adapt manual if blender is not setup
+          subMesh.glb.glbJsonData.animations.forEach((a, index) => {
+            //  console.info(`%c ANimation: ${a.name} index ${index}`, LOG_MATRIX)
+            if (a.name == 'dead') this.heroAnimationArrange.dead = index;
+            if (a.name == 'walk') this.heroAnimationArrange.walk = index;
+            if (a.name == 'salute') this.heroAnimationArrange.salute = index;
+            if (a.name == 'attack') this.heroAnimationArrange.attack = index;
+            if (a.name == 'idle') this.heroAnimationArrange.idle = index;
+          });
+          // adapt
+          if (this.name == 'Slayzer') {
+            subMesh.globalAmbient = [2, 2, 3, 1];
+          }
+
+          // this is optimisation very important - no emit per sub mesh - calc on client part.
+          if (idx > 0) {
+            array[idx].position = array[0].position;
+            array[idx].rotation = array[0].rotation;
+          }
+
+          // maybe will help - remote net players no nedd to collide in other remote user gamaplay
+          // this.core.collisionSystem.register((o.name + idx), subMesh.position, 15.0, 'enemies');
+          // dont care for multi sub mesh now
+          if (idx == 0) {
+            subMesh.position.netObject = subMesh.name;
+            // for now net view for rot is axis separated - cost is ok for orientaion remote pass
+            subMesh.rotation.emitY = subMesh.name;
+            this.core.collisionSystem.register(o.name, subMesh.position, 15.0, 'friendly');
+          }
+        });
+        this.setStartUpPosition();
+        for (var x = 0; x < this.heroe_bodies.length; x++) {
+          if (x > 0) {
+            this.heroe_bodies[x].position = this.heroe_bodies[0].position;
+            this.heroe_bodies[x].rotation = this.heroe_bodies[0].rotation;
+          }
+        }
+      }, 1600);
+    } catch (err) {
+      throw err;
+    }
+  };
+  setWalk() {
+    this.heroe_bodies.forEach(subMesh => {
+      subMesh.glb.animationIndex = this.heroAnimationArrange.walk;
+      console.info(`%chero walk`, _utils.LOG_MATRIX);
+    });
+  }
+  setSalute() {
+    this.heroe_bodies.forEach(subMesh => {
+      subMesh.glb.animationIndex = this.heroAnimationArrange.salute;
+      console.info(`%chero salute`, _utils.LOG_MATRIX);
+    });
+  }
+  setDead() {
+    this.heroe_bodies.forEach(subMesh => {
+      subMesh.glb.animationIndex = this.heroAnimationArrange.dead;
+      console.info(`%chero dead`, _utils.LOG_MATRIX);
+    });
+  }
+  setIdle() {
+    this.heroe_bodies.forEach(subMesh => {
+      subMesh.glb.animationIndex = this.heroAnimationArrange.idle;
+      console.info(`%chero idle`, _utils.LOG_MATRIX);
+    });
+  }
+  setAttack() {
+    this.heroe_bodies.forEach(subMesh => {
+      subMesh.glb.animationIndex = this.heroAnimationArrange.attack;
+      console.info(`%chero attack`, _utils.LOG_MATRIX);
+    });
+  }
+  setStartUpPosition() {
+    this.heroe_bodies.forEach(subMesh => {
+      subMesh.position.setPosition(_static.startUpPositions[app.player.data.team][0] + 50, _static.startUpPositions[app.player.data.team][1], _static.startUpPositions[app.player.data.team][2]);
+    });
+  }
+  attachEvents() {
+    addEventListener(`onDamage-${this.name}`, e => {
+      console.info(`%c remote[enemy] hero damage ${e.detail}`, _utils.LOG_MATRIX);
+      this.heroe_bodies[0].effects.energyBar.setProgress(e.detail.progress);
+      this.core.net.sendOnlyData({
+        type: "damage",
+        defenderName: e.detail.defender,
+        attackerName: e.detail.attacker,
+        hp: e.detail.hp,
+        progress: e.detail.progress
+      });
+      // if detail is 0
+      if (e.detail.progress == 0) {
+        this.setDead();
+        console.info(`%c hero dead [${this.name}], attacker[${e.detail.attacker}]`, _utils.LOG_MATRIX);
+        setTimeout(() => {
+          this.setStartUpPosition();
+        }, 1500);
+      }
+    });
+  }
+}
+exports.FriendlyHero = FriendlyHero;
+
+},{"../../../src/engine/loaders/webgpu-gltf":52,"../../../src/engine/utils":59,"./hero":8,"./static":14}],8:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -1609,6 +1994,7 @@ const HERO_ARCHETYPES = exports.HERO_ARCHETYPES = {
     hpRegenMult: 1.0,
     manaRegenMult: 1.0
   },
+  // special for creeps
   creep: {
     hpMult: 0.6,
     manaMult: 1,
@@ -1776,24 +2162,48 @@ class HeroProps {
       level: 0,
       maxLevel: 1
     }];
+    this.invertoryBonus = {
+      hp: 1,
+      mana: 1,
+      attack: 1,
+      armor: 1,
+      moveSpeed: 1,
+      attackSpeed: 1,
+      hpRegen: 1,
+      mpRegen: 1
+    };
     this.updateStats();
   }
-
-  // --- Update stats
   updateStats() {
     const lvlData = this.levels[this.currentLevel - 1];
     if (!lvlData) return;
+    console.log('updateStats: armor ', this.invertoryBonus.armor);
     Object.assign(this, {
-      hp: lvlData.hp,
-      mana: lvlData.mana,
-      attack: lvlData.attack,
-      armor: lvlData.armor,
-      moveSpeed: lvlData.moveSpeed,
-      attackSpeed: lvlData.attackSpeed,
-      hpRegen: lvlData.hpRegen,
-      mpRegen: lvlData.mpRegen,
+      hp: lvlData.hp * this.invertoryBonus.hp,
+      mana: lvlData.mana * this.invertoryBonus.mana,
+      attack: lvlData.attack * this.invertoryBonus.attack,
+      armor: lvlData.armor * this.invertoryBonus.armor,
+      moveSpeed: lvlData.moveSpeed * this.invertoryBonus.moveSpeed,
+      attackSpeed: lvlData.attackSpeed * this.invertoryBonus.attackSpeed,
+      hpRegen: lvlData.hpRegen * this.invertoryBonus.hpRegen,
+      mpRegen: lvlData.mpRegen * this.invertoryBonus.mpRegen,
       abilityPoints: lvlData.abilityPoints
     });
+    dispatchEvent(new CustomEvent('stats-localhero', {
+      detail: {
+        gold: this.gold,
+        currentLevel: this.currentLevel,
+        xp: this.currentXP,
+        hp: this.hp,
+        mana: this.mana,
+        attack: this.attack,
+        armor: this.armor,
+        moveSpeed: this.moveSpeed,
+        attackSpeed: this.attackSpeed,
+        hpRegen: this.hpRegen,
+        mpRegen: this.mpRegen
+      }
+    }));
   }
 
   // --- Kill enemy: only enemyLevel argument
@@ -1836,21 +2246,21 @@ class HeroProps {
     }
 
     // emit for hud
-    dispatchEvent(new CustomEvent('stats-localhero', {
-      detail: {
-        gold: this.gold,
-        currentLevel: this.currentLevel,
-        xp: this.currentXP,
-        hp: this.hp,
-        mana: this.mana,
-        attack: this.attack,
-        armor: this.armor,
-        moveSpeed: this.moveSpeed,
-        attackSpeed: this.attackSpeed,
-        hpRegen: this.hpRegen,
-        mpRegen: this.mpRegen
-      }
-    }));
+    // dispatchEvent(new CustomEvent('stats-localhero', {
+    //   detail: {
+    //     gold: this.gold,
+    //     currentLevel: this.currentLevel,
+    //     xp: this.currentXP,
+    //     hp: this.hp,
+    //     mana: this.mana,
+    //     attack: this.attack,
+    //     armor: this.armor,
+    //     moveSpeed: this.moveSpeed,
+    //     attackSpeed: this.attackSpeed,
+    //     hpRegen: this.hpRegen,
+    //     mpRegen: this.mpRegen,
+    //   }
+    // }))
   }
 
   // --- Upgrade abilities
@@ -1994,6 +2404,7 @@ class Hero extends HeroProps {
   updateStats() {
     super.updateStats();
     this.applyArchetypeStats();
+    // console.log('Override updateStats to include archetype scaling ....')
   }
 }
 exports.Hero = Hero;
@@ -2035,7 +2446,7 @@ function mergeArchetypesWeighted(typeA, typeB, weightA = 0.7) {
   return merged;
 }
 
-},{}],8:[function(require,module,exports){
+},{}],9:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -2104,7 +2515,7 @@ class HUD {
       margin: '0',
       boxSizing: "border-box",
       overflow: 'hidden',
-      fontSize: '9px'
+      fontSize: '10px'
     });
     hud.appendChild(statsDom);
     const statsDomValue = document.createElement("div");
@@ -2124,16 +2535,15 @@ class HUD {
       margin: '0',
       boxSizing: "border-box",
       overflow: 'hidden',
-      fontSize: '9px'
+      fontSize: '10px'
     });
     hud.appendChild(statsDomValue);
     let props = ["currentLevel", "hp", "mana", "gold", "mpRegen", "hpRegen", "moveSpeed", "attackSpeed", "armor", "attack"];
     addEventListener('stats-localhero', e => {
-      console.log('STATS UPDATE DOM ', e.detail);
+      // console.log('STATS UPDATE DOM ', e.detail[props[x]].toFixed(2))
       for (var x = 0; x < props.length; x++) {
         (0, _utils.byId)('stats-' + props[x]).innerHTML = e.detail[props[x]].toFixed(2);
       }
-      console.log('STATS UPDATE DOM ', e.detail);
     });
     for (var x = 0; x < props.length; x++) {
       const statsDomItem = document.createElement("div");
@@ -2444,6 +2854,7 @@ class HUD {
     for (let i = 0; i < 6; i++) {
       const slot = document.createElement("div");
       slot.className = "inventory-slot";
+      slot.id = `inventory-slot-${i}`;
       Object.assign(slot.style, {
         aspectRatio: "1 / 1",
         width: "90%",
@@ -2463,9 +2874,14 @@ class HUD {
         backgroundPosition: "center"
       });
       // Hover effect
-      slot.addEventListener("mouseenter", () => {
+      slot.addEventListener("mouseenter", e => {
         slot.style.border = "2px solid #ff0";
         slot.style.boxShadow = "0 0 10px rgba(255,255,0,0.5), inset 2px 2px 5px rgba(0,0,0,0.6)";
+        if (e.currentTarget.childNodes.length < 3) {
+          return;
+        }
+        let getDesc = e.currentTarget.childNodes[1].getAttribute('data-name') + " : " + e.currentTarget.childNodes[1].getAttribute('data-desc') + " \n Props: " + e.currentTarget.childNodes[1].getAttribute('data-effects');
+        (0, _utils.byId)('hudDesriptionText').innerText = getDesc;
       });
       slot.addEventListener("mouseleave", () => {
         slot.style.border = "2px solid #aaa";
@@ -2474,6 +2890,23 @@ class HUD {
       slot.textContent = "Empty";
       inventoryGrid.appendChild(slot);
     }
+    addEventListener('hero-invertory-update', e => {
+      console.log('hero-invertory-update', e.detail);
+      e.detail.items.forEach((item, index) => {
+        if (item != null) {
+          const effectsString = item.effects ? Object.entries(item.effects).map(([key, value]) => `${key}: ${value}`).join(', ') : 'None';
+          (0, _utils.byId)(`inventory-slot-${index}`).innerHTML = `
+            <img 
+               data-name="${item.name}" 
+               data-desc="${item.description}" 
+               data-effects="${effectsString}" 
+               width="50px" style="min-height: 50px;max-height:55px;"
+               src="${item.path}" />
+          `;
+          console.log('hero-invertory-update item', item);
+        }
+      });
+    });
     const loader = document.createElement("div");
     Object.assign(loader.style, {
       position: "fixed",
@@ -2512,10 +2945,12 @@ class HUD {
     function fakeProgress() {
       if (progress < 100) {
         // Random step to look "non-linear"
-        progress += Math.random() * 5;
+        progress += Math.random() * 4;
         if (progress > 100) progress = 100;
         bar.style.width = progress + '%';
         counter.textContent = "Prepare gameplay " + Math.floor(progress) + '%';
+        let grayEffect = 30 / progress;
+        loader.style.filter = `grayscale(${grayEffect})`;
         setTimeout(fakeProgress, 80 + Math.random() * 150);
       } else {
         counter.textContent = "Let the game begin!";
@@ -2539,18 +2974,190 @@ class HUD {
     document.body.appendChild(hud);
   }
   setCursor() {
+    // AnimatedCursor
     document.body.style.cursor = "url('./res/icons/default.png') 0 0, auto";
   }
 }
 exports.HUD = HUD;
 
-},{"../../../src/engine/utils.js":55}],9:[function(require,module,exports){
+},{"../../../src/engine/utils.js":59}],10:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.Inventory = void 0;
+/**
+ * @description
+ * Hero invertory (Local)
+ * Advanced Inventory system for RPG heroes.
+ * Supports stacking, crafting, and time-limited items.
+ */
+class Inventory {
+  constructor(hero, size = 6) {
+    this.hero = hero;
+    this.size = size;
+    this.slots = new Array(size).fill(null);
+    this.craftingRules = [];
+    this.activeTimers = new Map();
+  }
+
+  // --- Add crafting rule
+  addCraftingRule(requiredItems, resultItem) {
+    this.craftingRules.push({
+      requiredItems,
+      resultItem
+    });
+  }
+  loadAllRules(allLevel2_3) {
+    let onlyConstructable = allLevel2_3.filter(item => typeof item.from !== 'undefined');
+    onlyConstructable.forEach((item, index, array) => {
+      // console.log(item.name + " from " + item.from);
+      this.addCraftingRule(item.from, item);
+    });
+  }
+
+  // --- Add item (supports stacking + timed items + effects)
+  addItem(name, {
+    quantity = 1,
+    duration = null,
+    effects = null,
+    path = null,
+    description = ""
+  } = {}) {
+    const existingSlot = this.slots.find(s => s && s.name === name);
+    if (existingSlot && !duration) {
+      existingSlot.quantity += quantity;
+    } else {
+      const emptyIndex = this.slots.findIndex(s => s === null);
+      if (emptyIndex === -1) {
+        console.warn("Inventory is full!");
+        return false;
+      }
+      const newItem = {
+        name,
+        quantity,
+        createdAt: Date.now(),
+        duration,
+        effects,
+        path,
+        description
+      };
+      this.slots[emptyIndex] = newItem;
+
+      // Apply effects immediately
+      if (effects) this._applyEffects(effects, true);
+
+      // Time-limited logic
+      if (duration) {
+        const timerId = setTimeout(() => {
+          this.removeItem(name, quantity);
+          this.activeTimers.delete(name);
+          console.log(`⏳ Item "${name}" expired and removed.`);
+        }, duration);
+        this.activeTimers.set(name, timerId);
+      }
+    }
+    console.log(`🧩 Added item "${name}" x${quantity}`);
+    this._checkCraftingRules();
+    this._dispatchHeroUpdate();
+    return true;
+  }
+
+  // --- Remove item and reverse effects
+  removeItem(name, quantity = 1) {
+    const slotIndex = this.slots.findIndex(s => s && s.name === name);
+    if (slotIndex === -1) return false;
+    const slot = this.slots[slotIndex];
+    slot.quantity -= quantity;
+    if (slot.effects) {
+      this._applyEffects(slot.effects, false); // reverse effect
+    }
+    if (slot.quantity <= 0) {
+      this.slots[slotIndex] = null;
+      console.log(`❌ Removed item "${name}"`);
+    }
+    if (this.activeTimers.has(name)) {
+      clearTimeout(this.activeTimers.get(name));
+      this.activeTimers.delete(name);
+    }
+    this._dispatchHeroUpdate();
+    return true;
+  }
+
+  // --- Apply or reverse item effects on hero
+  _applyEffects(effects, isAdding = true) {
+    for (const [key, multiplier] of Object.entries(effects)) {
+      if (this.hero[key] !== undefined && typeof this.hero[key] === "number") {
+        const factor = isAdding ? multiplier : 1 / multiplier;
+        this.hero[key] *= factor;
+      }
+    }
+  }
+
+  // --- Crafting
+  _checkCraftingRules() {
+    for (const rule of this.craftingRules) {
+      const hasAll = rule.requiredItems.every(item => this.slots.some(slot => slot && slot.name === item));
+      if (hasAll) {
+        rule.requiredItems.forEach(item => this.removeItem(item, 1));
+        this.addItem(rule.resultItem.name, {
+          effects: rule.resultItem.effects,
+          path: rule.resultItem.path,
+          description: rule.resultItem.description
+        });
+        console.log(`✨ Crafted new item: "${rule.resultItem.name}"`);
+        return;
+      }
+    }
+  }
+  _dispatchHeroUpdate() {
+    this.slots.forEach((item, index) => {
+      if (item != null) for (var key in item.effects) {
+        if (this.hero[key]) {
+          console.log(key + '  -< effects props exist in hero base class -  value: ', item.effects[key]);
+          this.hero.invertoryBonus[key] *= item.effects[key];
+        }
+      }
+    });
+    this.hero.updateStats();
+    dispatchEvent(new CustomEvent("hero-invertory-update", {
+      detail: {
+        items: this.slots
+      }
+    }));
+  }
+
+  // --- Debug print
+  debugPrint() {
+    console.table(this.slots.map((slot, i) => ({
+      Slot: i + 1,
+      Item: slot ? slot.name : "Empty",
+      Quantity: slot ? slot.quantity : "-",
+      Duration: slot?.duration ? `${slot.duration / 1000}s` : "∞"
+    })));
+  }
+  clear() {
+    this.slots.forEach(slot => {
+      if (slot && slot.effects) this._applyEffects(slot.effects, false);
+    });
+    this.slots.fill(null);
+    this.activeTimers.forEach(t => clearTimeout(t));
+    this.activeTimers.clear();
+    this._dispatchHeroUpdate();
+    console.log("🧹 Inventory cleared");
+  }
+}
+exports.Inventory = Inventory;
+
+},{}],11:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.MEMapLoader = void 0;
+var _genTex = require("../../../src/engine/effects/gen-tex2.js");
 var _gen = require("../../../src/engine/effects/gen.js");
 var _loaderObj = require("../../../src/engine/loader-obj.js");
 var _webgpuGltf = require("../../../src/engine/loaders/webgpu-gltf.js");
@@ -2564,6 +3171,7 @@ function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e
  */
 class MEMapLoader {
   collectionOfTree1 = [];
+  collectionOfRocks = [];
   async loadNavMesh(navMapPath) {
     return new Promise(async (resolve, reject) => {
       try {
@@ -2617,41 +3225,150 @@ class MEMapLoader {
         radius: 1.5
       }
     });
-    console.log('FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF', _static.startUpPositions['south'][0]);
-    // wood-house-1
-    var glbFile01 = await fetch('./res/meshes/glb/wood-house-1.glb').then(res => res.arrayBuffer().then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, this.core.device)));
+
+    //https://sketchfab.com/search?features=downloadable&licenses=7c23a1ba438d4306920229c12afcb5f9&licenses=322a749bcfa841b29dff1e8a1bb74b0b&q=rock&type=models
+    var glbFile01 = await fetch('./res/meshes/env/rocks/rock1.glb').then(res => res.arrayBuffer().then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, this.core.device)));
     this.core.addGlbObjInctance({
       material: {
         type: 'standard',
         useTextureFromGlb: true
       },
-      scale: [20, 20, 20],
+      scale: [14, 13, 14],
       position: {
-        x: _static.startUpPositions['south'][0],
-        y: _static.startUpPositions['south'][1],
-        z: _static.startUpPositions['south'][2]
+        x: -780,
+        y: -10,
+        z: 950
       },
-      name: 'homeBase',
+      name: 'rocks1',
       texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
       raycast: {
-        enabled: true,
+        enabled: false,
+        radius: 1.5
+      },
+      pointerEffect: {
+        enabled: true
+      }
+    }, null, glbFile01);
+
+    // on engine level must be upgraded "add rotation for instanced objs... on meshObjInstanced class..."
+    // FOr now i will use another scene obj but same loaded data - that ok
+    this.core.addGlbObjInctance({
+      material: {
+        type: 'standard',
+        useTextureFromGlb: true
+      },
+      scale: [14, 13, 14],
+      rotation: {
+        x: 0,
+        y: 90,
+        z: 0
+      },
+      position: {
+        x: -1040,
+        y: -10,
+        z: 850
+      },
+      name: 'rocks2',
+      texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
+      raycast: {
+        enabled: false,
         radius: 1.5
       },
       pointerEffect: {
         enabled: true,
-        energyBar: true,
-        flameEffect: false,
-        flameEmitter: true,
-        circlePlane: false,
-        circlePlaneTex: true,
-        circlePlaneTexPath: './res/textures/rpg/magics/mariasword-2.png'
+        flameEffect: false
       }
     }, null, glbFile01);
 
-    // let t = this.core.mainRenderBundle.filter((r) => r.name.indexOf('friendly-tower') != -1)[0];
-    // this.core.collisionSystem.register(`friendly-tower`, t.position, 15.0, 'tower');
+    // TEST
+    var glbFile02 = await fetch('./res/meshes/env/rocks/cyber.glb').then(res => res.arrayBuffer().then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, this.core.device)));
+    this.core.addGlbObjInctance({
+      material: {
+        type: 'standard',
+        useTextureFromGlb: true
+      },
+      scale: [1, 1, 1],
+      rotation: {
+        x: 0,
+        y: 90,
+        z: 0
+      },
+      position: {
+        x: -900,
+        y: -10,
+        z: 930
+      },
+      name: 'homebase',
+      texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
+      raycast: {
+        enabled: false,
+        radius: 1.5
+      },
+      pointerEffect: {
+        enabled: true,
+        flameEffect: false
+      }
+    }, null, glbFile02);
+    var glbFile03 = await fetch('./res/meshes/env/rocks/home.glb').then(res => res.arrayBuffer().then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, this.core.device)));
+    this.core.addGlbObjInctance({
+      material: {
+        type: 'standard',
+        useTextureFromGlb: true
+      },
+      scale: [15, 15, 15],
+      rotation: {
+        x: 0,
+        y: 90,
+        z: 0
+      },
+      position: {
+        x: -800,
+        y: -20,
+        z: 830
+      },
+      name: 'tron_',
+      texturesPaths: ['./res/textures/star1.png'],
+      raycast: {
+        enabled: false,
+        radius: 1.5
+      },
+      pointerEffect: {
+        enabled: true,
+        energyBar: true
+      }
+    }, null, glbFile03);
+    setTimeout(() => {
+      this.collectionOfRocks = this.core.mainRenderBundle.filter(item => item.name.indexOf('rocks1') != -1);
+      this.collectionOfRocks.forEach(item => {
+        item.globalAmbient = [10, 10, 10];
+        // this.core.collisionSystem.register(`rock1`, item.position, 15.0, 'rock');
+      });
+      this.collectionOfRocks2 = this.core.mainRenderBundle.filter(item => item.name.indexOf('rocks2') != -1);
+      this.collectionOfRocks2.forEach(item => {
+        item.globalAmbient = [10, 10, 10];
+        // this.core.collisionSystem.register(`rock1`, item.position, 15.0, 'rock');
+      });
+      this.addInstancingRock();
 
-    this.core.lightContainer[0].position[1] = 170;
+      // remove after
+      app.homebase = this.core.mainRenderBundle.filter(item => item.name.indexOf('homebase') != -1)[0];
+      app.homebase.globalAmbient = [16, 2, 1];
+      app.tron = this.core.mainRenderBundle.filter(item => item.name.indexOf('tron_') != -1)[0];
+      app.tron.globalAmbient = [2, 2, 2];
+
+      // this.pointerEffect.circlePlaneTexPath
+      app.tron.effects.circle = new _genTex.GenGeoTexture2(app.device, app.tron.presentationFormat, 'circle2', './res/textures/star1.png');
+      app.tron.effects.circle.rotateEffectSpeed = 0.01;
+      this.core.collisionSystem.register(`rock3`, app.tron.position, 25.0, 'rock');
+      setTimeout(() => {
+        app.tron.effects.circle.instanceTargets[0].position = [0, 6, 0];
+        app.tron.effects.circle.instanceTargets[1].position = [0, 6, 0];
+        app.tron.effects.circle.instanceTargets[0].color = [2, 0.1, 0, 0.5];
+        app.tron.effects.circle.instanceTargets[1].color = [1, 1, 1, 0.11];
+      }, 5000);
+      // circlePlaneTexPath: './res/textures/star1.png',
+    }, 2000);
+    this.core.lightContainer[0].position[1] = 175;
     this.core.lightContainer[0].intesity = 1;
   }
   onTree(m) {
@@ -2749,12 +3466,13 @@ class MEMapLoader {
     setTimeout(() => {
       this.collectionOfTree1 = this.core.mainRenderBundle.filter(o => o.name.indexOf('tree') != -1);
       setTimeout(() => this.addInstancing(), 100);
-    }, 2000);
+    }, 2500);
   }
   addInstancing() {
     const spacing = 150;
     const clusterOffsets = [[0, 0], [700, 0], [0, 700], [700, 700]];
     this.collectionOfTree1.forEach(partOftree => {
+      partOftree.globalAmbient = [(0, _utils.randomIntFromTo)(5, 15), (0, _utils.randomIntFromTo)(5, 15), (0, _utils.randomIntFromTo)(5, 15)];
       const treesPerCluster = 9;
       const gridSize = Math.ceil(Math.sqrt(treesPerCluster));
       const totalInstances = treesPerCluster * clusterOffsets.length;
@@ -2777,10 +3495,629 @@ class MEMapLoader {
       }
     });
   }
+  addInstancingRock() {
+    const NUM = 16;
+    this.collectionOfRocks.forEach(rock => {
+      rock.updateMaxInstances(NUM);
+      rock.updateInstances(NUM);
+      for (var x = 0; x < NUM; x++) {
+        let instance;
+        if (x == 0) {
+          instance = rock.instanceTargets[x];
+          instance.position[0] = 200;
+          instance.position[2] = 0;
+          instance.position[1] = 0;
+        } else if (x < 8) {
+          instance = rock.instanceTargets[x];
+          instance.position[0] = x * 250;
+          instance.position[2] = 0;
+          instance.position[1] = 0;
+        } else if (x < 16) {
+          instance = rock.instanceTargets[x];
+          instance.position[0] = (x - 8) * 250;
+          instance.position[2] = -2000;
+          instance.position[1] = 0;
+        }
+        instance.color[3] = 1;
+        instance.color[0] = 1;
+        instance.color[1] = 1;
+        instance.color[2] = (0, _utils.randomIntFromTo)(1, 1.5);
+      }
+    });
+    const NUM2 = 16;
+    this.collectionOfRocks2.forEach(rock => {
+      rock.updateMaxInstances(NUM2);
+      rock.updateInstances(NUM2);
+      for (var x = 0; x < NUM2; x++) {
+        let instance;
+        if (x < 8) {
+          instance = rock.instanceTargets[x];
+          instance.position[0] = -50;
+          instance.position[2] = -2000 + x * 250;
+          instance.position[1] = 0;
+        } else if (x < 16) {
+          instance = rock.instanceTargets[x];
+          instance.position[0] = 1950;
+          instance.position[2] = -1800 + (x - 8) * 250;
+          instance.position[1] = 0;
+        }
+        instance.color[3] = 1;
+        instance.color[0] = 1;
+        instance.color[1] = 1;
+        instance.color[2] = 1;
+      }
+    });
+  }
 }
 exports.MEMapLoader = MEMapLoader;
 
-},{"../../../src/engine/effects/gen.js":37,"../../../src/engine/loader-obj.js":45,"../../../src/engine/loaders/webgpu-gltf.js":48,"../../../src/engine/utils.js":55,"./nav-mesh.js":10,"./static.js":11}],10:[function(require,module,exports){
+},{"../../../src/engine/effects/gen-tex2.js":40,"../../../src/engine/effects/gen.js":41,"../../../src/engine/loader-obj.js":49,"../../../src/engine/loaders/webgpu-gltf.js":52,"../../../src/engine/utils.js":59,"./nav-mesh.js":13,"./static.js":14}],12:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.Marketplace = void 0;
+class Marketplace {
+  constructor(hero) {
+    this.hero = hero;
+    this.items = this._generateItems();
+    this.createHud();
+  }
+  createHud() {
+    var box = document.createElement('div');
+    box.id = 'marketplace';
+    box.style.position = 'fixed';
+    box.style.right = '0';
+    box.style.display = 'flex';
+    box.style.flexDirection = 'row';
+    box.style.flexWrap = 'wrap';
+    box.style.zIndex = '2';
+    box.style.top = '0';
+    box.style.width = '50%';
+    box.style.height = '80%';
+    box.style.fontSize = '50%';
+    box.style.paddingLeft = '30px';
+    box.style.overflowY = 'scroll';
+    box.classList.add('btn');
+    box.classList.add('btn3');
+    var boxRightTitleBar = document.createElement('div');
+    boxRightTitleBar.id = 'marketplace-boxRightTitleBar';
+    boxRightTitleBar.style.position = 'absolute';
+    boxRightTitleBar.style.left = '0';
+    boxRightTitleBar.style.width = '50px';
+    boxRightTitleBar.style.fontSize = '20px';
+    boxRightTitleBar.style.height = '-webkit-fill-available';
+    // boxRightTitleBar.style.marginLeft = `-30px`;
+    boxRightTitleBar.innerHTML = 'Invertory';
+    boxRightTitleBar.classList.add('vertical-text');
+    box.classList.add('hide-by-right');
+    box.appendChild(boxRightTitleBar);
+    box.addEventListener("wheel", function (e) {
+      e.stopPropagation();
+    });
+    box.addEventListener('click', e => {
+      if (box.classList.contains('show-by-right')) {
+        box.classList.remove('show-by-right');
+        box.classList.add('hide-by-right');
+      } else {
+        box.classList.add('show-by-right');
+        box.classList.remove('hide-by-right');
+      }
+      // console.log("*********");
+    });
+    this.items.forEach(i => {
+      var itemDOM = document.createElement('div');
+      itemDOM.id = i.name;
+      itemDOM.innerHTML = `
+        <div style="" class="itemDOM">
+          <img class="invertoryItem" src='${i.path}' />
+          <div>name: ${i.name} price: ${i.price == 0 ? "<span style='color:red;' >Cant be buyed only constructed from basic item.</span>" : i.price} ${i.description}</div>
+        </div>`;
+      itemDOM.addEventListener('click', e => {
+        e.stopPropagation();
+        console.log("invertory:", e.currentTarget.id);
+        this.buy(e.currentTarget.id);
+      });
+      box.appendChild(itemDOM);
+    });
+    document.body.appendChild(box);
+  }
+
+  // --- Player buys an item if it’s purchasable
+  buy(itemName) {
+    const item = this.items.find(i => i.name === itemName);
+    if (!item) return console.warn("Item not found in market!");
+    if (item.level > 1) return console.warn("Only level 1 items can be bought!");
+    if (this.hero.gold < item.price) {
+      this.mb.show(this.label.get.nogold);
+      console.warn("Not enough gold!");
+      return;
+    }
+    this.hero.gold -= item.price;
+    this.hero.inventory.addItem(item.name, {
+      effects: item.effects,
+      path: item.path,
+      description: item.description
+    });
+    console.log(`💰 ${this.hero.name} bought ${item.name} for ${item.price} gold.`);
+  }
+
+  // --- Sell item for half price
+  sell(itemName) {
+    const item = this.items.find(i => i.name === itemName);
+    if (!item) return console.warn("Item not found in market!");
+    this.hero.gold += Math.floor(item.price / 2);
+    this.hero.inventory.removeItem(itemName);
+    console.log(`📦 ${this.hero.name} sold ${item.name} for ${Math.floor(item.price / 2)} gold.`);
+  }
+
+  // --- Print shop table
+  showMarket() {
+    console.table(this.items.map(i => ({
+      Name: i.name,
+      Level: i.level,
+      Price: i.price,
+      Description: i.description
+    })));
+  }
+
+  // --- All items database
+  _generateItems() {
+    return [
+    // LEVEL 1 — BASIC ITEMS (30)
+    {
+      name: "Gladius Ignis",
+      level: 1,
+      price: 120,
+      effects: {
+        attackSpeed: 1.1
+      },
+      description: "A forged sword imbued with faint fire energy.",
+      path: "./res/textures/rpg/invertory/aether-fortis.png"
+    }, {
+      name: "Aqua Orbis",
+      level: 1,
+      price: 110,
+      effects: {
+        mana: 1.15
+      },
+      description: "A small orb that resonates with water spirits.",
+      path: "./res/textures/rpg/invertory/aether-fortis.png"
+    }, {
+      name: "Terra Clavis",
+      level: 1,
+      price: 90,
+      effects: {
+        hp: 1.05
+      },
+      description: "An ancient stone amulet of endurance.",
+      path: "./res/textures/rpg/invertory/aether-fortis.png"
+    }, {
+      name: "Ventus Pluma",
+      level: 1,
+      price: 100,
+      effects: {
+        moveSpeed: 1.1
+      },
+      description: "A feather of the northern wind.",
+      path: "./res/textures/rpg/invertory/aether-fortis.png"
+    }, {
+      name: "Ferrum Anulus",
+      level: 1,
+      price: 80,
+      effects: {
+        armor: 1.1
+      },
+      description: "A simple iron ring engraved with runes.",
+      path: "./res/textures/rpg/invertory/aether-fortis.png"
+    }, {
+      name: "Luna Gemma",
+      level: 1,
+      price: 130,
+      effects: {
+        mana: 1.2
+      },
+      description: "A moonlit gem that glows in the dark.",
+      path: "./res/textures/rpg/invertory/aether-fortis.png"
+    }, {
+      name: "Sol Corona",
+      level: 1,
+      price: 140,
+      effects: {
+        attackSpeed: 1.15
+      },
+      description: "A golden emblem of the solar knights.",
+      path: "./res/textures/rpg/invertory/aether-fortis.png"
+    }, {
+      name: "Umbra Vellum",
+      level: 1,
+      price: 95,
+      effects: {
+        stealth: 1.2
+      },
+      description: "A dark fabric that absorbs light.",
+      path: "./res/textures/rpg/invertory/aether-fortis.png"
+    }, {
+      name: "Vita Flos",
+      level: 1,
+      price: 85,
+      effects: {
+        hp: 1.1
+      },
+      description: "A rare flower symbolizing life and rebirth.",
+      path: "./res/textures/rpg/invertory/aether-fortis.png"
+    }, {
+      name: "Glacies Sigil",
+      level: 1,
+      price: 100,
+      effects: {
+        armor: 1.15
+      },
+      description: "A sigil of frozen power.",
+      path: "./res/textures/rpg/invertory/aether-fortis.png"
+    }, {
+      name: "Ignis Scutum",
+      level: 1,
+      price: 120,
+      effects: {
+        armor: 1.2
+      },
+      description: "A small fire-warding shield.",
+      path: "./res/textures/rpg/invertory/aether-fortis.png"
+    }, {
+      name: "Sanguis Orb",
+      level: 1,
+      price: 130,
+      effects: {
+        hp: 1.15
+      },
+      description: "A pulsating orb of crimson light.",
+      path: "./res/textures/rpg/invertory/aether-fortis.png"
+    }, {
+      name: "Arbor Blade",
+      level: 1,
+      price: 90,
+      effects: {
+        attackSpeed: 1.08
+      },
+      description: "A wooden blade carved from the elder tree.",
+      path: "./res/textures/rpg/invertory/aether-fortis.png"
+    }, {
+      name: "Mare Pearl",
+      level: 1,
+      price: 150,
+      effects: {
+        mana: 1.3
+      },
+      description: "A rare pearl blessed by sea spirits.",
+      path: "./res/textures/rpg/invertory/mare-pearl.png"
+    }, {
+      name: "Vox Chime",
+      level: 1,
+      price: 70,
+      effects: {
+        moveSpeed: 1.05
+      },
+      description: "A charm that hums with sound magic.",
+      path: "./res/textures/rpg/invertory/vox-chime.png"
+    }, {
+      name: "Tenebris Fang",
+      level: 1,
+      price: 110,
+      effects: {
+        attackSpeed: 1.12
+      },
+      description: "A dark fang of unknown beast origin.",
+      path: "./res/textures/rpg/invertory/tenebris-fang.png"
+    }, {
+      name: "Lux Feather",
+      level: 1,
+      price: 100,
+      effects: {
+        mana: 1.1
+      },
+      description: "A radiant feather from a holy bird.",
+      path: "./res/textures/rpg/invertory/lux-feather.png"
+    }, {
+      name: "Fulgur Stone",
+      level: 1,
+      price: 95,
+      effects: {
+        attackSpeed: 1.1
+      },
+      description: "A crackling shard of lightning essence.",
+      path: "./res/textures/rpg/invertory/fulgur-stone.png"
+    }, {
+      name: "Silva Heart",
+      level: 1,
+      price: 80,
+      effects: {
+        hp: 1.07
+      },
+      description: "A seed pulsing with natural energy.",
+      path: "./res/textures/rpg/invertory/silva-heart.png"
+    }, {
+      name: "Noctis Band",
+      level: 1,
+      price: 120,
+      effects: {
+        stealth: 1.3
+      },
+      description: "A ring that vanishes under moonlight.",
+      path: "./res/textures/rpg/invertory/noctis-band.png"
+    }, {
+      name: "Rosa Thorn",
+      level: 1,
+      price: 100,
+      effects: {
+        attackSpeed: 1.05,
+        hp: 1.05
+      },
+      description: "A rose stem hardened into a piercing thorn.",
+      path: "./res/textures/rpg/invertory/rosa-thorn.png"
+    }, {
+      name: "Caelum Dust",
+      level: 1,
+      price: 110,
+      effects: {
+        mana: 1.1,
+        moveSpeed: 1.05
+      },
+      description: "Sky dust collected from high-altitude clouds.",
+      path: "./res/textures/rpg/invertory/caelum-dust.png"
+    }, {
+      name: "Ignifur Cape",
+      level: 1,
+      price: 125,
+      effects: {
+        armor: 1.1,
+        attackSpeed: 1.05
+      },
+      description: "A cape woven with fire-resistant fur.",
+      path: "./res/textures/rpg/invertory/ignifur-cape.png"
+    }, {
+      name: "Gelum Pendant",
+      level: 1,
+      price: 95,
+      effects: {
+        armor: 1.1
+      },
+      description: "Pendant of icy serenity.",
+      path: "./res/textures/rpg/invertory/gelum-fendant.png"
+    }, {
+      name: "Mortis Bone",
+      level: 1,
+      price: 140,
+      effects: {
+        attackSpeed: 1.15,
+        hp: 1.1
+      },
+      description: "A cursed relic bone from ancient warrior.",
+      path: "./res/textures/rpg/invertory/mortis-bone.png"
+    }, {
+      name: "Aether Scale",
+      level: 1,
+      price: 115,
+      effects: {
+        mana: 1.2
+      },
+      description: "Dragon scale imbued with aether magic.",
+      path: "./res/textures/rpg/invertory/aether-scale.png"
+    }, {
+      name: "Flamma Crystal",
+      level: 1,
+      price: 130,
+      effects: {
+        attackSpeed: 1.1
+      },
+      description: "A molten crystal of flame essence.",
+      path: "./res/textures/rpg/invertory/flamma-crystal.png"
+    }, {
+      name: "Spirit Charm",
+      level: 1,
+      price: 85,
+      effects: {
+        mana: 1.1,
+        moveSpeed: 1.1
+      },
+      description: "Charm of wandering spirits.",
+      path: "./res/textures/rpg/invertory/spirit-charm.png"
+    }, {
+      name: "Ardent Vine",
+      level: 1,
+      price: 80,
+      effects: {
+        hp: 1.05,
+        armor: 1.05
+      },
+      description: "Vine that strengthens when worn.",
+      path: "./res/textures/rpg/invertory/ardent-vine.png"
+    }, {
+      name: "Oculus Tempus",
+      level: 1,
+      price: 150,
+      effects: {
+        moveSpeed: 1.2
+      },
+      description: "An eye-shaped amulet bending time perception.",
+      path: "./res/textures/rpg/invertory/oculus-tempus.png"
+    },
+    // LEVEL 2 — CRAFTED ITEMS (10)
+    {
+      name: "Corona Ignifera",
+      level: 2,
+      price: 0,
+      from: ["Sol Corona", "Flamma Crystal"],
+      effects: {
+        attackSpeed: 1.25,
+        armor: 1.1
+      },
+      description: "Crown of blazing flame and golden radiance.",
+      path: "./res/textures/rpg/invertory/corona-ignifera.png"
+    }, {
+      name: "Aqua Sanctum",
+      level: 2,
+      price: 0,
+      from: ["Mare Pearl", "Luna Gemma"],
+      effects: {
+        mana: 1.35,
+        armor: 1.1
+      },
+      description: "Holy water relic radiating calm energy.",
+      path: "./res/textures/rpg/invertory/aqua-sanctum.png"
+    }, {
+      name: "Umbra Silens",
+      level: 2,
+      price: 0,
+      from: ["Umbra Vellum", "Noctis Band"],
+      effects: {
+        stealth: 1.5
+      },
+      description: "Veil of perfect silence and darkness.",
+      path: "./res/textures/rpg/invertory/umbra-silens.png"
+    }, {
+      name: "Terra Fortis",
+      level: 2,
+      price: 0,
+      from: ["Terra Clavis", "Ardent Vine", "Silva Heart"],
+      effects: {
+        hp: 1.3,
+        armor: 1.2
+      },
+      description: "Roots and stone fused into living armor.",
+      path: "./res/textures/rpg/invertory/terra-fortis.png"
+    }, {
+      name: "Ventus Aegis",
+      level: 2,
+      price: 0,
+      from: ["Ventus Pluma", "Ignifur Cape"],
+      effects: {
+        moveSpeed: 1.25,
+        armor: 1.15
+      },
+      description: "A shield that dances with the wind.",
+      path: "./res/textures/rpg/invertory/ventus-aegis.png"
+    }, {
+      name: "Ferrum Lux",
+      level: 2,
+      price: 0,
+      from: ["Ferrum Anulus", "Lux Feather"],
+      effects: {
+        armor: 1.25,
+        mana: 1.1
+      },
+      description: "Iron enchanted by celestial light.",
+      path: "./res/textures/rpg/invertory/ferrum-lux.png"
+    }, {
+      name: "Sanguis Vita",
+      level: 2,
+      price: 0,
+      from: ["Sanguis Orb", "Vita Flos"],
+      effects: {
+        hp: 1.4
+      },
+      description: "Blood and life entwined in crimson bloom.",
+      path: "./res/textures/rpg/invertory/sanguis-vita.png"
+    },
+    //<<<<<<
+    {
+      name: "Tenebris Vox",
+      level: 2,
+      price: 0,
+      from: ["Tenebris Fang", "Vox Chime"],
+      effects: {
+        attackSpeed: 1.2,
+        stealth: 1.2
+      },
+      description: "A cursed chime that roars like the abyss.",
+      path: "./res/textures/rpg/invertory/tenebris-vox.png"
+    }, {
+      name: "Aether Gladius",
+      level: 2,
+      price: 0,
+      from: ["Gladius Ignis", "Aether Scale"],
+      effects: {
+        attackSpeed: 1.3,
+        mana: 1.1
+      },
+      description: "A sword wreathed in spectral energy.",
+      path: "./res/textures/rpg/invertory/aether-gladius.png"
+    }, {
+      name: "Fulgur Mortis",
+      level: 2,
+      price: 0,
+      from: ["Fulgur Stone", "Mortis Bone"],
+      effects: {
+        attackSpeed: 1.25,
+        moveSpeed: 1.15
+      },
+      description: "Lightning fused with death’s essence.",
+      path: "./res/textures/rpg/invertory/fulgur-mortis.png"
+    },
+    // LEVEL 3 — ADVANCED ITEMS (5)
+    {
+      name: "Corona Umbra",
+      level: 3,
+      price: 0,
+      from: ["Umbra Silens", "Corona Ignifera", "Tenebris Vox"],
+      effects: {
+        attackSpeed: 1.4,
+        stealth: 1.3
+      },
+      description: "Crown of the night sun, radiating power and darkness.",
+      path: "./res/textures/rpg/invertory/corona-umbra.png"
+    }, {
+      name: "Terra Sanctum",
+      level: 3,
+      price: 0,
+      from: ["Terra Fortis", "Aqua Sanctum"],
+      effects: {
+        hp: 1.5,
+        armor: 1.3
+      },
+      description: "The sacred earth that sustains all life.",
+      path: "./res/textures/rpg/invertory/terra-sanctum.png"
+    }, {
+      name: "Aether Fortis",
+      level: 3,
+      price: 0,
+      from: ["Aether Gladius", "Ferrum Lux"],
+      effects: {
+        attackSpeed: 1.35,
+        mana: 1.25
+      },
+      description: "Forged in light and aetheric flame.",
+      path: "./res/textures/rpg/invertory/aether-fortis.png"
+    }, {
+      name: "Vita Mindza",
+      level: 3,
+      price: 0,
+      from: ["Sanguis Vita", "Ventus Aegis"],
+      effects: {
+        hp: 1.4,
+        moveSpeed: 1.2
+      },
+      description: "The living crown of vitality and wind.",
+      path: "./res/textures/rpg/invertory/vita-mindza.png"
+    }, {
+      name: "Mortis Ultima",
+      level: 3,
+      price: 0,
+      from: ["Fulgur Mortis", "Corona Umbra", "Aether Fortis"],
+      effects: {
+        attackSpeed: 1.6,
+        mana: 1.2,
+        stealth: 1.3
+      },
+      description: "Legendary artifact combining death, storm, and shadow.",
+      path: "./res/textures/rpg/invertory/mortis-ultima.png"
+    }];
+  }
+}
+exports.Marketplace = Marketplace;
+
+},{}],13:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -3304,7 +4641,7 @@ function resolvePairRepulsion(Apos, Bpos, minDistance = 30.0, pushStrength = 0.5
   return false;
 }
 
-},{"../../../src/engine/utils.js":55}],11:[function(require,module,exports){
+},{"../../../src/engine/utils.js":59}],14:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -3326,7 +4663,7 @@ const creepPoints = exports.creepPoints = {
   }
 };
 
-},{}],12:[function(require,module,exports){
+},{}],15:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -3444,9 +4781,9 @@ class MatrixTTS {
 }
 exports.MatrixTTS = MatrixTTS;
 
-},{}],13:[function(require,module,exports){
-arguments[4][10][0].apply(exports,arguments)
-},{"../../../src/engine/utils.js":55,"dup":10}],14:[function(require,module,exports){
+},{}],16:[function(require,module,exports){
+arguments[4][13][0].apply(exports,arguments)
+},{"../../../src/engine/utils.js":59,"dup":13}],17:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -3456,7 +4793,7 @@ exports.default = void 0;
 var _bvhLoader = require("./module/bvh-loader");
 var _default = exports.default = _bvhLoader.MEBvh;
 
-},{"./module/bvh-loader":15}],15:[function(require,module,exports){
+},{"./module/bvh-loader":18}],18:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -4145,7 +5482,7 @@ class MEBvh {
 }
 exports.MEBvh = MEBvh;
 
-},{"webgpu-matrix":27}],16:[function(require,module,exports){
+},{"webgpu-matrix":30}],19:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -4223,7 +5560,7 @@ function equals(a, b) {
   return Math.abs(a - b) <= tolerance * Math.max(1, Math.abs(a), Math.abs(b));
 }
 
-},{}],17:[function(require,module,exports){
+},{}],20:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -4252,7 +5589,7 @@ var vec4 = _interopRequireWildcard(require("./vec4.js"));
 exports.vec4 = vec4;
 function _interopRequireWildcard(e, t) { if ("function" == typeof WeakMap) var r = new WeakMap(), n = new WeakMap(); return (_interopRequireWildcard = function (e, t) { if (!t && e && e.__esModule) return e; var o, i, f = { __proto__: null, default: e }; if (null === e || "object" != typeof e && "function" != typeof e) return f; if (o = t ? n : r) { if (o.has(e)) return o.get(e); o.set(e, f); } for (const t in e) "default" !== t && {}.hasOwnProperty.call(e, t) && ((i = (o = Object.defineProperty) && Object.getOwnPropertyDescriptor(e, t)) && (i.get || i.set) ? o(f, t, i) : f[t] = e[t]); return f; })(e, t); }
 
-},{"./common.js":16,"./mat2.js":18,"./mat2d.js":19,"./mat3.js":20,"./mat4.js":21,"./quat.js":22,"./quat2.js":23,"./vec2.js":24,"./vec3.js":25,"./vec4.js":26}],18:[function(require,module,exports){
+},{"./common.js":19,"./mat2.js":21,"./mat2d.js":22,"./mat3.js":23,"./mat4.js":24,"./quat.js":25,"./quat2.js":26,"./vec2.js":27,"./vec3.js":28,"./vec4.js":29}],21:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -4714,7 +6051,7 @@ var mul = exports.mul = multiply;
  */
 var sub = exports.sub = subtract;
 
-},{"./common.js":16}],19:[function(require,module,exports){
+},{"./common.js":19}],22:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -5228,7 +6565,7 @@ var mul = exports.mul = multiply;
  */
 var sub = exports.sub = subtract;
 
-},{"./common.js":16}],20:[function(require,module,exports){
+},{"./common.js":19}],23:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -6040,7 +7377,7 @@ var mul = exports.mul = multiply;
  */
 var sub = exports.sub = subtract;
 
-},{"./common.js":16}],21:[function(require,module,exports){
+},{"./common.js":19}],24:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -8060,7 +9397,7 @@ var mul = exports.mul = multiply;
  */
 var sub = exports.sub = subtract;
 
-},{"./common.js":16}],22:[function(require,module,exports){
+},{"./common.js":19}],25:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -8843,7 +10180,7 @@ var setAxes = exports.setAxes = function () {
   };
 }();
 
-},{"./common.js":16,"./mat3.js":20,"./vec3.js":25,"./vec4.js":26}],23:[function(require,module,exports){
+},{"./common.js":19,"./mat3.js":23,"./vec3.js":28,"./vec4.js":29}],26:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -9716,7 +11053,7 @@ function equals(a, b) {
   return Math.abs(a0 - b0) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a0), Math.abs(b0)) && Math.abs(a1 - b1) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a1), Math.abs(b1)) && Math.abs(a2 - b2) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a2), Math.abs(b2)) && Math.abs(a3 - b3) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a3), Math.abs(b3)) && Math.abs(a4 - b4) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a4), Math.abs(b4)) && Math.abs(a5 - b5) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a5), Math.abs(b5)) && Math.abs(a6 - b6) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a6), Math.abs(b6)) && Math.abs(a7 - b7) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a7), Math.abs(b7));
 }
 
-},{"./common.js":16,"./mat4.js":21,"./quat.js":22}],24:[function(require,module,exports){
+},{"./common.js":19,"./mat4.js":24,"./quat.js":25}],27:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -10394,7 +11731,7 @@ var forEach = exports.forEach = function () {
   };
 }();
 
-},{"./common.js":16}],25:[function(require,module,exports){
+},{"./common.js":19}],28:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -11246,7 +12583,7 @@ var forEach = exports.forEach = function () {
   };
 }();
 
-},{"./common.js":16}],26:[function(require,module,exports){
+},{"./common.js":19}],29:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -11953,7 +13290,7 @@ var forEach = exports.forEach = function () {
   };
 }();
 
-},{"./common.js":16}],27:[function(require,module,exports){
+},{"./common.js":19}],30:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -15886,7 +17223,7 @@ function setDefaultType(ctor) {
   setDefaultType$1(ctor);
 }
 
-},{}],28:[function(require,module,exports){
+},{}],31:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -21233,7 +22570,7 @@ function setDefaultType(ctor) {
   setDefaultType$1(ctor);
 }
 
-},{}],29:[function(require,module,exports){
+},{}],32:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -21647,7 +22984,7 @@ class MEBall {
 }
 exports.default = MEBall;
 
-},{"../shaders/shaders":70,"./engine":40,"./matrix-class":50,"wgpu-matrix":28}],30:[function(require,module,exports){
+},{"../shaders/shaders":74,"./engine":44,"./matrix-class":54,"wgpu-matrix":31}],33:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -21685,7 +23022,7 @@ class Behavior {
 }
 exports.default = Behavior;
 
-},{"./utils":55}],31:[function(require,module,exports){
+},{"./utils":59}],34:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -21732,7 +23069,7 @@ class CollisionSystem {
 }
 exports.CollisionSystem = CollisionSystem;
 
-},{"../../examples/games/rpg/nav-mesh":13}],32:[function(require,module,exports){
+},{"../../examples/games/rpg/nav-mesh":16}],35:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -22157,7 +23494,7 @@ class MECube {
 }
 exports.default = MECube;
 
-},{"../shaders/shaders":70,"./engine":40,"./matrix-class":50,"wgpu-matrix":28}],33:[function(require,module,exports){
+},{"../shaders/shaders":74,"./engine":44,"./matrix-class":54,"wgpu-matrix":31}],36:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -22320,7 +23657,7 @@ class HPBarEffect {
 }
 exports.HPBarEffect = HPBarEffect;
 
-},{"../../shaders/energy-bars/energy-bar-shader.js":58,"wgpu-matrix":28}],34:[function(require,module,exports){
+},{"../../shaders/energy-bars/energy-bar-shader.js":62,"wgpu-matrix":31}],37:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -22539,7 +23876,7 @@ class FlameEmitter {
 }
 exports.FlameEmitter = FlameEmitter;
 
-},{"../../shaders/flame-effect/flame-instanced":59,"../utils":55,"wgpu-matrix":28}],35:[function(require,module,exports){
+},{"../../shaders/flame-effect/flame-instanced":63,"../utils":59,"wgpu-matrix":31}],38:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -22710,7 +24047,7 @@ class FlameEffect {
 }
 exports.FlameEffect = FlameEffect;
 
-},{"../../shaders/flame-effect/flameEffect":60,"wgpu-matrix":28}],36:[function(require,module,exports){
+},{"../../shaders/flame-effect/flameEffect":64,"wgpu-matrix":31}],39:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -22730,7 +24067,7 @@ class GenGeoTexture {
     this.indexData = geom.indices;
     this.enabled = true;
     this.rotateEffect = true;
-    this.rotateEffectSpeed = 10.5;
+    this.rotateEffectSpeed = 10;
     this.rotateAngle = 0;
     this.loadTexture(path).then(() => {
       this._initPipeline();
@@ -22907,6 +24244,9 @@ class GenGeoTexture {
   updateInstanceData = baseModelMatrix => {
     if (this.rotateEffect) {
       this.rotateAngle = (this.rotateAngle ?? 0) + this.rotateEffectSpeed; // accumulate rotation
+      if (this.rotateAngle >= 360) {
+        this.rotateAngle = 0;
+      }
     }
     const count = Math.min(this.instanceCount, this.maxInstances);
     for (let i = 0; i < count; i++) {
@@ -22948,7 +24288,264 @@ class GenGeoTexture {
 }
 exports.GenGeoTexture = GenGeoTexture;
 
-},{"../../shaders/standalone/geo.tex.js":72,"../geometry-factory.js":41,"wgpu-matrix":28}],37:[function(require,module,exports){
+},{"../../shaders/standalone/geo.tex.js":76,"../geometry-factory.js":45,"wgpu-matrix":31}],40:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.GenGeoTexture2 = void 0;
+var _geoTex = require("../../shaders/standalone/geo.tex.js");
+var _geometryFactory = require("../geometry-factory.js");
+var _wgpuMatrix = require("wgpu-matrix");
+class GenGeoTexture2 {
+  constructor(device, format, type = "sphere", path, scale = 1) {
+    this.device = device;
+    this.format = format;
+    const geom = _geometryFactory.GeometryFactory.create(type, scale);
+    this.vertexData = geom.positions;
+    this.uvData = geom.uvs;
+    this.indexData = geom.indices;
+    this.enabled = true;
+    this.rotateEffect = true;
+    this.rotateEffectSpeed = 10;
+    this.rotateAngle = 0;
+    this.loadTexture(path).then(() => {
+      this._initPipeline();
+    });
+  }
+  async loadTexture(url) {
+    return new Promise(async (resolve, reject) => {
+      const img = await fetch(url).then(r => r.blob()).then(createImageBitmap);
+      const texture = this.device.createTexture({
+        size: [img.width, img.height, 1],
+        format: "rgba8unorm",
+        usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT
+      });
+      this.device.queue.copyExternalImageToTexture({
+        source: img
+      }, {
+        texture
+      }, [img.width, img.height]);
+      const sampler = this.device.createSampler({
+        magFilter: "linear",
+        minFilter: "linear",
+        addressModeU: "repeat",
+        addressModeV: "repeat"
+      });
+      this.texture = texture;
+      this.sampler = sampler;
+      resolve();
+    });
+  }
+  _initPipeline() {
+    const {
+      vertexData,
+      uvData,
+      indexData
+    } = this;
+
+    // --- POSITION BUFFER (aligned)
+    this.vertexBuffer = this.device.createBuffer({
+      size: Math.ceil(vertexData.byteLength / 4) * 4,
+      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
+    });
+    this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
+
+    // --- UV BUFFER (aligned)
+    this.uvBuffer = this.device.createBuffer({
+      size: Math.ceil(uvData.byteLength / 4) * 4,
+      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
+    });
+    this.device.queue.writeBuffer(this.uvBuffer, 0, uvData);
+
+    // --- INDEX BUFFER (aligned)
+    const alignedIndexSize = Math.ceil(indexData.byteLength / 4) * 4;
+    this.indexBuffer = this.device.createBuffer({
+      size: alignedIndexSize,
+      usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST
+    });
+
+    // Create a temporary padded buffer if necessary
+    if (indexData.byteLength !== alignedIndexSize) {
+      const tmp = new Uint8Array(alignedIndexSize);
+      tmp.set(new Uint8Array(indexData.buffer));
+      this.device.queue.writeBuffer(this.indexBuffer, 0, tmp);
+    } else {
+      this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
+    }
+    this.indexCount = indexData.length;
+
+    // --- rest of your setup (no change)
+    this.cameraBuffer = this.device.createBuffer({
+      size: 64,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    this.instanceTargets = [];
+    this.lerpSpeed = 0.05;
+    this.maxInstances = 5;
+    this.instanceCount = 2;
+    this.floatsPerInstance = 16 + 4;
+    for (let x = 0; x < this.maxInstances; x++) {
+      this.instanceTargets.push({
+        index: x,
+        position: [0, 0, 0],
+        currentPosition: [0, 0, 0],
+        scale: [1, 1, 1],
+        currentScale: [1, 1, 1],
+        color: [0.6, 0.8, 1.0, 0.4]
+      });
+    }
+    this.instanceData = new Float32Array(this.instanceCount * this.floatsPerInstance);
+    this.modelBuffer = this.device.createBuffer({
+      size: Math.ceil(this.instanceData.byteLength / 4) * 4,
+      usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
+    });
+    const bindGroupLayout = this.device.createBindGroupLayout({
+      entries: [{
+        binding: 0,
+        visibility: GPUShaderStage.VERTEX,
+        buffer: {}
+      }, {
+        binding: 1,
+        visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
+        buffer: {
+          type: "read-only-storage"
+        }
+      }, {
+        binding: 2,
+        visibility: GPUShaderStage.FRAGMENT,
+        sampler: {}
+      }, {
+        binding: 3,
+        visibility: GPUShaderStage.FRAGMENT,
+        texture: {}
+      }]
+    });
+    this.bindGroup = this.device.createBindGroup({
+      layout: bindGroupLayout,
+      entries: [{
+        binding: 0,
+        resource: {
+          buffer: this.cameraBuffer
+        }
+      }, {
+        binding: 1,
+        resource: {
+          buffer: this.modelBuffer
+        }
+      }, {
+        binding: 2,
+        resource: this.sampler
+      }, {
+        binding: 3,
+        resource: this.texture.createView()
+      }]
+    });
+    const shaderModule = this.device.createShaderModule({
+      code: _geoTex.geoInstancedTexEffect
+    });
+    const pipelineLayout = this.device.createPipelineLayout({
+      bindGroupLayouts: [bindGroupLayout]
+    });
+    this.pipeline = this.device.createRenderPipeline({
+      layout: pipelineLayout,
+      vertex: {
+        module: shaderModule,
+        entryPoint: 'vsMain',
+        buffers: [{
+          arrayStride: 3 * 4,
+          attributes: [{
+            shaderLocation: 0,
+            offset: 0,
+            format: 'float32x3'
+          }]
+        }, {
+          arrayStride: 2 * 4,
+          attributes: [{
+            shaderLocation: 1,
+            offset: 0,
+            format: 'float32x2'
+          }]
+        }]
+      },
+      fragment: {
+        module: shaderModule,
+        entryPoint: 'fsMain',
+        targets: [{
+          format: this.format,
+          blend: {
+            color: {
+              srcFactor: 'src-alpha',
+              dstFactor: 'one-minus-src-alpha',
+              operation: 'add'
+            },
+            alpha: {
+              srcFactor: 'one',
+              dstFactor: 'one-minus-src-alpha',
+              operation: 'add'
+            }
+          }
+        }]
+      },
+      primitive: {
+        topology: 'triangle-list'
+      },
+      depthStencil: {
+        depthWriteEnabled: false,
+        depthCompare: 'less-equal',
+        format: 'depth24plus'
+      }
+    });
+  }
+  updateInstanceData = baseModelMatrix => {
+    if (this.rotateEffect) {
+      this.rotateAngle = (this.rotateAngle ?? 0) + this.rotateEffectSpeed; // accumulate rotation
+      if (this.rotateAngle >= 360) {
+        this.rotateAngle = 0;
+      }
+    }
+    const count = Math.min(this.instanceCount, this.maxInstances);
+    for (let i = 0; i < count; i++) {
+      const t = this.instanceTargets[i];
+      // smooth interpolation of position & scale
+      for (let j = 0; j < 3; j++) {
+        t.currentPosition[j] += (t.position[j] - t.currentPosition[j]) * this.lerpSpeed;
+        t.currentScale[j] += (t.scale[j] - t.currentScale[j]) * this.lerpSpeed;
+      }
+      const local = _wgpuMatrix.mat4.identity();
+      if (this.rotateEffect == true) {
+        _wgpuMatrix.mat4.rotateY(local, this.rotateAngle, local);
+      }
+      _wgpuMatrix.mat4.translate(local, t.currentPosition, local);
+      _wgpuMatrix.mat4.scale(local, t.currentScale, local);
+      const finalMat = _wgpuMatrix.mat4.identity();
+      _wgpuMatrix.mat4.multiply(baseModelMatrix, local, finalMat);
+      const offset = i * this.floatsPerInstance;
+      this.instanceData.set(finalMat, offset);
+      this.instanceData.set(t.color, offset + 16);
+    }
+    // IMPORTANT: upload ONLY the active range of floats to GPU to avoid leftover instances
+    const activeFloatCount = count * this.floatsPerInstance;
+    const activeBytes = activeFloatCount * 4;
+    this.device.queue.writeBuffer(this.modelBuffer, 0, this.instanceData.subarray(0, activeFloatCount));
+  };
+  draw(pass, cameraMatrix) {
+    this.device.queue.writeBuffer(this.cameraBuffer, 0, cameraMatrix);
+    pass.setPipeline(this.pipeline);
+    pass.setBindGroup(0, this.bindGroup);
+    pass.setVertexBuffer(0, this.vertexBuffer);
+    pass.setVertexBuffer(1, this.uvBuffer);
+    pass.setIndexBuffer(this.indexBuffer, 'uint16');
+    pass.drawIndexed(this.indexCount, this.instanceCount);
+  }
+  render(transPass, mesh, viewProjMatrix) {
+    this.draw(transPass, viewProjMatrix);
+  }
+}
+exports.GenGeoTexture2 = GenGeoTexture2;
+
+},{"../../shaders/standalone/geo.tex.js":76,"../geometry-factory.js":45,"wgpu-matrix":31}],41:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -23138,7 +24735,7 @@ class GenGeo {
 }
 exports.GenGeo = GenGeo;
 
-},{"../../shaders/standalone/geo.instanced.js":71,"../geometry-factory.js":41,"wgpu-matrix":28}],38:[function(require,module,exports){
+},{"../../shaders/standalone/geo.instanced.js":75,"../geometry-factory.js":45,"wgpu-matrix":31}],42:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -23301,7 +24898,7 @@ class MANABarEffect {
 }
 exports.MANABarEffect = MANABarEffect;
 
-},{"../../shaders/energy-bars/energy-bar-shader.js":58,"wgpu-matrix":28}],39:[function(require,module,exports){
+},{"../../shaders/energy-bars/energy-bar-shader.js":62,"wgpu-matrix":31}],43:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -23444,7 +25041,7 @@ class PointerEffect {
 }
 exports.PointerEffect = PointerEffect;
 
-},{"../../shaders/standalone/pointer.effect.js":73,"wgpu-matrix":28}],40:[function(require,module,exports){
+},{"../../shaders/standalone/pointer.effect.js":77,"wgpu-matrix":31}],44:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -23987,7 +25584,7 @@ class RPGCamera extends CameraBase {
 }
 exports.RPGCamera = RPGCamera;
 
-},{"./utils":55,"wgpu-matrix":28}],41:[function(require,module,exports){
+},{"./utils":59,"wgpu-matrix":31}],45:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -24009,6 +25606,8 @@ class GeometryFactory {
         return GeometryFactory.star(size);
       case "circle":
         return GeometryFactory.circle(size, segments);
+      case "circle2":
+        return GeometryFactory.circle2(size, segments);
       case "diamond":
         return GeometryFactory.diamond(size);
       case "rock":
@@ -24127,6 +25726,35 @@ class GeometryFactory {
       positions: new Float32Array(p),
       uvs: new Float32Array(uv),
       indices: new Uint16Array(ind)
+    };
+  }
+  static circle2(radius = 1, segments = 64) {
+    const positions = [0, 0, 0]; // center
+    const uvs = [0.5, 0.5]; // center UV
+    const indices = [];
+
+    // create outer vertices
+    for (let i = 0; i <= segments; i++) {
+      const angle = i / segments * Math.PI * 2;
+      const x = Math.cos(angle) * radius;
+      const y = Math.sin(angle) * radius;
+      positions.push(x, y, 0);
+      // map to circular UV range [0,1]
+      uvs.push((x / radius + 1) / 2, (y / radius + 1) / 2);
+      if (i > 0) {
+        // center = 0, connect previous outer vertex with current outer vertex
+        indices.push(0, i, i + 1);
+      }
+    }
+
+    // close the circle (last triangle connects to first outer vertex)
+    // we already pushed (segments + 1) outer vertices, so last index = segments + 1
+    // but first outer vertex is index 1
+    indices.push(0, segments + 1, 1);
+    return {
+      positions: new Float32Array(positions),
+      uvs: new Float32Array(uvs),
+      indices: new Uint16Array(indices)
     };
   }
   static diamond(S = 1) {
@@ -24268,7 +25896,7 @@ class GeometryFactory {
 }
 exports.GeometryFactory = GeometryFactory;
 
-},{}],42:[function(require,module,exports){
+},{}],46:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -24795,7 +26423,7 @@ class MaterialsInstanced {
 }
 exports.default = MaterialsInstanced;
 
-},{"../../shaders/fragment.wgsl":62,"../../shaders/fragment.wgsl.metal":63,"../../shaders/fragment.wgsl.normalmap":64,"../../shaders/fragment.wgsl.pong":65,"../../shaders/fragment.wgsl.power":66,"../../shaders/instanced/fragment.instanced.wgsl":67}],43:[function(require,module,exports){
+},{"../../shaders/fragment.wgsl":66,"../../shaders/fragment.wgsl.metal":67,"../../shaders/fragment.wgsl.normalmap":68,"../../shaders/fragment.wgsl.pong":69,"../../shaders/fragment.wgsl.power":70,"../../shaders/instanced/fragment.instanced.wgsl":71}],47:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -24816,6 +26444,7 @@ var _manaBar = require("../effects/mana-bar");
 var _flame = require("../effects/flame");
 var _flameEmmiter = require("../effects/flame-emmiter");
 var _genTex = require("../effects/gen-tex");
+var _genTex2 = require("../effects/gen-tex2");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 class MEMeshObjInstances extends _materialsInstanced.default {
   constructor(canvas, device, context, o, inputHandler, globalAmbient, _glbFile = null, primitiveIndex = null, skinnedNodeIndex = null) {
@@ -24841,6 +26470,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
     this.video = null;
     this.FINISH_VIDIO_INIT = false;
     this.globalAmbient = [...globalAmbient];
+    this.blendInstanced = false;
     if (typeof o.material.useTextureFromGlb === 'undefined' || typeof o.material.useTextureFromGlb !== "boolean") {
       o.material.useTextureFromGlb = false;
     }
@@ -25467,6 +27097,9 @@ class MEMeshObjInstances extends _materialsInstanced.default {
         if (typeof this.pointerEffect.circlePlaneTex !== 'undefined' && this.pointerEffect.circlePlaneTex == true) {
           this.effects.circlePlaneTex = new _genTex.GenGeoTexture(device, pf, 'ring', this.pointerEffect.circlePlaneTexPath);
         }
+        if (typeof this.pointerEffect.circle !== 'undefined' && this.pointerEffect.circlePlaneTexPath !== 'undefined') {
+          this.effects.circle = new _genTex2.GenGeoTexture2(device, pf, 'circle2', this.pointerEffect.circlePlaneTexPath);
+        }
       }
 
       // Rotates the camera around the origin based on time.
@@ -25604,7 +27237,8 @@ class MEMeshObjInstances extends _materialsInstanced.default {
         format: 'depth24plus'
       }
     });
-    console.log('✅Pipelines done');
+
+    // console.log('✅Pipelines done');
   };
   updateModelUniformBuffer = () => {
     // if(this.done == false) return;
@@ -25716,7 +27350,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
     pass.drawIndexed(this.indexCount, 1, 0, 0, 0);
 
     // pipelineBlended
-    pass.setPipeline(this.pipelineBlended);
+    if (this.blendInstanced == true) pass.setPipeline(this.pipelineBlended);else pass.setPipeline(this.pipeline);
     for (var ins = 1; ins < this.instanceCount; ins++) {
       pass.drawIndexed(this.indexCount, 1, 0, 0, ins);
     }
@@ -25778,7 +27412,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
 }
 exports.default = MEMeshObjInstances;
 
-},{"../../shaders/fragment.video.wgsl":61,"../../shaders/instanced/vertex.instanced.wgsl":68,"../effects/energy-bar":33,"../effects/flame":35,"../effects/flame-emmiter":34,"../effects/gen":37,"../effects/gen-tex":36,"../effects/mana-bar":38,"../effects/pointerEffect":39,"../loaders/bvh-instaced":46,"../matrix-class":50,"../utils":55,"./materials-instanced":42,"wgpu-matrix":28}],44:[function(require,module,exports){
+},{"../../shaders/fragment.video.wgsl":65,"../../shaders/instanced/vertex.instanced.wgsl":72,"../effects/energy-bar":36,"../effects/flame":38,"../effects/flame-emmiter":37,"../effects/gen":41,"../effects/gen-tex":39,"../effects/gen-tex2":40,"../effects/mana-bar":42,"../effects/pointerEffect":43,"../loaders/bvh-instaced":50,"../matrix-class":54,"../utils":59,"./materials-instanced":46,"wgpu-matrix":31}],48:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -26064,7 +27698,7 @@ class SpotLight {
 }
 exports.SpotLight = SpotLight;
 
-},{"../shaders/instanced/vertexShadow.instanced.wgsl":69,"../shaders/vertexShadow.wgsl":76,"./behavior":30,"wgpu-matrix":28}],45:[function(require,module,exports){
+},{"../shaders/instanced/vertexShadow.instanced.wgsl":73,"../shaders/vertexShadow.wgsl":80,"./behavior":33,"wgpu-matrix":31}],49:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -26532,7 +28166,7 @@ function play(nameAni) {
   this.playing = true;
 }
 
-},{}],46:[function(require,module,exports){
+},{}],50:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -27073,7 +28707,7 @@ class BVHPlayerInstances extends _meshObjInstances.default {
 }
 exports.BVHPlayerInstances = BVHPlayerInstances;
 
-},{"../instanced/mesh-obj-instances.js":43,"./webgpu-gltf.js":48,"wgpu-matrix":28}],47:[function(require,module,exports){
+},{"../instanced/mesh-obj-instances.js":47,"./webgpu-gltf.js":52,"wgpu-matrix":31}],51:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -27583,7 +29217,7 @@ class BVHPlayer extends _meshObj.default {
 }
 exports.BVHPlayer = BVHPlayer;
 
-},{"../mesh-obj":51,"./webgpu-gltf.js":48,"bvh-loader":14,"wgpu-matrix":28}],48:[function(require,module,exports){
+},{"../mesh-obj":55,"./webgpu-gltf.js":52,"bvh-loader":17,"wgpu-matrix":31}],52:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -28164,7 +29798,7 @@ async function uploadGLBModel(buffer, device) {
   return R;
 }
 
-},{"gl-matrix":17}],49:[function(require,module,exports){
+},{"gl-matrix":20}],53:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -28690,7 +30324,7 @@ class Materials {
 }
 exports.default = Materials;
 
-},{"../shaders/fragment.wgsl":62,"../shaders/fragment.wgsl.metal":63,"../shaders/fragment.wgsl.normalmap":64,"../shaders/fragment.wgsl.pong":65,"../shaders/fragment.wgsl.power":66}],50:[function(require,module,exports){
+},{"../shaders/fragment.wgsl":66,"../shaders/fragment.wgsl.metal":67,"../shaders/fragment.wgsl.normalmap":68,"../shaders/fragment.wgsl.pong":69,"../shaders/fragment.wgsl.power":70}],54:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -28708,9 +30342,10 @@ var _utils = require("./utils");
 class Position {
   constructor(x, y, z) {
     // console.log('TEST TYTPOF ', x)
-    // Not in use for nwo this is from matrix-engine project [nameUniq]
-    this.remoteName = null; // not in use
+    this.remoteName = null;
     this.netObject = null;
+    this.toRemote = [];
+    this.teams = [];
     this.netTolerance = 1;
     this.netTolerance__ = 0;
     if (typeof x == 'undefined') x = 0;
@@ -28779,15 +30414,47 @@ class Position {
         this.z += this.velZ;
         if (this.netObject != null) {
           if (this.netTolerance__ > this.netTolerance) {
-            app.net.send({
-              remoteName: this.remoteName,
-              sceneName: this.netObject,
-              netPos: {
-                x: this.x,
-                y: this.y,
-                z: this.z
-              }
-            });
+            if (this.teams.length == 0) {
+              app.net.send({
+                toRemote: this.toRemote,
+                // default null
+                remoteName: this.remoteName,
+                // default null
+                sceneName: this.netObject,
+                netPos: {
+                  x: this.x,
+                  y: this.y,
+                  z: this.z
+                }
+              });
+            } else {
+              // logic is only for two team - index 0 is local !!!
+              if (this.teams[0].length > 0) app.net.send({
+                toRemote: this.teams[0],
+                // default null remote conns
+                sceneName: this.netObject,
+                // origin scene name to receive
+                netPos: {
+                  x: this.x,
+                  y: this.y,
+                  z: this.z
+                }
+              });
+              // remove if (this.teams[1].length > 0)  after alll this is only for CASE OF SUM PLAYER 3 FOR TEST ONLY
+              if (this.teams[1].length > 0) app.net.send({
+                toRemote: this.teams[1],
+                // default null remote conns
+                remoteName: this.remoteName,
+                // to enemy players
+                sceneName: this.netObject,
+                // now not important
+                netPos: {
+                  x: this.x,
+                  y: this.y,
+                  z: this.z
+                }
+              });
+            }
             this.netTolerance__ = 0;
           } else {
             this.netTolerance__++;
@@ -28801,15 +30468,50 @@ class Position {
         this.onTargetPositionReach();
         if (this.netObject != null) {
           if (this.netTolerance__ > this.netTolerance) {
-            app.net.send({
-              remoteName: this.remoteName,
-              sceneName: this.netObject,
-              netPos: {
-                x: this.x,
-                y: this.y,
-                z: this.z
-              }
-            });
+            // 
+            if (this.teams.length == 0) {
+              app.net.send({
+                toRemote: this.toRemote,
+                // default null
+                remoteName: this.remoteName,
+                // default null
+                sceneName: this.netObject,
+                netPos: {
+                  x: this.x,
+                  y: this.y,
+                  z: this.z
+                }
+              });
+            } else {
+              // logic is only for two team - index 0 is local !!!
+              if (this.teams[0].length > 0) app.net.send({
+                // team: this.teams[0],
+                toRemote: this.teams[0],
+                // default null remote conns
+                // remoteName: this.remoteName,
+                sceneName: this.netObject,
+                // origin scene name to receive
+                netPos: {
+                  x: this.x,
+                  y: this.y,
+                  z: this.z
+                }
+              });
+              if (this.teams[1].length > 0) app.net.send({
+                // team: this.teams[1],
+                toRemote: this.teams[1],
+                // default null remote conns
+                remoteName: this.remoteName,
+                // to enemy players
+                sceneName: this.netObject,
+                // now not important
+                netPos: {
+                  x: this.x,
+                  y: this.y,
+                  z: this.z
+                }
+              });
+            }
             this.netTolerance__ = 0;
           } else {
             this.netTolerance__++;
@@ -28954,7 +30656,7 @@ class Rotation {
 }
 exports.Rotation = Rotation;
 
-},{"./utils":55}],51:[function(require,module,exports){
+},{"./utils":59}],55:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -29587,7 +31289,7 @@ class MEMeshObj extends _materials.default {
       },
       primitive: this.primitive
     });
-    console.log('✅Set Pipeline done');
+    // console.log('✅Set Pipeline done');
   };
   updateModelUniformBuffer = () => {
     if (this.done == false) return;
@@ -29749,7 +31451,7 @@ class MEMeshObj extends _materials.default {
 }
 exports.default = MEMeshObj;
 
-},{"../shaders/fragment.video.wgsl":61,"../shaders/vertex.wgsl":74,"../shaders/vertex.wgsl.normalmap":75,"./effects/pointerEffect":39,"./materials":49,"./matrix-class":50,"./utils":55,"wgpu-matrix":28}],52:[function(require,module,exports){
+},{"../shaders/fragment.video.wgsl":65,"../shaders/vertex.wgsl":78,"../shaders/vertex.wgsl.normalmap":79,"./effects/pointerEffect":43,"./materials":53,"./matrix-class":54,"./utils":59,"wgpu-matrix":31}],56:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -29814,7 +31516,7 @@ function joinSession(options) {
     window.OV = OV;
     exports.session = session = OV.initSession();
     session.on('connectionCreated', event => {
-      console.log(`connectionCreated ${event.connection.connectionId}`);
+      // console.log(`connectionCreated ${event.connection.connectionId}`)
       dispatchEvent(new CustomEvent('onConnectionCreated', {
         detail: event
       }));
@@ -29872,7 +31574,6 @@ function joinSession(options) {
         });
       });
       session.on('streamDestroyed', event => {
-        // alert(event);
         pushEvent(event);
       });
     } else {
@@ -30230,7 +31931,7 @@ function clearEventsTextarea() {
   exports.events = events = '';
 }
 
-},{}],53:[function(require,module,exports){
+},{}],57:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30284,7 +31985,8 @@ class MatrixStream {
       this.sessionName = (0, _matrixStream.byId)("sessionName");
       console.log('[CHANNEL]' + this.sessionName.value);
       this.attachEvents();
-      console.log(`%c MatrixStream constructed.`, _matrixStream.BIGLOG);
+      this.closeSession = _matrixStream.closeSession;
+      console.log(`%cMatrixStream constructed.`, _matrixStream.BIGLOG);
     });
   }
   attachEvents() {
@@ -30301,16 +32003,15 @@ class MatrixStream {
         console.error("Erro signal => ", error);
       });
     };
-
-    // this is duplicate for two cases with camera or only data
-    // this only data case - send system emit with session name channel
     this.send = netArg => {
+      const to = netArg.toRemote ? netArg.toRemote : [];
+      netArg.toRemote = null;
       this.session.signal({
         data: JSON.stringify(netArg),
-        to: [],
+        to: to,
         type: _matrixStream.netConfig.sessionName
       }).then(() => {
-        console.log('.');
+        // console.log('netArg.toRemote:' , netArg.toRemote);
       }).catch(error => {
         console.error("Erro signal => ", error);
       });
@@ -30346,8 +32047,7 @@ class MatrixStream {
         }
       });
       this.session.on(`signal:${_matrixStream.netConfig.sessionName}-data`, e => {
-        // console.log("SIGBAL DATA RECEIVE=>", e);
-        console.log("SIGBAL DATA RECEIVE LOW LEVEL TEST OWN MESG =>", e);
+        // console.log("SIGBAL DATA RECEIVE LOW LEVEL TEST OWN MESG =>", e);
         if (this.session.connection.connectionId == e.from.connectionId) {
           dispatchEvent(new CustomEvent('self-msg-data', {
             detail: e
@@ -30370,12 +32070,12 @@ class MatrixStream {
     // this.buttonCloseSession.addEventListener('click', closeSession);
 
     this.buttonLeaveSession.addEventListener('click', () => {
-      console.log(`%c LEAVE SESSION`, _matrixStream.REDLOG);
+      console.log(`%cLEAVE SESSION`, _matrixStream.REDLOG);
       (0, _matrixStream.removeUser)();
       (0, _matrixStream.leaveSession)();
     });
     (0, _matrixStream.byId)('netHeaderTitle').addEventListener('click', this.domManipulation.hideNetPanel);
-    setTimeout(() => dispatchEvent(new CustomEvent('net-ready', {})), 100);
+    setTimeout(() => dispatchEvent(new CustomEvent('net-ready', {})), 2500);
   }
   multiPlayer = {
     root: this,
@@ -30383,13 +32083,8 @@ class MatrixStream {
     update(e) {
       e.data = JSON.parse(e.data);
       try {
-        // console.log('REMOTE UPDATE::::', e);
         if (e.data.netPos) {
-          if (e.data.remoteName != null) {
-            app.getSceneObjectByName(e.data.remoteName).position.setPosition(e.data.netPos.x, e.data.netPos.y, e.data.netPos.z);
-          } else {
-            app.getSceneObjectByName(e.data.sceneName).position.setPosition(e.data.netPos.x, e.data.netPos.y, e.data.netPos.z);
-          }
+          app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).position.setPosition(e.data.netPos.x, e.data.netPos.y, e.data.netPos.z);
         } else if (e.data.netRotY || e.data.netRotY == 0) {
           app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).rotation.y = e.data.netRotY;
         } else if (e.data.netRotX) {
@@ -30400,7 +32095,7 @@ class MatrixStream {
           app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).glb.animationIndex = e.data.animationIndex;
         }
       } catch (err) {
-        console.info('mp-update-err:', err);
+        console.info('mmo-err:', err);
       }
     },
     leaveGamePlay() {}
@@ -30445,7 +32140,7 @@ let activateNet2 = sessionOption => {
 };
 exports.activateNet2 = activateNet2;
 
-},{"../utils":55,"./matrix-stream":52}],54:[function(require,module,exports){
+},{"../utils":59,"./matrix-stream":56}],58:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30634,13 +32329,13 @@ function addRaycastsListener(canvasId = "canvas1", eventName = 'click') {
   });
 }
 
-},{"wgpu-matrix":28}],55:[function(require,module,exports){
+},{"wgpu-matrix":31}],59:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.LS = exports.LOG_WARN = exports.LOG_MATRIX = exports.LOG_INFO = exports.LOG_FUNNY_SMALL = exports.LOG_FUNNY = void 0;
+exports.LS = exports.LOG_WARN = exports.LOG_MATRIX = exports.LOG_INFO = exports.LOG_FUNNY_SMALL = exports.LOG_FUNNY = exports.FullscreenManagerElement = exports.FullscreenManager = void 0;
 exports.ORBIT = ORBIT;
 exports.ORBIT_FROM_ARRAY = ORBIT_FROM_ARRAY;
 exports.OSCILLATOR = OSCILLATOR;
@@ -31602,8 +33297,57 @@ function isEven(n) {
 function isOdd(n) {
   return n % 2 !== 0;
 }
+class FullscreenManagerElement {
+  constructor(targetElement = document.documentElement) {
+    this.target = targetElement;
+  }
+  isFullscreen() {
+    return !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement);
+  }
+  request() {
+    const el = this.target;
+    return el.requestFullscreen?.() || el.webkitRequestFullscreen?.() || el.mozRequestFullScreen?.() || el.msRequestFullscreen?.();
+  }
+  exit() {
+    return document.exitFullscreen?.() || document.webkitExitFullscreen?.() || document.mozCancelFullScreen?.() || document.msExitFullscreen?.();
+  }
+  toggle() {
+    if (this.isFullscreen()) return this.exit();
+    return this.request();
+  }
+  onChange(callback) {
+    ["fullscreenchange", "webkitfullscreenchange", "mozfullscreenchange", "MSFullscreenChange"].forEach(evt => document.addEventListener(evt, () => {
+      callback(this.isFullscreen(), this.target);
+    }));
+  }
+}
+exports.FullscreenManagerElement = FullscreenManagerElement;
+class FullscreenManager {
+  constructor() {
+    this.target = document.documentElement; // fullscreen whole page / window
+  }
+  isFullscreen() {
+    return !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement);
+  }
+  request() {
+    const el = this.target;
+    return el.requestFullscreen?.() || el.webkitRequestFullscreen?.() || el.mozRequestFullScreen?.() || el.msRequestFullscreen?.();
+  }
+  exit() {
+    return document.exitFullscreen?.() || document.webkitExitFullscreen?.() || document.mozCancelFullScreen?.() || document.msExitFullscreen?.();
+  }
+  toggle() {
+    return this.isFullscreen() ? this.exit() : this.request();
+  }
+  onChange(callback) {
+    ["fullscreenchange", "webkitfullscreenchange", "mozfullscreenchange", "MSFullscreenChange"].forEach(evt => document.addEventListener(evt, () => {
+      callback(this.isFullscreen());
+    }));
+  }
+}
+exports.FullscreenManager = FullscreenManager;
 
-},{}],56:[function(require,module,exports){
+},{}],60:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -31625,6 +33369,7 @@ class MultiLang {
     });
   };
   loadMultilang = async function (lang = 'en') {
+    if (lang == 'rs') lang = 'sr'; // exc
     lang = 'res/multilang/' + lang + '.json';
     console.info(`%cMultilang: ${lang}`, _utils.LOG_MATRIX);
     try {
@@ -31643,7 +33388,7 @@ class MultiLang {
 }
 exports.MultiLang = MultiLang;
 
-},{"../engine/utils":55}],57:[function(require,module,exports){
+},{"../engine/utils":59}],61:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -31927,7 +33672,7 @@ class MatrixAmmo {
 }
 exports.default = MatrixAmmo;
 
-},{"../engine/utils":55}],58:[function(require,module,exports){
+},{"../engine/utils":59}],62:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -31973,7 +33718,7 @@ fn fsMain(in : VertexOutput) -> @location(0) vec4f {
 }
 `;
 
-},{}],59:[function(require,module,exports){
+},{}],63:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -32099,7 +33844,7 @@ fn fsMain(in : VSOut) -> @location(0) vec4<f32> {
 }
 `;
 
-},{}],60:[function(require,module,exports){
+},{}],64:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -32187,7 +33932,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
 }
 `;
 
-},{}],61:[function(require,module,exports){
+},{}],65:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -32277,7 +34022,7 @@ fn main(input : FragmentInput) -> @location(0) vec4f {
 }
 `;
 
-},{}],62:[function(require,module,exports){
+},{}],66:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -32508,7 +34253,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, 1.0);
 }`;
 
-},{}],63:[function(require,module,exports){
+},{}],67:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -32686,7 +34431,7 @@ return vec4f(color, 1.0);
 // let radiance = spotlights[0].color * 10.0; // test high intensity
 // Lo += materialData.baseColor * radiance * NdotL;
 
-},{}],64:[function(require,module,exports){
+},{}],68:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -32931,7 +34676,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, 1.0);
 }`;
 
-},{}],65:[function(require,module,exports){
+},{}],69:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -33151,7 +34896,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, 1.0);
 }`;
 
-},{}],66:[function(require,module,exports){
+},{}],70:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -33319,7 +35064,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 // let radiance = spotlights[0].color * 10.0; // test high intensity
 // Lo += materialData.baseColor * radiance * NdotL;
 
-},{}],67:[function(require,module,exports){
+},{}],71:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -33555,7 +35300,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, alpha);
 }`;
 
-},{}],68:[function(require,module,exports){
+},{}],72:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -33659,7 +35404,7 @@ fn main(
   return output;
 }`;
 
-},{}],69:[function(require,module,exports){
+},{}],73:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -33696,7 +35441,7 @@ fn main(
 }
 `;
 
-},{}],70:[function(require,module,exports){
+},{}],74:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -33754,7 +35499,7 @@ fn fragmentMain(input: VertexOutput) -> @location(0) vec4f {
   return vec4f(textureColor.rgb * lightColor, textureColor.a);
 }`;
 
-},{}],71:[function(require,module,exports){
+},{}],75:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -33812,7 +35557,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
 }
 `;
 
-},{}],72:[function(require,module,exports){
+},{}],76:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -33868,7 +35613,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
   let uvScale = vec2<f32>(1.3, 1.3);   // < 1.0 = zoom out (more texture visible)
   let uvOffset = vec2<f32>(0.01, 0.01); // move the texture slightly
   
-  let adjustedUV = input.v_uv * uvScale + uvOffset;
+  let adjustedUV = input.v_uv; // * uvScale + uvOffset; // make it like ring !
 
   let texColor = textureSample(myTexture, mySampler, adjustedUV);
 
@@ -33899,7 +35644,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
 }
 `;
 
-},{}],73:[function(require,module,exports){
+},{}],77:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -33957,7 +35702,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
   return vec4<f32>(color, 1.0);
 }`;
 
-},{}],74:[function(require,module,exports){
+},{}],78:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -34043,7 +35788,7 @@ fn main(
   return output;
 }`;
 
-},{}],75:[function(require,module,exports){
+},{}],79:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -34154,7 +35899,7 @@ fn main(
   return output;
 }`;
 
-},{}],76:[function(require,module,exports){
+},{}],80:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -34182,7 +35927,7 @@ fn main(
 }
 `;
 
-},{}],77:[function(require,module,exports){
+},{}],81:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -34252,7 +35997,7 @@ class MatrixSounds {
 }
 exports.MatrixSounds = MatrixSounds;
 
-},{}],78:[function(require,module,exports){
+},{}],82:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -34293,7 +36038,7 @@ class MatrixEngineWGPU {
     depthLoadOp: 'clear',
     depthStoreOp: 'store'
   };
-  matrixAmmo = new _matrixAmmo.default();
+  // matrixAmmo = new MatrixAmmo();
   matrixSounds = new _sounds.MatrixSounds();
   constructor(options, callback) {
     if (typeof options == 'undefined' || typeof options == "function") {
@@ -34330,6 +36075,9 @@ class MatrixEngineWGPU {
         type: 'WASD',
         responseCoef: 2000
       };
+    }
+    if (typeof options.dontUsePhysics == 'undefined') {
+      this.matrixAmmo = new _matrixAmmo.default();
     }
     this.options = options;
     this.mainCameraParams = options.mainCameraParams;
@@ -35256,4 +37004,4 @@ class MatrixEngineWGPU {
 }
 exports.default = MatrixEngineWGPU;
 
-},{"./engine/ball.js":29,"./engine/cube.js":32,"./engine/engine.js":40,"./engine/lights.js":44,"./engine/loader-obj.js":45,"./engine/loaders/bvh-instaced.js":46,"./engine/loaders/bvh.js":47,"./engine/mesh-obj.js":51,"./engine/utils.js":55,"./multilang/lang.js":56,"./physics/matrix-ammo.js":57,"./sounds/sounds.js":77,"wgpu-matrix":28}]},{},[6]);
+},{"./engine/ball.js":32,"./engine/cube.js":35,"./engine/engine.js":44,"./engine/lights.js":48,"./engine/loader-obj.js":49,"./engine/loaders/bvh-instaced.js":50,"./engine/loaders/bvh.js":51,"./engine/mesh-obj.js":55,"./engine/utils.js":59,"./multilang/lang.js":60,"./physics/matrix-ammo.js":61,"./sounds/sounds.js":81,"wgpu-matrix":31}]},{},[6]);

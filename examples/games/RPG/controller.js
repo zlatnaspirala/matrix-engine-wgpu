@@ -74,8 +74,12 @@ export class Controller {
         }));
       } else {
         // for now
-        console.log("navigate friendly_creeps creep from controller :", e.detail.hitObject.name);
-        dispatchEvent(new CustomEvent('navigate-friendly_creeps', {detail: 'test'}))
+
+        if (app.net.virtualEmiter != null) {
+          console.log("only emiter - navigate friendly_creeps creep from controller :", e.detail.hitObject.name);
+          dispatchEvent(new CustomEvent('navigate-friendly_creeps', {detail: 'test'}))
+        }
+
         // must be friendly objs
         return;
       }
@@ -123,6 +127,10 @@ export class Controller {
         followPath(this.heroe_bodies[x], path, this.core);
       }
       // followPath(this.heroe_bodies[0], path, this.core);
+    });
+
+    document.body.addEventListener("contextmenu", (e) => {
+      e.preventDefault();
     });
 
     this.canvas.addEventListener("contextmenu", (e) => {

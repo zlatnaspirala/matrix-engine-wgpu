@@ -1,8 +1,10 @@
 import {uploadGLBModel} from "../../../src/engine/loaders/webgpu-gltf.js";
 import {MatrixStream} from "../../../src/engine/networking/net.js";
-import {byId, isOdd, LS, SS, mb, typeText} from "../../../src/engine/utils.js";
+import {byId, isOdd, LS, SS, mb, typeText, FullscreenManager} from "../../../src/engine/utils.js";
 import MatrixEngineWGPU from "../../../src/world.js";
 import {HERO_ARCHETYPES} from "./hero.js";
+import {AnimatedCursor} from "../../../src/engine/plugin/animated-cursor/animated-cursor.js";
+import {fetchAll, fetchInfo} from "../../../src/engine/networking/matrix-stream.js";
 
 /**
  * @name forestOfHollowBloodStartSceen
@@ -20,7 +22,7 @@ import {HERO_ARCHETYPES} from "./hero.js";
  * Redistribution of raw assets is not permitted.”
  * 
  * @Note 
- * This is startup main instance for menu screen adn for the game.
+ * This is startup main instance for menu screen and for the game.
  * All @zlatnaspirala software use networking based
  * on openvidu/kurento media server(webRTC).
  * Node.js used for middleware.
@@ -34,6 +36,7 @@ import {HERO_ARCHETYPES} from "./hero.js";
  * For now. Next better varian can be timer solution.
  **/
 let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
+  dontUsePhysics: true,
   useSingleRenderPass: true,
   canvasSize: 'fullscreen', // {w: window.visualViewport.width, h: window.visualViewport.height }
   mainCameraParams: {
@@ -42,6 +45,12 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
   },
   clearColor: {r: 0, b: 0.1, g: 0.1, a: 1}
 }, (forestOfHollowBloodStartSceen) => {
+
+  forestOfHollowBloodStartSceen.FS = new FullscreenManager();
+
+  forestOfHollowBloodStartSceen.gamePlayStatus = null;
+  // in future replace with server event solution
+  forestOfHollowBloodStartSceen.gamePlayStatusTimer = null;
 
   forestOfHollowBloodStartSceen.heroByBody = [];
   forestOfHollowBloodStartSceen.selectedHero = 0;
@@ -74,7 +83,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
     } else if(selectHeroIndex == 1) {
       name = 'slayzer';
     } else if(selectHeroIndex == 2) {
-      name = 'slayzer';
+      name = 'steelborn';
     } else if(selectHeroIndex == 3) {
       name = 'warrok';
     } else if(selectHeroIndex == 4) {
@@ -84,19 +93,17 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
   }
 
   function checkHeroStatus() {
-    // app.net.session.remoteConnections.forEach((remoteConn) => {
-    //   console.log(" test remote conn ", remoteConn.connectionId)
-    // });
-    let isUsed = false;
-    document.querySelectorAll('[data-hero-index]').forEach((elem) => {
-      let index = parseInt(elem.getAttribute('data-hero-index'));
-      console.log(app.selectedHero, ' app.selectedHero VS Index:', index);
-      if(index == app.selectedHero) {
-        isUsed = true;
-        console.log('Hero element: Index: TRUE !!!!!', index);
-      }
+    const indices = [];
+
+    document.querySelectorAll('[data-hero-index]').forEach(elem => {
+      const index = parseInt(elem.getAttribute('data-hero-index'));
+      indices.push(index);
     });
-    return isUsed;
+
+    // check if any value appears more than once
+    const hasDuplicate = indices.some((val, i) => indices.indexOf(val) !== i);
+
+    return hasDuplicate;
   }
 
   function determinateTeam() {
@@ -115,10 +122,6 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
 
   function determinateSelection() {
 
-    if(checkHeroStatus() == true) {
-      console.log("hero used keep graphics no send ");
-      return;
-    }
 
     if(app.net.session.connection != null) {
       console.log("Test team data moment", byId(`waiting-${app.net.session.connection.connectionId}`).getAttribute('data-hero-team'))
@@ -150,10 +153,19 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
     // Only last non selected hero player will get 
     // first free hero in selection action next/back.
     // For now.
+
+    if(checkHeroStatus() == true) {
+      console.log("hero used keep graphics no send ");
+      return;
+    }
+
+
     if(isAllSelected() == true) {
       forestOfHollowBloodStartSceen.gotoGamePlay();
     }
   }
+
+  forestOfHollowBloodStartSceen.determinateSelection = determinateSelection;
 
   function isAllSelected() {
     let sumParty = document.querySelectorAll('[id*="waiting-"]');
@@ -184,15 +196,18 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
         path: heros[app.selectedHero].path,
         archetypes: [heros[app.selectedHero].type],
         team: byId(`waiting-${app.net.session.connection.connectionId}`).getAttribute('data-hero-team'),
-        data: Date.now()
+        data: Date.now(),
+        numOfPlayers: forestOfHollowBloodStartSceen.MINIMUM_PLAYERS
       })
+
       SS.set('player', {
         mesh: heros[app.selectedHero].meshName,
         hero: heros[app.selectedHero].name,
         path: heros[app.selectedHero].path,
         archetypes: [heros[app.selectedHero].type],
         team: byId(`waiting-${app.net.session.connection.connectionId}`).getAttribute('data-hero-team'),
-        data: Date.now()
+        data: Date.now(),
+        numOfPlayers: forestOfHollowBloodStartSceen.MINIMUM_PLAYERS
       })
 
       if(typeof preventEmit === 'undefined') forestOfHollowBloodStartSceen.net.sendOnlyData({
@@ -205,19 +220,28 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
 
   addEventListener('check-gameplay-channel', (e) => {
     let info = e.detail;
-    console.log('check-gameplay-channel ', info)
     if(info.status) {
-      console.log('check-gameplay-channel ', info.status)
-      console.log('check-gameplay-channel [url] ', info.url)
+      // console.log('check-gameplay-channel ', info.status)
       byId("onlineUsers").innerHTML = `GamePlay:Free`;
+      forestOfHollowBloodStartSceen.gamePlayStatus = "free";
+      byId('startBtnText').innerHTML = app.label.get.play;
+      byId("startBtnText").style.color = 'rgba(0, 0, 0, 0)';
+      clearInterval(forestOfHollowBloodStartSceen.gamePlayStatusTimer);
+      forestOfHollowBloodStartSceen.gamePlayStatusTimer = null;
     } else {
       let info = JSON.parse(e.detail);
-      console.log('check-gameplay-channel ', info.connections.numberOfElements)
-      byId("onlineUsers").innerHTML = `GamePlay:${info.connections.numberOfElements}`;
+      // console.log('check-gameplay-channel ', info.connections.numberOfElements)
+      byId("onlineUsers").innerHTML = `${app.label.get.alreadyingame}:${info.connections.numberOfElements}`;
+      forestOfHollowBloodStartSceen.gamePlayStatus = "used";
+      byId('startBtnText').innerHTML = `${app.label.get.gameplaychannel}:${app.label.get.used}`;
+      byId("startBtnText").style.color = 'rgb(255 53 53)';
+      forestOfHollowBloodStartSceen.gamePlayStatusTimer = setInterval(() => {
+        app.net.fetchInfo('forestOfHollowBlood-free-for-all');
+      }, 30000);
     }
   })
 
-  forestOfHollowBloodStartSceen.MINIMUM_PLAYERS = 2;
+  forestOfHollowBloodStartSceen.MINIMUM_PLAYERS = 3;
 
   forestOfHollowBloodStartSceen.setWaitingList = () => {
     // access net doms who comes with broadcaster2.html
@@ -276,9 +300,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
   });
 
   addEventListener('connectionDestroyed', (e) => {
-    if(byId(e.detail.connectionId)) {
-      byId(`waiting-${e.detail.connectionId}`).remove();
-    }
+    byId(`waiting-${e.detail.connectionId}`).remove();
   });
 
   addEventListener("onConnectionCreated", (e) => {
@@ -286,6 +308,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
     let newPlayer = document.createElement('div');
     if(app.net.session.connection.connectionId == e.detail.connection.connectionId) {
       console.log('newconn : created [LOCAL] determinate team');
+      document.title = app.net.session.connection.connectionId;
       let team = determinateTeam();
       newPlayer.setAttribute('data-hero-team', team);
       newPlayer.innerHTML = `<div id="${e.detail.connection.connectionId}-title" >Player:${e.detail.connection.connectionId} Team:${team}</div>`;
@@ -303,10 +326,8 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
             selectHeroIndex: app.selectedHero,
             team: testDom
           });
+          app.net.sendOnlyData({type: "team-notify", team: team})
         }
-        //----------
-
-        app.net.sendOnlyData({type: "team-notify", team: team})
       }, 2000);
     } else {
       newPlayer.innerHTML = `<div id="${e.detail.connection.connectionId}-title" >Player:${e.detail.connection.connectionId}</div>`;
@@ -361,15 +382,16 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
     }
   })
 
-  addEventListener('AmmoReady', async () => {
+  // addEventListener('AmmoReady', async () => {
     app.matrixSounds.play('music');
     heros = [
       {type: "Warrior", name: 'MariaSword', path: "res/meshes/glb/woman1.glb", desc: forestOfHollowBloodStartSceen.label.get.mariasword},
-      {type: "Warrior", name: 'Slayzer', path: "res/meshes/glb/monster.glb", desc: forestOfHollowBloodStartSceen.label.get.slayzer},
+      {type: "Ranger", name: 'Slayzer', path: "res/meshes/glb/monster.glb", desc: forestOfHollowBloodStartSceen.label.get.slayzer},
       {type: "Tank", name: 'Steelborn', path: "res/meshes/glb/bot.glb", desc: forestOfHollowBloodStartSceen.label.get.steelborn},
       {type: "Mage", name: 'Warrok', path: "res/meshes/glb/warrok.glb", desc: forestOfHollowBloodStartSceen.label.get.warrok},
       {type: "Necromancer", name: 'Skeletonz', path: "res/meshes/glb/skeletonz.glb", desc: forestOfHollowBloodStartSceen.label.get.skeletonz},
-      {type: "Assassin", name: 'Erika', path: "res/meshes/glb/erika.glb", desc: forestOfHollowBloodStartSceen.label.get.skeletonz},
+      {type: "Assassin", name: 'Erika', path: "res/meshes/glb/erika.glb", desc: forestOfHollowBloodStartSceen.label.get.erika},
+      {type: "Support", name: 'Arissa', path: "res/meshes/glb/arissa.glb", desc: forestOfHollowBloodStartSceen.label.get.arissa},
     ];
 
     forestOfHollowBloodStartSceen.heros = heros;
@@ -393,7 +415,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
             flameEmitter: true,
             circlePlane: true,
             circlePlaneTex: true,
-            circlePlaneTexPath: './res/textures/rpg/symbols/star.png',
+            circlePlaneTexPath: './res/textures/star1.png',
           }
         }, null, glbFile01);
       }
@@ -430,24 +452,34 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
               array[i].effects.flameEmitter.smoothFlickeringScale = 0.005;
             })
           }
-          if(x == 4) {
+          if(x == 6) {
             hero0.forEach((p, i, array) => {
-              array[i].globalAmbient = [6, 6, 8];
+              array[i].globalAmbient = [21, 11, 11];
             })
           }
         }
         app.lightContainer[0].position[2] = 10;
         app.lightContainer[0].position[1] = 50;
         app.lightContainer[0].intensity = 1.4;
-      }, 3000);
+      }, 4000);
     }
     loadHeros();
-    createHUDMEnu();
-  })
+    createHUDMenu();
+  // })
   forestOfHollowBloodStartSceen.addLight();
 
-  function createHUDMEnu() {
-    document.body.style.cursor = "url('./res/icons/default.png') 0 0, auto";
+  function createHUDMenu() {
+
+    forestOfHollowBloodStartSceen.animatedCursor = new AnimatedCursor({
+      path: "./res/icons/seq1/",
+      frameCount: 7,
+      speed: 80,
+      loop: true
+    })
+
+    forestOfHollowBloodStartSceen.animatedCursor.start();
+    // document.body.style.cursor = "url('./res/icons/default.png') 0 0, auto";
+
     document.addEventListener("contextmenu", event => event.preventDefault());
     byId('canvas1').style.pointerEvents = 'none';
 
@@ -486,7 +518,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
     nextBtn.innerHTML = `
       <div class="button-outer">
         <div class="button-inner">
-          <span id='nextBtn'>NEXT</span>
+          <span id='nextBtn'>${app.label.get.next}</span>
         </div>
       </div>
     `;
@@ -499,7 +531,9 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
       app.selectedHero++;
       console.log('app.selectedHero::: ', app.selectedHero)
       // Fix on remote 
-      if(app.net.session) {determinateSelection()}
+      if(app.net.session) {
+        determinateSelection();
+      }
 
       app.heroByBody.forEach((sceneObj, indexRoot) => {
         sceneObj.forEach((heroBodie) => {
@@ -551,7 +585,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
     previusBtn.innerHTML = `
       <div class="button-outer">
         <div class="button-inner">
-          <span id='previusBtnText'>BACK</span>
+          <span id='previusBtnText'>${app.label.get.back}</span>
         </div>
       </div>
     `;
@@ -627,17 +661,33 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
     startBtn.innerHTML = `
       <div class="button-outer">
         <div class="button-inner">
-          <span id='startBtnText'>PLAY</span>
+          <span id='startBtnText'>${app.label.get.play}</span>
         </div>
       </div>
     `;
+
+
+    forestOfHollowBloodStartSceen.notifyHeroSelectionTimer = null;
+
     startBtn.addEventListener('click', (e) => {
       if(app.net.connection == null) {
+        if(forestOfHollowBloodStartSceen.gamePlayStatus != "free") {
+          mb.show(app.label.get.gameplayused);
+          return;
+        }
         // console.log('app.net.connection is null let join gameplay sesion... Wait list.', app.selectedHero)
         byId('join-btn').click();
-        byId("startBtnText").innerHTML = 'Waiting for others...';
+        byId("startBtnText").innerHTML = app.label.get.waiting_for_others;
         e.target.disabled = true;
         app.matrixSounds.play('feel');
+
+        // test - for late users notify again 
+        app.notifyHeroSelectionTimer = setInterval(() => {
+          // not tested
+          console.log('determinateSelection called 10 sec !')
+          determinateSelection();
+        }, 10000);
+
         return;
       } else {
         console.log('nothing...', app.selectedHero)
@@ -689,7 +739,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
     aboutBtn.innerHTML = `
       <div class="button-outer">
         <div class="button-inner">
-          <span data-label='aboutword'>ABOUT</span>
+          <span data-label='aboutword'>${app.label.get.about_}</span>
         </div>
       </div>
     `;
@@ -733,7 +783,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
     let counter = null;
     function fakeProgress() {
       if(progress < 100) {
-        progress += Math.random() * 5;
+        progress += Math.random() * 3.5;
         if(progress > 100) progress = 100;
         bar.style.width = progress + '%';
         counter.textContent = Math.floor(progress) + '%';
@@ -741,7 +791,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
         byId('loader').style.filter = `grayscale(${grayEffect})`;
         setTimeout(fakeProgress, 80 + Math.random() * 150);
       } else {
-        counter.textContent = "Let the game begin!";
+        counter.textContent = app.label.get.letthegame;
         bar.style.boxShadow = "0 0 30px #00ff99";
         setTimeout(() => {loader.remove();}, 250)
       }
@@ -767,14 +817,17 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
       });
     });
 
+    /**
+     * @description
+     * Important moment for sys browser stuff
+     */
     function firstClick() {
-      console.log('ONLCE ')
+      // add here after - fs force
+      // app.FS.request();
       app.matrixSounds.play('music');
       removeEventListener('click', firstClick);
     }
     addEventListener('click', firstClick);
-
-
   }
 })
 window.app = forestOfHollowBloodStartSceen;

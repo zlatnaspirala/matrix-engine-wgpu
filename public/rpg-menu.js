@@ -103,6 +103,7 @@ const HERO_ARCHETYPES = exports.HERO_ARCHETYPES = {
     hpRegenMult: 1.0,
     manaRegenMult: 1.0
   },
+  // special for creeps
   creep: {
     hpMult: 0.6,
     manaMult: 1,
@@ -270,24 +271,48 @@ class HeroProps {
       level: 0,
       maxLevel: 1
     }];
+    this.invertoryBonus = {
+      hp: 1,
+      mana: 1,
+      attack: 1,
+      armor: 1,
+      moveSpeed: 1,
+      attackSpeed: 1,
+      hpRegen: 1,
+      mpRegen: 1
+    };
     this.updateStats();
   }
-
-  // --- Update stats
   updateStats() {
     const lvlData = this.levels[this.currentLevel - 1];
     if (!lvlData) return;
+    console.log('updateStats: armor ', this.invertoryBonus.armor);
     Object.assign(this, {
-      hp: lvlData.hp,
-      mana: lvlData.mana,
-      attack: lvlData.attack,
-      armor: lvlData.armor,
-      moveSpeed: lvlData.moveSpeed,
-      attackSpeed: lvlData.attackSpeed,
-      hpRegen: lvlData.hpRegen,
-      mpRegen: lvlData.mpRegen,
+      hp: lvlData.hp * this.invertoryBonus.hp,
+      mana: lvlData.mana * this.invertoryBonus.mana,
+      attack: lvlData.attack * this.invertoryBonus.attack,
+      armor: lvlData.armor * this.invertoryBonus.armor,
+      moveSpeed: lvlData.moveSpeed * this.invertoryBonus.moveSpeed,
+      attackSpeed: lvlData.attackSpeed * this.invertoryBonus.attackSpeed,
+      hpRegen: lvlData.hpRegen * this.invertoryBonus.hpRegen,
+      mpRegen: lvlData.mpRegen * this.invertoryBonus.mpRegen,
       abilityPoints: lvlData.abilityPoints
     });
+    dispatchEvent(new CustomEvent('stats-localhero', {
+      detail: {
+        gold: this.gold,
+        currentLevel: this.currentLevel,
+        xp: this.currentXP,
+        hp: this.hp,
+        mana: this.mana,
+        attack: this.attack,
+        armor: this.armor,
+        moveSpeed: this.moveSpeed,
+        attackSpeed: this.attackSpeed,
+        hpRegen: this.hpRegen,
+        mpRegen: this.mpRegen
+      }
+    }));
   }
 
   // --- Kill enemy: only enemyLevel argument
@@ -330,21 +355,21 @@ class HeroProps {
     }
 
     // emit for hud
-    dispatchEvent(new CustomEvent('stats-localhero', {
-      detail: {
-        gold: this.gold,
-        currentLevel: this.currentLevel,
-        xp: this.currentXP,
-        hp: this.hp,
-        mana: this.mana,
-        attack: this.attack,
-        armor: this.armor,
-        moveSpeed: this.moveSpeed,
-        attackSpeed: this.attackSpeed,
-        hpRegen: this.hpRegen,
-        mpRegen: this.mpRegen
-      }
-    }));
+    // dispatchEvent(new CustomEvent('stats-localhero', {
+    //   detail: {
+    //     gold: this.gold,
+    //     currentLevel: this.currentLevel,
+    //     xp: this.currentXP,
+    //     hp: this.hp,
+    //     mana: this.mana,
+    //     attack: this.attack,
+    //     armor: this.armor,
+    //     moveSpeed: this.moveSpeed,
+    //     attackSpeed: this.attackSpeed,
+    //     hpRegen: this.hpRegen,
+    //     mpRegen: this.mpRegen,
+    //   }
+    // }))
   }
 
   // --- Upgrade abilities
@@ -488,6 +513,7 @@ class Hero extends HeroProps {
   updateStats() {
     super.updateStats();
     this.applyArchetypeStats();
+    // console.log('Override updateStats to include archetype scaling ....')
   }
 }
 exports.Hero = Hero;
@@ -537,6 +563,8 @@ var _net = require("../../../src/engine/networking/net.js");
 var _utils = require("../../../src/engine/utils.js");
 var _world = _interopRequireDefault(require("../../../src/world.js"));
 var _hero = require("./hero.js");
+var _animatedCursor = require("../../../src/engine/plugin/animated-cursor/animated-cursor.js");
+var _matrixStream = require("../../../src/engine/networking/matrix-stream.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 /**
  * @name forestOfHollowBloodStartSceen
@@ -554,7 +582,7 @@ function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e
  * Redistribution of raw assets is not permitted.”
  * 
  * @Note 
- * This is startup main instance for menu screen adn for the game.
+ * This is startup main instance for menu screen and for the game.
  * All @zlatnaspirala software use networking based
  * on openvidu/kurento media server(webRTC).
  * Node.js used for middleware.
@@ -568,6 +596,7 @@ function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e
  * For now. Next better varian can be timer solution.
  **/
 let forestOfHollowBloodStartSceen = new _world.default({
+  dontUsePhysics: true,
   useSingleRenderPass: true,
   canvasSize: 'fullscreen',
   // {w: window.visualViewport.width, h: window.visualViewport.height }
@@ -582,6 +611,10 @@ let forestOfHollowBloodStartSceen = new _world.default({
     a: 1
   }
 }, forestOfHollowBloodStartSceen => {
+  forestOfHollowBloodStartSceen.FS = new _utils.FullscreenManager();
+  forestOfHollowBloodStartSceen.gamePlayStatus = null;
+  // in future replace with server event solution
+  forestOfHollowBloodStartSceen.gamePlayStatusTimer = null;
   forestOfHollowBloodStartSceen.heroByBody = [];
   forestOfHollowBloodStartSceen.selectedHero = 0;
   forestOfHollowBloodStartSceen.lock = false;
@@ -611,7 +644,7 @@ let forestOfHollowBloodStartSceen = new _world.default({
     } else if (selectHeroIndex == 1) {
       name = 'slayzer';
     } else if (selectHeroIndex == 2) {
-      name = 'slayzer';
+      name = 'steelborn';
     } else if (selectHeroIndex == 3) {
       name = 'warrok';
     } else if (selectHeroIndex == 4) {
@@ -620,19 +653,15 @@ let forestOfHollowBloodStartSceen = new _world.default({
     return name;
   }
   function checkHeroStatus() {
-    // app.net.session.remoteConnections.forEach((remoteConn) => {
-    //   console.log(" test remote conn ", remoteConn.connectionId)
-    // });
-    let isUsed = false;
+    const indices = [];
     document.querySelectorAll('[data-hero-index]').forEach(elem => {
-      let index = parseInt(elem.getAttribute('data-hero-index'));
-      console.log(app.selectedHero, ' app.selectedHero VS Index:', index);
-      if (index == app.selectedHero) {
-        isUsed = true;
-        console.log('Hero element: Index: TRUE !!!!!', index);
-      }
+      const index = parseInt(elem.getAttribute('data-hero-index'));
+      indices.push(index);
     });
-    return isUsed;
+
+    // check if any value appears more than once
+    const hasDuplicate = indices.some((val, i) => indices.indexOf(val) !== i);
+    return hasDuplicate;
   }
   function determinateTeam() {
     console.log('check remote conn.app.net.session.remoteConnections.size..', app.net.session.remoteConnections.size);
@@ -648,10 +677,6 @@ let forestOfHollowBloodStartSceen = new _world.default({
     }
   }
   function determinateSelection() {
-    if (checkHeroStatus() == true) {
-      console.log("hero used keep graphics no send ");
-      return;
-    }
     if (app.net.session.connection != null) {
       console.log("Test team data moment", (0, _utils.byId)(`waiting-${app.net.session.connection.connectionId}`).getAttribute('data-hero-team'));
       let testDom = (0, _utils.byId)(`waiting-${app.net.session.connection.connectionId}`).getAttribute('data-hero-team');
@@ -681,10 +706,16 @@ let forestOfHollowBloodStartSceen = new _world.default({
     // Only last non selected hero player will get 
     // first free hero in selection action next/back.
     // For now.
+
+    if (checkHeroStatus() == true) {
+      console.log("hero used keep graphics no send ");
+      return;
+    }
     if (isAllSelected() == true) {
       forestOfHollowBloodStartSceen.gotoGamePlay();
     }
   }
+  forestOfHollowBloodStartSceen.determinateSelection = determinateSelection;
   function isAllSelected() {
     let sumParty = document.querySelectorAll('[id*="waiting-"]');
     let testSelection = document.querySelectorAll('[id*="waithero-img-"]');
@@ -713,7 +744,8 @@ let forestOfHollowBloodStartSceen = new _world.default({
         path: heros[app.selectedHero].path,
         archetypes: [heros[app.selectedHero].type],
         team: (0, _utils.byId)(`waiting-${app.net.session.connection.connectionId}`).getAttribute('data-hero-team'),
-        data: Date.now()
+        data: Date.now(),
+        numOfPlayers: forestOfHollowBloodStartSceen.MINIMUM_PLAYERS
       });
       _utils.SS.set('player', {
         mesh: heros[app.selectedHero].meshName,
@@ -721,7 +753,8 @@ let forestOfHollowBloodStartSceen = new _world.default({
         path: heros[app.selectedHero].path,
         archetypes: [heros[app.selectedHero].type],
         team: (0, _utils.byId)(`waiting-${app.net.session.connection.connectionId}`).getAttribute('data-hero-team'),
-        data: Date.now()
+        data: Date.now(),
+        numOfPlayers: forestOfHollowBloodStartSceen.MINIMUM_PLAYERS
       });
       if (typeof preventEmit === 'undefined') forestOfHollowBloodStartSceen.net.sendOnlyData({
         type: 'start'
@@ -731,18 +764,27 @@ let forestOfHollowBloodStartSceen = new _world.default({
   };
   addEventListener('check-gameplay-channel', e => {
     let info = e.detail;
-    console.log('check-gameplay-channel ', info);
     if (info.status) {
-      console.log('check-gameplay-channel ', info.status);
-      console.log('check-gameplay-channel [url] ', info.url);
+      // console.log('check-gameplay-channel ', info.status)
       (0, _utils.byId)("onlineUsers").innerHTML = `GamePlay:Free`;
+      forestOfHollowBloodStartSceen.gamePlayStatus = "free";
+      (0, _utils.byId)('startBtnText').innerHTML = app.label.get.play;
+      (0, _utils.byId)("startBtnText").style.color = 'rgba(0, 0, 0, 0)';
+      clearInterval(forestOfHollowBloodStartSceen.gamePlayStatusTimer);
+      forestOfHollowBloodStartSceen.gamePlayStatusTimer = null;
     } else {
       let info = JSON.parse(e.detail);
-      console.log('check-gameplay-channel ', info.connections.numberOfElements);
-      (0, _utils.byId)("onlineUsers").innerHTML = `GamePlay:${info.connections.numberOfElements}`;
+      // console.log('check-gameplay-channel ', info.connections.numberOfElements)
+      (0, _utils.byId)("onlineUsers").innerHTML = `${app.label.get.alreadyingame}:${info.connections.numberOfElements}`;
+      forestOfHollowBloodStartSceen.gamePlayStatus = "used";
+      (0, _utils.byId)('startBtnText').innerHTML = `${app.label.get.gameplaychannel}:${app.label.get.used}`;
+      (0, _utils.byId)("startBtnText").style.color = 'rgb(255 53 53)';
+      forestOfHollowBloodStartSceen.gamePlayStatusTimer = setInterval(() => {
+        app.net.fetchInfo('forestOfHollowBlood-free-for-all');
+      }, 30000);
     }
   });
-  forestOfHollowBloodStartSceen.MINIMUM_PLAYERS = 2;
+  forestOfHollowBloodStartSceen.MINIMUM_PLAYERS = 3;
   forestOfHollowBloodStartSceen.setWaitingList = () => {
     // access net doms who comes with broadcaster2.html
     const waitingForOthersDOM = document.createElement("div");
@@ -796,15 +838,14 @@ let forestOfHollowBloodStartSceen = new _world.default({
     app.net.fetchInfo('forestOfHollowBlood-free-for-all');
   });
   addEventListener('connectionDestroyed', e => {
-    if ((0, _utils.byId)(e.detail.connectionId)) {
-      (0, _utils.byId)(`waiting-${e.detail.connectionId}`).remove();
-    }
+    (0, _utils.byId)(`waiting-${e.detail.connectionId}`).remove();
   });
   addEventListener("onConnectionCreated", e => {
     console.log('newconn : created', e.detail);
     let newPlayer = document.createElement('div');
     if (app.net.session.connection.connectionId == e.detail.connection.connectionId) {
       console.log('newconn : created [LOCAL] determinate team');
+      document.title = app.net.session.connection.connectionId;
       let team = determinateTeam();
       newPlayer.setAttribute('data-hero-team', team);
       newPlayer.innerHTML = `<div id="${e.detail.connection.connectionId}-title" >Player:${e.detail.connection.connectionId} Team:${team}</div>`;
@@ -821,13 +862,11 @@ let forestOfHollowBloodStartSceen = new _world.default({
             selectHeroIndex: app.selectedHero,
             team: testDom
           });
+          app.net.sendOnlyData({
+            type: "team-notify",
+            team: team
+          });
         }
-        //----------
-
-        app.net.sendOnlyData({
-          type: "team-notify",
-          team: team
-        });
       }, 2000);
     } else {
       newPlayer.innerHTML = `<div id="${e.detail.connection.connectionId}-title" >Player:${e.detail.connection.connectionId}</div>`;
@@ -881,122 +920,136 @@ let forestOfHollowBloodStartSceen = new _world.default({
       }
     }
   });
-  addEventListener('AmmoReady', async () => {
-    app.matrixSounds.play('music');
-    heros = [{
-      type: "Warrior",
-      name: 'MariaSword',
-      path: "res/meshes/glb/woman1.glb",
-      desc: forestOfHollowBloodStartSceen.label.get.mariasword
-    }, {
-      type: "Warrior",
-      name: 'Slayzer',
-      path: "res/meshes/glb/monster.glb",
-      desc: forestOfHollowBloodStartSceen.label.get.slayzer
-    }, {
-      type: "Tank",
-      name: 'Steelborn',
-      path: "res/meshes/glb/bot.glb",
-      desc: forestOfHollowBloodStartSceen.label.get.steelborn
-    }, {
-      type: "Mage",
-      name: 'Warrok',
-      path: "res/meshes/glb/warrok.glb",
-      desc: forestOfHollowBloodStartSceen.label.get.warrok
-    }, {
-      type: "Necromancer",
-      name: 'Skeletonz',
-      path: "res/meshes/glb/skeletonz.glb",
-      desc: forestOfHollowBloodStartSceen.label.get.skeletonz
-    }, {
-      type: "Assassin",
-      name: 'Erika',
-      path: "res/meshes/glb/erika.glb",
-      desc: forestOfHollowBloodStartSceen.label.get.skeletonz
-    }];
-    forestOfHollowBloodStartSceen.heros = heros;
 
-    // helper
-    async function loadHeros() {
-      for (var x = 0; x < heros.length; x++) {
-        var glbFile01 = await fetch(heros[x].path).then(res => res.arrayBuffer().then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, app.device)));
-        forestOfHollowBloodStartSceen.addGlbObjInctance({
-          material: x == 2 ? {
-            type: 'power',
-            useTextureFromGlb: true
-          } : {
-            type: 'standard',
-            useTextureFromGlb: true
-          },
-          scale: [20, 20, 20],
-          position: {
-            x: 0 + x * 50,
-            y: 0,
-            z: -10
-          },
-          name: heros[x].name,
-          texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
-          raycast: {
-            enabled: true,
-            radius: 1
-          },
-          pointerEffect: {
-            enabled: true,
-            pointer: true,
-            flameEffect: false,
-            flameEmitter: true,
-            circlePlane: true,
-            circlePlaneTex: true,
-            circlePlaneTexPath: './res/textures/rpg/symbols/star.png'
-          }
-        }, null, glbFile01);
-      }
-      setTimeout(() => {
-        forestOfHollowBloodStartSceen.cameras.WASD.position = [0, 14, 52];
-        app.cameras.WASD.pitch = -0.13;
-        app.cameras.WASD.yaw = 0;
-        app.mainRenderBundle.forEach(sceneObj => {
-          sceneObj.position.thrust = 1;
-          if (sceneObj.effects.flameEmitter) sceneObj.effects.flameEmitter.recreateVertexDataRND(1);
-        });
-        for (var x = 0; x < heros.length; x++) {
-          let hero0 = app.mainRenderBundle.filter(obj => obj.name.indexOf(heros[x].name) != -1);
-          app.heroByBody.push(hero0);
-          heros[x].meshName = hero0[0].name;
-          if (x == 0) {
-            hero0[0].effects.circlePlane.instanceTargets[0].color = [1, 0, 2, 1];
-          }
-          hero0[0].effects.flameEmitter.instanceTargets.forEach((p, i, array) => {
-            array[i].color = [0, 1, 0, 0.7];
-          });
-          if (x == 2) {
-            hero0.forEach((p, i, array) => {
-              array[i].globalAmbient = [11, 11, 1];
-            });
-          }
-          if (x == 3 || x == 5) {
-            hero0.forEach((p, i, array) => {
-              array[i].globalAmbient = [10, 10, 10];
-              array[i].effects.flameEmitter.smoothFlickeringScale = 0.005;
-            });
-          }
-          if (x == 4) {
-            hero0.forEach((p, i, array) => {
-              array[i].globalAmbient = [6, 6, 8];
-            });
-          }
+  // addEventListener('AmmoReady', async () => {
+  app.matrixSounds.play('music');
+  heros = [{
+    type: "Warrior",
+    name: 'MariaSword',
+    path: "res/meshes/glb/woman1.glb",
+    desc: forestOfHollowBloodStartSceen.label.get.mariasword
+  }, {
+    type: "Ranger",
+    name: 'Slayzer',
+    path: "res/meshes/glb/monster.glb",
+    desc: forestOfHollowBloodStartSceen.label.get.slayzer
+  }, {
+    type: "Tank",
+    name: 'Steelborn',
+    path: "res/meshes/glb/bot.glb",
+    desc: forestOfHollowBloodStartSceen.label.get.steelborn
+  }, {
+    type: "Mage",
+    name: 'Warrok',
+    path: "res/meshes/glb/warrok.glb",
+    desc: forestOfHollowBloodStartSceen.label.get.warrok
+  }, {
+    type: "Necromancer",
+    name: 'Skeletonz',
+    path: "res/meshes/glb/skeletonz.glb",
+    desc: forestOfHollowBloodStartSceen.label.get.skeletonz
+  }, {
+    type: "Assassin",
+    name: 'Erika',
+    path: "res/meshes/glb/erika.glb",
+    desc: forestOfHollowBloodStartSceen.label.get.erika
+  }, {
+    type: "Support",
+    name: 'Arissa',
+    path: "res/meshes/glb/arissa.glb",
+    desc: forestOfHollowBloodStartSceen.label.get.arissa
+  }];
+  forestOfHollowBloodStartSceen.heros = heros;
+
+  // helper
+  async function loadHeros() {
+    for (var x = 0; x < heros.length; x++) {
+      var glbFile01 = await fetch(heros[x].path).then(res => res.arrayBuffer().then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, app.device)));
+      forestOfHollowBloodStartSceen.addGlbObjInctance({
+        material: x == 2 ? {
+          type: 'power',
+          useTextureFromGlb: true
+        } : {
+          type: 'standard',
+          useTextureFromGlb: true
+        },
+        scale: [20, 20, 20],
+        position: {
+          x: 0 + x * 50,
+          y: 0,
+          z: -10
+        },
+        name: heros[x].name,
+        texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
+        raycast: {
+          enabled: true,
+          radius: 1
+        },
+        pointerEffect: {
+          enabled: true,
+          pointer: true,
+          flameEffect: false,
+          flameEmitter: true,
+          circlePlane: true,
+          circlePlaneTex: true,
+          circlePlaneTexPath: './res/textures/star1.png'
         }
-        app.lightContainer[0].position[2] = 10;
-        app.lightContainer[0].position[1] = 50;
-        app.lightContainer[0].intensity = 1.4;
-      }, 3000);
+      }, null, glbFile01);
     }
-    loadHeros();
-    createHUDMEnu();
-  });
+    setTimeout(() => {
+      forestOfHollowBloodStartSceen.cameras.WASD.position = [0, 14, 52];
+      app.cameras.WASD.pitch = -0.13;
+      app.cameras.WASD.yaw = 0;
+      app.mainRenderBundle.forEach(sceneObj => {
+        sceneObj.position.thrust = 1;
+        if (sceneObj.effects.flameEmitter) sceneObj.effects.flameEmitter.recreateVertexDataRND(1);
+      });
+      for (var x = 0; x < heros.length; x++) {
+        let hero0 = app.mainRenderBundle.filter(obj => obj.name.indexOf(heros[x].name) != -1);
+        app.heroByBody.push(hero0);
+        heros[x].meshName = hero0[0].name;
+        if (x == 0) {
+          hero0[0].effects.circlePlane.instanceTargets[0].color = [1, 0, 2, 1];
+        }
+        hero0[0].effects.flameEmitter.instanceTargets.forEach((p, i, array) => {
+          array[i].color = [0, 1, 0, 0.7];
+        });
+        if (x == 2) {
+          hero0.forEach((p, i, array) => {
+            array[i].globalAmbient = [11, 11, 1];
+          });
+        }
+        if (x == 3 || x == 5) {
+          hero0.forEach((p, i, array) => {
+            array[i].globalAmbient = [10, 10, 10];
+            array[i].effects.flameEmitter.smoothFlickeringScale = 0.005;
+          });
+        }
+        if (x == 6) {
+          hero0.forEach((p, i, array) => {
+            array[i].globalAmbient = [21, 11, 11];
+          });
+        }
+      }
+      app.lightContainer[0].position[2] = 10;
+      app.lightContainer[0].position[1] = 50;
+      app.lightContainer[0].intensity = 1.4;
+    }, 4000);
+  }
+  loadHeros();
+  createHUDMenu();
+  // })
   forestOfHollowBloodStartSceen.addLight();
-  function createHUDMEnu() {
-    document.body.style.cursor = "url('./res/icons/default.png') 0 0, auto";
+  function createHUDMenu() {
+    forestOfHollowBloodStartSceen.animatedCursor = new _animatedCursor.AnimatedCursor({
+      path: "./res/icons/seq1/",
+      frameCount: 7,
+      speed: 80,
+      loop: true
+    });
+    forestOfHollowBloodStartSceen.animatedCursor.start();
+    // document.body.style.cursor = "url('./res/icons/default.png') 0 0, auto";
+
     document.addEventListener("contextmenu", event => event.preventDefault());
     (0, _utils.byId)('canvas1').style.pointerEvents = 'none';
     const hud = document.createElement("div");
@@ -1033,7 +1086,7 @@ let forestOfHollowBloodStartSceen = new _world.default({
     nextBtn.innerHTML = `
       <div class="button-outer">
         <div class="button-inner">
-          <span id='nextBtn'>NEXT</span>
+          <span id='nextBtn'>${app.label.get.next}</span>
         </div>
       </div>
     `;
@@ -1093,7 +1146,7 @@ let forestOfHollowBloodStartSceen = new _world.default({
     previusBtn.innerHTML = `
       <div class="button-outer">
         <div class="button-inner">
-          <span id='previusBtnText'>BACK</span>
+          <span id='previusBtnText'>${app.label.get.back}</span>
         </div>
       </div>
     `;
@@ -1159,17 +1212,29 @@ let forestOfHollowBloodStartSceen = new _world.default({
     startBtn.innerHTML = `
       <div class="button-outer">
         <div class="button-inner">
-          <span id='startBtnText'>PLAY</span>
+          <span id='startBtnText'>${app.label.get.play}</span>
         </div>
       </div>
     `;
+    forestOfHollowBloodStartSceen.notifyHeroSelectionTimer = null;
     startBtn.addEventListener('click', e => {
       if (app.net.connection == null) {
+        if (forestOfHollowBloodStartSceen.gamePlayStatus != "free") {
+          _utils.mb.show(app.label.get.gameplayused);
+          return;
+        }
         // console.log('app.net.connection is null let join gameplay sesion... Wait list.', app.selectedHero)
         (0, _utils.byId)('join-btn').click();
-        (0, _utils.byId)("startBtnText").innerHTML = 'Waiting for others...';
+        (0, _utils.byId)("startBtnText").innerHTML = app.label.get.waiting_for_others;
         e.target.disabled = true;
         app.matrixSounds.play('feel');
+
+        // test - for late users notify again 
+        app.notifyHeroSelectionTimer = setInterval(() => {
+          // not tested
+          console.log('determinateSelection called 10 sec !');
+          determinateSelection();
+        }, 10000);
         return;
       } else {
         console.log('nothing...', app.selectedHero);
@@ -1218,7 +1283,7 @@ let forestOfHollowBloodStartSceen = new _world.default({
     aboutBtn.innerHTML = `
       <div class="button-outer">
         <div class="button-inner">
-          <span data-label='aboutword'>ABOUT</span>
+          <span data-label='aboutword'>${app.label.get.about_}</span>
         </div>
       </div>
     `;
@@ -1262,7 +1327,7 @@ let forestOfHollowBloodStartSceen = new _world.default({
     let counter = null;
     function fakeProgress() {
       if (progress < 100) {
-        progress += Math.random() * 5;
+        progress += Math.random() * 3.5;
         if (progress > 100) progress = 100;
         bar.style.width = progress + '%';
         counter.textContent = Math.floor(progress) + '%';
@@ -1270,7 +1335,7 @@ let forestOfHollowBloodStartSceen = new _world.default({
         (0, _utils.byId)('loader').style.filter = `grayscale(${grayEffect})`;
         setTimeout(fakeProgress, 80 + Math.random() * 150);
       } else {
-        counter.textContent = "Let the game begin!";
+        counter.textContent = app.label.get.letthegame;
         bar.style.boxShadow = "0 0 30px #00ff99";
         setTimeout(() => {
           loader.remove();
@@ -1293,8 +1358,14 @@ let forestOfHollowBloodStartSceen = new _world.default({
         app.matrixSounds.play('hover');
       });
     });
+
+    /**
+     * @description
+     * Important moment for sys browser stuff
+     */
     function firstClick() {
-      console.log('ONLCE ');
+      // add here after - fs force
+      // app.FS.request();
       app.matrixSounds.play('music');
       removeEventListener('click', firstClick);
     }
@@ -1303,7 +1374,7 @@ let forestOfHollowBloodStartSceen = new _world.default({
 });
 window.app = forestOfHollowBloodStartSceen;
 
-},{"../../../src/engine/loaders/webgpu-gltf.js":36,"../../../src/engine/networking/net.js":41,"../../../src/engine/utils.js":42,"../../../src/world.js":65,"./hero.js":1}],3:[function(require,module,exports){
+},{"../../../src/engine/loaders/webgpu-gltf.js":37,"../../../src/engine/networking/matrix-stream.js":41,"../../../src/engine/networking/net.js":42,"../../../src/engine/plugin/animated-cursor/animated-cursor.js":43,"../../../src/engine/utils.js":44,"../../../src/world.js":67,"./hero.js":1}],3:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -19504,7 +19575,7 @@ class MEBall {
 }
 exports.default = MEBall;
 
-},{"../shaders/shaders":57,"./engine":28,"./matrix-class":38,"wgpu-matrix":17}],19:[function(require,module,exports){
+},{"../shaders/shaders":59,"./engine":29,"./matrix-class":39,"wgpu-matrix":17}],19:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -19542,7 +19613,7 @@ class Behavior {
 }
 exports.default = Behavior;
 
-},{"./utils":42}],20:[function(require,module,exports){
+},{"./utils":44}],20:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -19967,7 +20038,7 @@ class MECube {
 }
 exports.default = MECube;
 
-},{"../shaders/shaders":57,"./engine":28,"./matrix-class":38,"wgpu-matrix":17}],21:[function(require,module,exports){
+},{"../shaders/shaders":59,"./engine":29,"./matrix-class":39,"wgpu-matrix":17}],21:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -20130,7 +20201,7 @@ class HPBarEffect {
 }
 exports.HPBarEffect = HPBarEffect;
 
-},{"../../shaders/energy-bars/energy-bar-shader.js":45,"wgpu-matrix":17}],22:[function(require,module,exports){
+},{"../../shaders/energy-bars/energy-bar-shader.js":47,"wgpu-matrix":17}],22:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -20349,7 +20420,7 @@ class FlameEmitter {
 }
 exports.FlameEmitter = FlameEmitter;
 
-},{"../../shaders/flame-effect/flame-instanced":46,"../utils":42,"wgpu-matrix":17}],23:[function(require,module,exports){
+},{"../../shaders/flame-effect/flame-instanced":48,"../utils":44,"wgpu-matrix":17}],23:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -20520,7 +20591,7 @@ class FlameEffect {
 }
 exports.FlameEffect = FlameEffect;
 
-},{"../../shaders/flame-effect/flameEffect":47,"wgpu-matrix":17}],24:[function(require,module,exports){
+},{"../../shaders/flame-effect/flameEffect":49,"wgpu-matrix":17}],24:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -20540,7 +20611,7 @@ class GenGeoTexture {
     this.indexData = geom.indices;
     this.enabled = true;
     this.rotateEffect = true;
-    this.rotateEffectSpeed = 10.5;
+    this.rotateEffectSpeed = 10;
     this.rotateAngle = 0;
     this.loadTexture(path).then(() => {
       this._initPipeline();
@@ -20717,6 +20788,9 @@ class GenGeoTexture {
   updateInstanceData = baseModelMatrix => {
     if (this.rotateEffect) {
       this.rotateAngle = (this.rotateAngle ?? 0) + this.rotateEffectSpeed; // accumulate rotation
+      if (this.rotateAngle >= 360) {
+        this.rotateAngle = 0;
+      }
     }
     const count = Math.min(this.instanceCount, this.maxInstances);
     for (let i = 0; i < count; i++) {
@@ -20758,7 +20832,264 @@ class GenGeoTexture {
 }
 exports.GenGeoTexture = GenGeoTexture;
 
-},{"../../shaders/standalone/geo.tex.js":59,"../geometry-factory.js":29,"wgpu-matrix":17}],25:[function(require,module,exports){
+},{"../../shaders/standalone/geo.tex.js":61,"../geometry-factory.js":30,"wgpu-matrix":17}],25:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.GenGeoTexture2 = void 0;
+var _geoTex = require("../../shaders/standalone/geo.tex.js");
+var _geometryFactory = require("../geometry-factory.js");
+var _wgpuMatrix = require("wgpu-matrix");
+class GenGeoTexture2 {
+  constructor(device, format, type = "sphere", path, scale = 1) {
+    this.device = device;
+    this.format = format;
+    const geom = _geometryFactory.GeometryFactory.create(type, scale);
+    this.vertexData = geom.positions;
+    this.uvData = geom.uvs;
+    this.indexData = geom.indices;
+    this.enabled = true;
+    this.rotateEffect = true;
+    this.rotateEffectSpeed = 10;
+    this.rotateAngle = 0;
+    this.loadTexture(path).then(() => {
+      this._initPipeline();
+    });
+  }
+  async loadTexture(url) {
+    return new Promise(async (resolve, reject) => {
+      const img = await fetch(url).then(r => r.blob()).then(createImageBitmap);
+      const texture = this.device.createTexture({
+        size: [img.width, img.height, 1],
+        format: "rgba8unorm",
+        usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT
+      });
+      this.device.queue.copyExternalImageToTexture({
+        source: img
+      }, {
+        texture
+      }, [img.width, img.height]);
+      const sampler = this.device.createSampler({
+        magFilter: "linear",
+        minFilter: "linear",
+        addressModeU: "repeat",
+        addressModeV: "repeat"
+      });
+      this.texture = texture;
+      this.sampler = sampler;
+      resolve();
+    });
+  }
+  _initPipeline() {
+    const {
+      vertexData,
+      uvData,
+      indexData
+    } = this;
+
+    // --- POSITION BUFFER (aligned)
+    this.vertexBuffer = this.device.createBuffer({
+      size: Math.ceil(vertexData.byteLength / 4) * 4,
+      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
+    });
+    this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
+
+    // --- UV BUFFER (aligned)
+    this.uvBuffer = this.device.createBuffer({
+      size: Math.ceil(uvData.byteLength / 4) * 4,
+      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
+    });
+    this.device.queue.writeBuffer(this.uvBuffer, 0, uvData);
+
+    // --- INDEX BUFFER (aligned)
+    const alignedIndexSize = Math.ceil(indexData.byteLength / 4) * 4;
+    this.indexBuffer = this.device.createBuffer({
+      size: alignedIndexSize,
+      usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST
+    });
+
+    // Create a temporary padded buffer if necessary
+    if (indexData.byteLength !== alignedIndexSize) {
+      const tmp = new Uint8Array(alignedIndexSize);
+      tmp.set(new Uint8Array(indexData.buffer));
+      this.device.queue.writeBuffer(this.indexBuffer, 0, tmp);
+    } else {
+      this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
+    }
+    this.indexCount = indexData.length;
+
+    // --- rest of your setup (no change)
+    this.cameraBuffer = this.device.createBuffer({
+      size: 64,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    this.instanceTargets = [];
+    this.lerpSpeed = 0.05;
+    this.maxInstances = 5;
+    this.instanceCount = 2;
+    this.floatsPerInstance = 16 + 4;
+    for (let x = 0; x < this.maxInstances; x++) {
+      this.instanceTargets.push({
+        index: x,
+        position: [0, 0, 0],
+        currentPosition: [0, 0, 0],
+        scale: [1, 1, 1],
+        currentScale: [1, 1, 1],
+        color: [0.6, 0.8, 1.0, 0.4]
+      });
+    }
+    this.instanceData = new Float32Array(this.instanceCount * this.floatsPerInstance);
+    this.modelBuffer = this.device.createBuffer({
+      size: Math.ceil(this.instanceData.byteLength / 4) * 4,
+      usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
+    });
+    const bindGroupLayout = this.device.createBindGroupLayout({
+      entries: [{
+        binding: 0,
+        visibility: GPUShaderStage.VERTEX,
+        buffer: {}
+      }, {
+        binding: 1,
+        visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
+        buffer: {
+          type: "read-only-storage"
+        }
+      }, {
+        binding: 2,
+        visibility: GPUShaderStage.FRAGMENT,
+        sampler: {}
+      }, {
+        binding: 3,
+        visibility: GPUShaderStage.FRAGMENT,
+        texture: {}
+      }]
+    });
+    this.bindGroup = this.device.createBindGroup({
+      layout: bindGroupLayout,
+      entries: [{
+        binding: 0,
+        resource: {
+          buffer: this.cameraBuffer
+        }
+      }, {
+        binding: 1,
+        resource: {
+          buffer: this.modelBuffer
+        }
+      }, {
+        binding: 2,
+        resource: this.sampler
+      }, {
+        binding: 3,
+        resource: this.texture.createView()
+      }]
+    });
+    const shaderModule = this.device.createShaderModule({
+      code: _geoTex.geoInstancedTexEffect
+    });
+    const pipelineLayout = this.device.createPipelineLayout({
+      bindGroupLayouts: [bindGroupLayout]
+    });
+    this.pipeline = this.device.createRenderPipeline({
+      layout: pipelineLayout,
+      vertex: {
+        module: shaderModule,
+        entryPoint: 'vsMain',
+        buffers: [{
+          arrayStride: 3 * 4,
+          attributes: [{
+            shaderLocation: 0,
+            offset: 0,
+            format: 'float32x3'
+          }]
+        }, {
+          arrayStride: 2 * 4,
+          attributes: [{
+            shaderLocation: 1,
+            offset: 0,
+            format: 'float32x2'
+          }]
+        }]
+      },
+      fragment: {
+        module: shaderModule,
+        entryPoint: 'fsMain',
+        targets: [{
+          format: this.format,
+          blend: {
+            color: {
+              srcFactor: 'src-alpha',
+              dstFactor: 'one-minus-src-alpha',
+              operation: 'add'
+            },
+            alpha: {
+              srcFactor: 'one',
+              dstFactor: 'one-minus-src-alpha',
+              operation: 'add'
+            }
+          }
+        }]
+      },
+      primitive: {
+        topology: 'triangle-list'
+      },
+      depthStencil: {
+        depthWriteEnabled: false,
+        depthCompare: 'less-equal',
+        format: 'depth24plus'
+      }
+    });
+  }
+  updateInstanceData = baseModelMatrix => {
+    if (this.rotateEffect) {
+      this.rotateAngle = (this.rotateAngle ?? 0) + this.rotateEffectSpeed; // accumulate rotation
+      if (this.rotateAngle >= 360) {
+        this.rotateAngle = 0;
+      }
+    }
+    const count = Math.min(this.instanceCount, this.maxInstances);
+    for (let i = 0; i < count; i++) {
+      const t = this.instanceTargets[i];
+      // smooth interpolation of position & scale
+      for (let j = 0; j < 3; j++) {
+        t.currentPosition[j] += (t.position[j] - t.currentPosition[j]) * this.lerpSpeed;
+        t.currentScale[j] += (t.scale[j] - t.currentScale[j]) * this.lerpSpeed;
+      }
+      const local = _wgpuMatrix.mat4.identity();
+      if (this.rotateEffect == true) {
+        _wgpuMatrix.mat4.rotateY(local, this.rotateAngle, local);
+      }
+      _wgpuMatrix.mat4.translate(local, t.currentPosition, local);
+      _wgpuMatrix.mat4.scale(local, t.currentScale, local);
+      const finalMat = _wgpuMatrix.mat4.identity();
+      _wgpuMatrix.mat4.multiply(baseModelMatrix, local, finalMat);
+      const offset = i * this.floatsPerInstance;
+      this.instanceData.set(finalMat, offset);
+      this.instanceData.set(t.color, offset + 16);
+    }
+    // IMPORTANT: upload ONLY the active range of floats to GPU to avoid leftover instances
+    const activeFloatCount = count * this.floatsPerInstance;
+    const activeBytes = activeFloatCount * 4;
+    this.device.queue.writeBuffer(this.modelBuffer, 0, this.instanceData.subarray(0, activeFloatCount));
+  };
+  draw(pass, cameraMatrix) {
+    this.device.queue.writeBuffer(this.cameraBuffer, 0, cameraMatrix);
+    pass.setPipeline(this.pipeline);
+    pass.setBindGroup(0, this.bindGroup);
+    pass.setVertexBuffer(0, this.vertexBuffer);
+    pass.setVertexBuffer(1, this.uvBuffer);
+    pass.setIndexBuffer(this.indexBuffer, 'uint16');
+    pass.drawIndexed(this.indexCount, this.instanceCount);
+  }
+  render(transPass, mesh, viewProjMatrix) {
+    this.draw(transPass, viewProjMatrix);
+  }
+}
+exports.GenGeoTexture2 = GenGeoTexture2;
+
+},{"../../shaders/standalone/geo.tex.js":61,"../geometry-factory.js":30,"wgpu-matrix":17}],26:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -20948,7 +21279,7 @@ class GenGeo {
 }
 exports.GenGeo = GenGeo;
 
-},{"../../shaders/standalone/geo.instanced.js":58,"../geometry-factory.js":29,"wgpu-matrix":17}],26:[function(require,module,exports){
+},{"../../shaders/standalone/geo.instanced.js":60,"../geometry-factory.js":30,"wgpu-matrix":17}],27:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -21111,7 +21442,7 @@ class MANABarEffect {
 }
 exports.MANABarEffect = MANABarEffect;
 
-},{"../../shaders/energy-bars/energy-bar-shader.js":45,"wgpu-matrix":17}],27:[function(require,module,exports){
+},{"../../shaders/energy-bars/energy-bar-shader.js":47,"wgpu-matrix":17}],28:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -21254,7 +21585,7 @@ class PointerEffect {
 }
 exports.PointerEffect = PointerEffect;
 
-},{"../../shaders/standalone/pointer.effect.js":60,"wgpu-matrix":17}],28:[function(require,module,exports){
+},{"../../shaders/standalone/pointer.effect.js":62,"wgpu-matrix":17}],29:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -21797,7 +22128,7 @@ class RPGCamera extends CameraBase {
 }
 exports.RPGCamera = RPGCamera;
 
-},{"./utils":42,"wgpu-matrix":17}],29:[function(require,module,exports){
+},{"./utils":44,"wgpu-matrix":17}],30:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -21819,6 +22150,8 @@ class GeometryFactory {
         return GeometryFactory.star(size);
       case "circle":
         return GeometryFactory.circle(size, segments);
+      case "circle2":
+        return GeometryFactory.circle2(size, segments);
       case "diamond":
         return GeometryFactory.diamond(size);
       case "rock":
@@ -21937,6 +22270,35 @@ class GeometryFactory {
       positions: new Float32Array(p),
       uvs: new Float32Array(uv),
       indices: new Uint16Array(ind)
+    };
+  }
+  static circle2(radius = 1, segments = 64) {
+    const positions = [0, 0, 0]; // center
+    const uvs = [0.5, 0.5]; // center UV
+    const indices = [];
+
+    // create outer vertices
+    for (let i = 0; i <= segments; i++) {
+      const angle = i / segments * Math.PI * 2;
+      const x = Math.cos(angle) * radius;
+      const y = Math.sin(angle) * radius;
+      positions.push(x, y, 0);
+      // map to circular UV range [0,1]
+      uvs.push((x / radius + 1) / 2, (y / radius + 1) / 2);
+      if (i > 0) {
+        // center = 0, connect previous outer vertex with current outer vertex
+        indices.push(0, i, i + 1);
+      }
+    }
+
+    // close the circle (last triangle connects to first outer vertex)
+    // we already pushed (segments + 1) outer vertices, so last index = segments + 1
+    // but first outer vertex is index 1
+    indices.push(0, segments + 1, 1);
+    return {
+      positions: new Float32Array(positions),
+      uvs: new Float32Array(uvs),
+      indices: new Uint16Array(indices)
     };
   }
   static diamond(S = 1) {
@@ -22078,7 +22440,7 @@ class GeometryFactory {
 }
 exports.GeometryFactory = GeometryFactory;
 
-},{}],30:[function(require,module,exports){
+},{}],31:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -22605,7 +22967,7 @@ class MaterialsInstanced {
 }
 exports.default = MaterialsInstanced;
 
-},{"../../shaders/fragment.wgsl":49,"../../shaders/fragment.wgsl.metal":50,"../../shaders/fragment.wgsl.normalmap":51,"../../shaders/fragment.wgsl.pong":52,"../../shaders/fragment.wgsl.power":53,"../../shaders/instanced/fragment.instanced.wgsl":54}],31:[function(require,module,exports){
+},{"../../shaders/fragment.wgsl":51,"../../shaders/fragment.wgsl.metal":52,"../../shaders/fragment.wgsl.normalmap":53,"../../shaders/fragment.wgsl.pong":54,"../../shaders/fragment.wgsl.power":55,"../../shaders/instanced/fragment.instanced.wgsl":56}],32:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -22626,6 +22988,7 @@ var _manaBar = require("../effects/mana-bar");
 var _flame = require("../effects/flame");
 var _flameEmmiter = require("../effects/flame-emmiter");
 var _genTex = require("../effects/gen-tex");
+var _genTex2 = require("../effects/gen-tex2");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 class MEMeshObjInstances extends _materialsInstanced.default {
   constructor(canvas, device, context, o, inputHandler, globalAmbient, _glbFile = null, primitiveIndex = null, skinnedNodeIndex = null) {
@@ -22651,6 +23014,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
     this.video = null;
     this.FINISH_VIDIO_INIT = false;
     this.globalAmbient = [...globalAmbient];
+    this.blendInstanced = false;
     if (typeof o.material.useTextureFromGlb === 'undefined' || typeof o.material.useTextureFromGlb !== "boolean") {
       o.material.useTextureFromGlb = false;
     }
@@ -23277,6 +23641,9 @@ class MEMeshObjInstances extends _materialsInstanced.default {
         if (typeof this.pointerEffect.circlePlaneTex !== 'undefined' && this.pointerEffect.circlePlaneTex == true) {
           this.effects.circlePlaneTex = new _genTex.GenGeoTexture(device, pf, 'ring', this.pointerEffect.circlePlaneTexPath);
         }
+        if (typeof this.pointerEffect.circle !== 'undefined' && this.pointerEffect.circlePlaneTexPath !== 'undefined') {
+          this.effects.circle = new _genTex2.GenGeoTexture2(device, pf, 'circle2', this.pointerEffect.circlePlaneTexPath);
+        }
       }
 
       // Rotates the camera around the origin based on time.
@@ -23414,7 +23781,8 @@ class MEMeshObjInstances extends _materialsInstanced.default {
         format: 'depth24plus'
       }
     });
-    console.log('✅Pipelines done');
+
+    // console.log('✅Pipelines done');
   };
   updateModelUniformBuffer = () => {
     // if(this.done == false) return;
@@ -23526,7 +23894,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
     pass.drawIndexed(this.indexCount, 1, 0, 0, 0);
 
     // pipelineBlended
-    pass.setPipeline(this.pipelineBlended);
+    if (this.blendInstanced == true) pass.setPipeline(this.pipelineBlended);else pass.setPipeline(this.pipeline);
     for (var ins = 1; ins < this.instanceCount; ins++) {
       pass.drawIndexed(this.indexCount, 1, 0, 0, ins);
     }
@@ -23588,7 +23956,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
 }
 exports.default = MEMeshObjInstances;
 
-},{"../../shaders/fragment.video.wgsl":48,"../../shaders/instanced/vertex.instanced.wgsl":55,"../effects/energy-bar":21,"../effects/flame":23,"../effects/flame-emmiter":22,"../effects/gen":25,"../effects/gen-tex":24,"../effects/mana-bar":26,"../effects/pointerEffect":27,"../loaders/bvh-instaced":34,"../matrix-class":38,"../utils":42,"./materials-instanced":30,"wgpu-matrix":17}],32:[function(require,module,exports){
+},{"../../shaders/fragment.video.wgsl":50,"../../shaders/instanced/vertex.instanced.wgsl":57,"../effects/energy-bar":21,"../effects/flame":23,"../effects/flame-emmiter":22,"../effects/gen":26,"../effects/gen-tex":24,"../effects/gen-tex2":25,"../effects/mana-bar":27,"../effects/pointerEffect":28,"../loaders/bvh-instaced":35,"../matrix-class":39,"../utils":44,"./materials-instanced":31,"wgpu-matrix":17}],33:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -23874,7 +24242,7 @@ class SpotLight {
 }
 exports.SpotLight = SpotLight;
 
-},{"../shaders/instanced/vertexShadow.instanced.wgsl":56,"../shaders/vertexShadow.wgsl":63,"./behavior":19,"wgpu-matrix":17}],33:[function(require,module,exports){
+},{"../shaders/instanced/vertexShadow.instanced.wgsl":58,"../shaders/vertexShadow.wgsl":65,"./behavior":19,"wgpu-matrix":17}],34:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -24342,7 +24710,7 @@ function play(nameAni) {
   this.playing = true;
 }
 
-},{}],34:[function(require,module,exports){
+},{}],35:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -24883,7 +25251,7 @@ class BVHPlayerInstances extends _meshObjInstances.default {
 }
 exports.BVHPlayerInstances = BVHPlayerInstances;
 
-},{"../instanced/mesh-obj-instances.js":31,"./webgpu-gltf.js":36,"wgpu-matrix":17}],35:[function(require,module,exports){
+},{"../instanced/mesh-obj-instances.js":32,"./webgpu-gltf.js":37,"wgpu-matrix":17}],36:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -25393,7 +25761,7 @@ class BVHPlayer extends _meshObj.default {
 }
 exports.BVHPlayer = BVHPlayer;
 
-},{"../mesh-obj":39,"./webgpu-gltf.js":36,"bvh-loader":3,"wgpu-matrix":17}],36:[function(require,module,exports){
+},{"../mesh-obj":40,"./webgpu-gltf.js":37,"bvh-loader":3,"wgpu-matrix":17}],37:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -25974,7 +26342,7 @@ async function uploadGLBModel(buffer, device) {
   return R;
 }
 
-},{"gl-matrix":6}],37:[function(require,module,exports){
+},{"gl-matrix":6}],38:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -26500,7 +26868,7 @@ class Materials {
 }
 exports.default = Materials;
 
-},{"../shaders/fragment.wgsl":49,"../shaders/fragment.wgsl.metal":50,"../shaders/fragment.wgsl.normalmap":51,"../shaders/fragment.wgsl.pong":52,"../shaders/fragment.wgsl.power":53}],38:[function(require,module,exports){
+},{"../shaders/fragment.wgsl":51,"../shaders/fragment.wgsl.metal":52,"../shaders/fragment.wgsl.normalmap":53,"../shaders/fragment.wgsl.pong":54,"../shaders/fragment.wgsl.power":55}],39:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -26518,9 +26886,10 @@ var _utils = require("./utils");
 class Position {
   constructor(x, y, z) {
     // console.log('TEST TYTPOF ', x)
-    // Not in use for nwo this is from matrix-engine project [nameUniq]
-    this.remoteName = null; // not in use
+    this.remoteName = null;
     this.netObject = null;
+    this.toRemote = [];
+    this.teams = [];
     this.netTolerance = 1;
     this.netTolerance__ = 0;
     if (typeof x == 'undefined') x = 0;
@@ -26589,15 +26958,47 @@ class Position {
         this.z += this.velZ;
         if (this.netObject != null) {
           if (this.netTolerance__ > this.netTolerance) {
-            app.net.send({
-              remoteName: this.remoteName,
-              sceneName: this.netObject,
-              netPos: {
-                x: this.x,
-                y: this.y,
-                z: this.z
-              }
-            });
+            if (this.teams.length == 0) {
+              app.net.send({
+                toRemote: this.toRemote,
+                // default null
+                remoteName: this.remoteName,
+                // default null
+                sceneName: this.netObject,
+                netPos: {
+                  x: this.x,
+                  y: this.y,
+                  z: this.z
+                }
+              });
+            } else {
+              // logic is only for two team - index 0 is local !!!
+              if (this.teams[0].length > 0) app.net.send({
+                toRemote: this.teams[0],
+                // default null remote conns
+                sceneName: this.netObject,
+                // origin scene name to receive
+                netPos: {
+                  x: this.x,
+                  y: this.y,
+                  z: this.z
+                }
+              });
+              // remove if (this.teams[1].length > 0)  after alll this is only for CASE OF SUM PLAYER 3 FOR TEST ONLY
+              if (this.teams[1].length > 0) app.net.send({
+                toRemote: this.teams[1],
+                // default null remote conns
+                remoteName: this.remoteName,
+                // to enemy players
+                sceneName: this.netObject,
+                // now not important
+                netPos: {
+                  x: this.x,
+                  y: this.y,
+                  z: this.z
+                }
+              });
+            }
             this.netTolerance__ = 0;
           } else {
             this.netTolerance__++;
@@ -26611,15 +27012,50 @@ class Position {
         this.onTargetPositionReach();
         if (this.netObject != null) {
           if (this.netTolerance__ > this.netTolerance) {
-            app.net.send({
-              remoteName: this.remoteName,
-              sceneName: this.netObject,
-              netPos: {
-                x: this.x,
-                y: this.y,
-                z: this.z
-              }
-            });
+            // 
+            if (this.teams.length == 0) {
+              app.net.send({
+                toRemote: this.toRemote,
+                // default null
+                remoteName: this.remoteName,
+                // default null
+                sceneName: this.netObject,
+                netPos: {
+                  x: this.x,
+                  y: this.y,
+                  z: this.z
+                }
+              });
+            } else {
+              // logic is only for two team - index 0 is local !!!
+              if (this.teams[0].length > 0) app.net.send({
+                // team: this.teams[0],
+                toRemote: this.teams[0],
+                // default null remote conns
+                // remoteName: this.remoteName,
+                sceneName: this.netObject,
+                // origin scene name to receive
+                netPos: {
+                  x: this.x,
+                  y: this.y,
+                  z: this.z
+                }
+              });
+              if (this.teams[1].length > 0) app.net.send({
+                // team: this.teams[1],
+                toRemote: this.teams[1],
+                // default null remote conns
+                remoteName: this.remoteName,
+                // to enemy players
+                sceneName: this.netObject,
+                // now not important
+                netPos: {
+                  x: this.x,
+                  y: this.y,
+                  z: this.z
+                }
+              });
+            }
             this.netTolerance__ = 0;
           } else {
             this.netTolerance__++;
@@ -26764,7 +27200,7 @@ class Rotation {
 }
 exports.Rotation = Rotation;
 
-},{"./utils":42}],39:[function(require,module,exports){
+},{"./utils":44}],40:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -27397,7 +27833,7 @@ class MEMeshObj extends _materials.default {
       },
       primitive: this.primitive
     });
-    console.log('✅Set Pipeline done');
+    // console.log('✅Set Pipeline done');
   };
   updateModelUniformBuffer = () => {
     if (this.done == false) return;
@@ -27559,7 +27995,7 @@ class MEMeshObj extends _materials.default {
 }
 exports.default = MEMeshObj;
 
-},{"../shaders/fragment.video.wgsl":48,"../shaders/vertex.wgsl":61,"../shaders/vertex.wgsl.normalmap":62,"./effects/pointerEffect":27,"./materials":37,"./matrix-class":38,"./utils":42,"wgpu-matrix":17}],40:[function(require,module,exports){
+},{"../shaders/fragment.video.wgsl":50,"../shaders/vertex.wgsl":63,"../shaders/vertex.wgsl.normalmap":64,"./effects/pointerEffect":28,"./materials":38,"./matrix-class":39,"./utils":44,"wgpu-matrix":17}],41:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -27624,7 +28060,7 @@ function joinSession(options) {
     window.OV = OV;
     exports.session = session = OV.initSession();
     session.on('connectionCreated', event => {
-      console.log(`connectionCreated ${event.connection.connectionId}`);
+      // console.log(`connectionCreated ${event.connection.connectionId}`)
       dispatchEvent(new CustomEvent('onConnectionCreated', {
         detail: event
       }));
@@ -27682,7 +28118,6 @@ function joinSession(options) {
         });
       });
       session.on('streamDestroyed', event => {
-        // alert(event);
         pushEvent(event);
       });
     } else {
@@ -28040,7 +28475,7 @@ function clearEventsTextarea() {
   exports.events = events = '';
 }
 
-},{}],41:[function(require,module,exports){
+},{}],42:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -28094,7 +28529,8 @@ class MatrixStream {
       this.sessionName = (0, _matrixStream.byId)("sessionName");
       console.log('[CHANNEL]' + this.sessionName.value);
       this.attachEvents();
-      console.log(`%c MatrixStream constructed.`, _matrixStream.BIGLOG);
+      this.closeSession = _matrixStream.closeSession;
+      console.log(`%cMatrixStream constructed.`, _matrixStream.BIGLOG);
     });
   }
   attachEvents() {
@@ -28111,16 +28547,15 @@ class MatrixStream {
         console.error("Erro signal => ", error);
       });
     };
-
-    // this is duplicate for two cases with camera or only data
-    // this only data case - send system emit with session name channel
     this.send = netArg => {
+      const to = netArg.toRemote ? netArg.toRemote : [];
+      netArg.toRemote = null;
       this.session.signal({
         data: JSON.stringify(netArg),
-        to: [],
+        to: to,
         type: _matrixStream.netConfig.sessionName
       }).then(() => {
-        console.log('.');
+        // console.log('netArg.toRemote:' , netArg.toRemote);
       }).catch(error => {
         console.error("Erro signal => ", error);
       });
@@ -28156,8 +28591,7 @@ class MatrixStream {
         }
       });
       this.session.on(`signal:${_matrixStream.netConfig.sessionName}-data`, e => {
-        // console.log("SIGBAL DATA RECEIVE=>", e);
-        console.log("SIGBAL DATA RECEIVE LOW LEVEL TEST OWN MESG =>", e);
+        // console.log("SIGBAL DATA RECEIVE LOW LEVEL TEST OWN MESG =>", e);
         if (this.session.connection.connectionId == e.from.connectionId) {
           dispatchEvent(new CustomEvent('self-msg-data', {
             detail: e
@@ -28180,12 +28614,12 @@ class MatrixStream {
     // this.buttonCloseSession.addEventListener('click', closeSession);
 
     this.buttonLeaveSession.addEventListener('click', () => {
-      console.log(`%c LEAVE SESSION`, _matrixStream.REDLOG);
+      console.log(`%cLEAVE SESSION`, _matrixStream.REDLOG);
       (0, _matrixStream.removeUser)();
       (0, _matrixStream.leaveSession)();
     });
     (0, _matrixStream.byId)('netHeaderTitle').addEventListener('click', this.domManipulation.hideNetPanel);
-    setTimeout(() => dispatchEvent(new CustomEvent('net-ready', {})), 100);
+    setTimeout(() => dispatchEvent(new CustomEvent('net-ready', {})), 2500);
   }
   multiPlayer = {
     root: this,
@@ -28193,13 +28627,8 @@ class MatrixStream {
     update(e) {
       e.data = JSON.parse(e.data);
       try {
-        // console.log('REMOTE UPDATE::::', e);
         if (e.data.netPos) {
-          if (e.data.remoteName != null) {
-            app.getSceneObjectByName(e.data.remoteName).position.setPosition(e.data.netPos.x, e.data.netPos.y, e.data.netPos.z);
-          } else {
-            app.getSceneObjectByName(e.data.sceneName).position.setPosition(e.data.netPos.x, e.data.netPos.y, e.data.netPos.z);
-          }
+          app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).position.setPosition(e.data.netPos.x, e.data.netPos.y, e.data.netPos.z);
         } else if (e.data.netRotY || e.data.netRotY == 0) {
           app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).rotation.y = e.data.netRotY;
         } else if (e.data.netRotX) {
@@ -28210,7 +28639,7 @@ class MatrixStream {
           app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).glb.animationIndex = e.data.animationIndex;
         }
       } catch (err) {
-        console.info('mp-update-err:', err);
+        console.info('mmo-err:', err);
       }
     },
     leaveGamePlay() {}
@@ -28255,13 +28684,67 @@ let activateNet2 = sessionOption => {
 };
 exports.activateNet2 = activateNet2;
 
-},{"../utils":42,"./matrix-stream":40}],42:[function(require,module,exports){
+},{"../utils":44,"./matrix-stream":41}],43:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.LS = exports.LOG_WARN = exports.LOG_MATRIX = exports.LOG_INFO = exports.LOG_FUNNY_SMALL = exports.LOG_FUNNY = void 0;
+exports.AnimatedCursor = void 0;
+class AnimatedCursor {
+  constructor(options = {}) {
+    this.path = options.path || './res/icons/';
+    this.frameCount = options.frameCount || 8; // number of PNGs
+    this.speed = options.speed || 100; // ms per frame
+    this.hotspot = options.hotspot || {
+      x: 0,
+      y: 0
+    };
+    this.loop = options.loop !== undefined ? options.loop : true;
+    this._current = 0;
+    this._timer = null;
+    this._isPlaying = false;
+  }
+  _applyCursor(index) {
+    const cursorUrl = `url('${this.path}${index}.png') ${this.hotspot.x} ${this.hotspot.y}, auto`;
+    document.body.style.cursor = cursorUrl;
+  }
+  start() {
+    if (this._isPlaying) return;
+    this._isPlaying = true;
+    this._applyCursor(this._current);
+    this._timer = setInterval(() => {
+      this._current++;
+      if (this._current >= this.frameCount) {
+        if (this.loop) this._current = 0;else return this.stop();
+      }
+      this._applyCursor(this._current);
+    }, this.speed);
+  }
+  stop() {
+    if (!this._isPlaying) return;
+    clearInterval(this._timer);
+    this._timer = null;
+    this._isPlaying = false;
+  }
+  reset() {
+    this._current = 0;
+    this._applyCursor(this._current);
+  }
+  destroy() {
+    this.stop();
+    document.body.style.cursor = 'auto';
+  }
+}
+exports.AnimatedCursor = AnimatedCursor;
+
+},{}],44:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.LS = exports.LOG_WARN = exports.LOG_MATRIX = exports.LOG_INFO = exports.LOG_FUNNY_SMALL = exports.LOG_FUNNY = exports.FullscreenManagerElement = exports.FullscreenManager = void 0;
 exports.ORBIT = ORBIT;
 exports.ORBIT_FROM_ARRAY = ORBIT_FROM_ARRAY;
 exports.OSCILLATOR = OSCILLATOR;
@@ -29223,8 +29706,57 @@ function isEven(n) {
 function isOdd(n) {
   return n % 2 !== 0;
 }
+class FullscreenManagerElement {
+  constructor(targetElement = document.documentElement) {
+    this.target = targetElement;
+  }
+  isFullscreen() {
+    return !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement);
+  }
+  request() {
+    const el = this.target;
+    return el.requestFullscreen?.() || el.webkitRequestFullscreen?.() || el.mozRequestFullScreen?.() || el.msRequestFullscreen?.();
+  }
+  exit() {
+    return document.exitFullscreen?.() || document.webkitExitFullscreen?.() || document.mozCancelFullScreen?.() || document.msExitFullscreen?.();
+  }
+  toggle() {
+    if (this.isFullscreen()) return this.exit();
+    return this.request();
+  }
+  onChange(callback) {
+    ["fullscreenchange", "webkitfullscreenchange", "mozfullscreenchange", "MSFullscreenChange"].forEach(evt => document.addEventListener(evt, () => {
+      callback(this.isFullscreen(), this.target);
+    }));
+  }
+}
+exports.FullscreenManagerElement = FullscreenManagerElement;
+class FullscreenManager {
+  constructor() {
+    this.target = document.documentElement; // fullscreen whole page / window
+  }
+  isFullscreen() {
+    return !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement);
+  }
+  request() {
+    const el = this.target;
+    return el.requestFullscreen?.() || el.webkitRequestFullscreen?.() || el.mozRequestFullScreen?.() || el.msRequestFullscreen?.();
+  }
+  exit() {
+    return document.exitFullscreen?.() || document.webkitExitFullscreen?.() || document.mozCancelFullScreen?.() || document.msExitFullscreen?.();
+  }
+  toggle() {
+    return this.isFullscreen() ? this.exit() : this.request();
+  }
+  onChange(callback) {
+    ["fullscreenchange", "webkitfullscreenchange", "mozfullscreenchange", "MSFullscreenChange"].forEach(evt => document.addEventListener(evt, () => {
+      callback(this.isFullscreen());
+    }));
+  }
+}
+exports.FullscreenManager = FullscreenManager;
 
-},{}],43:[function(require,module,exports){
+},{}],45:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -29246,6 +29778,7 @@ class MultiLang {
     });
   };
   loadMultilang = async function (lang = 'en') {
+    if (lang == 'rs') lang = 'sr'; // exc
     lang = 'res/multilang/' + lang + '.json';
     console.info(`%cMultilang: ${lang}`, _utils.LOG_MATRIX);
     try {
@@ -29264,7 +29797,7 @@ class MultiLang {
 }
 exports.MultiLang = MultiLang;
 
-},{"../engine/utils":42}],44:[function(require,module,exports){
+},{"../engine/utils":44}],46:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -29548,7 +30081,7 @@ class MatrixAmmo {
 }
 exports.default = MatrixAmmo;
 
-},{"../engine/utils":42}],45:[function(require,module,exports){
+},{"../engine/utils":44}],47:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -29594,7 +30127,7 @@ fn fsMain(in : VertexOutput) -> @location(0) vec4f {
 }
 `;
 
-},{}],46:[function(require,module,exports){
+},{}],48:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -29720,7 +30253,7 @@ fn fsMain(in : VSOut) -> @location(0) vec4<f32> {
 }
 `;
 
-},{}],47:[function(require,module,exports){
+},{}],49:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -29808,7 +30341,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
 }
 `;
 
-},{}],48:[function(require,module,exports){
+},{}],50:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -29898,7 +30431,7 @@ fn main(input : FragmentInput) -> @location(0) vec4f {
 }
 `;
 
-},{}],49:[function(require,module,exports){
+},{}],51:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30129,7 +30662,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, 1.0);
 }`;
 
-},{}],50:[function(require,module,exports){
+},{}],52:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30307,7 +30840,7 @@ return vec4f(color, 1.0);
 // let radiance = spotlights[0].color * 10.0; // test high intensity
 // Lo += materialData.baseColor * radiance * NdotL;
 
-},{}],51:[function(require,module,exports){
+},{}],53:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30552,7 +31085,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, 1.0);
 }`;
 
-},{}],52:[function(require,module,exports){
+},{}],54:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30772,7 +31305,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, 1.0);
 }`;
 
-},{}],53:[function(require,module,exports){
+},{}],55:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30940,7 +31473,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 // let radiance = spotlights[0].color * 10.0; // test high intensity
 // Lo += materialData.baseColor * radiance * NdotL;
 
-},{}],54:[function(require,module,exports){
+},{}],56:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -31176,7 +31709,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, alpha);
 }`;
 
-},{}],55:[function(require,module,exports){
+},{}],57:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -31280,7 +31813,7 @@ fn main(
   return output;
 }`;
 
-},{}],56:[function(require,module,exports){
+},{}],58:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -31317,7 +31850,7 @@ fn main(
 }
 `;
 
-},{}],57:[function(require,module,exports){
+},{}],59:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -31375,7 +31908,7 @@ fn fragmentMain(input: VertexOutput) -> @location(0) vec4f {
   return vec4f(textureColor.rgb * lightColor, textureColor.a);
 }`;
 
-},{}],58:[function(require,module,exports){
+},{}],60:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -31433,7 +31966,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
 }
 `;
 
-},{}],59:[function(require,module,exports){
+},{}],61:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -31489,7 +32022,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
   let uvScale = vec2<f32>(1.3, 1.3);   // < 1.0 = zoom out (more texture visible)
   let uvOffset = vec2<f32>(0.01, 0.01); // move the texture slightly
   
-  let adjustedUV = input.v_uv * uvScale + uvOffset;
+  let adjustedUV = input.v_uv; // * uvScale + uvOffset; // make it like ring !
 
   let texColor = textureSample(myTexture, mySampler, adjustedUV);
 
@@ -31520,7 +32053,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
 }
 `;
 
-},{}],60:[function(require,module,exports){
+},{}],62:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -31578,7 +32111,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
   return vec4<f32>(color, 1.0);
 }`;
 
-},{}],61:[function(require,module,exports){
+},{}],63:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -31664,7 +32197,7 @@ fn main(
   return output;
 }`;
 
-},{}],62:[function(require,module,exports){
+},{}],64:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -31775,7 +32308,7 @@ fn main(
   return output;
 }`;
 
-},{}],63:[function(require,module,exports){
+},{}],65:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -31803,7 +32336,7 @@ fn main(
 }
 `;
 
-},{}],64:[function(require,module,exports){
+},{}],66:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -31873,7 +32406,7 @@ class MatrixSounds {
 }
 exports.MatrixSounds = MatrixSounds;
 
-},{}],65:[function(require,module,exports){
+},{}],67:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -31914,7 +32447,7 @@ class MatrixEngineWGPU {
     depthLoadOp: 'clear',
     depthStoreOp: 'store'
   };
-  matrixAmmo = new _matrixAmmo.default();
+  // matrixAmmo = new MatrixAmmo();
   matrixSounds = new _sounds.MatrixSounds();
   constructor(options, callback) {
     if (typeof options == 'undefined' || typeof options == "function") {
@@ -31951,6 +32484,9 @@ class MatrixEngineWGPU {
         type: 'WASD',
         responseCoef: 2000
       };
+    }
+    if (typeof options.dontUsePhysics == 'undefined') {
+      this.matrixAmmo = new _matrixAmmo.default();
     }
     this.options = options;
     this.mainCameraParams = options.mainCameraParams;
@@ -32877,4 +33413,4 @@ class MatrixEngineWGPU {
 }
 exports.default = MatrixEngineWGPU;
 
-},{"./engine/ball.js":18,"./engine/cube.js":20,"./engine/engine.js":28,"./engine/lights.js":32,"./engine/loader-obj.js":33,"./engine/loaders/bvh-instaced.js":34,"./engine/loaders/bvh.js":35,"./engine/mesh-obj.js":39,"./engine/utils.js":42,"./multilang/lang.js":43,"./physics/matrix-ammo.js":44,"./sounds/sounds.js":64,"wgpu-matrix":17}]},{},[2]);
+},{"./engine/ball.js":18,"./engine/cube.js":20,"./engine/engine.js":29,"./engine/lights.js":33,"./engine/loader-obj.js":34,"./engine/loaders/bvh-instaced.js":35,"./engine/loaders/bvh.js":36,"./engine/mesh-obj.js":40,"./engine/utils.js":44,"./multilang/lang.js":45,"./physics/matrix-ammo.js":46,"./sounds/sounds.js":66,"wgpu-matrix":17}]},{},[2]);

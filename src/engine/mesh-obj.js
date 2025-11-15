@@ -647,7 +647,7 @@ export default class MEMeshObj extends Materials {
       },
       primitive: this.primitive,
     });
-    console.log('✅Set Pipeline done');
+    // console.log('✅Set Pipeline done');
   }
 
   updateModelUniformBuffer = () => {
