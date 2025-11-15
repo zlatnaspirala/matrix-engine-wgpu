@@ -921,124 +921,125 @@ let forestOfHollowBloodStartSceen = new _world.default({
       }
     }
   });
-  addEventListener('AmmoReady', async () => {
-    app.matrixSounds.play('music');
-    heros = [{
-      type: "Warrior",
-      name: 'MariaSword',
-      path: "res/meshes/glb/woman1.glb",
-      desc: forestOfHollowBloodStartSceen.label.get.mariasword
-    }, {
-      type: "Ranger",
-      name: 'Slayzer',
-      path: "res/meshes/glb/monster.glb",
-      desc: forestOfHollowBloodStartSceen.label.get.slayzer
-    }, {
-      type: "Tank",
-      name: 'Steelborn',
-      path: "res/meshes/glb/bot.glb",
-      desc: forestOfHollowBloodStartSceen.label.get.steelborn
-    }, {
-      type: "Mage",
-      name: 'Warrok',
-      path: "res/meshes/glb/warrok.glb",
-      desc: forestOfHollowBloodStartSceen.label.get.warrok
-    }, {
-      type: "Necromancer",
-      name: 'Skeletonz',
-      path: "res/meshes/glb/skeletonz.glb",
-      desc: forestOfHollowBloodStartSceen.label.get.skeletonz
-    }, {
-      type: "Assassin",
-      name: 'Erika',
-      path: "res/meshes/glb/erika.glb",
-      desc: forestOfHollowBloodStartSceen.label.get.erika
-    }, {
-      type: "Support",
-      name: 'Arissa',
-      path: "res/meshes/glb/arissa.glb",
-      desc: forestOfHollowBloodStartSceen.label.get.arissa
-    }];
-    forestOfHollowBloodStartSceen.heros = heros;
 
-    // helper
-    async function loadHeros() {
-      for (var x = 0; x < heros.length; x++) {
-        var glbFile01 = await fetch(heros[x].path).then(res => res.arrayBuffer().then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, app.device)));
-        forestOfHollowBloodStartSceen.addGlbObjInctance({
-          material: x == 2 ? {
-            type: 'power',
-            useTextureFromGlb: true
-          } : {
-            type: 'standard',
-            useTextureFromGlb: true
-          },
-          scale: [20, 20, 20],
-          position: {
-            x: 0 + x * 50,
-            y: 0,
-            z: -10
-          },
-          name: heros[x].name,
-          texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
-          raycast: {
-            enabled: true,
-            radius: 1
-          },
-          pointerEffect: {
-            enabled: true,
-            pointer: true,
-            flameEffect: false,
-            flameEmitter: true,
-            circlePlane: true,
-            circlePlaneTex: true,
-            circlePlaneTexPath: './res/textures/star1.png'
-          }
-        }, null, glbFile01);
-      }
-      setTimeout(() => {
-        forestOfHollowBloodStartSceen.cameras.WASD.position = [0, 14, 52];
-        app.cameras.WASD.pitch = -0.13;
-        app.cameras.WASD.yaw = 0;
-        app.mainRenderBundle.forEach(sceneObj => {
-          sceneObj.position.thrust = 1;
-          if (sceneObj.effects.flameEmitter) sceneObj.effects.flameEmitter.recreateVertexDataRND(1);
-        });
-        for (var x = 0; x < heros.length; x++) {
-          let hero0 = app.mainRenderBundle.filter(obj => obj.name.indexOf(heros[x].name) != -1);
-          app.heroByBody.push(hero0);
-          heros[x].meshName = hero0[0].name;
-          if (x == 0) {
-            hero0[0].effects.circlePlane.instanceTargets[0].color = [1, 0, 2, 1];
-          }
-          hero0[0].effects.flameEmitter.instanceTargets.forEach((p, i, array) => {
-            array[i].color = [0, 1, 0, 0.7];
-          });
-          if (x == 2) {
-            hero0.forEach((p, i, array) => {
-              array[i].globalAmbient = [11, 11, 1];
-            });
-          }
-          if (x == 3 || x == 5) {
-            hero0.forEach((p, i, array) => {
-              array[i].globalAmbient = [10, 10, 10];
-              array[i].effects.flameEmitter.smoothFlickeringScale = 0.005;
-            });
-          }
-          if (x == 6) {
-            hero0.forEach((p, i, array) => {
-              array[i].globalAmbient = [21, 11, 11];
-            });
-          }
+  // addEventListener('AmmoReady', async () => {
+  app.matrixSounds.play('music');
+  heros = [{
+    type: "Warrior",
+    name: 'MariaSword',
+    path: "res/meshes/glb/woman1.glb",
+    desc: forestOfHollowBloodStartSceen.label.get.mariasword
+  }, {
+    type: "Ranger",
+    name: 'Slayzer',
+    path: "res/meshes/glb/monster.glb",
+    desc: forestOfHollowBloodStartSceen.label.get.slayzer
+  }, {
+    type: "Tank",
+    name: 'Steelborn',
+    path: "res/meshes/glb/bot.glb",
+    desc: forestOfHollowBloodStartSceen.label.get.steelborn
+  }, {
+    type: "Mage",
+    name: 'Warrok',
+    path: "res/meshes/glb/warrok.glb",
+    desc: forestOfHollowBloodStartSceen.label.get.warrok
+  }, {
+    type: "Necromancer",
+    name: 'Skeletonz',
+    path: "res/meshes/glb/skeletonz.glb",
+    desc: forestOfHollowBloodStartSceen.label.get.skeletonz
+  }, {
+    type: "Assassin",
+    name: 'Erika',
+    path: "res/meshes/glb/erika.glb",
+    desc: forestOfHollowBloodStartSceen.label.get.erika
+  }, {
+    type: "Support",
+    name: 'Arissa',
+    path: "res/meshes/glb/arissa.glb",
+    desc: forestOfHollowBloodStartSceen.label.get.arissa
+  }];
+  forestOfHollowBloodStartSceen.heros = heros;
+
+  // helper
+  async function loadHeros() {
+    for (var x = 0; x < heros.length; x++) {
+      var glbFile01 = await fetch(heros[x].path).then(res => res.arrayBuffer().then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, app.device)));
+      forestOfHollowBloodStartSceen.addGlbObjInctance({
+        material: x == 2 ? {
+          type: 'power',
+          useTextureFromGlb: true
+        } : {
+          type: 'standard',
+          useTextureFromGlb: true
+        },
+        scale: [20, 20, 20],
+        position: {
+          x: 0 + x * 50,
+          y: 0,
+          z: -10
+        },
+        name: heros[x].name,
+        texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
+        raycast: {
+          enabled: true,
+          radius: 1
+        },
+        pointerEffect: {
+          enabled: true,
+          pointer: true,
+          flameEffect: false,
+          flameEmitter: true,
+          circlePlane: true,
+          circlePlaneTex: true,
+          circlePlaneTexPath: './res/textures/star1.png'
         }
-        app.lightContainer[0].position[2] = 10;
-        app.lightContainer[0].position[1] = 50;
-        app.lightContainer[0].intensity = 1.4;
-      }, 4000);
+      }, null, glbFile01);
     }
-    loadHeros();
-    createHUDMenu();
-  });
+    setTimeout(() => {
+      forestOfHollowBloodStartSceen.cameras.WASD.position = [0, 14, 52];
+      app.cameras.WASD.pitch = -0.13;
+      app.cameras.WASD.yaw = 0;
+      app.mainRenderBundle.forEach(sceneObj => {
+        sceneObj.position.thrust = 1;
+        if (sceneObj.effects.flameEmitter) sceneObj.effects.flameEmitter.recreateVertexDataRND(1);
+      });
+      for (var x = 0; x < heros.length; x++) {
+        let hero0 = app.mainRenderBundle.filter(obj => obj.name.indexOf(heros[x].name) != -1);
+        app.heroByBody.push(hero0);
+        heros[x].meshName = hero0[0].name;
+        if (x == 0) {
+          hero0[0].effects.circlePlane.instanceTargets[0].color = [1, 0, 2, 1];
+        }
+        hero0[0].effects.flameEmitter.instanceTargets.forEach((p, i, array) => {
+          array[i].color = [0, 1, 0, 0.7];
+        });
+        if (x == 2) {
+          hero0.forEach((p, i, array) => {
+            array[i].globalAmbient = [11, 11, 1];
+          });
+        }
+        if (x == 3 || x == 5) {
+          hero0.forEach((p, i, array) => {
+            array[i].globalAmbient = [10, 10, 10];
+            array[i].effects.flameEmitter.smoothFlickeringScale = 0.005;
+          });
+        }
+        if (x == 6) {
+          hero0.forEach((p, i, array) => {
+            array[i].globalAmbient = [21, 11, 11];
+          });
+        }
+      }
+      app.lightContainer[0].position[2] = 10;
+      app.lightContainer[0].position[1] = 50;
+      app.lightContainer[0].intensity = 1.4;
+    }, 4000);
+  }
+  loadHeros();
+  createHUDMenu();
+  // })
   forestOfHollowBloodStartSceen.addLight();
   function createHUDMenu() {
     forestOfHollowBloodStartSceen.animatedCursor = new _animatedCursor.AnimatedCursor({
@@ -28552,6 +28553,7 @@ class MatrixStream {
     };
     this.send = netArg => {
       const to = netArg.toRemote ? netArg.toRemote : [];
+      netArg.toRemote = null;
       this.session.signal({
         data: JSON.stringify(netArg),
         to: to,
@@ -28631,7 +28633,6 @@ class MatrixStream {
       try {
         if (e.data.netPos) {
           app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).position.setPosition(e.data.netPos.x, e.data.netPos.y, e.data.netPos.z);
-          if (e.data.remoteName == null) console.log('REMOTE UPDATE::::', e);
         } else if (e.data.netRotY || e.data.netRotY == 0) {
           app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).rotation.y = e.data.netRotY;
         } else if (e.data.netRotX) {
@@ -28642,7 +28643,7 @@ class MatrixStream {
           app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).glb.animationIndex = e.data.animationIndex;
         }
       } catch (err) {
-        console.info('mp-update-err:', err);
+        console.info('mmo-err:', err);
       }
     },
     leaveGamePlay() {}
@@ -32450,7 +32451,7 @@ class MatrixEngineWGPU {
     depthLoadOp: 'clear',
     depthStoreOp: 'store'
   };
-  matrixAmmo = new _matrixAmmo.default();
+  // matrixAmmo = new MatrixAmmo();
   matrixSounds = new _sounds.MatrixSounds();
   constructor(options, callback) {
     if (typeof options == 'undefined' || typeof options == "function") {
@@ -32487,6 +32488,9 @@ class MatrixEngineWGPU {
         type: 'WASD',
         responseCoef: 2000
       };
+    }
+    if (typeof options.dontUsePhysics == 'undefined') {
+      this.matrixAmmo = new _matrixAmmo.default();
     }
     this.options = options;
     this.mainCameraParams = options.mainCameraParams;
@@ -33140,7 +33144,7 @@ class MatrixEngineWGPU {
       this.device.queue.submit([commandEncoder.finish()]);
       requestAnimationFrame(this.frame);
     } catch (err) {
-      // console.log('%cLoop(err):' + err + " info : " + err.stack, LOG_WARN)
+      console.log('%cLoop(err):' + err + " info : " + err.stack, _utils.LOG_WARN);
       requestAnimationFrame(this.frame);
     }
   };

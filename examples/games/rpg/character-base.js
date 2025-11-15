@@ -45,10 +45,11 @@ export class Character extends Hero {
     this.name = name;
     this.core = forestOfHollowBlood;
     this.heroe_bodies = [];
-    // this.loadfriendlyCreeps();
+
     this.loadLocalHero(path);
+    this.loadfriendlyCreeps();
     // async
-    setTimeout(() => this.setupHUDForHero(name), 1000);
+    setTimeout(() => this.setupHUDForHero(name), 500);
   }
 
   setupHUDForHero(name) {
@@ -141,7 +142,7 @@ export class Character extends Hero {
       // ---------
       // make small async - cooking glbs files  mouseTarget_Circle
       setTimeout(() => {
-        console.info(`%cAnimation...`, LOG_MATRIX)
+        console.info(`%cAnimation setup...`, LOG_MATRIX)
         this.mouseTarget = app.getSceneObjectByName('mouseTarget_Circle');
         this.mouseTarget.animationSpeed = 20000;
         app.localHero.mouseTarget.instanceTargets[1].position[1] = 1;
@@ -209,7 +210,7 @@ export class Character extends Hero {
         dispatchEvent(new CustomEvent('local-hero-bodies-ready', {
           detail: `This is not sync - 99% works`
         }))
-      }, 6000); // return to 2 -3 - testing on 3-4 on same computer
+      }, 5000); // return to 2 -3 - testing on 3-4 on same computer
     } catch(err) {throw err;}
   }
 
@@ -261,10 +262,10 @@ export class Character extends Hero {
       })
 
 
-      if(this.core.net.virtualEmiter != null) {
-        console.info(`%c virtualEmiter use navigateCreeps `, LOG_MATRIX)
-        this.navigateCreeps();
-      }
+      // if(this.core.net.virtualEmiter != null) {
+      //   console.info(`%c virtualEmiter use navigateCreeps `, LOG_MATRIX)
+      //   this.navigateCreeps();
+      // }
     }, 3000);
   }
 

@@ -48,7 +48,7 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
   forestOfHollowBlood.matrixSounds.createAudio('music', 'res/audios/rpg/music.mp3', 1)
   forestOfHollowBlood.matrixSounds.createAudio('win1', 'res/audios/rpg/feel.mp3', 2);
 
-  addEventListener('AmmoReady', async () => {
+  // addEventListener('AmmoReady', async () => {
 
     forestOfHollowBlood.player.data = SS.get('player');
 
@@ -73,17 +73,16 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
 
     addEventListener('net-ready', () => {
       // console.log('net-ready ----------------------------------------------------');
-
       // console.log('forestOfHollowBlood.player.data.numOfPlayers', forestOfHollowBlood.player.data.numOfPlayers);
-
+      // automatic
+      byId('join-btn').click();
       // console.log('net-ready ----------------------------------------------------');
 
       // fix arg also
-      setTimeout(() => {
-        console.log(' NOW LOAD CREEPS ');
-        forestOfHollowBlood.loadEnemyCreeps();
-      }, 1000);
-
+      // setTimeout(() => {
+      console.log(' NOW LOAD CREEPS ');
+      forestOfHollowBlood.loadEnemyCreeps();
+      // }, 1000);
       byId('buttonLeaveSession').addEventListener('click', () => {
         location.assign("rpg-menu.html");
       });
@@ -133,16 +132,9 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
     addEventListener("onConnectionCreated", (e) => {
       const remoteCons = Array.from(e.detail.connection.session.remoteConnections.entries());
       if(remoteCons.length == (forestOfHollowBlood.player.data.numOfPlayers - 1)) {
-        // console.log(' -------------------GAME PLAYERS REACHED ALL PLAYERS---------------------------------');
-        // remo
         console.log(' -------------------GAME PLAYERS REACHED ALL PLAYERS---------------------------------');
-        // test again here for hackers
       }
       const isLocal = e.detail.connection.connectionId == app.net.session.connection.connectionId;
-      // console.log('[onConnectionCreated] remoteCons.length: ' + remoteCons.length);
-      // console.log('[onConnectionCreated] isLocal :' + isLocal);
-      // console.log('[onConnectionCreated] e.detail.connection.session.remoteConnections.size :' + e.detail.connection.session.remoteConnections.size);
-      // console.log('[onConnectionCreated] isLocal :' + isLocal);
       if(e.detail.connection.session.remoteConnections.size == 0) {
         // FIRST BE EMITER
         if(forestOfHollowBlood.net.virtualEmiter == null && isLocal) {
@@ -160,13 +152,13 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
             // 0 is string connId 1 is full connec objc 
             // console.log('[COLLECT teams >>>>>>local>>>>>>>]  already present team player .', remoteCons[x]);
             isSameTeamAlready = true;
-            if(forestOfHollowBlood.player.remoteByTeam[forestOfHollowBlood.player.data.team].indexOf(remoteCons[x][0]) == -1) {
-              forestOfHollowBlood.player.remoteByTeam[forestOfHollowBlood.player.data.team].push(remoteCons[x][0]);
+            if(forestOfHollowBlood.player.remoteByTeam[forestOfHollowBlood.player.data.team].indexOf(remoteCons[x][1]) == -1) {
+              forestOfHollowBlood.player.remoteByTeam[forestOfHollowBlood.player.data.team].push(remoteCons[x][1]);
             }
           } else {
             // console.log('[COLLECT teams >>>>>>enemy>>>>>>>]  already present team player .', remoteCons[x]);
-            if(forestOfHollowBlood.player.remoteByTeam[currentRemoteConn.team].indexOf(remoteCons[x][0]) == -1) {
-              forestOfHollowBlood.player.remoteByTeam[currentRemoteConn.team].push(remoteCons[x][0]);
+            if(forestOfHollowBlood.player.remoteByTeam[currentRemoteConn.team].indexOf(remoteCons[x][1]) == -1) {
+              forestOfHollowBlood.player.remoteByTeam[currentRemoteConn.team].push(remoteCons[x][1]);
             }
           }
         }
@@ -174,10 +166,7 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
           console.log('[EMITTER FOR NEUTRALS] virtualEmiter set2 [x]', remoteCons[x]);
           forestOfHollowBlood.net.virtualEmiter = e.detail.connection.connectionId;
           document.title = "VE " + app.net.session.connection.connectionId;
-        } else {
-          // document.title = app.net.session.connection.connectionId;
         }
-
       }
 
       if(e.detail.connection.connectionId == app.net.session.connection.connectionId) {
@@ -189,7 +178,7 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
         // document.title = app.net.session.connection.connectionId;
 
         // local
-        forestOfHollowBlood.localHero.loadfriendlyCreeps();
+        // forestOfHollowBlood.localHero.loadfriendlyCreeps();
       } else {
         //--------------------------------------------------------
         let newPlayer = document.createElement('div');
@@ -340,8 +329,6 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
       app.cameras.RPG.movementSpeed = 100;
       app.cameras.RPG.followMe = forestOfHollowBlood.localHero.heroe_bodies[0].position;
       app.cameras.RPG.mousRollInAction = true;
-      // automatic
-      byId('join-btn').click();
     });
 
     forestOfHollowBlood.RPG = new Controller(forestOfHollowBlood);
@@ -362,7 +349,7 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
 
     forestOfHollowBlood.collisionSystem = new CollisionSystem(forestOfHollowBlood);
     app.matrixSounds.play('music');
-  })
+  // })
   forestOfHollowBlood.addLight();
 })
 window.app = forestOfHollowBlood;

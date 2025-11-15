@@ -34,7 +34,7 @@ export default class MatrixEngineWGPU {
     depthLoadOp: 'clear',
     depthStoreOp: 'store'
   }
-  matrixAmmo = new MatrixAmmo();
+  // matrixAmmo = new MatrixAmmo();
   matrixSounds = new MatrixSounds();
 
   constructor(options, callback) {
@@ -62,6 +62,10 @@ export default class MatrixEngineWGPU {
         type: 'WASD',
         responseCoef: 2000
       }
+    }
+
+    if(typeof options.dontUsePhysics == 'undefined') {
+      this.matrixAmmo = new MatrixAmmo();
     }
     this.options = options;
     this.mainCameraParams = options.mainCameraParams;
@@ -572,7 +576,7 @@ export default class MatrixEngineWGPU {
       this.device.queue.submit([commandEncoder.finish()]);
       requestAnimationFrame(this.frame);
     } catch(err) {
-      // console.log('%cLoop(err):' + err + " info : " + err.stack, LOG_WARN)
+      console.log('%cLoop(err):' + err + " info : " + err.stack, LOG_WARN)
       requestAnimationFrame(this.frame);
     }
   }

@@ -66,9 +66,10 @@ export class MatrixStream {
 
     this.send = (netArg) => {
       const to = (netArg.toRemote ? netArg.toRemote : []);
+      netArg.toRemote = null;
       this.session.signal({
         data: JSON.stringify(netArg),
-        to: to ,
+        to: to,
         type: netConfig.sessionName
       }).then(() => {
         console.log('netArg.toRemote:' , netArg.toRemote);
@@ -146,10 +147,8 @@ export class MatrixStream {
     update(e) {
       e.data = JSON.parse(e.data);
       try {
-        
         if(e.data.netPos) {
           app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).position.setPosition(e.data.netPos.x, e.data.netPos.y, e.data.netPos.z);
-          if (e.data.remoteName == null) console.log('REMOTE UPDATE::::', e);
         } else if(e.data.netRotY || e.data.netRotY == 0) {
           app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).rotation.y = e.data.netRotY;
         } else if(e.data.netRotX) {
@@ -160,7 +159,7 @@ export class MatrixStream {
           app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).glb.animationIndex = e.data.animationIndex;
         }
       } catch(err) {
-        console.info('mp-update-err:', err);
+        console.info('mmo-err:', err);
       }
     },
     leaveGamePlay() {}

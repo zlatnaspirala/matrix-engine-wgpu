@@ -383,7 +383,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
     }
   })
 
-  addEventListener('AmmoReady', async () => {
+  // addEventListener('AmmoReady', async () => {
     app.matrixSounds.play('music');
     heros = [
       {type: "Warrior", name: 'MariaSword', path: "res/meshes/glb/woman1.glb", desc: forestOfHollowBloodStartSceen.label.get.mariasword},
@@ -466,7 +466,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
     }
     loadHeros();
     createHUDMenu();
-  })
+  // })
   forestOfHollowBloodStartSceen.addLight();
 
   function createHUDMenu() {
