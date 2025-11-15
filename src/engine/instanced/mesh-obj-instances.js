@@ -800,7 +800,7 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
       },
     });
 
-    console.log('✅Pipelines done');
+    // console.log('✅Pipelines done');
   };
 
   updateModelUniformBuffer = () => {

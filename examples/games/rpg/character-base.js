@@ -49,7 +49,7 @@ export class Character extends Hero {
     this.loadLocalHero(path);
     this.loadfriendlyCreeps();
     // async
-    setTimeout(() => this.setupHUDForHero(name), 500);
+    setTimeout(() => this.setupHUDForHero(name), 1100);
   }
 
   setupHUDForHero(name) {
@@ -64,7 +64,6 @@ export class Character extends Hero {
   }
 
   async loadfriendlyCreeps() {
-    console.info(`%cLOADING loadfriendlyCreeps !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! : `, LOG_MATRIX)
     this.friendlyLocal.creeps.push(new Creep({
       core: this.core,
       name: 'friendly_creeps0',
@@ -88,11 +87,18 @@ export class Character extends Hero {
     }, ['creep'], 'friendly', app.player.data.team));
 
     setTimeout(() => {
-      // while(typeof app.localHero.friendlyLocal.creeps[2] == 'undefined') {
-      //   console.info('wait.............')
-      // }
-      console.info('setAllCreepsAtStartPos')
-      app.localHero.setAllCreepsAtStartPos();
+      // console.info('setAllCreepsAtStartPos')
+      app.localHero.setAllCreepsAtStartPos().then(() => {
+        console.log('passed in first')
+      }).catch(() => {
+        setTimeout(() => {
+          app.localHero.setAllCreepsAtStartPos().then(() => {
+            console.log('passed in socound')
+          }).catch(() => {
+            alert('FAILD');
+          })
+        }, 5000)
+      });
     }, 15000);
 
   }
@@ -141,10 +147,25 @@ export class Character extends Hero {
       }, null, glbFile02);
       // ---------
       // make small async - cooking glbs files  mouseTarget_Circle
+      this.setupHero().then(()=>{
+        //
+      }).catch(()=>{
+        this.setupHero().then(()=>{ }).catch(()=>{   })
+      })
+    } catch(err) {throw err;}
+  }
+
+  setupHero () {
+    return new Promise((resolve,reject) => {
       setTimeout(() => {
         console.info(`%cAnimation setup...`, LOG_MATRIX)
         this.mouseTarget = app.getSceneObjectByName('mouseTarget_Circle');
         this.mouseTarget.animationSpeed = 20000;
+
+        if (typeof app.localHero.mouseTarget.instanceTargets === 'undefined') {
+          reject();
+          return;
+        }
         app.localHero.mouseTarget.instanceTargets[1].position[1] = 1;
         app.localHero.mouseTarget.instanceTargets[1].scale = [0.4, 0.4, 0.4];
 
@@ -181,14 +202,10 @@ export class Character extends Hero {
           app.localHero.heroe_bodies[0].globalAmbient = [12, 12, 12, 1]
         }
 
-        // app.localHero.setAllCreepsAtStartPos();
-
         app.localHero.heroe_bodies[0].effects.circlePlaneTex.rotateEffectSpeed = 0.1;
 
-        // this.loadfriendlyCreeps();
-
         this.attachEvents();
-        // important!!
+        // important!
         for(var x = 0;x < app.localHero.heroe_bodies.length;x++) {
           if(x > 0) {
             app.localHero.heroe_bodies[x].position = app.localHero.heroe_bodies[0].position;
@@ -211,12 +228,10 @@ export class Character extends Hero {
           detail: `This is not sync - 99% works`
         }))
       }, 5000); // return to 2 -3 - testing on 3-4 on same computer
-    } catch(err) {throw err;}
+    })
   }
 
   async loadFriendlyHero(p) {
-    //     console.log('loadCreeps() !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
-    console.log('loadFriendlyHero() !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
     try {
       this.friendlyLocal.heroes.push(new FriendlyHero(
         {
@@ -233,40 +248,51 @@ export class Character extends Hero {
   }
 
   setAllCreepsAtStartPos = () => {
-    setTimeout(() => {
-      console.info(`%c setAllCreepsAtStartPos...`, LOG_MATRIX)
-      this.friendlyLocal.creeps.forEach((subMesh_, id) => {
-        let subMesh = subMesh_.heroe_bodies[0];
-        subMesh.position.thrust = subMesh_.moveSpeed;
-        subMesh.glb.animationIndex = 0;
-        // adapt manual if blender is not setup
-        subMesh.glb.glbJsonData.animations.forEach((a, index) => {
-          // console.info(`%c ANimation: ${a.name} index ${index}`, LOG_MATRIX)
-          if(a.name == 'dead') this.friendlyCreepAnimationArrange.dead = index;
-          if(a.name == 'walk') this.friendlyCreepAnimationArrange.walk = index;
-          if(a.name == 'salute') this.friendlyCreepAnimationArrange.salute = index;
-          if(a.name == 'attack') this.friendlyCreepAnimationArrange.attack = index;
-          if(a.name == 'idle') this.friendlyCreepAnimationArrange.idle = index;
+    return new Promise((resolve, reject) => {
+      try {
+        this.friendlyLocal.creeps.forEach((subMesh_) => {
+          if(typeof subMesh_.heroe_bodies === 'undefined') {
+            reject();
+            return;
+          }
         })
-        // if(id == 0) subMesh.sharedState.emitAnimationEvent = true;
-        // all single skin mesh ??????????????????????????????????? ask for emitter
-        subMesh.sharedState.emitAnimationEvent = true;
-        // this.core.collisionSystem.register(`local${id}`, subMesh.position, 15.0, 'local_hero');
-      });
 
-      app.localHero.friendlyLocal.creeps.forEach((creep, index) => {
-        creep.heroe_bodies[0].position.setPosition(
-          startUpPositions[this.core.player.data.team][0] + (index + 1) * 50,
-          startUpPositions[this.core.player.data.team][1],
-          startUpPositions[this.core.player.data.team][2] + (index + 1) * 50);
-      })
+        console.info(`%c promise pass setAllCreepsAtStartPos...`, LOG_MATRIX)
+        this.friendlyLocal.creeps.forEach((subMesh_, id) => {
+          let subMesh = subMesh_.heroe_bodies[0];
+          subMesh.position.thrust = subMesh_.moveSpeed;
+          subMesh.glb.animationIndex = 0;
+          // adapt manual if blender is not setup
+          subMesh.glb.glbJsonData.animations.forEach((a, index) => {
+            // console.info(`%c ANimation: ${a.name} index ${index}`, LOG_MATRIX)
+            if(a.name == 'dead') this.friendlyCreepAnimationArrange.dead = index;
+            if(a.name == 'walk') this.friendlyCreepAnimationArrange.walk = index;
+            if(a.name == 'salute') this.friendlyCreepAnimationArrange.salute = index;
+            if(a.name == 'attack') this.friendlyCreepAnimationArrange.attack = index;
+            if(a.name == 'idle') this.friendlyCreepAnimationArrange.idle = index;
+          })
+          // if(id == 0) subMesh.sharedState.emitAnimationEvent = true;
+          // all single skin mesh ??????????????????????????????????? ask for emitter
+          subMesh.sharedState.emitAnimationEvent = true;
+          // this.core.collisionSystem.register(`local${id}`, subMesh.position, 15.0, 'local_hero');
+        });
 
+        app.localHero.friendlyLocal.creeps.forEach((creep, index) => {
+          creep.heroe_bodies[0].position.setPosition(
+            startUpPositions[this.core.player.data.team][0] + (index + 1) * 50,
+            startUpPositions[this.core.player.data.team][1],
+            startUpPositions[this.core.player.data.team][2] + (index + 1) * 50);
+        })
 
-      // if(this.core.net.virtualEmiter != null) {
-      //   console.info(`%c virtualEmiter use navigateCreeps `, LOG_MATRIX)
-      //   this.navigateCreeps();
-      // }
-    }, 3000);
+        resolve();
+        // if(this.core.net.virtualEmiter != null) {
+        //   console.info(`%c virtualEmiter use navigateCreeps `, LOG_MATRIX)
+        //   this.navigateCreeps();
+        // }
+      } catch(err) {
+        console.info('errr in ', err)
+      }
+    })
   }
 
   navigateCreeps() {

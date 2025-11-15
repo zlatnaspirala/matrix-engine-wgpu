@@ -32,7 +32,7 @@ export function joinSession(options) {
     session = OV.initSession();
 
     session.on('connectionCreated', event => {
-      console.log(`connectionCreated ${event.connection.connectionId}`)
+      // console.log(`connectionCreated ${event.connection.connectionId}`)
       dispatchEvent(new CustomEvent('onConnectionCreated', {detail: event}))
       pushEvent(event)
     });

@@ -36,6 +36,7 @@ import {fetchAll, fetchInfo} from "../../../src/engine/networking/matrix-stream.
  * For now. Next better varian can be timer solution.
  **/
 let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
+  dontUsePhysics: true,
   useSingleRenderPass: true,
   canvasSize: 'fullscreen', // {w: window.visualViewport.width, h: window.visualViewport.height }
   mainCameraParams: {
@@ -219,10 +220,8 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
 
   addEventListener('check-gameplay-channel', (e) => {
     let info = e.detail;
-    console.log('check-gameplay-channel ', info)
     if(info.status) {
-      console.log('check-gameplay-channel ', info.status)
-      console.log('check-gameplay-channel [url] ', info.url)
+      // console.log('check-gameplay-channel ', info.status)
       byId("onlineUsers").innerHTML = `GamePlay:Free`;
       forestOfHollowBloodStartSceen.gamePlayStatus = "free";
       byId('startBtnText').innerHTML = app.label.get.play;
@@ -231,7 +230,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
       forestOfHollowBloodStartSceen.gamePlayStatusTimer = null;
     } else {
       let info = JSON.parse(e.detail);
-      console.log('check-gameplay-channel ', info.connections.numberOfElements)
+      // console.log('check-gameplay-channel ', info.connections.numberOfElements)
       byId("onlineUsers").innerHTML = `${app.label.get.alreadyingame}:${info.connections.numberOfElements}`;
       forestOfHollowBloodStartSceen.gamePlayStatus = "used";
       byId('startBtnText').innerHTML = `${app.label.get.gameplaychannel}:${app.label.get.used}`;

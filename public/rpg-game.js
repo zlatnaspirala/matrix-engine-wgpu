@@ -46,7 +46,7 @@ class Character extends _hero.Hero {
     this.loadLocalHero(path);
     this.loadfriendlyCreeps();
     // async
-    setTimeout(() => this.setupHUDForHero(name), 500);
+    setTimeout(() => this.setupHUDForHero(name), 1100);
   }
   setupHUDForHero(name) {
     console.info(`%cLOADING hero name : ${name}`, _utils.LOG_MATRIX);
@@ -59,7 +59,6 @@ class Character extends _hero.Hero {
     (0, _utils.byId)('hudDesriptionText').innerHTML = app.label.get[name.toLowerCase()];
   }
   async loadfriendlyCreeps() {
-    console.info(`%cLOADING loadfriendlyCreeps !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! : `, _utils.LOG_MATRIX);
     this.friendlyLocal.creeps.push(new _creepCharacter.Creep({
       core: this.core,
       name: 'friendly_creeps0',
@@ -94,11 +93,18 @@ class Character extends _hero.Hero {
       }
     }, ['creep'], 'friendly', app.player.data.team));
     setTimeout(() => {
-      // while(typeof app.localHero.friendlyLocal.creeps[2] == 'undefined') {
-      //   console.info('wait.............')
-      // }
-      console.info('setAllCreepsAtStartPos');
-      app.localHero.setAllCreepsAtStartPos();
+      // console.info('setAllCreepsAtStartPos')
+      app.localHero.setAllCreepsAtStartPos().then(() => {
+        console.log('passed in first');
+      }).catch(() => {
+        setTimeout(() => {
+          app.localHero.setAllCreepsAtStartPos().then(() => {
+            console.log('passed in socound');
+          }).catch(() => {
+            alert('FAILD');
+          });
+        }, 5000);
+      });
     }, 15000);
   }
   async loadLocalHero(p) {
@@ -161,10 +167,25 @@ class Character extends _hero.Hero {
       }, null, glbFile02);
       // ---------
       // make small async - cooking glbs files  mouseTarget_Circle
+      this.setupHero().then(() => {
+        //
+      }).catch(() => {
+        this.setupHero().then(() => {}).catch(() => {});
+      });
+    } catch (err) {
+      throw err;
+    }
+  }
+  setupHero() {
+    return new Promise((resolve, reject) => {
       setTimeout(() => {
         console.info(`%cAnimation setup...`, _utils.LOG_MATRIX);
         this.mouseTarget = app.getSceneObjectByName('mouseTarget_Circle');
         this.mouseTarget.animationSpeed = 20000;
+        if (typeof app.localHero.mouseTarget.instanceTargets === 'undefined') {
+          reject();
+          return;
+        }
         app.localHero.mouseTarget.instanceTargets[1].position[1] = 1;
         app.localHero.mouseTarget.instanceTargets[1].scale = [0.4, 0.4, 0.4];
         this.heroe_bodies = app.mainRenderBundle.filter(obj => obj.name && obj.name.includes(this.name));
@@ -197,15 +218,9 @@ class Character extends _hero.Hero {
         } else if (app.localHero.name == 'Steelborn') {
           app.localHero.heroe_bodies[0].globalAmbient = [12, 12, 12, 1];
         }
-
-        // app.localHero.setAllCreepsAtStartPos();
-
         app.localHero.heroe_bodies[0].effects.circlePlaneTex.rotateEffectSpeed = 0.1;
-
-        // this.loadfriendlyCreeps();
-
         this.attachEvents();
-        // important!!
+        // important!
         for (var x = 0; x < app.localHero.heroe_bodies.length; x++) {
           if (x > 0) {
             app.localHero.heroe_bodies[x].position = app.localHero.heroe_bodies[0].position;
@@ -228,13 +243,9 @@ class Character extends _hero.Hero {
           detail: `This is not sync - 99% works`
         }));
       }, 5000); // return to 2 -3 - testing on 3-4 on same computer
-    } catch (err) {
-      throw err;
-    }
+    });
   }
   async loadFriendlyHero(p) {
-    //     console.log('loadCreeps() !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
-    console.log('loadFriendlyHero() !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
     try {
       this.friendlyLocal.heroes.push(new _friendlyCharacter.FriendlyHero({
         core: this.core,
@@ -252,35 +263,45 @@ class Character extends _hero.Hero {
     }
   }
   setAllCreepsAtStartPos = () => {
-    setTimeout(() => {
-      console.info(`%c setAllCreepsAtStartPos...`, _utils.LOG_MATRIX);
-      this.friendlyLocal.creeps.forEach((subMesh_, id) => {
-        let subMesh = subMesh_.heroe_bodies[0];
-        subMesh.position.thrust = subMesh_.moveSpeed;
-        subMesh.glb.animationIndex = 0;
-        // adapt manual if blender is not setup
-        subMesh.glb.glbJsonData.animations.forEach((a, index) => {
-          // console.info(`%c ANimation: ${a.name} index ${index}`, LOG_MATRIX)
-          if (a.name == 'dead') this.friendlyCreepAnimationArrange.dead = index;
-          if (a.name == 'walk') this.friendlyCreepAnimationArrange.walk = index;
-          if (a.name == 'salute') this.friendlyCreepAnimationArrange.salute = index;
-          if (a.name == 'attack') this.friendlyCreepAnimationArrange.attack = index;
-          if (a.name == 'idle') this.friendlyCreepAnimationArrange.idle = index;
+    return new Promise((resolve, reject) => {
+      try {
+        this.friendlyLocal.creeps.forEach(subMesh_ => {
+          if (typeof subMesh_.heroe_bodies === 'undefined') {
+            reject();
+            return;
+          }
         });
-        // if(id == 0) subMesh.sharedState.emitAnimationEvent = true;
-        // all single skin mesh ??????????????????????????????????? ask for emitter
-        subMesh.sharedState.emitAnimationEvent = true;
-        // this.core.collisionSystem.register(`local${id}`, subMesh.position, 15.0, 'local_hero');
-      });
-      app.localHero.friendlyLocal.creeps.forEach((creep, index) => {
-        creep.heroe_bodies[0].position.setPosition(_static.startUpPositions[this.core.player.data.team][0] + (index + 1) * 50, _static.startUpPositions[this.core.player.data.team][1], _static.startUpPositions[this.core.player.data.team][2] + (index + 1) * 50);
-      });
-
-      // if(this.core.net.virtualEmiter != null) {
-      //   console.info(`%c virtualEmiter use navigateCreeps `, LOG_MATRIX)
-      //   this.navigateCreeps();
-      // }
-    }, 3000);
+        console.info(`%c promise pass setAllCreepsAtStartPos...`, _utils.LOG_MATRIX);
+        this.friendlyLocal.creeps.forEach((subMesh_, id) => {
+          let subMesh = subMesh_.heroe_bodies[0];
+          subMesh.position.thrust = subMesh_.moveSpeed;
+          subMesh.glb.animationIndex = 0;
+          // adapt manual if blender is not setup
+          subMesh.glb.glbJsonData.animations.forEach((a, index) => {
+            // console.info(`%c ANimation: ${a.name} index ${index}`, LOG_MATRIX)
+            if (a.name == 'dead') this.friendlyCreepAnimationArrange.dead = index;
+            if (a.name == 'walk') this.friendlyCreepAnimationArrange.walk = index;
+            if (a.name == 'salute') this.friendlyCreepAnimationArrange.salute = index;
+            if (a.name == 'attack') this.friendlyCreepAnimationArrange.attack = index;
+            if (a.name == 'idle') this.friendlyCreepAnimationArrange.idle = index;
+          });
+          // if(id == 0) subMesh.sharedState.emitAnimationEvent = true;
+          // all single skin mesh ??????????????????????????????????? ask for emitter
+          subMesh.sharedState.emitAnimationEvent = true;
+          // this.core.collisionSystem.register(`local${id}`, subMesh.position, 15.0, 'local_hero');
+        });
+        app.localHero.friendlyLocal.creeps.forEach((creep, index) => {
+          creep.heroe_bodies[0].position.setPosition(_static.startUpPositions[this.core.player.data.team][0] + (index + 1) * 50, _static.startUpPositions[this.core.player.data.team][1], _static.startUpPositions[this.core.player.data.team][2] + (index + 1) * 50);
+        });
+        resolve();
+        // if(this.core.net.virtualEmiter != null) {
+        //   console.info(`%c virtualEmiter use navigateCreeps `, LOG_MATRIX)
+        //   this.navigateCreeps();
+        // }
+      } catch (err) {
+        console.info('errr in ', err);
+      }
+    });
   };
   navigateCreeps() {
     // console.log('navigateCreeps()');
@@ -1425,10 +1446,12 @@ function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e
  **/
 // set orientation  in animation end hero
 // setup HP after setDead
+
 if (!_utils.SS.has('player') || !_utils.LS.has('player')) {
   location.href = 'https://google.com';
 }
 let forestOfHollowBlood = new _world.default({
+  dontUsePhysics: true,
   useSingleRenderPass: true,
   canvasSize: 'fullscreen',
   mainCameraParams: {
@@ -1452,8 +1475,7 @@ let forestOfHollowBlood = new _world.default({
   forestOfHollowBlood.matrixSounds.createAudio('music', 'res/audios/rpg/music.mp3', 1);
   forestOfHollowBlood.matrixSounds.createAudio('win1', 'res/audios/rpg/feel.mp3', 2);
 
-  // addEventListener('AmmoReady', async () => {
-
+  // addEventListener('AmmoReady', async () => {})
   forestOfHollowBlood.player.data = _utils.SS.get('player');
   forestOfHollowBlood.net = new _net.MatrixStream({
     active: true,
@@ -1471,17 +1493,8 @@ let forestOfHollowBlood = new _world.default({
   };
   app.matrixSounds.audios.music.loop = true;
   addEventListener('net-ready', () => {
-    // console.log('net-ready ----------------------------------------------------');
-    // console.log('forestOfHollowBlood.player.data.numOfPlayers', forestOfHollowBlood.player.data.numOfPlayers);
-    // automatic
     (0, _matrixStream.byId)('join-btn').click();
-    // console.log('net-ready ----------------------------------------------------');
-
-    // fix arg also
-    // setTimeout(() => {
-    console.log(' NOW LOAD CREEPS ');
     forestOfHollowBlood.loadEnemyCreeps();
-    // }, 1000);
     (0, _matrixStream.byId)('buttonLeaveSession').addEventListener('click', () => {
       location.assign("rpg-menu.html");
     });
@@ -1496,7 +1509,7 @@ let forestOfHollowBlood = new _world.default({
     }
   };
   addEventListener('connectionDestroyed', e => {
-    console.log('connectionDestroyed , bad bad . end of game.');
+    console.log('connectionDestroyed - end of game.');
     /**
      * @note
      * For now actual is most simple way 
@@ -1506,7 +1519,6 @@ let forestOfHollowBlood = new _world.default({
      */
     if ((0, _matrixStream.byId)('remote-' + e.detail.connectionId)) {
       (0, _matrixStream.byId)('remote-' + e.detail.connectionId).remove();
-      //....
       // byId('waiting-' + e.detail.connectionId).remove();
       _utils.mb.error(`Player ${e.detail.connectionId} disconnected...`);
       let getPlayer = JSON.parse(e.detail.event.connection.data);
@@ -1523,14 +1535,10 @@ let forestOfHollowBlood = new _world.default({
   });
   addEventListener("onConnectionCreated", e => {
     const remoteCons = Array.from(e.detail.connection.session.remoteConnections.entries());
-    if (remoteCons.length == forestOfHollowBlood.player.data.numOfPlayers - 1) {
-      console.log(' -------------------GAME PLAYERS REACHED ALL PLAYERS---------------------------------');
-    }
+    // if(remoteCons.length == (forestOfHollowBlood.player.data.numOfPlayers - 1)) {}
     const isLocal = e.detail.connection.connectionId == app.net.session.connection.connectionId;
     if (e.detail.connection.session.remoteConnections.size == 0) {
-      // FIRST BE EMITER
       if (forestOfHollowBlood.net.virtualEmiter == null && isLocal) {
-        // console.log('[- Absolute first I AM EMITTER FOR NEUTRALS virtualEmiter set1 ]', e.detail.connection.connectionId);
         forestOfHollowBlood.net.virtualEmiter = e.detail.connection.connectionId;
         document.title = "VE " + app.net.session.connection.connectionId;
       }
@@ -1540,21 +1548,17 @@ let forestOfHollowBlood = new _world.default({
       for (var x = 0; x < remoteCons.length; x++) {
         let currentRemoteConn = JSON.parse(remoteCons[x][1].data);
         if (forestOfHollowBlood.player.data.team == currentRemoteConn.team) {
-          // 0 is string connId 1 is full connec objc 
-          // console.log('[COLLECT teams >>>>>>local>>>>>>>]  already present team player .', remoteCons[x]);
           isSameTeamAlready = true;
           if (forestOfHollowBlood.player.remoteByTeam[forestOfHollowBlood.player.data.team].indexOf(remoteCons[x][1]) == -1) {
             forestOfHollowBlood.player.remoteByTeam[forestOfHollowBlood.player.data.team].push(remoteCons[x][1]);
           }
         } else {
-          // console.log('[COLLECT teams >>>>>>enemy>>>>>>>]  already present team player .', remoteCons[x]);
           if (forestOfHollowBlood.player.remoteByTeam[currentRemoteConn.team].indexOf(remoteCons[x][1]) == -1) {
             forestOfHollowBlood.player.remoteByTeam[currentRemoteConn.team].push(remoteCons[x][1]);
           }
         }
       }
       if (isSameTeamAlready == false && isLocal == true) {
-        console.log('[EMITTER FOR NEUTRALS] virtualEmiter set2 [x]', remoteCons[x]);
         forestOfHollowBlood.net.virtualEmiter = e.detail.connection.connectionId;
         document.title = "VE " + app.net.session.connection.connectionId;
       }
@@ -1566,25 +1570,15 @@ let forestOfHollowBlood = new _world.default({
       (0, _matrixStream.byId)('matrix-net').appendChild(newPlayer);
       // document.title = forestOfHollowBlood.label.get.titleBan;
       // document.title = app.net.session.connection.connectionId;
-
-      // local
-      // forestOfHollowBlood.localHero.loadfriendlyCreeps();
     } else {
-      //--------------------------------------------------------
       let newPlayer = document.createElement('div');
       newPlayer.innerHTML = `remote Player: ${e.detail.connection.connectionId}`;
       newPlayer.id = `remote-${e.detail.connection.connectionId}`;
       (0, _matrixStream.byId)('matrix-net').appendChild(newPlayer);
       let d = JSON.parse(e.detail.connection.data);
       if (d.team == app.player.data.team) {
-        // for case on refresh CRITICAL !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        // for case on refresh CRITICAL !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        // console.log('[new Friendly hero]', d);
-        // d.mesh 
         let testIfExistAlready = app.mainRenderBundle.filter(obj => obj.name && obj.name.includes(d.mesh));
-        if (testIfExistAlready.length > 0) {
-          console.log('[new Friendly hero already exist do nothing]', d);
-        } else {
+        if (testIfExistAlready.length == 0) {
           app.localHero.loadFriendlyHero(d);
         }
       } else {
@@ -1592,7 +1586,6 @@ let forestOfHollowBlood = new _world.default({
         if (testIfExistAlready.length > 0) {
           console.log('[new enemy hero already exist do nothing]', d);
         } else {
-          // console.log('[new enemy hero]', d);
           app.enemies.loadEnemyHero(d);
         }
       }
@@ -1602,8 +1595,6 @@ let forestOfHollowBlood = new _world.default({
     let d = JSON.parse(e.detail.data);
     console.log('<data-receive self>', d);
     if (d.type == "damage") {
-      // string
-      console.log('<data-receive damage for >', d.defenderName);
       let IsEnemyHeroObj = forestOfHollowBlood.enemies.enemies.find(enemy => enemy.name === d.defenderName);
       let IsEnemyCreepObj = forestOfHollowBlood.enemies.creeps.find(creep => creep.name === d.defenderName);
       if (IsEnemyHeroObj) {
@@ -1617,15 +1608,14 @@ let forestOfHollowBlood = new _world.default({
             app.localHero.killEnemy(1);
           }
         }
-
         //..
       }
     }
   });
   addEventListener('only-data-receive', e => {
-    console.log('<data-receive>', e);
+    // console.log('<data-receive>', e)
     if (e.detail.from.connectionId == app.net.session.connection.connectionId) {
-      console.log('<data-receive damage for local hero !>', d);
+      console.log('<data-receive damage for local hero !!!>', d);
     }
     let d = JSON.parse(e.detail.data);
     if (d.type == "damage") {
@@ -1633,17 +1623,15 @@ let forestOfHollowBlood = new _world.default({
       console.log('<data-receive damage for >', d.defenderName);
       let IsEnemyHeroObj = forestOfHollowBlood.enemies.enemies.find(enemy => enemy.name === d.defenderName);
       let IsEnemyCreepObj = forestOfHollowBlood.enemies.creeps.find(creep => creep.name === d.defenderName);
-
       // new
       let IsFriendlyHeroObj = forestOfHollowBlood.localHero.friendlyLocal.heroes.find(fhero => fhero.name === d.defenderName);
       if (IsFriendlyHeroObj) {
-        //
-        console.log('<data-receive damage for IsFriendlyHeroObj >', IsFriendlyHeroObj);
+        // console.log('<data-receive damage for IsFriendlyHeroObj >', IsFriendlyHeroObj);
         const progress = Math.max(0, Math.min(1, d.hp / IsFriendlyHeroObj.getHPMax()));
         IsFriendlyHeroObj.heroe_bodies[0].effects.energyBar.setProgress(progress);
         console.log('<data-receive damage IsFriendlyHeroObj progress >', progress);
       } else if (IsEnemyHeroObj) {
-        console.log('<data-receive damage for IsEnemyHeroObj >', IsEnemyHeroObj);
+        // console.log('<data-receive damage for IsEnemyHeroObj >', IsEnemyHeroObj);
         const progress = Math.max(0, Math.min(1, d.hp / IsEnemyHeroObj.getHPMax()));
         IsEnemyHeroObj.heroe_bodies[0].effects.energyBar.setProgress(progress);
         console.log('<data-receive damage IsEnemyHeroObj progress >', progress);
@@ -1653,7 +1641,6 @@ let forestOfHollowBlood = new _world.default({
             app.localHero.killEnemy(1);
           }
         }
-
         //..
       } else if (IsEnemyCreepObj) {
         console.log('<data-receive damage for IsEnemyCreepObj >', IsEnemyCreepObj);
@@ -1707,7 +1694,6 @@ let forestOfHollowBlood = new _world.default({
   });
   forestOfHollowBlood.RPG = new _controller.Controller(forestOfHollowBlood);
   forestOfHollowBlood.mapLoader = new _mapLoader.MEMapLoader(forestOfHollowBlood, "./res/meshes/nav-mesh/navmesh.json");
-  // fix arg later!
   forestOfHollowBlood.localHero = new _characterBase.Character(forestOfHollowBlood, forestOfHollowBlood.player.data.path, forestOfHollowBlood.player.data.hero, [forestOfHollowBlood.player.data.archetypes]);
   forestOfHollowBlood.localHero.inventory = new _invertoryManager.Inventory(forestOfHollowBlood.localHero);
   forestOfHollowBlood.marketPlace = new _marketplace.Marketplace(forestOfHollowBlood.localHero);
@@ -1717,7 +1703,6 @@ let forestOfHollowBlood = new _world.default({
   forestOfHollowBlood.HUD = new _hud.HUD(forestOfHollowBlood.localHero);
   forestOfHollowBlood.collisionSystem = new _collisionSubSystem.CollisionSystem(forestOfHollowBlood);
   app.matrixSounds.play('music');
-  // })
   forestOfHollowBlood.addLight();
 });
 window.app = forestOfHollowBlood;
@@ -27228,7 +27213,8 @@ class MEMeshObjInstances extends _materialsInstanced.default {
         format: 'depth24plus'
       }
     });
-    console.log('✅Pipelines done');
+
+    // console.log('✅Pipelines done');
   };
   updateModelUniformBuffer = () => {
     // if(this.done == false) return;
@@ -31283,7 +31269,7 @@ class MEMeshObj extends _materials.default {
       },
       primitive: this.primitive
     });
-    console.log('✅Set Pipeline done');
+    // console.log('✅Set Pipeline done');
   };
   updateModelUniformBuffer = () => {
     if (this.done == false) return;
@@ -31510,7 +31496,7 @@ function joinSession(options) {
     window.OV = OV;
     exports.session = session = OV.initSession();
     session.on('connectionCreated', event => {
-      console.log(`connectionCreated ${event.connection.connectionId}`);
+      // console.log(`connectionCreated ${event.connection.connectionId}`)
       dispatchEvent(new CustomEvent('onConnectionCreated', {
         detail: event
       }));
@@ -32079,7 +32065,6 @@ class MatrixStream {
       try {
         if (e.data.netPos) {
           app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).position.setPosition(e.data.netPos.x, e.data.netPos.y, e.data.netPos.z);
-          if (e.data.remoteName == null) console.log('REMOTE UPDATE::::', e);
         } else if (e.data.netRotY || e.data.netRotY == 0) {
           app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).rotation.y = e.data.netRotY;
         } else if (e.data.netRotX) {
@@ -32090,7 +32075,7 @@ class MatrixStream {
           app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).glb.animationIndex = e.data.animationIndex;
         }
       } catch (err) {
-        console.info('mp-update-err:', err);
+        console.info('mmo-err:', err);
       }
     },
     leaveGamePlay() {}
@@ -36071,6 +36056,9 @@ class MatrixEngineWGPU {
         responseCoef: 2000
       };
     }
+    if (typeof options.dontUsePhysics == 'undefined') {
+      this.matrixAmmo = new _matrixAmmo.default();
+    }
     this.options = options;
     this.mainCameraParams = options.mainCameraParams;
     const target = this.options.appendTo || document.body;
@@ -36723,7 +36711,7 @@ class MatrixEngineWGPU {
       this.device.queue.submit([commandEncoder.finish()]);
       requestAnimationFrame(this.frame);
     } catch (err) {
-      console.log('%cLoop(err):' + err + " info : " + err.stack, _utils.LOG_WARN);
+      // console.log('%cLoop(err):' + err + " info : " + err.stack, LOG_WARN)
       requestAnimationFrame(this.frame);
     }
   };

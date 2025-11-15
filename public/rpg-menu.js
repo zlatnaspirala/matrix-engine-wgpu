@@ -596,6 +596,7 @@ function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e
  * For now. Next better varian can be timer solution.
  **/
 let forestOfHollowBloodStartSceen = new _world.default({
+  dontUsePhysics: true,
   useSingleRenderPass: true,
   canvasSize: 'fullscreen',
   // {w: window.visualViewport.width, h: window.visualViewport.height }
@@ -763,10 +764,8 @@ let forestOfHollowBloodStartSceen = new _world.default({
   };
   addEventListener('check-gameplay-channel', e => {
     let info = e.detail;
-    console.log('check-gameplay-channel ', info);
     if (info.status) {
-      console.log('check-gameplay-channel ', info.status);
-      console.log('check-gameplay-channel [url] ', info.url);
+      // console.log('check-gameplay-channel ', info.status)
       (0, _utils.byId)("onlineUsers").innerHTML = `GamePlay:Free`;
       forestOfHollowBloodStartSceen.gamePlayStatus = "free";
       (0, _utils.byId)('startBtnText').innerHTML = app.label.get.play;
@@ -775,7 +774,7 @@ let forestOfHollowBloodStartSceen = new _world.default({
       forestOfHollowBloodStartSceen.gamePlayStatusTimer = null;
     } else {
       let info = JSON.parse(e.detail);
-      console.log('check-gameplay-channel ', info.connections.numberOfElements);
+      // console.log('check-gameplay-channel ', info.connections.numberOfElements)
       (0, _utils.byId)("onlineUsers").innerHTML = `${app.label.get.alreadyingame}:${info.connections.numberOfElements}`;
       forestOfHollowBloodStartSceen.gamePlayStatus = "used";
       (0, _utils.byId)('startBtnText').innerHTML = `${app.label.get.gameplaychannel}:${app.label.get.used}`;
@@ -23782,7 +23781,8 @@ class MEMeshObjInstances extends _materialsInstanced.default {
         format: 'depth24plus'
       }
     });
-    console.log('✅Pipelines done');
+
+    // console.log('✅Pipelines done');
   };
   updateModelUniformBuffer = () => {
     // if(this.done == false) return;
@@ -27837,7 +27837,7 @@ class MEMeshObj extends _materials.default {
       },
       primitive: this.primitive
     });
-    console.log('✅Set Pipeline done');
+    // console.log('✅Set Pipeline done');
   };
   updateModelUniformBuffer = () => {
     if (this.done == false) return;
@@ -28064,7 +28064,7 @@ function joinSession(options) {
     window.OV = OV;
     exports.session = session = OV.initSession();
     session.on('connectionCreated', event => {
-      console.log(`connectionCreated ${event.connection.connectionId}`);
+      // console.log(`connectionCreated ${event.connection.connectionId}`)
       dispatchEvent(new CustomEvent('onConnectionCreated', {
         detail: event
       }));
@@ -33144,7 +33144,7 @@ class MatrixEngineWGPU {
       this.device.queue.submit([commandEncoder.finish()]);
       requestAnimationFrame(this.frame);
     } catch (err) {
-      console.log('%cLoop(err):' + err + " info : " + err.stack, _utils.LOG_WARN);
+      // console.log('%cLoop(err):' + err + " info : " + err.stack, LOG_WARN)
       requestAnimationFrame(this.frame);
     }
   };

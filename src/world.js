@@ -576,7 +576,7 @@ export default class MatrixEngineWGPU {
       this.device.queue.submit([commandEncoder.finish()]);
       requestAnimationFrame(this.frame);
     } catch(err) {
-      console.log('%cLoop(err):' + err + " info : " + err.stack, LOG_WARN)
+      // console.log('%cLoop(err):' + err + " info : " + err.stack, LOG_WARN)
       requestAnimationFrame(this.frame);
     }
   }
