@@ -387,7 +387,7 @@ class Character extends _hero.Hero {
     }
   }
   setAttackCreep(creepIndex) {
-    console.info(`%cfriendly creep attack enemy!`, _utils.LOG_MATRIX);
+    // console.info(`%cfriendly creep attack enemy!`, LOG_MATRIX)
     if (this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].glb.animationIndex != this.friendlyCreepAnimationArrange.attack) {
       this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].glb.animationIndex = this.friendlyCreepAnimationArrange.attack;
       // app.net.send({
@@ -462,7 +462,7 @@ class Character extends _hero.Hero {
             lc.creepFocusAttackOn = app.enemies.creeps.filter(creep => creep.name == e.detail.B.id)[0];
           }
           app.localHero.setAttackCreep(e.detail.B.id[e.detail.B.id.length - 1]);
-          console.info('creep vs creep ');
+          // console.info('creep vs creep ')
         }
       } else if (e.detail.A.group == "friendly") {
         // console.info('close distance A is friendly:', e.detail.A.group)
@@ -476,7 +476,7 @@ class Character extends _hero.Hero {
             lc.creepFocusAttackOn = app.enemies.creeps.filter(creep => creep.name == e.detail.B.id)[0];
           }
           app.localHero.setAttackCreep(e.detail.A.id[e.detail.A.id.length - 1]);
-          console.info('creep vs creep ');
+          // console.info('creep vs creep ')
           // console.info('close distance A is friendly:', e.detail.A.group)
         }
       }
@@ -31993,9 +31993,10 @@ class MatrixStream {
       });
     };
     this.send = netArg => {
+      const to = netArg.toRemote ? netArg.toRemote : [];
       this.session.signal({
         data: JSON.stringify(netArg),
-        to: netArg.toRemote ? netArg.toRemote : [],
+        to: to,
         type: _matrixStream.netConfig.sessionName
       }).then(() => {
         console.log('netArg.toRemote:', netArg.toRemote);
@@ -32070,9 +32071,9 @@ class MatrixStream {
     update(e) {
       e.data = JSON.parse(e.data);
       try {
-        // console.log('REMOTE UPDATE::::', e);
         if (e.data.netPos) {
           app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).position.setPosition(e.data.netPos.x, e.data.netPos.y, e.data.netPos.z);
+          if (e.data.remoteName == null) console.log('REMOTE UPDATE::::', e);
         } else if (e.data.netRotY || e.data.netRotY == 0) {
           app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).rotation.y = e.data.netRotY;
         } else if (e.data.netRotX) {

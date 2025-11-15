@@ -381,7 +381,7 @@ export class Character extends Hero {
   }
 
   setAttackCreep(creepIndex) {
-    console.info(`%cfriendly creep attack enemy!`, LOG_MATRIX)
+    // console.info(`%cfriendly creep attack enemy!`, LOG_MATRIX)
     if(this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].glb.animationIndex != this.friendlyCreepAnimationArrange.attack) {
       this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].glb.animationIndex = this.friendlyCreepAnimationArrange.attack;
       // app.net.send({
@@ -462,7 +462,7 @@ export class Character extends Hero {
             lc.creepFocusAttackOn = app.enemies.creeps.filter((creep) => creep.name == e.detail.B.id)[0];
           }
           app.localHero.setAttackCreep(e.detail.B.id[e.detail.B.id.length - 1]);
-          console.info('creep vs creep ')
+          // console.info('creep vs creep ')
         }
       } else if(e.detail.A.group == "friendly") {
         // console.info('close distance A is friendly:', e.detail.A.group)
@@ -477,7 +477,7 @@ export class Character extends Hero {
             lc.creepFocusAttackOn = app.enemies.creeps.filter((creep) => creep.name == e.detail.B.id)[0];
           }
           app.localHero.setAttackCreep(e.detail.A.id[e.detail.A.id.length - 1]);
-          console.info('creep vs creep ')
+          // console.info('creep vs creep ')
           // console.info('close distance A is friendly:', e.detail.A.group)
         }
       }
