@@ -57,7 +57,9 @@ export class Creep extends Hero {
     return new Promise((resolve, reject) => {
       setTimeout(() => {
         this.heroe_bodies = app.mainRenderBundle.filter(obj => obj.name && obj.name.includes(o.name));
-        if(this.heroe_bodies.length == 0) {
+        if(this.heroe_bodies.length == 0 ||
+          this.core.net.session == null
+        ) {
           reject();
           return;
         }
@@ -84,7 +86,7 @@ export class Creep extends Hero {
           if(this.group == 'friendly' && this.name.indexOf('friendly_creeps') != -1) {
             if(idx == 0) {
               if(this.core.net.virtualEmiter == this.core.net.session.connection.connectionId) {
-                subMesh.position.teams[0] = app.player.remoteByTeam[app.player.data.team]; 
+                subMesh.position.teams[0] = app.player.remoteByTeam[app.player.data.team];
                 subMesh.position.teams[1] = app.player.remoteByTeam[app.player.data.enemyTeam];
                 subMesh.position.netObject = subMesh.name;
                 let t = subMesh.name.replace('friendly_creeps', 'enemy_creep');
@@ -92,8 +94,11 @@ export class Creep extends Hero {
                 subMesh.position.remoteName = t;
                 subMesh.rotation.emitY = subMesh.name;
                 subMesh.rotation.remoteName = t;
+
+                subMesh.sharedState.emitAnimationEvent = true;
               }
             }
+
           }
           if(idx == 0) this.core.collisionSystem.register((o.name), subMesh.position, 15.0, this.group);
         });

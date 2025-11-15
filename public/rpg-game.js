@@ -271,7 +271,7 @@ class Character extends _hero.Hero {
             return;
           }
         });
-        console.info(`%c promise pass setAllCreepsAtStartPos...`, _utils.LOG_MATRIX);
+        // console.info(`%c promise pass setAllCreepsAtStartPos...`, LOG_MATRIX)
         this.friendlyLocal.creeps.forEach((subMesh_, id) => {
           let subMesh = subMesh_.heroe_bodies[0];
           subMesh.position.thrust = subMesh_.moveSpeed;
@@ -286,8 +286,6 @@ class Character extends _hero.Hero {
             if (a.name == 'idle') this.friendlyCreepAnimationArrange.idle = index;
           });
           // if(id == 0) subMesh.sharedState.emitAnimationEvent = true;
-          // all single skin mesh ??????????????????????????????????? ask for emitter
-          subMesh.sharedState.emitAnimationEvent = true;
           // this.core.collisionSystem.register(`local${id}`, subMesh.position, 15.0, 'local_hero');
         });
         app.localHero.friendlyLocal.creeps.forEach((creep, index) => {
@@ -406,6 +404,25 @@ class Character extends _hero.Hero {
       //   sceneName: 'not in use',
       //   animationIndex: this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].glb.animationIndex
       // })
+
+      // this.friendlyLocal.creeps[creepIndex].heroe_bodies[0]
+      // // logic is only for two team - index 0 is local !!!
+      // if(this.teams[0].length > 0) app.net.send({
+      //   // team: this.teams[0],
+      //   toRemote: this.teams[0], // default null remote conns
+      //   // remoteName: this.remoteName,
+      //   sceneName: this.netObject, // origin scene name to receive
+      //   netPos: {x: this.x, y: this.y, z: this.z},
+      // });
+
+      // // remove if (this.teams[1].length > 0)  after alll this is only for CASE OF SUM PLAYER 3 FOR TEST ONLY
+      // if(this.teams[1].length > 0) app.net.send({
+      //   // team: this.teams[1],
+      //   toRemote: this.teams[1], // default null remote conns
+      //   remoteName: this.remoteName, // to enemy players
+      //   sceneName: this.netObject, // now not important
+      //   netPos: {x: this.x, y: this.y, z: this.z},
+      // });
     }
   }
   setAttackCreep(creepIndex) {
@@ -996,7 +1013,7 @@ class Creep extends _hero.Hero {
     return new Promise((resolve, reject) => {
       setTimeout(() => {
         this.heroe_bodies = app.mainRenderBundle.filter(obj => obj.name && obj.name.includes(o.name));
-        if (this.heroe_bodies.length == 0) {
+        if (this.heroe_bodies.length == 0 || this.core.net.session == null) {
           reject();
           return;
         }
@@ -1030,6 +1047,7 @@ class Creep extends _hero.Hero {
                 subMesh.position.remoteName = t;
                 subMesh.rotation.emitY = subMesh.name;
                 subMesh.rotation.remoteName = t;
+                subMesh.sharedState.emitAnimationEvent = true;
               }
             }
           }
