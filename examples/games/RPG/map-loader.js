@@ -93,7 +93,7 @@ export class MEMapLoader {
     }, null, glbFile01);
 
     // TEST
-    var glbFile02 = await fetch('./res/meshes/env/rocks/cyber.glb').then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, this.core.device)));
+    var glbFile02 = await fetch('./res/meshes/env/rocks/home.glb').then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, this.core.device)));
     this.core.addGlbObjInctance({
       material: {type: 'standard', useTextureFromGlb: true},
       scale: [1, 1, 1],
@@ -103,7 +103,7 @@ export class MEMapLoader {
         y: -10,
         z: 930
       },
-      name: 'homebase',
+      name: 'tron_',
       texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
       raycast: {enabled: false, radius: 1.5},
       pointerEffect: {
@@ -146,8 +146,8 @@ export class MEMapLoader {
       this.addInstancingRock();
 
       // remove after
-      app.homebase = this.core.mainRenderBundle.filter((item) => item.name.indexOf('homebase') != -1)[0];
-      app.homebase.globalAmbient = [16, 2, 1];
+      // app.homebase = this.core.mainRenderBundle.filter((item) => item.name.indexOf('homebase') != -1)[0];
+      // app.homebase.globalAmbient = [16, 2, 1];
 
       app.tron = this.core.mainRenderBundle.filter((item) => item.name.indexOf('tron_') != -1)[0];
       app.tron.globalAmbient = [2, 2, 2];
@@ -229,8 +229,8 @@ export class MEMapLoader {
     }, null, glbFile01);
     setTimeout(() => {
       this.collectionOfTree1 = this.core.mainRenderBundle.filter((o => o.name.indexOf('tree') != -1));
-      setTimeout(() => this.addInstancing(), 100)
-    }, 2500)
+      this.addInstancing();
+    }, 3500);
   }
 
   addInstancing() {

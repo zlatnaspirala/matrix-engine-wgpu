@@ -26973,7 +26973,7 @@ class Position {
               });
             } else {
               // logic is only for two team - index 0 is local !!!
-              if (this.teams[0].length > 0) app.net.send({
+              if (this.teams.length > 0) if (this.teams[0].length > 0) app.net.send({
                 toRemote: this.teams[0],
                 // default null remote conns
                 sceneName: this.netObject,
@@ -26985,7 +26985,7 @@ class Position {
                 }
               });
               // remove if (this.teams[1].length > 0)  after alll this is only for CASE OF SUM PLAYER 3 FOR TEST ONLY
-              if (this.teams[1].length > 0) app.net.send({
+              if (this.teams.length > 0) if (this.teams[1].length > 0) app.net.send({
                 toRemote: this.teams[1],
                 // default null remote conns
                 remoteName: this.remoteName,

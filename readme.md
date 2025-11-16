@@ -663,8 +663,6 @@ You need just to copy paste this text to about form on your web page or any othe
 
   'Ruined rock fence' (https://skfb.ly/6RLwN) by VladNeko is licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/).
 
-  "Cyberpunk Rock" (https://skfb.ly/6VFoD) by 1Angelika_A is licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/).
-
   // test 
   "fantasy rock" (https://skfb.ly/oHXAz) by duckcracker02 is licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/).
 

@@ -405,27 +405,23 @@ class Character extends _hero.Hero {
     console.info(`%cfriendly setWalkCreep!`, _utils.LOG_MATRIX);
     if (this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].glb.animationIndex != this.friendlyCreepAnimationArrange.walk) {
       this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].glb.animationIndex = this.friendlyCreepAnimationArrange.walk;
-      // app.net.send({
-      //   remoteName: this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].position.remoteName,
-      //   sceneName: 'not in use',
-      //   animationIndex: this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].glb.animationIndex
-      // })
+      let pos = this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].position;
       if (this.core.net.virtualEmiter == null) {
         return;
       }
-      if (this.teams[0].length > 0) app.net.send({
-        toRemote: this.teams[0],
+      if (pos.teams.length > 0) if (pos.teams[0].length > 0) app.net.send({
+        toRemote: pos.teams[0],
         // default null remote conns
-        sceneName: this.netObject,
+        sceneName: pos.netObject,
         // origin scene name to receive
         animationIndex: this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].glb.animationIndex
       });
-      if (this.teams[1].length > 0) app.net.send({
-        toRemote: this.teams[1],
+      if (pos.teams.length > 0) if (pos.teams[1].length > 0) app.net.send({
+        toRemote: pos.teams[1],
         // default null remote conns
-        remoteName: this.remoteName,
+        remoteName: pos.remoteName,
         // to enemy players
-        sceneName: this.netObject,
+        sceneName: pos.netObject,
         // now not important
         animationIndex: this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].glb.animationIndex
       });
@@ -535,7 +531,7 @@ class Character extends _hero.Hero {
     });
     addEventListener(`animationEnd-${this.heroe_bodies[0].name}`, e => {
       // CHECK DISTANCE
-      if (e.detail.animationName != 'attack') {
+      if (e.detail.animationName != 'attack' || typeof this.core.enemies === 'undefined') {
         //--------------------------------
         return;
         //--------------------------------
@@ -630,6 +626,7 @@ class Character extends _hero.Hero {
       if (this.heroFocusAttackOn == null) {
         let isEnemiesClose = false; // on close distance 
         this.core.enemies.enemies.forEach(enemy => {
+          if (typeof enemy.heroe_bodies === 'undefined') return;
           let tt = this.core.RPG.distance3D(this.heroe_bodies[0].position, enemy.heroe_bodies[0].position);
           if (tt < this.core.RPG.distanceForAction) {
             console.log(`%c ATTACK DAMAGE ${enemy.heroe_bodies[0].name}`, _utils.LOG_MATRIX);
@@ -652,11 +649,13 @@ class Character extends _hero.Hero {
       }
     });
     addEventListener('navigate-friendly_creeps', e => {
-      if (e.detail.localCreepNav) {
-        console.log(`%c navigate creep ${e.detail.localCreepNav}  index : ${e.detail.index}`, _utils.LOG_MATRIX);
-        this.navigateCreep(e.detail.localCreepNav, e.detail.index);
-      } else {
-        this.navigateCreeps();
+      if (app.net.virtualEmiter != null) {
+        if (e.detail.localCreepNav) {
+          console.log(`%c navigate creep ${e.detail.localCreepNav}  index : ${e.detail.index}`, _utils.LOG_MATRIX);
+          this.navigateCreep(e.detail.localCreepNav, e.detail.index);
+        } else {
+          this.navigateCreeps();
+        }
       }
     });
     addEventListener('updateLocalHeroGold', e => {
@@ -1152,6 +1151,7 @@ class Creep extends _hero.Hero {
             // console.info('setIdle:', e.detail.animationName)
             let isEnemiesClose = false; // on close distance 
             this.core.enemies.enemies.forEach(enemy => {
+              if (typeof enemy.heroe_bodies[0] === 'undefined') return;
               let tt = this.core.RPG.distance3D(this.heroe_bodies[0].position, enemy.heroe_bodies[0].position);
               if (tt < this.core.RPG.distanceForAction) {
                 // console.log(`%c ATTACK DAMAGE ${enemy.heroe_bodies[0].name}`, LOG_MATRIX)
@@ -1190,7 +1190,7 @@ class Creep extends _hero.Hero {
               }
             });
             if (this.core.enemies.creeps.length > 0) this.core.enemies.creeps.forEach(creep => {
-              if (this.creepFocusAttackOn.name.indexOf(creep.name) != -1) {
+              if (this.creepFocusAttackOn != null) if (this.creepFocusAttackOn.name.indexOf(creep.name) != -1) {
                 let tt = this.core.RPG.distance3D(this.heroe_bodies[0].position, this.creepFocusAttackOn.heroe_bodies[0].position);
                 if (tt < this.core.RPG.distanceForAction) {
                   // console.log(`%c creep ATTACK DAMAGE ${creep.heroe_bodies[0].name}`, LOG_MATRIX)
@@ -3281,7 +3281,7 @@ class MEMapLoader {
     }, null, glbFile01);
 
     // TEST
-    var glbFile02 = await fetch('./res/meshes/env/rocks/cyber.glb').then(res => res.arrayBuffer().then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, this.core.device)));
+    var glbFile02 = await fetch('./res/meshes/env/rocks/home.glb').then(res => res.arrayBuffer().then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, this.core.device)));
     this.core.addGlbObjInctance({
       material: {
         type: 'standard',
@@ -3298,7 +3298,7 @@ class MEMapLoader {
         y: -10,
         z: 930
       },
-      name: 'homebase',
+      name: 'tron_',
       texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
       raycast: {
         enabled: false,
@@ -3351,8 +3351,9 @@ class MEMapLoader {
       this.addInstancingRock();
 
       // remove after
-      app.homebase = this.core.mainRenderBundle.filter(item => item.name.indexOf('homebase') != -1)[0];
-      app.homebase.globalAmbient = [16, 2, 1];
+      // app.homebase = this.core.mainRenderBundle.filter((item) => item.name.indexOf('homebase') != -1)[0];
+      // app.homebase.globalAmbient = [16, 2, 1];
+
       app.tron = this.core.mainRenderBundle.filter(item => item.name.indexOf('tron_') != -1)[0];
       app.tron.globalAmbient = [2, 2, 2];
 
@@ -3465,8 +3466,8 @@ class MEMapLoader {
     }, null, glbFile01);
     setTimeout(() => {
       this.collectionOfTree1 = this.core.mainRenderBundle.filter(o => o.name.indexOf('tree') != -1);
-      setTimeout(() => this.addInstancing(), 100);
-    }, 2500);
+      this.addInstancing();
+    }, 3500);
   }
   addInstancing() {
     const spacing = 150;
@@ -30429,7 +30430,7 @@ class Position {
               });
             } else {
               // logic is only for two team - index 0 is local !!!
-              if (this.teams[0].length > 0) app.net.send({
+              if (this.teams.length > 0) if (this.teams[0].length > 0) app.net.send({
                 toRemote: this.teams[0],
                 // default null remote conns
                 sceneName: this.netObject,
@@ -30441,7 +30442,7 @@ class Position {
                 }
               });
               // remove if (this.teams[1].length > 0)  after alll this is only for CASE OF SUM PLAYER 3 FOR TEST ONLY
-              if (this.teams[1].length > 0) app.net.send({
+              if (this.teams.length > 0) if (this.teams[1].length > 0) app.net.send({
                 toRemote: this.teams[1],
                 // default null remote conns
                 remoteName: this.remoteName,

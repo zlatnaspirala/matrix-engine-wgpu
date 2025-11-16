@@ -215,6 +215,7 @@ export class Creep extends Hero {
             // console.info('setIdle:', e.detail.animationName)
             let isEnemiesClose = false; // on close distance 
             this.core.enemies.enemies.forEach((enemy) => {
+              if (typeof enemy.heroe_bodies[0] === 'undefined') return;
               let tt = this.core.RPG.distance3D(
                 this.heroe_bodies[0].position,
                 enemy.heroe_bodies[0].position);
@@ -257,7 +258,7 @@ export class Creep extends Hero {
             })
 
             if(this.core.enemies.creeps.length > 0) this.core.enemies.creeps.forEach((creep) => {
-              if(this.creepFocusAttackOn.name.indexOf(creep.name) != -1) {
+              if (this.creepFocusAttackOn != null) if(this.creepFocusAttackOn.name.indexOf(creep.name) != -1) {
                 let tt = this.core.RPG.distance3D(
                   this.heroe_bodies[0].position,
                   this.creepFocusAttackOn.heroe_bodies[0].position);
