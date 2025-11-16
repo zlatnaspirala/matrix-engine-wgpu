@@ -26881,6 +26881,7 @@ var _utils = require("./utils");
  * Sub classes for matrix-wgpu
  * Base class
  * Position { x, y, z }
+ * This class comes from oldies project like matrix-engine and visual-js game engine.
  */
 
 class Position {
@@ -27109,6 +27110,8 @@ class Rotation {
     this.emitX = null;
     this.emitY = null;
     this.emitZ = null;
+    this.toRemote = [];
+    this.teams = [];
     if (typeof x == 'undefined') x = 0;
     if (typeof y == 'undefined') y = 0;
     if (typeof z == 'undefined') z = 0;
@@ -27168,14 +27171,29 @@ class Rotation {
   getRotY() {
     if (this.rotationSpeed.y == 0) {
       if (this.nety != this.y && this.emitY) {
-        app.net.send({
-          remoteName: this.remoteName,
-          sceneName: this.emitY,
-          netRotY: this.y
-        });
+        if (this.teams.length == 0) {
+          app.net.send({
+            toRemote: this.toRemote,
+            remoteName: this.remoteName,
+            sceneName: this.emitY,
+            netRotY: this.y
+          });
+        } else {
+          if (this.teams.length > 0) if (this.teams[0].length > 0) app.net.send({
+            toRemote: this.teams[0],
+            sceneName: this.emitY,
+            netRotY: this.y
+          });
+          if (this.teams.length > 0) if (this.teams[1].length > 0) app.net.send({
+            toRemote: this.teams[1],
+            remoteName: this.remoteName,
+            sceneName: this.emitY,
+            netRotY: this.y
+          });
+        }
+        this.nety = this.y;
+        return (0, _utils.degToRad)(this.y);
       }
-      this.nety = this.y;
-      return (0, _utils.degToRad)(this.y);
     } else {
       this.y = this.y + this.rotationSpeed.y * 0.001;
       return (0, _utils.degToRad)(this.y);

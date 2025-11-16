@@ -82,7 +82,6 @@ export class Creep extends Hero {
           } else if(this.name.indexOf('enemy_creep') != -1) {
             subMesh.globalAmbient = [12, 1, 1, 1];
           }
-
           if(this.group == 'friendly' && this.name.indexOf('friendly_creeps') != -1) {
             if(idx == 0) {
               if(this.core.net.virtualEmiter == this.core.net.session.connection.connectionId) {
@@ -94,13 +93,11 @@ export class Creep extends Hero {
                 subMesh.position.remoteName = t;
                 subMesh.rotation.emitY = subMesh.name;
                 subMesh.rotation.remoteName = t;
-
                 subMesh.sharedState.emitAnimationEvent = true;
               }
             }
-
           }
-          if(idx == 0) this.core.collisionSystem.register((o.name), subMesh.position, 15.0, this.group);
+          if(idx == 0) this.core.collisionSystem.register((o.name), subMesh.position, 15.0, this.group+idx);
         });
 
         this.setStartUpPosition();
