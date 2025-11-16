@@ -5,7 +5,6 @@ import {degToRad, radToDeg} from "./utils";
  * Sub classes for matrix-wgpu
  * Base class
  * Position { x, y, z }
- * This class comes from oldies project like matrix-engine and visual-js game engine.
  */
 
 export class Position {
@@ -107,13 +106,13 @@ export class Position {
               });
             } else {
               // logic is only for two team - index 0 is local !!!
-              if(this.teams.length > 0) if(this.teams[0].length > 0) app.net.send({
+              if (this.teams.length>0) if (this.teams[0].length > 0) app.net.send({
                 toRemote: this.teams[0], // default null remote conns
                 sceneName: this.netObject, // origin scene name to receive
                 netPos: {x: this.x, y: this.y, z: this.z},
               });
               // remove if (this.teams[1].length > 0)  after alll this is only for CASE OF SUM PLAYER 3 FOR TEST ONLY
-              if(this.teams.length > 0) if(this.teams[1].length > 0) app.net.send({
+              if (this.teams.length>0) if (this.teams[1].length > 0) app.net.send({
                 toRemote: this.teams[1], // default null remote conns
                 remoteName: this.remoteName, // to enemy players
                 sceneName: this.netObject, // now not important
@@ -145,7 +144,7 @@ export class Position {
             } else {
 
               // logic is only for two team - index 0 is local !!!
-              if(this.teams[0].length > 0) app.net.send({
+              if (this.teams[0].length > 0) app.net.send({
                 // team: this.teams[0],
                 toRemote: this.teams[0], // default null remote conns
                 // remoteName: this.remoteName,
@@ -153,7 +152,7 @@ export class Position {
                 netPos: {x: this.x, y: this.y, z: this.z},
               });
 
-              if(this.teams[1].length > 0) app.net.send({
+              if (this.teams[1].length > 0) app.net.send({
                 // team: this.teams[1],
                 toRemote: this.teams[1], // default null remote conns
                 remoteName: this.remoteName, // to enemy players
@@ -224,8 +223,6 @@ export class Rotation {
     this.emitX = null;
     this.emitY = null;
     this.emitZ = null;
-    this.toRemote = [];
-    this.teams = [];
     if(typeof x == 'undefined') x = 0;
     if(typeof y == 'undefined') y = 0;
     if(typeof z == 'undefined') z = 0;
@@ -284,29 +281,14 @@ export class Rotation {
   getRotY() {
     if(this.rotationSpeed.y == 0) {
       if(this.nety != this.y && this.emitY) {
-        if(this.teams.length == 0) {
-          app.net.send({
-            toRemote: this.toRemote,
-            remoteName: this.remoteName,
-            sceneName: this.emitY,
-            netRotY: this.y
-          });
-        } else {
-          if(this.teams.length > 0) if(this.teams[0].length > 0) app.net.send({
-            toRemote: this.teams[0],
-            sceneName: this.emitY,
-            netRotY: this.y
-          });
-          if(this.teams.length > 0) if(this.teams[1].length > 0) app.net.send({
-            toRemote: this.teams[1],
-            remoteName: this.remoteName,
-            sceneName: this.emitY,
-            netRotY: this.y
-          });
-        }
-        this.nety = this.y;
-        return degToRad(this.y);
+        app.net.send({
+          remoteName: this.remoteName,
+          sceneName: this.emitY,
+          netRotY: this.y
+        })
       }
+      this.nety = this.y;
+      return degToRad(this.y);
     } else {
       this.y = this.y + this.rotationSpeed.y * 0.001;
       return degToRad(this.y);
