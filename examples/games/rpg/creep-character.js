@@ -90,17 +90,16 @@ export class Creep extends Hero {
                 subMesh.position.teams[1] = app.player.remoteByTeam[app.player.data.enemyTeam];
                 subMesh.position.netObject = subMesh.name;
                 let t = subMesh.name.replace('friendly_creeps', 'enemy_creep');
-                // console.log('It is friendly creep use emit    subMesh.position.teams[0] ', subMesh.position.teams[0]);
                 subMesh.position.remoteName = t;
+                subMesh.rotation.teams[0] = app.player.remoteByTeam[app.player.data.team];
+                subMesh.rotation.teams[1] = app.player.remoteByTeam[app.player.data.enemyTeam];
                 subMesh.rotation.emitY = subMesh.name;
                 subMesh.rotation.remoteName = t;
-
                 subMesh.sharedState.emitAnimationEvent = true;
               }
             }
-
           }
-          if(idx == 0) this.core.collisionSystem.register((o.name), subMesh.position, 15.0, this.group + idx);
+          if(idx == 0) this.core.collisionSystem.register((o.name), subMesh.position, 15.0, this.group);
         });
 
         this.setStartUpPosition();

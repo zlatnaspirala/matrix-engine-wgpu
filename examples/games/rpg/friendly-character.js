@@ -68,12 +68,12 @@ export class FriendlyHero extends Hero {
           }
 
           // maybe will help - remote net players no nedd to collide in other remote user gamaplay
-          // this.core.collisionSystem.register((o.name + idx), subMesh.position, 15.0, 'enemies');
           // dont care for multi sub mesh now
           if(idx == 0) {
-            subMesh.position.netObject = subMesh.name;
-            // for now net view for rot is axis separated - cost is ok for orientaion remote pass
-            subMesh.rotation.emitY = subMesh.name;
+            // remove after test - not i use// remove after test - not i use
+            // subMesh.position.netObject = subMesh.name;
+            // subMesh.rotation.emitY = subMesh.name;
+            // remove after test - not i use// remove after test - not i use
             this.core.collisionSystem.register((o.name), subMesh.position, 15.0, 'friendly');
           }
         });

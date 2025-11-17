@@ -4,7 +4,7 @@ import {downloadMeshes} from "../../../src/engine/loader-obj.js";
 import {uploadGLBModel} from "../../../src/engine/loaders/webgpu-gltf.js";
 import {LOG_FUNNY_SMALL, randomFloatFromTo, randomIntFromTo} from "../../../src/engine/utils.js";
 import NavMesh from "./nav-mesh.js";
-import {startUpPositions} from "./static.js";
+import {creepPoints, startUpPositions} from "./static.js";
 
 /**
  * @description

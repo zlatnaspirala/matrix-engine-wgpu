@@ -27027,14 +27027,10 @@ class Position {
                 }
               });
             } else {
-              // logic is only for two team - index 0 is local !!!
+              // logic is only for two team - index 0 is local !
               if (this.teams[0].length > 0) app.net.send({
-                // team: this.teams[0],
                 toRemote: this.teams[0],
-                // default null remote conns
-                // remoteName: this.remoteName,
                 sceneName: this.netObject,
-                // origin scene name to receive
                 netPos: {
                   x: this.x,
                   y: this.y,
@@ -27104,7 +27100,8 @@ class Position {
 exports.Position = Position;
 class Rotation {
   constructor(x, y, z) {
-    // Not in use for nwo this is from matrix-engine project [nameUniq]
+    this.toRemote = [];
+    this.teams = [];
     this.remoteName = null;
     this.emitX = null;
     this.emitY = null;
@@ -27168,13 +27165,31 @@ class Rotation {
   getRotY() {
     if (this.rotationSpeed.y == 0) {
       if (this.nety != this.y && this.emitY) {
-        app.net.send({
-          remoteName: this.remoteName,
-          sceneName: this.emitY,
-          netRotY: this.y
-        });
+        // ---------------------------------------
+        if (this.teams.length == 0) {
+          app.net.send({
+            toRemote: this.toRemote,
+            remoteName: this.remoteName,
+            sceneName: this.emitY,
+            netRotY: this.y
+          });
+          this.nety = this.y;
+        } else {
+          if (this.teams[0].length > 0) app.net.send({
+            toRemote: this.teams[0],
+            sceneName: this.emitY,
+            netRotY: this.y
+          });
+          if (this.teams[1].length > 0) app.net.send({
+            toRemote: this.teams[1],
+            remoteName: this.remoteName,
+            sceneName: this.emitY,
+            netRotY: this.y
+          });
+          this.nety = this.y;
+        }
+        //-------------------------------------------
       }
-      this.nety = this.y;
       return (0, _utils.degToRad)(this.y);
     } else {
       this.y = this.y + this.rotationSpeed.y * 0.001;
@@ -27190,7 +27205,7 @@ class Rotation {
           netRotZ: this.z
         });
       }
-      this.nety = this.y;
+      this.netz = this.z;
       return (0, _utils.degToRad)(this.z);
     } else {
       this.z = this.z + this.rotationSpeed.z * 0.001;

@@ -251,7 +251,9 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
               startUpPositions[forestOfHollowBlood.player.data.team][1],
               startUpPositions[forestOfHollowBlood.player.data.team][2]
             );
-          }, 1000);
+            // const progress = Math.max(0, Math.min(1, d.hp / app.localHero.getHPMax()));
+            app.localHero.heroe_bodies[0].effects.energyBar.setProgress(1);
+          }, 500);
         }
       }
     } else if("damage-creep") {

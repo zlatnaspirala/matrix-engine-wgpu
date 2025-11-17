@@ -1066,15 +1066,16 @@ class Creep extends _hero.Hero {
                 subMesh.position.teams[1] = app.player.remoteByTeam[app.player.data.enemyTeam];
                 subMesh.position.netObject = subMesh.name;
                 let t = subMesh.name.replace('friendly_creeps', 'enemy_creep');
-                // console.log('It is friendly creep use emit    subMesh.position.teams[0] ', subMesh.position.teams[0]);
                 subMesh.position.remoteName = t;
+                subMesh.rotation.teams[0] = app.player.remoteByTeam[app.player.data.team];
+                subMesh.rotation.teams[1] = app.player.remoteByTeam[app.player.data.enemyTeam];
                 subMesh.rotation.emitY = subMesh.name;
                 subMesh.rotation.remoteName = t;
                 subMesh.sharedState.emitAnimationEvent = true;
               }
             }
           }
-          if (idx == 0) this.core.collisionSystem.register(o.name, subMesh.position, 15.0, this.group + idx);
+          if (idx == 0) this.core.collisionSystem.register(o.name, subMesh.position, 15.0, this.group);
         });
         this.setStartUpPosition();
         this.attachEvents();
@@ -1378,9 +1379,6 @@ class Enemie extends _hero.Hero {
           if (this.name == 'Slayzer') {
             subMesh.globalAmbient = [2, 2, 3, 1];
           }
-          // maybe will help - remote net players no nedd to collide in other remote user gamaplay
-          // this.core.collisionSystem.register((o.name + idx), subMesh.position, 15.0, 'enemies');
-          // dont care for multi sub mesh now
           if (idx == 0) this.core.collisionSystem.register(o.name, subMesh.position, 15.0, 'enemies');
         });
         this.setStartUpPosition();
@@ -1698,7 +1696,9 @@ let forestOfHollowBlood = new _world.default({
           app.localHero.setDead();
           setTimeout(() => {
             app.localHero.heroe_bodies[0].position.setPosition(_static.startUpPositions[forestOfHollowBlood.player.data.team][0], _static.startUpPositions[forestOfHollowBlood.player.data.team][1], _static.startUpPositions[forestOfHollowBlood.player.data.team][2]);
-          }, 1000);
+            // const progress = Math.max(0, Math.min(1, d.hp / app.localHero.getHPMax()));
+            app.localHero.heroe_bodies[0].effects.energyBar.setProgress(1);
+          }, 500);
         }
       }
     } else if ("damage-creep") {
@@ -1827,12 +1827,12 @@ class FriendlyHero extends _hero.Hero {
           }
 
           // maybe will help - remote net players no nedd to collide in other remote user gamaplay
-          // this.core.collisionSystem.register((o.name + idx), subMesh.position, 15.0, 'enemies');
           // dont care for multi sub mesh now
           if (idx == 0) {
-            subMesh.position.netObject = subMesh.name;
-            // for now net view for rot is axis separated - cost is ok for orientaion remote pass
-            subMesh.rotation.emitY = subMesh.name;
+            // remove after test - not i use// remove after test - not i use
+            // subMesh.position.netObject = subMesh.name;
+            // subMesh.rotation.emitY = subMesh.name;
+            // remove after test - not i use// remove after test - not i use
             this.core.collisionSystem.register(o.name, subMesh.position, 15.0, 'friendly');
           }
         });
@@ -3318,9 +3318,9 @@ class MEMapLoader {
         z: 0
       },
       position: {
-        x: creepPoints[getEnemyName__].finalPoint[0],
-        y: creepPoints[getEnemyName__].finalPoint[1],
-        z: creepPoints[getEnemyName__].finalPoint[2]
+        x: _static.creepPoints[getEnemyName__].finalPoint[0],
+        y: _static.creepPoints[getEnemyName__].finalPoint[1],
+        z: _static.creepPoints[getEnemyName__].finalPoint[2]
       },
       name: 'enemytron',
       texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
@@ -30508,14 +30508,10 @@ class Position {
                 }
               });
             } else {
-              // logic is only for two team - index 0 is local !!!
+              // logic is only for two team - index 0 is local !
               if (this.teams[0].length > 0) app.net.send({
-                // team: this.teams[0],
                 toRemote: this.teams[0],
-                // default null remote conns
-                // remoteName: this.remoteName,
                 sceneName: this.netObject,
-                // origin scene name to receive
                 netPos: {
                   x: this.x,
                   y: this.y,
@@ -30585,7 +30581,8 @@ class Position {
 exports.Position = Position;
 class Rotation {
   constructor(x, y, z) {
-    // Not in use for nwo this is from matrix-engine project [nameUniq]
+    this.toRemote = [];
+    this.teams = [];
     this.remoteName = null;
     this.emitX = null;
     this.emitY = null;
@@ -30649,13 +30646,31 @@ class Rotation {
   getRotY() {
     if (this.rotationSpeed.y == 0) {
       if (this.nety != this.y && this.emitY) {
-        app.net.send({
-          remoteName: this.remoteName,
-          sceneName: this.emitY,
-          netRotY: this.y
-        });
+        // ---------------------------------------
+        if (this.teams.length == 0) {
+          app.net.send({
+            toRemote: this.toRemote,
+            remoteName: this.remoteName,
+            sceneName: this.emitY,
+            netRotY: this.y
+          });
+          this.nety = this.y;
+        } else {
+          if (this.teams[0].length > 0) app.net.send({
+            toRemote: this.teams[0],
+            sceneName: this.emitY,
+            netRotY: this.y
+          });
+          if (this.teams[1].length > 0) app.net.send({
+            toRemote: this.teams[1],
+            remoteName: this.remoteName,
+            sceneName: this.emitY,
+            netRotY: this.y
+          });
+          this.nety = this.y;
+        }
+        //-------------------------------------------
       }
-      this.nety = this.y;
       return (0, _utils.degToRad)(this.y);
     } else {
       this.y = this.y + this.rotationSpeed.y * 0.001;
@@ -30671,7 +30686,7 @@ class Rotation {
           netRotZ: this.z
         });
       }
-      this.nety = this.y;
+      this.netz = this.z;
       return (0, _utils.degToRad)(this.z);
     } else {
       this.z = this.z + this.rotationSpeed.z * 0.001;
