@@ -92,18 +92,26 @@ export class MEMapLoader {
       }
     }, null, glbFile01);
 
-    // TEST
+    // Tron enemy
     var glbFile02 = await fetch('./res/meshes/env/rocks/home.glb').then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, this.core.device)));
+
+    let getEnemyName__ = '';
+    if(this.core.player.data.team == "south") {
+      getEnemyName__ = 'north';
+    } else {
+      getEnemyName__ = 'south';
+    }
+
     this.core.addGlbObjInctance({
       material: {type: 'standard', useTextureFromGlb: true},
       scale: [1, 1, 1],
       rotation: {x: 0, y: 90, z: 0},
       position: {
-        x: -900,
-        y: -10,
-        z: 930
+        x: creepPoints[getEnemyName__].finalPoint[0],
+        y: creepPoints[getEnemyName__].finalPoint[1],
+        z: creepPoints[getEnemyName__].finalPoint[2]
       },
-      name: 'tron_',
+      name: 'enemytron',
       texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
       raycast: {enabled: false, radius: 1.5},
       pointerEffect: {
@@ -153,16 +161,16 @@ export class MEMapLoader {
       app.tron.globalAmbient = [2, 2, 2];
 
       // this.pointerEffect.circlePlaneTexPath
-      app.tron.effects.circle = new GenGeoTexture2(app.device, app.tron.presentationFormat, 'circle2', './res/textures/star1.png' );
+      app.tron.effects.circle = new GenGeoTexture2(app.device, app.tron.presentationFormat, 'circle2', './res/textures/star1.png');
       app.tron.effects.circle.rotateEffectSpeed = 0.01;
-      
-      this.core.collisionSystem.register(`rock3`,  app.tron.position, 25.0, 'rock');
+
+      this.core.collisionSystem.register(`rock3`, app.tron.position, 25.0, 'rock');
 
       setTimeout(() => {
-        app.tron.effects.circle.instanceTargets[0].position = [0,6,0];
-        app.tron.effects.circle.instanceTargets[1].position = [0,6,0];
-        app.tron.effects.circle.instanceTargets[0].color = [2,0.1,0,0.5];
-        app.tron.effects.circle.instanceTargets[1].color = [1,1,1,0.11];
+        app.tron.effects.circle.instanceTargets[0].position = [0, 6, 0];
+        app.tron.effects.circle.instanceTargets[1].position = [0, 6, 0];
+        app.tron.effects.circle.instanceTargets[0].color = [2, 0.1, 0, 0.5];
+        app.tron.effects.circle.instanceTargets[1].color = [1, 1, 1, 0.11];
       }, 5000)
       // circlePlaneTexPath: './res/textures/star1.png',
 

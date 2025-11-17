@@ -100,7 +100,7 @@ export class Creep extends Hero {
             }
 
           }
-          if(idx == 0) this.core.collisionSystem.register((o.name), subMesh.position, 15.0, this.group);
+          if(idx == 0) this.core.collisionSystem.register((o.name), subMesh.position, 15.0, this.group + idx);
         });
 
         this.setStartUpPosition();

@@ -436,6 +436,22 @@ class Character extends _hero.Hero {
       //   sceneName: 'not in use',
       //   animationIndex: this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].glb.animationIndex
       // })
+
+      // let pos = this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].position;
+      // if(this.core.net.virtualEmiter == null) {
+      //   return;
+      // }
+      // if(pos.teams.length > 0) if(pos.teams[0].length > 0) app.net.send({
+      //   toRemote: pos.teams[0],
+      //   sceneName: pos.netObject,
+      //   animationIndex: this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].glb.animationIndex
+      // });
+      // if(pos.teams.length > 0) if(pos.teams[1].length > 0) app.net.send({
+      //   toRemote: pos.teams[1],
+      //   remoteName: pos.remoteName,
+      //   sceneName: pos.netObject,
+      //   animationIndex: this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].glb.animationIndex
+      // });
     }
   }
   attachEvents() {
@@ -540,6 +556,7 @@ class Character extends _hero.Hero {
         // console.info('animationEnd [heroFocusAttackOn == null ]', e.detail.animationName)
         let isEnemiesClose = false; // on close distance 
         this.core.enemies.enemies.forEach(enemy => {
+          if (typeof enemy.heroe_bodies === 'undefined') return;
           if (enemy.heroe_bodies) {
             let tt = this.core.RPG.distance3D(this.heroe_bodies[0].position, enemy.heroe_bodies[0].position);
             if (tt < this.core.RPG.distanceForAction) {
@@ -1056,7 +1073,7 @@ class Creep extends _hero.Hero {
               }
             }
           }
-          if (idx == 0) this.core.collisionSystem.register(o.name, subMesh.position, 15.0, this.group);
+          if (idx == 0) this.core.collisionSystem.register(o.name, subMesh.position, 15.0, this.group + idx);
         });
         this.setStartUpPosition();
         this.attachEvents();
@@ -3280,8 +3297,14 @@ class MEMapLoader {
       }
     }, null, glbFile01);
 
-    // TEST
+    // Tron enemy
     var glbFile02 = await fetch('./res/meshes/env/rocks/home.glb').then(res => res.arrayBuffer().then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, this.core.device)));
+    let getEnemyName__ = '';
+    if (this.core.player.data.team == "south") {
+      getEnemyName__ = 'north';
+    } else {
+      getEnemyName__ = 'south';
+    }
     this.core.addGlbObjInctance({
       material: {
         type: 'standard',
@@ -3294,11 +3317,11 @@ class MEMapLoader {
         z: 0
       },
       position: {
-        x: -900,
-        y: -10,
-        z: 930
+        x: creepPoints[getEnemyName__].finalPoint[0],
+        y: creepPoints[getEnemyName__].finalPoint[1],
+        z: creepPoints[getEnemyName__].finalPoint[2]
       },
-      name: 'tron_',
+      name: 'enemytron',
       texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
       raycast: {
         enabled: false,

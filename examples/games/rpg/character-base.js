@@ -402,16 +402,16 @@ export class Character extends Hero {
     console.info(`%cfriendly setWalkCreep!`, LOG_MATRIX)
     if(this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].glb.animationIndex != this.friendlyCreepAnimationArrange.walk) {
       this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].glb.animationIndex = this.friendlyCreepAnimationArrange.walk;
-      let pos =  this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].position;
+      let pos = this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].position;
       if(this.core.net.virtualEmiter == null) {
         return;
       }
-      if(pos.teams.length>0) if(pos.teams[0].length > 0) app.net.send({
+      if(pos.teams.length > 0) if(pos.teams[0].length > 0) app.net.send({
         toRemote: pos.teams[0], // default null remote conns
         sceneName: pos.netObject, // origin scene name to receive
         animationIndex: this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].glb.animationIndex
       });
-      if(pos.teams.length>0) if(pos.teams[1].length > 0) app.net.send({
+      if(pos.teams.length > 0) if(pos.teams[1].length > 0) app.net.send({
         toRemote: pos.teams[1], // default null remote conns
         remoteName: pos.remoteName, // to enemy players
         sceneName: pos.netObject, // now not important
@@ -429,6 +429,24 @@ export class Character extends Hero {
       //   sceneName: 'not in use',
       //   animationIndex: this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].glb.animationIndex
       // })
+
+      // let pos = this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].position;
+      // if(this.core.net.virtualEmiter == null) {
+      //   return;
+      // }
+      // if(pos.teams.length > 0) if(pos.teams[0].length > 0) app.net.send({
+      //   toRemote: pos.teams[0],
+      //   sceneName: pos.netObject,
+      //   animationIndex: this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].glb.animationIndex
+      // });
+      // if(pos.teams.length > 0) if(pos.teams[1].length > 0) app.net.send({
+      //   toRemote: pos.teams[1],
+      //   remoteName: pos.remoteName,
+      //   sceneName: pos.netObject,
+      //   animationIndex: this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].glb.animationIndex
+      // });
+
+
     }
   }
 
@@ -541,6 +559,7 @@ export class Character extends Hero {
         // console.info('animationEnd [heroFocusAttackOn == null ]', e.detail.animationName)
         let isEnemiesClose = false; // on close distance 
         this.core.enemies.enemies.forEach((enemy) => {
+          if(typeof enemy.heroe_bodies === 'undefined') return;
           if(enemy.heroe_bodies) {
             let tt = this.core.RPG.distance3D(
               this.heroe_bodies[0].position,
@@ -631,7 +650,7 @@ export class Character extends Hero {
       if(this.heroFocusAttackOn == null) {
         let isEnemiesClose = false; // on close distance 
         this.core.enemies.enemies.forEach((enemy) => {
-          if (typeof enemy.heroe_bodies === 'undefined') return;
+          if(typeof enemy.heroe_bodies === 'undefined') return;
           let tt = this.core.RPG.distance3D(
             this.heroe_bodies[0].position,
             enemy.heroe_bodies[0].position);
