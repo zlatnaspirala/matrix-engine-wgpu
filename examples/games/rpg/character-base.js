@@ -512,17 +512,15 @@ export class Character extends Hero {
           lc.creepFocusAttackOn =
             app.enemies.enemies.filter((enemy) => enemy.name == e.detail.A.id)[0];
           if(lc.creepFocusAttackOn === undefined) {
-            lc.creepFocusAttackOn = app.enemies.creeps.filter((creep) => creep.name == e.detail.B.id)[0];
+            lc.creepFocusAttackOn = app.enemies.creeps.filter((creep) => creep.name == e.detail.A.id)[0];
           }
           app.localHero.setAttackCreep(e.detail.B.id[e.detail.B.id.length - 1]);
-          // console.info('creep vs creep ')
+          // console.info('creep vs creep')
         }
       } else if(e.detail.A.group == "friendly") {
         // console.info('close distance A is friendly:', e.detail.A.group)
         if(e.detail.B.group == "enemy") {
           // console.info('close distance B is enemies:', e.detail.A.group)
-          //------------------
-          //------------------ BLOCK
           let lc = app.localHero.friendlyLocal.creeps.filter((localCreep) => localCreep.name == e.detail.A.id)[0];
           lc.creepFocusAttackOn =
             app.enemies.enemies.filter((enemy) => enemy.name == e.detail.B.id)[0];

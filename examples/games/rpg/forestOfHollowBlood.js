@@ -255,31 +255,35 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
         }
       }
     } else if("damage-creep") {
-      console.log('<data-receive damage creep team:', d.defenderTeam);
+      
       // true always
       if(app.player.data.team == d.defenderTeam) {
+        // console.log('<data-receive damage local creep team:', d.defenderTeam);
         // get last char from string defenderName
         let getCreepByIndex = parseInt(d.defenderName[d.defenderName.length - 1]);
         app.localHero.friendlyLocal.creeps[getCreepByIndex]
           .heroe_bodies[0].effects.energyBar.setProgress(d.progress);
         if(d.progress == 0) {
           app.localHero.friendlyLocal.creeps[getCreepByIndex].setDead();
-
           setTimeout(() => {
             app.localHero.friendlyLocal.creeps[getCreepByIndex].setStartUpPosition();
             app.localHero.friendlyLocal.creeps[getCreepByIndex].gotoFinal = false;
             app.localHero.friendlyLocal.creeps[getCreepByIndex].heroe_bodies[0].effects.energyBar.setProgress(1);
           }, 1000)
-
-          //  SEND ENERGY BATR PROGREEs
-          // this.core.net.sendOnlyData({
-          //   type: "damage-creep",
-          //   defenderName: e.detail.defender,
-          //   defenderTeam: this.team,
-          //   hp: e.detail.hp,
-          //   progress: e.detail.progress
-          // });
-
+        }
+      } else {
+        // console.log('<data-receive damage creep team ENEMY TEST CASE :', d.defenderTeam);
+        // get last char from string defenderName
+        let getCreepByIndex = parseInt(d.defenderName[d.defenderName.length - 1]);
+        app.enemies.creeps[getCreepByIndex]
+          .heroe_bodies[0].effects.energyBar.setProgress(d.progress);
+        if(d.progress == 0) {
+          app.enemies.creeps[getCreepByIndex].setDead();
+          setTimeout(() => {
+            app.enemies.creeps[getCreepByIndex].setStartUpPosition();
+            app.enemies.creeps[getCreepByIndex].gotoFinal = false;
+            app.enemies.creeps[getCreepByIndex].heroe_bodies[0].effects.energyBar.setProgress(1);
+          }, 700);
         }
       }
     }
