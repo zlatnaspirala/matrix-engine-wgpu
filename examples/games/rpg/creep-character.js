@@ -169,6 +169,24 @@ export class Creep extends Hero {
     }
   }
 
+    setStartUpPosCreep(index) {
+    if(this.group == 'enemy') {
+      this.heroe_bodies.forEach((subMesh, idx) => {
+        subMesh.position.setPosition(
+          startUpPositions[this.core.player.data.enemyTeam][0],
+          startUpPositions[this.core.player.data.enemyTeam][1],
+          startUpPositions[this.core.player.data.enemyTeam][2]);
+      });
+    } else {
+      this.heroe_bodies.forEach((subMesh, idx) => {
+        subMesh.position.setPosition(
+          startUpPositions[this.core.player.data.team][0],
+          startUpPositions[this.core.player.data.team][1],
+          startUpPositions[this.core.player.data.team][2]);
+      });
+    }
+  }
+
   attachEvents() {
     addEventListener(`onDamage-${this.name}`, (e) => {
       if(this.group == 'enemy') {
@@ -192,11 +210,12 @@ export class Creep extends Hero {
         this.setDead();
         console.info(`%cCreep dead [${this.name}], attacker[${e.detail.attacker}]`, LOG_MATRIX);
         setTimeout(() => {
-          this.setStartUpPosition();
+          this.setStartUpPosCreep(this.name[this.name.length - 1]);
           this.setWalk();
           this.gotoFinal = false;
-          this.hp = 300;
+          // this.hp = 300;
           this.heroe_bodies[0].effects.energyBar.setProgress(1);
+          // this.navigateCreeps
         }, 2000);
       }
     });

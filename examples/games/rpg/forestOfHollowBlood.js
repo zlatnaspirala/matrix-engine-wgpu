@@ -204,14 +204,12 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
   });
 
   addEventListener('only-data-receive', (e) => {
-    // console.log('<data-receive>', e)
-    if(e.detail.from.connectionId == app.net.session.connection.connectionId) {
-      console.log('<data-receive damage for local hero !!!>', d)
-    }
     let d = JSON.parse(e.detail.data);
+    // if(e.detail.from.connectionId == app.net.session.connection.connectionId) {
+    //   console.log('<data-receive damage for local hero !!!>', d)
+    // }
     if(d.type == "damage") {
-      // string
-      console.log('<data-receive damage for >', d.defenderName);
+      // console.log('<data-receive damage for >', d.defenderName);
       let IsEnemyHeroObj = forestOfHollowBlood.enemies.enemies.find((enemy) => enemy.name === d.defenderName);
       let IsEnemyCreepObj = forestOfHollowBlood.enemies.creeps.find((creep) => creep.name === d.defenderName);
       // new

@@ -35,7 +35,7 @@ export class Character extends Hero {
   heroFocusAttackOn = null;
   mouseTarget = null;
 
-  gold = 100;
+  // gold = 100;
 
   constructor(forestOfHollowBlood, path, name = 'MariaSword', archetypes = ["Warrior", "Mage"]) {
     super(name, archetypes);
@@ -71,35 +71,36 @@ export class Character extends Hero {
       path: 'res/meshes/glb/bot.glb',
       position: {x: 0, y: -23, z: 0}
     }, ['creep'], 'friendly', app.player.data.team));
-    this.friendlyLocal.creeps.push(new Creep({
-      core: this.core,
-      name: 'friendly_creeps1',
-      archetypes: ["creep"],
-      path: 'res/meshes/glb/bot.glb',
-      position: {x: 150, y: -23, z: 0}
-    }, ['creep'], 'friendly', app.player.data.team));
-    this.friendlyLocal.creeps.push(new Creep({
-      core: this.core,
-      name: 'friendly_creeps2',
-      archetypes: ["creep"],
-      path: 'res/meshes/glb/bot.glb',
-      position: {x: 100, y: -23, z: 0}
-    }, ['creep'], 'friendly', app.player.data.team));
+    // this.friendlyLocal.creeps.push(new Creep({
+    //   core: this.core,
+    //   name: 'friendly_creeps1',
+    //   archetypes: ["creep"],
+    //   path: 'res/meshes/glb/bot.glb',
+    //   position: {x: 150, y: -23, z: 0}
+    // }, ['creep'], 'friendly', app.player.data.team));
+    // this.friendlyLocal.creeps.push(new Creep({
+    //   core: this.core,
+    //   name: 'friendly_creeps2',
+    //   archetypes: ["creep"],
+    //   path: 'res/meshes/glb/bot.glb',
+    //   position: {x: 100, y: -23, z: 0}
+    // }, ['creep'], 'friendly', app.player.data.team));
 
     setTimeout(() => {
       // console.info('setAllCreepsAtStartPos')
       app.localHero.setAllCreepsAtStartPos().then(() => {
-        console.log('passed in 1')
+        // console.log('passed in 1')
       }).catch(() => {
         setTimeout(() => {
           app.localHero.setAllCreepsAtStartPos().then(() => {
-            console.log('passed in 2')
+            // console.log('passed in 2')
           }).catch(() => {
             setTimeout(() => {
               app.localHero.setAllCreepsAtStartPos().then(() => {
-                console.log('passed in 3')
+                // console.log('passed in 3')
               }).catch(() => {
-                alert('FAILD');
+                // alert('FAILD');
+                console.log('FAILD setAllCreepsAtStartPos');
               })
             }, 7000)
           })
@@ -564,8 +565,23 @@ export class Character extends Hero {
               this.calcDamage(this, enemy);
             }
           }
+        });
+
+        let isEnemiesCreepClose = false; // on close distance 
+        this.core.enemies.creeps.forEach((creep) => {
+          if(typeof creep.heroe_bodies === 'undefined') return;
+          if(creep.heroe_bodies) {
+            let tt = this.core.RPG.distance3D(
+              this.heroe_bodies[0].position,
+              creep.heroe_bodies[0].position);
+            if(tt < this.core.RPG.distanceForAction) {
+              console.log(`%cATTACK DAMAGE ${creep.heroe_bodies[0].name}`, LOG_MATRIX)
+              isEnemiesCreepClose = true;
+              this.calcDamage(this, creep);
+            }
+          }
         })
-        if(isEnemiesClose == false) this.setIdle();
+        if(isEnemiesCreepClose == false) this.setIdle();
         return;
       }
       else {

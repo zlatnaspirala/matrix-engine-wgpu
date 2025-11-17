@@ -35,7 +35,9 @@ class Character extends _hero.Hero {
   };
   heroFocusAttackOn = null;
   mouseTarget = null;
-  gold = 100;
+
+  // gold = 100;
+
   constructor(forestOfHollowBlood, path, name = 'MariaSword', archetypes = ["Warrior", "Mage"]) {
     super(name, archetypes);
     console.info(`%cLOADING local hero name : ${name}`, _utils.LOG_MATRIX);
@@ -70,42 +72,36 @@ class Character extends _hero.Hero {
         z: 0
       }
     }, ['creep'], 'friendly', app.player.data.team));
-    this.friendlyLocal.creeps.push(new _creepCharacter.Creep({
-      core: this.core,
-      name: 'friendly_creeps1',
-      archetypes: ["creep"],
-      path: 'res/meshes/glb/bot.glb',
-      position: {
-        x: 150,
-        y: -23,
-        z: 0
-      }
-    }, ['creep'], 'friendly', app.player.data.team));
-    this.friendlyLocal.creeps.push(new _creepCharacter.Creep({
-      core: this.core,
-      name: 'friendly_creeps2',
-      archetypes: ["creep"],
-      path: 'res/meshes/glb/bot.glb',
-      position: {
-        x: 100,
-        y: -23,
-        z: 0
-      }
-    }, ['creep'], 'friendly', app.player.data.team));
+    // this.friendlyLocal.creeps.push(new Creep({
+    //   core: this.core,
+    //   name: 'friendly_creeps1',
+    //   archetypes: ["creep"],
+    //   path: 'res/meshes/glb/bot.glb',
+    //   position: {x: 150, y: -23, z: 0}
+    // }, ['creep'], 'friendly', app.player.data.team));
+    // this.friendlyLocal.creeps.push(new Creep({
+    //   core: this.core,
+    //   name: 'friendly_creeps2',
+    //   archetypes: ["creep"],
+    //   path: 'res/meshes/glb/bot.glb',
+    //   position: {x: 100, y: -23, z: 0}
+    // }, ['creep'], 'friendly', app.player.data.team));
+
     setTimeout(() => {
       // console.info('setAllCreepsAtStartPos')
       app.localHero.setAllCreepsAtStartPos().then(() => {
-        console.log('passed in 1');
+        // console.log('passed in 1')
       }).catch(() => {
         setTimeout(() => {
           app.localHero.setAllCreepsAtStartPos().then(() => {
-            console.log('passed in 2');
+            // console.log('passed in 2')
           }).catch(() => {
             setTimeout(() => {
               app.localHero.setAllCreepsAtStartPos().then(() => {
-                console.log('passed in 3');
+                // console.log('passed in 3')
               }).catch(() => {
-                alert('FAILD');
+                // alert('FAILD');
+                console.log('FAILD setAllCreepsAtStartPos');
               });
             }, 7000);
           });
@@ -567,7 +563,19 @@ class Character extends _hero.Hero {
             }
           }
         });
-        if (isEnemiesClose == false) this.setIdle();
+        let isEnemiesCreepClose = false; // on close distance 
+        this.core.enemies.creeps.forEach(creep => {
+          if (typeof creep.heroe_bodies === 'undefined') return;
+          if (creep.heroe_bodies) {
+            let tt = this.core.RPG.distance3D(this.heroe_bodies[0].position, creep.heroe_bodies[0].position);
+            if (tt < this.core.RPG.distanceForAction) {
+              console.log(`%cATTACK DAMAGE ${creep.heroe_bodies[0].name}`, _utils.LOG_MATRIX);
+              isEnemiesCreepClose = true;
+              this.calcDamage(this, creep);
+            }
+          }
+        });
+        if (isEnemiesCreepClose == false) this.setIdle();
         return;
       } else {
         // Focus on enemy
@@ -1130,6 +1138,17 @@ class Creep extends _hero.Hero {
       });
     }
   }
+  setStartUpPosCreep(index) {
+    if (this.group == 'enemy') {
+      this.heroe_bodies.forEach((subMesh, idx) => {
+        subMesh.position.setPosition(_static.startUpPositions[this.core.player.data.enemyTeam][0], _static.startUpPositions[this.core.player.data.enemyTeam][1], _static.startUpPositions[this.core.player.data.enemyTeam][2]);
+      });
+    } else {
+      this.heroe_bodies.forEach((subMesh, idx) => {
+        subMesh.position.setPosition(_static.startUpPositions[this.core.player.data.team][0], _static.startUpPositions[this.core.player.data.team][1], _static.startUpPositions[this.core.player.data.team][2]);
+      });
+    }
+  }
   attachEvents() {
     addEventListener(`onDamage-${this.name}`, e => {
       if (this.group == 'enemy') {
@@ -1151,11 +1170,12 @@ class Creep extends _hero.Hero {
         this.setDead();
         console.info(`%cCreep dead [${this.name}], attacker[${e.detail.attacker}]`, _utils.LOG_MATRIX);
         setTimeout(() => {
-          this.setStartUpPosition();
+          this.setStartUpPosCreep(this.name[this.name.length - 1]);
           this.setWalk();
           this.gotoFinal = false;
-          this.hp = 300;
+          // this.hp = 300;
           this.heroe_bodies[0].effects.energyBar.setProgress(1);
+          // this.navigateCreeps
         }, 2000);
       }
     });
@@ -1264,7 +1284,6 @@ class EnemiesManager {
   }
   // Make possible to play 3x3 4x4 or 5x5 ...
   loadCreeps() {
-    // console.log('loadCreeps() !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
     this.creeps.push(new _creepCharacter.Creep({
       core: this.core,
       name: 'enemy_creep0',
@@ -1276,28 +1295,20 @@ class EnemiesManager {
         z: -0
       }
     }, ['creep'], 'enemy', app.player.data.enemyTeam));
-    this.creeps.push(new _creepCharacter.Creep({
-      core: this.core,
-      name: 'enemy_creep1',
-      archetypes: ["creep"],
-      path: 'res/meshes/glb/bot.glb',
-      position: {
-        x: 100,
-        y: -23,
-        z: -0
-      }
-    }, ['creep'], 'enemy', app.player.data.enemyTeam));
-    this.creeps.push(new _creepCharacter.Creep({
-      core: this.core,
-      name: 'enemy_creep2',
-      archetypes: ["creep"],
-      path: 'res/meshes/glb/bot.glb',
-      position: {
-        x: 150,
-        y: -23,
-        z: -0
-      }
-    }, ['creep'], 'enemy', app.player.data.enemyTeam));
+    // this.creeps.push(new Creep({
+    //   core: this.core,
+    //   name: 'enemy_creep1',
+    //   archetypes: ["creep"],
+    //   path: 'res/meshes/glb/bot.glb',
+    //   position: {x: 100, y: -23, z: -0}
+    // }, ['creep'], 'enemy', app.player.data.enemyTeam))
+    // this.creeps.push(new Creep({
+    //   core: this.core,
+    //   name: 'enemy_creep2',
+    //   archetypes: ["creep"],
+    //   path: 'res/meshes/glb/bot.glb',
+    //   position: {x: 150, y: -23, z: -0}
+    // }, ['creep'], 'enemy', app.player.data.enemyTeam))
   }
   isEnemy(name) {
     let test = this.enemies.filter(obj => obj.name && name.includes(obj.name));
@@ -1653,14 +1664,12 @@ let forestOfHollowBlood = new _world.default({
     }
   });
   addEventListener('only-data-receive', e => {
-    // console.log('<data-receive>', e)
-    if (e.detail.from.connectionId == app.net.session.connection.connectionId) {
-      console.log('<data-receive damage for local hero !!!>', d);
-    }
     let d = JSON.parse(e.detail.data);
+    // if(e.detail.from.connectionId == app.net.session.connection.connectionId) {
+    //   console.log('<data-receive damage for local hero !!!>', d)
+    // }
     if (d.type == "damage") {
-      // string
-      console.log('<data-receive damage for >', d.defenderName);
+      // console.log('<data-receive damage for >', d.defenderName);
       let IsEnemyHeroObj = forestOfHollowBlood.enemies.enemies.find(enemy => enemy.name === d.defenderName);
       let IsEnemyCreepObj = forestOfHollowBlood.enemies.creeps.find(creep => creep.name === d.defenderName);
       // new
@@ -1885,7 +1894,7 @@ class FriendlyHero extends _hero.Hero {
   }
   attachEvents() {
     addEventListener(`onDamage-${this.name}`, e => {
-      console.info(`%c remote[enemy] hero damage ${e.detail}`, _utils.LOG_MATRIX);
+      console.info(`%c remote[friendly] hero damage ${e.detail}`, _utils.LOG_MATRIX);
       this.heroe_bodies[0].effects.energyBar.setProgress(e.detail.progress);
       this.core.net.sendOnlyData({
         type: "damage",
