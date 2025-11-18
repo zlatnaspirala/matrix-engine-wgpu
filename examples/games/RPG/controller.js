@@ -150,7 +150,7 @@ export class Controller {
         // 87 person comp case -> addressbar ~~~
         if(test > 100) {
           console.log('BAN', test);
-          location.assign('https://google.com');
+          location.assign('https://maximumroulette.com');
         }
       }
 
@@ -158,7 +158,7 @@ export class Controller {
         let testW = window.outerWidth - window.innerWidth;
         if(testW > 100) {
           console.log('BAN', testW);
-          location.assign('https://google.com');
+          location.assign('https://maximumroulette.com');
         }
       }
 
@@ -166,7 +166,7 @@ export class Controller {
         if(e.code == "F12") {
           e.preventDefault();
           mb.error(`
-            You are interest in Forest Of hollow blood. See <a href='https://github.com/zlatnapirala'>Github Source</a>
+            You are interest in Forest Of Hollow Blood. See <a href='https://github.com/zlatnapirala'>Github Source</a>
             You can download for free project and test it into localhost.
             `)
           console.log(`%c[keydown opened] ${e}`, LOG_MATRIX)

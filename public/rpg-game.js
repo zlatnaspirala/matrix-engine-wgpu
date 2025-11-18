@@ -862,21 +862,21 @@ class Controller {
         // 87 person comp case -> addressbar ~~~
         if (test > 100) {
           console.log('BAN', test);
-          location.assign('https://google.com');
+          location.assign('https://maximumroulette.com');
         }
       }
       if (window.innerWidth < window.outerWidth) {
         let testW = window.outerWidth - window.innerWidth;
         if (testW > 100) {
           console.log('BAN', testW);
-          location.assign('https://google.com');
+          location.assign('https://maximumroulette.com');
         }
       }
       window.addEventListener('keydown', e => {
         if (e.code == "F12") {
           e.preventDefault();
           _utils.mb.error(`
-            You are interest in Forest Of hollow blood. See <a href='https://github.com/zlatnapirala'>Github Source</a>
+            You are interest in Forest Of Hollow Blood. See <a href='https://github.com/zlatnapirala'>Github Source</a>
             You can download for free project and test it into localhost.
             `);
           console.log(`%c[keydown opened] ${e}`, _utils.LOG_MATRIX);
@@ -3337,7 +3337,8 @@ class MEMapLoader {
         flameEffect: false
       }
     }, null, glbFile02);
-    var glbFile03 = await fetch('./res/meshes/env/rocks/home.glb').then(res => res.arrayBuffer().then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, this.core.device)));
+
+    // var glbFile03 = await fetch('./res/meshes/env/rocks/home.glb').then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, this.core.device)));
     this.core.addGlbObjInctance({
       material: {
         type: 'standard',
@@ -3350,11 +3351,11 @@ class MEMapLoader {
         z: 0
       },
       position: {
-        x: -800,
-        y: -20,
-        z: 830
+        x: _static.creepPoints[app.player.data.team].finalPoint[0],
+        y: _static.creepPoints[app.player.data.team].finalPoint[1],
+        z: _static.creepPoints[app.player.data.team].finalPoint[2]
       },
-      name: 'tron_',
+      name: 'friendlytron',
       texturesPaths: ['./res/textures/star1.png'],
       raycast: {
         enabled: false,
@@ -3364,7 +3365,7 @@ class MEMapLoader {
         enabled: true,
         energyBar: true
       }
-    }, null, glbFile03);
+    }, null, glbFile02);
     setTimeout(() => {
       this.collectionOfRocks = this.core.mainRenderBundle.filter(item => item.name.indexOf('rocks1') != -1);
       this.collectionOfRocks.forEach(item => {
@@ -3378,24 +3379,28 @@ class MEMapLoader {
       });
       this.addInstancingRock();
 
-      // remove after
-      // app.homebase = this.core.mainRenderBundle.filter((item) => item.name.indexOf('homebase') != -1)[0];
-      // app.homebase.globalAmbient = [16, 2, 1];
-
-      app.tron = this.core.mainRenderBundle.filter(item => item.name.indexOf('tron_') != -1)[0];
+      // trons 
+      app.enemytron = this.core.mainRenderBundle.filter(item => item.name.indexOf('enemytron') != -1)[0];
+      app.tron = this.core.mainRenderBundle.filter(item => item.name.indexOf('friendlytron') != -1)[0];
       app.tron.globalAmbient = [2, 2, 2];
 
       // this.pointerEffect.circlePlaneTexPath
       app.tron.effects.circle = new _genTex.GenGeoTexture2(app.device, app.tron.presentationFormat, 'circle2', './res/textures/star1.png');
       app.tron.effects.circle.rotateEffectSpeed = 0.01;
-      this.core.collisionSystem.register(`rock3`, app.tron.position, 25.0, 'rock');
+      app.enemytron.effects.circle = new _genTex.GenGeoTexture2(app.device, app.enemytron.presentationFormat, 'circle2', './res/textures/star1.png');
+      app.enemytron.effects.circle.rotateEffectSpeed = 0.01;
+      this.core.collisionSystem.register(app.tron.name, app.tron.position, 25.0, 'friendly');
+      this.core.collisionSystem.register(app.enemytron.name, app.enemytron.position, 25.0, 'enemy');
       setTimeout(() => {
         app.tron.effects.circle.instanceTargets[0].position = [0, 6, 0];
         app.tron.effects.circle.instanceTargets[1].position = [0, 6, 0];
         app.tron.effects.circle.instanceTargets[0].color = [2, 0.1, 0, 0.5];
         app.tron.effects.circle.instanceTargets[1].color = [1, 1, 1, 0.11];
+        app.enemytron.effects.circle.instanceTargets[0].position = [0, 6, 0];
+        app.enemytron.effects.circle.instanceTargets[1].position = [0, 6, 0];
+        app.enemytron.effects.circle.instanceTargets[0].color = [2, 0.1, 0, 0.5];
+        app.enemytron.effects.circle.instanceTargets[1].color = [1, 1, 1, 0.11];
       }, 5000);
-      // circlePlaneTexPath: './res/textures/star1.png',
     }, 2000);
     this.core.lightContainer[0].position[1] = 175;
     this.core.lightContainer[0].intesity = 1;
