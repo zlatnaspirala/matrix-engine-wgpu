@@ -1,5 +1,7 @@
 *.blender
 *.blend1
+**/*.blender
+**/*.blend1
 public/res/meshes/nav-mesh/*.blend
 public/res/meshes/nav-mesh/*.blend1
 public/res/meshes/jamb/*.blend
