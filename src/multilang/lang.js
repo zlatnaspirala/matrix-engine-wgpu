@@ -1,3 +1,4 @@
+import {en} from "../../public/res/multilang/en-backup";
 import {LOG_MATRIX} from "../engine/utils";
 
 export class MultiLang {
@@ -27,10 +28,10 @@ export class MultiLang {
           'Content-Type': 'application/json'
         }
       });
-      return await r.json()
+      return await r.json();
     } catch(err) {
-      console.warn('Not possible to access multilang json asset! Err => ', err);
-      return {}
+      console.warn('Not possible to access multilang json asset! Err => ', err, '. Use backup lang predefinited object. Only english avaible.');
+      return en;
     }
   }
 }

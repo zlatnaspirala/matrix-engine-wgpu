@@ -1384,7 +1384,7 @@ let forestOfHollowBloodStartSceen = new _world.default({
 });
 window.app = forestOfHollowBloodStartSceen;
 
-},{"../../../src/engine/loaders/webgpu-gltf.js":37,"../../../src/engine/networking/matrix-stream.js":41,"../../../src/engine/networking/net.js":42,"../../../src/engine/plugin/animated-cursor/animated-cursor.js":43,"../../../src/engine/utils.js":44,"../../../src/world.js":67,"./hero.js":1}],3:[function(require,module,exports){
+},{"../../../src/engine/loaders/webgpu-gltf.js":38,"../../../src/engine/networking/matrix-stream.js":42,"../../../src/engine/networking/net.js":43,"../../../src/engine/plugin/animated-cursor/animated-cursor.js":44,"../../../src/engine/utils.js":45,"../../../src/world.js":68,"./hero.js":1}],3:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -19177,6 +19177,74 @@ function setDefaultType(ctor) {
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
+exports.en = void 0;
+const en = exports.en = {
+  "play": "Play",
+  "changeTheme": "Theme dark/light",
+  "yes": "Yes",
+  "no": "No",
+  "on": "On",
+  "off": "Off",
+  "startGame": "🎲Start Game",
+  "changeLang": "Change Lang",
+  "english": "English",
+  "serbian": "Serbian",
+  "MAX": "MAX",
+  "MIN": "MIN",
+  "straight": "Straight",
+  "threeOf": "ThreeOf",
+  "fullhouse": "FULLH",
+  "help": "HELP",
+  "roll": "ROLL DICES",
+  "settings": "Settings",
+  "hand": "Hand",
+  "up": "Up |",
+  "down": "Down",
+  "free": "Free",
+  "cornerText": "🎲",
+  "poker": "Poker",
+  "jamb": "Jamb",
+  "final": "Final Σ",
+  "hide": "HIDE",
+  "sounds": "Sounds",
+  "welcomeMsg": "Welcome here, <br> open source project 🎲 Jamb 3d deluxe game <br> download from ",
+  "ready": "Ready for play 🎲!",
+  "freetoroll": "Free for roll 🎲!",
+  "pick5": "Pick best 5 🎲 and choose table field!",
+  "hand1": "First hand in play - please wait...",
+  "hand2": "Secound hand in play - please wait...",
+  "graphics": "Graphics options",
+  "choosename": "Choose nickname:",
+  "table": "Table",
+  "aboutword": "About",
+  "about": "<i>Jamb 3d deluxe</i> is a modern 3D dice game built entirely with MatrixEngineWGPU, a high-performance WebGPU-based rendering engine developed for creating interactive graphics directly in the browser. The game delivers smooth visuals, realistic dice physics, and an engaging user experience — all without requiring any plugins or installations. \n This project is powered by open technologies and is designed to be lightweight, fast, and highly customizable. It’s a great example of how WebGPU can be used for real-time interactive content. \n 🔗 Download / Try it: \n github.com/zlatnaspirala/matrix-engine-wgpu \n 🛠 License: \n The core engine and the Jamb 3d deluxe project are released under the GPL v3 license, making them free and open-source for both personal and commercial use — as long as you respect the terms of the license. \n Whether you're a developer, gamer, or enthusiast, Jamb 3d deluxe is a fun way to experience the potential of modern browser-based 3D technology. <img width='320' height='320' src='https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/public/res/icons/512.png?raw=true' />",
+  "letthegame": "Let the game begin!",
+  "about_": "About",
+  "next": "Next",
+  "back": "Back",
+  "used": "used",
+  "gameplaychannel": "gameplay channel",
+  "alreadyingame": "Already in game:",
+  "waiting_for_others": "Waiting for others...",
+  "titleBan": "✭Ban 🟢🟢🟢",
+  "aboutRPG": "Forest Of Hollow Blood Made in MatrixEngineWGPU webGPU engine. Open source part can be found in engine repo <a href='https://github.com/zlatnaspirala/matrix-engine-wgpu'> @zlatnaspirala Github.com </a>. Music by <a href='https://pixabay.com/users/mfcc-28627740/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=274290'>Mykola Sosin</a> from <a href='https://pixabay.com//?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=274290'>Pixabay</a> Characters used from great mixamo.com -✅What you can do You can use Mixamo characters and animations royalty-free in commercial, personal, or non‑profit projects (games, films, prints, etc.).You own your creations / how you use them.No requirement to credit Adobe / Mixamo (though allowed). -🚫What you cannot do You cannot redistribute or sell the raw Mixamo character or animation files “as is” (i.e. as standalone assets) to others.You can’t use Mixamo content to create a competing library of characters / animations (i.e. you can’t just package them and sell them to others). You can’t use Mixamo’s content (or outputs) to train AI / machine learning models. Used free assets from great https://craftpix.net Magic icons : https://craftpix.net/freebies/free-rpg-splash-game-512x512-icons/ For background music in rpg template used: Music by Dvir Silverstone from Pixabay Sound Effect by Crunchpix Studio from Pixabay Music by Emmraan from Pixabay . Logo includes the official WebGPU logo. WebGPU logo by W3C Licensed under Creative Commons Attribution 4.0 .   'Ruined rock fence' (https://skfb.ly/6RLwN) by VladNeko is licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/).",
+  "mariasword": "Maria Sword, the silver blade of the East, strikes with speed and elegance. Her courage burns quietly but never falters.",
+  "slayzer": "Slayzer — a dark creation with blades for arms. Silent, swift, and born from shadow.",
+  "steelborn": "Steelborn — a small yet fearless warrior clad in shining iron armor, wielding his sword with unshakable resolve.",
+  "warrok": "Warrok — a fierce brute forged in battle, wielding raw strength and unbreakable will.",
+  "skeletonz": "Skeletonz — a restless warrior of bone and shadow, risen again to fight without fear.",
+  "erika": "Erika moves like a shadow: quiet, precise and watchful. She carries one dark arrow — simple, deadly and personal.",
+  "arissa": "Arissa hides her power behind calm eyes and empty hands. No blade or staff—only the swirling dark orbs she conjures when the fight begins.",
+  "gameplayused": "Forest Of Hollow Blood for now have only one channel for gameplay. Please wait for current party end...",
+  "nogold": "Not enough gold!"
+};
+
+},{}],19:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
 exports.default = void 0;
 var _shaders = require("../shaders/shaders");
 var _wgpuMatrix = require("wgpu-matrix");
@@ -19585,7 +19653,7 @@ class MEBall {
 }
 exports.default = MEBall;
 
-},{"../shaders/shaders":59,"./engine":29,"./matrix-class":39,"wgpu-matrix":17}],19:[function(require,module,exports){
+},{"../shaders/shaders":60,"./engine":30,"./matrix-class":40,"wgpu-matrix":17}],20:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -19623,7 +19691,7 @@ class Behavior {
 }
 exports.default = Behavior;
 
-},{"./utils":44}],20:[function(require,module,exports){
+},{"./utils":45}],21:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -20048,7 +20116,7 @@ class MECube {
 }
 exports.default = MECube;
 
-},{"../shaders/shaders":59,"./engine":29,"./matrix-class":39,"wgpu-matrix":17}],21:[function(require,module,exports){
+},{"../shaders/shaders":60,"./engine":30,"./matrix-class":40,"wgpu-matrix":17}],22:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -20211,7 +20279,7 @@ class HPBarEffect {
 }
 exports.HPBarEffect = HPBarEffect;
 
-},{"../../shaders/energy-bars/energy-bar-shader.js":47,"wgpu-matrix":17}],22:[function(require,module,exports){
+},{"../../shaders/energy-bars/energy-bar-shader.js":48,"wgpu-matrix":17}],23:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -20430,7 +20498,7 @@ class FlameEmitter {
 }
 exports.FlameEmitter = FlameEmitter;
 
-},{"../../shaders/flame-effect/flame-instanced":48,"../utils":44,"wgpu-matrix":17}],23:[function(require,module,exports){
+},{"../../shaders/flame-effect/flame-instanced":49,"../utils":45,"wgpu-matrix":17}],24:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -20601,7 +20669,7 @@ class FlameEffect {
 }
 exports.FlameEffect = FlameEffect;
 
-},{"../../shaders/flame-effect/flameEffect":49,"wgpu-matrix":17}],24:[function(require,module,exports){
+},{"../../shaders/flame-effect/flameEffect":50,"wgpu-matrix":17}],25:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -20842,7 +20910,7 @@ class GenGeoTexture {
 }
 exports.GenGeoTexture = GenGeoTexture;
 
-},{"../../shaders/standalone/geo.tex.js":61,"../geometry-factory.js":30,"wgpu-matrix":17}],25:[function(require,module,exports){
+},{"../../shaders/standalone/geo.tex.js":62,"../geometry-factory.js":31,"wgpu-matrix":17}],26:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -21099,7 +21167,7 @@ class GenGeoTexture2 {
 }
 exports.GenGeoTexture2 = GenGeoTexture2;
 
-},{"../../shaders/standalone/geo.tex.js":61,"../geometry-factory.js":30,"wgpu-matrix":17}],26:[function(require,module,exports){
+},{"../../shaders/standalone/geo.tex.js":62,"../geometry-factory.js":31,"wgpu-matrix":17}],27:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -21289,7 +21357,7 @@ class GenGeo {
 }
 exports.GenGeo = GenGeo;
 
-},{"../../shaders/standalone/geo.instanced.js":60,"../geometry-factory.js":30,"wgpu-matrix":17}],27:[function(require,module,exports){
+},{"../../shaders/standalone/geo.instanced.js":61,"../geometry-factory.js":31,"wgpu-matrix":17}],28:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -21452,7 +21520,7 @@ class MANABarEffect {
 }
 exports.MANABarEffect = MANABarEffect;
 
-},{"../../shaders/energy-bars/energy-bar-shader.js":47,"wgpu-matrix":17}],28:[function(require,module,exports){
+},{"../../shaders/energy-bars/energy-bar-shader.js":48,"wgpu-matrix":17}],29:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -21595,7 +21663,7 @@ class PointerEffect {
 }
 exports.PointerEffect = PointerEffect;
 
-},{"../../shaders/standalone/pointer.effect.js":62,"wgpu-matrix":17}],29:[function(require,module,exports){
+},{"../../shaders/standalone/pointer.effect.js":63,"wgpu-matrix":17}],30:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -22138,7 +22206,7 @@ class RPGCamera extends CameraBase {
 }
 exports.RPGCamera = RPGCamera;
 
-},{"./utils":44,"wgpu-matrix":17}],30:[function(require,module,exports){
+},{"./utils":45,"wgpu-matrix":17}],31:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -22450,7 +22518,7 @@ class GeometryFactory {
 }
 exports.GeometryFactory = GeometryFactory;
 
-},{}],31:[function(require,module,exports){
+},{}],32:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -22977,7 +23045,7 @@ class MaterialsInstanced {
 }
 exports.default = MaterialsInstanced;
 
-},{"../../shaders/fragment.wgsl":51,"../../shaders/fragment.wgsl.metal":52,"../../shaders/fragment.wgsl.normalmap":53,"../../shaders/fragment.wgsl.pong":54,"../../shaders/fragment.wgsl.power":55,"../../shaders/instanced/fragment.instanced.wgsl":56}],32:[function(require,module,exports){
+},{"../../shaders/fragment.wgsl":52,"../../shaders/fragment.wgsl.metal":53,"../../shaders/fragment.wgsl.normalmap":54,"../../shaders/fragment.wgsl.pong":55,"../../shaders/fragment.wgsl.power":56,"../../shaders/instanced/fragment.instanced.wgsl":57}],33:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -23966,7 +24034,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
 }
 exports.default = MEMeshObjInstances;
 
-},{"../../shaders/fragment.video.wgsl":50,"../../shaders/instanced/vertex.instanced.wgsl":57,"../effects/energy-bar":21,"../effects/flame":23,"../effects/flame-emmiter":22,"../effects/gen":26,"../effects/gen-tex":24,"../effects/gen-tex2":25,"../effects/mana-bar":27,"../effects/pointerEffect":28,"../loaders/bvh-instaced":35,"../matrix-class":39,"../utils":44,"./materials-instanced":31,"wgpu-matrix":17}],33:[function(require,module,exports){
+},{"../../shaders/fragment.video.wgsl":51,"../../shaders/instanced/vertex.instanced.wgsl":58,"../effects/energy-bar":22,"../effects/flame":24,"../effects/flame-emmiter":23,"../effects/gen":27,"../effects/gen-tex":25,"../effects/gen-tex2":26,"../effects/mana-bar":28,"../effects/pointerEffect":29,"../loaders/bvh-instaced":36,"../matrix-class":40,"../utils":45,"./materials-instanced":32,"wgpu-matrix":17}],34:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -24252,7 +24320,7 @@ class SpotLight {
 }
 exports.SpotLight = SpotLight;
 
-},{"../shaders/instanced/vertexShadow.instanced.wgsl":58,"../shaders/vertexShadow.wgsl":65,"./behavior":19,"wgpu-matrix":17}],34:[function(require,module,exports){
+},{"../shaders/instanced/vertexShadow.instanced.wgsl":59,"../shaders/vertexShadow.wgsl":66,"./behavior":20,"wgpu-matrix":17}],35:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -24720,7 +24788,7 @@ function play(nameAni) {
   this.playing = true;
 }
 
-},{}],35:[function(require,module,exports){
+},{}],36:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -25261,7 +25329,7 @@ class BVHPlayerInstances extends _meshObjInstances.default {
 }
 exports.BVHPlayerInstances = BVHPlayerInstances;
 
-},{"../instanced/mesh-obj-instances.js":32,"./webgpu-gltf.js":37,"wgpu-matrix":17}],36:[function(require,module,exports){
+},{"../instanced/mesh-obj-instances.js":33,"./webgpu-gltf.js":38,"wgpu-matrix":17}],37:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -25771,7 +25839,7 @@ class BVHPlayer extends _meshObj.default {
 }
 exports.BVHPlayer = BVHPlayer;
 
-},{"../mesh-obj":40,"./webgpu-gltf.js":37,"bvh-loader":3,"wgpu-matrix":17}],37:[function(require,module,exports){
+},{"../mesh-obj":41,"./webgpu-gltf.js":38,"bvh-loader":3,"wgpu-matrix":17}],38:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -26352,7 +26420,7 @@ async function uploadGLBModel(buffer, device) {
   return R;
 }
 
-},{"gl-matrix":6}],38:[function(require,module,exports){
+},{"gl-matrix":6}],39:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -26878,7 +26946,7 @@ class Materials {
 }
 exports.default = Materials;
 
-},{"../shaders/fragment.wgsl":51,"../shaders/fragment.wgsl.metal":52,"../shaders/fragment.wgsl.normalmap":53,"../shaders/fragment.wgsl.pong":54,"../shaders/fragment.wgsl.power":55}],39:[function(require,module,exports){
+},{"../shaders/fragment.wgsl":52,"../shaders/fragment.wgsl.metal":53,"../shaders/fragment.wgsl.normalmap":54,"../shaders/fragment.wgsl.pong":55,"../shaders/fragment.wgsl.power":56}],40:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -27225,7 +27293,7 @@ class Rotation {
 }
 exports.Rotation = Rotation;
 
-},{"./utils":44}],40:[function(require,module,exports){
+},{"./utils":45}],41:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -28020,7 +28088,7 @@ class MEMeshObj extends _materials.default {
 }
 exports.default = MEMeshObj;
 
-},{"../shaders/fragment.video.wgsl":50,"../shaders/vertex.wgsl":63,"../shaders/vertex.wgsl.normalmap":64,"./effects/pointerEffect":28,"./materials":38,"./matrix-class":39,"./utils":44,"wgpu-matrix":17}],41:[function(require,module,exports){
+},{"../shaders/fragment.video.wgsl":51,"../shaders/vertex.wgsl":64,"../shaders/vertex.wgsl.normalmap":65,"./effects/pointerEffect":29,"./materials":39,"./matrix-class":40,"./utils":45,"wgpu-matrix":17}],42:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -28511,7 +28579,7 @@ function clearEventsTextarea() {
   exports.events = events = '';
 }
 
-},{}],42:[function(require,module,exports){
+},{}],43:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -28720,7 +28788,7 @@ let activateNet2 = sessionOption => {
 };
 exports.activateNet2 = activateNet2;
 
-},{"../utils":44,"./matrix-stream":41}],43:[function(require,module,exports){
+},{"../utils":45,"./matrix-stream":42}],44:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -28774,7 +28842,7 @@ class AnimatedCursor {
 }
 exports.AnimatedCursor = AnimatedCursor;
 
-},{}],44:[function(require,module,exports){
+},{}],45:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -29792,13 +29860,14 @@ class FullscreenManager {
 }
 exports.FullscreenManager = FullscreenManager;
 
-},{}],45:[function(require,module,exports){
+},{}],46:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.MultiLang = void 0;
+var _enBackup = require("../../public/res/multilang/en-backup");
 var _utils = require("../engine/utils");
 class MultiLang {
   constructor() {
@@ -29826,14 +29895,14 @@ class MultiLang {
       });
       return await r.json();
     } catch (err) {
-      console.warn('Not possible to access multilang json asset! Err => ', err);
-      return {};
+      console.warn('Not possible to access multilang json asset! Err => ', err, '. Use backup lang predefinited object. Only english avaible.');
+      return _enBackup.en;
     }
   };
 }
 exports.MultiLang = MultiLang;
 
-},{"../engine/utils":44}],46:[function(require,module,exports){
+},{"../../public/res/multilang/en-backup":18,"../engine/utils":45}],47:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30117,7 +30186,7 @@ class MatrixAmmo {
 }
 exports.default = MatrixAmmo;
 
-},{"../engine/utils":44}],47:[function(require,module,exports){
+},{"../engine/utils":45}],48:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30163,7 +30232,7 @@ fn fsMain(in : VertexOutput) -> @location(0) vec4f {
 }
 `;
 
-},{}],48:[function(require,module,exports){
+},{}],49:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30289,7 +30358,7 @@ fn fsMain(in : VSOut) -> @location(0) vec4<f32> {
 }
 `;
 
-},{}],49:[function(require,module,exports){
+},{}],50:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30377,7 +30446,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
 }
 `;
 
-},{}],50:[function(require,module,exports){
+},{}],51:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30467,7 +30536,7 @@ fn main(input : FragmentInput) -> @location(0) vec4f {
 }
 `;
 
-},{}],51:[function(require,module,exports){
+},{}],52:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30698,7 +30767,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, 1.0);
 }`;
 
-},{}],52:[function(require,module,exports){
+},{}],53:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30876,7 +30945,7 @@ return vec4f(color, 1.0);
 // let radiance = spotlights[0].color * 10.0; // test high intensity
 // Lo += materialData.baseColor * radiance * NdotL;
 
-},{}],53:[function(require,module,exports){
+},{}],54:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -31121,7 +31190,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, 1.0);
 }`;
 
-},{}],54:[function(require,module,exports){
+},{}],55:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -31341,7 +31410,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, 1.0);
 }`;
 
-},{}],55:[function(require,module,exports){
+},{}],56:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -31509,7 +31578,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 // let radiance = spotlights[0].color * 10.0; // test high intensity
 // Lo += materialData.baseColor * radiance * NdotL;
 
-},{}],56:[function(require,module,exports){
+},{}],57:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -31745,7 +31814,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, alpha);
 }`;
 
-},{}],57:[function(require,module,exports){
+},{}],58:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -31849,7 +31918,7 @@ fn main(
   return output;
 }`;
 
-},{}],58:[function(require,module,exports){
+},{}],59:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -31886,7 +31955,7 @@ fn main(
 }
 `;
 
-},{}],59:[function(require,module,exports){
+},{}],60:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -31944,7 +32013,7 @@ fn fragmentMain(input: VertexOutput) -> @location(0) vec4f {
   return vec4f(textureColor.rgb * lightColor, textureColor.a);
 }`;
 
-},{}],60:[function(require,module,exports){
+},{}],61:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -32002,7 +32071,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
 }
 `;
 
-},{}],61:[function(require,module,exports){
+},{}],62:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -32089,7 +32158,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
 }
 `;
 
-},{}],62:[function(require,module,exports){
+},{}],63:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -32147,7 +32216,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
   return vec4<f32>(color, 1.0);
 }`;
 
-},{}],63:[function(require,module,exports){
+},{}],64:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -32233,7 +32302,7 @@ fn main(
   return output;
 }`;
 
-},{}],64:[function(require,module,exports){
+},{}],65:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -32344,7 +32413,7 @@ fn main(
   return output;
 }`;
 
-},{}],65:[function(require,module,exports){
+},{}],66:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -32372,7 +32441,7 @@ fn main(
 }
 `;
 
-},{}],66:[function(require,module,exports){
+},{}],67:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -32442,7 +32511,7 @@ class MatrixSounds {
 }
 exports.MatrixSounds = MatrixSounds;
 
-},{}],67:[function(require,module,exports){
+},{}],68:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -33449,4 +33518,4 @@ class MatrixEngineWGPU {
 }
 exports.default = MatrixEngineWGPU;
 
-},{"./engine/ball.js":18,"./engine/cube.js":20,"./engine/engine.js":29,"./engine/lights.js":33,"./engine/loader-obj.js":34,"./engine/loaders/bvh-instaced.js":35,"./engine/loaders/bvh.js":36,"./engine/mesh-obj.js":40,"./engine/utils.js":44,"./multilang/lang.js":45,"./physics/matrix-ammo.js":46,"./sounds/sounds.js":66,"wgpu-matrix":17}]},{},[2]);
+},{"./engine/ball.js":19,"./engine/cube.js":21,"./engine/engine.js":30,"./engine/lights.js":34,"./engine/loader-obj.js":35,"./engine/loaders/bvh-instaced.js":36,"./engine/loaders/bvh.js":37,"./engine/mesh-obj.js":41,"./engine/utils.js":45,"./multilang/lang.js":46,"./physics/matrix-ammo.js":47,"./sounds/sounds.js":67,"wgpu-matrix":17}]},{},[2]);
