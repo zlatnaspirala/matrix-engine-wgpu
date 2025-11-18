@@ -325,7 +325,7 @@ export class HeroProps {
     return this.upgradeAbility(spellIndex);
   }
 
-  // attack NORMAL
+  // attack - direction always local -> enemy (remote)
   calcDamage(attacker, defender, abilityMultiplier = 1.0, critChance = 1, critMult = 1) {
     // Use attack from your current scaled stats
     const baseAttack = attacker.attack;
@@ -356,13 +356,13 @@ export class HeroProps {
 export class Hero extends HeroProps {
   constructor(name, archetypes = ["Warrior"]) {
     super(name);
-    this.archetypes = archetypes.slice(0, 2); // limit to 2
+     // limit to 2 mix
+    this.archetypes = archetypes.slice(0, 2);
     this.applyArchetypeStats();
   }
 
   applyArchetypeStats() {
     if(!this.archetypes || this.archetypes.length === 0) return;
-
     let typeData;
 
     if(this.archetypes.length === 2) {
@@ -400,18 +400,8 @@ export class Hero extends HeroProps {
   updateStats() {
     super.updateStats();
     this.applyArchetypeStats();
-    // console.log('Override updateStats to include archetype scaling ....')
   }
 }
-
-export const HERO_PROFILES = {
-  MariaSword: {
-    baseArchetypes: ["Warrior", "Mage"],
-    colorTheme: ["gold", "orange"],
-    weapon: "Sword",
-    abilities: ["Solar Dash", "Radiant Ascend", "Luminous Counter", "Solar Bloom"]
-  }
-};
 
 export function mergeArchetypes(typeA, typeB) {
   if(!HERO_ARCHETYPES[typeA] || !HERO_ARCHETYPES[typeB]) {

@@ -4,7 +4,7 @@
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.HeroProps = exports.Hero = exports.HERO_PROFILES = exports.HERO_ARCHETYPES = void 0;
+exports.HeroProps = exports.Hero = exports.HERO_ARCHETYPES = void 0;
 exports.mergeArchetypes = mergeArchetypes;
 exports.mergeArchetypesWeighted = mergeArchetypesWeighted;
 /**
@@ -443,7 +443,7 @@ class HeroProps {
     return this.upgradeAbility(spellIndex);
   }
 
-  // attack NORMAL
+  // attack - direction always local -> enemy (remote)
   calcDamage(attacker, defender, abilityMultiplier = 1.0, critChance = 1, critMult = 1) {
     // Use attack from your current scaled stats
     const baseAttack = attacker.attack;
@@ -476,7 +476,8 @@ exports.HeroProps = HeroProps;
 class Hero extends HeroProps {
   constructor(name, archetypes = ["Warrior"]) {
     super(name);
-    this.archetypes = archetypes.slice(0, 2); // limit to 2
+    // limit to 2 mix
+    this.archetypes = archetypes.slice(0, 2);
     this.applyArchetypeStats();
   }
   applyArchetypeStats() {
@@ -513,18 +514,9 @@ class Hero extends HeroProps {
   updateStats() {
     super.updateStats();
     this.applyArchetypeStats();
-    // console.log('Override updateStats to include archetype scaling ....')
   }
 }
 exports.Hero = Hero;
-const HERO_PROFILES = exports.HERO_PROFILES = {
-  MariaSword: {
-    baseArchetypes: ["Warrior", "Mage"],
-    colorTheme: ["gold", "orange"],
-    weapon: "Sword",
-    abilities: ["Solar Dash", "Radiant Ascend", "Luminous Counter", "Solar Bloom"]
-  }
-};
 function mergeArchetypes(typeA, typeB) {
   if (!HERO_ARCHETYPES[typeA] || !HERO_ARCHETYPES[typeB]) {
     console.warn(`Invalid archetype(s): ${typeA}, ${typeB}`);
@@ -762,10 +754,21 @@ let forestOfHollowBloodStartSceen = new _world.default({
       location.assign('rpg-game.html');
     }, 1000);
   };
+  navigator.connection.onchange = e => {
+    console.info('Network state changed...', e);
+    if (e.target.downlink < 0.4) {
+      (0, _utils.byId)('loader').style.display = 'block';
+      (0, _utils.byId)('loader').style.fontSize = '150%';
+      (0, _utils.byId)('loader').innerHTML = `NO INTERNET CONNECTIONS`;
+      setTimeout(() => {
+        location.href = 'https://maximumroulette.com';
+      }, 3000);
+    }
+  };
   addEventListener('check-gameplay-channel', e => {
     let info = e.detail;
-    if (info.status) {
-      // console.log('check-gameplay-channel ', info.status)
+    if (info.status != 'false' && typeof info.status !== "undefined") {
+      console.log('check-gameplay-channel status:', info.status);
       (0, _utils.byId)("onlineUsers").innerHTML = `GamePlay:Free`;
       forestOfHollowBloodStartSceen.gamePlayStatus = "free";
       (0, _utils.byId)('startBtnText').innerHTML = app.label.get.play;
@@ -773,15 +776,21 @@ let forestOfHollowBloodStartSceen = new _world.default({
       clearInterval(forestOfHollowBloodStartSceen.gamePlayStatusTimer);
       forestOfHollowBloodStartSceen.gamePlayStatusTimer = null;
     } else {
-      let info = JSON.parse(e.detail);
-      // console.log('check-gameplay-channel ', info.connections.numberOfElements)
-      (0, _utils.byId)("onlineUsers").innerHTML = `${app.label.get.alreadyingame}:${info.connections.numberOfElements}`;
-      forestOfHollowBloodStartSceen.gamePlayStatus = "used";
-      (0, _utils.byId)('startBtnText').innerHTML = `${app.label.get.gameplaychannel}:${app.label.get.used}`;
-      (0, _utils.byId)("startBtnText").style.color = 'rgb(255 53 53)';
-      forestOfHollowBloodStartSceen.gamePlayStatusTimer = setInterval(() => {
-        app.net.fetchInfo('forestOfHollowBlood-free-for-all');
-      }, 30000);
+      console.log('check-gameplay-channel status:', info.status);
+      if (typeof info.status != "undefined" && info.status == "false") {
+        // no internet
+        (0, _utils.byId)('loader').style.display = 'block';
+        alert("This is modal window, No internet connection... Please try ");
+      } else {
+        info = JSON.parse(e.detail);
+        (0, _utils.byId)("onlineUsers").innerHTML = `${app.label.get.alreadyingame}:${info.connections.numberOfElements}`;
+        forestOfHollowBloodStartSceen.gamePlayStatus = "used";
+        (0, _utils.byId)('startBtnText').innerHTML = `${app.label.get.gameplaychannel}:${app.label.get.used}`;
+        (0, _utils.byId)("startBtnText").style.color = 'rgb(255 53 53)';
+        forestOfHollowBloodStartSceen.gamePlayStatusTimer = setTimeout(() => {
+          app.net.fetchInfo('forestOfHollowBlood-free-for-all');
+        }, 30000);
+      }
     }
   });
   forestOfHollowBloodStartSceen.MINIMUM_PLAYERS = 3;
@@ -1338,7 +1347,8 @@ let forestOfHollowBloodStartSceen = new _world.default({
         counter.textContent = app.label.get.letthegame;
         bar.style.boxShadow = "0 0 30px #00ff99";
         setTimeout(() => {
-          loader.remove();
+          loader.style.display = 'none';
+          // loader.remove();
         }, 250);
       }
     }
@@ -28318,7 +28328,7 @@ function fetchInfo(sessionName) {
   httpRequest('POST', 'https://' + netConfig.NETWORKING_DOMAIN + ':' + netConfig.NETWORKING_PORT + '/api/fetch-info', {
     sessionName: sessionName
   }, 'Session couldn\'t be fetched', res => {
-    console.info("Session fetched");
+    // console.info("Session fetched");
     dispatchEvent(new CustomEvent('check-gameplay-channel', {
       detail: JSON.stringify(res, null, "\t")
     }));
@@ -28364,13 +28374,24 @@ function httpRequest(method, url, body, errorMsg, callback) {
         }
       } else {
         console.warn(errorMsg + ' (' + http.status + ')');
-        if (url.indexOf('fetch-info') != -1) dispatchEvent(new CustomEvent('check-gameplay-channel', {
-          detail: {
-            status: 'free',
-            url: url
+        if (url.indexOf('fetch-info') != -1) {
+          if (http.status == 0 && errorMsg == "Session couldn't be fetched") {
+            const errorText = errorMsg + ": HTTP " + http.status + " (" + http.responseText + ")";
+            dispatchEvent(new CustomEvent('check-gameplay-channel', {
+              detail: {
+                status: 'false',
+                errorText: errorText
+              }
+            }));
+          } else {
+            dispatchEvent(new CustomEvent('check-gameplay-channel', {
+              detail: {
+                status: 'free',
+                url: url
+              }
+            }));
           }
-        }));
-        byId('textarea-http').innerText = errorMsg + ": HTTP " + http.status + " (" + http.responseText + ")";
+        }
       }
     }
   }

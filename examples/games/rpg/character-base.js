@@ -1,7 +1,7 @@
 import {vec3, mat4} from "wgpu-matrix";
 import {uploadGLBModel} from "../../../src/engine/loaders/webgpu-gltf";
 import {byId, LOG_MATRIX} from "../../../src/engine/utils";
-import {Hero, HERO_PROFILES} from "./hero";
+import {Hero} from "./hero";
 import {Creep} from "./creep-character";
 import {followPath} from "./nav-mesh";
 import {creepPoints, startUpPositions} from "./static";

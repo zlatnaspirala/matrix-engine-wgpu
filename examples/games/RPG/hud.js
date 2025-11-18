@@ -344,7 +344,7 @@ export class HUD {
       const clamped = Math.max(0, Math.min(100, e.detail.HP));
       hpBar.style.width = clamped + "%";
       hpText.textContent = `MANA: ${clamped}%`;
-    })
+    });
 
     hud.appendChild(hudCenter);
     // left box
@@ -504,6 +504,7 @@ export class HUD {
     })
 
     const loader = document.createElement("div");
+    loader.id = "loader";
     Object.assign(loader.style, {
       position: "fixed",
       display: 'flex',
@@ -522,7 +523,6 @@ export class HUD {
       cursor: 'url(./res/icons/default.png) 0 0, auto',
       pointerEvents: 'auto'
     });
-    // loader.classList.add('buttonMatrix');
     loader.innerHTML = `
       <div class="loader">
         <div class="progress-container">
@@ -553,7 +553,8 @@ export class HUD {
         counter.textContent = "Let the game begin!";
         bar.style.boxShadow = "0 0 30px #00ff99";
         setTimeout(() => {
-          loader.remove();
+          // loader.remove();
+          loader.style.display = 'none';
           bar = null;
           counter = null;
         }, 250)
@@ -563,10 +564,8 @@ export class HUD {
     setTimeout(() => {
       bar = document.getElementById('progressBar');
       counter = document.getElementById('counter');
-      fakeProgress()
-    }, 300);
-
-
+      fakeProgress();
+    }, 600);
 
     // Add grid to hudItems
     hudItems.appendChild(inventoryGrid);

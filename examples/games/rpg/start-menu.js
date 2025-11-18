@@ -218,10 +218,22 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
     }, 1000);
   }
 
+  navigator.connection.onchange = (e) => {
+    console.info('Network state changed...', e);
+    if (e.target.downlink < 0.4) {
+        byId('loader').style.display = 'block';
+        byId('loader').style.fontSize = '150%';
+        byId('loader').innerHTML = `NO INTERNET CONNECTIONS`;
+        setTimeout(()=> {
+          location.href = 'https://maximumroulette.com';
+        }, 3000)
+    }
+  }
+
   addEventListener('check-gameplay-channel', (e) => {
     let info = e.detail;
-    if(info.status) {
-      // console.log('check-gameplay-channel ', info.status)
+    if(info.status != 'false' && typeof info.status !== "undefined") {
+      console.log('check-gameplay-channel status:', info.status)
       byId("onlineUsers").innerHTML = `GamePlay:Free`;
       forestOfHollowBloodStartSceen.gamePlayStatus = "free";
       byId('startBtnText').innerHTML = app.label.get.play;
@@ -229,15 +241,24 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
       clearInterval(forestOfHollowBloodStartSceen.gamePlayStatusTimer);
       forestOfHollowBloodStartSceen.gamePlayStatusTimer = null;
     } else {
-      let info = JSON.parse(e.detail);
-      // console.log('check-gameplay-channel ', info.connections.numberOfElements)
-      byId("onlineUsers").innerHTML = `${app.label.get.alreadyingame}:${info.connections.numberOfElements}`;
-      forestOfHollowBloodStartSceen.gamePlayStatus = "used";
-      byId('startBtnText').innerHTML = `${app.label.get.gameplaychannel}:${app.label.get.used}`;
-      byId("startBtnText").style.color = 'rgb(255 53 53)';
-      forestOfHollowBloodStartSceen.gamePlayStatusTimer = setInterval(() => {
-        app.net.fetchInfo('forestOfHollowBlood-free-for-all');
-      }, 30000);
+      
+      console.log('check-gameplay-channel status:', info.status)
+      if( typeof info.status != "undefined" && info.status == "false") {
+
+        // no internet
+        byId('loader').style.display = 'block';
+        alert("This is modal window, No internet connection... Please try ");
+
+      } else {
+        info = JSON.parse(e.detail);
+        byId("onlineUsers").innerHTML = `${app.label.get.alreadyingame}:${info.connections.numberOfElements}`;
+        forestOfHollowBloodStartSceen.gamePlayStatus = "used";
+        byId('startBtnText').innerHTML = `${app.label.get.gameplaychannel}:${app.label.get.used}`;
+        byId("startBtnText").style.color = 'rgb(255 53 53)';
+        forestOfHollowBloodStartSceen.gamePlayStatusTimer = setTimeout(() => {
+          app.net.fetchInfo('forestOfHollowBlood-free-for-all');
+        }, 30000);
+      }
     }
   })
 
@@ -383,88 +404,88 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
   })
 
   // addEventListener('AmmoReady', async () => {
-    app.matrixSounds.play('music');
-    heros = [
-      {type: "Warrior", name: 'MariaSword', path: "res/meshes/glb/woman1.glb", desc: forestOfHollowBloodStartSceen.label.get.mariasword},
-      {type: "Ranger", name: 'Slayzer', path: "res/meshes/glb/monster.glb", desc: forestOfHollowBloodStartSceen.label.get.slayzer},
-      {type: "Tank", name: 'Steelborn', path: "res/meshes/glb/bot.glb", desc: forestOfHollowBloodStartSceen.label.get.steelborn},
-      {type: "Mage", name: 'Warrok', path: "res/meshes/glb/warrok.glb", desc: forestOfHollowBloodStartSceen.label.get.warrok},
-      {type: "Necromancer", name: 'Skeletonz', path: "res/meshes/glb/skeletonz.glb", desc: forestOfHollowBloodStartSceen.label.get.skeletonz},
-      {type: "Assassin", name: 'Erika', path: "res/meshes/glb/erika.glb", desc: forestOfHollowBloodStartSceen.label.get.erika},
-      {type: "Support", name: 'Arissa', path: "res/meshes/glb/arissa.glb", desc: forestOfHollowBloodStartSceen.label.get.arissa},
-    ];
+  app.matrixSounds.play('music');
+  heros = [
+    {type: "Warrior", name: 'MariaSword', path: "res/meshes/glb/woman1.glb", desc: forestOfHollowBloodStartSceen.label.get.mariasword},
+    {type: "Ranger", name: 'Slayzer', path: "res/meshes/glb/monster.glb", desc: forestOfHollowBloodStartSceen.label.get.slayzer},
+    {type: "Tank", name: 'Steelborn', path: "res/meshes/glb/bot.glb", desc: forestOfHollowBloodStartSceen.label.get.steelborn},
+    {type: "Mage", name: 'Warrok', path: "res/meshes/glb/warrok.glb", desc: forestOfHollowBloodStartSceen.label.get.warrok},
+    {type: "Necromancer", name: 'Skeletonz', path: "res/meshes/glb/skeletonz.glb", desc: forestOfHollowBloodStartSceen.label.get.skeletonz},
+    {type: "Assassin", name: 'Erika', path: "res/meshes/glb/erika.glb", desc: forestOfHollowBloodStartSceen.label.get.erika},
+    {type: "Support", name: 'Arissa', path: "res/meshes/glb/arissa.glb", desc: forestOfHollowBloodStartSceen.label.get.arissa},
+  ];
 
-    forestOfHollowBloodStartSceen.heros = heros;
+  forestOfHollowBloodStartSceen.heros = heros;
 
-    // helper
-    async function loadHeros() {
+  // helper
+  async function loadHeros() {
+    for(var x = 0;x < heros.length;x++) {
+      var glbFile01 = await fetch(heros[x].path).then(
+        res => res.arrayBuffer().then(buf => uploadGLBModel(buf, app.device)));
+      forestOfHollowBloodStartSceen.addGlbObjInctance({
+        material: (x == 2 ? {type: 'power', useTextureFromGlb: true} : {type: 'standard', useTextureFromGlb: true}),
+        scale: [20, 20, 20],
+        position: {x: 0 + x * 50, y: 0, z: -10},
+        name: heros[x].name,
+        texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
+        raycast: {enabled: true, radius: 1},
+        pointerEffect: {
+          enabled: true,
+          pointer: true,
+          flameEffect: false,
+          flameEmitter: true,
+          circlePlane: true,
+          circlePlaneTex: true,
+          circlePlaneTexPath: './res/textures/star1.png',
+        }
+      }, null, glbFile01);
+    }
+
+    setTimeout(() => {
+
+      forestOfHollowBloodStartSceen.cameras.WASD.position = [0, 14, 52];
+      app.cameras.WASD.pitch = -0.13;
+      app.cameras.WASD.yaw = 0;
+      app.mainRenderBundle.forEach((sceneObj) => {
+        sceneObj.position.thrust = 1;
+        if(sceneObj.effects.flameEmitter) sceneObj.effects.flameEmitter.recreateVertexDataRND(1)
+      })
+
       for(var x = 0;x < heros.length;x++) {
-        var glbFile01 = await fetch(heros[x].path).then(
-          res => res.arrayBuffer().then(buf => uploadGLBModel(buf, app.device)));
-        forestOfHollowBloodStartSceen.addGlbObjInctance({
-          material: (x == 2 ? {type: 'power', useTextureFromGlb: true} : {type: 'standard', useTextureFromGlb: true}),
-          scale: [20, 20, 20],
-          position: {x: 0 + x * 50, y: 0, z: -10},
-          name: heros[x].name,
-          texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
-          raycast: {enabled: true, radius: 1},
-          pointerEffect: {
-            enabled: true,
-            pointer: true,
-            flameEffect: false,
-            flameEmitter: true,
-            circlePlane: true,
-            circlePlaneTex: true,
-            circlePlaneTexPath: './res/textures/star1.png',
-          }
-        }, null, glbFile01);
-      }
-
-      setTimeout(() => {
-
-        forestOfHollowBloodStartSceen.cameras.WASD.position = [0, 14, 52];
-        app.cameras.WASD.pitch = -0.13;
-        app.cameras.WASD.yaw = 0;
-        app.mainRenderBundle.forEach((sceneObj) => {
-          sceneObj.position.thrust = 1;
-          if(sceneObj.effects.flameEmitter) sceneObj.effects.flameEmitter.recreateVertexDataRND(1)
+        let hero0 = app.mainRenderBundle.filter((obj) => obj.name.indexOf(heros[x].name) != -1)
+        app.heroByBody.push(hero0);
+        heros[x].meshName = hero0[0].name;
+        if(x == 0) {
+          hero0[0].effects.circlePlane.instanceTargets[0].color = [1, 0, 2, 1];
+        }
+        hero0[0].effects.flameEmitter.instanceTargets.forEach((p, i, array) => {
+          array[i].color = [0, 1, 0, 0.7];
         })
 
-        for(var x = 0;x < heros.length;x++) {
-          let hero0 = app.mainRenderBundle.filter((obj) => obj.name.indexOf(heros[x].name) != -1)
-          app.heroByBody.push(hero0);
-          heros[x].meshName = hero0[0].name;
-          if(x == 0) {
-            hero0[0].effects.circlePlane.instanceTargets[0].color = [1, 0, 2, 1];
-          }
-          hero0[0].effects.flameEmitter.instanceTargets.forEach((p, i, array) => {
-            array[i].color = [0, 1, 0, 0.7];
+        if(x == 2) {
+          hero0.forEach((p, i, array) => {
+            array[i].globalAmbient = [11, 11, 1];
           })
-
-          if(x == 2) {
-            hero0.forEach((p, i, array) => {
-              array[i].globalAmbient = [11, 11, 1];
-            })
-          }
-          if(x == 3 || x == 5) {
-            hero0.forEach((p, i, array) => {
-              array[i].globalAmbient = [10, 10, 10];
-              array[i].effects.flameEmitter.smoothFlickeringScale = 0.005;
-            })
-          }
-          if(x == 6) {
-            hero0.forEach((p, i, array) => {
-              array[i].globalAmbient = [21, 11, 11];
-            })
-          }
         }
-        app.lightContainer[0].position[2] = 10;
-        app.lightContainer[0].position[1] = 50;
-        app.lightContainer[0].intensity = 1.4;
-      }, 4000);
-    }
-    loadHeros();
-    createHUDMenu();
+        if(x == 3 || x == 5) {
+          hero0.forEach((p, i, array) => {
+            array[i].globalAmbient = [10, 10, 10];
+            array[i].effects.flameEmitter.smoothFlickeringScale = 0.005;
+          })
+        }
+        if(x == 6) {
+          hero0.forEach((p, i, array) => {
+            array[i].globalAmbient = [21, 11, 11];
+          })
+        }
+      }
+      app.lightContainer[0].position[2] = 10;
+      app.lightContainer[0].position[1] = 50;
+      app.lightContainer[0].intensity = 1.4;
+    }, 4000);
+  }
+  loadHeros();
+  createHUDMenu();
   // })
   forestOfHollowBloodStartSceen.addLight();
 
@@ -793,7 +814,10 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
       } else {
         counter.textContent = app.label.get.letthegame;
         bar.style.boxShadow = "0 0 30px #00ff99";
-        setTimeout(() => {loader.remove();}, 250)
+        setTimeout(() => {
+          loader.style.display = 'none';
+          // loader.remove();
+        }, 250)
       }
     }
 

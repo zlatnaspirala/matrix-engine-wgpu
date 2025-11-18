@@ -1771,8 +1771,6 @@ var _webgpuGltf = require("../../../src/engine/loaders/webgpu-gltf");
 var _utils = require("../../../src/engine/utils");
 var _hero = require("./hero");
 var _static = require("./static");
-// import {followPath} from "./nav-mesh";
-
 class FriendlyHero extends _hero.Hero {
   heroAnimationArrange = {
     dead: null,
@@ -1791,7 +1789,7 @@ class FriendlyHero extends _hero.Hero {
   }
   loadFriendlyHero = async o => {
     try {
-      console.info(`%chero friendly path  ${o.path}`, _utils.LOG_MATRIX);
+      // console.info(`%cHero friendly path ${o.path}`, LOG_MATRIX)
       var glbFile01 = await fetch(o.path).then(res => res.arrayBuffer().then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, this.core.device)));
       this.core.addGlbObjInctance({
         material: {
@@ -1826,24 +1824,16 @@ class FriendlyHero extends _hero.Hero {
             if (a.name == 'attack') this.heroAnimationArrange.attack = index;
             if (a.name == 'idle') this.heroAnimationArrange.idle = index;
           });
-          // adapt
+          // adapt part
           if (this.name == 'Slayzer') {
             subMesh.globalAmbient = [2, 2, 3, 1];
           }
-
           // this is optimisation very important - no emit per sub mesh - calc on client part.
           if (idx > 0) {
             array[idx].position = array[0].position;
             array[idx].rotation = array[0].rotation;
           }
-
-          // maybe will help - remote net players no nedd to collide in other remote user gamaplay
-          // dont care for multi sub mesh now
           if (idx == 0) {
-            // remove after test - not i use// remove after test - not i use
-            // subMesh.position.netObject = subMesh.name;
-            // subMesh.rotation.emitY = subMesh.name;
-            // remove after test - not i use// remove after test - not i use
             this.core.collisionSystem.register(o.name, subMesh.position, 15.0, 'friendly');
           }
         });
@@ -1905,7 +1895,6 @@ class FriendlyHero extends _hero.Hero {
         hp: e.detail.hp,
         progress: e.detail.progress
       });
-      // if detail is 0
       if (e.detail.progress == 0) {
         this.setDead();
         console.info(`%c hero dead [${this.name}], attacker[${e.detail.attacker}]`, _utils.LOG_MATRIX);
@@ -1924,7 +1913,7 @@ exports.FriendlyHero = FriendlyHero;
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.HeroProps = exports.Hero = exports.HERO_PROFILES = exports.HERO_ARCHETYPES = void 0;
+exports.HeroProps = exports.Hero = exports.HERO_ARCHETYPES = void 0;
 exports.mergeArchetypes = mergeArchetypes;
 exports.mergeArchetypesWeighted = mergeArchetypesWeighted;
 /**
@@ -2363,7 +2352,7 @@ class HeroProps {
     return this.upgradeAbility(spellIndex);
   }
 
-  // attack NORMAL
+  // attack - direction always local -> enemy (remote)
   calcDamage(attacker, defender, abilityMultiplier = 1.0, critChance = 1, critMult = 1) {
     // Use attack from your current scaled stats
     const baseAttack = attacker.attack;
@@ -2396,7 +2385,8 @@ exports.HeroProps = HeroProps;
 class Hero extends HeroProps {
   constructor(name, archetypes = ["Warrior"]) {
     super(name);
-    this.archetypes = archetypes.slice(0, 2); // limit to 2
+    // limit to 2 mix
+    this.archetypes = archetypes.slice(0, 2);
     this.applyArchetypeStats();
   }
   applyArchetypeStats() {
@@ -2436,15 +2426,16 @@ class Hero extends HeroProps {
     // console.log('Override updateStats to include archetype scaling ....')
   }
 }
+
+// export const HERO_PROFILES = {
+//   MariaSword: {
+//     baseArchetypes: ["Warrior", "Mage"],
+//     colorTheme: ["gold", "orange"],
+//     weapon: "Sword",
+//     abilities: ["Solar Dash", "Radiant Ascend", "Luminous Counter", "Solar Bloom"]
+//   }
+// };
 exports.Hero = Hero;
-const HERO_PROFILES = exports.HERO_PROFILES = {
-  MariaSword: {
-    baseArchetypes: ["Warrior", "Mage"],
-    colorTheme: ["gold", "orange"],
-    weapon: "Sword",
-    abilities: ["Solar Dash", "Radiant Ascend", "Luminous Counter", "Solar Bloom"]
-  }
-};
 function mergeArchetypes(typeA, typeB) {
   if (!HERO_ARCHETYPES[typeA] || !HERO_ARCHETYPES[typeB]) {
     console.warn(`Invalid archetype(s): ${typeA}, ${typeB}`);
@@ -2955,7 +2946,6 @@ class HUD {
       cursor: 'url(./res/icons/default.png) 0 0, auto',
       pointerEvents: 'auto'
     });
-    // loader.classList.add('buttonMatrix');
     loader.innerHTML = `
       <div class="loader">
         <div class="progress-container">
@@ -2995,7 +2985,7 @@ class HUD {
       bar = document.getElementById('progressBar');
       counter = document.getElementById('counter');
       fakeProgress();
-    }, 300);
+    }, 600);
 
     // Add grid to hudItems
     hudItems.appendChild(inventoryGrid);

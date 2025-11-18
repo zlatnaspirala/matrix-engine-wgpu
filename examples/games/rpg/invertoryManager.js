@@ -18,9 +18,9 @@ export class Inventory {
     this.craftingRules.push({requiredItems, resultItem});
   }
 
-  loadAllRules (allLevel2_3) {
+  loadAllRules(allLevel2_3) {
     let onlyConstructable = allLevel2_3.filter((item) => typeof item.from !== 'undefined');
-    onlyConstructable.forEach((item , index, array) => {
+    onlyConstructable.forEach((item, index, array) => {
       // console.log(item.name + " from " + item.from);
       this.addCraftingRule(item.from, item);
     });
@@ -106,8 +106,9 @@ export class Inventory {
       );
       if(hasAll) {
         rule.requiredItems.forEach(item => this.removeItem(item, 1));
-        this.addItem(rule.resultItem.name, {effects: rule.resultItem.effects, path: rule.resultItem.path, 
-            description: rule.resultItem.description
+        this.addItem(rule.resultItem.name, {
+          effects: rule.resultItem.effects, path: rule.resultItem.path,
+          description: rule.resultItem.description
         });
         console.log(`✨ Crafted new item: "${rule.resultItem.name}"`);
         return;
@@ -126,11 +127,9 @@ export class Inventory {
     });
 
     this.hero.updateStats();
-    dispatchEvent(new CustomEvent("hero-invertory-update", {detail: {items: this.slots}})
-    );
+    dispatchEvent(new CustomEvent("hero-invertory-update", {detail: {items: this.slots}}));
   }
 
-  // --- Debug print
   debugPrint() {
     console.table(
       this.slots.map((slot, i) => ({

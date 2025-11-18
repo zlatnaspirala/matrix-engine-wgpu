@@ -1,7 +1,6 @@
 import {uploadGLBModel} from "../../../src/engine/loaders/webgpu-gltf";
 import {LOG_MATRIX} from "../../../src/engine/utils";
 import {Hero} from "./hero";
-// import {followPath} from "./nav-mesh";
 import {startUpPositions} from "./static";
 
 export class FriendlyHero extends Hero {
@@ -25,7 +24,7 @@ export class FriendlyHero extends Hero {
 
   loadFriendlyHero = async (o) => {
     try {
-      console.info(`%chero friendly path  ${o.path}`, LOG_MATRIX)
+      // console.info(`%cHero friendly path ${o.path}`, LOG_MATRIX)
       var glbFile01 = await fetch(o.path).then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, this.core.device)));
       this.core.addGlbObjInctance({
         material: {type: 'standard', useTextureFromGlb: true},
@@ -56,24 +55,16 @@ export class FriendlyHero extends Hero {
             if(a.name == 'attack') this.heroAnimationArrange.attack = index;
             if(a.name == 'idle') this.heroAnimationArrange.idle = index;
           });
-          // adapt
+          // adapt part
           if(this.name == 'Slayzer') {
             subMesh.globalAmbient = [2, 2, 3, 1];
           }
-
           // this is optimisation very important - no emit per sub mesh - calc on client part.
           if(idx > 0) {
             array[idx].position = array[0].position;
             array[idx].rotation = array[0].rotation;
           }
-
-          // maybe will help - remote net players no nedd to collide in other remote user gamaplay
-          // dont care for multi sub mesh now
           if(idx == 0) {
-            // remove after test - not i use// remove after test - not i use
-            // subMesh.position.netObject = subMesh.name;
-            // subMesh.rotation.emitY = subMesh.name;
-            // remove after test - not i use// remove after test - not i use
             this.core.collisionSystem.register((o.name), subMesh.position, 15.0, 'friendly');
           }
         });
@@ -145,7 +136,6 @@ export class FriendlyHero extends Hero {
         hp: e.detail.hp,
         progress: e.detail.progress
       });
-      // if detail is 0
       if(e.detail.progress == 0) {
         this.setDead();
         console.info(`%c hero dead [${this.name}], attacker[${e.detail.attacker}]`, LOG_MATRIX)

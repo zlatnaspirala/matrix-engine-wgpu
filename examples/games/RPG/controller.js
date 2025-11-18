@@ -174,7 +174,7 @@ export class Controller {
         }
       });
 
-      document.addEventListener("visibilitychange", () => {
+      let onVisibilityChange = () => {
         if(document.visibilityState === "visible") {
           if(hiddenAt !== null) {
             const now = Date.now();
@@ -190,7 +190,8 @@ export class Controller {
         } else {
           hiddenAt = Date.now();
         }
-      });
+      }
+      document.addEventListener("visibilitychange", onVisibilityChange);
     }
   }
 
