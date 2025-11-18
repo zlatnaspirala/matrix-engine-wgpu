@@ -60,7 +60,7 @@ export class Enemie extends Hero {
           if(this.name == 'Slayzer') {
             subMesh.globalAmbient = [2, 2, 3, 1];
           }
-          if(idx == 0) this.core.collisionSystem.register((o.name), subMesh.position, 15.0, 'enemies');
+          if(idx == 0) this.core.collisionSystem.register((o.name), subMesh.position, 15.0, 'enemy');
         });
 
         this.setStartUpPosition();

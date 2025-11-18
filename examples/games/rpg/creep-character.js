@@ -223,7 +223,7 @@ export class Creep extends Hero {
     if(this.group != 'enemy') {
       addEventListener(`animationEnd-${this.heroe_bodies[0].name}`, (e) => {
         // CHECK DISTANCE
-        if(e.detail.animationName != 'attack' && this.creepFocusAttackOn == null) {
+        if(e.detail.animationName != 'attack') { // && this.creepFocusAttackOn == null) {
           return;
         }
 

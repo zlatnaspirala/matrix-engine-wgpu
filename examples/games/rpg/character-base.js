@@ -509,24 +509,45 @@ export class Character extends Hero {
         if(e.detail.B.group == "friendly") {
           //------------------ BLOCK
           let lc = app.localHero.friendlyLocal.creeps.filter((localCreep) => localCreep.name == e.detail.B.id)[0];
+
+          console.info('A = enemy vs B = friendly <close-distance> is there friendly creeps here ', lc);
+
           lc.creepFocusAttackOn =
             app.enemies.enemies.filter((enemy) => enemy.name == e.detail.A.id)[0];
+
+            console.info('A = enemy vs B = friendly  <close-distance> is there enemy HERO  here ', lc.creepFocusAttackOn);
+
           if(lc.creepFocusAttackOn === undefined) {
+            console.info('it is undefined but ls is  ', lc);
             lc.creepFocusAttackOn = app.enemies.creeps.filter((creep) => creep.name == e.detail.A.id)[0];
+
+            console.info('A = enemy vs B = friendly  <close-distance> is there enemy HERO  here ', lc.creepFocusAttackOn);
+          }
+
+          if(lc.creepFocusAttackOn === undefined) {
+            console.info('<close-distance> lc.creepFocusAttackOn is UNDEFINED ', lc.creepFocusAttackOn);
+            return;
           }
           app.localHero.setAttackCreep(e.detail.B.id[e.detail.B.id.length - 1]);
           // console.info('creep vs creep')
         }
       } else if(e.detail.A.group == "friendly") {
-        // console.info('close distance A is friendly:', e.detail.A.group)
+         console.info('close distance A is friendly PAS 1 :', e.detail.A.group)
         if(e.detail.B.group == "enemy") {
           // console.info('close distance B is enemies:', e.detail.A.group)
           let lc = app.localHero.friendlyLocal.creeps.filter((localCreep) => localCreep.name == e.detail.A.id)[0];
+
+          console.info('close distance ls is  PAS 2 :', lc)
           lc.creepFocusAttackOn =
             app.enemies.enemies.filter((enemy) => enemy.name == e.detail.B.id)[0];
+
+            console.info('close distance lc.creepFocusAttackOn is  PAS 3 :', lc.creepFocusAttackOn)
           if(lc.creepFocusAttackOn == undefined) {
+            console.info('close distance lc.creepFocusAttackOn is  PAS 4 undefined:', lc.creepFocusAttackOn)
             lc.creepFocusAttackOn = app.enemies.creeps.filter((creep) => creep.name == e.detail.B.id)[0];
           }
+
+          console.info('close distance lc.creepFocusAttackOn is ATTACK PLAY PAS 5 :', lc.creepFocusAttackOn)
           app.localHero.setAttackCreep(e.detail.A.id[e.detail.A.id.length - 1]);
           // console.info('creep vs creep ')
           // console.info('close distance A is friendly:', e.detail.A.group)
@@ -542,7 +563,6 @@ export class Character extends Hero {
     })
 
     addEventListener(`animationEnd-${this.heroe_bodies[0].name}`, (e) => {
-      // CHECK DISTANCE
       if(e.detail.animationName != 'attack' || typeof this.core.enemies === 'undefined') {
         //--------------------------------
         return;

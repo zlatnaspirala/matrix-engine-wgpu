@@ -511,22 +511,34 @@ class Character extends _hero.Hero {
         if (e.detail.B.group == "friendly") {
           //------------------ BLOCK
           let lc = app.localHero.friendlyLocal.creeps.filter(localCreep => localCreep.name == e.detail.B.id)[0];
+          console.info('A = enemy vs B = friendly <close-distance> is there friendly creeps here ', lc);
           lc.creepFocusAttackOn = app.enemies.enemies.filter(enemy => enemy.name == e.detail.A.id)[0];
+          console.info('A = enemy vs B = friendly  <close-distance> is there enemy HERO  here ', lc.creepFocusAttackOn);
           if (lc.creepFocusAttackOn === undefined) {
+            console.info('it is undefined but ls is  ', lc);
             lc.creepFocusAttackOn = app.enemies.creeps.filter(creep => creep.name == e.detail.A.id)[0];
+            console.info('A = enemy vs B = friendly  <close-distance> is there enemy HERO  here ', lc.creepFocusAttackOn);
+          }
+          if (lc.creepFocusAttackOn === undefined) {
+            console.info('<close-distance> lc.creepFocusAttackOn is UNDEFINED ', lc.creepFocusAttackOn);
+            return;
           }
           app.localHero.setAttackCreep(e.detail.B.id[e.detail.B.id.length - 1]);
           // console.info('creep vs creep')
         }
       } else if (e.detail.A.group == "friendly") {
-        // console.info('close distance A is friendly:', e.detail.A.group)
+        console.info('close distance A is friendly PAS 1 :', e.detail.A.group);
         if (e.detail.B.group == "enemy") {
           // console.info('close distance B is enemies:', e.detail.A.group)
           let lc = app.localHero.friendlyLocal.creeps.filter(localCreep => localCreep.name == e.detail.A.id)[0];
+          console.info('close distance ls is  PAS 2 :', lc);
           lc.creepFocusAttackOn = app.enemies.enemies.filter(enemy => enemy.name == e.detail.B.id)[0];
+          console.info('close distance lc.creepFocusAttackOn is  PAS 3 :', lc.creepFocusAttackOn);
           if (lc.creepFocusAttackOn == undefined) {
+            console.info('close distance lc.creepFocusAttackOn is  PAS 4 undefined:', lc.creepFocusAttackOn);
             lc.creepFocusAttackOn = app.enemies.creeps.filter(creep => creep.name == e.detail.B.id)[0];
           }
+          console.info('close distance lc.creepFocusAttackOn is ATTACK PLAY PAS 5 :', lc.creepFocusAttackOn);
           app.localHero.setAttackCreep(e.detail.A.id[e.detail.A.id.length - 1]);
           // console.info('creep vs creep ')
           // console.info('close distance A is friendly:', e.detail.A.group)
@@ -541,7 +553,6 @@ class Character extends _hero.Hero {
       }
     });
     addEventListener(`animationEnd-${this.heroe_bodies[0].name}`, e => {
-      // CHECK DISTANCE
       if (e.detail.animationName != 'attack' || typeof this.core.enemies === 'undefined') {
         //--------------------------------
         return;
@@ -872,7 +883,7 @@ class Controller {
           return false;
         }
       });
-      document.addEventListener("visibilitychange", () => {
+      let onVisibilityChange = () => {
         if (document.visibilityState === "visible") {
           if (hiddenAt !== null) {
             const now = Date.now();
@@ -888,7 +899,8 @@ class Controller {
         } else {
           hiddenAt = Date.now();
         }
-      });
+      };
+      document.addEventListener("visibilitychange", onVisibilityChange);
     }
   }
   projectToScreen(worldPos, viewMatrix, projectionMatrix, canvas) {
@@ -1180,7 +1192,8 @@ class Creep extends _hero.Hero {
     if (this.group != 'enemy') {
       addEventListener(`animationEnd-${this.heroe_bodies[0].name}`, e => {
         // CHECK DISTANCE
-        if (e.detail.animationName != 'attack' && this.creepFocusAttackOn == null) {
+        if (e.detail.animationName != 'attack') {
+          // && this.creepFocusAttackOn == null) {
           return;
         }
         if (this.group == "friendly") {
@@ -1388,7 +1401,7 @@ class Enemie extends _hero.Hero {
           if (this.name == 'Slayzer') {
             subMesh.globalAmbient = [2, 2, 3, 1];
           }
-          if (idx == 0) this.core.collisionSystem.register(o.name, subMesh.position, 15.0, 'enemies');
+          if (idx == 0) this.core.collisionSystem.register(o.name, subMesh.position, 15.0, 'enemy');
         });
         this.setStartUpPosition();
         for (var x = 0; x < this.heroe_bodies.length; x++) {
@@ -2423,18 +2436,8 @@ class Hero extends HeroProps {
   updateStats() {
     super.updateStats();
     this.applyArchetypeStats();
-    // console.log('Override updateStats to include archetype scaling ....')
   }
 }
-
-// export const HERO_PROFILES = {
-//   MariaSword: {
-//     baseArchetypes: ["Warrior", "Mage"],
-//     colorTheme: ["gold", "orange"],
-//     weapon: "Sword",
-//     abilities: ["Solar Dash", "Radiant Ascend", "Luminous Counter", "Solar Bloom"]
-//   }
-// };
 exports.Hero = Hero;
 function mergeArchetypes(typeA, typeB) {
   if (!HERO_ARCHETYPES[typeA] || !HERO_ARCHETYPES[typeB]) {
@@ -2928,6 +2931,7 @@ class HUD {
       });
     });
     const loader = document.createElement("div");
+    loader.id = "loader";
     Object.assign(loader.style, {
       position: "fixed",
       display: 'flex',
@@ -2975,7 +2979,8 @@ class HUD {
         counter.textContent = "Let the game begin!";
         bar.style.boxShadow = "0 0 30px #00ff99";
         setTimeout(() => {
-          loader.remove();
+          // loader.remove();
+          loader.style.display = 'none';
           bar = null;
           counter = null;
         }, 250);
@@ -3146,8 +3151,6 @@ class Inventory {
       }
     }));
   }
-
-  // --- Debug print
   debugPrint() {
     console.table(this.slots.map((slot, i) => ({
       Slot: i + 1,
@@ -31800,7 +31803,7 @@ function fetchInfo(sessionName) {
   httpRequest('POST', 'https://' + netConfig.NETWORKING_DOMAIN + ':' + netConfig.NETWORKING_PORT + '/api/fetch-info', {
     sessionName: sessionName
   }, 'Session couldn\'t be fetched', res => {
-    console.info("Session fetched");
+    // console.info("Session fetched");
     dispatchEvent(new CustomEvent('check-gameplay-channel', {
       detail: JSON.stringify(res, null, "\t")
     }));
@@ -31846,13 +31849,24 @@ function httpRequest(method, url, body, errorMsg, callback) {
         }
       } else {
         console.warn(errorMsg + ' (' + http.status + ')');
-        if (url.indexOf('fetch-info') != -1) dispatchEvent(new CustomEvent('check-gameplay-channel', {
-          detail: {
-            status: 'free',
-            url: url
+        if (url.indexOf('fetch-info') != -1) {
+          if (http.status == 0 && errorMsg == "Session couldn't be fetched") {
+            const errorText = errorMsg + ": HTTP " + http.status + " (" + http.responseText + ")";
+            dispatchEvent(new CustomEvent('check-gameplay-channel', {
+              detail: {
+                status: 'false',
+                errorText: errorText
+              }
+            }));
+          } else {
+            dispatchEvent(new CustomEvent('check-gameplay-channel', {
+              detail: {
+                status: 'free',
+                url: url
+              }
+            }));
           }
-        }));
-        byId('textarea-http').innerText = errorMsg + ": HTTP " + http.status + " (" + http.responseText + ")";
+        }
       }
     }
   }
