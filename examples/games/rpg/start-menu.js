@@ -304,7 +304,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
       boxSizing: "border-box"
     });
     byId('netHeader').appendChild(onlineUsers);
-    app.net.fetchInfo('forestOfHollowBlood-free-for-all');
+    // app.net.fetchInfo('forestOfHollowBlood-free-for-all');
   }
 
   if(document.querySelector('.form-group')) document.querySelector('.form-group').style.display = 'none';
@@ -317,7 +317,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
     byId("sessionName").disabled = true;
     forestOfHollowBloodStartSceen.setWaitingList();
     // check game-play channel
-    app.net.fetchInfo('forestOfHollowBlood-free-for-all');
+    setTimeout(() => app.net.fetchInfo('forestOfHollowBlood-free-for-all') , 1000);
   });
 
   addEventListener('connectionDestroyed', (e) => {
@@ -448,8 +448,8 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
       app.cameras.WASD.yaw = 0;
       app.mainRenderBundle.forEach((sceneObj) => {
         sceneObj.position.thrust = 1;
-        if(sceneObj.effects.flameEmitter) sceneObj.effects.flameEmitter.recreateVertexDataRND(1)
-      })
+        if (sceneObj.effects) if(sceneObj.effects.flameEmitter) sceneObj.effects.flameEmitter.recreateVertexDataRND(1);
+      });
 
       for(var x = 0;x < heros.length;x++) {
         let hero0 = app.mainRenderBundle.filter((obj) => obj.name.indexOf(heros[x].name) != -1)

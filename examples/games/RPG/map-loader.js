@@ -104,12 +104,12 @@ export class MEMapLoader {
 
     this.core.addGlbObjInctance({
       material: {type: 'standard', useTextureFromGlb: true},
-      scale: [1, 1, 1],
+      scale: [15, 15, 15],
       rotation: {x: 0, y: 90, z: 0},
       position: {
-        x: creepPoints[getEnemyName__].finalPoint[0],
-        y: creepPoints[getEnemyName__].finalPoint[1],
-        z: creepPoints[getEnemyName__].finalPoint[2]
+        x: creepPoints[app.player.data.team].finalPoint[0],
+        y: creepPoints[app.player.data.team].finalPoint[1],
+        z: creepPoints[app.player.data.team].finalPoint[2]
       },
       name: 'enemytron',
       texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
@@ -120,16 +120,15 @@ export class MEMapLoader {
       }
     }, null, glbFile02);
 
-
-    // var glbFile03 = await fetch('./res/meshes/env/rocks/home.glb').then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, this.core.device)));
+    var glbFile03 = await fetch('./res/meshes/env/rocks/home.glb').then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, this.core.device)));
     this.core.addGlbObjInctance({
       material: {type: 'standard', useTextureFromGlb: true},
       scale: [15, 15, 15],
       rotation: {x: 0, y: 90, z: 0},
       position: {
-        x: creepPoints[app.player.data.team].finalPoint[0],
-        y: creepPoints[app.player.data.team].finalPoint[1],
-        z: creepPoints[app.player.data.team].finalPoint[2]
+        x: creepPoints[getEnemyName__].finalPoint[0],
+        y: creepPoints[getEnemyName__].finalPoint[1],
+        z: creepPoints[getEnemyName__].finalPoint[2]
       },
       name: 'friendlytron',
       texturesPaths: ['./res/textures/star1.png'],
@@ -138,7 +137,7 @@ export class MEMapLoader {
         enabled: true,
         energyBar: true,
       }
-    }, null, glbFile02);
+    }, null, glbFile03);
 
     setTimeout(() => {
       this.collectionOfRocks = this.core.mainRenderBundle.filter((item) => item.name.indexOf('rocks1') != -1);
@@ -158,6 +157,20 @@ export class MEMapLoader {
       app.tron = this.core.mainRenderBundle.filter((item) => item.name.indexOf('friendlytron') != -1)[0];
       app.tron.globalAmbient = [2, 2, 2];
 
+      // no need to extend whole Hero class 
+      // Fiktive
+      app.tron.currentLevel = 10;
+      app.tron.hp = 300;
+      app.tron.armor = 0.1;
+
+      app.enemytron.currentLevel = 10;
+      app.enemytron.hp = 300;
+      app.enemytron.armor = 0.1;
+
+      addEventListener(`onDamage-${app.enemytron.name}`, (e) => {
+        console.info(`%c ON damage TRON !!!!!!!! ${e.detail}`, LOG_MATRIX)
+
+      })
       // this.pointerEffect.circlePlaneTexPath
       app.tron.effects.circle = new GenGeoTexture2(app.device, app.tron.presentationFormat, 'circle2', './res/textures/star1.png');
       app.tron.effects.circle.rotateEffectSpeed = 0.01;
@@ -178,9 +191,9 @@ export class MEMapLoader {
         app.enemytron.effects.circle.instanceTargets[1].position = [0, 6, 0];
         app.enemytron.effects.circle.instanceTargets[0].color = [2, 0.1, 0, 0.5];
         app.enemytron.effects.circle.instanceTargets[1].color = [1, 1, 1, 0.11];
-      }, 5000);
+      }, 1000);
 
-    }, 2000);
+    }, 6500);
 
     this.core.lightContainer[0].position[1] = 175;
     this.core.lightContainer[0].intesity = 1;
