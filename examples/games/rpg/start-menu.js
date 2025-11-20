@@ -35,6 +35,10 @@ import {fetchAll, fetchInfo} from "../../../src/engine/networking/matrix-stream.
  * first free hero in selection action next/back.
  * For now. Next better varian can be timer solution.
  **/
+
+LS.clear();
+SS.clear();
+
 let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
   dontUsePhysics: true,
   useSingleRenderPass: true,
@@ -231,9 +235,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
   }
 
   addEventListener('check-gameplay-channel', (e) => {
-    // let info = e.detail;
-    let info = JSON.parse(e.detail);
-
+    let info = e.detail;
     if(info.status != 'false' && typeof info.status !== "undefined") {
       console.log('check-gameplay-channel status:', info.status)
       byId("onlineUsers").innerHTML = `GamePlay:Free`;
@@ -243,16 +245,13 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
       clearInterval(forestOfHollowBloodStartSceen.gamePlayStatusTimer);
       forestOfHollowBloodStartSceen.gamePlayStatusTimer = null;
     } else {
-
-      console.log('check-gameplay-channel status:', info.status)
+       console.log('check-gameplay-channel status:', info.status)
       if(typeof info.status != "undefined" && info.status == "false") {
-
         // no internet
         byId('loader').style.display = 'block';
         alert("This is modal window, No internet connection... Please try ");
-
       } else {
-
+        info = JSON.parse(e.detail);
         if(info.connections && info.connections.numberOfElements == 0) {
           byId("onlineUsers").innerHTML = `GamePlay:Free`;
           forestOfHollowBloodStartSceen.gamePlayStatus = "free";

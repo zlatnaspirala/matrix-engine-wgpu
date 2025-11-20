@@ -1782,7 +1782,12 @@ let forestOfHollowBlood = new _world.default({
             app.localHero.friendlyLocal.creeps[getCreepByIndex].setStartUpPosition();
             app.localHero.friendlyLocal.creeps[getCreepByIndex].gotoFinal = false;
             app.localHero.friendlyLocal.creeps[getCreepByIndex].heroe_bodies[0].effects.energyBar.setProgress(1);
-          }, 1000);
+            setTimeout(() => {
+              dispatchEvent(new CustomEvent('navigate-friendly_creeps', {
+                detail: 'test'
+              }));
+            }, 100);
+          }, 500);
         }
       } else {
         // console.log('<data-receive damage creep team ENEMY TEST CASE :', d.defenderTeam);
@@ -1971,11 +1976,6 @@ class FriendlyHero extends _hero.Hero {
     this.heroe_bodies.forEach(subMesh => {
       subMesh.position.setPosition(_static.startUpPositions[app.player.data.team][0] + 50, _static.startUpPositions[app.player.data.team][1], _static.startUpPositions[app.player.data.team][2]);
     });
-    setTimeout(() => {
-      dispatchEvent(new CustomEvent('navigate-friendly_creeps', {
-        detail: 'test'
-      }));
-    }, 300);
   }
   attachEvents() {
     addEventListener(`onDamage-${this.name}`, e => {

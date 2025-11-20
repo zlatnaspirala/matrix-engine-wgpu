@@ -124,9 +124,6 @@ export class FriendlyHero extends Hero {
         startUpPositions[app.player.data.team][2]
       )
     });
-    setTimeout(() => {
-       dispatchEvent(new CustomEvent('navigate-friendly_creeps', {detail: 'test'}))
-    },300);
   }
 
   attachEvents() {

@@ -269,7 +269,10 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
             app.localHero.friendlyLocal.creeps[getCreepByIndex].setStartUpPosition();
             app.localHero.friendlyLocal.creeps[getCreepByIndex].gotoFinal = false;
             app.localHero.friendlyLocal.creeps[getCreepByIndex].heroe_bodies[0].effects.energyBar.setProgress(1);
-          }, 1000)
+            setTimeout(() => {
+              dispatchEvent(new CustomEvent('navigate-friendly_creeps', {detail: 'test'}))
+            }, 100);
+          }, 500)
         }
       } else {
         // console.log('<data-receive damage creep team ENEMY TEST CASE :', d.defenderTeam);
@@ -295,7 +298,7 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
         // local must be
         app.tron.effects.energyBar.setProgress(d.progress);
         if(d.progress == 0) {
-          app.tron.globalAmbient = [2,1,1];
+          app.tron.globalAmbient = [2, 1, 1];
           mb.show(` Enemy wins !!! ${app.player.data.enemyTeam} `)
           setTimeout(() => {
             mb.show(` Enemy wins !!! ${app.player.data.enemyTeam} `)
@@ -306,7 +309,7 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
         // get last char from string defenderName
         app.tron.effects.energyBar.setProgress(d.progress);
         if(d.progress == 0) {
-          app.tron.globalAmbient = [2,1,1];
+          app.tron.globalAmbient = [2, 1, 1];
           mb.show(`Your team wins !!! ${app.player.data.team} `);
           setTimeout(() => {
             mb.show(`Your team wins !!! ${app.player.data.team} `);

@@ -277,14 +277,14 @@ export class Creep extends Hero {
           } else {
             // Focus on enemy vs creeps !
             let tt;
-            if (typeof this.creepFocusAttackOn.position !== 'undefined') {
+            if(typeof this.creepFocusAttackOn.position !== 'undefined') {
               tt = this.core.RPG.distance3D(
-              this.heroe_bodies[0].position,
-              this.creepFocusAttackOn.position);
+                this.heroe_bodies[0].position,
+                this.creepFocusAttackOn.position);
             } else {
               tt = this.core.RPG.distance3D(
-              this.heroe_bodies[0].position,
-              this.creepFocusAttackOn.heroe_bodies[0].position);
+                this.heroe_bodies[0].position,
+                this.creepFocusAttackOn.heroe_bodies[0].position);
             }
 
             if(tt < this.core.RPG.distanceForAction) {

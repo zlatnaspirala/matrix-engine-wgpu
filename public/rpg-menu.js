@@ -587,6 +587,9 @@ function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e
  * first free hero in selection action next/back.
  * For now. Next better varian can be timer solution.
  **/
+
+_utils.LS.clear();
+_utils.SS.clear();
 let forestOfHollowBloodStartSceen = new _world.default({
   dontUsePhysics: true,
   useSingleRenderPass: true,
@@ -766,8 +769,7 @@ let forestOfHollowBloodStartSceen = new _world.default({
     }
   };
   addEventListener('check-gameplay-channel', e => {
-    // let info = e.detail;
-    let info = JSON.parse(e.detail);
+    let info = e.detail;
     if (info.status != 'false' && typeof info.status !== "undefined") {
       console.log('check-gameplay-channel status:', info.status);
       (0, _utils.byId)("onlineUsers").innerHTML = `GamePlay:Free`;
@@ -783,6 +785,7 @@ let forestOfHollowBloodStartSceen = new _world.default({
         (0, _utils.byId)('loader').style.display = 'block';
         alert("This is modal window, No internet connection... Please try ");
       } else {
+        info = JSON.parse(e.detail);
         if (info.connections && info.connections.numberOfElements == 0) {
           (0, _utils.byId)("onlineUsers").innerHTML = `GamePlay:Free`;
           forestOfHollowBloodStartSceen.gamePlayStatus = "free";
