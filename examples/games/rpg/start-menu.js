@@ -220,18 +220,20 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
 
   navigator.connection.onchange = (e) => {
     console.info('Network state changed...', e);
-    if (e.target.downlink < 0.4) {
-        byId('loader').style.display = 'block';
-        byId('loader').style.fontSize = '150%';
-        byId('loader').innerHTML = `NO INTERNET CONNECTIONS`;
-        setTimeout(()=> {
-          location.href = 'https://maximumroulette.com';
-        }, 3000)
+    if(e.target.downlink < 0.4) {
+      byId('loader').style.display = 'block';
+      byId('loader').style.fontSize = '150%';
+      byId('loader').innerHTML = `NO INTERNET CONNECTIONS`;
+      setTimeout(() => {
+        location.href = 'https://maximumroulette.com';
+      }, 3000)
     }
   }
 
   addEventListener('check-gameplay-channel', (e) => {
-    let info = e.detail;
+    // let info = e.detail;
+    let info = JSON.parse(e.detail);
+
     if(info.status != 'false' && typeof info.status !== "undefined") {
       console.log('check-gameplay-channel status:', info.status)
       byId("onlineUsers").innerHTML = `GamePlay:Free`;
@@ -241,16 +243,25 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
       clearInterval(forestOfHollowBloodStartSceen.gamePlayStatusTimer);
       forestOfHollowBloodStartSceen.gamePlayStatusTimer = null;
     } else {
-      
+
       console.log('check-gameplay-channel status:', info.status)
-      if( typeof info.status != "undefined" && info.status == "false") {
+      if(typeof info.status != "undefined" && info.status == "false") {
 
         // no internet
         byId('loader').style.display = 'block';
         alert("This is modal window, No internet connection... Please try ");
 
       } else {
-        info = JSON.parse(e.detail);
+
+        if(info.connections && info.connections.numberOfElements == 0) {
+          byId("onlineUsers").innerHTML = `GamePlay:Free`;
+          forestOfHollowBloodStartSceen.gamePlayStatus = "free";
+          byId('startBtnText').innerHTML = app.label.get.play;
+          byId("startBtnText").style.color = 'rgba(0, 0, 0, 0)';
+          clearInterval(forestOfHollowBloodStartSceen.gamePlayStatusTimer);
+          forestOfHollowBloodStartSceen.gamePlayStatusTimer = null;
+          return;
+        }
         byId("onlineUsers").innerHTML = `${app.label.get.alreadyingame}:${info.connections.numberOfElements}`;
         forestOfHollowBloodStartSceen.gamePlayStatus = "used";
         byId('startBtnText').innerHTML = `${app.label.get.gameplaychannel}:${app.label.get.used}`;
@@ -317,7 +328,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
     byId("sessionName").disabled = true;
     forestOfHollowBloodStartSceen.setWaitingList();
     // check game-play channel
-    setTimeout(() => app.net.fetchInfo('forestOfHollowBlood-free-for-all') , 1000);
+    setTimeout(() => app.net.fetchInfo('forestOfHollowBlood-free-for-all'), 1000);
   });
 
   addEventListener('connectionDestroyed', (e) => {
@@ -448,7 +459,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
       app.cameras.WASD.yaw = 0;
       app.mainRenderBundle.forEach((sceneObj) => {
         sceneObj.position.thrust = 1;
-        if (sceneObj.effects) if(sceneObj.effects.flameEmitter) sceneObj.effects.flameEmitter.recreateVertexDataRND(1);
+        if(sceneObj.effects) if(sceneObj.effects.flameEmitter) sceneObj.effects.flameEmitter.recreateVertexDataRND(1);
       });
 
       for(var x = 0;x < heros.length;x++) {

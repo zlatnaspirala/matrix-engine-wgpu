@@ -2,7 +2,7 @@ import {GenGeoTexture2} from "../../../src/engine/effects/gen-tex2.js";
 import {GenGeo} from "../../../src/engine/effects/gen.js";
 import {downloadMeshes} from "../../../src/engine/loader-obj.js";
 import {uploadGLBModel} from "../../../src/engine/loaders/webgpu-gltf.js";
-import {LOG_FUNNY_SMALL, randomFloatFromTo, randomIntFromTo} from "../../../src/engine/utils.js";
+import {LOG_FUNNY_SMALL, LOG_MATRIX, randomFloatFromTo, randomIntFromTo} from "../../../src/engine/utils.js";
 import NavMesh from "./nav-mesh.js";
 import {creepPoints, startUpPositions} from "./static.js";
 
@@ -116,7 +116,7 @@ export class MEMapLoader {
       raycast: {enabled: false, radius: 1.5},
       pointerEffect: {
         enabled: true,
-        flameEffect: false
+        energyBar: true
       }
     }, null, glbFile02);
 
@@ -168,8 +168,16 @@ export class MEMapLoader {
       app.enemytron.armor = 0.1;
 
       addEventListener(`onDamage-${app.enemytron.name}`, (e) => {
-        console.info(`%c ON damage TRON !!!!!!!! ${e.detail}`, LOG_MATRIX)
-
+        console.info(`%c ON damage TRON ! ${e.detail}`, LOG_MATRIX)
+        app.enemytron.effects.energyBar.setProgress(e.detail.progress);
+        this.core.net.sendOnlyData({
+          type: "damage-tron",
+          defenderTeam: app.player.data.enemyTeam,
+          defenderName: e.detail.defender,
+          attackerName: e.detail.attacker,
+          hp: e.detail.hp,
+          progress: e.detail.progress
+        });
       })
       // this.pointerEffect.circlePlaneTexPath
       app.tron.effects.circle = new GenGeoTexture2(app.device, app.tron.presentationFormat, 'circle2', './res/textures/star1.png');

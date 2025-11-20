@@ -254,8 +254,8 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
           }, 500);
         }
       }
-    } else if("damage-creep") {
-      
+    } else if(d.type == "damage-creep") {
+
       // true always
       if(app.player.data.team == d.defenderTeam) {
         // console.log('<data-receive damage local creep team:', d.defenderTeam);
@@ -286,6 +286,34 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
           }, 700);
         }
       }
+    } else if(d.type == "damage-tron") {
+
+      //-----
+
+      if(app.player.data.team == d.defenderTeam) {
+        // console.log('<data-receive damage local creep team:', d.defenderTeam);
+        // local must be
+        app.tron.effects.energyBar.setProgress(d.progress);
+        if(d.progress == 0) {
+          app.tron.globalAmbient = [2,1,1];
+          mb.show(` Enemy wins !!! ${app.player.data.enemyTeam} `)
+          setTimeout(() => {
+            mb.show(` Enemy wins !!! ${app.player.data.enemyTeam} `)
+          }, 1000)
+        }
+      } else {
+        // console.log('<data-receive damage creep team ENEMY TEST CASE :', d.defenderTeam);
+        // get last char from string defenderName
+        app.tron.effects.energyBar.setProgress(d.progress);
+        if(d.progress == 0) {
+          app.tron.globalAmbient = [2,1,1];
+          mb.show(`Your team wins !!! ${app.player.data.team} `);
+          setTimeout(() => {
+            mb.show(`Your team wins !!! ${app.player.data.team} `);
+          }, 1000)
+        }
+      }
+      //----------
     }
   })
 

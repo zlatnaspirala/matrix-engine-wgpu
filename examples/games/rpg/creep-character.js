@@ -265,7 +265,7 @@ export class Creep extends Hero {
 
             let enemytron = this.core.RPG.distance3D(
               this.heroe_bodies[0].position,
-              app.enemytron.heroe_bodies[0].position);
+              app.enemytron.position);
             if(enemytron < this.core.RPG.distanceForAction) {
               console.log(`%c ATTACK ENEMY TRON ${creep.heroe_bodies[0].name}`, LOG_MATRIX);
               isEnemiesClose = true;

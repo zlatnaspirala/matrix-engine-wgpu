@@ -1259,7 +1259,7 @@ class Creep extends _hero.Hero {
                 return;
               }
             });
-            let enemytron = this.core.RPG.distance3D(this.heroe_bodies[0].position, app.enemytron.heroe_bodies[0].position);
+            let enemytron = this.core.RPG.distance3D(this.heroe_bodies[0].position, app.enemytron.position);
             if (enemytron < this.core.RPG.distanceForAction) {
               console.log(`%c ATTACK ENEMY TRON ${creep.heroe_bodies[0].name}`, _utils.LOG_MATRIX);
               isEnemiesClose = true;
@@ -1769,7 +1769,7 @@ let forestOfHollowBlood = new _world.default({
           }, 500);
         }
       }
-    } else if ("damage-creep") {
+    } else if (d.type == "damage-creep") {
       // true always
       if (app.player.data.team == d.defenderTeam) {
         // console.log('<data-receive damage local creep team:', d.defenderTeam);
@@ -1798,6 +1798,33 @@ let forestOfHollowBlood = new _world.default({
           }, 700);
         }
       }
+    } else if (d.type == "damage-tron") {
+      //-----
+
+      if (app.player.data.team == d.defenderTeam) {
+        // console.log('<data-receive damage local creep team:', d.defenderTeam);
+        // local must be
+        app.tron.effects.energyBar.setProgress(d.progress);
+        if (d.progress == 0) {
+          app.tron.globalAmbient = [2, 1, 1];
+          _utils.mb.show(` Enemy wins !!! ${app.player.data.enemyTeam} `);
+          setTimeout(() => {
+            _utils.mb.show(` Enemy wins !!! ${app.player.data.enemyTeam} `);
+          }, 1000);
+        }
+      } else {
+        // console.log('<data-receive damage creep team ENEMY TEST CASE :', d.defenderTeam);
+        // get last char from string defenderName
+        app.tron.effects.energyBar.setProgress(d.progress);
+        if (d.progress == 0) {
+          app.tron.globalAmbient = [2, 1, 1];
+          _utils.mb.show(`Your team wins !!! ${app.player.data.team} `);
+          setTimeout(() => {
+            _utils.mb.show(`Your team wins !!! ${app.player.data.team} `);
+          }, 1000);
+        }
+      }
+      //----------
     }
   });
   addEventListener('local-hero-bodies-ready', () => {
@@ -1898,13 +1925,13 @@ class FriendlyHero extends _hero.Hero {
             this.core.collisionSystem.register(o.name, subMesh.position, 15.0, 'friendly');
           }
         });
-        this.setStartUpPosition();
         for (var x = 0; x < this.heroe_bodies.length; x++) {
           if (x > 0) {
             this.heroe_bodies[x].position = this.heroe_bodies[0].position;
             this.heroe_bodies[x].rotation = this.heroe_bodies[0].rotation;
           }
         }
+        this.setStartUpPosition();
       }, 1600);
     } catch (err) {
       throw err;
@@ -1944,6 +1971,11 @@ class FriendlyHero extends _hero.Hero {
     this.heroe_bodies.forEach(subMesh => {
       subMesh.position.setPosition(_static.startUpPositions[app.player.data.team][0] + 50, _static.startUpPositions[app.player.data.team][1], _static.startUpPositions[app.player.data.team][2]);
     });
+    setTimeout(() => {
+      dispatchEvent(new CustomEvent('navigate-friendly_creeps', {
+        detail: 'test'
+      }));
+    }, 300);
   }
   attachEvents() {
     addEventListener(`onDamage-${this.name}`, e => {
@@ -3382,7 +3414,7 @@ class MEMapLoader {
       },
       pointerEffect: {
         enabled: true,
-        flameEffect: false
+        energyBar: true
       }
     }, null, glbFile02);
     var glbFile03 = await fetch('./res/meshes/env/rocks/home.glb').then(res => res.arrayBuffer().then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, this.core.device)));
@@ -3440,7 +3472,16 @@ class MEMapLoader {
       app.enemytron.hp = 300;
       app.enemytron.armor = 0.1;
       addEventListener(`onDamage-${app.enemytron.name}`, e => {
-        console.info(`%c ON damage TRON !!!!!!!! ${e.detail}`, LOG_MATRIX);
+        console.info(`%c ON damage TRON ! ${e.detail}`, _utils.LOG_MATRIX);
+        app.enemytron.effects.energyBar.setProgress(e.detail.progress);
+        this.core.net.sendOnlyData({
+          type: "damage-tron",
+          defenderTeam: app.player.data.enemyTeam,
+          defenderName: e.detail.defender,
+          attackerName: e.detail.attacker,
+          hp: e.detail.hp,
+          progress: e.detail.progress
+        });
       });
       // this.pointerEffect.circlePlaneTexPath
       app.tron.effects.circle = new _genTex.GenGeoTexture2(app.device, app.tron.presentationFormat, 'circle2', './res/textures/star1.png');

@@ -69,13 +69,14 @@ export class FriendlyHero extends Hero {
           }
         });
 
-        this.setStartUpPosition();
+        
         for(var x = 0;x < this.heroe_bodies.length;x++) {
           if(x > 0) {
             this.heroe_bodies[x].position = this.heroe_bodies[0].position;
             this.heroe_bodies[x].rotation = this.heroe_bodies[0].rotation;
           }
         }
+        this.setStartUpPosition();
       }, 1600);
     } catch(err) {throw err;}
   }
@@ -122,7 +123,10 @@ export class FriendlyHero extends Hero {
         startUpPositions[app.player.data.team][1],
         startUpPositions[app.player.data.team][2]
       )
-    })
+    });
+    setTimeout(() => {
+       dispatchEvent(new CustomEvent('navigate-friendly_creeps', {detail: 'test'}))
+    },300);
   }
 
   attachEvents() {

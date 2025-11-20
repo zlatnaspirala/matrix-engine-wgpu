@@ -766,7 +766,8 @@ let forestOfHollowBloodStartSceen = new _world.default({
     }
   };
   addEventListener('check-gameplay-channel', e => {
-    let info = e.detail;
+    // let info = e.detail;
+    let info = JSON.parse(e.detail);
     if (info.status != 'false' && typeof info.status !== "undefined") {
       console.log('check-gameplay-channel status:', info.status);
       (0, _utils.byId)("onlineUsers").innerHTML = `GamePlay:Free`;
@@ -782,7 +783,15 @@ let forestOfHollowBloodStartSceen = new _world.default({
         (0, _utils.byId)('loader').style.display = 'block';
         alert("This is modal window, No internet connection... Please try ");
       } else {
-        info = JSON.parse(e.detail);
+        if (info.connections && info.connections.numberOfElements == 0) {
+          (0, _utils.byId)("onlineUsers").innerHTML = `GamePlay:Free`;
+          forestOfHollowBloodStartSceen.gamePlayStatus = "free";
+          (0, _utils.byId)('startBtnText').innerHTML = app.label.get.play;
+          (0, _utils.byId)("startBtnText").style.color = 'rgba(0, 0, 0, 0)';
+          clearInterval(forestOfHollowBloodStartSceen.gamePlayStatusTimer);
+          forestOfHollowBloodStartSceen.gamePlayStatusTimer = null;
+          return;
+        }
         (0, _utils.byId)("onlineUsers").innerHTML = `${app.label.get.alreadyingame}:${info.connections.numberOfElements}`;
         forestOfHollowBloodStartSceen.gamePlayStatus = "used";
         (0, _utils.byId)('startBtnText').innerHTML = `${app.label.get.gameplaychannel}:${app.label.get.used}`;
