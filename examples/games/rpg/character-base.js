@@ -504,12 +504,16 @@ export class Character extends Hero {
         // console.info('close distance BOTH friendly :', e.detail.A)
         return;
       }
-      // nisu 2 local creeps
-      if(e.detail.A.group == "enemy") {
+      // nisu 2 local creeps && this.core.net.virtualEmiter != null no emiter only for local hero coresponde
+      if(e.detail.A.group == "enemy" && this.core.net.virtualEmiter != null) {
         if(e.detail.B.group == "friendly" && e.detail.B.id.indexOf('friendlytron') == -1) {
           //------------------ BLOCK
           let lc = app.localHero.friendlyLocal.creeps.filter((localCreep) => localCreep.name == e.detail.B.id)[0];
           console.info('A = enemy vs B = friendly <close-distance> is there friendly creeps here ', lc);
+          
+          if (lc === undefined) {
+            return;
+          }
           lc.creepFocusAttackOn =
             app.enemies.enemies.filter((enemy) => enemy.name == e.detail.A.id)[0];
 
@@ -535,7 +539,7 @@ export class Character extends Hero {
         }
       } else if(e.detail.A.group == "friendly" && e.detail.A.id.indexOf('friendlytron') == -1) {
         console.info('close distance A is friendly PAS 1 :', e.detail.A.group)
-        if(e.detail.B.group == "enemy") {
+        if(e.detail.B.group == "enemy" && this.core.net.virtualEmiter != null) {
           // console.info('close distance B is enemies:', e.detail.A.group)
           let lc = app.localHero.friendlyLocal.creeps.filter((localCreep) => localCreep.name == e.detail.A.id)[0];
           // console.info('close distance ls is  PAS 2 :', lc)

@@ -506,12 +506,15 @@ class Character extends _hero.Hero {
         // console.info('close distance BOTH friendly :', e.detail.A)
         return;
       }
-      // nisu 2 local creeps
-      if (e.detail.A.group == "enemy") {
+      // nisu 2 local creeps && this.core.net.virtualEmiter != null no emiter only for local hero coresponde
+      if (e.detail.A.group == "enemy" && this.core.net.virtualEmiter != null) {
         if (e.detail.B.group == "friendly" && e.detail.B.id.indexOf('friendlytron') == -1) {
           //------------------ BLOCK
           let lc = app.localHero.friendlyLocal.creeps.filter(localCreep => localCreep.name == e.detail.B.id)[0];
           console.info('A = enemy vs B = friendly <close-distance> is there friendly creeps here ', lc);
+          if (lc === undefined) {
+            return;
+          }
           lc.creepFocusAttackOn = app.enemies.enemies.filter(enemy => enemy.name == e.detail.A.id)[0];
 
           // console.info('A = enemy vs B = friendly  <close-distance> is there enemy HERO  here ', lc.creepFocusAttackOn);
@@ -534,7 +537,7 @@ class Character extends _hero.Hero {
         }
       } else if (e.detail.A.group == "friendly" && e.detail.A.id.indexOf('friendlytron') == -1) {
         console.info('close distance A is friendly PAS 1 :', e.detail.A.group);
-        if (e.detail.B.group == "enemy") {
+        if (e.detail.B.group == "enemy" && this.core.net.virtualEmiter != null) {
           // console.info('close distance B is enemies:', e.detail.A.group)
           let lc = app.localHero.friendlyLocal.creeps.filter(localCreep => localCreep.name == e.detail.A.id)[0];
           // console.info('close distance ls is  PAS 2 :', lc)
@@ -1196,7 +1199,8 @@ class Creep extends _hero.Hero {
       if (this.group == 'enemy') {
         console.info(`%c onDamage-${this.name} group: ${this.group}  creep damage!`, _utils.LOG_FUNNY);
       } else {
-        // alert('friendly creep damage must come from net')
+        console.log('friendly creep damage must come from net');
+        return;
       }
       this.heroe_bodies[0].effects.energyBar.setProgress(e.detail.progress);
       this.core.net.sendOnlyData({

@@ -192,7 +192,8 @@ export class Creep extends Hero {
       if(this.group == 'enemy') {
         console.info(`%c onDamage-${this.name} group: ${this.group}  creep damage!`, LOG_FUNNY);
       } else {
-        // alert('friendly creep damage must come from net')
+        console.log('friendly creep damage must come from net');
+        return;
       }
 
       this.heroe_bodies[0].effects.energyBar.setProgress(e.detail.progress);
