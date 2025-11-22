@@ -962,3 +962,106 @@ export function isEven(n) {
 export function isOdd(n) {
   return n % 2 !== 0;
 }
+
+export class FullscreenManagerElement {
+  constructor(targetElement = document.documentElement) {
+    this.target = targetElement;
+  }
+
+  isFullscreen() {
+    return !!(
+      document.fullscreenElement ||
+      document.webkitFullscreenElement ||
+      document.mozFullScreenElement ||
+      document.msFullscreenElement
+    );
+  }
+
+  request() {
+    const el = this.target;
+    return (
+      el.requestFullscreen?.() ||
+      el.webkitRequestFullscreen?.() ||
+      el.mozRequestFullScreen?.() ||
+      el.msRequestFullscreen?.()
+    );
+  }
+
+  exit() {
+    return (
+      document.exitFullscreen?.() ||
+      document.webkitExitFullscreen?.() ||
+      document.mozCancelFullScreen?.() ||
+      document.msExitFullscreen?.()
+    );
+  }
+
+  toggle() {
+    if (this.isFullscreen()) return this.exit();
+    return this.request();
+  }
+
+  onChange(callback) {
+    [
+      "fullscreenchange",
+      "webkitfullscreenchange",
+      "mozfullscreenchange",
+      "MSFullscreenChange"
+    ].forEach(evt => 
+      document.addEventListener(evt, () => {
+        callback(this.isFullscreen(), this.target);
+      })
+    );
+  }
+}
+
+export class FullscreenManager {
+  constructor() {
+    this.target = document.documentElement; // fullscreen whole page / window
+  }
+
+  isFullscreen() {
+    return !!(
+      document.fullscreenElement ||
+      document.webkitFullscreenElement ||
+      document.mozFullScreenElement ||
+      document.msFullscreenElement
+    );
+  }
+
+  request() {
+    const el = this.target;
+    return (
+      el.requestFullscreen?.() ||
+      el.webkitRequestFullscreen?.() ||
+      el.mozRequestFullScreen?.() ||
+      el.msRequestFullscreen?.()
+    );
+  }
+
+  exit() {
+    return (
+      document.exitFullscreen?.() ||
+      document.webkitExitFullscreen?.() ||
+      document.mozCancelFullScreen?.() ||
+      document.msExitFullscreen?.()
+    );
+  }
+
+  toggle() {
+    return this.isFullscreen() ? this.exit() : this.request();
+  }
+
+  onChange(callback) {
+    [
+      "fullscreenchange",
+      "webkitfullscreenchange",
+      "mozfullscreenchange",
+      "MSFullscreenChange"
+    ].forEach(evt =>
+      document.addEventListener(evt, () => {
+        callback(this.isFullscreen());
+      })
+    );
+  }
+}

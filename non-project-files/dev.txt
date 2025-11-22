@@ -19,3 +19,63 @@ https://phaser.discourse.group/t/disable-all-collision-impacts-matter-js/13715/2
 
 https://stackoverflow.com/questions/17755848/is-it-possible-to-disable-x-z-rotation-in-ammo-js
 
+
+
+
+
+
+Error: 404
+    at OpenVidu.handleError (/var/applications/kure/kure-server-client/node_modules/openvidu-node-client/lib/OpenVidu.js:684:20)
+    at /var/applications/kure/kure-server-client/node_modules/openvidu-node-client/lib/Session.js:164:30
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+New session forestOfHollowBlood-free-for-all-start
+Getting a token | {sessionName}={forestOfHollowBlood-free-for-all-start}
+Existing session forestOfHollowBlood-free-for-all-start
+Getting a token | {sessionName}={forestOfHollowBlood-free-for-all-start}
+Existing session forestOfHollowBlood-free-for-all-start
+Removing user | {sessionName, token}={forestOfHollowBlood-free-for-all-start, wss://maximumroulette.com:4443?sessionId=ses_HMEUdgtUO1&token=tok_SGRXIM8TXn2bvUMs}
+forestOfHollowBlood-free-for-all-start: wss://maximumroulette.com:4443?sessionId=ses_HMEUdgtUO1&token=tok_HfITO0CZ1SiC9Kye,wss://maximumroulette.com:4443?sessionId=ses_HMEUdgtUO1&token=tok_V7S13UcvOp6JPcNC
+Removing user | {sessionName, token}={forestOfHollowBlood-free-for-all-start, wss://maximumroulette.com:4443?sessionId=ses_HMEUdgtUO1&token=tok_HfITO0CZ1SiC9Kye}
+forestOfHollowBlood-free-for-all-start: wss://maximumroulette.com:4443?sessionId=ses_HMEUdgtUO1&token=tok_V7S13UcvOp6JPcNC
+Removing user | {sessionName, token}={forestOfHollowBlood-free-for-all-start, wss://maximumroulette.com:4443?sessionId=ses_HMEUdgtUO1&token=tok_V7S13UcvOp6JPcNC}
+forestOfHollowBlood-free-for-all-start:
+forestOfHollowBlood-free-for-all-start empty!
+Getting a token | {sessionName}={forestOfHollowBlood-free-for-all}
+New session forestOfHollowBlood-free-for-all
+Getting a token | {sessionName}={forestOfHollowBlood-free-for-all}
+Existing session forestOfHollowBlood-free-for-all
+Getting a token | {sessionName}={forestOfHollowBlood-free-for-all}
+Existing session forestOfHollowBlood-free-for-all
+Removing user | {sessionName, token}={forestOfHollowBlood-free-for-all, wss://maximumroulette.com:4443?sessionId=ses_G5TTk7cxNm&token=tok_MopPL2Fw4J320Jmr}
+forestOfHollowBlood-free-for-all: wss://maximumroulette.com:4443?sessionId=ses_G5TTk7cxNm&token=tok_PA06ahROLuB7T7Uw,wss://maximumroulette.com:4443?sessionId=ses_G5TTk7cxNm&token=tok_S9sTK854Rfc4XlEK
+Removing user | {sessionName, token}={forestOfHollowBlood-free-for-all, wss://maximumroulette.com:4443?sessionId=ses_G5TTk7cxNm&token=tok_S9sTK854Rfc4XlEK}
+forestOfHollowBlood-free-for-all: wss://maximumroulette.com:4443?sessionId=ses_G5TTk7cxNm&token=tok_PA06ahROLuB7T7Uw
+Getting a token | {sessionName}={forestOfHollowBlood-free-for-all}
+Existing session forestOfHollowBlood-free-for-all
+Error: 404
+    at OpenVidu.handleError (/var/applications/kure/kure-server-client/node_modules/openvidu-node-client/lib/OpenVidu.js:684:20)
+    at /var/applications/kure/kure-server-client/node_modules/openvidu-node-client/lib/Session.js:164:30
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+New session forestOfHollowBlood-free-for-all
+Getting a token | {sessionName}={forestOfHollowBlood-free-for-all}
+Existing session forestOfHollowBlood-free-for-all
+Getting a token | {sessionName}={forestOfHollowBlood-free-for-all}
+Existing session forestOfHollowBlood-free-for-all
+Removing user | {sessionName, token}={forestOfHollowBlood-free-for-all, wss://maximumroulette.com:4443?sessionId=ses_KkAXCvLiLk&token=tok_NCF4CRKFk6wvC87o}
+forestOfHollowBlood-free-for-all: wss://maximumroulette.com:4443?sessionId=ses_KkAXCvLiLk&token=tok_D4Pb3tf4uMXI7Guf,wss://maximumroulette.com:4443?sessionId=ses_KkAXCvLiLk&token=tok_L4PQHYesiZSBS9vC
+Closing session | {sessionName}=forestOfHollowBlood-free-for-all
+Removing user | {sessionName, token}={forestOfHollowBlood-free-for-all, wss://maximumroulette.com:4443?sessionId=ses_KkAXCvLiLk&token=tok_L4PQHYesiZSBS9vC}
+Problems in the app server: the SESSION does not exist
+Closing session | {sessionName}=forestOfHollowBlood-free-for-all
+Problems in the app server: the SESSION does not exist
+/var/applications/kure/kure-server-client/node_modules/openvidu-node-client/lib/OpenVidu.js:684
+            reject(new Error(error.status.toString()));
+                   ^
+
+Error: 404
+    at OpenVidu.handleError (/var/applications/kure/kure-server-client/node_modules/openvidu-node-client/lib/OpenVidu.js:684:20)
+    at /var/applications/kure/kure-server-client/node_modules/openvidu-node-client/lib/Session.js:199:30
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+
+Node.js v18.16.0
+

@@ -60,10 +60,7 @@ export class Enemie extends Hero {
           if(this.name == 'Slayzer') {
             subMesh.globalAmbient = [2, 2, 3, 1];
           }
-          // maybe will help - remote net players no nedd to collide in other remote user gamaplay
-          // this.core.collisionSystem.register((o.name + idx), subMesh.position, 15.0, 'enemies');
-          // dont care for multi sub mesh now
-          if(idx == 0) this.core.collisionSystem.register((o.name), subMesh.position, 15.0, 'enemies');
+          if(idx == 0) this.core.collisionSystem.register((o.name), subMesh.position, 15.0, 'enemy');
         });
 
         this.setStartUpPosition();
@@ -120,6 +117,10 @@ export class Enemie extends Hero {
         startUpPositions[app.player.data.enemyTeam][0],
         startUpPositions[app.player.data.enemyTeam][1],
         startUpPositions[app.player.data.enemyTeam][2]
+
+        // startUpPositions[app.player.data.team][0],
+        // startUpPositions[app.player.data.team][1],
+        // startUpPositions[app.player.data.team][2]
       )
     })
   }
@@ -130,8 +131,8 @@ export class Enemie extends Hero {
       this.heroe_bodies[0].effects.energyBar.setProgress(e.detail.progress);
       this.core.net.sendOnlyData({
         type: "damage",
-        defenderName:  e.detail.defender,
-        attackerName:  e.detail.attacker,
+        defenderName: e.detail.defender,
+        attackerName: e.detail.attacker,
         hp: e.detail.hp,
         progress: e.detail.progress
       });

@@ -497,7 +497,7 @@ Dimension (TextureViewDimension::e2DArray) of [TextureView of Texture "shadowTex
 ## Networking
 
 From 1.7.0 engine powered by networking. Used kurento&Openvidu server for backend.
-Very goot for handling streams, channels etc...
+Very good for handling streams, channels etc...
 
 See example code at `./examples/games/rpg/`
 
@@ -612,12 +612,27 @@ Performance for Jamb game:
 
 <img width="860" height="640" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/performance.png?raw=true" />
 
-## License
+Special licence for RPG example:
+
+```
+Creative Commons Attribution 4.0 International (CC BY 4.0)
+
+You are free to share and adapt this project, provided that you give appropriate credit.
+Attribution requirement:
+Include the following notice (with working link) in any distributed version or about page:
+
+"Forest Of Hollow Blood — an RPG example made with MatrixEngineWGPU (https://github.com/zlatnaspirala/matrix-engine-wgpu)"
+
+```
+
+
+## License && Credits
 
 ### Usage Note
 
-You may use, modify, and sell projects based on this code — just keep this notice and included references intact.
+You may use, modify, and sell projects based on this code — just keep this notice and included references intact (whole licence paragraph).
 
+You need just to copy paste this text to about form on your web page or any other type of app.
 ---
 
 ### Attribution & Credits
@@ -645,6 +660,16 @@ You may use, modify, and sell projects based on this code — just keep this not
   Music by <a href="https://pixabay.com/users/sonican-38947841/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=379413">Dvir Silverstone</a> from <a href="https://pixabay.com//?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=379413">Pixabay</a>
   Sound Effect by <a href="https://pixabay.com/users/freesound_crunchpixstudio-49769582/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=384915">Crunchpix Studio</a> from <a href="https://pixabay.com//?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=384915">Pixabay</a>
   Music by <a href="https://pixabay.com/users/emmraan-24732583/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=280277">Emmraan</a> from <a href="https://pixabay.com//?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=280277">Pixabay</a>
+
+  'Ruined rock fence' (https://skfb.ly/6RLwN) by VladNeko is licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/).
+
+  // test 
+  "fantasy rock" (https://skfb.ly/oHXAz) by duckcracker02 is licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/).
+
+  "Fantasy Rock" (https://skfb.ly/oHZSq) by lalune is licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/).
+  
+  Invertory images
+  https://djinnbestiary.itch.io/ancient-oddities-vol-1-13-free-potions
 
 ---
 

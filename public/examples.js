@@ -62,7 +62,7 @@ function destroyJambDoms() {
   (0, _loadObjsSequence.loadObjsSequence)();
 });
 
-},{"./examples/camera-texture.js":2,"./examples/glb-loader.js":3,"./examples/load-obj-file.js":4,"./examples/load-objs-sequence.js":5,"./examples/unlit-textures.js":6,"./examples/video-texture.js":7,"./src/engine/utils.js":46}],2:[function(require,module,exports){
+},{"./examples/camera-texture.js":2,"./examples/glb-loader.js":3,"./examples/load-obj-file.js":4,"./examples/load-objs-sequence.js":5,"./examples/unlit-textures.js":6,"./examples/video-texture.js":7,"./src/engine/utils.js":48}],2:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -143,7 +143,7 @@ var loadCameraTexture = function () {
 };
 exports.loadCameraTexture = loadCameraTexture;
 
-},{"../src/engine/loader-obj.js":38,"../src/engine/raycast.js":45,"../src/engine/utils.js":46,"../src/world.js":69}],3:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":40,"../src/engine/raycast.js":47,"../src/engine/utils.js":48,"../src/world.js":71}],3:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -350,7 +350,7 @@ function loadGLBLoader() {
 
 // loadGLBLoader()
 
-},{"../src/engine/loader-obj.js":38,"../src/engine/loaders/bvh.js":40,"../src/engine/loaders/webgpu-gltf.js":41,"../src/engine/utils.js":46,"../src/world.js":69}],4:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":40,"../src/engine/loaders/bvh.js":42,"../src/engine/loaders/webgpu-gltf.js":43,"../src/engine/utils.js":48,"../src/world.js":71}],4:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -498,7 +498,7 @@ var loadObjFile = function () {
 };
 exports.loadObjFile = loadObjFile;
 
-},{"../src/engine/loader-obj.js":38,"../src/engine/utils.js":46,"../src/world.js":69}],5:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":40,"../src/engine/utils.js":48,"../src/world.js":71}],5:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -634,7 +634,7 @@ var loadObjsSequence = function () {
 };
 exports.loadObjsSequence = loadObjsSequence;
 
-},{"../src/engine/loader-obj.js":38,"../src/engine/utils.js":46,"../src/world.js":69}],6:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":40,"../src/engine/utils.js":48,"../src/world.js":71}],6:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -698,7 +698,7 @@ var unlitTextures = function () {
 };
 exports.unlitTextures = unlitTextures;
 
-},{"../src/world.js":69}],7:[function(require,module,exports){
+},{"../src/world.js":71}],7:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -789,7 +789,7 @@ var loadVideoTexture = function () {
 };
 exports.loadVideoTexture = loadVideoTexture;
 
-},{"../src/engine/loader-obj.js":38,"../src/engine/raycast.js":45,"../src/engine/utils.js":46,"../src/world.js":69}],8:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":40,"../src/engine/raycast.js":47,"../src/engine/utils.js":48,"../src/world.js":71}],8:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -18582,6 +18582,74 @@ function setDefaultType(ctor) {
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
+exports.en = void 0;
+const en = exports.en = {
+  "play": "Play",
+  "changeTheme": "Theme dark/light",
+  "yes": "Yes",
+  "no": "No",
+  "on": "On",
+  "off": "Off",
+  "startGame": "🎲Start Game",
+  "changeLang": "Change Lang",
+  "english": "English",
+  "serbian": "Serbian",
+  "MAX": "MAX",
+  "MIN": "MIN",
+  "straight": "Straight",
+  "threeOf": "ThreeOf",
+  "fullhouse": "FULLH",
+  "help": "HELP",
+  "roll": "ROLL DICES",
+  "settings": "Settings",
+  "hand": "Hand",
+  "up": "Up |",
+  "down": "Down",
+  "free": "Free",
+  "cornerText": "🎲",
+  "poker": "Poker",
+  "jamb": "Jamb",
+  "final": "Final Σ",
+  "hide": "HIDE",
+  "sounds": "Sounds",
+  "welcomeMsg": "Welcome here, <br> open source project 🎲 Jamb 3d deluxe game <br> download from ",
+  "ready": "Ready for play 🎲!",
+  "freetoroll": "Free for roll 🎲!",
+  "pick5": "Pick best 5 🎲 and choose table field!",
+  "hand1": "First hand in play - please wait...",
+  "hand2": "Secound hand in play - please wait...",
+  "graphics": "Graphics options",
+  "choosename": "Choose nickname:",
+  "table": "Table",
+  "aboutword": "About",
+  "about": "<i>Jamb 3d deluxe</i> is a modern 3D dice game built entirely with MatrixEngineWGPU, a high-performance WebGPU-based rendering engine developed for creating interactive graphics directly in the browser. The game delivers smooth visuals, realistic dice physics, and an engaging user experience — all without requiring any plugins or installations. \n This project is powered by open technologies and is designed to be lightweight, fast, and highly customizable. It’s a great example of how WebGPU can be used for real-time interactive content. \n 🔗 Download / Try it: \n github.com/zlatnaspirala/matrix-engine-wgpu \n 🛠 License: \n The core engine and the Jamb 3d deluxe project are released under the GPL v3 license, making them free and open-source for both personal and commercial use — as long as you respect the terms of the license. \n Whether you're a developer, gamer, or enthusiast, Jamb 3d deluxe is a fun way to experience the potential of modern browser-based 3D technology. <img width='320' height='320' src='https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/public/res/icons/512.png?raw=true' />",
+  "letthegame": "Let the game begin!",
+  "about_": "About",
+  "next": "Next",
+  "back": "Back",
+  "used": "used",
+  "gameplaychannel": "gameplay channel",
+  "alreadyingame": "Already in game:",
+  "waiting_for_others": "Waiting for others...",
+  "titleBan": "✭Ban 🟢🟢🟢",
+  "aboutRPG": "Forest Of Hollow Blood Made in MatrixEngineWGPU webGPU engine. Open source part can be found in engine repo <a href='https://github.com/zlatnaspirala/matrix-engine-wgpu'> @zlatnaspirala Github.com </a>. Music by <a href='https://pixabay.com/users/mfcc-28627740/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=274290'>Mykola Sosin</a> from <a href='https://pixabay.com//?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=274290'>Pixabay</a> Characters used from great mixamo.com -✅What you can do You can use Mixamo characters and animations royalty-free in commercial, personal, or non‑profit projects (games, films, prints, etc.).You own your creations / how you use them.No requirement to credit Adobe / Mixamo (though allowed). -🚫What you cannot do You cannot redistribute or sell the raw Mixamo character or animation files “as is” (i.e. as standalone assets) to others.You can’t use Mixamo content to create a competing library of characters / animations (i.e. you can’t just package them and sell them to others). You can’t use Mixamo’s content (or outputs) to train AI / machine learning models. Used free assets from great https://craftpix.net Magic icons : https://craftpix.net/freebies/free-rpg-splash-game-512x512-icons/ For background music in rpg template used: Music by Dvir Silverstone from Pixabay Sound Effect by Crunchpix Studio from Pixabay Music by Emmraan from Pixabay . Logo includes the official WebGPU logo. WebGPU logo by W3C Licensed under Creative Commons Attribution 4.0 .   'Ruined rock fence' (https://skfb.ly/6RLwN) by VladNeko is licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/).",
+  "mariasword": "Maria Sword, the silver blade of the East, strikes with speed and elegance. Her courage burns quietly but never falters.",
+  "slayzer": "Slayzer — a dark creation with blades for arms. Silent, swift, and born from shadow.",
+  "steelborn": "Steelborn — a small yet fearless warrior clad in shining iron armor, wielding his sword with unshakable resolve.",
+  "warrok": "Warrok — a fierce brute forged in battle, wielding raw strength and unbreakable will.",
+  "skeletonz": "Skeletonz — a restless warrior of bone and shadow, risen again to fight without fear.",
+  "erika": "Erika moves like a shadow: quiet, precise and watchful. She carries one dark arrow — simple, deadly and personal.",
+  "arissa": "Arissa hides her power behind calm eyes and empty hands. No blade or staff—only the swirling dark orbs she conjures when the fight begins.",
+  "gameplayused": "Forest Of Hollow Blood for now have only one channel for gameplay. Please wait for current party end...",
+  "nogold": "Not enough gold!"
+};
+
+},{}],24:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
 exports.default = void 0;
 var _shaders = require("../shaders/shaders");
 var _wgpuMatrix = require("wgpu-matrix");
@@ -18990,7 +19058,7 @@ class MEBall {
 }
 exports.default = MEBall;
 
-},{"../shaders/shaders":61,"./engine":33,"./matrix-class":43,"wgpu-matrix":22}],24:[function(require,module,exports){
+},{"../shaders/shaders":63,"./engine":35,"./matrix-class":45,"wgpu-matrix":22}],25:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -19028,7 +19096,7 @@ class Behavior {
 }
 exports.default = Behavior;
 
-},{"./utils":46}],25:[function(require,module,exports){
+},{"./utils":48}],26:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -19453,7 +19521,7 @@ class MECube {
 }
 exports.default = MECube;
 
-},{"../shaders/shaders":61,"./engine":33,"./matrix-class":43,"wgpu-matrix":22}],26:[function(require,module,exports){
+},{"../shaders/shaders":63,"./engine":35,"./matrix-class":45,"wgpu-matrix":22}],27:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -19616,7 +19684,7 @@ class HPBarEffect {
 }
 exports.HPBarEffect = HPBarEffect;
 
-},{"../../shaders/energy-bars/energy-bar-shader.js":49,"wgpu-matrix":22}],27:[function(require,module,exports){
+},{"../../shaders/energy-bars/energy-bar-shader.js":51,"wgpu-matrix":22}],28:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -19835,7 +19903,7 @@ class FlameEmitter {
 }
 exports.FlameEmitter = FlameEmitter;
 
-},{"../../shaders/flame-effect/flame-instanced":50,"../utils":46,"wgpu-matrix":22}],28:[function(require,module,exports){
+},{"../../shaders/flame-effect/flame-instanced":52,"../utils":48,"wgpu-matrix":22}],29:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -20006,7 +20074,7 @@ class FlameEffect {
 }
 exports.FlameEffect = FlameEffect;
 
-},{"../../shaders/flame-effect/flameEffect":51,"wgpu-matrix":22}],29:[function(require,module,exports){
+},{"../../shaders/flame-effect/flameEffect":53,"wgpu-matrix":22}],30:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -20026,7 +20094,7 @@ class GenGeoTexture {
     this.indexData = geom.indices;
     this.enabled = true;
     this.rotateEffect = true;
-    this.rotateEffectSpeed = 10.5;
+    this.rotateEffectSpeed = 10;
     this.rotateAngle = 0;
     this.loadTexture(path).then(() => {
       this._initPipeline();
@@ -20203,6 +20271,9 @@ class GenGeoTexture {
   updateInstanceData = baseModelMatrix => {
     if (this.rotateEffect) {
       this.rotateAngle = (this.rotateAngle ?? 0) + this.rotateEffectSpeed; // accumulate rotation
+      if (this.rotateAngle >= 360) {
+        this.rotateAngle = 0;
+      }
     }
     const count = Math.min(this.instanceCount, this.maxInstances);
     for (let i = 0; i < count; i++) {
@@ -20244,7 +20315,264 @@ class GenGeoTexture {
 }
 exports.GenGeoTexture = GenGeoTexture;
 
-},{"../../shaders/standalone/geo.tex.js":63,"../geometry-factory.js":34,"wgpu-matrix":22}],30:[function(require,module,exports){
+},{"../../shaders/standalone/geo.tex.js":65,"../geometry-factory.js":36,"wgpu-matrix":22}],31:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.GenGeoTexture2 = void 0;
+var _geoTex = require("../../shaders/standalone/geo.tex.js");
+var _geometryFactory = require("../geometry-factory.js");
+var _wgpuMatrix = require("wgpu-matrix");
+class GenGeoTexture2 {
+  constructor(device, format, type = "sphere", path, scale = 1) {
+    this.device = device;
+    this.format = format;
+    const geom = _geometryFactory.GeometryFactory.create(type, scale);
+    this.vertexData = geom.positions;
+    this.uvData = geom.uvs;
+    this.indexData = geom.indices;
+    this.enabled = true;
+    this.rotateEffect = true;
+    this.rotateEffectSpeed = 10;
+    this.rotateAngle = 0;
+    this.loadTexture(path).then(() => {
+      this._initPipeline();
+    });
+  }
+  async loadTexture(url) {
+    return new Promise(async (resolve, reject) => {
+      const img = await fetch(url).then(r => r.blob()).then(createImageBitmap);
+      const texture = this.device.createTexture({
+        size: [img.width, img.height, 1],
+        format: "rgba8unorm",
+        usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT
+      });
+      this.device.queue.copyExternalImageToTexture({
+        source: img
+      }, {
+        texture
+      }, [img.width, img.height]);
+      const sampler = this.device.createSampler({
+        magFilter: "linear",
+        minFilter: "linear",
+        addressModeU: "repeat",
+        addressModeV: "repeat"
+      });
+      this.texture = texture;
+      this.sampler = sampler;
+      resolve();
+    });
+  }
+  _initPipeline() {
+    const {
+      vertexData,
+      uvData,
+      indexData
+    } = this;
+
+    // --- POSITION BUFFER (aligned)
+    this.vertexBuffer = this.device.createBuffer({
+      size: Math.ceil(vertexData.byteLength / 4) * 4,
+      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
+    });
+    this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
+
+    // --- UV BUFFER (aligned)
+    this.uvBuffer = this.device.createBuffer({
+      size: Math.ceil(uvData.byteLength / 4) * 4,
+      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
+    });
+    this.device.queue.writeBuffer(this.uvBuffer, 0, uvData);
+
+    // --- INDEX BUFFER (aligned)
+    const alignedIndexSize = Math.ceil(indexData.byteLength / 4) * 4;
+    this.indexBuffer = this.device.createBuffer({
+      size: alignedIndexSize,
+      usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST
+    });
+
+    // Create a temporary padded buffer if necessary
+    if (indexData.byteLength !== alignedIndexSize) {
+      const tmp = new Uint8Array(alignedIndexSize);
+      tmp.set(new Uint8Array(indexData.buffer));
+      this.device.queue.writeBuffer(this.indexBuffer, 0, tmp);
+    } else {
+      this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
+    }
+    this.indexCount = indexData.length;
+
+    // --- rest of your setup (no change)
+    this.cameraBuffer = this.device.createBuffer({
+      size: 64,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    this.instanceTargets = [];
+    this.lerpSpeed = 0.05;
+    this.maxInstances = 5;
+    this.instanceCount = 2;
+    this.floatsPerInstance = 16 + 4;
+    for (let x = 0; x < this.maxInstances; x++) {
+      this.instanceTargets.push({
+        index: x,
+        position: [0, 0, 0],
+        currentPosition: [0, 0, 0],
+        scale: [1, 1, 1],
+        currentScale: [1, 1, 1],
+        color: [0.6, 0.8, 1.0, 0.4]
+      });
+    }
+    this.instanceData = new Float32Array(this.instanceCount * this.floatsPerInstance);
+    this.modelBuffer = this.device.createBuffer({
+      size: Math.ceil(this.instanceData.byteLength / 4) * 4,
+      usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
+    });
+    const bindGroupLayout = this.device.createBindGroupLayout({
+      entries: [{
+        binding: 0,
+        visibility: GPUShaderStage.VERTEX,
+        buffer: {}
+      }, {
+        binding: 1,
+        visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
+        buffer: {
+          type: "read-only-storage"
+        }
+      }, {
+        binding: 2,
+        visibility: GPUShaderStage.FRAGMENT,
+        sampler: {}
+      }, {
+        binding: 3,
+        visibility: GPUShaderStage.FRAGMENT,
+        texture: {}
+      }]
+    });
+    this.bindGroup = this.device.createBindGroup({
+      layout: bindGroupLayout,
+      entries: [{
+        binding: 0,
+        resource: {
+          buffer: this.cameraBuffer
+        }
+      }, {
+        binding: 1,
+        resource: {
+          buffer: this.modelBuffer
+        }
+      }, {
+        binding: 2,
+        resource: this.sampler
+      }, {
+        binding: 3,
+        resource: this.texture.createView()
+      }]
+    });
+    const shaderModule = this.device.createShaderModule({
+      code: _geoTex.geoInstancedTexEffect
+    });
+    const pipelineLayout = this.device.createPipelineLayout({
+      bindGroupLayouts: [bindGroupLayout]
+    });
+    this.pipeline = this.device.createRenderPipeline({
+      layout: pipelineLayout,
+      vertex: {
+        module: shaderModule,
+        entryPoint: 'vsMain',
+        buffers: [{
+          arrayStride: 3 * 4,
+          attributes: [{
+            shaderLocation: 0,
+            offset: 0,
+            format: 'float32x3'
+          }]
+        }, {
+          arrayStride: 2 * 4,
+          attributes: [{
+            shaderLocation: 1,
+            offset: 0,
+            format: 'float32x2'
+          }]
+        }]
+      },
+      fragment: {
+        module: shaderModule,
+        entryPoint: 'fsMain',
+        targets: [{
+          format: this.format,
+          blend: {
+            color: {
+              srcFactor: 'src-alpha',
+              dstFactor: 'one-minus-src-alpha',
+              operation: 'add'
+            },
+            alpha: {
+              srcFactor: 'one',
+              dstFactor: 'one-minus-src-alpha',
+              operation: 'add'
+            }
+          }
+        }]
+      },
+      primitive: {
+        topology: 'triangle-list'
+      },
+      depthStencil: {
+        depthWriteEnabled: false,
+        depthCompare: 'less-equal',
+        format: 'depth24plus'
+      }
+    });
+  }
+  updateInstanceData = baseModelMatrix => {
+    if (this.rotateEffect) {
+      this.rotateAngle = (this.rotateAngle ?? 0) + this.rotateEffectSpeed; // accumulate rotation
+      if (this.rotateAngle >= 360) {
+        this.rotateAngle = 0;
+      }
+    }
+    const count = Math.min(this.instanceCount, this.maxInstances);
+    for (let i = 0; i < count; i++) {
+      const t = this.instanceTargets[i];
+      // smooth interpolation of position & scale
+      for (let j = 0; j < 3; j++) {
+        t.currentPosition[j] += (t.position[j] - t.currentPosition[j]) * this.lerpSpeed;
+        t.currentScale[j] += (t.scale[j] - t.currentScale[j]) * this.lerpSpeed;
+      }
+      const local = _wgpuMatrix.mat4.identity();
+      if (this.rotateEffect == true) {
+        _wgpuMatrix.mat4.rotateY(local, this.rotateAngle, local);
+      }
+      _wgpuMatrix.mat4.translate(local, t.currentPosition, local);
+      _wgpuMatrix.mat4.scale(local, t.currentScale, local);
+      const finalMat = _wgpuMatrix.mat4.identity();
+      _wgpuMatrix.mat4.multiply(baseModelMatrix, local, finalMat);
+      const offset = i * this.floatsPerInstance;
+      this.instanceData.set(finalMat, offset);
+      this.instanceData.set(t.color, offset + 16);
+    }
+    // IMPORTANT: upload ONLY the active range of floats to GPU to avoid leftover instances
+    const activeFloatCount = count * this.floatsPerInstance;
+    const activeBytes = activeFloatCount * 4;
+    this.device.queue.writeBuffer(this.modelBuffer, 0, this.instanceData.subarray(0, activeFloatCount));
+  };
+  draw(pass, cameraMatrix) {
+    this.device.queue.writeBuffer(this.cameraBuffer, 0, cameraMatrix);
+    pass.setPipeline(this.pipeline);
+    pass.setBindGroup(0, this.bindGroup);
+    pass.setVertexBuffer(0, this.vertexBuffer);
+    pass.setVertexBuffer(1, this.uvBuffer);
+    pass.setIndexBuffer(this.indexBuffer, 'uint16');
+    pass.drawIndexed(this.indexCount, this.instanceCount);
+  }
+  render(transPass, mesh, viewProjMatrix) {
+    this.draw(transPass, viewProjMatrix);
+  }
+}
+exports.GenGeoTexture2 = GenGeoTexture2;
+
+},{"../../shaders/standalone/geo.tex.js":65,"../geometry-factory.js":36,"wgpu-matrix":22}],32:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -20434,7 +20762,7 @@ class GenGeo {
 }
 exports.GenGeo = GenGeo;
 
-},{"../../shaders/standalone/geo.instanced.js":62,"../geometry-factory.js":34,"wgpu-matrix":22}],31:[function(require,module,exports){
+},{"../../shaders/standalone/geo.instanced.js":64,"../geometry-factory.js":36,"wgpu-matrix":22}],33:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -20597,7 +20925,7 @@ class MANABarEffect {
 }
 exports.MANABarEffect = MANABarEffect;
 
-},{"../../shaders/energy-bars/energy-bar-shader.js":49,"wgpu-matrix":22}],32:[function(require,module,exports){
+},{"../../shaders/energy-bars/energy-bar-shader.js":51,"wgpu-matrix":22}],34:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -20740,7 +21068,7 @@ class PointerEffect {
 }
 exports.PointerEffect = PointerEffect;
 
-},{"../../shaders/standalone/pointer.effect.js":64,"wgpu-matrix":22}],33:[function(require,module,exports){
+},{"../../shaders/standalone/pointer.effect.js":66,"wgpu-matrix":22}],35:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -21283,7 +21611,7 @@ class RPGCamera extends CameraBase {
 }
 exports.RPGCamera = RPGCamera;
 
-},{"./utils":46,"wgpu-matrix":22}],34:[function(require,module,exports){
+},{"./utils":48,"wgpu-matrix":22}],36:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -21305,6 +21633,8 @@ class GeometryFactory {
         return GeometryFactory.star(size);
       case "circle":
         return GeometryFactory.circle(size, segments);
+      case "circle2":
+        return GeometryFactory.circle2(size, segments);
       case "diamond":
         return GeometryFactory.diamond(size);
       case "rock":
@@ -21423,6 +21753,35 @@ class GeometryFactory {
       positions: new Float32Array(p),
       uvs: new Float32Array(uv),
       indices: new Uint16Array(ind)
+    };
+  }
+  static circle2(radius = 1, segments = 64) {
+    const positions = [0, 0, 0]; // center
+    const uvs = [0.5, 0.5]; // center UV
+    const indices = [];
+
+    // create outer vertices
+    for (let i = 0; i <= segments; i++) {
+      const angle = i / segments * Math.PI * 2;
+      const x = Math.cos(angle) * radius;
+      const y = Math.sin(angle) * radius;
+      positions.push(x, y, 0);
+      // map to circular UV range [0,1]
+      uvs.push((x / radius + 1) / 2, (y / radius + 1) / 2);
+      if (i > 0) {
+        // center = 0, connect previous outer vertex with current outer vertex
+        indices.push(0, i, i + 1);
+      }
+    }
+
+    // close the circle (last triangle connects to first outer vertex)
+    // we already pushed (segments + 1) outer vertices, so last index = segments + 1
+    // but first outer vertex is index 1
+    indices.push(0, segments + 1, 1);
+    return {
+      positions: new Float32Array(positions),
+      uvs: new Float32Array(uvs),
+      indices: new Uint16Array(indices)
     };
   }
   static diamond(S = 1) {
@@ -21564,7 +21923,7 @@ class GeometryFactory {
 }
 exports.GeometryFactory = GeometryFactory;
 
-},{}],35:[function(require,module,exports){
+},{}],37:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -22091,7 +22450,7 @@ class MaterialsInstanced {
 }
 exports.default = MaterialsInstanced;
 
-},{"../../shaders/fragment.wgsl":53,"../../shaders/fragment.wgsl.metal":54,"../../shaders/fragment.wgsl.normalmap":55,"../../shaders/fragment.wgsl.pong":56,"../../shaders/fragment.wgsl.power":57,"../../shaders/instanced/fragment.instanced.wgsl":58}],36:[function(require,module,exports){
+},{"../../shaders/fragment.wgsl":55,"../../shaders/fragment.wgsl.metal":56,"../../shaders/fragment.wgsl.normalmap":57,"../../shaders/fragment.wgsl.pong":58,"../../shaders/fragment.wgsl.power":59,"../../shaders/instanced/fragment.instanced.wgsl":60}],38:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -22112,6 +22471,7 @@ var _manaBar = require("../effects/mana-bar");
 var _flame = require("../effects/flame");
 var _flameEmmiter = require("../effects/flame-emmiter");
 var _genTex = require("../effects/gen-tex");
+var _genTex2 = require("../effects/gen-tex2");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 class MEMeshObjInstances extends _materialsInstanced.default {
   constructor(canvas, device, context, o, inputHandler, globalAmbient, _glbFile = null, primitiveIndex = null, skinnedNodeIndex = null) {
@@ -22137,6 +22497,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
     this.video = null;
     this.FINISH_VIDIO_INIT = false;
     this.globalAmbient = [...globalAmbient];
+    this.blendInstanced = false;
     if (typeof o.material.useTextureFromGlb === 'undefined' || typeof o.material.useTextureFromGlb !== "boolean") {
       o.material.useTextureFromGlb = false;
     }
@@ -22763,6 +23124,9 @@ class MEMeshObjInstances extends _materialsInstanced.default {
         if (typeof this.pointerEffect.circlePlaneTex !== 'undefined' && this.pointerEffect.circlePlaneTex == true) {
           this.effects.circlePlaneTex = new _genTex.GenGeoTexture(device, pf, 'ring', this.pointerEffect.circlePlaneTexPath);
         }
+        if (typeof this.pointerEffect.circle !== 'undefined' && this.pointerEffect.circlePlaneTexPath !== 'undefined') {
+          this.effects.circle = new _genTex2.GenGeoTexture2(device, pf, 'circle2', this.pointerEffect.circlePlaneTexPath);
+        }
       }
 
       // Rotates the camera around the origin based on time.
@@ -22900,7 +23264,8 @@ class MEMeshObjInstances extends _materialsInstanced.default {
         format: 'depth24plus'
       }
     });
-    console.log('✅Pipelines done');
+
+    // console.log('✅Pipelines done');
   };
   updateModelUniformBuffer = () => {
     // if(this.done == false) return;
@@ -23012,7 +23377,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
     pass.drawIndexed(this.indexCount, 1, 0, 0, 0);
 
     // pipelineBlended
-    pass.setPipeline(this.pipelineBlended);
+    if (this.blendInstanced == true) pass.setPipeline(this.pipelineBlended);else pass.setPipeline(this.pipeline);
     for (var ins = 1; ins < this.instanceCount; ins++) {
       pass.drawIndexed(this.indexCount, 1, 0, 0, ins);
     }
@@ -23074,7 +23439,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
 }
 exports.default = MEMeshObjInstances;
 
-},{"../../shaders/fragment.video.wgsl":52,"../../shaders/instanced/vertex.instanced.wgsl":59,"../effects/energy-bar":26,"../effects/flame":28,"../effects/flame-emmiter":27,"../effects/gen":30,"../effects/gen-tex":29,"../effects/mana-bar":31,"../effects/pointerEffect":32,"../loaders/bvh-instaced":39,"../matrix-class":43,"../utils":46,"./materials-instanced":35,"wgpu-matrix":22}],37:[function(require,module,exports){
+},{"../../shaders/fragment.video.wgsl":54,"../../shaders/instanced/vertex.instanced.wgsl":61,"../effects/energy-bar":27,"../effects/flame":29,"../effects/flame-emmiter":28,"../effects/gen":32,"../effects/gen-tex":30,"../effects/gen-tex2":31,"../effects/mana-bar":33,"../effects/pointerEffect":34,"../loaders/bvh-instaced":41,"../matrix-class":45,"../utils":48,"./materials-instanced":37,"wgpu-matrix":22}],39:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -23360,7 +23725,7 @@ class SpotLight {
 }
 exports.SpotLight = SpotLight;
 
-},{"../shaders/instanced/vertexShadow.instanced.wgsl":60,"../shaders/vertexShadow.wgsl":67,"./behavior":24,"wgpu-matrix":22}],38:[function(require,module,exports){
+},{"../shaders/instanced/vertexShadow.instanced.wgsl":62,"../shaders/vertexShadow.wgsl":69,"./behavior":25,"wgpu-matrix":22}],40:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -23828,7 +24193,7 @@ function play(nameAni) {
   this.playing = true;
 }
 
-},{}],39:[function(require,module,exports){
+},{}],41:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -24369,7 +24734,7 @@ class BVHPlayerInstances extends _meshObjInstances.default {
 }
 exports.BVHPlayerInstances = BVHPlayerInstances;
 
-},{"../instanced/mesh-obj-instances.js":36,"./webgpu-gltf.js":41,"wgpu-matrix":22}],40:[function(require,module,exports){
+},{"../instanced/mesh-obj-instances.js":38,"./webgpu-gltf.js":43,"wgpu-matrix":22}],42:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -24879,7 +25244,7 @@ class BVHPlayer extends _meshObj.default {
 }
 exports.BVHPlayer = BVHPlayer;
 
-},{"../mesh-obj":44,"./webgpu-gltf.js":41,"bvh-loader":8,"wgpu-matrix":22}],41:[function(require,module,exports){
+},{"../mesh-obj":46,"./webgpu-gltf.js":43,"bvh-loader":8,"wgpu-matrix":22}],43:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -25460,7 +25825,7 @@ async function uploadGLBModel(buffer, device) {
   return R;
 }
 
-},{"gl-matrix":11}],42:[function(require,module,exports){
+},{"gl-matrix":11}],44:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -25986,7 +26351,7 @@ class Materials {
 }
 exports.default = Materials;
 
-},{"../shaders/fragment.wgsl":53,"../shaders/fragment.wgsl.metal":54,"../shaders/fragment.wgsl.normalmap":55,"../shaders/fragment.wgsl.pong":56,"../shaders/fragment.wgsl.power":57}],43:[function(require,module,exports){
+},{"../shaders/fragment.wgsl":55,"../shaders/fragment.wgsl.metal":56,"../shaders/fragment.wgsl.normalmap":57,"../shaders/fragment.wgsl.pong":58,"../shaders/fragment.wgsl.power":59}],45:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -26004,9 +26369,10 @@ var _utils = require("./utils");
 class Position {
   constructor(x, y, z) {
     // console.log('TEST TYTPOF ', x)
-    // Not in use for nwo this is from matrix-engine project [nameUniq]
-    this.remoteName = null; // not in use
+    this.remoteName = null;
     this.netObject = null;
+    this.toRemote = [];
+    this.teams = [];
     this.netTolerance = 1;
     this.netTolerance__ = 0;
     if (typeof x == 'undefined') x = 0;
@@ -26075,15 +26441,47 @@ class Position {
         this.z += this.velZ;
         if (this.netObject != null) {
           if (this.netTolerance__ > this.netTolerance) {
-            app.net.send({
-              remoteName: this.remoteName,
-              sceneName: this.netObject,
-              netPos: {
-                x: this.x,
-                y: this.y,
-                z: this.z
-              }
-            });
+            if (this.teams.length == 0) {
+              app.net.send({
+                toRemote: this.toRemote,
+                // default null
+                remoteName: this.remoteName,
+                // default null
+                sceneName: this.netObject,
+                netPos: {
+                  x: this.x,
+                  y: this.y,
+                  z: this.z
+                }
+              });
+            } else {
+              // logic is only for two team - index 0 is local !!!
+              if (this.teams.length > 0) if (this.teams[0].length > 0) app.net.send({
+                toRemote: this.teams[0],
+                // default null remote conns
+                sceneName: this.netObject,
+                // origin scene name to receive
+                netPos: {
+                  x: this.x,
+                  y: this.y,
+                  z: this.z
+                }
+              });
+              // remove if (this.teams[1].length > 0)  after alll this is only for CASE OF SUM PLAYER 3 FOR TEST ONLY
+              if (this.teams.length > 0) if (this.teams[1].length > 0) app.net.send({
+                toRemote: this.teams[1],
+                // default null remote conns
+                remoteName: this.remoteName,
+                // to enemy players
+                sceneName: this.netObject,
+                // now not important
+                netPos: {
+                  x: this.x,
+                  y: this.y,
+                  z: this.z
+                }
+              });
+            }
             this.netTolerance__ = 0;
           } else {
             this.netTolerance__++;
@@ -26097,15 +26495,46 @@ class Position {
         this.onTargetPositionReach();
         if (this.netObject != null) {
           if (this.netTolerance__ > this.netTolerance) {
-            app.net.send({
-              remoteName: this.remoteName,
-              sceneName: this.netObject,
-              netPos: {
-                x: this.x,
-                y: this.y,
-                z: this.z
-              }
-            });
+            // 
+            if (this.teams.length == 0) {
+              app.net.send({
+                toRemote: this.toRemote,
+                // default null
+                remoteName: this.remoteName,
+                // default null
+                sceneName: this.netObject,
+                netPos: {
+                  x: this.x,
+                  y: this.y,
+                  z: this.z
+                }
+              });
+            } else {
+              // logic is only for two team - index 0 is local !
+              if (this.teams[0].length > 0) app.net.send({
+                toRemote: this.teams[0],
+                sceneName: this.netObject,
+                netPos: {
+                  x: this.x,
+                  y: this.y,
+                  z: this.z
+                }
+              });
+              if (this.teams[1].length > 0) app.net.send({
+                // team: this.teams[1],
+                toRemote: this.teams[1],
+                // default null remote conns
+                remoteName: this.remoteName,
+                // to enemy players
+                sceneName: this.netObject,
+                // now not important
+                netPos: {
+                  x: this.x,
+                  y: this.y,
+                  z: this.z
+                }
+              });
+            }
             this.netTolerance__ = 0;
           } else {
             this.netTolerance__++;
@@ -26154,7 +26583,8 @@ class Position {
 exports.Position = Position;
 class Rotation {
   constructor(x, y, z) {
-    // Not in use for nwo this is from matrix-engine project [nameUniq]
+    this.toRemote = [];
+    this.teams = [];
     this.remoteName = null;
     this.emitX = null;
     this.emitY = null;
@@ -26218,13 +26648,31 @@ class Rotation {
   getRotY() {
     if (this.rotationSpeed.y == 0) {
       if (this.nety != this.y && this.emitY) {
-        app.net.send({
-          remoteName: this.remoteName,
-          sceneName: this.emitY,
-          netRotY: this.y
-        });
+        // ---------------------------------------
+        if (this.teams.length == 0) {
+          app.net.send({
+            toRemote: this.toRemote,
+            remoteName: this.remoteName,
+            sceneName: this.emitY,
+            netRotY: this.y
+          });
+          this.nety = this.y;
+        } else {
+          if (this.teams[0].length > 0) app.net.send({
+            toRemote: this.teams[0],
+            sceneName: this.emitY,
+            netRotY: this.y
+          });
+          if (this.teams[1].length > 0) app.net.send({
+            toRemote: this.teams[1],
+            remoteName: this.remoteName,
+            sceneName: this.emitY,
+            netRotY: this.y
+          });
+          this.nety = this.y;
+        }
+        //-------------------------------------------
       }
-      this.nety = this.y;
       return (0, _utils.degToRad)(this.y);
     } else {
       this.y = this.y + this.rotationSpeed.y * 0.001;
@@ -26240,7 +26688,7 @@ class Rotation {
           netRotZ: this.z
         });
       }
-      this.nety = this.y;
+      this.netz = this.z;
       return (0, _utils.degToRad)(this.z);
     } else {
       this.z = this.z + this.rotationSpeed.z * 0.001;
@@ -26250,7 +26698,7 @@ class Rotation {
 }
 exports.Rotation = Rotation;
 
-},{"./utils":46}],44:[function(require,module,exports){
+},{"./utils":48}],46:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -26883,7 +27331,7 @@ class MEMeshObj extends _materials.default {
       },
       primitive: this.primitive
     });
-    console.log('✅Set Pipeline done');
+    // console.log('✅Set Pipeline done');
   };
   updateModelUniformBuffer = () => {
     if (this.done == false) return;
@@ -27045,7 +27493,7 @@ class MEMeshObj extends _materials.default {
 }
 exports.default = MEMeshObj;
 
-},{"../shaders/fragment.video.wgsl":52,"../shaders/vertex.wgsl":65,"../shaders/vertex.wgsl.normalmap":66,"./effects/pointerEffect":32,"./materials":42,"./matrix-class":43,"./utils":46,"wgpu-matrix":22}],45:[function(require,module,exports){
+},{"../shaders/fragment.video.wgsl":54,"../shaders/vertex.wgsl":67,"../shaders/vertex.wgsl.normalmap":68,"./effects/pointerEffect":34,"./materials":44,"./matrix-class":45,"./utils":48,"wgpu-matrix":22}],47:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -27234,13 +27682,13 @@ function addRaycastsListener(canvasId = "canvas1", eventName = 'click') {
   });
 }
 
-},{"wgpu-matrix":22}],46:[function(require,module,exports){
+},{"wgpu-matrix":22}],48:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.LS = exports.LOG_WARN = exports.LOG_MATRIX = exports.LOG_INFO = exports.LOG_FUNNY_SMALL = exports.LOG_FUNNY = void 0;
+exports.LS = exports.LOG_WARN = exports.LOG_MATRIX = exports.LOG_INFO = exports.LOG_FUNNY_SMALL = exports.LOG_FUNNY = exports.FullscreenManagerElement = exports.FullscreenManager = void 0;
 exports.ORBIT = ORBIT;
 exports.ORBIT_FROM_ARRAY = ORBIT_FROM_ARRAY;
 exports.OSCILLATOR = OSCILLATOR;
@@ -28202,14 +28650,64 @@ function isEven(n) {
 function isOdd(n) {
   return n % 2 !== 0;
 }
+class FullscreenManagerElement {
+  constructor(targetElement = document.documentElement) {
+    this.target = targetElement;
+  }
+  isFullscreen() {
+    return !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement);
+  }
+  request() {
+    const el = this.target;
+    return el.requestFullscreen?.() || el.webkitRequestFullscreen?.() || el.mozRequestFullScreen?.() || el.msRequestFullscreen?.();
+  }
+  exit() {
+    return document.exitFullscreen?.() || document.webkitExitFullscreen?.() || document.mozCancelFullScreen?.() || document.msExitFullscreen?.();
+  }
+  toggle() {
+    if (this.isFullscreen()) return this.exit();
+    return this.request();
+  }
+  onChange(callback) {
+    ["fullscreenchange", "webkitfullscreenchange", "mozfullscreenchange", "MSFullscreenChange"].forEach(evt => document.addEventListener(evt, () => {
+      callback(this.isFullscreen(), this.target);
+    }));
+  }
+}
+exports.FullscreenManagerElement = FullscreenManagerElement;
+class FullscreenManager {
+  constructor() {
+    this.target = document.documentElement; // fullscreen whole page / window
+  }
+  isFullscreen() {
+    return !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement);
+  }
+  request() {
+    const el = this.target;
+    return el.requestFullscreen?.() || el.webkitRequestFullscreen?.() || el.mozRequestFullScreen?.() || el.msRequestFullscreen?.();
+  }
+  exit() {
+    return document.exitFullscreen?.() || document.webkitExitFullscreen?.() || document.mozCancelFullScreen?.() || document.msExitFullscreen?.();
+  }
+  toggle() {
+    return this.isFullscreen() ? this.exit() : this.request();
+  }
+  onChange(callback) {
+    ["fullscreenchange", "webkitfullscreenchange", "mozfullscreenchange", "MSFullscreenChange"].forEach(evt => document.addEventListener(evt, () => {
+      callback(this.isFullscreen());
+    }));
+  }
+}
+exports.FullscreenManager = FullscreenManager;
 
-},{}],47:[function(require,module,exports){
+},{}],49:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.MultiLang = void 0;
+var _enBackup = require("../../public/res/multilang/en-backup");
 var _utils = require("../engine/utils");
 class MultiLang {
   constructor() {
@@ -28225,6 +28723,7 @@ class MultiLang {
     });
   };
   loadMultilang = async function (lang = 'en') {
+    if (lang == 'rs') lang = 'sr'; // exc
     lang = 'res/multilang/' + lang + '.json';
     console.info(`%cMultilang: ${lang}`, _utils.LOG_MATRIX);
     try {
@@ -28236,14 +28735,14 @@ class MultiLang {
       });
       return await r.json();
     } catch (err) {
-      console.warn('Not possible to access multilang json asset! Err => ', err);
-      return {};
+      console.warn('Not possible to access multilang json asset! Err => ', err, '. Use backup lang predefinited object. Only english avaible.');
+      return _enBackup.en;
     }
   };
 }
 exports.MultiLang = MultiLang;
 
-},{"../engine/utils":46}],48:[function(require,module,exports){
+},{"../../public/res/multilang/en-backup":23,"../engine/utils":48}],50:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -28527,7 +29026,7 @@ class MatrixAmmo {
 }
 exports.default = MatrixAmmo;
 
-},{"../engine/utils":46}],49:[function(require,module,exports){
+},{"../engine/utils":48}],51:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -28573,7 +29072,7 @@ fn fsMain(in : VertexOutput) -> @location(0) vec4f {
 }
 `;
 
-},{}],50:[function(require,module,exports){
+},{}],52:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -28699,7 +29198,7 @@ fn fsMain(in : VSOut) -> @location(0) vec4<f32> {
 }
 `;
 
-},{}],51:[function(require,module,exports){
+},{}],53:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -28787,7 +29286,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
 }
 `;
 
-},{}],52:[function(require,module,exports){
+},{}],54:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -28877,7 +29376,7 @@ fn main(input : FragmentInput) -> @location(0) vec4f {
 }
 `;
 
-},{}],53:[function(require,module,exports){
+},{}],55:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -29108,7 +29607,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, 1.0);
 }`;
 
-},{}],54:[function(require,module,exports){
+},{}],56:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -29286,7 +29785,7 @@ return vec4f(color, 1.0);
 // let radiance = spotlights[0].color * 10.0; // test high intensity
 // Lo += materialData.baseColor * radiance * NdotL;
 
-},{}],55:[function(require,module,exports){
+},{}],57:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -29531,7 +30030,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, 1.0);
 }`;
 
-},{}],56:[function(require,module,exports){
+},{}],58:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -29751,7 +30250,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, 1.0);
 }`;
 
-},{}],57:[function(require,module,exports){
+},{}],59:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -29919,7 +30418,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 // let radiance = spotlights[0].color * 10.0; // test high intensity
 // Lo += materialData.baseColor * radiance * NdotL;
 
-},{}],58:[function(require,module,exports){
+},{}],60:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30155,7 +30654,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, alpha);
 }`;
 
-},{}],59:[function(require,module,exports){
+},{}],61:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30259,7 +30758,7 @@ fn main(
   return output;
 }`;
 
-},{}],60:[function(require,module,exports){
+},{}],62:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30296,7 +30795,7 @@ fn main(
 }
 `;
 
-},{}],61:[function(require,module,exports){
+},{}],63:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30354,7 +30853,7 @@ fn fragmentMain(input: VertexOutput) -> @location(0) vec4f {
   return vec4f(textureColor.rgb * lightColor, textureColor.a);
 }`;
 
-},{}],62:[function(require,module,exports){
+},{}],64:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30412,7 +30911,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
 }
 `;
 
-},{}],63:[function(require,module,exports){
+},{}],65:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30468,7 +30967,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
   let uvScale = vec2<f32>(1.3, 1.3);   // < 1.0 = zoom out (more texture visible)
   let uvOffset = vec2<f32>(0.01, 0.01); // move the texture slightly
   
-  let adjustedUV = input.v_uv * uvScale + uvOffset;
+  let adjustedUV = input.v_uv; // * uvScale + uvOffset; // make it like ring !
 
   let texColor = textureSample(myTexture, mySampler, adjustedUV);
 
@@ -30499,7 +30998,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
 }
 `;
 
-},{}],64:[function(require,module,exports){
+},{}],66:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30557,7 +31056,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
   return vec4<f32>(color, 1.0);
 }`;
 
-},{}],65:[function(require,module,exports){
+},{}],67:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30643,7 +31142,7 @@ fn main(
   return output;
 }`;
 
-},{}],66:[function(require,module,exports){
+},{}],68:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30754,7 +31253,7 @@ fn main(
   return output;
 }`;
 
-},{}],67:[function(require,module,exports){
+},{}],69:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30782,7 +31281,7 @@ fn main(
 }
 `;
 
-},{}],68:[function(require,module,exports){
+},{}],70:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30852,7 +31351,7 @@ class MatrixSounds {
 }
 exports.MatrixSounds = MatrixSounds;
 
-},{}],69:[function(require,module,exports){
+},{}],71:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30893,7 +31392,7 @@ class MatrixEngineWGPU {
     depthLoadOp: 'clear',
     depthStoreOp: 'store'
   };
-  matrixAmmo = new _matrixAmmo.default();
+  // matrixAmmo = new MatrixAmmo();
   matrixSounds = new _sounds.MatrixSounds();
   constructor(options, callback) {
     if (typeof options == 'undefined' || typeof options == "function") {
@@ -30930,6 +31429,9 @@ class MatrixEngineWGPU {
         type: 'WASD',
         responseCoef: 2000
       };
+    }
+    if (typeof options.dontUsePhysics == 'undefined') {
+      this.matrixAmmo = new _matrixAmmo.default();
     }
     this.options = options;
     this.mainCameraParams = options.mainCameraParams;
@@ -31856,4 +32358,4 @@ class MatrixEngineWGPU {
 }
 exports.default = MatrixEngineWGPU;
 
-},{"./engine/ball.js":23,"./engine/cube.js":25,"./engine/engine.js":33,"./engine/lights.js":37,"./engine/loader-obj.js":38,"./engine/loaders/bvh-instaced.js":39,"./engine/loaders/bvh.js":40,"./engine/mesh-obj.js":44,"./engine/utils.js":46,"./multilang/lang.js":47,"./physics/matrix-ammo.js":48,"./sounds/sounds.js":68,"wgpu-matrix":22}]},{},[1]);
+},{"./engine/ball.js":24,"./engine/cube.js":26,"./engine/engine.js":35,"./engine/lights.js":39,"./engine/loader-obj.js":40,"./engine/loaders/bvh-instaced.js":41,"./engine/loaders/bvh.js":42,"./engine/mesh-obj.js":46,"./engine/utils.js":48,"./multilang/lang.js":49,"./physics/matrix-ammo.js":50,"./sounds/sounds.js":70,"wgpu-matrix":22}]},{},[1]);

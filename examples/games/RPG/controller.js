@@ -74,8 +74,12 @@ export class Controller {
         }));
       } else {
         // for now
-        console.log("navigate friendly_creeps creep from controller :", e.detail.hitObject.name);
-        dispatchEvent(new CustomEvent('navigate-friendly_creeps', {detail: 'test'}))
+
+        if (app.net.virtualEmiter != null) {
+          console.log("only emiter - navigate friendly_creeps creep from controller :", e.detail.hitObject.name);
+          dispatchEvent(new CustomEvent('navigate-friendly_creeps', {detail: 'test'}))
+        }
+
         // must be friendly objs
         return;
       }
@@ -125,6 +129,10 @@ export class Controller {
       // followPath(this.heroe_bodies[0], path, this.core);
     });
 
+    document.body.addEventListener("contextmenu", (e) => {
+      e.preventDefault();
+    });
+
     this.canvas.addEventListener("contextmenu", (e) => {
       e.preventDefault();
     });
@@ -142,7 +150,7 @@ export class Controller {
         // 87 person comp case -> addressbar ~~~
         if(test > 100) {
           console.log('BAN', test);
-          location.assign('https://google.com');
+          location.assign('https://maximumroulette.com');
         }
       }
 
@@ -150,7 +158,7 @@ export class Controller {
         let testW = window.outerWidth - window.innerWidth;
         if(testW > 100) {
           console.log('BAN', testW);
-          location.assign('https://google.com');
+          location.assign('https://maximumroulette.com');
         }
       }
 
@@ -158,7 +166,7 @@ export class Controller {
         if(e.code == "F12") {
           e.preventDefault();
           mb.error(`
-            You are interest in Forest Of hollow blood. See <a href='https://github.com/zlatnapirala'>Github Source</a>
+            You are interest in Forest Of Hollow Blood. See <a href='https://github.com/zlatnapirala'>Github Source</a>
             You can download for free project and test it into localhost.
             `)
           console.log(`%c[keydown opened] ${e}`, LOG_MATRIX)
@@ -166,7 +174,7 @@ export class Controller {
         }
       });
 
-      document.addEventListener("visibilitychange", () => {
+      let onVisibilityChange = () => {
         if(document.visibilityState === "visible") {
           if(hiddenAt !== null) {
             const now = Date.now();
@@ -182,7 +190,8 @@ export class Controller {
         } else {
           hiddenAt = Date.now();
         }
-      });
+      }
+      document.addEventListener("visibilitychange", onVisibilityChange);
     }
   }
 

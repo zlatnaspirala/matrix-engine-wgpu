@@ -1,7 +1,14 @@
 *.blender
 *.blend1
+**/*.blender
+**/*.blend1
 public/res/meshes/nav-mesh/*.blend
+public/res/meshes/nav-mesh/*.blend1
 public/res/meshes/jamb/*.blend
+public/res/meshes/jamb/*.blend1
 public/res/meshes/maps-objs/*.blend
+public/res/meshes/maps-objs/*.blend1
 public/res/meshes/glb/*.blend
 public/res/meshes/blender/*.blend
+public/res/meshes/blender/*.blend1
+public/res/meshes/glb/*.blend11
