@@ -256,10 +256,9 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
       }
     } else if(d.type == "damage-creep") {
 
-      // true always
       if(app.player.data.team == d.defenderTeam) {
         // console.log('<data-receive damage local creep team:', d.defenderTeam);
-        // get last char from string defenderName
+        // can be both team
         let getCreepByIndex = parseInt(d.defenderName[d.defenderName.length - 1]);
         app.localHero.friendlyLocal.creeps[getCreepByIndex]
           .heroe_bodies[0].effects.energyBar.setProgress(d.progress);
@@ -276,8 +275,7 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
           }, 500)
         }
       } else {
-        // console.log('<data-receive damage creep team ENEMY TEST CASE :', d.defenderTeam);
-        // get last char from string defenderName
+
         let getCreepByIndex = parseInt(d.defenderName[d.defenderName.length - 1]);
         app.enemies.creeps[getCreepByIndex]
           .heroe_bodies[0].effects.energyBar.setProgress(d.progress);
@@ -292,12 +290,7 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
         }
       }
     } else if(d.type == "damage-tron") {
-
-      //-----
-
       if(app.player.data.team == d.defenderTeam) {
-        // console.log('<data-receive damage local creep team:', d.defenderTeam);
-        // local must be
         app.tron.effects.energyBar.setProgress(d.progress);
         if(d.progress == 0) {
           app.tron.globalAmbient = [2, 1, 1];
@@ -307,9 +300,7 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
           }, 1000)
         }
       } else {
-        // console.log('<data-receive damage creep team ENEMY TEST CASE :', d.defenderTeam);
-        // get last char from string defenderName
-        app.tron.effects.energyBar.setProgress(d.progress);
+        app.enemytron.effects.energyBar.setProgress(d.progress);
         if(d.progress == 0) {
           app.tron.globalAmbient = [2, 1, 1];
           mb.show(`Your team wins !!! ${app.player.data.team} `);
@@ -318,7 +309,6 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
           }, 1000)
         }
       }
-      //----------
     }
   })
 

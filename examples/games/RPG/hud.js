@@ -1,4 +1,4 @@
-import {byId} from "../../../src/engine/utils.js";
+import {byId, typeText} from "../../../src/engine/utils.js";
 
 export class HUD {
   constructor(localHero) {
@@ -464,7 +464,7 @@ export class HUD {
       slot.addEventListener("mouseenter", (e) => {
         slot.style.border = "2px solid #ff0";
         slot.style.boxShadow = "0 0 10px rgba(255,255,0,0.5), inset 2px 2px 5px rgba(0,0,0,0.6)";
-        if (e.currentTarget.childNodes.length < 3) { return; }
+        if(e.currentTarget.childNodes.length < 3) {return;}
         let getDesc =
           e.currentTarget.childNodes[1].getAttribute('data-name') + " : " +
           e.currentTarget.childNodes[1].getAttribute('data-desc') + " \n Props: " +
@@ -499,6 +499,11 @@ export class HUD {
                src="${item.path}" />
           `;
           console.log('hero-invertory-update item', item)
+        } else {
+          // clear hud
+          byId(`inventory-slot-${index}`).innerHTML = `
+            empty
+          `;
         }
       })
     })
@@ -566,6 +571,30 @@ export class HUD {
       counter = document.getElementById('counter');
       fakeProgress();
     }, 600);
+
+
+
+    app.showSecrets = () => {
+      byId('helpBox').style.display = 'block';
+      typeText('helpBox', app.label.get.invertorysecret, 10);
+    };
+
+    var helpBox = document.createElement('div')
+    helpBox.id = 'helpBox';
+    helpBox.style.position = 'fixed';
+    helpBox.style.right = '20%';
+    helpBox.style.display = 'none';
+    helpBox.style.zIndex = '2';
+    helpBox.style.top = '10%';
+    helpBox.style.width = '60%';
+    helpBox.style.height = '60%';
+    helpBox.style.fontSize = '100%';
+    helpBox.classList.add('btn');
+    helpBox.addEventListener('click', () => {
+      byId('helpBox').style.display = 'none';
+    });
+    document.body.appendChild(helpBox);
+
 
     // Add grid to hudItems
     hudItems.appendChild(inventoryGrid);

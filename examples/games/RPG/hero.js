@@ -126,7 +126,7 @@ export class HeroProps {
 
     this.currentLevel = 1;
     this.currentXP = 0;
-    this.gold = 0;
+    this.gold = 200;
 
     this.baseXP = 100;
     this.baseGold = 200;

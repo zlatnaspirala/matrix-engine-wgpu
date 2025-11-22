@@ -66,7 +66,7 @@ export class MatrixStream {
 
     this.send = (netArg) => {
       const to = (netArg.toRemote ? netArg.toRemote : []);
-      netArg.toRemote = null;
+      netArg.toRemote = 'null';
       this.session.signal({
         data: JSON.stringify(netArg),
         to: to,

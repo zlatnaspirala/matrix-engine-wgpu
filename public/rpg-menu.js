@@ -241,7 +241,7 @@ class HeroProps {
     }];
     this.currentLevel = 1;
     this.currentXP = 0;
-    this.gold = 0;
+    this.gold = 200;
     this.baseXP = 100;
     this.baseGold = 200;
 
@@ -19248,7 +19248,8 @@ const en = exports.en = {
   "erika": "Erika moves like a shadow: quiet, precise and watchful. She carries one dark arrow — simple, deadly and personal.",
   "arissa": "Arissa hides her power behind calm eyes and empty hands. No blade or staff—only the swirling dark orbs she conjures when the fight begins.",
   "gameplayused": "Forest Of Hollow Blood for now have only one channel for gameplay. Please wait for current party end...",
-  "nogold": "Not enough gold!"
+  "nogold": "Not enough gold!",
+  "invertorysecret": "Corona Ignifera magic secret Sol Corona,Flamma Crystal\n  Aqua Sanctum magic secret Mare Pearl,Luna Gemma\n Umbra Silens magic secret Umbra Vellum,Noctis Band\n Terra Fortis magic secret Terra Clavis,Ardent Vine,Silva Heart\n Ventus Aegis magic secret Ventus Pluma,Ignifur Cape\n Ferrum Lux magic secret Ferrum Anulus,Lux Feather\n Sanguis Vita magic secret Sanguis Orb,Vita Flos \n Tenebris Vox magic secret Tenebris Fang,Vox Chime \n Aether Gladius magic secret Gladius Ignis,Aether Scale \n Fulgur Mortis magic secret Fulgur Stone,Mortis Bone \n Corona Umbra magic secret Umbra Silens,Corona Ignifera,Tenebris Vox \n Terra Sanctum magic secret Terra Fortis,Aqua Sanctum \n Aether Fortis magic secret Aether Gladius,Ferrum Lux \n  Vita Mindza magic secret Sanguis Vita,Ventus Aegis \n Mortis Ultima magic secret Fulgur Mortis,Corona Umbra,Aether Fortis"
 };
 
 },{}],19:[function(require,module,exports){
@@ -28665,7 +28666,7 @@ class MatrixStream {
     };
     this.send = netArg => {
       const to = netArg.toRemote ? netArg.toRemote : [];
-      netArg.toRemote = null;
+      netArg.toRemote = 'null';
       this.session.signal({
         data: JSON.stringify(netArg),
         to: to,

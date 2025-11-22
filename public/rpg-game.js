@@ -506,7 +506,7 @@ class Character extends _hero.Hero {
         // console.info('close distance BOTH friendly :', e.detail.A)
         return;
       }
-      // nisu 2 local creeps && this.core.net.virtualEmiter != null no emiter only for local hero coresponde
+      // core.net.virtualEmiter != null no emiter only for local hero corespondes
       if (e.detail.A.group == "enemy" && this.core.net.virtualEmiter != null) {
         if (e.detail.B.group == "friendly" && e.detail.B.id.indexOf('friendlytron') == -1) {
           //------------------ BLOCK
@@ -536,15 +536,13 @@ class Character extends _hero.Hero {
           // console.info('creep vs creep')
         }
       } else if (e.detail.A.group == "friendly" && e.detail.A.id.indexOf('friendlytron') == -1) {
-        console.info('close distance A is friendly PAS 1 :', e.detail.A.group);
         if (e.detail.B.group == "enemy" && this.core.net.virtualEmiter != null) {
-          // console.info('close distance B is enemies:', e.detail.A.group)
           let lc = app.localHero.friendlyLocal.creeps.filter(localCreep => localCreep.name == e.detail.A.id)[0];
-          // console.info('close distance ls is  PAS 2 :', lc)
+          if (lc === undefined) {
+            return;
+          }
           lc.creepFocusAttackOn = app.enemies.enemies.filter(enemy => enemy.name == e.detail.B.id)[0];
-          // console.info('close distance lc.creepFocusAttackOn is  PAS 3 :', lc.creepFocusAttackOn)
           if (lc.creepFocusAttackOn == undefined) {
-            // console.info('close distance lc.creepFocusAttackOn is  PAS 4 undefined:', lc.creepFocusAttackOn)
             lc.creepFocusAttackOn = app.enemies.creeps.filter(creep => creep.name == e.detail.B.id)[0];
           }
           if (lc.creepFocusAttackOn === undefined && e.detail.B.id.indexOf('enemytron') != -1) {
@@ -555,7 +553,7 @@ class Character extends _hero.Hero {
             // console.info('<close-distance> lc.creepFocusAttackOn is UNDEFINED ', lc.creepFocusAttackOn);
             return;
           }
-          console.info('close distance lc.creepFocusAttackOn is ATTACK PLAY PAS 5 :', lc.creepFocusAttackOn);
+          console.info('close distance:', lc.creepFocusAttackOn);
           app.localHero.setAttackCreep(e.detail.A.id[e.detail.A.id.length - 1]);
         }
       }
@@ -1774,10 +1772,9 @@ let forestOfHollowBlood = new _world.default({
         }
       }
     } else if (d.type == "damage-creep") {
-      // true always
       if (app.player.data.team == d.defenderTeam) {
         // console.log('<data-receive damage local creep team:', d.defenderTeam);
-        // get last char from string defenderName
+        // can be both team
         let getCreepByIndex = parseInt(d.defenderName[d.defenderName.length - 1]);
         app.localHero.friendlyLocal.creeps[getCreepByIndex].heroe_bodies[0].effects.energyBar.setProgress(d.progress);
         if (d.progress <= 0.09) {
@@ -1795,8 +1792,6 @@ let forestOfHollowBlood = new _world.default({
           }, 500);
         }
       } else {
-        // console.log('<data-receive damage creep team ENEMY TEST CASE :', d.defenderTeam);
-        // get last char from string defenderName
         let getCreepByIndex = parseInt(d.defenderName[d.defenderName.length - 1]);
         app.enemies.creeps[getCreepByIndex].heroe_bodies[0].effects.energyBar.setProgress(d.progress);
         app.enemies.creeps[getCreepByIndex].creepFocusAttackOn = null;
@@ -1810,11 +1805,7 @@ let forestOfHollowBlood = new _world.default({
         }
       }
     } else if (d.type == "damage-tron") {
-      //-----
-
       if (app.player.data.team == d.defenderTeam) {
-        // console.log('<data-receive damage local creep team:', d.defenderTeam);
-        // local must be
         app.tron.effects.energyBar.setProgress(d.progress);
         if (d.progress == 0) {
           app.tron.globalAmbient = [2, 1, 1];
@@ -1824,9 +1815,7 @@ let forestOfHollowBlood = new _world.default({
           }, 1000);
         }
       } else {
-        // console.log('<data-receive damage creep team ENEMY TEST CASE :', d.defenderTeam);
-        // get last char from string defenderName
-        app.tron.effects.energyBar.setProgress(d.progress);
+        app.enemytron.effects.energyBar.setProgress(d.progress);
         if (d.progress == 0) {
           app.tron.globalAmbient = [2, 1, 1];
           _utils.mb.show(`Your team wins !!! ${app.player.data.team} `);
@@ -1835,7 +1824,6 @@ let forestOfHollowBlood = new _world.default({
           }, 1000);
         }
       }
-      //----------
     }
   });
   addEventListener('local-hero-bodies-ready', () => {
@@ -2249,7 +2237,7 @@ class HeroProps {
     }];
     this.currentLevel = 1;
     this.currentXP = 0;
-    this.gold = 0;
+    this.gold = 200;
     this.baseXP = 100;
     this.baseGold = 200;
 
@@ -3013,6 +3001,11 @@ class HUD {
                src="${item.path}" />
           `;
           console.log('hero-invertory-update item', item);
+        } else {
+          // clear hud
+          (0, _utils.byId)(`inventory-slot-${index}`).innerHTML = `
+            empty
+          `;
         }
       });
     });
@@ -3077,6 +3070,25 @@ class HUD {
       counter = document.getElementById('counter');
       fakeProgress();
     }, 600);
+    app.showSecrets = () => {
+      (0, _utils.byId)('helpBox').style.display = 'block';
+      (0, _utils.typeText)('helpBox', app.label.get.invertorysecret, 10);
+    };
+    var helpBox = document.createElement('div');
+    helpBox.id = 'helpBox';
+    helpBox.style.position = 'fixed';
+    helpBox.style.right = '20%';
+    helpBox.style.display = 'none';
+    helpBox.style.zIndex = '2';
+    helpBox.style.top = '10%';
+    helpBox.style.width = '60%';
+    helpBox.style.height = '60%';
+    helpBox.style.fontSize = '100%';
+    helpBox.classList.add('btn');
+    helpBox.addEventListener('click', () => {
+      (0, _utils.byId)('helpBox').style.display = 'none';
+    });
+    document.body.appendChild(helpBox);
 
     // Add grid to hudItems
     hudItems.appendChild(inventoryGrid);
@@ -22774,7 +22786,8 @@ const en = exports.en = {
   "erika": "Erika moves like a shadow: quiet, precise and watchful. She carries one dark arrow — simple, deadly and personal.",
   "arissa": "Arissa hides her power behind calm eyes and empty hands. No blade or staff—only the swirling dark orbs she conjures when the fight begins.",
   "gameplayused": "Forest Of Hollow Blood for now have only one channel for gameplay. Please wait for current party end...",
-  "nogold": "Not enough gold!"
+  "nogold": "Not enough gold!",
+  "invertorysecret": "Corona Ignifera magic secret Sol Corona,Flamma Crystal\n  Aqua Sanctum magic secret Mare Pearl,Luna Gemma\n Umbra Silens magic secret Umbra Vellum,Noctis Band\n Terra Fortis magic secret Terra Clavis,Ardent Vine,Silva Heart\n Ventus Aegis magic secret Ventus Pluma,Ignifur Cape\n Ferrum Lux magic secret Ferrum Anulus,Lux Feather\n Sanguis Vita magic secret Sanguis Orb,Vita Flos \n Tenebris Vox magic secret Tenebris Fang,Vox Chime \n Aether Gladius magic secret Gladius Ignis,Aether Scale \n Fulgur Mortis magic secret Fulgur Stone,Mortis Bone \n Corona Umbra magic secret Umbra Silens,Corona Ignifera,Tenebris Vox \n Terra Sanctum magic secret Terra Fortis,Aqua Sanctum \n Aether Fortis magic secret Aether Gladius,Ferrum Lux \n  Vita Mindza magic secret Sanguis Vita,Ventus Aegis \n Mortis Ultima magic secret Fulgur Mortis,Corona Umbra,Aether Fortis"
 };
 
 },{}],33:[function(require,module,exports){
@@ -32238,7 +32251,7 @@ class MatrixStream {
     };
     this.send = netArg => {
       const to = netArg.toRemote ? netArg.toRemote : [];
-      netArg.toRemote = null;
+      netArg.toRemote = 'null';
       this.session.signal({
         data: JSON.stringify(netArg),
         to: to,
