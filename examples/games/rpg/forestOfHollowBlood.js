@@ -263,7 +263,8 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
         let getCreepByIndex = parseInt(d.defenderName[d.defenderName.length - 1]);
         app.localHero.friendlyLocal.creeps[getCreepByIndex]
           .heroe_bodies[0].effects.energyBar.setProgress(d.progress);
-        if(d.progress == 0) {
+        if(d.progress <= 0.09) {
+          app.localHero.friendlyLocal.creeps[getCreepByIndex].creepFocusAttackOn = null;
           app.localHero.friendlyLocal.creeps[getCreepByIndex].setDead();
           setTimeout(() => {
             app.localHero.friendlyLocal.creeps[getCreepByIndex].setStartUpPosition();
@@ -280,7 +281,8 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
         let getCreepByIndex = parseInt(d.defenderName[d.defenderName.length - 1]);
         app.enemies.creeps[getCreepByIndex]
           .heroe_bodies[0].effects.energyBar.setProgress(d.progress);
-        if(d.progress == 0) {
+          app.enemies.creeps[getCreepByIndex].creepFocusAttackOn = null;
+        if(d.progress <= 0.09) {
           app.enemies.creeps[getCreepByIndex].setDead();
           setTimeout(() => {
             app.enemies.creeps[getCreepByIndex].setStartUpPosition();
