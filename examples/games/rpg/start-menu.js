@@ -35,7 +35,6 @@ import {fetchAll, fetchInfo} from "../../../src/engine/networking/matrix-stream.
  * first free hero in selection action next/back.
  * For now. Next better varian can be timer solution.
  **/
-
 LS.clear();
 SS.clear();
 
@@ -49,6 +48,12 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
   },
   clearColor: {r: 0, b: 0.1, g: 0.1, a: 1}
 }, (forestOfHollowBloodStartSceen) => {
+
+  if('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('cache.js');
+  } else {
+    console.warn('Matrix Engine WGPU : No support for web workers in this browser.');
+  }
 
   forestOfHollowBloodStartSceen.FS = new FullscreenManager();
 
@@ -245,7 +250,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
       clearInterval(forestOfHollowBloodStartSceen.gamePlayStatusTimer);
       forestOfHollowBloodStartSceen.gamePlayStatusTimer = null;
     } else {
-       console.log('check-gameplay-channel status:', info.status)
+      console.log('check-gameplay-channel status:', info.status)
       if(typeof info.status != "undefined" && info.status == "false") {
         // no internet
         byId('loader').style.display = 'block';
@@ -817,12 +822,12 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
         progress += Math.random() * 3.5;
         if(progress > 100) progress = 100;
         bar.style.width = progress + '%';
-        counter.textContent = Math.floor(progress) + '%';
+        counter.textContent = Math.floor(progress) + '%' + ' This is beta 1 version - no magic attack implementation...';
         let grayEffect = 30 / progress;
         byId('loader').style.filter = `grayscale(${grayEffect})`;
         setTimeout(fakeProgress, 80 + Math.random() * 150);
       } else {
-        counter.textContent = app.label.get.letthegame;
+        counter.textContent = app.label.get.letthegame + " - This is beta 1 version - no magic attack...";
         bar.style.boxShadow = "0 0 30px #00ff99";
         setTimeout(() => {
           loader.style.display = 'none';
@@ -857,9 +862,9 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
      */
     function firstClick() {
       // add here after - fs force
-      // app.FS.request();
       app.matrixSounds.play('music');
       removeEventListener('click', firstClick);
+      app.FS.request();
     }
     addEventListener('click', firstClick);
   }

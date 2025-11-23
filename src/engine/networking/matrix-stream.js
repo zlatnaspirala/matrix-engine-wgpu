@@ -211,7 +211,7 @@ export function joinSession(options) {
           byId('session-title').innerText = sessionName;
           byId('join').style.display = 'none';
           byId('session').style.display = 'block';
-          console.log('[ONLY DATA]', session);
+          // console.log('[ONLY DATA]', session);
         }).catch(error => {
           console.warn('Error connecting to the session:', error.code, error.message);
           enableBtn();

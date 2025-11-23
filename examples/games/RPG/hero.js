@@ -162,7 +162,7 @@ export class HeroProps {
     const lvlData = this.levels[this.currentLevel - 1];
     if(!lvlData) return;
 
-    console.log('updateStats: armor ', this.invertoryBonus.armor)
+    // console.log('updateStats: armor ', this.invertoryBonus.armor)
 
     Object.assign(this, {
       hp: lvlData.hp * this.invertoryBonus.hp,

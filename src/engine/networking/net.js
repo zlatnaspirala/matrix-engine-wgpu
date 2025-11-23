@@ -97,7 +97,7 @@ export class MatrixStream {
     })
 
     addEventListener('setupSessionObject', (e) => {
-      console.log("setupSessionObject=>", e.detail);
+      // console.log("setupSessionObject=>", e.detail);
       this.session = e.detail;
       this.connection = e.detail.connection;
       this.session.on(`signal:${netConfig.sessionName}`, (e) => {

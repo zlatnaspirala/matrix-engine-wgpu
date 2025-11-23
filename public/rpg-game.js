@@ -31937,12 +31937,12 @@ function joinSession(options) {
       });
     } else {
       // in future some meta data can be added here -> on conn created event
-      console.log("netConfig", netConfig.customData);
+      // console.log("netConfig", netConfig.customData);
       session.connect(token, netConfig.customData).then(() => {
         byId('session-title').innerText = sessionName;
         byId('join').style.display = 'none';
         byId('session').style.display = 'block';
-        console.log('[ONLY DATA]', session);
+        // console.log('[ONLY DATA]', session);
       }).catch(error => {
         console.warn('Error connecting to the session:', error.code, error.message);
         enableBtn();

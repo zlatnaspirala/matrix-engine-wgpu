@@ -286,7 +286,9 @@ class HeroProps {
   updateStats() {
     const lvlData = this.levels[this.currentLevel - 1];
     if (!lvlData) return;
-    console.log('updateStats: armor ', this.invertoryBonus.armor);
+
+    // console.log('updateStats: armor ', this.invertoryBonus.armor)
+
     Object.assign(this, {
       hp: lvlData.hp * this.invertoryBonus.hp,
       mana: lvlData.mana * this.invertoryBonus.mana,
@@ -587,7 +589,6 @@ function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e
  * first free hero in selection action next/back.
  * For now. Next better varian can be timer solution.
  **/
-
 _utils.LS.clear();
 _utils.SS.clear();
 let forestOfHollowBloodStartSceen = new _world.default({
@@ -606,6 +607,11 @@ let forestOfHollowBloodStartSceen = new _world.default({
     a: 1
   }
 }, forestOfHollowBloodStartSceen => {
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('cache.js');
+  } else {
+    console.warn('Matrix Engine WGPU : No support for web workers in this browser.');
+  }
   forestOfHollowBloodStartSceen.FS = new _utils.FullscreenManager();
   forestOfHollowBloodStartSceen.gamePlayStatus = null;
   // in future replace with server event solution
@@ -1351,12 +1357,12 @@ let forestOfHollowBloodStartSceen = new _world.default({
         progress += Math.random() * 3.5;
         if (progress > 100) progress = 100;
         bar.style.width = progress + '%';
-        counter.textContent = Math.floor(progress) + '%';
+        counter.textContent = Math.floor(progress) + '%' + ' This is beta 1 version - no magic attack implementation...';
         let grayEffect = 30 / progress;
         (0, _utils.byId)('loader').style.filter = `grayscale(${grayEffect})`;
         setTimeout(fakeProgress, 80 + Math.random() * 150);
       } else {
-        counter.textContent = app.label.get.letthegame;
+        counter.textContent = app.label.get.letthegame + " - This is beta 1 version - no magic attack...";
         bar.style.boxShadow = "0 0 30px #00ff99";
         setTimeout(() => {
           loader.style.display = 'none';
@@ -1387,9 +1393,9 @@ let forestOfHollowBloodStartSceen = new _world.default({
      */
     function firstClick() {
       // add here after - fs force
-      // app.FS.request();
       app.matrixSounds.play('music');
       removeEventListener('click', firstClick);
+      app.FS.request();
     }
     addEventListener('click', firstClick);
   }
@@ -28357,7 +28363,7 @@ function joinSession(options) {
         byId('session-title').innerText = sessionName;
         byId('join').style.display = 'none';
         byId('session').style.display = 'block';
-        console.log('[ONLY DATA]', session);
+        // console.log('[ONLY DATA]', session);
       }).catch(error => {
         console.warn('Error connecting to the session:', error.code, error.message);
         enableBtn();
@@ -28695,7 +28701,7 @@ class MatrixStream {
       };
     });
     addEventListener('setupSessionObject', e => {
-      console.log("setupSessionObject=>", e.detail);
+      // console.log("setupSessionObject=>", e.detail);
       this.session = e.detail;
       this.connection = e.detail.connection;
       this.session.on(`signal:${_matrixStream.netConfig.sessionName}`, e => {

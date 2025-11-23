@@ -1,0 +1,25 @@
+{
+  "name": "Forest of Hollow Blood RPG MMO OG",
+  "short_name": "Forest of Hollow Blood",
+  "start_url": "rpg-menu.html",
+  "orientation": "landscape",
+  "theme_color": "gray",
+  "background_color": "black",
+  "description": "Welcome here ! Where magic begins !",
+  "display": "standalone",
+  "lang": "en-US",
+  "icons": [
+    {
+      "src": "res/icons/512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "author": {
+      "name": "Nikola Lukic",
+      "website": "https://maximumroulette.com",
+      "github": "https://github.com/zlatnaspirala",
+      "source-repo": "https://github.com/zlatnaspirala/matrix-engine-wgpu"
+  }
+}
