@@ -142,7 +142,7 @@ export class Enemie extends Hero {
         console.info(`%c hero dead [${this.name}], attacker[${e.detail.attacker}]`, LOG_MATRIX)
         setTimeout(() => {
           this.setStartUpPosition();
-        }, 1500);
+        }, 1100);
       }
     });
   }

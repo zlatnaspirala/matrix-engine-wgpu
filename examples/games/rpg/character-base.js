@@ -71,20 +71,20 @@ export class Character extends Hero {
       path: 'res/meshes/glb/bot.glb',
       position: {x: 0, y: -23, z: 0}
     }, ['creep'], 'friendly', app.player.data.team));
-    // this.friendlyLocal.creeps.push(new Creep({
-    //   core: this.core,
-    //   name: 'friendly_creeps1',
-    //   archetypes: ["creep"],
-    //   path: 'res/meshes/glb/bot.glb',
-    //   position: {x: 150, y: -23, z: 0}
-    // }, ['creep'], 'friendly', app.player.data.team));
-    // this.friendlyLocal.creeps.push(new Creep({
-    //   core: this.core,
-    //   name: 'friendly_creeps2',
-    //   archetypes: ["creep"],
-    //   path: 'res/meshes/glb/bot.glb',
-    //   position: {x: 100, y: -23, z: 0}
-    // }, ['creep'], 'friendly', app.player.data.team));
+    this.friendlyLocal.creeps.push(new Creep({
+      core: this.core,
+      name: 'friendly_creeps1',
+      archetypes: ["creep"],
+      path: 'res/meshes/glb/bot.glb',
+      position: {x: 150, y: -23, z: 0}
+    }, ['creep'], 'friendly', app.player.data.team));
+    this.friendlyLocal.creeps.push(new Creep({
+      core: this.core,
+      name: 'friendly_creeps2',
+      archetypes: ["creep"],
+      path: 'res/meshes/glb/bot.glb',
+      position: {x: 100, y: -23, z: 0}
+    }, ['creep'], 'friendly', app.player.data.team));
 
     setTimeout(() => {
       // console.info('setAllCreepsAtStartPos')

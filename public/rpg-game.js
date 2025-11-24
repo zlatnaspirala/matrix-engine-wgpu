@@ -72,21 +72,28 @@ class Character extends _hero.Hero {
         z: 0
       }
     }, ['creep'], 'friendly', app.player.data.team));
-    // this.friendlyLocal.creeps.push(new Creep({
-    //   core: this.core,
-    //   name: 'friendly_creeps1',
-    //   archetypes: ["creep"],
-    //   path: 'res/meshes/glb/bot.glb',
-    //   position: {x: 150, y: -23, z: 0}
-    // }, ['creep'], 'friendly', app.player.data.team));
-    // this.friendlyLocal.creeps.push(new Creep({
-    //   core: this.core,
-    //   name: 'friendly_creeps2',
-    //   archetypes: ["creep"],
-    //   path: 'res/meshes/glb/bot.glb',
-    //   position: {x: 100, y: -23, z: 0}
-    // }, ['creep'], 'friendly', app.player.data.team));
-
+    this.friendlyLocal.creeps.push(new _creepCharacter.Creep({
+      core: this.core,
+      name: 'friendly_creeps1',
+      archetypes: ["creep"],
+      path: 'res/meshes/glb/bot.glb',
+      position: {
+        x: 150,
+        y: -23,
+        z: 0
+      }
+    }, ['creep'], 'friendly', app.player.data.team));
+    this.friendlyLocal.creeps.push(new _creepCharacter.Creep({
+      core: this.core,
+      name: 'friendly_creeps2',
+      archetypes: ["creep"],
+      path: 'res/meshes/glb/bot.glb',
+      position: {
+        x: 100,
+        y: -23,
+        z: 0
+      }
+    }, ['creep'], 'friendly', app.player.data.team));
     setTimeout(() => {
       // console.info('setAllCreepsAtStartPos')
       app.localHero.setAllCreepsAtStartPos().then(() => {
@@ -1356,20 +1363,28 @@ class EnemiesManager {
         z: -0
       }
     }, ['creep'], 'enemy', app.player.data.enemyTeam));
-    // this.creeps.push(new Creep({
-    //   core: this.core,
-    //   name: 'enemy_creep1',
-    //   archetypes: ["creep"],
-    //   path: 'res/meshes/glb/bot.glb',
-    //   position: {x: 100, y: -23, z: -0}
-    // }, ['creep'], 'enemy', app.player.data.enemyTeam))
-    // this.creeps.push(new Creep({
-    //   core: this.core,
-    //   name: 'enemy_creep2',
-    //   archetypes: ["creep"],
-    //   path: 'res/meshes/glb/bot.glb',
-    //   position: {x: 150, y: -23, z: -0}
-    // }, ['creep'], 'enemy', app.player.data.enemyTeam))
+    this.creeps.push(new _creepCharacter.Creep({
+      core: this.core,
+      name: 'enemy_creep1',
+      archetypes: ["creep"],
+      path: 'res/meshes/glb/bot.glb',
+      position: {
+        x: 100,
+        y: -23,
+        z: -0
+      }
+    }, ['creep'], 'enemy', app.player.data.enemyTeam));
+    this.creeps.push(new _creepCharacter.Creep({
+      core: this.core,
+      name: 'enemy_creep2',
+      archetypes: ["creep"],
+      path: 'res/meshes/glb/bot.glb',
+      position: {
+        x: 150,
+        y: -23,
+        z: -0
+      }
+    }, ['creep'], 'enemy', app.player.data.enemyTeam));
   }
   isEnemy(name) {
     let test = this.enemies.filter(obj => obj.name && name.includes(obj.name));
@@ -1522,7 +1537,7 @@ class Enemie extends _hero.Hero {
         console.info(`%c hero dead [${this.name}], attacker[${e.detail.attacker}]`, _utils.LOG_MATRIX);
         setTimeout(() => {
           this.setStartUpPosition();
-        }, 1500);
+        }, 1100);
       }
     });
   }

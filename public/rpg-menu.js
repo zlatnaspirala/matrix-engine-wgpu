@@ -811,7 +811,7 @@ let forestOfHollowBloodStartSceen = new _world.default({
       }
     }
   });
-  forestOfHollowBloodStartSceen.MINIMUM_PLAYERS = 3;
+  forestOfHollowBloodStartSceen.MINIMUM_PLAYERS = 4;
   forestOfHollowBloodStartSceen.setWaitingList = () => {
     // access net doms who comes with broadcaster2.html
     const waitingForOthersDOM = document.createElement("div");
