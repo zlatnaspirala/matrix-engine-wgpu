@@ -1116,3 +1116,33 @@ new dom effect from
   color: rgb(0, 0, 0) !important;
   transform: scale(1.10);
 }
+
+.leaderboard {
+  z-index: 2;
+	font-family: 'stormfaze';
+	background: darkslategray;
+	position: absolute;
+	border-radius: 4px;
+	top: 5%;
+	left: 15%;
+	width: 70%;
+	padding: 10px 10px 10px 10px;
+	/* box-shadow: rgba(0, 0, 0, 0.07) 0px 1px 2px, rgba(0, 0, 0, 0.07) 0px 2px 4px, rgba(0, 0, 0, 0.07) 0px 4px 8px, rgba(0, 0, 0, 0.07) 0px 8px 16px, rgba(0, 0, 0, 0.07) 0px 16px 32px, rgba(0, 0, 0, 0.07) 0px 32px 64px; */
+
+	-webkit-box-shadow: 1px 1px 43px -15px #de961f;
+
+	font-size: large;
+	@media screen and (max-width: 700px) {
+		width: 97.5%;
+		left: 1%;
+		font-size: small;
+	}
+
+	@media screen and (max-width: 500px) {
+		width: 94%;
+		top: 0;
+		left: 0;
+		font-size: small;
+		height: 100vh;
+	}
+}

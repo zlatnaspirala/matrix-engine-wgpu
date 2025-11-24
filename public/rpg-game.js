@@ -1592,8 +1592,7 @@ let forestOfHollowBlood = new _world.default({
     a: 1
   }
 }, () => {
-  // forestOfHollowBlood.tts = new MatrixTTS();
-
+  forestOfHollowBlood.tts = new _tts.MatrixTTS();
   forestOfHollowBlood.player = {
     username: "guest"
   };
@@ -1826,8 +1825,9 @@ let forestOfHollowBlood = new _world.default({
           app.tron.globalAmbient = [2, 1, 1];
           _utils.mb.show(` Enemy wins !!! ${app.player.data.enemyTeam} `);
           setTimeout(() => {
-            _utils.mb.show(` Enemy wins !!! ${app.player.data.enemyTeam} `);
-          }, 1000);
+            _utils.mb.show(` Enemy wins, game over. ${app.player.data.enemyTeam} `);
+            location.assign("rpg-menu.html");
+          }, 3000);
         }
       } else {
         app.enemytron.effects.energyBar.setProgress(d.progress);
@@ -1835,8 +1835,9 @@ let forestOfHollowBlood = new _world.default({
           app.tron.globalAmbient = [2, 1, 1];
           _utils.mb.show(`Your team wins !!! ${app.player.data.team} `);
           setTimeout(() => {
-            _utils.mb.show(`Your team wins !!! ${app.player.data.team} `);
-          }, 1000);
+            _utils.mb.show(`Team ${app.player.data.team} wins !`);
+            location.assign("rpg-menu.html");
+          }, 3000);
         }
       }
     }
@@ -22786,6 +22787,7 @@ const en = exports.en = {
   "aboutword": "About",
   "about": "<i>Jamb 3d deluxe</i> is a modern 3D dice game built entirely with MatrixEngineWGPU, a high-performance WebGPU-based rendering engine developed for creating interactive graphics directly in the browser. The game delivers smooth visuals, realistic dice physics, and an engaging user experience — all without requiring any plugins or installations. \n This project is powered by open technologies and is designed to be lightweight, fast, and highly customizable. It’s a great example of how WebGPU can be used for real-time interactive content. \n 🔗 Download / Try it: \n github.com/zlatnaspirala/matrix-engine-wgpu \n 🛠 License: \n The core engine and the Jamb 3d deluxe project are released under the GPL v3 license, making them free and open-source for both personal and commercial use — as long as you respect the terms of the license. \n Whether you're a developer, gamer, or enthusiast, Jamb 3d deluxe is a fun way to experience the potential of modern browser-based 3D technology. <img width='320' height='320' src='https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/public/res/icons/512.png?raw=true' />",
   "letthegame": "Let the game begin!",
+  "leaderboard": "Leaderboard",
   "about_": "About",
   "next": "Next",
   "back": "Back",
@@ -32613,6 +32615,7 @@ exports.getAxisRot2 = getAxisRot2;
 exports.getAxisRot3 = getAxisRot3;
 exports.htmlHeader = void 0;
 exports.isEven = isEven;
+exports.isMobile = isMobile;
 exports.isOdd = isOdd;
 exports.mb = exports.mat4 = exports.jsonHeaders = void 0;
 exports.quaternion_rotation_matrix = quaternion_rotation_matrix;
@@ -32621,8 +32624,18 @@ exports.randomFloatFromTo = randomFloatFromTo;
 exports.randomIntFromTo = randomIntFromTo;
 exports.scriptManager = void 0;
 exports.setupCanvasFilters = setupCanvasFilters;
+exports.supportsTouch = void 0;
 exports.typeText = typeText;
 exports.vec3 = exports.urlQuery = void 0;
+var supportsTouch = exports.supportsTouch = 'ontouchstart' in window || navigator.msMaxTouchPoints;
+function isMobile() {
+  if (supportsTouch == true) return true;
+  const toMatch = [/Android/i, /webOS/i, /iPhone/i, /iPad/i, /iPod/i, /BlackBerry/i, /Windows Phone/i];
+  return toMatch.some(toMatchItem => {
+    return navigator.userAgent.match(toMatchItem);
+  });
+}
+;
 const vec3 = exports.vec3 = {
   cross(a, b, dst) {
     dst = dst || new Float32Array(3);

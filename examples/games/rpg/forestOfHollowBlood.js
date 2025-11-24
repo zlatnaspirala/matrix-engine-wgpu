@@ -40,7 +40,7 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
   clearColor: {r: 0, b: 0.122, g: 0.122, a: 1}
 }, () => {
 
-  // forestOfHollowBlood.tts = new MatrixTTS();
+  forestOfHollowBlood.tts = new MatrixTTS();
 
   forestOfHollowBlood.player = {
     username: "guest"
@@ -296,8 +296,9 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
           app.tron.globalAmbient = [2, 1, 1];
           mb.show(` Enemy wins !!! ${app.player.data.enemyTeam} `)
           setTimeout(() => {
-            mb.show(` Enemy wins !!! ${app.player.data.enemyTeam} `)
-          }, 1000)
+            mb.show(` Enemy wins, game over. ${app.player.data.enemyTeam} `)
+            location.assign("rpg-menu.html",);
+          }, 3000)
         }
       } else {
         app.enemytron.effects.energyBar.setProgress(d.progress);
@@ -305,8 +306,9 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
           app.tron.globalAmbient = [2, 1, 1];
           mb.show(`Your team wins !!! ${app.player.data.team} `);
           setTimeout(() => {
-            mb.show(`Your team wins !!! ${app.player.data.team} `);
-          }, 1000)
+            mb.show(`Team ${app.player.data.team} wins !`);
+            location.assign("rpg-menu.html",);
+          }, 3000)
         }
       }
     }
