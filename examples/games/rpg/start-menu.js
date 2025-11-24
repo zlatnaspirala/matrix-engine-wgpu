@@ -774,7 +774,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
     Object.assign(aboutBtn.style, {
       position: "fixed",
       bottom: '40px',
-      left: '120px',
+      left: '20px',
       width: "150px",
       height: "54px",
       textAlign: "center",
@@ -802,10 +802,10 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
     const LBBtn = document.createElement("button");
     Object.assign(LBBtn.style, {
       position: "fixed",
-      bottom: '40px',
+      bottom: '10px',
       left: '20px',
-      width: "150px",
-      height: "44px",
+      width: "140px",
+      height: "28px",
       textAlign: "center",
       color: "white",
       fontWeight: "bold",
@@ -816,14 +816,17 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
       cursor: 'url(./res/icons/default.png) 0 0, auto',
       pointerEvents: 'auto'
     });
-    LBBtn.classList.add('buttonMatrix');
+    // LBBtn.classList.add('buttonMatrix');
+    // LBBtn.innerHTML = `
+    //   <div class="button-outer">
+    //     <div class="button-inner">
+    //       <span data-label='leaderboard'>${app.label.get.leaderboard}</span>
+    //     </div>
+    //   </div>
+    // `;
 
     LBBtn.innerHTML = `
-      <div class="button-outer">
-        <div class="button-inner">
           <span data-label='leaderboard'>${app.label.get.leaderboard}</span>
-        </div>
-      </div>
     `;
     LBBtn.addEventListener('click', app.account.getLeaderboard);
     hud.appendChild(LBBtn);

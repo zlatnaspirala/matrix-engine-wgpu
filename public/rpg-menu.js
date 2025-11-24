@@ -643,10 +643,8 @@ class RCSAccount {
       var descText = document.createElement('div');
       descText.id = 'descText';
       descText.style = 'font-size:smaller;';
-      descText.innerHTML = `<span style="width:45%" >Hang3d use webcam for video chat and streaming data</span>
-		<span style="width:45%;" >Add Url params '?video=false&audio=false' to disable streaming</span>
-		<span> BLACK FLY by Audionautix | http://audionautix.com Music promoted by https://www.free-stock-music.com Creative Commons Attribution-ShareAlike 3.0 Unported</span>
-		`;
+      descText.innerHTML = `<span style="width:45%" >Welcome to rocketCraftingServer platform, enjoy in 'Forest Of Hollow Blood' lets magic begin.</span>`;
+      // <span style="width:45%;" >Add Url params '?video=false&audio=false' to disable streaming</span>
     }
     parent.appendChild(title);
     parent.appendChild(content);
@@ -951,7 +949,7 @@ class RCSAccount {
       userAgent: navigator.userAgent.toString(),
       fromUrl: location.href.toString(),
       token: JSON.parse(sessionStorage.getItem('RocketAcount')).token,
-      mapName: 'hang3d-matrix-base0'
+      mapName: 'FOHB'
     };
     fetch(route + '/rocket/point-plus10', {
       method: 'POST',
@@ -976,7 +974,7 @@ class RCSAccount {
       userAgent: navigator.userAgent.toString(),
       fromUrl: location.href.toString(),
       token: JSON.parse(sessionStorage.getItem('RocketAcount')).token,
-      mapName: 'hang3d-matrix-base0'
+      mapName: 'FOHB'
     };
     fetch(route + '/rocket/point-plus10', {
       method: 'POST',
@@ -1782,7 +1780,7 @@ let forestOfHollowBloodStartSceen = new _world.default({
     Object.assign(aboutBtn.style, {
       position: "fixed",
       bottom: '40px',
-      left: '120px',
+      left: '20px',
       width: "150px",
       height: "54px",
       textAlign: "center",
@@ -1808,10 +1806,10 @@ let forestOfHollowBloodStartSceen = new _world.default({
     const LBBtn = document.createElement("button");
     Object.assign(LBBtn.style, {
       position: "fixed",
-      bottom: '40px',
+      bottom: '10px',
       left: '20px',
-      width: "150px",
-      height: "44px",
+      width: "140px",
+      height: "28px",
       textAlign: "center",
       color: "white",
       fontWeight: "bold",
@@ -1822,13 +1820,17 @@ let forestOfHollowBloodStartSceen = new _world.default({
       cursor: 'url(./res/icons/default.png) 0 0, auto',
       pointerEvents: 'auto'
     });
-    LBBtn.classList.add('buttonMatrix');
+    // LBBtn.classList.add('buttonMatrix');
+    // LBBtn.innerHTML = `
+    //   <div class="button-outer">
+    //     <div class="button-inner">
+    //       <span data-label='leaderboard'>${app.label.get.leaderboard}</span>
+    //     </div>
+    //   </div>
+    // `;
+
     LBBtn.innerHTML = `
-      <div class="button-outer">
-        <div class="button-inner">
           <span data-label='leaderboard'>${app.label.get.leaderboard}</span>
-        </div>
-      </div>
     `;
     LBBtn.addEventListener('click', app.account.getLeaderboard);
     hud.appendChild(LBBtn);

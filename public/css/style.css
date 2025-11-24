@@ -1146,3 +1146,25 @@ new dom effect from
 		height: 100vh;
 	}
 }
+
+#myAccountLoginForm {
+	width: unset;
+	position: absolute;
+	width: 30vw;
+	left: 35%;
+	padding: 10px;
+	margin: 0;
+	top: 20%;
+	/* height: 57%; */
+	background: darkslategrey;
+
+	@media screen and (max-width: 1000px) {
+		width: 45%;
+		left: 28%;
+	}
+
+	@media screen and (max-width: 600px) {
+		width: 95%;
+		left: 0;
+	}
+}
