@@ -34,7 +34,7 @@ export default class MatrixEngineWGPU {
     depthLoadOp: 'clear',
     depthStoreOp: 'store'
   }
-  matrixAmmo = new MatrixAmmo();
+  // matrixAmmo = new MatrixAmmo();
   matrixSounds = new MatrixSounds();
 
   constructor(options, callback) {
@@ -62,6 +62,10 @@ export default class MatrixEngineWGPU {
         type: 'WASD',
         responseCoef: 2000
       }
+    }
+
+    if(typeof options.dontUsePhysics == 'undefined') {
+      this.matrixAmmo = new MatrixAmmo();
     }
     this.options = options;
     this.mainCameraParams = options.mainCameraParams;

@@ -1,4 +1,5 @@
 {
+  "play": "Igraj",
   "changeTheme": "Promeni Temu",
   "yes": "Da",
   "no": "Ne",
@@ -38,11 +39,26 @@
   "aboutword":"Info",
   "about":"Jamb 3d deluxe je moderna 3D igra sa kockicama u potpunosti izgrađena pomoću MatrixEngineWGPU-a, visokoperformansnog rendering endžina zasnovanog na WebGPU-u, razvijenog za kreiranje interaktivne grafike direktno u pregledaču. Igra pruža glatke vizuelne efekte, realističnu fiziku kockica i zanimljivo korisničko iskustvo — sve bez potrebe za bilo kakvim dodacima ili instalacijama.\n  Ovaj projekat je pokretan otvorenim tehnologijama i dizajniran je da bude lagan, brz i veoma prilagodljiv. Odličan je primer kako se WebGPU može koristiti za interaktivni sadržaj u realnom vremenu. \n 🔗 Preuzmite / Isprobajte: \n github.com/zlatnaspirala/matrix-engine-wgpu \n 🛠 Licenca: \n Osnovni endžin i projekat Jamb 3d deluxe objavljeni su pod GPL v3 licencom, što ih čini besplatnim i otvorenog koda za ličnu i komercijalnu upotrebu — sve dok poštujete uslove licence. \n Bez obzira da li ste programer, igrač ili entuzijasta, Jamb 3d deluxe je zabavan način da iskusite potencijal moderne 3D tehnologije zasnovane na pregledaču.",
 
+  "letthegame": "Neka igra pocne!",
+  "about_": "Info",
+  "next": "Sledeci",
+  "back": "Nazad",
+  "used": "zauzet",
+  "gameplaychannel":"server ",
+  "alreadyingame": "Broj igraca :",
+  "waiting_for_others": "Sacekaj druge igrace...",
   "titleBan":"✭Ban 🟢🟢🟢",
-  "aboutRPG": "Forest Of Hollow Blood je napravljen u MatrixEngineWGPU — webGPU endžinu. Otvoreni deo projekta možete pronaći u repozitorijumu endžina: <a href='https://github.com/zlatnaspirala/matrix-engine-wgpu'>@zlatnaspirala Github.com</a>. Muzika: Mykola Sosin (Pixabay). Likovi korišćeni sa odličnog mixamo.com. ✅ Šta možete da radite: Likove i animacije sa Mixamo možete koristiti besplatno, u komercijalne, lične ili neprofitne projekte (igre, filmove, štampu itd.). Vi ste vlasnik svojih kreacija i načina na koji ih koristite. Nije obavezno, ali je dozvoljeno navođenje izvora (Adobe / Mixamo). 🚫 Šta ne možete: Nije dozvoljeno ponovo distribuirati ili prodavati originalne Mixamo fajlove takve kakvi jesu (kao samostalne asete). Ne možete koristiti Mixamo sadržaj za pravljenje konkurentske biblioteke likova ili animacija, niti za treniranje AI / mašinskih modela. Korišćeni su i besplatni resursi sa sjajnog sajta https://craftpix.net. Magični ikoni: https://craftpix.net/freebies/free-rpg-splash-game-512x512-icons/. Za pozadinsku muziku u RPG šablonu korišćena je muzika autora Dvir Silverstone, Emmraan i zvučni efekti Crunchpix Studio (svi sa Pixabay-a).",
+  "aboutRPG": "Forest Of Hollow Blood je napravljen u MatrixEngineWGPU — webGPU endžinu. Otvoreni deo projekta možete pronaći u repozitorijumu endžina: <a href='https://github.com/zlatnaspirala/matrix-engine-wgpu'>@zlatnaspirala Github.com</a>. Muzika: Mykola Sosin (Pixabay). Likovi korišćeni sa odličnog mixamo.com. ✅ Šta možete da radite: Likove i animacije sa Mixamo možete koristiti besplatno, u komercijalne, lične ili neprofitne projekte (igre, filmove, štampu itd.). Vi ste vlasnik svojih kreacija i načina na koji ih koristite. Nije obavezno, ali je dozvoljeno navođenje izvora (Adobe / Mixamo). 🚫 Šta ne možete: Nije dozvoljeno ponovo distribuirati ili prodavati originalne Mixamo fajlove takve kakvi jesu (kao samostalne asete). Ne možete koristiti Mixamo sadržaj za pravljenje konkurentske biblioteke likova ili animacija, niti za treniranje AI / mašinskih modela. Korišćeni su i besplatni resursi sa sjajnog sajta https://craftpix.net. Magični ikoni: https://craftpix.net/freebies/free-rpg-splash-game-512x512-icons/. Za pozadinsku muziku u RPG šablonu korišćena je muzika autora Dvir Silverstone, Emmraan i zvučni efekti Crunchpix Studio (svi sa Pixabay-a). Logo includes the official WebGPU logo. WebGPU logo by W3C Licensed under Creative Commons Attribution 4.0 .  'Ruined rock fence' (https://skfb.ly/6RLwN) by VladNeko is licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/).",
   "mariasword": "Marija Sword, srebrna oštrica Istoka, udara brzinom i elegancijom. Njena hrabrost tiho gori, ali nikada ne posustaje.",
   "slayzer": "Slayzer — mračno stvorenje s oštricama umesto ruku. Tih, brz i rođen iz senke.",
   "steelborn":"Steelborn — mali, ali neustrašiv ratnik u sjajnom gvozdenom oklopu, koji mačem maše sa nepokolebljivom odlučnošću.",
   "warrok": "Warrok — siloviti ratnik kaljen u borbi, sa sirovom snagom i nesalomivom voljom.",
-  "skeletonz": "Skeletonz — nemirni ratnik od kostiju i senke, ponovo ustao da se bori bez straha."
+  "skeletonz": "Skeletonz — nemirni ratnik od kostiju i senke, ponovo ustao da se bori bez straha.",
+  "erika": "Erika se kreće kao senka: tiho, precizno i oprezno. Nosii jednu strelu tamne boje — jednostavnu, smrtonosnu i ličnu.",
+  "arissa": "Arissa skriva svoju moć iza mirnog pogleda i praznih ruku. Nema mača ni štapa — samo tamne sfere koje priziva čim borba počne.",
+
+  "gameplayused":"Forest Of Hollow Blood za sada ima samo jedan kanal za gameplay. Sacekajte da se trenutna partija zavrsi...",
+
+  "nogold" : "Nedovoljno zlata!",
+  "invertorysecret" : "Corona Ignifera magic secret Sol Corona,Flamma Crystal\n  Aqua Sanctum magic secret Mare Pearl,Luna Gemma\n Umbra Silens magic secret Umbra Vellum,Noctis Band\n Terra Fortis magic secret Terra Clavis,Ardent Vine,Silva Heart\n Ventus Aegis magic secret Ventus Pluma,Ignifur Cape\n Ferrum Lux magic secret Ferrum Anulus,Lux Feather\n Sanguis Vita magic secret Sanguis Orb,Vita Flos \n Tenebris Vox magic secret Tenebris Fang,Vox Chime \n Aether Gladius magic secret Gladius Ignis,Aether Scale \n Fulgur Mortis magic secret Fulgur Stone,Mortis Bone \n Corona Umbra magic secret Umbra Silens,Corona Ignifera,Tenebris Vox \n Terra Sanctum magic secret Terra Fortis,Aqua Sanctum \n Aether Fortis magic secret Aether Gladius,Ferrum Lux \n  Vita Mindza magic secret Sanguis Vita,Ventus Aegis \n Mortis Ultima magic secret Fulgur Mortis,Corona Umbra,Aether Fortis"
 }

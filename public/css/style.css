@@ -278,10 +278,19 @@ p {
 }
 
 .btn:hover {
-  background: #00ffff22;
+  background: #00ffff78;
   box-shadow: 0 0 20px #00ffffaa, 0 0 30px #00ffff55 inset;
   color: #ffffff;
   transform: scale(1.05);
+}
+
+.btn3 {}
+
+.btn3:hover {
+  background: #5d5d5d81;
+  box-shadow: 0 0 20px #00ffffaa, 0 0 30px #00ffff55 inset;
+  color: #ffffff;
+  transform: scale(1.02);
 }
 
 .btn span::before {
@@ -380,6 +389,7 @@ p {
 }
 
 #msgBox {
+  z-index: 10;
   text-shadow: 0px 4px 4px #282828;
   -webkit-user-select: none;
   /* Safari */
@@ -388,7 +398,7 @@ p {
   user-select: none;
   /* Standard syntax */
   background: rgb(2, 0, 36);
-  background: radial-gradient(circle, rgba(2, 0, 36, 1) 0%, rgba(9, 81, 121, 0.8463760504201681) 34%, rgba(0, 212, 255, 1) 100%);
+  /* background: radial-gradient(circle, rgba(2, 0, 36, 1) 0%, rgba(9, 81, 121, 0.8463760504201681) 34%, rgba(0, 212, 255, 1) 100%); */
 }
 
 .msg-box {
@@ -444,7 +454,7 @@ p {
   -webkit-text-stroke-width: 1px;
   -webkit-text-stroke-color: black;
 
-  background: linear-gradient(270deg, #ff0270, #02c5ff);
+  background: linear-gradient(270deg, #8e8e8e, #65757a);
   background-size: 50% 50%;
 
   -webkit-animation: AnimationName 2s ease infinite;
@@ -995,4 +1005,114 @@ new dom effect from
   font-size: 24px;
   letter-spacing: 2px;
   text-shadow: 0 0 10px #ff0000;
+}
+
+.invertoryItem {
+  width: 50px;
+  height: auto;
+}
+
+
+@-webkit-keyframes showByRight {
+  0% {
+    /* background-color: rgba(155, 101, 10, 0.95); */
+    right: -52%;
+  }
+
+  100% {
+    /* background-color: rgb(200, 54, 9); */
+    right: -4%;
+    opacity: 1;
+  }
+}
+
+/* Standard syntax */
+@keyframes showByRight {
+  0% {
+    /* background-color: rgba(155, 101, 10, 0.95); */
+    right: -52%;
+  }
+
+  100% {
+    /* background-color: rgb(200, 54, 9); */
+    right: -4%;
+    opacity: 1;
+  }
+}
+
+/* Safari 4.0 - 8.0 */
+@-webkit-keyframes hideByRight {
+  0% {
+    /* background-color: rgba(255, 166, 11, 0.95); */
+    right: -4%;
+  }
+
+  100% {
+    /* background-color: rgba(0, 0, 0, 0.95); */
+    right: -52%;
+    opacity: 0.6;
+  }
+}
+
+/* Standard syntax */
+@keyframes hideByRight {
+  0% {
+    right: -4%;
+  }
+
+  100% {
+    /* background-color: rgba(0, 0, 0, 0.95); */
+    right: -52%;
+    opacity: 0.6;
+  }
+}
+
+.show-by-right {
+  -webkit-scrollbar {
+    width: 25px;
+  }
+
+  -webkit-animation-fill-mode: forwards;
+  -webkit-animation-name: showByRight;
+  -webkit-animation-duration: 1.2s;
+  animation-fill-mode: forwards;
+  animation-name: showByRight;
+  animation-duration: 1.2s;
+}
+
+.hide-by-right {
+  -webkit-scrollbar {
+    width: 25px;
+  }
+
+  -webkit-animation-fill-mode: forwards;
+  -webkit-animation-name: hideByRight;
+  -webkit-animation-duration: 1.2s;
+  animation-fill-mode: forwards;
+  animation-name: hideByRight;
+  animation-duration: 1.2s;
+}
+
+.vertical-text {
+  writing-mode: vertical-lr;
+  /* or vertical-lr */
+  text-orientation: upright;
+}
+
+
+.itemDOM {
+  z-index: 2;
+  width: 100px;
+  background: black;
+  height: 100%;
+
+  transition: transform 0.3s ease;
+  transform-origin: center center;
+
+}
+
+.itemDOM:hover {
+  background: rgb(255, 255, 255);
+  color: rgb(0, 0, 0) !important;
+  transform: scale(1.10);
 }

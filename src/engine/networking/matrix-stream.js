@@ -32,7 +32,7 @@ export function joinSession(options) {
     session = OV.initSession();
 
     session.on('connectionCreated', event => {
-      console.log(`connectionCreated ${event.connection.connectionId}`)
+      // console.log(`connectionCreated ${event.connection.connectionId}`)
       dispatchEvent(new CustomEvent('onConnectionCreated', {detail: event}))
       pushEvent(event)
     });
@@ -77,7 +77,6 @@ export function joinSession(options) {
       });
 
       session.on('streamDestroyed', event => {
-        // alert(event);
         pushEvent(event);
       });
     } else {
@@ -212,7 +211,7 @@ export function joinSession(options) {
           byId('session-title').innerText = sessionName;
           byId('join').style.display = 'none';
           byId('session').style.display = 'block';
-          console.log('[ONLY DATA]', session);
+          // console.log('[ONLY DATA]', session);
         }).catch(error => {
           console.warn('Error connecting to the session:', error.code, error.message);
           enableBtn();
@@ -285,7 +284,7 @@ export function fetchInfo(sessionName) {
   },
     'Session couldn\'t be fetched',
     res => {
-      console.info("Session fetched");
+      // console.info("Session fetched");
       dispatchEvent(new CustomEvent('check-gameplay-channel', {detail: JSON.stringify(res, null, "\t")}))
       // byId('textarea-http').innerText = JSON.stringify(res, null, "\t");
     }
@@ -350,13 +349,14 @@ export function httpRequest(method, url, body, errorMsg, callback) {
         }
       } else {
         console.warn(errorMsg + ' (' + http.status + ')');
-        if (url.indexOf('fetch-info') != -1) dispatchEvent(new CustomEvent('check-gameplay-channel', {
-          detail: {
-            status: 'free',
-            url: url
+        if(url.indexOf('fetch-info') != -1) {
+          if(http.status == 0 && errorMsg == "Session couldn't be fetched") {
+            const errorText = errorMsg + ": HTTP " + http.status + " (" + http.responseText + ")";
+            dispatchEvent(new CustomEvent('check-gameplay-channel', {detail: {status: 'false' , errorText: errorText}}));
+          } else {
+            dispatchEvent(new CustomEvent('check-gameplay-channel', {detail: {status: 'free', url: url}}));
           }
-        }))
-        byId('textarea-http').innerText = errorMsg + ": HTTP " + http.status + " (" + http.responseText + ")";
+        }
       }
     }
   }

@@ -10,9 +10,10 @@ import {degToRad, radToDeg} from "./utils";
 export class Position {
   constructor(x, y, z) {
     // console.log('TEST TYTPOF ', x)
-    // Not in use for nwo this is from matrix-engine project [nameUniq]
-    this.remoteName = null; // not in use
+    this.remoteName = null;
     this.netObject = null;
+    this.toRemote = [];
+    this.teams = [];
 
     this.netTolerance = 1;
     this.netTolerance__ = 0;
@@ -95,11 +96,29 @@ export class Position {
         this.z += this.velZ;
         if(this.netObject != null) {
           if(this.netTolerance__ > this.netTolerance) {
-            app.net.send({
-              remoteName: this.remoteName,
-              sceneName: this.netObject,
-              netPos: {x: this.x, y: this.y, z: this.z},
-            })
+
+            if(this.teams.length == 0) {
+              app.net.send({
+                toRemote: this.toRemote, // default null
+                remoteName: this.remoteName, // default null
+                sceneName: this.netObject,
+                netPos: {x: this.x, y: this.y, z: this.z},
+              });
+            } else {
+              // logic is only for two team - index 0 is local !!!
+              if(this.teams.length > 0) if(this.teams[0].length > 0) app.net.send({
+                toRemote: this.teams[0], // default null remote conns
+                sceneName: this.netObject, // origin scene name to receive
+                netPos: {x: this.x, y: this.y, z: this.z},
+              });
+              // remove if (this.teams[1].length > 0)  after alll this is only for CASE OF SUM PLAYER 3 FOR TEST ONLY
+              if(this.teams.length > 0) if(this.teams[1].length > 0) app.net.send({
+                toRemote: this.teams[1], // default null remote conns
+                remoteName: this.remoteName, // to enemy players
+                sceneName: this.netObject, // now not important
+                netPos: {x: this.x, y: this.y, z: this.z},
+              });
+            }
             this.netTolerance__ = 0;
           } else {
             this.netTolerance__++;
@@ -113,11 +132,31 @@ export class Position {
         this.onTargetPositionReach();
         if(this.netObject != null) {
           if(this.netTolerance__ > this.netTolerance) {
-            app.net.send({
-              remoteName: this.remoteName,
-              sceneName: this.netObject,
-              netPos: {x: this.x, y: this.y, z: this.z},
-            })
+
+            // 
+            if(this.teams.length == 0) {
+              app.net.send({
+                toRemote: this.toRemote, // default null
+                remoteName: this.remoteName, // default null
+                sceneName: this.netObject,
+                netPos: {x: this.x, y: this.y, z: this.z},
+              });
+            } else {
+              // logic is only for two team - index 0 is local !
+              if(this.teams[0].length > 0) app.net.send({
+                toRemote: this.teams[0],
+                sceneName: this.netObject,
+                netPos: {x: this.x, y: this.y, z: this.z},
+              });
+              if(this.teams[1].length > 0) app.net.send({
+                // team: this.teams[1],
+                toRemote: this.teams[1], // default null remote conns
+                remoteName: this.remoteName, // to enemy players
+                sceneName: this.netObject, // now not important
+                netPos: {x: this.x, y: this.y, z: this.z},
+              });
+            }
+
             this.netTolerance__ = 0;
           } else {
             this.netTolerance__++;
@@ -174,7 +213,8 @@ export class Position {
 
 export class Rotation {
   constructor(x, y, z) {
-    // Not in use for nwo this is from matrix-engine project [nameUniq]
+    this.toRemote = [];
+    this.teams = [];
     this.remoteName = null;
     this.emitX = null;
     this.emitY = null;
@@ -237,13 +277,32 @@ export class Rotation {
   getRotY() {
     if(this.rotationSpeed.y == 0) {
       if(this.nety != this.y && this.emitY) {
-        app.net.send({
-          remoteName: this.remoteName,
-          sceneName: this.emitY,
-          netRotY: this.y
-        })
+        // ---------------------------------------
+        if(this.teams.length == 0) {
+          app.net.send({
+            toRemote: this.toRemote,
+            remoteName: this.remoteName,
+            sceneName: this.emitY,
+            netRotY: this.y
+          });
+          this.nety = this.y;
+        } else {
+          if(this.teams[0].length > 0) app.net.send({
+            toRemote: this.teams[0],
+            sceneName: this.emitY,
+            netRotY: this.y
+          });
+          if(this.teams[1].length > 0) app.net.send({
+            toRemote: this.teams[1],
+            remoteName: this.remoteName,
+            sceneName: this.emitY,
+            netRotY: this.y
+          });
+          this.nety = this.y;
+        }
+        //-------------------------------------------
       }
-      this.nety = this.y;
+
       return degToRad(this.y);
     } else {
       this.y = this.y + this.rotationSpeed.y * 0.001;
@@ -260,7 +319,7 @@ export class Rotation {
           netRotZ: this.z
         })
       }
-      this.nety = this.y;
+      this.netz = this.z;
       return degToRad(this.z);
     } else {
       this.z = this.z + this.rotationSpeed.z * 0.001;

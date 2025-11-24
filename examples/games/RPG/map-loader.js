@@ -1,9 +1,10 @@
+import {GenGeoTexture2} from "../../../src/engine/effects/gen-tex2.js";
 import {GenGeo} from "../../../src/engine/effects/gen.js";
 import {downloadMeshes} from "../../../src/engine/loader-obj.js";
 import {uploadGLBModel} from "../../../src/engine/loaders/webgpu-gltf.js";
-import {LOG_FUNNY_SMALL, randomFloatFromTo, randomIntFromTo} from "../../../src/engine/utils.js";
+import {LOG_FUNNY_SMALL, LOG_MATRIX, randomFloatFromTo, randomIntFromTo} from "../../../src/engine/utils.js";
 import NavMesh from "./nav-mesh.js";
-import {startUpPositions} from "./static.js";
+import {creepPoints, startUpPositions} from "./static.js";
 
 /**
  * @description
@@ -12,6 +13,7 @@ import {startUpPositions} from "./static.js";
 export class MEMapLoader {
 
   collectionOfTree1 = [];
+  collectionOfRocks = [];
 
   async loadNavMesh(navMapPath) {
     return new Promise(async (resolve, reject) => {
@@ -52,37 +54,156 @@ export class MEMapLoader {
       raycast: {enabled: true, radius: 1.5}
     });
 
-
-    console.log('FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF',  startUpPositions['south'][0])
-    // wood-house-1
-    var glbFile01 = await fetch('./res/meshes/glb/wood-house-1.glb').then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, this.core.device)));
+    //https://sketchfab.com/search?features=downloadable&licenses=7c23a1ba438d4306920229c12afcb5f9&licenses=322a749bcfa841b29dff1e8a1bb74b0b&q=rock&type=models
+    var glbFile01 = await fetch('./res/meshes/env/rocks/rock1.glb').then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, this.core.device)));
     this.core.addGlbObjInctance({
       material: {type: 'standard', useTextureFromGlb: true},
-      scale: [20, 20, 20],
+      scale: [14, 13, 14],
       position: {
-        x: startUpPositions['south'][0],
-        y: startUpPositions['south'][1],
-        z: startUpPositions['south'][2]
+        x: -780,
+        y: -10,
+        z: 950
       },
-      name: 'homeBase',
+      name: 'rocks1',
       texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
-      raycast: {enabled: true, radius: 1.5},
+      raycast: {enabled: false, radius: 1.5},
       pointerEffect: {
-        enabled: true,
-        energyBar: true,
-        flameEffect: false,
-        flameEmitter: true,
-        circlePlane: false,
-        circlePlaneTex: true,
-        circlePlaneTexPath: './res/textures/rpg/magics/mariasword-2.png',
+        enabled: true
       }
     }, null, glbFile01);
 
+    // on engine level must be upgraded "add rotation for instanced objs... on meshObjInstanced class..."
+    // FOr now i will use another scene obj but same loaded data - that ok
+    this.core.addGlbObjInctance({
+      material: {type: 'standard', useTextureFromGlb: true},
+      scale: [14, 13, 14],
+      rotation: {x: 0, y: 90, z: 0},
+      position: {
+        x: -1040,
+        y: -10,
+        z: 850
+      },
+      name: 'rocks2',
+      texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
+      raycast: {enabled: false, radius: 1.5},
+      pointerEffect: {
+        enabled: true,
+        flameEffect: false
+      }
+    }, null, glbFile01);
 
-    // let t = this.core.mainRenderBundle.filter((r) => r.name.indexOf('friendly-tower') != -1)[0];
-    // this.core.collisionSystem.register(`friendly-tower`, t.position, 15.0, 'tower');
+    // Tron enemy
+    var glbFile02 = await fetch('./res/meshes/env/rocks/home.glb').then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, this.core.device)));
 
-    this.core.lightContainer[0].position[1] = 170;
+    let getEnemyName__ = '';
+    if(this.core.player.data.team == "south") {
+      getEnemyName__ = 'north';
+    } else {
+      getEnemyName__ = 'south';
+    }
+
+    this.core.addGlbObjInctance({
+      material: {type: 'standard', useTextureFromGlb: true},
+      scale: [15, 15, 15],
+      rotation: {x: 0, y: 90, z: 0},
+      position: {
+        x: creepPoints[app.player.data.team].finalPoint[0],
+        y: creepPoints[app.player.data.team].finalPoint[1],
+        z: creepPoints[app.player.data.team].finalPoint[2]
+      },
+      name: 'enemytron',
+      texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
+      raycast: {enabled: false, radius: 1.5},
+      pointerEffect: {
+        enabled: true,
+        energyBar: true
+      }
+    }, null, glbFile02);
+
+    var glbFile03 = await fetch('./res/meshes/env/rocks/home.glb').then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, this.core.device)));
+    this.core.addGlbObjInctance({
+      material: {type: 'standard', useTextureFromGlb: true},
+      scale: [15, 15, 15],
+      rotation: {x: 0, y: 90, z: 0},
+      position: {
+        x: creepPoints[getEnemyName__].finalPoint[0],
+        y: creepPoints[getEnemyName__].finalPoint[1],
+        z: creepPoints[getEnemyName__].finalPoint[2]
+      },
+      name: 'friendlytron',
+      texturesPaths: ['./res/textures/star1.png'],
+      raycast: {enabled: false, radius: 1.5},
+      pointerEffect: {
+        enabled: true,
+        energyBar: true,
+      }
+    }, null, glbFile03);
+
+    setTimeout(() => {
+      this.collectionOfRocks = this.core.mainRenderBundle.filter((item) => item.name.indexOf('rocks1') != -1);
+      this.collectionOfRocks.forEach((item) => {
+        item.globalAmbient = [10, 10, 10];
+        // this.core.collisionSystem.register(`rock1`, item.position, 15.0, 'rock');
+      });
+      this.collectionOfRocks2 = this.core.mainRenderBundle.filter((item) => item.name.indexOf('rocks2') != -1);
+      this.collectionOfRocks2.forEach((item) => {
+        item.globalAmbient = [10, 10, 10];
+        // this.core.collisionSystem.register(`rock1`, item.position, 15.0, 'rock');
+      })
+      this.addInstancingRock();
+
+      // trons 
+      app.enemytron = this.core.mainRenderBundle.filter((item) => item.name.indexOf('enemytron') != -1)[0];
+      app.tron = this.core.mainRenderBundle.filter((item) => item.name.indexOf('friendlytron') != -1)[0];
+      app.tron.globalAmbient = [2, 2, 2];
+
+      // no need to extend whole Hero class 
+      // Fiktive
+      app.tron.currentLevel = 10;
+      app.tron.hp = 300;
+      app.tron.armor = 0.1;
+
+      app.enemytron.currentLevel = 10;
+      app.enemytron.hp = 300;
+      app.enemytron.armor = 0.1;
+
+      addEventListener(`onDamage-${app.enemytron.name}`, (e) => {
+        console.info(`%c ON damage TRON ! ${e.detail}`, LOG_MATRIX)
+        app.enemytron.effects.energyBar.setProgress(e.detail.progress);
+        this.core.net.sendOnlyData({
+          type: "damage-tron",
+          defenderTeam: app.player.data.enemyTeam,
+          defenderName: e.detail.defender,
+          attackerName: e.detail.attacker,
+          hp: e.detail.hp,
+          progress: e.detail.progress
+        });
+      })
+      // this.pointerEffect.circlePlaneTexPath
+      app.tron.effects.circle = new GenGeoTexture2(app.device, app.tron.presentationFormat, 'circle2', './res/textures/star1.png');
+      app.tron.effects.circle.rotateEffectSpeed = 0.01;
+
+      app.enemytron.effects.circle = new GenGeoTexture2(app.device, app.enemytron.presentationFormat, 'circle2', './res/textures/star1.png');
+      app.enemytron.effects.circle.rotateEffectSpeed = 0.01;
+
+      this.core.collisionSystem.register(app.tron.name, app.tron.position, 25.0, 'friendly');
+      this.core.collisionSystem.register(app.enemytron.name, app.enemytron.position, 25.0, 'enemy');
+
+      setTimeout(() => {
+        app.tron.effects.circle.instanceTargets[0].position = [0, 6, 0];
+        app.tron.effects.circle.instanceTargets[1].position = [0, 6, 0];
+        app.tron.effects.circle.instanceTargets[0].color = [2, 0.1, 0, 0.5];
+        app.tron.effects.circle.instanceTargets[1].color = [1, 1, 1, 0.11];
+
+        app.enemytron.effects.circle.instanceTargets[0].position = [0, 6, 0];
+        app.enemytron.effects.circle.instanceTargets[1].position = [0, 6, 0];
+        app.enemytron.effects.circle.instanceTargets[0].color = [2, 0.1, 0, 0.5];
+        app.enemytron.effects.circle.instanceTargets[1].color = [1, 1, 1, 0.11];
+      }, 1000);
+
+    }, 6500);
+
+    this.core.lightContainer[0].position[1] = 175;
     this.core.lightContainer[0].intesity = 1;
   }
 
@@ -143,8 +264,8 @@ export class MEMapLoader {
     }, null, glbFile01);
     setTimeout(() => {
       this.collectionOfTree1 = this.core.mainRenderBundle.filter((o => o.name.indexOf('tree') != -1));
-      setTimeout(() => this.addInstancing(), 100)
-    }, 2000)
+      this.addInstancing();
+    }, 3500);
   }
 
   addInstancing() {
@@ -157,6 +278,9 @@ export class MEMapLoader {
     ];
 
     this.collectionOfTree1.forEach((partOftree) => {
+
+      partOftree.globalAmbient = [randomIntFromTo(5, 15), randomIntFromTo(5, 15), randomIntFromTo(5, 15)];
+
       const treesPerCluster = 9;
       const gridSize = Math.ceil(Math.sqrt(treesPerCluster));
       const totalInstances = treesPerCluster * clusterOffsets.length;
@@ -181,6 +305,64 @@ export class MEMapLoader {
           instance.color[1] = randomFloatFromTo(0.7, 1.0);
           instance.color[2] = randomFloatFromTo(0.5, 0.9);
         }
+      }
+    });
+  }
+
+  addInstancingRock() {
+    const NUM = 16;
+    this.collectionOfRocks.forEach((rock) => {
+      rock.updateMaxInstances(NUM);
+      rock.updateInstances(NUM);
+      for(var x = 0;x < NUM;x++) {
+        let instance;
+        if(x == 0) {
+          instance = rock.instanceTargets[x];
+          instance.position[0] = 200;
+          instance.position[2] = 0;
+          instance.position[1] = 0;
+        } else if(x < 8) {
+          instance = rock.instanceTargets[x];
+          instance.position[0] = x * 250;
+          instance.position[2] = 0;
+          instance.position[1] = 0;
+        } else if(x < 16) {
+          instance = rock.instanceTargets[x];
+          instance.position[0] = (x - 8) * 250;
+          instance.position[2] = -2000;
+          instance.position[1] = 0;
+        }
+
+        instance.color[3] = 1;
+        instance.color[0] = 1;
+        instance.color[1] = 1;
+        instance.color[2] = randomIntFromTo(1, 1.5);
+      }
+    });
+
+
+    const NUM2 = 16;
+    this.collectionOfRocks2.forEach((rock) => {
+      rock.updateMaxInstances(NUM2);
+      rock.updateInstances(NUM2);
+      for(var x = 0;x < NUM2;x++) {
+        let instance;
+        if(x < 8) {
+          instance = rock.instanceTargets[x];
+          instance.position[0] = -50;
+          instance.position[2] = -2000 + x * 250;
+          instance.position[1] = 0;
+        } else if(x < 16) {
+          instance = rock.instanceTargets[x];
+          instance.position[0] = 1950;
+          instance.position[2] = -1800 + (x - 8) * 250;
+          instance.position[1] = 0;
+        }
+
+        instance.color[3] = 1;
+        instance.color[0] = 1;
+        instance.color[1] = 1;
+        instance.color[2] = 1;
       }
     });
   }

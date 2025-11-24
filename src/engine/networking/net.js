@@ -42,9 +42,10 @@ export class MatrixStream {
         this.buttonLeaveSession = byId('buttonLeaveSession');
         byId("sessionName").value = netConfig.sessionName;
         this.sessionName = byId("sessionName");
-        console.log('[CHANNEL]' + this.sessionName.value)
-        this.attachEvents()
-        console.log(`%c MatrixStream constructed.`, BIGLOG);
+        console.log('[CHANNEL]' + this.sessionName.value);
+        this.attachEvents();
+        this.closeSession = closeSession;
+        console.log(`%cMatrixStream constructed.`, BIGLOG);
       });
   }
 
@@ -63,15 +64,15 @@ export class MatrixStream {
       });
     }
 
-    // this is duplicate for two cases with camera or only data
-    // this only data case - send system emit with session name channel
     this.send = (netArg) => {
+      const to = (netArg.toRemote ? netArg.toRemote : []);
+      netArg.toRemote = 'null';
       this.session.signal({
         data: JSON.stringify(netArg),
-        to: [],
+        to: to,
         type: netConfig.sessionName
       }).then(() => {
-        console.log('.');
+        // console.log('netArg.toRemote:' , netArg.toRemote);
       }).catch(error => {
         console.error("Erro signal => ", error);
       });
@@ -96,7 +97,7 @@ export class MatrixStream {
     })
 
     addEventListener('setupSessionObject', (e) => {
-      console.log("setupSessionObject=>", e.detail);
+      // console.log("setupSessionObject=>", e.detail);
       this.session = e.detail;
       this.connection = e.detail.connection;
       this.session.on(`signal:${netConfig.sessionName}`, (e) => {
@@ -109,8 +110,7 @@ export class MatrixStream {
         }
       });
       this.session.on(`signal:${netConfig.sessionName}-data`, (e) => {
-        // console.log("SIGBAL DATA RECEIVE=>", e);
-        console.log("SIGBAL DATA RECEIVE LOW LEVEL TEST OWN MESG =>", e);
+        // console.log("SIGBAL DATA RECEIVE LOW LEVEL TEST OWN MESG =>", e);
         if(this.session.connection.connectionId == e.from.connectionId) {
           dispatchEvent(new CustomEvent('self-msg-data', {detail: e}));
         } else {
@@ -131,13 +131,14 @@ export class MatrixStream {
     // this.buttonCloseSession.addEventListener('click', closeSession);
 
     this.buttonLeaveSession.addEventListener('click', () => {
-      console.log(`%c LEAVE SESSION`, REDLOG)
-      removeUser()
-      leaveSession()
+      console.log(`%cLEAVE SESSION`, REDLOG)
+      removeUser();
+      leaveSession();
     })
 
     byId('netHeaderTitle').addEventListener('click', this.domManipulation.hideNetPanel)
-    setTimeout(() => dispatchEvent(new CustomEvent('net-ready', {})), 100)
+
+    setTimeout(() => dispatchEvent(new CustomEvent('net-ready', {})), 2500)
   }
 
   multiPlayer = {
@@ -146,13 +147,8 @@ export class MatrixStream {
     update(e) {
       e.data = JSON.parse(e.data);
       try {
-        // console.log('REMOTE UPDATE::::', e);
         if(e.data.netPos) {
-          if(e.data.remoteName != null) {
-            app.getSceneObjectByName(e.data.remoteName).position.setPosition(e.data.netPos.x, e.data.netPos.y, e.data.netPos.z);
-          } else {
-            app.getSceneObjectByName(e.data.sceneName).position.setPosition(e.data.netPos.x, e.data.netPos.y, e.data.netPos.z);
-          }
+          app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).position.setPosition(e.data.netPos.x, e.data.netPos.y, e.data.netPos.z);
         } else if(e.data.netRotY || e.data.netRotY == 0) {
           app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).rotation.y = e.data.netRotY;
         } else if(e.data.netRotX) {
@@ -162,8 +158,8 @@ export class MatrixStream {
         } else if(e.data.animationIndex || e.data.animationIndex == 0) {
           app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).glb.animationIndex = e.data.animationIndex;
         }
-      } catch (err) {
-        console.info('mp-update-err:',err);
+      } catch(err) {
+        console.info('mmo-err:', err);
       }
     },
     leaveGamePlay() {}

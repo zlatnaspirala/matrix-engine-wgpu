@@ -13,7 +13,7 @@ export class GenGeoTexture {
     this.enabled = true;
 
     this.rotateEffect = true;
-    this.rotateEffectSpeed = 10.5;
+    this.rotateEffectSpeed = 10;
     this.rotateAngle = 0;
     this.loadTexture(path).then(() => {
       this._initPipeline();
@@ -156,6 +156,9 @@ export class GenGeoTexture {
   updateInstanceData = (baseModelMatrix) => {
     if(this.rotateEffect) {
       this.rotateAngle = (this.rotateAngle ?? 0) + this.rotateEffectSpeed; // accumulate rotation
+      if (this.rotateAngle >= 360) {
+        this.rotateAngle = 0;
+      }
     }
     const count = Math.min(this.instanceCount, this.maxInstances);
     for(let i = 0;i < count;i++) {

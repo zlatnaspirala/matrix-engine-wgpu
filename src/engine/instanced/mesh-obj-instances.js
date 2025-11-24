@@ -12,6 +12,7 @@ import {MANABarEffect} from '../effects/mana-bar';
 import {FlameEffect} from '../effects/flame';
 import {FlameEmitter} from '../effects/flame-emmiter';
 import {GenGeoTexture} from '../effects/gen-tex';
+import {GenGeoTexture2} from '../effects/gen-tex2';
 
 export default class MEMeshObjInstances extends MaterialsInstanced {
   constructor(canvas, device, context, o, inputHandler, globalAmbient, _glbFile = null, primitiveIndex = null, skinnedNodeIndex = null) {
@@ -34,6 +35,9 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
     this.video = null;
     this.FINISH_VIDIO_INIT = false;
     this.globalAmbient = [...globalAmbient];
+
+    this.blendInstanced = false;
+
     if(typeof o.material.useTextureFromGlb === 'undefined' ||
       typeof o.material.useTextureFromGlb !== "boolean") {
       o.material.useTextureFromGlb = false;
@@ -640,6 +644,10 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
         if(typeof this.pointerEffect.circlePlaneTex !== 'undefined' && this.pointerEffect.circlePlaneTex == true) {
           this.effects.circlePlaneTex = new GenGeoTexture(device, pf, 'ring', this.pointerEffect.circlePlaneTexPath);
         }
+
+        if(typeof this.pointerEffect.circle !== 'undefined' && this.pointerEffect.circlePlaneTexPath !== 'undefined') {
+          this.effects.circle = new GenGeoTexture2(device, pf, 'circle2', this.pointerEffect.circlePlaneTexPath);
+        }
       }
 
       // Rotates the camera around the origin based on time.
@@ -792,7 +800,7 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
       },
     });
 
-    console.log('✅Pipelines done');
+    // console.log('✅Pipelines done');
   };
 
   updateModelUniformBuffer = () => {
@@ -916,7 +924,8 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
     pass.drawIndexed(this.indexCount, 1, 0, 0, 0);
 
     // pipelineBlended
-    pass.setPipeline(this.pipelineBlended);
+    if(this.blendInstanced == true) pass.setPipeline(this.pipelineBlended)
+    else pass.setPipeline(this.pipeline);
 
     for(var ins = 1;ins < this.instanceCount;ins++) {
       pass.drawIndexed(this.indexCount, 1, 0, 0, ins);

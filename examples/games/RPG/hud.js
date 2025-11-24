@@ -1,4 +1,4 @@
-import {byId} from "../../../src/engine/utils.js";
+import {byId, typeText} from "../../../src/engine/utils.js";
 
 export class HUD {
   constructor(localHero) {
@@ -66,7 +66,7 @@ export class HUD {
       margin: '0',
       boxSizing: "border-box",
       overflow: 'hidden',
-      fontSize: '9px',
+      fontSize: '10px',
     });
 
     hud.appendChild(statsDom);
@@ -89,7 +89,7 @@ export class HUD {
       margin: '0',
       boxSizing: "border-box",
       overflow: 'hidden',
-      fontSize: '9px',
+      fontSize: '10px',
     });
 
     hud.appendChild(statsDomValue);
@@ -108,11 +108,10 @@ export class HUD {
     ];
 
     addEventListener('stats-localhero', (e) => {
-      console.log('STATS UPDATE DOM ', e.detail)
+      // console.log('STATS UPDATE DOM ', e.detail[props[x]].toFixed(2))
       for(var x = 0;x < props.length;x++) {
         byId('stats-' + props[x]).innerHTML = e.detail[props[x]].toFixed(2);
       }
-      console.log('STATS UPDATE DOM ', e.detail)
     })
 
     for(var x = 0;x < props.length;x++) {
@@ -345,7 +344,7 @@ export class HUD {
       const clamped = Math.max(0, Math.min(100, e.detail.HP));
       hpBar.style.width = clamped + "%";
       hpText.textContent = `MANA: ${clamped}%`;
-    })
+    });
 
     hud.appendChild(hudCenter);
     // left box
@@ -441,6 +440,7 @@ export class HUD {
     for(let i = 0;i < 6;i++) {
       const slot = document.createElement("div");
       slot.className = "inventory-slot";
+      slot.id = `inventory-slot-${i}`;
 
       Object.assign(slot.style, {
         aspectRatio: "1 / 1",
@@ -461,10 +461,15 @@ export class HUD {
         backgroundPosition: "center",
       });
       // Hover effect
-      slot.addEventListener("mouseenter", () => {
+      slot.addEventListener("mouseenter", (e) => {
         slot.style.border = "2px solid #ff0";
-        slot.style.boxShadow =
-          "0 0 10px rgba(255,255,0,0.5), inset 2px 2px 5px rgba(0,0,0,0.6)";
+        slot.style.boxShadow = "0 0 10px rgba(255,255,0,0.5), inset 2px 2px 5px rgba(0,0,0,0.6)";
+        if(e.currentTarget.childNodes.length < 3) {return;}
+        let getDesc =
+          e.currentTarget.childNodes[1].getAttribute('data-name') + " : " +
+          e.currentTarget.childNodes[1].getAttribute('data-desc') + " \n Props: " +
+          e.currentTarget.childNodes[1].getAttribute('data-effects');
+        byId('hudDesriptionText').innerText = getDesc;
       });
       slot.addEventListener("mouseleave", () => {
         slot.style.border = "2px solid #aaa";
@@ -475,7 +480,36 @@ export class HUD {
       inventoryGrid.appendChild(slot);
     }
 
+    addEventListener('hero-invertory-update', (e) => {
+      console.log('hero-invertory-update', e.detail)
+      e.detail.items.forEach((item, index) => {
+        if(item != null) {
+          const effectsString = item.effects
+            ? Object.entries(item.effects)
+              .map(([key, value]) => `${key}: ${value}`)
+              .join(', ')
+            : 'None';
+
+          byId(`inventory-slot-${index}`).innerHTML = `
+            <img 
+               data-name="${item.name}" 
+               data-desc="${item.description}" 
+               data-effects="${effectsString}" 
+               width="50px" style="min-height: 50px;max-height:55px;"
+               src="${item.path}" />
+          `;
+          console.log('hero-invertory-update item', item)
+        } else {
+          // clear hud
+          byId(`inventory-slot-${index}`).innerHTML = `
+            empty
+          `;
+        }
+      })
+    })
+
     const loader = document.createElement("div");
+    loader.id = "loader";
     Object.assign(loader.style, {
       position: "fixed",
       display: 'flex',
@@ -494,7 +528,6 @@ export class HUD {
       cursor: 'url(./res/icons/default.png) 0 0, auto',
       pointerEvents: 'auto'
     });
-    // loader.classList.add('buttonMatrix');
     loader.innerHTML = `
       <div class="loader">
         <div class="progress-container">
@@ -514,16 +547,19 @@ export class HUD {
     function fakeProgress() {
       if(progress < 100) {
         // Random step to look "non-linear"
-        progress += Math.random() * 5;
+        progress += Math.random() * 4;
         if(progress > 100) progress = 100;
         bar.style.width = progress + '%';
         counter.textContent = "Prepare gameplay " + Math.floor(progress) + '%';
+        let grayEffect = 30 / progress;
+        loader.style.filter = `grayscale(${grayEffect})`;
         setTimeout(fakeProgress, 80 + Math.random() * 150);
       } else {
         counter.textContent = "Let the game begin!";
         bar.style.boxShadow = "0 0 30px #00ff99";
         setTimeout(() => {
-          loader.remove();
+          // loader.remove();
+          loader.style.display = 'none';
           bar = null;
           counter = null;
         }, 250)
@@ -533,9 +569,31 @@ export class HUD {
     setTimeout(() => {
       bar = document.getElementById('progressBar');
       counter = document.getElementById('counter');
-      fakeProgress()
-    }, 300);
+      fakeProgress();
+    }, 600);
 
+
+
+    app.showSecrets = () => {
+      byId('helpBox').style.display = 'block';
+      typeText('helpBox', app.label.get.invertorysecret, 10);
+    };
+
+    var helpBox = document.createElement('div')
+    helpBox.id = 'helpBox';
+    helpBox.style.position = 'fixed';
+    helpBox.style.right = '20%';
+    helpBox.style.display = 'none';
+    helpBox.style.zIndex = '2';
+    helpBox.style.top = '10%';
+    helpBox.style.width = '60%';
+    helpBox.style.height = '60%';
+    helpBox.style.fontSize = '100%';
+    helpBox.classList.add('btn');
+    helpBox.addEventListener('click', () => {
+      byId('helpBox').style.display = 'none';
+    });
+    document.body.appendChild(helpBox);
 
 
     // Add grid to hudItems
@@ -545,6 +603,7 @@ export class HUD {
   }
 
   setCursor() {
+    // AnimatedCursor
     document.body.style.cursor = "url('./res/icons/default.png') 0 0, auto";
   }
 
