@@ -25,12 +25,14 @@ Published on npm as: **`matrix-engine-wgpu`**
 
 ---
 
-## Goals
+## Roadmap
 
 - ✔️ Support for 3D objects and scene transformations
+- ✔️ Ammo.js physics full integration
+- ✔️ Networking with Kurento/OpenVidu/Own middleware Nodejs -> frontend 
 - 🎯 Replicate matrix-engine (WebGL) features
 - 📦 Based on the `shadowMapping` sample from [webgpu-samples](https://webgpu.github.io/webgpu-samples/?sample=shadowMapping)
-- ✔️ Ammo.js physics full integration
+
 
 ---
 
@@ -533,10 +535,39 @@ sceneObject.position.netObject = sceneObject[0].name; // we still need this setu
 sceneObject.position.remoteName = sceneObjecOposite[0].name;
 ```
 
+Use toRemote arg prop in send pass, if not it is default [] emit to all.
+
+Intelegent emit for teams (two teams implemented).
+Position will be emited for teams[0] and received for uniq scene obj name.
+Position will be emited for teams[1] and received for oposite (eg. enemy) uniq scene obj name.
+In this case toRemote is overrided (Don't pass it).
+Used for RPGMOG project.
+```js
+mesh.position.teams[0] = [ connId0, connId1 ];
+mesh.position.teams[1] = [ connId2, connId3 ];
+
+// emiter in core engine file
+  if(this.teams.length > 0) if(this.teams[0].length > 0) app.net.send({
+    toRemote: this.teams[0], // default null remote conns
+    sceneName: this.netObject, // origin scene name to receive
+    netPos: {x: this.x, y: this.y, z: this.z},
+  });
+  if(this.teams.length > 0) if(this.teams[1].length > 0) app.net.send({
+    toRemote: this.teams[1], // default null remote conns
+    remoteName: this.remoteName, // to enemy players
+    sceneName: this.netObject, // now not important
+    netPos: {x: this.x, y: this.y, z: this.z},
+  });
+```
+
 ## About URLParams
 
 Buildin Url Param check for multiLang. MultiLang feature is also buildin options.
 
+ Load multilang json file data.
+ - ?lang=en
+
+Access from code:
 ```js
 urlQuery.lang;
 ```
