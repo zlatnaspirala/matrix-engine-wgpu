@@ -2282,7 +2282,9 @@ class HeroProps {
   updateStats() {
     const lvlData = this.levels[this.currentLevel - 1];
     if (!lvlData) return;
-    console.log('updateStats: armor ', this.invertoryBonus.armor);
+
+    // console.log('updateStats: armor ', this.invertoryBonus.armor)
+
     Object.assign(this, {
       hp: lvlData.hp * this.invertoryBonus.hp,
       mana: lvlData.mana * this.invertoryBonus.mana,
@@ -31937,7 +31939,7 @@ function joinSession(options) {
       });
     } else {
       // in future some meta data can be added here -> on conn created event
-      // console.log("netConfig", netConfig.customData);
+      console.log("netConfig", netConfig.customData);
       session.connect(token, netConfig.customData).then(() => {
         byId('session-title').innerText = sessionName;
         byId('join').style.display = 'none';
@@ -32280,7 +32282,7 @@ class MatrixStream {
       };
     });
     addEventListener('setupSessionObject', e => {
-      console.log("setupSessionObject=>", e.detail);
+      // console.log("setupSessionObject=>", e.detail);
       this.session = e.detail;
       this.connection = e.detail.connection;
       this.session.on(`signal:${_matrixStream.netConfig.sessionName}`, e => {
