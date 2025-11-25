@@ -1269,17 +1269,19 @@ let forestOfHollowBloodStartSceen = new _world.default({
       location.assign('rpg-game.html');
     }, 1000);
   };
-  navigator.connection.onchange = e => {
-    console.info('Network state changed...', e);
-    if (e.target.downlink < 0.4) {
-      (0, _utils.byId)('loader').style.display = 'block';
-      (0, _utils.byId)('loader').style.fontSize = '150%';
-      (0, _utils.byId)('loader').innerHTML = `NO INTERNET CONNECTIONS`;
-      setTimeout(() => {
-        location.href = 'https://maximumroulette.com';
-      }, 3000);
-    }
-  };
+  if ('connection' in navigator && navigator.connection) {
+    navigator.connection.onchange = e => {
+      console.info('Network state changed...', e);
+      if (e.target.downlink < 0.4) {
+        (0, _utils.byId)('loader').style.display = 'block';
+        (0, _utils.byId)('loader').style.fontSize = '150%';
+        (0, _utils.byId)('loader').innerHTML = `NO INTERNET CONNECTIONS`;
+        setTimeout(() => {
+          location.href = 'https://maximumroulette.com';
+        }, 3000);
+      }
+    };
+  }
   addEventListener('check-gameplay-channel', e => {
     let info = e.detail;
     if (info.status != 'false' && typeof info.status !== "undefined") {
@@ -1457,7 +1459,10 @@ let forestOfHollowBloodStartSceen = new _world.default({
   // addEventListener('AmmoReady', async () => {
 
   // catch
-  if (app.label && app.label.get && typeof app.label.get.mariasword == 'undefined') {
+  if (typeof app.label == 'undefined' || typeof app.label.get == 'undefined' || typeof app.label.get.mariasword == 'undefined') {
+    if (typeof app.label == 'undefined') app.label = {
+      get: {}
+    };
     app.label.get = _enBackup.en;
   }
   app.matrixSounds.play('music');

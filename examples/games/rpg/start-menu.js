@@ -245,15 +245,17 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
     }, 1000);
   }
 
-  navigator.connection.onchange = (e) => {
-    console.info('Network state changed...', e);
-    if(e.target.downlink < 0.4) {
-      byId('loader').style.display = 'block';
-      byId('loader').style.fontSize = '150%';
-      byId('loader').innerHTML = `NO INTERNET CONNECTIONS`;
-      setTimeout(() => {
-        location.href = 'https://maximumroulette.com';
-      }, 3000)
+  if('connection' in navigator && navigator.connection) {
+    navigator.connection.onchange = (e) => {
+      console.info('Network state changed...', e);
+      if(e.target.downlink < 0.4) {
+        byId('loader').style.display = 'block';
+        byId('loader').style.fontSize = '150%';
+        byId('loader').innerHTML = `NO INTERNET CONNECTIONS`;
+        setTimeout(() => {
+          location.href = 'https://maximumroulette.com';
+        }, 3000)
+      }
     }
   }
 
@@ -439,7 +441,8 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
   // addEventListener('AmmoReady', async () => {
 
   // catch
-  if(app.label && app.label.get && typeof app.label.get.mariasword == 'undefined') {
+  if(typeof app.label == 'undefined' || typeof app.label.get == 'undefined' || typeof app.label.get.mariasword == 'undefined') {
+    if(typeof app.label == 'undefined') app.label = {get: {}};
     app.label.get = en;
   }
 
