@@ -40,6 +40,9 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
   clearColor: {r: 0, b: 0.122, g: 0.122, a: 1}
 }, () => {
 
+  forestOfHollowBlood.account = new RCSAccount("https://maximumroulette.com");
+  forestOfHollowBlood.account.createDOM();
+
   forestOfHollowBlood.tts = new MatrixTTS();
 
   forestOfHollowBlood.player = {
@@ -120,7 +123,9 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
 
   addEventListener("onConnectionCreated", (e) => {
     const remoteCons = Array.from(e.detail.connection.session.remoteConnections.entries());
-    // if(remoteCons.length == (forestOfHollowBlood.player.data.numOfPlayers - 1)) {}
+    if(remoteCons.length == 4) {
+      if (location.hostname.indexOf('localhost') == -1) app.account.gameStarted();
+    }
     const isLocal = e.detail.connection.connectionId == app.net.session.connection.connectionId;
     if(e.detail.connection.session.remoteConnections.size == 0) {
       if(forestOfHollowBlood.net.virtualEmiter == null && isLocal) {
@@ -147,6 +152,7 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
       if(isSameTeamAlready == false && isLocal == true) {
         forestOfHollowBlood.net.virtualEmiter = e.detail.connection.connectionId;
         document.title = "VE " + app.net.session.connection.connectionId;
+
       }
     }
 
@@ -279,7 +285,7 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
         let getCreepByIndex = parseInt(d.defenderName[d.defenderName.length - 1]);
         app.enemies.creeps[getCreepByIndex]
           .heroe_bodies[0].effects.energyBar.setProgress(d.progress);
-          app.enemies.creeps[getCreepByIndex].creepFocusAttackOn = null;
+        app.enemies.creeps[getCreepByIndex].creepFocusAttackOn = null;
         if(d.progress <= 0.09) {
           app.enemies.creeps[getCreepByIndex].setDead();
           setTimeout(() => {

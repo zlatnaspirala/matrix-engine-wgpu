@@ -1587,6 +1587,8 @@ let forestOfHollowBlood = new _world.default({
     a: 1
   }
 }, () => {
+  forestOfHollowBlood.account = new RCSAccount("https://maximumroulette.com");
+  forestOfHollowBlood.account.createDOM();
   forestOfHollowBlood.tts = new _tts.MatrixTTS();
   forestOfHollowBlood.player = {
     username: "guest"
@@ -1656,7 +1658,9 @@ let forestOfHollowBlood = new _world.default({
   });
   addEventListener("onConnectionCreated", e => {
     const remoteCons = Array.from(e.detail.connection.session.remoteConnections.entries());
-    // if(remoteCons.length == (forestOfHollowBlood.player.data.numOfPlayers - 1)) {}
+    if (remoteCons.length == 4) {
+      if (location.hostname.indexOf('localhost') == -1) app.account.gameStarted();
+    }
     const isLocal = e.detail.connection.connectionId == app.net.session.connection.connectionId;
     if (e.detail.connection.session.remoteConnections.size == 0) {
       if (forestOfHollowBlood.net.virtualEmiter == null && isLocal) {
