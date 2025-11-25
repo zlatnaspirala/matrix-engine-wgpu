@@ -99,11 +99,15 @@ export default class MatrixEngineWGPU {
     if(urlQuery.lang != null) {
       this.label.loadMultilang(urlQuery.lang).then((r) => {
         this.label.get = r;
+      }).catch((r) => {
+        this.label.get = r;
       });
     } else {
       this.label.loadMultilang().then((r) => {
         this.label.get = r;
-      });
+      }).catch((r) => {
+        this.label.get = r;
+      });;
     }
     this.init({canvas, callback})
   }

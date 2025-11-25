@@ -12,6 +12,8 @@ import {startUpPositions} from "./static.js";
 import {MatrixTTS} from "./tts.js";
 import {Marketplace} from "./marketplace.js";
 import {Inventory} from "./invertoryManager.js";
+import {RCSAccount} from "./rocket-crafting-account.js";
+import {en} from "../../../public/res/multilang/en-backup.js";
 
 /**
  * @description
@@ -40,7 +42,10 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
   clearColor: {r: 0, b: 0.122, g: 0.122, a: 1}
 }, () => {
 
-  // forestOfHollowBlood.tts = new MatrixTTS();
+  forestOfHollowBlood.account = new RCSAccount("https://maximumroulette.com");
+  forestOfHollowBlood.account.createDOM();
+
+  forestOfHollowBlood.tts = new MatrixTTS();
 
   forestOfHollowBlood.player = {
     username: "guest"
@@ -52,6 +57,12 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
 
   // addEventListener('AmmoReady', async () => {})
   forestOfHollowBlood.player.data = SS.get('player');
+
+  // ASYNC FOR very small json become big buggy - pragmatic
+  if(typeof app.label == 'undefined' || typeof app.label.get == 'undefined' || typeof app.label.get.mariasword == 'undefined') {
+    if(typeof app.label == 'undefined') app.label = {get: {}};
+    app.label.get = en;
+  }
 
   forestOfHollowBlood.net = new MatrixStream({
     active: true,
@@ -120,7 +131,9 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
 
   addEventListener("onConnectionCreated", (e) => {
     const remoteCons = Array.from(e.detail.connection.session.remoteConnections.entries());
-    // if(remoteCons.length == (forestOfHollowBlood.player.data.numOfPlayers - 1)) {}
+    if(remoteCons.length == 4) {
+      if(location.hostname.indexOf('localhost') == -1) app.account.gameStarted();
+    }
     const isLocal = e.detail.connection.connectionId == app.net.session.connection.connectionId;
     if(e.detail.connection.session.remoteConnections.size == 0) {
       if(forestOfHollowBlood.net.virtualEmiter == null && isLocal) {
@@ -147,6 +160,7 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
       if(isSameTeamAlready == false && isLocal == true) {
         forestOfHollowBlood.net.virtualEmiter = e.detail.connection.connectionId;
         document.title = "VE " + app.net.session.connection.connectionId;
+
       }
     }
 
@@ -279,7 +293,7 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
         let getCreepByIndex = parseInt(d.defenderName[d.defenderName.length - 1]);
         app.enemies.creeps[getCreepByIndex]
           .heroe_bodies[0].effects.energyBar.setProgress(d.progress);
-          app.enemies.creeps[getCreepByIndex].creepFocusAttackOn = null;
+        app.enemies.creeps[getCreepByIndex].creepFocusAttackOn = null;
         if(d.progress <= 0.09) {
           app.enemies.creeps[getCreepByIndex].setDead();
           setTimeout(() => {
@@ -296,8 +310,9 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
           app.tron.globalAmbient = [2, 1, 1];
           mb.show(` Enemy wins !!! ${app.player.data.enemyTeam} `)
           setTimeout(() => {
-            mb.show(` Enemy wins !!! ${app.player.data.enemyTeam} `)
-          }, 1000)
+            mb.show(` Enemy wins, game over. ${app.player.data.enemyTeam} `)
+            location.assign("rpg-menu.html",);
+          }, 3000)
         }
       } else {
         app.enemytron.effects.energyBar.setProgress(d.progress);
@@ -305,8 +320,9 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
           app.tron.globalAmbient = [2, 1, 1];
           mb.show(`Your team wins !!! ${app.player.data.team} `);
           setTimeout(() => {
-            mb.show(`Your team wins !!! ${app.player.data.team} `);
-          }, 1000)
+            mb.show(`Team ${app.player.data.team} wins !`);
+            location.assign("rpg-menu.html",);
+          }, 3000)
         }
       }
     }

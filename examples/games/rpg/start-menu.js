@@ -1,10 +1,12 @@
 import {uploadGLBModel} from "../../../src/engine/loaders/webgpu-gltf.js";
 import {MatrixStream} from "../../../src/engine/networking/net.js";
-import {byId, isOdd, LS, SS, mb, typeText, FullscreenManager} from "../../../src/engine/utils.js";
+import {byId, isOdd, LS, SS, mb, typeText, FullscreenManager, isMobile} from "../../../src/engine/utils.js";
 import MatrixEngineWGPU from "../../../src/world.js";
 import {HERO_ARCHETYPES} from "./hero.js";
 import {AnimatedCursor} from "../../../src/engine/plugin/animated-cursor/animated-cursor.js";
 import {fetchAll, fetchInfo} from "../../../src/engine/networking/matrix-stream.js";
+import {RCSAccount} from "./rocket-crafting-account.js";
+import {en} from "../../../public/res/multilang/en-backup.js";
 
 /**
  * @name forestOfHollowBloodStartSceen
@@ -34,7 +36,11 @@ import {fetchAll, fetchInfo} from "../../../src/engine/networking/matrix-stream.
  * Only last non selected hero player will get 
  * first free hero in selection action next/back.
  * For now. Next better varian can be timer solution.
+ * 
+ * @Backend Session account stuff.
+ * RocketCraftingServer platform used.
  **/
+
 LS.clear();
 SS.clear();
 
@@ -50,10 +56,22 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
 }, (forestOfHollowBloodStartSceen) => {
 
   if('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('cache.js');
+    if(location.hostname.indexOf('localhost') == -1) {
+      navigator.serviceWorker.register('cache.js');
+    } else {
+      // RCSAccount
+      navigator.serviceWorker.getRegistrations().then(function(registrations) {
+        for(let registration of registrations) {
+          registration.unregister();
+        }
+      });
+    }
   } else {
     console.warn('Matrix Engine WGPU : No support for web workers in this browser.');
   }
+
+  forestOfHollowBloodStartSceen.account = new RCSAccount("https://maximumroulette.com");
+  forestOfHollowBloodStartSceen.account.createDOM();
 
   forestOfHollowBloodStartSceen.FS = new FullscreenManager();
 
@@ -206,7 +224,8 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
         archetypes: [heros[app.selectedHero].type],
         team: byId(`waiting-${app.net.session.connection.connectionId}`).getAttribute('data-hero-team'),
         data: Date.now(),
-        numOfPlayers: forestOfHollowBloodStartSceen.MINIMUM_PLAYERS
+        numOfPlayers: forestOfHollowBloodStartSceen.MINIMUM_PLAYERS,
+        useCameraOrAudio: true
       })
 
       SS.set('player', {
@@ -216,7 +235,8 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
         archetypes: [heros[app.selectedHero].type],
         team: byId(`waiting-${app.net.session.connection.connectionId}`).getAttribute('data-hero-team'),
         data: Date.now(),
-        numOfPlayers: forestOfHollowBloodStartSceen.MINIMUM_PLAYERS
+        numOfPlayers: forestOfHollowBloodStartSceen.MINIMUM_PLAYERS,
+        useCameraOrAudio: true
       })
 
       if(typeof preventEmit === 'undefined') forestOfHollowBloodStartSceen.net.sendOnlyData({
@@ -227,15 +247,17 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
     }, 1000);
   }
 
-  navigator.connection.onchange = (e) => {
-    console.info('Network state changed...', e);
-    if(e.target.downlink < 0.4) {
-      byId('loader').style.display = 'block';
-      byId('loader').style.fontSize = '150%';
-      byId('loader').innerHTML = `NO INTERNET CONNECTIONS`;
-      setTimeout(() => {
-        location.href = 'https://maximumroulette.com';
-      }, 3000)
+  if('connection' in navigator && navigator.connection) {
+    navigator.connection.onchange = (e) => {
+      console.info('Network state changed...', e);
+      if(e.target.downlink < 0.4) {
+        byId('loader').style.display = 'block';
+        byId('loader').style.fontSize = '150%';
+        byId('loader').innerHTML = `NO INTERNET CONNECTIONS`;
+        setTimeout(() => {
+          location.href = 'https://maximumroulette.com';
+        }, 3000)
+      }
     }
   }
 
@@ -277,7 +299,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
     }
   })
 
-  forestOfHollowBloodStartSceen.MINIMUM_PLAYERS = 3;
+  forestOfHollowBloodStartSceen.MINIMUM_PLAYERS = (location.hostname.indexOf('localhost') != -1 ? 3 : 4);
 
   forestOfHollowBloodStartSceen.setWaitingList = () => {
     // access net doms who comes with broadcaster2.html
@@ -419,6 +441,13 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
   })
 
   // addEventListener('AmmoReady', async () => {
+
+  // catch
+  if(typeof app.label == 'undefined' || typeof app.label.get == 'undefined' || typeof app.label.get.mariasword == 'undefined') {
+    if(typeof app.label == 'undefined') app.label = {get: {}};
+    app.label.get = en;
+  }
+
   app.matrixSounds.play('music');
   heros = [
     {type: "Warrior", name: 'MariaSword', path: "res/meshes/glb/woman1.glb", desc: forestOfHollowBloodStartSceen.label.get.mariasword},
@@ -757,7 +786,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
     Object.assign(aboutBtn.style, {
       position: "fixed",
       bottom: '40px',
-      left: '120px',
+      left: '20px',
       width: "150px",
       height: "54px",
       textAlign: "center",
@@ -781,6 +810,38 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
     `;
     aboutBtn.addEventListener('click', (e) => app.showAbout());
     hud.appendChild(aboutBtn);
+
+    const LBBtn = document.createElement("button");
+    Object.assign(LBBtn.style, {
+      position: "fixed",
+      bottom: '10px',
+      left: '20px',
+      width: "140px",
+      height: "28px",
+      textAlign: "center",
+      color: "white",
+      fontWeight: "bold",
+      textShadow: "0 0 2px black",
+      color: '#ffffffff',
+      background: '#000000ff',
+      fontSize: '16px',
+      cursor: 'url(./res/icons/default.png) 0 0, auto',
+      pointerEvents: 'auto'
+    });
+    // LBBtn.classList.add('buttonMatrix');
+    // LBBtn.innerHTML = `
+    //   <div class="button-outer">
+    //     <div class="button-inner">
+    //       <span data-label='leaderboard'>${app.label.get.leaderboard}</span>
+    //     </div>
+    //   </div>
+    // `;
+
+    LBBtn.innerHTML = `
+          <span data-label='leaderboard'>${app.label.get.leaderboard}</span>
+    `;
+    LBBtn.addEventListener('click', app.account.getLeaderboard);
+    hud.appendChild(LBBtn);
 
     const loader = document.createElement("div");
     loader.id = 'loader';
@@ -864,7 +925,8 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
       // add here after - fs force
       app.matrixSounds.play('music');
       removeEventListener('click', firstClick);
-      app.FS.request();
+      // for mobile no need to call - if called porttrain forced (current orientation on mobile device)
+      if(location.hostname.indexOf('localhost') == -1 || isMobile() == false) app.FS.request();
     }
     addEventListener('click', firstClick);
   }

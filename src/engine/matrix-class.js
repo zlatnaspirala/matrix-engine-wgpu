@@ -15,7 +15,7 @@ export class Position {
     this.toRemote = [];
     this.teams = [];
 
-    this.netTolerance = 1;
+    this.netTolerance = 3;
     this.netTolerance__ = 0;
 
     if(typeof x == 'undefined') x = 0;

@@ -1,4 +1,14 @@
 
+export var supportsTouch = 'ontouchstart' in window || navigator.msMaxTouchPoints;
+
+export function isMobile() {
+	if(supportsTouch == true) return true;
+	const toMatch = [/Android/i, /webOS/i, /iPhone/i, /iPad/i, /iPod/i, /BlackBerry/i, /Windows Phone/i];
+	return toMatch.some(toMatchItem => {
+		return navigator.userAgent.match(toMatchItem);
+	});
+};
+
 export const vec3 = {
   cross(a, b, dst) {
     dst = dst || new Float32Array(3);

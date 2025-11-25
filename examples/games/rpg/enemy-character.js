@@ -117,10 +117,6 @@ export class Enemie extends Hero {
         startUpPositions[app.player.data.enemyTeam][0],
         startUpPositions[app.player.data.enemyTeam][1],
         startUpPositions[app.player.data.enemyTeam][2]
-
-        // startUpPositions[app.player.data.team][0],
-        // startUpPositions[app.player.data.team][1],
-        // startUpPositions[app.player.data.team][2]
       )
     })
   }
@@ -142,7 +138,7 @@ export class Enemie extends Hero {
         console.info(`%c hero dead [${this.name}], attacker[${e.detail.attacker}]`, LOG_MATRIX)
         setTimeout(() => {
           this.setStartUpPosition();
-        }, 1500);
+        }, 1100);
       }
     });
   }
