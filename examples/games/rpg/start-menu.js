@@ -6,6 +6,7 @@ import {HERO_ARCHETYPES} from "./hero.js";
 import {AnimatedCursor} from "../../../src/engine/plugin/animated-cursor/animated-cursor.js";
 import {fetchAll, fetchInfo} from "../../../src/engine/networking/matrix-stream.js";
 import {RCSAccount} from "./rocket-crafting-account.js";
+import {en} from "../../../public/res/multilang/en-backup.js";
 
 /**
  * @name forestOfHollowBloodStartSceen
@@ -436,6 +437,12 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
   })
 
   // addEventListener('AmmoReady', async () => {
+
+  // catch
+  if(app.label && app.label.get && typeof app.label.get.mariasword == 'undefined') {
+    app.label.get = en;
+  }
+
   app.matrixSounds.play('music');
   heros = [
     {type: "Warrior", name: 'MariaSword', path: "res/meshes/glb/woman1.glb", desc: forestOfHollowBloodStartSceen.label.get.mariasword},

@@ -217,7 +217,7 @@ class Character extends _hero.Hero {
         if (app.localHero.heroe_bodies[0].effects) {
           app.localHero.heroe_bodies[0].effects.flameEmitter.recreateVertexDataRND(1);
         } else {
-          alert(`what is app.localHero.heroe_bodies[0] ${app.localHero.heroe_bodies[0]} `);
+          console.log(`what is app.localHero.heroe_bodies[0] ${app.localHero.heroe_bodies[0]} `);
         }
 
         // adapt
@@ -816,7 +816,7 @@ class Controller {
         }));
         this.core.localHero.heroFocusAttackOn = null;
         // return;
-      } else if (this.core.enemies.isEnemy(e.detail.hitObject.name)) {
+      } else if (this.core.enemies && this.core.enemies.isEnemy(e.detail.hitObject.name)) {
         dispatchEvent(new CustomEvent(`onMouseTarget`, {
           detail: {
             type: 'attach',
@@ -1512,12 +1512,7 @@ class Enemie extends _hero.Hero {
   }
   setStartUpPosition() {
     this.heroe_bodies.forEach((subMesh, idx) => {
-      subMesh.position.setPosition(_static.startUpPositions[app.player.data.enemyTeam][0], _static.startUpPositions[app.player.data.enemyTeam][1], _static.startUpPositions[app.player.data.enemyTeam][2]
-
-      // startUpPositions[app.player.data.team][0],
-      // startUpPositions[app.player.data.team][1],
-      // startUpPositions[app.player.data.team][2]
-      );
+      subMesh.position.setPosition(_static.startUpPositions[app.player.data.enemyTeam][0], _static.startUpPositions[app.player.data.enemyTeam][1], _static.startUpPositions[app.player.data.enemyTeam][2]);
     });
   }
   attachEvents() {
@@ -30585,7 +30580,7 @@ class Position {
     this.netObject = null;
     this.toRemote = [];
     this.teams = [];
-    this.netTolerance = 1;
+    this.netTolerance = 3;
     this.netTolerance__ = 0;
     if (typeof x == 'undefined') x = 0;
     if (typeof y == 'undefined') y = 0;
@@ -36393,11 +36388,16 @@ class MatrixEngineWGPU {
     if (_utils.urlQuery.lang != null) {
       this.label.loadMultilang(_utils.urlQuery.lang).then(r => {
         this.label.get = r;
+      }).catch(r => {
+        this.label.get = r;
       });
     } else {
       this.label.loadMultilang().then(r => {
         this.label.get = r;
+      }).catch(r => {
+        this.label.get = r;
       });
+      ;
     }
     this.init({
       canvas,

@@ -9,7 +9,7 @@
  * for `cacheVersion`.
  * @param cacheVersion
  */
-var cacheVersion = 2;
+var cacheVersion = 3;
 var cacheName = 'matrix-engine-' + cacheVersion;
 
 try {

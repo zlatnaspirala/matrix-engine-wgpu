@@ -593,7 +593,7 @@ class RCSAccount {
     logo.id = 'logologin';
     logo.setAttribute('alt', 'Login');
     logo.style = 'width: 100px;border-radius: 10px;padding: 6px;';
-    logo.src = './res/icons/512.webp';
+    logo.src = './res/icons/512.png';
     var title = document.createElement('div');
     title.style.display = 'flex';
     title.innerHTML = `
@@ -828,6 +828,26 @@ class RCSAccount {
       _utils.mb.error(`${r.message}`);
     });
   };
+  gameStarted = async () => {
+    let route = this.apiDomain || location.origin;
+    let args = {
+      username: 'guest'
+    };
+    fetch(route + '/rocket/fohbstart', {
+      method: 'POST',
+      headers: _utils.jsonHeaders,
+      body: JSON.stringify(args)
+    }).then(d => {
+      return d.json();
+    }).then(r => {
+      console.log(r.message);
+      _utils.mb.show(`${r.message}`);
+      if (r.message == "User logged") {}
+    }).catch(err => {
+      console.log('[RCS Error]', err);
+      return;
+    });
+  };
   login = async () => {
     let route = this.apiDomain || location.origin;
     (0, _utils.byId)('loginRCSBtn').disabled = true;
@@ -1031,6 +1051,7 @@ var _hero = require("./hero.js");
 var _animatedCursor = require("../../../src/engine/plugin/animated-cursor/animated-cursor.js");
 var _matrixStream = require("../../../src/engine/networking/matrix-stream.js");
 var _rocketCraftingAccount = require("./rocket-crafting-account.js");
+var _enBackup = require("../../../public/res/multilang/en-backup.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 /**
  * @name forestOfHollowBloodStartSceen
@@ -1436,6 +1457,11 @@ let forestOfHollowBloodStartSceen = new _world.default({
   });
 
   // addEventListener('AmmoReady', async () => {
+
+  // catch
+  if (app.label && app.label.get && typeof app.label.get.mariasword == 'undefined') {
+    app.label.get = _enBackup.en;
+  }
   app.matrixSounds.play('music');
   heros = [{
     type: "Warrior",
@@ -1921,7 +1947,7 @@ let forestOfHollowBloodStartSceen = new _world.default({
 });
 window.app = forestOfHollowBloodStartSceen;
 
-},{"../../../src/engine/loaders/webgpu-gltf.js":39,"../../../src/engine/networking/matrix-stream.js":43,"../../../src/engine/networking/net.js":44,"../../../src/engine/plugin/animated-cursor/animated-cursor.js":45,"../../../src/engine/utils.js":46,"../../../src/world.js":69,"./hero.js":1,"./rocket-crafting-account.js":2}],4:[function(require,module,exports){
+},{"../../../public/res/multilang/en-backup.js":19,"../../../src/engine/loaders/webgpu-gltf.js":39,"../../../src/engine/networking/matrix-stream.js":43,"../../../src/engine/networking/net.js":44,"../../../src/engine/plugin/animated-cursor/animated-cursor.js":45,"../../../src/engine/utils.js":46,"../../../src/world.js":69,"./hero.js":1,"./rocket-crafting-account.js":2}],4:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -27507,7 +27533,7 @@ class Position {
     this.netObject = null;
     this.toRemote = [];
     this.teams = [];
-    this.netTolerance = 1;
+    this.netTolerance = 3;
     this.netTolerance__ = 0;
     if (typeof x == 'undefined') x = 0;
     if (typeof y == 'undefined') y = 0;
@@ -33180,11 +33206,16 @@ class MatrixEngineWGPU {
     if (_utils.urlQuery.lang != null) {
       this.label.loadMultilang(_utils.urlQuery.lang).then(r => {
         this.label.get = r;
+      }).catch(r => {
+        this.label.get = r;
       });
     } else {
       this.label.loadMultilang().then(r => {
         this.label.get = r;
+      }).catch(r => {
+        this.label.get = r;
       });
+      ;
     }
     this.init({
       canvas,

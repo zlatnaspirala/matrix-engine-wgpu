@@ -198,7 +198,7 @@ export class Character extends Hero {
         if(app.localHero.heroe_bodies[0].effects) {
           app.localHero.heroe_bodies[0].effects.flameEmitter.recreateVertexDataRND(1);
         } else {
-          alert(`what is app.localHero.heroe_bodies[0] ${app.localHero.heroe_bodies[0]} `);
+          console.log(`what is app.localHero.heroe_bodies[0] ${app.localHero.heroe_bodies[0]} `);
         }
 
         // adapt

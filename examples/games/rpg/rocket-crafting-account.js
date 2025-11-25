@@ -45,7 +45,7 @@ export class RCSAccount {
     logo.id = 'logologin';
     logo.setAttribute('alt', 'Login');
     logo.style = 'width: 100px;border-radius: 10px;padding: 6px;'
-    logo.src = './res/icons/512.webp';
+    logo.src = './res/icons/512.png';
 
     var title = document.createElement('div');
     title.style.display = 'flex';
@@ -302,7 +302,28 @@ export class RCSAccount {
 
   }
 
-  login = async () => {
+  gameStarted = async () => {
+    let route = this.apiDomain || location.origin;
+    let args = {
+      username: 'guest'
+    }
+    fetch(route + '/rocket/fohbstart', {
+      method: 'POST',
+      headers: jsonHeaders,
+      body: JSON.stringify(args)
+    }).then((d) => {
+      return d.json();
+    }).then((r) => {
+      console.log(r.message);
+      mb.show(`${r.message}`)
+      if(r.message == "User logged") {   }
+    }).catch((err) => {
+      console.log('[RCS Error]', err)
+      return;
+    })
+  }
+
+    login = async () => {
     let route = this.apiDomain || location.origin;
     byId('loginRCSBtn').disabled = true;
     byId('registerBtn').disabled = true;

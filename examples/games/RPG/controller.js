@@ -63,7 +63,7 @@ export class Controller {
         }));
         this.core.localHero.heroFocusAttackOn = null;
         // return;
-      } else if(this.core.enemies.isEnemy(e.detail.hitObject.name)) {
+      } else if(this.core.enemies && this.core.enemies.isEnemy(e.detail.hitObject.name)) {
         dispatchEvent(new CustomEvent(`onMouseTarget`, {
           detail: {
             type: 'attach',

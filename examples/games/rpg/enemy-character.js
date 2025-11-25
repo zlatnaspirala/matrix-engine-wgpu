@@ -117,10 +117,6 @@ export class Enemie extends Hero {
         startUpPositions[app.player.data.enemyTeam][0],
         startUpPositions[app.player.data.enemyTeam][1],
         startUpPositions[app.player.data.enemyTeam][2]
-
-        // startUpPositions[app.player.data.team][0],
-        // startUpPositions[app.player.data.team][1],
-        // startUpPositions[app.player.data.team][2]
       )
     })
   }
