@@ -12,6 +12,8 @@ import {startUpPositions} from "./static.js";
 import {MatrixTTS} from "./tts.js";
 import {Marketplace} from "./marketplace.js";
 import {Inventory} from "./invertoryManager.js";
+import {RCSAccount} from "./rocket-crafting-account.js";
+import {en} from "../../../public/res/multilang/en-backup.js";
 
 /**
  * @description
@@ -55,6 +57,12 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
 
   // addEventListener('AmmoReady', async () => {})
   forestOfHollowBlood.player.data = SS.get('player');
+
+  // ASYNC FOR very small json become big buggy - pragmatic
+  if(typeof app.label == 'undefined' || typeof app.label.get == 'undefined' || typeof app.label.get.mariasword == 'undefined') {
+    if(typeof app.label == 'undefined') app.label = {get: {}};
+    app.label.get = en;
+  }
 
   forestOfHollowBlood.net = new MatrixStream({
     active: true,
@@ -124,7 +132,7 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
   addEventListener("onConnectionCreated", (e) => {
     const remoteCons = Array.from(e.detail.connection.session.remoteConnections.entries());
     if(remoteCons.length == 4) {
-      if (location.hostname.indexOf('localhost') == -1) app.account.gameStarted();
+      if(location.hostname.indexOf('localhost') == -1) app.account.gameStarted();
     }
     const isLocal = e.detail.connection.connectionId == app.net.session.connection.connectionId;
     if(e.detail.connection.session.remoteConnections.size == 0) {

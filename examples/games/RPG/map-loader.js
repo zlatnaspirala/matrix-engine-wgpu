@@ -265,7 +265,7 @@ export class MEMapLoader {
     setTimeout(() => {
       this.collectionOfTree1 = this.core.mainRenderBundle.filter((o => o.name.indexOf('tree') != -1));
       this.addInstancing();
-    }, 3500);
+    }, 4000);
   }
 
   addInstancing() {

@@ -740,7 +740,7 @@ class Character extends _hero.Hero {
 }
 exports.Character = Character;
 
-},{"../../../src/engine/loaders/webgpu-gltf":53,"../../../src/engine/utils":60,"./creep-character":3,"./friendly-character":7,"./hero":8,"./nav-mesh":13,"./static":14,"wgpu-matrix":31}],2:[function(require,module,exports){
+},{"../../../src/engine/loaders/webgpu-gltf":54,"../../../src/engine/utils":61,"./creep-character":3,"./friendly-character":7,"./hero":8,"./nav-mesh":13,"./static":15,"wgpu-matrix":32}],2:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -1025,7 +1025,7 @@ class Controller {
 }
 exports.Controller = Controller;
 
-},{"../../../src/engine/raycast.js":59,"../../../src/engine/utils.js":60,"./nav-mesh.js":13,"wgpu-matrix":31}],3:[function(require,module,exports){
+},{"../../../src/engine/raycast.js":60,"../../../src/engine/utils.js":61,"./nav-mesh.js":13,"wgpu-matrix":32}],3:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -1320,7 +1320,7 @@ class Creep extends _hero.Hero {
 }
 exports.Creep = Creep;
 
-},{"../../../src/engine/loaders/webgpu-gltf":53,"../../../src/engine/utils":60,"./hero":8,"./static":14}],4:[function(require,module,exports){
+},{"../../../src/engine/loaders/webgpu-gltf":54,"../../../src/engine/utils":61,"./hero":8,"./static":15}],4:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -1539,7 +1539,7 @@ class Enemie extends _hero.Hero {
 }
 exports.Enemie = Enemie;
 
-},{"../../../src/engine/loaders/webgpu-gltf":53,"../../../src/engine/utils":60,"./hero":8,"./nav-mesh":13,"./static":14}],6:[function(require,module,exports){
+},{"../../../src/engine/loaders/webgpu-gltf":54,"../../../src/engine/utils":61,"./hero":8,"./nav-mesh":13,"./static":15}],6:[function(require,module,exports){
 "use strict";
 
 var _world = _interopRequireDefault(require("../../../src/world.js"));
@@ -1556,6 +1556,8 @@ var _static = require("./static.js");
 var _tts = require("./tts.js");
 var _marketplace = require("./marketplace.js");
 var _invertoryManager = require("./invertoryManager.js");
+var _rocketCraftingAccount = require("./rocket-crafting-account.js");
+var _enBackup = require("../../../public/res/multilang/en-backup.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 /**
  * @description
@@ -1587,7 +1589,7 @@ let forestOfHollowBlood = new _world.default({
     a: 1
   }
 }, () => {
-  forestOfHollowBlood.account = new RCSAccount("https://maximumroulette.com");
+  forestOfHollowBlood.account = new _rocketCraftingAccount.RCSAccount("https://maximumroulette.com");
   forestOfHollowBlood.account.createDOM();
   forestOfHollowBlood.tts = new _tts.MatrixTTS();
   forestOfHollowBlood.player = {
@@ -1600,6 +1602,14 @@ let forestOfHollowBlood = new _world.default({
 
   // addEventListener('AmmoReady', async () => {})
   forestOfHollowBlood.player.data = _utils.SS.get('player');
+
+  // ASYNC FOR very small json become big buggy - pragmatic
+  if (typeof app.label == 'undefined' || typeof app.label.get == 'undefined' || typeof app.label.get.mariasword == 'undefined') {
+    if (typeof app.label == 'undefined') app.label = {
+      get: {}
+    };
+    app.label.get = _enBackup.en;
+  }
   forestOfHollowBlood.net = new _net.MatrixStream({
     active: true,
     domain: 'maximumroulette.com',
@@ -1862,7 +1872,7 @@ let forestOfHollowBlood = new _world.default({
 });
 window.app = forestOfHollowBlood;
 
-},{"../../../src/engine/collision-sub-system.js":35,"../../../src/engine/networking/matrix-stream.js":57,"../../../src/engine/networking/net.js":58,"../../../src/engine/utils.js":60,"../../../src/world.js":83,"./character-base.js":1,"./controller.js":2,"./enemies-manager.js":4,"./hud.js":9,"./invertoryManager.js":10,"./map-loader.js":11,"./marketplace.js":12,"./static.js":14,"./tts.js":15}],7:[function(require,module,exports){
+},{"../../../public/res/multilang/en-backup.js":33,"../../../src/engine/collision-sub-system.js":36,"../../../src/engine/networking/matrix-stream.js":58,"../../../src/engine/networking/net.js":59,"../../../src/engine/utils.js":61,"../../../src/world.js":84,"./character-base.js":1,"./controller.js":2,"./enemies-manager.js":4,"./hud.js":9,"./invertoryManager.js":10,"./map-loader.js":11,"./marketplace.js":12,"./rocket-crafting-account.js":14,"./static.js":15,"./tts.js":16}],7:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -2009,7 +2019,7 @@ class FriendlyHero extends _hero.Hero {
 }
 exports.FriendlyHero = FriendlyHero;
 
-},{"../../../src/engine/loaders/webgpu-gltf":53,"../../../src/engine/utils":60,"./hero":8,"./static":14}],8:[function(require,module,exports){
+},{"../../../src/engine/loaders/webgpu-gltf":54,"../../../src/engine/utils":61,"./hero":8,"./static":15}],8:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -3119,7 +3129,7 @@ class HUD {
 }
 exports.HUD = HUD;
 
-},{"../../../src/engine/utils.js":60}],10:[function(require,module,exports){
+},{"../../../src/engine/utils.js":61}],10:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -3634,7 +3644,7 @@ class MEMapLoader {
     setTimeout(() => {
       this.collectionOfTree1 = this.core.mainRenderBundle.filter(o => o.name.indexOf('tree') != -1);
       this.addInstancing();
-    }, 3500);
+    }, 4000);
   }
   addInstancing() {
     const spacing = 150;
@@ -3719,7 +3729,7 @@ class MEMapLoader {
 }
 exports.MEMapLoader = MEMapLoader;
 
-},{"../../../src/engine/effects/gen-tex2.js":41,"../../../src/engine/effects/gen.js":42,"../../../src/engine/loader-obj.js":50,"../../../src/engine/loaders/webgpu-gltf.js":53,"../../../src/engine/utils.js":60,"./nav-mesh.js":13,"./static.js":14}],12:[function(require,module,exports){
+},{"../../../src/engine/effects/gen-tex2.js":42,"../../../src/engine/effects/gen.js":43,"../../../src/engine/loader-obj.js":51,"../../../src/engine/loaders/webgpu-gltf.js":54,"../../../src/engine/utils.js":61,"./nav-mesh.js":13,"./static.js":15}],12:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -4809,7 +4819,496 @@ function resolvePairRepulsion(Apos, Bpos, minDistance = 30.0, pushStrength = 0.5
   return false;
 }
 
-},{"../../../src/engine/utils.js":60}],14:[function(require,module,exports){
+},{"../../../src/engine/utils.js":61}],14:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.ROCK_RANK = exports.RCSAccount = void 0;
+var _utils = require("../../../src/engine/utils.js");
+/**
+ * @description This is clone from hang3d.
+ * @author Nikola Lukic 
+ * @email zlatnaspirala@gmail.com
+ * @website https://maximumroulette.com
+ */
+
+class RCSAccount {
+  email = null;
+  token = null;
+  constructor(apiDomain) {
+    this.apiDomain = apiDomain;
+    this.visitor();
+    addEventListener('F12', e => {
+      console.log(`%c[Debbuger] ${e.detail}`, REDLOG);
+      localStorage.removeItem("visitor");
+      this.visitor(e.detail);
+    });
+
+    // this.leaderboardBtn = document.createElement('div')
+    // this.leaderboardBtn.id = 'leaderboard';
+    // this.leaderboardBtn.innerHTML = `
+    //   <button id="leaderboardBtn" class="btn">Leaderboard</button>
+    // `;
+    // document.body.appendChild(this.leaderboardBtn);
+
+    // this.leaderboardBtn = document.getElementById('leaderboardBtn');
+    // this.leaderboardBtn.addEventListener("click", this.getLeaderboard)
+  }
+  createDOM = () => {
+    var parent = document.createElement('div');
+    this.parent = parent;
+    //parent.classList.add('')
+    parent.id = 'myAccountLoginForm';
+    var logo = document.createElement('img');
+    logo.id = 'logologin';
+    logo.setAttribute('alt', 'Login');
+    logo.style = 'width: 100px;border-radius: 10px;padding: 6px;';
+    logo.src = './res/icons/512.png';
+    var title = document.createElement('div');
+    title.style.display = 'flex';
+    title.innerHTML = `
+		
+		<div style='width:100%; margin: 5px 5px;'> <h2 style='margin: 5px 5px;'>Rocket GamePlay Login Form</h2>
+		 Maximumroulette.com</div>
+		`;
+    title.appendChild(logo);
+    var content = document.createElement('div');
+    content.style.display = 'flex';
+    content.style.flexDirection = 'column';
+    content.style.background = 'transparent';
+    var emailLabel = document.createElement('label');
+    emailLabel.id = 'emailLabel';
+    emailLabel.innerHTML = `Email:`;
+    emailLabel.setAttribute('for', 'arg-email');
+    var email = document.createElement('input');
+    // email.classList.add('myInput')
+    email.id = 'arg-email';
+    var passLabel = document.createElement('label');
+    passLabel.id = 'passLabel';
+    passLabel.innerHTML = `Passw:`;
+    passLabel.setAttribute('for', 'arg-pass');
+    var pass = document.createElement('input');
+    pass.id = 'arg-pass';
+    // pass.classList.add('myInput')
+    var loginBtn = document.createElement('button');
+    loginBtn.id = 'loginRCSBtn';
+    loginBtn.innerHTML = `LOGIN`;
+    loginBtn.classList.add('btn');
+    loginBtn.classList.add('btnMargin');
+    loginBtn.addEventListener('click', this.login);
+    var gotoRegisterMyAccount = document.createElement('button');
+    gotoRegisterMyAccount.id = 'registerBtn';
+    gotoRegisterMyAccount.classList.add(`btn`);
+    gotoRegisterMyAccount.classList.add(`btnMargin`);
+    gotoRegisterMyAccount.innerHTML = `REGISTER`;
+    gotoRegisterMyAccount.addEventListener('click', this.register);
+    var hideLoginMyAccount = document.createElement('button');
+    hideLoginMyAccount.classList.add(`btn`);
+    hideLoginMyAccount.classList.add(`btnMargin`);
+    hideLoginMyAccount.innerHTML = `NO LOGIN -> INSTANT PLAY`;
+    hideLoginMyAccount.addEventListener('click', () => {
+      (0, _utils.byId)('myAccountLoginForm').remove();
+    });
+    if ((0, _utils.isMobile)() == false) {
+      var descText = document.createElement('div');
+      descText.id = 'descText';
+      descText.style = 'font-size:smaller;';
+      descText.innerHTML = `<span style="width:45%" >Welcome to rocketCraftingServer platform, enjoy in 'Forest Of Hollow Blood' lets magic begin.</span>`;
+      // <span style="width:45%;" >Add Url params '?video=false&audio=false' to disable streaming</span>
+    }
+    parent.appendChild(title);
+    parent.appendChild(content);
+    content.appendChild(emailLabel);
+    content.appendChild(email);
+    content.appendChild(passLabel);
+    content.appendChild(pass);
+    content.appendChild(loginBtn);
+    content.appendChild(gotoRegisterMyAccount);
+    content.appendChild(hideLoginMyAccount);
+    // content.appendChild(logo)
+    if ((0, _utils.isMobile)() == false) content.appendChild(descText);
+    document.body.appendChild(parent);
+  };
+  createLeaderboardDOM = data => {
+    if ((0, _utils.byId)('leaderboard') != null) {
+      (0, _utils.byId)('leaderboard').style.display = 'block';
+      return;
+    }
+    // console.log('TEST MOBILE +++')
+    var parent = document.createElement('div');
+    parent.style = ``;
+    parent.classList.add('leaderboard');
+    // if(isMobile() == true) {
+    // 	parent.style = `
+    // 	position: absolute;
+    // 	border-radius: 4px;
+    // 	top: 10%;
+    // 	left: 0%;
+    // 	width: 95%;
+    // 	padding: 10px;`;
+    // }
+    parent.id = 'leaderboard';
+    var title = document.createElement('div');
+    title.innerHTML = `<h3>Top 10 leaderboard [RocketCraftingServer]</h3>`;
+    parent.appendChild(title);
+    var tableLabel = document.createElement('div');
+    tableLabel.style.display = 'flex';
+    tableLabel.style.flexDirection = 'row';
+    var nicklabel = document.createElement('div');
+    nicklabel.innerText = 'Nickname';
+    nicklabel.style.width = '100%';
+    var pointslabel = document.createElement('div');
+    pointslabel.innerText = 'Points';
+    pointslabel.style.width = '100%';
+    tableLabel.appendChild(nicklabel);
+    tableLabel.appendChild(pointslabel);
+    parent.appendChild(tableLabel);
+    var parentForTable = document.createElement('div');
+    parentForTable.style.height = '70vh';
+    parentForTable.style.overflow = 'scroll';
+    parentForTable.style.overflowX = 'hidden';
+    data.forEach((element, index) => {
+      var table = document.createElement('div');
+      table.style.display = 'flex';
+      table.style.flexDirection = 'row';
+      table.style.justifyContent = 'center';
+      table.style.alignItems = 'center';
+      table.style.boxShadow = 'none';
+      var nick = document.createElement('div');
+      nick.innerText = element.nickname;
+      nick.style.width = '100%';
+      if (index == 0) {
+        nick.style.boxShadow = '0px 7px 2px -1px #ffe100';
+      } else if (index == 1) {
+        nick.style.boxShadow = '0px 7px 2px -1px white';
+      } else if (index == 2) {
+        nick.style.boxShadow = '0px 7px 2px -1px #a01010';
+      } else {
+        nick.style.boxShadow = '0px 7px 2px -1px #757471';
+      }
+      var points = document.createElement('div');
+      points.innerText = element.points;
+      points.style.width = '100%';
+      if (index == 0) {
+        points.style.boxShadow = '0px 7px 2px -1px #ffe100';
+      } else if (index == 1) {
+        points.style.boxShadow = '0px 7px 2px -1px white';
+      } else if (index == 2) {
+        points.style.boxShadow = '0px 7px 2px -1px #a01010';
+      } else {
+        points.style.boxShadow = '0px 7px 2px -1px #757471';
+      }
+      // var medal = document.createElement('img');
+      // medal.id = 'medal';
+      // logo.src = './assets/icons/icon96.png';
+      table.appendChild(nick);
+      table.appendChild(points);
+      table.innerHTML += ROCK_RANK.getRankMedalImg(ROCK_RANK.getRank(element.points));
+      parentForTable.appendChild(table);
+    });
+    parent.appendChild(parentForTable);
+    var hideBtn = document.createElement('button');
+    hideBtn.classList = 'btn';
+    hideBtn.style.marginTop = '7px';
+    hideBtn.innerText = 'HIDE';
+    hideBtn.addEventListener('click', () => {
+      parent.style.display = 'none';
+    });
+    parent.appendChild(hideBtn);
+    document.body.appendChild(parent);
+  };
+  register = () => {
+    this.register_procedure(this);
+  };
+  async register_procedure() {
+    let route = this.apiDomain || location.origin;
+    (0, _utils.byId)('loginRCSBtn').disabled = true;
+    (0, _utils.byId)('registerBtn').disabled = true;
+    let args = {
+      emailField: (0, _utils.byId)('arg-email') != null ? (0, _utils.byId)('arg-email').value : null,
+      passwordField: (0, _utils.byId)('arg-pass') != null ? (0, _utils.byId)('arg-pass').value : null
+    };
+    if (args.emailField == null || args.passwordField == null) {
+      _utils.mb.show('Please fill up email and passw for login or register.');
+    }
+    fetch(route + '/rocket/register', {
+      method: 'POST',
+      headers: _utils.jsonHeaders,
+      body: JSON.stringify(args)
+    }).then(d => {
+      return d.json();
+    }).then(r => {
+      _utils.mb.error(`${r.message}`);
+      if (r.message == "Check email for conmfirmation key.") {
+        this.email = (0, _utils.byId)('arg-email').value;
+        sessionStorage.setItem('email', (0, _utils.byId)('arg-email').value);
+        (0, _utils.byId)('emailLabel').remove();
+        (0, _utils.byId)('loginRCSBtn').remove();
+        (0, _utils.byId)('arg-email').remove();
+        (0, _utils.byId)("passLabel").innerHTML = 'ENTER CONFIRMATION CODE';
+        (0, _utils.byId)('arg-pass').value = "";
+        (0, _utils.byId)('registerBtn').removeEventListener('click', this.register);
+        (0, _utils.byId)('registerBtn').disabled = false;
+        (0, _utils.byId)('registerBtn').innerHTML = 'CONFIRM CODE FROM EMAIL';
+        (0, _utils.byId)('registerBtn').id = 'CC';
+        (0, _utils.byId)('CC').addEventListener('click', () => {
+          this.confirmation();
+        });
+        sessionStorage.setItem('RocketAcountRegister', 'Check email for conmfirmation key.');
+      } else {
+        setTimeout(() => {
+          _utils.mb.show("Next Register/Login call try in 5 secounds...");
+          this.preventDBLOG = false;
+          this.preventDBREG = false;
+          (0, _utils.byId)('loginRCSBtn').disabled = false;
+          (0, _utils.byId)('registerBtn').disabled = false;
+        }, 5000);
+      }
+    }).catch(err => {
+      console.log('[My Account Error]', err);
+      _utils.mb.show("Next Register call try in 5 secounds...");
+      setTimeout(() => {
+        this.preventDBLOG = false;
+        this.preventDBREG = false;
+        (0, _utils.byId)('loginRCSBtn').disabled = false;
+        (0, _utils.byId)('registerBtn').disabled = false;
+      }, 5000);
+      return;
+    });
+  }
+  confirmation = async () => {
+    let route = this.apiDomain;
+    const args = {
+      emailField: this.email,
+      tokenField: (0, _utils.byId)('arg-pass').value
+    };
+    fetch(route + '/rocket/confirmation', {
+      method: 'POST',
+      headers: _utils.jsonHeaders,
+      body: JSON.stringify(args)
+    }).then(d => {
+      return d.json();
+    }).then(r => {
+      if (r.message == "Wrong confirmation code.") {} else if (r.message == "Confirmation done.") {
+        alert(r.message);
+        this.parent.innerHTML = '';
+        // ----
+        this.createDOM();
+      }
+      _utils.mb.error(`${r.message}`);
+    });
+  };
+  gameStarted = async () => {
+    let route = this.apiDomain || location.origin;
+    let args = {
+      username: 'guest'
+    };
+    fetch(route + '/rocket/fohbstart', {
+      method: 'POST',
+      headers: _utils.jsonHeaders,
+      body: JSON.stringify(args)
+    }).then(d => {
+      return d.json();
+    }).then(r => {
+      console.log(r.message);
+      _utils.mb.show(`${r.message}`);
+      if (r.message == "User logged") {}
+    }).catch(err => {
+      console.log('[RCS Error]', err);
+      return;
+    });
+  };
+  login = async () => {
+    let route = this.apiDomain || location.origin;
+    (0, _utils.byId)('loginRCSBtn').disabled = true;
+    (0, _utils.byId)('registerBtn').disabled = true;
+    let args = {
+      emailField: (0, _utils.byId)('arg-email') != null ? (0, _utils.byId)('arg-email').value : null,
+      passwordField: (0, _utils.byId)('arg-pass') != null ? (0, _utils.byId)('arg-pass').value : null
+    };
+    fetch(route + '/rocket/login', {
+      method: 'POST',
+      headers: _utils.jsonHeaders,
+      body: JSON.stringify(args)
+    }).then(d => {
+      return d.json();
+    }).then(r => {
+      console.log(r.message);
+      _utils.mb.show(`${r.message}`);
+      if (r.message == "User logged") {
+        this.email = (0, _utils.byId)('arg-email').value;
+        (0, _utils.byId)('myAccountLoginForm').style.display = 'none';
+        sessionStorage.setItem('RocketAcount', JSON.stringify(r.flag));
+      }
+    }).catch(err => {
+      console.log('[My Account Error]', err);
+      _utils.mb.show("Next Login call try in 5 secounds...");
+      setTimeout(() => {
+        this.preventDBLOG = false;
+        this.preventDBREG = false;
+        (0, _utils.byId)('registerBtn').disabled = false;
+        (0, _utils.byId)('loginRCSBtn').disabled = false;
+      }, 5000);
+      return;
+    });
+  };
+  async visitor(isRegular) {
+    if (typeof isRegular === 'undefined') isRegular = 'Yes';
+    if (localStorage.getItem("visitor") == 'welcome') return;
+    let route = this.apiDomain;
+    let args = {
+      email: (0, _utils.byId)('arg-email') != null ? (0, _utils.byId)('arg-email').value : 'no-email',
+      userAgent: navigator.userAgent.toString(),
+      fromUrl: location.href.toString(),
+      isRegular: isRegular
+    };
+    fetch(route + '/rocket/visitors', {
+      method: 'POST',
+      headers: _utils.jsonHeaders,
+      body: JSON.stringify(args)
+    }).then(d => {
+      return d.json();
+    }).then(() => {
+      localStorage.setItem("visitor", "welcome");
+    }).catch(err => {
+      console.log('ERR', err);
+    });
+  }
+  getLeaderboard = async e => {
+    e.preventDefault();
+    (0, _utils.byId)('netHeaderTitle').click();
+    // this.leaderboardBtn.disabled = true;
+    fetch(this.apiDomain + '/rocket/public-leaderboard', {
+      method: 'POST',
+      headers: _utils.jsonHeaders,
+      body: JSON.stringify({})
+    }).then(d => {
+      return d.json();
+    }).then(r => {
+      _utils.mb.error(`${r.message}`);
+      if (r.message == "You got leaderboard data.") {
+        this.leaderboardData = r.leaderboard;
+        this.createLeaderboardDOM(r.leaderboard);
+      }
+      // setTimeout(() => {this.leaderboardBtn.disabled = false}, 5000)
+    }).catch(err => {
+      console.log('[Leaderboard Error]', err);
+      _utils.mb.show("Next call try in 5 secounds...");
+      // setTimeout(() => {this.leaderboardBtn.disabled = false}, 5000)
+      return;
+    });
+  };
+  getLeaderboardFor3dContext = async e => {
+    // e.preventDefault();
+    fetch(this.apiDomain + '/rocket/public-leaderboard', {
+      method: 'POST',
+      headers: _utils.jsonHeaders,
+      body: JSON.stringify({})
+    }).then(d => {
+      return d.json();
+    }).then(r => {
+      _utils.mb.error(`${r.message}`);
+      if (r.message == "You got leaderboard data.") {
+        this.leaderboardData = r.leaderboard;
+        console.log('PREPARE FOR 3d context', this.leaderboardData);
+      }
+      setTimeout(() => {
+        this.leaderboardBtn.disabled = false;
+      }, 5000);
+    }).catch(err => {
+      console.log('[Leaderboard Error]', err);
+      _utils.mb.show("Next call try in 5 secounds...");
+      setTimeout(() => {
+        this.leaderboardBtn.disabled = false;
+      }, 5000);
+      return;
+    });
+  };
+  async points10() {
+    let route = this.apiDomain;
+    if (sessionStorage.getItem('RocketAcount') != null && JSON.parse(sessionStorage.getItem('RocketAcount')).token) {
+      console.log("NO ACCOUNT USER", sessionStorage.getItem('RocketAcount'));
+      return;
+    }
+    let args = {
+      email: (0, _utils.byId)('arg-email') != null ? (0, _utils.byId)('arg-email').value : 'no-email',
+      userAgent: navigator.userAgent.toString(),
+      fromUrl: location.href.toString(),
+      token: JSON.parse(sessionStorage.getItem('RocketAcount')).token,
+      mapName: 'FOHB'
+    };
+    fetch(route + '/rocket/point-plus10', {
+      method: 'POST',
+      headers: _utils.jsonHeaders,
+      body: JSON.stringify(args)
+    }).then(d => {
+      return d.json();
+    }).then(() => {
+      localStorage.setItem("visitor", "welcome");
+    }).catch(err => {
+      console.log('ERR', err);
+    });
+  }
+  async dead() {
+    let route = this.apiDomain;
+    if (sessionStorage.getItem('RocketAcount') != null && JSON.parse(sessionStorage.getItem('RocketAcount')).token) {
+      console.log("NO ACCOUNT USER", sessionStorage.getItem('RocketAcount'));
+      return;
+    }
+    let args = {
+      email: (0, _utils.byId)('arg-email') != null ? (0, _utils.byId)('arg-email').value : 'no-email',
+      userAgent: navigator.userAgent.toString(),
+      fromUrl: location.href.toString(),
+      token: JSON.parse(sessionStorage.getItem('RocketAcount')).token,
+      mapName: 'FOHB'
+    };
+    fetch(route + '/rocket/point-plus10', {
+      method: 'POST',
+      headers: _utils.jsonHeaders,
+      body: JSON.stringify(args)
+    }).then(d => {
+      return d.json();
+    }).then(() => {
+      localStorage.setItem("visitor", "welcome");
+    }).catch(err => {
+      console.log('ERR', err);
+    });
+  }
+}
+exports.RCSAccount = RCSAccount;
+var ROCK_RANK = exports.ROCK_RANK = {
+  getRank: points => {
+    points = parseInt(points);
+    if (points < 1001) {
+      return "junior";
+    } else if (points < 2000) {
+      return "senior";
+    } else if (points < 3000) {
+      return "captain";
+    } else if (points < 5000) {
+      return "general";
+    } else {
+      return "ultimate-killer";
+    }
+  },
+  getRankMedalImg: rank => {
+    if (rank == 'junior') {
+      return `<img style="height: 60px" src="./res/icons/medals/1.png" />`;
+    } else if (points == 'senior') {
+      return `<img style="height: 60px" src="./res/icons/medals/2.png" />`;
+    } else if (points == 'captain') {
+      return `<img style="height: 60px" src="./res/icons/medals/3.png" />`;
+    } else if (points == 'general') {
+      return `<img style="height: 60px" src="./res/icons/medals/4.png" />`;
+    } else {
+      return `<img style="height: 60px" src="./res/icons/medals/5.png" />`;
+    }
+  }
+};
+
+},{"../../../src/engine/utils.js":61}],15:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -4831,7 +5330,7 @@ const creepPoints = exports.creepPoints = {
   }
 };
 
-},{}],15:[function(require,module,exports){
+},{}],16:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -4949,9 +5448,9 @@ class MatrixTTS {
 }
 exports.MatrixTTS = MatrixTTS;
 
-},{}],16:[function(require,module,exports){
+},{}],17:[function(require,module,exports){
 arguments[4][13][0].apply(exports,arguments)
-},{"../../../src/engine/utils.js":60,"dup":13}],17:[function(require,module,exports){
+},{"../../../src/engine/utils.js":61,"dup":13}],18:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -4961,7 +5460,7 @@ exports.default = void 0;
 var _bvhLoader = require("./module/bvh-loader");
 var _default = exports.default = _bvhLoader.MEBvh;
 
-},{"./module/bvh-loader":18}],18:[function(require,module,exports){
+},{"./module/bvh-loader":19}],19:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -5650,7 +6149,7 @@ class MEBvh {
 }
 exports.MEBvh = MEBvh;
 
-},{"webgpu-matrix":30}],19:[function(require,module,exports){
+},{"webgpu-matrix":31}],20:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -5728,7 +6227,7 @@ function equals(a, b) {
   return Math.abs(a - b) <= tolerance * Math.max(1, Math.abs(a), Math.abs(b));
 }
 
-},{}],20:[function(require,module,exports){
+},{}],21:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -5757,7 +6256,7 @@ var vec4 = _interopRequireWildcard(require("./vec4.js"));
 exports.vec4 = vec4;
 function _interopRequireWildcard(e, t) { if ("function" == typeof WeakMap) var r = new WeakMap(), n = new WeakMap(); return (_interopRequireWildcard = function (e, t) { if (!t && e && e.__esModule) return e; var o, i, f = { __proto__: null, default: e }; if (null === e || "object" != typeof e && "function" != typeof e) return f; if (o = t ? n : r) { if (o.has(e)) return o.get(e); o.set(e, f); } for (const t in e) "default" !== t && {}.hasOwnProperty.call(e, t) && ((i = (o = Object.defineProperty) && Object.getOwnPropertyDescriptor(e, t)) && (i.get || i.set) ? o(f, t, i) : f[t] = e[t]); return f; })(e, t); }
 
-},{"./common.js":19,"./mat2.js":21,"./mat2d.js":22,"./mat3.js":23,"./mat4.js":24,"./quat.js":25,"./quat2.js":26,"./vec2.js":27,"./vec3.js":28,"./vec4.js":29}],21:[function(require,module,exports){
+},{"./common.js":20,"./mat2.js":22,"./mat2d.js":23,"./mat3.js":24,"./mat4.js":25,"./quat.js":26,"./quat2.js":27,"./vec2.js":28,"./vec3.js":29,"./vec4.js":30}],22:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -6219,7 +6718,7 @@ var mul = exports.mul = multiply;
  */
 var sub = exports.sub = subtract;
 
-},{"./common.js":19}],22:[function(require,module,exports){
+},{"./common.js":20}],23:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -6733,7 +7232,7 @@ var mul = exports.mul = multiply;
  */
 var sub = exports.sub = subtract;
 
-},{"./common.js":19}],23:[function(require,module,exports){
+},{"./common.js":20}],24:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -7545,7 +8044,7 @@ var mul = exports.mul = multiply;
  */
 var sub = exports.sub = subtract;
 
-},{"./common.js":19}],24:[function(require,module,exports){
+},{"./common.js":20}],25:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -9565,7 +10064,7 @@ var mul = exports.mul = multiply;
  */
 var sub = exports.sub = subtract;
 
-},{"./common.js":19}],25:[function(require,module,exports){
+},{"./common.js":20}],26:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -10348,7 +10847,7 @@ var setAxes = exports.setAxes = function () {
   };
 }();
 
-},{"./common.js":19,"./mat3.js":23,"./vec3.js":28,"./vec4.js":29}],26:[function(require,module,exports){
+},{"./common.js":20,"./mat3.js":24,"./vec3.js":29,"./vec4.js":30}],27:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -11221,7 +11720,7 @@ function equals(a, b) {
   return Math.abs(a0 - b0) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a0), Math.abs(b0)) && Math.abs(a1 - b1) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a1), Math.abs(b1)) && Math.abs(a2 - b2) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a2), Math.abs(b2)) && Math.abs(a3 - b3) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a3), Math.abs(b3)) && Math.abs(a4 - b4) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a4), Math.abs(b4)) && Math.abs(a5 - b5) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a5), Math.abs(b5)) && Math.abs(a6 - b6) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a6), Math.abs(b6)) && Math.abs(a7 - b7) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a7), Math.abs(b7));
 }
 
-},{"./common.js":19,"./mat4.js":24,"./quat.js":25}],27:[function(require,module,exports){
+},{"./common.js":20,"./mat4.js":25,"./quat.js":26}],28:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -11899,7 +12398,7 @@ var forEach = exports.forEach = function () {
   };
 }();
 
-},{"./common.js":19}],28:[function(require,module,exports){
+},{"./common.js":20}],29:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -12751,7 +13250,7 @@ var forEach = exports.forEach = function () {
   };
 }();
 
-},{"./common.js":19}],29:[function(require,module,exports){
+},{"./common.js":20}],30:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -13458,7 +13957,7 @@ var forEach = exports.forEach = function () {
   };
 }();
 
-},{"./common.js":19}],30:[function(require,module,exports){
+},{"./common.js":20}],31:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -17391,7 +17890,7 @@ function setDefaultType(ctor) {
   setDefaultType$1(ctor);
 }
 
-},{}],31:[function(require,module,exports){
+},{}],32:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -22738,7 +23237,7 @@ function setDefaultType(ctor) {
   setDefaultType$1(ctor);
 }
 
-},{}],32:[function(require,module,exports){
+},{}],33:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -22808,7 +23307,7 @@ const en = exports.en = {
   "invertorysecret": "Corona Ignifera magic secret Sol Corona,Flamma Crystal\n  Aqua Sanctum magic secret Mare Pearl,Luna Gemma\n Umbra Silens magic secret Umbra Vellum,Noctis Band\n Terra Fortis magic secret Terra Clavis,Ardent Vine,Silva Heart\n Ventus Aegis magic secret Ventus Pluma,Ignifur Cape\n Ferrum Lux magic secret Ferrum Anulus,Lux Feather\n Sanguis Vita magic secret Sanguis Orb,Vita Flos \n Tenebris Vox magic secret Tenebris Fang,Vox Chime \n Aether Gladius magic secret Gladius Ignis,Aether Scale \n Fulgur Mortis magic secret Fulgur Stone,Mortis Bone \n Corona Umbra magic secret Umbra Silens,Corona Ignifera,Tenebris Vox \n Terra Sanctum magic secret Terra Fortis,Aqua Sanctum \n Aether Fortis magic secret Aether Gladius,Ferrum Lux \n  Vita Mindza magic secret Sanguis Vita,Ventus Aegis \n Mortis Ultima magic secret Fulgur Mortis,Corona Umbra,Aether Fortis"
 };
 
-},{}],33:[function(require,module,exports){
+},{}],34:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -23222,7 +23721,7 @@ class MEBall {
 }
 exports.default = MEBall;
 
-},{"../shaders/shaders":75,"./engine":45,"./matrix-class":55,"wgpu-matrix":31}],34:[function(require,module,exports){
+},{"../shaders/shaders":76,"./engine":46,"./matrix-class":56,"wgpu-matrix":32}],35:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -23260,7 +23759,7 @@ class Behavior {
 }
 exports.default = Behavior;
 
-},{"./utils":60}],35:[function(require,module,exports){
+},{"./utils":61}],36:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -23307,7 +23806,7 @@ class CollisionSystem {
 }
 exports.CollisionSystem = CollisionSystem;
 
-},{"../../examples/games/rpg/nav-mesh":16}],36:[function(require,module,exports){
+},{"../../examples/games/rpg/nav-mesh":17}],37:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -23732,7 +24231,7 @@ class MECube {
 }
 exports.default = MECube;
 
-},{"../shaders/shaders":75,"./engine":45,"./matrix-class":55,"wgpu-matrix":31}],37:[function(require,module,exports){
+},{"../shaders/shaders":76,"./engine":46,"./matrix-class":56,"wgpu-matrix":32}],38:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -23895,7 +24394,7 @@ class HPBarEffect {
 }
 exports.HPBarEffect = HPBarEffect;
 
-},{"../../shaders/energy-bars/energy-bar-shader.js":63,"wgpu-matrix":31}],38:[function(require,module,exports){
+},{"../../shaders/energy-bars/energy-bar-shader.js":64,"wgpu-matrix":32}],39:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -24114,7 +24613,7 @@ class FlameEmitter {
 }
 exports.FlameEmitter = FlameEmitter;
 
-},{"../../shaders/flame-effect/flame-instanced":64,"../utils":60,"wgpu-matrix":31}],39:[function(require,module,exports){
+},{"../../shaders/flame-effect/flame-instanced":65,"../utils":61,"wgpu-matrix":32}],40:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -24285,7 +24784,7 @@ class FlameEffect {
 }
 exports.FlameEffect = FlameEffect;
 
-},{"../../shaders/flame-effect/flameEffect":65,"wgpu-matrix":31}],40:[function(require,module,exports){
+},{"../../shaders/flame-effect/flameEffect":66,"wgpu-matrix":32}],41:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -24526,7 +25025,7 @@ class GenGeoTexture {
 }
 exports.GenGeoTexture = GenGeoTexture;
 
-},{"../../shaders/standalone/geo.tex.js":77,"../geometry-factory.js":46,"wgpu-matrix":31}],41:[function(require,module,exports){
+},{"../../shaders/standalone/geo.tex.js":78,"../geometry-factory.js":47,"wgpu-matrix":32}],42:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -24783,7 +25282,7 @@ class GenGeoTexture2 {
 }
 exports.GenGeoTexture2 = GenGeoTexture2;
 
-},{"../../shaders/standalone/geo.tex.js":77,"../geometry-factory.js":46,"wgpu-matrix":31}],42:[function(require,module,exports){
+},{"../../shaders/standalone/geo.tex.js":78,"../geometry-factory.js":47,"wgpu-matrix":32}],43:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -24973,7 +25472,7 @@ class GenGeo {
 }
 exports.GenGeo = GenGeo;
 
-},{"../../shaders/standalone/geo.instanced.js":76,"../geometry-factory.js":46,"wgpu-matrix":31}],43:[function(require,module,exports){
+},{"../../shaders/standalone/geo.instanced.js":77,"../geometry-factory.js":47,"wgpu-matrix":32}],44:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -25136,7 +25635,7 @@ class MANABarEffect {
 }
 exports.MANABarEffect = MANABarEffect;
 
-},{"../../shaders/energy-bars/energy-bar-shader.js":63,"wgpu-matrix":31}],44:[function(require,module,exports){
+},{"../../shaders/energy-bars/energy-bar-shader.js":64,"wgpu-matrix":32}],45:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -25279,7 +25778,7 @@ class PointerEffect {
 }
 exports.PointerEffect = PointerEffect;
 
-},{"../../shaders/standalone/pointer.effect.js":78,"wgpu-matrix":31}],45:[function(require,module,exports){
+},{"../../shaders/standalone/pointer.effect.js":79,"wgpu-matrix":32}],46:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -25822,7 +26321,7 @@ class RPGCamera extends CameraBase {
 }
 exports.RPGCamera = RPGCamera;
 
-},{"./utils":60,"wgpu-matrix":31}],46:[function(require,module,exports){
+},{"./utils":61,"wgpu-matrix":32}],47:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -26134,7 +26633,7 @@ class GeometryFactory {
 }
 exports.GeometryFactory = GeometryFactory;
 
-},{}],47:[function(require,module,exports){
+},{}],48:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -26661,7 +27160,7 @@ class MaterialsInstanced {
 }
 exports.default = MaterialsInstanced;
 
-},{"../../shaders/fragment.wgsl":67,"../../shaders/fragment.wgsl.metal":68,"../../shaders/fragment.wgsl.normalmap":69,"../../shaders/fragment.wgsl.pong":70,"../../shaders/fragment.wgsl.power":71,"../../shaders/instanced/fragment.instanced.wgsl":72}],48:[function(require,module,exports){
+},{"../../shaders/fragment.wgsl":68,"../../shaders/fragment.wgsl.metal":69,"../../shaders/fragment.wgsl.normalmap":70,"../../shaders/fragment.wgsl.pong":71,"../../shaders/fragment.wgsl.power":72,"../../shaders/instanced/fragment.instanced.wgsl":73}],49:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -27650,7 +28149,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
 }
 exports.default = MEMeshObjInstances;
 
-},{"../../shaders/fragment.video.wgsl":66,"../../shaders/instanced/vertex.instanced.wgsl":73,"../effects/energy-bar":37,"../effects/flame":39,"../effects/flame-emmiter":38,"../effects/gen":42,"../effects/gen-tex":40,"../effects/gen-tex2":41,"../effects/mana-bar":43,"../effects/pointerEffect":44,"../loaders/bvh-instaced":51,"../matrix-class":55,"../utils":60,"./materials-instanced":47,"wgpu-matrix":31}],49:[function(require,module,exports){
+},{"../../shaders/fragment.video.wgsl":67,"../../shaders/instanced/vertex.instanced.wgsl":74,"../effects/energy-bar":38,"../effects/flame":40,"../effects/flame-emmiter":39,"../effects/gen":43,"../effects/gen-tex":41,"../effects/gen-tex2":42,"../effects/mana-bar":44,"../effects/pointerEffect":45,"../loaders/bvh-instaced":52,"../matrix-class":56,"../utils":61,"./materials-instanced":48,"wgpu-matrix":32}],50:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -27936,7 +28435,7 @@ class SpotLight {
 }
 exports.SpotLight = SpotLight;
 
-},{"../shaders/instanced/vertexShadow.instanced.wgsl":74,"../shaders/vertexShadow.wgsl":81,"./behavior":34,"wgpu-matrix":31}],50:[function(require,module,exports){
+},{"../shaders/instanced/vertexShadow.instanced.wgsl":75,"../shaders/vertexShadow.wgsl":82,"./behavior":35,"wgpu-matrix":32}],51:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -28404,7 +28903,7 @@ function play(nameAni) {
   this.playing = true;
 }
 
-},{}],51:[function(require,module,exports){
+},{}],52:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -28945,7 +29444,7 @@ class BVHPlayerInstances extends _meshObjInstances.default {
 }
 exports.BVHPlayerInstances = BVHPlayerInstances;
 
-},{"../instanced/mesh-obj-instances.js":48,"./webgpu-gltf.js":53,"wgpu-matrix":31}],52:[function(require,module,exports){
+},{"../instanced/mesh-obj-instances.js":49,"./webgpu-gltf.js":54,"wgpu-matrix":32}],53:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -29455,7 +29954,7 @@ class BVHPlayer extends _meshObj.default {
 }
 exports.BVHPlayer = BVHPlayer;
 
-},{"../mesh-obj":56,"./webgpu-gltf.js":53,"bvh-loader":17,"wgpu-matrix":31}],53:[function(require,module,exports){
+},{"../mesh-obj":57,"./webgpu-gltf.js":54,"bvh-loader":18,"wgpu-matrix":32}],54:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30036,7 +30535,7 @@ async function uploadGLBModel(buffer, device) {
   return R;
 }
 
-},{"gl-matrix":20}],54:[function(require,module,exports){
+},{"gl-matrix":21}],55:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30562,7 +31061,7 @@ class Materials {
 }
 exports.default = Materials;
 
-},{"../shaders/fragment.wgsl":67,"../shaders/fragment.wgsl.metal":68,"../shaders/fragment.wgsl.normalmap":69,"../shaders/fragment.wgsl.pong":70,"../shaders/fragment.wgsl.power":71}],55:[function(require,module,exports){
+},{"../shaders/fragment.wgsl":68,"../shaders/fragment.wgsl.metal":69,"../shaders/fragment.wgsl.normalmap":70,"../shaders/fragment.wgsl.pong":71,"../shaders/fragment.wgsl.power":72}],56:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30909,7 +31408,7 @@ class Rotation {
 }
 exports.Rotation = Rotation;
 
-},{"./utils":60}],56:[function(require,module,exports){
+},{"./utils":61}],57:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -31704,7 +32203,7 @@ class MEMeshObj extends _materials.default {
 }
 exports.default = MEMeshObj;
 
-},{"../shaders/fragment.video.wgsl":66,"../shaders/vertex.wgsl":79,"../shaders/vertex.wgsl.normalmap":80,"./effects/pointerEffect":44,"./materials":54,"./matrix-class":55,"./utils":60,"wgpu-matrix":31}],57:[function(require,module,exports){
+},{"../shaders/fragment.video.wgsl":67,"../shaders/vertex.wgsl":80,"../shaders/vertex.wgsl.normalmap":81,"./effects/pointerEffect":45,"./materials":55,"./matrix-class":56,"./utils":61,"wgpu-matrix":32}],58:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -32195,7 +32694,7 @@ function clearEventsTextarea() {
   exports.events = events = '';
 }
 
-},{}],58:[function(require,module,exports){
+},{}],59:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -32404,7 +32903,7 @@ let activateNet2 = sessionOption => {
 };
 exports.activateNet2 = activateNet2;
 
-},{"../utils":60,"./matrix-stream":57}],59:[function(require,module,exports){
+},{"../utils":61,"./matrix-stream":58}],60:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -32593,7 +33092,7 @@ function addRaycastsListener(canvasId = "canvas1", eventName = 'click') {
   });
 }
 
-},{"wgpu-matrix":31}],60:[function(require,module,exports){
+},{"wgpu-matrix":32}],61:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -33622,7 +34121,7 @@ class FullscreenManager {
 }
 exports.FullscreenManager = FullscreenManager;
 
-},{}],61:[function(require,module,exports){
+},{}],62:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -33664,7 +34163,7 @@ class MultiLang {
 }
 exports.MultiLang = MultiLang;
 
-},{"../../public/res/multilang/en-backup":32,"../engine/utils":60}],62:[function(require,module,exports){
+},{"../../public/res/multilang/en-backup":33,"../engine/utils":61}],63:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -33948,7 +34447,7 @@ class MatrixAmmo {
 }
 exports.default = MatrixAmmo;
 
-},{"../engine/utils":60}],63:[function(require,module,exports){
+},{"../engine/utils":61}],64:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -33994,7 +34493,7 @@ fn fsMain(in : VertexOutput) -> @location(0) vec4f {
 }
 `;
 
-},{}],64:[function(require,module,exports){
+},{}],65:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -34120,7 +34619,7 @@ fn fsMain(in : VSOut) -> @location(0) vec4<f32> {
 }
 `;
 
-},{}],65:[function(require,module,exports){
+},{}],66:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -34208,7 +34707,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
 }
 `;
 
-},{}],66:[function(require,module,exports){
+},{}],67:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -34298,7 +34797,7 @@ fn main(input : FragmentInput) -> @location(0) vec4f {
 }
 `;
 
-},{}],67:[function(require,module,exports){
+},{}],68:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -34529,7 +35028,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, 1.0);
 }`;
 
-},{}],68:[function(require,module,exports){
+},{}],69:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -34707,7 +35206,7 @@ return vec4f(color, 1.0);
 // let radiance = spotlights[0].color * 10.0; // test high intensity
 // Lo += materialData.baseColor * radiance * NdotL;
 
-},{}],69:[function(require,module,exports){
+},{}],70:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -34952,7 +35451,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, 1.0);
 }`;
 
-},{}],70:[function(require,module,exports){
+},{}],71:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -35172,7 +35671,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, 1.0);
 }`;
 
-},{}],71:[function(require,module,exports){
+},{}],72:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -35340,7 +35839,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 // let radiance = spotlights[0].color * 10.0; // test high intensity
 // Lo += materialData.baseColor * radiance * NdotL;
 
-},{}],72:[function(require,module,exports){
+},{}],73:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -35576,7 +36075,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, alpha);
 }`;
 
-},{}],73:[function(require,module,exports){
+},{}],74:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -35680,7 +36179,7 @@ fn main(
   return output;
 }`;
 
-},{}],74:[function(require,module,exports){
+},{}],75:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -35717,7 +36216,7 @@ fn main(
 }
 `;
 
-},{}],75:[function(require,module,exports){
+},{}],76:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -35775,7 +36274,7 @@ fn fragmentMain(input: VertexOutput) -> @location(0) vec4f {
   return vec4f(textureColor.rgb * lightColor, textureColor.a);
 }`;
 
-},{}],76:[function(require,module,exports){
+},{}],77:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -35833,7 +36332,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
 }
 `;
 
-},{}],77:[function(require,module,exports){
+},{}],78:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -35920,7 +36419,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
 }
 `;
 
-},{}],78:[function(require,module,exports){
+},{}],79:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -35978,7 +36477,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
   return vec4<f32>(color, 1.0);
 }`;
 
-},{}],79:[function(require,module,exports){
+},{}],80:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -36064,7 +36563,7 @@ fn main(
   return output;
 }`;
 
-},{}],80:[function(require,module,exports){
+},{}],81:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -36175,7 +36674,7 @@ fn main(
   return output;
 }`;
 
-},{}],81:[function(require,module,exports){
+},{}],82:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -36203,7 +36702,7 @@ fn main(
 }
 `;
 
-},{}],82:[function(require,module,exports){
+},{}],83:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -36273,7 +36772,7 @@ class MatrixSounds {
 }
 exports.MatrixSounds = MatrixSounds;
 
-},{}],83:[function(require,module,exports){
+},{}],84:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -37285,4 +37784,4 @@ class MatrixEngineWGPU {
 }
 exports.default = MatrixEngineWGPU;
 
-},{"./engine/ball.js":33,"./engine/cube.js":36,"./engine/engine.js":45,"./engine/lights.js":49,"./engine/loader-obj.js":50,"./engine/loaders/bvh-instaced.js":51,"./engine/loaders/bvh.js":52,"./engine/mesh-obj.js":56,"./engine/utils.js":60,"./multilang/lang.js":61,"./physics/matrix-ammo.js":62,"./sounds/sounds.js":82,"wgpu-matrix":31}]},{},[6]);
+},{"./engine/ball.js":34,"./engine/cube.js":37,"./engine/engine.js":46,"./engine/lights.js":50,"./engine/loader-obj.js":51,"./engine/loaders/bvh-instaced.js":52,"./engine/loaders/bvh.js":53,"./engine/mesh-obj.js":57,"./engine/utils.js":61,"./multilang/lang.js":62,"./physics/matrix-ammo.js":63,"./sounds/sounds.js":83,"wgpu-matrix":32}]},{},[6]);

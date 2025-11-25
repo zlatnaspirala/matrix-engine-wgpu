@@ -224,7 +224,8 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
         archetypes: [heros[app.selectedHero].type],
         team: byId(`waiting-${app.net.session.connection.connectionId}`).getAttribute('data-hero-team'),
         data: Date.now(),
-        numOfPlayers: forestOfHollowBloodStartSceen.MINIMUM_PLAYERS
+        numOfPlayers: forestOfHollowBloodStartSceen.MINIMUM_PLAYERS,
+        useCameraOrAudio: true
       })
 
       SS.set('player', {
@@ -234,7 +235,8 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
         archetypes: [heros[app.selectedHero].type],
         team: byId(`waiting-${app.net.session.connection.connectionId}`).getAttribute('data-hero-team'),
         data: Date.now(),
-        numOfPlayers: forestOfHollowBloodStartSceen.MINIMUM_PLAYERS
+        numOfPlayers: forestOfHollowBloodStartSceen.MINIMUM_PLAYERS,
+        useCameraOrAudio: true
       })
 
       if(typeof preventEmit === 'undefined') forestOfHollowBloodStartSceen.net.sendOnlyData({

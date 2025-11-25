@@ -1252,7 +1252,8 @@ let forestOfHollowBloodStartSceen = new _world.default({
         archetypes: [heros[app.selectedHero].type],
         team: (0, _utils.byId)(`waiting-${app.net.session.connection.connectionId}`).getAttribute('data-hero-team'),
         data: Date.now(),
-        numOfPlayers: forestOfHollowBloodStartSceen.MINIMUM_PLAYERS
+        numOfPlayers: forestOfHollowBloodStartSceen.MINIMUM_PLAYERS,
+        useCameraOrAudio: true
       });
       _utils.SS.set('player', {
         mesh: heros[app.selectedHero].meshName,
@@ -1261,7 +1262,8 @@ let forestOfHollowBloodStartSceen = new _world.default({
         archetypes: [heros[app.selectedHero].type],
         team: (0, _utils.byId)(`waiting-${app.net.session.connection.connectionId}`).getAttribute('data-hero-team'),
         data: Date.now(),
-        numOfPlayers: forestOfHollowBloodStartSceen.MINIMUM_PLAYERS
+        numOfPlayers: forestOfHollowBloodStartSceen.MINIMUM_PLAYERS,
+        useCameraOrAudio: true
       });
       if (typeof preventEmit === 'undefined') forestOfHollowBloodStartSceen.net.sendOnlyData({
         type: 'start'
