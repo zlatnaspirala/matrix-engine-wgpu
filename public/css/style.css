@@ -1117,7 +1117,7 @@ new dom effect from
   transform: scale(1.10);
 }
 
-.leaderboard {
+#leaderboard {
   z-index: 2;
 	font-family: 'stormfaze';
 	background: darkslategray;

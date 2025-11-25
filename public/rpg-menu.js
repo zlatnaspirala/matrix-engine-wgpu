@@ -575,14 +575,16 @@ class RCSAccount {
       localStorage.removeItem("visitor");
       this.visitor(e.detail);
     });
-    this.leaderboardBtn = document.createElement('div');
-    this.leaderboardBtn.id = 'Leaderboard';
-    this.leaderboardBtn.innerHTML = `
-		  <button id="leaderboardBtn" class="btn">Leaderboard</button>
-		`;
-    document.body.appendChild(this.leaderboardBtn);
-    this.leaderboardBtn = document.getElementById('leaderboardBtn');
-    this.leaderboardBtn.addEventListener("click", this.getLeaderboard);
+
+    // this.leaderboardBtn = document.createElement('div')
+    // this.leaderboardBtn.id = 'leaderboard';
+    // this.leaderboardBtn.innerHTML = `
+    //   <button id="leaderboardBtn" class="btn">Leaderboard</button>
+    // `;
+    // document.body.appendChild(this.leaderboardBtn);
+
+    // this.leaderboardBtn = document.getElementById('leaderboardBtn');
+    // this.leaderboardBtn.addEventListener("click", this.getLeaderboard)
   }
   createDOM = () => {
     var parent = document.createElement('div');
@@ -907,7 +909,7 @@ class RCSAccount {
   getLeaderboard = async e => {
     e.preventDefault();
     (0, _utils.byId)('netHeaderTitle').click();
-    this.leaderboardBtn.disabled = true;
+    // this.leaderboardBtn.disabled = true;
     fetch(this.apiDomain + '/rocket/public-leaderboard', {
       method: 'POST',
       headers: _utils.jsonHeaders,
@@ -920,15 +922,11 @@ class RCSAccount {
         this.leaderboardData = r.leaderboard;
         this.createLeaderboardDOM(r.leaderboard);
       }
-      setTimeout(() => {
-        this.leaderboardBtn.disabled = false;
-      }, 5000);
+      // setTimeout(() => {this.leaderboardBtn.disabled = false}, 5000)
     }).catch(err => {
       console.log('[Leaderboard Error]', err);
       _utils.mb.show("Next call try in 5 secounds...");
-      setTimeout(() => {
-        this.leaderboardBtn.disabled = false;
-      }, 5000);
+      // setTimeout(() => {this.leaderboardBtn.disabled = false}, 5000)
       return;
     });
   };
