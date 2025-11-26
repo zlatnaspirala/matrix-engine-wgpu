@@ -356,7 +356,7 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
     app.cameras.RPG.followMe = forestOfHollowBlood.localHero.heroe_bodies[0].position;
     app.cameras.RPG.mousRollInAction = true;
 
-    app.tts.speakHero( app.player.data.hero.toLowerCase() ,  'hello');
+    app.tts.speakHero(app.player.data.hero.toLowerCase(), 'hello');
   });
 
   forestOfHollowBlood.RPG = new Controller(forestOfHollowBlood);

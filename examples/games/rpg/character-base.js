@@ -1,4 +1,4 @@
-import {vec3, mat4} from "wgpu-matrix";
+import {vec3} from "wgpu-matrix";
 import {uploadGLBModel} from "../../../src/engine/loaders/webgpu-gltf";
 import {byId, LOG_MATRIX} from "../../../src/engine/utils";
 import {Hero} from "./hero";
@@ -39,8 +39,8 @@ export class Character extends Hero {
 
   constructor(forestOfHollowBlood, path, name = 'MariaSword', archetypes = ["Warrior", "Mage"]) {
     super(name, archetypes);
-    console.info(`%cLOADING local hero name : ${name}`, LOG_MATRIX)
-    console.info(`%cLOADING local hero forestOfHollowBlood.player.data : ${forestOfHollowBlood.player.data}`, LOG_MATRIX)
+    // console.info(`%cLOADING local hero name : ${name}`, LOG_MATRIX);
+    console.info(`%cplayer.data : ${forestOfHollowBlood.player.data}`, LOG_MATRIX);
 
     this.name = name;
     this.core = forestOfHollowBlood;
@@ -48,7 +48,6 @@ export class Character extends Hero {
 
     this.loadLocalHero(path);
     this.loadfriendlyCreeps();
-    // async
     setTimeout(() => this.setupHUDForHero(name), 1100);
   }
 
@@ -99,14 +98,13 @@ export class Character extends Hero {
               app.localHero.setAllCreepsAtStartPos().then(() => {
                 // console.log('passed in 3')
               }).catch(() => {
-                // alert('FAILD');
                 console.log('FAILD setAllCreepsAtStartPos');
               })
             }, 7000)
           })
         }, 7000)
       });
-    }, 15000);
+    }, 10000);
 
   }
 
@@ -198,7 +196,7 @@ export class Character extends Hero {
         if(app.localHero.heroe_bodies[0].effects) {
           app.localHero.heroe_bodies[0].effects.flameEmitter.recreateVertexDataRND(1);
         } else {
-          console.log(`what is app.localHero.heroe_bodies[0] ${app.localHero.heroe_bodies[0]} `);
+          console.log(`warn: ${app.localHero.heroe_bodies[0]} `);
         }
 
         // adapt
@@ -372,7 +370,7 @@ export class Character extends Hero {
         sceneName: subMesh.name,
         animationIndex: subMesh.glb.animationIndex
       })
-      console.info(`%chero dead`, LOG_MATRIX)
+      console.info(`%cHero dead${subMesh.name}.`, LOG_MATRIX);
     });
   }
 
@@ -391,12 +389,13 @@ export class Character extends Hero {
     this.heroFocusAttackOn = on;
     this.core.RPG.heroe_bodies.forEach(subMesh => {
       subMesh.glb.animationIndex = this.heroAnimationArrange.attack;
-      console.info(`%c ${subMesh.name} BEFORE SEND attack index ${subMesh.glb.animationIndex}`, LOG_MATRIX)
+      // console.info(`%c ${subMesh.name} BEFORE SEND attack index ${subMesh.glb.animationIndex}`, LOG_MATRIX)
       app.net.send({
         sceneName: subMesh.name,
         animationIndex: subMesh.glb.animationIndex
       })
     });
+    app.tts.speakHero(app.player.data.hero.toLowerCase(), 'attack');
   }
 
   setWalkCreep(creepIndex) {
@@ -473,7 +472,7 @@ export class Character extends Hero {
         setTimeout(() => {
           subMesh.instanceTargets[1].position[0] = 0;
           subMesh.instanceTargets[1].position[2] = 0;
-          console.log("? ", this.setWalk)
+          console.log("maybe idle? ", this.setWalk)
           this.setWalk()
         }, 1300)
       });
@@ -482,6 +481,7 @@ export class Character extends Hero {
     // Events HERO pos
     addEventListener('set-walk', () => {
       this.setWalk();
+      app.tts.speakHero(app.player.data.hero.toLowerCase(), 'walk');
     })
     addEventListener('set-idle', () => {
       this.setIdle();
@@ -497,7 +497,6 @@ export class Character extends Hero {
     })
 
     addEventListener('close-distance', (e) => {
-      // console.info('close distance :', e.detail)
       if((e.detail.A.id.indexOf('friendly') != -1 && e.detail.B.id.indexOf('friendly') != -1) ||
         (e.detail.A.group == "local_hero" && e.detail.B.id.indexOf('friendly') != -1) ||
         (e.detail.A.group == "friendly" && e.detail.B.group == "local_hero")) {
@@ -540,9 +539,7 @@ export class Character extends Hero {
       } else if(e.detail.A.group == "friendly" && e.detail.A.id.indexOf('friendlytron') == -1) {
         if(e.detail.B.group == "enemy" && this.core.net.virtualEmiter != null) {
           let lc = app.localHero.friendlyLocal.creeps.filter((localCreep) => localCreep.name == e.detail.A.id)[0];
-          if(lc === undefined) {
-            return;
-          }
+          if(lc === undefined) {return;}
           lc.creepFocusAttackOn =
             app.enemies.enemies.filter((enemy) => enemy.name == e.detail.B.id)[0];
           if(lc.creepFocusAttackOn == undefined) {
@@ -556,12 +553,11 @@ export class Character extends Hero {
             // console.info('<close-distance> lc.creepFocusAttackOn is UNDEFINED ', lc.creepFocusAttackOn);
             return;
           }
-          console.info('close distance:', lc.creepFocusAttackOn)
+          // console.info('close distance:', lc.creepFocusAttackOn)
           app.localHero.setAttackCreep(e.detail.A.id[e.detail.A.id.length - 1]);
         }
       }
-
-      // LOCAL HERO
+      // LOCAL
       if(e.detail.A.group == 'local_hero') {
         this.creepFocusAttackOn = app.enemies.enemies.filter((enemy) => enemy.name == e.detail.B.id)[0];
         if(this.creepFocusAttackOn == undefined) {
@@ -591,13 +587,11 @@ export class Character extends Hero {
 
     addEventListener(`animationEnd-${this.heroe_bodies[0].name}`, (e) => {
       if(e.detail.animationName != 'attack' || typeof this.core.enemies === 'undefined') {
-        //--------------------------------
         return;
-        //--------------------------------
       }
       if(this.heroFocusAttackOn == null) {
         // console.info('animationEnd [heroFocusAttackOn == null ]', e.detail.animationName)
-        let isEnemiesClose = false; // on close distance 
+        let isEnemiesClose = false;
         this.core.enemies.enemies.forEach((enemy) => {
           if(typeof enemy.heroe_bodies === 'undefined') return;
           if(enemy.heroe_bodies) {
@@ -611,8 +605,7 @@ export class Character extends Hero {
             }
           }
         });
-
-        let isEnemiesCreepClose = false; // on close distance 
+        let isEnemiesCreepClose = false;
         this.core.enemies.creeps.forEach((creep) => {
           if(typeof creep.heroe_bodies === 'undefined') return;
           if(creep.heroe_bodies) {
@@ -665,8 +658,7 @@ export class Character extends Hero {
         let getName = e.detail.name.split('_')[0];
         let t = app.localHero.friendlyLocal.creeps.filter((obj) => obj.name == getName);
         if(t[0].creepFocusAttackOn != null) {
-          // console.log(`%[character base]onTargetPositionReach 
-          //  creepFocusAttackOn : ${t[0].creepFocusAttackOn}`, LOG_MATRIX)
+          // console.log(`%[character base]`)
           return;
         }
 
@@ -696,14 +688,13 @@ export class Character extends Hero {
             this.setWalkCreep(getName[getName.length - 1]);
           }, 1000);
         }
-        //--------------------------------
+
         return;
-        //--------------------------------
       }
 
       // for now only local hero
       if(this.heroFocusAttackOn == null) {
-        let isEnemiesClose = false; // on close distance 
+        let isEnemiesClose = false;
         this.core.enemies.enemies.forEach((enemy) => {
           if(typeof enemy.heroe_bodies === 'undefined') return;
           let tt = this.core.RPG.distance3D(
