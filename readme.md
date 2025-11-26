@@ -614,22 +614,33 @@ This is static file storage.
 
 🎲 The first full app example will be a WebGPU-powered **Jamb 3d deluxe** game.
 
-## RPG game WIP
+## RPG game Beta version done
 
 Features done:
-
 - Navigation mesh
 - Hero class
 - GLB animations
+- Automatic team selection (South vs North)
+- Homebase stone (tron / enemytron)
+- Invertory (construct from 2 or 3 new upgraded item)
 
-<img width="860" height="640" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/RPG.png?raw=true" />
+<img width="860" height="640" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/mmorpg-online-game.png?raw=true" />
+<img width="860" height="640" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/mmorpg-online-game2.png?raw=true" />
+<img width="860" height="640" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/mmorpg-online-game3.png?raw=true" />
+<img width="860" height="640" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/mmorpg-online-game4.png?raw=true" />
+<img width="860" height="640" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/mmorpg-online-game5.png?raw=true" />
+
+[Invest in Forest Of Hollow Blood 9,660$](https://goldenspiral.itch.io/forest-of-hollow-blood)
 
 ---
 
 ## Live Demos & Dev Links
 
-- [Jamb WebGPU Demo (WIP)](https://maximumroulette.com/apps/webgpu/)
-  Support on https://goldenspiral.itch.io/jamb-3d-deluxe
+- [WebGPU Demos ](https://maximumroulette.com/apps/webgpu/examples.html)
+  Support this project on [itch.io](https://goldenspiral.itch.io/jamb-3d-deluxe)
+
+  <img width="860" height="640" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/RPG.png?raw=true" />
+
 - [CodePen Demo](https://codepen.io/zlatnaspirala/pen/VwNKMar?editors=0011)
   → Uses `empty.js` build from:
   [https://maximumroulette.com/apps/megpu/empty.js](https://maximumroulette.com/apps/megpu/empty.js)
