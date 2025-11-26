@@ -43,7 +43,7 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
 }, () => {
 
   forestOfHollowBlood.account = new RCSAccount("https://maximumroulette.com");
-  forestOfHollowBlood.account.createDOM();
+  forestOfHollowBlood.account.createDOM(true);
 
   forestOfHollowBlood.tts = new MatrixTTS();
 
@@ -52,8 +52,30 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
   };
 
   // Audios
-  forestOfHollowBlood.matrixSounds.createAudio('music', 'res/audios/rpg/music.mp3', 1)
+  forestOfHollowBlood.matrixSounds.createAudio('music', 'res/audios/rpg/music.mp3', 1);
+  forestOfHollowBlood.matrixSounds.createAudio('music2', 'res/audios/rpg/wizard-rider.mp3', 1)
   forestOfHollowBlood.matrixSounds.createAudio('win1', 'res/audios/rpg/feel.mp3', 2);
+
+  forestOfHollowBlood.handleHeroImage = (selectHeroIndex) => {
+    // func exist in case of changinf hero names...
+    let name = 'no-name';
+    if(selectHeroIndex == 0) {
+      name = 'mariasword';
+    } else if(selectHeroIndex == 1) {
+      name = 'slayzer';
+    } else if(selectHeroIndex == 2) {
+      name = 'steelborn';
+    } else if(selectHeroIndex == 3) {
+      name = 'warrok';
+    } else if(selectHeroIndex == 4) {
+      name = 'skeletonz';
+    } else if(selectHeroIndex == 5) {
+      name = 'erika';
+    } else if(selectHeroIndex == 6) {
+      name = 'arissa';
+    }
+    return name;
+  }
 
   // addEventListener('AmmoReady', async () => {})
   forestOfHollowBlood.player.data = SS.get('player');
@@ -70,7 +92,7 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
     port: 2020,
     sessionName: 'forestOfHollowBlood-free-for-all',
     resolution: '160x240',
-    isDataOnly: (urlQuery.camera || urlQuery.audio ? false : true),
+    isDataOnly: forestOfHollowBlood.player.data.useCameraOrAudio, //(urlQuery.camera || urlQuery.audio ? false : true),
     customData: forestOfHollowBlood.player.data
   });
 
@@ -333,6 +355,8 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
     app.cameras.RPG.movementSpeed = 100;
     app.cameras.RPG.followMe = forestOfHollowBlood.localHero.heroe_bodies[0].position;
     app.cameras.RPG.mousRollInAction = true;
+
+    app.tts.speakHero(app.player.data.hero.toLowerCase(), 'hello');
   });
 
   forestOfHollowBlood.RPG = new Controller(forestOfHollowBlood);
@@ -350,6 +374,12 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
   forestOfHollowBlood.HUD = new HUD(forestOfHollowBlood.localHero);
   forestOfHollowBlood.collisionSystem = new CollisionSystem(forestOfHollowBlood);
   app.matrixSounds.play('music');
+  app.matrixSounds.audios.music.onended = () => {
+    app.matrixSounds.play('music2');
+  };
+  app.matrixSounds.audios.music2.onended = () => {
+    app.matrixSounds.play('music');
+  };
   forestOfHollowBlood.addLight();
 })
 window.app = forestOfHollowBlood;

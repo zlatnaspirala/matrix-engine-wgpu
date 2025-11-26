@@ -35,11 +35,13 @@ export class RCSAccount {
     // this.leaderboardBtn.addEventListener("click", this.getLeaderboard)
   }
 
-  createDOM = () => {
+  createDOM = (hideLoginForm) => {
+    if (typeof hideLoginForm === 'undefined') hideLoginForm = false;
     var parent = document.createElement('div');
     this.parent = parent;
     //parent.classList.add('')
     parent.id = 'myAccountLoginForm';
+    if (hideLoginForm == true) parent.style.display = 'none';
 
     var logo = document.createElement('img');
     logo.id = 'logologin';
