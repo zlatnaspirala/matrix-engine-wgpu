@@ -1590,7 +1590,7 @@ let forestOfHollowBlood = new _world.default({
   }
 }, () => {
   forestOfHollowBlood.account = new _rocketCraftingAccount.RCSAccount("https://maximumroulette.com");
-  forestOfHollowBlood.account.createDOM();
+  forestOfHollowBlood.account.createDOM(true);
   forestOfHollowBlood.tts = new _tts.MatrixTTS();
   forestOfHollowBlood.player = {
     username: "guest"
@@ -1598,7 +1598,28 @@ let forestOfHollowBlood = new _world.default({
 
   // Audios
   forestOfHollowBlood.matrixSounds.createAudio('music', 'res/audios/rpg/music.mp3', 1);
+  forestOfHollowBlood.matrixSounds.createAudio('music2', 'res/audios/rpg/wizard-rider.mp3', 1);
   forestOfHollowBlood.matrixSounds.createAudio('win1', 'res/audios/rpg/feel.mp3', 2);
+  forestOfHollowBlood.handleHeroImage = selectHeroIndex => {
+    // func exist in case of changinf hero names...
+    let name = 'no-name';
+    if (selectHeroIndex == 0) {
+      name = 'mariasword';
+    } else if (selectHeroIndex == 1) {
+      name = 'slayzer';
+    } else if (selectHeroIndex == 2) {
+      name = 'steelborn';
+    } else if (selectHeroIndex == 3) {
+      name = 'warrok';
+    } else if (selectHeroIndex == 4) {
+      name = 'skeletonz';
+    } else if (selectHeroIndex == 5) {
+      name = 'erika';
+    } else if (selectHeroIndex == 6) {
+      name = 'arissa';
+    }
+    return name;
+  };
 
   // addEventListener('AmmoReady', async () => {})
   forestOfHollowBlood.player.data = _utils.SS.get('player');
@@ -1616,7 +1637,8 @@ let forestOfHollowBlood = new _world.default({
     port: 2020,
     sessionName: 'forestOfHollowBlood-free-for-all',
     resolution: '160x240',
-    isDataOnly: _utils.urlQuery.camera || _utils.urlQuery.audio ? false : true,
+    isDataOnly: forestOfHollowBlood.player.data.useCameraOrAudio,
+    //(urlQuery.camera || urlQuery.audio ? false : true),
     customData: forestOfHollowBlood.player.data
   });
   forestOfHollowBlood.net.virtualEmiter = null;
@@ -1856,6 +1878,7 @@ let forestOfHollowBlood = new _world.default({
     app.cameras.RPG.movementSpeed = 100;
     app.cameras.RPG.followMe = forestOfHollowBlood.localHero.heroe_bodies[0].position;
     app.cameras.RPG.mousRollInAction = true;
+    app.tts.speakHero(app.player.data.hero.toLowerCase(), 'hello');
   });
   forestOfHollowBlood.RPG = new _controller.Controller(forestOfHollowBlood);
   forestOfHollowBlood.mapLoader = new _mapLoader.MEMapLoader(forestOfHollowBlood, "./res/meshes/nav-mesh/navmesh.json");
@@ -1868,6 +1891,12 @@ let forestOfHollowBlood = new _world.default({
   forestOfHollowBlood.HUD = new _hud.HUD(forestOfHollowBlood.localHero);
   forestOfHollowBlood.collisionSystem = new _collisionSubSystem.CollisionSystem(forestOfHollowBlood);
   app.matrixSounds.play('music');
+  app.matrixSounds.audios.music.onended = () => {
+    app.matrixSounds.play('music2');
+  };
+  app.matrixSounds.audios.music2.onended = () => {
+    app.matrixSounds.play('music');
+  };
   forestOfHollowBlood.addLight();
 });
 window.app = forestOfHollowBlood;
@@ -4856,11 +4885,13 @@ class RCSAccount {
     // this.leaderboardBtn = document.getElementById('leaderboardBtn');
     // this.leaderboardBtn.addEventListener("click", this.getLeaderboard)
   }
-  createDOM = () => {
+  createDOM = hideLoginForm => {
+    if (typeof hideLoginForm === 'undefined') hideLoginForm = false;
     var parent = document.createElement('div');
     this.parent = parent;
     //parent.classList.add('')
     parent.id = 'myAccountLoginForm';
+    if (hideLoginForm == true) parent.style.display = 'none';
     var logo = document.createElement('img');
     logo.id = 'logologin';
     logo.setAttribute('alt', 'Login');
@@ -5336,14 +5367,62 @@ const creepPoints = exports.creepPoints = {
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.MatrixTTS = void 0;
+exports.speakBot = exports.MatrixTTS = void 0;
 /**
- * For audio voice Best way is 
+ * @author Nikola Lukic
+ * @email zlatnaspirala@gmail.com
+ * @www maximumroulette.com
+ * @description For audio voice Best way is 
  * to use browser buildin TTS speech API
+ * It is so good like paid services on internet.
  */
 class MatrixTTS {
   constructor() {
-    // this.loadVoices()
+    this.heroPresets = {
+      mariasword: {
+        gender: "female",
+        pitch: 0.2,
+        rate: 0.7
+      },
+      slayzer: {
+        gender: "male",
+        pitch: 0.35,
+        rate: 0.85
+      },
+      steelborn: {
+        gender: "male",
+        pitch: 0.9,
+        rate: 0.9
+      },
+      warrok: {
+        gender: "male",
+        pitch: 0.8,
+        rate: 0.9
+      },
+      skeletonz: {
+        gender: "male",
+        pitch: 0.7,
+        rate: 0.9
+      },
+      erika: {
+        gender: "female",
+        pitch: 0.5,
+        rate: 1.0
+      },
+      arissa: {
+        gender: "female",
+        pitch: 0.35,
+        rate: 1.05
+      }
+    };
+  }
+  getFemaleVoice(voices, lang = 'en-US') {
+    const femPatterns = [/female/i, /woman/i, /girl/i, /eva/i, /zira/i, /amy/i, /susan/i, /sarah/i];
+    return voices.find(v => v.lang === lang && femPatterns.some(p => p.test(v.name))) || voices.find(v => femPatterns.some(p => p.test(v.name))) || voices.find(v => v.lang === lang) || voices[0] || null;
+  }
+  getMaleVoice(voices, lang = 'en-US') {
+    const malePatterns = [/male/i, /man/i, /boy/i, /david/i, /mark/i, /john/i, /mike/i, /brian/i];
+    return voices.find(v => v.lang === lang && malePatterns.some(p => p.test(v.name))) || voices.find(v => malePatterns.some(p => p.test(v.name))) || voices.find(v => v.lang === lang) || voices[0] || null;
   }
   loadVoices = () => {
     return new Promise(resolve => {
@@ -5356,7 +5435,7 @@ class MatrixTTS {
       setTimeout(() => resolve(speechSynthesis.getVoices()), 1000);
     });
   };
-  chooseVoice(voices, lang = 'en-US') {
+  chooseVoice2(voices, lang = 'en-US') {
     const preferPatterns = [/google/i, /neural/i, /wave/i, /azure/i, /microsoft/i];
     for (const p of preferPatterns) {
       const found = voices.find(v => v.lang === lang && p.test(v.name));
@@ -5367,6 +5446,12 @@ class MatrixTTS {
     v = voices.find(v => preferPatterns.some(p => p.test(v.name)));
     if (v) return v;
     return voices[0] || null;
+  }
+  chooseVoice(voices, lang = 'en-US', gender = 'female') {
+    if (gender === 'male') {
+      return this.getMaleVoice(voices, lang);
+    }
+    return this.getFemaleVoice(voices, lang);
   }
   splitIntoChunks(text) {
     const parts = text.split(/([.!?]+(?:\s|$))/).map(s => s.trim()).filter(Boolean);
@@ -5386,6 +5471,7 @@ class MatrixTTS {
       rate = 0.95,
       pitch = 1.0,
       volume = 1.0,
+      gender = 'female',
       onstart,
       onend,
       onerror
@@ -5394,7 +5480,7 @@ class MatrixTTS {
       throw new Error('Web Speech API not supported in this browser.');
     }
     const voices = await this.loadVoices();
-    const voice = this.chooseVoice(voices, lang);
+    const voice = this.chooseVoice(voices, lang, gender);
     const chunks = this.splitIntoChunks(text);
     return new Promise((resolve, reject) => {
       let index = 0;
@@ -5445,8 +5531,82 @@ class MatrixTTS {
       }
     });
   }
+  async speakHero(hero, type, extra = {}) {
+    const preset = this.heroPresets[hero] || {
+      gender: "female",
+      pitch: 1.0,
+      rate: 1.0
+    };
+    let text = this.getSpeakHeroText(hero, type);
+    return this.speakNatural(text, {
+      lang: "en-US",
+      gender: preset.gender,
+      pitch: preset.pitch,
+      rate: preset.rate,
+      ...extra
+    });
+  }
+  getSpeakHeroText(hero, type) {
+    try {
+      const arr = speakBot[hero][type];
+      return arr[Math.floor(Math.random() * arr.length)];
+    } catch (e) {
+      return '[undefined speech]';
+    }
+  }
 }
 exports.MatrixTTS = MatrixTTS;
+const speakBot = exports.speakBot = {
+  mariasword: {
+    hello: ['Hello my friend', 'Choose me for ever', 'Ready for battle', 'I fight for you', 'Let us begin', 'Your blade awaits', 'At your command', 'Strength and honor', 'I stand with you', 'We make legends'],
+    attack: ['Lets blood fly', 'Kill em all', 'Cut them down', 'Strike fast', 'Another one falls', 'They are nothing', 'End them now', 'For glory!', 'Slicing through', 'Taste steel!'],
+    idle: ['Where are you', 'Still here', 'I wait your word', 'Why silence', 'I grow bored', 'Are we done', 'My blade sleeps', 'Time passes', 'Wake me up', 'Command me soon'],
+    walk: ['Roger that', 'Whatever you say', 'Moving out', 'On my way', 'Let’s go', 'Marching', 'Step forward', 'Following', 'Close behind', 'We travel'],
+    dead: ['damm it', 'i will back', 'This is not end', 'I fall but rise', 'My time fades', 'Carry on', 'The blade drops', 'Darkness comes', 'Remember me', 'I return later']
+  },
+  slayzer: {
+    hello: ['Slayzer online', 'Greetings human', 'Target detected', 'Systems active', 'I await orders', 'Weapon ready', 'Let’s synchronize', 'Calibrated', 'Combat mode here', 'Hello commander'],
+    attack: ['Erasing target', 'Neutralizing', 'Terminate!', 'Engaging enemy', 'Lock and strike', 'Target locked', 'Maximum damage', 'Destroy the threat', 'Fire at will', 'Executing kill'],
+    idle: ['Awaiting tasks', 'Processing silence', 'No movement', 'Sensors calm', 'Bored protocol active', 'Ping me anytime', 'Standing by', 'Still online', 'Low power mode soon', 'Need instructions'],
+    walk: ['Moving to location', 'Path confirmed', 'Walking', 'Trajectory stable', 'Following vector', 'Advancing', 'Let’s relocate', 'Tracking you', 'Footsteps engaged', 'March operation'],
+    dead: ['System failure', 'Core shutdown', 'I will reboot', 'Error… 0xDEAD', 'Memory fading', 'Goodbye… for now', 'Fatal crash', 'Power drained', 'Diagnostic end', 'I will recompile']
+  },
+  steelborn: {
+    hello: ['Steelborn stands', 'Metal breathes', 'Ready to forge destiny', 'Hammer in hand', 'Hello warrior', 'You called the forge', 'Let’s heat things up', 'I stand unbroken', 'Born of steel', 'We march strong'],
+    attack: ['Hammer strike!', 'Break them!', 'Smash!', 'Let the steel sing', 'Crush bones', 'Full force', 'Rage of iron', 'I hit harder', 'Tremble before steel', 'They will shatter'],
+    idle: ['Cooling down', 'I rest my hammer', 'Still as iron', 'Where to now', 'My metal waits', 'Silence of the forge', 'Don’t leave me rusting', 'Stand or command?', 'Waiting warrior', 'Breathing steel'],
+    walk: ['Heavy steps', 'March of metal', 'Lead and I follow', 'Moving slowly', 'I carry weight', 'Walk with strength', 'Follow the clang', 'Iron moves', 'Hammer shakes', 'Forward we go'],
+    dead: ['Steel cracks…', 'Forge goes dark', 'I rust… not yet', 'Broken but not gone', 'Hammer falls', 'Heat fading', 'I’ll return reforged', 'Iron sleeps', 'My core cools', 'I rise again someday']
+  },
+  warrok: {
+    hello: ['Warrok awakens', 'Blood and fire greet you', 'You summon the beast', 'Ready for slaughter', 'My claws itch', 'Speak mortal', 'War calls', 'Hungry again', 'Let us rage', 'The hunt begins'],
+    attack: ['Rip them apart!', 'Tear their soul!', 'Crush skulls!', 'Eat the weak!', 'Shred them!', 'Rage unleashed!', 'Blood for me!', 'No mercy!', 'Destroy now!', 'Split their bones!'],
+    idle: ['I hunger…', 'When do we kill?', 'Why stillness?', 'I grow restless', 'Let me loose!', 'Silence irritates me', 'I wait for blood', 'Caged beast here', 'Move mortal', 'My claws twitch'],
+    walk: ['Running wild', 'Move fast!', 'Hunt continues', 'Track them', 'Step by step', 'Beast follows', 'On the prowl', 'Creeping forward', 'Sniffing ahead', 'Let’s roam'],
+    dead: ['Beast falls…', 'I bite dust', 'Next time… stronger', 'Death tastes bitter', 'Roar fades...', 'My fury sleeps', 'Claws dull…', 'This is not end', 'I return to hunt', 'Warrok slumbers']
+  },
+  skeletonz: {
+    hello: ['Rattle rattle hello', 'Bones greet you', 'I rise again', 'Greetings… mortal', 'Click click I’m here', 'Back from grave', 'Dusty but ready', 'Another day undead', 'Skeleton online', 'Time to clatter'],
+    attack: ['Bone strike!', 'Crack attack!', 'Rattle them!', 'Break their flesh!', 'Shake them to pieces', 'Clack clack!', 'I poke you!', 'Sharp bones!', 'I’ll dismantle them', 'Dust them!'],
+    idle: ['No muscles… still tired', 'Just rattling', 'Any orders?', 'Standing dead', 'Grave silence', 'Waiting patiently', 'I don’t breathe but bored', 'Where to now?', 'Bones chilled', 'Dust settling'],
+    walk: ['Clack clack walking', 'Bones moving', 'Step by step', 'Joints cracking', 'Wobbling forward', 'Skeleton following', 'March of bones', 'Dragging feet', 'Grave stroll', 'Creeping rattle'],
+    dead: ['Falling apart… again', 'Oops bones scattered', 'Back to dust', 'See you after reassembly', 'Rattle ends', 'Skull cracked', 'Dead once more', 'I collapse', 'Bone pile time', 'Just rebuild me']
+  },
+  erika: {
+    hello: ['Erika ready', 'Hello hero', 'Nice to see you', 'Let’s do magic', 'I trust you', 'Warm greetings', 'I stand by you', 'Light surrounds us', 'Blessings friend', 'You’re not alone'],
+    attack: ['Casting strike!', 'Magic burns!', 'Feel my spell!', 'Light attacks!', 'Arcane burst!', 'I send fire!', 'No escape spell!', 'Focused beam!', 'Energy blast!', 'Radiant force!'],
+    idle: ['Meditating…', 'Magic sleeps', 'I wait for your word', 'Soft silence', 'Calm before storm', 'You need me?', 'Still casting thoughts', 'Breathing calmly', 'Waiting patiently', 'Daydreaming magic'],
+    walk: ['Walking lightly', 'Magic follows', 'Graceful steps', 'I float a bit', 'On my way', 'Move with light', 'Gliding forward', 'Following you', 'Quiet footsteps', 'Let’s continue'],
+    dead: ['Light fades', 'I fall softly', 'Magic slips away', 'Goodbye… for now', 'My spell ends', 'Fading warmth', 'I’ll return glowing', 'Darkness takes me', 'Release…', 'I rest for now']
+  },
+  arissa: {
+    hello: ['Arissa here', 'Ready to roam', 'Greetings wanderer', 'The shadows whisper', 'I am yours to command', 'Let’s sneak ahead', 'Silent hello', 'Eyes sharp', 'Hunter at your side', 'Let’s begin'],
+    attack: ['Silent strike!', 'Shadow hit!', 'Quick kill!', 'They won’t see it', 'Knife in the dark', 'One less problem', 'Down you go', 'Swift cut!', 'Dead before sound', 'Fade them out'],
+    idle: ['Hidden… waiting', 'Silence is comfort', 'Where do we stalk?', 'Watching the shadows', 'Still as night', 'I wait your signal', 'Sneaking thoughts', 'Listening closely', 'Quiet moment', 'Hunter rests'],
+    walk: ['Silent steps', 'Gliding through shadows', 'Moving unseen', 'Follow the wind', 'Tracking paths', 'Walking quietly', 'Step softly', 'On the hunt', 'Close behind', 'In the dark we move'],
+    dead: ['Shadow fades…', 'Caught at last', 'I slip away', 'My silence ends', 'Falling into dark', 'No more whispers', 'Blade drops…', 'I vanish', 'Light… gone', 'I return someday']
+  }
+};
 
 },{}],17:[function(require,module,exports){
 arguments[4][13][0].apply(exports,arguments)

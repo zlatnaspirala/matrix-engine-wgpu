@@ -7,6 +7,7 @@ import {AnimatedCursor} from "../../../src/engine/plugin/animated-cursor/animate
 import {fetchAll, fetchInfo} from "../../../src/engine/networking/matrix-stream.js";
 import {RCSAccount} from "./rocket-crafting-account.js";
 import {en} from "../../../public/res/multilang/en-backup.js";
+import {MatrixTTS} from "./tts.js";
 
 /**
  * @name forestOfHollowBloodStartSceen
@@ -70,6 +71,8 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
     console.warn('Matrix Engine WGPU : No support for web workers in this browser.');
   }
 
+  forestOfHollowBloodStartSceen.tts = new MatrixTTS();
+
   forestOfHollowBloodStartSceen.account = new RCSAccount("https://maximumroulette.com");
   forestOfHollowBloodStartSceen.account.createDOM();
 
@@ -115,6 +118,10 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
       name = 'warrok';
     } else if(selectHeroIndex == 4) {
       name = 'skeletonz';
+    } else if(selectHeroIndex == 5) {
+      name = 'erika';
+    } else if(selectHeroIndex == 6) {
+      name = 'arissa';
     }
     return name;
   }
@@ -148,13 +155,11 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
   }
 
   function determinateSelection() {
-
-
     if(app.net.session.connection != null) {
-      console.log("Test team data moment", byId(`waiting-${app.net.session.connection.connectionId}`).getAttribute('data-hero-team'))
+      // console.log("Test team data moment", byId(`waiting-${app.net.session.connection.connectionId}`).getAttribute('data-hero-team'))
       let testDom = byId(`waiting-${app.net.session.connection.connectionId}`).getAttribute('data-hero-team');
       if(typeof testDom != 'string') {
-        console.low('Potencial error not handled....')
+        console.log('Potencial error not handled....');
       }
       app.net.sendOnlyData({
         type: "selectHeroIndex",
@@ -180,12 +185,10 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
     // Only last non selected hero player will get 
     // first free hero in selection action next/back.
     // For now.
-
     if(checkHeroStatus() == true) {
-      console.log("hero used keep graphics no send ");
+      console.log("hero used keep graphics no send");
       return;
     }
-
 
     if(isAllSelected() == true) {
       forestOfHollowBloodStartSceen.gotoGamePlay();
@@ -598,6 +601,8 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
       // Fix on remote 
       if(app.net.session) {
         determinateSelection();
+      } else {
+        app.tts.speakHero( handleHeroImage(app.selectedHero) ,  'hello');
       }
 
       app.heroByBody.forEach((sceneObj, indexRoot) => {
@@ -666,6 +671,8 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
 
       if(app.net.session) {
         determinateSelection();
+      } else {
+        app.tts.speakHero( handleHeroImage(app.selectedHero) ,  'hello');
       }
 
       app.heroByBody.forEach((sceneObj, indexRoot) => {
