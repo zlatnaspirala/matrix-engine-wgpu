@@ -95,6 +95,18 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
 
   let heros = null;
 
+  function checkUsername() {
+    if(JSON.parse(SS.get('RocketAcount')) != null && typeof JSON.parse(SS.get('RocketAcount')).nickname !== 'undefined') {
+      return JSON.parse(SS.get('RocketAcount')).nickname;
+    } else {
+      if(app.net.session !== null) {
+        return app.net.session.connection.connectionId;
+      } else {
+        return 'nosession';
+      }
+    }
+  }
+
   // Networking
   forestOfHollowBloodStartSceen.net = new MatrixStream({
     active: true,
@@ -259,7 +271,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
         byId('loader').innerHTML = `NO INTERNET CONNECTIONS`;
         setTimeout(() => {
           location.href = 'https://maximumroulette.com';
-        }, 3000)
+        }, 3000);
       }
     }
   }
@@ -267,7 +279,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
   addEventListener('check-gameplay-channel', (e) => {
     let info = e.detail;
     if(info.status != 'false' && typeof info.status !== "undefined") {
-      console.log('check-gameplay-channel status:', info.status)
+      // console.log('check-gameplay-channel status:', info.status)
       byId("onlineUsers").innerHTML = `GamePlay:Free`;
       forestOfHollowBloodStartSceen.gamePlayStatus = "free";
       byId('startBtnText').innerHTML = app.label.get.play;
@@ -275,7 +287,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
       clearInterval(forestOfHollowBloodStartSceen.gamePlayStatusTimer);
       forestOfHollowBloodStartSceen.gamePlayStatusTimer = null;
     } else {
-      console.log('check-gameplay-channel status:', info.status)
+      // console.log('check-gameplay-channel status:', info.status)
       if(typeof info.status != "undefined" && info.status == "false") {
         // no internet
         byId('loader').style.display = 'block';
@@ -357,7 +369,15 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
     byId("sessionName").disabled = true;
     forestOfHollowBloodStartSceen.setWaitingList();
     // check game-play channel
-    setTimeout(() => app.net.fetchInfo('forestOfHollowBlood-free-for-all'), 1000);
+    setTimeout(() => {
+      app.net.fetchInfo('forestOfHollowBlood-free-for-all');
+      app.sendmsg = (m) => {
+        if(typeof m != 'string') return;
+        if(m.length > 120) return;
+        let username = checkUsername();
+        if (username != 'nosession') app.net.sendOnlyData({type: "chat", msg: m, username: username});
+      };
+    }, 1500);
   });
 
   addEventListener('connectionDestroyed', (e) => {
@@ -437,14 +457,19 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
         console.log(`<data-receive From ${e.detail.from.connectionId} team:${t.team}  ${byId(`waiting-${e.detail.from.connectionId}`)}`);
         byId(`${e.detail.from.connectionId}-title`).innerHTML = `Player:${e.detail.from.connectionId} Team:${t.team}`;
       } else if(t.type == 'start') {
-        // HERE_
         forestOfHollowBloodStartSceen.gotoGamePlay("no emit");
+      } else if(t.type == 'chat') {
+        // add chat
+        if(t.msg.length > 120) {
+          t.msg = '';
+          return;
+        }
+        mb.show(`Msg from ${t.username}: ${t.msg}`);
       }
     }
   })
 
   // addEventListener('AmmoReady', async () => {
-
   // catch
   if(typeof app.label == 'undefined' || typeof app.label.get == 'undefined' || typeof app.label.get.mariasword == 'undefined') {
     if(typeof app.label == 'undefined') app.label = {get: {}};
@@ -602,7 +627,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
       if(app.net.session) {
         determinateSelection();
       } else {
-        app.tts.speakHero( handleHeroImage(app.selectedHero) ,  'hello');
+        app.tts.speakHero(handleHeroImage(app.selectedHero), 'hello');
       }
 
       app.heroByBody.forEach((sceneObj, indexRoot) => {
@@ -672,7 +697,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
       if(app.net.session) {
         determinateSelection();
       } else {
-        app.tts.speakHero( handleHeroImage(app.selectedHero) ,  'hello');
+        app.tts.speakHero(handleHeroImage(app.selectedHero), 'hello');
       }
 
       app.heroByBody.forEach((sceneObj, indexRoot) => {
@@ -821,7 +846,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
     const LBBtn = document.createElement("button");
     Object.assign(LBBtn.style, {
       position: "fixed",
-      bottom: '10px',
+      bottom: '120px',
       left: '20px',
       width: "140px",
       height: "28px",
@@ -850,6 +875,67 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
     LBBtn.addEventListener('click', app.account.getLeaderboard);
     hud.appendChild(LBBtn);
 
+    // chat box
+    const sendMsgInput = document.createElement("input");
+    sendMsgInput.id = 'msg-input';
+    sendMsgInput.type = "text";
+    sendMsgInput.addEventListener("input", (e) => {
+      if(e.target.value.length > 120) {
+        e.target.value = e.target.value.slice(0, 120);
+      }
+    });
+
+    Object.assign(sendMsgInput.style, {
+      position: "fixed",
+      bottom: '182px',
+      left: '20px',
+      width: "134px",
+      height: "17px",
+      textAlign: "center",
+      color: "white",
+      fontWeight: "bold",
+      // textShadow: "0 0 2px black",
+      color: 'black',
+      // background: '#000000ff',
+      fontSize: '16px',
+      cursor: 'url(./res/icons/default.png) 0 0, auto',
+      pointerEvents: 'auto'
+    });
+    hud.appendChild(sendMsgInput);
+
+    const sendMsgBtn = document.createElement("button");
+    Object.assign(sendMsgBtn.style, {
+      position: "fixed",
+      bottom: '153px',
+      left: '20px',
+      width: "140px",
+      height: "28px",
+      textAlign: "center",
+      color: "white",
+      fontWeight: "bold",
+      textShadow: "0 0 2px black",
+      color: '#ffffffff',
+      background: '#000000ff',
+      fontSize: '16px',
+      cursor: 'url(./res/icons/default.png) 0 0, auto',
+      pointerEvents: 'auto'
+    });
+    // sendMsgBtn.classList.add('buttonMatrix');
+    // sendMsgBtn.innerHTML = `
+    //   <div class="button-outer">
+    //     <div class="button-inner">
+    //       <span data-label='leaderboard'>${app.label.get.leaderboard}</span>
+    //     </div>
+    //   </div>
+    // `;
+    sendMsgBtn.innerHTML = `<span data-label='leaderboard'>${app.label.get.sendmsg}</span>    `;
+    sendMsgBtn.addEventListener('click', () => {
+      sendMsgBtn.disabled = true;
+      app.sendmsg(sendMsgInput.value);
+      setTimeout(() => {sendMsgBtn.disabled = false;}, 5000);
+    });
+    hud.appendChild(sendMsgBtn);
+    // end
     const loader = document.createElement("div");
     loader.id = 'loader';
     Object.assign(loader.style, {
@@ -933,7 +1019,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
       app.matrixSounds.play('music');
       removeEventListener('click', firstClick);
       // for mobile no need to call - if called porttrain forced (current orientation on mobile device)
-      if(location.hostname.indexOf('localhost') == -1 || isMobile() == false) app.FS.request();
+      if(location.hostname.indexOf('localhost') == -1 && isMobile() == false) app.FS.request();
     }
     addEventListener('click', firstClick);
   }
