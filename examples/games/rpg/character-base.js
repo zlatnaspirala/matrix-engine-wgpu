@@ -559,25 +559,25 @@ export class Character extends Hero {
       }
       // LOCAL
       if(e.detail.A.group == 'local_hero') {
-        this.creepFocusAttackOn = app.enemies.enemies.filter((enemy) => enemy.name == e.detail.B.id)[0];
-        if(this.creepFocusAttackOn == undefined) {
-          this.creepFocusAttackOn = app.enemies.creeps.filter((creep) => creep.name == e.detail.B.id)[0];
-          if(this.creepFocusAttackOn == undefined) {
+        this.heroFocusAttackOn = app.enemies.enemies.filter((enemy) => enemy.name == e.detail.B.id)[0];
+        if(this.heroFocusAttackOn == undefined) {
+          this.heroFocusAttackOn = app.enemies.creeps.filter((creep) => creep.name == e.detail.B.id)[0];
+          if(this.heroFocusAttackOn == undefined) {
             if(e.detail.B.id.indexOf('enemytron') != -1) {
-              this.creepFocusAttackOn = app.enemytron;
-              console.info('<generate game event here1> creeps attack enemy home.', this.creepFocusAttackOn);
+              this.heroFocusAttackOn = app.enemytron;
+              console.info('<generate game event> LOCALHERO attack enemy home.', this.heroFocusAttackOn);
             }
           }
         }
         this.setAttack(this.heroFocusAttackOn);
       } else if(e.detail.B.group == 'local_hero') {
-        this.creepFocusAttackOn = app.enemies.enemies.filter((enemy) => enemy.name == e.detail.A.id)[0];
-        if(this.creepFocusAttackOn == undefined) {
-          this.creepFocusAttackOn = app.enemies.creeps.filter((creep) => creep.name == e.detail.A.id)[0];
-          if(this.creepFocusAttackOn == undefined) {
+        this.heroFocusAttackOn = app.enemies.enemies.filter((enemy) => enemy.name == e.detail.A.id)[0];
+        if(this.heroFocusAttackOn == undefined) {
+          this.heroFocusAttackOn = app.enemies.creeps.filter((creep) => creep.name == e.detail.A.id)[0];
+          if(this.heroFocusAttackOn == undefined) {
             if(e.detail.A.id.indexOf('enemytron') != -1) {
-              this.creepFocusAttackOn = app.enemytron;
-              console.info('<generate game event here2> creeps attack enemy home.', this.creepFocusAttackOn);
+              this.heroFocusAttackOn = app.enemytron;
+              console.info('<generate game event here2> creeps attack enemy home.', this.heroFocusAttackOn);
             }
           }
         }
