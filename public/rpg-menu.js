@@ -1959,10 +1959,13 @@ let forestOfHollowBloodStartSceen = new _world.default({
     sendMsgBtn.innerHTML = `<span data-label='leaderboard'>${app.label.get.sendmsg}</span>    `;
     sendMsgBtn.addEventListener('click', () => {
       sendMsgBtn.disabled = true;
+      sendMsgBtn.style.color = 'gray';
       app.sendmsg(sendMsgInput.value);
       setTimeout(() => {
         sendMsgBtn.disabled = false;
+        sendMsgBtn.style.color = 'white';
       }, 5000);
+      sendMsgInput.value = "";
     });
     hud.appendChild(sendMsgBtn);
     // end

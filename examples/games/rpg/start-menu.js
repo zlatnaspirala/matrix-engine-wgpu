@@ -931,8 +931,13 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
     sendMsgBtn.innerHTML = `<span data-label='leaderboard'>${app.label.get.sendmsg}</span>    `;
     sendMsgBtn.addEventListener('click', () => {
       sendMsgBtn.disabled = true;
+      sendMsgBtn.style.color = 'gray';
       app.sendmsg(sendMsgInput.value);
-      setTimeout(() => {sendMsgBtn.disabled = false;}, 5000);
+      setTimeout(() => {
+        sendMsgBtn.disabled = false;
+        sendMsgBtn.style.color = 'white';
+      }, 5000);
+      sendMsgInput.value = "";
     });
     hud.appendChild(sendMsgBtn);
     // end
