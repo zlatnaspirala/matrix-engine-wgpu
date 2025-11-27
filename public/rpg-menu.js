@@ -465,7 +465,8 @@ class HeroProps {
         attacker: attacker.name,
         defenderLevel: defender.currentLevel,
         defender: defender.name,
-        hp: defender.hp
+        hp: defender.hp,
+        damage: damage
       }
     }));
     return {
@@ -1131,6 +1132,7 @@ let forestOfHollowBloodStartSceen = new _world.default({
   forestOfHollowBloodStartSceen.lock = false;
 
   // Audios
+  forestOfHollowBloodStartSceen.matrixSounds.createAudio('music2', 'res/audios/rpg/music.mp3', 1);
   forestOfHollowBloodStartSceen.matrixSounds.createAudio('music', 'res/audios/rpg/wizard-rider.mp3', 1);
   forestOfHollowBloodStartSceen.matrixSounds.createAudio('click1', 'res/audios/click1.mp3', 1);
   app.matrixSounds.audios.click1.volume = 0.2;
@@ -1339,7 +1341,7 @@ let forestOfHollowBloodStartSceen = new _world.default({
       }
     }
   });
-  forestOfHollowBloodStartSceen.MINIMUM_PLAYERS = location.hostname.indexOf('localhost') != -1 ? 3 : 4;
+  forestOfHollowBloodStartSceen.MINIMUM_PLAYERS = location.hostname.indexOf('localhost') != -1 ? 2 : 4;
   forestOfHollowBloodStartSceen.setWaitingList = () => {
     // access net doms who comes with broadcaster2.html
     const waitingForOthersDOM = document.createElement("div");
@@ -1876,7 +1878,7 @@ let forestOfHollowBloodStartSceen = new _world.default({
     const LBBtn = document.createElement("button");
     Object.assign(LBBtn.style, {
       position: "fixed",
-      bottom: '120px',
+      bottom: '220px',
       left: '20px',
       width: "140px",
       height: "28px",
@@ -1916,7 +1918,7 @@ let forestOfHollowBloodStartSceen = new _world.default({
     });
     Object.assign(sendMsgInput.style, {
       position: "fixed",
-      bottom: '182px',
+      bottom: '282px',
       left: '20px',
       width: "134px",
       height: "17px",
@@ -1934,7 +1936,7 @@ let forestOfHollowBloodStartSceen = new _world.default({
     const sendMsgBtn = document.createElement("button");
     Object.assign(sendMsgBtn.style, {
       position: "fixed",
-      bottom: '153px',
+      bottom: '253px',
       left: '20px',
       width: "140px",
       height: "28px",
@@ -2046,7 +2048,15 @@ let forestOfHollowBloodStartSceen = new _world.default({
      */
     function firstClick() {
       // add here after - fs force
+      app.matrixSounds.audios.music.volume = 0.2;
+      app.matrixSounds.audios.music2.volume = 0.2;
       app.matrixSounds.play('music');
+      app.matrixSounds.audios.music.onended = () => {
+        app.matrixSounds.play('music2');
+      };
+      app.matrixSounds.audios.music2.onended = () => {
+        app.matrixSounds.play('music');
+      };
       removeEventListener('click', firstClick);
       // for mobile no need to call - if called porttrain forced (current orientation on mobile device)
       if (location.hostname.indexOf('localhost') == -1 && (0, _utils.isMobile)() == false) app.FS.request();
@@ -2161,6 +2171,9 @@ class MatrixTTS {
     return chunks;
   }
   async speakNatural(text, opts = {}) {
+    if (speechSynthesis.speaking || speechSynthesis.pending) {
+      return;
+    }
     const {
       lang = 'en-US',
       rate = 0.95,

@@ -27,6 +27,9 @@ import {en} from "../../../public/res/multilang/en-backup.js";
 // set orientation  in animation end hero
 // setup HP after setDead
 
+// tron must be emited because can be moved by heroes
+
+
 if(!SS.has('player') || !LS.has('player')) {
   location.href = 'https://google.com';
 }
@@ -227,6 +230,7 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
         console.log('<data-receive damage for IsEnemyHeroObj >', IsEnemyHeroObj);
         const progress = Math.max(0, Math.min(1, d.hp / IsEnemyHeroObj.getHPMax()));
         IsEnemyHeroObj.heroe_bodies[0].effects.energyBar.setProgress(progress);
+        IsEnemyHeroObj.hp = d.hp;
         console.log('<data-receive damage IsEnemyHeroObj progress >', progress);
         if(progress == 0) {
           if(app.localHero.name == d.attackerName) {
@@ -235,6 +239,42 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
           }
         }
         //..
+      }
+    } else if(d.type == "damage-creep") {
+      if(app.player.data.team == d.defenderTeam) {
+        console.log('<data-receive damage local creep but from self :', d.defenderTeam);
+        // can be both team
+        let getCreepByIndex = parseInt(d.defenderName[d.defenderName.length - 1]);
+        app.localHero.friendlyLocal.creeps[getCreepByIndex]
+          .heroe_bodies[0].effects.energyBar.setProgress(d.progress);
+        if(d.progress <= 0.09) {
+          app.localHero.friendlyLocal.creeps[getCreepByIndex].creepFocusAttackOn = null;
+          app.localHero.friendlyLocal.creeps[getCreepByIndex].setDead();
+          setTimeout(() => {
+            app.localHero.friendlyLocal.creeps[getCreepByIndex].setStartUpPosition();
+            app.localHero.friendlyLocal.creeps[getCreepByIndex].gotoFinal = false;
+            app.localHero.friendlyLocal.creeps[getCreepByIndex].heroe_bodies[0].effects.energyBar.setProgress(1);
+            app.localHero.friendlyLocal.creeps[getCreepByIndex].hp = 300;
+            setTimeout(() => {
+              dispatchEvent(new CustomEvent('navigate-friendly_creeps', {detail: 'test'}))
+            }, 100);
+          }, 500)
+        }
+      } else {
+        console.log('<data-receive damage enemy creep but from self :', d.defenderTeam);
+        let getCreepByIndex = parseInt(d.defenderName[d.defenderName.length - 1]);
+        app.enemies.creeps[getCreepByIndex]
+          .heroe_bodies[0].effects.energyBar.setProgress(d.progress);
+        app.enemies.creeps[getCreepByIndex].creepFocusAttackOn = null;
+        if(d.progress <= 0.09) {
+          app.enemies.creeps[getCreepByIndex].setDead();
+          setTimeout(() => {
+            app.enemies.creeps[getCreepByIndex].setStartUpPosition();
+            app.enemies.creeps[getCreepByIndex].gotoFinal = false;
+            app.enemies.creeps[getCreepByIndex].heroe_bodies[0].effects.energyBar.setProgress(1);
+            app.enemies.creeps[getCreepByIndex].hp = 300;
+          }, 700);
+        }
       }
     }
   });
@@ -276,6 +316,7 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
         console.log('<data-receive damage for LOCAL HERO >');
         const progress = Math.max(0, Math.min(1, d.hp / app.localHero.getHPMax()));
         app.localHero.heroe_bodies[0].effects.energyBar.setProgress(progress);
+        app.localHero.hp = d.hp;
         if(d.hp == 0 || progress == 0) {
           // local hero dead
           app.localHero.setDead();
@@ -287,7 +328,16 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
             );
             // const progress = Math.max(0, Math.min(1, d.hp / app.localHero.getHPMax()));
             app.localHero.heroe_bodies[0].effects.energyBar.setProgress(1);
-          }, 500);
+            let newhp = app.localHero.getHPMax();
+            app.localHero.hp = newhp;
+            this.core.net.sendOnlyData({
+              type: "hero-update",
+              heroName: d.defenderName,
+              hp: newhp,
+              progress: 1
+            });
+
+          }, 600);
         }
       }
     } else if(d.type == "damage-creep") {
@@ -305,6 +355,7 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
             app.localHero.friendlyLocal.creeps[getCreepByIndex].setStartUpPosition();
             app.localHero.friendlyLocal.creeps[getCreepByIndex].gotoFinal = false;
             app.localHero.friendlyLocal.creeps[getCreepByIndex].heroe_bodies[0].effects.energyBar.setProgress(1);
+            app.localHero.friendlyLocal.creeps[getCreepByIndex].hp = 300;
             setTimeout(() => {
               dispatchEvent(new CustomEvent('navigate-friendly_creeps', {detail: 'test'}))
             }, 100);
@@ -322,6 +373,7 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
             app.enemies.creeps[getCreepByIndex].setStartUpPosition();
             app.enemies.creeps[getCreepByIndex].gotoFinal = false;
             app.enemies.creeps[getCreepByIndex].heroe_bodies[0].effects.energyBar.setProgress(1);
+            app.enemies.creeps[getCreepByIndex].hp = 300;
           }, 700);
         }
       }
@@ -330,22 +382,49 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
         app.tron.effects.energyBar.setProgress(d.progress);
         if(d.progress == 0) {
           app.tron.globalAmbient = [2, 1, 1];
-          mb.show(` Enemy wins !!! ${app.player.data.enemyTeam} `)
+          mb.show(` Enemy wins !!! ${app.player.data.enemyTeam} `);
           setTimeout(() => {
             mb.show(` Enemy wins, game over. ${app.player.data.enemyTeam} `)
             location.assign("rpg-menu.html",);
-          }, 3000)
+          }, 13000)
         }
       } else {
         app.enemytron.effects.energyBar.setProgress(d.progress);
         if(d.progress == 0) {
           app.tron.globalAmbient = [2, 1, 1];
           mb.show(`Your team wins !!! ${app.player.data.team} `);
+          app.localHero.setSalute();
           setTimeout(() => {
             mb.show(`Team ${app.player.data.team} wins !`);
             location.assign("rpg-menu.html",);
           }, 3000)
         }
+      }
+    } else if(d.type == "hero-update") {
+
+
+      let IsEnemyHeroObj = forestOfHollowBlood.enemies.enemies.find((enemy) => enemy.name === d.heroName);
+      if(IsEnemyHeroObj) {
+        // ------------------------------------
+        console.log(d.hp, ' d.hp ->... IsEnemyHeroObj ... ', IsEnemyHeroObj.hp);
+        IsEnemyHeroObj.hp = d.hp;
+        return;
+      }
+
+      let IsEnemyCreepObj = forestOfHollowBlood.enemies.creeps.find((creep) => creep.name === d.heroName);
+      if(IsEnemyCreepObj) {
+        // ------------------------------------
+        console.log('... IsEnemyCreepObj test for now ... ')
+        IsEnemyCreepObj.hp = d.hp;
+        return;
+      }
+      // new
+      let IsFriendlyHeroObj = forestOfHollowBlood.localHero.friendlyLocal.heroes.find((fhero) => fhero.name === d.heroName);
+      if(IsFriendlyHeroObj) {
+        // ------------------------------------
+        console.log(d.hp, ' d.hp -> ... IsFriendlyHeroObj  ... ', IsFriendlyHeroObj.hp)
+        IsFriendlyHeroObj.hp = d.hp;
+        return;
       }
     }
   })

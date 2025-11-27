@@ -90,6 +90,7 @@ export class MatrixTTS {
   }
 
   async speakNatural(text, opts = {}) {
+    if(speechSynthesis.speaking || speechSynthesis.pending) {return;}
     const {
       lang = 'en-US',
       rate = 0.95,

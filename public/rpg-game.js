@@ -1197,7 +1197,7 @@ class Creep extends _hero.Hero {
       if (this.group == 'enemy') {
         console.info(`%c onDamage-${this.name} group: ${this.group}  creep damage!`, _utils.LOG_FUNNY);
       } else {
-        console.log('friendly creep damage must come from net');
+        console.log('friendly creep damage must come from net. [never]');
         return;
       }
       this.heroe_bodies[0].effects.energyBar.setProgress(e.detail.progress);
@@ -1208,24 +1208,22 @@ class Creep extends _hero.Hero {
         hp: e.detail.hp,
         progress: e.detail.progress
       });
-
-      // if detail is 0
       if (e.detail.progress == 0) {
         this.setDead();
-        console.info(`%cCreep dead [${this.name}], attacker[${e.detail.attacker}]`, _utils.LOG_MATRIX);
+        console.info(`%c Creep dead [${this.name}], attacker[${e.detail.attacker}]`, _utils.LOG_MATRIX);
         setTimeout(() => {
           this.setStartUpPosCreep(this.name[this.name.length - 1]);
           this.setWalk();
           this.creepFocusAttackOn = null;
           this.gotoFinal = false;
-          this.setStartUpPosCreep(this.name[this.name.length - 1]); // test
+          this.setStartUpPosCreep(this.name[this.name.length - 1]);
           this.hp = 300;
           this.heroe_bodies[0].effects.energyBar.setProgress(1);
           app.localHero.setWalkCreep(this.name[this.name.length - 1]);
           dispatchEvent(new CustomEvent('navigate-friendly_creeps', {
             detail: 'test'
           }));
-        }, 1000);
+        }, 700);
       }
     });
     if (this.group != 'enemy') {
@@ -1517,7 +1515,8 @@ class Enemie extends _hero.Hero {
         defenderName: e.detail.defender,
         attackerName: e.detail.attacker,
         hp: e.detail.hp,
-        progress: e.detail.progress
+        progress: e.detail.progress,
+        damage: e.detail.damage
       });
       // if detail is 0
       if (e.detail.progress == 0) {
@@ -1525,7 +1524,7 @@ class Enemie extends _hero.Hero {
         console.info(`%c hero dead [${this.name}], attacker[${e.detail.attacker}]`, _utils.LOG_MATRIX);
         setTimeout(() => {
           this.setStartUpPosition();
-        }, 1100);
+        }, 500);
       }
     });
   }
@@ -1563,6 +1562,8 @@ function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e
  **/
 // set orientation  in animation end hero
 // setup HP after setDead
+
+// tron must be emited because can be moved by heroes
 
 if (!_utils.SS.has('player') || !_utils.LS.has('player')) {
   location.href = 'https://google.com';
@@ -1751,6 +1752,7 @@ let forestOfHollowBlood = new _world.default({
         console.log('<data-receive damage for IsEnemyHeroObj >', IsEnemyHeroObj);
         const progress = Math.max(0, Math.min(1, d.hp / IsEnemyHeroObj.getHPMax()));
         IsEnemyHeroObj.heroe_bodies[0].effects.energyBar.setProgress(progress);
+        IsEnemyHeroObj.hp = d.hp;
         console.log('<data-receive damage IsEnemyHeroObj progress >', progress);
         if (progress == 0) {
           if (app.localHero.name == d.attackerName) {
@@ -1759,6 +1761,42 @@ let forestOfHollowBlood = new _world.default({
           }
         }
         //..
+      }
+    } else if (d.type == "damage-creep") {
+      if (app.player.data.team == d.defenderTeam) {
+        console.log('<data-receive damage local creep but from self :', d.defenderTeam);
+        // can be both team
+        let getCreepByIndex = parseInt(d.defenderName[d.defenderName.length - 1]);
+        app.localHero.friendlyLocal.creeps[getCreepByIndex].heroe_bodies[0].effects.energyBar.setProgress(d.progress);
+        if (d.progress <= 0.09) {
+          app.localHero.friendlyLocal.creeps[getCreepByIndex].creepFocusAttackOn = null;
+          app.localHero.friendlyLocal.creeps[getCreepByIndex].setDead();
+          setTimeout(() => {
+            app.localHero.friendlyLocal.creeps[getCreepByIndex].setStartUpPosition();
+            app.localHero.friendlyLocal.creeps[getCreepByIndex].gotoFinal = false;
+            app.localHero.friendlyLocal.creeps[getCreepByIndex].heroe_bodies[0].effects.energyBar.setProgress(1);
+            app.localHero.friendlyLocal.creeps[getCreepByIndex].hp = 300;
+            setTimeout(() => {
+              dispatchEvent(new CustomEvent('navigate-friendly_creeps', {
+                detail: 'test'
+              }));
+            }, 100);
+          }, 500);
+        }
+      } else {
+        console.log('<data-receive damage enemy creep but from self :', d.defenderTeam);
+        let getCreepByIndex = parseInt(d.defenderName[d.defenderName.length - 1]);
+        app.enemies.creeps[getCreepByIndex].heroe_bodies[0].effects.energyBar.setProgress(d.progress);
+        app.enemies.creeps[getCreepByIndex].creepFocusAttackOn = null;
+        if (d.progress <= 0.09) {
+          app.enemies.creeps[getCreepByIndex].setDead();
+          setTimeout(() => {
+            app.enemies.creeps[getCreepByIndex].setStartUpPosition();
+            app.enemies.creeps[getCreepByIndex].gotoFinal = false;
+            app.enemies.creeps[getCreepByIndex].heroe_bodies[0].effects.energyBar.setProgress(1);
+            app.enemies.creeps[getCreepByIndex].hp = 300;
+          }, 700);
+        }
       }
     }
   });
@@ -1799,6 +1837,7 @@ let forestOfHollowBlood = new _world.default({
         console.log('<data-receive damage for LOCAL HERO >');
         const progress = Math.max(0, Math.min(1, d.hp / app.localHero.getHPMax()));
         app.localHero.heroe_bodies[0].effects.energyBar.setProgress(progress);
+        app.localHero.hp = d.hp;
         if (d.hp == 0 || progress == 0) {
           // local hero dead
           app.localHero.setDead();
@@ -1806,7 +1845,15 @@ let forestOfHollowBlood = new _world.default({
             app.localHero.heroe_bodies[0].position.setPosition(_static.startUpPositions[forestOfHollowBlood.player.data.team][0], _static.startUpPositions[forestOfHollowBlood.player.data.team][1], _static.startUpPositions[forestOfHollowBlood.player.data.team][2]);
             // const progress = Math.max(0, Math.min(1, d.hp / app.localHero.getHPMax()));
             app.localHero.heroe_bodies[0].effects.energyBar.setProgress(1);
-          }, 500);
+            let newhp = app.localHero.getHPMax();
+            app.localHero.hp = newhp;
+            (void 0).core.net.sendOnlyData({
+              type: "hero-update",
+              heroName: d.defenderName,
+              hp: newhp,
+              progress: 1
+            });
+          }, 600);
         }
       }
     } else if (d.type == "damage-creep") {
@@ -1822,6 +1869,7 @@ let forestOfHollowBlood = new _world.default({
             app.localHero.friendlyLocal.creeps[getCreepByIndex].setStartUpPosition();
             app.localHero.friendlyLocal.creeps[getCreepByIndex].gotoFinal = false;
             app.localHero.friendlyLocal.creeps[getCreepByIndex].heroe_bodies[0].effects.energyBar.setProgress(1);
+            app.localHero.friendlyLocal.creeps[getCreepByIndex].hp = 300;
             setTimeout(() => {
               dispatchEvent(new CustomEvent('navigate-friendly_creeps', {
                 detail: 'test'
@@ -1839,6 +1887,7 @@ let forestOfHollowBlood = new _world.default({
             app.enemies.creeps[getCreepByIndex].setStartUpPosition();
             app.enemies.creeps[getCreepByIndex].gotoFinal = false;
             app.enemies.creeps[getCreepByIndex].heroe_bodies[0].effects.energyBar.setProgress(1);
+            app.enemies.creeps[getCreepByIndex].hp = 300;
           }, 700);
         }
       }
@@ -1851,18 +1900,42 @@ let forestOfHollowBlood = new _world.default({
           setTimeout(() => {
             _utils.mb.show(` Enemy wins, game over. ${app.player.data.enemyTeam} `);
             location.assign("rpg-menu.html");
-          }, 3000);
+          }, 13000);
         }
       } else {
         app.enemytron.effects.energyBar.setProgress(d.progress);
         if (d.progress == 0) {
           app.tron.globalAmbient = [2, 1, 1];
           _utils.mb.show(`Your team wins !!! ${app.player.data.team} `);
+          app.localHero.setSalute();
           setTimeout(() => {
             _utils.mb.show(`Team ${app.player.data.team} wins !`);
             location.assign("rpg-menu.html");
           }, 3000);
         }
+      }
+    } else if (d.type == "hero-update") {
+      let IsEnemyHeroObj = forestOfHollowBlood.enemies.enemies.find(enemy => enemy.name === d.heroName);
+      if (IsEnemyHeroObj) {
+        // ------------------------------------
+        console.log(d.hp, ' d.hp ->... IsEnemyHeroObj ... ', IsEnemyHeroObj.hp);
+        IsEnemyHeroObj.hp = d.hp;
+        return;
+      }
+      let IsEnemyCreepObj = forestOfHollowBlood.enemies.creeps.find(creep => creep.name === d.heroName);
+      if (IsEnemyCreepObj) {
+        // ------------------------------------
+        console.log('... IsEnemyCreepObj test for now ... ');
+        IsEnemyCreepObj.hp = d.hp;
+        return;
+      }
+      // new
+      let IsFriendlyHeroObj = forestOfHollowBlood.localHero.friendlyLocal.heroes.find(fhero => fhero.name === d.heroName);
+      if (IsFriendlyHeroObj) {
+        // ------------------------------------
+        console.log(d.hp, ' d.hp -> ... IsFriendlyHeroObj  ... ', IsFriendlyHeroObj.hp);
+        IsFriendlyHeroObj.hp = d.hp;
+        return;
       }
     }
   });
@@ -2019,6 +2092,7 @@ class FriendlyHero extends _hero.Hero {
     });
   }
   attachEvents() {
+    return;
     addEventListener(`onDamage-${this.name}`, e => {
       console.info(`%c remote[friendly] hero damage ${e.detail}`, _utils.LOG_MATRIX);
       this.heroe_bodies[0].effects.energyBar.setProgress(e.detail.progress);
@@ -2508,7 +2582,8 @@ class HeroProps {
         attacker: attacker.name,
         defenderLevel: defender.currentLevel,
         defender: defender.name,
-        hp: defender.hp
+        hp: defender.hp,
+        damage: damage
       }
     }));
     return {
@@ -3533,10 +3608,10 @@ class MEMapLoader {
       // no need to extend whole Hero class 
       // Fiktive
       app.tron.currentLevel = 10;
-      app.tron.hp = 300;
+      app.tron.hp = 400;
       app.tron.armor = 0.1;
       app.enemytron.currentLevel = 10;
-      app.enemytron.hp = 300;
+      app.enemytron.hp = 400;
       app.enemytron.armor = 0.1;
       addEventListener(`onDamage-${app.enemytron.name}`, e => {
         console.info(`%c ON damage TRON ! ${e.detail}`, _utils.LOG_MATRIX);
@@ -3555,6 +3630,13 @@ class MEMapLoader {
       app.tron.effects.circle.rotateEffectSpeed = 0.01;
       app.enemytron.effects.circle = new _genTex.GenGeoTexture2(app.device, app.enemytron.presentationFormat, 'circle2', './res/textures/star1.png');
       app.enemytron.effects.circle.rotateEffectSpeed = 0.01;
+
+      // emit pos
+      app.tron.position.teams[0] = app.player.remoteByTeam[app.player.data.team];
+      app.tron.position.teams[1] = app.player.remoteByTeam[app.player.data.enemyTeam];
+      app.tron.position.netObject = app.tron.name;
+      let t = app.tron.name.replace('friendlytron', 'enemytron');
+      app.tron.position.remoteName = t;
       this.core.collisionSystem.register(app.tron.name, app.tron.position, 25.0, 'friendly');
       this.core.collisionSystem.register(app.enemytron.name, app.enemytron.position, 25.0, 'enemy');
       setTimeout(() => {
@@ -5459,6 +5541,9 @@ class MatrixTTS {
     return chunks;
   }
   async speakNatural(text, opts = {}) {
+    if (speechSynthesis.speaking || speechSynthesis.pending) {
+      return;
+    }
     const {
       lang = 'en-US',
       rate = 0.95,
@@ -23399,6 +23484,7 @@ Object.defineProperty(exports, "__esModule", {
 exports.en = void 0;
 const en = exports.en = {
   "play": "Play",
+  "sendmsg": "Send message",
   "changeTheme": "Theme dark/light",
   "yes": "Yes",
   "no": "No",

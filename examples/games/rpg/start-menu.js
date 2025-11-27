@@ -87,7 +87,8 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
   forestOfHollowBloodStartSceen.lock = false;
 
   // Audios
-  forestOfHollowBloodStartSceen.matrixSounds.createAudio('music', 'res/audios/rpg/wizard-rider.mp3', 1)
+  forestOfHollowBloodStartSceen.matrixSounds.createAudio('music2', 'res/audios/rpg/music.mp3', 1);
+  forestOfHollowBloodStartSceen.matrixSounds.createAudio('music', 'res/audios/rpg/wizard-rider.mp3', 1);
   forestOfHollowBloodStartSceen.matrixSounds.createAudio('click1', 'res/audios/click1.mp3', 1);
   app.matrixSounds.audios.click1.volume = 0.2;
   forestOfHollowBloodStartSceen.matrixSounds.createAudio('hover', 'res/audios/kenney/mp3/click3.mp3', 2);
@@ -314,7 +315,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
     }
   })
 
-  forestOfHollowBloodStartSceen.MINIMUM_PLAYERS = (location.hostname.indexOf('localhost') != -1 ? 3 : 4);
+  forestOfHollowBloodStartSceen.MINIMUM_PLAYERS = (location.hostname.indexOf('localhost') != -1 ? 2 : 4);
 
   forestOfHollowBloodStartSceen.setWaitingList = () => {
     // access net doms who comes with broadcaster2.html
@@ -375,7 +376,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
         if(typeof m != 'string') return;
         if(m.length > 120) return;
         let username = checkUsername();
-        if (username != 'nosession') app.net.sendOnlyData({type: "chat", msg: m, username: username});
+        if(username != 'nosession') app.net.sendOnlyData({type: "chat", msg: m, username: username});
       };
     }, 1500);
   });
@@ -846,7 +847,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
     const LBBtn = document.createElement("button");
     Object.assign(LBBtn.style, {
       position: "fixed",
-      bottom: '120px',
+      bottom: '220px',
       left: '20px',
       width: "140px",
       height: "28px",
@@ -887,7 +888,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
 
     Object.assign(sendMsgInput.style, {
       position: "fixed",
-      bottom: '182px',
+      bottom: '282px',
       left: '20px',
       width: "134px",
       height: "17px",
@@ -906,7 +907,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
     const sendMsgBtn = document.createElement("button");
     Object.assign(sendMsgBtn.style, {
       position: "fixed",
-      bottom: '153px',
+      bottom: '253px',
       left: '20px',
       width: "140px",
       height: "28px",
@@ -1021,7 +1022,16 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
      */
     function firstClick() {
       // add here after - fs force
+      app.matrixSounds.audios.music.volume = 0.2;
+      app.matrixSounds.audios.music2.volume = 0.2;
       app.matrixSounds.play('music');
+
+      app.matrixSounds.audios.music.onended = () => {
+        app.matrixSounds.play('music2');
+      };
+      app.matrixSounds.audios.music2.onended = () => {
+        app.matrixSounds.play('music');
+      };
       removeEventListener('click', firstClick);
       // for mobile no need to call - if called porttrain forced (current orientation on mobile device)
       if(location.hostname.indexOf('localhost') == -1 && isMobile() == false) app.FS.request();

@@ -160,11 +160,11 @@ export class MEMapLoader {
       // no need to extend whole Hero class 
       // Fiktive
       app.tron.currentLevel = 10;
-      app.tron.hp = 300;
+      app.tron.hp = 400;
       app.tron.armor = 0.1;
 
       app.enemytron.currentLevel = 10;
-      app.enemytron.hp = 300;
+      app.enemytron.hp = 400;
       app.enemytron.armor = 0.1;
 
       addEventListener(`onDamage-${app.enemytron.name}`, (e) => {
@@ -185,6 +185,13 @@ export class MEMapLoader {
 
       app.enemytron.effects.circle = new GenGeoTexture2(app.device, app.enemytron.presentationFormat, 'circle2', './res/textures/star1.png');
       app.enemytron.effects.circle.rotateEffectSpeed = 0.01;
+
+      // emit pos
+      app.tron.position.teams[0] = app.player.remoteByTeam[app.player.data.team];
+      app.tron.position.teams[1] = app.player.remoteByTeam[app.player.data.enemyTeam];
+      app.tron.position.netObject = app.tron.name;
+      let t =  app.tron.name.replace('friendlytron', 'enemytron');
+      app.tron.position.remoteName = t;
 
       this.core.collisionSystem.register(app.tron.name, app.tron.position, 25.0, 'friendly');
       this.core.collisionSystem.register(app.enemytron.name, app.enemytron.position, 25.0, 'enemy');
