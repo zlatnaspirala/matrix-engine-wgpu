@@ -295,22 +295,6 @@ export class Creep extends Hero {
               dispatchEvent(new CustomEvent('navigate-friendly_creeps', {detail: 'test'}))
             }
 
-            // if(this.core.enemies.creeps.length > 0) this.core.enemies.creeps.forEach((creep) => {
-            //   if(this.creepFocusAttackOn != null) if(this.creepFocusAttackOn.name.indexOf(creep.name) != -1) {
-            //     let tt = this.core.RPG.distance3D(
-            //       this.heroe_bodies[0].position,
-            //       this.creepFocusAttackOn.heroe_bodies[0].position);
-            //     if(tt < this.core.RPG.distanceForAction) {
-            //       // console.log(`%c creep ATTACK DAMAGE ${creep.heroe_bodies[0].name}`, LOG_MATRIX)
-            //       this.calcDamage(this, creep);
-            //     } else {
-            //       // leave it go creep to your goals...
-            //       // console.log(`%c creepFocusAttackOn = null; (fcreep vs creeps)(navigate-friendly_creeps3) `, LOG_MATRIX)
-            //       this.creepFocusAttackOn = null;
-            //       dispatchEvent(new CustomEvent('navigate-friendly_creeps', {detail: 'test'}))
-            //     }
-            //   }
-            // });
           }
         }
       })

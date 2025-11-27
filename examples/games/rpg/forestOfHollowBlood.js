@@ -268,6 +268,28 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
           }, 700);
         }
       }
+    } else if (d.type == "damage-tron") {
+     if(app.player.data.team == d.defenderTeam) {
+        app.tron.effects.energyBar.setProgress(d.progress);
+        if(d.progress == 0) {
+          app.tron.globalAmbient = [2, 1, 1];
+          mb.show(`☠️☠️☠️ ${app.player.data.enemyTeam} ☠️☠️☠️`);
+          mb.show(`☠️ Enemy wins ☠️  ${app.player.data.enemyTeam} `);
+          setTimeout(() => {
+            location.assign("rpg-menu.html");
+          }, 15000);
+        }
+      } else {
+        app.enemytron.effects.energyBar.setProgress(d.progress);
+        if(d.progress == 0) {
+          app.tron.globalAmbient = [2, 1, 1];
+          mb.show(`🏆🏆🏆 Your team wins ! 🏆🏆🏆 ${app.player.data.team} 🏆🏆🏆`);
+          app.localHero.setSalute();
+          setTimeout(() => {
+            location.assign("rpg-menu.html",);
+          }, 15000);
+        }
+      }
     }
   });
 

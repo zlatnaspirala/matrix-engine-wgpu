@@ -40,7 +40,6 @@ class Character extends _hero.Hero {
 
   constructor(forestOfHollowBlood, path, name = 'MariaSword', archetypes = ["Warrior", "Mage"]) {
     super(name, archetypes);
-    // console.info(`%cLOADING local hero name : ${name}`, LOG_MATRIX);
     console.info(`%cplayer.data : ${forestOfHollowBlood.player.data}`, _utils.LOG_MATRIX);
     this.name = name;
     this.core = forestOfHollowBlood;
@@ -50,8 +49,7 @@ class Character extends _hero.Hero {
     setTimeout(() => this.setupHUDForHero(name), 1100);
   }
   setupHUDForHero(name) {
-    console.info(`%cLOADING hero name : ${name}`, _utils.LOG_MATRIX);
-    // if(name == 'MariaSword') {
+    // console.info(`%cLOADING hero name : ${name}`, LOG_MATRIX)
     for (var x = 1; x < 5; x++) {
       (0, _utils.byId)(`magic-slot-${x - 1}`).style.background = `url("./res/textures/rpg/magics/${name.toLowerCase()}-${x}.png")`;
       (0, _utils.byId)(`magic-slot-${x - 1}`).style.backgroundRepeat = "round";
@@ -94,10 +92,7 @@ class Character extends _hero.Hero {
       }
     }, ['creep'], 'friendly', app.player.data.team));
     setTimeout(() => {
-      // console.info('setAllCreepsAtStartPos')
-      app.localHero.setAllCreepsAtStartPos().then(() => {
-        // console.log('passed in 1')
-      }).catch(() => {
+      app.localHero.setAllCreepsAtStartPos().then(() => {}).catch(() => {
         setTimeout(() => {
           app.localHero.setAllCreepsAtStartPos().then(() => {
             // console.log('passed in 2')
@@ -172,7 +167,7 @@ class Character extends _hero.Hero {
           circlePlaneTexPath: './res/textures/star1.png'
         }
       }, null, glbFile02);
-      // ---------
+
       // make small async - cooking glbs files  mouseTarget_Circle
       this.setupHero().then(() => {
         //
@@ -186,7 +181,7 @@ class Character extends _hero.Hero {
   setupHero() {
     return new Promise((resolve, reject) => {
       setTimeout(() => {
-        console.info(`%cAnimation setup...`, _utils.LOG_MATRIX);
+        // console.info(`%cAnimation setup...`, LOG_MATRIX)
         this.mouseTarget = app.getSceneObjectByName('mouseTarget_Circle');
         this.mouseTarget.animationSpeed = 20000;
         if (typeof app.localHero.mouseTarget.instanceTargets === 'undefined') {
@@ -224,6 +219,8 @@ class Character extends _hero.Hero {
           app.localHero.heroe_bodies[0].globalAmbient = [2, 2, 3, 1];
         } else if (app.localHero.name == 'Steelborn') {
           app.localHero.heroe_bodies[0].globalAmbient = [12, 12, 12, 1];
+        } else {
+          app.localHero.heroe_bodies[0].globalAmbient = [2, 2, 3, 1];
         }
         app.localHero.heroe_bodies[0].effects.circlePlaneTex.rotateEffectSpeed = 0.1;
         this.attachEvents();
@@ -238,12 +235,6 @@ class Character extends _hero.Hero {
         // app.localHero.heroe_bodies[0].position.netObject = app.net.session.connection.connectionId;
         // not top solution - for now . High cost - precision good.
         app.localHero.heroe_bodies[0].position.netObject = app.localHero.heroe_bodies[0].name;
-        // DISABLED
-        // app.net.multiPlayer.onFollowPath = (e) => {
-        //   console.log('e.data.followPath.start' , e.data.followPath.start)
-        //   let remoteEnemy = this.core.enemies.enemies.find((enemy => enemy.name === e.data.heroName))
-        //   remoteEnemy.remoteNav(e.data.followPath.end);
-        // }
         // for now net view for rot is axis separated - cost is ok for orientaion remote pass
         app.localHero.heroe_bodies[0].rotation.emitY = app.localHero.heroe_bodies[0].name;
         dispatchEvent(new CustomEvent('local-hero-bodies-ready', {
@@ -299,17 +290,12 @@ class Character extends _hero.Hero {
           creep.heroe_bodies[0].position.setPosition(_static.startUpPositions[this.core.player.data.team][0] + (index + 1) * 50, _static.startUpPositions[this.core.player.data.team][1], _static.startUpPositions[this.core.player.data.team][2] + (index + 1) * 50);
         });
         resolve();
-        // if(this.core.net.virtualEmiter != null) {
-        //   console.info(`%c virtualEmiter use navigateCreeps `, LOG_MATRIX)
-        //   this.navigateCreeps();
-        // }
       } catch (err) {
-        console.info('errr in ', err);
+        console.info('err in: ', err);
       }
     });
   };
   navigateCreeps() {
-    // console.log('navigateCreeps()');
     app.localHero.friendlyLocal.creeps.forEach((creep, index) => {
       this.navigateCreep(creep, index);
     });
@@ -522,11 +508,7 @@ class Character extends _hero.Hero {
             return;
           }
           lc.creepFocusAttackOn = app.enemies.enemies.filter(enemy => enemy.name == e.detail.A.id)[0];
-
-          // console.info('A = enemy vs B = friendly  <close-distance> is there enemy HERO  here ', lc.creepFocusAttackOn);
-
           if (lc.creepFocusAttackOn === undefined) {
-            console.info('it is undefined but ls is  ', lc);
             lc.creepFocusAttackOn = app.enemies.creeps.filter(creep => creep.name == e.detail.A.id)[0];
             // console.info('A = enemy vs B = friendly  <close-distance> is there enemy HERO  here ', lc.creepFocusAttackOn);
           }
@@ -535,11 +517,9 @@ class Character extends _hero.Hero {
             console.info('<generate game event here> creeps attack enemy home.', lc.creepFocusAttackOn);
           }
           if (lc.creepFocusAttackOn === undefined) {
-            // console.info('<close-distance> lc.creepFocusAttackOn is UNDEFINED ', lc.creepFocusAttackOn);
             return;
           }
           app.localHero.setAttackCreep(e.detail.B.id[e.detail.B.id.length - 1]);
-          // console.info('creep vs creep')
         }
       } else if (e.detail.A.group == "friendly" && e.detail.A.id.indexOf('friendlytron') == -1) {
         if (e.detail.B.group == "enemy" && this.core.net.virtualEmiter != null) {
@@ -553,13 +533,11 @@ class Character extends _hero.Hero {
           }
           if (lc.creepFocusAttackOn === undefined && e.detail.B.id.indexOf('enemytron') != -1) {
             lc.creepFocusAttackOn = app.enemytron;
-            console.info('<generate game event here> creeps attack enemy home.', lc.creepFocusAttackOn);
+            // console.info('<generate game event here> creeps attack enemy home.', lc.creepFocusAttackOn);
           }
           if (lc.creepFocusAttackOn === undefined) {
-            // console.info('<close-distance> lc.creepFocusAttackOn is UNDEFINED ', lc.creepFocusAttackOn);
             return;
           }
-          // console.info('close distance:', lc.creepFocusAttackOn)
           app.localHero.setAttackCreep(e.detail.A.id[e.detail.A.id.length - 1]);
         }
       }
@@ -571,7 +549,7 @@ class Character extends _hero.Hero {
           if (this.heroFocusAttackOn == undefined) {
             if (e.detail.B.id.indexOf('enemytron') != -1) {
               this.heroFocusAttackOn = app.enemytron;
-              console.info('<generate game event> LOCALHERO attack enemy home.', this.heroFocusAttackOn);
+              // console.info('<generate game event> LOCALHERO attack enemy home.', this.heroFocusAttackOn);
             }
           }
         }
@@ -583,7 +561,7 @@ class Character extends _hero.Hero {
           if (this.heroFocusAttackOn == undefined) {
             if (e.detail.A.id.indexOf('enemytron') != -1) {
               this.heroFocusAttackOn = app.enemytron;
-              console.info('<generate game event here2> creeps attack enemy home.', this.heroFocusAttackOn);
+              // console.info('<generate game event here2> creeps attack enemy home.', this.heroFocusAttackOn);
             }
           }
         }
@@ -594,9 +572,11 @@ class Character extends _hero.Hero {
       if (e.detail.animationName != 'attack' || typeof this.core.enemies === 'undefined') {
         return;
       }
+      let isEnemiesClose = false;
+      let isEnemiesCreepClose = false;
       if (this.heroFocusAttackOn == null) {
         // console.info('animationEnd [heroFocusAttackOn == null ]', e.detail.animationName)
-        let isEnemiesClose = false;
+
         this.core.enemies.enemies.forEach(enemy => {
           if (typeof enemy.heroe_bodies === 'undefined') return;
           if (enemy.heroe_bodies) {
@@ -608,7 +588,6 @@ class Character extends _hero.Hero {
             }
           }
         });
-        let isEnemiesCreepClose = false;
         this.core.enemies.creeps.forEach(creep => {
           if (typeof creep.heroe_bodies === 'undefined') return;
           if (creep.heroe_bodies) {
@@ -623,11 +602,11 @@ class Character extends _hero.Hero {
         if (isEnemiesCreepClose == false) this.setIdle();
         return;
       } else {
-        // Focus on enemy
         if (this.core.enemies.enemies.length > 0) this.core.enemies.enemies.forEach(enemy => {
           if (this.heroFocusAttackOn.name.indexOf(enemy.name) != -1) {
             let tt = this.core.RPG.distance3D(this.heroe_bodies[0].position, this.heroFocusAttackOn.position);
             if (tt < this.core.RPG.distanceForAction) {
+              isEnemiesClose = true;
               console.log(`%cATTACK DAMAGE [lhero on enemy hero] ${enemy.heroe_bodies[0].name}`, _utils.LOG_MATRIX);
               this.calcDamage(this, enemy);
               return;
@@ -638,11 +617,20 @@ class Character extends _hero.Hero {
           if (this.heroFocusAttackOn.name.indexOf(creep.name) != -1) {
             let tt = this.core.RPG.distance3D(this.heroe_bodies[0].position, this.heroFocusAttackOn.position);
             if (tt < this.core.RPG.distanceForAction) {
+              isEnemiesCreepClose = true;
               console.log(`%cATTACK DAMAGE [lhero on creep] ${creep.heroe_bodies[0].name}`, _utils.LOG_MATRIX);
               this.calcDamage(this, creep);
+              return;
             }
           }
         });
+        let enemytron = app.RPG.distance3D(this.heroe_bodies[0].position, app.enemytron.position);
+        if (enemytron < app.RPG.distanceForAction) {
+          console.log(`%c HERRO ATTACK ENEMY TRON`, _utils.LOG_MATRIX);
+          isEnemiesClose = true;
+          this.calcDamage(this, app.enemytron);
+          return;
+        }
       }
     });
 
@@ -1286,23 +1274,6 @@ class Creep extends _hero.Hero {
                 detail: 'test'
               }));
             }
-
-            // if(this.core.enemies.creeps.length > 0) this.core.enemies.creeps.forEach((creep) => {
-            //   if(this.creepFocusAttackOn != null) if(this.creepFocusAttackOn.name.indexOf(creep.name) != -1) {
-            //     let tt = this.core.RPG.distance3D(
-            //       this.heroe_bodies[0].position,
-            //       this.creepFocusAttackOn.heroe_bodies[0].position);
-            //     if(tt < this.core.RPG.distanceForAction) {
-            //       // console.log(`%c creep ATTACK DAMAGE ${creep.heroe_bodies[0].name}`, LOG_MATRIX)
-            //       this.calcDamage(this, creep);
-            //     } else {
-            //       // leave it go creep to your goals...
-            //       // console.log(`%c creepFocusAttackOn = null; (fcreep vs creeps)(navigate-friendly_creeps3) `, LOG_MATRIX)
-            //       this.creepFocusAttackOn = null;
-            //       dispatchEvent(new CustomEvent('navigate-friendly_creeps', {detail: 'test'}))
-            //     }
-            //   }
-            // });
           }
         }
       });
@@ -1789,6 +1760,28 @@ let forestOfHollowBlood = new _world.default({
             app.enemies.creeps[getCreepByIndex].heroe_bodies[0].effects.energyBar.setProgress(1);
             app.enemies.creeps[getCreepByIndex].hp = 300;
           }, 700);
+        }
+      }
+    } else if (d.type == "damage-tron") {
+      if (app.player.data.team == d.defenderTeam) {
+        app.tron.effects.energyBar.setProgress(d.progress);
+        if (d.progress == 0) {
+          app.tron.globalAmbient = [2, 1, 1];
+          _utils.mb.show(`☠️☠️☠️ ${app.player.data.enemyTeam} ☠️☠️☠️`);
+          _utils.mb.show(`☠️ Enemy wins ☠️  ${app.player.data.enemyTeam} `);
+          setTimeout(() => {
+            location.assign("rpg-menu.html");
+          }, 15000);
+        }
+      } else {
+        app.enemytron.effects.energyBar.setProgress(d.progress);
+        if (d.progress == 0) {
+          app.tron.globalAmbient = [2, 1, 1];
+          _utils.mb.show(`🏆🏆🏆 Your team wins ! 🏆🏆🏆 ${app.player.data.team} 🏆🏆🏆`);
+          app.localHero.setSalute();
+          setTimeout(() => {
+            location.assign("rpg-menu.html");
+          }, 15000);
         }
       }
     }
@@ -3603,7 +3596,7 @@ class MEMapLoader {
       app.enemytron.hp = 400;
       app.enemytron.armor = 0.1;
       addEventListener(`onDamage-${app.enemytron.name}`, e => {
-        console.info(`%c ON damage TRON ! ${e.detail}`, _utils.LOG_MATRIX);
+        console.info(`%c ON damage TRON send [damage-tron] ! ${e.detail}`, _utils.LOG_MATRIX);
         app.enemytron.effects.energyBar.setProgress(e.detail.progress);
         this.core.net.sendOnlyData({
           type: "damage-tron",
