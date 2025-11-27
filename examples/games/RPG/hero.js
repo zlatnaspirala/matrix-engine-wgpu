@@ -346,7 +346,8 @@ export class HeroProps {
           attacker: attacker.name,
           defenderLevel: defender.currentLevel,
           defender: defender.name,
-          hp: defender.hp
+          hp: defender.hp,
+          damage: damage
         }
       }))
     return {damage, crit: crit > 1.0};

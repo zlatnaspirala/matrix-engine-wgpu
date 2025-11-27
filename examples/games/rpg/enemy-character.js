@@ -130,7 +130,8 @@ export class Enemie extends Hero {
         defenderName: e.detail.defender,
         attackerName: e.detail.attacker,
         hp: e.detail.hp,
-        progress: e.detail.progress
+        progress: e.detail.progress,
+        damage: e.detail.damage
       });
       // if detail is 0
       if(e.detail.progress == 0) {
@@ -138,7 +139,7 @@ export class Enemie extends Hero {
         console.info(`%c hero dead [${this.name}], attacker[${e.detail.attacker}]`, LOG_MATRIX)
         setTimeout(() => {
           this.setStartUpPosition();
-        }, 1100);
+        }, 500);
       }
     });
   }

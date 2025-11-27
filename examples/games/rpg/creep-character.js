@@ -192,12 +192,11 @@ export class Creep extends Hero {
       if(this.group == 'enemy') {
         console.info(`%c onDamage-${this.name} group: ${this.group}  creep damage!`, LOG_FUNNY);
       } else {
-        console.log('friendly creep damage must come from net');
+        console.log('friendly creep damage must come from net. [never]');
         return;
       }
 
       this.heroe_bodies[0].effects.energyBar.setProgress(e.detail.progress);
-
       this.core.net.sendOnlyData({
         type: "damage-creep",
         defenderName: e.detail.defender,
@@ -206,21 +205,20 @@ export class Creep extends Hero {
         progress: e.detail.progress
       });
 
-      // if detail is 0
       if(e.detail.progress == 0) {
         this.setDead();
-        console.info(`%cCreep dead [${this.name}], attacker[${e.detail.attacker}]`, LOG_MATRIX);
+        console.info(`%c Creep dead [${this.name}], attacker[${e.detail.attacker}]`, LOG_MATRIX);
         setTimeout(() => {
           this.setStartUpPosCreep(this.name[this.name.length - 1]);
           this.setWalk();
           this.creepFocusAttackOn = null;
           this.gotoFinal = false;
-          this.setStartUpPosCreep(this.name[this.name.length - 1]); // test
+          this.setStartUpPosCreep(this.name[this.name.length - 1]);
           this.hp = 300;
           this.heroe_bodies[0].effects.energyBar.setProgress(1);
           app.localHero.setWalkCreep(this.name[this.name.length - 1]);
-          dispatchEvent(new CustomEvent('navigate-friendly_creeps', {detail: 'test'}))
-        }, 1000);
+          dispatchEvent(new CustomEvent('navigate-friendly_creeps', {detail: 'test'}));
+        }, 700);
       }
     });
 
@@ -297,22 +295,6 @@ export class Creep extends Hero {
               dispatchEvent(new CustomEvent('navigate-friendly_creeps', {detail: 'test'}))
             }
 
-            // if(this.core.enemies.creeps.length > 0) this.core.enemies.creeps.forEach((creep) => {
-            //   if(this.creepFocusAttackOn != null) if(this.creepFocusAttackOn.name.indexOf(creep.name) != -1) {
-            //     let tt = this.core.RPG.distance3D(
-            //       this.heroe_bodies[0].position,
-            //       this.creepFocusAttackOn.heroe_bodies[0].position);
-            //     if(tt < this.core.RPG.distanceForAction) {
-            //       // console.log(`%c creep ATTACK DAMAGE ${creep.heroe_bodies[0].name}`, LOG_MATRIX)
-            //       this.calcDamage(this, creep);
-            //     } else {
-            //       // leave it go creep to your goals...
-            //       // console.log(`%c creepFocusAttackOn = null; (fcreep vs creeps)(navigate-friendly_creeps3) `, LOG_MATRIX)
-            //       this.creepFocusAttackOn = null;
-            //       dispatchEvent(new CustomEvent('navigate-friendly_creeps', {detail: 'test'}))
-            //     }
-            //   }
-            // });
           }
         }
       })

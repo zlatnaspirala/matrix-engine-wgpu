@@ -628,9 +628,12 @@ Features done:
 <img width="860" height="640" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/mmorpg-online-game2.png?raw=true" />
 <img width="860" height="640" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/mmorpg-online-game3.png?raw=true" />
 <img width="860" height="640" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/mmorpg-online-game4.png?raw=true" />
+
+Install it on your desktop with one click.
 <img width="860" height="640" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/mmorpg-online-game5.png?raw=true" />
 
 [Invest in Forest Of Hollow Blood 9,660$](https://goldenspiral.itch.io/forest-of-hollow-blood)
+See more details at [FOHB Wiki](https://github.com/zlatnaspirala/matrix-engine-wgpu/wiki/Support-the-Future-of-Forest-of-Hollow-Blood)
 
 ---
 

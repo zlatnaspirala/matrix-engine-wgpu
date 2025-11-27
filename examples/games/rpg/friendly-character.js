@@ -127,6 +127,7 @@ export class FriendlyHero extends Hero {
   }
 
   attachEvents() {
+    return;
     addEventListener(`onDamage-${this.name}`, (e) => {
       console.info(`%c remote[friendly] hero damage ${e.detail}`, LOG_MATRIX)
       this.heroe_bodies[0].effects.energyBar.setProgress(e.detail.progress);
