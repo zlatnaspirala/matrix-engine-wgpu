@@ -465,7 +465,8 @@ class HeroProps {
         attacker: attacker.name,
         defenderLevel: defender.currentLevel,
         defender: defender.name,
-        hp: defender.hp
+        hp: defender.hp,
+        damage: damage
       }
     }));
     return {
@@ -1131,12 +1132,24 @@ let forestOfHollowBloodStartSceen = new _world.default({
   forestOfHollowBloodStartSceen.lock = false;
 
   // Audios
+  forestOfHollowBloodStartSceen.matrixSounds.createAudio('music2', 'res/audios/rpg/music.mp3', 1);
   forestOfHollowBloodStartSceen.matrixSounds.createAudio('music', 'res/audios/rpg/wizard-rider.mp3', 1);
   forestOfHollowBloodStartSceen.matrixSounds.createAudio('click1', 'res/audios/click1.mp3', 1);
   app.matrixSounds.audios.click1.volume = 0.2;
   forestOfHollowBloodStartSceen.matrixSounds.createAudio('hover', 'res/audios/kenney/mp3/click3.mp3', 2);
   forestOfHollowBloodStartSceen.matrixSounds.createAudio('feel', 'res/audios/rpg/feel.mp3', 2);
   let heros = null;
+  function checkUsername() {
+    if (JSON.parse(_utils.SS.get('RocketAcount')) != null && typeof JSON.parse(_utils.SS.get('RocketAcount')).nickname !== 'undefined') {
+      return JSON.parse(_utils.SS.get('RocketAcount')).nickname;
+    } else {
+      if (app.net.session !== null) {
+        return app.net.session.connection.connectionId;
+      } else {
+        return 'nosession';
+      }
+    }
+  }
 
   // Networking
   forestOfHollowBloodStartSceen.net = new _net.MatrixStream({
@@ -1294,7 +1307,7 @@ let forestOfHollowBloodStartSceen = new _world.default({
   addEventListener('check-gameplay-channel', e => {
     let info = e.detail;
     if (info.status != 'false' && typeof info.status !== "undefined") {
-      console.log('check-gameplay-channel status:', info.status);
+      // console.log('check-gameplay-channel status:', info.status)
       (0, _utils.byId)("onlineUsers").innerHTML = `GamePlay:Free`;
       forestOfHollowBloodStartSceen.gamePlayStatus = "free";
       (0, _utils.byId)('startBtnText').innerHTML = app.label.get.play;
@@ -1302,7 +1315,7 @@ let forestOfHollowBloodStartSceen = new _world.default({
       clearInterval(forestOfHollowBloodStartSceen.gamePlayStatusTimer);
       forestOfHollowBloodStartSceen.gamePlayStatusTimer = null;
     } else {
-      console.log('check-gameplay-channel status:', info.status);
+      // console.log('check-gameplay-channel status:', info.status)
       if (typeof info.status != "undefined" && info.status == "false") {
         // no internet
         (0, _utils.byId)('loader').style.display = 'block';
@@ -1328,7 +1341,7 @@ let forestOfHollowBloodStartSceen = new _world.default({
       }
     }
   });
-  forestOfHollowBloodStartSceen.MINIMUM_PLAYERS = location.hostname.indexOf('localhost') != -1 ? 3 : 4;
+  forestOfHollowBloodStartSceen.MINIMUM_PLAYERS = location.hostname.indexOf('localhost') != -1 ? 2 : 4;
   forestOfHollowBloodStartSceen.setWaitingList = () => {
     // access net doms who comes with broadcaster2.html
     const waitingForOthersDOM = document.createElement("div");
@@ -1379,7 +1392,19 @@ let forestOfHollowBloodStartSceen = new _world.default({
     (0, _utils.byId)("sessionName").disabled = true;
     forestOfHollowBloodStartSceen.setWaitingList();
     // check game-play channel
-    setTimeout(() => app.net.fetchInfo('forestOfHollowBlood-free-for-all'), 1000);
+    setTimeout(() => {
+      app.net.fetchInfo('forestOfHollowBlood-free-for-all');
+      app.sendmsg = m => {
+        if (typeof m != 'string') return;
+        if (m.length > 120) return;
+        let username = checkUsername();
+        if (username != 'nosession') app.net.sendOnlyData({
+          type: "chat",
+          msg: m,
+          username: username
+        });
+      };
+    }, 1500);
   });
   addEventListener('connectionDestroyed', e => {
     (0, _utils.byId)(`waiting-${e.detail.connectionId}`).remove();
@@ -1459,14 +1484,19 @@ let forestOfHollowBloodStartSceen = new _world.default({
         console.log(`<data-receive From ${e.detail.from.connectionId} team:${t.team}  ${(0, _utils.byId)(`waiting-${e.detail.from.connectionId}`)}`);
         (0, _utils.byId)(`${e.detail.from.connectionId}-title`).innerHTML = `Player:${e.detail.from.connectionId} Team:${t.team}`;
       } else if (t.type == 'start') {
-        // HERE_
         forestOfHollowBloodStartSceen.gotoGamePlay("no emit");
+      } else if (t.type == 'chat') {
+        // add chat
+        if (t.msg.length > 120) {
+          t.msg = '';
+          return;
+        }
+        _utils.mb.show(`Msg from ${t.username}: ${t.msg}`);
       }
     }
   });
 
   // addEventListener('AmmoReady', async () => {
-
   // catch
   if (typeof app.label == 'undefined' || typeof app.label.get == 'undefined' || typeof app.label.get.mariasword == 'undefined') {
     if (typeof app.label == 'undefined') app.label = {
@@ -1848,7 +1878,7 @@ let forestOfHollowBloodStartSceen = new _world.default({
     const LBBtn = document.createElement("button");
     Object.assign(LBBtn.style, {
       position: "fixed",
-      bottom: '10px',
+      bottom: '220px',
       left: '20px',
       width: "140px",
       height: "28px",
@@ -1876,6 +1906,71 @@ let forestOfHollowBloodStartSceen = new _world.default({
     `;
     LBBtn.addEventListener('click', app.account.getLeaderboard);
     hud.appendChild(LBBtn);
+
+    // chat box
+    const sendMsgInput = document.createElement("input");
+    sendMsgInput.id = 'msg-input';
+    sendMsgInput.type = "text";
+    sendMsgInput.addEventListener("input", e => {
+      if (e.target.value.length > 120) {
+        e.target.value = e.target.value.slice(0, 120);
+      }
+    });
+    Object.assign(sendMsgInput.style, {
+      position: "fixed",
+      bottom: '282px',
+      left: '20px',
+      width: "134px",
+      height: "17px",
+      textAlign: "center",
+      color: "white",
+      fontWeight: "bold",
+      // textShadow: "0 0 2px black",
+      color: 'black',
+      // background: '#000000ff',
+      fontSize: '16px',
+      cursor: 'url(./res/icons/default.png) 0 0, auto',
+      pointerEvents: 'auto'
+    });
+    hud.appendChild(sendMsgInput);
+    const sendMsgBtn = document.createElement("button");
+    Object.assign(sendMsgBtn.style, {
+      position: "fixed",
+      bottom: '253px',
+      left: '20px',
+      width: "140px",
+      height: "28px",
+      textAlign: "center",
+      color: "white",
+      fontWeight: "bold",
+      textShadow: "0 0 2px black",
+      color: '#ffffffff',
+      background: '#000000ff',
+      fontSize: '16px',
+      cursor: 'url(./res/icons/default.png) 0 0, auto',
+      pointerEvents: 'auto'
+    });
+    // sendMsgBtn.classList.add('buttonMatrix');
+    // sendMsgBtn.innerHTML = `
+    //   <div class="button-outer">
+    //     <div class="button-inner">
+    //       <span data-label='leaderboard'>${app.label.get.leaderboard}</span>
+    //     </div>
+    //   </div>
+    // `;
+    sendMsgBtn.innerHTML = `<span data-label='leaderboard'>${app.label.get.sendmsg}</span>    `;
+    sendMsgBtn.addEventListener('click', () => {
+      sendMsgBtn.disabled = true;
+      sendMsgBtn.style.color = 'gray';
+      app.sendmsg(sendMsgInput.value);
+      setTimeout(() => {
+        sendMsgBtn.disabled = false;
+        sendMsgBtn.style.color = 'white';
+      }, 5000);
+      sendMsgInput.value = "";
+    });
+    hud.appendChild(sendMsgBtn);
+    // end
     const loader = document.createElement("div");
     loader.id = 'loader';
     Object.assign(loader.style, {
@@ -1953,10 +2048,18 @@ let forestOfHollowBloodStartSceen = new _world.default({
      */
     function firstClick() {
       // add here after - fs force
+      app.matrixSounds.audios.music.volume = 0.2;
+      app.matrixSounds.audios.music2.volume = 0.2;
       app.matrixSounds.play('music');
+      app.matrixSounds.audios.music.onended = () => {
+        app.matrixSounds.play('music2');
+      };
+      app.matrixSounds.audios.music2.onended = () => {
+        app.matrixSounds.play('music');
+      };
       removeEventListener('click', firstClick);
       // for mobile no need to call - if called porttrain forced (current orientation on mobile device)
-      if (location.hostname.indexOf('localhost') == -1 || (0, _utils.isMobile)() == false) app.FS.request();
+      if (location.hostname.indexOf('localhost') == -1 && (0, _utils.isMobile)() == false) app.FS.request();
     }
     addEventListener('click', firstClick);
   }
@@ -2068,6 +2171,9 @@ class MatrixTTS {
     return chunks;
   }
   async speakNatural(text, opts = {}) {
+    if (speechSynthesis.speaking || speechSynthesis.pending) {
+      return;
+    }
     const {
       lang = 'en-US',
       rate = 0.95,
@@ -20006,6 +20112,7 @@ Object.defineProperty(exports, "__esModule", {
 exports.en = void 0;
 const en = exports.en = {
   "play": "Play",
+  "sendmsg": "Send message",
   "changeTheme": "Theme dark/light",
   "yes": "Yes",
   "no": "No",
