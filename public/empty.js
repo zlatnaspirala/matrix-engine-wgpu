@@ -17819,6 +17819,7 @@ Object.defineProperty(exports, "__esModule", {
 exports.en = void 0;
 const en = exports.en = {
   "play": "Play",
+  "sendmsg": "Send message",
   "changeTheme": "Theme dark/light",
   "yes": "Yes",
   "no": "No",
@@ -17858,6 +17859,7 @@ const en = exports.en = {
   "aboutword": "About",
   "about": "<i>Jamb 3d deluxe</i> is a modern 3D dice game built entirely with MatrixEngineWGPU, a high-performance WebGPU-based rendering engine developed for creating interactive graphics directly in the browser. The game delivers smooth visuals, realistic dice physics, and an engaging user experience — all without requiring any plugins or installations. \n This project is powered by open technologies and is designed to be lightweight, fast, and highly customizable. It’s a great example of how WebGPU can be used for real-time interactive content. \n 🔗 Download / Try it: \n github.com/zlatnaspirala/matrix-engine-wgpu \n 🛠 License: \n The core engine and the Jamb 3d deluxe project are released under the GPL v3 license, making them free and open-source for both personal and commercial use — as long as you respect the terms of the license. \n Whether you're a developer, gamer, or enthusiast, Jamb 3d deluxe is a fun way to experience the potential of modern browser-based 3D technology. <img width='320' height='320' src='https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/public/res/icons/512.png?raw=true' />",
   "letthegame": "Let the game begin!",
+  "leaderboard": "Leaderboard",
   "about_": "About",
   "next": "Next",
   "back": "Back",
@@ -17875,7 +17877,8 @@ const en = exports.en = {
   "erika": "Erika moves like a shadow: quiet, precise and watchful. She carries one dark arrow — simple, deadly and personal.",
   "arissa": "Arissa hides her power behind calm eyes and empty hands. No blade or staff—only the swirling dark orbs she conjures when the fight begins.",
   "gameplayused": "Forest Of Hollow Blood for now have only one channel for gameplay. Please wait for current party end...",
-  "nogold": "Not enough gold!"
+  "nogold": "Not enough gold!",
+  "invertorysecret": "Corona Ignifera magic secret Sol Corona,Flamma Crystal\n  Aqua Sanctum magic secret Mare Pearl,Luna Gemma\n Umbra Silens magic secret Umbra Vellum,Noctis Band\n Terra Fortis magic secret Terra Clavis,Ardent Vine,Silva Heart\n Ventus Aegis magic secret Ventus Pluma,Ignifur Cape\n Ferrum Lux magic secret Ferrum Anulus,Lux Feather\n Sanguis Vita magic secret Sanguis Orb,Vita Flos \n Tenebris Vox magic secret Tenebris Fang,Vox Chime \n Aether Gladius magic secret Gladius Ignis,Aether Scale \n Fulgur Mortis magic secret Fulgur Stone,Mortis Bone \n Corona Umbra magic secret Umbra Silens,Corona Ignifera,Tenebris Vox \n Terra Sanctum magic secret Terra Fortis,Aqua Sanctum \n Aether Fortis magic secret Aether Gladius,Ferrum Lux \n  Vita Mindza magic secret Sanguis Vita,Ventus Aegis \n Mortis Ultima magic secret Fulgur Mortis,Corona Umbra,Aether Fortis"
 };
 
 },{}],18:[function(require,module,exports){
@@ -25607,7 +25610,7 @@ class Position {
     this.netObject = null;
     this.toRemote = [];
     this.teams = [];
-    this.netTolerance = 1;
+    this.netTolerance = 3;
     this.netTolerance__ = 0;
     if (typeof x == 'undefined') x = 0;
     if (typeof y == 'undefined') y = 0;
@@ -26748,6 +26751,7 @@ exports.getAxisRot2 = getAxisRot2;
 exports.getAxisRot3 = getAxisRot3;
 exports.htmlHeader = void 0;
 exports.isEven = isEven;
+exports.isMobile = isMobile;
 exports.isOdd = isOdd;
 exports.mb = exports.mat4 = exports.jsonHeaders = void 0;
 exports.quaternion_rotation_matrix = quaternion_rotation_matrix;
@@ -26756,8 +26760,18 @@ exports.randomFloatFromTo = randomFloatFromTo;
 exports.randomIntFromTo = randomIntFromTo;
 exports.scriptManager = void 0;
 exports.setupCanvasFilters = setupCanvasFilters;
+exports.supportsTouch = void 0;
 exports.typeText = typeText;
 exports.vec3 = exports.urlQuery = void 0;
+var supportsTouch = exports.supportsTouch = 'ontouchstart' in window || navigator.msMaxTouchPoints;
+function isMobile() {
+  if (supportsTouch == true) return true;
+  const toMatch = [/Android/i, /webOS/i, /iPhone/i, /iPad/i, /iPod/i, /BlackBerry/i, /Windows Phone/i];
+  return toMatch.some(toMatchItem => {
+    return navigator.userAgent.match(toMatchItem);
+  });
+}
+;
 const vec3 = exports.vec3 = {
   cross(a, b, dst) {
     dst = dst || new Float32Array(3);
@@ -30515,11 +30529,16 @@ class MatrixEngineWGPU {
     if (_utils.urlQuery.lang != null) {
       this.label.loadMultilang(_utils.urlQuery.lang).then(r => {
         this.label.get = r;
+      }).catch(r => {
+        this.label.get = r;
       });
     } else {
       this.label.loadMultilang().then(r => {
         this.label.get = r;
+      }).catch(r => {
+        this.label.get = r;
       });
+      ;
     }
     this.init({
       canvas,

@@ -1054,6 +1054,7 @@ var _matrixStream = require("../../../src/engine/networking/matrix-stream.js");
 var _rocketCraftingAccount = require("./rocket-crafting-account.js");
 var _enBackup = require("../../../public/res/multilang/en-backup.js");
 var _tts = require("./tts.js");
+var _editor = require("../../../src/tools/editor/editor.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 /**
  * @name forestOfHollowBloodStartSceen
@@ -1092,6 +1093,7 @@ _utils.LS.clear();
 _utils.SS.clear();
 let forestOfHollowBloodStartSceen = new _world.default({
   dontUsePhysics: true,
+  useEditor: true,
   useSingleRenderPass: true,
   canvasSize: 'fullscreen',
   // {w: window.visualViewport.width, h: window.visualViewport.height }
@@ -2066,7 +2068,7 @@ let forestOfHollowBloodStartSceen = new _world.default({
 });
 window.app = forestOfHollowBloodStartSceen;
 
-},{"../../../public/res/multilang/en-backup.js":20,"../../../src/engine/loaders/webgpu-gltf.js":40,"../../../src/engine/networking/matrix-stream.js":44,"../../../src/engine/networking/net.js":45,"../../../src/engine/plugin/animated-cursor/animated-cursor.js":46,"../../../src/engine/utils.js":47,"../../../src/world.js":70,"./hero.js":1,"./rocket-crafting-account.js":2,"./tts.js":4}],4:[function(require,module,exports){
+},{"../../../public/res/multilang/en-backup.js":20,"../../../src/engine/loaders/webgpu-gltf.js":40,"../../../src/engine/networking/matrix-stream.js":44,"../../../src/engine/networking/net.js":45,"../../../src/engine/plugin/animated-cursor/animated-cursor.js":46,"../../../src/engine/utils.js":47,"../../../src/tools/editor/editor.js":70,"../../../src/world.js":72,"./hero.js":1,"./rocket-crafting-account.js":2,"./tts.js":4}],4:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -33463,6 +33465,171 @@ exports.MatrixSounds = MatrixSounds;
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
+exports.Editor = void 0;
+var _hud = _interopRequireDefault(require("./hud"));
+function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
+class Editor {
+  constructor(core) {
+    this.core = core;
+    this.editorHud = new _hud.default(core);
+  }
+}
+exports.Editor = Editor;
+
+},{"./hud":71}],71:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+/**
+ * @Author NIkola Lukic
+ * @description
+ * Web Editor for matrix-engine-wgpu
+ */
+class EditorHud {
+  constructor(core) {
+    this.core = core;
+    this.sceneContainer = null;
+    this.createEditorSceneContainer();
+    this.createScenePropertyBox();
+    this.currentProperties = [];
+  }
+  createEditorSceneContainer() {
+    this.sceneContainer = document.createElement("div");
+    this.sceneContainer.id = "sceneContainer";
+    Object.assign(this.sceneContainer.style, {
+      position: "absolute",
+      top: "0",
+      left: "0",
+      width: "20%",
+      height: "100vh",
+      backgroundColor: "rgba(0,0,0,0.5)",
+      display: "flex",
+      alignItems: "start",
+      overflow: "auto",
+      color: "white",
+      fontFamily: "'Orbitron', sans-serif",
+      zIndex: "15",
+      padding: "2px",
+      boxSizing: "border-box",
+      flexDirection: "column"
+    });
+    this.scene = document.createElement("div");
+    this.scene.id = "scene";
+    Object.assign(this.scene.style, {
+      width: "100%",
+      height: "100%",
+      backgroundColor: "rgba(0,0,0,0.5)",
+      display: "flex",
+      alignItems: "start",
+      color: "white",
+      fontFamily: "'Orbitron', sans-serif",
+      zIndex: "15",
+      padding: "2px",
+      boxSizing: "border-box",
+      flexDirection: "column"
+    });
+    this.sceneContainerTitle = document.createElement("div");
+    this.sceneContainerTitle.style.height = '40px';
+    this.sceneContainerTitle.innerHTML = '[Scene container]';
+    this.sceneContainer.appendChild(this.sceneContainerTitle);
+    this.sceneContainer.appendChild(this.scene);
+    document.body.appendChild(this.sceneContainer);
+  }
+  updateSceneContainer() {
+    this.scene.innerHTML = ``;
+    this.core.mainRenderBundle.forEach(sceneObj => {
+      let so = document.createElement('div');
+      so.style.height = '20px';
+      so.classList.add('sceneContainerItem');
+      so.innerHTML = sceneObj.name;
+      so.addEventListener('click', this.updateSceneObjProperties);
+      this.scene.appendChild(so);
+    });
+  }
+  createScenePropertyBox() {
+    this.sceneProperty = document.createElement("div");
+    this.sceneProperty.id = "sceneProperty";
+    Object.assign(this.sceneProperty.style, {
+      position: "absolute",
+      top: "0",
+      right: "0",
+      width: "20%",
+      height: "100vh",
+      backgroundColor: "rgba(0,0,0,0.5)",
+      display: "flex",
+      alignItems: "start",
+      overflow: "auto",
+      color: "white",
+      fontFamily: "'Orbitron', sans-serif",
+      zIndex: "15",
+      padding: "2px",
+      boxSizing: "border-box",
+      flexDirection: "column"
+    });
+    this.objectProperies = document.createElement("div");
+    this.objectProperies.id = "objectProperies";
+    Object.assign(this.objectProperies.style, {
+      width: "100%",
+      height: "100%",
+      backgroundColor: "rgba(0,0,0,0.85)",
+      display: "flex",
+      alignItems: "start",
+      color: "white",
+      fontFamily: "'Orbitron', sans-serif",
+      zIndex: "15",
+      padding: "2px",
+      boxSizing: "border-box",
+      flexDirection: "column"
+    });
+    this.objectProperiesTitle = document.createElement("div");
+    this.objectProperiesTitle.style.height = '40px';
+    this.objectProperiesTitle.innerHTML = '[Scene properties]';
+    this.sceneProperty.appendChild(this.objectProperiesTitle);
+    this.sceneProperty.appendChild(this.objectProperies);
+    document.body.appendChild(this.sceneProperty);
+  }
+  updateSceneObjProperties = e => {
+    this.currentProperties = [];
+    this.objectProperiesTitle.innerHTML = `[Scene properties]`;
+    this.objectProperies.innerHTML = ``;
+    const currentSO = this.core.getSceneObjectByName(e.target.innerHTML);
+    this.objectProperiesTitle.innerHTML = `<span style="color:lime;">Name: ${e.target.innerHTML}</span> 
+      <span style="color:yellow;"> [${currentSO.constructor.name}]`;
+    // console.log('getOwnPropertyDescriptor :', Object.getOwnPropertyDescriptor(currentSO, 'name'))
+    const OK = Object.keys(currentSO);
+    OK.forEach(prop => {
+      console.log('[key]:', prop);
+      if (prop == 'glb' && typeof currentSO[prop] !== 'undefined' && currentSO[prop] != null) {
+        this.currentProperties.push(new SceneObjectProperty(this.objectProperies, 'glb', currentSO));
+      } else {
+        this.currentProperties.push(new SceneObjectProperty(this.objectProperies, prop, currentSO));
+      }
+    });
+    // Returns only enumerable properties.
+    // const enumObj = Object.getOwnPropertyNames(currentSO);
+    // console.log('what is enumObj ', enumObj);
+  };
+}
+exports.default = EditorHud;
+class SceneObjectProperty {
+  constructor(parentDOM, propName, currSceneObj) {
+    this.propName = document.createElement("div");
+    this.propName.innerHTML = `<div>${propName}</div>`;
+    this.propName.innerHTML = `<div>${currSceneObj[propName]}</div>`;
+    console.log('currSceneObj[propName] ', currSceneObj[propName]);
+    parentDOM.appendChild(this.propName);
+  }
+}
+
+},{}],72:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
 exports.default = void 0;
 var _wgpuMatrix = require("wgpu-matrix");
 var _ball = _interopRequireDefault(require("./engine/ball.js"));
@@ -33477,6 +33644,7 @@ var _loaderObj = require("./engine/loader-obj.js");
 var _lights = require("./engine/lights.js");
 var _bvh = require("./engine/loaders/bvh.js");
 var _bvhInstaced = require("./engine/loaders/bvh-instaced.js");
+var _editor = require("./tools/editor/editor.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 /**
  * @description
@@ -33538,6 +33706,9 @@ class MatrixEngineWGPU {
     }
     if (typeof options.dontUsePhysics == 'undefined') {
       this.matrixAmmo = new _matrixAmmo.default();
+    }
+    if (typeof options.useEditor !== "undefined") {
+      this.editor = new _editor.Editor(this);
     }
     this.options = options;
     this.mainCameraParams = options.mainCameraParams;
@@ -34026,6 +34197,9 @@ class MatrixEngineWGPU {
       this.matrixAmmo.addPhysics(myMesh1, o.physics);
     }
     this.mainRenderBundle.push(myMesh1);
+    if (typeof this.editor !== 'undefined') {
+      this.editor.editorHud.updateSceneContainer();
+    }
   };
   run(callback) {
     setTimeout(() => {
@@ -34335,10 +34509,13 @@ class MatrixEngineWGPU {
         // make it soft
         setTimeout(() => {
           this.mainRenderBundle.push(bvhPlayer);
-        }, 1000);
+        }, 800);
         // this.mainRenderBundle.push(bvhPlayer)
         c++;
       }
+    }
+    if (typeof this.editor !== 'undefined') {
+      this.editor.editorHud.updateSceneContainer();
     }
   };
 
@@ -34465,8 +34642,11 @@ class MatrixEngineWGPU {
       }
       skinnedNodeIndex++;
     }
+    if (typeof this.editor !== 'undefined') {
+      this.editor.editorHud.updateSceneContainer();
+    }
   };
 }
 exports.default = MatrixEngineWGPU;
 
-},{"./engine/ball.js":21,"./engine/cube.js":23,"./engine/engine.js":32,"./engine/lights.js":36,"./engine/loader-obj.js":37,"./engine/loaders/bvh-instaced.js":38,"./engine/loaders/bvh.js":39,"./engine/mesh-obj.js":43,"./engine/utils.js":47,"./multilang/lang.js":48,"./physics/matrix-ammo.js":49,"./sounds/sounds.js":69,"wgpu-matrix":19}]},{},[3]);
+},{"./engine/ball.js":21,"./engine/cube.js":23,"./engine/engine.js":32,"./engine/lights.js":36,"./engine/loader-obj.js":37,"./engine/loaders/bvh-instaced.js":38,"./engine/loaders/bvh.js":39,"./engine/mesh-obj.js":43,"./engine/utils.js":47,"./multilang/lang.js":48,"./physics/matrix-ammo.js":49,"./sounds/sounds.js":69,"./tools/editor/editor.js":70,"wgpu-matrix":19}]},{},[3]);

@@ -1168,3 +1168,12 @@ new dom effect from
 		left: 0;
 	}
 }
+
+
+.sceneContainerItem {
+  border-bottom: solid #00ff88;
+}
+
+.sceneContainerItem:hover {
+  color: lime;
+}

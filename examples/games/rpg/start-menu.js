@@ -8,6 +8,7 @@ import {fetchAll, fetchInfo} from "../../../src/engine/networking/matrix-stream.
 import {RCSAccount} from "./rocket-crafting-account.js";
 import {en} from "../../../public/res/multilang/en-backup.js";
 import {MatrixTTS} from "./tts.js";
+import {Editor} from "../../../src/tools/editor/editor.js";
 
 /**
  * @name forestOfHollowBloodStartSceen
@@ -47,6 +48,7 @@ SS.clear();
 
 let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
   dontUsePhysics: true,
+  useEditor: true,
   useSingleRenderPass: true,
   canvasSize: 'fullscreen', // {w: window.visualViewport.width, h: window.visualViewport.height }
   mainCameraParams: {

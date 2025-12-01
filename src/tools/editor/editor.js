@@ -1,8 +1,8 @@
 import EditorHud from "./hud";
 
 export class Editor {
-  constructor() {
-    //
-    this.editorHud = new EditorHud();
+  constructor(core) {
+    this.core = core;
+    this.editorHud = new EditorHud(core);
   }
 }
