@@ -1171,9 +1171,21 @@ new dom effect from
 
 
 .sceneContainerItem {
+  -webkit-text-stroke-width: 2;
+  -webkit-text-stroke-color:rgba(150, 150, 150, 0.93);
   border-bottom: solid #00ff88;
 }
 
 .sceneContainerItem:hover {
+  color: lime;
+}
+
+.scenePropItem {
+  -webkit-text-stroke-width: 0;
+  -webkit-text-stroke-color:rgba(0, 144, 224, 0.93);
+  border-bottom: solid #00ff88;
+}
+
+.scenePropItem:hover {
   color: lime;
 }
