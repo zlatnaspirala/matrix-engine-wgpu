@@ -1,3 +1,5 @@
+import {byId, isMobile, jsonHeaders, mb} from "../../engine/utils.js";
+
 /**
  * @Author NIkola Lukic
  * @description
@@ -51,7 +53,9 @@ export default class EditorHud {
 
     this.sceneContainerTitle = document.createElement("div");
     this.sceneContainerTitle.style.height = '40px';
-    this.sceneContainerTitle.innerHTML = '<b>Scene container</b>';
+    this.sceneContainerTitle.style.fontSize = (isMobile() == true ? "x-larger" : "larger");
+    this.sceneContainerTitle.style.padding = '5px';
+    this.sceneContainerTitle.innerHTML = 'Scene container';
     this.sceneContainer.appendChild(this.sceneContainerTitle);
     this.sceneContainer.appendChild(this.scene);
     document.body.appendChild(this.sceneContainer);
@@ -95,7 +99,7 @@ export default class EditorHud {
     this.objectProperies.id = "objectProperies";
     Object.assign(this.objectProperies.style, {
       width: "100%",
-      height: "100%",
+      height: "auto",
       backgroundColor: "rgba(0,0,0,0.85)",
       display: "flex",
       alignItems: "start",
@@ -110,7 +114,7 @@ export default class EditorHud {
     this.objectProperiesTitle = document.createElement("div");
     this.objectProperiesTitle.style.height = '40px';
     this.objectProperiesTitle.style.fontSize = '120%';
-    this.objectProperiesTitle.innerHTML = '----Scene properties----';
+    this.objectProperiesTitle.innerHTML = 'Scene object properties';
     this.sceneProperty.appendChild(this.objectProperiesTitle);
     this.sceneProperty.appendChild(this.objectProperies);
     document.body.appendChild(this.sceneProperty);
@@ -119,7 +123,7 @@ export default class EditorHud {
   updateSceneObjProperties = (e) => {
     this.currentProperties = [];
     this.objectProperiesTitle.style.fontSize = '120%';
-    this.objectProperiesTitle.innerHTML = `----Scene properties----`;
+    this.objectProperiesTitle.innerHTML = `Scene object properties`;
     this.objectProperies.innerHTML = ``;
     const currentSO = this.core.getSceneObjectByName(e.target.innerHTML);
     this.objectProperiesTitle.innerHTML = `<span style="color:lime;">Name: ${e.target.innerHTML}</span> 
@@ -141,28 +145,46 @@ class SceneObjectProperty {
     this.subObjectsProps = [];
     this.propName = document.createElement("div");
     this.propName.style.width = '100%';
-    // console.log(propName)
-    if(propName == "device" || propName == "position") {
+    // console.log("init : " + propName)
+    // Register
+    if(propName == "device" || propName == "position" || propName == "rotation"
+      || propName == "raycast" || propName == "entityArgPass" || propName == "scale"
+      || propName == "maxInstances" || propName == "texturesPaths" || propName == "glb"
+    ) {
       this.propName.style.overflow = 'hidden';
       this.propName.style.height = '20px';
+      this.propName.style.borderBottom = 'solid lime 2px';
       this.propName.addEventListener('click', (e) => {
-        if(e.currentTarget.style.height != 'unset') {
-          e.currentTarget.style.height = 'unset';
+        if(e.currentTarget.style.height != 'fit-content') {
+          this.propName.style.overflow = 'unset';
+          e.currentTarget.style.height = 'fit-content';
         } else {
+          this.propName.style.overflow = 'hidden';
           e.currentTarget.style.height = '20px';
         }
       })
 
-      if(propName == "position") {
-        this.propName.innerHTML = `<div>${propName} <span style="border-radius:7px;background:purple;">sceneObj</span>
+      if(propName == "position" || propName == "scale" || propName == "rotation" || propName == "glb") {
+        this.propName.innerHTML = `<div style="text-align:left;" >${propName} <span style="border-radius:7px;background:purple;">sceneObj</span>
         <span style="border-radius:6px;background:gray;">More info🔽</span></div>`;
+      } else if(propName == "entityArgPass") {
+        this.propName.innerHTML = `<div style="text-align:left;" >${propName} <span style="border-radius:7px;background:brown;">webGPU props</span>
+        <span style="border-radius:6px;background:gray;">More info🔽</span></div>`;
+      } else if(propName == "maxInstances") {
+        this.propName.innerHTML = `<div style="text-align:left;" >${propName} <span style="border-radius:7px;background:brown;">instanced</span>
+        <span style="border-radius:6px;background:gray;"> <input type="number" value="${currSceneObj[propName]}" /> </span></div>`;
+      } else if(propName == "texturesPaths") {
+        this.propName.innerHTML = `<div style="text-align:left;" >${propName} <span style="border-radius:7px;background:purple;">sceneObj</span>
+         <span style="border-radius:6px;background:gray;"> 
+           Path: ${currSceneObj[propName]} 
+         </span>
+           <div style="text-align:center;padding:5px;margin:5px;"> <img src="${currSceneObj[propName]}" width="256px" height="auto" /> </div>
+        </div>`;
       } else {
-        this.propName.innerHTML = `<div>${propName} <span style="border-radius:7px;background:red;">sys</span> 
-        <span style="border-radius:6px;background:gray;">More info🔽</span></div>`;
+        this.propName.innerHTML = `<div style="text-align:left;" >${propName} <span style="border-radius:7px;background:red;">sys</span> 
+        <span style="border-radius:6px;background:gray;">${currSceneObj[propName]}</span></div>`;
       }
-
-
-
+      // console.log('[propName] ', propName);
       if(typeof currSceneObj[propName].adapterInfo !== 'undefined') {
         this.exploreSubObject(currSceneObj[propName].adapterInfo, 'adapterInfo').forEach((item) => {
           if(typeof item === 'string') {
@@ -174,10 +196,15 @@ class SceneObjectProperty {
             this.propName.appendChild(item);
           }
         })
-      } else if(propName == 'position') {
-        console.log('[propName] ', propName);
-        console.log('currSceneObj[propName] ', currSceneObj[propName]);
-        this.exploreSubObject(currSceneObj[propName], 'position').forEach((item) => {
+      } else if(
+        propName == 'position' ||
+        propName == 'rotation' ||
+        propName == "raycast" ||
+        propName == "entityArgPass" ||
+        propName == "scale") {
+
+        // console.log('currSceneObj[propName] ', currSceneObj[propName]);
+        this.exploreSubObject(currSceneObj[propName], propName).forEach((item) => {
           if(typeof item === 'string') {
             this.propName.innerHTML += `<div style="text-align:left;"> ${item.split(':'[1])} </div>`;
           } else {
@@ -187,8 +214,25 @@ class SceneObjectProperty {
             this.propName.appendChild(item);
           }
         })
+      } else if(propName == 'glb') {
+        this.exploreGlb(currSceneObj[propName], propName).forEach((item) => {
+          if(typeof item === 'string') {
+            this.propName.innerHTML += `<div style="text-align:left;"> ${item.split(':'[1])} </div>`;
+          } else {
+            item.addEventListener('click', (event) => {
+              event.stopPropagation();
+            });
+            this.propName.appendChild(item);
+          }
+        });
       }
 
+      parentDOM.appendChild(this.propName);
+
+    } else if(propName == "isVideo") {
+      this.propName.style.borderBottom = 'solid lime 2px';
+      this.propName.innerHTML = `<div style="text-align:left;" >${propName} <span style="border-radius:7px;background:deepskyblue;">boolean</span>
+        <span style="border-radius:6px;background:gray;">${currSceneObj[propName]}</span></div>`;
       parentDOM.appendChild(this.propName);
     } else {
       // this.propName.innerHTML = `<div>${propName}</div>`;
@@ -209,14 +253,60 @@ class SceneObjectProperty {
       d.style.display = "flex";
       if(typeof subobj[prop] === 'number') {
         d.innerHTML += `<div style="width:50%;">${prop}</div> 
-         <div style="width:48%; background:lime;color:black;" > <input type="number" value="${subobj[prop]}" /> </div>`;
+         <div style="width:48%; background:lime;color:black;" > <input ${(rootKey == "adapterInfo" ? "disabled='true'" : "")}" type="number" value="${subobj[prop]}" /> </div>`;
       } else if(Array.isArray(subobj[prop])) {
         d.innerHTML += `<div style="width:50%">${prop}</div> 
-         <div style="width:${( subobj[prop].length == 0 ? "unset" : "48%" )}; background:lime;color:black;" > ${ ( subobj[prop].length == 0 ? "[Empty array]" : subobj[prop] ) } </div>`;
-      } else if (subobj[prop] === null) {
+         <div style="width:${(subobj[prop].length == 0 ? "unset" : "48%")}; background:lime;color:black;border-radius:5px;" > ${(subobj[prop].length == 0 ? "[Empty array]" : subobj[prop])} </div>`;
+      } else if(subobj[prop] === null) {
         d.innerHTML += `<div style="width:50%;">${prop}</div> 
          <div style="width:unset; background:lime;color:black;padding:1px;border-radius:5px;" >${subobj[prop]}</div>`;
-      }else {
+      } else if(subobj[prop] == false) {
+        d.innerHTML += `<div style="width:50%;">${prop}</div> 
+         <div style="width:unset; background:lime;color:black;padding:1px;border-radius:5px;" >false</div>`;
+      } else if(subobj[prop] == "") {
+        d.innerHTML += `<div style="width:50%;">${prop}</div> 
+         <div style="width:unset; background:lime;color:black;padding:1px;border-radius:5px;" >none</div>`;
+      } else {
+        d.innerHTML += `<div style="width:50%;">${prop}</div> 
+         <div style="width:48%; background:lime;color:black;padding:1px;border-radius:5px;" >${subobj[prop]}</div>`;
+      }
+
+      a.push(d);
+    });
+    // this.subObjectsProps.push(a);
+    return a;
+  }
+
+  exploreGlb(subobj, rootKey) {
+    let a = []; let __ = [];
+    for(const key in subobj) {
+      __.push(key);
+    }
+    __.forEach((prop, index) => {
+      if(index == 0) a.push(`${rootKey}`);
+      let d = null;
+      d = document.createElement("div");
+      d.style.textAlign = "left";
+      d.style.display = "flex";
+      if(typeof subobj[prop] === 'number') {
+        d.innerHTML += `<div style="width:50%;">${prop}</div> 
+         <div style="width:48%; background:lime;color:black;" > <input ${(rootKey == "adapterInfo" ? "disabled='true'" : "")}" type="number" value="${subobj[prop]}" /> </div>`;
+      } else if(Array.isArray(subobj[prop]) && prop == "nodes") {
+       console.log("init prop: " + rootKey)
+        d.innerHTML += `<div style="width:50%">${prop}</div> 
+         <div style="width:${(subobj[prop].length == 0 ? "unset" : "48%")}; background:lime;color:black;border-radius:5px;" > 
+            ${(subobj[prop].length == 0 ? "[Empty array]" : subobj[prop].length)}
+         </div>`;
+      } else if(subobj[prop] === null) {
+        d.innerHTML += `<div style="width:50%;">${prop}</div> 
+         <div style="width:unset; background:lime;color:black;padding:1px;border-radius:5px;" >${subobj[prop]}</div>`;
+      } else if(subobj[prop] == false) {
+        d.innerHTML += `<div style="width:50%;">${prop}</div> 
+         <div style="width:unset; background:lime;color:black;padding:1px;border-radius:5px;" >false</div>`;
+      } else if(subobj[prop] == "") {
+        d.innerHTML += `<div style="width:50%;">${prop}</div> 
+         <div style="width:unset; background:lime;color:black;padding:1px;border-radius:5px;" >none</div>`;
+      } else {
         d.innerHTML += `<div style="width:50%;">${prop}</div> 
          <div style="width:48%; background:lime;color:black;padding:1px;border-radius:5px;" >${subobj[prop]}</div>`;
       }
