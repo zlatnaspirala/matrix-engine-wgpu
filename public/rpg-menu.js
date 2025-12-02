@@ -2068,7 +2068,7 @@ let forestOfHollowBloodStartSceen = new _world.default({
 });
 window.app = forestOfHollowBloodStartSceen;
 
-},{"../../../public/res/multilang/en-backup.js":20,"../../../src/engine/loaders/webgpu-gltf.js":40,"../../../src/engine/networking/matrix-stream.js":44,"../../../src/engine/networking/net.js":45,"../../../src/engine/plugin/animated-cursor/animated-cursor.js":46,"../../../src/engine/utils.js":47,"../../../src/tools/editor/editor.js":70,"../../../src/world.js":72,"./hero.js":1,"./rocket-crafting-account.js":2,"./tts.js":4}],4:[function(require,module,exports){
+},{"../../../public/res/multilang/en-backup.js":20,"../../../src/engine/loaders/webgpu-gltf.js":40,"../../../src/engine/networking/matrix-stream.js":44,"../../../src/engine/networking/net.js":45,"../../../src/engine/plugin/animated-cursor/animated-cursor.js":46,"../../../src/engine/utils.js":47,"../../../src/tools/editor/editor.js":70,"../../../src/world.js":73,"./hero.js":1,"./rocket-crafting-account.js":2,"./tts.js":4}],4:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -33466,17 +33466,46 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.Editor = void 0;
+var _editor = _interopRequireDefault(require("./editor.provider"));
 var _hud = _interopRequireDefault(require("./hud"));
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 class Editor {
   constructor(core) {
     this.core = core;
     this.editorHud = new _hud.default(core);
+    this.editorProvider = new _editor.default(core);
   }
 }
 exports.Editor = Editor;
 
-},{"./hud":71}],71:[function(require,module,exports){
+},{"./editor.provider":71,"./hud":72}],71:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+/**
+ * @description
+ * For now it is posible for editor to work on fly
+ * with no memory/saves.
+ */
+
+class EditorProvider {
+  constructor(core) {
+    this.core = core;
+    this.addEditorEvents();
+  }
+  addEditorEvents() {
+    document.addEventListener('web.editor.input', e => {
+      console.log("[EDITOR] sceneObj: ", e.detail.inputFor);
+      console.log("[EDITOR] sceneObj: ", e.detail.inputFor);
+    });
+  }
+}
+exports.default = EditorProvider;
+
+},{}],72:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -33670,7 +33699,7 @@ class SceneObjectProperty {
         });
       } else if (propName == 'position' || propName == 'rotation' || propName == "raycast" || propName == "entityArgPass" || propName == "scale") {
         // console.log('currSceneObj[propName] ', currSceneObj[propName]);
-        this.exploreSubObject(currSceneObj[propName], propName).forEach(item => {
+        this.exploreSubObject(currSceneObj[propName], propName, currSceneObj).forEach(item => {
           if (typeof item === 'string') {
             this.propName.innerHTML += `<div style="text-align:left;"> ${item.split(':'[1])} </div>`;
           } else {
@@ -33703,7 +33732,7 @@ class SceneObjectProperty {
       // this.propName.innerHTML += `<div>${currSceneObj[propName]}</div>`;
     }
   }
-  exploreSubObject(subobj, rootKey) {
+  exploreSubObject(subobj, rootKey, currSceneObj) {
     let a = [];
     let __ = [];
     for (const key in subobj) {
@@ -33717,7 +33746,18 @@ class SceneObjectProperty {
       d.style.display = "flex";
       if (typeof subobj[prop] === 'number') {
         d.innerHTML += `<div style="width:50%;">${prop}</div> 
-         <div style="width:48%; background:lime;color:black;" > <input ${rootKey == "adapterInfo" ? "disabled='true'" : ""}" type="number" value="${subobj[prop]}" /> </div>`;
+         <div style="width:48%; background:lime;color:black;" > 
+
+         <input name="${prop}" 
+          onchange="console.log('change fired'); 
+          document.dispatchEvent(new CustomEvent('web.editor.input', {detail: {
+           'inputFor': ${currSceneObj ? "'" + currSceneObj.name + "'" : "'no info'"} ,
+           'propertyId': ${currSceneObj ? "'" + rootKey + "'" : "'no info'"} ,
+           'property': ${currSceneObj ? "'" + prop + "'" : "'no info'"}
+          }}))" 
+         ${rootKey == "adapterInfo" ? " disabled='true'" : " "} type="number" value="${subobj[prop]}" /> 
+        
+         </div>`;
       } else if (Array.isArray(subobj[prop])) {
         d.innerHTML += `<div style="width:50%">${prop}</div> 
          <div style="width:${subobj[prop].length == 0 ? "unset" : "48%"}; background:lime;color:black;border-radius:5px;" > ${subobj[prop].length == 0 ? "[Empty array]" : subobj[prop]} </div>`;
@@ -33751,6 +33791,7 @@ class SceneObjectProperty {
       d = document.createElement("div");
       d.style.textAlign = "left";
       d.style.display = "flex";
+      d.style.flexWrap = "wrap";
       if (typeof subobj[prop] === 'number') {
         d.innerHTML += `<div style="width:50%;">${prop}</div> 
          <div style="width:48%; background:lime;color:black;" > <input ${rootKey == "adapterInfo" ? "disabled='true'" : ""}" type="number" value="${subobj[prop]}" /> </div>`;
@@ -33760,6 +33801,62 @@ class SceneObjectProperty {
          <div style="width:${subobj[prop].length == 0 ? "unset" : "48%"}; background:lime;color:black;border-radius:5px;" > 
             ${subobj[prop].length == 0 ? "[Empty array]" : subobj[prop].length}
          </div>`;
+      } else if (Array.isArray(subobj[prop]) && prop == "skins") {
+        console.log("init prop: " + rootKey);
+        d.innerHTML += `<div style="width:50%">${prop}</div> 
+         <div style="width:${subobj[prop].length == 0 ? "unset" : "48%"}; background:lime;color:black;border-radius:5px;" > 
+            ${subobj[prop].length == 0 ? "[Empty array]" : subobj[prop].map(item => {
+          if (item && typeof item === "object" && "name" in item) {
+            return item.name + " Joints:" + item.joints.length + "\n inverseBindMatrices:" + item.inverseBindMatrices;
+          }
+          return String(item);
+        }).join(", ")}
+         </div>`;
+      } else if (prop == "glbJsonData") {
+        console.log("init glbJsonData: " + rootKey);
+        d.innerHTML += `<div style="width:50%">Animations:</div> 
+
+         <div style="width:${subobj[prop].animations.length == 0 ? "unset" : "48%"}; background:lime;color:black;border-radius:5px;" > 
+            ${subobj[prop].animations.length == 0 ? "[Empty array]" : subobj[prop].animations.map(item => {
+          if (item && typeof item === "object" && "name" in item) {
+            return item.name;
+          }
+          return String(item);
+        }).join(", ")}
+         </div>
+         \n
+         <div style="width:50%">Skinned meshes:</div> 
+         <div style="width:${subobj[prop].meshes.length == 0 ? "unset" : "48%"}; background:lime;color:black;border-radius:5px;" > 
+            ${subobj[prop].meshes.length == 0 ? "[Empty array]" : subobj[prop].meshes.map(item => {
+          if (item && typeof item === "object" && "name" in item) {
+            return item.name + " \n Primitives : " + item.primitives.length;
+          }
+          return String(item);
+        }).join(", ")}
+         </div>
+          \n
+         <div style="width:50%">Images:</div> 
+         <div style="width:${subobj[prop].images.length == 0 ? "unset" : "48%"}; background:lime;color:black;border-radius:5px;" > 
+            ${subobj[prop].images.length == 0 ? "[Empty array]" : subobj[prop].images.map(item => {
+          if (item && typeof item === "object" && "name" in item) {
+            return "<div>" + item.name + " \n mimeType: " + item.mimeType + "</div>";
+          }
+          return String(item);
+        }).join(", ")}
+         </div>
+
+         \n
+         <div style="width:50%">Materials:</div> 
+         <div style="width:${subobj[prop].materials.length == 0 ? "unset" : "48%"}; background:lime;color:black;border-radius:5px;" > 
+            ${subobj[prop].materials.length == 0 ? "[Empty array]" : subobj[prop].materials.map(item => {
+          if (item && typeof item === "object" && "name" in item) {
+            return "<div>" + item.name + " \n metallicFactor: " + item.pbrMetallicRoughness.metallicFactor + " \n roughnessFactor: " + item.pbrMetallicRoughness.roughnessFactor + "</div>";
+          }
+          return String(item);
+        }).join(", ")}
+         </div>
+         
+         `;
       } else if (subobj[prop] === null) {
         d.innerHTML += `<div style="width:50%;">${prop}</div> 
          <div style="width:unset; background:lime;color:black;padding:1px;border-radius:5px;" >${subobj[prop]}</div>`;
@@ -33780,7 +33877,7 @@ class SceneObjectProperty {
   }
 }
 
-},{"../../engine/utils.js":47}],72:[function(require,module,exports){
+},{"../../engine/utils.js":47}],73:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {

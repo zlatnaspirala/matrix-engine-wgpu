@@ -204,7 +204,7 @@ class SceneObjectProperty {
         propName == "scale") {
 
         // console.log('currSceneObj[propName] ', currSceneObj[propName]);
-        this.exploreSubObject(currSceneObj[propName], propName).forEach((item) => {
+        this.exploreSubObject(currSceneObj[propName], propName, currSceneObj).forEach((item) => {
           if(typeof item === 'string') {
             this.propName.innerHTML += `<div style="text-align:left;"> ${item.split(':'[1])} </div>`;
           } else {
@@ -240,7 +240,7 @@ class SceneObjectProperty {
     }
   }
 
-  exploreSubObject(subobj, rootKey) {
+  exploreSubObject(subobj, rootKey, currSceneObj) {
     let a = []; let __ = [];
     for(const key in subobj) {
       __.push(key);
@@ -253,7 +253,18 @@ class SceneObjectProperty {
       d.style.display = "flex";
       if(typeof subobj[prop] === 'number') {
         d.innerHTML += `<div style="width:50%;">${prop}</div> 
-         <div style="width:48%; background:lime;color:black;" > <input ${(rootKey == "adapterInfo" ? "disabled='true'" : "")}" type="number" value="${subobj[prop]}" /> </div>`;
+         <div style="width:48%; background:lime;color:black;" > 
+
+         <input name="${prop}" 
+          onchange="console.log('change fired'); 
+          document.dispatchEvent(new CustomEvent('web.editor.input', {detail: {
+           'inputFor': ${currSceneObj ? "'" + currSceneObj.name + "'" : "'no info'"} ,
+           'propertyId': ${currSceneObj ? "'" + rootKey + "'" : "'no info'"} ,
+           'property': ${currSceneObj ? "'" + prop + "'" : "'no info'"}
+          }}))" 
+         ${(rootKey == "adapterInfo" ? " disabled='true'" : " ")} type="number" value="${subobj[prop]}" /> 
+        
+         </div>`;
       } else if(Array.isArray(subobj[prop])) {
         d.innerHTML += `<div style="width:50%">${prop}</div> 
          <div style="width:${(subobj[prop].length == 0 ? "unset" : "48%")}; background:lime;color:black;border-radius:5px;" > ${(subobj[prop].length == 0 ? "[Empty array]" : subobj[prop])} </div>`;
@@ -288,15 +299,97 @@ class SceneObjectProperty {
       d = document.createElement("div");
       d.style.textAlign = "left";
       d.style.display = "flex";
+      d.style.flexWrap = "wrap";
       if(typeof subobj[prop] === 'number') {
         d.innerHTML += `<div style="width:50%;">${prop}</div> 
          <div style="width:48%; background:lime;color:black;" > <input ${(rootKey == "adapterInfo" ? "disabled='true'" : "")}" type="number" value="${subobj[prop]}" /> </div>`;
       } else if(Array.isArray(subobj[prop]) && prop == "nodes") {
-       console.log("init prop: " + rootKey)
+        console.log("init prop: " + rootKey)
         d.innerHTML += `<div style="width:50%">${prop}</div> 
          <div style="width:${(subobj[prop].length == 0 ? "unset" : "48%")}; background:lime;color:black;border-radius:5px;" > 
             ${(subobj[prop].length == 0 ? "[Empty array]" : subobj[prop].length)}
          </div>`;
+      } else if(Array.isArray(subobj[prop]) && prop == "skins") {
+        console.log("init prop: " + rootKey)
+        d.innerHTML += `<div style="width:50%">${prop}</div> 
+         <div style="width:${(subobj[prop].length == 0 ? "unset" : "48%")}; background:lime;color:black;border-radius:5px;" > 
+            ${(subobj[prop].length == 0 ? "[Empty array]" :
+            subobj[prop]
+              .map(item => {
+                if(item && typeof item === "object" && "name" in item) {
+                  return item.name + " Joints:" + item.joints.length + "\n inverseBindMatrices:" + item.inverseBindMatrices;
+                }
+                return String(item);
+              })
+              .join(", ")
+          )}
+         </div>`;
+      } else if(prop == "glbJsonData") {
+        console.log("init glbJsonData: " + rootKey)
+
+        d.innerHTML += `<div style="width:50%">Animations:</div> 
+
+         <div style="width:${(subobj[prop].animations.length == 0 ? "unset" : "48%")}; background:lime;color:black;border-radius:5px;" > 
+            ${(subobj[prop].animations.length == 0 ? "[Empty array]" :
+            subobj[prop].animations
+              .map(item => {
+                if(item && typeof item === "object" && "name" in item) {
+                  return item.name;
+                }
+                return String(item);
+              })
+              .join(", ")
+          )}
+         </div>
+         \n
+         <div style="width:50%">Skinned meshes:</div> 
+         <div style="width:${(subobj[prop].meshes.length == 0 ? "unset" : "48%")}; background:lime;color:black;border-radius:5px;" > 
+            ${(subobj[prop].meshes.length == 0 ? "[Empty array]" :
+            subobj[prop].meshes
+              .map(item => {
+                if(item && typeof item === "object" && "name" in item) {
+                  return item.name + " \n Primitives : " + item.primitives.length;
+                }
+                return String(item);
+              })
+              .join(", ")
+          )}
+         </div>
+          \n
+         <div style="width:50%">Images:</div> 
+         <div style="width:${(subobj[prop].images.length == 0 ? "unset" : "48%")}; background:lime;color:black;border-radius:5px;" > 
+            ${(subobj[prop].images.length == 0 ? "[Empty array]" :
+            subobj[prop].images
+              .map(item => {
+                if(item && typeof item === "object" && "name" in item) {
+                  return "<div>" + item.name + " \n mimeType: " + item.mimeType + "</div>";
+                }
+                return String(item);
+              })
+              .join(", ")
+          )}
+         </div>
+
+         \n
+         <div style="width:50%">Materials:</div> 
+         <div style="width:${(subobj[prop].materials.length == 0 ? "unset" : "48%")}; background:lime;color:black;border-radius:5px;" > 
+            ${(subobj[prop].materials.length == 0 ? "[Empty array]" :
+            subobj[prop].materials
+              .map(item => {
+                if(item && typeof item === "object" && "name" in item) {
+                  return "<div>" + item.name + " \n metallicFactor: " + item.pbrMetallicRoughness.metallicFactor  +
+                     " \n roughnessFactor: " + item.pbrMetallicRoughness.roughnessFactor + "</div>";
+                }
+                return String(item);
+              })
+              .join(", ")
+          )}
+         </div>
+         
+         `;
+
+
+
       } else if(subobj[prop] === null) {
         d.innerHTML += `<div style="width:50%;">${prop}</div> 
          <div style="width:unset; background:lime;color:black;padding:1px;border-radius:5px;" >${subobj[prop]}</div>`;
