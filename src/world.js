@@ -12,6 +12,7 @@ import {play} from "./engine/loader-obj.js";
 import {SpotLight} from "./engine/lights.js";
 import {BVHPlayer} from "./engine/loaders/bvh.js";
 import {BVHPlayerInstances} from "./engine/loaders/bvh-instaced.js";
+import {Editor} from "./tools/editor/editor.js";
 
 /**
  * @description
@@ -67,6 +68,28 @@ export default class MatrixEngineWGPU {
     if(typeof options.dontUsePhysics == 'undefined') {
       this.matrixAmmo = new MatrixAmmo();
     }
+
+    this.editor = undefined;
+    if(typeof options.useEditor !== "undefined") {
+      this.editor = new Editor(this);
+    }
+
+    window.addEventListener('keydown', e => {
+      if(e.code == "F4") {
+        e.preventDefault();
+        mb.error(`Activated WebEditor, you can use it infly there is no saves for now.`);
+        app.activateEditor();
+        return false;
+      }
+    });
+
+    this.activateEditor = () => {
+      if(this.editor == null || typeof this.editor === 'undefined') {
+        this.editor = new Editor(this);
+        this.editor.editorHud.updateSceneContainer();
+      }
+    };
+
     this.options = options;
     this.mainCameraParams = options.mainCameraParams;
 
@@ -410,6 +433,10 @@ export default class MatrixEngineWGPU {
       this.matrixAmmo.addPhysics(myMesh1, o.physics)
     }
     this.mainRenderBundle.push(myMesh1);
+
+    if(typeof this.editor !== 'undefined') {
+      this.editor.editorHud.updateSceneContainer();
+    }
   }
 
   run(callback) {
@@ -676,10 +703,13 @@ export default class MatrixEngineWGPU {
         //   this.matrixAmmo.addPhysics(myMesh1, o.physics)
         // }
         // make it soft
-        setTimeout(() => {this.mainRenderBundle.push(bvhPlayer)}, 1000)
+        setTimeout(() => {this.mainRenderBundle.push(bvhPlayer)}, 800);
         // this.mainRenderBundle.push(bvhPlayer)
         c++;
       }
+    }
+    if(typeof this.editor !== 'undefined') {
+      this.editor.editorHud.updateSceneContainer();
     }
   }
 
@@ -762,6 +792,9 @@ export default class MatrixEngineWGPU {
         c++;
       }
       skinnedNodeIndex++;
+    }
+    if(typeof this.editor !== 'undefined') {
+      this.editor.editorHud.updateSceneContainer();
     }
   }
 }
