@@ -48,7 +48,7 @@ SS.clear();
 
 let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
   dontUsePhysics: true,
-  useEditor: true,
+  // useEditor: true,
   useSingleRenderPass: true,
   canvasSize: 'fullscreen', // {w: window.visualViewport.width, h: window.visualViewport.height }
   mainCameraParams: {

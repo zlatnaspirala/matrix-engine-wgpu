@@ -69,9 +69,26 @@ export default class MatrixEngineWGPU {
       this.matrixAmmo = new MatrixAmmo();
     }
 
+    this.editor = undefined;
     if(typeof options.useEditor !== "undefined") {
       this.editor = new Editor(this);
     }
+
+    window.addEventListener('keydown', e => {
+      if(e.code == "F4") {
+        e.preventDefault();
+        mb.error(`Activated WebEditor, you can use it infly there is no saves for now.`);
+        app.activateEditor();
+        return false;
+      }
+    });
+
+    this.activateEditor = () => {
+      if(this.editor == null || typeof this.editor === 'undefined') {
+        this.editor = new Editor(this);
+        this.editor.editorHud.updateSceneContainer();
+      }
+    };
 
     this.options = options;
     this.mainCameraParams = options.mainCameraParams;

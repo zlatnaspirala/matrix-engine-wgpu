@@ -9,9 +9,182 @@ export default class EditorHud {
   constructor(core) {
     this.core = core;
     this.sceneContainer = null;
+    // this.createTopMenu();
+    this.createTopMenuInFly();
     this.createEditorSceneContainer();
     this.createScenePropertyBox();
     this.currentProperties = [];
+  }
+
+  createTopMenu() {
+    this.editorMenu = document.createElement("div");
+    this.editorMenu.id = "editorMenu";
+    Object.assign(this.editorMenu.style, {
+      position: "absolute",
+      top: "0",
+      left: "20%",
+      width: "60%",
+      height: "50px;",
+      backgroundColor: "rgba(0,0,0,0.85)",
+      display: "flex",
+      alignItems: "start",
+      // overflow: "auto",
+      color: "white",
+      fontFamily: "'Orbitron', sans-serif",
+      zIndex: "15",
+      padding: "2px",
+      boxSizing: "border-box",
+      flexDirection: "row"
+    });
+    this.editorMenu.innerHTML = " PROJECT MENU  ";
+    // document.body.appendChild(this.editorMenu);
+
+    this.editorMenu.innerHTML = `
+    <div class="top-item">
+      <div class="top-btn">Project ▾</div>
+      <div class="dropdown">
+      <div class="drop-item">📦 Create new project</div>
+      <div class="drop-item">📂 Load</div>
+      <div class="drop-item">💾 Save</div>
+      <div class="drop-item">🛠️ Build</div>
+      </div>
+    </div>
+
+    <div class="top-item">
+      <div class="top-btn">Insert ▾</div>
+      <div class="dropdown">
+        <div class="drop-item">🧊 Cube</div>
+        <div class="drop-item">⚪ Sphere</div>
+        <div class="drop-item">📦 GLB (model)</div>
+        <div class="drop-item">💡 Light</div>
+      </div>
+    </div>
+
+    <div class="top-item">
+      <div class="top-btn">View ▾</div>
+      <div class="dropdown">
+        <div class="drop-item">Hide Editor UI</div>
+        <div class="drop-item">FullScreen</div>
+      </div>
+    </div>
+
+    <div class="top-item">
+      <div class="top-btn">About ▾</div>
+      <div class="dropdown">
+        <div id="showAboutEditor" class="drop-item">matrix-engine-wgpu</div>
+      </div>
+    </div>
+  `;
+
+    document.body.appendChild(this.editorMenu);
+
+    // Mobile friendly toggles
+    this.editorMenu.querySelectorAll(".top-btn").forEach(btn => {
+      btn.addEventListener("click", e => {
+        const menu = e.target.nextElementSibling;
+
+        // close others
+        this.editorMenu.querySelectorAll(".dropdown").forEach(d => {
+          if(d !== menu) d.style.display = "none";
+        });
+
+        // toggle
+        menu.style.display =
+          menu.style.display === "block" ? "none" : "block";
+      });
+    });
+
+    // Close on outside tap
+    document.addEventListener("click", e => {
+      if(!this.editorMenu.contains(e.target)) {
+        this.editorMenu.querySelectorAll(".dropdown").forEach(d => {
+          d.style.display = "none";
+        });
+      }
+    });
+
+    this.showAboutModal = () => {
+      alert(`
+  ✔️ Support for 3D objects and scene transformations
+  ✔️ Ammo.js physics full integration
+  ✔️ Networking with Kurento/OpenVidu/Own middleware Nodejs -> frontend
+  🎯 Replicate matrix-engine (WebGL) features
+        `);
+    }
+    byId('showAboutEditor').addEventListener('click', this.showAboutModal);
+
+  }
+
+  createTopMenuInFly() {
+    this.editorMenu = document.createElement("div");
+    this.editorMenu.id = "editorMenu";
+    Object.assign(this.editorMenu.style, {
+      position: "absolute",
+      top: "0",
+      left: "20%",
+      width: "60%",
+      height: "50px;",
+      backgroundColor: "rgba(0,0,0,0.85)",
+      display: "flex",
+      alignItems: "start",
+      // overflow: "auto",
+      color: "white",
+      fontFamily: "'Orbitron', sans-serif",
+      zIndex: "15",
+      padding: "2px",
+      boxSizing: "border-box",
+      flexDirection: "row"
+    });
+    this.editorMenu.innerHTML = " PROJECT MENU  ";
+    // document.body.appendChild(this.editorMenu);
+
+    this.editorMenu.innerHTML = `
+    <div>INFLY Regime of work no saves. Nice for runtime debugging or get data for map setup.</div>
+    <div class="top-item">
+      <div class="top-btn">About ▾</div>
+      <div class="dropdown">
+        <div id="showAboutEditor" class="drop-item">matrix-engine-wgpu</div>
+      </div>
+    </div>
+  `;
+
+    document.body.appendChild(this.editorMenu);
+
+    // Mobile friendly toggles
+    this.editorMenu.querySelectorAll(".top-btn").forEach(btn => {
+      btn.addEventListener("click", e => {
+        const menu = e.target.nextElementSibling;
+
+        // close others
+        this.editorMenu.querySelectorAll(".dropdown").forEach(d => {
+          if(d !== menu) d.style.display = "none";
+        });
+
+        // toggle
+        menu.style.display =
+          menu.style.display === "block" ? "none" : "block";
+      });
+    });
+
+    // Close on outside tap
+    document.addEventListener("click", e => {
+      if(!this.editorMenu.contains(e.target)) {
+        this.editorMenu.querySelectorAll(".dropdown").forEach(d => {
+          d.style.display = "none";
+        });
+      }
+    });
+
+    this.showAboutModal = () => {
+      alert(`
+  ✔️ Support for 3D objects and scene transformations
+  ✔️ Ammo.js physics full integration
+  ✔️ Networking with Kurento/OpenVidu/Own middleware Nodejs -> frontend
+  🎯 Replicate matrix-engine (WebGL) features
+        `);
+    }
+    byId('showAboutEditor').addEventListener('click', this.showAboutModal);
+
   }
 
   createEditorSceneContainer() {
@@ -215,7 +388,7 @@ class SceneObjectProperty {
           }
         })
       } else if(propName == 'glb') {
-        this.exploreGlb(currSceneObj[propName], propName).forEach((item) => {
+        this.exploreGlb(currSceneObj[propName], propName, currSceneObj).forEach((item) => {
           if(typeof item === 'string') {
             this.propName.innerHTML += `<div style="text-align:left;"> ${item.split(':'[1])} </div>`;
           } else {
@@ -255,12 +428,13 @@ class SceneObjectProperty {
         d.innerHTML += `<div style="width:50%;">${prop}</div> 
          <div style="width:48%; background:lime;color:black;" > 
 
-         <input name="${prop}" 
-          onchange="console.log('change fired'); 
+         <input class="inputEditor" name="${prop}" 
+          onchange="console.log(this.value, 'change fired'); 
           document.dispatchEvent(new CustomEvent('web.editor.input', {detail: {
            'inputFor': ${currSceneObj ? "'" + currSceneObj.name + "'" : "'no info'"} ,
            'propertyId': ${currSceneObj ? "'" + rootKey + "'" : "'no info'"} ,
-           'property': ${currSceneObj ? "'" + prop + "'" : "'no info'"}
+           'property': ${currSceneObj ? "'" + prop + "'" : "'no info'"} ,
+           'value': ${currSceneObj ? "this.value" : "'no info'"}
           }}))" 
          ${(rootKey == "adapterInfo" ? " disabled='true'" : " ")} type="number" value="${subobj[prop]}" /> 
         
@@ -288,7 +462,7 @@ class SceneObjectProperty {
     return a;
   }
 
-  exploreGlb(subobj, rootKey) {
+  exploreGlb(subobj, rootKey, currSceneObj) {
     let a = []; let __ = [];
     for(const key in subobj) {
       __.push(key);
@@ -302,7 +476,19 @@ class SceneObjectProperty {
       d.style.flexWrap = "wrap";
       if(typeof subobj[prop] === 'number') {
         d.innerHTML += `<div style="width:50%;">${prop}</div> 
-         <div style="width:48%; background:lime;color:black;" > <input ${(rootKey == "adapterInfo" ? "disabled='true'" : "")}" type="number" value="${subobj[prop]}" /> </div>`;
+         <div style="width:48%; background:lime;color:black;" >
+           <input
+           class="inputEditor" name="${prop}" 
+           ${(prop === "animationIndex" ? "max='" + subobj['glbJsonData']['animations'].length - 1 + "'" : "")}
+             onchange="console.log(this.value, 'change fired'); 
+            document.dispatchEvent(new CustomEvent('web.editor.input', {detail: {
+             'inputFor': ${currSceneObj ? "'" + currSceneObj.name + "'" : "'no info'"} ,
+             'propertyId': ${currSceneObj ? "'" + rootKey + "'" : "'no info'"} ,
+             'property': ${currSceneObj ? "'" + prop + "'" : "'no info'"} ,
+             'value': ${currSceneObj ? "this.value" : "'no info'"}
+            }}))" 
+           ${(rootKey == "adapterInfo" ? "disabled='true'" : "")}" type="number" value="${subobj[prop]}" /> 
+           </div>`;
       } else if(Array.isArray(subobj[prop]) && prop == "nodes") {
         console.log("init prop: " + rootKey)
         d.innerHTML += `<div style="width:50%">${prop}</div> 
@@ -377,8 +563,8 @@ class SceneObjectProperty {
             subobj[prop].materials
               .map(item => {
                 if(item && typeof item === "object" && "name" in item) {
-                  return "<div>" + item.name + " \n metallicFactor: " + item.pbrMetallicRoughness.metallicFactor  +
-                     " \n roughnessFactor: " + item.pbrMetallicRoughness.roughnessFactor + "</div>";
+                  return "<div>" + item.name + " \n metallicFactor: " + item.pbrMetallicRoughness.metallicFactor +
+                    " \n roughnessFactor: " + item.pbrMetallicRoughness.roughnessFactor + "</div>";
                 }
                 return String(item);
               })

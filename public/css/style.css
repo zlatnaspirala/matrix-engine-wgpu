@@ -1189,3 +1189,98 @@ new dom effect from
 .scenePropItem:hover {
   color: lime;
 }
+
+.inputEditor {
+  font-family: "stormfaze";
+  width: 90%;
+  padding: 4px 8px;
+  font-size: 13px;
+
+  background: #2b2b2b;
+  color: #e6e6e6;
+  border: 1px solid #444;
+  border-radius: 4px;
+
+  outline: none;
+  transition: border 0.2s, background 0.2s;
+}
+
+/* Hover + Focus */
+.inputEditor:hover {
+  border-color: #666;
+}
+
+.inputEditor:focus {
+  background: #3a3a3a;
+  border-color: #888;
+}
+
+/* NATIVE ARROWS — scale + gray theme */
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button {
+  -webkit-appearance: auto !important;
+  background: #444;
+  border-radius: 4px;
+
+  /* 🔥 make arrows visually bigger */
+  transform: scale(1.5);
+  margin: 0 2px;
+
+  /* gray color filtering */
+  filter: grayscale(100%) brightness(1.4);
+}
+
+/* HOVER effect on arrows */
+input[type=number]:hover::-webkit-inner-spin-button,
+input[type=number]:hover::-webkit-outer-spin-button {
+  background: #555;
+  filter: grayscale(100%) brightness(1.8);
+}
+
+
+
+.top-item {
+  position: relative;
+}
+
+.top-btn {
+  padding: 8px 12px;
+  background: #3a3a3a;
+  border: 1px solid #555;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  user-select: none;
+}
+
+.top-btn:hover {
+  background: #4a4a4a;
+  border-color: #777;
+}
+
+.dropdown {
+  display: none;
+  position: absolute;
+  top: 38px;
+  left: 0;
+  min-width: 160px;
+  background: #2f2f2f;
+  border: 1px solid #444;
+  border-radius: 8px;
+  overflow: hidden;
+  z-index: 99999;
+}
+
+.drop-item {
+  padding: 10px 14px;
+  border-bottom: 1px solid #444;
+  cursor: pointer;
+}
+
+.drop-item:last-child {
+  border-bottom: none;
+}
+
+.drop-item:hover {
+  background: #444;
+}
