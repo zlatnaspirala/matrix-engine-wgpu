@@ -71,7 +71,12 @@ export default class MatrixEngineWGPU {
 
     this.editor = undefined;
     if(typeof options.useEditor !== "undefined") {
-      this.editor = new Editor(this);
+      if(typeof options.projectType !== "undefined" && options.projectType == "created from editor") {
+        this.editor = new Editor(this, "created from editor");
+      } else {
+        this.editor = new Editor(this, "infly");
+      }
+      
     }
 
     window.addEventListener('keydown', e => {

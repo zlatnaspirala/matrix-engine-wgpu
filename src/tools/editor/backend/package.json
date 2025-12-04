@@ -1,0 +1,28 @@
+{
+  "name": "megpu-web-editor",
+  "version": "0.0.1",
+  "description": "Web editor backend part",
+  "main": "matrix-editor.js",
+  "type": "module",
+  "scripts": {
+    "web-editor": "node matrix-editor.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zlatnaspirala/matrix-engine-wgpu.git"
+  },
+  "keywords": [
+    "web-editor",
+    "matrix-engine-wgpu"
+  ],
+  "author": "Nikola Lukic zlatnaspirala",
+  "license": "GPL-3.0-or-later",
+  "bugs": {
+    "url": "https://github.com/zlatnaspirala/matrix-engine-wgpu/issues"
+  },
+  "homepage": "https://github.com/zlatnaspirala/matrix-engine-wgpu#readme",
+  "dependencies": {
+    "ws": "^8.18.3"
+  }
+}
