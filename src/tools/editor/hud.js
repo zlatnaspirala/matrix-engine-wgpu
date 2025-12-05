@@ -13,6 +13,8 @@ export default class EditorHud {
       this.createTopMenuInFly();
     } else if(a == "created from editor") {
       this.createTopMenu();
+    } else if(a == "pre editor") {
+      this.createTopMenuPre();
     } else {
       throw console.error('Editor err');
     }
@@ -84,9 +86,8 @@ export default class EditorHud {
     <div class="top-item">
       <div class="top-btn">Project ▾</div>
       <div class="dropdown">
-      <div id="cnpBtn" class="drop-item">📦 Create new project</div>
-      <div class="drop-item">📂 Load</div>
       <div class="drop-item">💾 Save</div>
+      <div class="drop-item">🛠️ Watch</div>
       <div class="drop-item">🛠️ Build</div>
       </div>
     </div>
@@ -106,6 +107,114 @@ export default class EditorHud {
       <div class="dropdown">
         <div class="drop-item">Hide Editor UI</div>
         <div class="drop-item">FullScreen</div>
+      </div>
+    </div>
+
+    <div class="top-item">
+      <div class="top-btn">About ▾</div>
+      <div class="dropdown">
+        <div id="showAboutEditor" class="drop-item">matrix-engine-wgpu</div>
+      </div>
+    </div>
+  `;
+
+    document.body.appendChild(this.editorMenu);
+
+    // Mobile friendly toggles
+    this.editorMenu.querySelectorAll(".top-btn").forEach(btn => {
+      btn.addEventListener("click", e => {
+        const menu = e.target.nextElementSibling;
+
+        // close others
+        this.editorMenu.querySelectorAll(".dropdown").forEach(d => {
+          if(d !== menu) d.style.display = "none";
+        });
+
+        // toggle
+        menu.style.display =
+          menu.style.display === "block" ? "none" : "block";
+      });
+    });
+
+    // Close on outside tap
+    document.addEventListener("click", e => {
+      if(!this.editorMenu.contains(e.target)) {
+        this.editorMenu.querySelectorAll(".dropdown").forEach(d => {
+          d.style.display = "none";
+        });
+      }
+    });
+
+
+    byId('cnpBtn').addEventListener('click', () => {
+
+      let name = prompt("📦 Project name :", "MyProject1");
+
+      let features = {
+        physics: false,
+        networking: false
+      };
+
+      if(confirm("⚛ Enable physics (Ammo)?")) {
+        features.physics = true;
+      }
+
+      if(confirm("🔌 Enable networking (kurento/ov)?")) {
+        features.networking = true;
+      }
+
+      console.log(features);
+
+      document.dispatchEvent(new CustomEvent('cnp', {
+        detail: {
+          name: name,
+          features: features
+        }
+      }));
+    });
+
+
+    this.showAboutModal = () => {
+      alert(`
+  ✔️ Support for 3D objects and scene transformations
+  ✔️ Ammo.js physics full integration
+  ✔️ Networking with Kurento/OpenVidu/Own middleware Nodejs -> frontend
+  🎯 Replicate matrix-engine (WebGL) features
+        `);
+    }
+    byId('showAboutEditor').addEventListener('click', this.showAboutModal);
+
+  }
+
+  createTopMenuPre() {
+    this.editorMenu = document.createElement("div");
+    this.editorMenu.id = "editorMenu";
+    Object.assign(this.editorMenu.style, {
+      position: "absolute",
+      top: "0",
+      left: "20%",
+      width: "60%",
+      height: "50px;",
+      backgroundColor: "rgba(0,0,0,0.85)",
+      display: "flex",
+      alignItems: "start",
+      // overflow: "auto",
+      color: "white",
+      fontFamily: "'Orbitron', sans-serif",
+      zIndex: "15",
+      padding: "2px",
+      boxSizing: "border-box",
+      flexDirection: "row"
+    });
+    this.editorMenu.innerHTML = " PROJECT MENU  ";
+    // document.body.appendChild(this.editorMenu);
+
+    this.editorMenu.innerHTML = `
+    <div class="top-item">
+      <div class="top-btn">Project ▾</div>
+      <div class="dropdown">
+      <div id="cnpBtn" class="drop-item">📦 Create new project</div>
+      <div class="drop-item">📂 Load</div>
       </div>
     </div>
 

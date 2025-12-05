@@ -5,7 +5,7 @@ import {uploadGLBModel} from "../../../../src/engine/loaders/webgpu-gltf.js";
 let app = new MatrixEngineWGPU({
   dontUsePhysics: true,
   useEditor: true,
-  projectType: "created from editor",
+  projectType: "pre editor",
   useSingleRenderPass: true,
   canvasSize: 'fullscreen',
   mainCameraParams: {
@@ -15,7 +15,7 @@ let app = new MatrixEngineWGPU({
   clearColor: {r: 0, b: 0.1, g: 0.1, a: 1}
 }, 
    (app) => {
-
+    console.log("AUTOGEN NORMAL MAIN !");
   addEventListener('AmmoReady', async () => {
 
     console.log("AUTOGEN NORMAL MAIN !");

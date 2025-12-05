@@ -30394,9 +30394,20 @@ Object.defineProperty(exports, "__esModule", {
 exports.MEEditorClient = void 0;
 class MEEditorClient {
   ws = null;
-  constructor() {
+  constructor(typeOfRun, name) {
     this.ws = new WebSocket("ws://localhost:1243");
     this.ws.onopen = () => {
+      if (typeOfRun == 'created from editor') {
+        //
+        console.info('Create new project <signal>');
+        let o = {
+          action: "watch",
+          name: e.detail.name,
+          features: e.detail.features
+        };
+        o = JSON.stringify(o);
+        this.ws.send(o);
+      }
       console.log("%c[WS OPEN] [Attach events]", "color: lime; font-weight: bold");
     };
     this.ws.onmessage = event => {
@@ -30452,13 +30463,15 @@ class Editor {
     this.core = core;
     this.editorHud = new _hud.default(core, this.check(a));
     this.editorProvider = new _editor.default(core, this.check(a));
-    if (this.check(a) == 'created from editor') {
-      this.client = new _client.MEEditorClient();
+    if (this.check(a) == 'created from editor' || this.check(a) == 'pre editor') {
+      this.client = new _client.MEEditorClient(this.check(a));
     }
   }
   check(a) {
     if (typeof a !== 'undefined' && a == "created from editor") {
-      return "created from editor";
+      return a;
+    } else if (typeof a !== 'undefined' && a == "pre editor") {
+      return a;
     } else {
       return "infly";
     }
@@ -30524,6 +30537,8 @@ class EditorHud {
       this.createTopMenuInFly();
     } else if (a == "created from editor") {
       this.createTopMenu();
+    } else if (a == "pre editor") {
+      this.createTopMenuPre();
     } else {
       throw console.error('Editor err');
     }
@@ -30590,9 +30605,8 @@ class EditorHud {
     <div class="top-item">
       <div class="top-btn">Project ▾</div>
       <div class="dropdown">
-      <div id="cnpBtn" class="drop-item">📦 Create new project</div>
-      <div class="drop-item">📂 Load</div>
       <div class="drop-item">💾 Save</div>
+      <div class="drop-item">🛠️ Watch</div>
       <div class="drop-item">🛠️ Build</div>
       </div>
     </div>
@@ -30612,6 +30626,100 @@ class EditorHud {
       <div class="dropdown">
         <div class="drop-item">Hide Editor UI</div>
         <div class="drop-item">FullScreen</div>
+      </div>
+    </div>
+
+    <div class="top-item">
+      <div class="top-btn">About ▾</div>
+      <div class="dropdown">
+        <div id="showAboutEditor" class="drop-item">matrix-engine-wgpu</div>
+      </div>
+    </div>
+  `;
+    document.body.appendChild(this.editorMenu);
+
+    // Mobile friendly toggles
+    this.editorMenu.querySelectorAll(".top-btn").forEach(btn => {
+      btn.addEventListener("click", e => {
+        const menu = e.target.nextElementSibling;
+
+        // close others
+        this.editorMenu.querySelectorAll(".dropdown").forEach(d => {
+          if (d !== menu) d.style.display = "none";
+        });
+
+        // toggle
+        menu.style.display = menu.style.display === "block" ? "none" : "block";
+      });
+    });
+
+    // Close on outside tap
+    document.addEventListener("click", e => {
+      if (!this.editorMenu.contains(e.target)) {
+        this.editorMenu.querySelectorAll(".dropdown").forEach(d => {
+          d.style.display = "none";
+        });
+      }
+    });
+    (0, _utils.byId)('cnpBtn').addEventListener('click', () => {
+      let name = prompt("📦 Project name :", "MyProject1");
+      let features = {
+        physics: false,
+        networking: false
+      };
+      if (confirm("⚛ Enable physics (Ammo)?")) {
+        features.physics = true;
+      }
+      if (confirm("🔌 Enable networking (kurento/ov)?")) {
+        features.networking = true;
+      }
+      console.log(features);
+      document.dispatchEvent(new CustomEvent('cnp', {
+        detail: {
+          name: name,
+          features: features
+        }
+      }));
+    });
+    this.showAboutModal = () => {
+      alert(`
+  ✔️ Support for 3D objects and scene transformations
+  ✔️ Ammo.js physics full integration
+  ✔️ Networking with Kurento/OpenVidu/Own middleware Nodejs -> frontend
+  🎯 Replicate matrix-engine (WebGL) features
+        `);
+    };
+    (0, _utils.byId)('showAboutEditor').addEventListener('click', this.showAboutModal);
+  }
+  createTopMenuPre() {
+    this.editorMenu = document.createElement("div");
+    this.editorMenu.id = "editorMenu";
+    Object.assign(this.editorMenu.style, {
+      position: "absolute",
+      top: "0",
+      left: "20%",
+      width: "60%",
+      height: "50px;",
+      backgroundColor: "rgba(0,0,0,0.85)",
+      display: "flex",
+      alignItems: "start",
+      // overflow: "auto",
+      color: "white",
+      fontFamily: "'Orbitron', sans-serif",
+      zIndex: "15",
+      padding: "2px",
+      boxSizing: "border-box",
+      flexDirection: "row"
+    });
+    this.editorMenu.innerHTML = " PROJECT MENU  ";
+    // document.body.appendChild(this.editorMenu);
+
+    this.editorMenu.innerHTML = `
+    <div class="top-item">
+      <div class="top-btn">Project ▾</div>
+      <div class="dropdown">
+      <div id="cnpBtn" class="drop-item">📦 Create new project</div>
+      <div class="drop-item">📂 Load</div>
       </div>
     </div>
 
@@ -31118,7 +31226,7 @@ function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e
 let app = new _world.default({
   dontUsePhysics: true,
   useEditor: true,
-  projectType: "created from editor",
+  projectType: "pre editor",
   useSingleRenderPass: true,
   canvasSize: 'fullscreen',
   mainCameraParams: {
@@ -31132,6 +31240,7 @@ let app = new _world.default({
     a: 1
   }
 }, app => {
+  console.log("AUTOGEN NORMAL MAIN !");
   addEventListener('AmmoReady', async () => {
     console.log("AUTOGEN NORMAL MAIN !");
     // setTimeout(() => {
@@ -31243,6 +31352,8 @@ class MatrixEngineWGPU {
     if (typeof options.useEditor !== "undefined") {
       if (typeof options.projectType !== "undefined" && options.projectType == "created from editor") {
         this.editor = new _editor.Editor(this, "created from editor");
+      } else if (typeof options.projectType !== "undefined" && options.projectType == "pre editor") {
+        this.editor = new _editor.Editor(this, options.projectType);
       } else {
         this.editor = new _editor.Editor(this, "infly");
       }
@@ -31259,6 +31370,8 @@ class MatrixEngineWGPU {
       if (this.editor == null || typeof this.editor === 'undefined') {
         if (typeof options.projectType !== "undefined" && options.projectType == "created from editor") {
           this.editor = new _editor.Editor(this, "created from editor");
+        } else if (typeof options.projectType !== "undefined" && options.projectType == "pre editor") {
+          this.editor = new _editor.Editor(this, options.projectType);
         } else {
           this.editor = new _editor.Editor(this, "infly");
         }

@@ -73,6 +73,8 @@ export default class MatrixEngineWGPU {
     if(typeof options.useEditor !== "undefined") {
       if(typeof options.projectType !== "undefined" && options.projectType == "created from editor") {
         this.editor = new Editor(this, "created from editor");
+      } else if(typeof options.projectType !== "undefined" && options.projectType == "pre editor") {
+        this.editor = new Editor(this, options.projectType);
       } else {
         this.editor = new Editor(this, "infly");
       }
@@ -92,6 +94,8 @@ export default class MatrixEngineWGPU {
       if(this.editor == null || typeof this.editor === 'undefined') {
         if(typeof options.projectType !== "undefined" && options.projectType == "created from editor") {
           this.editor = new Editor(this, "created from editor");
+        } else if(typeof options.projectType !== "undefined" && options.projectType == "pre editor") {
+          this.editor = new Editor(this, options.projectType);
         } else {
           this.editor = new Editor(this, "infly");
         }

@@ -3,10 +3,21 @@ export class MEEditorClient {
 
   ws = null;
 
-  constructor() {
+  constructor(typeOfRun, name) {
     this.ws = new WebSocket("ws://localhost:1243");
 
     this.ws.onopen = () => {
+      if(typeOfRun == 'created from editor') {
+        //
+        console.info('Create new project <signal>');
+        let o = {
+          action: "watch",
+          name: e.detail.name,
+          features: e.detail.features
+        };
+        o = JSON.stringify(o);
+        this.ws.send(o);
+      }
       console.log("%c[WS OPEN] [Attach events]", "color: lime; font-weight: bold");
     };
 
@@ -15,7 +26,7 @@ export class MEEditorClient {
         const data = JSON.parse(event.data);
         console.log("%c[WS MESSAGE]", "color: yellow", data);
 
-        if (data && data.ok == true) {
+        if(data && data.ok == true) {
           location.assign(data.name + ".html");
         }
       } catch(e) {
