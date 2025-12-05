@@ -5,7 +5,7 @@
   "main": "matrix-editor.js",
   "type": "module",
   "scripts": {
-    "web-editor": "node matrix-editor.js",
+    "editorx": "node matrix-editor.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {

@@ -1,6 +1,6 @@
 {
   "name": "matrix-engine-wgpu",
-  "version": "1.7.6",
+  "version": "1.7.7",
   "description": "Networking implemented - based on kurento openvidu server. fix arcball camera,instanced draws added also effect pipeline blend with instancing option.Normalmap added, Fixed shadows casting vs camera/video texture, webGPU powered pwa application. Crazy fast rendering with AmmoJS physics support. Simple raycaster hit object added.",
   "main": "index.js",
   "scripts": {
@@ -14,17 +14,19 @@
     "rpg-menu": "watchify ./examples/games/RPG/start-menu.js -p [esmify --noImplicitAny] -o public/rpg-menu.js",
     "build-all": "npm run main-worker | npm run examples | npm run main | npm run empty",
     "hosts": "http-server ./public/ -p 3000",
-    "web-editor": "node src/tools/editor/backend/matrix-editor.js"
+    "editor": "watchify ./src/tools/editor/template/autogen.js -p [esmify --noImplicitAny] -o public/matrix-engine-autogen.js",
+    "editorx": "node src/tools/editor/backend/matrix-editor.js"
   },
   "author": "Nikola Lukic",
   "license": "MIT",
   "devDependencies": {
     "browser-resolve": "^2.0.0",
     "browserify": "^17.0.0",
+    "esbuild": "^0.27.1",
     "esmify": "^2.1.1",
+    "http-server": "^14.1.1",
     "watchify": "^4.0.0",
-    "wgpu-matrix": "^2.0.0",
-    "http-server": "^14.1.1"
+    "wgpu-matrix": "^2.0.0"
   },
   "dependencies": {
     "bvh-loader": "1.0.10",

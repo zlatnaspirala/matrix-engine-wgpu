@@ -6,14 +6,55 @@ import {byId, isMobile, jsonHeaders, mb} from "../../engine/utils.js";
  * Web Editor for matrix-engine-wgpu
  */
 export default class EditorHud {
-  constructor(core) {
+  constructor(core, a) {
     this.core = core;
     this.sceneContainer = null;
-    // this.createTopMenu();
-    this.createTopMenuInFly();
+    if(a == 'infly') {
+      this.createTopMenuInFly();
+    } else if(a == "created from editor") {
+      this.createTopMenu();
+    } else {
+      throw console.error('Editor err');
+    }
     this.createEditorSceneContainer();
     this.createScenePropertyBox();
     this.currentProperties = [];
+
+    document.addEventListener('editor-not-running', () => {
+      this.noEditorConn();
+    });
+  }
+
+  noEditorConn() {
+
+    this.errorForm = document.createElement("div");
+    this.errorForm.id = "errorForm";
+    Object.assign(this.errorForm.style, {
+      position: "absolute",
+      top: "10%",
+      left: "25%",
+      width: "50%",
+      height: "30vh",
+      backgroundColor: "rgba(0,0,0,0.85)",
+      display: "flex",
+      alignItems: "start",
+      color: "white",
+      fontFamily: "'Orbitron', sans-serif",
+      zIndex: "15",
+      padding: "2px",
+      boxSizing: "border-box",
+      flexDirection: "column",
+      justifyContent: 'center',
+      alignItems: 'center'
+    });
+
+    this.errorForm.innerHTML = `
+       <h2 class='fancy-label'>No connection with editor node app.</h2>
+       <h3 class='fancy-label'>Run from root [npm run editorx] \n 
+          or run from ./src/tools/editor/backend [npm run editorx] \n
+          Than refresh page [clear default cache browser with CTRL+F5] </h3>
+    `;
+    document.body.appendChild(this.errorForm);
   }
 
   createTopMenu() {
@@ -43,7 +84,7 @@ export default class EditorHud {
     <div class="top-item">
       <div class="top-btn">Project ▾</div>
       <div class="dropdown">
-      <div class="drop-item">📦 Create new project</div>
+      <div id="cnpBtn" class="drop-item">📦 Create new project</div>
       <div class="drop-item">📂 Load</div>
       <div class="drop-item">💾 Save</div>
       <div class="drop-item">🛠️ Build</div>
@@ -102,6 +143,35 @@ export default class EditorHud {
         });
       }
     });
+
+
+    byId('cnpBtn').addEventListener('click', () => {
+
+      let name = prompt("📦 Project name :", "MyProject1");
+
+      let features = {
+        physics: false,
+        networking: false
+      };
+
+      if(confirm("⚛ Enable physics (Ammo)?")) {
+        features.physics = true;
+      }
+
+      if(confirm("🔌 Enable networking (kurento/ov)?")) {
+        features.networking = true;
+      }
+
+      console.log(features);
+
+      document.dispatchEvent(new CustomEvent('cnp', {
+        detail: {
+          name: name,
+          features: features
+        }
+      }));
+    });
+
 
     this.showAboutModal = () => {
       alert(`

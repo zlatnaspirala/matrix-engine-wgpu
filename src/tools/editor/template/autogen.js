@@ -1,11 +1,6 @@
-import MatrixEngineWGPU from "../src/world.js";
-import {downloadMeshes} from '../src/engine/loader-obj.js';
-import {uploadGLBModel} from "../src/engine/loaders/webgpu-gltf.js";
-/**
- * @Note
- * This is READ ONLY FILE
- **/
-// export function loadGLBLoader() {
+import MatrixEngineWGPU from "../../../../src/world.js";
+import {downloadMeshes} from '../../../../src/engine/loader-obj.js';
+import {uploadGLBModel} from "../../../../src/engine/loaders/webgpu-gltf.js";
 
 let app = new MatrixEngineWGPU({
   dontUsePhysics: true,
@@ -18,10 +13,12 @@ let app = new MatrixEngineWGPU({
     responseCoef: 1000
   },
   clearColor: {r: 0, b: 0.1, g: 0.1, a: 1}
-}, (app) => {
+}, 
+   (app) => {
 
   addEventListener('AmmoReady', async () => {
 
+    console.log("AUTOGEN NORMAL MAIN !");
     // setTimeout(() => {
     //   app.cameras.WASD.yaw = -0.03;
     //   app.cameras.WASD.pitch = -0.49;

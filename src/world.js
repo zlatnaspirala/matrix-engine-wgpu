@@ -76,7 +76,7 @@ export default class MatrixEngineWGPU {
       } else {
         this.editor = new Editor(this, "infly");
       }
-      
+
     }
 
     window.addEventListener('keydown', e => {
@@ -90,7 +90,11 @@ export default class MatrixEngineWGPU {
 
     this.activateEditor = () => {
       if(this.editor == null || typeof this.editor === 'undefined') {
-        this.editor = new Editor(this);
+        if(typeof options.projectType !== "undefined" && options.projectType == "created from editor") {
+          this.editor = new Editor(this, "created from editor");
+        } else {
+          this.editor = new Editor(this, "infly");
+        }
         this.editor.editorHud.updateSceneContainer();
       }
     };

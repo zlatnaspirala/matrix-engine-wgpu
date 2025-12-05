@@ -5,19 +5,13 @@
  * @email zlatnaspirala@gmail.com
  * @www maximumroulette.com
  */
+import esbuild from "esbuild";
 import fs from "fs/promises";
 import path from "path";
 import {WebSocketServer} from "ws";
+import {copyFile} from "fs/promises";
 
-// console.log("\x1b[31m%s\x1b[0m", "Red text");
-// console.log("\x1b[32m%s\x1b[0m", "Green text");
-// console.log("\x1b[33m%s\x1b[0m", "Yellow text");
-// console.log("\x1b[34m%s\x1b[0m", "Blue text");
-// console.log("\x1b[35m%s\x1b[0m", "Magenta text");
-// console.log("\x1b[36m%s\x1b[0m", "Cyan text");
-// console.log("\x1b[37m%s\x1b[0m", "White text");
-
-// matrix-engine-wgpu repo root
+// matrix-engine-wgpu repo root reference
 const ENGINE_PATH = path.resolve("../../../../");
 const PUBLIC_DIR = path.join(ENGINE_PATH, "public");
 const PUBLIC_RES = path.join(PUBLIC_DIR, "res");
@@ -27,18 +21,18 @@ await fs.mkdir(PROJECTS_DIR, {recursive: true});
 
 const wss = new WebSocketServer({port: 1243});
 
-// console.log("\x1b[32m%s\x1b[0m", " Editor WS running on ws://localhost:1243 ");
-console.log("\x1b[1m\x1b[92m%s\x1b[0m", " Editor WS running on ws://localhost:1243");
+console.log("\x1b[1m\x1b[92m%s\x1b[0m", " Editorx websocket running on ws://localhost:1243");
 console.log("\x1b[92m%s\x1b[0m", "-----------------------------------------");
 console.log("\x1b[93m%s\x1b[0m", "- Start you new project                 -");
+console.log("\x1b[93m%s\x1b[0m", "- Load project                          -");
+console.log("\x1b[92m%s\x1b[0m", "-----------------------------------------");
 
 wss.on("connection", ws => {
   ws.on("message", async (msg) => {
     try {
-      const {cmd, payload} = JSON.parse(msg);
+      msg = JSON.parse(msg);
 
-      console.log("CONNECTED !!!")
-      if(cmd === "LIST_FOLDER") {
+      if(msg.action === "LIST_FOLDER") {
         const rel = payload.path || "";
         const folder = path.join(PUBLIC_RES, rel);
         const items = await fs.readdir(folder, {withFileTypes: true});
@@ -52,58 +46,201 @@ wss.on("connection", ws => {
         }));
       }
 
-      if(cmd === "CREATE_OBJECT") {
-        const name = payload.name || "obj";
-        const id = `${name}-${Math.random().toString(36).substring(2, 8)}`;
-        const objFolder = path.join(PUBLIC_RES, "objects", id);
-
-        await fs.mkdir(objFolder, {recursive: true});
-        await fs.writeFile(
-          path.join(objFolder, "meta.json"),
-          JSON.stringify({id, name}, null, 2)
-        );
-
-        ws.send(JSON.stringify({
-          cmd,
-          ok: true,
-          payload: {
-            id,
-            path: path.relative(PUBLIC_RES, objFolder)
-          }
-        }));
+      if(msg.action === "cnp") {
+        cnp(ws, msg);
       }
 
-      if(cmd === "SAVE_PROJECT") {
-        const project = payload.project;
-        const projectFolder = path.join(PROJECTS_DIR, project.projectName);
-        const projectPublic = path.join(projectFolder, "public");
-        const projectRes = path.join(projectPublic, "res");
+      // if(msg.action === "SAVE_PROJECT") {
+      //   const project = payload.project;
+      //   const projectFolder = path.join(PROJECTS_DIR, project.projectName);
+      //   const projectPublic = path.join(projectFolder, "public");
+      //   const projectRes = path.join(projectPublic, "res");
 
-        // create directories
-        await fs.mkdir(projectRes, {recursive: true});
+      //   // create directories
+      //   await fs.mkdir(projectRes, {recursive: true});
 
-        // native Node recursive copy (no fs-extra)
-        await fs.cp(PUBLIC_DIR, projectPublic, {
-          recursive: true,
-          force: true
-        });
+      //   // native Node recursive copy (no fs-extra)
+      //   await fs.cp(PUBLIC_DIR, projectPublic, {
+      //     recursive: true,
+      //     force: true
+      //   });
 
-        // write project JSON
-        await fs.mkdir(path.join(projectFolder, "src"), {recursive: true});
-        await fs.writeFile(
-          path.join(projectFolder, "src", "scene.json"),
-          JSON.stringify(project, null, 2)
-        );
+      //   // write project JSON
+      //   await fs.mkdir(path.join(projectFolder, "src"), {recursive: true});
+      //   await fs.writeFile(
+      //     path.join(projectFolder, "src", "scene.json"),
+      //     JSON.stringify(project, null, 2)
+      //   );
 
-        ws.send(JSON.stringify({
-          cmd,
-          ok: true,
-          payload: {projectFolder}
-        }));
-      }
+      //   ws.send(JSON.stringify({
+      //     cmd,
+      //     ok: true,
+      //     payload: {projectFolder}
+      //   }));
+      // }
 
     } catch(err) {
       ws.send(JSON.stringify({ok: false, error: err.message}));
     }
   });
 });
+
+export class CodeBuilder {
+  constructor() {
+    this.lines = [];
+  }
+
+  addLine(line) {
+    this.lines.push(line + "\n");
+  }
+
+  addEmptyLine() {
+    this.lines.push("\n");
+  }
+
+  toString() {
+    return this.lines.join("");
+  }
+
+  async saveTo(filePath) {
+    await fs.writeFile(filePath, this.toString());
+  }
+}
+
+function CBimport() {
+  return `import MatrixEngineWGPU from "../../src/world.js";
+import {downloadMeshes} from '../../src/engine/loader-obj.js';
+import {uploadGLBModel} from "../../src/engine/loaders/webgpu-gltf.js";
+`;
+}
+
+function CBoptions(p) {
+  return `
+  {
+  ${p ? '' : 'dontUsePhysics: true,'}
+  useEditor: true,
+  projectType: "created from editor",
+  useSingleRenderPass: true,
+  canvasSize: 'fullscreen',
+  mainCameraParams: {
+    type: 'WASD',
+    responseCoef: 1000
+  },
+  clearColor: {r: 0, b: 0.1, g: 0.1, a: 1}
+}
+  `;
+}
+
+async function cnp(ws, msg) {
+  const content = new CodeBuilder();
+  let p = false;
+  let n = false;
+  content.addLine(CBimport());
+
+  if(msg.features.physics) {
+    console.log('Add physics...');
+    p = true;
+    if(msg.features.networking) {
+      n = true;
+      console.log('Add net ...');
+    } else {
+      n = false;
+      console.log('no net ...');
+    }
+  } else {
+    console.log('no physics...');
+    if(msg.features.networking) {
+      console.log('Add net ...');
+      n = true;
+    } else {
+      console.log('no net ...');
+      n = false;
+    }
+  }
+
+  content.addLine(`let app = new MatrixEngineWGPU(`);
+  content.addLine(CBoptions(p, n));
+  content.addLine(`, (app) => {`);
+  if(p) content.addLine(`addEventListener('AmmoReady', async () => { `);
+  content.addLine(`// [MAIN_REPLACE1]`);
+  content.addLine(`// [MAIN_REPLACE2]`);
+  if(p) content.addLine(` })`);
+  content.addLine(`})`);
+  content.addLine(`window.app = app;`);
+
+  const name = msg.name || "noname";
+  const id = `${name}`;
+  const objFolder = path.join(PROJECTS_DIR, id);
+  let payload = {
+    id,
+    name,
+    absolutePath: path.join(objFolder, `${msg.name}.json`),
+    PROJECTS_DIR: PROJECTS_DIR,
+    projectData: path.join(id, `${msg.name}.json`),
+    physics: p,
+    networking: n
+  };
+  await fs.mkdir(objFolder, {recursive: true});
+  await fs.writeFile(
+    path.join(objFolder, `${msg.name}.json`),
+    JSON.stringify(payload, null, 2)
+  );
+
+  ws.send(JSON.stringify({
+    name,
+    ok: true,
+    payload: payload
+  }));
+
+  await content.saveTo(path.join(objFolder, 'app-gen.js'));
+
+  buildProject(name);
+  // startProjectWatch(name)
+}
+
+async function buildProject(projectName) {
+  const entry = `${PROJECTS_DIR}\\${projectName}\\app-gen.js`;
+  const outfile = `${PUBLIC_DIR}\\${projectName}.js`;
+  const context = await esbuild.context({
+    entryPoints: [entry],
+    bundle: true,
+    outfile,
+    format: "esm",
+    sourcemap: true,
+    platform: "browser",
+    minify: false
+  });
+  await context.watch();
+  console.log(`Watching & bundling ${projectName} → ${outfile}`);
+  const htmldoc = new CodeBuilder();
+  htmldoc.addLine(createHTMLProjectDocument(projectName));
+  const outHtmlFile = `${PUBLIC_DIR}\\${projectName}.html`;
+  htmldoc.saveTo(outHtmlFile);
+}
+
+function createHTMLProjectDocument (name) {
+  return `<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <link rel="manifest" href="manifest.web" />
+    <title>${name}</title>
+    <meta name="description" content="Web Editor for Matrix Engine webGPU. Created by Nikola Lukic zlatnaspirala@gmail.com 2025" />
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <link defer rel="stylesheet" href="css/style.css" />
+    <link rel="apple-touch-icon" href="res/icons/512.png" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="theme-color" content="#000000" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0,minimal-ui" />
+    <link rel="icon" type="image/png" sizes="512x512" href="res/icons/512.png" />
+    <script src="./hacker-timer/hack-timer-worker.min.js"></script>
+  </head>
+  <body allow="autoplay" class="meBody">
+    <script src="${name}.js"></script>
+    <div id="msgBox" class="msg-box animate1" onclick="mb.copy()"></div>
+    <div id="log" class="msg-box animate1">matrix-engine-autogen</div>
+    <div id="matrix-net"></div>
+  </body>
+</html>
+  `;
+}
