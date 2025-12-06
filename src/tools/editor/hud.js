@@ -86,8 +86,8 @@ export default class EditorHud {
     <div class="top-item">
       <div class="top-btn">Project ▾</div>
       <div class="dropdown">
-      <div class="drop-item">💾 Save</div>
       <div class="drop-item">🛠️ Watch</div>
+      <div id="stop-watch" class="drop-item">🛠️ Stop Watch</div>
       <div class="drop-item">🛠️ Build</div>
       </div>
     </div>
@@ -146,7 +146,14 @@ export default class EditorHud {
     });
 
 
-    byId('cnpBtn').addEventListener('click', () => {
+    if(byId('stop-watch')) byId('stop-watch').addEventListener('click', () => {
+      document.dispatchEvent(new CustomEvent('stop-watch', {
+        detail: {}
+      }));
+    })
+
+
+    if(byId('cnpBtn')) byId('cnpBtn').addEventListener('click', () => {
 
       let name = prompt("📦 Project name :", "MyProject1");
 
@@ -254,7 +261,7 @@ export default class EditorHud {
     });
 
 
-    byId('cnpBtn').addEventListener('click', () => {
+    if(byId('cnpBtn')) byId('cnpBtn').addEventListener('click', () => {
 
       let name = prompt("📦 Project name :", "MyProject1");
 

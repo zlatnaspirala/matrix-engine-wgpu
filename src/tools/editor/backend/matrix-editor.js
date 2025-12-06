@@ -16,8 +16,8 @@ const ENGINE_PATH = path.resolve("../../../../");
 const PUBLIC_DIR = path.join(ENGINE_PATH, "public");
 const PUBLIC_RES = path.join(PUBLIC_DIR, "res");
 const PROJECTS_DIR = path.join(ENGINE_PATH, "projects");
-
 await fs.mkdir(PROJECTS_DIR, {recursive: true});
+const watchers = new Map();
 
 const wss = new WebSocketServer({port: 1243});
 
@@ -48,6 +48,16 @@ wss.on("connection", ws => {
 
       if(msg.action === "cnp") {
         cnp(ws, msg);
+      }
+
+      if(msg.action === "watch") {
+        console.log("action [WATCH]");
+        buildProject(msg.name, ws, 'Watch activated')
+      }
+
+      if(msg.action === "stop-watch") {
+        console.log("action [WATCH]");
+        stopWatch(msg.name, ws)
       }
 
       // if(msg.action === "SAVE_PROJECT") {
@@ -114,12 +124,13 @@ import {uploadGLBModel} from "../../src/engine/loaders/webgpu-gltf.js";
 `;
 }
 
-function CBoptions(p) {
+function CBoptions(p, n, pName) {
   return `
   {
   ${p ? '' : 'dontUsePhysics: true,'}
   useEditor: true,
   projectType: "created from editor",
+  ${pName ? `projectName: '${pName}',` : ""}
   useSingleRenderPass: true,
   canvasSize: 'fullscreen',
   mainCameraParams: {
@@ -159,7 +170,7 @@ async function cnp(ws, msg) {
   }
 
   content.addLine(`let app = new MatrixEngineWGPU(`);
-  content.addLine(CBoptions(p, n));
+  content.addLine(CBoptions(p, n, msg.name));
   content.addLine(`, (app) => {`);
   if(p) content.addLine(`addEventListener('AmmoReady', async () => { `);
   content.addLine(`// [MAIN_REPLACE1]`);
@@ -172,6 +183,7 @@ async function cnp(ws, msg) {
   const id = `${name}`;
   const objFolder = path.join(PROJECTS_DIR, id);
   let payload = {
+    redirect: true,
     id,
     name,
     absolutePath: path.join(objFolder, `${msg.name}.json`),
@@ -186,19 +198,23 @@ async function cnp(ws, msg) {
     JSON.stringify(payload, null, 2)
   );
 
-  ws.send(JSON.stringify({
-    name,
-    ok: true,
-    payload: payload
-  }));
-
   await content.saveTo(path.join(objFolder, 'app-gen.js'));
 
-  buildProject(name);
-  // startProjectWatch(name)
+  buildProject(name, ws, payload);
 }
 
-async function buildProject(projectName) {
+async function buildProject(projectName, ws, payload) {
+
+  if(watchers.has(projectName)) {
+    console.log(`⚠️ Watcher for ${projectName} is already running...`);
+    ws.send(JSON.stringify({
+      name: projectName,
+      ok: true,
+      payload: "watcher running..."
+    }))
+    return;
+  }
+
   const entry = `${PROJECTS_DIR}\\${projectName}\\app-gen.js`;
   const outfile = `${PUBLIC_DIR}\\${projectName}.js`;
   const context = await esbuild.context({
@@ -212,13 +228,44 @@ async function buildProject(projectName) {
   });
   await context.watch();
   console.log(`Watching & bundling ${projectName} → ${outfile}`);
+  watchers.set(projectName, context); // <- store watcher
+  console.log(`👀 Started watcher for ${projectName}`);
+
   const htmldoc = new CodeBuilder();
   htmldoc.addLine(createHTMLProjectDocument(projectName));
   const outHtmlFile = `${PUBLIC_DIR}\\${projectName}.html`;
   htmldoc.saveTo(outHtmlFile);
+
+  ws.send(JSON.stringify({
+    name: projectName,
+    ok: true,
+    payload: payload
+  }))
 }
 
-function createHTMLProjectDocument (name) {
+async function stopWatch(projectName, ws) {
+  const ctx = watchers.get(projectName);
+  if(!ctx) {
+    console.log("No watcher for project:", projectName);
+    ws.send(JSON.stringify({
+      name: projectName,
+      ok: true,
+      payload: "watcher already terminated..."
+    }))
+    return;
+  }
+
+  await ctx.dispose();       // <- STOP WATCH
+  watchers.delete(projectName);
+  console.log("🛑 Watch stopped for", projectName);
+  ws.send(JSON.stringify({
+    name: projectName,
+    ok: true,
+    payload: "stop-watch done"
+  }))
+}
+
+function createHTMLProjectDocument(name) {
   return `<!DOCTYPE html>
 <html lang="en">
   <head>

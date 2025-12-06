@@ -2767,8 +2767,8 @@ function createInputHandler(window2, canvas) {
     zoom: 0
   };
   let mouseDown = false;
-  const setDigital = (e, value) => {
-    switch (e.code) {
+  const setDigital = (e2, value) => {
+    switch (e2.code) {
       case "KeyW":
         digital.forward = value;
         break;
@@ -2790,10 +2790,10 @@ function createInputHandler(window2, canvas) {
         digital.down = value;
         break;
     }
-    e.stopPropagation();
+    e2.stopPropagation();
   };
-  window2.addEventListener("keydown", (e) => setDigital(e, true));
-  window2.addEventListener("keyup", (e) => setDigital(e, false));
+  window2.addEventListener("keydown", (e2) => setDigital(e2, true));
+  window2.addEventListener("keyup", (e2) => setDigital(e2, false));
   canvas.style.touchAction = "pinch-zoom";
   canvas.addEventListener("pointerdown", () => {
     mouseDown = true;
@@ -2801,14 +2801,14 @@ function createInputHandler(window2, canvas) {
   canvas.addEventListener("pointerup", () => {
     mouseDown = false;
   });
-  canvas.addEventListener("pointermove", (e) => {
-    mouseDown = e.pointerType === "mouse" ? (e.buttons & 1) !== 0 : true;
+  canvas.addEventListener("pointermove", (e2) => {
+    mouseDown = e2.pointerType === "mouse" ? (e2.buttons & 1) !== 0 : true;
     if (mouseDown) {
-      analog.x += e.movementX / 10;
-      analog.y += e.movementY / 10;
+      analog.x += e2.movementX / 10;
+      analog.y += e2.movementY / 10;
     }
   });
-  canvas.addEventListener("wheel", (e) => {
+  canvas.addEventListener("wheel", (e2) => {
   }, { passive: false });
   return () => {
     const safeX = analog.x || 1e-4;
@@ -2871,9 +2871,9 @@ var RPGCamera = class extends CameraBase {
       this.aspect = options.canvas.width / options.canvas.height;
       this.setProjection(2 * Math.PI / 5, this.aspect, 1, 2e3);
       this.mousRollInAction = false;
-      addEventListener("wheel", (e) => {
+      addEventListener("wheel", (e2) => {
         this.mousRollInAction = true;
-        this.scrollY -= e.deltaY * this.scrollSpeed * 0.01;
+        this.scrollY -= e2.deltaY * this.scrollSpeed * 0.01;
         this.scrollY = Math.max(this.minY, Math.min(this.maxY, this.scrollY));
       });
     }
@@ -5509,7 +5509,7 @@ var Materials = class {
     }
   }
   createLayoutForRender() {
-    let e = [
+    let e2 = [
       {
         binding: 0,
         visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
@@ -5607,7 +5607,7 @@ var Materials = class {
         }
       ]
     ];
-    this.bglForRender = this.device.createBindGroupLayout({ label: "bglForRender", entries: e });
+    this.bglForRender = this.device.createBindGroupLayout({ label: "bglForRender", entries: e2 });
   }
 };
 
@@ -7064,8 +7064,8 @@ var MatrixSounds = class {
     const audio = this.audios[name];
     if (!audio) return;
     if (audio.paused) {
-      audio.play().catch((e) => {
-        if (e.name !== "NotAllowedError") console.warn("sounds error:", e);
+      audio.play().catch((e2) => {
+        if (e2.name !== "NotAllowedError") console.warn("sounds error:", e2);
       });
     } else {
       this.tryClone(name);
@@ -9962,7 +9962,7 @@ var MaterialsInstanced = class {
     }
   }
   createLayoutForRender() {
-    let e = [
+    let e2 = [
       {
         binding: 0,
         visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
@@ -10060,7 +10060,7 @@ var MaterialsInstanced = class {
         }
       ]
     ];
-    this.bglForRender = this.device.createBindGroupLayout({ label: "bglForRender", entries: e });
+    this.bglForRender = this.device.createBindGroupLayout({ label: "bglForRender", entries: e2 });
   }
 };
 
@@ -13299,7 +13299,7 @@ var MEEditorClient = class {
         console.info("wATCH project <signal>");
         let o = {
           action: "watch",
-          name
+          name: e.detail.name
         };
         o = JSON.stringify(o);
         this.ws.send(o);
@@ -13310,15 +13310,11 @@ var MEEditorClient = class {
       try {
         const data = JSON.parse(event.data);
         console.log("%c[WS MESSAGE]", "color: yellow", data);
-        if (data && data.ok == true && data.payload && data.payload.redirect == true) {
+        if (data && data.ok == true) {
           location.assign(data.name + ".html");
-        } else if (data.payload && data.payload == "stop-watch done") {
-          mb.show("watch-stoped");
-        } else {
-          mb.show("from editor:" + data.payload);
         }
-      } catch (e) {
-        console.error("[WS ERROR PARSE]", e);
+      } catch (e2) {
+        console.error("[WS ERROR PARSE]", e2);
       }
     };
     this.ws.onerror = (err) => {
@@ -13331,21 +13327,12 @@ var MEEditorClient = class {
     this.attachEvents();
   }
   attachEvents() {
-    document.addEventListener("cnp", (e) => {
+    document.addEventListener("cnp", (e2) => {
       console.info("Create new project <signal>");
       let o = {
         action: "cnp",
-        name: e.detail.name,
-        features: e.detail.features
-      };
-      o = JSON.stringify(o);
-      this.ws.send(o);
-    });
-    document.addEventListener("stop-watch", (e) => {
-      console.info("stop-watch <signal>");
-      let o = {
-        action: "stop-watch",
-        name: e.detail.name
+        name: e2.detail.name,
+        features: e2.detail.features
       };
       o = JSON.stringify(o);
       this.ws.send(o);
@@ -13360,13 +13347,13 @@ var EditorProvider = class {
     this.addEditorEvents();
   }
   addEditorEvents() {
-    document.addEventListener("web.editor.input", (e) => {
-      console.log("[EDITOR] sceneObj: ", e.detail.inputFor);
-      console.log("[EDITOR] sceneObj: ", e.detail.propertyId);
-      console.log("[EDITOR] sceneObj: ", e.detail.property);
-      let sceneObj = this.core.getSceneObjectByName(e.detail.inputFor);
+    document.addEventListener("web.editor.input", (e2) => {
+      console.log("[EDITOR] sceneObj: ", e2.detail.inputFor);
+      console.log("[EDITOR] sceneObj: ", e2.detail.propertyId);
+      console.log("[EDITOR] sceneObj: ", e2.detail.property);
+      let sceneObj = this.core.getSceneObjectByName(e2.detail.inputFor);
       if (sceneObj) {
-        sceneObj[e.detail.propertyId][e.detail.property] = e.detail.value;
+        sceneObj[e2.detail.propertyId][e2.detail.property] = e2.detail.value;
       } else {
         console.warn("EditorProvider input error");
         return;
@@ -13452,8 +13439,8 @@ var EditorHud = class {
     <div class="top-item">
       <div class="top-btn">Project \u25BE</div>
       <div class="dropdown">
+      <div class="drop-item">\u{1F4BE} Save</div>
       <div class="drop-item">\u{1F6E0}\uFE0F Watch</div>
-      <div id="stop-watch" class="drop-item">\u{1F6E0}\uFE0F Stop Watch</div>
       <div class="drop-item">\u{1F6E0}\uFE0F Build</div>
       </div>
     </div>
@@ -13485,27 +13472,22 @@ var EditorHud = class {
   `;
     document.body.appendChild(this.editorMenu);
     this.editorMenu.querySelectorAll(".top-btn").forEach((btn) => {
-      btn.addEventListener("click", (e) => {
-        const menu = e.target.nextElementSibling;
+      btn.addEventListener("click", (e2) => {
+        const menu = e2.target.nextElementSibling;
         this.editorMenu.querySelectorAll(".dropdown").forEach((d) => {
           if (d !== menu) d.style.display = "none";
         });
         menu.style.display = menu.style.display === "block" ? "none" : "block";
       });
     });
-    document.addEventListener("click", (e) => {
-      if (!this.editorMenu.contains(e.target)) {
+    document.addEventListener("click", (e2) => {
+      if (!this.editorMenu.contains(e2.target)) {
         this.editorMenu.querySelectorAll(".dropdown").forEach((d) => {
           d.style.display = "none";
         });
       }
     });
-    if (byId("stop-watch")) byId("stop-watch").addEventListener("click", () => {
-      document.dispatchEvent(new CustomEvent("stop-watch", {
-        detail: {}
-      }));
-    });
-    if (byId("cnpBtn")) byId("cnpBtn").addEventListener("click", () => {
+    byId("cnpBtn").addEventListener("click", () => {
       let name = prompt("\u{1F4E6} Project name :", "MyProject1");
       let features = {
         physics: false,
@@ -13574,22 +13556,22 @@ var EditorHud = class {
   `;
     document.body.appendChild(this.editorMenu);
     this.editorMenu.querySelectorAll(".top-btn").forEach((btn) => {
-      btn.addEventListener("click", (e) => {
-        const menu = e.target.nextElementSibling;
+      btn.addEventListener("click", (e2) => {
+        const menu = e2.target.nextElementSibling;
         this.editorMenu.querySelectorAll(".dropdown").forEach((d) => {
           if (d !== menu) d.style.display = "none";
         });
         menu.style.display = menu.style.display === "block" ? "none" : "block";
       });
     });
-    document.addEventListener("click", (e) => {
-      if (!this.editorMenu.contains(e.target)) {
+    document.addEventListener("click", (e2) => {
+      if (!this.editorMenu.contains(e2.target)) {
         this.editorMenu.querySelectorAll(".dropdown").forEach((d) => {
           d.style.display = "none";
         });
       }
     });
-    if (byId("cnpBtn")) byId("cnpBtn").addEventListener("click", () => {
+    byId("cnpBtn").addEventListener("click", () => {
       let name = prompt("\u{1F4E6} Project name :", "MyProject1");
       let features = {
         physics: false,
@@ -13651,16 +13633,16 @@ var EditorHud = class {
   `;
     document.body.appendChild(this.editorMenu);
     this.editorMenu.querySelectorAll(".top-btn").forEach((btn) => {
-      btn.addEventListener("click", (e) => {
-        const menu = e.target.nextElementSibling;
+      btn.addEventListener("click", (e2) => {
+        const menu = e2.target.nextElementSibling;
         this.editorMenu.querySelectorAll(".dropdown").forEach((d) => {
           if (d !== menu) d.style.display = "none";
         });
         menu.style.display = menu.style.display === "block" ? "none" : "block";
       });
     });
-    document.addEventListener("click", (e) => {
-      if (!this.editorMenu.contains(e.target)) {
+    document.addEventListener("click", (e2) => {
+      if (!this.editorMenu.contains(e2.target)) {
         this.editorMenu.querySelectorAll(".dropdown").forEach((d) => {
           d.style.display = "none";
         });
@@ -13775,13 +13757,13 @@ var EditorHud = class {
     this.sceneProperty.appendChild(this.objectProperies);
     document.body.appendChild(this.sceneProperty);
   }
-  updateSceneObjProperties = (e) => {
+  updateSceneObjProperties = (e2) => {
     this.currentProperties = [];
     this.objectProperiesTitle.style.fontSize = "120%";
     this.objectProperiesTitle.innerHTML = `Scene object properties`;
     this.objectProperies.innerHTML = ``;
-    const currentSO = this.core.getSceneObjectByName(e.target.innerHTML);
-    this.objectProperiesTitle.innerHTML = `<span style="color:lime;">Name: ${e.target.innerHTML}</span> 
+    const currentSO = this.core.getSceneObjectByName(e2.target.innerHTML);
+    this.objectProperiesTitle.innerHTML = `<span style="color:lime;">Name: ${e2.target.innerHTML}</span> 
       <span style="color:yellow;"> [${currentSO.constructor.name}]`;
     const OK = Object.keys(currentSO);
     OK.forEach((prop) => {
@@ -13802,13 +13784,13 @@ var SceneObjectProperty = class {
       this.propName.style.overflow = "hidden";
       this.propName.style.height = "20px";
       this.propName.style.borderBottom = "solid lime 2px";
-      this.propName.addEventListener("click", (e) => {
-        if (e.currentTarget.style.height != "fit-content") {
+      this.propName.addEventListener("click", (e2) => {
+        if (e2.currentTarget.style.height != "fit-content") {
           this.propName.style.overflow = "unset";
-          e.currentTarget.style.height = "fit-content";
+          e2.currentTarget.style.height = "fit-content";
         } else {
           this.propName.style.overflow = "hidden";
-          e.currentTarget.style.height = "20px";
+          e2.currentTarget.style.height = "20px";
         }
       });
       if (propName == "position" || propName == "scale" || propName == "rotation" || propName == "glb") {
@@ -14111,9 +14093,9 @@ var MatrixEngineWGPU = class {
         this.editor = new Editor(this, "infly");
       }
     }
-    window.addEventListener("keydown", (e) => {
-      if (e.code == "F4") {
-        e.preventDefault();
+    window.addEventListener("keydown", (e2) => {
+      if (e2.code == "F4") {
+        e2.preventDefault();
         mb.error(`Activated WebEditor, you can use it infly there is no saves for now.`);
         app.activateEditor();
         return false;
@@ -14920,12 +14902,12 @@ var MatrixEngineWGPU = class {
   };
 };
 
-// ../../../../projects/MyProject1/app-gen.js
+// ../../../../projects/pppppp/app-gen.js
 var app2 = new MatrixEngineWGPU(
   {
     useEditor: true,
     projectType: "created from editor",
-    projectName: "MyProject1",
+    projectName: "pppppp",
     useSingleRenderPass: true,
     canvasSize: "fullscreen",
     mainCameraParams: {
@@ -14950,4 +14932,4 @@ bvh-loader/module/bvh-loader.js:
    * @license GPL-V3
    *)
 */
-//# sourceMappingURL=MyProject1.js.map
+//# sourceMappingURL=pppppp.js.map

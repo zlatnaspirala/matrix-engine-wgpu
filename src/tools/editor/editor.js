@@ -4,12 +4,14 @@ import EditorHud from "./hud";
 
 export class Editor {
 
-  constructor(core, a) {
+  constructor(core, a, projName) {
     this.core = core;
     this.editorHud = new EditorHud(core, this.check(a));
     this.editorProvider = new EditorProvider(core, this.check(a));
-    if(this.check(a) == 'created from editor' || this.check(a) == 'pre editor') {
+    if(this.check(a) == 'pre editor') {
       this.client = new MEEditorClient(this.check(a));
+    } else if(this.check(a) == 'created from editor') {
+      this.client = new MEEditorClient(this.check(a), projName);
     }
   }
 

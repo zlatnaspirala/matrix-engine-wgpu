@@ -8,7 +8,7 @@ let app = new MatrixEngineWGPU(
   
   useEditor: true,
   projectType: "created from editor",
-  projectName: 'MyProject1',
+  projectName: rrrr,
   useSingleRenderPass: true,
   canvasSize: 'fullscreen',
   mainCameraParams: {

@@ -30392,6 +30392,7 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.MEEditorClient = void 0;
+var _utils = require("../../engine/utils");
 class MEEditorClient {
   ws = null;
   constructor(typeOfRun, name) {
@@ -30399,11 +30400,10 @@ class MEEditorClient {
     this.ws.onopen = () => {
       if (typeOfRun == 'created from editor') {
         //
-        console.info('Create new project <signal>');
+        console.info('wATCH project <signal>');
         let o = {
           action: "watch",
-          name: e.detail.name,
-          features: e.detail.features
+          name: name
         };
         o = JSON.stringify(o);
         this.ws.send(o);
@@ -30414,8 +30414,12 @@ class MEEditorClient {
       try {
         const data = JSON.parse(event.data);
         console.log("%c[WS MESSAGE]", "color: yellow", data);
-        if (data && data.ok == true) {
+        if (data && data.ok == true && data.payload && data.payload.redirect == true) {
           location.assign(data.name + ".html");
+        } else if (data.payload && data.payload == "stop-watch done") {
+          _utils.mb.show("watch-stoped");
+        } else {
+          _utils.mb.show("from editor:" + data.payload);
         }
       } catch (e) {
         console.error("[WS ERROR PARSE]", e);
@@ -30443,11 +30447,20 @@ class MEEditorClient {
       o = JSON.stringify(o);
       this.ws.send(o);
     });
+    document.addEventListener('stop-watch', e => {
+      console.info('stop-watch <signal>');
+      let o = {
+        action: "stop-watch",
+        name: e.detail.name
+      };
+      o = JSON.stringify(o);
+      this.ws.send(o);
+    });
   }
 }
 exports.MEEditorClient = MEEditorClient;
 
-},{}],64:[function(require,module,exports){
+},{"../../engine/utils":40}],64:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30459,12 +30472,14 @@ var _editor = _interopRequireDefault(require("./editor.provider"));
 var _hud = _interopRequireDefault(require("./hud"));
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 class Editor {
-  constructor(core, a) {
+  constructor(core, a, projName) {
     this.core = core;
     this.editorHud = new _hud.default(core, this.check(a));
     this.editorProvider = new _editor.default(core, this.check(a));
-    if (this.check(a) == 'created from editor' || this.check(a) == 'pre editor') {
+    if (this.check(a) == 'pre editor') {
       this.client = new _client.MEEditorClient(this.check(a));
+    } else if (this.check(a) == 'created from editor') {
+      this.client = new _client.MEEditorClient(this.check(a), projName);
     }
   }
   check(a) {
@@ -30605,8 +30620,8 @@ class EditorHud {
     <div class="top-item">
       <div class="top-btn">Project ▾</div>
       <div class="dropdown">
-      <div class="drop-item">💾 Save</div>
       <div class="drop-item">🛠️ Watch</div>
+      <div id="stop-watch" class="drop-item">🛠️ Stop Watch</div>
       <div class="drop-item">🛠️ Build</div>
       </div>
     </div>
@@ -30661,7 +30676,12 @@ class EditorHud {
         });
       }
     });
-    (0, _utils.byId)('cnpBtn').addEventListener('click', () => {
+    if ((0, _utils.byId)('stop-watch')) (0, _utils.byId)('stop-watch').addEventListener('click', () => {
+      document.dispatchEvent(new CustomEvent('stop-watch', {
+        detail: {}
+      }));
+    });
+    if ((0, _utils.byId)('cnpBtn')) (0, _utils.byId)('cnpBtn').addEventListener('click', () => {
       let name = prompt("📦 Project name :", "MyProject1");
       let features = {
         physics: false,
@@ -30755,7 +30775,7 @@ class EditorHud {
         });
       }
     });
-    (0, _utils.byId)('cnpBtn').addEventListener('click', () => {
+    if ((0, _utils.byId)('cnpBtn')) (0, _utils.byId)('cnpBtn').addEventListener('click', () => {
       let name = prompt("📦 Project name :", "MyProject1");
       let features = {
         physics: false,
@@ -31351,7 +31371,7 @@ class MatrixEngineWGPU {
     this.editor = undefined;
     if (typeof options.useEditor !== "undefined") {
       if (typeof options.projectType !== "undefined" && options.projectType == "created from editor") {
-        this.editor = new _editor.Editor(this, "created from editor");
+        this.editor = new _editor.Editor(this, "created from editor", options.projectName);
       } else if (typeof options.projectType !== "undefined" && options.projectType == "pre editor") {
         this.editor = new _editor.Editor(this, options.projectType);
       } else {

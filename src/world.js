@@ -72,7 +72,7 @@ export default class MatrixEngineWGPU {
     this.editor = undefined;
     if(typeof options.useEditor !== "undefined") {
       if(typeof options.projectType !== "undefined" && options.projectType == "created from editor") {
-        this.editor = new Editor(this, "created from editor");
+        this.editor = new Editor(this, "created from editor", options.projectName);
       } else if(typeof options.projectType !== "undefined" && options.projectType == "pre editor") {
         this.editor = new Editor(this, options.projectType);
       } else {
