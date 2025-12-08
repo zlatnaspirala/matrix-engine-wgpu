@@ -1169,6 +1169,7 @@ new dom effect from
 	}
 }
 
+/** Editor part can be removed for final build */
 
 .sceneContainerItem {
   -webkit-text-stroke-width: 2;
@@ -1284,3 +1285,75 @@ input[type=number]:hover::-webkit-outer-spin-button {
 .drop-item:hover {
   background: #444;
 }
+
+.file-browser {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  padding: 20px;
+  font-family: Arial, sans-serif;
+  background: #1b1b1b;
+}
+
+.file-item {
+  width: 110px;
+  text-align: center;
+  cursor: pointer;
+  user-select: none;
+  color: #ddd;
+}
+
+.file-item .icon {
+  display: block;
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 8px;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.5));
+}
+
+.file-item .label {
+  font-size: 13px;
+  word-break: break-all;
+  line-height: 1.3;
+}
+
+/* Hover */
+.file-item:hover {
+  color: #fff;
+  background: rgba(80,160,255,0.2);
+  border-radius: 8px;
+  transition: 0.15s;
+}
+
+.folder .icon {
+  background-image: url("icons/editor/folder.png");
+}
+
+.png .icon {
+  background-image: url("icons/editor/image.png");
+}
+
+.jpg .icon,
+.jpeg .icon {
+  background-image: url("icons/editor/image.png");
+}
+
+.js .icon {
+  background-image: url("icons/editor/js.png");
+}
+
+.ttf .icon,
+.otf .icon,
+.woff .icon,
+.woff2 .icon {
+  background-image: url("icons/editor/font.png");
+}
+
+.file-item .icon {
+  background-image: url("icons/editor/file.png");
+}
+
+

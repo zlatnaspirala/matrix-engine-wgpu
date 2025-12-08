@@ -17,6 +17,14 @@ export class MEEditorClient {
         };
         o = JSON.stringify(o);
         this.ws.send(o);
+
+        o = {
+          action: "list",
+          path: name
+        };
+        o = JSON.stringify(o);
+        this.ws.send(o);
+
       }
       console.log("%c[WS OPEN] [Attach events]", "color: lime; font-weight: bold");
     };
@@ -26,9 +34,32 @@ export class MEEditorClient {
         const data = JSON.parse(event.data);
         console.log("%c[WS MESSAGE]", "color: yellow", data);
         if(data && data.ok == true && data.payload && data.payload.redirect == true) {
-          location.assign(data.name + ".html");
-        } else if (data.payload && data.payload == "stop-watch done") {
+          setTimeout(() => location.assign(data.name + ".html"), 1000);
+        } else if(data.payload && data.payload == "stop-watch done") {
           mb.show("watch-stoped");
+        } else if(data.listAssets) {
+          document.dispatchEvent(new CustomEvent('la', {
+            detail: data
+          }))
+        } else if(data.projects) {
+          data.payload.forEach((item) => {
+            console.log('.....' + item.name);
+            if(item.name != 'readme.md') {
+              let txt = `Project list: \n
+                - ${item.name}  \n
+               \n
+               Choose project name:
+              `;
+              let projectName = prompt(txt);
+              if(projectName !== null) {
+                console.log("Project name:", projectName);
+                projectName += ".html";
+                location.assign(projectName);
+              } else {
+                console.error('Something wrong with load project input!');
+              }
+            }
+          });
         } else {
           mb.show("from editor:" + data.payload);
         }
@@ -50,6 +81,16 @@ export class MEEditorClient {
   }
 
   attachEvents() {
+
+    document.addEventListener('lp', (e) => {
+      console.info('Load project <signal>');
+      let o = {
+        action: "lp"
+      };
+      o = JSON.stringify(o);
+      this.ws.send(o);
+    })
+
     document.addEventListener('cnp', (e) => {
       console.info('Create new project <signal>');
       let o = {
@@ -65,6 +106,16 @@ export class MEEditorClient {
       console.info('stop-watch <signal>');
       let o = {
         action: "stop-watch",
+        name: e.detail.name
+      };
+      o = JSON.stringify(o);
+      this.ws.send(o);
+    })
+
+    document.addEventListener('start-watch', (e) => {
+      console.info('start-watch <signal>');
+      let o = {
+        action: "watch",
         name: e.detail.name
       };
       o = JSON.stringify(o);

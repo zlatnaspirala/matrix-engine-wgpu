@@ -13,6 +13,7 @@ export default class EditorHud {
       this.createTopMenuInFly();
     } else if(a == "created from editor") {
       this.createTopMenu();
+      this.createAssets();
     } else if(a == "pre editor") {
       this.createTopMenuPre();
     } else {
@@ -86,7 +87,7 @@ export default class EditorHud {
     <div class="top-item">
       <div class="top-btn">Project ▾</div>
       <div class="dropdown">
-      <div class="drop-item">🛠️ Watch</div>
+      <div id="start-watch" class="drop-item">🛠️ Watch</div>
       <div id="stop-watch" class="drop-item">🛠️ Stop Watch</div>
       <div class="drop-item">🛠️ Build</div>
       </div>
@@ -95,7 +96,7 @@ export default class EditorHud {
     <div class="top-item">
       <div class="top-btn">Insert ▾</div>
       <div class="dropdown">
-        <div class="drop-item">🧊 Cube</div>
+        <div id="addCube" class="drop-item">🧊 Cube</div>
         <div class="drop-item">⚪ Sphere</div>
         <div class="drop-item">📦 GLB (model)</div>
         <div class="drop-item">💡 Light</div>
@@ -145,18 +146,21 @@ export default class EditorHud {
       }
     });
 
-
     if(byId('stop-watch')) byId('stop-watch').addEventListener('click', () => {
       document.dispatchEvent(new CustomEvent('stop-watch', {
         detail: {}
       }));
     })
 
+    if(byId('start-watch')) byId('start-watch').addEventListener('click', () => {
+      document.dispatchEvent(new CustomEvent('start-watch', {
+        detail: {}
+      }));
+    })
 
     if(byId('cnpBtn')) byId('cnpBtn').addEventListener('click', () => {
 
       let name = prompt("📦 Project name :", "MyProject1");
-
       let features = {
         physics: false,
         networking: false
@@ -180,6 +184,13 @@ export default class EditorHud {
       }));
     });
 
+    // OBJECT LEVEL
+
+    if(byId('addCube')) byId('addCube').addEventListener('click', () => {
+      document.dispatchEvent(new CustomEvent('web.editor.addCube', {
+        detail: {}
+      }));
+    })
 
     this.showAboutModal = () => {
       alert(`
@@ -190,6 +201,65 @@ export default class EditorHud {
         `);
     }
     byId('showAboutEditor').addEventListener('click', this.showAboutModal);
+
+  }
+
+
+  createAssets() {
+    this.assetsBox = document.createElement("div");
+    this.assetsBox.id = "assetsBox";
+    Object.assign(this.assetsBox.style, {
+      position: "absolute",
+      bottom: "0",
+      left: "20%",
+      width: "60%",
+      height: "250px",
+      backgroundColor: "rgba(0,0,0,0.85)",
+      display: "flex",
+      alignItems: "start",
+      // overflow: "auto",
+      color: "white",
+      fontFamily: "'Orbitron', sans-serif",
+      zIndex: "15",
+      padding: "2px",
+      boxSizing: "border-box",
+      flexDirection: "row"
+    });
+    this.assetsBox.innerHTML = "ASSTES";
+    // document.body.appendChild(this.editorMenu);
+
+    // <div id="cnpBtn" class="drop-item">📦 Create new project</div>
+    //   <div class="drop-item">📂 Load</div>
+    this.assetsBox.innerHTML = `
+    <div id='res-folder' class="file-browser">
+     ASSETS
+    </div>`
+      ;
+
+    document.body.appendChild(this.assetsBox);
+
+    document.addEventListener('la', (e) => {
+
+      e.detail.payload.forEach((i) => {
+        let item = document.createElement('div');
+        item.classList.add('file-item');
+        item.classList.add('folder');
+        item.innerText = i.name;
+        byId('res-folder').appendChild(item);
+        // this.assetsBox.appendChild()
+      })
+
+
+      document.querySelectorAll('.file-item').forEach(el => {
+        el.addEventListener('click', () => {
+          document.querySelectorAll('.file-item').forEach(x => x.classList.remove('selected'));
+          el.classList.add('selected');
+        });
+      });
+
+    })
+
+
 
   }
 
@@ -221,7 +291,7 @@ export default class EditorHud {
       <div class="top-btn">Project ▾</div>
       <div class="dropdown">
       <div id="cnpBtn" class="drop-item">📦 Create new project</div>
-      <div class="drop-item">📂 Load</div>
+      <div id="loadProjectBtn" class="drop-item">📂 Load</div>
       </div>
     </div>
 
@@ -260,6 +330,15 @@ export default class EditorHud {
       }
     });
 
+
+
+    if(byId('loadProjectBtn')) byId('loadProjectBtn').addEventListener('click', () => {
+      // ***************************
+      // ---------------------------
+      document.dispatchEvent(new CustomEvent('lp', {
+        detail: {}
+      }));
+    });
 
     if(byId('cnpBtn')) byId('cnpBtn').addEventListener('click', () => {
 

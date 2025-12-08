@@ -30407,6 +30407,12 @@ class MEEditorClient {
         };
         o = JSON.stringify(o);
         this.ws.send(o);
+        o = {
+          action: "list",
+          path: name
+        };
+        o = JSON.stringify(o);
+        this.ws.send(o);
       }
       console.log("%c[WS OPEN] [Attach events]", "color: lime; font-weight: bold");
     };
@@ -30415,9 +30421,32 @@ class MEEditorClient {
         const data = JSON.parse(event.data);
         console.log("%c[WS MESSAGE]", "color: yellow", data);
         if (data && data.ok == true && data.payload && data.payload.redirect == true) {
-          location.assign(data.name + ".html");
+          setTimeout(() => location.assign(data.name + ".html"), 1000);
         } else if (data.payload && data.payload == "stop-watch done") {
           _utils.mb.show("watch-stoped");
+        } else if (data.listAssets) {
+          document.dispatchEvent(new CustomEvent('la', {
+            detail: data
+          }));
+        } else if (data.projects) {
+          data.payload.forEach(item => {
+            console.log('.....' + item.name);
+            if (item.name != 'readme.md') {
+              let txt = `Project list: \n
+                - ${item.name}  \n
+               \n
+               Choose project name:
+              `;
+              let projectName = prompt(txt);
+              if (projectName !== null) {
+                console.log("Project name:", projectName);
+                projectName += ".html";
+                location.assign(projectName);
+              } else {
+                console.error('Something wrong with load project input!');
+              }
+            }
+          });
         } else {
           _utils.mb.show("from editor:" + data.payload);
         }
@@ -30437,6 +30466,14 @@ class MEEditorClient {
     this.attachEvents();
   }
   attachEvents() {
+    document.addEventListener('lp', e => {
+      console.info('Load project <signal>');
+      let o = {
+        action: "lp"
+      };
+      o = JSON.stringify(o);
+      this.ws.send(o);
+    });
     document.addEventListener('cnp', e => {
       console.info('Create new project <signal>');
       let o = {
@@ -30451,6 +30488,15 @@ class MEEditorClient {
       console.info('stop-watch <signal>');
       let o = {
         action: "stop-watch",
+        name: e.detail.name
+      };
+      o = JSON.stringify(o);
+      this.ws.send(o);
+    });
+    document.addEventListener('start-watch', e => {
+      console.info('start-watch <signal>');
+      let o = {
+        action: "watch",
         name: e.detail.name
       };
       o = JSON.stringify(o);
@@ -30501,6 +30547,7 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.default = void 0;
+var _loaderObj = require("../../engine/loader-obj");
 /**
  * @description
  * For now it is posible for editor to work on fly
@@ -30515,9 +30562,6 @@ class EditorProvider {
   addEditorEvents() {
     document.addEventListener('web.editor.input', e => {
       console.log("[EDITOR] sceneObj: ", e.detail.inputFor);
-      console.log("[EDITOR] sceneObj: ", e.detail.propertyId);
-      console.log("[EDITOR] sceneObj: ", e.detail.property);
-
       // InFly Method
       let sceneObj = this.core.getSceneObjectByName(e.detail.inputFor);
       if (sceneObj) {
@@ -30527,11 +30571,50 @@ class EditorProvider {
         return;
       }
     });
+    document.addEventListener('web.editor.addCube', e => {
+      console.log("[web.editor.addCube]: ", e.detail);
+      (0, _loaderObj.downloadMeshes)({
+        cube: "./res/meshes/blender/cube.obj"
+      }, m => {
+        const texturesPaths = ['./res/meshes/blender/cube.png'];
+        this.core.addMeshObj({
+          position: {
+            x: 0,
+            y: 0,
+            z: -20
+          },
+          rotation: {
+            x: 0,
+            y: 0,
+            z: 0
+          },
+          rotationSpeed: {
+            x: 0,
+            y: 0,
+            z: 0
+          },
+          texturesPaths: [texturesPaths],
+          // useUVShema4x2: true,
+          name: 'Cube_' + app.mainRenderBundle.length,
+          mesh: m.cube,
+          raycast: {
+            enabled: true,
+            radius: 2
+          },
+          physics: {
+            enabled: true,
+            geometry: "Cube"
+          }
+        });
+      }, {
+        scale: [1, 1, 1]
+      });
+    });
   }
 }
 exports.default = EditorProvider;
 
-},{}],66:[function(require,module,exports){
+},{"../../engine/loader-obj":33}],66:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30552,6 +30635,7 @@ class EditorHud {
       this.createTopMenuInFly();
     } else if (a == "created from editor") {
       this.createTopMenu();
+      this.createAssets();
     } else if (a == "pre editor") {
       this.createTopMenuPre();
     } else {
@@ -30620,7 +30704,7 @@ class EditorHud {
     <div class="top-item">
       <div class="top-btn">Project ▾</div>
       <div class="dropdown">
-      <div class="drop-item">🛠️ Watch</div>
+      <div id="start-watch" class="drop-item">🛠️ Watch</div>
       <div id="stop-watch" class="drop-item">🛠️ Stop Watch</div>
       <div class="drop-item">🛠️ Build</div>
       </div>
@@ -30629,7 +30713,7 @@ class EditorHud {
     <div class="top-item">
       <div class="top-btn">Insert ▾</div>
       <div class="dropdown">
-        <div class="drop-item">🧊 Cube</div>
+        <div id="addCube" class="drop-item">🧊 Cube</div>
         <div class="drop-item">⚪ Sphere</div>
         <div class="drop-item">📦 GLB (model)</div>
         <div class="drop-item">💡 Light</div>
@@ -30681,6 +30765,11 @@ class EditorHud {
         detail: {}
       }));
     });
+    if ((0, _utils.byId)('start-watch')) (0, _utils.byId)('start-watch').addEventListener('click', () => {
+      document.dispatchEvent(new CustomEvent('start-watch', {
+        detail: {}
+      }));
+    });
     if ((0, _utils.byId)('cnpBtn')) (0, _utils.byId)('cnpBtn').addEventListener('click', () => {
       let name = prompt("📦 Project name :", "MyProject1");
       let features = {
@@ -30701,6 +30790,14 @@ class EditorHud {
         }
       }));
     });
+
+    // OBJECT LEVEL
+
+    if ((0, _utils.byId)('addCube')) (0, _utils.byId)('addCube').addEventListener('click', () => {
+      document.dispatchEvent(new CustomEvent('web.editor.addCube', {
+        detail: {}
+      }));
+    });
     this.showAboutModal = () => {
       alert(`
   ✔️ Support for 3D objects and scene transformations
@@ -30710,6 +30807,53 @@ class EditorHud {
         `);
     };
     (0, _utils.byId)('showAboutEditor').addEventListener('click', this.showAboutModal);
+  }
+  createAssets() {
+    this.assetsBox = document.createElement("div");
+    this.assetsBox.id = "assetsBox";
+    Object.assign(this.assetsBox.style, {
+      position: "absolute",
+      bottom: "0",
+      left: "20%",
+      width: "60%",
+      height: "250px",
+      backgroundColor: "rgba(0,0,0,0.85)",
+      display: "flex",
+      alignItems: "start",
+      // overflow: "auto",
+      color: "white",
+      fontFamily: "'Orbitron', sans-serif",
+      zIndex: "15",
+      padding: "2px",
+      boxSizing: "border-box",
+      flexDirection: "row"
+    });
+    this.assetsBox.innerHTML = "ASSTES";
+    // document.body.appendChild(this.editorMenu);
+
+    // <div id="cnpBtn" class="drop-item">📦 Create new project</div>
+    //   <div class="drop-item">📂 Load</div>
+    this.assetsBox.innerHTML = `
+    <div id='res-folder' class="file-browser">
+     ASSETS
+    </div>`;
+    document.body.appendChild(this.assetsBox);
+    document.addEventListener('la', e => {
+      e.detail.payload.forEach(i => {
+        let item = document.createElement('div');
+        item.classList.add('file-item');
+        item.classList.add('folder');
+        item.innerText = i.name;
+        (0, _utils.byId)('res-folder').appendChild(item);
+        // this.assetsBox.appendChild()
+      });
+      document.querySelectorAll('.file-item').forEach(el => {
+        el.addEventListener('click', () => {
+          document.querySelectorAll('.file-item').forEach(x => x.classList.remove('selected'));
+          el.classList.add('selected');
+        });
+      });
+    });
   }
   createTopMenuPre() {
     this.editorMenu = document.createElement("div");
@@ -30739,7 +30883,7 @@ class EditorHud {
       <div class="top-btn">Project ▾</div>
       <div class="dropdown">
       <div id="cnpBtn" class="drop-item">📦 Create new project</div>
-      <div class="drop-item">📂 Load</div>
+      <div id="loadProjectBtn" class="drop-item">📂 Load</div>
       </div>
     </div>
 
@@ -30774,6 +30918,13 @@ class EditorHud {
           d.style.display = "none";
         });
       }
+    });
+    if ((0, _utils.byId)('loadProjectBtn')) (0, _utils.byId)('loadProjectBtn').addEventListener('click', () => {
+      // ***************************
+      // ---------------------------
+      document.dispatchEvent(new CustomEvent('lp', {
+        detail: {}
+      }));
     });
     if ((0, _utils.byId)('cnpBtn')) (0, _utils.byId)('cnpBtn').addEventListener('click', () => {
       let name = prompt("📦 Project name :", "MyProject1");
@@ -32058,7 +32209,7 @@ class MatrixEngineWGPU {
       this.device.queue.submit([commandEncoder.finish()]);
       requestAnimationFrame(this.frame);
     } catch (err) {
-      // console.log('%cLoop(err):' + err + " info : " + err.stack, LOG_WARN)
+      console.log('%cLoop(err):' + err + " info : " + err.stack, _utils.LOG_WARN);
       requestAnimationFrame(this.frame);
     }
   };

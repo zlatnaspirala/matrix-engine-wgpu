@@ -1,3 +1,5 @@
+import {downloadMeshes} from "../../engine/loader-obj";
+
 /**
  * @description
  * For now it is posible for editor to work on fly
@@ -13,18 +15,35 @@ export default class EditorProvider {
   addEditorEvents() {
     document.addEventListener('web.editor.input', (e) => {
       console.log("[EDITOR] sceneObj: ", e.detail.inputFor);
-      console.log("[EDITOR] sceneObj: ", e.detail.propertyId);
-      console.log("[EDITOR] sceneObj: ", e.detail.property);
-
       // InFly Method
       let sceneObj = this.core.getSceneObjectByName(e.detail.inputFor);
-      if (sceneObj) {
+      if(sceneObj) {
         sceneObj[e.detail.propertyId][e.detail.property] = e.detail.value;
       } else {
         console.warn("EditorProvider input error");
         return;
       }
+    });
 
-    })
+    document.addEventListener('web.editor.addCube', (e) => {
+      console.log("[web.editor.addCube]: ", e.detail);
+      downloadMeshes({cube: "./res/meshes/blender/cube.obj"}, (m) => {
+        const texturesPaths = ['./res/meshes/blender/cube.png'];
+        this.core.addMeshObj({
+          position: {x: 0, y: 0, z: -20},
+          rotation: {x: 0, y: 0, z: 0},
+          rotationSpeed: {x: 0, y: 0, z: 0},
+          texturesPaths: [texturesPaths],
+          // useUVShema4x2: true,
+          name: 'Cube_' + app.mainRenderBundle.length,
+          mesh: m.cube,
+          raycast: {enabled: true, radius: 2},
+          physics: {
+            enabled: true,
+            geometry: "Cube"
+          }
+        })
+      }, {scale: [1, 1, 1]});
+    });
   }
 }

@@ -32,12 +32,27 @@ wss.on("connection", ws => {
     try {
       msg = JSON.parse(msg);
 
-      if(msg.action === "LIST_FOLDER") {
-        const rel = payload.path || "";
+      if(msg.action === "lp") {
+        const rel = (msg ? msg.path || "" : "");
+        const folder = path.join(PROJECTS_DIR, "");
+        const items = await fs.readdir(folder, {withFileTypes: true});
+        ws.send(JSON.stringify({
+          projects: "projects",
+          ok: true,
+          payload: items.map(d => ({
+            name: d.name,
+            isDir: d.isDirectory()
+          }))
+        }));
+      }
+
+      if(msg.action === "list") {
+        // const rel = payload.path || "";
+        const rel = "";
         const folder = path.join(PUBLIC_RES, rel);
         const items = await fs.readdir(folder, {withFileTypes: true});
         ws.send(JSON.stringify({
-          cmd,
+          listAssets: "list-assets",
           ok: true,
           payload: items.map(d => ({
             name: d.name,
@@ -173,7 +188,8 @@ async function cnp(ws, msg) {
   content.addLine(CBoptions(p, n, msg.name));
   content.addLine(`, (app) => {`);
   if(p) content.addLine(`addEventListener('AmmoReady', async () => { `);
-  content.addLine(`// [MAIN_REPLACE1]`);
+  content.addLine(`// [light]`);
+  content.addLine(`app.addLight();`);
   content.addLine(`// [MAIN_REPLACE2]`);
   if(p) content.addLine(` })`);
   content.addLine(`})`);

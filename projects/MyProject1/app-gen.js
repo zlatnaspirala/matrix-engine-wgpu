@@ -22,6 +22,8 @@ let app = new MatrixEngineWGPU(
 addEventListener('AmmoReady', async () => { 
 // [MAIN_REPLACE1]
 // [MAIN_REPLACE2]
+    console.log("[EDITOR] ADD LIGHT: ");
+    app.addLight();
  })
 })
 window.app = app;

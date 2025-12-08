@@ -2128,6 +2128,7 @@ function quaternion_rotation_matrix(Q) {
   ];
   return rot_matrix;
 }
+var LOG_WARN = "background: gray; color: yellow; font-size:10px";
 var LOG_MATRIX = "font-family: stormfaze;color: #lime; font-size:11px;text-shadow: 2px 2px 4px orangered;background: black;";
 var LOG_FUNNY = "font-family: stormfaze;color: #f1f033; font-size:14px;text-shadow: 2px 2px 4px #f335f4, 4px 4px 4px #d64444, 2px 2px 4px #c160a6, 6px 2px 0px #123de3;background: black;";
 var LOG_FUNNY_SMALL = "font-family: stormfaze;color: #f1f033; font-size:10px;text-shadow: 2px 2px 4px #f335f4, 4px 4px 4px #d64444, 1px 1px 2px #c160a6, 3px 1px 0px #123de3;background: black;";
@@ -7088,6 +7089,140 @@ var MatrixSounds = class {
 };
 
 // ../../../engine/loader-obj.js
+var constructMesh = class {
+  constructor(objectData, inputArg) {
+    this.inputArg = inputArg;
+    this.objectData = objectData;
+    this.create(objectData, inputArg);
+    this.setScale = (s) => {
+      this.inputArg.scale = s;
+      this.create(this.objectData, this.inputArg);
+    };
+    this.updateBuffers = () => {
+      this.inputArg.scale = [0.1, 0.1, 0.1];
+      this.create(this.objectData, this.inputArg);
+    };
+  }
+  create = (objectData, inputArg, callback) => {
+    if (typeof callback === "undefined") callback = function() {
+    };
+    let initOrientation = [0, 1, 2];
+    var verts = [], vertNormals = [], textures = [], unpacked = {};
+    unpacked.verts = [];
+    unpacked.norms = [];
+    unpacked.textures = [];
+    unpacked.hashindices = {};
+    unpacked.indices = [];
+    unpacked.index = 0;
+    var lines = objectData.split("\n");
+    if (inputArg.swap[0] !== null) {
+      swap(inputArg.swap[0], inputArg.swap[1], initOrientation);
+    }
+    var VERTEX_RE = /^v\s/;
+    var NORMAL_RE = /^vn\s/;
+    var TEXTURE_RE = /^vt\s/;
+    var FACE_RE = /^f\s/;
+    var WHITESPACE_RE = /\s+/;
+    for (var i = 0; i < lines.length; i++) {
+      var line = lines[i].trim();
+      var elements = line.split(WHITESPACE_RE);
+      elements.shift();
+      if (VERTEX_RE.test(line)) {
+        verts.push.apply(verts, elements);
+      } else if (NORMAL_RE.test(line)) {
+        vertNormals.push.apply(vertNormals, elements);
+      } else if (TEXTURE_RE.test(line)) {
+        textures.push.apply(textures, elements);
+      } else if (FACE_RE.test(line)) {
+        var quad = false;
+        for (var j = 0, eleLen = elements.length; j < eleLen; j++) {
+          if (j === 3 && !quad) {
+            j = 2;
+            quad = true;
+          }
+          if (elements[j] in unpacked.hashindices) {
+            unpacked.indices.push(unpacked.hashindices[elements[j]]);
+          } else {
+            var vertex = elements[j].split("/");
+            unpacked.verts.push(+verts[(vertex[0] - 1) * 3 + initOrientation[0]] * inputArg.scale[0]);
+            unpacked.verts.push(+verts[(vertex[0] - 1) * 3 + initOrientation[1]] * inputArg.scale[1]);
+            unpacked.verts.push(+verts[(vertex[0] - 1) * 3 + initOrientation[2]] * inputArg.scale[2]);
+            if (textures.length) {
+              unpacked.textures.push(+textures[(vertex[1] - 1) * 2 + 0]);
+              unpacked.textures.push(+textures[(vertex[1] - 1) * 2 + 1]);
+            }
+            unpacked.norms.push(+vertNormals[(vertex[2] - 1) * 3 + 0]);
+            unpacked.norms.push(+vertNormals[(vertex[2] - 1) * 3 + 1]);
+            unpacked.norms.push(+vertNormals[(vertex[2] - 1) * 3 + 2]);
+            unpacked.hashindices[elements[j]] = unpacked.index;
+            unpacked.indices.push(unpacked.index);
+            unpacked.index += 1;
+          }
+          if (j === 3 && quad) {
+            unpacked.indices.push(unpacked.hashindices[elements[0]]);
+          }
+        }
+      }
+    }
+    this.vertices = unpacked.verts;
+    this.vertexNormals = unpacked.norms;
+    this.textures = unpacked.textures;
+    this.indices = unpacked.indices;
+    callback();
+    return this;
+  };
+};
+var Ajax = function() {
+  var _this = this;
+  this.xmlhttp = new XMLHttpRequest();
+  this.get = function(url, callback) {
+    _this.xmlhttp.onreadystatechange = function() {
+      if (_this.xmlhttp.readyState === 4) {
+        callback(_this.xmlhttp.responseText, _this.xmlhttp.status);
+      }
+    };
+    _this.xmlhttp.open("GET", url, true);
+    _this.xmlhttp.send();
+  };
+};
+var downloadMeshes = function(nameAndURLs, completionCallback, inputArg) {
+  var semaphore = Object.keys(nameAndURLs).length;
+  var error = false;
+  if (typeof inputArg === "undefined") {
+    var inputArg = {
+      scale: [0.1, 0.1, 0.1],
+      swap: [null]
+    };
+  }
+  if (typeof inputArg.scale === "undefined") inputArg.scale = [0.1, 0.1, 0.1];
+  if (typeof inputArg.swap === "undefined") inputArg.swap = [null];
+  var meshes = {};
+  for (var mesh_name in nameAndURLs) {
+    if (nameAndURLs.hasOwnProperty(mesh_name)) {
+      new Ajax().get(
+        nameAndURLs[mesh_name],
+        /* @__PURE__ */ (function(name) {
+          return function(data, status) {
+            if (status === 200) {
+              meshes[name] = new constructMesh(data, inputArg);
+            } else {
+              error = true;
+              console.error('An error has occurred and the mesh "' + name + '" could not be downloaded.');
+            }
+            semaphore--;
+            if (semaphore === 0) {
+              if (error) {
+                console.error("An error has occurred and one or meshes has not been downloaded. The execution of the script has terminated.");
+                throw "";
+              }
+              completionCallback(meshes);
+            }
+          };
+        })(mesh_name)
+      );
+    }
+  }
+};
 function play(nameAni) {
   this.animations.active = nameAni;
   this.currentAni = this.animations[this.animations.active].from;
@@ -13303,6 +13438,12 @@ var MEEditorClient = class {
         };
         o = JSON.stringify(o);
         this.ws.send(o);
+        o = {
+          action: "list",
+          path: name
+        };
+        o = JSON.stringify(o);
+        this.ws.send(o);
       }
       console.log("%c[WS OPEN] [Attach events]", "color: lime; font-weight: bold");
     };
@@ -13311,9 +13452,35 @@ var MEEditorClient = class {
         const data = JSON.parse(event.data);
         console.log("%c[WS MESSAGE]", "color: yellow", data);
         if (data && data.ok == true && data.payload && data.payload.redirect == true) {
-          location.assign(data.name + ".html");
+          setTimeout(() => location.assign(data.name + ".html"), 1e3);
         } else if (data.payload && data.payload == "stop-watch done") {
           mb.show("watch-stoped");
+        } else if (data.listAssets) {
+          document.dispatchEvent(new CustomEvent("la", {
+            detail: data
+          }));
+        } else if (data.projects) {
+          data.payload.forEach((item) => {
+            console.log("....." + item.name);
+            if (item.name != "readme.md") {
+              let txt = `Project list: 
+
+                - ${item.name}  
+
+               
+
+               Choose project name:
+              `;
+              let projectName = prompt(txt);
+              if (projectName !== null) {
+                console.log("Project name:", projectName);
+                projectName += ".html";
+                location.assign(projectName);
+              } else {
+                console.error("Something wrong with load project input!");
+              }
+            }
+          });
         } else {
           mb.show("from editor:" + data.payload);
         }
@@ -13331,6 +13498,14 @@ var MEEditorClient = class {
     this.attachEvents();
   }
   attachEvents() {
+    document.addEventListener("lp", (e) => {
+      console.info("Load project <signal>");
+      let o = {
+        action: "lp"
+      };
+      o = JSON.stringify(o);
+      this.ws.send(o);
+    });
     document.addEventListener("cnp", (e) => {
       console.info("Create new project <signal>");
       let o = {
@@ -13350,6 +13525,15 @@ var MEEditorClient = class {
       o = JSON.stringify(o);
       this.ws.send(o);
     });
+    document.addEventListener("start-watch", (e) => {
+      console.info("start-watch <signal>");
+      let o = {
+        action: "watch",
+        name: e.detail.name
+      };
+      o = JSON.stringify(o);
+      this.ws.send(o);
+    });
   }
 };
 
@@ -13362,8 +13546,6 @@ var EditorProvider = class {
   addEditorEvents() {
     document.addEventListener("web.editor.input", (e) => {
       console.log("[EDITOR] sceneObj: ", e.detail.inputFor);
-      console.log("[EDITOR] sceneObj: ", e.detail.propertyId);
-      console.log("[EDITOR] sceneObj: ", e.detail.property);
       let sceneObj = this.core.getSceneObjectByName(e.detail.inputFor);
       if (sceneObj) {
         sceneObj[e.detail.propertyId][e.detail.property] = e.detail.value;
@@ -13371,6 +13553,26 @@ var EditorProvider = class {
         console.warn("EditorProvider input error");
         return;
       }
+    });
+    document.addEventListener("web.editor.addCube", (e) => {
+      console.log("[web.editor.addCube]: ", e.detail);
+      downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, (m) => {
+        const texturesPaths = ["./res/meshes/blender/cube.png"];
+        this.core.addMeshObj({
+          position: { x: 0, y: 0, z: -20 },
+          rotation: { x: 0, y: 0, z: 0 },
+          rotationSpeed: { x: 0, y: 0, z: 0 },
+          texturesPaths: [texturesPaths],
+          // useUVShema4x2: true,
+          name: "Cube_" + app.mainRenderBundle.length,
+          mesh: m.cube,
+          raycast: { enabled: true, radius: 2 },
+          physics: {
+            enabled: true,
+            geometry: "Cube"
+          }
+        });
+      }, { scale: [1, 1, 1] });
     });
   }
 };
@@ -13384,6 +13586,7 @@ var EditorHud = class {
       this.createTopMenuInFly();
     } else if (a == "created from editor") {
       this.createTopMenu();
+      this.createAssets();
     } else if (a == "pre editor") {
       this.createTopMenuPre();
     } else {
@@ -13452,7 +13655,7 @@ var EditorHud = class {
     <div class="top-item">
       <div class="top-btn">Project \u25BE</div>
       <div class="dropdown">
-      <div class="drop-item">\u{1F6E0}\uFE0F Watch</div>
+      <div id="start-watch" class="drop-item">\u{1F6E0}\uFE0F Watch</div>
       <div id="stop-watch" class="drop-item">\u{1F6E0}\uFE0F Stop Watch</div>
       <div class="drop-item">\u{1F6E0}\uFE0F Build</div>
       </div>
@@ -13461,7 +13664,7 @@ var EditorHud = class {
     <div class="top-item">
       <div class="top-btn">Insert \u25BE</div>
       <div class="dropdown">
-        <div class="drop-item">\u{1F9CA} Cube</div>
+        <div id="addCube" class="drop-item">\u{1F9CA} Cube</div>
         <div class="drop-item">\u26AA Sphere</div>
         <div class="drop-item">\u{1F4E6} GLB (model)</div>
         <div class="drop-item">\u{1F4A1} Light</div>
@@ -13505,6 +13708,11 @@ var EditorHud = class {
         detail: {}
       }));
     });
+    if (byId("start-watch")) byId("start-watch").addEventListener("click", () => {
+      document.dispatchEvent(new CustomEvent("start-watch", {
+        detail: {}
+      }));
+    });
     if (byId("cnpBtn")) byId("cnpBtn").addEventListener("click", () => {
       let name = prompt("\u{1F4E6} Project name :", "MyProject1");
       let features = {
@@ -13525,6 +13733,11 @@ var EditorHud = class {
         }
       }));
     });
+    if (byId("addCube")) byId("addCube").addEventListener("click", () => {
+      document.dispatchEvent(new CustomEvent("web.editor.addCube", {
+        detail: {}
+      }));
+    });
     this.showAboutModal = () => {
       alert(`
   \u2714\uFE0F Support for 3D objects and scene transformations
@@ -13534,6 +13747,48 @@ var EditorHud = class {
         `);
     };
     byId("showAboutEditor").addEventListener("click", this.showAboutModal);
+  }
+  createAssets() {
+    this.assetsBox = document.createElement("div");
+    this.assetsBox.id = "assetsBox";
+    Object.assign(this.assetsBox.style, {
+      position: "absolute",
+      bottom: "0",
+      left: "20%",
+      width: "60%",
+      height: "250px",
+      backgroundColor: "rgba(0,0,0,0.85)",
+      display: "flex",
+      alignItems: "start",
+      // overflow: "auto",
+      color: "white",
+      fontFamily: "'Orbitron', sans-serif",
+      zIndex: "15",
+      padding: "2px",
+      boxSizing: "border-box",
+      flexDirection: "row"
+    });
+    this.assetsBox.innerHTML = "ASSTES";
+    this.assetsBox.innerHTML = `
+    <div id='res-folder' class="file-browser">
+     ASSETS
+    </div>`;
+    document.body.appendChild(this.assetsBox);
+    document.addEventListener("la", (e) => {
+      e.detail.payload.forEach((i) => {
+        let item = document.createElement("div");
+        item.classList.add("file-item");
+        item.classList.add("folder");
+        item.innerText = i.name;
+        byId("res-folder").appendChild(item);
+      });
+      document.querySelectorAll(".file-item").forEach((el) => {
+        el.addEventListener("click", () => {
+          document.querySelectorAll(".file-item").forEach((x) => x.classList.remove("selected"));
+          el.classList.add("selected");
+        });
+      });
+    });
   }
   createTopMenuPre() {
     this.editorMenu = document.createElement("div");
@@ -13561,7 +13816,7 @@ var EditorHud = class {
       <div class="top-btn">Project \u25BE</div>
       <div class="dropdown">
       <div id="cnpBtn" class="drop-item">\u{1F4E6} Create new project</div>
-      <div class="drop-item">\u{1F4C2} Load</div>
+      <div id="loadProjectBtn" class="drop-item">\u{1F4C2} Load</div>
       </div>
     </div>
 
@@ -13588,6 +13843,11 @@ var EditorHud = class {
           d.style.display = "none";
         });
       }
+    });
+    if (byId("loadProjectBtn")) byId("loadProjectBtn").addEventListener("click", () => {
+      document.dispatchEvent(new CustomEvent("lp", {
+        detail: {}
+      }));
     });
     if (byId("cnpBtn")) byId("cnpBtn").addEventListener("click", () => {
       let name = prompt("\u{1F4E6} Project name :", "MyProject1");
@@ -14681,6 +14941,7 @@ var MatrixEngineWGPU = class {
       this.device.queue.submit([commandEncoder.finish()]);
       requestAnimationFrame(this.frame);
     } catch (err) {
+      console.log("%cLoop(err):" + err + " info : " + err.stack, LOG_WARN);
       requestAnimationFrame(this.frame);
     }
   };
@@ -14936,6 +15197,8 @@ var app2 = new MatrixEngineWGPU(
   },
   (app3) => {
     addEventListener("AmmoReady", async () => {
+      console.log("[EDITOR] ADD LIGHT: ");
+      app3.addLight();
     });
   }
 );
