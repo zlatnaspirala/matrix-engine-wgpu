@@ -8,7 +8,7 @@ let app = new MatrixEngineWGPU(
   
   useEditor: true,
   projectType: "created from editor",
-  projectName: 'MyProject1',
+  projectName: 'MM',
   useSingleRenderPass: true,
   canvasSize: 'fullscreen',
   mainCameraParams: {
@@ -20,10 +20,9 @@ let app = new MatrixEngineWGPU(
   
 , (app) => {
 addEventListener('AmmoReady', async () => { 
-// [MAIN_REPLACE1]
+// [light]
+app.addLight();
 // [MAIN_REPLACE2]
-    console.log("[EDITOR] ADD LIGHT: ");
-    app.addLight();
  })
 })
 window.app = app;

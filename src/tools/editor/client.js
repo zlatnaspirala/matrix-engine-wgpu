@@ -34,7 +34,7 @@ export class MEEditorClient {
         const data = JSON.parse(event.data);
         console.log("%c[WS MESSAGE]", "color: yellow", data);
         if(data && data.ok == true && data.payload && data.payload.redirect == true) {
-          setTimeout(() => location.assign(data.name + ".html"), 1000);
+          setTimeout(() => location.assign(data.name + ".html"), 2000);
         } else if(data.payload && data.payload == "stop-watch done") {
           mb.show("watch-stoped");
         } else if(data.listAssets) {
@@ -60,6 +60,10 @@ export class MEEditorClient {
               }
             }
           });
+        } else if (data.details) {
+          document.dispatchEvent(new CustomEvent('file-detail-data', {
+            detail: data
+          }))
         } else {
           mb.show("from editor:" + data.payload);
         }
@@ -120,6 +124,30 @@ export class MEEditorClient {
       };
       o = JSON.stringify(o);
       this.ws.send(o);
-    })
+    });
+
+    
+    document.addEventListener('nav-folder', (e) => {
+      console.info('nav-folder <signal>');
+      let o = {
+        action: "nav-folder",
+        name: e.detail.name,
+        rootFolder: e.detail.rootFolder
+      };
+      o = JSON.stringify(o);
+      this.ws.send(o);
+    });
+
+    document.addEventListener('file-detail', (e) => {
+      console.info('file-detail <signal>');
+      let o = {
+        action: "file-detail",
+        name: e.detail.name,
+        rootFolder: e.detail.rootFolder
+      };
+      o = JSON.stringify(o);
+      this.ws.send(o);
+    });
+    
   }
 }

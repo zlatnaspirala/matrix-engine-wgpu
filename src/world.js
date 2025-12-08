@@ -100,7 +100,14 @@ export default class MatrixEngineWGPU {
           this.editor = new Editor(this, "infly");
         }
         this.editor.editorHud.updateSceneContainer();
+      } else {
+        // nikola
+        this.editor.editorHud.editorMenu.style.display = 'flex';
+        this.editor.editorHud.assetsBox.style.display = 'flex';
+        this.editor.editorHud.sceneProperty.style.display = 'flex';
+        this.editor.editorHud.sceneContainer.style.display = 'flex';
       }
+
     };
 
     this.options = options;

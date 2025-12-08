@@ -1,14 +1,16 @@
-import {byId, isMobile, jsonHeaders, mb} from "../../engine/utils.js";
-
+import {byId, FullscreenManager, isMobile, jsonHeaders, mb} from "../../engine/utils.js";
 /**
  * @Author NIkola Lukic
  * @description
  * Web Editor for matrix-engine-wgpu
+ * Using "file protocol" in direct way no virtual/syntetic assets
  */
 export default class EditorHud {
   constructor(core, a) {
     this.core = core;
     this.sceneContainer = null;
+    this.FS = new FullscreenManager();
+
     if(a == 'infly') {
       this.createTopMenuInFly();
     } else if(a == "created from editor") {
@@ -26,6 +28,21 @@ export default class EditorHud {
     document.addEventListener('editor-not-running', () => {
       this.noEditorConn();
     });
+
+    document.addEventListener('file-detail-data', (e) => {
+      console.log(e.detail.details)
+      let s = "";
+      for(let key in e.detail.details) {
+        if(key == "path") {
+          s += key + ":" + e.detail.details[key].split("public")[1] + "\n";
+        } else {
+          s += key + ":" + e.detail.details[key] + "\n";
+        }
+
+      }
+      mb.show(s)
+    });
+
   }
 
   noEditorConn() {
@@ -104,10 +121,30 @@ export default class EditorHud {
     </div>
 
     <div class="top-item">
+      <div class="top-btn">Settings ▾</div>
+      <div class="dropdown">
+        <div id="cameraBox" class="drop-item">
+           <p>📽️Camera</p>
+           <div>Pitch: <input id="camera-settings-pitch" step='0.1' type='number' value='0' /></div>
+           <div>Yaw: <input id="camera-settings-yaw" step='0.1' type='number' value='0' /></div>
+           <div> Position :  </br>
+            \n 
+            X: <input id="camera-settings-pos-x" step='0.5' type='number' value='0' /> \n
+            Y: <input id="camera-settings-pos-y" step='0.5' type='number' value='0' /> \n
+            Z: <input id="camera-settings-pos-z" step='0.5' type='number' value='0' />
+           </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="top-item">
       <div class="top-btn">View ▾</div>
       <div class="dropdown">
-        <div class="drop-item">Hide Editor UI</div>
-        <div class="drop-item">FullScreen</div>
+        <div id="hideEditorBtn" class="drop-item">
+           <p>Hide Editor UI</p>
+           <small>To show editor press F4 ⌨️</small>
+        </div>
+        <div id="fullScreenBtn" class="drop-item">FullScreen</div>
       </div>
     </div>
 
@@ -145,6 +182,17 @@ export default class EditorHud {
         });
       }
     });
+
+    byId('fullScreenBtn').addEventListener('click', () => {
+      this.FS.request()
+    })
+
+    byId('hideEditorBtn').addEventListener('click', () => {
+      this.editorMenu.style.display = 'none';
+      this.assetsBox.style.display = 'none';
+      this.sceneProperty.style.display = 'none';
+      this.sceneContainer.style.display = 'none';
+    })
 
     if(byId('stop-watch')) byId('stop-watch').addEventListener('click', () => {
       document.dispatchEvent(new CustomEvent('stop-watch', {
@@ -185,11 +233,20 @@ export default class EditorHud {
     });
 
     // OBJECT LEVEL
-
     if(byId('addCube')) byId('addCube').addEventListener('click', () => {
       document.dispatchEvent(new CustomEvent('web.editor.addCube', {
         detail: {}
       }));
+    })
+
+    // settings
+    //camera
+    // camera-settings-pitch
+    byId('camera-settings-pitch').addEventListener('change', (e) => {
+      console.log('setting camera pitch ', e)
+    })
+    byId('camera-settings-yaw').addEventListener('change', (e) => {
+      console.log('setting camera', e)
     })
 
     this.showAboutModal = () => {
@@ -197,13 +254,14 @@ export default class EditorHud {
   ✔️ Support for 3D objects and scene transformations
   ✔️ Ammo.js physics full integration
   ✔️ Networking with Kurento/OpenVidu/Own middleware Nodejs -> frontend
-  🎯 Replicate matrix-engine (WebGL) features
+  🎯 Save system - direct code line [file-protocol]
+     Source code: https://github.com/zlatnaspirala/matrix-engine-wgpu
+     More at https://maximumroulette.com
         `);
     }
     byId('showAboutEditor').addEventListener('click', this.showAboutModal);
 
   }
-
 
   createAssets() {
     this.assetsBox = document.createElement("div");
@@ -223,7 +281,7 @@ export default class EditorHud {
       zIndex: "15",
       padding: "2px",
       boxSizing: "border-box",
-      flexDirection: "row"
+      flexDirection: "column"
     });
     this.assetsBox.innerHTML = "ASSTES";
     // document.body.appendChild(this.editorMenu);
@@ -231,36 +289,84 @@ export default class EditorHud {
     // <div id="cnpBtn" class="drop-item">📦 Create new project</div>
     //   <div class="drop-item">📂 Load</div>
     this.assetsBox.innerHTML = `
+    <div id="folderTitle" >Root</div>
+    <div id="folderBack" class="scenePropItem" >...</div>
     <div id='res-folder' class="file-browser">
-     ASSETS
     </div>`
       ;
 
     document.body.appendChild(this.assetsBox);
 
-    document.addEventListener('la', (e) => {
+    byId('folderBack').addEventListener('click', () => {
+      let getCurrent = byId('res-folder').getAttribute('data-root-folder');
+      const t = getCurrent.substring(0, getCurrent.lastIndexOf("\\"));
+      const last = t.substring(t.lastIndexOf("\\") + 1);
+      if(last == "public") {
+        console.log(last + "<<<<<<<<<<<<<<<<<PREVENTED<<");
+        return;
+      }
+      document.dispatchEvent(new CustomEvent("nav-folder", {
+        detail: {
+          rootFolder: t || "",
+          name: ''
+        }
+      }));
+    })
 
+    document.addEventListener('la', (e) => {
+      console.log('root folder ', e.detail.rootFolder)
+      byId('res-folder').setAttribute('data-root-folder', e.detail.rootFolder);
+      byId('res-folder').innerHTML = '';
       e.detail.payload.forEach((i) => {
         let item = document.createElement('div');
         item.classList.add('file-item');
-        item.classList.add('folder');
-        item.innerText = i.name;
+        if(i.isDir == true) {
+          item.classList.add('folder');
+        } else if(i.name.split('.')[1] == 'jpg' ||
+          i.name.split('.')[1] == 'png' ||
+          i.name.split('.')[1] == 'jpeg') {
+          item.classList.add('png');
+        } else if(i.name.split('.')[1] == 'mp3') {
+          item.classList.add('mp3');
+        } else if(i.name.split('.')[1] == 'js') {
+          item.classList.add('js');
+        } else if(i.name.split('.')[1] == 'ttf' ||
+          i.name.split('.')[1] == 'ttf' ||
+          i.name.split('.')[1] == 'TTF' ||
+          i.name.split('.')[1] == 'otf' ||
+          i.name.split('.')[1] == 'woff' ||
+          i.name.split('.')[1] == 'woff2') {
+          item.classList.add('ttf');
+        } else {
+          item.classList.add('unknown');
+        }
+
+        item.innerHTML = "<p>" + i.name + "</p>";
         byId('res-folder').appendChild(item);
-        // this.assetsBox.appendChild()
-      })
+        item.addEventListener('click', (e) => {
 
+          if(i.isDir == true) document.dispatchEvent(new CustomEvent("nav-folder", {
+            detail: {
+              rootFolder: byId('res-folder').getAttribute('data-root-folder') || "",
+              name: item.children[0].innerText
+            }
+          }));
 
+          if(i.isDir == false) document.dispatchEvent(new CustomEvent("file-detail", {
+            detail: {
+              rootFolder: byId('res-folder').getAttribute('data-root-folder') || "",
+              name: item.innerText
+            }
+          }));
+        });
+      });
       document.querySelectorAll('.file-item').forEach(el => {
         el.addEventListener('click', () => {
           document.querySelectorAll('.file-item').forEach(x => x.classList.remove('selected'));
           el.classList.add('selected');
         });
       });
-
     })
-
-
-
   }
 
   createTopMenuPre() {

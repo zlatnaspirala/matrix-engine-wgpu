@@ -2206,6 +2206,36 @@ var htmlHeader = new Headers({
   "Content-Type": "text/html",
   "Accept": "text/plain"
 });
+var FullscreenManager = class {
+  constructor() {
+    this.target = document.documentElement;
+  }
+  isFullscreen() {
+    return !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement);
+  }
+  request() {
+    const el = this.target;
+    return el.requestFullscreen?.() || el.webkitRequestFullscreen?.() || el.mozRequestFullScreen?.() || el.msRequestFullscreen?.();
+  }
+  exit() {
+    return document.exitFullscreen?.() || document.webkitExitFullscreen?.() || document.mozCancelFullScreen?.() || document.msExitFullscreen?.();
+  }
+  toggle() {
+    return this.isFullscreen() ? this.exit() : this.request();
+  }
+  onChange(callback) {
+    [
+      "fullscreenchange",
+      "webkitfullscreenchange",
+      "mozfullscreenchange",
+      "MSFullscreenChange"
+    ].forEach(
+      (evt) => document.addEventListener(evt, () => {
+        callback(this.isFullscreen());
+      })
+    );
+  }
+};
 
 // ../../../engine/matrix-class.js
 var Position = class {
@@ -13452,7 +13482,7 @@ var MEEditorClient = class {
         const data = JSON.parse(event.data);
         console.log("%c[WS MESSAGE]", "color: yellow", data);
         if (data && data.ok == true && data.payload && data.payload.redirect == true) {
-          setTimeout(() => location.assign(data.name + ".html"), 1e3);
+          setTimeout(() => location.assign(data.name + ".html"), 2e3);
         } else if (data.payload && data.payload == "stop-watch done") {
           mb.show("watch-stoped");
         } else if (data.listAssets) {
@@ -13481,6 +13511,10 @@ var MEEditorClient = class {
               }
             }
           });
+        } else if (data.details) {
+          document.dispatchEvent(new CustomEvent("file-detail-data", {
+            detail: data
+          }));
         } else {
           mb.show("from editor:" + data.payload);
         }
@@ -13534,6 +13568,26 @@ var MEEditorClient = class {
       o = JSON.stringify(o);
       this.ws.send(o);
     });
+    document.addEventListener("nav-folder", (e) => {
+      console.info("nav-folder <signal>");
+      let o = {
+        action: "nav-folder",
+        name: e.detail.name,
+        rootFolder: e.detail.rootFolder
+      };
+      o = JSON.stringify(o);
+      this.ws.send(o);
+    });
+    document.addEventListener("file-detail", (e) => {
+      console.info("file-detail <signal>");
+      let o = {
+        action: "file-detail",
+        name: e.detail.name,
+        rootFolder: e.detail.rootFolder
+      };
+      o = JSON.stringify(o);
+      this.ws.send(o);
+    });
   }
 };
 
@@ -13582,6 +13636,7 @@ var EditorHud = class {
   constructor(core, a) {
     this.core = core;
     this.sceneContainer = null;
+    this.FS = new FullscreenManager();
     if (a == "infly") {
       this.createTopMenuInFly();
     } else if (a == "created from editor") {
@@ -13597,6 +13652,18 @@ var EditorHud = class {
     this.currentProperties = [];
     document.addEventListener("editor-not-running", () => {
       this.noEditorConn();
+    });
+    document.addEventListener("file-detail-data", (e) => {
+      console.log(e.detail.details);
+      let s = "";
+      for (let key in e.detail.details) {
+        if (key == "path") {
+          s += key + ":" + e.detail.details[key].split("public")[1] + "\n";
+        } else {
+          s += key + ":" + e.detail.details[key] + "\n";
+        }
+      }
+      mb.show(s);
     });
   }
   noEditorConn() {
@@ -13672,10 +13739,33 @@ var EditorHud = class {
     </div>
 
     <div class="top-item">
+      <div class="top-btn">Settings \u25BE</div>
+      <div class="dropdown">
+        <div id="cameraBox" class="drop-item">
+           <p>\u{1F4FD}\uFE0FCamera</p>
+           <div>Pitch: <input id="camera-settings-pitch" step='0.1' type='number' value='0' /></div>
+           <div>Yaw: <input id="camera-settings-yaw" step='0.1' type='number' value='0' /></div>
+           <div> Position :  </br>
+            
+ 
+            X: <input id="camera-settings-pos-x" step='0.5' type='number' value='0' /> 
+
+            Y: <input id="camera-settings-pos-y" step='0.5' type='number' value='0' /> 
+
+            Z: <input id="camera-settings-pos-z" step='0.5' type='number' value='0' />
+           </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="top-item">
       <div class="top-btn">View \u25BE</div>
       <div class="dropdown">
-        <div class="drop-item">Hide Editor UI</div>
-        <div class="drop-item">FullScreen</div>
+        <div id="hideEditorBtn" class="drop-item">
+           <p>Hide Editor UI</p>
+           <small>To show editor press F4 \u2328\uFE0F</small>
+        </div>
+        <div id="fullScreenBtn" class="drop-item">FullScreen</div>
       </div>
     </div>
 
@@ -13702,6 +13792,15 @@ var EditorHud = class {
           d.style.display = "none";
         });
       }
+    });
+    byId("fullScreenBtn").addEventListener("click", () => {
+      this.FS.request();
+    });
+    byId("hideEditorBtn").addEventListener("click", () => {
+      this.editorMenu.style.display = "none";
+      this.assetsBox.style.display = "none";
+      this.sceneProperty.style.display = "none";
+      this.sceneContainer.style.display = "none";
     });
     if (byId("stop-watch")) byId("stop-watch").addEventListener("click", () => {
       document.dispatchEvent(new CustomEvent("stop-watch", {
@@ -13738,12 +13837,20 @@ var EditorHud = class {
         detail: {}
       }));
     });
+    byId("camera-settings-pitch").addEventListener("change", (e) => {
+      console.log("setting camera pitch ", e);
+    });
+    byId("camera-settings-yaw").addEventListener("change", (e) => {
+      console.log("setting camera", e);
+    });
     this.showAboutModal = () => {
       alert(`
   \u2714\uFE0F Support for 3D objects and scene transformations
   \u2714\uFE0F Ammo.js physics full integration
   \u2714\uFE0F Networking with Kurento/OpenVidu/Own middleware Nodejs -> frontend
-  \u{1F3AF} Replicate matrix-engine (WebGL) features
+  \u{1F3AF} Save system - direct code line [file-protocol]
+     Source code: https://github.com/zlatnaspirala/matrix-engine-wgpu
+     More at https://maximumroulette.com
         `);
     };
     byId("showAboutEditor").addEventListener("click", this.showAboutModal);
@@ -13766,21 +13873,66 @@ var EditorHud = class {
       zIndex: "15",
       padding: "2px",
       boxSizing: "border-box",
-      flexDirection: "row"
+      flexDirection: "column"
     });
     this.assetsBox.innerHTML = "ASSTES";
     this.assetsBox.innerHTML = `
+    <div id="folderTitle" >Root</div>
+    <div id="folderBack" class="scenePropItem" >...</div>
     <div id='res-folder' class="file-browser">
-     ASSETS
     </div>`;
     document.body.appendChild(this.assetsBox);
+    byId("folderBack").addEventListener("click", () => {
+      let getCurrent = byId("res-folder").getAttribute("data-root-folder");
+      const t = getCurrent.substring(0, getCurrent.lastIndexOf("\\"));
+      const last = t.substring(t.lastIndexOf("\\") + 1);
+      if (last == "public") {
+        console.log(last + "<<<<<<<<<<<<<<<<<PREVENTED<<");
+        return;
+      }
+      document.dispatchEvent(new CustomEvent("nav-folder", {
+        detail: {
+          rootFolder: t || "",
+          name: ""
+        }
+      }));
+    });
     document.addEventListener("la", (e) => {
+      console.log("root folder ", e.detail.rootFolder);
+      byId("res-folder").setAttribute("data-root-folder", e.detail.rootFolder);
+      byId("res-folder").innerHTML = "";
       e.detail.payload.forEach((i) => {
         let item = document.createElement("div");
         item.classList.add("file-item");
-        item.classList.add("folder");
-        item.innerText = i.name;
+        if (i.isDir == true) {
+          item.classList.add("folder");
+        } else if (i.name.split(".")[1] == "jpg" || i.name.split(".")[1] == "png" || i.name.split(".")[1] == "jpeg") {
+          item.classList.add("png");
+        } else if (i.name.split(".")[1] == "mp3") {
+          item.classList.add("mp3");
+        } else if (i.name.split(".")[1] == "js") {
+          item.classList.add("js");
+        } else if (i.name.split(".")[1] == "ttf" || i.name.split(".")[1] == "ttf" || i.name.split(".")[1] == "TTF" || i.name.split(".")[1] == "otf" || i.name.split(".")[1] == "woff" || i.name.split(".")[1] == "woff2") {
+          item.classList.add("ttf");
+        } else {
+          item.classList.add("unknown");
+        }
+        item.innerHTML = "<p>" + i.name + "</p>";
         byId("res-folder").appendChild(item);
+        item.addEventListener("click", (e2) => {
+          if (i.isDir == true) document.dispatchEvent(new CustomEvent("nav-folder", {
+            detail: {
+              rootFolder: byId("res-folder").getAttribute("data-root-folder") || "",
+              name: item.children[0].innerText
+            }
+          }));
+          if (i.isDir == false) document.dispatchEvent(new CustomEvent("file-detail", {
+            detail: {
+              rootFolder: byId("res-folder").getAttribute("data-root-folder") || "",
+              name: item.innerText
+            }
+          }));
+        });
       });
       document.querySelectorAll(".file-item").forEach((el) => {
         el.addEventListener("click", () => {
@@ -14389,6 +14541,11 @@ var MatrixEngineWGPU = class {
           this.editor = new Editor(this, "infly");
         }
         this.editor.editorHud.updateSceneContainer();
+      } else {
+        this.editor.editorHud.editorMenu.style.display = "flex";
+        this.editor.editorHud.assetsBox.style.display = "flex";
+        this.editor.editorHud.sceneProperty.style.display = "flex";
+        this.editor.editorHud.sceneContainer.style.display = "flex";
       }
     };
     this.options = options;
@@ -15181,12 +15338,12 @@ var MatrixEngineWGPU = class {
   };
 };
 
-// ../../../../projects/MyProject1/app-gen.js
+// ../../../../projects/MM/app-gen.js
 var app2 = new MatrixEngineWGPU(
   {
     useEditor: true,
     projectType: "created from editor",
-    projectName: "MyProject1",
+    projectName: "MM",
     useSingleRenderPass: true,
     canvasSize: "fullscreen",
     mainCameraParams: {
@@ -15197,7 +15354,6 @@ var app2 = new MatrixEngineWGPU(
   },
   (app3) => {
     addEventListener("AmmoReady", async () => {
-      console.log("[EDITOR] ADD LIGHT: ");
       app3.addLight();
     });
   }
@@ -15213,4 +15369,4 @@ bvh-loader/module/bvh-loader.js:
    * @license GPL-V3
    *)
 */
-//# sourceMappingURL=MyProject1.js.map
+//# sourceMappingURL=MM.js.map

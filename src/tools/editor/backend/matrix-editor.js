@@ -54,25 +54,25 @@ wss.on("connection", ws => {
         ws.send(JSON.stringify({
           listAssets: "list-assets",
           ok: true,
+          rootFolder: PUBLIC_RES,
           payload: items.map(d => ({
             name: d.name,
             isDir: d.isDirectory()
           }))
         }));
-      }
-
-      if(msg.action === "cnp") {
+      } else if(msg.action === "cnp") {
         cnp(ws, msg);
-      }
-
-      if(msg.action === "watch") {
+      } else if(msg.action === "watch") {
         console.log("action [WATCH]");
         buildProject(msg.name, ws, 'Watch activated')
-      }
-
-      if(msg.action === "stop-watch") {
+      } else if(msg.action === "stop-watch") {
         console.log("action [WATCH]");
         stopWatch(msg.name, ws)
+      } else if(msg.action === "nav-folder") {
+        console.log("nav-folder [WATCH]");
+        navFolder(msg, ws);
+      } else if(msg.action == "file-detail") {
+        fileDetail(msg, ws)
       }
 
       // if(msg.action === "SAVE_PROJECT") {
@@ -103,7 +103,6 @@ wss.on("connection", ws => {
       //     payload: {projectFolder}
       //   }));
       // }
-
     } catch(err) {
       ws.send(JSON.stringify({ok: false, error: err.message}));
     }
@@ -306,4 +305,51 @@ function createHTMLProjectDocument(name) {
   </body>
 </html>
   `;
+}
+
+async function navFolder(data, ws) {
+  if(data.rootFolder) {
+    console.log('data.rootFolder ', data.rootFolder);
+  } else {
+    console.log('data.rootFolder no defined');
+  }
+  const folder = path.join(data.rootFolder, data.name);
+  const items = await fs.readdir(folder, {withFileTypes: true});
+  ws.send(JSON.stringify({
+    listAssets: "list-assets",
+    ok: true,
+    rootFolder: path.join(data.rootFolder, data.name),
+    payload: items.map(d => ({
+      name: d.name,
+      isDir: d.isDirectory()
+    }))
+  }));
+}
+
+async function fileDetail(msg, ws) {
+  //
+  const folder = path.join(msg.rootFolder, msg.name);
+  try {
+    const stat = await fs.stat(folder);
+
+    const details = {
+      path: folder,
+      isFile: stat.isFile(),
+      isDirectory: stat.isDirectory(),
+      size: stat.size,          // bytes
+      created: stat.birthtime,  // Date
+      modified: stat.mtime,     // Date
+    };
+
+    console.log(details);
+    ws.send(JSON.stringify({
+      ok: true,
+      details: details
+    }));
+
+  } catch(err) {
+    console.error("Error:", err);
+    ws.send(JSON.stringify({error: err.message}));
+  }
+
 }
