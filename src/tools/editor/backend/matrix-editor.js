@@ -370,7 +370,7 @@ async function addCube(msg, ws) {
   content.addLine(`     name: 'Cube_' + app.mainRenderBundle.length,`);
   content.addLine(`     mesh: m.cube,`);
   content.addLine(`     raycast: {enabled: true, radius: 2},`);
-  content.addLine(`     physics: {enabled: true, geometry: "Cube"}`);
+  content.addLine(`     physics: {enabled: ${msg.options.physics}, geometry: "Cube"}`);
   content.addLine(`   }); `);
   content.addLine(` }, {scale: [1, 1, 1]});  `);
 
@@ -408,7 +408,7 @@ async function saveMethods(msg, ws) {
   // });
   // ??? path PROJECT_NAME
   const folderPerProject = path.join(GEN_METHODS_PATH, PROJECT_NAME);
-  fs.mkdir(folderPerProject)
+  fs.mkdir(folderPerProject, { recursive: true });
   const file = path.join(folderPerProject, "\\methods.js");
   const content =
     "export default " +

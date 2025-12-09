@@ -8,6 +8,7 @@ export class Editor {
 
   constructor(core, a, projName) {
     this.core = core;
+    this.methodsManager = new MethodsManager(this.check(a));
     this.editorHud = new EditorHud(core, this.check(a));
     this.editorProvider = new EditorProvider(core, this.check(a));
     if(this.check(a) == 'pre editor') {
@@ -16,9 +17,9 @@ export class Editor {
       this.client = new MEEditorClient(this.check(a), projName);
     }
 
-    this.methodsManager = new MethodsManager(document.body);
+    
     console.log("methodsManager", this.methodsManager);
-    this.methodsManager.lo
+    // this.methodsManager.lo
   }
 
   check(a) {

@@ -172,7 +172,8 @@ export class MEEditorClient {
       console.info('addCube <signal>');
       let o = {
         action: "addCube",
-        projectName: location.href.split('/public/')[1].split(".")[0]
+        projectName: location.href.split('/public/')[1].split(".")[0],
+        options: e.detail
       };
       o = JSON.stringify(o);
       this.ws.send(o);

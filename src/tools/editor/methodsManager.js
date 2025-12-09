@@ -1,22 +1,47 @@
-
+/**
+ * @description
+ * MethodsManager only for web editor jobs.
+ * @author Nikola Lukic
+ * @email zlatnaspirala@gmail.com
+ * @format
+ * { name, code, fn, type, intervalId }
+ */
 export default class MethodsManager {
-  constructor(rootElement) {
-    this.root = rootElement;
-    this.methodsContainer = []; // { name, code, fn, type, intervalId }
+  constructor(editorType) {
+    this.editorType = editorType;
+    this.methodsContainer = [];
     this.createUI();
-    this.loadMethods();
+    this.loadMethods(editorType).then((r) => {
+      console.log('r: ', r);
+      this.methodsContainer = r;
+      this.refreshSelect();
+      console.log('r: ', r);
+      this.select.click();
+    });
     document.addEventListener('show-method-editor', () => {
       this.popup.style.display = "block";
       this.wrapper.style.display = "block";
     })
   }
 
-  async loadMethods() {
-    const page = location.pathname.split("/").pop().replace(".html", "");
-    const file = `../src/tools/editor/gen/${page}/methods.js`;
-    const module = await import(file);
-    const methodsContainer = module.default;
-    console.log("methodsContainer     ", methodsContainer)
+  loadMethods = async (editorType) => {
+    return new Promise(async (resolve, reject) => {
+      if(editorType == 'created from editor') {
+        const page = location.pathname.split("/").pop().replace(".html", "");
+        const file = `../src/tools/editor/gen/${page}/methods.js`;
+        let module;
+        try {
+          module = await import(file);
+          if(module) {resolve(module.default)} else {
+            reject([])
+          }
+        } catch(err) {
+          reject([]);
+        }
+      } else {
+        resolve([]);
+      }
+    })
   }
 
   /*=====================================================
@@ -34,7 +59,6 @@ export default class MethodsManager {
       width:95%;
     `;
 
-    // SELECT — preview methods
     this.select = document.createElement("select");
     this.select.style.cssText = `
       width:100%;
@@ -47,12 +71,19 @@ export default class MethodsManager {
     this.wrapper.appendChild(this.select);
 
     this.select.onchange = () => {
+      console.log("CHANGE SCRIPT SELECT")
       const index = this.select.selectedIndex;
       const method = this.methodsContainer[index];
       if(!method) return;
 
       // Open editor with selected method
       this.openEditor(method);
+    };
+
+    this.select.onclick = () => {
+      const index = this.select.selectedIndex;
+      const method = this.methodsContainer[index];
+      if(method) this.openEditor(method);
     };
 
     // BUTTON Add new
@@ -87,12 +118,15 @@ export default class MethodsManager {
     this.popup.appendChild(this.wrapper);
 
     this.textarea = document.createElement("textarea");
+    this.textarea.id = "code-editor-textarea";
     this.textarea.style.cssText = `
       width:100%; 
       height:160px; 
       background:#1e1e1e; 
       color:#fff; 
       border:1px solid #555;
+      box-shadow: inset 0px 0px 16px 0px #3F51B5;
+      -webkit-text-stroke-color: #03A9F4;
     `;
     this.popup.appendChild(this.textarea);
 
@@ -109,8 +143,22 @@ export default class MethodsManager {
     this.btnSave.onclick = () => this.saveMethod();
     this.popup.appendChild(this.btnSave);
 
+    this.btnExit = document.createElement("button");
+    this.btnExit.innerText = "Hide";
+    this.btnExit.style.cssText = `
+      margin-top:10px;
+      padding:6px 14px;
+      background:#555;
+      color:#fff;
+      border:1px solid #666;
+      cursor:pointer;
+    `;
+    this.btnExit.onclick = () => {
+      this.popup.style.display = "none";
+    };
+    this.popup.appendChild(this.btnExit);
+
     document.body.appendChild(this.popup);
-    // this.root.appendChild(this.wrapper);
   }
 
   /*=====================================================

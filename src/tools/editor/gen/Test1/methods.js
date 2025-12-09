@@ -1,7 +1,13 @@
 export default [
   {
     "name": "NIK",
-    "code": "function NIK () {\n// ssssss\n}",
+    "code": "function NIK (){}",
+    "type": "void",
+    "intervalId": null
+  },
+  {
+    "name": "NIK2",
+    "code": "function NIK2 (){\n\n alert('NIK2')\n\n}",
     "type": "void",
     "intervalId": null
   }

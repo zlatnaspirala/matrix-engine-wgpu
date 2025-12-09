@@ -246,8 +246,20 @@ export default class EditorHud {
 
     // OBJECT LEVEL
     if(byId('addCube')) byId('addCube').addEventListener('click', () => {
+
+      let o = {
+        physics: false
+      };
+      if(confirm(`⚛ Enable physics (Ammo) for cube ? \n
+         - Press OK for physics cube.
+         - Press cancel for 'classic position'.
+        (Also physics enabled objects can be kinematic with some collide efect in physics world)
+        `)) {
+        o.physics = true;
+      }
+
       document.dispatchEvent(new CustomEvent('web.editor.addCube', {
-        detail: {}
+        detail: o
       }));
     })
 
@@ -269,13 +281,14 @@ export default class EditorHud {
     byId('showCodeEditorBtn').addEventListener('click', (e) => {
       console.log('show-method-editor ', e);
       document.dispatchEvent(new CustomEvent('show-method-editor', {detail: {}}));
-    });    
+    });
 
     this.showAboutModal = () => {
       alert(`
   ✔️ Support for 3D objects and scene transformations
-  ✔️ Ammo.js physics full integration
+  ✔️ Ammo.js physics integration
   ✔️ Networking with Kurento/OpenVidu/Own middleware Nodejs -> frontend
+  ✔️ Event system
   🎯 Save system - direct code line [file-protocol]
      Source code: https://github.com/zlatnaspirala/matrix-engine-wgpu
      More at https://maximumroulette.com
@@ -702,7 +715,11 @@ export default class EditorHud {
       } else {
         this.currentProperties.push(new SceneObjectProperty(this.objectProperies, prop, currentSO, this.core));
       }
-    })
+    });
+
+    // Add editor events system
+    this.currentProperties.push(new SceneObjectProperty(this.objectProperies, 'editor-events', currentSO, this.core));
+
   }
 }
 
@@ -849,6 +866,10 @@ class SceneObjectProperty {
       this.propName.innerHTML = `<div style="text-align:left;" >${propName} <span style="border-radius:7px;background:deepskyblue;">boolean</span>
         <span style="border-radius:6px;background:gray;">${currSceneObj[propName]}</span></div>`;
       parentDOM.appendChild(this.propName);
+    } else if(propName == 'editor-events') {
+      //
+      this.addEditorEventsProp(currSceneObj, parentDOM);
+
     } else {
       // this.propName.innerHTML = `<div>${propName}</div>`;
       // this.propName.innerHTML += `<div>${currSceneObj[propName]}</div>`;
@@ -878,7 +899,8 @@ class SceneObjectProperty {
            'property': ${currSceneObj ? "'" + prop + "'" : "'no info'"} ,
            'value': ${currSceneObj ? "this.value" : "'no info'"}
           }}))" 
-         ${(rootKey == "adapterInfo" ? " disabled='true'" : " ")} type="number" value="${subobj[prop]}" /> 
+         ${(rootKey == "adapterInfo" ? " disabled='true'" : " ")} type="number" value="${isNaN(subobj[prop]) ? 0 : subobj[prop]
+          }" /> 
         
          </div>`;
       } else if(Array.isArray(subobj[prop])) {
@@ -1036,5 +1058,27 @@ class SceneObjectProperty {
     });
     // this.subObjectsProps.push(a);
     return a;
+  }
+
+  addEditorEventsProp(currSceneObj, parentDOM) {
+
+    console.log("...................................")
+    this.propName.innerHTML = `<div>Events</div>`;
+
+    this.propName.innerHTML += `<div>HIT</div>`;
+
+    this.propName.innerHTML += `<div style='display:flex;'>
+      <div>onTargetReached (NoPhysics)</div>
+      <div><select id='sceneObjEditorPropEvents' ></select></div>
+    </div>`;
+
+    parentDOM.appendChild(this.propName);
+
+    byId('sceneObjEditorPropEvents').innerHTML = "";
+    this.core.editor.methodsManager.methodsContainer.forEach((m) => {
+      const op = document.createElement("option");
+      op.textContent = `${m.name}  [${m.type}]`;
+      byId('sceneObjEditorPropEvents').appendChild(op);
+    });
   }
 }

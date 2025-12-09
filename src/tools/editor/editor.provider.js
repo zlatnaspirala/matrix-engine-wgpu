@@ -40,7 +40,7 @@ export default class EditorProvider {
           mesh: m.cube,
           raycast: {enabled: true, radius: 2},
           physics: {
-            enabled: true,
+            enabled: e.detail.physics,
             geometry: "Cube"
           }
         })
