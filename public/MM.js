@@ -1,6 +1,12 @@
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __esm = (fn, res) => function __init() {
+  return fn && (res = (0, fn[__getOwnPropNames(fn)[0]])(fn = 0)), res;
+};
+var __commonJS = (cb, mod2) => function __require() {
+  return mod2 || (0, cb[__getOwnPropNames(cb)[0]])((mod2 = { exports: {} }).exports, mod2), mod2.exports;
+};
+
 // ../../../../node_modules/wgpu-matrix/dist/2.x/wgpu-matrix.module.js
-var EPSILON = 1e-6;
-var VecType$1 = Float32Array;
 function setDefaultType$5(ctor) {
   const oldType = VecType$1;
   VecType$1 = ctor;
@@ -19,13 +25,6 @@ function create$4(x, y, z) {
   }
   return dst;
 }
-var ctorMap = /* @__PURE__ */ new Map([
-  [Float32Array, () => new Float32Array(12)],
-  [Float64Array, () => new Float64Array(12)],
-  [Array, () => new Array(12).fill(0)]
-]);
-var newMat3 = ctorMap.get(Float32Array);
-var fromValues$2 = create$4;
 function set$3(x, y, z, dst) {
   dst = dst || new VecType$1(3);
   dst[0] = x;
@@ -95,7 +94,6 @@ function subtract$2(a, b, dst) {
   dst[2] = a[2] - b[2];
   return dst;
 }
-var sub$2 = subtract$2;
 function equalsApproximately$3(a, b) {
   return Math.abs(a[0] - b[0]) < EPSILON && Math.abs(a[1] - b[1]) < EPSILON && Math.abs(a[2] - b[2]) < EPSILON;
 }
@@ -137,7 +135,6 @@ function mulScalar$2(v, k, dst) {
   dst[2] = v[2] * k;
   return dst;
 }
-var scale$3 = mulScalar$2;
 function divScalar$2(v, k, dst) {
   dst = dst || new VecType$1(3);
   dst[0] = v[0] / k;
@@ -152,7 +149,6 @@ function inverse$3(v, dst) {
   dst[2] = 1 / v[2];
   return dst;
 }
-var invert$2 = inverse$3;
 function cross(a, b, dst) {
   dst = dst || new VecType$1(3);
   const t1 = a[2] * b[0] - a[0] * b[2];
@@ -171,28 +167,24 @@ function length$2(v) {
   const v2 = v[2];
   return Math.sqrt(v0 * v0 + v1 * v1 + v2 * v2);
 }
-var len$2 = length$2;
 function lengthSq$2(v) {
   const v0 = v[0];
   const v1 = v[1];
   const v2 = v[2];
   return v0 * v0 + v1 * v1 + v2 * v2;
 }
-var lenSq$2 = lengthSq$2;
 function distance$1(a, b) {
   const dx = a[0] - b[0];
   const dy = a[1] - b[1];
   const dz = a[2] - b[2];
   return Math.sqrt(dx * dx + dy * dy + dz * dz);
 }
-var dist$1 = distance$1;
 function distanceSq$1(a, b) {
   const dx = a[0] - b[0];
   const dy = a[1] - b[1];
   const dz = a[2] - b[2];
   return dx * dx + dy * dy + dz * dz;
 }
-var distSq$1 = distanceSq$1;
 function normalize$2(v, dst) {
   dst = dst || new VecType$1(3);
   const v0 = v[0];
@@ -224,7 +216,6 @@ function copy$3(v, dst) {
   dst[2] = v[2];
   return dst;
 }
-var clone$3 = copy$3;
 function multiply$3(a, b, dst) {
   dst = dst || new VecType$1(3);
   dst[0] = a[0] * b[0];
@@ -232,7 +223,6 @@ function multiply$3(a, b, dst) {
   dst[2] = a[2] * b[2];
   return dst;
 }
-var mul$3 = multiply$3;
 function divide$1(a, b, dst) {
   dst = dst || new VecType$1(3);
   dst[0] = a[0] / b[0];
@@ -240,7 +230,6 @@ function divide$1(a, b, dst) {
   dst[2] = a[2] / b[2];
   return dst;
 }
-var div$1 = divide$1;
 function random(scale = 1, dst) {
   dst = dst || new VecType$1(3);
   const angle2 = Math.random() * 2 * Math.PI;
@@ -337,61 +326,6 @@ function getScaling$1(m, dst) {
   dst[2] = Math.sqrt(zx * zx + zy * zy + zz * zz);
   return dst;
 }
-var vec3Impl = /* @__PURE__ */ Object.freeze({
-  __proto__: null,
-  create: create$4,
-  setDefaultType: setDefaultType$5,
-  fromValues: fromValues$2,
-  set: set$3,
-  ceil: ceil$1,
-  floor: floor$1,
-  round: round$1,
-  clamp: clamp$1,
-  add: add$2,
-  addScaled: addScaled$1,
-  angle: angle$1,
-  subtract: subtract$2,
-  sub: sub$2,
-  equalsApproximately: equalsApproximately$3,
-  equals: equals$3,
-  lerp: lerp$2,
-  lerpV: lerpV$1,
-  max: max$1,
-  min: min$1,
-  mulScalar: mulScalar$2,
-  scale: scale$3,
-  divScalar: divScalar$2,
-  inverse: inverse$3,
-  invert: invert$2,
-  cross,
-  dot: dot$2,
-  length: length$2,
-  len: len$2,
-  lengthSq: lengthSq$2,
-  lenSq: lenSq$2,
-  distance: distance$1,
-  dist: dist$1,
-  distanceSq: distanceSq$1,
-  distSq: distSq$1,
-  normalize: normalize$2,
-  negate: negate$2,
-  copy: copy$3,
-  clone: clone$3,
-  multiply: multiply$3,
-  mul: mul$3,
-  divide: divide$1,
-  div: div$1,
-  random,
-  zero: zero$1,
-  transformMat4: transformMat4$1,
-  transformMat4Upper3x3,
-  transformMat3,
-  transformQuat,
-  getTranslation: getTranslation$1,
-  getAxis: getAxis$1,
-  getScaling: getScaling$1
-});
-var MatType = Float32Array;
 function setDefaultType$3(ctor) {
   const oldType = MatType;
   MatType = ctor;
@@ -565,7 +499,6 @@ function copy$2(m, dst) {
   dst[15] = m[15];
   return dst;
 }
-var clone$2 = copy$2;
 function equalsApproximately$2(a, b) {
   return Math.abs(a[0] - b[0]) < EPSILON && Math.abs(a[1] - b[1]) < EPSILON && Math.abs(a[2] - b[2]) < EPSILON && Math.abs(a[3] - b[3]) < EPSILON && Math.abs(a[4] - b[4]) < EPSILON && Math.abs(a[5] - b[5]) < EPSILON && Math.abs(a[6] - b[6]) < EPSILON && Math.abs(a[7] - b[7]) < EPSILON && Math.abs(a[8] - b[8]) < EPSILON && Math.abs(a[9] - b[9]) < EPSILON && Math.abs(a[10] - b[10]) < EPSILON && Math.abs(a[11] - b[11]) < EPSILON && Math.abs(a[12] - b[12]) < EPSILON && Math.abs(a[13] - b[13]) < EPSILON && Math.abs(a[14] - b[14]) < EPSILON && Math.abs(a[15] - b[15]) < EPSILON;
 }
@@ -750,7 +683,6 @@ function determinant(m) {
   const t3 = tmp5 * m01 + tmp8 * m11 + tmp11 * m21 - (tmp4 * m01 + tmp9 * m11 + tmp10 * m21);
   return m00 * t0 + m10 * t1 + m20 * t2 + m30 * t3;
 }
-var invert$1 = inverse$2;
 function multiply$2(a, b, dst) {
   dst = dst || new MatType(16);
   const a00 = a[0];
@@ -803,7 +735,6 @@ function multiply$2(a, b, dst) {
   dst[15] = a03 * b30 + a13 * b31 + a23 * b32 + a33 * b33;
   return dst;
 }
-var mul$2 = multiply$2;
 function setTranslation(a, v, dst) {
   dst = dst || identity$1();
   if (a !== dst) {
@@ -937,9 +868,6 @@ function frustum(left, right, bottom, top, near, far, dst) {
   dst[15] = 0;
   return dst;
 }
-var xAxis;
-var yAxis;
-var zAxis;
 function aim(position, target, up, dst) {
   dst = dst || new MatType(16);
   xAxis = xAxis || create$4();
@@ -1274,7 +1202,6 @@ function axisRotation(axis, angleInRadians, dst) {
   dst[15] = 1;
   return dst;
 }
-var rotation = axisRotation;
 function axisRotate(m, axis, angleInRadians, dst) {
   dst = dst || new MatType(16);
   let x = axis[0];
@@ -1331,7 +1258,6 @@ function axisRotate(m, axis, angleInRadians, dst) {
   }
   return dst;
 }
-var rotate = axisRotate;
 function scaling(v, dst) {
   dst = dst || new MatType(16);
   dst[0] = v[0];
@@ -1419,54 +1345,6 @@ function uniformScale(m, s, dst) {
   }
   return dst;
 }
-var mat4Impl = /* @__PURE__ */ Object.freeze({
-  __proto__: null,
-  setDefaultType: setDefaultType$3,
-  create: create$2,
-  set: set$2,
-  fromMat3,
-  fromQuat,
-  negate: negate$1,
-  copy: copy$2,
-  clone: clone$2,
-  equalsApproximately: equalsApproximately$2,
-  equals: equals$2,
-  identity: identity$1,
-  transpose,
-  inverse: inverse$2,
-  determinant,
-  invert: invert$1,
-  multiply: multiply$2,
-  mul: mul$2,
-  setTranslation,
-  getTranslation,
-  getAxis,
-  setAxis,
-  getScaling,
-  perspective,
-  ortho,
-  frustum,
-  aim,
-  cameraAim,
-  lookAt,
-  translation,
-  translate,
-  rotationX,
-  rotateX: rotateX$1,
-  rotationY,
-  rotateY: rotateY$1,
-  rotationZ,
-  rotateZ: rotateZ$1,
-  axisRotation,
-  rotation,
-  axisRotate,
-  rotate,
-  scaling,
-  scale: scale$2,
-  uniformScaling,
-  uniformScale
-});
-var QuatType = Float32Array;
 function setDefaultType$2(ctor) {
   const oldType = QuatType;
   QuatType = ctor;
@@ -1488,7 +1366,6 @@ function create$1(x, y, z, w) {
   }
   return dst;
 }
-var fromValues$1 = create$1;
 function set$1(x, y, z, w, dst) {
   dst = dst || new QuatType(4);
   dst[0] = x;
@@ -1542,7 +1419,6 @@ function multiply$1(a, b, dst) {
   dst[3] = aw * bw - ax * bx - ay * by - az * bz;
   return dst;
 }
-var mul$1 = multiply$1;
 function rotateX(q, angleInRadians, dst) {
   dst = dst || new QuatType(4);
   const halfAngle = angleInRadians * 0.5;
@@ -1735,7 +1611,6 @@ function copy$1(q, dst) {
   dst[3] = q[3];
   return dst;
 }
-var clone$1 = copy$1;
 function add$1(a, b, dst) {
   dst = dst || new QuatType(4);
   dst[0] = a[0] + b[0];
@@ -1752,7 +1627,6 @@ function subtract$1(a, b, dst) {
   dst[3] = a[3] - b[3];
   return dst;
 }
-var sub$1 = subtract$1;
 function mulScalar$1(v, k, dst) {
   dst = dst || new QuatType(4);
   dst[0] = v[0] * k;
@@ -1761,7 +1635,6 @@ function mulScalar$1(v, k, dst) {
   dst[3] = v[3] * k;
   return dst;
 }
-var scale$1 = mulScalar$1;
 function divScalar$1(v, k, dst) {
   dst = dst || new QuatType(4);
   dst[0] = v[0] / k;
@@ -1788,7 +1661,6 @@ function length$1(v) {
   const v3 = v[3];
   return Math.sqrt(v0 * v0 + v1 * v1 + v2 * v2 + v3 * v3);
 }
-var len$1 = length$1;
 function lengthSq$1(v) {
   const v0 = v[0];
   const v1 = v[1];
@@ -1796,7 +1668,6 @@ function lengthSq$1(v) {
   const v3 = v[3];
   return v0 * v0 + v1 * v1 + v2 * v2 + v3 * v3;
 }
-var lenSq$1 = lengthSq$1;
 function normalize$1(v, dst) {
   dst = dst || new QuatType(4);
   const v0 = v[0];
@@ -1831,9 +1702,6 @@ function identity(dst) {
   dst[3] = 1;
   return dst;
 }
-var tempVec3;
-var xUnitVec3;
-var yUnitVec3;
 function rotationTo(aUnit, bUnit, dst) {
   dst = dst || new QuatType(4);
   tempVec3 = tempVec3 || create$4();
@@ -1863,8 +1731,6 @@ function rotationTo(aUnit, bUnit, dst) {
     return normalize$1(dst, dst);
   }
 }
-var tempQuat1;
-var tempQuat2;
 function sqlerp(a, b, c, d, t, dst) {
   dst = dst || new QuatType(4);
   tempQuat1 = tempQuat1 || new QuatType(4);
@@ -1874,49 +1740,191 @@ function sqlerp(a, b, c, d, t, dst) {
   slerp(tempQuat1, tempQuat2, 2 * t * (1 - t), dst);
   return dst;
 }
-var quatImpl = /* @__PURE__ */ Object.freeze({
-  __proto__: null,
-  create: create$1,
-  setDefaultType: setDefaultType$2,
-  fromValues: fromValues$1,
-  set: set$1,
-  fromAxisAngle,
-  toAxisAngle,
-  angle,
-  multiply: multiply$1,
-  mul: mul$1,
-  rotateX,
-  rotateY,
-  rotateZ,
-  slerp,
-  inverse: inverse$1,
-  conjugate,
-  fromMat,
-  fromEuler,
-  copy: copy$1,
-  clone: clone$1,
-  add: add$1,
-  subtract: subtract$1,
-  sub: sub$1,
-  mulScalar: mulScalar$1,
-  scale: scale$1,
-  divScalar: divScalar$1,
-  dot: dot$1,
-  lerp: lerp$1,
-  length: length$1,
-  len: len$1,
-  lengthSq: lengthSq$1,
-  lenSq: lenSq$1,
-  normalize: normalize$1,
-  equalsApproximately: equalsApproximately$1,
-  equals: equals$1,
-  identity,
-  rotationTo,
-  sqlerp
+var EPSILON, VecType$1, ctorMap, newMat3, fromValues$2, sub$2, scale$3, invert$2, len$2, lenSq$2, dist$1, distSq$1, clone$3, mul$3, div$1, vec3Impl, MatType, clone$2, invert$1, mul$2, xAxis, yAxis, zAxis, rotation, rotate, mat4Impl, QuatType, fromValues$1, mul$1, clone$1, sub$1, scale$1, len$1, lenSq$1, tempVec3, xUnitVec3, yUnitVec3, tempQuat1, tempQuat2, quatImpl;
+var init_wgpu_matrix_module = __esm({
+  "../../../../node_modules/wgpu-matrix/dist/2.x/wgpu-matrix.module.js"() {
+    EPSILON = 1e-6;
+    VecType$1 = Float32Array;
+    ctorMap = /* @__PURE__ */ new Map([
+      [Float32Array, () => new Float32Array(12)],
+      [Float64Array, () => new Float64Array(12)],
+      [Array, () => new Array(12).fill(0)]
+    ]);
+    newMat3 = ctorMap.get(Float32Array);
+    fromValues$2 = create$4;
+    sub$2 = subtract$2;
+    scale$3 = mulScalar$2;
+    invert$2 = inverse$3;
+    len$2 = length$2;
+    lenSq$2 = lengthSq$2;
+    dist$1 = distance$1;
+    distSq$1 = distanceSq$1;
+    clone$3 = copy$3;
+    mul$3 = multiply$3;
+    div$1 = divide$1;
+    vec3Impl = /* @__PURE__ */ Object.freeze({
+      __proto__: null,
+      create: create$4,
+      setDefaultType: setDefaultType$5,
+      fromValues: fromValues$2,
+      set: set$3,
+      ceil: ceil$1,
+      floor: floor$1,
+      round: round$1,
+      clamp: clamp$1,
+      add: add$2,
+      addScaled: addScaled$1,
+      angle: angle$1,
+      subtract: subtract$2,
+      sub: sub$2,
+      equalsApproximately: equalsApproximately$3,
+      equals: equals$3,
+      lerp: lerp$2,
+      lerpV: lerpV$1,
+      max: max$1,
+      min: min$1,
+      mulScalar: mulScalar$2,
+      scale: scale$3,
+      divScalar: divScalar$2,
+      inverse: inverse$3,
+      invert: invert$2,
+      cross,
+      dot: dot$2,
+      length: length$2,
+      len: len$2,
+      lengthSq: lengthSq$2,
+      lenSq: lenSq$2,
+      distance: distance$1,
+      dist: dist$1,
+      distanceSq: distanceSq$1,
+      distSq: distSq$1,
+      normalize: normalize$2,
+      negate: negate$2,
+      copy: copy$3,
+      clone: clone$3,
+      multiply: multiply$3,
+      mul: mul$3,
+      divide: divide$1,
+      div: div$1,
+      random,
+      zero: zero$1,
+      transformMat4: transformMat4$1,
+      transformMat4Upper3x3,
+      transformMat3,
+      transformQuat,
+      getTranslation: getTranslation$1,
+      getAxis: getAxis$1,
+      getScaling: getScaling$1
+    });
+    MatType = Float32Array;
+    clone$2 = copy$2;
+    invert$1 = inverse$2;
+    mul$2 = multiply$2;
+    rotation = axisRotation;
+    rotate = axisRotate;
+    mat4Impl = /* @__PURE__ */ Object.freeze({
+      __proto__: null,
+      setDefaultType: setDefaultType$3,
+      create: create$2,
+      set: set$2,
+      fromMat3,
+      fromQuat,
+      negate: negate$1,
+      copy: copy$2,
+      clone: clone$2,
+      equalsApproximately: equalsApproximately$2,
+      equals: equals$2,
+      identity: identity$1,
+      transpose,
+      inverse: inverse$2,
+      determinant,
+      invert: invert$1,
+      multiply: multiply$2,
+      mul: mul$2,
+      setTranslation,
+      getTranslation,
+      getAxis,
+      setAxis,
+      getScaling,
+      perspective,
+      ortho,
+      frustum,
+      aim,
+      cameraAim,
+      lookAt,
+      translation,
+      translate,
+      rotationX,
+      rotateX: rotateX$1,
+      rotationY,
+      rotateY: rotateY$1,
+      rotationZ,
+      rotateZ: rotateZ$1,
+      axisRotation,
+      rotation,
+      axisRotate,
+      rotate,
+      scaling,
+      scale: scale$2,
+      uniformScaling,
+      uniformScale
+    });
+    QuatType = Float32Array;
+    fromValues$1 = create$1;
+    mul$1 = multiply$1;
+    clone$1 = copy$1;
+    sub$1 = subtract$1;
+    scale$1 = mulScalar$1;
+    len$1 = length$1;
+    lenSq$1 = lengthSq$1;
+    quatImpl = /* @__PURE__ */ Object.freeze({
+      __proto__: null,
+      create: create$1,
+      setDefaultType: setDefaultType$2,
+      fromValues: fromValues$1,
+      set: set$1,
+      fromAxisAngle,
+      toAxisAngle,
+      angle,
+      multiply: multiply$1,
+      mul: mul$1,
+      rotateX,
+      rotateY,
+      rotateZ,
+      slerp,
+      inverse: inverse$1,
+      conjugate,
+      fromMat,
+      fromEuler,
+      copy: copy$1,
+      clone: clone$1,
+      add: add$1,
+      subtract: subtract$1,
+      sub: sub$1,
+      mulScalar: mulScalar$1,
+      scale: scale$1,
+      divScalar: divScalar$1,
+      dot: dot$1,
+      lerp: lerp$1,
+      length: length$1,
+      len: len$1,
+      lengthSq: lengthSq$1,
+      lenSq: lenSq$1,
+      normalize: normalize$1,
+      equalsApproximately: equalsApproximately$1,
+      equals: equals$1,
+      identity,
+      rotationTo,
+      sqlerp
+    });
+  }
 });
 
 // ../../../shaders/shaders.js
-var UNLIT_SHADER = `struct Uniforms {
+var UNLIT_SHADER;
+var init_shaders = __esm({
+  "../../../shaders/shaders.js"() {
+    UNLIT_SHADER = `struct Uniforms {
   viewProjectionMatrix : mat4x4f
 }
 @group(0) @binding(0) var<uniform> uniforms : Uniforms;
@@ -1961,9 +1969,10 @@ fn fragmentMain(input: VertexOutput) -> @location(0) vec4f {
 
   return vec4f(textureColor.rgb * lightColor, textureColor.a);
 }`;
+  }
+});
 
 // ../../../engine/utils.js
-var supportsTouch = "ontouchstart" in window || navigator.msMaxTouchPoints;
 function isMobile() {
   if (supportsTouch == true) return true;
   const toMatch = [/Android/i, /webOS/i, /iPhone/i, /iPad/i, /iPod/i, /BlackBerry/i, /Windows Phone/i];
@@ -1978,60 +1987,6 @@ function radToDeg(r) {
   var pi = Math.PI;
   return r * (180 / pi);
 }
-var scriptManager = {
-  SCRIPT_ID: 0,
-  LOAD: function addScript(src, id, type, parent, callback) {
-    var s = document.createElement("script");
-    s.onload = function() {
-      if (typeof callback != "undefined") callback();
-    };
-    if (typeof type !== "undefined") {
-      s.setAttribute("type", type);
-      s.innerHTML = src;
-    } else {
-      s.setAttribute("src", src);
-    }
-    if (typeof id !== "undefined") {
-      s.setAttribute("id", id);
-    }
-    if (typeof parent !== "undefined") {
-      document.getElementById(parent).appendChild(s);
-      if (typeof callback != "undefined") callback();
-    } else {
-      document.body.appendChild(s);
-    }
-  },
-  loadModule: function addScript2(src, id, type, parent) {
-    console.log("Script id load called ");
-    var s = document.createElement("script");
-    s.onload = function() {
-      scriptManager.SCRIPT_ID++;
-    };
-    if (typeof type === "undefined") {
-      s.setAttribute("type", "module");
-      s.setAttribute("src", src);
-    } else {
-      s.setAttribute("type", type);
-      s.innerHTML = src;
-    }
-    s.setAttribute("src", src);
-    if (typeof id !== "undefined") {
-      s.setAttribute("id", id);
-    }
-    if (typeof parent !== "undefined") {
-      document.getElementById(parent).appendChild(s);
-    } else {
-      document.body.appendChild(s);
-    }
-  },
-  loadGLSL: function(src) {
-    return new Promise((resolve) => {
-      fetch(src).then((data) => {
-        resolve(data.text());
-      });
-    });
-  }
-};
 function OSCILLATOR(min, max, step) {
   if ((typeof min === "string" || typeof min === "number") && (typeof max === "string" || typeof max === "number") && (typeof step === "string" || typeof step === "number")) {
     var ROOT = this;
@@ -2071,9 +2026,6 @@ function OSCILLATOR(min, max, step) {
     console.log("OSCILLATOR ERROR");
   }
 }
-var byId = function(id) {
-  return document.getElementById(id);
-};
 function randomFloatFromTo(min, max) {
   return Math.random() * (max - min) + min;
 }
@@ -2090,23 +2042,6 @@ function randomIntFromTo(min, max) {
     return Math.floor(Math.random() * (max - min + 1) + min);
   }
 }
-var urlQuery = (function() {
-  var query_string = {};
-  var query = window.location.search.substring(1);
-  var vars = query.split("&");
-  for (var i = 0; i < vars.length; i++) {
-    var pair = vars[i].split("=");
-    if (typeof query_string[pair[0]] === "undefined") {
-      query_string[pair[0]] = decodeURIComponent(pair[1]);
-    } else if (typeof query_string[pair[0]] === "string") {
-      var arr = [query_string[pair[0]], decodeURIComponent(pair[1])];
-      query_string[pair[0]] = arr;
-    } else {
-      query_string[pair[0]].push(decodeURIComponent(pair[1]));
-    }
-  }
-  return query_string;
-})();
 function quaternion_rotation_matrix(Q) {
   var q0 = Q[0];
   var q1 = Q[1];
@@ -2128,10 +2063,6 @@ function quaternion_rotation_matrix(Q) {
   ];
   return rot_matrix;
 }
-var LOG_WARN = "background: gray; color: yellow; font-size:10px";
-var LOG_MATRIX = "font-family: stormfaze;color: #lime; font-size:11px;text-shadow: 2px 2px 4px orangered;background: black;";
-var LOG_FUNNY = "font-family: stormfaze;color: #f1f033; font-size:14px;text-shadow: 2px 2px 4px #f335f4, 4px 4px 4px #d64444, 2px 2px 4px #c160a6, 6px 2px 0px #123de3;background: black;";
-var LOG_FUNNY_SMALL = "font-family: stormfaze;color: #f1f033; font-size:10px;text-shadow: 2px 2px 4px #f335f4, 4px 4px 4px #d64444, 1px 1px 2px #c160a6, 3px 1px 0px #123de3;background: black;";
 function genName(length) {
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
   let result = "";
@@ -2140,637 +2071,482 @@ function genName(length) {
   }
   return result;
 }
-var mb = {
-  root: () => byId("msgBox"),
-  pContent: () => byId("not-content"),
-  copy: function() {
-    navigator.clipboard.writeText(mb.root().children[0].innerText);
-  },
-  c: 0,
-  ic: 0,
-  t: {},
-  setContent: function(content, t) {
-    var iMsg = document.createElement("div");
-    iMsg.innerHTML = content;
-    iMsg.id = `msgbox-loc-${mb.c}`;
-    mb.root().appendChild(iMsg);
-    iMsg.classList.add("animate1");
-    if (t == "ok") {
-      iMsg.style = "font-family: stormfaze;color:white;padding:7px;margin:2px";
-    } else {
-      iMsg.style = "font-family: stormfaze;color:white;padding:7px;margin:2px";
-    }
-  },
-  kill: function() {
-    mb.root().remove();
-  },
-  show: function(content, t) {
-    mb.setContent(content, t);
-    mb.root().style.display = "block";
-    var loc2 = mb.c;
-    setTimeout(function() {
-      byId(`msgbox-loc-${loc2}`).classList.remove("fadeInDown");
-      byId(`msgbox-loc-${loc2}`).classList.add("fadeOut");
-      setTimeout(function() {
-        byId(`msgbox-loc-${loc2}`).style.display = "none";
-        byId(`msgbox-loc-${loc2}`).classList.remove("fadeOut");
-        byId(`msgbox-loc-${loc2}`).remove();
-        mb.ic++;
-        if (mb.c == mb.ic) {
-          mb.root().style.display = "none";
+var supportsTouch, scriptManager, byId, urlQuery, LOG_WARN, LOG_MATRIX, LOG_FUNNY, LOG_FUNNY_SMALL, mb, jsonHeaders, htmlHeader, FullscreenManager;
+var init_utils = __esm({
+  "../../../engine/utils.js"() {
+    supportsTouch = "ontouchstart" in window || navigator.msMaxTouchPoints;
+    scriptManager = {
+      SCRIPT_ID: 0,
+      LOAD: function addScript(src, id, type, parent, callback) {
+        var s = document.createElement("script");
+        s.onload = function() {
+          if (typeof callback != "undefined") callback();
+        };
+        if (typeof type !== "undefined") {
+          s.setAttribute("type", type);
+          s.innerHTML = src;
+        } else {
+          s.setAttribute("src", src);
         }
-      }, 1e3);
-    }, 3e3);
-    mb.c++;
-  },
-  error: function(content) {
-    if (mb.root() == null) return;
-    mb.root().classList.remove("success");
-    mb.root().classList.add("error");
-    mb.root().classList.add("fadeInDown");
-    mb.show(content, "err");
-  },
-  success: function(content) {
-    if (mb.root() == null) return;
-    mb.root().classList.remove("error");
-    mb.root().classList.add("success");
-    mb.root().classList.add("fadeInDown");
-    mb.show(content, "ok");
+        if (typeof id !== "undefined") {
+          s.setAttribute("id", id);
+        }
+        if (typeof parent !== "undefined") {
+          document.getElementById(parent).appendChild(s);
+          if (typeof callback != "undefined") callback();
+        } else {
+          document.body.appendChild(s);
+        }
+      },
+      loadModule: function addScript2(src, id, type, parent) {
+        console.log("Script id load called ");
+        var s = document.createElement("script");
+        s.onload = function() {
+          scriptManager.SCRIPT_ID++;
+        };
+        if (typeof type === "undefined") {
+          s.setAttribute("type", "module");
+          s.setAttribute("src", src);
+        } else {
+          s.setAttribute("type", type);
+          s.innerHTML = src;
+        }
+        s.setAttribute("src", src);
+        if (typeof id !== "undefined") {
+          s.setAttribute("id", id);
+        }
+        if (typeof parent !== "undefined") {
+          document.getElementById(parent).appendChild(s);
+        } else {
+          document.body.appendChild(s);
+        }
+      },
+      loadGLSL: function(src) {
+        return new Promise((resolve) => {
+          fetch(src).then((data) => {
+            resolve(data.text());
+          });
+        });
+      }
+    };
+    byId = function(id) {
+      return document.getElementById(id);
+    };
+    urlQuery = (function() {
+      var query_string = {};
+      var query = window.location.search.substring(1);
+      var vars = query.split("&");
+      for (var i = 0; i < vars.length; i++) {
+        var pair = vars[i].split("=");
+        if (typeof query_string[pair[0]] === "undefined") {
+          query_string[pair[0]] = decodeURIComponent(pair[1]);
+        } else if (typeof query_string[pair[0]] === "string") {
+          var arr = [query_string[pair[0]], decodeURIComponent(pair[1])];
+          query_string[pair[0]] = arr;
+        } else {
+          query_string[pair[0]].push(decodeURIComponent(pair[1]));
+        }
+      }
+      return query_string;
+    })();
+    LOG_WARN = "background: gray; color: yellow; font-size:10px";
+    LOG_MATRIX = "font-family: stormfaze;color: #lime; font-size:11px;text-shadow: 2px 2px 4px orangered;background: black;";
+    LOG_FUNNY = "font-family: stormfaze;color: #f1f033; font-size:14px;text-shadow: 2px 2px 4px #f335f4, 4px 4px 4px #d64444, 2px 2px 4px #c160a6, 6px 2px 0px #123de3;background: black;";
+    LOG_FUNNY_SMALL = "font-family: stormfaze;color: #f1f033; font-size:10px;text-shadow: 2px 2px 4px #f335f4, 4px 4px 4px #d64444, 1px 1px 2px #c160a6, 3px 1px 0px #123de3;background: black;";
+    mb = {
+      root: () => byId("msgBox"),
+      pContent: () => byId("not-content"),
+      copy: function() {
+        navigator.clipboard.writeText(mb.root().children[0].innerText);
+      },
+      c: 0,
+      ic: 0,
+      t: {},
+      setContent: function(content, t) {
+        var iMsg = document.createElement("div");
+        iMsg.innerHTML = content;
+        iMsg.id = `msgbox-loc-${mb.c}`;
+        mb.root().appendChild(iMsg);
+        iMsg.classList.add("animate1");
+        if (t == "ok") {
+          iMsg.style = "font-family: stormfaze;color:white;padding:7px;margin:2px";
+        } else {
+          iMsg.style = "font-family: stormfaze;color:white;padding:7px;margin:2px";
+        }
+      },
+      kill: function() {
+        mb.root().remove();
+      },
+      show: function(content, t) {
+        mb.setContent(content, t);
+        mb.root().style.display = "block";
+        var loc2 = mb.c;
+        setTimeout(function() {
+          byId(`msgbox-loc-${loc2}`).classList.remove("fadeInDown");
+          byId(`msgbox-loc-${loc2}`).classList.add("fadeOut");
+          setTimeout(function() {
+            byId(`msgbox-loc-${loc2}`).style.display = "none";
+            byId(`msgbox-loc-${loc2}`).classList.remove("fadeOut");
+            byId(`msgbox-loc-${loc2}`).remove();
+            mb.ic++;
+            if (mb.c == mb.ic) {
+              mb.root().style.display = "none";
+            }
+          }, 1e3);
+        }, 3e3);
+        mb.c++;
+      },
+      error: function(content) {
+        if (mb.root() == null) return;
+        mb.root().classList.remove("success");
+        mb.root().classList.add("error");
+        mb.root().classList.add("fadeInDown");
+        mb.show(content, "err");
+      },
+      success: function(content) {
+        if (mb.root() == null) return;
+        mb.root().classList.remove("error");
+        mb.root().classList.add("success");
+        mb.root().classList.add("fadeInDown");
+        mb.show(content, "ok");
+      }
+    };
+    jsonHeaders = new Headers({
+      "Content-Type": "application/json",
+      "Accept": "application/json"
+    });
+    htmlHeader = new Headers({
+      "Content-Type": "text/html",
+      "Accept": "text/plain"
+    });
+    FullscreenManager = class {
+      constructor() {
+        this.target = document.documentElement;
+      }
+      isFullscreen() {
+        return !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement);
+      }
+      request() {
+        const el = this.target;
+        return el.requestFullscreen?.() || el.webkitRequestFullscreen?.() || el.mozRequestFullScreen?.() || el.msRequestFullscreen?.();
+      }
+      exit() {
+        return document.exitFullscreen?.() || document.webkitExitFullscreen?.() || document.mozCancelFullScreen?.() || document.msExitFullscreen?.();
+      }
+      toggle() {
+        return this.isFullscreen() ? this.exit() : this.request();
+      }
+      onChange(callback) {
+        [
+          "fullscreenchange",
+          "webkitfullscreenchange",
+          "mozfullscreenchange",
+          "MSFullscreenChange"
+        ].forEach(
+          (evt) => document.addEventListener(evt, () => {
+            callback(this.isFullscreen());
+          })
+        );
+      }
+    };
   }
-};
-var jsonHeaders = new Headers({
-  "Content-Type": "application/json",
-  "Accept": "application/json"
 });
-var htmlHeader = new Headers({
-  "Content-Type": "text/html",
-  "Accept": "text/plain"
-});
-var FullscreenManager = class {
-  constructor() {
-    this.target = document.documentElement;
-  }
-  isFullscreen() {
-    return !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement);
-  }
-  request() {
-    const el = this.target;
-    return el.requestFullscreen?.() || el.webkitRequestFullscreen?.() || el.mozRequestFullScreen?.() || el.msRequestFullscreen?.();
-  }
-  exit() {
-    return document.exitFullscreen?.() || document.webkitExitFullscreen?.() || document.mozCancelFullScreen?.() || document.msExitFullscreen?.();
-  }
-  toggle() {
-    return this.isFullscreen() ? this.exit() : this.request();
-  }
-  onChange(callback) {
-    [
-      "fullscreenchange",
-      "webkitfullscreenchange",
-      "mozfullscreenchange",
-      "MSFullscreenChange"
-    ].forEach(
-      (evt) => document.addEventListener(evt, () => {
-        callback(this.isFullscreen());
-      })
-    );
-  }
-};
 
 // ../../../engine/matrix-class.js
-var Position = class {
-  constructor(x, y, z) {
-    this.remoteName = null;
-    this.netObject = null;
-    this.toRemote = [];
-    this.teams = [];
-    this.netTolerance = 3;
-    this.netTolerance__ = 0;
-    if (typeof x == "undefined") x = 0;
-    if (typeof y == "undefined") y = 0;
-    if (typeof z == "undefined") z = 0;
-    this.x = parseFloat(x);
-    this.y = parseFloat(y);
-    this.z = parseFloat(z);
-    this.velY = 0;
-    this.velX = 0;
-    this.velZ = 0;
-    this.inMove = false;
-    this.targetX = parseFloat(x);
-    this.targetY = parseFloat(y);
-    this.targetZ = parseFloat(z);
-    this.thrust = 0.01;
-    return this;
-  }
-  setSpeed(n) {
-    if (typeof n === "number") {
-      this.thrust = n;
-    } else {
-      console.log("Description: arguments (w, h) must be type of number.");
-    }
-  }
-  translateByX(x) {
-    this.inMove = true;
-    this.targetX = parseFloat(x);
-  }
-  translateByY(y) {
-    this.inMove = true;
-    this.targetY = parseFloat(y);
-  }
-  translateByZ(z) {
-    this.inMove = true;
-    this.targetZ = parseFloat(z);
-  }
-  translateByXY(x, y) {
-    this.inMove = true;
-    this.targetX = parseFloat(x);
-    this.targetY = parseFloat(y);
-  }
-  translateByXZ(x, z) {
-    this.inMove = true;
-    this.targetX = parseFloat(x);
-    this.targetZ = parseFloat(z);
-  }
-  translateByYZ(y, z) {
-    this.inMove = true;
-    this.targetY = parseFloat(y);
-    this.targetZ = parseFloat(z);
-  }
-  onTargetPositionReach() {
-  }
-  update() {
-    var tx = parseFloat(this.targetX) - parseFloat(this.x), ty = parseFloat(this.targetY) - parseFloat(this.y), tz = parseFloat(this.targetZ) - parseFloat(this.z), dist = Math.sqrt(tx * tx + ty * ty + tz * tz);
-    this.velX = tx / dist * this.thrust;
-    this.velY = ty / dist * this.thrust;
-    this.velZ = tz / dist * this.thrust;
-    if (this.inMove == true) {
-      if (dist > this.thrust) {
-        this.x += this.velX;
-        this.y += this.velY;
-        this.z += this.velZ;
-        if (this.netObject != null) {
-          if (this.netTolerance__ > this.netTolerance) {
-            if (this.teams.length == 0) {
-              app.net.send({
-                toRemote: this.toRemote,
-                // default null
-                remoteName: this.remoteName,
-                // default null
-                sceneName: this.netObject,
-                netPos: { x: this.x, y: this.y, z: this.z }
-              });
-            } else {
-              if (this.teams.length > 0) {
-                if (this.teams[0].length > 0) app.net.send({
-                  toRemote: this.teams[0],
-                  // default null remote conns
-                  sceneName: this.netObject,
-                  // origin scene name to receive
-                  netPos: { x: this.x, y: this.y, z: this.z }
-                });
-              }
-              if (this.teams.length > 0) {
-                if (this.teams[1].length > 0) app.net.send({
-                  toRemote: this.teams[1],
-                  // default null remote conns
-                  remoteName: this.remoteName,
-                  // to enemy players
-                  sceneName: this.netObject,
-                  // now not important
-                  netPos: { x: this.x, y: this.y, z: this.z }
-                });
+var Position, Rotation;
+var init_matrix_class = __esm({
+  "../../../engine/matrix-class.js"() {
+    init_utils();
+    Position = class {
+      constructor(x, y, z) {
+        this.remoteName = null;
+        this.netObject = null;
+        this.toRemote = [];
+        this.teams = [];
+        this.netTolerance = 3;
+        this.netTolerance__ = 0;
+        if (typeof x == "undefined") x = 0;
+        if (typeof y == "undefined") y = 0;
+        if (typeof z == "undefined") z = 0;
+        this.x = parseFloat(x);
+        this.y = parseFloat(y);
+        this.z = parseFloat(z);
+        this.velY = 0;
+        this.velX = 0;
+        this.velZ = 0;
+        this.inMove = false;
+        this.targetX = parseFloat(x);
+        this.targetY = parseFloat(y);
+        this.targetZ = parseFloat(z);
+        this.thrust = 0.01;
+        return this;
+      }
+      setSpeed(n) {
+        if (typeof n === "number") {
+          this.thrust = n;
+        } else {
+          console.log("Description: arguments (w, h) must be type of number.");
+        }
+      }
+      translateByX(x) {
+        this.inMove = true;
+        this.targetX = parseFloat(x);
+      }
+      translateByY(y) {
+        this.inMove = true;
+        this.targetY = parseFloat(y);
+      }
+      translateByZ(z) {
+        this.inMove = true;
+        this.targetZ = parseFloat(z);
+      }
+      translateByXY(x, y) {
+        this.inMove = true;
+        this.targetX = parseFloat(x);
+        this.targetY = parseFloat(y);
+      }
+      translateByXZ(x, z) {
+        this.inMove = true;
+        this.targetX = parseFloat(x);
+        this.targetZ = parseFloat(z);
+      }
+      translateByYZ(y, z) {
+        this.inMove = true;
+        this.targetY = parseFloat(y);
+        this.targetZ = parseFloat(z);
+      }
+      onTargetPositionReach() {
+      }
+      update() {
+        var tx = parseFloat(this.targetX) - parseFloat(this.x), ty = parseFloat(this.targetY) - parseFloat(this.y), tz = parseFloat(this.targetZ) - parseFloat(this.z), dist = Math.sqrt(tx * tx + ty * ty + tz * tz);
+        this.velX = tx / dist * this.thrust;
+        this.velY = ty / dist * this.thrust;
+        this.velZ = tz / dist * this.thrust;
+        if (this.inMove == true) {
+          if (dist > this.thrust) {
+            this.x += this.velX;
+            this.y += this.velY;
+            this.z += this.velZ;
+            if (this.netObject != null) {
+              if (this.netTolerance__ > this.netTolerance) {
+                if (this.teams.length == 0) {
+                  app.net.send({
+                    toRemote: this.toRemote,
+                    // default null
+                    remoteName: this.remoteName,
+                    // default null
+                    sceneName: this.netObject,
+                    netPos: { x: this.x, y: this.y, z: this.z }
+                  });
+                } else {
+                  if (this.teams.length > 0) {
+                    if (this.teams[0].length > 0) app.net.send({
+                      toRemote: this.teams[0],
+                      // default null remote conns
+                      sceneName: this.netObject,
+                      // origin scene name to receive
+                      netPos: { x: this.x, y: this.y, z: this.z }
+                    });
+                  }
+                  if (this.teams.length > 0) {
+                    if (this.teams[1].length > 0) app.net.send({
+                      toRemote: this.teams[1],
+                      // default null remote conns
+                      remoteName: this.remoteName,
+                      // to enemy players
+                      sceneName: this.netObject,
+                      // now not important
+                      netPos: { x: this.x, y: this.y, z: this.z }
+                    });
+                  }
+                }
+                this.netTolerance__ = 0;
+              } else {
+                this.netTolerance__++;
               }
             }
-            this.netTolerance__ = 0;
           } else {
-            this.netTolerance__++;
+            this.x = this.targetX;
+            this.y = this.targetY;
+            this.z = this.targetZ;
+            this.inMove = false;
+            this.onTargetPositionReach();
+            if (this.netObject != null) {
+              if (this.netTolerance__ > this.netTolerance) {
+                if (this.teams.length == 0) {
+                  app.net.send({
+                    toRemote: this.toRemote,
+                    // default null
+                    remoteName: this.remoteName,
+                    // default null
+                    sceneName: this.netObject,
+                    netPos: { x: this.x, y: this.y, z: this.z }
+                  });
+                } else {
+                  if (this.teams[0].length > 0) app.net.send({
+                    toRemote: this.teams[0],
+                    sceneName: this.netObject,
+                    netPos: { x: this.x, y: this.y, z: this.z }
+                  });
+                  if (this.teams[1].length > 0) app.net.send({
+                    // team: this.teams[1],
+                    toRemote: this.teams[1],
+                    // default null remote conns
+                    remoteName: this.remoteName,
+                    // to enemy players
+                    sceneName: this.netObject,
+                    // now not important
+                    netPos: { x: this.x, y: this.y, z: this.z }
+                  });
+                }
+                this.netTolerance__ = 0;
+              } else {
+                this.netTolerance__++;
+              }
+            }
           }
         }
-      } else {
-        this.x = this.targetX;
-        this.y = this.targetY;
-        this.z = this.targetZ;
+      }
+      get worldLocation() {
+        return [parseFloat(this.x), parseFloat(this.y), parseFloat(this.z)];
+      }
+      SetX(newx, em) {
+        this.x = newx;
+        this.targetX = newx;
         this.inMove = false;
-        this.onTargetPositionReach();
-        if (this.netObject != null) {
-          if (this.netTolerance__ > this.netTolerance) {
+      }
+      SetY(newy, em) {
+        this.y = newy;
+        this.targetY = newy;
+        this.inMove = false;
+      }
+      SetZ(newz, em) {
+        this.z = newz;
+        this.targetZ = newz;
+        this.inMove = false;
+      }
+      get X() {
+        return parseFloat(this.x);
+      }
+      get Y() {
+        return parseFloat(this.y);
+      }
+      get Z() {
+        return parseFloat(this.z);
+      }
+      setPosition(newx, newy, newz) {
+        this.x = newx;
+        this.y = newy;
+        this.z = newz;
+        this.targetX = newx;
+        this.targetY = newy;
+        this.targetZ = newz;
+        this.inMove = false;
+      }
+    };
+    Rotation = class {
+      constructor(x, y, z) {
+        this.toRemote = [];
+        this.teams = [];
+        this.remoteName = null;
+        this.emitX = null;
+        this.emitY = null;
+        this.emitZ = null;
+        if (typeof x == "undefined") x = 0;
+        if (typeof y == "undefined") y = 0;
+        if (typeof z == "undefined") z = 0;
+        this.x = x;
+        this.y = y;
+        this.z = z;
+        this.netx = x;
+        this.nety = y;
+        this.netz = z;
+        this.rotationSpeed = { x: 0, y: 0, z: 0 };
+        this.angle = 0;
+        this.axis = { x: 0, y: 0, z: 0 };
+        this.matrixRotation = null;
+      }
+      toDegree() {
+        return [radToDeg(this.axis.x), radToDeg(this.axis.y), radToDeg(this.axis.z)];
+      }
+      toDegreeX() {
+        return Math.cos(radToDeg(this.axis.x) / 2);
+      }
+      toDegreeY() {
+        return Math.cos(radToDeg(this.axis.z) / 2);
+      }
+      toDegreeZ() {
+        return Math.cos(radToDeg(this.axis.y) / 2);
+      }
+      getRotX() {
+        if (this.rotationSpeed.x == 0) {
+          if (this.netx != this.x && this.emitX) {
+            app.net.send({
+              remoteName: this.remoteName,
+              sceneName: this.emitX,
+              netRotX: this.x
+            });
+          }
+          this.netx = this.x;
+          return degToRad(this.x);
+        } else {
+          this.x = this.x + this.rotationSpeed.x * 1e-3;
+          return degToRad(this.x);
+        }
+      }
+      getRotY() {
+        if (this.rotationSpeed.y == 0) {
+          if (this.nety != this.y && this.emitY) {
             if (this.teams.length == 0) {
               app.net.send({
                 toRemote: this.toRemote,
-                // default null
                 remoteName: this.remoteName,
-                // default null
-                sceneName: this.netObject,
-                netPos: { x: this.x, y: this.y, z: this.z }
+                sceneName: this.emitY,
+                netRotY: this.y
               });
+              this.nety = this.y;
             } else {
               if (this.teams[0].length > 0) app.net.send({
                 toRemote: this.teams[0],
-                sceneName: this.netObject,
-                netPos: { x: this.x, y: this.y, z: this.z }
+                sceneName: this.emitY,
+                netRotY: this.y
               });
               if (this.teams[1].length > 0) app.net.send({
-                // team: this.teams[1],
                 toRemote: this.teams[1],
-                // default null remote conns
                 remoteName: this.remoteName,
-                // to enemy players
-                sceneName: this.netObject,
-                // now not important
-                netPos: { x: this.x, y: this.y, z: this.z }
+                sceneName: this.emitY,
+                netRotY: this.y
               });
+              this.nety = this.y;
             }
-            this.netTolerance__ = 0;
-          } else {
-            this.netTolerance__++;
           }
-        }
-      }
-    }
-  }
-  get worldLocation() {
-    return [parseFloat(this.x), parseFloat(this.y), parseFloat(this.z)];
-  }
-  SetX(newx, em) {
-    this.x = newx;
-    this.targetX = newx;
-    this.inMove = false;
-  }
-  SetY(newy, em) {
-    this.y = newy;
-    this.targetY = newy;
-    this.inMove = false;
-  }
-  SetZ(newz, em) {
-    this.z = newz;
-    this.targetZ = newz;
-    this.inMove = false;
-  }
-  get X() {
-    return parseFloat(this.x);
-  }
-  get Y() {
-    return parseFloat(this.y);
-  }
-  get Z() {
-    return parseFloat(this.z);
-  }
-  setPosition(newx, newy, newz) {
-    this.x = newx;
-    this.y = newy;
-    this.z = newz;
-    this.targetX = newx;
-    this.targetY = newy;
-    this.targetZ = newz;
-    this.inMove = false;
-  }
-};
-var Rotation = class {
-  constructor(x, y, z) {
-    this.toRemote = [];
-    this.teams = [];
-    this.remoteName = null;
-    this.emitX = null;
-    this.emitY = null;
-    this.emitZ = null;
-    if (typeof x == "undefined") x = 0;
-    if (typeof y == "undefined") y = 0;
-    if (typeof z == "undefined") z = 0;
-    this.x = x;
-    this.y = y;
-    this.z = z;
-    this.netx = x;
-    this.nety = y;
-    this.netz = z;
-    this.rotationSpeed = { x: 0, y: 0, z: 0 };
-    this.angle = 0;
-    this.axis = { x: 0, y: 0, z: 0 };
-    this.matrixRotation = null;
-  }
-  toDegree() {
-    return [radToDeg(this.axis.x), radToDeg(this.axis.y), radToDeg(this.axis.z)];
-  }
-  toDegreeX() {
-    return Math.cos(radToDeg(this.axis.x) / 2);
-  }
-  toDegreeY() {
-    return Math.cos(radToDeg(this.axis.z) / 2);
-  }
-  toDegreeZ() {
-    return Math.cos(radToDeg(this.axis.y) / 2);
-  }
-  getRotX() {
-    if (this.rotationSpeed.x == 0) {
-      if (this.netx != this.x && this.emitX) {
-        app.net.send({
-          remoteName: this.remoteName,
-          sceneName: this.emitX,
-          netRotX: this.x
-        });
-      }
-      this.netx = this.x;
-      return degToRad(this.x);
-    } else {
-      this.x = this.x + this.rotationSpeed.x * 1e-3;
-      return degToRad(this.x);
-    }
-  }
-  getRotY() {
-    if (this.rotationSpeed.y == 0) {
-      if (this.nety != this.y && this.emitY) {
-        if (this.teams.length == 0) {
-          app.net.send({
-            toRemote: this.toRemote,
-            remoteName: this.remoteName,
-            sceneName: this.emitY,
-            netRotY: this.y
-          });
-          this.nety = this.y;
+          return degToRad(this.y);
         } else {
-          if (this.teams[0].length > 0) app.net.send({
-            toRemote: this.teams[0],
-            sceneName: this.emitY,
-            netRotY: this.y
-          });
-          if (this.teams[1].length > 0) app.net.send({
-            toRemote: this.teams[1],
-            remoteName: this.remoteName,
-            sceneName: this.emitY,
-            netRotY: this.y
-          });
-          this.nety = this.y;
+          this.y = this.y + this.rotationSpeed.y * 1e-3;
+          return degToRad(this.y);
         }
       }
-      return degToRad(this.y);
-    } else {
-      this.y = this.y + this.rotationSpeed.y * 1e-3;
-      return degToRad(this.y);
-    }
-  }
-  getRotZ() {
-    if (this.rotationSpeed.z == 0) {
-      if (this.netz != this.z && this.emitZ) {
-        app.net.send({
-          remoteName: this.remoteName,
-          sceneName: this.emitZ,
-          netRotZ: this.z
-        });
+      getRotZ() {
+        if (this.rotationSpeed.z == 0) {
+          if (this.netz != this.z && this.emitZ) {
+            app.net.send({
+              remoteName: this.remoteName,
+              sceneName: this.emitZ,
+              netRotZ: this.z
+            });
+          }
+          this.netz = this.z;
+          return degToRad(this.z);
+        } else {
+          this.z = this.z + this.rotationSpeed.z * 1e-3;
+          return degToRad(this.z);
+        }
       }
-      this.netz = this.z;
-      return degToRad(this.z);
-    } else {
-      this.z = this.z + this.rotationSpeed.z * 1e-3;
-      return degToRad(this.z);
-    }
+    };
   }
-};
+});
 
 // ../../../engine/engine.js
-var CameraBase = class {
-  // The camera matrix
-  matrix_ = new Float32Array([
-    1,
-    0,
-    0,
-    0,
-    0,
-    1,
-    0,
-    0,
-    0,
-    0,
-    1,
-    0,
-    0,
-    0,
-    0,
-    1
-  ]);
-  // The calculated view matrix readonly
-  view_ = mat4Impl.create();
-  // Aliases to column vectors of the matrix
-  right_ = new Float32Array(this.matrix_.buffer, 4 * 0, 4);
-  up_ = new Float32Array(this.matrix_.buffer, 4 * 4, 4);
-  back_ = new Float32Array(this.matrix_.buffer, 4 * 8, 4);
-  position_ = new Float32Array(this.matrix_.buffer, 4 * 12, 4);
-  // Returns the camera matrix
-  get matrix() {
-    return this.matrix_;
-  }
-  // Assigns `mat` to the camera matrix
-  set matrix(mat) {
-    mat4Impl.copy(mat, this.matrix_);
-  }
-  // setProjection(fov = (2*Math.PI) / 5 , aspect = 1, near = 0.5, far = 1000) {
-  //   this.projectionMatrix = mat4.perspective(fov, aspect, near, far);
-  // }
-  // Returns the camera view matrix
-  get view() {
-    return this.view_;
-  }
-  // Assigns `mat` to the camera view
-  set view(mat) {
-    mat4Impl.copy(mat, this.view_);
-  }
-  // Returns column vector 0 of the camera matrix
-  get right() {
-    return this.right_;
-  }
-  // Assigns `vec` to the first 3 elements of column vector 0 of the camera matrix
-  set right(vec) {
-    vec3Impl.copy(vec, this.right_);
-  }
-  // Returns column vector 1 of the camera matrix
-  get up() {
-    return this.up_;
-  }
-  // Assigns `vec` to the first 3 elements of column vector 1 of the camera matrix \ Vec3
-  set up(vec) {
-    vec3Impl.copy(vec, this.up_);
-  }
-  // Returns column vector 2 of the camera matrix
-  get back() {
-    return this.back_;
-  }
-  // Assigns `vec` to the first 3 elements of column vector 2 of the camera matrix
-  set back(vec) {
-    vec3Impl.copy(vec, this.back_);
-  }
-  // Returns column vector 3 of the camera matrix
-  get position() {
-    return this.position_;
-  }
-  // Assigns `vec` to the first 3 elements of column vector 3 of the camera matrix
-  set position(vec) {
-    vec3Impl.copy(vec, this.position_);
-  }
-};
-var WASDCamera = class extends CameraBase {
-  // The camera absolute pitch angle
-  pitch = 0;
-  // The camera absolute yaw angle
-  yaw = 0;
-  // The movement veloicty readonly
-  velocity_ = vec3Impl.create();
-  // Speed multiplier for camera movement
-  movementSpeed = 10;
-  // Speed multiplier for camera rotation
-  rotationSpeed = 1;
-  // Movement velocity drag coeffient [0 .. 1]
-  // 0: Continues forever
-  // 1: Instantly stops moving
-  frictionCoefficient = 0.99;
-  // Returns velocity vector
-  get velocity() {
-    return this.velocity_;
-  }
-  // Assigns `vec` to the velocity vector
-  set velocity(vec) {
-    vec3Impl.copy(vec, this.velocity_);
-  }
-  setProjection(fov = 2 * Math.PI / 5, aspect = 1, near = 1, far = 1e3) {
-    this.projectionMatrix = mat4Impl.perspective(fov, aspect, near, far);
-  }
-  constructor(options) {
-    super();
-    if (options && (options.position || options.target)) {
-      const position = options.position ?? vec3Impl.create(0, 0, 0);
-      const target = options.target ?? vec3Impl.create(0, 0, 0);
-      const forward = vec3Impl.normalize(vec3Impl.sub(target, position));
-      this.recalculateAngles(forward);
-      this.position = position;
-      this.canvas = options.canvas;
-      this.aspect = options.canvas.width / options.canvas.height;
-      this.setProjection(2 * Math.PI / 5, this.aspect, 1, 2e3);
-    }
-  }
-  // Returns the camera matrix
-  get matrix() {
-    return super.matrix;
-  }
-  // Assigns `mat` to the camera matrix, and recalcuates the camera angles
-  set matrix(mat) {
-    super.matrix = mat;
-    this.recalculateAngles(this.back);
-  }
-  update(deltaTime2, input) {
-    const sign = (positive, negative) => (positive ? 1 : 0) - (negative ? 1 : 0);
-    this.yaw -= input.analog.x * deltaTime2 * this.rotationSpeed;
-    this.pitch -= input.analog.y * deltaTime2 * this.rotationSpeed;
-    this.yaw = mod(this.yaw, Math.PI * 2);
-    this.pitch = clamp(this.pitch, -Math.PI / 2, Math.PI / 2);
-    const position = vec3Impl.copy(this.position);
-    super.matrix = mat4Impl.rotateX(mat4Impl.rotationY(this.yaw), this.pitch);
-    const digital = input.digital;
-    const deltaRight = sign(digital.right, digital.left);
-    const deltaUp = sign(digital.up, digital.down);
-    const targetVelocity = vec3Impl.create();
-    const deltaBack = sign(digital.backward, digital.forward);
-    vec3Impl.addScaled(targetVelocity, this.right, deltaRight, targetVelocity);
-    vec3Impl.addScaled(targetVelocity, this.up, deltaUp, targetVelocity);
-    vec3Impl.addScaled(targetVelocity, this.back, deltaBack, targetVelocity);
-    vec3Impl.normalize(targetVelocity, targetVelocity);
-    vec3Impl.mulScalar(targetVelocity, this.movementSpeed, targetVelocity);
-    this.velocity = lerp(
-      targetVelocity,
-      this.velocity,
-      Math.pow(1 - this.frictionCoefficient, deltaTime2)
-    );
-    this.position = vec3Impl.addScaled(position, this.velocity, deltaTime2);
-    this.view = mat4Impl.invert(this.matrix);
-    return this.view;
-  }
-  // Recalculates the yaw and pitch values from a directional vector
-  recalculateAngles(dir) {
-    this.yaw = Math.atan2(dir[0], dir[2]);
-    this.pitch = -Math.asin(dir[1]);
-  }
-};
-var ArcballCamera = class extends CameraBase {
-  // The camera distance from the target
-  distance = 0;
-  // The current angular velocity
-  angularVelocity = 0;
-  // The current rotation axis
-  axis_ = vec3Impl.create();
-  // Returns the rotation axis
-  get axis() {
-    return this.axis_;
-  }
-  // Assigns `vec` to the rotation axis
-  set axis(vec) {
-    vec3Impl.copy(vec, this.axis_);
-  }
-  // Speed multiplier for camera rotation
-  rotationSpeed = 1;
-  // Speed multiplier for camera zoom
-  zoomSpeed = 0.1;
-  // Rotation velocity drag coeffient [0 .. 1]
-  // 0: Spins forever
-  // 1: Instantly stops spinning
-  frictionCoefficient = 0.999;
-  setProjection(fov = 2 * Math.PI / 5, aspect = 1, near = 1, far = 1e3) {
-    this.projectionMatrix = mat4Impl.perspective(fov, aspect, near, far);
-  }
-  // Construtor
-  constructor(options) {
-    super();
-    if (options && options.position) {
-      this.position = options.position;
-      this.distance = vec3Impl.len(this.position);
-      this.back = vec3Impl.normalize(this.position);
-      this.setProjection(2 * Math.PI / 5, this.aspect, 1, 2e3);
-      this.recalcuateRight();
-      this.recalcuateUp();
-    }
-  }
-  // Returns the camera matrix
-  get matrix() {
-    return super.matrix;
-  }
-  // Assigns `mat` to the camera matrix, and recalcuates the distance
-  set matrix(mat) {
-    super.matrix = mat;
-    this.distance = vec3Impl.len(this.position);
-  }
-  update(deltaTime2, input) {
-    const epsilon = 1e-7;
-    if (input.analog.touching) {
-      this.angularVelocity = 0;
-    } else {
-      this.angularVelocity *= Math.pow(1 - this.frictionCoefficient, deltaTime2);
-    }
-    const movement = vec3Impl.create();
-    vec3Impl.addScaled(movement, this.right, input.analog.x, movement);
-    vec3Impl.addScaled(movement, this.up, -input.analog.y, movement);
-    const crossProduct = vec3Impl.cross(movement, this.back);
-    const magnitude = vec3Impl.len(crossProduct);
-    if (magnitude > epsilon) {
-      this.axis = vec3Impl.scale(crossProduct, 1 / magnitude);
-      this.angularVelocity = magnitude * this.rotationSpeed;
-    }
-    const rotationAngle = this.angularVelocity * deltaTime2;
-    if (rotationAngle > epsilon) {
-      this.back = vec3Impl.normalize(rotate2(this.back, this.axis, rotationAngle));
-      this.recalcuateRight();
-      this.recalcuateUp();
-    }
-    if (input.analog.zoom !== 0) {
-      this.distance *= 1 + input.analog.zoom * this.zoomSpeed;
-    }
-    this.position = vec3Impl.scale(this.back, this.distance);
-    this.view = mat4Impl.invert(this.matrix);
-    return this.view;
-  }
-  // Assigns `this.right` with the cross product of `this.up` and `this.back`
-  recalcuateRight() {
-    this.right = vec3Impl.normalize(vec3Impl.cross(this.up, this.back));
-  }
-  // Assigns `this.up` with the cross product of `this.back` and `this.right`
-  recalcuateUp() {
-    this.up = vec3Impl.normalize(vec3Impl.cross(this.back, this.right));
-  }
-};
 function clamp(x, min, max) {
   return Math.min(Math.max(x, min), max);
 }
@@ -2859,1274 +2635,1547 @@ function createInputHandler(window2, canvas) {
     return out;
   };
 }
-var RPGCamera = class extends CameraBase {
-  followMe = null;
-  pitch = 0;
-  yaw = 0;
-  velocity_ = vec3Impl.create();
-  movementSpeed = 10;
-  rotationSpeed = 1;
-  followMeOffset = 150;
-  // << mobile adaptation needed after all...
-  // Movement velocity drag coeffient [0 .. 1]
-  // 0: Continues forever
-  // 1: Instantly stops moving
-  frictionCoefficient = 0.99;
-  // Returns velocity vector
-  // Inside your camera control init
-  scrollY = 50;
-  minY = 50.5;
-  // minimum camera height
-  maxY = 135;
-  // maximum camera height
-  scrollSpeed = 1;
-  get velocity() {
-    return this.velocity_;
+var CameraBase, WASDCamera, ArcballCamera, RPGCamera;
+var init_engine = __esm({
+  "../../../engine/engine.js"() {
+    init_wgpu_matrix_module();
+    init_utils();
+    CameraBase = class {
+      // The camera matrix
+      matrix_ = new Float32Array([
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1
+      ]);
+      // The calculated view matrix readonly
+      view_ = mat4Impl.create();
+      // Aliases to column vectors of the matrix
+      right_ = new Float32Array(this.matrix_.buffer, 4 * 0, 4);
+      up_ = new Float32Array(this.matrix_.buffer, 4 * 4, 4);
+      back_ = new Float32Array(this.matrix_.buffer, 4 * 8, 4);
+      position_ = new Float32Array(this.matrix_.buffer, 4 * 12, 4);
+      // Returns the camera matrix
+      get matrix() {
+        return this.matrix_;
+      }
+      // Assigns `mat` to the camera matrix
+      set matrix(mat) {
+        mat4Impl.copy(mat, this.matrix_);
+      }
+      // setProjection(fov = (2*Math.PI) / 5 , aspect = 1, near = 0.5, far = 1000) {
+      //   this.projectionMatrix = mat4.perspective(fov, aspect, near, far);
+      // }
+      // Returns the camera view matrix
+      get view() {
+        return this.view_;
+      }
+      // Assigns `mat` to the camera view
+      set view(mat) {
+        mat4Impl.copy(mat, this.view_);
+      }
+      // Returns column vector 0 of the camera matrix
+      get right() {
+        return this.right_;
+      }
+      // Assigns `vec` to the first 3 elements of column vector 0 of the camera matrix
+      set right(vec) {
+        vec3Impl.copy(vec, this.right_);
+      }
+      // Returns column vector 1 of the camera matrix
+      get up() {
+        return this.up_;
+      }
+      // Assigns `vec` to the first 3 elements of column vector 1 of the camera matrix \ Vec3
+      set up(vec) {
+        vec3Impl.copy(vec, this.up_);
+      }
+      // Returns column vector 2 of the camera matrix
+      get back() {
+        return this.back_;
+      }
+      // Assigns `vec` to the first 3 elements of column vector 2 of the camera matrix
+      set back(vec) {
+        vec3Impl.copy(vec, this.back_);
+      }
+      // Returns column vector 3 of the camera matrix
+      get position() {
+        return this.position_;
+      }
+      // Assigns `vec` to the first 3 elements of column vector 3 of the camera matrix
+      set position(vec) {
+        vec3Impl.copy(vec, this.position_);
+      }
+    };
+    WASDCamera = class extends CameraBase {
+      // The camera absolute pitch angle
+      pitch = 0;
+      // The camera absolute yaw angle
+      yaw = 0;
+      // The movement veloicty readonly
+      velocity_ = vec3Impl.create();
+      // Speed multiplier for camera movement
+      movementSpeed = 10;
+      // Speed multiplier for camera rotation
+      rotationSpeed = 1;
+      // Movement velocity drag coeffient [0 .. 1]
+      // 0: Continues forever
+      // 1: Instantly stops moving
+      frictionCoefficient = 0.99;
+      // Returns velocity vector
+      get velocity() {
+        return this.velocity_;
+      }
+      // Assigns `vec` to the velocity vector
+      set velocity(vec) {
+        vec3Impl.copy(vec, this.velocity_);
+      }
+      setProjection(fov = 2 * Math.PI / 5, aspect = 1, near = 1, far = 1e3) {
+        this.projectionMatrix = mat4Impl.perspective(fov, aspect, near, far);
+      }
+      constructor(options) {
+        super();
+        if (options && (options.position || options.target)) {
+          const position = options.position ?? vec3Impl.create(0, 0, 0);
+          const target = options.target ?? vec3Impl.create(0, 0, 0);
+          const forward = vec3Impl.normalize(vec3Impl.sub(target, position));
+          this.recalculateAngles(forward);
+          this.position = position;
+          this.canvas = options.canvas;
+          this.aspect = options.canvas.width / options.canvas.height;
+          this.setProjection(2 * Math.PI / 5, this.aspect, 1, 2e3);
+        }
+      }
+      // Returns the camera matrix
+      get matrix() {
+        return super.matrix;
+      }
+      // Assigns `mat` to the camera matrix, and recalcuates the camera angles
+      set matrix(mat) {
+        super.matrix = mat;
+        this.recalculateAngles(this.back);
+      }
+      update(deltaTime2, input) {
+        const sign = (positive, negative) => (positive ? 1 : 0) - (negative ? 1 : 0);
+        this.yaw -= input.analog.x * deltaTime2 * this.rotationSpeed;
+        this.pitch -= input.analog.y * deltaTime2 * this.rotationSpeed;
+        this.yaw = mod(this.yaw, Math.PI * 2);
+        this.pitch = clamp(this.pitch, -Math.PI / 2, Math.PI / 2);
+        const position = vec3Impl.copy(this.position);
+        super.matrix = mat4Impl.rotateX(mat4Impl.rotationY(this.yaw), this.pitch);
+        const digital = input.digital;
+        const deltaRight = sign(digital.right, digital.left);
+        const deltaUp = sign(digital.up, digital.down);
+        const targetVelocity = vec3Impl.create();
+        const deltaBack = sign(digital.backward, digital.forward);
+        vec3Impl.addScaled(targetVelocity, this.right, deltaRight, targetVelocity);
+        vec3Impl.addScaled(targetVelocity, this.up, deltaUp, targetVelocity);
+        vec3Impl.addScaled(targetVelocity, this.back, deltaBack, targetVelocity);
+        vec3Impl.normalize(targetVelocity, targetVelocity);
+        vec3Impl.mulScalar(targetVelocity, this.movementSpeed, targetVelocity);
+        this.velocity = lerp(
+          targetVelocity,
+          this.velocity,
+          Math.pow(1 - this.frictionCoefficient, deltaTime2)
+        );
+        this.position = vec3Impl.addScaled(position, this.velocity, deltaTime2);
+        this.view = mat4Impl.invert(this.matrix);
+        return this.view;
+      }
+      // Recalculates the yaw and pitch values from a directional vector
+      recalculateAngles(dir) {
+        this.yaw = Math.atan2(dir[0], dir[2]);
+        this.pitch = -Math.asin(dir[1]);
+      }
+    };
+    ArcballCamera = class extends CameraBase {
+      // The camera distance from the target
+      distance = 0;
+      // The current angular velocity
+      angularVelocity = 0;
+      // The current rotation axis
+      axis_ = vec3Impl.create();
+      // Returns the rotation axis
+      get axis() {
+        return this.axis_;
+      }
+      // Assigns `vec` to the rotation axis
+      set axis(vec) {
+        vec3Impl.copy(vec, this.axis_);
+      }
+      // Speed multiplier for camera rotation
+      rotationSpeed = 1;
+      // Speed multiplier for camera zoom
+      zoomSpeed = 0.1;
+      // Rotation velocity drag coeffient [0 .. 1]
+      // 0: Spins forever
+      // 1: Instantly stops spinning
+      frictionCoefficient = 0.999;
+      setProjection(fov = 2 * Math.PI / 5, aspect = 1, near = 1, far = 1e3) {
+        this.projectionMatrix = mat4Impl.perspective(fov, aspect, near, far);
+      }
+      // Construtor
+      constructor(options) {
+        super();
+        if (options && options.position) {
+          this.position = options.position;
+          this.distance = vec3Impl.len(this.position);
+          this.back = vec3Impl.normalize(this.position);
+          this.setProjection(2 * Math.PI / 5, this.aspect, 1, 2e3);
+          this.recalcuateRight();
+          this.recalcuateUp();
+        }
+      }
+      // Returns the camera matrix
+      get matrix() {
+        return super.matrix;
+      }
+      // Assigns `mat` to the camera matrix, and recalcuates the distance
+      set matrix(mat) {
+        super.matrix = mat;
+        this.distance = vec3Impl.len(this.position);
+      }
+      update(deltaTime2, input) {
+        const epsilon = 1e-7;
+        if (input.analog.touching) {
+          this.angularVelocity = 0;
+        } else {
+          this.angularVelocity *= Math.pow(1 - this.frictionCoefficient, deltaTime2);
+        }
+        const movement = vec3Impl.create();
+        vec3Impl.addScaled(movement, this.right, input.analog.x, movement);
+        vec3Impl.addScaled(movement, this.up, -input.analog.y, movement);
+        const crossProduct = vec3Impl.cross(movement, this.back);
+        const magnitude = vec3Impl.len(crossProduct);
+        if (magnitude > epsilon) {
+          this.axis = vec3Impl.scale(crossProduct, 1 / magnitude);
+          this.angularVelocity = magnitude * this.rotationSpeed;
+        }
+        const rotationAngle = this.angularVelocity * deltaTime2;
+        if (rotationAngle > epsilon) {
+          this.back = vec3Impl.normalize(rotate2(this.back, this.axis, rotationAngle));
+          this.recalcuateRight();
+          this.recalcuateUp();
+        }
+        if (input.analog.zoom !== 0) {
+          this.distance *= 1 + input.analog.zoom * this.zoomSpeed;
+        }
+        this.position = vec3Impl.scale(this.back, this.distance);
+        this.view = mat4Impl.invert(this.matrix);
+        return this.view;
+      }
+      // Assigns `this.right` with the cross product of `this.up` and `this.back`
+      recalcuateRight() {
+        this.right = vec3Impl.normalize(vec3Impl.cross(this.up, this.back));
+      }
+      // Assigns `this.up` with the cross product of `this.back` and `this.right`
+      recalcuateUp() {
+        this.up = vec3Impl.normalize(vec3Impl.cross(this.back, this.right));
+      }
+    };
+    RPGCamera = class extends CameraBase {
+      followMe = null;
+      pitch = 0;
+      yaw = 0;
+      velocity_ = vec3Impl.create();
+      movementSpeed = 10;
+      rotationSpeed = 1;
+      followMeOffset = 150;
+      // << mobile adaptation needed after all...
+      // Movement velocity drag coeffient [0 .. 1]
+      // 0: Continues forever
+      // 1: Instantly stops moving
+      frictionCoefficient = 0.99;
+      // Returns velocity vector
+      // Inside your camera control init
+      scrollY = 50;
+      minY = 50.5;
+      // minimum camera height
+      maxY = 135;
+      // maximum camera height
+      scrollSpeed = 1;
+      get velocity() {
+        return this.velocity_;
+      }
+      // Assigns `vec` to the velocity vector
+      set velocity(vec) {
+        vec3Impl.copy(vec, this.velocity_);
+      }
+      setProjection(fov = 2 * Math.PI / 5, aspect = 1, near = 1, far = 1e3) {
+        this.projectionMatrix = mat4Impl.perspective(fov, aspect, near, far);
+      }
+      constructor(options) {
+        super();
+        if (options && (options.position || options.target)) {
+          const position = options.position ?? vec3Impl.create(0, 0, 0);
+          const target = options.target ?? vec3Impl.create(0, 0, 0);
+          const forward = vec3Impl.normalize(vec3Impl.sub(target, position));
+          this.recalculateAngles(forward);
+          this.position = position;
+          this.canvas = options.canvas;
+          this.aspect = options.canvas.width / options.canvas.height;
+          this.setProjection(2 * Math.PI / 5, this.aspect, 1, 2e3);
+          this.mousRollInAction = false;
+          addEventListener("wheel", (e) => {
+            this.mousRollInAction = true;
+            this.scrollY -= e.deltaY * this.scrollSpeed * 0.01;
+            this.scrollY = Math.max(this.minY, Math.min(this.maxY, this.scrollY));
+          });
+        }
+      }
+      get matrix() {
+        return super.matrix;
+      }
+      // Assigns `mat` to the camera matrix, and recalcuates the camera angles
+      set matrix(mat) {
+        super.matrix = mat;
+        this.recalculateAngles(this.back);
+      }
+      update(deltaTime2, input) {
+        const sign = (positive, negative) => (positive ? 1 : 0) - (negative ? 1 : 0);
+        this.yaw = 0;
+        this.pitch = -0.88;
+        this.yaw = mod(this.yaw, Math.PI * 2);
+        this.pitch = clamp(this.pitch, -Math.PI / 2, Math.PI / 2);
+        if (this.followMe != null && this.followMe.inMove === true || this.mousRollInAction == true) {
+          this.followMeOffset = this.scrollY;
+          this.position[0] = this.followMe.x;
+          this.position[2] = this.followMe.z + this.followMeOffset;
+          app.lightContainer[0].position[0] = this.followMe.x;
+          app.lightContainer[0].position[2] = this.followMe.z;
+          app.lightContainer[0].target[0] = this.followMe.x;
+          app.lightContainer[0].target[2] = this.followMe.z;
+          this.mousRollInAction = false;
+        }
+        const smoothFactor = 0.1;
+        this.position[1] += (this.scrollY - this.position[1]) * smoothFactor;
+        let position = vec3Impl.copy(this.position);
+        super.matrix = mat4Impl.rotateX(mat4Impl.rotationY(this.yaw), this.pitch);
+        const digital = input.digital;
+        const deltaRight = sign(digital.right, digital.left);
+        const deltaUp = sign(digital.up, digital.down);
+        const targetVelocity = vec3Impl.create();
+        const deltaBack = sign(digital.backward, digital.forward);
+        if (deltaBack == -1) {
+          position[2] += -10;
+        } else if (deltaBack == 1) {
+          position[2] += 10;
+        }
+        position[0] += deltaRight * 10;
+        vec3Impl.addScaled(targetVelocity, this.right, deltaRight, targetVelocity);
+        vec3Impl.addScaled(targetVelocity, this.up, deltaUp, targetVelocity);
+        vec3Impl.normalize(targetVelocity, targetVelocity);
+        vec3Impl.mulScalar(targetVelocity, this.movementSpeed, targetVelocity);
+        this.velocity = lerp(
+          targetVelocity,
+          this.velocity,
+          Math.pow(1 - this.frictionCoefficient, deltaTime2)
+        );
+        this.position = vec3Impl.addScaled(position, this.velocity, deltaTime2);
+        this.view = mat4Impl.invert(this.matrix);
+        return this.view;
+      }
+      recalculateAngles(dir) {
+        this.yaw = Math.atan2(dir[0], dir[2]);
+        this.pitch = -Math.asin(dir[1]);
+      }
+    };
   }
-  // Assigns `vec` to the velocity vector
-  set velocity(vec) {
-    vec3Impl.copy(vec, this.velocity_);
-  }
-  setProjection(fov = 2 * Math.PI / 5, aspect = 1, near = 1, far = 1e3) {
-    this.projectionMatrix = mat4Impl.perspective(fov, aspect, near, far);
-  }
-  constructor(options) {
-    super();
-    if (options && (options.position || options.target)) {
-      const position = options.position ?? vec3Impl.create(0, 0, 0);
-      const target = options.target ?? vec3Impl.create(0, 0, 0);
-      const forward = vec3Impl.normalize(vec3Impl.sub(target, position));
-      this.recalculateAngles(forward);
-      this.position = position;
-      this.canvas = options.canvas;
-      this.aspect = options.canvas.width / options.canvas.height;
-      this.setProjection(2 * Math.PI / 5, this.aspect, 1, 2e3);
-      this.mousRollInAction = false;
-      addEventListener("wheel", (e) => {
-        this.mousRollInAction = true;
-        this.scrollY -= e.deltaY * this.scrollSpeed * 0.01;
-        this.scrollY = Math.max(this.minY, Math.min(this.maxY, this.scrollY));
-      });
-    }
-  }
-  get matrix() {
-    return super.matrix;
-  }
-  // Assigns `mat` to the camera matrix, and recalcuates the camera angles
-  set matrix(mat) {
-    super.matrix = mat;
-    this.recalculateAngles(this.back);
-  }
-  update(deltaTime2, input) {
-    const sign = (positive, negative) => (positive ? 1 : 0) - (negative ? 1 : 0);
-    this.yaw = 0;
-    this.pitch = -0.88;
-    this.yaw = mod(this.yaw, Math.PI * 2);
-    this.pitch = clamp(this.pitch, -Math.PI / 2, Math.PI / 2);
-    if (this.followMe != null && this.followMe.inMove === true || this.mousRollInAction == true) {
-      this.followMeOffset = this.scrollY;
-      this.position[0] = this.followMe.x;
-      this.position[2] = this.followMe.z + this.followMeOffset;
-      app.lightContainer[0].position[0] = this.followMe.x;
-      app.lightContainer[0].position[2] = this.followMe.z;
-      app.lightContainer[0].target[0] = this.followMe.x;
-      app.lightContainer[0].target[2] = this.followMe.z;
-      this.mousRollInAction = false;
-    }
-    const smoothFactor = 0.1;
-    this.position[1] += (this.scrollY - this.position[1]) * smoothFactor;
-    let position = vec3Impl.copy(this.position);
-    super.matrix = mat4Impl.rotateX(mat4Impl.rotationY(this.yaw), this.pitch);
-    const digital = input.digital;
-    const deltaRight = sign(digital.right, digital.left);
-    const deltaUp = sign(digital.up, digital.down);
-    const targetVelocity = vec3Impl.create();
-    const deltaBack = sign(digital.backward, digital.forward);
-    if (deltaBack == -1) {
-      position[2] += -10;
-    } else if (deltaBack == 1) {
-      position[2] += 10;
-    }
-    position[0] += deltaRight * 10;
-    vec3Impl.addScaled(targetVelocity, this.right, deltaRight, targetVelocity);
-    vec3Impl.addScaled(targetVelocity, this.up, deltaUp, targetVelocity);
-    vec3Impl.normalize(targetVelocity, targetVelocity);
-    vec3Impl.mulScalar(targetVelocity, this.movementSpeed, targetVelocity);
-    this.velocity = lerp(
-      targetVelocity,
-      this.velocity,
-      Math.pow(1 - this.frictionCoefficient, deltaTime2)
-    );
-    this.position = vec3Impl.addScaled(position, this.velocity, deltaTime2);
-    this.view = mat4Impl.invert(this.matrix);
-    return this.view;
-  }
-  recalculateAngles(dir) {
-    this.yaw = Math.atan2(dir[0], dir[2]);
-    this.pitch = -Math.asin(dir[1]);
-  }
-};
+});
 
 // ../../../engine/ball.js
-var MEBall = class {
-  constructor(canvas, device, context, o) {
-    this.context = context;
-    this.device = device;
-    this.inputHandler = createInputHandler(window, canvas);
-    this.cameras = o.cameras;
-    this.scale = o.scale;
-    console.log("passed : o.mainCameraParams.responseCoef ", o.mainCameraParams.responseCoef);
-    this.mainCameraParams = {
-      type: o.mainCameraParams.type,
-      responseCoef: o.mainCameraParams.responseCoef
+var MEBall;
+var init_ball = __esm({
+  "../../../engine/ball.js"() {
+    init_shaders();
+    init_wgpu_matrix_module();
+    init_matrix_class();
+    init_engine();
+    MEBall = class {
+      constructor(canvas, device, context, o) {
+        this.context = context;
+        this.device = device;
+        this.inputHandler = createInputHandler(window, canvas);
+        this.cameras = o.cameras;
+        this.scale = o.scale;
+        console.log("passed : o.mainCameraParams.responseCoef ", o.mainCameraParams.responseCoef);
+        this.mainCameraParams = {
+          type: o.mainCameraParams.type,
+          responseCoef: o.mainCameraParams.responseCoef
+        };
+        this.lastFrameMS = 0;
+        this.entityArgPass = o.entityArgPass;
+        this.SphereLayout = {
+          vertexStride: 8 * 4,
+          positionsOffset: 0,
+          normalOffset: 3 * 4,
+          uvOffset: 6 * 4
+        };
+        if (typeof o.raycast === "undefined") {
+          this.raycast = {
+            enabled: false,
+            radius: 2
+          };
+        } else {
+          this.raycast = o.raycast;
+        }
+        this.texturesPaths = [];
+        o.texturesPaths.forEach((t) => {
+          this.texturesPaths.push(t);
+        });
+        this.position = new Position(o.position.x, o.position.y, o.position.z);
+        this.rotation = new Rotation(o.rotation.x, o.rotation.y, o.rotation.z);
+        this.rotation.rotationSpeed.x = o.rotationSpeed.x;
+        this.rotation.rotationSpeed.y = o.rotationSpeed.y;
+        this.rotation.rotationSpeed.z = o.rotationSpeed.z;
+        this.shaderModule = device.createShaderModule({ code: UNLIT_SHADER });
+        this.presentationFormat = navigator.gpu.getPreferredCanvasFormat();
+        this.pipeline = device.createRenderPipeline({
+          layout: "auto",
+          vertex: {
+            module: this.shaderModule,
+            entryPoint: "vertexMain",
+            buffers: [
+              {
+                arrayStride: this.SphereLayout.vertexStride,
+                attributes: [
+                  {
+                    // position
+                    shaderLocation: 0,
+                    offset: this.SphereLayout.positionsOffset,
+                    format: "float32x3"
+                  },
+                  {
+                    // normal
+                    shaderLocation: 1,
+                    offset: this.SphereLayout.normalOffset,
+                    format: "float32x3"
+                  },
+                  {
+                    // uv
+                    shaderLocation: 2,
+                    offset: this.SphereLayout.uvOffset,
+                    format: "float32x2"
+                  }
+                ]
+              }
+            ]
+          },
+          fragment: {
+            module: this.shaderModule,
+            entryPoint: "fragmentMain",
+            targets: [
+              {
+                format: this.presentationFormat
+              }
+            ]
+          },
+          primitive: {
+            topology: "triangle-list",
+            // Backface culling since the sphere is solid piece of geometry.
+            // Faces pointing away from the camera will be occluded by faces
+            // pointing toward the camera.
+            cullMode: "back"
+          },
+          // Enable depth testing so that the fragment closest to the camera
+          // is rendered in front.
+          depthStencil: {
+            depthWriteEnabled: true,
+            depthCompare: "less",
+            format: "depth24plus"
+          }
+        });
+        this.depthTexture = device.createTexture({
+          size: [canvas.width, canvas.height],
+          format: "depth24plus",
+          usage: GPUTextureUsage.RENDER_ATTACHMENT
+        });
+        this.uniformBufferSize = 4 * 16;
+        this.uniformBuffer = device.createBuffer({
+          size: this.uniformBufferSize,
+          usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+        });
+        this.texture0 = null;
+        this.moonTexture = null;
+        this.settings = {
+          useRenderBundles: true,
+          asteroidCount: 15
+        };
+        this.loadTex0(this.texturesPaths, device).then(() => {
+          this.loadTex1(this.texturesPaths, device).then(() => {
+            this.sampler = device.createSampler({
+              magFilter: "linear",
+              minFilter: "linear"
+            });
+            this.transform = mat4Impl.create();
+            mat4Impl.identity(this.transform);
+            this.planet = this.createGeometry(this.scale);
+            this.planet.bindGroup = this.createSphereBindGroup(this.texture0, this.transform);
+            var asteroids = [
+              this.createGeometry(12, 8, 6, 0.15)
+            ];
+            this.renderables = [this.planet];
+            this.renderPassDescriptor = {
+              colorAttachments: [
+                {
+                  view: void 0,
+                  clearValue: { r: 0, g: 0, b: 0, a: 1 },
+                  loadOp: this.entityArgPass.loadOp,
+                  storeOp: this.entityArgPass.storeOp
+                }
+              ],
+              depthStencilAttachment: {
+                view: this.depthTexture.createView(),
+                depthClearValue: 1,
+                depthLoadOp: this.entityArgPass.depthLoadOp,
+                depthStoreOp: this.entityArgPass.depthStoreOp
+              }
+            };
+            const aspect = canvas.width / canvas.height;
+            this.projectionMatrix = mat4Impl.perspective(2 * Math.PI / 5, aspect, 1, 100);
+            this.modelViewProjectionMatrix = mat4Impl.create();
+            this.frameBindGroup = device.createBindGroup({
+              layout: this.pipeline.getBindGroupLayout(0),
+              entries: [
+                {
+                  binding: 0,
+                  resource: {
+                    buffer: this.uniformBuffer
+                  }
+                }
+              ]
+            });
+            this.renderBundle;
+            this.updateRenderBundle();
+          });
+        });
+      }
+      ensureEnoughAsteroids(asteroids, transform) {
+        for (let i = this.renderables.length; i <= this.settings.asteroidCount; ++i) {
+          const radius = Math.random() * 1.7 + 1.25;
+          const angle2 = Math.random() * Math.PI * 2;
+          const x = Math.sin(angle2) * radius;
+          const y = (Math.random() - 0.5) * 0.015;
+          const z = Math.cos(angle2) * radius;
+          mat4Impl.identity(transform);
+          mat4Impl.translate(transform, [x, y, z], transform);
+          mat4Impl.rotateX(transform, Math.random() * Math.PI, transform);
+          mat4Impl.rotateY(transform, Math.random() * Math.PI, transform);
+          this.renderables.push({
+            ...asteroids[i % asteroids.length],
+            bindGroup: this.createSphereBindGroup(this.moonTexture, transform)
+          });
+        }
+      }
+      updateRenderBundle() {
+        console.log("updateRenderBundle");
+        const renderBundleEncoder = this.device.createRenderBundleEncoder({
+          colorFormats: [this.presentationFormat],
+          depthStencilFormat: "depth24plus"
+        });
+        this.renderScene(renderBundleEncoder);
+        this.renderBundle = renderBundleEncoder.finish();
+      }
+      createGeometry(radius, widthSegments = 8, heightSegments = 4, randomness = 0) {
+        const sphereMesh = this.createSphereMesh(radius, widthSegments, heightSegments, randomness);
+        const vertices = this.device.createBuffer({
+          size: sphereMesh.vertices.byteLength,
+          usage: GPUBufferUsage.VERTEX,
+          mappedAtCreation: true
+        });
+        new Float32Array(vertices.getMappedRange()).set(sphereMesh.vertices);
+        vertices.unmap();
+        const indices = this.device.createBuffer({
+          size: sphereMesh.indices.byteLength,
+          usage: GPUBufferUsage.INDEX,
+          mappedAtCreation: true
+        });
+        new Uint16Array(indices.getMappedRange()).set(sphereMesh.indices);
+        indices.unmap();
+        return {
+          vertices,
+          indices,
+          indexCount: sphereMesh.indices.length
+        };
+      }
+      createSphereBindGroup(texture, transform) {
+        const uniformBufferSize = 4 * 16;
+        const uniformBuffer = this.device.createBuffer({
+          size: uniformBufferSize,
+          usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+          mappedAtCreation: true
+        });
+        new Float32Array(uniformBuffer.getMappedRange()).set(transform);
+        uniformBuffer.unmap();
+        const bindGroup = this.device.createBindGroup({
+          layout: this.pipeline.getBindGroupLayout(1),
+          entries: [
+            {
+              binding: 0,
+              resource: {
+                buffer: uniformBuffer
+              }
+            },
+            {
+              binding: 1,
+              resource: this.sampler
+            },
+            {
+              binding: 2,
+              resource: texture.createView()
+            }
+          ]
+        });
+        return bindGroup;
+      }
+      getTransformationMatrix(pos) {
+        const now = Date.now();
+        const deltaTime2 = (now - this.lastFrameMS) / this.mainCameraParams.responseCoef;
+        this.lastFrameMS = now;
+        const camera = this.cameras[this.mainCameraParams.type];
+        const viewMatrix = camera.update(deltaTime2, this.inputHandler());
+        mat4Impl.translate(viewMatrix, vec3Impl.fromValues(pos.x, pos.y, pos.z), viewMatrix);
+        mat4Impl.rotateX(viewMatrix, Math.PI * this.rotation.getRotX(), viewMatrix);
+        mat4Impl.rotateY(viewMatrix, Math.PI * this.rotation.getRotY(), viewMatrix);
+        mat4Impl.rotateZ(viewMatrix, Math.PI * this.rotation.getRotZ(), viewMatrix);
+        mat4Impl.multiply(this.projectionMatrix, viewMatrix, this.modelViewProjectionMatrix);
+        return this.modelViewProjectionMatrix;
+      }
+      async loadTex1(texPaths, device) {
+        return new Promise(async (resolve) => {
+          const response = await fetch(texPaths[0]);
+          const imageBitmap = await createImageBitmap(await response.blob());
+          this.moonTexture = device.createTexture({
+            size: [imageBitmap.width, imageBitmap.height, 1],
+            format: "rgba8unorm",
+            usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT
+          });
+          var moonTexture = this.moonTexture;
+          device.queue.copyExternalImageToTexture(
+            { source: imageBitmap },
+            { texture: moonTexture },
+            [imageBitmap.width, imageBitmap.height]
+          );
+          resolve();
+        });
+      }
+      async loadTex0(paths, device) {
+        return new Promise(async (resolve) => {
+          const response = await fetch(paths[0]);
+          const imageBitmap = await createImageBitmap(await response.blob());
+          console.log("loadTex0 WHAT IS THIS -> ", this);
+          this.texture0 = device.createTexture({
+            size: [imageBitmap.width, imageBitmap.height, 1],
+            format: "rgba8unorm",
+            usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT
+          });
+          var texture0 = this.texture0;
+          device.queue.copyExternalImageToTexture(
+            { source: imageBitmap },
+            { texture: texture0 },
+            [imageBitmap.width, imageBitmap.height]
+          );
+          resolve();
+        });
+      }
+      createSphereMesh(radius, widthSegments = 3, heightSegments = 3, randomness = 0) {
+        const vertices = [];
+        const indices = [];
+        widthSegments = Math.max(3, Math.floor(widthSegments));
+        heightSegments = Math.max(2, Math.floor(heightSegments));
+        const firstVertex = vec3Impl.create();
+        const vertex = vec3Impl.create();
+        const normal = vec3Impl.create();
+        let index = 0;
+        const grid = [];
+        for (let iy = 0; iy <= heightSegments; iy++) {
+          const verticesRow = [];
+          const v = iy / heightSegments;
+          let uOffset = 0;
+          if (iy === 0) {
+            uOffset = 0.5 / widthSegments;
+          } else if (iy === heightSegments) {
+            uOffset = -0.5 / widthSegments;
+          }
+          for (let ix = 0; ix <= widthSegments; ix++) {
+            const u = ix / widthSegments;
+            if (ix == widthSegments) {
+              vec3Impl.copy(firstVertex, vertex);
+            } else if (ix == 0 || iy != 0 && iy !== heightSegments) {
+              const rr = radius + (Math.random() - 0.5) * 2 * randomness * radius;
+              vertex[0] = -rr * Math.cos(u * Math.PI * 2) * Math.sin(v * Math.PI);
+              vertex[1] = rr * Math.cos(v * Math.PI);
+              vertex[2] = rr * Math.sin(u * Math.PI * 2) * Math.sin(v * Math.PI);
+              if (ix == 0) {
+                vec3Impl.copy(vertex, firstVertex);
+              }
+            }
+            vertices.push(...vertex);
+            vec3Impl.copy(vertex, normal);
+            vec3Impl.normalize(normal, normal);
+            vertices.push(...normal);
+            vertices.push(u + uOffset, 1 - v);
+            verticesRow.push(index++);
+          }
+          grid.push(verticesRow);
+        }
+        for (let iy = 0; iy < heightSegments; iy++) {
+          for (let ix = 0; ix < widthSegments; ix++) {
+            const a = grid[iy][ix + 1];
+            const b = grid[iy][ix];
+            const c = grid[iy + 1][ix];
+            const d = grid[iy + 1][ix + 1];
+            if (iy !== 0) indices.push(a, b, d);
+            if (iy !== heightSegments - 1) indices.push(b, c, d);
+          }
+        }
+        return {
+          vertices: new Float32Array(vertices),
+          indices: new Uint16Array(indices)
+        };
+      }
+      // Render bundles function as partial, limited render passes, so we can use the
+      // same code both to render the scene normally and to build the render bundle.
+      renderScene(passEncoder) {
+        if (typeof this.renderables === "undefined") return;
+        passEncoder.setPipeline(this.pipeline);
+        passEncoder.setBindGroup(0, this.frameBindGroup);
+        let count = 0;
+        for (const renderable of this.renderables) {
+          passEncoder.setBindGroup(1, renderable.bindGroup);
+          passEncoder.setVertexBuffer(0, renderable.vertices);
+          passEncoder.setIndexBuffer(renderable.indices, "uint16");
+          passEncoder.drawIndexed(renderable.indexCount);
+          if (++count > this.settings.asteroidCount) {
+            break;
+          }
+        }
+      }
+      draw = () => {
+        if (this.moonTexture == null) {
+          return;
+        }
+        const transformationMatrix = this.getTransformationMatrix(this.position);
+        this.device.queue.writeBuffer(
+          this.uniformBuffer,
+          0,
+          transformationMatrix.buffer,
+          transformationMatrix.byteOffset,
+          transformationMatrix.byteLength
+        );
+        this.renderPassDescriptor.colorAttachments[0].view = this.context.getCurrentTexture().createView();
+      };
     };
-    this.lastFrameMS = 0;
-    this.entityArgPass = o.entityArgPass;
-    this.SphereLayout = {
+  }
+});
+
+// ../../../engine/cube.js
+var SphereLayout, MECube;
+var init_cube = __esm({
+  "../../../engine/cube.js"() {
+    init_shaders();
+    init_wgpu_matrix_module();
+    init_matrix_class();
+    init_engine();
+    SphereLayout = {
       vertexStride: 8 * 4,
       positionsOffset: 0,
       normalOffset: 3 * 4,
       uvOffset: 6 * 4
     };
-    if (typeof o.raycast === "undefined") {
-      this.raycast = {
-        enabled: false,
-        radius: 2
-      };
-    } else {
-      this.raycast = o.raycast;
-    }
-    this.texturesPaths = [];
-    o.texturesPaths.forEach((t) => {
-      this.texturesPaths.push(t);
-    });
-    this.position = new Position(o.position.x, o.position.y, o.position.z);
-    this.rotation = new Rotation(o.rotation.x, o.rotation.y, o.rotation.z);
-    this.rotation.rotationSpeed.x = o.rotationSpeed.x;
-    this.rotation.rotationSpeed.y = o.rotationSpeed.y;
-    this.rotation.rotationSpeed.z = o.rotationSpeed.z;
-    this.shaderModule = device.createShaderModule({ code: UNLIT_SHADER });
-    this.presentationFormat = navigator.gpu.getPreferredCanvasFormat();
-    this.pipeline = device.createRenderPipeline({
-      layout: "auto",
-      vertex: {
-        module: this.shaderModule,
-        entryPoint: "vertexMain",
-        buffers: [
-          {
-            arrayStride: this.SphereLayout.vertexStride,
-            attributes: [
+    MECube = class {
+      constructor(canvas, device, context, o) {
+        this.device = device;
+        this.context = context;
+        this.entityArgPass = o.entityArgPass;
+        this.inputHandler = createInputHandler(window, canvas);
+        this.cameras = o.cameras;
+        console.log("passed : o.mainCameraParams.responseCoef ", o.mainCameraParams.responseCoef);
+        this.mainCameraParams = {
+          type: o.mainCameraParams.type,
+          responseCoef: o.mainCameraParams.responseCoef
+        };
+        this.lastFrameMS = 0;
+        this.shaderModule = device.createShaderModule({
+          code: UNLIT_SHADER
+        });
+        this.texturesPaths = [];
+        if (typeof o.raycast === "undefined") {
+          this.raycast = {
+            enabled: false,
+            radius: 2
+          };
+        } else {
+          this.raycast = o.raycast;
+        }
+        o.texturesPaths.forEach((t) => {
+          this.texturesPaths.push(t);
+        });
+        this.presentationFormat = navigator.gpu.getPreferredCanvasFormat();
+        this.position = new Position(o.position.x, o.position.y, o.position.z);
+        console.log("cube added on pos : ", this.position);
+        this.rotation = new Rotation(o.rotation.x, o.rotation.y, o.rotation.z);
+        this.rotation.rotationSpeed.x = o.rotationSpeed.x;
+        this.rotation.rotationSpeed.y = o.rotationSpeed.y;
+        this.rotation.rotationSpeed.z = o.rotationSpeed.z;
+        this.scale = o.scale;
+        this.pipeline = device.createRenderPipeline({
+          layout: "auto",
+          vertex: {
+            module: this.shaderModule,
+            entryPoint: "vertexMain",
+            buffers: [
               {
-                // position
-                shaderLocation: 0,
-                offset: this.SphereLayout.positionsOffset,
-                format: "float32x3"
-              },
-              {
-                // normal
-                shaderLocation: 1,
-                offset: this.SphereLayout.normalOffset,
-                format: "float32x3"
-              },
-              {
-                // uv
-                shaderLocation: 2,
-                offset: this.SphereLayout.uvOffset,
-                format: "float32x2"
+                arrayStride: SphereLayout.vertexStride,
+                attributes: [
+                  // position
+                  { shaderLocation: 0, offset: SphereLayout.positionsOffset, format: "float32x3" },
+                  // normal
+                  { shaderLocation: 1, offset: SphereLayout.normalOffset, format: "float32x3" },
+                  // uv
+                  { shaderLocation: 2, offset: SphereLayout.uvOffset, format: "float32x2" }
+                ]
               }
             ]
+          },
+          fragment: {
+            module: this.shaderModule,
+            entryPoint: "fragmentMain",
+            targets: [{ format: this.presentationFormat }]
+          },
+          primitive: {
+            topology: "triangle-list",
+            // Backface culling since the sphere is solid piece of geometry.
+            // Faces pointing away from the camera will be occluded by faces
+            // pointing toward the camera.
+            cullMode: "back"
+          },
+          // Enable depth testing so that the fragment closest to the camera
+          // is rendered in front.
+          depthStencil: {
+            depthWriteEnabled: true,
+            depthCompare: "less",
+            format: "depth24plus"
           }
-        ]
-      },
-      fragment: {
-        module: this.shaderModule,
-        entryPoint: "fragmentMain",
-        targets: [
-          {
-            format: this.presentationFormat
-          }
-        ]
-      },
-      primitive: {
-        topology: "triangle-list",
-        // Backface culling since the sphere is solid piece of geometry.
-        // Faces pointing away from the camera will be occluded by faces
-        // pointing toward the camera.
-        cullMode: "back"
-      },
-      // Enable depth testing so that the fragment closest to the camera
-      // is rendered in front.
-      depthStencil: {
-        depthWriteEnabled: true,
-        depthCompare: "less",
-        format: "depth24plus"
-      }
-    });
-    this.depthTexture = device.createTexture({
-      size: [canvas.width, canvas.height],
-      format: "depth24plus",
-      usage: GPUTextureUsage.RENDER_ATTACHMENT
-    });
-    this.uniformBufferSize = 4 * 16;
-    this.uniformBuffer = device.createBuffer({
-      size: this.uniformBufferSize,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
-    this.texture0 = null;
-    this.moonTexture = null;
-    this.settings = {
-      useRenderBundles: true,
-      asteroidCount: 15
-    };
-    this.loadTex0(this.texturesPaths, device).then(() => {
-      this.loadTex1(this.texturesPaths, device).then(() => {
-        this.sampler = device.createSampler({
-          magFilter: "linear",
-          minFilter: "linear"
         });
-        this.transform = mat4Impl.create();
-        mat4Impl.identity(this.transform);
-        this.planet = this.createGeometry(this.scale);
-        this.planet.bindGroup = this.createSphereBindGroup(this.texture0, this.transform);
-        var asteroids = [
-          this.createGeometry(12, 8, 6, 0.15)
-        ];
-        this.renderables = [this.planet];
-        this.renderPassDescriptor = {
-          colorAttachments: [
-            {
-              view: void 0,
-              clearValue: { r: 0, g: 0, b: 0, a: 1 },
-              loadOp: this.entityArgPass.loadOp,
-              storeOp: this.entityArgPass.storeOp
-            }
-          ],
-          depthStencilAttachment: {
-            view: this.depthTexture.createView(),
-            depthClearValue: 1,
-            depthLoadOp: this.entityArgPass.depthLoadOp,
-            depthStoreOp: this.entityArgPass.depthStoreOp
-          }
+        this.depthTexture = device.createTexture({
+          size: [canvas.width, canvas.height],
+          format: "depth24plus",
+          usage: GPUTextureUsage.RENDER_ATTACHMENT
+        });
+        this.uniformBufferSize = 4 * 16;
+        this.uniformBuffer = device.createBuffer({
+          size: this.uniformBufferSize,
+          usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+        });
+        this.texture0 = null;
+        this.moonTexture = null;
+        this.settings = {
+          useRenderBundles: true,
+          asteroidCount: 15
         };
-        const aspect = canvas.width / canvas.height;
-        this.projectionMatrix = mat4Impl.perspective(2 * Math.PI / 5, aspect, 1, 100);
-        this.modelViewProjectionMatrix = mat4Impl.create();
-        this.frameBindGroup = device.createBindGroup({
-          layout: this.pipeline.getBindGroupLayout(0),
+        this.loadTex0(this.texturesPaths, device).then(() => {
+          this.loadTex1(this.texturesPaths, device).then(() => {
+            this.sampler = device.createSampler({
+              magFilter: "linear",
+              minFilter: "linear"
+            });
+            this.transform = mat4Impl.create();
+            mat4Impl.identity(this.transform);
+            this.planet = this.createGeometry({
+              scale: this.scale,
+              useUVShema4x2: false
+            });
+            this.planet.bindGroup = this.createSphereBindGroup(this.texture0, this.transform);
+            var asteroids = [
+              // this.createGeometry(0.2, 8, 6, 0.15),
+            ];
+            this.renderables = [this.planet];
+            this.renderPassDescriptor = {
+              colorAttachments: [
+                {
+                  view: void 0,
+                  clearValue: { r: 0, g: 0, b: 0, a: 1 },
+                  loadOp: this.entityArgPass.loadOp,
+                  storeOp: this.entityArgPass.storeOp
+                }
+              ],
+              depthStencilAttachment: {
+                view: this.depthTexture.createView(),
+                depthClearValue: 1,
+                depthLoadOp: this.entityArgPass.depthLoadOp,
+                depthStoreOp: this.entityArgPass.depthStoreOp
+              }
+            };
+            const aspect = canvas.width / canvas.height;
+            this.projectionMatrix = mat4Impl.perspective(2 * Math.PI / 5, aspect, 1, 1e3);
+            this.modelViewProjectionMatrix = mat4Impl.create();
+            this.frameBindGroup = device.createBindGroup({
+              layout: this.pipeline.getBindGroupLayout(0),
+              entries: [
+                {
+                  binding: 0,
+                  resource: { buffer: this.uniformBuffer }
+                }
+              ]
+            });
+            this.renderBundle;
+            this.updateRenderBundle();
+          });
+        });
+      }
+      ensureEnoughAsteroids(asteroids, transform) {
+        for (let i = this.renderables.length; i <= this.settings.asteroidCount; ++i) {
+          const radius = Math.random() * 1.7 + 1.25;
+          const angle2 = Math.random() * Math.PI * 2;
+          const x = Math.sin(angle2) * radius;
+          const y = (Math.random() - 0.5) * 0.015;
+          const z = Math.cos(angle2) * radius;
+          mat4Impl.identity(transform);
+          mat4Impl.translate(transform, [x, y, z], transform);
+          mat4Impl.rotateX(transform, Math.random() * Math.PI, transform);
+          mat4Impl.rotateY(transform, Math.random() * Math.PI, transform);
+          this.renderables.push({
+            ...asteroids[i % asteroids.length],
+            bindGroup: this.createSphereBindGroup(this.moonTexture, transform)
+          });
+        }
+      }
+      updateRenderBundle() {
+        console.log("[CUBE] updateRenderBundle");
+        const renderBundleEncoder = this.device.createRenderBundleEncoder({
+          colorFormats: [this.presentationFormat],
+          depthStencilFormat: "depth24plus"
+        });
+        this.renderScene(renderBundleEncoder);
+        this.renderBundle = renderBundleEncoder.finish();
+      }
+      createGeometry(options) {
+        const mesh = this.createCubeVertices(options);
+        const vertices = this.device.createBuffer({
+          size: mesh.vertices.byteLength,
+          usage: GPUBufferUsage.VERTEX,
+          mappedAtCreation: true
+        });
+        new Float32Array(vertices.getMappedRange()).set(mesh.vertices);
+        vertices.unmap();
+        const indices = this.device.createBuffer({
+          size: mesh.indices.byteLength,
+          usage: GPUBufferUsage.INDEX,
+          mappedAtCreation: true
+        });
+        new Uint16Array(indices.getMappedRange()).set(mesh.indices);
+        indices.unmap();
+        return {
+          vertices,
+          indices,
+          indexCount: mesh.indices.length
+        };
+      }
+      createSphereBindGroup(texture, transform) {
+        const uniformBufferSize = 4 * 16;
+        const uniformBuffer = this.device.createBuffer({
+          size: uniformBufferSize,
+          usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+          mappedAtCreation: true
+        });
+        new Float32Array(uniformBuffer.getMappedRange()).set(transform);
+        uniformBuffer.unmap();
+        const bindGroup = this.device.createBindGroup({
+          layout: this.pipeline.getBindGroupLayout(1),
           entries: [
             {
               binding: 0,
               resource: {
-                buffer: this.uniformBuffer
+                buffer: uniformBuffer
               }
+            },
+            {
+              binding: 1,
+              resource: this.sampler
+            },
+            {
+              binding: 2,
+              resource: texture.createView()
             }
           ]
         });
-        this.renderBundle;
-        this.updateRenderBundle();
-      });
-    });
-  }
-  ensureEnoughAsteroids(asteroids, transform) {
-    for (let i = this.renderables.length; i <= this.settings.asteroidCount; ++i) {
-      const radius = Math.random() * 1.7 + 1.25;
-      const angle2 = Math.random() * Math.PI * 2;
-      const x = Math.sin(angle2) * radius;
-      const y = (Math.random() - 0.5) * 0.015;
-      const z = Math.cos(angle2) * radius;
-      mat4Impl.identity(transform);
-      mat4Impl.translate(transform, [x, y, z], transform);
-      mat4Impl.rotateX(transform, Math.random() * Math.PI, transform);
-      mat4Impl.rotateY(transform, Math.random() * Math.PI, transform);
-      this.renderables.push({
-        ...asteroids[i % asteroids.length],
-        bindGroup: this.createSphereBindGroup(this.moonTexture, transform)
-      });
-    }
-  }
-  updateRenderBundle() {
-    console.log("updateRenderBundle");
-    const renderBundleEncoder = this.device.createRenderBundleEncoder({
-      colorFormats: [this.presentationFormat],
-      depthStencilFormat: "depth24plus"
-    });
-    this.renderScene(renderBundleEncoder);
-    this.renderBundle = renderBundleEncoder.finish();
-  }
-  createGeometry(radius, widthSegments = 8, heightSegments = 4, randomness = 0) {
-    const sphereMesh = this.createSphereMesh(radius, widthSegments, heightSegments, randomness);
-    const vertices = this.device.createBuffer({
-      size: sphereMesh.vertices.byteLength,
-      usage: GPUBufferUsage.VERTEX,
-      mappedAtCreation: true
-    });
-    new Float32Array(vertices.getMappedRange()).set(sphereMesh.vertices);
-    vertices.unmap();
-    const indices = this.device.createBuffer({
-      size: sphereMesh.indices.byteLength,
-      usage: GPUBufferUsage.INDEX,
-      mappedAtCreation: true
-    });
-    new Uint16Array(indices.getMappedRange()).set(sphereMesh.indices);
-    indices.unmap();
-    return {
-      vertices,
-      indices,
-      indexCount: sphereMesh.indices.length
-    };
-  }
-  createSphereBindGroup(texture, transform) {
-    const uniformBufferSize = 4 * 16;
-    const uniformBuffer = this.device.createBuffer({
-      size: uniformBufferSize,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-      mappedAtCreation: true
-    });
-    new Float32Array(uniformBuffer.getMappedRange()).set(transform);
-    uniformBuffer.unmap();
-    const bindGroup = this.device.createBindGroup({
-      layout: this.pipeline.getBindGroupLayout(1),
-      entries: [
-        {
-          binding: 0,
-          resource: {
-            buffer: uniformBuffer
-          }
-        },
-        {
-          binding: 1,
-          resource: this.sampler
-        },
-        {
-          binding: 2,
-          resource: texture.createView()
-        }
-      ]
-    });
-    return bindGroup;
-  }
-  getTransformationMatrix(pos) {
-    const now = Date.now();
-    const deltaTime2 = (now - this.lastFrameMS) / this.mainCameraParams.responseCoef;
-    this.lastFrameMS = now;
-    const camera = this.cameras[this.mainCameraParams.type];
-    const viewMatrix = camera.update(deltaTime2, this.inputHandler());
-    mat4Impl.translate(viewMatrix, vec3Impl.fromValues(pos.x, pos.y, pos.z), viewMatrix);
-    mat4Impl.rotateX(viewMatrix, Math.PI * this.rotation.getRotX(), viewMatrix);
-    mat4Impl.rotateY(viewMatrix, Math.PI * this.rotation.getRotY(), viewMatrix);
-    mat4Impl.rotateZ(viewMatrix, Math.PI * this.rotation.getRotZ(), viewMatrix);
-    mat4Impl.multiply(this.projectionMatrix, viewMatrix, this.modelViewProjectionMatrix);
-    return this.modelViewProjectionMatrix;
-  }
-  async loadTex1(texPaths, device) {
-    return new Promise(async (resolve) => {
-      const response = await fetch(texPaths[0]);
-      const imageBitmap = await createImageBitmap(await response.blob());
-      this.moonTexture = device.createTexture({
-        size: [imageBitmap.width, imageBitmap.height, 1],
-        format: "rgba8unorm",
-        usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT
-      });
-      var moonTexture = this.moonTexture;
-      device.queue.copyExternalImageToTexture(
-        { source: imageBitmap },
-        { texture: moonTexture },
-        [imageBitmap.width, imageBitmap.height]
-      );
-      resolve();
-    });
-  }
-  async loadTex0(paths, device) {
-    return new Promise(async (resolve) => {
-      const response = await fetch(paths[0]);
-      const imageBitmap = await createImageBitmap(await response.blob());
-      console.log("loadTex0 WHAT IS THIS -> ", this);
-      this.texture0 = device.createTexture({
-        size: [imageBitmap.width, imageBitmap.height, 1],
-        format: "rgba8unorm",
-        usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT
-      });
-      var texture0 = this.texture0;
-      device.queue.copyExternalImageToTexture(
-        { source: imageBitmap },
-        { texture: texture0 },
-        [imageBitmap.width, imageBitmap.height]
-      );
-      resolve();
-    });
-  }
-  createSphereMesh(radius, widthSegments = 3, heightSegments = 3, randomness = 0) {
-    const vertices = [];
-    const indices = [];
-    widthSegments = Math.max(3, Math.floor(widthSegments));
-    heightSegments = Math.max(2, Math.floor(heightSegments));
-    const firstVertex = vec3Impl.create();
-    const vertex = vec3Impl.create();
-    const normal = vec3Impl.create();
-    let index = 0;
-    const grid = [];
-    for (let iy = 0; iy <= heightSegments; iy++) {
-      const verticesRow = [];
-      const v = iy / heightSegments;
-      let uOffset = 0;
-      if (iy === 0) {
-        uOffset = 0.5 / widthSegments;
-      } else if (iy === heightSegments) {
-        uOffset = -0.5 / widthSegments;
+        return bindGroup;
       }
-      for (let ix = 0; ix <= widthSegments; ix++) {
-        const u = ix / widthSegments;
-        if (ix == widthSegments) {
-          vec3Impl.copy(firstVertex, vertex);
-        } else if (ix == 0 || iy != 0 && iy !== heightSegments) {
-          const rr = radius + (Math.random() - 0.5) * 2 * randomness * radius;
-          vertex[0] = -rr * Math.cos(u * Math.PI * 2) * Math.sin(v * Math.PI);
-          vertex[1] = rr * Math.cos(v * Math.PI);
-          vertex[2] = rr * Math.sin(u * Math.PI * 2) * Math.sin(v * Math.PI);
-          if (ix == 0) {
-            vec3Impl.copy(vertex, firstVertex);
+      // TEST 
+      getViewMatrix() {
+        const camera = this.cameras[this.mainCameraParams.type];
+        const viewMatrix = camera.update(deltaTime, this.inputHandler());
+        return viewMatrix;
+      }
+      getTransformationMatrix(pos) {
+        const now = Date.now();
+        const deltaTime2 = (now - this.lastFrameMS) / this.mainCameraParams.responseCoef;
+        this.lastFrameMS = now;
+        const camera = this.cameras[this.mainCameraParams.type];
+        const viewMatrix = camera.update(deltaTime2, this.inputHandler());
+        mat4Impl.translate(viewMatrix, vec3Impl.fromValues(pos.x, pos.y, pos.z), viewMatrix);
+        mat4Impl.rotateX(viewMatrix, Math.PI * this.rotation.getRotX(), viewMatrix);
+        mat4Impl.rotateY(viewMatrix, Math.PI * this.rotation.getRotY(), viewMatrix);
+        mat4Impl.rotateZ(viewMatrix, Math.PI * this.rotation.getRotZ(), viewMatrix);
+        mat4Impl.multiply(this.projectionMatrix, viewMatrix, this.modelViewProjectionMatrix);
+        return this.modelViewProjectionMatrix;
+      }
+      async loadTex1(textPath, device) {
+        return new Promise(async (resolve) => {
+          const response = await fetch(textPath[0]);
+          const imageBitmap = await createImageBitmap(await response.blob());
+          this.moonTexture = device.createTexture({
+            size: [imageBitmap.width, imageBitmap.height, 1],
+            format: "rgba8unorm",
+            usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT
+          });
+          var moonTexture = this.moonTexture;
+          device.queue.copyExternalImageToTexture(
+            { source: imageBitmap },
+            { texture: moonTexture },
+            [imageBitmap.width, imageBitmap.height]
+          );
+          resolve();
+        });
+      }
+      async loadTex0(texturesPaths, device) {
+        return new Promise(async (resolve) => {
+          const response = await fetch(texturesPaths[0]);
+          const imageBitmap = await createImageBitmap(await response.blob());
+          console.log("WHAT IS THIS ", this);
+          this.texture0 = device.createTexture({
+            size: [imageBitmap.width, imageBitmap.height, 1],
+            format: "rgba8unorm",
+            usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT
+          });
+          var texture0 = this.texture0;
+          device.queue.copyExternalImageToTexture(
+            { source: imageBitmap },
+            { texture: texture0 },
+            [imageBitmap.width, imageBitmap.height]
+          );
+          resolve();
+        });
+      }
+      // Render bundles function as partial, limited render passes, so we can use the
+      // same code both to render the scene normally and to build the render bundle.
+      renderScene(passEncoder) {
+        if (typeof this.renderables === "undefined") return;
+        passEncoder.setPipeline(this.pipeline);
+        passEncoder.setBindGroup(0, this.frameBindGroup);
+        let count = 0;
+        for (const renderable of this.renderables) {
+          passEncoder.setBindGroup(1, renderable.bindGroup);
+          passEncoder.setVertexBuffer(0, renderable.vertices);
+          passEncoder.setIndexBuffer(renderable.indices, "uint16");
+          passEncoder.drawIndexed(renderable.indexCount);
+          if (++count > this.settings.asteroidCount) {
+            break;
           }
         }
-        vertices.push(...vertex);
-        vec3Impl.copy(vertex, normal);
-        vec3Impl.normalize(normal, normal);
-        vertices.push(...normal);
-        vertices.push(u + uOffset, 1 - v);
-        verticesRow.push(index++);
       }
-      grid.push(verticesRow);
-    }
-    for (let iy = 0; iy < heightSegments; iy++) {
-      for (let ix = 0; ix < widthSegments; ix++) {
-        const a = grid[iy][ix + 1];
-        const b = grid[iy][ix];
-        const c = grid[iy + 1][ix];
-        const d = grid[iy + 1][ix + 1];
-        if (iy !== 0) indices.push(a, b, d);
-        if (iy !== heightSegments - 1) indices.push(b, c, d);
-      }
-    }
-    return {
-      vertices: new Float32Array(vertices),
-      indices: new Uint16Array(indices)
-    };
-  }
-  // Render bundles function as partial, limited render passes, so we can use the
-  // same code both to render the scene normally and to build the render bundle.
-  renderScene(passEncoder) {
-    if (typeof this.renderables === "undefined") return;
-    passEncoder.setPipeline(this.pipeline);
-    passEncoder.setBindGroup(0, this.frameBindGroup);
-    let count = 0;
-    for (const renderable of this.renderables) {
-      passEncoder.setBindGroup(1, renderable.bindGroup);
-      passEncoder.setVertexBuffer(0, renderable.vertices);
-      passEncoder.setIndexBuffer(renderable.indices, "uint16");
-      passEncoder.drawIndexed(renderable.indexCount);
-      if (++count > this.settings.asteroidCount) {
-        break;
-      }
-    }
-  }
-  draw = () => {
-    if (this.moonTexture == null) {
-      return;
-    }
-    const transformationMatrix = this.getTransformationMatrix(this.position);
-    this.device.queue.writeBuffer(
-      this.uniformBuffer,
-      0,
-      transformationMatrix.buffer,
-      transformationMatrix.byteOffset,
-      transformationMatrix.byteLength
-    );
-    this.renderPassDescriptor.colorAttachments[0].view = this.context.getCurrentTexture().createView();
-  };
-};
-
-// ../../../engine/cube.js
-var SphereLayout = {
-  vertexStride: 8 * 4,
-  positionsOffset: 0,
-  normalOffset: 3 * 4,
-  uvOffset: 6 * 4
-};
-var MECube = class {
-  constructor(canvas, device, context, o) {
-    this.device = device;
-    this.context = context;
-    this.entityArgPass = o.entityArgPass;
-    this.inputHandler = createInputHandler(window, canvas);
-    this.cameras = o.cameras;
-    console.log("passed : o.mainCameraParams.responseCoef ", o.mainCameraParams.responseCoef);
-    this.mainCameraParams = {
-      type: o.mainCameraParams.type,
-      responseCoef: o.mainCameraParams.responseCoef
-    };
-    this.lastFrameMS = 0;
-    this.shaderModule = device.createShaderModule({
-      code: UNLIT_SHADER
-    });
-    this.texturesPaths = [];
-    if (typeof o.raycast === "undefined") {
-      this.raycast = {
-        enabled: false,
-        radius: 2
-      };
-    } else {
-      this.raycast = o.raycast;
-    }
-    o.texturesPaths.forEach((t) => {
-      this.texturesPaths.push(t);
-    });
-    this.presentationFormat = navigator.gpu.getPreferredCanvasFormat();
-    this.position = new Position(o.position.x, o.position.y, o.position.z);
-    console.log("cube added on pos : ", this.position);
-    this.rotation = new Rotation(o.rotation.x, o.rotation.y, o.rotation.z);
-    this.rotation.rotationSpeed.x = o.rotationSpeed.x;
-    this.rotation.rotationSpeed.y = o.rotationSpeed.y;
-    this.rotation.rotationSpeed.z = o.rotationSpeed.z;
-    this.scale = o.scale;
-    this.pipeline = device.createRenderPipeline({
-      layout: "auto",
-      vertex: {
-        module: this.shaderModule,
-        entryPoint: "vertexMain",
-        buffers: [
-          {
-            arrayStride: SphereLayout.vertexStride,
-            attributes: [
-              // position
-              { shaderLocation: 0, offset: SphereLayout.positionsOffset, format: "float32x3" },
-              // normal
-              { shaderLocation: 1, offset: SphereLayout.normalOffset, format: "float32x3" },
-              // uv
-              { shaderLocation: 2, offset: SphereLayout.uvOffset, format: "float32x2" }
-            ]
-          }
-        ]
-      },
-      fragment: {
-        module: this.shaderModule,
-        entryPoint: "fragmentMain",
-        targets: [{ format: this.presentationFormat }]
-      },
-      primitive: {
-        topology: "triangle-list",
-        // Backface culling since the sphere is solid piece of geometry.
-        // Faces pointing away from the camera will be occluded by faces
-        // pointing toward the camera.
-        cullMode: "back"
-      },
-      // Enable depth testing so that the fragment closest to the camera
-      // is rendered in front.
-      depthStencil: {
-        depthWriteEnabled: true,
-        depthCompare: "less",
-        format: "depth24plus"
-      }
-    });
-    this.depthTexture = device.createTexture({
-      size: [canvas.width, canvas.height],
-      format: "depth24plus",
-      usage: GPUTextureUsage.RENDER_ATTACHMENT
-    });
-    this.uniformBufferSize = 4 * 16;
-    this.uniformBuffer = device.createBuffer({
-      size: this.uniformBufferSize,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
-    this.texture0 = null;
-    this.moonTexture = null;
-    this.settings = {
-      useRenderBundles: true,
-      asteroidCount: 15
-    };
-    this.loadTex0(this.texturesPaths, device).then(() => {
-      this.loadTex1(this.texturesPaths, device).then(() => {
-        this.sampler = device.createSampler({
-          magFilter: "linear",
-          minFilter: "linear"
-        });
-        this.transform = mat4Impl.create();
-        mat4Impl.identity(this.transform);
-        this.planet = this.createGeometry({
-          scale: this.scale,
-          useUVShema4x2: false
-        });
-        this.planet.bindGroup = this.createSphereBindGroup(this.texture0, this.transform);
-        var asteroids = [
-          // this.createGeometry(0.2, 8, 6, 0.15),
-        ];
-        this.renderables = [this.planet];
-        this.renderPassDescriptor = {
-          colorAttachments: [
-            {
-              view: void 0,
-              clearValue: { r: 0, g: 0, b: 0, a: 1 },
-              loadOp: this.entityArgPass.loadOp,
-              storeOp: this.entityArgPass.storeOp
-            }
-          ],
-          depthStencilAttachment: {
-            view: this.depthTexture.createView(),
-            depthClearValue: 1,
-            depthLoadOp: this.entityArgPass.depthLoadOp,
-            depthStoreOp: this.entityArgPass.depthStoreOp
-          }
+      createCubeVertices(options) {
+        if (typeof options === "undefined") {
+          var options = {
+            scale: 1,
+            useUVShema4x2: false
+          };
+        }
+        if (typeof options.scale === "undefined") options.scale = 1;
+        let vertices;
+        if (options.useUVShema4x2 == true) {
+          vertices = new Float32Array([
+            //  position   |  texture coordinate
+            //-------------+----------------------
+            // front face     select the top left image  1, 0.5,   
+            -1,
+            1,
+            1,
+            1,
+            0,
+            0,
+            0,
+            0,
+            -1,
+            -1,
+            1,
+            1,
+            0,
+            0,
+            0,
+            0.5,
+            1,
+            1,
+            1,
+            1,
+            0,
+            0,
+            0.25,
+            0,
+            1,
+            -1,
+            1,
+            1,
+            0,
+            0,
+            0.25,
+            0.5,
+            // right face     select the top middle image
+            1,
+            1,
+            -1,
+            1,
+            0,
+            0,
+            0.25,
+            0,
+            1,
+            1,
+            1,
+            1,
+            0,
+            0,
+            0.5,
+            0,
+            1,
+            -1,
+            -1,
+            1,
+            0,
+            0,
+            0.25,
+            0.5,
+            1,
+            -1,
+            1,
+            1,
+            0,
+            0,
+            0.5,
+            0.5,
+            // back face      select to top right image
+            1,
+            1,
+            -1,
+            1,
+            0,
+            0,
+            0.5,
+            0,
+            1,
+            -1,
+            -1,
+            1,
+            0,
+            0,
+            0.5,
+            0.5,
+            -1,
+            1,
+            -1,
+            1,
+            0,
+            0,
+            0.75,
+            0,
+            -1,
+            -1,
+            -1,
+            1,
+            0,
+            0,
+            0.75,
+            0.5,
+            // left face       select the bottom left image
+            -1,
+            1,
+            1,
+            1,
+            0,
+            0,
+            0,
+            0.5,
+            -1,
+            1,
+            -1,
+            1,
+            0,
+            0,
+            0.25,
+            0.5,
+            -1,
+            -1,
+            1,
+            1,
+            0,
+            0,
+            0,
+            1,
+            -1,
+            -1,
+            -1,
+            1,
+            0,
+            0,
+            0.25,
+            1,
+            // bottom face     select the bottom middle image
+            1,
+            -1,
+            1,
+            1,
+            0,
+            0,
+            0.25,
+            0.5,
+            -1,
+            -1,
+            1,
+            1,
+            0,
+            0,
+            0.5,
+            0.5,
+            1,
+            -1,
+            -1,
+            1,
+            0,
+            0,
+            0.25,
+            1,
+            -1,
+            -1,
+            -1,
+            1,
+            0,
+            0,
+            0.5,
+            1,
+            // top face        select the bottom right image
+            -1,
+            1,
+            1,
+            1,
+            0,
+            0,
+            0.5,
+            0.5,
+            1,
+            1,
+            1,
+            1,
+            0,
+            0,
+            0.75,
+            0.5,
+            -1,
+            1,
+            -1,
+            1,
+            0,
+            0,
+            0.5,
+            1,
+            1,
+            1,
+            -1,
+            1,
+            0,
+            0,
+            0.75,
+            1
+          ]);
+        } else {
+          vertices = new Float32Array([
+            //  position                                                   |  texture coordinate
+            //-------------                                              +----------------------
+            // front face     select the top left image  1, 0.5,   
+            -1 * options.scale,
+            1 * options.scale,
+            1 * options.scale,
+            1,
+            0,
+            0,
+            0,
+            0,
+            -1 * options.scale,
+            -1 * options.scale,
+            1 * options.scale,
+            1,
+            0,
+            0,
+            0,
+            1,
+            1 * options.scale,
+            1 * options.scale,
+            1 * options.scale,
+            1,
+            0,
+            0,
+            1,
+            0,
+            1 * options.scale,
+            -1 * options.scale,
+            1 * options.scale,
+            1,
+            0,
+            0,
+            1,
+            1,
+            // right face     select the top middle image
+            1 * options.scale,
+            1 * options.scale,
+            -1 * options.scale,
+            1,
+            0,
+            0,
+            0,
+            0,
+            1 * options.scale,
+            1 * options.scale,
+            1 * options.scale,
+            1,
+            0,
+            0,
+            0,
+            1,
+            1 * options.scale,
+            -1 * options.scale,
+            -1 * options.scale,
+            1,
+            0,
+            0,
+            1,
+            0,
+            1 * options.scale,
+            -1 * options.scale,
+            1 * options.scale,
+            1,
+            0,
+            0,
+            1,
+            1,
+            // back face      select to top right image
+            1 * options.scale,
+            1 * options.scale,
+            -1 * options.scale,
+            1,
+            0,
+            0,
+            0,
+            0,
+            1 * options.scale,
+            -1 * options.scale,
+            -1 * options.scale,
+            1,
+            0,
+            0,
+            0,
+            1,
+            -1 * options.scale,
+            1 * options.scale,
+            -1 * options.scale,
+            1,
+            0,
+            0,
+            1,
+            0,
+            -1 * options.scale,
+            -1 * options.scale,
+            -1 * options.scale,
+            1,
+            0,
+            0,
+            1,
+            1,
+            // left face       select the bottom left image
+            -1 * options.scale,
+            1 * options.scale,
+            1 * options.scale,
+            1,
+            0,
+            0,
+            0,
+            0,
+            -1 * options.scale,
+            1 * options.scale,
+            -1 * options.scale,
+            1,
+            0,
+            0,
+            0,
+            1,
+            -1 * options.scale,
+            -1 * options.scale,
+            1 * options.scale,
+            1,
+            0,
+            0,
+            1,
+            0,
+            -1 * options.scale,
+            -1 * options.scale,
+            -1 * options.scale,
+            1,
+            0,
+            0,
+            1,
+            1,
+            // bottom face     select the bottom middle image
+            1 * options.scale,
+            -1 * options.scale,
+            1 * options.scale,
+            1,
+            0,
+            0,
+            0,
+            0,
+            -1 * options.scale,
+            -1 * options.scale,
+            1 * options.scale,
+            1,
+            0,
+            0,
+            0,
+            1,
+            1 * options.scale,
+            -1 * options.scale,
+            -1 * options.scale,
+            1,
+            0,
+            0,
+            1,
+            0,
+            -1 * options.scale,
+            -1 * options.scale,
+            -1 * options.scale,
+            1,
+            0,
+            0,
+            1,
+            1,
+            // top face        select the bottom right image
+            -1 * options.scale,
+            1 * options.scale,
+            1 * options.scale,
+            1,
+            0,
+            0,
+            0,
+            0,
+            1 * options.scale,
+            1 * options.scale,
+            1 * options.scale,
+            1,
+            0,
+            0,
+            0,
+            1,
+            -1 * options.scale,
+            1 * options.scale,
+            -1 * options.scale,
+            1,
+            0,
+            0,
+            1,
+            0,
+            1 * options.scale,
+            1 * options.scale,
+            -1 * options.scale,
+            1,
+            0,
+            0,
+            1,
+            1
+          ]);
+        }
+        const indices = new Uint16Array([
+          0,
+          1,
+          2,
+          2,
+          1,
+          3,
+          // front
+          4,
+          5,
+          6,
+          6,
+          5,
+          7,
+          // right
+          8,
+          9,
+          10,
+          10,
+          9,
+          11,
+          // back
+          12,
+          13,
+          14,
+          14,
+          13,
+          15,
+          // left
+          16,
+          17,
+          18,
+          18,
+          17,
+          19,
+          // bottom
+          20,
+          21,
+          22,
+          22,
+          21,
+          23
+          // top
+        ]);
+        return {
+          vertices,
+          indices,
+          numVertices: indices.length
         };
-        const aspect = canvas.width / canvas.height;
-        this.projectionMatrix = mat4Impl.perspective(2 * Math.PI / 5, aspect, 1, 1e3);
-        this.modelViewProjectionMatrix = mat4Impl.create();
-        this.frameBindGroup = device.createBindGroup({
-          layout: this.pipeline.getBindGroupLayout(0),
-          entries: [
-            {
-              binding: 0,
-              resource: { buffer: this.uniformBuffer }
-            }
-          ]
-        });
-        this.renderBundle;
-        this.updateRenderBundle();
-      });
-    });
-  }
-  ensureEnoughAsteroids(asteroids, transform) {
-    for (let i = this.renderables.length; i <= this.settings.asteroidCount; ++i) {
-      const radius = Math.random() * 1.7 + 1.25;
-      const angle2 = Math.random() * Math.PI * 2;
-      const x = Math.sin(angle2) * radius;
-      const y = (Math.random() - 0.5) * 0.015;
-      const z = Math.cos(angle2) * radius;
-      mat4Impl.identity(transform);
-      mat4Impl.translate(transform, [x, y, z], transform);
-      mat4Impl.rotateX(transform, Math.random() * Math.PI, transform);
-      mat4Impl.rotateY(transform, Math.random() * Math.PI, transform);
-      this.renderables.push({
-        ...asteroids[i % asteroids.length],
-        bindGroup: this.createSphereBindGroup(this.moonTexture, transform)
-      });
-    }
-  }
-  updateRenderBundle() {
-    console.log("[CUBE] updateRenderBundle");
-    const renderBundleEncoder = this.device.createRenderBundleEncoder({
-      colorFormats: [this.presentationFormat],
-      depthStencilFormat: "depth24plus"
-    });
-    this.renderScene(renderBundleEncoder);
-    this.renderBundle = renderBundleEncoder.finish();
-  }
-  createGeometry(options) {
-    const mesh = this.createCubeVertices(options);
-    const vertices = this.device.createBuffer({
-      size: mesh.vertices.byteLength,
-      usage: GPUBufferUsage.VERTEX,
-      mappedAtCreation: true
-    });
-    new Float32Array(vertices.getMappedRange()).set(mesh.vertices);
-    vertices.unmap();
-    const indices = this.device.createBuffer({
-      size: mesh.indices.byteLength,
-      usage: GPUBufferUsage.INDEX,
-      mappedAtCreation: true
-    });
-    new Uint16Array(indices.getMappedRange()).set(mesh.indices);
-    indices.unmap();
-    return {
-      vertices,
-      indices,
-      indexCount: mesh.indices.length
-    };
-  }
-  createSphereBindGroup(texture, transform) {
-    const uniformBufferSize = 4 * 16;
-    const uniformBuffer = this.device.createBuffer({
-      size: uniformBufferSize,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-      mappedAtCreation: true
-    });
-    new Float32Array(uniformBuffer.getMappedRange()).set(transform);
-    uniformBuffer.unmap();
-    const bindGroup = this.device.createBindGroup({
-      layout: this.pipeline.getBindGroupLayout(1),
-      entries: [
-        {
-          binding: 0,
-          resource: {
-            buffer: uniformBuffer
-          }
-        },
-        {
-          binding: 1,
-          resource: this.sampler
-        },
-        {
-          binding: 2,
-          resource: texture.createView()
-        }
-      ]
-    });
-    return bindGroup;
-  }
-  // TEST 
-  getViewMatrix() {
-    const camera = this.cameras[this.mainCameraParams.type];
-    const viewMatrix = camera.update(deltaTime, this.inputHandler());
-    return viewMatrix;
-  }
-  getTransformationMatrix(pos) {
-    const now = Date.now();
-    const deltaTime2 = (now - this.lastFrameMS) / this.mainCameraParams.responseCoef;
-    this.lastFrameMS = now;
-    const camera = this.cameras[this.mainCameraParams.type];
-    const viewMatrix = camera.update(deltaTime2, this.inputHandler());
-    mat4Impl.translate(viewMatrix, vec3Impl.fromValues(pos.x, pos.y, pos.z), viewMatrix);
-    mat4Impl.rotateX(viewMatrix, Math.PI * this.rotation.getRotX(), viewMatrix);
-    mat4Impl.rotateY(viewMatrix, Math.PI * this.rotation.getRotY(), viewMatrix);
-    mat4Impl.rotateZ(viewMatrix, Math.PI * this.rotation.getRotZ(), viewMatrix);
-    mat4Impl.multiply(this.projectionMatrix, viewMatrix, this.modelViewProjectionMatrix);
-    return this.modelViewProjectionMatrix;
-  }
-  async loadTex1(textPath, device) {
-    return new Promise(async (resolve) => {
-      const response = await fetch(textPath[0]);
-      const imageBitmap = await createImageBitmap(await response.blob());
-      this.moonTexture = device.createTexture({
-        size: [imageBitmap.width, imageBitmap.height, 1],
-        format: "rgba8unorm",
-        usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT
-      });
-      var moonTexture = this.moonTexture;
-      device.queue.copyExternalImageToTexture(
-        { source: imageBitmap },
-        { texture: moonTexture },
-        [imageBitmap.width, imageBitmap.height]
-      );
-      resolve();
-    });
-  }
-  async loadTex0(texturesPaths, device) {
-    return new Promise(async (resolve) => {
-      const response = await fetch(texturesPaths[0]);
-      const imageBitmap = await createImageBitmap(await response.blob());
-      console.log("WHAT IS THIS ", this);
-      this.texture0 = device.createTexture({
-        size: [imageBitmap.width, imageBitmap.height, 1],
-        format: "rgba8unorm",
-        usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT
-      });
-      var texture0 = this.texture0;
-      device.queue.copyExternalImageToTexture(
-        { source: imageBitmap },
-        { texture: texture0 },
-        [imageBitmap.width, imageBitmap.height]
-      );
-      resolve();
-    });
-  }
-  // Render bundles function as partial, limited render passes, so we can use the
-  // same code both to render the scene normally and to build the render bundle.
-  renderScene(passEncoder) {
-    if (typeof this.renderables === "undefined") return;
-    passEncoder.setPipeline(this.pipeline);
-    passEncoder.setBindGroup(0, this.frameBindGroup);
-    let count = 0;
-    for (const renderable of this.renderables) {
-      passEncoder.setBindGroup(1, renderable.bindGroup);
-      passEncoder.setVertexBuffer(0, renderable.vertices);
-      passEncoder.setIndexBuffer(renderable.indices, "uint16");
-      passEncoder.drawIndexed(renderable.indexCount);
-      if (++count > this.settings.asteroidCount) {
-        break;
       }
-    }
-  }
-  createCubeVertices(options) {
-    if (typeof options === "undefined") {
-      var options = {
-        scale: 1,
-        useUVShema4x2: false
+      draw = () => {
+        if (this.moonTexture == null) {
+          return;
+        }
+        const transformationMatrix = this.getTransformationMatrix(this.position);
+        this.device.queue.writeBuffer(
+          this.uniformBuffer,
+          0,
+          transformationMatrix.buffer,
+          transformationMatrix.byteOffset,
+          transformationMatrix.byteLength
+        );
+        this.renderPassDescriptor.colorAttachments[0].view = this.context.getCurrentTexture().createView();
       };
-    }
-    if (typeof options.scale === "undefined") options.scale = 1;
-    let vertices;
-    if (options.useUVShema4x2 == true) {
-      vertices = new Float32Array([
-        //  position   |  texture coordinate
-        //-------------+----------------------
-        // front face     select the top left image  1, 0.5,   
-        -1,
-        1,
-        1,
-        1,
-        0,
-        0,
-        0,
-        0,
-        -1,
-        -1,
-        1,
-        1,
-        0,
-        0,
-        0,
-        0.5,
-        1,
-        1,
-        1,
-        1,
-        0,
-        0,
-        0.25,
-        0,
-        1,
-        -1,
-        1,
-        1,
-        0,
-        0,
-        0.25,
-        0.5,
-        // right face     select the top middle image
-        1,
-        1,
-        -1,
-        1,
-        0,
-        0,
-        0.25,
-        0,
-        1,
-        1,
-        1,
-        1,
-        0,
-        0,
-        0.5,
-        0,
-        1,
-        -1,
-        -1,
-        1,
-        0,
-        0,
-        0.25,
-        0.5,
-        1,
-        -1,
-        1,
-        1,
-        0,
-        0,
-        0.5,
-        0.5,
-        // back face      select to top right image
-        1,
-        1,
-        -1,
-        1,
-        0,
-        0,
-        0.5,
-        0,
-        1,
-        -1,
-        -1,
-        1,
-        0,
-        0,
-        0.5,
-        0.5,
-        -1,
-        1,
-        -1,
-        1,
-        0,
-        0,
-        0.75,
-        0,
-        -1,
-        -1,
-        -1,
-        1,
-        0,
-        0,
-        0.75,
-        0.5,
-        // left face       select the bottom left image
-        -1,
-        1,
-        1,
-        1,
-        0,
-        0,
-        0,
-        0.5,
-        -1,
-        1,
-        -1,
-        1,
-        0,
-        0,
-        0.25,
-        0.5,
-        -1,
-        -1,
-        1,
-        1,
-        0,
-        0,
-        0,
-        1,
-        -1,
-        -1,
-        -1,
-        1,
-        0,
-        0,
-        0.25,
-        1,
-        // bottom face     select the bottom middle image
-        1,
-        -1,
-        1,
-        1,
-        0,
-        0,
-        0.25,
-        0.5,
-        -1,
-        -1,
-        1,
-        1,
-        0,
-        0,
-        0.5,
-        0.5,
-        1,
-        -1,
-        -1,
-        1,
-        0,
-        0,
-        0.25,
-        1,
-        -1,
-        -1,
-        -1,
-        1,
-        0,
-        0,
-        0.5,
-        1,
-        // top face        select the bottom right image
-        -1,
-        1,
-        1,
-        1,
-        0,
-        0,
-        0.5,
-        0.5,
-        1,
-        1,
-        1,
-        1,
-        0,
-        0,
-        0.75,
-        0.5,
-        -1,
-        1,
-        -1,
-        1,
-        0,
-        0,
-        0.5,
-        1,
-        1,
-        1,
-        -1,
-        1,
-        0,
-        0,
-        0.75,
-        1
-      ]);
-    } else {
-      vertices = new Float32Array([
-        //  position                                                   |  texture coordinate
-        //-------------                                              +----------------------
-        // front face     select the top left image  1, 0.5,   
-        -1 * options.scale,
-        1 * options.scale,
-        1 * options.scale,
-        1,
-        0,
-        0,
-        0,
-        0,
-        -1 * options.scale,
-        -1 * options.scale,
-        1 * options.scale,
-        1,
-        0,
-        0,
-        0,
-        1,
-        1 * options.scale,
-        1 * options.scale,
-        1 * options.scale,
-        1,
-        0,
-        0,
-        1,
-        0,
-        1 * options.scale,
-        -1 * options.scale,
-        1 * options.scale,
-        1,
-        0,
-        0,
-        1,
-        1,
-        // right face     select the top middle image
-        1 * options.scale,
-        1 * options.scale,
-        -1 * options.scale,
-        1,
-        0,
-        0,
-        0,
-        0,
-        1 * options.scale,
-        1 * options.scale,
-        1 * options.scale,
-        1,
-        0,
-        0,
-        0,
-        1,
-        1 * options.scale,
-        -1 * options.scale,
-        -1 * options.scale,
-        1,
-        0,
-        0,
-        1,
-        0,
-        1 * options.scale,
-        -1 * options.scale,
-        1 * options.scale,
-        1,
-        0,
-        0,
-        1,
-        1,
-        // back face      select to top right image
-        1 * options.scale,
-        1 * options.scale,
-        -1 * options.scale,
-        1,
-        0,
-        0,
-        0,
-        0,
-        1 * options.scale,
-        -1 * options.scale,
-        -1 * options.scale,
-        1,
-        0,
-        0,
-        0,
-        1,
-        -1 * options.scale,
-        1 * options.scale,
-        -1 * options.scale,
-        1,
-        0,
-        0,
-        1,
-        0,
-        -1 * options.scale,
-        -1 * options.scale,
-        -1 * options.scale,
-        1,
-        0,
-        0,
-        1,
-        1,
-        // left face       select the bottom left image
-        -1 * options.scale,
-        1 * options.scale,
-        1 * options.scale,
-        1,
-        0,
-        0,
-        0,
-        0,
-        -1 * options.scale,
-        1 * options.scale,
-        -1 * options.scale,
-        1,
-        0,
-        0,
-        0,
-        1,
-        -1 * options.scale,
-        -1 * options.scale,
-        1 * options.scale,
-        1,
-        0,
-        0,
-        1,
-        0,
-        -1 * options.scale,
-        -1 * options.scale,
-        -1 * options.scale,
-        1,
-        0,
-        0,
-        1,
-        1,
-        // bottom face     select the bottom middle image
-        1 * options.scale,
-        -1 * options.scale,
-        1 * options.scale,
-        1,
-        0,
-        0,
-        0,
-        0,
-        -1 * options.scale,
-        -1 * options.scale,
-        1 * options.scale,
-        1,
-        0,
-        0,
-        0,
-        1,
-        1 * options.scale,
-        -1 * options.scale,
-        -1 * options.scale,
-        1,
-        0,
-        0,
-        1,
-        0,
-        -1 * options.scale,
-        -1 * options.scale,
-        -1 * options.scale,
-        1,
-        0,
-        0,
-        1,
-        1,
-        // top face        select the bottom right image
-        -1 * options.scale,
-        1 * options.scale,
-        1 * options.scale,
-        1,
-        0,
-        0,
-        0,
-        0,
-        1 * options.scale,
-        1 * options.scale,
-        1 * options.scale,
-        1,
-        0,
-        0,
-        0,
-        1,
-        -1 * options.scale,
-        1 * options.scale,
-        -1 * options.scale,
-        1,
-        0,
-        0,
-        1,
-        0,
-        1 * options.scale,
-        1 * options.scale,
-        -1 * options.scale,
-        1,
-        0,
-        0,
-        1,
-        1
-      ]);
-    }
-    const indices = new Uint16Array([
-      0,
-      1,
-      2,
-      2,
-      1,
-      3,
-      // front
-      4,
-      5,
-      6,
-      6,
-      5,
-      7,
-      // right
-      8,
-      9,
-      10,
-      10,
-      9,
-      11,
-      // back
-      12,
-      13,
-      14,
-      14,
-      13,
-      15,
-      // left
-      16,
-      17,
-      18,
-      18,
-      17,
-      19,
-      // bottom
-      20,
-      21,
-      22,
-      22,
-      21,
-      23
-      // top
-    ]);
-    return {
-      vertices,
-      indices,
-      numVertices: indices.length
     };
   }
-  draw = () => {
-    if (this.moonTexture == null) {
-      return;
-    }
-    const transformationMatrix = this.getTransformationMatrix(this.position);
-    this.device.queue.writeBuffer(
-      this.uniformBuffer,
-      0,
-      transformationMatrix.buffer,
-      transformationMatrix.byteOffset,
-      transformationMatrix.byteLength
-    );
-    this.renderPassDescriptor.colorAttachments[0].view = this.context.getCurrentTexture().createView();
-  };
-};
+});
 
 // ../../../shaders/vertex.wgsl.js
-var vertexWGSL = `const MAX_BONES = 100u;
+var vertexWGSL;
+var init_vertex_wgsl = __esm({
+  "../../../shaders/vertex.wgsl.js"() {
+    vertexWGSL = `const MAX_BONES = 100u;
 
 struct Scene {
   lightViewProjMatrix: mat4x4f,
@@ -4204,9 +4253,14 @@ fn main(
   output.uv = uv;
   return output;
 }`;
+  }
+});
 
 // ../../../shaders/fragment.wgsl.js
-var fragmentWGSL = `
+var fragmentWGSL;
+var init_fragment_wgsl = __esm({
+  "../../../shaders/fragment.wgsl.js"() {
+    fragmentWGSL = `
 override shadowDepthTextureSize: f32 = 1024.0;
 const PI: f32 = 3.141592653589793;
 
@@ -4429,9 +4483,14 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 
     return vec4f(finalColor, 1.0);
 }`;
+  }
+});
 
 // ../../../shaders/fragment.wgsl.metal.js
-var fragmentWGSLMetal = `override shadowDepthTextureSize: f32 = 1024.0;
+var fragmentWGSLMetal;
+var init_fragment_wgsl_metal = __esm({
+  "../../../shaders/fragment.wgsl.metal.js"() {
+    fragmentWGSLMetal = `override shadowDepthTextureSize: f32 = 1024.0;
 const PI: f32 = 3.141592653589793;
 
 struct Scene {
@@ -4595,9 +4654,14 @@ var color = ambient + Lo;
 return vec4f(color, 1.0);
 }
 `;
+  }
+});
 
 // ../../../shaders/fragment.wgsl.normalmap.js
-var fragmentWGSLNormalMap = `
+var fragmentWGSLNormalMap;
+var init_fragment_wgsl_normalmap = __esm({
+  "../../../shaders/fragment.wgsl.normalmap.js"() {
+    fragmentWGSLNormalMap = `
 override shadowDepthTextureSize: f32 = 1024.0;
 const PI: f32 = 3.141592653589793;
 
@@ -4834,9 +4898,14 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     let finalColor = texColor.rgb * (scene.globalAmbient + lightContribution);
     return vec4f(finalColor, 1.0);
 }`;
+  }
+});
 
 // ../../../shaders/fragment.wgsl.pong.js
-var fragmentWGSLPong = `
+var fragmentWGSLPong;
+var init_fragment_wgsl_pong = __esm({
+  "../../../shaders/fragment.wgsl.pong.js"() {
+    fragmentWGSLPong = `
 override shadowDepthTextureSize: f32 = 1024.0;
 const PI: f32 = 3.141592653589793;
 
@@ -5048,9 +5117,14 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     let finalColor = texColor.rgb * (scene.globalAmbient + lightContribution);
     return vec4f(finalColor, 1.0);
 }`;
+  }
+});
 
 // ../../../shaders/fragment.wgsl.power.js
-var fragmentWGSLPower = `override shadowDepthTextureSize: f32 = 1024.0;
+var fragmentWGSLPower;
+var init_fragment_wgsl_power = __esm({
+  "../../../shaders/fragment.wgsl.power.js"() {
+    fragmentWGSLPower = `override shadowDepthTextureSize: f32 = 1024.0;
 const PI: f32 = 3.141592653589793;
 
 struct Scene {
@@ -5204,446 +5278,461 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(color, 1.0);
 }
 `;
+  }
+});
 
 // ../../../engine/materials.js
-var Materials = class {
-  constructor(device, material, glb) {
-    this.device = device;
-    this.glb = glb;
-    this.material = material;
-    this.isVideo = false;
-    this.videoIsReady = "NONE";
-    this.compareSampler = this.device.createSampler({
-      compare: "less-equal",
-      // safer for shadow comparison
-      addressModeU: "clamp-to-edge",
-      // prevents UV leaking outside
-      addressModeV: "clamp-to-edge",
-      magFilter: "linear",
-      // smooth PCF
-      minFilter: "linear"
-    });
-    this.imageSampler = this.device.createSampler({
-      magFilter: "linear",
-      minFilter: "linear"
-    });
-    this.videoSampler = this.device.createSampler({
-      magFilter: "linear",
-      minFilter: "linear"
-    });
-    this.postFXModeBuffer = this.device.createBuffer({
-      size: 4,
-      // u32 = 4 bytes
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
-    this.dummySpotlightUniformBuffer = this.device.createBuffer({
-      size: 80,
-      // Must match size in shader
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
-    this.device.queue.writeBuffer(this.dummySpotlightUniformBuffer, 0, new Float32Array(20));
-    const mrDummyTex = this.device.createTexture({
-      size: [1, 1, 1],
-      format: this.getFormat(),
-      usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST
-    });
-    const pixel = new Uint8Array([255, 255, 255, 255]);
-    this.device.queue.writeTexture(
-      { texture: mrDummyTex },
-      pixel,
-      { bytesPerRow: 4 },
-      [1, 1, 1]
-    );
-    this.metallicRoughnessTextureView = mrDummyTex.createView();
-    this.metallicRoughnessSampler = this.device.createSampler({
-      magFilter: "linear",
-      minFilter: "linear"
-    });
-    const materialPBRSize = 8 * 4;
-    this.materialPBRBuffer = this.device.createBuffer({
-      size: materialPBRSize,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
-    const baseColorFactor = [1, 1, 1, 1];
-    const metallicFactor = 0.1;
-    const roughnessFactor = 0.5;
-    const pad = [0, 0];
-    const materialArray = new Float32Array([
-      ...baseColorFactor,
-      metallicFactor,
-      roughnessFactor,
-      ...pad
-    ]);
-    this.device.queue.writeBuffer(this.materialPBRBuffer, 0, materialArray.buffer);
-    if (this.material.type == "normalmap") {
-      const normalTexInfo = this.glb.glbJsonData.materials[0].normalTexture;
-      if (normalTexInfo) {
-        const tex = this.glb.glbJsonData.glbTextures[normalTexInfo.index];
-        this.normalTextureView = tex.createView();
-        this.normalSampler = this.device.createSampler({
+var Materials;
+var init_materials = __esm({
+  "../../../engine/materials.js"() {
+    init_fragment_wgsl();
+    init_fragment_wgsl_metal();
+    init_fragment_wgsl_normalmap();
+    init_fragment_wgsl_pong();
+    init_fragment_wgsl_power();
+    Materials = class {
+      constructor(device, material, glb) {
+        this.device = device;
+        this.glb = glb;
+        this.material = material;
+        this.isVideo = false;
+        this.videoIsReady = "NONE";
+        this.compareSampler = this.device.createSampler({
+          compare: "less-equal",
+          // safer for shadow comparison
+          addressModeU: "clamp-to-edge",
+          // prevents UV leaking outside
+          addressModeV: "clamp-to-edge",
+          magFilter: "linear",
+          // smooth PCF
+          minFilter: "linear"
+        });
+        this.imageSampler = this.device.createSampler({
           magFilter: "linear",
           minFilter: "linear"
         });
-      } else {
-      }
-    } else {
-      this.normalDummyTex = device.createTexture({
-        size: [1, 1, 1],
-        format: "rgba8unorm",
-        usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST
-      });
-      const neutralNormal = new Uint8Array([128, 128, 255, 255]);
-      this.device.queue.writeTexture(
-        { texture: this.normalDummyTex },
-        neutralNormal,
-        { bytesPerRow: 4 },
-        [1, 1, 1]
-      );
-      this.normalTextureView = this.normalDummyTex.createView();
-      this.normalSampler = this.device.createSampler({
-        magFilter: "linear",
-        minFilter: "linear"
-      });
-    }
-  }
-  getMaterial() {
-    if (this.material.type == "standard") {
-      return fragmentWGSL;
-    } else if (this.material.type == "pong") {
-      return fragmentWGSLPong;
-    } else if (this.material.type == "power") {
-      return fragmentWGSLPower;
-    } else if (this.material.type == "metal") {
-      return fragmentWGSLMetal;
-    } else if (this.material.type == "normalmap") {
-      return fragmentWGSLNormalMap;
-    }
-    console.warn("Unknown material type:", this.material?.type);
-    return fragmentWGSL;
-  }
-  getFormat() {
-    if (this.material?.format == "darker") {
-      return "rgba8unorm-srgb";
-    } else if (this.material?.format == "normal") {
-      return "rgba8unorm";
-    } else {
-      return "rgba8unorm";
-    }
-  }
-  // not affect all fs
-  setupMaterialPBR(metallicFactor) {
-    const baseColorFactor = [1, 1, 1, 1];
-    const roughnessFactor = 0.5;
-    const pad = [0, 0];
-    const materialArray = new Float32Array([
-      ...baseColorFactor,
-      metallicFactor,
-      roughnessFactor,
-      ...pad
-    ]);
-    this.device.queue.writeBuffer(this.materialPBRBuffer, 0, materialArray.buffer);
-  }
-  updatePostFXMode(mode) {
-    const arrayBuffer = new Uint32Array([mode]);
-    this.device.queue.writeBuffer(this.postFXModeBuffer, 0, arrayBuffer);
-  }
-  async loadTex0(texturesPaths) {
-    this.sampler = this.device.createSampler({
-      magFilter: "linear",
-      minFilter: "linear"
-    });
-    return new Promise(async (resolve) => {
-      const response = await fetch(texturesPaths[0]);
-      const imageBitmap = await createImageBitmap(await response.blob());
-      this.texture0 = this.device.createTexture({
-        size: [imageBitmap.width, imageBitmap.height, 1],
-        // REMOVED 1
-        format: this.getFormat(),
-        usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT
-      });
-      this.device.queue.copyExternalImageToTexture(
-        { source: imageBitmap },
-        { texture: this.texture0 },
-        [imageBitmap.width, imageBitmap.height]
-      );
-      resolve();
-    });
-  }
-  async loadVideoTexture(arg) {
-    this.videoIsReady = "MAYBE";
-    if (arg.type === "video") {
-      this.video = document.createElement("video");
-      this.video.src = arg.src || "res/videos/tunel.mp4";
-      this.video.crossOrigin = "anonymous";
-      this.video.autoplay = true;
-      this.video.loop = true;
-      document.body.append(this.video);
-      this.video.style.display = "none";
-      this.video.style.position = "absolute";
-      this.video.style.top = "750px";
-      this.video.style.left = "50px";
-      await this.video.play();
-      this.isVideo = true;
-    } else if (arg.type === "videoElement") {
-      this.video = arg.el;
-      await this.video.play();
-    } else if (arg.type === "camera") {
-      this.video = document.createElement("video");
-      this.video.autoplay = true;
-      this.video.muted = true;
-      this.video.playsInline = true;
-      this.video.style.display = "none";
-      document.body.append(this.video);
-      try {
-        const stream = await navigator.mediaDevices?.getUserMedia?.({
-          video: {
-            width: { ideal: 1280 },
-            height: { ideal: 720 }
-          },
-          audio: false
+        this.videoSampler = this.device.createSampler({
+          magFilter: "linear",
+          minFilter: "linear"
         });
-        this.video.srcObject = stream;
-        await this.video.play();
-        this.isVideo = true;
-      } catch (err) {
-        console.error("\u274C Failed to access camera:", err);
-        return;
-      }
-    } else if (arg.type === "canvas2d") {
-      this.video = document.createElement("video");
-      this.video.autoplay = true;
-      this.video.muted = true;
-      this.video.playsInline = true;
-      this.video.style.display = "none";
-      document.body.append(this.video);
-      const stream = arg.el.captureStream?.() || arg.el.mozCaptureStream?.();
-      if (!stream) {
-        console.error("\u274C Cannot capture stream from canvas2d");
-        return;
-      }
-      this.video.srcObject = stream;
-      await this.video.play();
-      this.isVideo = true;
-    } else if (arg.type === "canvas2d-inline") {
-      const canvas = document.createElement("canvas");
-      canvas.width = arg.width || 256;
-      canvas.height = arg.height || 256;
-      const ctx = canvas.getContext("2d");
-      if (typeof arg.canvaInlineProgram === "function") {
-        const drawLoop = () => {
-          arg.canvaInlineProgram(ctx, canvas);
-          requestAnimationFrame(drawLoop);
-        };
-        drawLoop();
-      }
-      this.video = document.createElement("video");
-      this.video.autoplay = true;
-      this.video.muted = true;
-      this.video.playsInline = true;
-      this.video.style.display = "none";
-      document.body.append(this.video);
-      this.isVideo = true;
-      const stream = canvas.captureStream?.() || canvas.mozCaptureStream?.();
-      if (!stream) {
-        console.error("\u274C Cannot capture stream from inline canvas");
-        return;
-      }
-      this.video.srcObject = stream;
-      await this.video.play();
-    }
-    this.sampler = this.device.createSampler({
-      magFilter: "linear",
-      minFilter: "linear"
-    });
-    this.createLayoutForRender();
-  }
-  updateVideoTexture() {
-    if (!this.video || this.video.readyState < 2) return;
-    if (!this.externalTexture) {
-      this.externalTexture = this.device.importExternalTexture({ source: this.video });
-      this.createBindGroupForRender();
-      this.videoIsReady = "YES";
-      console.log("\u2705video bind.");
-    } else {
-      this.externalTexture = this.device.importExternalTexture({ source: this.video });
-      this.createBindGroupForRender();
-    }
-  }
-  getMaterialTexture(glb, materialIndex) {
-    const matDef = glb.glbJsonData.materials[materialIndex];
-    if (!matDef) {
-      console.warn("[engine] no material in glb...");
-      return null;
-    }
-    if (matDef.pbrMetallicRoughness?.baseColorTexture) {
-      const texIndex = matDef.pbrMetallicRoughness.baseColorTexture.index;
-      return glb.glbJsonData.glbTextures[texIndex].createView();
-    }
-    return null;
-  }
-  getMaterialTextureFromMaterial(material) {
-    if (!material || !material.pbrMetallicRoughness) return this.fallbackTextureView;
-    const texInfo = material.pbrMetallicRoughness.baseColorTexture;
-    if (!texInfo) return this.fallbackTextureView;
-    const texIndex = texInfo.index;
-    return this.glb.glbTextures[texIndex].createView();
-  }
-  createBindGroupForRender() {
-    let textureResource = this.isVideo ? this.externalTexture : this.texture0.createView();
-    if (this.material.useTextureFromGlb === true) {
-      const material = this.skinnedNode.mesh.primitives[0].material;
-      const textureView = material.baseColorTexture.imageView;
-      textureResource = textureView;
-    }
-    if (!textureResource || !this.sceneUniformBuffer || !this.shadowDepthTextureView) {
-      if (!textureResource) console.warn("\u2757Missing res texture: ", textureResource);
-      if (!this.sceneUniformBuffer) console.warn("\u2757Missing res: this.sceneUniformBuffer: ", this.sceneUniformBuffer);
-      if (!this.shadowDepthTextureView) console.warn("\u2757Missing res: this.shadowDepthTextureView: ", this.shadowDepthTextureView);
-      if (typeof textureResource === "undefined") {
-        this.updateVideoTexture();
-      }
-      return;
-    }
-    if (this.isVideo == true) {
-      this.sceneBindGroupForRender = this.device.createBindGroup({
-        label: "sceneBindGroupForRender [video]",
-        layout: this.bglForRender,
-        entries: [
-          { binding: 0, resource: { buffer: this.sceneUniformBuffer } },
-          { binding: 1, resource: this.shadowDepthTextureView },
-          { binding: 2, resource: this.compareSampler },
-          { binding: 3, resource: textureResource },
-          { binding: 4, resource: this.videoSampler },
-          { binding: 5, resource: { buffer: this.postFXModeBuffer } }
-        ]
-      });
-      if (this.video.paused == true) this.video.play();
-    } else {
-      this.sceneBindGroupForRender = this.device.createBindGroup({
-        label: "sceneBindGroupForRender [mesh][materials]",
-        layout: this.bglForRender,
-        entries: [
-          { binding: 0, resource: { buffer: this.sceneUniformBuffer } },
-          { binding: 1, resource: this.shadowDepthTextureView },
-          { binding: 2, resource: this.compareSampler },
-          { binding: 3, resource: textureResource },
-          { binding: 4, resource: this.imageSampler },
-          { binding: 5, resource: { buffer: !this.spotlightUniformBuffer ? this.dummySpotlightUniformBuffer : this.spotlightUniformBuffer } },
-          { binding: 6, resource: this.metallicRoughnessTextureView },
-          { binding: 7, resource: this.metallicRoughnessSampler },
-          { binding: 8, resource: { buffer: this.materialPBRBuffer } },
-          // NEW: dummy normal map
-          { binding: 9, resource: this.normalTextureView },
-          { binding: 10, resource: this.normalSampler }
-        ]
-      });
-    }
-  }
-  createLayoutForRender() {
-    let e = [
-      {
-        binding: 0,
-        visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
-        buffer: { type: "uniform" }
-      },
-      ...this.isVideo == false ? [
-        {
-          binding: 1,
-          visibility: GPUShaderStage.FRAGMENT,
-          texture: {
-            sampleType: "depth",
-            viewDimension: "2d-array",
-            // <- must match shadowMapArray
-            multisampled: false
+        this.postFXModeBuffer = this.device.createBuffer({
+          size: 4,
+          // u32 = 4 bytes
+          usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+        });
+        this.dummySpotlightUniformBuffer = this.device.createBuffer({
+          size: 80,
+          // Must match size in shader
+          usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+        });
+        this.device.queue.writeBuffer(this.dummySpotlightUniformBuffer, 0, new Float32Array(20));
+        const mrDummyTex = this.device.createTexture({
+          size: [1, 1, 1],
+          format: this.getFormat(),
+          usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST
+        });
+        const pixel = new Uint8Array([255, 255, 255, 255]);
+        this.device.queue.writeTexture(
+          { texture: mrDummyTex },
+          pixel,
+          { bytesPerRow: 4 },
+          [1, 1, 1]
+        );
+        this.metallicRoughnessTextureView = mrDummyTex.createView();
+        this.metallicRoughnessSampler = this.device.createSampler({
+          magFilter: "linear",
+          minFilter: "linear"
+        });
+        const materialPBRSize = 8 * 4;
+        this.materialPBRBuffer = this.device.createBuffer({
+          size: materialPBRSize,
+          usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+        });
+        const baseColorFactor = [1, 1, 1, 1];
+        const metallicFactor = 0.1;
+        const roughnessFactor = 0.5;
+        const pad = [0, 0];
+        const materialArray = new Float32Array([
+          ...baseColorFactor,
+          metallicFactor,
+          roughnessFactor,
+          ...pad
+        ]);
+        this.device.queue.writeBuffer(this.materialPBRBuffer, 0, materialArray.buffer);
+        if (this.material.type == "normalmap") {
+          const normalTexInfo = this.glb.glbJsonData.materials[0].normalTexture;
+          if (normalTexInfo) {
+            const tex = this.glb.glbJsonData.glbTextures[normalTexInfo.index];
+            this.normalTextureView = tex.createView();
+            this.normalSampler = this.device.createSampler({
+              magFilter: "linear",
+              minFilter: "linear"
+            });
+          } else {
           }
+        } else {
+          this.normalDummyTex = device.createTexture({
+            size: [1, 1, 1],
+            format: "rgba8unorm",
+            usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST
+          });
+          const neutralNormal = new Uint8Array([128, 128, 255, 255]);
+          this.device.queue.writeTexture(
+            { texture: this.normalDummyTex },
+            neutralNormal,
+            { bytesPerRow: 4 },
+            [1, 1, 1]
+          );
+          this.normalTextureView = this.normalDummyTex.createView();
+          this.normalSampler = this.device.createSampler({
+            magFilter: "linear",
+            minFilter: "linear"
+          });
         }
-      ] : [{
-        binding: 1,
-        visibility: GPUShaderStage.FRAGMENT,
-        texture: {
-          sampleType: "depth",
-          viewDimension: "2d"
+      }
+      getMaterial() {
+        if (this.material.type == "standard") {
+          return fragmentWGSL;
+        } else if (this.material.type == "pong") {
+          return fragmentWGSLPong;
+        } else if (this.material.type == "power") {
+          return fragmentWGSLPower;
+        } else if (this.material.type == "metal") {
+          return fragmentWGSLMetal;
+        } else if (this.material.type == "normalmap") {
+          return fragmentWGSLNormalMap;
         }
-      }],
-      {
-        binding: 2,
-        visibility: GPUShaderStage.FRAGMENT,
-        sampler: { type: "comparison" }
-      },
-      ...this.isVideo ? [
-        // VIDEO
-        {
-          binding: 3,
-          visibility: GPUShaderStage.FRAGMENT,
-          externalTexture: {}
-        },
-        {
-          binding: 4,
-          visibility: GPUShaderStage.FRAGMENT,
-          sampler: { type: "filtering" }
-          // for video sampling
-        },
-        {
-          binding: 5,
-          visibility: GPUShaderStage.FRAGMENT,
-          buffer: { type: "uniform" }
+        console.warn("Unknown material type:", this.material?.type);
+        return fragmentWGSL;
+      }
+      getFormat() {
+        if (this.material?.format == "darker") {
+          return "rgba8unorm-srgb";
+        } else if (this.material?.format == "normal") {
+          return "rgba8unorm";
+        } else {
+          return "rgba8unorm";
         }
-      ] : [
-        // IMAGE
-        {
-          binding: 3,
-          visibility: GPUShaderStage.FRAGMENT,
-          texture: {
-            sampleType: "float",
-            viewDimension: "2d"
+      }
+      // not affect all fs
+      setupMaterialPBR(metallicFactor) {
+        const baseColorFactor = [1, 1, 1, 1];
+        const roughnessFactor = 0.5;
+        const pad = [0, 0];
+        const materialArray = new Float32Array([
+          ...baseColorFactor,
+          metallicFactor,
+          roughnessFactor,
+          ...pad
+        ]);
+        this.device.queue.writeBuffer(this.materialPBRBuffer, 0, materialArray.buffer);
+      }
+      updatePostFXMode(mode) {
+        const arrayBuffer = new Uint32Array([mode]);
+        this.device.queue.writeBuffer(this.postFXModeBuffer, 0, arrayBuffer);
+      }
+      async loadTex0(texturesPaths) {
+        this.sampler = this.device.createSampler({
+          magFilter: "linear",
+          minFilter: "linear"
+        });
+        return new Promise(async (resolve) => {
+          const response = await fetch(texturesPaths[0]);
+          const imageBitmap = await createImageBitmap(await response.blob());
+          this.texture0 = this.device.createTexture({
+            size: [imageBitmap.width, imageBitmap.height, 1],
+            // REMOVED 1
+            format: this.getFormat(),
+            usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT
+          });
+          this.device.queue.copyExternalImageToTexture(
+            { source: imageBitmap },
+            { texture: this.texture0 },
+            [imageBitmap.width, imageBitmap.height]
+          );
+          resolve();
+        });
+      }
+      async loadVideoTexture(arg) {
+        this.videoIsReady = "MAYBE";
+        if (arg.type === "video") {
+          this.video = document.createElement("video");
+          this.video.src = arg.src || "res/videos/tunel.mp4";
+          this.video.crossOrigin = "anonymous";
+          this.video.autoplay = true;
+          this.video.loop = true;
+          document.body.append(this.video);
+          this.video.style.display = "none";
+          this.video.style.position = "absolute";
+          this.video.style.top = "750px";
+          this.video.style.left = "50px";
+          await this.video.play();
+          this.isVideo = true;
+        } else if (arg.type === "videoElement") {
+          this.video = arg.el;
+          await this.video.play();
+        } else if (arg.type === "camera") {
+          this.video = document.createElement("video");
+          this.video.autoplay = true;
+          this.video.muted = true;
+          this.video.playsInline = true;
+          this.video.style.display = "none";
+          document.body.append(this.video);
+          try {
+            const stream = await navigator.mediaDevices?.getUserMedia?.({
+              video: {
+                width: { ideal: 1280 },
+                height: { ideal: 720 }
+              },
+              audio: false
+            });
+            this.video.srcObject = stream;
+            await this.video.play();
+            this.isVideo = true;
+          } catch (err) {
+            console.error("\u274C Failed to access camera:", err);
+            return;
           }
-        },
-        {
-          binding: 4,
-          visibility: GPUShaderStage.FRAGMENT,
-          sampler: { type: "filtering" }
-        },
-        {
-          binding: 5,
-          visibility: GPUShaderStage.FRAGMENT,
-          buffer: { type: "uniform" }
-        },
-        {
-          binding: 6,
-          visibility: GPUShaderStage.FRAGMENT,
-          texture: {
-            sampleType: "float",
-            viewDimension: "2d"
+        } else if (arg.type === "canvas2d") {
+          this.video = document.createElement("video");
+          this.video.autoplay = true;
+          this.video.muted = true;
+          this.video.playsInline = true;
+          this.video.style.display = "none";
+          document.body.append(this.video);
+          const stream = arg.el.captureStream?.() || arg.el.mozCaptureStream?.();
+          if (!stream) {
+            console.error("\u274C Cannot capture stream from canvas2d");
+            return;
           }
-        },
-        {
-          binding: 7,
-          visibility: GPUShaderStage.FRAGMENT,
-          sampler: { type: "filtering" }
-        },
-        {
-          binding: 8,
-          visibility: GPUShaderStage.FRAGMENT,
-          buffer: { type: "uniform" }
-        },
-        {
-          binding: 9,
-          visibility: GPUShaderStage.FRAGMENT,
-          texture: { sampleType: "float", viewDimension: "2d" }
-        },
-        {
-          binding: 10,
-          visibility: GPUShaderStage.FRAGMENT,
-          sampler: { type: "filtering" }
+          this.video.srcObject = stream;
+          await this.video.play();
+          this.isVideo = true;
+        } else if (arg.type === "canvas2d-inline") {
+          const canvas = document.createElement("canvas");
+          canvas.width = arg.width || 256;
+          canvas.height = arg.height || 256;
+          const ctx = canvas.getContext("2d");
+          if (typeof arg.canvaInlineProgram === "function") {
+            const drawLoop = () => {
+              arg.canvaInlineProgram(ctx, canvas);
+              requestAnimationFrame(drawLoop);
+            };
+            drawLoop();
+          }
+          this.video = document.createElement("video");
+          this.video.autoplay = true;
+          this.video.muted = true;
+          this.video.playsInline = true;
+          this.video.style.display = "none";
+          document.body.append(this.video);
+          this.isVideo = true;
+          const stream = canvas.captureStream?.() || canvas.mozCaptureStream?.();
+          if (!stream) {
+            console.error("\u274C Cannot capture stream from inline canvas");
+            return;
+          }
+          this.video.srcObject = stream;
+          await this.video.play();
         }
-      ]
-    ];
-    this.bglForRender = this.device.createBindGroupLayout({ label: "bglForRender", entries: e });
+        this.sampler = this.device.createSampler({
+          magFilter: "linear",
+          minFilter: "linear"
+        });
+        this.createLayoutForRender();
+      }
+      updateVideoTexture() {
+        if (!this.video || this.video.readyState < 2) return;
+        if (!this.externalTexture) {
+          this.externalTexture = this.device.importExternalTexture({ source: this.video });
+          this.createBindGroupForRender();
+          this.videoIsReady = "YES";
+          console.log("\u2705video bind.");
+        } else {
+          this.externalTexture = this.device.importExternalTexture({ source: this.video });
+          this.createBindGroupForRender();
+        }
+      }
+      getMaterialTexture(glb, materialIndex) {
+        const matDef = glb.glbJsonData.materials[materialIndex];
+        if (!matDef) {
+          console.warn("[engine] no material in glb...");
+          return null;
+        }
+        if (matDef.pbrMetallicRoughness?.baseColorTexture) {
+          const texIndex = matDef.pbrMetallicRoughness.baseColorTexture.index;
+          return glb.glbJsonData.glbTextures[texIndex].createView();
+        }
+        return null;
+      }
+      getMaterialTextureFromMaterial(material) {
+        if (!material || !material.pbrMetallicRoughness) return this.fallbackTextureView;
+        const texInfo = material.pbrMetallicRoughness.baseColorTexture;
+        if (!texInfo) return this.fallbackTextureView;
+        const texIndex = texInfo.index;
+        return this.glb.glbTextures[texIndex].createView();
+      }
+      createBindGroupForRender() {
+        let textureResource = this.isVideo ? this.externalTexture : this.texture0.createView();
+        if (this.material.useTextureFromGlb === true) {
+          const material = this.skinnedNode.mesh.primitives[0].material;
+          const textureView = material.baseColorTexture.imageView;
+          textureResource = textureView;
+        }
+        if (!textureResource || !this.sceneUniformBuffer || !this.shadowDepthTextureView) {
+          if (!textureResource) console.warn("\u2757Missing res texture: ", textureResource);
+          if (!this.sceneUniformBuffer) console.warn("\u2757Missing res: this.sceneUniformBuffer: ", this.sceneUniformBuffer);
+          if (!this.shadowDepthTextureView) console.warn("\u2757Missing res: this.shadowDepthTextureView: ", this.shadowDepthTextureView);
+          if (typeof textureResource === "undefined") {
+            this.updateVideoTexture();
+          }
+          return;
+        }
+        if (this.isVideo == true) {
+          this.sceneBindGroupForRender = this.device.createBindGroup({
+            label: "sceneBindGroupForRender [video]",
+            layout: this.bglForRender,
+            entries: [
+              { binding: 0, resource: { buffer: this.sceneUniformBuffer } },
+              { binding: 1, resource: this.shadowDepthTextureView },
+              { binding: 2, resource: this.compareSampler },
+              { binding: 3, resource: textureResource },
+              { binding: 4, resource: this.videoSampler },
+              { binding: 5, resource: { buffer: this.postFXModeBuffer } }
+            ]
+          });
+          if (this.video.paused == true) this.video.play();
+        } else {
+          this.sceneBindGroupForRender = this.device.createBindGroup({
+            label: "sceneBindGroupForRender [mesh][materials]",
+            layout: this.bglForRender,
+            entries: [
+              { binding: 0, resource: { buffer: this.sceneUniformBuffer } },
+              { binding: 1, resource: this.shadowDepthTextureView },
+              { binding: 2, resource: this.compareSampler },
+              { binding: 3, resource: textureResource },
+              { binding: 4, resource: this.imageSampler },
+              { binding: 5, resource: { buffer: !this.spotlightUniformBuffer ? this.dummySpotlightUniformBuffer : this.spotlightUniformBuffer } },
+              { binding: 6, resource: this.metallicRoughnessTextureView },
+              { binding: 7, resource: this.metallicRoughnessSampler },
+              { binding: 8, resource: { buffer: this.materialPBRBuffer } },
+              // NEW: dummy normal map
+              { binding: 9, resource: this.normalTextureView },
+              { binding: 10, resource: this.normalSampler }
+            ]
+          });
+        }
+      }
+      createLayoutForRender() {
+        let e = [
+          {
+            binding: 0,
+            visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
+            buffer: { type: "uniform" }
+          },
+          ...this.isVideo == false ? [
+            {
+              binding: 1,
+              visibility: GPUShaderStage.FRAGMENT,
+              texture: {
+                sampleType: "depth",
+                viewDimension: "2d-array",
+                // <- must match shadowMapArray
+                multisampled: false
+              }
+            }
+          ] : [{
+            binding: 1,
+            visibility: GPUShaderStage.FRAGMENT,
+            texture: {
+              sampleType: "depth",
+              viewDimension: "2d"
+            }
+          }],
+          {
+            binding: 2,
+            visibility: GPUShaderStage.FRAGMENT,
+            sampler: { type: "comparison" }
+          },
+          ...this.isVideo ? [
+            // VIDEO
+            {
+              binding: 3,
+              visibility: GPUShaderStage.FRAGMENT,
+              externalTexture: {}
+            },
+            {
+              binding: 4,
+              visibility: GPUShaderStage.FRAGMENT,
+              sampler: { type: "filtering" }
+              // for video sampling
+            },
+            {
+              binding: 5,
+              visibility: GPUShaderStage.FRAGMENT,
+              buffer: { type: "uniform" }
+            }
+          ] : [
+            // IMAGE
+            {
+              binding: 3,
+              visibility: GPUShaderStage.FRAGMENT,
+              texture: {
+                sampleType: "float",
+                viewDimension: "2d"
+              }
+            },
+            {
+              binding: 4,
+              visibility: GPUShaderStage.FRAGMENT,
+              sampler: { type: "filtering" }
+            },
+            {
+              binding: 5,
+              visibility: GPUShaderStage.FRAGMENT,
+              buffer: { type: "uniform" }
+            },
+            {
+              binding: 6,
+              visibility: GPUShaderStage.FRAGMENT,
+              texture: {
+                sampleType: "float",
+                viewDimension: "2d"
+              }
+            },
+            {
+              binding: 7,
+              visibility: GPUShaderStage.FRAGMENT,
+              sampler: { type: "filtering" }
+            },
+            {
+              binding: 8,
+              visibility: GPUShaderStage.FRAGMENT,
+              buffer: { type: "uniform" }
+            },
+            {
+              binding: 9,
+              visibility: GPUShaderStage.FRAGMENT,
+              texture: { sampleType: "float", viewDimension: "2d" }
+            },
+            {
+              binding: 10,
+              visibility: GPUShaderStage.FRAGMENT,
+              sampler: { type: "filtering" }
+            }
+          ]
+        ];
+        this.bglForRender = this.device.createBindGroupLayout({ label: "bglForRender", entries: e });
+      }
+    };
   }
-};
+});
 
 // ../../../shaders/fragment.video.wgsl.js
-var fragmentVideoWGSL = `override shadowDepthTextureSize: f32 = 1024.0;
+var fragmentVideoWGSL;
+var init_fragment_video_wgsl = __esm({
+  "../../../shaders/fragment.video.wgsl.js"() {
+    fragmentVideoWGSL = `override shadowDepthTextureSize: f32 = 1024.0;
 
 struct Scene {
   lightViewProjMatrix : mat4x4f,
@@ -5725,9 +5814,14 @@ fn main(input : FragmentInput) -> @location(0) vec4f {
   // return color;
 }
 `;
+  }
+});
 
 // ../../../shaders/vertex.wgsl.normalmap.js
-var vertexWGSL_NM = `const MAX_BONES = 100u;
+var vertexWGSL_NM;
+var init_vertex_wgsl_normalmap = __esm({
+  "../../../shaders/vertex.wgsl.normalmap.js"() {
+    vertexWGSL_NM = `const MAX_BONES = 100u;
 
 struct Scene {
   lightViewProjMatrix: mat4x4f,
@@ -5830,9 +5924,14 @@ fn main(
 
   return output;
 }`;
+  }
+});
 
 // ../../../shaders/standalone/pointer.effect.js
-var pointerEffect = `
+var pointerEffect;
+var init_pointer_effect = __esm({
+  "../../../shaders/standalone/pointer.effect.js"() {
+    pointerEffect = `
 struct Camera {
   viewProjMatrix : mat4x4<f32>,
 };
@@ -5882,1385 +5981,1438 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
 
   return vec4<f32>(color, 1.0);
 }`;
+  }
+});
 
 // ../../../engine/effects/pointerEffect.js
-var PointerEffect = class {
-  constructor(device, format) {
-    this.device = device;
-    this.format = format;
-    this.enabled = true;
-    this._initPipeline();
+var PointerEffect;
+var init_pointerEffect = __esm({
+  "../../../engine/effects/pointerEffect.js"() {
+    init_wgpu_matrix_module();
+    init_pointer_effect();
+    PointerEffect = class {
+      constructor(device, format) {
+        this.device = device;
+        this.format = format;
+        this.enabled = true;
+        this._initPipeline();
+      }
+      _initPipeline() {
+        let S = 10;
+        const vertexData = new Float32Array([
+          -0.5 * S,
+          0.5 * S,
+          0 * S,
+          // top-left
+          0.5 * S,
+          0.5 * S,
+          0 * S,
+          // top-right
+          -0.1 * S,
+          -0.1 * S,
+          0 * S,
+          // bottom-left
+          0.1 * S,
+          -0.1 * S,
+          0 * S
+          // bottom-right
+        ]);
+        const uvData = new Float32Array([
+          0,
+          0,
+          1,
+          0,
+          0,
+          1,
+          1,
+          1
+        ]);
+        const indexData = new Uint16Array([
+          0,
+          2,
+          1,
+          1,
+          2,
+          3
+        ]);
+        this.vertexBuffer = this.device.createBuffer({
+          size: vertexData.byteLength,
+          usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
+        });
+        this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
+        this.uvBuffer = this.device.createBuffer({
+          size: uvData.byteLength,
+          usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
+        });
+        this.device.queue.writeBuffer(this.uvBuffer, 0, uvData);
+        this.indexBuffer = this.device.createBuffer({
+          size: Math.ceil(indexData.byteLength / 4) * 4,
+          usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST
+        });
+        this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
+        this.indexCount = indexData.length;
+        this.cameraBuffer = this.device.createBuffer({
+          size: 64,
+          usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+        });
+        this.modelBuffer = this.device.createBuffer({
+          size: 64,
+          usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+        });
+        const bindGroupLayout = this.device.createBindGroupLayout({
+          entries: [
+            { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {} },
+            { binding: 1, visibility: GPUShaderStage.VERTEX, buffer: {} }
+          ]
+        });
+        this.bindGroup = this.device.createBindGroup({
+          layout: bindGroupLayout,
+          entries: [
+            { binding: 0, resource: { buffer: this.cameraBuffer } },
+            { binding: 1, resource: { buffer: this.modelBuffer } }
+          ]
+        });
+        const shaderModule = this.device.createShaderModule({ code: pointerEffect });
+        const pipelineLayout = this.device.createPipelineLayout({ bindGroupLayouts: [bindGroupLayout] });
+        this.pipeline = this.device.createRenderPipeline({
+          layout: pipelineLayout,
+          vertex: {
+            module: shaderModule,
+            entryPoint: "vsMain",
+            buffers: [
+              { arrayStride: 3 * 4, attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }] },
+              { arrayStride: 2 * 4, attributes: [{ shaderLocation: 1, offset: 0, format: "float32x2" }] }
+            ]
+          },
+          fragment: {
+            module: shaderModule,
+            entryPoint: "fsMain",
+            targets: [{ format: this.format }]
+          },
+          primitive: { topology: "triangle-list" },
+          depthStencil: { depthWriteEnabled: true, depthCompare: "always", format: "depth24plus" }
+        });
+      }
+      draw(pass, cameraMatrix, modelMatrix) {
+        this.device.queue.writeBuffer(this.cameraBuffer, 0, cameraMatrix);
+        this.device.queue.writeBuffer(this.modelBuffer, 0, modelMatrix);
+        pass.setPipeline(this.pipeline);
+        pass.setBindGroup(0, this.bindGroup);
+        pass.setVertexBuffer(0, this.vertexBuffer);
+        pass.setVertexBuffer(1, this.uvBuffer);
+        pass.setIndexBuffer(this.indexBuffer, "uint16");
+        pass.drawIndexed(this.indexCount);
+      }
+      render(transPass, mesh, viewProjMatrix) {
+        const objPos = mesh.position;
+        const modelMatrix = mat4Impl.identity();
+        mat4Impl.translate(modelMatrix, [objPos.x, objPos.y + 60, objPos.z], modelMatrix);
+        this.draw(transPass, viewProjMatrix, modelMatrix);
+      }
+    };
   }
-  _initPipeline() {
-    let S = 10;
-    const vertexData = new Float32Array([
-      -0.5 * S,
-      0.5 * S,
-      0 * S,
-      // top-left
-      0.5 * S,
-      0.5 * S,
-      0 * S,
-      // top-right
-      -0.1 * S,
-      -0.1 * S,
-      0 * S,
-      // bottom-left
-      0.1 * S,
-      -0.1 * S,
-      0 * S
-      // bottom-right
-    ]);
-    const uvData = new Float32Array([
-      0,
-      0,
-      1,
-      0,
-      0,
-      1,
-      1,
-      1
-    ]);
-    const indexData = new Uint16Array([
-      0,
-      2,
-      1,
-      1,
-      2,
-      3
-    ]);
-    this.vertexBuffer = this.device.createBuffer({
-      size: vertexData.byteLength,
-      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
-    });
-    this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
-    this.uvBuffer = this.device.createBuffer({
-      size: uvData.byteLength,
-      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
-    });
-    this.device.queue.writeBuffer(this.uvBuffer, 0, uvData);
-    this.indexBuffer = this.device.createBuffer({
-      size: Math.ceil(indexData.byteLength / 4) * 4,
-      usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST
-    });
-    this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
-    this.indexCount = indexData.length;
-    this.cameraBuffer = this.device.createBuffer({
-      size: 64,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
-    this.modelBuffer = this.device.createBuffer({
-      size: 64,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
-    const bindGroupLayout = this.device.createBindGroupLayout({
-      entries: [
-        { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {} },
-        { binding: 1, visibility: GPUShaderStage.VERTEX, buffer: {} }
-      ]
-    });
-    this.bindGroup = this.device.createBindGroup({
-      layout: bindGroupLayout,
-      entries: [
-        { binding: 0, resource: { buffer: this.cameraBuffer } },
-        { binding: 1, resource: { buffer: this.modelBuffer } }
-      ]
-    });
-    const shaderModule = this.device.createShaderModule({ code: pointerEffect });
-    const pipelineLayout = this.device.createPipelineLayout({ bindGroupLayouts: [bindGroupLayout] });
-    this.pipeline = this.device.createRenderPipeline({
-      layout: pipelineLayout,
-      vertex: {
-        module: shaderModule,
-        entryPoint: "vsMain",
-        buffers: [
-          { arrayStride: 3 * 4, attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }] },
-          { arrayStride: 2 * 4, attributes: [{ shaderLocation: 1, offset: 0, format: "float32x2" }] }
-        ]
-      },
-      fragment: {
-        module: shaderModule,
-        entryPoint: "fsMain",
-        targets: [{ format: this.format }]
-      },
-      primitive: { topology: "triangle-list" },
-      depthStencil: { depthWriteEnabled: true, depthCompare: "always", format: "depth24plus" }
-    });
-  }
-  draw(pass, cameraMatrix, modelMatrix) {
-    this.device.queue.writeBuffer(this.cameraBuffer, 0, cameraMatrix);
-    this.device.queue.writeBuffer(this.modelBuffer, 0, modelMatrix);
-    pass.setPipeline(this.pipeline);
-    pass.setBindGroup(0, this.bindGroup);
-    pass.setVertexBuffer(0, this.vertexBuffer);
-    pass.setVertexBuffer(1, this.uvBuffer);
-    pass.setIndexBuffer(this.indexBuffer, "uint16");
-    pass.drawIndexed(this.indexCount);
-  }
-  render(transPass, mesh, viewProjMatrix) {
-    const objPos = mesh.position;
-    const modelMatrix = mat4Impl.identity();
-    mat4Impl.translate(modelMatrix, [objPos.x, objPos.y + 60, objPos.z], modelMatrix);
-    this.draw(transPass, viewProjMatrix, modelMatrix);
-  }
-};
+});
 
 // ../../../engine/mesh-obj.js
-var MEMeshObj = class extends Materials {
-  constructor(canvas, device, context, o, inputHandler, globalAmbient, _glbFile = null, primitiveIndex = null, skinnedNodeIndex = null) {
-    super(device, o.material, _glbFile);
-    if (typeof o.name === "undefined") o.name = genName(3);
-    if (typeof o.raycast === "undefined") {
-      this.raycast = { enabled: false, radius: 2 };
-    } else {
-      this.raycast = o.raycast;
-    }
-    if (typeof o.pointerEffect === "undefined") {
-      this.pointerEffect = { enabled: false };
-    }
-    this.name = o.name;
-    this.done = false;
-    this.canvas = canvas;
-    this.device = device;
-    this.context = context;
-    this.entityArgPass = o.entityArgPass;
-    this.clearColor = "red";
-    this.video = null;
-    this.FINISH_VIDIO_INIT = false;
-    this.globalAmbient = [...globalAmbient];
-    if (typeof o.material.useTextureFromGlb === "undefined" || typeof o.material.useTextureFromGlb !== "boolean") {
-      o.material.useTextureFromGlb = false;
-    }
-    this.material = o.material;
-    this.mesh = o.mesh;
-    if (_glbFile != null) {
-      if (typeof this.mesh == "undefined") {
-        this.mesh = {};
-        this.mesh.feedFromRealGlb = true;
-      }
-      const verView = _glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex].positions.view;
-      const byteOffsetV = verView.byteOffset || 0;
-      const byteLengthV = verView.buffer.byteLength;
-      const vertices = new Float32Array(
-        verView.buffer.buffer,
-        byteOffsetV,
-        byteLengthV / 4
-      );
-      this.mesh.vertices = vertices;
-      const norView = _glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex].normals.view;
-      const normalsUint8 = norView.buffer;
-      const byteOffsetN = norView.byteOffset || 0;
-      const byteLengthN = normalsUint8.byteLength;
-      const normals = new Float32Array(
-        normalsUint8.buffer,
-        byteOffsetN,
-        byteLengthN / 4
-      );
-      this.mesh.vertexNormals = normals;
-      let accessor = _glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex].texcoords[0];
-      const bufferView = accessor.view;
-      const byteOffset = (bufferView.byteOffset || 0) + (accessor.byteOffset || 0);
-      const count = accessor.count * 2;
-      const uvFloatArray = new Float32Array(bufferView.buffer.buffer, byteOffset, count);
-      this.mesh.uvs = uvFloatArray;
-      this.mesh.textures = uvFloatArray;
-      let binaryI = _glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex].indices;
-      const indicesView = binaryI.view;
-      const indicesUint8 = indicesView.buffer;
-      const byteOffsetI = indicesView.byteOffset || 0;
-      const byteLengthI = indicesUint8.byteLength;
-      let indicesArray;
-      switch (binaryI.componentType) {
-        case 5121:
-          indicesArray = new Uint8Array(indicesUint8.buffer, byteOffsetI, byteLengthI);
-          break;
-        case 5123:
-          indicesArray = new Uint16Array(indicesUint8.buffer, byteOffsetI, byteLengthI / 2);
-          break;
-        case 5125:
-          indicesArray = new Uint32Array(indicesUint8.buffer, byteOffsetI, byteLengthI / 4);
-          break;
-        default:
-          throw new Error("Unknown index componentType");
-      }
-      this.mesh.indices = indicesArray;
-      let weightsView = _glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex].weights.view;
-      this.mesh.weightsView = weightsView;
-      let primitive = _glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex];
-      let finalRoundedWeights = this.getAccessorArray(_glbFile, primitive.weights.weightsAccessIndex);
-      const weightsArray = finalRoundedWeights;
-      for (let i = 0; i < weightsArray.length; i += 4) {
-        const sum = weightsArray[i] + weightsArray[i + 1] + weightsArray[i + 2] + weightsArray[i + 3];
-        if (sum > 0) {
-          const inv = 1 / sum;
-          weightsArray[i] *= inv;
-          weightsArray[i + 1] *= inv;
-          weightsArray[i + 2] *= inv;
-          weightsArray[i + 3] *= inv;
+var MEMeshObj;
+var init_mesh_obj = __esm({
+  "../../../engine/mesh-obj.js"() {
+    init_wgpu_matrix_module();
+    init_matrix_class();
+    init_vertex_wgsl();
+    init_utils();
+    init_materials();
+    init_fragment_video_wgsl();
+    init_vertex_wgsl_normalmap();
+    init_pointerEffect();
+    MEMeshObj = class extends Materials {
+      constructor(canvas, device, context, o, inputHandler, globalAmbient, _glbFile = null, primitiveIndex = null, skinnedNodeIndex = null) {
+        super(device, o.material, _glbFile);
+        if (typeof o.name === "undefined") o.name = genName(3);
+        if (typeof o.raycast === "undefined") {
+          this.raycast = { enabled: false, radius: 2 };
         } else {
-          weightsArray[i] = 1;
-          weightsArray[i + 1] = 0;
-          weightsArray[i + 2] = 0;
-          weightsArray[i + 3] = 0;
+          this.raycast = o.raycast;
         }
-      }
-      for (let i = 0; i < weightsArray.length; i += 4) {
-        const s = weightsArray[i] + weightsArray[i + 1] + weightsArray[i + 2] + weightsArray[i + 3];
-        if (Math.abs(s - 1) > 1e-3) console.warn("Weight not normalized!", i, s);
-      }
-      this.mesh.weightsBuffer = this.device.createBuffer({
-        label: "weightsBuffer real data",
-        size: weightsArray.byteLength,
-        usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
-        mappedAtCreation: true
-      });
-      new Float32Array(this.mesh.weightsBuffer.getMappedRange()).set(weightsArray);
-      this.mesh.weightsBuffer.unmap();
-      let jointsView = _glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex].joints.view;
-      this.mesh.jointsView = jointsView;
-      let jointsArray16 = new Uint16Array(
-        jointsView.buffer,
-        jointsView.byteOffset || 0,
-        jointsView.byteLength / 2
-        // in Uint16 elements
-      );
-      const jointsArray32 = new Uint32Array(jointsArray16.length);
-      for (let i = 0; i < jointsArray16.length; i++) {
-        jointsArray32[i] = jointsArray16[i];
-      }
-      this.mesh.jointsBuffer = this.device.createBuffer({
-        label: "jointsBuffer[real-data]",
-        size: jointsArray32.byteLength,
-        usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
-        mappedAtCreation: true
-      });
-      new Uint32Array(this.mesh.jointsBuffer.getMappedRange()).set(jointsArray32);
-      this.mesh.jointsBuffer.unmap();
-      let tangentArray = null;
-      if (_glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex].tangents) {
-        const tangentView = _glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex].tangents.view;
-        const byteOffsetT = tangentView.byteOffset || 0;
-        const byteLengthT = tangentView.buffer.byteLength;
-        tangentArray = new Float32Array(
-          tangentView.buffer,
-          byteOffsetT,
-          byteLengthT / 4
-        );
-        this.mesh.tangents = tangentArray;
-        this.mesh.tangentsBuffer = this.device.createBuffer({
-          label: "tangentsBuffer[real-data]",
-          size: tangentArray.byteLength,
-          usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
-          mappedAtCreation: true
-        });
-        new Float32Array(this.mesh.tangentsBuffer.getMappedRange()).set(tangentArray);
-        this.mesh.tangentsBuffer.unmap();
-      } else {
-        const dummyTangents = new Float32Array(this.mesh.vertices.length / 3 * 4);
-        for (let i = 0; i < dummyTangents.length; i += 4) {
-          dummyTangents[i + 0] = 1;
-          dummyTangents[i + 1] = 0;
-          dummyTangents[i + 2] = 0;
-          dummyTangents[i + 3] = 1;
+        if (typeof o.pointerEffect === "undefined") {
+          this.pointerEffect = { enabled: false };
         }
-        this.mesh.tangentsBuffer = this.device.createBuffer({
-          label: "tangentsBuffer dummy",
-          size: dummyTangents.byteLength,
-          usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
-          mappedAtCreation: true
-        });
-        new Float32Array(this.mesh.tangentsBuffer.getMappedRange()).set(dummyTangents);
-        this.mesh.tangentsBuffer.unmap();
-        console.warn("GLTF primitive has no TANGENT attribute (normal map won\u2019t work properly).");
-      }
-    } else {
-      this.mesh.uvs = this.mesh.textures;
-    }
-    console.log(`%c Mesh loaded: ${o.name}`, LOG_FUNNY_SMALL);
-    if (typeof o.objAnim !== "undefined" && o.objAnim != null) {
-      this.objAnim = o.objAnim;
-      for (var key in this.objAnim.animations) {
-        if (key != "active") this.objAnim.animations[key].speedCounter = 0;
-      }
-      console.log(`%c Mesh objAnim exist: ${o.objAnim}`, LOG_FUNNY_SMALL);
-      this.drawElements = this.drawElementsAnim;
-    }
-    this.inputHandler = inputHandler;
-    this.cameras = o.cameras;
-    this.mainCameraParams = {
-      type: o.mainCameraParams.type,
-      responseCoef: o.mainCameraParams.responseCoef
-    };
-    this.lastFrameMS = 0;
-    this.texturesPaths = [];
-    o.texturesPaths.forEach((t) => {
-      this.texturesPaths.push(t);
-    });
-    this.presentationFormat = navigator.gpu.getPreferredCanvasFormat();
-    this.position = new Position(o.position.x, o.position.y, o.position.z);
-    this.rotation = new Rotation(o.rotation.x, o.rotation.y, o.rotation.z);
-    this.rotation.rotationSpeed.x = o.rotationSpeed.x;
-    this.rotation.rotationSpeed.y = o.rotationSpeed.y;
-    this.rotation.rotationSpeed.z = o.rotationSpeed.z;
-    this.scale = o.scale;
-    if (!this.joints) {
-      const jointsData = new Uint32Array(this.mesh.vertices.length / 3 * 4);
-      const jointsBuffer = this.device.createBuffer({
-        label: "jointsBuffer",
-        size: jointsData.byteLength,
-        usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
-        mappedAtCreation: true
-      });
-      new Uint32Array(jointsBuffer.getMappedRange()).set(jointsData);
-      jointsBuffer.unmap();
-      this.joints = {
-        data: jointsData,
-        buffer: jointsBuffer,
-        stride: 16
-        // vec4<u32>
-      };
-      const numVerts = this.mesh.vertices.length / 3;
-      const weightsData = new Float32Array(numVerts * 4);
-      for (let i = 0; i < numVerts; i++) {
-        weightsData[i * 4 + 0] = 1;
-        weightsData[i * 4 + 1] = 0;
-        weightsData[i * 4 + 2] = 0;
-        weightsData[i * 4 + 3] = 0;
-      }
-      const weightsBuffer = this.device.createBuffer({
-        label: "weightsBuffer dummy",
-        size: weightsData.byteLength,
-        usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
-        mappedAtCreation: true
-      });
-      new Float32Array(weightsBuffer.getMappedRange()).set(weightsData);
-      weightsBuffer.unmap();
-      this.weights = {
-        data: weightsData,
-        buffer: weightsBuffer,
-        stride: 16
-        // vec4<f32>
-      };
-    }
-    this.runProgram = () => {
-      return new Promise(async (resolve) => {
-        this.shadowDepthTextureSize = 1024;
-        this.modelViewProjectionMatrix = mat4Impl.create();
-        this.loadTex0(this.texturesPaths).then(() => {
-          resolve();
-        });
-      });
-    };
-    this.runProgram().then(() => {
-      this.context.configure({
-        device: this.device,
-        format: this.presentationFormat,
-        alphaMode: "premultiplied"
-      });
-      this.vertexBuffer = this.device.createBuffer({
-        size: this.mesh.vertices.length * Float32Array.BYTES_PER_ELEMENT,
-        usage: GPUBufferUsage.VERTEX,
-        mappedAtCreation: true
-      });
-      {
-        new Float32Array(this.vertexBuffer.getMappedRange()).set(this.mesh.vertices);
-        this.vertexBuffer.unmap();
-      }
-      this.vertexNormalsBuffer = this.device.createBuffer({
-        size: this.mesh.vertexNormals.length * Float32Array.BYTES_PER_ELEMENT,
-        usage: GPUBufferUsage.VERTEX,
-        mappedAtCreation: true
-      });
-      {
-        new Float32Array(this.vertexNormalsBuffer.getMappedRange()).set(this.mesh.vertexNormals);
-        this.vertexNormalsBuffer.unmap();
-      }
-      this.vertexTexCoordsBuffer = this.device.createBuffer({
-        size: this.mesh.textures.length * Float32Array.BYTES_PER_ELEMENT,
-        usage: GPUBufferUsage.VERTEX,
-        mappedAtCreation: true
-      });
-      {
-        new Float32Array(this.vertexTexCoordsBuffer.getMappedRange()).set(this.mesh.textures);
-        this.vertexTexCoordsBuffer.unmap();
-      }
-      this.indexCount = this.mesh.indices.length;
-      const indexCount = this.mesh.indices.length;
-      const size = Math.ceil(indexCount * Uint16Array.BYTES_PER_ELEMENT / 4) * 4;
-      this.indexBuffer = this.device.createBuffer({
-        size,
-        usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST,
-        mappedAtCreation: true
-      });
-      new Uint16Array(this.indexBuffer.getMappedRange()).set(this.mesh.indices);
-      this.indexBuffer.unmap();
-      this.indexCount = indexCount;
-      let glbInfo = {
-        arrayStride: 4 * 4,
-        // vec4<f32> = 4 * 4 bytes
-        attributes: [{ format: "float32x4", offset: 0, shaderLocation: 4 }]
-      };
-      let tang = null;
-      this.vertexBuffers = [
-        {
-          arrayStride: Float32Array.BYTES_PER_ELEMENT * 3,
-          attributes: [
-            {
-              // position
-              shaderLocation: 0,
-              offset: 0,
-              format: "float32x3"
-            }
-          ]
-        },
-        {
-          arrayStride: Float32Array.BYTES_PER_ELEMENT * 3,
-          attributes: [
-            {
-              // normal
-              shaderLocation: 1,
-              offset: 0,
-              format: "float32x3"
-            }
-          ]
-        },
-        {
-          arrayStride: Float32Array.BYTES_PER_ELEMENT * 2,
-          attributes: [
-            {
-              // uvs
-              shaderLocation: 2,
-              offset: 0,
-              format: "float32x2"
-            }
-          ]
-        },
-        // joint indices
-        {
-          arrayStride: 4 * 4,
-          // vec4<u32> = 4 * 4 bytes
-          attributes: [{ format: "uint32x4", offset: 0, shaderLocation: 3 }]
-        },
-        // weights
-        glbInfo
-      ];
-      if (this.mesh.tangentsBuffer) {
-        this.vertexBuffers.push({
-          arrayStride: 4 * 4,
-          // vec4<f32> = 16 bytes
-          attributes: [
-            { shaderLocation: 5, format: "float32x4", offset: 0 }
-          ]
-        });
-      } else {
-      }
-      this.primitive = {
-        topology: "triangle-list",
-        cullMode: "back",
-        // typical for shadow passes
-        frontFace: "ccw"
-      };
-      this.selectedBuffer = device.createBuffer({
-        size: 4,
-        // just one float
-        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-      });
-      this.selectedBindGroupLayout = device.createBindGroupLayout({
-        label: "selectedBindGroupLayout mesh",
-        entries: [
-          { binding: 0, visibility: GPUShaderStage.FRAGMENT, buffer: {} }
-        ]
-      });
-      this.selectedBindGroup = device.createBindGroup({
-        label: "selectedBindGroup mesh",
-        layout: this.selectedBindGroupLayout,
-        entries: [{ binding: 0, resource: { buffer: this.selectedBuffer } }]
-      });
-      this.setSelectedEffect = (selected = false) => {
-        this.device.queue.writeBuffer(this.selectedBuffer, 0, new Float32Array([selected ? 1 : 0]));
-      };
-      this.setSelectedEffect();
-      this.createLayoutForRender();
-      this.modelUniformBuffer = this.device.createBuffer({
-        size: 4 * 16,
-        // 4x4 matrix
-        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-      });
-      this.sceneUniformBuffer = this.device.createBuffer({
-        label: "sceneUniformBuffer per mesh",
-        size: 176,
-        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-      });
-      this.uniformBufferBindGroupLayout = this.device.createBindGroupLayout({
-        label: "uniformBufferBindGroupLayout in mesh regular",
-        entries: [
-          {
-            binding: 0,
-            visibility: GPUShaderStage.VERTEX,
-            buffer: {
-              type: "uniform"
-            }
-          },
-          {
-            binding: 1,
-            visibility: GPUShaderStage.VERTEX,
-            buffer: {
-              type: "uniform"
-            }
+        this.name = o.name;
+        this.done = false;
+        this.canvas = canvas;
+        this.device = device;
+        this.context = context;
+        this.entityArgPass = o.entityArgPass;
+        this.clearColor = "red";
+        this.video = null;
+        this.FINISH_VIDIO_INIT = false;
+        this.globalAmbient = [...globalAmbient];
+        if (typeof o.material.useTextureFromGlb === "undefined" || typeof o.material.useTextureFromGlb !== "boolean") {
+          o.material.useTextureFromGlb = false;
+        }
+        this.material = o.material;
+        this.mesh = o.mesh;
+        if (_glbFile != null) {
+          if (typeof this.mesh == "undefined") {
+            this.mesh = {};
+            this.mesh.feedFromRealGlb = true;
           }
-        ]
-      });
-      function alignTo256(n) {
-        return Math.ceil(n / 256) * 256;
-      }
-      let MAX_BONES = 100;
-      this.MAX_BONES = MAX_BONES;
-      this.bonesBuffer = device.createBuffer({
-        label: "bonesBuffer",
-        size: alignTo256(64 * MAX_BONES),
-        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-      });
-      const bones = new Float32Array(this.MAX_BONES * 16);
-      for (let i = 0; i < this.MAX_BONES; i++) {
-        bones.set([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1], i * 16);
-      }
-      this.device.queue.writeBuffer(this.bonesBuffer, 0, bones);
-      this.modelBindGroup = this.device.createBindGroup({
-        label: "modelBindGroup in mesh",
-        layout: this.uniformBufferBindGroupLayout,
-        entries: [
-          {
-            binding: 0,
-            resource: {
-              buffer: this.modelUniformBuffer
-            }
-          },
-          { binding: 1, resource: { buffer: this.bonesBuffer } }
-        ]
-      });
-      this.mainPassBindGroupLayout = this.device.createBindGroupLayout({
-        label: "mainPassBindGroupLayout mesh",
-        entries: [
-          { binding: 0, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: "depth" } },
-          { binding: 1, visibility: GPUShaderStage.FRAGMENT, sampler: { type: "comparison" } }
-        ]
-      });
-      this.effects = {};
-      if (this.pointerEffect && this.pointerEffect.enabled === true) {
-        let pf = navigator.gpu.getPreferredCanvasFormat();
-        this.effects.pointer = new PointerEffect(device, pf, this, true);
-      }
-      this.getTransformationMatrix = (mainRenderBundle, spotLight, index) => {
-        const now = Date.now();
-        const dt = (now - this.lastFrameMS) / this.mainCameraParams.responseCoef;
-        this.lastFrameMS = now;
-        const camera = this.cameras[this.mainCameraParams.type];
-        if (index == 0) camera.update(dt, inputHandler());
-        const camVP = mat4Impl.multiply(camera.projectionMatrix, camera.view);
-        const sceneData = new Float32Array(44);
-        sceneData.set(spotLight.viewProjMatrix, 0);
-        sceneData.set(camVP, 16);
-        sceneData.set([camera.position.x, camera.position.y, camera.position.z, 0], 32);
-        sceneData.set([spotLight.position[0], spotLight.position[1], spotLight.position[2], 0], 36);
-        sceneData.set([this.globalAmbient[0], this.globalAmbient[1], this.globalAmbient[2], 0], 40);
-        device.queue.writeBuffer(
-          this.sceneUniformBuffer,
-          0,
-          sceneData.buffer,
-          sceneData.byteOffset,
-          sceneData.byteLength
-        );
-      };
-      this.getModelMatrix = (pos) => {
-        let modelMatrix2 = mat4Impl.identity();
-        mat4Impl.translate(modelMatrix2, [pos.x, pos.y, pos.z], modelMatrix2);
-        if (this.itIsPhysicsBody) {
-          mat4Impl.rotate(
-            modelMatrix2,
-            [this.rotation.axis.x, this.rotation.axis.y, this.rotation.axis.z],
-            degToRad(this.rotation.angle),
-            modelMatrix2
+          const verView = _glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex].positions.view;
+          const byteOffsetV = verView.byteOffset || 0;
+          const byteLengthV = verView.buffer.byteLength;
+          const vertices = new Float32Array(
+            verView.buffer.buffer,
+            byteOffsetV,
+            byteLengthV / 4
           );
-        } else {
-          mat4Impl.rotateX(modelMatrix2, this.rotation.getRotX(), modelMatrix2);
-          mat4Impl.rotateY(modelMatrix2, this.rotation.getRotY(), modelMatrix2);
-          mat4Impl.rotateZ(modelMatrix2, this.rotation.getRotZ(), modelMatrix2);
-        }
-        if (this.glb || this.objAnim) {
-          mat4Impl.scale(modelMatrix2, [this.scale[0], this.scale[1], this.scale[2]], modelMatrix2);
-        }
-        return modelMatrix2;
-      };
-      const modelMatrix = mat4Impl.translation([0, 0, 0]);
-      const modelData = modelMatrix;
-      this.device.queue.writeBuffer(
-        this.modelUniformBuffer,
-        0,
-        modelData.buffer,
-        modelData.byteOffset,
-        modelData.byteLength
-      );
-      this.done = true;
-      try {
-        this.setupPipeline();
-      } catch (err) {
-        console.log("err in create pipeline in init ", err);
-      }
-    }).then(() => {
-      if (typeof this.objAnim !== "undefined" && this.objAnim !== null) {
-        console.log("after all updateMeshListBuffers...");
-        this.updateMeshListBuffers();
-      }
-    });
-  }
-  setupPipeline = () => {
-    this.createBindGroupForRender();
-    this.pipeline = this.device.createRenderPipeline({
-      label: "Mesh Pipeline \u2705",
-      layout: this.device.createPipelineLayout({
-        label: "createPipelineLayout Mesh",
-        bindGroupLayouts: [
-          this.bglForRender,
-          this.uniformBufferBindGroupLayout,
-          this.selectedBindGroupLayout
-        ]
-      }),
-      vertex: {
-        entryPoint: "main",
-        module: this.device.createShaderModule({
-          code: this.material.type == "normalmap" ? vertexWGSL_NM : vertexWGSL
-        }),
-        buffers: this.vertexBuffers
-      },
-      fragment: {
-        entryPoint: "main",
-        module: this.device.createShaderModule({
-          code: this.isVideo == true ? fragmentVideoWGSL : this.getMaterial()
-        }),
-        targets: [
-          {
-            format: this.presentationFormat
+          this.mesh.vertices = vertices;
+          const norView = _glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex].normals.view;
+          const normalsUint8 = norView.buffer;
+          const byteOffsetN = norView.byteOffset || 0;
+          const byteLengthN = normalsUint8.byteLength;
+          const normals = new Float32Array(
+            normalsUint8.buffer,
+            byteOffsetN,
+            byteLengthN / 4
+          );
+          this.mesh.vertexNormals = normals;
+          let accessor = _glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex].texcoords[0];
+          const bufferView = accessor.view;
+          const byteOffset = (bufferView.byteOffset || 0) + (accessor.byteOffset || 0);
+          const count = accessor.count * 2;
+          const uvFloatArray = new Float32Array(bufferView.buffer.buffer, byteOffset, count);
+          this.mesh.uvs = uvFloatArray;
+          this.mesh.textures = uvFloatArray;
+          let binaryI = _glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex].indices;
+          const indicesView = binaryI.view;
+          const indicesUint8 = indicesView.buffer;
+          const byteOffsetI = indicesView.byteOffset || 0;
+          const byteLengthI = indicesUint8.byteLength;
+          let indicesArray;
+          switch (binaryI.componentType) {
+            case 5121:
+              indicesArray = new Uint8Array(indicesUint8.buffer, byteOffsetI, byteLengthI);
+              break;
+            case 5123:
+              indicesArray = new Uint16Array(indicesUint8.buffer, byteOffsetI, byteLengthI / 2);
+              break;
+            case 5125:
+              indicesArray = new Uint32Array(indicesUint8.buffer, byteOffsetI, byteLengthI / 4);
+              break;
+            default:
+              throw new Error("Unknown index componentType");
           }
-        ],
-        constants: {
-          shadowDepthTextureSize: this.shadowDepthTextureSize
+          this.mesh.indices = indicesArray;
+          let weightsView = _glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex].weights.view;
+          this.mesh.weightsView = weightsView;
+          let primitive = _glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex];
+          let finalRoundedWeights = this.getAccessorArray(_glbFile, primitive.weights.weightsAccessIndex);
+          const weightsArray = finalRoundedWeights;
+          for (let i = 0; i < weightsArray.length; i += 4) {
+            const sum = weightsArray[i] + weightsArray[i + 1] + weightsArray[i + 2] + weightsArray[i + 3];
+            if (sum > 0) {
+              const inv = 1 / sum;
+              weightsArray[i] *= inv;
+              weightsArray[i + 1] *= inv;
+              weightsArray[i + 2] *= inv;
+              weightsArray[i + 3] *= inv;
+            } else {
+              weightsArray[i] = 1;
+              weightsArray[i + 1] = 0;
+              weightsArray[i + 2] = 0;
+              weightsArray[i + 3] = 0;
+            }
+          }
+          for (let i = 0; i < weightsArray.length; i += 4) {
+            const s = weightsArray[i] + weightsArray[i + 1] + weightsArray[i + 2] + weightsArray[i + 3];
+            if (Math.abs(s - 1) > 1e-3) console.warn("Weight not normalized!", i, s);
+          }
+          this.mesh.weightsBuffer = this.device.createBuffer({
+            label: "weightsBuffer real data",
+            size: weightsArray.byteLength,
+            usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+            mappedAtCreation: true
+          });
+          new Float32Array(this.mesh.weightsBuffer.getMappedRange()).set(weightsArray);
+          this.mesh.weightsBuffer.unmap();
+          let jointsView = _glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex].joints.view;
+          this.mesh.jointsView = jointsView;
+          let jointsArray16 = new Uint16Array(
+            jointsView.buffer,
+            jointsView.byteOffset || 0,
+            jointsView.byteLength / 2
+            // in Uint16 elements
+          );
+          const jointsArray32 = new Uint32Array(jointsArray16.length);
+          for (let i = 0; i < jointsArray16.length; i++) {
+            jointsArray32[i] = jointsArray16[i];
+          }
+          this.mesh.jointsBuffer = this.device.createBuffer({
+            label: "jointsBuffer[real-data]",
+            size: jointsArray32.byteLength,
+            usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+            mappedAtCreation: true
+          });
+          new Uint32Array(this.mesh.jointsBuffer.getMappedRange()).set(jointsArray32);
+          this.mesh.jointsBuffer.unmap();
+          let tangentArray = null;
+          if (_glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex].tangents) {
+            const tangentView = _glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex].tangents.view;
+            const byteOffsetT = tangentView.byteOffset || 0;
+            const byteLengthT = tangentView.buffer.byteLength;
+            tangentArray = new Float32Array(
+              tangentView.buffer,
+              byteOffsetT,
+              byteLengthT / 4
+            );
+            this.mesh.tangents = tangentArray;
+            this.mesh.tangentsBuffer = this.device.createBuffer({
+              label: "tangentsBuffer[real-data]",
+              size: tangentArray.byteLength,
+              usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+              mappedAtCreation: true
+            });
+            new Float32Array(this.mesh.tangentsBuffer.getMappedRange()).set(tangentArray);
+            this.mesh.tangentsBuffer.unmap();
+          } else {
+            const dummyTangents = new Float32Array(this.mesh.vertices.length / 3 * 4);
+            for (let i = 0; i < dummyTangents.length; i += 4) {
+              dummyTangents[i + 0] = 1;
+              dummyTangents[i + 1] = 0;
+              dummyTangents[i + 2] = 0;
+              dummyTangents[i + 3] = 1;
+            }
+            this.mesh.tangentsBuffer = this.device.createBuffer({
+              label: "tangentsBuffer dummy",
+              size: dummyTangents.byteLength,
+              usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+              mappedAtCreation: true
+            });
+            new Float32Array(this.mesh.tangentsBuffer.getMappedRange()).set(dummyTangents);
+            this.mesh.tangentsBuffer.unmap();
+            console.warn("GLTF primitive has no TANGENT attribute (normal map won\u2019t work properly).");
+          }
+        } else {
+          this.mesh.uvs = this.mesh.textures;
         }
-      },
-      depthStencil: {
-        depthWriteEnabled: true,
-        depthCompare: "less",
-        format: "depth24plus"
-      },
-      primitive: this.primitive
-    });
-  };
-  updateModelUniformBuffer = () => {
-    if (this.done == false) return;
-    const modelMatrix = this.getModelMatrix(this.position);
-    this.device.queue.writeBuffer(
-      this.modelUniformBuffer,
-      0,
-      modelMatrix.buffer,
-      modelMatrix.byteOffset,
-      modelMatrix.byteLength
-    );
-  };
-  createGPUBuffer(dataArray, usage) {
-    if (!dataArray || typeof dataArray.length !== "number") {
-      throw new Error("Invalid data array passed to createGPUBuffer");
-    }
-    const size = dataArray.length * dataArray.BYTES_PER_ELEMENT;
-    if (!Number.isFinite(size) || size <= 0) {
-      throw new Error(`Invalid buffer size: ${size}`);
-    }
-    const buffer = this.device.createBuffer({
-      size,
-      usage,
-      mappedAtCreation: true
-    });
-    const writeArray = dataArray.constructor === Float32Array ? new Float32Array(buffer.getMappedRange()) : new Uint16Array(buffer.getMappedRange());
-    writeArray.set(dataArray);
-    buffer.unmap();
-    return buffer;
+        console.log(`%c Mesh loaded: ${o.name}`, LOG_FUNNY_SMALL);
+        if (typeof o.objAnim !== "undefined" && o.objAnim != null) {
+          this.objAnim = o.objAnim;
+          for (var key in this.objAnim.animations) {
+            if (key != "active") this.objAnim.animations[key].speedCounter = 0;
+          }
+          console.log(`%c Mesh objAnim exist: ${o.objAnim}`, LOG_FUNNY_SMALL);
+          this.drawElements = this.drawElementsAnim;
+        }
+        this.inputHandler = inputHandler;
+        this.cameras = o.cameras;
+        this.mainCameraParams = {
+          type: o.mainCameraParams.type,
+          responseCoef: o.mainCameraParams.responseCoef
+        };
+        this.lastFrameMS = 0;
+        this.texturesPaths = [];
+        o.texturesPaths.forEach((t) => {
+          this.texturesPaths.push(t);
+        });
+        this.presentationFormat = navigator.gpu.getPreferredCanvasFormat();
+        this.position = new Position(o.position.x, o.position.y, o.position.z);
+        this.rotation = new Rotation(o.rotation.x, o.rotation.y, o.rotation.z);
+        this.rotation.rotationSpeed.x = o.rotationSpeed.x;
+        this.rotation.rotationSpeed.y = o.rotationSpeed.y;
+        this.rotation.rotationSpeed.z = o.rotationSpeed.z;
+        this.scale = o.scale;
+        if (!this.joints) {
+          const jointsData = new Uint32Array(this.mesh.vertices.length / 3 * 4);
+          const jointsBuffer = this.device.createBuffer({
+            label: "jointsBuffer",
+            size: jointsData.byteLength,
+            usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+            mappedAtCreation: true
+          });
+          new Uint32Array(jointsBuffer.getMappedRange()).set(jointsData);
+          jointsBuffer.unmap();
+          this.joints = {
+            data: jointsData,
+            buffer: jointsBuffer,
+            stride: 16
+            // vec4<u32>
+          };
+          const numVerts = this.mesh.vertices.length / 3;
+          const weightsData = new Float32Array(numVerts * 4);
+          for (let i = 0; i < numVerts; i++) {
+            weightsData[i * 4 + 0] = 1;
+            weightsData[i * 4 + 1] = 0;
+            weightsData[i * 4 + 2] = 0;
+            weightsData[i * 4 + 3] = 0;
+          }
+          const weightsBuffer = this.device.createBuffer({
+            label: "weightsBuffer dummy",
+            size: weightsData.byteLength,
+            usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+            mappedAtCreation: true
+          });
+          new Float32Array(weightsBuffer.getMappedRange()).set(weightsData);
+          weightsBuffer.unmap();
+          this.weights = {
+            data: weightsData,
+            buffer: weightsBuffer,
+            stride: 16
+            // vec4<f32>
+          };
+        }
+        this.runProgram = () => {
+          return new Promise(async (resolve) => {
+            this.shadowDepthTextureSize = 1024;
+            this.modelViewProjectionMatrix = mat4Impl.create();
+            this.loadTex0(this.texturesPaths).then(() => {
+              resolve();
+            });
+          });
+        };
+        this.runProgram().then(() => {
+          this.context.configure({
+            device: this.device,
+            format: this.presentationFormat,
+            alphaMode: "premultiplied"
+          });
+          this.vertexBuffer = this.device.createBuffer({
+            size: this.mesh.vertices.length * Float32Array.BYTES_PER_ELEMENT,
+            usage: GPUBufferUsage.VERTEX,
+            mappedAtCreation: true
+          });
+          {
+            new Float32Array(this.vertexBuffer.getMappedRange()).set(this.mesh.vertices);
+            this.vertexBuffer.unmap();
+          }
+          this.vertexNormalsBuffer = this.device.createBuffer({
+            size: this.mesh.vertexNormals.length * Float32Array.BYTES_PER_ELEMENT,
+            usage: GPUBufferUsage.VERTEX,
+            mappedAtCreation: true
+          });
+          {
+            new Float32Array(this.vertexNormalsBuffer.getMappedRange()).set(this.mesh.vertexNormals);
+            this.vertexNormalsBuffer.unmap();
+          }
+          this.vertexTexCoordsBuffer = this.device.createBuffer({
+            size: this.mesh.textures.length * Float32Array.BYTES_PER_ELEMENT,
+            usage: GPUBufferUsage.VERTEX,
+            mappedAtCreation: true
+          });
+          {
+            new Float32Array(this.vertexTexCoordsBuffer.getMappedRange()).set(this.mesh.textures);
+            this.vertexTexCoordsBuffer.unmap();
+          }
+          this.indexCount = this.mesh.indices.length;
+          const indexCount = this.mesh.indices.length;
+          const size = Math.ceil(indexCount * Uint16Array.BYTES_PER_ELEMENT / 4) * 4;
+          this.indexBuffer = this.device.createBuffer({
+            size,
+            usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST,
+            mappedAtCreation: true
+          });
+          new Uint16Array(this.indexBuffer.getMappedRange()).set(this.mesh.indices);
+          this.indexBuffer.unmap();
+          this.indexCount = indexCount;
+          let glbInfo = {
+            arrayStride: 4 * 4,
+            // vec4<f32> = 4 * 4 bytes
+            attributes: [{ format: "float32x4", offset: 0, shaderLocation: 4 }]
+          };
+          let tang = null;
+          this.vertexBuffers = [
+            {
+              arrayStride: Float32Array.BYTES_PER_ELEMENT * 3,
+              attributes: [
+                {
+                  // position
+                  shaderLocation: 0,
+                  offset: 0,
+                  format: "float32x3"
+                }
+              ]
+            },
+            {
+              arrayStride: Float32Array.BYTES_PER_ELEMENT * 3,
+              attributes: [
+                {
+                  // normal
+                  shaderLocation: 1,
+                  offset: 0,
+                  format: "float32x3"
+                }
+              ]
+            },
+            {
+              arrayStride: Float32Array.BYTES_PER_ELEMENT * 2,
+              attributes: [
+                {
+                  // uvs
+                  shaderLocation: 2,
+                  offset: 0,
+                  format: "float32x2"
+                }
+              ]
+            },
+            // joint indices
+            {
+              arrayStride: 4 * 4,
+              // vec4<u32> = 4 * 4 bytes
+              attributes: [{ format: "uint32x4", offset: 0, shaderLocation: 3 }]
+            },
+            // weights
+            glbInfo
+          ];
+          if (this.mesh.tangentsBuffer) {
+            this.vertexBuffers.push({
+              arrayStride: 4 * 4,
+              // vec4<f32> = 16 bytes
+              attributes: [
+                { shaderLocation: 5, format: "float32x4", offset: 0 }
+              ]
+            });
+          } else {
+          }
+          this.primitive = {
+            topology: "triangle-list",
+            cullMode: "back",
+            // typical for shadow passes
+            frontFace: "ccw"
+          };
+          this.selectedBuffer = device.createBuffer({
+            size: 4,
+            // just one float
+            usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+          });
+          this.selectedBindGroupLayout = device.createBindGroupLayout({
+            label: "selectedBindGroupLayout mesh",
+            entries: [
+              { binding: 0, visibility: GPUShaderStage.FRAGMENT, buffer: {} }
+            ]
+          });
+          this.selectedBindGroup = device.createBindGroup({
+            label: "selectedBindGroup mesh",
+            layout: this.selectedBindGroupLayout,
+            entries: [{ binding: 0, resource: { buffer: this.selectedBuffer } }]
+          });
+          this.setSelectedEffect = (selected = false) => {
+            this.device.queue.writeBuffer(this.selectedBuffer, 0, new Float32Array([selected ? 1 : 0]));
+          };
+          this.setSelectedEffect();
+          this.createLayoutForRender();
+          this.modelUniformBuffer = this.device.createBuffer({
+            size: 4 * 16,
+            // 4x4 matrix
+            usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+          });
+          this.sceneUniformBuffer = this.device.createBuffer({
+            label: "sceneUniformBuffer per mesh",
+            size: 176,
+            usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+          });
+          this.uniformBufferBindGroupLayout = this.device.createBindGroupLayout({
+            label: "uniformBufferBindGroupLayout in mesh regular",
+            entries: [
+              {
+                binding: 0,
+                visibility: GPUShaderStage.VERTEX,
+                buffer: {
+                  type: "uniform"
+                }
+              },
+              {
+                binding: 1,
+                visibility: GPUShaderStage.VERTEX,
+                buffer: {
+                  type: "uniform"
+                }
+              }
+            ]
+          });
+          function alignTo256(n) {
+            return Math.ceil(n / 256) * 256;
+          }
+          let MAX_BONES = 100;
+          this.MAX_BONES = MAX_BONES;
+          this.bonesBuffer = device.createBuffer({
+            label: "bonesBuffer",
+            size: alignTo256(64 * MAX_BONES),
+            usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+          });
+          const bones = new Float32Array(this.MAX_BONES * 16);
+          for (let i = 0; i < this.MAX_BONES; i++) {
+            bones.set([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1], i * 16);
+          }
+          this.device.queue.writeBuffer(this.bonesBuffer, 0, bones);
+          this.modelBindGroup = this.device.createBindGroup({
+            label: "modelBindGroup in mesh",
+            layout: this.uniformBufferBindGroupLayout,
+            entries: [
+              {
+                binding: 0,
+                resource: {
+                  buffer: this.modelUniformBuffer
+                }
+              },
+              { binding: 1, resource: { buffer: this.bonesBuffer } }
+            ]
+          });
+          this.mainPassBindGroupLayout = this.device.createBindGroupLayout({
+            label: "mainPassBindGroupLayout mesh",
+            entries: [
+              { binding: 0, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: "depth" } },
+              { binding: 1, visibility: GPUShaderStage.FRAGMENT, sampler: { type: "comparison" } }
+            ]
+          });
+          this.effects = {};
+          if (this.pointerEffect && this.pointerEffect.enabled === true) {
+            let pf = navigator.gpu.getPreferredCanvasFormat();
+            this.effects.pointer = new PointerEffect(device, pf, this, true);
+          }
+          this.getTransformationMatrix = (mainRenderBundle, spotLight, index) => {
+            const now = Date.now();
+            const dt = (now - this.lastFrameMS) / this.mainCameraParams.responseCoef;
+            this.lastFrameMS = now;
+            const camera = this.cameras[this.mainCameraParams.type];
+            if (index == 0) camera.update(dt, inputHandler());
+            const camVP = mat4Impl.multiply(camera.projectionMatrix, camera.view);
+            const sceneData = new Float32Array(44);
+            sceneData.set(spotLight.viewProjMatrix, 0);
+            sceneData.set(camVP, 16);
+            sceneData.set([camera.position.x, camera.position.y, camera.position.z, 0], 32);
+            sceneData.set([spotLight.position[0], spotLight.position[1], spotLight.position[2], 0], 36);
+            sceneData.set([this.globalAmbient[0], this.globalAmbient[1], this.globalAmbient[2], 0], 40);
+            device.queue.writeBuffer(
+              this.sceneUniformBuffer,
+              0,
+              sceneData.buffer,
+              sceneData.byteOffset,
+              sceneData.byteLength
+            );
+          };
+          this.getModelMatrix = (pos) => {
+            let modelMatrix2 = mat4Impl.identity();
+            mat4Impl.translate(modelMatrix2, [pos.x, pos.y, pos.z], modelMatrix2);
+            if (this.itIsPhysicsBody) {
+              mat4Impl.rotate(
+                modelMatrix2,
+                [this.rotation.axis.x, this.rotation.axis.y, this.rotation.axis.z],
+                degToRad(this.rotation.angle),
+                modelMatrix2
+              );
+            } else {
+              mat4Impl.rotateX(modelMatrix2, this.rotation.getRotX(), modelMatrix2);
+              mat4Impl.rotateY(modelMatrix2, this.rotation.getRotY(), modelMatrix2);
+              mat4Impl.rotateZ(modelMatrix2, this.rotation.getRotZ(), modelMatrix2);
+            }
+            if (this.glb || this.objAnim) {
+              mat4Impl.scale(modelMatrix2, [this.scale[0], this.scale[1], this.scale[2]], modelMatrix2);
+            }
+            return modelMatrix2;
+          };
+          const modelMatrix = mat4Impl.translation([0, 0, 0]);
+          const modelData = modelMatrix;
+          this.device.queue.writeBuffer(
+            this.modelUniformBuffer,
+            0,
+            modelData.buffer,
+            modelData.byteOffset,
+            modelData.byteLength
+          );
+          this.done = true;
+          try {
+            this.setupPipeline();
+          } catch (err) {
+            console.log("err in create pipeline in init ", err);
+          }
+        }).then(() => {
+          if (typeof this.objAnim !== "undefined" && this.objAnim !== null) {
+            console.log("after all updateMeshListBuffers...");
+            this.updateMeshListBuffers();
+          }
+        });
+      }
+      setupPipeline = () => {
+        this.createBindGroupForRender();
+        this.pipeline = this.device.createRenderPipeline({
+          label: "Mesh Pipeline \u2705",
+          layout: this.device.createPipelineLayout({
+            label: "createPipelineLayout Mesh",
+            bindGroupLayouts: [
+              this.bglForRender,
+              this.uniformBufferBindGroupLayout,
+              this.selectedBindGroupLayout
+            ]
+          }),
+          vertex: {
+            entryPoint: "main",
+            module: this.device.createShaderModule({
+              code: this.material.type == "normalmap" ? vertexWGSL_NM : vertexWGSL
+            }),
+            buffers: this.vertexBuffers
+          },
+          fragment: {
+            entryPoint: "main",
+            module: this.device.createShaderModule({
+              code: this.isVideo == true ? fragmentVideoWGSL : this.getMaterial()
+            }),
+            targets: [
+              {
+                format: this.presentationFormat
+              }
+            ],
+            constants: {
+              shadowDepthTextureSize: this.shadowDepthTextureSize
+            }
+          },
+          depthStencil: {
+            depthWriteEnabled: true,
+            depthCompare: "less",
+            format: "depth24plus"
+          },
+          primitive: this.primitive
+        });
+      };
+      updateModelUniformBuffer = () => {
+        if (this.done == false) return;
+        const modelMatrix = this.getModelMatrix(this.position);
+        this.device.queue.writeBuffer(
+          this.modelUniformBuffer,
+          0,
+          modelMatrix.buffer,
+          modelMatrix.byteOffset,
+          modelMatrix.byteLength
+        );
+      };
+      createGPUBuffer(dataArray, usage) {
+        if (!dataArray || typeof dataArray.length !== "number") {
+          throw new Error("Invalid data array passed to createGPUBuffer");
+        }
+        const size = dataArray.length * dataArray.BYTES_PER_ELEMENT;
+        if (!Number.isFinite(size) || size <= 0) {
+          throw new Error(`Invalid buffer size: ${size}`);
+        }
+        const buffer = this.device.createBuffer({
+          size,
+          usage,
+          mappedAtCreation: true
+        });
+        const writeArray = dataArray.constructor === Float32Array ? new Float32Array(buffer.getMappedRange()) : new Uint16Array(buffer.getMappedRange());
+        writeArray.set(dataArray);
+        buffer.unmap();
+        return buffer;
+      }
+      updateMeshListBuffers() {
+        for (const key in this.objAnim.meshList) {
+          const mesh = this.objAnim.meshList[key];
+          mesh.vertexBuffer = this.device.createBuffer({
+            size: mesh.vertices.length * Float32Array.BYTES_PER_ELEMENT,
+            usage: GPUBufferUsage.VERTEX,
+            mappedAtCreation: true
+          });
+          new Float32Array(mesh.vertexBuffer.getMappedRange()).set(mesh.vertices);
+          mesh.vertexBuffer.unmap();
+          mesh.vertexNormalsBuffer = this.device.createBuffer({
+            size: mesh.vertexNormals.length * Float32Array.BYTES_PER_ELEMENT,
+            usage: GPUBufferUsage.VERTEX,
+            mappedAtCreation: true
+          });
+          new Float32Array(mesh.vertexNormalsBuffer.getMappedRange()).set(mesh.vertexNormals);
+          mesh.vertexNormalsBuffer.unmap();
+          mesh.vertexTexCoordsBuffer = this.device.createBuffer({
+            size: mesh.textures.length * Float32Array.BYTES_PER_ELEMENT,
+            usage: GPUBufferUsage.VERTEX,
+            mappedAtCreation: true
+          });
+          new Float32Array(mesh.vertexTexCoordsBuffer.getMappedRange()).set(mesh.textures);
+          mesh.vertexTexCoordsBuffer.unmap();
+          const indexCount = mesh.indices.length;
+          const indexSize = Math.ceil(indexCount * Uint16Array.BYTES_PER_ELEMENT / 4) * 4;
+          mesh.indexBuffer = this.device.createBuffer({
+            size: indexSize,
+            usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST,
+            mappedAtCreation: true
+          });
+          new Uint16Array(mesh.indexBuffer.getMappedRange()).set(mesh.indices);
+          mesh.indexBuffer.unmap();
+          mesh.indexCount = indexCount;
+        }
+      }
+      drawElements = (pass, lightContainer) => {
+        if (this.isVideo) {
+          this.updateVideoTexture();
+        }
+        pass.setBindGroup(0, this.sceneBindGroupForRender);
+        pass.setBindGroup(1, this.modelBindGroup);
+        if (this.isVideo == false) {
+          let bindIndex = 2;
+          for (const light of lightContainer) {
+            pass.setBindGroup(bindIndex++, light.getMainPassBindGroup(this));
+          }
+        }
+        if (this.selectedBindGroup) {
+          pass.setBindGroup(2, this.selectedBindGroup);
+        }
+        pass.setVertexBuffer(0, this.vertexBuffer);
+        pass.setVertexBuffer(1, this.vertexNormalsBuffer);
+        pass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
+        if (this.joints) {
+          if (this.constructor.name === "BVHPlayer") {
+            pass.setVertexBuffer(3, this.mesh.jointsBuffer);
+            pass.setVertexBuffer(4, this.mesh.weightsBuffer);
+          } else {
+            pass.setVertexBuffer(3, this.joints.buffer);
+            pass.setVertexBuffer(4, this.weights.buffer);
+          }
+        }
+        if (this.mesh.tangentsBuffer) {
+          pass.setVertexBuffer(5, this.mesh.tangentsBuffer);
+        }
+        pass.setIndexBuffer(this.indexBuffer, "uint16");
+        pass.drawIndexed(this.indexCount);
+      };
+      drawElementsAnim = (renderPass, lightContainer) => {
+        if (!this.sceneBindGroupForRender || !this.modelBindGroup) {
+          console.log(" NULL 1");
+          return;
+        }
+        if (!this.objAnim.meshList[this.objAnim.id + this.objAnim.currentAni]) {
+          console.log(" NULL 2");
+          return;
+        }
+        renderPass.setBindGroup(0, this.sceneBindGroupForRender);
+        renderPass.setBindGroup(1, this.modelBindGroup);
+        const mesh = this.objAnim.meshList[this.objAnim.id + this.objAnim.currentAni];
+        if (this.isVideo == false) {
+          let bindIndex = 2;
+          for (const light of lightContainer) {
+            renderPass.setBindGroup(bindIndex++, light.getMainPassBindGroup(this));
+          }
+        }
+        if (this.selectedBindGroup) {
+          renderPass.setBindGroup(2, this.selectedBindGroup);
+        }
+        renderPass.setVertexBuffer(0, mesh.vertexBuffer);
+        renderPass.setVertexBuffer(1, mesh.vertexNormalsBuffer);
+        renderPass.setVertexBuffer(2, mesh.vertexTexCoordsBuffer);
+        if (this.constructor.name === "BVHPlayer") {
+          renderPass.setVertexBuffer(3, this.mesh.jointsBuffer);
+          renderPass.setVertexBuffer(4, this.mesh.weightsBuffer);
+        } else {
+          renderPass.setVertexBuffer(3, this.joints.buffer);
+          renderPass.setVertexBuffer(4, this.weights.buffer);
+        }
+        if (this.mesh.tangentsBuffer) {
+          renderPass.setVertexBuffer(5, this.mesh.tangentsBuffer);
+        }
+        renderPass.setIndexBuffer(mesh.indexBuffer, "uint16");
+        renderPass.drawIndexed(mesh.indexCount);
+        if (this.objAnim.playing == true) {
+          if (this.objAnim.animations[this.objAnim.animations.active].speedCounter >= this.objAnim.animations[this.objAnim.animations.active].speed) {
+            this.objAnim.currentAni++;
+            this.objAnim.animations[this.objAnim.animations.active].speedCounter = 0;
+          } else {
+            this.objAnim.animations[this.objAnim.animations.active].speedCounter++;
+          }
+          if (this.objAnim.currentAni >= this.objAnim.animations[this.objAnim.animations.active].to) {
+            this.objAnim.currentAni = this.objAnim.animations[this.objAnim.animations.active].from;
+          }
+        }
+      };
+      drawShadows = (shadowPass, light) => {
+        shadowPass.setVertexBuffer(0, this.vertexBuffer);
+        shadowPass.setVertexBuffer(1, this.vertexNormalsBuffer);
+        shadowPass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
+        shadowPass.setIndexBuffer(this.indexBuffer, "uint16");
+        shadowPass.drawIndexed(this.indexCount);
+      };
+    };
   }
-  updateMeshListBuffers() {
-    for (const key in this.objAnim.meshList) {
-      const mesh = this.objAnim.meshList[key];
-      mesh.vertexBuffer = this.device.createBuffer({
-        size: mesh.vertices.length * Float32Array.BYTES_PER_ELEMENT,
-        usage: GPUBufferUsage.VERTEX,
-        mappedAtCreation: true
-      });
-      new Float32Array(mesh.vertexBuffer.getMappedRange()).set(mesh.vertices);
-      mesh.vertexBuffer.unmap();
-      mesh.vertexNormalsBuffer = this.device.createBuffer({
-        size: mesh.vertexNormals.length * Float32Array.BYTES_PER_ELEMENT,
-        usage: GPUBufferUsage.VERTEX,
-        mappedAtCreation: true
-      });
-      new Float32Array(mesh.vertexNormalsBuffer.getMappedRange()).set(mesh.vertexNormals);
-      mesh.vertexNormalsBuffer.unmap();
-      mesh.vertexTexCoordsBuffer = this.device.createBuffer({
-        size: mesh.textures.length * Float32Array.BYTES_PER_ELEMENT,
-        usage: GPUBufferUsage.VERTEX,
-        mappedAtCreation: true
-      });
-      new Float32Array(mesh.vertexTexCoordsBuffer.getMappedRange()).set(mesh.textures);
-      mesh.vertexTexCoordsBuffer.unmap();
-      const indexCount = mesh.indices.length;
-      const indexSize = Math.ceil(indexCount * Uint16Array.BYTES_PER_ELEMENT / 4) * 4;
-      mesh.indexBuffer = this.device.createBuffer({
-        size: indexSize,
-        usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST,
-        mappedAtCreation: true
-      });
-      new Uint16Array(mesh.indexBuffer.getMappedRange()).set(mesh.indices);
-      mesh.indexBuffer.unmap();
-      mesh.indexCount = indexCount;
-    }
-  }
-  drawElements = (pass, lightContainer) => {
-    if (this.isVideo) {
-      this.updateVideoTexture();
-    }
-    pass.setBindGroup(0, this.sceneBindGroupForRender);
-    pass.setBindGroup(1, this.modelBindGroup);
-    if (this.isVideo == false) {
-      let bindIndex = 2;
-      for (const light of lightContainer) {
-        pass.setBindGroup(bindIndex++, light.getMainPassBindGroup(this));
-      }
-    }
-    if (this.selectedBindGroup) {
-      pass.setBindGroup(2, this.selectedBindGroup);
-    }
-    pass.setVertexBuffer(0, this.vertexBuffer);
-    pass.setVertexBuffer(1, this.vertexNormalsBuffer);
-    pass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
-    if (this.joints) {
-      if (this.constructor.name === "BVHPlayer") {
-        pass.setVertexBuffer(3, this.mesh.jointsBuffer);
-        pass.setVertexBuffer(4, this.mesh.weightsBuffer);
-      } else {
-        pass.setVertexBuffer(3, this.joints.buffer);
-        pass.setVertexBuffer(4, this.weights.buffer);
-      }
-    }
-    if (this.mesh.tangentsBuffer) {
-      pass.setVertexBuffer(5, this.mesh.tangentsBuffer);
-    }
-    pass.setIndexBuffer(this.indexBuffer, "uint16");
-    pass.drawIndexed(this.indexCount);
-  };
-  drawElementsAnim = (renderPass, lightContainer) => {
-    if (!this.sceneBindGroupForRender || !this.modelBindGroup) {
-      console.log(" NULL 1");
-      return;
-    }
-    if (!this.objAnim.meshList[this.objAnim.id + this.objAnim.currentAni]) {
-      console.log(" NULL 2");
-      return;
-    }
-    renderPass.setBindGroup(0, this.sceneBindGroupForRender);
-    renderPass.setBindGroup(1, this.modelBindGroup);
-    const mesh = this.objAnim.meshList[this.objAnim.id + this.objAnim.currentAni];
-    if (this.isVideo == false) {
-      let bindIndex = 2;
-      for (const light of lightContainer) {
-        renderPass.setBindGroup(bindIndex++, light.getMainPassBindGroup(this));
-      }
-    }
-    if (this.selectedBindGroup) {
-      renderPass.setBindGroup(2, this.selectedBindGroup);
-    }
-    renderPass.setVertexBuffer(0, mesh.vertexBuffer);
-    renderPass.setVertexBuffer(1, mesh.vertexNormalsBuffer);
-    renderPass.setVertexBuffer(2, mesh.vertexTexCoordsBuffer);
-    if (this.constructor.name === "BVHPlayer") {
-      renderPass.setVertexBuffer(3, this.mesh.jointsBuffer);
-      renderPass.setVertexBuffer(4, this.mesh.weightsBuffer);
-    } else {
-      renderPass.setVertexBuffer(3, this.joints.buffer);
-      renderPass.setVertexBuffer(4, this.weights.buffer);
-    }
-    if (this.mesh.tangentsBuffer) {
-      renderPass.setVertexBuffer(5, this.mesh.tangentsBuffer);
-    }
-    renderPass.setIndexBuffer(mesh.indexBuffer, "uint16");
-    renderPass.drawIndexed(mesh.indexCount);
-    if (this.objAnim.playing == true) {
-      if (this.objAnim.animations[this.objAnim.animations.active].speedCounter >= this.objAnim.animations[this.objAnim.animations.active].speed) {
-        this.objAnim.currentAni++;
-        this.objAnim.animations[this.objAnim.animations.active].speedCounter = 0;
-      } else {
-        this.objAnim.animations[this.objAnim.animations.active].speedCounter++;
-      }
-      if (this.objAnim.currentAni >= this.objAnim.animations[this.objAnim.animations.active].to) {
-        this.objAnim.currentAni = this.objAnim.animations[this.objAnim.animations.active].from;
-      }
-    }
-  };
-  drawShadows = (shadowPass, light) => {
-    shadowPass.setVertexBuffer(0, this.vertexBuffer);
-    shadowPass.setVertexBuffer(1, this.vertexNormalsBuffer);
-    shadowPass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
-    shadowPass.setIndexBuffer(this.indexBuffer, "uint16");
-    shadowPass.drawIndexed(this.indexCount);
-  };
-};
+});
 
 // ../../../physics/matrix-ammo.js
-var MatrixAmmo = class {
-  constructor() {
-    scriptManager.LOAD(
-      "https://maximumroulette.com/apps/megpu/ammo.js",
-      "ammojs",
-      void 0,
-      void 0,
-      this.init
-    );
-    this.lastRoll = "";
-    this.presentScore = "";
-    this.speedUpSimulation = 1;
-  }
-  init = () => {
-    Ammo().then((Ammo2) => {
-      this.dynamicsWorld = null;
-      this.rigidBodies = [];
-      this.Ammo = Ammo2;
-      this.lastUpdate = 0;
-      console.log("%c Ammo core loaded.", LOG_FUNNY);
-      this.initPhysics();
-      setTimeout(() => {
-        dispatchEvent(new CustomEvent("AmmoReady", {}));
-      }, 200);
-    });
-  };
-  initPhysics() {
-    let Ammo2 = this.Ammo;
-    var collisionConfiguration = new Ammo2.btDefaultCollisionConfiguration(), dispatcher = new Ammo2.btCollisionDispatcher(collisionConfiguration), overlappingPairCache = new Ammo2.btDbvtBroadphase(), solver = new Ammo2.btSequentialImpulseConstraintSolver();
-    this.dynamicsWorld = new Ammo2.btDiscreteDynamicsWorld(dispatcher, overlappingPairCache, solver, collisionConfiguration);
-    this.dynamicsWorld.setGravity(new Ammo2.btVector3(0, -10, 0));
-    var groundShape = new Ammo2.btBoxShape(new Ammo2.btVector3(70, 1, 70)), groundTransform = new Ammo2.btTransform();
-    groundTransform.setIdentity();
-    groundTransform.setOrigin(new Ammo2.btVector3(0, -4.45, 0));
-    var mass = 0, isDynamic = mass !== 0, localInertia = new Ammo2.btVector3(0, 0, 0);
-    if (isDynamic) groundShape.calculateLocalInertia(mass, localInertia);
-    var myMotionState = new Ammo2.btDefaultMotionState(groundTransform), rbInfo = new Ammo2.btRigidBodyConstructionInfo(mass, myMotionState, groundShape, localInertia), body = new Ammo2.btRigidBody(rbInfo);
-    body.name = "ground";
-    this.ground = body;
-    this.dynamicsWorld.addRigidBody(body);
-    this.detectCollision();
-  }
-  addPhysics(MEObject, pOptions) {
-    if (pOptions.geometry == "Sphere") {
-      this.addPhysicsSphere(MEObject, pOptions);
-    } else if (pOptions.geometry == "Cube") {
-      this.addPhysicsBox(MEObject, pOptions);
-    }
-  }
-  addPhysicsSphere(MEObject, pOptions) {
-    const FLAGS = {
-      TEST_NIDZA: 3,
-      CF_KINEMATIC_OBJECT: 2
-    };
-    let Ammo2 = this.Ammo;
-    var colShape = new Ammo2.btSphereShape(Array.isArray(pOptions.radius) ? pOptions.radius[0] : pOptions.radius), startTransform = new Ammo2.btTransform();
-    startTransform.setIdentity();
-    var mass = 1;
-    var localInertia = new Ammo2.btVector3(0, 0, 0);
-    colShape.calculateLocalInertia(mass, localInertia);
-    startTransform.setOrigin(new Ammo2.btVector3(pOptions.position.x, pOptions.position.y, pOptions.position.z));
-    var myMotionState = new Ammo2.btDefaultMotionState(startTransform), rbInfo = new Ammo2.btRigidBodyConstructionInfo(mass, myMotionState, colShape, localInertia), body = new Ammo2.btRigidBody(rbInfo);
-    if (pOptions.mass == 0 && typeof pOptions.state == "undefined" && typeof pOptions.collide == "undefined") {
-      body.setActivationState(2);
-      body.setCollisionFlags(FLAGS.CF_KINEMATIC_OBJECT);
-    } else if (typeof pOptions.collide != "undefined" && pOptions.collide == false) {
-      body.setActivationState(4);
-      body.setCollisionFlags(FLAGS.TEST_NIDZA);
-    } else {
-      body.setActivationState(4);
-    }
-    body.name = pOptions.name;
-    MEObject.itIsPhysicsBody = true;
-    body.MEObject = MEObject;
-    this.dynamicsWorld.addRigidBody(body);
-    this.rigidBodies.push(body);
-    return body;
-  }
-  addPhysicsBox(MEObject, pOptions) {
-    const FLAGS = {
-      TEST_NIDZA: 3,
-      CF_KINEMATIC_OBJECT: 2
-    };
-    let Ammo2 = this.Ammo;
-    var colShape = new Ammo2.btBoxShape(new Ammo2.btVector3(pOptions.scale[0], pOptions.scale[1], pOptions.scale[2])), startTransform = new Ammo2.btTransform();
-    startTransform.setIdentity();
-    var mass = pOptions.mass;
-    var localInertia = new Ammo2.btVector3(0, 0, 0);
-    colShape.calculateLocalInertia(mass, localInertia);
-    startTransform.setOrigin(new Ammo2.btVector3(pOptions.position.x, pOptions.position.y, pOptions.position.z));
-    var t = startTransform.getRotation();
-    t.setX(degToRad(pOptions.rotation.x));
-    t.setY(degToRad(pOptions.rotation.y));
-    t.setZ(degToRad(pOptions.rotation.z));
-    startTransform.setRotation(t);
-    var myMotionState = new Ammo2.btDefaultMotionState(startTransform), rbInfo = new Ammo2.btRigidBodyConstructionInfo(mass, myMotionState, colShape, localInertia), body = new Ammo2.btRigidBody(rbInfo);
-    if (pOptions.mass == 0 && typeof pOptions.state == "undefined" && typeof pOptions.collide == "undefined") {
-      body.setActivationState(2);
-      body.setCollisionFlags(FLAGS.CF_KINEMATIC_OBJECT);
-    } else if (typeof pOptions.collide != "undefined" && pOptions.collide == false) {
-      body.setActivationState(4);
-      body.setCollisionFlags(FLAGS.TEST_NIDZA);
-    } else {
-      body.setActivationState(4);
-    }
-    body.name = pOptions.name;
-    MEObject.itIsPhysicsBody = true;
-    body.MEObject = MEObject;
-    this.dynamicsWorld.addRigidBody(body);
-    this.rigidBodies.push(body);
-    return body;
-  }
-  setBodyVelocity(body, x, y, z) {
-    var tbv30 = new Ammo.btVector3();
-    tbv30.setValue(x, y, z);
-    body.setLinearVelocity(tbv30);
-  }
-  setKinematicTransform(body, x, y, z, rx, ry, rz) {
-    if (typeof rx == "undefined") {
-      var rx = 0;
-    }
-    if (typeof ry == "undefined") {
-      var ry = 0;
-    }
-    if (typeof rz == "undefined") {
-      var rz = 0;
-    }
-    let pos = new Ammo.btVector3();
-    pos = body.getWorldTransform().getOrigin();
-    let localRot = body.getWorldTransform().getRotation();
-    pos.setX(pos.x() + x);
-    pos.setY(pos.y() + y);
-    pos.setZ(pos.z() + z);
-    localRot.setX(rx);
-    localRot.setY(ry);
-    localRot.setZ(rz);
-    let physicsBody = body;
-    let ms = physicsBody.getMotionState();
-    if (ms) {
-      var tmpTrans = new Ammo.btTransform();
-      tmpTrans.setIdentity();
-      tmpTrans.setOrigin(pos);
-      tmpTrans.setRotation(localRot);
-      ms.setWorldTransform(tmpTrans);
-    }
-  }
-  getBodyByName(name) {
-    var b = null;
-    this.rigidBodies.forEach((item, index, array) => {
-      if (item.name == name) {
-        b = array[index];
-      }
-    });
-    return b;
-  }
-  getNameByBody(body) {
-    var b = null;
-    this.rigidBodies.forEach((item, index, array) => {
-      if (item.kB == body.kB) {
-        b = array[index].name;
-      }
-    });
-    return b;
-  }
-  deactivatePhysics(body) {
-    const CF_KINEMATIC_OBJECT = 2;
-    const DISABLE_DEACTIVATION = 4;
-    this.dynamicsWorld.removeRigidBody(body);
-    const flags = body.getCollisionFlags();
-    body.setCollisionFlags(flags | CF_KINEMATIC_OBJECT);
-    body.setActivationState(DISABLE_DEACTIVATION);
-    const zero = new Ammo.btVector3(0, 0, 0);
-    body.setLinearVelocity(zero);
-    body.setAngularVelocity(zero);
-    const currentTransform = body.getWorldTransform();
-    body.setWorldTransform(currentTransform);
-    body.getMotionState().setWorldTransform(currentTransform);
-    this.matrixAmmo.dynamicsWorld.addRigidBody(body);
-    body.isKinematic = true;
-  }
-  detectCollision() {
-    return;
-    this.lastRoll = "";
-    this.presentScore = "";
-    let dispatcher = this.dynamicsWorld.getDispatcher();
-    let numManifolds = dispatcher.getNumManifolds();
-    for (let i = 0; i < numManifolds; i++) {
-      let contactManifold = dispatcher.getManifoldByIndexInternal(i);
-      if (this.ground.kB == contactManifold.getBody0().kB && this.getNameByBody(contactManifold.getBody1()) == "CubePhysics1") {
-        var testR = contactManifold.getBody1().getWorldTransform().getRotation();
-        console.log("this.lastRoll = ", this.lastRoll, " presentScore = ", this.presentScore);
-      }
-    }
-  }
-  updatePhysics() {
-    if (typeof Ammo === "undefined") return;
-    const trans = new Ammo.btTransform();
-    const transform = new Ammo.btTransform();
-    this.rigidBodies.forEach(function(body) {
-      if (body.isKinematic) {
-        transform.setIdentity();
-        transform.setOrigin(new Ammo.btVector3(
-          body.MEObject.position.x,
-          body.MEObject.position.y,
-          body.MEObject.position.z
-        ));
-        const quat = new Ammo.btQuaternion();
-        quat.setRotation(
-          new Ammo.btVector3(
-            body.MEObject.rotation.axis.x,
-            body.MEObject.rotation.axis.y,
-            body.MEObject.rotation.axis.z
-          ),
-          degToRad(body.MEObject.rotation.angle)
+var MatrixAmmo;
+var init_matrix_ammo = __esm({
+  "../../../physics/matrix-ammo.js"() {
+    init_utils();
+    MatrixAmmo = class {
+      constructor() {
+        scriptManager.LOAD(
+          "https://maximumroulette.com/apps/megpu/ammo.js",
+          "ammojs",
+          void 0,
+          void 0,
+          this.init
         );
-        transform.setRotation(quat);
-        body.setWorldTransform(transform);
-        const ms = body.getMotionState();
-        if (ms) ms.setWorldTransform(transform);
+        this.lastRoll = "";
+        this.presentScore = "";
+        this.speedUpSimulation = 1;
       }
-    });
-    Ammo.destroy(transform);
-    const timeStep = 1 / 60;
-    const maxSubSteps = 10;
-    for (let i = 0; i < this.speedUpSimulation; i++) {
-      this.dynamicsWorld.stepSimulation(timeStep, maxSubSteps);
-    }
-    this.rigidBodies.forEach(function(body) {
-      if (!body.isKinematic && body.getMotionState()) {
-        body.getMotionState().getWorldTransform(trans);
-        const _x = +trans.getOrigin().x().toFixed(2);
-        const _y = +trans.getOrigin().y().toFixed(2);
-        const _z = +trans.getOrigin().z().toFixed(2);
-        body.MEObject.position.setPosition(_x, _y, _z);
-        const rot = trans.getRotation();
-        const rotAxis = rot.getAxis();
-        rot.normalize();
-        body.MEObject.rotation.axis.x = rotAxis.x();
-        body.MEObject.rotation.axis.y = rotAxis.y();
-        body.MEObject.rotation.axis.z = rotAxis.z();
-        body.MEObject.rotation.matrixRotation = quaternion_rotation_matrix(rot);
-        body.MEObject.rotation.angle = radToDeg(parseFloat(rot.getAngle().toFixed(2)));
+      init = () => {
+        Ammo().then((Ammo2) => {
+          this.dynamicsWorld = null;
+          this.rigidBodies = [];
+          this.Ammo = Ammo2;
+          this.lastUpdate = 0;
+          console.log("%c Ammo core loaded.", LOG_FUNNY);
+          this.initPhysics();
+          setTimeout(() => {
+            dispatchEvent(new CustomEvent("AmmoReady", {}));
+          }, 200);
+        });
+      };
+      initPhysics() {
+        let Ammo2 = this.Ammo;
+        var collisionConfiguration = new Ammo2.btDefaultCollisionConfiguration(), dispatcher = new Ammo2.btCollisionDispatcher(collisionConfiguration), overlappingPairCache = new Ammo2.btDbvtBroadphase(), solver = new Ammo2.btSequentialImpulseConstraintSolver();
+        this.dynamicsWorld = new Ammo2.btDiscreteDynamicsWorld(dispatcher, overlappingPairCache, solver, collisionConfiguration);
+        this.dynamicsWorld.setGravity(new Ammo2.btVector3(0, -10, 0));
+        var groundShape = new Ammo2.btBoxShape(new Ammo2.btVector3(70, 1, 70)), groundTransform = new Ammo2.btTransform();
+        groundTransform.setIdentity();
+        groundTransform.setOrigin(new Ammo2.btVector3(0, -4.45, 0));
+        var mass = 0, isDynamic = mass !== 0, localInertia = new Ammo2.btVector3(0, 0, 0);
+        if (isDynamic) groundShape.calculateLocalInertia(mass, localInertia);
+        var myMotionState = new Ammo2.btDefaultMotionState(groundTransform), rbInfo = new Ammo2.btRigidBodyConstructionInfo(mass, myMotionState, groundShape, localInertia), body = new Ammo2.btRigidBody(rbInfo);
+        body.name = "ground";
+        this.ground = body;
+        this.dynamicsWorld.addRigidBody(body);
+        this.detectCollision();
       }
-    });
-    Ammo.destroy(trans);
-    this.detectCollision();
+      addPhysics(MEObject, pOptions) {
+        if (pOptions.geometry == "Sphere") {
+          this.addPhysicsSphere(MEObject, pOptions);
+        } else if (pOptions.geometry == "Cube") {
+          this.addPhysicsBox(MEObject, pOptions);
+        }
+      }
+      addPhysicsSphere(MEObject, pOptions) {
+        const FLAGS = {
+          TEST_NIDZA: 3,
+          CF_KINEMATIC_OBJECT: 2
+        };
+        let Ammo2 = this.Ammo;
+        var colShape = new Ammo2.btSphereShape(Array.isArray(pOptions.radius) ? pOptions.radius[0] : pOptions.radius), startTransform = new Ammo2.btTransform();
+        startTransform.setIdentity();
+        var mass = 1;
+        var localInertia = new Ammo2.btVector3(0, 0, 0);
+        colShape.calculateLocalInertia(mass, localInertia);
+        startTransform.setOrigin(new Ammo2.btVector3(pOptions.position.x, pOptions.position.y, pOptions.position.z));
+        var myMotionState = new Ammo2.btDefaultMotionState(startTransform), rbInfo = new Ammo2.btRigidBodyConstructionInfo(mass, myMotionState, colShape, localInertia), body = new Ammo2.btRigidBody(rbInfo);
+        if (pOptions.mass == 0 && typeof pOptions.state == "undefined" && typeof pOptions.collide == "undefined") {
+          body.setActivationState(2);
+          body.setCollisionFlags(FLAGS.CF_KINEMATIC_OBJECT);
+        } else if (typeof pOptions.collide != "undefined" && pOptions.collide == false) {
+          body.setActivationState(4);
+          body.setCollisionFlags(FLAGS.TEST_NIDZA);
+        } else {
+          body.setActivationState(4);
+        }
+        body.name = pOptions.name;
+        MEObject.itIsPhysicsBody = true;
+        body.MEObject = MEObject;
+        this.dynamicsWorld.addRigidBody(body);
+        this.rigidBodies.push(body);
+        return body;
+      }
+      addPhysicsBox(MEObject, pOptions) {
+        const FLAGS = {
+          TEST_NIDZA: 3,
+          CF_KINEMATIC_OBJECT: 2
+        };
+        let Ammo2 = this.Ammo;
+        var colShape = new Ammo2.btBoxShape(new Ammo2.btVector3(pOptions.scale[0], pOptions.scale[1], pOptions.scale[2])), startTransform = new Ammo2.btTransform();
+        startTransform.setIdentity();
+        var mass = pOptions.mass;
+        var localInertia = new Ammo2.btVector3(0, 0, 0);
+        colShape.calculateLocalInertia(mass, localInertia);
+        startTransform.setOrigin(new Ammo2.btVector3(pOptions.position.x, pOptions.position.y, pOptions.position.z));
+        var t = startTransform.getRotation();
+        t.setX(degToRad(pOptions.rotation.x));
+        t.setY(degToRad(pOptions.rotation.y));
+        t.setZ(degToRad(pOptions.rotation.z));
+        startTransform.setRotation(t);
+        var myMotionState = new Ammo2.btDefaultMotionState(startTransform), rbInfo = new Ammo2.btRigidBodyConstructionInfo(mass, myMotionState, colShape, localInertia), body = new Ammo2.btRigidBody(rbInfo);
+        if (pOptions.mass == 0 && typeof pOptions.state == "undefined" && typeof pOptions.collide == "undefined") {
+          body.setActivationState(2);
+          body.setCollisionFlags(FLAGS.CF_KINEMATIC_OBJECT);
+        } else if (typeof pOptions.collide != "undefined" && pOptions.collide == false) {
+          body.setActivationState(4);
+          body.setCollisionFlags(FLAGS.TEST_NIDZA);
+        } else {
+          body.setActivationState(4);
+        }
+        body.name = pOptions.name;
+        MEObject.itIsPhysicsBody = true;
+        body.MEObject = MEObject;
+        this.dynamicsWorld.addRigidBody(body);
+        this.rigidBodies.push(body);
+        return body;
+      }
+      setBodyVelocity(body, x, y, z) {
+        var tbv30 = new Ammo.btVector3();
+        tbv30.setValue(x, y, z);
+        body.setLinearVelocity(tbv30);
+      }
+      setKinematicTransform(body, x, y, z, rx, ry, rz) {
+        if (typeof rx == "undefined") {
+          var rx = 0;
+        }
+        if (typeof ry == "undefined") {
+          var ry = 0;
+        }
+        if (typeof rz == "undefined") {
+          var rz = 0;
+        }
+        let pos = new Ammo.btVector3();
+        pos = body.getWorldTransform().getOrigin();
+        let localRot = body.getWorldTransform().getRotation();
+        pos.setX(pos.x() + x);
+        pos.setY(pos.y() + y);
+        pos.setZ(pos.z() + z);
+        localRot.setX(rx);
+        localRot.setY(ry);
+        localRot.setZ(rz);
+        let physicsBody = body;
+        let ms = physicsBody.getMotionState();
+        if (ms) {
+          var tmpTrans = new Ammo.btTransform();
+          tmpTrans.setIdentity();
+          tmpTrans.setOrigin(pos);
+          tmpTrans.setRotation(localRot);
+          ms.setWorldTransform(tmpTrans);
+        }
+      }
+      getBodyByName(name) {
+        var b = null;
+        this.rigidBodies.forEach((item, index, array) => {
+          if (item.name == name) {
+            b = array[index];
+          }
+        });
+        return b;
+      }
+      getNameByBody(body) {
+        var b = null;
+        this.rigidBodies.forEach((item, index, array) => {
+          if (item.kB == body.kB) {
+            b = array[index].name;
+          }
+        });
+        return b;
+      }
+      deactivatePhysics(body) {
+        const CF_KINEMATIC_OBJECT = 2;
+        const DISABLE_DEACTIVATION = 4;
+        this.dynamicsWorld.removeRigidBody(body);
+        const flags = body.getCollisionFlags();
+        body.setCollisionFlags(flags | CF_KINEMATIC_OBJECT);
+        body.setActivationState(DISABLE_DEACTIVATION);
+        const zero = new Ammo.btVector3(0, 0, 0);
+        body.setLinearVelocity(zero);
+        body.setAngularVelocity(zero);
+        const currentTransform = body.getWorldTransform();
+        body.setWorldTransform(currentTransform);
+        body.getMotionState().setWorldTransform(currentTransform);
+        this.matrixAmmo.dynamicsWorld.addRigidBody(body);
+        body.isKinematic = true;
+      }
+      detectCollision() {
+        return;
+        this.lastRoll = "";
+        this.presentScore = "";
+        let dispatcher = this.dynamicsWorld.getDispatcher();
+        let numManifolds = dispatcher.getNumManifolds();
+        for (let i = 0; i < numManifolds; i++) {
+          let contactManifold = dispatcher.getManifoldByIndexInternal(i);
+          if (this.ground.kB == contactManifold.getBody0().kB && this.getNameByBody(contactManifold.getBody1()) == "CubePhysics1") {
+            var testR = contactManifold.getBody1().getWorldTransform().getRotation();
+            console.log("this.lastRoll = ", this.lastRoll, " presentScore = ", this.presentScore);
+          }
+        }
+      }
+      updatePhysics() {
+        if (typeof Ammo === "undefined") return;
+        const trans = new Ammo.btTransform();
+        const transform = new Ammo.btTransform();
+        this.rigidBodies.forEach(function(body) {
+          if (body.isKinematic) {
+            transform.setIdentity();
+            transform.setOrigin(new Ammo.btVector3(
+              body.MEObject.position.x,
+              body.MEObject.position.y,
+              body.MEObject.position.z
+            ));
+            const quat = new Ammo.btQuaternion();
+            quat.setRotation(
+              new Ammo.btVector3(
+                body.MEObject.rotation.axis.x,
+                body.MEObject.rotation.axis.y,
+                body.MEObject.rotation.axis.z
+              ),
+              degToRad(body.MEObject.rotation.angle)
+            );
+            transform.setRotation(quat);
+            body.setWorldTransform(transform);
+            const ms = body.getMotionState();
+            if (ms) ms.setWorldTransform(transform);
+          }
+        });
+        Ammo.destroy(transform);
+        const timeStep = 1 / 60;
+        const maxSubSteps = 10;
+        for (let i = 0; i < this.speedUpSimulation; i++) {
+          this.dynamicsWorld.stepSimulation(timeStep, maxSubSteps);
+        }
+        this.rigidBodies.forEach(function(body) {
+          if (!body.isKinematic && body.getMotionState()) {
+            body.getMotionState().getWorldTransform(trans);
+            const _x = +trans.getOrigin().x().toFixed(2);
+            const _y = +trans.getOrigin().y().toFixed(2);
+            const _z = +trans.getOrigin().z().toFixed(2);
+            body.MEObject.position.setPosition(_x, _y, _z);
+            const rot = trans.getRotation();
+            const rotAxis = rot.getAxis();
+            rot.normalize();
+            body.MEObject.rotation.axis.x = rotAxis.x();
+            body.MEObject.rotation.axis.y = rotAxis.y();
+            body.MEObject.rotation.axis.z = rotAxis.z();
+            body.MEObject.rotation.matrixRotation = quaternion_rotation_matrix(rot);
+            body.MEObject.rotation.angle = radToDeg(parseFloat(rot.getAngle().toFixed(2)));
+          }
+        });
+        Ammo.destroy(trans);
+        this.detectCollision();
+      }
+    };
   }
-};
+});
 
 // ../../../../public/res/multilang/en-backup.js
-var en = {
-  "play": "Play",
-  "sendmsg": "Send message",
-  "changeTheme": "Theme dark/light",
-  "yes": "Yes",
-  "no": "No",
-  "on": "On",
-  "off": "Off",
-  "startGame": "\u{1F3B2}Start Game",
-  "changeLang": "Change Lang",
-  "english": "English",
-  "serbian": "Serbian",
-  "MAX": "MAX",
-  "MIN": "MIN",
-  "straight": "Straight",
-  "threeOf": "ThreeOf",
-  "fullhouse": "FULLH",
-  "help": "HELP",
-  "roll": "ROLL DICES",
-  "settings": "Settings",
-  "hand": "Hand",
-  "up": "Up |",
-  "down": "Down",
-  "free": "Free",
-  "cornerText": "\u{1F3B2}",
-  "poker": "Poker",
-  "jamb": "Jamb",
-  "final": "Final \u03A3",
-  "hide": "HIDE",
-  "sounds": "Sounds",
-  "welcomeMsg": "Welcome here, <br> open source project \u{1F3B2} Jamb 3d deluxe game <br> download from ",
-  "ready": "Ready for play \u{1F3B2}!",
-  "freetoroll": "Free for roll \u{1F3B2}!",
-  "pick5": "Pick best 5 \u{1F3B2} and choose table field!",
-  "hand1": "First hand in play - please wait...",
-  "hand2": "Secound hand in play - please wait...",
-  "graphics": "Graphics options",
-  "choosename": "Choose nickname:",
-  "table": "Table",
-  "aboutword": "About",
-  "about": "<i>Jamb 3d deluxe</i> is a modern 3D dice game built entirely with MatrixEngineWGPU, a high-performance WebGPU-based rendering engine developed for creating interactive graphics directly in the browser. The game delivers smooth visuals, realistic dice physics, and an engaging user experience \u2014 all without requiring any plugins or installations. \n This project is powered by open technologies and is designed to be lightweight, fast, and highly customizable. It\u2019s a great example of how WebGPU can be used for real-time interactive content. \n \u{1F517} Download / Try it: \n github.com/zlatnaspirala/matrix-engine-wgpu \n \u{1F6E0} License: \n The core engine and the Jamb 3d deluxe project are released under the GPL v3 license, making them free and open-source for both personal and commercial use \u2014 as long as you respect the terms of the license. \n Whether you're a developer, gamer, or enthusiast, Jamb 3d deluxe is a fun way to experience the potential of modern browser-based 3D technology. <img width='320' height='320' src='https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/public/res/icons/512.png?raw=true' />",
-  "letthegame": "Let the game begin!",
-  "leaderboard": "Leaderboard",
-  "about_": "About",
-  "next": "Next",
-  "back": "Back",
-  "used": "used",
-  "gameplaychannel": "gameplay channel",
-  "alreadyingame": "Already in game:",
-  "waiting_for_others": "Waiting for others...",
-  "titleBan": "\u272DBan \u{1F7E2}\u{1F7E2}\u{1F7E2}",
-  "aboutRPG": "Forest Of Hollow Blood Made in MatrixEngineWGPU webGPU engine. Open source part can be found in engine repo <a href='https://github.com/zlatnaspirala/matrix-engine-wgpu'> @zlatnaspirala Github.com </a>. Music by <a href='https://pixabay.com/users/mfcc-28627740/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=274290'>Mykola Sosin</a> from <a href='https://pixabay.com//?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=274290'>Pixabay</a> Characters used from great mixamo.com -\u2705What you can do You can use Mixamo characters and animations royalty-free in commercial, personal, or non\u2011profit projects (games, films, prints, etc.).You own your creations / how you use them.No requirement to credit Adobe / Mixamo (though allowed). -\u{1F6AB}What you cannot do You cannot redistribute or sell the raw Mixamo character or animation files \u201Cas is\u201D (i.e. as standalone assets) to others.You can\u2019t use Mixamo content to create a competing library of characters / animations (i.e. you can\u2019t just package them and sell them to others). You can\u2019t use Mixamo\u2019s content (or outputs) to train AI / machine learning models. Used free assets from great https://craftpix.net Magic icons : https://craftpix.net/freebies/free-rpg-splash-game-512x512-icons/ For background music in rpg template used: Music by Dvir Silverstone from Pixabay Sound Effect by Crunchpix Studio from Pixabay Music by Emmraan from Pixabay . Logo includes the official WebGPU logo. WebGPU logo by W3C Licensed under Creative Commons Attribution 4.0 .   'Ruined rock fence' (https://skfb.ly/6RLwN) by VladNeko is licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/).",
-  "mariasword": "Maria Sword, the silver blade of the East, strikes with speed and elegance. Her courage burns quietly but never falters.",
-  "slayzer": "Slayzer \u2014 a dark creation with blades for arms. Silent, swift, and born from shadow.",
-  "steelborn": "Steelborn \u2014 a small yet fearless warrior clad in shining iron armor, wielding his sword with unshakable resolve.",
-  "warrok": "Warrok \u2014 a fierce brute forged in battle, wielding raw strength and unbreakable will.",
-  "skeletonz": "Skeletonz \u2014 a restless warrior of bone and shadow, risen again to fight without fear.",
-  "erika": "Erika moves like a shadow: quiet, precise and watchful. She carries one dark arrow \u2014 simple, deadly and personal.",
-  "arissa": "Arissa hides her power behind calm eyes and empty hands. No blade or staff\u2014only the swirling dark orbs she conjures when the fight begins.",
-  "gameplayused": "Forest Of Hollow Blood for now have only one channel for gameplay. Please wait for current party end...",
-  "nogold": "Not enough gold!",
-  "invertorysecret": "Corona Ignifera magic secret Sol Corona,Flamma Crystal\n  Aqua Sanctum magic secret Mare Pearl,Luna Gemma\n Umbra Silens magic secret Umbra Vellum,Noctis Band\n Terra Fortis magic secret Terra Clavis,Ardent Vine,Silva Heart\n Ventus Aegis magic secret Ventus Pluma,Ignifur Cape\n Ferrum Lux magic secret Ferrum Anulus,Lux Feather\n Sanguis Vita magic secret Sanguis Orb,Vita Flos \n Tenebris Vox magic secret Tenebris Fang,Vox Chime \n Aether Gladius magic secret Gladius Ignis,Aether Scale \n Fulgur Mortis magic secret Fulgur Stone,Mortis Bone \n Corona Umbra magic secret Umbra Silens,Corona Ignifera,Tenebris Vox \n Terra Sanctum magic secret Terra Fortis,Aqua Sanctum \n Aether Fortis magic secret Aether Gladius,Ferrum Lux \n  Vita Mindza magic secret Sanguis Vita,Ventus Aegis \n Mortis Ultima magic secret Fulgur Mortis,Corona Umbra,Aether Fortis"
-};
+var en;
+var init_en_backup = __esm({
+  "../../../../public/res/multilang/en-backup.js"() {
+    en = {
+      "play": "Play",
+      "sendmsg": "Send message",
+      "changeTheme": "Theme dark/light",
+      "yes": "Yes",
+      "no": "No",
+      "on": "On",
+      "off": "Off",
+      "startGame": "\u{1F3B2}Start Game",
+      "changeLang": "Change Lang",
+      "english": "English",
+      "serbian": "Serbian",
+      "MAX": "MAX",
+      "MIN": "MIN",
+      "straight": "Straight",
+      "threeOf": "ThreeOf",
+      "fullhouse": "FULLH",
+      "help": "HELP",
+      "roll": "ROLL DICES",
+      "settings": "Settings",
+      "hand": "Hand",
+      "up": "Up |",
+      "down": "Down",
+      "free": "Free",
+      "cornerText": "\u{1F3B2}",
+      "poker": "Poker",
+      "jamb": "Jamb",
+      "final": "Final \u03A3",
+      "hide": "HIDE",
+      "sounds": "Sounds",
+      "welcomeMsg": "Welcome here, <br> open source project \u{1F3B2} Jamb 3d deluxe game <br> download from ",
+      "ready": "Ready for play \u{1F3B2}!",
+      "freetoroll": "Free for roll \u{1F3B2}!",
+      "pick5": "Pick best 5 \u{1F3B2} and choose table field!",
+      "hand1": "First hand in play - please wait...",
+      "hand2": "Secound hand in play - please wait...",
+      "graphics": "Graphics options",
+      "choosename": "Choose nickname:",
+      "table": "Table",
+      "aboutword": "About",
+      "about": "<i>Jamb 3d deluxe</i> is a modern 3D dice game built entirely with MatrixEngineWGPU, a high-performance WebGPU-based rendering engine developed for creating interactive graphics directly in the browser. The game delivers smooth visuals, realistic dice physics, and an engaging user experience \u2014 all without requiring any plugins or installations. \n This project is powered by open technologies and is designed to be lightweight, fast, and highly customizable. It\u2019s a great example of how WebGPU can be used for real-time interactive content. \n \u{1F517} Download / Try it: \n github.com/zlatnaspirala/matrix-engine-wgpu \n \u{1F6E0} License: \n The core engine and the Jamb 3d deluxe project are released under the GPL v3 license, making them free and open-source for both personal and commercial use \u2014 as long as you respect the terms of the license. \n Whether you're a developer, gamer, or enthusiast, Jamb 3d deluxe is a fun way to experience the potential of modern browser-based 3D technology. <img width='320' height='320' src='https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/public/res/icons/512.png?raw=true' />",
+      "letthegame": "Let the game begin!",
+      "leaderboard": "Leaderboard",
+      "about_": "About",
+      "next": "Next",
+      "back": "Back",
+      "used": "used",
+      "gameplaychannel": "gameplay channel",
+      "alreadyingame": "Already in game:",
+      "waiting_for_others": "Waiting for others...",
+      "titleBan": "\u272DBan \u{1F7E2}\u{1F7E2}\u{1F7E2}",
+      "aboutRPG": "Forest Of Hollow Blood Made in MatrixEngineWGPU webGPU engine. Open source part can be found in engine repo <a href='https://github.com/zlatnaspirala/matrix-engine-wgpu'> @zlatnaspirala Github.com </a>. Music by <a href='https://pixabay.com/users/mfcc-28627740/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=274290'>Mykola Sosin</a> from <a href='https://pixabay.com//?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=274290'>Pixabay</a> Characters used from great mixamo.com -\u2705What you can do You can use Mixamo characters and animations royalty-free in commercial, personal, or non\u2011profit projects (games, films, prints, etc.).You own your creations / how you use them.No requirement to credit Adobe / Mixamo (though allowed). -\u{1F6AB}What you cannot do You cannot redistribute or sell the raw Mixamo character or animation files \u201Cas is\u201D (i.e. as standalone assets) to others.You can\u2019t use Mixamo content to create a competing library of characters / animations (i.e. you can\u2019t just package them and sell them to others). You can\u2019t use Mixamo\u2019s content (or outputs) to train AI / machine learning models. Used free assets from great https://craftpix.net Magic icons : https://craftpix.net/freebies/free-rpg-splash-game-512x512-icons/ For background music in rpg template used: Music by Dvir Silverstone from Pixabay Sound Effect by Crunchpix Studio from Pixabay Music by Emmraan from Pixabay . Logo includes the official WebGPU logo. WebGPU logo by W3C Licensed under Creative Commons Attribution 4.0 .   'Ruined rock fence' (https://skfb.ly/6RLwN) by VladNeko is licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/).",
+      "mariasword": "Maria Sword, the silver blade of the East, strikes with speed and elegance. Her courage burns quietly but never falters.",
+      "slayzer": "Slayzer \u2014 a dark creation with blades for arms. Silent, swift, and born from shadow.",
+      "steelborn": "Steelborn \u2014 a small yet fearless warrior clad in shining iron armor, wielding his sword with unshakable resolve.",
+      "warrok": "Warrok \u2014 a fierce brute forged in battle, wielding raw strength and unbreakable will.",
+      "skeletonz": "Skeletonz \u2014 a restless warrior of bone and shadow, risen again to fight without fear.",
+      "erika": "Erika moves like a shadow: quiet, precise and watchful. She carries one dark arrow \u2014 simple, deadly and personal.",
+      "arissa": "Arissa hides her power behind calm eyes and empty hands. No blade or staff\u2014only the swirling dark orbs she conjures when the fight begins.",
+      "gameplayused": "Forest Of Hollow Blood for now have only one channel for gameplay. Please wait for current party end...",
+      "nogold": "Not enough gold!",
+      "invertorysecret": "Corona Ignifera magic secret Sol Corona,Flamma Crystal\n  Aqua Sanctum magic secret Mare Pearl,Luna Gemma\n Umbra Silens magic secret Umbra Vellum,Noctis Band\n Terra Fortis magic secret Terra Clavis,Ardent Vine,Silva Heart\n Ventus Aegis magic secret Ventus Pluma,Ignifur Cape\n Ferrum Lux magic secret Ferrum Anulus,Lux Feather\n Sanguis Vita magic secret Sanguis Orb,Vita Flos \n Tenebris Vox magic secret Tenebris Fang,Vox Chime \n Aether Gladius magic secret Gladius Ignis,Aether Scale \n Fulgur Mortis magic secret Fulgur Stone,Mortis Bone \n Corona Umbra magic secret Umbra Silens,Corona Ignifera,Tenebris Vox \n Terra Sanctum magic secret Terra Fortis,Aqua Sanctum \n Aether Fortis magic secret Aether Gladius,Ferrum Lux \n  Vita Mindza magic secret Sanguis Vita,Ventus Aegis \n Mortis Ultima magic secret Fulgur Mortis,Corona Umbra,Aether Fortis"
+    };
+  }
+});
 
 // ../../../multilang/lang.js
-var MultiLang = class {
-  constructor() {
-    addEventListener("updateLang", () => {
-      console.log("Multilang updated.");
-      this.update();
-    });
-  }
-  update = function() {
-    var allTranDoms = document.querySelectorAll("[data-label]");
-    allTranDoms.forEach((i) => {
-      i.innerHTML = this.get[i.getAttribute("data-label")];
-    });
-  };
-  loadMultilang = async function(lang = "en") {
-    if (lang == "rs") lang = "sr";
-    lang = "res/multilang/" + lang + ".json";
-    console.info(`%cMultilang: ${lang}`, LOG_MATRIX);
-    try {
-      const r = await fetch(lang, {
-        headers: {
-          "Accept": "application/json",
-          "Content-Type": "application/json"
+var MultiLang;
+var init_lang = __esm({
+  "../../../multilang/lang.js"() {
+    init_en_backup();
+    init_utils();
+    MultiLang = class {
+      constructor() {
+        addEventListener("updateLang", () => {
+          console.log("Multilang updated.");
+          this.update();
+        });
+      }
+      update = function() {
+        var allTranDoms = document.querySelectorAll("[data-label]");
+        allTranDoms.forEach((i) => {
+          i.innerHTML = this.get[i.getAttribute("data-label")];
+        });
+      };
+      loadMultilang = async function(lang = "en") {
+        if (lang == "rs") lang = "sr";
+        lang = "res/multilang/" + lang + ".json";
+        console.info(`%cMultilang: ${lang}`, LOG_MATRIX);
+        try {
+          const r = await fetch(lang, {
+            headers: {
+              "Accept": "application/json",
+              "Content-Type": "application/json"
+            }
+          });
+          return await r.json();
+        } catch (err) {
+          console.warn("Not possible to access multilang json asset! Err => ", err, ". Use backup lang predefinited object. Only english avaible.");
+          return en;
         }
-      });
-      return await r.json();
-    } catch (err) {
-      console.warn("Not possible to access multilang json asset! Err => ", err, ". Use backup lang predefinited object. Only english avaible.");
-      return en;
-    }
-  };
-};
+      };
+    };
+  }
+});
 
 // ../../../sounds/sounds.js
-var MatrixSounds = class {
-  constructor() {
-    this.volume = 0.5;
-    this.audios = {};
-    this.enabled = true;
-  }
-  muteAll() {
-    this.enabled = false;
-    Object.values(this.audios).forEach((audio) => audio.pause());
-  }
-  unmuteAll() {
-    this.enabled = true;
-  }
-  createClones(c, name, path) {
-    for (let x = 1; x < c; x++) {
-      const a = new Audio(path);
-      a.id = name + x;
-      a.volume = this.volume;
-      this.audios[name + x] = a;
-      document.body.append(a);
-    }
-  }
-  createAudio(name, path, useClones) {
-    const a = new Audio(path);
-    a.id = name;
-    a.volume = this.volume;
-    this.audios[name] = a;
-    document.body.append(a);
-    if (typeof useClones !== "undefined") {
-      this.createClones(useClones, name, path);
-    }
-  }
-  play(name) {
-    if (!this.enabled) return;
-    const audio = this.audios[name];
-    if (!audio) return;
-    if (audio.paused) {
-      audio.play().catch((e) => {
-        if (e.name !== "NotAllowedError") console.warn("sounds error:", e);
-      });
-    } else {
-      this.tryClone(name);
-    }
-  }
-  tryClone(name) {
-    if (!this.enabled) return;
-    let cc = 1;
-    try {
-      while (this.audios[name + cc] && this.audios[name + cc].paused === false) {
-        cc++;
+var MatrixSounds;
+var init_sounds = __esm({
+  "../../../sounds/sounds.js"() {
+    MatrixSounds = class {
+      constructor() {
+        this.volume = 0.5;
+        this.audios = {};
+        this.enabled = true;
       }
-      if (this.audios[name + cc]) {
-        this.audios[name + cc].play();
+      muteAll() {
+        this.enabled = false;
+        Object.values(this.audios).forEach((audio) => audio.pause());
       }
-    } catch (err) {
-      console.warn("Clone play failed:", err);
-    }
-  }
-};
-
-// ../../../engine/loader-obj.js
-var constructMesh = class {
-  constructor(objectData, inputArg) {
-    this.inputArg = inputArg;
-    this.objectData = objectData;
-    this.create(objectData, inputArg);
-    this.setScale = (s) => {
-      this.inputArg.scale = s;
-      this.create(this.objectData, this.inputArg);
-    };
-    this.updateBuffers = () => {
-      this.inputArg.scale = [0.1, 0.1, 0.1];
-      this.create(this.objectData, this.inputArg);
-    };
-  }
-  create = (objectData, inputArg, callback) => {
-    if (typeof callback === "undefined") callback = function() {
-    };
-    let initOrientation = [0, 1, 2];
-    var verts = [], vertNormals = [], textures = [], unpacked = {};
-    unpacked.verts = [];
-    unpacked.norms = [];
-    unpacked.textures = [];
-    unpacked.hashindices = {};
-    unpacked.indices = [];
-    unpacked.index = 0;
-    var lines = objectData.split("\n");
-    if (inputArg.swap[0] !== null) {
-      swap(inputArg.swap[0], inputArg.swap[1], initOrientation);
-    }
-    var VERTEX_RE = /^v\s/;
-    var NORMAL_RE = /^vn\s/;
-    var TEXTURE_RE = /^vt\s/;
-    var FACE_RE = /^f\s/;
-    var WHITESPACE_RE = /\s+/;
-    for (var i = 0; i < lines.length; i++) {
-      var line = lines[i].trim();
-      var elements = line.split(WHITESPACE_RE);
-      elements.shift();
-      if (VERTEX_RE.test(line)) {
-        verts.push.apply(verts, elements);
-      } else if (NORMAL_RE.test(line)) {
-        vertNormals.push.apply(vertNormals, elements);
-      } else if (TEXTURE_RE.test(line)) {
-        textures.push.apply(textures, elements);
-      } else if (FACE_RE.test(line)) {
-        var quad = false;
-        for (var j = 0, eleLen = elements.length; j < eleLen; j++) {
-          if (j === 3 && !quad) {
-            j = 2;
-            quad = true;
-          }
-          if (elements[j] in unpacked.hashindices) {
-            unpacked.indices.push(unpacked.hashindices[elements[j]]);
-          } else {
-            var vertex = elements[j].split("/");
-            unpacked.verts.push(+verts[(vertex[0] - 1) * 3 + initOrientation[0]] * inputArg.scale[0]);
-            unpacked.verts.push(+verts[(vertex[0] - 1) * 3 + initOrientation[1]] * inputArg.scale[1]);
-            unpacked.verts.push(+verts[(vertex[0] - 1) * 3 + initOrientation[2]] * inputArg.scale[2]);
-            if (textures.length) {
-              unpacked.textures.push(+textures[(vertex[1] - 1) * 2 + 0]);
-              unpacked.textures.push(+textures[(vertex[1] - 1) * 2 + 1]);
-            }
-            unpacked.norms.push(+vertNormals[(vertex[2] - 1) * 3 + 0]);
-            unpacked.norms.push(+vertNormals[(vertex[2] - 1) * 3 + 1]);
-            unpacked.norms.push(+vertNormals[(vertex[2] - 1) * 3 + 2]);
-            unpacked.hashindices[elements[j]] = unpacked.index;
-            unpacked.indices.push(unpacked.index);
-            unpacked.index += 1;
-          }
-          if (j === 3 && quad) {
-            unpacked.indices.push(unpacked.hashindices[elements[0]]);
-          }
+      unmuteAll() {
+        this.enabled = true;
+      }
+      createClones(c, name, path) {
+        for (let x = 1; x < c; x++) {
+          const a = new Audio(path);
+          a.id = name + x;
+          a.volume = this.volume;
+          this.audios[name + x] = a;
+          document.body.append(a);
         }
       }
-    }
-    this.vertices = unpacked.verts;
-    this.vertexNormals = unpacked.norms;
-    this.textures = unpacked.textures;
-    this.indices = unpacked.indices;
-    callback();
-    return this;
-  };
-};
-var Ajax = function() {
-  var _this = this;
-  this.xmlhttp = new XMLHttpRequest();
-  this.get = function(url, callback) {
-    _this.xmlhttp.onreadystatechange = function() {
-      if (_this.xmlhttp.readyState === 4) {
-        callback(_this.xmlhttp.responseText, _this.xmlhttp.status);
+      createAudio(name, path, useClones) {
+        const a = new Audio(path);
+        a.id = name;
+        a.volume = this.volume;
+        this.audios[name] = a;
+        document.body.append(a);
+        if (typeof useClones !== "undefined") {
+          this.createClones(useClones, name, path);
+        }
+      }
+      play(name) {
+        if (!this.enabled) return;
+        const audio = this.audios[name];
+        if (!audio) return;
+        if (audio.paused) {
+          audio.play().catch((e) => {
+            if (e.name !== "NotAllowedError") console.warn("sounds error:", e);
+          });
+        } else {
+          this.tryClone(name);
+        }
+      }
+      tryClone(name) {
+        if (!this.enabled) return;
+        let cc = 1;
+        try {
+          while (this.audios[name + cc] && this.audios[name + cc].paused === false) {
+            cc++;
+          }
+          if (this.audios[name + cc]) {
+            this.audios[name + cc].play();
+          }
+        } catch (err) {
+          console.warn("Clone play failed:", err);
+        }
       }
     };
-    _this.xmlhttp.open("GET", url, true);
-    _this.xmlhttp.send();
-  };
-};
-var downloadMeshes = function(nameAndURLs, completionCallback, inputArg) {
-  var semaphore = Object.keys(nameAndURLs).length;
-  var error = false;
-  if (typeof inputArg === "undefined") {
-    var inputArg = {
-      scale: [0.1, 0.1, 0.1],
-      swap: [null]
-    };
   }
-  if (typeof inputArg.scale === "undefined") inputArg.scale = [0.1, 0.1, 0.1];
-  if (typeof inputArg.swap === "undefined") inputArg.swap = [null];
-  var meshes = {};
-  for (var mesh_name in nameAndURLs) {
-    if (nameAndURLs.hasOwnProperty(mesh_name)) {
-      new Ajax().get(
-        nameAndURLs[mesh_name],
-        /* @__PURE__ */ (function(name) {
-          return function(data, status) {
-            if (status === 200) {
-              meshes[name] = new constructMesh(data, inputArg);
-            } else {
-              error = true;
-              console.error('An error has occurred and the mesh "' + name + '" could not be downloaded.');
-            }
-            semaphore--;
-            if (semaphore === 0) {
-              if (error) {
-                console.error("An error has occurred and one or meshes has not been downloaded. The execution of the script has terminated.");
-                throw "";
-              }
-              completionCallback(meshes);
-            }
-          };
-        })(mesh_name)
-      );
-    }
-  }
-};
+});
+
+// ../../../engine/loader-obj.js
 function play(nameAni) {
   this.animations.active = nameAni;
   this.currentAni = this.animations[this.animations.active].from;
   this.playing = true;
 }
+var constructMesh, Ajax, downloadMeshes;
+var init_loader_obj = __esm({
+  "../../../engine/loader-obj.js"() {
+    constructMesh = class {
+      constructor(objectData, inputArg) {
+        this.inputArg = inputArg;
+        this.objectData = objectData;
+        this.create(objectData, inputArg);
+        this.setScale = (s) => {
+          this.inputArg.scale = s;
+          this.create(this.objectData, this.inputArg);
+        };
+        this.updateBuffers = () => {
+          this.inputArg.scale = [0.1, 0.1, 0.1];
+          this.create(this.objectData, this.inputArg);
+        };
+      }
+      create = (objectData, inputArg, callback) => {
+        if (typeof callback === "undefined") callback = function() {
+        };
+        let initOrientation = [0, 1, 2];
+        var verts = [], vertNormals = [], textures = [], unpacked = {};
+        unpacked.verts = [];
+        unpacked.norms = [];
+        unpacked.textures = [];
+        unpacked.hashindices = {};
+        unpacked.indices = [];
+        unpacked.index = 0;
+        var lines = objectData.split("\n");
+        if (inputArg.swap[0] !== null) {
+          swap(inputArg.swap[0], inputArg.swap[1], initOrientation);
+        }
+        var VERTEX_RE = /^v\s/;
+        var NORMAL_RE = /^vn\s/;
+        var TEXTURE_RE = /^vt\s/;
+        var FACE_RE = /^f\s/;
+        var WHITESPACE_RE = /\s+/;
+        for (var i = 0; i < lines.length; i++) {
+          var line = lines[i].trim();
+          var elements = line.split(WHITESPACE_RE);
+          elements.shift();
+          if (VERTEX_RE.test(line)) {
+            verts.push.apply(verts, elements);
+          } else if (NORMAL_RE.test(line)) {
+            vertNormals.push.apply(vertNormals, elements);
+          } else if (TEXTURE_RE.test(line)) {
+            textures.push.apply(textures, elements);
+          } else if (FACE_RE.test(line)) {
+            var quad = false;
+            for (var j = 0, eleLen = elements.length; j < eleLen; j++) {
+              if (j === 3 && !quad) {
+                j = 2;
+                quad = true;
+              }
+              if (elements[j] in unpacked.hashindices) {
+                unpacked.indices.push(unpacked.hashindices[elements[j]]);
+              } else {
+                var vertex = elements[j].split("/");
+                unpacked.verts.push(+verts[(vertex[0] - 1) * 3 + initOrientation[0]] * inputArg.scale[0]);
+                unpacked.verts.push(+verts[(vertex[0] - 1) * 3 + initOrientation[1]] * inputArg.scale[1]);
+                unpacked.verts.push(+verts[(vertex[0] - 1) * 3 + initOrientation[2]] * inputArg.scale[2]);
+                if (textures.length) {
+                  unpacked.textures.push(+textures[(vertex[1] - 1) * 2 + 0]);
+                  unpacked.textures.push(+textures[(vertex[1] - 1) * 2 + 1]);
+                }
+                unpacked.norms.push(+vertNormals[(vertex[2] - 1) * 3 + 0]);
+                unpacked.norms.push(+vertNormals[(vertex[2] - 1) * 3 + 1]);
+                unpacked.norms.push(+vertNormals[(vertex[2] - 1) * 3 + 2]);
+                unpacked.hashindices[elements[j]] = unpacked.index;
+                unpacked.indices.push(unpacked.index);
+                unpacked.index += 1;
+              }
+              if (j === 3 && quad) {
+                unpacked.indices.push(unpacked.hashindices[elements[0]]);
+              }
+            }
+          }
+        }
+        this.vertices = unpacked.verts;
+        this.vertexNormals = unpacked.norms;
+        this.textures = unpacked.textures;
+        this.indices = unpacked.indices;
+        callback();
+        return this;
+      };
+    };
+    Ajax = function() {
+      var _this = this;
+      this.xmlhttp = new XMLHttpRequest();
+      this.get = function(url, callback) {
+        _this.xmlhttp.onreadystatechange = function() {
+          if (_this.xmlhttp.readyState === 4) {
+            callback(_this.xmlhttp.responseText, _this.xmlhttp.status);
+          }
+        };
+        _this.xmlhttp.open("GET", url, true);
+        _this.xmlhttp.send();
+      };
+    };
+    downloadMeshes = function(nameAndURLs, completionCallback, inputArg) {
+      var semaphore = Object.keys(nameAndURLs).length;
+      var error = false;
+      if (typeof inputArg === "undefined") {
+        var inputArg = {
+          scale: [0.1, 0.1, 0.1],
+          swap: [null]
+        };
+      }
+      if (typeof inputArg.scale === "undefined") inputArg.scale = [0.1, 0.1, 0.1];
+      if (typeof inputArg.swap === "undefined") inputArg.swap = [null];
+      var meshes = {};
+      for (var mesh_name in nameAndURLs) {
+        if (nameAndURLs.hasOwnProperty(mesh_name)) {
+          new Ajax().get(
+            nameAndURLs[mesh_name],
+            /* @__PURE__ */ (function(name) {
+              return function(data, status) {
+                if (status === 200) {
+                  meshes[name] = new constructMesh(data, inputArg);
+                } else {
+                  error = true;
+                  console.error('An error has occurred and the mesh "' + name + '" could not be downloaded.');
+                }
+                semaphore--;
+                if (semaphore === 0) {
+                  if (error) {
+                    console.error("An error has occurred and one or meshes has not been downloaded. The execution of the script has terminated.");
+                    throw "";
+                  }
+                  completionCallback(meshes);
+                }
+              };
+            })(mesh_name)
+          );
+        }
+      }
+    };
+  }
+});
 
 // ../../../shaders/vertexShadow.wgsl.js
-var vertexShadowWGSL = `struct Scene {
+var vertexShadowWGSL;
+var init_vertexShadow_wgsl = __esm({
+  "../../../shaders/vertexShadow.wgsl.js"() {
+    vertexShadowWGSL = `struct Scene {
   lightViewProjMatrix: mat4x4f,
   cameraViewProjMatrix: mat4x4f,
   lightPos: vec3f,
@@ -7280,32 +7432,43 @@ fn main(
   return scene.lightViewProjMatrix * model.modelMatrix * vec4(position, 1);
 }
 `;
+  }
+});
 
 // ../../../engine/behavior.js
-var Behavior = class {
-  status = "Only oscillator";
-  constructor() {
-    this.osc0 = new OSCILLATOR(0, 5, 0.01);
+var Behavior;
+var init_behavior = __esm({
+  "../../../engine/behavior.js"() {
+    init_utils();
+    Behavior = class {
+      status = "Only oscillator";
+      constructor() {
+        this.osc0 = new OSCILLATOR(0, 5, 0.01);
+      }
+      setOsc0(min, max, step) {
+        this.osc0.min = min;
+        this.osc0.max = max;
+        this.osc0.step = step;
+      }
+      // apend - keep init origin
+      addPath(NUMBER) {
+        let inc = this.osc0.UPDATE();
+        console.log("test inc", inc);
+        console.log("test inc + number", NUMBER + inc);
+        return inc + NUMBER;
+      }
+      setPath0() {
+        return this.osc0.UPDATE();
+      }
+    };
   }
-  setOsc0(min, max, step) {
-    this.osc0.min = min;
-    this.osc0.max = max;
-    this.osc0.step = step;
-  }
-  // apend - keep init origin
-  addPath(NUMBER) {
-    let inc = this.osc0.UPDATE();
-    console.log("test inc", inc);
-    console.log("test inc + number", NUMBER + inc);
-    return inc + NUMBER;
-  }
-  setPath0() {
-    return this.osc0.UPDATE();
-  }
-};
+});
 
 // ../../../shaders/instanced/vertexShadow.instanced.wgsl.js
-var vertexShadowWGSLInstanced = `struct Scene {
+var vertexShadowWGSLInstanced;
+var init_vertexShadow_instanced_wgsl = __esm({
+  "../../../shaders/instanced/vertexShadow.instanced.wgsl.js"() {
+    vertexShadowWGSLInstanced = `struct Scene {
   lightViewProjMatrix: mat4x4f,
   cameraViewProjMatrix: mat4x4f,
   lightPos: vec3f,
@@ -7334,300 +7497,303 @@ fn main(
   // return scene.lightViewProjMatrix * model.modelMatrix * vec4(position, 1);
 }
 `;
+  }
+});
 
 // ../../../engine/lights.js
-var SpotLight = class {
-  camera;
-  inputHandler;
-  position;
-  target;
-  up;
-  direction;
-  viewMatrix;
-  projectionMatrix;
-  viewProjMatrix;
-  fov;
-  aspect;
-  near;
-  far;
-  innerCutoff;
-  outerCutoff;
-  spotlightUniformBuffer;
-  constructor(camera, inputHandler, device, position = vec3Impl.create(0, 10, -20), target = vec3Impl.create(0, 0, -20), fov = 45, aspect = 1, near = 0.1, far = 200) {
-    this.fov = fov;
-    this.aspect = aspect;
-    this.near = near;
-    this.far = far;
-    this.camera = camera;
-    this.inputHandler = inputHandler;
-    this.position = position;
-    this.target = target;
-    this.up = vec3Impl.create(0, 0, -1);
-    this.direction = vec3Impl.normalize(vec3Impl.subtract(target, position));
-    this.intensity = 1;
-    this.color = vec3Impl.create(1, 1, 1);
-    this.viewMatrix = mat4Impl.lookAt(position, target, this.up);
-    this.projectionMatrix = mat4Impl.perspective(
-      this.fov * Math.PI / 180,
-      this.aspect,
-      this.near,
-      this.far
-    );
-    this.setProjection = function(fov2 = 2 * Math.PI / 5, aspect2 = 1, near2 = 0.1, far2 = 200) {
-      this.projectionMatrix = mat4Impl.perspective(fov2, aspect2, near2, far2);
-    };
-    this.updateProjection = function() {
-      this.projectionMatrix = mat4Impl.perspective(this.fov, this.aspect, this.near, this.far);
-    };
-    this.device = device;
-    this.viewProjMatrix = mat4Impl.multiply(this.projectionMatrix, this.viewMatrix);
-    this.fov = fov;
-    this.aspect = aspect;
-    this.near = near;
-    this.far = far;
-    this.innerCutoff = Math.cos(Math.PI / 180 * 20);
-    this.outerCutoff = Math.cos(Math.PI / 180 * 30);
-    this.ambientFactor = 0.5;
-    this.range = 20;
-    this.shadowBias = 0.01;
-    this.SHADOW_RES = 1024;
-    this.primitive = {
-      topology: "triangle-list",
-      cullMode: "back",
-      // for front interest border drawen shadows !
-      frontFace: "ccw"
-    };
-    this.shadowTexture = this.device.createTexture({
-      label: "shadowTexture[light]",
-      size: [this.SHADOW_RES, this.SHADOW_RES, 1],
-      format: "depth32float",
-      usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING
-    });
-    this.shadowSampler = device.createSampler({
-      label: "shadowSampler[light]",
-      compare: "less",
-      magFilter: "linear",
-      minFilter: "linear"
-    });
-    this.renderPassDescriptor = {
-      label: "renderPassDescriptor shadowPass [per SpotLigth]",
-      colorAttachments: [],
-      depthStencilAttachment: {
-        view: this.shadowTexture.createView(),
-        depthClearValue: 1,
-        depthLoadOp: "clear",
-        depthStoreOp: "store"
-      }
-    };
-    this.uniformBufferBindGroupLayout = this.device.createBindGroupLayout({
-      label: "uniformBufferBindGroupLayout in light",
-      entries: [
-        {
-          binding: 0,
-          visibility: GPUShaderStage.VERTEX,
-          buffer: {
-            type: "uniform"
+var SpotLight;
+var init_lights = __esm({
+  "../../../engine/lights.js"() {
+    init_wgpu_matrix_module();
+    init_vertexShadow_wgsl();
+    init_behavior();
+    init_vertexShadow_instanced_wgsl();
+    SpotLight = class {
+      camera;
+      inputHandler;
+      position;
+      target;
+      up;
+      direction;
+      viewMatrix;
+      projectionMatrix;
+      viewProjMatrix;
+      fov;
+      aspect;
+      near;
+      far;
+      innerCutoff;
+      outerCutoff;
+      spotlightUniformBuffer;
+      constructor(camera, inputHandler, device, position = vec3Impl.create(0, 10, -20), target = vec3Impl.create(0, 0, -20), fov = 45, aspect = 1, near = 0.1, far = 200) {
+        this.fov = fov;
+        this.aspect = aspect;
+        this.near = near;
+        this.far = far;
+        this.camera = camera;
+        this.inputHandler = inputHandler;
+        this.position = position;
+        this.target = target;
+        this.up = vec3Impl.create(0, 0, -1);
+        this.direction = vec3Impl.normalize(vec3Impl.subtract(target, position));
+        this.intensity = 1;
+        this.color = vec3Impl.create(1, 1, 1);
+        this.viewMatrix = mat4Impl.lookAt(position, target, this.up);
+        this.projectionMatrix = mat4Impl.perspective(
+          this.fov * Math.PI / 180,
+          this.aspect,
+          this.near,
+          this.far
+        );
+        this.setProjection = function(fov2 = 2 * Math.PI / 5, aspect2 = 1, near2 = 0.1, far2 = 200) {
+          this.projectionMatrix = mat4Impl.perspective(fov2, aspect2, near2, far2);
+        };
+        this.updateProjection = function() {
+          this.projectionMatrix = mat4Impl.perspective(this.fov, this.aspect, this.near, this.far);
+        };
+        this.device = device;
+        this.viewProjMatrix = mat4Impl.multiply(this.projectionMatrix, this.viewMatrix);
+        this.fov = fov;
+        this.aspect = aspect;
+        this.near = near;
+        this.far = far;
+        this.innerCutoff = Math.cos(Math.PI / 180 * 20);
+        this.outerCutoff = Math.cos(Math.PI / 180 * 30);
+        this.ambientFactor = 0.5;
+        this.range = 20;
+        this.shadowBias = 0.01;
+        this.SHADOW_RES = 1024;
+        this.primitive = {
+          topology: "triangle-list",
+          cullMode: "back",
+          // for front interest border drawen shadows !
+          frontFace: "ccw"
+        };
+        this.shadowTexture = this.device.createTexture({
+          label: "shadowTexture[light]",
+          size: [this.SHADOW_RES, this.SHADOW_RES, 1],
+          format: "depth32float",
+          usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING
+        });
+        this.shadowSampler = device.createSampler({
+          label: "shadowSampler[light]",
+          compare: "less",
+          magFilter: "linear",
+          minFilter: "linear"
+        });
+        this.renderPassDescriptor = {
+          label: "renderPassDescriptor shadowPass [per SpotLigth]",
+          colorAttachments: [],
+          depthStencilAttachment: {
+            view: this.shadowTexture.createView(),
+            depthClearValue: 1,
+            depthLoadOp: "clear",
+            depthStoreOp: "store"
           }
-        }
-      ]
-    });
-    this.shadowBindGroupContainer = [];
-    this.shadowBindGroup = [];
-    this.getShadowBindGroup = (mesh, index) => {
-      if (this.shadowBindGroupContainer[index]) {
-        return this.shadowBindGroupContainer[index];
-      }
-      this.shadowBindGroupContainer[index] = this.device.createBindGroup({
-        label: "sceneBindGroupForShadow in light",
-        layout: this.uniformBufferBindGroupLayout,
-        entries: [
-          {
-            binding: 0,
-            resource: {
-              buffer: mesh.sceneUniformBuffer
+        };
+        this.uniformBufferBindGroupLayout = this.device.createBindGroupLayout({
+          label: "uniformBufferBindGroupLayout in light",
+          entries: [
+            {
+              binding: 0,
+              visibility: GPUShaderStage.VERTEX,
+              buffer: {
+                type: "uniform"
+              }
             }
+          ]
+        });
+        this.shadowBindGroupContainer = [];
+        this.shadowBindGroup = [];
+        this.getShadowBindGroup = (mesh, index) => {
+          if (this.shadowBindGroupContainer[index]) {
+            return this.shadowBindGroupContainer[index];
           }
-        ]
-      });
-      return this.shadowBindGroupContainer[index];
-    };
-    this.getShadowBindGroup_bones = (index) => {
-      if (this.shadowBindGroup[index]) {
-        return this.shadowBindGroup[index];
-      }
-      this.modelUniformBuffer = this.device.createBuffer({
-        size: 4 * 16,
-        // 4x4 matrix
-        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-      });
-      this.shadowBindGroup[index] = this.device.createBindGroup({
-        label: "model BindGroupForShadow in light",
-        layout: this.uniformBufferBindGroupLayout,
-        entries: [
-          {
-            binding: 0,
-            resource: {
-              buffer: this.modelUniformBuffer
-            }
-          }
-        ]
-      });
-      return this.shadowBindGroup[index];
-    };
-    this.modelBindGroupLayout = this.device.createBindGroupLayout({
-      label: "modelBindGroupLayout in light [one bindings]",
-      entries: [
-        { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
-        { binding: 1, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } }
-      ]
-    });
-    this.modelBindGroupLayoutInstanced = this.device.createBindGroupLayout({
-      label: "modelBindGroupLayout in light [for skinned] [instanced]",
-      entries: [
-        { binding: 0, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: { type: "read-only-storage" } },
-        { binding: 1, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } }
-      ]
-    });
-    this.shadowPipeline = this.device.createRenderPipeline({
-      label: "shadowPipeline per light",
-      layout: this.device.createPipelineLayout({
-        label: "createPipelineLayout - uniformBufferBindGroupLayout light [regular]",
-        bindGroupLayouts: [
-          this.uniformBufferBindGroupLayout,
-          this.modelBindGroupLayout
-        ]
-      }),
-      vertex: {
-        module: this.device.createShaderModule({
-          code: vertexShadowWGSL
-        }),
-        buffers: [
-          {
-            arrayStride: 12,
-            // 3 * 4 bytes (vec3f)
-            attributes: [
+          this.shadowBindGroupContainer[index] = this.device.createBindGroup({
+            label: "sceneBindGroupForShadow in light",
+            layout: this.uniformBufferBindGroupLayout,
+            entries: [
               {
-                shaderLocation: 0,
-                // must match @location(0) in vertex shader
-                offset: 0,
-                format: "float32x3"
+                binding: 0,
+                resource: {
+                  buffer: mesh.sceneUniformBuffer
+                }
               }
             ]
+          });
+          return this.shadowBindGroupContainer[index];
+        };
+        this.getShadowBindGroup_bones = (index) => {
+          if (this.shadowBindGroup[index]) {
+            return this.shadowBindGroup[index];
           }
-        ]
-      },
-      depthStencil: {
-        depthWriteEnabled: true,
-        depthCompare: "less",
-        format: "depth32float"
-      },
-      primitive: this.primitive
-    });
-    this.shadowPipelineInstanced = this.device.createRenderPipeline({
-      label: "shadowPipeline [instanced] per light",
-      layout: this.device.createPipelineLayout({
-        label: "createPipelineLayout - uniformBufferBindGroupLayout light [instanced]",
-        bindGroupLayouts: [
-          this.uniformBufferBindGroupLayout,
-          this.modelBindGroupLayoutInstanced
-        ]
-      }),
-      vertex: {
-        module: this.device.createShaderModule({
-          code: vertexShadowWGSLInstanced
-        }),
-        buffers: [
-          {
-            arrayStride: 12,
-            // 3 * 4 bytes (vec3f)
-            attributes: [
+          this.modelUniformBuffer = this.device.createBuffer({
+            size: 4 * 16,
+            // 4x4 matrix
+            usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+          });
+          this.shadowBindGroup[index] = this.device.createBindGroup({
+            label: "model BindGroupForShadow in light",
+            layout: this.uniformBufferBindGroupLayout,
+            entries: [
               {
-                shaderLocation: 0,
-                // must match @location(0) in vertex shader
-                offset: 0,
-                format: "float32x3"
+                binding: 0,
+                resource: {
+                  buffer: this.modelUniformBuffer
+                }
               }
             ]
-          }
-        ]
-      },
-      depthStencil: {
-        depthWriteEnabled: true,
-        depthCompare: "less",
-        format: "depth32float"
-      },
-      primitive: this.primitive
-    });
-    this.getMainPassBindGroup = function(mesh) {
-      if (!this.mainPassBindGroupContainer) this.mainPassBindGroupContainer = [];
-      const index = mesh._lightBindGroupIndex || 0;
-      if (this.mainPassBindGroupContainer[index]) {
-        return this.mainPassBindGroupContainer[index];
-      }
-      this.mainPassBindGroupContainer[index] = this.device.createBindGroup({
-        label: `mainPassBindGroup for mesh`,
-        layout: mesh.mainPassBindGroupLayout,
-        // this should match the pipeline
-        entries: [
-          {
-            binding: 0,
-            // must match @binding in shader for shadow texture
-            resource: this.shadowTexture.createView()
+          });
+          return this.shadowBindGroup[index];
+        };
+        this.modelBindGroupLayout = this.device.createBindGroupLayout({
+          label: "modelBindGroupLayout in light [one bindings]",
+          entries: [
+            { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
+            { binding: 1, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } }
+          ]
+        });
+        this.modelBindGroupLayoutInstanced = this.device.createBindGroupLayout({
+          label: "modelBindGroupLayout in light [for skinned] [instanced]",
+          entries: [
+            { binding: 0, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: { type: "read-only-storage" } },
+            { binding: 1, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } }
+          ]
+        });
+        this.shadowPipeline = this.device.createRenderPipeline({
+          label: "shadowPipeline per light",
+          layout: this.device.createPipelineLayout({
+            label: "createPipelineLayout - uniformBufferBindGroupLayout light [regular]",
+            bindGroupLayouts: [
+              this.uniformBufferBindGroupLayout,
+              this.modelBindGroupLayout
+            ]
+          }),
+          vertex: {
+            module: this.device.createShaderModule({
+              code: vertexShadowWGSL
+            }),
+            buffers: [
+              {
+                arrayStride: 12,
+                // 3 * 4 bytes (vec3f)
+                attributes: [
+                  {
+                    shaderLocation: 0,
+                    // must match @location(0) in vertex shader
+                    offset: 0,
+                    format: "float32x3"
+                  }
+                ]
+              }
+            ]
           },
-          {
-            binding: 1,
-            // must match @binding in shader for shadow sampler
-            resource: this.shadowSampler
+          depthStencil: {
+            depthWriteEnabled: true,
+            depthCompare: "less",
+            format: "depth32float"
+          },
+          primitive: this.primitive
+        });
+        this.shadowPipelineInstanced = this.device.createRenderPipeline({
+          label: "shadowPipeline [instanced] per light",
+          layout: this.device.createPipelineLayout({
+            label: "createPipelineLayout - uniformBufferBindGroupLayout light [instanced]",
+            bindGroupLayouts: [
+              this.uniformBufferBindGroupLayout,
+              this.modelBindGroupLayoutInstanced
+            ]
+          }),
+          vertex: {
+            module: this.device.createShaderModule({
+              code: vertexShadowWGSLInstanced
+            }),
+            buffers: [
+              {
+                arrayStride: 12,
+                // 3 * 4 bytes (vec3f)
+                attributes: [
+                  {
+                    shaderLocation: 0,
+                    // must match @location(0) in vertex shader
+                    offset: 0,
+                    format: "float32x3"
+                  }
+                ]
+              }
+            ]
+          },
+          depthStencil: {
+            depthWriteEnabled: true,
+            depthCompare: "less",
+            format: "depth32float"
+          },
+          primitive: this.primitive
+        });
+        this.getMainPassBindGroup = function(mesh) {
+          if (!this.mainPassBindGroupContainer) this.mainPassBindGroupContainer = [];
+          const index = mesh._lightBindGroupIndex || 0;
+          if (this.mainPassBindGroupContainer[index]) {
+            return this.mainPassBindGroupContainer[index];
           }
-        ]
-      });
-      return this.mainPassBindGroupContainer[index];
+          this.mainPassBindGroupContainer[index] = this.device.createBindGroup({
+            label: `mainPassBindGroup for mesh`,
+            layout: mesh.mainPassBindGroupLayout,
+            // this should match the pipeline
+            entries: [
+              {
+                binding: 0,
+                // must match @binding in shader for shadow texture
+                resource: this.shadowTexture.createView()
+              },
+              {
+                binding: 1,
+                // must match @binding in shader for shadow sampler
+                resource: this.shadowSampler
+              }
+            ]
+          });
+          return this.mainPassBindGroupContainer[index];
+        };
+        this.behavior = new Behavior();
+        this.updater = [];
+      }
+      update() {
+        this.updater.forEach((update) => {
+          update(this);
+        });
+        this.direction = vec3Impl.normalize(vec3Impl.subtract(this.target, this.position));
+        const target = vec3Impl.add(this.position, this.direction);
+        this.viewMatrix = mat4Impl.lookAt(this.position, target, this.up);
+        this.viewProjMatrix = mat4Impl.multiply(this.projectionMatrix, this.viewMatrix);
+      }
+      getLightDataBuffer() {
+        const m = this.viewProjMatrix;
+        return new Float32Array([
+          ...this.position,
+          0,
+          ...this.direction,
+          0,
+          this.innerCutoff,
+          this.outerCutoff,
+          this.intensity,
+          0,
+          ...this.color,
+          0,
+          this.range,
+          this.ambientFactor,
+          this.shadowBias,
+          // <<--- use shadowBias
+          0,
+          // keep padding
+          ...m
+        ]);
+      }
     };
-    this.behavior = new Behavior();
-    this.updater = [];
   }
-  update() {
-    this.updater.forEach((update) => {
-      update(this);
-    });
-    this.direction = vec3Impl.normalize(vec3Impl.subtract(this.target, this.position));
-    const target = vec3Impl.add(this.position, this.direction);
-    this.viewMatrix = mat4Impl.lookAt(this.position, target, this.up);
-    this.viewProjMatrix = mat4Impl.multiply(this.projectionMatrix, this.viewMatrix);
-  }
-  getLightDataBuffer() {
-    const m = this.viewProjMatrix;
-    return new Float32Array([
-      ...this.position,
-      0,
-      ...this.direction,
-      0,
-      this.innerCutoff,
-      this.outerCutoff,
-      this.intensity,
-      0,
-      ...this.color,
-      0,
-      this.range,
-      this.ambientFactor,
-      this.shadowBias,
-      // <<--- use shadowBias
-      0,
-      // keep padding
-      ...m
-    ]);
-  }
-};
+});
 
 // ../../../../node_modules/webgpu-matrix/dist/1.x/wgpu-matrix.module.js
-var EPSILON2 = 1e-6;
-var ctorMap2 = /* @__PURE__ */ new Map([
-  [Float32Array, () => new Float32Array(12)],
-  [Float64Array, () => new Float64Array(12)],
-  [Array, () => new Array(12).fill(0)]
-]);
-var newMat32 = ctorMap2.get(Float32Array);
-var VecType$12 = Float32Array;
 function create$22(x, y, z) {
   const dst = new VecType$12(3);
   if (x !== void 0) {
@@ -7674,7 +7840,6 @@ function normalize$12(v, dst) {
   }
   return dst;
 }
-var MatType2 = Float32Array;
 function setDefaultType$22(ctor) {
   const oldType = MatType2;
   MatType2 = ctor;
@@ -7772,7 +7937,6 @@ function copy$12(m, dst) {
   dst[15] = m[15];
   return dst;
 }
-var clone$12 = copy$12;
 function equalsApproximately$12(a, b) {
   return Math.abs(a[0] - b[0]) < EPSILON2 && Math.abs(a[1] - b[1]) < EPSILON2 && Math.abs(a[2] - b[2]) < EPSILON2 && Math.abs(a[3] - b[3]) < EPSILON2 && Math.abs(a[4] - b[4]) < EPSILON2 && Math.abs(a[5] - b[5]) < EPSILON2 && Math.abs(a[6] - b[6]) < EPSILON2 && Math.abs(a[7] - b[7]) < EPSILON2 && Math.abs(a[8] - b[8]) < EPSILON2 && Math.abs(a[9] - b[9]) < EPSILON2 && Math.abs(a[10] - b[10]) < EPSILON2 && Math.abs(a[11] - b[11]) < EPSILON2 && Math.abs(a[12] - b[12]) < EPSILON2 && Math.abs(a[13] - b[13]) < EPSILON2 && Math.abs(a[14] - b[14]) < EPSILON2 && Math.abs(a[15] - b[15]) < EPSILON2;
 }
@@ -7957,7 +8121,6 @@ function determinant2(m) {
   const t3 = tmp5 * m01 + tmp8 * m11 + tmp11 * m21 - (tmp4 * m01 + tmp9 * m11 + tmp10 * m21);
   return m00 * t0 + m10 * t1 + m20 * t2 + m30 * t3;
 }
-var invert$12 = inverse$12;
 function multiply$12(a, b, dst) {
   dst = dst || new MatType2(16);
   const a00 = a[0];
@@ -8010,7 +8173,6 @@ function multiply$12(a, b, dst) {
   dst[15] = a03 * b30 + a13 * b31 + a23 * b32 + a33 * b33;
   return dst;
 }
-var mul$12 = multiply$12;
 function setTranslation2(a, v, dst) {
   dst = dst || identity2();
   if (a !== dst) {
@@ -8139,9 +8301,6 @@ function frustum2(left, right, bottom, top, near, far, dst) {
   dst[15] = 0;
   return dst;
 }
-var xAxis2;
-var yAxis2;
-var zAxis2;
 function lookAt2(eye, target, up, dst) {
   dst = dst || new MatType2(16);
   xAxis2 = xAxis2 || create$22();
@@ -8424,7 +8583,6 @@ function axisRotation2(axis, angleInRadians, dst) {
   dst[15] = 1;
   return dst;
 }
-var rotation2 = axisRotation2;
 function axisRotate2(m, axis, angleInRadians, dst) {
   dst = dst || new MatType2(16);
   let x = axis[0];
@@ -8481,7 +8639,6 @@ function axisRotate2(m, axis, angleInRadians, dst) {
   }
   return dst;
 }
-var rotate3 = axisRotate2;
 function scaling2(v, dst) {
   dst = dst || new MatType2(16);
   dst[0] = v[0];
@@ -8527,45 +8684,64 @@ function scale$12(m, v, dst) {
   }
   return dst;
 }
-var mat4Impl2 = /* @__PURE__ */ Object.freeze({
-  __proto__: null,
-  setDefaultType: setDefaultType$22,
-  create: create$12,
-  negate: negate$12,
-  copy: copy$12,
-  clone: clone$12,
-  equalsApproximately: equalsApproximately$12,
-  equals: equals$12,
-  identity: identity2,
-  transpose: transpose2,
-  inverse: inverse$12,
-  determinant: determinant2,
-  invert: invert$12,
-  multiply: multiply$12,
-  mul: mul$12,
-  setTranslation: setTranslation2,
-  getTranslation: getTranslation2,
-  getAxis: getAxis2,
-  setAxis: setAxis2,
-  getScaling: getScaling2,
-  perspective: perspective2,
-  ortho: ortho2,
-  frustum: frustum2,
-  lookAt: lookAt2,
-  translation: translation2,
-  translate: translate2,
-  rotationX: rotationX2,
-  rotateX: rotateX2,
-  rotationY: rotationY2,
-  rotateY: rotateY2,
-  rotationZ: rotationZ2,
-  rotateZ: rotateZ2,
-  axisRotation: axisRotation2,
-  rotation: rotation2,
-  axisRotate: axisRotate2,
-  rotate: rotate3,
-  scaling: scaling2,
-  scale: scale$12
+var EPSILON2, ctorMap2, newMat32, VecType$12, MatType2, clone$12, invert$12, mul$12, xAxis2, yAxis2, zAxis2, rotation2, rotate3, mat4Impl2;
+var init_wgpu_matrix_module2 = __esm({
+  "../../../../node_modules/webgpu-matrix/dist/1.x/wgpu-matrix.module.js"() {
+    EPSILON2 = 1e-6;
+    ctorMap2 = /* @__PURE__ */ new Map([
+      [Float32Array, () => new Float32Array(12)],
+      [Float64Array, () => new Float64Array(12)],
+      [Array, () => new Array(12).fill(0)]
+    ]);
+    newMat32 = ctorMap2.get(Float32Array);
+    VecType$12 = Float32Array;
+    MatType2 = Float32Array;
+    clone$12 = copy$12;
+    invert$12 = inverse$12;
+    mul$12 = multiply$12;
+    rotation2 = axisRotation2;
+    rotate3 = axisRotate2;
+    mat4Impl2 = /* @__PURE__ */ Object.freeze({
+      __proto__: null,
+      setDefaultType: setDefaultType$22,
+      create: create$12,
+      negate: negate$12,
+      copy: copy$12,
+      clone: clone$12,
+      equalsApproximately: equalsApproximately$12,
+      equals: equals$12,
+      identity: identity2,
+      transpose: transpose2,
+      inverse: inverse$12,
+      determinant: determinant2,
+      invert: invert$12,
+      multiply: multiply$12,
+      mul: mul$12,
+      setTranslation: setTranslation2,
+      getTranslation: getTranslation2,
+      getAxis: getAxis2,
+      setAxis: setAxis2,
+      getScaling: getScaling2,
+      perspective: perspective2,
+      ortho: ortho2,
+      frustum: frustum2,
+      lookAt: lookAt2,
+      translation: translation2,
+      translate: translate2,
+      rotationX: rotationX2,
+      rotateX: rotateX2,
+      rotationY: rotationY2,
+      rotateY: rotateY2,
+      rotationZ: rotationZ2,
+      rotateZ: rotateZ2,
+      axisRotation: axisRotation2,
+      rotation: rotation2,
+      axisRotate: axisRotate2,
+      rotate: rotate3,
+      scaling: scaling2,
+      scale: scale$12
+    });
+  }
 });
 
 // ../../../../node_modules/bvh-loader/module/bvh-loader.js
@@ -8616,33 +8792,6 @@ function multiply(a, b) {
   }
   return m;
 }
-var _AXES2TUPLE = {
-  "sxyz": [0, 0, 0, 0],
-  "sxyx": [0, 0, 1, 0],
-  "sxzy": [0, 1, 0, 0],
-  "sxzx": [0, 1, 1, 0],
-  "syzx": [1, 0, 0, 0],
-  "syzy": [1, 0, 1, 0],
-  "syxz": [1, 1, 0, 0],
-  "syxy": [1, 1, 1, 0],
-  "szxy": [2, 0, 0, 0],
-  "szxz": [2, 0, 1, 0],
-  "szyx": [2, 1, 0, 0],
-  "szyz": [2, 1, 1, 0],
-  "rzyx": [0, 0, 0, 1],
-  "rxyx": [0, 0, 1, 1],
-  "ryzx": [0, 1, 0, 1],
-  "rxzx": [0, 1, 1, 1],
-  "rxzy": [1, 0, 0, 1],
-  "ryzy": [1, 0, 1, 1],
-  "rzxy": [1, 1, 0, 1],
-  "ryxy": [1, 1, 1, 1],
-  "ryxz": [2, 0, 0, 1],
-  "rzxz": [2, 0, 1, 1],
-  "rxyz": [2, 1, 0, 1],
-  "rzyz": [2, 1, 1, 1]
-};
-var _NEXT_AXIS = [1, 2, 0, 1];
 function euler2mat(ai, aj, ak, axes) {
   if (typeof axes === "undefined") var axes = "sxyz";
   try {
@@ -8729,489 +8878,76 @@ function mat2euler(M, rad2deg_flag) {
   }
   return [roll, pitch, yaw];
 }
-var MEBvhJoint = class {
-  constructor(name, parent) {
-    this.name = name;
-    this.parent = parent;
-    this.offset = [
-      [0, 0, 0],
-      [0, 0, 0],
-      [0, 0, 0]
-    ];
-    this.channels = [];
-    this.children = [];
-    this.channelOffset = 0;
-  }
-  add_child(child) {
-    this.children.push(child);
-  }
-  __repr__() {
-    return this.name;
-  }
-  position_animated() {
-    var detFlag = false;
-    for (const item in this.channels) {
-      if (this.channels[item].endsWith("position") == true) {
-        detFlag = true;
-      }
-    }
-    return detFlag;
-  }
-  rotation_animated() {
-    var detFlag = false;
-    for (const item in this.channels) {
-      if (this.channels[item].endsWith("rotation") == true) {
-        detFlag = true;
-      }
-    }
-    return detFlag;
-  }
-  createIdentityMatrix() {
-    return new Float32Array([
-      1,
-      0,
-      0,
-      0,
-      0,
-      1,
-      0,
-      0,
-      0,
-      0,
-      1,
-      0,
-      0,
-      0,
-      0,
-      1
-    ]);
-  }
-  matrixFromKeyframe(frameData) {
-    const m = this.createIdentityMatrix();
-    let t = [0, 0, 0];
-    let r = [0, 0, 0];
-    for (let i = 0; i < this.channels.length; i++) {
-      const channel = this.channels[i];
-      const value = frameData[this.channelOffset + i];
-      switch (channel) {
-        case "Xposition":
-          t[0] = value;
-          break;
-        case "Yposition":
-          t[1] = value;
-          break;
-        case "Zposition":
-          t[2] = value;
-          break;
-        case "Xrotation":
-          r[0] = degToRad2(value);
-          break;
-        case "Yrotation":
-          r[1] = degToRad2(value);
-          break;
-        case "Zrotation":
-          r[2] = degToRad2(value);
-          break;
-      }
-    }
-    mat4Impl2.translate(m, t, m);
-    mat4Impl2.rotateX(m, r[0], m);
-    mat4Impl2.rotateY(m, r[1], m);
-    mat4Impl2.rotateZ(m, r[2], m);
-    return m;
-  }
-};
-var MEBvh = class {
-  constructor() {
-    this.joints = {};
-    this.root = null;
-    this.keyframes = null;
-    this.frames = 0;
-    this.fps = 0;
-    this.myName = "MATRIX-ENGINE-BVH";
-    this.jointOrder = [];
-  }
-  computeJointOrder() {
-    this.jointOrder = [];
-    const traverse = (joint) => {
-      this.jointOrder.push(joint.name);
-      for (const child of joint.children) {
-        traverse(child);
-      }
+var _AXES2TUPLE, _NEXT_AXIS, MEBvhJoint, MEBvh;
+var init_bvh_loader = __esm({
+  "../../../../node_modules/bvh-loader/module/bvh-loader.js"() {
+    init_wgpu_matrix_module2();
+    _AXES2TUPLE = {
+      "sxyz": [0, 0, 0, 0],
+      "sxyx": [0, 0, 1, 0],
+      "sxzy": [0, 1, 0, 0],
+      "sxzx": [0, 1, 1, 0],
+      "syzx": [1, 0, 0, 0],
+      "syzy": [1, 0, 1, 0],
+      "syxz": [1, 1, 0, 0],
+      "syxy": [1, 1, 1, 0],
+      "szxy": [2, 0, 0, 0],
+      "szxz": [2, 0, 1, 0],
+      "szyx": [2, 1, 0, 0],
+      "szyz": [2, 1, 1, 0],
+      "rzyx": [0, 0, 0, 1],
+      "rxyx": [0, 0, 1, 1],
+      "ryzx": [0, 1, 0, 1],
+      "rxzx": [0, 1, 1, 1],
+      "rxzy": [1, 0, 0, 1],
+      "ryzy": [1, 0, 1, 1],
+      "rzxy": [1, 1, 0, 1],
+      "ryxy": [1, 1, 1, 1],
+      "ryxz": [2, 0, 0, 1],
+      "rzxz": [2, 0, 1, 1],
+      "rxyz": [2, 1, 0, 1],
+      "rzyz": [2, 1, 1, 1]
     };
-    traverse(this.root);
-  }
-  computeChannelOffsets() {
-    let offset = 0;
-    const walk = (joint) => {
-      joint.channelOffset = offset;
-      offset += joint.channels.length;
-      for (const child of joint.children) {
-        walk(child);
+    _NEXT_AXIS = [1, 2, 0, 1];
+    MEBvhJoint = class {
+      constructor(name, parent) {
+        this.name = name;
+        this.parent = parent;
+        this.offset = [
+          [0, 0, 0],
+          [0, 0, 0],
+          [0, 0, 0]
+        ];
+        this.channels = [];
+        this.children = [];
+        this.channelOffset = 0;
       }
-    };
-    if (this.root) walk(this.root);
-    this.totalChannels = offset;
-  }
-  async parse_file(link) {
-    return new Promise((resolve, reject) => {
-      fetch(link).then((event) => {
-        event.text().then((text) => {
-          var hierarchy = text.split("MOTION")[0];
-          var motion = text.split("MOTION")[1];
-          var newLog = document.createElement("div");
-          newLog.innerHTML += "<h2>Hierarchy</h2>";
-          newLog.innerHTML += "<p>" + hierarchy + "</p>";
-          var newLog2 = document.createElement("span");
-          newLog2.innerHTML += "<h2>Motion</h2>";
-          newLog2.innerHTML += '<p class="paragraf fixHeight" >' + motion + "</p>";
-          if (byId2 && byId2("log") !== null) {
-            byId2("log").appendChild(newLog2);
-            byId2("log").appendChild(newLog);
+      add_child(child) {
+        this.children.push(child);
+      }
+      __repr__() {
+        return this.name;
+      }
+      position_animated() {
+        var detFlag = false;
+        for (const item in this.channels) {
+          if (this.channels[item].endsWith("position") == true) {
+            detFlag = true;
           }
-          this._parse_hierarchy(hierarchy);
-          this.computeJointOrder();
-          this.computeChannelOffsets();
-          this.parse_motion(motion);
-          resolve();
-        });
-      });
-    });
-  }
-  _parse_hierarchy(text) {
-    var lines = text.split(/\s*\n+\s*/);
-    var joint_stack = [];
-    for (var key in lines) {
-      var line = lines[key];
-      var words = line.split(/\s+/);
-      var instruction = words[0];
-      var parent = null;
-      if (instruction == "JOINT" || instruction == "ROOT") {
-        if (instruction == "JOINT") {
-          parent = joint_stack[joint_stack.length - 1];
-        } else {
-          parent = null;
         }
-        var joint = new MEBvhJoint(words[1], parent);
-        this.joints[joint.name] = joint;
-        if (parent != null) {
-          parent.add_child(joint);
+        return detFlag;
+      }
+      rotation_animated() {
+        var detFlag = false;
+        for (const item in this.channels) {
+          if (this.channels[item].endsWith("rotation") == true) {
+            detFlag = true;
+          }
         }
-        joint_stack.push(joint);
-        if (instruction == "ROOT") {
-          this.root = joint;
-        }
-      } else if (instruction == "CHANNELS") {
-        for (var j = 2; j < words.length; j++) {
-          joint_stack[joint_stack.length - 1].channels.push(words[j]);
-        }
-      } else if (instruction == "OFFSET") {
-        for (var j = 1; j < words.length; j++) {
-          joint_stack[joint_stack.length - 1].offset[j - 1] = parseFloat(
-            words[j]
-          );
-        }
-      } else if (instruction == "End") {
-        var joint = new MEBvhJoint(
-          joint_stack[joint_stack.length - 1].name + "_end",
-          joint_stack[joint_stack.length - 1]
-        );
-        joint_stack[joint_stack.length - 1].add_child(joint);
-        joint_stack.push(joint);
-        this.joints[joint.name] = joint;
-      } else if (instruction == "}") {
-        joint_stack.pop();
+        return detFlag;
       }
-    }
-  }
-  _add_pose_recursive(joint, offset, poses) {
-    var newLog1 = document.createElement("span");
-    newLog1.innerHTML += "<h2>add_pose_recursive</h2>";
-    newLog1.innerHTML += '<p class="paragraf" >Joint Name: ' + joint.name + "</p>";
-    newLog1.innerHTML += "<p>joint.parent    : " + (joint.parent != null ? joint.parent.name : "null") + "</p>";
-    newLog1.innerHTML += "<p>joint.offset    : " + joint.offset + "</p>";
-    newLog1.innerHTML += "<p>joint.children.length  : " + joint.children.length + "</p>";
-    joint.children.length != 0 ? newLog1.innerHTML += "<p> Childrens: " : newLog1.innerHTML += "No Childrens ";
-    joint.children.forEach((iJoint) => {
-      newLog1.innerHTML += " " + iJoint["name"] + " , ";
-    });
-    newLog1.innerHTML += "</p>";
-    newLog1.innerHTML += "<p>Argument offset : " + offset + "</p>";
-    byId2("log").appendChild(newLog1);
-    var pose = arraySum3(joint.offset, offset);
-    poses.push(pose);
-    for (var c in joint.children) {
-      this._add_pose_recursive(joint.children[c], pose, poses);
-    }
-  }
-  plot_hierarchy() {
-    var poses = [];
-    this._add_pose_recursive(this.root, [0, 0, 0], poses);
-  }
-  parse_motion(text) {
-    var lines = text.split(/\s*\n+\s*/);
-    var frame = 0;
-    for (var key in lines) {
-      var line = lines[key];
-      if (line == "") {
-        continue;
-      }
-      var words = line.split(/\s+/);
-      if (line.startsWith("Frame Time:")) {
-        this.fps = Math.round(1 / parseFloat(words[2]));
-        continue;
-      }
-      if (line.startsWith("Frames:")) {
-        this.frames = parseInt(words[1]);
-        continue;
-      }
-      if (this.keyframes == null) {
-        var localArr = Array.from(Array(this.frames), () => new Array(words.length));
-        this.keyframes = localArr;
-      }
-      for (var angle_index = 0; angle_index < words.length; angle_index++) {
-        this.keyframes[frame][angle_index] = parseFloat(words[angle_index]);
-      }
-      frame += 1;
-    }
-  }
-  _extract_rotation(frame_pose, index_offset, joint) {
-    var local_rotation = [0, 0, 0], M_rotation;
-    for (var key in joint.channels) {
-      var channel = joint.channels[key];
-      if (channel.endsWith("position")) {
-        continue;
-      }
-      if (channel == "Xrotation") {
-        local_rotation[0] = frame_pose[index_offset];
-      } else if (channel == "Yrotation") {
-        local_rotation[1] = frame_pose[index_offset];
-      } else if (channel == "Zrotation") {
-        local_rotation[2] = frame_pose[index_offset];
-      } else {
-        console.warn("Unknown channel {channel}");
-      }
-      index_offset += 1;
-    }
-    local_rotation = npdeg2rad(local_rotation);
-    M_rotation = [
-      [1, 0, 0],
-      [0, 1, 0],
-      [0, 0, 1]
-    ];
-    for (key in joint.channels) {
-      var channel = joint.channels[key];
-      if (channel.endsWith("position")) {
-        continue;
-      }
-      var euler_rot;
-      if (channel == "Xrotation") {
-        euler_rot = [local_rotation[0], 0, 0];
-      } else if (channel == "Yrotation") {
-        euler_rot = [0, local_rotation[1], 0];
-      } else if (channel == "Zrotation") {
-        euler_rot = [0, 0, local_rotation[2]];
-      } else {
-        console.warn("Unknown channel {channel}");
-      }
-      var M_channel = euler2mat(euler_rot[0], euler_rot[1], euler_rot[2], euler_rot[3]);
-      var M_rotation = multiply(M_rotation, M_channel);
-    }
-    return [M_rotation, index_offset];
-  }
-  _extract_position(joint, frame_pose, index_offset) {
-    var offset_position = [0, 0, 0];
-    for (var key in joint.channels) {
-      var channel = joint.channels[key];
-      if (channel.endsWith("rotation")) {
-        continue;
-      }
-      if (channel == "Xposition") {
-        offset_position[0] = frame_pose[index_offset];
-      } else if (channel == "Yposition") {
-        offset_position[1] = frame_pose[index_offset];
-      } else if (channel == "Zposition") {
-        offset_position[2] = frame_pose[index_offset];
-      } else {
-        console.warn("Unknown channel {channel}");
-      }
-      index_offset += 1;
-    }
-    return [offset_position, index_offset];
-  }
-  _recursive_apply_frame(joint, frame_pose, index_offset, p, r, M_parent, p_parent) {
-    var joint_index;
-    if (joint.position_animated()) {
-      var local = this._extract_position(joint, frame_pose, index_offset);
-      var offset_position = local[0], index_offset = local[1];
-    } else {
-      var offset_position = [0, 0, 0];
-    }
-    if (joint.channels.length == 0) {
-      var local2 = 0;
-      for (var item in this.joints) {
-        if (joint.name == item) {
-          joint_index = local2;
-        }
-        local2++;
-      }
-      p[joint_index] = arraySum3(p_parent, dot3vs1(M_parent, joint.offset));
-      r[joint_index] = mat2euler(M_parent);
-      return index_offset;
-    }
-    if (joint.rotation_animated()) {
-      var local2 = this._extract_rotation(frame_pose, index_offset, joint);
-      var M_rotation = local2[0];
-      index_offset = local2[1];
-    } else {
-      var M_rotation = [
-        [1, 0, 0],
-        [0, 1, 0],
-        [0, 0, 1]
-      ];
-    }
-    var M = multiply(M_parent, M_rotation);
-    var position = arraySum3(p_parent, dot3vs1(M_parent, joint.offset));
-    position = arraySum3(position, offset_position);
-    var rotation3 = mat2euler(M, "rad2deg");
-    var local = 0;
-    for (const item2 in this.joints) {
-      if (joint.name == item2) {
-        joint_index = local;
-      }
-      local++;
-    }
-    p[joint_index] = position;
-    r[joint_index] = rotation3;
-    for (var c in joint.children) {
-      index_offset = this._recursive_apply_frame(
-        joint.children[c],
-        frame_pose,
-        index_offset,
-        p,
-        r,
-        M,
-        position
-      );
-    }
-    return index_offset;
-  }
-  frame_pose(frame) {
-    var jointLength = 0;
-    for (var x in this.joints) {
-      jointLength++;
-    }
-    var p = Array.from(Array(jointLength), () => [0, 0, 0]);
-    var r = Array.from(Array(jointLength), () => [0, 0, 0]);
-    var frame_pose = this.keyframes[frame];
-    var M_parent = [
-      [0, 0, 0],
-      [0, 0, 0],
-      [0, 0, 0]
-    ];
-    M_parent[0][0] = 1;
-    M_parent[1][1] = 1;
-    M_parent[2][2] = 1;
-    this._recursive_apply_frame(
-      this.root,
-      frame_pose,
-      0,
-      p,
-      r,
-      M_parent,
-      [0, 0, 0]
-    );
-    return [p, r];
-  }
-  all_frame_poses() {
-    var jointLength = 0;
-    for (var x in this.joints) {
-      jointLength++;
-    }
-    var p = Array.from({ length: this.frames }, () => Array.from({ length: jointLength }, () => [0, 0, 0]));
-    var r = Array.from({ length: this.frames }, () => Array.from({ length: jointLength }, () => [0, 0, 0]));
-    for (var frame = 0; frame < this.keyframes.length; frame++) {
-      var local3 = this.frame_pose(frame);
-      p[frame] = local3[0];
-      r[frame] = local3[1];
-    }
-    return [p, r];
-  }
-  _plot_pose(p, r, fig, ax) {
-  }
-  // Meybe helps for draw
-  // plot_frame(frame, fig=None, ax=None) {
-  plot_frame(frame, fig, ax) {
-  }
-  joint_names() {
-    var keys = [];
-    for (var key in this.joints) {
-      keys.push(key);
-    }
-    return keys;
-  }
-  plot_all_frames() {
-  }
-  __repr__() {
-    return `BVH.JS ${this.joints.keys().length} joints, ${this.frames} frames`;
-  }
-};
-
-// ../../../../node_modules/bvh-loader/index.js
-var bvh_loader_default = MEBvh;
-
-// ../../../engine/loaders/webgpu-gltf.js
-var GLTFBuffer = class {
-  constructor(buffer, size, offset) {
-    this.arrayBuffer = buffer;
-    this.size = size;
-    this.byteOffset = offset;
-  }
-};
-
-// ../../../engine/loaders/bvh.js
-var animBVH = new bvh_loader_default();
-var BVHPlayer = class extends MEMeshObj {
-  constructor(o, bvh, glb, primitiveIndex, skinnedNodeIndex, canvas, device, context, inputHandler, globalAmbient) {
-    super(canvas, device, context, o, inputHandler, globalAmbient, glb, primitiveIndex, skinnedNodeIndex);
-    this.bvh = {};
-    this.glb = glb;
-    this.currentFrame = 0;
-    this.fps = 30;
-    this.timeAccumulator = 0;
-    this.scaleBoneTest = 1;
-    this.primitiveIndex = primitiveIndex;
-    if (!this.bvh.sharedState) {
-      this.bvh.sharedState = { currentFrame: 0, timeAccumulator: 0 };
-    }
-    this.sharedState = this.bvh.sharedState;
-    this.skinnedNode = this.glb.skinnedMeshNodes[skinnedNodeIndex];
-    this.nodeWorldMatrices = Array.from(
-      { length: this.glb.nodes.length },
-      () => mat4Impl.identity()
-    );
-    this.startTime = performance.now() / 1e3;
-    this.MAX_BONES = 100;
-    this.skeleton = [];
-    this.animationSpeed = 1e3;
-    this.inverseBindMatrices = [];
-    this.initInverseBindMatrices();
-    this.makeSkeletal();
-  }
-  makeSkeletal() {
-    let skin = this.glb.skins[0];
-    const accessorIndex = skin.inverseBindMatrices;
-    if (accessorIndex == null) {
-      console.warn("No inverseBindMatrices, using identity matrices");
-    }
-    const invBindArray = this.inverseBindMatrices;
-    this.skeleton = skin.joints.slice();
-    for (let i = 0; i < skin.joints.length; i++) {
-      const jointIndex = skin.joints[i];
-      const jointNode = this.glb.nodes[jointIndex];
-      jointNode.inverseBindMatrix = invBindArray.slice(i * 16, (i + 1) * 16);
-      if (!jointNode.transform) {
-        jointNode.transform = new Float32Array([
+      createIdentityMatrix() {
+        return new Float32Array([
           1,
           0,
           0,
@@ -9230,342 +8966,811 @@ var BVHPlayer = class extends MEMeshObj {
           1
         ]);
       }
-      if (!jointNode.translation || !jointNode.rotation || !jointNode.scale) {
-        const { translation: translation3, rotation: rotation3, scale } = this.decomposeMatrix(jointNode.transform);
-        jointNode.translation = translation3;
-        jointNode.rotation = rotation3;
-        jointNode.scale = scale;
-      }
-    }
-    this.glb.animationIndex = 0;
-    for (let j = 0; j < this.glb.glbJsonData.animations.length; j++) {
-      if (this.glb.glbJsonData.animations[j].name.indexOf("Armature") !== -1) {
-        this.glb.animationIndex = j;
-      }
-    }
-  }
-  initInverseBindMatrices(skinIndex = 0) {
-    const skin = this.glb.skins[skinIndex];
-    const invBindAccessorIndex = skin.inverseBindMatrices;
-    if (invBindAccessorIndex === void 0 || invBindAccessorIndex === null) {
-      console.warn("No inverseBindMatrices accessor for skin", skinIndex);
-      return;
-    }
-    const invBindArray = this.getAccessorArray(this.glb, invBindAccessorIndex);
-    this.inverseBindMatrices = invBindArray;
-  }
-  getNumberOfFramesCurAni() {
-    let anim = this.glb.glbJsonData.animations[this.glb.animationIndex];
-    const sampler = anim.samplers[0];
-    const inputAccessor = this.glb.glbJsonData.accessors[sampler.input];
-    const numFrames = inputAccessor.count;
-    return numFrames;
-  }
-  update(deltaTime2) {
-    const frameTime = 1 / this.fps;
-    this.sharedState.timeAccumulator += deltaTime2;
-    while (this.sharedState.timeAccumulator >= frameTime) {
-      this.sharedState.currentFrame = (this.sharedState.currentFrame + 1) % this.getNumberOfFramesCurAni();
-      this.sharedState.timeAccumulator -= frameTime;
-    }
-    const currentTime = performance.now() / this.animationSpeed - this.startTime;
-    const boneMatrices = new Float32Array(this.MAX_BONES * 16);
-    if (this.glb.glbJsonData.animations && this.glb.glbJsonData.animations.length > 0) {
-      this.updateSingleBoneCubeAnimation(this.glb.glbJsonData.animations[this.glb.animationIndex], this.glb.nodes, currentTime, boneMatrices);
-    }
-  }
-  getAccessorArray(glb, accessorIndex) {
-    const accessor = glb.glbJsonData.accessors[accessorIndex];
-    const bufferView = glb.glbJsonData.bufferViews[accessor.bufferView];
-    const byteOffset = (bufferView.byteOffset || 0) + (accessor.byteOffset || 0);
-    const byteLength = accessor.count * this.getNumComponents(accessor.type) * (accessor.componentType === 5126 ? 4 : 2);
-    const bufferDef = glb.glbBinaryBuffer;
-    const slice = this.getBufferSlice(bufferDef, byteOffset, byteLength);
-    switch (accessor.componentType) {
-      case 5126:
-        return new Float32Array(slice);
-      case 5123:
-        return new Uint16Array(slice);
-      case 5121:
-        return new Uint8Array(slice);
-      default:
-        throw new Error("Unsupported componentType: " + accessor.componentType);
-    }
-  }
-  getAccessorTypeForChannel(path) {
-    switch (path) {
-      case "translation":
-        return "VEC3";
-      case "rotation":
-        return "VEC4";
-      case "scale":
-        return "VEC3";
-      case "weights":
-        return "VECN";
-      // if needed
-      default:
-        throw new Error("Unknown channel path: " + path);
-    }
-  }
-  getNumComponents(type) {
-    switch (type) {
-      case "SCALAR":
-        return 1;
-      case "VEC2":
-        return 2;
-      case "VEC3":
-        return 3;
-      case "VEC4":
-        return 4;
-      case "MAT4":
-        return 16;
-      default:
-        throw new Error("Unknown type: " + type);
-    }
-  }
-  getComponentSize(componentType) {
-    switch (componentType) {
-      case 5126:
-        return 4;
-      // float32
-      case 5123:
-        return 2;
-      // uint16
-      case 5121:
-        return 1;
-      // uint8
-      default:
-        throw new Error("Unknown componentType: " + componentType);
-    }
-  }
-  /**
-   *  @description
-   *  Get a typed slice of the raw binary buffer from glTF buffer definitions.
-   * @param {Object} bufferDef - the glTF buffer definition (usually gltfJson.buffers[0])
-   * @param {Number} byteOffset - byte offset into the buffer
-   * @param {Number} byteLength - byte length to slice
-   * @returns {ArrayBuffer} sliced array buffer
-   **/
-  getBufferSlice(bufferDef, byteOffset, byteLength) {
-    if (bufferDef instanceof GLTFBuffer) {
-      return bufferDef.arrayBuffer.slice(
-        bufferDef.byteOffset + (byteOffset || 0),
-        bufferDef.byteOffset + (byteOffset || 0) + byteLength
-      );
-    }
-    if (bufferDef instanceof ArrayBuffer) {
-      return bufferDef.slice(byteOffset, byteOffset + byteLength);
-    }
-    if (bufferDef && bufferDef.data instanceof ArrayBuffer) {
-      return bufferDef.data.slice(byteOffset, byteOffset + byteLength);
-    }
-    if (bufferDef && bufferDef._data instanceof ArrayBuffer) {
-      return bufferDef._data.slice(byteOffset, byteOffset + byteLength);
-    }
-    throw new Error("No binary data found in GLB buffer[0]");
-  }
-  // --- helpers
-  lerpVec(a, b, t) {
-    return a.map((v, i) => v * (1 - t) + b[i] * t);
-  }
-  // Example quaternion slerp (a,b = [x,y,z,w])
-  quatSlerp(a, b, t) {
-    let dot = a[0] * b[0] + a[1] * b[1] + a[2] * b[2] + a[3] * b[3];
-    if (dot < 0) {
-      b = b.map((v) => -v);
-      dot = -dot;
-    }
-    if (dot > 0.9995) return lerpVec(a, b, t);
-    const theta0 = Math.acos(dot);
-    const theta = theta0 * t;
-    const sinTheta = Math.sin(theta);
-    const sinTheta0 = Math.sin(theta0);
-    const s0 = Math.cos(theta) - dot * sinTheta / sinTheta0;
-    const s1 = sinTheta / sinTheta0;
-    return a.map((v, i) => s0 * v + s1 * b[i]);
-  }
-  // naive quaternion to 4x4 matrix
-  quatToMat4(q) {
-    const [x, y, z, w] = q;
-    const xx = x * x, yy = y * y, zz = z * z;
-    const xy = x * y, xz = x * z, yz = y * z, wx = w * x, wy = w * y, wz = w * z;
-    return new Float32Array([
-      1 - 2 * (yy + zz),
-      2 * (xy + wz),
-      2 * (xz - wy),
-      0,
-      2 * (xy - wz),
-      1 - 2 * (xx + zz),
-      2 * (yz + wx),
-      0,
-      2 * (xz + wy),
-      2 * (yz - wx),
-      1 - 2 * (xx + yy),
-      0,
-      0,
-      0,
-      0,
-      1
-    ]);
-  }
-  // Compose TRS to a 4×4
-  composeMatrix(translation3, rotationQuat, scale) {
-    const m = mat4Impl.identity();
-    mat4Impl.translate(m, translation3, m);
-    const rot = mat4Impl.fromQuat(rotationQuat);
-    mat4Impl.multiply(m, rot, m);
-    mat4Impl.scale(m, scale, m);
-    return m;
-  }
-  decomposeMatrix(m) {
-    const t = new Float32Array([m[12], m[13], m[14]]);
-    const cx = [m[0], m[1], m[2]];
-    const cy = [m[4], m[5], m[6]];
-    const cz = [m[8], m[9], m[10]];
-    const len = (v) => Math.hypot(v[0], v[1], v[2]);
-    let sx = len(cx), sy = len(cy), sz = len(cz);
-    if (sx === 0) sx = 1;
-    if (sy === 0) sy = 1;
-    if (sz === 0) sz = 1;
-    const r00 = m[0] / sx, r01 = m[4] / sy, r02 = m[8] / sz;
-    const r10 = m[1] / sx, r11 = m[5] / sy, r12 = m[9] / sz;
-    const r20 = m[2] / sx, r21 = m[6] / sy, r22 = m[10] / sz;
-    const det3 = r00 * (r11 * r22 - r12 * r21) - r01 * (r10 * r22 - r12 * r20) + r02 * (r10 * r21 - r11 * r20);
-    if (det3 < 0) {
-      sz = -sz;
-    }
-    const trace = r00 + r11 + r22;
-    let qx, qy, qz, qw;
-    if (trace > 1e-5) {
-      const s = Math.sqrt(trace + 1) * 2;
-      qw = 0.25 * s;
-      qx = (r21 - r12) / s;
-      qy = (r02 - r20) / s;
-      qz = (r10 - r01) / s;
-    } else if (r00 > r11 && r00 > r22) {
-      const s = Math.sqrt(1 + r00 - r11 - r22) * 2;
-      qw = (r21 - r12) / s;
-      qx = 0.25 * s;
-      qy = (r01 + r10) / s;
-      qz = (r02 + r20) / s;
-    } else if (r11 > r22) {
-      const s = Math.sqrt(1 + r11 - r00 - r22) * 2;
-      qw = (r02 - r20) / s;
-      qx = (r01 + r10) / s;
-      qy = 0.25 * s;
-      qz = (r12 + r21) / s;
-    } else {
-      const s = Math.sqrt(1 + r22 - r00 - r11) * 2;
-      qw = (r10 - r01) / s;
-      qx = (r02 + r20) / s;
-      qy = (r12 + r21) / s;
-      qz = 0.25 * s;
-    }
-    const rot = new Float32Array([qx, qy, qz, qw]);
-    const scale = new Float32Array([sx, sy, sz]);
-    return { translation: t, rotation: rot, scale };
-  }
-  slerp(q0, q1, t, out) {
-    let dot = q0[0] * q1[0] + q0[1] * q1[1] + q0[2] * q1[2] + q0[3] * q1[3];
-    if (dot < 0) {
-      dot = -dot;
-      q1 = [-q1[0], -q1[1], -q1[2], -q1[3]];
-    }
-    if (dot > 0.9995) {
-      for (let i = 0; i < 4; i++) out[i] = q0[i] + t * (q1[i] - q0[i]);
-      const len = Math.hypot(...out);
-      for (let i = 0; i < 4; i++) out[i] /= len;
-      return;
-    }
-    const theta0 = Math.acos(dot);
-    const theta = theta0 * t;
-    const sinTheta = Math.sin(theta);
-    const sinTheta0 = Math.sin(theta0);
-    const s0 = Math.cos(theta) - dot * sinTheta / sinTheta0;
-    const s1 = sinTheta / sinTheta0;
-    for (let i = 0; i < 4; i++) {
-      out[i] = s0 * q0[i] + s1 * q1[i];
-    }
-  }
-  updateSingleBoneCubeAnimation(glbAnimation, nodes, time, boneMatrices) {
-    const channels = glbAnimation.channels;
-    const samplers = glbAnimation.samplers;
-    const nodeChannels = /* @__PURE__ */ new Map();
-    for (const channel of channels) {
-      if (!nodeChannels.has(channel.target.node)) nodeChannels.set(channel.target.node, []);
-      nodeChannels.get(channel.target.node).push(channel);
-    }
-    for (let j = 0; j < this.skeleton.length; j++) {
-      const nodeIndex = this.skeleton[j];
-      const node = nodes[nodeIndex];
-      if (!node.translation) node.translation = new Float32Array([0, 0, 0]);
-      if (!node.rotation) node.rotation = quatImpl.create();
-      if (!node.scale) node.scale = new Float32Array([1, 1, 1]);
-      if (!node.originalTranslation) node.originalTranslation = node.translation.slice();
-      if (!node.originalRotation) node.originalRotation = node.rotation.slice();
-      if (!node.originalScale) node.originalScale = node.scale.slice();
-      const channelsForNode = nodeChannels.get(nodeIndex) || [];
-      for (const channel of channelsForNode) {
-        const path = channel.target.path;
-        const sampler = samplers[channel.sampler];
-        const inputTimes = this.getAccessorArray(this.glb, sampler.input);
-        const outputArray = this.getAccessorArray(this.glb, sampler.output);
-        const numComponents = path === "rotation" ? 4 : 3;
-        const animTime = time % inputTimes[inputTimes.length - 1];
-        let i = 0;
-        while (i < inputTimes.length - 1 && inputTimes[i + 1] <= animTime) i++;
-        const t0 = inputTimes[i];
-        const t1 = inputTimes[Math.min(i + 1, inputTimes.length - 1)];
-        const factor = t1 !== t0 ? (animTime - t0) / (t1 - t0) : 0;
-        const v0 = outputArray.subarray(i * numComponents, (i + 1) * numComponents);
-        const v1 = outputArray.subarray(
-          Math.min(i + 1, inputTimes.length - 1) * numComponents,
-          Math.min(i + 2, inputTimes.length) * numComponents
-        );
-        if (path === "translation") {
-          for (let k = 0; k < 3; k++)
-            node.translation[k] = v0[k] * (1 - factor) + v1[k] * factor;
-        } else if (path === "scale") {
-          for (let k = 0; k < 3; k++)
-            node.scale[k] = v0[k] * (1 - factor) + v1[k] * factor;
-        } else if (path === "rotation") {
-          this.slerp(v0, v1, factor, node.rotation);
+      matrixFromKeyframe(frameData) {
+        const m = this.createIdentityMatrix();
+        let t = [0, 0, 0];
+        let r = [0, 0, 0];
+        for (let i = 0; i < this.channels.length; i++) {
+          const channel = this.channels[i];
+          const value = frameData[this.channelOffset + i];
+          switch (channel) {
+            case "Xposition":
+              t[0] = value;
+              break;
+            case "Yposition":
+              t[1] = value;
+              break;
+            case "Zposition":
+              t[2] = value;
+              break;
+            case "Xrotation":
+              r[0] = degToRad2(value);
+              break;
+            case "Yrotation":
+              r[1] = degToRad2(value);
+              break;
+            case "Zrotation":
+              r[2] = degToRad2(value);
+              break;
+          }
         }
-      }
-      node.transform = this.composeMatrix(node.translation, node.rotation, node.scale);
-    }
-    const computeWorld = (nodeIndex) => {
-      const node = nodes[nodeIndex];
-      if (!node.worldMatrix) node.worldMatrix = mat4Impl.create();
-      let parentWorld = node.parent !== null ? nodes[node.parent].worldMatrix : null;
-      if (parentWorld) {
-        mat4Impl.multiply(parentWorld, node.transform, node.worldMatrix);
-      } else {
-        mat4Impl.copy(node.transform, node.worldMatrix);
-      }
-      mat4Impl.scale(node.worldMatrix, [this.scaleBoneTest, this.scaleBoneTest, this.scaleBoneTest], node.worldMatrix);
-      if (node.children) {
-        for (const childIndex of node.children) computeWorld(childIndex);
+        mat4Impl2.translate(m, t, m);
+        mat4Impl2.rotateX(m, r[0], m);
+        mat4Impl2.rotateY(m, r[1], m);
+        mat4Impl2.rotateZ(m, r[2], m);
+        return m;
       }
     };
-    for (let i = 0; i < nodes.length; i++) {
-      if (nodes[i].parent === null || nodes[i].parent === void 0) {
-        computeWorld(i);
+    MEBvh = class {
+      constructor() {
+        this.joints = {};
+        this.root = null;
+        this.keyframes = null;
+        this.frames = 0;
+        this.fps = 0;
+        this.myName = "MATRIX-ENGINE-BVH";
+        this.jointOrder = [];
       }
-    }
-    for (let j = 0; j < this.skeleton.length; j++) {
-      const jointNode = nodes[this.skeleton[j]];
-      const finalMat = mat4Impl.create();
-      mat4Impl.multiply(jointNode.worldMatrix, jointNode.inverseBindMatrix, finalMat);
-      boneMatrices.set(finalMat, j * 16);
-    }
-    this.device.queue.writeBuffer(this.bonesBuffer, 0, boneMatrices);
-    return boneMatrices;
+      computeJointOrder() {
+        this.jointOrder = [];
+        const traverse = (joint) => {
+          this.jointOrder.push(joint.name);
+          for (const child of joint.children) {
+            traverse(child);
+          }
+        };
+        traverse(this.root);
+      }
+      computeChannelOffsets() {
+        let offset = 0;
+        const walk = (joint) => {
+          joint.channelOffset = offset;
+          offset += joint.channels.length;
+          for (const child of joint.children) {
+            walk(child);
+          }
+        };
+        if (this.root) walk(this.root);
+        this.totalChannels = offset;
+      }
+      async parse_file(link) {
+        return new Promise((resolve, reject) => {
+          fetch(link).then((event) => {
+            event.text().then((text) => {
+              var hierarchy = text.split("MOTION")[0];
+              var motion = text.split("MOTION")[1];
+              var newLog = document.createElement("div");
+              newLog.innerHTML += "<h2>Hierarchy</h2>";
+              newLog.innerHTML += "<p>" + hierarchy + "</p>";
+              var newLog2 = document.createElement("span");
+              newLog2.innerHTML += "<h2>Motion</h2>";
+              newLog2.innerHTML += '<p class="paragraf fixHeight" >' + motion + "</p>";
+              if (byId2 && byId2("log") !== null) {
+                byId2("log").appendChild(newLog2);
+                byId2("log").appendChild(newLog);
+              }
+              this._parse_hierarchy(hierarchy);
+              this.computeJointOrder();
+              this.computeChannelOffsets();
+              this.parse_motion(motion);
+              resolve();
+            });
+          });
+        });
+      }
+      _parse_hierarchy(text) {
+        var lines = text.split(/\s*\n+\s*/);
+        var joint_stack = [];
+        for (var key in lines) {
+          var line = lines[key];
+          var words = line.split(/\s+/);
+          var instruction = words[0];
+          var parent = null;
+          if (instruction == "JOINT" || instruction == "ROOT") {
+            if (instruction == "JOINT") {
+              parent = joint_stack[joint_stack.length - 1];
+            } else {
+              parent = null;
+            }
+            var joint = new MEBvhJoint(words[1], parent);
+            this.joints[joint.name] = joint;
+            if (parent != null) {
+              parent.add_child(joint);
+            }
+            joint_stack.push(joint);
+            if (instruction == "ROOT") {
+              this.root = joint;
+            }
+          } else if (instruction == "CHANNELS") {
+            for (var j = 2; j < words.length; j++) {
+              joint_stack[joint_stack.length - 1].channels.push(words[j]);
+            }
+          } else if (instruction == "OFFSET") {
+            for (var j = 1; j < words.length; j++) {
+              joint_stack[joint_stack.length - 1].offset[j - 1] = parseFloat(
+                words[j]
+              );
+            }
+          } else if (instruction == "End") {
+            var joint = new MEBvhJoint(
+              joint_stack[joint_stack.length - 1].name + "_end",
+              joint_stack[joint_stack.length - 1]
+            );
+            joint_stack[joint_stack.length - 1].add_child(joint);
+            joint_stack.push(joint);
+            this.joints[joint.name] = joint;
+          } else if (instruction == "}") {
+            joint_stack.pop();
+          }
+        }
+      }
+      _add_pose_recursive(joint, offset, poses) {
+        var newLog1 = document.createElement("span");
+        newLog1.innerHTML += "<h2>add_pose_recursive</h2>";
+        newLog1.innerHTML += '<p class="paragraf" >Joint Name: ' + joint.name + "</p>";
+        newLog1.innerHTML += "<p>joint.parent    : " + (joint.parent != null ? joint.parent.name : "null") + "</p>";
+        newLog1.innerHTML += "<p>joint.offset    : " + joint.offset + "</p>";
+        newLog1.innerHTML += "<p>joint.children.length  : " + joint.children.length + "</p>";
+        joint.children.length != 0 ? newLog1.innerHTML += "<p> Childrens: " : newLog1.innerHTML += "No Childrens ";
+        joint.children.forEach((iJoint) => {
+          newLog1.innerHTML += " " + iJoint["name"] + " , ";
+        });
+        newLog1.innerHTML += "</p>";
+        newLog1.innerHTML += "<p>Argument offset : " + offset + "</p>";
+        byId2("log").appendChild(newLog1);
+        var pose = arraySum3(joint.offset, offset);
+        poses.push(pose);
+        for (var c in joint.children) {
+          this._add_pose_recursive(joint.children[c], pose, poses);
+        }
+      }
+      plot_hierarchy() {
+        var poses = [];
+        this._add_pose_recursive(this.root, [0, 0, 0], poses);
+      }
+      parse_motion(text) {
+        var lines = text.split(/\s*\n+\s*/);
+        var frame = 0;
+        for (var key in lines) {
+          var line = lines[key];
+          if (line == "") {
+            continue;
+          }
+          var words = line.split(/\s+/);
+          if (line.startsWith("Frame Time:")) {
+            this.fps = Math.round(1 / parseFloat(words[2]));
+            continue;
+          }
+          if (line.startsWith("Frames:")) {
+            this.frames = parseInt(words[1]);
+            continue;
+          }
+          if (this.keyframes == null) {
+            var localArr = Array.from(Array(this.frames), () => new Array(words.length));
+            this.keyframes = localArr;
+          }
+          for (var angle_index = 0; angle_index < words.length; angle_index++) {
+            this.keyframes[frame][angle_index] = parseFloat(words[angle_index]);
+          }
+          frame += 1;
+        }
+      }
+      _extract_rotation(frame_pose, index_offset, joint) {
+        var local_rotation = [0, 0, 0], M_rotation;
+        for (var key in joint.channels) {
+          var channel = joint.channels[key];
+          if (channel.endsWith("position")) {
+            continue;
+          }
+          if (channel == "Xrotation") {
+            local_rotation[0] = frame_pose[index_offset];
+          } else if (channel == "Yrotation") {
+            local_rotation[1] = frame_pose[index_offset];
+          } else if (channel == "Zrotation") {
+            local_rotation[2] = frame_pose[index_offset];
+          } else {
+            console.warn("Unknown channel {channel}");
+          }
+          index_offset += 1;
+        }
+        local_rotation = npdeg2rad(local_rotation);
+        M_rotation = [
+          [1, 0, 0],
+          [0, 1, 0],
+          [0, 0, 1]
+        ];
+        for (key in joint.channels) {
+          var channel = joint.channels[key];
+          if (channel.endsWith("position")) {
+            continue;
+          }
+          var euler_rot;
+          if (channel == "Xrotation") {
+            euler_rot = [local_rotation[0], 0, 0];
+          } else if (channel == "Yrotation") {
+            euler_rot = [0, local_rotation[1], 0];
+          } else if (channel == "Zrotation") {
+            euler_rot = [0, 0, local_rotation[2]];
+          } else {
+            console.warn("Unknown channel {channel}");
+          }
+          var M_channel = euler2mat(euler_rot[0], euler_rot[1], euler_rot[2], euler_rot[3]);
+          var M_rotation = multiply(M_rotation, M_channel);
+        }
+        return [M_rotation, index_offset];
+      }
+      _extract_position(joint, frame_pose, index_offset) {
+        var offset_position = [0, 0, 0];
+        for (var key in joint.channels) {
+          var channel = joint.channels[key];
+          if (channel.endsWith("rotation")) {
+            continue;
+          }
+          if (channel == "Xposition") {
+            offset_position[0] = frame_pose[index_offset];
+          } else if (channel == "Yposition") {
+            offset_position[1] = frame_pose[index_offset];
+          } else if (channel == "Zposition") {
+            offset_position[2] = frame_pose[index_offset];
+          } else {
+            console.warn("Unknown channel {channel}");
+          }
+          index_offset += 1;
+        }
+        return [offset_position, index_offset];
+      }
+      _recursive_apply_frame(joint, frame_pose, index_offset, p, r, M_parent, p_parent) {
+        var joint_index;
+        if (joint.position_animated()) {
+          var local = this._extract_position(joint, frame_pose, index_offset);
+          var offset_position = local[0], index_offset = local[1];
+        } else {
+          var offset_position = [0, 0, 0];
+        }
+        if (joint.channels.length == 0) {
+          var local2 = 0;
+          for (var item in this.joints) {
+            if (joint.name == item) {
+              joint_index = local2;
+            }
+            local2++;
+          }
+          p[joint_index] = arraySum3(p_parent, dot3vs1(M_parent, joint.offset));
+          r[joint_index] = mat2euler(M_parent);
+          return index_offset;
+        }
+        if (joint.rotation_animated()) {
+          var local2 = this._extract_rotation(frame_pose, index_offset, joint);
+          var M_rotation = local2[0];
+          index_offset = local2[1];
+        } else {
+          var M_rotation = [
+            [1, 0, 0],
+            [0, 1, 0],
+            [0, 0, 1]
+          ];
+        }
+        var M = multiply(M_parent, M_rotation);
+        var position = arraySum3(p_parent, dot3vs1(M_parent, joint.offset));
+        position = arraySum3(position, offset_position);
+        var rotation3 = mat2euler(M, "rad2deg");
+        var local = 0;
+        for (const item2 in this.joints) {
+          if (joint.name == item2) {
+            joint_index = local;
+          }
+          local++;
+        }
+        p[joint_index] = position;
+        r[joint_index] = rotation3;
+        for (var c in joint.children) {
+          index_offset = this._recursive_apply_frame(
+            joint.children[c],
+            frame_pose,
+            index_offset,
+            p,
+            r,
+            M,
+            position
+          );
+        }
+        return index_offset;
+      }
+      frame_pose(frame) {
+        var jointLength = 0;
+        for (var x in this.joints) {
+          jointLength++;
+        }
+        var p = Array.from(Array(jointLength), () => [0, 0, 0]);
+        var r = Array.from(Array(jointLength), () => [0, 0, 0]);
+        var frame_pose = this.keyframes[frame];
+        var M_parent = [
+          [0, 0, 0],
+          [0, 0, 0],
+          [0, 0, 0]
+        ];
+        M_parent[0][0] = 1;
+        M_parent[1][1] = 1;
+        M_parent[2][2] = 1;
+        this._recursive_apply_frame(
+          this.root,
+          frame_pose,
+          0,
+          p,
+          r,
+          M_parent,
+          [0, 0, 0]
+        );
+        return [p, r];
+      }
+      all_frame_poses() {
+        var jointLength = 0;
+        for (var x in this.joints) {
+          jointLength++;
+        }
+        var p = Array.from({ length: this.frames }, () => Array.from({ length: jointLength }, () => [0, 0, 0]));
+        var r = Array.from({ length: this.frames }, () => Array.from({ length: jointLength }, () => [0, 0, 0]));
+        for (var frame = 0; frame < this.keyframes.length; frame++) {
+          var local3 = this.frame_pose(frame);
+          p[frame] = local3[0];
+          r[frame] = local3[1];
+        }
+        return [p, r];
+      }
+      _plot_pose(p, r, fig, ax) {
+      }
+      // Meybe helps for draw
+      // plot_frame(frame, fig=None, ax=None) {
+      plot_frame(frame, fig, ax) {
+      }
+      joint_names() {
+        var keys = [];
+        for (var key in this.joints) {
+          keys.push(key);
+        }
+        return keys;
+      }
+      plot_all_frames() {
+      }
+      __repr__() {
+        return `BVH.JS ${this.joints.keys().length} joints, ${this.frames} frames`;
+      }
+    };
   }
-};
+});
+
+// ../../../../node_modules/bvh-loader/index.js
+var bvh_loader_default;
+var init_bvh_loader2 = __esm({
+  "../../../../node_modules/bvh-loader/index.js"() {
+    init_bvh_loader();
+    bvh_loader_default = MEBvh;
+  }
+});
+
+// ../../../engine/loaders/webgpu-gltf.js
+var GLTFBuffer;
+var init_webgpu_gltf = __esm({
+  "../../../engine/loaders/webgpu-gltf.js"() {
+    GLTFBuffer = class {
+      constructor(buffer, size, offset) {
+        this.arrayBuffer = buffer;
+        this.size = size;
+        this.byteOffset = offset;
+      }
+    };
+  }
+});
+
+// ../../../engine/loaders/bvh.js
+var animBVH, BVHPlayer;
+var init_bvh = __esm({
+  "../../../engine/loaders/bvh.js"() {
+    init_bvh_loader2();
+    init_mesh_obj();
+    init_wgpu_matrix_module();
+    init_webgpu_gltf();
+    animBVH = new bvh_loader_default();
+    BVHPlayer = class extends MEMeshObj {
+      constructor(o, bvh, glb, primitiveIndex, skinnedNodeIndex, canvas, device, context, inputHandler, globalAmbient) {
+        super(canvas, device, context, o, inputHandler, globalAmbient, glb, primitiveIndex, skinnedNodeIndex);
+        this.bvh = {};
+        this.glb = glb;
+        this.currentFrame = 0;
+        this.fps = 30;
+        this.timeAccumulator = 0;
+        this.scaleBoneTest = 1;
+        this.primitiveIndex = primitiveIndex;
+        if (!this.bvh.sharedState) {
+          this.bvh.sharedState = { currentFrame: 0, timeAccumulator: 0 };
+        }
+        this.sharedState = this.bvh.sharedState;
+        this.skinnedNode = this.glb.skinnedMeshNodes[skinnedNodeIndex];
+        this.nodeWorldMatrices = Array.from(
+          { length: this.glb.nodes.length },
+          () => mat4Impl.identity()
+        );
+        this.startTime = performance.now() / 1e3;
+        this.MAX_BONES = 100;
+        this.skeleton = [];
+        this.animationSpeed = 1e3;
+        this.inverseBindMatrices = [];
+        this.initInverseBindMatrices();
+        this.makeSkeletal();
+      }
+      makeSkeletal() {
+        let skin = this.glb.skins[0];
+        const accessorIndex = skin.inverseBindMatrices;
+        if (accessorIndex == null) {
+          console.warn("No inverseBindMatrices, using identity matrices");
+        }
+        const invBindArray = this.inverseBindMatrices;
+        this.skeleton = skin.joints.slice();
+        for (let i = 0; i < skin.joints.length; i++) {
+          const jointIndex = skin.joints[i];
+          const jointNode = this.glb.nodes[jointIndex];
+          jointNode.inverseBindMatrix = invBindArray.slice(i * 16, (i + 1) * 16);
+          if (!jointNode.transform) {
+            jointNode.transform = new Float32Array([
+              1,
+              0,
+              0,
+              0,
+              0,
+              1,
+              0,
+              0,
+              0,
+              0,
+              1,
+              0,
+              0,
+              0,
+              0,
+              1
+            ]);
+          }
+          if (!jointNode.translation || !jointNode.rotation || !jointNode.scale) {
+            const { translation: translation3, rotation: rotation3, scale } = this.decomposeMatrix(jointNode.transform);
+            jointNode.translation = translation3;
+            jointNode.rotation = rotation3;
+            jointNode.scale = scale;
+          }
+        }
+        this.glb.animationIndex = 0;
+        for (let j = 0; j < this.glb.glbJsonData.animations.length; j++) {
+          if (this.glb.glbJsonData.animations[j].name.indexOf("Armature") !== -1) {
+            this.glb.animationIndex = j;
+          }
+        }
+      }
+      initInverseBindMatrices(skinIndex = 0) {
+        const skin = this.glb.skins[skinIndex];
+        const invBindAccessorIndex = skin.inverseBindMatrices;
+        if (invBindAccessorIndex === void 0 || invBindAccessorIndex === null) {
+          console.warn("No inverseBindMatrices accessor for skin", skinIndex);
+          return;
+        }
+        const invBindArray = this.getAccessorArray(this.glb, invBindAccessorIndex);
+        this.inverseBindMatrices = invBindArray;
+      }
+      getNumberOfFramesCurAni() {
+        let anim = this.glb.glbJsonData.animations[this.glb.animationIndex];
+        const sampler = anim.samplers[0];
+        const inputAccessor = this.glb.glbJsonData.accessors[sampler.input];
+        const numFrames = inputAccessor.count;
+        return numFrames;
+      }
+      update(deltaTime2) {
+        const frameTime = 1 / this.fps;
+        this.sharedState.timeAccumulator += deltaTime2;
+        while (this.sharedState.timeAccumulator >= frameTime) {
+          this.sharedState.currentFrame = (this.sharedState.currentFrame + 1) % this.getNumberOfFramesCurAni();
+          this.sharedState.timeAccumulator -= frameTime;
+        }
+        const currentTime = performance.now() / this.animationSpeed - this.startTime;
+        const boneMatrices = new Float32Array(this.MAX_BONES * 16);
+        if (this.glb.glbJsonData.animations && this.glb.glbJsonData.animations.length > 0) {
+          this.updateSingleBoneCubeAnimation(this.glb.glbJsonData.animations[this.glb.animationIndex], this.glb.nodes, currentTime, boneMatrices);
+        }
+      }
+      getAccessorArray(glb, accessorIndex) {
+        const accessor = glb.glbJsonData.accessors[accessorIndex];
+        const bufferView = glb.glbJsonData.bufferViews[accessor.bufferView];
+        const byteOffset = (bufferView.byteOffset || 0) + (accessor.byteOffset || 0);
+        const byteLength = accessor.count * this.getNumComponents(accessor.type) * (accessor.componentType === 5126 ? 4 : 2);
+        const bufferDef = glb.glbBinaryBuffer;
+        const slice = this.getBufferSlice(bufferDef, byteOffset, byteLength);
+        switch (accessor.componentType) {
+          case 5126:
+            return new Float32Array(slice);
+          case 5123:
+            return new Uint16Array(slice);
+          case 5121:
+            return new Uint8Array(slice);
+          default:
+            throw new Error("Unsupported componentType: " + accessor.componentType);
+        }
+      }
+      getAccessorTypeForChannel(path) {
+        switch (path) {
+          case "translation":
+            return "VEC3";
+          case "rotation":
+            return "VEC4";
+          case "scale":
+            return "VEC3";
+          case "weights":
+            return "VECN";
+          // if needed
+          default:
+            throw new Error("Unknown channel path: " + path);
+        }
+      }
+      getNumComponents(type) {
+        switch (type) {
+          case "SCALAR":
+            return 1;
+          case "VEC2":
+            return 2;
+          case "VEC3":
+            return 3;
+          case "VEC4":
+            return 4;
+          case "MAT4":
+            return 16;
+          default:
+            throw new Error("Unknown type: " + type);
+        }
+      }
+      getComponentSize(componentType) {
+        switch (componentType) {
+          case 5126:
+            return 4;
+          // float32
+          case 5123:
+            return 2;
+          // uint16
+          case 5121:
+            return 1;
+          // uint8
+          default:
+            throw new Error("Unknown componentType: " + componentType);
+        }
+      }
+      /**
+       *  @description
+       *  Get a typed slice of the raw binary buffer from glTF buffer definitions.
+       * @param {Object} bufferDef - the glTF buffer definition (usually gltfJson.buffers[0])
+       * @param {Number} byteOffset - byte offset into the buffer
+       * @param {Number} byteLength - byte length to slice
+       * @returns {ArrayBuffer} sliced array buffer
+       **/
+      getBufferSlice(bufferDef, byteOffset, byteLength) {
+        if (bufferDef instanceof GLTFBuffer) {
+          return bufferDef.arrayBuffer.slice(
+            bufferDef.byteOffset + (byteOffset || 0),
+            bufferDef.byteOffset + (byteOffset || 0) + byteLength
+          );
+        }
+        if (bufferDef instanceof ArrayBuffer) {
+          return bufferDef.slice(byteOffset, byteOffset + byteLength);
+        }
+        if (bufferDef && bufferDef.data instanceof ArrayBuffer) {
+          return bufferDef.data.slice(byteOffset, byteOffset + byteLength);
+        }
+        if (bufferDef && bufferDef._data instanceof ArrayBuffer) {
+          return bufferDef._data.slice(byteOffset, byteOffset + byteLength);
+        }
+        throw new Error("No binary data found in GLB buffer[0]");
+      }
+      // --- helpers
+      lerpVec(a, b, t) {
+        return a.map((v, i) => v * (1 - t) + b[i] * t);
+      }
+      // Example quaternion slerp (a,b = [x,y,z,w])
+      quatSlerp(a, b, t) {
+        let dot = a[0] * b[0] + a[1] * b[1] + a[2] * b[2] + a[3] * b[3];
+        if (dot < 0) {
+          b = b.map((v) => -v);
+          dot = -dot;
+        }
+        if (dot > 0.9995) return lerpVec(a, b, t);
+        const theta0 = Math.acos(dot);
+        const theta = theta0 * t;
+        const sinTheta = Math.sin(theta);
+        const sinTheta0 = Math.sin(theta0);
+        const s0 = Math.cos(theta) - dot * sinTheta / sinTheta0;
+        const s1 = sinTheta / sinTheta0;
+        return a.map((v, i) => s0 * v + s1 * b[i]);
+      }
+      // naive quaternion to 4x4 matrix
+      quatToMat4(q) {
+        const [x, y, z, w] = q;
+        const xx = x * x, yy = y * y, zz = z * z;
+        const xy = x * y, xz = x * z, yz = y * z, wx = w * x, wy = w * y, wz = w * z;
+        return new Float32Array([
+          1 - 2 * (yy + zz),
+          2 * (xy + wz),
+          2 * (xz - wy),
+          0,
+          2 * (xy - wz),
+          1 - 2 * (xx + zz),
+          2 * (yz + wx),
+          0,
+          2 * (xz + wy),
+          2 * (yz - wx),
+          1 - 2 * (xx + yy),
+          0,
+          0,
+          0,
+          0,
+          1
+        ]);
+      }
+      // Compose TRS to a 4×4
+      composeMatrix(translation3, rotationQuat, scale) {
+        const m = mat4Impl.identity();
+        mat4Impl.translate(m, translation3, m);
+        const rot = mat4Impl.fromQuat(rotationQuat);
+        mat4Impl.multiply(m, rot, m);
+        mat4Impl.scale(m, scale, m);
+        return m;
+      }
+      decomposeMatrix(m) {
+        const t = new Float32Array([m[12], m[13], m[14]]);
+        const cx = [m[0], m[1], m[2]];
+        const cy = [m[4], m[5], m[6]];
+        const cz = [m[8], m[9], m[10]];
+        const len = (v) => Math.hypot(v[0], v[1], v[2]);
+        let sx = len(cx), sy = len(cy), sz = len(cz);
+        if (sx === 0) sx = 1;
+        if (sy === 0) sy = 1;
+        if (sz === 0) sz = 1;
+        const r00 = m[0] / sx, r01 = m[4] / sy, r02 = m[8] / sz;
+        const r10 = m[1] / sx, r11 = m[5] / sy, r12 = m[9] / sz;
+        const r20 = m[2] / sx, r21 = m[6] / sy, r22 = m[10] / sz;
+        const det3 = r00 * (r11 * r22 - r12 * r21) - r01 * (r10 * r22 - r12 * r20) + r02 * (r10 * r21 - r11 * r20);
+        if (det3 < 0) {
+          sz = -sz;
+        }
+        const trace = r00 + r11 + r22;
+        let qx, qy, qz, qw;
+        if (trace > 1e-5) {
+          const s = Math.sqrt(trace + 1) * 2;
+          qw = 0.25 * s;
+          qx = (r21 - r12) / s;
+          qy = (r02 - r20) / s;
+          qz = (r10 - r01) / s;
+        } else if (r00 > r11 && r00 > r22) {
+          const s = Math.sqrt(1 + r00 - r11 - r22) * 2;
+          qw = (r21 - r12) / s;
+          qx = 0.25 * s;
+          qy = (r01 + r10) / s;
+          qz = (r02 + r20) / s;
+        } else if (r11 > r22) {
+          const s = Math.sqrt(1 + r11 - r00 - r22) * 2;
+          qw = (r02 - r20) / s;
+          qx = (r01 + r10) / s;
+          qy = 0.25 * s;
+          qz = (r12 + r21) / s;
+        } else {
+          const s = Math.sqrt(1 + r22 - r00 - r11) * 2;
+          qw = (r10 - r01) / s;
+          qx = (r02 + r20) / s;
+          qy = (r12 + r21) / s;
+          qz = 0.25 * s;
+        }
+        const rot = new Float32Array([qx, qy, qz, qw]);
+        const scale = new Float32Array([sx, sy, sz]);
+        return { translation: t, rotation: rot, scale };
+      }
+      slerp(q0, q1, t, out) {
+        let dot = q0[0] * q1[0] + q0[1] * q1[1] + q0[2] * q1[2] + q0[3] * q1[3];
+        if (dot < 0) {
+          dot = -dot;
+          q1 = [-q1[0], -q1[1], -q1[2], -q1[3]];
+        }
+        if (dot > 0.9995) {
+          for (let i = 0; i < 4; i++) out[i] = q0[i] + t * (q1[i] - q0[i]);
+          const len = Math.hypot(...out);
+          for (let i = 0; i < 4; i++) out[i] /= len;
+          return;
+        }
+        const theta0 = Math.acos(dot);
+        const theta = theta0 * t;
+        const sinTheta = Math.sin(theta);
+        const sinTheta0 = Math.sin(theta0);
+        const s0 = Math.cos(theta) - dot * sinTheta / sinTheta0;
+        const s1 = sinTheta / sinTheta0;
+        for (let i = 0; i < 4; i++) {
+          out[i] = s0 * q0[i] + s1 * q1[i];
+        }
+      }
+      updateSingleBoneCubeAnimation(glbAnimation, nodes, time, boneMatrices) {
+        const channels = glbAnimation.channels;
+        const samplers = glbAnimation.samplers;
+        const nodeChannels = /* @__PURE__ */ new Map();
+        for (const channel of channels) {
+          if (!nodeChannels.has(channel.target.node)) nodeChannels.set(channel.target.node, []);
+          nodeChannels.get(channel.target.node).push(channel);
+        }
+        for (let j = 0; j < this.skeleton.length; j++) {
+          const nodeIndex = this.skeleton[j];
+          const node = nodes[nodeIndex];
+          if (!node.translation) node.translation = new Float32Array([0, 0, 0]);
+          if (!node.rotation) node.rotation = quatImpl.create();
+          if (!node.scale) node.scale = new Float32Array([1, 1, 1]);
+          if (!node.originalTranslation) node.originalTranslation = node.translation.slice();
+          if (!node.originalRotation) node.originalRotation = node.rotation.slice();
+          if (!node.originalScale) node.originalScale = node.scale.slice();
+          const channelsForNode = nodeChannels.get(nodeIndex) || [];
+          for (const channel of channelsForNode) {
+            const path = channel.target.path;
+            const sampler = samplers[channel.sampler];
+            const inputTimes = this.getAccessorArray(this.glb, sampler.input);
+            const outputArray = this.getAccessorArray(this.glb, sampler.output);
+            const numComponents = path === "rotation" ? 4 : 3;
+            const animTime = time % inputTimes[inputTimes.length - 1];
+            let i = 0;
+            while (i < inputTimes.length - 1 && inputTimes[i + 1] <= animTime) i++;
+            const t0 = inputTimes[i];
+            const t1 = inputTimes[Math.min(i + 1, inputTimes.length - 1)];
+            const factor = t1 !== t0 ? (animTime - t0) / (t1 - t0) : 0;
+            const v0 = outputArray.subarray(i * numComponents, (i + 1) * numComponents);
+            const v1 = outputArray.subarray(
+              Math.min(i + 1, inputTimes.length - 1) * numComponents,
+              Math.min(i + 2, inputTimes.length) * numComponents
+            );
+            if (path === "translation") {
+              for (let k = 0; k < 3; k++)
+                node.translation[k] = v0[k] * (1 - factor) + v1[k] * factor;
+            } else if (path === "scale") {
+              for (let k = 0; k < 3; k++)
+                node.scale[k] = v0[k] * (1 - factor) + v1[k] * factor;
+            } else if (path === "rotation") {
+              this.slerp(v0, v1, factor, node.rotation);
+            }
+          }
+          node.transform = this.composeMatrix(node.translation, node.rotation, node.scale);
+        }
+        const computeWorld = (nodeIndex) => {
+          const node = nodes[nodeIndex];
+          if (!node.worldMatrix) node.worldMatrix = mat4Impl.create();
+          let parentWorld = node.parent !== null ? nodes[node.parent].worldMatrix : null;
+          if (parentWorld) {
+            mat4Impl.multiply(parentWorld, node.transform, node.worldMatrix);
+          } else {
+            mat4Impl.copy(node.transform, node.worldMatrix);
+          }
+          mat4Impl.scale(node.worldMatrix, [this.scaleBoneTest, this.scaleBoneTest, this.scaleBoneTest], node.worldMatrix);
+          if (node.children) {
+            for (const childIndex of node.children) computeWorld(childIndex);
+          }
+        };
+        for (let i = 0; i < nodes.length; i++) {
+          if (nodes[i].parent === null || nodes[i].parent === void 0) {
+            computeWorld(i);
+          }
+        }
+        for (let j = 0; j < this.skeleton.length; j++) {
+          const jointNode = nodes[this.skeleton[j]];
+          const finalMat = mat4Impl.create();
+          mat4Impl.multiply(jointNode.worldMatrix, jointNode.inverseBindMatrix, finalMat);
+          boneMatrices.set(finalMat, j * 16);
+        }
+        this.device.queue.writeBuffer(this.bonesBuffer, 0, boneMatrices);
+        return boneMatrices;
+      }
+    };
+  }
+});
 
 // ../../../shaders/instanced/fragment.instanced.wgsl.js
-var fragmentWGSLInstanced = `
+var fragmentWGSLInstanced;
+var init_fragment_instanced_wgsl = __esm({
+  "../../../shaders/instanced/fragment.instanced.wgsl.js"() {
+    fragmentWGSLInstanced = `
 override shadowDepthTextureSize: f32 = 1024.0;
 const PI: f32 = 3.141592653589793;
 
@@ -9793,444 +9998,460 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     let alpha = input.colorMult.a; // use alpha for blending
     return vec4f(finalColor, alpha);
 }`;
+  }
+});
 
 // ../../../engine/instanced/materials-instanced.js
-var MaterialsInstanced = class {
-  constructor(device, material, glb) {
-    this.device = device;
-    this.glb = glb;
-    this.material = material;
-    this.isVideo = false;
-    this.videoIsReady = "NONE";
-    this.compareSampler = this.device.createSampler({
-      compare: "less-equal",
-      // safer for shadow comparison
-      addressModeU: "clamp-to-edge",
-      // prevents UV leaking outside
-      addressModeV: "clamp-to-edge",
-      magFilter: "linear",
-      // smooth PCF
-      minFilter: "linear"
-    });
-    this.imageSampler = this.device.createSampler({
-      magFilter: "linear",
-      minFilter: "linear"
-    });
-    this.videoSampler = this.device.createSampler({
-      magFilter: "linear",
-      minFilter: "linear"
-    });
-    this.postFXModeBuffer = this.device.createBuffer({
-      size: 4,
-      // u32 = 4 bytes
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
-    this.dummySpotlightUniformBuffer = this.device.createBuffer({
-      size: 80,
-      // Must match size in shader
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
-    this.device.queue.writeBuffer(this.dummySpotlightUniformBuffer, 0, new Float32Array(20));
-    const mrDummyTex = this.device.createTexture({
-      size: [1, 1, 1],
-      format: this.getFormat(),
-      usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST
-    });
-    const pixel = new Uint8Array([255, 255, 255, 255]);
-    this.device.queue.writeTexture(
-      { texture: mrDummyTex },
-      pixel,
-      { bytesPerRow: 4 },
-      [1, 1, 1]
-    );
-    this.metallicRoughnessTextureView = mrDummyTex.createView();
-    this.metallicRoughnessSampler = this.device.createSampler({
-      magFilter: "linear",
-      minFilter: "linear"
-    });
-    const materialPBRSize = 8 * 4;
-    this.materialPBRBuffer = this.device.createBuffer({
-      size: materialPBRSize,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
-    const baseColorFactor = [1, 1, 1, 1];
-    const metallicFactor = 0.1;
-    const roughnessFactor = 0.5;
-    const pad = [0, 0];
-    const materialArray = new Float32Array([
-      ...baseColorFactor,
-      metallicFactor,
-      roughnessFactor,
-      ...pad
-    ]);
-    this.device.queue.writeBuffer(this.materialPBRBuffer, 0, materialArray.buffer);
-    if (this.material.type == "normalmap") {
-      const normalTexInfo = this.glb.glbJsonData.materials[0].normalTexture;
-      if (normalTexInfo) {
-        const tex = this.glb.glbJsonData.glbTextures[normalTexInfo.index];
-        this.normalTextureView = tex.createView();
-        this.normalSampler = this.device.createSampler({
+var MaterialsInstanced;
+var init_materials_instanced = __esm({
+  "../../../engine/instanced/materials-instanced.js"() {
+    init_fragment_wgsl();
+    init_fragment_wgsl_metal();
+    init_fragment_wgsl_normalmap();
+    init_fragment_wgsl_pong();
+    init_fragment_wgsl_power();
+    init_fragment_instanced_wgsl();
+    MaterialsInstanced = class {
+      constructor(device, material, glb) {
+        this.device = device;
+        this.glb = glb;
+        this.material = material;
+        this.isVideo = false;
+        this.videoIsReady = "NONE";
+        this.compareSampler = this.device.createSampler({
+          compare: "less-equal",
+          // safer for shadow comparison
+          addressModeU: "clamp-to-edge",
+          // prevents UV leaking outside
+          addressModeV: "clamp-to-edge",
+          magFilter: "linear",
+          // smooth PCF
+          minFilter: "linear"
+        });
+        this.imageSampler = this.device.createSampler({
           magFilter: "linear",
           minFilter: "linear"
         });
-      } else {
-      }
-    } else {
-      this.normalDummyTex = device.createTexture({
-        size: [1, 1, 1],
-        format: "rgba8unorm",
-        usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST
-      });
-      const neutralNormal = new Uint8Array([128, 128, 255, 255]);
-      this.device.queue.writeTexture(
-        { texture: this.normalDummyTex },
-        neutralNormal,
-        { bytesPerRow: 4 },
-        [1, 1, 1]
-      );
-      this.normalTextureView = this.normalDummyTex.createView();
-      this.normalSampler = this.device.createSampler({
-        magFilter: "linear",
-        minFilter: "linear"
-      });
-    }
-  }
-  getMaterial() {
-    if (this.material.type == "standard") {
-      return fragmentWGSLInstanced;
-    } else if (this.material.type == "pong") {
-      return fragmentWGSLPong;
-    } else if (this.material.type == "power") {
-      return fragmentWGSLPower;
-    } else if (this.material.type == "metal") {
-      return fragmentWGSLMetal;
-    } else if (this.material.type == "normalmap") {
-      return fragmentWGSLNormalMap;
-    }
-    console.warn("Unknown material type:", this.material?.type);
-    return fragmentWGSL;
-  }
-  getFormat() {
-    if (this.material?.format == "darker") {
-      return "rgba8unorm-srgb";
-    } else if (this.material?.format == "normal") {
-      return "rgba8unorm";
-    } else {
-      return "rgba8unorm";
-    }
-  }
-  // not affect all fs
-  setupMaterialPBR(metallicFactor) {
-    const baseColorFactor = [1, 1, 1, 1];
-    const roughnessFactor = 0.5;
-    const pad = [0, 0];
-    const materialArray = new Float32Array([
-      ...baseColorFactor,
-      metallicFactor,
-      roughnessFactor,
-      ...pad
-    ]);
-    this.device.queue.writeBuffer(this.materialPBRBuffer, 0, materialArray.buffer);
-  }
-  updatePostFXMode(mode) {
-    const arrayBuffer = new Uint32Array([mode]);
-    this.device.queue.writeBuffer(this.postFXModeBuffer, 0, arrayBuffer);
-  }
-  async loadTex0(texturesPaths) {
-    this.sampler = this.device.createSampler({
-      magFilter: "linear",
-      minFilter: "linear"
-    });
-    return new Promise(async (resolve) => {
-      const response = await fetch(texturesPaths[0]);
-      const imageBitmap = await createImageBitmap(await response.blob());
-      this.texture0 = this.device.createTexture({
-        size: [imageBitmap.width, imageBitmap.height, 1],
-        // REMOVED 1
-        format: this.getFormat(),
-        usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT
-      });
-      this.device.queue.copyExternalImageToTexture(
-        { source: imageBitmap },
-        { texture: this.texture0 },
-        [imageBitmap.width, imageBitmap.height]
-      );
-      resolve();
-    });
-  }
-  async loadVideoTexture(arg) {
-    this.videoIsReady = "MAYBE";
-    if (arg.type === "video") {
-      this.video = document.createElement("video");
-      this.video.src = arg.src || "res/videos/tunel.mp4";
-      this.video.crossOrigin = "anonymous";
-      this.video.autoplay = true;
-      this.video.loop = true;
-      document.body.append(this.video);
-      this.video.style.display = "none";
-      this.video.style.position = "absolute";
-      this.video.style.top = "750px";
-      this.video.style.left = "50px";
-      await this.video.play();
-      this.isVideo = true;
-    } else if (arg.type === "videoElement") {
-      this.video = arg.el;
-      await this.video.play();
-    } else if (arg.type === "camera") {
-      this.video = document.createElement("video");
-      this.video.autoplay = true;
-      this.video.muted = true;
-      this.video.playsInline = true;
-      this.video.style.display = "none";
-      document.body.append(this.video);
-      try {
-        const stream = await navigator.mediaDevices?.getUserMedia?.({
-          video: {
-            width: { ideal: 1280 },
-            height: { ideal: 720 }
-          },
-          audio: false
+        this.videoSampler = this.device.createSampler({
+          magFilter: "linear",
+          minFilter: "linear"
         });
-        this.video.srcObject = stream;
-        await this.video.play();
-        this.isVideo = true;
-      } catch (err) {
-        console.error("\u274C Failed to access camera:", err);
-        return;
-      }
-    } else if (arg.type === "canvas2d") {
-      this.video = document.createElement("video");
-      this.video.autoplay = true;
-      this.video.muted = true;
-      this.video.playsInline = true;
-      this.video.style.display = "none";
-      document.body.append(this.video);
-      const stream = arg.el.captureStream?.() || arg.el.mozCaptureStream?.();
-      if (!stream) {
-        console.error("\u274C Cannot capture stream from canvas2d");
-        return;
-      }
-      this.video.srcObject = stream;
-      await this.video.play();
-      this.isVideo = true;
-    } else if (arg.type === "canvas2d-inline") {
-      const canvas = document.createElement("canvas");
-      canvas.width = arg.width || 256;
-      canvas.height = arg.height || 256;
-      const ctx = canvas.getContext("2d");
-      if (typeof arg.canvaInlineProgram === "function") {
-        const drawLoop = () => {
-          arg.canvaInlineProgram(ctx, canvas);
-          requestAnimationFrame(drawLoop);
-        };
-        drawLoop();
-      }
-      this.video = document.createElement("video");
-      this.video.autoplay = true;
-      this.video.muted = true;
-      this.video.playsInline = true;
-      this.video.style.display = "none";
-      document.body.append(this.video);
-      this.isVideo = true;
-      const stream = canvas.captureStream?.() || canvas.mozCaptureStream?.();
-      if (!stream) {
-        console.error("\u274C Cannot capture stream from inline canvas");
-        return;
-      }
-      this.video.srcObject = stream;
-      await this.video.play();
-    }
-    this.sampler = this.device.createSampler({
-      magFilter: "linear",
-      minFilter: "linear"
-    });
-    this.createLayoutForRender();
-  }
-  updateVideoTexture() {
-    if (!this.video || this.video.readyState < 2) return;
-    if (!this.externalTexture) {
-      this.externalTexture = this.device.importExternalTexture({ source: this.video });
-      this.createBindGroupForRender();
-      this.videoIsReady = "YES";
-      console.log("\u2705video bind.");
-    } else {
-      this.externalTexture = this.device.importExternalTexture({ source: this.video });
-      this.createBindGroupForRender();
-    }
-  }
-  getMaterialTexture(glb, materialIndex) {
-    const matDef = glb.glbJsonData.materials[materialIndex];
-    if (!matDef) {
-      console.warn("[engine] no material in glb...");
-      return null;
-    }
-    if (matDef.pbrMetallicRoughness?.baseColorTexture) {
-      const texIndex = matDef.pbrMetallicRoughness.baseColorTexture.index;
-      return glb.glbJsonData.glbTextures[texIndex].createView();
-    }
-    return null;
-  }
-  getMaterialTextureFromMaterial(material) {
-    if (!material || !material.pbrMetallicRoughness) return this.fallbackTextureView;
-    const texInfo = material.pbrMetallicRoughness.baseColorTexture;
-    if (!texInfo) return this.fallbackTextureView;
-    const texIndex = texInfo.index;
-    return this.glb.glbTextures[texIndex].createView();
-  }
-  createBindGroupForRender() {
-    let textureResource = this.isVideo ? this.externalTexture : this.texture0.createView();
-    if (this.material.useTextureFromGlb === true) {
-      const material = this.skinnedNode.mesh.primitives[0].material;
-      const textureView = material.baseColorTexture.imageView;
-      textureResource = textureView;
-    }
-    if (!textureResource || !this.sceneUniformBuffer || !this.shadowDepthTextureView) {
-      if (!textureResource) console.warn("\u2757Missing res texture: ", textureResource);
-      if (!this.sceneUniformBuffer) console.warn("\u2757Missing res: this.sceneUniformBuffer: ", this.sceneUniformBuffer);
-      if (!this.shadowDepthTextureView) console.warn("\u2757Missing res: this.shadowDepthTextureView: ", this.shadowDepthTextureView);
-      if (typeof textureResource === "undefined") {
-        this.updateVideoTexture();
-      }
-      return;
-    }
-    if (this.isVideo == true) {
-      this.sceneBindGroupForRender = this.device.createBindGroup({
-        layout: this.bglForRender,
-        entries: [
-          { binding: 0, resource: { buffer: this.sceneUniformBuffer } },
-          { binding: 1, resource: this.shadowDepthTextureView },
-          { binding: 2, resource: this.compareSampler },
-          { binding: 3, resource: textureResource },
-          { binding: 4, resource: this.videoSampler },
-          { binding: 5, resource: { buffer: this.postFXModeBuffer } }
-        ]
-      });
-      if (this.video.paused == true) this.video.play();
-    } else {
-      this.sceneBindGroupForRender = this.device.createBindGroup({
-        layout: this.bglForRender,
-        entries: [
-          { binding: 0, resource: { buffer: this.sceneUniformBuffer } },
-          { binding: 1, resource: this.shadowDepthTextureView },
-          { binding: 2, resource: this.compareSampler },
-          { binding: 3, resource: textureResource },
-          { binding: 4, resource: this.imageSampler },
-          { binding: 5, resource: { buffer: !this.spotlightUniformBuffer ? this.dummySpotlightUniformBuffer : this.spotlightUniformBuffer } },
-          { binding: 6, resource: this.metallicRoughnessTextureView },
-          { binding: 7, resource: this.metallicRoughnessSampler },
-          { binding: 8, resource: { buffer: this.materialPBRBuffer } },
-          // NEW: dummy normal map
-          { binding: 9, resource: this.normalTextureView },
-          { binding: 10, resource: this.normalSampler }
-        ]
-      });
-    }
-  }
-  createLayoutForRender() {
-    let e = [
-      {
-        binding: 0,
-        visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
-        buffer: { type: "uniform" }
-      },
-      ...this.isVideo == false ? [
-        {
-          binding: 1,
-          visibility: GPUShaderStage.FRAGMENT,
-          texture: {
-            sampleType: "depth",
-            viewDimension: "2d-array",
-            // <- must match shadowMapArray
-            multisampled: false
+        this.postFXModeBuffer = this.device.createBuffer({
+          size: 4,
+          // u32 = 4 bytes
+          usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+        });
+        this.dummySpotlightUniformBuffer = this.device.createBuffer({
+          size: 80,
+          // Must match size in shader
+          usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+        });
+        this.device.queue.writeBuffer(this.dummySpotlightUniformBuffer, 0, new Float32Array(20));
+        const mrDummyTex = this.device.createTexture({
+          size: [1, 1, 1],
+          format: this.getFormat(),
+          usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST
+        });
+        const pixel = new Uint8Array([255, 255, 255, 255]);
+        this.device.queue.writeTexture(
+          { texture: mrDummyTex },
+          pixel,
+          { bytesPerRow: 4 },
+          [1, 1, 1]
+        );
+        this.metallicRoughnessTextureView = mrDummyTex.createView();
+        this.metallicRoughnessSampler = this.device.createSampler({
+          magFilter: "linear",
+          minFilter: "linear"
+        });
+        const materialPBRSize = 8 * 4;
+        this.materialPBRBuffer = this.device.createBuffer({
+          size: materialPBRSize,
+          usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+        });
+        const baseColorFactor = [1, 1, 1, 1];
+        const metallicFactor = 0.1;
+        const roughnessFactor = 0.5;
+        const pad = [0, 0];
+        const materialArray = new Float32Array([
+          ...baseColorFactor,
+          metallicFactor,
+          roughnessFactor,
+          ...pad
+        ]);
+        this.device.queue.writeBuffer(this.materialPBRBuffer, 0, materialArray.buffer);
+        if (this.material.type == "normalmap") {
+          const normalTexInfo = this.glb.glbJsonData.materials[0].normalTexture;
+          if (normalTexInfo) {
+            const tex = this.glb.glbJsonData.glbTextures[normalTexInfo.index];
+            this.normalTextureView = tex.createView();
+            this.normalSampler = this.device.createSampler({
+              magFilter: "linear",
+              minFilter: "linear"
+            });
+          } else {
           }
+        } else {
+          this.normalDummyTex = device.createTexture({
+            size: [1, 1, 1],
+            format: "rgba8unorm",
+            usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST
+          });
+          const neutralNormal = new Uint8Array([128, 128, 255, 255]);
+          this.device.queue.writeTexture(
+            { texture: this.normalDummyTex },
+            neutralNormal,
+            { bytesPerRow: 4 },
+            [1, 1, 1]
+          );
+          this.normalTextureView = this.normalDummyTex.createView();
+          this.normalSampler = this.device.createSampler({
+            magFilter: "linear",
+            minFilter: "linear"
+          });
         }
-      ] : [{
-        binding: 1,
-        visibility: GPUShaderStage.FRAGMENT,
-        texture: {
-          sampleType: "depth",
-          viewDimension: "2d"
+      }
+      getMaterial() {
+        if (this.material.type == "standard") {
+          return fragmentWGSLInstanced;
+        } else if (this.material.type == "pong") {
+          return fragmentWGSLPong;
+        } else if (this.material.type == "power") {
+          return fragmentWGSLPower;
+        } else if (this.material.type == "metal") {
+          return fragmentWGSLMetal;
+        } else if (this.material.type == "normalmap") {
+          return fragmentWGSLNormalMap;
         }
-      }],
-      {
-        binding: 2,
-        visibility: GPUShaderStage.FRAGMENT,
-        sampler: { type: "comparison" }
-      },
-      ...this.isVideo ? [
-        // VIDEO
-        {
-          binding: 3,
-          visibility: GPUShaderStage.FRAGMENT,
-          externalTexture: {}
-        },
-        {
-          binding: 4,
-          visibility: GPUShaderStage.FRAGMENT,
-          sampler: { type: "filtering" }
-          // for video sampling
-        },
-        {
-          binding: 5,
-          visibility: GPUShaderStage.FRAGMENT,
-          buffer: { type: "uniform" }
+        console.warn("Unknown material type:", this.material?.type);
+        return fragmentWGSL;
+      }
+      getFormat() {
+        if (this.material?.format == "darker") {
+          return "rgba8unorm-srgb";
+        } else if (this.material?.format == "normal") {
+          return "rgba8unorm";
+        } else {
+          return "rgba8unorm";
         }
-      ] : [
-        // IMAGE
-        {
-          binding: 3,
-          visibility: GPUShaderStage.FRAGMENT,
-          texture: {
-            sampleType: "float",
-            viewDimension: "2d"
+      }
+      // not affect all fs
+      setupMaterialPBR(metallicFactor) {
+        const baseColorFactor = [1, 1, 1, 1];
+        const roughnessFactor = 0.5;
+        const pad = [0, 0];
+        const materialArray = new Float32Array([
+          ...baseColorFactor,
+          metallicFactor,
+          roughnessFactor,
+          ...pad
+        ]);
+        this.device.queue.writeBuffer(this.materialPBRBuffer, 0, materialArray.buffer);
+      }
+      updatePostFXMode(mode) {
+        const arrayBuffer = new Uint32Array([mode]);
+        this.device.queue.writeBuffer(this.postFXModeBuffer, 0, arrayBuffer);
+      }
+      async loadTex0(texturesPaths) {
+        this.sampler = this.device.createSampler({
+          magFilter: "linear",
+          minFilter: "linear"
+        });
+        return new Promise(async (resolve) => {
+          const response = await fetch(texturesPaths[0]);
+          const imageBitmap = await createImageBitmap(await response.blob());
+          this.texture0 = this.device.createTexture({
+            size: [imageBitmap.width, imageBitmap.height, 1],
+            // REMOVED 1
+            format: this.getFormat(),
+            usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT
+          });
+          this.device.queue.copyExternalImageToTexture(
+            { source: imageBitmap },
+            { texture: this.texture0 },
+            [imageBitmap.width, imageBitmap.height]
+          );
+          resolve();
+        });
+      }
+      async loadVideoTexture(arg) {
+        this.videoIsReady = "MAYBE";
+        if (arg.type === "video") {
+          this.video = document.createElement("video");
+          this.video.src = arg.src || "res/videos/tunel.mp4";
+          this.video.crossOrigin = "anonymous";
+          this.video.autoplay = true;
+          this.video.loop = true;
+          document.body.append(this.video);
+          this.video.style.display = "none";
+          this.video.style.position = "absolute";
+          this.video.style.top = "750px";
+          this.video.style.left = "50px";
+          await this.video.play();
+          this.isVideo = true;
+        } else if (arg.type === "videoElement") {
+          this.video = arg.el;
+          await this.video.play();
+        } else if (arg.type === "camera") {
+          this.video = document.createElement("video");
+          this.video.autoplay = true;
+          this.video.muted = true;
+          this.video.playsInline = true;
+          this.video.style.display = "none";
+          document.body.append(this.video);
+          try {
+            const stream = await navigator.mediaDevices?.getUserMedia?.({
+              video: {
+                width: { ideal: 1280 },
+                height: { ideal: 720 }
+              },
+              audio: false
+            });
+            this.video.srcObject = stream;
+            await this.video.play();
+            this.isVideo = true;
+          } catch (err) {
+            console.error("\u274C Failed to access camera:", err);
+            return;
           }
-        },
-        {
-          binding: 4,
-          visibility: GPUShaderStage.FRAGMENT,
-          sampler: { type: "filtering" }
-        },
-        {
-          binding: 5,
-          visibility: GPUShaderStage.FRAGMENT,
-          buffer: { type: "uniform" }
-        },
-        {
-          binding: 6,
-          visibility: GPUShaderStage.FRAGMENT,
-          texture: {
-            sampleType: "float",
-            viewDimension: "2d"
+        } else if (arg.type === "canvas2d") {
+          this.video = document.createElement("video");
+          this.video.autoplay = true;
+          this.video.muted = true;
+          this.video.playsInline = true;
+          this.video.style.display = "none";
+          document.body.append(this.video);
+          const stream = arg.el.captureStream?.() || arg.el.mozCaptureStream?.();
+          if (!stream) {
+            console.error("\u274C Cannot capture stream from canvas2d");
+            return;
           }
-        },
-        {
-          binding: 7,
-          visibility: GPUShaderStage.FRAGMENT,
-          sampler: { type: "filtering" }
-        },
-        {
-          binding: 8,
-          visibility: GPUShaderStage.FRAGMENT,
-          buffer: { type: "uniform" }
-        },
-        {
-          binding: 9,
-          visibility: GPUShaderStage.FRAGMENT,
-          texture: { sampleType: "float", viewDimension: "2d" }
-        },
-        {
-          binding: 10,
-          visibility: GPUShaderStage.FRAGMENT,
-          sampler: { type: "filtering" }
+          this.video.srcObject = stream;
+          await this.video.play();
+          this.isVideo = true;
+        } else if (arg.type === "canvas2d-inline") {
+          const canvas = document.createElement("canvas");
+          canvas.width = arg.width || 256;
+          canvas.height = arg.height || 256;
+          const ctx = canvas.getContext("2d");
+          if (typeof arg.canvaInlineProgram === "function") {
+            const drawLoop = () => {
+              arg.canvaInlineProgram(ctx, canvas);
+              requestAnimationFrame(drawLoop);
+            };
+            drawLoop();
+          }
+          this.video = document.createElement("video");
+          this.video.autoplay = true;
+          this.video.muted = true;
+          this.video.playsInline = true;
+          this.video.style.display = "none";
+          document.body.append(this.video);
+          this.isVideo = true;
+          const stream = canvas.captureStream?.() || canvas.mozCaptureStream?.();
+          if (!stream) {
+            console.error("\u274C Cannot capture stream from inline canvas");
+            return;
+          }
+          this.video.srcObject = stream;
+          await this.video.play();
         }
-      ]
-    ];
-    this.bglForRender = this.device.createBindGroupLayout({ label: "bglForRender", entries: e });
+        this.sampler = this.device.createSampler({
+          magFilter: "linear",
+          minFilter: "linear"
+        });
+        this.createLayoutForRender();
+      }
+      updateVideoTexture() {
+        if (!this.video || this.video.readyState < 2) return;
+        if (!this.externalTexture) {
+          this.externalTexture = this.device.importExternalTexture({ source: this.video });
+          this.createBindGroupForRender();
+          this.videoIsReady = "YES";
+          console.log("\u2705video bind.");
+        } else {
+          this.externalTexture = this.device.importExternalTexture({ source: this.video });
+          this.createBindGroupForRender();
+        }
+      }
+      getMaterialTexture(glb, materialIndex) {
+        const matDef = glb.glbJsonData.materials[materialIndex];
+        if (!matDef) {
+          console.warn("[engine] no material in glb...");
+          return null;
+        }
+        if (matDef.pbrMetallicRoughness?.baseColorTexture) {
+          const texIndex = matDef.pbrMetallicRoughness.baseColorTexture.index;
+          return glb.glbJsonData.glbTextures[texIndex].createView();
+        }
+        return null;
+      }
+      getMaterialTextureFromMaterial(material) {
+        if (!material || !material.pbrMetallicRoughness) return this.fallbackTextureView;
+        const texInfo = material.pbrMetallicRoughness.baseColorTexture;
+        if (!texInfo) return this.fallbackTextureView;
+        const texIndex = texInfo.index;
+        return this.glb.glbTextures[texIndex].createView();
+      }
+      createBindGroupForRender() {
+        let textureResource = this.isVideo ? this.externalTexture : this.texture0.createView();
+        if (this.material.useTextureFromGlb === true) {
+          const material = this.skinnedNode.mesh.primitives[0].material;
+          const textureView = material.baseColorTexture.imageView;
+          textureResource = textureView;
+        }
+        if (!textureResource || !this.sceneUniformBuffer || !this.shadowDepthTextureView) {
+          if (!textureResource) console.warn("\u2757Missing res texture: ", textureResource);
+          if (!this.sceneUniformBuffer) console.warn("\u2757Missing res: this.sceneUniformBuffer: ", this.sceneUniformBuffer);
+          if (!this.shadowDepthTextureView) console.warn("\u2757Missing res: this.shadowDepthTextureView: ", this.shadowDepthTextureView);
+          if (typeof textureResource === "undefined") {
+            this.updateVideoTexture();
+          }
+          return;
+        }
+        if (this.isVideo == true) {
+          this.sceneBindGroupForRender = this.device.createBindGroup({
+            layout: this.bglForRender,
+            entries: [
+              { binding: 0, resource: { buffer: this.sceneUniformBuffer } },
+              { binding: 1, resource: this.shadowDepthTextureView },
+              { binding: 2, resource: this.compareSampler },
+              { binding: 3, resource: textureResource },
+              { binding: 4, resource: this.videoSampler },
+              { binding: 5, resource: { buffer: this.postFXModeBuffer } }
+            ]
+          });
+          if (this.video.paused == true) this.video.play();
+        } else {
+          this.sceneBindGroupForRender = this.device.createBindGroup({
+            layout: this.bglForRender,
+            entries: [
+              { binding: 0, resource: { buffer: this.sceneUniformBuffer } },
+              { binding: 1, resource: this.shadowDepthTextureView },
+              { binding: 2, resource: this.compareSampler },
+              { binding: 3, resource: textureResource },
+              { binding: 4, resource: this.imageSampler },
+              { binding: 5, resource: { buffer: !this.spotlightUniformBuffer ? this.dummySpotlightUniformBuffer : this.spotlightUniformBuffer } },
+              { binding: 6, resource: this.metallicRoughnessTextureView },
+              { binding: 7, resource: this.metallicRoughnessSampler },
+              { binding: 8, resource: { buffer: this.materialPBRBuffer } },
+              // NEW: dummy normal map
+              { binding: 9, resource: this.normalTextureView },
+              { binding: 10, resource: this.normalSampler }
+            ]
+          });
+        }
+      }
+      createLayoutForRender() {
+        let e = [
+          {
+            binding: 0,
+            visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
+            buffer: { type: "uniform" }
+          },
+          ...this.isVideo == false ? [
+            {
+              binding: 1,
+              visibility: GPUShaderStage.FRAGMENT,
+              texture: {
+                sampleType: "depth",
+                viewDimension: "2d-array",
+                // <- must match shadowMapArray
+                multisampled: false
+              }
+            }
+          ] : [{
+            binding: 1,
+            visibility: GPUShaderStage.FRAGMENT,
+            texture: {
+              sampleType: "depth",
+              viewDimension: "2d"
+            }
+          }],
+          {
+            binding: 2,
+            visibility: GPUShaderStage.FRAGMENT,
+            sampler: { type: "comparison" }
+          },
+          ...this.isVideo ? [
+            // VIDEO
+            {
+              binding: 3,
+              visibility: GPUShaderStage.FRAGMENT,
+              externalTexture: {}
+            },
+            {
+              binding: 4,
+              visibility: GPUShaderStage.FRAGMENT,
+              sampler: { type: "filtering" }
+              // for video sampling
+            },
+            {
+              binding: 5,
+              visibility: GPUShaderStage.FRAGMENT,
+              buffer: { type: "uniform" }
+            }
+          ] : [
+            // IMAGE
+            {
+              binding: 3,
+              visibility: GPUShaderStage.FRAGMENT,
+              texture: {
+                sampleType: "float",
+                viewDimension: "2d"
+              }
+            },
+            {
+              binding: 4,
+              visibility: GPUShaderStage.FRAGMENT,
+              sampler: { type: "filtering" }
+            },
+            {
+              binding: 5,
+              visibility: GPUShaderStage.FRAGMENT,
+              buffer: { type: "uniform" }
+            },
+            {
+              binding: 6,
+              visibility: GPUShaderStage.FRAGMENT,
+              texture: {
+                sampleType: "float",
+                viewDimension: "2d"
+              }
+            },
+            {
+              binding: 7,
+              visibility: GPUShaderStage.FRAGMENT,
+              sampler: { type: "filtering" }
+            },
+            {
+              binding: 8,
+              visibility: GPUShaderStage.FRAGMENT,
+              buffer: { type: "uniform" }
+            },
+            {
+              binding: 9,
+              visibility: GPUShaderStage.FRAGMENT,
+              texture: { sampleType: "float", viewDimension: "2d" }
+            },
+            {
+              binding: 10,
+              visibility: GPUShaderStage.FRAGMENT,
+              sampler: { type: "filtering" }
+            }
+          ]
+        ];
+        this.bglForRender = this.device.createBindGroupLayout({ label: "bglForRender", entries: e });
+      }
+    };
   }
-};
+});
 
 // ../../../shaders/instanced/vertex.instanced.wgsl.js
-var vertexWGSLInstanced = `const MAX_BONES = 100u;
+var vertexWGSLInstanced;
+var init_vertex_instanced_wgsl = __esm({
+  "../../../shaders/instanced/vertex.instanced.wgsl.js"() {
+    vertexWGSLInstanced = `const MAX_BONES = 100u;
 
 struct Scene {
   lightViewProjMatrix: mat4x4f,
@@ -10326,394 +10547,404 @@ fn main(
   output.colorMult = inst.colorMult;
   return output;
 }`;
+  }
+});
 
 // ../../../engine/geometry-factory.js
-var GeometryFactory = class _GeometryFactory {
-  static create(type, size = 1, segments = 16, options = {}) {
-    switch (type) {
-      case "quad":
-        return _GeometryFactory.quad(size);
-      case "cube":
-        return _GeometryFactory.cube(size);
-      case "sphere":
-        return _GeometryFactory.sphere(size, segments);
-      case "pyramid":
-        return _GeometryFactory.pyramid(size);
-      case "star":
-        return _GeometryFactory.star(size);
-      case "circle":
-        return _GeometryFactory.circle(size, segments);
-      case "circle2":
-        return _GeometryFactory.circle2(size, segments);
-      case "diamond":
-        return _GeometryFactory.diamond(size);
-      case "rock":
-        return _GeometryFactory.rock(size, options.detail || 3);
-      case "meteor":
-        return _GeometryFactory.meteor(size, options.detail || 6);
-      case "thunder":
-        return _GeometryFactory.thunder(size);
-      case "shard":
-        return _GeometryFactory.shard(size);
-      case "circlePlane":
-        return _GeometryFactory.circlePlane(size, segments);
-      case "ring":
-        return _GeometryFactory.ring(size, options.innerRatio || 0.7, segments, options.height || 0.05);
-      default:
-        throw new Error(`Unknown geometry: ${type}`);
-    }
-  }
-  // --- BASIC SHAPES ---------------------------------------------------------
-  static quad(S = 1) {
-    const positions = new Float32Array([
-      -S,
-      S,
-      0,
-      S,
-      S,
-      0,
-      -S,
-      -S,
-      0,
-      S,
-      -S,
-      0
-    ]);
-    const uvs = new Float32Array([0, 0, 1, 0, 0, 1, 1, 1]);
-    const indices = new Uint16Array([0, 2, 1, 1, 2, 3]);
-    return { positions, uvs, indices };
-  }
-  static cube(S = 1) {
-    const p = S / 2;
-    const positions = new Float32Array([
-      -p,
-      -p,
-      p,
-      p,
-      -p,
-      p,
-      p,
-      p,
-      p,
-      -p,
-      p,
-      p,
-      -p,
-      -p,
-      -p,
-      -p,
-      p,
-      -p,
-      p,
-      p,
-      -p,
-      p,
-      -p,
-      -p,
-      -p,
-      p,
-      -p,
-      -p,
-      p,
-      p,
-      p,
-      p,
-      p,
-      p,
-      p,
-      -p,
-      -p,
-      -p,
-      -p,
-      p,
-      -p,
-      -p,
-      p,
-      -p,
-      p,
-      -p,
-      -p,
-      p,
-      p,
-      -p,
-      -p,
-      p,
-      p,
-      -p,
-      p,
-      p,
-      p,
-      p,
-      -p,
-      p,
-      -p,
-      -p,
-      -p,
-      -p,
-      -p,
-      p,
-      -p,
-      p,
-      p,
-      -p,
-      p,
-      -p
-    ]);
-    const uvs = new Float32Array(6 * 8).fill(0);
-    const indices = [];
-    for (let i2 = 0; i2 < 6; i2++) {
-      const o = i2 * 4;
-      indices.push(o, o + 1, o + 2, o, o + 2, o + 3);
-    }
-    let i = new Uint16Array(i);
-    return { positions, uvs, i };
-  }
-  static sphere(R = 0.1, seg = 16) {
-    const p = [], uv = [], ind = [];
-    for (let y = 0; y <= seg; y++) {
-      const v = y / seg, \u03B8 = v * Math.PI;
-      for (let x = 0; x <= seg; x++) {
-        const u = x / seg, \u03C6 = u * Math.PI * 2;
-        p.push(R * Math.sin(\u03B8) * Math.cos(\u03C6), R * Math.cos(\u03B8), R * Math.sin(\u03B8) * Math.sin(\u03C6));
-        uv.push(u, v);
+var GeometryFactory;
+var init_geometry_factory = __esm({
+  "../../../engine/geometry-factory.js"() {
+    GeometryFactory = class _GeometryFactory {
+      static create(type, size = 1, segments = 16, options = {}) {
+        switch (type) {
+          case "quad":
+            return _GeometryFactory.quad(size);
+          case "cube":
+            return _GeometryFactory.cube(size);
+          case "sphere":
+            return _GeometryFactory.sphere(size, segments);
+          case "pyramid":
+            return _GeometryFactory.pyramid(size);
+          case "star":
+            return _GeometryFactory.star(size);
+          case "circle":
+            return _GeometryFactory.circle(size, segments);
+          case "circle2":
+            return _GeometryFactory.circle2(size, segments);
+          case "diamond":
+            return _GeometryFactory.diamond(size);
+          case "rock":
+            return _GeometryFactory.rock(size, options.detail || 3);
+          case "meteor":
+            return _GeometryFactory.meteor(size, options.detail || 6);
+          case "thunder":
+            return _GeometryFactory.thunder(size);
+          case "shard":
+            return _GeometryFactory.shard(size);
+          case "circlePlane":
+            return _GeometryFactory.circlePlane(size, segments);
+          case "ring":
+            return _GeometryFactory.ring(size, options.innerRatio || 0.7, segments, options.height || 0.05);
+          default:
+            throw new Error(`Unknown geometry: ${type}`);
+        }
       }
-    }
-    for (let y = 0; y < seg; y++) {
-      for (let x = 0; x < seg; x++) {
-        const i = y * (seg + 1) + x;
-        ind.push(i, i + seg + 1, i + 1, i + 1, i + seg + 1, i + seg + 2);
+      // --- BASIC SHAPES ---------------------------------------------------------
+      static quad(S = 1) {
+        const positions = new Float32Array([
+          -S,
+          S,
+          0,
+          S,
+          S,
+          0,
+          -S,
+          -S,
+          0,
+          S,
+          -S,
+          0
+        ]);
+        const uvs = new Float32Array([0, 0, 1, 0, 0, 1, 1, 1]);
+        const indices = new Uint16Array([0, 2, 1, 1, 2, 3]);
+        return { positions, uvs, indices };
       }
-    }
-    return { positions: new Float32Array(p), uvs: new Float32Array(uv), indices: new Uint16Array(ind) };
-  }
-  static pyramid(S = 1) {
-    const h = S, p = S / 2;
-    const pos = new Float32Array([
-      -p,
-      0,
-      -p,
-      p,
-      0,
-      -p,
-      p,
-      0,
-      p,
-      -p,
-      0,
-      p,
-      0,
-      h,
-      0
-    ]);
-    const uv = new Float32Array([0, 0, 1, 0, 1, 1, 0, 1, 0.5, 0]);
-    const idx = new Uint16Array([0, 1, 2, 0, 2, 3, 0, 1, 4, 1, 2, 4, 2, 3, 4, 3, 0, 4]);
-    return { positions: pos, uvs: uv, indices: idx };
-  }
-  static star(S = 1) {
-    const R = S, r = S * 0.4, v = [], uv = [], ind = [];
-    for (let i = 0; i < 10; i++) {
-      const a = i / 10 * Math.PI * 2;
-      const rr = i % 2 ? r : R;
-      v.push(Math.cos(a) * rr, Math.sin(a) * rr, 0);
-      uv.push((Math.cos(a) + 1) / 2, (Math.sin(a) + 1) / 2);
-    }
-    for (let i = 1; i < 9; i++) ind.push(0, i, i + 1);
-    ind.push(0, 9, 1);
-    return { positions: new Float32Array(v), uvs: new Float32Array(uv), indices: new Uint16Array(ind) };
-  }
-  static circle(R = 1, seg = 32) {
-    const p = [0, 0, 0], uv = [0.5, 0.5], ind = [];
-    for (let i = 0; i <= seg; i++) {
-      const a = i / seg * Math.PI * 2;
-      p.push(Math.cos(a) * R, Math.sin(a) * R, 0);
-      uv.push((Math.cos(a) + 1) / 2, (Math.sin(a) + 1) / 2);
-      if (i > 1) ind.push(0, i - 1, i);
-    }
-    return { positions: new Float32Array(p), uvs: new Float32Array(uv), indices: new Uint16Array(ind) };
-  }
-  static circle2(radius = 1, segments = 64) {
-    const positions = [0, 0, 0];
-    const uvs = [0.5, 0.5];
-    const indices = [];
-    for (let i = 0; i <= segments; i++) {
-      const angle2 = i / segments * Math.PI * 2;
-      const x = Math.cos(angle2) * radius;
-      const y = Math.sin(angle2) * radius;
-      positions.push(x, y, 0);
-      uvs.push((x / radius + 1) / 2, (y / radius + 1) / 2);
-      if (i > 0) {
-        indices.push(0, i, i + 1);
+      static cube(S = 1) {
+        const p = S / 2;
+        const positions = new Float32Array([
+          -p,
+          -p,
+          p,
+          p,
+          -p,
+          p,
+          p,
+          p,
+          p,
+          -p,
+          p,
+          p,
+          -p,
+          -p,
+          -p,
+          -p,
+          p,
+          -p,
+          p,
+          p,
+          -p,
+          p,
+          -p,
+          -p,
+          -p,
+          p,
+          -p,
+          -p,
+          p,
+          p,
+          p,
+          p,
+          p,
+          p,
+          p,
+          -p,
+          -p,
+          -p,
+          -p,
+          p,
+          -p,
+          -p,
+          p,
+          -p,
+          p,
+          -p,
+          -p,
+          p,
+          p,
+          -p,
+          -p,
+          p,
+          p,
+          -p,
+          p,
+          p,
+          p,
+          p,
+          -p,
+          p,
+          -p,
+          -p,
+          -p,
+          -p,
+          -p,
+          p,
+          -p,
+          p,
+          p,
+          -p,
+          p,
+          -p
+        ]);
+        const uvs = new Float32Array(6 * 8).fill(0);
+        const indices = [];
+        for (let i2 = 0; i2 < 6; i2++) {
+          const o = i2 * 4;
+          indices.push(o, o + 1, o + 2, o, o + 2, o + 3);
+        }
+        let i = new Uint16Array(i);
+        return { positions, uvs, i };
       }
-    }
-    indices.push(0, segments + 1, 1);
-    return {
-      positions: new Float32Array(positions),
-      uvs: new Float32Array(uvs),
-      indices: new Uint16Array(indices)
+      static sphere(R = 0.1, seg = 16) {
+        const p = [], uv = [], ind = [];
+        for (let y = 0; y <= seg; y++) {
+          const v = y / seg, \u03B8 = v * Math.PI;
+          for (let x = 0; x <= seg; x++) {
+            const u = x / seg, \u03C6 = u * Math.PI * 2;
+            p.push(R * Math.sin(\u03B8) * Math.cos(\u03C6), R * Math.cos(\u03B8), R * Math.sin(\u03B8) * Math.sin(\u03C6));
+            uv.push(u, v);
+          }
+        }
+        for (let y = 0; y < seg; y++) {
+          for (let x = 0; x < seg; x++) {
+            const i = y * (seg + 1) + x;
+            ind.push(i, i + seg + 1, i + 1, i + 1, i + seg + 1, i + seg + 2);
+          }
+        }
+        return { positions: new Float32Array(p), uvs: new Float32Array(uv), indices: new Uint16Array(ind) };
+      }
+      static pyramid(S = 1) {
+        const h = S, p = S / 2;
+        const pos = new Float32Array([
+          -p,
+          0,
+          -p,
+          p,
+          0,
+          -p,
+          p,
+          0,
+          p,
+          -p,
+          0,
+          p,
+          0,
+          h,
+          0
+        ]);
+        const uv = new Float32Array([0, 0, 1, 0, 1, 1, 0, 1, 0.5, 0]);
+        const idx = new Uint16Array([0, 1, 2, 0, 2, 3, 0, 1, 4, 1, 2, 4, 2, 3, 4, 3, 0, 4]);
+        return { positions: pos, uvs: uv, indices: idx };
+      }
+      static star(S = 1) {
+        const R = S, r = S * 0.4, v = [], uv = [], ind = [];
+        for (let i = 0; i < 10; i++) {
+          const a = i / 10 * Math.PI * 2;
+          const rr = i % 2 ? r : R;
+          v.push(Math.cos(a) * rr, Math.sin(a) * rr, 0);
+          uv.push((Math.cos(a) + 1) / 2, (Math.sin(a) + 1) / 2);
+        }
+        for (let i = 1; i < 9; i++) ind.push(0, i, i + 1);
+        ind.push(0, 9, 1);
+        return { positions: new Float32Array(v), uvs: new Float32Array(uv), indices: new Uint16Array(ind) };
+      }
+      static circle(R = 1, seg = 32) {
+        const p = [0, 0, 0], uv = [0.5, 0.5], ind = [];
+        for (let i = 0; i <= seg; i++) {
+          const a = i / seg * Math.PI * 2;
+          p.push(Math.cos(a) * R, Math.sin(a) * R, 0);
+          uv.push((Math.cos(a) + 1) / 2, (Math.sin(a) + 1) / 2);
+          if (i > 1) ind.push(0, i - 1, i);
+        }
+        return { positions: new Float32Array(p), uvs: new Float32Array(uv), indices: new Uint16Array(ind) };
+      }
+      static circle2(radius = 1, segments = 64) {
+        const positions = [0, 0, 0];
+        const uvs = [0.5, 0.5];
+        const indices = [];
+        for (let i = 0; i <= segments; i++) {
+          const angle2 = i / segments * Math.PI * 2;
+          const x = Math.cos(angle2) * radius;
+          const y = Math.sin(angle2) * radius;
+          positions.push(x, y, 0);
+          uvs.push((x / radius + 1) / 2, (y / radius + 1) / 2);
+          if (i > 0) {
+            indices.push(0, i, i + 1);
+          }
+        }
+        indices.push(0, segments + 1, 1);
+        return {
+          positions: new Float32Array(positions),
+          uvs: new Float32Array(uvs),
+          indices: new Uint16Array(indices)
+        };
+      }
+      static diamond(S = 1) {
+        const h = S, p = S / 2;
+        const pos = new Float32Array([
+          0,
+          h,
+          0,
+          -p,
+          0,
+          -p,
+          p,
+          0,
+          -p,
+          p,
+          0,
+          p,
+          -p,
+          0,
+          p,
+          0,
+          -h,
+          0
+        ]);
+        const uv = new Float32Array(6 * 2).fill(0);
+        const idx = new Uint16Array([
+          0,
+          1,
+          2,
+          0,
+          2,
+          3,
+          0,
+          3,
+          4,
+          0,
+          4,
+          1,
+          5,
+          2,
+          1,
+          5,
+          3,
+          2,
+          5,
+          4,
+          3,
+          5,
+          1,
+          4
+        ]);
+        return { positions: pos, uvs: uv, indices: idx };
+      }
+      // --- FANTASY & EFFECT GEOMETRIES -----------------------------------------
+      static thunder(S = 1) {
+        const pts = [0, 0, 0];
+        for (let i = 1; i < 8; i++) {
+          const x = (Math.random() - 0.5) * 0.2 * S;
+          const y = i * (S / 7);
+          const z = (Math.random() - 0.5) * 0.1 * S;
+          pts.push(x, y, z);
+        }
+        const p = [], uv = [], ind = [];
+        for (let i = 0; i < pts.length / 3 - 1; i++) {
+          const x1 = pts[i * 3], y1 = pts[i * 3 + 1], z1 = pts[i * 3 + 2];
+          const x2 = pts[(i + 1) * 3], y2 = pts[(i + 1) * 3 + 1], z2 = pts[(i + 1) * 3 + 2];
+          const w = 0.03 * S;
+          p.push(x1 - w, y1, z1, x1 + w, y1, z1, x2 - w, y2, z2, x2 + w, y2, z2);
+          uv.push(0, 0, 1, 0, 0, 1, 1, 1);
+          const o = i * 4;
+          ind.push(o, o + 1, o + 2, o + 1, o + 3, o + 2);
+        }
+        return { positions: new Float32Array(p), uvs: new Float32Array(uv), indices: new Uint16Array(ind) };
+      }
+      static rock(S = 1, detail = 4) {
+        const base = _GeometryFactory.sphere(S, detail);
+        const p = base.positions;
+        for (let i = 0; i < p.length; i += 3) {
+          const n = Math.random() * 0.3 + 0.85;
+          p[i] *= n;
+          p[i + 1] *= n;
+          p[i + 2] *= n;
+        }
+        return base;
+      }
+      static meteor(S = 1, detail = 6) {
+        const base = _GeometryFactory.rock(S, detail);
+        const p = base.positions;
+        for (let i = 0; i < p.length; i += 3) {
+          p[i + 1] *= 1.4 + Math.random() * 0.5;
+          p[i] *= 0.8 + Math.random() * 0.3;
+        }
+        return base;
+      }
+      static shard(S = 1) {
+        const positions = new Float32Array([
+          0,
+          0,
+          0,
+          S * 0.3,
+          0,
+          S * 0.2,
+          -S * 0.2,
+          0,
+          S * 0.3,
+          0,
+          S * 1.2,
+          0
+        ]);
+        const uvs = new Float32Array([0, 0, 1, 0, 0, 1, 1, 1]);
+        const indices = new Uint16Array([0, 1, 2, 1, 2, 3, 0, 2, 3, 0, 1, 3]);
+        return { positions, uvs, indices };
+      }
+      static circlePlane(radius = 1, segments = 32) {
+        const positions = [];
+        const uvs = [];
+        const indices = [];
+        positions.push(0, 0, 0);
+        uvs.push(0.5, 0.5);
+        for (let i = 0; i <= segments; i++) {
+          const angle2 = i / segments * Math.PI * 2;
+          const x = Math.cos(angle2) * radius;
+          const y = 0;
+          const z = Math.sin(angle2) * radius;
+          positions.push(x, y, z);
+          uvs.push((x / radius + 1) / 2, (z / radius + 1) / 2);
+        }
+        for (let i = 1; i <= segments; i++) {
+          indices.push(0, i, i + 1);
+        }
+        return {
+          positions: new Float32Array(positions),
+          uvs: new Float32Array(uvs),
+          indices: new Uint16Array(indices)
+        };
+      }
+      static ring(outerRadius = 4, innerRadiusRatio = 0.7, segments = 48, height = 0.05) {
+        const innerRadius = outerRadius * innerRadiusRatio;
+        const positions = [];
+        const uvs = [];
+        const indices = [];
+        for (let i = 0; i <= segments; i++) {
+          const angle2 = i / segments * Math.PI * 2;
+          const cos = Math.cos(angle2);
+          const sin = Math.sin(angle2);
+          positions.push(cos * outerRadius, 0, sin * outerRadius);
+          uvs.push((cos + 1) / 2, (sin + 1) / 2);
+          positions.push(cos * innerRadius, height, sin * innerRadius);
+          uvs.push((cos * innerRadius / outerRadius + 1) / 2, (sin * innerRadius / outerRadius + 1) / 2);
+        }
+        for (let i = 0; i < segments * 2; i += 2) {
+          indices.push(i, i + 1, i + 2);
+          indices.push(i + 1, i + 3, i + 2);
+        }
+        return {
+          positions: new Float32Array(positions),
+          uvs: new Float32Array(uvs),
+          indices: new Uint16Array(indices)
+        };
+      }
     };
   }
-  static diamond(S = 1) {
-    const h = S, p = S / 2;
-    const pos = new Float32Array([
-      0,
-      h,
-      0,
-      -p,
-      0,
-      -p,
-      p,
-      0,
-      -p,
-      p,
-      0,
-      p,
-      -p,
-      0,
-      p,
-      0,
-      -h,
-      0
-    ]);
-    const uv = new Float32Array(6 * 2).fill(0);
-    const idx = new Uint16Array([
-      0,
-      1,
-      2,
-      0,
-      2,
-      3,
-      0,
-      3,
-      4,
-      0,
-      4,
-      1,
-      5,
-      2,
-      1,
-      5,
-      3,
-      2,
-      5,
-      4,
-      3,
-      5,
-      1,
-      4
-    ]);
-    return { positions: pos, uvs: uv, indices: idx };
-  }
-  // --- FANTASY & EFFECT GEOMETRIES -----------------------------------------
-  static thunder(S = 1) {
-    const pts = [0, 0, 0];
-    for (let i = 1; i < 8; i++) {
-      const x = (Math.random() - 0.5) * 0.2 * S;
-      const y = i * (S / 7);
-      const z = (Math.random() - 0.5) * 0.1 * S;
-      pts.push(x, y, z);
-    }
-    const p = [], uv = [], ind = [];
-    for (let i = 0; i < pts.length / 3 - 1; i++) {
-      const x1 = pts[i * 3], y1 = pts[i * 3 + 1], z1 = pts[i * 3 + 2];
-      const x2 = pts[(i + 1) * 3], y2 = pts[(i + 1) * 3 + 1], z2 = pts[(i + 1) * 3 + 2];
-      const w = 0.03 * S;
-      p.push(x1 - w, y1, z1, x1 + w, y1, z1, x2 - w, y2, z2, x2 + w, y2, z2);
-      uv.push(0, 0, 1, 0, 0, 1, 1, 1);
-      const o = i * 4;
-      ind.push(o, o + 1, o + 2, o + 1, o + 3, o + 2);
-    }
-    return { positions: new Float32Array(p), uvs: new Float32Array(uv), indices: new Uint16Array(ind) };
-  }
-  static rock(S = 1, detail = 4) {
-    const base = _GeometryFactory.sphere(S, detail);
-    const p = base.positions;
-    for (let i = 0; i < p.length; i += 3) {
-      const n = Math.random() * 0.3 + 0.85;
-      p[i] *= n;
-      p[i + 1] *= n;
-      p[i + 2] *= n;
-    }
-    return base;
-  }
-  static meteor(S = 1, detail = 6) {
-    const base = _GeometryFactory.rock(S, detail);
-    const p = base.positions;
-    for (let i = 0; i < p.length; i += 3) {
-      p[i + 1] *= 1.4 + Math.random() * 0.5;
-      p[i] *= 0.8 + Math.random() * 0.3;
-    }
-    return base;
-  }
-  static shard(S = 1) {
-    const positions = new Float32Array([
-      0,
-      0,
-      0,
-      S * 0.3,
-      0,
-      S * 0.2,
-      -S * 0.2,
-      0,
-      S * 0.3,
-      0,
-      S * 1.2,
-      0
-    ]);
-    const uvs = new Float32Array([0, 0, 1, 0, 0, 1, 1, 1]);
-    const indices = new Uint16Array([0, 1, 2, 1, 2, 3, 0, 2, 3, 0, 1, 3]);
-    return { positions, uvs, indices };
-  }
-  static circlePlane(radius = 1, segments = 32) {
-    const positions = [];
-    const uvs = [];
-    const indices = [];
-    positions.push(0, 0, 0);
-    uvs.push(0.5, 0.5);
-    for (let i = 0; i <= segments; i++) {
-      const angle2 = i / segments * Math.PI * 2;
-      const x = Math.cos(angle2) * radius;
-      const y = 0;
-      const z = Math.sin(angle2) * radius;
-      positions.push(x, y, z);
-      uvs.push((x / radius + 1) / 2, (z / radius + 1) / 2);
-    }
-    for (let i = 1; i <= segments; i++) {
-      indices.push(0, i, i + 1);
-    }
-    return {
-      positions: new Float32Array(positions),
-      uvs: new Float32Array(uvs),
-      indices: new Uint16Array(indices)
-    };
-  }
-  static ring(outerRadius = 4, innerRadiusRatio = 0.7, segments = 48, height = 0.05) {
-    const innerRadius = outerRadius * innerRadiusRatio;
-    const positions = [];
-    const uvs = [];
-    const indices = [];
-    for (let i = 0; i <= segments; i++) {
-      const angle2 = i / segments * Math.PI * 2;
-      const cos = Math.cos(angle2);
-      const sin = Math.sin(angle2);
-      positions.push(cos * outerRadius, 0, sin * outerRadius);
-      uvs.push((cos + 1) / 2, (sin + 1) / 2);
-      positions.push(cos * innerRadius, height, sin * innerRadius);
-      uvs.push((cos * innerRadius / outerRadius + 1) / 2, (sin * innerRadius / outerRadius + 1) / 2);
-    }
-    for (let i = 0; i < segments * 2; i += 2) {
-      indices.push(i, i + 1, i + 2);
-      indices.push(i + 1, i + 3, i + 2);
-    }
-    return {
-      positions: new Float32Array(positions),
-      uvs: new Float32Array(uvs),
-      indices: new Uint16Array(indices)
-    };
-  }
-};
+});
 
 // ../../../shaders/standalone/geo.instanced.js
-var geoInstancedEffect = `struct Camera {
+var geoInstancedEffect;
+var init_geo_instanced = __esm({
+  "../../../shaders/standalone/geo.instanced.js"() {
+    geoInstancedEffect = `struct Camera {
   viewProjMatrix : mat4x4<f32>,
 };
 @group(0) @binding(0) var<uniform> camera : Camera;
@@ -10763,146 +10994,159 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
   return vec4<f32>(color, alpha);
 }
 `;
+  }
+});
 
 // ../../../engine/effects/gen.js
-var GenGeo = class {
-  constructor(device, format, type = "sphere", scale = 1) {
-    this.device = device;
-    this.format = format;
-    const geom = GeometryFactory.create(type, scale);
-    this.vertexData = geom.positions;
-    this.uvData = geom.uvs;
-    this.indexData = geom.indices;
-    this.enabled = true;
-    this._initPipeline();
-  }
-  _initPipeline() {
-    const { vertexData, uvData, indexData } = this;
-    this.vertexBuffer = this.device.createBuffer({
-      size: vertexData.byteLength,
-      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
-    });
-    this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
-    this.uvBuffer = this.device.createBuffer({
-      size: uvData.byteLength,
-      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
-    });
-    this.device.queue.writeBuffer(this.uvBuffer, 0, uvData);
-    this.indexBuffer = this.device.createBuffer({
-      size: Math.ceil(indexData.byteLength / 4) * 4,
-      usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST
-    });
-    this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
-    this.indexCount = indexData.length;
-    this.cameraBuffer = this.device.createBuffer({
-      size: 64,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
-    this.instanceTargets = [];
-    this.lerpSpeed = 0.05;
-    this.maxInstances = 5;
-    this.instanceCount = 2;
-    this.floatsPerInstance = 16 + 4;
-    for (let x = 0; x < this.maxInstances; x++) {
-      this.instanceTargets.push({
-        index: x,
-        position: [0, 0, 0],
-        currentPosition: [0, 0, 0],
-        scale: [1, 1, 1],
-        currentScale: [1, 1, 1],
-        color: [0.6, 0.8, 1, 0.4]
-      });
-    }
-    this.instanceData = new Float32Array(this.instanceCount * this.floatsPerInstance);
-    this.modelBuffer = this.device.createBuffer({
-      size: this.instanceData.byteLength,
-      usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
-    });
-    const bindGroupLayout = this.device.createBindGroupLayout({
-      entries: [
-        { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {} },
-        { binding: 1, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: { type: "read-only-storage" } }
-      ]
-    });
-    this.bindGroup = this.device.createBindGroup({
-      layout: bindGroupLayout,
-      entries: [
-        { binding: 0, resource: { buffer: this.cameraBuffer } },
-        { binding: 1, resource: { buffer: this.modelBuffer } }
-      ]
-    });
-    const shaderModule = this.device.createShaderModule({ code: geoInstancedEffect });
-    const pipelineLayout = this.device.createPipelineLayout({ bindGroupLayouts: [bindGroupLayout] });
-    this.pipeline = this.device.createRenderPipeline({
-      layout: pipelineLayout,
-      vertex: {
-        module: shaderModule,
-        entryPoint: "vsMain",
-        buffers: [
-          { arrayStride: 3 * 4, attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }] },
-          { arrayStride: 2 * 4, attributes: [{ shaderLocation: 1, offset: 0, format: "float32x2" }] }
-        ]
-      },
-      fragment: {
-        module: shaderModule,
-        entryPoint: "fsMain",
-        targets: [{
-          format: this.format,
-          blend: {
-            color: {
-              srcFactor: "src-alpha",
-              dstFactor: "one-minus-src-alpha",
-              operation: "add"
-            },
-            alpha: {
-              srcFactor: "one",
-              dstFactor: "one-minus-src-alpha",
-              operation: "add"
-            }
-          }
-        }]
-      },
-      primitive: { topology: "triangle-list" },
-      depthStencil: { depthWriteEnabled: false, depthCompare: "less-equal", format: "depth24plus" }
-    });
-  }
-  updateInstanceData = (baseModelMatrix) => {
-    const count = Math.min(this.instanceCount, this.maxInstances);
-    for (let i = 0; i < count; i++) {
-      const t = this.instanceTargets[i];
-      for (let j = 0; j < 3; j++) {
-        t.currentPosition[j] += (t.position[j] - t.currentPosition[j]) * this.lerpSpeed;
-        t.currentScale[j] += (t.scale[j] - t.currentScale[j]) * this.lerpSpeed;
+var GenGeo;
+var init_gen = __esm({
+  "../../../engine/effects/gen.js"() {
+    init_geometry_factory();
+    init_wgpu_matrix_module();
+    init_geo_instanced();
+    GenGeo = class {
+      constructor(device, format, type = "sphere", scale = 1) {
+        this.device = device;
+        this.format = format;
+        const geom = GeometryFactory.create(type, scale);
+        this.vertexData = geom.positions;
+        this.uvData = geom.uvs;
+        this.indexData = geom.indices;
+        this.enabled = true;
+        this._initPipeline();
       }
-      const local = mat4Impl.identity();
-      mat4Impl.translate(local, t.currentPosition, local);
-      mat4Impl.scale(local, t.currentScale, local);
-      const finalMat = mat4Impl.identity();
-      mat4Impl.multiply(baseModelMatrix, local, finalMat);
-      const offset = i * this.floatsPerInstance;
-      this.instanceData.set(finalMat, offset);
-      this.instanceData.set(t.color, offset + 16);
-    }
-    const activeFloatCount = count * this.floatsPerInstance;
-    const activeBytes = activeFloatCount * 4;
-    this.device.queue.writeBuffer(this.modelBuffer, 0, this.instanceData.subarray(0, activeFloatCount));
-  };
-  draw(pass, cameraMatrix) {
-    this.device.queue.writeBuffer(this.cameraBuffer, 0, cameraMatrix);
-    pass.setPipeline(this.pipeline);
-    pass.setBindGroup(0, this.bindGroup);
-    pass.setVertexBuffer(0, this.vertexBuffer);
-    pass.setVertexBuffer(1, this.uvBuffer);
-    pass.setIndexBuffer(this.indexBuffer, "uint16");
-    pass.drawIndexed(this.indexCount, this.instanceCount);
+      _initPipeline() {
+        const { vertexData, uvData, indexData } = this;
+        this.vertexBuffer = this.device.createBuffer({
+          size: vertexData.byteLength,
+          usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
+        });
+        this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
+        this.uvBuffer = this.device.createBuffer({
+          size: uvData.byteLength,
+          usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
+        });
+        this.device.queue.writeBuffer(this.uvBuffer, 0, uvData);
+        this.indexBuffer = this.device.createBuffer({
+          size: Math.ceil(indexData.byteLength / 4) * 4,
+          usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST
+        });
+        this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
+        this.indexCount = indexData.length;
+        this.cameraBuffer = this.device.createBuffer({
+          size: 64,
+          usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+        });
+        this.instanceTargets = [];
+        this.lerpSpeed = 0.05;
+        this.maxInstances = 5;
+        this.instanceCount = 2;
+        this.floatsPerInstance = 16 + 4;
+        for (let x = 0; x < this.maxInstances; x++) {
+          this.instanceTargets.push({
+            index: x,
+            position: [0, 0, 0],
+            currentPosition: [0, 0, 0],
+            scale: [1, 1, 1],
+            currentScale: [1, 1, 1],
+            color: [0.6, 0.8, 1, 0.4]
+          });
+        }
+        this.instanceData = new Float32Array(this.instanceCount * this.floatsPerInstance);
+        this.modelBuffer = this.device.createBuffer({
+          size: this.instanceData.byteLength,
+          usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
+        });
+        const bindGroupLayout = this.device.createBindGroupLayout({
+          entries: [
+            { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {} },
+            { binding: 1, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: { type: "read-only-storage" } }
+          ]
+        });
+        this.bindGroup = this.device.createBindGroup({
+          layout: bindGroupLayout,
+          entries: [
+            { binding: 0, resource: { buffer: this.cameraBuffer } },
+            { binding: 1, resource: { buffer: this.modelBuffer } }
+          ]
+        });
+        const shaderModule = this.device.createShaderModule({ code: geoInstancedEffect });
+        const pipelineLayout = this.device.createPipelineLayout({ bindGroupLayouts: [bindGroupLayout] });
+        this.pipeline = this.device.createRenderPipeline({
+          layout: pipelineLayout,
+          vertex: {
+            module: shaderModule,
+            entryPoint: "vsMain",
+            buffers: [
+              { arrayStride: 3 * 4, attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }] },
+              { arrayStride: 2 * 4, attributes: [{ shaderLocation: 1, offset: 0, format: "float32x2" }] }
+            ]
+          },
+          fragment: {
+            module: shaderModule,
+            entryPoint: "fsMain",
+            targets: [{
+              format: this.format,
+              blend: {
+                color: {
+                  srcFactor: "src-alpha",
+                  dstFactor: "one-minus-src-alpha",
+                  operation: "add"
+                },
+                alpha: {
+                  srcFactor: "one",
+                  dstFactor: "one-minus-src-alpha",
+                  operation: "add"
+                }
+              }
+            }]
+          },
+          primitive: { topology: "triangle-list" },
+          depthStencil: { depthWriteEnabled: false, depthCompare: "less-equal", format: "depth24plus" }
+        });
+      }
+      updateInstanceData = (baseModelMatrix) => {
+        const count = Math.min(this.instanceCount, this.maxInstances);
+        for (let i = 0; i < count; i++) {
+          const t = this.instanceTargets[i];
+          for (let j = 0; j < 3; j++) {
+            t.currentPosition[j] += (t.position[j] - t.currentPosition[j]) * this.lerpSpeed;
+            t.currentScale[j] += (t.scale[j] - t.currentScale[j]) * this.lerpSpeed;
+          }
+          const local = mat4Impl.identity();
+          mat4Impl.translate(local, t.currentPosition, local);
+          mat4Impl.scale(local, t.currentScale, local);
+          const finalMat = mat4Impl.identity();
+          mat4Impl.multiply(baseModelMatrix, local, finalMat);
+          const offset = i * this.floatsPerInstance;
+          this.instanceData.set(finalMat, offset);
+          this.instanceData.set(t.color, offset + 16);
+        }
+        const activeFloatCount = count * this.floatsPerInstance;
+        const activeBytes = activeFloatCount * 4;
+        this.device.queue.writeBuffer(this.modelBuffer, 0, this.instanceData.subarray(0, activeFloatCount));
+      };
+      draw(pass, cameraMatrix) {
+        this.device.queue.writeBuffer(this.cameraBuffer, 0, cameraMatrix);
+        pass.setPipeline(this.pipeline);
+        pass.setBindGroup(0, this.bindGroup);
+        pass.setVertexBuffer(0, this.vertexBuffer);
+        pass.setVertexBuffer(1, this.uvBuffer);
+        pass.setIndexBuffer(this.indexBuffer, "uint16");
+        pass.drawIndexed(this.indexCount, this.instanceCount);
+      }
+      render(transPass, mesh, viewProjMatrix) {
+        this.draw(transPass, viewProjMatrix);
+      }
+    };
   }
-  render(transPass, mesh, viewProjMatrix) {
-    this.draw(transPass, viewProjMatrix);
-  }
-};
+});
 
 // ../../../shaders/energy-bars/energy-bar-shader.js
-var hpBarEffectShaders = `
+var hpBarEffectShaders;
+var init_energy_bar_shader = __esm({
+  "../../../shaders/energy-bars/energy-bar-shader.js"() {
+    hpBarEffectShaders = `
 struct Camera {
   viewProj : mat4x4f
 };
@@ -10940,267 +11184,285 @@ fn fsMain(in : VertexOutput) -> @location(0) vec4f {
   return model.color; // filled
 }
 `;
+  }
+});
 
 // ../../../engine/effects/energy-bar.js
-var HPBarEffect = class {
-  constructor(device, format) {
-    this.device = device;
-    this.format = format;
-    this.progress = 1;
-    this.color = [0.1, 0.9, 0.1, 1];
-    this.offsetY = 48;
-    this.enabled = true;
-    this._initPipeline();
+var HPBarEffect;
+var init_energy_bar = __esm({
+  "../../../engine/effects/energy-bar.js"() {
+    init_wgpu_matrix_module();
+    init_energy_bar_shader();
+    HPBarEffect = class {
+      constructor(device, format) {
+        this.device = device;
+        this.format = format;
+        this.progress = 1;
+        this.color = [0.1, 0.9, 0.1, 1];
+        this.offsetY = 48;
+        this.enabled = true;
+        this._initPipeline();
+      }
+      _initPipeline() {
+        const W = 40;
+        const H = 3;
+        const vertexData = new Float32Array([
+          -0.5 * W,
+          0.5 * H,
+          0,
+          0.5 * W,
+          0.5 * H,
+          0,
+          -0.5 * W,
+          -0.5 * H,
+          0,
+          0.5 * W,
+          -0.5 * H,
+          0
+        ]);
+        const uvData = new Float32Array([
+          0,
+          1,
+          1,
+          1,
+          0,
+          0,
+          1,
+          0
+        ]);
+        const indexData = new Uint16Array([0, 2, 1, 1, 2, 3]);
+        this.vertexBuffer = this.device.createBuffer({
+          size: vertexData.byteLength,
+          usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
+        });
+        this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
+        this.uvBuffer = this.device.createBuffer({
+          size: uvData.byteLength,
+          usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
+        });
+        this.device.queue.writeBuffer(this.uvBuffer, 0, uvData);
+        this.indexBuffer = this.device.createBuffer({
+          size: Math.ceil(indexData.byteLength / 4) * 4,
+          usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST
+        });
+        this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
+        this.indexCount = indexData.length;
+        this.cameraBuffer = this.device.createBuffer({
+          size: 64,
+          usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+        });
+        this.modelBuffer = this.device.createBuffer({
+          size: 64 + 16 + 16,
+          usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+        });
+        const bindGroupLayout = this.device.createBindGroupLayout({
+          entries: [
+            { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {} },
+            { binding: 1, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: {} }
+          ]
+        });
+        this.bindGroup = this.device.createBindGroup({
+          layout: bindGroupLayout,
+          entries: [
+            { binding: 0, resource: { buffer: this.cameraBuffer } },
+            { binding: 1, resource: { buffer: this.modelBuffer } }
+          ]
+        });
+        const shaderModule = this.device.createShaderModule({ code: hpBarEffectShaders });
+        const pipelineLayout = this.device.createPipelineLayout({ bindGroupLayouts: [bindGroupLayout] });
+        this.pipeline = this.device.createRenderPipeline({
+          layout: pipelineLayout,
+          vertex: {
+            module: shaderModule,
+            entryPoint: "vsMain",
+            buffers: [
+              { arrayStride: 3 * 4, attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }] },
+              { arrayStride: 2 * 4, attributes: [{ shaderLocation: 1, offset: 0, format: "float32x2" }] }
+            ]
+          },
+          fragment: {
+            module: shaderModule,
+            entryPoint: "fsMain",
+            targets: [{ format: this.format }]
+          },
+          primitive: { topology: "triangle-list" },
+          depthStencil: { depthWriteEnabled: false, depthCompare: "always", format: "depth24plus" }
+        });
+      }
+      setProgress(value) {
+        this.progress = Math.max(0, Math.min(1, value));
+      }
+      setColor(r, g, b, a = 1) {
+        this.color = [r, g, b, a];
+      }
+      draw(pass, cameraMatrix, modelMatrix) {
+        const color = new Float32Array(this.color);
+        const progressData = new Float32Array([this.progress]);
+        const buffer = new ArrayBuffer(64 + 16 + 4);
+        const f32 = new Float32Array(buffer);
+        f32.set(cameraMatrix, 0);
+        this.device.queue.writeBuffer(this.cameraBuffer, 0, cameraMatrix);
+        this.device.queue.writeBuffer(this.modelBuffer, 0, modelMatrix);
+        this.device.queue.writeBuffer(this.modelBuffer, 64, color);
+        this.device.queue.writeBuffer(this.modelBuffer, 64 + 16, progressData);
+        pass.setPipeline(this.pipeline);
+        pass.setBindGroup(0, this.bindGroup);
+        pass.setVertexBuffer(0, this.vertexBuffer);
+        pass.setVertexBuffer(1, this.uvBuffer);
+        pass.setIndexBuffer(this.indexBuffer, "uint16");
+        pass.drawIndexed(this.indexCount);
+      }
+      render(pass, mesh, viewProjMatrix) {
+        const pos = mesh.position;
+        const modelMatrix = mat4Impl.identity();
+        mat4Impl.translate(modelMatrix, [pos.x, pos.y + this.offsetY, pos.z], modelMatrix);
+        this.draw(pass, viewProjMatrix, modelMatrix);
+      }
+    };
   }
-  _initPipeline() {
-    const W = 40;
-    const H = 3;
-    const vertexData = new Float32Array([
-      -0.5 * W,
-      0.5 * H,
-      0,
-      0.5 * W,
-      0.5 * H,
-      0,
-      -0.5 * W,
-      -0.5 * H,
-      0,
-      0.5 * W,
-      -0.5 * H,
-      0
-    ]);
-    const uvData = new Float32Array([
-      0,
-      1,
-      1,
-      1,
-      0,
-      0,
-      1,
-      0
-    ]);
-    const indexData = new Uint16Array([0, 2, 1, 1, 2, 3]);
-    this.vertexBuffer = this.device.createBuffer({
-      size: vertexData.byteLength,
-      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
-    });
-    this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
-    this.uvBuffer = this.device.createBuffer({
-      size: uvData.byteLength,
-      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
-    });
-    this.device.queue.writeBuffer(this.uvBuffer, 0, uvData);
-    this.indexBuffer = this.device.createBuffer({
-      size: Math.ceil(indexData.byteLength / 4) * 4,
-      usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST
-    });
-    this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
-    this.indexCount = indexData.length;
-    this.cameraBuffer = this.device.createBuffer({
-      size: 64,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
-    this.modelBuffer = this.device.createBuffer({
-      size: 64 + 16 + 16,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
-    const bindGroupLayout = this.device.createBindGroupLayout({
-      entries: [
-        { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {} },
-        { binding: 1, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: {} }
-      ]
-    });
-    this.bindGroup = this.device.createBindGroup({
-      layout: bindGroupLayout,
-      entries: [
-        { binding: 0, resource: { buffer: this.cameraBuffer } },
-        { binding: 1, resource: { buffer: this.modelBuffer } }
-      ]
-    });
-    const shaderModule = this.device.createShaderModule({ code: hpBarEffectShaders });
-    const pipelineLayout = this.device.createPipelineLayout({ bindGroupLayouts: [bindGroupLayout] });
-    this.pipeline = this.device.createRenderPipeline({
-      layout: pipelineLayout,
-      vertex: {
-        module: shaderModule,
-        entryPoint: "vsMain",
-        buffers: [
-          { arrayStride: 3 * 4, attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }] },
-          { arrayStride: 2 * 4, attributes: [{ shaderLocation: 1, offset: 0, format: "float32x2" }] }
-        ]
-      },
-      fragment: {
-        module: shaderModule,
-        entryPoint: "fsMain",
-        targets: [{ format: this.format }]
-      },
-      primitive: { topology: "triangle-list" },
-      depthStencil: { depthWriteEnabled: false, depthCompare: "always", format: "depth24plus" }
-    });
-  }
-  setProgress(value) {
-    this.progress = Math.max(0, Math.min(1, value));
-  }
-  setColor(r, g, b, a = 1) {
-    this.color = [r, g, b, a];
-  }
-  draw(pass, cameraMatrix, modelMatrix) {
-    const color = new Float32Array(this.color);
-    const progressData = new Float32Array([this.progress]);
-    const buffer = new ArrayBuffer(64 + 16 + 4);
-    const f32 = new Float32Array(buffer);
-    f32.set(cameraMatrix, 0);
-    this.device.queue.writeBuffer(this.cameraBuffer, 0, cameraMatrix);
-    this.device.queue.writeBuffer(this.modelBuffer, 0, modelMatrix);
-    this.device.queue.writeBuffer(this.modelBuffer, 64, color);
-    this.device.queue.writeBuffer(this.modelBuffer, 64 + 16, progressData);
-    pass.setPipeline(this.pipeline);
-    pass.setBindGroup(0, this.bindGroup);
-    pass.setVertexBuffer(0, this.vertexBuffer);
-    pass.setVertexBuffer(1, this.uvBuffer);
-    pass.setIndexBuffer(this.indexBuffer, "uint16");
-    pass.drawIndexed(this.indexCount);
-  }
-  render(pass, mesh, viewProjMatrix) {
-    const pos = mesh.position;
-    const modelMatrix = mat4Impl.identity();
-    mat4Impl.translate(modelMatrix, [pos.x, pos.y + this.offsetY, pos.z], modelMatrix);
-    this.draw(pass, viewProjMatrix, modelMatrix);
-  }
-};
+});
 
 // ../../../engine/effects/mana-bar.js
-var MANABarEffect = class {
-  constructor(device, format) {
-    this.device = device;
-    this.format = format;
-    this.progress = 1;
-    this.color = [0.1, 0.1, 0.9, 1];
-    this.offsetY = 45;
-    this.enabled = true;
-    this._initPipeline();
+var MANABarEffect;
+var init_mana_bar = __esm({
+  "../../../engine/effects/mana-bar.js"() {
+    init_wgpu_matrix_module();
+    init_energy_bar_shader();
+    MANABarEffect = class {
+      constructor(device, format) {
+        this.device = device;
+        this.format = format;
+        this.progress = 1;
+        this.color = [0.1, 0.1, 0.9, 1];
+        this.offsetY = 45;
+        this.enabled = true;
+        this._initPipeline();
+      }
+      _initPipeline() {
+        const W = 40;
+        const H = 3;
+        const vertexData = new Float32Array([
+          -0.5 * W,
+          0.5 * H,
+          0,
+          0.5 * W,
+          0.5 * H,
+          0,
+          -0.5 * W,
+          -0.5 * H,
+          0,
+          0.5 * W,
+          -0.5 * H,
+          0
+        ]);
+        const uvData = new Float32Array([
+          0,
+          1,
+          1,
+          1,
+          0,
+          0,
+          1,
+          0
+        ]);
+        const indexData = new Uint16Array([0, 2, 1, 1, 2, 3]);
+        this.vertexBuffer = this.device.createBuffer({
+          size: vertexData.byteLength,
+          usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
+        });
+        this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
+        this.uvBuffer = this.device.createBuffer({
+          size: uvData.byteLength,
+          usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
+        });
+        this.device.queue.writeBuffer(this.uvBuffer, 0, uvData);
+        this.indexBuffer = this.device.createBuffer({
+          size: Math.ceil(indexData.byteLength / 4) * 4,
+          usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST
+        });
+        this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
+        this.indexCount = indexData.length;
+        this.cameraBuffer = this.device.createBuffer({
+          size: 64,
+          usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+        });
+        this.modelBuffer = this.device.createBuffer({
+          size: 64 + 16 + 16,
+          usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+        });
+        const bindGroupLayout = this.device.createBindGroupLayout({
+          entries: [
+            { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {} },
+            { binding: 1, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: {} }
+          ]
+        });
+        this.bindGroup = this.device.createBindGroup({
+          layout: bindGroupLayout,
+          entries: [
+            { binding: 0, resource: { buffer: this.cameraBuffer } },
+            { binding: 1, resource: { buffer: this.modelBuffer } }
+          ]
+        });
+        const shaderModule = this.device.createShaderModule({ code: hpBarEffectShaders });
+        const pipelineLayout = this.device.createPipelineLayout({ bindGroupLayouts: [bindGroupLayout] });
+        this.pipeline = this.device.createRenderPipeline({
+          layout: pipelineLayout,
+          vertex: {
+            module: shaderModule,
+            entryPoint: "vsMain",
+            buffers: [
+              { arrayStride: 3 * 4, attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }] },
+              { arrayStride: 2 * 4, attributes: [{ shaderLocation: 1, offset: 0, format: "float32x2" }] }
+            ]
+          },
+          fragment: {
+            module: shaderModule,
+            entryPoint: "fsMain",
+            targets: [{ format: this.format }]
+          },
+          primitive: { topology: "triangle-list" },
+          depthStencil: { depthWriteEnabled: false, depthCompare: "always", format: "depth24plus" }
+        });
+      }
+      setProgress(value) {
+        this.progress = Math.max(0, Math.min(1, value));
+      }
+      setColor(r, g, b, a = 1) {
+        this.color = [r, g, b, a];
+      }
+      draw(pass, cameraMatrix, modelMatrix) {
+        const color = new Float32Array(this.color);
+        const progressData = new Float32Array([this.progress]);
+        const buffer = new ArrayBuffer(64 + 16 + 4);
+        const f32 = new Float32Array(buffer);
+        f32.set(cameraMatrix, 0);
+        this.device.queue.writeBuffer(this.cameraBuffer, 0, cameraMatrix);
+        this.device.queue.writeBuffer(this.modelBuffer, 0, modelMatrix);
+        this.device.queue.writeBuffer(this.modelBuffer, 64, color);
+        this.device.queue.writeBuffer(this.modelBuffer, 64 + 16, progressData);
+        pass.setPipeline(this.pipeline);
+        pass.setBindGroup(0, this.bindGroup);
+        pass.setVertexBuffer(0, this.vertexBuffer);
+        pass.setVertexBuffer(1, this.uvBuffer);
+        pass.setIndexBuffer(this.indexBuffer, "uint16");
+        pass.drawIndexed(this.indexCount);
+      }
+      render(pass, mesh, viewProjMatrix) {
+        const pos = mesh.position;
+        const modelMatrix = mat4Impl.identity();
+        mat4Impl.translate(modelMatrix, [pos.x, pos.y + this.offsetY, pos.z], modelMatrix);
+        this.draw(pass, viewProjMatrix, modelMatrix);
+      }
+    };
   }
-  _initPipeline() {
-    const W = 40;
-    const H = 3;
-    const vertexData = new Float32Array([
-      -0.5 * W,
-      0.5 * H,
-      0,
-      0.5 * W,
-      0.5 * H,
-      0,
-      -0.5 * W,
-      -0.5 * H,
-      0,
-      0.5 * W,
-      -0.5 * H,
-      0
-    ]);
-    const uvData = new Float32Array([
-      0,
-      1,
-      1,
-      1,
-      0,
-      0,
-      1,
-      0
-    ]);
-    const indexData = new Uint16Array([0, 2, 1, 1, 2, 3]);
-    this.vertexBuffer = this.device.createBuffer({
-      size: vertexData.byteLength,
-      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
-    });
-    this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
-    this.uvBuffer = this.device.createBuffer({
-      size: uvData.byteLength,
-      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
-    });
-    this.device.queue.writeBuffer(this.uvBuffer, 0, uvData);
-    this.indexBuffer = this.device.createBuffer({
-      size: Math.ceil(indexData.byteLength / 4) * 4,
-      usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST
-    });
-    this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
-    this.indexCount = indexData.length;
-    this.cameraBuffer = this.device.createBuffer({
-      size: 64,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
-    this.modelBuffer = this.device.createBuffer({
-      size: 64 + 16 + 16,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
-    const bindGroupLayout = this.device.createBindGroupLayout({
-      entries: [
-        { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {} },
-        { binding: 1, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: {} }
-      ]
-    });
-    this.bindGroup = this.device.createBindGroup({
-      layout: bindGroupLayout,
-      entries: [
-        { binding: 0, resource: { buffer: this.cameraBuffer } },
-        { binding: 1, resource: { buffer: this.modelBuffer } }
-      ]
-    });
-    const shaderModule = this.device.createShaderModule({ code: hpBarEffectShaders });
-    const pipelineLayout = this.device.createPipelineLayout({ bindGroupLayouts: [bindGroupLayout] });
-    this.pipeline = this.device.createRenderPipeline({
-      layout: pipelineLayout,
-      vertex: {
-        module: shaderModule,
-        entryPoint: "vsMain",
-        buffers: [
-          { arrayStride: 3 * 4, attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }] },
-          { arrayStride: 2 * 4, attributes: [{ shaderLocation: 1, offset: 0, format: "float32x2" }] }
-        ]
-      },
-      fragment: {
-        module: shaderModule,
-        entryPoint: "fsMain",
-        targets: [{ format: this.format }]
-      },
-      primitive: { topology: "triangle-list" },
-      depthStencil: { depthWriteEnabled: false, depthCompare: "always", format: "depth24plus" }
-    });
-  }
-  setProgress(value) {
-    this.progress = Math.max(0, Math.min(1, value));
-  }
-  setColor(r, g, b, a = 1) {
-    this.color = [r, g, b, a];
-  }
-  draw(pass, cameraMatrix, modelMatrix) {
-    const color = new Float32Array(this.color);
-    const progressData = new Float32Array([this.progress]);
-    const buffer = new ArrayBuffer(64 + 16 + 4);
-    const f32 = new Float32Array(buffer);
-    f32.set(cameraMatrix, 0);
-    this.device.queue.writeBuffer(this.cameraBuffer, 0, cameraMatrix);
-    this.device.queue.writeBuffer(this.modelBuffer, 0, modelMatrix);
-    this.device.queue.writeBuffer(this.modelBuffer, 64, color);
-    this.device.queue.writeBuffer(this.modelBuffer, 64 + 16, progressData);
-    pass.setPipeline(this.pipeline);
-    pass.setBindGroup(0, this.bindGroup);
-    pass.setVertexBuffer(0, this.vertexBuffer);
-    pass.setVertexBuffer(1, this.uvBuffer);
-    pass.setIndexBuffer(this.indexBuffer, "uint16");
-    pass.drawIndexed(this.indexCount);
-  }
-  render(pass, mesh, viewProjMatrix) {
-    const pos = mesh.position;
-    const modelMatrix = mat4Impl.identity();
-    mat4Impl.translate(modelMatrix, [pos.x, pos.y + this.offsetY, pos.z], modelMatrix);
-    this.draw(pass, viewProjMatrix, modelMatrix);
-  }
-};
+});
 
 // ../../../shaders/flame-effect/flameEffect.js
-var flameEffect = (
-  /* wgsl */
-  `struct Camera {
+var flameEffect;
+var init_flameEffect = __esm({
+  "../../../shaders/flame-effect/flameEffect.js"() {
+    flameEffect = /* wgsl */
+    `struct Camera {
   viewProj : mat4x4<f32>
 };
 @group(0) @binding(0) var<uniform> camera : Camera;
@@ -11279,141 +11541,152 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
   // output with premultiplied color (for additive/soft blending)
   return vec4<f32>(finalColor * alpha, alpha);
 }
-`
-);
+`;
+  }
+});
 
 // ../../../engine/effects/flame.js
-var FlameEffect = class {
-  constructor(device, format) {
-    this.device = device;
-    this.format = format;
-    this.time = 0;
-    this.intensity = 12;
-    this.enabled = true;
-    this._initPipeline();
-  }
-  _initPipeline() {
-    const S = 40;
-    const vertexData = new Float32Array([
-      -0.5 * S,
-      0.5 * S,
-      0,
-      0.5 * S,
-      0.5 * S,
-      0,
-      -0.5 * S,
-      -0.5 * S,
-      0,
-      0.5 * S,
-      -0.5 * S,
-      0
-    ]);
-    const uvData = new Float32Array([
-      0,
-      1,
-      1,
-      1,
-      0,
-      0,
-      1,
-      0
-    ]);
-    const indexData = new Uint16Array([0, 2, 1, 1, 2, 3]);
-    this.vertexBuffer = this.device.createBuffer({
-      size: vertexData.byteLength,
-      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
-    });
-    this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
-    this.uvBuffer = this.device.createBuffer({
-      size: uvData.byteLength,
-      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
-    });
-    this.device.queue.writeBuffer(this.uvBuffer, 0, uvData);
-    this.indexBuffer = this.device.createBuffer({
-      size: Math.ceil(indexData.byteLength / 4) * 4,
-      usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST
-    });
-    this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
-    this.indexCount = indexData.length;
-    this.cameraBuffer = this.device.createBuffer({
-      size: 64,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
-    this.modelBuffer = this.device.createBuffer({
-      size: 64 + 16 + 16,
-      // model + time/intensity padded
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
-    const bindGroupLayout = this.device.createBindGroupLayout({
-      entries: [
-        { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {} },
-        { binding: 1, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: {} }
-      ]
-    });
-    this.bindGroup = this.device.createBindGroup({
-      layout: bindGroupLayout,
-      entries: [
-        { binding: 0, resource: { buffer: this.cameraBuffer } },
-        { binding: 1, resource: { buffer: this.modelBuffer } }
-      ]
-    });
-    const shaderModule = this.device.createShaderModule({ code: flameEffect });
-    const pipelineLayout = this.device.createPipelineLayout({ bindGroupLayouts: [bindGroupLayout] });
-    this.pipeline = this.device.createRenderPipeline({
-      layout: pipelineLayout,
-      vertex: {
-        module: shaderModule,
-        entryPoint: "vsMain",
-        buffers: [
-          { arrayStride: 3 * 4, attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }] },
-          { arrayStride: 2 * 4, attributes: [{ shaderLocation: 1, offset: 0, format: "float32x2" }] }
-        ]
-      },
-      fragment: {
-        module: shaderModule,
-        entryPoint: "fsMain",
-        targets: [{ format: this.format }]
-      },
-      primitive: { topology: "triangle-list" },
-      depthStencil: { depthWriteEnabled: false, depthCompare: "always", format: "depth24plus" },
-      blend: {
-        color: { srcFactor: "src-alpha", dstFactor: "one", operation: "add" },
-        alpha: { srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add" }
+var FlameEffect;
+var init_flame = __esm({
+  "../../../engine/effects/flame.js"() {
+    init_wgpu_matrix_module();
+    init_flameEffect();
+    FlameEffect = class {
+      constructor(device, format) {
+        this.device = device;
+        this.format = format;
+        this.time = 0;
+        this.intensity = 12;
+        this.enabled = true;
+        this._initPipeline();
       }
-    });
+      _initPipeline() {
+        const S = 40;
+        const vertexData = new Float32Array([
+          -0.5 * S,
+          0.5 * S,
+          0,
+          0.5 * S,
+          0.5 * S,
+          0,
+          -0.5 * S,
+          -0.5 * S,
+          0,
+          0.5 * S,
+          -0.5 * S,
+          0
+        ]);
+        const uvData = new Float32Array([
+          0,
+          1,
+          1,
+          1,
+          0,
+          0,
+          1,
+          0
+        ]);
+        const indexData = new Uint16Array([0, 2, 1, 1, 2, 3]);
+        this.vertexBuffer = this.device.createBuffer({
+          size: vertexData.byteLength,
+          usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
+        });
+        this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
+        this.uvBuffer = this.device.createBuffer({
+          size: uvData.byteLength,
+          usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
+        });
+        this.device.queue.writeBuffer(this.uvBuffer, 0, uvData);
+        this.indexBuffer = this.device.createBuffer({
+          size: Math.ceil(indexData.byteLength / 4) * 4,
+          usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST
+        });
+        this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
+        this.indexCount = indexData.length;
+        this.cameraBuffer = this.device.createBuffer({
+          size: 64,
+          usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+        });
+        this.modelBuffer = this.device.createBuffer({
+          size: 64 + 16 + 16,
+          // model + time/intensity padded
+          usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+        });
+        const bindGroupLayout = this.device.createBindGroupLayout({
+          entries: [
+            { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {} },
+            { binding: 1, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: {} }
+          ]
+        });
+        this.bindGroup = this.device.createBindGroup({
+          layout: bindGroupLayout,
+          entries: [
+            { binding: 0, resource: { buffer: this.cameraBuffer } },
+            { binding: 1, resource: { buffer: this.modelBuffer } }
+          ]
+        });
+        const shaderModule = this.device.createShaderModule({ code: flameEffect });
+        const pipelineLayout = this.device.createPipelineLayout({ bindGroupLayouts: [bindGroupLayout] });
+        this.pipeline = this.device.createRenderPipeline({
+          layout: pipelineLayout,
+          vertex: {
+            module: shaderModule,
+            entryPoint: "vsMain",
+            buffers: [
+              { arrayStride: 3 * 4, attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }] },
+              { arrayStride: 2 * 4, attributes: [{ shaderLocation: 1, offset: 0, format: "float32x2" }] }
+            ]
+          },
+          fragment: {
+            module: shaderModule,
+            entryPoint: "fsMain",
+            targets: [{ format: this.format }]
+          },
+          primitive: { topology: "triangle-list" },
+          depthStencil: { depthWriteEnabled: false, depthCompare: "always", format: "depth24plus" },
+          blend: {
+            color: { srcFactor: "src-alpha", dstFactor: "one", operation: "add" },
+            alpha: { srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add" }
+          }
+        });
+      }
+      draw(pass, cameraMatrix) {
+        this.device.queue.writeBuffer(this.cameraBuffer, 0, cameraMatrix);
+        pass.setPipeline(this.pipeline);
+        pass.setBindGroup(0, this.bindGroup);
+        pass.setVertexBuffer(0, this.vertexBuffer);
+        pass.setVertexBuffer(1, this.uvBuffer);
+        pass.setIndexBuffer(this.indexBuffer, "uint16");
+        pass.drawIndexed(this.indexCount);
+      }
+      updateInstanceData = (baseModelMatrix) => {
+        const local = mat4Impl.identity();
+        mat4Impl.translate(local, [0, 20, 0], local);
+        mat4Impl.scale(local, [1, 1, 1], local);
+        const finalMat = mat4Impl.identity();
+        mat4Impl.multiply(baseModelMatrix, local, finalMat);
+        const timeBuffer = new Float32Array([this.time]);
+        const intensityBuffer = new Float32Array([this.intensity]);
+        this.device.queue.writeBuffer(this.modelBuffer, 0, finalMat);
+        this.device.queue.writeBuffer(this.modelBuffer, 64, timeBuffer);
+        this.device.queue.writeBuffer(this.modelBuffer, 80, intensityBuffer);
+      };
+      render(pass, mesh, viewProjMatrix, dt = 0.01, offsetY = 50) {
+        this.time += dt;
+        this.draw(pass, viewProjMatrix);
+      }
+      setIntensity(v) {
+        this.intensity = v;
+      }
+    };
   }
-  draw(pass, cameraMatrix) {
-    this.device.queue.writeBuffer(this.cameraBuffer, 0, cameraMatrix);
-    pass.setPipeline(this.pipeline);
-    pass.setBindGroup(0, this.bindGroup);
-    pass.setVertexBuffer(0, this.vertexBuffer);
-    pass.setVertexBuffer(1, this.uvBuffer);
-    pass.setIndexBuffer(this.indexBuffer, "uint16");
-    pass.drawIndexed(this.indexCount);
-  }
-  updateInstanceData = (baseModelMatrix) => {
-    const local = mat4Impl.identity();
-    mat4Impl.translate(local, [0, 20, 0], local);
-    mat4Impl.scale(local, [1, 1, 1], local);
-    const finalMat = mat4Impl.identity();
-    mat4Impl.multiply(baseModelMatrix, local, finalMat);
-    const timeBuffer = new Float32Array([this.time]);
-    const intensityBuffer = new Float32Array([this.intensity]);
-    this.device.queue.writeBuffer(this.modelBuffer, 0, finalMat);
-    this.device.queue.writeBuffer(this.modelBuffer, 64, timeBuffer);
-    this.device.queue.writeBuffer(this.modelBuffer, 80, intensityBuffer);
-  };
-  render(pass, mesh, viewProjMatrix, dt = 0.01, offsetY = 50) {
-    this.time += dt;
-    this.draw(pass, viewProjMatrix);
-  }
-  setIntensity(v) {
-    this.intensity = v;
-  }
-};
+});
 
 // ../../../shaders/flame-effect/flame-instanced.js
-var flameEffectInstance = `struct Camera {
+var flameEffectInstance;
+var init_flame_instanced = __esm({
+  "../../../shaders/flame-effect/flame-instanced.js"() {
+    flameEffectInstance = `struct Camera {
   viewProj : mat4x4<f32>
 };
 @group(0) @binding(0) var<uniform> camera : Camera;
@@ -11531,215 +11804,228 @@ fn fsMain(in : VSOut) -> @location(0) vec4<f32> {
   return vec4<f32>(color, alpha);
 }
 `;
+  }
+});
 
 // ../../../engine/effects/flame-emmiter.js
-var FlameEmitter = class {
-  constructor(device, format, maxParticles = 20) {
-    this.device = device;
-    this.format = format;
-    this.time = 0;
-    this.intensity = 3;
-    this.enabled = true;
-    this.maxParticles = maxParticles;
-    this.instanceTargets = [];
-    this.floatsPerInstance = 28;
-    this.instanceData = new Float32Array(maxParticles * this.floatsPerInstance);
-    this.smoothFlickeringScale = 0.1;
-    this.maxY = 1.9;
-    this.minY = 0;
-    this.swap0 = 0;
-    this.swap1 = 1;
-    this.swap2 = 2;
-    for (let i = 0; i < maxParticles; i++) {
-      this.instanceTargets.push({
-        position: [0, 0, 0],
-        currentPosition: [0, 0, 0],
-        scale: [1, 1, 1],
-        currentScale: [1, 1, 1],
-        rotation: 0.1,
-        color: [1, 0.3, 0, 0.1],
-        time: 1,
-        intensity: 1,
-        riseSpeed: 1
-      });
-    }
-    this._initPipeline();
-  }
-  recreateVertexData(S) {
-    const vertexData = new Float32Array([
-      -0.4 * S,
-      0.5 * S,
-      0 * S,
-      0.4 * S,
-      0.5 * S,
-      0 * S,
-      -0.2 * S,
-      -0.5 * S,
-      0 * S,
-      0.2 * S,
-      -0.5 * S,
-      0 * S
-    ]);
-    this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
-  }
-  recreateVertexDataRND(S) {
-    const vertexData = new Float32Array([
-      -randomFloatFromTo(0.1, 0.8) * S,
-      randomFloatFromTo(0.4, 0.6) * S,
-      0 * S,
-      randomFloatFromTo(0.1, 0.8) * S,
-      randomFloatFromTo(0.4, 0.6) * S,
-      0 * S,
-      -randomFloatFromTo(0.1, 0.4) * S,
-      -randomFloatFromTo(0.4, 0.6) * S,
-      0 * S,
-      randomFloatFromTo(0.1, 0.4) * S,
-      -randomFloatFromTo(0.4, 0.6) * S,
-      0 * S
-    ]);
-    this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
-  }
-  _initPipeline() {
-    const S = 5;
-    const vertexData = new Float32Array([
-      -0.2 * S,
-      -0.5 * S,
-      0 * S,
-      0.2 * S,
-      -0.5 * S,
-      0 * S,
-      -0.4 * S,
-      0.5 * S,
-      0 * S,
-      0.4 * S,
-      0.5 * S,
-      0 * S
-    ]);
-    const uvData = new Float32Array([0, 1, 1, 1, 0, 0, 1, 0]);
-    const indexData = new Uint16Array([0, 2, 1, 1, 2, 3]);
-    this.vertexBuffer = this.device.createBuffer({
-      size: vertexData.byteLength,
-      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
-    });
-    this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
-    this.uvBuffer = this.device.createBuffer({
-      size: uvData.byteLength,
-      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
-    });
-    this.device.queue.writeBuffer(this.uvBuffer, 0, uvData);
-    this.indexBuffer = this.device.createBuffer({
-      size: Math.ceil(indexData.byteLength / 4) * 4,
-      usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST
-    });
-    this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
-    this.indexCount = indexData.length;
-    this.cameraBuffer = this.device.createBuffer({ size: 64, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
-    this.modelBuffer = this.device.createBuffer({
-      size: this.maxParticles * this.floatsPerInstance * 4,
-      usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
-    });
-    const bindGroupLayout = this.device.createBindGroupLayout({
-      entries: [
-        { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {} },
-        { binding: 1, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: { type: "read-only-storage" } }
-      ]
-    });
-    this.bindGroup = this.device.createBindGroup({
-      layout: bindGroupLayout,
-      entries: [
-        { binding: 0, resource: { buffer: this.cameraBuffer } },
-        { binding: 1, resource: { buffer: this.modelBuffer } }
-      ]
-    });
-    const shaderModule = this.device.createShaderModule({ code: flameEffectInstance });
-    const pipelineLayout = this.device.createPipelineLayout({ bindGroupLayouts: [bindGroupLayout] });
-    this.pipeline = this.device.createRenderPipeline({
-      layout: pipelineLayout,
-      vertex: {
-        module: shaderModule,
-        entryPoint: "vsMain",
-        buffers: [
-          { arrayStride: 3 * 4, attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }] },
-          { arrayStride: 2 * 4, attributes: [{ shaderLocation: 1, offset: 0, format: "float32x2" }] }
-        ]
-      },
-      fragment: {
-        module: shaderModule,
-        entryPoint: "fsMain",
-        targets: [{ format: this.format }]
-      },
-      primitive: { topology: "triangle-list" },
-      depthStencil: { depthWriteEnabled: false, depthCompare: "less", format: "depth24plus" },
-      blend: {
-        // color: {srcFactor: "src-alpha", dstFactor: "one", operation: "add"},
-        // alpha: {srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add"}
-        color: {
-          srcFactor: "src-alpha",
-          dstFactor: "one-minus-src-alpha",
-          operation: "add"
-        },
-        alpha: {
-          srcFactor: "one",
-          dstFactor: "one-minus-src-alpha",
-          operation: "add"
+var FlameEmitter;
+var init_flame_emmiter = __esm({
+  "../../../engine/effects/flame-emmiter.js"() {
+    init_wgpu_matrix_module();
+    init_flame_instanced();
+    init_utils();
+    FlameEmitter = class {
+      constructor(device, format, maxParticles = 20) {
+        this.device = device;
+        this.format = format;
+        this.time = 0;
+        this.intensity = 3;
+        this.enabled = true;
+        this.maxParticles = maxParticles;
+        this.instanceTargets = [];
+        this.floatsPerInstance = 28;
+        this.instanceData = new Float32Array(maxParticles * this.floatsPerInstance);
+        this.smoothFlickeringScale = 0.1;
+        this.maxY = 1.9;
+        this.minY = 0;
+        this.swap0 = 0;
+        this.swap1 = 1;
+        this.swap2 = 2;
+        for (let i = 0; i < maxParticles; i++) {
+          this.instanceTargets.push({
+            position: [0, 0, 0],
+            currentPosition: [0, 0, 0],
+            scale: [1, 1, 1],
+            currentScale: [1, 1, 1],
+            rotation: 0.1,
+            color: [1, 0.3, 0, 0.1],
+            time: 1,
+            intensity: 1,
+            riseSpeed: 1
+          });
         }
+        this._initPipeline();
       }
-    });
-  }
-  updateInstanceData = (baseModelMatrix) => {
-    const count = Math.min(this.instanceTargets.length, this.maxParticles);
-    for (let i = 0; i < count; i++) {
-      const t = this.instanceTargets[i];
-      for (let j = 0; j < 3; j++) {
-        t.currentPosition[j] += (t.position[j] - t.currentPosition[j]) * 0.12;
-        t.currentScale[j] += (t.scale[j] - t.currentScale[j]) * 0.12;
+      recreateVertexData(S) {
+        const vertexData = new Float32Array([
+          -0.4 * S,
+          0.5 * S,
+          0 * S,
+          0.4 * S,
+          0.5 * S,
+          0 * S,
+          -0.2 * S,
+          -0.5 * S,
+          0 * S,
+          0.2 * S,
+          -0.5 * S,
+          0 * S
+        ]);
+        this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
       }
-      const local = mat4Impl.identity();
-      mat4Impl.translate(local, t.currentPosition, local);
-      mat4Impl.rotateY(local, t.rotation, local);
-      mat4Impl.scale(local, t.currentScale, local);
-      const finalMat = mat4Impl.identity();
-      mat4Impl.multiply(baseModelMatrix, local, finalMat);
-      const offset = i * this.floatsPerInstance;
-      this.instanceData.set(finalMat, offset);
-      this.instanceData.set([t.time, 0, 0, 0], offset + 16);
-      this.instanceData.set([t.intensity, 0, 0, 0], offset + 20);
-      this.instanceData.set([t.color[0], t.color[1], t.color[2], t.color[3] ?? 1], offset + 24);
-    }
-    this.device.queue.writeBuffer(
-      this.modelBuffer,
-      0,
-      this.instanceData.subarray(0, count * this.floatsPerInstance)
-    );
-  };
-  render(pass, mesh, viewProjMatrix, dt = 0.1) {
-    this.time += dt;
-    for (const p of this.instanceTargets) {
-      p.position[this.swap1] += dt * p.riseSpeed;
-      if (p.position[this.swap1] > this.maxY) {
-        p.position[this.swap1] = this.minY + Math.random() * 0.5;
-        p.position[this.swap0] = (Math.random() - 0.5) * 0.2;
-        p.position[this.swap2] = (Math.random() - 0.5) * 0.2 + 0.1;
-        p.riseSpeed = 0.2 + Math.random() * 1;
+      recreateVertexDataRND(S) {
+        const vertexData = new Float32Array([
+          -randomFloatFromTo(0.1, 0.8) * S,
+          randomFloatFromTo(0.4, 0.6) * S,
+          0 * S,
+          randomFloatFromTo(0.1, 0.8) * S,
+          randomFloatFromTo(0.4, 0.6) * S,
+          0 * S,
+          -randomFloatFromTo(0.1, 0.4) * S,
+          -randomFloatFromTo(0.4, 0.6) * S,
+          0 * S,
+          randomFloatFromTo(0.1, 0.4) * S,
+          -randomFloatFromTo(0.4, 0.6) * S,
+          0 * S
+        ]);
+        this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
       }
-      p.scale[0] = p.scale[1] = this.smoothFlickeringScale + Math.sin(this.time * 2 + p.position[this.swap1]) * 0.1;
-      p.rotation += dt * randomIntFromTo(3, 15);
-    }
-    this.device.queue.writeBuffer(this.cameraBuffer, 0, viewProjMatrix);
-    pass.setPipeline(this.pipeline);
-    pass.setBindGroup(0, this.bindGroup);
-    pass.setVertexBuffer(0, this.vertexBuffer);
-    pass.setVertexBuffer(1, this.uvBuffer);
-    pass.setIndexBuffer(this.indexBuffer, "uint16");
-    pass.drawIndexed(this.indexCount, this.instanceTargets.length);
+      _initPipeline() {
+        const S = 5;
+        const vertexData = new Float32Array([
+          -0.2 * S,
+          -0.5 * S,
+          0 * S,
+          0.2 * S,
+          -0.5 * S,
+          0 * S,
+          -0.4 * S,
+          0.5 * S,
+          0 * S,
+          0.4 * S,
+          0.5 * S,
+          0 * S
+        ]);
+        const uvData = new Float32Array([0, 1, 1, 1, 0, 0, 1, 0]);
+        const indexData = new Uint16Array([0, 2, 1, 1, 2, 3]);
+        this.vertexBuffer = this.device.createBuffer({
+          size: vertexData.byteLength,
+          usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
+        });
+        this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
+        this.uvBuffer = this.device.createBuffer({
+          size: uvData.byteLength,
+          usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
+        });
+        this.device.queue.writeBuffer(this.uvBuffer, 0, uvData);
+        this.indexBuffer = this.device.createBuffer({
+          size: Math.ceil(indexData.byteLength / 4) * 4,
+          usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST
+        });
+        this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
+        this.indexCount = indexData.length;
+        this.cameraBuffer = this.device.createBuffer({ size: 64, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
+        this.modelBuffer = this.device.createBuffer({
+          size: this.maxParticles * this.floatsPerInstance * 4,
+          usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
+        });
+        const bindGroupLayout = this.device.createBindGroupLayout({
+          entries: [
+            { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {} },
+            { binding: 1, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: { type: "read-only-storage" } }
+          ]
+        });
+        this.bindGroup = this.device.createBindGroup({
+          layout: bindGroupLayout,
+          entries: [
+            { binding: 0, resource: { buffer: this.cameraBuffer } },
+            { binding: 1, resource: { buffer: this.modelBuffer } }
+          ]
+        });
+        const shaderModule = this.device.createShaderModule({ code: flameEffectInstance });
+        const pipelineLayout = this.device.createPipelineLayout({ bindGroupLayouts: [bindGroupLayout] });
+        this.pipeline = this.device.createRenderPipeline({
+          layout: pipelineLayout,
+          vertex: {
+            module: shaderModule,
+            entryPoint: "vsMain",
+            buffers: [
+              { arrayStride: 3 * 4, attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }] },
+              { arrayStride: 2 * 4, attributes: [{ shaderLocation: 1, offset: 0, format: "float32x2" }] }
+            ]
+          },
+          fragment: {
+            module: shaderModule,
+            entryPoint: "fsMain",
+            targets: [{ format: this.format }]
+          },
+          primitive: { topology: "triangle-list" },
+          depthStencil: { depthWriteEnabled: false, depthCompare: "less", format: "depth24plus" },
+          blend: {
+            // color: {srcFactor: "src-alpha", dstFactor: "one", operation: "add"},
+            // alpha: {srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add"}
+            color: {
+              srcFactor: "src-alpha",
+              dstFactor: "one-minus-src-alpha",
+              operation: "add"
+            },
+            alpha: {
+              srcFactor: "one",
+              dstFactor: "one-minus-src-alpha",
+              operation: "add"
+            }
+          }
+        });
+      }
+      updateInstanceData = (baseModelMatrix) => {
+        const count = Math.min(this.instanceTargets.length, this.maxParticles);
+        for (let i = 0; i < count; i++) {
+          const t = this.instanceTargets[i];
+          for (let j = 0; j < 3; j++) {
+            t.currentPosition[j] += (t.position[j] - t.currentPosition[j]) * 0.12;
+            t.currentScale[j] += (t.scale[j] - t.currentScale[j]) * 0.12;
+          }
+          const local = mat4Impl.identity();
+          mat4Impl.translate(local, t.currentPosition, local);
+          mat4Impl.rotateY(local, t.rotation, local);
+          mat4Impl.scale(local, t.currentScale, local);
+          const finalMat = mat4Impl.identity();
+          mat4Impl.multiply(baseModelMatrix, local, finalMat);
+          const offset = i * this.floatsPerInstance;
+          this.instanceData.set(finalMat, offset);
+          this.instanceData.set([t.time, 0, 0, 0], offset + 16);
+          this.instanceData.set([t.intensity, 0, 0, 0], offset + 20);
+          this.instanceData.set([t.color[0], t.color[1], t.color[2], t.color[3] ?? 1], offset + 24);
+        }
+        this.device.queue.writeBuffer(
+          this.modelBuffer,
+          0,
+          this.instanceData.subarray(0, count * this.floatsPerInstance)
+        );
+      };
+      render(pass, mesh, viewProjMatrix, dt = 0.1) {
+        this.time += dt;
+        for (const p of this.instanceTargets) {
+          p.position[this.swap1] += dt * p.riseSpeed;
+          if (p.position[this.swap1] > this.maxY) {
+            p.position[this.swap1] = this.minY + Math.random() * 0.5;
+            p.position[this.swap0] = (Math.random() - 0.5) * 0.2;
+            p.position[this.swap2] = (Math.random() - 0.5) * 0.2 + 0.1;
+            p.riseSpeed = 0.2 + Math.random() * 1;
+          }
+          p.scale[0] = p.scale[1] = this.smoothFlickeringScale + Math.sin(this.time * 2 + p.position[this.swap1]) * 0.1;
+          p.rotation += dt * randomIntFromTo(3, 15);
+        }
+        this.device.queue.writeBuffer(this.cameraBuffer, 0, viewProjMatrix);
+        pass.setPipeline(this.pipeline);
+        pass.setBindGroup(0, this.bindGroup);
+        pass.setVertexBuffer(0, this.vertexBuffer);
+        pass.setVertexBuffer(1, this.uvBuffer);
+        pass.setIndexBuffer(this.indexBuffer, "uint16");
+        pass.drawIndexed(this.indexCount, this.instanceTargets.length);
+      }
+      setIntensity(v) {
+        this.intensity = v;
+      }
+    };
   }
-  setIntensity(v) {
-    this.intensity = v;
-  }
-};
+});
 
 // ../../../shaders/standalone/geo.tex.js
-var geoInstancedTexEffect = `
+var geoInstancedTexEffect;
+var init_geo_tex = __esm({
+  "../../../shaders/standalone/geo.tex.js"() {
+    geoInstancedTexEffect = `
 // === CAMERA & INSTANCE BUFFERS ============================================
 struct Camera {
   viewProjMatrix : mat4x4<f32>,
@@ -11818,815 +12104,83 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
   // return vec4<f32>(tintedRGB, finalAlpha);
 }
 `;
+  }
+});
 
 // ../../../engine/effects/gen-tex.js
-var GenGeoTexture = class {
-  constructor(device, format, type = "sphere", path, scale = 1) {
-    this.device = device;
-    this.format = format;
-    const geom = GeometryFactory.create(type, scale);
-    this.vertexData = geom.positions;
-    this.uvData = geom.uvs;
-    this.indexData = geom.indices;
-    this.enabled = true;
-    this.rotateEffect = true;
-    this.rotateEffectSpeed = 10;
-    this.rotateAngle = 0;
-    this.loadTexture(path).then(() => {
-      this._initPipeline();
-    });
-  }
-  async loadTexture(url) {
-    return new Promise(async (resolve, reject) => {
-      const img = await fetch(url).then((r) => r.blob()).then(createImageBitmap);
-      const texture = this.device.createTexture({
-        size: [img.width, img.height, 1],
-        format: "rgba8unorm",
-        usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT
-      });
-      this.device.queue.copyExternalImageToTexture(
-        { source: img },
-        { texture },
-        [img.width, img.height]
-      );
-      const sampler = this.device.createSampler({
-        magFilter: "linear",
-        minFilter: "linear",
-        addressModeU: "repeat",
-        addressModeV: "repeat"
-      });
-      this.texture = texture;
-      this.sampler = sampler;
-      resolve();
-    });
-  }
-  _initPipeline() {
-    const { vertexData, uvData, indexData } = this;
-    this.vertexBuffer = this.device.createBuffer({
-      size: vertexData.byteLength,
-      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
-    });
-    this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
-    this.uvBuffer = this.device.createBuffer({
-      size: uvData.byteLength,
-      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
-    });
-    this.device.queue.writeBuffer(this.uvBuffer, 0, uvData);
-    this.indexBuffer = this.device.createBuffer({
-      size: Math.ceil(indexData.byteLength / 4) * 4,
-      usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST
-    });
-    this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
-    this.indexCount = indexData.length;
-    this.cameraBuffer = this.device.createBuffer({
-      size: 64,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
-    this.instanceTargets = [];
-    this.lerpSpeed = 0.05;
-    this.maxInstances = 5;
-    this.instanceCount = 2;
-    this.floatsPerInstance = 16 + 4;
-    for (let x = 0; x < this.maxInstances; x++) {
-      this.instanceTargets.push({
-        index: x,
-        position: [0, 0, 0],
-        currentPosition: [0, 0, 0],
-        scale: [1, 1, 1],
-        currentScale: [1, 1, 1],
-        color: [0.6, 0.8, 1, 0.4]
-      });
-    }
-    this.instanceData = new Float32Array(this.instanceCount * this.floatsPerInstance);
-    this.modelBuffer = this.device.createBuffer({
-      size: this.instanceData.byteLength,
-      usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
-    });
-    const bindGroupLayout = this.device.createBindGroupLayout({
-      entries: [
-        { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {} },
-        { binding: 1, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: { type: "read-only-storage" } },
-        { binding: 2, visibility: GPUShaderStage.FRAGMENT, sampler: {} },
-        { binding: 3, visibility: GPUShaderStage.FRAGMENT, texture: {} }
-      ]
-    });
-    this.bindGroup = this.device.createBindGroup({
-      layout: bindGroupLayout,
-      entries: [
-        { binding: 0, resource: { buffer: this.cameraBuffer } },
-        { binding: 1, resource: { buffer: this.modelBuffer } },
-        { binding: 2, resource: this.sampler },
-        { binding: 3, resource: this.texture.createView() }
-      ]
-    });
-    const shaderModule = this.device.createShaderModule({ code: geoInstancedTexEffect });
-    const pipelineLayout = this.device.createPipelineLayout({ bindGroupLayouts: [bindGroupLayout] });
-    this.pipeline = this.device.createRenderPipeline({
-      layout: pipelineLayout,
-      vertex: {
-        module: shaderModule,
-        entryPoint: "vsMain",
-        buffers: [
-          { arrayStride: 3 * 4, attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }] },
-          { arrayStride: 2 * 4, attributes: [{ shaderLocation: 1, offset: 0, format: "float32x2" }] }
-        ]
-      },
-      fragment: {
-        module: shaderModule,
-        entryPoint: "fsMain",
-        targets: [{
-          format: this.format,
-          blend: {
-            color: {
-              srcFactor: "src-alpha",
-              dstFactor: "one-minus-src-alpha",
-              operation: "add"
-            },
-            alpha: {
-              srcFactor: "one",
-              dstFactor: "one-minus-src-alpha",
-              operation: "add"
-            }
-          }
-        }]
-      },
-      primitive: { topology: "triangle-list" },
-      depthStencil: { depthWriteEnabled: false, depthCompare: "less-equal", format: "depth24plus" }
-    });
-  }
-  updateInstanceData = (baseModelMatrix) => {
-    if (this.rotateEffect) {
-      this.rotateAngle = (this.rotateAngle ?? 0) + this.rotateEffectSpeed;
-      if (this.rotateAngle >= 360) {
+var GenGeoTexture;
+var init_gen_tex = __esm({
+  "../../../engine/effects/gen-tex.js"() {
+    init_geo_tex();
+    init_geometry_factory();
+    init_wgpu_matrix_module();
+    GenGeoTexture = class {
+      constructor(device, format, type = "sphere", path, scale = 1) {
+        this.device = device;
+        this.format = format;
+        const geom = GeometryFactory.create(type, scale);
+        this.vertexData = geom.positions;
+        this.uvData = geom.uvs;
+        this.indexData = geom.indices;
+        this.enabled = true;
+        this.rotateEffect = true;
+        this.rotateEffectSpeed = 10;
         this.rotateAngle = 0;
-      }
-    }
-    const count = Math.min(this.instanceCount, this.maxInstances);
-    for (let i = 0; i < count; i++) {
-      const t = this.instanceTargets[i];
-      for (let j = 0; j < 3; j++) {
-        t.currentPosition[j] += (t.position[j] - t.currentPosition[j]) * this.lerpSpeed;
-        t.currentScale[j] += (t.scale[j] - t.currentScale[j]) * this.lerpSpeed;
-      }
-      const local = mat4Impl.identity();
-      if (this.rotateEffect == true) {
-        mat4Impl.rotateY(local, this.rotateAngle, local);
-      }
-      mat4Impl.translate(local, t.currentPosition, local);
-      mat4Impl.scale(local, t.currentScale, local);
-      const finalMat = mat4Impl.identity();
-      mat4Impl.multiply(baseModelMatrix, local, finalMat);
-      const offset = i * this.floatsPerInstance;
-      this.instanceData.set(finalMat, offset);
-      this.instanceData.set(t.color, offset + 16);
-    }
-    const activeFloatCount = count * this.floatsPerInstance;
-    const activeBytes = activeFloatCount * 4;
-    this.device.queue.writeBuffer(this.modelBuffer, 0, this.instanceData.subarray(0, activeFloatCount));
-  };
-  draw(pass, cameraMatrix) {
-    this.device.queue.writeBuffer(this.cameraBuffer, 0, cameraMatrix);
-    pass.setPipeline(this.pipeline);
-    pass.setBindGroup(0, this.bindGroup);
-    pass.setVertexBuffer(0, this.vertexBuffer);
-    pass.setVertexBuffer(1, this.uvBuffer);
-    pass.setIndexBuffer(this.indexBuffer, "uint16");
-    pass.drawIndexed(this.indexCount, this.instanceCount);
-  }
-  render(transPass, mesh, viewProjMatrix) {
-    this.draw(transPass, viewProjMatrix);
-  }
-};
-
-// ../../../engine/effects/gen-tex2.js
-var GenGeoTexture2 = class {
-  constructor(device, format, type = "sphere", path, scale = 1) {
-    this.device = device;
-    this.format = format;
-    const geom = GeometryFactory.create(type, scale);
-    this.vertexData = geom.positions;
-    this.uvData = geom.uvs;
-    this.indexData = geom.indices;
-    this.enabled = true;
-    this.rotateEffect = true;
-    this.rotateEffectSpeed = 10;
-    this.rotateAngle = 0;
-    this.loadTexture(path).then(() => {
-      this._initPipeline();
-    });
-  }
-  async loadTexture(url) {
-    return new Promise(async (resolve, reject) => {
-      const img = await fetch(url).then((r) => r.blob()).then(createImageBitmap);
-      const texture = this.device.createTexture({
-        size: [img.width, img.height, 1],
-        format: "rgba8unorm",
-        usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT
-      });
-      this.device.queue.copyExternalImageToTexture(
-        { source: img },
-        { texture },
-        [img.width, img.height]
-      );
-      const sampler = this.device.createSampler({
-        magFilter: "linear",
-        minFilter: "linear",
-        addressModeU: "repeat",
-        addressModeV: "repeat"
-      });
-      this.texture = texture;
-      this.sampler = sampler;
-      resolve();
-    });
-  }
-  _initPipeline() {
-    const { vertexData, uvData, indexData } = this;
-    this.vertexBuffer = this.device.createBuffer({
-      size: Math.ceil(vertexData.byteLength / 4) * 4,
-      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
-    });
-    this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
-    this.uvBuffer = this.device.createBuffer({
-      size: Math.ceil(uvData.byteLength / 4) * 4,
-      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
-    });
-    this.device.queue.writeBuffer(this.uvBuffer, 0, uvData);
-    const alignedIndexSize = Math.ceil(indexData.byteLength / 4) * 4;
-    this.indexBuffer = this.device.createBuffer({
-      size: alignedIndexSize,
-      usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST
-    });
-    if (indexData.byteLength !== alignedIndexSize) {
-      const tmp = new Uint8Array(alignedIndexSize);
-      tmp.set(new Uint8Array(indexData.buffer));
-      this.device.queue.writeBuffer(this.indexBuffer, 0, tmp);
-    } else {
-      this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
-    }
-    this.indexCount = indexData.length;
-    this.cameraBuffer = this.device.createBuffer({
-      size: 64,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
-    this.instanceTargets = [];
-    this.lerpSpeed = 0.05;
-    this.maxInstances = 5;
-    this.instanceCount = 2;
-    this.floatsPerInstance = 16 + 4;
-    for (let x = 0; x < this.maxInstances; x++) {
-      this.instanceTargets.push({
-        index: x,
-        position: [0, 0, 0],
-        currentPosition: [0, 0, 0],
-        scale: [1, 1, 1],
-        currentScale: [1, 1, 1],
-        color: [0.6, 0.8, 1, 0.4]
-      });
-    }
-    this.instanceData = new Float32Array(this.instanceCount * this.floatsPerInstance);
-    this.modelBuffer = this.device.createBuffer({
-      size: Math.ceil(this.instanceData.byteLength / 4) * 4,
-      usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
-    });
-    const bindGroupLayout = this.device.createBindGroupLayout({
-      entries: [
-        { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {} },
-        { binding: 1, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: { type: "read-only-storage" } },
-        { binding: 2, visibility: GPUShaderStage.FRAGMENT, sampler: {} },
-        { binding: 3, visibility: GPUShaderStage.FRAGMENT, texture: {} }
-      ]
-    });
-    this.bindGroup = this.device.createBindGroup({
-      layout: bindGroupLayout,
-      entries: [
-        { binding: 0, resource: { buffer: this.cameraBuffer } },
-        { binding: 1, resource: { buffer: this.modelBuffer } },
-        { binding: 2, resource: this.sampler },
-        { binding: 3, resource: this.texture.createView() }
-      ]
-    });
-    const shaderModule = this.device.createShaderModule({ code: geoInstancedTexEffect });
-    const pipelineLayout = this.device.createPipelineLayout({ bindGroupLayouts: [bindGroupLayout] });
-    this.pipeline = this.device.createRenderPipeline({
-      layout: pipelineLayout,
-      vertex: {
-        module: shaderModule,
-        entryPoint: "vsMain",
-        buffers: [
-          { arrayStride: 3 * 4, attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }] },
-          { arrayStride: 2 * 4, attributes: [{ shaderLocation: 1, offset: 0, format: "float32x2" }] }
-        ]
-      },
-      fragment: {
-        module: shaderModule,
-        entryPoint: "fsMain",
-        targets: [{
-          format: this.format,
-          blend: {
-            color: {
-              srcFactor: "src-alpha",
-              dstFactor: "one-minus-src-alpha",
-              operation: "add"
-            },
-            alpha: {
-              srcFactor: "one",
-              dstFactor: "one-minus-src-alpha",
-              operation: "add"
-            }
-          }
-        }]
-      },
-      primitive: { topology: "triangle-list" },
-      depthStencil: { depthWriteEnabled: false, depthCompare: "less-equal", format: "depth24plus" }
-    });
-  }
-  updateInstanceData = (baseModelMatrix) => {
-    if (this.rotateEffect) {
-      this.rotateAngle = (this.rotateAngle ?? 0) + this.rotateEffectSpeed;
-      if (this.rotateAngle >= 360) {
-        this.rotateAngle = 0;
-      }
-    }
-    const count = Math.min(this.instanceCount, this.maxInstances);
-    for (let i = 0; i < count; i++) {
-      const t = this.instanceTargets[i];
-      for (let j = 0; j < 3; j++) {
-        t.currentPosition[j] += (t.position[j] - t.currentPosition[j]) * this.lerpSpeed;
-        t.currentScale[j] += (t.scale[j] - t.currentScale[j]) * this.lerpSpeed;
-      }
-      const local = mat4Impl.identity();
-      if (this.rotateEffect == true) {
-        mat4Impl.rotateY(local, this.rotateAngle, local);
-      }
-      mat4Impl.translate(local, t.currentPosition, local);
-      mat4Impl.scale(local, t.currentScale, local);
-      const finalMat = mat4Impl.identity();
-      mat4Impl.multiply(baseModelMatrix, local, finalMat);
-      const offset = i * this.floatsPerInstance;
-      this.instanceData.set(finalMat, offset);
-      this.instanceData.set(t.color, offset + 16);
-    }
-    const activeFloatCount = count * this.floatsPerInstance;
-    const activeBytes = activeFloatCount * 4;
-    this.device.queue.writeBuffer(this.modelBuffer, 0, this.instanceData.subarray(0, activeFloatCount));
-  };
-  draw(pass, cameraMatrix) {
-    this.device.queue.writeBuffer(this.cameraBuffer, 0, cameraMatrix);
-    pass.setPipeline(this.pipeline);
-    pass.setBindGroup(0, this.bindGroup);
-    pass.setVertexBuffer(0, this.vertexBuffer);
-    pass.setVertexBuffer(1, this.uvBuffer);
-    pass.setIndexBuffer(this.indexBuffer, "uint16");
-    pass.drawIndexed(this.indexCount, this.instanceCount);
-  }
-  render(transPass, mesh, viewProjMatrix) {
-    this.draw(transPass, viewProjMatrix);
-  }
-};
-
-// ../../../engine/instanced/mesh-obj-instances.js
-var MEMeshObjInstances = class extends MaterialsInstanced {
-  constructor(canvas, device, context, o, inputHandler, globalAmbient, _glbFile = null, primitiveIndex = null, skinnedNodeIndex = null) {
-    super(device, o.material, _glbFile);
-    if (typeof o.name === "undefined") o.name = genName(3);
-    if (typeof o.raycast === "undefined") {
-      this.raycast = { enabled: false, radius: 2 };
-    } else {
-      this.raycast = o.raycast;
-    }
-    this.pointerEffect = o.pointerEffect;
-    this.name = o.name;
-    this.done = false;
-    this.canvas = canvas;
-    this.device = device;
-    this.context = context;
-    this.entityArgPass = o.entityArgPass;
-    this.clearColor = "red";
-    this.video = null;
-    this.FINISH_VIDIO_INIT = false;
-    this.globalAmbient = [...globalAmbient];
-    this.blendInstanced = false;
-    if (typeof o.material.useTextureFromGlb === "undefined" || typeof o.material.useTextureFromGlb !== "boolean") {
-      o.material.useTextureFromGlb = false;
-    }
-    this.material = o.material;
-    this.mesh = o.mesh;
-    if (_glbFile != null) {
-      if (typeof this.mesh == "undefined") {
-        this.mesh = {};
-        this.mesh.feedFromRealGlb = true;
-      }
-      const verView = _glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex].positions.view;
-      const byteOffsetV = verView.byteOffset || 0;
-      const byteLengthV = verView.buffer.byteLength;
-      const vertices = new Float32Array(
-        verView.buffer.buffer,
-        byteOffsetV,
-        byteLengthV / 4
-      );
-      this.mesh.vertices = vertices;
-      const norView = _glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex].normals.view;
-      const normalsUint8 = norView.buffer;
-      const byteOffsetN = norView.byteOffset || 0;
-      const byteLengthN = normalsUint8.byteLength;
-      const normals = new Float32Array(
-        normalsUint8.buffer,
-        byteOffsetN,
-        byteLengthN / 4
-      );
-      this.mesh.vertexNormals = normals;
-      let accessor = _glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex].texcoords[0];
-      const bufferView = accessor.view;
-      const byteOffset = (bufferView.byteOffset || 0) + (accessor.byteOffset || 0);
-      const count = accessor.count * 2;
-      const uvFloatArray = new Float32Array(bufferView.buffer.buffer, byteOffset, count);
-      this.mesh.uvs = uvFloatArray;
-      this.mesh.textures = uvFloatArray;
-      let binaryI = _glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex].indices;
-      const indicesView = binaryI.view;
-      const indicesUint8 = indicesView.buffer;
-      const byteOffsetI = indicesView.byteOffset || 0;
-      const byteLengthI = indicesUint8.byteLength;
-      let indicesArray;
-      switch (binaryI.componentType) {
-        case 5121:
-          indicesArray = new Uint8Array(indicesUint8.buffer, byteOffsetI, byteLengthI);
-          break;
-        case 5123:
-          indicesArray = new Uint16Array(indicesUint8.buffer, byteOffsetI, byteLengthI / 2);
-          break;
-        case 5125:
-          indicesArray = new Uint32Array(indicesUint8.buffer, byteOffsetI, byteLengthI / 4);
-          break;
-        default:
-          throw new Error("Unknown index componentType");
-      }
-      this.mesh.indices = indicesArray;
-      let weightsView = _glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex].weights.view;
-      this.mesh.weightsView = weightsView;
-      let primitive = _glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex];
-      let finalRoundedWeights = this.getAccessorArray(_glbFile, primitive.weights.weightsAccessIndex);
-      const weightsArray = finalRoundedWeights;
-      for (let i = 0; i < weightsArray.length; i += 4) {
-        const sum = weightsArray[i] + weightsArray[i + 1] + weightsArray[i + 2] + weightsArray[i + 3];
-        if (sum > 0) {
-          const inv = 1 / sum;
-          weightsArray[i] *= inv;
-          weightsArray[i + 1] *= inv;
-          weightsArray[i + 2] *= inv;
-          weightsArray[i + 3] *= inv;
-        } else {
-          weightsArray[i] = 1;
-          weightsArray[i + 1] = 0;
-          weightsArray[i + 2] = 0;
-          weightsArray[i + 3] = 0;
-        }
-      }
-      for (let i = 0; i < weightsArray.length; i += 4) {
-        const s = weightsArray[i] + weightsArray[i + 1] + weightsArray[i + 2] + weightsArray[i + 3];
-        if (Math.abs(s - 1) > 1e-3) console.warn("Weight not normalized!", i, s);
-      }
-      this.mesh.weightsBuffer = this.device.createBuffer({
-        label: "weightsBuffer real data",
-        size: weightsArray.byteLength,
-        usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
-        mappedAtCreation: true
-      });
-      new Float32Array(this.mesh.weightsBuffer.getMappedRange()).set(weightsArray);
-      this.mesh.weightsBuffer.unmap();
-      let jointsView = _glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex].joints.view;
-      this.mesh.jointsView = jointsView;
-      let jointsArray16 = new Uint16Array(
-        jointsView.buffer,
-        jointsView.byteOffset || 0,
-        jointsView.byteLength / 2
-        // in Uint16 elements
-      );
-      const jointsArray32 = new Uint32Array(jointsArray16.length);
-      for (let i = 0; i < jointsArray16.length; i++) {
-        jointsArray32[i] = jointsArray16[i];
-      }
-      this.mesh.jointsBuffer = this.device.createBuffer({
-        label: "jointsBuffer[real-data]",
-        size: jointsArray32.byteLength,
-        usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
-        mappedAtCreation: true
-      });
-      new Uint32Array(this.mesh.jointsBuffer.getMappedRange()).set(jointsArray32);
-      this.mesh.jointsBuffer.unmap();
-      let tangentArray = null;
-      if (_glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex].tangents) {
-        const tangentView = _glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex].tangents.view;
-        const byteOffsetT = tangentView.byteOffset || 0;
-        const byteLengthT = tangentView.buffer.byteLength;
-        tangentArray = new Float32Array(
-          tangentView.buffer,
-          byteOffsetT,
-          byteLengthT / 4
-        );
-        this.mesh.tangents = tangentArray;
-        this.mesh.tangentsBuffer = this.device.createBuffer({
-          label: "tangentsBuffer[real-data]",
-          size: tangentArray.byteLength,
-          usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
-          mappedAtCreation: true
+        this.loadTexture(path).then(() => {
+          this._initPipeline();
         });
-        new Float32Array(this.mesh.tangentsBuffer.getMappedRange()).set(tangentArray);
-        this.mesh.tangentsBuffer.unmap();
-      } else {
-        const dummyTangents = new Float32Array(this.mesh.vertices.length / 3 * 4);
-        for (let i = 0; i < dummyTangents.length; i += 4) {
-          dummyTangents[i + 0] = 1;
-          dummyTangents[i + 1] = 0;
-          dummyTangents[i + 2] = 0;
-          dummyTangents[i + 3] = 1;
-        }
-        this.mesh.tangentsBuffer = this.device.createBuffer({
-          label: "tangentsBuffer dummy",
-          size: dummyTangents.byteLength,
-          usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
-          mappedAtCreation: true
-        });
-        new Float32Array(this.mesh.tangentsBuffer.getMappedRange()).set(dummyTangents);
-        this.mesh.tangentsBuffer.unmap();
-        console.warn("GLTF primitive has no TANGENT attribute (normal map won\u2019t work properly).");
       }
-    } else {
-      this.mesh.uvs = this.mesh.textures;
-    }
-    if (typeof o.objAnim !== "undefined" && o.objAnim != null) {
-      this.objAnim = o.objAnim;
-      for (var key in this.objAnim.animations) {
-        if (key != "active") this.objAnim.animations[key].speedCounter = 0;
-      }
-      console.log(`%c Mesh objAnim exist: ${o.objAnim}`, LOG_FUNNY_SMALL);
-      this.drawElements = this.drawElementsAnim;
-    }
-    this.inputHandler = inputHandler;
-    this.cameras = o.cameras;
-    this.mainCameraParams = {
-      type: o.mainCameraParams.type,
-      responseCoef: o.mainCameraParams.responseCoef
-    };
-    this.lastFrameMS = 0;
-    this.texturesPaths = [];
-    o.texturesPaths.forEach((t) => {
-      this.texturesPaths.push(t);
-    });
-    this.presentationFormat = navigator.gpu.getPreferredCanvasFormat();
-    this.position = new Position(o.position.x, o.position.y, o.position.z);
-    this.rotation = new Rotation(o.rotation.x, o.rotation.y, o.rotation.z);
-    this.rotation.rotationSpeed.x = o.rotationSpeed.x;
-    this.rotation.rotationSpeed.y = o.rotationSpeed.y;
-    this.rotation.rotationSpeed.z = o.rotationSpeed.z;
-    this.scale = o.scale;
-    if (!this.joints) {
-      const jointsData = new Uint32Array(this.mesh.vertices.length / 3 * 4);
-      const jointsBuffer = this.device.createBuffer({
-        label: "jointsBuffer",
-        size: jointsData.byteLength,
-        usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
-        mappedAtCreation: true
-      });
-      new Uint32Array(jointsBuffer.getMappedRange()).set(jointsData);
-      jointsBuffer.unmap();
-      this.joints = {
-        data: jointsData,
-        buffer: jointsBuffer,
-        stride: 16
-        // vec4<u32>
-      };
-      const numVerts = this.mesh.vertices.length / 3;
-      const weightsData = new Float32Array(numVerts * 4);
-      for (let i = 0; i < numVerts; i++) {
-        weightsData[i * 4 + 0] = 1;
-        weightsData[i * 4 + 1] = 0;
-        weightsData[i * 4 + 2] = 0;
-        weightsData[i * 4 + 3] = 0;
-      }
-      const weightsBuffer = this.device.createBuffer({
-        label: "weightsBuffer dummy",
-        size: weightsData.byteLength,
-        usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
-        mappedAtCreation: true
-      });
-      new Float32Array(weightsBuffer.getMappedRange()).set(weightsData);
-      weightsBuffer.unmap();
-      this.weights = {
-        data: weightsData,
-        buffer: weightsBuffer,
-        stride: 16
-        // vec4<f32>
-      };
-    }
-    this.runProgram = () => {
-      return new Promise(async (resolve) => {
-        this.shadowDepthTextureSize = 1024;
-        this.modelViewProjectionMatrix = mat4Impl.create();
-        this.loadTex0(this.texturesPaths).then(() => {
+      async loadTexture(url) {
+        return new Promise(async (resolve, reject) => {
+          const img = await fetch(url).then((r) => r.blob()).then(createImageBitmap);
+          const texture = this.device.createTexture({
+            size: [img.width, img.height, 1],
+            format: "rgba8unorm",
+            usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT
+          });
+          this.device.queue.copyExternalImageToTexture(
+            { source: img },
+            { texture },
+            [img.width, img.height]
+          );
+          const sampler = this.device.createSampler({
+            magFilter: "linear",
+            minFilter: "linear",
+            addressModeU: "repeat",
+            addressModeV: "repeat"
+          });
+          this.texture = texture;
+          this.sampler = sampler;
           resolve();
         });
-      });
-    };
-    this.runProgram().then(() => {
-      this.context.configure({
-        device: this.device,
-        format: this.presentationFormat,
-        alphaMode: "premultiplied"
-      });
-      this.vertexBuffer = this.device.createBuffer({
-        size: this.mesh.vertices.length * Float32Array.BYTES_PER_ELEMENT,
-        usage: GPUBufferUsage.VERTEX,
-        mappedAtCreation: true
-      });
-      {
-        new Float32Array(this.vertexBuffer.getMappedRange()).set(this.mesh.vertices);
-        this.vertexBuffer.unmap();
       }
-      this.vertexNormalsBuffer = this.device.createBuffer({
-        size: this.mesh.vertexNormals.length * Float32Array.BYTES_PER_ELEMENT,
-        usage: GPUBufferUsage.VERTEX,
-        mappedAtCreation: true
-      });
-      {
-        new Float32Array(this.vertexNormalsBuffer.getMappedRange()).set(this.mesh.vertexNormals);
-        this.vertexNormalsBuffer.unmap();
-      }
-      this.vertexTexCoordsBuffer = this.device.createBuffer({
-        size: this.mesh.textures.length * Float32Array.BYTES_PER_ELEMENT,
-        usage: GPUBufferUsage.VERTEX,
-        mappedAtCreation: true
-      });
-      {
-        new Float32Array(this.vertexTexCoordsBuffer.getMappedRange()).set(this.mesh.textures);
-        this.vertexTexCoordsBuffer.unmap();
-      }
-      this.indexCount = this.mesh.indices.length;
-      const indexCount = this.mesh.indices.length;
-      const size = Math.ceil(indexCount * Uint16Array.BYTES_PER_ELEMENT / 4) * 4;
-      this.indexBuffer = this.device.createBuffer({
-        size,
-        usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST,
-        mappedAtCreation: true
-      });
-      new Uint16Array(this.indexBuffer.getMappedRange()).set(this.mesh.indices);
-      this.indexBuffer.unmap();
-      this.indexCount = indexCount;
-      let glbInfo = {
-        arrayStride: 4 * 4,
-        // vec4<f32> = 4 * 4 bytes
-        attributes: [{ format: "float32x4", offset: 0, shaderLocation: 4 }]
-      };
-      this.vertexBuffers = [
-        {
-          arrayStride: Float32Array.BYTES_PER_ELEMENT * 3,
-          attributes: [
-            {
-              // position
-              shaderLocation: 0,
-              offset: 0,
-              format: "float32x3"
-            }
-          ]
-        },
-        {
-          arrayStride: Float32Array.BYTES_PER_ELEMENT * 3,
-          attributes: [
-            {
-              // normal
-              shaderLocation: 1,
-              offset: 0,
-              format: "float32x3"
-            }
-          ]
-        },
-        {
-          arrayStride: Float32Array.BYTES_PER_ELEMENT * 2,
-          attributes: [
-            {
-              // uvs
-              shaderLocation: 2,
-              offset: 0,
-              format: "float32x2"
-            }
-          ]
-        },
-        // joint indices
-        {
-          arrayStride: 4 * 4,
-          // vec4<u32> = 4 * 4 bytes
-          attributes: [{ format: "uint32x4", offset: 0, shaderLocation: 3 }]
-        },
-        // weights
-        glbInfo
-      ];
-      if (this.mesh.tangentsBuffer) {
-        this.vertexBuffers.push({
-          arrayStride: 4 * 4,
-          attributes: [
-            { shaderLocation: 5, format: "float32x4", offset: 0 }
-          ]
+      _initPipeline() {
+        const { vertexData, uvData, indexData } = this;
+        this.vertexBuffer = this.device.createBuffer({
+          size: vertexData.byteLength,
+          usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
         });
-      } else {
-      }
-      this.primitive = {
-        topology: "triangle-list",
-        cullMode: "back",
-        // typical for shadow passes
-        frontFace: "ccw"
-      };
-      this.selectedBuffer = device.createBuffer({
-        size: 4,
-        // just one float
-        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-      });
-      this.selectedBindGroupLayout = device.createBindGroupLayout({
-        entries: [
-          { binding: 0, visibility: GPUShaderStage.FRAGMENT, buffer: {} }
-        ]
-      });
-      this.selectedBindGroup = device.createBindGroup({
-        layout: this.selectedBindGroupLayout,
-        entries: [{ binding: 0, resource: { buffer: this.selectedBuffer } }]
-      });
-      this.setSelectedEffect = (selected = false) => {
-        this.device.queue.writeBuffer(this.selectedBuffer, 0, new Float32Array([selected ? 1 : 0]));
-      };
-      this.setSelectedEffect();
-      this.createLayoutForRender();
-      this.instanceTargets = [];
-      this.lerpSpeed = 0.05;
-      this.lerpSpeedAlpha = 0.05;
-      this.maxInstances = 5;
-      this.instanceCount = 2;
-      this.floatsPerInstance = 16 + 4;
-      for (let x = 0; x < this.maxInstances; x++) {
-        this.instanceTargets.push({
-          index: x,
-          position: [0, 0, 0],
-          currentPosition: [0, 0, 0],
-          scale: [1, 1, 1],
-          currentScale: [1, 1, 1],
-          color: [0.6, 0.8, 1, 0.4],
-          currentColor: [0.6, 0.8, 1, 0.4]
+        this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
+        this.uvBuffer = this.device.createBuffer({
+          size: uvData.byteLength,
+          usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
         });
-      }
-      this.instanceData = new Float32Array(this.instanceCount * this.floatsPerInstance);
-      this.instanceBuffer = device.createBuffer({
-        size: this.instanceData.byteLength,
-        usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
-      });
-      this.updateInstanceData = (modelMatrix) => {
-        this.instanceData.set(modelMatrix, 0);
-        this.instanceData.set([1, 1, 1, 1], 16);
-        for (let i = 1; i < this.instanceCount; i++) {
-          const t = this.instanceTargets[i];
-          const ghost = new Float32Array(modelMatrix);
-          for (let j = 0; j < 3; j++) {
-            t.currentPosition[j] += (t.position[j] - t.currentPosition[j]) * this.lerpSpeed;
-            t.currentScale[j] += (t.scale[j] - t.currentScale[j]) * this.lerpSpeed;
-            t.currentColor[j] += (t.color[j] - t.currentColor[j]) * this.lerpSpeed;
-            if (j == 2) {
-              t.currentColor[j + 1] += (t.color[j + 1] - t.currentColor[j + 1]) * this.lerpSpeedAlpha;
-            }
-          }
-          ghost[0] *= t.currentScale[0];
-          ghost[5] *= t.currentScale[1];
-          ghost[10] *= t.currentScale[2];
-          ghost[12] += t.currentPosition[0];
-          ghost[13] += t.currentPosition[1];
-          ghost[14] += t.currentPosition[2];
-          const offset = 20 * i;
-          this.instanceData.set(ghost, offset);
-          this.instanceData.set(t.currentColor, offset + 16);
-        }
-        device.queue.writeBuffer(this.instanceBuffer, 0, this.instanceData);
-      };
-      this.updateInstances = (newCount) => {
-        if (newCount > this.maxInstances) {
-          console.error(`Instance count ${newCount} exceeds buffer max ${this.maxInstances}`);
-          return;
-        }
-        this.instanceCount = newCount;
-        this.instanceData = new Float32Array(this.instanceCount * this.floatsPerInstance);
-        this.instanceBuffer = device.createBuffer({
-          size: this.instanceData.byteLength,
-          usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
+        this.device.queue.writeBuffer(this.uvBuffer, 0, uvData);
+        this.indexBuffer = this.device.createBuffer({
+          size: Math.ceil(indexData.byteLength / 4) * 4,
+          usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST
         });
-        let m = this.getModelMatrix(this.position);
-        this.updateInstanceData(m);
-        this.modelBindGroupInstanced = this.device.createBindGroup({
-          label: "modelBindGroup in mesh [instanced]",
-          layout: this.uniformBufferBindGroupLayoutInstanced,
-          entries: [
-            //
-            { binding: 0, resource: { buffer: this.instanceBuffer } },
-            { binding: 1, resource: { buffer: this.bonesBuffer } }
-          ]
+        this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
+        this.indexCount = indexData.length;
+        this.cameraBuffer = this.device.createBuffer({
+          size: 64,
+          usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
         });
-      };
-      this.updateMaxInstances = (newMax) => {
-        this.maxInstances = newMax;
+        this.instanceTargets = [];
+        this.lerpSpeed = 0.05;
+        this.maxInstances = 5;
+        this.instanceCount = 2;
+        this.floatsPerInstance = 16 + 4;
         for (let x = 0; x < this.maxInstances; x++) {
           this.instanceTargets.push({
             index: x,
@@ -12634,457 +12188,1439 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
             currentPosition: [0, 0, 0],
             scale: [1, 1, 1],
             currentScale: [1, 1, 1],
-            color: [0.6, 0.8, 1, 0.4],
-            currentColor: [0.6, 0.8, 1, 0.4]
+            color: [0.6, 0.8, 1, 0.4]
           });
         }
+        this.instanceData = new Float32Array(this.instanceCount * this.floatsPerInstance);
+        this.modelBuffer = this.device.createBuffer({
+          size: this.instanceData.byteLength,
+          usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
+        });
+        const bindGroupLayout = this.device.createBindGroupLayout({
+          entries: [
+            { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {} },
+            { binding: 1, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: { type: "read-only-storage" } },
+            { binding: 2, visibility: GPUShaderStage.FRAGMENT, sampler: {} },
+            { binding: 3, visibility: GPUShaderStage.FRAGMENT, texture: {} }
+          ]
+        });
+        this.bindGroup = this.device.createBindGroup({
+          layout: bindGroupLayout,
+          entries: [
+            { binding: 0, resource: { buffer: this.cameraBuffer } },
+            { binding: 1, resource: { buffer: this.modelBuffer } },
+            { binding: 2, resource: this.sampler },
+            { binding: 3, resource: this.texture.createView() }
+          ]
+        });
+        const shaderModule = this.device.createShaderModule({ code: geoInstancedTexEffect });
+        const pipelineLayout = this.device.createPipelineLayout({ bindGroupLayouts: [bindGroupLayout] });
+        this.pipeline = this.device.createRenderPipeline({
+          layout: pipelineLayout,
+          vertex: {
+            module: shaderModule,
+            entryPoint: "vsMain",
+            buffers: [
+              { arrayStride: 3 * 4, attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }] },
+              { arrayStride: 2 * 4, attributes: [{ shaderLocation: 1, offset: 0, format: "float32x2" }] }
+            ]
+          },
+          fragment: {
+            module: shaderModule,
+            entryPoint: "fsMain",
+            targets: [{
+              format: this.format,
+              blend: {
+                color: {
+                  srcFactor: "src-alpha",
+                  dstFactor: "one-minus-src-alpha",
+                  operation: "add"
+                },
+                alpha: {
+                  srcFactor: "one",
+                  dstFactor: "one-minus-src-alpha",
+                  operation: "add"
+                }
+              }
+            }]
+          },
+          primitive: { topology: "triangle-list" },
+          depthStencil: { depthWriteEnabled: false, depthCompare: "less-equal", format: "depth24plus" }
+        });
+      }
+      updateInstanceData = (baseModelMatrix) => {
+        if (this.rotateEffect) {
+          this.rotateAngle = (this.rotateAngle ?? 0) + this.rotateEffectSpeed;
+          if (this.rotateAngle >= 360) {
+            this.rotateAngle = 0;
+          }
+        }
+        const count = Math.min(this.instanceCount, this.maxInstances);
+        for (let i = 0; i < count; i++) {
+          const t = this.instanceTargets[i];
+          for (let j = 0; j < 3; j++) {
+            t.currentPosition[j] += (t.position[j] - t.currentPosition[j]) * this.lerpSpeed;
+            t.currentScale[j] += (t.scale[j] - t.currentScale[j]) * this.lerpSpeed;
+          }
+          const local = mat4Impl.identity();
+          if (this.rotateEffect == true) {
+            mat4Impl.rotateY(local, this.rotateAngle, local);
+          }
+          mat4Impl.translate(local, t.currentPosition, local);
+          mat4Impl.scale(local, t.currentScale, local);
+          const finalMat = mat4Impl.identity();
+          mat4Impl.multiply(baseModelMatrix, local, finalMat);
+          const offset = i * this.floatsPerInstance;
+          this.instanceData.set(finalMat, offset);
+          this.instanceData.set(t.color, offset + 16);
+        }
+        const activeFloatCount = count * this.floatsPerInstance;
+        const activeBytes = activeFloatCount * 4;
+        this.device.queue.writeBuffer(this.modelBuffer, 0, this.instanceData.subarray(0, activeFloatCount));
       };
-      this.modelUniformBuffer = this.device.createBuffer({
-        size: 4 * 16,
-        // 4x4 matrix
-        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-      });
-      this.sceneUniformBuffer = this.device.createBuffer({
-        label: "sceneUniformBuffer per mesh",
-        size: 176,
-        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-      });
-      this.uniformBufferBindGroupLayoutInstanced = this.device.createBindGroupLayout({
-        label: "uniformBufferBindGroupLayout in mesh [instanced]",
-        entries: [
-          { binding: 0, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: { type: "read-only-storage" } },
-          { binding: 1, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } }
-        ]
-      });
-      this.uniformBufferBindGroupLayout = this.device.createBindGroupLayout({
-        label: "uniformBufferBindGroupLayout in mesh [regular]",
-        entries: [
+      draw(pass, cameraMatrix) {
+        this.device.queue.writeBuffer(this.cameraBuffer, 0, cameraMatrix);
+        pass.setPipeline(this.pipeline);
+        pass.setBindGroup(0, this.bindGroup);
+        pass.setVertexBuffer(0, this.vertexBuffer);
+        pass.setVertexBuffer(1, this.uvBuffer);
+        pass.setIndexBuffer(this.indexBuffer, "uint16");
+        pass.drawIndexed(this.indexCount, this.instanceCount);
+      }
+      render(transPass, mesh, viewProjMatrix) {
+        this.draw(transPass, viewProjMatrix);
+      }
+    };
+  }
+});
+
+// ../../../engine/effects/gen-tex2.js
+var GenGeoTexture2;
+var init_gen_tex2 = __esm({
+  "../../../engine/effects/gen-tex2.js"() {
+    init_geo_tex();
+    init_geometry_factory();
+    init_wgpu_matrix_module();
+    GenGeoTexture2 = class {
+      constructor(device, format, type = "sphere", path, scale = 1) {
+        this.device = device;
+        this.format = format;
+        const geom = GeometryFactory.create(type, scale);
+        this.vertexData = geom.positions;
+        this.uvData = geom.uvs;
+        this.indexData = geom.indices;
+        this.enabled = true;
+        this.rotateEffect = true;
+        this.rotateEffectSpeed = 10;
+        this.rotateAngle = 0;
+        this.loadTexture(path).then(() => {
+          this._initPipeline();
+        });
+      }
+      async loadTexture(url) {
+        return new Promise(async (resolve, reject) => {
+          const img = await fetch(url).then((r) => r.blob()).then(createImageBitmap);
+          const texture = this.device.createTexture({
+            size: [img.width, img.height, 1],
+            format: "rgba8unorm",
+            usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT
+          });
+          this.device.queue.copyExternalImageToTexture(
+            { source: img },
+            { texture },
+            [img.width, img.height]
+          );
+          const sampler = this.device.createSampler({
+            magFilter: "linear",
+            minFilter: "linear",
+            addressModeU: "repeat",
+            addressModeV: "repeat"
+          });
+          this.texture = texture;
+          this.sampler = sampler;
+          resolve();
+        });
+      }
+      _initPipeline() {
+        const { vertexData, uvData, indexData } = this;
+        this.vertexBuffer = this.device.createBuffer({
+          size: Math.ceil(vertexData.byteLength / 4) * 4,
+          usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
+        });
+        this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
+        this.uvBuffer = this.device.createBuffer({
+          size: Math.ceil(uvData.byteLength / 4) * 4,
+          usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
+        });
+        this.device.queue.writeBuffer(this.uvBuffer, 0, uvData);
+        const alignedIndexSize = Math.ceil(indexData.byteLength / 4) * 4;
+        this.indexBuffer = this.device.createBuffer({
+          size: alignedIndexSize,
+          usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST
+        });
+        if (indexData.byteLength !== alignedIndexSize) {
+          const tmp = new Uint8Array(alignedIndexSize);
+          tmp.set(new Uint8Array(indexData.buffer));
+          this.device.queue.writeBuffer(this.indexBuffer, 0, tmp);
+        } else {
+          this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
+        }
+        this.indexCount = indexData.length;
+        this.cameraBuffer = this.device.createBuffer({
+          size: 64,
+          usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+        });
+        this.instanceTargets = [];
+        this.lerpSpeed = 0.05;
+        this.maxInstances = 5;
+        this.instanceCount = 2;
+        this.floatsPerInstance = 16 + 4;
+        for (let x = 0; x < this.maxInstances; x++) {
+          this.instanceTargets.push({
+            index: x,
+            position: [0, 0, 0],
+            currentPosition: [0, 0, 0],
+            scale: [1, 1, 1],
+            currentScale: [1, 1, 1],
+            color: [0.6, 0.8, 1, 0.4]
+          });
+        }
+        this.instanceData = new Float32Array(this.instanceCount * this.floatsPerInstance);
+        this.modelBuffer = this.device.createBuffer({
+          size: Math.ceil(this.instanceData.byteLength / 4) * 4,
+          usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
+        });
+        const bindGroupLayout = this.device.createBindGroupLayout({
+          entries: [
+            { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {} },
+            { binding: 1, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: { type: "read-only-storage" } },
+            { binding: 2, visibility: GPUShaderStage.FRAGMENT, sampler: {} },
+            { binding: 3, visibility: GPUShaderStage.FRAGMENT, texture: {} }
+          ]
+        });
+        this.bindGroup = this.device.createBindGroup({
+          layout: bindGroupLayout,
+          entries: [
+            { binding: 0, resource: { buffer: this.cameraBuffer } },
+            { binding: 1, resource: { buffer: this.modelBuffer } },
+            { binding: 2, resource: this.sampler },
+            { binding: 3, resource: this.texture.createView() }
+          ]
+        });
+        const shaderModule = this.device.createShaderModule({ code: geoInstancedTexEffect });
+        const pipelineLayout = this.device.createPipelineLayout({ bindGroupLayouts: [bindGroupLayout] });
+        this.pipeline = this.device.createRenderPipeline({
+          layout: pipelineLayout,
+          vertex: {
+            module: shaderModule,
+            entryPoint: "vsMain",
+            buffers: [
+              { arrayStride: 3 * 4, attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }] },
+              { arrayStride: 2 * 4, attributes: [{ shaderLocation: 1, offset: 0, format: "float32x2" }] }
+            ]
+          },
+          fragment: {
+            module: shaderModule,
+            entryPoint: "fsMain",
+            targets: [{
+              format: this.format,
+              blend: {
+                color: {
+                  srcFactor: "src-alpha",
+                  dstFactor: "one-minus-src-alpha",
+                  operation: "add"
+                },
+                alpha: {
+                  srcFactor: "one",
+                  dstFactor: "one-minus-src-alpha",
+                  operation: "add"
+                }
+              }
+            }]
+          },
+          primitive: { topology: "triangle-list" },
+          depthStencil: { depthWriteEnabled: false, depthCompare: "less-equal", format: "depth24plus" }
+        });
+      }
+      updateInstanceData = (baseModelMatrix) => {
+        if (this.rotateEffect) {
+          this.rotateAngle = (this.rotateAngle ?? 0) + this.rotateEffectSpeed;
+          if (this.rotateAngle >= 360) {
+            this.rotateAngle = 0;
+          }
+        }
+        const count = Math.min(this.instanceCount, this.maxInstances);
+        for (let i = 0; i < count; i++) {
+          const t = this.instanceTargets[i];
+          for (let j = 0; j < 3; j++) {
+            t.currentPosition[j] += (t.position[j] - t.currentPosition[j]) * this.lerpSpeed;
+            t.currentScale[j] += (t.scale[j] - t.currentScale[j]) * this.lerpSpeed;
+          }
+          const local = mat4Impl.identity();
+          if (this.rotateEffect == true) {
+            mat4Impl.rotateY(local, this.rotateAngle, local);
+          }
+          mat4Impl.translate(local, t.currentPosition, local);
+          mat4Impl.scale(local, t.currentScale, local);
+          const finalMat = mat4Impl.identity();
+          mat4Impl.multiply(baseModelMatrix, local, finalMat);
+          const offset = i * this.floatsPerInstance;
+          this.instanceData.set(finalMat, offset);
+          this.instanceData.set(t.color, offset + 16);
+        }
+        const activeFloatCount = count * this.floatsPerInstance;
+        const activeBytes = activeFloatCount * 4;
+        this.device.queue.writeBuffer(this.modelBuffer, 0, this.instanceData.subarray(0, activeFloatCount));
+      };
+      draw(pass, cameraMatrix) {
+        this.device.queue.writeBuffer(this.cameraBuffer, 0, cameraMatrix);
+        pass.setPipeline(this.pipeline);
+        pass.setBindGroup(0, this.bindGroup);
+        pass.setVertexBuffer(0, this.vertexBuffer);
+        pass.setVertexBuffer(1, this.uvBuffer);
+        pass.setIndexBuffer(this.indexBuffer, "uint16");
+        pass.drawIndexed(this.indexCount, this.instanceCount);
+      }
+      render(transPass, mesh, viewProjMatrix) {
+        this.draw(transPass, viewProjMatrix);
+      }
+    };
+  }
+});
+
+// ../../../engine/instanced/mesh-obj-instances.js
+var MEMeshObjInstances;
+var init_mesh_obj_instances = __esm({
+  "../../../engine/instanced/mesh-obj-instances.js"() {
+    init_wgpu_matrix_module();
+    init_matrix_class();
+    init_utils();
+    init_fragment_video_wgsl();
+    init_pointerEffect();
+    init_materials_instanced();
+    init_vertex_instanced_wgsl();
+    init_bvh_instaced();
+    init_gen();
+    init_energy_bar();
+    init_mana_bar();
+    init_flame();
+    init_flame_emmiter();
+    init_gen_tex();
+    init_gen_tex2();
+    MEMeshObjInstances = class extends MaterialsInstanced {
+      constructor(canvas, device, context, o, inputHandler, globalAmbient, _glbFile = null, primitiveIndex = null, skinnedNodeIndex = null) {
+        super(device, o.material, _glbFile);
+        if (typeof o.name === "undefined") o.name = genName(3);
+        if (typeof o.raycast === "undefined") {
+          this.raycast = { enabled: false, radius: 2 };
+        } else {
+          this.raycast = o.raycast;
+        }
+        this.pointerEffect = o.pointerEffect;
+        this.name = o.name;
+        this.done = false;
+        this.canvas = canvas;
+        this.device = device;
+        this.context = context;
+        this.entityArgPass = o.entityArgPass;
+        this.clearColor = "red";
+        this.video = null;
+        this.FINISH_VIDIO_INIT = false;
+        this.globalAmbient = [...globalAmbient];
+        this.blendInstanced = false;
+        if (typeof o.material.useTextureFromGlb === "undefined" || typeof o.material.useTextureFromGlb !== "boolean") {
+          o.material.useTextureFromGlb = false;
+        }
+        this.material = o.material;
+        this.mesh = o.mesh;
+        if (_glbFile != null) {
+          if (typeof this.mesh == "undefined") {
+            this.mesh = {};
+            this.mesh.feedFromRealGlb = true;
+          }
+          const verView = _glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex].positions.view;
+          const byteOffsetV = verView.byteOffset || 0;
+          const byteLengthV = verView.buffer.byteLength;
+          const vertices = new Float32Array(
+            verView.buffer.buffer,
+            byteOffsetV,
+            byteLengthV / 4
+          );
+          this.mesh.vertices = vertices;
+          const norView = _glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex].normals.view;
+          const normalsUint8 = norView.buffer;
+          const byteOffsetN = norView.byteOffset || 0;
+          const byteLengthN = normalsUint8.byteLength;
+          const normals = new Float32Array(
+            normalsUint8.buffer,
+            byteOffsetN,
+            byteLengthN / 4
+          );
+          this.mesh.vertexNormals = normals;
+          let accessor = _glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex].texcoords[0];
+          const bufferView = accessor.view;
+          const byteOffset = (bufferView.byteOffset || 0) + (accessor.byteOffset || 0);
+          const count = accessor.count * 2;
+          const uvFloatArray = new Float32Array(bufferView.buffer.buffer, byteOffset, count);
+          this.mesh.uvs = uvFloatArray;
+          this.mesh.textures = uvFloatArray;
+          let binaryI = _glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex].indices;
+          const indicesView = binaryI.view;
+          const indicesUint8 = indicesView.buffer;
+          const byteOffsetI = indicesView.byteOffset || 0;
+          const byteLengthI = indicesUint8.byteLength;
+          let indicesArray;
+          switch (binaryI.componentType) {
+            case 5121:
+              indicesArray = new Uint8Array(indicesUint8.buffer, byteOffsetI, byteLengthI);
+              break;
+            case 5123:
+              indicesArray = new Uint16Array(indicesUint8.buffer, byteOffsetI, byteLengthI / 2);
+              break;
+            case 5125:
+              indicesArray = new Uint32Array(indicesUint8.buffer, byteOffsetI, byteLengthI / 4);
+              break;
+            default:
+              throw new Error("Unknown index componentType");
+          }
+          this.mesh.indices = indicesArray;
+          let weightsView = _glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex].weights.view;
+          this.mesh.weightsView = weightsView;
+          let primitive = _glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex];
+          let finalRoundedWeights = this.getAccessorArray(_glbFile, primitive.weights.weightsAccessIndex);
+          const weightsArray = finalRoundedWeights;
+          for (let i = 0; i < weightsArray.length; i += 4) {
+            const sum = weightsArray[i] + weightsArray[i + 1] + weightsArray[i + 2] + weightsArray[i + 3];
+            if (sum > 0) {
+              const inv = 1 / sum;
+              weightsArray[i] *= inv;
+              weightsArray[i + 1] *= inv;
+              weightsArray[i + 2] *= inv;
+              weightsArray[i + 3] *= inv;
+            } else {
+              weightsArray[i] = 1;
+              weightsArray[i + 1] = 0;
+              weightsArray[i + 2] = 0;
+              weightsArray[i + 3] = 0;
+            }
+          }
+          for (let i = 0; i < weightsArray.length; i += 4) {
+            const s = weightsArray[i] + weightsArray[i + 1] + weightsArray[i + 2] + weightsArray[i + 3];
+            if (Math.abs(s - 1) > 1e-3) console.warn("Weight not normalized!", i, s);
+          }
+          this.mesh.weightsBuffer = this.device.createBuffer({
+            label: "weightsBuffer real data",
+            size: weightsArray.byteLength,
+            usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+            mappedAtCreation: true
+          });
+          new Float32Array(this.mesh.weightsBuffer.getMappedRange()).set(weightsArray);
+          this.mesh.weightsBuffer.unmap();
+          let jointsView = _glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex].joints.view;
+          this.mesh.jointsView = jointsView;
+          let jointsArray16 = new Uint16Array(
+            jointsView.buffer,
+            jointsView.byteOffset || 0,
+            jointsView.byteLength / 2
+            // in Uint16 elements
+          );
+          const jointsArray32 = new Uint32Array(jointsArray16.length);
+          for (let i = 0; i < jointsArray16.length; i++) {
+            jointsArray32[i] = jointsArray16[i];
+          }
+          this.mesh.jointsBuffer = this.device.createBuffer({
+            label: "jointsBuffer[real-data]",
+            size: jointsArray32.byteLength,
+            usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+            mappedAtCreation: true
+          });
+          new Uint32Array(this.mesh.jointsBuffer.getMappedRange()).set(jointsArray32);
+          this.mesh.jointsBuffer.unmap();
+          let tangentArray = null;
+          if (_glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex].tangents) {
+            const tangentView = _glbFile.skinnedMeshNodes[skinnedNodeIndex].mesh.primitives[primitiveIndex].tangents.view;
+            const byteOffsetT = tangentView.byteOffset || 0;
+            const byteLengthT = tangentView.buffer.byteLength;
+            tangentArray = new Float32Array(
+              tangentView.buffer,
+              byteOffsetT,
+              byteLengthT / 4
+            );
+            this.mesh.tangents = tangentArray;
+            this.mesh.tangentsBuffer = this.device.createBuffer({
+              label: "tangentsBuffer[real-data]",
+              size: tangentArray.byteLength,
+              usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+              mappedAtCreation: true
+            });
+            new Float32Array(this.mesh.tangentsBuffer.getMappedRange()).set(tangentArray);
+            this.mesh.tangentsBuffer.unmap();
+          } else {
+            const dummyTangents = new Float32Array(this.mesh.vertices.length / 3 * 4);
+            for (let i = 0; i < dummyTangents.length; i += 4) {
+              dummyTangents[i + 0] = 1;
+              dummyTangents[i + 1] = 0;
+              dummyTangents[i + 2] = 0;
+              dummyTangents[i + 3] = 1;
+            }
+            this.mesh.tangentsBuffer = this.device.createBuffer({
+              label: "tangentsBuffer dummy",
+              size: dummyTangents.byteLength,
+              usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+              mappedAtCreation: true
+            });
+            new Float32Array(this.mesh.tangentsBuffer.getMappedRange()).set(dummyTangents);
+            this.mesh.tangentsBuffer.unmap();
+            console.warn("GLTF primitive has no TANGENT attribute (normal map won\u2019t work properly).");
+          }
+        } else {
+          this.mesh.uvs = this.mesh.textures;
+        }
+        if (typeof o.objAnim !== "undefined" && o.objAnim != null) {
+          this.objAnim = o.objAnim;
+          for (var key in this.objAnim.animations) {
+            if (key != "active") this.objAnim.animations[key].speedCounter = 0;
+          }
+          console.log(`%c Mesh objAnim exist: ${o.objAnim}`, LOG_FUNNY_SMALL);
+          this.drawElements = this.drawElementsAnim;
+        }
+        this.inputHandler = inputHandler;
+        this.cameras = o.cameras;
+        this.mainCameraParams = {
+          type: o.mainCameraParams.type,
+          responseCoef: o.mainCameraParams.responseCoef
+        };
+        this.lastFrameMS = 0;
+        this.texturesPaths = [];
+        o.texturesPaths.forEach((t) => {
+          this.texturesPaths.push(t);
+        });
+        this.presentationFormat = navigator.gpu.getPreferredCanvasFormat();
+        this.position = new Position(o.position.x, o.position.y, o.position.z);
+        this.rotation = new Rotation(o.rotation.x, o.rotation.y, o.rotation.z);
+        this.rotation.rotationSpeed.x = o.rotationSpeed.x;
+        this.rotation.rotationSpeed.y = o.rotationSpeed.y;
+        this.rotation.rotationSpeed.z = o.rotationSpeed.z;
+        this.scale = o.scale;
+        if (!this.joints) {
+          const jointsData = new Uint32Array(this.mesh.vertices.length / 3 * 4);
+          const jointsBuffer = this.device.createBuffer({
+            label: "jointsBuffer",
+            size: jointsData.byteLength,
+            usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+            mappedAtCreation: true
+          });
+          new Uint32Array(jointsBuffer.getMappedRange()).set(jointsData);
+          jointsBuffer.unmap();
+          this.joints = {
+            data: jointsData,
+            buffer: jointsBuffer,
+            stride: 16
+            // vec4<u32>
+          };
+          const numVerts = this.mesh.vertices.length / 3;
+          const weightsData = new Float32Array(numVerts * 4);
+          for (let i = 0; i < numVerts; i++) {
+            weightsData[i * 4 + 0] = 1;
+            weightsData[i * 4 + 1] = 0;
+            weightsData[i * 4 + 2] = 0;
+            weightsData[i * 4 + 3] = 0;
+          }
+          const weightsBuffer = this.device.createBuffer({
+            label: "weightsBuffer dummy",
+            size: weightsData.byteLength,
+            usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+            mappedAtCreation: true
+          });
+          new Float32Array(weightsBuffer.getMappedRange()).set(weightsData);
+          weightsBuffer.unmap();
+          this.weights = {
+            data: weightsData,
+            buffer: weightsBuffer,
+            stride: 16
+            // vec4<f32>
+          };
+        }
+        this.runProgram = () => {
+          return new Promise(async (resolve) => {
+            this.shadowDepthTextureSize = 1024;
+            this.modelViewProjectionMatrix = mat4Impl.create();
+            this.loadTex0(this.texturesPaths).then(() => {
+              resolve();
+            });
+          });
+        };
+        this.runProgram().then(() => {
+          this.context.configure({
+            device: this.device,
+            format: this.presentationFormat,
+            alphaMode: "premultiplied"
+          });
+          this.vertexBuffer = this.device.createBuffer({
+            size: this.mesh.vertices.length * Float32Array.BYTES_PER_ELEMENT,
+            usage: GPUBufferUsage.VERTEX,
+            mappedAtCreation: true
+          });
           {
-            binding: 0,
-            visibility: GPUShaderStage.VERTEX,
-            buffer: {
-              type: "uniform"
+            new Float32Array(this.vertexBuffer.getMappedRange()).set(this.mesh.vertices);
+            this.vertexBuffer.unmap();
+          }
+          this.vertexNormalsBuffer = this.device.createBuffer({
+            size: this.mesh.vertexNormals.length * Float32Array.BYTES_PER_ELEMENT,
+            usage: GPUBufferUsage.VERTEX,
+            mappedAtCreation: true
+          });
+          {
+            new Float32Array(this.vertexNormalsBuffer.getMappedRange()).set(this.mesh.vertexNormals);
+            this.vertexNormalsBuffer.unmap();
+          }
+          this.vertexTexCoordsBuffer = this.device.createBuffer({
+            size: this.mesh.textures.length * Float32Array.BYTES_PER_ELEMENT,
+            usage: GPUBufferUsage.VERTEX,
+            mappedAtCreation: true
+          });
+          {
+            new Float32Array(this.vertexTexCoordsBuffer.getMappedRange()).set(this.mesh.textures);
+            this.vertexTexCoordsBuffer.unmap();
+          }
+          this.indexCount = this.mesh.indices.length;
+          const indexCount = this.mesh.indices.length;
+          const size = Math.ceil(indexCount * Uint16Array.BYTES_PER_ELEMENT / 4) * 4;
+          this.indexBuffer = this.device.createBuffer({
+            size,
+            usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST,
+            mappedAtCreation: true
+          });
+          new Uint16Array(this.indexBuffer.getMappedRange()).set(this.mesh.indices);
+          this.indexBuffer.unmap();
+          this.indexCount = indexCount;
+          let glbInfo = {
+            arrayStride: 4 * 4,
+            // vec4<f32> = 4 * 4 bytes
+            attributes: [{ format: "float32x4", offset: 0, shaderLocation: 4 }]
+          };
+          this.vertexBuffers = [
+            {
+              arrayStride: Float32Array.BYTES_PER_ELEMENT * 3,
+              attributes: [
+                {
+                  // position
+                  shaderLocation: 0,
+                  offset: 0,
+                  format: "float32x3"
+                }
+              ]
+            },
+            {
+              arrayStride: Float32Array.BYTES_PER_ELEMENT * 3,
+              attributes: [
+                {
+                  // normal
+                  shaderLocation: 1,
+                  offset: 0,
+                  format: "float32x3"
+                }
+              ]
+            },
+            {
+              arrayStride: Float32Array.BYTES_PER_ELEMENT * 2,
+              attributes: [
+                {
+                  // uvs
+                  shaderLocation: 2,
+                  offset: 0,
+                  format: "float32x2"
+                }
+              ]
+            },
+            // joint indices
+            {
+              arrayStride: 4 * 4,
+              // vec4<u32> = 4 * 4 bytes
+              attributes: [{ format: "uint32x4", offset: 0, shaderLocation: 3 }]
+            },
+            // weights
+            glbInfo
+          ];
+          if (this.mesh.tangentsBuffer) {
+            this.vertexBuffers.push({
+              arrayStride: 4 * 4,
+              attributes: [
+                { shaderLocation: 5, format: "float32x4", offset: 0 }
+              ]
+            });
+          } else {
+          }
+          this.primitive = {
+            topology: "triangle-list",
+            cullMode: "back",
+            // typical for shadow passes
+            frontFace: "ccw"
+          };
+          this.selectedBuffer = device.createBuffer({
+            size: 4,
+            // just one float
+            usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+          });
+          this.selectedBindGroupLayout = device.createBindGroupLayout({
+            entries: [
+              { binding: 0, visibility: GPUShaderStage.FRAGMENT, buffer: {} }
+            ]
+          });
+          this.selectedBindGroup = device.createBindGroup({
+            layout: this.selectedBindGroupLayout,
+            entries: [{ binding: 0, resource: { buffer: this.selectedBuffer } }]
+          });
+          this.setSelectedEffect = (selected = false) => {
+            this.device.queue.writeBuffer(this.selectedBuffer, 0, new Float32Array([selected ? 1 : 0]));
+          };
+          this.setSelectedEffect();
+          this.createLayoutForRender();
+          this.instanceTargets = [];
+          this.lerpSpeed = 0.05;
+          this.lerpSpeedAlpha = 0.05;
+          this.maxInstances = 5;
+          this.instanceCount = 2;
+          this.floatsPerInstance = 16 + 4;
+          for (let x = 0; x < this.maxInstances; x++) {
+            this.instanceTargets.push({
+              index: x,
+              position: [0, 0, 0],
+              currentPosition: [0, 0, 0],
+              scale: [1, 1, 1],
+              currentScale: [1, 1, 1],
+              color: [0.6, 0.8, 1, 0.4],
+              currentColor: [0.6, 0.8, 1, 0.4]
+            });
+          }
+          this.instanceData = new Float32Array(this.instanceCount * this.floatsPerInstance);
+          this.instanceBuffer = device.createBuffer({
+            size: this.instanceData.byteLength,
+            usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
+          });
+          this.updateInstanceData = (modelMatrix) => {
+            this.instanceData.set(modelMatrix, 0);
+            this.instanceData.set([1, 1, 1, 1], 16);
+            for (let i = 1; i < this.instanceCount; i++) {
+              const t = this.instanceTargets[i];
+              const ghost = new Float32Array(modelMatrix);
+              for (let j = 0; j < 3; j++) {
+                t.currentPosition[j] += (t.position[j] - t.currentPosition[j]) * this.lerpSpeed;
+                t.currentScale[j] += (t.scale[j] - t.currentScale[j]) * this.lerpSpeed;
+                t.currentColor[j] += (t.color[j] - t.currentColor[j]) * this.lerpSpeed;
+                if (j == 2) {
+                  t.currentColor[j + 1] += (t.color[j + 1] - t.currentColor[j + 1]) * this.lerpSpeedAlpha;
+                }
+              }
+              ghost[0] *= t.currentScale[0];
+              ghost[5] *= t.currentScale[1];
+              ghost[10] *= t.currentScale[2];
+              ghost[12] += t.currentPosition[0];
+              ghost[13] += t.currentPosition[1];
+              ghost[14] += t.currentPosition[2];
+              const offset = 20 * i;
+              this.instanceData.set(ghost, offset);
+              this.instanceData.set(t.currentColor, offset + 16);
+            }
+            device.queue.writeBuffer(this.instanceBuffer, 0, this.instanceData);
+          };
+          this.updateInstances = (newCount) => {
+            if (newCount > this.maxInstances) {
+              console.error(`Instance count ${newCount} exceeds buffer max ${this.maxInstances}`);
+              return;
+            }
+            this.instanceCount = newCount;
+            this.instanceData = new Float32Array(this.instanceCount * this.floatsPerInstance);
+            this.instanceBuffer = device.createBuffer({
+              size: this.instanceData.byteLength,
+              usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
+            });
+            let m = this.getModelMatrix(this.position);
+            this.updateInstanceData(m);
+            this.modelBindGroupInstanced = this.device.createBindGroup({
+              label: "modelBindGroup in mesh [instanced]",
+              layout: this.uniformBufferBindGroupLayoutInstanced,
+              entries: [
+                //
+                { binding: 0, resource: { buffer: this.instanceBuffer } },
+                { binding: 1, resource: { buffer: this.bonesBuffer } }
+              ]
+            });
+          };
+          this.updateMaxInstances = (newMax) => {
+            this.maxInstances = newMax;
+            for (let x = 0; x < this.maxInstances; x++) {
+              this.instanceTargets.push({
+                index: x,
+                position: [0, 0, 0],
+                currentPosition: [0, 0, 0],
+                scale: [1, 1, 1],
+                currentScale: [1, 1, 1],
+                color: [0.6, 0.8, 1, 0.4],
+                currentColor: [0.6, 0.8, 1, 0.4]
+              });
+            }
+          };
+          this.modelUniformBuffer = this.device.createBuffer({
+            size: 4 * 16,
+            // 4x4 matrix
+            usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+          });
+          this.sceneUniformBuffer = this.device.createBuffer({
+            label: "sceneUniformBuffer per mesh",
+            size: 176,
+            usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+          });
+          this.uniformBufferBindGroupLayoutInstanced = this.device.createBindGroupLayout({
+            label: "uniformBufferBindGroupLayout in mesh [instanced]",
+            entries: [
+              { binding: 0, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: { type: "read-only-storage" } },
+              { binding: 1, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } }
+            ]
+          });
+          this.uniformBufferBindGroupLayout = this.device.createBindGroupLayout({
+            label: "uniformBufferBindGroupLayout in mesh [regular]",
+            entries: [
+              {
+                binding: 0,
+                visibility: GPUShaderStage.VERTEX,
+                buffer: {
+                  type: "uniform"
+                }
+              },
+              {
+                binding: 1,
+                visibility: GPUShaderStage.VERTEX,
+                buffer: {
+                  type: "uniform"
+                }
+              }
+            ]
+          });
+          function alignTo256(n) {
+            return Math.ceil(n / 256) * 256;
+          }
+          let MAX_BONES = 100;
+          this.MAX_BONES = MAX_BONES;
+          this.bonesBuffer = device.createBuffer({
+            label: "bonesBuffer",
+            size: alignTo256(64 * MAX_BONES),
+            usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+          });
+          const bones = new Float32Array(this.MAX_BONES * 16);
+          for (let i = 0; i < this.MAX_BONES; i++) {
+            bones.set([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1], i * 16);
+          }
+          this.device.queue.writeBuffer(this.bonesBuffer, 0, bones);
+          this.modelBindGroup = this.device.createBindGroup({
+            label: "modelBindGroup in mesh",
+            layout: this.uniformBufferBindGroupLayout,
+            entries: [
+              //
+              { binding: 0, resource: { buffer: this.modelUniformBuffer } },
+              { binding: 1, resource: { buffer: this.bonesBuffer } }
+            ]
+          });
+          this.modelBindGroupInstanced = this.device.createBindGroup({
+            label: "modelBindGroup in mesh [instanced]",
+            layout: this.uniformBufferBindGroupLayoutInstanced,
+            entries: [
+              //
+              { binding: 0, resource: { buffer: this.instanceBuffer } },
+              { binding: 1, resource: { buffer: this.bonesBuffer } }
+            ]
+          });
+          this.mainPassBindGroupLayout = this.device.createBindGroupLayout({
+            label: "mainPassBindGroupLayout mesh [instaced]",
+            entries: [
+              { binding: 0, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: "depth" } },
+              { binding: 1, visibility: GPUShaderStage.FRAGMENT, sampler: { type: "comparison" } }
+            ]
+          });
+          this.effects = {};
+          if (this.pointerEffect && this.pointerEffect.enabled === true) {
+            let pf = navigator.gpu.getPreferredCanvasFormat();
+            if (typeof this.pointerEffect.pointer !== "undefined" && this.pointerEffect.pointer == true) {
+              this.effects.pointer = new PointerEffect(device, pf, this, true);
+            }
+            if (typeof this.pointerEffect.ballEffect !== "undefined" && this.pointerEffect.ballEffect == true) {
+              this.effects.ballEffect = new GenGeo(device, pf, "sphere");
+            }
+            if (typeof this.pointerEffect.energyBar !== "undefined" && this.pointerEffect.energyBar == true) {
+              this.effects.energyBar = new HPBarEffect(device, pf);
+              this.effects.manaBar = new MANABarEffect(device, pf);
+            }
+            if (typeof this.pointerEffect.flameEffect !== "undefined" && this.pointerEffect.flameEffect == true) {
+              this.effects.flameEffect = new FlameEffect(device, pf);
+            }
+            if (typeof this.pointerEffect.flameEmitter !== "undefined" && this.pointerEffect.flameEmitter == true) {
+              this.effects.flameEmitter = new FlameEmitter(device, pf);
+            }
+            if (typeof this.pointerEffect.circlePlane !== "undefined" && this.pointerEffect.circlePlane == true) {
+              this.effects.circlePlane = new GenGeo(device, pf, "circlePlane");
+            }
+            if (typeof this.pointerEffect.circlePlaneTex !== "undefined" && this.pointerEffect.circlePlaneTex == true) {
+              this.effects.circlePlaneTex = new GenGeoTexture(device, pf, "ring", this.pointerEffect.circlePlaneTexPath);
+            }
+            if (typeof this.pointerEffect.circle !== "undefined" && this.pointerEffect.circlePlaneTexPath !== "undefined") {
+              this.effects.circle = new GenGeoTexture2(device, pf, "circle2", this.pointerEffect.circlePlaneTexPath);
+            }
+          }
+          this.getTransformationMatrix = (mainRenderBundle, spotLight, index) => {
+            const now = Date.now();
+            const dt = (now - this.lastFrameMS) / this.mainCameraParams.responseCoef;
+            this.lastFrameMS = now;
+            const camera = this.cameras[this.mainCameraParams.type];
+            if (index == 0) camera.update(dt, inputHandler());
+            const camVP = mat4Impl.multiply(camera.projectionMatrix, camera.view);
+            const sceneData = new Float32Array(44);
+            sceneData.set(spotLight.viewProjMatrix, 0);
+            sceneData.set(camVP, 16);
+            sceneData.set([camera.position.x, camera.position.y, camera.position.z, 0], 32);
+            sceneData.set([spotLight.position[0], spotLight.position[1], spotLight.position[2], 0], 36);
+            sceneData.set([this.globalAmbient[0], this.globalAmbient[1], this.globalAmbient[2], 0], 40);
+            device.queue.writeBuffer(
+              this.sceneUniformBuffer,
+              0,
+              sceneData.buffer,
+              sceneData.byteOffset,
+              sceneData.byteLength
+            );
+          };
+          this.getModelMatrix = (pos) => {
+            let modelMatrix = mat4Impl.identity();
+            mat4Impl.translate(modelMatrix, [pos.x, pos.y, pos.z], modelMatrix);
+            if (this.itIsPhysicsBody) {
+              mat4Impl.rotate(
+                modelMatrix,
+                [this.rotation.axis.x, this.rotation.axis.y, this.rotation.axis.z],
+                degToRad(this.rotation.angle),
+                modelMatrix
+              );
+            } else {
+              mat4Impl.rotateX(modelMatrix, this.rotation.getRotX(), modelMatrix);
+              mat4Impl.rotateY(modelMatrix, this.rotation.getRotY(), modelMatrix);
+              mat4Impl.rotateZ(modelMatrix, this.rotation.getRotZ(), modelMatrix);
+            }
+            if (this.glb || this.objAnim) {
+              mat4Impl.scale(modelMatrix, [this.scale[0], this.scale[1], this.scale[2]], modelMatrix);
+            }
+            return modelMatrix;
+          };
+          this.done = true;
+          try {
+            this.setupPipeline();
+          } catch (err) {
+            console.log("err in create pipeline in init ", err);
+          }
+        }).then(() => {
+          if (typeof this.objAnim !== "undefined" && this.objAnim !== null) {
+            console.log("after all updateMeshListBuffers...");
+            this.updateMeshListBuffers();
+          }
+        });
+      }
+      setupPipeline = () => {
+        this.createBindGroupForRender();
+        const baseDesc = {
+          label: "Mesh Pipeline Base",
+          layout: this.device.createPipelineLayout({
+            label: "createPipelineLayout Mesh",
+            bindGroupLayouts: [
+              this.bglForRender,
+              this.uniformBufferBindGroupLayoutInstanced,
+              this.selectedBindGroupLayout
+            ]
+          }),
+          vertex: {
+            entryPoint: "main",
+            module: this.device.createShaderModule({
+              code: vertexWGSLInstanced
+            }),
+            buffers: this.vertexBuffers
+          },
+          fragment: {
+            entryPoint: "main",
+            module: this.device.createShaderModule({
+              code: this.isVideo == true ? fragmentVideoWGSL : this.getMaterial()
+            }),
+            constants: {
+              shadowDepthTextureSize: this.shadowDepthTextureSize
             }
           },
-          {
-            binding: 1,
-            visibility: GPUShaderStage.VERTEX,
-            buffer: {
-              type: "uniform"
-            }
+          depthStencil: {
+            depthWriteEnabled: true,
+            depthCompare: "less",
+            format: "depth24plus"
+          },
+          primitive: this.primitive
+        };
+        this.pipeline = this.device.createRenderPipeline({
+          ...baseDesc,
+          label: "Mesh Pipeline Opaque \u2705",
+          fragment: {
+            ...baseDesc.fragment,
+            targets: [{
+              format: this.presentationFormat,
+              blend: void 0
+            }]
           }
-        ]
-      });
-      function alignTo256(n) {
-        return Math.ceil(n / 256) * 256;
-      }
-      let MAX_BONES = 100;
-      this.MAX_BONES = MAX_BONES;
-      this.bonesBuffer = device.createBuffer({
-        label: "bonesBuffer",
-        size: alignTo256(64 * MAX_BONES),
-        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-      });
-      const bones = new Float32Array(this.MAX_BONES * 16);
-      for (let i = 0; i < this.MAX_BONES; i++) {
-        bones.set([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1], i * 16);
-      }
-      this.device.queue.writeBuffer(this.bonesBuffer, 0, bones);
-      this.modelBindGroup = this.device.createBindGroup({
-        label: "modelBindGroup in mesh",
-        layout: this.uniformBufferBindGroupLayout,
-        entries: [
-          //
-          { binding: 0, resource: { buffer: this.modelUniformBuffer } },
-          { binding: 1, resource: { buffer: this.bonesBuffer } }
-        ]
-      });
-      this.modelBindGroupInstanced = this.device.createBindGroup({
-        label: "modelBindGroup in mesh [instanced]",
-        layout: this.uniformBufferBindGroupLayoutInstanced,
-        entries: [
-          //
-          { binding: 0, resource: { buffer: this.instanceBuffer } },
-          { binding: 1, resource: { buffer: this.bonesBuffer } }
-        ]
-      });
-      this.mainPassBindGroupLayout = this.device.createBindGroupLayout({
-        label: "mainPassBindGroupLayout mesh [instaced]",
-        entries: [
-          { binding: 0, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: "depth" } },
-          { binding: 1, visibility: GPUShaderStage.FRAGMENT, sampler: { type: "comparison" } }
-        ]
-      });
-      this.effects = {};
-      if (this.pointerEffect && this.pointerEffect.enabled === true) {
-        let pf = navigator.gpu.getPreferredCanvasFormat();
-        if (typeof this.pointerEffect.pointer !== "undefined" && this.pointerEffect.pointer == true) {
-          this.effects.pointer = new PointerEffect(device, pf, this, true);
-        }
-        if (typeof this.pointerEffect.ballEffect !== "undefined" && this.pointerEffect.ballEffect == true) {
-          this.effects.ballEffect = new GenGeo(device, pf, "sphere");
-        }
-        if (typeof this.pointerEffect.energyBar !== "undefined" && this.pointerEffect.energyBar == true) {
-          this.effects.energyBar = new HPBarEffect(device, pf);
-          this.effects.manaBar = new MANABarEffect(device, pf);
-        }
-        if (typeof this.pointerEffect.flameEffect !== "undefined" && this.pointerEffect.flameEffect == true) {
-          this.effects.flameEffect = new FlameEffect(device, pf);
-        }
-        if (typeof this.pointerEffect.flameEmitter !== "undefined" && this.pointerEffect.flameEmitter == true) {
-          this.effects.flameEmitter = new FlameEmitter(device, pf);
-        }
-        if (typeof this.pointerEffect.circlePlane !== "undefined" && this.pointerEffect.circlePlane == true) {
-          this.effects.circlePlane = new GenGeo(device, pf, "circlePlane");
-        }
-        if (typeof this.pointerEffect.circlePlaneTex !== "undefined" && this.pointerEffect.circlePlaneTex == true) {
-          this.effects.circlePlaneTex = new GenGeoTexture(device, pf, "ring", this.pointerEffect.circlePlaneTexPath);
-        }
-        if (typeof this.pointerEffect.circle !== "undefined" && this.pointerEffect.circlePlaneTexPath !== "undefined") {
-          this.effects.circle = new GenGeoTexture2(device, pf, "circle2", this.pointerEffect.circlePlaneTexPath);
-        }
-      }
-      this.getTransformationMatrix = (mainRenderBundle, spotLight, index) => {
-        const now = Date.now();
-        const dt = (now - this.lastFrameMS) / this.mainCameraParams.responseCoef;
-        this.lastFrameMS = now;
-        const camera = this.cameras[this.mainCameraParams.type];
-        if (index == 0) camera.update(dt, inputHandler());
-        const camVP = mat4Impl.multiply(camera.projectionMatrix, camera.view);
-        const sceneData = new Float32Array(44);
-        sceneData.set(spotLight.viewProjMatrix, 0);
-        sceneData.set(camVP, 16);
-        sceneData.set([camera.position.x, camera.position.y, camera.position.z, 0], 32);
-        sceneData.set([spotLight.position[0], spotLight.position[1], spotLight.position[2], 0], 36);
-        sceneData.set([this.globalAmbient[0], this.globalAmbient[1], this.globalAmbient[2], 0], 40);
-        device.queue.writeBuffer(
-          this.sceneUniformBuffer,
-          0,
-          sceneData.buffer,
-          sceneData.byteOffset,
-          sceneData.byteLength
-        );
+        });
+        this.pipelineBlended = this.device.createRenderPipeline({
+          ...baseDesc,
+          label: "Mesh Pipeline Blended \u2705",
+          fragment: {
+            ...baseDesc.fragment,
+            targets: [{
+              format: this.presentationFormat,
+              blend: {
+                color: {
+                  srcFactor: "src-alpha",
+                  dstFactor: "one-minus-src-alpha",
+                  operation: "add"
+                },
+                alpha: {
+                  srcFactor: "one",
+                  dstFactor: "one-minus-src-alpha",
+                  operation: "add"
+                }
+              }
+            }]
+          },
+          depthStencil: {
+            depthWriteEnabled: false,
+            // <<< disable depth write for transparency
+            depthCompare: "less",
+            format: "depth24plus"
+          }
+        });
       };
-      this.getModelMatrix = (pos) => {
-        let modelMatrix = mat4Impl.identity();
-        mat4Impl.translate(modelMatrix, [pos.x, pos.y, pos.z], modelMatrix);
-        if (this.itIsPhysicsBody) {
-          mat4Impl.rotate(
-            modelMatrix,
-            [this.rotation.axis.x, this.rotation.axis.y, this.rotation.axis.z],
-            degToRad(this.rotation.angle),
-            modelMatrix
-          );
+      updateModelUniformBuffer = () => {
+      };
+      createGPUBuffer(dataArray, usage) {
+        if (!dataArray || typeof dataArray.length !== "number") {
+          throw new Error("Invalid data array passed to createGPUBuffer");
+        }
+        const size = dataArray.length * dataArray.BYTES_PER_ELEMENT;
+        if (!Number.isFinite(size) || size <= 0) {
+          throw new Error(`Invalid buffer size: ${size}`);
+        }
+        const buffer = this.device.createBuffer({
+          size,
+          usage,
+          mappedAtCreation: true
+        });
+        const writeArray = dataArray.constructor === Float32Array ? new Float32Array(buffer.getMappedRange()) : new Uint16Array(buffer.getMappedRange());
+        writeArray.set(dataArray);
+        buffer.unmap();
+        return buffer;
+      }
+      updateMeshListBuffers() {
+        for (const key in this.objAnim.meshList) {
+          const mesh = this.objAnim.meshList[key];
+          mesh.vertexBuffer = this.device.createBuffer({
+            size: mesh.vertices.length * Float32Array.BYTES_PER_ELEMENT,
+            usage: GPUBufferUsage.VERTEX,
+            mappedAtCreation: true
+          });
+          new Float32Array(mesh.vertexBuffer.getMappedRange()).set(mesh.vertices);
+          mesh.vertexBuffer.unmap();
+          mesh.vertexNormalsBuffer = this.device.createBuffer({
+            size: mesh.vertexNormals.length * Float32Array.BYTES_PER_ELEMENT,
+            usage: GPUBufferUsage.VERTEX,
+            mappedAtCreation: true
+          });
+          new Float32Array(mesh.vertexNormalsBuffer.getMappedRange()).set(mesh.vertexNormals);
+          mesh.vertexNormalsBuffer.unmap();
+          mesh.vertexTexCoordsBuffer = this.device.createBuffer({
+            size: mesh.textures.length * Float32Array.BYTES_PER_ELEMENT,
+            usage: GPUBufferUsage.VERTEX,
+            mappedAtCreation: true
+          });
+          new Float32Array(mesh.vertexTexCoordsBuffer.getMappedRange()).set(mesh.textures);
+          mesh.vertexTexCoordsBuffer.unmap();
+          const indexCount = mesh.indices.length;
+          const indexSize = Math.ceil(indexCount * Uint16Array.BYTES_PER_ELEMENT / 4) * 4;
+          mesh.indexBuffer = this.device.createBuffer({
+            size: indexSize,
+            usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST,
+            mappedAtCreation: true
+          });
+          new Uint16Array(mesh.indexBuffer.getMappedRange()).set(mesh.indices);
+          mesh.indexBuffer.unmap();
+          mesh.indexCount = indexCount;
+        }
+      }
+      drawElements = (pass, lightContainer) => {
+        if (this.isVideo) {
+          this.updateVideoTexture();
+        }
+        pass.setBindGroup(0, this.sceneBindGroupForRender);
+        if (this instanceof BVHPlayerInstances) {
+          pass.setBindGroup(1, this.modelBindGroupInstanced);
         } else {
-          mat4Impl.rotateX(modelMatrix, this.rotation.getRotX(), modelMatrix);
-          mat4Impl.rotateY(modelMatrix, this.rotation.getRotY(), modelMatrix);
-          mat4Impl.rotateZ(modelMatrix, this.rotation.getRotZ(), modelMatrix);
+          pass.setBindGroup(1, this.modelBindGroup);
         }
-        if (this.glb || this.objAnim) {
-          mat4Impl.scale(modelMatrix, [this.scale[0], this.scale[1], this.scale[2]], modelMatrix);
-        }
-        return modelMatrix;
-      };
-      this.done = true;
-      try {
-        this.setupPipeline();
-      } catch (err) {
-        console.log("err in create pipeline in init ", err);
-      }
-    }).then(() => {
-      if (typeof this.objAnim !== "undefined" && this.objAnim !== null) {
-        console.log("after all updateMeshListBuffers...");
-        this.updateMeshListBuffers();
-      }
-    });
-  }
-  setupPipeline = () => {
-    this.createBindGroupForRender();
-    const baseDesc = {
-      label: "Mesh Pipeline Base",
-      layout: this.device.createPipelineLayout({
-        label: "createPipelineLayout Mesh",
-        bindGroupLayouts: [
-          this.bglForRender,
-          this.uniformBufferBindGroupLayoutInstanced,
-          this.selectedBindGroupLayout
-        ]
-      }),
-      vertex: {
-        entryPoint: "main",
-        module: this.device.createShaderModule({
-          code: vertexWGSLInstanced
-        }),
-        buffers: this.vertexBuffers
-      },
-      fragment: {
-        entryPoint: "main",
-        module: this.device.createShaderModule({
-          code: this.isVideo == true ? fragmentVideoWGSL : this.getMaterial()
-        }),
-        constants: {
-          shadowDepthTextureSize: this.shadowDepthTextureSize
-        }
-      },
-      depthStencil: {
-        depthWriteEnabled: true,
-        depthCompare: "less",
-        format: "depth24plus"
-      },
-      primitive: this.primitive
-    };
-    this.pipeline = this.device.createRenderPipeline({
-      ...baseDesc,
-      label: "Mesh Pipeline Opaque \u2705",
-      fragment: {
-        ...baseDesc.fragment,
-        targets: [{
-          format: this.presentationFormat,
-          blend: void 0
-        }]
-      }
-    });
-    this.pipelineBlended = this.device.createRenderPipeline({
-      ...baseDesc,
-      label: "Mesh Pipeline Blended \u2705",
-      fragment: {
-        ...baseDesc.fragment,
-        targets: [{
-          format: this.presentationFormat,
-          blend: {
-            color: {
-              srcFactor: "src-alpha",
-              dstFactor: "one-minus-src-alpha",
-              operation: "add"
-            },
-            alpha: {
-              srcFactor: "one",
-              dstFactor: "one-minus-src-alpha",
-              operation: "add"
-            }
+        if (this.isVideo == false) {
+          let bindIndex = 2;
+          for (const light of lightContainer) {
+            pass.setBindGroup(bindIndex++, light.getMainPassBindGroup(this));
           }
-        }]
-      },
-      depthStencil: {
-        depthWriteEnabled: false,
-        // <<< disable depth write for transparency
-        depthCompare: "less",
-        format: "depth24plus"
-      }
-    });
-  };
-  updateModelUniformBuffer = () => {
-  };
-  createGPUBuffer(dataArray, usage) {
-    if (!dataArray || typeof dataArray.length !== "number") {
-      throw new Error("Invalid data array passed to createGPUBuffer");
-    }
-    const size = dataArray.length * dataArray.BYTES_PER_ELEMENT;
-    if (!Number.isFinite(size) || size <= 0) {
-      throw new Error(`Invalid buffer size: ${size}`);
-    }
-    const buffer = this.device.createBuffer({
-      size,
-      usage,
-      mappedAtCreation: true
-    });
-    const writeArray = dataArray.constructor === Float32Array ? new Float32Array(buffer.getMappedRange()) : new Uint16Array(buffer.getMappedRange());
-    writeArray.set(dataArray);
-    buffer.unmap();
-    return buffer;
+        }
+        if (this.selectedBindGroup) {
+          pass.setBindGroup(2, this.selectedBindGroup);
+        }
+        pass.setVertexBuffer(0, this.vertexBuffer);
+        pass.setVertexBuffer(1, this.vertexNormalsBuffer);
+        pass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
+        if (this.joints) {
+          if (this.constructor.name === "BVHPlayer" || this.constructor.name === "BVHPlayerInstances") {
+            pass.setVertexBuffer(3, this.mesh.jointsBuffer);
+            pass.setVertexBuffer(4, this.mesh.weightsBuffer);
+          } else {
+            pass.setVertexBuffer(3, this.joints.buffer);
+            pass.setVertexBuffer(4, this.weights.buffer);
+          }
+        }
+        if (this.mesh.tangentsBuffer) {
+          pass.setVertexBuffer(5, this.mesh.tangentsBuffer);
+        }
+        pass.setIndexBuffer(this.indexBuffer, "uint16");
+        pass.drawIndexed(this.indexCount, 1, 0, 0, 0);
+        if (this.blendInstanced == true) pass.setPipeline(this.pipelineBlended);
+        else pass.setPipeline(this.pipeline);
+        for (var ins = 1; ins < this.instanceCount; ins++) {
+          pass.drawIndexed(this.indexCount, 1, 0, 0, ins);
+        }
+      };
+      drawElementsAnim = (renderPass, lightContainer) => {
+        if (!this.sceneBindGroupForRender || !this.modelBindGroup) {
+          console.log(" NULL 1");
+          return;
+        }
+        if (!this.objAnim.meshList[this.objAnim.id + this.objAnim.currentAni]) {
+          console.log(" NULL 2");
+          return;
+        }
+        renderPass.setBindGroup(0, this.sceneBindGroupForRender);
+        renderPass.setBindGroup(1, this.modelBindGroup);
+        const mesh = this.objAnim.meshList[this.objAnim.id + this.objAnim.currentAni];
+        if (this.isVideo == false) {
+          let bindIndex = 2;
+          for (const light of lightContainer) {
+            renderPass.setBindGroup(bindIndex++, light.getMainPassBindGroup(this));
+          }
+        }
+        renderPass.setVertexBuffer(0, mesh.vertexBuffer);
+        renderPass.setVertexBuffer(1, mesh.vertexNormalsBuffer);
+        renderPass.setVertexBuffer(2, mesh.vertexTexCoordsBuffer);
+        if (this.constructor.name === "BVHPlayer") {
+          renderPass.setVertexBuffer(3, this.mesh.jointsBuffer);
+          renderPass.setVertexBuffer(4, this.mesh.weightsBuffer);
+        } else {
+          renderPass.setVertexBuffer(3, this.joints.buffer);
+          renderPass.setVertexBuffer(4, this.weights.buffer);
+        }
+        renderPass.setIndexBuffer(mesh.indexBuffer, "uint16");
+        renderPass.drawIndexed(mesh.indexCount);
+        if (this.objAnim.playing == true) {
+          if (this.objAnim.animations[this.objAnim.animations.active].speedCounter >= this.objAnim.animations[this.objAnim.animations.active].speed) {
+            this.objAnim.currentAni++;
+            this.objAnim.animations[this.objAnim.animations.active].speedCounter = 0;
+          } else {
+            this.objAnim.animations[this.objAnim.animations.active].speedCounter++;
+          }
+          if (this.objAnim.currentAni >= this.objAnim.animations[this.objAnim.animations.active].to) {
+            this.objAnim.currentAni = this.objAnim.animations[this.objAnim.animations.active].from;
+          }
+        }
+      };
+      drawShadows = (shadowPass) => {
+        shadowPass.setVertexBuffer(0, this.vertexBuffer);
+        shadowPass.setVertexBuffer(1, this.vertexNormalsBuffer);
+        shadowPass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
+        shadowPass.setIndexBuffer(this.indexBuffer, "uint16");
+        if (this instanceof BVHPlayerInstances) {
+          shadowPass.drawIndexed(this.indexCount, this.instanceCount, 0, 0, 0);
+        } else {
+          shadowPass.drawIndexed(this.indexCount);
+        }
+      };
+    };
   }
-  updateMeshListBuffers() {
-    for (const key in this.objAnim.meshList) {
-      const mesh = this.objAnim.meshList[key];
-      mesh.vertexBuffer = this.device.createBuffer({
-        size: mesh.vertices.length * Float32Array.BYTES_PER_ELEMENT,
-        usage: GPUBufferUsage.VERTEX,
-        mappedAtCreation: true
-      });
-      new Float32Array(mesh.vertexBuffer.getMappedRange()).set(mesh.vertices);
-      mesh.vertexBuffer.unmap();
-      mesh.vertexNormalsBuffer = this.device.createBuffer({
-        size: mesh.vertexNormals.length * Float32Array.BYTES_PER_ELEMENT,
-        usage: GPUBufferUsage.VERTEX,
-        mappedAtCreation: true
-      });
-      new Float32Array(mesh.vertexNormalsBuffer.getMappedRange()).set(mesh.vertexNormals);
-      mesh.vertexNormalsBuffer.unmap();
-      mesh.vertexTexCoordsBuffer = this.device.createBuffer({
-        size: mesh.textures.length * Float32Array.BYTES_PER_ELEMENT,
-        usage: GPUBufferUsage.VERTEX,
-        mappedAtCreation: true
-      });
-      new Float32Array(mesh.vertexTexCoordsBuffer.getMappedRange()).set(mesh.textures);
-      mesh.vertexTexCoordsBuffer.unmap();
-      const indexCount = mesh.indices.length;
-      const indexSize = Math.ceil(indexCount * Uint16Array.BYTES_PER_ELEMENT / 4) * 4;
-      mesh.indexBuffer = this.device.createBuffer({
-        size: indexSize,
-        usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST,
-        mappedAtCreation: true
-      });
-      new Uint16Array(mesh.indexBuffer.getMappedRange()).set(mesh.indices);
-      mesh.indexBuffer.unmap();
-      mesh.indexCount = indexCount;
-    }
-  }
-  drawElements = (pass, lightContainer) => {
-    if (this.isVideo) {
-      this.updateVideoTexture();
-    }
-    pass.setBindGroup(0, this.sceneBindGroupForRender);
-    if (this instanceof BVHPlayerInstances) {
-      pass.setBindGroup(1, this.modelBindGroupInstanced);
-    } else {
-      pass.setBindGroup(1, this.modelBindGroup);
-    }
-    if (this.isVideo == false) {
-      let bindIndex = 2;
-      for (const light of lightContainer) {
-        pass.setBindGroup(bindIndex++, light.getMainPassBindGroup(this));
-      }
-    }
-    if (this.selectedBindGroup) {
-      pass.setBindGroup(2, this.selectedBindGroup);
-    }
-    pass.setVertexBuffer(0, this.vertexBuffer);
-    pass.setVertexBuffer(1, this.vertexNormalsBuffer);
-    pass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
-    if (this.joints) {
-      if (this.constructor.name === "BVHPlayer" || this.constructor.name === "BVHPlayerInstances") {
-        pass.setVertexBuffer(3, this.mesh.jointsBuffer);
-        pass.setVertexBuffer(4, this.mesh.weightsBuffer);
-      } else {
-        pass.setVertexBuffer(3, this.joints.buffer);
-        pass.setVertexBuffer(4, this.weights.buffer);
-      }
-    }
-    if (this.mesh.tangentsBuffer) {
-      pass.setVertexBuffer(5, this.mesh.tangentsBuffer);
-    }
-    pass.setIndexBuffer(this.indexBuffer, "uint16");
-    pass.drawIndexed(this.indexCount, 1, 0, 0, 0);
-    if (this.blendInstanced == true) pass.setPipeline(this.pipelineBlended);
-    else pass.setPipeline(this.pipeline);
-    for (var ins = 1; ins < this.instanceCount; ins++) {
-      pass.drawIndexed(this.indexCount, 1, 0, 0, ins);
-    }
-  };
-  drawElementsAnim = (renderPass, lightContainer) => {
-    if (!this.sceneBindGroupForRender || !this.modelBindGroup) {
-      console.log(" NULL 1");
-      return;
-    }
-    if (!this.objAnim.meshList[this.objAnim.id + this.objAnim.currentAni]) {
-      console.log(" NULL 2");
-      return;
-    }
-    renderPass.setBindGroup(0, this.sceneBindGroupForRender);
-    renderPass.setBindGroup(1, this.modelBindGroup);
-    const mesh = this.objAnim.meshList[this.objAnim.id + this.objAnim.currentAni];
-    if (this.isVideo == false) {
-      let bindIndex = 2;
-      for (const light of lightContainer) {
-        renderPass.setBindGroup(bindIndex++, light.getMainPassBindGroup(this));
-      }
-    }
-    renderPass.setVertexBuffer(0, mesh.vertexBuffer);
-    renderPass.setVertexBuffer(1, mesh.vertexNormalsBuffer);
-    renderPass.setVertexBuffer(2, mesh.vertexTexCoordsBuffer);
-    if (this.constructor.name === "BVHPlayer") {
-      renderPass.setVertexBuffer(3, this.mesh.jointsBuffer);
-      renderPass.setVertexBuffer(4, this.mesh.weightsBuffer);
-    } else {
-      renderPass.setVertexBuffer(3, this.joints.buffer);
-      renderPass.setVertexBuffer(4, this.weights.buffer);
-    }
-    renderPass.setIndexBuffer(mesh.indexBuffer, "uint16");
-    renderPass.drawIndexed(mesh.indexCount);
-    if (this.objAnim.playing == true) {
-      if (this.objAnim.animations[this.objAnim.animations.active].speedCounter >= this.objAnim.animations[this.objAnim.animations.active].speed) {
-        this.objAnim.currentAni++;
-        this.objAnim.animations[this.objAnim.animations.active].speedCounter = 0;
-      } else {
-        this.objAnim.animations[this.objAnim.animations.active].speedCounter++;
-      }
-      if (this.objAnim.currentAni >= this.objAnim.animations[this.objAnim.animations.active].to) {
-        this.objAnim.currentAni = this.objAnim.animations[this.objAnim.animations.active].from;
-      }
-    }
-  };
-  drawShadows = (shadowPass) => {
-    shadowPass.setVertexBuffer(0, this.vertexBuffer);
-    shadowPass.setVertexBuffer(1, this.vertexNormalsBuffer);
-    shadowPass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
-    shadowPass.setIndexBuffer(this.indexBuffer, "uint16");
-    if (this instanceof BVHPlayerInstances) {
-      shadowPass.drawIndexed(this.indexCount, this.instanceCount, 0, 0, 0);
-    } else {
-      shadowPass.drawIndexed(this.indexCount);
-    }
-  };
-};
+});
 
 // ../../../engine/loaders/bvh-instaced.js
-var BVHPlayerInstances = class extends MEMeshObjInstances {
-  constructor(o, bvh, glb, primitiveIndex, skinnedNodeIndex, canvas, device, context, inputHandler, globalAmbient) {
-    super(canvas, device, context, o, inputHandler, globalAmbient, glb, primitiveIndex, skinnedNodeIndex);
-    this.bvh = {};
-    this.glb = glb;
-    this.currentFrame = 0;
-    this.fps = 30;
-    this.timeAccumulator = 0;
-    this.scaleBoneTest = 1;
-    this.primitiveIndex = primitiveIndex;
-    if (!this.bvh.sharedState) {
-      this.bvh.sharedState = {
-        emitAnimationEvent: false,
-        animationStarted: false,
-        currentFrame: 0,
-        timeAccumulator: 0,
-        animationFinished: false
-      };
-    }
-    this.sharedState = this.bvh.sharedState;
-    this.skinnedNode = this.glb.skinnedMeshNodes[skinnedNodeIndex];
-    this.nodeWorldMatrices = Array.from(
-      { length: this.glb.nodes.length },
-      () => mat4Impl.identity()
-    );
-    this.startTime = performance.now() / 1e3;
-    this.MAX_BONES = 100;
-    this.skeleton = [];
-    this.animationSpeed = 1e3;
-    this.inverseBindMatrices = [];
-    this.initInverseBindMatrices();
-    this.makeSkeletal();
-  }
-  makeSkeletal() {
-    let skin = this.glb.skins[0];
-    const accessorIndex = skin.inverseBindMatrices;
-    if (accessorIndex == null) {
-      console.warn("No inverseBindMatrices, using identity matrices");
-    }
-    const invBindArray = this.inverseBindMatrices;
-    this.skeleton = skin.joints.slice();
-    for (let i = 0; i < skin.joints.length; i++) {
-      const jointIndex = skin.joints[i];
-      const jointNode = this.glb.nodes[jointIndex];
-      jointNode.inverseBindMatrix = invBindArray.slice(i * 16, (i + 1) * 16);
-      if (!jointNode.transform) {
-        jointNode.transform = new Float32Array([
-          1,
+var BVHPlayerInstances;
+var init_bvh_instaced = __esm({
+  "../../../engine/loaders/bvh-instaced.js"() {
+    init_wgpu_matrix_module();
+    init_webgpu_gltf();
+    init_mesh_obj_instances();
+    BVHPlayerInstances = class extends MEMeshObjInstances {
+      constructor(o, bvh, glb, primitiveIndex, skinnedNodeIndex, canvas, device, context, inputHandler, globalAmbient) {
+        super(canvas, device, context, o, inputHandler, globalAmbient, glb, primitiveIndex, skinnedNodeIndex);
+        this.bvh = {};
+        this.glb = glb;
+        this.currentFrame = 0;
+        this.fps = 30;
+        this.timeAccumulator = 0;
+        this.scaleBoneTest = 1;
+        this.primitiveIndex = primitiveIndex;
+        if (!this.bvh.sharedState) {
+          this.bvh.sharedState = {
+            emitAnimationEvent: false,
+            animationStarted: false,
+            currentFrame: 0,
+            timeAccumulator: 0,
+            animationFinished: false
+          };
+        }
+        this.sharedState = this.bvh.sharedState;
+        this.skinnedNode = this.glb.skinnedMeshNodes[skinnedNodeIndex];
+        this.nodeWorldMatrices = Array.from(
+          { length: this.glb.nodes.length },
+          () => mat4Impl.identity()
+        );
+        this.startTime = performance.now() / 1e3;
+        this.MAX_BONES = 100;
+        this.skeleton = [];
+        this.animationSpeed = 1e3;
+        this.inverseBindMatrices = [];
+        this.initInverseBindMatrices();
+        this.makeSkeletal();
+      }
+      makeSkeletal() {
+        let skin = this.glb.skins[0];
+        const accessorIndex = skin.inverseBindMatrices;
+        if (accessorIndex == null) {
+          console.warn("No inverseBindMatrices, using identity matrices");
+        }
+        const invBindArray = this.inverseBindMatrices;
+        this.skeleton = skin.joints.slice();
+        for (let i = 0; i < skin.joints.length; i++) {
+          const jointIndex = skin.joints[i];
+          const jointNode = this.glb.nodes[jointIndex];
+          jointNode.inverseBindMatrix = invBindArray.slice(i * 16, (i + 1) * 16);
+          if (!jointNode.transform) {
+            jointNode.transform = new Float32Array([
+              1,
+              0,
+              0,
+              0,
+              0,
+              1,
+              0,
+              0,
+              0,
+              0,
+              1,
+              0,
+              0,
+              0,
+              0,
+              1
+            ]);
+          }
+          if (!jointNode.translation || !jointNode.rotation || !jointNode.scale) {
+            const { translation: translation3, rotation: rotation3, scale } = this.decomposeMatrix(jointNode.transform);
+            jointNode.translation = translation3;
+            jointNode.rotation = rotation3;
+            jointNode.scale = scale;
+          }
+        }
+        this.glb.animationIndex = 0;
+        for (let j = 0; j < this.glb.glbJsonData.animations.length; j++) {
+          if (this.glb.glbJsonData.animations[j].name.indexOf("Armature") !== -1) {
+            this.glb.animationIndex = j;
+          }
+        }
+      }
+      initInverseBindMatrices(skinIndex = 0) {
+        const skin = this.glb.skins[skinIndex];
+        const invBindAccessorIndex = skin.inverseBindMatrices;
+        if (invBindAccessorIndex === void 0 || invBindAccessorIndex === null) {
+          console.warn("No inverseBindMatrices accessor for skin", skinIndex);
+          return;
+        }
+        const invBindArray = this.getAccessorArray(this.glb, invBindAccessorIndex);
+        this.inverseBindMatrices = invBindArray;
+      }
+      getNumberOfFramesCurAni() {
+        const anim = this.glb.glbJsonData.animations[this.glb.animationIndex];
+        let maxFrames = 0;
+        if (typeof anim == "undefined") {
+          console.log("[anim undefined]", this.name);
+          return 1;
+        }
+        for (const sampler of anim.samplers) {
+          const inputAccessor = this.glb.glbJsonData.accessors[sampler.input];
+          if (inputAccessor.count > maxFrames) maxFrames = inputAccessor.count;
+        }
+        return maxFrames;
+      }
+      getAnimationLength(animation) {
+        let maxTime = 0;
+        for (const channel of animation.channels) {
+          const sampler = animation.samplers[channel.sampler];
+          const inputTimes = this.getAccessorArray(this.glb, sampler.input);
+          const lastTime = inputTimes[inputTimes.length - 1];
+          if (lastTime > maxTime) maxTime = lastTime;
+        }
+        return maxTime;
+      }
+      update(deltaTime2) {
+        const frameTime = 1 / this.fps;
+        this.sharedState.timeAccumulator += deltaTime2;
+        while (this.sharedState.timeAccumulator >= frameTime) {
+          this.sharedState.currentFrame = (this.sharedState.currentFrame + 1) % this.getNumberOfFramesCurAni();
+          this.sharedState.timeAccumulator -= frameTime;
+        }
+        var inTime = this.getAnimationLength(this.glb.glbJsonData.animations[this.glb.animationIndex]);
+        if (this.sharedState.animationStarted == false && this.sharedState.emitAnimationEvent == true) {
+          this.sharedState.animationStarted = true;
+          setTimeout(() => {
+            this.sharedState.animationStarted = false;
+            dispatchEvent(new CustomEvent(`animationEnd-${this.name}`, {
+              detail: {
+                animationName: this.glb.glbJsonData.animations[this.glb.animationIndex].name
+              }
+            }));
+          }, inTime * 1e3);
+        }
+        const currentTime = performance.now() / this.animationSpeed - this.startTime;
+        const boneMatrices = new Float32Array(this.MAX_BONES * 16);
+        if (this.glb.glbJsonData.animations && this.glb.glbJsonData.animations.length > 0) {
+          this.updateSingleBoneCubeAnimation(this.glb.glbJsonData.animations[this.glb.animationIndex], this.glb.nodes, currentTime, boneMatrices);
+        }
+      }
+      getAccessorArray(glb, accessorIndex) {
+        const accessor = glb.glbJsonData.accessors[accessorIndex];
+        const bufferView = glb.glbJsonData.bufferViews[accessor.bufferView];
+        const byteOffset = (bufferView.byteOffset || 0) + (accessor.byteOffset || 0);
+        const byteLength = accessor.count * this.getNumComponents(accessor.type) * (accessor.componentType === 5126 ? 4 : 2);
+        const bufferDef = glb.glbBinaryBuffer;
+        const slice = this.getBufferSlice(bufferDef, byteOffset, byteLength);
+        switch (accessor.componentType) {
+          case 5126:
+            return new Float32Array(slice);
+          case 5123:
+            return new Uint16Array(slice);
+          case 5121:
+            return new Uint8Array(slice);
+          default:
+            throw new Error("Unsupported componentType: " + accessor.componentType);
+        }
+      }
+      getAccessorTypeForChannel(path) {
+        switch (path) {
+          case "translation":
+            return "VEC3";
+          case "rotation":
+            return "VEC4";
+          case "scale":
+            return "VEC3";
+          case "weights":
+            return "VECN";
+          // if needed
+          default:
+            throw new Error("Unknown channel path: " + path);
+        }
+      }
+      getNumComponents(type) {
+        switch (type) {
+          case "SCALAR":
+            return 1;
+          case "VEC2":
+            return 2;
+          case "VEC3":
+            return 3;
+          case "VEC4":
+            return 4;
+          case "MAT4":
+            return 16;
+          default:
+            throw new Error("Unknown type: " + type);
+        }
+      }
+      getComponentSize(componentType) {
+        switch (componentType) {
+          case 5126:
+            return 4;
+          // float32
+          case 5123:
+            return 2;
+          // uint16
+          case 5121:
+            return 1;
+          // uint8
+          default:
+            throw new Error("Unknown componentType: " + componentType);
+        }
+      }
+      /**
+       *  @description
+       *  Get a typed slice of the raw binary buffer from glTF buffer definitions.
+       * @param {Object} bufferDef - the glTF buffer definition (usually gltfJson.buffers[0])
+       * @param {Number} byteOffset - byte offset into the buffer
+       * @param {Number} byteLength - byte length to slice
+       * @returns {ArrayBuffer} sliced array buffer
+       **/
+      getBufferSlice(bufferDef, byteOffset, byteLength) {
+        if (bufferDef instanceof GLTFBuffer) {
+          return bufferDef.arrayBuffer.slice(
+            bufferDef.byteOffset + (byteOffset || 0),
+            bufferDef.byteOffset + (byteOffset || 0) + byteLength
+          );
+        }
+        if (bufferDef instanceof ArrayBuffer) {
+          return bufferDef.slice(byteOffset, byteOffset + byteLength);
+        }
+        if (bufferDef && bufferDef.data instanceof ArrayBuffer) {
+          return bufferDef.data.slice(byteOffset, byteOffset + byteLength);
+        }
+        if (bufferDef && bufferDef._data instanceof ArrayBuffer) {
+          return bufferDef._data.slice(byteOffset, byteOffset + byteLength);
+        }
+        throw new Error("No binary data found in GLB buffer[0]");
+      }
+      // --- helpers
+      lerpVec(a, b, t) {
+        return a.map((v, i) => v * (1 - t) + b[i] * t);
+      }
+      // Example quaternion slerp (a,b = [x,y,z,w])
+      quatSlerp(a, b, t) {
+        let dot = a[0] * b[0] + a[1] * b[1] + a[2] * b[2] + a[3] * b[3];
+        if (dot < 0) {
+          b = b.map((v) => -v);
+          dot = -dot;
+        }
+        if (dot > 0.9995) return lerpVec(a, b, t);
+        const theta0 = Math.acos(dot);
+        const theta = theta0 * t;
+        const sinTheta = Math.sin(theta);
+        const sinTheta0 = Math.sin(theta0);
+        const s0 = Math.cos(theta) - dot * sinTheta / sinTheta0;
+        const s1 = sinTheta / sinTheta0;
+        return a.map((v, i) => s0 * v + s1 * b[i]);
+      }
+      // naive quaternion to 4x4 matrix
+      quatToMat4(q) {
+        const [x, y, z, w] = q;
+        const xx = x * x, yy = y * y, zz = z * z;
+        const xy = x * y, xz = x * z, yz = y * z, wx = w * x, wy = w * y, wz = w * z;
+        return new Float32Array([
+          1 - 2 * (yy + zz),
+          2 * (xy + wz),
+          2 * (xz - wy),
           0,
+          2 * (xy - wz),
+          1 - 2 * (xx + zz),
+          2 * (yz + wx),
           0,
-          0,
-          0,
-          1,
-          0,
-          0,
-          0,
-          0,
-          1,
+          2 * (xz + wy),
+          2 * (yz - wx),
+          1 - 2 * (xx + yy),
           0,
           0,
           0,
@@ -13092,408 +13628,208 @@ var BVHPlayerInstances = class extends MEMeshObjInstances {
           1
         ]);
       }
-      if (!jointNode.translation || !jointNode.rotation || !jointNode.scale) {
-        const { translation: translation3, rotation: rotation3, scale } = this.decomposeMatrix(jointNode.transform);
-        jointNode.translation = translation3;
-        jointNode.rotation = rotation3;
-        jointNode.scale = scale;
+      // Compose TRS to a 4×4
+      composeMatrix(translation3, rotationQuat, scale) {
+        const m = mat4Impl.identity();
+        mat4Impl.translate(m, translation3, m);
+        const rot = mat4Impl.fromQuat(rotationQuat);
+        mat4Impl.multiply(m, rot, m);
+        mat4Impl.scale(m, scale, m);
+        return m;
       }
-    }
-    this.glb.animationIndex = 0;
-    for (let j = 0; j < this.glb.glbJsonData.animations.length; j++) {
-      if (this.glb.glbJsonData.animations[j].name.indexOf("Armature") !== -1) {
-        this.glb.animationIndex = j;
+      decomposeMatrix(m) {
+        const t = new Float32Array([m[12], m[13], m[14]]);
+        const cx = [m[0], m[1], m[2]];
+        const cy = [m[4], m[5], m[6]];
+        const cz = [m[8], m[9], m[10]];
+        const len = (v) => Math.hypot(v[0], v[1], v[2]);
+        let sx = len(cx), sy = len(cy), sz = len(cz);
+        if (sx === 0) sx = 1;
+        if (sy === 0) sy = 1;
+        if (sz === 0) sz = 1;
+        const r00 = m[0] / sx, r01 = m[4] / sy, r02 = m[8] / sz;
+        const r10 = m[1] / sx, r11 = m[5] / sy, r12 = m[9] / sz;
+        const r20 = m[2] / sx, r21 = m[6] / sy, r22 = m[10] / sz;
+        const det3 = r00 * (r11 * r22 - r12 * r21) - r01 * (r10 * r22 - r12 * r20) + r02 * (r10 * r21 - r11 * r20);
+        if (det3 < 0) {
+          sz = -sz;
+        }
+        const trace = r00 + r11 + r22;
+        let qx, qy, qz, qw;
+        if (trace > 1e-5) {
+          const s = Math.sqrt(trace + 1) * 2;
+          qw = 0.25 * s;
+          qx = (r21 - r12) / s;
+          qy = (r02 - r20) / s;
+          qz = (r10 - r01) / s;
+        } else if (r00 > r11 && r00 > r22) {
+          const s = Math.sqrt(1 + r00 - r11 - r22) * 2;
+          qw = (r21 - r12) / s;
+          qx = 0.25 * s;
+          qy = (r01 + r10) / s;
+          qz = (r02 + r20) / s;
+        } else if (r11 > r22) {
+          const s = Math.sqrt(1 + r11 - r00 - r22) * 2;
+          qw = (r02 - r20) / s;
+          qx = (r01 + r10) / s;
+          qy = 0.25 * s;
+          qz = (r12 + r21) / s;
+        } else {
+          const s = Math.sqrt(1 + r22 - r00 - r11) * 2;
+          qw = (r10 - r01) / s;
+          qx = (r02 + r20) / s;
+          qy = (r12 + r21) / s;
+          qz = 0.25 * s;
+        }
+        const rot = new Float32Array([qx, qy, qz, qw]);
+        const scale = new Float32Array([sx, sy, sz]);
+        return { translation: t, rotation: rot, scale };
       }
-    }
-  }
-  initInverseBindMatrices(skinIndex = 0) {
-    const skin = this.glb.skins[skinIndex];
-    const invBindAccessorIndex = skin.inverseBindMatrices;
-    if (invBindAccessorIndex === void 0 || invBindAccessorIndex === null) {
-      console.warn("No inverseBindMatrices accessor for skin", skinIndex);
-      return;
-    }
-    const invBindArray = this.getAccessorArray(this.glb, invBindAccessorIndex);
-    this.inverseBindMatrices = invBindArray;
-  }
-  getNumberOfFramesCurAni() {
-    const anim = this.glb.glbJsonData.animations[this.glb.animationIndex];
-    let maxFrames = 0;
-    if (typeof anim == "undefined") {
-      console.log("[anim undefined]", this.name);
-      return 1;
-    }
-    for (const sampler of anim.samplers) {
-      const inputAccessor = this.glb.glbJsonData.accessors[sampler.input];
-      if (inputAccessor.count > maxFrames) maxFrames = inputAccessor.count;
-    }
-    return maxFrames;
-  }
-  getAnimationLength(animation) {
-    let maxTime = 0;
-    for (const channel of animation.channels) {
-      const sampler = animation.samplers[channel.sampler];
-      const inputTimes = this.getAccessorArray(this.glb, sampler.input);
-      const lastTime = inputTimes[inputTimes.length - 1];
-      if (lastTime > maxTime) maxTime = lastTime;
-    }
-    return maxTime;
-  }
-  update(deltaTime2) {
-    const frameTime = 1 / this.fps;
-    this.sharedState.timeAccumulator += deltaTime2;
-    while (this.sharedState.timeAccumulator >= frameTime) {
-      this.sharedState.currentFrame = (this.sharedState.currentFrame + 1) % this.getNumberOfFramesCurAni();
-      this.sharedState.timeAccumulator -= frameTime;
-    }
-    var inTime = this.getAnimationLength(this.glb.glbJsonData.animations[this.glb.animationIndex]);
-    if (this.sharedState.animationStarted == false && this.sharedState.emitAnimationEvent == true) {
-      this.sharedState.animationStarted = true;
-      setTimeout(() => {
-        this.sharedState.animationStarted = false;
-        dispatchEvent(new CustomEvent(`animationEnd-${this.name}`, {
-          detail: {
-            animationName: this.glb.glbJsonData.animations[this.glb.animationIndex].name
-          }
-        }));
-      }, inTime * 1e3);
-    }
-    const currentTime = performance.now() / this.animationSpeed - this.startTime;
-    const boneMatrices = new Float32Array(this.MAX_BONES * 16);
-    if (this.glb.glbJsonData.animations && this.glb.glbJsonData.animations.length > 0) {
-      this.updateSingleBoneCubeAnimation(this.glb.glbJsonData.animations[this.glb.animationIndex], this.glb.nodes, currentTime, boneMatrices);
-    }
-  }
-  getAccessorArray(glb, accessorIndex) {
-    const accessor = glb.glbJsonData.accessors[accessorIndex];
-    const bufferView = glb.glbJsonData.bufferViews[accessor.bufferView];
-    const byteOffset = (bufferView.byteOffset || 0) + (accessor.byteOffset || 0);
-    const byteLength = accessor.count * this.getNumComponents(accessor.type) * (accessor.componentType === 5126 ? 4 : 2);
-    const bufferDef = glb.glbBinaryBuffer;
-    const slice = this.getBufferSlice(bufferDef, byteOffset, byteLength);
-    switch (accessor.componentType) {
-      case 5126:
-        return new Float32Array(slice);
-      case 5123:
-        return new Uint16Array(slice);
-      case 5121:
-        return new Uint8Array(slice);
-      default:
-        throw new Error("Unsupported componentType: " + accessor.componentType);
-    }
-  }
-  getAccessorTypeForChannel(path) {
-    switch (path) {
-      case "translation":
-        return "VEC3";
-      case "rotation":
-        return "VEC4";
-      case "scale":
-        return "VEC3";
-      case "weights":
-        return "VECN";
-      // if needed
-      default:
-        throw new Error("Unknown channel path: " + path);
-    }
-  }
-  getNumComponents(type) {
-    switch (type) {
-      case "SCALAR":
-        return 1;
-      case "VEC2":
-        return 2;
-      case "VEC3":
-        return 3;
-      case "VEC4":
-        return 4;
-      case "MAT4":
-        return 16;
-      default:
-        throw new Error("Unknown type: " + type);
-    }
-  }
-  getComponentSize(componentType) {
-    switch (componentType) {
-      case 5126:
-        return 4;
-      // float32
-      case 5123:
-        return 2;
-      // uint16
-      case 5121:
-        return 1;
-      // uint8
-      default:
-        throw new Error("Unknown componentType: " + componentType);
-    }
-  }
-  /**
-   *  @description
-   *  Get a typed slice of the raw binary buffer from glTF buffer definitions.
-   * @param {Object} bufferDef - the glTF buffer definition (usually gltfJson.buffers[0])
-   * @param {Number} byteOffset - byte offset into the buffer
-   * @param {Number} byteLength - byte length to slice
-   * @returns {ArrayBuffer} sliced array buffer
-   **/
-  getBufferSlice(bufferDef, byteOffset, byteLength) {
-    if (bufferDef instanceof GLTFBuffer) {
-      return bufferDef.arrayBuffer.slice(
-        bufferDef.byteOffset + (byteOffset || 0),
-        bufferDef.byteOffset + (byteOffset || 0) + byteLength
-      );
-    }
-    if (bufferDef instanceof ArrayBuffer) {
-      return bufferDef.slice(byteOffset, byteOffset + byteLength);
-    }
-    if (bufferDef && bufferDef.data instanceof ArrayBuffer) {
-      return bufferDef.data.slice(byteOffset, byteOffset + byteLength);
-    }
-    if (bufferDef && bufferDef._data instanceof ArrayBuffer) {
-      return bufferDef._data.slice(byteOffset, byteOffset + byteLength);
-    }
-    throw new Error("No binary data found in GLB buffer[0]");
-  }
-  // --- helpers
-  lerpVec(a, b, t) {
-    return a.map((v, i) => v * (1 - t) + b[i] * t);
-  }
-  // Example quaternion slerp (a,b = [x,y,z,w])
-  quatSlerp(a, b, t) {
-    let dot = a[0] * b[0] + a[1] * b[1] + a[2] * b[2] + a[3] * b[3];
-    if (dot < 0) {
-      b = b.map((v) => -v);
-      dot = -dot;
-    }
-    if (dot > 0.9995) return lerpVec(a, b, t);
-    const theta0 = Math.acos(dot);
-    const theta = theta0 * t;
-    const sinTheta = Math.sin(theta);
-    const sinTheta0 = Math.sin(theta0);
-    const s0 = Math.cos(theta) - dot * sinTheta / sinTheta0;
-    const s1 = sinTheta / sinTheta0;
-    return a.map((v, i) => s0 * v + s1 * b[i]);
-  }
-  // naive quaternion to 4x4 matrix
-  quatToMat4(q) {
-    const [x, y, z, w] = q;
-    const xx = x * x, yy = y * y, zz = z * z;
-    const xy = x * y, xz = x * z, yz = y * z, wx = w * x, wy = w * y, wz = w * z;
-    return new Float32Array([
-      1 - 2 * (yy + zz),
-      2 * (xy + wz),
-      2 * (xz - wy),
-      0,
-      2 * (xy - wz),
-      1 - 2 * (xx + zz),
-      2 * (yz + wx),
-      0,
-      2 * (xz + wy),
-      2 * (yz - wx),
-      1 - 2 * (xx + yy),
-      0,
-      0,
-      0,
-      0,
-      1
-    ]);
-  }
-  // Compose TRS to a 4×4
-  composeMatrix(translation3, rotationQuat, scale) {
-    const m = mat4Impl.identity();
-    mat4Impl.translate(m, translation3, m);
-    const rot = mat4Impl.fromQuat(rotationQuat);
-    mat4Impl.multiply(m, rot, m);
-    mat4Impl.scale(m, scale, m);
-    return m;
-  }
-  decomposeMatrix(m) {
-    const t = new Float32Array([m[12], m[13], m[14]]);
-    const cx = [m[0], m[1], m[2]];
-    const cy = [m[4], m[5], m[6]];
-    const cz = [m[8], m[9], m[10]];
-    const len = (v) => Math.hypot(v[0], v[1], v[2]);
-    let sx = len(cx), sy = len(cy), sz = len(cz);
-    if (sx === 0) sx = 1;
-    if (sy === 0) sy = 1;
-    if (sz === 0) sz = 1;
-    const r00 = m[0] / sx, r01 = m[4] / sy, r02 = m[8] / sz;
-    const r10 = m[1] / sx, r11 = m[5] / sy, r12 = m[9] / sz;
-    const r20 = m[2] / sx, r21 = m[6] / sy, r22 = m[10] / sz;
-    const det3 = r00 * (r11 * r22 - r12 * r21) - r01 * (r10 * r22 - r12 * r20) + r02 * (r10 * r21 - r11 * r20);
-    if (det3 < 0) {
-      sz = -sz;
-    }
-    const trace = r00 + r11 + r22;
-    let qx, qy, qz, qw;
-    if (trace > 1e-5) {
-      const s = Math.sqrt(trace + 1) * 2;
-      qw = 0.25 * s;
-      qx = (r21 - r12) / s;
-      qy = (r02 - r20) / s;
-      qz = (r10 - r01) / s;
-    } else if (r00 > r11 && r00 > r22) {
-      const s = Math.sqrt(1 + r00 - r11 - r22) * 2;
-      qw = (r21 - r12) / s;
-      qx = 0.25 * s;
-      qy = (r01 + r10) / s;
-      qz = (r02 + r20) / s;
-    } else if (r11 > r22) {
-      const s = Math.sqrt(1 + r11 - r00 - r22) * 2;
-      qw = (r02 - r20) / s;
-      qx = (r01 + r10) / s;
-      qy = 0.25 * s;
-      qz = (r12 + r21) / s;
-    } else {
-      const s = Math.sqrt(1 + r22 - r00 - r11) * 2;
-      qw = (r10 - r01) / s;
-      qx = (r02 + r20) / s;
-      qy = (r12 + r21) / s;
-      qz = 0.25 * s;
-    }
-    const rot = new Float32Array([qx, qy, qz, qw]);
-    const scale = new Float32Array([sx, sy, sz]);
-    return { translation: t, rotation: rot, scale };
-  }
-  slerp(q0, q1, t, out) {
-    let dot = q0[0] * q1[0] + q0[1] * q1[1] + q0[2] * q1[2] + q0[3] * q1[3];
-    if (dot < 0) {
-      dot = -dot;
-      q1 = [-q1[0], -q1[1], -q1[2], -q1[3]];
-    }
-    if (dot > 0.9995) {
-      for (let i = 0; i < 4; i++) out[i] = q0[i] + t * (q1[i] - q0[i]);
-      const len = Math.hypot(...out);
-      for (let i = 0; i < 4; i++) out[i] /= len;
-      return;
-    }
-    const theta0 = Math.acos(dot);
-    const theta = theta0 * t;
-    const sinTheta = Math.sin(theta);
-    const sinTheta0 = Math.sin(theta0);
-    const s0 = Math.cos(theta) - dot * sinTheta / sinTheta0;
-    const s1 = sinTheta / sinTheta0;
-    for (let i = 0; i < 4; i++) {
-      out[i] = s0 * q0[i] + s1 * q1[i];
-    }
-  }
-  updateSingleBoneCubeAnimation(glbAnimation, nodes, time, boneMatrices) {
-    const channels = glbAnimation.channels;
-    const samplers = glbAnimation.samplers;
-    const nodeChannels = /* @__PURE__ */ new Map();
-    for (const channel of channels) {
-      if (!nodeChannels.has(channel.target.node)) nodeChannels.set(channel.target.node, []);
-      nodeChannels.get(channel.target.node).push(channel);
-    }
-    for (let j = 0; j < this.skeleton.length; j++) {
-      const nodeIndex = this.skeleton[j];
-      const node = nodes[nodeIndex];
-      if (!node.translation) node.translation = new Float32Array([0, 0, 0]);
-      if (!node.rotation) node.rotation = quatImpl.create();
-      if (!node.scale) node.scale = new Float32Array([1, 1, 1]);
-      if (!node.originalTranslation) node.originalTranslation = node.translation.slice();
-      if (!node.originalRotation) node.originalRotation = node.rotation.slice();
-      if (!node.originalScale) node.originalScale = node.scale.slice();
-      const channelsForNode = nodeChannels.get(nodeIndex) || [];
-      for (const channel of channelsForNode) {
-        const path = channel.target.path;
-        const sampler = samplers[channel.sampler];
-        const inputTimes = this.getAccessorArray(this.glb, sampler.input);
-        const outputArray = this.getAccessorArray(this.glb, sampler.output);
-        const numComponents = path === "rotation" ? 4 : 3;
-        const animTime = time % inputTimes[inputTimes.length - 1];
-        let i = 0;
-        while (i < inputTimes.length - 1 && inputTimes[i + 1] <= animTime) i++;
-        const t0 = inputTimes[i];
-        const t1 = inputTimes[Math.min(i + 1, inputTimes.length - 1)];
-        const factor = t1 !== t0 ? (animTime - t0) / (t1 - t0) : 0;
-        const v0 = outputArray.subarray(i * numComponents, (i + 1) * numComponents);
-        const v1 = outputArray.subarray(
-          Math.min(i + 1, inputTimes.length - 1) * numComponents,
-          Math.min(i + 2, inputTimes.length) * numComponents
-        );
-        if (path === "translation") {
-          for (let k = 0; k < 3; k++)
-            node.translation[k] = v0[k] * (1 - factor) + v1[k] * factor;
-        } else if (path === "scale") {
-          for (let k = 0; k < 3; k++)
-            node.scale[k] = v0[k] * (1 - factor) + v1[k] * factor;
-        } else if (path === "rotation") {
-          this.slerp(v0, v1, factor, node.rotation);
+      slerp(q0, q1, t, out) {
+        let dot = q0[0] * q1[0] + q0[1] * q1[1] + q0[2] * q1[2] + q0[3] * q1[3];
+        if (dot < 0) {
+          dot = -dot;
+          q1 = [-q1[0], -q1[1], -q1[2], -q1[3]];
+        }
+        if (dot > 0.9995) {
+          for (let i = 0; i < 4; i++) out[i] = q0[i] + t * (q1[i] - q0[i]);
+          const len = Math.hypot(...out);
+          for (let i = 0; i < 4; i++) out[i] /= len;
+          return;
+        }
+        const theta0 = Math.acos(dot);
+        const theta = theta0 * t;
+        const sinTheta = Math.sin(theta);
+        const sinTheta0 = Math.sin(theta0);
+        const s0 = Math.cos(theta) - dot * sinTheta / sinTheta0;
+        const s1 = sinTheta / sinTheta0;
+        for (let i = 0; i < 4; i++) {
+          out[i] = s0 * q0[i] + s1 * q1[i];
         }
       }
-      node.transform = this.composeMatrix(node.translation, node.rotation, node.scale);
-    }
-    const computeWorld = (nodeIndex) => {
-      const node = nodes[nodeIndex];
-      if (!node.worldMatrix) node.worldMatrix = mat4Impl.create();
-      let parentWorld = node.parent !== null ? nodes[node.parent].worldMatrix : null;
-      if (parentWorld) {
-        mat4Impl.multiply(parentWorld, node.transform, node.worldMatrix);
-      } else {
-        mat4Impl.copy(node.transform, node.worldMatrix);
-      }
-      mat4Impl.scale(node.worldMatrix, [this.scaleBoneTest, this.scaleBoneTest, this.scaleBoneTest], node.worldMatrix);
-      if (node.children) {
-        for (const childIndex of node.children) computeWorld(childIndex);
+      updateSingleBoneCubeAnimation(glbAnimation, nodes, time, boneMatrices) {
+        const channels = glbAnimation.channels;
+        const samplers = glbAnimation.samplers;
+        const nodeChannels = /* @__PURE__ */ new Map();
+        for (const channel of channels) {
+          if (!nodeChannels.has(channel.target.node)) nodeChannels.set(channel.target.node, []);
+          nodeChannels.get(channel.target.node).push(channel);
+        }
+        for (let j = 0; j < this.skeleton.length; j++) {
+          const nodeIndex = this.skeleton[j];
+          const node = nodes[nodeIndex];
+          if (!node.translation) node.translation = new Float32Array([0, 0, 0]);
+          if (!node.rotation) node.rotation = quatImpl.create();
+          if (!node.scale) node.scale = new Float32Array([1, 1, 1]);
+          if (!node.originalTranslation) node.originalTranslation = node.translation.slice();
+          if (!node.originalRotation) node.originalRotation = node.rotation.slice();
+          if (!node.originalScale) node.originalScale = node.scale.slice();
+          const channelsForNode = nodeChannels.get(nodeIndex) || [];
+          for (const channel of channelsForNode) {
+            const path = channel.target.path;
+            const sampler = samplers[channel.sampler];
+            const inputTimes = this.getAccessorArray(this.glb, sampler.input);
+            const outputArray = this.getAccessorArray(this.glb, sampler.output);
+            const numComponents = path === "rotation" ? 4 : 3;
+            const animTime = time % inputTimes[inputTimes.length - 1];
+            let i = 0;
+            while (i < inputTimes.length - 1 && inputTimes[i + 1] <= animTime) i++;
+            const t0 = inputTimes[i];
+            const t1 = inputTimes[Math.min(i + 1, inputTimes.length - 1)];
+            const factor = t1 !== t0 ? (animTime - t0) / (t1 - t0) : 0;
+            const v0 = outputArray.subarray(i * numComponents, (i + 1) * numComponents);
+            const v1 = outputArray.subarray(
+              Math.min(i + 1, inputTimes.length - 1) * numComponents,
+              Math.min(i + 2, inputTimes.length) * numComponents
+            );
+            if (path === "translation") {
+              for (let k = 0; k < 3; k++)
+                node.translation[k] = v0[k] * (1 - factor) + v1[k] * factor;
+            } else if (path === "scale") {
+              for (let k = 0; k < 3; k++)
+                node.scale[k] = v0[k] * (1 - factor) + v1[k] * factor;
+            } else if (path === "rotation") {
+              this.slerp(v0, v1, factor, node.rotation);
+            }
+          }
+          node.transform = this.composeMatrix(node.translation, node.rotation, node.scale);
+        }
+        const computeWorld = (nodeIndex) => {
+          const node = nodes[nodeIndex];
+          if (!node.worldMatrix) node.worldMatrix = mat4Impl.create();
+          let parentWorld = node.parent !== null ? nodes[node.parent].worldMatrix : null;
+          if (parentWorld) {
+            mat4Impl.multiply(parentWorld, node.transform, node.worldMatrix);
+          } else {
+            mat4Impl.copy(node.transform, node.worldMatrix);
+          }
+          mat4Impl.scale(node.worldMatrix, [this.scaleBoneTest, this.scaleBoneTest, this.scaleBoneTest], node.worldMatrix);
+          if (node.children) {
+            for (const childIndex of node.children) computeWorld(childIndex);
+          }
+        };
+        for (let i = 0; i < nodes.length; i++) {
+          if (nodes[i].parent === null || nodes[i].parent === void 0) {
+            computeWorld(i);
+          }
+        }
+        for (let j = 0; j < this.skeleton.length; j++) {
+          const jointNode = nodes[this.skeleton[j]];
+          const finalMat = mat4Impl.create();
+          mat4Impl.multiply(jointNode.worldMatrix, jointNode.inverseBindMatrix, finalMat);
+          boneMatrices.set(finalMat, j * 16);
+        }
+        this.device.queue.writeBuffer(this.bonesBuffer, 0, boneMatrices);
+        return boneMatrices;
       }
     };
-    for (let i = 0; i < nodes.length; i++) {
-      if (nodes[i].parent === null || nodes[i].parent === void 0) {
-        computeWorld(i);
-      }
-    }
-    for (let j = 0; j < this.skeleton.length; j++) {
-      const jointNode = nodes[this.skeleton[j]];
-      const finalMat = mat4Impl.create();
-      mat4Impl.multiply(jointNode.worldMatrix, jointNode.inverseBindMatrix, finalMat);
-      boneMatrices.set(finalMat, j * 16);
-    }
-    this.device.queue.writeBuffer(this.bonesBuffer, 0, boneMatrices);
-    return boneMatrices;
   }
-};
+});
 
 // ../client.js
-var MEEditorClient = class {
-  ws = null;
-  constructor(typeOfRun, name) {
-    this.ws = new WebSocket("ws://localhost:1243");
-    this.ws.onopen = () => {
-      if (typeOfRun == "created from editor") {
-        console.info("wATCH project <signal>");
-        let o = {
-          action: "watch",
-          name
+var MEEditorClient;
+var init_client = __esm({
+  "../client.js"() {
+    init_utils();
+    MEEditorClient = class {
+      ws = null;
+      constructor(typeOfRun, name) {
+        this.ws = new WebSocket("ws://localhost:1243");
+        this.ws.onopen = () => {
+          if (typeOfRun == "created from editor") {
+            console.info("wATCH project <signal>");
+            let o = {
+              action: "watch",
+              name
+            };
+            o = JSON.stringify(o);
+            this.ws.send(o);
+            o = {
+              action: "list",
+              path: name
+            };
+            o = JSON.stringify(o);
+            this.ws.send(o);
+          }
+          console.log("%c[WS OPEN] [Attach events]", "color: lime; font-weight: bold");
         };
-        o = JSON.stringify(o);
-        this.ws.send(o);
-        o = {
-          action: "list",
-          path: name
-        };
-        o = JSON.stringify(o);
-        this.ws.send(o);
-      }
-      console.log("%c[WS OPEN] [Attach events]", "color: lime; font-weight: bold");
-    };
-    this.ws.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        console.log("%c[WS MESSAGE]", "color: yellow", data);
-        if (data && data.ok == true && data.payload && data.payload.redirect == true) {
-          setTimeout(() => location.assign(data.name + ".html"), 2e3);
-        } else if (data.payload && data.payload == "stop-watch done") {
-          mb.show("watch-stoped");
-        } else if (data.listAssets) {
-          document.dispatchEvent(new CustomEvent("la", {
-            detail: data
-          }));
-        } else if (data.projects) {
-          data.payload.forEach((item) => {
-            console.log("....." + item.name);
-            if (item.name != "readme.md") {
-              let txt = `Project list: 
+        this.ws.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            console.log("%c[WS MESSAGE]", "color: yellow", data);
+            if (data && data.ok == true && data.payload && data.payload.redirect == true) {
+              setTimeout(() => location.assign(data.name + ".html"), 2e3);
+            } else if (data.payload && data.payload == "stop-watch done") {
+              mb.show("watch-stoped");
+            } else if (data.listAssets) {
+              document.dispatchEvent(new CustomEvent("la", {
+                detail: data
+              }));
+            } else if (data.projects) {
+              data.payload.forEach((item) => {
+                console.log("....." + item.name);
+                if (item.name != "readme.md") {
+                  let txt = `Project list: 
 
                 - ${item.name}  
 
@@ -13501,193 +13837,197 @@ var MEEditorClient = class {
 
                Choose project name:
               `;
-              let projectName = prompt(txt);
-              if (projectName !== null) {
-                console.log("Project name:", projectName);
-                projectName += ".html";
-                location.assign(projectName);
-              } else {
-                console.error("Something wrong with load project input!");
-              }
+                  let projectName = prompt(txt);
+                  if (projectName !== null) {
+                    console.log("Project name:", projectName);
+                    projectName += ".html";
+                    location.assign(projectName);
+                  } else {
+                    console.error("Something wrong with load project input!");
+                  }
+                }
+              });
+            } else if (data.details) {
+              document.dispatchEvent(new CustomEvent("file-detail-data", {
+                detail: data
+              }));
+            } else {
+              mb.show("from editor:" + data.payload);
             }
-          });
-        } else if (data.details) {
-          document.dispatchEvent(new CustomEvent("file-detail-data", {
-            detail: data
-          }));
-        } else {
-          mb.show("from editor:" + data.payload);
-        }
-      } catch (e) {
-        console.error("[WS ERROR PARSE]", e);
+          } catch (e) {
+            console.error("[WS ERROR PARSE]", e);
+          }
+        };
+        this.ws.onerror = (err) => {
+          console.error("%c[WS ERROR]", "color: red", err);
+          document.dispatchEvent(new CustomEvent("editor-not-running", { detail: {} }));
+        };
+        this.ws.onclose = () => {
+          console.log("%c[WS CLOSED]", "color: gray");
+        };
+        this.attachEvents();
+      }
+      attachEvents() {
+        document.addEventListener("lp", (e) => {
+          console.info("Load project <signal>");
+          let o = {
+            action: "lp"
+          };
+          o = JSON.stringify(o);
+          this.ws.send(o);
+        });
+        document.addEventListener("cnp", (e) => {
+          console.info("Create new project <signal>");
+          let o = {
+            action: "cnp",
+            name: e.detail.name,
+            features: e.detail.features
+          };
+          o = JSON.stringify(o);
+          this.ws.send(o);
+        });
+        document.addEventListener("stop-watch", (e) => {
+          console.info("stop-watch <signal>");
+          let o = {
+            action: "stop-watch",
+            name: e.detail.name
+          };
+          o = JSON.stringify(o);
+          this.ws.send(o);
+        });
+        document.addEventListener("start-watch", (e) => {
+          console.info("start-watch <signal>");
+          let o = {
+            action: "watch",
+            name: e.detail.name
+          };
+          o = JSON.stringify(o);
+          this.ws.send(o);
+        });
+        document.addEventListener("nav-folder", (e) => {
+          console.info("nav-folder <signal>");
+          let o = {
+            action: "nav-folder",
+            name: e.detail.name,
+            rootFolder: e.detail.rootFolder
+          };
+          o = JSON.stringify(o);
+          this.ws.send(o);
+        });
+        document.addEventListener("file-detail", (e) => {
+          console.info("file-detail <signal>");
+          let o = {
+            action: "file-detail",
+            name: e.detail.name,
+            rootFolder: e.detail.rootFolder
+          };
+          o = JSON.stringify(o);
+          this.ws.send(o);
+        });
+        document.addEventListener("web.editor.addCube", (e) => {
+          console.log("[web.editor.addCube]: ", e.detail);
+          console.info("addCube <signal>");
+          let o = {
+            action: "addCube",
+            projectName: location.href.split("/public/")[1].split(".")[0]
+          };
+          o = JSON.stringify(o);
+          this.ws.send(o);
+        });
       }
     };
-    this.ws.onerror = (err) => {
-      console.error("%c[WS ERROR]", "color: red", err);
-      document.dispatchEvent(new CustomEvent("editor-not-running", { detail: {} }));
-    };
-    this.ws.onclose = () => {
-      console.log("%c[WS CLOSED]", "color: gray");
-    };
-    this.attachEvents();
   }
-  attachEvents() {
-    document.addEventListener("lp", (e) => {
-      console.info("Load project <signal>");
-      let o = {
-        action: "lp"
-      };
-      o = JSON.stringify(o);
-      this.ws.send(o);
-    });
-    document.addEventListener("cnp", (e) => {
-      console.info("Create new project <signal>");
-      let o = {
-        action: "cnp",
-        name: e.detail.name,
-        features: e.detail.features
-      };
-      o = JSON.stringify(o);
-      this.ws.send(o);
-    });
-    document.addEventListener("stop-watch", (e) => {
-      console.info("stop-watch <signal>");
-      let o = {
-        action: "stop-watch",
-        name: e.detail.name
-      };
-      o = JSON.stringify(o);
-      this.ws.send(o);
-    });
-    document.addEventListener("start-watch", (e) => {
-      console.info("start-watch <signal>");
-      let o = {
-        action: "watch",
-        name: e.detail.name
-      };
-      o = JSON.stringify(o);
-      this.ws.send(o);
-    });
-    document.addEventListener("nav-folder", (e) => {
-      console.info("nav-folder <signal>");
-      let o = {
-        action: "nav-folder",
-        name: e.detail.name,
-        rootFolder: e.detail.rootFolder
-      };
-      o = JSON.stringify(o);
-      this.ws.send(o);
-    });
-    document.addEventListener("file-detail", (e) => {
-      console.info("file-detail <signal>");
-      let o = {
-        action: "file-detail",
-        name: e.detail.name,
-        rootFolder: e.detail.rootFolder
-      };
-      o = JSON.stringify(o);
-      this.ws.send(o);
-    });
-  }
-};
+});
 
 // ../editor.provider.js
-var EditorProvider = class {
-  constructor(core) {
-    this.core = core;
-    this.addEditorEvents();
-  }
-  addEditorEvents() {
-    document.addEventListener("web.editor.input", (e) => {
-      console.log("[EDITOR] sceneObj: ", e.detail.inputFor);
-      let sceneObj = this.core.getSceneObjectByName(e.detail.inputFor);
-      if (sceneObj) {
-        sceneObj[e.detail.propertyId][e.detail.property] = e.detail.value;
-      } else {
-        console.warn("EditorProvider input error");
-        return;
+var EditorProvider;
+var init_editor_provider = __esm({
+  "../editor.provider.js"() {
+    init_loader_obj();
+    EditorProvider = class {
+      constructor(core) {
+        this.core = core;
+        this.addEditorEvents();
       }
-    });
-    document.addEventListener("web.editor.addCube", (e) => {
-      console.log("[web.editor.addCube]: ", e.detail);
-      downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, (m) => {
-        const texturesPaths = ["./res/meshes/blender/cube.png"];
-        this.core.addMeshObj({
-          position: { x: 0, y: 0, z: -20 },
-          rotation: { x: 0, y: 0, z: 0 },
-          rotationSpeed: { x: 0, y: 0, z: 0 },
-          texturesPaths: [texturesPaths],
-          // useUVShema4x2: true,
-          name: "Cube_" + app.mainRenderBundle.length,
-          mesh: m.cube,
-          raycast: { enabled: true, radius: 2 },
-          physics: {
-            enabled: true,
-            geometry: "Cube"
+      addEditorEvents() {
+        document.addEventListener("web.editor.input", (e) => {
+          console.log("[EDITOR] sceneObj: ", e.detail.inputFor);
+          let sceneObj = this.core.getSceneObjectByName(e.detail.inputFor);
+          if (sceneObj) {
+            sceneObj[e.detail.propertyId][e.detail.property] = e.detail.value;
+          } else {
+            console.warn("EditorProvider input error");
+            return;
           }
         });
-      }, { scale: [1, 1, 1] });
-    });
+        document.addEventListener("web.editor.addCube", (e) => {
+        });
+      }
+    };
   }
-};
+});
 
 // ../hud.js
-var EditorHud = class {
-  constructor(core, a) {
-    this.core = core;
-    this.sceneContainer = null;
-    this.FS = new FullscreenManager();
-    if (a == "infly") {
-      this.createTopMenuInFly();
-    } else if (a == "created from editor") {
-      this.createTopMenu();
-      this.createAssets();
-    } else if (a == "pre editor") {
-      this.createTopMenuPre();
-    } else {
-      throw console.error("Editor err");
-    }
-    this.createEditorSceneContainer();
-    this.createScenePropertyBox();
-    this.currentProperties = [];
-    document.addEventListener("editor-not-running", () => {
-      this.noEditorConn();
-    });
-    document.addEventListener("file-detail-data", (e) => {
-      console.log(e.detail.details);
-      let s = "";
-      for (let key in e.detail.details) {
-        if (key == "path") {
-          s += key + ":" + e.detail.details[key].split("public")[1] + "\n";
+var EditorHud, SceneObjectProperty;
+var init_hud = __esm({
+  "../hud.js"() {
+    init_utils();
+    EditorHud = class {
+      constructor(core, a) {
+        this.core = core;
+        this.sceneContainer = null;
+        this.FS = new FullscreenManager();
+        if (a == "infly") {
+          this.createTopMenuInFly();
+        } else if (a == "created from editor") {
+          this.createTopMenu();
+          this.createAssets();
+        } else if (a == "pre editor") {
+          this.createTopMenuPre();
         } else {
-          s += key + ":" + e.detail.details[key] + "\n";
+          throw console.error("Editor err");
         }
+        this.createEditorSceneContainer();
+        this.createScenePropertyBox();
+        this.currentProperties = [];
+        document.addEventListener("editor-not-running", () => {
+          this.noEditorConn();
+        });
+        document.addEventListener("file-detail-data", (e) => {
+          console.log(e.detail.details);
+          let s = "";
+          for (let key in e.detail.details) {
+            if (key == "path") {
+              s += key + ":" + e.detail.details[key].split("public")[1] + "\n";
+            } else {
+              s += key + ":" + e.detail.details[key] + "\n";
+            }
+          }
+          mb.show(s);
+        });
       }
-      mb.show(s);
-    });
-  }
-  noEditorConn() {
-    this.errorForm = document.createElement("div");
-    this.errorForm.id = "errorForm";
-    Object.assign(this.errorForm.style, {
-      position: "absolute",
-      top: "10%",
-      left: "25%",
-      width: "50%",
-      height: "30vh",
-      backgroundColor: "rgba(0,0,0,0.85)",
-      display: "flex",
-      alignItems: "start",
-      color: "white",
-      fontFamily: "'Orbitron', sans-serif",
-      zIndex: "15",
-      padding: "2px",
-      boxSizing: "border-box",
-      flexDirection: "column",
-      justifyContent: "center",
-      alignItems: "center"
-    });
-    this.errorForm.innerHTML = `
+      noEditorConn() {
+        this.errorForm = document.createElement("div");
+        this.errorForm.id = "errorForm";
+        Object.assign(this.errorForm.style, {
+          position: "absolute",
+          top: "10%",
+          left: "25%",
+          width: "50%",
+          height: "30vh",
+          backgroundColor: "rgba(0,0,0,0.85)",
+          display: "flex",
+          alignItems: "start",
+          color: "white",
+          fontFamily: "'Orbitron', sans-serif",
+          zIndex: "15",
+          padding: "2px",
+          boxSizing: "border-box",
+          flexDirection: "column",
+          justifyContent: "center",
+          alignItems: "center"
+        });
+        this.errorForm.innerHTML = `
        <h2 class='fancy-label'>No connection with editor node app.</h2>
        <h3 class='fancy-label'>Run from root [npm run editorx] 
  
@@ -13695,30 +14035,30 @@ var EditorHud = class {
 
           Than refresh page [clear default cache browser with CTRL+F5] </h3>
     `;
-    document.body.appendChild(this.errorForm);
-  }
-  createTopMenu() {
-    this.editorMenu = document.createElement("div");
-    this.editorMenu.id = "editorMenu";
-    Object.assign(this.editorMenu.style, {
-      position: "absolute",
-      top: "0",
-      left: "20%",
-      width: "60%",
-      height: "50px;",
-      backgroundColor: "rgba(0,0,0,0.85)",
-      display: "flex",
-      alignItems: "start",
-      // overflow: "auto",
-      color: "white",
-      fontFamily: "'Orbitron', sans-serif",
-      zIndex: "15",
-      padding: "2px",
-      boxSizing: "border-box",
-      flexDirection: "row"
-    });
-    this.editorMenu.innerHTML = " PROJECT MENU  ";
-    this.editorMenu.innerHTML = `
+        document.body.appendChild(this.errorForm);
+      }
+      createTopMenu() {
+        this.editorMenu = document.createElement("div");
+        this.editorMenu.id = "editorMenu";
+        Object.assign(this.editorMenu.style, {
+          position: "absolute",
+          top: "0",
+          left: "20%",
+          width: "60%",
+          height: "50px;",
+          backgroundColor: "rgba(0,0,0,0.85)",
+          display: "flex",
+          alignItems: "start",
+          // overflow: "auto",
+          color: "white",
+          fontFamily: "'Orbitron', sans-serif",
+          zIndex: "15",
+          padding: "2px",
+          boxSizing: "border-box",
+          flexDirection: "row"
+        });
+        this.editorMenu.innerHTML = " PROJECT MENU  ";
+        this.editorMenu.innerHTML = `
     <div class="top-item">
       <div class="top-btn">Project \u25BE</div>
       <div class="dropdown">
@@ -13776,75 +14116,81 @@ var EditorHud = class {
       </div>
     </div>
   `;
-    document.body.appendChild(this.editorMenu);
-    this.editorMenu.querySelectorAll(".top-btn").forEach((btn) => {
-      btn.addEventListener("click", (e) => {
-        const menu = e.target.nextElementSibling;
-        this.editorMenu.querySelectorAll(".dropdown").forEach((d) => {
-          if (d !== menu) d.style.display = "none";
+        document.body.appendChild(this.editorMenu);
+        this.editorMenu.querySelectorAll(".top-btn").forEach((btn) => {
+          btn.addEventListener("click", (e) => {
+            const menu = e.target.nextElementSibling;
+            this.editorMenu.querySelectorAll(".dropdown").forEach((d) => {
+              if (d !== menu) d.style.display = "none";
+            });
+            menu.style.display = menu.style.display === "block" ? "none" : "block";
+          });
         });
-        menu.style.display = menu.style.display === "block" ? "none" : "block";
-      });
-    });
-    document.addEventListener("click", (e) => {
-      if (!this.editorMenu.contains(e.target)) {
-        this.editorMenu.querySelectorAll(".dropdown").forEach((d) => {
-          d.style.display = "none";
+        document.addEventListener("click", (e) => {
+          if (!this.editorMenu.contains(e.target)) {
+            this.editorMenu.querySelectorAll(".dropdown").forEach((d) => {
+              d.style.display = "none";
+            });
+          }
         });
-      }
-    });
-    byId("fullScreenBtn").addEventListener("click", () => {
-      this.FS.request();
-    });
-    byId("hideEditorBtn").addEventListener("click", () => {
-      this.editorMenu.style.display = "none";
-      this.assetsBox.style.display = "none";
-      this.sceneProperty.style.display = "none";
-      this.sceneContainer.style.display = "none";
-    });
-    if (byId("stop-watch")) byId("stop-watch").addEventListener("click", () => {
-      document.dispatchEvent(new CustomEvent("stop-watch", {
-        detail: {}
-      }));
-    });
-    if (byId("start-watch")) byId("start-watch").addEventListener("click", () => {
-      document.dispatchEvent(new CustomEvent("start-watch", {
-        detail: {}
-      }));
-    });
-    if (byId("cnpBtn")) byId("cnpBtn").addEventListener("click", () => {
-      let name = prompt("\u{1F4E6} Project name :", "MyProject1");
-      let features = {
-        physics: false,
-        networking: false
-      };
-      if (confirm("\u269B Enable physics (Ammo)?")) {
-        features.physics = true;
-      }
-      if (confirm("\u{1F50C} Enable networking (kurento/ov)?")) {
-        features.networking = true;
-      }
-      console.log(features);
-      document.dispatchEvent(new CustomEvent("cnp", {
-        detail: {
-          name,
-          features
-        }
-      }));
-    });
-    if (byId("addCube")) byId("addCube").addEventListener("click", () => {
-      document.dispatchEvent(new CustomEvent("web.editor.addCube", {
-        detail: {}
-      }));
-    });
-    byId("camera-settings-pitch").addEventListener("change", (e) => {
-      console.log("setting camera pitch ", e);
-    });
-    byId("camera-settings-yaw").addEventListener("change", (e) => {
-      console.log("setting camera", e);
-    });
-    this.showAboutModal = () => {
-      alert(`
+        byId("fullScreenBtn").addEventListener("click", () => {
+          this.FS.request();
+        });
+        byId("hideEditorBtn").addEventListener("click", () => {
+          this.editorMenu.style.display = "none";
+          this.assetsBox.style.display = "none";
+          this.sceneProperty.style.display = "none";
+          this.sceneContainer.style.display = "none";
+        });
+        if (byId("stop-watch")) byId("stop-watch").addEventListener("click", () => {
+          document.dispatchEvent(new CustomEvent("stop-watch", {
+            detail: {}
+          }));
+        });
+        if (byId("start-watch")) byId("start-watch").addEventListener("click", () => {
+          document.dispatchEvent(new CustomEvent("start-watch", {
+            detail: {}
+          }));
+        });
+        if (byId("cnpBtn")) byId("cnpBtn").addEventListener("click", () => {
+          let name = prompt("\u{1F4E6} Project name :", "MyProject1");
+          let features = {
+            physics: false,
+            networking: false
+          };
+          if (confirm("\u269B Enable physics (Ammo)?")) {
+            features.physics = true;
+          }
+          if (confirm("\u{1F50C} Enable networking (kurento/ov)?")) {
+            features.networking = true;
+          }
+          console.log(features);
+          document.dispatchEvent(new CustomEvent("cnp", {
+            detail: {
+              name,
+              features
+            }
+          }));
+        });
+        if (byId("addCube")) byId("addCube").addEventListener("click", () => {
+          document.dispatchEvent(new CustomEvent("web.editor.addCube", {
+            detail: {}
+          }));
+        });
+        setTimeout(() => {
+          this.core.cameras.WASD.pitch = byId("camera-settings-pitch").value;
+          this.core.cameras.WASD.yaw = byId("camera-settings-yaw").value;
+        }, 1500);
+        byId("camera-settings-pitch").addEventListener("change", (e) => {
+          console.log("setting camera pitch ", e);
+          this.core.cameras.WASD.pitch = e.target.value;
+        });
+        byId("camera-settings-yaw").addEventListener("change", (e) => {
+          console.log("setting camera", e);
+          this.core.cameras.WASD.yaw = e.target.value;
+        });
+        this.showAboutModal = () => {
+          alert(`
   \u2714\uFE0F Support for 3D objects and scene transformations
   \u2714\uFE0F Ammo.js physics full integration
   \u2714\uFE0F Networking with Kurento/OpenVidu/Own middleware Nodejs -> frontend
@@ -13852,118 +14198,118 @@ var EditorHud = class {
      Source code: https://github.com/zlatnaspirala/matrix-engine-wgpu
      More at https://maximumroulette.com
         `);
-    };
-    byId("showAboutEditor").addEventListener("click", this.showAboutModal);
-  }
-  createAssets() {
-    this.assetsBox = document.createElement("div");
-    this.assetsBox.id = "assetsBox";
-    Object.assign(this.assetsBox.style, {
-      position: "absolute",
-      bottom: "0",
-      left: "20%",
-      width: "60%",
-      height: "250px",
-      backgroundColor: "rgba(0,0,0,0.85)",
-      display: "flex",
-      alignItems: "start",
-      // overflow: "auto",
-      color: "white",
-      fontFamily: "'Orbitron', sans-serif",
-      zIndex: "15",
-      padding: "2px",
-      boxSizing: "border-box",
-      flexDirection: "column"
-    });
-    this.assetsBox.innerHTML = "ASSTES";
-    this.assetsBox.innerHTML = `
+        };
+        byId("showAboutEditor").addEventListener("click", this.showAboutModal);
+      }
+      createAssets() {
+        this.assetsBox = document.createElement("div");
+        this.assetsBox.id = "assetsBox";
+        Object.assign(this.assetsBox.style, {
+          position: "absolute",
+          bottom: "0",
+          left: "20%",
+          width: "60%",
+          height: "250px",
+          backgroundColor: "rgba(0,0,0,0.85)",
+          display: "flex",
+          alignItems: "start",
+          // overflow: "auto",
+          color: "white",
+          fontFamily: "'Orbitron', sans-serif",
+          zIndex: "15",
+          padding: "2px",
+          boxSizing: "border-box",
+          flexDirection: "column"
+        });
+        this.assetsBox.innerHTML = "ASSTES";
+        this.assetsBox.innerHTML = `
     <div id="folderTitle" >Root</div>
     <div id="folderBack" class="scenePropItem" >...</div>
     <div id='res-folder' class="file-browser">
     </div>`;
-    document.body.appendChild(this.assetsBox);
-    byId("folderBack").addEventListener("click", () => {
-      let getCurrent = byId("res-folder").getAttribute("data-root-folder");
-      const t = getCurrent.substring(0, getCurrent.lastIndexOf("\\"));
-      const last = t.substring(t.lastIndexOf("\\") + 1);
-      if (last == "public") {
-        console.log(last + "<<<<<<<<<<<<<<<<<PREVENTED<<");
-        return;
+        document.body.appendChild(this.assetsBox);
+        byId("folderBack").addEventListener("click", () => {
+          let getCurrent = byId("res-folder").getAttribute("data-root-folder");
+          const t = getCurrent.substring(0, getCurrent.lastIndexOf("\\"));
+          const last = t.substring(t.lastIndexOf("\\") + 1);
+          if (last == "public") {
+            console.log(last + "<<<<<<<<<<<<<<<<<PREVENTED<<");
+            return;
+          }
+          document.dispatchEvent(new CustomEvent("nav-folder", {
+            detail: {
+              rootFolder: t || "",
+              name: ""
+            }
+          }));
+        });
+        document.addEventListener("la", (e) => {
+          console.log("root folder ", e.detail.rootFolder);
+          byId("res-folder").setAttribute("data-root-folder", e.detail.rootFolder);
+          byId("res-folder").innerHTML = "";
+          e.detail.payload.forEach((i) => {
+            let item = document.createElement("div");
+            item.classList.add("file-item");
+            if (i.isDir == true) {
+              item.classList.add("folder");
+            } else if (i.name.split(".")[1] == "jpg" || i.name.split(".")[1] == "png" || i.name.split(".")[1] == "jpeg") {
+              item.classList.add("png");
+            } else if (i.name.split(".")[1] == "mp3") {
+              item.classList.add("mp3");
+            } else if (i.name.split(".")[1] == "js") {
+              item.classList.add("js");
+            } else if (i.name.split(".")[1] == "ttf" || i.name.split(".")[1] == "ttf" || i.name.split(".")[1] == "TTF" || i.name.split(".")[1] == "otf" || i.name.split(".")[1] == "woff" || i.name.split(".")[1] == "woff2") {
+              item.classList.add("ttf");
+            } else {
+              item.classList.add("unknown");
+            }
+            item.innerHTML = "<p>" + i.name + "</p>";
+            byId("res-folder").appendChild(item);
+            item.addEventListener("click", (e2) => {
+              if (i.isDir == true) document.dispatchEvent(new CustomEvent("nav-folder", {
+                detail: {
+                  rootFolder: byId("res-folder").getAttribute("data-root-folder") || "",
+                  name: item.children[0].innerText
+                }
+              }));
+              if (i.isDir == false) document.dispatchEvent(new CustomEvent("file-detail", {
+                detail: {
+                  rootFolder: byId("res-folder").getAttribute("data-root-folder") || "",
+                  name: item.innerText
+                }
+              }));
+            });
+          });
+          document.querySelectorAll(".file-item").forEach((el) => {
+            el.addEventListener("click", () => {
+              document.querySelectorAll(".file-item").forEach((x) => x.classList.remove("selected"));
+              el.classList.add("selected");
+            });
+          });
+        });
       }
-      document.dispatchEvent(new CustomEvent("nav-folder", {
-        detail: {
-          rootFolder: t || "",
-          name: ""
-        }
-      }));
-    });
-    document.addEventListener("la", (e) => {
-      console.log("root folder ", e.detail.rootFolder);
-      byId("res-folder").setAttribute("data-root-folder", e.detail.rootFolder);
-      byId("res-folder").innerHTML = "";
-      e.detail.payload.forEach((i) => {
-        let item = document.createElement("div");
-        item.classList.add("file-item");
-        if (i.isDir == true) {
-          item.classList.add("folder");
-        } else if (i.name.split(".")[1] == "jpg" || i.name.split(".")[1] == "png" || i.name.split(".")[1] == "jpeg") {
-          item.classList.add("png");
-        } else if (i.name.split(".")[1] == "mp3") {
-          item.classList.add("mp3");
-        } else if (i.name.split(".")[1] == "js") {
-          item.classList.add("js");
-        } else if (i.name.split(".")[1] == "ttf" || i.name.split(".")[1] == "ttf" || i.name.split(".")[1] == "TTF" || i.name.split(".")[1] == "otf" || i.name.split(".")[1] == "woff" || i.name.split(".")[1] == "woff2") {
-          item.classList.add("ttf");
-        } else {
-          item.classList.add("unknown");
-        }
-        item.innerHTML = "<p>" + i.name + "</p>";
-        byId("res-folder").appendChild(item);
-        item.addEventListener("click", (e2) => {
-          if (i.isDir == true) document.dispatchEvent(new CustomEvent("nav-folder", {
-            detail: {
-              rootFolder: byId("res-folder").getAttribute("data-root-folder") || "",
-              name: item.children[0].innerText
-            }
-          }));
-          if (i.isDir == false) document.dispatchEvent(new CustomEvent("file-detail", {
-            detail: {
-              rootFolder: byId("res-folder").getAttribute("data-root-folder") || "",
-              name: item.innerText
-            }
-          }));
+      createTopMenuPre() {
+        this.editorMenu = document.createElement("div");
+        this.editorMenu.id = "editorMenu";
+        Object.assign(this.editorMenu.style, {
+          position: "absolute",
+          top: "0",
+          left: "20%",
+          width: "60%",
+          height: "50px;",
+          backgroundColor: "rgba(0,0,0,0.85)",
+          display: "flex",
+          alignItems: "start",
+          // overflow: "auto",
+          color: "white",
+          fontFamily: "'Orbitron', sans-serif",
+          zIndex: "15",
+          padding: "2px",
+          boxSizing: "border-box",
+          flexDirection: "row"
         });
-      });
-      document.querySelectorAll(".file-item").forEach((el) => {
-        el.addEventListener("click", () => {
-          document.querySelectorAll(".file-item").forEach((x) => x.classList.remove("selected"));
-          el.classList.add("selected");
-        });
-      });
-    });
-  }
-  createTopMenuPre() {
-    this.editorMenu = document.createElement("div");
-    this.editorMenu.id = "editorMenu";
-    Object.assign(this.editorMenu.style, {
-      position: "absolute",
-      top: "0",
-      left: "20%",
-      width: "60%",
-      height: "50px;",
-      backgroundColor: "rgba(0,0,0,0.85)",
-      display: "flex",
-      alignItems: "start",
-      // overflow: "auto",
-      color: "white",
-      fontFamily: "'Orbitron', sans-serif",
-      zIndex: "15",
-      padding: "2px",
-      boxSizing: "border-box",
-      flexDirection: "row"
-    });
-    this.editorMenu.innerHTML = " PROJECT MENU  ";
-    this.editorMenu.innerHTML = `
+        this.editorMenu.innerHTML = " PROJECT MENU  ";
+        this.editorMenu.innerHTML = `
     <div class="top-item">
       <div class="top-btn">Project \u25BE</div>
       <div class="dropdown">
@@ -13979,80 +14325,80 @@ var EditorHud = class {
       </div>
     </div>
   `;
-    document.body.appendChild(this.editorMenu);
-    this.editorMenu.querySelectorAll(".top-btn").forEach((btn) => {
-      btn.addEventListener("click", (e) => {
-        const menu = e.target.nextElementSibling;
-        this.editorMenu.querySelectorAll(".dropdown").forEach((d) => {
-          if (d !== menu) d.style.display = "none";
+        document.body.appendChild(this.editorMenu);
+        this.editorMenu.querySelectorAll(".top-btn").forEach((btn) => {
+          btn.addEventListener("click", (e) => {
+            const menu = e.target.nextElementSibling;
+            this.editorMenu.querySelectorAll(".dropdown").forEach((d) => {
+              if (d !== menu) d.style.display = "none";
+            });
+            menu.style.display = menu.style.display === "block" ? "none" : "block";
+          });
         });
-        menu.style.display = menu.style.display === "block" ? "none" : "block";
-      });
-    });
-    document.addEventListener("click", (e) => {
-      if (!this.editorMenu.contains(e.target)) {
-        this.editorMenu.querySelectorAll(".dropdown").forEach((d) => {
-          d.style.display = "none";
+        document.addEventListener("click", (e) => {
+          if (!this.editorMenu.contains(e.target)) {
+            this.editorMenu.querySelectorAll(".dropdown").forEach((d) => {
+              d.style.display = "none";
+            });
+          }
         });
-      }
-    });
-    if (byId("loadProjectBtn")) byId("loadProjectBtn").addEventListener("click", () => {
-      document.dispatchEvent(new CustomEvent("lp", {
-        detail: {}
-      }));
-    });
-    if (byId("cnpBtn")) byId("cnpBtn").addEventListener("click", () => {
-      let name = prompt("\u{1F4E6} Project name :", "MyProject1");
-      let features = {
-        physics: false,
-        networking: false
-      };
-      if (confirm("\u269B Enable physics (Ammo)?")) {
-        features.physics = true;
-      }
-      if (confirm("\u{1F50C} Enable networking (kurento/ov)?")) {
-        features.networking = true;
-      }
-      console.log(features);
-      document.dispatchEvent(new CustomEvent("cnp", {
-        detail: {
-          name,
-          features
-        }
-      }));
-    });
-    this.showAboutModal = () => {
-      alert(`
+        if (byId("loadProjectBtn")) byId("loadProjectBtn").addEventListener("click", () => {
+          document.dispatchEvent(new CustomEvent("lp", {
+            detail: {}
+          }));
+        });
+        if (byId("cnpBtn")) byId("cnpBtn").addEventListener("click", () => {
+          let name = prompt("\u{1F4E6} Project name :", "MyProject1");
+          let features = {
+            physics: false,
+            networking: false
+          };
+          if (confirm("\u269B Enable physics (Ammo)?")) {
+            features.physics = true;
+          }
+          if (confirm("\u{1F50C} Enable networking (kurento/ov)?")) {
+            features.networking = true;
+          }
+          console.log(features);
+          document.dispatchEvent(new CustomEvent("cnp", {
+            detail: {
+              name,
+              features
+            }
+          }));
+        });
+        this.showAboutModal = () => {
+          alert(`
   \u2714\uFE0F Support for 3D objects and scene transformations
   \u2714\uFE0F Ammo.js physics full integration
   \u2714\uFE0F Networking with Kurento/OpenVidu/Own middleware Nodejs -> frontend
   \u{1F3AF} Replicate matrix-engine (WebGL) features
         `);
-    };
-    byId("showAboutEditor").addEventListener("click", this.showAboutModal);
-  }
-  createTopMenuInFly() {
-    this.editorMenu = document.createElement("div");
-    this.editorMenu.id = "editorMenu";
-    Object.assign(this.editorMenu.style, {
-      position: "absolute",
-      top: "0",
-      left: "20%",
-      width: "60%",
-      height: "50px;",
-      backgroundColor: "rgba(0,0,0,0.85)",
-      display: "flex",
-      alignItems: "start",
-      // overflow: "auto",
-      color: "white",
-      fontFamily: "'Orbitron', sans-serif",
-      zIndex: "15",
-      padding: "2px",
-      boxSizing: "border-box",
-      flexDirection: "row"
-    });
-    this.editorMenu.innerHTML = " PROJECT MENU  ";
-    this.editorMenu.innerHTML = `
+        };
+        byId("showAboutEditor").addEventListener("click", this.showAboutModal);
+      }
+      createTopMenuInFly() {
+        this.editorMenu = document.createElement("div");
+        this.editorMenu.id = "editorMenu";
+        Object.assign(this.editorMenu.style, {
+          position: "absolute",
+          top: "0",
+          left: "20%",
+          width: "60%",
+          height: "50px;",
+          backgroundColor: "rgba(0,0,0,0.85)",
+          display: "flex",
+          alignItems: "start",
+          // overflow: "auto",
+          color: "white",
+          fontFamily: "'Orbitron', sans-serif",
+          zIndex: "15",
+          padding: "2px",
+          boxSizing: "border-box",
+          flexDirection: "row"
+        });
+        this.editorMenu.innerHTML = " PROJECT MENU  ";
+        this.editorMenu.innerHTML = `
     <div>INFLY Regime of work no saves. Nice for runtime debugging or get data for map setup.</div>
     <div class="top-item">
       <div class="top-btn">About \u25BE</div>
@@ -14061,245 +14407,245 @@ var EditorHud = class {
       </div>
     </div>
   `;
-    document.body.appendChild(this.editorMenu);
-    this.editorMenu.querySelectorAll(".top-btn").forEach((btn) => {
-      btn.addEventListener("click", (e) => {
-        const menu = e.target.nextElementSibling;
-        this.editorMenu.querySelectorAll(".dropdown").forEach((d) => {
-          if (d !== menu) d.style.display = "none";
+        document.body.appendChild(this.editorMenu);
+        this.editorMenu.querySelectorAll(".top-btn").forEach((btn) => {
+          btn.addEventListener("click", (e) => {
+            const menu = e.target.nextElementSibling;
+            this.editorMenu.querySelectorAll(".dropdown").forEach((d) => {
+              if (d !== menu) d.style.display = "none";
+            });
+            menu.style.display = menu.style.display === "block" ? "none" : "block";
+          });
         });
-        menu.style.display = menu.style.display === "block" ? "none" : "block";
-      });
-    });
-    document.addEventListener("click", (e) => {
-      if (!this.editorMenu.contains(e.target)) {
-        this.editorMenu.querySelectorAll(".dropdown").forEach((d) => {
-          d.style.display = "none";
+        document.addEventListener("click", (e) => {
+          if (!this.editorMenu.contains(e.target)) {
+            this.editorMenu.querySelectorAll(".dropdown").forEach((d) => {
+              d.style.display = "none";
+            });
+          }
         });
-      }
-    });
-    this.showAboutModal = () => {
-      alert(`
+        this.showAboutModal = () => {
+          alert(`
   \u2714\uFE0F Support for 3D objects and scene transformations
   \u2714\uFE0F Ammo.js physics full integration
   \u2714\uFE0F Networking with Kurento/OpenVidu/Own middleware Nodejs -> frontend
   \u{1F3AF} Replicate matrix-engine (WebGL) features
         `);
-    };
-    byId("showAboutEditor").addEventListener("click", this.showAboutModal);
-  }
-  createEditorSceneContainer() {
-    this.sceneContainer = document.createElement("div");
-    this.sceneContainer.id = "sceneContainer";
-    Object.assign(this.sceneContainer.style, {
-      position: "absolute",
-      top: "0",
-      left: "0",
-      width: "20%",
-      height: "100vh",
-      backgroundColor: "rgba(0,0,0,0.85)",
-      display: "flex",
-      alignItems: "start",
-      overflow: "auto",
-      color: "white",
-      fontFamily: "'Orbitron', sans-serif",
-      zIndex: "15",
-      padding: "2px",
-      boxSizing: "border-box",
-      flexDirection: "column"
-    });
-    this.scene = document.createElement("div");
-    this.scene.id = "scene";
-    Object.assign(this.scene.style, {
-      width: "100%",
-      height: "100%",
-      backgroundColor: "rgba(0,0,0,0.85)",
-      display: "flex",
-      alignItems: "start",
-      color: "white",
-      fontFamily: "'Orbitron', sans-serif",
-      zIndex: "15",
-      padding: "2px",
-      boxSizing: "border-box",
-      flexDirection: "column"
-    });
-    this.sceneContainerTitle = document.createElement("div");
-    this.sceneContainerTitle.style.height = "40px";
-    this.sceneContainerTitle.style.fontSize = isMobile() == true ? "x-larger" : "larger";
-    this.sceneContainerTitle.style.padding = "5px";
-    this.sceneContainerTitle.innerHTML = "Scene container";
-    this.sceneContainer.appendChild(this.sceneContainerTitle);
-    this.sceneContainer.appendChild(this.scene);
-    document.body.appendChild(this.sceneContainer);
-  }
-  updateSceneContainer() {
-    this.scene.innerHTML = ``;
-    this.core.mainRenderBundle.forEach((sceneObj) => {
-      let so = document.createElement("div");
-      so.style.height = "20px";
-      so.classList.add("sceneContainerItem");
-      so.innerHTML = sceneObj.name;
-      so.addEventListener("click", this.updateSceneObjProperties);
-      this.scene.appendChild(so);
-    });
-  }
-  createScenePropertyBox() {
-    this.sceneProperty = document.createElement("div");
-    this.sceneProperty.id = "sceneProperty";
-    this.sceneProperty.classList.add("scenePropItem");
-    Object.assign(this.sceneProperty.style, {
-      position: "absolute",
-      top: "0",
-      right: "0",
-      width: "20%",
-      height: "100vh",
-      backgroundColor: "rgba(0,0,0,0.85)",
-      display: "flex",
-      alignItems: "start",
-      overflow: "auto",
-      color: "white",
-      fontFamily: "'Orbitron', sans-serif",
-      zIndex: "15",
-      padding: "2px",
-      boxSizing: "border-box",
-      flexDirection: "column"
-    });
-    this.objectProperies = document.createElement("div");
-    this.objectProperies.id = "objectProperies";
-    Object.assign(this.objectProperies.style, {
-      width: "100%",
-      height: "auto",
-      backgroundColor: "rgba(0,0,0,0.85)",
-      display: "flex",
-      alignItems: "start",
-      color: "white",
-      fontFamily: "'Orbitron', sans-serif",
-      zIndex: "15",
-      padding: "2px",
-      boxSizing: "border-box",
-      flexDirection: "column"
-    });
-    this.objectProperiesTitle = document.createElement("div");
-    this.objectProperiesTitle.style.height = "40px";
-    this.objectProperiesTitle.style.fontSize = "120%";
-    this.objectProperiesTitle.innerHTML = "Scene object properties";
-    this.sceneProperty.appendChild(this.objectProperiesTitle);
-    this.sceneProperty.appendChild(this.objectProperies);
-    document.body.appendChild(this.sceneProperty);
-  }
-  updateSceneObjProperties = (e) => {
-    this.currentProperties = [];
-    this.objectProperiesTitle.style.fontSize = "120%";
-    this.objectProperiesTitle.innerHTML = `Scene object properties`;
-    this.objectProperies.innerHTML = ``;
-    const currentSO = this.core.getSceneObjectByName(e.target.innerHTML);
-    this.objectProperiesTitle.innerHTML = `<span style="color:lime;">Name: ${e.target.innerHTML}</span> 
-      <span style="color:yellow;"> [${currentSO.constructor.name}]`;
-    const OK = Object.keys(currentSO);
-    OK.forEach((prop) => {
-      if (prop == "glb" && typeof currentSO[prop] !== "undefined" && currentSO[prop] != null) {
-        this.currentProperties.push(new SceneObjectProperty(this.objectProperies, "glb", currentSO));
-      } else {
-        this.currentProperties.push(new SceneObjectProperty(this.objectProperies, prop, currentSO));
+        };
+        byId("showAboutEditor").addEventListener("click", this.showAboutModal);
       }
-    });
-  };
-};
-var SceneObjectProperty = class {
-  constructor(parentDOM, propName, currSceneObj) {
-    this.subObjectsProps = [];
-    this.propName = document.createElement("div");
-    this.propName.style.width = "100%";
-    if (propName == "device" || propName == "position" || propName == "rotation" || propName == "raycast" || propName == "entityArgPass" || propName == "scale" || propName == "maxInstances" || propName == "texturesPaths" || propName == "glb") {
-      this.propName.style.overflow = "hidden";
-      this.propName.style.height = "20px";
-      this.propName.style.borderBottom = "solid lime 2px";
-      this.propName.addEventListener("click", (e) => {
-        if (e.currentTarget.style.height != "fit-content") {
-          this.propName.style.overflow = "unset";
-          e.currentTarget.style.height = "fit-content";
-        } else {
+      createEditorSceneContainer() {
+        this.sceneContainer = document.createElement("div");
+        this.sceneContainer.id = "sceneContainer";
+        Object.assign(this.sceneContainer.style, {
+          position: "absolute",
+          top: "0",
+          left: "0",
+          width: "20%",
+          height: "100vh",
+          backgroundColor: "rgba(0,0,0,0.85)",
+          display: "flex",
+          alignItems: "start",
+          overflow: "auto",
+          color: "white",
+          fontFamily: "'Orbitron', sans-serif",
+          zIndex: "15",
+          padding: "2px",
+          boxSizing: "border-box",
+          flexDirection: "column"
+        });
+        this.scene = document.createElement("div");
+        this.scene.id = "scene";
+        Object.assign(this.scene.style, {
+          width: "100%",
+          height: "100%",
+          backgroundColor: "rgba(0,0,0,0.85)",
+          display: "flex",
+          alignItems: "start",
+          color: "white",
+          fontFamily: "'Orbitron', sans-serif",
+          zIndex: "15",
+          padding: "2px",
+          boxSizing: "border-box",
+          flexDirection: "column"
+        });
+        this.sceneContainerTitle = document.createElement("div");
+        this.sceneContainerTitle.style.height = "40px";
+        this.sceneContainerTitle.style.fontSize = isMobile() == true ? "x-larger" : "larger";
+        this.sceneContainerTitle.style.padding = "5px";
+        this.sceneContainerTitle.innerHTML = "Scene container";
+        this.sceneContainer.appendChild(this.sceneContainerTitle);
+        this.sceneContainer.appendChild(this.scene);
+        document.body.appendChild(this.sceneContainer);
+      }
+      updateSceneContainer() {
+        this.scene.innerHTML = ``;
+        this.core.mainRenderBundle.forEach((sceneObj) => {
+          let so = document.createElement("div");
+          so.style.height = "20px";
+          so.classList.add("sceneContainerItem");
+          so.innerHTML = sceneObj.name;
+          so.addEventListener("click", this.updateSceneObjProperties);
+          this.scene.appendChild(so);
+        });
+      }
+      createScenePropertyBox() {
+        this.sceneProperty = document.createElement("div");
+        this.sceneProperty.id = "sceneProperty";
+        this.sceneProperty.classList.add("scenePropItem");
+        Object.assign(this.sceneProperty.style, {
+          position: "absolute",
+          top: "0",
+          right: "0",
+          width: "20%",
+          height: "100vh",
+          backgroundColor: "rgba(0,0,0,0.85)",
+          display: "flex",
+          alignItems: "start",
+          overflow: "auto",
+          color: "white",
+          fontFamily: "'Orbitron', sans-serif",
+          zIndex: "15",
+          padding: "2px",
+          boxSizing: "border-box",
+          flexDirection: "column"
+        });
+        this.objectProperies = document.createElement("div");
+        this.objectProperies.id = "objectProperies";
+        Object.assign(this.objectProperies.style, {
+          width: "100%",
+          height: "auto",
+          backgroundColor: "rgba(0,0,0,0.85)",
+          display: "flex",
+          alignItems: "start",
+          color: "white",
+          fontFamily: "'Orbitron', sans-serif",
+          zIndex: "15",
+          padding: "2px",
+          boxSizing: "border-box",
+          flexDirection: "column"
+        });
+        this.objectProperiesTitle = document.createElement("div");
+        this.objectProperiesTitle.style.height = "40px";
+        this.objectProperiesTitle.style.fontSize = "120%";
+        this.objectProperiesTitle.innerHTML = "Scene object properties";
+        this.sceneProperty.appendChild(this.objectProperiesTitle);
+        this.sceneProperty.appendChild(this.objectProperies);
+        document.body.appendChild(this.sceneProperty);
+      }
+      updateSceneObjProperties = (e) => {
+        this.currentProperties = [];
+        this.objectProperiesTitle.style.fontSize = "120%";
+        this.objectProperiesTitle.innerHTML = `Scene object properties`;
+        this.objectProperies.innerHTML = ``;
+        const currentSO = this.core.getSceneObjectByName(e.target.innerHTML);
+        this.objectProperiesTitle.innerHTML = `<span style="color:lime;">Name: ${e.target.innerHTML}</span> 
+      <span style="color:yellow;"> [${currentSO.constructor.name}]`;
+        const OK = Object.keys(currentSO);
+        OK.forEach((prop) => {
+          if (prop == "glb" && typeof currentSO[prop] !== "undefined" && currentSO[prop] != null) {
+            this.currentProperties.push(new SceneObjectProperty(this.objectProperies, "glb", currentSO));
+          } else {
+            this.currentProperties.push(new SceneObjectProperty(this.objectProperies, prop, currentSO));
+          }
+        });
+      };
+    };
+    SceneObjectProperty = class {
+      constructor(parentDOM, propName, currSceneObj) {
+        this.subObjectsProps = [];
+        this.propName = document.createElement("div");
+        this.propName.style.width = "100%";
+        if (propName == "device" || propName == "position" || propName == "rotation" || propName == "raycast" || propName == "entityArgPass" || propName == "scale" || propName == "maxInstances" || propName == "texturesPaths" || propName == "glb") {
           this.propName.style.overflow = "hidden";
-          e.currentTarget.style.height = "20px";
-        }
-      });
-      if (propName == "position" || propName == "scale" || propName == "rotation" || propName == "glb") {
-        this.propName.innerHTML = `<div style="text-align:left;" >${propName} <span style="border-radius:7px;background:purple;">sceneObj</span>
+          this.propName.style.height = "20px";
+          this.propName.style.borderBottom = "solid lime 2px";
+          this.propName.addEventListener("click", (e) => {
+            if (e.currentTarget.style.height != "fit-content") {
+              this.propName.style.overflow = "unset";
+              e.currentTarget.style.height = "fit-content";
+            } else {
+              this.propName.style.overflow = "hidden";
+              e.currentTarget.style.height = "20px";
+            }
+          });
+          if (propName == "position" || propName == "scale" || propName == "rotation" || propName == "glb") {
+            this.propName.innerHTML = `<div style="text-align:left;" >${propName} <span style="border-radius:7px;background:purple;">sceneObj</span>
         <span style="border-radius:6px;background:gray;">More info\u{1F53D}</span></div>`;
-      } else if (propName == "entityArgPass") {
-        this.propName.innerHTML = `<div style="text-align:left;" >${propName} <span style="border-radius:7px;background:brown;">webGPU props</span>
+          } else if (propName == "entityArgPass") {
+            this.propName.innerHTML = `<div style="text-align:left;" >${propName} <span style="border-radius:7px;background:brown;">webGPU props</span>
         <span style="border-radius:6px;background:gray;">More info\u{1F53D}</span></div>`;
-      } else if (propName == "maxInstances") {
-        this.propName.innerHTML = `<div style="text-align:left;" >${propName} <span style="border-radius:7px;background:brown;">instanced</span>
+          } else if (propName == "maxInstances") {
+            this.propName.innerHTML = `<div style="text-align:left;" >${propName} <span style="border-radius:7px;background:brown;">instanced</span>
         <span style="border-radius:6px;background:gray;"> <input type="number" value="${currSceneObj[propName]}" /> </span></div>`;
-      } else if (propName == "texturesPaths") {
-        this.propName.innerHTML = `<div style="text-align:left;" >${propName} <span style="border-radius:7px;background:purple;">sceneObj</span>
+          } else if (propName == "texturesPaths") {
+            this.propName.innerHTML = `<div style="text-align:left;" >${propName} <span style="border-radius:7px;background:purple;">sceneObj</span>
          <span style="border-radius:6px;background:gray;"> 
            Path: ${currSceneObj[propName]} 
          </span>
            <div style="text-align:center;padding:5px;margin:5px;"> <img src="${currSceneObj[propName]}" width="256px" height="auto" /> </div>
         </div>`;
-      } else {
-        this.propName.innerHTML = `<div style="text-align:left;" >${propName} <span style="border-radius:7px;background:red;">sys</span> 
+          } else {
+            this.propName.innerHTML = `<div style="text-align:left;" >${propName} <span style="border-radius:7px;background:red;">sys</span> 
         <span style="border-radius:6px;background:gray;">${currSceneObj[propName]}</span></div>`;
-      }
-      if (typeof currSceneObj[propName].adapterInfo !== "undefined") {
-        this.exploreSubObject(currSceneObj[propName].adapterInfo, "adapterInfo").forEach((item) => {
-          if (typeof item === "string") {
-            this.propName.innerHTML += `<div style="text-align:left;"> ${item.split(":"[1])} </div>`;
-          } else {
-            item.addEventListener("click", (event) => {
-              event.stopPropagation();
-            });
-            this.propName.appendChild(item);
           }
-        });
-      } else if (propName == "position" || propName == "rotation" || propName == "raycast" || propName == "entityArgPass" || propName == "scale") {
-        this.exploreSubObject(currSceneObj[propName], propName, currSceneObj).forEach((item) => {
-          if (typeof item === "string") {
-            this.propName.innerHTML += `<div style="text-align:left;"> ${item.split(":"[1])} </div>`;
-          } else {
-            item.addEventListener("click", (event) => {
-              event.stopPropagation();
+          if (typeof currSceneObj[propName].adapterInfo !== "undefined") {
+            this.exploreSubObject(currSceneObj[propName].adapterInfo, "adapterInfo").forEach((item) => {
+              if (typeof item === "string") {
+                this.propName.innerHTML += `<div style="text-align:left;"> ${item.split(":"[1])} </div>`;
+              } else {
+                item.addEventListener("click", (event) => {
+                  event.stopPropagation();
+                });
+                this.propName.appendChild(item);
+              }
             });
-            this.propName.appendChild(item);
-          }
-        });
-      } else if (propName == "glb") {
-        this.exploreGlb(currSceneObj[propName], propName, currSceneObj).forEach((item) => {
-          if (typeof item === "string") {
-            this.propName.innerHTML += `<div style="text-align:left;"> ${item.split(":"[1])} </div>`;
-          } else {
-            item.addEventListener("click", (event) => {
-              event.stopPropagation();
+          } else if (propName == "position" || propName == "rotation" || propName == "raycast" || propName == "entityArgPass" || propName == "scale") {
+            this.exploreSubObject(currSceneObj[propName], propName, currSceneObj).forEach((item) => {
+              if (typeof item === "string") {
+                this.propName.innerHTML += `<div style="text-align:left;"> ${item.split(":"[1])} </div>`;
+              } else {
+                item.addEventListener("click", (event) => {
+                  event.stopPropagation();
+                });
+                this.propName.appendChild(item);
+              }
             });
-            this.propName.appendChild(item);
+          } else if (propName == "glb") {
+            this.exploreGlb(currSceneObj[propName], propName, currSceneObj).forEach((item) => {
+              if (typeof item === "string") {
+                this.propName.innerHTML += `<div style="text-align:left;"> ${item.split(":"[1])} </div>`;
+              } else {
+                item.addEventListener("click", (event) => {
+                  event.stopPropagation();
+                });
+                this.propName.appendChild(item);
+              }
+            });
           }
-        });
-      }
-      parentDOM.appendChild(this.propName);
-    } else if (propName == "isVideo") {
-      this.propName.style.borderBottom = "solid lime 2px";
-      this.propName.innerHTML = `<div style="text-align:left;" >${propName} <span style="border-radius:7px;background:deepskyblue;">boolean</span>
+          parentDOM.appendChild(this.propName);
+        } else if (propName == "isVideo") {
+          this.propName.style.borderBottom = "solid lime 2px";
+          this.propName.innerHTML = `<div style="text-align:left;" >${propName} <span style="border-radius:7px;background:deepskyblue;">boolean</span>
         <span style="border-radius:6px;background:gray;">${currSceneObj[propName]}</span></div>`;
-      parentDOM.appendChild(this.propName);
-    } else {
-    }
-  }
-  exploreSubObject(subobj, rootKey, currSceneObj) {
-    let a = [];
-    let __ = [];
-    for (const key in subobj) {
-      __.push(key);
-    }
-    __.forEach((prop, index) => {
-      if (index == 0) a.push(`${rootKey}`);
-      let d = null;
-      d = document.createElement("div");
-      d.style.textAlign = "left";
-      d.style.display = "flex";
-      if (typeof subobj[prop] === "number") {
-        d.innerHTML += `<div style="width:50%;">${prop}</div> 
+          parentDOM.appendChild(this.propName);
+        } else {
+        }
+      }
+      exploreSubObject(subobj, rootKey, currSceneObj) {
+        let a = [];
+        let __ = [];
+        for (const key in subobj) {
+          __.push(key);
+        }
+        __.forEach((prop, index) => {
+          if (index == 0) a.push(`${rootKey}`);
+          let d = null;
+          d = document.createElement("div");
+          d.style.textAlign = "left";
+          d.style.display = "flex";
+          if (typeof subobj[prop] === "number") {
+            d.innerHTML += `<div style="width:50%;">${prop}</div> 
          <div style="width:48%; background:lime;color:black;" > 
 
          <input class="inputEditor" name="${prop}" 
@@ -14313,41 +14659,41 @@ var SceneObjectProperty = class {
          ${rootKey == "adapterInfo" ? " disabled='true'" : " "} type="number" value="${subobj[prop]}" /> 
         
          </div>`;
-      } else if (Array.isArray(subobj[prop])) {
-        d.innerHTML += `<div style="width:50%">${prop}</div> 
+          } else if (Array.isArray(subobj[prop])) {
+            d.innerHTML += `<div style="width:50%">${prop}</div> 
          <div style="width:${subobj[prop].length == 0 ? "unset" : "48%"}; background:lime;color:black;border-radius:5px;" > ${subobj[prop].length == 0 ? "[Empty array]" : subobj[prop]} </div>`;
-      } else if (subobj[prop] === null) {
-        d.innerHTML += `<div style="width:50%;">${prop}</div> 
+          } else if (subobj[prop] === null) {
+            d.innerHTML += `<div style="width:50%;">${prop}</div> 
          <div style="width:unset; background:lime;color:black;padding:1px;border-radius:5px;" >${subobj[prop]}</div>`;
-      } else if (subobj[prop] == false) {
-        d.innerHTML += `<div style="width:50%;">${prop}</div> 
+          } else if (subobj[prop] == false) {
+            d.innerHTML += `<div style="width:50%;">${prop}</div> 
          <div style="width:unset; background:lime;color:black;padding:1px;border-radius:5px;" >false</div>`;
-      } else if (subobj[prop] == "") {
-        d.innerHTML += `<div style="width:50%;">${prop}</div> 
+          } else if (subobj[prop] == "") {
+            d.innerHTML += `<div style="width:50%;">${prop}</div> 
          <div style="width:unset; background:lime;color:black;padding:1px;border-radius:5px;" >none</div>`;
-      } else {
-        d.innerHTML += `<div style="width:50%;">${prop}</div> 
+          } else {
+            d.innerHTML += `<div style="width:50%;">${prop}</div> 
          <div style="width:48%; background:lime;color:black;padding:1px;border-radius:5px;" >${subobj[prop]}</div>`;
+          }
+          a.push(d);
+        });
+        return a;
       }
-      a.push(d);
-    });
-    return a;
-  }
-  exploreGlb(subobj, rootKey, currSceneObj) {
-    let a = [];
-    let __ = [];
-    for (const key in subobj) {
-      __.push(key);
-    }
-    __.forEach((prop, index) => {
-      if (index == 0) a.push(`${rootKey}`);
-      let d = null;
-      d = document.createElement("div");
-      d.style.textAlign = "left";
-      d.style.display = "flex";
-      d.style.flexWrap = "wrap";
-      if (typeof subobj[prop] === "number") {
-        d.innerHTML += `<div style="width:50%;">${prop}</div> 
+      exploreGlb(subobj, rootKey, currSceneObj) {
+        let a = [];
+        let __ = [];
+        for (const key in subobj) {
+          __.push(key);
+        }
+        __.forEach((prop, index) => {
+          if (index == 0) a.push(`${rootKey}`);
+          let d = null;
+          d = document.createElement("div");
+          d.style.textAlign = "left";
+          d.style.display = "flex";
+          d.style.flexWrap = "wrap";
+          if (typeof subobj[prop] === "number") {
+            d.innerHTML += `<div style="width:50%;">${prop}</div> 
          <div style="width:48%; background:lime;color:black;" >
            <input
            class="inputEditor" name="${prop}" 
@@ -14361,56 +14707,56 @@ var SceneObjectProperty = class {
             }}))" 
            ${rootKey == "adapterInfo" ? "disabled='true'" : ""}" type="number" value="${subobj[prop]}" /> 
            </div>`;
-      } else if (Array.isArray(subobj[prop]) && prop == "nodes") {
-        console.log("init prop: " + rootKey);
-        d.innerHTML += `<div style="width:50%">${prop}</div> 
+          } else if (Array.isArray(subobj[prop]) && prop == "nodes") {
+            console.log("init prop: " + rootKey);
+            d.innerHTML += `<div style="width:50%">${prop}</div> 
          <div style="width:${subobj[prop].length == 0 ? "unset" : "48%"}; background:lime;color:black;border-radius:5px;" > 
             ${subobj[prop].length == 0 ? "[Empty array]" : subobj[prop].length}
          </div>`;
-      } else if (Array.isArray(subobj[prop]) && prop == "skins") {
-        console.log("init prop: " + rootKey);
-        d.innerHTML += `<div style="width:50%">${prop}</div> 
+          } else if (Array.isArray(subobj[prop]) && prop == "skins") {
+            console.log("init prop: " + rootKey);
+            d.innerHTML += `<div style="width:50%">${prop}</div> 
          <div style="width:${subobj[prop].length == 0 ? "unset" : "48%"}; background:lime;color:black;border-radius:5px;" > 
             ${subobj[prop].length == 0 ? "[Empty array]" : subobj[prop].map((item) => {
-          if (item && typeof item === "object" && "name" in item) {
-            return item.name + " Joints:" + item.joints.length + "\n inverseBindMatrices:" + item.inverseBindMatrices;
-          }
-          return String(item);
-        }).join(", ")}
+              if (item && typeof item === "object" && "name" in item) {
+                return item.name + " Joints:" + item.joints.length + "\n inverseBindMatrices:" + item.inverseBindMatrices;
+              }
+              return String(item);
+            }).join(", ")}
          </div>`;
-      } else if (prop == "glbJsonData") {
-        console.log("init glbJsonData: " + rootKey);
-        d.innerHTML += `<div style="width:50%">Animations:</div> 
+          } else if (prop == "glbJsonData") {
+            console.log("init glbJsonData: " + rootKey);
+            d.innerHTML += `<div style="width:50%">Animations:</div> 
 
          <div style="width:${subobj[prop].animations.length == 0 ? "unset" : "48%"}; background:lime;color:black;border-radius:5px;" > 
             ${subobj[prop].animations.length == 0 ? "[Empty array]" : subobj[prop].animations.map((item) => {
-          if (item && typeof item === "object" && "name" in item) {
-            return item.name;
-          }
-          return String(item);
-        }).join(", ")}
+              if (item && typeof item === "object" && "name" in item) {
+                return item.name;
+              }
+              return String(item);
+            }).join(", ")}
          </div>
          
 
          <div style="width:50%">Skinned meshes:</div> 
          <div style="width:${subobj[prop].meshes.length == 0 ? "unset" : "48%"}; background:lime;color:black;border-radius:5px;" > 
             ${subobj[prop].meshes.length == 0 ? "[Empty array]" : subobj[prop].meshes.map((item) => {
-          if (item && typeof item === "object" && "name" in item) {
-            return item.name + " \n Primitives : " + item.primitives.length;
-          }
-          return String(item);
-        }).join(", ")}
+              if (item && typeof item === "object" && "name" in item) {
+                return item.name + " \n Primitives : " + item.primitives.length;
+              }
+              return String(item);
+            }).join(", ")}
          </div>
           
 
          <div style="width:50%">Images:</div> 
          <div style="width:${subobj[prop].images.length == 0 ? "unset" : "48%"}; background:lime;color:black;border-radius:5px;" > 
             ${subobj[prop].images.length == 0 ? "[Empty array]" : subobj[prop].images.map((item) => {
-          if (item && typeof item === "object" && "name" in item) {
-            return "<div>" + item.name + " \n mimeType: " + item.mimeType + "</div>";
-          }
-          return String(item);
-        }).join(", ")}
+              if (item && typeof item === "object" && "name" in item) {
+                return "<div>" + item.name + " \n mimeType: " + item.mimeType + "</div>";
+              }
+              return String(item);
+            }).join(", ")}
          </div>
 
          
@@ -14418,947 +14764,1011 @@ var SceneObjectProperty = class {
          <div style="width:50%">Materials:</div> 
          <div style="width:${subobj[prop].materials.length == 0 ? "unset" : "48%"}; background:lime;color:black;border-radius:5px;" > 
             ${subobj[prop].materials.length == 0 ? "[Empty array]" : subobj[prop].materials.map((item) => {
-          if (item && typeof item === "object" && "name" in item) {
-            return "<div>" + item.name + " \n metallicFactor: " + item.pbrMetallicRoughness.metallicFactor + " \n roughnessFactor: " + item.pbrMetallicRoughness.roughnessFactor + "</div>";
-          }
-          return String(item);
-        }).join(", ")}
+              if (item && typeof item === "object" && "name" in item) {
+                return "<div>" + item.name + " \n metallicFactor: " + item.pbrMetallicRoughness.metallicFactor + " \n roughnessFactor: " + item.pbrMetallicRoughness.roughnessFactor + "</div>";
+              }
+              return String(item);
+            }).join(", ")}
          </div>
          
          `;
-      } else if (subobj[prop] === null) {
-        d.innerHTML += `<div style="width:50%;">${prop}</div> 
+          } else if (subobj[prop] === null) {
+            d.innerHTML += `<div style="width:50%;">${prop}</div> 
          <div style="width:unset; background:lime;color:black;padding:1px;border-radius:5px;" >${subobj[prop]}</div>`;
-      } else if (subobj[prop] == false) {
-        d.innerHTML += `<div style="width:50%;">${prop}</div> 
+          } else if (subobj[prop] == false) {
+            d.innerHTML += `<div style="width:50%;">${prop}</div> 
          <div style="width:unset; background:lime;color:black;padding:1px;border-radius:5px;" >false</div>`;
-      } else if (subobj[prop] == "") {
-        d.innerHTML += `<div style="width:50%;">${prop}</div> 
+          } else if (subobj[prop] == "") {
+            d.innerHTML += `<div style="width:50%;">${prop}</div> 
          <div style="width:unset; background:lime;color:black;padding:1px;border-radius:5px;" >none</div>`;
-      } else {
-        d.innerHTML += `<div style="width:50%;">${prop}</div> 
+          } else {
+            d.innerHTML += `<div style="width:50%;">${prop}</div> 
          <div style="width:48%; background:lime;color:black;padding:1px;border-radius:5px;" >${subobj[prop]}</div>`;
+          }
+          a.push(d);
+        });
+        return a;
       }
-      a.push(d);
-    });
-    return a;
+    };
   }
-};
+});
 
 // ../editor.js
-var Editor = class {
-  constructor(core, a, projName) {
-    this.core = core;
-    this.editorHud = new EditorHud(core, this.check(a));
-    this.editorProvider = new EditorProvider(core, this.check(a));
-    if (this.check(a) == "pre editor") {
-      this.client = new MEEditorClient(this.check(a));
-    } else if (this.check(a) == "created from editor") {
-      this.client = new MEEditorClient(this.check(a), projName);
-    }
+var Editor;
+var init_editor = __esm({
+  "../editor.js"() {
+    init_client();
+    init_editor_provider();
+    init_hud();
+    Editor = class {
+      constructor(core, a, projName) {
+        this.core = core;
+        this.editorHud = new EditorHud(core, this.check(a));
+        this.editorProvider = new EditorProvider(core, this.check(a));
+        if (this.check(a) == "pre editor") {
+          this.client = new MEEditorClient(this.check(a));
+        } else if (this.check(a) == "created from editor") {
+          this.client = new MEEditorClient(this.check(a), projName);
+        }
+      }
+      check(a) {
+        if (typeof a !== "undefined" && a == "created from editor") {
+          return a;
+        } else if (typeof a !== "undefined" && a == "pre editor") {
+          return a;
+        } else {
+          return "infly";
+        }
+      }
+    };
   }
-  check(a) {
-    if (typeof a !== "undefined" && a == "created from editor") {
-      return a;
-    } else if (typeof a !== "undefined" && a == "pre editor") {
-      return a;
-    } else {
-      return "infly";
-    }
-  }
-};
+});
 
 // ../../../world.js
-var MatrixEngineWGPU = class {
-  mainRenderBundle = [];
-  lightContainer = [];
-  frame = () => {
-  };
-  entityHolder = [];
-  lastTime = 0;
-  entityArgPass = {
-    loadOp: "clear",
-    storeOp: "store",
-    depthLoadOp: "clear",
-    depthStoreOp: "store"
-  };
-  // matrixAmmo = new MatrixAmmo();
-  matrixSounds = new MatrixSounds();
-  constructor(options, callback) {
-    if (typeof options == "undefined" || typeof options == "function") {
-      this.options = {
-        useSingleRenderPass: true,
-        canvasSize: "fullscreen",
-        canvasId: "canvas1",
-        mainCameraParams: {
-          type: "WASD",
-          responseCoef: 2e3
-        },
-        clearColor: { r: 0.584, g: 0, b: 0.239, a: 1 }
+var MatrixEngineWGPU;
+var init_world = __esm({
+  "../../../world.js"() {
+    init_wgpu_matrix_module();
+    init_ball();
+    init_cube();
+    init_engine();
+    init_engine();
+    init_mesh_obj();
+    init_matrix_ammo();
+    init_utils();
+    init_lang();
+    init_sounds();
+    init_loader_obj();
+    init_lights();
+    init_bvh();
+    init_bvh_instaced();
+    init_editor();
+    MatrixEngineWGPU = class {
+      mainRenderBundle = [];
+      lightContainer = [];
+      frame = () => {
       };
-      callback = options;
-    }
-    if (typeof options.clearColor === "undefined") {
-      options.clearColor = { r: 0.584, g: 0, b: 0.239, a: 1 };
-    }
-    if (typeof options.canvasId === "undefined") {
-      options.canvasId = "canvas1";
-    }
-    if (typeof options.mainCameraParams === "undefined") {
-      options.mainCameraParams = {
-        type: "WASD",
-        responseCoef: 2e3
-      };
-    }
-    if (typeof options.dontUsePhysics == "undefined") {
-      this.matrixAmmo = new MatrixAmmo();
-    }
-    this.editor = void 0;
-    if (typeof options.useEditor !== "undefined") {
-      if (typeof options.projectType !== "undefined" && options.projectType == "created from editor") {
-        this.editor = new Editor(this, "created from editor", options.projectName);
-      } else if (typeof options.projectType !== "undefined" && options.projectType == "pre editor") {
-        this.editor = new Editor(this, options.projectType);
-      } else {
-        this.editor = new Editor(this, "infly");
-      }
-    }
-    window.addEventListener("keydown", (e) => {
-      if (e.code == "F4") {
-        e.preventDefault();
-        mb.error(`Activated WebEditor, you can use it infly there is no saves for now.`);
-        app.activateEditor();
-        return false;
-      }
-    });
-    this.activateEditor = () => {
-      if (this.editor == null || typeof this.editor === "undefined") {
-        if (typeof options.projectType !== "undefined" && options.projectType == "created from editor") {
-          this.editor = new Editor(this, "created from editor");
-        } else if (typeof options.projectType !== "undefined" && options.projectType == "pre editor") {
-          this.editor = new Editor(this, options.projectType);
-        } else {
-          this.editor = new Editor(this, "infly");
-        }
-        this.editor.editorHud.updateSceneContainer();
-      } else {
-        this.editor.editorHud.editorMenu.style.display = "flex";
-        this.editor.editorHud.assetsBox.style.display = "flex";
-        this.editor.editorHud.sceneProperty.style.display = "flex";
-        this.editor.editorHud.sceneContainer.style.display = "flex";
-      }
-    };
-    this.options = options;
-    this.mainCameraParams = options.mainCameraParams;
-    const target = this.options.appendTo || document.body;
-    var canvas = document.createElement("canvas");
-    canvas.id = this.options.canvasId;
-    if (this.options.canvasSize == "fullscreen") {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    } else {
-      canvas.width = this.options.canvasSize.w;
-      canvas.height = this.options.canvasSize.h;
-    }
-    target.append(canvas);
-    const initialCameraPosition = vec3Impl.create(0, 0, 0);
-    this.mainCameraParams = {
-      type: this.options.mainCameraParams.type,
-      responseCoef: this.options.mainCameraParams.responseCoef
-    };
-    this.cameras = {
-      arcball: new ArcballCamera({ position: initialCameraPosition }),
-      WASD: new WASDCamera({ position: initialCameraPosition, canvas }),
-      RPG: new RPGCamera({ position: initialCameraPosition, canvas })
-    };
-    this.label = new MultiLang();
-    if (urlQuery.lang != null) {
-      this.label.loadMultilang(urlQuery.lang).then((r) => {
-        this.label.get = r;
-      }).catch((r) => {
-        this.label.get = r;
-      });
-    } else {
-      this.label.loadMultilang().then((r) => {
-        this.label.get = r;
-      }).catch((r) => {
-        this.label.get = r;
-      });
-      ;
-    }
-    this.init({ canvas, callback });
-  }
-  init = async ({ canvas, callback }) => {
-    this.canvas = canvas;
-    this.adapter = await navigator.gpu.requestAdapter();
-    this.device = await this.adapter.requestDevice({
-      extensions: ["ray_tracing"]
-    });
-    this.context = canvas.getContext("webgpu");
-    const devicePixelRatio = window.devicePixelRatio;
-    canvas.width = canvas.clientWidth * devicePixelRatio;
-    canvas.height = canvas.clientHeight * devicePixelRatio;
-    const presentationFormat = navigator.gpu.getPreferredCanvasFormat();
-    this.context.configure({
-      device: this.device,
-      format: presentationFormat,
-      alphaMode: "premultiplied"
-    });
-    if (this.options.useSingleRenderPass == true) {
-      this.frame = this.frameSinglePass;
-    } else {
-      this.frame = this.framePassPerObject;
-    }
-    this.globalAmbient = vec3Impl.create(0.5, 0.5, 0.5);
-    this.MAX_SPOTLIGHTS = 20;
-    this.inputHandler = createInputHandler(window, canvas);
-    this.createGlobalStuff();
-    this.run(callback);
-  };
-  createGlobalStuff() {
-    this.spotlightUniformBuffer = this.device.createBuffer({
-      label: "spotlightUniformBufferGLOBAL",
-      size: this.MAX_SPOTLIGHTS * 144,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
-    this.SHADOW_RES = 1024;
-    this.createTexArrayForShadows();
-    this.mainDepthTexture = this.device.createTexture({
-      size: [this.canvas.width, this.canvas.height],
-      format: "depth24plus",
-      usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING
-    });
-    this.mainDepthView = this.mainDepthTexture.createView();
-    this.mainRenderPassDesc = {
-      label: "mainRenderPassDesc",
-      colorAttachments: [{
-        view: void 0,
-        // set each frame
+      entityHolder = [];
+      lastTime = 0;
+      entityArgPass = {
         loadOp: "clear",
         storeOp: "store",
-        clearValue: [0.02, 0.02, 0.02, 1]
-      }],
-      depthStencilAttachment: {
-        view: this.mainDepthView,
-        // fixed
         depthLoadOp: "clear",
-        depthStoreOp: "store",
-        depthClearValue: 1
-      }
-    };
-    const depthTexture = this.device.createTexture({
-      size: [this.canvas.width, this.canvas.height],
-      format: "depth24plus",
-      usage: GPUTextureUsage.RENDER_ATTACHMENT
-    });
-    this.depthTextureViewTrail = depthTexture.createView();
-  }
-  createTexArrayForShadows() {
-    let numberOfLights = this.lightContainer.length;
-    if (this.lightContainer.length == 0) {
-      setTimeout(() => {
-        this.createMe();
-      }, 800);
-    }
-    this.createMe = () => {
-      Math.max(1, this.lightContainer.length);
-      if (this.lightContainer.length == 0) {
-        setTimeout(() => {
-          this.createMe();
-        }, 800);
-        return;
-      }
-      this.shadowTextureArray = this.device.createTexture({
-        label: `shadowTextureArray[GLOBAL] num of light ${numberOfLights}`,
-        size: {
-          width: 1024,
-          height: 1024,
-          depthOrArrayLayers: numberOfLights
-          // at least 1
-        },
-        dimension: "2d",
-        format: "depth32float",
-        usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING
-      });
-      this.shadowArrayView = this.shadowTextureArray.createView({
-        dimension: "2d-array"
-      });
-      this.shadowVideoTexture = this.device.createTexture({
-        size: [1024, 1024],
-        format: "depth32float",
-        usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING
-      });
-      this.shadowVideoView = this.shadowVideoTexture.createView({
-        dimension: "2d"
-      });
-    };
-    this.createMe();
-  }
-  getSceneObjectByName(name) {
-    return this.mainRenderBundle.find((sceneObject) => sceneObject.name === name);
-  }
-  // Not in use for now
-  addCube = (o) => {
-    if (typeof o === "undefined") {
-      var o = {
-        scale: 1,
-        position: { x: 0, y: 0, z: -4 },
-        texturesPaths: ["./res/textures/default.png"],
-        rotation: { x: 0, y: 0, z: 0 },
-        rotationSpeed: { x: 0, y: 0, z: 0 },
-        entityArgPass: this.entityArgPass,
-        cameras: this.cameras,
-        mainCameraParams: this.mainCameraParams
+        depthStoreOp: "store"
       };
-    } else {
-      if (typeof o.position === "undefined") {
-        o.position = { x: 0, y: 0, z: -4 };
-      }
-      if (typeof o.rotation === "undefined") {
-        o.rotation = { x: 0, y: 0, z: 0 };
-      }
-      if (typeof o.rotationSpeed === "undefined") {
-        o.rotationSpeed = { x: 0, y: 0, z: 0 };
-      }
-      if (typeof o.texturesPaths === "undefined") {
-        o.texturesPaths = ["./res/textures/default.png"];
-      }
-      if (typeof o.scale === "undefined") {
-        o.scale = 1;
-      }
-      if (typeof o.mainCameraParams === "undefined") {
-        o.mainCameraParams = this.mainCameraParams;
-      }
-      o.entityArgPass = this.entityArgPass;
-      o.cameras = this.cameras;
-    }
-    if (typeof o.physics === "undefined") {
-      o.physics = {
-        scale: [1, 1, 1],
-        enabled: true,
-        geometry: "Sphere",
-        radius: o.scale,
-        name: o.name,
-        rotation: o.rotation
-      };
-    }
-    if (typeof o.position !== "undefined") {
-      o.physics.position = o.position;
-    }
-    if (typeof o.physics.enabled === "undefined") {
-      o.physics.enabled = true;
-    }
-    if (typeof o.physics.geometry === "undefined") {
-      o.physics.geometry = "Sphere";
-    }
-    if (typeof o.physics.radius === "undefined") {
-      o.physics.radius = o.scale;
-    }
-    if (typeof o.physics.mass === "undefined") {
-      o.physics.mass = 1;
-    }
-    if (typeof o.physics.name === "undefined") {
-      o.physics.name = o.name;
-    }
-    if (typeof o.physics.scale === "undefined") {
-      o.physics.scale = o.scale;
-    }
-    if (typeof o.physics.rotation === "undefined") {
-      o.physics.rotation = o.rotation;
-    }
-    let myCube1 = new MECube(this.canvas, this.device, this.context, o);
-    if (o.physics.enabled == true) {
-      this.matrixAmmo.addPhysics(myCube1, o.physics);
-    }
-    this.mainRenderBundle.push(myCube1);
-  };
-  // Not in use for now
-  addBall = (o) => {
-    if (typeof o === "undefined") {
-      var o = {
-        scale: 1,
-        position: { x: 0, y: 0, z: -4 },
-        texturesPaths: ["./res/textures/default.png"],
-        rotation: { x: 0, y: 0, z: 0 },
-        rotationSpeed: { x: 0, y: 0, z: 0 },
-        entityArgPass: this.entityArgPass,
-        cameras: this.cameras,
-        mainCameraParams: this.mainCameraParams
-      };
-    } else {
-      if (typeof o.position === "undefined") {
-        o.position = { x: 0, y: 0, z: -4 };
-      }
-      if (typeof o.rotation === "undefined") {
-        o.rotation = { x: 0, y: 0, z: 0 };
-      }
-      if (typeof o.rotationSpeed === "undefined") {
-        o.rotationSpeed = { x: 0, y: 0, z: 0 };
-      }
-      if (typeof o.texturesPaths === "undefined") {
-        o.texturesPaths = ["./res/textures/default.png"];
-      }
-      if (typeof o.mainCameraParams === "undefined") {
-        o.mainCameraParams = this.mainCameraParams;
-      }
-      if (typeof o.scale === "undefined") {
-        o.scale = 1;
-      }
-      o.entityArgPass = this.entityArgPass;
-      o.cameras = this.cameras;
-    }
-    if (typeof o.physics === "undefined") {
-      o.physics = {
-        scale: [1, 1, 1],
-        enabled: true,
-        geometry: "Sphere",
-        radius: o.scale,
-        name: o.name,
-        rotation: o.rotation
-      };
-    }
-    if (typeof o.position !== "undefined") {
-      o.physics.position = o.position;
-    }
-    if (typeof o.physics.enabled === "undefined") {
-      o.physics.enabled = true;
-    }
-    if (typeof o.physics.geometry === "undefined") {
-      o.physics.geometry = "Sphere";
-    }
-    if (typeof o.physics.radius === "undefined") {
-      o.physics.radius = o.scale;
-    }
-    if (typeof o.physics.mass === "undefined") {
-      o.physics.mass = 1;
-    }
-    if (typeof o.physics.name === "undefined") {
-      o.physics.name = o.name;
-    }
-    if (typeof o.physics.scale === "undefined") {
-      o.physics.scale = o.scale;
-    }
-    if (typeof o.physics.rotation === "undefined") {
-      o.physics.rotation = o.rotation;
-    }
-    let myBall1 = new MEBall(this.canvas, this.device, this.context, o);
-    if (o.physics.enabled == true) {
-      this.matrixAmmo.addPhysics(myBall1, o.physics);
-    }
-    this.mainRenderBundle.push(myBall1);
-  };
-  addLight(o) {
-    const camera = this.cameras[this.mainCameraParams.type];
-    let newLight = new SpotLight(camera, this.inputHandler, this.device);
-    this.lightContainer.push(newLight);
-    this.createTexArrayForShadows();
-    console.log(`%cAdd light: ${newLight}`, LOG_FUNNY_SMALL);
-  }
-  addMeshObj = (o, clearColor = this.options.clearColor) => {
-    if (typeof o.name === "undefined") {
-      o.name = genName(9);
-    }
-    if (typeof o.position === "undefined") {
-      o.position = { x: 0, y: 0, z: -4 };
-    }
-    if (typeof o.rotation === "undefined") {
-      o.rotation = { x: 0, y: 0, z: 0 };
-    }
-    if (typeof o.rotationSpeed === "undefined") {
-      o.rotationSpeed = { x: 0, y: 0, z: 0 };
-    }
-    if (typeof o.texturesPaths === "undefined") {
-      o.texturesPaths = ["./res/textures/default.png"];
-    }
-    if (typeof o.material === "undefined") {
-      o.material = { type: "standard" };
-    }
-    if (typeof o.mainCameraParams === "undefined") {
-      o.mainCameraParams = this.mainCameraParams;
-    }
-    if (typeof o.scale === "undefined") {
-      o.scale = [1, 1, 1];
-    }
-    if (typeof o.raycast === "undefined") {
-      o.raycast = { enabled: false, radius: 2 };
-    }
-    o.entityArgPass = this.entityArgPass;
-    o.cameras = this.cameras;
-    if (typeof o.physics === "undefined") {
-      o.physics = {
-        scale: [1, 1, 1],
-        enabled: true,
-        geometry: "Sphere",
-        //                   must be fixed<<
-        radius: typeof o.scale == Number ? o.scale : o.scale[0],
-        name: o.name,
-        rotation: o.rotation
-      };
-    }
-    if (typeof o.physics.enabled === "undefined") {
-      o.physics.enabled = true;
-    }
-    if (typeof o.physics.geometry === "undefined") {
-      o.physics.geometry = "Cube";
-    }
-    if (typeof o.physics.radius === "undefined") {
-      o.physics.radius = o.scale;
-    }
-    if (typeof o.physics.mass === "undefined") {
-      o.physics.mass = 1;
-    }
-    if (typeof o.physics.name === "undefined") {
-      o.physics.name = o.name;
-    }
-    if (typeof o.physics.scale === "undefined") {
-      o.physics.scale = o.scale;
-    }
-    if (typeof o.physics.rotation === "undefined") {
-      o.physics.rotation = o.rotation;
-    }
-    o.physics.position = o.position;
-    if (typeof o.objAnim == "undefined" || typeof o.objAnim == null) {
-      o.objAnim = null;
-    } else {
-      if (typeof o.objAnim.animations !== "undefined") {
-        o.objAnim.play = play;
-      }
-      o.objAnim.meshList = o.objAnim.meshList;
-      if (typeof o.mesh === "undefined") {
-        o.mesh = o.objAnim.meshList[0];
-        console.info("objSeq animation is active.");
-      }
-      o.objAnim.scaleAll = function(s) {
-        for (var k in this.meshList) {
-          this.meshList[k].setScale(s);
+      // matrixAmmo = new MatrixAmmo();
+      matrixSounds = new MatrixSounds();
+      constructor(options, callback) {
+        if (typeof options == "undefined" || typeof options == "function") {
+          this.options = {
+            useSingleRenderPass: true,
+            canvasSize: "fullscreen",
+            canvasId: "canvas1",
+            mainCameraParams: {
+              type: "WASD",
+              responseCoef: 2e3
+            },
+            clearColor: { r: 0.584, g: 0, b: 0.239, a: 1 }
+          };
+          callback = options;
         }
-      };
-    }
-    let AM = this.globalAmbient.slice();
-    let myMesh1 = new MEMeshObj(this.canvas, this.device, this.context, o, this.inputHandler, AM);
-    myMesh1.spotlightUniformBuffer = this.spotlightUniformBuffer;
-    myMesh1.clearColor = clearColor;
-    if (o.physics.enabled == true) {
-      this.matrixAmmo.addPhysics(myMesh1, o.physics);
-    }
-    this.mainRenderBundle.push(myMesh1);
-    if (typeof this.editor !== "undefined") {
-      this.editor.editorHud.updateSceneContainer();
-    }
-  };
-  run(callback) {
-    setTimeout(() => {
-      requestAnimationFrame(this.frame);
-    }, 500);
-    setTimeout(() => {
-      callback(this);
-    }, 20);
-  }
-  destroyProgram = () => {
-    this.mainRenderBundle = [];
-    this.canvas.remove();
-  };
-  updateLights() {
-    const floatsPerLight = 36;
-    const data = new Float32Array(this.MAX_SPOTLIGHTS * floatsPerLight);
-    for (let i = 0; i < this.MAX_SPOTLIGHTS; i++) {
-      if (i < this.lightContainer.length) {
-        const buf = this.lightContainer[i].getLightDataBuffer();
-        data.set(buf, i * floatsPerLight);
-      } else {
-        data.set(new Float32Array(floatsPerLight), i * floatsPerLight);
-      }
-    }
-    this.device.queue.writeBuffer(this.spotlightUniformBuffer, 0, data.buffer);
-  }
-  frameSinglePass = () => {
-    if (typeof this.mainRenderBundle == "undefined" || this.mainRenderBundle.length == 0) {
-      setTimeout(() => {
-        requestAnimationFrame(this.frame);
-      }, 100);
-      return;
-    }
-    this.mainRenderBundle.forEach((meItem, index) => {
-      if (meItem.isVideo == true) {
-        if (!meItem.externalTexture) {
-          meItem.createBindGroupForRender();
-          setTimeout(() => {
-            requestAnimationFrame(this.frame);
-          }, 1e3);
-          return;
+        if (typeof options.clearColor === "undefined") {
+          options.clearColor = { r: 0.584, g: 0, b: 0.239, a: 1 };
         }
-      }
-    });
-    try {
-      let commandEncoder = this.device.createCommandEncoder();
-      this.updateLights();
-      for (const light of this.lightContainer) {
-        light.update();
-        this.mainRenderBundle.forEach((meItem, index) => {
-          meItem.updateModelUniformBuffer();
-          meItem.getTransformationMatrix(this.mainRenderBundle, light, index);
+        if (typeof options.canvasId === "undefined") {
+          options.canvasId = "canvas1";
+        }
+        if (typeof options.mainCameraParams === "undefined") {
+          options.mainCameraParams = {
+            type: "WASD",
+            responseCoef: 2e3
+          };
+        }
+        if (typeof options.dontUsePhysics == "undefined") {
+          this.matrixAmmo = new MatrixAmmo();
+        }
+        this.editor = void 0;
+        if (typeof options.useEditor !== "undefined") {
+          if (typeof options.projectType !== "undefined" && options.projectType == "created from editor") {
+            this.editor = new Editor(this, "created from editor", options.projectName);
+          } else if (typeof options.projectType !== "undefined" && options.projectType == "pre editor") {
+            this.editor = new Editor(this, options.projectType);
+          } else {
+            this.editor = new Editor(this, "infly");
+          }
+        }
+        window.addEventListener("keydown", (e) => {
+          if (e.code == "F4") {
+            e.preventDefault();
+            mb.error(`Activated WebEditor, you can use it infly there is no saves for now.`);
+            app.activateEditor();
+            return false;
+          }
         });
+        this.activateEditor = () => {
+          if (this.editor == null || typeof this.editor === "undefined") {
+            if (typeof options.projectType !== "undefined" && options.projectType == "created from editor") {
+              this.editor = new Editor(this, "created from editor");
+            } else if (typeof options.projectType !== "undefined" && options.projectType == "pre editor") {
+              this.editor = new Editor(this, options.projectType);
+            } else {
+              this.editor = new Editor(this, "infly");
+            }
+            this.editor.editorHud.updateSceneContainer();
+          } else {
+            this.editor.editorHud.editorMenu.style.display = "flex";
+            this.editor.editorHud.assetsBox.style.display = "flex";
+            this.editor.editorHud.sceneProperty.style.display = "flex";
+            this.editor.editorHud.sceneContainer.style.display = "flex";
+          }
+        };
+        this.options = options;
+        this.mainCameraParams = options.mainCameraParams;
+        const target = this.options.appendTo || document.body;
+        var canvas = document.createElement("canvas");
+        canvas.id = this.options.canvasId;
+        if (this.options.canvasSize == "fullscreen") {
+          canvas.width = window.innerWidth;
+          canvas.height = window.innerHeight;
+        } else {
+          canvas.width = this.options.canvasSize.w;
+          canvas.height = this.options.canvasSize.h;
+        }
+        target.append(canvas);
+        const initialCameraPosition = vec3Impl.create(0, 0, 0);
+        this.mainCameraParams = {
+          type: this.options.mainCameraParams.type,
+          responseCoef: this.options.mainCameraParams.responseCoef
+        };
+        this.cameras = {
+          arcball: new ArcballCamera({ position: initialCameraPosition }),
+          WASD: new WASDCamera({ position: initialCameraPosition, canvas }),
+          RPG: new RPGCamera({ position: initialCameraPosition, canvas })
+        };
+        this.label = new MultiLang();
+        if (urlQuery.lang != null) {
+          this.label.loadMultilang(urlQuery.lang).then((r) => {
+            this.label.get = r;
+          }).catch((r) => {
+            this.label.get = r;
+          });
+        } else {
+          this.label.loadMultilang().then((r) => {
+            this.label.get = r;
+          }).catch((r) => {
+            this.label.get = r;
+          });
+          ;
+        }
+        this.init({ canvas, callback });
       }
-      if (this.matrixAmmo) this.matrixAmmo.updatePhysics();
-      let now, deltaTime2;
-      for (let i = 0; i < this.lightContainer.length; i++) {
-        const light = this.lightContainer[i];
-        let ViewPerLightRenderShadowPass = this.shadowTextureArray.createView({
-          dimension: "2d",
-          baseArrayLayer: i,
-          arrayLayerCount: 1,
-          // must be > 0
-          baseMipLevel: 0,
-          mipLevelCount: 1
+      init = async ({ canvas, callback }) => {
+        this.canvas = canvas;
+        this.adapter = await navigator.gpu.requestAdapter();
+        this.device = await this.adapter.requestDevice({
+          extensions: ["ray_tracing"]
         });
-        const shadowPass = commandEncoder.beginRenderPass({
-          label: "shadowPass",
-          colorAttachments: [],
+        this.context = canvas.getContext("webgpu");
+        const devicePixelRatio = window.devicePixelRatio;
+        canvas.width = canvas.clientWidth * devicePixelRatio;
+        canvas.height = canvas.clientHeight * devicePixelRatio;
+        const presentationFormat = navigator.gpu.getPreferredCanvasFormat();
+        this.context.configure({
+          device: this.device,
+          format: presentationFormat,
+          alphaMode: "premultiplied"
+        });
+        if (this.options.useSingleRenderPass == true) {
+          this.frame = this.frameSinglePass;
+        } else {
+          this.frame = this.framePassPerObject;
+        }
+        this.globalAmbient = vec3Impl.create(0.5, 0.5, 0.5);
+        this.MAX_SPOTLIGHTS = 20;
+        this.inputHandler = createInputHandler(window, canvas);
+        this.createGlobalStuff();
+        this.run(callback);
+      };
+      createGlobalStuff() {
+        this.spotlightUniformBuffer = this.device.createBuffer({
+          label: "spotlightUniformBufferGLOBAL",
+          size: this.MAX_SPOTLIGHTS * 144,
+          usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+        });
+        this.SHADOW_RES = 1024;
+        this.createTexArrayForShadows();
+        this.mainDepthTexture = this.device.createTexture({
+          size: [this.canvas.width, this.canvas.height],
+          format: "depth24plus",
+          usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING
+        });
+        this.mainDepthView = this.mainDepthTexture.createView();
+        this.mainRenderPassDesc = {
+          label: "mainRenderPassDesc",
+          colorAttachments: [{
+            view: void 0,
+            // set each frame
+            loadOp: "clear",
+            storeOp: "store",
+            clearValue: [0.02, 0.02, 0.02, 1]
+          }],
           depthStencilAttachment: {
-            view: ViewPerLightRenderShadowPass,
+            view: this.mainDepthView,
+            // fixed
             depthLoadOp: "clear",
             depthStoreOp: "store",
             depthClearValue: 1
           }
+        };
+        const depthTexture = this.device.createTexture({
+          size: [this.canvas.width, this.canvas.height],
+          format: "depth24plus",
+          usage: GPUTextureUsage.RENDER_ATTACHMENT
         });
-        now = performance.now() / 1e3;
-        for (const [meshIndex, mesh] of this.mainRenderBundle.entries()) {
-          if (mesh instanceof BVHPlayerInstances) {
-            mesh.updateInstanceData(mesh.getModelMatrix(mesh.position));
-            shadowPass.setPipeline(light.shadowPipelineInstanced);
-          } else {
-            shadowPass.setPipeline(light.shadowPipeline);
+        this.depthTextureViewTrail = depthTexture.createView();
+      }
+      createTexArrayForShadows() {
+        let numberOfLights = this.lightContainer.length;
+        if (this.lightContainer.length == 0) {
+          setTimeout(() => {
+            this.createMe();
+          }, 800);
+        }
+        this.createMe = () => {
+          Math.max(1, this.lightContainer.length);
+          if (this.lightContainer.length == 0) {
+            setTimeout(() => {
+              this.createMe();
+            }, 800);
+            return;
           }
-          if (mesh.videoIsReady == "NONE") {
-            shadowPass.setBindGroup(0, light.getShadowBindGroup(mesh, meshIndex));
-            if (mesh instanceof BVHPlayerInstances) {
-              shadowPass.setBindGroup(1, mesh.modelBindGroupInstanced);
-            } else {
-              shadowPass.setBindGroup(1, mesh.modelBindGroup);
-            }
-            mesh.drawShadows(shadowPass, light);
-          }
-        }
-        shadowPass.end();
+          this.shadowTextureArray = this.device.createTexture({
+            label: `shadowTextureArray[GLOBAL] num of light ${numberOfLights}`,
+            size: {
+              width: 1024,
+              height: 1024,
+              depthOrArrayLayers: numberOfLights
+              // at least 1
+            },
+            dimension: "2d",
+            format: "depth32float",
+            usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING
+          });
+          this.shadowArrayView = this.shadowTextureArray.createView({
+            dimension: "2d-array"
+          });
+          this.shadowVideoTexture = this.device.createTexture({
+            size: [1024, 1024],
+            format: "depth32float",
+            usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING
+          });
+          this.shadowVideoView = this.shadowVideoTexture.createView({
+            dimension: "2d"
+          });
+        };
+        this.createMe();
       }
-      const currentTextureView = this.context.getCurrentTexture().createView();
-      this.mainRenderPassDesc.colorAttachments[0].view = currentTextureView;
-      let pass = commandEncoder.beginRenderPass(this.mainRenderPassDesc);
-      for (const mesh of this.mainRenderBundle) {
-        mesh.position.update();
-        if (mesh.update) {
-          now = performance.now() / 1e3;
-          deltaTime2 = now - (this.lastTime || now);
-          this.lastTime = now;
-          mesh.update(deltaTime2);
-        }
-        pass.setPipeline(mesh.pipeline);
-        if (!mesh.sceneBindGroupForRender || mesh.FINISH_VIDIO_INIT == false && mesh.isVideo == true) {
-          for (const m of this.mainRenderBundle) {
-            if (m.isVideo == true) {
-              console.log("\u2705shadowVideoView", this.shadowVideoView);
-              m.shadowDepthTextureView = this.shadowVideoView;
-              m.FINISH_VIDIO_INIT = true;
-              m.setupPipeline();
-            } else {
-              m.shadowDepthTextureView = this.shadowArrayView;
-              m.setupPipeline();
-            }
-          }
-        }
-        mesh.drawElements(pass, this.lightContainer);
+      getSceneObjectByName(name) {
+        return this.mainRenderBundle.find((sceneObject) => sceneObject.name === name);
       }
-      pass.end();
-      if (this.collisionSystem) this.collisionSystem.update();
-      const transPassDesc = {
-        colorAttachments: [{ view: currentTextureView, loadOp: "load", storeOp: "store" }],
-        depthStencilAttachment: {
-          view: this.mainDepthView,
-          depthLoadOp: "load",
-          depthStoreOp: "store",
-          depthClearValue: 1
-        }
-      };
-      const transPass = commandEncoder.beginRenderPass(transPassDesc);
-      const viewProjMatrix = mat4Impl.multiply(
-        this.cameras[this.mainCameraParams.type].projectionMatrix,
-        this.cameras[this.mainCameraParams.type].view,
-        mat4Impl.identity()
-      );
-      for (const mesh of this.mainRenderBundle) {
-        if (mesh.effects) Object.keys(mesh.effects).forEach((effect_) => {
-          const effect = mesh.effects[effect_];
-          if (effect.enabled == false) return;
-          let md = mesh.getModelMatrix(mesh.position);
-          if (effect.updateInstanceData) effect.updateInstanceData(md);
-          effect.render(transPass, mesh, viewProjMatrix);
-        });
-      }
-      transPass.end();
-      this.device.queue.submit([commandEncoder.finish()]);
-      requestAnimationFrame(this.frame);
-    } catch (err) {
-      console.log("%cLoop(err):" + err + " info : " + err.stack, LOG_WARN);
-      requestAnimationFrame(this.frame);
-    }
-  };
-  framePassPerObject = () => {
-    let commandEncoder = this.device.createCommandEncoder();
-    if (this.matrixAmmo.rigidBodies && this.matrixAmmo.rigidBodies.length > 0) this.matrixAmmo.updatePhysics();
-    this.mainRenderBundle.forEach((meItem, index) => {
-      if (index === 0) {
-        if (meItem.renderPassDescriptor) meItem.renderPassDescriptor.colorAttachments[0].loadOp = "clear";
-      } else {
-        if (meItem.renderPassDescriptor) meItem.renderPassDescriptor.colorAttachments[0].loadOp = "load";
-      }
-      meItem.draw(commandEncoder);
-      if (meItem.renderBundle) {
-        meItem.renderPassDescriptor.colorAttachments[0].view = this.context.getCurrentTexture().createView();
-        const passEncoder = commandEncoder.beginRenderPass(meItem.renderPassDescriptor);
-        passEncoder.executeBundles([meItem.renderBundle]);
-        passEncoder.end();
-      } else {
-        meItem.draw(commandEncoder);
-      }
-    });
-    this.device.queue.submit([commandEncoder.finish()]);
-    requestAnimationFrame(this.frame);
-  };
-  // ---------------------------------------
-  addGlbObj = (o, BVHANIM, glbFile, clearColor = this.options.clearColor) => {
-    if (typeof o.name === "undefined") {
-      o.name = genName(9);
-    }
-    if (typeof o.position === "undefined") {
-      o.position = { x: 0, y: 0, z: -4 };
-    }
-    if (typeof o.rotation === "undefined") {
-      o.rotation = { x: 0, y: 0, z: 0 };
-    }
-    if (typeof o.rotationSpeed === "undefined") {
-      o.rotationSpeed = { x: 0, y: 0, z: 0 };
-    }
-    if (typeof o.texturesPaths === "undefined") {
-      o.texturesPaths = ["./res/textures/default.png"];
-    }
-    if (typeof o.material === "undefined") {
-      o.material = { type: "standard" };
-    }
-    if (typeof o.mainCameraParams === "undefined") {
-      o.mainCameraParams = this.mainCameraParams;
-    }
-    if (typeof o.scale === "undefined") {
-      o.scale = [1, 1, 1];
-    }
-    if (typeof o.raycast === "undefined") {
-      o.raycast = { enabled: false, radius: 2 };
-    }
-    if (typeof o.pointerEffect === "undefined") {
-      o.pointerEffect = { enabled: false };
-    }
-    o.entityArgPass = this.entityArgPass;
-    o.cameras = this.cameras;
-    if (typeof o.physics === "undefined") {
-      o.physics = {
-        scale: [1, 1, 1],
-        enabled: true,
-        geometry: "Sphere",
-        //                   must be fixed<<
-        radius: typeof o.scale == Number ? o.scale : o.scale[0],
-        name: o.name,
-        rotation: o.rotation
-      };
-    }
-    if (typeof o.physics.enabled === "undefined") {
-      o.physics.enabled = true;
-    }
-    if (typeof o.physics.geometry === "undefined") {
-      o.physics.geometry = "Cube";
-    }
-    if (typeof o.physics.radius === "undefined") {
-      o.physics.radius = o.scale;
-    }
-    if (typeof o.physics.mass === "undefined") {
-      o.physics.mass = 1;
-    }
-    if (typeof o.physics.name === "undefined") {
-      o.physics.name = o.name;
-    }
-    if (typeof o.physics.scale === "undefined") {
-      o.physics.scale = o.scale;
-    }
-    if (typeof o.physics.rotation === "undefined") {
-      o.physics.rotation = o.rotation;
-    }
-    o.physics.position = o.position;
-    if (typeof o.objAnim == "undefined" || typeof o.objAnim == null) {
-      o.objAnim = null;
-    } else {
-      alert("GLB not use objAnim (it is only for obj sequence). GLB use BVH skeletal for animation");
-    }
-    let skinnedNodeIndex = 0;
-    for (const skinnedNode of glbFile.skinnedMeshNodes) {
-      let c = 0;
-      for (const primitive of skinnedNode.mesh.primitives) {
-        o.name = o.name + "-" + skinnedNode.name + "-" + c;
-        const bvhPlayer = new BVHPlayer(
-          o,
-          BVHANIM,
-          glbFile,
-          c,
-          skinnedNodeIndex,
-          this.canvas,
-          this.device,
-          this.context,
-          this.inputHandler,
-          this.globalAmbient.slice()
-        );
-        skinnedNodeIndex++;
-        bvhPlayer.spotlightUniformBuffer = this.spotlightUniformBuffer;
-        bvhPlayer.clearColor = clearColor;
-        setTimeout(() => {
-          this.mainRenderBundle.push(bvhPlayer);
-        }, 800);
-        c++;
-      }
-    }
-    if (typeof this.editor !== "undefined") {
-      this.editor.editorHud.updateSceneContainer();
-    }
-  };
-  // NEW TEST INSTANCED DRAWS
-  addGlbObjInctance = (o, BVHANIM, glbFile, clearColor = this.options.clearColor) => {
-    if (typeof o.name === "undefined") {
-      o.name = genName(9);
-    }
-    if (typeof o.position === "undefined") {
-      o.position = { x: 0, y: 0, z: -4 };
-    }
-    if (typeof o.rotation === "undefined") {
-      o.rotation = { x: 0, y: 0, z: 0 };
-    }
-    if (typeof o.rotationSpeed === "undefined") {
-      o.rotationSpeed = { x: 0, y: 0, z: 0 };
-    }
-    if (typeof o.texturesPaths === "undefined") {
-      o.texturesPaths = ["./res/textures/default.png"];
-    }
-    if (typeof o.material === "undefined") {
-      o.material = { type: "standard" };
-    }
-    if (typeof o.mainCameraParams === "undefined") {
-      o.mainCameraParams = this.mainCameraParams;
-    }
-    if (typeof o.scale === "undefined") {
-      o.scale = [1, 1, 1];
-    }
-    if (typeof o.raycast === "undefined") {
-      o.raycast = { enabled: false, radius: 2 };
-    }
-    if (typeof o.pointerEffect === "undefined") {
-      o.pointerEffect = {
-        enabled: false,
-        pointer: false,
-        ballEffect: false
-      };
-    }
-    o.entityArgPass = this.entityArgPass;
-    o.cameras = this.cameras;
-    if (typeof o.physics === "undefined") {
-      o.physics = {
-        scale: [1, 1, 1],
-        enabled: true,
-        geometry: "Sphere",
-        //                   must be fixed<<
-        radius: typeof o.scale == Number ? o.scale : o.scale[0],
-        name: o.name,
-        rotation: o.rotation
-      };
-    }
-    if (typeof o.physics.enabled === "undefined") {
-      o.physics.enabled = true;
-    }
-    if (typeof o.physics.geometry === "undefined") {
-      o.physics.geometry = "Cube";
-    }
-    if (typeof o.physics.radius === "undefined") {
-      o.physics.radius = o.scale;
-    }
-    if (typeof o.physics.mass === "undefined") {
-      o.physics.mass = 1;
-    }
-    if (typeof o.physics.name === "undefined") {
-      o.physics.name = o.name;
-    }
-    if (typeof o.physics.scale === "undefined") {
-      o.physics.scale = o.scale;
-    }
-    if (typeof o.physics.rotation === "undefined") {
-      o.physics.rotation = o.rotation;
-    }
-    o.physics.position = o.position;
-    if (typeof o.objAnim == "undefined" || typeof o.objAnim == null) {
-      o.objAnim = null;
-    } else {
-      console.warn("GLB not use objAnim (it is only for obj sequence). GLB use BVH skeletal for animation");
-    }
-    let skinnedNodeIndex = 0;
-    for (const skinnedNode of glbFile.skinnedMeshNodes) {
-      let c = 0;
-      for (const primitive of skinnedNode.mesh.primitives) {
-        o.name = o.name + "_" + skinnedNode.name;
-        if (skinnedNodeIndex == 0) {
+      // Not in use for now
+      addCube = (o) => {
+        if (typeof o === "undefined") {
+          var o = {
+            scale: 1,
+            position: { x: 0, y: 0, z: -4 },
+            texturesPaths: ["./res/textures/default.png"],
+            rotation: { x: 0, y: 0, z: 0 },
+            rotationSpeed: { x: 0, y: 0, z: 0 },
+            entityArgPass: this.entityArgPass,
+            cameras: this.cameras,
+            mainCameraParams: this.mainCameraParams
+          };
         } else {
+          if (typeof o.position === "undefined") {
+            o.position = { x: 0, y: 0, z: -4 };
+          }
+          if (typeof o.rotation === "undefined") {
+            o.rotation = { x: 0, y: 0, z: 0 };
+          }
+          if (typeof o.rotationSpeed === "undefined") {
+            o.rotationSpeed = { x: 0, y: 0, z: 0 };
+          }
+          if (typeof o.texturesPaths === "undefined") {
+            o.texturesPaths = ["./res/textures/default.png"];
+          }
+          if (typeof o.scale === "undefined") {
+            o.scale = 1;
+          }
+          if (typeof o.mainCameraParams === "undefined") {
+            o.mainCameraParams = this.mainCameraParams;
+          }
+          o.entityArgPass = this.entityArgPass;
+          o.cameras = this.cameras;
+        }
+        if (typeof o.physics === "undefined") {
+          o.physics = {
+            scale: [1, 1, 1],
+            enabled: true,
+            geometry: "Sphere",
+            radius: o.scale,
+            name: o.name,
+            rotation: o.rotation
+          };
+        }
+        if (typeof o.position !== "undefined") {
+          o.physics.position = o.position;
+        }
+        if (typeof o.physics.enabled === "undefined") {
+          o.physics.enabled = true;
+        }
+        if (typeof o.physics.geometry === "undefined") {
+          o.physics.geometry = "Sphere";
+        }
+        if (typeof o.physics.radius === "undefined") {
+          o.physics.radius = o.scale;
+        }
+        if (typeof o.physics.mass === "undefined") {
+          o.physics.mass = 1;
+        }
+        if (typeof o.physics.name === "undefined") {
+          o.physics.name = o.name;
+        }
+        if (typeof o.physics.scale === "undefined") {
+          o.physics.scale = o.scale;
+        }
+        if (typeof o.physics.rotation === "undefined") {
+          o.physics.rotation = o.rotation;
+        }
+        let myCube1 = new MECube(this.canvas, this.device, this.context, o);
+        if (o.physics.enabled == true) {
+          this.matrixAmmo.addPhysics(myCube1, o.physics);
+        }
+        this.mainRenderBundle.push(myCube1);
+      };
+      // Not in use for now
+      addBall = (o) => {
+        if (typeof o === "undefined") {
+          var o = {
+            scale: 1,
+            position: { x: 0, y: 0, z: -4 },
+            texturesPaths: ["./res/textures/default.png"],
+            rotation: { x: 0, y: 0, z: 0 },
+            rotationSpeed: { x: 0, y: 0, z: 0 },
+            entityArgPass: this.entityArgPass,
+            cameras: this.cameras,
+            mainCameraParams: this.mainCameraParams
+          };
+        } else {
+          if (typeof o.position === "undefined") {
+            o.position = { x: 0, y: 0, z: -4 };
+          }
+          if (typeof o.rotation === "undefined") {
+            o.rotation = { x: 0, y: 0, z: 0 };
+          }
+          if (typeof o.rotationSpeed === "undefined") {
+            o.rotationSpeed = { x: 0, y: 0, z: 0 };
+          }
+          if (typeof o.texturesPaths === "undefined") {
+            o.texturesPaths = ["./res/textures/default.png"];
+          }
+          if (typeof o.mainCameraParams === "undefined") {
+            o.mainCameraParams = this.mainCameraParams;
+          }
+          if (typeof o.scale === "undefined") {
+            o.scale = 1;
+          }
+          o.entityArgPass = this.entityArgPass;
+          o.cameras = this.cameras;
+        }
+        if (typeof o.physics === "undefined") {
+          o.physics = {
+            scale: [1, 1, 1],
+            enabled: true,
+            geometry: "Sphere",
+            radius: o.scale,
+            name: o.name,
+            rotation: o.rotation
+          };
+        }
+        if (typeof o.position !== "undefined") {
+          o.physics.position = o.position;
+        }
+        if (typeof o.physics.enabled === "undefined") {
+          o.physics.enabled = true;
+        }
+        if (typeof o.physics.geometry === "undefined") {
+          o.physics.geometry = "Sphere";
+        }
+        if (typeof o.physics.radius === "undefined") {
+          o.physics.radius = o.scale;
+        }
+        if (typeof o.physics.mass === "undefined") {
+          o.physics.mass = 1;
+        }
+        if (typeof o.physics.name === "undefined") {
+          o.physics.name = o.name;
+        }
+        if (typeof o.physics.scale === "undefined") {
+          o.physics.scale = o.scale;
+        }
+        if (typeof o.physics.rotation === "undefined") {
+          o.physics.rotation = o.rotation;
+        }
+        let myBall1 = new MEBall(this.canvas, this.device, this.context, o);
+        if (o.physics.enabled == true) {
+          this.matrixAmmo.addPhysics(myBall1, o.physics);
+        }
+        this.mainRenderBundle.push(myBall1);
+      };
+      addLight(o) {
+        const camera = this.cameras[this.mainCameraParams.type];
+        let newLight = new SpotLight(camera, this.inputHandler, this.device);
+        this.lightContainer.push(newLight);
+        this.createTexArrayForShadows();
+        console.log(`%cAdd light: ${newLight}`, LOG_FUNNY_SMALL);
+      }
+      addMeshObj = (o, clearColor = this.options.clearColor) => {
+        if (typeof o.name === "undefined") {
+          o.name = genName(9);
+        }
+        if (typeof o.position === "undefined") {
+          o.position = { x: 0, y: 0, z: -4 };
+        }
+        if (typeof o.rotation === "undefined") {
+          o.rotation = { x: 0, y: 0, z: 0 };
+        }
+        if (typeof o.rotationSpeed === "undefined") {
+          o.rotationSpeed = { x: 0, y: 0, z: 0 };
+        }
+        if (typeof o.texturesPaths === "undefined") {
+          o.texturesPaths = ["./res/textures/default.png"];
+        }
+        if (typeof o.material === "undefined") {
+          o.material = { type: "standard" };
+        }
+        if (typeof o.mainCameraParams === "undefined") {
+          o.mainCameraParams = this.mainCameraParams;
+        }
+        if (typeof o.scale === "undefined") {
+          o.scale = [1, 1, 1];
+        }
+        if (typeof o.raycast === "undefined") {
+          o.raycast = { enabled: false, radius: 2 };
+        }
+        o.entityArgPass = this.entityArgPass;
+        o.cameras = this.cameras;
+        if (typeof o.physics === "undefined") {
+          o.physics = {
+            scale: [1, 1, 1],
+            enabled: true,
+            geometry: "Sphere",
+            //                   must be fixed<<
+            radius: typeof o.scale == Number ? o.scale : o.scale[0],
+            name: o.name,
+            rotation: o.rotation
+          };
+        }
+        if (typeof o.physics.enabled === "undefined") {
+          o.physics.enabled = true;
+        }
+        if (typeof o.physics.geometry === "undefined") {
+          o.physics.geometry = "Cube";
+        }
+        if (typeof o.physics.radius === "undefined") {
+          o.physics.radius = o.scale;
+        }
+        if (typeof o.physics.mass === "undefined") {
+          o.physics.mass = 1;
+        }
+        if (typeof o.physics.name === "undefined") {
+          o.physics.name = o.name;
+        }
+        if (typeof o.physics.scale === "undefined") {
+          o.physics.scale = o.scale;
+        }
+        if (typeof o.physics.rotation === "undefined") {
+          o.physics.rotation = o.rotation;
+        }
+        o.physics.position = o.position;
+        if (typeof o.objAnim == "undefined" || typeof o.objAnim == null) {
+          o.objAnim = null;
+        } else {
+          if (typeof o.objAnim.animations !== "undefined") {
+            o.objAnim.play = play;
+          }
+          o.objAnim.meshList = o.objAnim.meshList;
+          if (typeof o.mesh === "undefined") {
+            o.mesh = o.objAnim.meshList[0];
+            console.info("objSeq animation is active.");
+          }
+          o.objAnim.scaleAll = function(s) {
+            for (var k in this.meshList) {
+              this.meshList[k].setScale(s);
+            }
+          };
+        }
+        let AM = this.globalAmbient.slice();
+        let myMesh1 = new MEMeshObj(this.canvas, this.device, this.context, o, this.inputHandler, AM);
+        myMesh1.spotlightUniformBuffer = this.spotlightUniformBuffer;
+        myMesh1.clearColor = clearColor;
+        if (o.physics.enabled == true) {
+          this.matrixAmmo.addPhysics(myMesh1, o.physics);
+        }
+        this.mainRenderBundle.push(myMesh1);
+        if (typeof this.editor !== "undefined") {
+          this.editor.editorHud.updateSceneContainer();
+        }
+      };
+      run(callback) {
+        setTimeout(() => {
+          requestAnimationFrame(this.frame);
+        }, 500);
+        setTimeout(() => {
+          callback(this);
+        }, 20);
+      }
+      destroyProgram = () => {
+        this.mainRenderBundle = [];
+        this.canvas.remove();
+      };
+      updateLights() {
+        const floatsPerLight = 36;
+        const data = new Float32Array(this.MAX_SPOTLIGHTS * floatsPerLight);
+        for (let i = 0; i < this.MAX_SPOTLIGHTS; i++) {
+          if (i < this.lightContainer.length) {
+            const buf = this.lightContainer[i].getLightDataBuffer();
+            data.set(buf, i * floatsPerLight);
+          } else {
+            data.set(new Float32Array(floatsPerLight), i * floatsPerLight);
+          }
+        }
+        this.device.queue.writeBuffer(this.spotlightUniformBuffer, 0, data.buffer);
+      }
+      frameSinglePass = () => {
+        if (typeof this.mainRenderBundle == "undefined" || this.mainRenderBundle.length == 0) {
+          setTimeout(() => {
+            requestAnimationFrame(this.frame);
+          }, 100);
+          return;
+        }
+        this.mainRenderBundle.forEach((meItem, index) => {
+          if (meItem.isVideo == true) {
+            if (!meItem.externalTexture) {
+              meItem.createBindGroupForRender();
+              setTimeout(() => {
+                requestAnimationFrame(this.frame);
+              }, 1e3);
+              return;
+            }
+          }
+        });
+        try {
+          let commandEncoder = this.device.createCommandEncoder();
+          this.updateLights();
+          for (const light of this.lightContainer) {
+            light.update();
+            this.mainRenderBundle.forEach((meItem, index) => {
+              meItem.updateModelUniformBuffer();
+              meItem.getTransformationMatrix(this.mainRenderBundle, light, index);
+            });
+          }
+          if (this.matrixAmmo) this.matrixAmmo.updatePhysics();
+          let now, deltaTime2;
+          for (let i = 0; i < this.lightContainer.length; i++) {
+            const light = this.lightContainer[i];
+            let ViewPerLightRenderShadowPass = this.shadowTextureArray.createView({
+              dimension: "2d",
+              baseArrayLayer: i,
+              arrayLayerCount: 1,
+              // must be > 0
+              baseMipLevel: 0,
+              mipLevelCount: 1
+            });
+            const shadowPass = commandEncoder.beginRenderPass({
+              label: "shadowPass",
+              colorAttachments: [],
+              depthStencilAttachment: {
+                view: ViewPerLightRenderShadowPass,
+                depthLoadOp: "clear",
+                depthStoreOp: "store",
+                depthClearValue: 1
+              }
+            });
+            now = performance.now() / 1e3;
+            for (const [meshIndex, mesh] of this.mainRenderBundle.entries()) {
+              if (mesh instanceof BVHPlayerInstances) {
+                mesh.updateInstanceData(mesh.getModelMatrix(mesh.position));
+                shadowPass.setPipeline(light.shadowPipelineInstanced);
+              } else {
+                shadowPass.setPipeline(light.shadowPipeline);
+              }
+              if (mesh.videoIsReady == "NONE") {
+                shadowPass.setBindGroup(0, light.getShadowBindGroup(mesh, meshIndex));
+                if (mesh instanceof BVHPlayerInstances) {
+                  shadowPass.setBindGroup(1, mesh.modelBindGroupInstanced);
+                } else {
+                  shadowPass.setBindGroup(1, mesh.modelBindGroup);
+                }
+                mesh.drawShadows(shadowPass, light);
+              }
+            }
+            shadowPass.end();
+          }
+          const currentTextureView = this.context.getCurrentTexture().createView();
+          this.mainRenderPassDesc.colorAttachments[0].view = currentTextureView;
+          let pass = commandEncoder.beginRenderPass(this.mainRenderPassDesc);
+          for (const mesh of this.mainRenderBundle) {
+            mesh.position.update();
+            if (mesh.update) {
+              now = performance.now() / 1e3;
+              deltaTime2 = now - (this.lastTime || now);
+              this.lastTime = now;
+              mesh.update(deltaTime2);
+            }
+            pass.setPipeline(mesh.pipeline);
+            if (!mesh.sceneBindGroupForRender || mesh.FINISH_VIDIO_INIT == false && mesh.isVideo == true) {
+              for (const m of this.mainRenderBundle) {
+                if (m.isVideo == true) {
+                  console.log("\u2705shadowVideoView", this.shadowVideoView);
+                  m.shadowDepthTextureView = this.shadowVideoView;
+                  m.FINISH_VIDIO_INIT = true;
+                  m.setupPipeline();
+                } else {
+                  m.shadowDepthTextureView = this.shadowArrayView;
+                  m.setupPipeline();
+                }
+              }
+            }
+            mesh.drawElements(pass, this.lightContainer);
+          }
+          pass.end();
+          if (this.collisionSystem) this.collisionSystem.update();
+          const transPassDesc = {
+            colorAttachments: [{ view: currentTextureView, loadOp: "load", storeOp: "store" }],
+            depthStencilAttachment: {
+              view: this.mainDepthView,
+              depthLoadOp: "load",
+              depthStoreOp: "store",
+              depthClearValue: 1
+            }
+          };
+          const transPass = commandEncoder.beginRenderPass(transPassDesc);
+          const viewProjMatrix = mat4Impl.multiply(
+            this.cameras[this.mainCameraParams.type].projectionMatrix,
+            this.cameras[this.mainCameraParams.type].view,
+            mat4Impl.identity()
+          );
+          for (const mesh of this.mainRenderBundle) {
+            if (mesh.effects) Object.keys(mesh.effects).forEach((effect_) => {
+              const effect = mesh.effects[effect_];
+              if (effect.enabled == false) return;
+              let md = mesh.getModelMatrix(mesh.position);
+              if (effect.updateInstanceData) effect.updateInstanceData(md);
+              effect.render(transPass, mesh, viewProjMatrix);
+            });
+          }
+          transPass.end();
+          this.device.queue.submit([commandEncoder.finish()]);
+          requestAnimationFrame(this.frame);
+        } catch (err) {
+          console.log("%cLoop(err):" + err + " info : " + err.stack, LOG_WARN);
+          requestAnimationFrame(this.frame);
+        }
+      };
+      framePassPerObject = () => {
+        let commandEncoder = this.device.createCommandEncoder();
+        if (this.matrixAmmo.rigidBodies && this.matrixAmmo.rigidBodies.length > 0) this.matrixAmmo.updatePhysics();
+        this.mainRenderBundle.forEach((meItem, index) => {
+          if (index === 0) {
+            if (meItem.renderPassDescriptor) meItem.renderPassDescriptor.colorAttachments[0].loadOp = "clear";
+          } else {
+            if (meItem.renderPassDescriptor) meItem.renderPassDescriptor.colorAttachments[0].loadOp = "load";
+          }
+          meItem.draw(commandEncoder);
+          if (meItem.renderBundle) {
+            meItem.renderPassDescriptor.colorAttachments[0].view = this.context.getCurrentTexture().createView();
+            const passEncoder = commandEncoder.beginRenderPass(meItem.renderPassDescriptor);
+            passEncoder.executeBundles([meItem.renderBundle]);
+            passEncoder.end();
+          } else {
+            meItem.draw(commandEncoder);
+          }
+        });
+        this.device.queue.submit([commandEncoder.finish()]);
+        requestAnimationFrame(this.frame);
+      };
+      // ---------------------------------------
+      addGlbObj = (o, BVHANIM, glbFile, clearColor = this.options.clearColor) => {
+        if (typeof o.name === "undefined") {
+          o.name = genName(9);
+        }
+        if (typeof o.position === "undefined") {
+          o.position = { x: 0, y: 0, z: -4 };
+        }
+        if (typeof o.rotation === "undefined") {
+          o.rotation = { x: 0, y: 0, z: 0 };
+        }
+        if (typeof o.rotationSpeed === "undefined") {
+          o.rotationSpeed = { x: 0, y: 0, z: 0 };
+        }
+        if (typeof o.texturesPaths === "undefined") {
+          o.texturesPaths = ["./res/textures/default.png"];
+        }
+        if (typeof o.material === "undefined") {
+          o.material = { type: "standard" };
+        }
+        if (typeof o.mainCameraParams === "undefined") {
+          o.mainCameraParams = this.mainCameraParams;
+        }
+        if (typeof o.scale === "undefined") {
+          o.scale = [1, 1, 1];
+        }
+        if (typeof o.raycast === "undefined") {
+          o.raycast = { enabled: false, radius: 2 };
+        }
+        if (typeof o.pointerEffect === "undefined") {
           o.pointerEffect = { enabled: false };
         }
-        const bvhPlayer = new BVHPlayerInstances(
-          o,
-          BVHANIM,
-          glbFile,
-          c,
-          skinnedNodeIndex,
-          this.canvas,
-          this.device,
-          this.context,
-          this.inputHandler,
-          this.globalAmbient.slice()
-        );
-        bvhPlayer.spotlightUniformBuffer = this.spotlightUniformBuffer;
-        bvhPlayer.clearColor = clearColor;
-        setTimeout(() => {
-          this.mainRenderBundle.push(bvhPlayer);
-        }, 200);
-        c++;
-      }
-      skinnedNodeIndex++;
-    }
-    if (typeof this.editor !== "undefined") {
-      this.editor.editorHud.updateSceneContainer();
-    }
-  };
-};
+        o.entityArgPass = this.entityArgPass;
+        o.cameras = this.cameras;
+        if (typeof o.physics === "undefined") {
+          o.physics = {
+            scale: [1, 1, 1],
+            enabled: true,
+            geometry: "Sphere",
+            //                   must be fixed<<
+            radius: typeof o.scale == Number ? o.scale : o.scale[0],
+            name: o.name,
+            rotation: o.rotation
+          };
+        }
+        if (typeof o.physics.enabled === "undefined") {
+          o.physics.enabled = true;
+        }
+        if (typeof o.physics.geometry === "undefined") {
+          o.physics.geometry = "Cube";
+        }
+        if (typeof o.physics.radius === "undefined") {
+          o.physics.radius = o.scale;
+        }
+        if (typeof o.physics.mass === "undefined") {
+          o.physics.mass = 1;
+        }
+        if (typeof o.physics.name === "undefined") {
+          o.physics.name = o.name;
+        }
+        if (typeof o.physics.scale === "undefined") {
+          o.physics.scale = o.scale;
+        }
+        if (typeof o.physics.rotation === "undefined") {
+          o.physics.rotation = o.rotation;
+        }
+        o.physics.position = o.position;
+        if (typeof o.objAnim == "undefined" || typeof o.objAnim == null) {
+          o.objAnim = null;
+        } else {
+          alert("GLB not use objAnim (it is only for obj sequence). GLB use BVH skeletal for animation");
+        }
+        let skinnedNodeIndex = 0;
+        for (const skinnedNode of glbFile.skinnedMeshNodes) {
+          let c = 0;
+          for (const primitive of skinnedNode.mesh.primitives) {
+            o.name = o.name + "-" + skinnedNode.name + "-" + c;
+            const bvhPlayer = new BVHPlayer(
+              o,
+              BVHANIM,
+              glbFile,
+              c,
+              skinnedNodeIndex,
+              this.canvas,
+              this.device,
+              this.context,
+              this.inputHandler,
+              this.globalAmbient.slice()
+            );
+            skinnedNodeIndex++;
+            bvhPlayer.spotlightUniformBuffer = this.spotlightUniformBuffer;
+            bvhPlayer.clearColor = clearColor;
+            setTimeout(() => {
+              this.mainRenderBundle.push(bvhPlayer);
+            }, 800);
+            c++;
+          }
+        }
+        if (typeof this.editor !== "undefined") {
+          this.editor.editorHud.updateSceneContainer();
+        }
+      };
+      // NEW TEST INSTANCED DRAWS
+      addGlbObjInctance = (o, BVHANIM, glbFile, clearColor = this.options.clearColor) => {
+        if (typeof o.name === "undefined") {
+          o.name = genName(9);
+        }
+        if (typeof o.position === "undefined") {
+          o.position = { x: 0, y: 0, z: -4 };
+        }
+        if (typeof o.rotation === "undefined") {
+          o.rotation = { x: 0, y: 0, z: 0 };
+        }
+        if (typeof o.rotationSpeed === "undefined") {
+          o.rotationSpeed = { x: 0, y: 0, z: 0 };
+        }
+        if (typeof o.texturesPaths === "undefined") {
+          o.texturesPaths = ["./res/textures/default.png"];
+        }
+        if (typeof o.material === "undefined") {
+          o.material = { type: "standard" };
+        }
+        if (typeof o.mainCameraParams === "undefined") {
+          o.mainCameraParams = this.mainCameraParams;
+        }
+        if (typeof o.scale === "undefined") {
+          o.scale = [1, 1, 1];
+        }
+        if (typeof o.raycast === "undefined") {
+          o.raycast = { enabled: false, radius: 2 };
+        }
+        if (typeof o.pointerEffect === "undefined") {
+          o.pointerEffect = {
+            enabled: false,
+            pointer: false,
+            ballEffect: false
+          };
+        }
+        o.entityArgPass = this.entityArgPass;
+        o.cameras = this.cameras;
+        if (typeof o.physics === "undefined") {
+          o.physics = {
+            scale: [1, 1, 1],
+            enabled: true,
+            geometry: "Sphere",
+            //                   must be fixed<<
+            radius: typeof o.scale == Number ? o.scale : o.scale[0],
+            name: o.name,
+            rotation: o.rotation
+          };
+        }
+        if (typeof o.physics.enabled === "undefined") {
+          o.physics.enabled = true;
+        }
+        if (typeof o.physics.geometry === "undefined") {
+          o.physics.geometry = "Cube";
+        }
+        if (typeof o.physics.radius === "undefined") {
+          o.physics.radius = o.scale;
+        }
+        if (typeof o.physics.mass === "undefined") {
+          o.physics.mass = 1;
+        }
+        if (typeof o.physics.name === "undefined") {
+          o.physics.name = o.name;
+        }
+        if (typeof o.physics.scale === "undefined") {
+          o.physics.scale = o.scale;
+        }
+        if (typeof o.physics.rotation === "undefined") {
+          o.physics.rotation = o.rotation;
+        }
+        o.physics.position = o.position;
+        if (typeof o.objAnim == "undefined" || typeof o.objAnim == null) {
+          o.objAnim = null;
+        } else {
+          console.warn("GLB not use objAnim (it is only for obj sequence). GLB use BVH skeletal for animation");
+        }
+        let skinnedNodeIndex = 0;
+        for (const skinnedNode of glbFile.skinnedMeshNodes) {
+          let c = 0;
+          for (const primitive of skinnedNode.mesh.primitives) {
+            o.name = o.name + "_" + skinnedNode.name;
+            if (skinnedNodeIndex == 0) {
+            } else {
+              o.pointerEffect = { enabled: false };
+            }
+            const bvhPlayer = new BVHPlayerInstances(
+              o,
+              BVHANIM,
+              glbFile,
+              c,
+              skinnedNodeIndex,
+              this.canvas,
+              this.device,
+              this.context,
+              this.inputHandler,
+              this.globalAmbient.slice()
+            );
+            bvhPlayer.spotlightUniformBuffer = this.spotlightUniformBuffer;
+            bvhPlayer.clearColor = clearColor;
+            setTimeout(() => {
+              this.mainRenderBundle.push(bvhPlayer);
+            }, 200);
+            c++;
+          }
+          skinnedNodeIndex++;
+        }
+        if (typeof this.editor !== "undefined") {
+          this.editor.editorHud.updateSceneContainer();
+        }
+      };
+    };
+  }
+});
 
 // ../../../../projects/MM/app-gen.js
-var app2 = new MatrixEngineWGPU(
-  {
-    useEditor: true,
-    projectType: "created from editor",
-    projectName: "MM",
-    useSingleRenderPass: true,
-    canvasSize: "fullscreen",
-    mainCameraParams: {
-      type: "WASD",
-      responseCoef: 1e3
-    },
-    clearColor: { r: 0, b: 0.1, g: 0.1, a: 1 }
-  },
-  (app3) => {
-    addEventListener("AmmoReady", async () => {
-      app3.addLight();
-    });
+var require_app_gen = __commonJS({
+  "../../../../projects/MM/app-gen.js"(exports) {
+    init_world();
+    init_loader_obj();
+    init_webgpu_gltf();
+    var app2 = new MatrixEngineWGPU(
+      {
+        useEditor: true,
+        projectType: "created from editor",
+        projectName: "MM",
+        useSingleRenderPass: true,
+        canvasSize: "fullscreen",
+        mainCameraParams: {
+          type: "WASD",
+          responseCoef: 1e3
+        },
+        clearColor: { r: 0, b: 0.1, g: 0.1, a: 1 }
+      },
+      (app3) => {
+        addEventListener("AmmoReady", async () => {
+          app3.addLight();
+          downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, (m) => {
+            const texturesPaths = ["./res/meshes/blender/cube.png"];
+            app3.addMeshObj({
+              position: { x: 0, y: 0, z: -20 },
+              rotation: { x: 0, y: 0, z: 0 },
+              rotationSpeed: { x: 0, y: 0, z: 0 },
+              texturesPaths: [texturesPaths],
+              name: "Cube_" + app3.mainRenderBundle.length,
+              mesh: m.cube,
+              raycast: { enabled: true, radius: 2 },
+              physics: { enabled: true, geometry: "Cube" }
+            });
+          }, { scale: [1, 1, 1] });
+          downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, (m) => {
+            const texturesPaths = ["./res/meshes/blender/cube.png"];
+            exports.core.addMeshObj({
+              position: { x: 0, y: 0, z: -20 },
+              rotation: { x: 0, y: 0, z: 0 },
+              rotationSpeed: { x: 0, y: 0, z: 0 },
+              texturesPaths: [texturesPaths],
+              name: "Cube_" + app3.mainRenderBundle.length,
+              mesh: m.cube,
+              raycast: { enabled: true, radius: 2 },
+              physics: { enabled: true, geometry: "Cube" }
+            });
+          }, { scale: [1, 1, 1] });
+        });
+      }
+    );
+    window.app = app2;
   }
-);
-window.app = app2;
+});
+export default require_app_gen();
 /*! Bundled license information:
 
 bvh-loader/module/bvh-loader.js:

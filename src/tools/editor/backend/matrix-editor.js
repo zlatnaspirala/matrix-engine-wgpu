@@ -9,22 +9,24 @@ import esbuild from "esbuild";
 import fs from "fs/promises";
 import path from "path";
 import {WebSocketServer} from "ws";
-import {copyFile} from "fs/promises";
+// import {copyFile} from "fs/promises";
 
 // matrix-engine-wgpu repo root reference
 const ENGINE_PATH = path.resolve("../../../../");
+const GEN_METHODS_PATH = path.resolve("../gen");
 const PUBLIC_DIR = path.join(ENGINE_PATH, "public");
 const PUBLIC_RES = path.join(PUBLIC_DIR, "res");
 const PROJECTS_DIR = path.join(ENGINE_PATH, "projects");
 await fs.mkdir(PROJECTS_DIR, {recursive: true});
 const watchers = new Map();
+let PROJECT_NAME = "";
 
 const wss = new WebSocketServer({port: 1243});
-
 console.log("\x1b[1m\x1b[92m%s\x1b[0m", " Editorx websocket running on ws://localhost:1243");
 console.log("\x1b[92m%s\x1b[0m", "-----------------------------------------");
 console.log("\x1b[93m%s\x1b[0m", "- Start you new project                 -");
 console.log("\x1b[93m%s\x1b[0m", "- Load project                          -");
+console.log("\x1b[93m%s\x1b[0m", "- Add Cube [mesh]                       -");
 console.log("\x1b[92m%s\x1b[0m", "-----------------------------------------");
 
 wss.on("connection", ws => {
@@ -47,7 +49,6 @@ wss.on("connection", ws => {
       }
 
       if(msg.action === "list") {
-        // const rel = payload.path || "";
         const rel = "";
         const folder = path.join(PUBLIC_RES, rel);
         const items = await fs.readdir(folder, {withFileTypes: true});
@@ -72,7 +73,11 @@ wss.on("connection", ws => {
         console.log("nav-folder [WATCH]");
         navFolder(msg, ws);
       } else if(msg.action == "file-detail") {
-        fileDetail(msg, ws)
+        fileDetail(msg, ws);
+      } else if(msg.action == "addCube") {
+        addCube(msg, ws);
+      } else if(msg.action == "save-methods") {
+        saveMethods(msg, ws);
       }
 
       // if(msg.action === "SAVE_PROJECT") {
@@ -244,6 +249,7 @@ async function buildProject(projectName, ws, payload) {
   await context.watch();
   console.log(`Watching & bundling ${projectName} → ${outfile}`);
   watchers.set(projectName, context); // <- store watcher
+  PROJECT_NAME = projectName;
   console.log(`👀 Started watcher for ${projectName}`);
 
   const htmldoc = new CodeBuilder();
@@ -352,4 +358,67 @@ async function fileDetail(msg, ws) {
     ws.send(JSON.stringify({error: err.message}));
   }
 
+}
+
+async function addCube(msg, ws) {
+  const content = new CodeBuilder();
+  content.addLine(` downloadMeshes({cube: "./res/meshes/blender/cube.obj"}, (m) => { `);
+  content.addLine(`   const texturesPaths = ['./res/meshes/blender/cube.png']; `);
+  content.addLine(`   app.addMeshObj({`);
+  content.addLine(`     position: {x: 0, y: 0, z: -20}, rotation: {x: 0, y: 0, z: 0}, rotationSpeed: {x: 0, y: 0, z: 0},`);
+  content.addLine(`     texturesPaths: [texturesPaths],`);
+  content.addLine(`     name: 'Cube_' + app.mainRenderBundle.length,`);
+  content.addLine(`     mesh: m.cube,`);
+  content.addLine(`     raycast: {enabled: true, radius: 2},`);
+  content.addLine(`     physics: {enabled: true, geometry: "Cube"}`);
+  content.addLine(`   }); `);
+  content.addLine(` }, {scale: [1, 1, 1]});  `);
+
+  const objScript = path.join(PROJECTS_DIR, msg.projectName + "\\app-gen.js");
+
+  fs.readFile(objScript).then((b) => {
+    let text = b.toString("utf8");
+    text = text.replace('// [MAIN_REPLACE2]',
+      `
+      ${content.toString()} \n
+      // [MAIN_REPLACE2]\n`);
+
+    saveScript(objScript, text, ws);
+  })
+}
+
+async function saveScript(path, text, ws) {
+  fs.writeFile(path, text, "utf8").then((e) => {
+    console.log('write file OK');
+    const refresh = 'refresh';
+    console.log(refresh);
+    ws.send(JSON.stringify({
+      ok: true,
+      refresh: refresh
+    }));
+  }).catch((err) => {
+    console.log('write file ERR', err)
+  });
+}
+
+async function saveMethods(msg, ws) {
+  console.log('WHAT IS ', msg.methodsContainer);
+  // msg.methodsContainer.forEach((method) => {
+  //   console.log('WHAT IS method ', method);
+  // });
+  // ??? path PROJECT_NAME
+  const folderPerProject = path.join(GEN_METHODS_PATH, PROJECT_NAME);
+  fs.mkdir(folderPerProject)
+  const file = path.join(folderPerProject, "\\methods.js");
+  const content =
+    "export default " +
+    JSON.stringify(msg.methodsContainer, null, 2) +
+    ";\n";
+  fs.writeFile(file, content, "utf8").then((e) => {
+    ws.send(JSON.stringify({
+      ok: true,
+      methodSaves: 'OK'
+    }));
+    console.log("Saved methods.js");
+  });
 }

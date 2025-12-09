@@ -137,6 +137,18 @@ export default class EditorHud {
       </div>
     </div>
     
+    
+    <div class="top-item">
+      <div class="top-btn">Script ▾</div>
+      <div class="dropdown">
+        <div id="showCodeEditorBtn" class="drop-item">
+           <p>Show code editor</p>
+           <small> ⌨️ </small>
+        </div>
+      </div>
+    </div>
+
+
     <div class="top-item">
       <div class="top-btn">View ▾</div>
       <div class="dropdown">
@@ -240,14 +252,24 @@ export default class EditorHud {
     })
 
     // settings
-    //camera
-    // camera-settings-pitch
+    setTimeout(() => {
+      this.core.cameras.WASD.pitch = byId('camera-settings-pitch').value;
+      this.core.cameras.WASD.yaw = byId('camera-settings-yaw').value;
+    }, 1500);
+
     byId('camera-settings-pitch').addEventListener('change', (e) => {
-      console.log('setting camera pitch ', e)
+      console.log('setting camera pitch ', e);
+      this.core.cameras.WASD.pitch = e.target.value;
     })
     byId('camera-settings-yaw').addEventListener('change', (e) => {
       console.log('setting camera', e)
+      this.core.cameras.WASD.yaw = e.target.value;
     })
+
+    byId('showCodeEditorBtn').addEventListener('click', (e) => {
+      console.log('show-method-editor ', e);
+      document.dispatchEvent(new CustomEvent('show-method-editor', {detail: {}}));
+    });    
 
     this.showAboutModal = () => {
       alert(`
@@ -674,18 +696,19 @@ export default class EditorHud {
       <span style="color:yellow;"> [${currentSO.constructor.name}]`;
     const OK = Object.keys(currentSO);
     OK.forEach((prop) => {
-      // console.log('[key]:', prop);
+      console.log('[key]:', prop);
       if(prop == 'glb' && typeof currentSO[prop] !== 'undefined' && currentSO[prop] != null) {
-        this.currentProperties.push(new SceneObjectProperty(this.objectProperies, 'glb', currentSO));
+        this.currentProperties.push(new SceneObjectProperty(this.objectProperies, 'glb', currentSO, this.core));
       } else {
-        this.currentProperties.push(new SceneObjectProperty(this.objectProperies, prop, currentSO));
+        this.currentProperties.push(new SceneObjectProperty(this.objectProperies, prop, currentSO, this.core));
       }
     })
   }
 }
 
 class SceneObjectProperty {
-  constructor(parentDOM, propName, currSceneObj) {
+  constructor(parentDOM, propName, currSceneObj, core) {
+    this.core = core;
     this.subObjectsProps = [];
     this.propName = document.createElement("div");
     this.propName.style.width = '100%';
@@ -694,6 +717,7 @@ class SceneObjectProperty {
     if(propName == "device" || propName == "position" || propName == "rotation"
       || propName == "raycast" || propName == "entityArgPass" || propName == "scale"
       || propName == "maxInstances" || propName == "texturesPaths" || propName == "glb"
+      || propName == "itIsPhysicsBody"
     ) {
       this.propName.style.overflow = 'hidden';
       this.propName.style.height = '20px';
@@ -708,7 +732,10 @@ class SceneObjectProperty {
         }
       })
 
-      if(propName == "position" || propName == "scale" || propName == "rotation" || propName == "glb") {
+      if(propName == "itIsPhysicsBody") {
+        this.propName.innerHTML = `<div style="text-align:left;" >${propName} <span style="border-radius:7px;background:green;">PhysicsBody</span>
+        <span style="border-radius:6px;background:gray;">More info🔽</span></div>`;
+      } else if(propName == "position" || propName == "scale" || propName == "rotation" || propName == "glb") {
         this.propName.innerHTML = `<div style="text-align:left;" >${propName} <span style="border-radius:7px;background:purple;">sceneObj</span>
         <span style="border-radius:6px;background:gray;">More info🔽</span></div>`;
       } else if(propName == "entityArgPass") {
@@ -728,8 +755,9 @@ class SceneObjectProperty {
         this.propName.innerHTML = `<div style="text-align:left;" >${propName} <span style="border-radius:7px;background:red;">sys</span> 
         <span style="border-radius:6px;background:gray;">${currSceneObj[propName]}</span></div>`;
       }
+
       // console.log('[propName] ', propName);
-      if(typeof currSceneObj[propName].adapterInfo !== 'undefined') {
+      if(currSceneObj[propName] && typeof currSceneObj[propName].adapterInfo !== 'undefined') {
         this.exploreSubObject(currSceneObj[propName].adapterInfo, 'adapterInfo').forEach((item) => {
           if(typeof item === 'string') {
             this.propName.innerHTML += `<div style="text-align:left;"> ${item.split(':'[1])} </div>`;
@@ -740,6 +768,45 @@ class SceneObjectProperty {
             this.propName.appendChild(item);
           }
         })
+      } else if(propName == "itIsPhysicsBody") {
+        let body = this.core.matrixAmmo.getBodyByName(currSceneObj.name);
+        for(let key in body) {
+          if(typeof body[key] === 'string') {
+            this.propName.innerHTML += `<div style="display:flex;text-align:left;"> 
+              <div style="background:black;color:white;width:35%;">${key}</div>
+              <div style="background:lime;color:black;width:55%;">${body[key]} </div>`;
+          } else {
+            let item = document.createElement('div');
+            item.style.display = "flex";
+
+            let funcNameDesc = document.createElement('span');
+            funcNameDesc.style.background = "blue";
+            funcNameDesc.style.width = "55%";
+            funcNameDesc.innerHTML = key + ":";
+            item.appendChild(funcNameDesc);
+
+            if(typeof body[key] === "function") {
+              console.log("function");
+              let physicsFuncDesc = document.createElement('select');
+              // fill it
+              item.appendChild(physicsFuncDesc);
+            } else if(typeof body[key] === "object") {
+              console.log("OBJECT");
+              let objDesc = document.createElement('span');
+              objDesc.style.background = "yellow";
+              objDesc.style.color = "black";
+              objDesc.innerHTML = key;
+              item.appendChild(objDesc);
+            }
+
+
+            item.addEventListener('click', (event) => {
+              event.stopPropagation();
+            });
+            this.propName.style.textAlign = 'left';
+            this.propName.appendChild(item);
+          }
+        }
       } else if(
         propName == 'position' ||
         propName == 'rotation' ||
@@ -769,6 +836,10 @@ class SceneObjectProperty {
             this.propName.appendChild(item);
           }
         });
+      } else if(propName == 'itIsPhysicsBody') {
+        this.propName.style.borderBottom = 'solid lime 2px';
+        this.propName.innerHTML = `<div style="text-align:left;" >${propName} <span style="border-radius:7px;background:deepskyblue;">boolean</span>
+        <span style="border-radius:6px;background:gray;">${currSceneObj[propName]}</span></div>`;
       }
 
       parentDOM.appendChild(this.propName);

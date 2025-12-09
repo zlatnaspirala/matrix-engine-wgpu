@@ -1,6 +1,8 @@
 import {MEEditorClient} from "./client";
 import EditorProvider from "./editor.provider";
 import EditorHud from "./hud";
+import MethodsManager from "./methodsManager";
+// import methodsContainer from './';
 
 export class Editor {
 
@@ -13,6 +15,10 @@ export class Editor {
     } else if(this.check(a) == 'created from editor') {
       this.client = new MEEditorClient(this.check(a), projName);
     }
+
+    this.methodsManager = new MethodsManager(document.body);
+    console.log("methodsManager", this.methodsManager);
+    this.methodsManager.lo
   }
 
   check(a) {

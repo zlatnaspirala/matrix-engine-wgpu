@@ -26,7 +26,8 @@ export default class EditorProvider {
     });
 
     document.addEventListener('web.editor.addCube', (e) => {
-      console.log("[web.editor.addCube]: ", e.detail);
+      // console.log("[web.editor.addCube]: ", e.detail);
+      // THIS MUST BE SAME LIKE SERVER VERSION OF ADD CUBE
       downloadMeshes({cube: "./res/meshes/blender/cube.obj"}, (m) => {
         const texturesPaths = ['./res/meshes/blender/cube.png'];
         this.core.addMeshObj({

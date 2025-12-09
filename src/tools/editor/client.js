@@ -60,10 +60,12 @@ export class MEEditorClient {
               }
             }
           });
-        } else if (data.details) {
+        } else if(data.details) {
           document.dispatchEvent(new CustomEvent('file-detail-data', {
             detail: data
           }))
+        } else if(data.refresh == 'refresh') {
+          // setTimeout(() => location.reload(true) , 1500);
         } else {
           mb.show("from editor:" + data.payload);
         }
@@ -126,7 +128,6 @@ export class MEEditorClient {
       this.ws.send(o);
     });
 
-    
     document.addEventListener('nav-folder', (e) => {
       console.info('nav-folder <signal>');
       let o = {
@@ -148,6 +149,44 @@ export class MEEditorClient {
       o = JSON.stringify(o);
       this.ws.send(o);
     });
-    
+
+    document.addEventListener('web.editor.addCube', (e) => {
+      console.log("[web.editor.addCube]: ", e.detail);
+      // downloadMeshes({cube: "./res/meshes/blender/cube.obj"}, (m) => {
+      //   const texturesPaths = ['./res/meshes/blender/cube.png'];
+      //   this.core.addMeshObj({
+      //     position: {x: 0, y: 0, z: -20},
+      //     rotation: {x: 0, y: 0, z: 0},
+      //     rotationSpeed: {x: 0, y: 0, z: 0},
+      //     texturesPaths: [texturesPaths],
+      //     // useUVShema4x2: true,
+      //     name: 'Cube_' + app.mainRenderBundle.length,
+      //     mesh: m.cube,
+      //     raycast: {enabled: true, radius: 2},
+      //     physics: {
+      //       enabled: true,
+      //       geometry: "Cube"
+      //     }
+      //   })
+      // }, {scale: [1, 1, 1]});
+      console.info('addCube <signal>');
+      let o = {
+        action: "addCube",
+        projectName: location.href.split('/public/')[1].split(".")[0]
+      };
+      o = JSON.stringify(o);
+      this.ws.send(o);
+    });
+
+    document.addEventListener('save-methods', (e) => {
+      console.info('save script <signal>');
+      let o = {
+        action: "save-methods",
+        methodsContainer: e.detail.methodsContainer
+      };
+      o = JSON.stringify(o);
+      this.ws.send(o);
+    })
+
   }
 }
