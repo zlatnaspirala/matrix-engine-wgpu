@@ -14548,13 +14548,24 @@ var SceneObjectProperty = class {
     this.propName.innerHTML = `<div>Events</div>`;
     this.propName.innerHTML += `<div>HIT</div>`;
     this.propName.innerHTML += `<div style='display:flex;'>
-      <div>onTargetReached (NoPhysics)</div>
+      <div style="align-content: center;">onTargetReached (NoPhysics)</div>
       <div><select id='sceneObjEditorPropEvents' ></select></div>
     </div>`;
     parentDOM.appendChild(this.propName);
+    byId("sceneObjEditorPropEvents").onchange = (e) => {
+      console.log("TEST DROPD ", e.target.value);
+      const method = app.editor.methodsManager.methodsContainer.find(
+        (m) => m.name === e.target.value
+      );
+      console.log("SELECTED :  ", method);
+      let F = app.editor.methodsManager.compileFunction(method.code);
+      currSceneObj.position.onTargetPositionReach = F;
+      console.log("SELECTED F :  ", F);
+    };
     byId("sceneObjEditorPropEvents").innerHTML = "";
     this.core.editor.methodsManager.methodsContainer.forEach((m) => {
       const op = document.createElement("option");
+      op.value = m.name;
       op.textContent = `${m.name}  [${m.type}]`;
       byId("sceneObjEditorPropEvents").appendChild(op);
     });
@@ -14577,6 +14588,9 @@ var MethodsManager = class {
     document.addEventListener("show-method-editor", () => {
       this.popup.style.display = "block";
       this.wrapper.style.display = "block";
+    });
+    document.addEventListener("XcompileFunction", (e) => {
+      this.compileFunction(e.detail.code);
     });
   }
   loadMethods = async (editorType) => {

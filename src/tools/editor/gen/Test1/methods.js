@@ -1,7 +1,7 @@
 export default [
   {
     "name": "NIK",
-    "code": "function NIK (){}",
+    "code": "function NIK (){\nalert('NIK BIND FUNC')\n}",
     "type": "void",
     "intervalId": null
   },

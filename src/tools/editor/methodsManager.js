@@ -21,6 +21,10 @@ export default class MethodsManager {
     document.addEventListener('show-method-editor', () => {
       this.popup.style.display = "block";
       this.wrapper.style.display = "block";
+    });
+
+    document.addEventListener('XcompileFunction', (e) => {
+      this.compileFunction(e.detail.code);
     })
   }
 
