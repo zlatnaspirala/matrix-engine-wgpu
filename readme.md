@@ -32,7 +32,7 @@ Published on npm as: **`matrix-engine-wgpu`**
 - ✔️ Networking with Kurento/OpenVidu/Own middleware Nodejs -> frontend 
 - 🎯 Replicate matrix-engine (WebGL) features
 - 📦 Based on the `shadowMapping` sample from [webgpu-samples](https://webgpu.github.io/webgpu-samples/?sample=shadowMapping)
-
+- 🎯 Web GUI(online) Editor
 
 ---
 
@@ -614,7 +614,7 @@ This is static file storage.
 
 🎲 The first full app example will be a WebGPU-powered **Jamb 3d deluxe** game.
 
-## RPG game Beta version done
+## MOBA game Beta version done
 
 Features done:
 - Navigation mesh
@@ -657,7 +657,7 @@ Performance for Jamb game:
 
 <img width="860" height="640" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/performance.png?raw=true" />
 
-Special licence for RPG example:
+Special licence for MOBA example:
 
 ```
 Creative Commons Attribution 4.0 International (CC BY 4.0)
@@ -666,9 +666,29 @@ You are free to share and adapt this project, provided that you give appropriate
 Attribution requirement:
 Include the following notice (with working link) in any distributed version or about page:
 
-"Forest Of Hollow Blood — an RPG example made with MatrixEngineWGPU (https://github.com/zlatnaspirala/matrix-engine-wgpu)"
+"Forest Of Hollow Blood — an MOBA example made with MatrixEngineWGPU (https://github.com/zlatnaspirala/matrix-engine-wgpu)"
 
 ```
+
+## Web Editor from version [1.8.0]
+
+Run editor
+```js
+npm run editorx
+```
+Navigate to `matrix-engine.html` it is landing page for editor.
+After create new project or load project page will be redirect to
+`./public/<PROJECT_NAME>.html`
+Source location : `./projects/<PROJECT_NAME>`
+
+Features :
+ - Create new project/ load project
+ - Create cubeMesh
+ - Properties box for selected sceneObj
+ - Events system (Create func and attach to sceneObj)
+
+YT video promotion : 
+
 
 
 ## License && Credits

@@ -1075,21 +1075,29 @@ class SceneObjectProperty {
     parentDOM.appendChild(this.propName);
 
     byId('sceneObjEditorPropEvents').onchange = (e) => {
-      console.log('TEST DROPD ', e.target.value)
-      // console.log('TEST DROPD ', currSceneObj.position);
-      // currSceneObj.position.onTargetPositionReach
+      console.log('Event system selection:', e.target.value)
+      if (e.target.value == "none") {
+        currSceneObj.position.onTargetPositionReach = ()=> {};
+        console.log('clear event')
+        return;
+      }
       const method = app.editor.methodsManager.methodsContainer.find(
         m => m.name === e.target.value
       );
-      console.log('SELECTED :  ', method);
       let F = app.editor.methodsManager.compileFunction(method.code);
       currSceneObj.position.onTargetPositionReach = F;
-      console.log('SELECTED F :  ', F);
-      // code: "function NIK2 (){\n\n alert('NIK2')\n\n}"
+      console.log('[position.onTargetPositionReach][attached]', F);
     };
 
     byId('sceneObjEditorPropEvents').innerHTML = "";
-    this.core.editor.methodsManager.methodsContainer.forEach((m) => {
+    this.core.editor.methodsManager.methodsContainer.forEach((m, index) => {
+      if(index == 0) {
+        const op = document.createElement("option");
+        op.value = 'none';
+        op.textContent = `none`;
+        byId('sceneObjEditorPropEvents').appendChild(op);
+      }
+
       const op = document.createElement("option");
       op.value = m.name;
       op.textContent = `${m.name}  [${m.type}]`;

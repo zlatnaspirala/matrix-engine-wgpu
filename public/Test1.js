@@ -14553,17 +14553,28 @@ var SceneObjectProperty = class {
     </div>`;
     parentDOM.appendChild(this.propName);
     byId("sceneObjEditorPropEvents").onchange = (e) => {
-      console.log("TEST DROPD ", e.target.value);
+      console.log("Event system selection:", e.target.value);
+      if (e.target.value == "none") {
+        currSceneObj.position.onTargetPositionReach = () => {
+        };
+        console.log("clear event");
+        return;
+      }
       const method = app.editor.methodsManager.methodsContainer.find(
         (m) => m.name === e.target.value
       );
-      console.log("SELECTED :  ", method);
       let F = app.editor.methodsManager.compileFunction(method.code);
       currSceneObj.position.onTargetPositionReach = F;
-      console.log("SELECTED F :  ", F);
+      console.log("[position.onTargetPositionReach][attached]", F);
     };
     byId("sceneObjEditorPropEvents").innerHTML = "";
-    this.core.editor.methodsManager.methodsContainer.forEach((m) => {
+    this.core.editor.methodsManager.methodsContainer.forEach((m, index) => {
+      if (index == 0) {
+        const op2 = document.createElement("option");
+        op2.value = "none";
+        op2.textContent = `none`;
+        byId("sceneObjEditorPropEvents").appendChild(op2);
+      }
       const op = document.createElement("option");
       op.value = m.name;
       op.textContent = `${m.name}  [${m.type}]`;

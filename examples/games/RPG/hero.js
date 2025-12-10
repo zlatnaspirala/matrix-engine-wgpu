@@ -1,7 +1,7 @@
 /**
  * @description
  * Hero based classes
- * Core of RPG type of game.
+ * Core of MOBA type of game.
  */
 export const HERO_ARCHETYPES = {
   Warrior: {
