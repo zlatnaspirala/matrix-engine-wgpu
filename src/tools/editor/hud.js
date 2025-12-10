@@ -109,7 +109,7 @@ export default class EditorHud {
       height: "30vh",
       backgroundColor: "rgba(0,0,0,0.85)",
       display: "flex",
-      alignItems: "start",
+      // alignItems: "start",
       color: "white",
       fontFamily: "'Orbitron', sans-serif",
       zIndex: "15",
@@ -935,6 +935,8 @@ class SceneObjectProperty {
       //
       this.addEditorEventsProp(currSceneObj, parentDOM);
 
+      this.addEditorDeleteAction(currSceneObj, parentDOM);
+
     } else {
       // this.propName.innerHTML = `<div>${propName}</div>`;
       // this.propName.innerHTML += `<div>${currSceneObj[propName]}</div>`;
@@ -1127,8 +1129,6 @@ class SceneObjectProperty {
 
   addEditorEventsProp(currSceneObj, parentDOM) {
 
-    console.log("...................................")
-    this.propName.innerHTML = `<div>Events</div>`;
 
     this.propName.innerHTML += `<div>HIT</div>`;
 
@@ -1169,4 +1169,18 @@ class SceneObjectProperty {
       byId('sceneObjEditorPropEvents').appendChild(op);
     });
   }
+
+  addEditorDeleteAction(currSceneObj, parentDOM) {
+    console.log(".............DELETE OBJECT..............")
+    this.propName.innerHTML += `<div style='display:flex;'>
+      <div style="align-content: center;color:red;">Delete sceneObject:</div>
+      <div><button  data-sceneobject='${currSceneObj.name}' id='delete-${currSceneObj.name}'>DELETE</button></div>
+    </div>`;
+    byId(`delete-${currSceneObj.name}`).addEventListener('click', () => {
+      document.dispatchEvent(new CustomEvent('web.editor.delete', {
+        detail: `${currSceneObj.name}`
+      }));
+    });
+  }
+
 }

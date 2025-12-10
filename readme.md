@@ -56,6 +56,11 @@ Published on npm as: **`matrix-engine-wgpu`**
 
 - Add meshes with `.addMeshObj()`, supporting `.obj` loading, unlit textures, cubes, spheres, etc.
 
+- Destroy sceneObj:
+  ```js
+  app.removeSceneObjectByName('Sphere1');
+  ```
+
 - Cleanly destroy the scene:
 
   ```js

@@ -89,5 +89,14 @@ export default class EditorProvider {
         })
       }, {scale: [1, 1, 1]});
     });
+
+    // delete
+    document.addEventListener('web.editor.delete', (e) => {
+      console.log("[web.editor.delete]: ", e.detail);
+      // e.detail.path = e.detail.path.replace('\\res', 'res');
+      // e.detail.path = e.detail.path.replace(/\\/g, '/');
+      // THIS MUST BE SAME LIKE SERVER VERSION OF ADD CUBE
+      this.core.removeSceneObjectByName(e.detail);
+    });
   }
 }

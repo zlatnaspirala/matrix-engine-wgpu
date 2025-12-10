@@ -215,5 +215,18 @@ export class MEEditorClient {
       o = JSON.stringify(o);
       this.ws.send(o);
     });
+    // delete obj
+    // delete-sceneObject
+    document.addEventListener('web.editor.delete', (e) => {
+      console.log("[web.editor.delete]: ", e.detail);
+      console.info('delete-obj <signal>');
+      let o = {
+        action: "delete-obj",
+        projectName: location.href.split('/public/')[1].split(".")[0],
+        name: e.detail
+      };
+      o = JSON.stringify(o);
+      this.ws.send(o);
+    });
   }
 }

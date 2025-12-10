@@ -3,7 +3,7 @@
  * Web editor backend node application.
  * @author Nikola Lukic
  * @email zlatnaspirala@gmail.com
- * @www maximumroulette.com
+ * @www https://maximumroulette.com
  */
 import esbuild from "esbuild";
 import fs from "fs/promises";
@@ -22,11 +22,13 @@ const watchers = new Map();
 let PROJECT_NAME = "";
 
 const wss = new WebSocketServer({port: 1243});
-console.log("\x1b[1m\x1b[92m%s\x1b[0m", " Editorx websocket running on ws://localhost:1243");
+console.log("\x1b[1m\x1b[92m%s\x1b[0m", " Editorx websock running on ws://localhost:1243");
 console.log("\x1b[92m%s\x1b[0m", "-----------------------------------------");
 console.log("\x1b[93m%s\x1b[0m", "- Start you new project                 -");
 console.log("\x1b[93m%s\x1b[0m", "- Load project                          -");
 console.log("\x1b[93m%s\x1b[0m", "- Add Cube [mesh]                       -");
+console.log("\x1b[93m%s\x1b[0m", "- Add Obj  [mesh]                       -");
+console.log("\x1b[93m%s\x1b[0m", "- Add Glb  [skinned-mesh]               -");
 console.log("\x1b[92m%s\x1b[0m", "-----------------------------------------");
 
 wss.on("connection", ws => {
@@ -35,7 +37,7 @@ wss.on("connection", ws => {
       msg = JSON.parse(msg);
 
       if(msg.action === "lp") {
-        const rel = (msg ? msg.path || "" : "");
+        // const rel = (msg ? msg.path || "" : "");
         const folder = path.join(PROJECTS_DIR, "");
         const items = await fs.readdir(folder, {withFileTypes: true});
         ws.send(JSON.stringify({
@@ -46,9 +48,7 @@ wss.on("connection", ws => {
             isDir: d.isDirectory()
           }))
         }));
-      }
-
-      if(msg.action === "list") {
+      } else if(msg.action === "list") {
         const rel = "";
         const folder = path.join(PUBLIC_RES, rel);
         const items = await fs.readdir(folder, {withFileTypes: true});
@@ -82,36 +82,10 @@ wss.on("connection", ws => {
         addObj(msg, ws);
       } else if(msg.action == "save-methods") {
         saveMethods(msg, ws);
+      }else if(msg.action == "delete-obj") {
+        deleteSceneObject(msg, ws);
       }
 
-      // if(msg.action === "SAVE_PROJECT") {
-      //   const project = payload.project;
-      //   const projectFolder = path.join(PROJECTS_DIR, project.projectName);
-      //   const projectPublic = path.join(projectFolder, "public");
-      //   const projectRes = path.join(projectPublic, "res");
-
-      //   // create directories
-      //   await fs.mkdir(projectRes, {recursive: true});
-
-      //   // native Node recursive copy (no fs-extra)
-      //   await fs.cp(PUBLIC_DIR, projectPublic, {
-      //     recursive: true,
-      //     force: true
-      //   });
-
-      //   // write project JSON
-      //   await fs.mkdir(path.join(projectFolder, "src"), {recursive: true});
-      //   await fs.writeFile(
-      //     path.join(projectFolder, "src", "scene.json"),
-      //     JSON.stringify(project, null, 2)
-      //   );
-
-      //   ws.send(JSON.stringify({
-      //     cmd,
-      //     ok: true,
-      //     payload: {projectFolder}
-      //   }));
-      // }
     } catch(err) {
       ws.send(JSON.stringify({ok: false, error: err.message}));
     }
@@ -172,22 +146,22 @@ async function cnp(ws, msg) {
   content.addLine(CBimport());
 
   if(msg.features.physics) {
-    console.log('Add physics...');
+    // console.log('Add physics...');
     p = true;
     if(msg.features.networking) {
       n = true;
-      console.log('Add net ...');
+      // console.log('Add net ...');
     } else {
       n = false;
-      console.log('no net ...');
+      // console.log('no net ...');
     }
   } else {
-    console.log('no physics...');
+    // console.log('no physics...');
     if(msg.features.networking) {
-      console.log('Add net ...');
+      // console.log('Add net ...');
       n = true;
     } else {
-      console.log('no net ...');
+      // console.log('no net ...');
       n = false;
     }
   }
@@ -319,7 +293,7 @@ function createHTMLProjectDocument(name) {
 
 async function navFolder(data, ws) {
   if(data.rootFolder) {
-    console.log('data.rootFolder ', data.rootFolder);
+    // console.log('data.rootFolder ', data.rootFolder);
   } else {
     console.log('data.rootFolder no defined');
   }
@@ -337,11 +311,9 @@ async function navFolder(data, ws) {
 }
 
 async function fileDetail(msg, ws) {
-  //
   const folder = path.join(msg.rootFolder, msg.name);
   try {
     const stat = await fs.stat(folder);
-
     const details = {
       path: folder,
       isFile: stat.isFile(),
@@ -350,22 +322,19 @@ async function fileDetail(msg, ws) {
       created: stat.birthtime,  // Date
       modified: stat.mtime,     // Date
     };
-
-    console.log(details);
     ws.send(JSON.stringify({
       ok: true,
       details: details
     }));
-
   } catch(err) {
     console.error("Error:", err);
     ws.send(JSON.stringify({error: err.message}));
   }
-
 }
 
 async function addCube(msg, ws) {
   const content = new CodeBuilder();
+  content.addLine(` // ME START ${'Cube_' + app.mainRenderBundle.length}`);
   content.addLine(` downloadMeshes({cube: "./res/meshes/blender/cube.obj"}, (m) => { `);
   content.addLine(`   const texturesPaths = ['./res/meshes/blender/cube.png']; `);
   content.addLine(`   app.addMeshObj({`);
@@ -377,23 +346,21 @@ async function addCube(msg, ws) {
   content.addLine(`     physics: {enabled: ${msg.options.physics}, geometry: "Cube"}`);
   content.addLine(`   }); `);
   content.addLine(` }, {scale: [1, 1, 1]});  `);
+  content.addLine(` // ME END ${'Cube_' + app.mainRenderBundle.length}`);
 
   const objScript = path.join(PROJECTS_DIR, msg.projectName + "\\app-gen.js");
-
   fs.readFile(objScript).then((b) => {
     let text = b.toString("utf8");
     text = text.replace('// [MAIN_REPLACE2]',
       `
       ${content.toString()} \n
       // [MAIN_REPLACE2]\n`);
-
     saveScript(objScript, text, ws);
   })
 }
 
 async function saveScript(path, text, ws) {
   fs.writeFile(path, text, "utf8").then((e) => {
-    console.log('write file OK');
     const refresh = 'refresh';
     console.log(refresh);
     ws.send(JSON.stringify({
@@ -406,11 +373,7 @@ async function saveScript(path, text, ws) {
 }
 
 async function saveMethods(msg, ws) {
-  console.log('WHAT IS ', msg.methodsContainer);
-  // msg.methodsContainer.forEach((method) => {
-  //   console.log('WHAT IS method ', method);
-  // });
-  // ??? path PROJECT_NAME
+  // console.log('WHAT IS ', msg.methodsContainer);
   const folderPerProject = path.join(GEN_METHODS_PATH, PROJECT_NAME);
   fs.mkdir(folderPerProject, {recursive: true});
   const file = path.join(folderPerProject, "\\methods.js");
@@ -430,18 +393,19 @@ async function saveMethods(msg, ws) {
 async function addGlb(msg, ws) {
   const content = new CodeBuilder();
   msg.options.path = msg.options.path.replace(/\\/g, '/');
+  content.addLine(` // ME START ${'Glb_' + app.mainRenderBundle.length} `);
   content.addLine(` var glbFile01 = await fetch('${msg.options.path}').then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, app.device)));`);
   content.addLine(`   const texturesPaths = ['./res/meshes/blender/cube.png']; `);
   content.addLine(`    app.addGlbObj({ `);
   content.addLine(`     position: {x: 0, y: 0, z: -20}, rotation: {x: 0, y: 0, z: 0}, rotationSpeed: {x: 0, y: 0, z: 0},`);
   content.addLine(`     texturesPaths: [texturesPaths],`);
   content.addLine(`     scale: [2, 2, 2],`);
-  content.addLine(`     name: 'Cube_' + app.mainRenderBundle.length,`);
+  content.addLine(`     name: 'Glb_' + app.mainRenderBundle.length,`);
   content.addLine(`     material: {type: 'power', useTextureFromGlb: true},`);
   content.addLine(`     raycast: {enabled: true, radius: 2},`);
   content.addLine(`     physics: {enabled: ${msg.options.physics}, geometry: "Cube"}`);
   content.addLine(`   }, null, glbFile01);`);
-  content.addLine(`// END-GLB `);
+  content.addLine(` // ME END ${'Glb_' + app.mainRenderBundle.length} `);
 
   const objScript = path.join(PROJECTS_DIR, PROJECT_NAME + "\\app-gen.js");
   fs.readFile(objScript).then((b) => {
@@ -454,25 +418,25 @@ async function addGlb(msg, ws) {
   })
 }
 
-
 async function addObj(msg, ws) {
   msg.options.path = msg.options.path.replace(/\\/g, '/');
-  console.log('msg', msg.options.path)
+  console.log('msg', msg.options.path);
   const content = new CodeBuilder();
+  content.addLine(` // ME START ${'Obj_' + app.mainRenderBundle.length}`);
   content.addLine(` downloadMeshes({cube: "${msg.options.path}"}, (m) => { `);
   content.addLine(`   const texturesPaths = ['./res/meshes/blender/cube.png']; `);
   content.addLine(`   app.addMeshObj({`);
   content.addLine(`     position: {x: 0, y: 0, z: -20}, rotation: {x: 0, y: 0, z: 0}, rotationSpeed: {x: 0, y: 0, z: 0},`);
   content.addLine(`     texturesPaths: [texturesPaths],`);
-  content.addLine(`     name: 'Cube_' + app.mainRenderBundle.length,`);
+  content.addLine(`     name: 'Obj_' + app.mainRenderBundle.length,`);
   content.addLine(`     mesh: m.cube,`);
   content.addLine(`     raycast: {enabled: true, radius: 2},`);
   content.addLine(`     physics: {enabled: ${msg.options.physics}, geometry: "Cube"}`);
   content.addLine(`   }); `);
   content.addLine(` }, {scale: [1, 1, 1]});  `);
+  content.addLine(` // ME END ${'Obj_' + app.mainRenderBundle.length}`);
 
   const objScript = path.join(PROJECTS_DIR, msg.projectName + "\\app-gen.js");
-
   fs.readFile(objScript).then((b) => {
     let text = b.toString("utf8");
     text = text.replace('// [MAIN_REPLACE2]',
@@ -482,4 +446,32 @@ async function addObj(msg, ws) {
 
     saveScript(objScript, text, ws);
   })
+}
+
+// Delete object script code
+async function deleteSceneObject(n, ws) {
+  const objScript = path.join(PROJECTS_DIR, PROJECT_NAME + "\\app-gen.js");
+  fs.readFile(objScript).then((b) => {
+    let text = b.toString("utf8");
+    text = removeSceneBlock(text, n);
+    console.log('DELETE')
+    saveScript(objScript, text, ws);
+  })
+}
+/**
+ * Remove generated scene block between ME START <name> and ME END <name>.
+ * Keeps all content outside that block intact.
+ * @param {string} text - Full file text
+ * @param {string} objName - Example: "Cube_1"
+ * @returns {string}
+ */
+function removeSceneBlock(text, objName) {
+  const start = `// ME START ${objName}`;
+  const end = `// ME END ${objName}`;
+  const regex = new RegExp(`${escapeRegExp(start)}[\\s\\S]*?${escapeRegExp(end)}`, "g");
+  return text.replace(regex, "");
+}
+
+function escapeRegExp(str) {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
