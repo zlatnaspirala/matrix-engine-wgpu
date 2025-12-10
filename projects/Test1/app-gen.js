@@ -20,9 +20,12 @@ let app = new MatrixEngineWGPU(
   
 , (app) => {
 addEventListener('AmmoReady', async () => { 
-// [light]
-app.addLight();
+  // [light]
+  app.addLight();
 
+   
+
+      
        downloadMeshes({cube: "./res/meshes/blender/cube.obj"}, (m) => { 
    const texturesPaths = ['./res/meshes/blender/cube.png']; 
    app.addMeshObj({
@@ -31,7 +34,7 @@ app.addLight();
      name: 'Cube_' + app.mainRenderBundle.length,
      mesh: m.cube,
      raycast: {enabled: true, radius: 2},
-     physics: {enabled: true, geometry: "Cube"}
+     physics: {enabled: false, geometry: "Cube"}
    }); 
  }, {scale: [1, 1, 1]});  
  
@@ -45,26 +48,7 @@ app.addLight();
      name: 'Cube_' + app.mainRenderBundle.length,
      mesh: m.cube,
      raycast: {enabled: true, radius: 2},
-     physics: {enabled: true, geometry: "Cube"}
-   }); 
- }, {scale: [1, 1, 1]});  
- 
- 
-
-      
- 
- 
-
-      
-       downloadMeshes({cube: "./res/meshes/blender/cube.obj"}, (m) => { 
-   const texturesPaths = ['./res/meshes/blender/cube.png']; 
-   app.addMeshObj({
-     position: {x: 0, y: 0, z: -20}, rotation: {x: 0, y: 0, z: 0}, rotationSpeed: {x: 0, y: 0, z: 0},
-     texturesPaths: [texturesPaths],
-     name: 'Cube_' + app.mainRenderBundle.length,
-     mesh: m.cube,
-     raycast: {enabled: true, radius: 2},
-     physics: {enabled: true, geometry: "Cube"}
+     physics: {enabled: false, geometry: "Cube"}
    }); 
  }, {scale: [1, 1, 1]});  
  
@@ -78,7 +62,7 @@ app.addLight();
      name: 'Cube_' + app.mainRenderBundle.length,
      mesh: m.cube,
      raycast: {enabled: true, radius: 2},
-     physics: {enabled: true, geometry: "Cube"}
+     physics: {enabled: false, geometry: "Cube"}
    }); 
  }, {scale: [1, 1, 1]});  
  
@@ -92,7 +76,21 @@ app.addLight();
      name: 'Cube_' + app.mainRenderBundle.length,
      mesh: m.cube,
      raycast: {enabled: true, radius: 2},
-     physics: {enabled: true, geometry: "Cube"}
+     physics: {enabled: false, geometry: "Cube"}
+   }); 
+ }, {scale: [1, 1, 1]});  
+ 
+
+      
+       downloadMeshes({cube: "./res/meshes/blender/cube.obj"}, (m) => { 
+   const texturesPaths = ['./res/meshes/blender/cube.png']; 
+   app.addMeshObj({
+     position: {x: 0, y: 0, z: -20}, rotation: {x: 0, y: 0, z: 0}, rotationSpeed: {x: 0, y: 0, z: 0},
+     texturesPaths: [texturesPaths],
+     name: 'Cube_' + app.mainRenderBundle.length,
+     mesh: m.cube,
+     raycast: {enabled: true, radius: 2},
+     physics: {enabled: false, geometry: "Cube"}
    }); 
  }, {scale: [1, 1, 1]});  
  
@@ -126,32 +124,6 @@ app.addLight();
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-      
  })
 })
 window.app = app;

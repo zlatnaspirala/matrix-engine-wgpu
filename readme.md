@@ -692,6 +692,11 @@ YT video promotion :
 
 
 
+About 'In fly' regime:
+Editor can be activated even without backend node but in that case no
+saves.
+
+
 ## License && Credits
 
 ### Usage Note

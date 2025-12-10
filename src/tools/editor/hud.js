@@ -25,24 +25,76 @@ export default class EditorHud {
     this.createScenePropertyBox();
     this.currentProperties = [];
 
+    // TEST 
+    setTimeout(() => document.dispatchEvent(new CustomEvent('updateSceneContainer', {detail: {}})), 1000)
+
     document.addEventListener('editor-not-running', () => {
       this.noEditorConn();
     });
 
     document.addEventListener('file-detail-data', (e) => {
       console.log(e.detail.details)
-      let s = "";
-      for(let key in e.detail.details) {
-        if(key == "path") {
-          s += key + ":" + e.detail.details[key].split("public")[1] + "\n";
+      let getPATH = e.detail.details.path.split("public")[1];
+      const ext = getPATH.split('.').pop();
+
+      if(ext == 'glb' && confirm("GLB FILE 📦 Do you wanna add it to the scene ?")) {
+        // e.detail.details[key].split("public")[1]
+        let name = prompt("📦 GLB file : ", getPATH);
+        if(confirm("⚛ Enable physics (Ammo)?")) {
+          // infly 
+          let o = {
+            physics: true,
+            path: name,
+          }
+          document.dispatchEvent(new CustomEvent('web.editor.addGlb', {
+            detail: o
+          }));
         } else {
-          s += key + ":" + e.detail.details[key] + "\n";
+          // infly
+          let o = {
+            physics: false,
+            path: name,
+          }
+          document.dispatchEvent(new CustomEvent('web.editor.addGlb', {
+            detail: o
+          }));
         }
-
+        // -
+      } else if(ext == 'obj' && confirm("OBJ FILE 📦 Do you wanna add it to the scene ?")) {
+        // e.detail.details[key].split("public")[1]
+        let name = prompt("📦 OBJ file : ", getPATH);
+        if(confirm("⚛ Enable physics (Ammo)?")) {
+          // infly 
+          let o = {
+            physics: true,
+            path: name,
+          }
+          document.dispatchEvent(new CustomEvent('web.editor.addObj', {
+            detail: o
+          }));
+        } else {
+          // infly
+          let o = {
+            physics: false,
+            path: name,
+          }
+          document.dispatchEvent(new CustomEvent('web.editor.addObj', {
+            detail: o
+          }));
+        }
+        // -
+      } else {
+        let s = "";
+        for(let key in e.detail.details) {
+          if(key == "path") {
+            s += key + ":" + e.detail.details[key].split("public")[1] + "\n";
+          } else {
+            s += key + ":" + e.detail.details[key] + "\n";
+          }
+        }
+        mb.show(s);
       }
-      mb.show(s)
     });
-
   }
 
   noEditorConn() {
@@ -113,7 +165,10 @@ export default class EditorHud {
     <div class="top-item">
       <div class="top-btn">Insert ▾</div>
       <div class="dropdown">
-        <div id="addCube" class="drop-item">🧊 Cube</div>
+        <div id="addCube" class="drop-item">🧊Cube</div>
+        <div id="addCubePhysics" class="drop-item">🧊Cube with Physics</div>
+        <div id="addSphere" class="drop-item">⚪Sphere</div>
+        <div id="addSpherePhysics" class="drop-item">⚪Sphere with Physics</div>
         <div class="drop-item">⚪ Sphere</div>
         <div class="drop-item">📦 GLB (model)</div>
         <div class="drop-item">💡 Light</div>
@@ -246,22 +301,29 @@ export default class EditorHud {
 
     // OBJECT LEVEL
     if(byId('addCube')) byId('addCube').addEventListener('click', () => {
-
       let o = {
         physics: false
       };
-      if(confirm(`⚛ Enable physics (Ammo) for cube ? \n
-         - Press OK for physics cube.
-         - Press cancel for 'classic position'.
-        (Also physics enabled objects can be kinematic with some collide efect in physics world)
-        `)) {
-        o.physics = true;
-      }
-
+      // if(confirm(`⚛ Enable physics (Ammo) for cube ? \n
+      //    - Press OK for physics cube.
+      //    - Press cancel for 'classic position'.
+      //   (Also physics enabled objects can be kinematic with some collide efect in physics world)
+      //   `)) {
+      //   o.physics = true;
+      // }
       document.dispatchEvent(new CustomEvent('web.editor.addCube', {
         detail: o
       }));
-    })
+    });
+
+    if(byId('addCubePhysics')) byId('addCubePhysics').addEventListener('click', () => {
+      let o = {
+        physics: true
+      };
+      document.dispatchEvent(new CustomEvent('web.editor.addCube', {
+        detail: o
+      }));
+    });
 
     // settings
     setTimeout(() => {
@@ -283,6 +345,9 @@ export default class EditorHud {
       document.dispatchEvent(new CustomEvent('show-method-editor', {detail: {}}));
     });
 
+    document.addEventListener('updateSceneContainer', (e) => {
+      this.updateSceneContainer();
+    })
     this.showAboutModal = () => {
       alert(`
   ✔️ Support for 3D objects and scene transformations
@@ -1076,8 +1141,8 @@ class SceneObjectProperty {
 
     byId('sceneObjEditorPropEvents').onchange = (e) => {
       console.log('Event system selection:', e.target.value)
-      if (e.target.value == "none") {
-        currSceneObj.position.onTargetPositionReach = ()=> {};
+      if(e.target.value == "none") {
+        currSceneObj.position.onTargetPositionReach = () => {};
         console.log('clear event')
         return;
       }

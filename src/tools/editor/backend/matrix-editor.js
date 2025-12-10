@@ -76,6 +76,10 @@ wss.on("connection", ws => {
         fileDetail(msg, ws);
       } else if(msg.action == "addCube") {
         addCube(msg, ws);
+      } else if(msg.action == "addGlb") {
+        addGlb(msg, ws);
+      } else if(msg.action == "addObj") {
+        addObj(msg, ws);
       } else if(msg.action == "save-methods") {
         saveMethods(msg, ws);
       }
@@ -408,7 +412,7 @@ async function saveMethods(msg, ws) {
   // });
   // ??? path PROJECT_NAME
   const folderPerProject = path.join(GEN_METHODS_PATH, PROJECT_NAME);
-  fs.mkdir(folderPerProject, { recursive: true });
+  fs.mkdir(folderPerProject, {recursive: true});
   const file = path.join(folderPerProject, "\\methods.js");
   const content =
     "export default " +
@@ -421,4 +425,61 @@ async function saveMethods(msg, ws) {
     }));
     console.log("Saved methods.js");
   });
+}
+
+async function addGlb(msg, ws) {
+  const content = new CodeBuilder();
+  msg.options.path = msg.options.path.replace(/\\/g, '/');
+  content.addLine(` var glbFile01 = await fetch('${msg.options.path}').then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, app.device)));`);
+  content.addLine(`   const texturesPaths = ['./res/meshes/blender/cube.png']; `);
+  content.addLine(`    app.addGlbObj({ `);
+  content.addLine(`     position: {x: 0, y: 0, z: -20}, rotation: {x: 0, y: 0, z: 0}, rotationSpeed: {x: 0, y: 0, z: 0},`);
+  content.addLine(`     texturesPaths: [texturesPaths],`);
+  content.addLine(`     scale: [2, 2, 2],`);
+  content.addLine(`     name: 'Cube_' + app.mainRenderBundle.length,`);
+  content.addLine(`     material: {type: 'power', useTextureFromGlb: true},`);
+  content.addLine(`     raycast: {enabled: true, radius: 2},`);
+  content.addLine(`     physics: {enabled: ${msg.options.physics}, geometry: "Cube"}`);
+  content.addLine(`   }, null, glbFile01);`);
+  content.addLine(`// END-GLB `);
+
+  const objScript = path.join(PROJECTS_DIR, PROJECT_NAME + "\\app-gen.js");
+  fs.readFile(objScript).then((b) => {
+    let text = b.toString("utf8");
+    text = text.replace('// [MAIN_REPLACE2]',
+      `
+      ${content.toString()} \n
+      // [MAIN_REPLACE2]\n`);
+    saveScript(objScript, text, ws);
+  })
+}
+
+
+async function addObj(msg, ws) {
+  msg.options.path = msg.options.path.replace(/\\/g, '/');
+  console.log('msg', msg.options.path)
+  const content = new CodeBuilder();
+  content.addLine(` downloadMeshes({cube: "${msg.options.path}"}, (m) => { `);
+  content.addLine(`   const texturesPaths = ['./res/meshes/blender/cube.png']; `);
+  content.addLine(`   app.addMeshObj({`);
+  content.addLine(`     position: {x: 0, y: 0, z: -20}, rotation: {x: 0, y: 0, z: 0}, rotationSpeed: {x: 0, y: 0, z: 0},`);
+  content.addLine(`     texturesPaths: [texturesPaths],`);
+  content.addLine(`     name: 'Cube_' + app.mainRenderBundle.length,`);
+  content.addLine(`     mesh: m.cube,`);
+  content.addLine(`     raycast: {enabled: true, radius: 2},`);
+  content.addLine(`     physics: {enabled: ${msg.options.physics}, geometry: "Cube"}`);
+  content.addLine(`   }); `);
+  content.addLine(` }, {scale: [1, 1, 1]});  `);
+
+  const objScript = path.join(PROJECTS_DIR, msg.projectName + "\\app-gen.js");
+
+  fs.readFile(objScript).then((b) => {
+    let text = b.toString("utf8");
+    text = text.replace('// [MAIN_REPLACE2]',
+      `
+      ${content.toString()} \n
+      // [MAIN_REPLACE2]\n`);
+
+    saveScript(objScript, text, ws);
+  })
 }

@@ -66,6 +66,7 @@ export class MEEditorClient {
           }))
         } else if(data.refresh == 'refresh') {
           // setTimeout(() => location.reload(true) , 1500);
+          setTimeout(() => document.dispatchEvent(new CustomEvent('updateSceneContainer', {detail: {}})), 1000)
         } else {
           mb.show("from editor:" + data.payload);
         }
@@ -187,7 +188,32 @@ export class MEEditorClient {
       };
       o = JSON.stringify(o);
       this.ws.send(o);
-    })
+    });
 
+    document.addEventListener('web.editor.addGlb', (e) => {
+      console.log("[web.editor.addGlb]: ", e.detail);
+
+      console.info('addGlb <signal>');
+      let o = {
+        action: "addGlb",
+        projectName: location.href.split('/public/')[1].split(".")[0],
+        options: e.detail
+      };
+      o = JSON.stringify(o);
+      this.ws.send(o);
+    });
+
+    document.addEventListener('web.editor.addObj', (e) => {
+      console.log("[web.editor.addObj]: ", e.detail);
+
+      console.info('addObj <signal>');
+      let o = {
+        action: "addObj",
+        projectName: location.href.split('/public/')[1].split(".")[0],
+        options: e.detail
+      };
+      o = JSON.stringify(o);
+      this.ws.send(o);
+    });
   }
 }

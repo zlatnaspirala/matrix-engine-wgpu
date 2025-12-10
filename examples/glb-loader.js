@@ -29,7 +29,6 @@ export function loadGLBLoader() {
         app.cameras.WASD.position[1] = 23;
       }, 2000)
 
-
       downloadMeshes({cube: "./res/meshes/blender/cube.obj"}, onGround, {scale: [120, 0.5, 120]})
 
       // // Monster1

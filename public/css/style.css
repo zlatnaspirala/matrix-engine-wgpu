@@ -1303,6 +1303,7 @@ input[type=number]:hover::-webkit-outer-spin-button {
   font-family: Arial, sans-serif;
   background: #1b1b1b;
   height: 95%;
+  overflow: scroll;
 }
 
 .file-item {
