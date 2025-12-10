@@ -15582,7 +15582,8 @@ var EditorHud = class {
         if (confirm("\u269B Enable physics (Ammo)?")) {
           let o = {
             physics: true,
-            path: name
+            path: name,
+            index: this.core.mainRenderBundle.length
           };
           document.dispatchEvent(new CustomEvent("web.editor.addGlb", {
             detail: o
@@ -15590,7 +15591,8 @@ var EditorHud = class {
         } else {
           let o = {
             physics: false,
-            path: name
+            path: name,
+            index: this.core.mainRenderBundle.length
           };
           document.dispatchEvent(new CustomEvent("web.editor.addGlb", {
             detail: o
@@ -15601,7 +15603,8 @@ var EditorHud = class {
         if (confirm("\u269B Enable physics (Ammo)?")) {
           let o = {
             physics: true,
-            path: name
+            path: name,
+            index: this.core.mainRenderBundle.length
           };
           document.dispatchEvent(new CustomEvent("web.editor.addObj", {
             detail: o
@@ -15609,7 +15612,8 @@ var EditorHud = class {
         } else {
           let o = {
             physics: false,
-            path: name
+            path: name,
+            index: this.core.mainRenderBundle.length
           };
           document.dispatchEvent(new CustomEvent("web.editor.addObj", {
             detail: o
@@ -15811,7 +15815,8 @@ var EditorHud = class {
     });
     if (byId("addCube")) byId("addCube").addEventListener("click", () => {
       let o = {
-        physics: false
+        physics: false,
+        index: this.core.mainRenderBundle.length
       };
       document.dispatchEvent(new CustomEvent("web.editor.addCube", {
         detail: o
@@ -15819,7 +15824,8 @@ var EditorHud = class {
     });
     if (byId("addCubePhysics")) byId("addCubePhysics").addEventListener("click", () => {
       let o = {
-        physics: true
+        physics: true,
+        index: this.core.mainRenderBundle.length
       };
       document.dispatchEvent(new CustomEvent("web.editor.addCube", {
         detail: o
@@ -17687,6 +17693,32 @@ var app2 = new MatrixEngineWGPU(
   (app3) => {
     addEventListener("AmmoReady", async () => {
       app3.addLight();
+      downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, (m) => {
+        const texturesPaths = ["./res/meshes/blender/cube.png"];
+        app3.addMeshObj({
+          position: { x: 0, y: 0, z: -20 },
+          rotation: { x: 0, y: 0, z: 0 },
+          rotationSpeed: { x: 0, y: 0, z: 0 },
+          texturesPaths: [texturesPaths],
+          name: "Cube_" + app3.mainRenderBundle.length,
+          mesh: m.cube,
+          raycast: { enabled: true, radius: 2 },
+          physics: { enabled: false, geometry: "Cube" }
+        });
+      }, { scale: [1, 1, 1] });
+      downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, (m) => {
+        const texturesPaths = ["./res/meshes/blender/cube.png"];
+        app3.addMeshObj({
+          position: { x: 0, y: 0, z: -20 },
+          rotation: { x: 0, y: 0, z: 0 },
+          rotationSpeed: { x: 0, y: 0, z: 0 },
+          texturesPaths: [texturesPaths],
+          name: "Cube_" + app3.mainRenderBundle.length,
+          mesh: m.cube,
+          raycast: { enabled: true, radius: 2 },
+          physics: { enabled: false, geometry: "Cube" }
+        });
+      }, { scale: [1, 1, 1] });
     });
   }
 );

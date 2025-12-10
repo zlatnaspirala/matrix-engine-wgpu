@@ -45,6 +45,7 @@ export default class EditorHud {
           let o = {
             physics: true,
             path: name,
+            index: this.core.mainRenderBundle.length
           }
           document.dispatchEvent(new CustomEvent('web.editor.addGlb', {
             detail: o
@@ -54,6 +55,7 @@ export default class EditorHud {
           let o = {
             physics: false,
             path: name,
+            index: this.core.mainRenderBundle.length
           }
           document.dispatchEvent(new CustomEvent('web.editor.addGlb', {
             detail: o
@@ -68,6 +70,7 @@ export default class EditorHud {
           let o = {
             physics: true,
             path: name,
+            index: this.core.mainRenderBundle.length
           }
           document.dispatchEvent(new CustomEvent('web.editor.addObj', {
             detail: o
@@ -77,6 +80,7 @@ export default class EditorHud {
           let o = {
             physics: false,
             path: name,
+            index: this.core.mainRenderBundle.length
           }
           document.dispatchEvent(new CustomEvent('web.editor.addObj', {
             detail: o
@@ -302,7 +306,8 @@ export default class EditorHud {
     // OBJECT LEVEL
     if(byId('addCube')) byId('addCube').addEventListener('click', () => {
       let o = {
-        physics: false
+        physics: false,
+        index: this.core.mainRenderBundle.length
       };
       // if(confirm(`⚛ Enable physics (Ammo) for cube ? \n
       //    - Press OK for physics cube.
@@ -318,7 +323,8 @@ export default class EditorHud {
 
     if(byId('addCubePhysics')) byId('addCubePhysics').addEventListener('click', () => {
       let o = {
-        physics: true
+        physics: true,
+        index: this.core.mainRenderBundle.length
       };
       document.dispatchEvent(new CustomEvent('web.editor.addCube', {
         detail: o

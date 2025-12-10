@@ -334,7 +334,7 @@ async function fileDetail(msg, ws) {
 
 async function addCube(msg, ws) {
   const content = new CodeBuilder();
-  content.addLine(` // ME START ${'Cube_' + app.mainRenderBundle.length}`);
+  content.addLine(` // ME START ${'Cube_' + msg.options.index}`);
   content.addLine(` downloadMeshes({cube: "./res/meshes/blender/cube.obj"}, (m) => { `);
   content.addLine(`   const texturesPaths = ['./res/meshes/blender/cube.png']; `);
   content.addLine(`   app.addMeshObj({`);
@@ -346,7 +346,7 @@ async function addCube(msg, ws) {
   content.addLine(`     physics: {enabled: ${msg.options.physics}, geometry: "Cube"}`);
   content.addLine(`   }); `);
   content.addLine(` }, {scale: [1, 1, 1]});  `);
-  content.addLine(` // ME END ${'Cube_' + app.mainRenderBundle.length}`);
+  content.addLine(` // ME END ${'Cube_' + msg.options.index}`);
 
   const objScript = path.join(PROJECTS_DIR, msg.projectName + "\\app-gen.js");
   fs.readFile(objScript).then((b) => {
@@ -390,10 +390,10 @@ async function saveMethods(msg, ws) {
   });
 }
 
-async function addGlb(msg, ws) {
+async function addGlb(msg, ws) { //msg.options.index
   const content = new CodeBuilder();
   msg.options.path = msg.options.path.replace(/\\/g, '/');
-  content.addLine(` // ME START ${'Glb_' + app.mainRenderBundle.length} `);
+  content.addLine(` // ME START ${'Glb_' + msg.options.index} `);
   content.addLine(` var glbFile01 = await fetch('${msg.options.path}').then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, app.device)));`);
   content.addLine(`   const texturesPaths = ['./res/meshes/blender/cube.png']; `);
   content.addLine(`    app.addGlbObj({ `);
@@ -405,7 +405,7 @@ async function addGlb(msg, ws) {
   content.addLine(`     raycast: {enabled: true, radius: 2},`);
   content.addLine(`     physics: {enabled: ${msg.options.physics}, geometry: "Cube"}`);
   content.addLine(`   }, null, glbFile01);`);
-  content.addLine(` // ME END ${'Glb_' + app.mainRenderBundle.length} `);
+  content.addLine(` // ME END ${'Glb_' + msg.options.index} `);
 
   const objScript = path.join(PROJECTS_DIR, PROJECT_NAME + "\\app-gen.js");
   fs.readFile(objScript).then((b) => {
@@ -422,7 +422,7 @@ async function addObj(msg, ws) {
   msg.options.path = msg.options.path.replace(/\\/g, '/');
   console.log('msg', msg.options.path);
   const content = new CodeBuilder();
-  content.addLine(` // ME START ${'Obj_' + app.mainRenderBundle.length}`);
+  content.addLine(` // ME START ${'Obj_' + msg.options.index}`);
   content.addLine(` downloadMeshes({cube: "${msg.options.path}"}, (m) => { `);
   content.addLine(`   const texturesPaths = ['./res/meshes/blender/cube.png']; `);
   content.addLine(`   app.addMeshObj({`);
@@ -434,7 +434,7 @@ async function addObj(msg, ws) {
   content.addLine(`     physics: {enabled: ${msg.options.physics}, geometry: "Cube"}`);
   content.addLine(`   }); `);
   content.addLine(` }, {scale: [1, 1, 1]});  `);
-  content.addLine(` // ME END ${'Obj_' + app.mainRenderBundle.length}`);
+  content.addLine(` // ME END ${'Obj_' + msg.options.index}`);
 
   const objScript = path.join(PROJECTS_DIR, msg.projectName + "\\app-gen.js");
   fs.readFile(objScript).then((b) => {
@@ -453,10 +453,9 @@ async function deleteSceneObject(n, ws) {
   const objScript = path.join(PROJECTS_DIR, PROJECT_NAME + "\\app-gen.js");
   fs.readFile(objScript).then((b) => {
     let text = b.toString("utf8");
-    text = removeSceneBlock(text, n);
-    console.log('DELETE')
+    text = removeSceneBlock(text, n.name);
     saveScript(objScript, text, ws);
-  })
+  });
 }
 /**
  * Remove generated scene block between ME START <name> and ME END <name>.
@@ -468,7 +467,12 @@ async function deleteSceneObject(n, ws) {
 function removeSceneBlock(text, objName) {
   const start = `// ME START ${objName}`;
   const end = `// ME END ${objName}`;
-  const regex = new RegExp(`${escapeRegExp(start)}[\\s\\S]*?${escapeRegExp(end)}`, "g");
+
+  // Regex: remove everything from START to END including the entire block + following newline
+  const pattern = `${escapeRegExp(start)}[\\s\\S]*?${escapeRegExp(end)}\\s*`;
+
+  const regex = new RegExp(pattern, "g");
+
   return text.replace(regex, "");
 }
 

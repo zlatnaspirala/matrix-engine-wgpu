@@ -153,23 +153,6 @@ export class MEEditorClient {
 
     document.addEventListener('web.editor.addCube', (e) => {
       console.log("[web.editor.addCube]: ", e.detail);
-      // downloadMeshes({cube: "./res/meshes/blender/cube.obj"}, (m) => {
-      //   const texturesPaths = ['./res/meshes/blender/cube.png'];
-      //   this.core.addMeshObj({
-      //     position: {x: 0, y: 0, z: -20},
-      //     rotation: {x: 0, y: 0, z: 0},
-      //     rotationSpeed: {x: 0, y: 0, z: 0},
-      //     texturesPaths: [texturesPaths],
-      //     // useUVShema4x2: true,
-      //     name: 'Cube_' + app.mainRenderBundle.length,
-      //     mesh: m.cube,
-      //     raycast: {enabled: true, radius: 2},
-      //     physics: {
-      //       enabled: true,
-      //       geometry: "Cube"
-      //     }
-      //   })
-      // }, {scale: [1, 1, 1]});
       console.info('addCube <signal>');
       let o = {
         action: "addCube",
