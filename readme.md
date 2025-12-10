@@ -686,6 +686,7 @@ Features :
  - Create cubeMesh
  - Properties box for selected sceneObj
  - Events system (Create func and attach to sceneObj)
+ - Resource navigation
 
 YT video promotion : 
 
