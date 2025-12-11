@@ -200,9 +200,13 @@ export default class EditorHud {
     <div class="top-item">
       <div class="top-btn">Script ▾</div>
       <div class="dropdown">
+        <div id="showVisualCodeEditorBtn" class="drop-item">
+           <span>Visual Scripting</span>
+           <small>⌨️FluxCodexVertex</small>
+        </div>
         <div id="showCodeEditorBtn" class="drop-item">
-           <p>Show code editor</p>
-           <small> ⌨️ </small>
+           <span>Show code editor</span>
+           <small>⌨️ Function edit</small>
         </div>
       </div>
     </div>
@@ -349,6 +353,12 @@ export default class EditorHud {
     byId('showCodeEditorBtn').addEventListener('click', (e) => {
       console.log('show-method-editor ', e);
       document.dispatchEvent(new CustomEvent('show-method-editor', {detail: {}}));
+    });
+
+    byId('showVisualCodeEditorBtn').addEventListener('click', (e) => {
+      console.log('show-fluxcodexvertex-editor ', e);
+      byId('app').style.display ='flex';
+      // document.dispatchEvent(new CustomEvent('show-method-editor', {detail: {}}));
     });
 
     document.addEventListener('updateSceneContainer', (e) => {
@@ -780,7 +790,7 @@ export default class EditorHud {
       <span style="color:yellow;"> [${currentSO.constructor.name}]`;
     const OK = Object.keys(currentSO);
     OK.forEach((prop) => {
-      console.log('[key]:', prop);
+      // console.log('[key]:', prop);
       if(prop == 'glb' && typeof currentSO[prop] !== 'undefined' && currentSO[prop] != null) {
         this.currentProperties.push(new SceneObjectProperty(this.objectProperies, 'glb', currentSO, this.core));
       } else {

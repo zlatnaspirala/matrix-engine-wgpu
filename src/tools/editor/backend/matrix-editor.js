@@ -89,7 +89,6 @@ wss.on("connection", ws => {
       } else if(msg.action == "updateRot") {
         updateRot(msg, ws);
       }
-      
 
     } catch(err) {
       ws.send(JSON.stringify({ok: false, error: err.message}));

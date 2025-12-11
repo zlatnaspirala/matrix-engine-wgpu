@@ -1,8 +1,8 @@
 export default [
   {
     "name": "NIK",
-    "code": "function NIK (){\nalert('NIK BIND FUNC')\n}",
-    "type": "void",
+    "code": "function NIK (zigzag){\n   alert('NIK BIND FUNC', zigzag)\n\n return zigzag;\n}",
+    "type": "return",
     "intervalId": null
   },
   {
