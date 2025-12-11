@@ -15467,6 +15467,28 @@ var MEEditorClient = class {
       o = JSON.stringify(o);
       this.ws.send(o);
     });
+    document.addEventListener("web.editor.update.pos", (e) => {
+      console.log("[web.editor.update.pos]: ", e.detail);
+      console.info("web.editor.update.pos <signal>");
+      let o = {
+        action: "updatePos",
+        projectName: location.href.split("/public/")[1].split(".")[0],
+        data: e.detail
+      };
+      o = JSON.stringify(o);
+      this.ws.send(o);
+    });
+    document.addEventListener("web.editor.update.rot", (e) => {
+      console.log("[web.editor.update.rot]: ", e.detail);
+      console.info("web.editor.update.rot <signal>");
+      let o = {
+        action: "updateRot",
+        projectName: location.href.split("/public/")[1].split(".")[0],
+        data: e.detail
+      };
+      o = JSON.stringify(o);
+      this.ws.send(o);
+    });
   }
 };
 
@@ -15481,7 +15503,23 @@ var EditorProvider = class {
   }
   addEditorEvents() {
     document.addEventListener("web.editor.input", (e) => {
-      console.log("[EDITOR] sceneObj: ", e.detail.inputFor);
+      console.log("[EDITOR-input]: ", e.detail);
+      switch (e.detail.propertyId) {
+        case "position": {
+          console.log("change signal for pos");
+          if (e.detail.property == "x" || e.detail.property == "y" || e.detail.property == "z") document.dispatchEvent(new CustomEvent("web.editor.update.pos", {
+            detail: e.detail
+          }));
+        }
+        case "rotation": {
+          console.log("change signal for rot");
+          if (e.detail.property == "x" || e.detail.property == "y" || e.detail.property == "z") document.dispatchEvent(new CustomEvent("web.editor.update.rot", {
+            detail: e.detail
+          }));
+        }
+        default:
+          console.log("changes not saved.");
+      }
       let sceneObj = this.core.getSceneObjectByName(e.detail.inputFor);
       if (sceneObj) {
         sceneObj[e.detail.propertyId][e.detail.property] = e.detail.value;
@@ -17706,19 +17744,15 @@ var app2 = new MatrixEngineWGPU(
           physics: { enabled: false, geometry: "Cube" }
         });
       }, { scale: [1, 1, 1] });
-      downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, (m) => {
-        const texturesPaths = ["./res/meshes/blender/cube.png"];
-        app3.addMeshObj({
-          position: { x: 0, y: 0, z: -20 },
-          rotation: { x: 0, y: 0, z: 0 },
-          rotationSpeed: { x: 0, y: 0, z: 0 },
-          texturesPaths: [texturesPaths],
-          name: "Cube_" + app3.mainRenderBundle.length,
-          mesh: m.cube,
-          raycast: { enabled: true, radius: 2 },
-          physics: { enabled: false, geometry: "Cube" }
-        });
-      }, { scale: [1, 1, 1] });
+      setTimeout(() => {
+        app3.getSceneObjectByName("Cube_0").position.SetX(8);
+      }, 200);
+      setTimeout(() => {
+        app3.getSceneObjectByName("Cube_0").position.SetY(6);
+      }, 200);
+      setTimeout(() => {
+        app3.getSceneObjectByName("Cube_0").position.SetZ(-15);
+      }, 200);
     });
   }
 );

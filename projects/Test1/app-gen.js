@@ -23,9 +23,10 @@ addEventListener('AmmoReady', async () => {
   // [light]
   app.addLight();
 
- 
+  
+
       
-       // ME START Cube_0
+       // ME START Cube_0 addCube
  downloadMeshes({cube: "./res/meshes/blender/cube.obj"}, (m) => { 
    const texturesPaths = ['./res/meshes/blender/cube.png']; 
    app.addMeshObj({
@@ -37,28 +38,28 @@ addEventListener('AmmoReady', async () => {
      physics: {enabled: false, geometry: "Cube"}
    }); 
  }, {scale: [1, 1, 1]});  
- // ME END Cube_0
+ // ME END Cube_0 addCube
  
-
-      
-       // ME START Cube_1
- downloadMeshes({cube: "./res/meshes/blender/cube.obj"}, (m) => { 
-   const texturesPaths = ['./res/meshes/blender/cube.png']; 
-   app.addMeshObj({
-     position: {x: 0, y: 0, z: -20}, rotation: {x: 0, y: 0, z: 0}, rotationSpeed: {x: 0, y: 0, z: 0},
-     texturesPaths: [texturesPaths],
-     name: 'Cube_' + app.mainRenderBundle.length,
-     mesh: m.cube,
-     raycast: {enabled: true, radius: 2},
-     physics: {enabled: false, geometry: "Cube"}
-   }); 
- }, {scale: [1, 1, 1]});  
- // ME END Cube_1
+         // ME START Cube_0 updatePosx
+ setTimeout(() => {
+  app.getSceneObjectByName('Cube_0').position.SetX(8);
+ }, 200);
+ // ME END Cube_0 updatePosx
  
-
-      // [MAIN_REPLACE2]
-
-
+       // ME START Cube_0 updatePosy
+ setTimeout(() => {
+  app.getSceneObjectByName('Cube_0').position.SetY(6);
+ }, 200);
+ // ME END Cube_0 updatePosy
+ 
+        // ME START Cube_0 updatePosz
+ setTimeout(() => {
+  app.getSceneObjectByName('Cube_0').position.SetZ(-15);
+ }, 200);
+ // ME END Cube_0 updatePosz
+ 
+ 
+ // [MAIN_REPLACE2]
 
  })
 })

@@ -198,6 +198,10 @@ export class MEEditorClient {
       o = JSON.stringify(o);
       this.ws.send(o);
     });
+
+    // add for instane class also later
+
+
     // delete obj
     // delete-sceneObject
     document.addEventListener('web.editor.delete', (e) => {
@@ -211,5 +215,32 @@ export class MEEditorClient {
       o = JSON.stringify(o);
       this.ws.send(o);
     });
+
+    // UPDATE
+    document.addEventListener('web.editor.update.pos', (e) => {
+      console.log("[web.editor.update.pos]: ", e.detail);
+      console.info('web.editor.update.pos <signal>');
+      let o = {
+        action: "updatePos",
+        projectName: location.href.split('/public/')[1].split(".")[0],
+        data: e.detail
+      };
+      o = JSON.stringify(o);
+      this.ws.send(o);
+    });
+
+    document.addEventListener('web.editor.update.rot', (e) => {
+      console.log("[web.editor.update.rot]: ", e.detail);
+      console.info('web.editor.update.rot <signal>');
+      let o = {
+        action: "updateRot",
+        projectName: location.href.split('/public/')[1].split(".")[0],
+        data: e.detail
+      };
+      o = JSON.stringify(o);
+      this.ws.send(o);
+    });
+
+
   }
 }

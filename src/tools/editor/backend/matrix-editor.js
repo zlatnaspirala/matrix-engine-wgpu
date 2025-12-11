@@ -82,9 +82,14 @@ wss.on("connection", ws => {
         addObj(msg, ws);
       } else if(msg.action == "save-methods") {
         saveMethods(msg, ws);
-      }else if(msg.action == "delete-obj") {
+      } else if(msg.action == "delete-obj") {
         deleteSceneObject(msg, ws);
+      } else if(msg.action == "updatePos") {
+        updatePos(msg, ws);
+      } else if(msg.action == "updateRot") {
+        updateRot(msg, ws);
       }
+      
 
     } catch(err) {
       ws.send(JSON.stringify({ok: false, error: err.message}));
@@ -334,7 +339,7 @@ async function fileDetail(msg, ws) {
 
 async function addCube(msg, ws) {
   const content = new CodeBuilder();
-  content.addLine(` // ME START ${'Cube_' + msg.options.index}`);
+  content.addLine(` // ME START ${'Cube_' + msg.options.index} ${msg.action}`);
   content.addLine(` downloadMeshes({cube: "./res/meshes/blender/cube.obj"}, (m) => { `);
   content.addLine(`   const texturesPaths = ['./res/meshes/blender/cube.png']; `);
   content.addLine(`   app.addMeshObj({`);
@@ -346,7 +351,7 @@ async function addCube(msg, ws) {
   content.addLine(`     physics: {enabled: ${msg.options.physics}, geometry: "Cube"}`);
   content.addLine(`   }); `);
   content.addLine(` }, {scale: [1, 1, 1]});  `);
-  content.addLine(` // ME END ${'Cube_' + msg.options.index}`);
+  content.addLine(` // ME END ${'Cube_' + msg.options.index} ${msg.action}`);
 
   const objScript = path.join(PROJECTS_DIR, msg.projectName + "\\app-gen.js");
   fs.readFile(objScript).then((b) => {
@@ -448,31 +453,67 @@ async function addObj(msg, ws) {
   })
 }
 
+// update procedure
+async function updatePos(msg, ws) {
+  //  // inputFor: "Cube_0" property: "x" propertyId: "position" value: "1"
+  console.log('msg pos update :', msg.data);
+  const content = new CodeBuilder();
+  content.addLine(` // ME START ${msg.data.inputFor} ${msg.action + msg.data.property}`);
+  content.addLine(` setTimeout(() => {`);
+  content.addLine(`  app.getSceneObjectByName('${msg.data.inputFor}').position.Set${msg.data.property.toUpperCase()}(${msg.data.value});`);
+  content.addLine(` }, 200);`);
+  content.addLine(` // ME END ${msg.data.inputFor} ${msg.action + msg.data.property}`);
+
+  const objScript = path.join(PROJECTS_DIR, msg.projectName + "\\app-gen.js");
+  fs.readFile(objScript).then((b) => {
+    let text = b.toString("utf8");
+    text = removeSceneBlock(text, (msg.action + msg.data.property), msg.data.inputFor);
+    text = text.replace('// [MAIN_REPLACE2]', `${content.toString()} \n // [MAIN_REPLACE2]`);
+    saveScript(objScript, text, ws);
+  })
+}
+
+async function updateRot(msg, ws) {
+  //  // inputFor: "Cube_0" property: "x" propertyId: "position" value: "1"
+  console.log('msg rot update :', msg.data);
+  const content = new CodeBuilder();
+  content.addLine(` // ME START ${msg.data.inputFor} ${msg.action + msg.data.property}`);
+  content.addLine(` setTimeout(() => {`);
+  content.addLine(`  app.getSceneObjectByName('${msg.data.inputFor}').rotation.${msg.data.property} = ${msg.data.value};`);
+  content.addLine(` }, 200);`);
+  content.addLine(` // ME END ${msg.data.inputFor} ${msg.action + msg.data.property}`);
+
+  const objScript = path.join(PROJECTS_DIR, msg.projectName + "\\app-gen.js");
+  fs.readFile(objScript).then((b) => {
+    let text = b.toString("utf8");
+    text = removeSceneBlock(text, (msg.action + msg.data.property), msg.data.inputFor);
+    text = text.replace('// [MAIN_REPLACE2]', `${content.toString()} \n // [MAIN_REPLACE2]`);
+    saveScript(objScript, text, ws);
+  })
+}
+
 // Delete object script code
 async function deleteSceneObject(n, ws) {
   const objScript = path.join(PROJECTS_DIR, PROJECT_NAME + "\\app-gen.js");
   fs.readFile(objScript).then((b) => {
     let text = b.toString("utf8");
-    text = removeSceneBlock(text, n.name);
+    text = removeSceneBlock(text, n.action, n.name);
     saveScript(objScript, text, ws);
   });
 }
-/**
- * Remove generated scene block between ME START <name> and ME END <name>.
- * Keeps all content outside that block intact.
- * @param {string} text - Full file text
- * @param {string} objName - Example: "Cube_1"
- * @returns {string}
- */
-function removeSceneBlock(text, objName) {
-  const start = `// ME START ${objName}`;
-  const end = `// ME END ${objName}`;
 
-  // Regex: remove everything from START to END including the entire block + following newline
+function removeSceneBlock(text, type, objName) {
+  // is delete-obj  delete all
+  let start = '', end = '';
+  if(type == 'delete-obj') {
+    start = `// ME START ${objName}`;
+    end = `// ME END ${objName}`;
+  } else {
+    start = `// ME START ${objName} ${type}`;
+    end = `// ME END ${objName} ${type}`;
+  }
   const pattern = `${escapeRegExp(start)}[\\s\\S]*?${escapeRegExp(end)}\\s*`;
-
   const regex = new RegExp(pattern, "g");
-
   return text.replace(regex, "");
 }
 

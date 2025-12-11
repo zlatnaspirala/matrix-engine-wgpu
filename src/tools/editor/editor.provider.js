@@ -19,7 +19,34 @@ export default class EditorProvider {
 
   addEditorEvents() {
     document.addEventListener('web.editor.input', (e) => {
-      console.log("[EDITOR] sceneObj: ", e.detail.inputFor);
+      console.log("[EDITOR-input]: ", e.detail);
+      // Saves methods
+      switch(e.detail.propertyId) {
+        case 'position':
+          {
+            console.log('change signal for pos');
+            if(e.detail.property == 'x' ||
+              e.detail.property == 'y' ||
+              e.detail.property == 'z'
+            ) document.dispatchEvent(new CustomEvent('web.editor.update.pos', {
+              detail: e.detail
+            }));
+          }
+        case 'rotation':
+          {
+            console.log('change signal for rot');
+            if(e.detail.property == 'x' ||
+              e.detail.property == 'y' ||
+              e.detail.property == 'z'
+            ) document.dispatchEvent(new CustomEvent('web.editor.update.rot', {
+              detail: e.detail
+            }));
+          }
+        default:
+          console.log('changes not saved.')
+      }
+      // inputFor: "Cube_0" property: "x" propertyId: "position" value: "1"
+
       // InFly Method
       let sceneObj = this.core.getSceneObjectByName(e.detail.inputFor);
       if(sceneObj) {
@@ -98,5 +125,8 @@ export default class EditorProvider {
       // THIS MUST BE SAME LIKE SERVER VERSION OF ADD CUBE
       this.core.removeSceneObjectByName(e.detail);
     });
+
+    // update procedure
+
   }
 }
