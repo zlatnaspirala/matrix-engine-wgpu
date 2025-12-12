@@ -358,6 +358,7 @@ export default class EditorHud {
     byId('showVisualCodeEditorBtn').addEventListener('click', (e) => {
       console.log('show-fluxcodexvertex-editor ', e);
       byId('app').style.display ='flex';
+      this.core.editor.fluxCodexVertex.updateLinks();
       // document.dispatchEvent(new CustomEvent('show-method-editor', {detail: {}}));
     });
 

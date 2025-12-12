@@ -29,6 +29,14 @@ export default class FluxCodexVertex {
 
     // Initialize the graph
     this.init();
+
+    document.addEventListener('keydown', (e) => {
+      //
+      if(e.key == 'F6') {
+        this.runGraph();
+      }
+
+    })
   }
 
   // ====================================================================
@@ -49,43 +57,64 @@ export default class FluxCodexVertex {
   // Dynamic Method Helpers
   // --------------------------------------------------------------------
   getArgNames(fn) {
-    const src = fn.toString();
-    const args = src.match(/\(([^)]*)\)/);
-    if(!args) return [];
-    return args[1]
-      .split(',')
-      .map(a => a.trim())
-      .filter(a => a.length);
+    const src = fn.toString().trim();
+
+    // Case 1: arrow function with no parentheses:  a => ...
+    const arrowNoParen = src.match(/^([a-zA-Z0-9_$]+)\s*=>/);
+    if(arrowNoParen) {
+      return [arrowNoParen[1].trim()];
+    }
+
+    // Case 2: normal (a,b) => ...  OR function(a,b) { ... }
+    const argsMatch = src.match(/\(([^)]*)\)/);
+    if(argsMatch && argsMatch[1].trim().length > 0) {
+      return argsMatch[1]
+        .split(",")
+        .map(a => a.trim())
+        .filter(a => a.length > 0);
+    }
+
+    // Default: no args
+    return [];
   }
 
   hasReturn(fn) {
-    return /return\s+/.test(fn.toString());
-  }
+    const src = fn.toString().trim();
 
-  adaptNodeToMethod(node, methodItem) {
-    // Compile the function inline
-    const fn = this.methodsManager.compileFunction(methodItem.code);
-
-    // Clear old pins
-    node.inputs = [{name: "exec", type: "action"}];
-    node.outputs = [{name: "execOut", type: "action"}];
-
-    // Detect arguments
-    const args = this.getArgNames(fn);
-    args.forEach(arg => node.inputs.push({name: arg, type: "any"}));
-
-    // Detect return
-    if(this.hasReturn(fn)) {
-      node.outputs.push({name: "return", type: "any"});
+    // Case 1: implicit return in arrow: (a)=>a+2  OR  a=>a*2
+    // Detect arrow "=>" followed by an expression, not "{"
+    if(/=>\s*[^({]/.test(src)) {
+      return true;
     }
 
-    // Store method on node
-    node.attachedMethod = methodItem.name;
-    node.fn = fn;
+    // Case 2: normal "return" inside function body
+    if(/return\s+/.test(src)) {
+      return true;
+    }
 
-    // Update the DOM
-    this.updateNodeDOM(node.id);
+    return false;
   }
+
+adaptNodeToMethod(node, methodItem) {
+  const fn = this.methodsManager.compileFunction(methodItem.code);
+
+  // Reset pins except execution pins
+  node.inputs = [{name: "exec", type: "action"}];
+  node.outputs = [{name: "execOut", type: "action"}];
+
+  // Dynamic input pins
+  const args = this.getArgNames(fn);
+  args.forEach(arg => node.inputs.push({name: arg, type: "any"}));
+
+  // Dynamic return pin
+  if(this.hasReturn(fn)) node.outputs.push({name: "return", type: "any"});
+
+  node.attachedMethod = methodItem.name;
+  node.fn = fn;
+
+  // 🔹 Refresh the DOM so new pins are clickable
+  this.updateNodeDOM(node.id);
+}
 
   populateMethodsSelect(selectEl) {
     selectEl.innerHTML = '';
@@ -107,38 +136,41 @@ export default class FluxCodexVertex {
     const el = document.querySelector(`.node[data-id="${nodeId}"]`);
     if(!el) return;
 
-    // Pin containers
     const left = el.querySelector('.pins-left');
     const right = el.querySelector('.pins-right');
     if(!left || !right) return;
 
-    // Clear existing pins
+    // Clear only **non-exec pins**
     left.innerHTML = '';
     right.innerHTML = '';
 
-    // Recreate pins
-    (node.inputs || []).forEach(pin => left.appendChild(this._pinElement(pin, false, nodeId)));
-    (node.outputs || []).forEach(pin => right.appendChild(this._pinElement(pin, true, nodeId)));
+    // Keep exec pins in the spec
+    const inputs = node.inputs || [];
+    const outputs = node.outputs || [];
 
-    // Re-add method select for function nodes
-    if(node.category === 'action' && node.attachedMethod) {
+    inputs.forEach(pin => left.appendChild(this._pinElement(pin, false, nodeId)));
+    outputs.forEach(pin => right.appendChild(this._pinElement(pin, true, nodeId)));
+
+    // --- Method select (only for Function nodes) ---
+    if(node.category === 'action' && node.title === 'Function') {
       let select = el.querySelector('select.method-select');
       if(!select) {
         select = document.createElement('select');
         select.className = 'method-select';
-        el.querySelector('.body').prepend(select);
+        select.style.cssText = 'width:100%; margin-top:6px;';
+        el.querySelector('.body').appendChild(select);
       }
       this.populateMethodsSelect(select);
-      select.value = node.attachedMethod;
 
-      // Bind change event
-      select.addEventListener('change', (e) => {
-        const methodName = e.target.value;
-        const methodItem = this.methodsManager.methodsContainer.find(m => m.name === methodName);
-        if(methodItem) this.adaptNodeToMethod(node, methodItem);
-      });
+      if(node.attachedMethod) select.value = node.attachedMethod;
+
+      select.onchange = (e) => {
+        const selected = this.methodsManager.methodsContainer.find(m => m.name === e.target.value);
+        if(selected) this.adaptNodeToMethod(node, selected);
+      };
     }
   }
+
   // ====================================================================
   // 2. NODE/PIN CREATION (DOM)
   // ====================================================================
@@ -175,103 +207,125 @@ export default class FluxCodexVertex {
     this.state.connecting = null;
   }
 
-  _pinElement(pinSpec, isOutput, nodeId) {
-    const pin = document.createElement('div');
-    pin.className = 'pin ' + pinSpec.type;
-    pin.dataset.pin = pinSpec.name;
-    pin.dataset.type = pinSpec.type;
-    pin.dataset.io = isOutput ? 'out' : 'in';
+_pinElement(pinSpec, isOutput, nodeId) {
+  const pin = document.createElement('div');
+  pin.className = 'pin ' + pinSpec.type;
+  pin.dataset.pin = pinSpec.name;
+  pin.dataset.type = pinSpec.type;
+  pin.dataset.io = isOutput ? 'out' : 'in';
 
-    const dot = document.createElement('div');
-    dot.className = 'dot';
-    pin.appendChild(dot);
+  // Dot for connecting
+  const dot = document.createElement('div');
+  dot.className = 'dot';
+  pin.appendChild(dot);
 
-    pin.addEventListener('mousedown', (e) => this.startConnect(nodeId, pinSpec.name, pinSpec.type, isOutput));
-    pin.addEventListener('mouseup', (e) => this.finishConnect(nodeId, pinSpec.name, pinSpec.type, isOutput));
-    return pin;
-  }
+  // Label
+  const label = document.createElement('span');
+  label.className = 'pin-label';
+  label.textContent = pinSpec.name;
+  label.style.fontSize = '10px';
+  label.style.marginLeft = '4px';
+  pin.appendChild(label);
+
+  pin.addEventListener('mousedown', (e) => this.startConnect(nodeId, pinSpec.name, pinSpec.type, isOutput));
+  pin.addEventListener('mouseup', (e) => this.finishConnect(nodeId, pinSpec.name, pinSpec.type, isOutput));
+
+  return pin;
+}
 
 createNodeDOM(spec) {
-    const el = document.createElement('div');
-    el.className = 'node ' + (spec.category || '');
-    el.style.left = spec.x + 'px';
-    el.style.top = spec.y + 'px';
-    el.dataset.id = spec.id;
+  const el = document.createElement('div');
+  el.className = 'node ' + (spec.category || '');
+  el.style.left = spec.x + 'px';
+  el.style.top = spec.y + 'px';
+  el.dataset.id = spec.id;
 
-    // --- Header ---
-    const header = document.createElement('div');
-    header.className = 'header';
-    header.textContent = spec.title;
-    el.appendChild(header);
+  // --- Header ---
+  const header = document.createElement('div');
+  header.className = 'header';
+  header.textContent = spec.title;
+  el.appendChild(header);
 
-    // --- Body ---
-    const body = document.createElement('div');
-    body.className = 'body';
+  // --- Body ---
+  const body = document.createElement('div');
+  body.className = 'body';
 
-    // --- Pins row ---
-    const row = document.createElement('div');
-    row.className = 'pin-row';
-    const left = document.createElement('div'); left.className = 'pins-left';
-    const right = document.createElement('div'); right.className = 'pins-right';
+  // --- Pins row ---
+  const row = document.createElement('div');
+  row.className = 'pin-row';
+  const left = document.createElement('div'); left.className = 'pins-left';
+  const right = document.createElement('div'); right.className = 'pins-right';
 
-    (spec.inputs || []).forEach(pin => left.appendChild(this._pinElement(pin, false, spec.id)));
-    (spec.outputs || []).forEach(pin => right.appendChild(this._pinElement(pin, true, spec.id)));
+  (spec.inputs || []).forEach(pin => left.appendChild(this._pinElement(pin, false, spec.id)));
+  (spec.outputs || []).forEach(pin => right.appendChild(this._pinElement(pin, true, spec.id)));
 
-    row.appendChild(left);
-    row.appendChild(right);
-    body.appendChild(row);
+  row.appendChild(left);
+  row.appendChild(right);
+  body.appendChild(row);
 
-    // --- Display block (for value/math/Print) ---
-    if((spec.category === 'value' && spec.title !== 'GenRandInt') || spec.category === 'math' || spec.title === 'Print') {
-        const display = document.createElement('div');
-        display.className = 'value-display';
-        display.textContent = '?';
-        spec.displayEl = display;
-        body.appendChild(display);
-    }
+  // --- Display / special inputs ---
+  if(spec.title === 'GenRandInt' && spec.fields) {
+    const container = document.createElement('div');
+    container.className = 'genrand-inputs';
+    spec.fields.forEach(f => {
+      const input = document.createElement('input');
+      input.type = 'number';
+      input.value = f.value;
+      input.style.width = '40px';
+      input.style.marginRight = '4px';
+      input.addEventListener('input', e => f.value = e.target.value);
+      container.appendChild(input);
 
-    // --- Method select (for action/function nodes) ---
-    if(spec.category === 'action') {
-        let select = el.querySelector('select.method-select');
-        if(!select) {
-            select = document.createElement('select');
-            select.className = 'method-select';
-            select.style.cssText = 'width:100%; margin-top:6px;';
-            body.appendChild(select);
-        }
-        this.populateMethodsSelect(select);
-
-        // Pre-select if method already attached
-        if(spec.attachedMethod) select.value = spec.attachedMethod;
-
-        // Event listener
-        select.onchange = (e) => {
-            const selected = this.methodsManager.methodsContainer.find(m => m.name === e.target.value);
-            if(selected) {
-                this.adaptNodeToMethod(spec, selected); // Updates pins + DOM
-            }
-        };
-    }
-
-    el.appendChild(body);
-
-    // --- Drag header ---
-    header.addEventListener('mousedown', e => {
-        e.preventDefault();
-        this.state.draggingNode = el;
-        const rect = el.getBoundingClientRect();
-        const bx = this.board.getBoundingClientRect();
-        this.state.dragOffset = [e.clientX - rect.left + bx.left, e.clientY - rect.top + bx.top];
-        document.body.style.cursor = 'grabbing';
+      const lbl = document.createElement('span');
+      lbl.textContent = f.key;
+      lbl.style.fontSize = '10px';
+      lbl.style.marginRight = '6px';
+      container.appendChild(lbl);
     });
+    body.appendChild(container);
+  } else if(spec.category === 'value' || spec.category === 'math' || spec.title === 'Print') {
+    const display = document.createElement('div');
+    display.className = 'value-display';
+    display.textContent = '?';
+    spec.displayEl = display;
+    body.appendChild(display);
+  }
 
-    // --- Select node on click ---
-    el.addEventListener('click', e => {
-        e.stopPropagation();
-        this.selectNode(spec.id);
-    });
+  // --- Method select (only for action/function, exclude Print/Timeout) ---
+  if(spec.category === 'action' && spec.title !== 'Print' && spec.title !== 'SetTimeout') {
+    const select = document.createElement('select');
+    select.className = 'method-select';
+    select.style.cssText = 'width:100%; margin-top:6px;';
+    body.appendChild(select);
+    this.populateMethodsSelect(select);
 
-    return el;
+    if(spec.attachedMethod) select.value = spec.attachedMethod;
+
+    select.onchange = (e) => {
+      const selected = this.methodsManager.methodsContainer.find(m => m.name === e.target.value);
+      if(selected) this.adaptNodeToMethod(spec, selected);
+    };
+  }
+
+  el.appendChild(body);
+
+  // --- Drag header ---
+  header.addEventListener('mousedown', e => {
+    e.preventDefault();
+    this.state.draggingNode = el;
+    const rect = el.getBoundingClientRect();
+    const bx = this.board.getBoundingClientRect();
+    this.state.dragOffset = [e.clientX - rect.left + bx.left, e.clientY - rect.top + bx.top];
+    document.body.style.cursor = 'grabbing';
+  });
+
+  // --- Select node ---
+  el.addEventListener('click', e => {
+    e.stopPropagation();
+    this.selectNode(spec.id);
+  });
+
+  return el;
 }
 
   selectNode(id) {
@@ -287,13 +341,54 @@ createNodeDOM(spec) {
     const x = Math.abs(this.state.pan[0]) + 100 + Math.random() * 200;
     const y = Math.abs(this.state.pan[1]) + 100 + Math.random() * 200;
 
+    // Node factory map
+    const nodeFactories = {
+      'event': (id, x, y) => ({
+        id, title: 'onLoad', x, y, category: 'event',
+        inputs: [], outputs: [{name: 'exec', type: 'action'}]
+      }),
+      'function': (id, x, y) => ({
+        id, title: 'Function', x, y, category: 'action',
+        inputs: [{name: 'exec', type: 'action'}],
+        outputs: [{name: 'execOut', type: 'action'}]
+      }),
+      'if': (id, x, y) => ({
+        id, title: 'If', x, y, category: 'control',
+        inputs: [{name: 'exec', type: 'action'}, {name: 'condition', type: 'value'}],
+        outputs: [{name: 'true', type: 'action'}, {name: 'false', type: 'action'}]
+      }),
+      'genrand': (id, x, y) => ({
+        id, title: 'GenRandInt', x, y, category: 'value',
+        inputs: [], outputs: [{name: 'result', type: 'value'}],
+        fields: [{key: 'min', value: '0'}, {key: 'max', value: '10'}]
+      }),
+      'print': (id, x, y) => ({
+        id, title: 'Print', x, y, category: 'action',
+        inputs: [{name: 'exec', type: 'action'}, {name: 'value', type: 'value'}],
+        outputs: [{name: 'execOut', type: 'action'}],
+        fields: [{key: 'label', value: 'Result'}],
+        builtIn: true
+      }),
+      'timeout': (id, x, y) => ({
+        id, title: 'SetTimeout', x, y, category: 'timer',
+        inputs: [{name: 'exec', type: 'action'}, {name: 'delay', type: 'value'}],
+        outputs: [{name: 'execOut', type: 'action'}],
+        fields: [{key: 'delay', value: '1000'}],
+        builtIn: true
+      }),
+      // Math nodes
+      'add': (id, x, y) => ({id, title: 'Add', x, y, category: 'math', inputs: [{name: 'a', type: 'value'}, {name: 'b', type: 'value'}], outputs: [{name: 'result', type: 'value'}]}),
+      'sub': (id, x, y) => ({id, title: 'Sub', x, y, category: 'math', inputs: [{name: 'a', type: 'value'}, {name: 'b', type: 'value'}], outputs: [{name: 'result', type: 'value'}]}),
+      'mul': (id, x, y) => ({id, title: 'Mul', x, y, category: 'math', inputs: [{name: 'a', type: 'value'}, {name: 'b', type: 'value'}], outputs: [{name: 'result', type: 'value'}]}),
+      'div': (id, x, y) => ({id, title: 'Div', x, y, category: 'math', inputs: [{name: 'a', type: 'value'}, {name: 'b', type: 'value'}], outputs: [{name: 'result', type: 'value'}]}),
+      'sin': (id, x, y) => ({id, title: 'Sin', x, y, category: 'math', inputs: [{name: 'a', type: 'value'}], outputs: [{name: 'result', type: 'value'}]}),
+      'cos': (id, x, y) => ({id, title: 'Cos', x, y, category: 'math', inputs: [{name: 'a', type: 'value'}], outputs: [{name: 'result', type: 'value'}]}),
+      'pi': (id, x, y) => ({id, title: 'Pi', x, y, category: 'math', inputs: [], outputs: [{name: 'result', type: 'value'}]})
+    };
+
+    // Generate node spec
     let spec = null;
-    if(type === 'function') {
-      spec = {id, title: 'Function', x, y, category: 'action', inputs: [{name: "exec", type: "action"}], outputs: [{name: "execOut", type: "action"}]};
-    } else if(type === 'event') {
-      spec = {id, title: 'onLoad', x, y, category: 'event', inputs: [], outputs: [{name: "exec", type: "action"}]};
-    }
-    // add other node types...
+    if(nodeFactories[type]) spec = nodeFactories[type](id, x, y);
 
     if(spec) {
       const dom = this.createNodeDOM(spec);
@@ -301,14 +396,16 @@ createNodeDOM(spec) {
       this.nodes[id] = spec;
       return id;
     }
+
     return null;
   }
+
 
   _executeAttachedMethod(n) {
     if(n.attachedMethod) {
       const method = this.methodsManager.methodsContainer.find(m => m.name === n.attachedMethod);
       if(method) {
-        const fn = method.fn;
+        const fn = this.methodsManager.compileFunction(method.code);
         const args = this.getArgNames(fn).map(argName => this.getValue(n.id, argName));
         let result;
         try {result = fn(...args);} catch(err) {console.error("User method error:", err);}
@@ -479,8 +576,14 @@ createNodeDOM(spec) {
         Object.values(this.nodes).forEach(spec => {
           const domEl = this.createNodeDOM(spec);
           this.board.appendChild(domEl);
-          if((spec.category === 'value' && spec.title !== 'GenRandInt') || spec.category === 'math' || spec.category === 'Print') {
+
+          if((spec.category === 'value' && spec.title !== 'GenRandInt') || spec.category === 'math' || spec.title === 'Print') {
             spec.displayEl = domEl.querySelector('.value-display');
+          }
+
+          // Only function nodes get dynamic pins updated
+          if(spec.category === 'action' && spec.title === 'Function') {
+            this.updateNodeDOM(spec.id);
           }
         });
         this.updateLinks(); this.updateValueDisplays(); this.log('Restored graph.'); return;

@@ -23,8 +23,8 @@ export class Editor {
         this.fluxCodexVertex = new FluxCodexVertex('board', 'boardWrap', 'log', this.methodsManager)
         setTimeout(() => {
           this.fluxCodexVertex.updateLinks();
-        }, 100);
-      }, 100);
+        }, 3000);
+      }, 300);
     }
     // console.log("methodsManager", this.methodsManager);
   }
@@ -43,6 +43,8 @@ export class Editor {
     let FCV = document.createElement('div');
     FCV.id = 'app';
     FCV.style.display = 'none';
+    // test async 
+    // setTimeout(() => FCV.style.display = 'none' , 200);
     FCV.innerHTML = `
     <div id="leftBar">
       <h3>Blueprint Nodes</h3>

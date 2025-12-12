@@ -1601,6 +1601,11 @@ svg.connections {
   outline: 3px solid rgba(255, 255, 255, 0.1);
 }
 
+.genrand-inputs {
+  display: flex;
+  flex-direction: column;
+}
+
 .node .value-display {
   font-size: 12px;
   color: #9fb4d8;
@@ -1618,4 +1623,11 @@ svg.connections {
   color: #cfe;
   white-space: pre-wrap;
   word-break: break-all;
+}
+
+.pin-label {
+  font-size: 10px;
+  color: #eee;
+  margin-left: 4px;
+  user-select: none;
 }

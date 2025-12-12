@@ -15615,6 +15615,11 @@ var FluxCodexVertex = class _FluxCodexVertex {
     };
     this.bindGlobalListeners();
     this.init();
+    document.addEventListener("keydown", (e) => {
+      if (e.key == "F6") {
+        this.runGraph();
+      }
+    });
   }
   // ====================================================================
   // 1. UTILITY & DEBUGGING
@@ -15632,13 +15637,26 @@ var FluxCodexVertex = class _FluxCodexVertex {
   // Dynamic Method Helpers
   // --------------------------------------------------------------------
   getArgNames(fn) {
-    const src = fn.toString();
-    const args = src.match(/\(([^)]*)\)/);
-    if (!args) return [];
-    return args[1].split(",").map((a) => a.trim()).filter((a) => a.length);
+    const src = fn.toString().trim();
+    const arrowNoParen = src.match(/^([a-zA-Z0-9_$]+)\s*=>/);
+    if (arrowNoParen) {
+      return [arrowNoParen[1].trim()];
+    }
+    const argsMatch = src.match(/\(([^)]*)\)/);
+    if (argsMatch && argsMatch[1].trim().length > 0) {
+      return argsMatch[1].split(",").map((a) => a.trim()).filter((a) => a.length > 0);
+    }
+    return [];
   }
   hasReturn(fn) {
-    return /return\s+/.test(fn.toString());
+    const src = fn.toString().trim();
+    if (/=>\s*[^({]/.test(src)) {
+      return true;
+    }
+    if (/return\s+/.test(src)) {
+      return true;
+    }
+    return false;
   }
   adaptNodeToMethod(node, methodItem) {
     const fn = this.methodsManager.compileFunction(methodItem.code);
@@ -15646,9 +15664,7 @@ var FluxCodexVertex = class _FluxCodexVertex {
     node.outputs = [{ name: "execOut", type: "action" }];
     const args = this.getArgNames(fn);
     args.forEach((arg) => node.inputs.push({ name: arg, type: "any" }));
-    if (this.hasReturn(fn)) {
-      node.outputs.push({ name: "return", type: "any" });
-    }
+    if (this.hasReturn(fn)) node.outputs.push({ name: "return", type: "any" });
     node.attachedMethod = methodItem.name;
     node.fn = fn;
     this.updateNodeDOM(node.id);
@@ -15675,22 +15691,24 @@ var FluxCodexVertex = class _FluxCodexVertex {
     if (!left || !right) return;
     left.innerHTML = "";
     right.innerHTML = "";
-    (node.inputs || []).forEach((pin) => left.appendChild(this._pinElement(pin, false, nodeId)));
-    (node.outputs || []).forEach((pin) => right.appendChild(this._pinElement(pin, true, nodeId)));
-    if (node.category === "action" && node.attachedMethod) {
+    const inputs = node.inputs || [];
+    const outputs = node.outputs || [];
+    inputs.forEach((pin) => left.appendChild(this._pinElement(pin, false, nodeId)));
+    outputs.forEach((pin) => right.appendChild(this._pinElement(pin, true, nodeId)));
+    if (node.category === "action" && node.title === "Function") {
       let select = el.querySelector("select.method-select");
       if (!select) {
         select = document.createElement("select");
         select.className = "method-select";
-        el.querySelector(".body").prepend(select);
+        select.style.cssText = "width:100%; margin-top:6px;";
+        el.querySelector(".body").appendChild(select);
       }
       this.populateMethodsSelect(select);
-      select.value = node.attachedMethod;
-      select.addEventListener("change", (e) => {
-        const methodName = e.target.value;
-        const methodItem = this.methodsManager.methodsContainer.find((m) => m.name === methodName);
-        if (methodItem) this.adaptNodeToMethod(node, methodItem);
-      });
+      if (node.attachedMethod) select.value = node.attachedMethod;
+      select.onchange = (e) => {
+        const selected = this.methodsManager.methodsContainer.find((m) => m.name === e.target.value);
+        if (selected) this.adaptNodeToMethod(node, selected);
+      };
     }
   }
   // ====================================================================
@@ -15728,6 +15746,12 @@ var FluxCodexVertex = class _FluxCodexVertex {
     const dot = document.createElement("div");
     dot.className = "dot";
     pin.appendChild(dot);
+    const label = document.createElement("span");
+    label.className = "pin-label";
+    label.textContent = pinSpec.name;
+    label.style.fontSize = "10px";
+    label.style.marginLeft = "4px";
+    pin.appendChild(label);
     pin.addEventListener("mousedown", (e) => this.startConnect(nodeId, pinSpec.name, pinSpec.type, isOutput));
     pin.addEventListener("mouseup", (e) => this.finishConnect(nodeId, pinSpec.name, pinSpec.type, isOutput));
     return pin;
@@ -15755,28 +15779,41 @@ var FluxCodexVertex = class _FluxCodexVertex {
     row.appendChild(left);
     row.appendChild(right);
     body.appendChild(row);
-    if (spec.category === "value" && spec.title !== "GenRandInt" || spec.category === "math" || spec.title === "Print") {
+    if (spec.title === "GenRandInt" && spec.fields) {
+      const container = document.createElement("div");
+      container.className = "genrand-inputs";
+      spec.fields.forEach((f) => {
+        const input = document.createElement("input");
+        input.type = "number";
+        input.value = f.value;
+        input.style.width = "40px";
+        input.style.marginRight = "4px";
+        input.addEventListener("input", (e) => f.value = e.target.value);
+        container.appendChild(input);
+        const lbl = document.createElement("span");
+        lbl.textContent = f.key;
+        lbl.style.fontSize = "10px";
+        lbl.style.marginRight = "6px";
+        container.appendChild(lbl);
+      });
+      body.appendChild(container);
+    } else if (spec.category === "value" || spec.category === "math" || spec.title === "Print") {
       const display = document.createElement("div");
       display.className = "value-display";
       display.textContent = "?";
       spec.displayEl = display;
       body.appendChild(display);
     }
-    if (spec.category === "action") {
-      let select = el.querySelector("select.method-select");
-      if (!select) {
-        select = document.createElement("select");
-        select.className = "method-select";
-        select.style.cssText = "width:100%; margin-top:6px;";
-        body.appendChild(select);
-      }
+    if (spec.category === "action" && spec.title !== "Print" && spec.title !== "SetTimeout") {
+      const select = document.createElement("select");
+      select.className = "method-select";
+      select.style.cssText = "width:100%; margin-top:6px;";
+      body.appendChild(select);
       this.populateMethodsSelect(select);
       if (spec.attachedMethod) select.value = spec.attachedMethod;
       select.onchange = (e) => {
         const selected = this.methodsManager.methodsContainer.find((m) => m.name === e.target.value);
-        if (selected) {
-          this.adaptNodeToMethod(spec, selected);
-        }
+        if (selected) this.adaptNodeToMethod(spec, selected);
       };
     }
     el.appendChild(body);
@@ -15805,12 +15842,77 @@ var FluxCodexVertex = class _FluxCodexVertex {
     const id = "node_" + this.nodeCounter++;
     const x = Math.abs(this.state.pan[0]) + 100 + Math.random() * 200;
     const y = Math.abs(this.state.pan[1]) + 100 + Math.random() * 200;
+    const nodeFactories = {
+      "event": (id2, x2, y2) => ({
+        id: id2,
+        title: "onLoad",
+        x: x2,
+        y: y2,
+        category: "event",
+        inputs: [],
+        outputs: [{ name: "exec", type: "action" }]
+      }),
+      "function": (id2, x2, y2) => ({
+        id: id2,
+        title: "Function",
+        x: x2,
+        y: y2,
+        category: "action",
+        inputs: [{ name: "exec", type: "action" }],
+        outputs: [{ name: "execOut", type: "action" }]
+      }),
+      "if": (id2, x2, y2) => ({
+        id: id2,
+        title: "If",
+        x: x2,
+        y: y2,
+        category: "control",
+        inputs: [{ name: "exec", type: "action" }, { name: "condition", type: "value" }],
+        outputs: [{ name: "true", type: "action" }, { name: "false", type: "action" }]
+      }),
+      "genrand": (id2, x2, y2) => ({
+        id: id2,
+        title: "GenRandInt",
+        x: x2,
+        y: y2,
+        category: "value",
+        inputs: [],
+        outputs: [{ name: "result", type: "value" }],
+        fields: [{ key: "min", value: "0" }, { key: "max", value: "10" }]
+      }),
+      "print": (id2, x2, y2) => ({
+        id: id2,
+        title: "Print",
+        x: x2,
+        y: y2,
+        category: "action",
+        inputs: [{ name: "exec", type: "action" }, { name: "value", type: "value" }],
+        outputs: [{ name: "execOut", type: "action" }],
+        fields: [{ key: "label", value: "Result" }],
+        builtIn: true
+      }),
+      "timeout": (id2, x2, y2) => ({
+        id: id2,
+        title: "SetTimeout",
+        x: x2,
+        y: y2,
+        category: "timer",
+        inputs: [{ name: "exec", type: "action" }, { name: "delay", type: "value" }],
+        outputs: [{ name: "execOut", type: "action" }],
+        fields: [{ key: "delay", value: "1000" }],
+        builtIn: true
+      }),
+      // Math nodes
+      "add": (id2, x2, y2) => ({ id: id2, title: "Add", x: x2, y: y2, category: "math", inputs: [{ name: "a", type: "value" }, { name: "b", type: "value" }], outputs: [{ name: "result", type: "value" }] }),
+      "sub": (id2, x2, y2) => ({ id: id2, title: "Sub", x: x2, y: y2, category: "math", inputs: [{ name: "a", type: "value" }, { name: "b", type: "value" }], outputs: [{ name: "result", type: "value" }] }),
+      "mul": (id2, x2, y2) => ({ id: id2, title: "Mul", x: x2, y: y2, category: "math", inputs: [{ name: "a", type: "value" }, { name: "b", type: "value" }], outputs: [{ name: "result", type: "value" }] }),
+      "div": (id2, x2, y2) => ({ id: id2, title: "Div", x: x2, y: y2, category: "math", inputs: [{ name: "a", type: "value" }, { name: "b", type: "value" }], outputs: [{ name: "result", type: "value" }] }),
+      "sin": (id2, x2, y2) => ({ id: id2, title: "Sin", x: x2, y: y2, category: "math", inputs: [{ name: "a", type: "value" }], outputs: [{ name: "result", type: "value" }] }),
+      "cos": (id2, x2, y2) => ({ id: id2, title: "Cos", x: x2, y: y2, category: "math", inputs: [{ name: "a", type: "value" }], outputs: [{ name: "result", type: "value" }] }),
+      "pi": (id2, x2, y2) => ({ id: id2, title: "Pi", x: x2, y: y2, category: "math", inputs: [], outputs: [{ name: "result", type: "value" }] })
+    };
     let spec = null;
-    if (type === "function") {
-      spec = { id, title: "Function", x, y, category: "action", inputs: [{ name: "exec", type: "action" }], outputs: [{ name: "execOut", type: "action" }] };
-    } else if (type === "event") {
-      spec = { id, title: "onLoad", x, y, category: "event", inputs: [], outputs: [{ name: "exec", type: "action" }] };
-    }
+    if (nodeFactories[type]) spec = nodeFactories[type](id, x, y);
     if (spec) {
       const dom = this.createNodeDOM(spec);
       this.board.appendChild(dom);
@@ -15823,7 +15925,7 @@ var FluxCodexVertex = class _FluxCodexVertex {
     if (n.attachedMethod) {
       const method = this.methodsManager.methodsContainer.find((m) => m.name === n.attachedMethod);
       if (method) {
-        const fn = method.fn;
+        const fn = this.methodsManager.compileFunction(method.code);
         const args = this.getArgNames(fn).map((argName) => this.getValue(n.id, argName));
         let result;
         try {
@@ -15994,8 +16096,11 @@ var FluxCodexVertex = class _FluxCodexVertex {
         Object.values(this.nodes).forEach((spec) => {
           const domEl = this.createNodeDOM(spec);
           this.board.appendChild(domEl);
-          if (spec.category === "value" && spec.title !== "GenRandInt" || spec.category === "math" || spec.category === "Print") {
+          if (spec.category === "value" && spec.title !== "GenRandInt" || spec.category === "math" || spec.title === "Print") {
             spec.displayEl = domEl.querySelector(".value-display");
+          }
+          if (spec.category === "action" && spec.title === "Function") {
+            this.updateNodeDOM(spec.id);
           }
         });
         this.updateLinks();
@@ -16315,6 +16420,7 @@ var EditorHud = class {
     byId("showVisualCodeEditorBtn").addEventListener("click", (e) => {
       console.log("show-fluxcodexvertex-editor ", e);
       byId("app").style.display = "flex";
+      this.core.editor.fluxCodexVertex.updateLinks();
     });
     document.addEventListener("updateSceneContainer", (e) => {
       this.updateSceneContainer();
@@ -17245,8 +17351,8 @@ var Editor = class {
         this.fluxCodexVertex = new FluxCodexVertex("board", "boardWrap", "log", this.methodsManager);
         setTimeout(() => {
           this.fluxCodexVertex.updateLinks();
-        }, 100);
-      }, 100);
+        }, 3e3);
+      }, 300);
     }
   }
   check(a) {
