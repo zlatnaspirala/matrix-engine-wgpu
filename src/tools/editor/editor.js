@@ -63,6 +63,15 @@ export class Editor {
       <button class="btn" onclick="app.editor.fluxCodexVertex.addNode('cos')">Cos</button>
       <button class="btn" onclick="app.editor.fluxCodexVertex.addNode('pi')">Pi</button>
       <hr style="border:none; height:1px; background:rgba(255,255,255,0.03); margin:10px 0;">
+      <!-- COMPARISON NODES -->
+      <button class="btn" onclick="app.editor.fluxCodexVertex.addNode('equal')">Equal (==)</button>
+      <button class="btn" onclick="app.editor.fluxCodexVertex.addNode('notequal')">Not Equal (!=)</button>
+      <button class="btn" onclick="app.editor.fluxCodexVertex.addNode('greater')">Greater (>)</button>
+      <button class="btn" onclick="app.editor.fluxCodexVertex.addNode('less')">Less (<)</button>
+      <button class="btn" onclick="app.editor.fluxCodexVertex.addNode('greaterEqual')">Greater/Equal (>=)</button>
+      <button class="btn" onclick="app.editor.fluxCodexVertex.addNode('lessEqual')">Less/Equal (<=)</button>
+
+      <hr style="border:none; height:1px; background:rgba(255,255,255,0.03); margin:10px 0;">
       <button class="btn" onclick="app.editor.fluxCodexVertex.compileGraph()">Save to LocalStorage</button>
       <button class="btn" onclick="clearStorage()">Clear Save</button>
       <button class="btn" onclick="app.editor.fluxCodexVertex.runGraph()">Run</button>

@@ -15591,6 +15591,7 @@ var EditorProvider = class {
 // ../fluxCodexVertex.js
 var FluxCodexVertex = class _FluxCodexVertex {
   constructor(boardId, boardWrapId, logId, methodsManager) {
+    this.debugMode = true;
     this.methodsManager = methodsManager;
     this.board = document.getElementById(boardId);
     this.boardWrap = document.getElementById(boardWrapId);
@@ -15617,7 +15618,13 @@ var FluxCodexVertex = class _FluxCodexVertex {
     this.init();
     document.addEventListener("keydown", (e) => {
       if (e.key == "F6") {
+        e.preventDefault();
         this.runGraph();
+      } else if (e.key === "Delete" || e.key === "Backspace") {
+        if (this.state.selectedNode) {
+          this.deleteNode(this.state.selectedNode);
+          this.state.selectedNode = null;
+        }
       }
     });
   }
@@ -15663,8 +15670,8 @@ var FluxCodexVertex = class _FluxCodexVertex {
     node.inputs = [{ name: "exec", type: "action" }];
     node.outputs = [{ name: "execOut", type: "action" }];
     const args = this.getArgNames(fn);
-    args.forEach((arg) => node.inputs.push({ name: arg, type: "any" }));
-    if (this.hasReturn(fn)) node.outputs.push({ name: "return", type: "any" });
+    args.forEach((arg) => node.inputs.push({ name: arg, type: "value" }));
+    if (this.hasReturn(fn)) node.outputs.push({ name: "return", type: "value" });
     node.attachedMethod = methodItem.name;
     node.fn = fn;
     this.updateNodeDOM(node.id);
@@ -15725,7 +15732,7 @@ var FluxCodexVertex = class _FluxCodexVertex {
     }
     const from = this.state.connecting.out ? this.state.connecting : { node: nodeId, pin: pinName };
     const to = this.state.connecting.out ? { node: nodeId, pin: pinName } : this.state.connecting;
-    if (from.pin && to.pin && this.state.connecting.type === type) {
+    if (from.pin && to.pin && this.isTypeCompatible(this.state.connecting.type, type)) {
       const exists = this.links.find(
         (l) => l.from.node === from.node && l.from.pin === from.pin && l.to.node === to.node && l.to.pin === to.pin
       );
@@ -15737,23 +15744,33 @@ var FluxCodexVertex = class _FluxCodexVertex {
     }
     this.state.connecting = null;
   }
+  normalizePinType(type) {
+    if (!type) return "any";
+    if (type === "number") return "value";
+    return type;
+  }
   _pinElement(pinSpec, isOutput, nodeId) {
     const pin = document.createElement("div");
-    pin.className = "pin " + pinSpec.type;
+    pin.className = `pin pin-${pinSpec.type}`;
     pin.dataset.pin = pinSpec.name;
     pin.dataset.type = pinSpec.type;
     pin.dataset.io = isOutput ? "out" : "in";
+    pin.dataset.node = nodeId;
     const dot = document.createElement("div");
     dot.className = "dot";
     pin.appendChild(dot);
     const label = document.createElement("span");
     label.className = "pin-label";
     label.textContent = pinSpec.name;
-    label.style.fontSize = "10px";
-    label.style.marginLeft = "4px";
     pin.appendChild(label);
-    pin.addEventListener("mousedown", (e) => this.startConnect(nodeId, pinSpec.name, pinSpec.type, isOutput));
-    pin.addEventListener("mouseup", (e) => this.finishConnect(nodeId, pinSpec.name, pinSpec.type, isOutput));
+    pin.addEventListener(
+      "mousedown",
+      () => this.startConnect(nodeId, pinSpec.name, pinSpec.type, isOutput)
+    );
+    pin.addEventListener(
+      "mouseup",
+      () => this.finishConnect(nodeId, pinSpec.name, pinSpec.type, isOutput)
+    );
     return pin;
   }
   createNodeDOM(spec) {
@@ -15774,12 +15791,18 @@ var FluxCodexVertex = class _FluxCodexVertex {
     left.className = "pins-left";
     const right = document.createElement("div");
     right.className = "pins-right";
-    (spec.inputs || []).forEach((pin) => left.appendChild(this._pinElement(pin, false, spec.id)));
-    (spec.outputs || []).forEach((pin) => right.appendChild(this._pinElement(pin, true, spec.id)));
+    (spec.inputs || []).forEach((pin) => {
+      pin.type = this.normalizePinType(pin.type);
+      left.appendChild(this._pinElement(pin, false, spec.id));
+    });
+    (spec.outputs || []).forEach((pin) => {
+      pin.type = this.normalizePinType(pin.type);
+      right.appendChild(this._pinElement(pin, true, spec.id));
+    });
     row.appendChild(left);
     row.appendChild(right);
     body.appendChild(row);
-    if (spec.title === "GenRandInt" && spec.fields) {
+    if (spec.fields && spec.title === "GenRandInt") {
       const container = document.createElement("div");
       container.className = "genrand-inputs";
       spec.fields.forEach((f) => {
@@ -15790,31 +15813,36 @@ var FluxCodexVertex = class _FluxCodexVertex {
         input.style.marginRight = "4px";
         input.addEventListener("input", (e) => f.value = e.target.value);
         container.appendChild(input);
-        const lbl = document.createElement("span");
-        lbl.textContent = f.key;
-        lbl.style.fontSize = "10px";
-        lbl.style.marginRight = "6px";
-        container.appendChild(lbl);
+        const label = document.createElement("span");
+        label.textContent = f.key;
+        label.className = "field-label";
+        container.appendChild(label);
       });
       body.appendChild(container);
-    } else if (spec.category === "value" || spec.category === "math" || spec.title === "Print") {
+    } else if (spec.category === "math" || spec.category === "value" || spec.title === "Print") {
       const display = document.createElement("div");
       display.className = "value-display";
       display.textContent = "?";
       spec.displayEl = display;
       body.appendChild(display);
     }
-    if (spec.category === "action" && spec.title !== "Print" && spec.title !== "SetTimeout") {
+    if (spec.category === "action" && !spec.builtIn) {
       const select = document.createElement("select");
       select.className = "method-select";
       select.style.cssText = "width:100%; margin-top:6px;";
       body.appendChild(select);
       this.populateMethodsSelect(select);
-      if (spec.attachedMethod) select.value = spec.attachedMethod;
-      select.onchange = (e) => {
-        const selected = this.methodsManager.methodsContainer.find((m) => m.name === e.target.value);
-        if (selected) this.adaptNodeToMethod(spec, selected);
-      };
+      if (spec.attachedMethod) {
+        select.value = spec.attachedMethod;
+      }
+      select.addEventListener("change", (e) => {
+        const selected = this.methodsManager.methodsContainer.find(
+          (m) => m.name === e.target.value
+        );
+        if (selected) {
+          this.adaptNodeToMethod(spec, selected);
+        }
+      });
     }
     el.appendChild(body);
     header.addEventListener("mousedown", (e) => {
@@ -15822,7 +15850,10 @@ var FluxCodexVertex = class _FluxCodexVertex {
       this.state.draggingNode = el;
       const rect = el.getBoundingClientRect();
       const bx = this.board.getBoundingClientRect();
-      this.state.dragOffset = [e.clientX - rect.left + bx.left, e.clientY - rect.top + bx.top];
+      this.state.dragOffset = [
+        e.clientX - rect.left + bx.left,
+        e.clientY - rect.top + bx.top
+      ];
       document.body.style.cursor = "grabbing";
     });
     el.addEventListener("click", (e) => {
@@ -15837,6 +15868,14 @@ var FluxCodexVertex = class _FluxCodexVertex {
     }
     this.state.selectedNode = id;
     document.querySelector(`.node[data-id="${id}"]`)?.classList.add("selected");
+  }
+  isTypeCompatible(fromType, toType) {
+    if (fromType === "action" || toType === "action") {
+      return fromType === toType;
+    }
+    if (fromType === toType) return true;
+    if (fromType === "any" || toType === "any") return true;
+    return false;
   }
   addNode(type) {
     const id = "node_" + this.nodeCounter++;
@@ -15863,12 +15902,22 @@ var FluxCodexVertex = class _FluxCodexVertex {
       }),
       "if": (id2, x2, y2) => ({
         id: id2,
-        title: "If",
+        title: "if",
         x: x2,
         y: y2,
-        category: "control",
-        inputs: [{ name: "exec", type: "action" }, { name: "condition", type: "value" }],
-        outputs: [{ name: "true", type: "action" }, { name: "false", type: "action" }]
+        category: "logic",
+        inputs: [
+          { name: "exec", type: "action" },
+          { name: "condition", type: "boolean" }
+        ],
+        outputs: [
+          { name: "true", type: "action" },
+          { name: "false", type: "action" }
+        ],
+        fields: [
+          { key: "condition", value: true }
+          // default literal for condition
+        ]
       }),
       "genrand": (id2, x2, y2) => ({
         id: id2,
@@ -15885,10 +15934,20 @@ var FluxCodexVertex = class _FluxCodexVertex {
         title: "Print",
         x: x2,
         y: y2,
-        category: "action",
-        inputs: [{ name: "exec", type: "action" }, { name: "value", type: "value" }],
-        outputs: [{ name: "execOut", type: "action" }],
-        fields: [{ key: "label", value: "Result" }],
+        category: "actionprint",
+        // FLOW + DATA
+        inputs: [
+          { name: "exec", type: "action" },
+          { name: "value", type: "any" }
+          // 👈 value to print (ANY is correct)
+        ],
+        outputs: [
+          { name: "execOut", type: "action" }
+        ],
+        // UI-only literal fields (NOT pins)
+        fields: [
+          { key: "label", value: "Result" }
+        ],
         builtIn: true
       }),
       "timeout": (id2, x2, y2) => ({
@@ -15909,7 +15968,62 @@ var FluxCodexVertex = class _FluxCodexVertex {
       "div": (id2, x2, y2) => ({ id: id2, title: "Div", x: x2, y: y2, category: "math", inputs: [{ name: "a", type: "value" }, { name: "b", type: "value" }], outputs: [{ name: "result", type: "value" }] }),
       "sin": (id2, x2, y2) => ({ id: id2, title: "Sin", x: x2, y: y2, category: "math", inputs: [{ name: "a", type: "value" }], outputs: [{ name: "result", type: "value" }] }),
       "cos": (id2, x2, y2) => ({ id: id2, title: "Cos", x: x2, y: y2, category: "math", inputs: [{ name: "a", type: "value" }], outputs: [{ name: "result", type: "value" }] }),
-      "pi": (id2, x2, y2) => ({ id: id2, title: "Pi", x: x2, y: y2, category: "math", inputs: [], outputs: [{ name: "result", type: "value" }] })
+      "pi": (id2, x2, y2) => ({ id: id2, title: "Pi", x: x2, y: y2, category: "math", inputs: [], outputs: [{ name: "result", type: "value" }] }),
+      // comparation nodes
+      "greater": (id2, x2, y2) => ({
+        id: id2,
+        title: "A > B",
+        x: x2,
+        y: y2,
+        category: "compare",
+        inputs: [{ name: "A", type: "number" }, { name: "B", type: "number" }],
+        outputs: [{ name: "result", type: "boolean" }]
+      }),
+      "less": (id2, x2, y2) => ({
+        id: id2,
+        title: "A < B",
+        x: x2,
+        y: y2,
+        category: "compare",
+        inputs: [{ name: "A", type: "number" }, { name: "B", type: "number" }],
+        outputs: [{ name: "result", type: "boolean" }]
+      }),
+      "equal": (id2, x2, y2) => ({
+        id: id2,
+        title: "A == B",
+        x: x2,
+        y: y2,
+        category: "compare",
+        inputs: [{ name: "A", type: "any" }, { name: "B", type: "any" }],
+        outputs: [{ name: "result", type: "boolean" }]
+      }),
+      "notequal": (id2, x2, y2) => ({
+        id: id2,
+        title: "A != B",
+        x: x2,
+        y: y2,
+        category: "compare",
+        inputs: [{ name: "A", type: "any" }, { name: "B", type: "any" }],
+        outputs: [{ name: "result", type: "boolean" }]
+      }),
+      "greaterEqual": (id2, x2, y2) => ({
+        id: id2,
+        title: "A >= B",
+        x: x2,
+        y: y2,
+        category: "compare",
+        inputs: [{ name: "A", type: "number" }, { name: "B", type: "number" }],
+        outputs: [{ name: "result", type: "boolean" }]
+      }),
+      "lessEqual": (id2, x2, y2) => ({
+        id: id2,
+        title: "A <= B",
+        x: x2,
+        y: y2,
+        category: "compare",
+        inputs: [{ name: "A", type: "number" }, { name: "B", type: "number" }],
+        outputs: [{ name: "result", type: "boolean" }]
+      })
     };
     let spec = null;
     if (nodeFactories[type]) spec = nodeFactories[type](id, x, y);
@@ -15938,38 +16052,35 @@ var FluxCodexVertex = class _FluxCodexVertex {
     }
   }
   getValue(nodeId, pinName, visited = /* @__PURE__ */ new Set()) {
-    const n = this.nodes[nodeId];
-    if (!n) return 0;
-    if (n.attachedMethod && pinName === "return") return n._returnCache ?? 0;
-    let linkToSource = null;
-    for (const link of this.links) {
-      if (link.to.node === nodeId && link.to.pin === pinName && link.type === "value") {
-        linkToSource = link;
-        break;
+    const node = this.nodes[nodeId];
+    if (!node || visited.has(nodeId)) return void 0;
+    visited.add(nodeId);
+    console.log(`[GET] Node ${nodeId} pin "${pinName}"`);
+    const field = node.fields?.find((f) => f.key === pinName);
+    if (field !== void 0) {
+      console.log(`  \u2192 Using literal field "${pinName}":`, field.value);
+      return field.value;
+    }
+    const link = this.links.find((l) => l.to.node === nodeId && l.to.pin === pinName);
+    if (link) {
+      console.log(`  \u2192 Linked from Node ${link.from.node} pin ${link.from.pin}`);
+      return this.getValue(link.from.node, link.from.pin, visited);
+    }
+    const inputPin = node.inputs?.find((p) => p.name === pinName);
+    if (inputPin) {
+      console.log(`  \u2192 No link, using literal/default for input pin "${pinName}"`);
+      return inputPin.default ?? 0;
+    }
+    if (node.outputs?.some((o) => o.name === pinName)) {
+      if (node._returnCache === void 0) {
+        console.log(`  \u2192 Node ${nodeId} output "${pinName}" not cached, triggering node...`);
+        this.triggerNode(nodeId);
       }
+      console.log(`  \u2192 Using _returnCache for output pin "${pinName}":`, node._returnCache);
+      return node._returnCache;
     }
-    if (linkToSource) {
-      const sourceNodeId = linkToSource.from.node;
-      if (visited.has(sourceNodeId)) return 0;
-      const newVisited = new Set(visited);
-      newVisited.add(nodeId);
-      return this.getValue(sourceNodeId, linkToSource.from.pin, newVisited);
-    }
-    if (n.title === "GenRandInt") {
-      const min = +n.fields?.find((f) => f.key === "min")?.value || 0;
-      const max = +n.fields?.find((f) => f.key === "max")?.value || 10;
-      return Math.floor(Math.random() * (max - min + 1) + min);
-    }
-    if (n.title === "Pi") return Math.PI;
-    const vA = +this.getValue(nodeId, "a", visited) || 0;
-    const vB = +this.getValue(nodeId, "b", visited) || 0;
-    if (n.title === "Add") return vA + vB;
-    if (n.title === "Sub") return vA - vB;
-    if (n.title === "Mul") return vA * vB;
-    if (n.title === "Div") return vB ? vA / vB : 0;
-    if (n.title === "Sin") return Math.sin(vA);
-    if (n.title === "Cos") return Math.cos(vA);
-    return 0;
+    console.log(`  \u2192 Pin "${pinName}" not found, returning undefined`);
+    return void 0;
   }
   updateValueDisplays() {
     Object.values(this.nodes).forEach((n) => {
@@ -15989,7 +16100,8 @@ var FluxCodexVertex = class _FluxCodexVertex {
     if (n.category === "event") {
       this.enqueueOutputs(n, "exec");
       return;
-    } else if (n.category === "action" || n.category === "timer") {
+    }
+    if (n.category === "action" || n.category === "timer" || n.category === "actionprint") {
       this._executeAttachedMethod(n);
       if (n.title === "Print") {
         const valueToPrint = this.getValue(id, "value");
@@ -16004,13 +16116,102 @@ var FluxCodexVertex = class _FluxCodexVertex {
         return;
       }
       this.enqueueOutputs(n, "execOut");
-    } else if (n.category === "control" && n.title === "If") {
-      const condition = this.getValue(id, "condition");
+      return;
+    } else if (n.category === "logic" && n.title === "if") {
+      let condition = this.getValue(id, "condition");
+      if (condition === void 0) {
+        const link = this.links.find((l) => l.to.node === id && l.to.pin === "condition");
+        if (link) {
+          condition = this.getValue(link.from.node, link.from.pin);
+        }
+      }
+      console.log("IF node", id, "evaluated condition:", condition);
       this.enqueueOutputs(n, condition ? "true" : "false");
+    }
+    if (["math", "value", "compare"].includes(n.category)) {
+      if (n.category === "compare") {
+        const a = this.getValue(id, "A");
+        const b = this.getValue(id, "B");
+        let result;
+        switch (n.title) {
+          case "A > B":
+            result = a > b;
+            break;
+          case "A < B":
+            result = a < b;
+            break;
+          case "A == B":
+            result = a == b;
+            break;
+          case "A != B":
+            result = a != b;
+            break;
+          case "A >= B":
+            result = a >= b;
+            break;
+          case "A <= B":
+            result = a <= b;
+            break;
+        }
+        n._returnCache = result;
+        if (n.displayEl) n.displayEl.textContent = result;
+      }
+      if (n.title === "GenRandInt") {
+        const min = parseInt(this.getValue(id, "min")) || 0;
+        const max = parseInt(this.getValue(id, "max")) || 10;
+        const result = Math.floor(Math.random() * (max - min + 1)) + min;
+        n._returnCache = result;
+        if (n.displayEl) n.displayEl.textContent = result;
+      } else if (["Add", "Sub", "Mul", "Div", "Sin", "Cos", "Pi"].includes(n.title)) {
+        let a = parseFloat(this.getValue(id, "a")) || 0;
+        let b = parseFloat(this.getValue(id, "b")) || 0;
+        let result = 0;
+        switch (n.title) {
+          case "Add":
+            result = a + b;
+            break;
+          case "Sub":
+            result = a - b;
+            break;
+          case "Mul":
+            result = a * b;
+            break;
+          case "Div":
+            result = b !== 0 ? a / b : 0;
+            break;
+          case "Sin":
+            result = Math.sin(a);
+            break;
+          case "Cos":
+            result = Math.cos(a);
+            break;
+          case "Pi":
+            result = Math.PI;
+            break;
+        }
+        n._returnCache = result;
+        if (n.displayEl) n.displayEl.textContent = result;
+      }
     }
   }
   enqueueOutputs(n, pinName) {
     this.links.filter((l) => l.from.node === n.id && l.from.pin === pinName && l.type === "action").forEach((l) => setTimeout(() => this.triggerNode(l.to.node), 10));
+  }
+  deleteNode(nodeId) {
+    const node = this.nodes[nodeId];
+    if (!node) return;
+    this.links = this.links.filter((link) => {
+      if (link.from.node === nodeId || link.to.node === nodeId) {
+        const dom2 = document.getElementById(link.id);
+        if (dom2) dom2.remove();
+        return false;
+      }
+      return true;
+    });
+    const dom = this.board.querySelector(`[data-id="${nodeId}"]`);
+    if (dom) dom.remove();
+    delete this.nodes[nodeId];
+    this.updateLinks();
   }
   bindGlobalListeners() {
     document.addEventListener("mousemove", this.handleMouseMove.bind(this));
@@ -16071,6 +16272,7 @@ var FluxCodexVertex = class _FluxCodexVertex {
   }
   runGraph() {
     this.updateValueDisplays();
+    Object.values(this.nodes).forEach((n) => n._returnCache = void 0);
     Object.values(this.nodes).filter((n) => n.category === "event" && n.title === "onLoad").forEach((n) => this.triggerNode(n.id));
   }
   compileGraph() {
@@ -17385,6 +17587,15 @@ var Editor = class {
       <button class="btn" onclick="app.editor.fluxCodexVertex.addNode('sin')">Sin</button>
       <button class="btn" onclick="app.editor.fluxCodexVertex.addNode('cos')">Cos</button>
       <button class="btn" onclick="app.editor.fluxCodexVertex.addNode('pi')">Pi</button>
+      <hr style="border:none; height:1px; background:rgba(255,255,255,0.03); margin:10px 0;">
+      <!-- COMPARISON NODES -->
+      <button class="btn" onclick="app.editor.fluxCodexVertex.addNode('equal')">Equal (==)</button>
+      <button class="btn" onclick="app.editor.fluxCodexVertex.addNode('notequal')">Not Equal (!=)</button>
+      <button class="btn" onclick="app.editor.fluxCodexVertex.addNode('greater')">Greater (>)</button>
+      <button class="btn" onclick="app.editor.fluxCodexVertex.addNode('less')">Less (<)</button>
+      <button class="btn" onclick="app.editor.fluxCodexVertex.addNode('greaterEqual')">Greater/Equal (>=)</button>
+      <button class="btn" onclick="app.editor.fluxCodexVertex.addNode('lessEqual')">Less/Equal (<=)</button>
+
       <hr style="border:none; height:1px; background:rgba(255,255,255,0.03); margin:10px 0;">
       <button class="btn" onclick="app.editor.fluxCodexVertex.compileGraph()">Save to LocalStorage</button>
       <button class="btn" onclick="clearStorage()">Clear Save</button>

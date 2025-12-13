@@ -1,5 +1,42 @@
+/**
+ * @filename
+ * fluxCodexVertex.js
+ *
+ * @Licence
+ * This Source Code Form is subject to the terms of the
+ * Mozilla Public License, v. 2.0.
+ * If a copy of the MPL was not distributed with this file,
+ * You can obtain one at https://mozilla.org/MPL/2.0/.
+ *
+ * Copyright (c) 2025 Nikola Lukić
+ * 
+ * @Note
+ * License summary for fluxCodexVertex.js (MPL 2.0):
+ * 
+ * ✔ You MAY:
+ * - Use this file in commercial and proprietary software
+ * - Modify and redistribute this file
+ * - Combine it with closed-source code
+ * - Sell software that includes this file
+ * 
+ * ✘ You MUST:
+ * - Publish the source code of this file if you modify it
+ * - Keep this file under MPL 2.0
+ * - Provide a link to the MPL 2.0 license
+ * - Preserve copyright notices
+ * 
+ * ✔ You do NOT have to:
+ * - Open-source your entire project
+ * - Publish files that merely import or use this file
+ * - Release unrelated source code
+ * 
+ * - MPL applies ONLY to this file
+ */
+
 export default class FluxCodexVertex {
   constructor(boardId, boardWrapId, logId, methodsManager) {
+    this.debugMode = true;
+
     this.methodsManager = methodsManager;
     // --- DOM Elements ---
     this.board = document.getElementById(boardId);
@@ -31,9 +68,14 @@ export default class FluxCodexVertex {
     this.init();
 
     document.addEventListener('keydown', (e) => {
-      //
       if(e.key == 'F6') {
+        e.preventDefault();
         this.runGraph();
+      } else if(e.key === "Delete" || e.key === "Backspace") {
+        if(this.state.selectedNode) {
+          this.deleteNode(this.state.selectedNode);
+          this.state.selectedNode = null;
+        }
       }
 
     })
@@ -95,26 +137,26 @@ export default class FluxCodexVertex {
     return false;
   }
 
-adaptNodeToMethod(node, methodItem) {
-  const fn = this.methodsManager.compileFunction(methodItem.code);
+  adaptNodeToMethod(node, methodItem) {
+    const fn = this.methodsManager.compileFunction(methodItem.code);
 
-  // Reset pins except execution pins
-  node.inputs = [{name: "exec", type: "action"}];
-  node.outputs = [{name: "execOut", type: "action"}];
+    // Reset pins except execution pins
+    node.inputs = [{name: "exec", type: "action"}];
+    node.outputs = [{name: "execOut", type: "action"}];
 
-  // Dynamic input pins
-  const args = this.getArgNames(fn);
-  args.forEach(arg => node.inputs.push({name: arg, type: "any"}));
+    // Dynamic input pins
+    const args = this.getArgNames(fn);
+    args.forEach(arg => node.inputs.push({name: arg, type: "value"}));
 
-  // Dynamic return pin
-  if(this.hasReturn(fn)) node.outputs.push({name: "return", type: "any"});
+    // Dynamic return pin
+    if(this.hasReturn(fn)) node.outputs.push({name: "return", type: "value"});
 
-  node.attachedMethod = methodItem.name;
-  node.fn = fn;
+    node.attachedMethod = methodItem.name;
+    node.fn = fn;
 
-  // 🔹 Refresh the DOM so new pins are clickable
-  this.updateNodeDOM(node.id);
-}
+    // 🔹 Refresh the DOM so new pins are clickable
+    this.updateNodeDOM(node.id);
+  }
 
   populateMethodsSelect(selectEl) {
     selectEl.innerHTML = '';
@@ -190,7 +232,7 @@ adaptNodeToMethod(node, methodItem) {
     const to = this.state.connecting.out ? {node: nodeId, pin: pinName} : this.state.connecting;
 
     // Prevent duplicate links and type mismatch
-    if(from.pin && to.pin && this.state.connecting.type === type) {
+    if(from.pin && to.pin && this.isTypeCompatible(this.state.connecting.type, type)) {
       const exists = this.links.find(l =>
         l.from.node === from.node && l.from.pin === from.pin &&
         l.to.node === to.node && l.to.pin === to.pin
@@ -207,126 +249,163 @@ adaptNodeToMethod(node, methodItem) {
     this.state.connecting = null;
   }
 
-_pinElement(pinSpec, isOutput, nodeId) {
-  const pin = document.createElement('div');
-  pin.className = 'pin ' + pinSpec.type;
-  pin.dataset.pin = pinSpec.name;
-  pin.dataset.type = pinSpec.type;
-  pin.dataset.io = isOutput ? 'out' : 'in';
+  normalizePinType(type) {
+    if(!type) return 'any';
+    if(type === 'number') return 'value';
+    return type;
+  }
 
-  // Dot for connecting
-  const dot = document.createElement('div');
-  dot.className = 'dot';
-  pin.appendChild(dot);
+  _pinElement(pinSpec, isOutput, nodeId) {
+    const pin = document.createElement('div');
 
-  // Label
-  const label = document.createElement('span');
-  label.className = 'pin-label';
-  label.textContent = pinSpec.name;
-  label.style.fontSize = '10px';
-  label.style.marginLeft = '4px';
-  pin.appendChild(label);
+    // CSS class with type
+    pin.className = `pin pin-${pinSpec.type}`;
+    pin.dataset.pin = pinSpec.name;
+    pin.dataset.type = pinSpec.type;
+    pin.dataset.io = isOutput ? 'out' : 'in';
+    pin.dataset.node = nodeId;
 
-  pin.addEventListener('mousedown', (e) => this.startConnect(nodeId, pinSpec.name, pinSpec.type, isOutput));
-  pin.addEventListener('mouseup', (e) => this.finishConnect(nodeId, pinSpec.name, pinSpec.type, isOutput));
+    // Dot (connect point)
+    const dot = document.createElement('div');
+    dot.className = 'dot';
+    pin.appendChild(dot);
 
-  return pin;
-}
+    // Pin Label
+    const label = document.createElement('span');
+    label.className = 'pin-label';
+    label.textContent = pinSpec.name;
+    pin.appendChild(label);
 
-createNodeDOM(spec) {
-  const el = document.createElement('div');
-  el.className = 'node ' + (spec.category || '');
-  el.style.left = spec.x + 'px';
-  el.style.top = spec.y + 'px';
-  el.dataset.id = spec.id;
+    // Connect events
+    pin.addEventListener('mousedown', () =>
+      this.startConnect(nodeId, pinSpec.name, pinSpec.type, isOutput)
+    );
 
-  // --- Header ---
-  const header = document.createElement('div');
-  header.className = 'header';
-  header.textContent = spec.title;
-  el.appendChild(header);
+    pin.addEventListener('mouseup', () =>
+      this.finishConnect(nodeId, pinSpec.name, pinSpec.type, isOutput)
+    );
 
-  // --- Body ---
-  const body = document.createElement('div');
-  body.className = 'body';
+    return pin;
+  }
 
-  // --- Pins row ---
-  const row = document.createElement('div');
-  row.className = 'pin-row';
-  const left = document.createElement('div'); left.className = 'pins-left';
-  const right = document.createElement('div'); right.className = 'pins-right';
+  createNodeDOM(spec) {
+    const el = document.createElement('div');
+    el.className = 'node ' + (spec.category || '');
+    el.style.left = spec.x + 'px';
+    el.style.top = spec.y + 'px';
+    el.dataset.id = spec.id;
 
-  (spec.inputs || []).forEach(pin => left.appendChild(this._pinElement(pin, false, spec.id)));
-  (spec.outputs || []).forEach(pin => right.appendChild(this._pinElement(pin, true, spec.id)));
+    // --- Header ---
+    const header = document.createElement('div');
+    header.className = 'header';
+    header.textContent = spec.title;
+    el.appendChild(header);
 
-  row.appendChild(left);
-  row.appendChild(right);
-  body.appendChild(row);
+    // --- Body ---
+    const body = document.createElement('div');
+    body.className = 'body';
 
-  // --- Display / special inputs ---
-  if(spec.title === 'GenRandInt' && spec.fields) {
-    const container = document.createElement('div');
-    container.className = 'genrand-inputs';
-    spec.fields.forEach(f => {
-      const input = document.createElement('input');
-      input.type = 'number';
-      input.value = f.value;
-      input.style.width = '40px';
-      input.style.marginRight = '4px';
-      input.addEventListener('input', e => f.value = e.target.value);
-      container.appendChild(input);
+    // --- Pin row ---
+    const row = document.createElement('div');
+    row.className = 'pin-row';
 
-      const lbl = document.createElement('span');
-      lbl.textContent = f.key;
-      lbl.style.fontSize = '10px';
-      lbl.style.marginRight = '6px';
-      container.appendChild(lbl);
+    const left = document.createElement('div');
+    left.className = 'pins-left';
+
+    const right = document.createElement('div');
+    right.className = 'pins-right';
+
+    // Normalize pins before building DOM
+    (spec.inputs || []).forEach(pin => {
+      pin.type = this.normalizePinType(pin.type);
+      left.appendChild(this._pinElement(pin, false, spec.id));
     });
-    body.appendChild(container);
-  } else if(spec.category === 'value' || spec.category === 'math' || spec.title === 'Print') {
-    const display = document.createElement('div');
-    display.className = 'value-display';
-    display.textContent = '?';
-    spec.displayEl = display;
-    body.appendChild(display);
+
+    (spec.outputs || []).forEach(pin => {
+      pin.type = this.normalizePinType(pin.type);
+      right.appendChild(this._pinElement(pin, true, spec.id));
+    });
+
+    row.appendChild(left);
+    row.appendChild(right);
+    body.appendChild(row);
+
+    // --- Value display ---
+    if(spec.fields && spec.title === 'GenRandInt') {
+      const container = document.createElement('div');
+      container.className = 'genrand-inputs';
+
+      spec.fields.forEach(f => {
+        const input = document.createElement('input');
+        input.type = 'number';
+        input.value = f.value;
+        input.style.width = '40px';
+        input.style.marginRight = '4px';
+        input.addEventListener('input', e => f.value = e.target.value);
+        container.appendChild(input);
+
+        const label = document.createElement('span');
+        label.textContent = f.key;
+        label.className = 'field-label';
+        container.appendChild(label);
+      });
+
+      body.appendChild(container);
+    }
+    else if(spec.category === 'math' || spec.category === 'value' || spec.title === 'Print') {
+      const display = document.createElement('div');
+      display.className = 'value-display';
+      display.textContent = '?';
+      spec.displayEl = display;
+      body.appendChild(display);
+    }
+
+    // --- Function Method Selector ---
+    if(spec.category === 'action' && !spec.builtIn) {
+      const select = document.createElement('select');
+      select.className = 'method-select';
+      select.style.cssText = 'width:100%; margin-top:6px;';
+
+      body.appendChild(select);
+
+      this.populateMethodsSelect(select);
+      if(spec.attachedMethod) {
+        select.value = spec.attachedMethod;
+      }
+
+      select.addEventListener('change', (e) => {
+        const selected = this.methodsManager.methodsContainer.find(
+          m => m.name === e.target.value
+        );
+        if(selected) {
+          this.adaptNodeToMethod(spec, selected);
+        }
+      });
+    }
+
+    el.appendChild(body);
+
+    // --- Dragging ---
+    header.addEventListener('mousedown', e => {
+      e.preventDefault();
+      this.state.draggingNode = el;
+      const rect = el.getBoundingClientRect();
+      const bx = this.board.getBoundingClientRect();
+      this.state.dragOffset = [
+        e.clientX - rect.left + bx.left,
+        e.clientY - rect.top + bx.top
+      ];
+      document.body.style.cursor = 'grabbing';
+    });
+
+    // --- Selecting ---
+    el.addEventListener('click', e => {
+      e.stopPropagation();
+      this.selectNode(spec.id);
+    });
+
+    return el;
   }
-
-  // --- Method select (only for action/function, exclude Print/Timeout) ---
-  if(spec.category === 'action' && spec.title !== 'Print' && spec.title !== 'SetTimeout') {
-    const select = document.createElement('select');
-    select.className = 'method-select';
-    select.style.cssText = 'width:100%; margin-top:6px;';
-    body.appendChild(select);
-    this.populateMethodsSelect(select);
-
-    if(spec.attachedMethod) select.value = spec.attachedMethod;
-
-    select.onchange = (e) => {
-      const selected = this.methodsManager.methodsContainer.find(m => m.name === e.target.value);
-      if(selected) this.adaptNodeToMethod(spec, selected);
-    };
-  }
-
-  el.appendChild(body);
-
-  // --- Drag header ---
-  header.addEventListener('mousedown', e => {
-    e.preventDefault();
-    this.state.draggingNode = el;
-    const rect = el.getBoundingClientRect();
-    const bx = this.board.getBoundingClientRect();
-    this.state.dragOffset = [e.clientX - rect.left + bx.left, e.clientY - rect.top + bx.top];
-    document.body.style.cursor = 'grabbing';
-  });
-
-  // --- Select node ---
-  el.addEventListener('click', e => {
-    e.stopPropagation();
-    this.selectNode(spec.id);
-  });
-
-  return el;
-}
 
   selectNode(id) {
     if(this.state.selectedNode) {
@@ -334,6 +413,15 @@ createNodeDOM(spec) {
     }
     this.state.selectedNode = id;
     document.querySelector(`.node[data-id="${id}"]`)?.classList.add('selected');
+  }
+
+  isTypeCompatible(fromType, toType) {
+    if(fromType === 'action' || toType === 'action') {
+      return fromType === toType;
+    }
+    if(fromType === toType) return true;
+    if(fromType === 'any' || toType === 'any') return true;
+    return false;
   }
 
   addNode(type) {
@@ -353,9 +441,18 @@ createNodeDOM(spec) {
         outputs: [{name: 'execOut', type: 'action'}]
       }),
       'if': (id, x, y) => ({
-        id, title: 'If', x, y, category: 'control',
-        inputs: [{name: 'exec', type: 'action'}, {name: 'condition', type: 'value'}],
-        outputs: [{name: 'true', type: 'action'}, {name: 'false', type: 'action'}]
+        id, title: 'if', x, y, category: 'logic',
+        inputs: [
+          {name: 'exec', type: 'action'},
+          {name: 'condition', type: 'boolean'}
+        ],
+        outputs: [
+          {name: 'true', type: 'action'},
+          {name: 'false', type: 'action'}
+        ],
+        fields: [
+          {key: 'condition', value: true} // default literal for condition
+        ]
       }),
       'genrand': (id, x, y) => ({
         id, title: 'GenRandInt', x, y, category: 'value',
@@ -363,10 +460,27 @@ createNodeDOM(spec) {
         fields: [{key: 'min', value: '0'}, {key: 'max', value: '10'}]
       }),
       'print': (id, x, y) => ({
-        id, title: 'Print', x, y, category: 'action',
-        inputs: [{name: 'exec', type: 'action'}, {name: 'value', type: 'value'}],
-        outputs: [{name: 'execOut', type: 'action'}],
-        fields: [{key: 'label', value: 'Result'}],
+        id,
+        title: 'Print',
+        x,
+        y,
+        category: 'actionprint',
+
+        // FLOW + DATA
+        inputs: [
+          {name: 'exec', type: 'action'},
+          {name: 'value', type: 'any'}   // 👈 value to print (ANY is correct)
+        ],
+
+        outputs: [
+          {name: 'execOut', type: 'action'}
+        ],
+
+        // UI-only literal fields (NOT pins)
+        fields: [
+          {key: 'label', value: 'Result'}
+        ],
+
         builtIn: true
       }),
       'timeout': (id, x, y) => ({
@@ -383,7 +497,44 @@ createNodeDOM(spec) {
       'div': (id, x, y) => ({id, title: 'Div', x, y, category: 'math', inputs: [{name: 'a', type: 'value'}, {name: 'b', type: 'value'}], outputs: [{name: 'result', type: 'value'}]}),
       'sin': (id, x, y) => ({id, title: 'Sin', x, y, category: 'math', inputs: [{name: 'a', type: 'value'}], outputs: [{name: 'result', type: 'value'}]}),
       'cos': (id, x, y) => ({id, title: 'Cos', x, y, category: 'math', inputs: [{name: 'a', type: 'value'}], outputs: [{name: 'result', type: 'value'}]}),
-      'pi': (id, x, y) => ({id, title: 'Pi', x, y, category: 'math', inputs: [], outputs: [{name: 'result', type: 'value'}]})
+      'pi': (id, x, y) => ({id, title: 'Pi', x, y, category: 'math', inputs: [], outputs: [{name: 'result', type: 'value'}]}),
+      // comparation nodes
+      'greater': (id, x, y) => ({
+        id, title: 'A > B', x, y, category: 'compare',
+        inputs: [{name: 'A', type: 'number'}, {name: 'B', type: 'number'}],
+        outputs: [{name: 'result', type: 'boolean'}]
+      }),
+
+      'less': (id, x, y) => ({
+        id, title: 'A < B', x, y, category: 'compare',
+        inputs: [{name: 'A', type: 'number'}, {name: 'B', type: 'number'}],
+        outputs: [{name: 'result', type: 'boolean'}]
+      }),
+
+      'equal': (id, x, y) => ({
+        id, title: 'A == B', x, y, category: 'compare',
+        inputs: [{name: 'A', type: 'any'}, {name: 'B', type: 'any'}],
+        outputs: [{name: 'result', type: 'boolean'}]
+      }),
+
+      'notequal': (id, x, y) => ({
+        id, title: 'A != B', x, y, category: 'compare',
+        inputs: [{name: 'A', type: 'any'}, {name: 'B', type: 'any'}],
+        outputs: [{name: 'result', type: 'boolean'}]
+      }),
+
+      'greaterEqual': (id, x, y) => ({
+        id, title: 'A >= B', x, y, category: 'compare',
+        inputs: [{name: 'A', type: 'number'}, {name: 'B', type: 'number'}],
+        outputs: [{name: 'result', type: 'boolean'}]
+      }),
+
+      'lessEqual': (id, x, y) => ({
+        id, title: 'A <= B', x, y, category: 'compare',
+        inputs: [{name: 'A', type: 'number'}, {name: 'B', type: 'number'}],
+        outputs: [{name: 'result', type: 'boolean'}]
+      }),
+
     };
 
     // Generate node spec
@@ -414,42 +565,50 @@ createNodeDOM(spec) {
     }
   }
 
-  getValue(nodeId, pinName, visited = new Set()) {
-    const n = this.nodes[nodeId];
-    if(!n) return 0;
+getValue(nodeId, pinName, visited = new Set()) {
+  const node = this.nodes[nodeId];
+  if(!node || visited.has(nodeId)) return undefined;
+  visited.add(nodeId);
 
-    // Return cached dynamic function output
-    if(n.attachedMethod && pinName === "return") return n._returnCache ?? 0;
+  console.log(`[GET] Node ${nodeId} pin "${pinName}"`);
 
-    let linkToSource = null;
-    for(const link of this.links) {
-      if(link.to.node === nodeId && link.to.pin === pinName && link.type === 'value') {linkToSource = link; break;}
-    }
-    if(linkToSource) {
-      const sourceNodeId = linkToSource.from.node;
-      if(visited.has(sourceNodeId)) return 0;
-      const newVisited = new Set(visited); newVisited.add(nodeId);
-      return this.getValue(sourceNodeId, linkToSource.from.pin, newVisited);
-    }
-
-    if(n.title === 'GenRandInt') {
-      const min = +(n.fields?.find(f => f.key === 'min')?.value) || 0;
-      const max = +(n.fields?.find(f => f.key === 'max')?.value) || 10;
-      return Math.floor(Math.random() * (max - min + 1) + min);
-    }
-    if(n.title === 'Pi') return Math.PI;
-
-    const vA = +this.getValue(nodeId, 'a', visited) || 0;
-    const vB = +this.getValue(nodeId, 'b', visited) || 0;
-    if(n.title === 'Add') return vA + vB;
-    if(n.title === 'Sub') return vA - vB;
-    if(n.title === 'Mul') return vA * vB;
-    if(n.title === 'Div') return vB ? vA / vB : 0;
-    if(n.title === 'Sin') return Math.sin(vA);
-    if(n.title === 'Cos') return Math.cos(vA);
-
-    return 0;
+  // 1️⃣ Check literal fields
+  const field = node.fields?.find(f => f.key === pinName);
+  if(field !== undefined) {
+    console.log(`  → Using literal field "${pinName}":`, field.value);
+    return field.value;
   }
+
+  // 2️⃣ Check linked input pin
+  const link = this.links.find(l => l.to.node === nodeId && l.to.pin === pinName);
+  if(link) {
+    console.log(`  → Linked from Node ${link.from.node} pin ${link.from.pin}`);
+    return this.getValue(link.from.node, link.from.pin, visited);
+  }
+
+  // 3️⃣ Check input pin (not linked)
+  const inputPin = node.inputs?.find(p => p.name === pinName);
+  if(inputPin) {
+    console.log(`  → No link, using literal/default for input pin "${pinName}"`);
+    return inputPin.default ?? 0;
+  }
+
+  // 4️⃣ Guard for nodes that produce output
+  if(node.outputs?.some(o => o.name === pinName)) {
+    // If not evaluated, run node
+    if(node._returnCache === undefined) {
+      console.log(`  → Node ${nodeId} output "${pinName}" not cached, triggering node...`);
+      this.triggerNode(nodeId);  // Execute node to populate _returnCache
+    }
+    console.log(`  → Using _returnCache for output pin "${pinName}":`, node._returnCache);
+    return node._returnCache;
+  }
+
+  console.log(`  → Pin "${pinName}" not found, returning undefined`);
+  return undefined;
+}
+
+
 
   updateValueDisplays() {
     Object.values(this.nodes).forEach(n => {
@@ -460,14 +619,24 @@ createNodeDOM(spec) {
   }
 
   triggerNode(id) {
-    const n = this.nodes[id]; if(!n) return;
+    const n = this.nodes[id];
+    if(!n) return;
+
     const el = document.querySelector(`.node[data-id="${id}"] .header`);
-    if(el) {el.style.filter = 'brightness(1.5)'; setTimeout(() => el.style.filter = 'none', 200);}
+    if(el) {
+      el.style.filter = 'brightness(1.5)';
+      setTimeout(() => el.style.filter = 'none', 200);
+    }
 
-    if(n.category === 'event') {this.enqueueOutputs(n, 'exec'); return;}
+    // Event nodes
+    if(n.category === 'event') {
+      this.enqueueOutputs(n, 'exec');
+      return;
+    }
 
-    else if(n.category === 'action' || n.category === 'timer') {
-      // --- STEP 2: execute attached method
+    // Action/Print/Timer nodes
+    if(n.category === 'action' || n.category === 'timer' || n.category === 'actionprint') {
+      // Execute attached method if exists
       this._executeAttachedMethod(n);
 
       // Built-in nodes
@@ -483,18 +652,112 @@ createNodeDOM(spec) {
         setTimeout(() => this.enqueueOutputs(n, 'execOut'), delay);
         return;
       }
+
       this.enqueueOutputs(n, 'execOut');
+      return;
     }
 
-    else if(n.category === 'control' && n.title === 'If') {
-      const condition = this.getValue(id, 'condition');
+    // IF node
+    else if(n.category === 'logic' && n.title === 'if') {
+      // Evaluate condition
+      let condition = this.getValue(id, 'condition');
+
+      // If no literal and no link, check connected Compare node output
+      if(condition === undefined) {
+        const link = this.links.find(l => l.to.node === id && l.to.pin === 'condition');
+        if(link) {
+          condition = this.getValue(link.from.node, link.from.pin);
+        }
+      }
+
+      console.log('IF node', id, 'evaluated condition:', condition);
       this.enqueueOutputs(n, condition ? 'true' : 'false');
     }
+    // Math/value nodes
+    if(['math', 'value', 'compare'].includes(n.category)) {
+
+      // --- Comparison nodes ---
+      if(n.category === 'compare') {
+        const a = this.getValue(id, 'A');
+        const b = this.getValue(id, 'B');
+        let result;
+        switch(n.title) {
+          case 'A > B': result = a > b; break;
+          case 'A < B': result = a < b; break;
+          case 'A == B': result = a == b; break;
+          case 'A != B': result = a != b; break;
+          case 'A >= B': result = a >= b; break;
+          case 'A <= B': result = a <= b; break;
+        }
+        n._returnCache = result;
+        if(n.displayEl) n.displayEl.textContent = result;
+      }
+
+      // --- Random Int ---
+      if(n.title === 'GenRandInt') {
+        const min = parseInt(this.getValue(id, 'min')) || 0;
+        const max = parseInt(this.getValue(id, 'max')) || 10;
+        const result = Math.floor(Math.random() * (max - min + 1)) + min;
+        n._returnCache = result;
+        if(n.displayEl) n.displayEl.textContent = result;
+      }
+
+      // --- Math nodes ---
+      else if(['Add', 'Sub', 'Mul', 'Div', 'Sin', 'Cos', 'Pi'].includes(n.title)) {
+        let a = parseFloat(this.getValue(id, 'a')) || 0;
+        let b = parseFloat(this.getValue(id, 'b')) || 0;
+        let result = 0;
+        switch(n.title) {
+          case 'Add': result = a + b; break;
+          case 'Sub': result = a - b; break;
+          case 'Mul': result = a * b; break;
+          case 'Div': result = b !== 0 ? a / b : 0; break;
+          case 'Sin': result = Math.sin(a); break;
+          case 'Cos': result = Math.cos(a); break;
+          case 'Pi': result = Math.PI; break;
+        }
+        n._returnCache = result;
+        if(n.displayEl) n.displayEl.textContent = result;
+      }
+    }
+
   }
 
   enqueueOutputs(n, pinName) {
     this.links.filter(l => l.from.node === n.id && l.from.pin === pinName && l.type === 'action')
       .forEach(l => setTimeout(() => this.triggerNode(l.to.node), 10));
+  }
+
+  deleteNode(nodeId) {
+    const node = this.nodes[nodeId];
+    if(!node) return;
+
+    // 1) Remove links related to this node
+    this.links = this.links.filter(link => {
+
+      // link.from = { node, pin }
+      // link.to   = { node, pin }
+
+      if(link.from.node === nodeId || link.to.node === nodeId) {
+
+        // Also remove DOM SVG line
+        const dom = document.getElementById(link.id);
+        if(dom) dom.remove();
+
+        return false; // remove from array
+      }
+      return true;
+    });
+
+    // 2) Remove the node DOM itself
+    const dom = this.board.querySelector(`[data-id="${nodeId}"]`);
+    if(dom) dom.remove();
+
+    // 3) Remove from internal registry
+    delete this.nodes[nodeId];
+
+    // 4) Update UI
+    this.updateLinks();
   }
 
   bindGlobalListeners() {
@@ -552,7 +815,11 @@ createNodeDOM(spec) {
     });
   }
 
-  runGraph() {this.updateValueDisplays(); Object.values(this.nodes).filter(n => n.category === 'event' && n.title === 'onLoad').forEach(n => this.triggerNode(n.id));}
+  runGraph() {
+    this.updateValueDisplays();
+    Object.values(this.nodes).forEach(n => n._returnCache = undefined);
+    Object.values(this.nodes).filter(n => n.category === 'event' && n.title === 'onLoad').forEach(n => this.triggerNode(n.id));
+  }
 
   compileGraph() {
     const bundle = {nodes: this.nodes, links: this.links, nodeCounter: this.nodeCounter, linkCounter: this.linkCounter, pan: this.state.pan};
