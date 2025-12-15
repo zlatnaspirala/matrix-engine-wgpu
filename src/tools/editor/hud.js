@@ -44,7 +44,7 @@ export default class EditorHud {
           // infly 
           let o = {
             physics: true,
-            path: name,
+            path: getPATH,
             index: this.core.mainRenderBundle.length
           }
           document.dispatchEvent(new CustomEvent('web.editor.addGlb', {
@@ -54,7 +54,7 @@ export default class EditorHud {
           // infly
           let o = {
             physics: false,
-            path: name,
+            path: getPATH,
             index: this.core.mainRenderBundle.length
           }
           document.dispatchEvent(new CustomEvent('web.editor.addGlb', {
@@ -163,6 +163,7 @@ export default class EditorHud {
       <div id="start-watch" class="drop-item">🛠️ Watch</div>
       <div id="stop-watch" class="drop-item">🛠️ Stop Watch</div>
       <div class="drop-item">🛠️ Build</div>
+      <div id="start-refresh" class="drop-item">🛠️ Refresh</div>
       </div>
     </div>
 
@@ -313,6 +314,10 @@ export default class EditorHud {
         }
       }));
     });
+
+    byId('start-refresh').onclick = () => {
+      location.reload(true);
+    }
 
     // OBJECT LEVEL
     if(byId('addCube')) byId('addCube').addEventListener('click', () => {
@@ -1212,14 +1217,16 @@ class SceneObjectProperty {
   }
 
   addEditorDeleteAction(currSceneObj, parentDOM) {
-    console.log(".............DELETE OBJECT..............")
     this.propName.innerHTML += `<div style='display:flex;'>
       <div style="align-content: center;color:red;">Delete sceneObject:</div>
       <div><button  data-sceneobject='${currSceneObj.name}' id='delete-${currSceneObj.name}'>DELETE</button></div>
     </div>`;
     byId(`delete-${currSceneObj.name}`).addEventListener('click', () => {
+      if(this.core.mainRenderBundle.length <= 1) {
+        alert("WARN - SCENE IS EMPTY IN EDITOR MODE YOU WILL GOT FREEZE - After adding first obj again you must refresh!");
+      }
       document.dispatchEvent(new CustomEvent('web.editor.delete', {
-        detail: `${currSceneObj.name}`
+        detail: currSceneObj.name
       }));
     });
   }

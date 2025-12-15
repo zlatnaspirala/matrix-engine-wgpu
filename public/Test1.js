@@ -15499,7 +15499,7 @@ var EditorProvider = class {
     this.addEditorEvents();
   }
   getNameFromPath(p) {
-    return p.split(/[/\\]/).pop().replace(/\.[^/.]+$/, "") + this.core.mainRenderBundle.length;
+    return p.split(/[/\\]/).pop().replace(/\.[^/.]+$/, "");
   }
   addEditorEvents() {
     document.addEventListener("web.editor.input", (e) => {
@@ -15556,7 +15556,7 @@ var EditorProvider = class {
       this.core.addGlbObj({
         material: { type: "power", useTextureFromGlb: true },
         scale: [2, 2, 2],
-        position: { x: 0, y: 0, z: -50 },
+        position: { x: 0, y: 0, z: -20 },
         name: this.getNameFromPath(e.detail.path),
         texturesPaths: ["./res/meshes/glb/textures/mutant_origin.png"]
       }, null, glbFile01);
@@ -16788,7 +16788,7 @@ var EditorHud = class {
         if (confirm("\u269B Enable physics (Ammo)?")) {
           let o = {
             physics: true,
-            path: name,
+            path: getPATH,
             index: this.core.mainRenderBundle.length
           };
           document.dispatchEvent(new CustomEvent("web.editor.addGlb", {
@@ -16797,7 +16797,7 @@ var EditorHud = class {
         } else {
           let o = {
             physics: false,
-            path: name,
+            path: getPATH,
             index: this.core.mainRenderBundle.length
           };
           document.dispatchEvent(new CustomEvent("web.editor.addGlb", {
@@ -16897,6 +16897,7 @@ var EditorHud = class {
       <div id="start-watch" class="drop-item">\u{1F6E0}\uFE0F Watch</div>
       <div id="stop-watch" class="drop-item">\u{1F6E0}\uFE0F Stop Watch</div>
       <div class="drop-item">\u{1F6E0}\uFE0F Build</div>
+      <div id="start-refresh" class="drop-item">\u{1F6E0}\uFE0F Refresh</div>
       </div>
     </div>
 
@@ -17030,6 +17031,9 @@ var EditorHud = class {
         }
       }));
     });
+    byId("start-refresh").onclick = () => {
+      location.reload(true);
+    };
     if (byId("addCube")) byId("addCube").addEventListener("click", () => {
       let o = {
         physics: false,
@@ -17773,14 +17777,16 @@ var SceneObjectProperty = class {
     });
   }
   addEditorDeleteAction(currSceneObj, parentDOM) {
-    console.log(".............DELETE OBJECT..............");
     this.propName.innerHTML += `<div style='display:flex;'>
       <div style="align-content: center;color:red;">Delete sceneObject:</div>
       <div><button  data-sceneobject='${currSceneObj.name}' id='delete-${currSceneObj.name}'>DELETE</button></div>
     </div>`;
     byId(`delete-${currSceneObj.name}`).addEventListener("click", () => {
+      if (this.core.mainRenderBundle.length <= 1) {
+        alert("WARN - SCENE IS EMPTY IN EDITOR MODE YOU WILL GOT FREEZE - After adding first obj again you must refresh!");
+      }
       document.dispatchEvent(new CustomEvent("web.editor.delete", {
-        detail: `${currSceneObj.name}`
+        detail: currSceneObj.name
       }));
     });
   }
@@ -18052,14 +18058,6 @@ var Editor = class {
       <button class="btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('greaterEqual')">Greater/Equal (>=)</button>
       <button class="btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('lessEqual')">Less/Equal (<=)</button>
       <hr style="border:none; height:1px; background:rgba(255,255,255,0.03); margin:10px 0;">
-      <span>Variables</span>
-      // <button class="btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getNumber')">number</button>
-      // <button class="btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getBoolean')">boolean</button>
-      // <button class="btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getString')">string</button>
-      // <button class="btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setNumber')">setNumber</button>
-      // <button class="btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setBoolean')">setBoolean</button>
-      // <button class="btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setString')">setString</button>
-
       <hr style="border:none; height:1px; background:rgba(255,255,255,0.03); margin:10px 0;">
       <span>Compile FluxCodexVertex</span>
       <button class="btnLeftBox" onclick="app.editor.fluxCodexVertex.compileGraph()">Save to LocalStorage</button>
@@ -18309,6 +18307,9 @@ var MatrixEngineWGPU = class {
   }
   getSceneObjectByName(name) {
     return this.mainRenderBundle.find((sceneObject) => sceneObject.name === name);
+  }
+  getNameFromPath(p) {
+    return p.split(/[/\\]/).pop().replace(/\.[^/.]+$/, "");
   }
   removeSceneObjectByName(name) {
     const index = this.mainRenderBundle.findIndex((obj2) => obj2.name === name);
@@ -18988,273 +18989,18 @@ var app2 = new MatrixEngineWGPU(
   (app3) => {
     addEventListener("AmmoReady", async () => {
       app3.addLight();
+      addCube;
       downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, (m) => {
-        const texturesPaths2 = ["./res/meshes/blender/cube.png"];
+        let texturesPaths = ["./res/meshes/blender/cube.png"];
         app3.addMeshObj({
           position: { x: 0, y: 0, z: -20 },
           rotation: { x: 0, y: 0, z: 0 },
           rotationSpeed: { x: 0, y: 0, z: 0 },
-          texturesPaths: [texturesPaths2],
+          texturesPaths: [texturesPaths],
           name: "Cube_" + app3.mainRenderBundle.length,
           mesh: m.cube,
           raycast: { enabled: true, radius: 2 },
           physics: { enabled: false, geometry: "Cube" }
-        });
-      }, { scale: [1, 1, 1] });
-      setTimeout(() => {
-        app3.getSceneObjectByName("Cube_0").rotation.x = -3;
-      }, 200);
-      setTimeout(() => {
-        app3.getSceneObjectByName("Cube_0").position.SetX(7);
-      }, 200);
-      setTimeout(() => {
-        app3.getSceneObjectByName("Cube_0").position.SetY(7);
-      }, 200);
-      var glbFile01 = await fetch("res/meshes/env/tower.glb").then((res) => res.arrayBuffer().then((buf) => uploadGLBModel(buf, app3.device)));
-      const texturesPaths = ["./res/meshes/blender/cube.png"];
-      app3.addGlbObj({
-        position: { x: 0, y: 0, z: -20 },
-        rotation: { x: 0, y: 0, z: 0 },
-        rotationSpeed: { x: 0, y: 0, z: 0 },
-        texturesPaths: [texturesPaths],
-        scale: [2, 2, 2],
-        name: "Glb_" + app3.mainRenderBundle.length,
-        material: { type: "power", useTextureFromGlb: true },
-        raycast: { enabled: true, radius: 2 },
-        physics: { enabled: true, geometry: "Cube" }
-      }, null, glbFile01);
-      downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, (m) => {
-        const texturesPaths2 = ["./res/meshes/blender/cube.png"];
-        app3.addMeshObj({
-          position: { x: 0, y: 0, z: -20 },
-          rotation: { x: 0, y: 0, z: 0 },
-          rotationSpeed: { x: 0, y: 0, z: 0 },
-          texturesPaths: [texturesPaths2],
-          name: "Cube_" + app3.mainRenderBundle.length,
-          mesh: m.cube,
-          raycast: { enabled: true, radius: 2 },
-          physics: { enabled: true, geometry: "Cube" }
-        });
-      }, { scale: [1, 1, 1] });
-      downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, (m) => {
-        const texturesPaths2 = ["./res/meshes/blender/cube.png"];
-        app3.addMeshObj({
-          position: { x: 0, y: 0, z: -20 },
-          rotation: { x: 0, y: 0, z: 0 },
-          rotationSpeed: { x: 0, y: 0, z: 0 },
-          texturesPaths: [texturesPaths2],
-          name: "Cube_" + app3.mainRenderBundle.length,
-          mesh: m.cube,
-          raycast: { enabled: true, radius: 2 },
-          physics: { enabled: true, geometry: "Cube" }
-        });
-      }, { scale: [1, 1, 1] });
-      downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, (m) => {
-        const texturesPaths2 = ["./res/meshes/blender/cube.png"];
-        app3.addMeshObj({
-          position: { x: 0, y: 0, z: -20 },
-          rotation: { x: 0, y: 0, z: 0 },
-          rotationSpeed: { x: 0, y: 0, z: 0 },
-          texturesPaths: [texturesPaths2],
-          name: "Cube_" + app3.mainRenderBundle.length,
-          mesh: m.cube,
-          raycast: { enabled: true, radius: 2 },
-          physics: { enabled: true, geometry: "Cube" }
-        });
-      }, { scale: [1, 1, 1] });
-      downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, (m) => {
-        const texturesPaths2 = ["./res/meshes/blender/cube.png"];
-        app3.addMeshObj({
-          position: { x: 0, y: 0, z: -20 },
-          rotation: { x: 0, y: 0, z: 0 },
-          rotationSpeed: { x: 0, y: 0, z: 0 },
-          texturesPaths: [texturesPaths2],
-          name: "Cube_" + app3.mainRenderBundle.length,
-          mesh: m.cube,
-          raycast: { enabled: true, radius: 2 },
-          physics: { enabled: true, geometry: "Cube" }
-        });
-      }, { scale: [1, 1, 1] });
-      downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, (m) => {
-        const texturesPaths2 = ["./res/meshes/blender/cube.png"];
-        app3.addMeshObj({
-          position: { x: 0, y: 0, z: -20 },
-          rotation: { x: 0, y: 0, z: 0 },
-          rotationSpeed: { x: 0, y: 0, z: 0 },
-          texturesPaths: [texturesPaths2],
-          name: "Cube_" + app3.mainRenderBundle.length,
-          mesh: m.cube,
-          raycast: { enabled: true, radius: 2 },
-          physics: { enabled: true, geometry: "Cube" }
-        });
-      }, { scale: [1, 1, 1] });
-      downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, (m) => {
-        const texturesPaths2 = ["./res/meshes/blender/cube.png"];
-        app3.addMeshObj({
-          position: { x: 0, y: 0, z: -20 },
-          rotation: { x: 0, y: 0, z: 0 },
-          rotationSpeed: { x: 0, y: 0, z: 0 },
-          texturesPaths: [texturesPaths2],
-          name: "Cube_" + app3.mainRenderBundle.length,
-          mesh: m.cube,
-          raycast: { enabled: true, radius: 2 },
-          physics: { enabled: true, geometry: "Cube" }
-        });
-      }, { scale: [1, 1, 1] });
-      downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, (m) => {
-        const texturesPaths2 = ["./res/meshes/blender/cube.png"];
-        app3.addMeshObj({
-          position: { x: 0, y: 0, z: -20 },
-          rotation: { x: 0, y: 0, z: 0 },
-          rotationSpeed: { x: 0, y: 0, z: 0 },
-          texturesPaths: [texturesPaths2],
-          name: "Cube_" + app3.mainRenderBundle.length,
-          mesh: m.cube,
-          raycast: { enabled: true, radius: 2 },
-          physics: { enabled: true, geometry: "Cube" }
-        });
-      }, { scale: [1, 1, 1] });
-      downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, (m) => {
-        const texturesPaths2 = ["./res/meshes/blender/cube.png"];
-        app3.addMeshObj({
-          position: { x: 0, y: 0, z: -20 },
-          rotation: { x: 0, y: 0, z: 0 },
-          rotationSpeed: { x: 0, y: 0, z: 0 },
-          texturesPaths: [texturesPaths2],
-          name: "Cube_" + app3.mainRenderBundle.length,
-          mesh: m.cube,
-          raycast: { enabled: true, radius: 2 },
-          physics: { enabled: true, geometry: "Cube" }
-        });
-      }, { scale: [1, 1, 1] });
-      downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, (m) => {
-        const texturesPaths2 = ["./res/meshes/blender/cube.png"];
-        app3.addMeshObj({
-          position: { x: 0, y: 0, z: -20 },
-          rotation: { x: 0, y: 0, z: 0 },
-          rotationSpeed: { x: 0, y: 0, z: 0 },
-          texturesPaths: [texturesPaths2],
-          name: "Cube_" + app3.mainRenderBundle.length,
-          mesh: m.cube,
-          raycast: { enabled: true, radius: 2 },
-          physics: { enabled: true, geometry: "Cube" }
-        });
-      }, { scale: [1, 1, 1] });
-      downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, (m) => {
-        const texturesPaths2 = ["./res/meshes/blender/cube.png"];
-        app3.addMeshObj({
-          position: { x: 0, y: 0, z: -20 },
-          rotation: { x: 0, y: 0, z: 0 },
-          rotationSpeed: { x: 0, y: 0, z: 0 },
-          texturesPaths: [texturesPaths2],
-          name: "Cube_" + app3.mainRenderBundle.length,
-          mesh: m.cube,
-          raycast: { enabled: true, radius: 2 },
-          physics: { enabled: true, geometry: "Cube" }
-        });
-      }, { scale: [1, 1, 1] });
-      downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, (m) => {
-        const texturesPaths2 = ["./res/meshes/blender/cube.png"];
-        app3.addMeshObj({
-          position: { x: 0, y: 0, z: -20 },
-          rotation: { x: 0, y: 0, z: 0 },
-          rotationSpeed: { x: 0, y: 0, z: 0 },
-          texturesPaths: [texturesPaths2],
-          name: "Cube_" + app3.mainRenderBundle.length,
-          mesh: m.cube,
-          raycast: { enabled: true, radius: 2 },
-          physics: { enabled: true, geometry: "Cube" }
-        });
-      }, { scale: [1, 1, 1] });
-      downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, (m) => {
-        const texturesPaths2 = ["./res/meshes/blender/cube.png"];
-        app3.addMeshObj({
-          position: { x: 0, y: 0, z: -20 },
-          rotation: { x: 0, y: 0, z: 0 },
-          rotationSpeed: { x: 0, y: 0, z: 0 },
-          texturesPaths: [texturesPaths2],
-          name: "Cube_" + app3.mainRenderBundle.length,
-          mesh: m.cube,
-          raycast: { enabled: true, radius: 2 },
-          physics: { enabled: true, geometry: "Cube" }
-        });
-      }, { scale: [1, 1, 1] });
-      downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, (m) => {
-        const texturesPaths2 = ["./res/meshes/blender/cube.png"];
-        app3.addMeshObj({
-          position: { x: 0, y: 0, z: -20 },
-          rotation: { x: 0, y: 0, z: 0 },
-          rotationSpeed: { x: 0, y: 0, z: 0 },
-          texturesPaths: [texturesPaths2],
-          name: "Cube_" + app3.mainRenderBundle.length,
-          mesh: m.cube,
-          raycast: { enabled: true, radius: 2 },
-          physics: { enabled: true, geometry: "Cube" }
-        });
-      }, { scale: [1, 1, 1] });
-      downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, (m) => {
-        const texturesPaths2 = ["./res/meshes/blender/cube.png"];
-        app3.addMeshObj({
-          position: { x: 0, y: 0, z: -20 },
-          rotation: { x: 0, y: 0, z: 0 },
-          rotationSpeed: { x: 0, y: 0, z: 0 },
-          texturesPaths: [texturesPaths2],
-          name: "Cube_" + app3.mainRenderBundle.length,
-          mesh: m.cube,
-          raycast: { enabled: true, radius: 2 },
-          physics: { enabled: true, geometry: "Cube" }
-        });
-      }, { scale: [1, 1, 1] });
-      downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, (m) => {
-        const texturesPaths2 = ["./res/meshes/blender/cube.png"];
-        app3.addMeshObj({
-          position: { x: 0, y: 0, z: -20 },
-          rotation: { x: 0, y: 0, z: 0 },
-          rotationSpeed: { x: 0, y: 0, z: 0 },
-          texturesPaths: [texturesPaths2],
-          name: "Cube_" + app3.mainRenderBundle.length,
-          mesh: m.cube,
-          raycast: { enabled: true, radius: 2 },
-          physics: { enabled: true, geometry: "Cube" }
-        });
-      }, { scale: [1, 1, 1] });
-      downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, (m) => {
-        const texturesPaths2 = ["./res/meshes/blender/cube.png"];
-        app3.addMeshObj({
-          position: { x: 0, y: 0, z: -20 },
-          rotation: { x: 0, y: 0, z: 0 },
-          rotationSpeed: { x: 0, y: 0, z: 0 },
-          texturesPaths: [texturesPaths2],
-          name: "Cube_" + app3.mainRenderBundle.length,
-          mesh: m.cube,
-          raycast: { enabled: true, radius: 2 },
-          physics: { enabled: true, geometry: "Cube" }
-        });
-      }, { scale: [1, 1, 1] });
-      downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, (m) => {
-        const texturesPaths2 = ["./res/meshes/blender/cube.png"];
-        app3.addMeshObj({
-          position: { x: 0, y: 0, z: -20 },
-          rotation: { x: 0, y: 0, z: 0 },
-          rotationSpeed: { x: 0, y: 0, z: 0 },
-          texturesPaths: [texturesPaths2],
-          name: "Cube_" + app3.mainRenderBundle.length,
-          mesh: m.cube,
-          raycast: { enabled: true, radius: 2 },
-          physics: { enabled: true, geometry: "Cube" }
-        });
-      }, { scale: [1, 1, 1] });
-      downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, (m) => {
-        const texturesPaths2 = ["./res/meshes/blender/cube.png"];
-        app3.addMeshObj({
-          position: { x: 0, y: 0, z: -20 },
-          rotation: { x: 0, y: 0, z: 0 },
-          rotationSpeed: { x: 0, y: 0, z: 0 },
-          texturesPaths: [texturesPaths2],
-          name: "Cube_" + app3.mainRenderBundle.length,
-          mesh: m.cube,
-          raycast: { enabled: true, radius: 2 },
-          physics: { enabled: true, geometry: "Cube" }
         });
       }, { scale: [1, 1, 1] });
     });

@@ -14,7 +14,7 @@ export default class EditorProvider {
   }
 
   getNameFromPath(p) {
-    return p.split(/[/\\]/).pop().replace(/\.[^/.]+$/, "") + (this.core.mainRenderBundle.length);
+    return p.split(/[/\\]/).pop().replace(/\.[^/.]+$/, ""); // + (this.core.mainRenderBundle.length);
   }
 
   addEditorEvents() {
@@ -89,7 +89,7 @@ export default class EditorProvider {
       this.core.addGlbObj({
         material: {type: 'power', useTextureFromGlb: true},
         scale: [2, 2, 2],
-        position: {x: 0, y: 0, z: -50},
+        position: {x: 0, y: 0, z: -20},
         name: this.getNameFromPath(e.detail.path),
         texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
       }, null, glbFile01);
@@ -122,9 +122,7 @@ export default class EditorProvider {
     // delete
     document.addEventListener('web.editor.delete', (e) => {
       console.log("[web.editor.delete]: ", e.detail);
-      // e.detail.path = e.detail.path.replace('\\res', 'res');
-      // e.detail.path = e.detail.path.replace(/\\/g, '/');
-      // THIS MUST BE SAME LIKE SERVER VERSION OF ADD CUBE
+
       this.core.removeSceneObjectByName(e.detail);
     });
 

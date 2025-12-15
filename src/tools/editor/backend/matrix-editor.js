@@ -340,7 +340,7 @@ async function addCube(msg, ws) {
   const content = new CodeBuilder();
   content.addLine(` // ME START ${'Cube_' + msg.options.index} ${msg.action}`);
   content.addLine(` downloadMeshes({cube: "./res/meshes/blender/cube.obj"}, (m) => { `);
-  content.addLine(`   const texturesPaths = ['./res/meshes/blender/cube.png']; `);
+  content.addLine(`   let texturesPaths = ['./res/meshes/blender/cube.png']; `);
   content.addLine(`   app.addMeshObj({`);
   content.addLine(`     position: {x: 0, y: 0, z: -20}, rotation: {x: 0, y: 0, z: 0}, rotationSpeed: {x: 0, y: 0, z: 0},`);
   content.addLine(`     texturesPaths: [texturesPaths],`);
@@ -394,22 +394,26 @@ async function saveMethods(msg, ws) {
   });
 }
 
+function getNameFromPath(p) {
+  return p.split(/[/\\]/).pop().replace(/\.[^/.]+$/, "");
+}
+
 async function addGlb(msg, ws) { //msg.options.index
   const content = new CodeBuilder();
   msg.options.path = msg.options.path.replace(/\\/g, '/');
-  content.addLine(` // ME START ${'Glb_' + msg.options.index} `);
+  content.addLine(` // ME START ${getNameFromPath(msg.options.path)}`);
   content.addLine(` var glbFile01 = await fetch('${msg.options.path}').then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, app.device)));`);
-  content.addLine(`   const texturesPaths = ['./res/meshes/blender/cube.png']; `);
+  content.addLine(`   texturesPaths = ['./res/meshes/blender/cube.png']; `);
   content.addLine(`    app.addGlbObj({ `);
   content.addLine(`     position: {x: 0, y: 0, z: -20}, rotation: {x: 0, y: 0, z: 0}, rotationSpeed: {x: 0, y: 0, z: 0},`);
   content.addLine(`     texturesPaths: [texturesPaths],`);
   content.addLine(`     scale: [2, 2, 2],`);
-  content.addLine(`     name: 'Glb_' + app.mainRenderBundle.length,`);
+  content.addLine(`     name:  app.getNameFromPath('${msg.options.path}'),`);
   content.addLine(`     material: {type: 'power', useTextureFromGlb: true},`);
   content.addLine(`     raycast: {enabled: true, radius: 2},`);
   content.addLine(`     physics: {enabled: ${msg.options.physics}, geometry: "Cube"}`);
   content.addLine(`   }, null, glbFile01);`);
-  content.addLine(` // ME END ${'Glb_' + msg.options.index} `);
+  content.addLine(` // ME END ${getNameFromPath(msg.options.path)}`);
 
   const objScript = path.join(PROJECTS_DIR, PROJECT_NAME + "\\app-gen.js");
   fs.readFile(objScript).then((b) => {
@@ -505,8 +509,8 @@ function removeSceneBlock(text, type, objName) {
   // is delete-obj  delete all
   let start = '', end = '';
   if(type == 'delete-obj') {
-    start = `// ME START ${objName}`;
-    end = `// ME END ${objName}`;
+    start = `// ME START ${objName.split('-')[0]}`;
+    end = `// ME END ${objName.split('-')[0]}`;
   } else {
     start = `// ME START ${objName} ${type}`;
     end = `// ME END ${objName} ${type}`;

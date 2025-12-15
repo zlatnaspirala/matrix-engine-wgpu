@@ -72,14 +72,6 @@ export class Editor {
       <button class="btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('greaterEqual')">Greater/Equal (>=)</button>
       <button class="btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('lessEqual')">Less/Equal (<=)</button>
       <hr style="border:none; height:1px; background:rgba(255,255,255,0.03); margin:10px 0;">
-      <span>Variables</span>
-      // <button class="btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getNumber')">number</button>
-      // <button class="btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getBoolean')">boolean</button>
-      // <button class="btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getString')">string</button>
-      // <button class="btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setNumber')">setNumber</button>
-      // <button class="btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setBoolean')">setBoolean</button>
-      // <button class="btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setString')">setString</button>
-
       <hr style="border:none; height:1px; background:rgba(255,255,255,0.03); margin:10px 0;">
       <span>Compile FluxCodexVertex</span>
       <button class="btnLeftBox" onclick="app.editor.fluxCodexVertex.compileGraph()">Save to LocalStorage</button>

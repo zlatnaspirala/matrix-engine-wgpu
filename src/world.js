@@ -286,6 +286,10 @@ export default class MatrixEngineWGPU {
     return this.mainRenderBundle.find((sceneObject) => sceneObject.name === name)
   }
 
+  getNameFromPath(p) {
+    return p.split(/[/\\]/).pop().replace(/\.[^/.]+$/, "");
+  }
+
   removeSceneObjectByName(name) {
     const index = this.mainRenderBundle.findIndex(obj => obj.name === name);
 
