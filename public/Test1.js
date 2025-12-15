@@ -15510,12 +15510,14 @@ var EditorProvider = class {
           if (e.detail.property == "x" || e.detail.property == "y" || e.detail.property == "z") document.dispatchEvent(new CustomEvent("web.editor.update.pos", {
             detail: e.detail
           }));
+          break;
         }
         case "rotation": {
           console.log("change signal for rot");
           if (e.detail.property == "x" || e.detail.property == "y" || e.detail.property == "z") document.dispatchEvent(new CustomEvent("web.editor.update.rot", {
             detail: e.detail
           }));
+          break;
         }
         default:
           console.log("changes not saved.");
@@ -15593,6 +15595,11 @@ var FluxCodexVertex = class _FluxCodexVertex {
   constructor(boardId, boardWrapId, logId, methodsManager) {
     this.debugMode = true;
     this.methodsManager = methodsManager;
+    this.variables = {
+      number: {},
+      boolean: {},
+      string: {}
+    };
     this.board = document.getElementById(boardId);
     this.boardWrap = document.getElementById(boardWrapId);
     this.svg = this.board.querySelector("svg.connections");
@@ -15601,6 +15608,7 @@ var FluxCodexVertex = class _FluxCodexVertex {
     this.links = [];
     this.nodeCounter = 1;
     this.linkCounter = 1;
+    this._execContext = null;
     this.state = {
       draggingNode: null,
       dragOffset: [0, 0],
@@ -15614,13 +15622,15 @@ var FluxCodexVertex = class _FluxCodexVertex {
       panStart: [0, 0]
       // [x, y]
     };
+    this.createVariablesPopup();
+    this._createImportInput();
     this.bindGlobalListeners();
     this.init();
     document.addEventListener("keydown", (e) => {
       if (e.key == "F6") {
         e.preventDefault();
         this.runGraph();
-      } else if (e.key === "Delete" || e.key === "Backspace") {
+      } else if (e.key === "Delete") {
         if (this.state.selectedNode) {
           this.deleteNode(this.state.selectedNode);
           this.state.selectedNode = null;
@@ -15634,11 +15644,227 @@ var FluxCodexVertex = class _FluxCodexVertex {
   log(...args) {
     this.logEl.textContent = args.join(" ");
   }
+  createGetNumberNode(varName) {
+    return this.addNode("getNumber", { var: varName });
+  }
+  createGetBooleanNode(varName) {
+    return this.addNode("getBoolean", { var: varName });
+  }
+  createGetStringNode(varName) {
+    return this.addNode("getString", { var: varName });
+  }
+  createSetNumberNode(varName) {
+    return this.addNode("setNumber", { var: varName });
+  }
+  createSetBooleanNode(varName) {
+    return this.addNode("setBoolean", { var: varName });
+  }
+  createSetStringNode(varName) {
+    return this.addNode("setString", { var: varName });
+  }
+  evaluateGetterNode(n) {
+    const key = n.fields?.find((f) => f.key === "var")?.value;
+    if (n.title === "Get Number") {
+      n._returnCache = this.variables.number[key]?.value ?? 0;
+    }
+    if (n.title === "Get Boolean") {
+      n._returnCache = this.variables.boolean[key]?.value ?? false;
+    }
+    if (n.title === "Get String") {
+      n._returnCache = this.variables.string[key]?.value ?? "";
+    }
+  }
+  notifyVariableChanged(type, key) {
+    for (const id in this.nodes) {
+      const n = this.nodes[id];
+      if (!n.fields) continue;
+      if (!n.title.startsWith("Get")) continue;
+      const varField = n.fields.find((f) => f.key === "var");
+      if (!varField || varField.value !== key) continue;
+      if (type === "number" && n.title !== "Get Number" || type === "boolean" && n.title !== "Get Boolean" || type === "string" && n.title !== "Get String") continue;
+      this.evaluateGetterNode(n);
+      if (n.displayEl) {
+        n.displayEl.textContent = n._returnCache;
+      }
+    }
+  }
+  createVariablesPopup() {
+    if (this._varsPopup) return;
+    const popup = document.createElement("div");
+    popup.id = "varsPopup";
+    this._varsPopup = popup;
+    Object.assign(popup.style, {
+      display: "none",
+      flexDirection: "column",
+      position: "absolute",
+      top: "10%",
+      left: "0",
+      width: "30%",
+      height: "50%",
+      overflow: "scroll",
+      background: "#111",
+      border: "1px solid #444",
+      borderRadius: "8px",
+      padding: "10px",
+      zIndex: 9999,
+      color: "#eee",
+      overflowX: "hidden"
+    });
+    const title = document.createElement("div");
+    title.innerHTML = `Variables`;
+    title.style.marginBottom = "8px";
+    title.style.fontWeight = "bold";
+    popup.appendChild(title);
+    const list = document.createElement("div");
+    list.id = "varslist";
+    popup.appendChild(list);
+    const btns = document.createElement("div");
+    btns.style.marginTop = "10px";
+    btns.style.display = "flex";
+    btns.style.gap = "6px";
+    btns.append(
+      this._createVarBtn("Number", "number"),
+      this._createVarBtn("Boolean", "boolean"),
+      this._createVarBtn("String", "string")
+    );
+    popup.appendChild(btns);
+    const hideVPopup = document.createElement("button");
+    hideVPopup.innerText = `Hide`;
+    hideVPopup.style.margin = "18px 18px 18px 18px";
+    hideVPopup.style.fontWeight = "bold";
+    hideVPopup.style.height = "4%";
+    hideVPopup.style.webkitTextStrokeWidth = "0px";
+    hideVPopup.addEventListener("click", () => {
+      byId("varsPopup").style.display = "none";
+    });
+    popup.appendChild(hideVPopup);
+    document.body.appendChild(popup);
+    this.makePopupDraggable(popup);
+    this._refreshVarsList(list);
+  }
+  _refreshVarsList(container) {
+    container.innerHTML = "";
+    const colors = {
+      number: "#4fc3f7",
+      boolean: "#aed581",
+      string: "#ffb74d"
+    };
+    for (const type in this.variables) {
+      for (const name in this.variables[type]) {
+        const row = document.createElement("div");
+        Object.assign(row.style, {
+          display: "flex",
+          alignItems: "center",
+          gap: "6px",
+          padding: "4px",
+          cursor: "pointer",
+          borderBottom: "1px solid #222",
+          color: colors[type],
+          webkitTextStrokeWidth: "0px"
+        });
+        const label = document.createElement("span");
+        label.textContent = `${name} (${type})`;
+        const input = document.createElement("input");
+        input.value = this.variables[type][name].value ?? "";
+        input.style.width = "60px";
+        input.style.background = "#000";
+        input.style.color = "#fff";
+        input.style.border = "1px solid #333";
+        input.oninput = (e) => {
+          this.variables[type][name].value = type === "number" ? Number(e.target.value) : type === "boolean" ? e.target.value === "true" : e.target.value;
+        };
+        const propagate = document.createElement("button");
+        propagate.innerText = `Get ${name}`;
+        propagate.onclick = () => {
+          if (type === "number") {
+            this.createGetNumberNode(name);
+          }
+        };
+        const propagateSet = document.createElement("button");
+        propagateSet.innerText = `Set ${name}`;
+        propagateSet.onclick = () => {
+          if (type === "number") {
+            this.createSetNumberNode(name);
+          }
+        };
+        row.append(label, input, propagate, propagateSet);
+        container.appendChild(row);
+      }
+    }
+  }
+  makePopupDraggable(popup, handle = popup) {
+    let isDragging = false;
+    let startX = 0;
+    let startY = 0;
+    let startLeft = 0;
+    let startTop = 0;
+    handle.style.cursor = "move";
+    handle.addEventListener("mousedown", (e) => {
+      isDragging = true;
+      startX = e.clientX;
+      startY = e.clientY;
+      const rect = popup.getBoundingClientRect();
+      startLeft = rect.left;
+      startTop = rect.top;
+      popup.style.left = startLeft + "px";
+      popup.style.top = startTop + "px";
+      popup.style.transform = "none";
+      document.addEventListener("mousemove", onMove);
+      document.addEventListener("mouseup", onUp);
+    });
+    const onMove = (e) => {
+      if (!isDragging) return;
+      popup.style.left = startLeft + (e.clientX - startX) + "px";
+      popup.style.top = startTop + (e.clientY - startY) + "px";
+    };
+    const onUp = () => {
+      isDragging = false;
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup", onUp);
+    };
+  }
+  _createVarBtn(label, type) {
+    const btn = document.createElement("button");
+    btn.textContent = label;
+    btn.style.flex = "1";
+    btn.style.cursor = "pointer";
+    btn.classList.add("btn");
+    btn.onclick = () => {
+      const name = prompt(`New ${type} variable name`);
+      if (!name) return;
+      if (this.variables[type][name]) {
+        alert("Variable exists");
+        return;
+      }
+      this.variables[type][name] = {
+        value: type === "number" ? 0 : type === "boolean" ? false : ""
+      };
+      this._refreshVarsList(this._varsPopup.children[1]);
+    };
+    return btn;
+  }
   _getPinDot(nodeId, pinName, isOutput) {
     const nodeEl = document.querySelector(`.node[data-id="${nodeId}"]`);
     if (!nodeEl) return null;
     const io = isOutput ? "out" : "in";
     return nodeEl.querySelector(`.pin[data-pin="${pinName}"][data-io="${io}"] .dot`);
+  }
+  populateVariableSelect(select, type) {
+    select.innerHTML = "";
+    const vars = this.variables[type];
+    if (!vars.length) {
+      const opt = document.createElement("option");
+      opt.textContent = "(no variables)";
+      opt.disabled = true;
+      select.appendChild(opt);
+      return;
+    }
+    vars.forEach((v) => {
+      const opt = document.createElement("option");
+      opt.value = v.name;
+      opt.textContent = v.name;
+      select.appendChild(opt);
+    });
   }
   // --------------------------------------------------------------------
   // Dynamic Method Helpers
@@ -15826,7 +16052,7 @@ var FluxCodexVertex = class _FluxCodexVertex {
       spec.displayEl = display;
       body.appendChild(display);
     }
-    if (spec.category === "action" && !spec.builtIn) {
+    if (spec.category === "action" && !spec.builtIn && !spec.isVariableNode) {
       const select = document.createElement("select");
       select.className = "method-select";
       select.style.cssText = "width:100%; margin-top:6px;";
@@ -15843,6 +16069,17 @@ var FluxCodexVertex = class _FluxCodexVertex {
           this.adaptNodeToMethod(spec, selected);
         }
       });
+    }
+    if (spec.fields?.some((f) => f.key === "var")) {
+      const input = document.createElement("input");
+      input.type = "text";
+      input.value = spec.fields.find((f) => f.key === "var")?.value ?? "";
+      input.readOnly = true;
+      input.style.width = "100%";
+      input.style.marginTop = "6px";
+      input.style.opacity = "0.7";
+      input.style.cursor = "default";
+      body.appendChild(input);
     }
     el.appendChild(body);
     header.addEventListener("mousedown", (e) => {
@@ -15877,7 +16114,7 @@ var FluxCodexVertex = class _FluxCodexVertex {
     if (fromType === "any" || toType === "any") return true;
     return false;
   }
-  addNode(type) {
+  addNode(type, options = {}) {
     const id = "node_" + this.nodeCounter++;
     const x = Math.abs(this.state.pan[0]) + 100 + Math.random() * 200;
     const y = Math.abs(this.state.pan[1]) + 100 + Math.random() * 200;
@@ -15935,19 +16172,9 @@ var FluxCodexVertex = class _FluxCodexVertex {
         x: x2,
         y: y2,
         category: "actionprint",
-        // FLOW + DATA
-        inputs: [
-          { name: "exec", type: "action" },
-          { name: "value", type: "any" }
-          // 👈 value to print (ANY is correct)
-        ],
-        outputs: [
-          { name: "execOut", type: "action" }
-        ],
-        // UI-only literal fields (NOT pins)
-        fields: [
-          { key: "label", value: "Result" }
-        ],
+        inputs: [{ name: "exec", type: "action" }, { name: "value", type: "any" }],
+        outputs: [{ name: "execOut", type: "action" }],
+        fields: [{ key: "label", value: "Result" }],
         builtIn: true
       }),
       "timeout": (id2, x2, y2) => ({
@@ -16023,10 +16250,89 @@ var FluxCodexVertex = class _FluxCodexVertex {
         category: "compare",
         inputs: [{ name: "A", type: "number" }, { name: "B", type: "number" }],
         outputs: [{ name: "result", type: "boolean" }]
+      }),
+      "getNumber": (id2, x2, y2) => ({
+        id: id2,
+        title: "Get Number",
+        x: x2,
+        y: y2,
+        category: "value",
+        outputs: [{ name: "result", type: "number" }],
+        fields: [{ key: "var", value: "" }],
+        isGetterNode: true
+        // flag for special handling
+      }),
+      "getBoolean": (id2, x2, y2) => ({
+        id: id2,
+        title: "Get Boolean",
+        x: x2,
+        y: y2,
+        category: "value",
+        outputs: [{ name: "result", type: "boolean" }],
+        fields: [{ key: "var", value: "" }]
+      }),
+      "getString": (id2, x2, y2) => ({
+        id: id2,
+        title: "Get String",
+        x: x2,
+        y: y2,
+        category: "value",
+        outputs: [{ name: "result", type: "string" }],
+        fields: [{ key: "var", value: "" }]
+      }),
+      "setNumber": (id2, x2, y2) => ({
+        id: id2,
+        title: "Set Number",
+        x: x2,
+        y: y2,
+        category: "action",
+        isVariableNode: true,
+        inputs: [
+          { name: "exec", type: "action" },
+          { name: "value", type: "number" }
+        ],
+        outputs: [{ name: "execOut", type: "action" }],
+        fields: [
+          { key: "var", value: "" },
+          { key: "literal", value: 0 }
+        ]
+      }),
+      "setBoolean": (id2, x2, y2) => ({
+        id: id2,
+        title: "Set Boolean",
+        x: x2,
+        y: y2,
+        category: "action",
+        inputs: [
+          { name: "exec", type: "action" },
+          { name: "value", type: "boolean" }
+        ],
+        outputs: [{ name: "execOut", type: "action" }],
+        fields: [{ key: "var", value: "" }]
+      }),
+      "setString": (id2, x2, y2) => ({
+        id: id2,
+        title: "Set String",
+        x: x2,
+        y: y2,
+        category: "action",
+        inputs: [
+          { name: "exec", type: "action" },
+          { name: "value", type: "string" }
+        ],
+        outputs: [{ name: "execOut", type: "action" }],
+        fields: [{ key: "var", value: "" }]
       })
     };
     let spec = null;
     if (nodeFactories[type]) spec = nodeFactories[type](id, x, y);
+    if (spec && spec.fields && options) {
+      for (const f of spec.fields) {
+        if (options[f.key] !== void 0) {
+          f.value = options[f.key];
+        }
+      }
+    }
     if (spec) {
       const dom = this.createNodeDOM(spec);
       this.board.appendChild(dom);
@@ -16034,6 +16340,11 @@ var FluxCodexVertex = class _FluxCodexVertex {
       return id;
     }
     return null;
+  }
+  setVariable(type, key, value) {
+    if (!this.variables[type][key]) return;
+    this.variables[type][key].value = value;
+    this.notifyVariableChanged(type, key);
   }
   _executeAttachedMethod(n) {
     if (n.attachedMethod) {
@@ -16055,61 +16366,110 @@ var FluxCodexVertex = class _FluxCodexVertex {
     const node = this.nodes[nodeId];
     if (!node || visited.has(nodeId)) return void 0;
     visited.add(nodeId);
-    console.log(`[GET] Node ${nodeId} pin "${pinName}"`);
+    if (node.title === "if" && pinName === "condition" && this._execContext !== nodeId) {
+      console.warn(`[GET] Blocked IF condition outside exec for node ${nodeId}`);
+      return void 0;
+    }
     const field = node.fields?.find((f) => f.key === pinName);
-    if (field !== void 0) {
-      console.log(`  \u2192 Using literal field "${pinName}":`, field.value);
-      return field.value;
-    }
+    if (field) return field.value;
     const link = this.links.find((l) => l.to.node === nodeId && l.to.pin === pinName);
-    if (link) {
-      console.log(`  \u2192 Linked from Node ${link.from.node} pin ${link.from.pin}`);
-      return this.getValue(link.from.node, link.from.pin, visited);
-    }
+    if (link) return this.getValue(link.from.node, link.from.pin, visited);
     const inputPin = node.inputs?.find((p) => p.name === pinName);
-    if (inputPin) {
-      console.log(`  \u2192 No link, using literal/default for input pin "${pinName}"`);
-      return inputPin.default ?? 0;
-    }
+    if (inputPin) return inputPin.default ?? 0;
     if (node.outputs?.some((o) => o.name === pinName)) {
-      if (node._returnCache === void 0) {
-        console.log(`  \u2192 Node ${nodeId} output "${pinName}" not cached, triggering node...`);
+      const dynamicNodes = ["GenRandInt", "RandomFloat"];
+      if (node._returnCache === void 0 || dynamicNodes.includes(node.title)) {
+        this._execContext = nodeId;
         this.triggerNode(nodeId);
+        this._execContext = null;
       }
-      console.log(`  \u2192 Using _returnCache for output pin "${pinName}":`, node._returnCache);
       return node._returnCache;
     }
-    console.log(`  \u2192 Pin "${pinName}" not found, returning undefined`);
     return void 0;
   }
   updateValueDisplays() {
     Object.values(this.nodes).forEach((n) => {
-      if (n.displayEl && n.outputs?.some((o) => o.name === "result")) {
-        n.displayEl.textContent = this.getValue(n.id, "result").toFixed(3);
+      if (!n.displayEl) return;
+      const out = n.outputs?.find((o) => o.name === "result");
+      if (!out) return;
+      const v = this.getValue(n.id, "result");
+      if (v === void 0) {
+        n.displayEl.textContent = "\u2014";
+      } else if (typeof v === "number") {
+        n.displayEl.textContent = v.toFixed(3);
+      } else {
+        n.displayEl.textContent = String(v);
       }
     });
   }
-  triggerNode(id) {
-    const n = this.nodes[id];
+  invalidateVariableGetters(type, varName) {
+    for (const id in this.nodes) {
+      const n = this.nodes[id];
+      if (n.category === "value" && n.fields?.some((f) => f.key === "var" && f.value === varName) && n.title === `Get ${type[0].toUpperCase() + type.slice(1)}`) {
+        delete n._returnCache;
+      }
+    }
+  }
+  triggerNode(nodeId) {
+    const n = this.nodes[nodeId];
     if (!n) return;
-    const el = document.querySelector(`.node[data-id="${id}"] .header`);
-    if (el) {
-      el.style.filter = "brightness(1.5)";
-      setTimeout(() => el.style.filter = "none", 200);
+    this._execContext = nodeId;
+    const highlight = document.querySelector(`.node[data-id="${nodeId}"] .header`);
+    if (highlight) {
+      highlight.style.filter = "brightness(1.5)";
+      setTimeout(() => highlight.style.filter = "none", 200);
+    }
+    if (n.isGetterNode) {
+      const varField = n.fields?.find((f) => f.key === "var");
+      if (varField && varField.value) {
+        const type = n.title.replace("Get ", "").toLowerCase();
+        const value = this.getVariable(type, varField.value);
+        n._returnCache = value;
+        if (n.displayEl) n.displayEl.textContent = typeof value === "number" ? value.toFixed(3) : String(value);
+      }
+      n.finished = true;
+      return;
     }
     if (n.category === "event") {
       this.enqueueOutputs(n, "exec");
       return;
     }
-    if (n.category === "action" || n.category === "timer" || n.category === "actionprint") {
-      this._executeAttachedMethod(n);
+    if (n.isVariableNode && n.title !== "Set Number") {
+      const type = n.title.replace("Set ", "").toLowerCase();
+      const varField = n.fields?.find((f) => f.key === "var");
+      if (varField && varField.value) {
+        const value = this.getValue(nodeId, "value");
+        this.setVariable(type, varField.value, value);
+      }
+    }
+    if (n.title === "Set Number") {
+      const varField = n.fields?.find((f) => f.key === "var");
+      if (varField && varField.value) {
+        const valInput = this.getValue(nodeId, "value");
+        this.variables.number[varField.value] = { value: valInput };
+        for (const nodeId2 in this.nodes) {
+          const node2 = this.nodes[nodeId2];
+          if (node2.isGetterNode) {
+            const vf2 = node2.fields?.find((f) => f.key === "var");
+            if (vf2 && vf2.value === varField.value && node2.displayEl) {
+              node2.displayEl.textContent = typeof valInput === "number" ? valInput.toFixed(3) : String(valInput);
+              node2._returnCache = valInput;
+            }
+          }
+        }
+      }
+      n.finished = true;
+      this.enqueueOutputs(n, "execOut");
+      return;
+    }
+    if (["action", "actionprint", "timer"].includes(n.category)) {
+      if (n.attachedMethod) this._executeAttachedMethod(n);
       if (n.title === "Print") {
-        const valueToPrint = this.getValue(id, "value");
-        const labelField = n.fields?.find((f) => f.key === "label");
-        const label = labelField ? labelField.value : "Print:";
-        if (n.displayEl) n.displayEl.textContent = valueToPrint;
-        console.log(`[Blueprint] ${label}`, valueToPrint);
-        this.log(`> ${label}`, valueToPrint);
+        const val = this.getValue(nodeId, "value");
+        const label = n.fields?.find((f) => f.key === "label")?.value || "Print:";
+        if (n.displayEl) n.displayEl.textContent = val;
+        console.log(`[Print] ${label}`, val);
+        this.log(`> ${label}`, val);
       } else if (n.title === "SetTimeout") {
         const delay = +n.fields?.find((f) => f.key === "delay")?.value || 1e3;
         setTimeout(() => this.enqueueOutputs(n, "execOut"), delay);
@@ -16117,82 +16477,71 @@ var FluxCodexVertex = class _FluxCodexVertex {
       }
       this.enqueueOutputs(n, "execOut");
       return;
-    } else if (n.category === "logic" && n.title === "if") {
-      let condition = this.getValue(id, "condition");
-      if (condition === void 0) {
-        const link = this.links.find((l) => l.to.node === id && l.to.pin === "condition");
-        if (link) {
-          condition = this.getValue(link.from.node, link.from.pin);
-        }
-      }
-      console.log("IF node", id, "evaluated condition:", condition);
+    }
+    if (n.category === "logic" && n.title === "if") {
+      const condition = Boolean(this.getValue(nodeId, "condition"));
       this.enqueueOutputs(n, condition ? "true" : "false");
+      this._execContext = null;
+      return;
     }
     if (["math", "value", "compare"].includes(n.category)) {
-      if (n.category === "compare") {
-        const a = this.getValue(id, "A");
-        const b = this.getValue(id, "B");
-        let result;
-        switch (n.title) {
-          case "A > B":
-            result = a > b;
-            break;
-          case "A < B":
-            result = a < b;
-            break;
-          case "A == B":
-            result = a == b;
-            break;
-          case "A != B":
-            result = a != b;
-            break;
-          case "A >= B":
-            result = a >= b;
-            break;
-          case "A <= B":
-            result = a <= b;
-            break;
-        }
-        n._returnCache = result;
-        if (n.displayEl) n.displayEl.textContent = result;
+      let result;
+      switch (n.title) {
+        case "Add":
+          result = this.getValue(nodeId, "a") + this.getValue(nodeId, "b");
+          break;
+        case "Sub":
+          result = this.getValue(nodeId, "a") - this.getValue(nodeId, "b");
+          break;
+        case "Mul":
+          result = this.getValue(nodeId, "a") * this.getValue(nodeId, "b");
+          break;
+        case "Div":
+          result = this.getValue(nodeId, "a") / this.getValue(nodeId, "b");
+          break;
+        case "Sin":
+          result = Math.sin(this.getValue(nodeId, "a"));
+          break;
+        case "Cos":
+          result = Math.cos(this.getValue(nodeId, "a"));
+          break;
+        case "Pi":
+          result = Math.PI;
+          break;
+        case "A > B":
+          result = this.getValue(nodeId, "A") > this.getValue(nodeId, "B");
+          break;
+        case "A < B":
+          result = this.getValue(nodeId, "A") < this.getValue(nodeId, "B");
+          break;
+        case "A == B":
+          result = this.getValue(nodeId, "A") == this.getValue(nodeId, "B");
+          break;
+        case "A != B":
+          result = this.getValue(nodeId, "A") != this.getValue(nodeId, "B");
+          break;
+        case "A >= B":
+          result = this.getValue(nodeId, "A") >= this.getValue(nodeId, "B");
+          break;
+        case "A <= B":
+          result = this.getValue(nodeId, "A") <= this.getValue(nodeId, "B");
+          break;
+        case "GenRandInt":
+          const min = +n.fields?.find((f) => f.key === "min")?.value || 0;
+          const max = +n.fields?.find((f) => f.key === "max")?.value || 10;
+          result = Math.floor(Math.random() * (max - min + 1)) + min;
+          break;
+        default:
+          result = void 0;
       }
-      if (n.title === "GenRandInt") {
-        const min = parseInt(this.getValue(id, "min")) || 0;
-        const max = parseInt(this.getValue(id, "max")) || 10;
-        const result = Math.floor(Math.random() * (max - min + 1)) + min;
-        n._returnCache = result;
-        if (n.displayEl) n.displayEl.textContent = result;
-      } else if (["Add", "Sub", "Mul", "Div", "Sin", "Cos", "Pi"].includes(n.title)) {
-        let a = parseFloat(this.getValue(id, "a")) || 0;
-        let b = parseFloat(this.getValue(id, "b")) || 0;
-        let result = 0;
-        switch (n.title) {
-          case "Add":
-            result = a + b;
-            break;
-          case "Sub":
-            result = a - b;
-            break;
-          case "Mul":
-            result = a * b;
-            break;
-          case "Div":
-            result = b !== 0 ? a / b : 0;
-            break;
-          case "Sin":
-            result = Math.sin(a);
-            break;
-          case "Cos":
-            result = Math.cos(a);
-            break;
-          case "Pi":
-            result = Math.PI;
-            break;
-        }
-        n._returnCache = result;
-        if (n.displayEl) n.displayEl.textContent = result;
-      }
+      n._returnCache = result;
+      if (n.displayEl) n.displayEl.textContent = typeof result === "number" ? result.toFixed(3) : String(result);
     }
+    this._execContext = null;
+  }
+  getVariable(type, key) {
+    if (!this.variables[type][key]) return void 0;
+    return this.variables[type][key].value;
   }
   enqueueOutputs(n, pinName) {
     this.links.filter((l) => l.from.node === n.id && l.from.pin === pinName && l.type === "action").forEach((l) => setTimeout(() => this.triggerNode(l.to.node), 10));
@@ -16276,7 +16625,14 @@ var FluxCodexVertex = class _FluxCodexVertex {
     Object.values(this.nodes).filter((n) => n.category === "event" && n.title === "onLoad").forEach((n) => this.triggerNode(n.id));
   }
   compileGraph() {
-    const bundle = { nodes: this.nodes, links: this.links, nodeCounter: this.nodeCounter, linkCounter: this.linkCounter, pan: this.state.pan };
+    const bundle = {
+      nodes: this.nodes,
+      links: this.links,
+      nodeCounter: this.nodeCounter,
+      linkCounter: this.linkCounter,
+      pan: this.state.pan,
+      variables: this.variables
+    };
     localStorage.setItem(_FluxCodexVertex.SAVE_KEY, JSON.stringify(bundle));
     this.log("Graph saved to LocalStorage!");
   }
@@ -16284,11 +16640,76 @@ var FluxCodexVertex = class _FluxCodexVertex {
     localStorage.removeItem(_FluxCodexVertex.SAVE_KEY);
     this.log("Save cleared. Refresh to reset.");
   }
+  _buildSaveBundle() {
+    return {
+      nodes: this.nodes,
+      links: this.links,
+      nodeCounter: this.nodeCounter,
+      linkCounter: this.linkCounter,
+      pan: this.state.pan,
+      variables: this.variables,
+      version: 1
+    };
+  }
+  _loadFromBundle(data) {
+    this.nodes = data.nodes || {};
+    this.links = data.links || {};
+    this.nodeCounter = data.nodeCounter || 0;
+    this.linkCounter = data.linkCounter || 0;
+    this.state.pan = data.pan || { x: 0, y: 0 };
+    this.variables = data.variables || {
+      number: {},
+      boolean: {},
+      string: {}
+    };
+    this._refreshVarsList(this._varsPopup.children[1]);
+    this.loadFromImport();
+    this.log("Graph imported from JSON");
+  }
+  exportToJSON() {
+    const bundle = this._buildSaveBundle();
+    const json = JSON.stringify(bundle, null, 2);
+    const blob = new Blob([json], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "fluxcodex-graph.json";
+    a.click();
+    URL.revokeObjectURL(url);
+    this.log("Graph exported as JSON");
+  }
+  _createImportInput() {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".json";
+    input.style.display = "none";
+    input.onchange = (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const data = JSON.parse(reader.result);
+          this._loadFromBundle(data);
+        } catch (err) {
+          console.error("Invalid JSON file", err);
+        }
+      };
+      reader.readAsText(file);
+    };
+    document.body.appendChild(input);
+    this._importInput = input;
+  }
   init() {
     const saved = localStorage.getItem(_FluxCodexVertex.SAVE_KEY);
     if (saved) {
       try {
         const data = JSON.parse(saved);
+        console.log("data.variables", data.variables);
+        if (data.variables) {
+          this.variables = data.variables;
+          this._refreshVarsList(this._varsPopup.children[1]);
+        }
         this.nodes = data.nodes || {};
         this.links = data.links || [];
         this.nodeCounter = data.nodeCounter || 1;
@@ -16314,6 +16735,23 @@ var FluxCodexVertex = class _FluxCodexVertex {
       }
     }
     this.addNode("event");
+  }
+  loadFromImport() {
+    Object.values(this.nodes).forEach((spec) => {
+      const domEl = this.createNodeDOM(spec);
+      this.board.appendChild(domEl);
+      if (spec.category === "value" && spec.title !== "GenRandInt" || spec.category === "math" || spec.title === "Print") {
+        spec.displayEl = domEl.querySelector(".value-display");
+      }
+      if (spec.category === "action" && spec.title === "Function") {
+        this.updateNodeDOM(spec.id);
+      }
+    });
+    this.updateLinks();
+    this.updateValueDisplays();
+    this.log("Restored graph.");
+    this.compileGraph();
+    return;
   }
 };
 FluxCodexVertex.SAVE_KEY = "matrixEngineVisualScripting";
@@ -16503,9 +16941,13 @@ var EditorHud = class {
            <span>Visual Scripting</span>
            <small>\u2328\uFE0FFluxCodexVertex</small>
         </div>
+        <div id="showCodeVARSBtn" class="drop-item">
+           <span>Variable editor</span>
+           <small>\u2328\uFE0F Visual Script tool</small>
+        </div>
         <div id="showCodeEditorBtn" class="drop-item">
            <span>Show code editor</span>
-           <small>\u2328\uFE0F Function edit</small>
+           <small>\u2328\uFE0F Function raw edit</small>
         </div>
       </div>
     </div>
@@ -16516,9 +16958,12 @@ var EditorHud = class {
       <div class="dropdown">
         <div id="hideEditorBtn" class="drop-item">
            <p>Hide Editor UI</p>
-           <small>To show editor press F4 \u2328\uFE0F</small>
+           <small>Show editor - press F4 \u2328\uFE0F</small>
         </div>
-        <div id="fullScreenBtn" class="drop-item">FullScreen</div>
+        <div id="fullScreenBtn" class="drop-item">
+         <span>FullScreen</span>
+         <small>Exit - press F11 \u2328\uFE0F</small>
+        </div>
       </div>
     </div>
 
@@ -16620,8 +17065,12 @@ var EditorHud = class {
       document.dispatchEvent(new CustomEvent("show-method-editor", { detail: {} }));
     });
     byId("showVisualCodeEditorBtn").addEventListener("click", (e) => {
-      console.log("show-fluxcodexvertex-editor ", e);
       byId("app").style.display = "flex";
+      this.core.editor.fluxCodexVertex.updateLinks();
+    });
+    byId("showCodeVARSBtn").addEventListener("click", (e) => {
+      byId("app").style.display = "flex";
+      byId("varsPopup").style.display = "flex";
       this.core.editor.fluxCodexVertex.updateLinks();
     });
     document.addEventListener("updateSceneContainer", (e) => {
@@ -16634,6 +17083,8 @@ var EditorHud = class {
   \u2714\uFE0F Networking with Kurento/OpenVidu/Own middleware Nodejs -> frontend
   \u2714\uFE0F Event system
   \u{1F3AF} Save system - direct code line [file-protocol]
+  \u{1F3AF} Adding Visual Scripting System called 
+     FlowCodexVertex (deactivete from top menu)(activate on pressing F4 key)
      Source code: https://github.com/zlatnaspirala/matrix-engine-wgpu
      More at https://maximumroulette.com
         `);
@@ -16646,8 +17097,8 @@ var EditorHud = class {
     Object.assign(this.assetsBox.style, {
       position: "absolute",
       bottom: "0",
-      left: "20%",
-      width: "60%",
+      left: "17.55%",
+      width: "63%",
       height: "250px",
       backgroundColor: "rgba(0,0,0,0.85)",
       display: "flex",
@@ -16809,9 +17260,14 @@ var EditorHud = class {
     this.showAboutModal = () => {
       alert(`
   \u2714\uFE0F Support for 3D objects and scene transformations
-  \u2714\uFE0F Ammo.js physics full integration
+  \u2714\uFE0F Ammo.js physics integration
   \u2714\uFE0F Networking with Kurento/OpenVidu/Own middleware Nodejs -> frontend
-  \u{1F3AF} Replicate matrix-engine (WebGL) features
+  \u2714\uFE0F Event system
+  \u{1F3AF} Save system - direct code line [file-protocol]
+  \u{1F3AF} Adding Visual Scripting System called 
+     FlowCodexVertex (deactivete from top menu)(activate on pressing F4 key)
+     Source code: https://github.com/zlatnaspirala/matrix-engine-wgpu
+     More at https://maximumroulette.com
         `);
     };
     byId("showAboutEditor").addEventListener("click", this.showAboutModal);
@@ -16866,9 +17322,14 @@ var EditorHud = class {
     this.showAboutModal = () => {
       alert(`
   \u2714\uFE0F Support for 3D objects and scene transformations
-  \u2714\uFE0F Ammo.js physics full integration
+  \u2714\uFE0F Ammo.js physics integration
   \u2714\uFE0F Networking with Kurento/OpenVidu/Own middleware Nodejs -> frontend
-  \u{1F3AF} Replicate matrix-engine (WebGL) features
+  \u2714\uFE0F Event system
+  \u{1F3AF} Save system - direct code line [file-protocol]
+     Adding Visual Scripting System called 
+     flowCodexVertex (deactivete from top menu)(activate on pressing F4 key)
+     Source code: https://github.com/zlatnaspirala/matrix-engine-wgpu
+     More at https://maximumroulette.com
         `);
     };
     byId("showAboutEditor").addEventListener("click", this.showAboutModal);
@@ -16880,9 +17341,9 @@ var EditorHud = class {
       position: "absolute",
       top: "0",
       left: "0",
-      width: "20%",
+      width: "17.5%",
       height: "100vh",
-      backgroundColor: "rgba(0,0,0,0.85)",
+      backgroundColor: "rgb(75 75 75 / 85%)",
       display: "flex",
       alignItems: "start",
       overflow: "auto",
@@ -16909,7 +17370,8 @@ var EditorHud = class {
       flexDirection: "column"
     });
     this.sceneContainerTitle = document.createElement("div");
-    this.sceneContainerTitle.style.height = "40px";
+    this.sceneContainerTitle.style.height = "30px";
+    this.sceneContainerTitle.style.width = "-webkit-fill-available";
     this.sceneContainerTitle.style.fontSize = isMobile() == true ? "x-larger" : "larger";
     this.sceneContainerTitle.style.padding = "5px";
     this.sceneContainerTitle.innerHTML = "Scene container";
@@ -16938,7 +17400,7 @@ var EditorHud = class {
       right: "0",
       width: "20%",
       height: "100vh",
-      backgroundColor: "rgba(0,0,0,0.85)",
+      backgroundColor: "rgb(35 35 35 / 63%)",
       display: "flex",
       alignItems: "start",
       overflow: "auto",
@@ -17366,9 +17828,6 @@ var MethodsManager = class {
       }
     });
   };
-  /*=====================================================
-     UI
-  =====================================================*/
   createUI() {
     this.wrapper = document.createElement("div");
     this.wrapper.style.cssText = `
@@ -17467,13 +17926,9 @@ var MethodsManager = class {
     this.popup.appendChild(this.btnExit);
     document.body.appendChild(this.popup);
   }
-  /*=====================================================
-     Logic
-  =====================================================*/
   openEditor(existing) {
     this.editing = existing || null;
     this.textarea.value = existing ? existing.code : "";
-    this.popup.style.display = "block";
   }
   saveMethod() {
     const code = this.textarea.value.trim();
@@ -17572,34 +18027,48 @@ var Editor = class {
     FCV.style.display = "none";
     FCV.innerHTML = `
     <div id="leftBar">
-      <h3>Blueprint Nodes</h3>
-      <button class="btn" onclick="app.editor.fluxCodexVertex.addNode('event')">Event: onLoad</button>
-      <button class="btn" onclick="app.editor.fluxCodexVertex.addNode('function')">Function</button>
-      <button class="btn" onclick="app.editor.fluxCodexVertex.addNode('if')">If Branch</button>
-      <button class="btn" onclick="app.editor.fluxCodexVertex.addNode('genrand')">GenRandInt</button>
-      <button class="btn" onclick="app.editor.fluxCodexVertex.addNode('print')">Print</button>
-      <button class="btn" onclick="app.editor.fluxCodexVertex.addNode('timeout')">SetTimeout</button>
+      <h3>Events/Func</h3>
+      <button class="btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('event')">Event: onLoad</button>
+      <button class="btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('function')">Function</button>
+      <button class="btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('if')">If Branch</button>
+      <button class="btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('genrand')">GenRandInt</button>
+      <button class="btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('print')">Print</button>
+      <button class="btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('timeout')">SetTimeout</button>
       <hr style="border:none; height:1px; background:rgba(255,255,255,0.03); margin:10px 0;">
-      <button class="btn" onclick="app.editor.fluxCodexVertex.addNode('add')">Add (+)</button>
-      <button class="btn" onclick="app.editor.fluxCodexVertex.addNode('sub')">Sub (-)</button>
-      <button class="btn" onclick="app.editor.fluxCodexVertex.addNode('mul')">Mul (*)</button>
-      <button class="btn" onclick="app.editor.fluxCodexVertex.addNode('div')">Div (/)</button>
-      <button class="btn" onclick="app.editor.fluxCodexVertex.addNode('sin')">Sin</button>
-      <button class="btn" onclick="app.editor.fluxCodexVertex.addNode('cos')">Cos</button>
-      <button class="btn" onclick="app.editor.fluxCodexVertex.addNode('pi')">Pi</button>
+      <span>Math</span>
+      <button class="btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('add')">Add (+)</button>
+      <button class="btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('sub')">Sub (-)</button>
+      <button class="btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('mul')">Mul (*)</button>
+      <button class="btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('div')">Div (/)</button>
+      <button class="btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('sin')">Sin</button>
+      <button class="btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('cos')">Cos</button>
+      <button class="btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('pi')">Pi</button>
       <hr style="border:none; height:1px; background:rgba(255,255,255,0.03); margin:10px 0;">
-      <!-- COMPARISON NODES -->
-      <button class="btn" onclick="app.editor.fluxCodexVertex.addNode('equal')">Equal (==)</button>
-      <button class="btn" onclick="app.editor.fluxCodexVertex.addNode('notequal')">Not Equal (!=)</button>
-      <button class="btn" onclick="app.editor.fluxCodexVertex.addNode('greater')">Greater (>)</button>
-      <button class="btn" onclick="app.editor.fluxCodexVertex.addNode('less')">Less (<)</button>
-      <button class="btn" onclick="app.editor.fluxCodexVertex.addNode('greaterEqual')">Greater/Equal (>=)</button>
-      <button class="btn" onclick="app.editor.fluxCodexVertex.addNode('lessEqual')">Less/Equal (<=)</button>
+      <span>COMPARISON</span>
+      <button class="btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('equal')">Equal (==)</button>
+      <button class="btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('notequal')">Not Equal (!=)</button>
+      <button class="btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('greater')">Greater (>)</button>
+      <button class="btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('less')">Less (<)</button>
+      <button class="btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('greaterEqual')">Greater/Equal (>=)</button>
+      <button class="btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('lessEqual')">Less/Equal (<=)</button>
+      <hr style="border:none; height:1px; background:rgba(255,255,255,0.03); margin:10px 0;">
+      <span>Variables</span>
+      // <button class="btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getNumber')">number</button>
+      // <button class="btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getBoolean')">boolean</button>
+      // <button class="btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getString')">string</button>
+      // <button class="btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setNumber')">setNumber</button>
+      // <button class="btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setBoolean')">setBoolean</button>
+      // <button class="btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setString')">setString</button>
 
       <hr style="border:none; height:1px; background:rgba(255,255,255,0.03); margin:10px 0;">
-      <button class="btn" onclick="app.editor.fluxCodexVertex.compileGraph()">Save to LocalStorage</button>
-      <button class="btn" onclick="clearStorage()">Clear Save</button>
-      <button class="btn" onclick="app.editor.fluxCodexVertex.runGraph()">Run</button>
+      <span>Compile FluxCodexVertex</span>
+      <button class="btnLeftBox" onclick="app.editor.fluxCodexVertex.compileGraph()">Save to LocalStorage</button>
+      <button class="btnLeftBox" onclick="clearStorage()">Clear Save</button>
+      <button class="btnLeftBox" onclick="app.editor.fluxCodexVertex.runGraph()">Run</button>
+      <hr style="border:none; height:1px; background:rgba(255,255,255,0.03); margin:10px 0;">
+      <button class="btnLeftBox" onclick="app.editor.fluxCodexVertex.exportToJSON()">Export (JSON)</button>
+      <button class="btnLeftBox" onclick="app.editor.fluxCodexVertex._importInput.click()">Import (JSON)</button>
+
       <pre id="log" aria-live="polite"></pre>
     </div>
     <div id="boardWrap">
@@ -18520,12 +18989,12 @@ var app2 = new MatrixEngineWGPU(
     addEventListener("AmmoReady", async () => {
       app3.addLight();
       downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, (m) => {
-        const texturesPaths = ["./res/meshes/blender/cube.png"];
+        const texturesPaths2 = ["./res/meshes/blender/cube.png"];
         app3.addMeshObj({
           position: { x: 0, y: 0, z: -20 },
           rotation: { x: 0, y: 0, z: 0 },
           rotationSpeed: { x: 0, y: 0, z: 0 },
-          texturesPaths: [texturesPaths],
+          texturesPaths: [texturesPaths2],
           name: "Cube_" + app3.mainRenderBundle.length,
           mesh: m.cube,
           raycast: { enabled: true, radius: 2 },
@@ -18533,11 +19002,261 @@ var app2 = new MatrixEngineWGPU(
         });
       }, { scale: [1, 1, 1] });
       setTimeout(() => {
-        app3.getSceneObjectByName("Cube_0").rotation.x = 45;
+        app3.getSceneObjectByName("Cube_0").rotation.x = -3;
       }, 200);
       setTimeout(() => {
-        app3.getSceneObjectByName("Cube_0").rotation.y = 45;
+        app3.getSceneObjectByName("Cube_0").position.SetX(7);
       }, 200);
+      setTimeout(() => {
+        app3.getSceneObjectByName("Cube_0").position.SetY(7);
+      }, 200);
+      var glbFile01 = await fetch("res/meshes/env/tower.glb").then((res) => res.arrayBuffer().then((buf) => uploadGLBModel(buf, app3.device)));
+      const texturesPaths = ["./res/meshes/blender/cube.png"];
+      app3.addGlbObj({
+        position: { x: 0, y: 0, z: -20 },
+        rotation: { x: 0, y: 0, z: 0 },
+        rotationSpeed: { x: 0, y: 0, z: 0 },
+        texturesPaths: [texturesPaths],
+        scale: [2, 2, 2],
+        name: "Glb_" + app3.mainRenderBundle.length,
+        material: { type: "power", useTextureFromGlb: true },
+        raycast: { enabled: true, radius: 2 },
+        physics: { enabled: true, geometry: "Cube" }
+      }, null, glbFile01);
+      downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, (m) => {
+        const texturesPaths2 = ["./res/meshes/blender/cube.png"];
+        app3.addMeshObj({
+          position: { x: 0, y: 0, z: -20 },
+          rotation: { x: 0, y: 0, z: 0 },
+          rotationSpeed: { x: 0, y: 0, z: 0 },
+          texturesPaths: [texturesPaths2],
+          name: "Cube_" + app3.mainRenderBundle.length,
+          mesh: m.cube,
+          raycast: { enabled: true, radius: 2 },
+          physics: { enabled: true, geometry: "Cube" }
+        });
+      }, { scale: [1, 1, 1] });
+      downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, (m) => {
+        const texturesPaths2 = ["./res/meshes/blender/cube.png"];
+        app3.addMeshObj({
+          position: { x: 0, y: 0, z: -20 },
+          rotation: { x: 0, y: 0, z: 0 },
+          rotationSpeed: { x: 0, y: 0, z: 0 },
+          texturesPaths: [texturesPaths2],
+          name: "Cube_" + app3.mainRenderBundle.length,
+          mesh: m.cube,
+          raycast: { enabled: true, radius: 2 },
+          physics: { enabled: true, geometry: "Cube" }
+        });
+      }, { scale: [1, 1, 1] });
+      downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, (m) => {
+        const texturesPaths2 = ["./res/meshes/blender/cube.png"];
+        app3.addMeshObj({
+          position: { x: 0, y: 0, z: -20 },
+          rotation: { x: 0, y: 0, z: 0 },
+          rotationSpeed: { x: 0, y: 0, z: 0 },
+          texturesPaths: [texturesPaths2],
+          name: "Cube_" + app3.mainRenderBundle.length,
+          mesh: m.cube,
+          raycast: { enabled: true, radius: 2 },
+          physics: { enabled: true, geometry: "Cube" }
+        });
+      }, { scale: [1, 1, 1] });
+      downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, (m) => {
+        const texturesPaths2 = ["./res/meshes/blender/cube.png"];
+        app3.addMeshObj({
+          position: { x: 0, y: 0, z: -20 },
+          rotation: { x: 0, y: 0, z: 0 },
+          rotationSpeed: { x: 0, y: 0, z: 0 },
+          texturesPaths: [texturesPaths2],
+          name: "Cube_" + app3.mainRenderBundle.length,
+          mesh: m.cube,
+          raycast: { enabled: true, radius: 2 },
+          physics: { enabled: true, geometry: "Cube" }
+        });
+      }, { scale: [1, 1, 1] });
+      downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, (m) => {
+        const texturesPaths2 = ["./res/meshes/blender/cube.png"];
+        app3.addMeshObj({
+          position: { x: 0, y: 0, z: -20 },
+          rotation: { x: 0, y: 0, z: 0 },
+          rotationSpeed: { x: 0, y: 0, z: 0 },
+          texturesPaths: [texturesPaths2],
+          name: "Cube_" + app3.mainRenderBundle.length,
+          mesh: m.cube,
+          raycast: { enabled: true, radius: 2 },
+          physics: { enabled: true, geometry: "Cube" }
+        });
+      }, { scale: [1, 1, 1] });
+      downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, (m) => {
+        const texturesPaths2 = ["./res/meshes/blender/cube.png"];
+        app3.addMeshObj({
+          position: { x: 0, y: 0, z: -20 },
+          rotation: { x: 0, y: 0, z: 0 },
+          rotationSpeed: { x: 0, y: 0, z: 0 },
+          texturesPaths: [texturesPaths2],
+          name: "Cube_" + app3.mainRenderBundle.length,
+          mesh: m.cube,
+          raycast: { enabled: true, radius: 2 },
+          physics: { enabled: true, geometry: "Cube" }
+        });
+      }, { scale: [1, 1, 1] });
+      downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, (m) => {
+        const texturesPaths2 = ["./res/meshes/blender/cube.png"];
+        app3.addMeshObj({
+          position: { x: 0, y: 0, z: -20 },
+          rotation: { x: 0, y: 0, z: 0 },
+          rotationSpeed: { x: 0, y: 0, z: 0 },
+          texturesPaths: [texturesPaths2],
+          name: "Cube_" + app3.mainRenderBundle.length,
+          mesh: m.cube,
+          raycast: { enabled: true, radius: 2 },
+          physics: { enabled: true, geometry: "Cube" }
+        });
+      }, { scale: [1, 1, 1] });
+      downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, (m) => {
+        const texturesPaths2 = ["./res/meshes/blender/cube.png"];
+        app3.addMeshObj({
+          position: { x: 0, y: 0, z: -20 },
+          rotation: { x: 0, y: 0, z: 0 },
+          rotationSpeed: { x: 0, y: 0, z: 0 },
+          texturesPaths: [texturesPaths2],
+          name: "Cube_" + app3.mainRenderBundle.length,
+          mesh: m.cube,
+          raycast: { enabled: true, radius: 2 },
+          physics: { enabled: true, geometry: "Cube" }
+        });
+      }, { scale: [1, 1, 1] });
+      downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, (m) => {
+        const texturesPaths2 = ["./res/meshes/blender/cube.png"];
+        app3.addMeshObj({
+          position: { x: 0, y: 0, z: -20 },
+          rotation: { x: 0, y: 0, z: 0 },
+          rotationSpeed: { x: 0, y: 0, z: 0 },
+          texturesPaths: [texturesPaths2],
+          name: "Cube_" + app3.mainRenderBundle.length,
+          mesh: m.cube,
+          raycast: { enabled: true, radius: 2 },
+          physics: { enabled: true, geometry: "Cube" }
+        });
+      }, { scale: [1, 1, 1] });
+      downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, (m) => {
+        const texturesPaths2 = ["./res/meshes/blender/cube.png"];
+        app3.addMeshObj({
+          position: { x: 0, y: 0, z: -20 },
+          rotation: { x: 0, y: 0, z: 0 },
+          rotationSpeed: { x: 0, y: 0, z: 0 },
+          texturesPaths: [texturesPaths2],
+          name: "Cube_" + app3.mainRenderBundle.length,
+          mesh: m.cube,
+          raycast: { enabled: true, radius: 2 },
+          physics: { enabled: true, geometry: "Cube" }
+        });
+      }, { scale: [1, 1, 1] });
+      downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, (m) => {
+        const texturesPaths2 = ["./res/meshes/blender/cube.png"];
+        app3.addMeshObj({
+          position: { x: 0, y: 0, z: -20 },
+          rotation: { x: 0, y: 0, z: 0 },
+          rotationSpeed: { x: 0, y: 0, z: 0 },
+          texturesPaths: [texturesPaths2],
+          name: "Cube_" + app3.mainRenderBundle.length,
+          mesh: m.cube,
+          raycast: { enabled: true, radius: 2 },
+          physics: { enabled: true, geometry: "Cube" }
+        });
+      }, { scale: [1, 1, 1] });
+      downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, (m) => {
+        const texturesPaths2 = ["./res/meshes/blender/cube.png"];
+        app3.addMeshObj({
+          position: { x: 0, y: 0, z: -20 },
+          rotation: { x: 0, y: 0, z: 0 },
+          rotationSpeed: { x: 0, y: 0, z: 0 },
+          texturesPaths: [texturesPaths2],
+          name: "Cube_" + app3.mainRenderBundle.length,
+          mesh: m.cube,
+          raycast: { enabled: true, radius: 2 },
+          physics: { enabled: true, geometry: "Cube" }
+        });
+      }, { scale: [1, 1, 1] });
+      downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, (m) => {
+        const texturesPaths2 = ["./res/meshes/blender/cube.png"];
+        app3.addMeshObj({
+          position: { x: 0, y: 0, z: -20 },
+          rotation: { x: 0, y: 0, z: 0 },
+          rotationSpeed: { x: 0, y: 0, z: 0 },
+          texturesPaths: [texturesPaths2],
+          name: "Cube_" + app3.mainRenderBundle.length,
+          mesh: m.cube,
+          raycast: { enabled: true, radius: 2 },
+          physics: { enabled: true, geometry: "Cube" }
+        });
+      }, { scale: [1, 1, 1] });
+      downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, (m) => {
+        const texturesPaths2 = ["./res/meshes/blender/cube.png"];
+        app3.addMeshObj({
+          position: { x: 0, y: 0, z: -20 },
+          rotation: { x: 0, y: 0, z: 0 },
+          rotationSpeed: { x: 0, y: 0, z: 0 },
+          texturesPaths: [texturesPaths2],
+          name: "Cube_" + app3.mainRenderBundle.length,
+          mesh: m.cube,
+          raycast: { enabled: true, radius: 2 },
+          physics: { enabled: true, geometry: "Cube" }
+        });
+      }, { scale: [1, 1, 1] });
+      downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, (m) => {
+        const texturesPaths2 = ["./res/meshes/blender/cube.png"];
+        app3.addMeshObj({
+          position: { x: 0, y: 0, z: -20 },
+          rotation: { x: 0, y: 0, z: 0 },
+          rotationSpeed: { x: 0, y: 0, z: 0 },
+          texturesPaths: [texturesPaths2],
+          name: "Cube_" + app3.mainRenderBundle.length,
+          mesh: m.cube,
+          raycast: { enabled: true, radius: 2 },
+          physics: { enabled: true, geometry: "Cube" }
+        });
+      }, { scale: [1, 1, 1] });
+      downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, (m) => {
+        const texturesPaths2 = ["./res/meshes/blender/cube.png"];
+        app3.addMeshObj({
+          position: { x: 0, y: 0, z: -20 },
+          rotation: { x: 0, y: 0, z: 0 },
+          rotationSpeed: { x: 0, y: 0, z: 0 },
+          texturesPaths: [texturesPaths2],
+          name: "Cube_" + app3.mainRenderBundle.length,
+          mesh: m.cube,
+          raycast: { enabled: true, radius: 2 },
+          physics: { enabled: true, geometry: "Cube" }
+        });
+      }, { scale: [1, 1, 1] });
+      downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, (m) => {
+        const texturesPaths2 = ["./res/meshes/blender/cube.png"];
+        app3.addMeshObj({
+          position: { x: 0, y: 0, z: -20 },
+          rotation: { x: 0, y: 0, z: 0 },
+          rotationSpeed: { x: 0, y: 0, z: 0 },
+          texturesPaths: [texturesPaths2],
+          name: "Cube_" + app3.mainRenderBundle.length,
+          mesh: m.cube,
+          raycast: { enabled: true, radius: 2 },
+          physics: { enabled: true, geometry: "Cube" }
+        });
+      }, { scale: [1, 1, 1] });
+      downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, (m) => {
+        const texturesPaths2 = ["./res/meshes/blender/cube.png"];
+        app3.addMeshObj({
+          position: { x: 0, y: 0, z: -20 },
+          rotation: { x: 0, y: 0, z: 0 },
+          rotationSpeed: { x: 0, y: 0, z: 0 },
+          texturesPaths: [texturesPaths2],
+          name: "Cube_" + app3.mainRenderBundle.length,
+          mesh: m.cube,
+          raycast: { enabled: true, radius: 2 },
+          physics: { enabled: true, geometry: "Cube" }
+        });
+      }, { scale: [1, 1, 1] });
     });
   }
 );

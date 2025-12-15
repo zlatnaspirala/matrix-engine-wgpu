@@ -1305,6 +1305,7 @@ input[type=number]:hover::-webkit-outer-spin-button {
   background: #1b1b1b;
   height: 95%;
   overflow: scroll;
+  overflow-x: hidden;
 }
 
 .file-item {
@@ -1418,7 +1419,7 @@ body {
   display: flex;
   position: absolute;
   top: 0;
-  left: 20%;
+  left: 17.55%;
   height: 100%;
   width: 80%;
   gap: 8px;
@@ -1434,31 +1435,43 @@ body {
   z-index: 10;
   height: 74vh;
   overflow: scroll;
+
+  -webkit-text-stroke-width: 0.2px;
+  -webkit-text-stroke-color: #27464c;
 }
 
 #leftBar h3 {
   margin: 8px 0;
-  font-size: 14px;
+  font-size: 11px;
   color: #9fb4d8;
 }
 
-.btn {
-  display: block;
-  padding: 8px 10px;
-  margin: 6px 0;
-  background: #1b2632;
-  border-radius: 8px;
-  cursor: pointer;
-  border: 1px solid rgba(255, 255, 255, 0.04);
-  color: var(--text);
-  font-size: 13px;
-  text-align: left;
-  transition: background 0.2s;
+
+.btn4 {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 600;
+  font-size: 10px;
+  color: #00ffff;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  padding: 12px 24px;
+  background: linear-gradient(145deg, #0f0f0f, #1a1a1a);
+  border: 2px solid #00ffff;
+  border-radius: 12px;
+  box-shadow: 0 0 10px #00ffff44, 0 0 20px #00ffff22 inset;
+  /* cursor: pointer; */
+  transition: all 0.25s ease-in-out;
+  display: inline-block;
+  text-align: center;
 }
 
-.btn:hover {
-  background: #2a3642;
+.btn4:hover {
+  background: #00ffff78;
+  box-shadow: 0 0 20px #00ffffaa, 0 0 30px #00ffff55 inset;
+  color: #ffffff;
+  transform: scale(1.05);
 }
+
 
 /* #boardWrap {
   flex: 1;
@@ -1469,26 +1482,23 @@ body {
 } */
 
 #boardWrap {
-  background: 
-    linear-gradient(135deg, #1a1a1a 0%, #2b2b2b 100%), /* subtle dark gradient */
-    repeating-linear-gradient(
-      0deg,
-      rgba(255,255,255,0.05),
-      rgba(255,255,255,0.05) 1px,
+  background:
+    linear-gradient(135deg, #1a1a1a 0%, #2b2b2b 100%),
+    /* subtle dark gradient */
+    repeating-linear-gradient(0deg,
+      rgba(255, 255, 255, 0.05),
+      rgba(255, 255, 255, 0.05) 1px,
       transparent 1px,
-      transparent 20px
-    ),
-    repeating-linear-gradient(
-      90deg,
-      rgba(255,255,255,0.05),
-      rgba(255,255,255,0.05) 1px,
+      transparent 20px),
+    repeating-linear-gradient(90deg,
+      rgba(255, 255, 255, 0.05),
+      rgba(255, 255, 255, 0.05) 1px,
       transparent 1px,
-      transparent 20px
-    );
-  
+      transparent 20px);
+
   background-blend-mode: overlay;
   background-size: auto, 20px 20px, 20px 20px;
-  
+
   position: relative;
   width: 100%;
   height: 100%;
@@ -1499,8 +1509,11 @@ body {
 #boardWrap::before {
   content: '';
   position: absolute;
-  top:0; left:0; right:0; bottom:0;
-  background: radial-gradient(circle at center, rgba(255,255,255,0.02), transparent 70%);
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle at center, rgba(255, 255, 255, 0.02), transparent 70%);
   pointer-events: none;
 }
 
@@ -1572,7 +1585,11 @@ svg.connections {
   background: var(--grad-timer);
 }
 
-.node .compare .header { background: var(--grad-compare); } /* New */
+.node .compare .header {
+  background: var(--grad-compare);
+}
+
+/* New */
 
 .node .body {
   padding: 8px 10px;
@@ -1636,7 +1653,7 @@ svg.connections {
   border-radius: 50%;
 }
 
-.pin-any .dot{
+.pin-any .dot {
   width: 12px;
   height: 12px;
   background: #4eff5a;
@@ -1654,7 +1671,9 @@ svg.connections {
   stroke: #6ef4c0;
 }
 
-.link-boolean { stroke: #4eff8b; }
+.link-boolean {
+  stroke: #4eff8b;
+}
 
 .node-selected {
   outline: 3px solid rgba(255, 255, 255, 0.1);
@@ -1691,10 +1710,33 @@ svg.connections {
   user-select: none;
 }
 
-.pin.pin-action, .pin.pin-value > span {
+.pin.pin-action,
+.pin.pin-value>span {
   width: unset;
 }
 
-.pins-right > .pin {
-  flex-direction: row-reverse; 
+.pins-right>.pin {
+  flex-direction: row-reverse;
 }
+
+.btnLeftBox {
+  display: block;
+  padding: 8px 10px;
+  margin: 6px 0;
+  background: #27464c;
+  border-radius: 8px;
+  cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  color: var(--text);
+  font-size: 11px;
+  text-align: left;
+  transition: background 0.2s;
+}
+
+.btnLeftBox:hover {
+  background: #2a3642;
+}
+
+.value-display[data-type="number"] { color:#6ef4c0; }
+.value-display[data-type="boolean"] { color:#f6d64e; }
+.value-display[data-type="string"] { color:#9fc9ff; }

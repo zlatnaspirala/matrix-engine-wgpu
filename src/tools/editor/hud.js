@@ -204,9 +204,13 @@ export default class EditorHud {
            <span>Visual Scripting</span>
            <small>⌨️FluxCodexVertex</small>
         </div>
+        <div id="showCodeVARSBtn" class="drop-item">
+           <span>Variable editor</span>
+           <small>⌨️ Visual Script tool</small>
+        </div>
         <div id="showCodeEditorBtn" class="drop-item">
            <span>Show code editor</span>
-           <small>⌨️ Function edit</small>
+           <small>⌨️ Function raw edit</small>
         </div>
       </div>
     </div>
@@ -217,9 +221,12 @@ export default class EditorHud {
       <div class="dropdown">
         <div id="hideEditorBtn" class="drop-item">
            <p>Hide Editor UI</p>
-           <small>To show editor press F4 ⌨️</small>
+           <small>Show editor - press F4 ⌨️</small>
         </div>
-        <div id="fullScreenBtn" class="drop-item">FullScreen</div>
+        <div id="fullScreenBtn" class="drop-item">
+         <span>FullScreen</span>
+         <small>Exit - press F11 ⌨️</small>
+        </div>
       </div>
     </div>
 
@@ -356,8 +363,15 @@ export default class EditorHud {
     });
 
     byId('showVisualCodeEditorBtn').addEventListener('click', (e) => {
-      console.log('show-fluxcodexvertex-editor ', e);
-      byId('app').style.display ='flex';
+      // console.log('show-fluxcodexvertex-editor ', e);
+      byId('app').style.display = 'flex';
+      this.core.editor.fluxCodexVertex.updateLinks();
+      // document.dispatchEvent(new CustomEvent('show-method-editor', {detail: {}}));
+    });
+
+    byId('showCodeVARSBtn').addEventListener('click', (e) => {
+      byId('app').style.display = 'flex';
+      byId('varsPopup').style.display = 'flex';
       this.core.editor.fluxCodexVertex.updateLinks();
       // document.dispatchEvent(new CustomEvent('show-method-editor', {detail: {}}));
     });
@@ -372,6 +386,8 @@ export default class EditorHud {
   ✔️ Networking with Kurento/OpenVidu/Own middleware Nodejs -> frontend
   ✔️ Event system
   🎯 Save system - direct code line [file-protocol]
+  🎯 Adding Visual Scripting System called 
+     FlowCodexVertex (deactivete from top menu)(activate on pressing F4 key)
      Source code: https://github.com/zlatnaspirala/matrix-engine-wgpu
      More at https://maximumroulette.com
         `);
@@ -386,8 +402,8 @@ export default class EditorHud {
     Object.assign(this.assetsBox.style, {
       position: "absolute",
       bottom: "0",
-      left: "20%",
-      width: "60%",
+      left: "17.55%",
+      width: "63%",
       height: "250px",
       backgroundColor: "rgba(0,0,0,0.85)",
       display: "flex",
@@ -594,9 +610,14 @@ export default class EditorHud {
     this.showAboutModal = () => {
       alert(`
   ✔️ Support for 3D objects and scene transformations
-  ✔️ Ammo.js physics full integration
+  ✔️ Ammo.js physics integration
   ✔️ Networking with Kurento/OpenVidu/Own middleware Nodejs -> frontend
-  🎯 Replicate matrix-engine (WebGL) features
+  ✔️ Event system
+  🎯 Save system - direct code line [file-protocol]
+  🎯 Adding Visual Scripting System called 
+     FlowCodexVertex (deactivete from top menu)(activate on pressing F4 key)
+     Source code: https://github.com/zlatnaspirala/matrix-engine-wgpu
+     More at https://maximumroulette.com
         `);
     }
     byId('showAboutEditor').addEventListener('click', this.showAboutModal);
@@ -666,9 +687,14 @@ export default class EditorHud {
     this.showAboutModal = () => {
       alert(`
   ✔️ Support for 3D objects and scene transformations
-  ✔️ Ammo.js physics full integration
+  ✔️ Ammo.js physics integration
   ✔️ Networking with Kurento/OpenVidu/Own middleware Nodejs -> frontend
-  🎯 Replicate matrix-engine (WebGL) features
+  ✔️ Event system
+  🎯 Save system - direct code line [file-protocol]
+     Adding Visual Scripting System called 
+     flowCodexVertex (deactivete from top menu)(activate on pressing F4 key)
+     Source code: https://github.com/zlatnaspirala/matrix-engine-wgpu
+     More at https://maximumroulette.com
         `);
     }
     byId('showAboutEditor').addEventListener('click', this.showAboutModal);
@@ -682,9 +708,9 @@ export default class EditorHud {
       position: "absolute",
       top: "0",
       left: "0",
-      width: "20%",
+      width: "17.5%",
       height: "100vh",
-      backgroundColor: "rgba(0,0,0,0.85)",
+      backgroundColor: "rgb(75 75 75 / 85%)",
       display: "flex",
       alignItems: "start",
       overflow: "auto",
@@ -713,7 +739,8 @@ export default class EditorHud {
     });
 
     this.sceneContainerTitle = document.createElement("div");
-    this.sceneContainerTitle.style.height = '40px';
+    this.sceneContainerTitle.style.height = '30px';
+    this.sceneContainerTitle.style.width = "-webkit-fill-available";
     this.sceneContainerTitle.style.fontSize = (isMobile() == true ? "x-larger" : "larger");
     this.sceneContainerTitle.style.padding = '5px';
     this.sceneContainerTitle.innerHTML = 'Scene container';
@@ -744,7 +771,7 @@ export default class EditorHud {
       right: "0",
       width: "20%",
       height: "100vh",
-      backgroundColor: "rgba(0,0,0,0.85)",
+      backgroundColor: "rgb(35 35 35 / 63%)",
       display: "flex",
       alignItems: "start",
       overflow: "auto",
@@ -1145,10 +1172,7 @@ class SceneObjectProperty {
   }
 
   addEditorEventsProp(currSceneObj, parentDOM) {
-
-
     this.propName.innerHTML += `<div>HIT</div>`;
-
     this.propName.innerHTML += `<div style='display:flex;'>
       <div style="align-content: center;">onTargetReached (NoPhysics)</div>
       <div><select id='sceneObjEditorPropEvents' ></select></div>

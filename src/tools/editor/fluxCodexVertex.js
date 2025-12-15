@@ -1,4 +1,7 @@
 /**
+ * @description
+ * Flux Codex Vertex use visual scripting model.
+ * 
  * @filename
  * fluxCodexVertex.js
  *
@@ -8,7 +11,7 @@
  * If a copy of the MPL was not distributed with this file,
  * You can obtain one at https://mozilla.org/MPL/2.0/.
  *
- * Copyright (c) 2025 Nikola Lukić
+ * Copyright (c) 2025 Nikola Lukić zlatnaspirala@gmail.com
  * 
  * @Note
  * License summary for fluxCodexVertex.js (MPL 2.0):
@@ -33,11 +36,18 @@
  * - MPL applies ONLY to this file
  */
 
+import {byId} from "../../engine/utils";
+
 export default class FluxCodexVertex {
   constructor(boardId, boardWrapId, logId, methodsManager) {
     this.debugMode = true;
 
     this.methodsManager = methodsManager;
+    this.variables = {
+      number: {},
+      boolean: {},
+      string: {}
+    };
     // --- DOM Elements ---
     this.board = document.getElementById(boardId);
     this.boardWrap = document.getElementById(boardWrapId);
@@ -49,6 +59,8 @@ export default class FluxCodexVertex {
     this.links = [];
     this.nodeCounter = 1;
     this.linkCounter = 1;
+
+    this._execContext = null;
 
     // --- State Management ---
     this.state = {
@@ -62,7 +74,10 @@ export default class FluxCodexVertex {
     };
 
     // Bind event listeners
+    this.createVariablesPopup();
+    this._createImportInput();
     this.bindGlobalListeners();
+
 
     // Initialize the graph
     this.init();
@@ -71,7 +86,7 @@ export default class FluxCodexVertex {
       if(e.key == 'F6') {
         e.preventDefault();
         this.runGraph();
-      } else if(e.key === "Delete" || e.key === "Backspace") {
+      } else if(e.key === "Delete" /*|| e.key === "Backspace"*/) {
         if(this.state.selectedNode) {
           this.deleteNode(this.state.selectedNode);
           this.state.selectedNode = null;
@@ -88,6 +103,286 @@ export default class FluxCodexVertex {
     this.logEl.textContent = args.join(' ');
   }
 
+  createGetNumberNode(varName) {
+    return this.addNode('getNumber', {var: varName});
+  }
+
+  createGetBooleanNode(varName) {
+    return this.addNode('getBoolean', {var: varName});
+  }
+
+  createGetStringNode(varName) {
+    return this.addNode('getString', {var: varName});
+  }
+
+  createSetNumberNode(varName) {
+    return this.addNode('setNumber', {var: varName});
+  }
+
+  createSetBooleanNode(varName) {
+    return this.addNode('setBoolean', {var: varName});
+  }
+
+  createSetStringNode(varName) {
+    return this.addNode('setString', {var: varName});
+  }
+
+  evaluateGetterNode(n) {
+    const key = n.fields?.find(f => f.key === 'var')?.value;
+
+    if(n.title === 'Get Number') {
+      n._returnCache = this.variables.number[key]?.value ?? 0;
+    }
+
+    if(n.title === 'Get Boolean') {
+      n._returnCache = this.variables.boolean[key]?.value ?? false;
+    }
+
+    if(n.title === 'Get String') {
+      n._returnCache = this.variables.string[key]?.value ?? '';
+    }
+  }
+
+  notifyVariableChanged(type, key) {
+    for(const id in this.nodes) {
+      const n = this.nodes[id];
+
+      if(!n.fields) continue;
+      if(!n.title.startsWith('Get')) continue;
+
+      const varField = n.fields.find(f => f.key === 'var');
+      if(!varField || varField.value !== key) continue;
+
+      // type guard
+      if(
+        (type === 'number' && n.title !== 'Get Number') ||
+        (type === 'boolean' && n.title !== 'Get Boolean') ||
+        (type === 'string' && n.title !== 'Get String')
+      ) continue;
+
+      // recompute getter value
+      this.evaluateGetterNode(n);
+
+      // update UI
+      if(n.displayEl) {
+        n.displayEl.textContent = n._returnCache;
+      }
+    }
+  }
+
+
+  createVariablesPopup() {
+    if(this._varsPopup) return;
+    const popup = document.createElement('div');
+    popup.id = 'varsPopup';
+    this._varsPopup = popup;
+    Object.assign(popup.style, {
+      display: 'none',
+      flexDirection: 'column',
+      position: 'absolute',
+      top: '10%',
+      left: '0',
+      width: '30%',
+      height: '50%',
+      overflow: 'scroll',
+      background: '#111',
+      border: '1px solid #444',
+      borderRadius: '8px',
+      padding: '10px',
+      zIndex: 9999,
+      color: '#eee',
+      overflowX: 'hidden'
+    });
+    /* ---------- HEADER ---------- */
+    const title = document.createElement('div');
+    title.innerHTML = `Variables`;
+    title.style.marginBottom = '8px';
+    title.style.fontWeight = 'bold';
+    popup.appendChild(title);
+
+
+    /* ---------- LIST ---------- */
+    const list = document.createElement('div');
+    list.id = 'varslist'
+    popup.appendChild(list);
+
+    /* ---------- CREATE BUTTONS ---------- */
+    const btns = document.createElement('div');
+    btns.style.marginTop = '10px';
+    btns.style.display = 'flex';
+    btns.style.gap = '6px';
+
+    btns.append(
+      this._createVarBtn('Number', 'number'),
+      this._createVarBtn('Boolean', 'boolean'),
+      this._createVarBtn('String', 'string')
+    );
+
+    popup.appendChild(btns);
+
+    const hideVPopup = document.createElement('button');
+    hideVPopup.innerText = `Hide`;
+    hideVPopup.style.margin = '18px 18px 18px 18px';
+    // hideVPopup.style.padding = '8px 8px 8px 8px';
+    hideVPopup.style.fontWeight = 'bold';
+    hideVPopup.style.height = '4%';
+    hideVPopup.style.webkitTextStrokeWidth = '0px';
+    hideVPopup.addEventListener('click', () => {
+      byId('varsPopup').style.display = 'none';
+    })
+    popup.appendChild(hideVPopup);
+
+    document.body.appendChild(popup);
+    // byId('app').appendChild(popup);
+
+    this.makePopupDraggable(popup);
+
+    this._refreshVarsList(list);
+  }
+
+  _refreshVarsList(container) {
+    container.innerHTML = '';
+
+    const colors = {
+      number: '#4fc3f7',
+      boolean: '#aed581',
+      string: '#ffb74d'
+    };
+
+    for(const type in this.variables) {
+      for(const name in this.variables[type]) {
+        const row = document.createElement('div');
+
+        Object.assign(row.style, {
+          display: 'flex',
+          alignItems: 'center',
+          gap: '6px',
+          padding: '4px',
+          cursor: 'pointer',
+          borderBottom: '1px solid #222',
+          color: colors[type],
+          webkitTextStrokeWidth: '0px'
+        });
+
+        /* label */
+        const label = document.createElement('span');
+        label.textContent = `${name} (${type})`;
+
+        /* value input */
+        const input = document.createElement('input');
+        input.value = this.variables[type][name].value ?? '';
+        input.style.width = '60px';
+        input.style.background = '#000';
+        input.style.color = '#fff';
+        input.style.border = '1px solid #333';
+
+        input.oninput = e => {
+          this.variables[type][name].value =
+            type === 'number' ? Number(e.target.value) :
+              type === 'boolean' ? e.target.value === 'true' :
+                e.target.value;
+        };
+
+        // /* CLICK → create getter node */
+        // row.onclick = () => {
+        //   if(type === 'number') {
+        //     this.createGetNumberNode(name);
+        //   }
+        //   // boolean/string later
+        // };
+
+        const propagate = document.createElement('button');
+        propagate.innerText = `Get ${name}`;
+        /* CLICK → create getter node */
+        propagate.onclick = () => {
+          if(type === 'number') {
+            this.createGetNumberNode(name);
+          }
+          // boolean/string later
+        };
+
+        const propagateSet = document.createElement('button');
+        propagateSet.innerText = `Set ${name}`;
+        /* CLICK → create getter node */
+        propagateSet.onclick = () => {
+          if(type === 'number') {
+            this.createSetNumberNode(name);
+          }
+          // boolean/string later
+        };
+
+        row.append(label, input, propagate, propagateSet);
+        container.appendChild(row);
+      }
+    }
+  }
+
+  makePopupDraggable(popup, handle = popup) {
+    let isDragging = false;
+    let startX = 0;
+    let startY = 0;
+    let startLeft = 0;
+    let startTop = 0;
+
+    handle.style.cursor = 'move';
+
+    handle.addEventListener('mousedown', e => {
+      isDragging = true;
+      startX = e.clientX;
+      startY = e.clientY;
+
+      const rect = popup.getBoundingClientRect();
+      startLeft = rect.left;
+      startTop = rect.top;
+
+      popup.style.left = startLeft + 'px';
+      popup.style.top = startTop + 'px';
+      popup.style.transform = 'none';
+
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    });
+
+    const onMove = e => {
+      if(!isDragging) return;
+      popup.style.left = startLeft + (e.clientX - startX) + 'px';
+      popup.style.top = startTop + (e.clientY - startY) + 'px';
+    };
+
+    const onUp = () => {
+      isDragging = false;
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    };
+  }
+
+  _createVarBtn(label, type) {
+    const btn = document.createElement('button');
+    btn.textContent = label;
+    btn.style.flex = '1';
+    btn.style.cursor = 'pointer';
+    btn.classList.add('btn')
+    btn.onclick = () => {
+      const name = prompt(`New ${type} variable name`);
+      if(!name) return;
+
+      if(this.variables[type][name]) {
+        alert('Variable exists');
+        return;
+      }
+
+      this.variables[type][name] = {
+        value: type === 'number' ? 0 :
+          type === 'boolean' ? false : ''
+      };
+
+      this._refreshVarsList(this._varsPopup.children[1]);
+    };
+
+    return btn;
+  }
+
+
   _getPinDot(nodeId, pinName, isOutput) {
     const nodeEl = document.querySelector(`.node[data-id="${nodeId}"]`);
     if(!nodeEl) return null;
@@ -95,6 +390,25 @@ export default class FluxCodexVertex {
     return nodeEl.querySelector(`.pin[data-pin="${pinName}"][data-io="${io}"] .dot`);
   }
 
+  populateVariableSelect(select, type) {
+    select.innerHTML = '';
+
+    const vars = this.variables[type];
+    if(!vars.length) {
+      const opt = document.createElement('option');
+      opt.textContent = '(no variables)';
+      opt.disabled = true;
+      select.appendChild(opt);
+      return;
+    }
+
+    vars.forEach(v => {
+      const opt = document.createElement('option');
+      opt.value = v.name;
+      opt.textContent = v.name;
+      select.appendChild(opt);
+    });
+  }
   // --------------------------------------------------------------------
   // Dynamic Method Helpers
   // --------------------------------------------------------------------
@@ -361,7 +675,7 @@ export default class FluxCodexVertex {
     }
 
     // --- Function Method Selector ---
-    if(spec.category === 'action' && !spec.builtIn) {
+    if(spec.category === 'action' && !spec.builtIn && !spec.isVariableNode) {
       const select = document.createElement('select');
       select.className = 'method-select';
       select.style.cssText = 'width:100%; margin-top:6px;';
@@ -381,6 +695,22 @@ export default class FluxCodexVertex {
           this.adaptNodeToMethod(spec, selected);
         }
       });
+    }
+
+    // Variable name input (temporary until popup)
+    if(spec.fields?.some(f => f.key === 'var')) {
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.value = spec.fields.find(f => f.key === 'var')?.value ?? '';
+      input.readOnly = true;
+
+      input.style.width = '100%';
+      input.style.marginTop = '6px';
+      input.style.opacity = '0.7';
+      input.style.cursor = 'default';
+
+      body.appendChild(input);
+
     }
 
     el.appendChild(body);
@@ -424,7 +754,7 @@ export default class FluxCodexVertex {
     return false;
   }
 
-  addNode(type) {
+  addNode(type, options = {}) {
     const id = 'node_' + (this.nodeCounter++);
     const x = Math.abs(this.state.pan[0]) + 100 + Math.random() * 200;
     const y = Math.abs(this.state.pan[1]) + 100 + Math.random() * 200;
@@ -460,27 +790,11 @@ export default class FluxCodexVertex {
         fields: [{key: 'min', value: '0'}, {key: 'max', value: '10'}]
       }),
       'print': (id, x, y) => ({
-        id,
-        title: 'Print',
-        x,
-        y,
+        id, title: 'Print', x, y,
         category: 'actionprint',
-
-        // FLOW + DATA
-        inputs: [
-          {name: 'exec', type: 'action'},
-          {name: 'value', type: 'any'}   // 👈 value to print (ANY is correct)
-        ],
-
-        outputs: [
-          {name: 'execOut', type: 'action'}
-        ],
-
-        // UI-only literal fields (NOT pins)
-        fields: [
-          {key: 'label', value: 'Result'}
-        ],
-
+        inputs: [{name: 'exec', type: 'action'}, {name: 'value', type: 'any'}],
+        outputs: [{name: 'execOut', type: 'action'}],
+        fields: [{key: 'label', value: 'Result'}],
         builtIn: true
       }),
       'timeout': (id, x, y) => ({
@@ -535,11 +849,79 @@ export default class FluxCodexVertex {
         outputs: [{name: 'result', type: 'boolean'}]
       }),
 
+      'getNumber': (id, x, y) => ({
+        id, title: 'Get Number', x, y,
+        category: 'value',
+        outputs: [{name: 'result', type: 'number'}],
+        fields: [{key: 'var', value: ''}],
+        isGetterNode: true // flag for special handling
+      }),
+
+      'getBoolean': (id, x, y) => ({
+        id, title: 'Get Boolean', x, y,
+        category: 'value',
+        outputs: [{name: 'result', type: 'boolean'}],
+        fields: [{key: 'var', value: ''}]
+      }),
+
+      'getString': (id, x, y) => ({
+        id, title: 'Get String', x, y,
+        category: 'value',
+        outputs: [{name: 'result', type: 'string'}],
+        fields: [{key: 'var', value: ''}]
+      }),
+
+      'setNumber': (id, x, y) => ({
+        id, title: 'Set Number', x, y,
+        category: 'action',
+        isVariableNode: true,
+        inputs: [
+          {name: 'exec', type: 'action'},
+          {name: 'value', type: 'number'}
+        ],
+        outputs: [{name: 'execOut', type: 'action'}],
+        fields: [
+          {key: 'var', value: ''},
+          {key: 'literal', value: 0}
+        ]
+      }),
+
+      'setBoolean': (id, x, y) => ({
+        id, title: 'Set Boolean', x, y,
+        category: 'action',
+        inputs: [
+          {name: 'exec', type: 'action'},
+          {name: 'value', type: 'boolean'}
+        ],
+        outputs: [{name: 'execOut', type: 'action'}],
+        fields: [{key: 'var', value: ''}]
+      }),
+
+      'setString': (id, x, y) => ({
+        id, title: 'Set String', x, y,
+        category: 'action',
+        inputs: [
+          {name: 'exec', type: 'action'},
+          {name: 'value', type: 'string'}
+        ],
+        outputs: [{name: 'execOut', type: 'action'}],
+        fields: [{key: 'var', value: ''}]
+      }),
     };
+
 
     // Generate node spec
     let spec = null;
     if(nodeFactories[type]) spec = nodeFactories[type](id, x, y);
+
+    if(spec && spec.fields && options) {
+      for(const f of spec.fields) {
+        if(options[f.key] !== undefined) {
+          f.value = options[f.key];
+        }
+      }
+    }
+
 
     if(spec) {
       const dom = this.createNodeDOM(spec);
@@ -551,6 +933,12 @@ export default class FluxCodexVertex {
     return null;
   }
 
+  setVariable(type, key, value) {
+    if(!this.variables[type][key]) return;
+
+    this.variables[type][key].value = value;
+    this.notifyVariableChanged(type, key);
+  }
 
   _executeAttachedMethod(n) {
     if(n.attachedMethod) {
@@ -565,88 +953,165 @@ export default class FluxCodexVertex {
     }
   }
 
-getValue(nodeId, pinName, visited = new Set()) {
-  const node = this.nodes[nodeId];
-  if(!node || visited.has(nodeId)) return undefined;
-  visited.add(nodeId);
+  getValue(nodeId, pinName, visited = new Set()) {
+    const node = this.nodes[nodeId];
+    if(!node || visited.has(nodeId)) return undefined;
+    visited.add(nodeId);
 
-  console.log(`[GET] Node ${nodeId} pin "${pinName}"`);
-
-  // 1️⃣ Check literal fields
-  const field = node.fields?.find(f => f.key === pinName);
-  if(field !== undefined) {
-    console.log(`  → Using literal field "${pinName}":`, field.value);
-    return field.value;
-  }
-
-  // 2️⃣ Check linked input pin
-  const link = this.links.find(l => l.to.node === nodeId && l.to.pin === pinName);
-  if(link) {
-    console.log(`  → Linked from Node ${link.from.node} pin ${link.from.pin}`);
-    return this.getValue(link.from.node, link.from.pin, visited);
-  }
-
-  // 3️⃣ Check input pin (not linked)
-  const inputPin = node.inputs?.find(p => p.name === pinName);
-  if(inputPin) {
-    console.log(`  → No link, using literal/default for input pin "${pinName}"`);
-    return inputPin.default ?? 0;
-  }
-
-  // 4️⃣ Guard for nodes that produce output
-  if(node.outputs?.some(o => o.name === pinName)) {
-    // If not evaluated, run node
-    if(node._returnCache === undefined) {
-      console.log(`  → Node ${nodeId} output "${pinName}" not cached, triggering node...`);
-      this.triggerNode(nodeId);  // Execute node to populate _returnCache
+    // Block IF condition evaluation outside exec
+    if(node.title === 'if' && pinName === 'condition' && this._execContext !== nodeId) {
+      console.warn(`[GET] Blocked IF condition outside exec for node ${nodeId}`);
+      return undefined;
     }
-    console.log(`  → Using _returnCache for output pin "${pinName}":`, node._returnCache);
-    return node._returnCache;
+
+    // 1️⃣ Literal field
+    const field = node.fields?.find(f => f.key === pinName);
+    if(field) return field.value;
+
+    // 2️⃣ Linked input pin
+    const link = this.links.find(l => l.to.node === nodeId && l.to.pin === pinName);
+    if(link) return this.getValue(link.from.node, link.from.pin, visited);
+
+    // 3️⃣ Default input pin
+    const inputPin = node.inputs?.find(p => p.name === pinName);
+    if(inputPin) return inputPin.default ?? 0;
+
+    // 4️⃣ Dynamic output (computed node)
+    if(node.outputs?.some(o => o.name === pinName)) {
+      const dynamicNodes = ['GenRandInt', 'RandomFloat'];
+      if(node._returnCache === undefined || dynamicNodes.includes(node.title)) {
+        this._execContext = nodeId;
+        this.triggerNode(nodeId);
+        this._execContext = null;
+      }
+      return node._returnCache;
+    }
+
+    return undefined;
   }
-
-  console.log(`  → Pin "${pinName}" not found, returning undefined`);
-  return undefined;
-}
-
 
 
   updateValueDisplays() {
     Object.values(this.nodes).forEach(n => {
-      if(n.displayEl && n.outputs?.some(o => o.name === 'result')) {
-        n.displayEl.textContent = this.getValue(n.id, 'result').toFixed(3);
+      if(!n.displayEl) return;
+
+      const out = n.outputs?.find(o => o.name === 'result');
+      if(!out) return;
+
+      const v = this.getValue(n.id, 'result');
+
+      if(v === undefined) {
+        n.displayEl.textContent = '—';
+      }
+      else if(typeof v === 'number') {
+        n.displayEl.textContent = v.toFixed(3);
+      }
+      else {
+        n.displayEl.textContent = String(v);
       }
     });
   }
 
-  triggerNode(id) {
-    const n = this.nodes[id];
-    if(!n) return;
+  invalidateVariableGetters(type, varName) {
+    for(const id in this.nodes) {
+      const n = this.nodes[id];
+      if(
+        n.category === 'value' &&
+        n.fields?.some(f => f.key === 'var' && f.value === varName) &&
+        n.title === `Get ${type[0].toUpperCase() + type.slice(1)}`
+      ) {
+        delete n._returnCache;
+      }
+    }
+  }
 
-    const el = document.querySelector(`.node[data-id="${id}"] .header`);
-    if(el) {
-      el.style.filter = 'brightness(1.5)';
-      setTimeout(() => el.style.filter = 'none', 200);
+  triggerNode(nodeId) {
+    const n = this.nodes[nodeId];
+    if(!n) return;
+    this._execContext = nodeId;
+
+    // Highlight node header
+    const highlight = document.querySelector(`.node[data-id="${nodeId}"] .header`);
+    if(highlight) {
+      highlight.style.filter = 'brightness(1.5)';
+      setTimeout(() => highlight.style.filter = 'none', 200);
     }
 
-    // Event nodes
+    // --- Handle Getter Nodes ---
+    if(n.isGetterNode) {
+      const varField = n.fields?.find(f => f.key === 'var');
+      if(varField && varField.value) {
+        const type = n.title.replace('Get ', '').toLowerCase(); // number / boolean / string
+        const value = this.getVariable(type, varField.value);
+        n._returnCache = value;
+
+        // Update visual label if exists
+        if(n.displayEl) n.displayEl.textContent =
+          typeof value === 'number' ? value.toFixed(3) : String(value);
+      }
+
+      n.finished = true;
+      return;
+    }
+
+    // -----------------------------
+    // Event Nodes
+    // -----------------------------
     if(n.category === 'event') {
       this.enqueueOutputs(n, 'exec');
       return;
     }
 
-    // Action/Print/Timer nodes
-    if(n.category === 'action' || n.category === 'timer' || n.category === 'actionprint') {
-      // Execute attached method if exists
-      this._executeAttachedMethod(n);
+    // -----------------------------
+    // Variable Setter Nodes (skip Set Number)
+    // -----------------------------
+    if(n.isVariableNode && n.title !== 'Set Number') {
+      const type = n.title.replace('Set ', '').toLowerCase();
+      const varField = n.fields?.find(f => f.key === 'var');
+      if(varField && varField.value) {
+        const value = this.getValue(nodeId, 'value');
+        this.setVariable(type, varField.value, value);
+      }
+    }
 
-      // Built-in nodes
+    // --- Handle SetNumber Nodes ---
+    if(n.title === 'Set Number') {
+      const varField = n.fields?.find(f => f.key === 'var');
+      if(varField && varField.value) {
+        const valInput = this.getValue(nodeId, 'value');
+        this.variables.number[varField.value] = {value: valInput};
+
+        // Update all corresponding GetNumber nodes immediately
+        for(const nodeId2 in this.nodes) {
+          const node2 = this.nodes[nodeId2];
+          if(node2.isGetterNode) {
+            const vf2 = node2.fields?.find(f => f.key === 'var');
+            if(vf2 && vf2.value === varField.value && node2.displayEl) {
+              node2.displayEl.textContent =
+                typeof valInput === 'number' ? valInput.toFixed(3) : String(valInput);
+              node2._returnCache = valInput;
+            }
+          }
+        }
+      }
+
+      n.finished = true;
+      this.enqueueOutputs(n, 'execOut');
+      return;
+    }
+
+    // -----------------------------
+    // Action / Print / Timer Nodes
+    // -----------------------------
+    if(['action', 'actionprint', 'timer'].includes(n.category)) {
+      if(n.attachedMethod) this._executeAttachedMethod(n);
+
       if(n.title === 'Print') {
-        const valueToPrint = this.getValue(id, 'value');
-        const labelField = n.fields?.find(f => f.key === 'label');
-        const label = labelField ? labelField.value : 'Print:';
-        if(n.displayEl) n.displayEl.textContent = valueToPrint;
-        console.log(`[Blueprint] ${label}`, valueToPrint);
-        this.log(`> ${label}`, valueToPrint);
+        const val = this.getValue(nodeId, 'value');
+        const label = n.fields?.find(f => f.key === 'label')?.value || 'Print:';
+        if(n.displayEl) n.displayEl.textContent = val;
+        console.log(`[Print] ${label}`, val);
+        this.log(`> ${label}`, val);
       } else if(n.title === 'SetTimeout') {
         const delay = +n.fields?.find(f => f.key === 'delay')?.value || 1000;
         setTimeout(() => this.enqueueOutputs(n, 'execOut'), delay);
@@ -657,70 +1122,57 @@ getValue(nodeId, pinName, visited = new Set()) {
       return;
     }
 
-    // IF node
-    else if(n.category === 'logic' && n.title === 'if') {
-      // Evaluate condition
-      let condition = this.getValue(id, 'condition');
-
-      // If no literal and no link, check connected Compare node output
-      if(condition === undefined) {
-        const link = this.links.find(l => l.to.node === id && l.to.pin === 'condition');
-        if(link) {
-          condition = this.getValue(link.from.node, link.from.pin);
-        }
-      }
-
-      console.log('IF node', id, 'evaluated condition:', condition);
+    // -----------------------------
+    // IF Node
+    // -----------------------------
+    if(n.category === 'logic' && n.title === 'if') {
+      const condition = Boolean(this.getValue(nodeId, 'condition'));
       this.enqueueOutputs(n, condition ? 'true' : 'false');
+      this._execContext = null;
+      return;
     }
-    // Math/value nodes
+
+    // -----------------------------
+    // Math / Value / Compare Nodes
+    // -----------------------------
     if(['math', 'value', 'compare'].includes(n.category)) {
+      let result;
 
-      // --- Comparison nodes ---
-      if(n.category === 'compare') {
-        const a = this.getValue(id, 'A');
-        const b = this.getValue(id, 'B');
-        let result;
-        switch(n.title) {
-          case 'A > B': result = a > b; break;
-          case 'A < B': result = a < b; break;
-          case 'A == B': result = a == b; break;
-          case 'A != B': result = a != b; break;
-          case 'A >= B': result = a >= b; break;
-          case 'A <= B': result = a <= b; break;
-        }
-        n._returnCache = result;
-        if(n.displayEl) n.displayEl.textContent = result;
+      switch(n.title) {
+        case 'Add': result = this.getValue(nodeId, 'a') + this.getValue(nodeId, 'b'); break;
+        case 'Sub': result = this.getValue(nodeId, 'a') - this.getValue(nodeId, 'b'); break;
+        case 'Mul': result = this.getValue(nodeId, 'a') * this.getValue(nodeId, 'b'); break;
+        case 'Div': result = this.getValue(nodeId, 'a') / this.getValue(nodeId, 'b'); break;
+        case 'Sin': result = Math.sin(this.getValue(nodeId, 'a')); break;
+        case 'Cos': result = Math.cos(this.getValue(nodeId, 'a')); break;
+        case 'Pi': result = Math.PI; break;
+        case 'A > B': result = this.getValue(nodeId, 'A') > this.getValue(nodeId, 'B'); break;
+        case 'A < B': result = this.getValue(nodeId, 'A') < this.getValue(nodeId, 'B'); break;
+        case 'A == B': result = this.getValue(nodeId, 'A') == this.getValue(nodeId, 'B'); break;
+        case 'A != B': result = this.getValue(nodeId, 'A') != this.getValue(nodeId, 'B'); break;
+        case 'A >= B': result = this.getValue(nodeId, 'A') >= this.getValue(nodeId, 'B'); break;
+        case 'A <= B': result = this.getValue(nodeId, 'A') <= this.getValue(nodeId, 'B'); break;
+        case 'GenRandInt':
+          const min = +n.fields?.find(f => f.key === 'min')?.value || 0;
+          const max = +n.fields?.find(f => f.key === 'max')?.value || 10;
+          result = Math.floor(Math.random() * (max - min + 1)) + min;
+          break;
+        default:
+          result = undefined;
       }
 
-      // --- Random Int ---
-      if(n.title === 'GenRandInt') {
-        const min = parseInt(this.getValue(id, 'min')) || 0;
-        const max = parseInt(this.getValue(id, 'max')) || 10;
-        const result = Math.floor(Math.random() * (max - min + 1)) + min;
-        n._returnCache = result;
-        if(n.displayEl) n.displayEl.textContent = result;
-      }
-
-      // --- Math nodes ---
-      else if(['Add', 'Sub', 'Mul', 'Div', 'Sin', 'Cos', 'Pi'].includes(n.title)) {
-        let a = parseFloat(this.getValue(id, 'a')) || 0;
-        let b = parseFloat(this.getValue(id, 'b')) || 0;
-        let result = 0;
-        switch(n.title) {
-          case 'Add': result = a + b; break;
-          case 'Sub': result = a - b; break;
-          case 'Mul': result = a * b; break;
-          case 'Div': result = b !== 0 ? a / b : 0; break;
-          case 'Sin': result = Math.sin(a); break;
-          case 'Cos': result = Math.cos(a); break;
-          case 'Pi': result = Math.PI; break;
-        }
-        n._returnCache = result;
-        if(n.displayEl) n.displayEl.textContent = result;
-      }
+      n._returnCache = result;
+      if(n.displayEl) n.displayEl.textContent =
+        typeof result === 'number' ? result.toFixed(3) : String(result);
     }
 
+    this._execContext = null;
+  }
+
+
+  getVariable(type, key) {
+    if(!this.variables[type][key]) return undefined;
+    return this.variables[type][key].value;
   }
 
   enqueueOutputs(n, pinName) {
@@ -822,18 +1274,105 @@ getValue(nodeId, pinName, visited = new Set()) {
   }
 
   compileGraph() {
-    const bundle = {nodes: this.nodes, links: this.links, nodeCounter: this.nodeCounter, linkCounter: this.linkCounter, pan: this.state.pan};
+    const bundle = {
+      nodes: this.nodes,
+      links: this.links,
+      nodeCounter: this.nodeCounter,
+      linkCounter: this.linkCounter,
+      pan: this.state.pan,
+      variables: this.variables
+    };
     localStorage.setItem(FluxCodexVertex.SAVE_KEY, JSON.stringify(bundle));
     this.log('Graph saved to LocalStorage!');
   }
 
   clearStorage() {localStorage.removeItem(FluxCodexVertex.SAVE_KEY); this.log('Save cleared. Refresh to reset.');}
 
+  _buildSaveBundle() {
+    return {
+      nodes: this.nodes,
+      links: this.links,
+      nodeCounter: this.nodeCounter,
+      linkCounter: this.linkCounter,
+      pan: this.state.pan,
+      variables: this.variables,
+      version: 1
+    };
+  }
+
+  _loadFromBundle(data) {
+    this.nodes = data.nodes || {};
+    this.links = data.links || {};
+    this.nodeCounter = data.nodeCounter || 0;
+    this.linkCounter = data.linkCounter || 0;
+    this.state.pan = data.pan || {x: 0, y: 0};
+
+    this.variables = data.variables || {
+      number: {},
+      boolean: {},
+      string: {}
+    };
+
+    // refresh UI
+    this._refreshVarsList(this._varsPopup.children[1]);
+    this.loadFromImport();
+
+    this.log('Graph imported from JSON');
+  }
+
+  exportToJSON() {
+    const bundle = this._buildSaveBundle();
+    const json = JSON.stringify(bundle, null, 2);
+
+    const blob = new Blob([json], {type: 'application/json'});
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'fluxcodex-graph.json';
+    a.click();
+
+    URL.revokeObjectURL(url);
+
+    this.log('Graph exported as JSON');
+  }
+
+  _createImportInput() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.style.display = 'none';
+
+    input.onchange = (e) => {
+      const file = e.target.files[0];
+      if(!file) return;
+
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const data = JSON.parse(reader.result);
+          this._loadFromBundle(data);
+        } catch(err) {
+          console.error('Invalid JSON file', err);
+        }
+      };
+      reader.readAsText(file);
+    };
+
+    document.body.appendChild(input);
+    this._importInput = input;
+  }
+
   init() {
     const saved = localStorage.getItem(FluxCodexVertex.SAVE_KEY);
     if(saved) {
       try {
         const data = JSON.parse(saved);
+        console.log('data.variables', data.variables)
+        if(data.variables) {
+          this.variables = data.variables;
+          this._refreshVarsList(this._varsPopup.children[1]);
+        }
         this.nodes = data.nodes || {};
         this.links = data.links || [];
         this.nodeCounter = data.nodeCounter || 1;
@@ -857,6 +1396,26 @@ getValue(nodeId, pinName, visited = new Set()) {
       } catch(e) {console.error("Failed to load graph from storage:", e);}
     }
     this.addNode('event');
+  }
+
+  loadFromImport() {
+    Object.values(this.nodes).forEach(spec => {
+      const domEl = this.createNodeDOM(spec);
+      this.board.appendChild(domEl);
+
+      if((spec.category === 'value' && spec.title !== 'GenRandInt') || spec.category === 'math' || spec.title === 'Print') {
+        spec.displayEl = domEl.querySelector('.value-display');
+      }
+
+      // Only function nodes get dynamic pins updated
+      if(spec.category === 'action' && spec.title === 'Function') {
+        this.updateNodeDOM(spec.id);
+      }
+    });
+    this.updateLinks(); this.updateValueDisplays(); this.log('Restored graph.');
+
+    this.compileGraph();
+    return;
   }
 }
 

@@ -31,6 +31,7 @@ export default class EditorProvider {
             ) document.dispatchEvent(new CustomEvent('web.editor.update.pos', {
               detail: e.detail
             }));
+            break;
           }
         case 'rotation':
           {
@@ -41,6 +42,7 @@ export default class EditorProvider {
             ) document.dispatchEvent(new CustomEvent('web.editor.update.rot', {
               detail: e.detail
             }));
+              break;
           }
         default:
           console.log('changes not saved.')

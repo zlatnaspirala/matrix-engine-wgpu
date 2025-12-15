@@ -48,9 +48,6 @@ export default class MethodsManager {
     })
   }
 
-  /*=====================================================
-     UI
-  =====================================================*/
   createUI() {
     // Wrapper
     this.wrapper = document.createElement("div");
@@ -165,14 +162,10 @@ export default class MethodsManager {
     document.body.appendChild(this.popup);
   }
 
-  /*=====================================================
-     Logic
-  =====================================================*/
-
   openEditor(existing) {
     this.editing = existing || null;
     this.textarea.value = existing ? existing.code : "";
-    this.popup.style.display = "block";
+    // this.popup.style.display = "block";
   }
 
   saveMethod() {
