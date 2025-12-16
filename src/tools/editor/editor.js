@@ -24,7 +24,7 @@ export class Editor {
         setTimeout(() => {
           this.fluxCodexVertex.updateLinks();
         }, 3000);
-      }, 300);
+      }, 1500);
     }
     // console.log("methodsManager", this.methodsManager);
   }

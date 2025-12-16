@@ -48,6 +48,16 @@ export default class FluxCodexVertex {
       boolean: {},
       string: {}
     };
+
+    const PIN_COLORS = {
+      position: '#3b82f6',   // blue
+      rotation: '#a855f7',   // purple
+      scale: '#22c55e',      // green
+      vector: '#06b6d4',     // cyan (x,y,z)
+      number: '#facc15',     // yellow
+      exec: '#ffffff'
+    };
+    
     // --- DOM Elements ---
     this.board = document.getElementById(boardId);
     this.boardWrap = document.getElementById(boardWrapId);

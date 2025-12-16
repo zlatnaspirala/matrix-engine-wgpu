@@ -15600,6 +15600,19 @@ var FluxCodexVertex = class _FluxCodexVertex {
       boolean: {},
       string: {}
     };
+    const PIN_COLORS = {
+      position: "#3b82f6",
+      // blue
+      rotation: "#a855f7",
+      // purple
+      scale: "#22c55e",
+      // green
+      vector: "#06b6d4",
+      // cyan (x,y,z)
+      number: "#facc15",
+      // yellow
+      exec: "#ffffff"
+    };
     this.board = document.getElementById(boardId);
     this.boardWrap = document.getElementById(boardWrapId);
     this.svg = this.board.querySelector("svg.connections");
@@ -17159,8 +17172,12 @@ var EditorHud = class {
       document.dispatchEvent(new CustomEvent("show-method-editor", { detail: {} }));
     });
     byId("showVisualCodeEditorBtn").addEventListener("click", (e) => {
-      byId("app").style.display = "flex";
-      this.core.editor.fluxCodexVertex.updateLinks();
+      if (byId("app").style.display == "flex") {
+        byId("app").style.display = "none";
+      } else {
+        byId("app").style.display = "flex";
+        this.core.editor.fluxCodexVertex.updateLinks();
+      }
     });
     byId("showCodeVARSBtn").addEventListener("click", (e) => {
       byId("app").style.display = "flex";
@@ -18105,7 +18122,7 @@ var Editor = class {
         setTimeout(() => {
           this.fluxCodexVertex.updateLinks();
         }, 3e3);
-      }, 300);
+      }, 1500);
     }
   }
   check(a) {
