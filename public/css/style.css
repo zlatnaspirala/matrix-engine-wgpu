@@ -1403,6 +1403,8 @@ input[type=number]:hover::-webkit-outer-spin-button {
   --grad-math: linear-gradient(135deg, #ff6ec6, #d23aa1);
   --grad-value: linear-gradient(135deg, #6ef4c0, #3aa88f);
   --grad-timer: linear-gradient(135deg, #ff8c6e, #d23a2b);
+  --grad-compare: linear-gradient(135deg, #ecec4b, #d7b50c);
+  --grad-scene: linear-gradient(135deg, #1068c0, #0f7ee6);
 }
 
 /* html,
@@ -1585,9 +1587,14 @@ svg.connections {
   background: var(--grad-timer);
 }
 
-.node .compare .header {
+.node.compare .header {
   background: var(--grad-compare);
 }
+
+.node.scene .header {
+  background: var(--grad-scene);
+}
+
 
 /* New */
 
@@ -1721,8 +1728,8 @@ svg.connections {
 
 .btnLeftBox {
   display: block;
-  padding: 8px 10px;
-  margin: 6px 0;
+  padding: 5px 8px;
+  margin: 3px 0;
   background: #27464c;
   border-radius: 8px;
   cursor: pointer;

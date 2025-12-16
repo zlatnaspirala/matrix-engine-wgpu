@@ -15984,7 +15984,6 @@ var FluxCodexVertex = class _FluxCodexVertex {
     return type;
   }
   updateSceneObjectPins(node, objectName) {
-    node.outputs = [{ name: "execOut", type: "action" }];
     const obj = (window.app?.mainRenderBundle || []).find((o) => o.name === objectName);
     if (!obj) return;
     const props = ["name", "position", "rotation", "scale"];
@@ -16371,6 +16370,7 @@ var FluxCodexVertex = class _FluxCodexVertex {
         fields: [{ key: "var", value: "" }, { key: "literal", value: "" }]
       }),
       "getSceneObject": (id2, x2, y2) => ({
+        noExec: true,
         id: id2,
         title: "Get Scene Object",
         x: x2,
@@ -18102,38 +18102,41 @@ var Editor = class {
     FCV.innerHTML = `
     <div id="leftBar">
       <h3>Events/Func</h3>
-      <button class="btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('event')">Event: onLoad</button>
-      <button class="btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('function')">Function</button>
-      <button class="btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('if')">If Branch</button>
-      <button class="btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('genrand')">GenRandInt</button>
-      <button class="btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('print')">Print</button>
-      <button class="btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('timeout')">SetTimeout</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('event')">Event: onLoad</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('function')">Function</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('if')">If Branch</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('genrand')">GenRandInt</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('print')">Print</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('timeout')">SetTimeout</button>
+      <hr style="border:none; height:1px; background:rgba(255,255,255,0.03); margin:10px 0;">
+      <span>Scene objects</span>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getSceneObject')">Get scene object</button>
       <hr style="border:none; height:1px; background:rgba(255,255,255,0.03); margin:10px 0;">
       <span>Math</span>
-      <button class="btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('add')">Add (+)</button>
-      <button class="btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('sub')">Sub (-)</button>
-      <button class="btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('mul')">Mul (*)</button>
-      <button class="btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('div')">Div (/)</button>
-      <button class="btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('sin')">Sin</button>
-      <button class="btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('cos')">Cos</button>
-      <button class="btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('pi')">Pi</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('add')">Add (+)</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('sub')">Sub (-)</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('mul')">Mul (*)</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('div')">Div (/)</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('sin')">Sin</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('cos')">Cos</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('pi')">Pi</button>
       <hr style="border:none; height:1px; background:rgba(255,255,255,0.03); margin:10px 0;">
       <span>COMPARISON</span>
-      <button class="btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('equal')">Equal (==)</button>
-      <button class="btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('notequal')">Not Equal (!=)</button>
-      <button class="btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('greater')">Greater (>)</button>
-      <button class="btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('less')">Less (<)</button>
-      <button class="btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('greaterEqual')">Greater/Equal (>=)</button>
-      <button class="btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('lessEqual')">Less/Equal (<=)</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('equal')">Equal (==)</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('notequal')">Not Equal (!=)</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('greater')">Greater (>)</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('less')">Less (<)</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('greaterEqual')">Greater/Equal (>=)</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('lessEqual')">Less/Equal (<=)</button>
       <hr style="border:none; height:1px; background:rgba(255,255,255,0.03); margin:10px 0;">
       <hr style="border:none; height:1px; background:rgba(255,255,255,0.03); margin:10px 0;">
       <span>Compile FluxCodexVertex</span>
-      <button class="btnLeftBox" onclick="app.editor.fluxCodexVertex.compileGraph()">Save to LocalStorage</button>
-      <button class="btnLeftBox" onclick="clearStorage()">Clear Save</button>
-      <button class="btnLeftBox" onclick="app.editor.fluxCodexVertex.runGraph()">Run</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.compileGraph()">Save to LocalStorage</button>
+      <button class="btn4 btnLeftBox" onclick="clearStorage()">Clear Save</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.runGraph()">Run</button>
       <hr style="border:none; height:1px; background:rgba(255,255,255,0.03); margin:10px 0;">
-      <button class="btnLeftBox" onclick="app.editor.fluxCodexVertex.exportToJSON()">Export (JSON)</button>
-      <button class="btnLeftBox" onclick="app.editor.fluxCodexVertex._importInput.click()">Import (JSON)</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.exportToJSON()">Export (JSON)</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex._importInput.click()">Import (JSON)</button>
 
       <pre id="log" aria-live="polite"></pre>
     </div>

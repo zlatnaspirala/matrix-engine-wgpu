@@ -578,7 +578,7 @@ export default class FluxCodexVertex {
   }
 
   updateSceneObjectPins(node, objectName) {
-    node.outputs = [{name: 'execOut', type: 'action'}]; // optional exec if needed
+    // node.outputs = [{name: 'execOut', type: 'action'}]; // optional exec if needed
 
     const obj = (window.app?.mainRenderBundle || []).find(o => o.name === objectName);
     if(!obj) return;
@@ -770,7 +770,6 @@ export default class FluxCodexVertex {
         spec.fields[0].value = name;
         this.updateSceneObjectPins(spec, name);
       });
-
       el.appendChild(select);
     }
 
@@ -975,6 +974,7 @@ export default class FluxCodexVertex {
       }),
 
       'getSceneObject': (id, x, y) => ({
+        noExec: true,
         id, title: 'Get Scene Object', x, y,
         category: 'scene',
         inputs: [], // no inputs
