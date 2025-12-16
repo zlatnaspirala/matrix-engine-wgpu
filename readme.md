@@ -32,7 +32,7 @@ Published on npm as: **`matrix-engine-wgpu`**
 - ✔️ Networking with Kurento/OpenVidu/Own middleware Nodejs -> frontend 
 - 🎯 Replicate matrix-engine (WebGL) features
 - 📦 Based on the `shadowMapping` sample from [webgpu-samples](https://webgpu.github.io/webgpu-samples/?sample=shadowMapping)
-- 🎯 Web GUI(online) Editor
+- 🎯 Web GUI(online) Editor with Visual Scripting (Named: FlowCodexVertex) WIP
 
 ---
 
@@ -645,7 +645,7 @@ See more details at [FOHB Wiki](https://github.com/zlatnaspirala/matrix-engine-w
 ## Live Demos & Dev Links
 
 - [WebGPU Demos ](https://maximumroulette.com/apps/webgpu/examples.html)
-  Support this project on [itch.io](https://goldenspiral.itch.io/jamb-3d-deluxe)
+  Support JAMB 3D this project on [itch.io](https://goldenspiral.itch.io/jamb-3d-deluxe)
 
   <img width="860" height="640" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/RPG.png?raw=true" />
 
@@ -686,15 +686,19 @@ After create new project or load project page will be redirect to
 `./public/<PROJECT_NAME>.html`
 Source location : `./projects/<PROJECT_NAME>`
 
+
 Features :
- - Create new project/ load project
+ - Create new project/ load project - only on landing page
  - Create cubeMesh
  - Properties box for selected sceneObj
  - Events system (Create func and attach to sceneObj)
  - Resource navigation
+ - Visual Scripting
+
+  <img width="860" height="640" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/visual-scripting-math.png?raw=true" />
+
 
 YT video promotion : 
-
 
 
 About 'In fly' regime:

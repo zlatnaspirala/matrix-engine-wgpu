@@ -1052,6 +1052,21 @@ export default class FluxCodexVertex {
     const inputPin = node.inputs?.find(p => p.name === pinName);
     if(inputPin) return inputPin.default ?? 0;
 
+    if(node.title === 'Get Scene Object') {
+
+      console.log('FUNC getValue , ' + 'node.title :' + node.title + ', this.nodes[nodeId]._returnCache = ' + this.nodes[nodeId]._returnCache);
+      const objName = node.fields[0].value;
+      console.log(' objName is n.fields[0].value = ' + node.fields[0].value)
+      const obj = (window.app?.mainRenderBundle || []).find(o => o.name === objName);
+      console.log('(window.app?.mainRenderBundle || []).find(o => o.name === objName) = ' + (window.app?.mainRenderBundle || []).find(o => o.name === objName))
+      if(!obj) return undefined;
+
+      const out = node.outputs.find(o => o.name === pinName);
+      if(!out) return undefined;
+
+      return obj[pinName]; // simple one-level property access
+    }
+
     // 4️⃣ Dynamic output (computed node)
     if(node.outputs?.some(o => o.name === pinName)) {
       const dynamicNodes = ['GenRandInt', 'RandomFloat'];
@@ -1063,16 +1078,7 @@ export default class FluxCodexVertex {
       return node._returnCache;
     }
 
-    if(n.title === 'Get Scene Object') {
-      const objName = n.fields[0].value;
-      const obj = (window.app?.mainRenderBundle || []).find(o => o.name === objName);
-      if(!obj) return undefined;
 
-      const out = n.outputs.find(o => o.name === pinName);
-      if(!out) return undefined;
-
-      return obj[pinName]; // simple one-level property access
-    }
 
     return undefined;
   }
@@ -1253,8 +1259,24 @@ export default class FluxCodexVertex {
         typeof result === 'number' ? result.toFixed(3) : String(result);
     }
 
+
+
     this._execContext = null;
   }
+
+
+  // computeSceneNode(n) {
+  //   const objName = n.fields?.find(f => f.key === 'selectedObject')?.value;
+  //   const obj = this.scene?.[objName];
+
+  //   n._returnCache = {
+  //     NAME: obj?.name ?? '',
+  //     POSITION: obj?.position ?? null,
+  //     ROTATION: obj?.rotation ?? null,
+  //     SCALE: obj?.scale ?? null
+  //   };
+  // }
+
 
 
   getVariable(type, key) {
@@ -1374,6 +1396,23 @@ export default class FluxCodexVertex {
   }
 
   clearStorage() {localStorage.removeItem(FluxCodexVertex.SAVE_KEY); this.log('Save cleared. Refresh to reset.');}
+
+  clearAllNodes() {
+    // Remove node DOMs
+    this.board.querySelectorAll('.node').forEach(n => n.remove());
+
+    // Clear data
+    this.nodes.length = 0;
+    this.links.length = 0;
+
+    // Clear state
+    this.state.selectedNode = null;
+    this.state.draggingNode = null;
+    this.state.connectingPin = null;
+
+    // Optional: redraw connections
+    this.updateLinks();
+  }
 
   _buildSaveBundle() {
     return {
