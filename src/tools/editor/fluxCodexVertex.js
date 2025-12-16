@@ -297,6 +297,10 @@ export default class FluxCodexVertex {
         propagate.onclick = () => {
           if(type === 'number') {
             this.createGetNumberNode(name);
+          } else if(type === 'boolean') {
+            this.createGetBooleanNode(name);
+          } else if(type === 'string') {
+            this.createSetStringNode(name);
           }
           // boolean/string later
         };
@@ -307,6 +311,10 @@ export default class FluxCodexVertex {
         propagateSet.onclick = () => {
           if(type === 'number') {
             this.createSetNumberNode(name);
+          } else if(type === 'boolean') {
+            this.createSetBooleanNode(name);
+          } else if(type === 'string') {
+            this.createSetStringNode(name);
           }
           // boolean/string later
         };
@@ -569,6 +577,28 @@ export default class FluxCodexVertex {
     return type;
   }
 
+  updateSceneObjectPins(node, objectName) {
+    node.outputs = [{name: 'execOut', type: 'action'}]; // optional exec if needed
+
+    const obj = (window.app?.mainRenderBundle || []).find(o => o.name === objectName);
+    if(!obj) return;
+
+    // expose one-level properties
+    const props = ['name', 'position', 'rotation', 'scale'];
+    props.forEach(p => {
+      if(obj[p] !== undefined) {
+        const type = typeof obj[p] === 'number' ? 'number' :
+          typeof obj[p] === 'string' ? 'string' : 'object';
+        node.outputs.push({name: p, type});
+      }
+    });
+
+    // Refresh DOM
+    this.updateNodeDOM(node.id);
+  }
+
+
+
   _pinElement(pinSpec, isOutput, nodeId) {
     const pin = document.createElement('div');
 
@@ -713,10 +743,42 @@ export default class FluxCodexVertex {
 
     }
 
+
+    if(spec.title === 'Get Scene Object') {
+      const select = document.createElement('select');
+      select.style.width = '100%';
+      select.style.marginTop = '6px';
+
+      // Populate scene objects
+      const objects = window.app?.mainRenderBundle || [];
+      const placeholder = document.createElement('option');
+      placeholder.textContent = '-- Select Object --';
+      placeholder.value = '';
+      select.appendChild(placeholder);
+
+      objects.forEach(obj => {
+        const opt = document.createElement('option');
+        opt.value = obj.name;
+        opt.textContent = obj.name;
+        select.appendChild(opt);
+      });
+
+      if(spec.fields[0].value) select.value = spec.fields[0].value;
+
+      select.addEventListener('change', (e) => {
+        const name = e.target.value;
+        spec.fields[0].value = name;
+        this.updateSceneObjectPins(spec, name);
+      });
+
+      el.appendChild(select);
+    }
+
+
     el.appendChild(body);
 
     // --- Dragging ---
-    header.addEventListener('mousedown', e => {
+    header.addEventListener('mousedown', (e) => {
       e.preventDefault();
       this.state.draggingNode = el;
       const rect = el.getBoundingClientRect();
@@ -854,21 +916,23 @@ export default class FluxCodexVertex {
         category: 'value',
         outputs: [{name: 'result', type: 'number'}],
         fields: [{key: 'var', value: ''}],
-        isGetterNode: true // flag for special handling
+        isGetterNode: true
       }),
 
       'getBoolean': (id, x, y) => ({
         id, title: 'Get Boolean', x, y,
         category: 'value',
         outputs: [{name: 'result', type: 'boolean'}],
-        fields: [{key: 'var', value: ''}]
+        fields: [{key: 'var', value: ''}],
+        isGetterNode: true
       }),
 
       'getString': (id, x, y) => ({
         id, title: 'Get String', x, y,
         category: 'value',
         outputs: [{name: 'result', type: 'string'}],
-        fields: [{key: 'var', value: ''}]
+        fields: [{key: 'var', value: ''}],
+        isGetterNode: true
       }),
 
       'setNumber': (id, x, y) => ({
@@ -889,23 +953,35 @@ export default class FluxCodexVertex {
       'setBoolean': (id, x, y) => ({
         id, title: 'Set Boolean', x, y,
         category: 'action',
+        isVariableNode: true,
         inputs: [
           {name: 'exec', type: 'action'},
           {name: 'value', type: 'boolean'}
         ],
         outputs: [{name: 'execOut', type: 'action'}],
-        fields: [{key: 'var', value: ''}]
+        fields: [{key: 'var', value: ''}, {key: 'literal', value: false}]
       }),
 
       'setString': (id, x, y) => ({
         id, title: 'Set String', x, y,
         category: 'action',
+        isVariableNode: true,
         inputs: [
           {name: 'exec', type: 'action'},
           {name: 'value', type: 'string'}
         ],
         outputs: [{name: 'execOut', type: 'action'}],
-        fields: [{key: 'var', value: ''}]
+        fields: [{key: 'var', value: ''}, {key: 'literal', value: ''}]
+      }),
+
+      'getSceneObject': (id, x, y) => ({
+        id, title: 'Get Scene Object', x, y,
+        category: 'scene',
+        inputs: [], // no inputs
+        outputs: [], // will be filled dynamically
+        fields: [{key: 'selectedObject', value: ''}],
+
+        builtIn: true
       }),
     };
 
@@ -985,6 +1061,17 @@ export default class FluxCodexVertex {
         this._execContext = null;
       }
       return node._returnCache;
+    }
+
+    if(n.title === 'Get Scene Object') {
+      const objName = n.fields[0].value;
+      const obj = (window.app?.mainRenderBundle || []).find(o => o.name === objName);
+      if(!obj) return undefined;
+
+      const out = n.outputs.find(o => o.name === pinName);
+      if(!out) return undefined;
+
+      return obj[pinName]; // simple one-level property access
     }
 
     return undefined;
