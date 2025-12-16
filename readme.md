@@ -697,6 +697,10 @@ Features :
 
   <img width="860" height="640" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/visual-scripting-math.png?raw=true" />
 
+@Note
+License for fluxCodexVertex.js (MPL 2.0) 
+Affect only this file!
+
 
 YT video promotion : 
 
