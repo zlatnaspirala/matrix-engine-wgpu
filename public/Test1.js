@@ -15590,28 +15590,48 @@ var EditorProvider = class {
   }
 };
 
+// ../../../engine/plugin/tooltip/ToolTip.js
+var METoolTip = class {
+  constructor() {
+    const tooltip2 = document.createElement("div");
+    tooltip2.style.position = "fixed";
+    tooltip2.style.padding = "6px 10px";
+    tooltip2.style.background = "rgba(0,0,0,0.8)";
+    tooltip2.style.color = "#fff";
+    tooltip2.style.borderRadius = "6px";
+    tooltip2.style.fontFamily = "Arial";
+    tooltip2.style.fontSize = "12px";
+    tooltip2.style.pointerEvents = "none";
+    tooltip2.style.opacity = "0";
+    tooltip2.style.transition = "opacity 0.2s ease";
+    tooltip2.style.zIndex = "9999";
+    document.body.appendChild(tooltip2);
+  }
+  attachTooltip(element, text) {
+    element.addEventListener("mouseenter", (e) => {
+      tooltip.textContent = text;
+      tooltip.style.opacity = "1";
+    });
+    element.addEventListener("mousemove", (e) => {
+      tooltip.style.left = e.clientX + 12 + "px";
+      tooltip.style.top = e.clientY + 12 + "px";
+    });
+    element.addEventListener("mouseleave", () => {
+      tooltip.style.opacity = "0";
+    });
+  }
+};
+
 // ../fluxCodexVertex.js
 var FluxCodexVertex = class _FluxCodexVertex {
   constructor(boardId, boardWrapId, logId, methodsManager) {
     this.debugMode = true;
+    this.toolTip = new METoolTip();
     this.methodsManager = methodsManager;
     this.variables = {
       number: {},
       boolean: {},
       string: {}
-    };
-    const PIN_COLORS = {
-      position: "#3b82f6",
-      // blue
-      rotation: "#a855f7",
-      // purple
-      scale: "#22c55e",
-      // green
-      vector: "#06b6d4",
-      // cyan (x,y,z)
-      number: "#facc15",
-      // yellow
-      exec: "#ffffff"
     };
     this.board = document.getElementById(boardId);
     this.boardWrap = document.getElementById(boardWrapId);
@@ -15625,15 +15645,11 @@ var FluxCodexVertex = class _FluxCodexVertex {
     this.state = {
       draggingNode: null,
       dragOffset: [0, 0],
-      // [x, y]
       connecting: null,
-      // {node, pin, type, out}
       selectedNode: null,
       pan: [0, 0],
-      // [x, y]
       panning: false,
       panStart: [0, 0]
-      // [x, y]
     };
     this.createVariablesPopup();
     this._createImportInput();
@@ -15651,9 +15667,6 @@ var FluxCodexVertex = class _FluxCodexVertex {
       }
     });
   }
-  // ====================================================================
-  // 1. UTILITY & DEBUGGING
-  // ====================================================================
   log(...args) {
     this.logEl.textContent = args.join(" ");
   }
@@ -15743,9 +15756,10 @@ var FluxCodexVertex = class _FluxCodexVertex {
     popup.appendChild(btns);
     const hideVPopup = document.createElement("button");
     hideVPopup.innerText = `Hide`;
-    hideVPopup.style.margin = "18px 18px 18px 18px";
+    hideVPopup.classList.add("btn4");
+    hideVPopup.style.margin = "8px 8px 8px 8px";
+    hideVPopup.style.width = "100px";
     hideVPopup.style.fontWeight = "bold";
-    hideVPopup.style.height = "4%";
     hideVPopup.style.webkitTextStrokeWidth = "0px";
     hideVPopup.addEventListener("click", () => {
       byId("varsPopup").style.display = "none";
@@ -15887,9 +15901,7 @@ var FluxCodexVertex = class _FluxCodexVertex {
       select.appendChild(opt);
     });
   }
-  // --------------------------------------------------------------------
   // Dynamic Method Helpers
-  // --------------------------------------------------------------------
   getArgNames(fn) {
     const src = fn.toString().trim();
     const arrowNoParen = src.match(/^([a-zA-Z0-9_$]+)\s*=>/);
@@ -15965,10 +15977,8 @@ var FluxCodexVertex = class _FluxCodexVertex {
       };
     }
   }
-  // ====================================================================
-  // 2. NODE/PIN CREATION (DOM)
-  // ====================================================================
-  // ------------------------- CONNECTION HANDLERS -------------------------
+  // NODE/PIN CREATION
+  // CONNECTION HANDLERS
   startConnect(nodeId, pinName, type, isOut) {
     this.state.connecting = { node: nodeId, pin: pinName, type, out: isOut };
   }
@@ -16395,6 +16405,41 @@ var FluxCodexVertex = class _FluxCodexVertex {
         // will be filled dynamically
         fields: [{ key: "selectedObject", value: "" }],
         builtIn: true
+      }),
+      "getPosition": (id2, x2, y2) => ({
+        id: id2,
+        title: "Get Position",
+        category: "scene",
+        inputs: [{ name: "position", semantic: "position" }],
+        outputs: [
+          { name: "x", semantic: "number" },
+          { name: "y", semantic: "number" },
+          { name: "z", semantic: "number" }
+        ],
+        noExec: true
+      }),
+      "setPosition": (id2, x2, y2) => ({
+        id: id2,
+        title: "Set Position",
+        category: "scene",
+        inputs: [
+          { name: "exec", type: "action" },
+          { name: "position", semantic: "position" },
+          { name: "x", semantic: "number" },
+          { name: "y", semantic: "number" },
+          { name: "z", semantic: "number" }
+        ],
+        outputs: [{ name: "execOut", type: "action" }]
+      }),
+      "translateByX": (id2, x2, y2) => ({
+        id: id2,
+        title: "Translate By X",
+        category: "scene",
+        inputs: [
+          { name: "position", semantic: "position" },
+          { name: "x", semantic: "number" }
+        ],
+        outputs: [{ name: "execOut", semantic: "exec" }]
       })
     };
     let spec = null;
@@ -16459,6 +16504,15 @@ var FluxCodexVertex = class _FluxCodexVertex {
       const out = node.outputs.find((o) => o.name === pinName);
       if (!out) return void 0;
       return obj[pinName];
+    } else if (node.title === "Get Position") {
+      const pos = this.getValue(nodeId, "position");
+      if (!pos) return void 0;
+      node._returnCache = {
+        x: pos.x,
+        y: pos.y,
+        z: pos.z
+      };
+      return node._returnCache[pinName];
     }
     if (node.outputs?.some((o) => o.name === pinName)) {
       const dynamicNodes = ["GenRandInt", "RandomFloat"];
@@ -16566,6 +16620,25 @@ var FluxCodexVertex = class _FluxCodexVertex {
       const condition = Boolean(this.getValue(nodeId, "condition"));
       this.enqueueOutputs(n, condition ? "true" : "false");
       this._execContext = null;
+      return;
+    }
+    if (n.title === "Set Position") {
+      const pos = this.getValue(nodeId, "position");
+      if (pos?.setPosition) {
+        pos.setPosition(
+          this.getValue(nodeId, "x"),
+          this.getValue(nodeId, "y"),
+          this.getValue(nodeId, "z")
+        );
+      }
+      this.enqueueOutputs(n, "execOut");
+      return;
+    } else if (n.title === "Translate By X") {
+      const pos = this.getValue(nodeId, "position");
+      if (pos?.translateByX) {
+        pos.translateByX(this.getValue(nodeId, "x"));
+      }
+      this.enqueueOutputs(n, "execOut");
       return;
     }
     if (["math", "value", "compare"].includes(n.category)) {
@@ -18170,9 +18243,9 @@ var Editor = class {
       <hr style="border:none; height:1px; background:rgba(255,255,255,0.03); margin:10px 0;">
       <hr style="border:none; height:1px; background:rgba(255,255,255,0.03); margin:10px 0;">
       <span>Compile FluxCodexVertex</span>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.compileGraph()">Save to LocalStorage</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.clearStorage();">Clear Save</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.runGraph()">Run</button>
+      <button style="color:orangered;" class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.compileGraph()">Save to LocalStorage</button>
+      <button style="color:red;" class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.clearStorage();">Clear Save</button>
+      <button style="color:orangered;" class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.runGraph()">Run (F6)</button>
       <hr style="border:none; height:1px; background:rgba(255,255,255,0.03); margin:10px 0;">
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.exportToJSON()">Export (JSON)</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex._importInput.click()">Import (JSON)</button>

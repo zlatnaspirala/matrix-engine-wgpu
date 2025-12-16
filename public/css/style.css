@@ -1656,7 +1656,7 @@ svg.connections {
 .pin-boolean .dot {
   width: 12px;
   height: 12px;
-  background: #4eff5a;
+  background: #ff514e;
   border-radius: 50%;
 }
 
@@ -1664,6 +1664,20 @@ svg.connections {
   width: 12px;
   height: 12px;
   background: #4eff5a;
+  border-radius: 50%;
+}
+
+.pin-string .dot {
+  width: 12px;
+  height: 12px;
+  background: #4eff5a;
+  border-radius: 50%;
+}
+
+.pin-object .dot {
+  width: 12px;
+  height: 12px;
+  background: #4ecdff;
   border-radius: 50%;
 }
 

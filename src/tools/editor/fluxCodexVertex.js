@@ -35,12 +35,13 @@
  * 
  * - MPL applies ONLY to this file
  */
-
+import {METoolTip} from "../../engine/plugin/tooltip/ToolTip";
 import {byId} from "../../engine/utils";
 
 export default class FluxCodexVertex {
   constructor(boardId, boardWrapId, logId, methodsManager) {
     this.debugMode = true;
+    this.toolTip = new METoolTip();
 
     this.methodsManager = methodsManager;
     this.variables = {
@@ -49,22 +50,13 @@ export default class FluxCodexVertex {
       string: {}
     };
 
-    const PIN_COLORS = {
-      position: '#3b82f6',   // blue
-      rotation: '#a855f7',   // purple
-      scale: '#22c55e',      // green
-      vector: '#06b6d4',     // cyan (x,y,z)
-      number: '#facc15',     // yellow
-      exec: '#ffffff'
-    };
-    
-    // --- DOM Elements ---
+    // DOM Elements
     this.board = document.getElementById(boardId);
     this.boardWrap = document.getElementById(boardWrapId);
     this.svg = this.board.querySelector('svg.connections');
     this.logEl = document.getElementById(logId);
 
-    // --- Data Model ---
+    // Data Model
     this.nodes = {};
     this.links = [];
     this.nodeCounter = 1;
@@ -72,22 +64,21 @@ export default class FluxCodexVertex {
 
     this._execContext = null;
 
-    // --- State Management ---
+    // State Management
     this.state = {
       draggingNode: null,
-      dragOffset: [0, 0], // [x, y]
-      connecting: null, // {node, pin, type, out}
+      dragOffset: [0, 0],
+      connecting: null,
       selectedNode: null,
-      pan: [0, 0], // [x, y]
+      pan: [0, 0],
       panning: false,
-      panStart: [0, 0] // [x, y]
+      panStart: [0, 0]
     };
 
     // Bind event listeners
     this.createVariablesPopup();
     this._createImportInput();
     this.bindGlobalListeners();
-
 
     // Initialize the graph
     this.init();
@@ -106,12 +97,7 @@ export default class FluxCodexVertex {
     })
   }
 
-  // ====================================================================
-  // 1. UTILITY & DEBUGGING
-  // ====================================================================
-  log(...args) {
-    this.logEl.textContent = args.join(' ');
-  }
+  log(...args) {this.logEl.textContent = args.join(' ');}
 
   createGetNumberNode(varName) {
     return this.addNode('getNumber', {var: varName});
@@ -163,9 +149,7 @@ export default class FluxCodexVertex {
       const varField = n.fields.find(f => f.key === 'var');
       if(!varField || varField.value !== key) continue;
 
-      // type guard
-      if(
-        (type === 'number' && n.title !== 'Get Number') ||
+      if((type === 'number' && n.title !== 'Get Number') ||
         (type === 'boolean' && n.title !== 'Get Boolean') ||
         (type === 'string' && n.title !== 'Get String')
       ) continue;
@@ -179,7 +163,6 @@ export default class FluxCodexVertex {
       }
     }
   }
-
 
   createVariablesPopup() {
     if(this._varsPopup) return;
@@ -203,27 +186,24 @@ export default class FluxCodexVertex {
       color: '#eee',
       overflowX: 'hidden'
     });
-    /* ---------- HEADER ---------- */
+    // HEADER
     const title = document.createElement('div');
     title.innerHTML = `Variables`;
     title.style.marginBottom = '8px';
     title.style.fontWeight = 'bold';
     popup.appendChild(title);
 
-
-    /* ---------- LIST ---------- */
     const list = document.createElement('div');
     list.id = 'varslist'
     popup.appendChild(list);
 
-    /* ---------- CREATE BUTTONS ---------- */
+    // CREATE BUTTONS
     const btns = document.createElement('div');
     btns.style.marginTop = '10px';
     btns.style.display = 'flex';
     btns.style.gap = '6px';
 
-    btns.append(
-      this._createVarBtn('Number', 'number'),
+    btns.append(this._createVarBtn('Number', 'number'),
       this._createVarBtn('Boolean', 'boolean'),
       this._createVarBtn('String', 'string')
     );
@@ -232,21 +212,18 @@ export default class FluxCodexVertex {
 
     const hideVPopup = document.createElement('button');
     hideVPopup.innerText = `Hide`;
-    hideVPopup.style.margin = '18px 18px 18px 18px';
-    // hideVPopup.style.padding = '8px 8px 8px 8px';
+    hideVPopup.classList.add('btn4');
+    hideVPopup.style.margin = '8px 8px 8px 8px';
+    hideVPopup.style.width = '100px';
     hideVPopup.style.fontWeight = 'bold';
-    hideVPopup.style.height = '4%';
+    // hideVPopup.style.height = '4%';
     hideVPopup.style.webkitTextStrokeWidth = '0px';
     hideVPopup.addEventListener('click', () => {
       byId('varsPopup').style.display = 'none';
     })
     popup.appendChild(hideVPopup);
-
     document.body.appendChild(popup);
-    // byId('app').appendChild(popup);
-
     this.makePopupDraggable(popup);
-
     this._refreshVarsList(list);
   }
 
@@ -274,11 +251,11 @@ export default class FluxCodexVertex {
           webkitTextStrokeWidth: '0px'
         });
 
-        /* label */
+        // label
         const label = document.createElement('span');
         label.textContent = `${name} (${type})`;
 
-        /* value input */
+        // value input
         const input = document.createElement('input');
         input.value = this.variables[type][name].value ?? '';
         input.style.width = '60px';
@@ -293,17 +270,9 @@ export default class FluxCodexVertex {
                 e.target.value;
         };
 
-        // /* CLICK → create getter node */
-        // row.onclick = () => {
-        //   if(type === 'number') {
-        //     this.createGetNumberNode(name);
-        //   }
-        //   // boolean/string later
-        // };
-
         const propagate = document.createElement('button');
         propagate.innerText = `Get ${name}`;
-        /* CLICK → create getter node */
+        // CLICK → create getter node
         propagate.onclick = () => {
           if(type === 'number') {
             this.createGetNumberNode(name);
@@ -312,12 +281,11 @@ export default class FluxCodexVertex {
           } else if(type === 'string') {
             this.createSetStringNode(name);
           }
-          // boolean/string later
         };
 
         const propagateSet = document.createElement('button');
         propagateSet.innerText = `Set ${name}`;
-        /* CLICK → create getter node */
+        // CLICK → create getter node
         propagateSet.onclick = () => {
           if(type === 'number') {
             this.createSetNumberNode(name);
@@ -326,9 +294,7 @@ export default class FluxCodexVertex {
           } else if(type === 'string') {
             this.createSetStringNode(name);
           }
-          // boolean/string later
         };
-
         row.append(label, input, propagate, propagateSet);
         container.appendChild(row);
       }
@@ -348,15 +314,12 @@ export default class FluxCodexVertex {
       isDragging = true;
       startX = e.clientX;
       startY = e.clientY;
-
       const rect = popup.getBoundingClientRect();
       startLeft = rect.left;
       startTop = rect.top;
-
       popup.style.left = startLeft + 'px';
       popup.style.top = startTop + 'px';
       popup.style.transform = 'none';
-
       document.addEventListener('mousemove', onMove);
       document.addEventListener('mouseup', onUp);
     });
@@ -383,23 +346,19 @@ export default class FluxCodexVertex {
     btn.onclick = () => {
       const name = prompt(`New ${type} variable name`);
       if(!name) return;
-
       if(this.variables[type][name]) {
         alert('Variable exists');
         return;
       }
-
       this.variables[type][name] = {
         value: type === 'number' ? 0 :
           type === 'boolean' ? false : ''
       };
-
       this._refreshVarsList(this._varsPopup.children[1]);
     };
 
     return btn;
   }
-
 
   _getPinDot(nodeId, pinName, isOutput) {
     const nodeEl = document.querySelector(`.node[data-id="${nodeId}"]`);
@@ -427,18 +386,15 @@ export default class FluxCodexVertex {
       select.appendChild(opt);
     });
   }
-  // --------------------------------------------------------------------
+
   // Dynamic Method Helpers
-  // --------------------------------------------------------------------
   getArgNames(fn) {
     const src = fn.toString().trim();
-
     // Case 1: arrow function with no parentheses:  a => ...
     const arrowNoParen = src.match(/^([a-zA-Z0-9_$]+)\s*=>/);
     if(arrowNoParen) {
       return [arrowNoParen[1].trim()];
     }
-
     // Case 2: normal (a,b) => ...  OR function(a,b) { ... }
     const argsMatch = src.match(/\(([^)]*)\)/);
     if(argsMatch && argsMatch[1].trim().length > 0) {
@@ -447,46 +403,33 @@ export default class FluxCodexVertex {
         .map(a => a.trim())
         .filter(a => a.length > 0);
     }
-
     // Default: no args
     return [];
   }
 
   hasReturn(fn) {
     const src = fn.toString().trim();
-
     // Case 1: implicit return in arrow: (a)=>a+2  OR  a=>a*2
     // Detect arrow "=>" followed by an expression, not "{"
-    if(/=>\s*[^({]/.test(src)) {
-      return true;
-    }
-
+    if(/=>\s*[^({]/.test(src)) {return true;}
     // Case 2: normal "return" inside function body
-    if(/return\s+/.test(src)) {
-      return true;
-    }
-
+    if(/return\s+/.test(src)) {return true;}
     return false;
   }
 
   adaptNodeToMethod(node, methodItem) {
     const fn = this.methodsManager.compileFunction(methodItem.code);
-
     // Reset pins except execution pins
     node.inputs = [{name: "exec", type: "action"}];
     node.outputs = [{name: "execOut", type: "action"}];
-
     // Dynamic input pins
     const args = this.getArgNames(fn);
     args.forEach(arg => node.inputs.push({name: arg, type: "value"}));
-
     // Dynamic return pin
     if(this.hasReturn(fn)) node.outputs.push({name: "return", type: "value"});
-
     node.attachedMethod = methodItem.name;
     node.fn = fn;
-
-    // 🔹 Refresh the DOM so new pins are clickable
+    // Refresh the DOM so new pins are clickable
     this.updateNodeDOM(node.id);
   }
 
@@ -496,7 +439,6 @@ export default class FluxCodexVertex {
     placeholder.value = '';
     placeholder.textContent = '-- Select Method --';
     selectEl.appendChild(placeholder);
-
     this.methodsManager.methodsContainer.forEach(method => {
       const opt = document.createElement('option');
       opt.value = method.name;
@@ -525,7 +467,7 @@ export default class FluxCodexVertex {
     inputs.forEach(pin => left.appendChild(this._pinElement(pin, false, nodeId)));
     outputs.forEach(pin => right.appendChild(this._pinElement(pin, true, nodeId)));
 
-    // --- Method select (only for Function nodes) ---
+    // Method select (only for Function nodes)
     if(node.category === 'action' && node.title === 'Function') {
       let select = el.querySelector('select.method-select');
       if(!select) {
@@ -545,11 +487,8 @@ export default class FluxCodexVertex {
     }
   }
 
-  // ====================================================================
-  // 2. NODE/PIN CREATION (DOM)
-  // ====================================================================
-
-  // ------------------------- CONNECTION HANDLERS -------------------------
+  // NODE/PIN CREATION
+  // CONNECTION HANDLERS
   startConnect(nodeId, pinName, type, isOut) {
     this.state.connecting = {node: nodeId, pin: pinName, type: type, out: isOut};
   }
@@ -569,15 +508,12 @@ export default class FluxCodexVertex {
         l.from.node === from.node && l.from.pin === from.pin &&
         l.to.node === to.node && l.to.pin === to.pin
       );
-
       if(!exists) {
         this.links.push({id: 'link_' + (this.linkCounter++), from, to, type});
         this.updateLinks();
-
         if(type === 'value') setTimeout(() => this.updateValueDisplays(), 0);
       }
     }
-
     this.state.connecting = null;
   }
 
@@ -588,11 +524,8 @@ export default class FluxCodexVertex {
   }
 
   updateSceneObjectPins(node, objectName) {
-    // node.outputs = [{name: 'execOut', type: 'action'}]; // optional exec if needed
-
     const obj = (window.app?.mainRenderBundle || []).find(o => o.name === objectName);
     if(!obj) return;
-
     // expose one-level properties
     const props = ['name', 'position', 'rotation', 'scale'];
     props.forEach(p => {
@@ -602,16 +535,12 @@ export default class FluxCodexVertex {
         node.outputs.push({name: p, type});
       }
     });
-
     // Refresh DOM
     this.updateNodeDOM(node.id);
   }
 
-
-
   _pinElement(pinSpec, isOutput, nodeId) {
     const pin = document.createElement('div');
-
     // CSS class with type
     pin.className = `pin pin-${pinSpec.type}`;
     pin.dataset.pin = pinSpec.name;
@@ -684,7 +613,7 @@ export default class FluxCodexVertex {
     row.appendChild(right);
     body.appendChild(row);
 
-    // --- Value display ---
+    // Value display
     if(spec.fields && spec.title === 'GenRandInt') {
       const container = document.createElement('div');
       container.className = 'genrand-inputs';
@@ -705,8 +634,7 @@ export default class FluxCodexVertex {
       });
 
       body.appendChild(container);
-    }
-    else if(spec.category === 'math' || spec.category === 'value' || spec.title === 'Print') {
+    } else if(spec.category === 'math' || spec.category === 'value' || spec.title === 'Print') {
       const display = document.createElement('div');
       display.className = 'value-display';
       display.textContent = '?';
@@ -714,7 +642,7 @@ export default class FluxCodexVertex {
       body.appendChild(display);
     }
 
-    // --- Function Method Selector ---
+    // Function Method Selector
     if(spec.category === 'action' && !spec.builtIn && !spec.isVariableNode) {
       const select = document.createElement('select');
       select.className = 'method-select';
@@ -753,7 +681,6 @@ export default class FluxCodexVertex {
 
     }
 
-
     if(spec.title === 'Get Scene Object') {
       const select = document.createElement('select');
       select.style.width = '100%';
@@ -783,9 +710,7 @@ export default class FluxCodexVertex {
       el.appendChild(select);
     }
 
-
     el.appendChild(body);
-
     // --- Dragging ---
     header.addEventListener('mousedown', (e) => {
       e.preventDefault();
@@ -798,7 +723,6 @@ export default class FluxCodexVertex {
       ];
       document.body.style.cursor = 'grabbing';
     });
-
     // --- Selecting ---
     el.addEventListener('click', e => {
       e.stopPropagation();
@@ -889,37 +813,31 @@ export default class FluxCodexVertex {
         inputs: [{name: 'A', type: 'number'}, {name: 'B', type: 'number'}],
         outputs: [{name: 'result', type: 'boolean'}]
       }),
-
       'less': (id, x, y) => ({
         id, title: 'A < B', x, y, category: 'compare',
         inputs: [{name: 'A', type: 'number'}, {name: 'B', type: 'number'}],
         outputs: [{name: 'result', type: 'boolean'}]
       }),
-
       'equal': (id, x, y) => ({
         id, title: 'A == B', x, y, category: 'compare',
         inputs: [{name: 'A', type: 'any'}, {name: 'B', type: 'any'}],
         outputs: [{name: 'result', type: 'boolean'}]
       }),
-
       'notequal': (id, x, y) => ({
         id, title: 'A != B', x, y, category: 'compare',
         inputs: [{name: 'A', type: 'any'}, {name: 'B', type: 'any'}],
         outputs: [{name: 'result', type: 'boolean'}]
       }),
-
       'greaterEqual': (id, x, y) => ({
         id, title: 'A >= B', x, y, category: 'compare',
         inputs: [{name: 'A', type: 'number'}, {name: 'B', type: 'number'}],
         outputs: [{name: 'result', type: 'boolean'}]
       }),
-
       'lessEqual': (id, x, y) => ({
         id, title: 'A <= B', x, y, category: 'compare',
         inputs: [{name: 'A', type: 'number'}, {name: 'B', type: 'number'}],
         outputs: [{name: 'result', type: 'boolean'}]
       }),
-
       'getNumber': (id, x, y) => ({
         id, title: 'Get Number', x, y,
         category: 'value',
@@ -927,7 +845,6 @@ export default class FluxCodexVertex {
         fields: [{key: 'var', value: ''}],
         isGetterNode: true
       }),
-
       'getBoolean': (id, x, y) => ({
         id, title: 'Get Boolean', x, y,
         category: 'value',
@@ -935,7 +852,6 @@ export default class FluxCodexVertex {
         fields: [{key: 'var', value: ''}],
         isGetterNode: true
       }),
-
       'getString': (id, x, y) => ({
         id, title: 'Get String', x, y,
         category: 'value',
@@ -943,7 +859,6 @@ export default class FluxCodexVertex {
         fields: [{key: 'var', value: ''}],
         isGetterNode: true
       }),
-
       'setNumber': (id, x, y) => ({
         id, title: 'Set Number', x, y,
         category: 'action',
@@ -958,7 +873,6 @@ export default class FluxCodexVertex {
           {key: 'literal', value: 0}
         ]
       }),
-
       'setBoolean': (id, x, y) => ({
         id, title: 'Set Boolean', x, y,
         category: 'action',
@@ -970,7 +884,6 @@ export default class FluxCodexVertex {
         outputs: [{name: 'execOut', type: 'action'}],
         fields: [{key: 'var', value: ''}, {key: 'literal', value: false}]
       }),
-
       'setString': (id, x, y) => ({
         id, title: 'Set String', x, y,
         category: 'action',
@@ -982,7 +895,6 @@ export default class FluxCodexVertex {
         outputs: [{name: 'execOut', type: 'action'}],
         fields: [{key: 'var', value: ''}, {key: 'literal', value: ''}]
       }),
-
       'getSceneObject': (id, x, y) => ({
         noExec: true,
         id, title: 'Get Scene Object', x, y,
@@ -993,6 +905,41 @@ export default class FluxCodexVertex {
 
         builtIn: true
       }),
+
+      'getPosition': (id, x, y) => ({
+        id, title: 'Get Position',
+        category: 'scene',
+        inputs: [{name: 'position', semantic: 'position'}],
+        outputs: [
+          {name: 'x', semantic: 'number'},
+          {name: 'y', semantic: 'number'},
+          {name: 'z', semantic: 'number'}
+        ],
+        noExec: true
+      }),
+      'setPosition': (id, x, y) => ({
+        id, title: 'Set Position',
+        category: 'scene',
+        inputs: [
+          {name: 'exec', type: 'action'},
+          {name: 'position', semantic: 'position'},
+          {name: 'x', semantic: 'number'},
+          {name: 'y', semantic: 'number'},
+          {name: 'z', semantic: 'number'}
+        ],
+        outputs: [{name: 'execOut',  type: 'action'}]
+      }),
+
+      'translateByX': (id, x, y) => ({
+        id, title: 'Translate By X',
+        category: 'scene',
+        inputs: [
+          {name: 'position', semantic: 'position'},
+          {name: 'x', semantic: 'number'}
+        ],
+        outputs: [{name: 'execOut', semantic: 'exec'}]
+      })
+
     };
 
 
@@ -1075,6 +1022,17 @@ export default class FluxCodexVertex {
       if(!out) return undefined;
 
       return obj[pinName]; // simple one-level property access
+    } else if(node.title === 'Get Position') {
+      const pos = this.getValue(nodeId, 'position');
+      if(!pos) return undefined;
+
+      node._returnCache = {
+        x: pos.x,
+        y: pos.y,
+        z: pos.z
+      };
+
+      return node._returnCache[pinName];
     }
 
     // 4️⃣ Dynamic output (computed node)
@@ -1235,6 +1193,26 @@ export default class FluxCodexVertex {
       return;
     }
 
+    if(n.title === 'Set Position') {
+      const pos = this.getValue(nodeId, 'position');
+      if(pos?.setPosition) {
+        pos.setPosition(
+          this.getValue(nodeId, 'x'),
+          this.getValue(nodeId, 'y'),
+          this.getValue(nodeId, 'z')
+        );
+      }
+      this.enqueueOutputs(n, 'execOut');
+      return;
+    } else if(n.title === 'Translate By X') {
+      const pos = this.getValue(nodeId, 'position');
+      if(pos?.translateByX) {
+        pos.translateByX(this.getValue(nodeId, 'x'));
+      }
+      this.enqueueOutputs(n, 'execOut');
+      return;
+    }
+
     // -----------------------------
     // Math / Value / Compare Nodes
     // -----------------------------
@@ -1268,7 +1246,6 @@ export default class FluxCodexVertex {
       if(n.displayEl) n.displayEl.textContent =
         typeof result === 'number' ? result.toFixed(3) : String(result);
     }
-
 
 
     this._execContext = null;
