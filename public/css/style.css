@@ -223,7 +223,7 @@ span {
 
 .timeLineSlider,
 p {
-  background: rgba(12, 122, 22, 0.5);
+  background: rgb(59 0 135 / 48%);
   width: 100%;
   margin: 5px 5px 5px 5px;
 }
@@ -1193,7 +1193,7 @@ new dom effect from
 }
 
 .inputEditor {
-  font-family: "stormfaze";
+  /* font-family: "stormfaze"; */
   width: 90%;
   padding: 4px 8px;
   font-size: 13px;
@@ -1790,9 +1790,17 @@ svg.connections {
   background: #2a3642;
 }
 
-.value-display[data-type="number"] { color:#6ef4c0; }
-.value-display[data-type="boolean"] { color:#f6d64e; }
-.value-display[data-type="string"] { color:#9fc9ff; }
+.value-display[data-type="number"] {
+  color: #6ef4c0;
+}
+
+.value-display[data-type="boolean"] {
+  color: #f6d64e;
+}
+
+.value-display[data-type="string"] {
+  color: #9fc9ff;
+}
 
 
 /* CMnenu */
@@ -1813,7 +1821,7 @@ svg.connections {
   font-size: 11px;
   font-family: Orbitron, monospace;
 
-  box-shadow: 0 8px 30px rgba(0,0,0,0.6);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6);
 }
 
 .fc-context-menu.hidden {
@@ -1832,7 +1840,7 @@ svg.connections {
 .fc-context-menu hr {
   border: none;
   height: 1px;
-  background: rgba(255,255,255,0.05);
+  background: rgba(255, 255, 255, 0.05);
   margin: 6px 0;
 }
 
@@ -1852,5 +1860,5 @@ svg.connections {
 }
 
 .fc-context-menu button:hover {
-  background: rgba(255,255,255,0.08);
+  background: rgba(255, 255, 255, 0.08);
 }

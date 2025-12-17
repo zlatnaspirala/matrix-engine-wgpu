@@ -15431,6 +15431,17 @@ var MEEditorClient = class {
       o = JSON.stringify(o);
       this.ws.send(o);
     });
+    document.addEventListener("web.editor.addSphere", (e) => {
+      console.log("[web.editor.addSphere]: ", e.detail);
+      console.info("addSphere <signal>");
+      let o = {
+        action: "addSphere",
+        projectName: location.href.split("/public/")[1].split(".")[0],
+        options: e.detail
+      };
+      o = JSON.stringify(o);
+      this.ws.send(o);
+    });
     document.addEventListener("save-methods", (e) => {
       console.info("save script <signal>");
       let o = {
@@ -15551,6 +15562,25 @@ var EditorProvider = class {
           physics: {
             enabled: e.detail.physics,
             geometry: "Cube"
+          }
+        });
+      }, { scale: [1, 1, 1] });
+    });
+    document.addEventListener("web.editor.addSphere", (e) => {
+      downloadMeshes({ cube: "./res/meshes/shapes/sphere.obj" }, (m) => {
+        const texturesPaths = "./res/meshes/blender/cube.png";
+        this.core.addMeshObj({
+          position: { x: 0, y: 0, z: -20 },
+          rotation: { x: 0, y: 0, z: 0 },
+          rotationSpeed: { x: 0, y: 0, z: 0 },
+          texturesPaths: [texturesPaths],
+          // useUVShema4x2: true,
+          name: "Sphere_" + app.mainRenderBundle.length,
+          mesh: m.cube,
+          raycast: { enabled: true, radius: 2 },
+          physics: {
+            enabled: e.detail.physics,
+            geometry: "Sphere"
           }
         });
       }, { scale: [1, 1, 1] });
@@ -17274,9 +17304,8 @@ var EditorHud = class {
         <div id="addCubePhysics" class="drop-item">\u{1F9CA}Cube with Physics</div>
         <div id="addSphere" class="drop-item">\u26AASphere</div>
         <div id="addSpherePhysics" class="drop-item">\u26AASphere with Physics</div>
-        <div class="drop-item">\u26AA Sphere</div>
-        <div class="drop-item">\u{1F4E6} GLB (model)</div>
-        <div class="drop-item">\u{1F4A1} Light</div>
+        <small>Glb and Obj files add direct from asset (by selecting)</small>
+        <!--div class="drop-item">\u{1F4A1} Light</div-->
       </div>
     </div>
 
@@ -17411,12 +17440,30 @@ var EditorHud = class {
         detail: o
       }));
     });
+    if (byId("addSphere")) byId("addSphere").addEventListener("click", () => {
+      let o = {
+        physics: false,
+        index: this.core.mainRenderBundle.length
+      };
+      document.dispatchEvent(new CustomEvent("web.editor.addSphere", {
+        detail: o
+      }));
+    });
     if (byId("addCubePhysics")) byId("addCubePhysics").addEventListener("click", () => {
       let o = {
         physics: true,
         index: this.core.mainRenderBundle.length
       };
       document.dispatchEvent(new CustomEvent("web.editor.addCube", {
+        detail: o
+      }));
+    });
+    if (byId("addSpherePhysics")) byId("addSpherePhysics").addEventListener("click", () => {
+      let o = {
+        physics: true,
+        index: this.core.mainRenderBundle.length
+      };
+      document.dispatchEvent(new CustomEvent("web.editor.addSphere", {
         detail: o
       }));
     });
@@ -17796,7 +17843,8 @@ var EditorHud = class {
       display: "flex",
       alignItems: "start",
       color: "white",
-      fontFamily: "'Orbitron', sans-serif",
+      // fontFamily: "'Orbitron', sans-serif",
+      fontFamily: "monospace",
       zIndex: "15",
       padding: "2px",
       boxSizing: "border-box",
@@ -19423,7 +19471,6 @@ var app2 = new MatrixEngineWGPU(
   (app3) => {
     addEventListener("AmmoReady", async () => {
       app3.addLight();
-      addCube;
       downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, (m) => {
         let texturesPaths = ["./res/meshes/blender/cube.png"];
         app3.addMeshObj({

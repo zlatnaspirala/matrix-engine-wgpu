@@ -163,6 +163,18 @@ export class MEEditorClient {
       this.ws.send(o);
     });
 
+    document.addEventListener('web.editor.addSphere', (e) => {
+      console.log("[web.editor.addSphere]: ", e.detail);
+      console.info('addSphere <signal>');
+      let o = {
+        action: "addSphere",
+        projectName: location.href.split('/public/')[1].split(".")[0],
+        options: e.detail
+      };
+      o = JSON.stringify(o);
+      this.ws.send(o);
+    });
+
     document.addEventListener('save-methods', (e) => {
       console.info('save script <signal>');
       let o = {

@@ -42,7 +42,7 @@ export default class EditorProvider {
             ) document.dispatchEvent(new CustomEvent('web.editor.update.rot', {
               detail: e.detail
             }));
-              break;
+            break;
           }
         default:
           console.log('changes not saved.')
@@ -76,6 +76,27 @@ export default class EditorProvider {
           physics: {
             enabled: e.detail.physics,
             geometry: "Cube"
+          }
+        })
+      }, {scale: [1, 1, 1]});
+    });
+
+    document.addEventListener('web.editor.addSphere', (e) => {
+      // console.log("[web.editor.addCube]: ", e.detail);
+      downloadMeshes({cube: "./res/meshes/shapes/sphere.obj"}, (m) => {
+        const texturesPaths = './res/meshes/blender/cube.png';
+        this.core.addMeshObj({
+          position: {x: 0, y: 0, z: -20},
+          rotation: {x: 0, y: 0, z: 0},
+          rotationSpeed: {x: 0, y: 0, z: 0},
+          texturesPaths: [texturesPaths],
+          // useUVShema4x2: true,
+          name: 'Sphere_' + app.mainRenderBundle.length,
+          mesh: m.cube,
+          raycast: {enabled: true, radius: 2},
+          physics: {
+            enabled: e.detail.physics,
+            geometry: "Sphere"
           }
         })
       }, {scale: [1, 1, 1]});

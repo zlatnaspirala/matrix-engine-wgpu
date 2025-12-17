@@ -34,6 +34,43 @@ Published on npm as: **`matrix-engine-wgpu`**
 - 📦 Based on the `shadowMapping` sample from [webgpu-samples](https://webgpu.github.io/webgpu-samples/?sample=shadowMapping)
 - 🎯 Web GUI(online) Editor with Visual Scripting (Named: FlowCodexVertex) WIP
 
+## About web editor FluxCodexVertex from version [1.8.0]
+
+EditorX have two main parts.
+ - Frontend part (under ./src/tools/editor)
+ - Frontend part (under ./src/tools/editor/backend)
+Before everything run `npm i` for deps installation in root also in ./src/tools/editor/backend folder.
+Backend part done on node.js
+
+
+### General stuff :
+ - Editor creates file (windows tested only) and all other operation.
+ - Scene container added
+ - SceneObject Property container added
+ - Assets toolbar (bottom) added (from asset toobox add glb or obj files by selecting)
+ - Top menu (Cube/sphere with physics or without)
+ + Visual Scripting part
+
+### Visual Scripting done list:
+ - Adding MATH, event/custom methods, variable popup, get scene object -set pos - ontargetReach bind event.
+ - Run graph
+ - Save graph [for noe in localstorage - for final build becomes real JS object simply added in app flow.]
+ - Export to JSON format
+ - Import from JSON format
+
+⚠️ Visual Scriptiong is only possible from engine source (not from npm i matrix-engine-wgpu). That means 
+you need to clone or download source from github repo.
+
+@Instructions
+  - All you need to run `npm run editorx` from root of engine.
+  Editorx is just alias for FluxCodexVertex. (To be uniq i need 3 words)
+  - Run with pressing F6 key or from leftBox clicking on Run.
+  - If you delete all objects from scene - You need to to refresh and add some object to scene.
+  - Before importing graph you need to delete all nodes from flexCodexVertex graph.
+  - Saves still based on Local storage. After delete click save to memories empty []array.
+    You must save any changes manually for now.
+
+  <img width="860" height="640" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/visual-scripting-math.png?raw=true" />
 ---
 
 ## Features
@@ -675,7 +712,7 @@ Include the following notice (with working link) in any distributed version or a
 
 ```
 
-## Web Editor from version [1.8.0]
+## Web Editor FluxCodexVertex from version [1.8.0]
 
 Run editor
 ```js
@@ -699,7 +736,7 @@ Features :
 
 @Note
 License for fluxCodexVertex.js (MPL 2.0) 
-Affect only this file!
+Affect only this file! Just leave comment licence part in header of file.
 
 
 YT video promotion : 

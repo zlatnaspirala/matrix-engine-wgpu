@@ -37,7 +37,6 @@ wss.on("connection", ws => {
       msg = JSON.parse(msg);
 
       if(msg.action === "lp") {
-        // const rel = (msg ? msg.path || "" : "");
         const folder = path.join(PROJECTS_DIR, "");
         const items = await fs.readdir(folder, {withFileTypes: true});
         ws.send(JSON.stringify({
@@ -76,6 +75,8 @@ wss.on("connection", ws => {
         fileDetail(msg, ws);
       } else if(msg.action == "addCube") {
         addCube(msg, ws);
+      } else if(msg.action == "addSphere") {
+        addSphere(msg, ws);
       } else if(msg.action == "addGlb") {
         addGlb(msg, ws);
       } else if(msg.action == "addObj") {
@@ -377,7 +378,6 @@ async function saveScript(path, text, ws) {
 }
 
 async function saveMethods(msg, ws) {
-  // console.log('WHAT IS ', msg.methodsContainer);
   const folderPerProject = path.join(GEN_METHODS_PATH, PROJECT_NAME);
   fs.mkdir(folderPerProject, {recursive: true});
   const file = path.join(folderPerProject, "\\methods.js");
@@ -398,7 +398,7 @@ function getNameFromPath(p) {
   return p.split(/[/\\]/).pop().replace(/\.[^/.]+$/, "");
 }
 
-async function addGlb(msg, ws) { //msg.options.index
+async function addGlb(msg, ws) {
   const content = new CodeBuilder();
   msg.options.path = msg.options.path.replace(/\\/g, '/');
   content.addLine(` // ME START ${getNameFromPath(msg.options.path)}`);
@@ -456,6 +456,33 @@ async function addObj(msg, ws) {
   })
 }
 
+async function addSphere(msg, ws) {
+  const content = new CodeBuilder();
+  content.addLine(` // ME START ${'Sphere_' + msg.options.index} ${msg.action}`);
+  content.addLine(` downloadMeshes({sphere: "./res/meshes/shapes/sphere.obj"}, (m) => { `);
+  content.addLine(`   let texturesPaths = ['./res/meshes/blender/cube.png']; `);
+  content.addLine(`   app.addMeshObj({`);
+  content.addLine(`     position: {x: 0, y: 0, z: -20}, rotation: {x: 0, y: 0, z: 0}, rotationSpeed: {x: 0, y: 0, z: 0},`);
+  content.addLine(`     texturesPaths: [texturesPaths],`);
+  content.addLine(`     name: 'Sphere_' + app.mainRenderBundle.length,`);
+  content.addLine(`     mesh: m.sphere,`);
+  content.addLine(`     raycast: {enabled: true, radius: 2},`);
+  content.addLine(`     physics: {enabled: ${msg.options.physics}, geometry: "Sphere"}`);
+  content.addLine(`   }); `);
+  content.addLine(` }, {scale: [1, 1, 1]});  `);
+  content.addLine(` // ME END ${'Sphere_' + msg.options.index} ${msg.action}`);
+
+  const objScript = path.join(PROJECTS_DIR, msg.projectName + "\\app-gen.js");
+  fs.readFile(objScript).then((b) => {
+    let text = b.toString("utf8");
+    text = text.replace('// [MAIN_REPLACE2]',
+      `
+      ${content.toString()} \n
+      // [MAIN_REPLACE2]\n`);
+    saveScript(objScript, text, ws);
+  })
+}
+
 // update procedure
 async function updatePos(msg, ws) {
   //  // inputFor: "Cube_0" property: "x" propertyId: "position" value: "1"
@@ -505,19 +532,30 @@ async function deleteSceneObject(n, ws) {
   });
 }
 
+
 function removeSceneBlock(text, type, objName) {
-  // is delete-obj  delete all
-  let start = '', end = '';
-  if(type == 'delete-obj') {
-    start = `// ME START ${objName.split('-')[0]}`;
-    end = `// ME END ${objName.split('-')[0]}`;
+  let regex;
+
+  if (type === 'delete-obj') {
+    // match ANY block that belongs to this object
+    const start = `// ME START ${objName} `;
+    const end   = `// ME END ${objName} `;
+
+    regex = new RegExp(
+      `${escapeRegExp(start)}[\\s\\S]*?${escapeRegExp(end)}[^\\n]*\\s*`,
+      'g'
+    );
   } else {
-    start = `// ME START ${objName} ${type}`;
-    end = `// ME END ${objName} ${type}`;
+    const start = `// ME START ${objName} ${type}`;
+    const end   = `// ME END ${objName} ${type}`;
+
+    regex = new RegExp(
+      `${escapeRegExp(start)}[\\s\\S]*?${escapeRegExp(end)}\\s*`,
+      'g'
+    );
   }
-  const pattern = `${escapeRegExp(start)}[\\s\\S]*?${escapeRegExp(end)}\\s*`;
-  const regex = new RegExp(pattern, "g");
-  return text.replace(regex, "");
+
+  return text.replace(regex, '');
 }
 
 function escapeRegExp(str) {

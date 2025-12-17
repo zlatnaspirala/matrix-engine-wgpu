@@ -21,11 +21,21 @@ let app = new MatrixEngineWGPU(
       // [light]
       app.addLight();
  
+
       
-       addCube
+        
+
+      
+        
  
 
       
+        
+
+            
+       
+             
+ 
        // ME START Cube_0 addCube
  downloadMeshes({cube: "./res/meshes/blender/cube.obj"}, (m) => { 
    let texturesPaths = ['./res/meshes/blender/cube.png']; 
@@ -40,16 +50,16 @@ let app = new MatrixEngineWGPU(
  }, {scale: [1, 1, 1]});  
  // ME END Cube_0 addCube
  
-
-      // [MAIN_REPLACE2]
-
-
-
-
+ 
+ 
+ 
+       // [MAIN_REPLACE2]
 
 
 
 
+
+ 
 
 
   })

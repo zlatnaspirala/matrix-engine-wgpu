@@ -174,9 +174,8 @@ export default class EditorHud {
         <div id="addCubePhysics" class="drop-item">🧊Cube with Physics</div>
         <div id="addSphere" class="drop-item">⚪Sphere</div>
         <div id="addSpherePhysics" class="drop-item">⚪Sphere with Physics</div>
-        <div class="drop-item">⚪ Sphere</div>
-        <div class="drop-item">📦 GLB (model)</div>
-        <div class="drop-item">💡 Light</div>
+        <small>Glb and Obj files add direct from asset (by selecting)</small>
+        <!--div class="drop-item">💡 Light</div-->
       </div>
     </div>
 
@@ -339,12 +338,39 @@ export default class EditorHud {
       }));
     });
 
+    if(byId('addSphere')) byId('addSphere').addEventListener('click', () => {
+      let o = {
+        physics: false,
+        index: this.core.mainRenderBundle.length
+      };
+      // if(confirm(`⚛ Enable physics (Ammo) for cube ? \n
+      //    - Press OK for physics cube.
+      //    - Press cancel for 'classic position'.
+      //   (Also physics enabled objects can be kinematic with some collide efect in physics world)
+      //   `)) {
+      //   o.physics = true;
+      // }
+      document.dispatchEvent(new CustomEvent('web.editor.addSphere', {
+        detail: o
+      }));
+    });
+
     if(byId('addCubePhysics')) byId('addCubePhysics').addEventListener('click', () => {
       let o = {
         physics: true,
         index: this.core.mainRenderBundle.length
       };
       document.dispatchEvent(new CustomEvent('web.editor.addCube', {
+        detail: o
+      }));
+    });
+
+    if(byId('addSpherePhysics')) byId('addSpherePhysics').addEventListener('click', () => {
+      let o = {
+        physics: true,
+        index: this.core.mainRenderBundle.length
+      };
+      document.dispatchEvent(new CustomEvent('web.editor.addSphere', {
         detail: o
       }));
     });
@@ -374,7 +400,7 @@ export default class EditorHud {
         byId('app').style.display = 'none';
       } else {
         byId('app').style.display = 'flex';
-        if (this.core.editor.fluxCodexVertex) this.core.editor.fluxCodexVertex.updateLinks();
+        if(this.core.editor.fluxCodexVertex) this.core.editor.fluxCodexVertex.updateLinks();
       }
     });
 
@@ -801,7 +827,8 @@ export default class EditorHud {
       display: "flex",
       alignItems: "start",
       color: "white",
-      fontFamily: "'Orbitron', sans-serif",
+      // fontFamily: "'Orbitron', sans-serif",
+      fontFamily: 'monospace',
       zIndex: "15",
       padding: "2px",
       boxSizing: "border-box",
