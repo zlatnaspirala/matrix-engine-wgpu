@@ -94,7 +94,99 @@ export default class FluxCodexVertex {
         }
       }
 
-    })
+    });
+
+    this.createContextMenu();
+  }
+
+  createContextMenu() {
+    let CMenu = document.createElement('div');
+    CMenu.id = "fc-context-menu";
+    CMenu.classList.add('fc-context-menu');
+    CMenu.classList.add('hidden');
+
+    const board = document.getElementById('board');
+
+    board.addEventListener('contextmenu', e => {
+      e.preventDefault();
+
+      CMenu.innerHTML = this.getFluxCodexMenuHTML();
+
+      const menuRect = CMenu.getBoundingClientRect();
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+
+      let x = e.clientX;
+      let y = e.clientY;
+
+      // Horizontal clamp (prevent right overflow)
+      if(x + menuRect.width > vw) {
+        x = vw - menuRect.width - 5;
+      }
+
+      // Vertical smart placement
+      if(y > vh * 0.5) {
+        // open upwards
+        y = y - menuRect.height;
+      }
+
+      // Final clamp (top safety)
+      if(y < 5) y = 5;
+
+      CMenu.style.left = x + 'px';
+      CMenu.style.top = y + 'px';
+      CMenu.classList.remove('hidden');
+    });
+
+    document.addEventListener('click', () => {
+      CMenu.classList.add('hidden');
+    });
+
+
+    byId('app').appendChild(CMenu);
+  }
+
+  getFluxCodexMenuHTML() {
+    return `
+    <h3>Events / Func</h3>
+    <button onclick="app.editor.fluxCodexVertex.addNode('event')">Event: onLoad</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('function')">Function</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('if')">If Branch</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('genrand')">GenRandInt</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('print')">Print</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('timeout')">SetTimeout</button>
+
+    <hr>
+    <span>Scene</span>
+    <button onclick="app.editor.fluxCodexVertex.addNode('getSceneObject')">Get Scene Object</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('setPosition')">Set Position</button>
+
+
+    <button onclick="app.editor.fluxCodexVertex.addNode('onTargetPositionReach')">onTargetPositionReach</button>
+    
+
+    <hr>
+    <span>Math</span>
+    <button onclick="app.editor.fluxCodexVertex.addNode('add')">Add (+)</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('sub')">Sub (-)</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('mul')">Mul (*)</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('div')">Div (/)</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('sin')">Sin</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('cos')">Cos</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('pi')">Pi</button>
+
+    <hr>
+    <span>Comparison</span>
+    <button onclick="app.editor.fluxCodexVertex.addNode('equal')">Equal (==)</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('notequal')">Not Equal (!=)</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('greater')">Greater (>)</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('less')">Less (<)</button>
+
+    <hr>
+    <span>Compile</span>
+    <button onclick="app.editor.fluxCodexVertex.compileGraph()">Save</button>
+    <button onclick="app.editor.fluxCodexVertex.runGraph()">Run (F6)</button>
+  `;
   }
 
   log(...args) {this.logEl.textContent = args.join(' ');}
@@ -178,7 +270,9 @@ export default class FluxCodexVertex {
       width: '30%',
       height: '50%',
       overflow: 'scroll',
-      background: '#111',
+      background: 'linear-gradient(135deg, #1a1a1a 0%, #2b2b2b 100%), /* subtle dark gradient */ repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.05) 1px, transparent 1px, transparent 20px), repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.05) 1px, transparent 1px, transparent 20px)',
+      backgroundBlendMode: 'overlay',
+      backgroundSize: 'auto, 20px 20px, 20px 20px',
       border: '1px solid #444',
       borderRadius: '8px',
       padding: '10px',
@@ -272,6 +366,7 @@ export default class FluxCodexVertex {
 
         const propagate = document.createElement('button');
         propagate.innerText = `Get ${name}`;
+        propagate.classList.add('btnGetter');
         // CLICK → create getter node
         propagate.onclick = () => {
           if(type === 'number') {
@@ -285,6 +380,7 @@ export default class FluxCodexVertex {
 
         const propagateSet = document.createElement('button');
         propagateSet.innerText = `Set ${name}`;
+        propagateSet.classList.add('btnGetter');
         // CLICK → create getter node
         propagateSet.onclick = () => {
           if(type === 'number') {
@@ -542,7 +638,12 @@ export default class FluxCodexVertex {
   _pinElement(pinSpec, isOutput, nodeId) {
     const pin = document.createElement('div');
     // CSS class with type
-    pin.className = `pin pin-${pinSpec.type}`;
+    console.log('test pin :', pinSpec.name);
+    if(pinSpec.name == 'position') {
+      pin.className = `pin pin-${pinSpec.name}`;
+    } else {
+      pin.className = `pin pin-${pinSpec.type}`;
+    }
     pin.dataset.pin = pinSpec.name;
     pin.dataset.type = pinSpec.type;
     pin.dataset.io = isOutput ? 'out' : 'in';
@@ -895,6 +996,17 @@ export default class FluxCodexVertex {
         outputs: [{name: 'execOut', type: 'action'}],
         fields: [{key: 'var', value: ''}, {key: 'literal', value: ''}]
       }),
+
+      'comment': (id, x, y, comment = "Add comment") => ({
+        id,
+        title: comment, x, y,
+        category: 'meta',
+        inputs: [],
+        outputs: [],
+        comment: true,
+        noExec: true
+      }),
+
       'getSceneObject': (id, x, y) => ({
         noExec: true,
         id, title: 'Get Scene Object', x, y,
@@ -902,7 +1014,6 @@ export default class FluxCodexVertex {
         inputs: [], // no inputs
         outputs: [], // will be filled dynamically
         fields: [{key: 'selectedObject', value: ''}],
-
         builtIn: true
       }),
 
@@ -927,17 +1038,53 @@ export default class FluxCodexVertex {
           {name: 'y', semantic: 'number'},
           {name: 'z', semantic: 'number'}
         ],
-        outputs: [{name: 'execOut',  type: 'action'}]
+        outputs: [{name: 'execOut', type: 'action'}],
       }),
 
       'translateByX': (id, x, y) => ({
         id, title: 'Translate By X',
         category: 'scene',
         inputs: [
+          {name: 'exec', type: 'action'},
           {name: 'position', semantic: 'position'},
           {name: 'x', semantic: 'number'}
         ],
+        outputs: [{name: 'execOut', semantic: 'exec'}],
+        builtIn: true
+      }),
+      'translateByY': (id, x, y) => ({
+        id, title: 'Translate By Y',
+        category: 'scene',
+        inputs: [
+          {name: 'exec', type: 'action'},
+          {name: 'position', semantic: 'position'},
+          {name: 'y', semantic: 'number'}
+        ],
         outputs: [{name: 'execOut', semantic: 'exec'}]
+      }),
+      'translateByZ': (id, x, y) => ({
+        id, title: 'Translate By Z',
+        category: 'scene',
+        inputs: [
+          {name: 'exec', type: 'action'},
+          {name: 'position', semantic: 'position'},
+          {name: 'z', semantic: 'number'}
+        ],
+        outputs: [{name: 'execOut', semantic: 'exec'}]
+      }),
+
+      'onTargetPositionReach': (id, x, y) => ({
+        id,
+        title: 'On Target Position Reach',
+        category: 'event',
+        noExec: true,
+        inputs: [
+          {name: 'position', type: 'object'}
+        ],
+        outputs: [
+          {name: 'exec', type: 'action'}
+        ],
+        _listenerAttached: false
       })
 
     };
@@ -971,6 +1118,32 @@ export default class FluxCodexVertex {
 
     this.variables[type][key].value = value;
     this.notifyVariableChanged(type, key);
+  }
+
+  initEventNodes() {
+    for(const nodeId in this.nodes) {
+      const n = this.nodes[nodeId];
+      if(n.category === 'event') {
+        this.activateEventNode(nodeId);
+      }
+    }
+  }
+
+  activateEventNode(nodeId) {
+    const n = this.nodes[nodeId];
+    if(n._listenerAttached) return;
+
+    if(n.title === 'On Target Position Reach') {
+      const pos = this.getValue(nodeId, 'position');
+      if(!pos) return;
+
+      pos.onTargetPositionReach = () => {
+        console.log('real onTargetPositionReach called')
+        this.enqueueOutputs(n, 'exec');
+      };
+
+      n._listenerAttached = true;
+    }
   }
 
   _executeAttachedMethod(n) {
@@ -1011,6 +1184,8 @@ export default class FluxCodexVertex {
 
     if(node.title === 'Get Scene Object') {
 
+      // direct reference to real object must be migrated to factory 
+      // to make it reusable for any other priject
       console.log('FUNC getValue , ' + 'node.title :' + node.title + ', this.nodes[nodeId]._returnCache = ' + this.nodes[nodeId]._returnCache);
       const objName = node.fields[0].value;
       console.log(' objName is n.fields[0].value = ' + node.fields[0].value)
@@ -1045,8 +1220,6 @@ export default class FluxCodexVertex {
       }
       return node._returnCache;
     }
-
-
 
     return undefined;
   }
@@ -1114,6 +1287,30 @@ export default class FluxCodexVertex {
       n.finished = true;
       return;
     }
+
+
+    if(n.title === 'On Target Position Reach') {
+      console.log('TEST TEST On Target Position Reach ', pos);
+      if(n._listenerAttached) return;
+
+      const pos = this.getValue(nodeId, 'position');
+      if(!pos) return;
+
+      // 🔥 subscribe to position updates
+      // Attach listener (engine-agnostic)
+      console.log('TEST TEST ', pos);
+      pos.onTargetPositionReach = () => {
+
+        this.triggerNode(n) // NO HELP
+        this.enqueueOutputs(n, 'exec');
+
+        alert(' TARGET REACh ')
+      };
+
+      n._listenerAttached = true;
+      return;
+    }
+
 
     // -----------------------------
     // Event Nodes
@@ -1208,6 +1405,20 @@ export default class FluxCodexVertex {
       const pos = this.getValue(nodeId, 'position');
       if(pos?.translateByX) {
         pos.translateByX(this.getValue(nodeId, 'x'));
+      }
+      this.enqueueOutputs(n, 'execOut');
+      return;
+    } else if(n.title === 'Translate By Y') {
+      const pos = this.getValue(nodeId, 'position');
+      if(pos?.translateByY) {
+        pos.translateByX(this.getValue(nodeId, 'y'));
+      }
+      this.enqueueOutputs(n, 'execOut');
+      return;
+    } else if(n.title === 'Translate By Z') {
+      const pos = this.getValue(nodeId, 'position');
+      if(pos?.translateByZ) {
+        pos.translateByX(this.getValue(nodeId, 'z'));
       }
       this.enqueueOutputs(n, 'execOut');
       return;
@@ -1312,6 +1523,10 @@ export default class FluxCodexVertex {
     document.addEventListener('mousemove', this.handleMouseMove.bind(this));
     document.addEventListener('mouseup', this.handleMouseUp.bind(this));
     this.boardWrap.addEventListener('mousedown', this.handleBoardWrapMouseDown.bind(this));
+
+    this.board.addEventListener('click', () => {
+      byId('app').style.opacity = 1;
+    })
   }
 
   handleMouseMove(e) {
@@ -1364,7 +1579,9 @@ export default class FluxCodexVertex {
   }
 
   runGraph() {
+    byId('app').style.opacity = 0.4;
     this.updateValueDisplays();
+    this.initEventNodes();
     Object.values(this.nodes).forEach(n => n._returnCache = undefined);
     Object.values(this.nodes).filter(n => n.category === 'event' && n.title === 'onLoad').forEach(n => this.triggerNode(n.id));
   }

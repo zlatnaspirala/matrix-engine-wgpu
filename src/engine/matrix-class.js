@@ -47,33 +47,39 @@ export class Position {
   }
 
   translateByX(x) {
+    if (parseFloat(x) == this.targetX) return;
     this.inMove = true;
     this.targetX = parseFloat(x);
   };
 
   translateByY(y) {
+    if (parseFloat(y) == this.targetY) return;
     this.inMove = true;
     this.targetY = parseFloat(y);
   }
 
   translateByZ(z) {
+    if (parseFloat(z) == this.targetZ) return;
     this.inMove = true;
     this.targetZ = parseFloat(z);
   }
 
   translateByXY(x, y) {
+    if (parseFloat(y) == this.targetY && parseFloat(x) == this.targetX) return;
     this.inMove = true;
     this.targetX = parseFloat(x);
     this.targetY = parseFloat(y);
   }
 
   translateByXZ(x, z) {
+    if (parseFloat(z) == this.targetZ && parseFloat(x) == this.targetX) return;
     this.inMove = true;
     this.targetX = parseFloat(x);
     this.targetZ = parseFloat(z);
   }
 
   translateByYZ(y, z) {
+    if (parseFloat(y) == this.targetY && parseFloat(z) == this.targetZ) return;
     this.inMove = true;
     this.targetY = parseFloat(y);
     this.targetZ = parseFloat(z);

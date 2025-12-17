@@ -2276,28 +2276,34 @@ var Position = class {
     }
   }
   translateByX(x) {
+    if (parseFloat(x) == this.targetX) return;
     this.inMove = true;
     this.targetX = parseFloat(x);
   }
   translateByY(y) {
+    if (parseFloat(y) == this.targetY) return;
     this.inMove = true;
     this.targetY = parseFloat(y);
   }
   translateByZ(z) {
+    if (parseFloat(z) == this.targetZ) return;
     this.inMove = true;
     this.targetZ = parseFloat(z);
   }
   translateByXY(x, y) {
+    if (parseFloat(y) == this.targetY && parseFloat(x) == this.targetX) return;
     this.inMove = true;
     this.targetX = parseFloat(x);
     this.targetY = parseFloat(y);
   }
   translateByXZ(x, z) {
+    if (parseFloat(z) == this.targetZ && parseFloat(x) == this.targetX) return;
     this.inMove = true;
     this.targetX = parseFloat(x);
     this.targetZ = parseFloat(z);
   }
   translateByYZ(y, z) {
+    if (parseFloat(y) == this.targetY && parseFloat(z) == this.targetZ) return;
     this.inMove = true;
     this.targetY = parseFloat(y);
     this.targetZ = parseFloat(z);
@@ -15666,6 +15672,79 @@ var FluxCodexVertex = class _FluxCodexVertex {
         }
       }
     });
+    this.createContextMenu();
+  }
+  createContextMenu() {
+    let CMenu = document.createElement("div");
+    CMenu.id = "fc-context-menu";
+    CMenu.classList.add("fc-context-menu");
+    CMenu.classList.add("hidden");
+    const board = document.getElementById("board");
+    board.addEventListener("contextmenu", (e) => {
+      e.preventDefault();
+      CMenu.innerHTML = this.getFluxCodexMenuHTML();
+      const menuRect = CMenu.getBoundingClientRect();
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      let x = e.clientX;
+      let y = e.clientY;
+      if (x + menuRect.width > vw) {
+        x = vw - menuRect.width - 5;
+      }
+      if (y > vh * 0.5) {
+        y = y - menuRect.height;
+      }
+      if (y < 5) y = 5;
+      CMenu.style.left = x + "px";
+      CMenu.style.top = y + "px";
+      CMenu.classList.remove("hidden");
+    });
+    document.addEventListener("click", () => {
+      CMenu.classList.add("hidden");
+    });
+    byId("app").appendChild(CMenu);
+  }
+  getFluxCodexMenuHTML() {
+    return `
+    <h3>Events / Func</h3>
+    <button onclick="app.editor.fluxCodexVertex.addNode('event')">Event: onLoad</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('function')">Function</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('if')">If Branch</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('genrand')">GenRandInt</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('print')">Print</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('timeout')">SetTimeout</button>
+
+    <hr>
+    <span>Scene</span>
+    <button onclick="app.editor.fluxCodexVertex.addNode('getSceneObject')">Get Scene Object</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('setPosition')">Set Position</button>
+
+
+    <button onclick="app.editor.fluxCodexVertex.addNode('onTargetPositionReach')">onTargetPositionReach</button>
+    
+
+    <hr>
+    <span>Math</span>
+    <button onclick="app.editor.fluxCodexVertex.addNode('add')">Add (+)</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('sub')">Sub (-)</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('mul')">Mul (*)</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('div')">Div (/)</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('sin')">Sin</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('cos')">Cos</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('pi')">Pi</button>
+
+    <hr>
+    <span>Comparison</span>
+    <button onclick="app.editor.fluxCodexVertex.addNode('equal')">Equal (==)</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('notequal')">Not Equal (!=)</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('greater')">Greater (>)</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('less')">Less (<)</button>
+
+    <hr>
+    <span>Compile</span>
+    <button onclick="app.editor.fluxCodexVertex.compileGraph()">Save</button>
+    <button onclick="app.editor.fluxCodexVertex.runGraph()">Run (F6)</button>
+  `;
   }
   log(...args) {
     this.logEl.textContent = args.join(" ");
@@ -15728,7 +15807,9 @@ var FluxCodexVertex = class _FluxCodexVertex {
       width: "30%",
       height: "50%",
       overflow: "scroll",
-      background: "#111",
+      background: "linear-gradient(135deg, #1a1a1a 0%, #2b2b2b 100%), /* subtle dark gradient */ repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.05) 1px, transparent 1px, transparent 20px), repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.05) 1px, transparent 1px, transparent 20px)",
+      backgroundBlendMode: "overlay",
+      backgroundSize: "auto, 20px 20px, 20px 20px",
       border: "1px solid #444",
       borderRadius: "8px",
       padding: "10px",
@@ -15802,6 +15883,7 @@ var FluxCodexVertex = class _FluxCodexVertex {
         };
         const propagate = document.createElement("button");
         propagate.innerText = `Get ${name}`;
+        propagate.classList.add("btnGetter");
         propagate.onclick = () => {
           if (type === "number") {
             this.createGetNumberNode(name);
@@ -15813,6 +15895,7 @@ var FluxCodexVertex = class _FluxCodexVertex {
         };
         const propagateSet = document.createElement("button");
         propagateSet.innerText = `Set ${name}`;
+        propagateSet.classList.add("btnGetter");
         propagateSet.onclick = () => {
           if (type === "number") {
             this.createSetNumberNode(name);
@@ -16020,7 +16103,12 @@ var FluxCodexVertex = class _FluxCodexVertex {
   }
   _pinElement(pinSpec, isOutput, nodeId) {
     const pin = document.createElement("div");
-    pin.className = `pin pin-${pinSpec.type}`;
+    console.log("test pin :", pinSpec.name);
+    if (pinSpec.name == "position") {
+      pin.className = `pin pin-${pinSpec.name}`;
+    } else {
+      pin.className = `pin pin-${pinSpec.type}`;
+    }
     pin.dataset.pin = pinSpec.name;
     pin.dataset.type = pinSpec.type;
     pin.dataset.io = isOutput ? "out" : "in";
@@ -16392,6 +16480,17 @@ var FluxCodexVertex = class _FluxCodexVertex {
         outputs: [{ name: "execOut", type: "action" }],
         fields: [{ key: "var", value: "" }, { key: "literal", value: "" }]
       }),
+      "comment": (id2, x2, y2, comment = "Add comment") => ({
+        id: id2,
+        title: comment,
+        x: x2,
+        y: y2,
+        category: "meta",
+        inputs: [],
+        outputs: [],
+        comment: true,
+        noExec: true
+      }),
       "getSceneObject": (id2, x2, y2) => ({
         noExec: true,
         id: id2,
@@ -16436,10 +16535,47 @@ var FluxCodexVertex = class _FluxCodexVertex {
         title: "Translate By X",
         category: "scene",
         inputs: [
+          { name: "exec", type: "action" },
           { name: "position", semantic: "position" },
           { name: "x", semantic: "number" }
         ],
+        outputs: [{ name: "execOut", semantic: "exec" }],
+        builtIn: true
+      }),
+      "translateByY": (id2, x2, y2) => ({
+        id: id2,
+        title: "Translate By Y",
+        category: "scene",
+        inputs: [
+          { name: "exec", type: "action" },
+          { name: "position", semantic: "position" },
+          { name: "y", semantic: "number" }
+        ],
         outputs: [{ name: "execOut", semantic: "exec" }]
+      }),
+      "translateByZ": (id2, x2, y2) => ({
+        id: id2,
+        title: "Translate By Z",
+        category: "scene",
+        inputs: [
+          { name: "exec", type: "action" },
+          { name: "position", semantic: "position" },
+          { name: "z", semantic: "number" }
+        ],
+        outputs: [{ name: "execOut", semantic: "exec" }]
+      }),
+      "onTargetPositionReach": (id2, x2, y2) => ({
+        id: id2,
+        title: "On Target Position Reach",
+        category: "event",
+        noExec: true,
+        inputs: [
+          { name: "position", type: "object" }
+        ],
+        outputs: [
+          { name: "exec", type: "action" }
+        ],
+        _listenerAttached: false
       })
     };
     let spec = null;
@@ -16463,6 +16599,27 @@ var FluxCodexVertex = class _FluxCodexVertex {
     if (!this.variables[type][key]) return;
     this.variables[type][key].value = value;
     this.notifyVariableChanged(type, key);
+  }
+  initEventNodes() {
+    for (const nodeId in this.nodes) {
+      const n = this.nodes[nodeId];
+      if (n.category === "event") {
+        this.activateEventNode(nodeId);
+      }
+    }
+  }
+  activateEventNode(nodeId) {
+    const n = this.nodes[nodeId];
+    if (n._listenerAttached) return;
+    if (n.title === "On Target Position Reach") {
+      const pos = this.getValue(nodeId, "position");
+      if (!pos) return;
+      pos.onTargetPositionReach = () => {
+        console.log("real onTargetPositionReach called");
+        this.enqueueOutputs(n, "exec");
+      };
+      n._listenerAttached = true;
+    }
   }
   _executeAttachedMethod(n) {
     if (n.attachedMethod) {
@@ -16568,6 +16725,20 @@ var FluxCodexVertex = class _FluxCodexVertex {
       n.finished = true;
       return;
     }
+    if (n.title === "On Target Position Reach") {
+      console.log("TEST TEST On Target Position Reach ", pos);
+      if (n._listenerAttached) return;
+      const pos = this.getValue(nodeId, "position");
+      if (!pos) return;
+      console.log("TEST TEST ", pos);
+      pos.onTargetPositionReach = () => {
+        this.triggerNode(n);
+        this.enqueueOutputs(n, "exec");
+        alert(" TARGET REACh ");
+      };
+      n._listenerAttached = true;
+      return;
+    }
     if (n.category === "event") {
       this.enqueueOutputs(n, "exec");
       return;
@@ -16637,6 +16808,20 @@ var FluxCodexVertex = class _FluxCodexVertex {
       const pos = this.getValue(nodeId, "position");
       if (pos?.translateByX) {
         pos.translateByX(this.getValue(nodeId, "x"));
+      }
+      this.enqueueOutputs(n, "execOut");
+      return;
+    } else if (n.title === "Translate By Y") {
+      const pos = this.getValue(nodeId, "position");
+      if (pos?.translateByY) {
+        pos.translateByX(this.getValue(nodeId, "y"));
+      }
+      this.enqueueOutputs(n, "execOut");
+      return;
+    } else if (n.title === "Translate By Z") {
+      const pos = this.getValue(nodeId, "position");
+      if (pos?.translateByZ) {
+        pos.translateByX(this.getValue(nodeId, "z"));
       }
       this.enqueueOutputs(n, "execOut");
       return;
@@ -16733,6 +16918,9 @@ var FluxCodexVertex = class _FluxCodexVertex {
     document.addEventListener("mousemove", this.handleMouseMove.bind(this));
     document.addEventListener("mouseup", this.handleMouseUp.bind(this));
     this.boardWrap.addEventListener("mousedown", this.handleBoardWrapMouseDown.bind(this));
+    this.board.addEventListener("click", () => {
+      byId("app").style.opacity = 1;
+    });
   }
   handleMouseMove(e) {
     if (this.state.draggingNode) {
@@ -16787,7 +16975,9 @@ var FluxCodexVertex = class _FluxCodexVertex {
     });
   }
   runGraph() {
+    byId("app").style.opacity = 0.4;
     this.updateValueDisplays();
+    this.initEventNodes();
     Object.values(this.nodes).forEach((n) => n._returnCache = void 0);
     Object.values(this.nodes).filter((n) => n.category === "event" && n.title === "onLoad").forEach((n) => this.triggerNode(n.id));
   }
@@ -17051,7 +17241,7 @@ var EditorHud = class {
     Object.assign(this.editorMenu.style, {
       position: "absolute",
       top: "0",
-      left: "20%",
+      left: "30%",
       width: "60%",
       height: "50px;",
       backgroundColor: "rgba(0,0,0,0.85)",
@@ -17117,14 +17307,16 @@ var EditorHud = class {
         <div id="showVisualCodeEditorBtn" class="drop-item">
            <span>Visual Scripting</span>
            <small>\u2328\uFE0FFluxCodexVertex</small>
+           <small>\u2328\uFE0FPress F6 for run</small>
         </div>
         <div id="showCodeVARSBtn" class="drop-item">
            <span>Variable editor</span>
-           <small>\u2328\uFE0F Visual Script tool</small>
+           <small>\u2328\uFE0FVisual Script tool</small>
         </div>
         <div id="showCodeEditorBtn" class="drop-item">
            <span>Show code editor</span>
-           <small>\u2328\uFE0F Function raw edit</small>
+           <small>\u2328\uFE0FFunction raw edit</small>
+           <small>Custom Functions</small>
         </div>
       </div>
     </div>
@@ -17249,7 +17441,7 @@ var EditorHud = class {
         byId("app").style.display = "none";
       } else {
         byId("app").style.display = "flex";
-        this.core.editor.fluxCodexVertex.updateLinks();
+        if (this.core.editor.fluxCodexVertex) this.core.editor.fluxCodexVertex.updateLinks();
       }
     });
     byId("showCodeVARSBtn").addEventListener("click", (e) => {
@@ -18014,6 +18206,28 @@ var MethodsManager = class {
       }
     });
   };
+  makePopupDraggable() {
+    let isDragging = false;
+    let offsetX = 0;
+    let offsetY = 0;
+    this.wrapper.style.cursor = "move";
+    this.wrapper.addEventListener("mousedown", (e) => {
+      isDragging = true;
+      const rect = this.popup.getBoundingClientRect();
+      offsetX = e.clientX - rect.left;
+      offsetY = e.clientY - rect.top;
+      this.popup.style.transition = "none";
+    });
+    document.addEventListener("mousemove", (e) => {
+      if (!isDragging) return;
+      this.popup.style.left = e.clientX - offsetX + "px";
+      this.popup.style.top = e.clientY - offsetY + "px";
+      this.popup.style.transform = "none";
+    });
+    document.addEventListener("mouseup", () => {
+      if (isDragging) isDragging = false;
+    });
+  }
   createUI() {
     this.wrapper = document.createElement("div");
     this.wrapper.style.cssText = `
@@ -18072,6 +18286,19 @@ var MethodsManager = class {
       z-index:999;
     `;
     this.popup.appendChild(this.wrapper);
+    this.btnRemove = document.createElement("button");
+    this.btnRemove.innerText = "Remove method";
+    this.btnRemove.style.cssText = `
+        margin-top:10px;
+        margin-left:10px;
+        padding:6px 14px;
+        background:#a33;
+        color:#fff;
+        border:1px solid #800;
+        cursor:pointer;
+      `;
+    this.btnRemove.onclick = () => this.removeMethod();
+    this.popup.appendChild(this.btnRemove);
     this.textarea = document.createElement("textarea");
     this.textarea.id = "code-editor-textarea";
     this.textarea.style.cssText = `
@@ -18110,6 +18337,7 @@ var MethodsManager = class {
       this.popup.style.display = "none";
     };
     this.popup.appendChild(this.btnExit);
+    this.makePopupDraggable();
     document.body.appendChild(this.popup);
   }
   openEditor(existing) {
@@ -18138,6 +18366,23 @@ var MethodsManager = class {
     }
     this.refreshSelect();
     this.popup.style.display = "none";
+    document.dispatchEvent(new CustomEvent("save-methods", {
+      detail: {
+        methodsContainer: this.methodsContainer
+      }
+    }));
+  }
+  removeMethod() {
+    if (!this.editing) return;
+    const idx = this.methodsContainer.indexOf(this.editing);
+    if (idx === -1) return;
+    if (this.methodsContainer[idx].intervalId) {
+      clearInterval(this.methodsContainer[idx].intervalId);
+    }
+    this.methodsContainer.splice(idx, 1);
+    this.editing = null;
+    this.refreshSelect();
+    this.textarea.value = "";
     document.dispatchEvent(new CustomEvent("save-methods", {
       detail: {
         methodsContainer: this.methodsContainer
@@ -18211,6 +18456,7 @@ var Editor = class {
     let FCV = document.createElement("div");
     FCV.id = "app";
     FCV.style.display = "none";
+    FCV.style.opacity = 1;
     FCV.innerHTML = `
     <div id="leftBar">
       <h3>Events/Func</h3>
@@ -18223,6 +18469,11 @@ var Editor = class {
       <hr style="border:none; height:1px; background:rgba(255,255,255,0.03); margin:10px 0;">
       <span>Scene objects</span>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getSceneObject')">Get scene object</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setPosition')">Set position</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('translateByX')">TranslateByX</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('translateByY')">TranslateByY</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('translateByZ')">TranslateByZ</button>
+      
       <hr style="border:none; height:1px; background:rgba(255,255,255,0.03); margin:10px 0;">
       <span>Math</span>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('add')">Add (+)</button>

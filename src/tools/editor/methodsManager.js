@@ -48,6 +48,34 @@ export default class MethodsManager {
     })
   }
 
+  makePopupDraggable() {
+    let isDragging = false;
+    let offsetX = 0;
+    let offsetY = 0;
+
+    // Use the wrapper as the drag handle
+    this.wrapper.style.cursor = "move";
+
+    this.wrapper.addEventListener("mousedown", (e) => {
+      isDragging = true;
+      const rect = this.popup.getBoundingClientRect();
+      offsetX = e.clientX - rect.left;
+      offsetY = e.clientY - rect.top;
+      this.popup.style.transition = "none"; // remove transition during drag
+    });
+
+    document.addEventListener("mousemove", (e) => {
+      if(!isDragging) return;
+      this.popup.style.left = e.clientX - offsetX + "px";
+      this.popup.style.top = e.clientY - offsetY + "px";
+      this.popup.style.transform = "none"; // cancel centering transform
+    });
+
+    document.addEventListener("mouseup", () => {
+      if(isDragging) isDragging = false;
+    });
+  }
+
   createUI() {
     // Wrapper
     this.wrapper = document.createElement("div");
@@ -118,6 +146,22 @@ export default class MethodsManager {
 
     this.popup.appendChild(this.wrapper);
 
+
+    // Add after btnSave or btnExit creation
+    this.btnRemove = document.createElement("button");
+    this.btnRemove.innerText = "Remove method";
+    this.btnRemove.style.cssText = `
+        margin-top:10px;
+        margin-left:10px;
+        padding:6px 14px;
+        background:#a33;
+        color:#fff;
+        border:1px solid #800;
+        cursor:pointer;
+      `;
+    this.btnRemove.onclick = () => this.removeMethod();
+    this.popup.appendChild(this.btnRemove);
+
     this.textarea = document.createElement("textarea");
     this.textarea.id = "code-editor-textarea";
     this.textarea.style.cssText = `
@@ -159,6 +203,7 @@ export default class MethodsManager {
     };
     this.popup.appendChild(this.btnExit);
 
+    this.makePopupDraggable();
     document.body.appendChild(this.popup);
   }
 
@@ -204,6 +249,37 @@ export default class MethodsManager {
       }
     }));
 
+  }
+
+  removeMethod() {
+    if(!this.editing) return; // nothing selected
+
+    const idx = this.methodsContainer.indexOf(this.editing);
+    if(idx === -1) return;
+
+    // If it was an interval, clear it
+    if(this.methodsContainer[idx].intervalId) {
+      clearInterval(this.methodsContainer[idx].intervalId);
+    }
+
+    // Remove from container
+    this.methodsContainer.splice(idx, 1);
+
+    // Reset editing
+    this.editing = null;
+
+    // Refresh select options
+    this.refreshSelect();
+
+    // Optionally clear editor
+    this.textarea.value = "";
+
+    // Dispatch update event
+    document.dispatchEvent(new CustomEvent('save-methods', {
+      detail: {
+        methodsContainer: this.methodsContainer
+      }
+    }));
   }
 
   refreshSelect() {

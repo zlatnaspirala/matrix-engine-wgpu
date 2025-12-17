@@ -139,7 +139,7 @@ export default class EditorHud {
     Object.assign(this.editorMenu.style, {
       position: "absolute",
       top: "0",
-      left: "20%",
+      left: "30%",
       width: "60%",
       height: "50px;",
       backgroundColor: "rgba(0,0,0,0.85)",
@@ -204,14 +204,16 @@ export default class EditorHud {
         <div id="showVisualCodeEditorBtn" class="drop-item">
            <span>Visual Scripting</span>
            <small>⌨️FluxCodexVertex</small>
+           <small>⌨️Press F6 for run</small>
         </div>
         <div id="showCodeVARSBtn" class="drop-item">
            <span>Variable editor</span>
-           <small>⌨️ Visual Script tool</small>
+           <small>⌨️Visual Script tool</small>
         </div>
         <div id="showCodeEditorBtn" class="drop-item">
            <span>Show code editor</span>
-           <small>⌨️ Function raw edit</small>
+           <small>⌨️Function raw edit</small>
+           <small>Custom Functions</small>
         </div>
       </div>
     </div>
@@ -372,7 +374,7 @@ export default class EditorHud {
         byId('app').style.display = 'none';
       } else {
         byId('app').style.display = 'flex';
-        this.core.editor.fluxCodexVertex.updateLinks();
+        if (this.core.editor.fluxCodexVertex) this.core.editor.fluxCodexVertex.updateLinks();
       }
     });
 

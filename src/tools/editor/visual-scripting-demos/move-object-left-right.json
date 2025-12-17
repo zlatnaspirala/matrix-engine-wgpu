@@ -1,0 +1,424 @@
+{
+  "nodes": {
+    "node_1": {
+      "id": "node_1",
+      "title": "onLoad",
+      "x": 222.171875,
+      "y": 92.453125,
+      "category": "event",
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "exec",
+          "type": "action"
+        }
+      ]
+    },
+    "node_2": {
+      "noExec": true,
+      "id": "node_2",
+      "title": "Get Scene Object",
+      "x": 266.234375,
+      "y": 260,
+      "category": "scene",
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "position",
+          "type": "object"
+        },
+        {
+          "name": "rotation",
+          "type": "object"
+        },
+        {
+          "name": "scale",
+          "type": "object"
+        }
+      ],
+      "fields": [
+        {
+          "key": "selectedObject",
+          "value": "Cube_0"
+        }
+      ],
+      "builtIn": true
+    },
+    "node_3": {
+      "id": "node_3",
+      "title": "Print",
+      "x": 576.75,
+      "y": 116.5,
+      "category": "actionprint",
+      "inputs": [
+        {
+          "name": "exec",
+          "type": "action"
+        },
+        {
+          "name": "value",
+          "type": "any"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "execOut",
+          "type": "action"
+        }
+      ],
+      "fields": [
+        {
+          "key": "label",
+          "value": "Result"
+        }
+      ],
+      "builtIn": true,
+      "displayEl": {}
+    },
+    "node_6": {
+      "id": "node_6",
+      "title": "On Target Position Reach",
+      "category": "event",
+      "noExec": true,
+      "inputs": [
+        {
+          "name": "position",
+          "type": "object"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "exec",
+          "type": "action"
+        }
+      ],
+      "fields": [
+        {
+          "key": "epsilon",
+          "value": 0.01
+        }
+      ],
+      "x": 660,
+      "y": 436,
+      "_listenerAttached": true
+    },
+    "node_8": {
+      "id": "node_8",
+      "title": "Translate By X",
+      "category": "scene",
+      "inputs": [
+        {
+          "name": "exec",
+          "type": "action"
+        },
+        {
+          "name": "position",
+          "semantic": "position",
+          "type": "any"
+        },
+        {
+          "name": "x",
+          "semantic": "number",
+          "type": "any"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "execOut",
+          "semantic": "exec",
+          "type": "any"
+        }
+      ],
+      "builtIn": true,
+      "x": 568,
+      "y": 273
+    },
+    "node_9": {
+      "id": "node_9",
+      "title": "Get Number",
+      "x": 297.578125,
+      "y": 535.578125,
+      "category": "value",
+      "outputs": [
+        {
+          "name": "result",
+          "type": "value"
+        }
+      ],
+      "fields": [
+        {
+          "key": "var",
+          "value": "newX"
+        }
+      ],
+      "isGetterNode": true,
+      "displayEl": {},
+      "_returnCache": -2,
+      "finished": true
+    },
+    "node_10": {
+      "id": "node_10",
+      "title": "Translate By X",
+      "category": "scene",
+      "inputs": [
+        {
+          "name": "exec",
+          "type": "action"
+        },
+        {
+          "name": "position",
+          "semantic": "position",
+          "type": "any"
+        },
+        {
+          "name": "x",
+          "semantic": "number",
+          "type": "any"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "execOut",
+          "semantic": "exec",
+          "type": "any"
+        }
+      ],
+      "builtIn": true,
+      "x": 851,
+      "y": 580
+    },
+    "node_11": {
+      "id": "node_11",
+      "title": "Get Number",
+      "x": 372.09375,
+      "y": 769.140625,
+      "category": "value",
+      "outputs": [
+        {
+          "name": "result",
+          "type": "value"
+        }
+      ],
+      "fields": [
+        {
+          "key": "var",
+          "value": "NEG"
+        }
+      ],
+      "isGetterNode": true,
+      "displayEl": {},
+      "_returnCache": -1,
+      "finished": true
+    },
+    "node_12": {
+      "id": "node_12",
+      "title": "Mul",
+      "x": 560.734375,
+      "y": 635.53125,
+      "category": "math",
+      "inputs": [
+        {
+          "name": "a",
+          "type": "value"
+        },
+        {
+          "name": "b",
+          "type": "value"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "result",
+          "type": "value"
+        }
+      ],
+      "displayEl": {},
+      "_returnCache": 2
+    }
+  },
+  "links": [
+    {
+      "id": "link_1",
+      "from": {
+        "node": "node_1",
+        "pin": "exec",
+        "type": "action",
+        "out": true
+      },
+      "to": {
+        "node": "node_3",
+        "pin": "exec"
+      },
+      "type": "action"
+    },
+    {
+      "id": "link_2",
+      "from": {
+        "node": "node_2",
+        "pin": "name",
+        "type": "string",
+        "out": true
+      },
+      "to": {
+        "node": "node_3",
+        "pin": "value"
+      },
+      "type": "any"
+    },
+    {
+      "id": "link_6",
+      "from": {
+        "node": "node_2",
+        "pin": "position",
+        "type": "object",
+        "out": true
+      },
+      "to": {
+        "node": "node_6",
+        "pin": "position"
+      },
+      "type": "object"
+    },
+    {
+      "id": "link_8",
+      "from": {
+        "node": "node_3",
+        "pin": "execOut",
+        "type": "action",
+        "out": true
+      },
+      "to": {
+        "node": "node_8",
+        "pin": "exec"
+      },
+      "type": "action"
+    },
+    {
+      "id": "link_9",
+      "from": {
+        "node": "node_9",
+        "pin": "result",
+        "type": "value",
+        "out": true
+      },
+      "to": {
+        "node": "node_8",
+        "pin": "x"
+      },
+      "type": "any"
+    },
+    {
+      "id": "link_10",
+      "from": {
+        "node": "node_2",
+        "pin": "position",
+        "type": "object",
+        "out": true
+      },
+      "to": {
+        "node": "node_8",
+        "pin": "position"
+      },
+      "type": "any"
+    },
+    {
+      "id": "link_11",
+      "from": {
+        "node": "node_6",
+        "pin": "exec",
+        "type": "action",
+        "out": true
+      },
+      "to": {
+        "node": "node_10",
+        "pin": "exec"
+      },
+      "type": "action"
+    },
+    {
+      "id": "link_12",
+      "from": {
+        "node": "node_2",
+        "pin": "position",
+        "type": "object",
+        "out": true
+      },
+      "to": {
+        "node": "node_10",
+        "pin": "position"
+      },
+      "type": "any"
+    },
+    {
+      "id": "link_13",
+      "from": {
+        "node": "node_11",
+        "pin": "result",
+        "type": "value",
+        "out": true
+      },
+      "to": {
+        "node": "node_12",
+        "pin": "b"
+      },
+      "type": "value"
+    },
+    {
+      "id": "link_14",
+      "from": {
+        "node": "node_9",
+        "pin": "result",
+        "type": "value",
+        "out": true
+      },
+      "to": {
+        "node": "node_12",
+        "pin": "a"
+      },
+      "type": "value"
+    },
+    {
+      "id": "link_15",
+      "from": {
+        "node": "node_12",
+        "pin": "result",
+        "type": "value",
+        "out": true
+      },
+      "to": {
+        "node": "node_10",
+        "pin": "x"
+      },
+      "type": "any"
+    }
+  ],
+  "nodeCounter": 13,
+  "linkCounter": 16,
+  "pan": [
+    -211,
+    -19
+  ],
+  "variables": {
+    "number": {
+      "newX": {
+        "value": -2
+      },
+      "newY": {
+        "value": 0
+      },
+      "newZ": {
+        "value": -20
+      },
+      "NEG": {
+        "value": -1
+      }
+    },
+    "boolean": {},
+    "string": {}
+  },
+  "version": 1
+}
