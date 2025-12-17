@@ -33,42 +33,72 @@ Published on npm as: **`matrix-engine-wgpu`**
 - 🎯 Replicate matrix-engine (WebGL) features
 - 📦 Based on the `shadowMapping` sample from [webgpu-samples](https://webgpu.github.io/webgpu-samples/?sample=shadowMapping)
 - 🎯 Web GUI(online) Editor with Visual Scripting (Named: FlowCodexVertex) WIP
+# FluxCodexVertex Web Editor 🚀 (since version 1.8.0)
 
-## About web editor FluxCodexVertex from version [1.8.0]
+EditorX has **two main parts**:
 
-EditorX have two main parts.
- - Frontend part (under ./src/tools/editor)
- - Frontend part (under ./src/tools/editor/backend)
-Before everything run `npm i` for deps installation in root also in ./src/tools/editor/backend folder.
-Backend part done on node.js
+- **Frontend** (`./src/tools/editor`)
+- **Backend** (`./src/tools/editor/backend`)
 
+> **Before running anything**, install dependencies with `npm i`:
+> - in the **root** folder  
+> - and also inside `./src/tools/editor/backend`
 
-### General stuff :
- - Editor creates file (windows tested only) and all other operation.
- - Scene container added
- - SceneObject Property container added
- - Assets toolbar (bottom) added (from asset toobox add glb or obj files by selecting)
- - Top menu (Cube/sphere with physics or without)
- + Visual Scripting part
+The backend is built using **Node.js** 🟢
 
-### Visual Scripting done list:
- - Adding MATH, event/custom methods, variable popup, get scene object -set pos - ontargetReach bind event.
- - Run graph
- - Save graph [for noe in localstorage - for final build becomes real JS object simply added in app flow.]
- - Export to JSON format
- - Import from JSON format
+---
 
-⚠️ Visual Scriptiong is only possible from engine source (not from npm i matrix-engine-wgpu). That means 
-you need to clone or download source from github repo.
+## General Features 🧩
 
-@Instructions
-  - All you need to run `npm run editorx` from root of engine.
-  Editorx is just alias for FluxCodexVertex. (To be uniq i need 3 words)
-  - Run with pressing F6 key or from leftBox clicking on Run.
-  - If you delete all objects from scene - You need to to refresh and add some object to scene.
-  - Before importing graph you need to delete all nodes from flexCodexVertex graph.
-  - Saves still based on Local storage. After delete click save to memories empty []array.
-    You must save any changes manually for now.
+- Editor creates and manages files (Windows tested only)
+- Scene container added
+- SceneObject property container added
+- Assets toolbar added (bottom panel)  
+  - Add **GLB** or **OBJ** files from the asset toolbox by selecting them
+- Top menu for adding primitives (Cube / Sphere) with or without physics ⚙️
+- Integrated Visual Scripting system 🧠
+
+---
+
+## Visual Scripting – Implemented Features ✅
+
+- Add **Math nodes**, **events / custom methods**, **variable popup**
+- Get SceneObject → set position → bind `onTargetReach` events
+- Run the graph ▶️
+- Save graph
+  - Currently saved to **LocalStorage**
+  - [NOT DONE] For final builds, becomes a real **JS object** injected into the app flow
+- Export graph to **JSON**
+- Import graph from **JSON**
+
+---
+
+## ⚠️ Important Notes
+
+Visual Scripting is only available when running the engine **from source**  
+(not from `npm i matrix-engine-wgpu`).  
+
+You must clone or download the engine source from the **GitHub repository**.
+
+---
+
+## Instructions 📌
+
+- Run the editor with:
+
+```bash
+npm run editorx
+```
+
+from the engine root directory.
+
+EditorX is an alias for FluxCodexVertex (needed three words to keep the name unique 😄)
+Run the scene by pressing F6 or by clicking Run in the left panel
+If you delete all objects from the scene, you must refresh the page and add at least one object again
+Before importing a graph, delete all nodes from the FluxCodexVertex graph
+Saving is still based on LocalStorage
+After deleting everything, click Save to store an empty [] array
+All changes in graph must be saved manually for now 💾.
 
   <img width="860" height="640" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/visual-scripting-math.png?raw=true" />
 ---
