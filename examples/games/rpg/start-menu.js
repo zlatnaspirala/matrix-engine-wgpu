@@ -19,7 +19,7 @@ import {Editor} from "../../../src/tools/editor/editor.js";
  * Attribution requirement:
  * Include the following notice (with working link) in any distributed version or about page:
  * 
- * "Forest Of Hollow Blood — an RPG example made with MatrixEngineWGPU (https://github.com/zlatnaspirala/matrix-engine-wgpu)"
+ * "Forest Of Hollow Blood — an MOBA example made with MatrixEngineWGPU (https://github.com/zlatnaspirala/matrix-engine-wgpu)"
  * @Note
  * “Character and animation assets from Mixamo,
  * used under Adobe’s royalty‑free license. 

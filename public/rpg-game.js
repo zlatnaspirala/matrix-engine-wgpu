@@ -37004,10 +37004,12 @@ var _editor = _interopRequireDefault(require("./editor.provider"));
 var _hud = _interopRequireDefault(require("./hud"));
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 class Editor {
-  constructor(core) {
+  constructor(core, a) {
     this.core = core;
     this.editorHud = new _hud.default(core);
     this.editorProvider = new _editor.default(core);
+    if (typeof a !== 'undefined' && a == "") {}
+    this.client = new MEEditorClient();
   }
 }
 exports.Editor = Editor;
@@ -37682,7 +37684,11 @@ class MatrixEngineWGPU {
     }
     this.editor = undefined;
     if (typeof options.useEditor !== "undefined") {
-      this.editor = new _editor.Editor(this);
+      if (typeof options.projectType !== "undefined" && options.projectType == "created from editor") {
+        this.editor = new _editor.Editor(this, "created from editor");
+      } else {
+        this.editor = new _editor.Editor(this, "infly");
+      }
     }
     window.addEventListener('keydown', e => {
       if (e.code == "F4") {

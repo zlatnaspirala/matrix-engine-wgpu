@@ -1,7 +1,7 @@
 /**
  * @description
  * Hero invertory (Local)
- * Advanced Inventory system for RPG heroes.
+ * Advanced Inventory system for MOBA heroes.
  * Supports stacking, crafting, and time-limited items.
  */
 export class Inventory {

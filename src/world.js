@@ -71,7 +71,14 @@ export default class MatrixEngineWGPU {
 
     this.editor = undefined;
     if(typeof options.useEditor !== "undefined") {
-      this.editor = new Editor(this);
+      if(typeof options.projectType !== "undefined" && options.projectType == "created from editor") {
+        this.editor = new Editor(this, "created from editor", options.projectName);
+      } else if(typeof options.projectType !== "undefined" && options.projectType == "pre editor") {
+        this.editor = new Editor(this, options.projectType);
+      } else {
+        this.editor = new Editor(this, "infly");
+      }
+
     }
 
     window.addEventListener('keydown', e => {
@@ -85,9 +92,22 @@ export default class MatrixEngineWGPU {
 
     this.activateEditor = () => {
       if(this.editor == null || typeof this.editor === 'undefined') {
-        this.editor = new Editor(this);
+        if(typeof options.projectType !== "undefined" && options.projectType == "created from editor") {
+          this.editor = new Editor(this, "created from editor");
+        } else if(typeof options.projectType !== "undefined" && options.projectType == "pre editor") {
+          this.editor = new Editor(this, options.projectType);
+        } else {
+          this.editor = new Editor(this, "infly");
+        }
         this.editor.editorHud.updateSceneContainer();
+      } else {
+        // nikola
+        this.editor.editorHud.editorMenu.style.display = 'flex';
+        this.editor.editorHud.assetsBox.style.display = 'flex';
+        this.editor.editorHud.sceneProperty.style.display = 'flex';
+        this.editor.editorHud.sceneContainer.style.display = 'flex';
       }
+
     };
 
     this.options = options;
@@ -264,6 +284,44 @@ export default class MatrixEngineWGPU {
 
   getSceneObjectByName(name) {
     return this.mainRenderBundle.find((sceneObject) => sceneObject.name === name)
+  }
+
+  getNameFromPath(p) {
+    return p.split(/[/\\]/).pop().replace(/\.[^/.]+$/, "");
+  }
+
+  removeSceneObjectByName(name) {
+    const index = this.mainRenderBundle.findIndex(obj => obj.name === name);
+
+    if(index === -1) {
+      console.warn("Scene object not found:", name);
+      return false;
+    }
+
+    // Get object
+    const obj = this.mainRenderBundle[index];
+    let testPB = app.matrixAmmo.getBodyByName(obj.name);
+    if(testPB !== null) {
+      try {
+        this.matrixAmmo.dynamicsWorld.removeRigidBody(testPB);
+      } catch(e) {
+        console.warn("Physics cleanup error:", e);
+      }
+    }
+
+    // if(obj.destroy && typeof obj.destroy === "function") {
+    //   try {
+    //     obj.destroy();  // user-defined GPU cleanup
+    //   } catch(e) {
+    //     console.warn("Destroy() cleanup failed:", e);
+    //   }
+    // }
+
+    // Remove from render bundle
+    this.mainRenderBundle.splice(index, 1);
+
+    console.log("Removed scene object:", name);
+    return true;
   }
 
   // Not in use for now
@@ -607,7 +665,7 @@ export default class MatrixEngineWGPU {
       this.device.queue.submit([commandEncoder.finish()]);
       requestAnimationFrame(this.frame);
     } catch(err) {
-      // console.log('%cLoop(err):' + err + " info : " + err.stack, LOG_WARN)
+      console.log('%cLoop(err):' + err + " info : " + err.stack, LOG_WARN)
       requestAnimationFrame(this.frame);
     }
   }
@@ -703,7 +761,10 @@ export default class MatrixEngineWGPU {
         //   this.matrixAmmo.addPhysics(myMesh1, o.physics)
         // }
         // make it soft
-        setTimeout(() => {this.mainRenderBundle.push(bvhPlayer)}, 800);
+        setTimeout(() => {
+          this.mainRenderBundle.push(bvhPlayer);
+          setTimeout(() => document.dispatchEvent(new CustomEvent('updateSceneContainer', {detail: {}})), 100)
+        }, 500);
         // this.mainRenderBundle.push(bvhPlayer)
         c++;
       }

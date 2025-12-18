@@ -143,7 +143,7 @@ var loadCameraTexture = function () {
 };
 exports.loadCameraTexture = loadCameraTexture;
 
-},{"../src/engine/loader-obj.js":40,"../src/engine/raycast.js":47,"../src/engine/utils.js":48,"../src/world.js":71}],3:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":40,"../src/engine/raycast.js":47,"../src/engine/utils.js":48,"../src/world.js":75}],3:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -350,7 +350,7 @@ function loadGLBLoader() {
 
 // loadGLBLoader()
 
-},{"../src/engine/loader-obj.js":40,"../src/engine/loaders/bvh.js":42,"../src/engine/loaders/webgpu-gltf.js":43,"../src/engine/utils.js":48,"../src/world.js":71}],4:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":40,"../src/engine/loaders/bvh.js":42,"../src/engine/loaders/webgpu-gltf.js":43,"../src/engine/utils.js":48,"../src/world.js":75}],4:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -498,7 +498,7 @@ var loadObjFile = function () {
 };
 exports.loadObjFile = loadObjFile;
 
-},{"../src/engine/loader-obj.js":40,"../src/engine/utils.js":48,"../src/world.js":71}],5:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":40,"../src/engine/utils.js":48,"../src/world.js":75}],5:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -634,7 +634,7 @@ var loadObjsSequence = function () {
 };
 exports.loadObjsSequence = loadObjsSequence;
 
-},{"../src/engine/loader-obj.js":40,"../src/engine/utils.js":48,"../src/world.js":71}],6:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":40,"../src/engine/utils.js":48,"../src/world.js":75}],6:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -698,7 +698,7 @@ var unlitTextures = function () {
 };
 exports.unlitTextures = unlitTextures;
 
-},{"../src/world.js":71}],7:[function(require,module,exports){
+},{"../src/world.js":75}],7:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -789,7 +789,7 @@ var loadVideoTexture = function () {
 };
 exports.loadVideoTexture = loadVideoTexture;
 
-},{"../src/engine/loader-obj.js":40,"../src/engine/raycast.js":47,"../src/engine/utils.js":48,"../src/world.js":71}],8:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":40,"../src/engine/raycast.js":47,"../src/engine/utils.js":48,"../src/world.js":75}],8:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -18585,6 +18585,7 @@ Object.defineProperty(exports, "__esModule", {
 exports.en = void 0;
 const en = exports.en = {
   "play": "Play",
+  "sendmsg": "Send message",
   "changeTheme": "Theme dark/light",
   "yes": "Yes",
   "no": "No",
@@ -18624,6 +18625,7 @@ const en = exports.en = {
   "aboutword": "About",
   "about": "<i>Jamb 3d deluxe</i> is a modern 3D dice game built entirely with MatrixEngineWGPU, a high-performance WebGPU-based rendering engine developed for creating interactive graphics directly in the browser. The game delivers smooth visuals, realistic dice physics, and an engaging user experience — all without requiring any plugins or installations. \n This project is powered by open technologies and is designed to be lightweight, fast, and highly customizable. It’s a great example of how WebGPU can be used for real-time interactive content. \n 🔗 Download / Try it: \n github.com/zlatnaspirala/matrix-engine-wgpu \n 🛠 License: \n The core engine and the Jamb 3d deluxe project are released under the GPL v3 license, making them free and open-source for both personal and commercial use — as long as you respect the terms of the license. \n Whether you're a developer, gamer, or enthusiast, Jamb 3d deluxe is a fun way to experience the potential of modern browser-based 3D technology. <img width='320' height='320' src='https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/public/res/icons/512.png?raw=true' />",
   "letthegame": "Let the game begin!",
+  "leaderboard": "Leaderboard",
   "about_": "About",
   "next": "Next",
   "back": "Back",
@@ -18641,7 +18643,8 @@ const en = exports.en = {
   "erika": "Erika moves like a shadow: quiet, precise and watchful. She carries one dark arrow — simple, deadly and personal.",
   "arissa": "Arissa hides her power behind calm eyes and empty hands. No blade or staff—only the swirling dark orbs she conjures when the fight begins.",
   "gameplayused": "Forest Of Hollow Blood for now have only one channel for gameplay. Please wait for current party end...",
-  "nogold": "Not enough gold!"
+  "nogold": "Not enough gold!",
+  "invertorysecret": "Corona Ignifera magic secret Sol Corona,Flamma Crystal\n  Aqua Sanctum magic secret Mare Pearl,Luna Gemma\n Umbra Silens magic secret Umbra Vellum,Noctis Band\n Terra Fortis magic secret Terra Clavis,Ardent Vine,Silva Heart\n Ventus Aegis magic secret Ventus Pluma,Ignifur Cape\n Ferrum Lux magic secret Ferrum Anulus,Lux Feather\n Sanguis Vita magic secret Sanguis Orb,Vita Flos \n Tenebris Vox magic secret Tenebris Fang,Vox Chime \n Aether Gladius magic secret Gladius Ignis,Aether Scale \n Fulgur Mortis magic secret Fulgur Stone,Mortis Bone \n Corona Umbra magic secret Umbra Silens,Corona Ignifera,Tenebris Vox \n Terra Sanctum magic secret Terra Fortis,Aqua Sanctum \n Aether Fortis magic secret Aether Gladius,Ferrum Lux \n  Vita Mindza magic secret Sanguis Vita,Ventus Aegis \n Mortis Ultima magic secret Fulgur Mortis,Corona Umbra,Aether Fortis"
 };
 
 },{}],24:[function(require,module,exports){
@@ -26373,7 +26376,7 @@ class Position {
     this.netObject = null;
     this.toRemote = [];
     this.teams = [];
-    this.netTolerance = 1;
+    this.netTolerance = 3;
     this.netTolerance__ = 0;
     if (typeof x == 'undefined') x = 0;
     if (typeof y == 'undefined') y = 0;
@@ -27703,6 +27706,7 @@ exports.getAxisRot2 = getAxisRot2;
 exports.getAxisRot3 = getAxisRot3;
 exports.htmlHeader = void 0;
 exports.isEven = isEven;
+exports.isMobile = isMobile;
 exports.isOdd = isOdd;
 exports.mb = exports.mat4 = exports.jsonHeaders = void 0;
 exports.quaternion_rotation_matrix = quaternion_rotation_matrix;
@@ -27711,8 +27715,18 @@ exports.randomFloatFromTo = randomFloatFromTo;
 exports.randomIntFromTo = randomIntFromTo;
 exports.scriptManager = void 0;
 exports.setupCanvasFilters = setupCanvasFilters;
+exports.supportsTouch = void 0;
 exports.typeText = typeText;
 exports.vec3 = exports.urlQuery = void 0;
+var supportsTouch = exports.supportsTouch = 'ontouchstart' in window || navigator.msMaxTouchPoints;
+function isMobile() {
+  if (supportsTouch == true) return true;
+  const toMatch = [/Android/i, /webOS/i, /iPhone/i, /iPad/i, /iPod/i, /BlackBerry/i, /Windows Phone/i];
+  return toMatch.some(toMatchItem => {
+    return navigator.userAgent.match(toMatchItem);
+  });
+}
+;
 const vec3 = exports.vec3 = {
   cross(a, b, dst) {
     dst = dst || new Float32Array(3);
@@ -31357,6 +31371,1008 @@ exports.MatrixSounds = MatrixSounds;
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
+exports.MEEditorClient = void 0;
+var _utils = require("../../engine/utils");
+class MEEditorClient {
+  ws = null;
+  constructor(typeOfRun, name) {
+    this.ws = new WebSocket("ws://localhost:1243");
+    this.ws.onopen = () => {
+      if (typeOfRun == 'created from editor') {
+        //
+        console.info('wATCH project <signal>');
+        let o = {
+          action: "watch",
+          name: name
+        };
+        o = JSON.stringify(o);
+        this.ws.send(o);
+        o = {
+          action: "list",
+          path: name
+        };
+        o = JSON.stringify(o);
+        this.ws.send(o);
+      }
+      console.log("%c[WS OPEN] [Attach events]", "color: lime; font-weight: bold");
+    };
+    this.ws.onmessage = event => {
+      try {
+        const data = JSON.parse(event.data);
+        console.log("%c[WS MESSAGE]", "color: yellow", data);
+        if (data && data.ok == true && data.payload && data.payload.redirect == true) {
+          setTimeout(() => location.assign(data.name + ".html"), 1000);
+        } else if (data.payload && data.payload == "stop-watch done") {
+          _utils.mb.show("watch-stoped");
+        } else if (data.listAssets) {
+          document.dispatchEvent(new CustomEvent('la', {
+            detail: data
+          }));
+        } else if (data.projects) {
+          data.payload.forEach(item => {
+            console.log('.....' + item.name);
+            if (item.name != 'readme.md') {
+              let txt = `Project list: \n
+                - ${item.name}  \n
+               \n
+               Choose project name:
+              `;
+              let projectName = prompt(txt);
+              if (projectName !== null) {
+                console.log("Project name:", projectName);
+                projectName += ".html";
+                location.assign(projectName);
+              } else {
+                console.error('Something wrong with load project input!');
+              }
+            }
+          });
+        } else {
+          _utils.mb.show("from editor:" + data.payload);
+        }
+      } catch (e) {
+        console.error("[WS ERROR PARSE]", e);
+      }
+    };
+    this.ws.onerror = err => {
+      console.error("%c[WS ERROR]", "color: red", err);
+      document.dispatchEvent(new CustomEvent("editor-not-running", {
+        detail: {}
+      }));
+    };
+    this.ws.onclose = () => {
+      console.log("%c[WS CLOSED]", "color: gray");
+    };
+    this.attachEvents();
+  }
+  attachEvents() {
+    document.addEventListener('lp', e => {
+      console.info('Load project <signal>');
+      let o = {
+        action: "lp"
+      };
+      o = JSON.stringify(o);
+      this.ws.send(o);
+    });
+    document.addEventListener('cnp', e => {
+      console.info('Create new project <signal>');
+      let o = {
+        action: "cnp",
+        name: e.detail.name,
+        features: e.detail.features
+      };
+      o = JSON.stringify(o);
+      this.ws.send(o);
+    });
+    document.addEventListener('stop-watch', e => {
+      console.info('stop-watch <signal>');
+      let o = {
+        action: "stop-watch",
+        name: e.detail.name
+      };
+      o = JSON.stringify(o);
+      this.ws.send(o);
+    });
+    document.addEventListener('start-watch', e => {
+      console.info('start-watch <signal>');
+      let o = {
+        action: "watch",
+        name: e.detail.name
+      };
+      o = JSON.stringify(o);
+      this.ws.send(o);
+    });
+  }
+}
+exports.MEEditorClient = MEEditorClient;
+
+},{"../../engine/utils":48}],72:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.Editor = void 0;
+var _client = require("./client");
+var _editor = _interopRequireDefault(require("./editor.provider"));
+var _hud = _interopRequireDefault(require("./hud"));
+function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
+class Editor {
+  constructor(core, a, projName) {
+    this.core = core;
+    this.editorHud = new _hud.default(core, this.check(a));
+    this.editorProvider = new _editor.default(core, this.check(a));
+    if (this.check(a) == 'pre editor') {
+      this.client = new _client.MEEditorClient(this.check(a));
+    } else if (this.check(a) == 'created from editor') {
+      this.client = new _client.MEEditorClient(this.check(a), projName);
+    }
+  }
+  check(a) {
+    if (typeof a !== 'undefined' && a == "created from editor") {
+      return a;
+    } else if (typeof a !== 'undefined' && a == "pre editor") {
+      return a;
+    } else {
+      return "infly";
+    }
+  }
+}
+exports.Editor = Editor;
+
+},{"./client":71,"./editor.provider":73,"./hud":74}],73:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+var _loaderObj = require("../../engine/loader-obj");
+/**
+ * @description
+ * For now it is posible for editor to work on fly
+ * with no memory/saves.
+ */
+
+class EditorProvider {
+  constructor(core) {
+    this.core = core;
+    this.addEditorEvents();
+  }
+  addEditorEvents() {
+    document.addEventListener('web.editor.input', e => {
+      console.log("[EDITOR] sceneObj: ", e.detail.inputFor);
+      // InFly Method
+      let sceneObj = this.core.getSceneObjectByName(e.detail.inputFor);
+      if (sceneObj) {
+        sceneObj[e.detail.propertyId][e.detail.property] = e.detail.value;
+      } else {
+        console.warn("EditorProvider input error");
+        return;
+      }
+    });
+    document.addEventListener('web.editor.addCube', e => {
+      console.log("[web.editor.addCube]: ", e.detail);
+      (0, _loaderObj.downloadMeshes)({
+        cube: "./res/meshes/blender/cube.obj"
+      }, m => {
+        const texturesPaths = ['./res/meshes/blender/cube.png'];
+        this.core.addMeshObj({
+          position: {
+            x: 0,
+            y: 0,
+            z: -20
+          },
+          rotation: {
+            x: 0,
+            y: 0,
+            z: 0
+          },
+          rotationSpeed: {
+            x: 0,
+            y: 0,
+            z: 0
+          },
+          texturesPaths: [texturesPaths],
+          // useUVShema4x2: true,
+          name: 'Cube_' + app.mainRenderBundle.length,
+          mesh: m.cube,
+          raycast: {
+            enabled: true,
+            radius: 2
+          },
+          physics: {
+            enabled: true,
+            geometry: "Cube"
+          }
+        });
+      }, {
+        scale: [1, 1, 1]
+      });
+    });
+  }
+}
+exports.default = EditorProvider;
+
+},{"../../engine/loader-obj":40}],74:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+var _utils = require("../../engine/utils.js");
+/**
+ * @Author NIkola Lukic
+ * @description
+ * Web Editor for matrix-engine-wgpu
+ */
+class EditorHud {
+  constructor(core, a) {
+    this.core = core;
+    this.sceneContainer = null;
+    if (a == 'infly') {
+      this.createTopMenuInFly();
+    } else if (a == "created from editor") {
+      this.createTopMenu();
+      this.createAssets();
+    } else if (a == "pre editor") {
+      this.createTopMenuPre();
+    } else {
+      throw console.error('Editor err');
+    }
+    this.createEditorSceneContainer();
+    this.createScenePropertyBox();
+    this.currentProperties = [];
+    document.addEventListener('editor-not-running', () => {
+      this.noEditorConn();
+    });
+  }
+  noEditorConn() {
+    this.errorForm = document.createElement("div");
+    this.errorForm.id = "errorForm";
+    Object.assign(this.errorForm.style, {
+      position: "absolute",
+      top: "10%",
+      left: "25%",
+      width: "50%",
+      height: "30vh",
+      backgroundColor: "rgba(0,0,0,0.85)",
+      display: "flex",
+      alignItems: "start",
+      color: "white",
+      fontFamily: "'Orbitron', sans-serif",
+      zIndex: "15",
+      padding: "2px",
+      boxSizing: "border-box",
+      flexDirection: "column",
+      justifyContent: 'center',
+      alignItems: 'center'
+    });
+    this.errorForm.innerHTML = `
+       <h2 class='fancy-label'>No connection with editor node app.</h2>
+       <h3 class='fancy-label'>Run from root [npm run editorx] \n 
+          or run from ./src/tools/editor/backend [npm run editorx] \n
+          Than refresh page [clear default cache browser with CTRL+F5] </h3>
+    `;
+    document.body.appendChild(this.errorForm);
+  }
+  createTopMenu() {
+    this.editorMenu = document.createElement("div");
+    this.editorMenu.id = "editorMenu";
+    Object.assign(this.editorMenu.style, {
+      position: "absolute",
+      top: "0",
+      left: "20%",
+      width: "60%",
+      height: "50px;",
+      backgroundColor: "rgba(0,0,0,0.85)",
+      display: "flex",
+      alignItems: "start",
+      // overflow: "auto",
+      color: "white",
+      fontFamily: "'Orbitron', sans-serif",
+      zIndex: "15",
+      padding: "2px",
+      boxSizing: "border-box",
+      flexDirection: "row"
+    });
+    this.editorMenu.innerHTML = " PROJECT MENU  ";
+    // document.body.appendChild(this.editorMenu);
+
+    this.editorMenu.innerHTML = `
+    <div class="top-item">
+      <div class="top-btn">Project ▾</div>
+      <div class="dropdown">
+      <div id="start-watch" class="drop-item">🛠️ Watch</div>
+      <div id="stop-watch" class="drop-item">🛠️ Stop Watch</div>
+      <div class="drop-item">🛠️ Build</div>
+      </div>
+    </div>
+
+    <div class="top-item">
+      <div class="top-btn">Insert ▾</div>
+      <div class="dropdown">
+        <div id="addCube" class="drop-item">🧊 Cube</div>
+        <div class="drop-item">⚪ Sphere</div>
+        <div class="drop-item">📦 GLB (model)</div>
+        <div class="drop-item">💡 Light</div>
+      </div>
+    </div>
+
+    <div class="top-item">
+      <div class="top-btn">View ▾</div>
+      <div class="dropdown">
+        <div class="drop-item">Hide Editor UI</div>
+        <div class="drop-item">FullScreen</div>
+      </div>
+    </div>
+
+    <div class="top-item">
+      <div class="top-btn">About ▾</div>
+      <div class="dropdown">
+        <div id="showAboutEditor" class="drop-item">matrix-engine-wgpu</div>
+      </div>
+    </div>
+  `;
+    document.body.appendChild(this.editorMenu);
+
+    // Mobile friendly toggles
+    this.editorMenu.querySelectorAll(".top-btn").forEach(btn => {
+      btn.addEventListener("click", e => {
+        const menu = e.target.nextElementSibling;
+
+        // close others
+        this.editorMenu.querySelectorAll(".dropdown").forEach(d => {
+          if (d !== menu) d.style.display = "none";
+        });
+
+        // toggle
+        menu.style.display = menu.style.display === "block" ? "none" : "block";
+      });
+    });
+
+    // Close on outside tap
+    document.addEventListener("click", e => {
+      if (!this.editorMenu.contains(e.target)) {
+        this.editorMenu.querySelectorAll(".dropdown").forEach(d => {
+          d.style.display = "none";
+        });
+      }
+    });
+    if ((0, _utils.byId)('stop-watch')) (0, _utils.byId)('stop-watch').addEventListener('click', () => {
+      document.dispatchEvent(new CustomEvent('stop-watch', {
+        detail: {}
+      }));
+    });
+    if ((0, _utils.byId)('start-watch')) (0, _utils.byId)('start-watch').addEventListener('click', () => {
+      document.dispatchEvent(new CustomEvent('start-watch', {
+        detail: {}
+      }));
+    });
+    if ((0, _utils.byId)('cnpBtn')) (0, _utils.byId)('cnpBtn').addEventListener('click', () => {
+      let name = prompt("📦 Project name :", "MyProject1");
+      let features = {
+        physics: false,
+        networking: false
+      };
+      if (confirm("⚛ Enable physics (Ammo)?")) {
+        features.physics = true;
+      }
+      if (confirm("🔌 Enable networking (kurento/ov)?")) {
+        features.networking = true;
+      }
+      console.log(features);
+      document.dispatchEvent(new CustomEvent('cnp', {
+        detail: {
+          name: name,
+          features: features
+        }
+      }));
+    });
+
+    // OBJECT LEVEL
+
+    if ((0, _utils.byId)('addCube')) (0, _utils.byId)('addCube').addEventListener('click', () => {
+      document.dispatchEvent(new CustomEvent('web.editor.addCube', {
+        detail: {}
+      }));
+    });
+    this.showAboutModal = () => {
+      alert(`
+  ✔️ Support for 3D objects and scene transformations
+  ✔️ Ammo.js physics full integration
+  ✔️ Networking with Kurento/OpenVidu/Own middleware Nodejs -> frontend
+  🎯 Replicate matrix-engine (WebGL) features
+        `);
+    };
+    (0, _utils.byId)('showAboutEditor').addEventListener('click', this.showAboutModal);
+  }
+  createAssets() {
+    this.assetsBox = document.createElement("div");
+    this.assetsBox.id = "assetsBox";
+    Object.assign(this.assetsBox.style, {
+      position: "absolute",
+      bottom: "0",
+      left: "20%",
+      width: "60%",
+      height: "250px",
+      backgroundColor: "rgba(0,0,0,0.85)",
+      display: "flex",
+      alignItems: "start",
+      // overflow: "auto",
+      color: "white",
+      fontFamily: "'Orbitron', sans-serif",
+      zIndex: "15",
+      padding: "2px",
+      boxSizing: "border-box",
+      flexDirection: "row"
+    });
+    this.assetsBox.innerHTML = "ASSTES";
+    // document.body.appendChild(this.editorMenu);
+
+    // <div id="cnpBtn" class="drop-item">📦 Create new project</div>
+    //   <div class="drop-item">📂 Load</div>
+    this.assetsBox.innerHTML = `
+    <div id='res-folder' class="file-browser">
+     ASSETS
+    </div>`;
+    document.body.appendChild(this.assetsBox);
+    document.addEventListener('la', e => {
+      e.detail.payload.forEach(i => {
+        let item = document.createElement('div');
+        item.classList.add('file-item');
+        item.classList.add('folder');
+        item.innerText = i.name;
+        (0, _utils.byId)('res-folder').appendChild(item);
+        // this.assetsBox.appendChild()
+      });
+      document.querySelectorAll('.file-item').forEach(el => {
+        el.addEventListener('click', () => {
+          document.querySelectorAll('.file-item').forEach(x => x.classList.remove('selected'));
+          el.classList.add('selected');
+        });
+      });
+    });
+  }
+  createTopMenuPre() {
+    this.editorMenu = document.createElement("div");
+    this.editorMenu.id = "editorMenu";
+    Object.assign(this.editorMenu.style, {
+      position: "absolute",
+      top: "0",
+      left: "20%",
+      width: "60%",
+      height: "50px;",
+      backgroundColor: "rgba(0,0,0,0.85)",
+      display: "flex",
+      alignItems: "start",
+      // overflow: "auto",
+      color: "white",
+      fontFamily: "'Orbitron', sans-serif",
+      zIndex: "15",
+      padding: "2px",
+      boxSizing: "border-box",
+      flexDirection: "row"
+    });
+    this.editorMenu.innerHTML = " PROJECT MENU  ";
+    // document.body.appendChild(this.editorMenu);
+
+    this.editorMenu.innerHTML = `
+    <div class="top-item">
+      <div class="top-btn">Project ▾</div>
+      <div class="dropdown">
+      <div id="cnpBtn" class="drop-item">📦 Create new project</div>
+      <div id="loadProjectBtn" class="drop-item">📂 Load</div>
+      </div>
+    </div>
+
+    <div class="top-item">
+      <div class="top-btn">About ▾</div>
+      <div class="dropdown">
+        <div id="showAboutEditor" class="drop-item">matrix-engine-wgpu</div>
+      </div>
+    </div>
+  `;
+    document.body.appendChild(this.editorMenu);
+
+    // Mobile friendly toggles
+    this.editorMenu.querySelectorAll(".top-btn").forEach(btn => {
+      btn.addEventListener("click", e => {
+        const menu = e.target.nextElementSibling;
+
+        // close others
+        this.editorMenu.querySelectorAll(".dropdown").forEach(d => {
+          if (d !== menu) d.style.display = "none";
+        });
+
+        // toggle
+        menu.style.display = menu.style.display === "block" ? "none" : "block";
+      });
+    });
+
+    // Close on outside tap
+    document.addEventListener("click", e => {
+      if (!this.editorMenu.contains(e.target)) {
+        this.editorMenu.querySelectorAll(".dropdown").forEach(d => {
+          d.style.display = "none";
+        });
+      }
+    });
+    if ((0, _utils.byId)('loadProjectBtn')) (0, _utils.byId)('loadProjectBtn').addEventListener('click', () => {
+      // ***************************
+      // ---------------------------
+      document.dispatchEvent(new CustomEvent('lp', {
+        detail: {}
+      }));
+    });
+    if ((0, _utils.byId)('cnpBtn')) (0, _utils.byId)('cnpBtn').addEventListener('click', () => {
+      let name = prompt("📦 Project name :", "MyProject1");
+      let features = {
+        physics: false,
+        networking: false
+      };
+      if (confirm("⚛ Enable physics (Ammo)?")) {
+        features.physics = true;
+      }
+      if (confirm("🔌 Enable networking (kurento/ov)?")) {
+        features.networking = true;
+      }
+      console.log(features);
+      document.dispatchEvent(new CustomEvent('cnp', {
+        detail: {
+          name: name,
+          features: features
+        }
+      }));
+    });
+    this.showAboutModal = () => {
+      alert(`
+  ✔️ Support for 3D objects and scene transformations
+  ✔️ Ammo.js physics full integration
+  ✔️ Networking with Kurento/OpenVidu/Own middleware Nodejs -> frontend
+  🎯 Replicate matrix-engine (WebGL) features
+        `);
+    };
+    (0, _utils.byId)('showAboutEditor').addEventListener('click', this.showAboutModal);
+  }
+  createTopMenuInFly() {
+    this.editorMenu = document.createElement("div");
+    this.editorMenu.id = "editorMenu";
+    Object.assign(this.editorMenu.style, {
+      position: "absolute",
+      top: "0",
+      left: "20%",
+      width: "60%",
+      height: "50px;",
+      backgroundColor: "rgba(0,0,0,0.85)",
+      display: "flex",
+      alignItems: "start",
+      // overflow: "auto",
+      color: "white",
+      fontFamily: "'Orbitron', sans-serif",
+      zIndex: "15",
+      padding: "2px",
+      boxSizing: "border-box",
+      flexDirection: "row"
+    });
+    this.editorMenu.innerHTML = " PROJECT MENU  ";
+    // document.body.appendChild(this.editorMenu);
+
+    this.editorMenu.innerHTML = `
+    <div>INFLY Regime of work no saves. Nice for runtime debugging or get data for map setup.</div>
+    <div class="top-item">
+      <div class="top-btn">About ▾</div>
+      <div class="dropdown">
+        <div id="showAboutEditor" class="drop-item">matrix-engine-wgpu</div>
+      </div>
+    </div>
+  `;
+    document.body.appendChild(this.editorMenu);
+
+    // Mobile friendly toggles
+    this.editorMenu.querySelectorAll(".top-btn").forEach(btn => {
+      btn.addEventListener("click", e => {
+        const menu = e.target.nextElementSibling;
+
+        // close others
+        this.editorMenu.querySelectorAll(".dropdown").forEach(d => {
+          if (d !== menu) d.style.display = "none";
+        });
+
+        // toggle
+        menu.style.display = menu.style.display === "block" ? "none" : "block";
+      });
+    });
+
+    // Close on outside tap
+    document.addEventListener("click", e => {
+      if (!this.editorMenu.contains(e.target)) {
+        this.editorMenu.querySelectorAll(".dropdown").forEach(d => {
+          d.style.display = "none";
+        });
+      }
+    });
+    this.showAboutModal = () => {
+      alert(`
+  ✔️ Support for 3D objects and scene transformations
+  ✔️ Ammo.js physics full integration
+  ✔️ Networking with Kurento/OpenVidu/Own middleware Nodejs -> frontend
+  🎯 Replicate matrix-engine (WebGL) features
+        `);
+    };
+    (0, _utils.byId)('showAboutEditor').addEventListener('click', this.showAboutModal);
+  }
+  createEditorSceneContainer() {
+    this.sceneContainer = document.createElement("div");
+    this.sceneContainer.id = "sceneContainer";
+    Object.assign(this.sceneContainer.style, {
+      position: "absolute",
+      top: "0",
+      left: "0",
+      width: "20%",
+      height: "100vh",
+      backgroundColor: "rgba(0,0,0,0.85)",
+      display: "flex",
+      alignItems: "start",
+      overflow: "auto",
+      color: "white",
+      fontFamily: "'Orbitron', sans-serif",
+      zIndex: "15",
+      padding: "2px",
+      boxSizing: "border-box",
+      flexDirection: "column"
+    });
+    this.scene = document.createElement("div");
+    this.scene.id = "scene";
+    Object.assign(this.scene.style, {
+      width: "100%",
+      height: "100%",
+      backgroundColor: "rgba(0,0,0,0.85)",
+      display: "flex",
+      alignItems: "start",
+      color: "white",
+      fontFamily: "'Orbitron', sans-serif",
+      zIndex: "15",
+      padding: "2px",
+      boxSizing: "border-box",
+      flexDirection: "column"
+    });
+    this.sceneContainerTitle = document.createElement("div");
+    this.sceneContainerTitle.style.height = '40px';
+    this.sceneContainerTitle.style.fontSize = (0, _utils.isMobile)() == true ? "x-larger" : "larger";
+    this.sceneContainerTitle.style.padding = '5px';
+    this.sceneContainerTitle.innerHTML = 'Scene container';
+    this.sceneContainer.appendChild(this.sceneContainerTitle);
+    this.sceneContainer.appendChild(this.scene);
+    document.body.appendChild(this.sceneContainer);
+  }
+  updateSceneContainer() {
+    this.scene.innerHTML = ``;
+    this.core.mainRenderBundle.forEach(sceneObj => {
+      let so = document.createElement('div');
+      so.style.height = '20px';
+      so.classList.add('sceneContainerItem');
+      so.innerHTML = sceneObj.name;
+      so.addEventListener('click', this.updateSceneObjProperties);
+      this.scene.appendChild(so);
+    });
+  }
+  createScenePropertyBox() {
+    this.sceneProperty = document.createElement("div");
+    this.sceneProperty.id = "sceneProperty";
+    this.sceneProperty.classList.add('scenePropItem');
+    Object.assign(this.sceneProperty.style, {
+      position: "absolute",
+      top: "0",
+      right: "0",
+      width: "20%",
+      height: "100vh",
+      backgroundColor: "rgba(0,0,0,0.85)",
+      display: "flex",
+      alignItems: "start",
+      overflow: "auto",
+      color: "white",
+      fontFamily: "'Orbitron', sans-serif",
+      zIndex: "15",
+      padding: "2px",
+      boxSizing: "border-box",
+      flexDirection: "column"
+    });
+    this.objectProperies = document.createElement("div");
+    this.objectProperies.id = "objectProperies";
+    Object.assign(this.objectProperies.style, {
+      width: "100%",
+      height: "auto",
+      backgroundColor: "rgba(0,0,0,0.85)",
+      display: "flex",
+      alignItems: "start",
+      color: "white",
+      fontFamily: "'Orbitron', sans-serif",
+      zIndex: "15",
+      padding: "2px",
+      boxSizing: "border-box",
+      flexDirection: "column"
+    });
+    this.objectProperiesTitle = document.createElement("div");
+    this.objectProperiesTitle.style.height = '40px';
+    this.objectProperiesTitle.style.fontSize = '120%';
+    this.objectProperiesTitle.innerHTML = 'Scene object properties';
+    this.sceneProperty.appendChild(this.objectProperiesTitle);
+    this.sceneProperty.appendChild(this.objectProperies);
+    document.body.appendChild(this.sceneProperty);
+  }
+  updateSceneObjProperties = e => {
+    this.currentProperties = [];
+    this.objectProperiesTitle.style.fontSize = '120%';
+    this.objectProperiesTitle.innerHTML = `Scene object properties`;
+    this.objectProperies.innerHTML = ``;
+    const currentSO = this.core.getSceneObjectByName(e.target.innerHTML);
+    this.objectProperiesTitle.innerHTML = `<span style="color:lime;">Name: ${e.target.innerHTML}</span> 
+      <span style="color:yellow;"> [${currentSO.constructor.name}]`;
+    const OK = Object.keys(currentSO);
+    OK.forEach(prop => {
+      // console.log('[key]:', prop);
+      if (prop == 'glb' && typeof currentSO[prop] !== 'undefined' && currentSO[prop] != null) {
+        this.currentProperties.push(new SceneObjectProperty(this.objectProperies, 'glb', currentSO));
+      } else {
+        this.currentProperties.push(new SceneObjectProperty(this.objectProperies, prop, currentSO));
+      }
+    });
+  };
+}
+exports.default = EditorHud;
+class SceneObjectProperty {
+  constructor(parentDOM, propName, currSceneObj) {
+    this.subObjectsProps = [];
+    this.propName = document.createElement("div");
+    this.propName.style.width = '100%';
+    // console.log("init : " + propName)
+    // Register
+    if (propName == "device" || propName == "position" || propName == "rotation" || propName == "raycast" || propName == "entityArgPass" || propName == "scale" || propName == "maxInstances" || propName == "texturesPaths" || propName == "glb") {
+      this.propName.style.overflow = 'hidden';
+      this.propName.style.height = '20px';
+      this.propName.style.borderBottom = 'solid lime 2px';
+      this.propName.addEventListener('click', e => {
+        if (e.currentTarget.style.height != 'fit-content') {
+          this.propName.style.overflow = 'unset';
+          e.currentTarget.style.height = 'fit-content';
+        } else {
+          this.propName.style.overflow = 'hidden';
+          e.currentTarget.style.height = '20px';
+        }
+      });
+      if (propName == "position" || propName == "scale" || propName == "rotation" || propName == "glb") {
+        this.propName.innerHTML = `<div style="text-align:left;" >${propName} <span style="border-radius:7px;background:purple;">sceneObj</span>
+        <span style="border-radius:6px;background:gray;">More info🔽</span></div>`;
+      } else if (propName == "entityArgPass") {
+        this.propName.innerHTML = `<div style="text-align:left;" >${propName} <span style="border-radius:7px;background:brown;">webGPU props</span>
+        <span style="border-radius:6px;background:gray;">More info🔽</span></div>`;
+      } else if (propName == "maxInstances") {
+        this.propName.innerHTML = `<div style="text-align:left;" >${propName} <span style="border-radius:7px;background:brown;">instanced</span>
+        <span style="border-radius:6px;background:gray;"> <input type="number" value="${currSceneObj[propName]}" /> </span></div>`;
+      } else if (propName == "texturesPaths") {
+        this.propName.innerHTML = `<div style="text-align:left;" >${propName} <span style="border-radius:7px;background:purple;">sceneObj</span>
+         <span style="border-radius:6px;background:gray;"> 
+           Path: ${currSceneObj[propName]} 
+         </span>
+           <div style="text-align:center;padding:5px;margin:5px;"> <img src="${currSceneObj[propName]}" width="256px" height="auto" /> </div>
+        </div>`;
+      } else {
+        this.propName.innerHTML = `<div style="text-align:left;" >${propName} <span style="border-radius:7px;background:red;">sys</span> 
+        <span style="border-radius:6px;background:gray;">${currSceneObj[propName]}</span></div>`;
+      }
+      // console.log('[propName] ', propName);
+      if (typeof currSceneObj[propName].adapterInfo !== 'undefined') {
+        this.exploreSubObject(currSceneObj[propName].adapterInfo, 'adapterInfo').forEach(item => {
+          if (typeof item === 'string') {
+            this.propName.innerHTML += `<div style="text-align:left;"> ${item.split(':'[1])} </div>`;
+          } else {
+            item.addEventListener('click', event => {
+              event.stopPropagation();
+            });
+            this.propName.appendChild(item);
+          }
+        });
+      } else if (propName == 'position' || propName == 'rotation' || propName == "raycast" || propName == "entityArgPass" || propName == "scale") {
+        // console.log('currSceneObj[propName] ', currSceneObj[propName]);
+        this.exploreSubObject(currSceneObj[propName], propName, currSceneObj).forEach(item => {
+          if (typeof item === 'string') {
+            this.propName.innerHTML += `<div style="text-align:left;"> ${item.split(':'[1])} </div>`;
+          } else {
+            item.addEventListener('click', event => {
+              event.stopPropagation();
+            });
+            this.propName.appendChild(item);
+          }
+        });
+      } else if (propName == 'glb') {
+        this.exploreGlb(currSceneObj[propName], propName, currSceneObj).forEach(item => {
+          if (typeof item === 'string') {
+            this.propName.innerHTML += `<div style="text-align:left;"> ${item.split(':'[1])} </div>`;
+          } else {
+            item.addEventListener('click', event => {
+              event.stopPropagation();
+            });
+            this.propName.appendChild(item);
+          }
+        });
+      }
+      parentDOM.appendChild(this.propName);
+    } else if (propName == "isVideo") {
+      this.propName.style.borderBottom = 'solid lime 2px';
+      this.propName.innerHTML = `<div style="text-align:left;" >${propName} <span style="border-radius:7px;background:deepskyblue;">boolean</span>
+        <span style="border-radius:6px;background:gray;">${currSceneObj[propName]}</span></div>`;
+      parentDOM.appendChild(this.propName);
+    } else {
+      // this.propName.innerHTML = `<div>${propName}</div>`;
+      // this.propName.innerHTML += `<div>${currSceneObj[propName]}</div>`;
+    }
+  }
+  exploreSubObject(subobj, rootKey, currSceneObj) {
+    let a = [];
+    let __ = [];
+    for (const key in subobj) {
+      __.push(key);
+    }
+    __.forEach((prop, index) => {
+      if (index == 0) a.push(`${rootKey}`);
+      let d = null;
+      d = document.createElement("div");
+      d.style.textAlign = "left";
+      d.style.display = "flex";
+      if (typeof subobj[prop] === 'number') {
+        d.innerHTML += `<div style="width:50%;">${prop}</div> 
+         <div style="width:48%; background:lime;color:black;" > 
+
+         <input class="inputEditor" name="${prop}" 
+          onchange="console.log(this.value, 'change fired'); 
+          document.dispatchEvent(new CustomEvent('web.editor.input', {detail: {
+           'inputFor': ${currSceneObj ? "'" + currSceneObj.name + "'" : "'no info'"} ,
+           'propertyId': ${currSceneObj ? "'" + rootKey + "'" : "'no info'"} ,
+           'property': ${currSceneObj ? "'" + prop + "'" : "'no info'"} ,
+           'value': ${currSceneObj ? "this.value" : "'no info'"}
+          }}))" 
+         ${rootKey == "adapterInfo" ? " disabled='true'" : " "} type="number" value="${subobj[prop]}" /> 
+        
+         </div>`;
+      } else if (Array.isArray(subobj[prop])) {
+        d.innerHTML += `<div style="width:50%">${prop}</div> 
+         <div style="width:${subobj[prop].length == 0 ? "unset" : "48%"}; background:lime;color:black;border-radius:5px;" > ${subobj[prop].length == 0 ? "[Empty array]" : subobj[prop]} </div>`;
+      } else if (subobj[prop] === null) {
+        d.innerHTML += `<div style="width:50%;">${prop}</div> 
+         <div style="width:unset; background:lime;color:black;padding:1px;border-radius:5px;" >${subobj[prop]}</div>`;
+      } else if (subobj[prop] == false) {
+        d.innerHTML += `<div style="width:50%;">${prop}</div> 
+         <div style="width:unset; background:lime;color:black;padding:1px;border-radius:5px;" >false</div>`;
+      } else if (subobj[prop] == "") {
+        d.innerHTML += `<div style="width:50%;">${prop}</div> 
+         <div style="width:unset; background:lime;color:black;padding:1px;border-radius:5px;" >none</div>`;
+      } else {
+        d.innerHTML += `<div style="width:50%;">${prop}</div> 
+         <div style="width:48%; background:lime;color:black;padding:1px;border-radius:5px;" >${subobj[prop]}</div>`;
+      }
+      a.push(d);
+    });
+    // this.subObjectsProps.push(a);
+    return a;
+  }
+  exploreGlb(subobj, rootKey, currSceneObj) {
+    let a = [];
+    let __ = [];
+    for (const key in subobj) {
+      __.push(key);
+    }
+    __.forEach((prop, index) => {
+      if (index == 0) a.push(`${rootKey}`);
+      let d = null;
+      d = document.createElement("div");
+      d.style.textAlign = "left";
+      d.style.display = "flex";
+      d.style.flexWrap = "wrap";
+      if (typeof subobj[prop] === 'number') {
+        d.innerHTML += `<div style="width:50%;">${prop}</div> 
+         <div style="width:48%; background:lime;color:black;" >
+           <input
+           class="inputEditor" name="${prop}" 
+           ${prop === "animationIndex" ? "max='" + subobj['glbJsonData']['animations'].length - 1 + "'" : ""}
+             onchange="console.log(this.value, 'change fired'); 
+            document.dispatchEvent(new CustomEvent('web.editor.input', {detail: {
+             'inputFor': ${currSceneObj ? "'" + currSceneObj.name + "'" : "'no info'"} ,
+             'propertyId': ${currSceneObj ? "'" + rootKey + "'" : "'no info'"} ,
+             'property': ${currSceneObj ? "'" + prop + "'" : "'no info'"} ,
+             'value': ${currSceneObj ? "this.value" : "'no info'"}
+            }}))" 
+           ${rootKey == "adapterInfo" ? "disabled='true'" : ""}" type="number" value="${subobj[prop]}" /> 
+           </div>`;
+      } else if (Array.isArray(subobj[prop]) && prop == "nodes") {
+        console.log("init prop: " + rootKey);
+        d.innerHTML += `<div style="width:50%">${prop}</div> 
+         <div style="width:${subobj[prop].length == 0 ? "unset" : "48%"}; background:lime;color:black;border-radius:5px;" > 
+            ${subobj[prop].length == 0 ? "[Empty array]" : subobj[prop].length}
+         </div>`;
+      } else if (Array.isArray(subobj[prop]) && prop == "skins") {
+        console.log("init prop: " + rootKey);
+        d.innerHTML += `<div style="width:50%">${prop}</div> 
+         <div style="width:${subobj[prop].length == 0 ? "unset" : "48%"}; background:lime;color:black;border-radius:5px;" > 
+            ${subobj[prop].length == 0 ? "[Empty array]" : subobj[prop].map(item => {
+          if (item && typeof item === "object" && "name" in item) {
+            return item.name + " Joints:" + item.joints.length + "\n inverseBindMatrices:" + item.inverseBindMatrices;
+          }
+          return String(item);
+        }).join(", ")}
+         </div>`;
+      } else if (prop == "glbJsonData") {
+        console.log("init glbJsonData: " + rootKey);
+        d.innerHTML += `<div style="width:50%">Animations:</div> 
+
+         <div style="width:${subobj[prop].animations.length == 0 ? "unset" : "48%"}; background:lime;color:black;border-radius:5px;" > 
+            ${subobj[prop].animations.length == 0 ? "[Empty array]" : subobj[prop].animations.map(item => {
+          if (item && typeof item === "object" && "name" in item) {
+            return item.name;
+          }
+          return String(item);
+        }).join(", ")}
+         </div>
+         \n
+         <div style="width:50%">Skinned meshes:</div> 
+         <div style="width:${subobj[prop].meshes.length == 0 ? "unset" : "48%"}; background:lime;color:black;border-radius:5px;" > 
+            ${subobj[prop].meshes.length == 0 ? "[Empty array]" : subobj[prop].meshes.map(item => {
+          if (item && typeof item === "object" && "name" in item) {
+            return item.name + " \n Primitives : " + item.primitives.length;
+          }
+          return String(item);
+        }).join(", ")}
+         </div>
+          \n
+         <div style="width:50%">Images:</div> 
+         <div style="width:${subobj[prop].images.length == 0 ? "unset" : "48%"}; background:lime;color:black;border-radius:5px;" > 
+            ${subobj[prop].images.length == 0 ? "[Empty array]" : subobj[prop].images.map(item => {
+          if (item && typeof item === "object" && "name" in item) {
+            return "<div>" + item.name + " \n mimeType: " + item.mimeType + "</div>";
+          }
+          return String(item);
+        }).join(", ")}
+         </div>
+
+         \n
+         <div style="width:50%">Materials:</div> 
+         <div style="width:${subobj[prop].materials.length == 0 ? "unset" : "48%"}; background:lime;color:black;border-radius:5px;" > 
+            ${subobj[prop].materials.length == 0 ? "[Empty array]" : subobj[prop].materials.map(item => {
+          if (item && typeof item === "object" && "name" in item) {
+            return "<div>" + item.name + " \n metallicFactor: " + item.pbrMetallicRoughness.metallicFactor + " \n roughnessFactor: " + item.pbrMetallicRoughness.roughnessFactor + "</div>";
+          }
+          return String(item);
+        }).join(", ")}
+         </div>
+         
+         `;
+      } else if (subobj[prop] === null) {
+        d.innerHTML += `<div style="width:50%;">${prop}</div> 
+         <div style="width:unset; background:lime;color:black;padding:1px;border-radius:5px;" >${subobj[prop]}</div>`;
+      } else if (subobj[prop] == false) {
+        d.innerHTML += `<div style="width:50%;">${prop}</div> 
+         <div style="width:unset; background:lime;color:black;padding:1px;border-radius:5px;" >false</div>`;
+      } else if (subobj[prop] == "") {
+        d.innerHTML += `<div style="width:50%;">${prop}</div> 
+         <div style="width:unset; background:lime;color:black;padding:1px;border-radius:5px;" >none</div>`;
+      } else {
+        d.innerHTML += `<div style="width:50%;">${prop}</div> 
+         <div style="width:48%; background:lime;color:black;padding:1px;border-radius:5px;" >${subobj[prop]}</div>`;
+      }
+      a.push(d);
+    });
+    // this.subObjectsProps.push(a);
+    return a;
+  }
+}
+
+},{"../../engine/utils.js":48}],75:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
 exports.default = void 0;
 var _wgpuMatrix = require("wgpu-matrix");
 var _ball = _interopRequireDefault(require("./engine/ball.js"));
@@ -31371,6 +32387,7 @@ var _loaderObj = require("./engine/loader-obj.js");
 var _lights = require("./engine/lights.js");
 var _bvh = require("./engine/loaders/bvh.js");
 var _bvhInstaced = require("./engine/loaders/bvh-instaced.js");
+var _editor = require("./tools/editor/editor.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 /**
  * @description
@@ -31433,6 +32450,36 @@ class MatrixEngineWGPU {
     if (typeof options.dontUsePhysics == 'undefined') {
       this.matrixAmmo = new _matrixAmmo.default();
     }
+    this.editor = undefined;
+    if (typeof options.useEditor !== "undefined") {
+      if (typeof options.projectType !== "undefined" && options.projectType == "created from editor") {
+        this.editor = new _editor.Editor(this, "created from editor", options.projectName);
+      } else if (typeof options.projectType !== "undefined" && options.projectType == "pre editor") {
+        this.editor = new _editor.Editor(this, options.projectType);
+      } else {
+        this.editor = new _editor.Editor(this, "infly");
+      }
+    }
+    window.addEventListener('keydown', e => {
+      if (e.code == "F4") {
+        e.preventDefault();
+        _utils.mb.error(`Activated WebEditor, you can use it infly there is no saves for now.`);
+        app.activateEditor();
+        return false;
+      }
+    });
+    this.activateEditor = () => {
+      if (this.editor == null || typeof this.editor === 'undefined') {
+        if (typeof options.projectType !== "undefined" && options.projectType == "created from editor") {
+          this.editor = new _editor.Editor(this, "created from editor");
+        } else if (typeof options.projectType !== "undefined" && options.projectType == "pre editor") {
+          this.editor = new _editor.Editor(this, options.projectType);
+        } else {
+          this.editor = new _editor.Editor(this, "infly");
+        }
+        this.editor.editorHud.updateSceneContainer();
+      }
+    };
     this.options = options;
     this.mainCameraParams = options.mainCameraParams;
     const target = this.options.appendTo || document.body;
@@ -31470,11 +32517,16 @@ class MatrixEngineWGPU {
     if (_utils.urlQuery.lang != null) {
       this.label.loadMultilang(_utils.urlQuery.lang).then(r => {
         this.label.get = r;
+      }).catch(r => {
+        this.label.get = r;
       });
     } else {
       this.label.loadMultilang().then(r => {
         this.label.get = r;
+      }).catch(r => {
+        this.label.get = r;
       });
+      ;
     }
     this.init({
       canvas,
@@ -31915,6 +32967,9 @@ class MatrixEngineWGPU {
       this.matrixAmmo.addPhysics(myMesh1, o.physics);
     }
     this.mainRenderBundle.push(myMesh1);
+    if (typeof this.editor !== 'undefined') {
+      this.editor.editorHud.updateSceneContainer();
+    }
   };
   run(callback) {
     setTimeout(() => {
@@ -32085,7 +33140,7 @@ class MatrixEngineWGPU {
       this.device.queue.submit([commandEncoder.finish()]);
       requestAnimationFrame(this.frame);
     } catch (err) {
-      // console.log('%cLoop(err):' + err + " info : " + err.stack, LOG_WARN)
+      console.log('%cLoop(err):' + err + " info : " + err.stack, _utils.LOG_WARN);
       requestAnimationFrame(this.frame);
     }
   };
@@ -32224,10 +33279,13 @@ class MatrixEngineWGPU {
         // make it soft
         setTimeout(() => {
           this.mainRenderBundle.push(bvhPlayer);
-        }, 1000);
+        }, 800);
         // this.mainRenderBundle.push(bvhPlayer)
         c++;
       }
+    }
+    if (typeof this.editor !== 'undefined') {
+      this.editor.editorHud.updateSceneContainer();
     }
   };
 
@@ -32354,8 +33412,11 @@ class MatrixEngineWGPU {
       }
       skinnedNodeIndex++;
     }
+    if (typeof this.editor !== 'undefined') {
+      this.editor.editorHud.updateSceneContainer();
+    }
   };
 }
 exports.default = MatrixEngineWGPU;
 
-},{"./engine/ball.js":24,"./engine/cube.js":26,"./engine/engine.js":35,"./engine/lights.js":39,"./engine/loader-obj.js":40,"./engine/loaders/bvh-instaced.js":41,"./engine/loaders/bvh.js":42,"./engine/mesh-obj.js":46,"./engine/utils.js":48,"./multilang/lang.js":49,"./physics/matrix-ammo.js":50,"./sounds/sounds.js":70,"wgpu-matrix":22}]},{},[1]);
+},{"./engine/ball.js":24,"./engine/cube.js":26,"./engine/engine.js":35,"./engine/lights.js":39,"./engine/loader-obj.js":40,"./engine/loaders/bvh-instaced.js":41,"./engine/loaders/bvh.js":42,"./engine/mesh-obj.js":46,"./engine/utils.js":48,"./multilang/lang.js":49,"./physics/matrix-ammo.js":50,"./sounds/sounds.js":70,"./tools/editor/editor.js":72,"wgpu-matrix":22}]},{},[1]);

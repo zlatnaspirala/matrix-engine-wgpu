@@ -32,7 +32,78 @@ Published on npm as: **`matrix-engine-wgpu`**
 - ✔️ Networking with Kurento/OpenVidu/Own middleware Nodejs -> frontend 
 - 🎯 Replicate matrix-engine (WebGL) features
 - 📦 Based on the `shadowMapping` sample from [webgpu-samples](https://webgpu.github.io/webgpu-samples/?sample=shadowMapping)
+- 🎯 Web GUI(online) Editor with Visual Scripting (Named: FlowCodexVertex) WIP
 
+
+## FluxCodexVertex Web Editor 🚀 (since version 1.8.0)
+
+EditorX has **two main parts**:
+
+- **Frontend** (`./src/tools/editor`)
+- **Backend** (`./src/tools/editor/backend`)
+
+> **Before running anything**, install dependencies with `npm i`:
+> - in the **root** folder  
+> - and also inside `./src/tools/editor/backend`
+
+The backend is built using **Node.js** 🟢
+
+---
+
+## General Features 🧩
+
+- Editor creates and manages files (Windows tested only)
+- Scene container added
+- SceneObject property container added
+- Assets toolbar added (bottom panel)  
+  - Add **GLB** or **OBJ** files from the asset toolbox by selecting them
+- Top menu for adding primitives (Cube / Sphere) with or without physics ⚙️
+- Integrated Visual Scripting system 🧠
+
+---
+
+## Visual Scripting – Implemented Features ✅
+
+- Add **Math nodes**, **events / custom methods**, **variable popup**, **SceneObject access** 
+- Get SceneObject → set position → bind `onTargetReach` events
+- Custom func editor
+- Run the graph ▶️
+- Save graph
+  - Currently saved to **LocalStorage**
+  - For final builds, becomes a real **JS object** injected into the app flow.[NOT DONE]
+    Now it is posible to hide editor on begin.
+- Export graph to **JSON**
+- Import graph from **JSON**
+
+---
+
+## ⚠️ Important Notes
+
+Visual Scripting is only available when running the engine **from source**  
+(not from `npm i matrix-engine-wgpu`).  
+
+You must clone or download the engine source from the **GitHub repository**.
+
+---
+
+## Instructions 📌
+
+- Run the editor with:
+
+```bash
+npm run editorx
+```
+
+from the engine root directory.
+EditorX is an alias for FluxCodexVertex (needed three words to keep the name unique)
+Run the scene by pressing F6 or by clicking Run in the left panel
+If you delete all objects from the scene, you must refresh the page and add at least one object again
+Before importing a graph, delete all nodes from the FluxCodexVertex graph
+Saving is still based on LocalStorage
+After deleting everything, click Save to store an empty [] array
+All changes in graph must be saved manually for now 💾.
+
+<img width="860" height="640" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/visual-scripting-math.png?raw=true" />
 
 ---
 
@@ -55,6 +126,11 @@ Published on npm as: **`matrix-engine-wgpu`**
   ```
 
 - Add meshes with `.addMeshObj()`, supporting `.obj` loading, unlit textures, cubes, spheres, etc.
+
+- Destroy sceneObj:
+  ```js
+  app.removeSceneObjectByName('Sphere1');
+  ```
 
 - Cleanly destroy the scene:
 
@@ -614,7 +690,7 @@ This is static file storage.
 
 🎲 The first full app example will be a WebGPU-powered **Jamb 3d deluxe** game.
 
-## RPG game Beta version done
+## MOBA game Beta version done
 
 Features done:
 - Navigation mesh
@@ -640,7 +716,7 @@ See more details at [FOHB Wiki](https://github.com/zlatnaspirala/matrix-engine-w
 ## Live Demos & Dev Links
 
 - [WebGPU Demos ](https://maximumroulette.com/apps/webgpu/examples.html)
-  Support this project on [itch.io](https://goldenspiral.itch.io/jamb-3d-deluxe)
+  Support JAMB 3D this project on [itch.io](https://goldenspiral.itch.io/jamb-3d-deluxe)
 
   <img width="860" height="640" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/RPG.png?raw=true" />
 
@@ -657,7 +733,7 @@ Performance for Jamb game:
 
 <img width="860" height="640" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/performance.png?raw=true" />
 
-Special licence for RPG example:
+Special licence for MOBA example:
 
 ```
 Creative Commons Attribution 4.0 International (CC BY 4.0)
@@ -666,9 +742,43 @@ You are free to share and adapt this project, provided that you give appropriate
 Attribution requirement:
 Include the following notice (with working link) in any distributed version or about page:
 
-"Forest Of Hollow Blood — an RPG example made with MatrixEngineWGPU (https://github.com/zlatnaspirala/matrix-engine-wgpu)"
+"Forest Of Hollow Blood — an MOBA example made with MatrixEngineWGPU (https://github.com/zlatnaspirala/matrix-engine-wgpu)"
 
 ```
+
+## Web Editor FluxCodexVertex from version [1.8.0]
+
+Run editor
+```js
+npm run editorx
+```
+Navigate to `matrix-engine.html` it is landing page for editor.
+After create new project or load project page will be redirect to
+`./public/<PROJECT_NAME>.html`
+Source location : `./projects/<PROJECT_NAME>`
+
+
+Features :
+ - Create new project/ load project - only on landing page
+ - Create cubeMesh
+ - Properties box for selected sceneObj
+ - Events system (Create func and attach to sceneObj)
+ - Resource navigation
+ - Visual Scripting
+
+  <img width="860" height="640" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/visual-scripting-math.png?raw=true" />
+
+@Note
+License for fluxCodexVertex.js (MPL 2.0) 
+Affect only this file! Just leave comment licence part in header of file.
+
+
+YT video promotion : 
+
+
+About 'In fly' regime:
+Editor can be activated even without backend node but in that case no
+saves.
 
 
 ## License && Credits

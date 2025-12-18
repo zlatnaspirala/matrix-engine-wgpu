@@ -4,2331 +4,11 @@
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.HeroProps = exports.Hero = exports.HERO_ARCHETYPES = void 0;
-exports.mergeArchetypes = mergeArchetypes;
-exports.mergeArchetypesWeighted = mergeArchetypesWeighted;
-/**
- * @description
- * Hero based classes
- * Core of RPG type of game.
- */
-const HERO_ARCHETYPES = exports.HERO_ARCHETYPES = {
-  Warrior: {
-    hpMult: 1.2,
-    manaMult: 0.8,
-    attackMult: 1.1,
-    armorMult: 1.2,
-    moveSpeed: 1.0,
-    attackSpeed: 1.0,
-    hpRegenMult: 1.2,
-    manaRegenMult: 0.8
-  },
-  Tank: {
-    hpMult: 1.6,
-    manaMult: 0.6,
-    attackMult: 0.9,
-    armorMult: 1.5,
-    moveSpeed: 0.9,
-    attackSpeed: 0.8,
-    hpRegenMult: 1.4,
-    manaRegenMult: 0.7
-  },
-  Assassin: {
-    hpMult: 0.9,
-    manaMult: 0.9,
-    attackMult: 1.5,
-    armorMult: 0.8,
-    moveSpeed: 1.3,
-    attackSpeed: 1.4,
-    hpRegenMult: 0.9,
-    manaRegenMult: 0.9
-  },
-  Mage: {
-    hpMult: 0.8,
-    manaMult: 1.5,
-    attackMult: 0.9,
-    armorMult: 0.7,
-    moveSpeed: 1.0,
-    attackSpeed: 0.9,
-    hpRegenMult: 0.8,
-    manaRegenMult: 1.5
-  },
-  Support: {
-    hpMult: 1.0,
-    manaMult: 1.2,
-    attackMult: 0.8,
-    armorMult: 1.0,
-    moveSpeed: 1.0,
-    attackSpeed: 1.0,
-    hpRegenMult: 1.2,
-    manaRegenMult: 1.2
-  },
-  Ranger: {
-    hpMult: 1.0,
-    manaMult: 1.0,
-    attackMult: 1.2,
-    armorMult: 0.9,
-    moveSpeed: 1.2,
-    attackSpeed: 1.2,
-    hpRegenMult: 1.0,
-    manaRegenMult: 1.0
-  },
-  Summoner: {
-    hpMult: 0.9,
-    manaMult: 1.4,
-    attackMult: 0.8,
-    armorMult: 0.9,
-    moveSpeed: 1.0,
-    attackSpeed: 0.9,
-    hpRegenMult: 1.0,
-    manaRegenMult: 1.4
-  },
-  Necromancer: {
-    hpMult: 0.9,
-    manaMult: 1.4,
-    attackMult: 0.9,
-    armorMult: 0.8,
-    moveSpeed: 1.0,
-    attackSpeed: 0.9,
-    hpRegenMult: 0.9,
-    manaRegenMult: 1.4
-  },
-  Engineer: {
-    hpMult: 1.1,
-    manaMult: 1.0,
-    attackMult: 1.0,
-    armorMult: 1.1,
-    moveSpeed: 1.0,
-    attackSpeed: 1.0,
-    hpRegenMult: 1.0,
-    manaRegenMult: 1.0
-  },
-  // special for creeps
-  creep: {
-    hpMult: 0.6,
-    manaMult: 1,
-    attackMult: 1,
-    armorMult: 1,
-    moveSpeed: 0.3,
-    attackSpeed: 0.5,
-    hpRegenMult: 1,
-    manaRegenMult: 1
-  }
-};
-class HeroProps {
-  constructor(name) {
-    this.name = name;
-    this.levels = [{
-      level: 1,
-      xp: 100,
-      hp: 500,
-      mana: 300,
-      attack: 40,
-      armor: 5,
-      moveSpeed: 1.0,
-      attackSpeed: 1.0,
-      hpRegen: 2.0,
-      mpRegen: 1.0,
-      abilityPoints: 1
-    }, {
-      level: 2,
-      xp: 200,
-      hp: 570,
-      mana: 345,
-      attack: 46,
-      armor: 5.5,
-      moveSpeed: 1.05,
-      attackSpeed: 1.05,
-      hpRegen: 2.25,
-      mpRegen: 1.15,
-      abilityPoints: 2
-    }, {
-      level: 3,
-      xp: 350,
-      hp: 645,
-      mana: 395,
-      attack: 52,
-      armor: 6,
-      moveSpeed: 1.10,
-      attackSpeed: 1.10,
-      hpRegen: 2.52,
-      mpRegen: 1.31,
-      abilityPoints: 3
-    }, {
-      level: 4,
-      xp: 500,
-      hp: 725,
-      mana: 450,
-      attack: 58,
-      armor: 6.5,
-      moveSpeed: 1.15,
-      attackSpeed: 1.16,
-      hpRegen: 2.81,
-      mpRegen: 1.49,
-      abilityPoints: 4
-    }, {
-      level: 5,
-      xp: 700,
-      hp: 810,
-      mana: 510,
-      attack: 65,
-      armor: 7,
-      moveSpeed: 1.20,
-      attackSpeed: 1.23,
-      hpRegen: 3.13,
-      mpRegen: 1.68,
-      abilityPoints: 5
-    }, {
-      level: 6,
-      xp: 900,
-      hp: 900,
-      mana: 575,
-      attack: 72,
-      armor: 7.5,
-      moveSpeed: 1.25,
-      attackSpeed: 1.31,
-      hpRegen: 3.48,
-      mpRegen: 1.88,
-      abilityPoints: 6
-    }, {
-      level: 7,
-      xp: 1150,
-      hp: 995,
-      mana: 645,
-      attack: 80,
-      armor: 8,
-      moveSpeed: 1.30,
-      attackSpeed: 1.40,
-      hpRegen: 3.85,
-      mpRegen: 2.10,
-      abilityPoints: 7
-    }, {
-      level: 8,
-      xp: 1400,
-      hp: 1095,
-      mana: 720,
-      attack: 88,
-      armor: 8.5,
-      moveSpeed: 1.35,
-      attackSpeed: 1.50,
-      hpRegen: 4.25,
-      mpRegen: 2.33,
-      abilityPoints: 8
-    }, {
-      level: 9,
-      xp: 1700,
-      hp: 1200,
-      mana: 800,
-      attack: 97,
-      armor: 9,
-      moveSpeed: 1.40,
-      attackSpeed: 1.61,
-      hpRegen: 4.68,
-      mpRegen: 2.58,
-      abilityPoints: 9
-    }, {
-      level: 10,
-      xp: null,
-      hp: 1310,
-      mana: 885,
-      attack: 107,
-      armor: 9.5,
-      moveSpeed: 1.45,
-      attackSpeed: 1.73,
-      hpRegen: 5.13,
-      mpRegen: 2.84,
-      abilityPoints: 10
-    }];
-    this.currentLevel = 1;
-    this.currentXP = 0;
-    this.gold = 200;
-    this.baseXP = 100;
-    this.baseGold = 200;
-
-    // --- Multipliers
-    this.xpMultiplier = {
-      stronger: 0.1,
-      weaker: 0.2
-    };
-    this.goldMultiplier = 50;
-
-    // --- Maximum level difference for XP
-    this.maxLevelDiffForXP = 3;
-    this.abilities = [{
-      name: "Spell 1",
-      level: 1,
-      maxLevel: 4
-    }, {
-      name: "Spell 2",
-      level: 0,
-      maxLevel: 4
-    }, {
-      name: "Spell 3",
-      level: 0,
-      maxLevel: 4
-    }, {
-      name: "Ultimate",
-      level: 0,
-      maxLevel: 1
-    }];
-    this.invertoryBonus = {
-      hp: 1,
-      mana: 1,
-      attack: 1,
-      armor: 1,
-      moveSpeed: 1,
-      attackSpeed: 1,
-      hpRegen: 1,
-      mpRegen: 1
-    };
-    this.updateStats();
-  }
-  updateStats() {
-    const lvlData = this.levels[this.currentLevel - 1];
-    if (!lvlData) return;
-
-    // console.log('updateStats: armor ', this.invertoryBonus.armor)
-
-    Object.assign(this, {
-      hp: lvlData.hp * this.invertoryBonus.hp,
-      mana: lvlData.mana * this.invertoryBonus.mana,
-      attack: lvlData.attack * this.invertoryBonus.attack,
-      armor: lvlData.armor * this.invertoryBonus.armor,
-      moveSpeed: lvlData.moveSpeed * this.invertoryBonus.moveSpeed,
-      attackSpeed: lvlData.attackSpeed * this.invertoryBonus.attackSpeed,
-      hpRegen: lvlData.hpRegen * this.invertoryBonus.hpRegen,
-      mpRegen: lvlData.mpRegen * this.invertoryBonus.mpRegen,
-      abilityPoints: lvlData.abilityPoints
-    });
-    dispatchEvent(new CustomEvent('stats-localhero', {
-      detail: {
-        gold: this.gold,
-        currentLevel: this.currentLevel,
-        xp: this.currentXP,
-        hp: this.hp,
-        mana: this.mana,
-        attack: this.attack,
-        armor: this.armor,
-        moveSpeed: this.moveSpeed,
-        attackSpeed: this.attackSpeed,
-        hpRegen: this.hpRegen,
-        mpRegen: this.mpRegen
-      }
-    }));
-  }
-
-  // --- Kill enemy: only enemyLevel argument
-  killEnemy(enemyLevel) {
-    if (enemyLevel < 1) enemyLevel = 1;
-    const levelDiff = this.currentLevel - enemyLevel;
-
-    // --- XP calculation with cap for weak enemies
-    let earnedXP = 0;
-    if (levelDiff < this.maxLevelDiffForXP) {
-      if (enemyLevel >= this.currentLevel) {
-        earnedXP = this.baseXP * (1 + this.xpMultiplier.stronger * (enemyLevel - this.currentLevel));
-      } else {
-        earnedXP = this.baseXP * (1 - this.xpMultiplier.weaker * (this.currentLevel - enemyLevel));
-      }
-      earnedXP = Math.round(Math.max(0, earnedXP));
-    }
-
-    // --- Gold reward
-    const goldReward = this.baseGold + enemyLevel * this.goldMultiplier;
-    this.currentXP += earnedXP;
-    this.gold += goldReward;
-
-    // for creep any way - rule if they kill hero
-    // maybe some smlall reward... checkLevelUp
-    console.log(`${this.name} killed Lv${enemyLevel} enemy: +${earnedXP} XP, +${goldReward} gold`);
-    this.checkLevelUp();
-  }
-
-  // --- Automatic level-up
-  checkLevelUp() {
-    while (this.currentLevel < 10) {
-      const nextLevelXP = this.levels[this.currentLevel - 1].xp;
-      if (this.currentXP >= nextLevelXP) {
-        this.currentLevel++;
-        console.log(`${this.name} leveled up! Now level ${this.currentLevel}`);
-        this.updateStats();
-        this.currentXP -= nextLevelXP;
-      } else break;
-    }
-
-    // emit for hud
-    // dispatchEvent(new CustomEvent('stats-localhero', {
-    //   detail: {
-    //     gold: this.gold,
-    //     currentLevel: this.currentLevel,
-    //     xp: this.currentXP,
-    //     hp: this.hp,
-    //     mana: this.mana,
-    //     attack: this.attack,
-    //     armor: this.armor,
-    //     moveSpeed: this.moveSpeed,
-    //     attackSpeed: this.attackSpeed,
-    //     hpRegen: this.hpRegen,
-    //     mpRegen: this.mpRegen,
-    //   }
-    // }))
-  }
-
-  // --- Upgrade abilities
-  upgradeAbility(spellIndex) {
-    const spell = this.abilities[spellIndex];
-    if (!spell) return false;
-    if (spell.level < spell.maxLevel && this.abilityPoints > 0) {
-      spell.level++;
-      this.abilityPoints--;
-      console.log(`${this.name} upgraded ${spell.name} to level ${spell.level}`);
-      return true;
-    }
-    return false;
-  }
-
-  // --- Get / Set stats
-  getStat(statName) {
-    return this[statName] ?? null;
-  }
-  setStat(statName, value) {
-    if (this.hasOwnProperty(statName)) {
-      this[statName] = value;
-      return true;
-    }
-    return false;
-  }
-
-  // --- Debug print
-  debugPrint() {
-    console.table({
-      level: this.currentLevel,
-      xp: this.currentXP,
-      gold: this.gold,
-      hp: this.hp,
-      mana: this.mana,
-      attack: this.attack,
-      armor: this.armor,
-      moveSpeed: this.moveSpeed,
-      attackSpeed: this.attackSpeed,
-      hpRegen: this.hpRegen,
-      mpRegen: this.mpRegen,
-      abilityPoints: this.abilityPoints,
-      abilities: this.abilities.map(a => `${a.name} (Lv ${a.level})`).join(", ")
-    });
-  }
-  showUpgradeableAbilities() {
-    if (this.abilityPoints <= 0) {
-      console.log(`${this.name} has no ability points to spend.`);
-      return [];
-    }
-    const upgradeable = this.abilities.map((spell, index) => ({
-      ...spell,
-      index
-    })).filter(spell => spell.level < spell.maxLevel);
-    if (upgradeable.length === 0) {
-      console.log(`${this.name} has no spells left to upgrade.`);
-      return [];
-    }
-    console.log(`${this.name} has ${this.abilityPoints} ability point(s) available.`);
-    console.log("Upgradeable spells:");
-    upgradeable.forEach(spell => {
-      console.log(`  [${spell.index}] ${spell.name} (Lv ${spell.level}/${spell.maxLevel})`);
-    });
-    return upgradeable;
-  }
-
-  // --- Upgrade a spell by name (optional convenience)
-  upgradeAbilityByName(spellName) {
-    const spellIndex = this.abilities.findIndex(s => s.name === spellName);
-    if (spellIndex === -1) return false;
-    return this.upgradeAbility(spellIndex);
-  }
-
-  // attack - direction always local -> enemy (remote)
-  calcDamage(attacker, defender, abilityMultiplier = 1.0, critChance = 1, critMult = 1) {
-    // Use attack from your current scaled stats
-    const baseAttack = attacker.attack;
-    // Optional: magic abilities could use mana or another stat later
-    const base = baseAttack * abilityMultiplier;
-    // Critical hit roll - not for now
-    const crit = Math.random() < critChance ? critMult : 1.0;
-    // Damage reduced by armor
-    const damage = Math.max(0, base * crit - defender.armor);
-    // Apply damage
-    defender.hp = Math.max(0, defender.hp - damage);
-    // --- Sync energy bar (0 → 1)
-    const progress = Math.max(0, Math.min(1, defender.hp / this.getHPMax()));
-    dispatchEvent(new CustomEvent(`onDamage-${defender.name}`, {
-      detail: {
-        progress: progress,
-        attacker: attacker.name,
-        defenderLevel: defender.currentLevel,
-        defender: defender.name,
-        hp: defender.hp,
-        damage: damage
-      }
-    }));
-    return {
-      damage,
-      crit: crit > 1.0
-    };
-  }
-}
-exports.HeroProps = HeroProps;
-class Hero extends HeroProps {
-  constructor(name, archetypes = ["Warrior"]) {
-    super(name);
-    // limit to 2 mix
-    this.archetypes = archetypes.slice(0, 2);
-    this.applyArchetypeStats();
-  }
-  applyArchetypeStats() {
-    if (!this.archetypes || this.archetypes.length === 0) return;
-    let typeData;
-    if (this.archetypes.length === 2) {
-      typeData = mergeArchetypes(this.archetypes[0], this.archetypes[1]);
-    } else {
-      typeData = HERO_ARCHETYPES[this.archetypes[0]];
-    }
-    if (!typeData) return;
-    this.hp *= typeData.hpMult;
-    this.mana *= typeData.manaMult;
-    this.attack *= typeData.attackMult;
-    this.armor *= typeData.armorMult;
-    this.moveSpeed *= typeData.moveSpeed;
-    this.attackSpeed *= typeData.attackSpeed;
-    this.hpRegen *= typeData.hpRegenMult;
-    this.mpRegen *= typeData.manaRegenMult;
-    this._mergedArchetype = typeData._mergedFrom || this.archetypes;
-  }
-  getHPMax() {
-    let typeData;
-    if (this.archetypes.length === 2) {
-      typeData = mergeArchetypes(this.archetypes[0], this.archetypes[1]);
-    } else {
-      typeData = HERO_ARCHETYPES[this.archetypes[0]];
-    }
-    this.baseHp = this.levels[this.currentLevel - 1].hp;
-    return this.baseHp; // * typeData.hpMult; ???
-  }
-
-  // Override updateStats to include archetype scaling
-  updateStats() {
-    super.updateStats();
-    this.applyArchetypeStats();
-  }
-}
-exports.Hero = Hero;
-function mergeArchetypes(typeA, typeB) {
-  if (!HERO_ARCHETYPES[typeA] || !HERO_ARCHETYPES[typeB]) {
-    console.warn(`Invalid archetype(s): ${typeA}, ${typeB}`);
-    return HERO_ARCHETYPES[typeA] || HERO_ARCHETYPES[typeB];
-  }
-  const a = HERO_ARCHETYPES[typeA];
-  const b = HERO_ARCHETYPES[typeB];
-  const merged = {};
-
-  // Average their multipliers (or tweak with weights if needed)
-  for (const key in a) {
-    if (typeof a[key] === "number" && typeof b[key] === "number") {
-      merged[key] = (a[key] + b[key]) / 2;
-    }
-  }
-  merged._mergedFrom = [typeA, typeB];
-  return merged;
-}
-
-// not used now
-function mergeArchetypesWeighted(typeA, typeB, weightA = 0.7) {
-  const a = HERO_ARCHETYPES[typeA];
-  const b = HERO_ARCHETYPES[typeB];
-  const wB = 1 - weightA;
-  const merged = {};
-  for (const key in a) if (typeof a[key] === "number" && typeof b[key] === "number") merged[key] = a[key] * weightA + b[key] * wB;
-  merged._mergedFrom = [typeA, typeB];
-  return merged;
-}
-
-},{}],2:[function(require,module,exports){
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.ROCK_RANK = exports.RCSAccount = void 0;
-var _utils = require("../../../src/engine/utils.js");
-/**
- * @description This is clone from hang3d.
- * @author Nikola Lukic 
- * @email zlatnaspirala@gmail.com
- * @website https://maximumroulette.com
- */
-
-class RCSAccount {
-  email = null;
-  token = null;
-  constructor(apiDomain) {
-    this.apiDomain = apiDomain;
-    this.visitor();
-    addEventListener('F12', e => {
-      console.log(`%c[Debbuger] ${e.detail}`, REDLOG);
-      localStorage.removeItem("visitor");
-      this.visitor(e.detail);
-    });
-
-    // this.leaderboardBtn = document.createElement('div')
-    // this.leaderboardBtn.id = 'leaderboard';
-    // this.leaderboardBtn.innerHTML = `
-    //   <button id="leaderboardBtn" class="btn">Leaderboard</button>
-    // `;
-    // document.body.appendChild(this.leaderboardBtn);
-
-    // this.leaderboardBtn = document.getElementById('leaderboardBtn');
-    // this.leaderboardBtn.addEventListener("click", this.getLeaderboard)
-  }
-  createDOM = hideLoginForm => {
-    if (typeof hideLoginForm === 'undefined') hideLoginForm = false;
-    var parent = document.createElement('div');
-    this.parent = parent;
-    //parent.classList.add('')
-    parent.id = 'myAccountLoginForm';
-    if (hideLoginForm == true) parent.style.display = 'none';
-    var logo = document.createElement('img');
-    logo.id = 'logologin';
-    logo.setAttribute('alt', 'Login');
-    logo.style = 'width: 100px;border-radius: 10px;padding: 6px;';
-    logo.src = './res/icons/512.png';
-    var title = document.createElement('div');
-    title.style.display = 'flex';
-    title.innerHTML = `
-		
-		<div style='width:100%; margin: 5px 5px;'> <h2 style='margin: 5px 5px;'>Rocket GamePlay Login Form</h2>
-		 Maximumroulette.com</div>
-		`;
-    title.appendChild(logo);
-    var content = document.createElement('div');
-    content.style.display = 'flex';
-    content.style.flexDirection = 'column';
-    content.style.background = 'transparent';
-    var emailLabel = document.createElement('label');
-    emailLabel.id = 'emailLabel';
-    emailLabel.innerHTML = `Email:`;
-    emailLabel.setAttribute('for', 'arg-email');
-    var email = document.createElement('input');
-    // email.classList.add('myInput')
-    email.id = 'arg-email';
-    var passLabel = document.createElement('label');
-    passLabel.id = 'passLabel';
-    passLabel.innerHTML = `Passw:`;
-    passLabel.setAttribute('for', 'arg-pass');
-    var pass = document.createElement('input');
-    pass.id = 'arg-pass';
-    // pass.classList.add('myInput')
-    var loginBtn = document.createElement('button');
-    loginBtn.id = 'loginRCSBtn';
-    loginBtn.innerHTML = `LOGIN`;
-    loginBtn.classList.add('btn');
-    loginBtn.classList.add('btnMargin');
-    loginBtn.addEventListener('click', this.login);
-    var gotoRegisterMyAccount = document.createElement('button');
-    gotoRegisterMyAccount.id = 'registerBtn';
-    gotoRegisterMyAccount.classList.add(`btn`);
-    gotoRegisterMyAccount.classList.add(`btnMargin`);
-    gotoRegisterMyAccount.innerHTML = `REGISTER`;
-    gotoRegisterMyAccount.addEventListener('click', this.register);
-    var hideLoginMyAccount = document.createElement('button');
-    hideLoginMyAccount.classList.add(`btn`);
-    hideLoginMyAccount.classList.add(`btnMargin`);
-    hideLoginMyAccount.innerHTML = `NO LOGIN -> INSTANT PLAY`;
-    hideLoginMyAccount.addEventListener('click', () => {
-      (0, _utils.byId)('myAccountLoginForm').remove();
-    });
-    if ((0, _utils.isMobile)() == false) {
-      var descText = document.createElement('div');
-      descText.id = 'descText';
-      descText.style = 'font-size:smaller;';
-      descText.innerHTML = `<span style="width:45%" >Welcome to rocketCraftingServer platform, enjoy in 'Forest Of Hollow Blood' lets magic begin.</span>`;
-      // <span style="width:45%;" >Add Url params '?video=false&audio=false' to disable streaming</span>
-    }
-    parent.appendChild(title);
-    parent.appendChild(content);
-    content.appendChild(emailLabel);
-    content.appendChild(email);
-    content.appendChild(passLabel);
-    content.appendChild(pass);
-    content.appendChild(loginBtn);
-    content.appendChild(gotoRegisterMyAccount);
-    content.appendChild(hideLoginMyAccount);
-    // content.appendChild(logo)
-    if ((0, _utils.isMobile)() == false) content.appendChild(descText);
-    document.body.appendChild(parent);
-  };
-  createLeaderboardDOM = data => {
-    if ((0, _utils.byId)('leaderboard') != null) {
-      (0, _utils.byId)('leaderboard').style.display = 'block';
-      return;
-    }
-    // console.log('TEST MOBILE +++')
-    var parent = document.createElement('div');
-    parent.style = ``;
-    parent.classList.add('leaderboard');
-    // if(isMobile() == true) {
-    // 	parent.style = `
-    // 	position: absolute;
-    // 	border-radius: 4px;
-    // 	top: 10%;
-    // 	left: 0%;
-    // 	width: 95%;
-    // 	padding: 10px;`;
-    // }
-    parent.id = 'leaderboard';
-    var title = document.createElement('div');
-    title.innerHTML = `<h3>Top 10 leaderboard [RocketCraftingServer]</h3>`;
-    parent.appendChild(title);
-    var tableLabel = document.createElement('div');
-    tableLabel.style.display = 'flex';
-    tableLabel.style.flexDirection = 'row';
-    var nicklabel = document.createElement('div');
-    nicklabel.innerText = 'Nickname';
-    nicklabel.style.width = '100%';
-    var pointslabel = document.createElement('div');
-    pointslabel.innerText = 'Points';
-    pointslabel.style.width = '100%';
-    tableLabel.appendChild(nicklabel);
-    tableLabel.appendChild(pointslabel);
-    parent.appendChild(tableLabel);
-    var parentForTable = document.createElement('div');
-    parentForTable.style.height = '70vh';
-    parentForTable.style.overflow = 'scroll';
-    parentForTable.style.overflowX = 'hidden';
-    data.forEach((element, index) => {
-      var table = document.createElement('div');
-      table.style.display = 'flex';
-      table.style.flexDirection = 'row';
-      table.style.justifyContent = 'center';
-      table.style.alignItems = 'center';
-      table.style.boxShadow = 'none';
-      var nick = document.createElement('div');
-      nick.innerText = element.nickname;
-      nick.style.width = '100%';
-      if (index == 0) {
-        nick.style.boxShadow = '0px 7px 2px -1px #ffe100';
-      } else if (index == 1) {
-        nick.style.boxShadow = '0px 7px 2px -1px white';
-      } else if (index == 2) {
-        nick.style.boxShadow = '0px 7px 2px -1px #a01010';
-      } else {
-        nick.style.boxShadow = '0px 7px 2px -1px #757471';
-      }
-      var points = document.createElement('div');
-      points.innerText = element.points;
-      points.style.width = '100%';
-      if (index == 0) {
-        points.style.boxShadow = '0px 7px 2px -1px #ffe100';
-      } else if (index == 1) {
-        points.style.boxShadow = '0px 7px 2px -1px white';
-      } else if (index == 2) {
-        points.style.boxShadow = '0px 7px 2px -1px #a01010';
-      } else {
-        points.style.boxShadow = '0px 7px 2px -1px #757471';
-      }
-      // var medal = document.createElement('img');
-      // medal.id = 'medal';
-      // logo.src = './assets/icons/icon96.png';
-      table.appendChild(nick);
-      table.appendChild(points);
-      table.innerHTML += ROCK_RANK.getRankMedalImg(ROCK_RANK.getRank(element.points));
-      parentForTable.appendChild(table);
-    });
-    parent.appendChild(parentForTable);
-    var hideBtn = document.createElement('button');
-    hideBtn.classList = 'btn';
-    hideBtn.style.marginTop = '7px';
-    hideBtn.innerText = 'HIDE';
-    hideBtn.addEventListener('click', () => {
-      parent.style.display = 'none';
-    });
-    parent.appendChild(hideBtn);
-    document.body.appendChild(parent);
-  };
-  register = () => {
-    this.register_procedure(this);
-  };
-  async register_procedure() {
-    let route = this.apiDomain || location.origin;
-    (0, _utils.byId)('loginRCSBtn').disabled = true;
-    (0, _utils.byId)('registerBtn').disabled = true;
-    let args = {
-      emailField: (0, _utils.byId)('arg-email') != null ? (0, _utils.byId)('arg-email').value : null,
-      passwordField: (0, _utils.byId)('arg-pass') != null ? (0, _utils.byId)('arg-pass').value : null
-    };
-    if (args.emailField == null || args.passwordField == null) {
-      _utils.mb.show('Please fill up email and passw for login or register.');
-    }
-    fetch(route + '/rocket/register', {
-      method: 'POST',
-      headers: _utils.jsonHeaders,
-      body: JSON.stringify(args)
-    }).then(d => {
-      return d.json();
-    }).then(r => {
-      _utils.mb.error(`${r.message}`);
-      if (r.message == "Check email for conmfirmation key.") {
-        this.email = (0, _utils.byId)('arg-email').value;
-        sessionStorage.setItem('email', (0, _utils.byId)('arg-email').value);
-        (0, _utils.byId)('emailLabel').remove();
-        (0, _utils.byId)('loginRCSBtn').remove();
-        (0, _utils.byId)('arg-email').remove();
-        (0, _utils.byId)("passLabel").innerHTML = 'ENTER CONFIRMATION CODE';
-        (0, _utils.byId)('arg-pass').value = "";
-        (0, _utils.byId)('registerBtn').removeEventListener('click', this.register);
-        (0, _utils.byId)('registerBtn').disabled = false;
-        (0, _utils.byId)('registerBtn').innerHTML = 'CONFIRM CODE FROM EMAIL';
-        (0, _utils.byId)('registerBtn').id = 'CC';
-        (0, _utils.byId)('CC').addEventListener('click', () => {
-          this.confirmation();
-        });
-        sessionStorage.setItem('RocketAcountRegister', 'Check email for conmfirmation key.');
-      } else {
-        setTimeout(() => {
-          _utils.mb.show("Next Register/Login call try in 5 secounds...");
-          this.preventDBLOG = false;
-          this.preventDBREG = false;
-          (0, _utils.byId)('loginRCSBtn').disabled = false;
-          (0, _utils.byId)('registerBtn').disabled = false;
-        }, 5000);
-      }
-    }).catch(err => {
-      console.log('[My Account Error]', err);
-      _utils.mb.show("Next Register call try in 5 secounds...");
-      setTimeout(() => {
-        this.preventDBLOG = false;
-        this.preventDBREG = false;
-        (0, _utils.byId)('loginRCSBtn').disabled = false;
-        (0, _utils.byId)('registerBtn').disabled = false;
-      }, 5000);
-      return;
-    });
-  }
-  confirmation = async () => {
-    let route = this.apiDomain;
-    const args = {
-      emailField: this.email,
-      tokenField: (0, _utils.byId)('arg-pass').value
-    };
-    fetch(route + '/rocket/confirmation', {
-      method: 'POST',
-      headers: _utils.jsonHeaders,
-      body: JSON.stringify(args)
-    }).then(d => {
-      return d.json();
-    }).then(r => {
-      if (r.message == "Wrong confirmation code.") {} else if (r.message == "Confirmation done.") {
-        alert(r.message);
-        this.parent.innerHTML = '';
-        // ----
-        this.createDOM();
-      }
-      _utils.mb.error(`${r.message}`);
-    });
-  };
-  gameStarted = async () => {
-    let route = this.apiDomain || location.origin;
-    let args = {
-      username: 'guest'
-    };
-    fetch(route + '/rocket/fohbstart', {
-      method: 'POST',
-      headers: _utils.jsonHeaders,
-      body: JSON.stringify(args)
-    }).then(d => {
-      return d.json();
-    }).then(r => {
-      console.log(r.message);
-      _utils.mb.show(`${r.message}`);
-      if (r.message == "User logged") {}
-    }).catch(err => {
-      console.log('[RCS Error]', err);
-      return;
-    });
-  };
-  login = async () => {
-    let route = this.apiDomain || location.origin;
-    (0, _utils.byId)('loginRCSBtn').disabled = true;
-    (0, _utils.byId)('registerBtn').disabled = true;
-    let args = {
-      emailField: (0, _utils.byId)('arg-email') != null ? (0, _utils.byId)('arg-email').value : null,
-      passwordField: (0, _utils.byId)('arg-pass') != null ? (0, _utils.byId)('arg-pass').value : null
-    };
-    fetch(route + '/rocket/login', {
-      method: 'POST',
-      headers: _utils.jsonHeaders,
-      body: JSON.stringify(args)
-    }).then(d => {
-      return d.json();
-    }).then(r => {
-      console.log(r.message);
-      _utils.mb.show(`${r.message}`);
-      if (r.message == "User logged") {
-        this.email = (0, _utils.byId)('arg-email').value;
-        (0, _utils.byId)('myAccountLoginForm').style.display = 'none';
-        sessionStorage.setItem('RocketAcount', JSON.stringify(r.flag));
-      }
-    }).catch(err => {
-      console.log('[My Account Error]', err);
-      _utils.mb.show("Next Login call try in 5 secounds...");
-      setTimeout(() => {
-        this.preventDBLOG = false;
-        this.preventDBREG = false;
-        (0, _utils.byId)('registerBtn').disabled = false;
-        (0, _utils.byId)('loginRCSBtn').disabled = false;
-      }, 5000);
-      return;
-    });
-  };
-  async visitor(isRegular) {
-    if (typeof isRegular === 'undefined') isRegular = 'Yes';
-    if (localStorage.getItem("visitor") == 'welcome') return;
-    let route = this.apiDomain;
-    let args = {
-      email: (0, _utils.byId)('arg-email') != null ? (0, _utils.byId)('arg-email').value : 'no-email',
-      userAgent: navigator.userAgent.toString(),
-      fromUrl: location.href.toString(),
-      isRegular: isRegular
-    };
-    fetch(route + '/rocket/visitors', {
-      method: 'POST',
-      headers: _utils.jsonHeaders,
-      body: JSON.stringify(args)
-    }).then(d => {
-      return d.json();
-    }).then(() => {
-      localStorage.setItem("visitor", "welcome");
-    }).catch(err => {
-      console.log('ERR', err);
-    });
-  }
-  getLeaderboard = async e => {
-    e.preventDefault();
-    (0, _utils.byId)('netHeaderTitle').click();
-    // this.leaderboardBtn.disabled = true;
-    fetch(this.apiDomain + '/rocket/public-leaderboard', {
-      method: 'POST',
-      headers: _utils.jsonHeaders,
-      body: JSON.stringify({})
-    }).then(d => {
-      return d.json();
-    }).then(r => {
-      _utils.mb.error(`${r.message}`);
-      if (r.message == "You got leaderboard data.") {
-        this.leaderboardData = r.leaderboard;
-        this.createLeaderboardDOM(r.leaderboard);
-      }
-      // setTimeout(() => {this.leaderboardBtn.disabled = false}, 5000)
-    }).catch(err => {
-      console.log('[Leaderboard Error]', err);
-      _utils.mb.show("Next call try in 5 secounds...");
-      // setTimeout(() => {this.leaderboardBtn.disabled = false}, 5000)
-      return;
-    });
-  };
-  getLeaderboardFor3dContext = async e => {
-    // e.preventDefault();
-    fetch(this.apiDomain + '/rocket/public-leaderboard', {
-      method: 'POST',
-      headers: _utils.jsonHeaders,
-      body: JSON.stringify({})
-    }).then(d => {
-      return d.json();
-    }).then(r => {
-      _utils.mb.error(`${r.message}`);
-      if (r.message == "You got leaderboard data.") {
-        this.leaderboardData = r.leaderboard;
-        console.log('PREPARE FOR 3d context', this.leaderboardData);
-      }
-      setTimeout(() => {
-        this.leaderboardBtn.disabled = false;
-      }, 5000);
-    }).catch(err => {
-      console.log('[Leaderboard Error]', err);
-      _utils.mb.show("Next call try in 5 secounds...");
-      setTimeout(() => {
-        this.leaderboardBtn.disabled = false;
-      }, 5000);
-      return;
-    });
-  };
-  async points10() {
-    let route = this.apiDomain;
-    if (sessionStorage.getItem('RocketAcount') != null && JSON.parse(sessionStorage.getItem('RocketAcount')).token) {
-      console.log("NO ACCOUNT USER", sessionStorage.getItem('RocketAcount'));
-      return;
-    }
-    let args = {
-      email: (0, _utils.byId)('arg-email') != null ? (0, _utils.byId)('arg-email').value : 'no-email',
-      userAgent: navigator.userAgent.toString(),
-      fromUrl: location.href.toString(),
-      token: JSON.parse(sessionStorage.getItem('RocketAcount')).token,
-      mapName: 'FOHB'
-    };
-    fetch(route + '/rocket/point-plus10', {
-      method: 'POST',
-      headers: _utils.jsonHeaders,
-      body: JSON.stringify(args)
-    }).then(d => {
-      return d.json();
-    }).then(() => {
-      localStorage.setItem("visitor", "welcome");
-    }).catch(err => {
-      console.log('ERR', err);
-    });
-  }
-  async dead() {
-    let route = this.apiDomain;
-    if (sessionStorage.getItem('RocketAcount') != null && JSON.parse(sessionStorage.getItem('RocketAcount')).token) {
-      console.log("NO ACCOUNT USER", sessionStorage.getItem('RocketAcount'));
-      return;
-    }
-    let args = {
-      email: (0, _utils.byId)('arg-email') != null ? (0, _utils.byId)('arg-email').value : 'no-email',
-      userAgent: navigator.userAgent.toString(),
-      fromUrl: location.href.toString(),
-      token: JSON.parse(sessionStorage.getItem('RocketAcount')).token,
-      mapName: 'FOHB'
-    };
-    fetch(route + '/rocket/point-plus10', {
-      method: 'POST',
-      headers: _utils.jsonHeaders,
-      body: JSON.stringify(args)
-    }).then(d => {
-      return d.json();
-    }).then(() => {
-      localStorage.setItem("visitor", "welcome");
-    }).catch(err => {
-      console.log('ERR', err);
-    });
-  }
-}
-exports.RCSAccount = RCSAccount;
-var ROCK_RANK = exports.ROCK_RANK = {
-  getRank: points => {
-    points = parseInt(points);
-    if (points < 1001) {
-      return "junior";
-    } else if (points < 2000) {
-      return "senior";
-    } else if (points < 3000) {
-      return "captain";
-    } else if (points < 5000) {
-      return "general";
-    } else {
-      return "ultimate-killer";
-    }
-  },
-  getRankMedalImg: rank => {
-    if (rank == 'junior') {
-      return `<img style="height: 60px" src="./res/icons/medals/1.png" />`;
-    } else if (points == 'senior') {
-      return `<img style="height: 60px" src="./res/icons/medals/2.png" />`;
-    } else if (points == 'captain') {
-      return `<img style="height: 60px" src="./res/icons/medals/3.png" />`;
-    } else if (points == 'general') {
-      return `<img style="height: 60px" src="./res/icons/medals/4.png" />`;
-    } else {
-      return `<img style="height: 60px" src="./res/icons/medals/5.png" />`;
-    }
-  }
-};
-
-},{"../../../src/engine/utils.js":47}],3:[function(require,module,exports){
-"use strict";
-
-var _webgpuGltf = require("../../../src/engine/loaders/webgpu-gltf.js");
-var _net = require("../../../src/engine/networking/net.js");
-var _utils = require("../../../src/engine/utils.js");
-var _world = _interopRequireDefault(require("../../../src/world.js"));
-var _hero = require("./hero.js");
-var _animatedCursor = require("../../../src/engine/plugin/animated-cursor/animated-cursor.js");
-var _matrixStream = require("../../../src/engine/networking/matrix-stream.js");
-var _rocketCraftingAccount = require("./rocket-crafting-account.js");
-var _enBackup = require("../../../public/res/multilang/en-backup.js");
-var _tts = require("./tts.js");
-var _editor = require("../../../src/tools/editor/editor.js");
-function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
-/**
- * @name forestOfHollowBloodStartSceen
- * 
- * @licence
- * Creative Commons Attribution 4.0 International (CC BY 4.0)
- * You are free to share and adapt this project, provided that you give appropriate credit.
- * Attribution requirement:
- * Include the following notice (with working link) in any distributed version or about page:
- * 
- * "Forest Of Hollow Blood — an RPG example made with MatrixEngineWGPU (https://github.com/zlatnaspirala/matrix-engine-wgpu)"
- * @Note
- * “Character and animation assets from Mixamo,
- * used under Adobe’s royalty‑free license. 
- * Redistribution of raw assets is not permitted.”
- * 
- * @Note 
- * This is startup main instance for menu screen and for the game.
- * All @zlatnaspirala software use networking based
- * on openvidu/kurento media server(webRTC).
- * Node.js used for middleware.
- * Server Events API also used for helping in creation of
- * matching/waiting list players or get status of public channel
- * (game-play channel).
- * 
- * @note
- * Only last non selected hero player will get 
- * first free hero in selection action next/back.
- * For now. Next better varian can be timer solution.
- * 
- * @Backend Session account stuff.
- * RocketCraftingServer platform used.
- **/
-
-_utils.LS.clear();
-_utils.SS.clear();
-let forestOfHollowBloodStartSceen = new _world.default({
-  dontUsePhysics: true,
-  // useEditor: true,
-  useSingleRenderPass: true,
-  canvasSize: 'fullscreen',
-  // {w: window.visualViewport.width, h: window.visualViewport.height }
-  mainCameraParams: {
-    type: 'WASD',
-    responseCoef: 1000
-  },
-  clearColor: {
-    r: 0,
-    b: 0.1,
-    g: 0.1,
-    a: 1
-  }
-}, forestOfHollowBloodStartSceen => {
-  if ('serviceWorker' in navigator) {
-    if (location.hostname.indexOf('localhost') == -1) {
-      navigator.serviceWorker.register('cache.js');
-    } else {
-      // RCSAccount
-      navigator.serviceWorker.getRegistrations().then(function (registrations) {
-        for (let registration of registrations) {
-          registration.unregister();
-        }
-      });
-    }
-  } else {
-    console.warn('Matrix Engine WGPU : No support for web workers in this browser.');
-  }
-  forestOfHollowBloodStartSceen.tts = new _tts.MatrixTTS();
-  forestOfHollowBloodStartSceen.account = new _rocketCraftingAccount.RCSAccount("https://maximumroulette.com");
-  forestOfHollowBloodStartSceen.account.createDOM();
-  forestOfHollowBloodStartSceen.FS = new _utils.FullscreenManager();
-  forestOfHollowBloodStartSceen.gamePlayStatus = null;
-  // in future replace with server event solution
-  forestOfHollowBloodStartSceen.gamePlayStatusTimer = null;
-  forestOfHollowBloodStartSceen.heroByBody = [];
-  forestOfHollowBloodStartSceen.selectedHero = 0;
-  forestOfHollowBloodStartSceen.lock = false;
-
-  // Audios
-  forestOfHollowBloodStartSceen.matrixSounds.createAudio('music2', 'res/audios/rpg/music.mp3', 1);
-  forestOfHollowBloodStartSceen.matrixSounds.createAudio('music', 'res/audios/rpg/wizard-rider.mp3', 1);
-  forestOfHollowBloodStartSceen.matrixSounds.createAudio('click1', 'res/audios/click1.mp3', 1);
-  app.matrixSounds.audios.click1.volume = 0.2;
-  forestOfHollowBloodStartSceen.matrixSounds.createAudio('hover', 'res/audios/kenney/mp3/click3.mp3', 2);
-  forestOfHollowBloodStartSceen.matrixSounds.createAudio('feel', 'res/audios/rpg/feel.mp3', 2);
-  let heros = null;
-  function checkUsername() {
-    if (JSON.parse(_utils.SS.get('RocketAcount')) != null && typeof JSON.parse(_utils.SS.get('RocketAcount')).nickname !== 'undefined') {
-      return JSON.parse(_utils.SS.get('RocketAcount')).nickname;
-    } else {
-      if (app.net.session !== null) {
-        return app.net.session.connection.connectionId;
-      } else {
-        return 'nosession';
-      }
-    }
-  }
-
-  // Networking
-  forestOfHollowBloodStartSceen.net = new _net.MatrixStream({
-    active: true,
-    domain: 'maximumroulette.com',
-    port: 2020,
-    sessionName: 'forestOfHollowBlood-free-for-all-start',
-    resolution: '160x240',
-    isDataOnly: true
-  });
-  function handleHeroImage(selectHeroIndex) {
-    // func exist in case of changinf hero names...
-    let name = 'no-name';
-    if (selectHeroIndex == 0) {
-      name = 'mariasword';
-    } else if (selectHeroIndex == 1) {
-      name = 'slayzer';
-    } else if (selectHeroIndex == 2) {
-      name = 'steelborn';
-    } else if (selectHeroIndex == 3) {
-      name = 'warrok';
-    } else if (selectHeroIndex == 4) {
-      name = 'skeletonz';
-    } else if (selectHeroIndex == 5) {
-      name = 'erika';
-    } else if (selectHeroIndex == 6) {
-      name = 'arissa';
-    }
-    return name;
-  }
-  function checkHeroStatus() {
-    const indices = [];
-    document.querySelectorAll('[data-hero-index]').forEach(elem => {
-      const index = parseInt(elem.getAttribute('data-hero-index'));
-      indices.push(index);
-    });
-
-    // check if any value appears more than once
-    const hasDuplicate = indices.some((val, i) => indices.indexOf(val) !== i);
-    return hasDuplicate;
-  }
-  function determinateTeam() {
-    console.log('check remote conn.app.net.session.remoteConnections.size..', app.net.session.remoteConnections.size);
-    if (app.net.session.remoteConnections.size == 0) {
-      // Rule - even -> south team odd -> north team
-      return "south";
-    } else {
-      if ((0, _utils.isOdd)(app.net.session.remoteConnections.size) == true) {
-        return "north";
-      } else {
-        return "south";
-      }
-    }
-  }
-  function determinateSelection() {
-    if (app.net.session.connection != null) {
-      // console.log("Test team data moment", byId(`waiting-${app.net.session.connection.connectionId}`).getAttribute('data-hero-team'))
-      let testDom = (0, _utils.byId)(`waiting-${app.net.session.connection.connectionId}`).getAttribute('data-hero-team');
-      if (typeof testDom != 'string') {
-        console.log('Potencial error not handled....');
-      }
-      app.net.sendOnlyData({
-        type: "selectHeroIndex",
-        selectHeroIndex: app.selectedHero,
-        team: testDom
-      });
-    }
-    // fix for local
-    if ((0, _utils.byId)(`waithero-img-${app.net.session.connection.connectionId}`)) {
-      let heroImage = (0, _utils.byId)(`waithero-img-${app.net.session.connection.connectionId}`);
-      heroImage.src = `./res/textures/rpg/hero-image/${handleHeroImage(app.selectedHero)}.png`;
-      heroImage.setAttribute('data-hero-index', app.selectedHero);
-    } else {
-      let heroImage = document.createElement('img');
-      heroImage.setAttribute('data-hero-index', app.selectedHero);
-      heroImage.id = `waithero-img-${app.net.session.connection.connectionId}`;
-      heroImage.width = '64';
-      heroImage.height = '64';
-      heroImage.src = `./res/textures/rpg/hero-image/${handleHeroImage(app.selectedHero)}.png`;
-      (0, _utils.byId)(`waiting-${app.net.session.connection.connectionId}`).appendChild(heroImage);
-    }
-    // Only last non selected hero player will get 
-    // first free hero in selection action next/back.
-    // For now.
-    if (checkHeroStatus() == true) {
-      console.log("hero used keep graphics no send");
-      return;
-    }
-    if (isAllSelected() == true) {
-      forestOfHollowBloodStartSceen.gotoGamePlay();
-    }
-  }
-  forestOfHollowBloodStartSceen.determinateSelection = determinateSelection;
-  function isAllSelected() {
-    let sumParty = document.querySelectorAll('[id*="waiting-"]');
-    let testSelection = document.querySelectorAll('[id*="waithero-img-"]');
-    console.info(testSelection, ' testSelection vs Number of players:', sumParty);
-    if (sumParty.length == forestOfHollowBloodStartSceen.MINIMUM_PLAYERS) {
-      // good all are still here
-      if (testSelection.length == forestOfHollowBloodStartSceen.MINIMUM_PLAYERS) {
-        // good all selected hero !PLAY!
-        return true;
-      } else {
-        _utils.mb.error(`No selection hero for all players...`);
-        return false;
-      }
-    } else {
-      _utils.mb.error(`No enough players...`);
-      return false;
-    }
-  }
-  forestOfHollowBloodStartSceen.gotoGamePlay = preventEmit => {
-    setTimeout(() => {
-      // check again ! good all selected hero !PLAY!
-      // console.log('...', byId(`waiting-${app.net.session.connection.connectionId}`));
-      _utils.LS.set('player', {
-        mesh: heros[app.selectedHero].meshName,
-        hero: heros[app.selectedHero].name,
-        path: heros[app.selectedHero].path,
-        archetypes: [heros[app.selectedHero].type],
-        team: (0, _utils.byId)(`waiting-${app.net.session.connection.connectionId}`).getAttribute('data-hero-team'),
-        data: Date.now(),
-        numOfPlayers: forestOfHollowBloodStartSceen.MINIMUM_PLAYERS,
-        useCameraOrAudio: true
-      });
-      _utils.SS.set('player', {
-        mesh: heros[app.selectedHero].meshName,
-        hero: heros[app.selectedHero].name,
-        path: heros[app.selectedHero].path,
-        archetypes: [heros[app.selectedHero].type],
-        team: (0, _utils.byId)(`waiting-${app.net.session.connection.connectionId}`).getAttribute('data-hero-team'),
-        data: Date.now(),
-        numOfPlayers: forestOfHollowBloodStartSceen.MINIMUM_PLAYERS,
-        useCameraOrAudio: true
-      });
-      if (typeof preventEmit === 'undefined') forestOfHollowBloodStartSceen.net.sendOnlyData({
-        type: 'start'
-      });
-      location.assign('rpg-game.html');
-    }, 1000);
-  };
-  if ('connection' in navigator && navigator.connection) {
-    navigator.connection.onchange = e => {
-      console.info('Network state changed...', e);
-      if (e.target.downlink < 0.4) {
-        (0, _utils.byId)('loader').style.display = 'block';
-        (0, _utils.byId)('loader').style.fontSize = '150%';
-        (0, _utils.byId)('loader').innerHTML = `NO INTERNET CONNECTIONS`;
-        setTimeout(() => {
-          location.href = 'https://maximumroulette.com';
-        }, 3000);
-      }
-    };
-  }
-  addEventListener('check-gameplay-channel', e => {
-    let info = e.detail;
-    if (info.status != 'false' && typeof info.status !== "undefined") {
-      // console.log('check-gameplay-channel status:', info.status)
-      (0, _utils.byId)("onlineUsers").innerHTML = `GamePlay:Free`;
-      forestOfHollowBloodStartSceen.gamePlayStatus = "free";
-      (0, _utils.byId)('startBtnText').innerHTML = app.label.get.play;
-      (0, _utils.byId)("startBtnText").style.color = 'rgba(0, 0, 0, 0)';
-      clearInterval(forestOfHollowBloodStartSceen.gamePlayStatusTimer);
-      forestOfHollowBloodStartSceen.gamePlayStatusTimer = null;
-    } else {
-      // console.log('check-gameplay-channel status:', info.status)
-      if (typeof info.status != "undefined" && info.status == "false") {
-        // no internet
-        (0, _utils.byId)('loader').style.display = 'block';
-        alert("This is modal window, No internet connection... Please try ");
-      } else {
-        info = JSON.parse(e.detail);
-        if (info.connections && info.connections.numberOfElements == 0) {
-          (0, _utils.byId)("onlineUsers").innerHTML = `GamePlay:Free`;
-          forestOfHollowBloodStartSceen.gamePlayStatus = "free";
-          (0, _utils.byId)('startBtnText').innerHTML = app.label.get.play;
-          (0, _utils.byId)("startBtnText").style.color = 'rgba(0, 0, 0, 0)';
-          clearInterval(forestOfHollowBloodStartSceen.gamePlayStatusTimer);
-          forestOfHollowBloodStartSceen.gamePlayStatusTimer = null;
-          return;
-        }
-        (0, _utils.byId)("onlineUsers").innerHTML = `${app.label.get.alreadyingame}:${info.connections.numberOfElements}`;
-        forestOfHollowBloodStartSceen.gamePlayStatus = "used";
-        (0, _utils.byId)('startBtnText').innerHTML = `${app.label.get.gameplaychannel}:${app.label.get.used}`;
-        (0, _utils.byId)("startBtnText").style.color = 'rgb(255 53 53)';
-        forestOfHollowBloodStartSceen.gamePlayStatusTimer = setTimeout(() => {
-          app.net.fetchInfo('forestOfHollowBlood-free-for-all');
-        }, 30000);
-      }
-    }
-  });
-  forestOfHollowBloodStartSceen.MINIMUM_PLAYERS = location.hostname.indexOf('localhost') != -1 ? 2 : 4;
-  forestOfHollowBloodStartSceen.setWaitingList = () => {
-    // access net doms who comes with broadcaster2.html
-    const waitingForOthersDOM = document.createElement("div");
-    waitingForOthersDOM.id = "waitingForOthersDOM";
-    Object.assign(waitingForOthersDOM.style, {
-      flexFlow: 'wrap',
-      width: "100%",
-      height: "35%",
-      backgroundColor: "rgba(60, 60, 60, 1)",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "space-around",
-      color: "white",
-      fontFamily: "'Orbitron', sans-serif",
-      zIndex: "1",
-      fontSize: '20px',
-      padding: "10px",
-      boxSizing: "border-box"
-    });
-    (0, _utils.byId)('session-header').appendChild(waitingForOthersDOM);
-    const onlineUsers = document.createElement("div");
-    onlineUsers.id = "onlineUsers";
-    Object.assign(onlineUsers.style, {
-      flexFlow: 'wrap',
-      width: "100%",
-      height: "35%",
-      backgroundColor: "rgba(60, 60, 60, 1)",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "space-around",
-      color: "white",
-      fontFamily: "'Orbitron', sans-serif",
-      zIndex: "1",
-      fontSize: '20px',
-      padding: "10px",
-      boxSizing: "border-box"
-    });
-    (0, _utils.byId)('netHeader').appendChild(onlineUsers);
-    // app.net.fetchInfo('forestOfHollowBlood-free-for-all');
-  };
-  if (document.querySelector('.form-group')) document.querySelector('.form-group').style.display = 'none';
-  // keep simple all networking code on top level
-  // all job will be done with no account for now.
-  addEventListener('net-ready', () => {
-    (0, _utils.byId)('matrix-net').style.opacity = '0.75';
-    document.querySelector('.form-group').style.display = 'none';
-    (0, _utils.byId)("caller-title").innerHTML = `forestOfHollowBlood`;
-    (0, _utils.byId)("sessionName").disabled = true;
-    forestOfHollowBloodStartSceen.setWaitingList();
-    // check game-play channel
-    setTimeout(() => {
-      app.net.fetchInfo('forestOfHollowBlood-free-for-all');
-      app.sendmsg = m => {
-        if (typeof m != 'string') return;
-        if (m.length > 120) return;
-        let username = checkUsername();
-        if (username != 'nosession') app.net.sendOnlyData({
-          type: "chat",
-          msg: m,
-          username: username
-        });
-      };
-    }, 1500);
-  });
-  addEventListener('connectionDestroyed', e => {
-    (0, _utils.byId)(`waiting-${e.detail.connectionId}`).remove();
-  });
-  addEventListener("onConnectionCreated", e => {
-    console.log('newconn : created', e.detail);
-    let newPlayer = document.createElement('div');
-    if (app.net.session.connection.connectionId == e.detail.connection.connectionId) {
-      console.log('newconn : created [LOCAL] determinate team');
-      document.title = app.net.session.connection.connectionId;
-      let team = determinateTeam();
-      newPlayer.setAttribute('data-hero-team', team);
-      newPlayer.innerHTML = `<div id="${e.detail.connection.connectionId}-title" >Player:${e.detail.connection.connectionId} Team:${team}</div>`;
-      setTimeout(() => {
-        //---------- test
-        if (app.net.session.connection != null) {
-          console.log("Test team data moment", (0, _utils.byId)(`waiting-${app.net.session.connection.connectionId}`).getAttribute('data-hero-team'));
-          let testDom = (0, _utils.byId)(`waiting-${app.net.session.connection.connectionId}`).getAttribute('data-hero-team');
-          if (typeof testDom != 'string') {
-            console.low('Potencial error not handled....');
-          }
-          app.net.sendOnlyData({
-            type: "selectHeroIndex",
-            selectHeroIndex: app.selectedHero,
-            team: testDom
-          });
-          app.net.sendOnlyData({
-            type: "team-notify",
-            team: team
-          });
-        }
-      }, 2000);
-    } else {
-      newPlayer.innerHTML = `<div id="${e.detail.connection.connectionId}-title" >Player:${e.detail.connection.connectionId}</div>`;
-    }
-    newPlayer.id = `waiting-${e.detail.connection.connectionId}`;
-    (0, _utils.byId)('waitingForOthersDOM').appendChild(newPlayer);
-    let testParty = document.querySelectorAll('[id*="waiting-"]');
-    console.info('Test number of players:', testParty);
-    if (testParty.length == forestOfHollowBloodStartSceen.MINIMUM_PLAYERS) {
-      // when all choose hero goto play
-      _utils.mb.success(`Consensus is reached. Party${forestOfHollowBloodStartSceen.MINIMUM_PLAYERS}
-          When all player select hero gameplay starts.
-        `);
-    } else if (testParty.length < forestOfHollowBloodStartSceen.MINIMUM_PLAYERS) {
-      _utils.mb.success(`Player ${e.detail.connection.connectionId} joined party.Select your hero and wait for other...`);
-    } else if (testParty.length > forestOfHollowBloodStartSceen.MINIMUM_PLAYERS) {
-      if (e.detail.connection.connectionId == app.net.session.connection.connectionId) {
-        _utils.mb.success(`Max players is reached.Please wait for next party...`);
-      }
-    }
-  });
-  addEventListener('only-data-receive', e => {
-    let t = JSON.parse(e.detail.data);
-    if (t) {
-      if (t.type == 'selectHeroIndex') {
-        console.log(`<data-receive From ${e.detail.from} data:${t.selectHeroIndex}`);
-        let name = handleHeroImage(t.selectHeroIndex);
-        let heroImage = (0, _utils.byId)(`waithero-img-${e.detail.from.connectionId}`);
-        if (heroImage) {
-          heroImage.src = `./res/textures/rpg/hero-image/${name.toLowerCase()}.png`;
-          heroImage.setAttribute('data-hero-index', t.selectHeroIndex);
-        } else {
-          let heroImage = document.createElement('img');
-          heroImage.id = `waithero-img-${e.detail.from.connectionId}`;
-          heroImage.width = '64';
-          heroImage.height = '64';
-          heroImage.src = `./res/textures/rpg/hero-image/${name.toLowerCase()}.png`;
-          heroImage.setAttribute('data-hero-index', t.selectHeroIndex);
-          (0, _utils.byId)(`waiting-${e.detail.from.connectionId}`).appendChild(heroImage);
-          // also add team for initial user problem case...
-          if (t.team) {
-            (0, _utils.byId)(`${e.detail.from.connectionId}-title`).innerHTML = `Player:${e.detail.from.connectionId} Team:${t.team}`;
-          }
-        }
-      } else if (t.type == 'team-notify') {
-        console.log(`<data-receive From ${e.detail.from.connectionId} team:${t.team}  ${(0, _utils.byId)(`waiting-${e.detail.from.connectionId}`)}`);
-        (0, _utils.byId)(`${e.detail.from.connectionId}-title`).innerHTML = `Player:${e.detail.from.connectionId} Team:${t.team}`;
-      } else if (t.type == 'start') {
-        forestOfHollowBloodStartSceen.gotoGamePlay("no emit");
-      } else if (t.type == 'chat') {
-        // add chat
-        if (t.msg.length > 120) {
-          t.msg = '';
-          return;
-        }
-        _utils.mb.show(`Msg from ${t.username}: ${t.msg}`);
-      }
-    }
-  });
-
-  // addEventListener('AmmoReady', async () => {
-  // catch
-  if (typeof app.label == 'undefined' || typeof app.label.get == 'undefined' || typeof app.label.get.mariasword == 'undefined') {
-    if (typeof app.label == 'undefined') app.label = {
-      get: {}
-    };
-    app.label.get = _enBackup.en;
-  }
-  app.matrixSounds.play('music');
-  heros = [{
-    type: "Warrior",
-    name: 'MariaSword',
-    path: "res/meshes/glb/woman1.glb",
-    desc: forestOfHollowBloodStartSceen.label.get.mariasword
-  }, {
-    type: "Ranger",
-    name: 'Slayzer',
-    path: "res/meshes/glb/monster.glb",
-    desc: forestOfHollowBloodStartSceen.label.get.slayzer
-  }, {
-    type: "Tank",
-    name: 'Steelborn',
-    path: "res/meshes/glb/bot.glb",
-    desc: forestOfHollowBloodStartSceen.label.get.steelborn
-  }, {
-    type: "Mage",
-    name: 'Warrok',
-    path: "res/meshes/glb/warrok.glb",
-    desc: forestOfHollowBloodStartSceen.label.get.warrok
-  }, {
-    type: "Necromancer",
-    name: 'Skeletonz',
-    path: "res/meshes/glb/skeletonz.glb",
-    desc: forestOfHollowBloodStartSceen.label.get.skeletonz
-  }, {
-    type: "Assassin",
-    name: 'Erika',
-    path: "res/meshes/glb/erika.glb",
-    desc: forestOfHollowBloodStartSceen.label.get.erika
-  }, {
-    type: "Support",
-    name: 'Arissa',
-    path: "res/meshes/glb/arissa.glb",
-    desc: forestOfHollowBloodStartSceen.label.get.arissa
-  }];
-  forestOfHollowBloodStartSceen.heros = heros;
-
-  // helper
-  async function loadHeros() {
-    for (var x = 0; x < heros.length; x++) {
-      var glbFile01 = await fetch(heros[x].path).then(res => res.arrayBuffer().then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, app.device)));
-      forestOfHollowBloodStartSceen.addGlbObjInctance({
-        material: x == 2 ? {
-          type: 'power',
-          useTextureFromGlb: true
-        } : {
-          type: 'standard',
-          useTextureFromGlb: true
-        },
-        scale: [20, 20, 20],
-        position: {
-          x: 0 + x * 50,
-          y: 0,
-          z: -10
-        },
-        name: heros[x].name,
-        texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
-        raycast: {
-          enabled: true,
-          radius: 1
-        },
-        pointerEffect: {
-          enabled: true,
-          pointer: true,
-          flameEffect: false,
-          flameEmitter: true,
-          circlePlane: true,
-          circlePlaneTex: true,
-          circlePlaneTexPath: './res/textures/star1.png'
-        }
-      }, null, glbFile01);
-    }
-    setTimeout(() => {
-      forestOfHollowBloodStartSceen.cameras.WASD.position = [0, 14, 52];
-      app.cameras.WASD.pitch = -0.13;
-      app.cameras.WASD.yaw = 0;
-      app.mainRenderBundle.forEach(sceneObj => {
-        sceneObj.position.thrust = 1;
-        if (sceneObj.effects) if (sceneObj.effects.flameEmitter) sceneObj.effects.flameEmitter.recreateVertexDataRND(1);
-      });
-      for (var x = 0; x < heros.length; x++) {
-        let hero0 = app.mainRenderBundle.filter(obj => obj.name.indexOf(heros[x].name) != -1);
-        app.heroByBody.push(hero0);
-        heros[x].meshName = hero0[0].name;
-        if (x == 0) {
-          hero0[0].effects.circlePlane.instanceTargets[0].color = [1, 0, 2, 1];
-        }
-        hero0[0].effects.flameEmitter.instanceTargets.forEach((p, i, array) => {
-          array[i].color = [0, 1, 0, 0.7];
-        });
-        if (x == 2) {
-          hero0.forEach((p, i, array) => {
-            array[i].globalAmbient = [11, 11, 1];
-          });
-        }
-        if (x == 3 || x == 5) {
-          hero0.forEach((p, i, array) => {
-            array[i].globalAmbient = [10, 10, 10];
-            array[i].effects.flameEmitter.smoothFlickeringScale = 0.005;
-          });
-        }
-        if (x == 6) {
-          hero0.forEach((p, i, array) => {
-            array[i].globalAmbient = [21, 11, 11];
-          });
-        }
-      }
-      app.lightContainer[0].position[2] = 10;
-      app.lightContainer[0].position[1] = 50;
-      app.lightContainer[0].intensity = 1.4;
-    }, 4000);
-  }
-  loadHeros();
-  createHUDMenu();
-  // })
-  forestOfHollowBloodStartSceen.addLight();
-  function createHUDMenu() {
-    forestOfHollowBloodStartSceen.animatedCursor = new _animatedCursor.AnimatedCursor({
-      path: "./res/icons/seq1/",
-      frameCount: 7,
-      speed: 80,
-      loop: true
-    });
-    forestOfHollowBloodStartSceen.animatedCursor.start();
-    // document.body.style.cursor = "url('./res/icons/default.png') 0 0, auto";
-
-    document.addEventListener("contextmenu", event => event.preventDefault());
-    (0, _utils.byId)('canvas1').style.pointerEvents = 'none';
-    const hud = document.createElement("div");
-    hud.id = "hud-menu";
-    Object.assign(hud.style, {
-      position: "fixed",
-      bottom: "0",
-      left: "0",
-      width: "100%",
-      height: "35%",
-      backgroundColor: "rgba(60, 60, 60, 1)",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "space-around",
-      color: "white",
-      fontFamily: "'Orbitron', sans-serif",
-      zIndex: "1",
-      fontSize: '20px',
-      padding: "10px",
-      boxSizing: "border-box"
-    });
-    const nextBtn = document.createElement("button");
-    Object.assign(nextBtn.style, {
-      // position: "absolute",
-      width: "80px",
-      textAlign: "center",
-      color: "white",
-      fontWeight: "bold",
-      textShadow: "0 0 2px black",
-      height: "40px",
-      fontSize: '16px'
-    });
-    nextBtn.classList.add('buttonMatrix');
-    nextBtn.innerHTML = `
-      <div class="button-outer">
-        <div class="button-inner">
-          <span id='nextBtn'>${app.label.get.next}</span>
-        </div>
-      </div>
-    `;
-    nextBtn.addEventListener('click', () => {
-      if (app.selectedHero >= app.heroByBody.length - 1 || app.lock == true) {
-        console.log('NEXTBLOCKED ', app.selectedHero);
-        return;
-      }
-      app.lock = true;
-      app.selectedHero++;
-      console.log('app.selectedHero::: ', app.selectedHero);
-      // Fix on remote 
-      if (app.net.session) {
-        determinateSelection();
-      } else {
-        app.tts.speakHero(handleHeroImage(app.selectedHero), 'hello');
-      }
-      app.heroByBody.forEach((sceneObj, indexRoot) => {
-        sceneObj.forEach(heroBodie => {
-          heroBodie.position.translateByX(-50 * app.selectedHero + indexRoot * 50);
-          heroBodie.position.onTargetPositionReach = () => {
-            app.lock = false;
-          };
-          if (heroBodie.effects.circlePlane) {
-            if (indexRoot == app.selectedHero) {
-              heroBodie.effects.circlePlane.instanceTargets[0].color = [1, 0, 2, 1];
-            } else {
-              heroBodie.effects.circlePlane.instanceTargets[0].color = [0.6, 0.8, 1, 0.4];
-            }
-          }
-        });
-      });
-      updateDesc();
-      app.matrixSounds.play('click1');
-    });
-    const desc = document.createElement("div");
-    desc.id = 'desc';
-    Object.assign(desc.style, {
-      display: 'flex',
-      flexDirection: 'column',
-      width: "300px",
-      textAlign: "center",
-      color: 'c4deff',
-      fontWeight: "bold",
-      textShadow: "0 0 5px black"
-    });
-    desc.textContent = "HERO INFO";
-    const previusBtn = document.createElement("button");
-    Object.assign(previusBtn.style, {
-      width: "80px",
-      textAlign: "center",
-      color: "white",
-      fontWeight: "bold",
-      textShadow: "0 0 2px black",
-      height: "40px",
-      fontSize: '16px'
-    });
-    previusBtn.classList.add('buttonMatrix');
-    previusBtn.innerHTML = `
-      <div class="button-outer">
-        <div class="button-inner">
-          <span id='previusBtnText'>${app.label.get.back}</span>
-        </div>
-      </div>
-    `;
-    previusBtn.addEventListener('click', () => {
-      console.log('TEST previusBtn forestOfHollowBloodStartSceen.selectedHero', app.selectedHero);
-      if (app.selectedHero < 1 || app.lock == true) {
-        // console.log('BLOCKED', app.selectedHero)
-        return;
-      }
-      app.lock = true;
-      app.selectedHero--;
-      if (app.net.session) {
-        determinateSelection();
-      } else {
-        app.tts.speakHero(handleHeroImage(app.selectedHero), 'hello');
-      }
-      app.heroByBody.forEach((sceneObj, indexRoot) => {
-        sceneObj.forEach(heroBodie => {
-          heroBodie.position.translateByX(-app.selectedHero * 50 + indexRoot * 50);
-          heroBodie.position.onTargetPositionReach = () => {
-            app.lock = false;
-          };
-          if (heroBodie.effects.circlePlane) {
-            if (indexRoot == app.selectedHero) {
-              heroBodie.effects.circlePlane.instanceTargets[0].color = [1, 0, 2, 1];
-            } else {
-              heroBodie.effects.circlePlane.instanceTargets[0].color = [0.6, 0.8, 1, 0.4];
-            }
-          }
-        });
-      });
-      updateDesc();
-      app.matrixSounds.play('click1');
-    });
-    function updateDesc() {
-      (0, _utils.byId)('desc').innerHTML = `
-        <div style='height:130px;'> ${app.heros[app.selectedHero].desc}</div>
-        `;
-      let C = _hero.HERO_ARCHETYPES[app.heros[app.selectedHero].type];
-      for (let key in C) {
-        (0, _utils.byId)('desc').innerHTML += ` 
-         <div style='font-size: 15px;display: inline-flex;justify-content:space-between'>
-           <span style="color:#00e2ff"> ${key} </span> : <span style="color:#02e2ff">${C[key]} </span>
-          </div>
-        `;
-      }
-    }
-    const startBtn = document.createElement("button");
-    Object.assign(startBtn.style, {
-      position: "fixed",
-      bottom: '40px',
-      right: '120px',
-      width: "250px",
-      height: "54px",
-      textAlign: "center",
-      color: "white",
-      fontWeight: "bold",
-      textShadow: "0 0 2px black",
-      color: '#ffffffff',
-      background: '#000000ff',
-      fontSize: '16px',
-      cursor: 'url(./res/icons/default.png) 0 0, auto'
-    });
-    startBtn.classList.add('buttonMatrix');
-    startBtn.innerHTML = `
-      <div class="button-outer">
-        <div class="button-inner">
-          <span id='startBtnText'>${app.label.get.play}</span>
-        </div>
-      </div>
-    `;
-    forestOfHollowBloodStartSceen.notifyHeroSelectionTimer = null;
-    startBtn.addEventListener('click', e => {
-      if (app.net.connection == null) {
-        if (forestOfHollowBloodStartSceen.gamePlayStatus != "free") {
-          _utils.mb.show(app.label.get.gameplayused);
-          return;
-        }
-        // console.log('app.net.connection is null let join gameplay sesion... Wait list.', app.selectedHero)
-        (0, _utils.byId)('join-btn').click();
-        (0, _utils.byId)("startBtnText").innerHTML = app.label.get.waiting_for_others;
-        e.target.disabled = true;
-        app.matrixSounds.play('feel');
-
-        // test - for late users notify again 
-        app.notifyHeroSelectionTimer = setInterval(() => {
-          // not tested
-          console.log('determinateSelection called 10 sec !');
-          determinateSelection();
-        }, 10000);
-        return;
-      } else {
-        console.log('nothing...', app.selectedHero);
-        return;
-      }
-    });
-
-    //about
-    forestOfHollowBloodStartSceen.showAbout = () => {
-      (0, _utils.byId)('helpBox').style.display = 'block';
-      (0, _utils.typeText)('helpBox', app.label.get.aboutRPG, 10);
-    };
-    var helpBox = document.createElement('div');
-    helpBox.id = 'helpBox';
-    helpBox.style.position = 'fixed';
-    helpBox.style.right = '20%';
-    helpBox.style.display = 'none';
-    helpBox.style.zIndex = '2';
-    helpBox.style.top = '15%';
-    helpBox.style.width = '60%';
-    helpBox.style.height = '50%';
-    helpBox.style.fontSize = '100%';
-    helpBox.classList.add('btn');
-    helpBox.addEventListener('click', () => {
-      (0, _utils.byId)('helpBox').style.display = 'none';
-    });
-    document.body.appendChild(helpBox);
-    const aboutBtn = document.createElement("button");
-    Object.assign(aboutBtn.style, {
-      position: "fixed",
-      bottom: '40px',
-      left: '20px',
-      width: "150px",
-      height: "54px",
-      textAlign: "center",
-      color: "white",
-      fontWeight: "bold",
-      textShadow: "0 0 2px black",
-      color: '#ffffffff',
-      background: '#000000ff',
-      fontSize: '16px',
-      cursor: 'url(./res/icons/default.png) 0 0, auto',
-      pointerEvents: 'auto'
-    });
-    aboutBtn.classList.add('buttonMatrix');
-    aboutBtn.innerHTML = `
-      <div class="button-outer">
-        <div class="button-inner">
-          <span data-label='aboutword'>${app.label.get.about_}</span>
-        </div>
-      </div>
-    `;
-    aboutBtn.addEventListener('click', e => app.showAbout());
-    hud.appendChild(aboutBtn);
-    const LBBtn = document.createElement("button");
-    Object.assign(LBBtn.style, {
-      position: "fixed",
-      bottom: '220px',
-      left: '20px',
-      width: "140px",
-      height: "28px",
-      textAlign: "center",
-      color: "white",
-      fontWeight: "bold",
-      textShadow: "0 0 2px black",
-      color: '#ffffffff',
-      background: '#000000ff',
-      fontSize: '16px',
-      cursor: 'url(./res/icons/default.png) 0 0, auto',
-      pointerEvents: 'auto'
-    });
-    // LBBtn.classList.add('buttonMatrix');
-    // LBBtn.innerHTML = `
-    //   <div class="button-outer">
-    //     <div class="button-inner">
-    //       <span data-label='leaderboard'>${app.label.get.leaderboard}</span>
-    //     </div>
-    //   </div>
-    // `;
-
-    LBBtn.innerHTML = `
-          <span data-label='leaderboard'>${app.label.get.leaderboard}</span>
-    `;
-    LBBtn.addEventListener('click', app.account.getLeaderboard);
-    hud.appendChild(LBBtn);
-
-    // chat box
-    const sendMsgInput = document.createElement("input");
-    sendMsgInput.id = 'msg-input';
-    sendMsgInput.type = "text";
-    sendMsgInput.addEventListener("input", e => {
-      if (e.target.value.length > 120) {
-        e.target.value = e.target.value.slice(0, 120);
-      }
-    });
-    Object.assign(sendMsgInput.style, {
-      position: "fixed",
-      bottom: '282px',
-      left: '20px',
-      width: "134px",
-      height: "17px",
-      textAlign: "center",
-      color: "white",
-      fontWeight: "bold",
-      // textShadow: "0 0 2px black",
-      color: 'black',
-      // background: '#000000ff',
-      fontSize: '16px',
-      cursor: 'url(./res/icons/default.png) 0 0, auto',
-      pointerEvents: 'auto'
-    });
-    hud.appendChild(sendMsgInput);
-    const sendMsgBtn = document.createElement("button");
-    Object.assign(sendMsgBtn.style, {
-      position: "fixed",
-      bottom: '253px',
-      left: '20px',
-      width: "140px",
-      height: "28px",
-      textAlign: "center",
-      color: "white",
-      fontWeight: "bold",
-      textShadow: "0 0 2px black",
-      color: '#ffffffff',
-      background: '#000000ff',
-      fontSize: '16px',
-      cursor: 'url(./res/icons/default.png) 0 0, auto',
-      pointerEvents: 'auto'
-    });
-    // sendMsgBtn.classList.add('buttonMatrix');
-    // sendMsgBtn.innerHTML = `
-    //   <div class="button-outer">
-    //     <div class="button-inner">
-    //       <span data-label='leaderboard'>${app.label.get.leaderboard}</span>
-    //     </div>
-    //   </div>
-    // `;
-    sendMsgBtn.innerHTML = `<span data-label='leaderboard'>${app.label.get.sendmsg}</span>    `;
-    sendMsgBtn.addEventListener('click', () => {
-      sendMsgBtn.disabled = true;
-      sendMsgBtn.style.color = 'gray';
-      app.sendmsg(sendMsgInput.value);
-      setTimeout(() => {
-        sendMsgBtn.disabled = false;
-        sendMsgBtn.style.color = 'white';
-      }, 5000);
-      sendMsgInput.value = "";
-    });
-    hud.appendChild(sendMsgBtn);
-    // end
-    const loader = document.createElement("div");
-    loader.id = 'loader';
-    Object.assign(loader.style, {
-      position: "fixed",
-      display: 'flex',
-      bottom: '0',
-      left: '0',
-      width: "100vw",
-      height: "100vh",
-      textAlign: "center",
-      color: "white",
-      zIndex: 10,
-      fontWeight: "bold",
-      textShadow: "0 0 2px black",
-      color: '#ffffffff',
-      background: '#000000ff',
-      fontSize: '16px',
-      cursor: 'url(./res/icons/default.png) 0 0, auto',
-      pointerEvents: 'auto',
-      filter: 'grayscale(1)'
-    });
-    loader.innerHTML = `
-      <div class="loader">
-        <div class="progress-container">
-          <div class="progress-bar" id="progressBar"></div>
-          </div>
-        <div class="counter" id="counter">0%</div>
-      </div>
-    `;
-    loader.addEventListener('click', e => {
-      app.matrixSounds.play('music');
-    });
-    hud.appendChild(loader);
-    let progress = 0;
-    let bar = null;
-    let counter = null;
-    function fakeProgress() {
-      if (progress < 100) {
-        progress += Math.random() * 3.5;
-        if (progress > 100) progress = 100;
-        bar.style.width = progress + '%';
-        counter.textContent = Math.floor(progress) + '%' + ' This is beta 1 version - no magic attack implementation...';
-        let grayEffect = 30 / progress;
-        (0, _utils.byId)('loader').style.filter = `grayscale(${grayEffect})`;
-        setTimeout(fakeProgress, 80 + Math.random() * 150);
-      } else {
-        counter.textContent = app.label.get.letthegame + " - This is beta 1 version - no magic attack...";
-        bar.style.boxShadow = "0 0 30px #00ff99";
-        setTimeout(() => {
-          loader.style.display = 'none';
-          // loader.remove();
-        }, 250);
-      }
-    }
-    setTimeout(() => {
-      bar = document.getElementById('progressBar');
-      counter = document.getElementById('counter');
-      fakeProgress();
-    }, 300);
-    hud.appendChild(previusBtn);
-    hud.appendChild(desc);
-    hud.appendChild(nextBtn);
-    hud.appendChild(startBtn);
-    document.body.appendChild(hud);
-    updateDesc();
-    document.querySelectorAll('.buttonMatrix').forEach(el => {
-      el.addEventListener('mouseenter', () => {
-        app.matrixSounds.play('hover');
-      });
-    });
-
-    /**
-     * @description
-     * Important moment for sys browser stuff
-     */
-    function firstClick() {
-      // add here after - fs force
-      app.matrixSounds.audios.music.volume = 0.2;
-      app.matrixSounds.audios.music2.volume = 0.2;
-      app.matrixSounds.play('music');
-      app.matrixSounds.audios.music.onended = () => {
-        app.matrixSounds.play('music2');
-      };
-      app.matrixSounds.audios.music2.onended = () => {
-        app.matrixSounds.play('music');
-      };
-      removeEventListener('click', firstClick);
-      // for mobile no need to call - if called porttrain forced (current orientation on mobile device)
-      if (location.hostname.indexOf('localhost') == -1 && (0, _utils.isMobile)() == false) app.FS.request();
-    }
-    addEventListener('click', firstClick);
-  }
-});
-window.app = forestOfHollowBloodStartSceen;
-
-},{"../../../public/res/multilang/en-backup.js":20,"../../../src/engine/loaders/webgpu-gltf.js":40,"../../../src/engine/networking/matrix-stream.js":44,"../../../src/engine/networking/net.js":45,"../../../src/engine/plugin/animated-cursor/animated-cursor.js":46,"../../../src/engine/utils.js":47,"../../../src/tools/editor/editor.js":70,"../../../src/world.js":73,"./hero.js":1,"./rocket-crafting-account.js":2,"./tts.js":4}],4:[function(require,module,exports){
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.speakBot = exports.MatrixTTS = void 0;
-/**
- * @author Nikola Lukic
- * @email zlatnaspirala@gmail.com
- * @www maximumroulette.com
- * @description For audio voice Best way is 
- * to use browser buildin TTS speech API
- * It is so good like paid services on internet.
- */
-class MatrixTTS {
-  constructor() {
-    this.heroPresets = {
-      mariasword: {
-        gender: "female",
-        pitch: 0.2,
-        rate: 0.7
-      },
-      slayzer: {
-        gender: "male",
-        pitch: 0.35,
-        rate: 0.85
-      },
-      steelborn: {
-        gender: "male",
-        pitch: 0.9,
-        rate: 0.9
-      },
-      warrok: {
-        gender: "male",
-        pitch: 0.8,
-        rate: 0.9
-      },
-      skeletonz: {
-        gender: "male",
-        pitch: 0.7,
-        rate: 0.9
-      },
-      erika: {
-        gender: "female",
-        pitch: 0.5,
-        rate: 1.0
-      },
-      arissa: {
-        gender: "female",
-        pitch: 0.35,
-        rate: 1.05
-      }
-    };
-  }
-  getFemaleVoice(voices, lang = 'en-US') {
-    const femPatterns = [/female/i, /woman/i, /girl/i, /eva/i, /zira/i, /amy/i, /susan/i, /sarah/i];
-    return voices.find(v => v.lang === lang && femPatterns.some(p => p.test(v.name))) || voices.find(v => femPatterns.some(p => p.test(v.name))) || voices.find(v => v.lang === lang) || voices[0] || null;
-  }
-  getMaleVoice(voices, lang = 'en-US') {
-    const malePatterns = [/male/i, /man/i, /boy/i, /david/i, /mark/i, /john/i, /mike/i, /brian/i];
-    return voices.find(v => v.lang === lang && malePatterns.some(p => p.test(v.name))) || voices.find(v => malePatterns.some(p => p.test(v.name))) || voices.find(v => v.lang === lang) || voices[0] || null;
-  }
-  loadVoices = () => {
-    return new Promise(resolve => {
-      let voices = speechSynthesis.getVoices();
-      if (voices.length) return resolve(voices);
-      speechSynthesis.onvoiceschanged = () => {
-        voices = speechSynthesis.getVoices();
-        resolve(voices);
-      };
-      setTimeout(() => resolve(speechSynthesis.getVoices()), 1000);
-    });
-  };
-  chooseVoice2(voices, lang = 'en-US') {
-    const preferPatterns = [/google/i, /neural/i, /wave/i, /azure/i, /microsoft/i];
-    for (const p of preferPatterns) {
-      const found = voices.find(v => v.lang === lang && p.test(v.name));
-      if (found) return found;
-    }
-    let v = voices.find(v => v.lang === lang);
-    if (v) return v;
-    v = voices.find(v => preferPatterns.some(p => p.test(v.name)));
-    if (v) return v;
-    return voices[0] || null;
-  }
-  chooseVoice(voices, lang = 'en-US', gender = 'female') {
-    if (gender === 'male') {
-      return this.getMaleVoice(voices, lang);
-    }
-    return this.getFemaleVoice(voices, lang);
-  }
-  splitIntoChunks(text) {
-    const parts = text.split(/([.!?]+(?:\s|$))/).map(s => s.trim()).filter(Boolean);
-    const chunks = [];
-    for (const p of parts) {
-      if (p.length > 120 && p.includes(',')) {
-        p.split(',').map(s => s.trim()).filter(Boolean).forEach(s => chunks.push(s + ','));
-      } else {
-        chunks.push(p);
-      }
-    }
-    return chunks;
-  }
-  async speakNatural(text, opts = {}) {
-    if (speechSynthesis.speaking || speechSynthesis.pending) {
-      return;
-    }
-    const {
-      lang = 'en-US',
-      rate = 0.95,
-      pitch = 1.0,
-      volume = 1.0,
-      gender = 'female',
-      onstart,
-      onend,
-      onerror
-    } = opts;
-    if (!('speechSynthesis' in window)) {
-      throw new Error('Web Speech API not supported in this browser.');
-    }
-    const voices = await this.loadVoices();
-    const voice = this.chooseVoice(voices, lang, gender);
-    const chunks = this.splitIntoChunks(text);
-    return new Promise((resolve, reject) => {
-      let index = 0;
-      function speakNext() {
-        if (index >= chunks.length) {
-          if (onend) onend();
-          return resolve();
-        }
-        const chunk = chunks[index++];
-        const u = new SpeechSynthesisUtterance(chunk);
-        if (voice) u.voice = voice;
-        u.lang = lang;
-        u.rate = rate;
-        u.pitch = pitch;
-        u.volume = volume;
-        if (chunk.length > 80) {
-          u.rate = rate * (0.95 + Math.random() * 0.1);
-          u.pitch = pitch * (0.97 + Math.random() * 0.06);
-        }
-        u.onstart = () => {
-          if (index === 1 && onstart) onstart();
-        };
-        u.onend = () => {
-          setTimeout(speakNext, 60); // 60ms pause
-        };
-        u.onerror = e => {
-          if (onerror) onerror(e);
-          reject(e);
-        };
-        speechSynthesis.speak(u);
-      }
-      if (speechSynthesis.speaking) speechSynthesis.cancel();
-      speakNext();
-    });
-  }
-  async speak(text, rate = 0.95, pitch = 1.0) {
-    return new Promise(async (resolve, reject) => {
-      try {
-        await this.speakNatural(text, {
-          lang: 'en-US',
-          rate: rate,
-          pitch: pitch
-        });
-        resolve('Finished speaking');
-      } catch (e) {
-        reject('TTS error');
-        console.error('TTS error', e);
-      }
-    });
-  }
-  async speakHero(hero, type, extra = {}) {
-    const preset = this.heroPresets[hero] || {
-      gender: "female",
-      pitch: 1.0,
-      rate: 1.0
-    };
-    let text = this.getSpeakHeroText(hero, type);
-    return this.speakNatural(text, {
-      lang: "en-US",
-      gender: preset.gender,
-      pitch: preset.pitch,
-      rate: preset.rate,
-      ...extra
-    });
-  }
-  getSpeakHeroText(hero, type) {
-    try {
-      const arr = speakBot[hero][type];
-      return arr[Math.floor(Math.random() * arr.length)];
-    } catch (e) {
-      return '[undefined speech]';
-    }
-  }
-}
-exports.MatrixTTS = MatrixTTS;
-const speakBot = exports.speakBot = {
-  mariasword: {
-    hello: ['Hello my friend', 'Choose me for ever', 'Ready for battle', 'I fight for you', 'Let us begin', 'Your blade awaits', 'At your command', 'Strength and honor', 'I stand with you', 'We make legends'],
-    attack: ['Lets blood fly', 'Kill em all', 'Cut them down', 'Strike fast', 'Another one falls', 'They are nothing', 'End them now', 'For glory!', 'Slicing through', 'Taste steel!'],
-    idle: ['Where are you', 'Still here', 'I wait your word', 'Why silence', 'I grow bored', 'Are we done', 'My blade sleeps', 'Time passes', 'Wake me up', 'Command me soon'],
-    walk: ['Roger that', 'Whatever you say', 'Moving out', 'On my way', 'Let’s go', 'Marching', 'Step forward', 'Following', 'Close behind', 'We travel'],
-    dead: ['damm it', 'i will back', 'This is not end', 'I fall but rise', 'My time fades', 'Carry on', 'The blade drops', 'Darkness comes', 'Remember me', 'I return later']
-  },
-  slayzer: {
-    hello: ['Slayzer online', 'Greetings human', 'Target detected', 'Systems active', 'I await orders', 'Weapon ready', 'Let’s synchronize', 'Calibrated', 'Combat mode here', 'Hello commander'],
-    attack: ['Erasing target', 'Neutralizing', 'Terminate!', 'Engaging enemy', 'Lock and strike', 'Target locked', 'Maximum damage', 'Destroy the threat', 'Fire at will', 'Executing kill'],
-    idle: ['Awaiting tasks', 'Processing silence', 'No movement', 'Sensors calm', 'Bored protocol active', 'Ping me anytime', 'Standing by', 'Still online', 'Low power mode soon', 'Need instructions'],
-    walk: ['Moving to location', 'Path confirmed', 'Walking', 'Trajectory stable', 'Following vector', 'Advancing', 'Let’s relocate', 'Tracking you', 'Footsteps engaged', 'March operation'],
-    dead: ['System failure', 'Core shutdown', 'I will reboot', 'Error… 0xDEAD', 'Memory fading', 'Goodbye… for now', 'Fatal crash', 'Power drained', 'Diagnostic end', 'I will recompile']
-  },
-  steelborn: {
-    hello: ['Steelborn stands', 'Metal breathes', 'Ready to forge destiny', 'Hammer in hand', 'Hello warrior', 'You called the forge', 'Let’s heat things up', 'I stand unbroken', 'Born of steel', 'We march strong'],
-    attack: ['Hammer strike!', 'Break them!', 'Smash!', 'Let the steel sing', 'Crush bones', 'Full force', 'Rage of iron', 'I hit harder', 'Tremble before steel', 'They will shatter'],
-    idle: ['Cooling down', 'I rest my hammer', 'Still as iron', 'Where to now', 'My metal waits', 'Silence of the forge', 'Don’t leave me rusting', 'Stand or command?', 'Waiting warrior', 'Breathing steel'],
-    walk: ['Heavy steps', 'March of metal', 'Lead and I follow', 'Moving slowly', 'I carry weight', 'Walk with strength', 'Follow the clang', 'Iron moves', 'Hammer shakes', 'Forward we go'],
-    dead: ['Steel cracks…', 'Forge goes dark', 'I rust… not yet', 'Broken but not gone', 'Hammer falls', 'Heat fading', 'I’ll return reforged', 'Iron sleeps', 'My core cools', 'I rise again someday']
-  },
-  warrok: {
-    hello: ['Warrok awakens', 'Blood and fire greet you', 'You summon the beast', 'Ready for slaughter', 'My claws itch', 'Speak mortal', 'War calls', 'Hungry again', 'Let us rage', 'The hunt begins'],
-    attack: ['Rip them apart!', 'Tear their soul!', 'Crush skulls!', 'Eat the weak!', 'Shred them!', 'Rage unleashed!', 'Blood for me!', 'No mercy!', 'Destroy now!', 'Split their bones!'],
-    idle: ['I hunger…', 'When do we kill?', 'Why stillness?', 'I grow restless', 'Let me loose!', 'Silence irritates me', 'I wait for blood', 'Caged beast here', 'Move mortal', 'My claws twitch'],
-    walk: ['Running wild', 'Move fast!', 'Hunt continues', 'Track them', 'Step by step', 'Beast follows', 'On the prowl', 'Creeping forward', 'Sniffing ahead', 'Let’s roam'],
-    dead: ['Beast falls…', 'I bite dust', 'Next time… stronger', 'Death tastes bitter', 'Roar fades...', 'My fury sleeps', 'Claws dull…', 'This is not end', 'I return to hunt', 'Warrok slumbers']
-  },
-  skeletonz: {
-    hello: ['Rattle rattle hello', 'Bones greet you', 'I rise again', 'Greetings… mortal', 'Click click I’m here', 'Back from grave', 'Dusty but ready', 'Another day undead', 'Skeleton online', 'Time to clatter'],
-    attack: ['Bone strike!', 'Crack attack!', 'Rattle them!', 'Break their flesh!', 'Shake them to pieces', 'Clack clack!', 'I poke you!', 'Sharp bones!', 'I’ll dismantle them', 'Dust them!'],
-    idle: ['No muscles… still tired', 'Just rattling', 'Any orders?', 'Standing dead', 'Grave silence', 'Waiting patiently', 'I don’t breathe but bored', 'Where to now?', 'Bones chilled', 'Dust settling'],
-    walk: ['Clack clack walking', 'Bones moving', 'Step by step', 'Joints cracking', 'Wobbling forward', 'Skeleton following', 'March of bones', 'Dragging feet', 'Grave stroll', 'Creeping rattle'],
-    dead: ['Falling apart… again', 'Oops bones scattered', 'Back to dust', 'See you after reassembly', 'Rattle ends', 'Skull cracked', 'Dead once more', 'I collapse', 'Bone pile time', 'Just rebuild me']
-  },
-  erika: {
-    hello: ['Erika ready', 'Hello hero', 'Nice to see you', 'Let’s do magic', 'I trust you', 'Warm greetings', 'I stand by you', 'Light surrounds us', 'Blessings friend', 'You’re not alone'],
-    attack: ['Casting strike!', 'Magic burns!', 'Feel my spell!', 'Light attacks!', 'Arcane burst!', 'I send fire!', 'No escape spell!', 'Focused beam!', 'Energy blast!', 'Radiant force!'],
-    idle: ['Meditating…', 'Magic sleeps', 'I wait for your word', 'Soft silence', 'Calm before storm', 'You need me?', 'Still casting thoughts', 'Breathing calmly', 'Waiting patiently', 'Daydreaming magic'],
-    walk: ['Walking lightly', 'Magic follows', 'Graceful steps', 'I float a bit', 'On my way', 'Move with light', 'Gliding forward', 'Following you', 'Quiet footsteps', 'Let’s continue'],
-    dead: ['Light fades', 'I fall softly', 'Magic slips away', 'Goodbye… for now', 'My spell ends', 'Fading warmth', 'I’ll return glowing', 'Darkness takes me', 'Release…', 'I rest for now']
-  },
-  arissa: {
-    hello: ['Arissa here', 'Ready to roam', 'Greetings wanderer', 'The shadows whisper', 'I am yours to command', 'Let’s sneak ahead', 'Silent hello', 'Eyes sharp', 'Hunter at your side', 'Let’s begin'],
-    attack: ['Silent strike!', 'Shadow hit!', 'Quick kill!', 'They won’t see it', 'Knife in the dark', 'One less problem', 'Down you go', 'Swift cut!', 'Dead before sound', 'Fade them out'],
-    idle: ['Hidden… waiting', 'Silence is comfort', 'Where do we stalk?', 'Watching the shadows', 'Still as night', 'I wait your signal', 'Sneaking thoughts', 'Listening closely', 'Quiet moment', 'Hunter rests'],
-    walk: ['Silent steps', 'Gliding through shadows', 'Moving unseen', 'Follow the wind', 'Tracking paths', 'Walking quietly', 'Step softly', 'On the hunt', 'Close behind', 'In the dark we move'],
-    dead: ['Shadow fades…', 'Caught at last', 'I slip away', 'My silence ends', 'Falling into dark', 'No more whispers', 'Blade drops…', 'I vanish', 'Light… gone', 'I return someday']
-  }
-};
-
-},{}],5:[function(require,module,exports){
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
 exports.default = void 0;
 var _bvhLoader = require("./module/bvh-loader");
 var _default = exports.default = _bvhLoader.MEBvh;
 
-},{"./module/bvh-loader":6}],6:[function(require,module,exports){
+},{"./module/bvh-loader":2}],2:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -3017,7 +697,7 @@ class MEBvh {
 }
 exports.MEBvh = MEBvh;
 
-},{"webgpu-matrix":18}],7:[function(require,module,exports){
+},{"webgpu-matrix":14}],3:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -3095,7 +775,7 @@ function equals(a, b) {
   return Math.abs(a - b) <= tolerance * Math.max(1, Math.abs(a), Math.abs(b));
 }
 
-},{}],8:[function(require,module,exports){
+},{}],4:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -3124,7 +804,7 @@ var vec4 = _interopRequireWildcard(require("./vec4.js"));
 exports.vec4 = vec4;
 function _interopRequireWildcard(e, t) { if ("function" == typeof WeakMap) var r = new WeakMap(), n = new WeakMap(); return (_interopRequireWildcard = function (e, t) { if (!t && e && e.__esModule) return e; var o, i, f = { __proto__: null, default: e }; if (null === e || "object" != typeof e && "function" != typeof e) return f; if (o = t ? n : r) { if (o.has(e)) return o.get(e); o.set(e, f); } for (const t in e) "default" !== t && {}.hasOwnProperty.call(e, t) && ((i = (o = Object.defineProperty) && Object.getOwnPropertyDescriptor(e, t)) && (i.get || i.set) ? o(f, t, i) : f[t] = e[t]); return f; })(e, t); }
 
-},{"./common.js":7,"./mat2.js":9,"./mat2d.js":10,"./mat3.js":11,"./mat4.js":12,"./quat.js":13,"./quat2.js":14,"./vec2.js":15,"./vec3.js":16,"./vec4.js":17}],9:[function(require,module,exports){
+},{"./common.js":3,"./mat2.js":5,"./mat2d.js":6,"./mat3.js":7,"./mat4.js":8,"./quat.js":9,"./quat2.js":10,"./vec2.js":11,"./vec3.js":12,"./vec4.js":13}],5:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -3586,7 +1266,7 @@ var mul = exports.mul = multiply;
  */
 var sub = exports.sub = subtract;
 
-},{"./common.js":7}],10:[function(require,module,exports){
+},{"./common.js":3}],6:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -4100,7 +1780,7 @@ var mul = exports.mul = multiply;
  */
 var sub = exports.sub = subtract;
 
-},{"./common.js":7}],11:[function(require,module,exports){
+},{"./common.js":3}],7:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -4912,7 +2592,7 @@ var mul = exports.mul = multiply;
  */
 var sub = exports.sub = subtract;
 
-},{"./common.js":7}],12:[function(require,module,exports){
+},{"./common.js":3}],8:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -6932,7 +4612,7 @@ var mul = exports.mul = multiply;
  */
 var sub = exports.sub = subtract;
 
-},{"./common.js":7}],13:[function(require,module,exports){
+},{"./common.js":3}],9:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -7715,7 +5395,7 @@ var setAxes = exports.setAxes = function () {
   };
 }();
 
-},{"./common.js":7,"./mat3.js":11,"./vec3.js":16,"./vec4.js":17}],14:[function(require,module,exports){
+},{"./common.js":3,"./mat3.js":7,"./vec3.js":12,"./vec4.js":13}],10:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -8588,7 +6268,7 @@ function equals(a, b) {
   return Math.abs(a0 - b0) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a0), Math.abs(b0)) && Math.abs(a1 - b1) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a1), Math.abs(b1)) && Math.abs(a2 - b2) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a2), Math.abs(b2)) && Math.abs(a3 - b3) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a3), Math.abs(b3)) && Math.abs(a4 - b4) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a4), Math.abs(b4)) && Math.abs(a5 - b5) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a5), Math.abs(b5)) && Math.abs(a6 - b6) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a6), Math.abs(b6)) && Math.abs(a7 - b7) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a7), Math.abs(b7));
 }
 
-},{"./common.js":7,"./mat4.js":12,"./quat.js":13}],15:[function(require,module,exports){
+},{"./common.js":3,"./mat4.js":8,"./quat.js":9}],11:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -9266,7 +6946,7 @@ var forEach = exports.forEach = function () {
   };
 }();
 
-},{"./common.js":7}],16:[function(require,module,exports){
+},{"./common.js":3}],12:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -10118,7 +7798,7 @@ var forEach = exports.forEach = function () {
   };
 }();
 
-},{"./common.js":7}],17:[function(require,module,exports){
+},{"./common.js":3}],13:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -10825,7 +8505,7 @@ var forEach = exports.forEach = function () {
   };
 }();
 
-},{"./common.js":7}],18:[function(require,module,exports){
+},{"./common.js":3}],14:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -14758,7 +12438,7 @@ function setDefaultType(ctor) {
   setDefaultType$1(ctor);
 }
 
-},{}],19:[function(require,module,exports){
+},{}],15:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -20105,7 +17785,7 @@ function setDefaultType(ctor) {
   setDefaultType$1(ctor);
 }
 
-},{}],20:[function(require,module,exports){
+},{}],16:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -20176,7 +17856,7 @@ const en = exports.en = {
   "invertorysecret": "Corona Ignifera magic secret Sol Corona,Flamma Crystal\n  Aqua Sanctum magic secret Mare Pearl,Luna Gemma\n Umbra Silens magic secret Umbra Vellum,Noctis Band\n Terra Fortis magic secret Terra Clavis,Ardent Vine,Silva Heart\n Ventus Aegis magic secret Ventus Pluma,Ignifur Cape\n Ferrum Lux magic secret Ferrum Anulus,Lux Feather\n Sanguis Vita magic secret Sanguis Orb,Vita Flos \n Tenebris Vox magic secret Tenebris Fang,Vox Chime \n Aether Gladius magic secret Gladius Ignis,Aether Scale \n Fulgur Mortis magic secret Fulgur Stone,Mortis Bone \n Corona Umbra magic secret Umbra Silens,Corona Ignifera,Tenebris Vox \n Terra Sanctum magic secret Terra Fortis,Aqua Sanctum \n Aether Fortis magic secret Aether Gladius,Ferrum Lux \n  Vita Mindza magic secret Sanguis Vita,Ventus Aegis \n Mortis Ultima magic secret Fulgur Mortis,Corona Umbra,Aether Fortis"
 };
 
-},{}],21:[function(require,module,exports){
+},{}],17:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -20590,7 +18270,7 @@ class MEBall {
 }
 exports.default = MEBall;
 
-},{"../shaders/shaders":62,"./engine":32,"./matrix-class":42,"wgpu-matrix":19}],22:[function(require,module,exports){
+},{"../shaders/shaders":56,"./engine":28,"./matrix-class":38,"wgpu-matrix":15}],18:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -20628,7 +18308,7 @@ class Behavior {
 }
 exports.default = Behavior;
 
-},{"./utils":47}],23:[function(require,module,exports){
+},{"./utils":41}],19:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -21053,7 +18733,7 @@ class MECube {
 }
 exports.default = MECube;
 
-},{"../shaders/shaders":62,"./engine":32,"./matrix-class":42,"wgpu-matrix":19}],24:[function(require,module,exports){
+},{"../shaders/shaders":56,"./engine":28,"./matrix-class":38,"wgpu-matrix":15}],20:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -21216,7 +18896,7 @@ class HPBarEffect {
 }
 exports.HPBarEffect = HPBarEffect;
 
-},{"../../shaders/energy-bars/energy-bar-shader.js":50,"wgpu-matrix":19}],25:[function(require,module,exports){
+},{"../../shaders/energy-bars/energy-bar-shader.js":44,"wgpu-matrix":15}],21:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -21435,7 +19115,7 @@ class FlameEmitter {
 }
 exports.FlameEmitter = FlameEmitter;
 
-},{"../../shaders/flame-effect/flame-instanced":51,"../utils":47,"wgpu-matrix":19}],26:[function(require,module,exports){
+},{"../../shaders/flame-effect/flame-instanced":45,"../utils":41,"wgpu-matrix":15}],22:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -21606,7 +19286,7 @@ class FlameEffect {
 }
 exports.FlameEffect = FlameEffect;
 
-},{"../../shaders/flame-effect/flameEffect":52,"wgpu-matrix":19}],27:[function(require,module,exports){
+},{"../../shaders/flame-effect/flameEffect":46,"wgpu-matrix":15}],23:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -21847,7 +19527,7 @@ class GenGeoTexture {
 }
 exports.GenGeoTexture = GenGeoTexture;
 
-},{"../../shaders/standalone/geo.tex.js":64,"../geometry-factory.js":33,"wgpu-matrix":19}],28:[function(require,module,exports){
+},{"../../shaders/standalone/geo.tex.js":58,"../geometry-factory.js":29,"wgpu-matrix":15}],24:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -22104,7 +19784,7 @@ class GenGeoTexture2 {
 }
 exports.GenGeoTexture2 = GenGeoTexture2;
 
-},{"../../shaders/standalone/geo.tex.js":64,"../geometry-factory.js":33,"wgpu-matrix":19}],29:[function(require,module,exports){
+},{"../../shaders/standalone/geo.tex.js":58,"../geometry-factory.js":29,"wgpu-matrix":15}],25:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -22294,7 +19974,7 @@ class GenGeo {
 }
 exports.GenGeo = GenGeo;
 
-},{"../../shaders/standalone/geo.instanced.js":63,"../geometry-factory.js":33,"wgpu-matrix":19}],30:[function(require,module,exports){
+},{"../../shaders/standalone/geo.instanced.js":57,"../geometry-factory.js":29,"wgpu-matrix":15}],26:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -22457,7 +20137,7 @@ class MANABarEffect {
 }
 exports.MANABarEffect = MANABarEffect;
 
-},{"../../shaders/energy-bars/energy-bar-shader.js":50,"wgpu-matrix":19}],31:[function(require,module,exports){
+},{"../../shaders/energy-bars/energy-bar-shader.js":44,"wgpu-matrix":15}],27:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -22600,7 +20280,7 @@ class PointerEffect {
 }
 exports.PointerEffect = PointerEffect;
 
-},{"../../shaders/standalone/pointer.effect.js":65,"wgpu-matrix":19}],32:[function(require,module,exports){
+},{"../../shaders/standalone/pointer.effect.js":59,"wgpu-matrix":15}],28:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -23143,7 +20823,7 @@ class RPGCamera extends CameraBase {
 }
 exports.RPGCamera = RPGCamera;
 
-},{"./utils":47,"wgpu-matrix":19}],33:[function(require,module,exports){
+},{"./utils":41,"wgpu-matrix":15}],29:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -23455,7 +21135,7 @@ class GeometryFactory {
 }
 exports.GeometryFactory = GeometryFactory;
 
-},{}],34:[function(require,module,exports){
+},{}],30:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -23982,7 +21662,7 @@ class MaterialsInstanced {
 }
 exports.default = MaterialsInstanced;
 
-},{"../../shaders/fragment.wgsl":54,"../../shaders/fragment.wgsl.metal":55,"../../shaders/fragment.wgsl.normalmap":56,"../../shaders/fragment.wgsl.pong":57,"../../shaders/fragment.wgsl.power":58,"../../shaders/instanced/fragment.instanced.wgsl":59}],35:[function(require,module,exports){
+},{"../../shaders/fragment.wgsl":48,"../../shaders/fragment.wgsl.metal":49,"../../shaders/fragment.wgsl.normalmap":50,"../../shaders/fragment.wgsl.pong":51,"../../shaders/fragment.wgsl.power":52,"../../shaders/instanced/fragment.instanced.wgsl":53}],31:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -24971,7 +22651,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
 }
 exports.default = MEMeshObjInstances;
 
-},{"../../shaders/fragment.video.wgsl":53,"../../shaders/instanced/vertex.instanced.wgsl":60,"../effects/energy-bar":24,"../effects/flame":26,"../effects/flame-emmiter":25,"../effects/gen":29,"../effects/gen-tex":27,"../effects/gen-tex2":28,"../effects/mana-bar":30,"../effects/pointerEffect":31,"../loaders/bvh-instaced":38,"../matrix-class":42,"../utils":47,"./materials-instanced":34,"wgpu-matrix":19}],36:[function(require,module,exports){
+},{"../../shaders/fragment.video.wgsl":47,"../../shaders/instanced/vertex.instanced.wgsl":54,"../effects/energy-bar":20,"../effects/flame":22,"../effects/flame-emmiter":21,"../effects/gen":25,"../effects/gen-tex":23,"../effects/gen-tex2":24,"../effects/mana-bar":26,"../effects/pointerEffect":27,"../loaders/bvh-instaced":34,"../matrix-class":38,"../utils":41,"./materials-instanced":30,"wgpu-matrix":15}],32:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -25257,7 +22937,7 @@ class SpotLight {
 }
 exports.SpotLight = SpotLight;
 
-},{"../shaders/instanced/vertexShadow.instanced.wgsl":61,"../shaders/vertexShadow.wgsl":68,"./behavior":22,"wgpu-matrix":19}],37:[function(require,module,exports){
+},{"../shaders/instanced/vertexShadow.instanced.wgsl":55,"../shaders/vertexShadow.wgsl":62,"./behavior":18,"wgpu-matrix":15}],33:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -25725,7 +23405,7 @@ function play(nameAni) {
   this.playing = true;
 }
 
-},{}],38:[function(require,module,exports){
+},{}],34:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -26266,7 +23946,7 @@ class BVHPlayerInstances extends _meshObjInstances.default {
 }
 exports.BVHPlayerInstances = BVHPlayerInstances;
 
-},{"../instanced/mesh-obj-instances.js":35,"./webgpu-gltf.js":40,"wgpu-matrix":19}],39:[function(require,module,exports){
+},{"../instanced/mesh-obj-instances.js":31,"./webgpu-gltf.js":36,"wgpu-matrix":15}],35:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -26776,7 +24456,7 @@ class BVHPlayer extends _meshObj.default {
 }
 exports.BVHPlayer = BVHPlayer;
 
-},{"../mesh-obj":43,"./webgpu-gltf.js":40,"bvh-loader":5,"wgpu-matrix":19}],40:[function(require,module,exports){
+},{"../mesh-obj":39,"./webgpu-gltf.js":36,"bvh-loader":1,"wgpu-matrix":15}],36:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -27357,7 +25037,7 @@ async function uploadGLBModel(buffer, device) {
   return R;
 }
 
-},{"gl-matrix":8}],41:[function(require,module,exports){
+},{"gl-matrix":4}],37:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -27883,7 +25563,7 @@ class Materials {
 }
 exports.default = Materials;
 
-},{"../shaders/fragment.wgsl":54,"../shaders/fragment.wgsl.metal":55,"../shaders/fragment.wgsl.normalmap":56,"../shaders/fragment.wgsl.pong":57,"../shaders/fragment.wgsl.power":58}],42:[function(require,module,exports){
+},{"../shaders/fragment.wgsl":48,"../shaders/fragment.wgsl.metal":49,"../shaders/fragment.wgsl.normalmap":50,"../shaders/fragment.wgsl.pong":51,"../shaders/fragment.wgsl.power":52}],38:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -27931,28 +25611,34 @@ class Position {
     }
   }
   translateByX(x) {
+    if (parseFloat(x) == this.targetX) return;
     this.inMove = true;
     this.targetX = parseFloat(x);
   }
   translateByY(y) {
+    if (parseFloat(y) == this.targetY) return;
     this.inMove = true;
     this.targetY = parseFloat(y);
   }
   translateByZ(z) {
+    if (parseFloat(z) == this.targetZ) return;
     this.inMove = true;
     this.targetZ = parseFloat(z);
   }
   translateByXY(x, y) {
+    if (parseFloat(y) == this.targetY && parseFloat(x) == this.targetX) return;
     this.inMove = true;
     this.targetX = parseFloat(x);
     this.targetY = parseFloat(y);
   }
   translateByXZ(x, z) {
+    if (parseFloat(z) == this.targetZ && parseFloat(x) == this.targetX) return;
     this.inMove = true;
     this.targetX = parseFloat(x);
     this.targetZ = parseFloat(z);
   }
   translateByYZ(y, z) {
+    if (parseFloat(y) == this.targetY && parseFloat(z) == this.targetZ) return;
     this.inMove = true;
     this.targetY = parseFloat(y);
     this.targetZ = parseFloat(z);
@@ -28230,7 +25916,7 @@ class Rotation {
 }
 exports.Rotation = Rotation;
 
-},{"./utils":47}],43:[function(require,module,exports){
+},{"./utils":41}],39:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -29025,761 +26711,47 @@ class MEMeshObj extends _materials.default {
 }
 exports.default = MEMeshObj;
 
-},{"../shaders/fragment.video.wgsl":53,"../shaders/vertex.wgsl":66,"../shaders/vertex.wgsl.normalmap":67,"./effects/pointerEffect":31,"./materials":41,"./matrix-class":42,"./utils":47,"wgpu-matrix":19}],44:[function(require,module,exports){
+},{"../shaders/fragment.video.wgsl":47,"../shaders/vertex.wgsl":60,"../shaders/vertex.wgsl.normalmap":61,"./effects/pointerEffect":27,"./materials":37,"./matrix-class":38,"./utils":41,"wgpu-matrix":15}],40:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.REDLOG = exports.NETLOG = exports.BIGLOG = exports.ANYLOG = void 0;
-exports.byId = byId;
-exports.checkBtnsForce = checkBtnsForce;
-exports.checkBtnsRecordings = checkBtnsRecordings;
-exports.clearEventsTextarea = clearEventsTextarea;
-exports.clearHttpTextarea = clearHttpTextarea;
-exports.closeSession = closeSession;
-exports.deleteRecording = deleteRecording;
-exports.enableBtn = enableBtn;
-exports.events = void 0;
-exports.fetchAll = fetchAll;
-exports.fetchInfo = fetchInfo;
-exports.forceDisconnect = forceDisconnect;
-exports.forceUnpublish = forceUnpublish;
-exports.getRecording = getRecording;
-exports.getToken = getToken;
-exports.httpRequest = httpRequest;
-exports.joinSession = joinSession;
-exports.leaveSession = leaveSession;
-exports.listRecordings = listRecordings;
-exports.netConfig = void 0;
-exports.pushEvent = pushEvent;
-exports.removeUser = removeUser;
-exports.session = void 0;
-exports.startRecording = startRecording;
-exports.stopRecording = stopRecording;
-exports.updateNumVideos = updateNumVideos;
-const netConfig = exports.netConfig = {
-  NETWORKING_DOMAIN: '',
-  NETWORKING_PORT: '2020',
-  isDataOnly: false
-};
-function byId(d) {
-  return document.getElementById(d);
-}
-;
-var BIGLOG = exports.BIGLOG = "color: #55fd53;font-size:20px;text-shadow: 0px 0px 5px #f4fd63, -1px -1px 5px orange";
-var REDLOG = exports.REDLOG = "color: lime;font-size:15px;text-shadow: 0px 0px 5px red, -2px -2px 5px orangered";
-var NETLOG = exports.NETLOG = "color: orange;font-size:15px;text-shadow: 0px 0px 1px red, 0px 0px 5px orangered";
-var ANYLOG = exports.ANYLOG = "color: yellow;font-size:15px;text-shadow: 1px 1px 4px red, 0px 0px 2px orangered";
-var OV;
-var numVideos = 0;
-var sessionName;
-var token;
-var session;
-function joinSession(options) {
-  if (typeof options === 'undefined') {
-    options = {
-      resolution: '320x240'
-    };
+exports.METoolTip = void 0;
+class METoolTip {
+  constructor() {
+    // --- Tooltip system ---
+    const tooltip = document.createElement('div');
+    tooltip.style.position = 'fixed';
+    tooltip.style.padding = '6px 10px';
+    tooltip.style.background = 'rgba(0,0,0,0.8)';
+    tooltip.style.color = '#fff';
+    tooltip.style.borderRadius = '6px';
+    tooltip.style.fontFamily = 'Arial';
+    tooltip.style.fontSize = '12px';
+    tooltip.style.pointerEvents = 'none';
+    tooltip.style.opacity = '0';
+    tooltip.style.transition = 'opacity 0.2s ease';
+    tooltip.style.zIndex = '9999';
+    document.body.appendChild(tooltip);
   }
-  // console.log('resolution:', options.resolution);
-  document.getElementById("join-btn").disabled = true;
-  document.getElementById("join-btn").innerHTML = "Joining...";
-  getToken(function () {
-    OV = new OpenVidu();
-    window.OV = OV;
-    exports.session = session = OV.initSession();
-    session.on('connectionCreated', event => {
-      // console.log(`connectionCreated ${event.connection.connectionId}`)
-      dispatchEvent(new CustomEvent('onConnectionCreated', {
-        detail: event
-      }));
-      pushEvent(event);
+  attachTooltip(element, text) {
+    element.addEventListener('mouseenter', e => {
+      tooltip.textContent = text;
+      tooltip.style.opacity = '1';
     });
-    session.on('connectionDestroyed', e => {
-      console.log(`Connection destroyed ${e.connection.connectionId}`);
-      dispatchEvent(new CustomEvent('connectionDestroyed', {
-        detail: {
-          connectionId: e.connection.connectionId,
-          event: e
-        }
-      }));
-      // byId("pwa-container-2").style.display = "none";
-      pushEvent(e);
+    element.addEventListener('mousemove', e => {
+      tooltip.style.left = e.clientX + 12 + 'px';
+      tooltip.style.top = e.clientY + 12 + 'px';
     });
-    if (!options.isDataOnly) {
-      // On every new Stream received...
-      session.on('streamCreated', event => {
-        pushEvent(event);
-        console.log(`%c [onStreamCreated] ${event.stream.streamId}`);
-        setTimeout(() => {
-          console.log(`%c REMOTE STREAM READY [] ${byId("remote-video-" + event.stream.streamId)}`, BIGLOG);
-        }, 2000);
-        dispatchEvent(new CustomEvent('onStreamCreated', {
-          detail: {
-            event: event,
-            msg: `[connectionId][${event.stream.connection.connectionId}]`
-          }
-        }));
-        // Subscribe to the Stream to receive it
-        // HTML video will be appended to element with 'video-container' id
-        var subscriber = session.subscribe(event.stream, 'video-container');
-        // When the HTML video has been appended to DOM...
-        subscriber.on('videoElementCreated', event => {
-          dispatchEvent(new CustomEvent(`videoElementCreatedSubscriber`, {
-            detail: event
-          }));
-          // Add a new HTML element for the user's name and nickname over its video
-          updateNumVideos(1);
-        });
-
-        // When the HTML video has been appended to DOM...
-        subscriber.on('videoElementDestroyed', event => {
-          pushEvent(event);
-          // Add a new HTML element for the user's name and nickname over its video
-          updateNumVideos(-1);
-        });
-
-        // When the subscriber stream has started playing media...
-        subscriber.on('streamPlaying', event => {
-          dispatchEvent(new CustomEvent('streamPlaying', {
-            detail: event
-          }));
-        });
-      });
-      session.on('streamDestroyed', event => {
-        pushEvent(event);
-      });
-    } else {
-      // data
-      session.on('streamCreated', event => {
-        const subscriber = session.subscribe(event.stream, "subscriber");
-        console.log("USER DATA: " + event.stream.connection.data);
-      });
-    }
-    session.on('sessionDisconnected', event => {
-      console.log("Session Disconected", event);
-      // byId("pwa-container-2").style.display = "none";
-      pushEvent(event);
-      if (event.reason !== 'disconnect') {
-        removeUser();
-      }
-      if (event.reason !== 'sessionClosedByServer') {
-        exports.session = session = null;
-        numVideos = 0;
-        // $('#join').show();
-        byId('join').style.display = 'block';
-        byId('session').style.display = 'none';
-      }
-    });
-
-    // session.on('recordingStarted', event => {
-    //   pushEvent(event);
-    // });
-
-    // session.on('recordingStopped', event => {
-    //   pushEvent(event);
-    // });
-
-    // On every asynchronous exception...
-    session.on('exception', exception => {
-      console.warn(exception);
-    });
-    dispatchEvent(new CustomEvent(`setupSessionObject`, {
-      detail: session
-    }));
-    if (!netConfig.isDataOnly === true) {
-      session.connect(token).then(() => {
-        byId('session-title').innerText = sessionName;
-        byId('join').style.display = 'none';
-        byId('session').style.display = 'block';
-        var publisher = OV.initPublisher('video-container', {
-          audioSource: netConfig.isDataOnly ? false : undefined,
-          // The source of audio. If undefined default microphone
-          videoSource: netConfig.isDataOnly ? false : undefined,
-          // The source of video. If undefined default webcam
-          publishAudio: !netConfig.isDataOnly,
-          // Whether you want to start publishing with your audio unmuted or not
-          publishVideo: !netConfig.isDataOnly,
-          // Whether you want to start publishing with your video enabled or not
-          resolution: options.resolution,
-          // The resolution of your video
-          frameRate: 30,
-          // The frame rate of your video
-          insertMode: 'APPEND',
-          // How the video is inserted in the target element 'video-container'
-          mirror: false // Whether to mirror your local video or not
-        });
-        publisher.on('accessAllowed', event => {
-          pushEvent({
-            type: 'accessAllowed'
-          });
-        });
-        publisher.on('accessDenied', event => {
-          pushEvent(event);
-        });
-        publisher.on('accessDialogOpened', event => {
-          pushEvent({
-            type: 'accessDialogOpened'
-          });
-        });
-        publisher.on('accessDialogClosed', event => {
-          pushEvent({
-            type: 'accessDialogClosed'
-          });
-        });
-
-        // When the publisher stream has started playing media...
-        publisher.on('streamCreated', event => {
-          dispatchEvent(new CustomEvent(`LOCAL-STREAM-READY`, {
-            detail: event.stream
-          }));
-          console.log(`%c LOCAL STREAM READY ${event.stream.connection.connectionId}`, BIGLOG);
-          // if(document.getElementById("pwa-container-1").style.display != 'none') {
-          // 	document.getElementById("pwa-container-1").style.display = 'none';
-          // }
-          pushEvent(event);
-        });
-
-        // When our HTML video has been added to DOM...
-        publisher.on('videoElementCreated', event => {
-          dispatchEvent(new CustomEvent(`videoElementCreated`, {
-            detail: event
-          }));
-          updateNumVideos(1);
-          console.log('NOT FIXED MUTE event.element, ', event.element);
-          event.element.mute = true;
-          // $(event.element).prop('muted', true); // Mute local video
-        });
-
-        // When the HTML video has been appended to DOM...
-        publisher.on('videoElementDestroyed', event => {
-          dispatchEvent(new CustomEvent(`videoElementDestroyed`, {
-            detail: event
-          }));
-          pushEvent(event);
-          updateNumVideos(-1);
-        });
-
-        // When the publisher stream has started playing media...
-        publisher.on('streamPlaying', event => {
-          console.log("publisher.on streamPlaying");
-          // if(document.getElementById("pwa-container-1").style.display != 'none') {
-          // 	document.getElementById("pwa-container-1").style.display = 'none';
-          // }
-          // pushEvent(event);
-        });
-        session.publish(publisher);
-      }).catch(error => {
-        console.warn('Error connecting to the session:', error.code, error.message);
-        enableBtn();
-      });
-    } else {
-      // in future some meta data can be added here -> on conn created event
-      console.log("netConfig", netConfig.customData);
-      session.connect(token, netConfig.customData).then(() => {
-        byId('session-title').innerText = sessionName;
-        byId('join').style.display = 'none';
-        byId('session').style.display = 'block';
-        // console.log('[ONLY DATA]', session);
-      }).catch(error => {
-        console.warn('Error connecting to the session:', error.code, error.message);
-        enableBtn();
-      });
-    }
-    return false;
-  });
-}
-function leaveSession() {
-  session.disconnect();
-  enableBtn();
-}
-
-/* OPENVIDU METHODS */
-
-function enableBtn() {
-  document.getElementById("join-btn").disabled = false;
-  document.getElementById("join-btn").innerHTML = "Join!";
-}
-
-/* APPLICATION REST METHODS */
-
-function getToken(callback) {
-  sessionName = byId("sessionName").value;
-  httpRequest('POST', 'https://' + netConfig.NETWORKING_DOMAIN + ':' + netConfig.NETWORKING_PORT + '/api/get-token', {
-    sessionName: sessionName
-  }, 'Request of TOKEN gone WRONG:', res => {
-    token = res[0];
-    console.log('Excellent (TOKEN:' + token + ')');
-    callback(token);
-  });
-}
-function removeUser() {
-  httpRequest('POST', 'https://' + netConfig.NETWORKING_DOMAIN + ':' + netConfig.NETWORKING_PORT + '/api/remove-user', {
-    sessionName: sessionName,
-    token: token
-  }, 'User couldn\'t be removed from session', res => {
-    console.warn("You have been removed from session " + sessionName);
-  });
-}
-function closeSession() {
-  httpRequest('DELETE', 'https://' + netConfig.NETWORKING_DOMAIN + ':' + netConfig.NETWORKING_PORT + '/api/close-session', {
-    sessionName: sessionName
-  }, 'Session couldn\'t be closed', res => {
-    console.warn("Session " + sessionName + " has been closed");
-  });
-}
-function fetchInfo(sessionName) {
-  httpRequest('POST', 'https://' + netConfig.NETWORKING_DOMAIN + ':' + netConfig.NETWORKING_PORT + '/api/fetch-info', {
-    sessionName: sessionName
-  }, 'Session couldn\'t be fetched', res => {
-    // console.info("Session fetched");
-    dispatchEvent(new CustomEvent('check-gameplay-channel', {
-      detail: JSON.stringify(res, null, "\t")
-    }));
-    // byId('textarea-http').innerText = JSON.stringify(res, null, "\t");
-  });
-}
-function fetchAll() {
-  httpRequest('GET', 'https://' + netConfig.NETWORKING_DOMAIN + ':' + netConfig.NETWORKING_PORT + '/api/fetch-all', {}, 'All session info couldn\'t be fetched', res => {
-    console.warn("All session fetched");
-    byId('textarea-http').innerText = JSON.stringify(res, null, "\t");
-  });
-}
-function forceDisconnect() {
-  httpRequest('DELETE', 'https://' + netConfig.NETWORKING_DOMAIN + ':' + netConfig.NETWORKING_PORT + '/api/force-disconnect', {
-    sessionName: sessionName,
-    connectionId: document.getElementById('forceValue').value
-  }, 'Connection couldn\'t be closed', res => {
-    console.warn("Connection has been closed");
-  });
-}
-function forceUnpublish() {
-  httpRequest('DELETE', 'https://' + netConfig.NETWORKING_DOMAIN + ':' + netConfig.NETWORKING_PORT + '/api/force-unpublish', {
-    sessionName: sessionName,
-    streamId: document.getElementById('forceValue').value
-  }, 'Stream couldn\'t be closed', res => {
-    console.warn("Stream has been closed");
-  });
-}
-function httpRequest(method, url, body, errorMsg, callback) {
-  byId('textarea-http').innerText = '';
-  var http = new XMLHttpRequest();
-  http.open(method, url, true);
-  http.setRequestHeader('Content-type', 'application/json');
-  http.addEventListener('readystatechange', processRequest, false);
-  http.send(JSON.stringify(body));
-  function processRequest() {
-    if (http.readyState == 4) {
-      if (http.status == 200) {
-        try {
-          callback(JSON.parse(http.responseText));
-        } catch (e) {
-          callback(e);
-        }
-      } else {
-        console.warn(errorMsg + ' (' + http.status + ')');
-        if (url.indexOf('fetch-info') != -1) {
-          if (http.status == 0 && errorMsg == "Session couldn't be fetched") {
-            const errorText = errorMsg + ": HTTP " + http.status + " (" + http.responseText + ")";
-            dispatchEvent(new CustomEvent('check-gameplay-channel', {
-              detail: {
-                status: 'false',
-                errorText: errorText
-              }
-            }));
-          } else {
-            dispatchEvent(new CustomEvent('check-gameplay-channel', {
-              detail: {
-                status: 'free',
-                url: url
-              }
-            }));
-          }
-        }
-      }
-    }
-  }
-}
-function startRecording() {
-  // not fixed 
-  var outputMode = $('input[name=outputMode]:checked').val();
-  var hasAudio = $('#has-audio-checkbox').prop('checked');
-  var hasVideo = $('#has-video-checkbox').prop('checked');
-  httpRequest('POST', 'api/recording/start', {
-    session: session.sessionId,
-    outputMode: outputMode,
-    hasAudio: hasAudio,
-    hasVideo: hasVideo
-  }, 'Start recording WRONG', res => {
-    console.log(res);
-    document.getElementById('forceRecordingId').value = res.id;
-    checkBtnsRecordings();
-    byId('textarea-http').innerText = JSON.stringify(res, null, "\t");
-  });
-}
-function stopRecording() {
-  var forceRecordingId = document.getElementById('forceRecordingId').value;
-  httpRequest('POST', 'api/recording/stop', {
-    recording: forceRecordingId
-  }, 'Stop recording WRONG', res => {
-    console.log(res);
-    $('#textarea-http').text(JSON.stringify(res, null, "\t"));
-  });
-}
-function deleteRecording() {
-  var forceRecordingId = document.getElementById('forceRecordingId').value;
-  httpRequest('DELETE', 'api/recording/delete', {
-    recording: forceRecordingId
-  }, 'Delete recording WRONG', res => {
-    console.log("DELETE ok");
-    byId('textarea-http').innerText = "DELETE ok";
-  });
-}
-function getRecording() {
-  var forceRecordingId = document.getElementById('forceRecordingId').value;
-  httpRequest('GET', 'api/recording/get/' + forceRecordingId, {}, 'Get recording WRONG', res => {
-    console.log(res);
-    byId('textarea-http').innerText = JSON.stringify(res, null, "\t");
-  });
-}
-function listRecordings() {
-  httpRequest('GET', 'api/recording/list', {}, 'List recordings WRONG', res => {
-    console.log(res);
-    byId('textarea-http').innerText = JSON.stringify(res, null, "\t");
-  });
-}
-
-/* APPLICATION REST METHODS */
-/* APPLICATION BROWSER METHODS */
-var events = exports.events = '';
-window.onbeforeunload = function () {
-  if (session) {
-    removeUser();
-    leaveSession();
-  }
-};
-function updateNumVideos(i) {
-  numVideos += i;
-  var coll = document.getElementsByTagName('video');
-  for (var x = 0; x < coll.length; x++) {
-    coll.classList = '';
-  }
-  for (var x = 0; x < coll.length; x++) {
-    coll.classList = '';
-    switch (numVideos) {
-      case 1:
-        coll[x].classList.add('two');
-        break;
-      case 2:
-        coll[x].classList.add('two');
-        break;
-      case 3:
-        coll[x].classList.add('three');
-        break;
-      case 4:
-        coll[x].classList.add('four');
-        break;
-    }
-  }
-}
-function checkBtnsForce() {
-  if (document.getElementById("forceValue").value === "") {
-    document.getElementById('buttonForceUnpublish').disabled = true;
-    document.getElementById('buttonForceDisconnect').disabled = true;
-  } else {
-    document.getElementById('buttonForceUnpublish').disabled = false;
-    document.getElementById('buttonForceDisconnect').disabled = false;
-  }
-}
-function checkBtnsRecordings() {
-  if (document.getElementById("forceRecordingId").value === "") {
-    document.getElementById('buttonGetRecording').disaevents$bled = true;
-    document.getElementById('buttonStopRecording').disabled = true;
-    document.getElementById('buttonDeleteRecording').disabled = true;
-  } else {
-    document.getElementById('buttonGetRecording').disabled = false;
-    document.getElementById('buttonStopRecording').disabled = false;
-    document.getElementById('buttonDeleteRecording').disabled = false;
-  }
-}
-function pushEvent(event) {
-  exports.events = events = events + ((!events ? '' : '\n') + event.type);
-  byId('textarea-events').innerText = events;
-  // console.info("EVENT: ", events)
-}
-function clearHttpTextarea() {
-  byId('textarea-http').innerText = '';
-}
-function clearEventsTextarea() {
-  byId('textarea-events').innerText = '';
-  exports.events = events = '';
-}
-
-},{}],45:[function(require,module,exports){
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.activateNet2 = exports.MatrixStream = void 0;
-var _utils = require("../utils");
-var _matrixStream = require("./matrix-stream");
-/**
- * Main instance for matrix-stream
- * Same logic like all others implementation
- * with openvidu/kurento server.
- * 
- * You can use old networking if you wanna 
- * full control (MultiRtc3 like in matrix-engine old versions)
- */
-class MatrixStream {
-  connection = null;
-  session = null;
-  constructor(arg) {
-    if (typeof arg === 'undefined') {
-      throw console.error('MatrixStream constructor must have argument : { domain: <DOMAIN_NAME> , port: <NUMBER> }');
-    }
-    _matrixStream.netConfig.NETWORKING_DOMAIN = arg.domain;
-    _matrixStream.netConfig.NETWORKING_PORT = arg.port;
-    _matrixStream.netConfig.sessionName = arg.sessionName;
-    _matrixStream.netConfig.resolution = arg.resolution;
-    _matrixStream.netConfig.isDataOnly = arg.isDataOnly;
-    if (arg.customData) _matrixStream.netConfig.customData = arg.customData;
-    _utils.scriptManager.LOAD('./networking/openvidu-browser-2.20.0.js', undefined, undefined, undefined, () => {
-      setTimeout(() => {
-        this.loadNetHTML();
-      }, 2500);
-    });
-
-    // addEventListener("onConnectionCreated", (e) => {console.log('newconn:created', e.detail);})
-  }
-  loadNetHTML() {
-    fetch("./networking/broadcaster2.html", {
-      headers: _utils.htmlHeader
-    }).then(res => {
-      return res.text();
-    }).then(html => {
-      var popupUI = (0, _matrixStream.byId)("matrix-net");
-      popupUI.style = 'display: block;';
-      popupUI.innerHTML = html;
-      this.joinSessionUI = (0, _matrixStream.byId)("join-btn");
-      this.buttonCloseSession = (0, _matrixStream.byId)('buttonCloseSession');
-      this.buttonLeaveSession = (0, _matrixStream.byId)('buttonLeaveSession');
-      (0, _matrixStream.byId)("sessionName").value = _matrixStream.netConfig.sessionName;
-      this.sessionName = (0, _matrixStream.byId)("sessionName");
-      console.log('[CHANNEL]' + this.sessionName.value);
-      this.attachEvents();
-      this.closeSession = _matrixStream.closeSession;
-      console.log(`%cMatrixStream constructed.`, _matrixStream.BIGLOG);
+    element.addEventListener('mouseleave', () => {
+      tooltip.style.opacity = '0';
     });
   }
-  attachEvents() {
-    this.fetchInfo = _matrixStream.fetchInfo;
-    // just for data only test 
-    this.sendOnlyData = netArg => {
-      this.session.signal({
-        data: JSON.stringify(netArg),
-        to: [],
-        type: _matrixStream.netConfig.sessionName + "-data"
-      }).then(() => {
-        // console.log('emit all successfully');
-      }).catch(error => {
-        console.error("Erro signal => ", error);
-      });
-    };
-    this.send = netArg => {
-      const to = netArg.toRemote ? netArg.toRemote : [];
-      netArg.toRemote = 'null';
-      this.session.signal({
-        data: JSON.stringify(netArg),
-        to: to,
-        type: _matrixStream.netConfig.sessionName
-      }).then(() => {
-        // console.log('netArg.toRemote:' , netArg.toRemote);
-      }).catch(error => {
-        console.error("Erro signal => ", error);
-      });
-    };
-    addEventListener(`LOCAL-STREAM-READY`, e => {
-      console.log('LOCAL-STREAM-READY ', e.detail.connection);
-      this.connection = e.detail.connection;
-      var CHANNEL = _matrixStream.netConfig.sessionName;
-      // console.log("ONLY ONES CHANNEL =>", CHANNEL);
-      this.connection.send = netArg => {
-        this.session.signal({
-          data: JSON.stringify(netArg),
-          to: [],
-          type: CHANNEL
-        }).then(() => {
-          // console.log('emit all successfully');
-        }).catch(error => {
-          console.error("Erro signal => ", error);
-        });
-      };
-    });
-    addEventListener('setupSessionObject', e => {
-      // console.log("setupSessionObject=>", e.detail);
-      this.session = e.detail;
-      this.connection = e.detail.connection;
-      this.session.on(`signal:${_matrixStream.netConfig.sessionName}`, e => {
-        // console.log("SIGBAL SYS RECEIVE=>", e);
-        if (this.session.connection.connectionId == e.from.connectionId) {
-          // avoid - option
-          // dispatchEvent(new CustomEvent('self-msg', {detail: e}));
-        } else {
-          this.multiPlayer.update(e);
-        }
-      });
-      this.session.on(`signal:${_matrixStream.netConfig.sessionName}-data`, e => {
-        // console.log("SIGBAL DATA RECEIVE LOW LEVEL TEST OWN MESG =>", e);
-        if (this.session.connection.connectionId == e.from.connectionId) {
-          dispatchEvent(new CustomEvent('self-msg-data', {
-            detail: e
-          }));
-        } else {
-          dispatchEvent(new CustomEvent('only-data-receive', {
-            detail: e
-          }));
-        }
-      });
-    });
-    this.joinSessionUI.addEventListener('click', () => {
-      console.log(`%c JOIN SESSION [${_matrixStream.netConfig.resolution}] `, _matrixStream.REDLOG);
-      (0, _matrixStream.joinSession)({
-        resolution: _matrixStream.netConfig.resolution,
-        isDataOnly: _matrixStream.netConfig.isDataOnly
-      });
-    });
-    this.buttonCloseSession.remove();
-    // this.buttonCloseSession.addEventListener('click', closeSession);
-
-    this.buttonLeaveSession.addEventListener('click', () => {
-      console.log(`%cLEAVE SESSION`, _matrixStream.REDLOG);
-      (0, _matrixStream.removeUser)();
-      (0, _matrixStream.leaveSession)();
-    });
-    (0, _matrixStream.byId)('netHeaderTitle').addEventListener('click', this.domManipulation.hideNetPanel);
-    setTimeout(() => dispatchEvent(new CustomEvent('net-ready', {})), 2500);
-  }
-  multiPlayer = {
-    root: this,
-    onFollowPath(e) {},
-    update(e) {
-      e.data = JSON.parse(e.data);
-      try {
-        if (e.data.netPos) {
-          app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).position.setPosition(e.data.netPos.x, e.data.netPos.y, e.data.netPos.z);
-        } else if (e.data.netRotY || e.data.netRotY == 0) {
-          app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).rotation.y = e.data.netRotY;
-        } else if (e.data.netRotX) {
-          app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).rotation.x = e.data.netRotX;
-        } else if (e.data.netRotZ) {
-          app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).rotation.z = e.data.netRotZ;
-        } else if (e.data.animationIndex || e.data.animationIndex == 0) {
-          app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).glb.animationIndex = e.data.animationIndex;
-        }
-      } catch (err) {
-        console.info('mmo-err:', err);
-      }
-    },
-    leaveGamePlay() {}
-  };
-  domManipulation = {
-    hideNetPanel: () => {
-      if ((0, _matrixStream.byId)('matrix-net').classList.contains('hide-by-vertical')) {
-        (0, _matrixStream.byId)('matrix-net').classList.remove('hide-by-vertical');
-        (0, _matrixStream.byId)('matrix-net').classList.add('show-by-vertical');
-        (0, _matrixStream.byId)('netHeaderTitle').innerText = 'HIDE';
-      } else {
-        (0, _matrixStream.byId)('matrix-net').classList.remove('show-by-vertical');
-        (0, _matrixStream.byId)('matrix-net').classList.add('hide-by-vertical');
-        (0, _matrixStream.byId)('netHeaderTitle').innerText = 'SHOW';
-      }
-    }
-  };
 }
-exports.MatrixStream = MatrixStream;
-let activateNet2 = sessionOption => {
-  console.info(`%cNetworking2 [openvidu/kurento server] params: ${sessionOption}`, CS3);
-  // -----------------------
-  // Make run
-  // -----------------------
-  if (typeof sessionOption === 'undefined') {
-    var sessionOption = {};
-    sessionOption.sessionName = 'matrix-engine-random';
-    sessionOption.resolution = '160x240';
-    sessionOption.active = true;
-    sessionOption.domain = 'maximumroulette.com';
-    sessionOption.port = 2020;
-  }
-  net = new MatrixStream({
-    domain: t.networking2.domain,
-    port: t.networking2.port,
-    sessionName: sessionOption.sessionName,
-    resolution: sessionOption.resolution
-  });
-  addEventListener(`setTitle`, e => {
-    document.title = e.detail;
-  });
-};
-exports.activateNet2 = activateNet2;
+exports.METoolTip = METoolTip;
 
-},{"../utils":47,"./matrix-stream":44}],46:[function(require,module,exports){
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.AnimatedCursor = void 0;
-class AnimatedCursor {
-  constructor(options = {}) {
-    this.path = options.path || './res/icons/';
-    this.frameCount = options.frameCount || 8; // number of PNGs
-    this.speed = options.speed || 100; // ms per frame
-    this.hotspot = options.hotspot || {
-      x: 0,
-      y: 0
-    };
-    this.loop = options.loop !== undefined ? options.loop : true;
-    this._current = 0;
-    this._timer = null;
-    this._isPlaying = false;
-  }
-  _applyCursor(index) {
-    const cursorUrl = `url('${this.path}${index}.png') ${this.hotspot.x} ${this.hotspot.y}, auto`;
-    document.body.style.cursor = cursorUrl;
-  }
-  start() {
-    if (this._isPlaying) return;
-    this._isPlaying = true;
-    this._applyCursor(this._current);
-    this._timer = setInterval(() => {
-      this._current++;
-      if (this._current >= this.frameCount) {
-        if (this.loop) this._current = 0;else return this.stop();
-      }
-      this._applyCursor(this._current);
-    }, this.speed);
-  }
-  stop() {
-    if (!this._isPlaying) return;
-    clearInterval(this._timer);
-    this._timer = null;
-    this._isPlaying = false;
-  }
-  reset() {
-    this._current = 0;
-    this._applyCursor(this._current);
-  }
-  destroy() {
-    this.stop();
-    document.body.style.cursor = 'auto';
-  }
-}
-exports.AnimatedCursor = AnimatedCursor;
-
-},{}],47:[function(require,module,exports){
+},{}],41:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30808,7 +27780,7 @@ class FullscreenManager {
 }
 exports.FullscreenManager = FullscreenManager;
 
-},{}],48:[function(require,module,exports){
+},{}],42:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30850,7 +27822,7 @@ class MultiLang {
 }
 exports.MultiLang = MultiLang;
 
-},{"../../public/res/multilang/en-backup":20,"../engine/utils":47}],49:[function(require,module,exports){
+},{"../../public/res/multilang/en-backup":16,"../engine/utils":41}],43:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -31134,7 +28106,7 @@ class MatrixAmmo {
 }
 exports.default = MatrixAmmo;
 
-},{"../engine/utils":47}],50:[function(require,module,exports){
+},{"../engine/utils":41}],44:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -31180,7 +28152,7 @@ fn fsMain(in : VertexOutput) -> @location(0) vec4f {
 }
 `;
 
-},{}],51:[function(require,module,exports){
+},{}],45:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -31306,7 +28278,7 @@ fn fsMain(in : VSOut) -> @location(0) vec4<f32> {
 }
 `;
 
-},{}],52:[function(require,module,exports){
+},{}],46:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -31394,7 +28366,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
 }
 `;
 
-},{}],53:[function(require,module,exports){
+},{}],47:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -31484,7 +28456,7 @@ fn main(input : FragmentInput) -> @location(0) vec4f {
 }
 `;
 
-},{}],54:[function(require,module,exports){
+},{}],48:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -31715,7 +28687,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, 1.0);
 }`;
 
-},{}],55:[function(require,module,exports){
+},{}],49:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -31893,7 +28865,7 @@ return vec4f(color, 1.0);
 // let radiance = spotlights[0].color * 10.0; // test high intensity
 // Lo += materialData.baseColor * radiance * NdotL;
 
-},{}],56:[function(require,module,exports){
+},{}],50:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -32138,7 +29110,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, 1.0);
 }`;
 
-},{}],57:[function(require,module,exports){
+},{}],51:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -32358,7 +29330,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, 1.0);
 }`;
 
-},{}],58:[function(require,module,exports){
+},{}],52:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -32526,7 +29498,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 // let radiance = spotlights[0].color * 10.0; // test high intensity
 // Lo += materialData.baseColor * radiance * NdotL;
 
-},{}],59:[function(require,module,exports){
+},{}],53:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -32762,7 +29734,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, alpha);
 }`;
 
-},{}],60:[function(require,module,exports){
+},{}],54:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -32866,7 +29838,7 @@ fn main(
   return output;
 }`;
 
-},{}],61:[function(require,module,exports){
+},{}],55:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -32903,7 +29875,7 @@ fn main(
 }
 `;
 
-},{}],62:[function(require,module,exports){
+},{}],56:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -32961,7 +29933,7 @@ fn fragmentMain(input: VertexOutput) -> @location(0) vec4f {
   return vec4f(textureColor.rgb * lightColor, textureColor.a);
 }`;
 
-},{}],63:[function(require,module,exports){
+},{}],57:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -33019,7 +29991,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
 }
 `;
 
-},{}],64:[function(require,module,exports){
+},{}],58:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -33106,7 +30078,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
 }
 `;
 
-},{}],65:[function(require,module,exports){
+},{}],59:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -33164,7 +30136,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
   return vec4<f32>(color, 1.0);
 }`;
 
-},{}],66:[function(require,module,exports){
+},{}],60:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -33250,7 +30222,7 @@ fn main(
   return output;
 }`;
 
-},{}],67:[function(require,module,exports){
+},{}],61:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -33361,7 +30333,7 @@ fn main(
   return output;
 }`;
 
-},{}],68:[function(require,module,exports){
+},{}],62:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -33389,7 +30361,7 @@ fn main(
 }
 `;
 
-},{}],69:[function(require,module,exports){
+},{}],63:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -33459,34 +30431,367 @@ class MatrixSounds {
 }
 exports.MatrixSounds = MatrixSounds;
 
-},{}],70:[function(require,module,exports){
+},{}],64:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.MEEditorClient = void 0;
+var _utils = require("../../engine/utils");
+class MEEditorClient {
+  ws = null;
+  constructor(typeOfRun, name) {
+    this.ws = new WebSocket("ws://localhost:1243");
+    this.ws.onopen = () => {
+      if (typeOfRun == 'created from editor') {
+        //
+        console.info('wATCH project <signal>');
+        let o = {
+          action: "watch",
+          name: name
+        };
+        o = JSON.stringify(o);
+        this.ws.send(o);
+        o = {
+          action: "list",
+          path: name
+        };
+        o = JSON.stringify(o);
+        this.ws.send(o);
+      }
+      console.log("%c[WS OPEN] [Attach events]", "color: lime; font-weight: bold");
+    };
+    this.ws.onmessage = event => {
+      try {
+        const data = JSON.parse(event.data);
+        console.log("%c[WS MESSAGE]", "color: yellow", data);
+        if (data && data.ok == true && data.payload && data.payload.redirect == true) {
+          setTimeout(() => location.assign(data.name + ".html"), 2000);
+        } else if (data.payload && data.payload == "stop-watch done") {
+          _utils.mb.show("watch-stoped");
+        } else if (data.listAssets) {
+          document.dispatchEvent(new CustomEvent('la', {
+            detail: data
+          }));
+        } else if (data.projects) {
+          data.payload.forEach(item => {
+            console.log('.....' + item.name);
+            if (item.name != 'readme.md') {
+              let txt = `Project list: \n
+                - ${item.name}  \n
+               \n
+               Choose project name:
+              `;
+              let projectName = prompt(txt);
+              if (projectName !== null) {
+                console.log("Project name:", projectName);
+                projectName += ".html";
+                location.assign(projectName);
+              } else {
+                console.error('Something wrong with load project input!');
+              }
+            }
+          });
+        } else if (data.details) {
+          document.dispatchEvent(new CustomEvent('file-detail-data', {
+            detail: data
+          }));
+        } else if (data.refresh == 'refresh') {
+          // setTimeout(() => location.reload(true) , 1500);
+          setTimeout(() => document.dispatchEvent(new CustomEvent('updateSceneContainer', {
+            detail: {}
+          })), 1000);
+        } else {
+          _utils.mb.show("from editor:" + data.payload);
+        }
+      } catch (e) {
+        console.error("[WS ERROR PARSE]", e);
+      }
+    };
+    this.ws.onerror = err => {
+      console.error("%c[WS ERROR]", "color: red", err);
+      document.dispatchEvent(new CustomEvent("editor-not-running", {
+        detail: {}
+      }));
+    };
+    this.ws.onclose = () => {
+      console.log("%c[WS CLOSED]", "color: gray");
+    };
+    this.attachEvents();
+  }
+  attachEvents() {
+    document.addEventListener('lp', e => {
+      console.info('Load project <signal>');
+      let o = {
+        action: "lp"
+      };
+      o = JSON.stringify(o);
+      this.ws.send(o);
+    });
+    document.addEventListener('cnp', e => {
+      console.info('Create new project <signal>');
+      let o = {
+        action: "cnp",
+        name: e.detail.name,
+        features: e.detail.features
+      };
+      o = JSON.stringify(o);
+      this.ws.send(o);
+    });
+    document.addEventListener('stop-watch', e => {
+      console.info('stop-watch <signal>');
+      let o = {
+        action: "stop-watch",
+        name: e.detail.name
+      };
+      o = JSON.stringify(o);
+      this.ws.send(o);
+    });
+    document.addEventListener('start-watch', e => {
+      console.info('start-watch <signal>');
+      let o = {
+        action: "watch",
+        name: e.detail.name
+      };
+      o = JSON.stringify(o);
+      this.ws.send(o);
+    });
+    document.addEventListener('nav-folder', e => {
+      console.info('nav-folder <signal>');
+      let o = {
+        action: "nav-folder",
+        name: e.detail.name,
+        rootFolder: e.detail.rootFolder
+      };
+      o = JSON.stringify(o);
+      this.ws.send(o);
+    });
+    document.addEventListener('file-detail', e => {
+      console.info('file-detail <signal>');
+      let o = {
+        action: "file-detail",
+        name: e.detail.name,
+        rootFolder: e.detail.rootFolder
+      };
+      o = JSON.stringify(o);
+      this.ws.send(o);
+    });
+    document.addEventListener('web.editor.addCube', e => {
+      console.log("[web.editor.addCube]: ", e.detail);
+      console.info('addCube <signal>');
+      let o = {
+        action: "addCube",
+        projectName: location.href.split('/public/')[1].split(".")[0],
+        options: e.detail
+      };
+      o = JSON.stringify(o);
+      this.ws.send(o);
+    });
+    document.addEventListener('web.editor.addSphere', e => {
+      console.log("[web.editor.addSphere]: ", e.detail);
+      console.info('addSphere <signal>');
+      let o = {
+        action: "addSphere",
+        projectName: location.href.split('/public/')[1].split(".")[0],
+        options: e.detail
+      };
+      o = JSON.stringify(o);
+      this.ws.send(o);
+    });
+    document.addEventListener('save-methods', e => {
+      console.info('save script <signal>');
+      let o = {
+        action: "save-methods",
+        methodsContainer: e.detail.methodsContainer
+      };
+      o = JSON.stringify(o);
+      this.ws.send(o);
+    });
+    document.addEventListener('web.editor.addGlb', e => {
+      console.log("[web.editor.addGlb]: ", e.detail);
+      console.info('addGlb <signal>');
+      let o = {
+        action: "addGlb",
+        projectName: location.href.split('/public/')[1].split(".")[0],
+        options: e.detail
+      };
+      o = JSON.stringify(o);
+      this.ws.send(o);
+    });
+    document.addEventListener('web.editor.addObj', e => {
+      console.log("[web.editor.addObj]: ", e.detail);
+      console.info('addObj <signal>');
+      let o = {
+        action: "addObj",
+        projectName: location.href.split('/public/')[1].split(".")[0],
+        options: e.detail
+      };
+      o = JSON.stringify(o);
+      this.ws.send(o);
+    });
+
+    // add for instane class also later
+
+    // delete obj
+    // delete-sceneObject
+    document.addEventListener('web.editor.delete', e => {
+      console.log("[web.editor.delete]: ", e.detail);
+      console.info('delete-obj <signal>');
+      let o = {
+        action: "delete-obj",
+        projectName: location.href.split('/public/')[1].split(".")[0],
+        name: e.detail
+      };
+      o = JSON.stringify(o);
+      this.ws.send(o);
+    });
+
+    // UPDATE
+    document.addEventListener('web.editor.update.pos', e => {
+      console.log("[web.editor.update.pos]: ", e.detail);
+      console.info('web.editor.update.pos <signal>');
+      let o = {
+        action: "updatePos",
+        projectName: location.href.split('/public/')[1].split(".")[0],
+        data: e.detail
+      };
+      o = JSON.stringify(o);
+      this.ws.send(o);
+    });
+    document.addEventListener('web.editor.update.rot', e => {
+      console.log("[web.editor.update.rot]: ", e.detail);
+      console.info('web.editor.update.rot <signal>');
+      let o = {
+        action: "updateRot",
+        projectName: location.href.split('/public/')[1].split(".")[0],
+        data: e.detail
+      };
+      o = JSON.stringify(o);
+      this.ws.send(o);
+    });
+  }
+}
+exports.MEEditorClient = MEEditorClient;
+
+},{"../../engine/utils":41}],65:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.Editor = void 0;
+var _client = require("./client");
 var _editor = _interopRequireDefault(require("./editor.provider"));
+var _fluxCodexVertex = _interopRequireDefault(require("./fluxCodexVertex"));
 var _hud = _interopRequireDefault(require("./hud"));
+var _methodsManager = _interopRequireDefault(require("./methodsManager"));
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
+// import methodsContainer from './';
+
 class Editor {
-  constructor(core, a) {
+  constructor(core, a, projName) {
     this.core = core;
-    this.editorHud = new _hud.default(core);
-    this.editorProvider = new _editor.default(core);
-    if (typeof a !== 'undefined' && a == "") {}
-    this.client = new MEEditorClient();
+    this.methodsManager = new _methodsManager.default(this.check(a));
+    this.editorHud = new _hud.default(core, this.check(a));
+    this.editorProvider = new _editor.default(core, this.check(a));
+    if (this.check(a) == 'pre editor') {
+      this.client = new _client.MEEditorClient(this.check(a));
+    } else if (this.check(a) == 'created from editor') {
+      this.client = new _client.MEEditorClient(this.check(a), projName);
+      // Visual Scripting
+      this.createFluxCodexVertexDOM();
+      setTimeout(() => {
+        this.fluxCodexVertex = new _fluxCodexVertex.default('board', 'boardWrap', 'log', this.methodsManager);
+        setTimeout(() => {
+          this.fluxCodexVertex.updateLinks();
+        }, 3000);
+      }, 1500);
+    }
+    // console.log("methodsManager", this.methodsManager);
+  }
+  check(a) {
+    if (typeof a !== 'undefined' && a == "created from editor") {
+      return a;
+    } else if (typeof a !== 'undefined' && a == "pre editor") {
+      return a;
+    } else {
+      return "infly";
+    }
+  }
+  createFluxCodexVertexDOM() {
+    let FCV = document.createElement('div');
+    FCV.id = 'app';
+    FCV.style.display = 'none';
+    FCV.style.opacity = 1;
+    // test async 
+    // setTimeout(() => FCV.style.display = 'none' , 200);
+    FCV.innerHTML = `
+    <div id="leftBar">
+      <h3>Events/Func</h3>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('event')">Event: onLoad</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('function')">Function</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('if')">If Branch</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('genrand')">GenRandInt</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('print')">Print</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('timeout')">SetTimeout</button>
+      <hr style="border:none; height:1px; background:rgba(255,255,255,0.03); margin:10px 0;">
+      <span>Scene objects</span>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getSceneObject')">Get scene object</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setPosition')">Set position</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('translateByX')">TranslateByX</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('translateByY')">TranslateByY</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('translateByZ')">TranslateByZ</button>
+      
+      <hr style="border:none; height:1px; background:rgba(255,255,255,0.03); margin:10px 0;">
+      <span>Math</span>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('add')">Add (+)</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('sub')">Sub (-)</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('mul')">Mul (*)</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('div')">Div (/)</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('sin')">Sin</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('cos')">Cos</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('pi')">Pi</button>
+      <hr style="border:none; height:1px; background:rgba(255,255,255,0.03); margin:10px 0;">
+      <span>COMPARISON</span>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('equal')">Equal (==)</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('notequal')">Not Equal (!=)</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('greater')">Greater (>)</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('less')">Less (<)</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('greaterEqual')">Greater/Equal (>=)</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('lessEqual')">Less/Equal (<=)</button>
+      <hr style="border:none; height:1px; background:rgba(255,255,255,0.03); margin:10px 0;">
+      <hr style="border:none; height:1px; background:rgba(255,255,255,0.03); margin:10px 0;">
+      <span>Compile FluxCodexVertex</span>
+      <button style="color:orangered;" class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.compileGraph()">Save to LocalStorage</button>
+      <button style="color:red;" class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.clearStorage();">Clear Save</button>
+      <button style="color:orangered;" class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.runGraph()">Run (F6)</button>
+      <hr style="border:none; height:1px; background:rgba(255,255,255,0.03); margin:10px 0;">
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.exportToJSON()">Export (JSON)</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex._importInput.click()">Import (JSON)</button>
+
+      <pre id="log" aria-live="polite"></pre>
+    </div>
+    <div id="boardWrap">
+      <div id="board">
+        <svg class="connections"></svg>
+      </div>
+    </div>
+    `;
+    document.body.appendChild(FCV);
   }
 }
 exports.Editor = Editor;
 
-},{"./editor.provider":71,"./hud":72}],71:[function(require,module,exports){
+},{"./client":64,"./editor.provider":66,"./fluxCodexVertex":67,"./hud":68,"./methodsManager":69}],66:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.default = void 0;
+var _loaderObj = require("../../engine/loader-obj");
+var _webgpuGltf = require("../../engine/loaders/webgpu-gltf");
 /**
  * @description
  * For now it is posible for editor to work on fly
@@ -33498,11 +30803,34 @@ class EditorProvider {
     this.core = core;
     this.addEditorEvents();
   }
+  getNameFromPath(p) {
+    return p.split(/[/\\]/).pop().replace(/\.[^/.]+$/, ""); // + (this.core.mainRenderBundle.length);
+  }
   addEditorEvents() {
     document.addEventListener('web.editor.input', e => {
-      console.log("[EDITOR] sceneObj: ", e.detail.inputFor);
-      console.log("[EDITOR] sceneObj: ", e.detail.propertyId);
-      console.log("[EDITOR] sceneObj: ", e.detail.property);
+      console.log("[EDITOR-input]: ", e.detail);
+      // Saves methods
+      switch (e.detail.propertyId) {
+        case 'position':
+          {
+            console.log('change signal for pos');
+            if (e.detail.property == 'x' || e.detail.property == 'y' || e.detail.property == 'z') document.dispatchEvent(new CustomEvent('web.editor.update.pos', {
+              detail: e.detail
+            }));
+            break;
+          }
+        case 'rotation':
+          {
+            console.log('change signal for rot');
+            if (e.detail.property == 'x' || e.detail.property == 'y' || e.detail.property == 'z') document.dispatchEvent(new CustomEvent('web.editor.update.rot', {
+              detail: e.detail
+            }));
+            break;
+          }
+        default:
+          console.log('changes not saved.');
+      }
+      // inputFor: "Cube_0" property: "x" propertyId: "position" value: "1"
 
       // InFly Method
       let sceneObj = this.core.getSceneObjectByName(e.detail.inputFor);
@@ -33513,11 +30841,2199 @@ class EditorProvider {
         return;
       }
     });
+    document.addEventListener('web.editor.addCube', e => {
+      // console.log("[web.editor.addCube]: ", e.detail);
+      // THIS MUST BE SAME LIKE SERVER VERSION OF ADD CUBE
+      (0, _loaderObj.downloadMeshes)({
+        cube: "./res/meshes/blender/cube.obj"
+      }, m => {
+        const texturesPaths = './res/meshes/blender/cube.png';
+        this.core.addMeshObj({
+          position: {
+            x: 0,
+            y: 0,
+            z: -20
+          },
+          rotation: {
+            x: 0,
+            y: 0,
+            z: 0
+          },
+          rotationSpeed: {
+            x: 0,
+            y: 0,
+            z: 0
+          },
+          texturesPaths: [texturesPaths],
+          // useUVShema4x2: true,
+          name: 'Cube_' + app.mainRenderBundle.length,
+          mesh: m.cube,
+          raycast: {
+            enabled: true,
+            radius: 2
+          },
+          physics: {
+            enabled: e.detail.physics,
+            geometry: "Cube"
+          }
+        });
+      }, {
+        scale: [1, 1, 1]
+      });
+    });
+    document.addEventListener('web.editor.addSphere', e => {
+      // console.log("[web.editor.addCube]: ", e.detail);
+      (0, _loaderObj.downloadMeshes)({
+        cube: "./res/meshes/shapes/sphere.obj"
+      }, m => {
+        const texturesPaths = './res/meshes/blender/cube.png';
+        this.core.addMeshObj({
+          position: {
+            x: 0,
+            y: 0,
+            z: -20
+          },
+          rotation: {
+            x: 0,
+            y: 0,
+            z: 0
+          },
+          rotationSpeed: {
+            x: 0,
+            y: 0,
+            z: 0
+          },
+          texturesPaths: [texturesPaths],
+          // useUVShema4x2: true,
+          name: 'Sphere_' + app.mainRenderBundle.length,
+          mesh: m.cube,
+          raycast: {
+            enabled: true,
+            radius: 2
+          },
+          physics: {
+            enabled: e.detail.physics,
+            geometry: "Sphere"
+          }
+        });
+      }, {
+        scale: [1, 1, 1]
+      });
+    });
+    document.addEventListener('web.editor.addGlb', async e => {
+      console.log("[web.editor.addGlb]: ", e.detail.path);
+      e.detail.path = e.detail.path.replace('\\res', 'res');
+      // THIS MUST BE SAME LIKE SERVER VERSION OF ADD GLB
+      var glbFile01 = await fetch(e.detail.path).then(res => res.arrayBuffer().then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, this.core.device)));
+      this.core.addGlbObj({
+        material: {
+          type: 'power',
+          useTextureFromGlb: true
+        },
+        scale: [2, 2, 2],
+        position: {
+          x: 0,
+          y: 0,
+          z: -20
+        },
+        name: this.getNameFromPath(e.detail.path),
+        texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png']
+      }, null, glbFile01);
+    });
+    document.addEventListener('web.editor.addObj', e => {
+      console.log("[web.editor.addObj]: ", e.detail);
+      e.detail.path = e.detail.path.replace('\\res', 'res');
+      e.detail.path = e.detail.path.replace(/\\/g, '/');
+      // THIS MUST BE SAME LIKE SERVER VERSION OF ADD CUBE
+      (0, _loaderObj.downloadMeshes)({
+        objMesh: `'${e.detail.path}'`
+      }, m => {
+        const texturesPaths = './res/meshes/blender/cube.png';
+        this.core.addMeshObj({
+          position: {
+            x: 0,
+            y: 0,
+            z: -20
+          },
+          rotation: {
+            x: 0,
+            y: 0,
+            z: 0
+          },
+          rotationSpeed: {
+            x: 0,
+            y: 0,
+            z: 0
+          },
+          texturesPaths: [texturesPaths],
+          // useUVShema4x2: true,
+          name: 'objmesh_' + app.mainRenderBundle.length,
+          mesh: m.objMesh,
+          raycast: {
+            enabled: true,
+            radius: 2
+          },
+          physics: {
+            enabled: e.detail.physics,
+            geometry: "Cube"
+          }
+        });
+      }, {
+        scale: [1, 1, 1]
+      });
+    });
+
+    // delete
+    document.addEventListener('web.editor.delete', e => {
+      console.log("[web.editor.delete]: ", e.detail);
+      this.core.removeSceneObjectByName(e.detail);
+    });
+
+    // update procedure
   }
 }
 exports.default = EditorProvider;
 
-},{}],72:[function(require,module,exports){
+},{"../../engine/loader-obj":33,"../../engine/loaders/webgpu-gltf":36}],67:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+var _ToolTip = require("../../engine/plugin/tooltip/ToolTip");
+var _utils = require("../../engine/utils");
+/**
+ * @description
+ * Flux Codex Vertex use visual scripting model.
+ * 
+ * @filename
+ * fluxCodexVertex.js
+ *
+ * @Licence
+ * This Source Code Form is subject to the terms of the
+ * Mozilla Public License, v. 2.0.
+ * If a copy of the MPL was not distributed with this file,
+ * You can obtain one at https://mozilla.org/MPL/2.0/.
+ *
+ * Copyright (c) 2025 Nikola Lukić zlatnaspirala@gmail.com
+ * 
+ * @Note
+ * License summary for fluxCodexVertex.js (MPL 2.0):
+ * 
+ * ✔ You MAY:
+ * - Use this file in commercial and proprietary software
+ * - Modify and redistribute this file
+ * - Combine it with closed-source code
+ * - Sell software that includes this file
+ * 
+ * ✘ You MUST:
+ * - Publish the source code of this file if you modify it
+ * - Keep this file under MPL 2.0
+ * - Provide a link to the MPL 2.0 license
+ * - Preserve copyright notices
+ * 
+ * ✔ You do NOT have to:
+ * - Open-source your entire project
+ * - Publish files that merely import or use this file
+ * - Release unrelated source code
+ * 
+ * - MPL applies ONLY to this file
+ */
+
+class FluxCodexVertex {
+  constructor(boardId, boardWrapId, logId, methodsManager) {
+    this.debugMode = true;
+    this.toolTip = new _ToolTip.METoolTip();
+    this.methodsManager = methodsManager;
+    this.variables = {
+      number: {},
+      boolean: {},
+      string: {}
+    };
+
+    // DOM Elements
+    this.board = document.getElementById(boardId);
+    this.boardWrap = document.getElementById(boardWrapId);
+    this.svg = this.board.querySelector('svg.connections');
+    this.logEl = document.getElementById(logId);
+
+    // Data Model
+    this.nodes = {};
+    this.links = [];
+    this.nodeCounter = 1;
+    this.linkCounter = 1;
+    this._execContext = null;
+
+    // State Management
+    this.state = {
+      draggingNode: null,
+      dragOffset: [0, 0],
+      connecting: null,
+      selectedNode: null,
+      pan: [0, 0],
+      panning: false,
+      panStart: [0, 0]
+    };
+
+    // Bind event listeners
+    this.createVariablesPopup();
+    this._createImportInput();
+    this.bindGlobalListeners();
+
+    // Initialize the graph
+    this.init();
+    document.addEventListener('keydown', e => {
+      if (e.key == 'F6') {
+        e.preventDefault();
+        this.runGraph();
+      } else if (e.key === "Delete" /*|| e.key === "Backspace"*/) {
+        if (this.state.selectedNode) {
+          this.deleteNode(this.state.selectedNode);
+          this.state.selectedNode = null;
+        }
+      }
+    });
+    this.createContextMenu();
+  }
+  createContextMenu() {
+    let CMenu = document.createElement('div');
+    CMenu.id = "fc-context-menu";
+    CMenu.classList.add('fc-context-menu');
+    CMenu.classList.add('hidden');
+    const board = document.getElementById('board');
+    board.addEventListener('contextmenu', e => {
+      e.preventDefault();
+      CMenu.innerHTML = this.getFluxCodexMenuHTML();
+      const menuRect = CMenu.getBoundingClientRect();
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      let x = e.clientX;
+      let y = e.clientY;
+
+      // Horizontal clamp (prevent right overflow)
+      if (x + menuRect.width > vw) {
+        x = vw - menuRect.width - 5;
+      }
+
+      // Vertical smart placement
+      if (y > vh * 0.5) {
+        // open upwards
+        y = y - menuRect.height;
+      }
+
+      // Final clamp (top safety)
+      if (y < 5) y = 5;
+      CMenu.style.left = x + 'px';
+      CMenu.style.top = y + 'px';
+      CMenu.classList.remove('hidden');
+    });
+    document.addEventListener('click', () => {
+      CMenu.classList.add('hidden');
+    });
+    (0, _utils.byId)('app').appendChild(CMenu);
+  }
+  getFluxCodexMenuHTML() {
+    return `
+    <h3>Events / Func</h3>
+    <button onclick="app.editor.fluxCodexVertex.addNode('event')">Event: onLoad</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('function')">Function</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('if')">If Branch</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('genrand')">GenRandInt</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('print')">Print</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('timeout')">SetTimeout</button>
+
+    <hr>
+    <span>Scene</span>
+    <button onclick="app.editor.fluxCodexVertex.addNode('getSceneObject')">Get Scene Object</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('setPosition')">Set Position</button>
+
+
+    <button onclick="app.editor.fluxCodexVertex.addNode('onTargetPositionReach')">onTargetPositionReach</button>
+    
+
+    <hr>
+    <span>Math</span>
+    <button onclick="app.editor.fluxCodexVertex.addNode('add')">Add (+)</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('sub')">Sub (-)</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('mul')">Mul (*)</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('div')">Div (/)</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('sin')">Sin</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('cos')">Cos</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('pi')">Pi</button>
+
+    <hr>
+    <span>Comparison</span>
+    <button onclick="app.editor.fluxCodexVertex.addNode('equal')">Equal (==)</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('notequal')">Not Equal (!=)</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('greater')">Greater (>)</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('less')">Less (<)</button>
+
+    <hr>
+    <span>Compile</span>
+    <button onclick="app.editor.fluxCodexVertex.compileGraph()">Save</button>
+    <button onclick="app.editor.fluxCodexVertex.runGraph()">Run (F6)</button>
+  `;
+  }
+  log(...args) {
+    this.logEl.textContent = args.join(' ');
+  }
+  createGetNumberNode(varName) {
+    return this.addNode('getNumber', {
+      var: varName
+    });
+  }
+  createGetBooleanNode(varName) {
+    return this.addNode('getBoolean', {
+      var: varName
+    });
+  }
+  createGetStringNode(varName) {
+    return this.addNode('getString', {
+      var: varName
+    });
+  }
+  createSetNumberNode(varName) {
+    return this.addNode('setNumber', {
+      var: varName
+    });
+  }
+  createSetBooleanNode(varName) {
+    return this.addNode('setBoolean', {
+      var: varName
+    });
+  }
+  createSetStringNode(varName) {
+    return this.addNode('setString', {
+      var: varName
+    });
+  }
+  evaluateGetterNode(n) {
+    const key = n.fields?.find(f => f.key === 'var')?.value;
+    if (n.title === 'Get Number') {
+      n._returnCache = this.variables.number[key]?.value ?? 0;
+    }
+    if (n.title === 'Get Boolean') {
+      n._returnCache = this.variables.boolean[key]?.value ?? false;
+    }
+    if (n.title === 'Get String') {
+      n._returnCache = this.variables.string[key]?.value ?? '';
+    }
+  }
+  notifyVariableChanged(type, key) {
+    for (const id in this.nodes) {
+      const n = this.nodes[id];
+      if (!n.fields) continue;
+      if (!n.title.startsWith('Get')) continue;
+      const varField = n.fields.find(f => f.key === 'var');
+      if (!varField || varField.value !== key) continue;
+      if (type === 'number' && n.title !== 'Get Number' || type === 'boolean' && n.title !== 'Get Boolean' || type === 'string' && n.title !== 'Get String') continue;
+
+      // recompute getter value
+      this.evaluateGetterNode(n);
+
+      // update UI
+      if (n.displayEl) {
+        n.displayEl.textContent = n._returnCache;
+      }
+    }
+  }
+  createVariablesPopup() {
+    if (this._varsPopup) return;
+    const popup = document.createElement('div');
+    popup.id = 'varsPopup';
+    this._varsPopup = popup;
+    Object.assign(popup.style, {
+      display: 'none',
+      flexDirection: 'column',
+      position: 'absolute',
+      top: '10%',
+      left: '0',
+      width: '30%',
+      height: '50%',
+      overflow: 'scroll',
+      background: 'linear-gradient(135deg, #1a1a1a 0%, #2b2b2b 100%), /* subtle dark gradient */ repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.05) 1px, transparent 1px, transparent 20px), repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.05) 1px, transparent 1px, transparent 20px)',
+      backgroundBlendMode: 'overlay',
+      backgroundSize: 'auto, 20px 20px, 20px 20px',
+      border: '1px solid #444',
+      borderRadius: '8px',
+      padding: '10px',
+      zIndex: 9999,
+      color: '#eee',
+      overflowX: 'hidden'
+    });
+    // HEADER
+    const title = document.createElement('div');
+    title.innerHTML = `Variables`;
+    title.style.marginBottom = '8px';
+    title.style.fontWeight = 'bold';
+    popup.appendChild(title);
+    const list = document.createElement('div');
+    list.id = 'varslist';
+    popup.appendChild(list);
+
+    // CREATE BUTTONS
+    const btns = document.createElement('div');
+    btns.style.marginTop = '10px';
+    btns.style.display = 'flex';
+    btns.style.gap = '6px';
+    btns.append(this._createVarBtn('Number', 'number'), this._createVarBtn('Boolean', 'boolean'), this._createVarBtn('String', 'string'));
+    popup.appendChild(btns);
+    const hideVPopup = document.createElement('button');
+    hideVPopup.innerText = `Hide`;
+    hideVPopup.classList.add('btn4');
+    hideVPopup.style.margin = '8px 8px 8px 8px';
+    hideVPopup.style.width = '100px';
+    hideVPopup.style.fontWeight = 'bold';
+    // hideVPopup.style.height = '4%';
+    hideVPopup.style.webkitTextStrokeWidth = '0px';
+    hideVPopup.addEventListener('click', () => {
+      (0, _utils.byId)('varsPopup').style.display = 'none';
+    });
+    popup.appendChild(hideVPopup);
+    document.body.appendChild(popup);
+    this.makePopupDraggable(popup);
+    this._refreshVarsList(list);
+  }
+  _refreshVarsList(container) {
+    container.innerHTML = '';
+    const colors = {
+      number: '#4fc3f7',
+      boolean: '#aed581',
+      string: '#ffb74d'
+    };
+    for (const type in this.variables) {
+      for (const name in this.variables[type]) {
+        const row = document.createElement('div');
+        Object.assign(row.style, {
+          display: 'flex',
+          alignItems: 'center',
+          gap: '6px',
+          padding: '4px',
+          cursor: 'pointer',
+          borderBottom: '1px solid #222',
+          color: colors[type],
+          webkitTextStrokeWidth: '0px'
+        });
+
+        // label
+        const label = document.createElement('span');
+        label.textContent = `${name} (${type})`;
+
+        // value input
+        const input = document.createElement('input');
+        input.value = this.variables[type][name].value ?? '';
+        input.style.width = '60px';
+        input.style.background = '#000';
+        input.style.color = '#fff';
+        input.style.border = '1px solid #333';
+        input.oninput = e => {
+          this.variables[type][name].value = type === 'number' ? Number(e.target.value) : type === 'boolean' ? e.target.value === 'true' : e.target.value;
+        };
+        const propagate = document.createElement('button');
+        propagate.innerText = `Get ${name}`;
+        propagate.classList.add('btnGetter');
+        // CLICK → create getter node
+        propagate.onclick = () => {
+          if (type === 'number') {
+            this.createGetNumberNode(name);
+          } else if (type === 'boolean') {
+            this.createGetBooleanNode(name);
+          } else if (type === 'string') {
+            this.createSetStringNode(name);
+          }
+        };
+        const propagateSet = document.createElement('button');
+        propagateSet.innerText = `Set ${name}`;
+        propagateSet.classList.add('btnGetter');
+        // CLICK → create getter node
+        propagateSet.onclick = () => {
+          if (type === 'number') {
+            this.createSetNumberNode(name);
+          } else if (type === 'boolean') {
+            this.createSetBooleanNode(name);
+          } else if (type === 'string') {
+            this.createSetStringNode(name);
+          }
+        };
+        row.append(label, input, propagate, propagateSet);
+        container.appendChild(row);
+      }
+    }
+  }
+  makePopupDraggable(popup, handle = popup) {
+    let isDragging = false;
+    let startX = 0;
+    let startY = 0;
+    let startLeft = 0;
+    let startTop = 0;
+    handle.style.cursor = 'move';
+    handle.addEventListener('mousedown', e => {
+      isDragging = true;
+      startX = e.clientX;
+      startY = e.clientY;
+      const rect = popup.getBoundingClientRect();
+      startLeft = rect.left;
+      startTop = rect.top;
+      popup.style.left = startLeft + 'px';
+      popup.style.top = startTop + 'px';
+      popup.style.transform = 'none';
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    });
+    const onMove = e => {
+      if (!isDragging) return;
+      popup.style.left = startLeft + (e.clientX - startX) + 'px';
+      popup.style.top = startTop + (e.clientY - startY) + 'px';
+    };
+    const onUp = () => {
+      isDragging = false;
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    };
+  }
+  _createVarBtn(label, type) {
+    const btn = document.createElement('button');
+    btn.textContent = label;
+    btn.style.flex = '1';
+    btn.style.cursor = 'pointer';
+    btn.classList.add('btn');
+    btn.onclick = () => {
+      const name = prompt(`New ${type} variable name`);
+      if (!name) return;
+      if (this.variables[type][name]) {
+        alert('Variable exists');
+        return;
+      }
+      this.variables[type][name] = {
+        value: type === 'number' ? 0 : type === 'boolean' ? false : ''
+      };
+      this._refreshVarsList(this._varsPopup.children[1]);
+    };
+    return btn;
+  }
+  _getPinDot(nodeId, pinName, isOutput) {
+    const nodeEl = document.querySelector(`.node[data-id="${nodeId}"]`);
+    if (!nodeEl) return null;
+    const io = isOutput ? 'out' : 'in';
+    return nodeEl.querySelector(`.pin[data-pin="${pinName}"][data-io="${io}"] .dot`);
+  }
+  populateVariableSelect(select, type) {
+    select.innerHTML = '';
+    const vars = this.variables[type];
+    if (!vars.length) {
+      const opt = document.createElement('option');
+      opt.textContent = '(no variables)';
+      opt.disabled = true;
+      select.appendChild(opt);
+      return;
+    }
+    vars.forEach(v => {
+      const opt = document.createElement('option');
+      opt.value = v.name;
+      opt.textContent = v.name;
+      select.appendChild(opt);
+    });
+  }
+
+  // Dynamic Method Helpers
+  getArgNames(fn) {
+    const src = fn.toString().trim();
+    // Case 1: arrow function with no parentheses:  a => ...
+    const arrowNoParen = src.match(/^([a-zA-Z0-9_$]+)\s*=>/);
+    if (arrowNoParen) {
+      return [arrowNoParen[1].trim()];
+    }
+    // Case 2: normal (a,b) => ...  OR function(a,b) { ... }
+    const argsMatch = src.match(/\(([^)]*)\)/);
+    if (argsMatch && argsMatch[1].trim().length > 0) {
+      return argsMatch[1].split(",").map(a => a.trim()).filter(a => a.length > 0);
+    }
+    // Default: no args
+    return [];
+  }
+  hasReturn(fn) {
+    const src = fn.toString().trim();
+    // Case 1: implicit return in arrow: (a)=>a+2  OR  a=>a*2
+    // Detect arrow "=>" followed by an expression, not "{"
+    if (/=>\s*[^({]/.test(src)) {
+      return true;
+    }
+    // Case 2: normal "return" inside function body
+    if (/return\s+/.test(src)) {
+      return true;
+    }
+    return false;
+  }
+  adaptNodeToMethod(node, methodItem) {
+    const fn = this.methodsManager.compileFunction(methodItem.code);
+    // Reset pins except execution pins
+    node.inputs = [{
+      name: "exec",
+      type: "action"
+    }];
+    node.outputs = [{
+      name: "execOut",
+      type: "action"
+    }];
+    // Dynamic input pins
+    const args = this.getArgNames(fn);
+    args.forEach(arg => node.inputs.push({
+      name: arg,
+      type: "value"
+    }));
+    // Dynamic return pin
+    if (this.hasReturn(fn)) node.outputs.push({
+      name: "return",
+      type: "value"
+    });
+    node.attachedMethod = methodItem.name;
+    node.fn = fn;
+    // Refresh the DOM so new pins are clickable
+    this.updateNodeDOM(node.id);
+  }
+  populateMethodsSelect(selectEl) {
+    selectEl.innerHTML = '';
+    const placeholder = document.createElement('option');
+    placeholder.value = '';
+    placeholder.textContent = '-- Select Method --';
+    selectEl.appendChild(placeholder);
+    this.methodsManager.methodsContainer.forEach(method => {
+      const opt = document.createElement('option');
+      opt.value = method.name;
+      opt.textContent = method.name;
+      selectEl.appendChild(opt);
+    });
+  }
+  updateNodeDOM(nodeId) {
+    const node = this.nodes[nodeId];
+    const el = document.querySelector(`.node[data-id="${nodeId}"]`);
+    if (!el) return;
+    const left = el.querySelector('.pins-left');
+    const right = el.querySelector('.pins-right');
+    if (!left || !right) return;
+
+    // Clear only **non-exec pins**
+    left.innerHTML = '';
+    right.innerHTML = '';
+
+    // Keep exec pins in the spec
+    const inputs = node.inputs || [];
+    const outputs = node.outputs || [];
+    inputs.forEach(pin => left.appendChild(this._pinElement(pin, false, nodeId)));
+    outputs.forEach(pin => right.appendChild(this._pinElement(pin, true, nodeId)));
+
+    // Method select (only for Function nodes)
+    if (node.category === 'action' && node.title === 'Function') {
+      let select = el.querySelector('select.method-select');
+      if (!select) {
+        select = document.createElement('select');
+        select.className = 'method-select';
+        select.style.cssText = 'width:100%; margin-top:6px;';
+        el.querySelector('.body').appendChild(select);
+      }
+      this.populateMethodsSelect(select);
+      if (node.attachedMethod) select.value = node.attachedMethod;
+      select.onchange = e => {
+        const selected = this.methodsManager.methodsContainer.find(m => m.name === e.target.value);
+        if (selected) this.adaptNodeToMethod(node, selected);
+      };
+    }
+  }
+
+  // NODE/PIN CREATION
+  // CONNECTION HANDLERS
+  startConnect(nodeId, pinName, type, isOut) {
+    this.state.connecting = {
+      node: nodeId,
+      pin: pinName,
+      type: type,
+      out: isOut
+    };
+  }
+  finishConnect(nodeId, pinName, type, isOut) {
+    if (!this.state.connecting || this.state.connecting.node === nodeId) {
+      this.state.connecting = null;
+      return;
+    }
+    const from = this.state.connecting.out ? this.state.connecting : {
+      node: nodeId,
+      pin: pinName
+    };
+    const to = this.state.connecting.out ? {
+      node: nodeId,
+      pin: pinName
+    } : this.state.connecting;
+
+    // Prevent duplicate links and type mismatch
+    if (from.pin && to.pin && this.isTypeCompatible(this.state.connecting.type, type)) {
+      const exists = this.links.find(l => l.from.node === from.node && l.from.pin === from.pin && l.to.node === to.node && l.to.pin === to.pin);
+      if (!exists) {
+        this.links.push({
+          id: 'link_' + this.linkCounter++,
+          from,
+          to,
+          type
+        });
+        this.updateLinks();
+        if (type === 'value') setTimeout(() => this.updateValueDisplays(), 0);
+      }
+    }
+    this.state.connecting = null;
+  }
+  normalizePinType(type) {
+    if (!type) return 'any';
+    if (type === 'number') return 'value';
+    return type;
+  }
+  updateSceneObjectPins(node, objectName) {
+    const obj = (window.app?.mainRenderBundle || []).find(o => o.name === objectName);
+    if (!obj) return;
+    // expose one-level properties
+    const props = ['name', 'position', 'rotation', 'scale'];
+    props.forEach(p => {
+      if (obj[p] !== undefined) {
+        const type = typeof obj[p] === 'number' ? 'number' : typeof obj[p] === 'string' ? 'string' : 'object';
+        node.outputs.push({
+          name: p,
+          type
+        });
+      }
+    });
+    // Refresh DOM
+    this.updateNodeDOM(node.id);
+  }
+  _pinElement(pinSpec, isOutput, nodeId) {
+    const pin = document.createElement('div');
+    // CSS class with type
+    console.log('test pin :', pinSpec.name);
+    if (pinSpec.name == 'position') {
+      pin.className = `pin pin-${pinSpec.name}`;
+    } else {
+      pin.className = `pin pin-${pinSpec.type}`;
+    }
+    pin.dataset.pin = pinSpec.name;
+    pin.dataset.type = pinSpec.type;
+    pin.dataset.io = isOutput ? 'out' : 'in';
+    pin.dataset.node = nodeId;
+
+    // Dot (connect point)
+    const dot = document.createElement('div');
+    dot.className = 'dot';
+    pin.appendChild(dot);
+
+    // Pin Label
+    const label = document.createElement('span');
+    label.className = 'pin-label';
+    label.textContent = pinSpec.name;
+    pin.appendChild(label);
+
+    // Connect events
+    pin.addEventListener('mousedown', () => this.startConnect(nodeId, pinSpec.name, pinSpec.type, isOutput));
+    pin.addEventListener('mouseup', () => this.finishConnect(nodeId, pinSpec.name, pinSpec.type, isOutput));
+    return pin;
+  }
+  createNodeDOM(spec) {
+    const el = document.createElement('div');
+    el.className = 'node ' + (spec.category || '');
+    el.style.left = spec.x + 'px';
+    el.style.top = spec.y + 'px';
+    el.dataset.id = spec.id;
+
+    // --- Header ---
+    const header = document.createElement('div');
+    header.className = 'header';
+    header.textContent = spec.title;
+    el.appendChild(header);
+
+    // --- Body ---
+    const body = document.createElement('div');
+    body.className = 'body';
+
+    // --- Pin row ---
+    const row = document.createElement('div');
+    row.className = 'pin-row';
+    const left = document.createElement('div');
+    left.className = 'pins-left';
+    const right = document.createElement('div');
+    right.className = 'pins-right';
+
+    // Normalize pins before building DOM
+    (spec.inputs || []).forEach(pin => {
+      pin.type = this.normalizePinType(pin.type);
+      left.appendChild(this._pinElement(pin, false, spec.id));
+    });
+    (spec.outputs || []).forEach(pin => {
+      pin.type = this.normalizePinType(pin.type);
+      right.appendChild(this._pinElement(pin, true, spec.id));
+    });
+    row.appendChild(left);
+    row.appendChild(right);
+    body.appendChild(row);
+
+    // Value display
+    if (spec.fields && spec.title === 'GenRandInt') {
+      const container = document.createElement('div');
+      container.className = 'genrand-inputs';
+      spec.fields.forEach(f => {
+        const input = document.createElement('input');
+        input.type = 'number';
+        input.value = f.value;
+        input.style.width = '40px';
+        input.style.marginRight = '4px';
+        input.addEventListener('input', e => f.value = e.target.value);
+        container.appendChild(input);
+        const label = document.createElement('span');
+        label.textContent = f.key;
+        label.className = 'field-label';
+        container.appendChild(label);
+      });
+      body.appendChild(container);
+    } else if (spec.category === 'math' || spec.category === 'value' || spec.title === 'Print') {
+      const display = document.createElement('div');
+      display.className = 'value-display';
+      display.textContent = '?';
+      spec.displayEl = display;
+      body.appendChild(display);
+    }
+
+    // Function Method Selector
+    if (spec.category === 'action' && !spec.builtIn && !spec.isVariableNode) {
+      const select = document.createElement('select');
+      select.className = 'method-select';
+      select.style.cssText = 'width:100%; margin-top:6px;';
+      body.appendChild(select);
+      this.populateMethodsSelect(select);
+      if (spec.attachedMethod) {
+        select.value = spec.attachedMethod;
+      }
+      select.addEventListener('change', e => {
+        const selected = this.methodsManager.methodsContainer.find(m => m.name === e.target.value);
+        if (selected) {
+          this.adaptNodeToMethod(spec, selected);
+        }
+      });
+    }
+
+    // Variable name input (temporary until popup)
+    if (spec.fields?.some(f => f.key === 'var')) {
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.value = spec.fields.find(f => f.key === 'var')?.value ?? '';
+      input.readOnly = true;
+      input.style.width = '100%';
+      input.style.marginTop = '6px';
+      input.style.opacity = '0.7';
+      input.style.cursor = 'default';
+      body.appendChild(input);
+    }
+    if (spec.title === 'Get Scene Object') {
+      const select = document.createElement('select');
+      select.style.width = '100%';
+      select.style.marginTop = '6px';
+
+      // Populate scene objects
+      const objects = window.app?.mainRenderBundle || [];
+      const placeholder = document.createElement('option');
+      placeholder.textContent = '-- Select Object --';
+      placeholder.value = '';
+      select.appendChild(placeholder);
+      objects.forEach(obj => {
+        const opt = document.createElement('option');
+        opt.value = obj.name;
+        opt.textContent = obj.name;
+        select.appendChild(opt);
+      });
+      if (spec.fields[0].value) select.value = spec.fields[0].value;
+      select.addEventListener('change', e => {
+        const name = e.target.value;
+        spec.fields[0].value = name;
+        this.updateSceneObjectPins(spec, name);
+      });
+      el.appendChild(select);
+    }
+    el.appendChild(body);
+    // --- Dragging ---
+    header.addEventListener('mousedown', e => {
+      e.preventDefault();
+      this.state.draggingNode = el;
+      const rect = el.getBoundingClientRect();
+      const bx = this.board.getBoundingClientRect();
+      this.state.dragOffset = [e.clientX - rect.left + bx.left, e.clientY - rect.top + bx.top];
+      document.body.style.cursor = 'grabbing';
+    });
+    // --- Selecting ---
+    el.addEventListener('click', e => {
+      e.stopPropagation();
+      this.selectNode(spec.id);
+    });
+    return el;
+  }
+  selectNode(id) {
+    if (this.state.selectedNode) {
+      document.querySelector(`.node[data-id="${this.state.selectedNode}"]`)?.classList.remove('selected');
+    }
+    this.state.selectedNode = id;
+    document.querySelector(`.node[data-id="${id}"]`)?.classList.add('selected');
+  }
+  isTypeCompatible(fromType, toType) {
+    if (fromType === 'action' || toType === 'action') {
+      return fromType === toType;
+    }
+    if (fromType === toType) return true;
+    if (fromType === 'any' || toType === 'any') return true;
+    return false;
+  }
+  addNode(type, options = {}) {
+    const id = 'node_' + this.nodeCounter++;
+    const x = Math.abs(this.state.pan[0]) + 100 + Math.random() * 200;
+    const y = Math.abs(this.state.pan[1]) + 100 + Math.random() * 200;
+
+    // Node factory map
+    const nodeFactories = {
+      'event': (id, x, y) => ({
+        id,
+        title: 'onLoad',
+        x,
+        y,
+        category: 'event',
+        inputs: [],
+        outputs: [{
+          name: 'exec',
+          type: 'action'
+        }]
+      }),
+      'function': (id, x, y) => ({
+        id,
+        title: 'Function',
+        x,
+        y,
+        category: 'action',
+        inputs: [{
+          name: 'exec',
+          type: 'action'
+        }],
+        outputs: [{
+          name: 'execOut',
+          type: 'action'
+        }]
+      }),
+      'if': (id, x, y) => ({
+        id,
+        title: 'if',
+        x,
+        y,
+        category: 'logic',
+        inputs: [{
+          name: 'exec',
+          type: 'action'
+        }, {
+          name: 'condition',
+          type: 'boolean'
+        }],
+        outputs: [{
+          name: 'true',
+          type: 'action'
+        }, {
+          name: 'false',
+          type: 'action'
+        }],
+        fields: [{
+          key: 'condition',
+          value: true
+        } // default literal for condition
+        ]
+      }),
+      'genrand': (id, x, y) => ({
+        id,
+        title: 'GenRandInt',
+        x,
+        y,
+        category: 'value',
+        inputs: [],
+        outputs: [{
+          name: 'result',
+          type: 'value'
+        }],
+        fields: [{
+          key: 'min',
+          value: '0'
+        }, {
+          key: 'max',
+          value: '10'
+        }]
+      }),
+      'print': (id, x, y) => ({
+        id,
+        title: 'Print',
+        x,
+        y,
+        category: 'actionprint',
+        inputs: [{
+          name: 'exec',
+          type: 'action'
+        }, {
+          name: 'value',
+          type: 'any'
+        }],
+        outputs: [{
+          name: 'execOut',
+          type: 'action'
+        }],
+        fields: [{
+          key: 'label',
+          value: 'Result'
+        }],
+        builtIn: true
+      }),
+      'timeout': (id, x, y) => ({
+        id,
+        title: 'SetTimeout',
+        x,
+        y,
+        category: 'timer',
+        inputs: [{
+          name: 'exec',
+          type: 'action'
+        }, {
+          name: 'delay',
+          type: 'value'
+        }],
+        outputs: [{
+          name: 'execOut',
+          type: 'action'
+        }],
+        fields: [{
+          key: 'delay',
+          value: '1000'
+        }],
+        builtIn: true
+      }),
+      // Math nodes
+      'add': (id, x, y) => ({
+        id,
+        title: 'Add',
+        x,
+        y,
+        category: 'math',
+        inputs: [{
+          name: 'a',
+          type: 'value'
+        }, {
+          name: 'b',
+          type: 'value'
+        }],
+        outputs: [{
+          name: 'result',
+          type: 'value'
+        }]
+      }),
+      'sub': (id, x, y) => ({
+        id,
+        title: 'Sub',
+        x,
+        y,
+        category: 'math',
+        inputs: [{
+          name: 'a',
+          type: 'value'
+        }, {
+          name: 'b',
+          type: 'value'
+        }],
+        outputs: [{
+          name: 'result',
+          type: 'value'
+        }]
+      }),
+      'mul': (id, x, y) => ({
+        id,
+        title: 'Mul',
+        x,
+        y,
+        category: 'math',
+        inputs: [{
+          name: 'a',
+          type: 'value'
+        }, {
+          name: 'b',
+          type: 'value'
+        }],
+        outputs: [{
+          name: 'result',
+          type: 'value'
+        }]
+      }),
+      'div': (id, x, y) => ({
+        id,
+        title: 'Div',
+        x,
+        y,
+        category: 'math',
+        inputs: [{
+          name: 'a',
+          type: 'value'
+        }, {
+          name: 'b',
+          type: 'value'
+        }],
+        outputs: [{
+          name: 'result',
+          type: 'value'
+        }]
+      }),
+      'sin': (id, x, y) => ({
+        id,
+        title: 'Sin',
+        x,
+        y,
+        category: 'math',
+        inputs: [{
+          name: 'a',
+          type: 'value'
+        }],
+        outputs: [{
+          name: 'result',
+          type: 'value'
+        }]
+      }),
+      'cos': (id, x, y) => ({
+        id,
+        title: 'Cos',
+        x,
+        y,
+        category: 'math',
+        inputs: [{
+          name: 'a',
+          type: 'value'
+        }],
+        outputs: [{
+          name: 'result',
+          type: 'value'
+        }]
+      }),
+      'pi': (id, x, y) => ({
+        id,
+        title: 'Pi',
+        x,
+        y,
+        category: 'math',
+        inputs: [],
+        outputs: [{
+          name: 'result',
+          type: 'value'
+        }]
+      }),
+      // comparation nodes
+      'greater': (id, x, y) => ({
+        id,
+        title: 'A > B',
+        x,
+        y,
+        category: 'compare',
+        inputs: [{
+          name: 'A',
+          type: 'number'
+        }, {
+          name: 'B',
+          type: 'number'
+        }],
+        outputs: [{
+          name: 'result',
+          type: 'boolean'
+        }]
+      }),
+      'less': (id, x, y) => ({
+        id,
+        title: 'A < B',
+        x,
+        y,
+        category: 'compare',
+        inputs: [{
+          name: 'A',
+          type: 'number'
+        }, {
+          name: 'B',
+          type: 'number'
+        }],
+        outputs: [{
+          name: 'result',
+          type: 'boolean'
+        }]
+      }),
+      'equal': (id, x, y) => ({
+        id,
+        title: 'A == B',
+        x,
+        y,
+        category: 'compare',
+        inputs: [{
+          name: 'A',
+          type: 'any'
+        }, {
+          name: 'B',
+          type: 'any'
+        }],
+        outputs: [{
+          name: 'result',
+          type: 'boolean'
+        }]
+      }),
+      'notequal': (id, x, y) => ({
+        id,
+        title: 'A != B',
+        x,
+        y,
+        category: 'compare',
+        inputs: [{
+          name: 'A',
+          type: 'any'
+        }, {
+          name: 'B',
+          type: 'any'
+        }],
+        outputs: [{
+          name: 'result',
+          type: 'boolean'
+        }]
+      }),
+      'greaterEqual': (id, x, y) => ({
+        id,
+        title: 'A >= B',
+        x,
+        y,
+        category: 'compare',
+        inputs: [{
+          name: 'A',
+          type: 'number'
+        }, {
+          name: 'B',
+          type: 'number'
+        }],
+        outputs: [{
+          name: 'result',
+          type: 'boolean'
+        }]
+      }),
+      'lessEqual': (id, x, y) => ({
+        id,
+        title: 'A <= B',
+        x,
+        y,
+        category: 'compare',
+        inputs: [{
+          name: 'A',
+          type: 'number'
+        }, {
+          name: 'B',
+          type: 'number'
+        }],
+        outputs: [{
+          name: 'result',
+          type: 'boolean'
+        }]
+      }),
+      'getNumber': (id, x, y) => ({
+        id,
+        title: 'Get Number',
+        x,
+        y,
+        category: 'value',
+        outputs: [{
+          name: 'result',
+          type: 'number'
+        }],
+        fields: [{
+          key: 'var',
+          value: ''
+        }],
+        isGetterNode: true
+      }),
+      'getBoolean': (id, x, y) => ({
+        id,
+        title: 'Get Boolean',
+        x,
+        y,
+        category: 'value',
+        outputs: [{
+          name: 'result',
+          type: 'boolean'
+        }],
+        fields: [{
+          key: 'var',
+          value: ''
+        }],
+        isGetterNode: true
+      }),
+      'getString': (id, x, y) => ({
+        id,
+        title: 'Get String',
+        x,
+        y,
+        category: 'value',
+        outputs: [{
+          name: 'result',
+          type: 'string'
+        }],
+        fields: [{
+          key: 'var',
+          value: ''
+        }],
+        isGetterNode: true
+      }),
+      'setNumber': (id, x, y) => ({
+        id,
+        title: 'Set Number',
+        x,
+        y,
+        category: 'action',
+        isVariableNode: true,
+        inputs: [{
+          name: 'exec',
+          type: 'action'
+        }, {
+          name: 'value',
+          type: 'number'
+        }],
+        outputs: [{
+          name: 'execOut',
+          type: 'action'
+        }],
+        fields: [{
+          key: 'var',
+          value: ''
+        }, {
+          key: 'literal',
+          value: 0
+        }]
+      }),
+      'setBoolean': (id, x, y) => ({
+        id,
+        title: 'Set Boolean',
+        x,
+        y,
+        category: 'action',
+        isVariableNode: true,
+        inputs: [{
+          name: 'exec',
+          type: 'action'
+        }, {
+          name: 'value',
+          type: 'boolean'
+        }],
+        outputs: [{
+          name: 'execOut',
+          type: 'action'
+        }],
+        fields: [{
+          key: 'var',
+          value: ''
+        }, {
+          key: 'literal',
+          value: false
+        }]
+      }),
+      'setString': (id, x, y) => ({
+        id,
+        title: 'Set String',
+        x,
+        y,
+        category: 'action',
+        isVariableNode: true,
+        inputs: [{
+          name: 'exec',
+          type: 'action'
+        }, {
+          name: 'value',
+          type: 'string'
+        }],
+        outputs: [{
+          name: 'execOut',
+          type: 'action'
+        }],
+        fields: [{
+          key: 'var',
+          value: ''
+        }, {
+          key: 'literal',
+          value: ''
+        }]
+      }),
+      'comment': (id, x, y, comment = "Add comment") => ({
+        id,
+        title: comment,
+        x,
+        y,
+        category: 'meta',
+        inputs: [],
+        outputs: [],
+        comment: true,
+        noExec: true
+      }),
+      'getSceneObject': (id, x, y) => ({
+        noExec: true,
+        id,
+        title: 'Get Scene Object',
+        x,
+        y,
+        category: 'scene',
+        inputs: [],
+        // no inputs
+        outputs: [],
+        // will be filled dynamically
+        fields: [{
+          key: 'selectedObject',
+          value: ''
+        }],
+        builtIn: true
+      }),
+      'getPosition': (id, x, y) => ({
+        id,
+        title: 'Get Position',
+        category: 'scene',
+        inputs: [{
+          name: 'position',
+          semantic: 'position'
+        }],
+        outputs: [{
+          name: 'x',
+          semantic: 'number'
+        }, {
+          name: 'y',
+          semantic: 'number'
+        }, {
+          name: 'z',
+          semantic: 'number'
+        }],
+        noExec: true
+      }),
+      'setPosition': (id, x, y) => ({
+        id,
+        title: 'Set Position',
+        category: 'scene',
+        inputs: [{
+          name: 'exec',
+          type: 'action'
+        }, {
+          name: 'position',
+          semantic: 'position'
+        }, {
+          name: 'x',
+          semantic: 'number'
+        }, {
+          name: 'y',
+          semantic: 'number'
+        }, {
+          name: 'z',
+          semantic: 'number'
+        }],
+        outputs: [{
+          name: 'execOut',
+          type: 'action'
+        }]
+      }),
+      'translateByX': (id, x, y) => ({
+        id,
+        title: 'Translate By X',
+        category: 'scene',
+        inputs: [{
+          name: 'exec',
+          type: 'action'
+        }, {
+          name: 'position',
+          semantic: 'position'
+        }, {
+          name: 'x',
+          semantic: 'number'
+        }],
+        outputs: [{
+          name: 'execOut',
+          semantic: 'exec'
+        }],
+        builtIn: true
+      }),
+      'translateByY': (id, x, y) => ({
+        id,
+        title: 'Translate By Y',
+        category: 'scene',
+        inputs: [{
+          name: 'exec',
+          type: 'action'
+        }, {
+          name: 'position',
+          semantic: 'position'
+        }, {
+          name: 'y',
+          semantic: 'number'
+        }],
+        outputs: [{
+          name: 'execOut',
+          semantic: 'exec'
+        }]
+      }),
+      'translateByZ': (id, x, y) => ({
+        id,
+        title: 'Translate By Z',
+        category: 'scene',
+        inputs: [{
+          name: 'exec',
+          type: 'action'
+        }, {
+          name: 'position',
+          semantic: 'position'
+        }, {
+          name: 'z',
+          semantic: 'number'
+        }],
+        outputs: [{
+          name: 'execOut',
+          semantic: 'exec'
+        }]
+      }),
+      'onTargetPositionReach': (id, x, y) => ({
+        id,
+        title: 'On Target Position Reach',
+        category: 'event',
+        noExec: true,
+        inputs: [{
+          name: 'position',
+          type: 'object'
+        }],
+        outputs: [{
+          name: 'exec',
+          type: 'action'
+        }],
+        _listenerAttached: false
+      })
+    };
+
+    // Generate node spec
+    let spec = null;
+    if (nodeFactories[type]) spec = nodeFactories[type](id, x, y);
+    if (spec && spec.fields && options) {
+      for (const f of spec.fields) {
+        if (options[f.key] !== undefined) {
+          f.value = options[f.key];
+        }
+      }
+    }
+    if (spec) {
+      const dom = this.createNodeDOM(spec);
+      this.board.appendChild(dom);
+      this.nodes[id] = spec;
+      return id;
+    }
+    return null;
+  }
+  setVariable(type, key, value) {
+    if (!this.variables[type][key]) return;
+    this.variables[type][key].value = value;
+    this.notifyVariableChanged(type, key);
+  }
+  initEventNodes() {
+    for (const nodeId in this.nodes) {
+      const n = this.nodes[nodeId];
+      if (n.category === 'event') {
+        this.activateEventNode(nodeId);
+      }
+    }
+  }
+  activateEventNode(nodeId) {
+    const n = this.nodes[nodeId];
+    if (n._listenerAttached) return;
+    if (n.title === 'On Target Position Reach') {
+      const pos = this.getValue(nodeId, 'position');
+      if (!pos) return;
+      pos.onTargetPositionReach = () => {
+        console.log('real onTargetPositionReach called');
+        this.enqueueOutputs(n, 'exec');
+      };
+      n._listenerAttached = true;
+    }
+  }
+  _executeAttachedMethod(n) {
+    if (n.attachedMethod) {
+      const method = this.methodsManager.methodsContainer.find(m => m.name === n.attachedMethod);
+      if (method) {
+        const fn = this.methodsManager.compileFunction(method.code);
+        const args = this.getArgNames(fn).map(argName => this.getValue(n.id, argName));
+        let result;
+        try {
+          result = fn(...args);
+        } catch (err) {
+          console.error("User method error:", err);
+        }
+        if (this.hasReturn(fn)) n._returnCache = result;
+      }
+    }
+  }
+  getValue(nodeId, pinName, visited = new Set()) {
+    const node = this.nodes[nodeId];
+    if (!node || visited.has(nodeId)) return undefined;
+    visited.add(nodeId);
+
+    // Block IF condition evaluation outside exec
+    if (node.title === 'if' && pinName === 'condition' && this._execContext !== nodeId) {
+      console.warn(`[GET] Blocked IF condition outside exec for node ${nodeId}`);
+      return undefined;
+    }
+
+    // 1️⃣ Literal field
+    const field = node.fields?.find(f => f.key === pinName);
+    if (field) return field.value;
+
+    // 2️⃣ Linked input pin
+    const link = this.links.find(l => l.to.node === nodeId && l.to.pin === pinName);
+    if (link) return this.getValue(link.from.node, link.from.pin, visited);
+
+    // 3️⃣ Default input pin
+    const inputPin = node.inputs?.find(p => p.name === pinName);
+    if (inputPin) return inputPin.default ?? 0;
+    if (node.title === 'Get Scene Object') {
+      // direct reference to real object must be migrated to factory 
+      // to make it reusable for any other priject
+      console.log('FUNC getValue , ' + 'node.title :' + node.title + ', this.nodes[nodeId]._returnCache = ' + this.nodes[nodeId]._returnCache);
+      const objName = node.fields[0].value;
+      console.log(' objName is n.fields[0].value = ' + node.fields[0].value);
+      const obj = (window.app?.mainRenderBundle || []).find(o => o.name === objName);
+      console.log('(window.app?.mainRenderBundle || []).find(o => o.name === objName) = ' + (window.app?.mainRenderBundle || []).find(o => o.name === objName));
+      if (!obj) return undefined;
+      const out = node.outputs.find(o => o.name === pinName);
+      if (!out) return undefined;
+      return obj[pinName]; // simple one-level property access
+    } else if (node.title === 'Get Position') {
+      const pos = this.getValue(nodeId, 'position');
+      if (!pos) return undefined;
+      node._returnCache = {
+        x: pos.x,
+        y: pos.y,
+        z: pos.z
+      };
+      return node._returnCache[pinName];
+    }
+
+    // 4️⃣ Dynamic output (computed node)
+    if (node.outputs?.some(o => o.name === pinName)) {
+      const dynamicNodes = ['GenRandInt', 'RandomFloat'];
+      if (node._returnCache === undefined || dynamicNodes.includes(node.title)) {
+        this._execContext = nodeId;
+        this.triggerNode(nodeId);
+        this._execContext = null;
+      }
+      return node._returnCache;
+    }
+    return undefined;
+  }
+  updateValueDisplays() {
+    Object.values(this.nodes).forEach(n => {
+      if (!n.displayEl) return;
+      const out = n.outputs?.find(o => o.name === 'result');
+      if (!out) return;
+      const v = this.getValue(n.id, 'result');
+      if (v === undefined) {
+        n.displayEl.textContent = '—';
+      } else if (typeof v === 'number') {
+        n.displayEl.textContent = v.toFixed(3);
+      } else {
+        n.displayEl.textContent = String(v);
+      }
+    });
+  }
+  invalidateVariableGetters(type, varName) {
+    for (const id in this.nodes) {
+      const n = this.nodes[id];
+      if (n.category === 'value' && n.fields?.some(f => f.key === 'var' && f.value === varName) && n.title === `Get ${type[0].toUpperCase() + type.slice(1)}`) {
+        delete n._returnCache;
+      }
+    }
+  }
+  triggerNode(nodeId) {
+    const n = this.nodes[nodeId];
+    if (!n) return;
+    this._execContext = nodeId;
+
+    // Highlight node header
+    const highlight = document.querySelector(`.node[data-id="${nodeId}"] .header`);
+    if (highlight) {
+      highlight.style.filter = 'brightness(1.5)';
+      setTimeout(() => highlight.style.filter = 'none', 200);
+    }
+
+    // --- Handle Getter Nodes ---
+    if (n.isGetterNode) {
+      const varField = n.fields?.find(f => f.key === 'var');
+      if (varField && varField.value) {
+        const type = n.title.replace('Get ', '').toLowerCase(); // number / boolean / string
+        const value = this.getVariable(type, varField.value);
+        n._returnCache = value;
+
+        // Update visual label if exists
+        if (n.displayEl) n.displayEl.textContent = typeof value === 'number' ? value.toFixed(3) : String(value);
+      }
+      n.finished = true;
+      return;
+    }
+    if (n.title === 'On Target Position Reach') {
+      console.log('TEST TEST On Target Position Reach ', pos);
+      if (n._listenerAttached) return;
+      const pos = this.getValue(nodeId, 'position');
+      if (!pos) return;
+
+      // 🔥 subscribe to position updates
+      // Attach listener (engine-agnostic)
+      console.log('TEST TEST ', pos);
+      pos.onTargetPositionReach = () => {
+        this.triggerNode(n); // NO HELP
+        this.enqueueOutputs(n, 'exec');
+        alert(' TARGET REACh ');
+      };
+      n._listenerAttached = true;
+      return;
+    }
+
+    // -----------------------------
+    // Event Nodes
+    // -----------------------------
+    if (n.category === 'event') {
+      this.enqueueOutputs(n, 'exec');
+      return;
+    }
+
+    // -----------------------------
+    // Variable Setter Nodes (skip Set Number)
+    // -----------------------------
+    if (n.isVariableNode && n.title !== 'Set Number') {
+      const type = n.title.replace('Set ', '').toLowerCase();
+      const varField = n.fields?.find(f => f.key === 'var');
+      if (varField && varField.value) {
+        const value = this.getValue(nodeId, 'value');
+        this.setVariable(type, varField.value, value);
+      }
+    }
+
+    // --- Handle SetNumber Nodes ---
+    if (n.title === 'Set Number') {
+      const varField = n.fields?.find(f => f.key === 'var');
+      if (varField && varField.value) {
+        const valInput = this.getValue(nodeId, 'value');
+        this.variables.number[varField.value] = {
+          value: valInput
+        };
+
+        // Update all corresponding GetNumber nodes immediately
+        for (const nodeId2 in this.nodes) {
+          const node2 = this.nodes[nodeId2];
+          if (node2.isGetterNode) {
+            const vf2 = node2.fields?.find(f => f.key === 'var');
+            if (vf2 && vf2.value === varField.value && node2.displayEl) {
+              node2.displayEl.textContent = typeof valInput === 'number' ? valInput.toFixed(3) : String(valInput);
+              node2._returnCache = valInput;
+            }
+          }
+        }
+      }
+      n.finished = true;
+      this.enqueueOutputs(n, 'execOut');
+      return;
+    }
+
+    // -----------------------------
+    // Action / Print / Timer Nodes
+    // -----------------------------
+    if (['action', 'actionprint', 'timer'].includes(n.category)) {
+      if (n.attachedMethod) this._executeAttachedMethod(n);
+      if (n.title === 'Print') {
+        const val = this.getValue(nodeId, 'value');
+        const label = n.fields?.find(f => f.key === 'label')?.value || 'Print:';
+        if (n.displayEl) n.displayEl.textContent = val;
+        console.log(`[Print] ${label}`, val);
+        this.log(`> ${label}`, val);
+      } else if (n.title === 'SetTimeout') {
+        const delay = +n.fields?.find(f => f.key === 'delay')?.value || 1000;
+        setTimeout(() => this.enqueueOutputs(n, 'execOut'), delay);
+        return;
+      }
+      this.enqueueOutputs(n, 'execOut');
+      return;
+    }
+
+    // -----------------------------
+    // IF Node
+    // -----------------------------
+    if (n.category === 'logic' && n.title === 'if') {
+      const condition = Boolean(this.getValue(nodeId, 'condition'));
+      this.enqueueOutputs(n, condition ? 'true' : 'false');
+      this._execContext = null;
+      return;
+    }
+    if (n.title === 'Set Position') {
+      const pos = this.getValue(nodeId, 'position');
+      if (pos?.setPosition) {
+        pos.setPosition(this.getValue(nodeId, 'x'), this.getValue(nodeId, 'y'), this.getValue(nodeId, 'z'));
+      }
+      this.enqueueOutputs(n, 'execOut');
+      return;
+    } else if (n.title === 'Translate By X') {
+      const pos = this.getValue(nodeId, 'position');
+      if (pos?.translateByX) {
+        pos.translateByX(this.getValue(nodeId, 'x'));
+      }
+      this.enqueueOutputs(n, 'execOut');
+      return;
+    } else if (n.title === 'Translate By Y') {
+      const pos = this.getValue(nodeId, 'position');
+      if (pos?.translateByY) {
+        pos.translateByX(this.getValue(nodeId, 'y'));
+      }
+      this.enqueueOutputs(n, 'execOut');
+      return;
+    } else if (n.title === 'Translate By Z') {
+      const pos = this.getValue(nodeId, 'position');
+      if (pos?.translateByZ) {
+        pos.translateByX(this.getValue(nodeId, 'z'));
+      }
+      this.enqueueOutputs(n, 'execOut');
+      return;
+    }
+
+    // -----------------------------
+    // Math / Value / Compare Nodes
+    // -----------------------------
+    if (['math', 'value', 'compare'].includes(n.category)) {
+      let result;
+      switch (n.title) {
+        case 'Add':
+          result = this.getValue(nodeId, 'a') + this.getValue(nodeId, 'b');
+          break;
+        case 'Sub':
+          result = this.getValue(nodeId, 'a') - this.getValue(nodeId, 'b');
+          break;
+        case 'Mul':
+          result = this.getValue(nodeId, 'a') * this.getValue(nodeId, 'b');
+          break;
+        case 'Div':
+          result = this.getValue(nodeId, 'a') / this.getValue(nodeId, 'b');
+          break;
+        case 'Sin':
+          result = Math.sin(this.getValue(nodeId, 'a'));
+          break;
+        case 'Cos':
+          result = Math.cos(this.getValue(nodeId, 'a'));
+          break;
+        case 'Pi':
+          result = Math.PI;
+          break;
+        case 'A > B':
+          result = this.getValue(nodeId, 'A') > this.getValue(nodeId, 'B');
+          break;
+        case 'A < B':
+          result = this.getValue(nodeId, 'A') < this.getValue(nodeId, 'B');
+          break;
+        case 'A == B':
+          result = this.getValue(nodeId, 'A') == this.getValue(nodeId, 'B');
+          break;
+        case 'A != B':
+          result = this.getValue(nodeId, 'A') != this.getValue(nodeId, 'B');
+          break;
+        case 'A >= B':
+          result = this.getValue(nodeId, 'A') >= this.getValue(nodeId, 'B');
+          break;
+        case 'A <= B':
+          result = this.getValue(nodeId, 'A') <= this.getValue(nodeId, 'B');
+          break;
+        case 'GenRandInt':
+          const min = +n.fields?.find(f => f.key === 'min')?.value || 0;
+          const max = +n.fields?.find(f => f.key === 'max')?.value || 10;
+          result = Math.floor(Math.random() * (max - min + 1)) + min;
+          break;
+        default:
+          result = undefined;
+      }
+      n._returnCache = result;
+      if (n.displayEl) n.displayEl.textContent = typeof result === 'number' ? result.toFixed(3) : String(result);
+    }
+    this._execContext = null;
+  }
+
+  // computeSceneNode(n) {
+  //   const objName = n.fields?.find(f => f.key === 'selectedObject')?.value;
+  //   const obj = this.scene?.[objName];
+
+  //   n._returnCache = {
+  //     NAME: obj?.name ?? '',
+  //     POSITION: obj?.position ?? null,
+  //     ROTATION: obj?.rotation ?? null,
+  //     SCALE: obj?.scale ?? null
+  //   };
+  // }
+
+  getVariable(type, key) {
+    if (!this.variables[type][key]) return undefined;
+    return this.variables[type][key].value;
+  }
+  enqueueOutputs(n, pinName) {
+    this.links.filter(l => l.from.node === n.id && l.from.pin === pinName && l.type === 'action').forEach(l => setTimeout(() => this.triggerNode(l.to.node), 10));
+  }
+  deleteNode(nodeId) {
+    const node = this.nodes[nodeId];
+    if (!node) return;
+
+    // 1) Remove links related to this node
+    this.links = this.links.filter(link => {
+      // link.from = { node, pin }
+      // link.to   = { node, pin }
+
+      if (link.from.node === nodeId || link.to.node === nodeId) {
+        // Also remove DOM SVG line
+        const dom = document.getElementById(link.id);
+        if (dom) dom.remove();
+        return false; // remove from array
+      }
+      return true;
+    });
+
+    // 2) Remove the node DOM itself
+    const dom = this.board.querySelector(`[data-id="${nodeId}"]`);
+    if (dom) dom.remove();
+
+    // 3) Remove from internal registry
+    delete this.nodes[nodeId];
+
+    // 4) Update UI
+    this.updateLinks();
+  }
+  bindGlobalListeners() {
+    document.addEventListener('mousemove', this.handleMouseMove.bind(this));
+    document.addEventListener('mouseup', this.handleMouseUp.bind(this));
+    this.boardWrap.addEventListener('mousedown', this.handleBoardWrapMouseDown.bind(this));
+    this.board.addEventListener('click', () => {
+      (0, _utils.byId)('app').style.opacity = 1;
+    });
+  }
+  handleMouseMove(e) {
+    if (this.state.draggingNode) {
+      const el = this.state.draggingNode;
+      const newX = e.clientX - this.state.dragOffset[0];
+      const newY = e.clientY - this.state.dragOffset[1];
+      el.style.left = newX + 'px';
+      el.style.top = newY + 'px';
+      const id = el.dataset.id;
+      if (this.nodes[id]) {
+        this.nodes[id].x = newX;
+        this.nodes[id].y = newY;
+      }
+      this.updateLinks();
+    } else if (this.state.panning) {
+      const dx = e.clientX - this.state.panStart[0],
+        dy = e.clientY - this.state.panStart[1];
+      this.state.pan[0] += dx;
+      this.state.pan[1] += dy;
+      this.board.style.transform = `translate(${this.state.pan[0]}px,${this.state.pan[1]}px)`;
+      this.state.panStart = [e.clientX, e.clientY];
+      this.updateLinks();
+    }
+  }
+  handleMouseUp() {
+    if (this.state.draggingNode) setTimeout(() => this.updateValueDisplays(), 0);
+    this.state.draggingNode = null;
+    this.state.panning = false;
+    document.body.style.cursor = 'default';
+  }
+  handleBoardWrapMouseDown(e) {
+    if (!e.target.closest('.node')) {
+      this.state.panning = true;
+      this.state.panStart = [e.clientX, e.clientY];
+      document.body.style.cursor = 'grabbing';
+      this.selectNode(null);
+    }
+  }
+  updateLinks() {
+    while (this.svg.firstChild) this.svg.removeChild(this.svg.firstChild);
+    const bRect = this.board.getBoundingClientRect();
+    this.links.forEach(l => {
+      const fromDot = this._getPinDot(l.from.node, l.from.pin, true);
+      const toDot = this._getPinDot(l.to.node, l.to.pin, false);
+      if (!fromDot || !toDot) return;
+      const fRect = fromDot.getBoundingClientRect(),
+        tRect = toDot.getBoundingClientRect();
+      const x1 = fRect.left - bRect.left + 6,
+        y1 = fRect.top - bRect.top + 6;
+      const x2 = tRect.left - bRect.left + 6,
+        y2 = tRect.top - bRect.top + 6;
+      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      path.setAttribute('class', 'link ' + (l.type === 'value' ? 'value' : ''));
+      path.setAttribute('d', `M${x1},${y1} C${x1 + 50},${y1} ${x2 - 50},${y2} ${x2},${y2}`);
+      this.svg.appendChild(path);
+    });
+  }
+  runGraph() {
+    (0, _utils.byId)('app').style.opacity = 0.4;
+    this.updateValueDisplays();
+    this.initEventNodes();
+    Object.values(this.nodes).forEach(n => n._returnCache = undefined);
+    Object.values(this.nodes).filter(n => n.category === 'event' && n.title === 'onLoad').forEach(n => this.triggerNode(n.id));
+  }
+  compileGraph() {
+    const bundle = {
+      nodes: this.nodes,
+      links: this.links,
+      nodeCounter: this.nodeCounter,
+      linkCounter: this.linkCounter,
+      pan: this.state.pan,
+      variables: this.variables
+    };
+    localStorage.setItem(FluxCodexVertex.SAVE_KEY, JSON.stringify(bundle));
+    this.log('Graph saved to LocalStorage!');
+  }
+  clearStorage() {
+    localStorage.removeItem(FluxCodexVertex.SAVE_KEY);
+    this.log('Save cleared. Refresh to reset.');
+  }
+  clearAllNodes() {
+    // Remove node DOMs
+    this.board.querySelectorAll('.node').forEach(n => n.remove());
+
+    // Clear data
+    this.nodes.length = 0;
+    this.links.length = 0;
+
+    // Clear state
+    this.state.selectedNode = null;
+    this.state.draggingNode = null;
+    this.state.connectingPin = null;
+
+    // Optional: redraw connections
+    this.updateLinks();
+  }
+  _buildSaveBundle() {
+    return {
+      nodes: this.nodes,
+      links: this.links,
+      nodeCounter: this.nodeCounter,
+      linkCounter: this.linkCounter,
+      pan: this.state.pan,
+      variables: this.variables,
+      version: 1
+    };
+  }
+  _loadFromBundle(data) {
+    this.nodes = data.nodes || {};
+    this.links = data.links || {};
+    this.nodeCounter = data.nodeCounter || 0;
+    this.linkCounter = data.linkCounter || 0;
+    this.state.pan = data.pan || {
+      x: 0,
+      y: 0
+    };
+    this.variables = data.variables || {
+      number: {},
+      boolean: {},
+      string: {}
+    };
+
+    // refresh UI
+    this._refreshVarsList(this._varsPopup.children[1]);
+    this.loadFromImport();
+    this.log('Graph imported from JSON');
+  }
+  exportToJSON() {
+    const bundle = this._buildSaveBundle();
+    const json = JSON.stringify(bundle, null, 2);
+    const blob = new Blob([json], {
+      type: 'application/json'
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'fluxcodex-graph.json';
+    a.click();
+    URL.revokeObjectURL(url);
+    this.log('Graph exported as JSON');
+  }
+  _createImportInput() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.style.display = 'none';
+    input.onchange = e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const data = JSON.parse(reader.result);
+          this._loadFromBundle(data);
+        } catch (err) {
+          console.error('Invalid JSON file', err);
+        }
+      };
+      reader.readAsText(file);
+    };
+    document.body.appendChild(input);
+    this._importInput = input;
+  }
+  init() {
+    const saved = localStorage.getItem(FluxCodexVertex.SAVE_KEY);
+    if (saved) {
+      try {
+        const data = JSON.parse(saved);
+        console.log('data.variables', data.variables);
+        if (data.variables) {
+          this.variables = data.variables;
+          this._refreshVarsList(this._varsPopup.children[1]);
+        }
+        this.nodes = data.nodes || {};
+        this.links = data.links || [];
+        this.nodeCounter = data.nodeCounter || 1;
+        this.linkCounter = data.linkCounter || 1;
+        this.state.pan = data.pan || [0, 0];
+        this.board.style.transform = `translate(${this.state.pan[0]}px,${this.state.pan[1]}px)`;
+        Object.values(this.nodes).forEach(spec => {
+          const domEl = this.createNodeDOM(spec);
+          this.board.appendChild(domEl);
+          if (spec.category === 'value' && spec.title !== 'GenRandInt' || spec.category === 'math' || spec.title === 'Print') {
+            spec.displayEl = domEl.querySelector('.value-display');
+          }
+
+          // Only function nodes get dynamic pins updated
+          if (spec.category === 'action' && spec.title === 'Function') {
+            this.updateNodeDOM(spec.id);
+          }
+        });
+        this.updateLinks();
+        this.updateValueDisplays();
+        this.log('Restored graph.');
+        return;
+      } catch (e) {
+        console.error("Failed to load graph from storage:", e);
+      }
+    }
+    this.addNode('event');
+  }
+  loadFromImport() {
+    Object.values(this.nodes).forEach(spec => {
+      const domEl = this.createNodeDOM(spec);
+      this.board.appendChild(domEl);
+      if (spec.category === 'value' && spec.title !== 'GenRandInt' || spec.category === 'math' || spec.title === 'Print') {
+        spec.displayEl = domEl.querySelector('.value-display');
+      }
+
+      // Only function nodes get dynamic pins updated
+      if (spec.category === 'action' && spec.title === 'Function') {
+        this.updateNodeDOM(spec.id);
+      }
+    });
+    this.updateLinks();
+    this.updateValueDisplays();
+    this.log('Restored graph.');
+    this.compileGraph();
+    return;
+  }
+}
+exports.default = FluxCodexVertex;
+FluxCodexVertex.SAVE_KEY = 'matrixEngineVisualScripting';
+
+},{"../../engine/plugin/tooltip/ToolTip":40,"../../engine/utils":41}],68:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -33529,16 +33045,129 @@ var _utils = require("../../engine/utils.js");
  * @Author NIkola Lukic
  * @description
  * Web Editor for matrix-engine-wgpu
+ * Using "file protocol" in direct way no virtual/syntetic assets
  */
 class EditorHud {
-  constructor(core) {
+  constructor(core, a) {
     this.core = core;
     this.sceneContainer = null;
-    // this.createTopMenu();
-    this.createTopMenuInFly();
+    this.FS = new _utils.FullscreenManager();
+    if (a == 'infly') {
+      this.createTopMenuInFly();
+    } else if (a == "created from editor") {
+      this.createTopMenu();
+      this.createAssets();
+    } else if (a == "pre editor") {
+      this.createTopMenuPre();
+    } else {
+      throw console.error('Editor err');
+    }
     this.createEditorSceneContainer();
     this.createScenePropertyBox();
     this.currentProperties = [];
+
+    // TEST 
+    setTimeout(() => document.dispatchEvent(new CustomEvent('updateSceneContainer', {
+      detail: {}
+    })), 1000);
+    document.addEventListener('editor-not-running', () => {
+      this.noEditorConn();
+    });
+    document.addEventListener('file-detail-data', e => {
+      console.log(e.detail.details);
+      let getPATH = e.detail.details.path.split("public")[1];
+      const ext = getPATH.split('.').pop();
+      if (ext == 'glb' && confirm("GLB FILE 📦 Do you wanna add it to the scene ?")) {
+        // e.detail.details[key].split("public")[1]
+        let name = prompt("📦 GLB file : ", getPATH);
+        if (confirm("⚛ Enable physics (Ammo)?")) {
+          // infly 
+          let o = {
+            physics: true,
+            path: getPATH,
+            index: this.core.mainRenderBundle.length
+          };
+          document.dispatchEvent(new CustomEvent('web.editor.addGlb', {
+            detail: o
+          }));
+        } else {
+          // infly
+          let o = {
+            physics: false,
+            path: getPATH,
+            index: this.core.mainRenderBundle.length
+          };
+          document.dispatchEvent(new CustomEvent('web.editor.addGlb', {
+            detail: o
+          }));
+        }
+        // -
+      } else if (ext == 'obj' && confirm("OBJ FILE 📦 Do you wanna add it to the scene ?")) {
+        // e.detail.details[key].split("public")[1]
+        let name = prompt("📦 OBJ file : ", getPATH);
+        if (confirm("⚛ Enable physics (Ammo)?")) {
+          // infly 
+          let o = {
+            physics: true,
+            path: name,
+            index: this.core.mainRenderBundle.length
+          };
+          document.dispatchEvent(new CustomEvent('web.editor.addObj', {
+            detail: o
+          }));
+        } else {
+          // infly
+          let o = {
+            physics: false,
+            path: name,
+            index: this.core.mainRenderBundle.length
+          };
+          document.dispatchEvent(new CustomEvent('web.editor.addObj', {
+            detail: o
+          }));
+        }
+        // -
+      } else {
+        let s = "";
+        for (let key in e.detail.details) {
+          if (key == "path") {
+            s += key + ":" + e.detail.details[key].split("public")[1] + "\n";
+          } else {
+            s += key + ":" + e.detail.details[key] + "\n";
+          }
+        }
+        _utils.mb.show(s);
+      }
+    });
+  }
+  noEditorConn() {
+    this.errorForm = document.createElement("div");
+    this.errorForm.id = "errorForm";
+    Object.assign(this.errorForm.style, {
+      position: "absolute",
+      top: "20%",
+      left: "25%",
+      width: "50%",
+      height: "30vh",
+      backgroundColor: "rgba(0,0,0,0.85)",
+      display: "flex",
+      // alignItems: "start",
+      color: "white",
+      fontFamily: "'Orbitron', sans-serif",
+      zIndex: "15",
+      padding: "2px",
+      boxSizing: "border-box",
+      flexDirection: "column",
+      justifyContent: 'center',
+      alignItems: 'center'
+    });
+    this.errorForm.innerHTML = `
+       <h2 class='fancy-label'>No connection with editor node app.</h2>
+       <h3 class='fancy-label'>Run from root [npm run editorx] \n 
+          or run from ./src/tools/editor/backend [npm run editorx] \n
+          Than refresh page [clear default cache browser with CTRL+F5] </h3>
+    `;
+    document.body.appendChild(this.errorForm);
   }
   createTopMenu() {
     this.editorMenu = document.createElement("div");
@@ -33546,7 +33175,7 @@ class EditorHud {
     Object.assign(this.editorMenu.style, {
       position: "absolute",
       top: "0",
-      left: "20%",
+      left: "30%",
       width: "60%",
       height: "50px;",
       backgroundColor: "rgba(0,0,0,0.85)",
@@ -33567,28 +33196,75 @@ class EditorHud {
     <div class="top-item">
       <div class="top-btn">Project ▾</div>
       <div class="dropdown">
-      <div class="drop-item">📦 Create new project</div>
-      <div class="drop-item">📂 Load</div>
-      <div class="drop-item">💾 Save</div>
+      <div id="start-watch" class="drop-item">🛠️ Watch</div>
+      <div id="stop-watch" class="drop-item">🛠️ Stop Watch</div>
       <div class="drop-item">🛠️ Build</div>
+      <div id="start-refresh" class="drop-item">🛠️ Refresh</div>
       </div>
     </div>
 
     <div class="top-item">
       <div class="top-btn">Insert ▾</div>
       <div class="dropdown">
-        <div class="drop-item">🧊 Cube</div>
-        <div class="drop-item">⚪ Sphere</div>
-        <div class="drop-item">📦 GLB (model)</div>
-        <div class="drop-item">💡 Light</div>
+        <div id="addCube" class="drop-item">🧊Cube</div>
+        <div id="addCubePhysics" class="drop-item">🧊Cube with Physics</div>
+        <div id="addSphere" class="drop-item">⚪Sphere</div>
+        <div id="addSpherePhysics" class="drop-item">⚪Sphere with Physics</div>
+        <small>Glb and Obj files add direct from asset (by selecting)</small>
+        <!--div class="drop-item">💡 Light</div-->
       </div>
     </div>
 
     <div class="top-item">
+      <div class="top-btn">Settings ▾</div>
+      <div class="dropdown">
+        <div id="cameraBox" class="drop-item">
+           <p>📽️Camera</p>
+           <div>Pitch: <input id="camera-settings-pitch" step='0.1' type='number' value='0' /></div>
+           <div>Yaw: <input id="camera-settings-yaw" step='0.1' type='number' value='0' /></div>
+           <div> Position :  </br>
+            \n 
+            X: <input id="camera-settings-pos-x" step='0.5' type='number' value='0' /> \n
+            Y: <input id="camera-settings-pos-y" step='0.5' type='number' value='0' /> \n
+            Z: <input id="camera-settings-pos-z" step='0.5' type='number' value='0' />
+           </div>
+        </div>
+      </div>
+    </div>
+    
+    
+    <div class="top-item">
+      <div class="top-btn">Script ▾</div>
+      <div class="dropdown">
+        <div id="showVisualCodeEditorBtn" class="drop-item">
+           <span>Visual Scripting</span>
+           <small>⌨️FluxCodexVertex</small>
+           <small>⌨️Press F6 for run</small>
+        </div>
+        <div id="showCodeVARSBtn" class="drop-item">
+           <span>Variable editor</span>
+           <small>⌨️Visual Script tool</small>
+        </div>
+        <div id="showCodeEditorBtn" class="drop-item">
+           <span>Show code editor</span>
+           <small>⌨️Function raw edit</small>
+           <small>Custom Functions</small>
+        </div>
+      </div>
+    </div>
+
+
+    <div class="top-item">
       <div class="top-btn">View ▾</div>
       <div class="dropdown">
-        <div class="drop-item">Hide Editor UI</div>
-        <div class="drop-item">FullScreen</div>
+        <div id="hideEditorBtn" class="drop-item">
+           <p>Hide Editor UI</p>
+           <small>Show editor - press F4 ⌨️</small>
+        </div>
+        <div id="fullScreenBtn" class="drop-item">
+         <span>FullScreen</span>
+         <small>Exit - press F11 ⌨️</small>
+        </div>
       </div>
     </div>
 
@@ -33624,12 +33300,345 @@ class EditorHud {
         });
       }
     });
+    (0, _utils.byId)('fullScreenBtn').addEventListener('click', () => {
+      this.FS.request();
+    });
+    (0, _utils.byId)('hideEditorBtn').addEventListener('click', () => {
+      this.editorMenu.style.display = 'none';
+      this.assetsBox.style.display = 'none';
+      this.sceneProperty.style.display = 'none';
+      this.sceneContainer.style.display = 'none';
+    });
+    if ((0, _utils.byId)('stop-watch')) (0, _utils.byId)('stop-watch').addEventListener('click', () => {
+      document.dispatchEvent(new CustomEvent('stop-watch', {
+        detail: {}
+      }));
+    });
+    if ((0, _utils.byId)('start-watch')) (0, _utils.byId)('start-watch').addEventListener('click', () => {
+      document.dispatchEvent(new CustomEvent('start-watch', {
+        detail: {}
+      }));
+    });
+    if ((0, _utils.byId)('cnpBtn')) (0, _utils.byId)('cnpBtn').addEventListener('click', () => {
+      let name = prompt("📦 Project name :", "MyProject1");
+      let features = {
+        physics: false,
+        networking: false
+      };
+      if (confirm("⚛ Enable physics (Ammo)?")) {
+        features.physics = true;
+      }
+      if (confirm("🔌 Enable networking (kurento/ov)?")) {
+        features.networking = true;
+      }
+      console.log(features);
+      document.dispatchEvent(new CustomEvent('cnp', {
+        detail: {
+          name: name,
+          features: features
+        }
+      }));
+    });
+    (0, _utils.byId)('start-refresh').onclick = () => {
+      location.reload(true);
+    };
+
+    // OBJECT LEVEL
+    if ((0, _utils.byId)('addCube')) (0, _utils.byId)('addCube').addEventListener('click', () => {
+      let o = {
+        physics: false,
+        index: this.core.mainRenderBundle.length
+      };
+      // if(confirm(`⚛ Enable physics (Ammo) for cube ? \n
+      //    - Press OK for physics cube.
+      //    - Press cancel for 'classic position'.
+      //   (Also physics enabled objects can be kinematic with some collide efect in physics world)
+      //   `)) {
+      //   o.physics = true;
+      // }
+      document.dispatchEvent(new CustomEvent('web.editor.addCube', {
+        detail: o
+      }));
+    });
+    if ((0, _utils.byId)('addSphere')) (0, _utils.byId)('addSphere').addEventListener('click', () => {
+      let o = {
+        physics: false,
+        index: this.core.mainRenderBundle.length
+      };
+      // if(confirm(`⚛ Enable physics (Ammo) for cube ? \n
+      //    - Press OK for physics cube.
+      //    - Press cancel for 'classic position'.
+      //   (Also physics enabled objects can be kinematic with some collide efect in physics world)
+      //   `)) {
+      //   o.physics = true;
+      // }
+      document.dispatchEvent(new CustomEvent('web.editor.addSphere', {
+        detail: o
+      }));
+    });
+    if ((0, _utils.byId)('addCubePhysics')) (0, _utils.byId)('addCubePhysics').addEventListener('click', () => {
+      let o = {
+        physics: true,
+        index: this.core.mainRenderBundle.length
+      };
+      document.dispatchEvent(new CustomEvent('web.editor.addCube', {
+        detail: o
+      }));
+    });
+    if ((0, _utils.byId)('addSpherePhysics')) (0, _utils.byId)('addSpherePhysics').addEventListener('click', () => {
+      let o = {
+        physics: true,
+        index: this.core.mainRenderBundle.length
+      };
+      document.dispatchEvent(new CustomEvent('web.editor.addSphere', {
+        detail: o
+      }));
+    });
+
+    // settings
+    setTimeout(() => {
+      this.core.cameras.WASD.pitch = (0, _utils.byId)('camera-settings-pitch').value;
+      this.core.cameras.WASD.yaw = (0, _utils.byId)('camera-settings-yaw').value;
+    }, 1500);
+    (0, _utils.byId)('camera-settings-pitch').addEventListener('change', e => {
+      console.log('setting camera pitch ', e);
+      this.core.cameras.WASD.pitch = e.target.value;
+    });
+    (0, _utils.byId)('camera-settings-yaw').addEventListener('change', e => {
+      console.log('setting camera', e);
+      this.core.cameras.WASD.yaw = e.target.value;
+    });
+    (0, _utils.byId)('showCodeEditorBtn').addEventListener('click', e => {
+      console.log('show-method-editor ', e);
+      document.dispatchEvent(new CustomEvent('show-method-editor', {
+        detail: {}
+      }));
+    });
+    (0, _utils.byId)('showVisualCodeEditorBtn').addEventListener('click', e => {
+      if ((0, _utils.byId)('app').style.display == 'flex') {
+        (0, _utils.byId)('app').style.display = 'none';
+      } else {
+        (0, _utils.byId)('app').style.display = 'flex';
+        if (this.core.editor.fluxCodexVertex) this.core.editor.fluxCodexVertex.updateLinks();
+      }
+    });
+    (0, _utils.byId)('showCodeVARSBtn').addEventListener('click', e => {
+      (0, _utils.byId)('app').style.display = 'flex';
+      (0, _utils.byId)('varsPopup').style.display = 'flex';
+      this.core.editor.fluxCodexVertex.updateLinks();
+      // document.dispatchEvent(new CustomEvent('show-method-editor', {detail: {}}));
+    });
+    document.addEventListener('updateSceneContainer', e => {
+      this.updateSceneContainer();
+    });
     this.showAboutModal = () => {
       alert(`
   ✔️ Support for 3D objects and scene transformations
-  ✔️ Ammo.js physics full integration
+  ✔️ Ammo.js physics integration
   ✔️ Networking with Kurento/OpenVidu/Own middleware Nodejs -> frontend
-  🎯 Replicate matrix-engine (WebGL) features
+  ✔️ Event system
+  🎯 Save system - direct code line [file-protocol]
+  🎯 Adding Visual Scripting System called 
+     FlowCodexVertex (deactivete from top menu)(activate on pressing F4 key)
+     Source code: https://github.com/zlatnaspirala/matrix-engine-wgpu
+     More at https://maximumroulette.com
+        `);
+    };
+    (0, _utils.byId)('showAboutEditor').addEventListener('click', this.showAboutModal);
+  }
+  createAssets() {
+    this.assetsBox = document.createElement("div");
+    this.assetsBox.id = "assetsBox";
+    Object.assign(this.assetsBox.style, {
+      position: "absolute",
+      bottom: "0",
+      left: "17.55%",
+      width: "63%",
+      height: "250px",
+      backgroundColor: "rgba(0,0,0,0.85)",
+      display: "flex",
+      alignItems: "start",
+      // overflow: "auto",
+      color: "white",
+      fontFamily: "'Orbitron', sans-serif",
+      zIndex: "15",
+      padding: "2px",
+      boxSizing: "border-box",
+      flexDirection: "column"
+    });
+    this.assetsBox.innerHTML = "ASSTES";
+    // document.body.appendChild(this.editorMenu);
+
+    // <div id="cnpBtn" class="drop-item">📦 Create new project</div>
+    //   <div class="drop-item">📂 Load</div>
+    this.assetsBox.innerHTML = `
+    <div id="folderTitle" >Root</div>
+    <div id="folderBack" class="scenePropItem" >...</div>
+    <div id='res-folder' class="file-browser">
+    </div>`;
+    document.body.appendChild(this.assetsBox);
+    (0, _utils.byId)('folderBack').addEventListener('click', () => {
+      let getCurrent = (0, _utils.byId)('res-folder').getAttribute('data-root-folder');
+      const t = getCurrent.substring(0, getCurrent.lastIndexOf("\\"));
+      const last = t.substring(t.lastIndexOf("\\") + 1);
+      if (last == "public") {
+        console.log(last + "<<<<<<<<<<<<<<<<<PREVENTED<<");
+        return;
+      }
+      document.dispatchEvent(new CustomEvent("nav-folder", {
+        detail: {
+          rootFolder: t || "",
+          name: ''
+        }
+      }));
+    });
+    document.addEventListener('la', e => {
+      console.log('root folder ', e.detail.rootFolder);
+      (0, _utils.byId)('res-folder').setAttribute('data-root-folder', e.detail.rootFolder);
+      (0, _utils.byId)('res-folder').innerHTML = '';
+      e.detail.payload.forEach(i => {
+        let item = document.createElement('div');
+        item.classList.add('file-item');
+        if (i.isDir == true) {
+          item.classList.add('folder');
+        } else if (i.name.split('.')[1] == 'jpg' || i.name.split('.')[1] == 'png' || i.name.split('.')[1] == 'jpeg') {
+          item.classList.add('png');
+        } else if (i.name.split('.')[1] == 'mp3') {
+          item.classList.add('mp3');
+        } else if (i.name.split('.')[1] == 'js') {
+          item.classList.add('js');
+        } else if (i.name.split('.')[1] == 'ttf' || i.name.split('.')[1] == 'ttf' || i.name.split('.')[1] == 'TTF' || i.name.split('.')[1] == 'otf' || i.name.split('.')[1] == 'woff' || i.name.split('.')[1] == 'woff2') {
+          item.classList.add('ttf');
+        } else {
+          item.classList.add('unknown');
+        }
+        item.innerHTML = "<p>" + i.name + "</p>";
+        (0, _utils.byId)('res-folder').appendChild(item);
+        item.addEventListener('click', e => {
+          if (i.isDir == true) document.dispatchEvent(new CustomEvent("nav-folder", {
+            detail: {
+              rootFolder: (0, _utils.byId)('res-folder').getAttribute('data-root-folder') || "",
+              name: item.children[0].innerText
+            }
+          }));
+          if (i.isDir == false) document.dispatchEvent(new CustomEvent("file-detail", {
+            detail: {
+              rootFolder: (0, _utils.byId)('res-folder').getAttribute('data-root-folder') || "",
+              name: item.innerText
+            }
+          }));
+        });
+      });
+      document.querySelectorAll('.file-item').forEach(el => {
+        el.addEventListener('click', () => {
+          document.querySelectorAll('.file-item').forEach(x => x.classList.remove('selected'));
+          el.classList.add('selected');
+        });
+      });
+    });
+  }
+  createTopMenuPre() {
+    this.editorMenu = document.createElement("div");
+    this.editorMenu.id = "editorMenu";
+    Object.assign(this.editorMenu.style, {
+      position: "absolute",
+      top: "0",
+      left: "20%",
+      width: "60%",
+      height: "50px;",
+      backgroundColor: "rgba(0,0,0,0.85)",
+      display: "flex",
+      alignItems: "start",
+      // overflow: "auto",
+      color: "white",
+      fontFamily: "'Orbitron', sans-serif",
+      zIndex: "15",
+      padding: "2px",
+      boxSizing: "border-box",
+      flexDirection: "row"
+    });
+    this.editorMenu.innerHTML = " PROJECT MENU  ";
+    // document.body.appendChild(this.editorMenu);
+
+    this.editorMenu.innerHTML = `
+    <div class="top-item">
+      <div class="top-btn">Project ▾</div>
+      <div class="dropdown">
+      <div id="cnpBtn" class="drop-item">📦 Create new project</div>
+      <div id="loadProjectBtn" class="drop-item">📂 Load</div>
+      </div>
+    </div>
+
+    <div class="top-item">
+      <div class="top-btn">About ▾</div>
+      <div class="dropdown">
+        <div id="showAboutEditor" class="drop-item">matrix-engine-wgpu</div>
+      </div>
+    </div>
+  `;
+    document.body.appendChild(this.editorMenu);
+
+    // Mobile friendly toggles
+    this.editorMenu.querySelectorAll(".top-btn").forEach(btn => {
+      btn.addEventListener("click", e => {
+        const menu = e.target.nextElementSibling;
+
+        // close others
+        this.editorMenu.querySelectorAll(".dropdown").forEach(d => {
+          if (d !== menu) d.style.display = "none";
+        });
+
+        // toggle
+        menu.style.display = menu.style.display === "block" ? "none" : "block";
+      });
+    });
+
+    // Close on outside tap
+    document.addEventListener("click", e => {
+      if (!this.editorMenu.contains(e.target)) {
+        this.editorMenu.querySelectorAll(".dropdown").forEach(d => {
+          d.style.display = "none";
+        });
+      }
+    });
+    if ((0, _utils.byId)('loadProjectBtn')) (0, _utils.byId)('loadProjectBtn').addEventListener('click', () => {
+      // ***************************
+      // ---------------------------
+      document.dispatchEvent(new CustomEvent('lp', {
+        detail: {}
+      }));
+    });
+    if ((0, _utils.byId)('cnpBtn')) (0, _utils.byId)('cnpBtn').addEventListener('click', () => {
+      let name = prompt("📦 Project name :", "MyProject1");
+      let features = {
+        physics: false,
+        networking: false
+      };
+      if (confirm("⚛ Enable physics (Ammo)?")) {
+        features.physics = true;
+      }
+      if (confirm("🔌 Enable networking (kurento/ov)?")) {
+        features.networking = true;
+      }
+      console.log(features);
+      document.dispatchEvent(new CustomEvent('cnp', {
+        detail: {
+          name: name,
+          features: features
+        }
+      }));
+    });
+    this.showAboutModal = () => {
+      alert(`
+  ✔️ Support for 3D objects and scene transformations
+  ✔️ Ammo.js physics integration
+  ✔️ Networking with Kurento/OpenVidu/Own middleware Nodejs -> frontend
+  ✔️ Event system
+  🎯 Save system - direct code line [file-protocol]
+  🎯 Adding Visual Scripting System called 
+     FlowCodexVertex (deactivete from top menu)(activate on pressing F4 key)
+     Source code: https://github.com/zlatnaspirala/matrix-engine-wgpu
+     More at https://maximumroulette.com
         `);
     };
     (0, _utils.byId)('showAboutEditor').addEventListener('click', this.showAboutModal);
@@ -33694,9 +33703,14 @@ class EditorHud {
     this.showAboutModal = () => {
       alert(`
   ✔️ Support for 3D objects and scene transformations
-  ✔️ Ammo.js physics full integration
+  ✔️ Ammo.js physics integration
   ✔️ Networking with Kurento/OpenVidu/Own middleware Nodejs -> frontend
-  🎯 Replicate matrix-engine (WebGL) features
+  ✔️ Event system
+  🎯 Save system - direct code line [file-protocol]
+     Adding Visual Scripting System called 
+     flowCodexVertex (deactivete from top menu)(activate on pressing F4 key)
+     Source code: https://github.com/zlatnaspirala/matrix-engine-wgpu
+     More at https://maximumroulette.com
         `);
     };
     (0, _utils.byId)('showAboutEditor').addEventListener('click', this.showAboutModal);
@@ -33708,9 +33722,9 @@ class EditorHud {
       position: "absolute",
       top: "0",
       left: "0",
-      width: "20%",
+      width: "17.5%",
       height: "100vh",
-      backgroundColor: "rgba(0,0,0,0.85)",
+      backgroundColor: "rgb(75 75 75 / 85%)",
       display: "flex",
       alignItems: "start",
       overflow: "auto",
@@ -33737,7 +33751,8 @@ class EditorHud {
       flexDirection: "column"
     });
     this.sceneContainerTitle = document.createElement("div");
-    this.sceneContainerTitle.style.height = '40px';
+    this.sceneContainerTitle.style.height = '30px';
+    this.sceneContainerTitle.style.width = "-webkit-fill-available";
     this.sceneContainerTitle.style.fontSize = (0, _utils.isMobile)() == true ? "x-larger" : "larger";
     this.sceneContainerTitle.style.padding = '5px';
     this.sceneContainerTitle.innerHTML = 'Scene container';
@@ -33766,7 +33781,7 @@ class EditorHud {
       right: "0",
       width: "20%",
       height: "100vh",
-      backgroundColor: "rgba(0,0,0,0.85)",
+      backgroundColor: "rgb(35 35 35 / 63%)",
       display: "flex",
       alignItems: "start",
       overflow: "auto",
@@ -33786,7 +33801,8 @@ class EditorHud {
       display: "flex",
       alignItems: "start",
       color: "white",
-      fontFamily: "'Orbitron', sans-serif",
+      // fontFamily: "'Orbitron', sans-serif",
+      fontFamily: 'monospace',
       zIndex: "15",
       padding: "2px",
       boxSizing: "border-box",
@@ -33812,22 +33828,26 @@ class EditorHud {
     OK.forEach(prop => {
       // console.log('[key]:', prop);
       if (prop == 'glb' && typeof currentSO[prop] !== 'undefined' && currentSO[prop] != null) {
-        this.currentProperties.push(new SceneObjectProperty(this.objectProperies, 'glb', currentSO));
+        this.currentProperties.push(new SceneObjectProperty(this.objectProperies, 'glb', currentSO, this.core));
       } else {
-        this.currentProperties.push(new SceneObjectProperty(this.objectProperies, prop, currentSO));
+        this.currentProperties.push(new SceneObjectProperty(this.objectProperies, prop, currentSO, this.core));
       }
     });
+
+    // Add editor events system
+    this.currentProperties.push(new SceneObjectProperty(this.objectProperies, 'editor-events', currentSO, this.core));
   };
 }
 exports.default = EditorHud;
 class SceneObjectProperty {
-  constructor(parentDOM, propName, currSceneObj) {
+  constructor(parentDOM, propName, currSceneObj, core) {
+    this.core = core;
     this.subObjectsProps = [];
     this.propName = document.createElement("div");
     this.propName.style.width = '100%';
     // console.log("init : " + propName)
     // Register
-    if (propName == "device" || propName == "position" || propName == "rotation" || propName == "raycast" || propName == "entityArgPass" || propName == "scale" || propName == "maxInstances" || propName == "texturesPaths" || propName == "glb") {
+    if (propName == "device" || propName == "position" || propName == "rotation" || propName == "raycast" || propName == "entityArgPass" || propName == "scale" || propName == "maxInstances" || propName == "texturesPaths" || propName == "glb" || propName == "itIsPhysicsBody") {
       this.propName.style.overflow = 'hidden';
       this.propName.style.height = '20px';
       this.propName.style.borderBottom = 'solid lime 2px';
@@ -33840,7 +33860,10 @@ class SceneObjectProperty {
           e.currentTarget.style.height = '20px';
         }
       });
-      if (propName == "position" || propName == "scale" || propName == "rotation" || propName == "glb") {
+      if (propName == "itIsPhysicsBody") {
+        this.propName.innerHTML = `<div style="text-align:left;" >${propName} <span style="border-radius:7px;background:green;">PhysicsBody</span>
+        <span style="border-radius:6px;background:gray;">More info🔽</span></div>`;
+      } else if (propName == "position" || propName == "scale" || propName == "rotation" || propName == "glb") {
         this.propName.innerHTML = `<div style="text-align:left;" >${propName} <span style="border-radius:7px;background:purple;">sceneObj</span>
         <span style="border-radius:6px;background:gray;">More info🔽</span></div>`;
       } else if (propName == "entityArgPass") {
@@ -33860,8 +33883,9 @@ class SceneObjectProperty {
         this.propName.innerHTML = `<div style="text-align:left;" >${propName} <span style="border-radius:7px;background:red;">sys</span> 
         <span style="border-radius:6px;background:gray;">${currSceneObj[propName]}</span></div>`;
       }
+
       // console.log('[propName] ', propName);
-      if (typeof currSceneObj[propName].adapterInfo !== 'undefined') {
+      if (currSceneObj[propName] && typeof currSceneObj[propName].adapterInfo !== 'undefined') {
         this.exploreSubObject(currSceneObj[propName].adapterInfo, 'adapterInfo').forEach(item => {
           if (typeof item === 'string') {
             this.propName.innerHTML += `<div style="text-align:left;"> ${item.split(':'[1])} </div>`;
@@ -33872,6 +33896,41 @@ class SceneObjectProperty {
             this.propName.appendChild(item);
           }
         });
+      } else if (propName == "itIsPhysicsBody") {
+        let body = this.core.matrixAmmo.getBodyByName(currSceneObj.name);
+        for (let key in body) {
+          if (typeof body[key] === 'string') {
+            this.propName.innerHTML += `<div style="display:flex;text-align:left;"> 
+              <div style="background:black;color:white;width:35%;">${key}</div>
+              <div style="background:lime;color:black;width:55%;">${body[key]} </div>`;
+          } else {
+            let item = document.createElement('div');
+            item.style.display = "flex";
+            let funcNameDesc = document.createElement('span');
+            funcNameDesc.style.background = "blue";
+            funcNameDesc.style.width = "55%";
+            funcNameDesc.innerHTML = key + ":";
+            item.appendChild(funcNameDesc);
+            if (typeof body[key] === "function") {
+              console.log("function");
+              let physicsFuncDesc = document.createElement('select');
+              // fill it
+              item.appendChild(physicsFuncDesc);
+            } else if (typeof body[key] === "object") {
+              console.log("OBJECT");
+              let objDesc = document.createElement('span');
+              objDesc.style.background = "yellow";
+              objDesc.style.color = "black";
+              objDesc.innerHTML = key;
+              item.appendChild(objDesc);
+            }
+            item.addEventListener('click', event => {
+              event.stopPropagation();
+            });
+            this.propName.style.textAlign = 'left';
+            this.propName.appendChild(item);
+          }
+        }
       } else if (propName == 'position' || propName == 'rotation' || propName == "raycast" || propName == "entityArgPass" || propName == "scale") {
         // console.log('currSceneObj[propName] ', currSceneObj[propName]);
         this.exploreSubObject(currSceneObj[propName], propName, currSceneObj).forEach(item => {
@@ -33895,6 +33954,10 @@ class SceneObjectProperty {
             this.propName.appendChild(item);
           }
         });
+      } else if (propName == 'itIsPhysicsBody') {
+        this.propName.style.borderBottom = 'solid lime 2px';
+        this.propName.innerHTML = `<div style="text-align:left;" >${propName} <span style="border-radius:7px;background:deepskyblue;">boolean</span>
+        <span style="border-radius:6px;background:gray;">${currSceneObj[propName]}</span></div>`;
       }
       parentDOM.appendChild(this.propName);
     } else if (propName == "isVideo") {
@@ -33902,6 +33965,10 @@ class SceneObjectProperty {
       this.propName.innerHTML = `<div style="text-align:left;" >${propName} <span style="border-radius:7px;background:deepskyblue;">boolean</span>
         <span style="border-radius:6px;background:gray;">${currSceneObj[propName]}</span></div>`;
       parentDOM.appendChild(this.propName);
+    } else if (propName == 'editor-events') {
+      //
+      this.addEditorEventsProp(currSceneObj, parentDOM);
+      this.addEditorDeleteAction(currSceneObj, parentDOM);
     } else {
       // this.propName.innerHTML = `<div>${propName}</div>`;
       // this.propName.innerHTML += `<div>${currSceneObj[propName]}</div>`;
@@ -33931,7 +33998,7 @@ class SceneObjectProperty {
            'property': ${currSceneObj ? "'" + prop + "'" : "'no info'"} ,
            'value': ${currSceneObj ? "this.value" : "'no info'"}
           }}))" 
-         ${rootKey == "adapterInfo" ? " disabled='true'" : " "} type="number" value="${subobj[prop]}" /> 
+         ${rootKey == "adapterInfo" ? " disabled='true'" : " "} type="number" value="${isNaN(subobj[prop]) ? 0 : subobj[prop]}" /> 
         
          </div>`;
       } else if (Array.isArray(subobj[prop])) {
@@ -34063,9 +34130,406 @@ class SceneObjectProperty {
     // this.subObjectsProps.push(a);
     return a;
   }
+  addEditorEventsProp(currSceneObj, parentDOM) {
+    this.propName.innerHTML += `<div>HIT</div>`;
+    this.propName.innerHTML += `<div style='display:flex;'>
+      <div style="align-content: center;">onTargetReached (NoPhysics)</div>
+      <div><select id='sceneObjEditorPropEvents' ></select></div>
+    </div>`;
+    parentDOM.appendChild(this.propName);
+    (0, _utils.byId)('sceneObjEditorPropEvents').onchange = e => {
+      console.log('Event system selection:', e.target.value);
+      if (e.target.value == "none") {
+        currSceneObj.position.onTargetPositionReach = () => {};
+        console.log('clear event');
+        return;
+      }
+      const method = app.editor.methodsManager.methodsContainer.find(m => m.name === e.target.value);
+      let F = app.editor.methodsManager.compileFunction(method.code);
+      currSceneObj.position.onTargetPositionReach = F;
+      console.log('[position.onTargetPositionReach][attached]', F);
+    };
+    (0, _utils.byId)('sceneObjEditorPropEvents').innerHTML = "";
+    this.core.editor.methodsManager.methodsContainer.forEach((m, index) => {
+      if (index == 0) {
+        const op = document.createElement("option");
+        op.value = 'none';
+        op.textContent = `none`;
+        (0, _utils.byId)('sceneObjEditorPropEvents').appendChild(op);
+      }
+      const op = document.createElement("option");
+      op.value = m.name;
+      op.textContent = `${m.name}  [${m.type}]`;
+      (0, _utils.byId)('sceneObjEditorPropEvents').appendChild(op);
+    });
+  }
+  addEditorDeleteAction(currSceneObj, parentDOM) {
+    this.propName.innerHTML += `<div style='display:flex;'>
+      <div style="align-content: center;color:red;">Delete sceneObject:</div>
+      <div><button  data-sceneobject='${currSceneObj.name}' id='delete-${currSceneObj.name}'>DELETE</button></div>
+    </div>`;
+    (0, _utils.byId)(`delete-${currSceneObj.name}`).addEventListener('click', () => {
+      if (this.core.mainRenderBundle.length <= 1) {
+        alert("WARN - SCENE IS EMPTY IN EDITOR MODE YOU WILL GOT FREEZE - After adding first obj again you must refresh!");
+      }
+      document.dispatchEvent(new CustomEvent('web.editor.delete', {
+        detail: currSceneObj.name
+      }));
+    });
+  }
 }
 
-},{"../../engine/utils.js":47}],73:[function(require,module,exports){
+},{"../../engine/utils.js":41}],69:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+/**
+ * @description
+ * MethodsManager only for web editor jobs.
+ * @author Nikola Lukic
+ * @email zlatnaspirala@gmail.com
+ * @format
+ * { name, code, fn, type, intervalId }
+ */
+class MethodsManager {
+  constructor(editorType) {
+    this.editorType = editorType;
+    this.methodsContainer = [];
+    this.createUI();
+    this.loadMethods(editorType).then(r => {
+      console.log('r: ', r);
+      this.methodsContainer = r;
+      this.refreshSelect();
+      console.log('r: ', r);
+      this.select.click();
+    });
+    document.addEventListener('show-method-editor', () => {
+      this.popup.style.display = "block";
+      this.wrapper.style.display = "block";
+    });
+    document.addEventListener('XcompileFunction', e => {
+      this.compileFunction(e.detail.code);
+    });
+  }
+  loadMethods = async editorType => {
+    return new Promise(async (resolve, reject) => {
+      if (editorType == 'created from editor') {
+        const page = location.pathname.split("/").pop().replace(".html", "");
+        const file = `../src/tools/editor/gen/${page}/methods.js`;
+        let module;
+        try {
+          module = await import(file);
+          if (module) {
+            resolve(module.default);
+          } else {
+            reject([]);
+          }
+        } catch (err) {
+          reject([]);
+        }
+      } else {
+        resolve([]);
+      }
+    });
+  };
+  makePopupDraggable() {
+    let isDragging = false;
+    let offsetX = 0;
+    let offsetY = 0;
+
+    // Use the wrapper as the drag handle
+    this.wrapper.style.cursor = "move";
+    this.wrapper.addEventListener("mousedown", e => {
+      isDragging = true;
+      const rect = this.popup.getBoundingClientRect();
+      offsetX = e.clientX - rect.left;
+      offsetY = e.clientY - rect.top;
+      this.popup.style.transition = "none"; // remove transition during drag
+    });
+    document.addEventListener("mousemove", e => {
+      if (!isDragging) return;
+      this.popup.style.left = e.clientX - offsetX + "px";
+      this.popup.style.top = e.clientY - offsetY + "px";
+      this.popup.style.transform = "none"; // cancel centering transform
+    });
+    document.addEventListener("mouseup", () => {
+      if (isDragging) isDragging = false;
+    });
+  }
+  createUI() {
+    // Wrapper
+    this.wrapper = document.createElement("div");
+    this.wrapper.style.cssText = `
+      padding: 10px; 
+      background:#2f2f2f;
+      border-radius:8px;
+      color:#ddd; 
+      font-family: monospace;
+      width:95%;
+    `;
+    this.select = document.createElement("select");
+    this.select.style.cssText = `
+      width:100%;
+      padding:5px;
+      background:#3a3a3a;
+      color:#fff;
+      border:1px solid #555;
+      margin-bottom:10px;
+    `;
+    this.wrapper.appendChild(this.select);
+    this.select.onchange = () => {
+      console.log("CHANGE SCRIPT SELECT");
+      const index = this.select.selectedIndex;
+      const method = this.methodsContainer[index];
+      if (!method) return;
+
+      // Open editor with selected method
+      this.openEditor(method);
+    };
+    this.select.onclick = () => {
+      const index = this.select.selectedIndex;
+      const method = this.methodsContainer[index];
+      if (method) this.openEditor(method);
+    };
+
+    // BUTTON Add new
+    this.btnNew = document.createElement("button");
+    this.btnNew.innerText = "New Method";
+    this.btnNew.style.cssText = `
+      width:30%;
+      padding:6px;
+      background:#444;
+      color:#fff;
+      border:1px solid #555;
+      cursor:pointer;
+    `;
+    this.btnNew.onclick = () => this.openEditor();
+    this.wrapper.appendChild(this.btnNew);
+
+    // Popup Editor
+    this.popup = document.createElement("div");
+    this.popup.style.cssText = `
+      position:fixed;
+      top:50%; left:50%;
+      transform:translate(-50%,-50%);
+      background:#2a2a2a;
+      padding:20px;
+      border:1px solid #555;
+      border-radius:8px;
+      display:none;
+      width:400px;
+      z-index:999;
+    `;
+    this.popup.appendChild(this.wrapper);
+
+    // Add after btnSave or btnExit creation
+    this.btnRemove = document.createElement("button");
+    this.btnRemove.innerText = "Remove method";
+    this.btnRemove.style.cssText = `
+        margin-top:10px;
+        margin-left:10px;
+        padding:6px 14px;
+        background:#a33;
+        color:#fff;
+        border:1px solid #800;
+        cursor:pointer;
+      `;
+    this.btnRemove.onclick = () => this.removeMethod();
+    this.popup.appendChild(this.btnRemove);
+    this.textarea = document.createElement("textarea");
+    this.textarea.id = "code-editor-textarea";
+    this.textarea.style.cssText = `
+      width:100%; 
+      height:160px; 
+      background:#1e1e1e; 
+      color:#fff; 
+      border:1px solid #555;
+      box-shadow: inset 0px 0px 16px 0px #3F51B5;
+      -webkit-text-stroke-color: #03A9F4;
+    `;
+    this.popup.appendChild(this.textarea);
+    this.btnSave = document.createElement("button");
+    this.btnSave.innerText = "Save method";
+    this.btnSave.style.cssText = `
+      margin-top:10px;
+      padding:6px 14px;
+      background:#555;
+      color:#fff;
+      border:1px solid #666;
+      cursor:pointer;
+    `;
+    this.btnSave.onclick = () => this.saveMethod();
+    this.popup.appendChild(this.btnSave);
+    this.btnExit = document.createElement("button");
+    this.btnExit.innerText = "Hide";
+    this.btnExit.style.cssText = `
+      margin-top:10px;
+      padding:6px 14px;
+      background:#555;
+      color:#fff;
+      border:1px solid #666;
+      cursor:pointer;
+    `;
+    this.btnExit.onclick = () => {
+      this.popup.style.display = "none";
+    };
+    this.popup.appendChild(this.btnExit);
+    this.makePopupDraggable();
+    document.body.appendChild(this.popup);
+  }
+  openEditor(existing) {
+    this.editing = existing || null;
+    this.textarea.value = existing ? existing.code : "";
+    // this.popup.style.display = "block";
+  }
+  saveMethod() {
+    const code = this.textarea.value.trim();
+    if (!code) return;
+    const name = this.extractName(code);
+    const obj = {
+      name,
+      code,
+      type: this.detectType(code),
+      fn: this.compileFunction(code),
+      intervalId: null
+    };
+    if (obj.type === "interval") {
+      obj.intervalId = obj.fn(); // start the interval
+    }
+
+    // Replace or add
+    if (this.editing) {
+      const idx = this.methodsContainer.indexOf(this.editing);
+      this.methodsContainer[idx] = obj;
+    } else {
+      this.methodsContainer.push(obj);
+    }
+    this.refreshSelect();
+    this.popup.style.display = "none";
+    document.dispatchEvent(new CustomEvent('save-methods', {
+      detail: {
+        methodsContainer: this.methodsContainer
+      }
+    }));
+  }
+  removeMethod() {
+    if (!this.editing) return; // nothing selected
+
+    const idx = this.methodsContainer.indexOf(this.editing);
+    if (idx === -1) return;
+
+    // If it was an interval, clear it
+    if (this.methodsContainer[idx].intervalId) {
+      clearInterval(this.methodsContainer[idx].intervalId);
+    }
+
+    // Remove from container
+    this.methodsContainer.splice(idx, 1);
+
+    // Reset editing
+    this.editing = null;
+
+    // Refresh select options
+    this.refreshSelect();
+
+    // Optionally clear editor
+    this.textarea.value = "";
+
+    // Dispatch update event
+    document.dispatchEvent(new CustomEvent('save-methods', {
+      detail: {
+        methodsContainer: this.methodsContainer
+      }
+    }));
+  }
+  refreshSelect() {
+    this.select.innerHTML = "";
+    this.methodsContainer.forEach(m => {
+      const op = document.createElement("option");
+      op.textContent = `${m.name}  [${m.type}]`;
+      this.select.appendChild(op);
+    });
+  }
+  extractName(code) {
+    const match = code.match(/function\s+([a-zA-Z0-9_]+)/);
+    return match ? match[1] : "method_" + (this.methodsContainer.length + 1);
+  }
+  detectType(code) {
+    if (code.includes("setInterval")) return "interval";
+    if (code.includes("return")) return "return";
+    return "void";
+  }
+  compileFunction(code) {
+    try {
+      // Wrap the function code into a callable unit
+      const fn = new Function(code + "; return " + this.extractName(code) + ";")();
+      return fn;
+    } catch (e) {
+      console.error("Compilation error:", e);
+      return () => {};
+    }
+  }
+  destroyIntervals() {
+    this.methodsContainer.forEach(m => {
+      if (m.intervalId) clearInterval(m.intervalId);
+    });
+  }
+}
+exports.default = MethodsManager;
+
+},{}],70:[function(require,module,exports){
+"use strict";
+
+var _world = _interopRequireDefault(require("../../../../src/world.js"));
+var _loaderObj = require("../../../../src/engine/loader-obj.js");
+var _webgpuGltf = require("../../../../src/engine/loaders/webgpu-gltf.js");
+function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
+let app = new _world.default({
+  dontUsePhysics: true,
+  useEditor: true,
+  projectType: "pre editor",
+  useSingleRenderPass: true,
+  canvasSize: 'fullscreen',
+  mainCameraParams: {
+    type: 'WASD',
+    responseCoef: 1000
+  },
+  clearColor: {
+    r: 0,
+    b: 0.1,
+    g: 0.1,
+    a: 1
+  }
+}, app => {
+  console.log("AUTOGEN NORMAL MAIN !");
+  addEventListener('AmmoReady', async () => {
+    console.log("AUTOGEN NORMAL MAIN !");
+    // setTimeout(() => {
+    //   app.cameras.WASD.yaw = -0.03;
+    //   app.cameras.WASD.pitch = -0.49;
+    //   app.cameras.WASD.position[2] = 0;
+    //   app.cameras.WASD.position[1] = 23;
+    // }, 2000);
+
+    // downloadMeshes({cube: "./res/meshes/blender/cube.obj"}, onGround, {scale: [120, 0.5, 120]})
+
+    // // // Monster1
+    // var glbFile01 = await fetch("res/meshes/glb/monster.glb").then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, TEST_ANIM.device)));
+    // TEST_ANIM.addGlbObj({
+    //   material: {type: 'standard', useTextureFromGlb: true},
+    //   scale: [20, 20, 20],
+    //   position: {x: 0, y: -4, z: -70},
+    //   name: 'firstGlb',
+    //   texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png'],
+    // }, null, glbFile01);
+  });
+});
+window.app = app;
+
+},{"../../../../src/engine/loader-obj.js":33,"../../../../src/engine/loaders/webgpu-gltf.js":36,"../../../../src/world.js":71}],71:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -34151,7 +34615,9 @@ class MatrixEngineWGPU {
     this.editor = undefined;
     if (typeof options.useEditor !== "undefined") {
       if (typeof options.projectType !== "undefined" && options.projectType == "created from editor") {
-        this.editor = new _editor.Editor(this, "created from editor");
+        this.editor = new _editor.Editor(this, "created from editor", options.projectName);
+      } else if (typeof options.projectType !== "undefined" && options.projectType == "pre editor") {
+        this.editor = new _editor.Editor(this, options.projectType);
       } else {
         this.editor = new _editor.Editor(this, "infly");
       }
@@ -34166,8 +34632,20 @@ class MatrixEngineWGPU {
     });
     this.activateEditor = () => {
       if (this.editor == null || typeof this.editor === 'undefined') {
-        this.editor = new _editor.Editor(this);
+        if (typeof options.projectType !== "undefined" && options.projectType == "created from editor") {
+          this.editor = new _editor.Editor(this, "created from editor");
+        } else if (typeof options.projectType !== "undefined" && options.projectType == "pre editor") {
+          this.editor = new _editor.Editor(this, options.projectType);
+        } else {
+          this.editor = new _editor.Editor(this, "infly");
+        }
         this.editor.editorHud.updateSceneContainer();
+      } else {
+        // nikola
+        this.editor.editorHud.editorMenu.style.display = 'flex';
+        this.editor.editorHud.assetsBox.style.display = 'flex';
+        this.editor.editorHud.sceneProperty.style.display = 'flex';
+        this.editor.editorHud.sceneContainer.style.display = 'flex';
       }
     };
     this.options = options;
@@ -34341,6 +34819,40 @@ class MatrixEngineWGPU {
   }
   getSceneObjectByName(name) {
     return this.mainRenderBundle.find(sceneObject => sceneObject.name === name);
+  }
+  getNameFromPath(p) {
+    return p.split(/[/\\]/).pop().replace(/\.[^/.]+$/, "");
+  }
+  removeSceneObjectByName(name) {
+    const index = this.mainRenderBundle.findIndex(obj => obj.name === name);
+    if (index === -1) {
+      console.warn("Scene object not found:", name);
+      return false;
+    }
+
+    // Get object
+    const obj = this.mainRenderBundle[index];
+    let testPB = app.matrixAmmo.getBodyByName(obj.name);
+    if (testPB !== null) {
+      try {
+        this.matrixAmmo.dynamicsWorld.removeRigidBody(testPB);
+      } catch (e) {
+        console.warn("Physics cleanup error:", e);
+      }
+    }
+
+    // if(obj.destroy && typeof obj.destroy === "function") {
+    //   try {
+    //     obj.destroy();  // user-defined GPU cleanup
+    //   } catch(e) {
+    //     console.warn("Destroy() cleanup failed:", e);
+    //   }
+    // }
+
+    // Remove from render bundle
+    this.mainRenderBundle.splice(index, 1);
+    console.log("Removed scene object:", name);
+    return true;
   }
 
   // Not in use for now
@@ -34830,7 +35342,7 @@ class MatrixEngineWGPU {
       this.device.queue.submit([commandEncoder.finish()]);
       requestAnimationFrame(this.frame);
     } catch (err) {
-      // console.log('%cLoop(err):' + err + " info : " + err.stack, LOG_WARN)
+      console.log('%cLoop(err):' + err + " info : " + err.stack, _utils.LOG_WARN);
       requestAnimationFrame(this.frame);
     }
   };
@@ -34969,7 +35481,10 @@ class MatrixEngineWGPU {
         // make it soft
         setTimeout(() => {
           this.mainRenderBundle.push(bvhPlayer);
-        }, 800);
+          setTimeout(() => document.dispatchEvent(new CustomEvent('updateSceneContainer', {
+            detail: {}
+          })), 100);
+        }, 500);
         // this.mainRenderBundle.push(bvhPlayer)
         c++;
       }
@@ -35109,4 +35624,4 @@ class MatrixEngineWGPU {
 }
 exports.default = MatrixEngineWGPU;
 
-},{"./engine/ball.js":21,"./engine/cube.js":23,"./engine/engine.js":32,"./engine/lights.js":36,"./engine/loader-obj.js":37,"./engine/loaders/bvh-instaced.js":38,"./engine/loaders/bvh.js":39,"./engine/mesh-obj.js":43,"./engine/utils.js":47,"./multilang/lang.js":48,"./physics/matrix-ammo.js":49,"./sounds/sounds.js":69,"./tools/editor/editor.js":70,"wgpu-matrix":19}]},{},[3]);
+},{"./engine/ball.js":17,"./engine/cube.js":19,"./engine/engine.js":28,"./engine/lights.js":32,"./engine/loader-obj.js":33,"./engine/loaders/bvh-instaced.js":34,"./engine/loaders/bvh.js":35,"./engine/mesh-obj.js":39,"./engine/utils.js":41,"./multilang/lang.js":42,"./physics/matrix-ammo.js":43,"./sounds/sounds.js":63,"./tools/editor/editor.js":65,"wgpu-matrix":15}]},{},[70]);
