@@ -142,9 +142,9 @@ export default class EditorProvider {
 
     // delete
     document.addEventListener('web.editor.delete', (e) => {
-      console.log("[web.editor.delete]: ", e.detail);
+      console.log("[web.editor.delete]: ", e.detail.fullName);
 
-      this.core.removeSceneObjectByName(e.detail);
+      this.core.removeSceneObjectByName(e.detail.fullName);
     });
 
     // update procedure

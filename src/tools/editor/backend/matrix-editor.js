@@ -538,8 +538,8 @@ function removeSceneBlock(text, type, objName) {
 
   if (type === 'delete-obj') {
     // match ANY block that belongs to this object
-    const start = `// ME START ${objName} `;
-    const end   = `// ME END ${objName} `;
+    const start = `// ME START ${objName}`;
+    const end   = `// ME END ${objName}`;
 
     regex = new RegExp(
       `${escapeRegExp(start)}[\\s\\S]*?${escapeRegExp(end)}[^\\n]*\\s*`,

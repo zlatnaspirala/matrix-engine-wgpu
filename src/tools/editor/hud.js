@@ -1256,8 +1256,25 @@ class SceneObjectProperty {
       if(this.core.mainRenderBundle.length <= 1) {
         alert("WARN - SCENE IS EMPTY IN EDITOR MODE YOU WILL GOT FREEZE - After adding first obj again you must refresh!");
       }
+      // important
+      let name = currSceneObj.name;
+      let ruleOfNaming = name;
+
+      const underscoreIndex = name.indexOf('_');
+      const dashIndex = name.indexOf('-');
+
+      // Rule 1 & 2
+      if(
+        underscoreIndex === -1 ||               // no '_'
+        (dashIndex !== -1 && dashIndex < underscoreIndex) // '-' before '_'
+      ) {
+        ruleOfNaming = name.split('-')[0];
+      }
+
+      alert(ruleOfNaming);
+ 
       document.dispatchEvent(new CustomEvent('web.editor.delete', {
-        detail: currSceneObj.name
+        detail: { prefix: ruleOfNaming , fullName: currSceneObj.name }
       }));
     });
   }

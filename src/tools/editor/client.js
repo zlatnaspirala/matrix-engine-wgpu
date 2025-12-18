@@ -217,12 +217,12 @@ export class MEEditorClient {
     // delete obj
     // delete-sceneObject
     document.addEventListener('web.editor.delete', (e) => {
-      console.log("[web.editor.delete]: ", e.detail);
+      console.log("[web.editor.delete]: ", e.detail.prefix);
       console.info('delete-obj <signal>');
       let o = {
         action: "delete-obj",
         projectName: location.href.split('/public/')[1].split(".")[0],
-        name: e.detail
+        name: e.detail.prefix
       };
       o = JSON.stringify(o);
       this.ws.send(o);

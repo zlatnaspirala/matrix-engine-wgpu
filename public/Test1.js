@@ -15474,12 +15474,12 @@ var MEEditorClient = class {
       this.ws.send(o);
     });
     document.addEventListener("web.editor.delete", (e) => {
-      console.log("[web.editor.delete]: ", e.detail);
+      console.log("[web.editor.delete]: ", e.detail.prefix);
       console.info("delete-obj <signal>");
       let o = {
         action: "delete-obj",
         projectName: location.href.split("/public/")[1].split(".")[0],
-        name: e.detail
+        name: e.detail.prefix
       };
       o = JSON.stringify(o);
       this.ws.send(o);
@@ -15620,8 +15620,8 @@ var EditorProvider = class {
       }, { scale: [1, 1, 1] });
     });
     document.addEventListener("web.editor.delete", (e) => {
-      console.log("[web.editor.delete]: ", e.detail);
-      this.core.removeSceneObjectByName(e.detail);
+      console.log("[web.editor.delete]: ", e.detail.fullName);
+      this.core.removeSceneObjectByName(e.detail.fullName);
     });
   }
 };
@@ -17239,7 +17239,7 @@ var EditorHud = class {
     this.errorForm.id = "errorForm";
     Object.assign(this.errorForm.style, {
       position: "absolute",
-      top: "10%",
+      top: "20%",
       left: "25%",
       width: "50%",
       height: "30vh",
@@ -18205,8 +18205,17 @@ var SceneObjectProperty = class {
       if (this.core.mainRenderBundle.length <= 1) {
         alert("WARN - SCENE IS EMPTY IN EDITOR MODE YOU WILL GOT FREEZE - After adding first obj again you must refresh!");
       }
+      let name = currSceneObj.name;
+      let ruleOfNaming = name;
+      const underscoreIndex = name.indexOf("_");
+      const dashIndex = name.indexOf("-");
+      if (underscoreIndex === -1 || // no '_'
+      dashIndex !== -1 && dashIndex < underscoreIndex) {
+        ruleOfNaming = name.split("-")[0];
+      }
+      alert(ruleOfNaming);
       document.dispatchEvent(new CustomEvent("web.editor.delete", {
-        detail: currSceneObj.name
+        detail: { prefix: ruleOfNaming, fullName: currSceneObj.name }
       }));
     });
   }
@@ -19484,6 +19493,25 @@ var app2 = new MatrixEngineWGPU(
           physics: { enabled: false, geometry: "Cube" }
         });
       }, { scale: [1, 1, 1] });
+      downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, (m) => {
+        let texturesPaths = ["./res/meshes/blender/cube.png"];
+        app3.addMeshObj({
+          position: { x: 0, y: 0, z: -20 },
+          rotation: { x: 0, y: 0, z: 0 },
+          rotationSpeed: { x: 0, y: 0, z: 0 },
+          texturesPaths: [texturesPaths],
+          name: "Cube_" + app3.mainRenderBundle.length,
+          mesh: m.cube,
+          raycast: { enabled: true, radius: 2 },
+          physics: { enabled: false, geometry: "Cube" }
+        });
+      }, { scale: [1, 1, 1] });
+      setTimeout(() => {
+        app3.getSceneObjectByName("Cube_1").position.SetX(4);
+      }, 200);
+      setTimeout(() => {
+        app3.getSceneObjectByName("Cube_0").position.SetX(-6);
+      }, 200);
     });
   }
 );
