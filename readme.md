@@ -70,7 +70,7 @@ The backend is built using **Node.js** 🟢
 - Run the graph ▶️
 - Save graph
   - Currently saved to **LocalStorage**
-  - [NOT DONE] For final builds, becomes a real **JS object** injected into the app flow.
+  - For final builds, becomes a real **JS object** injected into the app flow.[NOT DONE]
     Now it is posible to hide editor on begin.
 - Export graph to **JSON**
 - Import graph from **JSON**
@@ -95,8 +95,7 @@ npm run editorx
 ```
 
 from the engine root directory.
-
-EditorX is an alias for FluxCodexVertex (needed three words to keep the name unique 😄)
+EditorX is an alias for FluxCodexVertex (needed three words to keep the name unique)
 Run the scene by pressing F6 or by clicking Run in the left panel
 If you delete all objects from the scene, you must refresh the page and add at least one object again
 Before importing a graph, delete all nodes from the FluxCodexVertex graph

@@ -14,7 +14,7 @@
     "rpg-menu": "watchify ./examples/games/RPG/start-menu.js -p [esmify --noImplicitAny] -o public/rpg-menu.js",
     "build-all": "npm run main-worker | npm run examples | npm run main | npm run empty",
     "hosts": "http-server ./public/ -p 3000",
-    "editor": "watchify ./src/tools/editor/template/autogen.js -p [esmify --noImplicitAny] -o public/matrix-engine-autogen.js",
+    "editor-landing": "watchify ./src/tools/editor/template/autogen.js -p [esmify --noImplicitAny] -o public/matrix-engine-autogen.js",
     "editorx": "cd src/tools/editor/backend && node matrix-editor.js"
   },
   "author": "Nikola Lukic",

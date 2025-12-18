@@ -107,7 +107,7 @@ export default class EditorHud {
     this.errorForm.id = "errorForm";
     Object.assign(this.errorForm.style, {
       position: "absolute",
-      top: "10%",
+      top: "20%",
       left: "25%",
       width: "50%",
       height: "30vh",

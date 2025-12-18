@@ -18270,7 +18270,7 @@ class MEBall {
 }
 exports.default = MEBall;
 
-},{"../shaders/shaders":55,"./engine":28,"./matrix-class":38,"wgpu-matrix":15}],18:[function(require,module,exports){
+},{"../shaders/shaders":56,"./engine":28,"./matrix-class":38,"wgpu-matrix":15}],18:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -18308,7 +18308,7 @@ class Behavior {
 }
 exports.default = Behavior;
 
-},{"./utils":40}],19:[function(require,module,exports){
+},{"./utils":41}],19:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -18733,7 +18733,7 @@ class MECube {
 }
 exports.default = MECube;
 
-},{"../shaders/shaders":55,"./engine":28,"./matrix-class":38,"wgpu-matrix":15}],20:[function(require,module,exports){
+},{"../shaders/shaders":56,"./engine":28,"./matrix-class":38,"wgpu-matrix":15}],20:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -18896,7 +18896,7 @@ class HPBarEffect {
 }
 exports.HPBarEffect = HPBarEffect;
 
-},{"../../shaders/energy-bars/energy-bar-shader.js":43,"wgpu-matrix":15}],21:[function(require,module,exports){
+},{"../../shaders/energy-bars/energy-bar-shader.js":44,"wgpu-matrix":15}],21:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -19115,7 +19115,7 @@ class FlameEmitter {
 }
 exports.FlameEmitter = FlameEmitter;
 
-},{"../../shaders/flame-effect/flame-instanced":44,"../utils":40,"wgpu-matrix":15}],22:[function(require,module,exports){
+},{"../../shaders/flame-effect/flame-instanced":45,"../utils":41,"wgpu-matrix":15}],22:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -19286,7 +19286,7 @@ class FlameEffect {
 }
 exports.FlameEffect = FlameEffect;
 
-},{"../../shaders/flame-effect/flameEffect":45,"wgpu-matrix":15}],23:[function(require,module,exports){
+},{"../../shaders/flame-effect/flameEffect":46,"wgpu-matrix":15}],23:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -19527,7 +19527,7 @@ class GenGeoTexture {
 }
 exports.GenGeoTexture = GenGeoTexture;
 
-},{"../../shaders/standalone/geo.tex.js":57,"../geometry-factory.js":29,"wgpu-matrix":15}],24:[function(require,module,exports){
+},{"../../shaders/standalone/geo.tex.js":58,"../geometry-factory.js":29,"wgpu-matrix":15}],24:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -19784,7 +19784,7 @@ class GenGeoTexture2 {
 }
 exports.GenGeoTexture2 = GenGeoTexture2;
 
-},{"../../shaders/standalone/geo.tex.js":57,"../geometry-factory.js":29,"wgpu-matrix":15}],25:[function(require,module,exports){
+},{"../../shaders/standalone/geo.tex.js":58,"../geometry-factory.js":29,"wgpu-matrix":15}],25:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -19974,7 +19974,7 @@ class GenGeo {
 }
 exports.GenGeo = GenGeo;
 
-},{"../../shaders/standalone/geo.instanced.js":56,"../geometry-factory.js":29,"wgpu-matrix":15}],26:[function(require,module,exports){
+},{"../../shaders/standalone/geo.instanced.js":57,"../geometry-factory.js":29,"wgpu-matrix":15}],26:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -20137,7 +20137,7 @@ class MANABarEffect {
 }
 exports.MANABarEffect = MANABarEffect;
 
-},{"../../shaders/energy-bars/energy-bar-shader.js":43,"wgpu-matrix":15}],27:[function(require,module,exports){
+},{"../../shaders/energy-bars/energy-bar-shader.js":44,"wgpu-matrix":15}],27:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -20280,7 +20280,7 @@ class PointerEffect {
 }
 exports.PointerEffect = PointerEffect;
 
-},{"../../shaders/standalone/pointer.effect.js":58,"wgpu-matrix":15}],28:[function(require,module,exports){
+},{"../../shaders/standalone/pointer.effect.js":59,"wgpu-matrix":15}],28:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -20823,7 +20823,7 @@ class RPGCamera extends CameraBase {
 }
 exports.RPGCamera = RPGCamera;
 
-},{"./utils":40,"wgpu-matrix":15}],29:[function(require,module,exports){
+},{"./utils":41,"wgpu-matrix":15}],29:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -21662,7 +21662,7 @@ class MaterialsInstanced {
 }
 exports.default = MaterialsInstanced;
 
-},{"../../shaders/fragment.wgsl":47,"../../shaders/fragment.wgsl.metal":48,"../../shaders/fragment.wgsl.normalmap":49,"../../shaders/fragment.wgsl.pong":50,"../../shaders/fragment.wgsl.power":51,"../../shaders/instanced/fragment.instanced.wgsl":52}],31:[function(require,module,exports){
+},{"../../shaders/fragment.wgsl":48,"../../shaders/fragment.wgsl.metal":49,"../../shaders/fragment.wgsl.normalmap":50,"../../shaders/fragment.wgsl.pong":51,"../../shaders/fragment.wgsl.power":52,"../../shaders/instanced/fragment.instanced.wgsl":53}],31:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -22651,7 +22651,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
 }
 exports.default = MEMeshObjInstances;
 
-},{"../../shaders/fragment.video.wgsl":46,"../../shaders/instanced/vertex.instanced.wgsl":53,"../effects/energy-bar":20,"../effects/flame":22,"../effects/flame-emmiter":21,"../effects/gen":25,"../effects/gen-tex":23,"../effects/gen-tex2":24,"../effects/mana-bar":26,"../effects/pointerEffect":27,"../loaders/bvh-instaced":34,"../matrix-class":38,"../utils":40,"./materials-instanced":30,"wgpu-matrix":15}],32:[function(require,module,exports){
+},{"../../shaders/fragment.video.wgsl":47,"../../shaders/instanced/vertex.instanced.wgsl":54,"../effects/energy-bar":20,"../effects/flame":22,"../effects/flame-emmiter":21,"../effects/gen":25,"../effects/gen-tex":23,"../effects/gen-tex2":24,"../effects/mana-bar":26,"../effects/pointerEffect":27,"../loaders/bvh-instaced":34,"../matrix-class":38,"../utils":41,"./materials-instanced":30,"wgpu-matrix":15}],32:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -22937,7 +22937,7 @@ class SpotLight {
 }
 exports.SpotLight = SpotLight;
 
-},{"../shaders/instanced/vertexShadow.instanced.wgsl":54,"../shaders/vertexShadow.wgsl":61,"./behavior":18,"wgpu-matrix":15}],33:[function(require,module,exports){
+},{"../shaders/instanced/vertexShadow.instanced.wgsl":55,"../shaders/vertexShadow.wgsl":62,"./behavior":18,"wgpu-matrix":15}],33:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -25563,7 +25563,7 @@ class Materials {
 }
 exports.default = Materials;
 
-},{"../shaders/fragment.wgsl":47,"../shaders/fragment.wgsl.metal":48,"../shaders/fragment.wgsl.normalmap":49,"../shaders/fragment.wgsl.pong":50,"../shaders/fragment.wgsl.power":51}],38:[function(require,module,exports){
+},{"../shaders/fragment.wgsl":48,"../shaders/fragment.wgsl.metal":49,"../shaders/fragment.wgsl.normalmap":50,"../shaders/fragment.wgsl.pong":51,"../shaders/fragment.wgsl.power":52}],38:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -25611,28 +25611,34 @@ class Position {
     }
   }
   translateByX(x) {
+    if (parseFloat(x) == this.targetX) return;
     this.inMove = true;
     this.targetX = parseFloat(x);
   }
   translateByY(y) {
+    if (parseFloat(y) == this.targetY) return;
     this.inMove = true;
     this.targetY = parseFloat(y);
   }
   translateByZ(z) {
+    if (parseFloat(z) == this.targetZ) return;
     this.inMove = true;
     this.targetZ = parseFloat(z);
   }
   translateByXY(x, y) {
+    if (parseFloat(y) == this.targetY && parseFloat(x) == this.targetX) return;
     this.inMove = true;
     this.targetX = parseFloat(x);
     this.targetY = parseFloat(y);
   }
   translateByXZ(x, z) {
+    if (parseFloat(z) == this.targetZ && parseFloat(x) == this.targetX) return;
     this.inMove = true;
     this.targetX = parseFloat(x);
     this.targetZ = parseFloat(z);
   }
   translateByYZ(y, z) {
+    if (parseFloat(y) == this.targetY && parseFloat(z) == this.targetZ) return;
     this.inMove = true;
     this.targetY = parseFloat(y);
     this.targetZ = parseFloat(z);
@@ -25910,7 +25916,7 @@ class Rotation {
 }
 exports.Rotation = Rotation;
 
-},{"./utils":40}],39:[function(require,module,exports){
+},{"./utils":41}],39:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -26705,7 +26711,47 @@ class MEMeshObj extends _materials.default {
 }
 exports.default = MEMeshObj;
 
-},{"../shaders/fragment.video.wgsl":46,"../shaders/vertex.wgsl":59,"../shaders/vertex.wgsl.normalmap":60,"./effects/pointerEffect":27,"./materials":37,"./matrix-class":38,"./utils":40,"wgpu-matrix":15}],40:[function(require,module,exports){
+},{"../shaders/fragment.video.wgsl":47,"../shaders/vertex.wgsl":60,"../shaders/vertex.wgsl.normalmap":61,"./effects/pointerEffect":27,"./materials":37,"./matrix-class":38,"./utils":41,"wgpu-matrix":15}],40:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.METoolTip = void 0;
+class METoolTip {
+  constructor() {
+    // --- Tooltip system ---
+    const tooltip = document.createElement('div');
+    tooltip.style.position = 'fixed';
+    tooltip.style.padding = '6px 10px';
+    tooltip.style.background = 'rgba(0,0,0,0.8)';
+    tooltip.style.color = '#fff';
+    tooltip.style.borderRadius = '6px';
+    tooltip.style.fontFamily = 'Arial';
+    tooltip.style.fontSize = '12px';
+    tooltip.style.pointerEvents = 'none';
+    tooltip.style.opacity = '0';
+    tooltip.style.transition = 'opacity 0.2s ease';
+    tooltip.style.zIndex = '9999';
+    document.body.appendChild(tooltip);
+  }
+  attachTooltip(element, text) {
+    element.addEventListener('mouseenter', e => {
+      tooltip.textContent = text;
+      tooltip.style.opacity = '1';
+    });
+    element.addEventListener('mousemove', e => {
+      tooltip.style.left = e.clientX + 12 + 'px';
+      tooltip.style.top = e.clientY + 12 + 'px';
+    });
+    element.addEventListener('mouseleave', () => {
+      tooltip.style.opacity = '0';
+    });
+  }
+}
+exports.METoolTip = METoolTip;
+
+},{}],41:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -27734,7 +27780,7 @@ class FullscreenManager {
 }
 exports.FullscreenManager = FullscreenManager;
 
-},{}],41:[function(require,module,exports){
+},{}],42:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -27776,7 +27822,7 @@ class MultiLang {
 }
 exports.MultiLang = MultiLang;
 
-},{"../../public/res/multilang/en-backup":16,"../engine/utils":40}],42:[function(require,module,exports){
+},{"../../public/res/multilang/en-backup":16,"../engine/utils":41}],43:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -28060,7 +28106,7 @@ class MatrixAmmo {
 }
 exports.default = MatrixAmmo;
 
-},{"../engine/utils":40}],43:[function(require,module,exports){
+},{"../engine/utils":41}],44:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -28106,7 +28152,7 @@ fn fsMain(in : VertexOutput) -> @location(0) vec4f {
 }
 `;
 
-},{}],44:[function(require,module,exports){
+},{}],45:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -28232,7 +28278,7 @@ fn fsMain(in : VSOut) -> @location(0) vec4<f32> {
 }
 `;
 
-},{}],45:[function(require,module,exports){
+},{}],46:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -28320,7 +28366,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
 }
 `;
 
-},{}],46:[function(require,module,exports){
+},{}],47:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -28410,7 +28456,7 @@ fn main(input : FragmentInput) -> @location(0) vec4f {
 }
 `;
 
-},{}],47:[function(require,module,exports){
+},{}],48:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -28641,7 +28687,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, 1.0);
 }`;
 
-},{}],48:[function(require,module,exports){
+},{}],49:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -28819,7 +28865,7 @@ return vec4f(color, 1.0);
 // let radiance = spotlights[0].color * 10.0; // test high intensity
 // Lo += materialData.baseColor * radiance * NdotL;
 
-},{}],49:[function(require,module,exports){
+},{}],50:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -29064,7 +29110,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, 1.0);
 }`;
 
-},{}],50:[function(require,module,exports){
+},{}],51:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -29284,7 +29330,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, 1.0);
 }`;
 
-},{}],51:[function(require,module,exports){
+},{}],52:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -29452,7 +29498,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 // let radiance = spotlights[0].color * 10.0; // test high intensity
 // Lo += materialData.baseColor * radiance * NdotL;
 
-},{}],52:[function(require,module,exports){
+},{}],53:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -29688,7 +29734,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, alpha);
 }`;
 
-},{}],53:[function(require,module,exports){
+},{}],54:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -29792,7 +29838,7 @@ fn main(
   return output;
 }`;
 
-},{}],54:[function(require,module,exports){
+},{}],55:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -29829,7 +29875,7 @@ fn main(
 }
 `;
 
-},{}],55:[function(require,module,exports){
+},{}],56:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -29887,7 +29933,7 @@ fn fragmentMain(input: VertexOutput) -> @location(0) vec4f {
   return vec4f(textureColor.rgb * lightColor, textureColor.a);
 }`;
 
-},{}],56:[function(require,module,exports){
+},{}],57:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -29945,7 +29991,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
 }
 `;
 
-},{}],57:[function(require,module,exports){
+},{}],58:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30032,7 +30078,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
 }
 `;
 
-},{}],58:[function(require,module,exports){
+},{}],59:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30090,7 +30136,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
   return vec4<f32>(color, 1.0);
 }`;
 
-},{}],59:[function(require,module,exports){
+},{}],60:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30176,7 +30222,7 @@ fn main(
   return output;
 }`;
 
-},{}],60:[function(require,module,exports){
+},{}],61:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30287,7 +30333,7 @@ fn main(
   return output;
 }`;
 
-},{}],61:[function(require,module,exports){
+},{}],62:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30315,7 +30361,7 @@ fn main(
 }
 `;
 
-},{}],62:[function(require,module,exports){
+},{}],63:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30385,7 +30431,7 @@ class MatrixSounds {
 }
 exports.MatrixSounds = MatrixSounds;
 
-},{}],63:[function(require,module,exports){
+},{}],64:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30542,6 +30588,17 @@ class MEEditorClient {
       o = JSON.stringify(o);
       this.ws.send(o);
     });
+    document.addEventListener('web.editor.addSphere', e => {
+      console.log("[web.editor.addSphere]: ", e.detail);
+      console.info('addSphere <signal>');
+      let o = {
+        action: "addSphere",
+        projectName: location.href.split('/public/')[1].split(".")[0],
+        options: e.detail
+      };
+      o = JSON.stringify(o);
+      this.ws.send(o);
+    });
     document.addEventListener('save-methods', e => {
       console.info('save script <signal>');
       let o = {
@@ -30617,7 +30674,7 @@ class MEEditorClient {
 }
 exports.MEEditorClient = MEEditorClient;
 
-},{"../../engine/utils":40}],64:[function(require,module,exports){
+},{"../../engine/utils":41}],65:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30649,7 +30706,7 @@ class Editor {
         setTimeout(() => {
           this.fluxCodexVertex.updateLinks();
         }, 3000);
-      }, 300);
+      }, 1500);
     }
     // console.log("methodsManager", this.methodsManager);
   }
@@ -30666,43 +30723,52 @@ class Editor {
     let FCV = document.createElement('div');
     FCV.id = 'app';
     FCV.style.display = 'none';
+    FCV.style.opacity = 1;
     // test async 
     // setTimeout(() => FCV.style.display = 'none' , 200);
     FCV.innerHTML = `
     <div id="leftBar">
       <h3>Events/Func</h3>
-      <button class="btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('event')">Event: onLoad</button>
-      <button class="btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('function')">Function</button>
-      <button class="btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('if')">If Branch</button>
-      <button class="btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('genrand')">GenRandInt</button>
-      <button class="btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('print')">Print</button>
-      <button class="btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('timeout')">SetTimeout</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('event')">Event: onLoad</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('function')">Function</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('if')">If Branch</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('genrand')">GenRandInt</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('print')">Print</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('timeout')">SetTimeout</button>
+      <hr style="border:none; height:1px; background:rgba(255,255,255,0.03); margin:10px 0;">
+      <span>Scene objects</span>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getSceneObject')">Get scene object</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setPosition')">Set position</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('translateByX')">TranslateByX</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('translateByY')">TranslateByY</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('translateByZ')">TranslateByZ</button>
+      
       <hr style="border:none; height:1px; background:rgba(255,255,255,0.03); margin:10px 0;">
       <span>Math</span>
-      <button class="btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('add')">Add (+)</button>
-      <button class="btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('sub')">Sub (-)</button>
-      <button class="btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('mul')">Mul (*)</button>
-      <button class="btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('div')">Div (/)</button>
-      <button class="btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('sin')">Sin</button>
-      <button class="btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('cos')">Cos</button>
-      <button class="btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('pi')">Pi</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('add')">Add (+)</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('sub')">Sub (-)</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('mul')">Mul (*)</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('div')">Div (/)</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('sin')">Sin</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('cos')">Cos</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('pi')">Pi</button>
       <hr style="border:none; height:1px; background:rgba(255,255,255,0.03); margin:10px 0;">
       <span>COMPARISON</span>
-      <button class="btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('equal')">Equal (==)</button>
-      <button class="btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('notequal')">Not Equal (!=)</button>
-      <button class="btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('greater')">Greater (>)</button>
-      <button class="btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('less')">Less (<)</button>
-      <button class="btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('greaterEqual')">Greater/Equal (>=)</button>
-      <button class="btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('lessEqual')">Less/Equal (<=)</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('equal')">Equal (==)</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('notequal')">Not Equal (!=)</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('greater')">Greater (>)</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('less')">Less (<)</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('greaterEqual')">Greater/Equal (>=)</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('lessEqual')">Less/Equal (<=)</button>
       <hr style="border:none; height:1px; background:rgba(255,255,255,0.03); margin:10px 0;">
       <hr style="border:none; height:1px; background:rgba(255,255,255,0.03); margin:10px 0;">
       <span>Compile FluxCodexVertex</span>
-      <button class="btnLeftBox" onclick="app.editor.fluxCodexVertex.compileGraph()">Save to LocalStorage</button>
-      <button class="btnLeftBox" onclick="clearStorage()">Clear Save</button>
-      <button class="btnLeftBox" onclick="app.editor.fluxCodexVertex.runGraph()">Run</button>
+      <button style="color:orangered;" class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.compileGraph()">Save to LocalStorage</button>
+      <button style="color:red;" class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.clearStorage();">Clear Save</button>
+      <button style="color:orangered;" class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.runGraph()">Run (F6)</button>
       <hr style="border:none; height:1px; background:rgba(255,255,255,0.03); margin:10px 0;">
-      <button class="btnLeftBox" onclick="app.editor.fluxCodexVertex.exportToJSON()">Export (JSON)</button>
-      <button class="btnLeftBox" onclick="app.editor.fluxCodexVertex._importInput.click()">Import (JSON)</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.exportToJSON()">Export (JSON)</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex._importInput.click()">Import (JSON)</button>
 
       <pre id="log" aria-live="polite"></pre>
     </div>
@@ -30717,7 +30783,7 @@ class Editor {
 }
 exports.Editor = Editor;
 
-},{"./client":63,"./editor.provider":65,"./fluxCodexVertex":66,"./hud":67,"./methodsManager":68}],65:[function(require,module,exports){
+},{"./client":64,"./editor.provider":66,"./fluxCodexVertex":67,"./hud":68,"./methodsManager":69}],66:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30738,7 +30804,7 @@ class EditorProvider {
     this.addEditorEvents();
   }
   getNameFromPath(p) {
-    return p.split(/[/\\]/).pop().replace(/\.[^/.]+$/, "") + this.core.mainRenderBundle.length;
+    return p.split(/[/\\]/).pop().replace(/\.[^/.]+$/, ""); // + (this.core.mainRenderBundle.length);
   }
   addEditorEvents() {
     document.addEventListener('web.editor.input', e => {
@@ -30815,6 +30881,45 @@ class EditorProvider {
         scale: [1, 1, 1]
       });
     });
+    document.addEventListener('web.editor.addSphere', e => {
+      // console.log("[web.editor.addCube]: ", e.detail);
+      (0, _loaderObj.downloadMeshes)({
+        cube: "./res/meshes/shapes/sphere.obj"
+      }, m => {
+        const texturesPaths = './res/meshes/blender/cube.png';
+        this.core.addMeshObj({
+          position: {
+            x: 0,
+            y: 0,
+            z: -20
+          },
+          rotation: {
+            x: 0,
+            y: 0,
+            z: 0
+          },
+          rotationSpeed: {
+            x: 0,
+            y: 0,
+            z: 0
+          },
+          texturesPaths: [texturesPaths],
+          // useUVShema4x2: true,
+          name: 'Sphere_' + app.mainRenderBundle.length,
+          mesh: m.cube,
+          raycast: {
+            enabled: true,
+            radius: 2
+          },
+          physics: {
+            enabled: e.detail.physics,
+            geometry: "Sphere"
+          }
+        });
+      }, {
+        scale: [1, 1, 1]
+      });
+    });
     document.addEventListener('web.editor.addGlb', async e => {
       console.log("[web.editor.addGlb]: ", e.detail.path);
       e.detail.path = e.detail.path.replace('\\res', 'res');
@@ -30829,7 +30934,7 @@ class EditorProvider {
         position: {
           x: 0,
           y: 0,
-          z: -50
+          z: -20
         },
         name: this.getNameFromPath(e.detail.path),
         texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png']
@@ -30889,13 +30994,14 @@ class EditorProvider {
 }
 exports.default = EditorProvider;
 
-},{"../../engine/loader-obj":33,"../../engine/loaders/webgpu-gltf":36}],66:[function(require,module,exports){
+},{"../../engine/loader-obj":33,"../../engine/loaders/webgpu-gltf":36}],67:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.default = void 0;
+var _ToolTip = require("../../engine/plugin/tooltip/ToolTip");
 var _utils = require("../../engine/utils");
 /**
  * @description
@@ -30938,37 +31044,36 @@ var _utils = require("../../engine/utils");
 class FluxCodexVertex {
   constructor(boardId, boardWrapId, logId, methodsManager) {
     this.debugMode = true;
+    this.toolTip = new _ToolTip.METoolTip();
     this.methodsManager = methodsManager;
     this.variables = {
       number: {},
       boolean: {},
       string: {}
     };
-    // --- DOM Elements ---
+
+    // DOM Elements
     this.board = document.getElementById(boardId);
     this.boardWrap = document.getElementById(boardWrapId);
     this.svg = this.board.querySelector('svg.connections');
     this.logEl = document.getElementById(logId);
 
-    // --- Data Model ---
+    // Data Model
     this.nodes = {};
     this.links = [];
     this.nodeCounter = 1;
     this.linkCounter = 1;
     this._execContext = null;
 
-    // --- State Management ---
+    // State Management
     this.state = {
       draggingNode: null,
       dragOffset: [0, 0],
-      // [x, y]
       connecting: null,
-      // {node, pin, type, out}
       selectedNode: null,
       pan: [0, 0],
-      // [x, y]
       panning: false,
-      panStart: [0, 0] // [x, y]
+      panStart: [0, 0]
     };
 
     // Bind event listeners
@@ -30989,11 +31094,87 @@ class FluxCodexVertex {
         }
       }
     });
+    this.createContextMenu();
   }
+  createContextMenu() {
+    let CMenu = document.createElement('div');
+    CMenu.id = "fc-context-menu";
+    CMenu.classList.add('fc-context-menu');
+    CMenu.classList.add('hidden');
+    const board = document.getElementById('board');
+    board.addEventListener('contextmenu', e => {
+      e.preventDefault();
+      CMenu.innerHTML = this.getFluxCodexMenuHTML();
+      const menuRect = CMenu.getBoundingClientRect();
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      let x = e.clientX;
+      let y = e.clientY;
 
-  // ====================================================================
-  // 1. UTILITY & DEBUGGING
-  // ====================================================================
+      // Horizontal clamp (prevent right overflow)
+      if (x + menuRect.width > vw) {
+        x = vw - menuRect.width - 5;
+      }
+
+      // Vertical smart placement
+      if (y > vh * 0.5) {
+        // open upwards
+        y = y - menuRect.height;
+      }
+
+      // Final clamp (top safety)
+      if (y < 5) y = 5;
+      CMenu.style.left = x + 'px';
+      CMenu.style.top = y + 'px';
+      CMenu.classList.remove('hidden');
+    });
+    document.addEventListener('click', () => {
+      CMenu.classList.add('hidden');
+    });
+    (0, _utils.byId)('app').appendChild(CMenu);
+  }
+  getFluxCodexMenuHTML() {
+    return `
+    <h3>Events / Func</h3>
+    <button onclick="app.editor.fluxCodexVertex.addNode('event')">Event: onLoad</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('function')">Function</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('if')">If Branch</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('genrand')">GenRandInt</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('print')">Print</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('timeout')">SetTimeout</button>
+
+    <hr>
+    <span>Scene</span>
+    <button onclick="app.editor.fluxCodexVertex.addNode('getSceneObject')">Get Scene Object</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('setPosition')">Set Position</button>
+
+
+    <button onclick="app.editor.fluxCodexVertex.addNode('onTargetPositionReach')">onTargetPositionReach</button>
+    
+
+    <hr>
+    <span>Math</span>
+    <button onclick="app.editor.fluxCodexVertex.addNode('add')">Add (+)</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('sub')">Sub (-)</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('mul')">Mul (*)</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('div')">Div (/)</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('sin')">Sin</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('cos')">Cos</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('pi')">Pi</button>
+
+    <hr>
+    <span>Comparison</span>
+    <button onclick="app.editor.fluxCodexVertex.addNode('equal')">Equal (==)</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('notequal')">Not Equal (!=)</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('greater')">Greater (>)</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('less')">Less (<)</button>
+
+    <hr>
+    <span>Compile</span>
+    <button onclick="app.editor.fluxCodexVertex.compileGraph()">Save</button>
+    <button onclick="app.editor.fluxCodexVertex.runGraph()">Run (F6)</button>
+  `;
+  }
   log(...args) {
     this.logEl.textContent = args.join(' ');
   }
@@ -31046,8 +31227,6 @@ class FluxCodexVertex {
       if (!n.title.startsWith('Get')) continue;
       const varField = n.fields.find(f => f.key === 'var');
       if (!varField || varField.value !== key) continue;
-
-      // type guard
       if (type === 'number' && n.title !== 'Get Number' || type === 'boolean' && n.title !== 'Get Boolean' || type === 'string' && n.title !== 'Get String') continue;
 
       // recompute getter value
@@ -31073,7 +31252,9 @@ class FluxCodexVertex {
       width: '30%',
       height: '50%',
       overflow: 'scroll',
-      background: '#111',
+      background: 'linear-gradient(135deg, #1a1a1a 0%, #2b2b2b 100%), /* subtle dark gradient */ repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.05) 1px, transparent 1px, transparent 20px), repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.05) 1px, transparent 1px, transparent 20px)',
+      backgroundBlendMode: 'overlay',
+      backgroundSize: 'auto, 20px 20px, 20px 20px',
       border: '1px solid #444',
       borderRadius: '8px',
       padding: '10px',
@@ -31081,19 +31262,17 @@ class FluxCodexVertex {
       color: '#eee',
       overflowX: 'hidden'
     });
-    /* ---------- HEADER ---------- */
+    // HEADER
     const title = document.createElement('div');
     title.innerHTML = `Variables`;
     title.style.marginBottom = '8px';
     title.style.fontWeight = 'bold';
     popup.appendChild(title);
-
-    /* ---------- LIST ---------- */
     const list = document.createElement('div');
     list.id = 'varslist';
     popup.appendChild(list);
 
-    /* ---------- CREATE BUTTONS ---------- */
+    // CREATE BUTTONS
     const btns = document.createElement('div');
     btns.style.marginTop = '10px';
     btns.style.display = 'flex';
@@ -31102,18 +31281,17 @@ class FluxCodexVertex {
     popup.appendChild(btns);
     const hideVPopup = document.createElement('button');
     hideVPopup.innerText = `Hide`;
-    hideVPopup.style.margin = '18px 18px 18px 18px';
-    // hideVPopup.style.padding = '8px 8px 8px 8px';
+    hideVPopup.classList.add('btn4');
+    hideVPopup.style.margin = '8px 8px 8px 8px';
+    hideVPopup.style.width = '100px';
     hideVPopup.style.fontWeight = 'bold';
-    hideVPopup.style.height = '4%';
+    // hideVPopup.style.height = '4%';
     hideVPopup.style.webkitTextStrokeWidth = '0px';
     hideVPopup.addEventListener('click', () => {
       (0, _utils.byId)('varsPopup').style.display = 'none';
     });
     popup.appendChild(hideVPopup);
     document.body.appendChild(popup);
-    // byId('app').appendChild(popup);
-
     this.makePopupDraggable(popup);
     this._refreshVarsList(list);
   }
@@ -31138,11 +31316,11 @@ class FluxCodexVertex {
           webkitTextStrokeWidth: '0px'
         });
 
-        /* label */
+        // label
         const label = document.createElement('span');
         label.textContent = `${name} (${type})`;
 
-        /* value input */
+        // value input
         const input = document.createElement('input');
         input.value = this.variables[type][name].value ?? '';
         input.style.width = '60px';
@@ -31152,32 +31330,31 @@ class FluxCodexVertex {
         input.oninput = e => {
           this.variables[type][name].value = type === 'number' ? Number(e.target.value) : type === 'boolean' ? e.target.value === 'true' : e.target.value;
         };
-
-        // /* CLICK → create getter node */
-        // row.onclick = () => {
-        //   if(type === 'number') {
-        //     this.createGetNumberNode(name);
-        //   }
-        //   // boolean/string later
-        // };
-
         const propagate = document.createElement('button');
         propagate.innerText = `Get ${name}`;
-        /* CLICK → create getter node */
+        propagate.classList.add('btnGetter');
+        // CLICK → create getter node
         propagate.onclick = () => {
           if (type === 'number') {
             this.createGetNumberNode(name);
+          } else if (type === 'boolean') {
+            this.createGetBooleanNode(name);
+          } else if (type === 'string') {
+            this.createSetStringNode(name);
           }
-          // boolean/string later
         };
         const propagateSet = document.createElement('button');
         propagateSet.innerText = `Set ${name}`;
-        /* CLICK → create getter node */
+        propagateSet.classList.add('btnGetter');
+        // CLICK → create getter node
         propagateSet.onclick = () => {
           if (type === 'number') {
             this.createSetNumberNode(name);
+          } else if (type === 'boolean') {
+            this.createSetBooleanNode(name);
+          } else if (type === 'string') {
+            this.createSetStringNode(name);
           }
-          // boolean/string later
         };
         row.append(label, input, propagate, propagateSet);
         container.appendChild(row);
@@ -31258,36 +31435,30 @@ class FluxCodexVertex {
       select.appendChild(opt);
     });
   }
-  // --------------------------------------------------------------------
+
   // Dynamic Method Helpers
-  // --------------------------------------------------------------------
   getArgNames(fn) {
     const src = fn.toString().trim();
-
     // Case 1: arrow function with no parentheses:  a => ...
     const arrowNoParen = src.match(/^([a-zA-Z0-9_$]+)\s*=>/);
     if (arrowNoParen) {
       return [arrowNoParen[1].trim()];
     }
-
     // Case 2: normal (a,b) => ...  OR function(a,b) { ... }
     const argsMatch = src.match(/\(([^)]*)\)/);
     if (argsMatch && argsMatch[1].trim().length > 0) {
       return argsMatch[1].split(",").map(a => a.trim()).filter(a => a.length > 0);
     }
-
     // Default: no args
     return [];
   }
   hasReturn(fn) {
     const src = fn.toString().trim();
-
     // Case 1: implicit return in arrow: (a)=>a+2  OR  a=>a*2
     // Detect arrow "=>" followed by an expression, not "{"
     if (/=>\s*[^({]/.test(src)) {
       return true;
     }
-
     // Case 2: normal "return" inside function body
     if (/return\s+/.test(src)) {
       return true;
@@ -31296,7 +31467,6 @@ class FluxCodexVertex {
   }
   adaptNodeToMethod(node, methodItem) {
     const fn = this.methodsManager.compileFunction(methodItem.code);
-
     // Reset pins except execution pins
     node.inputs = [{
       name: "exec",
@@ -31306,14 +31476,12 @@ class FluxCodexVertex {
       name: "execOut",
       type: "action"
     }];
-
     // Dynamic input pins
     const args = this.getArgNames(fn);
     args.forEach(arg => node.inputs.push({
       name: arg,
       type: "value"
     }));
-
     // Dynamic return pin
     if (this.hasReturn(fn)) node.outputs.push({
       name: "return",
@@ -31321,8 +31489,7 @@ class FluxCodexVertex {
     });
     node.attachedMethod = methodItem.name;
     node.fn = fn;
-
-    // 🔹 Refresh the DOM so new pins are clickable
+    // Refresh the DOM so new pins are clickable
     this.updateNodeDOM(node.id);
   }
   populateMethodsSelect(selectEl) {
@@ -31356,7 +31523,7 @@ class FluxCodexVertex {
     inputs.forEach(pin => left.appendChild(this._pinElement(pin, false, nodeId)));
     outputs.forEach(pin => right.appendChild(this._pinElement(pin, true, nodeId)));
 
-    // --- Method select (only for Function nodes) ---
+    // Method select (only for Function nodes)
     if (node.category === 'action' && node.title === 'Function') {
       let select = el.querySelector('select.method-select');
       if (!select) {
@@ -31374,11 +31541,8 @@ class FluxCodexVertex {
     }
   }
 
-  // ====================================================================
-  // 2. NODE/PIN CREATION (DOM)
-  // ====================================================================
-
-  // ------------------------- CONNECTION HANDLERS -------------------------
+  // NODE/PIN CREATION
+  // CONNECTION HANDLERS
   startConnect(nodeId, pinName, type, isOut) {
     this.state.connecting = {
       node: nodeId,
@@ -31422,11 +31586,32 @@ class FluxCodexVertex {
     if (type === 'number') return 'value';
     return type;
   }
+  updateSceneObjectPins(node, objectName) {
+    const obj = (window.app?.mainRenderBundle || []).find(o => o.name === objectName);
+    if (!obj) return;
+    // expose one-level properties
+    const props = ['name', 'position', 'rotation', 'scale'];
+    props.forEach(p => {
+      if (obj[p] !== undefined) {
+        const type = typeof obj[p] === 'number' ? 'number' : typeof obj[p] === 'string' ? 'string' : 'object';
+        node.outputs.push({
+          name: p,
+          type
+        });
+      }
+    });
+    // Refresh DOM
+    this.updateNodeDOM(node.id);
+  }
   _pinElement(pinSpec, isOutput, nodeId) {
     const pin = document.createElement('div');
-
     // CSS class with type
-    pin.className = `pin pin-${pinSpec.type}`;
+    console.log('test pin :', pinSpec.name);
+    if (pinSpec.name == 'position') {
+      pin.className = `pin pin-${pinSpec.name}`;
+    } else {
+      pin.className = `pin pin-${pinSpec.type}`;
+    }
     pin.dataset.pin = pinSpec.name;
     pin.dataset.type = pinSpec.type;
     pin.dataset.io = isOutput ? 'out' : 'in';
@@ -31486,7 +31671,7 @@ class FluxCodexVertex {
     row.appendChild(right);
     body.appendChild(row);
 
-    // --- Value display ---
+    // Value display
     if (spec.fields && spec.title === 'GenRandInt') {
       const container = document.createElement('div');
       container.className = 'genrand-inputs';
@@ -31512,7 +31697,7 @@ class FluxCodexVertex {
       body.appendChild(display);
     }
 
-    // --- Function Method Selector ---
+    // Function Method Selector
     if (spec.category === 'action' && !spec.builtIn && !spec.isVariableNode) {
       const select = document.createElement('select');
       select.className = 'method-select';
@@ -31542,8 +31727,32 @@ class FluxCodexVertex {
       input.style.cursor = 'default';
       body.appendChild(input);
     }
-    el.appendChild(body);
+    if (spec.title === 'Get Scene Object') {
+      const select = document.createElement('select');
+      select.style.width = '100%';
+      select.style.marginTop = '6px';
 
+      // Populate scene objects
+      const objects = window.app?.mainRenderBundle || [];
+      const placeholder = document.createElement('option');
+      placeholder.textContent = '-- Select Object --';
+      placeholder.value = '';
+      select.appendChild(placeholder);
+      objects.forEach(obj => {
+        const opt = document.createElement('option');
+        opt.value = obj.name;
+        opt.textContent = obj.name;
+        select.appendChild(opt);
+      });
+      if (spec.fields[0].value) select.value = spec.fields[0].value;
+      select.addEventListener('change', e => {
+        const name = e.target.value;
+        spec.fields[0].value = name;
+        this.updateSceneObjectPins(spec, name);
+      });
+      el.appendChild(select);
+    }
+    el.appendChild(body);
     // --- Dragging ---
     header.addEventListener('mousedown', e => {
       e.preventDefault();
@@ -31553,7 +31762,6 @@ class FluxCodexVertex {
       this.state.dragOffset = [e.clientX - rect.left + bx.left, e.clientY - rect.top + bx.top];
       document.body.style.cursor = 'grabbing';
     });
-
     // --- Selecting ---
     el.addEventListener('click', e => {
       e.stopPropagation();
@@ -31939,7 +32147,7 @@ class FluxCodexVertex {
           key: 'var',
           value: ''
         }],
-        isGetterNode: true // flag for special handling
+        isGetterNode: true
       }),
       'getBoolean': (id, x, y) => ({
         id,
@@ -31954,7 +32162,8 @@ class FluxCodexVertex {
         fields: [{
           key: 'var',
           value: ''
-        }]
+        }],
+        isGetterNode: true
       }),
       'getString': (id, x, y) => ({
         id,
@@ -31969,7 +32178,8 @@ class FluxCodexVertex {
         fields: [{
           key: 'var',
           value: ''
-        }]
+        }],
+        isGetterNode: true
       }),
       'setNumber': (id, x, y) => ({
         id,
@@ -32003,6 +32213,7 @@ class FluxCodexVertex {
         x,
         y,
         category: 'action',
+        isVariableNode: true,
         inputs: [{
           name: 'exec',
           type: 'action'
@@ -32017,6 +32228,9 @@ class FluxCodexVertex {
         fields: [{
           key: 'var',
           value: ''
+        }, {
+          key: 'literal',
+          value: false
         }]
       }),
       'setString': (id, x, y) => ({
@@ -32025,6 +32239,7 @@ class FluxCodexVertex {
         x,
         y,
         category: 'action',
+        isVariableNode: true,
         inputs: [{
           name: 'exec',
           type: 'action'
@@ -32039,7 +32254,156 @@ class FluxCodexVertex {
         fields: [{
           key: 'var',
           value: ''
+        }, {
+          key: 'literal',
+          value: ''
         }]
+      }),
+      'comment': (id, x, y, comment = "Add comment") => ({
+        id,
+        title: comment,
+        x,
+        y,
+        category: 'meta',
+        inputs: [],
+        outputs: [],
+        comment: true,
+        noExec: true
+      }),
+      'getSceneObject': (id, x, y) => ({
+        noExec: true,
+        id,
+        title: 'Get Scene Object',
+        x,
+        y,
+        category: 'scene',
+        inputs: [],
+        // no inputs
+        outputs: [],
+        // will be filled dynamically
+        fields: [{
+          key: 'selectedObject',
+          value: ''
+        }],
+        builtIn: true
+      }),
+      'getPosition': (id, x, y) => ({
+        id,
+        title: 'Get Position',
+        category: 'scene',
+        inputs: [{
+          name: 'position',
+          semantic: 'position'
+        }],
+        outputs: [{
+          name: 'x',
+          semantic: 'number'
+        }, {
+          name: 'y',
+          semantic: 'number'
+        }, {
+          name: 'z',
+          semantic: 'number'
+        }],
+        noExec: true
+      }),
+      'setPosition': (id, x, y) => ({
+        id,
+        title: 'Set Position',
+        category: 'scene',
+        inputs: [{
+          name: 'exec',
+          type: 'action'
+        }, {
+          name: 'position',
+          semantic: 'position'
+        }, {
+          name: 'x',
+          semantic: 'number'
+        }, {
+          name: 'y',
+          semantic: 'number'
+        }, {
+          name: 'z',
+          semantic: 'number'
+        }],
+        outputs: [{
+          name: 'execOut',
+          type: 'action'
+        }]
+      }),
+      'translateByX': (id, x, y) => ({
+        id,
+        title: 'Translate By X',
+        category: 'scene',
+        inputs: [{
+          name: 'exec',
+          type: 'action'
+        }, {
+          name: 'position',
+          semantic: 'position'
+        }, {
+          name: 'x',
+          semantic: 'number'
+        }],
+        outputs: [{
+          name: 'execOut',
+          semantic: 'exec'
+        }],
+        builtIn: true
+      }),
+      'translateByY': (id, x, y) => ({
+        id,
+        title: 'Translate By Y',
+        category: 'scene',
+        inputs: [{
+          name: 'exec',
+          type: 'action'
+        }, {
+          name: 'position',
+          semantic: 'position'
+        }, {
+          name: 'y',
+          semantic: 'number'
+        }],
+        outputs: [{
+          name: 'execOut',
+          semantic: 'exec'
+        }]
+      }),
+      'translateByZ': (id, x, y) => ({
+        id,
+        title: 'Translate By Z',
+        category: 'scene',
+        inputs: [{
+          name: 'exec',
+          type: 'action'
+        }, {
+          name: 'position',
+          semantic: 'position'
+        }, {
+          name: 'z',
+          semantic: 'number'
+        }],
+        outputs: [{
+          name: 'execOut',
+          semantic: 'exec'
+        }]
+      }),
+      'onTargetPositionReach': (id, x, y) => ({
+        id,
+        title: 'On Target Position Reach',
+        category: 'event',
+        noExec: true,
+        inputs: [{
+          name: 'position',
+          type: 'object'
+        }],
+        outputs: [{
+          name: 'exec',
+          type: 'action'
+        }],
+        _listenerAttached: false
       })
     };
 
@@ -32065,6 +32429,27 @@ class FluxCodexVertex {
     if (!this.variables[type][key]) return;
     this.variables[type][key].value = value;
     this.notifyVariableChanged(type, key);
+  }
+  initEventNodes() {
+    for (const nodeId in this.nodes) {
+      const n = this.nodes[nodeId];
+      if (n.category === 'event') {
+        this.activateEventNode(nodeId);
+      }
+    }
+  }
+  activateEventNode(nodeId) {
+    const n = this.nodes[nodeId];
+    if (n._listenerAttached) return;
+    if (n.title === 'On Target Position Reach') {
+      const pos = this.getValue(nodeId, 'position');
+      if (!pos) return;
+      pos.onTargetPositionReach = () => {
+        console.log('real onTargetPositionReach called');
+        this.enqueueOutputs(n, 'exec');
+      };
+      n._listenerAttached = true;
+    }
   }
   _executeAttachedMethod(n) {
     if (n.attachedMethod) {
@@ -32104,6 +32489,28 @@ class FluxCodexVertex {
     // 3️⃣ Default input pin
     const inputPin = node.inputs?.find(p => p.name === pinName);
     if (inputPin) return inputPin.default ?? 0;
+    if (node.title === 'Get Scene Object') {
+      // direct reference to real object must be migrated to factory 
+      // to make it reusable for any other priject
+      console.log('FUNC getValue , ' + 'node.title :' + node.title + ', this.nodes[nodeId]._returnCache = ' + this.nodes[nodeId]._returnCache);
+      const objName = node.fields[0].value;
+      console.log(' objName is n.fields[0].value = ' + node.fields[0].value);
+      const obj = (window.app?.mainRenderBundle || []).find(o => o.name === objName);
+      console.log('(window.app?.mainRenderBundle || []).find(o => o.name === objName) = ' + (window.app?.mainRenderBundle || []).find(o => o.name === objName));
+      if (!obj) return undefined;
+      const out = node.outputs.find(o => o.name === pinName);
+      if (!out) return undefined;
+      return obj[pinName]; // simple one-level property access
+    } else if (node.title === 'Get Position') {
+      const pos = this.getValue(nodeId, 'position');
+      if (!pos) return undefined;
+      node._returnCache = {
+        x: pos.x,
+        y: pos.y,
+        z: pos.z
+      };
+      return node._returnCache[pinName];
+    }
 
     // 4️⃣ Dynamic output (computed node)
     if (node.outputs?.some(o => o.name === pinName)) {
@@ -32164,6 +32571,23 @@ class FluxCodexVertex {
         if (n.displayEl) n.displayEl.textContent = typeof value === 'number' ? value.toFixed(3) : String(value);
       }
       n.finished = true;
+      return;
+    }
+    if (n.title === 'On Target Position Reach') {
+      console.log('TEST TEST On Target Position Reach ', pos);
+      if (n._listenerAttached) return;
+      const pos = this.getValue(nodeId, 'position');
+      if (!pos) return;
+
+      // 🔥 subscribe to position updates
+      // Attach listener (engine-agnostic)
+      console.log('TEST TEST ', pos);
+      pos.onTargetPositionReach = () => {
+        this.triggerNode(n); // NO HELP
+        this.enqueueOutputs(n, 'exec');
+        alert(' TARGET REACh ');
+      };
+      n._listenerAttached = true;
       return;
     }
 
@@ -32242,6 +32666,35 @@ class FluxCodexVertex {
       this._execContext = null;
       return;
     }
+    if (n.title === 'Set Position') {
+      const pos = this.getValue(nodeId, 'position');
+      if (pos?.setPosition) {
+        pos.setPosition(this.getValue(nodeId, 'x'), this.getValue(nodeId, 'y'), this.getValue(nodeId, 'z'));
+      }
+      this.enqueueOutputs(n, 'execOut');
+      return;
+    } else if (n.title === 'Translate By X') {
+      const pos = this.getValue(nodeId, 'position');
+      if (pos?.translateByX) {
+        pos.translateByX(this.getValue(nodeId, 'x'));
+      }
+      this.enqueueOutputs(n, 'execOut');
+      return;
+    } else if (n.title === 'Translate By Y') {
+      const pos = this.getValue(nodeId, 'position');
+      if (pos?.translateByY) {
+        pos.translateByX(this.getValue(nodeId, 'y'));
+      }
+      this.enqueueOutputs(n, 'execOut');
+      return;
+    } else if (n.title === 'Translate By Z') {
+      const pos = this.getValue(nodeId, 'position');
+      if (pos?.translateByZ) {
+        pos.translateByX(this.getValue(nodeId, 'z'));
+      }
+      this.enqueueOutputs(n, 'execOut');
+      return;
+    }
 
     // -----------------------------
     // Math / Value / Compare Nodes
@@ -32301,6 +32754,19 @@ class FluxCodexVertex {
     }
     this._execContext = null;
   }
+
+  // computeSceneNode(n) {
+  //   const objName = n.fields?.find(f => f.key === 'selectedObject')?.value;
+  //   const obj = this.scene?.[objName];
+
+  //   n._returnCache = {
+  //     NAME: obj?.name ?? '',
+  //     POSITION: obj?.position ?? null,
+  //     ROTATION: obj?.rotation ?? null,
+  //     SCALE: obj?.scale ?? null
+  //   };
+  // }
+
   getVariable(type, key) {
     if (!this.variables[type][key]) return undefined;
     return this.variables[type][key].value;
@@ -32340,6 +32806,9 @@ class FluxCodexVertex {
     document.addEventListener('mousemove', this.handleMouseMove.bind(this));
     document.addEventListener('mouseup', this.handleMouseUp.bind(this));
     this.boardWrap.addEventListener('mousedown', this.handleBoardWrapMouseDown.bind(this));
+    this.board.addEventListener('click', () => {
+      (0, _utils.byId)('app').style.opacity = 1;
+    });
   }
   handleMouseMove(e) {
     if (this.state.draggingNode) {
@@ -32398,7 +32867,9 @@ class FluxCodexVertex {
     });
   }
   runGraph() {
+    (0, _utils.byId)('app').style.opacity = 0.4;
     this.updateValueDisplays();
+    this.initEventNodes();
     Object.values(this.nodes).forEach(n => n._returnCache = undefined);
     Object.values(this.nodes).filter(n => n.category === 'event' && n.title === 'onLoad').forEach(n => this.triggerNode(n.id));
   }
@@ -32417,6 +32888,22 @@ class FluxCodexVertex {
   clearStorage() {
     localStorage.removeItem(FluxCodexVertex.SAVE_KEY);
     this.log('Save cleared. Refresh to reset.');
+  }
+  clearAllNodes() {
+    // Remove node DOMs
+    this.board.querySelectorAll('.node').forEach(n => n.remove());
+
+    // Clear data
+    this.nodes.length = 0;
+    this.links.length = 0;
+
+    // Clear state
+    this.state.selectedNode = null;
+    this.state.draggingNode = null;
+    this.state.connectingPin = null;
+
+    // Optional: redraw connections
+    this.updateLinks();
   }
   _buildSaveBundle() {
     return {
@@ -32546,7 +33033,7 @@ class FluxCodexVertex {
 exports.default = FluxCodexVertex;
 FluxCodexVertex.SAVE_KEY = 'matrixEngineVisualScripting';
 
-},{"../../engine/utils":40}],67:[function(require,module,exports){
+},{"../../engine/plugin/tooltip/ToolTip":40,"../../engine/utils":41}],68:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -32597,7 +33084,7 @@ class EditorHud {
           // infly 
           let o = {
             physics: true,
-            path: name,
+            path: getPATH,
             index: this.core.mainRenderBundle.length
           };
           document.dispatchEvent(new CustomEvent('web.editor.addGlb', {
@@ -32607,7 +33094,7 @@ class EditorHud {
           // infly
           let o = {
             physics: false,
-            path: name,
+            path: getPATH,
             index: this.core.mainRenderBundle.length
           };
           document.dispatchEvent(new CustomEvent('web.editor.addGlb', {
@@ -32658,7 +33145,7 @@ class EditorHud {
     this.errorForm.id = "errorForm";
     Object.assign(this.errorForm.style, {
       position: "absolute",
-      top: "10%",
+      top: "20%",
       left: "25%",
       width: "50%",
       height: "30vh",
@@ -32688,7 +33175,7 @@ class EditorHud {
     Object.assign(this.editorMenu.style, {
       position: "absolute",
       top: "0",
-      left: "20%",
+      left: "30%",
       width: "60%",
       height: "50px;",
       backgroundColor: "rgba(0,0,0,0.85)",
@@ -32712,6 +33199,7 @@ class EditorHud {
       <div id="start-watch" class="drop-item">🛠️ Watch</div>
       <div id="stop-watch" class="drop-item">🛠️ Stop Watch</div>
       <div class="drop-item">🛠️ Build</div>
+      <div id="start-refresh" class="drop-item">🛠️ Refresh</div>
       </div>
     </div>
 
@@ -32722,9 +33210,8 @@ class EditorHud {
         <div id="addCubePhysics" class="drop-item">🧊Cube with Physics</div>
         <div id="addSphere" class="drop-item">⚪Sphere</div>
         <div id="addSpherePhysics" class="drop-item">⚪Sphere with Physics</div>
-        <div class="drop-item">⚪ Sphere</div>
-        <div class="drop-item">📦 GLB (model)</div>
-        <div class="drop-item">💡 Light</div>
+        <small>Glb and Obj files add direct from asset (by selecting)</small>
+        <!--div class="drop-item">💡 Light</div-->
       </div>
     </div>
 
@@ -32752,14 +33239,16 @@ class EditorHud {
         <div id="showVisualCodeEditorBtn" class="drop-item">
            <span>Visual Scripting</span>
            <small>⌨️FluxCodexVertex</small>
+           <small>⌨️Press F6 for run</small>
         </div>
         <div id="showCodeVARSBtn" class="drop-item">
            <span>Variable editor</span>
-           <small>⌨️ Visual Script tool</small>
+           <small>⌨️Visual Script tool</small>
         </div>
         <div id="showCodeEditorBtn" class="drop-item">
            <span>Show code editor</span>
-           <small>⌨️ Function raw edit</small>
+           <small>⌨️Function raw edit</small>
+           <small>Custom Functions</small>
         </div>
       </div>
     </div>
@@ -32850,6 +33339,9 @@ class EditorHud {
         }
       }));
     });
+    (0, _utils.byId)('start-refresh').onclick = () => {
+      location.reload(true);
+    };
 
     // OBJECT LEVEL
     if ((0, _utils.byId)('addCube')) (0, _utils.byId)('addCube').addEventListener('click', () => {
@@ -32868,12 +33360,37 @@ class EditorHud {
         detail: o
       }));
     });
+    if ((0, _utils.byId)('addSphere')) (0, _utils.byId)('addSphere').addEventListener('click', () => {
+      let o = {
+        physics: false,
+        index: this.core.mainRenderBundle.length
+      };
+      // if(confirm(`⚛ Enable physics (Ammo) for cube ? \n
+      //    - Press OK for physics cube.
+      //    - Press cancel for 'classic position'.
+      //   (Also physics enabled objects can be kinematic with some collide efect in physics world)
+      //   `)) {
+      //   o.physics = true;
+      // }
+      document.dispatchEvent(new CustomEvent('web.editor.addSphere', {
+        detail: o
+      }));
+    });
     if ((0, _utils.byId)('addCubePhysics')) (0, _utils.byId)('addCubePhysics').addEventListener('click', () => {
       let o = {
         physics: true,
         index: this.core.mainRenderBundle.length
       };
       document.dispatchEvent(new CustomEvent('web.editor.addCube', {
+        detail: o
+      }));
+    });
+    if ((0, _utils.byId)('addSpherePhysics')) (0, _utils.byId)('addSpherePhysics').addEventListener('click', () => {
+      let o = {
+        physics: true,
+        index: this.core.mainRenderBundle.length
+      };
+      document.dispatchEvent(new CustomEvent('web.editor.addSphere', {
         detail: o
       }));
     });
@@ -32898,10 +33415,12 @@ class EditorHud {
       }));
     });
     (0, _utils.byId)('showVisualCodeEditorBtn').addEventListener('click', e => {
-      // console.log('show-fluxcodexvertex-editor ', e);
-      (0, _utils.byId)('app').style.display = 'flex';
-      this.core.editor.fluxCodexVertex.updateLinks();
-      // document.dispatchEvent(new CustomEvent('show-method-editor', {detail: {}}));
+      if ((0, _utils.byId)('app').style.display == 'flex') {
+        (0, _utils.byId)('app').style.display = 'none';
+      } else {
+        (0, _utils.byId)('app').style.display = 'flex';
+        if (this.core.editor.fluxCodexVertex) this.core.editor.fluxCodexVertex.updateLinks();
+      }
     });
     (0, _utils.byId)('showCodeVARSBtn').addEventListener('click', e => {
       (0, _utils.byId)('app').style.display = 'flex';
@@ -33282,7 +33801,8 @@ class EditorHud {
       display: "flex",
       alignItems: "start",
       color: "white",
-      fontFamily: "'Orbitron', sans-serif",
+      // fontFamily: "'Orbitron', sans-serif",
+      fontFamily: 'monospace',
       zIndex: "15",
       padding: "2px",
       boxSizing: "border-box",
@@ -33644,12 +34164,14 @@ class SceneObjectProperty {
     });
   }
   addEditorDeleteAction(currSceneObj, parentDOM) {
-    console.log(".............DELETE OBJECT..............");
     this.propName.innerHTML += `<div style='display:flex;'>
       <div style="align-content: center;color:red;">Delete sceneObject:</div>
       <div><button  data-sceneobject='${currSceneObj.name}' id='delete-${currSceneObj.name}'>DELETE</button></div>
     </div>`;
     (0, _utils.byId)(`delete-${currSceneObj.name}`).addEventListener('click', () => {
+      if (this.core.mainRenderBundle.length <= 1) {
+        alert("WARN - SCENE IS EMPTY IN EDITOR MODE YOU WILL GOT FREEZE - After adding first obj again you must refresh!");
+      }
       document.dispatchEvent(new CustomEvent('web.editor.delete', {
         detail: currSceneObj.name
       }));
@@ -33657,7 +34179,7 @@ class SceneObjectProperty {
   }
 }
 
-},{"../../engine/utils.js":40}],68:[function(require,module,exports){
+},{"../../engine/utils.js":41}],69:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -33713,6 +34235,30 @@ class MethodsManager {
       }
     });
   };
+  makePopupDraggable() {
+    let isDragging = false;
+    let offsetX = 0;
+    let offsetY = 0;
+
+    // Use the wrapper as the drag handle
+    this.wrapper.style.cursor = "move";
+    this.wrapper.addEventListener("mousedown", e => {
+      isDragging = true;
+      const rect = this.popup.getBoundingClientRect();
+      offsetX = e.clientX - rect.left;
+      offsetY = e.clientY - rect.top;
+      this.popup.style.transition = "none"; // remove transition during drag
+    });
+    document.addEventListener("mousemove", e => {
+      if (!isDragging) return;
+      this.popup.style.left = e.clientX - offsetX + "px";
+      this.popup.style.top = e.clientY - offsetY + "px";
+      this.popup.style.transform = "none"; // cancel centering transform
+    });
+    document.addEventListener("mouseup", () => {
+      if (isDragging) isDragging = false;
+    });
+  }
   createUI() {
     // Wrapper
     this.wrapper = document.createElement("div");
@@ -33778,6 +34324,21 @@ class MethodsManager {
       z-index:999;
     `;
     this.popup.appendChild(this.wrapper);
+
+    // Add after btnSave or btnExit creation
+    this.btnRemove = document.createElement("button");
+    this.btnRemove.innerText = "Remove method";
+    this.btnRemove.style.cssText = `
+        margin-top:10px;
+        margin-left:10px;
+        padding:6px 14px;
+        background:#a33;
+        color:#fff;
+        border:1px solid #800;
+        cursor:pointer;
+      `;
+    this.btnRemove.onclick = () => this.removeMethod();
+    this.popup.appendChild(this.btnRemove);
     this.textarea = document.createElement("textarea");
     this.textarea.id = "code-editor-textarea";
     this.textarea.style.cssText = `
@@ -33816,6 +34377,7 @@ class MethodsManager {
       this.popup.style.display = "none";
     };
     this.popup.appendChild(this.btnExit);
+    this.makePopupDraggable();
     document.body.appendChild(this.popup);
   }
   openEditor(existing) {
@@ -33847,6 +34409,36 @@ class MethodsManager {
     }
     this.refreshSelect();
     this.popup.style.display = "none";
+    document.dispatchEvent(new CustomEvent('save-methods', {
+      detail: {
+        methodsContainer: this.methodsContainer
+      }
+    }));
+  }
+  removeMethod() {
+    if (!this.editing) return; // nothing selected
+
+    const idx = this.methodsContainer.indexOf(this.editing);
+    if (idx === -1) return;
+
+    // If it was an interval, clear it
+    if (this.methodsContainer[idx].intervalId) {
+      clearInterval(this.methodsContainer[idx].intervalId);
+    }
+
+    // Remove from container
+    this.methodsContainer.splice(idx, 1);
+
+    // Reset editing
+    this.editing = null;
+
+    // Refresh select options
+    this.refreshSelect();
+
+    // Optionally clear editor
+    this.textarea.value = "";
+
+    // Dispatch update event
     document.dispatchEvent(new CustomEvent('save-methods', {
       detail: {
         methodsContainer: this.methodsContainer
@@ -33888,7 +34480,7 @@ class MethodsManager {
 }
 exports.default = MethodsManager;
 
-},{}],69:[function(require,module,exports){
+},{}],70:[function(require,module,exports){
 "use strict";
 
 var _world = _interopRequireDefault(require("../../../../src/world.js"));
@@ -33937,7 +34529,7 @@ let app = new _world.default({
 });
 window.app = app;
 
-},{"../../../../src/engine/loader-obj.js":33,"../../../../src/engine/loaders/webgpu-gltf.js":36,"../../../../src/world.js":70}],70:[function(require,module,exports){
+},{"../../../../src/engine/loader-obj.js":33,"../../../../src/engine/loaders/webgpu-gltf.js":36,"../../../../src/world.js":71}],71:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -34227,6 +34819,9 @@ class MatrixEngineWGPU {
   }
   getSceneObjectByName(name) {
     return this.mainRenderBundle.find(sceneObject => sceneObject.name === name);
+  }
+  getNameFromPath(p) {
+    return p.split(/[/\\]/).pop().replace(/\.[^/.]+$/, "");
   }
   removeSceneObjectByName(name) {
     const index = this.mainRenderBundle.findIndex(obj => obj.name === name);
@@ -35029,4 +35624,4 @@ class MatrixEngineWGPU {
 }
 exports.default = MatrixEngineWGPU;
 
-},{"./engine/ball.js":17,"./engine/cube.js":19,"./engine/engine.js":28,"./engine/lights.js":32,"./engine/loader-obj.js":33,"./engine/loaders/bvh-instaced.js":34,"./engine/loaders/bvh.js":35,"./engine/mesh-obj.js":39,"./engine/utils.js":40,"./multilang/lang.js":41,"./physics/matrix-ammo.js":42,"./sounds/sounds.js":62,"./tools/editor/editor.js":64,"wgpu-matrix":15}]},{},[69]);
+},{"./engine/ball.js":17,"./engine/cube.js":19,"./engine/engine.js":28,"./engine/lights.js":32,"./engine/loader-obj.js":33,"./engine/loaders/bvh-instaced.js":34,"./engine/loaders/bvh.js":35,"./engine/mesh-obj.js":39,"./engine/utils.js":41,"./multilang/lang.js":42,"./physics/matrix-ammo.js":43,"./sounds/sounds.js":63,"./tools/editor/editor.js":65,"wgpu-matrix":15}]},{},[70]);
