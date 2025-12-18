@@ -33,7 +33,9 @@ Published on npm as: **`matrix-engine-wgpu`**
 - 🎯 Replicate matrix-engine (WebGL) features
 - 📦 Based on the `shadowMapping` sample from [webgpu-samples](https://webgpu.github.io/webgpu-samples/?sample=shadowMapping)
 - 🎯 Web GUI(online) Editor with Visual Scripting (Named: FlowCodexVertex) WIP
-# FluxCodexVertex Web Editor 🚀 (since version 1.8.0)
+
+
+## FluxCodexVertex Web Editor 🚀 (since version 1.8.0)
 
 EditorX has **two main parts**:
 
@@ -62,12 +64,14 @@ The backend is built using **Node.js** 🟢
 
 ## Visual Scripting – Implemented Features ✅
 
-- Add **Math nodes**, **events / custom methods**, **variable popup**
+- Add **Math nodes**, **events / custom methods**, **variable popup**, **SceneObject access** 
 - Get SceneObject → set position → bind `onTargetReach` events
+- Custom func editor
 - Run the graph ▶️
 - Save graph
   - Currently saved to **LocalStorage**
-  - [NOT DONE] For final builds, becomes a real **JS object** injected into the app flow
+  - [NOT DONE] For final builds, becomes a real **JS object** injected into the app flow.
+    Now it is posible to hide editor on begin.
 - Export graph to **JSON**
 - Import graph from **JSON**
 
@@ -100,7 +104,8 @@ Saving is still based on LocalStorage
 After deleting everything, click Save to store an empty [] array
 All changes in graph must be saved manually for now 💾.
 
-  <img width="860" height="640" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/visual-scripting-math.png?raw=true" />
+<img width="860" height="640" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/visual-scripting-math.png?raw=true" />
+
 ---
 
 ## Features
