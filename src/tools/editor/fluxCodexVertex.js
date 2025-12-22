@@ -47,7 +47,8 @@ export default class FluxCodexVertex {
     this.variables = {
       number: {},
       boolean: {},
-      string: {}
+      string: {},
+      object: {}
     };
 
     // DOM Elements
@@ -79,6 +80,9 @@ export default class FluxCodexVertex {
     this.createVariablesPopup();
     this._createImportInput();
     this.bindGlobalListeners();
+
+    // track - for dom update
+    this._varInputs = {}; // { "object.myVar": textarea }
 
     // Initialize the graph
     this.init();
@@ -157,13 +161,23 @@ export default class FluxCodexVertex {
     <button onclick="app.editor.fluxCodexVertex.addNode('timeout')">SetTimeout</button>
 
     <hr>
+    <span>Networking</span>
+    <button onclick="app.editor.fluxCodexVertex.addNode('fetch')">Fetch</button>
+
+    <hr>
     <span>Scene</span>
     <button onclick="app.editor.fluxCodexVertex.addNode('getSceneObject')">Get Scene Object</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('setPosition')">Set Position</button>
-
-
     <button onclick="app.editor.fluxCodexVertex.addNode('onTargetPositionReach')">onTargetPositionReach</button>
-    
+
+    <button onclick="app.editor.fluxCodexVertex.addNode('getObjectAnimation')">getObjectAnimation</button>
+
+    <button onclick="app.editor.fluxCodexVertex.addNode('dynamicFunction')">Function Dinamic</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('getSubObject')">Get Sub Object</button>
+
+    <hr>
+    <span>JSON</span>
+    <button onclick="app.editor.fluxCodexVertex.addNode('dynamicJSON')">JSON</button>
 
     <hr>
     <span>Math</span>
@@ -203,6 +217,10 @@ export default class FluxCodexVertex {
     return this.addNode('getString', {var: varName});
   }
 
+  createGetObjectNode(varName) {
+    return this.addNode('getObject', {var: varName});
+  }
+
   createSetNumberNode(varName) {
     return this.addNode('setNumber', {var: varName});
   }
@@ -215,44 +233,64 @@ export default class FluxCodexVertex {
     return this.addNode('setString', {var: varName});
   }
 
+  createSetObjectNode(varName) {
+    return this.addNode('setObject', {var: varName});
+  }
+
   evaluateGetterNode(n) {
     const key = n.fields?.find(f => f.key === 'var')?.value;
+    if(!key) return;
 
-    if(n.title === 'Get Number') {
-      n._returnCache = this.variables.number[key]?.value ?? 0;
-    }
+    const type = n.title.replace('Get ', '').toLowerCase();
 
-    if(n.title === 'Get Boolean') {
-      n._returnCache = this.variables.boolean[key]?.value ?? false;
-    }
-
-    if(n.title === 'Get String') {
-      n._returnCache = this.variables.string[key]?.value ?? '';
-    }
+    const entry = this.variables[type]?.[key];
+    n._returnCache = entry ? entry.value : (
+      type === 'number' ? 0 :
+        type === 'boolean' ? false :
+          type === 'string' ? '' :
+            type === 'object' ? {} :
+              undefined
+    );
   }
 
   notifyVariableChanged(type, key) {
     for(const id in this.nodes) {
       const n = this.nodes[id];
 
-      if(!n.fields) continue;
-      if(!n.title.startsWith('Get')) continue;
+      if(!n.isGetterNode || !n.fields) continue;
 
       const varField = n.fields.find(f => f.key === 'var');
       if(!varField || varField.value !== key) continue;
 
-      if((type === 'number' && n.title !== 'Get Number') ||
-        (type === 'boolean' && n.title !== 'Get Boolean') ||
-        (type === 'string' && n.title !== 'Get String')
-      ) continue;
+      const getterType = n.title.replace('Get ', '').toLowerCase();
+      if(getterType !== type) continue;
 
-      // recompute getter value
+      // recompute value
       this.evaluateGetterNode(n);
 
       // update UI
       if(n.displayEl) {
-        n.displayEl.textContent = n._returnCache;
+        const val = n._returnCache;
+
+        if(type === 'object') {
+          n.displayEl.textContent = JSON.stringify(val);
+        } else if(type === 'number') {
+          n.displayEl.textContent = val.toFixed(3);
+        } else {
+          n.displayEl.textContent = String(val);
+        }
       }
+    }
+
+    const input = this._varInputs?.[`${type}.${key}`];
+    if(!input) return;
+
+    const val = this.variables?.[type]?.[key]?.value;
+
+    if(type === 'object') {
+      input.value = JSON.stringify(val ?? {}, null, 2);
+    } else {
+      input.value = val ?? '';
     }
   }
 
@@ -267,8 +305,8 @@ export default class FluxCodexVertex {
       position: 'absolute',
       top: '10%',
       left: '0',
-      width: '30%',
-      height: '50%',
+      width: '60%',
+      height: '60%',
       overflow: 'scroll',
       background: 'linear-gradient(135deg, #1a1a1a 0%, #2b2b2b 100%), /* subtle dark gradient */ repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.05) 1px, transparent 1px, transparent 20px), repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.05) 1px, transparent 1px, transparent 20px)',
       backgroundBlendMode: 'overlay',
@@ -299,7 +337,8 @@ export default class FluxCodexVertex {
 
     btns.append(this._createVarBtn('Number', 'number'),
       this._createVarBtn('Boolean', 'boolean'),
-      this._createVarBtn('String', 'string')
+      this._createVarBtn('String', 'string'),
+      this._createVarBtn('Object', 'object')
     );
 
     popup.appendChild(btns);
@@ -321,13 +360,90 @@ export default class FluxCodexVertex {
     this._refreshVarsList(list);
   }
 
+  // _refreshVarsList(container) {
+  //   container.innerHTML = '';
+
+  //   const colors = {
+  //     number: '#4fc3f7',
+  //     boolean: '#aed581',
+  //     string: '#ffb74d'
+  //   };
+
+  //   for(const type in this.variables) {
+  //     for(const name in this.variables[type]) {
+  //       const row = document.createElement('div');
+
+  //       Object.assign(row.style, {
+  //         display: 'flex',
+  //         alignItems: 'center',
+  //         gap: '6px',
+  //         padding: '4px',
+  //         cursor: 'pointer',
+  //         borderBottom: '1px solid #222',
+  //         color: colors[type],
+  //         webkitTextStrokeWidth: '0px'
+  //       });
+
+  //       // label
+  //       const label = document.createElement('span');
+  //       label.textContent = `${name} (${type})`;
+
+  //       // value input
+  //       const input = document.createElement('input');
+  //       input.value = this.variables[type][name].value ?? '';
+  //       input.style.width = '60px';
+  //       input.style.background = '#000';
+  //       input.style.color = '#fff';
+  //       input.style.border = '1px solid #333';
+
+  //       input.oninput = e => {
+  //         this.variables[type][name].value =
+  //           type === 'number' ? Number(e.target.value) :
+  //             type === 'boolean' ? e.target.value === 'true' :
+  //               e.target.value;
+  //       };
+
+  //       const propagate = document.createElement('button');
+  //       propagate.innerText = `Get ${name}`;
+  //       propagate.classList.add('btnGetter');
+  //       // CLICK → create getter node
+  //       propagate.onclick = () => {
+  //         if(type === 'number') {
+  //           this.createGetNumberNode(name);
+  //         } else if(type === 'boolean') {
+  //           this.createGetBooleanNode(name);
+  //         } else if(type === 'string') {
+  //           this.createSetStringNode(name);
+  //         }
+  //       };
+
+  //       const propagateSet = document.createElement('button');
+  //       propagateSet.innerText = `Set ${name}`;
+  //       propagateSet.classList.add('btnGetter');
+  //       // CLICK → create getter node
+  //       propagateSet.onclick = () => {
+  //         if(type === 'number') {
+  //           this.createSetNumberNode(name);
+  //         } else if(type === 'boolean') {
+  //           this.createSetBooleanNode(name);
+  //         } else if(type === 'string') {
+  //           this.createSetStringNode(name);
+  //         }
+  //       };
+  //       row.append(label, input, propagate, propagateSet);
+  //       container.appendChild(row);
+  //     }
+  //   }
+  // }
+
   _refreshVarsList(container) {
     container.innerHTML = '';
 
     const colors = {
       number: '#4fc3f7',
       boolean: '#aed581',
-      string: '#ffb74d'
+      string: '#ffb74d',
+      object: '#ce93d8' // 👈 NEW
     };
 
     for(const type in this.variables) {
@@ -341,61 +457,95 @@ export default class FluxCodexVertex {
           padding: '4px',
           cursor: 'pointer',
           borderBottom: '1px solid #222',
-          color: colors[type],
+          color: colors[type] || '#fff',
           webkitTextStrokeWidth: '0px'
         });
 
-        // label
+        // -----------------
+        // LABEL
+        // -----------------
         const label = document.createElement('span');
         label.textContent = `${name} (${type})`;
+        label.style.minWidth = '120px';
 
-        // value input
-        const input = document.createElement('input');
-        input.value = this.variables[type][name].value ?? '';
-        input.style.width = '60px';
-        input.style.background = '#000';
-        input.style.color = '#fff';
-        input.style.border = '1px solid #333';
+        // -----------------
+        // VALUE INPUT
+        // -----------------
+        let input;
+
+        if(type === 'object') {
+          input = document.createElement('textarea');
+          input.value = JSON.stringify(this.variables[type][name].value ?? {}, null, 2);
+          input.style.width = '120px';
+          input.style.height = '40px';
+        } else {
+          input = document.createElement('input');
+          input.value = this.variables[type][name].value ?? '';
+          input.style.width = '60px';
+        }
+        this._varInputs[`${type}.${name}`] = input;
+
+        Object.assign(input.style, {
+          background: '#000',
+          color: '#fff',
+          border: '1px solid #333'
+        });
 
         input.oninput = e => {
-          this.variables[type][name].value =
-            type === 'number' ? Number(e.target.value) :
-              type === 'boolean' ? e.target.value === 'true' :
-                e.target.value;
+          let val;
+
+          if(type === 'number') {
+            val = Number(e.target.value);
+          } else if(type === 'boolean') {
+            val = e.target.value === 'true';
+          } else if(type === 'object') {
+            try {
+              val = JSON.parse(e.target.value);
+            } catch {
+              return; // invalid JSON → ignore
+            }
+          } else {
+            val = e.target.value;
+          }
+
+          this.variables[type][name].value = val;
+          this.notifyVariableChanged(type, name); // 👈
         };
 
-        const propagate = document.createElement('button');
-        propagate.innerText = `Get ${name}`;
-        propagate.classList.add('btnGetter');
-        // CLICK → create getter node
-        propagate.onclick = () => {
-          if(type === 'number') {
-            this.createGetNumberNode(name);
-          } else if(type === 'boolean') {
-            this.createGetBooleanNode(name);
-          } else if(type === 'string') {
-            this.createSetStringNode(name);
-          }
+        // -----------------
+        // GET BUTTON
+        // -----------------
+        const btnGet = document.createElement('button');
+        btnGet.innerText = `Get`;
+        btnGet.classList.add('btnGetter');
+
+        btnGet.onclick = () => {
+          if(type === 'number') this.createGetNumberNode(name);
+          else if(type === 'boolean') this.createGetBooleanNode(name);
+          else if(type === 'string') this.createGetStringNode(name);
+          else if(type === 'object') this.createGetObjectNode(name);
         };
 
-        const propagateSet = document.createElement('button');
-        propagateSet.innerText = `Set ${name}`;
-        propagateSet.classList.add('btnGetter');
-        // CLICK → create getter node
-        propagateSet.onclick = () => {
-          if(type === 'number') {
-            this.createSetNumberNode(name);
-          } else if(type === 'boolean') {
-            this.createSetBooleanNode(name);
-          } else if(type === 'string') {
-            this.createSetStringNode(name);
-          }
+        // -----------------
+        // SET BUTTON
+        // -----------------
+        const btnSet = document.createElement('button');
+        btnSet.innerText = `Set`;
+        btnSet.classList.add('btnGetter');
+
+        btnSet.onclick = () => {
+          if(type === 'number') this.createSetNumberNode(name);
+          else if(type === 'boolean') this.createSetBooleanNode(name);
+          else if(type === 'string') this.createSetStringNode(name);
+          else if(type === 'object') this.createSetObjectNode(name);
         };
-        row.append(label, input, propagate, propagateSet);
+
+        row.append(label, input, btnGet, btnSet);
         container.appendChild(row);
       }
     }
   }
+
 
   makePopupDraggable(popup, handle = popup) {
     let isDragging = false;
@@ -438,18 +588,31 @@ export default class FluxCodexVertex {
     btn.textContent = label;
     btn.style.flex = '1';
     btn.style.cursor = 'pointer';
-    btn.classList.add('btn')
+    btn.classList.add('btn4');
+
     btn.onclick = () => {
       const name = prompt(`New ${type} variable name`);
       if(!name) return;
+
+      // SAFETY: ensure type bucket exists
+      if(!this.variables[type]) {
+        this.variables[type] = {};
+      }
+
       if(this.variables[type][name]) {
         alert('Variable exists');
         return;
       }
+
       this.variables[type][name] = {
-        value: type === 'number' ? 0 :
-          type === 'boolean' ? false : ''
+        value:
+          type === 'number' ? 0 :
+            type === 'boolean' ? false :
+              type === 'string' ? '' :
+                type === 'object' ? {} :
+                  null
       };
+
       this._refreshVarsList(this._varsPopup.children[1]);
     };
 
@@ -526,6 +689,30 @@ export default class FluxCodexVertex {
     node.attachedMethod = methodItem.name;
     node.fn = fn;
     // Refresh the DOM so new pins are clickable
+    this.updateNodeDOM(node.id);
+  }
+
+  adaptNodeToMethod2(node, methodItem) {
+    const fn = this.methodsManager.compileFunction(methodItem.code);
+    const args = this.getArgNames(fn);
+
+    // RESET value pins (keep exec)
+    node.inputs = node.inputs.filter(p => p.type === 'action');
+    node.outputs = node.outputs.filter(p => p.type === 'action');
+
+    // Create input pins from function signature
+    args.forEach(arg => {
+      node.inputs.push({name: arg, type: 'value'});
+    });
+
+    // Return pin
+    if(this.hasReturn(fn)) {
+      node.outputs.push({name: 'return', type: 'value'});
+    }
+
+    node.attachedMethod = methodItem.name;
+    node.fn = fn;
+
     this.updateNodeDOM(node.id);
   }
 
@@ -611,6 +798,101 @@ export default class FluxCodexVertex {
       }
     }
     this.state.connecting = null;
+
+    // test _______________________________
+    const toNode = this.nodes[to.node];
+    const fromNode = this.nodes[from.node];
+
+    if(toNode && toNode.category === 'functions' && toNode.code && to.pin === 'reference') {
+
+      console.log('TEST FUNC DIN ADPT');
+
+
+      const fnRef = this.getPinValue(fromNode, from.pin);
+      if(typeof fnRef !== 'function') return;
+
+      toNode._fnRef = fnRef;
+
+      const fnName = fnRef.name || 'wrappedFn';
+      toNode.code = `
+        function ${fnName}(fn, ...args) {
+          return fn(...args);
+        }
+        `.trim();
+      // toNode.reference = fnRef;
+
+      this.adaptNodeToMethod2(toNode, {
+        name: this.methodsManager.extractName(toNode.code),
+        code: toNode.code
+      });
+
+      //
+    }
+
+    // ---------------------------------------
+    // Get Sub Object – adapt pins on connect
+    // ---------------------------------------
+    const targetNode = this.nodes[to.node];
+    const sourceNode = this.nodes[from.node];
+
+    // Case: object output connected INTO Get Sub Object
+    if(
+      targetNode?.title === 'Get Sub Object' &&
+      to.pin === 'object'
+    ) {
+        targetNode._needsRebuild = true; 
+      this._adaptGetSubObjectOnConnect(targetNode, sourceNode, from.pin);
+    }
+
+  }
+
+  _adaptGetSubObjectOnConnect(getSubNode, sourceNode, sourcePin) {
+    // 1️⃣ Try to resolve object value (best-effort)
+    const obj = this.getPinValue(sourceNode, sourcePin);
+
+    if(!obj || typeof obj !== 'object') return;
+
+    // 2️⃣ Detect variable name for preview (if coming from Get Object)
+    let previewName = '';
+
+    if(sourceNode.isGetterNode) {
+      const vf = sourceNode.fields?.find(f => f.key === 'var');
+      if(vf?.value) previewName = vf.value;
+    }
+
+    // 3️⃣ Update preview DOM field
+    const previewField = getSubNode.fields?.find(f => f.key === 'objectPreview');
+    if(previewField) {
+      previewField.value = previewName || '[object]';
+
+      if(getSubNode.objectPreviewEl) {
+        getSubNode.objectPreviewEl.value = previewField.value;
+      }
+    }
+
+    // 4️⃣ Resolve optional path
+    const path = getSubNode.fields?.find(f => f.key === 'path')?.value;
+    const target = this.resolvePath(obj, path);
+
+    if(!target || typeof target !== 'object') return;
+
+    // 5️⃣ Adapt output pins (ONE LEVEL)
+    this.adaptSubObjectPins(getSubNode, target);
+
+    // 6️⃣ Cache values immediately
+    getSubNode._subCache = {};
+    for(const k in target) {
+      getSubNode._subCache[k] = target[k];
+    }
+
+    // 7️⃣ Force node redraw
+    this.updateNode(getSubNode.id);
+  }
+
+
+  getPinValue(node, pinName) {
+    const out = node.outputs?.find(p => p.name === pinName);
+    return out?.value;
   }
 
   normalizePinType(type) {
@@ -620,14 +902,19 @@ export default class FluxCodexVertex {
   }
 
   updateSceneObjectPins(node, objectName) {
-    const obj = (window.app?.mainRenderBundle || []).find(o => o.name === objectName);
+    const obj = (node.accessObject || []).find(o => o.name === objectName);
     if(!obj) return;
+    // clear 
+    node.outputs = [];
     // expose one-level properties
-    const props = ['name', 'position', 'rotation', 'scale'];
-    props.forEach(p => {
-      if(obj[p] !== undefined) {
-        const type = typeof obj[p] === 'number' ? 'number' :
-          typeof obj[p] === 'string' ? 'string' : 'object';
+    // const props = ['name', 'position', 'rotation', 'scale'];
+    node.exposeProps.forEach(p => {
+      const value = this.getByPath(obj, p);
+      if(value !== undefined) {
+        const type =
+          typeof value === 'number' ? 'number' :
+            typeof value === 'string' ? 'string' :
+              'object';
         node.outputs.push({name: p, type});
       }
     });
@@ -674,7 +961,13 @@ export default class FluxCodexVertex {
 
   createNodeDOM(spec) {
     const el = document.createElement('div');
-    el.className = 'node ' + (spec.category || '');
+
+    if(spec.title == 'Fetch') {
+      el.className = 'node ' + (spec.title.toLowerCase() || '');
+    } else {
+      el.className = 'node ' + (spec.category || '');
+    }
+
     el.style.left = spec.x + 'px';
     el.style.top = spec.y + 'px';
     el.dataset.id = spec.id;
@@ -744,7 +1037,7 @@ export default class FluxCodexVertex {
     }
 
     // Function Method Selector
-    if(spec.category === 'action' && !spec.builtIn && !spec.isVariableNode) {
+    if(spec.title === 'Function' && spec.category === 'action' && !spec.builtIn && !spec.isVariableNode) {
       const select = document.createElement('select');
       select.className = 'method-select';
       select.style.cssText = 'width:100%; margin-top:6px;';
@@ -782,13 +1075,33 @@ export default class FluxCodexVertex {
 
     }
 
-    if(spec.title === 'Get Scene Object') {
+
+    if(spec.title === 'functions') {
+      const select = document.createElement('select');
+      select.style.width = '100%';
+      select.style.marginTop = '6px';
+
+      this.populateDynamicFunctionSelect(select, spec.accessObject);
+
+      select.addEventListener('change', e => {
+        const fnName = e.target.value;
+        if(fnName) {
+          this.adaptDynamicFunction(spec, fnName);
+        }
+      });
+
+      body.appendChild(select);
+    }
+
+    if(spec.title === 'Get Scene Object' || spec.title === 'Get Scene Animation') {
+
+
       const select = document.createElement('select');
       select.style.width = '100%';
       select.style.marginTop = '6px';
 
       // Populate scene objects
-      const objects = window.app?.mainRenderBundle || [];
+      const objects = spec.accessObject || [];// window.app?.mainRenderBundle || [];
       const placeholder = document.createElement('option');
       placeholder.textContent = '-- Select Object --';
       placeholder.value = '';
@@ -839,6 +1152,66 @@ export default class FluxCodexVertex {
     }
     this.state.selectedNode = id;
     document.querySelector(`.node[data-id="${id}"]`)?.classList.add('selected');
+  }
+
+  populateDynamicFunctionSelect(select, accessObject) {
+    select.innerHTML = '';
+
+    const placeholder = document.createElement('option');
+    placeholder.value = '';
+    placeholder.textContent = '-- Select Function --';
+    select.appendChild(placeholder);
+
+    if(!accessObject || typeof accessObject !== 'object') return;
+
+    for(const key in accessObject) {
+      if(typeof accessObject[key] === 'function') {
+        const opt = document.createElement('option');
+        opt.value = key;
+        opt.textContent = key;
+        select.appendChild(opt);
+      }
+    }
+  }
+
+  updateFunctionPins(node, objectName, funcName) {
+    const obj = this.resolveAccessObject(node.accessObject, objectName);
+    if(!obj) {
+      console.warn('Access object not found:', objectName);
+      return;
+    }
+
+    const fn = obj[funcName];
+    if(typeof fn !== 'function') {
+      console.warn('Not a function:', funcName);
+      return;
+    }
+
+    // reset exec pins
+    node.inputs = [{name: 'exec', type: 'action'}];
+    node.outputs = [{name: 'execOut', type: 'action'}];
+
+    // args → inputs
+    const args = this.getArgNames(fn);
+    args.forEach(arg => {
+      node.inputs.push({name: arg, type: 'value'});
+    });
+
+    // return → output
+    if(this.hasReturn(fn)) {
+      node.outputs.push({name: 'return', type: 'value'});
+    }
+
+    // store metadata only
+    node._access = {
+      objectName,
+      methodName: funcName
+    };
+
+    node.category = 'functions';
+    node.title = `${objectName}.${funcName}`;
+
+    this.updateNodeDOM(node.id);
   }
 
   isTypeCompatible(fromType, toType) {
@@ -960,6 +1333,34 @@ export default class FluxCodexVertex {
         fields: [{key: 'var', value: ''}],
         isGetterNode: true
       }),
+
+      'getObject': (id, x, y) => ({
+        id,
+        title: 'Get Object',
+        x, y,
+        category: 'value',
+        outputs: [{name: 'result', type: 'object'}],
+        fields: [{key: 'var', value: ''}],
+        isGetterNode: true
+      }),
+
+      'setObject': (id, x, y) => ({
+        id,
+        title: 'Set Object',
+        x, y,
+        category: 'action',
+        isVariableNode: true,
+        inputs: [
+          {name: 'exec', type: 'action'},
+          {name: 'value', type: 'object'}
+        ],
+        outputs: [{name: 'execOut', type: 'action'}],
+        fields: [
+          {key: 'var', value: ''},
+          {key: 'literal', value: {}}
+        ]
+      }),
+
       'setNumber': (id, x, y) => ({
         id, title: 'Set Number', x, y,
         category: 'action',
@@ -1006,15 +1407,53 @@ export default class FluxCodexVertex {
         comment: true,
         noExec: true
       }),
+      // 'downloadMeshes': (id, x, y) => ({
+      //   id, title: 'downloadMeshes',
+      //   category: 'functions', x, y,
+      //   builtIn: true,
+      //   inputs: [
+      //     {name: 'exec', type: 'action'},
+      //     {name: 'name', type: 'value'},
+      //     {name: 'path', type: 'value'},
+      //   ],
+      //   outputs: [
+      //     {name: 'execOut', type: 'action'}
+      //   ],  // generated dynamically
+      //   noExec: false,
+      // }),
+      // full dinamic  functions taje ref from object (only funcs)
+      'dynamicFunction': (id, x, y) => ({
+        id,
+        title: 'functions',
+        x, y,
+        category: 'action',
+        inputs: [{name: 'exec', type: 'action'}],
+        outputs: [{name: 'execOut', type: 'action'}],
+        accessObject: window.app
+      }),
 
       'getSceneObject': (id, x, y) => ({
         noExec: true,
         id, title: 'Get Scene Object', x, y,
         category: 'scene',
+        inputs: [],
+        outputs: [],
+        fields: [{key: 'selectedObject', value: ''}],
+        builtIn: true,
+        accessObject: window.app?.mainRenderBundle,
+        exposeProps: ['name', 'position', 'rotation', 'scale']
+      }),
+
+      'getObjectAnimation': (id, x, y) => ({
+        noExec: true,
+        id, title: 'Get Scene Animation', x, y,
+        category: 'scene',
         inputs: [], // no inputs
         outputs: [], // will be filled dynamically
         fields: [{key: 'selectedObject', value: ''}],
-        builtIn: true
+        builtIn: true,
+        accessObject: window.app?.mainRenderBundle, // direct man
+        exposeProps: ['name', 'glb.glbJsonData.animations', 'glb.animationIndex']
       }),
 
       'getPosition': (id, x, y) => ({
@@ -1049,7 +1488,7 @@ export default class FluxCodexVertex {
           {name: 'position', semantic: 'position'},
           {name: 'x', semantic: 'number'}
         ],
-        outputs: [{name: 'execOut', semantic: 'exec'}],
+        outputs: [{name: 'execOut', type: 'action'}],
         builtIn: true
       }),
       'translateByY': (id, x, y) => ({
@@ -1060,8 +1499,9 @@ export default class FluxCodexVertex {
           {name: 'position', semantic: 'position'},
           {name: 'y', semantic: 'number'}
         ],
-        outputs: [{name: 'execOut', semantic: 'exec'}]
+        outputs: [{name: 'execOut', type: 'action'}]
       }),
+
       'translateByZ': (id, x, y) => ({
         id, title: 'Translate By Z',
         category: 'scene',
@@ -1070,7 +1510,7 @@ export default class FluxCodexVertex {
           {name: 'position', semantic: 'position'},
           {name: 'z', semantic: 'number'}
         ],
-        outputs: [{name: 'execOut', semantic: 'exec'}]
+        outputs: [{name: 'execOut', type: 'action'}]
       }),
 
       'onTargetPositionReach': (id, x, y) => ({
@@ -1085,6 +1525,47 @@ export default class FluxCodexVertex {
           {name: 'exec', type: 'action'}
         ],
         _listenerAttached: false
+      }),
+
+      'fetch': (id, x, y) => ({
+        id,
+        title: 'Fetch',
+        x, y,
+        category: 'action',
+        inputs: [
+          {name: 'exec', type: 'action'},
+          {name: 'url', type: 'string'},
+          {name: 'method', type: 'string', default: 'GET'},
+          {name: 'body', type: 'object'},
+          {name: 'headers', type: 'object'}
+        ],
+        outputs: [
+          {name: 'execOut', type: 'action'},
+          {name: 'error', type: 'action'},
+          {name: 'response', type: 'object'},
+          {name: 'status', type: 'number'}
+        ]
+      }),
+
+      'getSubObject': (id, x, y) => ({
+        id,
+        title: 'Get Sub Object',
+        x, y,
+        category: 'value',
+        inputs: [
+          {name: 'exec', type: 'action'},
+          {name: 'object', type: 'object'}
+        ],
+        outputs: [
+          {name: 'execOut', type: 'action'}
+        ],
+        fields: [
+          {key: 'objectPreview', value: '', readonly: true},
+          {key: 'path', value: '', placeholder: 'SomeProperty.SomeProperty2'}
+        ],
+        isDynamicNode: true,
+        _needsRebuild: true,   // 👈 MUST be true initially
+        _pinsBuilt: false
       })
 
     };
@@ -1129,19 +1610,114 @@ export default class FluxCodexVertex {
     }
   }
 
-  activateEventNode(nodeId) {
-    const n = this.nodes[nodeId];
-    if(n._listenerAttached) return;
+  adaptSubObjectPins(node, obj) {
+    if(!obj || typeof obj !== 'object') return;
 
+    node.outputs = node.outputs.filter(p => p.type === 'action');
+
+    for(const key of Object.keys(obj)) {
+      node.outputs.push({
+        name: key,
+        type: this.detectType(obj[key])
+      });
+    }
+  }
+
+  detectType(val) {
+    if(typeof val === 'number') return 'number';
+    if(typeof val === 'boolean') return 'boolean';
+    if(typeof val === 'string') return 'string';
+    if(typeof val === 'object') return 'object';
+    return 'any';
+  }
+
+  createFieldInput(node, field) {
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.value = field.value ?? '';
+    input.placeholder = field.placeholder ?? '';
+    input.disabled = field.readonly === true;
+
+    if(field.readonly) {
+      input.style.opacity = '0.7';
+      input.style.cursor = 'default';
+    }
+
+    input.onkeydown = e => {
+      if(e.key === 'Enter' && !field.readonly) {
+        field.value = input.value;
+        node._needsRebuild = true;
+      }
+    };
+
+    return input;
+  }
+
+  resolvePath(obj, path) {
+    if(!obj || !path) return obj;
+
+    return path.split('.').reduce((acc, key) => {
+      if(acc && typeof acc === 'object') {
+        return acc[key];
+      }
+      return undefined;
+    }, obj);
+  }
+
+  resolveAccessObject(accessObject, objectName) {
+    if(!accessObject) return null;
+    // case 1: array [{name, ...}]
+    if(Array.isArray(accessObject)) {
+      return accessObject.find(o => o.name === objectName) || null;
+    }
+    // case 2: dictionary {player: obj}
+    if(typeof accessObject === 'object') {
+      return accessObject[objectName] || null;
+    }
+    return null;
+  }
+
+  adaptNodeToAccessMethod(node, objectName, methodName) {
+    const obj = this.accessObject.find(o => o.name === objectName);
+    if(!obj) return;
+
+    const method = obj[methodName];
+    if(typeof method !== 'function') return;
+
+    const args = this.getArgNames(method);
+
+    node.inputs = [{name: 'exec', type: 'action'}];
+    node.outputs = [{name: 'execOut', type: 'action'}];
+
+    args.forEach(arg =>
+      node.inputs.push({name: arg, type: 'value'})
+    );
+
+    if(this.hasReturn(method)) {
+      node.outputs.push({name: 'return', type: 'value'});
+    }
+
+    node._access = {
+      objectName,
+      methodName
+    };
+
+    this.updateNodeDOM(node.id);
+  }
+
+
+  activateEventNode(nodeId) {
+    console.log('activateEventNode ????')
+    const n = this.nodes[nodeId];
+    // if(n._listenerAttached) return;
+    // console.log('activateEventNode 1????')
     if(n.title === 'On Target Position Reach') {
       const pos = this.getValue(nodeId, 'position');
       if(!pos) return;
-
       pos.onTargetPositionReach = () => {
         console.log('real onTargetPositionReach called')
         this.enqueueOutputs(n, 'exec');
       };
-
       n._listenerAttached = true;
     }
   }
@@ -1182,20 +1758,16 @@ export default class FluxCodexVertex {
     const inputPin = node.inputs?.find(p => p.name === pinName);
     if(inputPin) return inputPin.default ?? 0;
 
-    if(node.title === 'Get Scene Object') {
-
+    if(node.title === 'Get Scene Object' || node.title === 'Get Scene Animation') {
       // direct reference to real object must be migrated to factory 
       // to make it reusable for any other priject
-      console.log('FUNC getValue , ' + 'node.title :' + node.title + ', this.nodes[nodeId]._returnCache = ' + this.nodes[nodeId]._returnCache);
+      console.log('FUNC getValue , ' + 'node.title :' + node.title + ',' + this.nodes[nodeId]._returnCache);
       const objName = node.fields[0].value;
       console.log(' objName is n.fields[0].value = ' + node.fields[0].value)
-      const obj = (window.app?.mainRenderBundle || []).find(o => o.name === objName);
-      console.log('(window.app?.mainRenderBundle || []).find(o => o.name === objName) = ' + (window.app?.mainRenderBundle || []).find(o => o.name === objName))
+      const obj = (node.accessObject || []).find(o => o.name === objName);
       if(!obj) return undefined;
-
       const out = node.outputs.find(o => o.name === pinName);
       if(!out) return undefined;
-
       return obj[pinName]; // simple one-level property access
     } else if(node.title === 'Get Position') {
       const pos = this.getValue(nodeId, 'position');
@@ -1208,6 +1780,8 @@ export default class FluxCodexVertex {
       };
 
       return node._returnCache[pinName];
+    } else if(node.title === 'Get Sub Object') {
+      return node._subCache?.[pinName];
     }
 
     // 4️⃣ Dynamic output (computed node)
@@ -1246,6 +1820,44 @@ export default class FluxCodexVertex {
     });
   }
 
+  extractArgs(code) {
+    const match = code.match(/function\s+[^(]*\(([^)]*)\)/);
+    if(!match) return [];
+
+    return match[1]
+      .split(',')
+      .map(a => a.trim())
+      .filter(Boolean);
+  }
+
+  adaptDynamicFunction(node, fnName) {
+    const fn = node.accessObject?.[fnName];
+    if(typeof fn !== 'function') return;
+
+    // reset pins (KEEP exec)
+    node.inputs = [{name: 'exec', type: 'action'}];
+    node.outputs = [{name: 'execOut', type: 'action'}];
+
+    // args → inputs
+    const args = this.getArgNames(fn);
+    args.forEach(arg => {
+      node.inputs.push({name: arg, type: 'value'});
+    });
+
+    // return → output
+    if(this.hasReturn(fn)) {
+      node.outputs.push({name: 'return', type: 'value'});
+    }
+
+    node.category = 'functions';
+    node.fn = fn;               // REAL FUNCTION
+    node.fnName = fnName;
+    node.title = fnName;        // show function name on node
+
+    this.updateNodeDOM(node.id);
+  }
+
+
   invalidateVariableGetters(type, varName) {
     for(const id in this.nodes) {
       const n = this.nodes[id];
@@ -1271,17 +1883,64 @@ export default class FluxCodexVertex {
       setTimeout(() => highlight.style.filter = 'none', 200);
     }
 
-    // --- Handle Getter Nodes ---
+    if(n.title === 'Get Sub Object') {
+      const obj = this.getValue(n.id, 'object');
+
+      // 1️⃣ detect variable name from connection
+      const source = this.getConnectedSource(n.id, 'object');
+
+      if(source?.node?.isGetterNode) {
+        const varField = source.node.fields.find(f => f.key === 'var');
+        if(varField) {
+          const previewField = n.fields.find(f => f.key === 'objectPreview');
+          previewField.value = varField.value;
+
+          if(n.objectPreviewEl) {
+            n.objectPreviewEl.value = varField.value;
+          }
+        }
+      }
+
+      // 2️⃣ resolve path
+      const path = n.fields.find(f => f.key === 'path')?.value;
+      const target = this.resolvePath(obj, path);
+
+      // 3️⃣ rebuild pins
+      if(n._needsRebuild || !n._pinsBuilt) {
+        this.adaptSubObjectPins(n, target);
+        n._needsRebuild = false;
+        n._pinsBuilt = true;
+      }
+
+      // 4️⃣ cache
+      n._subCache = {};
+      if(target && typeof target === 'object') {
+        for(const k in target) n._subCache[k] = target[k];
+      }
+
+      this.enqueueOutputs(n, 'execOut');
+      return;
+    }
+
     if(n.isGetterNode) {
       const varField = n.fields?.find(f => f.key === 'var');
       if(varField && varField.value) {
-        const type = n.title.replace('Get ', '').toLowerCase(); // number / boolean / string
+        const type = n.title.replace('Get ', '').toLowerCase(); // number / boolean / string / object
         const value = this.getVariable(type, varField.value);
+
         n._returnCache = value;
 
         // Update visual label if exists
-        if(n.displayEl) n.displayEl.textContent =
-          typeof value === 'number' ? value.toFixed(3) : String(value);
+        if(n.displayEl) {
+          if(type === 'object') {
+            n.displayEl.textContent =
+              value !== undefined ? JSON.stringify(value) : '{}';
+          } else if(typeof value === 'number') {
+            n.displayEl.textContent = value.toFixed(3);
+          } else {
+            n.displayEl.textContent = String(value);
+          }
+        }
       }
 
       n.finished = true;
@@ -1289,9 +1948,10 @@ export default class FluxCodexVertex {
     }
 
 
+
     if(n.title === 'On Target Position Reach') {
       console.log('TEST TEST On Target Position Reach ', pos);
-      if(n._listenerAttached) return;
+      // if(n._listenerAttached) return;
 
       const pos = this.getValue(nodeId, 'position');
       if(!pos) return;
@@ -1312,42 +1972,54 @@ export default class FluxCodexVertex {
     }
 
 
-    // -----------------------------
-    // Event Nodes
-    // -----------------------------
+    // --- functionDinamic execution ---
+    if(n.category === 'functions' && n.fn) {
+      const args = n.inputs
+        .filter(p => p.type !== 'action')
+        .map(p => this.getValue(n.id, p.name));
+
+      const result = n.fn(...args);
+
+      if(this.hasReturn(n.fn)) {
+        n._returnCache = result;
+      }
+
+      this.enqueueOutputs(n, 'execOut');
+      return;
+    }
+
     if(n.category === 'event') {
       this.enqueueOutputs(n, 'exec');
       return;
     }
 
-    // -----------------------------
-    // Variable Setter Nodes (skip Set Number)
-    // -----------------------------
-    if(n.isVariableNode && n.title !== 'Set Number') {
+    if(n.isVariableNode) {
       const type = n.title.replace('Set ', '').toLowerCase();
       const varField = n.fields?.find(f => f.key === 'var');
+
       if(varField && varField.value) {
         const value = this.getValue(nodeId, 'value');
-        this.setVariable(type, varField.value, value);
-      }
-    }
+        this.variables[type][varField.value] = {value};
 
-    // --- Handle SetNumber Nodes ---
-    if(n.title === 'Set Number') {
-      const varField = n.fields?.find(f => f.key === 'var');
-      if(varField && varField.value) {
-        const valInput = this.getValue(nodeId, 'value');
-        this.variables.number[varField.value] = {value: valInput};
+        this.notifyVariableChanged(type, varField.value);
 
-        // Update all corresponding GetNumber nodes immediately
+        // Update matching getter nodes instantly
         for(const nodeId2 in this.nodes) {
           const node2 = this.nodes[nodeId2];
           if(node2.isGetterNode) {
             const vf2 = node2.fields?.find(f => f.key === 'var');
             if(vf2 && vf2.value === varField.value && node2.displayEl) {
-              node2.displayEl.textContent =
-                typeof valInput === 'number' ? valInput.toFixed(3) : String(valInput);
-              node2._returnCache = valInput;
+
+              if(type === 'object') {
+                node2.displayEl.textContent = JSON.stringify(value);
+              } else {
+                node2.displayEl.textContent =
+                  typeof value === 'number'
+                    ? value.toFixed(3)
+                    : String(value);
+              }
+
+              node2._returnCache = value;
             }
           }
         }
@@ -1357,6 +2029,51 @@ export default class FluxCodexVertex {
       this.enqueueOutputs(n, 'execOut');
       return;
     }
+
+    if(n.title === 'Fetch') {
+      const url = this.getValue(nodeId, 'url');
+      if(!url) {
+        console.warn('[Fetch] URL missing');
+        this.enqueueOutputs(n, 'error');
+        return;
+      }
+
+      const method = this.getValue(nodeId, 'method') || 'GET';
+      const body = this.getValue(nodeId, 'body');
+      const headers = this.getValue(nodeId, 'headers') || {};
+
+      const options = {
+        method,
+        headers
+      };
+
+      if(body && method !== 'GET') {
+        options.body =
+          typeof body === 'string' ? body : JSON.stringify(body);
+
+        if(!headers['Content-Type']) {
+          headers['Content-Type'] = 'application/json';
+        }
+      }
+
+      fetch(url, options)
+        .then(async res => {
+          n._returnCache = {
+            response: await res.json().catch(() => null),
+            status: res.status
+          };
+
+          this.enqueueOutputs(n, 'execOut');
+        })
+        .catch(err => {
+          console.error('[Fetch]', err);
+          this.enqueueOutputs(n, 'error');
+        });
+
+      return;
+    }
+
+
 
     // -----------------------------
     // Action / Print / Timer Nodes
@@ -1459,22 +2176,42 @@ export default class FluxCodexVertex {
     }
 
 
+
     this._execContext = null;
   }
 
+  getConnectedSource(nodeId, inputName) {
+    const link = this.links.find(l => l.to.node === nodeId && l.to.pin === inputName);
+    if(!link) return null;
+    return {
+      node: this.nodes[link.from.node],
+      pin: link.from.pin
+    };
+  }
 
-  // computeSceneNode(n) {
-  //   const objName = n.fields?.find(f => f.key === 'selectedObject')?.value;
-  //   const obj = this.scene?.[objName];
+  populateAccessMethods(select) {
+    select.innerHTML = '';
+    this.accessObject.forEach(obj => {
+      Object.getOwnPropertyNames(obj.__proto__)
+        .filter(k => typeof obj[k] === 'function' && k !== 'constructor')
+        .forEach(fn => {
+          const opt = document.createElement('option');
+          opt.value = `${obj.name}.${fn}`;
+          opt.textContent = `${obj.name}.${fn}`;
+          select.appendChild(opt);
+        });
+    });
 
-  //   n._returnCache = {
-  //     NAME: obj?.name ?? '',
-  //     POSITION: obj?.position ?? null,
-  //     ROTATION: obj?.rotation ?? null,
-  //     SCALE: obj?.scale ?? null
-  //   };
-  // }
+    select.onchange = e => {
+      const [objName, fnName] = e.target.value.split('.');
+      this.adaptNodeToAccessMethod(node, objName, fnName);
+    };
+  }
 
+
+  getByPath(obj, path) {
+    return path.split('.').reduce((acc, key) => acc?.[key], obj);
+  }
 
 
   getVariable(type, key) {

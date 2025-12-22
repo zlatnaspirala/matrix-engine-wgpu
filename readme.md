@@ -101,7 +101,7 @@ If you delete all objects from the scene, you must refresh the page and add at l
 Before importing a graph, delete all nodes from the FluxCodexVertex graph
 Saving is still based on LocalStorage
 After deleting everything, click Save to store an empty [] array
-All changes in graph must be saved manually for now 💾.
+All changes in graph must be saved manually/clicking for now 💾 (no autosave for graphs).
 
 <img width="860" height="640" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/visual-scripting-math.png?raw=true" />
 

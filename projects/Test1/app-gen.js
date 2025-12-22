@@ -20,68 +20,43 @@ let app = new MatrixEngineWGPU(
     addEventListener('AmmoReady', async () => {
       // [light]
       app.addLight();
-  
+
+      // ME START Cube_0 addCube
+      downloadMeshes({cube: "./res/meshes/blender/cube.obj"}, (m) => {
+        let texturesPaths = ['./res/meshes/blender/cube.png'];
+        app.addMeshObj({
+          position: {x: 0, y: 0, z: -20}, rotation: {x: 0, y: 0, z: 0}, rotationSpeed: {x: 0, y: 0, z: 0},
+          texturesPaths: [texturesPaths],
+          name: 'Cube_' + app.mainRenderBundle.length,
+          mesh: m.cube,
+          raycast: {enabled: true, radius: 2},
+          physics: {enabled: false, geometry: "Cube"}
+        });
+      }, {scale: [1, 1, 1]});
+      // ME END Cube_0 addCube
+
+ 
+
+      
        
-             
- 
-       // ME START Cube_0 addCube
- downloadMeshes({cube: "./res/meshes/blender/cube.obj"}, (m) => { 
-   let texturesPaths = ['./res/meshes/blender/cube.png']; 
-   app.addMeshObj({
+       // ME START bot
+ var glbFile01 = await fetch('res/meshes/glb/bot.glb').then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, app.device)));
+   texturesPaths = ['./res/meshes/blender/cube.png']; 
+    app.addGlbObj({ 
      position: {x: 0, y: 0, z: -20}, rotation: {x: 0, y: 0, z: 0}, rotationSpeed: {x: 0, y: 0, z: 0},
      texturesPaths: [texturesPaths],
-     name: 'Cube_' + app.mainRenderBundle.length,
-     mesh: m.cube,
+     scale: [2, 2, 2],
+     name:  app.getNameFromPath('res/meshes/glb/bot.glb'),
+     material: {type: 'power', useTextureFromGlb: true},
      raycast: {enabled: true, radius: 2},
      physics: {enabled: false, geometry: "Cube"}
-   }); 
- }, {scale: [1, 1, 1]});  
- // ME END Cube_0 addCube
-
-
-      
-       // ME START Cube_1 addCube
- downloadMeshes({cube: "./res/meshes/blender/cube.obj"}, (m) => { 
-   let texturesPaths = ['./res/meshes/blender/cube.png']; 
-   app.addMeshObj({
-     position: {x: 0, y: 0, z: -20}, rotation: {x: 0, y: 0, z: 0}, rotationSpeed: {x: 0, y: 0, z: 0},
-     texturesPaths: [texturesPaths],
-     name: 'Cube_' + app.mainRenderBundle.length,
-     mesh: m.cube,
-     raycast: {enabled: true, radius: 2},
-     physics: {enabled: false, geometry: "Cube"}
-   }); 
- }, {scale: [1, 1, 1]});  
- // ME END Cube_1 addCube
+   }, null, glbFile01);
+ // ME END bot
  
 
-          // ME START Cube_1 updatePosx
- setTimeout(() => {
-  app.getSceneObjectByName('Cube_1').position.SetX(4);
- }, 200);
- // ME END Cube_1 updatePosx
+      // [MAIN_REPLACE2]
  
-       // ME START Cube_0 updatePosx
- setTimeout(() => {
-  app.getSceneObjectByName('Cube_0').position.SetX(-6);
- }, 200);
- // ME END Cube_0 updatePosx
- 
-
-      
-       // [MAIN_REPLACE2]
-
-
-
-
-
-
-
-
-
-
-
-  })
-});
+    })
+  });
 
 window.app = app;

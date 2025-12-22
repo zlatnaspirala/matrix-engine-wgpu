@@ -359,7 +359,7 @@ async function addCube(msg, ws) {
     text = text.replace('// [MAIN_REPLACE2]',
       `
       ${content.toString()} \n
-      // [MAIN_REPLACE2]\n`);
+      // [MAIN_REPLACE2]`);
     saveScript(objScript, text, ws);
   })
 }
@@ -421,7 +421,7 @@ async function addGlb(msg, ws) {
     text = text.replace('// [MAIN_REPLACE2]',
       `
       ${content.toString()} \n
-      // [MAIN_REPLACE2]\n`);
+      // [MAIN_REPLACE2]`);
     saveScript(objScript, text, ws);
   })
 }
@@ -450,7 +450,7 @@ async function addObj(msg, ws) {
     text = text.replace('// [MAIN_REPLACE2]',
       `
       ${content.toString()} \n
-      // [MAIN_REPLACE2]\n`);
+      // [MAIN_REPLACE2]`);
 
     saveScript(objScript, text, ws);
   })
@@ -478,7 +478,7 @@ async function addSphere(msg, ws) {
     text = text.replace('// [MAIN_REPLACE2]',
       `
       ${content.toString()} \n
-      // [MAIN_REPLACE2]\n`);
+      // [MAIN_REPLACE2]`);
     saveScript(objScript, text, ws);
   })
 }

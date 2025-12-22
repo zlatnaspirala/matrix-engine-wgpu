@@ -8,11 +8,12 @@ import MatrixAmmo from "./physics/matrix-ammo.js";
 import {LOG_FUNNY_SMALL, LOG_WARN, genName, mb, scriptManager, urlQuery} from "./engine/utils.js";
 import {MultiLang} from "./multilang/lang.js";
 import {MatrixSounds} from "./sounds/sounds.js";
-import {play} from "./engine/loader-obj.js";
+import {downloadMeshes, play} from "./engine/loader-obj.js";
 import {SpotLight} from "./engine/lights.js";
 import {BVHPlayer} from "./engine/loaders/bvh.js";
 import {BVHPlayerInstances} from "./engine/loaders/bvh-instaced.js";
 import {Editor} from "./tools/editor/editor.js";
+import MEMeshObjInstances from "./engine/instanced/mesh-obj-instances.js";
 
 /**
  * @description
@@ -23,6 +24,15 @@ import {Editor} from "./tools/editor/editor.js";
  * @github zlatnaspirala
  */
 export default class MatrixEngineWGPU {
+
+  // save class reference
+  reference = {
+    MEMeshObj,
+    MEMeshObjInstances,
+    BVHPlayerInstances,
+    BVHPlayer,
+    downloadMeshes
+  }
 
   mainRenderBundle = [];
   lightContainer = [];
@@ -35,7 +45,7 @@ export default class MatrixEngineWGPU {
     depthLoadOp: 'clear',
     depthStoreOp: 'store'
   }
-  // matrixAmmo = new MatrixAmmo();
+
   matrixSounds = new MatrixSounds();
 
   constructor(options, callback) {
@@ -84,7 +94,7 @@ export default class MatrixEngineWGPU {
     window.addEventListener('keydown', e => {
       if(e.code == "F4") {
         e.preventDefault();
-        mb.error(`Activated WebEditor, you can use it infly there is no saves for now.`);
+        mb.error(`Activated WebEditor view.`);
         app.activateEditor();
         return false;
       }
@@ -101,13 +111,11 @@ export default class MatrixEngineWGPU {
         }
         this.editor.editorHud.updateSceneContainer();
       } else {
-        // nikola
         this.editor.editorHud.editorMenu.style.display = 'flex';
         this.editor.editorHud.assetsBox.style.display = 'flex';
         this.editor.editorHud.sceneProperty.style.display = 'flex';
         this.editor.editorHud.sceneContainer.style.display = 'flex';
       }
-
     };
 
     this.options = options;
@@ -124,7 +132,6 @@ export default class MatrixEngineWGPU {
       canvas.height = this.options.canvasSize.h;
     }
     target.append(canvas);
-
     // The camera types
     const initialCameraPosition = vec3.create(0, 0, 0);
     this.mainCameraParams = {
@@ -324,7 +331,7 @@ export default class MatrixEngineWGPU {
     return true;
   }
 
-  // Not in use for now
+  // Not in use for now -  Can be used with addBall have indipended pipeline and draw func.
   addCube = (o) => {
     if(typeof o === 'undefined') {
       var o = {
@@ -503,8 +510,80 @@ export default class MatrixEngineWGPU {
   }
 
   destroyProgram = () => {
-    this.mainRenderBundle = [];
-    this.canvas.remove();
+    console.warn('%c[MatrixEngineWGPU] Destroy program', 'color: orange');
+
+    // 1️⃣ Stop render loop
+    this.frame = () => {};
+    if(this._rafId) {
+      cancelAnimationFrame(this._rafId);
+      this._rafId = null;
+    }
+
+    // 2️⃣ Clear scene objects (GPU safe)
+    for(const obj of this.mainRenderBundle) {
+      try {
+        // if(obj.destroy) obj.destroy(); // optional per-object cleanup
+      } catch(e) {
+        console.warn('Object destroy error:', e);
+      }
+    }
+    this.mainRenderBundle.length = 0;
+
+    // 3️⃣ Physics cleanup
+    if(this.matrixAmmo) {
+      try {
+        this.matrixAmmo.destroy?.();
+        this.matrixAmmo = null;
+      } catch(e) {
+        console.warn('Physics destroy error:', e);
+      }
+    }
+
+    // 4️⃣ Editor cleanup
+    if(this.editor) {
+      try {
+        this.editor.destroy?.();
+      } catch(e) {
+        console.warn('Editor destroy error:', e);
+      }
+      this.editor = null;
+    }
+
+    // 5️⃣ Remove input handlers
+    if(this.inputHandler?.destroy) {
+      this.inputHandler.destroy();
+    }
+    this.inputHandler = null;
+
+    // 6️⃣ GPU resources
+    try {
+      this.mainDepthTexture?.destroy();
+      this.shadowTextureArray?.destroy();
+      this.shadowVideoTexture?.destroy();
+    } catch(e) {}
+
+    this.mainDepthTexture = null;
+    this.shadowTextureArray = null;
+    this.shadowVideoTexture = null;
+
+    // 7️⃣ Lose WebGPU context (IMPORTANT)
+    try {
+      this.context?.unconfigure?.();
+    } catch(e) {}
+
+    // 8️⃣ Remove canvas
+    if(this.canvas && this.canvas.parentNode) {
+      this.canvas.parentNode.removeChild(this.canvas);
+    }
+
+    this.canvas = null;
+    this.device = null;
+    this.context = null;
+    this.adapter = null;
+
+    console.warn('%c[MatrixEngineWGPU] Destroy complete ✔', 'color: lightgreen');
+    // this.mainRenderBundle = [];
+    // this.canvas.remove();
   }
 
   updateLights() {

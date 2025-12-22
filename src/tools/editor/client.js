@@ -9,22 +9,19 @@ export class MEEditorClient {
 
     this.ws.onopen = () => {
       if(typeOfRun == 'created from editor') {
-        //
-        console.info('wATCH project <signal>');
+        console.info('created from editor - watch <signal>');
         let o = {
           action: "watch",
           name: name
         };
         o = JSON.stringify(o);
         this.ws.send(o);
-
         o = {
           action: "list",
           path: name
         };
         o = JSON.stringify(o);
         this.ws.send(o);
-
       }
       console.log("%c[WS OPEN] [Attach events]", "color: lime; font-weight: bold");
     };
@@ -96,7 +93,7 @@ export class MEEditorClient {
       };
       o = JSON.stringify(o);
       this.ws.send(o);
-    })
+    });
 
     document.addEventListener('cnp', (e) => {
       console.info('Create new project <signal>');
@@ -107,7 +104,7 @@ export class MEEditorClient {
       };
       o = JSON.stringify(o);
       this.ws.send(o);
-    })
+    });
 
     document.addEventListener('stop-watch', (e) => {
       console.info('stop-watch <signal>');
@@ -117,7 +114,7 @@ export class MEEditorClient {
       };
       o = JSON.stringify(o);
       this.ws.send(o);
-    })
+    });
 
     document.addEventListener('start-watch', (e) => {
       console.info('start-watch <signal>');
@@ -211,11 +208,7 @@ export class MEEditorClient {
       this.ws.send(o);
     });
 
-    // add for instane class also later
-
-
     // delete obj
-    // delete-sceneObject
     document.addEventListener('web.editor.delete', (e) => {
       console.log("[web.editor.delete]: ", e.detail.prefix);
       console.info('delete-obj <signal>');
@@ -228,7 +221,6 @@ export class MEEditorClient {
       this.ws.send(o);
     });
 
-    // UPDATE
     document.addEventListener('web.editor.update.pos', (e) => {
       console.log("[web.editor.update.pos]: ", e.detail);
       console.info('web.editor.update.pos <signal>');
@@ -252,7 +244,6 @@ export class MEEditorClient {
       o = JSON.stringify(o);
       this.ws.send(o);
     });
-
 
   }
 }
