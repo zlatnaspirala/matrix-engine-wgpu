@@ -318,7 +318,6 @@ export default class FluxCodexVertex {
     console.log('[NOTIFY VARIABLE]', type, key, 'value:', this.variables[type]?.[key]);
   }
 
-
   createVariablesPopup() {
     if(this._varsPopup) return;
     const popup = document.createElement('div');
@@ -430,9 +429,10 @@ export default class FluxCodexVertex {
 
           // 1️⃣ cache for pin creation
           node._subCache = {};
-          if(target && typeof target === 'object') {
-            for(const k in target) node._subCache[k] = target[k];
-          }
+               node._subCache = target;
+          // if(target && typeof target === 'object') {
+          //   for(const k in target) node._subCache[k] = target[k];
+          // }
 
           // 2️⃣ mark dirty (pins rebuild later)
           node._needsRebuild = true;
@@ -1574,24 +1574,39 @@ export default class FluxCodexVertex {
     }
   }
 
-  adaptSubObjectPins(node, obj) {
-    if(!obj || typeof obj !== 'object') return;
+  // adaptSubObjectPins(node, obj) {
+  //   if(!obj || typeof obj !== 'object') return;
 
-    // keep only action pins first
+  //   // Keep only action pins, remove old property pins
+  //   node.outputs = node.outputs.filter(p => p.type === 'action');
+
+  //   // Add pins for object keys
+  //   for(const key of Object.keys(obj)) {
+  //     node.outputs.push({
+  //       name: key,
+  //       type: this.detectType(obj[key])
+  //     });
+  //   }
+
+  //   // Mark as pins built
+  //   node._pinsBuilt = true;
+  // }
+
+  adaptSubObjectPins(node, obj) {
+    // Keep only action pins
     node.outputs = node.outputs.filter(p => p.type === 'action');
 
-    // 1️⃣ Add "result" pin — contains the whole target object
-    node.outputs.push({name: 'result', type: 'object', value: obj});
-
-    // 2️⃣ Add dynamic pins for each property
-    for(const key of Object.keys(obj)) {
-      node.outputs.push({
-        name: key,
-        type: this.detectType(obj[key]),
-        value: obj[key]  // optional but helps for debug
-      });
+    if(obj && typeof obj === 'object') {
+      for(const key of Object.keys(obj)) {
+        node.outputs.push({
+          name: key,
+          type: this.detectType(obj[key])
+        });
+      }
     }
+    // No pins for primitive values (string/number/boolean)
   }
+
 
 
   detectType(val) {
@@ -1673,23 +1688,38 @@ export default class FluxCodexVertex {
 
         console.log('[PATH INPUT CHANGE]', node.id, 'path:', path, 'target:', target);
 
-        // 1️⃣ cache for pin creation
+        // 🔹 1. Cache for pin creation
         node._subCache = {};
+        // if(target && typeof target === 'object') {
+        //   // store object keys
+        //   for(const k in target) node._subCache[k] = target[k];
+        // } else {
+        //   // store primitive value under "value"
+        //   node._subCache['value'] = target;
+        // }
+
+        // 🔥 DIRECTLY SAVE target
+        node._subCache = target;
+
+        // 🔹 2. Only rebuild pins if target is an object
+        node.outputs = node.outputs.filter(p => p.type === 'action'); // clear old object pins
         if(target && typeof target === 'object') {
-          for(const k in target) node._subCache[k] = target[k];
+          for(const k in target) {
+            node.outputs.push({
+              name: k,
+              type: this.detectType(target[k])
+            });
+          }
         }
 
-        // 2️⃣ rebuild pins immediately
-        this.adaptSubObjectPins(node, target);
-
-        // 3️⃣ refresh node DOM to show pins
-        this.updateNodeDOM(node.id);
-
-        // 4️⃣ mark dirty for execution
-        node._needsRebuild = false; // already rebuilt
+        node._needsRebuild = false;
         node._pinsBuilt = true;
+
+        this.updateNodeDOM(node.id); // refresh visuals
       };
     }
+
+
 
 
 
@@ -1832,10 +1862,10 @@ export default class FluxCodexVertex {
 
       return node._returnCache[pinName];
     } else if(node.title === 'Get Sub Object') {
-      // return node._subCache?.[pinName];
-      if(pinName === 'result') return node._subCache; // whole object
-      return node._subCache?.[pinName];
+ return node._subCache; // simple, raw value
+
     }
+
 
     // 4️⃣ Dynamic output (computed node)
     if(node.outputs?.some(o => o.name === pinName)) {
@@ -1852,26 +1882,30 @@ export default class FluxCodexVertex {
   }
 
 
-  updateValueDisplays() {
-    Object.values(this.nodes).forEach(n => {
-      if(!n.displayEl) return;
+updateValueDisplays() {
+  for(const id in this.nodes) {
+    const node = this.nodes[id];
+    if(!node.displayEl) continue;
 
-      const out = n.outputs?.find(o => o.name === 'result');
-      if(!out) return;
+    if(node.title === 'Print') {
+      // assume first input pin is the value to print
+      const pin = node.inputs?.[0];
+      if(!pin) continue;
 
-      const v = this.getValue(n.id, 'result');
-
-      if(v === undefined) {
-        n.displayEl.textContent = '—';
+      const val = this.getValue(node.id, pin.name);
+      if(val === undefined) {
+        node.displayEl.textContent = 'undefined';
+      } else if(typeof val === 'object') {
+        node.displayEl.textContent = JSON.stringify(val, null, 2);
+      } else if(typeof val === 'number') {
+        node.displayEl.textContent = val.toFixed(3);
+      } else {
+        node.displayEl.textContent = String(val);
       }
-      else if(typeof v === 'number') {
-        n.displayEl.textContent = v.toFixed(3);
-      }
-      else {
-        n.displayEl.textContent = String(v);
-      }
-    });
+    }
   }
+}
+
 
   extractArgs(code) {
     const match = code.match(/function\s+[^(]*\(([^)]*)\)/);
@@ -1937,26 +1971,37 @@ export default class FluxCodexVertex {
     }
 
     if(n.title === 'Get Sub Object') {
-      const obj = this.getValue(n.id, 'object');
+      const obj = this.getValue(n.id, 'object'); // root object
       const path = n.fields.find(f => f.key === 'path')?.value;
       const target = this.resolvePath(obj, path);
 
-      // ✅ only rebuild if dirty
-      if(n._needsRebuild || !n._pinsBuilt) {
-        this.adaptSubObjectPins(n, target);  // rebuild pins here
-        n._needsRebuild = false;
-        n._pinsBuilt = true;
-      }
-
-      // ✅ cache after pins are rebuilt
+      // always store something in _subCache
       n._subCache = {};
+
       if(target && typeof target === 'object') {
         for(const k in target) n._subCache[k] = target[k];
+      } else {
+        n._subCache['value'] = target; // primitive stored here
       }
+
+      // rebuild output pins only if object
+      n.outputs = n.outputs.filter(p => p.type === 'action'); // clear old
+      if(target && typeof target === 'object') {
+        for(const k in target) {
+          n.outputs.push({
+            name: k,
+            type: this.detectType(target[k])
+          });
+        }
+      }
+
+      n._needsRebuild = false;
+      n._pinsBuilt = true;
 
       this.enqueueOutputs(n, 'execOut');
       return;
     }
+
 
 
     if(n.isGetterNode) {

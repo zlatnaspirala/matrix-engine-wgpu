@@ -15960,9 +15960,7 @@ var FluxCodexVertex = class _FluxCodexVertex {
           const target = this.resolvePath(rootObj, path);
           console.log("[PATH INPUT CHANGE]", node.id, "path:", path, "target:", target);
           node._subCache = {};
-          if (target && typeof target === "object") {
-            for (const k in target) node._subCache[k] = target[k];
-          }
+          node._subCache = target;
           node._needsRebuild = true;
           node._pinsBuilt = false;
           this.updateNodeDOM(node.id);
@@ -16963,17 +16961,29 @@ var FluxCodexVertex = class _FluxCodexVertex {
       }
     }
   }
+  // adaptSubObjectPins(node, obj) {
+  //   if(!obj || typeof obj !== 'object') return;
+  //   // Keep only action pins, remove old property pins
+  //   node.outputs = node.outputs.filter(p => p.type === 'action');
+  //   // Add pins for object keys
+  //   for(const key of Object.keys(obj)) {
+  //     node.outputs.push({
+  //       name: key,
+  //       type: this.detectType(obj[key])
+  //     });
+  //   }
+  //   // Mark as pins built
+  //   node._pinsBuilt = true;
+  // }
   adaptSubObjectPins(node2, obj) {
-    if (!obj || typeof obj !== "object") return;
     node2.outputs = node2.outputs.filter((p) => p.type === "action");
-    node2.outputs.push({ name: "result", type: "object", value: obj });
-    for (const key of Object.keys(obj)) {
-      node2.outputs.push({
-        name: key,
-        type: this.detectType(obj[key]),
-        value: obj[key]
-        // optional but helps for debug
-      });
+    if (obj && typeof obj === "object") {
+      for (const key of Object.keys(obj)) {
+        node2.outputs.push({
+          name: key,
+          type: this.detectType(obj[key])
+        });
+      }
     }
   }
   detectType(val) {
@@ -17036,13 +17046,19 @@ var FluxCodexVertex = class _FluxCodexVertex {
         const target = this.resolvePath(rootObj, path);
         console.log("[PATH INPUT CHANGE]", node2.id, "path:", path, "target:", target);
         node2._subCache = {};
+        node2._subCache = target;
+        node2.outputs = node2.outputs.filter((p) => p.type === "action");
         if (target && typeof target === "object") {
-          for (const k in target) node2._subCache[k] = target[k];
+          for (const k in target) {
+            node2.outputs.push({
+              name: k,
+              type: this.detectType(target[k])
+            });
+          }
         }
-        this.adaptSubObjectPins(node2, target);
-        this.updateNodeDOM(node2.id);
         node2._needsRebuild = false;
         node2._pinsBuilt = true;
+        this.updateNodeDOM(node2.id);
       };
     }
     return input;
@@ -17152,8 +17168,7 @@ var FluxCodexVertex = class _FluxCodexVertex {
       };
       return node2._returnCache[pinName];
     } else if (node2.title === "Get Sub Object") {
-      if (pinName === "result") return node2._subCache;
-      return node2._subCache?.[pinName];
+      return node2._subCache;
     }
     if (node2.outputs?.some((o) => o.name === pinName)) {
       const dynamicNodes = ["GenRandInt", "RandomFloat"];
@@ -17167,19 +17182,24 @@ var FluxCodexVertex = class _FluxCodexVertex {
     return void 0;
   }
   updateValueDisplays() {
-    Object.values(this.nodes).forEach((n) => {
-      if (!n.displayEl) return;
-      const out = n.outputs?.find((o) => o.name === "result");
-      if (!out) return;
-      const v = this.getValue(n.id, "result");
-      if (v === void 0) {
-        n.displayEl.textContent = "\u2014";
-      } else if (typeof v === "number") {
-        n.displayEl.textContent = v.toFixed(3);
-      } else {
-        n.displayEl.textContent = String(v);
+    for (const id in this.nodes) {
+      const node2 = this.nodes[id];
+      if (!node2.displayEl) continue;
+      if (node2.title === "Print") {
+        const pin = node2.inputs?.[0];
+        if (!pin) continue;
+        const val = this.getValue(node2.id, pin.name);
+        if (val === void 0) {
+          node2.displayEl.textContent = "undefined";
+        } else if (typeof val === "object") {
+          node2.displayEl.textContent = JSON.stringify(val, null, 2);
+        } else if (typeof val === "number") {
+          node2.displayEl.textContent = val.toFixed(3);
+        } else {
+          node2.displayEl.textContent = String(val);
+        }
       }
-    });
+    }
   }
   extractArgs(code) {
     const match = code.match(/function\s+[^(]*\(([^)]*)\)/);
@@ -17225,15 +17245,23 @@ var FluxCodexVertex = class _FluxCodexVertex {
       const obj = this.getValue(n.id, "object");
       const path = n.fields.find((f) => f.key === "path")?.value;
       const target = this.resolvePath(obj, path);
-      if (n._needsRebuild || !n._pinsBuilt) {
-        this.adaptSubObjectPins(n, target);
-        n._needsRebuild = false;
-        n._pinsBuilt = true;
-      }
       n._subCache = {};
       if (target && typeof target === "object") {
         for (const k in target) n._subCache[k] = target[k];
+      } else {
+        n._subCache["value"] = target;
       }
+      n.outputs = n.outputs.filter((p) => p.type === "action");
+      if (target && typeof target === "object") {
+        for (const k in target) {
+          n.outputs.push({
+            name: k,
+            type: this.detectType(target[k])
+          });
+        }
+      }
+      n._needsRebuild = false;
+      n._pinsBuilt = true;
       this.enqueueOutputs(n, "execOut");
       return;
     }
