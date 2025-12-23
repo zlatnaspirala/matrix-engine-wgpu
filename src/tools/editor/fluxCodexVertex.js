@@ -415,17 +415,32 @@ export default class FluxCodexVertex {
         this._varInputs[`${type}.${name}`] = input;
         Object.assign(input.style, {background: '#000', color: '#fff', border: '1px solid #333'});
 
-        input.oninput = e => {
-          let val;
-          try {
-            val = type === 'object' ? JSON.parse(e.target.value) : e.target.value;
-            if(type === 'number') val = Number(val);
-            if(type === 'boolean') val = val === 'true';
-          } catch {if(type === 'object') return;}
-          this.variables[type][name] = val; // ← overwrite actual object
-          this.notifyVariableChanged(type, name);
-          console.log('[VAR INPUT]', 'type:', type, 'name:', name, 'value:', val);
+        input.oninput = () => {
+          const link = this.getConnectedSource(node.id, 'object');
+          if(!link?.node?.isGetterNode) return;
+
+          const varField = link.node.fields?.find(f => f.key === 'var');
+          const varName = varField?.value;
+          const rootObj = this.variables?.object?.[varName];
+
+          const path = input.value;
+          const target = this.resolvePath(rootObj, path);
+
+          console.log('[PATH INPUT CHANGE]', node.id, 'path:', path, 'target:', target);
+
+          // 1️⃣ cache for pin creation
+          node._subCache = {};
+          if(target && typeof target === 'object') {
+            for(const k in target) node._subCache[k] = target[k];
+          }
+
+          // 2️⃣ mark dirty (pins rebuild later)
+          node._needsRebuild = true;
+          node._pinsBuilt = false;
+
+          this.updateNodeDOM(node.id);
         };
+
 
         const btnGet = document.createElement('button');
         btnGet.innerText = 'Get';
@@ -1562,15 +1577,22 @@ export default class FluxCodexVertex {
   adaptSubObjectPins(node, obj) {
     if(!obj || typeof obj !== 'object') return;
 
+    // keep only action pins first
     node.outputs = node.outputs.filter(p => p.type === 'action');
 
+    // 1️⃣ Add "result" pin — contains the whole target object
+    node.outputs.push({name: 'result', type: 'object', value: obj});
+
+    // 2️⃣ Add dynamic pins for each property
     for(const key of Object.keys(obj)) {
       node.outputs.push({
         name: key,
-        type: this.detectType(obj[key])
+        type: this.detectType(obj[key]),
+        value: obj[key]  // optional but helps for debug
       });
     }
   }
+
 
   detectType(val) {
     if(typeof val === 'number') return 'number';
@@ -1774,10 +1796,6 @@ export default class FluxCodexVertex {
       return undefined;
     }
 
-    // // 🔥 LAZY EVALUATION FOR GETTERS  TEST <<<<<<<<<<<
-    // if(node.isGetterNode) {
-    //   this.evaluateGetterNode(node);
-    // }
 
     // 1️⃣ Literal field
     const field = node.fields?.find(f => f.key === pinName);
@@ -1814,6 +1832,8 @@ export default class FluxCodexVertex {
 
       return node._returnCache[pinName];
     } else if(node.title === 'Get Sub Object') {
+      // return node._subCache?.[pinName];
+      if(pinName === 'result') return node._subCache; // whole object
       return node._subCache?.[pinName];
     }
 
@@ -2099,12 +2119,42 @@ export default class FluxCodexVertex {
       if(n.attachedMethod) this._executeAttachedMethod(n);
 
       if(n.title === 'Print') {
-        const val = this.getValue(nodeId, 'value');
         const label = n.fields?.find(f => f.key === 'label')?.value || 'Print:';
-        if(n.displayEl) n.displayEl.textContent = val;
+        let val;
+
+        const link = this.getConnectedSource(nodeId, 'value');
+        if(link) {
+          const fromNode = link.node;
+          const fromPin = link.pin;
+
+          // ✅ Check _subCache first (for Get Sub Object)
+          if(fromNode._subCache && fromPin in fromNode._subCache) {
+            val = fromNode._subCache[fromPin];
+          }
+          // ✅ Otherwise fallback to normal getValue
+          else {
+            val = this.getValue(fromNode.id, fromPin);
+          }
+        } else {
+          val = this.getValue(nodeId, 'value');
+        }
+
+        if(n.displayEl) {
+          if(typeof val === 'object') {
+            n.displayEl.textContent = JSON.stringify(val);
+          } else if(typeof val === 'number') {
+            n.displayEl.textContent = val.toFixed(3);
+          } else {
+            n.displayEl.textContent = String(val);
+          }
+        }
+
         console.log(`[Print] ${label}`, val);
         this.log(`> ${label}`, val);
-      } else if(n.title === 'SetTimeout') {
+      }
+
+
+      else if(n.title === 'SetTimeout') {
         const delay = +n.fields?.find(f => f.key === 'delay')?.value || 1000;
         setTimeout(() => this.enqueueOutputs(n, 'execOut'), delay);
         return;

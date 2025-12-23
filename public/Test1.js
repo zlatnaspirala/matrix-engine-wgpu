@@ -15950,18 +15950,22 @@ var FluxCodexVertex = class _FluxCodexVertex {
         }
         this._varInputs[`${type}.${name}`] = input;
         Object.assign(input.style, { background: "#000", color: "#fff", border: "1px solid #333" });
-        input.oninput = (e) => {
-          let val;
-          try {
-            val = type === "object" ? JSON.parse(e.target.value) : e.target.value;
-            if (type === "number") val = Number(val);
-            if (type === "boolean") val = val === "true";
-          } catch {
-            if (type === "object") return;
+        input.oninput = () => {
+          const link = this.getConnectedSource(node.id, "object");
+          if (!link?.node?.isGetterNode) return;
+          const varField = link.node.fields?.find((f) => f.key === "var");
+          const varName = varField?.value;
+          const rootObj = this.variables?.object?.[varName];
+          const path = input.value;
+          const target = this.resolvePath(rootObj, path);
+          console.log("[PATH INPUT CHANGE]", node.id, "path:", path, "target:", target);
+          node._subCache = {};
+          if (target && typeof target === "object") {
+            for (const k in target) node._subCache[k] = target[k];
           }
-          this.variables[type][name] = val;
-          this.notifyVariableChanged(type, name);
-          console.log("[VAR INPUT]", "type:", type, "name:", name, "value:", val);
+          node._needsRebuild = true;
+          node._pinsBuilt = false;
+          this.updateNodeDOM(node.id);
         };
         const btnGet = document.createElement("button");
         btnGet.innerText = "Get";
@@ -16962,10 +16966,13 @@ var FluxCodexVertex = class _FluxCodexVertex {
   adaptSubObjectPins(node2, obj) {
     if (!obj || typeof obj !== "object") return;
     node2.outputs = node2.outputs.filter((p) => p.type === "action");
+    node2.outputs.push({ name: "result", type: "object", value: obj });
     for (const key of Object.keys(obj)) {
       node2.outputs.push({
         name: key,
-        type: this.detectType(obj[key])
+        type: this.detectType(obj[key]),
+        value: obj[key]
+        // optional but helps for debug
       });
     }
   }
@@ -17145,6 +17152,7 @@ var FluxCodexVertex = class _FluxCodexVertex {
       };
       return node2._returnCache[pinName];
     } else if (node2.title === "Get Sub Object") {
+      if (pinName === "result") return node2._subCache;
       return node2._subCache?.[pinName];
     }
     if (node2.outputs?.some((o) => o.name === pinName)) {
@@ -17335,9 +17343,29 @@ var FluxCodexVertex = class _FluxCodexVertex {
     if (["action", "actionprint", "timer"].includes(n.category)) {
       if (n.attachedMethod) this._executeAttachedMethod(n);
       if (n.title === "Print") {
-        const val = this.getValue(nodeId, "value");
         const label = n.fields?.find((f) => f.key === "label")?.value || "Print:";
-        if (n.displayEl) n.displayEl.textContent = val;
+        let val;
+        const link = this.getConnectedSource(nodeId, "value");
+        if (link) {
+          const fromNode = link.node;
+          const fromPin = link.pin;
+          if (fromNode._subCache && fromPin in fromNode._subCache) {
+            val = fromNode._subCache[fromPin];
+          } else {
+            val = this.getValue(fromNode.id, fromPin);
+          }
+        } else {
+          val = this.getValue(nodeId, "value");
+        }
+        if (n.displayEl) {
+          if (typeof val === "object") {
+            n.displayEl.textContent = JSON.stringify(val);
+          } else if (typeof val === "number") {
+            n.displayEl.textContent = val.toFixed(3);
+          } else {
+            n.displayEl.textContent = String(val);
+          }
+        }
         console.log(`[Print] ${label}`, val);
         this.log(`> ${label}`, val);
       } else if (n.title === "SetTimeout") {
