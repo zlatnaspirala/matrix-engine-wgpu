@@ -189,10 +189,6 @@ textarea {
   font-family: stormfaze;
 }
 
-span {
-  /* width: 100px; */
-}
-
 .mLightInput {
   width: 150px;
   font-size: 26px;
@@ -1456,7 +1452,7 @@ body {
   color: #00ffff;
   text-transform: uppercase;
   letter-spacing: 1.5px;
-  padding: 12px 24px;
+  padding: 7px 12px;
   background: linear-gradient(145deg, #0f0f0f, #1a1a1a);
   border: 2px solid #00ffff;
   border-radius: 12px;
@@ -1546,9 +1542,12 @@ body {
 
 
 #board {
+  width: 10000px;
+  height: 10000px;
   position: absolute;
   inset: 0;
   transform-origin: 0 0;
+  border: solid 0.5px rgba(144, 144, 144, 0.4);
 }
 
 svg.connections {
@@ -1618,6 +1617,10 @@ svg.connections {
 
 .node.scene .header {
   background: var(--grad-scene);
+}
+
+.node.fetch .header {
+  background: rgb(3, 203, 217);
 }
 
 
@@ -1746,6 +1749,19 @@ svg.connections {
   padding: 2px 4px;
   border-radius: 4px;
 }
+
+.node-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 6px;
+}
+
+.node-fields input {
+  width: 100%;
+  box-sizing: border-box;
+}
+
 
 #log {
   font-family: monospace;
