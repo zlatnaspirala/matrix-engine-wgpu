@@ -81,10 +81,8 @@ export default class FluxCodexVertex {
     this._createImportInput();
     this.bindGlobalListeners();
 
-    // track - for dom update
-    this._varInputs = {}; // { "object.myVar": textarea }
+    this._varInputs = {};
 
-    // Initialize the graph
     this.init();
 
     document.addEventListener('keydown', (e) => {
@@ -457,7 +455,6 @@ export default class FluxCodexVertex {
       }
     }
   }
-
 
   makePopupDraggable(popup, handle = popup) {
     let isDragging = false;
