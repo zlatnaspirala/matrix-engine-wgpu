@@ -15951,18 +15951,19 @@ var FluxCodexVertex = class _FluxCodexVertex {
         this._varInputs[`${type}.${name}`] = input;
         Object.assign(input.style, { background: "#000", color: "#fff", border: "1px solid #333" });
         input.oninput = () => {
-          const link = this.getConnectedSource(node.id, "object");
-          if (!link?.node?.isGetterNode) return;
-          const varField = link.node.fields?.find((f) => f.key === "var");
-          const varName = varField?.value;
-          const rootObj = this.variables?.object?.[varName];
-          const path = input.value;
-          const target = this.resolvePath(rootObj, path);
-          console.log("[PATH INPUT CHANGE]", node.id, "path:", path, "target:", target);
-          node._subCache = {};
-          node._subCache = target;
-          node._needsRebuild = true;
-          node._pinsBuilt = false;
+          if (type === "object") {
+            try {
+              this.variables.object[name] = JSON.parse(input.value);
+            } catch {
+              return;
+            }
+          } else if (type === "number") {
+            this.variables.number[name] = parseFloat(input.value);
+          } else if (type === "boolean") {
+            this.variables.boolean[name] = input.value === "true";
+          } else {
+            this.variables.string[name] = input.value;
+          }
           this.updateNodeDOM(node.id);
         };
         const btnGet = document.createElement("button");
@@ -17107,7 +17108,6 @@ var FluxCodexVertex = class _FluxCodexVertex {
     this.updateNodeDOM(node2.id);
   }
   activateEventNode(nodeId) {
-    console.log("activateEventNode ????");
     const n = this.nodes[nodeId];
     if (n.title === "On Target Position Reach") {
       const pos = this.getValue(nodeId, "position");
@@ -17245,12 +17245,9 @@ var FluxCodexVertex = class _FluxCodexVertex {
       const obj = this.getValue(n.id, "object");
       const path = n.fields.find((f) => f.key === "path")?.value;
       const target = this.resolvePath(obj, path);
-      n._subCache = {};
-      if (target && typeof target === "object") {
-        for (const k in target) n._subCache[k] = target[k];
-      } else {
-        n._subCache["value"] = target;
-      }
+      console.log("0) obj in trigger :  ", obj);
+      console.log("1) n._subCache in trigger :  ", n._subCache);
+      console.log("2) target in trigger :  ", target);
       n.outputs = n.outputs.filter((p) => p.type === "action");
       if (target && typeof target === "object") {
         for (const k in target) {
