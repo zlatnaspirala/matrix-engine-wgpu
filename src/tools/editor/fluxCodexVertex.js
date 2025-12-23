@@ -188,8 +188,8 @@ export default class FluxCodexVertex {
     <button onclick="app.editor.fluxCodexVertex.addNode('getSubObject')">Get Sub Object</button>
 
     <hr>
-    <span>JSON</span>
-    <button onclick="app.editor.fluxCodexVertex.addNode('dynamicJSON')">JSON</button>
+    <span>Comment</span>
+    <button onclick="app.editor.fluxCodexVertex.addNode('comment')">Comment</button>
 
     <hr>
     <span>Math</span>
@@ -415,8 +415,6 @@ export default class FluxCodexVertex {
         Object.assign(input.style, {background: '#000', color: '#fff', border: '1px solid #333'});
 
         input.oninput = () => {
-
-
           if(type === 'object') {
             try {
               this.variables.object[name] = JSON.parse(input.value);
@@ -430,10 +428,7 @@ export default class FluxCodexVertex {
           } else {
             this.variables.string[name] = input.value;
           }
-
-
-
-          this.updateNodeDOM(node.id);
+          // this.updateNodeDOM(node.id);
         };
 
 
@@ -940,10 +935,28 @@ export default class FluxCodexVertex {
     row.appendChild(right);
     body.appendChild(row);
 
+    if(spec.comment) {
+      const textarea = document.createElement('textarea');
+      // textarea.style
+     textarea.style.webkitBoxShadow = 'inset 0px 0px 1px 4px #9E9E9E';
+     textarea.style.boxShadow = 'inset 0px 0px 22px 1px rgba(118, 118, 118, 1)';
+     textarea.style.backgroundColor = 'gray'; 
+     textarea.style.color = 'black';
+
+      textarea.value = spec.fields.find(f => f.key === 'text').value;
+
+      textarea.oninput = () => {
+        spec.fields.find(f => f.key === 'text').value = textarea.value;
+        row.textContent = textarea.value.split('\n')[0] || 'Comment';
+      };
+
+      body.appendChild(textarea);
+    }
     // ==================================================
     // 🔴 FIELD INPUTS (CORRECT PLACE)
     // ==================================================
-    if(spec.fields?.length) {
+    if(spec.fields?.length && !spec.comment) {
+
       const fieldsWrap = document.createElement('div');
       fieldsWrap.className = 'node-fields';
 
@@ -1016,7 +1029,8 @@ export default class FluxCodexVertex {
     }
 
     // Variable name input (temporary until popup)
-    if(spec.fields?.some(f => f.key === 'var')) {
+    if(spec.fields?.some(f => f.key === 'var') && !spec.comment) {
+      
       const input = document.createElement('input');
       input.type = 'text';
       input.value = spec.fields.find(f => f.key === 'var')?.value ?? '';
@@ -1357,14 +1371,18 @@ export default class FluxCodexVertex {
         fields: [{key: 'var', value: ''}, {key: 'literal', value: ''}]
       }),
 
-      'comment': (id, x, y, comment = "Add comment") => ({
+      'comment': (id, x, y) => ({
         id,
-        title: comment, x, y,
+        title: 'Comment',
+        x, y,
         category: 'meta',
         inputs: [],
         outputs: [],
         comment: true,
-        noExec: true
+        noExec: true,
+        fields: [
+          {key: 'text', value: 'Add comment'}
+        ]
       }),
       // 'downloadMeshes': (id, x, y) => ({
       //   id, title: 'downloadMeshes',

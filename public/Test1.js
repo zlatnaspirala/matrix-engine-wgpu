@@ -15770,8 +15770,8 @@ var FluxCodexVertex = class _FluxCodexVertex {
     <button onclick="app.editor.fluxCodexVertex.addNode('getSubObject')">Get Sub Object</button>
 
     <hr>
-    <span>JSON</span>
-    <button onclick="app.editor.fluxCodexVertex.addNode('dynamicJSON')">JSON</button>
+    <span>Comment</span>
+    <button onclick="app.editor.fluxCodexVertex.addNode('comment')">Comment</button>
 
     <hr>
     <span>Math</span>
@@ -15964,7 +15964,6 @@ var FluxCodexVertex = class _FluxCodexVertex {
           } else {
             this.variables.string[name] = input.value;
           }
-          this.updateNodeDOM(node.id);
         };
         const btnGet = document.createElement("button");
         btnGet.innerText = "Get";
@@ -16332,7 +16331,20 @@ var FluxCodexVertex = class _FluxCodexVertex {
     row.appendChild(left);
     row.appendChild(right);
     body.appendChild(row);
-    if (spec.fields?.length) {
+    if (spec.comment) {
+      const textarea = document.createElement("textarea");
+      textarea.style.webkitBoxShadow = "inset 0px 0px 1px 4px #9E9E9E";
+      textarea.style.boxShadow = "inset 0px 0px 22px 1px rgba(118, 118, 118, 1)";
+      textarea.style.backgroundColor = "gray";
+      textarea.style.color = "black";
+      textarea.value = spec.fields.find((f) => f.key === "text").value;
+      textarea.oninput = () => {
+        spec.fields.find((f) => f.key === "text").value = textarea.value;
+        row.textContent = textarea.value.split("\n")[0] || "Comment";
+      };
+      body.appendChild(textarea);
+    }
+    if (spec.fields?.length && !spec.comment) {
       const fieldsWrap = document.createElement("div");
       fieldsWrap.className = "node-fields";
       spec.fields.forEach((field) => {
@@ -16387,7 +16399,7 @@ var FluxCodexVertex = class _FluxCodexVertex {
         }
       });
     }
-    if (spec.fields?.some((f) => f.key === "var")) {
+    if (spec.fields?.some((f) => f.key === "var") && !spec.comment) {
       const input = document.createElement("input");
       input.type = "text";
       input.value = spec.fields.find((f) => f.key === "var")?.value ?? "";
@@ -16750,16 +16762,19 @@ var FluxCodexVertex = class _FluxCodexVertex {
         outputs: [{ name: "execOut", type: "action" }],
         fields: [{ key: "var", value: "" }, { key: "literal", value: "" }]
       }),
-      "comment": (id2, x2, y2, comment = "Add comment") => ({
+      "comment": (id2, x2, y2) => ({
         id: id2,
-        title: comment,
+        title: "Comment",
         x: x2,
         y: y2,
         category: "meta",
         inputs: [],
         outputs: [],
         comment: true,
-        noExec: true
+        noExec: true,
+        fields: [
+          { key: "text", value: "Add comment" }
+        ]
       }),
       // 'downloadMeshes': (id, x, y) => ({
       //   id, title: 'downloadMeshes',
