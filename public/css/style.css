@@ -189,10 +189,6 @@ textarea {
   font-family: stormfaze;
 }
 
-span {
-  /* width: 100px; */
-}
-
 .mLightInput {
   width: 150px;
   font-size: 26px;
@@ -1753,6 +1749,19 @@ svg.connections {
   padding: 2px 4px;
   border-radius: 4px;
 }
+
+.node-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 6px;
+}
+
+.node-fields input {
+  width: 100%;
+  box-sizing: border-box;
+}
+
 
 #log {
   font-family: monospace;
