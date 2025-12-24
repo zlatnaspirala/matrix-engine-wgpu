@@ -15753,26 +15753,22 @@ var FluxCodexVertex = class _FluxCodexVertex {
     <button onclick="app.editor.fluxCodexVertex.addNode('genrand')">GenRandInt</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('print')">Print</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('timeout')">SetTimeout</button>
-
+    <button onclick="app.editor.fluxCodexVertex.addNode('getArray')">getArray</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('forEach')">forEach</button>
     <hr>
     <span>Networking</span>
     <button onclick="app.editor.fluxCodexVertex.addNode('fetch')">Fetch</button>
-
     <hr>
     <span>Scene</span>
     <button onclick="app.editor.fluxCodexVertex.addNode('getSceneObject')">Get Scene Object</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('setPosition')">Set Position</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('onTargetPositionReach')">onTargetPositionReach</button>
-
     <button onclick="app.editor.fluxCodexVertex.addNode('getObjectAnimation')">getObjectAnimation</button>
-
     <button onclick="app.editor.fluxCodexVertex.addNode('dynamicFunction')">Function Dinamic</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('getSubObject')">Get Sub Object</button>
-
     <hr>
     <span>Comment</span>
     <button onclick="app.editor.fluxCodexVertex.addNode('comment')">Comment</button>
-
     <hr>
     <span>Math</span>
     <button onclick="app.editor.fluxCodexVertex.addNode('add')">Add (+)</button>
@@ -15782,14 +15778,12 @@ var FluxCodexVertex = class _FluxCodexVertex {
     <button onclick="app.editor.fluxCodexVertex.addNode('sin')">Sin</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('cos')">Cos</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('pi')">Pi</button>
-
     <hr>
     <span>Comparison</span>
     <button onclick="app.editor.fluxCodexVertex.addNode('equal')">Equal (==)</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('notequal')">Not Equal (!=)</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('greater')">Greater (>)</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('less')">Less (<)</button>
-
     <hr>
     <span>Compile</span>
     <button onclick="app.editor.fluxCodexVertex.compileGraph()">Save</button>
@@ -16943,8 +16937,45 @@ var FluxCodexVertex = class _FluxCodexVertex {
         ],
         isDynamicNode: true,
         _needsRebuild: true,
-        // 👈 MUST be true initially
         _pinsBuilt: false
+      }),
+      "forEach": (id2, x2, y2) => ({
+        id: id2,
+        title: "For Each",
+        type: "forEach",
+        x: x2,
+        y: y2,
+        state: { item: null, index: 0 },
+        inputs: [
+          { name: "exec", type: "action" },
+          { name: "array", type: "any" }
+        ],
+        outputs: [
+          { name: "loop", type: "action" },
+          { name: "completed", type: "action" },
+          { name: "item", type: "any" },
+          { name: "index", type: "number" }
+        ]
+      }),
+      "getArray": (id2, x2, y2, initialArray = []) => ({
+        id: id2,
+        type: "getArray",
+        title: "Get Array",
+        x: x2,
+        y: y2,
+        fields: [
+          { key: "array", value: initialArray.slice() }
+          // literal array
+        ],
+        inputs: [
+          { name: "array", type: "any", default: initialArray.slice() }
+          // input literal or connected
+        ],
+        outputs: [
+          { name: "array", type: "any" }
+          // separate output
+        ],
+        _returnCache: initialArray.slice()
       })
     };
     let spec = null;
@@ -16968,6 +16999,17 @@ var FluxCodexVertex = class _FluxCodexVertex {
     if (!this.variables[type][key]) return;
     this.variables[type][key].value = value;
     this.notifyVariableChanged(type, key);
+  }
+  updateArrayNode(node2, newValue) {
+    if (!Array.isArray(newValue)) {
+      console.warn("Value must be an array");
+      return;
+    }
+    const field = node2.fields.find((f) => f.key === "array");
+    if (field) {
+      field.value = newValue;
+      node2._returnCache = newValue;
+    }
   }
   initEventNodes() {
     for (const nodeId in this.nodes) {
@@ -17154,6 +17196,7 @@ var FluxCodexVertex = class _FluxCodexVertex {
     const node2 = this.nodes[nodeId];
     if (!node2 || visited.has(nodeId)) return void 0;
     visited.add(nodeId);
+    console.log("getValue -> nodeId:", nodeId, "title:", node2.title, "pin:", pinName);
     if (node2.title === "if" && pinName === "condition" && this._execContext !== nodeId) {
       console.warn(`[GET] Blocked IF condition outside exec for node ${nodeId}`);
       return void 0;
@@ -17184,6 +17227,26 @@ var FluxCodexVertex = class _FluxCodexVertex {
       return node2._returnCache[pinName];
     } else if (node2.title === "Get Sub Object") {
       return node2._subCache;
+    } else if (node2.type === "forEach") {
+      console.log("getValue node.state?.item: ", node2.state?.item);
+      console.log("getValue node.state?.index: ", node2.state?.index);
+      if (pinName === "item") return node2.state?.item;
+      if (pinName === "index") return node2.state?.index;
+    } else if (node2.title === "Get Array") {
+      if (node2._returnCache !== void 0) return node2._returnCache;
+      let arrValue;
+      const link2 = this.links.find((l) => l.to.node === node2.id && l.to.pin === "array");
+      if (link2) {
+        const fromNode = this.nodes[link2.from.node];
+        if (fromNode._returnCache === void 0) this.triggerNode(fromNode.id);
+        arrValue = fromNode._returnCache;
+      } else {
+        console.log("Node inputs for", nodeId, node2.title, node2.inputs?.map((p) => p.name));
+        const inputPin2 = node2.inputs?.find((p) => p.name === "array");
+        arrValue = inputPin2?.default ?? node2.fields?.find((f) => f.key === "array")?.value ?? [];
+      }
+      node2._returnCache = Array.isArray(arrValue) ? arrValue : void 0;
+      return node2._returnCache;
     }
     if (node2.outputs?.some((o) => o.name === pinName)) {
       const dynamicNodes = ["GenRandInt", "RandomFloat"];
@@ -17276,6 +17339,38 @@ var FluxCodexVertex = class _FluxCodexVertex {
       n._pinsBuilt = true;
       this.enqueueOutputs(n, "execOut");
       return;
+    } else if (n.type === "forEach") {
+      console.log("JUST ACTION foreach : " + this.links.filter((l) => l.from.node === n.id && l.from.type === "action"));
+      console.log("TRIGGER - ForEach links:", this.links.filter((l) => l.to.node === n.id));
+      const arr2 = this.getValue(n.id, "array");
+      console.log("trigger < - > this.getValue(n.id, array) : ", arr2);
+      let arr;
+      const link = this.links.find((l) => l.to.node === n.id && l.to.pin === "array");
+      if (link) arr = this.getValue(link.from.node, link.from.pin);
+      console.log("trigger < - >  this.getValue(link.from.node, link.from.pin); : ", arr);
+      if (arr === void 0) {
+        const inputPin = n.inputs?.find((p) => p.name === "array");
+        arr = inputPin?.default;
+      }
+      if (typeof arr === "string") {
+        try {
+          arr = JSON.parse(arr);
+        } catch (e) {
+          console.warn("Failed to parse array string", arr);
+          arr = [];
+        }
+      }
+      if (!Array.isArray(arr)) return;
+      arr.forEach((item, idx) => {
+        this.links.filter((l) => l.from.node === n.id && l.from.pin === "loop").forEach((link2) => {
+          this.triggerNode(link2.to.node, { item, index: idx });
+        });
+      });
+      this.links.forEach((link2) => {
+        if (link2.from === n.id && link2.fromPin === "completed") {
+          this.enqueueOutputs(n, "exec");
+        }
+      });
     }
     if (n.isGetterNode) {
       const varField = n.fields?.find((f) => f.key === "var");
@@ -17389,7 +17484,7 @@ var FluxCodexVertex = class _FluxCodexVertex {
         if (link) {
           const fromNode = link.node;
           const fromPin = link.pin;
-          if (fromNode._subCache && fromPin in fromNode._subCache) {
+          if (fromNode._subCache && typeof fromNode._subCache === "object" && fromPin in fromNode._subCache) {
             val = fromNode._subCache[fromPin];
           } else {
             val = this.getValue(fromNode.id, fromPin);
@@ -17541,7 +17636,10 @@ var FluxCodexVertex = class _FluxCodexVertex {
     return this.variables[type][key].value;
   }
   enqueueOutputs(n, pinName) {
-    this.links.filter((l) => l.from.node === n.id && l.from.pin === pinName && l.type === "action").forEach((l) => setTimeout(() => this.triggerNode(l.to.node), 10));
+    this.links.filter((l) => l.from.node === n.id && l.from.pin === pinName && l.type === "action").forEach((l) => setTimeout(() => {
+      console.log(`enqueueOutputs  this.triggerNode(l.to.node) l.to.node = ${l.to.node}`);
+      this.triggerNode(l.to.node);
+    }, 10));
   }
   deleteNode(nodeId) {
     const node2 = this.nodes[nodeId];

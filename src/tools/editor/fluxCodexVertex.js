@@ -169,26 +169,22 @@ export default class FluxCodexVertex {
     <button onclick="app.editor.fluxCodexVertex.addNode('genrand')">GenRandInt</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('print')">Print</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('timeout')">SetTimeout</button>
-
+    <button onclick="app.editor.fluxCodexVertex.addNode('getArray')">getArray</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('forEach')">forEach</button>
     <hr>
     <span>Networking</span>
     <button onclick="app.editor.fluxCodexVertex.addNode('fetch')">Fetch</button>
-
     <hr>
     <span>Scene</span>
     <button onclick="app.editor.fluxCodexVertex.addNode('getSceneObject')">Get Scene Object</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('setPosition')">Set Position</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('onTargetPositionReach')">onTargetPositionReach</button>
-
     <button onclick="app.editor.fluxCodexVertex.addNode('getObjectAnimation')">getObjectAnimation</button>
-
     <button onclick="app.editor.fluxCodexVertex.addNode('dynamicFunction')">Function Dinamic</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('getSubObject')">Get Sub Object</button>
-
     <hr>
     <span>Comment</span>
     <button onclick="app.editor.fluxCodexVertex.addNode('comment')">Comment</button>
-
     <hr>
     <span>Math</span>
     <button onclick="app.editor.fluxCodexVertex.addNode('add')">Add (+)</button>
@@ -198,14 +194,12 @@ export default class FluxCodexVertex {
     <button onclick="app.editor.fluxCodexVertex.addNode('sin')">Sin</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('cos')">Cos</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('pi')">Pi</button>
-
     <hr>
     <span>Comparison</span>
     <button onclick="app.editor.fluxCodexVertex.addNode('equal')">Equal (==)</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('notequal')">Not Equal (!=)</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('greater')">Greater (>)</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('less')">Less (<)</button>
-
     <hr>
     <span>Compile</span>
     <button onclick="app.editor.fluxCodexVertex.compileGraph()">Save</button>
@@ -522,7 +516,6 @@ export default class FluxCodexVertex {
 
     return btn;
   }
-
 
   _getPinDot(nodeId, pinName, isOutput) {
     const nodeEl = document.querySelector(`.node[data-id="${nodeId}"]`);
@@ -935,10 +928,10 @@ export default class FluxCodexVertex {
     if(spec.comment) {
       const textarea = document.createElement('textarea');
       // textarea.style
-     textarea.style.webkitBoxShadow = 'inset 0px 0px 1px 4px #9E9E9E';
-     textarea.style.boxShadow = 'inset 0px 0px 22px 1px rgba(118, 118, 118, 1)';
-     textarea.style.backgroundColor = 'gray'; 
-     textarea.style.color = 'black';
+      textarea.style.webkitBoxShadow = 'inset 0px 0px 1px 4px #9E9E9E';
+      textarea.style.boxShadow = 'inset 0px 0px 22px 1px rgba(118, 118, 118, 1)';
+      textarea.style.backgroundColor = 'gray';
+      textarea.style.color = 'black';
 
       textarea.value = spec.fields.find(f => f.key === 'text').value;
 
@@ -1027,7 +1020,7 @@ export default class FluxCodexVertex {
 
     // Variable name input (temporary until popup)
     if(spec.fields?.some(f => f.key === 'var') && !spec.comment) {
-      
+
       const input = document.createElement('input');
       input.type = 'text';
       input.value = spec.fields.find(f => f.key === 'var')?.value ?? '';
@@ -1441,6 +1434,7 @@ export default class FluxCodexVertex {
         ],
         noExec: true
       }),
+
       'setPosition': (id, x, y) => ({
         id, title: 'Set Position',
         category: 'scene',
@@ -1538,8 +1532,43 @@ export default class FluxCodexVertex {
           {key: 'path', value: '', placeholder: 'SomeProperty'}
         ],
         isDynamicNode: true,
-        _needsRebuild: true,   // 👈 MUST be true initially
+        _needsRebuild: true,
         _pinsBuilt: false
+      }),
+
+      'forEach': (id, x, y) => ({
+        id,
+        title: 'For Each',
+        type: 'forEach',
+        x, y,
+        state: {item: null, index: 0},
+        inputs: [
+          {name: 'exec', type: 'action'},
+          {name: 'array', type: 'any'}
+        ],
+        outputs: [
+          {name: 'loop', type: 'action'},
+          {name: 'completed', type: 'action'},
+          {name: 'item', type: 'any'},
+          {name: 'index', type: 'number'}
+        ],
+      }),
+
+      'getArray': (id, x, y, initialArray = []) => ({
+        id,
+        type: 'getArray',
+        title: 'Get Array',
+        x, y,
+        fields: [
+          {key: 'array', value: initialArray.slice()} // literal array
+        ],
+        inputs: [
+          {name: 'array', type: 'any', default: initialArray.slice()}  // input literal or connected
+        ],
+        outputs: [
+          {name: 'array', type: 'any'}  // separate output
+        ],
+        _returnCache: initialArray.slice()
       })
 
     };
@@ -1573,6 +1602,19 @@ export default class FluxCodexVertex {
 
     this.variables[type][key].value = value;
     this.notifyVariableChanged(type, key);
+  }
+
+  updateArrayNode(node, newValue) {
+    if(!Array.isArray(newValue)) {
+      console.warn('Value must be an array');
+      return;
+    }
+
+    const field = node.fields.find(f => f.key === 'array');
+    if(field) {
+      field.value = newValue;       // update literal field
+      node._returnCache = newValue; // update cache
+    }
   }
 
   initEventNodes() {
@@ -1830,6 +1872,8 @@ export default class FluxCodexVertex {
     if(!node || visited.has(nodeId)) return undefined;
     visited.add(nodeId);
 
+    console.log('getValue -> nodeId:', nodeId, 'title:', node.title, 'pin:', pinName);
+
     // Block IF condition evaluation outside exec
     if(node.title === 'if' && pinName === 'condition' && this._execContext !== nodeId) {
       console.warn(`[GET] Blocked IF condition outside exec for node ${nodeId}`);
@@ -1874,6 +1918,32 @@ export default class FluxCodexVertex {
     } else if(node.title === 'Get Sub Object') {
       return node._subCache; // simple, raw value
 
+    } else if(node.type === 'forEach') {
+      console.log('getValue node.state?.item: ', node.state?.item)
+      console.log('getValue node.state?.index: ', node.state?.index)
+      if(pinName === 'item') return node.state?.item;
+      if(pinName === 'index') return node.state?.index;
+    } else if(node.title === 'Get Array') {
+      if(node._returnCache !== undefined) return node._returnCache;
+
+      let arrValue;
+
+      // 1️⃣ Check for connected node
+      const link = this.links.find(l => l.to.node === node.id && l.to.pin === 'array');
+      if(link) {
+        const fromNode = this.nodes[link.from.node];
+        if(fromNode._returnCache === undefined) this.triggerNode(fromNode.id); // trigger source
+        arrValue = fromNode._returnCache;
+      }
+      // 2️⃣ If no link, use literal
+      else {
+        console.log('Node inputs for', nodeId, node.title, node.inputs?.map(p => p.name));
+        const inputPin = node.inputs?.find(p => p.name === 'array');
+        arrValue = inputPin?.default ?? node.fields?.find(f => f.key === 'array')?.value ?? [];
+      }
+
+      node._returnCache = Array.isArray(arrValue) ? arrValue : undefined;
+      return node._returnCache;
     }
 
 
@@ -1980,23 +2050,16 @@ export default class FluxCodexVertex {
       setTimeout(() => highlight.style.filter = 'none', 200);
     }
 
+    // console.log('TRIGGER - ForEach links:', this.links.filter(l => l.to.node === n.id));
+
     if(n.title === 'Get Sub Object') {
       const obj = this.getValue(n.id, 'object'); // root object
       const path = n.fields.find(f => f.key === 'path')?.value;
       const target = this.resolvePath(obj, path);
-
       console.log('0) obj in trigger :  ', obj)
       console.log('1) n._subCache in trigger :  ', n._subCache)
       console.log('2) target in trigger :  ', target)
-      // always store something in _subCache
       // n._subCache = {};
-
-      // if(target && typeof target === 'object') {
-      //   for(const k in target) n._subCache[k] = target[k];
-      // } else {
-      //   n._subCache['value'] = target; // primitive stored here
-      // }
-
       // rebuild output pins only if object
       n.outputs = n.outputs.filter(p => p.type === 'action'); // clear old
       if(target && typeof target === 'object') {
@@ -2015,6 +2078,66 @@ export default class FluxCodexVertex {
       return;
     }
 
+    else if(n.type === 'forEach') {
+
+      console.log("JUST ACTION foreach : " + this.links.filter(l => l.from.node === n.id && l.from.type === 'action'));
+
+      console.log('TRIGGER - ForEach links:', this.links.filter(l => l.to.node === n.id));
+
+      const arr2 = this.getValue(n.id, 'array');
+      console.log('trigger < - > this.getValue(n.id, array) : ', arr2)
+      let arr;
+
+      // Prefer linked node output
+      const link = this.links.find(l => l.to.node === n.id && l.to.pin === 'array');
+      if(link) arr = this.getValue(link.from.node, link.from.pin);
+
+      console.log('trigger < - >  this.getValue(link.from.node, link.from.pin); : ', arr)
+      // Fallback to literal
+      if(arr === undefined) {
+        const inputPin = n.inputs?.find(p => p.name === 'array');
+        arr = inputPin?.default;
+      }
+
+
+      if(typeof arr === 'string') {
+        try {
+          arr = JSON.parse(arr); // converts string to actual JS array
+        } catch(e) {
+          console.warn('Failed to parse array string', arr);
+          arr = []; // fallback
+        }
+      }
+
+      if(!Array.isArray(arr)) return;
+
+arr.forEach((item, idx) => {
+  // trigger downstream nodes with snapshot
+  this.links.filter(l => l.from.node === n.id && l.from.pin === 'loop')
+            .forEach(link => {
+              // pass a temporary state for this iteration
+              this.triggerNode(link.to.node, { item, index: idx });
+            });
+});
+      // for(let i = 0;i < arr.length;i++) {
+      //   n.state.item = arr[i];
+      //   n.state.index = i;
+
+      //   // trigger all nodes connected to 'loop'
+      //   this.links.forEach(link => {
+      //     if(link.from === n.id && link.fromPin === 'loop') {
+      //       this.enqueueOutputs(n, 'loop');
+      //     }
+      //   });
+      // }
+
+      // completed pin
+      this.links.forEach(link => {
+        if(link.from === n.id && link.fromPin === 'completed') {
+          this.enqueueOutputs(n, 'exec');
+        }
+      });
+    }
 
 
     if(n.isGetterNode) {
@@ -2184,12 +2307,9 @@ export default class FluxCodexVertex {
         if(link) {
           const fromNode = link.node;
           const fromPin = link.pin;
-
-          // ✅ Check _subCache first (for Get Sub Object)
-          if(fromNode._subCache && fromPin in fromNode._subCache) {
+          if(fromNode._subCache && typeof fromNode._subCache === 'object' && fromPin in fromNode._subCache) {
             val = fromNode._subCache[fromPin];
           }
-          // ✅ Otherwise fallback to normal getValue
           else {
             val = this.getValue(fromNode.id, fromPin);
           }
@@ -2346,7 +2466,10 @@ export default class FluxCodexVertex {
 
   enqueueOutputs(n, pinName) {
     this.links.filter(l => l.from.node === n.id && l.from.pin === pinName && l.type === 'action')
-      .forEach(l => setTimeout(() => this.triggerNode(l.to.node), 10));
+      .forEach(l => setTimeout(() => {
+        console.log(`enqueueOutputs  this.triggerNode(l.to.node) l.to.node = ${l.to.node}`)
+        this.triggerNode(l.to.node)
+      }, 10));
   }
 
   deleteNode(nodeId) {
