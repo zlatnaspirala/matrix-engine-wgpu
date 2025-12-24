@@ -17361,15 +17361,18 @@ var FluxCodexVertex = class _FluxCodexVertex {
         }
       }
       if (!Array.isArray(arr)) return;
-      arr.forEach((item, idx) => {
-        this.links.filter((l) => l.from.node === n.id && l.from.pin === "loop").forEach((link2) => {
-          this.triggerNode(link2.to.node, { item, index: idx });
+      arr.forEach((item, index) => {
+        n.state = { item, index };
+        this.links.filter(
+          (l) => l.type === "action" && l.from.node === n.id && l.from.pin === "loop"
+        ).forEach((l) => {
+          this.triggerNode(l.to.node);
         });
       });
-      this.links.forEach((link2) => {
-        if (link2.from === n.id && link2.fromPin === "completed") {
-          this.enqueueOutputs(n, "exec");
-        }
+      this.links.filter(
+        (l) => l.type === "action" && l.from.node === n.id && l.from.pin === "completed"
+      ).forEach((l) => {
+        this.triggerNode(l.to.node);
       });
     }
     if (n.isGetterNode) {

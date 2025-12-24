@@ -2079,9 +2079,7 @@ export default class FluxCodexVertex {
     }
 
     else if(n.type === 'forEach') {
-
       console.log("JUST ACTION foreach : " + this.links.filter(l => l.from.node === n.id && l.from.type === 'action'));
-
       console.log('TRIGGER - ForEach links:', this.links.filter(l => l.to.node === n.id));
 
       const arr2 = this.getValue(n.id, 'array');
@@ -2099,7 +2097,6 @@ export default class FluxCodexVertex {
         arr = inputPin?.default;
       }
 
-
       if(typeof arr === 'string') {
         try {
           arr = JSON.parse(arr); // converts string to actual JS array
@@ -2111,32 +2108,32 @@ export default class FluxCodexVertex {
 
       if(!Array.isArray(arr)) return;
 
-arr.forEach((item, idx) => {
-  // trigger downstream nodes with snapshot
-  this.links.filter(l => l.from.node === n.id && l.from.pin === 'loop')
-            .forEach(link => {
-              // pass a temporary state for this iteration
-              this.triggerNode(link.to.node, { item, index: idx });
-            });
-});
-      // for(let i = 0;i < arr.length;i++) {
-      //   n.state.item = arr[i];
-      //   n.state.index = i;
+      arr.forEach((item, index) => {
+        // update node runtime state
+        n.state = {item, index};
 
-      //   // trigger all nodes connected to 'loop'
-      //   this.links.forEach(link => {
-      //     if(link.from === n.id && link.fromPin === 'loop') {
-      //       this.enqueueOutputs(n, 'loop');
-      //     }
-      //   });
-      // }
-
-      // completed pin
-      this.links.forEach(link => {
-        if(link.from === n.id && link.fromPin === 'completed') {
-          this.enqueueOutputs(n, 'exec');
-        }
+        // 🔥 MANUAL EXEC TRIGGER (this is REQUIRED)
+        this.links
+          .filter(l =>
+            l.type === 'action' &&
+            l.from.node === n.id &&
+            l.from.pin === 'loop'
+          )
+          .forEach(l => {
+            this.triggerNode(l.to.node);
+          });
       });
+
+      // completed pin (once)
+      this.links
+        .filter(l =>
+          l.type === 'action' &&
+          l.from.node === n.id &&
+          l.from.pin === 'completed'
+        )
+        .forEach(l => {
+          this.triggerNode(l.to.node);
+        });
     }
 
 
