@@ -1748,6 +1748,10 @@ svg.connections {
   background: rgba(0, 0, 0, 0.3);
   padding: 2px 4px;
   border-radius: 4px;
+  max-width: 200px;        /* maximum width */
+  overflow: hidden;        /* hide overflow */
+  text-overflow: ellipsis; /* show "..." when text too long */
+  white-space: nowrap;     /* keep in a single line */
 }
 
 .node-fields {
