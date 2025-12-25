@@ -86,11 +86,11 @@ export default class FluxCodexVertex {
     this.init();
 
     document.addEventListener("keydown", e => {
-      if (e.key == "F6") {
+      if(e.key == "F6") {
         e.preventDefault();
         this.runGraph();
-      } else if (e.key === "Delete" /*|| e.key === "Backspace"*/) {
-        if (this.state.selectedNode) {
+      } else if(e.key === "Delete" /*|| e.key === "Backspace"*/) {
+        if(this.state.selectedNode) {
           this.deleteNode(this.state.selectedNode);
           this.state.selectedNode = null;
         }
@@ -103,10 +103,10 @@ export default class FluxCodexVertex {
       const {nodeId, field, value} = e.detail;
 
       const node = this.nodes.find(n => n.id === nodeId);
-      if (!node) return;
+      if(!node) return;
 
-      if (node.type !== "getSubObject") return;
-      if (field !== "path") return;
+      if(node.type !== "getSubObject") return;
+      if(field !== "path") return;
 
       this.handleGetSubObject(node, value);
     });
@@ -133,18 +133,18 @@ export default class FluxCodexVertex {
       let y = e.clientY;
 
       // Horizontal clamp (prevent right overflow)
-      if (x + menuRect.width > vw) {
+      if(x + menuRect.width > vw) {
         x = vw - menuRect.width - 5;
       }
 
       // Vertical smart placement
-      if (y > vh * 0.5) {
+      if(y > vh * 0.5) {
         // open upwards
         y = y - menuRect.height;
       }
 
       // Final clamp (top safety)
-      if (y < 5) y = 5;
+      if(y < 5) y = 5;
 
       CMenu.style.left = x + "px";
       CMenu.style.top = y + "px";
@@ -264,7 +264,7 @@ export default class FluxCodexVertex {
 
   evaluateGetterNode(n) {
     const key = n.fields?.find(f => f.key === "var")?.value;
-    if (!key) return;
+    if(!key) return;
 
     const type = n.title.replace("Get ", "").toLowerCase();
     const entry = this.variables[type]?.[key];
@@ -272,14 +272,14 @@ export default class FluxCodexVertex {
     n._returnCache = entry
       ? entry.value
       : type === "number"
-      ? 0
-      : type === "boolean"
-      ? false
-      : type === "string"
-      ? ""
-      : type === "object"
-      ? {}
-      : undefined;
+        ? 0
+        : type === "boolean"
+          ? false
+          : type === "string"
+            ? ""
+            : type === "object"
+              ? {}
+              : undefined;
 
     console.log(
       "[EVALUATE GETTER]",
@@ -294,23 +294,23 @@ export default class FluxCodexVertex {
   }
 
   notifyVariableChanged(type, key) {
-    for (const id in this.nodes) {
+    for(const id in this.nodes) {
       const n = this.nodes[id];
 
       // Update getter nodes
-      if (n.isGetterNode) {
+      if(n.isGetterNode) {
         const varField = n.fields?.find(f => f.key === "var");
-        if (
+        if(
           varField?.value === key &&
           n.title.replace("Get ", "").toLowerCase() === type
         ) {
           this.evaluateGetterNode(n);
 
-          if (n.displayEl) {
+          if(n.displayEl) {
             const val = n._returnCache;
-            if (type === "object")
+            if(type === "object")
               n.displayEl.textContent = JSON.stringify(val, null, 2);
-            else if (type === "number")
+            else if(type === "number")
               n.displayEl.textContent = val.toFixed(3);
             else n.displayEl.textContent = String(val);
           }
@@ -320,10 +320,10 @@ export default class FluxCodexVertex {
       // Update sub-object nodes connected to this getter
       n.inputs?.forEach(pin => {
         const link = this.getConnectedSource(n.id, pin.name);
-        if (link?.node?.isGetterNode) {
+        if(link?.node?.isGetterNode) {
           const srcNode = link.node;
           const srcPin = link.pin;
-          if (srcNode.fields?.find(f => f.key === "var")?.value === key) {
+          if(srcNode.fields?.find(f => f.key === "var")?.value === key) {
             this._adaptGetSubObjectOnConnect(n, srcNode, srcPin);
           }
         }
@@ -332,9 +332,9 @@ export default class FluxCodexVertex {
 
     // Update variable input UI if exists
     const input = this._varInputs?.[`${type}.${key}`];
-    if (input) {
+    if(input) {
       const storedValue = this.variables?.[type]?.[key];
-      if (type === "object")
+      if(type === "object")
         input.value = JSON.stringify(storedValue ?? {}, null, 2);
       else input.value = storedValue ?? "";
     }
@@ -349,7 +349,7 @@ export default class FluxCodexVertex {
   }
 
   createVariablesPopup() {
-    if (this._varsPopup) return;
+    if(this._varsPopup) return;
     const popup = document.createElement("div");
     popup.id = "varsPopup";
     this._varsPopup = popup;
@@ -426,8 +426,8 @@ export default class FluxCodexVertex {
       object: "#ce93d8",
     };
 
-    for (const type in this.variables) {
-      for (const name in this.variables[type]) {
+    for(const type in this.variables) {
+      for(const name in this.variables[type]) {
         const row = document.createElement("div");
         Object.assign(row.style, {
           display: "flex",
@@ -444,7 +444,7 @@ export default class FluxCodexVertex {
         label.style.minWidth = "120px";
 
         let input;
-        if (type === "object") {
+        if(type === "object") {
           input = document.createElement("textarea");
           input.value = JSON.stringify(
             this.variables[type][name] ?? {},
@@ -468,15 +468,15 @@ export default class FluxCodexVertex {
         });
 
         input.oninput = () => {
-          if (type === "object") {
+          if(type === "object") {
             try {
               this.variables.object[name] = JSON.parse(input.value);
             } catch {
               return;
             }
-          } else if (type === "number") {
+          } else if(type === "number") {
             this.variables.number[name] = parseFloat(input.value);
-          } else if (type === "boolean") {
+          } else if(type === "boolean") {
             this.variables.boolean[name] = input.value === "true";
           } else {
             this.variables.string[name] = input.value;
@@ -488,20 +488,20 @@ export default class FluxCodexVertex {
         btnGet.innerText = "Get";
         btnGet.classList.add("btnGetter");
         btnGet.onclick = () => {
-          if (type === "number") this.createGetNumberNode(name);
-          else if (type === "boolean") this.createGetBooleanNode(name);
-          else if (type === "string") this.createGetStringNode(name);
-          else if (type === "object") this.createGetObjectNode(name);
+          if(type === "number") this.createGetNumberNode(name);
+          else if(type === "boolean") this.createGetBooleanNode(name);
+          else if(type === "string") this.createGetStringNode(name);
+          else if(type === "object") this.createGetObjectNode(name);
         };
 
         const btnSet = document.createElement("button");
         btnSet.innerText = "Set";
         btnSet.classList.add("btnGetter");
         btnSet.onclick = () => {
-          if (type === "number") this.createSetNumberNode(name);
-          else if (type === "boolean") this.createSetBooleanNode(name);
-          else if (type === "string") this.createSetStringNode(name);
-          else if (type === "object") this.createSetObjectNode(name);
+          if(type === "number") this.createSetNumberNode(name);
+          else if(type === "boolean") this.createSetBooleanNode(name);
+          else if(type === "string") this.createSetStringNode(name);
+          else if(type === "object") this.createSetObjectNode(name);
         };
 
         row.append(label, input, btnGet, btnSet);
@@ -534,7 +534,7 @@ export default class FluxCodexVertex {
     });
 
     const onMove = e => {
-      if (!isDragging) return;
+      if(!isDragging) return;
       popup.style.left = startLeft + (e.clientX - startX) + "px";
       popup.style.top = startTop + (e.clientY - startY) + "px";
     };
@@ -555,10 +555,10 @@ export default class FluxCodexVertex {
 
     btn.onclick = () => {
       const name = prompt(`New ${type} variable name`);
-      if (!name) return;
+      if(!name) return;
 
-      if (!this.variables[type]) this.variables[type] = {};
-      if (this.variables[type][name]) {
+      if(!this.variables[type]) this.variables[type] = {};
+      if(this.variables[type][name]) {
         alert("Variable exists");
         return;
       }
@@ -568,12 +568,12 @@ export default class FluxCodexVertex {
         type === "object"
           ? {} // ← store object directly
           : type === "number"
-          ? 0
-          : type === "boolean"
-          ? false
-          : type === "string"
-          ? ""
-          : null;
+            ? 0
+            : type === "boolean"
+              ? false
+              : type === "string"
+                ? ""
+                : null;
 
       this._refreshVarsList(this._varsPopup.children[1]);
       console.log("[NEW VARIABLE]", type, name, this.variables[type][name]);
@@ -584,7 +584,7 @@ export default class FluxCodexVertex {
 
   _getPinDot(nodeId, pinName, isOutput) {
     const nodeEl = document.querySelector(`.node[data-id="${nodeId}"]`);
-    if (!nodeEl) return null;
+    if(!nodeEl) return null;
     const io = isOutput ? "out" : "in";
     return nodeEl.querySelector(
       `.pin[data-pin="${pinName}"][data-io="${io}"] .dot`
@@ -595,7 +595,7 @@ export default class FluxCodexVertex {
     select.innerHTML = "";
 
     const vars = this.variables[type];
-    if (!vars.length) {
+    if(!vars.length) {
       const opt = document.createElement("option");
       opt.textContent = "(no variables)";
       opt.disabled = true;
@@ -616,12 +616,12 @@ export default class FluxCodexVertex {
     const src = fn.toString().trim();
     // Case 1: arrow function with no parentheses:  a => ...
     const arrowNoParen = src.match(/^([a-zA-Z0-9_$]+)\s*=>/);
-    if (arrowNoParen) {
+    if(arrowNoParen) {
       return [arrowNoParen[1].trim()];
     }
     // Case 2: normal (a,b) => ...  OR function(a,b) { ... }
     const argsMatch = src.match(/\(([^)]*)\)/);
-    if (argsMatch && argsMatch[1].trim().length > 0) {
+    if(argsMatch && argsMatch[1].trim().length > 0) {
       return argsMatch[1]
         .split(",")
         .map(a => a.trim())
@@ -635,11 +635,11 @@ export default class FluxCodexVertex {
     const src = fn.toString().trim();
     // Case 1: implicit return in arrow: (a)=>a+2  OR  a=>a*2
     // Detect arrow "=>" followed by an expression, not "{"
-    if (/=>\s*[^({]/.test(src)) {
+    if(/=>\s*[^({]/.test(src)) {
       return true;
     }
     // Case 2: normal "return" inside function body
-    if (/return\s+/.test(src)) {
+    if(/return\s+/.test(src)) {
       return true;
     }
     return false;
@@ -654,7 +654,7 @@ export default class FluxCodexVertex {
     const args = this.getArgNames(fn);
     args.forEach(arg => node.inputs.push({name: arg, type: "value"}));
     // Dynamic return pin
-    if (this.hasReturn(fn)) node.outputs.push({name: "return", type: "value"});
+    if(this.hasReturn(fn)) node.outputs.push({name: "return", type: "value"});
     node.attachedMethod = methodItem.name;
     node.fn = fn;
     // Refresh the DOM so new pins are clickable
@@ -675,7 +675,7 @@ export default class FluxCodexVertex {
     });
 
     // Return pin
-    if (this.hasReturn(fn)) {
+    if(this.hasReturn(fn)) {
       node.outputs.push({name: "return", type: "value"});
     }
 
@@ -702,11 +702,11 @@ export default class FluxCodexVertex {
   updateNodeDOM(nodeId) {
     const node = this.nodes[nodeId];
     const el = document.querySelector(`.node[data-id="${nodeId}"]`);
-    if (!el) return;
+    if(!el) return;
 
     const left = el.querySelector(".pins-left");
     const right = el.querySelector(".pins-right");
-    if (!left || !right) return;
+    if(!left || !right) return;
 
     // Clear only **non-exec pins**
     left.innerHTML = "";
@@ -724,9 +724,9 @@ export default class FluxCodexVertex {
     );
 
     // Method select (only for Function nodes)
-    if (node.category === "action" && node.title === "Function") {
+    if(node.category === "action" && node.title === "Function") {
       let select = el.querySelector("select.method-select");
-      if (!select) {
+      if(!select) {
         select = document.createElement("select");
         select.className = "method-select";
         select.style.cssText = "width:100%; margin-top:6px;";
@@ -734,13 +734,13 @@ export default class FluxCodexVertex {
       }
       this.populateMethodsSelect(select);
 
-      if (node.attachedMethod) select.value = node.attachedMethod;
+      if(node.attachedMethod) select.value = node.attachedMethod;
 
       select.onchange = e => {
         const selected = this.methodsManager.methodsContainer.find(
           m => m.name === e.target.value
         );
-        if (selected) this.adaptNodeToMethod(node, selected);
+        if(selected) this.adaptNodeToMethod(node, selected);
       };
     }
   }
@@ -757,7 +757,7 @@ export default class FluxCodexVertex {
   }
 
   finishConnect(nodeId, pinName, type, isOut) {
-    if (!this.state.connecting || this.state.connecting.node === nodeId) {
+    if(!this.state.connecting || this.state.connecting.node === nodeId) {
       this.state.connecting = null;
       return;
     }
@@ -770,7 +770,7 @@ export default class FluxCodexVertex {
       : this.state.connecting;
 
     // Prevent duplicate links and type mismatch
-    if (
+    if(
       from.pin &&
       to.pin &&
       this.isTypeCompatible(this.state.connecting.type, type)
@@ -782,10 +782,10 @@ export default class FluxCodexVertex {
           l.to.node === to.node &&
           l.to.pin === to.pin
       );
-      if (!exists) {
+      if(!exists) {
         this.links.push({id: "link_" + this.linkCounter++, from, to, type});
         this.updateLinks();
-        if (type === "value") setTimeout(() => this.updateValueDisplays(), 0);
+        if(type === "value") setTimeout(() => this.updateValueDisplays(), 0);
       }
     }
     this.state.connecting = null;
@@ -794,7 +794,7 @@ export default class FluxCodexVertex {
     let toNode = this.nodes[to.node];
     let fromNode = this.nodes[from.node];
 
-    if (
+    if(
       toNode &&
       toNode.category === "functions" &&
       toNode.code &&
@@ -802,7 +802,7 @@ export default class FluxCodexVertex {
     ) {
       console.log("TEST FUNC PIN ADAPT");
       const fnRef = this.getPinValue(fromNode, from.pin);
-      if (typeof fnRef !== "function") return;
+      if(typeof fnRef !== "function") return;
       toNode._fnRef = fnRef;
       const fnName = fnRef.name || "wrappedFn";
       toNode.code = `
@@ -828,22 +828,22 @@ export default class FluxCodexVertex {
 
   _adaptGetSubObjectOnConnect(getSubNode, sourceNode, sourcePin) {
     const obj = sourceNode._returnCache;
-    if (!obj || typeof obj !== "object") return;
+    if(!obj || typeof obj !== "object") return;
     const varField = sourceNode.fields?.find(f => f.key === "var");
     const previewField = getSubNode.fields?.find(
       f => f.key === "objectPreview"
     );
-    if (previewField) {
+    if(previewField) {
       previewField.value = varField?.value || "[object]";
-      if (getSubNode.objectPreviewEl)
+      if(getSubNode.objectPreviewEl)
         getSubNode.objectPreviewEl.value = previewField.value;
     }
     const path = getSubNode.fields?.find(f => f.key === "path")?.value;
     const target = this.resolvePath(obj, path);
     this.adaptSubObjectPins(getSubNode, target);
     getSubNode._subCache = {};
-    if (target && typeof target === "object") {
-      for (const k in target) getSubNode._subCache[k] = target[k];
+    if(target && typeof target === "object") {
+      for(const k in target) getSubNode._subCache[k] = target[k];
     }
     getSubNode._needsRebuild = false;
     getSubNode._pinsBuilt = true;
@@ -860,7 +860,7 @@ export default class FluxCodexVertex {
 
   onPinsConnected(sourceNode, sourcePin, targetNode, targetPin) {
     // only react if target is GetSubObject-like node
-    if (
+    if(
       targetNode.title === "Get Scene Object" ||
       targetNode.title === "Get Sub Object"
     ) {
@@ -874,27 +874,27 @@ export default class FluxCodexVertex {
   }
 
   normalizePinType(type) {
-    if (!type) return "any";
-    if (type === "number") return "value";
+    if(!type) return "any";
+    if(type === "number") return "value";
     return type;
   }
 
   updateSceneObjectPins(node, objectName) {
     const obj = (node.accessObject || []).find(o => o.name === objectName);
-    if (!obj) return;
+    if(!obj) return;
     // clear
     node.outputs = [];
     // expose one-level properties
     // const props = ['name', 'position', 'rotation', 'scale'];
     node.exposeProps.forEach(p => {
       const value = this.getByPath(obj, p);
-      if (value !== undefined) {
+      if(value !== undefined) {
         const type =
           typeof value === "number"
             ? "number"
             : typeof value === "string"
-            ? "string"
-            : "object";
+              ? "string"
+              : "object";
         node.outputs.push({name: p, type});
       }
     });
@@ -906,7 +906,7 @@ export default class FluxCodexVertex {
     const pin = document.createElement("div");
     // CSS class with type
     // console.log('test pin :', pinSpec.name);
-    if (pinSpec.name == "position") {
+    if(pinSpec.name == "position") {
       pin.className = `pin pin-${pinSpec.name}`;
     } else {
       pin.className = `pin pin-${pinSpec.type}`;
@@ -941,7 +941,7 @@ export default class FluxCodexVertex {
 
   handleGetSubObject(node, path) {
     const objInput = node.inputs.find(i => i.name === "object");
-    if (!objInput || typeof objInput.value !== "object") {
+    if(!objInput || typeof objInput.value !== "object") {
       node.outputs.length = 0;
       this.editor.draw();
       return;
@@ -959,7 +959,7 @@ export default class FluxCodexVertex {
 
     node.outputs.length = 0;
 
-    if (target && typeof target === "object") {
+    if(target && typeof target === "object") {
       Object.keys(target).forEach(k => {
         node.outputs.push({name: k, type: "any"});
       });
@@ -971,7 +971,7 @@ export default class FluxCodexVertex {
   createNodeDOM(spec) {
     const el = document.createElement("div");
 
-    if (spec.title == "Fetch") {
+    if(spec.title == "Fetch") {
       el.className = "node " + (spec.title.toLowerCase() || "");
     } else {
       el.className = "node " + (spec.category || "");
@@ -1016,7 +1016,7 @@ export default class FluxCodexVertex {
     row.appendChild(right);
     body.appendChild(row);
 
-    if (spec.comment) {
+    if(spec.comment) {
       const textarea = document.createElement("textarea");
       // textarea.style
       textarea.style.webkitBoxShadow = "inset 0px 0px 1px 4px #9E9E9E";
@@ -1037,17 +1037,17 @@ export default class FluxCodexVertex {
     // ==================================================
     // 🔴 FIELD INPUTS (CORRECT PLACE)
     // ==================================================
-    if (spec.fields?.length && !spec.comment) {
+    if(spec.fields?.length && !spec.comment) {
       const fieldsWrap = document.createElement("div");
       fieldsWrap.className = "node-fields";
 
       spec.fields.forEach(field => {
         // skip special cases handled elsewhere
-        if (field.key === "var") return;
+        if(field.key === "var") return;
 
         const input = this.createFieldInput(spec, field);
 
-        if (field.key === "objectPreview") {
+        if(field.key === "objectPreview") {
           spec.objectPreviewEl = input;
         }
 
@@ -1058,7 +1058,7 @@ export default class FluxCodexVertex {
     }
 
     // Value display
-    if (spec.fields && spec.title === "GenRandInt") {
+    if(spec.fields && spec.title === "GenRandInt") {
       const container = document.createElement("div");
       container.className = "genrand-inputs";
 
@@ -1078,7 +1078,7 @@ export default class FluxCodexVertex {
       });
 
       body.appendChild(container);
-    } else if (
+    } else if(
       spec.category === "math" ||
       spec.category === "value" ||
       spec.title === "Print"
@@ -1091,7 +1091,7 @@ export default class FluxCodexVertex {
     }
 
     // Function Method Selector
-    if (
+    if(
       spec.title === "Function" &&
       spec.category === "action" &&
       !spec.builtIn &&
@@ -1104,7 +1104,7 @@ export default class FluxCodexVertex {
       body.appendChild(select);
 
       this.populateMethodsSelect(select);
-      if (spec.attachedMethod) {
+      if(spec.attachedMethod) {
         select.value = spec.attachedMethod;
       }
 
@@ -1112,14 +1112,14 @@ export default class FluxCodexVertex {
         const selected = this.methodsManager.methodsContainer.find(
           m => m.name === e.target.value
         );
-        if (selected) {
+        if(selected) {
           this.adaptNodeToMethod(spec, selected);
         }
       });
     }
 
     // Variable name input (temporary until popup)
-    if (spec.fields?.some(f => f.key === "var") && !spec.comment) {
+    if(spec.fields?.some(f => f.key === "var") && !spec.comment) {
       const input = document.createElement("input");
       input.type = "text";
       input.value = spec.fields.find(f => f.key === "var")?.value ?? "";
@@ -1133,7 +1133,7 @@ export default class FluxCodexVertex {
       body.appendChild(input);
     }
 
-    if (spec.title === "functions") {
+    if(spec.title === "functions") {
       const select = document.createElement("select");
       select.style.width = "100%";
       select.style.marginTop = "6px";
@@ -1142,7 +1142,7 @@ export default class FluxCodexVertex {
 
       select.addEventListener("change", e => {
         const fnName = e.target.value;
-        if (fnName) {
+        if(fnName) {
           this.adaptDynamicFunction(spec, fnName);
         }
       });
@@ -1150,7 +1150,7 @@ export default class FluxCodexVertex {
       body.appendChild(select);
     }
 
-    if (
+    if(
       spec.title === "Get Scene Object" ||
       spec.title === "Get Scene Animation"
     ) {
@@ -1172,7 +1172,7 @@ export default class FluxCodexVertex {
         select.appendChild(opt);
       });
 
-      if (spec.fields[0].value) select.value = spec.fields[0].value;
+      if(spec.fields[0].value) select.value = spec.fields[0].value;
 
       select.addEventListener("change", e => {
         const name = e.target.value;
@@ -1205,7 +1205,7 @@ export default class FluxCodexVertex {
   }
 
   selectNode(id) {
-    if (this.state.selectedNode) {
+    if(this.state.selectedNode) {
       document
         .querySelector(`.node[data-id="${this.state.selectedNode}"]`)
         ?.classList.remove("selected");
@@ -1222,10 +1222,10 @@ export default class FluxCodexVertex {
     placeholder.textContent = "-- Select Function --";
     select.appendChild(placeholder);
 
-    if (!accessObject || typeof accessObject !== "object") return;
+    if(!accessObject || typeof accessObject !== "object") return;
 
-    for (const key in accessObject) {
-      if (typeof accessObject[key] === "function") {
+    for(const key in accessObject) {
+      if(typeof accessObject[key] === "function") {
         const opt = document.createElement("option");
         opt.value = key;
         opt.textContent = key;
@@ -1236,13 +1236,13 @@ export default class FluxCodexVertex {
 
   updateFunctionPins(node, objectName, funcName) {
     const obj = this.resolveAccessObject(node.accessObject, objectName);
-    if (!obj) {
+    if(!obj) {
       console.warn("Access object not found:", objectName);
       return;
     }
 
     const fn = obj[funcName];
-    if (typeof fn !== "function") {
+    if(typeof fn !== "function") {
       console.warn("Not a function:", funcName);
       return;
     }
@@ -1258,7 +1258,7 @@ export default class FluxCodexVertex {
     });
 
     // return → output
-    if (this.hasReturn(fn)) {
+    if(this.hasReturn(fn)) {
       node.outputs.push({name: "return", type: "value"});
     }
 
@@ -1275,11 +1275,11 @@ export default class FluxCodexVertex {
   }
 
   isTypeCompatible(fromType, toType) {
-    if (fromType === "action" || toType === "action") {
+    if(fromType === "action" || toType === "action") {
       return fromType === toType;
     }
-    if (fromType === toType) return true;
-    if (fromType === "any" || toType === "any") return true;
+    if(fromType === toType) return true;
+    if(fromType === "any" || toType === "any") return true;
     return false;
   }
 
@@ -1823,7 +1823,7 @@ export default class FluxCodexVertex {
         state: {item: null, index: 0},
         inputs: [
           {name: "exec", type: "action"},
-          {name: "array", type: "any"},
+          {name: "array", type: "any"},  // semantic array pin
         ],
         outputs: [
           {name: "loop", type: "action"},
@@ -1834,22 +1834,19 @@ export default class FluxCodexVertex {
       }),
 
       getArray: (id, x, y, initialArray = []) => ({
-        id,
-        type: "getArray",
+        id, type: "getArray",
         title: "Get Array",
-        x,
-        y,
+        x, y,
         fields: [
-          {key: "array", value: initialArray.slice()}, // literal array
+          {key: "array", value: initialArray.slice()},
         ],
         inputs: [
           {name: "exec", type: "action"},
-          // {name: 'array', type: 'any', default: initialArray.slice()}  // input literal or connected
-          {name: "result", type: "object"},
+          {name: "array", type: "any"},
         ],
         outputs: [
-          {name: "array", type: "any"},
           {name: "execOut", type: "action"},
+          {name: "array", type: "any"}
         ],
         _returnCache: initialArray.slice(),
       }),
@@ -1857,17 +1854,17 @@ export default class FluxCodexVertex {
 
     // Generate node spec
     let spec = null;
-    if (nodeFactories[type]) spec = nodeFactories[type](id, x, y);
+    if(nodeFactories[type]) spec = nodeFactories[type](id, x, y);
 
-    if (spec && spec.fields && options) {
-      for (const f of spec.fields) {
-        if (options[f.key] !== undefined) {
+    if(spec && spec.fields && options) {
+      for(const f of spec.fields) {
+        if(options[f.key] !== undefined) {
           f.value = options[f.key];
         }
       }
     }
 
-    if (spec) {
+    if(spec) {
       const dom = this.createNodeDOM(spec);
       this.board.appendChild(dom);
       this.nodes[id] = spec;
@@ -1878,29 +1875,29 @@ export default class FluxCodexVertex {
   }
 
   setVariable(type, key, value) {
-    if (!this.variables[type][key]) return;
+    if(!this.variables[type][key]) return;
 
     this.variables[type][key].value = value;
     this.notifyVariableChanged(type, key);
   }
 
   updateArrayNode(node, newValue) {
-    if (!Array.isArray(newValue)) {
+    if(!Array.isArray(newValue)) {
       console.warn("Value must be an array");
       return;
     }
 
     const field = node.fields.find(f => f.key === "array");
-    if (field) {
+    if(field) {
       field.value = newValue; // update literal field
       node._returnCache = newValue; // update cache
     }
   }
 
   initEventNodes() {
-    for (const nodeId in this.nodes) {
+    for(const nodeId in this.nodes) {
       const n = this.nodes[nodeId];
-      if (n.category === "event") {
+      if(n.category === "event") {
         this.activateEventNode(nodeId);
       }
     }
@@ -1928,8 +1925,8 @@ export default class FluxCodexVertex {
     // Keep only action pins
     node.outputs = node.outputs.filter(p => p.type === "action");
 
-    if (obj && typeof obj === "object") {
-      for (const key of Object.keys(obj)) {
+    if(obj && typeof obj === "object") {
+      for(const key of Object.keys(obj)) {
         node.outputs.push({
           name: key,
           type: this.detectType(obj[key]),
@@ -1940,10 +1937,10 @@ export default class FluxCodexVertex {
   }
 
   detectType(val) {
-    if (typeof val === "number") return "number";
-    if (typeof val === "boolean") return "boolean";
-    if (typeof val === "string") return "string";
-    if (typeof val === "object") return "object";
+    if(typeof val === "number") return "number";
+    if(typeof val === "boolean") return "boolean";
+    if(typeof val === "string") return "string";
+    if(typeof val === "object") return "object";
     return "any";
   }
 
@@ -1954,7 +1951,7 @@ export default class FluxCodexVertex {
     input.placeholder = field.placeholder ?? "";
     input.disabled = field.readonly === true;
 
-    if (field.readonly) {
+    if(field.readonly) {
       input.style.opacity = "0.7";
       input.style.cursor = "default";
     }
@@ -1963,7 +1960,7 @@ export default class FluxCodexVertex {
     const saveInputValue = () => {
       let val;
 
-      if (field.type === "object") {
+      if(field.type === "object") {
         try {
           val = JSON.parse(input.value);
         } catch {
@@ -1976,7 +1973,7 @@ export default class FluxCodexVertex {
       field.value = val;
 
       // existing logic stays
-      if (node.isGetterNode && field.key === "var") {
+      if(node.isGetterNode && field.key === "var") {
         this.notifyVariableChanged("object", val);
       }
 
@@ -1996,7 +1993,7 @@ export default class FluxCodexVertex {
 
     // 2️⃣ Now assign handlers
     input.onkeydown = e => {
-      if (e.key === "Enter") {
+      if(e.key === "Enter") {
         e.preventDefault();
         saveInputValue();
       }
@@ -2005,10 +2002,10 @@ export default class FluxCodexVertex {
     // console.log("TEST saveInputValue")
     input.onblur = () => saveInputValue();
 
-    if (node.title === "Get Sub Object" && field.key === "path") {
+    if(node.title === "Get Sub Object" && field.key === "path") {
       input.oninput = () => {
         const link = this.getConnectedSource(node.id, "object");
-        if (!link?.node?.isGetterNode) return;
+        if(!link?.node?.isGetterNode) return;
 
         const varField = link.node.fields?.find(f => f.key === "var");
         const varName = varField?.value;
@@ -2041,8 +2038,8 @@ export default class FluxCodexVertex {
 
         // 🔹 2. Only rebuild pins if target is an object
         node.outputs = node.outputs.filter(p => p.type === "action"); // clear old object pins
-        if (target && typeof target === "object") {
-          for (const k in target) {
+        if(target && typeof target === "object") {
+          for(const k in target) {
             node.outputs.push({
               name: k,
               type: this.detectType(target[k]),
@@ -2061,13 +2058,13 @@ export default class FluxCodexVertex {
   }
 
   resolvePath(obj, path) {
-    if (!obj || !path) return obj; // if no path, return the root object
+    if(!obj || !path) return obj; // if no path, return the root object
 
     const parts = path.split(".").filter(p => p.length);
     let current = obj;
 
-    for (const part of parts) {
-      if (current && typeof current === "object" && part in current) {
+    for(const part of parts) {
+      if(current && typeof current === "object" && part in current) {
         current = current[part];
       } else {
         return undefined; // path not found
@@ -2077,13 +2074,13 @@ export default class FluxCodexVertex {
   }
 
   resolveAccessObject(accessObject, objectName) {
-    if (!accessObject) return null;
+    if(!accessObject) return null;
     // case 1: array [{name, ...}]
-    if (Array.isArray(accessObject)) {
+    if(Array.isArray(accessObject)) {
       return accessObject.find(o => o.name === objectName) || null;
     }
     // case 2: dictionary {player: obj}
-    if (typeof accessObject === "object") {
+    if(typeof accessObject === "object") {
       return accessObject[objectName] || null;
     }
     return null;
@@ -2091,10 +2088,10 @@ export default class FluxCodexVertex {
 
   adaptNodeToAccessMethod(node, objectName, methodName) {
     const obj = this.accessObject.find(o => o.name === objectName);
-    if (!obj) return;
+    if(!obj) return;
 
     const method = obj[methodName];
-    if (typeof method !== "function") return;
+    if(typeof method !== "function") return;
 
     const args = this.getArgNames(method);
 
@@ -2103,7 +2100,7 @@ export default class FluxCodexVertex {
 
     args.forEach(arg => node.inputs.push({name: arg, type: "value"}));
 
-    if (this.hasReturn(method)) {
+    if(this.hasReturn(method)) {
       node.outputs.push({name: "return", type: "value"});
     }
 
@@ -2120,9 +2117,9 @@ export default class FluxCodexVertex {
     const n = this.nodes[nodeId];
     // if(n._listenerAttached) return;
     // console.log('activateEventNode 1????')
-    if (n.title === "On Target Position Reach") {
+    if(n.title === "On Target Position Reach") {
       const pos = this.getValue(nodeId, "position");
-      if (!pos) return;
+      if(!pos) return;
       pos.onTargetPositionReach = () => {
         console.log("real onTargetPositionReach called");
         this.enqueueOutputs(n, "exec");
@@ -2132,11 +2129,11 @@ export default class FluxCodexVertex {
   }
 
   _executeAttachedMethod(n) {
-    if (n.attachedMethod) {
+    if(n.attachedMethod) {
       const method = this.methodsManager.methodsContainer.find(
         m => m.name === n.attachedMethod
       );
-      if (method) {
+      if(method) {
         const fn = this.methodsManager.compileFunction(method.code);
         const args = this.getArgNames(fn).map(argName =>
           this.getValue(n.id, argName)
@@ -2144,17 +2141,17 @@ export default class FluxCodexVertex {
         let result;
         try {
           result = fn(...args);
-        } catch (err) {
+        } catch(err) {
           console.error("User method error:", err);
         }
-        if (this.hasReturn(fn)) n._returnCache = result;
+        if(this.hasReturn(fn)) n._returnCache = result;
       }
     }
   }
 
   getValue(nodeId, pinName, visited = new Set()) {
     const node = this.nodes[nodeId];
-    if (!node || visited.has(nodeId)) return undefined;
+    if(!node || visited.has(nodeId)) return undefined;
     visited.add(nodeId);
 
     console.log(
@@ -2167,7 +2164,7 @@ export default class FluxCodexVertex {
     );
 
     // Block IF condition evaluation outside exec
-    if (
+    if(
       node.title === "if" &&
       pinName === "condition" &&
       this._execContext !== nodeId
@@ -2178,18 +2175,18 @@ export default class FluxCodexVertex {
       return undefined;
     }
 
-    if (node.isGetterNode) {
-      if (node._returnCache === undefined) {
+    if(node.isGetterNode) {
+      if(node._returnCache === undefined) {
         this.triggerNode(node.id); // populate _returnCache
       }
 
       let value = node._returnCache;
 
       // Optional: parse string to array
-      if (typeof value === "string") {
+      if(typeof value === "string") {
         try {
           value = JSON.parse(value);
-        } catch (e) {}
+        } catch(e) {}
       }
       console.warn(`  nodeId: ${nodeId}  value: `, value);
       return value;
@@ -2197,19 +2194,19 @@ export default class FluxCodexVertex {
 
     // 1️⃣ Literal field
     const field = node.fields?.find(f => f.key === pinName);
-    if (field) return field.value;
+    if(field) return field.value;
 
     // 2️⃣ Linked input pin
     const link = this.links.find(
       l => l.to.node === nodeId && l.to.pin === pinName
     );
-    if (link) return this.getValue(link.from.node, link.from.pin, visited);
+    if(link) return this.getValue(link.from.node, link.from.pin, visited);
 
     // 3️⃣ Default input pin
     const inputPin = node.inputs?.find(p => p.name === pinName);
-    if (inputPin) return inputPin.default ?? 0;
+    if(inputPin) return inputPin.default ?? 0;
 
-    if (
+    if(
       node.title === "Get Scene Object" ||
       node.title === "Get Scene Animation"
     ) {
@@ -2217,21 +2214,21 @@ export default class FluxCodexVertex {
       // to make it reusable for any other priject
       console.log(
         "FUNC getValue , " +
-          "node.title :" +
-          node.title +
-          "," +
-          this.nodes[nodeId]._returnCache
+        "node.title :" +
+        node.title +
+        "," +
+        this.nodes[nodeId]._returnCache
       );
       const objName = node.fields[0].value;
       console.log(" objName is n.fields[0].value = " + node.fields[0].value);
       const obj = (node.accessObject || []).find(o => o.name === objName);
-      if (!obj) return undefined;
+      if(!obj) return undefined;
       const out = node.outputs.find(o => o.name === pinName);
-      if (!out) return undefined;
+      if(!out) return undefined;
       return obj[pinName]; // simple one-level property access
-    } else if (node.title === "Get Position") {
+    } else if(node.title === "Get Position") {
       const pos = this.getValue(nodeId, "position");
-      if (!pos) return undefined;
+      if(!pos) return undefined;
 
       node._returnCache = {
         x: pos.x,
@@ -2240,19 +2237,19 @@ export default class FluxCodexVertex {
       };
 
       return node._returnCache[pinName];
-    } else if (node.title === "Get Sub Object") {
+    } else if(node.title === "Get Sub Object") {
       return node._subCache; // simple, raw value
-    } else if (node.type === "forEach") {
+    } else if(node.type === "forEach") {
       console.log("getValue node.state?.item: ", node.state?.item);
       console.log("getValue node.state?.index: ", node.state?.index);
-      if (pinName === "item") return node.state?.item;
-      if (pinName === "index") return node.state?.index;
+      if(pinName === "item") return node.state?.item;
+      if(pinName === "index") return node.state?.index;
     }
 
     // 4️⃣ Dynamic output (computed node)
-    if (node.outputs?.some(o => o.name === pinName)) {
+    if(node.outputs?.some(o => o.name === pinName)) {
       const dynamicNodes = ["GenRandInt", "RandomFloat"];
-      if (
+      if(
         node._returnCache === undefined ||
         dynamicNodes.includes(node.title)
       ) {
@@ -2267,21 +2264,21 @@ export default class FluxCodexVertex {
   }
 
   updateValueDisplays() {
-    for (const id in this.nodes) {
+    for(const id in this.nodes) {
       const node = this.nodes[id];
-      if (!node.displayEl) continue;
+      if(!node.displayEl) continue;
 
-      if (node.title === "Print") {
+      if(node.title === "Print") {
         // assume first input pin is the value to print
         const pin = node.inputs?.[0];
-        if (!pin) continue;
+        if(!pin) continue;
 
         const val = this.getValue(node.id, pin.name);
-        if (val === undefined) {
+        if(val === undefined) {
           node.displayEl.textContent = "undefined";
-        } else if (typeof val === "object") {
+        } else if(typeof val === "object") {
           node.displayEl.textContent = JSON.stringify(val, null, 2);
-        } else if (typeof val === "number") {
+        } else if(typeof val === "number") {
           node.displayEl.textContent = val.toFixed(3);
         } else {
           node.displayEl.textContent = String(val);
@@ -2292,7 +2289,7 @@ export default class FluxCodexVertex {
 
   extractArgs(code) {
     const match = code.match(/function\s+[^(]*\(([^)]*)\)/);
-    if (!match) return [];
+    if(!match) return [];
 
     return match[1]
       .split(",")
@@ -2302,7 +2299,7 @@ export default class FluxCodexVertex {
 
   adaptDynamicFunction(node, fnName) {
     const fn = node.accessObject?.[fnName];
-    if (typeof fn !== "function") return;
+    if(typeof fn !== "function") return;
 
     // reset pins (KEEP exec)
     node.inputs = [{name: "exec", type: "action"}];
@@ -2315,7 +2312,7 @@ export default class FluxCodexVertex {
     });
 
     // return → output
-    if (this.hasReturn(fn)) {
+    if(this.hasReturn(fn)) {
       node.outputs.push({name: "return", type: "value"});
     }
 
@@ -2328,9 +2325,9 @@ export default class FluxCodexVertex {
   }
 
   invalidateVariableGetters(type, varName) {
-    for (const id in this.nodes) {
+    for(const id in this.nodes) {
       const n = this.nodes[id];
-      if (
+      if(
         n.category === "value" &&
         n.fields?.some(f => f.key === "var" && f.value === varName) &&
         n.title === `Get ${type[0].toUpperCase() + type.slice(1)}`
@@ -2342,21 +2339,21 @@ export default class FluxCodexVertex {
 
   triggerNode(nodeId) {
     const n = this.nodes[nodeId];
-    if (!n) return;
+    if(!n) return;
     this._execContext = nodeId;
 
     // Highlight node header
     const highlight = document.querySelector(
       `.node[data-id="${nodeId}"] .header`
     );
-    if (highlight) {
+    if(highlight) {
       highlight.style.filter = "brightness(1.5)";
       setTimeout(() => (highlight.style.filter = "none"), 200);
     }
 
     // console.log('TRIGGER - ForEach links:', this.links.filter(l => l.to.node === n.id));
 
-    if (n.title === "Get Sub Object") {
+    if(n.title === "Get Sub Object") {
       const obj = this.getValue(n.id, "object"); // root object
       const path = n.fields.find(f => f.key === "path")?.value;
       const target = this.resolvePath(obj, path);
@@ -2366,8 +2363,8 @@ export default class FluxCodexVertex {
       // n._subCache = {};
       // rebuild output pins only if object
       n.outputs = n.outputs.filter(p => p.type === "action"); // clear old
-      if (target && typeof target === "object") {
-        for (const k in target) {
+      if(target && typeof target === "object") {
+        for(const k in target) {
           n.outputs.push({
             name: k,
             type: this.detectType(target[k]),
@@ -2380,43 +2377,39 @@ export default class FluxCodexVertex {
 
       this.enqueueOutputs(n, "execOut");
       return;
-    } else if (n.type === "forEach") {
+    } else if(n.type === "forEach") {
       console.log(
         "TRIGGER - ForEach links:",
         this.links.filter(l => l.to.node === n.id)
       );
 
-      const arr2 = this.getValue(n.id, "array");
-      console.log("trigger < - > this.getValue(n.id, array) =  ", arr2);
       let arr;
-
-      // Prefer linked node output
-      const link = this.links.find(
-        l =>
-          l.to.node === n.id && (l.to.pin === "array" || l.to.pin === "result")
+      // Prefer linked node output l.to.pin === "array" || l.to.pin === "result" || l.to.pin === "var"
+      const link = this.links.find(l =>
+        l.to.node === n.id
       );
-      if (link) arr = this.getValue(link.from.node, link.from.pin);
+      if(link) arr = this.getValue(link.from.node, link.from.pin);
 
       console.log(
         "trigger < - >  this.getValue(link.from.node, link.from.pin); : ",
         arr
       );
       // Fallback to literal
-      if (arr === undefined) {
+      if(arr === undefined) {
         const inputPin = n.inputs?.find(p => p.name === "array");
         arr = inputPin?.default;
       }
 
-      if (typeof arr === "string") {
+      if(typeof arr === "string") {
         try {
           arr = JSON.parse(arr); // converts string to actual JS array
-        } catch (e) {
+        } catch(e) {
           console.warn("Failed to parse array string", arr);
           arr = []; // fallback
         }
       }
 
-      if (!Array.isArray(arr)) return;
+      if(!Array.isArray(arr)) return;
 
       arr.forEach((item, index) => {
         // update node runtime state
@@ -2446,7 +2439,7 @@ export default class FluxCodexVertex {
         .forEach(l => {
           this.triggerNode(l.to.node);
         });
-    } else if (n.title === "Get Array") {
+    } else if(n.title === "Get Array") {
       let arr;
 
       // 🔎 find input link
@@ -2465,11 +2458,11 @@ export default class FluxCodexVertex {
 
       // console.log('trigger < Get Array > link =  ', link)
 
-      if (link) {
+      if(link) {
         const fromNode = this.nodes[link.from.node];
 
         // 🔥 CRUCIAL PART
-        if (fromNode._returnCache === undefined) {
+        if(fromNode._returnCache === undefined) {
           console.log("[GetArray] triggering upstream node:", fromNode.id);
           this.triggerNode(fromNode.id);
         }
@@ -2489,13 +2482,13 @@ export default class FluxCodexVertex {
       return;
     }
 
-    if (n.isGetterNode) {
+    if(n.isGetterNode) {
       console.log(
         "on trigger n.isGetterNode  n._returnCache = ",
         n._returnCache
       );
       const varField = n.fields?.find(f => f.key === "var");
-      if (varField && varField.value) {
+      if(varField && varField.value) {
         const type = n.title.replace("Get ", "").toLowerCase();
         const value = this.getVariable(type, varField.value);
 
@@ -2505,11 +2498,11 @@ export default class FluxCodexVertex {
           n._returnCache
         );
         // Update visual label if exists
-        if (n.displayEl) {
-          if (type === "object") {
+        if(n.displayEl) {
+          if(type === "object") {
             n.displayEl.textContent =
               value !== undefined ? JSON.stringify(value) : "{}";
-          } else if (typeof value === "number") {
+          } else if(typeof value === "number") {
             n.displayEl.textContent = value.toFixed(3);
           } else {
             n.displayEl.textContent = String(value);
@@ -2521,12 +2514,12 @@ export default class FluxCodexVertex {
       return;
     }
 
-    if (n.title === "On Target Position Reach") {
+    if(n.title === "On Target Position Reach") {
       console.log("TEST TEST On Target Position Reach ", pos);
       // if(n._listenerAttached) return;
 
       const pos = this.getValue(nodeId, "position");
-      if (!pos) return;
+      if(!pos) return;
 
       // 🔥 subscribe to position updates
       // Attach listener (engine-agnostic)
@@ -2543,14 +2536,14 @@ export default class FluxCodexVertex {
     }
 
     // --- functionDinamic execution ---
-    if (n.category === "functions" && n.fn) {
+    if(n.category === "functions" && n.fn) {
       const args = n.inputs
         .filter(p => p.type !== "action")
         .map(p => this.getValue(n.id, p.name));
 
       const result = n.fn(...args);
 
-      if (this.hasReturn(n.fn)) {
+      if(this.hasReturn(n.fn)) {
         n._returnCache = result;
       }
 
@@ -2558,28 +2551,28 @@ export default class FluxCodexVertex {
       return;
     }
 
-    if (n.category === "event") {
+    if(n.category === "event") {
       this.enqueueOutputs(n, "exec");
       return;
     }
 
-    if (n.isVariableNode) {
+    if(n.isVariableNode) {
       const type = n.title.replace("Set ", "").toLowerCase();
       const varField = n.fields?.find(f => f.key === "var");
 
-      if (varField && varField.value) {
+      if(varField && varField.value) {
         const value = this.getValue(nodeId, "value");
         this.variables[type][varField.value] = {value};
 
         this.notifyVariableChanged(type, varField.value);
 
         // Update matching getter nodes instantly
-        for (const nodeId2 in this.nodes) {
+        for(const nodeId2 in this.nodes) {
           const node2 = this.nodes[nodeId2];
-          if (node2.isGetterNode) {
+          if(node2.isGetterNode) {
             const vf2 = node2.fields?.find(f => f.key === "var");
-            if (vf2 && vf2.value === varField.value && node2.displayEl) {
-              if (type === "object") {
+            if(vf2 && vf2.value === varField.value && node2.displayEl) {
+              if(type === "object") {
                 node2.displayEl.textContent = JSON.stringify(value);
               } else {
                 node2.displayEl.textContent =
@@ -2597,9 +2590,9 @@ export default class FluxCodexVertex {
       return;
     }
 
-    if (n.title === "Fetch") {
+    if(n.title === "Fetch") {
       const url = this.getValue(nodeId, "url");
-      if (!url) {
+      if(!url) {
         console.warn("[Fetch] URL missing");
         this.enqueueOutputs(n, "error");
         return;
@@ -2614,10 +2607,10 @@ export default class FluxCodexVertex {
         headers,
       };
 
-      if (body && method !== "GET") {
+      if(body && method !== "GET") {
         options.body = typeof body === "string" ? body : JSON.stringify(body);
 
-        if (!headers["Content-Type"]) {
+        if(!headers["Content-Type"]) {
           headers["Content-Type"] = "application/json";
         }
       }
@@ -2642,18 +2635,18 @@ export default class FluxCodexVertex {
     // -----------------------------
     // Action / Print / Timer Nodes
     // -----------------------------
-    if (["action", "actionprint", "timer"].includes(n.category)) {
-      if (n.attachedMethod) this._executeAttachedMethod(n);
+    if(["action", "actionprint", "timer"].includes(n.category)) {
+      if(n.attachedMethod) this._executeAttachedMethod(n);
 
-      if (n.title === "Print") {
+      if(n.title === "Print") {
         const label = n.fields?.find(f => f.key === "label")?.value || "Print:";
         let val;
 
         const link = this.getConnectedSource(nodeId, "value");
-        if (link) {
+        if(link) {
           const fromNode = link.node;
           const fromPin = link.pin;
-          if (
+          if(
             fromNode._subCache &&
             typeof fromNode._subCache === "object" &&
             fromPin in fromNode._subCache
@@ -2666,10 +2659,10 @@ export default class FluxCodexVertex {
           val = this.getValue(nodeId, "value");
         }
 
-        if (n.displayEl) {
-          if (typeof val === "object") {
+        if(n.displayEl) {
+          if(typeof val === "object") {
             n.displayEl.textContent = JSON.stringify(val);
-          } else if (typeof val === "number") {
+          } else if(typeof val === "number") {
             n.displayEl.textContent = val.toFixed(3);
           } else {
             n.displayEl.textContent = String(val);
@@ -2678,7 +2671,7 @@ export default class FluxCodexVertex {
 
         console.log(`[Print] ${label}`, val);
         this.log(`> ${label}`, val);
-      } else if (n.title === "SetTimeout") {
+      } else if(n.title === "SetTimeout") {
         const delay = +n.fields?.find(f => f.key === "delay")?.value || 1000;
         setTimeout(() => this.enqueueOutputs(n, "execOut"), delay);
         return;
@@ -2691,16 +2684,16 @@ export default class FluxCodexVertex {
     // -----------------------------
     // IF Node
     // -----------------------------
-    if (n.category === "logic" && n.title === "if") {
+    if(n.category === "logic" && n.title === "if") {
       const condition = Boolean(this.getValue(nodeId, "condition"));
       this.enqueueOutputs(n, condition ? "true" : "false");
       this._execContext = null;
       return;
     }
 
-    if (n.title === "Set Position") {
+    if(n.title === "Set Position") {
       const pos = this.getValue(nodeId, "position");
-      if (pos?.setPosition) {
+      if(pos?.setPosition) {
         pos.setPosition(
           this.getValue(nodeId, "x"),
           this.getValue(nodeId, "y"),
@@ -2709,23 +2702,23 @@ export default class FluxCodexVertex {
       }
       this.enqueueOutputs(n, "execOut");
       return;
-    } else if (n.title === "Translate By X") {
+    } else if(n.title === "Translate By X") {
       const pos = this.getValue(nodeId, "position");
-      if (pos?.translateByX) {
+      if(pos?.translateByX) {
         pos.translateByX(this.getValue(nodeId, "x"));
       }
       this.enqueueOutputs(n, "execOut");
       return;
-    } else if (n.title === "Translate By Y") {
+    } else if(n.title === "Translate By Y") {
       const pos = this.getValue(nodeId, "position");
-      if (pos?.translateByY) {
+      if(pos?.translateByY) {
         pos.translateByX(this.getValue(nodeId, "y"));
       }
       this.enqueueOutputs(n, "execOut");
       return;
-    } else if (n.title === "Translate By Z") {
+    } else if(n.title === "Translate By Z") {
       const pos = this.getValue(nodeId, "position");
-      if (pos?.translateByZ) {
+      if(pos?.translateByZ) {
         pos.translateByX(this.getValue(nodeId, "z"));
       }
       this.enqueueOutputs(n, "execOut");
@@ -2735,10 +2728,10 @@ export default class FluxCodexVertex {
     // -----------------------------
     // Math / Value / Compare Nodes
     // -----------------------------
-    if (["math", "value", "compare"].includes(n.category)) {
+    if(["math", "value", "compare"].includes(n.category)) {
       let result;
 
-      switch (n.title) {
+      switch(n.title) {
         case "Add":
           result = this.getValue(nodeId, "a") + this.getValue(nodeId, "b");
           break;
@@ -2788,7 +2781,7 @@ export default class FluxCodexVertex {
       }
 
       n._returnCache = result;
-      if (n.displayEl)
+      if(n.displayEl)
         n.displayEl.textContent =
           typeof result === "number" ? result.toFixed(3) : String(result);
     }
@@ -2800,7 +2793,7 @@ export default class FluxCodexVertex {
     const link = this.links.find(
       l => l.to.node === nodeId && l.to.pin === inputName
     );
-    if (!link) return null;
+    if(!link) return null;
     return {
       node: this.nodes[link.from.node],
       pin: link.from.pin,
@@ -2832,8 +2825,8 @@ export default class FluxCodexVertex {
 
   getVariable(type, key) {
     const entry = this.variables[type]?.[key];
-    if (entry === undefined) return undefined;
-    if (entry && typeof entry === "object" && "value" in entry) {
+    if(entry === undefined) return undefined;
+    if(entry && typeof entry === "object" && "value" in entry) {
       return entry.value;
     }
     return entry;
@@ -2857,17 +2850,17 @@ export default class FluxCodexVertex {
 
   deleteNode(nodeId) {
     const node = this.nodes[nodeId];
-    if (!node) return;
+    if(!node) return;
 
     // 1) Remove links related to this node
     this.links = this.links.filter(link => {
       // link.from = { node, pin }
       // link.to   = { node, pin }
 
-      if (link.from.node === nodeId || link.to.node === nodeId) {
+      if(link.from.node === nodeId || link.to.node === nodeId) {
         // Also remove DOM SVG line
         const dom = document.getElementById(link.id);
-        if (dom) dom.remove();
+        if(dom) dom.remove();
 
         return false; // remove from array
       }
@@ -2876,7 +2869,7 @@ export default class FluxCodexVertex {
 
     // 2) Remove the node DOM itself
     const dom = this.board.querySelector(`[data-id="${nodeId}"]`);
-    if (dom) dom.remove();
+    if(dom) dom.remove();
 
     // 3) Remove from internal registry
     delete this.nodes[nodeId];
@@ -2899,19 +2892,19 @@ export default class FluxCodexVertex {
   }
 
   handleMouseMove(e) {
-    if (this.state.draggingNode) {
+    if(this.state.draggingNode) {
       const el = this.state.draggingNode;
       const newX = e.clientX - this.state.dragOffset[0];
       const newY = e.clientY - this.state.dragOffset[1];
       el.style.left = newX + "px";
       el.style.top = newY + "px";
       const id = el.dataset.id;
-      if (this.nodes[id]) {
+      if(this.nodes[id]) {
         this.nodes[id].x = newX;
         this.nodes[id].y = newY;
       }
       this.updateLinks();
-    } else if (this.state.panning) {
+    } else if(this.state.panning) {
       const dx = e.clientX - this.state.panStart[0],
         dy = e.clientY - this.state.panStart[1];
       this.state.pan[0] += dx;
@@ -2923,7 +2916,7 @@ export default class FluxCodexVertex {
   }
 
   handleMouseUp() {
-    if (this.state.draggingNode)
+    if(this.state.draggingNode)
       setTimeout(() => this.updateValueDisplays(), 0);
     this.state.draggingNode = null;
     this.state.panning = false;
@@ -2931,7 +2924,7 @@ export default class FluxCodexVertex {
   }
 
   handleBoardWrapMouseDown(e) {
-    if (!e.target.closest(".node")) {
+    if(!e.target.closest(".node")) {
       this.state.panning = true;
       this.state.panStart = [e.clientX, e.clientY];
       document.body.style.cursor = "grabbing";
@@ -2940,12 +2933,12 @@ export default class FluxCodexVertex {
   }
 
   updateLinks() {
-    while (this.svg.firstChild) this.svg.removeChild(this.svg.firstChild);
+    while(this.svg.firstChild) this.svg.removeChild(this.svg.firstChild);
     const bRect = this.board.getBoundingClientRect();
     this.links.forEach(l => {
       const fromDot = this._getPinDot(l.from.node, l.from.pin, true);
       const toDot = this._getPinDot(l.to.node, l.to.pin, false);
-      if (!fromDot || !toDot) return;
+      if(!fromDot || !toDot) return;
       const fRect = fromDot.getBoundingClientRect(),
         tRect = toDot.getBoundingClientRect();
       const x1 = fRect.left - bRect.left + 6,
@@ -3067,14 +3060,14 @@ export default class FluxCodexVertex {
 
     input.onchange = e => {
       const file = e.target.files[0];
-      if (!file) return;
+      if(!file) return;
 
       const reader = new FileReader();
       reader.onload = () => {
         try {
           const data = JSON.parse(reader.result);
           this._loadFromBundle(data);
-        } catch (err) {
+        } catch(err) {
           console.error("Invalid JSON file", err);
         }
       };
@@ -3087,11 +3080,11 @@ export default class FluxCodexVertex {
 
   init() {
     const saved = localStorage.getItem(FluxCodexVertex.SAVE_KEY);
-    if (saved) {
+    if(saved) {
       try {
         const data = JSON.parse(saved);
         console.log("data.variables", data.variables);
-        if (data.variables) {
+        if(data.variables) {
           this.variables = data.variables;
           this._refreshVarsList(this._varsPopup.children[1]);
         }
@@ -3105,7 +3098,7 @@ export default class FluxCodexVertex {
           const domEl = this.createNodeDOM(spec);
           this.board.appendChild(domEl);
 
-          if (
+          if(
             (spec.category === "value" && spec.title !== "GenRandInt") ||
             spec.category === "math" ||
             spec.title === "Print"
@@ -3114,7 +3107,7 @@ export default class FluxCodexVertex {
           }
 
           // Only function nodes get dynamic pins updated
-          if (spec.category === "action" && spec.title === "Function") {
+          if(spec.category === "action" && spec.title === "Function") {
             this.updateNodeDOM(spec.id);
           }
         });
@@ -3122,7 +3115,7 @@ export default class FluxCodexVertex {
         this.updateValueDisplays();
         this.log("Restored graph.");
         return;
-      } catch (e) {
+      } catch(e) {
         console.error("Failed to load graph from storage:", e);
       }
     }
@@ -3134,7 +3127,7 @@ export default class FluxCodexVertex {
       const domEl = this.createNodeDOM(spec);
       this.board.appendChild(domEl);
 
-      if (
+      if(
         (spec.category === "value" && spec.title !== "GenRandInt") ||
         spec.category === "math" ||
         spec.title === "Print"
@@ -3143,7 +3136,7 @@ export default class FluxCodexVertex {
       }
 
       // Only function nodes get dynamic pins updated
-      if (spec.category === "action" && spec.title === "Function") {
+      if(spec.category === "action" && spec.title === "Function") {
         this.updateNodeDOM(spec.id);
       }
     });

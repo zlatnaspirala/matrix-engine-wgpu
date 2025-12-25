@@ -17119,6 +17119,7 @@ var FluxCodexVertex = class _FluxCodexVertex {
         inputs: [
           { name: "exec", type: "action" },
           { name: "array", type: "any" }
+          // semantic array pin
         ],
         outputs: [
           { name: "loop", type: "action" },
@@ -17135,16 +17136,14 @@ var FluxCodexVertex = class _FluxCodexVertex {
         y: y2,
         fields: [
           { key: "array", value: initialArray.slice() }
-          // literal array
         ],
         inputs: [
           { name: "exec", type: "action" },
-          // {name: 'array', type: 'any', default: initialArray.slice()}  // input literal or connected
-          { name: "result", type: "object" }
+          { name: "array", type: "any" }
         ],
         outputs: [
-          { name: "array", type: "any" },
-          { name: "execOut", type: "action" }
+          { name: "execOut", type: "action" },
+          { name: "array", type: "any" }
         ],
         _returnCache: initialArray.slice()
       })
@@ -17540,11 +17539,9 @@ var FluxCodexVertex = class _FluxCodexVertex {
         "TRIGGER - ForEach links:",
         this.links.filter((l) => l.to.node === n.id)
       );
-      const arr2 = this.getValue(n.id, "array");
-      console.log("trigger < - > this.getValue(n.id, array) =  ", arr2);
       let arr;
       const link = this.links.find(
-        (l) => l.to.node === n.id && (l.to.pin === "array" || l.to.pin === "result")
+        (l) => l.to.node === n.id
       );
       if (link) arr = this.getValue(link.from.node, link.from.pin);
       console.log(
