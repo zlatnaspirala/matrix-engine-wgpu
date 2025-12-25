@@ -15705,15 +15705,6 @@ var FluxCodexVertex = class _FluxCodexVertex {
       }
     });
     this.createContextMenu();
-    document.addEventListener("fluxcodex.input.change", (e) => {
-      console.log("fluxcodex.input.change");
-      const { nodeId, field, value } = e.detail;
-      const node2 = this.nodes.find((n) => n.id === nodeId);
-      if (!node2) return;
-      if (node2.type !== "getSubObject") return;
-      this.handleGetSubObject(node2, value);
-      if (field !== "path") return;
-    });
   }
   createContextMenu() {
     let CMenu = document.createElement("div");
@@ -17110,20 +17101,6 @@ var FluxCodexVertex = class _FluxCodexVertex {
       }
     }
   }
-  // adaptSubObjectPins(node, obj) {
-  //   if(!obj || typeof obj !== 'object') return;
-  //   // Keep only action pins, remove old property pins
-  //   node.outputs = node.outputs.filter(p => p.type === 'action');
-  //   // Add pins for object keys
-  //   for(const key of Object.keys(obj)) {
-  //     node.outputs.push({
-  //       name: key,
-  //       type: this.detectType(obj[key])
-  //     });
-  //   }
-  //   // Mark as pins built
-  //   node._pinsBuilt = true;
-  // }
   adaptSubObjectPins(node2, obj) {
     node2.outputs = node2.outputs.filter((p) => p.type === "action");
     if (obj && typeof obj === "object") {
@@ -17195,14 +17172,6 @@ var FluxCodexVertex = class _FluxCodexVertex {
         const rootObj = this.variables?.object?.[varName];
         const path = input.value;
         const target = this.resolvePath(rootObj, path);
-        console.log(
-          "[PATH INPUT CHANGE]",
-          node2.id,
-          "path:",
-          path,
-          "target:",
-          target
-        );
         node2._subCache = {};
         node2._subCache = target;
         node2.outputs = node2.outputs.filter((p) => p.type === "action");
@@ -17256,10 +17225,7 @@ var FluxCodexVertex = class _FluxCodexVertex {
     if (this.hasReturn(method)) {
       node2.outputs.push({ name: "return", type: "value" });
     }
-    node2._access = {
-      objectName,
-      methodName
-    };
+    node2._access = { objectName, methodName };
     this.updateNodeDOM(node2.id);
   }
   activateEventNode(nodeId) {
@@ -17298,18 +17264,8 @@ var FluxCodexVertex = class _FluxCodexVertex {
     const node2 = this.nodes[nodeId];
     if (!node2 || visited.has(nodeId)) return void 0;
     visited.add(nodeId);
-    console.log(
-      "getValue -> nodeId:",
-      nodeId,
-      "title:",
-      node2.title,
-      "pin:",
-      pinName
-    );
     if (node2.title === "if" && pinName === "condition" && this._execContext !== nodeId) {
-      console.warn(
-        `[GET] Blocked IF condition outside exec for node ${nodeId}`
-      );
+      console.warn(`[GET] Blocked IF condition outside exec for node ${nodeId}`);
       return void 0;
     }
     if (node2.isGetterNode) {
@@ -17321,9 +17277,9 @@ var FluxCodexVertex = class _FluxCodexVertex {
         try {
           value = JSON.parse(value);
         } catch (e) {
+          console.warn("[getValue][json parse err]:", e);
         }
       }
-      console.warn(`  nodeId: ${nodeId}  value: `, value);
       return value;
     }
     const field = node2.fields?.find((f) => f.key === pinName);
@@ -17334,7 +17290,6 @@ var FluxCodexVertex = class _FluxCodexVertex {
     if (inputPin) return inputPin.default ?? 0;
     if (node2.title === "Get Scene Object" || node2.title === "Get Scene Animation") {
       const objName = node2.fields[0].value;
-      console.log(" objName is n.fields[0].value = " + node2.fields[0].value);
       const obj = (node2.accessObject || []).find((o) => o.name === objName);
       if (!obj) return void 0;
       const out = node2.outputs.find((o) => o.name === pinName);
@@ -17462,15 +17417,11 @@ var FluxCodexVertex = class _FluxCodexVertex {
       if (!Array.isArray(arr)) return;
       arr.forEach((item, index) => {
         n.state = { item, index };
-        this.links.filter(
-          (l) => l.type === "action" && l.from.node === n.id && l.from.pin === "loop"
-        ).forEach((l) => {
+        this.links.filter((l) => l.type === "action" && l.from.node === n.id && l.from.pin === "loop").forEach((l) => {
           this.triggerNode(l.to.node);
         });
       });
-      this.links.filter(
-        (l) => l.type === "action" && l.from.node === n.id && l.from.pin === "completed"
-      ).forEach((l) => {
+      this.links.filter((l) => l.type === "action" && l.from.node === n.id && l.from.pin === "completed").forEach((l) => {
         this.triggerNode(l.to.node);
       });
     } else if (n.title === "Get Array") {
@@ -17615,8 +17566,7 @@ var FluxCodexVertex = class _FluxCodexVertex {
             n.displayEl.textContent = String(val);
           }
         }
-        console.log(`[Print] ${label}`, val);
-        this.log(`> ${label}`, val);
+        console.info(`[Print] ${label}`, val);
       } else if (n.title === "SetTimeout") {
         const delay = +n.fields?.find((f) => f.key === "delay")?.value || 1e3;
         setTimeout(() => this.enqueueOutputs(n, "execOut"), delay);
@@ -18199,6 +18149,14 @@ var EditorHud = class {
            <p>Hide Editor UI</p>
            <small>Show editor - press F4 \u2328\uFE0F</small>
         </div>
+        <div id="bg-transparent" class="drop-item">
+           <p>Background transparent</p>
+           <small>Fancy style</small>
+        </div>
+        <div id="bg-tradicional" class="drop-item">
+           <p>Background tradicional</p>
+           <small>Old school</small>
+        </div>
         <div id="fullScreenBtn" class="drop-item">
          <span>FullScreen</span>
          <small>Exit - press F11 \u2328\uFE0F</small>
@@ -18238,6 +18196,12 @@ var EditorHud = class {
       this.assetsBox.style.display = "none";
       this.sceneProperty.style.display = "none";
       this.sceneContainer.style.display = "none";
+    });
+    byId("bg-transparent").addEventListener("click", () => {
+      byId("boardWrap").style.backgroundImage = "none";
+    });
+    byId("bg-tradicional").addEventListener("click", () => {
+      byId("boardWrap").style.backgroundImage = 'url("res/icons/editor/chatgpt-gen-bg.png")';
     });
     if (byId("stop-watch")) byId("stop-watch").addEventListener("click", () => {
       document.dispatchEvent(new CustomEvent("stop-watch", {

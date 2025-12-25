@@ -99,16 +99,16 @@ export default class FluxCodexVertex {
 
     this.createContextMenu();
 
-    // not in use
-    document.addEventListener("fluxcodex.input.change", e => {
-      console.log('fluxcodex.input.change')
-      const {nodeId, field, value} = e.detail;
-      const node = this.nodes.find(n => n.id === nodeId);
-      if(!node) return;
-      if(node.type !== "getSubObject") return;
-      this.handleGetSubObject(node, value);
-      if(field !== "path") return;
-    });
+    // not in use - alternative for refresh getters/ no exec nodes
+    // document.addEventListener("fluxcodex.input.change", e => {
+    //   console.log('fluxcodex.input.change')
+    //   const {nodeId, field, value} = e.detail;
+    //   const node = this.nodes.find(n => n.id === nodeId);
+    //   if(!node) return;
+    //   if(node.type !== "getSubObject") return;
+    //   this.handleGetSubObject(node, value);
+    //   if(field !== "path") return;
+    // });
   }
 
   createContextMenu() {
@@ -236,7 +236,6 @@ export default class FluxCodexVertex {
     n._returnCache = entry ? entry.value : type === "number" ? 0
       : type === "boolean" ? false : type === "string" ? "" : type === "object"
         ? {} : undefined;
-    // console.log("[EVALUATE GETTER]", n.id, "type:", type, "key:", key, "value:", n._returnCache);
   }
 
   notifyVariableChanged(type, key) {
@@ -678,7 +677,6 @@ export default class FluxCodexVertex {
     let fromNode = this.nodes[from.node];
 
     if(toNode && toNode.category === "functions" && toNode.code && to.pin === "reference") {
-      // console.log("TEST FUNC PIN ADAPT");
       const fnRef = this.getPinValue(fromNode, from.pin);
       if(typeof fnRef !== "function") return;
       toNode._fnRef = fnRef;
@@ -1709,8 +1707,8 @@ export default class FluxCodexVertex {
 
     const field = node.fields.find(f => f.key === "array");
     if(field) {
-      field.value = newValue; // update literal field
-      node._returnCache = newValue; // update cache
+      field.value = newValue;
+      node._returnCache = newValue;
     }
   }
 
@@ -1723,28 +1721,8 @@ export default class FluxCodexVertex {
     }
   }
 
-  // adaptSubObjectPins(node, obj) {
-  //   if(!obj || typeof obj !== 'object') return;
-
-  //   // Keep only action pins, remove old property pins
-  //   node.outputs = node.outputs.filter(p => p.type === 'action');
-
-  //   // Add pins for object keys
-  //   for(const key of Object.keys(obj)) {
-  //     node.outputs.push({
-  //       name: key,
-  //       type: this.detectType(obj[key])
-  //     });
-  //   }
-
-  //   // Mark as pins built
-  //   node._pinsBuilt = true;
-  // }
-
   adaptSubObjectPins(node, obj) {
-    // Keep only action pins
     node.outputs = node.outputs.filter(p => p.type === "action");
-
     if(obj && typeof obj === "object") {
       for(const key of Object.keys(obj)) {
         node.outputs.push({
@@ -1753,7 +1731,6 @@ export default class FluxCodexVertex {
         });
       }
     }
-    // No pins for primitive values (string/number/boolean)
   }
 
   detectType(val) {
@@ -1776,15 +1753,13 @@ export default class FluxCodexVertex {
       input.style.cursor = "default";
     }
 
-    // 1️⃣ Define save function first
     const saveInputValue = () => {
       let val;
-
       if(field.type === "object") {
         try {
           val = JSON.parse(input.value);
         } catch {
-          return; // 🚫 invalid JSON → DO NOT overwrite
+          return;
         }
       } else {
         val = input.value;
@@ -1797,7 +1772,7 @@ export default class FluxCodexVertex {
         this.notifyVariableChanged("object", val);
       }
 
-      // ✅ DISPATCH (NEW)
+      // ? not tested in last ver
       document.dispatchEvent(
         new CustomEvent("fluxcodex.field.change", {
           detail: {
@@ -1811,7 +1786,6 @@ export default class FluxCodexVertex {
       );
     };
 
-    // 2️⃣ Now assign handlers
     input.onkeydown = e => {
       if(e.key === "Enter") {
         e.preventDefault();
@@ -1819,7 +1793,6 @@ export default class FluxCodexVertex {
       }
     };
 
-    // console.log("TEST saveInputValue")
     input.onblur = () => saveInputValue();
 
     if(node.title === "Get Sub Object" && field.key === "path") {
@@ -1833,30 +1806,8 @@ export default class FluxCodexVertex {
 
         const path = input.value;
         const target = this.resolvePath(rootObj, path);
-
-        console.log(
-          "[PATH INPUT CHANGE]",
-          node.id,
-          "path:",
-          path,
-          "target:",
-          target
-        );
-
-        // 🔹 1. Cache for pin creation
         node._subCache = {};
-        // if(target && typeof target === 'object') {
-        //   // store object keys
-        //   for(const k in target) node._subCache[k] = target[k];
-        // } else {
-        //   // store primitive value under "value"
-        //   node._subCache['value'] = target;
-        // }
-
-        // 🔥 DIRECTLY SAVE target
         node._subCache = target;
-
-        // 🔹 2. Only rebuild pins if target is an object
         node.outputs = node.outputs.filter(p => p.type === "action"); // clear old object pins
         if(target && typeof target === "object") {
           for(const k in target) {
@@ -1869,8 +1820,7 @@ export default class FluxCodexVertex {
 
         node._needsRebuild = false;
         node._pinsBuilt = true;
-
-        this.updateNodeDOM(node.id); // refresh visuals
+        this.updateNodeDOM(node.id);
       };
     }
 
@@ -1878,16 +1828,14 @@ export default class FluxCodexVertex {
   }
 
   resolvePath(obj, path) {
-    if(!obj || !path) return obj; // if no path, return the root object
-
+    if(!obj || !path) return obj;
     const parts = path.split(".").filter(p => p.length);
     let current = obj;
-
     for(const part of parts) {
       if(current && typeof current === "object" && part in current) {
         current = current[part];
       } else {
-        return undefined; // path not found
+        return undefined;
       }
     }
     return current;
@@ -1895,11 +1843,9 @@ export default class FluxCodexVertex {
 
   resolveAccessObject(accessObject, objectName) {
     if(!accessObject) return null;
-    // case 1: array [{name, ...}]
     if(Array.isArray(accessObject)) {
       return accessObject.find(o => o.name === objectName) || null;
     }
-    // case 2: dictionary {player: obj}
     if(typeof accessObject === "object") {
       return accessObject[objectName] || null;
     }
@@ -1924,19 +1870,12 @@ export default class FluxCodexVertex {
       node.outputs.push({name: "return", type: "value"});
     }
 
-    node._access = {
-      objectName,
-      methodName,
-    };
-
+    node._access = {objectName, methodName};
     this.updateNodeDOM(node.id);
   }
 
   activateEventNode(nodeId) {
-    // console.log('activateEventNode ????')
     const n = this.nodes[nodeId];
-    // if(n._listenerAttached) return;
-    // console.log('activateEventNode 1????')
     if(n.title === "On Target Position Reach") {
       const pos = this.getValue(nodeId, "position");
       if(!pos) return;
@@ -1974,41 +1913,25 @@ export default class FluxCodexVertex {
     if(!node || visited.has(nodeId)) return undefined;
     visited.add(nodeId);
 
-    console.log(
-      "getValue -> nodeId:",
-      nodeId,
-      "title:",
-      node.title,
-      "pin:",
-      pinName
-    );
-
-    // Block IF condition evaluation outside exec
-    if(
-      node.title === "if" &&
-      pinName === "condition" &&
-      this._execContext !== nodeId
-    ) {
-      console.warn(
-        `[GET] Blocked IF condition outside exec for node ${nodeId}`
-      );
+    if(node.title === "if" && pinName === "condition" && this._execContext !== nodeId) {
+      console.warn(`[GET] Blocked IF condition outside exec for node ${nodeId}`);
       return undefined;
     }
 
     if(node.isGetterNode) {
       if(node._returnCache === undefined) {
-        this.triggerNode(node.id); // populate _returnCache
+        this.triggerNode(node.id);
       }
 
       let value = node._returnCache;
-
       // Optional: parse string to array
       if(typeof value === "string") {
         try {
           value = JSON.parse(value);
-        } catch(e) {}
+        } catch(e) {
+          console.warn('[getValue][json parse err]:', e);
+        }
       }
-      console.warn(`  nodeId: ${nodeId}  value: `, value);
       return value;
     }
 
@@ -2022,7 +1945,6 @@ export default class FluxCodexVertex {
 
     if(node.title === "Get Scene Object" || node.title === "Get Scene Animation") {
       const objName = node.fields[0].value;
-      console.log(" objName is n.fields[0].value = " + node.fields[0].value);
       const obj = (node.accessObject || []).find(o => o.name === objName);
       if(!obj) return undefined;
       const out = node.outputs.find(o => o.name === pinName);
@@ -2031,13 +1953,11 @@ export default class FluxCodexVertex {
     } else if(node.title === "Get Position") {
       const pos = this.getValue(nodeId, "position");
       if(!pos) return undefined;
-
       node._returnCache = {
         x: pos.x,
         y: pos.y,
         z: pos.z,
       };
-
       return node._returnCache[pinName];
     } else if(node.title === "Get Sub Object") {
       return node._subCache;
@@ -2129,10 +2049,10 @@ export default class FluxCodexVertex {
     }
 
     if(n.title === "Get Sub Object") {
-      const obj = this.getValue(n.id, "object"); // root object
+      const obj = this.getValue(n.id, "object");
       const path = n.fields.find(f => f.key === "path")?.value;
       const target = this.resolvePath(obj, path);
-      n.outputs = n.outputs.filter(p => p.type === "action"); // clear old
+      n.outputs = n.outputs.filter(p => p.type === "action");
       if(target && typeof target === "object") {
         for(const k in target) {
           n.outputs.push({
@@ -2169,20 +2089,12 @@ export default class FluxCodexVertex {
       arr.forEach((item, index) => {
         // update node runtime state!
         n.state = {item, index};
-
-        this.links.filter(l =>
-          l.type === "action" && l.from.node === n.id &&
-          l.from.pin === "loop"
-        )
-          .forEach(l => {
-            this.triggerNode(l.to.node);
-          });
+        this.links.filter(l => l.type === "action" && l.from.node === n.id && l.from.pin === "loop").forEach(l => {
+          this.triggerNode(l.to.node);
+        });
       });
       // completed pin (once)
-      this.links.filter(l =>
-        l.type === "action" && l.from.node === n.id &&
-        l.from.pin === "completed"
-      )
+      this.links.filter(l => l.type === "action" && l.from.node === n.id && l.from.pin === "completed")
         .forEach(l => {this.triggerNode(l.to.node)});
     } else if(n.title === "Get Array") {
       let arr;
@@ -2202,9 +2114,7 @@ export default class FluxCodexVertex {
         // fallback to default literal
         arr = n.inputs?.find(p => p.name === "array")?.default ?? [];
       }
-      // console.log("[GetArray] resolved array:", arr);
       n._returnCache = Array.isArray(arr) ? arr : [];
-      // continue exec flow
       this.enqueueOutputs(n, "execOut");
       return;
     }
@@ -2236,7 +2146,6 @@ export default class FluxCodexVertex {
       const pos = this.getValue(nodeId, "position");
       if(!pos) return;
       // Attach listener (engine-agnostic)
-      // console.log("TEST TEST ", pos);
       pos.onTargetPositionReach = () => {
         this.triggerNode(n);
         this.enqueueOutputs(n, "exec");
@@ -2367,8 +2276,7 @@ export default class FluxCodexVertex {
           }
         }
 
-        console.log(`[Print] ${label}`, val);
-        this.log(`> ${label}`, val);
+        console.info(`[Print] ${label}`, val);
       } else if(n.title === "SetTimeout") {
         const delay = +n.fields?.find(f => f.key === "delay")?.value || 1000;
         setTimeout(() => this.enqueueOutputs(n, "execOut"), delay);

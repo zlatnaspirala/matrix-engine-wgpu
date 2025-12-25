@@ -225,6 +225,14 @@ export default class EditorHud {
            <p>Hide Editor UI</p>
            <small>Show editor - press F4 ⌨️</small>
         </div>
+        <div id="bg-transparent" class="drop-item">
+           <p>Background transparent</p>
+           <small>Fancy style</small>
+        </div>
+        <div id="bg-tradicional" class="drop-item">
+           <p>Background tradicional</p>
+           <small>Old school</small>
+        </div>
         <div id="fullScreenBtn" class="drop-item">
          <span>FullScreen</span>
          <small>Exit - press F11 ⌨️</small>
@@ -278,6 +286,14 @@ export default class EditorHud {
       this.sceneContainer.style.display = 'none';
     })
 
+    byId('bg-transparent').addEventListener('click', () => {
+      byId('boardWrap').style.backgroundImage = 'none';
+    })
+
+    byId('bg-tradicional').addEventListener('click', () => {
+      byId('boardWrap').style.backgroundImage = 'url("res/icons/editor/chatgpt-gen-bg.png")';
+    })
+    
     if(byId('stop-watch')) byId('stop-watch').addEventListener('click', () => {
       document.dispatchEvent(new CustomEvent('stop-watch', {
         detail: {}
