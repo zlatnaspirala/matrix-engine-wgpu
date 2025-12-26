@@ -1947,13 +1947,10 @@ export default class FluxCodexVertex {
       return undefined;
     }
 
-    console.warn(`[GET] GET VALUEexec for node ${nodeId}`);
-
     if(node.isGetterNode) {
       if(node._returnCache === undefined) {
         this.triggerNode(node.id);
       }
-
       let value = node._returnCache;
       // Optional: parse string to array
       if(typeof value === "string") {
@@ -2158,15 +2155,17 @@ export default class FluxCodexVertex {
       if(link) {
         const fromNode = this.nodes[link.from.node];
         if(fromNode._returnCache === undefined && fromNode._subCache === undefined) {
-
           this.triggerNode(fromNode.id);
         }
-        arr = fromNode._returnCache;
+        if(fromNode._returnCache) arr = fromNode._returnCache;
+        if(fromNode._subCache) arr = fromNode._subCache;
+
       } else {
         // fallback to default literal
         arr = n.inputs?.find(p => p.name === "array")?.default ?? [];
       }
-      n._returnCache = Array.isArray(arr) ? arr : [];
+      // make it fluid 
+      n._returnCache = Array.isArray(arr) ? arr : ( arr[link.from.pin] ? arr[link.from.pin] : [] );
       this.enqueueOutputs(n, "execOut");
       return;
     }

@@ -17297,7 +17297,6 @@ var FluxCodexVertex = class _FluxCodexVertex {
       console.warn(`[GET] Blocked IF condition outside exec for node ${nodeId}`);
       return void 0;
     }
-    console.warn(`[GET] GET VALUEexec for node ${nodeId}`);
     if (node2.isGetterNode) {
       if (node2._returnCache === void 0) {
         this.triggerNode(node2.id);
@@ -17469,11 +17468,12 @@ var FluxCodexVertex = class _FluxCodexVertex {
         if (fromNode._returnCache === void 0 && fromNode._subCache === void 0) {
           this.triggerNode(fromNode.id);
         }
-        arr = fromNode._returnCache;
+        if (fromNode._returnCache) arr = fromNode._returnCache;
+        if (fromNode._subCache) arr = fromNode._subCache;
       } else {
         arr = n.inputs?.find((p) => p.name === "array")?.default ?? [];
       }
-      n._returnCache = Array.isArray(arr) ? arr : [];
+      n._returnCache = Array.isArray(arr) ? arr : arr[link.from.pin] ? arr[link.from.pin] : [];
       this.enqueueOutputs(n, "execOut");
       return;
     }
