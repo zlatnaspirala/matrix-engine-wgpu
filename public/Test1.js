@@ -15705,6 +15705,15 @@ var FluxCodexVertex = class _FluxCodexVertex {
       }
     });
     this.createContextMenu();
+    document.addEventListener("fluxcodex.input.change", (e) => {
+      console.log("fluxcodex.input.change");
+      const { nodeId, field, value } = e.detail;
+      const node2 = this.nodes.find((n) => n.id === nodeId);
+      if (!node2) return;
+      if (node2.type !== "getSubObject") return;
+      this.handleGetSubObject(node2, value);
+      if (field !== "path") return;
+    });
   }
   createContextMenu() {
     let CMenu = document.createElement("div");
@@ -15937,13 +15946,13 @@ var FluxCodexVertex = class _FluxCodexVertex {
         if (type === "object") {
           input = document.createElement("textarea");
           input.value = JSON.stringify(this.variables[type][name] ?? {}, null, 2);
-          input.style.width = "120px";
+          input.style.width = "220px";
           input.style.height = "40px";
           input.style.webkitTextStrokeWidth = "0px";
         } else {
           input = document.createElement("input");
           input.value = this.variables[type][name] ?? "";
-          input.style.width = "60px";
+          input.style.width = "";
         }
         this._varInputs[`${type}.${name}`] = input;
         Object.assign(input.style, {
@@ -15984,7 +15993,17 @@ var FluxCodexVertex = class _FluxCodexVertex {
           else if (type === "string") this.createSetStringNode(name);
           else if (type === "object") this.createSetObjectNode(name);
         };
-        row.append(label, input, btnGet, btnSet);
+        const btnDel = document.createElement("button");
+        btnDel.innerText = "Del";
+        btnDel.classList.add("btnGetter");
+        btnDel.style.color = "#ff5252";
+        btnDel.onclick = () => {
+          if (!confirm(`Delete variable "${name}" (${type}) ?`)) return;
+          delete this.variables[type][name];
+          delete this._varInputs[`${type}.${name}`];
+          this._refreshVarsList(container);
+        };
+        row.append(label, input, btnGet, btnSet, btnDel);
         container.appendChild(row);
       }
     }
@@ -16294,7 +16313,12 @@ var FluxCodexVertex = class _FluxCodexVertex {
     const body = document.createElement("div");
     body.className = "body";
     const row = document.createElement("div");
-    row.className = "pin-row";
+    if (spec.title == "Comment") {
+      row.classList.add("pin-row");
+      row.classList.add("comment");
+    } else {
+      row.className = "pin-row";
+    }
     const left = document.createElement("div");
     left.className = "pins-left";
     const right = document.createElement("div");
@@ -16319,7 +16343,7 @@ var FluxCodexVertex = class _FluxCodexVertex {
       textarea.value = spec.fields.find((f) => f.key === "text").value;
       textarea.oninput = () => {
         spec.fields.find((f) => f.key === "text").value = textarea.value;
-        row.textContent = textarea.value.split("\n")[0] || "Comment";
+        row.textContent = textarea.value || "Comment";
       };
       body.appendChild(textarea);
     }
@@ -17102,6 +17126,7 @@ var FluxCodexVertex = class _FluxCodexVertex {
     }
   }
   adaptSubObjectPins(node2, obj) {
+    if (!obj || typeof obj !== "object") return;
     node2.outputs = node2.outputs.filter((p) => p.type === "action");
     if (obj && typeof obj === "object") {
       for (const key of Object.keys(obj)) {
@@ -17262,12 +17287,17 @@ var FluxCodexVertex = class _FluxCodexVertex {
   }
   getValue(nodeId, pinName, visited = /* @__PURE__ */ new Set()) {
     const node2 = this.nodes[nodeId];
+    if (visited.has(nodeId + ":" + pinName)) {
+      console.warn("[getValue] cycle blocked", nodeId, pinName);
+      return void 0;
+    }
     if (!node2 || visited.has(nodeId)) return void 0;
     visited.add(nodeId);
     if (node2.title === "if" && pinName === "condition" && this._execContext !== nodeId) {
       console.warn(`[GET] Blocked IF condition outside exec for node ${nodeId}`);
       return void 0;
     }
+    console.warn(`[GET] GET VALUEexec for node ${nodeId}`);
     if (node2.isGetterNode) {
       if (node2._returnCache === void 0) {
         this.triggerNode(node2.id);
@@ -17275,7 +17305,10 @@ var FluxCodexVertex = class _FluxCodexVertex {
       let value = node2._returnCache;
       if (typeof value === "string") {
         try {
-          value = JSON.parse(value);
+          if (node2.title == "Get String") {
+          } else {
+            value = JSON.parse(value);
+          }
         } catch (e) {
           console.warn("[getValue][json parse err]:", e);
         }
@@ -17305,6 +17338,11 @@ var FluxCodexVertex = class _FluxCodexVertex {
       };
       return node2._returnCache[pinName];
     } else if (node2.title === "Get Sub Object") {
+      let varField = node2.fields?.find((f) => f.key === "var");
+      if (!varField || !varField.value) {
+        varField = node2.fields?.find((f) => f.key === "objectPreview");
+      }
+      console.log("test   const obj = this.variables.object?.[varField.value]?.value; ", this.variables.object?.[varField.value]?.value);
       return node2._subCache;
     } else if (node2.type === "forEach") {
       if (pinName === "item") return node2.state?.item;
@@ -17383,17 +17421,14 @@ var FluxCodexVertex = class _FluxCodexVertex {
     }
     if (n.title === "Get Sub Object") {
       const obj = this.getValue(n.id, "object");
-      const path = n.fields.find((f) => f.key === "path")?.value;
-      const target = this.resolvePath(obj, path);
-      n.outputs = n.outputs.filter((p) => p.type === "action");
-      if (target && typeof target === "object") {
-        for (const k in target) {
-          n.outputs.push({
-            name: k,
-            type: this.detectType(target[k])
-          });
-        }
+      let path = n.fields.find((f) => f.key === "path")?.value;
+      let target = this.resolvePath(obj, path);
+      if (target === void 0) {
+        path = path.replace("value.", "");
+        target = this.resolvePath(obj, path);
       }
+      console.warn("SET CACHE target is ", target);
+      n._subCache = target;
       n._needsRebuild = false;
       n._pinsBuilt = true;
       this.enqueueOutputs(n, "execOut");
@@ -17431,7 +17466,7 @@ var FluxCodexVertex = class _FluxCodexVertex {
       );
       if (link) {
         const fromNode = this.nodes[link.from.node];
-        if (fromNode._returnCache === void 0) {
+        if (fromNode._returnCache === void 0 && fromNode._subCache === void 0) {
           this.triggerNode(fromNode.id);
         }
         arr = fromNode._returnCache;
@@ -18196,12 +18231,13 @@ var EditorHud = class {
       this.assetsBox.style.display = "none";
       this.sceneProperty.style.display = "none";
       this.sceneContainer.style.display = "none";
+      byId("app").style.display = "none";
     });
     byId("bg-transparent").addEventListener("click", () => {
       byId("boardWrap").style.backgroundImage = "none";
     });
     byId("bg-tradicional").addEventListener("click", () => {
-      byId("boardWrap").style.backgroundImage = 'url("res/icons/editor/chatgpt-gen-bg.png")';
+      byId("boardWrap").style.backgroundImage = "";
     });
     if (byId("stop-watch")) byId("stop-watch").addEventListener("click", () => {
       document.dispatchEvent(new CustomEvent("stop-watch", {
@@ -19328,14 +19364,25 @@ var Editor = class {
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('genrand')">GenRandInt</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('print')">Print</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('timeout')">SetTimeout</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getArray')">getArray</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('forEach')">forEach</button>
       <hr style="border:none; height:1px; background:rgba(255,255,255,0.03); margin:10px 0;">
-      <span>Scene objects</span>
+      <span>Scene objects [agnostic]</span>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getSceneObject')">Get scene object</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setPosition')">Set position</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('translateByX')">TranslateByX</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('translateByY')">TranslateByY</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('translateByZ')">TranslateByZ</button>
-      
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('onTargetPositionReach')">onTarget PositionReach</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getObjectAnimation')">Get Object Animation</button>
+      <hr>
+      <span>Dinamics</span>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('dynamicFunction')">Function Dinamic</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getSubObject')">Get Sub Object</button>
+      <hr>
+      <span>Networking</span>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('fetch')">Fetch</button>
+
       <hr style="border:none; height:1px; background:rgba(255,255,255,0.03); margin:10px 0;">
       <span>Math</span>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('add')">Add (+)</button>
@@ -19356,9 +19403,9 @@ var Editor = class {
       <hr style="border:none; height:1px; background:rgba(255,255,255,0.03); margin:10px 0;">
       <hr style="border:none; height:1px; background:rgba(255,255,255,0.03); margin:10px 0;">
       <span>Compile FluxCodexVertex</span>
-      <button style="color:orangered;" class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.compileGraph()">Save to LocalStorage</button>
-      <button style="color:red;" class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.clearStorage();">Clear Save</button>
-      <button style="color:orangered;" class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.runGraph()">Run (F6)</button>
+      <button style="color:#00bcd4;" class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.compileGraph()">Save to LocalStorage</button>
+      <button style="color:#00bcd4;" class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.clearStorage();">Clear Save</button>
+      <button style="color:#00bcd4;" class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.runGraph()">Run (F6)</button>
       <hr style="border:none; height:1px; background:rgba(255,255,255,0.03); margin:10px 0;">
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.exportToJSON()">Export (JSON)</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex._importInput.click()">Import (JSON)</button>

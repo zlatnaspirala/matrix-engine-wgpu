@@ -284,6 +284,7 @@ export default class EditorHud {
       this.assetsBox.style.display = 'none';
       this.sceneProperty.style.display = 'none';
       this.sceneContainer.style.display = 'none';
+      byId('app').style.display = 'none';
     })
 
     byId('bg-transparent').addEventListener('click', () => {
@@ -291,7 +292,8 @@ export default class EditorHud {
     })
 
     byId('bg-tradicional').addEventListener('click', () => {
-      byId('boardWrap').style.backgroundImage = 'url("res/icons/editor/chatgpt-gen-bg.png")';
+      // byId('boardWrap').style.backgroundImage = 'url("res/icons/editor/chatgpt-gen-bg.png")';
+      byId('boardWrap').style.backgroundImage = '';
     })
     
     if(byId('stop-watch')) byId('stop-watch').addEventListener('click', () => {
