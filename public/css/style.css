@@ -1640,6 +1640,32 @@ svg.connections {
   margin: 6px 0;
 }
 
+.comment {
+  align-items: flex-start;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.pin-row .comment {
+  width: 100%;
+  min-height: 40px;
+  resize: vertical;
+
+  white-space: pre-wrap;
+  /* preserve new lines */
+  word-break: break-word;
+
+  background: rgba(0, 0, 0, 0.4);
+  color: #cfd8dc;
+  border: 1px solid #333;
+  border-radius: 6px;
+  padding: 6px;
+
+  font-family: monospace;
+  font-size: 12px;
+  outline: none;
+}
+
 .pins-left,
 .pins-right {
   display: flex;
@@ -1741,13 +1767,22 @@ svg.connections {
 }
 
 .node .value-display {
+  -webkit-text-stroke-width: initial;
   font-size: 12px;
-  color: #9fb4d8;
+  color: #ffffff;
   margin-top: 4px;
   font-family: monospace;
   background: rgba(0, 0, 0, 0.3);
   padding: 2px 4px;
   border-radius: 4px;
+  max-width: 200px;
+  /* maximum width */
+  overflow: hidden;
+  /* hide overflow */
+  text-overflow: ellipsis;
+  /* show "..." when text too long */
+  white-space: nowrap;
+  /* keep in a single line */
 }
 
 .node-fields {
@@ -1877,4 +1912,12 @@ svg.connections {
 
 .fc-context-menu button:hover {
   background: rgba(255, 255, 255, 0.08);
+}
+
+.btnGetter:hover {
+  opacity: 0.85;
+}
+
+.btnGetter:has(:contains("Del")) {
+  border-color: #ff5252;
 }

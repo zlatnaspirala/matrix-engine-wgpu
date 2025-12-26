@@ -66,6 +66,7 @@ The backend is built using **Node.js** 🟢
 
 - Add **Math nodes**, **events / custom methods**, **variable popup**, **SceneObject access** 
 - Get SceneObject → set position → bind `onTargetReach` events
+- Fetch, GetArray, forEach, Print, IF, Math, compare etc...
 - Custom func editor
 - Run the graph ▶️
 - Save graph
@@ -103,7 +104,7 @@ Saving is still based on LocalStorage
 After deleting everything, click Save to store an empty [] array
 All changes in graph must be saved manually/clicking for now 💾 (no autosave for graphs).
 
-<img width="860" height="640" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/visual-scripting-math.png?raw=true" />
+<img width="860" height="640" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/visual-scripting-fetch.png?raw=true" />
 
 ---
 
