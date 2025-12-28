@@ -1,7 +1,7 @@
 {
   "name": "matrix-engine-wgpu",
-  "version": "1.8.3",
-  "description": "1.8.3[Bloom implemented] [1.8.2]For visual scripting added fetch, getArra and forEach. Networking implemented - based on kurento openvidu server. fix arcball camera,instanced draws added also effect pipeline blend with instancing option.Normalmap added, Fixed shadows casting vs camera/video texture, webGPU powered pwa application. Crazy fast rendering with AmmoJS physics support. Simple raycaster hit object added.",
+  "version": "1.8.4",
+  "description": "1.8.4[Bloom implemented] [1.8.2]For visual scripting added fetch, getArra and forEach. Networking implemented - based on kurento openvidu server. fix arcball camera,instanced draws added also effect pipeline blend with instancing option.Normalmap added, Fixed shadows casting vs camera/video texture, webGPU powered pwa application. Crazy fast rendering with AmmoJS physics support. Simple raycaster hit object added.",
   "main": "index.js",
   "scripts": {
     "main-worker": "watchify app-worker.js -p [esmify --noImplicitAny] -o public/app-worker.js",
