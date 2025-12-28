@@ -15,6 +15,8 @@ import {BVHPlayerInstances} from "./engine/loaders/bvh-instaced.js";
 import {Editor} from "./tools/editor/editor.js";
 import MEMeshObjInstances from "./engine/instanced/mesh-obj-instances.js";
 
+import {BloomPass, fullscreenQuadWGSL} from "./engine/postprocessing/bloom.js";
+
 /**
  * @description
  * Main engine root class.
@@ -197,6 +199,59 @@ export default class MatrixEngineWGPU {
   };
 
   createGlobalStuff() {
+
+    //------------------ TEST
+    this.bloomOutputTex = this.device.createTexture({
+      size: [this.canvas.width, this.canvas.height],
+      format: 'rgba16float',
+      usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING,
+    });
+
+    this.sceneTexture = this.device.createTexture({
+      label: "final pipeline sceneTexture",
+      size: [this.canvas.width, this.canvas.height],
+      format: 'rgba16float',
+      usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING
+    });
+
+    this.sceneTextureView = this.sceneTexture.createView();
+
+    this.presentSampler = this.device.createSampler({
+      magFilter: 'linear',
+      minFilter: 'linear'
+    });
+
+    this.presentPipeline = this.device.createRenderPipeline({
+      label: "final pipeline",
+      layout: 'auto',
+      vertex: {
+        module: this.device.createShaderModule({code: fullscreenQuadWGSL()}),
+        entryPoint: 'vert',
+      },
+      fragment: {
+        module: this.device.createShaderModule({
+          code: `
+        @group(0) @binding(0) var hdrTex : texture_2d<f32>;
+        @group(0) @binding(1) var samp : sampler;
+
+        @fragment
+        fn main(@builtin(position) pos: vec4<f32>) -> @location(0) vec4<f32> {
+          let uv = pos.xy / vec2<f32>(textureDimensions(hdrTex));
+          let hdr = textureSample(hdrTex, samp, uv).rgb;
+
+          // simple tonemap
+          let ldr = hdr / (hdr + vec3(1.0));
+
+          return vec4<f32>(ldr, 1.0);
+        }
+      `
+        }),
+        entryPoint: 'main',
+        targets: [{format: 'bgra8unorm'}], // rgba16float  bgra8unorm
+      },
+    });
+    //------------------ TEST
+
     this.spotlightUniformBuffer = this.device.createBuffer({
       label: 'spotlightUniformBufferGLOBAL',
       size: this.MAX_SPOTLIGHTS * 144,
@@ -239,6 +294,7 @@ export default class MatrixEngineWGPU {
 
     this.depthTextureViewTrail = depthTexture.createView();
   }
+
   createTexArrayForShadows() {
     let numberOfLights = this.lightContainer.length;
     if(this.lightContainer.length == 0) {
@@ -683,7 +739,9 @@ export default class MatrixEngineWGPU {
         shadowPass.end();
       }
       const currentTextureView = this.context.getCurrentTexture().createView();
-      this.mainRenderPassDesc.colorAttachments[0].view = currentTextureView;
+      // this.mainRenderPassDesc.colorAttachments[0].view = currentTextureView;
+      this.mainRenderPassDesc.colorAttachments[0].view = this.sceneTextureView;
+
       let pass = commandEncoder.beginRenderPass(this.mainRenderPassDesc);
       // Loop over each mesh
 
@@ -719,7 +777,7 @@ export default class MatrixEngineWGPU {
 
       // transparent pointerEffect pass (load color, load depth)
       const transPassDesc = {
-        colorAttachments: [{view: currentTextureView, loadOp: 'load', storeOp: 'store'}],
+        colorAttachments: [{view: this.sceneTextureView, loadOp: 'load', storeOp: 'store'}],
         depthStencilAttachment: {
           view: this.mainDepthView,
           depthLoadOp: 'load',
@@ -740,6 +798,37 @@ export default class MatrixEngineWGPU {
         });
       }
       transPass.end();
+
+
+      const canvasView = this.context.getCurrentTexture().createView();
+      // test bloom 
+      if(this.bloomPass) {
+        // render
+        // this.bloomPass.render(commandEncoder, this.sceneTexture, canvasView);
+        this.bloomPass.render(commandEncoder, this.sceneTextureView, this.bloomOutputTex);
+
+      }
+
+      pass = commandEncoder.beginRenderPass({
+        colorAttachments: [{
+          view: canvasView,
+          loadOp: 'clear',
+          storeOp: 'store',
+          clearValue: {r: 0, g: 0, b: 0, a: 1}
+        }]
+      });
+
+      pass.setPipeline(this.presentPipeline);
+      pass.setBindGroup(0, this.device.createBindGroup({
+        layout: this.presentPipeline.getBindGroupLayout(0),
+        entries: [
+          {binding: 0, resource: (this.bloomPass ?  this.bloomOutputTex : this.sceneTexture.createView())},
+          {binding: 1, resource: this.presentSampler}
+        ]
+      }));
+
+      pass.draw(6);
+      pass.end();
 
       this.device.queue.submit([commandEncoder.finish()]);
       requestAnimationFrame(this.frame);
@@ -775,7 +864,6 @@ export default class MatrixEngineWGPU {
     requestAnimationFrame(this.frame);
   }
 
-  // ---------------------------------------
   addGlbObj = (o, BVHANIM, glbFile, clearColor = this.options.clearColor) => {
     if(typeof o.name === 'undefined') {o.name = genName(9)}
     if(typeof o.position === 'undefined') {o.position = {x: 0, y: 0, z: -4}}
@@ -853,7 +941,6 @@ export default class MatrixEngineWGPU {
     }
   }
 
-  // NEW TEST INSTANCED DRAWS
   addGlbObjInctance = (o, BVHANIM, glbFile, clearColor = this.options.clearColor) => {
     if(typeof o.name === 'undefined') {o.name = genName(9)}
     if(typeof o.position === 'undefined') {o.position = {x: 0, y: 0, z: -4}}
@@ -936,5 +1023,12 @@ export default class MatrixEngineWGPU {
     if(typeof this.editor !== 'undefined') {
       this.editor.editorHud.updateSceneContainer();
     }
+  }
+
+  activateBloomEffect = () => {
+
+    this.bloomPass = new BloomPass(this.canvas.width, this.canvas.height, this.device, 1.5);
+    // alert('BLOOM');
+
   }
 }
