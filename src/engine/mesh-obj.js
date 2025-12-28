@@ -633,7 +633,7 @@ export default class MEMeshObj extends Materials {
         }),
         targets: [
           {
-            format: this.presentationFormat,
+            format: 'rgba16float',//this.presentationFormat,
           },
         ],
         constants: {

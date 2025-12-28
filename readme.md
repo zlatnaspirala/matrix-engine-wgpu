@@ -30,6 +30,7 @@ Published on npm as: **`matrix-engine-wgpu`**
 - ✔️ Support for 3D objects and scene transformations
 - ✔️ Ammo.js physics full integration
 - ✔️ Networking with Kurento/OpenVidu/Own middleware Nodejs -> frontend 
+- ✔️ Bloom post processing
 - 🎯 Replicate matrix-engine (WebGL) features
 - 📦 Based on the `shadowMapping` sample from [webgpu-samples](https://webgpu.github.io/webgpu-samples/?sample=shadowMapping)
 - 🎯 Web GUI(online) Editor with Visual Scripting (Named: FlowCodexVertex) WIP
@@ -292,6 +293,21 @@ material: {type: 'power'},
 ...
 }, null, glbFile);
 ```
+
+### Bloom post processing
+Activete with : 
+```js
+ app.activateBloomEffect();
+```
+
+Manipulate with `app.bloomPass`:
+ setKnee
+ setIntensity
+ setThreshold
+ setBlurRadius
+
+ Fancy results: 
+ <img src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/bloom.png?raw=true" />
 
 ### Object Interaction (Raycasting)
 
