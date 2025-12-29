@@ -107,22 +107,22 @@ export class BloomPass {
     );
   }
 
-  setIntensity(v) {
+  setIntensity = (v) => {
     this.params.intensity = v;
     this._updateParams();
   }
 
-  setThreshold(v) {
+  setThreshold = (v) => {
     this.params.threshold = v;
     this._updateParams();
   }
 
-  setKnee(v) {
+  setKnee = (v) => {
     this.params.knee = v;
     this._updateParams();
   }
 
-  setBlurRadius(v) {
+  setBlurRadius = (v) => {
     this.params.blurRadius = v;
     this._updateParams();
   }

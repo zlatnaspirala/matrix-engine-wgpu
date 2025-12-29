@@ -12,12 +12,12 @@ function setDefaultType$5(ctor) {
   VecType$1 = ctor;
   return oldType;
 }
-function create$4(x, y, z) {
+function create$4(x2, y2, z) {
   const dst = new VecType$1(3);
-  if (x !== void 0) {
-    dst[0] = x;
-    if (y !== void 0) {
-      dst[1] = y;
+  if (x2 !== void 0) {
+    dst[0] = x2;
+    if (y2 !== void 0) {
+      dst[1] = y2;
       if (z !== void 0) {
         dst[2] = z;
       }
@@ -32,10 +32,10 @@ var ctorMap = /* @__PURE__ */ new Map([
 ]);
 var newMat3 = ctorMap.get(Float32Array);
 var fromValues$2 = create$4;
-function set$3(x, y, z, dst) {
+function set$3(x2, y2, z, dst) {
   dst = dst || new VecType$1(3);
-  dst[0] = x;
-  dst[1] = y;
+  dst[0] = x2;
+  dst[1] = y2;
   dst[2] = z;
   return dst;
 }
@@ -266,13 +266,13 @@ function zero$1(dst) {
 }
 function transformMat4$1(v, m, dst) {
   dst = dst || new VecType$1(3);
-  const x = v[0];
-  const y = v[1];
+  const x2 = v[0];
+  const y2 = v[1];
   const z = v[2];
-  const w = m[3] * x + m[7] * y + m[11] * z + m[15] || 1;
-  dst[0] = (m[0] * x + m[4] * y + m[8] * z + m[12]) / w;
-  dst[1] = (m[1] * x + m[5] * y + m[9] * z + m[13]) / w;
-  dst[2] = (m[2] * x + m[6] * y + m[10] * z + m[14]) / w;
+  const w = m[3] * x2 + m[7] * y2 + m[11] * z + m[15] || 1;
+  dst[0] = (m[0] * x2 + m[4] * y2 + m[8] * z + m[12]) / w;
+  dst[1] = (m[1] * x2 + m[5] * y2 + m[9] * z + m[13]) / w;
+  dst[2] = (m[2] * x2 + m[6] * y2 + m[10] * z + m[14]) / w;
   return dst;
 }
 function transformMat4Upper3x3(v, m, dst) {
@@ -287,12 +287,12 @@ function transformMat4Upper3x3(v, m, dst) {
 }
 function transformMat3(v, m, dst) {
   dst = dst || new VecType$1(3);
-  const x = v[0];
-  const y = v[1];
+  const x2 = v[0];
+  const y2 = v[1];
   const z = v[2];
-  dst[0] = x * m[0] + y * m[4] + z * m[8];
-  dst[1] = x * m[1] + y * m[5] + z * m[9];
-  dst[2] = x * m[2] + y * m[6] + z * m[10];
+  dst[0] = x2 * m[0] + y2 * m[4] + z * m[8];
+  dst[1] = x2 * m[1] + y2 * m[5] + z * m[9];
+  dst[2] = x2 * m[2] + y2 * m[6] + z * m[10];
   return dst;
 }
 function transformQuat(v, q, dst) {
@@ -301,14 +301,14 @@ function transformQuat(v, q, dst) {
   const qy = q[1];
   const qz = q[2];
   const w2 = q[3] * 2;
-  const x = v[0];
-  const y = v[1];
+  const x2 = v[0];
+  const y2 = v[1];
   const z = v[2];
-  const uvX = qy * z - qz * y;
-  const uvY = qz * x - qx * z;
-  const uvZ = qx * y - qy * x;
-  dst[0] = x + uvX * w2 + (qy * uvZ - qz * uvY) * 2;
-  dst[1] = y + uvY * w2 + (qz * uvX - qx * uvZ) * 2;
+  const uvX = qy * z - qz * y2;
+  const uvY = qz * x2 - qx * z;
+  const uvZ = qx * y2 - qy * x2;
+  dst[0] = x2 + uvX * w2 + (qy * uvZ - qz * uvY) * 2;
+  dst[1] = y2 + uvY * w2 + (qz * uvX - qx * uvZ) * 2;
   dst[2] = z + uvZ * w2 + (qx * uvY - qy * uvX) * 2;
   return dst;
 }
@@ -497,21 +497,21 @@ function fromMat3(m3, dst) {
 }
 function fromQuat(q, dst) {
   dst = dst || new MatType(16);
-  const x = q[0];
-  const y = q[1];
+  const x2 = q[0];
+  const y2 = q[1];
   const z = q[2];
   const w = q[3];
-  const x2 = x + x;
-  const y2 = y + y;
+  const x22 = x2 + x2;
+  const y22 = y2 + y2;
   const z2 = z + z;
-  const xx = x * x2;
-  const yx = y * x2;
-  const yy = y * y2;
-  const zx = z * x2;
-  const zy = z * y2;
+  const xx = x2 * x22;
+  const yx = y2 * x22;
+  const yy = y2 * y22;
+  const zx = z * x22;
+  const zy = z * y22;
   const zz = z * z2;
-  const wx = w * x2;
-  const wy = w * y2;
+  const wx = w * x22;
+  const wy = w * y22;
   const wz = w * z2;
   dst[0] = 1 - yy - zz;
   dst[1] = yx + wz;
@@ -1249,29 +1249,29 @@ function rotateZ$1(m, angleInRadians, dst) {
 }
 function axisRotation(axis, angleInRadians, dst) {
   dst = dst || new MatType(16);
-  let x = axis[0];
-  let y = axis[1];
+  let x2 = axis[0];
+  let y2 = axis[1];
   let z = axis[2];
-  const n = Math.sqrt(x * x + y * y + z * z);
-  x /= n;
-  y /= n;
+  const n = Math.sqrt(x2 * x2 + y2 * y2 + z * z);
+  x2 /= n;
+  y2 /= n;
   z /= n;
-  const xx = x * x;
-  const yy = y * y;
+  const xx = x2 * x2;
+  const yy = y2 * y2;
   const zz = z * z;
   const c = Math.cos(angleInRadians);
   const s = Math.sin(angleInRadians);
   const oneMinusCosine = 1 - c;
   dst[0] = xx + (1 - xx) * c;
-  dst[1] = x * y * oneMinusCosine + z * s;
-  dst[2] = x * z * oneMinusCosine - y * s;
+  dst[1] = x2 * y2 * oneMinusCosine + z * s;
+  dst[2] = x2 * z * oneMinusCosine - y2 * s;
   dst[3] = 0;
-  dst[4] = x * y * oneMinusCosine - z * s;
+  dst[4] = x2 * y2 * oneMinusCosine - z * s;
   dst[5] = yy + (1 - yy) * c;
-  dst[6] = y * z * oneMinusCosine + x * s;
+  dst[6] = y2 * z * oneMinusCosine + x2 * s;
   dst[7] = 0;
-  dst[8] = x * z * oneMinusCosine + y * s;
-  dst[9] = y * z * oneMinusCosine - x * s;
+  dst[8] = x2 * z * oneMinusCosine + y2 * s;
+  dst[9] = y2 * z * oneMinusCosine - x2 * s;
   dst[10] = zz + (1 - zz) * c;
   dst[11] = 0;
   dst[12] = 0;
@@ -1283,27 +1283,27 @@ function axisRotation(axis, angleInRadians, dst) {
 var rotation = axisRotation;
 function axisRotate(m, axis, angleInRadians, dst) {
   dst = dst || new MatType(16);
-  let x = axis[0];
-  let y = axis[1];
+  let x2 = axis[0];
+  let y2 = axis[1];
   let z = axis[2];
-  const n = Math.sqrt(x * x + y * y + z * z);
-  x /= n;
-  y /= n;
+  const n = Math.sqrt(x2 * x2 + y2 * y2 + z * z);
+  x2 /= n;
+  y2 /= n;
   z /= n;
-  const xx = x * x;
-  const yy = y * y;
+  const xx = x2 * x2;
+  const yy = y2 * y2;
   const zz = z * z;
   const c = Math.cos(angleInRadians);
   const s = Math.sin(angleInRadians);
   const oneMinusCosine = 1 - c;
   const r00 = xx + (1 - xx) * c;
-  const r01 = x * y * oneMinusCosine + z * s;
-  const r02 = x * z * oneMinusCosine - y * s;
-  const r10 = x * y * oneMinusCosine - z * s;
+  const r01 = x2 * y2 * oneMinusCosine + z * s;
+  const r02 = x2 * z * oneMinusCosine - y2 * s;
+  const r10 = x2 * y2 * oneMinusCosine - z * s;
   const r11 = yy + (1 - yy) * c;
-  const r12 = y * z * oneMinusCosine + x * s;
-  const r20 = x * z * oneMinusCosine + y * s;
-  const r21 = y * z * oneMinusCosine - x * s;
+  const r12 = y2 * z * oneMinusCosine + x2 * s;
+  const r20 = x2 * z * oneMinusCosine + y2 * s;
+  const r21 = y2 * z * oneMinusCosine - x2 * s;
   const r22 = zz + (1 - zz) * c;
   const m00 = m[0];
   const m01 = m[1];
@@ -1478,12 +1478,12 @@ function setDefaultType$2(ctor) {
   QuatType = ctor;
   return oldType;
 }
-function create$1(x, y, z, w) {
+function create$1(x2, y2, z, w) {
   const dst = new QuatType(4);
-  if (x !== void 0) {
-    dst[0] = x;
-    if (y !== void 0) {
-      dst[1] = y;
+  if (x2 !== void 0) {
+    dst[0] = x2;
+    if (y2 !== void 0) {
+      dst[1] = y2;
       if (z !== void 0) {
         dst[2] = z;
         if (w !== void 0) {
@@ -1495,10 +1495,10 @@ function create$1(x, y, z, w) {
   return dst;
 }
 var fromValues$1 = create$1;
-function set$1(x, y, z, w, dst) {
+function set$1(x2, y2, z, w, dst) {
   dst = dst || new QuatType(4);
-  dst[0] = x;
-  dst[1] = y;
+  dst[0] = x2;
+  dst[1] = y2;
   dst[2] = z;
   dst[3] = w;
   return dst;
@@ -1986,19 +1986,19 @@ function radToDeg(r) {
 }
 var scriptManager = {
   SCRIPT_ID: 0,
-  LOAD: function addScript(src, id, type, parent, callback) {
+  LOAD: function addScript(src, id2, type2, parent, callback) {
     var s = document.createElement("script");
     s.onload = function() {
       if (typeof callback != "undefined") callback();
     };
-    if (typeof type !== "undefined") {
-      s.setAttribute("type", type);
+    if (typeof type2 !== "undefined") {
+      s.setAttribute("type", type2);
       s.innerHTML = src;
     } else {
       s.setAttribute("src", src);
     }
-    if (typeof id !== "undefined") {
-      s.setAttribute("id", id);
+    if (typeof id2 !== "undefined") {
+      s.setAttribute("id", id2);
     }
     if (typeof parent !== "undefined") {
       document.getElementById(parent).appendChild(s);
@@ -2007,22 +2007,22 @@ var scriptManager = {
       document.body.appendChild(s);
     }
   },
-  loadModule: function addScript2(src, id, type, parent) {
+  loadModule: function addScript2(src, id2, type2, parent) {
     console.log("Script id load called ");
     var s = document.createElement("script");
     s.onload = function() {
       scriptManager.SCRIPT_ID++;
     };
-    if (typeof type === "undefined") {
+    if (typeof type2 === "undefined") {
       s.setAttribute("type", "module");
       s.setAttribute("src", src);
     } else {
-      s.setAttribute("type", type);
+      s.setAttribute("type", type2);
       s.innerHTML = src;
     }
     s.setAttribute("src", src);
-    if (typeof id !== "undefined") {
-      s.setAttribute("id", id);
+    if (typeof id2 !== "undefined") {
+      s.setAttribute("id", id2);
     }
     if (typeof parent !== "undefined") {
       document.getElementById(parent).appendChild(s);
@@ -2077,8 +2077,8 @@ function OSCILLATOR(min, max, step) {
     console.log("OSCILLATOR ERROR");
   }
 }
-var byId = function(id) {
-  return document.getElementById(id);
+var byId = function(id2) {
+  return document.getElementById(id2);
 };
 function randomFloatFromTo(min, max) {
   return Math.random() * (max - min) + min;
@@ -2245,25 +2245,25 @@ var FullscreenManager = class {
 
 // ../../../engine/matrix-class.js
 var Position = class {
-  constructor(x, y, z) {
+  constructor(x2, y2, z) {
     this.remoteName = null;
     this.netObject = null;
     this.toRemote = [];
     this.teams = [];
     this.netTolerance = 3;
     this.netTolerance__ = 0;
-    if (typeof x == "undefined") x = 0;
-    if (typeof y == "undefined") y = 0;
+    if (typeof x2 == "undefined") x2 = 0;
+    if (typeof y2 == "undefined") y2 = 0;
     if (typeof z == "undefined") z = 0;
-    this.x = parseFloat(x);
-    this.y = parseFloat(y);
+    this.x = parseFloat(x2);
+    this.y = parseFloat(y2);
     this.z = parseFloat(z);
     this.velY = 0;
     this.velX = 0;
     this.velZ = 0;
     this.inMove = false;
-    this.targetX = parseFloat(x);
-    this.targetY = parseFloat(y);
+    this.targetX = parseFloat(x2);
+    this.targetY = parseFloat(y2);
     this.targetZ = parseFloat(z);
     this.thrust = 0.01;
     return this;
@@ -2275,37 +2275,37 @@ var Position = class {
       console.log("Description: arguments (w, h) must be type of number.");
     }
   }
-  translateByX(x) {
-    if (parseFloat(x) == this.targetX) return;
+  translateByX(x2) {
+    if (parseFloat(x2) == this.targetX) return;
     this.inMove = true;
-    this.targetX = parseFloat(x);
+    this.targetX = parseFloat(x2);
   }
-  translateByY(y) {
-    if (parseFloat(y) == this.targetY) return;
+  translateByY(y2) {
+    if (parseFloat(y2) == this.targetY) return;
     this.inMove = true;
-    this.targetY = parseFloat(y);
+    this.targetY = parseFloat(y2);
   }
   translateByZ(z) {
     if (parseFloat(z) == this.targetZ) return;
     this.inMove = true;
     this.targetZ = parseFloat(z);
   }
-  translateByXY(x, y) {
-    if (parseFloat(y) == this.targetY && parseFloat(x) == this.targetX) return;
+  translateByXY(x2, y2) {
+    if (parseFloat(y2) == this.targetY && parseFloat(x2) == this.targetX) return;
     this.inMove = true;
-    this.targetX = parseFloat(x);
-    this.targetY = parseFloat(y);
+    this.targetX = parseFloat(x2);
+    this.targetY = parseFloat(y2);
   }
-  translateByXZ(x, z) {
-    if (parseFloat(z) == this.targetZ && parseFloat(x) == this.targetX) return;
+  translateByXZ(x2, z) {
+    if (parseFloat(z) == this.targetZ && parseFloat(x2) == this.targetX) return;
     this.inMove = true;
-    this.targetX = parseFloat(x);
+    this.targetX = parseFloat(x2);
     this.targetZ = parseFloat(z);
   }
-  translateByYZ(y, z) {
-    if (parseFloat(y) == this.targetY && parseFloat(z) == this.targetZ) return;
+  translateByYZ(y2, z) {
+    if (parseFloat(y2) == this.targetY && parseFloat(z) == this.targetZ) return;
     this.inMove = true;
-    this.targetY = parseFloat(y);
+    this.targetY = parseFloat(y2);
     this.targetZ = parseFloat(z);
   }
   onTargetPositionReach() {
@@ -2438,21 +2438,21 @@ var Position = class {
   }
 };
 var Rotation = class {
-  constructor(x, y, z) {
+  constructor(x2, y2, z) {
     this.toRemote = [];
     this.teams = [];
     this.remoteName = null;
     this.emitX = null;
     this.emitY = null;
     this.emitZ = null;
-    if (typeof x == "undefined") x = 0;
-    if (typeof y == "undefined") y = 0;
+    if (typeof x2 == "undefined") x2 = 0;
+    if (typeof y2 == "undefined") y2 = 0;
     if (typeof z == "undefined") z = 0;
-    this.x = x;
-    this.y = y;
+    this.x = x2;
+    this.y = y2;
     this.z = z;
-    this.netx = x;
-    this.nety = y;
+    this.netx = x2;
+    this.nety = y2;
     this.netz = z;
     this.rotationSpeed = { x: 0, y: 0, z: 0 };
     this.angle = 0;
@@ -2643,16 +2643,16 @@ var WASDCamera = class extends CameraBase {
   setProjection(fov = 2 * Math.PI / 5, aspect = 1, near = 1, far = 1e3) {
     this.projectionMatrix = mat4Impl.perspective(fov, aspect, near, far);
   }
-  constructor(options) {
+  constructor(options2) {
     super();
-    if (options && (options.position || options.target)) {
-      const position = options.position ?? vec3Impl.create(0, 0, 0);
-      const target = options.target ?? vec3Impl.create(0, 0, 0);
+    if (options2 && (options2.position || options2.target)) {
+      const position = options2.position ?? vec3Impl.create(0, 0, 0);
+      const target = options2.target ?? vec3Impl.create(0, 0, 0);
       const forward = vec3Impl.normalize(vec3Impl.sub(target, position));
       this.recalculateAngles(forward);
       this.position = position;
-      this.canvas = options.canvas;
-      this.aspect = options.canvas.width / options.canvas.height;
+      this.canvas = options2.canvas;
+      this.aspect = options2.canvas.width / options2.canvas.height;
       this.setProjection(2 * Math.PI / 5, this.aspect, 1, 2e3);
     }
   }
@@ -2725,10 +2725,10 @@ var ArcballCamera = class extends CameraBase {
     this.projectionMatrix = mat4Impl.perspective(fov, aspect, near, far);
   }
   // Construtor
-  constructor(options) {
+  constructor(options2) {
     super();
-    if (options && options.position) {
-      this.position = options.position;
+    if (options2 && options2.position) {
+      this.position = options2.position;
       this.distance = vec3Impl.len(this.position);
       this.back = vec3Impl.normalize(this.position);
       this.setProjection(2 * Math.PI / 5, this.aspect, 1, 2e3);
@@ -2783,11 +2783,11 @@ var ArcballCamera = class extends CameraBase {
     this.up = vec3Impl.normalize(vec3Impl.cross(this.back, this.right));
   }
 };
-function clamp(x, min, max) {
-  return Math.min(Math.max(x, min), max);
+function clamp(x2, min, max) {
+  return Math.min(Math.max(x2, min), max);
 }
-function mod(x, div) {
-  return x - Math.floor(Math.abs(x) / div) * div * Math.sign(x);
+function mod(x2, div) {
+  return x2 - Math.floor(Math.abs(x2) / div) * div * Math.sign(x2);
 }
 function rotate2(vec, axis, angle2) {
   return vec3Impl.transformMat4Upper3x3(vec, mat4Impl.rotation(axis, angle2));
@@ -2902,16 +2902,16 @@ var RPGCamera = class extends CameraBase {
   setProjection(fov = 2 * Math.PI / 5, aspect = 1, near = 1, far = 1e3) {
     this.projectionMatrix = mat4Impl.perspective(fov, aspect, near, far);
   }
-  constructor(options) {
+  constructor(options2) {
     super();
-    if (options && (options.position || options.target)) {
-      const position = options.position ?? vec3Impl.create(0, 0, 0);
-      const target = options.target ?? vec3Impl.create(0, 0, 0);
+    if (options2 && (options2.position || options2.target)) {
+      const position = options2.position ?? vec3Impl.create(0, 0, 0);
+      const target = options2.target ?? vec3Impl.create(0, 0, 0);
       const forward = vec3Impl.normalize(vec3Impl.sub(target, position));
       this.recalculateAngles(forward);
       this.position = position;
-      this.canvas = options.canvas;
-      this.aspect = options.canvas.width / options.canvas.height;
+      this.canvas = options2.canvas;
+      this.aspect = options2.canvas.width / options2.canvas.height;
       this.setProjection(2 * Math.PI / 5, this.aspect, 1, 2e3);
       this.mousRollInAction = false;
       addEventListener("wheel", (e) => {
@@ -3143,11 +3143,11 @@ var MEBall = class {
     for (let i = this.renderables.length; i <= this.settings.asteroidCount; ++i) {
       const radius = Math.random() * 1.7 + 1.25;
       const angle2 = Math.random() * Math.PI * 2;
-      const x = Math.sin(angle2) * radius;
-      const y = (Math.random() - 0.5) * 0.015;
+      const x2 = Math.sin(angle2) * radius;
+      const y2 = (Math.random() - 0.5) * 0.015;
       const z = Math.cos(angle2) * radius;
       mat4Impl.identity(transform);
-      mat4Impl.translate(transform, [x, y, z], transform);
+      mat4Impl.translate(transform, [x2, y2, z], transform);
       mat4Impl.rotateX(transform, Math.random() * Math.PI, transform);
       mat4Impl.rotateY(transform, Math.random() * Math.PI, transform);
       this.renderables.push({
@@ -3508,11 +3508,11 @@ var MECube = class {
     for (let i = this.renderables.length; i <= this.settings.asteroidCount; ++i) {
       const radius = Math.random() * 1.7 + 1.25;
       const angle2 = Math.random() * Math.PI * 2;
-      const x = Math.sin(angle2) * radius;
-      const y = (Math.random() - 0.5) * 0.015;
+      const x2 = Math.sin(angle2) * radius;
+      const y2 = (Math.random() - 0.5) * 0.015;
       const z = Math.cos(angle2) * radius;
       mat4Impl.identity(transform);
-      mat4Impl.translate(transform, [x, y, z], transform);
+      mat4Impl.translate(transform, [x2, y2, z], transform);
       mat4Impl.rotateX(transform, Math.random() * Math.PI, transform);
       mat4Impl.rotateY(transform, Math.random() * Math.PI, transform);
       this.renderables.push({
@@ -3530,8 +3530,8 @@ var MECube = class {
     this.renderScene(renderBundleEncoder);
     this.renderBundle = renderBundleEncoder.finish();
   }
-  createGeometry(options) {
-    const mesh = this.createCubeVertices(options);
+  createGeometry(options2) {
+    const mesh = this.createCubeVertices(options2);
     const vertices = this.device.createBuffer({
       size: mesh.vertices.byteLength,
       usage: GPUBufferUsage.VERTEX,
@@ -3655,16 +3655,16 @@ var MECube = class {
       }
     }
   }
-  createCubeVertices(options) {
-    if (typeof options === "undefined") {
-      var options = {
+  createCubeVertices(options2) {
+    if (typeof options2 === "undefined") {
+      var options2 = {
         scale: 1,
         useUVShema4x2: false
       };
     }
-    if (typeof options.scale === "undefined") options.scale = 1;
+    if (typeof options2.scale === "undefined") options2.scale = 1;
     let vertices;
-    if (options.useUVShema4x2 == true) {
+    if (options2.useUVShema4x2 == true) {
       vertices = new Float32Array([
         //  position   |  texture coordinate
         //-------------+----------------------
@@ -3872,198 +3872,198 @@ var MECube = class {
         //  position                                                   |  texture coordinate
         //-------------                                              +----------------------
         // front face     select the top left image  1, 0.5,   
-        -1 * options.scale,
-        1 * options.scale,
-        1 * options.scale,
+        -1 * options2.scale,
+        1 * options2.scale,
+        1 * options2.scale,
         1,
         0,
         0,
         0,
         0,
-        -1 * options.scale,
-        -1 * options.scale,
-        1 * options.scale,
+        -1 * options2.scale,
+        -1 * options2.scale,
+        1 * options2.scale,
         1,
         0,
         0,
         0,
         1,
-        1 * options.scale,
-        1 * options.scale,
-        1 * options.scale,
+        1 * options2.scale,
+        1 * options2.scale,
+        1 * options2.scale,
         1,
         0,
         0,
         1,
         0,
-        1 * options.scale,
-        -1 * options.scale,
-        1 * options.scale,
+        1 * options2.scale,
+        -1 * options2.scale,
+        1 * options2.scale,
         1,
         0,
         0,
         1,
         1,
         // right face     select the top middle image
-        1 * options.scale,
-        1 * options.scale,
-        -1 * options.scale,
+        1 * options2.scale,
+        1 * options2.scale,
+        -1 * options2.scale,
         1,
         0,
         0,
         0,
         0,
-        1 * options.scale,
-        1 * options.scale,
-        1 * options.scale,
+        1 * options2.scale,
+        1 * options2.scale,
+        1 * options2.scale,
         1,
         0,
         0,
         0,
         1,
-        1 * options.scale,
-        -1 * options.scale,
-        -1 * options.scale,
+        1 * options2.scale,
+        -1 * options2.scale,
+        -1 * options2.scale,
         1,
         0,
         0,
         1,
         0,
-        1 * options.scale,
-        -1 * options.scale,
-        1 * options.scale,
+        1 * options2.scale,
+        -1 * options2.scale,
+        1 * options2.scale,
         1,
         0,
         0,
         1,
         1,
         // back face      select to top right image
-        1 * options.scale,
-        1 * options.scale,
-        -1 * options.scale,
+        1 * options2.scale,
+        1 * options2.scale,
+        -1 * options2.scale,
         1,
         0,
         0,
         0,
         0,
-        1 * options.scale,
-        -1 * options.scale,
-        -1 * options.scale,
+        1 * options2.scale,
+        -1 * options2.scale,
+        -1 * options2.scale,
         1,
         0,
         0,
         0,
         1,
-        -1 * options.scale,
-        1 * options.scale,
-        -1 * options.scale,
+        -1 * options2.scale,
+        1 * options2.scale,
+        -1 * options2.scale,
         1,
         0,
         0,
         1,
         0,
-        -1 * options.scale,
-        -1 * options.scale,
-        -1 * options.scale,
+        -1 * options2.scale,
+        -1 * options2.scale,
+        -1 * options2.scale,
         1,
         0,
         0,
         1,
         1,
         // left face       select the bottom left image
-        -1 * options.scale,
-        1 * options.scale,
-        1 * options.scale,
+        -1 * options2.scale,
+        1 * options2.scale,
+        1 * options2.scale,
         1,
         0,
         0,
         0,
         0,
-        -1 * options.scale,
-        1 * options.scale,
-        -1 * options.scale,
+        -1 * options2.scale,
+        1 * options2.scale,
+        -1 * options2.scale,
         1,
         0,
         0,
         0,
         1,
-        -1 * options.scale,
-        -1 * options.scale,
-        1 * options.scale,
+        -1 * options2.scale,
+        -1 * options2.scale,
+        1 * options2.scale,
         1,
         0,
         0,
         1,
         0,
-        -1 * options.scale,
-        -1 * options.scale,
-        -1 * options.scale,
+        -1 * options2.scale,
+        -1 * options2.scale,
+        -1 * options2.scale,
         1,
         0,
         0,
         1,
         1,
         // bottom face     select the bottom middle image
-        1 * options.scale,
-        -1 * options.scale,
-        1 * options.scale,
+        1 * options2.scale,
+        -1 * options2.scale,
+        1 * options2.scale,
         1,
         0,
         0,
         0,
         0,
-        -1 * options.scale,
-        -1 * options.scale,
-        1 * options.scale,
+        -1 * options2.scale,
+        -1 * options2.scale,
+        1 * options2.scale,
         1,
         0,
         0,
         0,
         1,
-        1 * options.scale,
-        -1 * options.scale,
-        -1 * options.scale,
+        1 * options2.scale,
+        -1 * options2.scale,
+        -1 * options2.scale,
         1,
         0,
         0,
         1,
         0,
-        -1 * options.scale,
-        -1 * options.scale,
-        -1 * options.scale,
+        -1 * options2.scale,
+        -1 * options2.scale,
+        -1 * options2.scale,
         1,
         0,
         0,
         1,
         1,
         // top face        select the bottom right image
-        -1 * options.scale,
-        1 * options.scale,
-        1 * options.scale,
+        -1 * options2.scale,
+        1 * options2.scale,
+        1 * options2.scale,
         1,
         0,
         0,
         0,
         0,
-        1 * options.scale,
-        1 * options.scale,
-        1 * options.scale,
+        1 * options2.scale,
+        1 * options2.scale,
+        1 * options2.scale,
         1,
         0,
         0,
         0,
         1,
-        -1 * options.scale,
-        1 * options.scale,
-        -1 * options.scale,
+        -1 * options2.scale,
+        1 * options2.scale,
+        -1 * options2.scale,
         1,
         0,
         0,
         1,
         0,
-        1 * options.scale,
-        1 * options.scale,
-        -1 * options.scale,
+        1 * options2.scale,
+        1 * options2.scale,
+        -1 * options2.scale,
         1,
         0,
         0,
@@ -6551,7 +6551,8 @@ var MEMeshObj = class extends Materials {
         }),
         targets: [
           {
-            format: this.presentationFormat
+            format: "rgba16float"
+            //this.presentationFormat,
           }
         ],
         constants: {
@@ -6834,12 +6835,12 @@ var MatrixAmmo = class {
     this.rigidBodies.push(body);
     return body;
   }
-  setBodyVelocity(body, x, y, z) {
+  setBodyVelocity(body, x2, y2, z) {
     var tbv30 = new Ammo.btVector3();
-    tbv30.setValue(x, y, z);
+    tbv30.setValue(x2, y2, z);
     body.setLinearVelocity(tbv30);
   }
-  setKinematicTransform(body, x, y, z, rx, ry, rz) {
+  setKinematicTransform(body, x2, y2, z, rx, ry, rz) {
     if (typeof rx == "undefined") {
       var rx = 0;
     }
@@ -6852,8 +6853,8 @@ var MatrixAmmo = class {
     let pos = new Ammo.btVector3();
     pos = body.getWorldTransform().getOrigin();
     let localRot = body.getWorldTransform().getRotation();
-    pos.setX(pos.x() + x);
-    pos.setY(pos.y() + y);
+    pos.setX(pos.x() + x2);
+    pos.setY(pos.y() + y2);
     pos.setZ(pos.z() + z);
     localRot.setX(rx);
     localRot.setY(ry);
@@ -7084,11 +7085,11 @@ var MatrixSounds = class {
     this.enabled = true;
   }
   createClones(c, name, path) {
-    for (let x = 1; x < c; x++) {
+    for (let x2 = 1; x2 < c; x2++) {
       const a = new Audio(path);
-      a.id = name + x;
+      a.id = name + x2;
       a.volume = this.volume;
-      this.audios[name + x] = a;
+      this.audios[name + x2] = a;
       document.body.append(a);
     }
   }
@@ -7640,12 +7641,12 @@ var ctorMap2 = /* @__PURE__ */ new Map([
 ]);
 var newMat32 = ctorMap2.get(Float32Array);
 var VecType$12 = Float32Array;
-function create$22(x, y, z) {
+function create$22(x2, y2, z) {
   const dst = new VecType$12(3);
-  if (x !== void 0) {
-    dst[0] = x;
-    if (y !== void 0) {
-      dst[1] = y;
+  if (x2 !== void 0) {
+    dst[0] = x2;
+    if (y2 !== void 0) {
+      dst[1] = y2;
       if (z !== void 0) {
         dst[2] = z;
       }
@@ -8405,29 +8406,29 @@ function rotateZ2(m, angleInRadians, dst) {
 }
 function axisRotation2(axis, angleInRadians, dst) {
   dst = dst || new MatType2(16);
-  let x = axis[0];
-  let y = axis[1];
+  let x2 = axis[0];
+  let y2 = axis[1];
   let z = axis[2];
-  const n = Math.sqrt(x * x + y * y + z * z);
-  x /= n;
-  y /= n;
+  const n = Math.sqrt(x2 * x2 + y2 * y2 + z * z);
+  x2 /= n;
+  y2 /= n;
   z /= n;
-  const xx = x * x;
-  const yy = y * y;
+  const xx = x2 * x2;
+  const yy = y2 * y2;
   const zz = z * z;
   const c = Math.cos(angleInRadians);
   const s = Math.sin(angleInRadians);
   const oneMinusCosine = 1 - c;
   dst[0] = xx + (1 - xx) * c;
-  dst[1] = x * y * oneMinusCosine + z * s;
-  dst[2] = x * z * oneMinusCosine - y * s;
+  dst[1] = x2 * y2 * oneMinusCosine + z * s;
+  dst[2] = x2 * z * oneMinusCosine - y2 * s;
   dst[3] = 0;
-  dst[4] = x * y * oneMinusCosine - z * s;
+  dst[4] = x2 * y2 * oneMinusCosine - z * s;
   dst[5] = yy + (1 - yy) * c;
-  dst[6] = y * z * oneMinusCosine + x * s;
+  dst[6] = y2 * z * oneMinusCosine + x2 * s;
   dst[7] = 0;
-  dst[8] = x * z * oneMinusCosine + y * s;
-  dst[9] = y * z * oneMinusCosine - x * s;
+  dst[8] = x2 * z * oneMinusCosine + y2 * s;
+  dst[9] = y2 * z * oneMinusCosine - x2 * s;
   dst[10] = zz + (1 - zz) * c;
   dst[11] = 0;
   dst[12] = 0;
@@ -8439,27 +8440,27 @@ function axisRotation2(axis, angleInRadians, dst) {
 var rotation2 = axisRotation2;
 function axisRotate2(m, axis, angleInRadians, dst) {
   dst = dst || new MatType2(16);
-  let x = axis[0];
-  let y = axis[1];
+  let x2 = axis[0];
+  let y2 = axis[1];
   let z = axis[2];
-  const n = Math.sqrt(x * x + y * y + z * z);
-  x /= n;
-  y /= n;
+  const n = Math.sqrt(x2 * x2 + y2 * y2 + z * z);
+  x2 /= n;
+  y2 /= n;
   z /= n;
-  const xx = x * x;
-  const yy = y * y;
+  const xx = x2 * x2;
+  const yy = y2 * y2;
   const zz = z * z;
   const c = Math.cos(angleInRadians);
   const s = Math.sin(angleInRadians);
   const oneMinusCosine = 1 - c;
   const r00 = xx + (1 - xx) * c;
-  const r01 = x * y * oneMinusCosine + z * s;
-  const r02 = x * z * oneMinusCosine - y * s;
-  const r10 = x * y * oneMinusCosine - z * s;
+  const r01 = x2 * y2 * oneMinusCosine + z * s;
+  const r02 = x2 * z * oneMinusCosine - y2 * s;
+  const r10 = x2 * y2 * oneMinusCosine - z * s;
   const r11 = yy + (1 - yy) * c;
-  const r12 = y * z * oneMinusCosine + x * s;
-  const r20 = x * z * oneMinusCosine + y * s;
-  const r21 = y * z * oneMinusCosine - x * s;
+  const r12 = y2 * z * oneMinusCosine + x2 * s;
+  const r20 = x2 * z * oneMinusCosine + y2 * s;
+  const r21 = y2 * z * oneMinusCosine - x2 * s;
   const r22 = zz + (1 - zz) * c;
   const m00 = m[0];
   const m01 = m[1];
@@ -8597,8 +8598,8 @@ function npdeg2rad(degrees) {
     degrees[2] * (Math.PI / 180)
   ];
 }
-function byId2(id) {
-  return document.getElementById(id);
+function byId2(id2) {
+  return document.getElementById(id2);
 }
 function dot3vs1(a, b) {
   var aNumRows = a.length, aNumCols = a[0].length, bNumRows = b.length;
@@ -9110,7 +9111,7 @@ var MEBvh = class {
   }
   frame_pose(frame) {
     var jointLength = 0;
-    for (var x in this.joints) {
+    for (var x2 in this.joints) {
       jointLength++;
     }
     var p = Array.from(Array(jointLength), () => [0, 0, 0]);
@@ -9137,7 +9138,7 @@ var MEBvh = class {
   }
   all_frame_poses() {
     var jointLength = 0;
-    for (var x in this.joints) {
+    for (var x2 in this.joints) {
       jointLength++;
     }
     var p = Array.from({ length: this.frames }, () => Array.from({ length: jointLength }, () => [0, 0, 0]));
@@ -9519,15 +9520,15 @@ function multiply2(out, a, b) {
   return out;
 }
 function translate3(out, a, v) {
-  var x = v[0], y = v[1], z = v[2];
+  var x2 = v[0], y2 = v[1], z = v[2];
   var a00, a01, a02, a03;
   var a10, a11, a12, a13;
   var a20, a21, a22, a23;
   if (a === out) {
-    out[12] = a[0] * x + a[4] * y + a[8] * z + a[12];
-    out[13] = a[1] * x + a[5] * y + a[9] * z + a[13];
-    out[14] = a[2] * x + a[6] * y + a[10] * z + a[14];
-    out[15] = a[3] * x + a[7] * y + a[11] * z + a[15];
+    out[12] = a[0] * x2 + a[4] * y2 + a[8] * z + a[12];
+    out[13] = a[1] * x2 + a[5] * y2 + a[9] * z + a[13];
+    out[14] = a[2] * x2 + a[6] * y2 + a[10] * z + a[14];
+    out[15] = a[3] * x2 + a[7] * y2 + a[11] * z + a[15];
   } else {
     a00 = a[0];
     a01 = a[1];
@@ -9553,23 +9554,23 @@ function translate3(out, a, v) {
     out[9] = a21;
     out[10] = a22;
     out[11] = a23;
-    out[12] = a00 * x + a10 * y + a20 * z + a[12];
-    out[13] = a01 * x + a11 * y + a21 * z + a[13];
-    out[14] = a02 * x + a12 * y + a22 * z + a[14];
-    out[15] = a03 * x + a13 * y + a23 * z + a[15];
+    out[12] = a00 * x2 + a10 * y2 + a20 * z + a[12];
+    out[13] = a01 * x2 + a11 * y2 + a21 * z + a[13];
+    out[14] = a02 * x2 + a12 * y2 + a22 * z + a[14];
+    out[15] = a03 * x2 + a13 * y2 + a23 * z + a[15];
   }
   return out;
 }
 function scale(out, a, v) {
-  var x = v[0], y = v[1], z = v[2];
-  out[0] = a[0] * x;
-  out[1] = a[1] * x;
-  out[2] = a[2] * x;
-  out[3] = a[3] * x;
-  out[4] = a[4] * y;
-  out[5] = a[5] * y;
-  out[6] = a[6] * y;
-  out[7] = a[7] * y;
+  var x2 = v[0], y2 = v[1], z = v[2];
+  out[0] = a[0] * x2;
+  out[1] = a[1] * x2;
+  out[2] = a[2] * x2;
+  out[3] = a[3] * x2;
+  out[4] = a[4] * y2;
+  out[5] = a[5] * y2;
+  out[6] = a[6] * y2;
+  out[7] = a[7] * y2;
   out[8] = a[8] * z;
   out[9] = a[9] * z;
   out[10] = a[10] * z;
@@ -9581,8 +9582,8 @@ function scale(out, a, v) {
   return out;
 }
 function rotate4(out, a, rad, axis) {
-  var x = axis[0], y = axis[1], z = axis[2];
-  var len = Math.sqrt(x * x + y * y + z * z);
+  var x2 = axis[0], y2 = axis[1], z = axis[2];
+  var len = Math.sqrt(x2 * x2 + y2 * y2 + z * z);
   var s, c, t;
   var a00, a01, a02, a03;
   var a10, a11, a12, a13;
@@ -9594,8 +9595,8 @@ function rotate4(out, a, rad, axis) {
     return null;
   }
   len = 1 / len;
-  x *= len;
-  y *= len;
+  x2 *= len;
+  y2 *= len;
   z *= len;
   s = Math.sin(rad);
   c = Math.cos(rad);
@@ -9612,14 +9613,14 @@ function rotate4(out, a, rad, axis) {
   a21 = a[9];
   a22 = a[10];
   a23 = a[11];
-  b00 = x * x * t + c;
-  b01 = y * x * t + z * s;
-  b02 = z * x * t - y * s;
-  b10 = x * y * t - z * s;
-  b11 = y * y * t + c;
-  b12 = z * y * t + x * s;
-  b20 = x * z * t + y * s;
-  b21 = y * z * t - x * s;
+  b00 = x2 * x2 * t + c;
+  b01 = y2 * x2 * t + z * s;
+  b02 = z * x2 * t - y2 * s;
+  b10 = x2 * y2 * t - z * s;
+  b11 = y2 * y2 * t + c;
+  b12 = z * y2 * t + x2 * s;
+  b20 = x2 * z * t + y2 * s;
+  b21 = y2 * z * t - x2 * s;
   b22 = z * z * t + c;
   out[0] = a00 * b00 + a10 * b01 + a20 * b02;
   out[1] = a01 * b00 + a11 * b01 + a21 * b02;
@@ -9773,29 +9774,29 @@ function fromScaling(out, v) {
   return out;
 }
 function fromRotation(out, rad, axis) {
-  var x = axis[0], y = axis[1], z = axis[2];
-  var len = Math.sqrt(x * x + y * y + z * z);
+  var x2 = axis[0], y2 = axis[1], z = axis[2];
+  var len = Math.sqrt(x2 * x2 + y2 * y2 + z * z);
   var s, c, t;
   if (len < EPSILON3) {
     return null;
   }
   len = 1 / len;
-  x *= len;
-  y *= len;
+  x2 *= len;
+  y2 *= len;
   z *= len;
   s = Math.sin(rad);
   c = Math.cos(rad);
   t = 1 - c;
-  out[0] = x * x * t + c;
-  out[1] = y * x * t + z * s;
-  out[2] = z * x * t - y * s;
+  out[0] = x2 * x2 * t + c;
+  out[1] = y2 * x2 * t + z * s;
+  out[2] = z * x2 * t - y2 * s;
   out[3] = 0;
-  out[4] = x * y * t - z * s;
-  out[5] = y * y * t + c;
-  out[6] = z * y * t + x * s;
+  out[4] = x2 * y2 * t - z * s;
+  out[5] = y2 * y2 * t + c;
+  out[6] = z * y2 * t + x2 * s;
   out[7] = 0;
-  out[8] = x * z * t + y * s;
-  out[9] = y * z * t - x * s;
+  out[8] = x2 * z * t + y2 * s;
+  out[9] = y2 * z * t - x2 * s;
   out[10] = z * z * t + c;
   out[11] = 0;
   out[12] = 0;
@@ -9868,18 +9869,18 @@ function fromZRotation(out, rad) {
   return out;
 }
 function fromRotationTranslation(out, q, v) {
-  var x = q[0], y = q[1], z = q[2], w = q[3];
-  var x2 = x + x;
-  var y2 = y + y;
+  var x2 = q[0], y2 = q[1], z = q[2], w = q[3];
+  var x22 = x2 + x2;
+  var y22 = y2 + y2;
   var z2 = z + z;
-  var xx = x * x2;
-  var xy = x * y2;
-  var xz = x * z2;
-  var yy = y * y2;
-  var yz = y * z2;
+  var xx = x2 * x22;
+  var xy = x2 * y22;
+  var xz = x2 * z2;
+  var yy = y2 * y22;
+  var yz = y2 * z2;
   var zz = z * z2;
-  var wx = w * x2;
-  var wy = w * y2;
+  var wx = w * x22;
+  var wy = w * y22;
   var wz = w * z2;
   out[0] = 1 - (yy + zz);
   out[1] = xy + wz;
@@ -10038,18 +10039,18 @@ function decompose(out_r, out_t, out_s, mat) {
   return out_r;
 }
 function fromRotationTranslationScale(out, q, v, s) {
-  var x = q[0], y = q[1], z = q[2], w = q[3];
-  var x2 = x + x;
-  var y2 = y + y;
+  var x2 = q[0], y2 = q[1], z = q[2], w = q[3];
+  var x22 = x2 + x2;
+  var y22 = y2 + y2;
   var z2 = z + z;
-  var xx = x * x2;
-  var xy = x * y2;
-  var xz = x * z2;
-  var yy = y * y2;
-  var yz = y * z2;
+  var xx = x2 * x22;
+  var xy = x2 * y22;
+  var xz = x2 * z2;
+  var yy = y2 * y22;
+  var yz = y2 * z2;
   var zz = z * z2;
-  var wx = w * x2;
-  var wy = w * y2;
+  var wx = w * x22;
+  var wy = w * y22;
   var wz = w * z2;
   var sx = s[0];
   var sy = s[1];
@@ -10073,18 +10074,18 @@ function fromRotationTranslationScale(out, q, v, s) {
   return out;
 }
 function fromRotationTranslationScaleOrigin(out, q, v, s, o) {
-  var x = q[0], y = q[1], z = q[2], w = q[3];
-  var x2 = x + x;
-  var y2 = y + y;
+  var x2 = q[0], y2 = q[1], z = q[2], w = q[3];
+  var x22 = x2 + x2;
+  var y22 = y2 + y2;
   var z2 = z + z;
-  var xx = x * x2;
-  var xy = x * y2;
-  var xz = x * z2;
-  var yy = y * y2;
-  var yz = y * z2;
+  var xx = x2 * x22;
+  var xy = x2 * y22;
+  var xz = x2 * z2;
+  var yy = y2 * y22;
+  var yz = y2 * z2;
   var zz = z * z2;
-  var wx = w * x2;
-  var wy = w * y2;
+  var wx = w * x22;
+  var wy = w * y22;
   var wz = w * z2;
   var sx = s[0];
   var sy = s[1];
@@ -10120,18 +10121,18 @@ function fromRotationTranslationScaleOrigin(out, q, v, s, o) {
   return out;
 }
 function fromQuat3(out, q) {
-  var x = q[0], y = q[1], z = q[2], w = q[3];
-  var x2 = x + x;
-  var y2 = y + y;
+  var x2 = q[0], y2 = q[1], z = q[2], w = q[3];
+  var x22 = x2 + x2;
+  var y22 = y2 + y2;
   var z2 = z + z;
-  var xx = x * x2;
-  var yx = y * x2;
-  var yy = y * y2;
-  var zx = z * x2;
-  var zy = z * y2;
+  var xx = x2 * x22;
+  var yx = y2 * x22;
+  var yy = y2 * y22;
+  var zx = z * x22;
+  var zy = z * y22;
   var zz = z * z2;
-  var wx = w * x2;
-  var wy = w * y2;
+  var wx = w * x22;
+  var wy = w * y22;
   var wz = w * z2;
   out[0] = 1 - yy - zz;
   out[1] = yx + wz;
@@ -10531,8 +10532,8 @@ var GLTFTextureFilter = {
 function alignTo(val, align) {
   return Math.floor((val + align - 1) / align) * align;
 }
-function gltfTypeNumComponents(type) {
-  switch (type) {
+function gltfTypeNumComponents(type2) {
+  switch (type2) {
     case "SCALAR":
       return 1;
     case "VEC2":
@@ -10542,11 +10543,11 @@ function gltfTypeNumComponents(type) {
     case "VEC4":
       return 4;
     default:
-      alert("Unhandled glTF Type " + type);
+      alert("Unhandled glTF Type " + type2);
       return null;
   }
 }
-function gltfTypeSize(componentType, type) {
+function gltfTypeSize(componentType, type2) {
   var typeSize = 0;
   switch (componentType) {
     case GLTFComponentType.BYTE:
@@ -10576,7 +10577,7 @@ function gltfTypeSize(componentType, type) {
     default:
       alert("Unrecognized GLTF Component Type?");
   }
-  return gltfTypeNumComponents(type) * typeSize;
+  return gltfTypeNumComponents(type2) * typeSize;
 }
 var GLTFBuffer = class {
   constructor(buffer, size, offset) {
@@ -11137,8 +11138,8 @@ var BVHPlayer = class extends MEMeshObj {
         throw new Error("Unknown channel path: " + path);
     }
   }
-  getNumComponents(type) {
-    switch (type) {
+  getNumComponents(type2) {
+    switch (type2) {
       case "SCALAR":
         return 1;
       case "VEC2":
@@ -11150,7 +11151,7 @@ var BVHPlayer = class extends MEMeshObj {
       case "MAT4":
         return 16;
       default:
-        throw new Error("Unknown type: " + type);
+        throw new Error("Unknown type: " + type2);
     }
   }
   getComponentSize(componentType) {
@@ -11216,9 +11217,9 @@ var BVHPlayer = class extends MEMeshObj {
   }
   // naive quaternion to 4x4 matrix
   quatToMat4(q) {
-    const [x, y, z, w] = q;
-    const xx = x * x, yy = y * y, zz = z * z;
-    const xy = x * y, xz = x * z, yz = y * z, wx = w * x, wy = w * y, wz = w * z;
+    const [x2, y2, z, w] = q;
+    const xx = x2 * x2, yy = y2 * y2, zz = z * z;
+    const xy = x2 * y2, xz = x2 * z, yz = y2 * z, wx = w * x2, wy = w * y2, wz = w * z;
     return new Float32Array([
       1 - 2 * (yy + zz),
       2 * (xy + wz),
@@ -12159,8 +12160,8 @@ fn main(
 
 // ../../../engine/geometry-factory.js
 var GeometryFactory = class _GeometryFactory {
-  static create(type, size = 1, segments = 16, options = {}) {
-    switch (type) {
+  static create(type2, size = 1, segments = 16, options2 = {}) {
+    switch (type2) {
       case "quad":
         return _GeometryFactory.quad(size);
       case "cube":
@@ -12178,9 +12179,9 @@ var GeometryFactory = class _GeometryFactory {
       case "diamond":
         return _GeometryFactory.diamond(size);
       case "rock":
-        return _GeometryFactory.rock(size, options.detail || 3);
+        return _GeometryFactory.rock(size, options2.detail || 3);
       case "meteor":
-        return _GeometryFactory.meteor(size, options.detail || 6);
+        return _GeometryFactory.meteor(size, options2.detail || 6);
       case "thunder":
         return _GeometryFactory.thunder(size);
       case "shard":
@@ -12188,9 +12189,9 @@ var GeometryFactory = class _GeometryFactory {
       case "circlePlane":
         return _GeometryFactory.circlePlane(size, segments);
       case "ring":
-        return _GeometryFactory.ring(size, options.innerRatio || 0.7, segments, options.height || 0.05);
+        return _GeometryFactory.ring(size, options2.innerRatio || 0.7, segments, options2.height || 0.05);
       default:
-        throw new Error(`Unknown geometry: ${type}`);
+        throw new Error(`Unknown geometry: ${type2}`);
     }
   }
   // --- BASIC SHAPES ---------------------------------------------------------
@@ -12300,17 +12301,17 @@ var GeometryFactory = class _GeometryFactory {
   }
   static sphere(R = 0.1, seg = 16) {
     const p = [], uv = [], ind = [];
-    for (let y = 0; y <= seg; y++) {
-      const v = y / seg, \u03B8 = v * Math.PI;
-      for (let x = 0; x <= seg; x++) {
-        const u = x / seg, \u03C6 = u * Math.PI * 2;
+    for (let y2 = 0; y2 <= seg; y2++) {
+      const v = y2 / seg, \u03B8 = v * Math.PI;
+      for (let x2 = 0; x2 <= seg; x2++) {
+        const u = x2 / seg, \u03C6 = u * Math.PI * 2;
         p.push(R * Math.sin(\u03B8) * Math.cos(\u03C6), R * Math.cos(\u03B8), R * Math.sin(\u03B8) * Math.sin(\u03C6));
         uv.push(u, v);
       }
     }
-    for (let y = 0; y < seg; y++) {
-      for (let x = 0; x < seg; x++) {
-        const i = y * (seg + 1) + x;
+    for (let y2 = 0; y2 < seg; y2++) {
+      for (let x2 = 0; x2 < seg; x2++) {
+        const i = y2 * (seg + 1) + x2;
         ind.push(i, i + seg + 1, i + 1, i + 1, i + seg + 1, i + seg + 2);
       }
     }
@@ -12367,10 +12368,10 @@ var GeometryFactory = class _GeometryFactory {
     const indices = [];
     for (let i = 0; i <= segments; i++) {
       const angle2 = i / segments * Math.PI * 2;
-      const x = Math.cos(angle2) * radius;
-      const y = Math.sin(angle2) * radius;
-      positions.push(x, y, 0);
-      uvs.push((x / radius + 1) / 2, (y / radius + 1) / 2);
+      const x2 = Math.cos(angle2) * radius;
+      const y2 = Math.sin(angle2) * radius;
+      positions.push(x2, y2, 0);
+      uvs.push((x2 / radius + 1) / 2, (y2 / radius + 1) / 2);
       if (i > 0) {
         indices.push(0, i, i + 1);
       }
@@ -12437,10 +12438,10 @@ var GeometryFactory = class _GeometryFactory {
   static thunder(S = 1) {
     const pts = [0, 0, 0];
     for (let i = 1; i < 8; i++) {
-      const x = (Math.random() - 0.5) * 0.2 * S;
-      const y = i * (S / 7);
+      const x2 = (Math.random() - 0.5) * 0.2 * S;
+      const y2 = i * (S / 7);
       const z = (Math.random() - 0.5) * 0.1 * S;
-      pts.push(x, y, z);
+      pts.push(x2, y2, z);
     }
     const p = [], uv = [], ind = [];
     for (let i = 0; i < pts.length / 3 - 1; i++) {
@@ -12501,11 +12502,11 @@ var GeometryFactory = class _GeometryFactory {
     uvs.push(0.5, 0.5);
     for (let i = 0; i <= segments; i++) {
       const angle2 = i / segments * Math.PI * 2;
-      const x = Math.cos(angle2) * radius;
-      const y = 0;
+      const x2 = Math.cos(angle2) * radius;
+      const y2 = 0;
       const z = Math.sin(angle2) * radius;
-      positions.push(x, y, z);
-      uvs.push((x / radius + 1) / 2, (z / radius + 1) / 2);
+      positions.push(x2, y2, z);
+      uvs.push((x2 / radius + 1) / 2, (z / radius + 1) / 2);
     }
     for (let i = 1; i <= segments; i++) {
       indices.push(0, i, i + 1);
@@ -12596,10 +12597,10 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
 
 // ../../../engine/effects/gen.js
 var GenGeo = class {
-  constructor(device, format, type = "sphere", scale2 = 1) {
+  constructor(device, format, type2 = "sphere", scale2 = 1) {
     this.device = device;
     this.format = format;
-    const geom = GeometryFactory.create(type, scale2);
+    const geom = GeometryFactory.create(type2, scale2);
     this.vertexData = geom.positions;
     this.uvData = geom.uvs;
     this.indexData = geom.indices;
@@ -12633,9 +12634,9 @@ var GenGeo = class {
     this.maxInstances = 5;
     this.instanceCount = 2;
     this.floatsPerInstance = 16 + 4;
-    for (let x = 0; x < this.maxInstances; x++) {
+    for (let x2 = 0; x2 < this.maxInstances; x2++) {
       this.instanceTargets.push({
-        index: x,
+        index: x2,
         position: [0, 0, 0],
         currentPosition: [0, 0, 0],
         scale: [1, 1, 1],
@@ -13651,10 +13652,10 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
 
 // ../../../engine/effects/gen-tex.js
 var GenGeoTexture = class {
-  constructor(device, format, type = "sphere", path, scale2 = 1) {
+  constructor(device, format, type2 = "sphere", path, scale2 = 1) {
     this.device = device;
     this.format = format;
-    const geom = GeometryFactory.create(type, scale2);
+    const geom = GeometryFactory.create(type2, scale2);
     this.vertexData = geom.positions;
     this.uvData = geom.uvs;
     this.indexData = geom.indices;
@@ -13717,9 +13718,9 @@ var GenGeoTexture = class {
     this.maxInstances = 5;
     this.instanceCount = 2;
     this.floatsPerInstance = 16 + 4;
-    for (let x = 0; x < this.maxInstances; x++) {
+    for (let x2 = 0; x2 < this.maxInstances; x2++) {
       this.instanceTargets.push({
-        index: x,
+        index: x2,
         position: [0, 0, 0],
         currentPosition: [0, 0, 0],
         scale: [1, 1, 1],
@@ -13830,10 +13831,10 @@ var GenGeoTexture = class {
 
 // ../../../engine/effects/gen-tex2.js
 var GenGeoTexture2 = class {
-  constructor(device, format, type = "sphere", path, scale2 = 1) {
+  constructor(device, format, type2 = "sphere", path, scale2 = 1) {
     this.device = device;
     this.format = format;
-    const geom = GeometryFactory.create(type, scale2);
+    const geom = GeometryFactory.create(type2, scale2);
     this.vertexData = geom.positions;
     this.uvData = geom.uvs;
     this.indexData = geom.indices;
@@ -13903,9 +13904,9 @@ var GenGeoTexture2 = class {
     this.maxInstances = 5;
     this.instanceCount = 2;
     this.floatsPerInstance = 16 + 4;
-    for (let x = 0; x < this.maxInstances; x++) {
+    for (let x2 = 0; x2 < this.maxInstances; x2++) {
       this.instanceTargets.push({
-        index: x,
+        index: x2,
         position: [0, 0, 0],
         currentPosition: [0, 0, 0],
         scale: [1, 1, 1],
@@ -14390,9 +14391,9 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
       this.maxInstances = 5;
       this.instanceCount = 2;
       this.floatsPerInstance = 16 + 4;
-      for (let x = 0; x < this.maxInstances; x++) {
+      for (let x2 = 0; x2 < this.maxInstances; x2++) {
         this.instanceTargets.push({
-          index: x,
+          index: x2,
           position: [0, 0, 0],
           currentPosition: [0, 0, 0],
           scale: [1, 1, 1],
@@ -14457,9 +14458,9 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
       };
       this.updateMaxInstances = (newMax) => {
         this.maxInstances = newMax;
-        for (let x = 0; x < this.maxInstances; x++) {
+        for (let x2 = 0; x2 < this.maxInstances; x2++) {
           this.instanceTargets.push({
-            index: x,
+            index: x2,
             position: [0, 0, 0],
             currentPosition: [0, 0, 0],
             scale: [1, 1, 1],
@@ -15027,8 +15028,8 @@ var BVHPlayerInstances = class extends MEMeshObjInstances {
         throw new Error("Unknown channel path: " + path);
     }
   }
-  getNumComponents(type) {
-    switch (type) {
+  getNumComponents(type2) {
+    switch (type2) {
       case "SCALAR":
         return 1;
       case "VEC2":
@@ -15040,7 +15041,7 @@ var BVHPlayerInstances = class extends MEMeshObjInstances {
       case "MAT4":
         return 16;
       default:
-        throw new Error("Unknown type: " + type);
+        throw new Error("Unknown type: " + type2);
     }
   }
   getComponentSize(componentType) {
@@ -15106,9 +15107,9 @@ var BVHPlayerInstances = class extends MEMeshObjInstances {
   }
   // naive quaternion to 4x4 matrix
   quatToMat4(q) {
-    const [x, y, z, w] = q;
-    const xx = x * x, yy = y * y, zz = z * z;
-    const xy = x * y, xz = x * z, yz = y * z, wx = w * x, wy = w * y, wz = w * z;
+    const [x2, y2, z, w] = q;
+    const xx = x2 * x2, yy = y2 * y2, zz = z * z;
+    const xy = x2 * y2, xz = x2 * z, yz = y2 * z, wx = w * x2, wy = w * y2, wz = w * z;
     return new Float32Array([
       1 - 2 * (yy + zz),
       2 * (xy + wz),
@@ -15727,17 +15728,17 @@ var FluxCodexVertex = class _FluxCodexVertex {
       const menuRect = CMenu.getBoundingClientRect();
       const vw = window.innerWidth;
       const vh = window.innerHeight;
-      let x = e.clientX;
-      let y = e.clientY;
-      if (x + menuRect.width > vw) {
-        x = vw - menuRect.width - 5;
+      let x2 = e.clientX;
+      let y2 = e.clientY;
+      if (x2 + menuRect.width > vw) {
+        x2 = vw - menuRect.width - 5;
       }
-      if (y > vh * 0.5) {
-        y = y - menuRect.height;
+      if (y2 > vh * 0.5) {
+        y2 = y2 - menuRect.height;
       }
-      if (y < 5) y = 5;
-      CMenu.style.left = x + "px";
-      CMenu.style.top = y + "px";
+      if (y2 < 5) y2 = 5;
+      CMenu.style.left = x2 + "px";
+      CMenu.style.top = y2 + "px";
       CMenu.classList.remove("hidden");
     });
     document.addEventListener("click", () => {
@@ -15762,6 +15763,7 @@ var FluxCodexVertex = class _FluxCodexVertex {
     <hr>
     <span>Scene</span>
     <button onclick="app.editor.fluxCodexVertex.addNode('getSceneObject')">Get Scene Object</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('getSceneLight')">Get Scene Light</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('setPosition')">Set Position</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('onTargetPositionReach')">onTargetPositionReach</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('getObjectAnimation')">Get Object Animation</button>
@@ -15821,22 +15823,22 @@ var FluxCodexVertex = class _FluxCodexVertex {
   evaluateGetterNode(n) {
     const key = n.fields?.find((f) => f.key === "var")?.value;
     if (!key) return;
-    const type = n.title.replace("Get ", "").toLowerCase();
-    const entry = this.variables[type]?.[key];
-    n._returnCache = entry ? entry.value : type === "number" ? 0 : type === "boolean" ? false : type === "string" ? "" : type === "object" ? {} : void 0;
+    const type2 = n.title.replace("Get ", "").toLowerCase();
+    const entry = this.variables[type2]?.[key];
+    n._returnCache = entry ? entry.value : type2 === "number" ? 0 : type2 === "boolean" ? false : type2 === "string" ? "" : type2 === "object" ? {} : void 0;
   }
-  notifyVariableChanged(type, key) {
-    for (const id in this.nodes) {
-      const n = this.nodes[id];
+  notifyVariableChanged(type2, key) {
+    for (const id2 in this.nodes) {
+      const n = this.nodes[id2];
       if (n.isGetterNode) {
         const varField = n.fields?.find((f) => f.key === "var");
-        if (varField?.value === key && n.title.replace("Get ", "").toLowerCase() === type) {
+        if (varField?.value === key && n.title.replace("Get ", "").toLowerCase() === type2) {
           this.evaluateGetterNode(n);
           if (n.displayEl) {
             const val = n._returnCache;
-            if (type === "object")
+            if (type2 === "object")
               n.displayEl.textContent = JSON.stringify(val, null, 2);
-            else if (type === "number")
+            else if (type2 === "number")
               n.displayEl.textContent = val.toFixed(3);
             else n.displayEl.textContent = String(val);
           }
@@ -15853,10 +15855,10 @@ var FluxCodexVertex = class _FluxCodexVertex {
         }
       });
     }
-    const input = this._varInputs?.[`${type}.${key}`];
+    const input = this._varInputs?.[`${type2}.${key}`];
     if (input) {
-      const storedValue = this.variables?.[type]?.[key];
-      if (type === "object")
+      const storedValue = this.variables?.[type2]?.[key];
+      if (type2 === "object")
         input.value = JSON.stringify(storedValue ?? {}, null, 2);
       else input.value = storedValue ?? "";
     }
@@ -15927,8 +15929,8 @@ var FluxCodexVertex = class _FluxCodexVertex {
       string: "#ffb74d",
       object: "#ce93d8"
     };
-    for (const type in this.variables) {
-      for (const name in this.variables[type]) {
+    for (const type2 in this.variables) {
+      for (const name in this.variables[type2]) {
         const row = document.createElement("div");
         Object.assign(row.style, {
           display: "flex",
@@ -15937,39 +15939,39 @@ var FluxCodexVertex = class _FluxCodexVertex {
           padding: "4px",
           cursor: "pointer",
           borderBottom: "1px solid #222",
-          color: colors[type] || "#fff"
+          color: colors[type2] || "#fff"
         });
         const label = document.createElement("span");
-        label.textContent = `${name} (${type})`;
+        label.textContent = `${name} (${type2})`;
         label.style.minWidth = "120px";
         let input;
-        if (type === "object") {
+        if (type2 === "object") {
           input = document.createElement("textarea");
-          input.value = JSON.stringify(this.variables[type][name] ?? {}, null, 2);
+          input.value = JSON.stringify(this.variables[type2][name] ?? {}, null, 2);
           input.style.width = "220px";
           input.style.height = "40px";
           input.style.webkitTextStrokeWidth = "0px";
         } else {
           input = document.createElement("input");
-          input.value = this.variables[type][name] ?? "";
+          input.value = this.variables[type2][name] ?? "";
           input.style.width = "";
         }
-        this._varInputs[`${type}.${name}`] = input;
+        this._varInputs[`${type2}.${name}`] = input;
         Object.assign(input.style, {
           background: "#000",
           color: "#fff",
           border: "1px solid #333"
         });
         input.oninput = () => {
-          if (type === "object") {
+          if (type2 === "object") {
             try {
               this.variables.object[name] = JSON.parse(input.value);
             } catch {
               return;
             }
-          } else if (type === "number") {
+          } else if (type2 === "number") {
             this.variables.number[name] = parseFloat(input.value);
-          } else if (type === "boolean") {
+          } else if (type2 === "boolean") {
             this.variables.boolean[name] = input.value === "true";
           } else {
             this.variables.string[name] = input.value;
@@ -15979,28 +15981,28 @@ var FluxCodexVertex = class _FluxCodexVertex {
         btnGet.innerText = "Get";
         btnGet.classList.add("btnGetter");
         btnGet.onclick = () => {
-          if (type === "number") this.createGetNumberNode(name);
-          else if (type === "boolean") this.createGetBooleanNode(name);
-          else if (type === "string") this.createGetStringNode(name);
-          else if (type === "object") this.createGetObjectNode(name);
+          if (type2 === "number") this.createGetNumberNode(name);
+          else if (type2 === "boolean") this.createGetBooleanNode(name);
+          else if (type2 === "string") this.createGetStringNode(name);
+          else if (type2 === "object") this.createGetObjectNode(name);
         };
         const btnSet = document.createElement("button");
         btnSet.innerText = "Set";
         btnSet.classList.add("btnGetter");
         btnSet.onclick = () => {
-          if (type === "number") this.createSetNumberNode(name);
-          else if (type === "boolean") this.createSetBooleanNode(name);
-          else if (type === "string") this.createSetStringNode(name);
-          else if (type === "object") this.createSetObjectNode(name);
+          if (type2 === "number") this.createSetNumberNode(name);
+          else if (type2 === "boolean") this.createSetBooleanNode(name);
+          else if (type2 === "string") this.createSetStringNode(name);
+          else if (type2 === "object") this.createSetObjectNode(name);
         };
         const btnDel = document.createElement("button");
         btnDel.innerText = "Del";
         btnDel.classList.add("btnGetter");
         btnDel.style.color = "#ff5252";
         btnDel.onclick = () => {
-          if (!confirm(`Delete variable "${name}" (${type}) ?`)) return;
-          delete this.variables[type][name];
-          delete this._varInputs[`${type}.${name}`];
+          if (!confirm(`Delete variable "${name}" (${type2}) ?`)) return;
+          delete this.variables[type2][name];
+          delete this._varInputs[`${type2}.${name}`];
           this._refreshVarsList(container);
         };
         row.append(label, input, btnGet, btnSet, btnDel);
@@ -16039,21 +16041,21 @@ var FluxCodexVertex = class _FluxCodexVertex {
       document.removeEventListener("mouseup", onUp);
     };
   }
-  _createVarBtn(label, type) {
+  _createVarBtn(label, type2) {
     const btn = document.createElement("button");
     btn.textContent = label;
     btn.style.flex = "1";
     btn.style.cursor = "pointer";
     btn.classList.add("btn4");
     btn.onclick = () => {
-      const name = prompt(`New ${type} variable name`);
+      const name = prompt(`New ${type2} variable name`);
       if (!name) return;
-      if (!this.variables[type]) this.variables[type] = {};
-      if (this.variables[type][name]) {
+      if (!this.variables[type2]) this.variables[type2] = {};
+      if (this.variables[type2][name]) {
         alert("Variable exists");
         return;
       }
-      this.variables[type][name] = type === "object" ? {} : type === "number" ? 0 : type === "boolean" ? false : type === "string" ? "" : null;
+      this.variables[type2][name] = type2 === "object" ? {} : type2 === "number" ? 0 : type2 === "boolean" ? false : type2 === "string" ? "" : null;
       this._refreshVarsList(this._varsPopup.children[1]);
     };
     return btn;
@@ -16064,9 +16066,9 @@ var FluxCodexVertex = class _FluxCodexVertex {
     const io = isOutput ? "out" : "in";
     return nodeEl.querySelector(`.pin[data-pin="${pinName}"][data-io="${io}"] .dot`);
   }
-  populateVariableSelect(select, type) {
+  populateVariableSelect(select, type2) {
     select.innerHTML = "";
-    const vars = this.variables[type];
+    const vars = this.variables[type2];
     if (!vars.length) {
       const opt = document.createElement("option");
       opt.textContent = "(no variables)";
@@ -16173,29 +16175,29 @@ var FluxCodexVertex = class _FluxCodexVertex {
     }
   }
   // NODE/PIN
-  startConnect(nodeId, pinName, type, isOut) {
+  startConnect(nodeId, pinName, type2, isOut) {
     this.state.connecting = {
       node: nodeId,
       pin: pinName,
-      type,
+      type: type2,
       out: isOut
     };
   }
-  finishConnect(nodeId, pinName, type) {
+  finishConnect(nodeId, pinName, type2) {
     if (!this.state.connecting || this.state.connecting.node === nodeId) {
       this.state.connecting = null;
       return;
     }
     const from = this.state.connecting.out ? this.state.connecting : { node: nodeId, pin: pinName };
     const to = this.state.connecting.out ? { node: nodeId, pin: pinName } : this.state.connecting;
-    if (from.pin && to.pin && this.isTypeCompatible(this.state.connecting.type, type)) {
+    if (from.pin && to.pin && this.isTypeCompatible(this.state.connecting.type, type2)) {
       const exists = this.links.find(
         (l) => l.from.node === from.node && l.from.pin === from.pin && l.to.node === to.node && l.to.pin === to.pin
       );
       if (!exists) {
-        this.links.push({ id: "link_" + this.linkCounter++, from, to, type });
+        this.links.push({ id: "link_" + this.linkCounter++, from, to, type: type2 });
         this.updateLinks();
-        if (type === "value") setTimeout(() => this.updateValueDisplays(), 0);
+        if (type2 === "value") setTimeout(() => this.updateValueDisplays(), 0);
       }
     }
     this.state.connecting = null;
@@ -16242,7 +16244,7 @@ var FluxCodexVertex = class _FluxCodexVertex {
     this.updateNodeDOM(getSubNode.id);
   }
   onPinsConnected(sourceNode, sourcePin, targetNode) {
-    if (targetNode.title === "Get Scene Object" || targetNode.title === "Get Sub Object") {
+    if (targetNode.title === "Get Scene Object" || targetNode.title === "Get Sub Object" || targetNode.title === "Get Scene Light") {
       this._adaptGetSubObjectOnConnect(targetNode, sourceNode, sourcePin);
     }
   }
@@ -16250,10 +16252,10 @@ var FluxCodexVertex = class _FluxCodexVertex {
     const out = node2.outputs?.find((p) => p.name === pinName);
     return out?.value;
   }
-  normalizePinType(type) {
-    if (!type) return "any";
-    if (type === "number") return "value";
-    return type;
+  normalizePinType(type2) {
+    if (!type2) return "any";
+    if (type2 === "number") return "value";
+    return type2;
   }
   updateSceneObjectPins(node2, objectName) {
     const obj = (node2.accessObject || []).find((o) => o.name === objectName);
@@ -16262,8 +16264,8 @@ var FluxCodexVertex = class _FluxCodexVertex {
     node2.exposeProps.forEach((p) => {
       const value = this.getByPath(obj, p);
       if (value !== void 0) {
-        const type = typeof value === "number" ? "number" : typeof value === "string" ? "string" : "object";
-        node2.outputs.push({ name: p, type });
+        const type2 = typeof value === "number" ? "number" : typeof value === "string" ? "string" : "object";
+        node2.outputs.push({ name: p, type: type2 });
       }
     });
     this.updateNodeDOM(node2.id);
@@ -16296,24 +16298,24 @@ var FluxCodexVertex = class _FluxCodexVertex {
     );
     return pin;
   }
-  createNodeDOM(spec) {
+  createNodeDOM(spec2) {
     const el = document.createElement("div");
-    if (spec.title == "Fetch") {
-      el.className = "node " + (spec.title.toLowerCase() || "");
+    if (spec2.title == "Fetch") {
+      el.className = "node " + (spec2.title.toLowerCase() || "");
     } else {
-      el.className = "node " + (spec.category || "");
+      el.className = "node " + (spec2.category || "");
     }
-    el.style.left = spec.x + "px";
-    el.style.top = spec.y + "px";
-    el.dataset.id = spec.id;
+    el.style.left = spec2.x + "px";
+    el.style.top = spec2.y + "px";
+    el.dataset.id = spec2.id;
     const header = document.createElement("div");
     header.className = "header";
-    header.textContent = spec.title;
+    header.textContent = spec2.title;
     el.appendChild(header);
     const body = document.createElement("div");
     body.className = "body";
     const row = document.createElement("div");
-    if (spec.title == "Comment") {
+    if (spec2.title == "Comment") {
       row.classList.add("pin-row");
       row.classList.add("comment");
     } else {
@@ -16323,47 +16325,47 @@ var FluxCodexVertex = class _FluxCodexVertex {
     left.className = "pins-left";
     const right = document.createElement("div");
     right.className = "pins-right";
-    (spec.inputs || []).forEach((pin) => {
+    (spec2.inputs || []).forEach((pin) => {
       pin.type = this.normalizePinType(pin.type);
-      left.appendChild(this._pinElement(pin, false, spec.id));
+      left.appendChild(this._pinElement(pin, false, spec2.id));
     });
-    (spec.outputs || []).forEach((pin) => {
+    (spec2.outputs || []).forEach((pin) => {
       pin.type = this.normalizePinType(pin.type);
-      right.appendChild(this._pinElement(pin, true, spec.id));
+      right.appendChild(this._pinElement(pin, true, spec2.id));
     });
     row.appendChild(left);
     row.appendChild(right);
     body.appendChild(row);
-    if (spec.comment) {
+    if (spec2.comment) {
       const textarea = document.createElement("textarea");
       textarea.style.webkitBoxShadow = "inset 0px 0px 1px 4px #9E9E9E";
       textarea.style.boxShadow = "inset 0px 0px 22px 1px rgba(118, 118, 118, 1)";
       textarea.style.backgroundColor = "gray";
       textarea.style.color = "black";
-      textarea.value = spec.fields.find((f) => f.key === "text").value;
+      textarea.value = spec2.fields.find((f) => f.key === "text").value;
       textarea.oninput = () => {
-        spec.fields.find((f) => f.key === "text").value = textarea.value;
+        spec2.fields.find((f) => f.key === "text").value = textarea.value;
         row.textContent = textarea.value || "Comment";
       };
       body.appendChild(textarea);
     }
-    if (spec.fields?.length && !spec.comment) {
+    if (spec2.fields?.length && !spec2.comment) {
       const fieldsWrap = document.createElement("div");
       fieldsWrap.className = "node-fields";
-      spec.fields.forEach((field) => {
+      spec2.fields.forEach((field) => {
         if (field.key === "var") return;
-        const input = this.createFieldInput(spec, field);
+        const input = this.createFieldInput(spec2, field);
         if (field.key === "objectPreview") {
-          spec.objectPreviewEl = input;
+          spec2.objectPreviewEl = input;
         }
         fieldsWrap.appendChild(input);
       });
       body.appendChild(fieldsWrap);
     }
-    if (spec.fields && spec.title === "GenRandInt") {
+    if (spec2.fields && spec2.title === "GenRandInt") {
       const container = document.createElement("div");
       container.className = "genrand-inputs";
-      spec.fields.forEach((f) => {
+      spec2.fields.forEach((f) => {
         const input = document.createElement("input");
         input.type = "number";
         input.value = f.value;
@@ -16377,35 +16379,35 @@ var FluxCodexVertex = class _FluxCodexVertex {
         container.appendChild(label);
       });
       body.appendChild(container);
-    } else if (spec.category === "math" || spec.category === "value" || spec.title === "Print") {
+    } else if (spec2.category === "math" || spec2.category === "value" || spec2.title === "Print") {
       const display = document.createElement("div");
       display.className = "value-display";
       display.textContent = "?";
-      spec.displayEl = display;
+      spec2.displayEl = display;
       body.appendChild(display);
     }
-    if (spec.title === "Function" && spec.category === "action" && !spec.builtIn && !spec.isVariableNode) {
+    if (spec2.title === "Function" && spec2.category === "action" && !spec2.builtIn && !spec2.isVariableNode) {
       const select = document.createElement("select");
       select.className = "method-select";
       select.style.cssText = "width:100%; margin-top:6px;";
       body.appendChild(select);
       this.populateMethodsSelect(select);
-      if (spec.attachedMethod) {
-        select.value = spec.attachedMethod;
+      if (spec2.attachedMethod) {
+        select.value = spec2.attachedMethod;
       }
       select.addEventListener("change", (e) => {
         const selected = this.methodsManager.methodsContainer.find(
           (m) => m.name === e.target.value
         );
         if (selected) {
-          this.adaptNodeToMethod(spec, selected);
+          this.adaptNodeToMethod(spec2, selected);
         }
       });
     }
-    if (spec.fields?.some((f) => f.key === "var") && !spec.comment) {
+    if (spec2.fields?.some((f) => f.key === "var") && !spec2.comment) {
       const input = document.createElement("input");
       input.type = "text";
-      input.value = spec.fields.find((f) => f.key === "var")?.value ?? "";
+      input.value = spec2.fields.find((f) => f.key === "var")?.value ?? "";
       input.readOnly = true;
       input.style.width = "100%";
       input.style.marginTop = "6px";
@@ -16413,24 +16415,24 @@ var FluxCodexVertex = class _FluxCodexVertex {
       input.style.cursor = "default";
       body.appendChild(input);
     }
-    if (spec.title === "functions") {
+    if (spec2.title === "functions") {
       const select = document.createElement("select");
       select.style.width = "100%";
       select.style.marginTop = "6px";
-      this.populateDynamicFunctionSelect(select, spec.accessObject);
+      this.populateDynamicFunctionSelect(select, spec2.accessObject);
       select.addEventListener("change", (e) => {
         const fnName = e.target.value;
         if (fnName) {
-          this.adaptDynamicFunction(spec, fnName);
+          this.adaptDynamicFunction(spec2, fnName);
         }
       });
       body.appendChild(select);
     }
-    if (spec.title === "Get Scene Object" || spec.title === "Get Scene Animation") {
+    if (spec2.title === "Get Scene Object" || spec2.title === "Get Scene Animation" || spec2.title === "Get Scene Light") {
       const select = document.createElement("select");
       select.style.width = "100%";
       select.style.marginTop = "6px";
-      const objects = spec.accessObject || [];
+      const objects = spec2.accessObject || [];
       const placeholder = document.createElement("option");
       placeholder.textContent = "-- Select Object --";
       placeholder.value = "";
@@ -16441,11 +16443,11 @@ var FluxCodexVertex = class _FluxCodexVertex {
         opt.textContent = obj.name;
         select.appendChild(opt);
       });
-      if (spec.fields[0].value) select.value = spec.fields[0].value;
+      if (spec2.fields[0].value) select.value = spec2.fields[0].value;
       select.addEventListener("change", (e) => {
         const name = e.target.value;
-        spec.fields[0].value = name;
-        this.updateSceneObjectPins(spec, name);
+        spec2.fields[0].value = name;
+        this.updateSceneObjectPins(spec2, name);
       });
       el.appendChild(select);
     }
@@ -16463,16 +16465,16 @@ var FluxCodexVertex = class _FluxCodexVertex {
     });
     el.addEventListener("click", (e) => {
       e.stopPropagation();
-      this.selectNode(spec.id);
+      this.selectNode(spec2.id);
     });
     return el;
   }
-  selectNode(id) {
+  selectNode(id2) {
     if (this.state.selectedNode) {
       document.querySelector(`.node[data-id="${this.state.selectedNode}"]`)?.classList.remove("selected");
     }
-    this.state.selectedNode = id;
-    document.querySelector(`.node[data-id="${id}"]`)?.classList.add("selected");
+    this.state.selectedNode = id2;
+    document.querySelector(`.node[data-id="${id2}"]`)?.classList.add("selected");
   }
   populateDynamicFunctionSelect(select, accessObject) {
     select.innerHTML = "";
@@ -16893,7 +16895,7 @@ var FluxCodexVertex = class _FluxCodexVertex {
       //   noExec: false,
       // }),
       // full dinamic  functions taje ref from object (only funcs)
-      dynamicFunction: (id2, x2, y2) => ({
+      dynamicFunction: (id2, x2, y2, accessObject) => ({
         id: id2,
         title: "functions",
         x: x2,
@@ -16901,7 +16903,7 @@ var FluxCodexVertex = class _FluxCodexVertex {
         category: "action",
         inputs: [{ name: "exec", type: "action" }],
         outputs: [{ name: "execOut", type: "action" }],
-        accessObject: window.app
+        accessObject: accessObject ? accessObject : window.app
       }),
       getSceneObject: (id2, x2, y2) => ({
         noExec: true,
@@ -16916,6 +16918,20 @@ var FluxCodexVertex = class _FluxCodexVertex {
         builtIn: true,
         accessObject: window.app?.mainRenderBundle,
         exposeProps: ["name", "position", "rotation", "scale"]
+      }),
+      getSceneLight: (id2, x2, y2) => ({
+        noExec: true,
+        id: id2,
+        title: "Get Scene Light",
+        x: x2,
+        y: y2,
+        category: "scene",
+        inputs: [],
+        outputs: [],
+        fields: [{ key: "selectedObject", value: "" }],
+        builtIn: true,
+        accessObject: window.app?.lightContainer,
+        exposeProps: ["ambientFactor", "setProjection"]
       }),
       getObjectAnimation: (id2, x2, y2) => ({
         noExec: true,
@@ -17085,7 +17101,21 @@ var FluxCodexVertex = class _FluxCodexVertex {
       })
     };
     let spec = null;
-    if (nodeFactories[type]) spec = nodeFactories[type](id, x, y);
+    if (type === "dynamicFunction") {
+      let AO = prompt(`Add global access object !`);
+      if (AO) {
+        console.warn("Adding AO ", eval(AO));
+        options.accessObject = eval(AO);
+      } else {
+        console.warn("Adding global access object failed...");
+        options.accessObject = window.app;
+        return;
+      }
+      ;
+      if (nodeFactories[type]) spec = nodeFactories[type](id, x, y, options.accessObject);
+    } else {
+      if (nodeFactories[type]) spec = nodeFactories[type](id, x, y);
+    }
     if (spec && spec.fields && options) {
       for (const f of spec.fields) {
         if (options[f.key] !== void 0) {
@@ -17101,10 +17131,10 @@ var FluxCodexVertex = class _FluxCodexVertex {
     }
     return null;
   }
-  setVariable(type, key, value) {
-    if (!this.variables[type][key]) return;
-    this.variables[type][key].value = value;
-    this.notifyVariableChanged(type, key);
+  setVariable(type2, key, value) {
+    if (!this.variables[type2][key]) return;
+    this.variables[type2][key].value = value;
+    this.notifyVariableChanged(type2, key);
   }
   updateArrayNode(node2, newValue) {
     if (!Array.isArray(newValue)) {
@@ -17320,7 +17350,7 @@ var FluxCodexVertex = class _FluxCodexVertex {
     if (link) return this.getValue(link.from.node, link.from.pin, visited);
     const inputPin = node2.inputs?.find((p) => p.name === pinName);
     if (inputPin) return inputPin.default ?? 0;
-    if (node2.title === "Get Scene Object" || node2.title === "Get Scene Animation") {
+    if (node2.title === "Get Scene Object" || node2.title === "Get Scene Animation" || node2.title === "Get Scene Light") {
       const objName = node2.fields[0].value;
       const obj = (node2.accessObject || []).find((o) => o.name === objName);
       if (!obj) return void 0;
@@ -17359,8 +17389,8 @@ var FluxCodexVertex = class _FluxCodexVertex {
     return void 0;
   }
   updateValueDisplays() {
-    for (const id in this.nodes) {
-      const node2 = this.nodes[id];
+    for (const id2 in this.nodes) {
+      const node2 = this.nodes[id2];
       if (!node2.displayEl) continue;
       if (node2.title === "Print") {
         const pin = node2.inputs?.[0];
@@ -17401,10 +17431,10 @@ var FluxCodexVertex = class _FluxCodexVertex {
     node2.title = fnName;
     this.updateNodeDOM(node2.id);
   }
-  invalidateVariableGetters(type, varName) {
-    for (const id in this.nodes) {
-      const n = this.nodes[id];
-      if (n.category === "value" && n.fields?.some((f) => f.key === "var" && f.value === varName) && n.title === `Get ${type[0].toUpperCase() + type.slice(1)}`) {
+  invalidateVariableGetters(type2, varName) {
+    for (const id2 in this.nodes) {
+      const n = this.nodes[id2];
+      if (n.category === "value" && n.fields?.some((f) => f.key === "var" && f.value === varName) && n.title === `Get ${type2[0].toUpperCase() + type2.slice(1)}`) {
         delete n._returnCache;
       }
     }
@@ -17480,11 +17510,11 @@ var FluxCodexVertex = class _FluxCodexVertex {
     if (n.isGetterNode) {
       const varField = n.fields?.find((f) => f.key === "var");
       if (varField && varField.value) {
-        const type = n.title.replace("Get ", "").toLowerCase();
-        const value = this.getVariable(type, varField.value);
+        const type2 = n.title.replace("Get ", "").toLowerCase();
+        const value = this.getVariable(type2, varField.value);
         n._returnCache = value;
         if (n.displayEl) {
-          if (type === "object") {
+          if (type2 === "object") {
             n.displayEl.textContent = value !== void 0 ? JSON.stringify(value) : "{}";
           } else if (typeof value === "number") {
             n.displayEl.textContent = value.toFixed(3);
@@ -17521,18 +17551,18 @@ var FluxCodexVertex = class _FluxCodexVertex {
       return;
     }
     if (n.isVariableNode) {
-      const type = n.title.replace("Set ", "").toLowerCase();
+      const type2 = n.title.replace("Set ", "").toLowerCase();
       const varField = n.fields?.find((f) => f.key === "var");
       if (varField && varField.value) {
         const value = this.getValue(nodeId, "value");
-        this.variables[type][varField.value] = { value };
-        this.notifyVariableChanged(type, varField.value);
+        this.variables[type2][varField.value] = { value };
+        this.notifyVariableChanged(type2, varField.value);
         for (const nodeId2 in this.nodes) {
           const node2 = this.nodes[nodeId2];
           if (node2.isGetterNode) {
             const vf2 = node2.fields?.find((f) => f.key === "var");
             if (vf2 && vf2.value === varField.value && node2.displayEl) {
-              if (type === "object") {
+              if (type2 === "object") {
                 node2.displayEl.textContent = JSON.stringify(value);
               } else {
                 node2.displayEl.textContent = typeof value === "number" ? value.toFixed(3) : String(value);
@@ -17556,14 +17586,14 @@ var FluxCodexVertex = class _FluxCodexVertex {
       const method = this.getValue(nodeId, "method") || "GET";
       const body = this.getValue(nodeId, "body");
       const headers = this.getValue(nodeId, "headers") || {};
-      const options = { method, headers };
+      const options2 = { method, headers };
       if (body && method !== "GET") {
-        options.body = typeof body === "string" ? body : JSON.stringify(body);
+        options2.body = typeof body === "string" ? body : JSON.stringify(body);
         if (!headers["Content-Type"]) {
           headers["Content-Type"] = "application/json";
         }
       }
-      fetch(url, options).then(async (res) => {
+      fetch(url, options2).then(async (res) => {
         n._returnCache = {
           response: await res.json().catch(() => null),
           status: res.status
@@ -17730,8 +17760,8 @@ var FluxCodexVertex = class _FluxCodexVertex {
   getByPath(obj, path) {
     return path.split(".").reduce((acc, key) => acc?.[key], obj);
   }
-  getVariable(type, key) {
-    const entry = this.variables[type]?.[key];
+  getVariable(type2, key) {
+    const entry = this.variables[type2]?.[key];
     if (entry === void 0) return void 0;
     if (entry && typeof entry === "object" && "value" in entry) {
       return entry.value;
@@ -17779,10 +17809,10 @@ var FluxCodexVertex = class _FluxCodexVertex {
       const newY = e.clientY - this.state.dragOffset[1];
       el.style.left = newX + "px";
       el.style.top = newY + "px";
-      const id = el.dataset.id;
-      if (this.nodes[id]) {
-        this.nodes[id].x = newX;
-        this.nodes[id].y = newY;
+      const id2 = el.dataset.id;
+      if (this.nodes[id2]) {
+        this.nodes[id2].x = newX;
+        this.nodes[id2].y = newY;
       }
       this.updateLinks();
     } else if (this.state.panning) {
@@ -17847,7 +17877,13 @@ var FluxCodexVertex = class _FluxCodexVertex {
       pan: this.state.pan,
       variables: this.variables
     };
-    localStorage.setItem(_FluxCodexVertex.SAVE_KEY, JSON.stringify(bundle));
+    function saveReplacer(key, value) {
+      if (key === "fn") return void 0;
+      if (key === "accessObject") return void 0;
+      if (key === "_returnCache") return void 0;
+      return value;
+    }
+    localStorage.setItem(_FluxCodexVertex.SAVE_KEY, JSON.stringify(bundle, saveReplacer));
     this.log("Graph saved to LocalStorage!");
   }
   clearStorage() {
@@ -17938,14 +17974,14 @@ var FluxCodexVertex = class _FluxCodexVertex {
         this.linkCounter = data.linkCounter || 1;
         this.state.pan = data.pan || [0, 0];
         this.board.style.transform = `translate(${this.state.pan[0]}px,${this.state.pan[1]}px)`;
-        Object.values(this.nodes).forEach((spec) => {
-          const domEl = this.createNodeDOM(spec);
+        Object.values(this.nodes).forEach((spec2) => {
+          const domEl = this.createNodeDOM(spec2);
           this.board.appendChild(domEl);
-          if (spec.category === "value" && spec.title !== "GenRandInt" || spec.category === "math" || spec.title === "Print") {
-            spec.displayEl = domEl.querySelector(".value-display");
+          if (spec2.category === "value" && spec2.title !== "GenRandInt" || spec2.category === "math" || spec2.title === "Print") {
+            spec2.displayEl = domEl.querySelector(".value-display");
           }
-          if (spec.category === "action" && spec.title === "Function") {
-            this.updateNodeDOM(spec.id);
+          if (spec2.category === "action" && spec2.title === "Function") {
+            this.updateNodeDOM(spec2.id);
           }
         });
         this.updateLinks();
@@ -17959,14 +17995,14 @@ var FluxCodexVertex = class _FluxCodexVertex {
     this.addNode("event");
   }
   loadFromImport() {
-    Object.values(this.nodes).forEach((spec) => {
-      const domEl = this.createNodeDOM(spec);
+    Object.values(this.nodes).forEach((spec2) => {
+      const domEl = this.createNodeDOM(spec2);
       this.board.appendChild(domEl);
-      if (spec.category === "value" && spec.title !== "GenRandInt" || spec.category === "math" || spec.title === "Print") {
-        spec.displayEl = domEl.querySelector(".value-display");
+      if (spec2.category === "value" && spec2.title !== "GenRandInt" || spec2.category === "math" || spec2.title === "Print") {
+        spec2.displayEl = domEl.querySelector(".value-display");
       }
-      if (spec.category === "action" && spec.title === "Function") {
-        this.updateNodeDOM(spec.id);
+      if (spec2.category === "action" && spec2.title === "Function") {
+        this.updateNodeDOM(spec2.id);
       }
     });
     this.updateLinks();
@@ -18436,7 +18472,7 @@ var EditorHud = class {
       });
       document.querySelectorAll(".file-item").forEach((el) => {
         el.addEventListener("click", () => {
-          document.querySelectorAll(".file-item").forEach((x) => x.classList.remove("selected"));
+          document.querySelectorAll(".file-item").forEach((x2) => x2.classList.remove("selected"));
           el.classList.add("selected");
         });
       });
@@ -19422,6 +19458,293 @@ var Editor = class {
   }
 };
 
+// ../../../engine/postprocessing/bloom.js
+var BloomPass = class {
+  constructor(width, height, device, intensity = 1.5) {
+    this.device = device;
+    this.width = width;
+    this.height = height;
+    this.brightTex = this._createTexture();
+    this.blurTexA = this._createTexture();
+    this.blurTexB = this._createTexture();
+    this.sampler = device.createSampler({
+      magFilter: "linear",
+      minFilter: "linear"
+    });
+    this.intensityBuffer = this._createUniformBuffer([intensity]);
+    this.blurDirX = this._createUniformBuffer([1, 0]);
+    this.blurDirY = this._createUniformBuffer([0, 1]);
+    this.params = {
+      intensity,
+      threshold: 0.6,
+      knee: 0.5,
+      blurRadius: 6
+    };
+    this.paramBuffer = this.device.createBuffer({
+      size: 16,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    this._updateParams();
+    this.brightPipeline = this._createPipeline(
+      brightPassWGSL(),
+      [
+        { binding: 0, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: "float" } },
+        { binding: 1, visibility: GPUShaderStage.FRAGMENT, sampler: { type: "filtering" } },
+        { binding: 2, visibility: GPUShaderStage.FRAGMENT, buffer: { type: "uniform" } }
+      ]
+    );
+    this.blurPipeline = this._createPipeline(
+      blurPassWGSL(),
+      [
+        { binding: 0, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: "float" } },
+        { binding: 1, visibility: GPUShaderStage.FRAGMENT, sampler: { type: "filtering" } },
+        { binding: 2, visibility: GPUShaderStage.FRAGMENT, buffer: { type: "uniform" } },
+        { binding: 3, visibility: GPUShaderStage.FRAGMENT, buffer: { type: "uniform" } }
+      ]
+    );
+    this.combinePipeline = this._createPipeline(
+      combinePassWGSL(),
+      [
+        { binding: 0, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: "float" } },
+        { binding: 1, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: "float" } },
+        { binding: 2, visibility: GPUShaderStage.FRAGMENT, sampler: { type: "filtering" } },
+        { binding: 3, visibility: GPUShaderStage.FRAGMENT, buffer: { type: "uniform" } }
+      ]
+    );
+  }
+  _createTexture() {
+    return this.device.createTexture({
+      size: [this.width, this.height],
+      format: "rgba16float",
+      usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING
+    });
+  }
+  _createPipeline(fragmentWGSL2, bindGroupLayoutEntries) {
+    const bindGroupLayout = this.device.createBindGroupLayout({
+      entries: bindGroupLayoutEntries
+    });
+    return this.device.createRenderPipeline({
+      layout: this.device.createPipelineLayout({
+        bindGroupLayouts: [bindGroupLayout]
+      }),
+      vertex: {
+        module: this.device.createShaderModule({ code: fullscreenQuadWGSL() }),
+        entryPoint: "vert"
+      },
+      fragment: {
+        module: this.device.createShaderModule({ code: fragmentWGSL2 }),
+        entryPoint: "main",
+        targets: [{ format: "rgba16float" }]
+      },
+      primitive: { topology: "triangle-list" }
+    });
+  }
+  _updateParams() {
+    this.device.queue.writeBuffer(
+      this.paramBuffer,
+      0,
+      new Float32Array([
+        this.params.intensity,
+        this.params.threshold,
+        this.params.knee,
+        this.params.blurRadius
+      ])
+    );
+  }
+  setIntensity = (v) => {
+    this.params.intensity = v;
+    this._updateParams();
+  };
+  setThreshold = (v) => {
+    this.params.threshold = v;
+    this._updateParams();
+  };
+  setKnee = (v) => {
+    this.params.knee = v;
+    this._updateParams();
+  };
+  setBlurRadius = (v) => {
+    this.params.blurRadius = v;
+    this._updateParams();
+  };
+  _createUniformBuffer(data) {
+    const buffer = this.device.createBuffer({
+      size: 16,
+      // std140 safe
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    this.device.queue.writeBuffer(buffer, 0, new Float32Array(data));
+    return buffer;
+  }
+  _brightBindGroup(view) {
+    return this.device.createBindGroup({
+      layout: this.brightPipeline.getBindGroupLayout(0),
+      entries: [
+        { binding: 0, resource: view },
+        { binding: 1, resource: this.sampler },
+        { binding: 2, resource: { buffer: this.paramBuffer } }
+      ]
+    });
+  }
+  _blurBindGroup(view, dirBuffer) {
+    return this.device.createBindGroup({
+      layout: this.blurPipeline.getBindGroupLayout(0),
+      entries: [
+        { binding: 0, resource: view },
+        { binding: 1, resource: this.sampler },
+        { binding: 2, resource: { buffer: dirBuffer } },
+        { binding: 3, resource: { buffer: this.paramBuffer } }
+      ]
+    });
+  }
+  _combineBindGroup(sceneView, bloomView) {
+    return this.device.createBindGroup({
+      layout: this.combinePipeline.getBindGroupLayout(0),
+      entries: [
+        { binding: 0, resource: sceneView },
+        { binding: 1, resource: bloomView },
+        { binding: 2, resource: this.sampler },
+        { binding: 3, resource: { buffer: this.paramBuffer } }
+      ]
+    });
+  }
+  _beginFullscreenPass(encoder, targetView) {
+    return encoder.beginRenderPass({
+      colorAttachments: [{
+        view: targetView,
+        loadOp: "clear",
+        storeOp: "store",
+        clearValue: { r: 0, g: 0, b: 0, a: 1 }
+      }]
+    });
+  }
+  render(encoder, sceneView, finalTargetView) {
+    {
+      const pass = this._beginFullscreenPass(encoder, this.brightTex.createView());
+      pass.setPipeline(this.brightPipeline);
+      pass.setBindGroup(0, this._brightBindGroup(sceneView));
+      pass.draw(6);
+      pass.end();
+    }
+    {
+      const pass = this._beginFullscreenPass(encoder, this.blurTexA.createView());
+      pass.setPipeline(this.blurPipeline);
+      pass.setBindGroup(0, this._blurBindGroup(this.brightTex.createView(), this.blurDirX));
+      pass.draw(6);
+      pass.end();
+    }
+    {
+      const pass = this._beginFullscreenPass(encoder, this.blurTexB.createView());
+      pass.setPipeline(this.blurPipeline);
+      pass.setBindGroup(0, this._blurBindGroup(this.blurTexA.createView(), this.blurDirY));
+      pass.draw(6);
+      pass.end();
+    }
+    {
+      const pass = this._beginFullscreenPass(encoder, finalTargetView);
+      pass.setPipeline(this.combinePipeline);
+      pass.setBindGroup(
+        0,
+        this._combineBindGroup(sceneView, this.blurTexB.createView())
+      );
+      pass.draw(6);
+      pass.end();
+    }
+  }
+};
+function fullscreenQuadWGSL() {
+  return `
+    @vertex
+    fn vert(@builtin(vertex_index) i : u32) -> @builtin(position) vec4<f32> {
+      var pos = array<vec2<f32>, 6>(
+        vec2(-1.0, -1.0), vec2(1.0, -1.0), vec2(-1.0, 1.0),
+        vec2(-1.0, 1.0), vec2(1.0, -1.0), vec2(1.0, 1.0)
+      );
+      return vec4(pos[i], 0.0, 1.0);
+    }
+  `;
+}
+function brightPassWGSL() {
+  return `
+    struct BloomParams {
+    intensity: f32,
+    threshold: f32,
+    knee: f32,
+    radius: f32,
+  };
+    @group(0) @binding(0) var tex: texture_2d<f32>;
+    @group(0) @binding(1) var samp: sampler;
+    @group(0) @binding(2) var<uniform> bloom: BloomParams;
+    @fragment
+    fn main(@builtin(position) p: vec4<f32>) -> @location(0) vec4<f32> {
+      let size = vec2<f32>(textureDimensions(tex));
+      let uv = p.xy / size;
+      let c = textureSample(tex, samp, uv).rgb;
+      let lum = dot(c, vec3<f32>(0.2126,0.7152,0.0722));
+      let x = max(lum - bloom.threshold, 0.0);
+      let w = x * x / (x + bloom.knee);
+      return vec4(c * w, 1.0);
+    }
+  `;
+}
+function blurPassWGSL() {
+  return `
+   struct BloomParams {
+    intensity: f32,
+    threshold: f32,
+    knee: f32,
+    radius: f32,
+  };
+
+  @group(0) @binding(0) var tex: texture_2d<f32>;
+  @group(0) @binding(1) var samp: sampler;
+  @group(0) @binding(2) var<uniform> dir: vec2<f32>;
+  @group(0) @binding(3) var<uniform> bloom: BloomParams;
+
+  @fragment
+  fn main(@builtin(position) p: vec4<f32>) -> @location(0) vec4<f32> {
+    let size = vec2<f32>(textureDimensions(tex));
+    let uv = p.xy / size;
+    let r = bloom.radius;
+    let o = array<f32,5>(-r, -r*0.5, 0.0, r*0.5, r);
+    let w = array<f32,5>(0.1,0.2,0.4,0.2,0.1);
+    var col = vec3(0.0);
+    for(var i=0;i<5;i++){
+      col += textureSample(tex, samp, uv + o[i]*dir/size).rgb * w[i];
+    }
+    return vec4(col,1.0);
+  }
+`;
+}
+function combinePassWGSL() {
+  return `
+  struct BloomParams {
+    intensity: f32,
+    threshold: f32,
+    knee: f32,
+    radius: f32,
+  };
+  @group(0) @binding(0) var origTex: texture_2d<f32>;
+  @group(0) @binding(1) var bloomTex: texture_2d<f32>;
+  @group(0) @binding(2) var samp: sampler;
+  @group(0) @binding(3) var<uniform> bloom: BloomParams;
+
+  @fragment
+  fn main(@builtin(position) p: vec4<f32>) -> @location(0) vec4<f32> {
+    let size = vec2<f32>(textureDimensions(origTex));
+    let uv = p.xy / size;
+
+    let origColor = textureSample(origTex, samp, uv).rgb;
+    let bloomColor = textureSample(bloomTex, samp, uv).rgb;
+
+    // additive bloom
+    let color = origColor + bloomColor * bloom.intensity;
+
+    return vec4(color, 1.0);
+  }
+`;
+}
+
 // ../../../world.js
 var MatrixEngineWGPU = class {
   // save class reference
@@ -19445,8 +19768,8 @@ var MatrixEngineWGPU = class {
     depthStoreOp: "store"
   };
   matrixSounds = new MatrixSounds();
-  constructor(options, callback) {
-    if (typeof options == "undefined" || typeof options == "function") {
+  constructor(options2, callback) {
+    if (typeof options2 == "undefined" || typeof options2 == "function") {
       this.options = {
         useSingleRenderPass: true,
         canvasSize: "fullscreen",
@@ -19457,29 +19780,29 @@ var MatrixEngineWGPU = class {
         },
         clearColor: { r: 0.584, g: 0, b: 0.239, a: 1 }
       };
-      callback = options;
+      callback = options2;
     }
-    if (typeof options.clearColor === "undefined") {
-      options.clearColor = { r: 0.584, g: 0, b: 0.239, a: 1 };
+    if (typeof options2.clearColor === "undefined") {
+      options2.clearColor = { r: 0.584, g: 0, b: 0.239, a: 1 };
     }
-    if (typeof options.canvasId === "undefined") {
-      options.canvasId = "canvas1";
+    if (typeof options2.canvasId === "undefined") {
+      options2.canvasId = "canvas1";
     }
-    if (typeof options.mainCameraParams === "undefined") {
-      options.mainCameraParams = {
+    if (typeof options2.mainCameraParams === "undefined") {
+      options2.mainCameraParams = {
         type: "WASD",
         responseCoef: 2e3
       };
     }
-    if (typeof options.dontUsePhysics == "undefined") {
+    if (typeof options2.dontUsePhysics == "undefined") {
       this.matrixAmmo = new MatrixAmmo();
     }
     this.editor = void 0;
-    if (typeof options.useEditor !== "undefined") {
-      if (typeof options.projectType !== "undefined" && options.projectType == "created from editor") {
-        this.editor = new Editor(this, "created from editor", options.projectName);
-      } else if (typeof options.projectType !== "undefined" && options.projectType == "pre editor") {
-        this.editor = new Editor(this, options.projectType);
+    if (typeof options2.useEditor !== "undefined") {
+      if (typeof options2.projectType !== "undefined" && options2.projectType == "created from editor") {
+        this.editor = new Editor(this, "created from editor", options2.projectName);
+      } else if (typeof options2.projectType !== "undefined" && options2.projectType == "pre editor") {
+        this.editor = new Editor(this, options2.projectType);
       } else {
         this.editor = new Editor(this, "infly");
       }
@@ -19494,10 +19817,10 @@ var MatrixEngineWGPU = class {
     });
     this.activateEditor = () => {
       if (this.editor == null || typeof this.editor === "undefined") {
-        if (typeof options.projectType !== "undefined" && options.projectType == "created from editor") {
+        if (typeof options2.projectType !== "undefined" && options2.projectType == "created from editor") {
           this.editor = new Editor(this, "created from editor");
-        } else if (typeof options.projectType !== "undefined" && options.projectType == "pre editor") {
-          this.editor = new Editor(this, options.projectType);
+        } else if (typeof options2.projectType !== "undefined" && options2.projectType == "pre editor") {
+          this.editor = new Editor(this, options2.projectType);
         } else {
           this.editor = new Editor(this, "infly");
         }
@@ -19509,8 +19832,8 @@ var MatrixEngineWGPU = class {
         this.editor.editorHud.sceneContainer.style.display = "flex";
       }
     };
-    this.options = options;
-    this.mainCameraParams = options.mainCameraParams;
+    this.options = options2;
+    this.mainCameraParams = options2.mainCameraParams;
     const target = this.options.appendTo || document.body;
     var canvas = document.createElement("canvas");
     canvas.id = this.options.canvasId;
@@ -19577,6 +19900,52 @@ var MatrixEngineWGPU = class {
     this.run(callback);
   };
   createGlobalStuff() {
+    this.bloomOutputTex = this.device.createTexture({
+      size: [this.canvas.width, this.canvas.height],
+      format: "rgba16float",
+      usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING
+    });
+    this.sceneTexture = this.device.createTexture({
+      label: "final pipeline sceneTexture",
+      size: [this.canvas.width, this.canvas.height],
+      format: "rgba16float",
+      usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING
+    });
+    this.sceneTextureView = this.sceneTexture.createView();
+    this.presentSampler = this.device.createSampler({
+      magFilter: "linear",
+      minFilter: "linear"
+    });
+    this.presentPipeline = this.device.createRenderPipeline({
+      label: "final pipeline",
+      layout: "auto",
+      vertex: {
+        module: this.device.createShaderModule({ code: fullscreenQuadWGSL() }),
+        entryPoint: "vert"
+      },
+      fragment: {
+        module: this.device.createShaderModule({
+          code: `
+        @group(0) @binding(0) var hdrTex : texture_2d<f32>;
+        @group(0) @binding(1) var samp : sampler;
+
+        @fragment
+        fn main(@builtin(position) pos: vec4<f32>) -> @location(0) vec4<f32> {
+          let uv = pos.xy / vec2<f32>(textureDimensions(hdrTex));
+          let hdr = textureSample(hdrTex, samp, uv).rgb;
+
+          // simple tonemap
+          let ldr = hdr / (hdr + vec3(1.0));
+
+          return vec4<f32>(ldr, 1.0);
+        }
+      `
+        }),
+        entryPoint: "main",
+        targets: [{ format: "bgra8unorm" }]
+        // rgba16float  bgra8unorm
+      }
+    });
     this.spotlightUniformBuffer = this.device.createBuffer({
       label: "spotlightUniformBufferGLOBAL",
       size: this.MAX_SPOTLIGHTS * 144,
@@ -20078,7 +20447,7 @@ var MatrixEngineWGPU = class {
         shadowPass.end();
       }
       const currentTextureView = this.context.getCurrentTexture().createView();
-      this.mainRenderPassDesc.colorAttachments[0].view = currentTextureView;
+      this.mainRenderPassDesc.colorAttachments[0].view = this.sceneTextureView;
       let pass = commandEncoder.beginRenderPass(this.mainRenderPassDesc);
       for (const mesh of this.mainRenderBundle) {
         mesh.position.update();
@@ -20107,7 +20476,7 @@ var MatrixEngineWGPU = class {
       pass.end();
       if (this.collisionSystem) this.collisionSystem.update();
       const transPassDesc = {
-        colorAttachments: [{ view: currentTextureView, loadOp: "load", storeOp: "store" }],
+        colorAttachments: [{ view: this.sceneTextureView, loadOp: "load", storeOp: "store" }],
         depthStencilAttachment: {
           view: this.mainDepthView,
           depthLoadOp: "load",
@@ -20131,6 +20500,28 @@ var MatrixEngineWGPU = class {
         });
       }
       transPass.end();
+      const canvasView = this.context.getCurrentTexture().createView();
+      if (this.bloomPass) {
+        this.bloomPass.render(commandEncoder, this.sceneTextureView, this.bloomOutputTex);
+      }
+      pass = commandEncoder.beginRenderPass({
+        colorAttachments: [{
+          view: canvasView,
+          loadOp: "clear",
+          storeOp: "store",
+          clearValue: { r: 0, g: 0, b: 0, a: 1 }
+        }]
+      });
+      pass.setPipeline(this.presentPipeline);
+      pass.setBindGroup(0, this.device.createBindGroup({
+        layout: this.presentPipeline.getBindGroupLayout(0),
+        entries: [
+          { binding: 0, resource: this.bloomPass ? this.bloomOutputTex : this.sceneTexture.createView() },
+          { binding: 1, resource: this.presentSampler }
+        ]
+      }));
+      pass.draw(6);
+      pass.end();
       this.device.queue.submit([commandEncoder.finish()]);
       requestAnimationFrame(this.frame);
     } catch (err) {
@@ -20160,7 +20551,6 @@ var MatrixEngineWGPU = class {
     this.device.queue.submit([commandEncoder.finish()]);
     requestAnimationFrame(this.frame);
   };
-  // ---------------------------------------
   addGlbObj = (o, BVHANIM, glbFile, clearColor = this.options.clearColor) => {
     if (typeof o.name === "undefined") {
       o.name = genName(9);
@@ -20263,7 +20653,6 @@ var MatrixEngineWGPU = class {
       this.editor.editorHud.updateSceneContainer();
     }
   };
-  // NEW TEST INSTANCED DRAWS
   addGlbObjInctance = (o, BVHANIM, glbFile, clearColor = this.options.clearColor) => {
     if (typeof o.name === "undefined") {
       o.name = genName(9);
@@ -20372,6 +20761,9 @@ var MatrixEngineWGPU = class {
     if (typeof this.editor !== "undefined") {
       this.editor.editorHud.updateSceneContainer();
     }
+  };
+  activateBloomEffect = () => {
+    this.bloomPass = new BloomPass(this.canvas.width, this.canvas.height, this.device, 1.5);
   };
 };
 

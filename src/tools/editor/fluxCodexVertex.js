@@ -164,6 +164,7 @@ export default class FluxCodexVertex {
     <hr>
     <span>Scene</span>
     <button onclick="app.editor.fluxCodexVertex.addNode('getSceneObject')">Get Scene Object</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('getSceneLight')">Get Scene Light</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('setPosition')">Set Position</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('onTargetPositionReach')">onTargetPositionReach</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('getObjectAnimation')">Get Object Animation</button>
@@ -740,7 +741,9 @@ export default class FluxCodexVertex {
   }
 
   onPinsConnected(sourceNode, sourcePin, targetNode) {
-    if(targetNode.title === "Get Scene Object" || targetNode.title === "Get Sub Object") {
+    if(targetNode.title === "Get Scene Object" || targetNode.title === "Get Sub Object" ||
+      targetNode.title === "Get Scene Light"
+    ) {
       this._adaptGetSubObjectOnConnect(targetNode, sourceNode, sourcePin);
     }
   }
@@ -992,8 +995,8 @@ export default class FluxCodexVertex {
     }
 
     if(
-      spec.title === "Get Scene Object" ||
-      spec.title === "Get Scene Animation"
+      spec.title === "Get Scene Object" || spec.title === "Get Scene Animation" ||
+      spec.title === "Get Scene Light"
     ) {
       const select = document.createElement("select");
       select.style.width = "100%";
@@ -1496,23 +1499,17 @@ export default class FluxCodexVertex {
       //   noExec: false,
       // }),
       // full dinamic  functions taje ref from object (only funcs)
-      dynamicFunction: (id, x, y) => ({
-        id,
-        title: "functions",
-        x,
-        y,
+      dynamicFunction: (id, x, y, accessObject) => ({
+        id, title: "functions", x, y,
         category: "action",
         inputs: [{name: "exec", type: "action"}],
         outputs: [{name: "execOut", type: "action"}],
-        accessObject: window.app,
+        accessObject: (accessObject ? accessObject : window.app),
       }),
 
       getSceneObject: (id, x, y) => ({
-        noExec: true,
-        id,
-        title: "Get Scene Object",
-        x,
-        y,
+        noExec: true, id,
+        title: "Get Scene Object", x, y,
         category: "scene",
         inputs: [],
         outputs: [],
@@ -1520,6 +1517,18 @@ export default class FluxCodexVertex {
         builtIn: true,
         accessObject: window.app?.mainRenderBundle,
         exposeProps: ["name", "position", "rotation", "scale"],
+      }),
+
+      getSceneLight: (id, x, y) => ({
+        noExec: true, id,
+        title: "Get Scene Light", x, y,
+        category: "scene",
+        inputs: [],
+        outputs: [],
+        fields: [{key: "selectedObject", value: ""}],
+        builtIn: true,
+        accessObject: window.app?.lightContainer,
+        exposeProps: ["ambientFactor", "setProjection"],
       }),
 
       getObjectAnimation: (id, x, y) => ({
@@ -1695,7 +1704,22 @@ export default class FluxCodexVertex {
 
     // Generate node spec
     let spec = null;
-    if(nodeFactories[type]) spec = nodeFactories[type](id, x, y);
+
+    if(type === 'dynamicFunction') {
+      // Exception for dynamic access
+      let AO = prompt(`Add global access object !`);
+      if(AO) {
+        console.warn("Adding AO ", eval(AO));
+        options.accessObject = eval(AO);
+      } else {
+        console.warn("Adding global access object failed...");
+        options.accessObject = window.app;
+        return;
+      };
+      if(nodeFactories[type]) spec = nodeFactories[type](id, x, y, options.accessObject);
+    } else {
+      if(nodeFactories[type]) spec = nodeFactories[type](id, x, y);
+    }
 
     if(spec && spec.fields && options) {
       for(const f of spec.fields) {
@@ -1975,7 +1999,9 @@ export default class FluxCodexVertex {
     const inputPin = node.inputs?.find(p => p.name === pinName);
     if(inputPin) return inputPin.default ?? 0;
 
-    if(node.title === "Get Scene Object" || node.title === "Get Scene Animation") {
+    if(node.title === "Get Scene Object" || node.title === "Get Scene Animation" ||
+      node.title === "Get Scene Light"
+    ) {
       const objName = node.fields[0].value;
       const obj = (node.accessObject || []).find(o => o.name === objName);
       if(!obj) return undefined;
@@ -2092,7 +2118,7 @@ export default class FluxCodexVertex {
       let path = n.fields.find(f => f.key === "path")?.value;
       let target = this.resolvePath(obj, path);
 
-      if (target === undefined) {
+      if(target === undefined) {
         // probably no prefix .value 
         path = path.replace('value.', '');
         target = this.resolvePath(obj, path);
@@ -2165,7 +2191,7 @@ export default class FluxCodexVertex {
         arr = n.inputs?.find(p => p.name === "array")?.default ?? [];
       }
       // make it fluid 
-      n._returnCache = Array.isArray(arr) ? arr : ( arr[link.from.pin] ? arr[link.from.pin] : [] );
+      n._returnCache = Array.isArray(arr) ? arr : (arr[link.from.pin] ? arr[link.from.pin] : []);
       this.enqueueOutputs(n, "execOut");
       return;
     }
@@ -2606,7 +2632,15 @@ export default class FluxCodexVertex {
       pan: this.state.pan,
       variables: this.variables,
     };
-    localStorage.setItem(FluxCodexVertex.SAVE_KEY, JSON.stringify(bundle));
+
+    function saveReplacer(key, value) {
+      if(key === 'fn') return undefined;
+      if(key === 'accessObject') return undefined;
+      if(key === '_returnCache') return undefined;
+      return value;
+    }
+
+    localStorage.setItem(FluxCodexVertex.SAVE_KEY, JSON.stringify(bundle, saveReplacer));
     this.log("Graph saved to LocalStorage!");
   }
 
