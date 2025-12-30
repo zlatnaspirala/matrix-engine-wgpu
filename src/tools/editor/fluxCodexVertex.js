@@ -1093,10 +1093,7 @@ export default class FluxCodexVertex {
       body.appendChild(select);
     }
 
-    if(
-      spec.title === "Get Scene Object" || spec.title === "Get Scene Animation" ||
-      spec.title === "Get Scene Light"
-    ) {
+    if(spec.title === "Get Scene Object" || spec.title === "Get Scene Animation" || spec.title === "Get Scene Light") {
       const select = document.createElement("select");
       select.id = spec._id;
       select.style.width = "100%";
@@ -1630,7 +1627,8 @@ export default class FluxCodexVertex {
       }),
 
       getObjectAnimation: (id, x, y) => ({
-        noExec: true, id, title: "Get Scene Animation", x, y, category: "scene",
+        noExec: true, id, title: "Get Scene Animation", x, y,
+        category: "scene",
         inputs: [],
         outputs: [],
         fields: [{key: "selectedObject", value: ""}],
@@ -2121,6 +2119,11 @@ export default class FluxCodexVertex {
       if(!obj) return undefined;
       const out = node.outputs.find(o => o.name === pinName);
       if(!out) return undefined;
+
+      if (pinName.indexOf('.' != -1)) {
+        return this.resolvePath(obj, pinName);
+      }
+
       return obj[pinName];
     } else if(node.title === "Get Position") {
       const pos = this.getValue(nodeId, "position");
@@ -2241,16 +2244,7 @@ export default class FluxCodexVertex {
       console.warn('SET CACHE target is ', target)
       // n.outputs = n.outputs.filter(p => p.type === "action");
       n._subCache = target;
-
-      // if(target && typeof target === "object") {
-      //   for(const k in target) {
-      //     n.outputs.push({
-      //       name: k,
-      //       type: this.detectType(target[k]),
-      //     });
-      //   }
-      // }
-
+      n._returnCache = target;
       n._needsRebuild = false;
       n._pinsBuilt = true;
 
@@ -2293,6 +2287,8 @@ export default class FluxCodexVertex {
           l.to.pin === "result" || l.to.pin === "value")
       );
 
+   
+
       if(link) {
         const fromNode = this.nodes[link.from.node];
         if(fromNode._returnCache === undefined && fromNode._subCache === undefined) {
@@ -2306,7 +2302,9 @@ export default class FluxCodexVertex {
         arr = n.inputs?.find(p => p.name === "array")?.default ?? [];
       }
       // make it fluid 
-      n._returnCache = Array.isArray(arr) ? arr : (arr[link.from.pin] ? arr[link.from.pin] : []);
+      n._returnCache = Array.isArray(arr) ? arr : arr ? arr[link.from.pin] : 
+         this.getValue(link.from.node, link.from.pin);
+
       this.enqueueOutputs(n, "execOut");
       return;
     }

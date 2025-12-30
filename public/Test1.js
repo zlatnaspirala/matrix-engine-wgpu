@@ -17484,6 +17484,9 @@ var FluxCodexVertex = class _FluxCodexVertex {
       if (!obj) return void 0;
       const out = node2.outputs.find((o) => o.name === pinName);
       if (!out) return void 0;
+      if (pinName.indexOf("." != -1)) {
+        return this.resolvePath(obj, pinName);
+      }
       return obj[pinName];
     } else if (node2.title === "Get Position") {
       const pos = this.getValue(nodeId, "position");
@@ -17586,6 +17589,7 @@ var FluxCodexVertex = class _FluxCodexVertex {
       }
       console.warn("SET CACHE target is ", target);
       n._subCache = target;
+      n._returnCache = target;
       n._needsRebuild = false;
       n._pinsBuilt = true;
       this.enqueueOutputs(n, "execOut");
@@ -17631,7 +17635,7 @@ var FluxCodexVertex = class _FluxCodexVertex {
       } else {
         arr = n.inputs?.find((p) => p.name === "array")?.default ?? [];
       }
-      n._returnCache = Array.isArray(arr) ? arr : arr[link.from.pin] ? arr[link.from.pin] : [];
+      n._returnCache = Array.isArray(arr) ? arr : arr ? arr[link.from.pin] : this.getValue(link.from.node, link.from.pin);
       this.enqueueOutputs(n, "execOut");
       return;
     }
