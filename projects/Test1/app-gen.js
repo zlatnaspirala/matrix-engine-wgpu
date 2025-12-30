@@ -70,7 +70,31 @@ let app = new MatrixEngineWGPU(
  // ME END Cube_2 addCube
  
 
-      // [MAIN_REPLACE2]
+         // ME START Cube_0 updatePosx
+ setTimeout(() => {
+  app.getSceneObjectByName('Cube_0').position.SetX(3);
+ }, 200);
+ // ME END Cube_0 updatePosx
+ 
+            // ME START Cube_1 updatePosz
+ setTimeout(() => {
+  app.getSceneObjectByName('Cube_1').position.SetZ(-24);
+ }, 200);
+ // ME END Cube_1 updatePosz
+ 
+                // ME START Cube_1 updatePosy
+ setTimeout(() => {
+  app.getSceneObjectByName('Cube_1').position.SetY(1);
+ }, 200);
+ // ME END Cube_1 updatePosy
+ 
+     // ME START Cube_1 updatePosx
+ setTimeout(() => {
+  app.getSceneObjectByName('Cube_1').position.SetX(0);
+ }, 200);
+ // ME END Cube_1 updatePosx
+ 
+ // [MAIN_REPLACE2]
  
     })
   });

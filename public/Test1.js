@@ -17479,6 +17479,7 @@ var FluxCodexVertex = class _FluxCodexVertex {
           select2.appendChild(opt);
         });
       }
+      if (node2.fields[0].value) select2.value = node2.fields[0].value;
       const obj = (node2.accessObject || []).find((o) => o.name === objName);
       if (!obj) return void 0;
       const out = node2.outputs.find((o) => o.name === pinName);
@@ -17779,11 +17780,7 @@ var FluxCodexVertex = class _FluxCodexVertex {
     if (n.title === "Set Position") {
       const pos = this.getValue(nodeId, "position");
       if (pos?.setPosition) {
-        pos.setPosition(
-          this.getValue(nodeId, "x"),
-          this.getValue(nodeId, "y"),
-          this.getValue(nodeId, "z")
-        );
+        pos.setPosition(this.getValue(nodeId, "x"), this.getValue(nodeId, "y"), this.getValue(nodeId, "z"));
       }
       this.enqueueOutputs(n, "execOut");
       return;
@@ -20952,6 +20949,18 @@ var app2 = new MatrixEngineWGPU(
           physics: { enabled: false, geometry: "Cube" }
         });
       }, { scale: [1, 1, 1] });
+      setTimeout(() => {
+        app3.getSceneObjectByName("Cube_0").position.SetX(3);
+      }, 200);
+      setTimeout(() => {
+        app3.getSceneObjectByName("Cube_1").position.SetZ(-24);
+      }, 200);
+      setTimeout(() => {
+        app3.getSceneObjectByName("Cube_1").position.SetY(1);
+      }, 200);
+      setTimeout(() => {
+        app3.getSceneObjectByName("Cube_1").position.SetX(0);
+      }, 200);
     });
   }
 );

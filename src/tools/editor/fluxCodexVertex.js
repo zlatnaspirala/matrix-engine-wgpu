@@ -2102,6 +2102,7 @@ export default class FluxCodexVertex {
       const dom = this.board.querySelector(`[data-id="${nodeId}"]`);
       const selects = dom.querySelectorAll("select"); // returns NodeList
       let select = selects[0];
+      // alert()
       // if((select.options.length-1) != node.accessObject.length) {
       select.innerHTML = ``;
       if(select) {
@@ -2112,6 +2113,8 @@ export default class FluxCodexVertex {
           select.appendChild(opt);
         });
       }
+
+      if(node.fields[0].value) select.value = node.fields[0].value;
       // }
 
       const obj = (node.accessObject || []).find(o => o.name === objName);
@@ -2347,7 +2350,7 @@ export default class FluxCodexVertex {
     // functionDinamic execution
     if(n.category === "functions") {
 
-      if (n.fn === undefined) {
+      if(n.fn === undefined) {
         n.fn = n.accessObject[n.fnName]
       }
 
@@ -2490,11 +2493,7 @@ export default class FluxCodexVertex {
     if(n.title === "Set Position") {
       const pos = this.getValue(nodeId, "position");
       if(pos?.setPosition) {
-        pos.setPosition(
-          this.getValue(nodeId, "x"),
-          this.getValue(nodeId, "y"),
-          this.getValue(nodeId, "z")
-        );
+        pos.setPosition(this.getValue(nodeId, "x"), this.getValue(nodeId, "y"), this.getValue(nodeId, "z"));
       }
       this.enqueueOutputs(n, "execOut");
       return;
