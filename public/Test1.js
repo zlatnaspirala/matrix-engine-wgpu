@@ -900,9 +900,9 @@ function perspective(fieldOfViewYInRadians, aspect, zNear, zFar, dst) {
   }
   return dst;
 }
-function ortho(left, right, bottom, top, near, far, dst) {
+function ortho(left2, right2, bottom, top, near, far, dst) {
   dst = dst || new MatType(16);
-  dst[0] = 2 / (right - left);
+  dst[0] = 2 / (right2 - left2);
   dst[1] = 0;
   dst[2] = 0;
   dst[3] = 0;
@@ -914,15 +914,15 @@ function ortho(left, right, bottom, top, near, far, dst) {
   dst[9] = 0;
   dst[10] = 1 / (near - far);
   dst[11] = 0;
-  dst[12] = (right + left) / (left - right);
+  dst[12] = (right2 + left2) / (left2 - right2);
   dst[13] = (top + bottom) / (bottom - top);
   dst[14] = near / (near - far);
   dst[15] = 1;
   return dst;
 }
-function frustum(left, right, bottom, top, near, far, dst) {
+function frustum(left2, right2, bottom, top, near, far, dst) {
   dst = dst || new MatType(16);
-  const dx = right - left;
+  const dx = right2 - left2;
   const dy = top - bottom;
   const dz = near - far;
   dst[0] = 2 * near / dx;
@@ -933,7 +933,7 @@ function frustum(left, right, bottom, top, near, far, dst) {
   dst[5] = 2 * near / dy;
   dst[6] = 0;
   dst[7] = 0;
-  dst[8] = (left + right) / dx;
+  dst[8] = (left2 + right2) / dx;
   dst[9] = (top + bottom) / dy;
   dst[10] = far / dz;
   dst[11] = -1;
@@ -2220,8 +2220,8 @@ var FullscreenManager = class {
     return !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement);
   }
   request() {
-    const el = this.target;
-    return el.requestFullscreen?.() || el.webkitRequestFullscreen?.() || el.mozRequestFullScreen?.() || el.msRequestFullscreen?.();
+    const el2 = this.target;
+    return el2.requestFullscreen?.() || el2.webkitRequestFullscreen?.() || el2.mozRequestFullScreen?.() || el2.msRequestFullscreen?.();
   }
   exit() {
     return document.exitFullscreen?.() || document.webkitExitFullscreen?.() || document.mozCancelFullScreen?.() || document.msExitFullscreen?.();
@@ -6759,10 +6759,10 @@ var MatrixAmmo = class {
     groundTransform.setOrigin(new Ammo2.btVector3(0, -4.45, 0));
     var mass = 0, isDynamic = mass !== 0, localInertia = new Ammo2.btVector3(0, 0, 0);
     if (isDynamic) groundShape.calculateLocalInertia(mass, localInertia);
-    var myMotionState = new Ammo2.btDefaultMotionState(groundTransform), rbInfo = new Ammo2.btRigidBodyConstructionInfo(mass, myMotionState, groundShape, localInertia), body = new Ammo2.btRigidBody(rbInfo);
-    body.name = "ground";
-    this.ground = body;
-    this.dynamicsWorld.addRigidBody(body);
+    var myMotionState = new Ammo2.btDefaultMotionState(groundTransform), rbInfo = new Ammo2.btRigidBodyConstructionInfo(mass, myMotionState, groundShape, localInertia), body2 = new Ammo2.btRigidBody(rbInfo);
+    body2.name = "ground";
+    this.ground = body2;
+    this.dynamicsWorld.addRigidBody(body2);
     this.detectCollision();
   }
   addPhysics(MEObject, pOptions) {
@@ -6784,22 +6784,22 @@ var MatrixAmmo = class {
     var localInertia = new Ammo2.btVector3(0, 0, 0);
     colShape.calculateLocalInertia(mass, localInertia);
     startTransform.setOrigin(new Ammo2.btVector3(pOptions.position.x, pOptions.position.y, pOptions.position.z));
-    var myMotionState = new Ammo2.btDefaultMotionState(startTransform), rbInfo = new Ammo2.btRigidBodyConstructionInfo(mass, myMotionState, colShape, localInertia), body = new Ammo2.btRigidBody(rbInfo);
+    var myMotionState = new Ammo2.btDefaultMotionState(startTransform), rbInfo = new Ammo2.btRigidBodyConstructionInfo(mass, myMotionState, colShape, localInertia), body2 = new Ammo2.btRigidBody(rbInfo);
     if (pOptions.mass == 0 && typeof pOptions.state == "undefined" && typeof pOptions.collide == "undefined") {
-      body.setActivationState(2);
-      body.setCollisionFlags(FLAGS.CF_KINEMATIC_OBJECT);
+      body2.setActivationState(2);
+      body2.setCollisionFlags(FLAGS.CF_KINEMATIC_OBJECT);
     } else if (typeof pOptions.collide != "undefined" && pOptions.collide == false) {
-      body.setActivationState(4);
-      body.setCollisionFlags(FLAGS.TEST_NIDZA);
+      body2.setActivationState(4);
+      body2.setCollisionFlags(FLAGS.TEST_NIDZA);
     } else {
-      body.setActivationState(4);
+      body2.setActivationState(4);
     }
-    body.name = pOptions.name;
+    body2.name = pOptions.name;
     MEObject.itIsPhysicsBody = true;
-    body.MEObject = MEObject;
-    this.dynamicsWorld.addRigidBody(body);
-    this.rigidBodies.push(body);
-    return body;
+    body2.MEObject = MEObject;
+    this.dynamicsWorld.addRigidBody(body2);
+    this.rigidBodies.push(body2);
+    return body2;
   }
   addPhysicsBox(MEObject, pOptions) {
     const FLAGS = {
@@ -6818,29 +6818,29 @@ var MatrixAmmo = class {
     t.setY(degToRad(pOptions.rotation.y));
     t.setZ(degToRad(pOptions.rotation.z));
     startTransform.setRotation(t);
-    var myMotionState = new Ammo2.btDefaultMotionState(startTransform), rbInfo = new Ammo2.btRigidBodyConstructionInfo(mass, myMotionState, colShape, localInertia), body = new Ammo2.btRigidBody(rbInfo);
+    var myMotionState = new Ammo2.btDefaultMotionState(startTransform), rbInfo = new Ammo2.btRigidBodyConstructionInfo(mass, myMotionState, colShape, localInertia), body2 = new Ammo2.btRigidBody(rbInfo);
     if (pOptions.mass == 0 && typeof pOptions.state == "undefined" && typeof pOptions.collide == "undefined") {
-      body.setActivationState(2);
-      body.setCollisionFlags(FLAGS.CF_KINEMATIC_OBJECT);
+      body2.setActivationState(2);
+      body2.setCollisionFlags(FLAGS.CF_KINEMATIC_OBJECT);
     } else if (typeof pOptions.collide != "undefined" && pOptions.collide == false) {
-      body.setActivationState(4);
-      body.setCollisionFlags(FLAGS.TEST_NIDZA);
+      body2.setActivationState(4);
+      body2.setCollisionFlags(FLAGS.TEST_NIDZA);
     } else {
-      body.setActivationState(4);
+      body2.setActivationState(4);
     }
-    body.name = pOptions.name;
+    body2.name = pOptions.name;
     MEObject.itIsPhysicsBody = true;
-    body.MEObject = MEObject;
-    this.dynamicsWorld.addRigidBody(body);
-    this.rigidBodies.push(body);
-    return body;
+    body2.MEObject = MEObject;
+    this.dynamicsWorld.addRigidBody(body2);
+    this.rigidBodies.push(body2);
+    return body2;
   }
-  setBodyVelocity(body, x2, y2, z) {
+  setBodyVelocity(body2, x2, y2, z) {
     var tbv30 = new Ammo.btVector3();
     tbv30.setValue(x2, y2, z);
-    body.setLinearVelocity(tbv30);
+    body2.setLinearVelocity(tbv30);
   }
-  setKinematicTransform(body, x2, y2, z, rx, ry, rz) {
+  setKinematicTransform(body2, x2, y2, z, rx, ry, rz) {
     if (typeof rx == "undefined") {
       var rx = 0;
     }
@@ -6851,15 +6851,15 @@ var MatrixAmmo = class {
       var rz = 0;
     }
     let pos = new Ammo.btVector3();
-    pos = body.getWorldTransform().getOrigin();
-    let localRot = body.getWorldTransform().getRotation();
+    pos = body2.getWorldTransform().getOrigin();
+    let localRot = body2.getWorldTransform().getRotation();
     pos.setX(pos.x() + x2);
     pos.setY(pos.y() + y2);
     pos.setZ(pos.z() + z);
     localRot.setX(rx);
     localRot.setY(ry);
     localRot.setZ(rz);
-    let physicsBody = body;
+    let physicsBody = body2;
     let ms = physicsBody.getMotionState();
     if (ms) {
       var tmpTrans = new Ammo.btTransform();
@@ -6878,30 +6878,30 @@ var MatrixAmmo = class {
     });
     return b;
   }
-  getNameByBody(body) {
+  getNameByBody(body2) {
     var b = null;
     this.rigidBodies.forEach((item, index, array) => {
-      if (item.kB == body.kB) {
+      if (item.kB == body2.kB) {
         b = array[index].name;
       }
     });
     return b;
   }
-  deactivatePhysics(body) {
+  deactivatePhysics(body2) {
     const CF_KINEMATIC_OBJECT = 2;
     const DISABLE_DEACTIVATION = 4;
-    this.dynamicsWorld.removeRigidBody(body);
-    const flags = body.getCollisionFlags();
-    body.setCollisionFlags(flags | CF_KINEMATIC_OBJECT);
-    body.setActivationState(DISABLE_DEACTIVATION);
+    this.dynamicsWorld.removeRigidBody(body2);
+    const flags = body2.getCollisionFlags();
+    body2.setCollisionFlags(flags | CF_KINEMATIC_OBJECT);
+    body2.setActivationState(DISABLE_DEACTIVATION);
     const zero = new Ammo.btVector3(0, 0, 0);
-    body.setLinearVelocity(zero);
-    body.setAngularVelocity(zero);
-    const currentTransform = body.getWorldTransform();
-    body.setWorldTransform(currentTransform);
-    body.getMotionState().setWorldTransform(currentTransform);
-    this.matrixAmmo.dynamicsWorld.addRigidBody(body);
-    body.isKinematic = true;
+    body2.setLinearVelocity(zero);
+    body2.setAngularVelocity(zero);
+    const currentTransform = body2.getWorldTransform();
+    body2.setWorldTransform(currentTransform);
+    body2.getMotionState().setWorldTransform(currentTransform);
+    this.matrixAmmo.dynamicsWorld.addRigidBody(body2);
+    body2.isKinematic = true;
   }
   detectCollision() {
     return;
@@ -6921,26 +6921,26 @@ var MatrixAmmo = class {
     if (typeof Ammo === "undefined") return;
     const trans = new Ammo.btTransform();
     const transform = new Ammo.btTransform();
-    this.rigidBodies.forEach(function(body) {
-      if (body.isKinematic) {
+    this.rigidBodies.forEach(function(body2) {
+      if (body2.isKinematic) {
         transform.setIdentity();
         transform.setOrigin(new Ammo.btVector3(
-          body.MEObject.position.x,
-          body.MEObject.position.y,
-          body.MEObject.position.z
+          body2.MEObject.position.x,
+          body2.MEObject.position.y,
+          body2.MEObject.position.z
         ));
         const quat = new Ammo.btQuaternion();
         quat.setRotation(
           new Ammo.btVector3(
-            body.MEObject.rotation.axis.x,
-            body.MEObject.rotation.axis.y,
-            body.MEObject.rotation.axis.z
+            body2.MEObject.rotation.axis.x,
+            body2.MEObject.rotation.axis.y,
+            body2.MEObject.rotation.axis.z
           ),
-          degToRad(body.MEObject.rotation.angle)
+          degToRad(body2.MEObject.rotation.angle)
         );
         transform.setRotation(quat);
-        body.setWorldTransform(transform);
-        const ms = body.getMotionState();
+        body2.setWorldTransform(transform);
+        const ms = body2.getMotionState();
         if (ms) ms.setWorldTransform(transform);
       }
     });
@@ -6950,21 +6950,21 @@ var MatrixAmmo = class {
     for (let i = 0; i < this.speedUpSimulation; i++) {
       this.dynamicsWorld.stepSimulation(timeStep, maxSubSteps);
     }
-    this.rigidBodies.forEach(function(body) {
-      if (!body.isKinematic && body.getMotionState()) {
-        body.getMotionState().getWorldTransform(trans);
+    this.rigidBodies.forEach(function(body2) {
+      if (!body2.isKinematic && body2.getMotionState()) {
+        body2.getMotionState().getWorldTransform(trans);
         const _x = +trans.getOrigin().x().toFixed(2);
         const _y = +trans.getOrigin().y().toFixed(2);
         const _z = +trans.getOrigin().z().toFixed(2);
-        body.MEObject.position.setPosition(_x, _y, _z);
+        body2.MEObject.position.setPosition(_x, _y, _z);
         const rot = trans.getRotation();
         const rotAxis = rot.getAxis();
         rot.normalize();
-        body.MEObject.rotation.axis.x = rotAxis.x();
-        body.MEObject.rotation.axis.y = rotAxis.y();
-        body.MEObject.rotation.axis.z = rotAxis.z();
-        body.MEObject.rotation.matrixRotation = quaternion_rotation_matrix(rot);
-        body.MEObject.rotation.angle = radToDeg(parseFloat(rot.getAngle().toFixed(2)));
+        body2.MEObject.rotation.axis.x = rotAxis.x();
+        body2.MEObject.rotation.axis.y = rotAxis.y();
+        body2.MEObject.rotation.axis.z = rotAxis.z();
+        body2.MEObject.rotation.matrixRotation = quaternion_rotation_matrix(rot);
+        body2.MEObject.rotation.angle = radToDeg(parseFloat(rot.getAngle().toFixed(2)));
       }
     });
     Ammo.destroy(trans);
@@ -7350,6 +7350,7 @@ fn main(
 
 // ../../../engine/lights.js
 var SpotLight = class {
+  name;
   camera;
   inputHandler;
   position;
@@ -7366,7 +7367,11 @@ var SpotLight = class {
   innerCutoff;
   outerCutoff;
   spotlightUniformBuffer;
-  constructor(camera, inputHandler, device, position = vec3Impl.create(0, 10, -20), target = vec3Impl.create(0, 0, -20), fov = 45, aspect = 1, near = 0.1, far = 200) {
+  constructor(camera, inputHandler, device, indexx, position = vec3Impl.create(0, 10, -20), target = vec3Impl.create(0, 0, -20), fov = 45, aspect = 1, near = 0.1, far = 200) {
+    this.name = "light" + indexx;
+    this.getName = () => {
+      return "light" + indexx;
+    };
     this.fov = fov;
     this.aspect = aspect;
     this.near = near;
@@ -7624,12 +7629,50 @@ var SpotLight = class {
       this.range,
       this.ambientFactor,
       this.shadowBias,
-      // <<--- use shadowBias
       0,
-      // keep padding
       ...m
     ]);
   }
+  // Setters
+  setPosX = (x2) => {
+    this.position[0] = x2;
+  };
+  setPosY = (y2) => {
+    this.position[1] = y2;
+  };
+  setPosZ = (z) => {
+    this.position[2] = z;
+  };
+  setInnerCutoff = (innerCutoff) => {
+    this.innerCutoff = innerCutoff;
+  };
+  setOuterCutoff = (outerCutoff) => {
+    this.outerCutoff = outerCutoff;
+  };
+  setIntensity = (intensity) => {
+    this.intensity = intensity;
+  };
+  setColor = (color) => {
+    this.color = color;
+  };
+  setColorR = (colorR) => {
+    this.color[0] = colorR;
+  };
+  setColorB = (colorB) => {
+    this.color[1] = colorB;
+  };
+  setColorG = (colorG) => {
+    this.color[2] = colorG;
+  };
+  setRange = (range) => {
+    this.range = range;
+  };
+  setAmbientFactor = (ambientFactor) => {
+    this.ambientFactor = ambientFactor;
+  };
+  setAmbientFactor = (shadowBias) => {
+    this.shadowBias = shadowBias;
+  };
 };
 
 // ../../../../node_modules/webgpu-matrix/dist/1.x/wgpu-matrix.module.js
@@ -8109,9 +8152,9 @@ function perspective2(fieldOfViewYInRadians, aspect, zNear, zFar, dst) {
   dst[15] = 0;
   return dst;
 }
-function ortho2(left, right, bottom, top, near, far, dst) {
+function ortho2(left2, right2, bottom, top, near, far, dst) {
   dst = dst || new MatType2(16);
-  dst[0] = 2 / (right - left);
+  dst[0] = 2 / (right2 - left2);
   dst[1] = 0;
   dst[2] = 0;
   dst[3] = 0;
@@ -8123,15 +8166,15 @@ function ortho2(left, right, bottom, top, near, far, dst) {
   dst[9] = 0;
   dst[10] = 1 / (near - far);
   dst[11] = 0;
-  dst[12] = (right + left) / (left - right);
+  dst[12] = (right2 + left2) / (left2 - right2);
   dst[13] = (top + bottom) / (bottom - top);
   dst[14] = near / (near - far);
   dst[15] = 1;
   return dst;
 }
-function frustum2(left, right, bottom, top, near, far, dst) {
+function frustum2(left2, right2, bottom, top, near, far, dst) {
   dst = dst || new MatType2(16);
-  const dx = right - left;
+  const dx = right2 - left2;
   const dy = top - bottom;
   const dz = near - far;
   dst[0] = 2 * near / dx;
@@ -8142,7 +8185,7 @@ function frustum2(left, right, bottom, top, near, far, dst) {
   dst[5] = 2 * near / dy;
   dst[6] = 0;
   dst[7] = 0;
-  dst[8] = (left + right) / dx;
+  dst[8] = (left2 + right2) / dx;
   dst[9] = (top + bottom) / dy;
   dst[10] = far / dz;
   dst[11] = -1;
@@ -10152,8 +10195,8 @@ function fromQuat3(out, q) {
   out[15] = 1;
   return out;
 }
-function frustum3(out, left, right, bottom, top, near, far) {
-  var rl = 1 / (right - left);
+function frustum3(out, left2, right2, bottom, top, near, far) {
+  var rl = 1 / (right2 - left2);
   var tb = 1 / (top - bottom);
   var nf = 1 / (near - far);
   out[0] = near * 2 * rl;
@@ -10164,7 +10207,7 @@ function frustum3(out, left, right, bottom, top, near, far) {
   out[5] = near * 2 * tb;
   out[6] = 0;
   out[7] = 0;
-  out[8] = (right + left) * rl;
+  out[8] = (right2 + left2) * rl;
   out[9] = (top + bottom) * tb;
   out[10] = (far + near) * nf;
   out[11] = -1;
@@ -10252,8 +10295,8 @@ function perspectiveFromFieldOfView(out, fov, near, far) {
   out[15] = 0;
   return out;
 }
-function orthoNO(out, left, right, bottom, top, near, far) {
-  var lr = 1 / (left - right);
+function orthoNO(out, left2, right2, bottom, top, near, far) {
+  var lr = 1 / (left2 - right2);
   var bt = 1 / (bottom - top);
   var nf = 1 / (near - far);
   out[0] = -2 * lr;
@@ -10268,15 +10311,15 @@ function orthoNO(out, left, right, bottom, top, near, far) {
   out[9] = 0;
   out[10] = 2 * nf;
   out[11] = 0;
-  out[12] = (left + right) * lr;
+  out[12] = (left2 + right2) * lr;
   out[13] = (top + bottom) * bt;
   out[14] = (far + near) * nf;
   out[15] = 1;
   return out;
 }
 var ortho3 = orthoNO;
-function orthoZO(out, left, right, bottom, top, near, far) {
-  var lr = 1 / (left - right);
+function orthoZO(out, left2, right2, bottom, top, near, far) {
+  var lr = 1 / (left2 - right2);
   var bt = 1 / (bottom - top);
   var nf = 1 / (near - far);
   out[0] = -2 * lr;
@@ -10291,7 +10334,7 @@ function orthoZO(out, left, right, bottom, top, near, far) {
   out[9] = 0;
   out[10] = nf;
   out[11] = 0;
-  out[12] = (left + right) * lr;
+  out[12] = (left2 + right2) * lr;
   out[13] = (top + bottom) * bt;
   out[14] = near * nf;
   out[15] = 1;
@@ -10850,20 +10893,20 @@ var GLBModel = class {
   }
 };
 async function uploadGLBModel(buffer, device) {
-  const header = new Uint32Array(buffer, 0, 5);
-  if (header[0] !== 1179937895) {
+  const header2 = new Uint32Array(buffer, 0, 5);
+  if (header2[0] !== 1179937895) {
     alert("This does not appear to be a glb file?");
     return;
   }
   const glbJsonData = JSON.parse(
-    new TextDecoder("utf-8").decode(new Uint8Array(buffer, 20, header[3]))
+    new TextDecoder("utf-8").decode(new Uint8Array(buffer, 20, header2[3]))
   );
-  const binaryHeader = new Uint32Array(buffer, 20 + header[3], 2);
-  const glbBuffer = new GLTFBuffer(buffer, binaryHeader[0], 28 + header[3]);
+  const binaryHeader = new Uint32Array(buffer, 20 + header2[3], 2);
+  const glbBuffer = new GLTFBuffer(buffer, binaryHeader[0], 28 + header2[3]);
   const bufferViews = glbJsonData.bufferViews.map(
     (v) => new GLTFBufferView(glbBuffer, v)
   );
-  const binaryOffset = 28 + header[3];
+  const binaryOffset = 28 + header2[3];
   const binaryLength = binaryHeader[0];
   const glbBinaryBuffer = buffer.slice(binaryOffset, binaryOffset + binaryLength);
   const images = [];
@@ -15931,8 +15974,8 @@ var FluxCodexVertex = class _FluxCodexVertex {
     };
     for (const type2 in this.variables) {
       for (const name in this.variables[type2]) {
-        const row = document.createElement("div");
-        Object.assign(row.style, {
+        const row2 = document.createElement("div");
+        Object.assign(row2.style, {
           display: "flex",
           alignItems: "center",
           gap: "6px",
@@ -16005,8 +16048,8 @@ var FluxCodexVertex = class _FluxCodexVertex {
           delete this._varInputs[`${type2}.${name}`];
           this._refreshVarsList(container);
         };
-        row.append(label, input, btnGet, btnSet, btnDel);
-        container.appendChild(row);
+        row2.append(label, input, btnGet, btnSet, btnDel);
+        container.appendChild(row2);
       }
     }
   }
@@ -16066,21 +16109,21 @@ var FluxCodexVertex = class _FluxCodexVertex {
     const io = isOutput ? "out" : "in";
     return nodeEl.querySelector(`.pin[data-pin="${pinName}"][data-io="${io}"] .dot`);
   }
-  populateVariableSelect(select, type2) {
-    select.innerHTML = "";
+  populateVariableSelect(select2, type2) {
+    select2.innerHTML = "";
     const vars = this.variables[type2];
     if (!vars.length) {
       const opt = document.createElement("option");
       opt.textContent = "(no variables)";
       opt.disabled = true;
-      select.appendChild(opt);
+      select2.appendChild(opt);
       return;
     }
     vars.forEach((v) => {
       const opt = document.createElement("option");
       opt.value = v.name;
       opt.textContent = v.name;
-      select.appendChild(opt);
+      select2.appendChild(opt);
     });
   }
   // Dynamic Method Helpers
@@ -16134,10 +16177,10 @@ var FluxCodexVertex = class _FluxCodexVertex {
   }
   populateMethodsSelect(selectEl) {
     selectEl.innerHTML = "";
-    const placeholder = document.createElement("option");
-    placeholder.value = "";
-    placeholder.textContent = "-- Select Method --";
-    selectEl.appendChild(placeholder);
+    const placeholder2 = document.createElement("option");
+    placeholder2.value = "";
+    placeholder2.textContent = "-- Select Method --";
+    selectEl.appendChild(placeholder2);
     this.methodsManager.methodsContainer.forEach((method) => {
       const opt = document.createElement("option");
       opt.value = method.name;
@@ -16145,32 +16188,109 @@ var FluxCodexVertex = class _FluxCodexVertex {
       selectEl.appendChild(opt);
     });
   }
+  _getSceneSelectedName(node2) {
+    return node2.fields?.find(
+      (f) => f.key === "selectedObject" || f.key === "object"
+    )?.value;
+  }
   updateNodeDOM(nodeId) {
     const node2 = this.nodes[nodeId];
-    const el = document.querySelector(`.node[data-id="${nodeId}"]`);
-    if (!el) return;
-    const left = el.querySelector(".pins-left");
-    const right = el.querySelector(".pins-right");
-    if (!left || !right) return;
-    left.innerHTML = "";
-    right.innerHTML = "";
+    const el2 = document.querySelector(`.node[data-id="${nodeId}"]`);
+    if (!el2) return;
+    const left2 = el2.querySelector(".pins-left");
+    const right2 = el2.querySelector(".pins-right");
+    if (!left2 || !right2) return;
+    left2.innerHTML = "";
+    right2.innerHTML = "";
     const inputs = node2.inputs || [];
     const outputs = node2.outputs || [];
-    inputs.forEach((pin) => left.appendChild(this._pinElement(pin, false, nodeId)));
-    outputs.forEach((pin) => right.appendChild(this._pinElement(pin, true, nodeId)));
-    if (node2.category === "action" && node2.title === "Function") {
-      let select = el.querySelector("select.method-select");
-      if (!select) {
-        select = document.createElement("select");
-        select.className = "method-select";
-        select.style.cssText = "width:100%; margin-top:6px;";
-        el.querySelector(".body").appendChild(select);
+    inputs.forEach((pin) => left2.appendChild(this._pinElement(pin, false, nodeId)));
+    outputs.forEach((pin) => right2.appendChild(this._pinElement(pin, true, nodeId)));
+    if (node2.title === "Get Scene Object" || node2.title === "Get Scene Light" || node2.title === "Get Scene Animation") {
+      const select2 = el2.querySelector("select.scene-select");
+      if (select2) {
+        console.log("TEST!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+        const objects2 = spec.accessObject || [];
+        objects2.forEach((obj) => {
+          const opt = document.createElement("option");
+          opt.value = obj.name;
+          opt.textContent = obj.name;
+          select2.appendChild(opt);
+        });
+        const selected = this._getSceneSelectedName(node2);
+        if (selected) {
+          select2.value = selected;
+        }
       }
-      this.populateMethodsSelect(select);
-      if (node2.attachedMethod) select.value = node2.attachedMethod;
-      select.onchange = (e) => {
+    } else if (node2.category === "action" && node2.title === "Function") {
+      let select2 = el2.querySelector("select.method-select");
+      if (!select2) {
+        select2 = document.createElement("select");
+        select2.className = "method-select";
+        select2.style.cssText = "width:100%; margin-top:6px;";
+        el2.querySelector(".body").appendChild(select2);
+      }
+      this.populateMethodsSelect(select2);
+      if (node2.attachedMethod) select2.value = node2.attachedMethod;
+      select2.onchange = (e) => {
         const selected = this.methodsManager.methodsContainer.find((m) => m.name === e.target.value);
         if (selected) this.adaptNodeToMethod(node2, selected);
+      };
+    } else if (node2.category === "functions") {
+      console.log("new");
+      const dom2 = document.querySelector(`.node[data-id="${nodeId}"]`);
+      this.restoreDynamicFunctionNode(node2, dom2);
+    }
+  }
+  restoreDynamicFunctionNode(node, dom) {
+    if (!node.accessObject && node.accessObjectLiteral) {
+      try {
+        node.accessObject = eval(node.accessObjectLiteral);
+      } catch (e) {
+        console.warn("Failed to eval accessObjectLiteral:", node.accessObjectLiteral, e);
+        node.accessObject = [];
+      }
+    }
+    if (!node.fields) node.fields = [];
+    if (!node.fields.find((f) => f.key === "selectedObject")) {
+      node.fields.push({ key: "selectedObject", value: "" });
+    }
+    if (!node.inputs || node.inputs.length === 0) {
+      node.inputs = [{ name: "exec", type: "action" }];
+    }
+    if (!node.outputs || node.outputs.length === 0) {
+      node.outputs = [{ name: "execOut", type: "action" }];
+    }
+    let select = dom.querySelector("select");
+    if (select == null) {
+      select = document.createElement("select");
+      select.id = node.id;
+      select.className = "method-select";
+      select.style.cssText = "width:100%; margin-top:6px;";
+      dom.appendChild(select);
+    }
+    if (select && node.accessObject) {
+      const numOptions = select.options.length;
+      const newLength = Object.keys(node.accessObject).filter((key) => typeof node.accessObject[key] === "function");
+      if (numOptions !== newLength.length + 1) {
+        console.log("BALBLA");
+        select.innerHTML = "";
+        const placeholder2 = document.createElement("option");
+        placeholder2.value = "";
+        placeholder2.textContent = "-- Select Function --";
+        select.appendChild(placeholder2);
+        Object.keys(node.accessObject).filter((key) => typeof node.accessObject[key] === "function").forEach((fnName) => {
+          const opt = document.createElement("option");
+          opt.value = fnName;
+          opt.textContent = fnName;
+          select.appendChild(opt);
+        });
+        const selected = node.fields.find((f) => f.key === "selectedObject")?.value;
+        if (selected) select.value = selected;
+      }
+      select.onchange = (e) => {
+        const val = e.target.value;
+        node.fields.find((f) => f.key === "selectedObject").value = val;
       };
     }
   }
@@ -16298,24 +16418,25 @@ var FluxCodexVertex = class _FluxCodexVertex {
     );
     return pin;
   }
-  createNodeDOM(spec2) {
+  createNodeDOM(spec) {
     const el = document.createElement("div");
-    if (spec2.title == "Fetch") {
-      el.className = "node " + (spec2.title.toLowerCase() || "");
+    if (spec.title == "Fetch") {
+      el.className = "node " + (spec.title.toLowerCase() || "");
     } else {
-      el.className = "node " + (spec2.category || "");
+      el.className = "node " + (spec.category || "");
     }
-    el.style.left = spec2.x + "px";
-    el.style.top = spec2.y + "px";
-    el.dataset.id = spec2.id;
+    el.style.left = spec.x + "px";
+    el.style.top = spec.y + "px";
+    el.dataset.id = spec.id;
     const header = document.createElement("div");
     header.className = "header";
-    header.textContent = spec2.title;
+    console.log(".....................spec.title.", spec.title);
+    header.textContent = spec.title;
     el.appendChild(header);
     const body = document.createElement("div");
     body.className = "body";
     const row = document.createElement("div");
-    if (spec2.title == "Comment") {
+    if (spec.title == "Comment") {
       row.classList.add("pin-row");
       row.classList.add("comment");
     } else {
@@ -16325,47 +16446,47 @@ var FluxCodexVertex = class _FluxCodexVertex {
     left.className = "pins-left";
     const right = document.createElement("div");
     right.className = "pins-right";
-    (spec2.inputs || []).forEach((pin) => {
+    (spec.inputs || []).forEach((pin) => {
       pin.type = this.normalizePinType(pin.type);
-      left.appendChild(this._pinElement(pin, false, spec2.id));
+      left.appendChild(this._pinElement(pin, false, spec.id));
     });
-    (spec2.outputs || []).forEach((pin) => {
+    (spec.outputs || []).forEach((pin) => {
       pin.type = this.normalizePinType(pin.type);
-      right.appendChild(this._pinElement(pin, true, spec2.id));
+      right.appendChild(this._pinElement(pin, true, spec.id));
     });
     row.appendChild(left);
     row.appendChild(right);
     body.appendChild(row);
-    if (spec2.comment) {
+    if (spec.comment) {
       const textarea = document.createElement("textarea");
       textarea.style.webkitBoxShadow = "inset 0px 0px 1px 4px #9E9E9E";
       textarea.style.boxShadow = "inset 0px 0px 22px 1px rgba(118, 118, 118, 1)";
       textarea.style.backgroundColor = "gray";
       textarea.style.color = "black";
-      textarea.value = spec2.fields.find((f) => f.key === "text").value;
+      textarea.value = spec.fields.find((f) => f.key === "text").value;
       textarea.oninput = () => {
-        spec2.fields.find((f) => f.key === "text").value = textarea.value;
+        spec.fields.find((f) => f.key === "text").value = textarea.value;
         row.textContent = textarea.value || "Comment";
       };
       body.appendChild(textarea);
     }
-    if (spec2.fields?.length && !spec2.comment) {
+    if (spec.fields?.length && !spec.comment) {
       const fieldsWrap = document.createElement("div");
       fieldsWrap.className = "node-fields";
-      spec2.fields.forEach((field) => {
+      spec.fields.forEach((field) => {
         if (field.key === "var") return;
-        const input = this.createFieldInput(spec2, field);
+        const input = this.createFieldInput(spec, field);
         if (field.key === "objectPreview") {
-          spec2.objectPreviewEl = input;
+          spec.objectPreviewEl = input;
         }
         fieldsWrap.appendChild(input);
       });
       body.appendChild(fieldsWrap);
     }
-    if (spec2.fields && spec2.title === "GenRandInt") {
+    if (spec.fields && spec.title === "GenRandInt") {
       const container = document.createElement("div");
       container.className = "genrand-inputs";
-      spec2.fields.forEach((f) => {
+      spec.fields.forEach((f) => {
         const input = document.createElement("input");
         input.type = "number";
         input.value = f.value;
@@ -16379,35 +16500,36 @@ var FluxCodexVertex = class _FluxCodexVertex {
         container.appendChild(label);
       });
       body.appendChild(container);
-    } else if (spec2.category === "math" || spec2.category === "value" || spec2.title === "Print") {
+    } else if (spec.category === "math" || spec.category === "value" || spec.title === "Print") {
       const display = document.createElement("div");
       display.className = "value-display";
       display.textContent = "?";
-      spec2.displayEl = display;
+      spec.displayEl = display;
       body.appendChild(display);
     }
-    if (spec2.title === "Function" && spec2.category === "action" && !spec2.builtIn && !spec2.isVariableNode) {
-      const select = document.createElement("select");
-      select.className = "method-select";
-      select.style.cssText = "width:100%; margin-top:6px;";
-      body.appendChild(select);
-      this.populateMethodsSelect(select);
-      if (spec2.attachedMethod) {
-        select.value = spec2.attachedMethod;
+    if (spec.title === "Function" && spec.category === "action" && !spec.builtIn && !spec.isVariableNode) {
+      const select2 = document.createElement("select");
+      select2.id = spec.id;
+      select2.className = "method-select";
+      select2.style.cssText = "width:100%; margin-top:6px;";
+      body.appendChild(select2);
+      this.populateMethodsSelect(select2);
+      if (spec.attachedMethod) {
+        select2.value = spec.attachedMethod;
       }
-      select.addEventListener("change", (e) => {
+      select2.addEventListener("change", (e) => {
         const selected = this.methodsManager.methodsContainer.find(
           (m) => m.name === e.target.value
         );
         if (selected) {
-          this.adaptNodeToMethod(spec2, selected);
+          this.adaptNodeToMethod(spec, selected);
         }
       });
     }
-    if (spec2.fields?.some((f) => f.key === "var") && !spec2.comment) {
+    if (spec.fields?.some((f) => f.key === "var") && !spec.comment) {
       const input = document.createElement("input");
       input.type = "text";
-      input.value = spec2.fields.find((f) => f.key === "var")?.value ?? "";
+      input.value = spec.fields.find((f) => f.key === "var")?.value ?? "";
       input.readOnly = true;
       input.style.width = "100%";
       input.style.marginTop = "6px";
@@ -16415,39 +16537,42 @@ var FluxCodexVertex = class _FluxCodexVertex {
       input.style.cursor = "default";
       body.appendChild(input);
     }
-    if (spec2.title === "functions") {
-      const select = document.createElement("select");
-      select.style.width = "100%";
-      select.style.marginTop = "6px";
-      this.populateDynamicFunctionSelect(select, spec2.accessObject);
-      select.addEventListener("change", (e) => {
+    if (spec.title === "functions") {
+      const select2 = document.createElement("select");
+      select2.style.width = "100%";
+      select2.style.marginTop = "6px";
+      this.populateDynamicFunctionSelect(select2, spec.accessObject);
+      select2.addEventListener("change", (e) => {
         const fnName = e.target.value;
         if (fnName) {
-          this.adaptDynamicFunction(spec2, fnName);
+          this.adaptDynamicFunction(spec, fnName);
         }
       });
-      body.appendChild(select);
+      body.appendChild(select2);
     }
-    if (spec2.title === "Get Scene Object" || spec2.title === "Get Scene Animation" || spec2.title === "Get Scene Light") {
+    if (spec.title === "Get Scene Object" || spec.title === "Get Scene Animation" || spec.title === "Get Scene Light") {
       const select = document.createElement("select");
+      select.id = spec._id;
       select.style.width = "100%";
       select.style.marginTop = "6px";
-      const objects = spec2.accessObject || [];
+      if (spec.accessObject === void 0) spec.accessObject = eval(spec.accessObjectLiteral);
+      const objects = spec.accessObject || [];
       const placeholder = document.createElement("option");
       placeholder.textContent = "-- Select Object --";
       placeholder.value = "";
       select.appendChild(placeholder);
-      objects.forEach((obj) => {
+      console.log("WORKS objects", spec.accessObject.length);
+      spec.accessObject.forEach((obj) => {
         const opt = document.createElement("option");
         opt.value = obj.name;
         opt.textContent = obj.name;
         select.appendChild(opt);
       });
-      if (spec2.fields[0].value) select.value = spec2.fields[0].value;
+      if (spec.fields[0].value) select.value = spec.fields[0].value;
       select.addEventListener("change", (e) => {
         const name = e.target.value;
-        spec2.fields[0].value = name;
-        this.updateSceneObjectPins(spec2, name);
+        spec.fields[0].value = name;
+        this.updateSceneObjectPins(spec, name);
       });
       el.appendChild(select);
     }
@@ -16465,7 +16590,8 @@ var FluxCodexVertex = class _FluxCodexVertex {
     });
     el.addEventListener("click", (e) => {
       e.stopPropagation();
-      this.selectNode(spec2.id);
+      this.selectNode(spec.id);
+      this.updateNodeDOM(spec.id);
     });
     return el;
   }
@@ -16476,19 +16602,19 @@ var FluxCodexVertex = class _FluxCodexVertex {
     this.state.selectedNode = id2;
     document.querySelector(`.node[data-id="${id2}"]`)?.classList.add("selected");
   }
-  populateDynamicFunctionSelect(select, accessObject) {
-    select.innerHTML = "";
-    const placeholder = document.createElement("option");
-    placeholder.value = "";
-    placeholder.textContent = "-- Select Function --";
-    select.appendChild(placeholder);
+  populateDynamicFunctionSelect(select2, accessObject) {
+    select2.innerHTML = "";
+    const placeholder2 = document.createElement("option");
+    placeholder2.value = "";
+    placeholder2.textContent = "-- Select Function --";
+    select2.appendChild(placeholder2);
     if (!accessObject || typeof accessObject !== "object") return;
     for (const key in accessObject) {
       if (typeof accessObject[key] === "function") {
         const opt = document.createElement("option");
         opt.value = key;
         opt.textContent = key;
-        select.appendChild(opt);
+        select2.appendChild(opt);
       }
     }
   }
@@ -16503,6 +16629,7 @@ var FluxCodexVertex = class _FluxCodexVertex {
       console.warn("Not a function:", funcName);
       return;
     }
+    alert("FN", fn);
     node2.inputs = [{ name: "exec", type: "action" }];
     node2.outputs = [{ name: "execOut", type: "action" }];
     const args = this.getArgNames(fn);
@@ -16880,21 +17007,6 @@ var FluxCodexVertex = class _FluxCodexVertex {
         noExec: true,
         fields: [{ key: "text", value: "Add comment" }]
       }),
-      // 'downloadMeshes': (id, x, y) => ({
-      //   id, title: 'downloadMeshes',
-      //   category: 'functions', x, y,
-      //   builtIn: true,
-      //   inputs: [
-      //     {name: 'exec', type: 'action'},
-      //     {name: 'name', type: 'value'},
-      //     {name: 'path', type: 'value'},
-      //   ],
-      //   outputs: [
-      //     {name: 'execOut', type: 'action'}
-      //   ],  // generated dynamically
-      //   noExec: false,
-      // }),
-      // full dinamic  functions taje ref from object (only funcs)
       dynamicFunction: (id2, x2, y2, accessObject) => ({
         id: id2,
         title: "functions",
@@ -16903,7 +17015,9 @@ var FluxCodexVertex = class _FluxCodexVertex {
         category: "action",
         inputs: [{ name: "exec", type: "action" }],
         outputs: [{ name: "execOut", type: "action" }],
-        accessObject: accessObject ? accessObject : window.app
+        fields: [{ key: "selectedObject", value: "" }],
+        accessObject: accessObject ? accessObject : window.app,
+        accessObjectLiteral: "window.app"
       }),
       getSceneObject: (id2, x2, y2) => ({
         noExec: true,
@@ -16917,6 +17031,7 @@ var FluxCodexVertex = class _FluxCodexVertex {
         fields: [{ key: "selectedObject", value: "" }],
         builtIn: true,
         accessObject: window.app?.mainRenderBundle,
+        accessObjectLiteral: "window.app?.mainRenderBundle",
         exposeProps: ["name", "position", "rotation", "scale"]
       }),
       getSceneLight: (id2, x2, y2) => ({
@@ -16931,6 +17046,7 @@ var FluxCodexVertex = class _FluxCodexVertex {
         fields: [{ key: "selectedObject", value: "" }],
         builtIn: true,
         accessObject: window.app?.lightContainer,
+        accessObjectLiteral: "window.app?.lightContainer",
         exposeProps: ["ambientFactor", "setProjection"]
       }),
       getObjectAnimation: (id2, x2, y2) => ({
@@ -16941,13 +17057,11 @@ var FluxCodexVertex = class _FluxCodexVertex {
         y: y2,
         category: "scene",
         inputs: [],
-        // no inputs
         outputs: [],
-        // will be filled dynamically
         fields: [{ key: "selectedObject", value: "" }],
         builtIn: true,
         accessObject: window.app?.mainRenderBundle,
-        // direct man
+        accessObjectLiteral: "window.app?.mainRenderBundle",
         exposeProps: [
           "name",
           "glb.glbJsonData.animations",
@@ -17124,8 +17238,8 @@ var FluxCodexVertex = class _FluxCodexVertex {
       }
     }
     if (spec) {
-      const dom = this.createNodeDOM(spec);
-      this.board.appendChild(dom);
+      const dom2 = this.createNodeDOM(spec);
+      this.board.appendChild(dom2);
       this.nodes[id] = spec;
       return id;
     }
@@ -17351,7 +17465,20 @@ var FluxCodexVertex = class _FluxCodexVertex {
     const inputPin = node2.inputs?.find((p) => p.name === pinName);
     if (inputPin) return inputPin.default ?? 0;
     if (node2.title === "Get Scene Object" || node2.title === "Get Scene Animation" || node2.title === "Get Scene Light") {
-      const objName = node2.fields[0].value;
+      const objName = this._getSceneSelectedName(node2);
+      if (!objName) return void 0;
+      const dom2 = this.board.querySelector(`[data-id="${nodeId}"]`);
+      const selects = dom2.querySelectorAll("select");
+      let select2 = selects[0];
+      select2.innerHTML = ``;
+      if (select2) {
+        node2.accessObject.forEach((obj2) => {
+          const opt = document.createElement("option");
+          opt.value = obj2.name;
+          opt.textContent = obj2.name;
+          select2.appendChild(opt);
+        });
+      }
       const obj = (node2.accessObject || []).find((o) => o.name === objName);
       if (!obj) return void 0;
       const out = node2.outputs.find((o) => o.name === pinName);
@@ -17428,7 +17555,7 @@ var FluxCodexVertex = class _FluxCodexVertex {
     node2.category = "functions";
     node2.fn = fn;
     node2.fnName = fnName;
-    node2.title = fnName;
+    node2.descFunc = fnName;
     this.updateNodeDOM(node2.id);
   }
   invalidateVariableGetters(type2, varName) {
@@ -17537,7 +17664,10 @@ var FluxCodexVertex = class _FluxCodexVertex {
       n._listenerAttached = true;
       return;
     }
-    if (n.category === "functions" && n.fn) {
+    if (n.category === "functions") {
+      if (n.fn === void 0) {
+        n.fn = n.accessObject[n.fnName];
+      }
       const args = n.inputs.filter((p) => p.type !== "action").map((p) => this.getValue(n.id, p.name));
       const result = n.fn(...args);
       if (this.hasReturn(n.fn)) {
@@ -17584,11 +17714,11 @@ var FluxCodexVertex = class _FluxCodexVertex {
         return;
       }
       const method = this.getValue(nodeId, "method") || "GET";
-      const body = this.getValue(nodeId, "body");
+      const body2 = this.getValue(nodeId, "body");
       const headers = this.getValue(nodeId, "headers") || {};
       const options2 = { method, headers };
-      if (body && method !== "GET") {
-        options2.body = typeof body === "string" ? body : JSON.stringify(body);
+      if (body2 && method !== "GET") {
+        options2.body = typeof body2 === "string" ? body2 : JSON.stringify(body2);
         if (!headers["Content-Type"]) {
           headers["Content-Type"] = "application/json";
         }
@@ -17742,17 +17872,18 @@ var FluxCodexVertex = class _FluxCodexVertex {
       pin: link.from.pin
     };
   }
-  populateAccessMethods(select) {
-    select.innerHTML = "";
+  populateAccessMethods(select2) {
+    console.log("populateAccessMethods");
+    select2.innerHTML = "";
     this.accessObject.forEach((obj) => {
       Object.getOwnPropertyNames(obj.__proto__).filter((k) => typeof obj[k] === "function" && k !== "constructor").forEach((fn) => {
         const opt = document.createElement("option");
         opt.value = `${obj.name}.${fn}`;
         opt.textContent = `${obj.name}.${fn}`;
-        select.appendChild(opt);
+        select2.appendChild(opt);
       });
     });
-    select.onchange = (e) => {
+    select2.onchange = (e) => {
       const [objName, fnName] = e.target.value.split(".");
       this.adaptNodeToAccessMethod(node, objName, fnName);
     };
@@ -17780,14 +17911,14 @@ var FluxCodexVertex = class _FluxCodexVertex {
     if (!node2) return;
     this.links = this.links.filter((link) => {
       if (link.from.node === nodeId || link.to.node === nodeId) {
-        const dom2 = document.getElementById(link.id);
-        if (dom2) dom2.remove();
+        const dom3 = document.getElementById(link.id);
+        if (dom3) dom3.remove();
         return false;
       }
       return true;
     });
-    const dom = this.board.querySelector(`[data-id="${nodeId}"]`);
-    if (dom) dom.remove();
+    const dom2 = this.board.querySelector(`[data-id="${nodeId}"]`);
+    if (dom2) dom2.remove();
     delete this.nodes[nodeId];
     this.updateLinks();
   }
@@ -17804,12 +17935,12 @@ var FluxCodexVertex = class _FluxCodexVertex {
   }
   handleMouseMove(e) {
     if (this.state.draggingNode) {
-      const el = this.state.draggingNode;
+      const el2 = this.state.draggingNode;
       const newX = e.clientX - this.state.dragOffset[0];
       const newY = e.clientY - this.state.dragOffset[1];
-      el.style.left = newX + "px";
-      el.style.top = newY + "px";
-      const id2 = el.dataset.id;
+      el2.style.left = newX + "px";
+      el2.style.top = newY + "px";
+      const id2 = el2.dataset.id;
       if (this.nodes[id2]) {
         this.nodes[id2].x = newX;
         this.nodes[id2].y = newY;
@@ -17980,9 +18111,7 @@ var FluxCodexVertex = class _FluxCodexVertex {
           if (spec2.category === "value" && spec2.title !== "GenRandInt" || spec2.category === "math" || spec2.title === "Print") {
             spec2.displayEl = domEl.querySelector(".value-display");
           }
-          if (spec2.category === "action" && spec2.title === "Function") {
-            this.updateNodeDOM(spec2.id);
-          }
+          this.updateNodeDOM(spec2.id);
         });
         this.updateLinks();
         this.updateValueDisplays();
@@ -18470,10 +18599,10 @@ var EditorHud = class {
           }));
         });
       });
-      document.querySelectorAll(".file-item").forEach((el) => {
-        el.addEventListener("click", () => {
+      document.querySelectorAll(".file-item").forEach((el2) => {
+        el2.addEventListener("click", () => {
           document.querySelectorAll(".file-item").forEach((x2) => x2.classList.remove("selected"));
-          el.classList.add("selected");
+          el2.classList.add("selected");
         });
       });
     });
@@ -18808,12 +18937,12 @@ var SceneObjectProperty = class {
           }
         });
       } else if (propName == "itIsPhysicsBody") {
-        let body = this.core.matrixAmmo.getBodyByName(currSceneObj.name);
-        for (let key in body) {
-          if (typeof body[key] === "string") {
+        let body2 = this.core.matrixAmmo.getBodyByName(currSceneObj.name);
+        for (let key in body2) {
+          if (typeof body2[key] === "string") {
             this.propName.innerHTML += `<div style="display:flex;text-align:left;"> 
               <div style="background:black;color:white;width:35%;">${key}</div>
-              <div style="background:lime;color:black;width:55%;">${body[key]} </div>`;
+              <div style="background:lime;color:black;width:55%;">${body2[key]} </div>`;
           } else {
             let item = document.createElement("div");
             item.style.display = "flex";
@@ -18822,11 +18951,11 @@ var SceneObjectProperty = class {
             funcNameDesc.style.width = "55%";
             funcNameDesc.innerHTML = key + ":";
             item.appendChild(funcNameDesc);
-            if (typeof body[key] === "function") {
+            if (typeof body2[key] === "function") {
               console.log("function");
               let physicsFuncDesc = document.createElement("select");
               item.appendChild(physicsFuncDesc);
-            } else if (typeof body[key] === "object") {
+            } else if (typeof body2[key] === "object") {
               console.log("OBJECT");
               let objDesc = document.createElement("span");
               objDesc.style.background = "yellow";
@@ -20201,7 +20330,7 @@ var MatrixEngineWGPU = class {
   };
   addLight(o) {
     const camera = this.cameras[this.mainCameraParams.type];
-    let newLight = new SpotLight(camera, this.inputHandler, this.device);
+    let newLight = new SpotLight(camera, this.inputHandler, this.device, this.lightContainer.length);
     this.lightContainer.push(newLight);
     this.createTexArrayForShadows();
     console.log(`%cAdd light: ${newLight}`, LOG_FUNNY_SMALL);
@@ -20810,6 +20939,19 @@ var app2 = new MatrixEngineWGPU(
         raycast: { enabled: true, radius: 2 },
         physics: { enabled: false, geometry: "Cube" }
       }, null, glbFile01);
+      downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, (m) => {
+        let texturesPaths2 = ["./res/meshes/blender/cube.png"];
+        app3.addMeshObj({
+          position: { x: 0, y: 0, z: -20 },
+          rotation: { x: 0, y: 0, z: 0 },
+          rotationSpeed: { x: 0, y: 0, z: 0 },
+          texturesPaths: [texturesPaths2],
+          name: "Cube_" + app3.mainRenderBundle.length,
+          mesh: m.cube,
+          raycast: { enabled: true, radius: 2 },
+          physics: { enabled: false, geometry: "Cube" }
+        });
+      }, { scale: [1, 1, 1] });
     });
   }
 );

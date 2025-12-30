@@ -616,6 +616,12 @@ export default class FluxCodexVertex {
     });
   }
 
+  _getSceneSelectedName(node) {
+    return node.fields?.find(
+      f => f.key === "selectedObject" || f.key === "object"
+    )?.value;
+  }
+
   updateNodeDOM(nodeId) {
     const node = this.nodes[nodeId];
     const el = document.querySelector(`.node[data-id="${nodeId}"]`);
@@ -634,8 +640,29 @@ export default class FluxCodexVertex {
     inputs.forEach(pin => left.appendChild(this._pinElement(pin, false, nodeId)));
     outputs.forEach(pin => right.appendChild(this._pinElement(pin, true, nodeId)));
 
-    // Method select (only for Function nodes)
-    if(node.category === "action" && node.title === "Function") {
+    if(node.title === "Get Scene Object" || node.title === "Get Scene Light" || node.title === "Get Scene Animation") {
+      const select = el.querySelector("select.scene-select");
+      if(select) {
+        console.log('TEST!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
+        const objects = spec.accessObject || []; // window.app?.mainRenderBundle || [];
+        objects.forEach(obj => {
+          const opt = document.createElement("option");
+          opt.value = obj.name;
+          opt.textContent = obj.name;
+          select.appendChild(opt);
+        });
+
+        const selected = this._getSceneSelectedName(node);
+        if(selected) {
+          select.value = selected;
+        }
+        // // restore previous value
+        // const field = node.fields?.find(f => f.key === "object");
+        // if(field?.value) {
+        //   select.value = field.value;
+        // }
+      }
+    } else if(node.category === "action" && node.title === "Function") {
       let select = el.querySelector("select.method-select");
       if(!select) {
         select = document.createElement("select");
@@ -650,6 +677,85 @@ export default class FluxCodexVertex {
       select.onchange = e => {
         const selected = this.methodsManager.methodsContainer.find(m => m.name === e.target.value);
         if(selected) this.adaptNodeToMethod(node, selected);
+      };
+    } else if(node.category === "functions") {
+      console.log('new')
+      const dom = document.querySelector(`.node[data-id="${nodeId}"]`);
+      this.restoreDynamicFunctionNode(node, dom);
+    }
+  }
+
+  restoreDynamicFunctionNode(node, dom) {
+    // Restore accessObject reference from literal
+    if(!node.accessObject && node.accessObjectLiteral) {
+      try {
+        node.accessObject = eval(node.accessObjectLiteral);
+      } catch(e) {
+        console.warn("Failed to eval accessObjectLiteral:", node.accessObjectLiteral, e);
+        node.accessObject = [];
+      }
+    }
+
+    // Ensure fields exist
+    if(!node.fields) node.fields = [];
+    if(!node.fields.find(f => f.key === "selectedObject")) {
+      node.fields.push({key: "selectedObject", value: ""});
+    }
+
+    // Ensure pins exist
+    if(!node.inputs || node.inputs.length === 0) {
+      node.inputs = [{name: "exec", type: "action"}];
+    }
+    if(!node.outputs || node.outputs.length === 0) {
+      node.outputs = [{name: "execOut", type: "action"}];
+    }
+
+    // Rebuild DOM select for this node
+    let select = dom.querySelector("select");
+
+    if(select == null) {
+      select = document.createElement("select");
+      select.id = node.id;
+      select.className = "method-select";
+      select.style.cssText = "width:100%; margin-top:6px;";
+
+      dom.appendChild(select);
+
+    }
+
+    if(select && node.accessObject) {
+      const numOptions = select.options.length;
+      const newLength = Object.keys(node.accessObject)
+        .filter(key => typeof node.accessObject[key] === "function")
+
+      // Only repopulate if length differs
+      if(numOptions !== newLength.length + 1) { // +1 for placeholder
+        console.log('BALBLA')
+        select.innerHTML = "";
+        const placeholder = document.createElement("option");
+        placeholder.value = "";
+        placeholder.textContent = "-- Select Function --";
+        select.appendChild(placeholder);
+
+        Object.keys(node.accessObject)
+          .filter(key => typeof node.accessObject[key] === "function")
+          .forEach(fnName => {
+            const opt = document.createElement("option");
+            opt.value = fnName;
+            opt.textContent = fnName;
+            select.appendChild(opt);
+          });
+
+
+        // restore previously selected
+        const selected = node.fields.find(f => f.key === "selectedObject")?.value;
+        if(selected) select.value = selected;
+      }
+
+      // Attach onchange
+      select.onchange = e => {
+        const val = e.target.value;
+        node.fields.find(f => f.key === "selectedObject").value = val;
       };
     }
   }
@@ -823,6 +929,7 @@ export default class FluxCodexVertex {
     // --- Header ---
     const header = document.createElement("div");
     header.className = "header";
+    console.log('.....................spec.title.', spec.title)
     header.textContent = spec.title;
     el.appendChild(header);
 
@@ -922,11 +1029,7 @@ export default class FluxCodexVertex {
       });
 
       body.appendChild(container);
-    } else if(
-      spec.category === "math" ||
-      spec.category === "value" ||
-      spec.title === "Print"
-    ) {
+    } else if(spec.category === "math" || spec.category === "value" || spec.title === "Print") {
       const display = document.createElement("div");
       display.className = "value-display";
       display.textContent = "?";
@@ -935,13 +1038,9 @@ export default class FluxCodexVertex {
     }
 
     // Function Method Selector
-    if(
-      spec.title === "Function" &&
-      spec.category === "action" &&
-      !spec.builtIn &&
-      !spec.isVariableNode
-    ) {
+    if(spec.title === "Function" && spec.category === "action" && !spec.builtIn && !spec.isVariableNode) {
       const select = document.createElement("select");
+      select.id = spec.id;
       select.className = "method-select";
       select.style.cssText = "width:100%; margin-top:6px;";
 
@@ -999,17 +1098,22 @@ export default class FluxCodexVertex {
       spec.title === "Get Scene Light"
     ) {
       const select = document.createElement("select");
+      select.id = spec._id;
       select.style.width = "100%";
       select.style.marginTop = "6px";
 
       // Populate scene objects
+
+      if(spec.accessObject === undefined) spec.accessObject = eval(spec.accessObjectLiteral);
       const objects = spec.accessObject || []; // window.app?.mainRenderBundle || [];
+
       const placeholder = document.createElement("option");
       placeholder.textContent = "-- Select Object --";
       placeholder.value = "";
       select.appendChild(placeholder);
 
-      objects.forEach(obj => {
+      console.log('WORKS objects', spec.accessObject.length);
+      spec.accessObject.forEach(obj => {
         const opt = document.createElement("option");
         opt.value = obj.name;
         opt.textContent = obj.name;
@@ -1043,6 +1147,8 @@ export default class FluxCodexVertex {
     el.addEventListener("click", e => {
       e.stopPropagation();
       this.selectNode(spec.id);
+
+      this.updateNodeDOM(spec.id)
     });
 
     return el;
@@ -1090,6 +1196,8 @@ export default class FluxCodexVertex {
       console.warn("Not a function:", funcName);
       return;
     }
+
+    alert('FN', fn)
 
     // reset exec pins
     node.inputs = [{name: "exec", type: "action"}];
@@ -1484,27 +1592,15 @@ export default class FluxCodexVertex {
         noExec: true,
         fields: [{key: "text", value: "Add comment"}],
       }),
-      // 'downloadMeshes': (id, x, y) => ({
-      //   id, title: 'downloadMeshes',
-      //   category: 'functions', x, y,
-      //   builtIn: true,
-      //   inputs: [
-      //     {name: 'exec', type: 'action'},
-      //     {name: 'name', type: 'value'},
-      //     {name: 'path', type: 'value'},
-      //   ],
-      //   outputs: [
-      //     {name: 'execOut', type: 'action'}
-      //   ],  // generated dynamically
-      //   noExec: false,
-      // }),
-      // full dinamic  functions taje ref from object (only funcs)
+
       dynamicFunction: (id, x, y, accessObject) => ({
         id, title: "functions", x, y,
         category: "action",
         inputs: [{name: "exec", type: "action"}],
         outputs: [{name: "execOut", type: "action"}],
+        fields: [{key: "selectedObject", value: ""}],
         accessObject: (accessObject ? accessObject : window.app),
+        accessObjectLiteral: "window.app",
       }),
 
       getSceneObject: (id, x, y) => ({
@@ -1516,6 +1612,7 @@ export default class FluxCodexVertex {
         fields: [{key: "selectedObject", value: ""}],
         builtIn: true,
         accessObject: window.app?.mainRenderBundle,
+        accessObjectLiteral: "window.app?.mainRenderBundle",
         exposeProps: ["name", "position", "rotation", "scale"],
       }),
 
@@ -1528,21 +1625,18 @@ export default class FluxCodexVertex {
         fields: [{key: "selectedObject", value: ""}],
         builtIn: true,
         accessObject: window.app?.lightContainer,
+        accessObjectLiteral: "window.app?.lightContainer",
         exposeProps: ["ambientFactor", "setProjection"],
       }),
 
       getObjectAnimation: (id, x, y) => ({
-        noExec: true,
-        id,
-        title: "Get Scene Animation",
-        x,
-        y,
-        category: "scene",
-        inputs: [], // no inputs
-        outputs: [], // will be filled dynamically
+        noExec: true, id, title: "Get Scene Animation", x, y, category: "scene",
+        inputs: [],
+        outputs: [],
         fields: [{key: "selectedObject", value: ""}],
         builtIn: true,
-        accessObject: window.app?.mainRenderBundle, // direct man
+        accessObject: window.app?.mainRenderBundle,
+        accessObjectLiteral: "window.app?.mainRenderBundle",
         exposeProps: [
           "name",
           "glb.glbJsonData.animations",
@@ -2002,7 +2096,24 @@ export default class FluxCodexVertex {
     if(node.title === "Get Scene Object" || node.title === "Get Scene Animation" ||
       node.title === "Get Scene Light"
     ) {
-      const objName = node.fields[0].value;
+      const objName = this._getSceneSelectedName(node);
+      if(!objName) return undefined;
+      //repopulate
+      const dom = this.board.querySelector(`[data-id="${nodeId}"]`);
+      const selects = dom.querySelectorAll("select"); // returns NodeList
+      let select = selects[0];
+      // if((select.options.length-1) != node.accessObject.length) {
+      select.innerHTML = ``;
+      if(select) {
+        node.accessObject.forEach(obj => {
+          const opt = document.createElement("option");
+          opt.value = obj.name;
+          opt.textContent = obj.name;
+          select.appendChild(opt);
+        });
+      }
+      // }
+
       const obj = (node.accessObject || []).find(o => o.name === objName);
       if(!obj) return undefined;
       const out = node.outputs.find(o => o.name === pinName);
@@ -2086,7 +2197,8 @@ export default class FluxCodexVertex {
     node.category = "functions";
     node.fn = fn; // REAL FUNCTION
     node.fnName = fnName;
-    node.title = fnName;
+    node.descFunc = fnName;
+    // node.title = fnName;
     this.updateNodeDOM(node.id);
   }
 
@@ -2233,7 +2345,12 @@ export default class FluxCodexVertex {
     }
 
     // functionDinamic execution
-    if(n.category === "functions" && n.fn) {
+    if(n.category === "functions") {
+
+      if (n.fn === undefined) {
+        n.fn = n.accessObject[n.fnName]
+      }
+
       const args = n.inputs
         .filter(p => p.type !== "action")
         .map(p => this.getValue(n.id, p.name));
@@ -2473,6 +2590,8 @@ export default class FluxCodexVertex {
   }
 
   populateAccessMethods(select) {
+
+    console.log("populateAccessMethods")
     select.innerHTML = "";
     this.accessObject.forEach(obj => {
       Object.getOwnPropertyNames(obj.__proto__)
@@ -2762,9 +2881,9 @@ export default class FluxCodexVertex {
             spec.category === "math" || spec.title === "Print") {
             spec.displayEl = domEl.querySelector(".value-display");
           }
-          if(spec.category === "action" && spec.title === "Function") {
-            this.updateNodeDOM(spec.id);
-          }
+          // if(spec.category === "action" && spec.title === "Function") {
+          this.updateNodeDOM(spec.id);
+          // }
         });
         this.updateLinks();
         this.updateValueDisplays();

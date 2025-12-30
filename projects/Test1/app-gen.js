@@ -54,6 +54,22 @@ let app = new MatrixEngineWGPU(
  // ME END bot
  
 
+      
+       // ME START Cube_2 addCube
+ downloadMeshes({cube: "./res/meshes/blender/cube.obj"}, (m) => { 
+   let texturesPaths = ['./res/meshes/blender/cube.png']; 
+   app.addMeshObj({
+     position: {x: 0, y: 0, z: -20}, rotation: {x: 0, y: 0, z: 0}, rotationSpeed: {x: 0, y: 0, z: 0},
+     texturesPaths: [texturesPaths],
+     name: 'Cube_' + app.mainRenderBundle.length,
+     mesh: m.cube,
+     raycast: {enabled: true, radius: 2},
+     physics: {enabled: false, geometry: "Cube"}
+   }); 
+ }, {scale: [1, 1, 1]});  
+ // ME END Cube_2 addCube
+ 
+
       // [MAIN_REPLACE2]
  
     })
