@@ -16343,7 +16343,7 @@ var FluxCodexVertex = class _FluxCodexVertex {
     this.onPinsConnected(fromNode, from.pin, toNode, to.pin);
   }
   _adaptGetSubObjectOnConnect(getSubNode, sourceNode) {
-    alert();
+    alert("adapt");
     const obj = sourceNode._returnCache;
     if (!obj || typeof obj !== "object") return;
     const varField = sourceNode.fields?.find((f) => f.key === "var");
@@ -16539,17 +16539,20 @@ var FluxCodexVertex = class _FluxCodexVertex {
       body.appendChild(input);
     }
     if (spec.title === "functions") {
-      const select2 = document.createElement("select");
-      select2.style.width = "100%";
-      select2.style.marginTop = "6px";
-      this.populateDynamicFunctionSelect(select2, spec.accessObject);
-      select2.addEventListener("change", (e) => {
+      const select = document.createElement("select");
+      select.style.width = "100%";
+      select.style.marginTop = "6px";
+      if (spec.accessObject === void 0) {
+        spec.accessObject = eval(spec.accessObjectLiteral);
+      }
+      this.populateDynamicFunctionSelect(select, spec.accessObject);
+      select.addEventListener("change", (e) => {
         const fnName = e.target.value;
         if (fnName) {
           this.adaptDynamicFunction(spec, fnName);
         }
       });
-      body.appendChild(select2);
+      body.appendChild(select);
     }
     if (spec.title === "Get Scene Object" || spec.title === "Get Scene Animation" || spec.title === "Get Scene Light") {
       const select = document.createElement("select");
@@ -17228,6 +17231,7 @@ var FluxCodexVertex = class _FluxCodexVertex {
       }
       ;
       if (nodeFactories[type]) spec = nodeFactories[type](id, x, y, options.accessObject);
+      spec.accessObjectLiteral = AO;
     } else {
       if (nodeFactories[type]) spec = nodeFactories[type](id, x, y);
     }
@@ -17588,6 +17592,7 @@ var FluxCodexVertex = class _FluxCodexVertex {
     return match[1].split(",").map((a) => a.trim()).filter(Boolean);
   }
   adaptDynamicFunction(node2, fnName) {
+    console.log("adaptDynamicFunction(node, fnName) ");
     const fn = node2.accessObject?.[fnName];
     if (typeof fn !== "function") return;
     node2.inputs = [{ name: "exec", type: "action" }];
@@ -17713,6 +17718,7 @@ var FluxCodexVertex = class _FluxCodexVertex {
       return;
     }
     if (n.category === "functions") {
+      console.log("n.category === functions ");
       if (n.fn === void 0) {
         n.fn = n.accessObject[n.fnName];
       }

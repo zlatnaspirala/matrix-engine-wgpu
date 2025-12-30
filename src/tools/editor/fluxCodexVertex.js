@@ -824,7 +824,7 @@ export default class FluxCodexVertex {
   }
 
   _adaptGetSubObjectOnConnect(getSubNode, sourceNode) {
-    alert()
+    alert('adapt')
     const obj = sourceNode._returnCache;
     if(!obj || typeof obj !== "object") return;
     const varField = sourceNode.fields?.find(f => f.key === "var");
@@ -1082,6 +1082,9 @@ export default class FluxCodexVertex {
       select.style.width = "100%";
       select.style.marginTop = "6px";
 
+      if (spec.accessObject === undefined) {
+        spec.accessObject = eval(spec.accessObjectLiteral);
+      }
       this.populateDynamicFunctionSelect(select, spec.accessObject);
 
       select.addEventListener("change", e => {
@@ -1101,7 +1104,6 @@ export default class FluxCodexVertex {
       select.style.marginTop = "6px";
 
       // Populate scene objects
-
       if(spec.accessObject === undefined) spec.accessObject = eval(spec.accessObjectLiteral);
       const objects = spec.accessObject || []; // window.app?.mainRenderBundle || [];
 
@@ -1810,6 +1812,8 @@ export default class FluxCodexVertex {
         return;
       };
       if(nodeFactories[type]) spec = nodeFactories[type](id, x, y, options.accessObject);
+      spec.accessObjectLiteral = AO;
+
     } else {
       if(nodeFactories[type]) spec = nodeFactories[type](id, x, y);
     }
@@ -2238,6 +2242,7 @@ export default class FluxCodexVertex {
   }
 
   adaptDynamicFunction(node, fnName) {
+    console.log('adaptDynamicFunction(node, fnName) ')
     const fn = node.accessObject?.[fnName];
     if(typeof fn !== "function") return;
     node.inputs = [{name: "exec", type: "action"}];
@@ -2398,6 +2403,7 @@ export default class FluxCodexVertex {
     // functionDinamic execution
     if(n.category === "functions") {
 
+      console.log('n.category === functions ')
       if(n.fn === undefined) {
         n.fn = n.accessObject[n.fnName]
       }
