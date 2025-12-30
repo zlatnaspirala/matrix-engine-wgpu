@@ -16343,6 +16343,7 @@ var FluxCodexVertex = class _FluxCodexVertex {
     this.onPinsConnected(fromNode, from.pin, toNode, to.pin);
   }
   _adaptGetSubObjectOnConnect(getSubNode, sourceNode) {
+    alert();
     const obj = sourceNode._returnCache;
     if (!obj || typeof obj !== "object") return;
     const varField = sourceNode.fields?.find((f) => f.key === "var");
@@ -17335,7 +17336,45 @@ var FluxCodexVertex = class _FluxCodexVertex {
     if (node2.title === "Get Sub Object" && field.key === "path") {
       input.oninput = () => {
         const link = this.getConnectedSource(node2.id, "object");
-        if (!link?.node?.isGetterNode) return;
+        if (!link?.node?.isGetterNode) {
+          if (link.node.title == "Get Sub Object") {
+            console.log("special sub sub test ", link.node.title);
+            let target2 = this.resolvePath(link.node._returnCache, link.pin);
+            node2.outputs = node2.outputs.filter((p) => p.type === "action");
+            if (target2 && typeof target2 === "object") {
+              for (const k in target2) {
+                node2.outputs.push({
+                  name: k,
+                  type: this.detectType(target2[k])
+                });
+              }
+            }
+          }
+          if (link.node.title == "Get Scene Animation") {
+            console.log("special test ", link.node.title);
+            const varField2 = link.node.fields?.find((f) => f.key === "selectedObject");
+            console.log("special test ", varField2);
+            if (link.pin.indexOf(".") != -1) {
+              let target2 = this.resolvePath(app.getSceneObjectByName(varField2.value), link.pin);
+              console.log("special test target ", target2);
+              link.node._subCache = target2;
+              node2.outputs = node2.outputs.filter((p) => p.type === "action");
+              if (target2 && typeof target2 === "object") {
+                for (const k in target2) {
+                  node2.outputs.push({
+                    name: k,
+                    type: this.detectType(target2[k])
+                  });
+                }
+              }
+              node2._needsRebuild = false;
+              node2._pinsBuilt = true;
+              this.updateNodeDOM(node2.id);
+            }
+            console.log("special test :::: ", link.node.accessObject[varField2.value]);
+          }
+          return;
+        }
         const varField = link.node.fields?.find((f) => f.key === "var");
         const varName = varField?.value;
         const rootObj = this.variables?.object?.[varName];
@@ -17498,11 +17537,15 @@ var FluxCodexVertex = class _FluxCodexVertex {
       };
       return node2._returnCache[pinName];
     } else if (node2.title === "Get Sub Object") {
-      let varField = node2.fields?.find((f) => f.key === "var");
-      if (!varField || !varField.value) {
-        varField = node2.fields?.find((f) => f.key === "objectPreview");
+      let varField = node2.outputs?.find((f) => f.name === "0");
+      let isName = node2.outputs?.find((f) => f.name === "name");
+      console.log("test1 :::", varField);
+      if (varField) {
+        if (varField.type == "object") {
+          return node2._subCache[parseInt(varField.name)];
+        }
       }
-      console.log("test   const obj = this.variables.object?.[varField.value]?.value; ", this.variables.object?.[varField.value]?.value);
+      console.log("test2 :::", isName);
       return node2._subCache;
     } else if (node2.type === "forEach") {
       if (pinName === "item") return node2.state?.item;

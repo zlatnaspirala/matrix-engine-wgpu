@@ -824,6 +824,7 @@ export default class FluxCodexVertex {
   }
 
   _adaptGetSubObjectOnConnect(getSubNode, sourceNode) {
+    alert()
     const obj = sourceNode._returnCache;
     if(!obj || typeof obj !== "object") return;
     const varField = sourceNode.fields?.find(f => f.key === "var");
@@ -1939,7 +1940,55 @@ export default class FluxCodexVertex {
     if(node.title === "Get Sub Object" && field.key === "path") {
       input.oninput = () => {
         const link = this.getConnectedSource(node.id, "object");
-        if(!link?.node?.isGetterNode) return;
+        if(!link?.node?.isGetterNode) {
+
+
+          if(link.node.title == "Get Sub Object") {
+            console.log('special sub sub test ', link.node.title)
+            let target = this.resolvePath(link.node._returnCache, link.pin);
+            node.outputs = node.outputs.filter(p => p.type === "action"); // clear old object pins
+            if(target && typeof target === "object") {
+              for(const k in target) {
+                node.outputs.push({
+                  name: k,
+                  type: this.detectType(target[k]),
+                });
+              }
+            }
+          }
+          if(link.node.title == "Get Scene Animation") {
+            console.log('special test ', link.node.title)
+
+            const varField = link.node.fields?.find(f => f.key === "selectedObject");
+            console.log('special test ', varField)
+
+            // pin: "glb.glbJsonData.animations"
+
+            if(link.pin.indexOf('.') != -1) {
+              let target = this.resolvePath(app.getSceneObjectByName(varField.value), link.pin);
+              console.log('special test target ', target)
+              link.node._subCache = target;
+
+              node.outputs = node.outputs.filter(p => p.type === "action"); // clear old object pins
+              if(target && typeof target === "object") {
+                for(const k in target) {
+                  node.outputs.push({
+                    name: k,
+                    type: this.detectType(target[k]),
+                  });
+                }
+              }
+
+              node._needsRebuild = false;
+              node._pinsBuilt = true;
+              this.updateNodeDOM(node.id);
+            }
+            console.log('special test :::: ', link.node.accessObject[varField.value])
+            // this.getValue(link.node.id, "")
+          }
+          return;
+
+        }
 
         const varField = link.node.fields?.find(f => f.key === "var");
         const varName = varField?.value;
@@ -2120,7 +2169,7 @@ export default class FluxCodexVertex {
       const out = node.outputs.find(o => o.name === pinName);
       if(!out) return undefined;
 
-      if (pinName.indexOf('.' != -1)) {
+      if(pinName.indexOf('.' != -1)) {
         return this.resolvePath(obj, pinName);
       }
 
@@ -2136,12 +2185,13 @@ export default class FluxCodexVertex {
       return node._returnCache[pinName];
     } else if(node.title === "Get Sub Object") {
 
-      let varField = node.fields?.find(f => f.key === "var");
-      if(!varField || !varField.value) {
-        varField = node.fields?.find(f => f.key === "objectPreview");
+      let varField = node.outputs?.find(f => f.name === "0");
+      let isName = node.outputs?.find(f => f.name === "name");
+      console.log('test1 :::', varField)
+      if (varField) if (varField.type == 'object')  {
+        return node._subCache[parseInt(varField.name)]
       }
-
-      console.log('test   const obj = this.variables.object?.[varField.value]?.value; ', this.variables.object?.[varField.value]?.value)
+      console.log('test2 :::', isName);
       return node._subCache;
     } else if(node.type === "forEach") {
       if(pinName === "item") return node.state?.item;
@@ -2287,7 +2337,7 @@ export default class FluxCodexVertex {
           l.to.pin === "result" || l.to.pin === "value")
       );
 
-   
+
 
       if(link) {
         const fromNode = this.nodes[link.from.node];
@@ -2302,8 +2352,8 @@ export default class FluxCodexVertex {
         arr = n.inputs?.find(p => p.name === "array")?.default ?? [];
       }
       // make it fluid 
-      n._returnCache = Array.isArray(arr) ? arr : arr ? arr[link.from.pin] : 
-         this.getValue(link.from.node, link.from.pin);
+      n._returnCache = Array.isArray(arr) ? arr : arr ? arr[link.from.pin] :
+        this.getValue(link.from.node, link.from.pin);
 
       this.enqueueOutputs(n, "execOut");
       return;
