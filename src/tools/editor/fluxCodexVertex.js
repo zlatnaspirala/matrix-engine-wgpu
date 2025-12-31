@@ -2452,6 +2452,30 @@ export default class FluxCodexVertex {
       return;
     }
 
+    // 🔹 Reference Function execution
+    if(n.title === "reffunctions") {
+      const fn = n._fnRef;
+      if(typeof fn !== "function") {
+        console.warn("[reffunctions] No function reference");
+        this.enqueueOutputs(n, "execOut");
+        return;
+      }
+
+      // Collect REAL args (exclude exec + reference)
+      const args = n.inputs
+        .filter(p => p.type !== "action" && p.name !== "reference")
+        .map(p => this.getValue(n.id, p.name));
+
+      const result = fn(...args);
+
+      if(this.hasReturn(fn)) {
+        n._returnCache = result;
+      }
+
+      this.enqueueOutputs(n, "execOut");
+      return;
+    }
+
     if(n.isGetterNode) {
       const varField = n.fields?.find(f => f.key === "var");
       if(varField && varField.value) {

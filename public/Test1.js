@@ -17745,6 +17745,21 @@ var FluxCodexVertex = class _FluxCodexVertex {
       this.enqueueOutputs(n, "execOut");
       return;
     }
+    if (n.title === "reffunctions") {
+      const fn = n._fnRef;
+      if (typeof fn !== "function") {
+        console.warn("[reffunctions] No function reference");
+        this.enqueueOutputs(n, "execOut");
+        return;
+      }
+      const args = n.inputs.filter((p) => p.type !== "action" && p.name !== "reference").map((p) => this.getValue(n.id, p.name));
+      const result = fn(...args);
+      if (this.hasReturn(fn)) {
+        n._returnCache = result;
+      }
+      this.enqueueOutputs(n, "execOut");
+      return;
+    }
     if (n.isGetterNode) {
       const varField = n.fields?.find((f) => f.key === "var");
       if (varField && varField.value) {
