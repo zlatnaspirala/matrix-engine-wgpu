@@ -16545,7 +16545,7 @@ var FluxCodexVertex = class _FluxCodexVertex {
       if (spec.accessObject === void 0) {
         spec.accessObject = eval(spec.accessObjectLiteral);
       }
-      this.populateDynamicFunctionSelect(select, spec.accessObject);
+      this.populateDynamicFunctionSelect(select, spec);
       select.addEventListener("change", (e) => {
         const fnName = e.target.value;
         if (fnName) {
@@ -16606,19 +16606,27 @@ var FluxCodexVertex = class _FluxCodexVertex {
     this.state.selectedNode = id2;
     document.querySelector(`.node[data-id="${id2}"]`)?.classList.add("selected");
   }
-  populateDynamicFunctionSelect(select2, accessObject) {
+  populateDynamicFunctionSelect(select2, spec2) {
     select2.innerHTML = "";
     const placeholder2 = document.createElement("option");
     placeholder2.value = "";
     placeholder2.textContent = "-- Select Function --";
     select2.appendChild(placeholder2);
-    if (!accessObject || typeof accessObject !== "object") return;
-    for (const key in accessObject) {
-      if (typeof accessObject[key] === "function") {
+    if (!spec2.accessObject || typeof spec2.accessObject !== "object") return;
+    for (const key in spec2.accessObject) {
+      if (typeof spec2.accessObject[key] === "function") {
         const opt = document.createElement("option");
         opt.value = key;
         opt.textContent = key;
         select2.appendChild(opt);
+      }
+    }
+    let current = spec2.fields.find((item) => item.key == "selectedObject").value;
+    for (const opt of select2.options) {
+      if (opt.text === current) {
+        alert();
+        opt.selected = true;
+        break;
       }
     }
   }

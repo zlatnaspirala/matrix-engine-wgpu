@@ -1082,10 +1082,10 @@ export default class FluxCodexVertex {
       select.style.width = "100%";
       select.style.marginTop = "6px";
 
-      if (spec.accessObject === undefined) {
+      if(spec.accessObject === undefined) {
         spec.accessObject = eval(spec.accessObjectLiteral);
       }
-      this.populateDynamicFunctionSelect(select, spec.accessObject);
+      this.populateDynamicFunctionSelect(select, spec);
 
       select.addEventListener("change", e => {
         const fnName = e.target.value;
@@ -1164,7 +1164,7 @@ export default class FluxCodexVertex {
     document.querySelector(`.node[data-id="${id}"]`)?.classList.add("selected");
   }
 
-  populateDynamicFunctionSelect(select, accessObject) {
+  populateDynamicFunctionSelect(select, spec) {
     select.innerHTML = "";
 
     const placeholder = document.createElement("option");
@@ -1172,14 +1172,23 @@ export default class FluxCodexVertex {
     placeholder.textContent = "-- Select Function --";
     select.appendChild(placeholder);
 
-    if(!accessObject || typeof accessObject !== "object") return;
+    if(!spec.accessObject || typeof spec.accessObject !== "object") return;
 
-    for(const key in accessObject) {
-      if(typeof accessObject[key] === "function") {
+    for(const key in spec.accessObject) {
+      if(typeof spec.accessObject[key] === "function") {
         const opt = document.createElement("option");
         opt.value = key;
         opt.textContent = key;
         select.appendChild(opt);
+      }
+    }
+    // console.log(spec.fields.find(item => item.key == "selectedObject").value)
+    let current = spec.fields.find(item => item.key == "selectedObject").value;
+    for(const opt of select.options) {
+      if(opt.text === current) {
+        alert()
+        opt.selected = true;
+        break;
       }
     }
   }
@@ -2192,7 +2201,7 @@ export default class FluxCodexVertex {
       let varField = node.outputs?.find(f => f.name === "0");
       let isName = node.outputs?.find(f => f.name === "name");
       console.log('test1 :::', varField)
-      if (varField) if (varField.type == 'object')  {
+      if(varField) if(varField.type == 'object') {
         return node._subCache[parseInt(varField.name)]
       }
       console.log('test2 :::', isName);
