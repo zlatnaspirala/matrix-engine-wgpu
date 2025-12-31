@@ -12,12 +12,12 @@ function setDefaultType$5(ctor) {
   VecType$1 = ctor;
   return oldType;
 }
-function create$4(x, y, z) {
+function create$4(x2, y2, z) {
   const dst = new VecType$1(3);
-  if (x !== void 0) {
-    dst[0] = x;
-    if (y !== void 0) {
-      dst[1] = y;
+  if (x2 !== void 0) {
+    dst[0] = x2;
+    if (y2 !== void 0) {
+      dst[1] = y2;
       if (z !== void 0) {
         dst[2] = z;
       }
@@ -32,10 +32,10 @@ var ctorMap = /* @__PURE__ */ new Map([
 ]);
 var newMat3 = ctorMap.get(Float32Array);
 var fromValues$2 = create$4;
-function set$3(x, y, z, dst) {
+function set$3(x2, y2, z, dst) {
   dst = dst || new VecType$1(3);
-  dst[0] = x;
-  dst[1] = y;
+  dst[0] = x2;
+  dst[1] = y2;
   dst[2] = z;
   return dst;
 }
@@ -266,13 +266,13 @@ function zero$1(dst) {
 }
 function transformMat4$1(v, m, dst) {
   dst = dst || new VecType$1(3);
-  const x = v[0];
-  const y = v[1];
+  const x2 = v[0];
+  const y2 = v[1];
   const z = v[2];
-  const w = m[3] * x + m[7] * y + m[11] * z + m[15] || 1;
-  dst[0] = (m[0] * x + m[4] * y + m[8] * z + m[12]) / w;
-  dst[1] = (m[1] * x + m[5] * y + m[9] * z + m[13]) / w;
-  dst[2] = (m[2] * x + m[6] * y + m[10] * z + m[14]) / w;
+  const w = m[3] * x2 + m[7] * y2 + m[11] * z + m[15] || 1;
+  dst[0] = (m[0] * x2 + m[4] * y2 + m[8] * z + m[12]) / w;
+  dst[1] = (m[1] * x2 + m[5] * y2 + m[9] * z + m[13]) / w;
+  dst[2] = (m[2] * x2 + m[6] * y2 + m[10] * z + m[14]) / w;
   return dst;
 }
 function transformMat4Upper3x3(v, m, dst) {
@@ -287,12 +287,12 @@ function transformMat4Upper3x3(v, m, dst) {
 }
 function transformMat3(v, m, dst) {
   dst = dst || new VecType$1(3);
-  const x = v[0];
-  const y = v[1];
+  const x2 = v[0];
+  const y2 = v[1];
   const z = v[2];
-  dst[0] = x * m[0] + y * m[4] + z * m[8];
-  dst[1] = x * m[1] + y * m[5] + z * m[9];
-  dst[2] = x * m[2] + y * m[6] + z * m[10];
+  dst[0] = x2 * m[0] + y2 * m[4] + z * m[8];
+  dst[1] = x2 * m[1] + y2 * m[5] + z * m[9];
+  dst[2] = x2 * m[2] + y2 * m[6] + z * m[10];
   return dst;
 }
 function transformQuat(v, q, dst) {
@@ -301,14 +301,14 @@ function transformQuat(v, q, dst) {
   const qy = q[1];
   const qz = q[2];
   const w2 = q[3] * 2;
-  const x = v[0];
-  const y = v[1];
+  const x2 = v[0];
+  const y2 = v[1];
   const z = v[2];
-  const uvX = qy * z - qz * y;
-  const uvY = qz * x - qx * z;
-  const uvZ = qx * y - qy * x;
-  dst[0] = x + uvX * w2 + (qy * uvZ - qz * uvY) * 2;
-  dst[1] = y + uvY * w2 + (qz * uvX - qx * uvZ) * 2;
+  const uvX = qy * z - qz * y2;
+  const uvY = qz * x2 - qx * z;
+  const uvZ = qx * y2 - qy * x2;
+  dst[0] = x2 + uvX * w2 + (qy * uvZ - qz * uvY) * 2;
+  dst[1] = y2 + uvY * w2 + (qz * uvX - qx * uvZ) * 2;
   dst[2] = z + uvZ * w2 + (qx * uvY - qy * uvX) * 2;
   return dst;
 }
@@ -497,21 +497,21 @@ function fromMat3(m3, dst) {
 }
 function fromQuat(q, dst) {
   dst = dst || new MatType(16);
-  const x = q[0];
-  const y = q[1];
+  const x2 = q[0];
+  const y2 = q[1];
   const z = q[2];
   const w = q[3];
-  const x2 = x + x;
-  const y2 = y + y;
+  const x22 = x2 + x2;
+  const y22 = y2 + y2;
   const z2 = z + z;
-  const xx = x * x2;
-  const yx = y * x2;
-  const yy = y * y2;
-  const zx = z * x2;
-  const zy = z * y2;
+  const xx = x2 * x22;
+  const yx = y2 * x22;
+  const yy = y2 * y22;
+  const zx = z * x22;
+  const zy = z * y22;
   const zz = z * z2;
-  const wx = w * x2;
-  const wy = w * y2;
+  const wx = w * x22;
+  const wy = w * y22;
   const wz = w * z2;
   dst[0] = 1 - yy - zz;
   dst[1] = yx + wz;
@@ -900,9 +900,9 @@ function perspective(fieldOfViewYInRadians, aspect, zNear, zFar, dst) {
   }
   return dst;
 }
-function ortho(left, right, bottom, top, near, far, dst) {
+function ortho(left2, right2, bottom, top, near, far, dst) {
   dst = dst || new MatType(16);
-  dst[0] = 2 / (right - left);
+  dst[0] = 2 / (right2 - left2);
   dst[1] = 0;
   dst[2] = 0;
   dst[3] = 0;
@@ -914,15 +914,15 @@ function ortho(left, right, bottom, top, near, far, dst) {
   dst[9] = 0;
   dst[10] = 1 / (near - far);
   dst[11] = 0;
-  dst[12] = (right + left) / (left - right);
+  dst[12] = (right2 + left2) / (left2 - right2);
   dst[13] = (top + bottom) / (bottom - top);
   dst[14] = near / (near - far);
   dst[15] = 1;
   return dst;
 }
-function frustum(left, right, bottom, top, near, far, dst) {
+function frustum(left2, right2, bottom, top, near, far, dst) {
   dst = dst || new MatType(16);
-  const dx = right - left;
+  const dx = right2 - left2;
   const dy = top - bottom;
   const dz = near - far;
   dst[0] = 2 * near / dx;
@@ -933,7 +933,7 @@ function frustum(left, right, bottom, top, near, far, dst) {
   dst[5] = 2 * near / dy;
   dst[6] = 0;
   dst[7] = 0;
-  dst[8] = (left + right) / dx;
+  dst[8] = (left2 + right2) / dx;
   dst[9] = (top + bottom) / dy;
   dst[10] = far / dz;
   dst[11] = -1;
@@ -1249,29 +1249,29 @@ function rotateZ$1(m, angleInRadians, dst) {
 }
 function axisRotation(axis, angleInRadians, dst) {
   dst = dst || new MatType(16);
-  let x = axis[0];
-  let y = axis[1];
+  let x2 = axis[0];
+  let y2 = axis[1];
   let z = axis[2];
-  const n = Math.sqrt(x * x + y * y + z * z);
-  x /= n;
-  y /= n;
+  const n = Math.sqrt(x2 * x2 + y2 * y2 + z * z);
+  x2 /= n;
+  y2 /= n;
   z /= n;
-  const xx = x * x;
-  const yy = y * y;
+  const xx = x2 * x2;
+  const yy = y2 * y2;
   const zz = z * z;
   const c = Math.cos(angleInRadians);
   const s = Math.sin(angleInRadians);
   const oneMinusCosine = 1 - c;
   dst[0] = xx + (1 - xx) * c;
-  dst[1] = x * y * oneMinusCosine + z * s;
-  dst[2] = x * z * oneMinusCosine - y * s;
+  dst[1] = x2 * y2 * oneMinusCosine + z * s;
+  dst[2] = x2 * z * oneMinusCosine - y2 * s;
   dst[3] = 0;
-  dst[4] = x * y * oneMinusCosine - z * s;
+  dst[4] = x2 * y2 * oneMinusCosine - z * s;
   dst[5] = yy + (1 - yy) * c;
-  dst[6] = y * z * oneMinusCosine + x * s;
+  dst[6] = y2 * z * oneMinusCosine + x2 * s;
   dst[7] = 0;
-  dst[8] = x * z * oneMinusCosine + y * s;
-  dst[9] = y * z * oneMinusCosine - x * s;
+  dst[8] = x2 * z * oneMinusCosine + y2 * s;
+  dst[9] = y2 * z * oneMinusCosine - x2 * s;
   dst[10] = zz + (1 - zz) * c;
   dst[11] = 0;
   dst[12] = 0;
@@ -1283,27 +1283,27 @@ function axisRotation(axis, angleInRadians, dst) {
 var rotation = axisRotation;
 function axisRotate(m, axis, angleInRadians, dst) {
   dst = dst || new MatType(16);
-  let x = axis[0];
-  let y = axis[1];
+  let x2 = axis[0];
+  let y2 = axis[1];
   let z = axis[2];
-  const n = Math.sqrt(x * x + y * y + z * z);
-  x /= n;
-  y /= n;
+  const n = Math.sqrt(x2 * x2 + y2 * y2 + z * z);
+  x2 /= n;
+  y2 /= n;
   z /= n;
-  const xx = x * x;
-  const yy = y * y;
+  const xx = x2 * x2;
+  const yy = y2 * y2;
   const zz = z * z;
   const c = Math.cos(angleInRadians);
   const s = Math.sin(angleInRadians);
   const oneMinusCosine = 1 - c;
   const r00 = xx + (1 - xx) * c;
-  const r01 = x * y * oneMinusCosine + z * s;
-  const r02 = x * z * oneMinusCosine - y * s;
-  const r10 = x * y * oneMinusCosine - z * s;
+  const r01 = x2 * y2 * oneMinusCosine + z * s;
+  const r02 = x2 * z * oneMinusCosine - y2 * s;
+  const r10 = x2 * y2 * oneMinusCosine - z * s;
   const r11 = yy + (1 - yy) * c;
-  const r12 = y * z * oneMinusCosine + x * s;
-  const r20 = x * z * oneMinusCosine + y * s;
-  const r21 = y * z * oneMinusCosine - x * s;
+  const r12 = y2 * z * oneMinusCosine + x2 * s;
+  const r20 = x2 * z * oneMinusCosine + y2 * s;
+  const r21 = y2 * z * oneMinusCosine - x2 * s;
   const r22 = zz + (1 - zz) * c;
   const m00 = m[0];
   const m01 = m[1];
@@ -1478,12 +1478,12 @@ function setDefaultType$2(ctor) {
   QuatType = ctor;
   return oldType;
 }
-function create$1(x, y, z, w) {
+function create$1(x2, y2, z, w) {
   const dst = new QuatType(4);
-  if (x !== void 0) {
-    dst[0] = x;
-    if (y !== void 0) {
-      dst[1] = y;
+  if (x2 !== void 0) {
+    dst[0] = x2;
+    if (y2 !== void 0) {
+      dst[1] = y2;
       if (z !== void 0) {
         dst[2] = z;
         if (w !== void 0) {
@@ -1495,10 +1495,10 @@ function create$1(x, y, z, w) {
   return dst;
 }
 var fromValues$1 = create$1;
-function set$1(x, y, z, w, dst) {
+function set$1(x2, y2, z, w, dst) {
   dst = dst || new QuatType(4);
-  dst[0] = x;
-  dst[1] = y;
+  dst[0] = x2;
+  dst[1] = y2;
   dst[2] = z;
   dst[3] = w;
   return dst;
@@ -1986,19 +1986,19 @@ function radToDeg(r) {
 }
 var scriptManager = {
   SCRIPT_ID: 0,
-  LOAD: function addScript(src, id, type, parent, callback) {
+  LOAD: function addScript(src, id2, type2, parent, callback) {
     var s = document.createElement("script");
     s.onload = function() {
       if (typeof callback != "undefined") callback();
     };
-    if (typeof type !== "undefined") {
-      s.setAttribute("type", type);
+    if (typeof type2 !== "undefined") {
+      s.setAttribute("type", type2);
       s.innerHTML = src;
     } else {
       s.setAttribute("src", src);
     }
-    if (typeof id !== "undefined") {
-      s.setAttribute("id", id);
+    if (typeof id2 !== "undefined") {
+      s.setAttribute("id", id2);
     }
     if (typeof parent !== "undefined") {
       document.getElementById(parent).appendChild(s);
@@ -2007,22 +2007,22 @@ var scriptManager = {
       document.body.appendChild(s);
     }
   },
-  loadModule: function addScript2(src, id, type, parent) {
+  loadModule: function addScript2(src, id2, type2, parent) {
     console.log("Script id load called ");
     var s = document.createElement("script");
     s.onload = function() {
       scriptManager.SCRIPT_ID++;
     };
-    if (typeof type === "undefined") {
+    if (typeof type2 === "undefined") {
       s.setAttribute("type", "module");
       s.setAttribute("src", src);
     } else {
-      s.setAttribute("type", type);
+      s.setAttribute("type", type2);
       s.innerHTML = src;
     }
     s.setAttribute("src", src);
-    if (typeof id !== "undefined") {
-      s.setAttribute("id", id);
+    if (typeof id2 !== "undefined") {
+      s.setAttribute("id", id2);
     }
     if (typeof parent !== "undefined") {
       document.getElementById(parent).appendChild(s);
@@ -2077,8 +2077,8 @@ function OSCILLATOR(min, max, step) {
     console.log("OSCILLATOR ERROR");
   }
 }
-var byId = function(id) {
-  return document.getElementById(id);
+var byId = function(id2) {
+  return document.getElementById(id2);
 };
 function randomFloatFromTo(min, max) {
   return Math.random() * (max - min) + min;
@@ -2220,8 +2220,8 @@ var FullscreenManager = class {
     return !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement);
   }
   request() {
-    const el = this.target;
-    return el.requestFullscreen?.() || el.webkitRequestFullscreen?.() || el.mozRequestFullScreen?.() || el.msRequestFullscreen?.();
+    const el2 = this.target;
+    return el2.requestFullscreen?.() || el2.webkitRequestFullscreen?.() || el2.mozRequestFullScreen?.() || el2.msRequestFullscreen?.();
   }
   exit() {
     return document.exitFullscreen?.() || document.webkitExitFullscreen?.() || document.mozCancelFullScreen?.() || document.msExitFullscreen?.();
@@ -2245,25 +2245,25 @@ var FullscreenManager = class {
 
 // ../../../engine/matrix-class.js
 var Position = class {
-  constructor(x, y, z) {
+  constructor(x2, y2, z) {
     this.remoteName = null;
     this.netObject = null;
     this.toRemote = [];
     this.teams = [];
     this.netTolerance = 3;
     this.netTolerance__ = 0;
-    if (typeof x == "undefined") x = 0;
-    if (typeof y == "undefined") y = 0;
+    if (typeof x2 == "undefined") x2 = 0;
+    if (typeof y2 == "undefined") y2 = 0;
     if (typeof z == "undefined") z = 0;
-    this.x = parseFloat(x);
-    this.y = parseFloat(y);
+    this.x = parseFloat(x2);
+    this.y = parseFloat(y2);
     this.z = parseFloat(z);
     this.velY = 0;
     this.velX = 0;
     this.velZ = 0;
     this.inMove = false;
-    this.targetX = parseFloat(x);
-    this.targetY = parseFloat(y);
+    this.targetX = parseFloat(x2);
+    this.targetY = parseFloat(y2);
     this.targetZ = parseFloat(z);
     this.thrust = 0.01;
     return this;
@@ -2275,37 +2275,37 @@ var Position = class {
       console.log("Description: arguments (w, h) must be type of number.");
     }
   }
-  translateByX(x) {
-    if (parseFloat(x) == this.targetX) return;
+  translateByX(x2) {
+    if (parseFloat(x2) == this.targetX) return;
     this.inMove = true;
-    this.targetX = parseFloat(x);
+    this.targetX = parseFloat(x2);
   }
-  translateByY(y) {
-    if (parseFloat(y) == this.targetY) return;
+  translateByY(y2) {
+    if (parseFloat(y2) == this.targetY) return;
     this.inMove = true;
-    this.targetY = parseFloat(y);
+    this.targetY = parseFloat(y2);
   }
   translateByZ(z) {
     if (parseFloat(z) == this.targetZ) return;
     this.inMove = true;
     this.targetZ = parseFloat(z);
   }
-  translateByXY(x, y) {
-    if (parseFloat(y) == this.targetY && parseFloat(x) == this.targetX) return;
+  translateByXY(x2, y2) {
+    if (parseFloat(y2) == this.targetY && parseFloat(x2) == this.targetX) return;
     this.inMove = true;
-    this.targetX = parseFloat(x);
-    this.targetY = parseFloat(y);
+    this.targetX = parseFloat(x2);
+    this.targetY = parseFloat(y2);
   }
-  translateByXZ(x, z) {
-    if (parseFloat(z) == this.targetZ && parseFloat(x) == this.targetX) return;
+  translateByXZ(x2, z) {
+    if (parseFloat(z) == this.targetZ && parseFloat(x2) == this.targetX) return;
     this.inMove = true;
-    this.targetX = parseFloat(x);
+    this.targetX = parseFloat(x2);
     this.targetZ = parseFloat(z);
   }
-  translateByYZ(y, z) {
-    if (parseFloat(y) == this.targetY && parseFloat(z) == this.targetZ) return;
+  translateByYZ(y2, z) {
+    if (parseFloat(y2) == this.targetY && parseFloat(z) == this.targetZ) return;
     this.inMove = true;
-    this.targetY = parseFloat(y);
+    this.targetY = parseFloat(y2);
     this.targetZ = parseFloat(z);
   }
   onTargetPositionReach() {
@@ -2438,40 +2438,66 @@ var Position = class {
   }
 };
 var Rotation = class {
-  constructor(x, y, z) {
+  constructor(x2, y2, z) {
     this.toRemote = [];
     this.teams = [];
     this.remoteName = null;
     this.emitX = null;
     this.emitY = null;
     this.emitZ = null;
-    if (typeof x == "undefined") x = 0;
-    if (typeof y == "undefined") y = 0;
+    if (typeof x2 == "undefined") x2 = 0;
+    if (typeof y2 == "undefined") y2 = 0;
     if (typeof z == "undefined") z = 0;
-    this.x = x;
-    this.y = y;
+    this.x = x2;
+    this.y = y2;
     this.z = z;
-    this.netx = x;
-    this.nety = y;
+    this.netx = x2;
+    this.nety = y2;
     this.netz = z;
     this.rotationSpeed = { x: 0, y: 0, z: 0 };
     this.angle = 0;
     this.axis = { x: 0, y: 0, z: 0 };
     this.matrixRotation = null;
   }
-  toDegree() {
+  setRotate = (x2, y2, z) => {
+    this.rotationSpeed = { x: x2, y: y2, z };
+  };
+  setRotateX = (x2) => {
+    this.rotationSpeed.x = x2;
+  };
+  setRotateY = (y2) => {
+    this.rotationSpeed.y = y2;
+  };
+  setRotateZ = (z) => {
+    this.rotationSpeed.z = z;
+  };
+  setRotation = (x2, y2, z) => {
+    this.x = x2;
+    this.y = y2;
+    this.z = z;
+  };
+  setRotationX = (x2) => {
+    this.x = x2;
+  };
+  setRotationY = (y2) => {
+    this.y = y2;
+  };
+  setRotationZ = (z) => {
+    this.z = z;
+  };
+  toDegree = () => {
     return [radToDeg(this.axis.x), radToDeg(this.axis.y), radToDeg(this.axis.z)];
-  }
-  toDegreeX() {
+  };
+  toDegreeX = () => {
     return Math.cos(radToDeg(this.axis.x) / 2);
-  }
-  toDegreeY() {
+  };
+  toDegreeY = () => {
     return Math.cos(radToDeg(this.axis.z) / 2);
-  }
-  toDegreeZ() {
+  };
+  toDegreeZ = () => {
     return Math.cos(radToDeg(this.axis.y) / 2);
-  }
-  getRotX() {
+  };
+  getRotX = () => {
     if (this.rotationSpeed.x == 0) {
       if (this.netx != this.x && this.emitX) {
         app.net.send({
@@ -2486,8 +2512,8 @@ var Rotation = class {
       this.x = this.x + this.rotationSpeed.x * 1e-3;
       return degToRad(this.x);
     }
-  }
-  getRotY() {
+  };
+  getRotY = () => {
     if (this.rotationSpeed.y == 0) {
       if (this.nety != this.y && this.emitY) {
         if (this.teams.length == 0) {
@@ -2518,8 +2544,8 @@ var Rotation = class {
       this.y = this.y + this.rotationSpeed.y * 1e-3;
       return degToRad(this.y);
     }
-  }
-  getRotZ() {
+  };
+  getRotZ = () => {
     if (this.rotationSpeed.z == 0) {
       if (this.netz != this.z && this.emitZ) {
         app.net.send({
@@ -2534,7 +2560,7 @@ var Rotation = class {
       this.z = this.z + this.rotationSpeed.z * 1e-3;
       return degToRad(this.z);
     }
-  }
+  };
 };
 
 // ../../../engine/engine.js
@@ -2643,16 +2669,16 @@ var WASDCamera = class extends CameraBase {
   setProjection(fov = 2 * Math.PI / 5, aspect = 1, near = 1, far = 1e3) {
     this.projectionMatrix = mat4Impl.perspective(fov, aspect, near, far);
   }
-  constructor(options) {
+  constructor(options2) {
     super();
-    if (options && (options.position || options.target)) {
-      const position = options.position ?? vec3Impl.create(0, 0, 0);
-      const target = options.target ?? vec3Impl.create(0, 0, 0);
+    if (options2 && (options2.position || options2.target)) {
+      const position = options2.position ?? vec3Impl.create(0, 0, 0);
+      const target = options2.target ?? vec3Impl.create(0, 0, 0);
       const forward = vec3Impl.normalize(vec3Impl.sub(target, position));
       this.recalculateAngles(forward);
       this.position = position;
-      this.canvas = options.canvas;
-      this.aspect = options.canvas.width / options.canvas.height;
+      this.canvas = options2.canvas;
+      this.aspect = options2.canvas.width / options2.canvas.height;
       this.setProjection(2 * Math.PI / 5, this.aspect, 1, 2e3);
     }
   }
@@ -2725,10 +2751,10 @@ var ArcballCamera = class extends CameraBase {
     this.projectionMatrix = mat4Impl.perspective(fov, aspect, near, far);
   }
   // Construtor
-  constructor(options) {
+  constructor(options2) {
     super();
-    if (options && options.position) {
-      this.position = options.position;
+    if (options2 && options2.position) {
+      this.position = options2.position;
       this.distance = vec3Impl.len(this.position);
       this.back = vec3Impl.normalize(this.position);
       this.setProjection(2 * Math.PI / 5, this.aspect, 1, 2e3);
@@ -2783,11 +2809,11 @@ var ArcballCamera = class extends CameraBase {
     this.up = vec3Impl.normalize(vec3Impl.cross(this.back, this.right));
   }
 };
-function clamp(x, min, max) {
-  return Math.min(Math.max(x, min), max);
+function clamp(x2, min, max) {
+  return Math.min(Math.max(x2, min), max);
 }
-function mod(x, div) {
-  return x - Math.floor(Math.abs(x) / div) * div * Math.sign(x);
+function mod(x2, div) {
+  return x2 - Math.floor(Math.abs(x2) / div) * div * Math.sign(x2);
 }
 function rotate2(vec, axis, angle2) {
   return vec3Impl.transformMat4Upper3x3(vec, mat4Impl.rotation(axis, angle2));
@@ -2902,16 +2928,16 @@ var RPGCamera = class extends CameraBase {
   setProjection(fov = 2 * Math.PI / 5, aspect = 1, near = 1, far = 1e3) {
     this.projectionMatrix = mat4Impl.perspective(fov, aspect, near, far);
   }
-  constructor(options) {
+  constructor(options2) {
     super();
-    if (options && (options.position || options.target)) {
-      const position = options.position ?? vec3Impl.create(0, 0, 0);
-      const target = options.target ?? vec3Impl.create(0, 0, 0);
+    if (options2 && (options2.position || options2.target)) {
+      const position = options2.position ?? vec3Impl.create(0, 0, 0);
+      const target = options2.target ?? vec3Impl.create(0, 0, 0);
       const forward = vec3Impl.normalize(vec3Impl.sub(target, position));
       this.recalculateAngles(forward);
       this.position = position;
-      this.canvas = options.canvas;
-      this.aspect = options.canvas.width / options.canvas.height;
+      this.canvas = options2.canvas;
+      this.aspect = options2.canvas.width / options2.canvas.height;
       this.setProjection(2 * Math.PI / 5, this.aspect, 1, 2e3);
       this.mousRollInAction = false;
       addEventListener("wheel", (e) => {
@@ -3143,11 +3169,11 @@ var MEBall = class {
     for (let i = this.renderables.length; i <= this.settings.asteroidCount; ++i) {
       const radius = Math.random() * 1.7 + 1.25;
       const angle2 = Math.random() * Math.PI * 2;
-      const x = Math.sin(angle2) * radius;
-      const y = (Math.random() - 0.5) * 0.015;
+      const x2 = Math.sin(angle2) * radius;
+      const y2 = (Math.random() - 0.5) * 0.015;
       const z = Math.cos(angle2) * radius;
       mat4Impl.identity(transform);
-      mat4Impl.translate(transform, [x, y, z], transform);
+      mat4Impl.translate(transform, [x2, y2, z], transform);
       mat4Impl.rotateX(transform, Math.random() * Math.PI, transform);
       mat4Impl.rotateY(transform, Math.random() * Math.PI, transform);
       this.renderables.push({
@@ -3508,11 +3534,11 @@ var MECube = class {
     for (let i = this.renderables.length; i <= this.settings.asteroidCount; ++i) {
       const radius = Math.random() * 1.7 + 1.25;
       const angle2 = Math.random() * Math.PI * 2;
-      const x = Math.sin(angle2) * radius;
-      const y = (Math.random() - 0.5) * 0.015;
+      const x2 = Math.sin(angle2) * radius;
+      const y2 = (Math.random() - 0.5) * 0.015;
       const z = Math.cos(angle2) * radius;
       mat4Impl.identity(transform);
-      mat4Impl.translate(transform, [x, y, z], transform);
+      mat4Impl.translate(transform, [x2, y2, z], transform);
       mat4Impl.rotateX(transform, Math.random() * Math.PI, transform);
       mat4Impl.rotateY(transform, Math.random() * Math.PI, transform);
       this.renderables.push({
@@ -3530,8 +3556,8 @@ var MECube = class {
     this.renderScene(renderBundleEncoder);
     this.renderBundle = renderBundleEncoder.finish();
   }
-  createGeometry(options) {
-    const mesh = this.createCubeVertices(options);
+  createGeometry(options2) {
+    const mesh = this.createCubeVertices(options2);
     const vertices = this.device.createBuffer({
       size: mesh.vertices.byteLength,
       usage: GPUBufferUsage.VERTEX,
@@ -3655,16 +3681,16 @@ var MECube = class {
       }
     }
   }
-  createCubeVertices(options) {
-    if (typeof options === "undefined") {
-      var options = {
+  createCubeVertices(options2) {
+    if (typeof options2 === "undefined") {
+      var options2 = {
         scale: 1,
         useUVShema4x2: false
       };
     }
-    if (typeof options.scale === "undefined") options.scale = 1;
+    if (typeof options2.scale === "undefined") options2.scale = 1;
     let vertices;
-    if (options.useUVShema4x2 == true) {
+    if (options2.useUVShema4x2 == true) {
       vertices = new Float32Array([
         //  position   |  texture coordinate
         //-------------+----------------------
@@ -3872,198 +3898,198 @@ var MECube = class {
         //  position                                                   |  texture coordinate
         //-------------                                              +----------------------
         // front face     select the top left image  1, 0.5,   
-        -1 * options.scale,
-        1 * options.scale,
-        1 * options.scale,
+        -1 * options2.scale,
+        1 * options2.scale,
+        1 * options2.scale,
         1,
         0,
         0,
         0,
         0,
-        -1 * options.scale,
-        -1 * options.scale,
-        1 * options.scale,
+        -1 * options2.scale,
+        -1 * options2.scale,
+        1 * options2.scale,
         1,
         0,
         0,
         0,
         1,
-        1 * options.scale,
-        1 * options.scale,
-        1 * options.scale,
+        1 * options2.scale,
+        1 * options2.scale,
+        1 * options2.scale,
         1,
         0,
         0,
         1,
         0,
-        1 * options.scale,
-        -1 * options.scale,
-        1 * options.scale,
+        1 * options2.scale,
+        -1 * options2.scale,
+        1 * options2.scale,
         1,
         0,
         0,
         1,
         1,
         // right face     select the top middle image
-        1 * options.scale,
-        1 * options.scale,
-        -1 * options.scale,
+        1 * options2.scale,
+        1 * options2.scale,
+        -1 * options2.scale,
         1,
         0,
         0,
         0,
         0,
-        1 * options.scale,
-        1 * options.scale,
-        1 * options.scale,
+        1 * options2.scale,
+        1 * options2.scale,
+        1 * options2.scale,
         1,
         0,
         0,
         0,
         1,
-        1 * options.scale,
-        -1 * options.scale,
-        -1 * options.scale,
+        1 * options2.scale,
+        -1 * options2.scale,
+        -1 * options2.scale,
         1,
         0,
         0,
         1,
         0,
-        1 * options.scale,
-        -1 * options.scale,
-        1 * options.scale,
+        1 * options2.scale,
+        -1 * options2.scale,
+        1 * options2.scale,
         1,
         0,
         0,
         1,
         1,
         // back face      select to top right image
-        1 * options.scale,
-        1 * options.scale,
-        -1 * options.scale,
+        1 * options2.scale,
+        1 * options2.scale,
+        -1 * options2.scale,
         1,
         0,
         0,
         0,
         0,
-        1 * options.scale,
-        -1 * options.scale,
-        -1 * options.scale,
+        1 * options2.scale,
+        -1 * options2.scale,
+        -1 * options2.scale,
         1,
         0,
         0,
         0,
         1,
-        -1 * options.scale,
-        1 * options.scale,
-        -1 * options.scale,
+        -1 * options2.scale,
+        1 * options2.scale,
+        -1 * options2.scale,
         1,
         0,
         0,
         1,
         0,
-        -1 * options.scale,
-        -1 * options.scale,
-        -1 * options.scale,
+        -1 * options2.scale,
+        -1 * options2.scale,
+        -1 * options2.scale,
         1,
         0,
         0,
         1,
         1,
         // left face       select the bottom left image
-        -1 * options.scale,
-        1 * options.scale,
-        1 * options.scale,
+        -1 * options2.scale,
+        1 * options2.scale,
+        1 * options2.scale,
         1,
         0,
         0,
         0,
         0,
-        -1 * options.scale,
-        1 * options.scale,
-        -1 * options.scale,
+        -1 * options2.scale,
+        1 * options2.scale,
+        -1 * options2.scale,
         1,
         0,
         0,
         0,
         1,
-        -1 * options.scale,
-        -1 * options.scale,
-        1 * options.scale,
+        -1 * options2.scale,
+        -1 * options2.scale,
+        1 * options2.scale,
         1,
         0,
         0,
         1,
         0,
-        -1 * options.scale,
-        -1 * options.scale,
-        -1 * options.scale,
+        -1 * options2.scale,
+        -1 * options2.scale,
+        -1 * options2.scale,
         1,
         0,
         0,
         1,
         1,
         // bottom face     select the bottom middle image
-        1 * options.scale,
-        -1 * options.scale,
-        1 * options.scale,
+        1 * options2.scale,
+        -1 * options2.scale,
+        1 * options2.scale,
         1,
         0,
         0,
         0,
         0,
-        -1 * options.scale,
-        -1 * options.scale,
-        1 * options.scale,
+        -1 * options2.scale,
+        -1 * options2.scale,
+        1 * options2.scale,
         1,
         0,
         0,
         0,
         1,
-        1 * options.scale,
-        -1 * options.scale,
-        -1 * options.scale,
+        1 * options2.scale,
+        -1 * options2.scale,
+        -1 * options2.scale,
         1,
         0,
         0,
         1,
         0,
-        -1 * options.scale,
-        -1 * options.scale,
-        -1 * options.scale,
+        -1 * options2.scale,
+        -1 * options2.scale,
+        -1 * options2.scale,
         1,
         0,
         0,
         1,
         1,
         // top face        select the bottom right image
-        -1 * options.scale,
-        1 * options.scale,
-        1 * options.scale,
+        -1 * options2.scale,
+        1 * options2.scale,
+        1 * options2.scale,
         1,
         0,
         0,
         0,
         0,
-        1 * options.scale,
-        1 * options.scale,
-        1 * options.scale,
+        1 * options2.scale,
+        1 * options2.scale,
+        1 * options2.scale,
         1,
         0,
         0,
         0,
         1,
-        -1 * options.scale,
-        1 * options.scale,
-        -1 * options.scale,
+        -1 * options2.scale,
+        1 * options2.scale,
+        -1 * options2.scale,
         1,
         0,
         0,
         1,
         0,
-        1 * options.scale,
-        1 * options.scale,
-        -1 * options.scale,
+        1 * options2.scale,
+        1 * options2.scale,
+        -1 * options2.scale,
         1,
         0,
         0,
@@ -6551,7 +6577,8 @@ var MEMeshObj = class extends Materials {
         }),
         targets: [
           {
-            format: this.presentationFormat
+            format: "rgba16float"
+            //this.presentationFormat,
           }
         ],
         constants: {
@@ -6758,10 +6785,10 @@ var MatrixAmmo = class {
     groundTransform.setOrigin(new Ammo2.btVector3(0, -4.45, 0));
     var mass = 0, isDynamic = mass !== 0, localInertia = new Ammo2.btVector3(0, 0, 0);
     if (isDynamic) groundShape.calculateLocalInertia(mass, localInertia);
-    var myMotionState = new Ammo2.btDefaultMotionState(groundTransform), rbInfo = new Ammo2.btRigidBodyConstructionInfo(mass, myMotionState, groundShape, localInertia), body = new Ammo2.btRigidBody(rbInfo);
-    body.name = "ground";
-    this.ground = body;
-    this.dynamicsWorld.addRigidBody(body);
+    var myMotionState = new Ammo2.btDefaultMotionState(groundTransform), rbInfo = new Ammo2.btRigidBodyConstructionInfo(mass, myMotionState, groundShape, localInertia), body2 = new Ammo2.btRigidBody(rbInfo);
+    body2.name = "ground";
+    this.ground = body2;
+    this.dynamicsWorld.addRigidBody(body2);
     this.detectCollision();
   }
   addPhysics(MEObject, pOptions) {
@@ -6783,22 +6810,22 @@ var MatrixAmmo = class {
     var localInertia = new Ammo2.btVector3(0, 0, 0);
     colShape.calculateLocalInertia(mass, localInertia);
     startTransform.setOrigin(new Ammo2.btVector3(pOptions.position.x, pOptions.position.y, pOptions.position.z));
-    var myMotionState = new Ammo2.btDefaultMotionState(startTransform), rbInfo = new Ammo2.btRigidBodyConstructionInfo(mass, myMotionState, colShape, localInertia), body = new Ammo2.btRigidBody(rbInfo);
+    var myMotionState = new Ammo2.btDefaultMotionState(startTransform), rbInfo = new Ammo2.btRigidBodyConstructionInfo(mass, myMotionState, colShape, localInertia), body2 = new Ammo2.btRigidBody(rbInfo);
     if (pOptions.mass == 0 && typeof pOptions.state == "undefined" && typeof pOptions.collide == "undefined") {
-      body.setActivationState(2);
-      body.setCollisionFlags(FLAGS.CF_KINEMATIC_OBJECT);
+      body2.setActivationState(2);
+      body2.setCollisionFlags(FLAGS.CF_KINEMATIC_OBJECT);
     } else if (typeof pOptions.collide != "undefined" && pOptions.collide == false) {
-      body.setActivationState(4);
-      body.setCollisionFlags(FLAGS.TEST_NIDZA);
+      body2.setActivationState(4);
+      body2.setCollisionFlags(FLAGS.TEST_NIDZA);
     } else {
-      body.setActivationState(4);
+      body2.setActivationState(4);
     }
-    body.name = pOptions.name;
+    body2.name = pOptions.name;
     MEObject.itIsPhysicsBody = true;
-    body.MEObject = MEObject;
-    this.dynamicsWorld.addRigidBody(body);
-    this.rigidBodies.push(body);
-    return body;
+    body2.MEObject = MEObject;
+    this.dynamicsWorld.addRigidBody(body2);
+    this.rigidBodies.push(body2);
+    return body2;
   }
   addPhysicsBox(MEObject, pOptions) {
     const FLAGS = {
@@ -6817,29 +6844,29 @@ var MatrixAmmo = class {
     t.setY(degToRad(pOptions.rotation.y));
     t.setZ(degToRad(pOptions.rotation.z));
     startTransform.setRotation(t);
-    var myMotionState = new Ammo2.btDefaultMotionState(startTransform), rbInfo = new Ammo2.btRigidBodyConstructionInfo(mass, myMotionState, colShape, localInertia), body = new Ammo2.btRigidBody(rbInfo);
+    var myMotionState = new Ammo2.btDefaultMotionState(startTransform), rbInfo = new Ammo2.btRigidBodyConstructionInfo(mass, myMotionState, colShape, localInertia), body2 = new Ammo2.btRigidBody(rbInfo);
     if (pOptions.mass == 0 && typeof pOptions.state == "undefined" && typeof pOptions.collide == "undefined") {
-      body.setActivationState(2);
-      body.setCollisionFlags(FLAGS.CF_KINEMATIC_OBJECT);
+      body2.setActivationState(2);
+      body2.setCollisionFlags(FLAGS.CF_KINEMATIC_OBJECT);
     } else if (typeof pOptions.collide != "undefined" && pOptions.collide == false) {
-      body.setActivationState(4);
-      body.setCollisionFlags(FLAGS.TEST_NIDZA);
+      body2.setActivationState(4);
+      body2.setCollisionFlags(FLAGS.TEST_NIDZA);
     } else {
-      body.setActivationState(4);
+      body2.setActivationState(4);
     }
-    body.name = pOptions.name;
+    body2.name = pOptions.name;
     MEObject.itIsPhysicsBody = true;
-    body.MEObject = MEObject;
-    this.dynamicsWorld.addRigidBody(body);
-    this.rigidBodies.push(body);
-    return body;
+    body2.MEObject = MEObject;
+    this.dynamicsWorld.addRigidBody(body2);
+    this.rigidBodies.push(body2);
+    return body2;
   }
-  setBodyVelocity(body, x, y, z) {
+  setBodyVelocity(body2, x2, y2, z) {
     var tbv30 = new Ammo.btVector3();
-    tbv30.setValue(x, y, z);
-    body.setLinearVelocity(tbv30);
+    tbv30.setValue(x2, y2, z);
+    body2.setLinearVelocity(tbv30);
   }
-  setKinematicTransform(body, x, y, z, rx, ry, rz) {
+  setKinematicTransform(body2, x2, y2, z, rx, ry, rz) {
     if (typeof rx == "undefined") {
       var rx = 0;
     }
@@ -6850,15 +6877,15 @@ var MatrixAmmo = class {
       var rz = 0;
     }
     let pos = new Ammo.btVector3();
-    pos = body.getWorldTransform().getOrigin();
-    let localRot = body.getWorldTransform().getRotation();
-    pos.setX(pos.x() + x);
-    pos.setY(pos.y() + y);
+    pos = body2.getWorldTransform().getOrigin();
+    let localRot = body2.getWorldTransform().getRotation();
+    pos.setX(pos.x() + x2);
+    pos.setY(pos.y() + y2);
     pos.setZ(pos.z() + z);
     localRot.setX(rx);
     localRot.setY(ry);
     localRot.setZ(rz);
-    let physicsBody = body;
+    let physicsBody = body2;
     let ms = physicsBody.getMotionState();
     if (ms) {
       var tmpTrans = new Ammo.btTransform();
@@ -6877,30 +6904,30 @@ var MatrixAmmo = class {
     });
     return b;
   }
-  getNameByBody(body) {
+  getNameByBody(body2) {
     var b = null;
     this.rigidBodies.forEach((item, index, array) => {
-      if (item.kB == body.kB) {
+      if (item.kB == body2.kB) {
         b = array[index].name;
       }
     });
     return b;
   }
-  deactivatePhysics(body) {
+  deactivatePhysics(body2) {
     const CF_KINEMATIC_OBJECT = 2;
     const DISABLE_DEACTIVATION = 4;
-    this.dynamicsWorld.removeRigidBody(body);
-    const flags = body.getCollisionFlags();
-    body.setCollisionFlags(flags | CF_KINEMATIC_OBJECT);
-    body.setActivationState(DISABLE_DEACTIVATION);
+    this.dynamicsWorld.removeRigidBody(body2);
+    const flags = body2.getCollisionFlags();
+    body2.setCollisionFlags(flags | CF_KINEMATIC_OBJECT);
+    body2.setActivationState(DISABLE_DEACTIVATION);
     const zero = new Ammo.btVector3(0, 0, 0);
-    body.setLinearVelocity(zero);
-    body.setAngularVelocity(zero);
-    const currentTransform = body.getWorldTransform();
-    body.setWorldTransform(currentTransform);
-    body.getMotionState().setWorldTransform(currentTransform);
-    this.matrixAmmo.dynamicsWorld.addRigidBody(body);
-    body.isKinematic = true;
+    body2.setLinearVelocity(zero);
+    body2.setAngularVelocity(zero);
+    const currentTransform = body2.getWorldTransform();
+    body2.setWorldTransform(currentTransform);
+    body2.getMotionState().setWorldTransform(currentTransform);
+    this.matrixAmmo.dynamicsWorld.addRigidBody(body2);
+    body2.isKinematic = true;
   }
   detectCollision() {
     return;
@@ -6920,26 +6947,26 @@ var MatrixAmmo = class {
     if (typeof Ammo === "undefined") return;
     const trans = new Ammo.btTransform();
     const transform = new Ammo.btTransform();
-    this.rigidBodies.forEach(function(body) {
-      if (body.isKinematic) {
+    this.rigidBodies.forEach(function(body2) {
+      if (body2.isKinematic) {
         transform.setIdentity();
         transform.setOrigin(new Ammo.btVector3(
-          body.MEObject.position.x,
-          body.MEObject.position.y,
-          body.MEObject.position.z
+          body2.MEObject.position.x,
+          body2.MEObject.position.y,
+          body2.MEObject.position.z
         ));
         const quat = new Ammo.btQuaternion();
         quat.setRotation(
           new Ammo.btVector3(
-            body.MEObject.rotation.axis.x,
-            body.MEObject.rotation.axis.y,
-            body.MEObject.rotation.axis.z
+            body2.MEObject.rotation.axis.x,
+            body2.MEObject.rotation.axis.y,
+            body2.MEObject.rotation.axis.z
           ),
-          degToRad(body.MEObject.rotation.angle)
+          degToRad(body2.MEObject.rotation.angle)
         );
         transform.setRotation(quat);
-        body.setWorldTransform(transform);
-        const ms = body.getMotionState();
+        body2.setWorldTransform(transform);
+        const ms = body2.getMotionState();
         if (ms) ms.setWorldTransform(transform);
       }
     });
@@ -6949,21 +6976,21 @@ var MatrixAmmo = class {
     for (let i = 0; i < this.speedUpSimulation; i++) {
       this.dynamicsWorld.stepSimulation(timeStep, maxSubSteps);
     }
-    this.rigidBodies.forEach(function(body) {
-      if (!body.isKinematic && body.getMotionState()) {
-        body.getMotionState().getWorldTransform(trans);
+    this.rigidBodies.forEach(function(body2) {
+      if (!body2.isKinematic && body2.getMotionState()) {
+        body2.getMotionState().getWorldTransform(trans);
         const _x = +trans.getOrigin().x().toFixed(2);
         const _y = +trans.getOrigin().y().toFixed(2);
         const _z = +trans.getOrigin().z().toFixed(2);
-        body.MEObject.position.setPosition(_x, _y, _z);
+        body2.MEObject.position.setPosition(_x, _y, _z);
         const rot = trans.getRotation();
         const rotAxis = rot.getAxis();
         rot.normalize();
-        body.MEObject.rotation.axis.x = rotAxis.x();
-        body.MEObject.rotation.axis.y = rotAxis.y();
-        body.MEObject.rotation.axis.z = rotAxis.z();
-        body.MEObject.rotation.matrixRotation = quaternion_rotation_matrix(rot);
-        body.MEObject.rotation.angle = radToDeg(parseFloat(rot.getAngle().toFixed(2)));
+        body2.MEObject.rotation.axis.x = rotAxis.x();
+        body2.MEObject.rotation.axis.y = rotAxis.y();
+        body2.MEObject.rotation.axis.z = rotAxis.z();
+        body2.MEObject.rotation.matrixRotation = quaternion_rotation_matrix(rot);
+        body2.MEObject.rotation.angle = radToDeg(parseFloat(rot.getAngle().toFixed(2)));
       }
     });
     Ammo.destroy(trans);
@@ -7084,11 +7111,11 @@ var MatrixSounds = class {
     this.enabled = true;
   }
   createClones(c, name, path) {
-    for (let x = 1; x < c; x++) {
+    for (let x2 = 1; x2 < c; x2++) {
       const a = new Audio(path);
-      a.id = name + x;
+      a.id = name + x2;
       a.volume = this.volume;
-      this.audios[name + x] = a;
+      this.audios[name + x2] = a;
       document.body.append(a);
     }
   }
@@ -7349,6 +7376,7 @@ fn main(
 
 // ../../../engine/lights.js
 var SpotLight = class {
+  name;
   camera;
   inputHandler;
   position;
@@ -7365,7 +7393,11 @@ var SpotLight = class {
   innerCutoff;
   outerCutoff;
   spotlightUniformBuffer;
-  constructor(camera, inputHandler, device, position = vec3Impl.create(0, 10, -20), target = vec3Impl.create(0, 0, -20), fov = 45, aspect = 1, near = 0.1, far = 200) {
+  constructor(camera, inputHandler, device, indexx, position = vec3Impl.create(0, 10, -20), target = vec3Impl.create(0, 0, -20), fov = 45, aspect = 1, near = 0.1, far = 200) {
+    this.name = "light" + indexx;
+    this.getName = () => {
+      return "light" + indexx;
+    };
     this.fov = fov;
     this.aspect = aspect;
     this.near = near;
@@ -7623,12 +7655,50 @@ var SpotLight = class {
       this.range,
       this.ambientFactor,
       this.shadowBias,
-      // <<--- use shadowBias
       0,
-      // keep padding
       ...m
     ]);
   }
+  // Setters
+  setPosX = (x2) => {
+    this.position[0] = x2;
+  };
+  setPosY = (y2) => {
+    this.position[1] = y2;
+  };
+  setPosZ = (z) => {
+    this.position[2] = z;
+  };
+  setInnerCutoff = (innerCutoff) => {
+    this.innerCutoff = innerCutoff;
+  };
+  setOuterCutoff = (outerCutoff) => {
+    this.outerCutoff = outerCutoff;
+  };
+  setIntensity = (intensity) => {
+    this.intensity = intensity;
+  };
+  setColor = (color) => {
+    this.color = color;
+  };
+  setColorR = (colorR) => {
+    this.color[0] = colorR;
+  };
+  setColorB = (colorB) => {
+    this.color[1] = colorB;
+  };
+  setColorG = (colorG) => {
+    this.color[2] = colorG;
+  };
+  setRange = (range) => {
+    this.range = range;
+  };
+  setAmbientFactor = (ambientFactor) => {
+    this.ambientFactor = ambientFactor;
+  };
+  setShadowBias = (shadowBias) => {
+    this.shadowBias = shadowBias;
+  };
 };
 
 // ../../../../node_modules/webgpu-matrix/dist/1.x/wgpu-matrix.module.js
@@ -7640,12 +7710,12 @@ var ctorMap2 = /* @__PURE__ */ new Map([
 ]);
 var newMat32 = ctorMap2.get(Float32Array);
 var VecType$12 = Float32Array;
-function create$22(x, y, z) {
+function create$22(x2, y2, z) {
   const dst = new VecType$12(3);
-  if (x !== void 0) {
-    dst[0] = x;
-    if (y !== void 0) {
-      dst[1] = y;
+  if (x2 !== void 0) {
+    dst[0] = x2;
+    if (y2 !== void 0) {
+      dst[1] = y2;
       if (z !== void 0) {
         dst[2] = z;
       }
@@ -8108,9 +8178,9 @@ function perspective2(fieldOfViewYInRadians, aspect, zNear, zFar, dst) {
   dst[15] = 0;
   return dst;
 }
-function ortho2(left, right, bottom, top, near, far, dst) {
+function ortho2(left2, right2, bottom, top, near, far, dst) {
   dst = dst || new MatType2(16);
-  dst[0] = 2 / (right - left);
+  dst[0] = 2 / (right2 - left2);
   dst[1] = 0;
   dst[2] = 0;
   dst[3] = 0;
@@ -8122,15 +8192,15 @@ function ortho2(left, right, bottom, top, near, far, dst) {
   dst[9] = 0;
   dst[10] = 1 / (near - far);
   dst[11] = 0;
-  dst[12] = (right + left) / (left - right);
+  dst[12] = (right2 + left2) / (left2 - right2);
   dst[13] = (top + bottom) / (bottom - top);
   dst[14] = near / (near - far);
   dst[15] = 1;
   return dst;
 }
-function frustum2(left, right, bottom, top, near, far, dst) {
+function frustum2(left2, right2, bottom, top, near, far, dst) {
   dst = dst || new MatType2(16);
-  const dx = right - left;
+  const dx = right2 - left2;
   const dy = top - bottom;
   const dz = near - far;
   dst[0] = 2 * near / dx;
@@ -8141,7 +8211,7 @@ function frustum2(left, right, bottom, top, near, far, dst) {
   dst[5] = 2 * near / dy;
   dst[6] = 0;
   dst[7] = 0;
-  dst[8] = (left + right) / dx;
+  dst[8] = (left2 + right2) / dx;
   dst[9] = (top + bottom) / dy;
   dst[10] = far / dz;
   dst[11] = -1;
@@ -8405,29 +8475,29 @@ function rotateZ2(m, angleInRadians, dst) {
 }
 function axisRotation2(axis, angleInRadians, dst) {
   dst = dst || new MatType2(16);
-  let x = axis[0];
-  let y = axis[1];
+  let x2 = axis[0];
+  let y2 = axis[1];
   let z = axis[2];
-  const n = Math.sqrt(x * x + y * y + z * z);
-  x /= n;
-  y /= n;
+  const n = Math.sqrt(x2 * x2 + y2 * y2 + z * z);
+  x2 /= n;
+  y2 /= n;
   z /= n;
-  const xx = x * x;
-  const yy = y * y;
+  const xx = x2 * x2;
+  const yy = y2 * y2;
   const zz = z * z;
   const c = Math.cos(angleInRadians);
   const s = Math.sin(angleInRadians);
   const oneMinusCosine = 1 - c;
   dst[0] = xx + (1 - xx) * c;
-  dst[1] = x * y * oneMinusCosine + z * s;
-  dst[2] = x * z * oneMinusCosine - y * s;
+  dst[1] = x2 * y2 * oneMinusCosine + z * s;
+  dst[2] = x2 * z * oneMinusCosine - y2 * s;
   dst[3] = 0;
-  dst[4] = x * y * oneMinusCosine - z * s;
+  dst[4] = x2 * y2 * oneMinusCosine - z * s;
   dst[5] = yy + (1 - yy) * c;
-  dst[6] = y * z * oneMinusCosine + x * s;
+  dst[6] = y2 * z * oneMinusCosine + x2 * s;
   dst[7] = 0;
-  dst[8] = x * z * oneMinusCosine + y * s;
-  dst[9] = y * z * oneMinusCosine - x * s;
+  dst[8] = x2 * z * oneMinusCosine + y2 * s;
+  dst[9] = y2 * z * oneMinusCosine - x2 * s;
   dst[10] = zz + (1 - zz) * c;
   dst[11] = 0;
   dst[12] = 0;
@@ -8439,27 +8509,27 @@ function axisRotation2(axis, angleInRadians, dst) {
 var rotation2 = axisRotation2;
 function axisRotate2(m, axis, angleInRadians, dst) {
   dst = dst || new MatType2(16);
-  let x = axis[0];
-  let y = axis[1];
+  let x2 = axis[0];
+  let y2 = axis[1];
   let z = axis[2];
-  const n = Math.sqrt(x * x + y * y + z * z);
-  x /= n;
-  y /= n;
+  const n = Math.sqrt(x2 * x2 + y2 * y2 + z * z);
+  x2 /= n;
+  y2 /= n;
   z /= n;
-  const xx = x * x;
-  const yy = y * y;
+  const xx = x2 * x2;
+  const yy = y2 * y2;
   const zz = z * z;
   const c = Math.cos(angleInRadians);
   const s = Math.sin(angleInRadians);
   const oneMinusCosine = 1 - c;
   const r00 = xx + (1 - xx) * c;
-  const r01 = x * y * oneMinusCosine + z * s;
-  const r02 = x * z * oneMinusCosine - y * s;
-  const r10 = x * y * oneMinusCosine - z * s;
+  const r01 = x2 * y2 * oneMinusCosine + z * s;
+  const r02 = x2 * z * oneMinusCosine - y2 * s;
+  const r10 = x2 * y2 * oneMinusCosine - z * s;
   const r11 = yy + (1 - yy) * c;
-  const r12 = y * z * oneMinusCosine + x * s;
-  const r20 = x * z * oneMinusCosine + y * s;
-  const r21 = y * z * oneMinusCosine - x * s;
+  const r12 = y2 * z * oneMinusCosine + x2 * s;
+  const r20 = x2 * z * oneMinusCosine + y2 * s;
+  const r21 = y2 * z * oneMinusCosine - x2 * s;
   const r22 = zz + (1 - zz) * c;
   const m00 = m[0];
   const m01 = m[1];
@@ -8597,8 +8667,8 @@ function npdeg2rad(degrees) {
     degrees[2] * (Math.PI / 180)
   ];
 }
-function byId2(id) {
-  return document.getElementById(id);
+function byId2(id2) {
+  return document.getElementById(id2);
 }
 function dot3vs1(a, b) {
   var aNumRows = a.length, aNumCols = a[0].length, bNumRows = b.length;
@@ -9110,7 +9180,7 @@ var MEBvh = class {
   }
   frame_pose(frame) {
     var jointLength = 0;
-    for (var x in this.joints) {
+    for (var x2 in this.joints) {
       jointLength++;
     }
     var p = Array.from(Array(jointLength), () => [0, 0, 0]);
@@ -9137,7 +9207,7 @@ var MEBvh = class {
   }
   all_frame_poses() {
     var jointLength = 0;
-    for (var x in this.joints) {
+    for (var x2 in this.joints) {
       jointLength++;
     }
     var p = Array.from({ length: this.frames }, () => Array.from({ length: jointLength }, () => [0, 0, 0]));
@@ -9519,15 +9589,15 @@ function multiply2(out, a, b) {
   return out;
 }
 function translate3(out, a, v) {
-  var x = v[0], y = v[1], z = v[2];
+  var x2 = v[0], y2 = v[1], z = v[2];
   var a00, a01, a02, a03;
   var a10, a11, a12, a13;
   var a20, a21, a22, a23;
   if (a === out) {
-    out[12] = a[0] * x + a[4] * y + a[8] * z + a[12];
-    out[13] = a[1] * x + a[5] * y + a[9] * z + a[13];
-    out[14] = a[2] * x + a[6] * y + a[10] * z + a[14];
-    out[15] = a[3] * x + a[7] * y + a[11] * z + a[15];
+    out[12] = a[0] * x2 + a[4] * y2 + a[8] * z + a[12];
+    out[13] = a[1] * x2 + a[5] * y2 + a[9] * z + a[13];
+    out[14] = a[2] * x2 + a[6] * y2 + a[10] * z + a[14];
+    out[15] = a[3] * x2 + a[7] * y2 + a[11] * z + a[15];
   } else {
     a00 = a[0];
     a01 = a[1];
@@ -9553,23 +9623,23 @@ function translate3(out, a, v) {
     out[9] = a21;
     out[10] = a22;
     out[11] = a23;
-    out[12] = a00 * x + a10 * y + a20 * z + a[12];
-    out[13] = a01 * x + a11 * y + a21 * z + a[13];
-    out[14] = a02 * x + a12 * y + a22 * z + a[14];
-    out[15] = a03 * x + a13 * y + a23 * z + a[15];
+    out[12] = a00 * x2 + a10 * y2 + a20 * z + a[12];
+    out[13] = a01 * x2 + a11 * y2 + a21 * z + a[13];
+    out[14] = a02 * x2 + a12 * y2 + a22 * z + a[14];
+    out[15] = a03 * x2 + a13 * y2 + a23 * z + a[15];
   }
   return out;
 }
 function scale(out, a, v) {
-  var x = v[0], y = v[1], z = v[2];
-  out[0] = a[0] * x;
-  out[1] = a[1] * x;
-  out[2] = a[2] * x;
-  out[3] = a[3] * x;
-  out[4] = a[4] * y;
-  out[5] = a[5] * y;
-  out[6] = a[6] * y;
-  out[7] = a[7] * y;
+  var x2 = v[0], y2 = v[1], z = v[2];
+  out[0] = a[0] * x2;
+  out[1] = a[1] * x2;
+  out[2] = a[2] * x2;
+  out[3] = a[3] * x2;
+  out[4] = a[4] * y2;
+  out[5] = a[5] * y2;
+  out[6] = a[6] * y2;
+  out[7] = a[7] * y2;
   out[8] = a[8] * z;
   out[9] = a[9] * z;
   out[10] = a[10] * z;
@@ -9581,8 +9651,8 @@ function scale(out, a, v) {
   return out;
 }
 function rotate4(out, a, rad, axis) {
-  var x = axis[0], y = axis[1], z = axis[2];
-  var len = Math.sqrt(x * x + y * y + z * z);
+  var x2 = axis[0], y2 = axis[1], z = axis[2];
+  var len = Math.sqrt(x2 * x2 + y2 * y2 + z * z);
   var s, c, t;
   var a00, a01, a02, a03;
   var a10, a11, a12, a13;
@@ -9594,8 +9664,8 @@ function rotate4(out, a, rad, axis) {
     return null;
   }
   len = 1 / len;
-  x *= len;
-  y *= len;
+  x2 *= len;
+  y2 *= len;
   z *= len;
   s = Math.sin(rad);
   c = Math.cos(rad);
@@ -9612,14 +9682,14 @@ function rotate4(out, a, rad, axis) {
   a21 = a[9];
   a22 = a[10];
   a23 = a[11];
-  b00 = x * x * t + c;
-  b01 = y * x * t + z * s;
-  b02 = z * x * t - y * s;
-  b10 = x * y * t - z * s;
-  b11 = y * y * t + c;
-  b12 = z * y * t + x * s;
-  b20 = x * z * t + y * s;
-  b21 = y * z * t - x * s;
+  b00 = x2 * x2 * t + c;
+  b01 = y2 * x2 * t + z * s;
+  b02 = z * x2 * t - y2 * s;
+  b10 = x2 * y2 * t - z * s;
+  b11 = y2 * y2 * t + c;
+  b12 = z * y2 * t + x2 * s;
+  b20 = x2 * z * t + y2 * s;
+  b21 = y2 * z * t - x2 * s;
   b22 = z * z * t + c;
   out[0] = a00 * b00 + a10 * b01 + a20 * b02;
   out[1] = a01 * b00 + a11 * b01 + a21 * b02;
@@ -9773,29 +9843,29 @@ function fromScaling(out, v) {
   return out;
 }
 function fromRotation(out, rad, axis) {
-  var x = axis[0], y = axis[1], z = axis[2];
-  var len = Math.sqrt(x * x + y * y + z * z);
+  var x2 = axis[0], y2 = axis[1], z = axis[2];
+  var len = Math.sqrt(x2 * x2 + y2 * y2 + z * z);
   var s, c, t;
   if (len < EPSILON3) {
     return null;
   }
   len = 1 / len;
-  x *= len;
-  y *= len;
+  x2 *= len;
+  y2 *= len;
   z *= len;
   s = Math.sin(rad);
   c = Math.cos(rad);
   t = 1 - c;
-  out[0] = x * x * t + c;
-  out[1] = y * x * t + z * s;
-  out[2] = z * x * t - y * s;
+  out[0] = x2 * x2 * t + c;
+  out[1] = y2 * x2 * t + z * s;
+  out[2] = z * x2 * t - y2 * s;
   out[3] = 0;
-  out[4] = x * y * t - z * s;
-  out[5] = y * y * t + c;
-  out[6] = z * y * t + x * s;
+  out[4] = x2 * y2 * t - z * s;
+  out[5] = y2 * y2 * t + c;
+  out[6] = z * y2 * t + x2 * s;
   out[7] = 0;
-  out[8] = x * z * t + y * s;
-  out[9] = y * z * t - x * s;
+  out[8] = x2 * z * t + y2 * s;
+  out[9] = y2 * z * t - x2 * s;
   out[10] = z * z * t + c;
   out[11] = 0;
   out[12] = 0;
@@ -9868,18 +9938,18 @@ function fromZRotation(out, rad) {
   return out;
 }
 function fromRotationTranslation(out, q, v) {
-  var x = q[0], y = q[1], z = q[2], w = q[3];
-  var x2 = x + x;
-  var y2 = y + y;
+  var x2 = q[0], y2 = q[1], z = q[2], w = q[3];
+  var x22 = x2 + x2;
+  var y22 = y2 + y2;
   var z2 = z + z;
-  var xx = x * x2;
-  var xy = x * y2;
-  var xz = x * z2;
-  var yy = y * y2;
-  var yz = y * z2;
+  var xx = x2 * x22;
+  var xy = x2 * y22;
+  var xz = x2 * z2;
+  var yy = y2 * y22;
+  var yz = y2 * z2;
   var zz = z * z2;
-  var wx = w * x2;
-  var wy = w * y2;
+  var wx = w * x22;
+  var wy = w * y22;
   var wz = w * z2;
   out[0] = 1 - (yy + zz);
   out[1] = xy + wz;
@@ -10038,18 +10108,18 @@ function decompose(out_r, out_t, out_s, mat) {
   return out_r;
 }
 function fromRotationTranslationScale(out, q, v, s) {
-  var x = q[0], y = q[1], z = q[2], w = q[3];
-  var x2 = x + x;
-  var y2 = y + y;
+  var x2 = q[0], y2 = q[1], z = q[2], w = q[3];
+  var x22 = x2 + x2;
+  var y22 = y2 + y2;
   var z2 = z + z;
-  var xx = x * x2;
-  var xy = x * y2;
-  var xz = x * z2;
-  var yy = y * y2;
-  var yz = y * z2;
+  var xx = x2 * x22;
+  var xy = x2 * y22;
+  var xz = x2 * z2;
+  var yy = y2 * y22;
+  var yz = y2 * z2;
   var zz = z * z2;
-  var wx = w * x2;
-  var wy = w * y2;
+  var wx = w * x22;
+  var wy = w * y22;
   var wz = w * z2;
   var sx = s[0];
   var sy = s[1];
@@ -10073,18 +10143,18 @@ function fromRotationTranslationScale(out, q, v, s) {
   return out;
 }
 function fromRotationTranslationScaleOrigin(out, q, v, s, o) {
-  var x = q[0], y = q[1], z = q[2], w = q[3];
-  var x2 = x + x;
-  var y2 = y + y;
+  var x2 = q[0], y2 = q[1], z = q[2], w = q[3];
+  var x22 = x2 + x2;
+  var y22 = y2 + y2;
   var z2 = z + z;
-  var xx = x * x2;
-  var xy = x * y2;
-  var xz = x * z2;
-  var yy = y * y2;
-  var yz = y * z2;
+  var xx = x2 * x22;
+  var xy = x2 * y22;
+  var xz = x2 * z2;
+  var yy = y2 * y22;
+  var yz = y2 * z2;
   var zz = z * z2;
-  var wx = w * x2;
-  var wy = w * y2;
+  var wx = w * x22;
+  var wy = w * y22;
   var wz = w * z2;
   var sx = s[0];
   var sy = s[1];
@@ -10120,18 +10190,18 @@ function fromRotationTranslationScaleOrigin(out, q, v, s, o) {
   return out;
 }
 function fromQuat3(out, q) {
-  var x = q[0], y = q[1], z = q[2], w = q[3];
-  var x2 = x + x;
-  var y2 = y + y;
+  var x2 = q[0], y2 = q[1], z = q[2], w = q[3];
+  var x22 = x2 + x2;
+  var y22 = y2 + y2;
   var z2 = z + z;
-  var xx = x * x2;
-  var yx = y * x2;
-  var yy = y * y2;
-  var zx = z * x2;
-  var zy = z * y2;
+  var xx = x2 * x22;
+  var yx = y2 * x22;
+  var yy = y2 * y22;
+  var zx = z * x22;
+  var zy = z * y22;
   var zz = z * z2;
-  var wx = w * x2;
-  var wy = w * y2;
+  var wx = w * x22;
+  var wy = w * y22;
   var wz = w * z2;
   out[0] = 1 - yy - zz;
   out[1] = yx + wz;
@@ -10151,8 +10221,8 @@ function fromQuat3(out, q) {
   out[15] = 1;
   return out;
 }
-function frustum3(out, left, right, bottom, top, near, far) {
-  var rl = 1 / (right - left);
+function frustum3(out, left2, right2, bottom, top, near, far) {
+  var rl = 1 / (right2 - left2);
   var tb = 1 / (top - bottom);
   var nf = 1 / (near - far);
   out[0] = near * 2 * rl;
@@ -10163,7 +10233,7 @@ function frustum3(out, left, right, bottom, top, near, far) {
   out[5] = near * 2 * tb;
   out[6] = 0;
   out[7] = 0;
-  out[8] = (right + left) * rl;
+  out[8] = (right2 + left2) * rl;
   out[9] = (top + bottom) * tb;
   out[10] = (far + near) * nf;
   out[11] = -1;
@@ -10251,8 +10321,8 @@ function perspectiveFromFieldOfView(out, fov, near, far) {
   out[15] = 0;
   return out;
 }
-function orthoNO(out, left, right, bottom, top, near, far) {
-  var lr = 1 / (left - right);
+function orthoNO(out, left2, right2, bottom, top, near, far) {
+  var lr = 1 / (left2 - right2);
   var bt = 1 / (bottom - top);
   var nf = 1 / (near - far);
   out[0] = -2 * lr;
@@ -10267,15 +10337,15 @@ function orthoNO(out, left, right, bottom, top, near, far) {
   out[9] = 0;
   out[10] = 2 * nf;
   out[11] = 0;
-  out[12] = (left + right) * lr;
+  out[12] = (left2 + right2) * lr;
   out[13] = (top + bottom) * bt;
   out[14] = (far + near) * nf;
   out[15] = 1;
   return out;
 }
 var ortho3 = orthoNO;
-function orthoZO(out, left, right, bottom, top, near, far) {
-  var lr = 1 / (left - right);
+function orthoZO(out, left2, right2, bottom, top, near, far) {
+  var lr = 1 / (left2 - right2);
   var bt = 1 / (bottom - top);
   var nf = 1 / (near - far);
   out[0] = -2 * lr;
@@ -10290,7 +10360,7 @@ function orthoZO(out, left, right, bottom, top, near, far) {
   out[9] = 0;
   out[10] = nf;
   out[11] = 0;
-  out[12] = (left + right) * lr;
+  out[12] = (left2 + right2) * lr;
   out[13] = (top + bottom) * bt;
   out[14] = near * nf;
   out[15] = 1;
@@ -10531,8 +10601,8 @@ var GLTFTextureFilter = {
 function alignTo(val, align) {
   return Math.floor((val + align - 1) / align) * align;
 }
-function gltfTypeNumComponents(type) {
-  switch (type) {
+function gltfTypeNumComponents(type2) {
+  switch (type2) {
     case "SCALAR":
       return 1;
     case "VEC2":
@@ -10542,11 +10612,11 @@ function gltfTypeNumComponents(type) {
     case "VEC4":
       return 4;
     default:
-      alert("Unhandled glTF Type " + type);
+      alert("Unhandled glTF Type " + type2);
       return null;
   }
 }
-function gltfTypeSize(componentType, type) {
+function gltfTypeSize(componentType, type2) {
   var typeSize = 0;
   switch (componentType) {
     case GLTFComponentType.BYTE:
@@ -10576,7 +10646,7 @@ function gltfTypeSize(componentType, type) {
     default:
       alert("Unrecognized GLTF Component Type?");
   }
-  return gltfTypeNumComponents(type) * typeSize;
+  return gltfTypeNumComponents(type2) * typeSize;
 }
 var GLTFBuffer = class {
   constructor(buffer, size, offset) {
@@ -10849,20 +10919,20 @@ var GLBModel = class {
   }
 };
 async function uploadGLBModel(buffer, device) {
-  const header = new Uint32Array(buffer, 0, 5);
-  if (header[0] !== 1179937895) {
+  const header2 = new Uint32Array(buffer, 0, 5);
+  if (header2[0] !== 1179937895) {
     alert("This does not appear to be a glb file?");
     return;
   }
   const glbJsonData = JSON.parse(
-    new TextDecoder("utf-8").decode(new Uint8Array(buffer, 20, header[3]))
+    new TextDecoder("utf-8").decode(new Uint8Array(buffer, 20, header2[3]))
   );
-  const binaryHeader = new Uint32Array(buffer, 20 + header[3], 2);
-  const glbBuffer = new GLTFBuffer(buffer, binaryHeader[0], 28 + header[3]);
+  const binaryHeader = new Uint32Array(buffer, 20 + header2[3], 2);
+  const glbBuffer = new GLTFBuffer(buffer, binaryHeader[0], 28 + header2[3]);
   const bufferViews = glbJsonData.bufferViews.map(
     (v) => new GLTFBufferView(glbBuffer, v)
   );
-  const binaryOffset = 28 + header[3];
+  const binaryOffset = 28 + header2[3];
   const binaryLength = binaryHeader[0];
   const glbBinaryBuffer = buffer.slice(binaryOffset, binaryOffset + binaryLength);
   const images = [];
@@ -11084,6 +11154,20 @@ var BVHPlayer = class extends MEMeshObj {
     const invBindArray = this.getAccessorArray(this.glb, invBindAccessorIndex);
     this.inverseBindMatrices = invBindArray;
   }
+  playAnimationByIndex = (animationIndex) => {
+    this.glb.animationIndex = animationIndex;
+  };
+  playAnimationByName = (animationName) => {
+    const animations = this.glb.glbJsonData.animations;
+    const index = animations.findIndex(
+      (anim) => anim.name === animationName
+    );
+    if (index === -1) {
+      console.warn(`Animation '${animationName}' not found`);
+      return;
+    }
+    this.glb.animationIndex = index;
+  };
   getNumberOfFramesCurAni() {
     let anim = this.glb.glbJsonData.animations[this.glb.animationIndex];
     const sampler = anim.samplers[0];
@@ -11137,8 +11221,8 @@ var BVHPlayer = class extends MEMeshObj {
         throw new Error("Unknown channel path: " + path);
     }
   }
-  getNumComponents(type) {
-    switch (type) {
+  getNumComponents(type2) {
+    switch (type2) {
       case "SCALAR":
         return 1;
       case "VEC2":
@@ -11150,7 +11234,7 @@ var BVHPlayer = class extends MEMeshObj {
       case "MAT4":
         return 16;
       default:
-        throw new Error("Unknown type: " + type);
+        throw new Error("Unknown type: " + type2);
     }
   }
   getComponentSize(componentType) {
@@ -11216,9 +11300,9 @@ var BVHPlayer = class extends MEMeshObj {
   }
   // naive quaternion to 4x4 matrix
   quatToMat4(q) {
-    const [x, y, z, w] = q;
-    const xx = x * x, yy = y * y, zz = z * z;
-    const xy = x * y, xz = x * z, yz = y * z, wx = w * x, wy = w * y, wz = w * z;
+    const [x2, y2, z, w] = q;
+    const xx = x2 * x2, yy = y2 * y2, zz = z * z;
+    const xy = x2 * y2, xz = x2 * z, yz = y2 * z, wx = w * x2, wy = w * y2, wz = w * z;
     return new Float32Array([
       1 - 2 * (yy + zz),
       2 * (xy + wz),
@@ -12159,8 +12243,8 @@ fn main(
 
 // ../../../engine/geometry-factory.js
 var GeometryFactory = class _GeometryFactory {
-  static create(type, size = 1, segments = 16, options = {}) {
-    switch (type) {
+  static create(type2, size = 1, segments = 16, options2 = {}) {
+    switch (type2) {
       case "quad":
         return _GeometryFactory.quad(size);
       case "cube":
@@ -12178,9 +12262,9 @@ var GeometryFactory = class _GeometryFactory {
       case "diamond":
         return _GeometryFactory.diamond(size);
       case "rock":
-        return _GeometryFactory.rock(size, options.detail || 3);
+        return _GeometryFactory.rock(size, options2.detail || 3);
       case "meteor":
-        return _GeometryFactory.meteor(size, options.detail || 6);
+        return _GeometryFactory.meteor(size, options2.detail || 6);
       case "thunder":
         return _GeometryFactory.thunder(size);
       case "shard":
@@ -12188,9 +12272,9 @@ var GeometryFactory = class _GeometryFactory {
       case "circlePlane":
         return _GeometryFactory.circlePlane(size, segments);
       case "ring":
-        return _GeometryFactory.ring(size, options.innerRatio || 0.7, segments, options.height || 0.05);
+        return _GeometryFactory.ring(size, options2.innerRatio || 0.7, segments, options2.height || 0.05);
       default:
-        throw new Error(`Unknown geometry: ${type}`);
+        throw new Error(`Unknown geometry: ${type2}`);
     }
   }
   // --- BASIC SHAPES ---------------------------------------------------------
@@ -12300,17 +12384,17 @@ var GeometryFactory = class _GeometryFactory {
   }
   static sphere(R = 0.1, seg = 16) {
     const p = [], uv = [], ind = [];
-    for (let y = 0; y <= seg; y++) {
-      const v = y / seg, \u03B8 = v * Math.PI;
-      for (let x = 0; x <= seg; x++) {
-        const u = x / seg, \u03C6 = u * Math.PI * 2;
+    for (let y2 = 0; y2 <= seg; y2++) {
+      const v = y2 / seg, \u03B8 = v * Math.PI;
+      for (let x2 = 0; x2 <= seg; x2++) {
+        const u = x2 / seg, \u03C6 = u * Math.PI * 2;
         p.push(R * Math.sin(\u03B8) * Math.cos(\u03C6), R * Math.cos(\u03B8), R * Math.sin(\u03B8) * Math.sin(\u03C6));
         uv.push(u, v);
       }
     }
-    for (let y = 0; y < seg; y++) {
-      for (let x = 0; x < seg; x++) {
-        const i = y * (seg + 1) + x;
+    for (let y2 = 0; y2 < seg; y2++) {
+      for (let x2 = 0; x2 < seg; x2++) {
+        const i = y2 * (seg + 1) + x2;
         ind.push(i, i + seg + 1, i + 1, i + 1, i + seg + 1, i + seg + 2);
       }
     }
@@ -12367,10 +12451,10 @@ var GeometryFactory = class _GeometryFactory {
     const indices = [];
     for (let i = 0; i <= segments; i++) {
       const angle2 = i / segments * Math.PI * 2;
-      const x = Math.cos(angle2) * radius;
-      const y = Math.sin(angle2) * radius;
-      positions.push(x, y, 0);
-      uvs.push((x / radius + 1) / 2, (y / radius + 1) / 2);
+      const x2 = Math.cos(angle2) * radius;
+      const y2 = Math.sin(angle2) * radius;
+      positions.push(x2, y2, 0);
+      uvs.push((x2 / radius + 1) / 2, (y2 / radius + 1) / 2);
       if (i > 0) {
         indices.push(0, i, i + 1);
       }
@@ -12437,10 +12521,10 @@ var GeometryFactory = class _GeometryFactory {
   static thunder(S = 1) {
     const pts = [0, 0, 0];
     for (let i = 1; i < 8; i++) {
-      const x = (Math.random() - 0.5) * 0.2 * S;
-      const y = i * (S / 7);
+      const x2 = (Math.random() - 0.5) * 0.2 * S;
+      const y2 = i * (S / 7);
       const z = (Math.random() - 0.5) * 0.1 * S;
-      pts.push(x, y, z);
+      pts.push(x2, y2, z);
     }
     const p = [], uv = [], ind = [];
     for (let i = 0; i < pts.length / 3 - 1; i++) {
@@ -12501,11 +12585,11 @@ var GeometryFactory = class _GeometryFactory {
     uvs.push(0.5, 0.5);
     for (let i = 0; i <= segments; i++) {
       const angle2 = i / segments * Math.PI * 2;
-      const x = Math.cos(angle2) * radius;
-      const y = 0;
+      const x2 = Math.cos(angle2) * radius;
+      const y2 = 0;
       const z = Math.sin(angle2) * radius;
-      positions.push(x, y, z);
-      uvs.push((x / radius + 1) / 2, (z / radius + 1) / 2);
+      positions.push(x2, y2, z);
+      uvs.push((x2 / radius + 1) / 2, (z / radius + 1) / 2);
     }
     for (let i = 1; i <= segments; i++) {
       indices.push(0, i, i + 1);
@@ -12596,10 +12680,10 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
 
 // ../../../engine/effects/gen.js
 var GenGeo = class {
-  constructor(device, format, type = "sphere", scale2 = 1) {
+  constructor(device, format, type2 = "sphere", scale2 = 1) {
     this.device = device;
     this.format = format;
-    const geom = GeometryFactory.create(type, scale2);
+    const geom = GeometryFactory.create(type2, scale2);
     this.vertexData = geom.positions;
     this.uvData = geom.uvs;
     this.indexData = geom.indices;
@@ -12633,9 +12717,9 @@ var GenGeo = class {
     this.maxInstances = 5;
     this.instanceCount = 2;
     this.floatsPerInstance = 16 + 4;
-    for (let x = 0; x < this.maxInstances; x++) {
+    for (let x2 = 0; x2 < this.maxInstances; x2++) {
       this.instanceTargets.push({
-        index: x,
+        index: x2,
         position: [0, 0, 0],
         currentPosition: [0, 0, 0],
         scale: [1, 1, 1],
@@ -13651,10 +13735,10 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
 
 // ../../../engine/effects/gen-tex.js
 var GenGeoTexture = class {
-  constructor(device, format, type = "sphere", path, scale2 = 1) {
+  constructor(device, format, type2 = "sphere", path, scale2 = 1) {
     this.device = device;
     this.format = format;
-    const geom = GeometryFactory.create(type, scale2);
+    const geom = GeometryFactory.create(type2, scale2);
     this.vertexData = geom.positions;
     this.uvData = geom.uvs;
     this.indexData = geom.indices;
@@ -13717,9 +13801,9 @@ var GenGeoTexture = class {
     this.maxInstances = 5;
     this.instanceCount = 2;
     this.floatsPerInstance = 16 + 4;
-    for (let x = 0; x < this.maxInstances; x++) {
+    for (let x2 = 0; x2 < this.maxInstances; x2++) {
       this.instanceTargets.push({
-        index: x,
+        index: x2,
         position: [0, 0, 0],
         currentPosition: [0, 0, 0],
         scale: [1, 1, 1],
@@ -13830,10 +13914,10 @@ var GenGeoTexture = class {
 
 // ../../../engine/effects/gen-tex2.js
 var GenGeoTexture2 = class {
-  constructor(device, format, type = "sphere", path, scale2 = 1) {
+  constructor(device, format, type2 = "sphere", path, scale2 = 1) {
     this.device = device;
     this.format = format;
-    const geom = GeometryFactory.create(type, scale2);
+    const geom = GeometryFactory.create(type2, scale2);
     this.vertexData = geom.positions;
     this.uvData = geom.uvs;
     this.indexData = geom.indices;
@@ -13903,9 +13987,9 @@ var GenGeoTexture2 = class {
     this.maxInstances = 5;
     this.instanceCount = 2;
     this.floatsPerInstance = 16 + 4;
-    for (let x = 0; x < this.maxInstances; x++) {
+    for (let x2 = 0; x2 < this.maxInstances; x2++) {
       this.instanceTargets.push({
-        index: x,
+        index: x2,
         position: [0, 0, 0],
         currentPosition: [0, 0, 0],
         scale: [1, 1, 1],
@@ -14390,9 +14474,9 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
       this.maxInstances = 5;
       this.instanceCount = 2;
       this.floatsPerInstance = 16 + 4;
-      for (let x = 0; x < this.maxInstances; x++) {
+      for (let x2 = 0; x2 < this.maxInstances; x2++) {
         this.instanceTargets.push({
-          index: x,
+          index: x2,
           position: [0, 0, 0],
           currentPosition: [0, 0, 0],
           scale: [1, 1, 1],
@@ -14457,9 +14541,9 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
       };
       this.updateMaxInstances = (newMax) => {
         this.maxInstances = newMax;
-        for (let x = 0; x < this.maxInstances; x++) {
+        for (let x2 = 0; x2 < this.maxInstances; x2++) {
           this.instanceTargets.push({
-            index: x,
+            index: x2,
             position: [0, 0, 0],
             currentPosition: [0, 0, 0],
             scale: [1, 1, 1],
@@ -15027,8 +15111,8 @@ var BVHPlayerInstances = class extends MEMeshObjInstances {
         throw new Error("Unknown channel path: " + path);
     }
   }
-  getNumComponents(type) {
-    switch (type) {
+  getNumComponents(type2) {
+    switch (type2) {
       case "SCALAR":
         return 1;
       case "VEC2":
@@ -15040,7 +15124,7 @@ var BVHPlayerInstances = class extends MEMeshObjInstances {
       case "MAT4":
         return 16;
       default:
-        throw new Error("Unknown type: " + type);
+        throw new Error("Unknown type: " + type2);
     }
   }
   getComponentSize(componentType) {
@@ -15106,9 +15190,9 @@ var BVHPlayerInstances = class extends MEMeshObjInstances {
   }
   // naive quaternion to 4x4 matrix
   quatToMat4(q) {
-    const [x, y, z, w] = q;
-    const xx = x * x, yy = y * y, zz = z * z;
-    const xy = x * y, xz = x * z, yz = y * z, wx = w * x, wy = w * y, wz = w * z;
+    const [x2, y2, z, w] = q;
+    const xx = x2 * x2, yy = y2 * y2, zz = z * z;
+    const xy = x2 * y2, xz = x2 * z, yz = y2 * z, wx = w * x2, wy = w * y2, wz = w * z;
     return new Float32Array([
       1 - 2 * (yy + zz),
       2 * (xy + wz),
@@ -15692,7 +15776,7 @@ var FluxCodexVertex = class _FluxCodexVertex {
     this._createImportInput();
     this.bindGlobalListeners();
     this._varInputs = {};
-    this.init();
+    setTimeout(() => this.init(), 4e3);
     document.addEventListener("keydown", (e) => {
       if (e.key == "F6") {
         e.preventDefault();
@@ -15727,17 +15811,17 @@ var FluxCodexVertex = class _FluxCodexVertex {
       const menuRect = CMenu.getBoundingClientRect();
       const vw = window.innerWidth;
       const vh = window.innerHeight;
-      let x = e.clientX;
-      let y = e.clientY;
-      if (x + menuRect.width > vw) {
-        x = vw - menuRect.width - 5;
+      let x2 = e.clientX;
+      let y2 = e.clientY;
+      if (x2 + menuRect.width > vw) {
+        x2 = vw - menuRect.width - 5;
       }
-      if (y > vh * 0.5) {
-        y = y - menuRect.height;
+      if (y2 > vh * 0.5) {
+        y2 = y2 - menuRect.height;
       }
-      if (y < 5) y = 5;
-      CMenu.style.left = x + "px";
-      CMenu.style.top = y + "px";
+      if (y2 < 5) y2 = 5;
+      CMenu.style.left = x2 + "px";
+      CMenu.style.top = y2 + "px";
       CMenu.classList.remove("hidden");
     });
     document.addEventListener("click", () => {
@@ -15762,10 +15846,18 @@ var FluxCodexVertex = class _FluxCodexVertex {
     <hr>
     <span>Scene</span>
     <button onclick="app.editor.fluxCodexVertex.addNode('getSceneObject')">Get Scene Object</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('getSceneLight')">Get Scene Light</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('setPosition')">Set Position</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('setRotation')">Set Rotation</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('setRotate')">Set Rotate</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('setRotateX')">Set RotateX</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('setRotateY')">Set RotateY</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('setRotateZ')">Set RotateZ</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('onTargetPositionReach')">onTargetPositionReach</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('getObjectAnimation')">Get Object Animation</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('dynamicFunction')">Function Dinamic</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('refFunction')">Function by Ref</button>
+    
     <button onclick="app.editor.fluxCodexVertex.addNode('getSubObject')">Get Sub Object</button>
     <hr>
     <span>Comment</span>
@@ -15821,22 +15913,22 @@ var FluxCodexVertex = class _FluxCodexVertex {
   evaluateGetterNode(n) {
     const key = n.fields?.find((f) => f.key === "var")?.value;
     if (!key) return;
-    const type = n.title.replace("Get ", "").toLowerCase();
-    const entry = this.variables[type]?.[key];
-    n._returnCache = entry ? entry.value : type === "number" ? 0 : type === "boolean" ? false : type === "string" ? "" : type === "object" ? {} : void 0;
+    const type2 = n.title.replace("Get ", "").toLowerCase();
+    const entry = this.variables[type2]?.[key];
+    n._returnCache = entry ? entry.value : type2 === "number" ? 0 : type2 === "boolean" ? false : type2 === "string" ? "" : type2 === "object" ? {} : void 0;
   }
-  notifyVariableChanged(type, key) {
-    for (const id in this.nodes) {
-      const n = this.nodes[id];
+  notifyVariableChanged(type2, key) {
+    for (const id2 in this.nodes) {
+      const n = this.nodes[id2];
       if (n.isGetterNode) {
         const varField = n.fields?.find((f) => f.key === "var");
-        if (varField?.value === key && n.title.replace("Get ", "").toLowerCase() === type) {
+        if (varField?.value === key && n.title.replace("Get ", "").toLowerCase() === type2) {
           this.evaluateGetterNode(n);
           if (n.displayEl) {
             const val = n._returnCache;
-            if (type === "object")
+            if (type2 === "object")
               n.displayEl.textContent = JSON.stringify(val, null, 2);
-            else if (type === "number")
+            else if (type2 === "number")
               n.displayEl.textContent = val.toFixed(3);
             else n.displayEl.textContent = String(val);
           }
@@ -15853,10 +15945,10 @@ var FluxCodexVertex = class _FluxCodexVertex {
         }
       });
     }
-    const input = this._varInputs?.[`${type}.${key}`];
+    const input = this._varInputs?.[`${type2}.${key}`];
     if (input) {
-      const storedValue = this.variables?.[type]?.[key];
-      if (type === "object")
+      const storedValue = this.variables?.[type2]?.[key];
+      if (type2 === "object")
         input.value = JSON.stringify(storedValue ?? {}, null, 2);
       else input.value = storedValue ?? "";
     }
@@ -15927,49 +16019,49 @@ var FluxCodexVertex = class _FluxCodexVertex {
       string: "#ffb74d",
       object: "#ce93d8"
     };
-    for (const type in this.variables) {
-      for (const name in this.variables[type]) {
-        const row = document.createElement("div");
-        Object.assign(row.style, {
+    for (const type2 in this.variables) {
+      for (const name in this.variables[type2]) {
+        const row2 = document.createElement("div");
+        Object.assign(row2.style, {
           display: "flex",
           alignItems: "center",
           gap: "6px",
           padding: "4px",
           cursor: "pointer",
           borderBottom: "1px solid #222",
-          color: colors[type] || "#fff"
+          color: colors[type2] || "#fff"
         });
         const label = document.createElement("span");
-        label.textContent = `${name} (${type})`;
+        label.textContent = `${name} (${type2})`;
         label.style.minWidth = "120px";
         let input;
-        if (type === "object") {
+        if (type2 === "object") {
           input = document.createElement("textarea");
-          input.value = JSON.stringify(this.variables[type][name] ?? {}, null, 2);
+          input.value = JSON.stringify(this.variables[type2][name] ?? {}, null, 2);
           input.style.width = "220px";
           input.style.height = "40px";
           input.style.webkitTextStrokeWidth = "0px";
         } else {
           input = document.createElement("input");
-          input.value = this.variables[type][name] ?? "";
+          input.value = this.variables[type2][name] ?? "";
           input.style.width = "";
         }
-        this._varInputs[`${type}.${name}`] = input;
+        this._varInputs[`${type2}.${name}`] = input;
         Object.assign(input.style, {
           background: "#000",
           color: "#fff",
           border: "1px solid #333"
         });
         input.oninput = () => {
-          if (type === "object") {
+          if (type2 === "object") {
             try {
               this.variables.object[name] = JSON.parse(input.value);
             } catch {
               return;
             }
-          } else if (type === "number") {
+          } else if (type2 === "number") {
             this.variables.number[name] = parseFloat(input.value);
-          } else if (type === "boolean") {
+          } else if (type2 === "boolean") {
             this.variables.boolean[name] = input.value === "true";
           } else {
             this.variables.string[name] = input.value;
@@ -15979,32 +16071,32 @@ var FluxCodexVertex = class _FluxCodexVertex {
         btnGet.innerText = "Get";
         btnGet.classList.add("btnGetter");
         btnGet.onclick = () => {
-          if (type === "number") this.createGetNumberNode(name);
-          else if (type === "boolean") this.createGetBooleanNode(name);
-          else if (type === "string") this.createGetStringNode(name);
-          else if (type === "object") this.createGetObjectNode(name);
+          if (type2 === "number") this.createGetNumberNode(name);
+          else if (type2 === "boolean") this.createGetBooleanNode(name);
+          else if (type2 === "string") this.createGetStringNode(name);
+          else if (type2 === "object") this.createGetObjectNode(name);
         };
         const btnSet = document.createElement("button");
         btnSet.innerText = "Set";
         btnSet.classList.add("btnGetter");
         btnSet.onclick = () => {
-          if (type === "number") this.createSetNumberNode(name);
-          else if (type === "boolean") this.createSetBooleanNode(name);
-          else if (type === "string") this.createSetStringNode(name);
-          else if (type === "object") this.createSetObjectNode(name);
+          if (type2 === "number") this.createSetNumberNode(name);
+          else if (type2 === "boolean") this.createSetBooleanNode(name);
+          else if (type2 === "string") this.createSetStringNode(name);
+          else if (type2 === "object") this.createSetObjectNode(name);
         };
         const btnDel = document.createElement("button");
         btnDel.innerText = "Del";
         btnDel.classList.add("btnGetter");
         btnDel.style.color = "#ff5252";
         btnDel.onclick = () => {
-          if (!confirm(`Delete variable "${name}" (${type}) ?`)) return;
-          delete this.variables[type][name];
-          delete this._varInputs[`${type}.${name}`];
+          if (!confirm(`Delete variable "${name}" (${type2}) ?`)) return;
+          delete this.variables[type2][name];
+          delete this._varInputs[`${type2}.${name}`];
           this._refreshVarsList(container);
         };
-        row.append(label, input, btnGet, btnSet, btnDel);
-        container.appendChild(row);
+        row2.append(label, input, btnGet, btnSet, btnDel);
+        container.appendChild(row2);
       }
     }
   }
@@ -16039,21 +16131,21 @@ var FluxCodexVertex = class _FluxCodexVertex {
       document.removeEventListener("mouseup", onUp);
     };
   }
-  _createVarBtn(label, type) {
+  _createVarBtn(label, type2) {
     const btn = document.createElement("button");
     btn.textContent = label;
     btn.style.flex = "1";
     btn.style.cursor = "pointer";
     btn.classList.add("btn4");
     btn.onclick = () => {
-      const name = prompt(`New ${type} variable name`);
+      const name = prompt(`New ${type2} variable name`);
       if (!name) return;
-      if (!this.variables[type]) this.variables[type] = {};
-      if (this.variables[type][name]) {
+      if (!this.variables[type2]) this.variables[type2] = {};
+      if (this.variables[type2][name]) {
         alert("Variable exists");
         return;
       }
-      this.variables[type][name] = type === "object" ? {} : type === "number" ? 0 : type === "boolean" ? false : type === "string" ? "" : null;
+      this.variables[type2][name] = type2 === "object" ? {} : type2 === "number" ? 0 : type2 === "boolean" ? false : type2 === "string" ? "" : null;
       this._refreshVarsList(this._varsPopup.children[1]);
     };
     return btn;
@@ -16064,21 +16156,21 @@ var FluxCodexVertex = class _FluxCodexVertex {
     const io = isOutput ? "out" : "in";
     return nodeEl.querySelector(`.pin[data-pin="${pinName}"][data-io="${io}"] .dot`);
   }
-  populateVariableSelect(select, type) {
-    select.innerHTML = "";
-    const vars = this.variables[type];
+  populateVariableSelect(select2, type2) {
+    select2.innerHTML = "";
+    const vars = this.variables[type2];
     if (!vars.length) {
       const opt = document.createElement("option");
       opt.textContent = "(no variables)";
       opt.disabled = true;
-      select.appendChild(opt);
+      select2.appendChild(opt);
       return;
     }
     vars.forEach((v) => {
       const opt = document.createElement("option");
       opt.value = v.name;
       opt.textContent = v.name;
-      select.appendChild(opt);
+      select2.appendChild(opt);
     });
   }
   // Dynamic Method Helpers
@@ -16118,24 +16210,64 @@ var FluxCodexVertex = class _FluxCodexVertex {
   adaptNodeToMethod2(node2, methodItem) {
     const fn = this.methodsManager.compileFunction(methodItem.code);
     const args = this.getArgNames(fn);
-    node2.inputs = node2.inputs.filter((p) => p.type === "action");
-    node2.outputs = node2.outputs.filter((p) => p.type === "action");
+    const preservedInputs = node2.inputs.filter(
+      (p) => p.type === "action" || p.name === "reference"
+    );
+    const preservedOutputs = node2.outputs.filter(
+      (p) => p.type === "action"
+    );
+    node2.inputs = [...preservedInputs];
+    node2.outputs = [...preservedOutputs];
     args.forEach((arg) => {
-      node2.inputs.push({ name: arg, type: "value" });
+      if (!node2.inputs.some((p) => p.name === arg)) {
+        node2.inputs.push({ name: arg, type: "value" });
+      }
     });
     if (this.hasReturn(fn)) {
-      node2.outputs.push({ name: "return", type: "value" });
+      if (!node2.outputs.some((p) => p.name === "return")) {
+        node2.outputs.push({ name: "return", type: "value" });
+      }
     }
     node2.attachedMethod = methodItem.name;
     node2.fn = fn;
     this.updateNodeDOM(node2.id);
   }
+  adaptRefFunctionNode(node2, fnRef) {
+    const args = this.getArgNames(fnRef);
+    const hasReturn = this.hasReturn(fnRef);
+    const preservedInputs = node2.inputs.filter(
+      (p) => p.type === "action" || p.name === "reference"
+    );
+    const preservedOutputs = node2.outputs.filter(
+      (p) => p.type === "action"
+    );
+    node2.inputs = [...preservedInputs];
+    node2.outputs = [...preservedOutputs];
+    args.forEach((arg) => {
+      if (!node2.inputs.some((p) => p.name === arg)) {
+        node2.inputs.push({
+          name: arg,
+          type: "value"
+        });
+      }
+    });
+    if (hasReturn) {
+      if (!node2.outputs.some((p) => p.name === "return")) {
+        node2.outputs.push({
+          name: "return",
+          type: "value"
+        });
+      }
+    }
+    node2.fn = (...callArgs) => fnRef(...callArgs);
+    this.updateNodeDOM(node2.id);
+  }
   populateMethodsSelect(selectEl) {
     selectEl.innerHTML = "";
-    const placeholder = document.createElement("option");
-    placeholder.value = "";
-    placeholder.textContent = "-- Select Method --";
-    selectEl.appendChild(placeholder);
+    const placeholder2 = document.createElement("option");
+    placeholder2.value = "";
+    placeholder2.textContent = "-- Select Method --";
+    selectEl.appendChild(placeholder2);
     this.methodsManager.methodsContainer.forEach((method) => {
       const opt = document.createElement("option");
       opt.value = method.name;
@@ -16143,78 +16275,168 @@ var FluxCodexVertex = class _FluxCodexVertex {
       selectEl.appendChild(opt);
     });
   }
+  _getSceneSelectedName(node2) {
+    return node2.fields?.find(
+      (f) => f.key === "selectedObject" || f.key === "object"
+    )?.value;
+  }
   updateNodeDOM(nodeId) {
     const node2 = this.nodes[nodeId];
-    const el = document.querySelector(`.node[data-id="${nodeId}"]`);
-    if (!el) return;
-    const left = el.querySelector(".pins-left");
-    const right = el.querySelector(".pins-right");
-    if (!left || !right) return;
-    left.innerHTML = "";
-    right.innerHTML = "";
+    const el2 = document.querySelector(`.node[data-id="${nodeId}"]`);
+    if (!el2) return;
+    const left2 = el2.querySelector(".pins-left");
+    const right2 = el2.querySelector(".pins-right");
+    if (!left2 || !right2) return;
+    left2.innerHTML = "";
+    right2.innerHTML = "";
     const inputs = node2.inputs || [];
     const outputs = node2.outputs || [];
-    inputs.forEach((pin) => left.appendChild(this._pinElement(pin, false, nodeId)));
-    outputs.forEach((pin) => right.appendChild(this._pinElement(pin, true, nodeId)));
-    if (node2.category === "action" && node2.title === "Function") {
-      let select = el.querySelector("select.method-select");
-      if (!select) {
-        select = document.createElement("select");
-        select.className = "method-select";
-        select.style.cssText = "width:100%; margin-top:6px;";
-        el.querySelector(".body").appendChild(select);
+    inputs.forEach((pin) => left2.appendChild(this._pinElement(pin, false, nodeId)));
+    outputs.forEach((pin) => right2.appendChild(this._pinElement(pin, true, nodeId)));
+    if (node2.title === "Get Scene Object" || node2.title === "Get Scene Light" || node2.title === "Get Scene Animation") {
+      const select2 = el2.querySelector("select.scene-select");
+      if (select2) {
+        console.log("TEST!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+        const objects2 = spec.accessObject || [];
+        objects2.forEach((obj) => {
+          const opt = document.createElement("option");
+          opt.value = obj.name;
+          opt.textContent = obj.name;
+          select2.appendChild(opt);
+        });
+        const selected = this._getSceneSelectedName(node2);
+        if (selected) {
+          select2.value = selected;
+        }
       }
-      this.populateMethodsSelect(select);
-      if (node2.attachedMethod) select.value = node2.attachedMethod;
-      select.onchange = (e) => {
+    } else if (node2.category === "action" && node2.title === "Function") {
+      let select2 = el2.querySelector("select.method-select");
+      if (!select2) {
+        select2 = document.createElement("select");
+        select2.className = "method-select";
+        select2.style.cssText = "width:100%; margin-top:6px;";
+        el2.querySelector(".body").appendChild(select2);
+      }
+      this.populateMethodsSelect(select2);
+      if (node2.attachedMethod) select2.value = node2.attachedMethod;
+      select2.onchange = (e) => {
         const selected = this.methodsManager.methodsContainer.find((m) => m.name === e.target.value);
         if (selected) this.adaptNodeToMethod(node2, selected);
+      };
+    } else if (node2.category === "functions") {
+      const dom2 = document.querySelector(`.node[data-id="${nodeId}"]`);
+      this.restoreDynamicFunctionNode(node2, dom2);
+    } else if (node2.category === "reffunctions") {
+      console.log("new ref");
+      const dom2 = document.querySelector(`.node[data-id="${nodeId}"]`);
+      this.restoreDynamicFunctionNode(node2, dom2);
+    }
+  }
+  restoreDynamicFunctionNode(node, dom) {
+    if (!node.accessObject && node.accessObjectLiteral) {
+      try {
+        node.accessObject = eval(node.accessObjectLiteral);
+      } catch (e) {
+        console.warn("Failed to eval accessObjectLiteral:", node.accessObjectLiteral, e);
+        node.accessObject = [];
+      }
+    }
+    if (!node.fields) node.fields = [];
+    if (!node.fields.find((f) => f.key === "selectedObject")) {
+      node.fields.push({ key: "selectedObject", value: "" });
+    }
+    if (!node.inputs || node.inputs.length === 0) {
+      node.inputs = [{ name: "exec", type: "action" }];
+    }
+    if (!node.outputs || node.outputs.length === 0) {
+      node.outputs = [{ name: "execOut", type: "action" }];
+    }
+    let select = dom.querySelector("select");
+    if (select == null) {
+      select = document.createElement("select");
+      select.id = node.id;
+      select.className = "method-select";
+      select.style.cssText = "width:100%; margin-top:6px;";
+      dom.appendChild(select);
+    }
+    if (select && node.accessObject) {
+      const numOptions = select.options.length;
+      const newLength = Object.keys(node.accessObject).filter((key) => typeof node.accessObject[key] === "function");
+      if (numOptions !== newLength.length + 1) {
+        console.log("BALBLA");
+        select.innerHTML = "";
+        const placeholder2 = document.createElement("option");
+        placeholder2.value = "";
+        placeholder2.textContent = "-- Select Function --";
+        select.appendChild(placeholder2);
+        Object.keys(node.accessObject).filter((key) => typeof node.accessObject[key] === "function").forEach((fnName) => {
+          const opt = document.createElement("option");
+          opt.value = fnName;
+          opt.textContent = fnName;
+          select.appendChild(opt);
+        });
+        const selected = node.fields.find((f) => f.key === "selectedObject")?.value;
+        if (selected) select.value = selected;
+      }
+      select.onchange = (e) => {
+        const val = e.target.value;
+        node.fields.find((f) => f.key === "selectedObject").value = val;
       };
     }
   }
   // NODE/PIN
-  startConnect(nodeId, pinName, type, isOut) {
+  startConnect(nodeId, pinName, type2, isOut) {
     this.state.connecting = {
       node: nodeId,
       pin: pinName,
-      type,
+      type: type2,
       out: isOut
     };
   }
-  finishConnect(nodeId, pinName, type) {
+  _applyConnectionRuntime(from, to, type2) {
+    const toNode = this.nodes[to.node];
+    const fromNode = this.nodes[from.node];
+    if (!toNode || !fromNode) return;
+    if (toNode.title === "reffunctions" && to.pin === "reference") {
+      const fnRef = this.getPinValue(fromNode, from.pin);
+      if (typeof fnRef === "function") {
+        toNode._fnRef = fnRef;
+        this.adaptRefFunctionNode(toNode, fnRef);
+      }
+    }
+    this.onPinsConnected(fromNode, from.pin, toNode, to.pin);
+  }
+  restoreConnectionsRuntime() {
+    for (const link of this.links) {
+      this._applyConnectionRuntime(link.from, link.to, link.type);
+    }
+  }
+  finishConnect(nodeId, pinName, type2) {
     if (!this.state.connecting || this.state.connecting.node === nodeId) {
       this.state.connecting = null;
       return;
     }
     const from = this.state.connecting.out ? this.state.connecting : { node: nodeId, pin: pinName };
     const to = this.state.connecting.out ? { node: nodeId, pin: pinName } : this.state.connecting;
-    if (from.pin && to.pin && this.isTypeCompatible(this.state.connecting.type, type)) {
+    if (from.pin && to.pin && this.isTypeCompatible(this.state.connecting.type, type2)) {
       const exists = this.links.find(
         (l) => l.from.node === from.node && l.from.pin === from.pin && l.to.node === to.node && l.to.pin === to.pin
       );
       if (!exists) {
-        this.links.push({ id: "link_" + this.linkCounter++, from, to, type });
+        this.links.push({ id: "link_" + this.linkCounter++, from, to, type: type2 });
         this.updateLinks();
-        if (type === "value") setTimeout(() => this.updateValueDisplays(), 0);
+        if (type2 === "value") setTimeout(() => this.updateValueDisplays(), 0);
       }
     }
     this.state.connecting = null;
     let toNode = this.nodes[to.node];
     let fromNode = this.nodes[from.node];
-    if (toNode && toNode.category === "functions" && toNode.code && to.pin === "reference") {
+    if (toNode && toNode.title === "reffunctions" && to.pin === "reference") {
+      console.log("sss ");
       const fnRef = this.getPinValue(fromNode, from.pin);
       if (typeof fnRef !== "function") return;
       toNode._fnRef = fnRef;
-      const fnName = fnRef.name || "wrappedFn";
-      toNode.code = `
-        function ${fnName}(fn, ...args) {
-          return fn(...args);
-        }
-        `.trim();
-      this.adaptNodeToMethod2(toNode, {
-        name: this.methodsManager.extractName(toNode.code),
-        code: toNode.code
-      });
+      this.adaptRefFunctionNode(toNode, fnRef);
     }
     toNode = this.nodes[to.node];
     fromNode = this.nodes[from.node];
@@ -16242,18 +16464,27 @@ var FluxCodexVertex = class _FluxCodexVertex {
     this.updateNodeDOM(getSubNode.id);
   }
   onPinsConnected(sourceNode, sourcePin, targetNode) {
-    if (targetNode.title === "Get Scene Object" || targetNode.title === "Get Sub Object") {
+    if (targetNode.title === "Get Scene Object" || targetNode.title === "Get Sub Object" || targetNode.title === "Get Scene Light") {
       this._adaptGetSubObjectOnConnect(targetNode, sourceNode, sourcePin);
     }
   }
+  // get func for ref pin
   getPinValue(node2, pinName) {
     const out = node2.outputs?.find((p) => p.name === pinName);
-    return out?.value;
+    let getName = node2.fields.find((item) => item.key == "selectedObject").value;
+    if (node2.title == "Get Scene Object") {
+      return app.getSceneObjectByName(getName)[out.name];
+    } else if (node2.title == "Get Scene Animation") {
+      return app.getSceneObjectByName(getName)[out.name];
+    } else {
+      getName = parseInt(getName.replace("light", ""));
+      return node2.accessObject[getName][pinName];
+    }
   }
-  normalizePinType(type) {
-    if (!type) return "any";
-    if (type === "number") return "value";
-    return type;
+  normalizePinType(type2) {
+    if (!type2) return "any";
+    if (type2 === "number") return "value";
+    return type2;
   }
   updateSceneObjectPins(node2, objectName) {
     const obj = (node2.accessObject || []).find((o) => o.name === objectName);
@@ -16262,8 +16493,8 @@ var FluxCodexVertex = class _FluxCodexVertex {
     node2.exposeProps.forEach((p) => {
       const value = this.getByPath(obj, p);
       if (value !== void 0) {
-        const type = typeof value === "number" ? "number" : typeof value === "string" ? "string" : "object";
-        node2.outputs.push({ name: p, type });
+        const type2 = typeof value === "number" ? "number" : typeof value === "string" ? "string" : "object";
+        node2.outputs.push({ name: p, type: type2 });
       }
     });
     this.updateNodeDOM(node2.id);
@@ -16308,6 +16539,7 @@ var FluxCodexVertex = class _FluxCodexVertex {
     el.dataset.id = spec.id;
     const header = document.createElement("div");
     header.className = "header";
+    console.log(".....................spec.title.", spec.title);
     header.textContent = spec.title;
     el.appendChild(header);
     const body = document.createElement("div");
@@ -16385,15 +16617,16 @@ var FluxCodexVertex = class _FluxCodexVertex {
       body.appendChild(display);
     }
     if (spec.title === "Function" && spec.category === "action" && !spec.builtIn && !spec.isVariableNode) {
-      const select = document.createElement("select");
-      select.className = "method-select";
-      select.style.cssText = "width:100%; margin-top:6px;";
-      body.appendChild(select);
-      this.populateMethodsSelect(select);
+      const select2 = document.createElement("select");
+      select2.id = spec.id;
+      select2.className = "method-select";
+      select2.style.cssText = "width:100%; margin-top:6px;";
+      body.appendChild(select2);
+      this.populateMethodsSelect(select2);
       if (spec.attachedMethod) {
-        select.value = spec.attachedMethod;
+        select2.value = spec.attachedMethod;
       }
-      select.addEventListener("change", (e) => {
+      select2.addEventListener("change", (e) => {
         const selected = this.methodsManager.methodsContainer.find(
           (m) => m.name === e.target.value
         );
@@ -16417,7 +16650,10 @@ var FluxCodexVertex = class _FluxCodexVertex {
       const select = document.createElement("select");
       select.style.width = "100%";
       select.style.marginTop = "6px";
-      this.populateDynamicFunctionSelect(select, spec.accessObject);
+      if (spec.accessObject === void 0) {
+        spec.accessObject = eval(spec.accessObjectLiteral);
+      }
+      this.populateDynamicFunctionSelect(select, spec);
       select.addEventListener("change", (e) => {
         const fnName = e.target.value;
         if (fnName) {
@@ -16426,16 +16662,19 @@ var FluxCodexVertex = class _FluxCodexVertex {
       });
       body.appendChild(select);
     }
-    if (spec.title === "Get Scene Object" || spec.title === "Get Scene Animation") {
+    if (spec.title === "Get Scene Object" || spec.title === "Get Scene Animation" || spec.title === "Get Scene Light") {
       const select = document.createElement("select");
+      select.id = spec._id;
       select.style.width = "100%";
       select.style.marginTop = "6px";
+      if (spec.accessObject === void 0) spec.accessObject = eval(spec.accessObjectLiteral);
       const objects = spec.accessObject || [];
       const placeholder = document.createElement("option");
       placeholder.textContent = "-- Select Object --";
       placeholder.value = "";
       select.appendChild(placeholder);
-      objects.forEach((obj) => {
+      console.log("WORKS objects", spec.accessObject.length);
+      spec.accessObject.forEach((obj) => {
         const opt = document.createElement("option");
         opt.value = obj.name;
         opt.textContent = obj.name;
@@ -16464,59 +16703,39 @@ var FluxCodexVertex = class _FluxCodexVertex {
     el.addEventListener("click", (e) => {
       e.stopPropagation();
       this.selectNode(spec.id);
+      this.updateNodeDOM(spec.id);
     });
     return el;
   }
-  selectNode(id) {
+  selectNode(id2) {
     if (this.state.selectedNode) {
       document.querySelector(`.node[data-id="${this.state.selectedNode}"]`)?.classList.remove("selected");
     }
-    this.state.selectedNode = id;
-    document.querySelector(`.node[data-id="${id}"]`)?.classList.add("selected");
+    this.state.selectedNode = id2;
+    document.querySelector(`.node[data-id="${id2}"]`)?.classList.add("selected");
   }
-  populateDynamicFunctionSelect(select, accessObject) {
-    select.innerHTML = "";
-    const placeholder = document.createElement("option");
-    placeholder.value = "";
-    placeholder.textContent = "-- Select Function --";
-    select.appendChild(placeholder);
-    if (!accessObject || typeof accessObject !== "object") return;
-    for (const key in accessObject) {
-      if (typeof accessObject[key] === "function") {
+  populateDynamicFunctionSelect(select2, spec2) {
+    select2.innerHTML = "";
+    const placeholder2 = document.createElement("option");
+    placeholder2.value = "";
+    placeholder2.textContent = "-- Select Function --";
+    select2.appendChild(placeholder2);
+    if (!spec2.accessObject || typeof spec2.accessObject !== "object") return;
+    for (const key in spec2.accessObject) {
+      if (typeof spec2.accessObject[key] === "function") {
         const opt = document.createElement("option");
         opt.value = key;
         opt.textContent = key;
-        select.appendChild(opt);
+        select2.appendChild(opt);
       }
     }
-  }
-  updateFunctionPins(node2, objectName, funcName) {
-    const obj = this.resolveAccessObject(node2.accessObject, objectName);
-    if (!obj) {
-      console.warn("Access object not found:", objectName);
-      return;
+    let current = spec2.fields.find((item) => item.key == "selectedObject").value;
+    for (const opt of select2.options) {
+      if (opt.text === current) {
+        opt.selected = true;
+        break;
+      }
     }
-    const fn = obj[funcName];
-    if (typeof fn !== "function") {
-      console.warn("Not a function:", funcName);
-      return;
-    }
-    node2.inputs = [{ name: "exec", type: "action" }];
-    node2.outputs = [{ name: "execOut", type: "action" }];
-    const args = this.getArgNames(fn);
-    args.forEach((arg) => {
-      node2.inputs.push({ name: arg, type: "value" });
-    });
-    if (this.hasReturn(fn)) {
-      node2.outputs.push({ name: "return", type: "value" });
-    }
-    node2._access = {
-      objectName,
-      methodName: funcName
-    };
-    node2.category = "functions";
-    node2.title = `${objectName}.${funcName}`;
-    this.updateNodeDOM(node2.id);
   }
   isTypeCompatible(fromType, toType) {
     if (fromType === "action" || toType === "action") {
@@ -16878,22 +17097,7 @@ var FluxCodexVertex = class _FluxCodexVertex {
         noExec: true,
         fields: [{ key: "text", value: "Add comment" }]
       }),
-      // 'downloadMeshes': (id, x, y) => ({
-      //   id, title: 'downloadMeshes',
-      //   category: 'functions', x, y,
-      //   builtIn: true,
-      //   inputs: [
-      //     {name: 'exec', type: 'action'},
-      //     {name: 'name', type: 'value'},
-      //     {name: 'path', type: 'value'},
-      //   ],
-      //   outputs: [
-      //     {name: 'execOut', type: 'action'}
-      //   ],  // generated dynamically
-      //   noExec: false,
-      // }),
-      // full dinamic  functions taje ref from object (only funcs)
-      dynamicFunction: (id2, x2, y2) => ({
+      dynamicFunction: (id2, x2, y2, accessObject) => ({
         id: id2,
         title: "functions",
         x: x2,
@@ -16901,7 +17105,21 @@ var FluxCodexVertex = class _FluxCodexVertex {
         category: "action",
         inputs: [{ name: "exec", type: "action" }],
         outputs: [{ name: "execOut", type: "action" }],
-        accessObject: window.app
+        fields: [{ key: "selectedObject", value: "" }],
+        accessObject: accessObject ? accessObject : window.app,
+        accessObjectLiteral: "window.app"
+      }),
+      refFunction: (id2, x2, y2) => ({
+        id: id2,
+        title: "reffunctions",
+        x: x2,
+        y: y2,
+        category: "action",
+        inputs: [
+          { name: "exec", type: "action" },
+          { name: "reference", type: "any" }
+        ],
+        outputs: [{ name: "execOut", type: "action" }]
       }),
       getSceneObject: (id2, x2, y2) => ({
         noExec: true,
@@ -16915,7 +17133,38 @@ var FluxCodexVertex = class _FluxCodexVertex {
         fields: [{ key: "selectedObject", value: "" }],
         builtIn: true,
         accessObject: window.app?.mainRenderBundle,
+        accessObjectLiteral: "window.app?.mainRenderBundle",
         exposeProps: ["name", "position", "rotation", "scale"]
+      }),
+      getSceneLight: (id2, x2, y2) => ({
+        noExec: true,
+        id: id2,
+        title: "Get Scene Light",
+        x: x2,
+        y: y2,
+        category: "scene",
+        inputs: [],
+        outputs: [],
+        fields: [{ key: "selectedObject", value: "" }],
+        builtIn: true,
+        accessObject: window.app?.lightContainer,
+        accessObjectLiteral: "window.app?.lightContainer",
+        exposeProps: [
+          "ambientFactor",
+          "setPosX",
+          "setPosY",
+          "setPosZ",
+          "setIntensity",
+          "setInnerCutoff",
+          "setOuterCutoff",
+          "setColor",
+          "setColorR",
+          "setColorB",
+          "setColorG",
+          "setRange",
+          "setAmbientFactor",
+          "setShadowBias"
+        ]
       }),
       getObjectAnimation: (id2, x2, y2) => ({
         noExec: true,
@@ -16925,21 +17174,23 @@ var FluxCodexVertex = class _FluxCodexVertex {
         y: y2,
         category: "scene",
         inputs: [],
-        // no inputs
         outputs: [],
-        // will be filled dynamically
         fields: [{ key: "selectedObject", value: "" }],
         builtIn: true,
         accessObject: window.app?.mainRenderBundle,
-        // direct man
+        accessObjectLiteral: "window.app?.mainRenderBundle",
         exposeProps: [
           "name",
           "glb.glbJsonData.animations",
-          "glb.animationIndex"
+          "glb.animationIndex",
+          "playAnimationByName",
+          "playAnimationByIndex"
         ]
       }),
       getPosition: (id2, x2, y2) => ({
         id: id2,
+        x: x2,
+        y: y2,
         title: "Get Position",
         category: "scene",
         inputs: [{ name: "position", semantic: "position" }],
@@ -16952,11 +17203,82 @@ var FluxCodexVertex = class _FluxCodexVertex {
       }),
       setPosition: (id2, x2, y2) => ({
         id: id2,
+        x: x2,
+        y: y2,
         title: "Set Position",
         category: "scene",
         inputs: [
           { name: "exec", type: "action" },
           { name: "position", semantic: "position" },
+          { name: "x", semantic: "number" },
+          { name: "y", semantic: "number" },
+          { name: "z", semantic: "number" }
+        ],
+        outputs: [{ name: "execOut", type: "action" }]
+      }),
+      setRotate: (id2, x2, y2) => ({
+        id: id2,
+        x: x2,
+        y: y2,
+        title: "Set Rotate",
+        category: "scene",
+        inputs: [
+          { name: "exec", type: "action" },
+          { name: "rotation", semantic: "rotation" },
+          { name: "x", semantic: "number" },
+          { name: "y", semantic: "number" },
+          { name: "z", semantic: "number" }
+        ],
+        outputs: [{ name: "execOut", type: "action" }]
+      }),
+      setRotateX: (id2, x2, y2) => ({
+        id: id2,
+        x: x2,
+        y: y2,
+        title: "Set RotateX",
+        category: "scene",
+        inputs: [
+          { name: "exec", type: "action" },
+          { name: "rotation", semantic: "rotation" },
+          { name: "x", semantic: "number" }
+        ],
+        outputs: [{ name: "execOut", type: "action" }]
+      }),
+      setRotateY: (id2, x2, y2) => ({
+        id: id2,
+        x: x2,
+        y: y2,
+        title: "Set RotateY",
+        category: "scene",
+        inputs: [
+          { name: "exec", type: "action" },
+          { name: "rotation", semantic: "rotation" },
+          { name: "y", semantic: "number" }
+        ],
+        outputs: [{ name: "execOut", type: "action" }]
+      }),
+      setRotateZ: (id2, x2, y2) => ({
+        id: id2,
+        x: x2,
+        y: y2,
+        title: "Set RotateZ",
+        category: "scene",
+        inputs: [
+          { name: "exec", type: "action" },
+          { name: "rotation", semantic: "rotation" },
+          { name: "z", semantic: "number" }
+        ],
+        outputs: [{ name: "execOut", type: "action" }]
+      }),
+      setRotation: (id2, x2, y2) => ({
+        id: id2,
+        x: x2,
+        y: y2,
+        title: "Set Rotation",
+        category: "scene",
+        inputs: [
+          { name: "exec", type: "action" },
+          { name: "rotation", semantic: "rotation" },
           { name: "x", semantic: "number" },
           { name: "y", semantic: "number" },
           { name: "z", semantic: "number" }
@@ -17085,7 +17407,22 @@ var FluxCodexVertex = class _FluxCodexVertex {
       })
     };
     let spec = null;
-    if (nodeFactories[type]) spec = nodeFactories[type](id, x, y);
+    if (type === "dynamicFunction") {
+      let AO = prompt(`Add global access object !`);
+      if (AO) {
+        console.warn("Adding AO ", eval(AO));
+        options.accessObject = eval(AO);
+      } else {
+        console.warn("Adding global access object failed...");
+        options.accessObject = window.app;
+        return;
+      }
+      ;
+      if (nodeFactories[type]) spec = nodeFactories[type](id, x, y, options.accessObject);
+      spec.accessObjectLiteral = AO;
+    } else {
+      if (nodeFactories[type]) spec = nodeFactories[type](id, x, y);
+    }
     if (spec && spec.fields && options) {
       for (const f of spec.fields) {
         if (options[f.key] !== void 0) {
@@ -17094,17 +17431,17 @@ var FluxCodexVertex = class _FluxCodexVertex {
       }
     }
     if (spec) {
-      const dom = this.createNodeDOM(spec);
-      this.board.appendChild(dom);
+      const dom2 = this.createNodeDOM(spec);
+      this.board.appendChild(dom2);
       this.nodes[id] = spec;
       return id;
     }
     return null;
   }
-  setVariable(type, key, value) {
-    if (!this.variables[type][key]) return;
-    this.variables[type][key].value = value;
-    this.notifyVariableChanged(type, key);
+  setVariable(type2, key, value) {
+    if (!this.variables[type2][key]) return;
+    this.variables[type2][key].value = value;
+    this.notifyVariableChanged(type2, key);
   }
   updateArrayNode(node2, newValue) {
     if (!Array.isArray(newValue)) {
@@ -17191,7 +17528,45 @@ var FluxCodexVertex = class _FluxCodexVertex {
     if (node2.title === "Get Sub Object" && field.key === "path") {
       input.oninput = () => {
         const link = this.getConnectedSource(node2.id, "object");
-        if (!link?.node?.isGetterNode) return;
+        if (!link?.node?.isGetterNode) {
+          if (link.node.title == "Get Sub Object") {
+            console.log("special sub sub test ", link.node.title);
+            let target2 = this.resolvePath(link.node._returnCache, link.pin);
+            node2.outputs = node2.outputs.filter((p) => p.type === "action");
+            if (target2 && typeof target2 === "object") {
+              for (const k in target2) {
+                node2.outputs.push({
+                  name: k,
+                  type: this.detectType(target2[k])
+                });
+              }
+            }
+          }
+          if (link.node.title == "Get Scene Animation") {
+            console.log("special test ", link.node.title);
+            const varField2 = link.node.fields?.find((f) => f.key === "selectedObject");
+            console.log("special test ", varField2);
+            if (link.pin.indexOf(".") != -1) {
+              let target2 = this.resolvePath(app.getSceneObjectByName(varField2.value), link.pin);
+              console.log("special test target ", target2);
+              link.node._subCache = target2;
+              node2.outputs = node2.outputs.filter((p) => p.type === "action");
+              if (target2 && typeof target2 === "object") {
+                for (const k in target2) {
+                  node2.outputs.push({
+                    name: k,
+                    type: this.detectType(target2[k])
+                  });
+                }
+              }
+              node2._needsRebuild = false;
+              node2._pinsBuilt = true;
+              this.updateNodeDOM(node2.id);
+            }
+            console.log("special test :::: ", link.node.accessObject[varField2.value]);
+          }
+          return;
+        }
         const varField = link.node.fields?.find((f) => f.key === "var");
         const varName = varField?.value;
         const rootObj = this.variables?.object?.[varName];
@@ -17320,12 +17695,30 @@ var FluxCodexVertex = class _FluxCodexVertex {
     if (link) return this.getValue(link.from.node, link.from.pin, visited);
     const inputPin = node2.inputs?.find((p) => p.name === pinName);
     if (inputPin) return inputPin.default ?? 0;
-    if (node2.title === "Get Scene Object" || node2.title === "Get Scene Animation") {
-      const objName = node2.fields[0].value;
+    if (node2.title === "Get Scene Object" || node2.title === "Get Scene Animation" || node2.title === "Get Scene Light") {
+      const objName = this._getSceneSelectedName(node2);
+      if (!objName) return void 0;
+      const dom2 = this.board.querySelector(`[data-id="${nodeId}"]`);
+      const selects = dom2.querySelectorAll("select");
+      let select2 = selects[0];
+      select2.innerHTML = ``;
+      if (select2) {
+        node2.accessObject.forEach((obj2) => {
+          const opt = document.createElement("option");
+          opt.value = obj2.name;
+          opt.textContent = obj2.name;
+          select2.appendChild(opt);
+        });
+      }
+      if (node2.fields[0].value) select2.value = node2.fields[0].value;
+      console.log(">>>>>>>>>>>>>>>>>>>>>");
       const obj = (node2.accessObject || []).find((o) => o.name === objName);
       if (!obj) return void 0;
       const out = node2.outputs.find((o) => o.name === pinName);
       if (!out) return void 0;
+      if (pinName.indexOf("." != -1)) {
+        return this.resolvePath(obj, pinName);
+      }
       return obj[pinName];
     } else if (node2.title === "Get Position") {
       const pos = this.getValue(nodeId, "position");
@@ -17337,11 +17730,15 @@ var FluxCodexVertex = class _FluxCodexVertex {
       };
       return node2._returnCache[pinName];
     } else if (node2.title === "Get Sub Object") {
-      let varField = node2.fields?.find((f) => f.key === "var");
-      if (!varField || !varField.value) {
-        varField = node2.fields?.find((f) => f.key === "objectPreview");
+      let varField = node2.outputs?.find((f) => f.name === "0");
+      let isName = node2.outputs?.find((f) => f.name === "name");
+      console.log("test1 :::", varField);
+      if (varField) {
+        if (varField.type == "object") {
+          return node2._subCache[parseInt(varField.name)];
+        }
       }
-      console.log("test   const obj = this.variables.object?.[varField.value]?.value; ", this.variables.object?.[varField.value]?.value);
+      console.log("test2 :::", isName);
       return node2._subCache;
     } else if (node2.type === "forEach") {
       if (pinName === "item") return node2.state?.item;
@@ -17359,8 +17756,8 @@ var FluxCodexVertex = class _FluxCodexVertex {
     return void 0;
   }
   updateValueDisplays() {
-    for (const id in this.nodes) {
-      const node2 = this.nodes[id];
+    for (const id2 in this.nodes) {
+      const node2 = this.nodes[id2];
       if (!node2.displayEl) continue;
       if (node2.title === "Print") {
         const pin = node2.inputs?.[0];
@@ -17384,6 +17781,7 @@ var FluxCodexVertex = class _FluxCodexVertex {
     return match[1].split(",").map((a) => a.trim()).filter(Boolean);
   }
   adaptDynamicFunction(node2, fnName) {
+    console.log("adaptDynamicFunction(node, fnName) ");
     const fn = node2.accessObject?.[fnName];
     if (typeof fn !== "function") return;
     node2.inputs = [{ name: "exec", type: "action" }];
@@ -17398,13 +17796,13 @@ var FluxCodexVertex = class _FluxCodexVertex {
     node2.category = "functions";
     node2.fn = fn;
     node2.fnName = fnName;
-    node2.title = fnName;
+    node2.descFunc = fnName;
     this.updateNodeDOM(node2.id);
   }
-  invalidateVariableGetters(type, varName) {
-    for (const id in this.nodes) {
-      const n = this.nodes[id];
-      if (n.category === "value" && n.fields?.some((f) => f.key === "var" && f.value === varName) && n.title === `Get ${type[0].toUpperCase() + type.slice(1)}`) {
+  invalidateVariableGetters(type2, varName) {
+    for (const id2 in this.nodes) {
+      const n = this.nodes[id2];
+      if (n.category === "value" && n.fields?.some((f) => f.key === "var" && f.value === varName) && n.title === `Get ${type2[0].toUpperCase() + type2.slice(1)}`) {
         delete n._returnCache;
       }
     }
@@ -17428,6 +17826,7 @@ var FluxCodexVertex = class _FluxCodexVertex {
       }
       console.warn("SET CACHE target is ", target);
       n._subCache = target;
+      n._returnCache = target;
       n._needsRebuild = false;
       n._pinsBuilt = true;
       this.enqueueOutputs(n, "execOut");
@@ -17473,18 +17872,33 @@ var FluxCodexVertex = class _FluxCodexVertex {
       } else {
         arr = n.inputs?.find((p) => p.name === "array")?.default ?? [];
       }
-      n._returnCache = Array.isArray(arr) ? arr : arr[link.from.pin] ? arr[link.from.pin] : [];
+      n._returnCache = Array.isArray(arr) ? arr : arr ? arr[link.from.pin] : this.getValue(link.from.node, link.from.pin);
+      this.enqueueOutputs(n, "execOut");
+      return;
+    }
+    if (n.title === "reffunctions") {
+      const fn = n._fnRef;
+      if (typeof fn !== "function") {
+        console.warn("[reffunctions] No function reference");
+        this.enqueueOutputs(n, "execOut");
+        return;
+      }
+      const args = n.inputs.filter((p) => p.type !== "action" && p.name !== "reference").map((p) => this.getValue(n.id, p.name));
+      const result = fn(...args);
+      if (this.hasReturn(fn)) {
+        n._returnCache = result;
+      }
       this.enqueueOutputs(n, "execOut");
       return;
     }
     if (n.isGetterNode) {
       const varField = n.fields?.find((f) => f.key === "var");
       if (varField && varField.value) {
-        const type = n.title.replace("Get ", "").toLowerCase();
-        const value = this.getVariable(type, varField.value);
+        const type2 = n.title.replace("Get ", "").toLowerCase();
+        const value = this.getVariable(type2, varField.value);
         n._returnCache = value;
         if (n.displayEl) {
-          if (type === "object") {
+          if (type2 === "object") {
             n.displayEl.textContent = value !== void 0 ? JSON.stringify(value) : "{}";
           } else if (typeof value === "number") {
             n.displayEl.textContent = value.toFixed(3);
@@ -17507,7 +17921,11 @@ var FluxCodexVertex = class _FluxCodexVertex {
       n._listenerAttached = true;
       return;
     }
-    if (n.category === "functions" && n.fn) {
+    if (n.category === "functions") {
+      console.log("n.category === functions ");
+      if (n.fn === void 0) {
+        n.fn = n.accessObject[n.fnName];
+      }
       const args = n.inputs.filter((p) => p.type !== "action").map((p) => this.getValue(n.id, p.name));
       const result = n.fn(...args);
       if (this.hasReturn(n.fn)) {
@@ -17521,18 +17939,18 @@ var FluxCodexVertex = class _FluxCodexVertex {
       return;
     }
     if (n.isVariableNode) {
-      const type = n.title.replace("Set ", "").toLowerCase();
+      const type2 = n.title.replace("Set ", "").toLowerCase();
       const varField = n.fields?.find((f) => f.key === "var");
       if (varField && varField.value) {
         const value = this.getValue(nodeId, "value");
-        this.variables[type][varField.value] = { value };
-        this.notifyVariableChanged(type, varField.value);
+        this.variables[type2][varField.value] = { value };
+        this.notifyVariableChanged(type2, varField.value);
         for (const nodeId2 in this.nodes) {
           const node2 = this.nodes[nodeId2];
           if (node2.isGetterNode) {
             const vf2 = node2.fields?.find((f) => f.key === "var");
             if (vf2 && vf2.value === varField.value && node2.displayEl) {
-              if (type === "object") {
+              if (type2 === "object") {
                 node2.displayEl.textContent = JSON.stringify(value);
               } else {
                 node2.displayEl.textContent = typeof value === "number" ? value.toFixed(3) : String(value);
@@ -17554,16 +17972,16 @@ var FluxCodexVertex = class _FluxCodexVertex {
         return;
       }
       const method = this.getValue(nodeId, "method") || "GET";
-      const body = this.getValue(nodeId, "body");
+      const body2 = this.getValue(nodeId, "body");
       const headers = this.getValue(nodeId, "headers") || {};
-      const options = { method, headers };
-      if (body && method !== "GET") {
-        options.body = typeof body === "string" ? body : JSON.stringify(body);
+      const options2 = { method, headers };
+      if (body2 && method !== "GET") {
+        options2.body = typeof body2 === "string" ? body2 : JSON.stringify(body2);
         if (!headers["Content-Type"]) {
           headers["Content-Type"] = "application/json";
         }
       }
-      fetch(url, options).then(async (res) => {
+      fetch(url, options2).then(async (res) => {
         n._returnCache = {
           response: await res.json().catch(() => null),
           status: res.status
@@ -17619,11 +18037,42 @@ var FluxCodexVertex = class _FluxCodexVertex {
     if (n.title === "Set Position") {
       const pos = this.getValue(nodeId, "position");
       if (pos?.setPosition) {
-        pos.setPosition(
-          this.getValue(nodeId, "x"),
-          this.getValue(nodeId, "y"),
-          this.getValue(nodeId, "z")
-        );
+        pos.setPosition(this.getValue(nodeId, "x"), this.getValue(nodeId, "y"), this.getValue(nodeId, "z"));
+      }
+      this.enqueueOutputs(n, "execOut");
+      return;
+    } else if (n.title === "Set Rotation") {
+      const rot = this.getValue(nodeId, "rotation");
+      if (rot?.setRotation) {
+        rot.setRotation(this.getValue(nodeId, "x"), this.getValue(nodeId, "y"), this.getValue(nodeId, "z"));
+      }
+      this.enqueueOutputs(n, "execOut");
+      return;
+    } else if (n.title === "Set Rotate") {
+      const rot = this.getValue(nodeId, "rotation");
+      if (rot?.setRotate) {
+        rot.setRotate(this.getValue(nodeId, "x"), this.getValue(nodeId, "y"), this.getValue(nodeId, "z"));
+      }
+      this.enqueueOutputs(n, "execOut");
+      return;
+    } else if (n.title === "Set RotateX") {
+      const rot = this.getValue(nodeId, "rotation");
+      if (rot?.setRotateX) {
+        rot.setRotateX(this.getValue(nodeId, "x"));
+      }
+      this.enqueueOutputs(n, "execOut");
+      return;
+    } else if (n.title === "Set RotateY") {
+      const rot = this.getValue(nodeId, "rotation");
+      if (rot?.setRotateY) {
+        rot.setRotateY(this.getValue(nodeId, "y"));
+      }
+      this.enqueueOutputs(n, "execOut");
+      return;
+    } else if (n.title === "Set RotateZ") {
+      const rot = this.getValue(nodeId, "rotation");
+      if (rot?.setRotateZ) {
+        rot.setRotateZ(this.getValue(nodeId, "z"));
       }
       this.enqueueOutputs(n, "execOut");
       return;
@@ -17712,17 +18161,17 @@ var FluxCodexVertex = class _FluxCodexVertex {
       pin: link.from.pin
     };
   }
-  populateAccessMethods(select) {
-    select.innerHTML = "";
+  populateAccessMethods(select2) {
+    select2.innerHTML = "";
     this.accessObject.forEach((obj) => {
       Object.getOwnPropertyNames(obj.__proto__).filter((k) => typeof obj[k] === "function" && k !== "constructor").forEach((fn) => {
         const opt = document.createElement("option");
         opt.value = `${obj.name}.${fn}`;
         opt.textContent = `${obj.name}.${fn}`;
-        select.appendChild(opt);
+        select2.appendChild(opt);
       });
     });
-    select.onchange = (e) => {
+    select2.onchange = (e) => {
       const [objName, fnName] = e.target.value.split(".");
       this.adaptNodeToAccessMethod(node, objName, fnName);
     };
@@ -17730,8 +18179,8 @@ var FluxCodexVertex = class _FluxCodexVertex {
   getByPath(obj, path) {
     return path.split(".").reduce((acc, key) => acc?.[key], obj);
   }
-  getVariable(type, key) {
-    const entry = this.variables[type]?.[key];
+  getVariable(type2, key) {
+    const entry = this.variables[type2]?.[key];
     if (entry === void 0) return void 0;
     if (entry && typeof entry === "object" && "value" in entry) {
       return entry.value;
@@ -17750,14 +18199,14 @@ var FluxCodexVertex = class _FluxCodexVertex {
     if (!node2) return;
     this.links = this.links.filter((link) => {
       if (link.from.node === nodeId || link.to.node === nodeId) {
-        const dom2 = document.getElementById(link.id);
-        if (dom2) dom2.remove();
+        const dom3 = document.getElementById(link.id);
+        if (dom3) dom3.remove();
         return false;
       }
       return true;
     });
-    const dom = this.board.querySelector(`[data-id="${nodeId}"]`);
-    if (dom) dom.remove();
+    const dom2 = this.board.querySelector(`[data-id="${nodeId}"]`);
+    if (dom2) dom2.remove();
     delete this.nodes[nodeId];
     this.updateLinks();
   }
@@ -17774,15 +18223,15 @@ var FluxCodexVertex = class _FluxCodexVertex {
   }
   handleMouseMove(e) {
     if (this.state.draggingNode) {
-      const el = this.state.draggingNode;
+      const el2 = this.state.draggingNode;
       const newX = e.clientX - this.state.dragOffset[0];
       const newY = e.clientY - this.state.dragOffset[1];
-      el.style.left = newX + "px";
-      el.style.top = newY + "px";
-      const id = el.dataset.id;
-      if (this.nodes[id]) {
-        this.nodes[id].x = newX;
-        this.nodes[id].y = newY;
+      el2.style.left = newX + "px";
+      el2.style.top = newY + "px";
+      const id2 = el2.dataset.id;
+      if (this.nodes[id2]) {
+        this.nodes[id2].x = newX;
+        this.nodes[id2].y = newY;
       }
       this.updateLinks();
     } else if (this.state.panning) {
@@ -17847,7 +18296,13 @@ var FluxCodexVertex = class _FluxCodexVertex {
       pan: this.state.pan,
       variables: this.variables
     };
-    localStorage.setItem(_FluxCodexVertex.SAVE_KEY, JSON.stringify(bundle));
+    function saveReplacer(key, value) {
+      if (key === "fn") return void 0;
+      if (key === "accessObject") return void 0;
+      if (key === "_returnCache") return void 0;
+      return value;
+    }
+    localStorage.setItem(_FluxCodexVertex.SAVE_KEY, JSON.stringify(bundle, saveReplacer));
     this.log("Graph saved to LocalStorage!");
   }
   clearStorage() {
@@ -17938,18 +18393,17 @@ var FluxCodexVertex = class _FluxCodexVertex {
         this.linkCounter = data.linkCounter || 1;
         this.state.pan = data.pan || [0, 0];
         this.board.style.transform = `translate(${this.state.pan[0]}px,${this.state.pan[1]}px)`;
-        Object.values(this.nodes).forEach((spec) => {
-          const domEl = this.createNodeDOM(spec);
+        Object.values(this.nodes).forEach((spec2) => {
+          const domEl = this.createNodeDOM(spec2);
           this.board.appendChild(domEl);
-          if (spec.category === "value" && spec.title !== "GenRandInt" || spec.category === "math" || spec.title === "Print") {
-            spec.displayEl = domEl.querySelector(".value-display");
+          if (spec2.category === "value" && spec2.title !== "GenRandInt" || spec2.category === "math" || spec2.title === "Print") {
+            spec2.displayEl = domEl.querySelector(".value-display");
           }
-          if (spec.category === "action" && spec.title === "Function") {
-            this.updateNodeDOM(spec.id);
-          }
+          this.updateNodeDOM(spec2.id);
         });
         this.updateLinks();
         this.updateValueDisplays();
+        this.restoreConnectionsRuntime();
         this.log("Restored graph.");
         return;
       } catch (e) {
@@ -17959,14 +18413,14 @@ var FluxCodexVertex = class _FluxCodexVertex {
     this.addNode("event");
   }
   loadFromImport() {
-    Object.values(this.nodes).forEach((spec) => {
-      const domEl = this.createNodeDOM(spec);
+    Object.values(this.nodes).forEach((spec2) => {
+      const domEl = this.createNodeDOM(spec2);
       this.board.appendChild(domEl);
-      if (spec.category === "value" && spec.title !== "GenRandInt" || spec.category === "math" || spec.title === "Print") {
-        spec.displayEl = domEl.querySelector(".value-display");
+      if (spec2.category === "value" && spec2.title !== "GenRandInt" || spec2.category === "math" || spec2.title === "Print") {
+        spec2.displayEl = domEl.querySelector(".value-display");
       }
-      if (spec.category === "action" && spec.title === "Function") {
-        this.updateNodeDOM(spec.id);
+      if (spec2.category === "action" && spec2.title === "Function") {
+        this.updateNodeDOM(spec2.id);
       }
     });
     this.updateLinks();
@@ -18414,6 +18868,8 @@ var EditorHud = class {
           item.classList.add("js");
         } else if (i.name.split(".")[1] == "ttf" || i.name.split(".")[1] == "ttf" || i.name.split(".")[1] == "TTF" || i.name.split(".")[1] == "otf" || i.name.split(".")[1] == "woff" || i.name.split(".")[1] == "woff2") {
           item.classList.add("ttf");
+        } else if (i.name.split(".")[1] == "glb") {
+          item.classList.add("glb");
         } else {
           item.classList.add("unknown");
         }
@@ -18434,10 +18890,10 @@ var EditorHud = class {
           }));
         });
       });
-      document.querySelectorAll(".file-item").forEach((el) => {
-        el.addEventListener("click", () => {
-          document.querySelectorAll(".file-item").forEach((x) => x.classList.remove("selected"));
-          el.classList.add("selected");
+      document.querySelectorAll(".file-item").forEach((el2) => {
+        el2.addEventListener("click", () => {
+          document.querySelectorAll(".file-item").forEach((x2) => x2.classList.remove("selected"));
+          el2.classList.add("selected");
         });
       });
     });
@@ -18772,12 +19228,12 @@ var SceneObjectProperty = class {
           }
         });
       } else if (propName == "itIsPhysicsBody") {
-        let body = this.core.matrixAmmo.getBodyByName(currSceneObj.name);
-        for (let key in body) {
-          if (typeof body[key] === "string") {
+        let body2 = this.core.matrixAmmo.getBodyByName(currSceneObj.name);
+        for (let key in body2) {
+          if (typeof body2[key] === "string") {
             this.propName.innerHTML += `<div style="display:flex;text-align:left;"> 
               <div style="background:black;color:white;width:35%;">${key}</div>
-              <div style="background:lime;color:black;width:55%;">${body[key]} </div>`;
+              <div style="background:lime;color:black;width:55%;">${body2[key]} </div>`;
           } else {
             let item = document.createElement("div");
             item.style.display = "flex";
@@ -18786,11 +19242,11 @@ var SceneObjectProperty = class {
             funcNameDesc.style.width = "55%";
             funcNameDesc.innerHTML = key + ":";
             item.appendChild(funcNameDesc);
-            if (typeof body[key] === "function") {
+            if (typeof body2[key] === "function") {
               console.log("function");
               let physicsFuncDesc = document.createElement("select");
               item.appendChild(physicsFuncDesc);
-            } else if (typeof body[key] === "object") {
+            } else if (typeof body2[key] === "object") {
               console.log("OBJECT");
               let objDesc = document.createElement("span");
               objDesc.style.background = "yellow";
@@ -19370,6 +19826,7 @@ var Editor = class {
       <span>Scene objects [agnostic]</span>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getSceneObject')">Get scene object</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setPosition')">Set position</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setRotation')">Set rotation</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('translateByX')">TranslateByX</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('translateByY')">TranslateByY</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('translateByZ')">TranslateByZ</button>
@@ -19422,6 +19879,294 @@ var Editor = class {
   }
 };
 
+// ../../../engine/postprocessing/bloom.js
+var BloomPass = class {
+  constructor(width, height, device, intensity = 1.5) {
+    this.enabled = false;
+    this.device = device;
+    this.width = width;
+    this.height = height;
+    this.brightTex = this._createTexture();
+    this.blurTexA = this._createTexture();
+    this.blurTexB = this._createTexture();
+    this.sampler = device.createSampler({
+      magFilter: "linear",
+      minFilter: "linear"
+    });
+    this.intensityBuffer = this._createUniformBuffer([intensity]);
+    this.blurDirX = this._createUniformBuffer([1, 0]);
+    this.blurDirY = this._createUniformBuffer([0, 1]);
+    this.params = {
+      intensity,
+      threshold: 0.6,
+      knee: 0.5,
+      blurRadius: 6
+    };
+    this.paramBuffer = this.device.createBuffer({
+      size: 16,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    this._updateParams();
+    this.brightPipeline = this._createPipeline(
+      brightPassWGSL(),
+      [
+        { binding: 0, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: "float" } },
+        { binding: 1, visibility: GPUShaderStage.FRAGMENT, sampler: { type: "filtering" } },
+        { binding: 2, visibility: GPUShaderStage.FRAGMENT, buffer: { type: "uniform" } }
+      ]
+    );
+    this.blurPipeline = this._createPipeline(
+      blurPassWGSL(),
+      [
+        { binding: 0, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: "float" } },
+        { binding: 1, visibility: GPUShaderStage.FRAGMENT, sampler: { type: "filtering" } },
+        { binding: 2, visibility: GPUShaderStage.FRAGMENT, buffer: { type: "uniform" } },
+        { binding: 3, visibility: GPUShaderStage.FRAGMENT, buffer: { type: "uniform" } }
+      ]
+    );
+    this.combinePipeline = this._createPipeline(
+      combinePassWGSL(),
+      [
+        { binding: 0, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: "float" } },
+        { binding: 1, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: "float" } },
+        { binding: 2, visibility: GPUShaderStage.FRAGMENT, sampler: { type: "filtering" } },
+        { binding: 3, visibility: GPUShaderStage.FRAGMENT, buffer: { type: "uniform" } }
+      ]
+    );
+  }
+  _createTexture() {
+    return this.device.createTexture({
+      size: [this.width, this.height],
+      format: "rgba16float",
+      usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING
+    });
+  }
+  _createPipeline(fragmentWGSL2, bindGroupLayoutEntries) {
+    const bindGroupLayout = this.device.createBindGroupLayout({
+      entries: bindGroupLayoutEntries
+    });
+    return this.device.createRenderPipeline({
+      layout: this.device.createPipelineLayout({
+        bindGroupLayouts: [bindGroupLayout]
+      }),
+      vertex: {
+        module: this.device.createShaderModule({ code: fullscreenQuadWGSL() }),
+        entryPoint: "vert"
+      },
+      fragment: {
+        module: this.device.createShaderModule({ code: fragmentWGSL2 }),
+        entryPoint: "main",
+        targets: [{ format: "rgba16float" }]
+      },
+      primitive: { topology: "triangle-list" }
+    });
+  }
+  _updateParams() {
+    this.device.queue.writeBuffer(
+      this.paramBuffer,
+      0,
+      new Float32Array([
+        this.params.intensity,
+        this.params.threshold,
+        this.params.knee,
+        this.params.blurRadius
+      ])
+    );
+  }
+  setIntensity = (v) => {
+    this.params.intensity = v;
+    this._updateParams();
+  };
+  setThreshold = (v) => {
+    this.params.threshold = v;
+    this._updateParams();
+  };
+  setKnee = (v) => {
+    this.params.knee = v;
+    this._updateParams();
+  };
+  setBlurRadius = (v) => {
+    this.params.blurRadius = v;
+    this._updateParams();
+  };
+  _createUniformBuffer(data) {
+    const buffer = this.device.createBuffer({
+      size: 16,
+      // std140 safe
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    this.device.queue.writeBuffer(buffer, 0, new Float32Array(data));
+    return buffer;
+  }
+  _brightBindGroup(view) {
+    return this.device.createBindGroup({
+      layout: this.brightPipeline.getBindGroupLayout(0),
+      entries: [
+        { binding: 0, resource: view },
+        { binding: 1, resource: this.sampler },
+        { binding: 2, resource: { buffer: this.paramBuffer } }
+      ]
+    });
+  }
+  _blurBindGroup(view, dirBuffer) {
+    return this.device.createBindGroup({
+      layout: this.blurPipeline.getBindGroupLayout(0),
+      entries: [
+        { binding: 0, resource: view },
+        { binding: 1, resource: this.sampler },
+        { binding: 2, resource: { buffer: dirBuffer } },
+        { binding: 3, resource: { buffer: this.paramBuffer } }
+      ]
+    });
+  }
+  _combineBindGroup(sceneView, bloomView) {
+    return this.device.createBindGroup({
+      layout: this.combinePipeline.getBindGroupLayout(0),
+      entries: [
+        { binding: 0, resource: sceneView },
+        { binding: 1, resource: bloomView },
+        { binding: 2, resource: this.sampler },
+        { binding: 3, resource: { buffer: this.paramBuffer } }
+      ]
+    });
+  }
+  _beginFullscreenPass(encoder, targetView) {
+    return encoder.beginRenderPass({
+      colorAttachments: [{
+        view: targetView,
+        loadOp: "clear",
+        storeOp: "store",
+        clearValue: { r: 0, g: 0, b: 0, a: 1 }
+      }]
+    });
+  }
+  render(encoder, sceneView, finalTargetView) {
+    {
+      const pass = this._beginFullscreenPass(encoder, this.brightTex.createView());
+      pass.setPipeline(this.brightPipeline);
+      pass.setBindGroup(0, this._brightBindGroup(sceneView));
+      pass.draw(6);
+      pass.end();
+    }
+    {
+      const pass = this._beginFullscreenPass(encoder, this.blurTexA.createView());
+      pass.setPipeline(this.blurPipeline);
+      pass.setBindGroup(0, this._blurBindGroup(this.brightTex.createView(), this.blurDirX));
+      pass.draw(6);
+      pass.end();
+    }
+    {
+      const pass = this._beginFullscreenPass(encoder, this.blurTexB.createView());
+      pass.setPipeline(this.blurPipeline);
+      pass.setBindGroup(0, this._blurBindGroup(this.blurTexA.createView(), this.blurDirY));
+      pass.draw(6);
+      pass.end();
+    }
+    {
+      const pass = this._beginFullscreenPass(encoder, finalTargetView);
+      pass.setPipeline(this.combinePipeline);
+      pass.setBindGroup(
+        0,
+        this._combineBindGroup(sceneView, this.blurTexB.createView())
+      );
+      pass.draw(6);
+      pass.end();
+    }
+  }
+};
+function fullscreenQuadWGSL() {
+  return `
+    @vertex
+    fn vert(@builtin(vertex_index) i : u32) -> @builtin(position) vec4<f32> {
+      var pos = array<vec2<f32>, 6>(
+        vec2(-1.0, -1.0), vec2(1.0, -1.0), vec2(-1.0, 1.0),
+        vec2(-1.0, 1.0), vec2(1.0, -1.0), vec2(1.0, 1.0)
+      );
+      return vec4(pos[i], 0.0, 1.0);
+    }
+  `;
+}
+function brightPassWGSL() {
+  return `
+    struct BloomParams {
+    intensity: f32,
+    threshold: f32,
+    knee: f32,
+    radius: f32,
+  };
+    @group(0) @binding(0) var tex: texture_2d<f32>;
+    @group(0) @binding(1) var samp: sampler;
+    @group(0) @binding(2) var<uniform> bloom: BloomParams;
+    @fragment
+    fn main(@builtin(position) p: vec4<f32>) -> @location(0) vec4<f32> {
+      let size = vec2<f32>(textureDimensions(tex));
+      let uv = p.xy / size;
+      let c = textureSample(tex, samp, uv).rgb;
+      let lum = dot(c, vec3<f32>(0.2126,0.7152,0.0722));
+      let x = max(lum - bloom.threshold, 0.0);
+      let w = x * x / (x + bloom.knee);
+      return vec4(c * w, 1.0);
+    }
+  `;
+}
+function blurPassWGSL() {
+  return `
+   struct BloomParams {
+    intensity: f32,
+    threshold: f32,
+    knee: f32,
+    radius: f32,
+  };
+
+  @group(0) @binding(0) var tex: texture_2d<f32>;
+  @group(0) @binding(1) var samp: sampler;
+  @group(0) @binding(2) var<uniform> dir: vec2<f32>;
+  @group(0) @binding(3) var<uniform> bloom: BloomParams;
+
+  @fragment
+  fn main(@builtin(position) p: vec4<f32>) -> @location(0) vec4<f32> {
+    let size = vec2<f32>(textureDimensions(tex));
+    let uv = p.xy / size;
+    let r = bloom.radius;
+    let o = array<f32,5>(-r, -r*0.5, 0.0, r*0.5, r);
+    let w = array<f32,5>(0.1,0.2,0.4,0.2,0.1);
+    var col = vec3(0.0);
+    for(var i=0;i<5;i++){
+      col += textureSample(tex, samp, uv + o[i]*dir/size).rgb * w[i];
+    }
+    return vec4(col,1.0);
+  }
+`;
+}
+function combinePassWGSL() {
+  return `
+  struct BloomParams {
+    intensity: f32,
+    threshold: f32,
+    knee: f32,
+    radius: f32,
+  };
+  @group(0) @binding(0) var origTex: texture_2d<f32>;
+  @group(0) @binding(1) var bloomTex: texture_2d<f32>;
+  @group(0) @binding(2) var samp: sampler;
+  @group(0) @binding(3) var<uniform> bloom: BloomParams;
+
+  @fragment
+  fn main(@builtin(position) p: vec4<f32>) -> @location(0) vec4<f32> {
+    let size = vec2<f32>(textureDimensions(origTex));
+    let uv = p.xy / size;
+
+    let origColor = textureSample(origTex, samp, uv).rgb;
+    let bloomColor = textureSample(bloomTex, samp, uv).rgb;
+
+    // additive bloom
+    let color = origColor + bloomColor * bloom.intensity;
+
+    return vec4(color, 1.0);
+  }
+`;
+}
+
 // ../../../world.js
 var MatrixEngineWGPU = class {
   // save class reference
@@ -19445,8 +20190,8 @@ var MatrixEngineWGPU = class {
     depthStoreOp: "store"
   };
   matrixSounds = new MatrixSounds();
-  constructor(options, callback) {
-    if (typeof options == "undefined" || typeof options == "function") {
+  constructor(options2, callback) {
+    if (typeof options2 == "undefined" || typeof options2 == "function") {
       this.options = {
         useSingleRenderPass: true,
         canvasSize: "fullscreen",
@@ -19457,29 +20202,29 @@ var MatrixEngineWGPU = class {
         },
         clearColor: { r: 0.584, g: 0, b: 0.239, a: 1 }
       };
-      callback = options;
+      callback = options2;
     }
-    if (typeof options.clearColor === "undefined") {
-      options.clearColor = { r: 0.584, g: 0, b: 0.239, a: 1 };
+    if (typeof options2.clearColor === "undefined") {
+      options2.clearColor = { r: 0.584, g: 0, b: 0.239, a: 1 };
     }
-    if (typeof options.canvasId === "undefined") {
-      options.canvasId = "canvas1";
+    if (typeof options2.canvasId === "undefined") {
+      options2.canvasId = "canvas1";
     }
-    if (typeof options.mainCameraParams === "undefined") {
-      options.mainCameraParams = {
+    if (typeof options2.mainCameraParams === "undefined") {
+      options2.mainCameraParams = {
         type: "WASD",
         responseCoef: 2e3
       };
     }
-    if (typeof options.dontUsePhysics == "undefined") {
+    if (typeof options2.dontUsePhysics == "undefined") {
       this.matrixAmmo = new MatrixAmmo();
     }
     this.editor = void 0;
-    if (typeof options.useEditor !== "undefined") {
-      if (typeof options.projectType !== "undefined" && options.projectType == "created from editor") {
-        this.editor = new Editor(this, "created from editor", options.projectName);
-      } else if (typeof options.projectType !== "undefined" && options.projectType == "pre editor") {
-        this.editor = new Editor(this, options.projectType);
+    if (typeof options2.useEditor !== "undefined") {
+      if (typeof options2.projectType !== "undefined" && options2.projectType == "created from editor") {
+        this.editor = new Editor(this, "created from editor", options2.projectName);
+      } else if (typeof options2.projectType !== "undefined" && options2.projectType == "pre editor") {
+        this.editor = new Editor(this, options2.projectType);
       } else {
         this.editor = new Editor(this, "infly");
       }
@@ -19494,10 +20239,10 @@ var MatrixEngineWGPU = class {
     });
     this.activateEditor = () => {
       if (this.editor == null || typeof this.editor === "undefined") {
-        if (typeof options.projectType !== "undefined" && options.projectType == "created from editor") {
+        if (typeof options2.projectType !== "undefined" && options2.projectType == "created from editor") {
           this.editor = new Editor(this, "created from editor");
-        } else if (typeof options.projectType !== "undefined" && options.projectType == "pre editor") {
-          this.editor = new Editor(this, options.projectType);
+        } else if (typeof options2.projectType !== "undefined" && options2.projectType == "pre editor") {
+          this.editor = new Editor(this, options2.projectType);
         } else {
           this.editor = new Editor(this, "infly");
         }
@@ -19509,8 +20254,8 @@ var MatrixEngineWGPU = class {
         this.editor.editorHud.sceneContainer.style.display = "flex";
       }
     };
-    this.options = options;
-    this.mainCameraParams = options.mainCameraParams;
+    this.options = options2;
+    this.mainCameraParams = options2.mainCameraParams;
     const target = this.options.appendTo || document.body;
     var canvas = document.createElement("canvas");
     canvas.id = this.options.canvasId;
@@ -19577,6 +20322,63 @@ var MatrixEngineWGPU = class {
     this.run(callback);
   };
   createGlobalStuff() {
+    this.bloomPass = {
+      enabled: false,
+      setIntesity: (v) => {
+      },
+      setKnee: (v) => {
+      },
+      setBlurRadius: (v) => {
+      },
+      setThreshold: (v) => {
+      }
+    };
+    this.bloomOutputTex = this.device.createTexture({
+      size: [this.canvas.width, this.canvas.height],
+      format: "rgba16float",
+      usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING
+    });
+    this.sceneTexture = this.device.createTexture({
+      label: "final pipeline sceneTexture",
+      size: [this.canvas.width, this.canvas.height],
+      format: "rgba16float",
+      usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING
+    });
+    this.sceneTextureView = this.sceneTexture.createView();
+    this.presentSampler = this.device.createSampler({
+      magFilter: "linear",
+      minFilter: "linear"
+    });
+    this.presentPipeline = this.device.createRenderPipeline({
+      label: "final pipeline",
+      layout: "auto",
+      vertex: {
+        module: this.device.createShaderModule({ code: fullscreenQuadWGSL() }),
+        entryPoint: "vert"
+      },
+      fragment: {
+        module: this.device.createShaderModule({
+          code: `
+        @group(0) @binding(0) var hdrTex : texture_2d<f32>;
+        @group(0) @binding(1) var samp : sampler;
+
+        @fragment
+        fn main(@builtin(position) pos: vec4<f32>) -> @location(0) vec4<f32> {
+          let uv = pos.xy / vec2<f32>(textureDimensions(hdrTex));
+          let hdr = textureSample(hdrTex, samp, uv).rgb;
+
+          // simple tonemap
+          let ldr = hdr / (hdr + vec3(1.0));
+
+          return vec4<f32>(ldr, 1.0);
+        }
+      `
+        }),
+        entryPoint: "main",
+        targets: [{ format: "bgra8unorm" }]
+        // rgba16float  bgra8unorm
+      }
+    });
     this.spotlightUniformBuffer = this.device.createBuffer({
       label: "spotlightUniformBufferGLOBAL",
       size: this.MAX_SPOTLIGHTS * 144,
@@ -19655,13 +20457,16 @@ var MatrixEngineWGPU = class {
     };
     this.createMe();
   }
-  getSceneObjectByName(name) {
+  getSceneObjectByName = (name) => {
     return this.mainRenderBundle.find((sceneObject) => sceneObject.name === name);
-  }
+  };
+  getSceneLightByName = (name) => {
+    return this.lightContainer.find((l) => l.name === name);
+  };
   getNameFromPath(p) {
     return p.split(/[/\\]/).pop().replace(/\.[^/.]+$/, "");
   }
-  removeSceneObjectByName(name) {
+  removeSceneObjectByName = (name) => {
     const index = this.mainRenderBundle.findIndex((obj2) => obj2.name === name);
     if (index === -1) {
       console.warn("Scene object not found:", name);
@@ -19679,7 +20484,7 @@ var MatrixEngineWGPU = class {
     this.mainRenderBundle.splice(index, 1);
     console.log("Removed scene object:", name);
     return true;
-  }
+  };
   // Not in use for now -  Can be used with addBall have indipended pipeline and draw func.
   addCube = (o) => {
     if (typeof o === "undefined") {
@@ -19832,7 +20637,7 @@ var MatrixEngineWGPU = class {
   };
   addLight(o) {
     const camera = this.cameras[this.mainCameraParams.type];
-    let newLight = new SpotLight(camera, this.inputHandler, this.device);
+    let newLight = new SpotLight(camera, this.inputHandler, this.device, this.lightContainer.length);
     this.lightContainer.push(newLight);
     this.createTexArrayForShadows();
     console.log(`%cAdd light: ${newLight}`, LOG_FUNNY_SMALL);
@@ -20078,7 +20883,7 @@ var MatrixEngineWGPU = class {
         shadowPass.end();
       }
       const currentTextureView = this.context.getCurrentTexture().createView();
-      this.mainRenderPassDesc.colorAttachments[0].view = currentTextureView;
+      this.mainRenderPassDesc.colorAttachments[0].view = this.sceneTextureView;
       let pass = commandEncoder.beginRenderPass(this.mainRenderPassDesc);
       for (const mesh of this.mainRenderBundle) {
         mesh.position.update();
@@ -20107,7 +20912,7 @@ var MatrixEngineWGPU = class {
       pass.end();
       if (this.collisionSystem) this.collisionSystem.update();
       const transPassDesc = {
-        colorAttachments: [{ view: currentTextureView, loadOp: "load", storeOp: "store" }],
+        colorAttachments: [{ view: this.sceneTextureView, loadOp: "load", storeOp: "store" }],
         depthStencilAttachment: {
           view: this.mainDepthView,
           depthLoadOp: "load",
@@ -20131,6 +20936,28 @@ var MatrixEngineWGPU = class {
         });
       }
       transPass.end();
+      const canvasView = this.context.getCurrentTexture().createView();
+      if (this.bloomPass.enabled == true) {
+        this.bloomPass.render(commandEncoder, this.sceneTextureView, this.bloomOutputTex);
+      }
+      pass = commandEncoder.beginRenderPass({
+        colorAttachments: [{
+          view: canvasView,
+          loadOp: "clear",
+          storeOp: "store",
+          clearValue: { r: 0, g: 0, b: 0, a: 1 }
+        }]
+      });
+      pass.setPipeline(this.presentPipeline);
+      pass.setBindGroup(0, this.device.createBindGroup({
+        layout: this.presentPipeline.getBindGroupLayout(0),
+        entries: [
+          { binding: 0, resource: this.bloomPass ? this.bloomOutputTex : this.sceneTexture.createView() },
+          { binding: 1, resource: this.presentSampler }
+        ]
+      }));
+      pass.draw(6);
+      pass.end();
       this.device.queue.submit([commandEncoder.finish()]);
       requestAnimationFrame(this.frame);
     } catch (err) {
@@ -20160,7 +20987,6 @@ var MatrixEngineWGPU = class {
     this.device.queue.submit([commandEncoder.finish()]);
     requestAnimationFrame(this.frame);
   };
-  // ---------------------------------------
   addGlbObj = (o, BVHANIM, glbFile, clearColor = this.options.clearColor) => {
     if (typeof o.name === "undefined") {
       o.name = genName(9);
@@ -20263,7 +21089,6 @@ var MatrixEngineWGPU = class {
       this.editor.editorHud.updateSceneContainer();
     }
   };
-  // NEW TEST INSTANCED DRAWS
   addGlbObjInctance = (o, BVHANIM, glbFile, clearColor = this.options.clearColor) => {
     if (typeof o.name === "undefined") {
       o.name = genName(9);
@@ -20373,6 +21198,10 @@ var MatrixEngineWGPU = class {
       this.editor.editorHud.updateSceneContainer();
     }
   };
+  activateBloomEffect = () => {
+    this.bloomPass = new BloomPass(this.canvas.width, this.canvas.height, this.device, 1.5);
+    this.bloomPass.enabled = true;
+  };
 };
 
 // ../../../../projects/Test1/app-gen.js
@@ -20405,7 +21234,35 @@ var app2 = new MatrixEngineWGPU(
           physics: { enabled: false, geometry: "Cube" }
         });
       }, { scale: [1, 1, 1] });
-      var glbFile01 = await fetch("res/meshes/glb/bot.glb").then((res) => res.arrayBuffer().then((buf) => uploadGLBModel(buf, app3.device)));
+      downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, (m) => {
+        let texturesPaths2 = ["./res/meshes/blender/cube.png"];
+        app3.addMeshObj({
+          position: { x: 0, y: 0, z: -20 },
+          rotation: { x: 0, y: 0, z: 0 },
+          rotationSpeed: { x: 0, y: 0, z: 0 },
+          texturesPaths: [texturesPaths2],
+          name: "Cube_" + app3.mainRenderBundle.length,
+          mesh: m.cube,
+          raycast: { enabled: true, radius: 2 },
+          physics: { enabled: false, geometry: "Cube" }
+        });
+      }, { scale: [1, 1, 1] });
+      setTimeout(() => {
+        app3.getSceneObjectByName("Cube_0").position.SetZ(-20);
+      }, 200);
+      setTimeout(() => {
+        app3.getSceneObjectByName("Cube_1").position.SetY(0);
+      }, 200);
+      setTimeout(() => {
+        app3.getSceneObjectByName("Cube_1").position.SetZ(-20);
+      }, 200);
+      setTimeout(() => {
+        app3.getSceneObjectByName("Cube_1").position.SetX(-3);
+      }, 200);
+      setTimeout(() => {
+        app3.getSceneObjectByName("Cube_0").position.SetX(3);
+      }, 200);
+      var glbFile01 = await fetch("res/meshes/glb/woman1.glb").then((res) => res.arrayBuffer().then((buf) => uploadGLBModel(buf, app3.device)));
       texturesPaths = ["./res/meshes/blender/cube.png"];
       app3.addGlbObj({
         position: { x: 0, y: 0, z: -20 },
@@ -20413,11 +21270,17 @@ var app2 = new MatrixEngineWGPU(
         rotationSpeed: { x: 0, y: 0, z: 0 },
         texturesPaths: [texturesPaths],
         scale: [2, 2, 2],
-        name: app3.getNameFromPath("res/meshes/glb/bot.glb"),
+        name: app3.getNameFromPath("res/meshes/glb/woman1.glb"),
         material: { type: "power", useTextureFromGlb: true },
         raycast: { enabled: true, radius: 2 },
         physics: { enabled: false, geometry: "Cube" }
       }, null, glbFile01);
+      setTimeout(() => {
+        app3.getSceneObjectByName("woman1-Maria-0").position.SetY(-1);
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("woman1-Maria-0-sword-0").position.SetY(-1);
+      }, 800);
     });
   }
 );

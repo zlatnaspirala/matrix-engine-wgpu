@@ -120,6 +120,22 @@ export class BVHPlayer extends MEMeshObj {
     this.inverseBindMatrices = invBindArray;
   }
 
+  playAnimationByIndex = (animationIndex) => {
+    this.glb.animationIndex = animationIndex;
+  }
+
+  playAnimationByName = (animationName) => {
+    const animations = this.glb.glbJsonData.animations;
+    const index = animations.findIndex(
+      anim => anim.name === animationName
+    );
+    if(index === -1) {
+      console.warn(`Animation '${animationName}' not found`);
+      return;
+    }
+    this.glb.animationIndex = index;
+  };
+
   getNumberOfFramesCurAni() {
     let anim = this.glb.glbJsonData.animations[this.glb.animationIndex]
     const sampler = anim.samplers[0];

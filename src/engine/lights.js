@@ -2,6 +2,7 @@ import {mat4, vec3} from 'wgpu-matrix';
 import {vertexShadowWGSL} from '../shaders/vertexShadow.wgsl';
 import Behavior from './behavior';
 import {vertexShadowWGSLInstanced} from '../shaders/instanced/vertexShadow.instanced.wgsl';
+import {randomIntFromTo} from './utils';
 
 /**
  * @description
@@ -10,6 +11,7 @@ import {vertexShadowWGSLInstanced} from '../shaders/instanced/vertexShadow.insta
  * @email zlatnaspirala@gmail.com
  */
 export class SpotLight {
+  name;
   camera;
   inputHandler;
 
@@ -36,10 +38,13 @@ export class SpotLight {
     camera,
     inputHandler,
     device,
+    indexx,
     position = vec3.create(0, 10, -20),
     target = vec3.create(0, 0, -20),
     fov = 45, aspect = 1.0, near = 0.1, far = 200) {
 
+    this.name = "light" + indexx;
+    this.getName = () => {return "light" + indexx};
     this.fov = fov;
     this.aspect = aspect;
     this.near = near;
@@ -154,7 +159,6 @@ export class SpotLight {
       return this.shadowBindGroupContainer[index];
     }
 
-    // test
     this.getShadowBindGroup_bones = (index) => {
 
       if(this.shadowBindGroup[index]) {
@@ -196,7 +200,7 @@ export class SpotLight {
         {binding: 1, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}, },
       ],
     });
- 
+
     this.shadowPipeline = this.device.createRenderPipeline({
       label: 'shadowPipeline per light',
       layout: this.device.createPipelineLayout({
@@ -317,9 +321,51 @@ export class SpotLight {
       0.0,
       this.range,
       this.ambientFactor,
-      this.shadowBias,  // <<--- use shadowBias
-      0.0,              // keep padding
+      this.shadowBias,
+      0.0,
       ...m
     ]);
   }
+
+  // Setters
+  setPosX = (x) => {
+    this.position[0] = x;
+  }
+  setPosY = (y) => {
+    this.position[1] = y;
+  }
+  setPosZ = (z) => {
+    this.position[2] = z;
+  }
+  setInnerCutoff = (innerCutoff) => {
+    this.innerCutoff = innerCutoff;
+  }
+  setOuterCutoff = (outerCutoff) => {
+    this.outerCutoff = outerCutoff;
+  }
+  setIntensity = (intensity) => {
+    this.intensity = intensity;
+  }
+  setColor = (color) => {
+    this.color = color;
+  }
+  setColorR = (colorR) => {
+    this.color[0] = colorR;
+  }
+  setColorB = (colorB) => {
+    this.color[1] = colorB;
+  }
+  setColorG = (colorG) => {
+    this.color[2] = colorG;
+  }
+  setRange = (range) => {
+    this.range = range;
+  }
+  setAmbientFactor = (ambientFactor) => {
+   this.ambientFactor = ambientFactor;
+  }
+  setShadowBias = (shadowBias) => {
+   this.shadowBias = shadowBias;
+  }
+
 }

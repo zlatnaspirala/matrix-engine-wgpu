@@ -219,9 +219,10 @@ textarea {
 
 .timeLineSlider,
 p {
-  background: rgb(59 0 135 / 48%);
+  background: rgb(89 89 89);
   width: 100%;
   margin: 5px 5px 5px 5px;
+  -webkit-text-stroke-width: 0px;
 }
 
 /* For animation Line */
@@ -1305,6 +1306,7 @@ input[type=number]:hover::-webkit-outer-spin-button {
 }
 
 .file-item {
+  word-break: break-all;
   background-position-y: 4px;
   width: 65px;
   height: 65px;
@@ -1372,6 +1374,10 @@ input[type=number]:hover::-webkit-outer-spin-button {
 
 .mp3 {
   background-image: url("../res/icons/editor/mp3.png");
+}
+
+.glb {
+  background-image: url("../res/icons/editor/glb.png");
 }
 
 .otf,

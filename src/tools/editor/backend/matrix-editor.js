@@ -409,7 +409,7 @@ async function addGlb(msg, ws) {
   content.addLine(`     texturesPaths: [texturesPaths],`);
   content.addLine(`     scale: [2, 2, 2],`);
   content.addLine(`     name:  app.getNameFromPath('${msg.options.path}'),`);
-  content.addLine(`     material: {type: 'power', useTextureFromGlb: true},`);
+  content.addLine(`     material: {type: 'standard', useTextureFromGlb: true},`);
   content.addLine(`     raycast: {enabled: true, radius: 2},`);
   content.addLine(`     physics: {enabled: ${msg.options.physics}, geometry: "Cube"}`);
   content.addLine(`   }, null, glbFile01);`);
@@ -491,7 +491,7 @@ async function updatePos(msg, ws) {
   content.addLine(` // ME START ${msg.data.inputFor} ${msg.action + msg.data.property}`);
   content.addLine(` setTimeout(() => {`);
   content.addLine(`  app.getSceneObjectByName('${msg.data.inputFor}').position.Set${msg.data.property.toUpperCase()}(${msg.data.value});`);
-  content.addLine(` }, 200);`);
+  content.addLine(` }, 800);`);
   content.addLine(` // ME END ${msg.data.inputFor} ${msg.action + msg.data.property}`);
 
   const objScript = path.join(PROJECTS_DIR, msg.projectName + "\\app-gen.js");
@@ -510,7 +510,7 @@ async function updateRot(msg, ws) {
   content.addLine(` // ME START ${msg.data.inputFor} ${msg.action + msg.data.property}`);
   content.addLine(` setTimeout(() => {`);
   content.addLine(`  app.getSceneObjectByName('${msg.data.inputFor}').rotation.${msg.data.property} = ${msg.data.value};`);
-  content.addLine(` }, 200);`);
+  content.addLine(` }, 800);`);
   content.addLine(` // ME END ${msg.data.inputFor} ${msg.action + msg.data.property}`);
 
   const objScript = path.join(PROJECTS_DIR, msg.projectName + "\\app-gen.js");

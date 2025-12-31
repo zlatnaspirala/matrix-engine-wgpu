@@ -523,6 +523,8 @@ export default class EditorHud {
           i.name.split('.')[1] == 'woff' ||
           i.name.split('.')[1] == 'woff2') {
           item.classList.add('ttf');
+        } else if(i.name.split('.')[1] == 'glb') {
+          item.classList.add('glb');
         } else {
           item.classList.add('unknown');
         }
