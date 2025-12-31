@@ -15811,6 +15811,8 @@ var FluxCodexVertex = class _FluxCodexVertex {
     <button onclick="app.editor.fluxCodexVertex.addNode('onTargetPositionReach')">onTargetPositionReach</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('getObjectAnimation')">Get Object Animation</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('dynamicFunction')">Function Dinamic</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('refFunction')">Function by Ref</button>
+    
     <button onclick="app.editor.fluxCodexVertex.addNode('getSubObject')">Get Sub Object</button>
     <hr>
     <span>Comment</span>
@@ -16163,16 +16165,56 @@ var FluxCodexVertex = class _FluxCodexVertex {
   adaptNodeToMethod2(node2, methodItem) {
     const fn = this.methodsManager.compileFunction(methodItem.code);
     const args = this.getArgNames(fn);
-    node2.inputs = node2.inputs.filter((p) => p.type === "action");
-    node2.outputs = node2.outputs.filter((p) => p.type === "action");
+    const preservedInputs = node2.inputs.filter(
+      (p) => p.type === "action" || p.name === "reference"
+    );
+    const preservedOutputs = node2.outputs.filter(
+      (p) => p.type === "action"
+    );
+    node2.inputs = [...preservedInputs];
+    node2.outputs = [...preservedOutputs];
     args.forEach((arg) => {
-      node2.inputs.push({ name: arg, type: "value" });
+      if (!node2.inputs.some((p) => p.name === arg)) {
+        node2.inputs.push({ name: arg, type: "value" });
+      }
     });
     if (this.hasReturn(fn)) {
-      node2.outputs.push({ name: "return", type: "value" });
+      if (!node2.outputs.some((p) => p.name === "return")) {
+        node2.outputs.push({ name: "return", type: "value" });
+      }
     }
     node2.attachedMethod = methodItem.name;
     node2.fn = fn;
+    this.updateNodeDOM(node2.id);
+  }
+  adaptRefFunctionNode(node2, fnRef) {
+    const args = this.getArgNames(fnRef);
+    const hasReturn = this.hasReturn(fnRef);
+    const preservedInputs = node2.inputs.filter(
+      (p) => p.type === "action" || p.name === "reference"
+    );
+    const preservedOutputs = node2.outputs.filter(
+      (p) => p.type === "action"
+    );
+    node2.inputs = [...preservedInputs];
+    node2.outputs = [...preservedOutputs];
+    args.forEach((arg) => {
+      if (!node2.inputs.some((p) => p.name === arg)) {
+        node2.inputs.push({
+          name: arg,
+          type: "value"
+        });
+      }
+    });
+    if (hasReturn) {
+      if (!node2.outputs.some((p) => p.name === "return")) {
+        node2.outputs.push({
+          name: "return",
+          type: "value"
+        });
+      }
+    }
+    node2.fn = (...callArgs) => fnRef(...callArgs);
     this.updateNodeDOM(node2.id);
   }
   populateMethodsSelect(selectEl) {
@@ -16237,7 +16279,10 @@ var FluxCodexVertex = class _FluxCodexVertex {
         if (selected) this.adaptNodeToMethod(node2, selected);
       };
     } else if (node2.category === "functions") {
-      console.log("new");
+      const dom2 = document.querySelector(`.node[data-id="${nodeId}"]`);
+      this.restoreDynamicFunctionNode(node2, dom2);
+    } else if (node2.category === "reffunctions") {
+      console.log("new ref");
       const dom2 = document.querySelector(`.node[data-id="${nodeId}"]`);
       this.restoreDynamicFunctionNode(node2, dom2);
     }
@@ -16323,27 +16368,18 @@ var FluxCodexVertex = class _FluxCodexVertex {
     this.state.connecting = null;
     let toNode = this.nodes[to.node];
     let fromNode = this.nodes[from.node];
-    if (toNode && toNode.category === "functions" && toNode.code && to.pin === "reference") {
+    if (toNode && toNode.title === "reffunctions" && to.pin === "reference") {
+      console.log("sss ");
       const fnRef = this.getPinValue(fromNode, from.pin);
       if (typeof fnRef !== "function") return;
       toNode._fnRef = fnRef;
-      const fnName = fnRef.name || "wrappedFn";
-      toNode.code = `
-        function ${fnName}(fn, ...args) {
-          return fn(...args);
-        }
-        `.trim();
-      this.adaptNodeToMethod2(toNode, {
-        name: this.methodsManager.extractName(toNode.code),
-        code: toNode.code
-      });
+      this.adaptRefFunctionNode(toNode, fnRef);
     }
     toNode = this.nodes[to.node];
     fromNode = this.nodes[from.node];
     this.onPinsConnected(fromNode, from.pin, toNode, to.pin);
   }
   _adaptGetSubObjectOnConnect(getSubNode, sourceNode) {
-    alert("adapt");
     const obj = sourceNode._returnCache;
     if (!obj || typeof obj !== "object") return;
     const varField = sourceNode.fields?.find((f) => f.key === "var");
@@ -16369,9 +16405,12 @@ var FluxCodexVertex = class _FluxCodexVertex {
       this._adaptGetSubObjectOnConnect(targetNode, sourceNode, sourcePin);
     }
   }
+  // get func fro ref pin
   getPinValue(node2, pinName) {
     const out = node2.outputs?.find((p) => p.name === pinName);
-    return out?.value;
+    let getName = node2.fields.find((item) => item.key == "selectedObject").value;
+    getName = parseInt(getName.replace("light", ""));
+    return node2.accessObject[getName][pinName];
   }
   normalizePinType(type2) {
     if (!type2) return "any";
@@ -16624,7 +16663,6 @@ var FluxCodexVertex = class _FluxCodexVertex {
     let current = spec2.fields.find((item) => item.key == "selectedObject").value;
     for (const opt of select2.options) {
       if (opt.text === current) {
-        alert();
         opt.selected = true;
         break;
       }
@@ -17031,6 +17069,18 @@ var FluxCodexVertex = class _FluxCodexVertex {
         accessObject: accessObject ? accessObject : window.app,
         accessObjectLiteral: "window.app"
       }),
+      refFunction: (id2, x2, y2) => ({
+        id: id2,
+        title: "reffunctions",
+        x: x2,
+        y: y2,
+        category: "action",
+        inputs: [
+          { name: "exec", type: "action" },
+          { name: "reference", type: "any" }
+        ],
+        outputs: [{ name: "execOut", type: "action" }]
+      }),
       getSceneObject: (id2, x2, y2) => ({
         noExec: true,
         id: id2,
@@ -17059,7 +17109,7 @@ var FluxCodexVertex = class _FluxCodexVertex {
         builtIn: true,
         accessObject: window.app?.lightContainer,
         accessObjectLiteral: "window.app?.lightContainer",
-        exposeProps: ["ambientFactor", "setProjection"]
+        exposeProps: ["ambientFactor", "setPosX", "setPosY", "setPosZ", "setIntensity"]
       }),
       getObjectAnimation: (id2, x2, y2) => ({
         noExec: true,
@@ -19648,6 +19698,7 @@ var Editor = class {
 // ../../../engine/postprocessing/bloom.js
 var BloomPass = class {
   constructor(width, height, device, intensity = 1.5) {
+    this.enabled = false;
     this.device = device;
     this.width = width;
     this.height = height;
@@ -20087,6 +20138,17 @@ var MatrixEngineWGPU = class {
     this.run(callback);
   };
   createGlobalStuff() {
+    this.bloomPass = {
+      enabled: false,
+      setIntesity: (v) => {
+      },
+      setKnee: (v) => {
+      },
+      setBlurRadius: (v) => {
+      },
+      setThreshold: (v) => {
+      }
+    };
     this.bloomOutputTex = this.device.createTexture({
       size: [this.canvas.width, this.canvas.height],
       format: "rgba16float",
@@ -20211,13 +20273,16 @@ var MatrixEngineWGPU = class {
     };
     this.createMe();
   }
-  getSceneObjectByName(name) {
+  getSceneObjectByName = (name) => {
     return this.mainRenderBundle.find((sceneObject) => sceneObject.name === name);
-  }
+  };
+  getSceneLightByName = (name) => {
+    return this.lightContainer.find((l) => l.name === name);
+  };
   getNameFromPath(p) {
     return p.split(/[/\\]/).pop().replace(/\.[^/.]+$/, "");
   }
-  removeSceneObjectByName(name) {
+  removeSceneObjectByName = (name) => {
     const index = this.mainRenderBundle.findIndex((obj2) => obj2.name === name);
     if (index === -1) {
       console.warn("Scene object not found:", name);
@@ -20235,7 +20300,7 @@ var MatrixEngineWGPU = class {
     this.mainRenderBundle.splice(index, 1);
     console.log("Removed scene object:", name);
     return true;
-  }
+  };
   // Not in use for now -  Can be used with addBall have indipended pipeline and draw func.
   addCube = (o) => {
     if (typeof o === "undefined") {
@@ -20688,7 +20753,7 @@ var MatrixEngineWGPU = class {
       }
       transPass.end();
       const canvasView = this.context.getCurrentTexture().createView();
-      if (this.bloomPass) {
+      if (this.bloomPass.enabled == true) {
         this.bloomPass.render(commandEncoder, this.sceneTextureView, this.bloomOutputTex);
       }
       pass = commandEncoder.beginRenderPass({
@@ -20951,6 +21016,7 @@ var MatrixEngineWGPU = class {
   };
   activateBloomEffect = () => {
     this.bloomPass = new BloomPass(this.canvas.width, this.canvas.height, this.device, 1.5);
+    this.bloomPass.enabled = true;
   };
 };
 

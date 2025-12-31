@@ -169,6 +169,8 @@ export default class FluxCodexVertex {
     <button onclick="app.editor.fluxCodexVertex.addNode('onTargetPositionReach')">onTargetPositionReach</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('getObjectAnimation')">Get Object Animation</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('dynamicFunction')">Function Dinamic</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('refFunction')">Function by Ref</button>
+    
     <button onclick="app.editor.fluxCodexVertex.addNode('getSubObject')">Get Sub Object</button>
     <hr>
     <span>Comment</span>
@@ -589,16 +591,77 @@ export default class FluxCodexVertex {
   adaptNodeToMethod2(node, methodItem) {
     const fn = this.methodsManager.compileFunction(methodItem.code);
     const args = this.getArgNames(fn);
-    // RESET value pins (keep exec)
-    node.inputs = node.inputs.filter(p => p.type === "action");
-    node.outputs = node.outputs.filter(p => p.type === "action");
-    // Create input pins from function signature
-    args.forEach(arg => {node.inputs.push({name: arg, type: "value"});});
+
+    // Preserve action + reference pins
+    const preservedInputs = node.inputs.filter(
+      p => p.type === "action" || p.name === "reference"
+    );
+
+    const preservedOutputs = node.outputs.filter(
+      p => p.type === "action"
+    );
+
+    node.inputs = [...preservedInputs];
+    node.outputs = [...preservedOutputs];
+
+    // Add argument pins (reuse if exists)
+    args.forEach(arg => {
+      if(!node.inputs.some(p => p.name === arg)) {
+        node.inputs.push({name: arg, type: "value"});
+      }
+    });
+
+    // Return value
     if(this.hasReturn(fn)) {
-      node.outputs.push({name: "return", type: "value"});
+      if(!node.outputs.some(p => p.name === "return")) {
+        node.outputs.push({name: "return", type: "value"});
+      }
     }
+
     node.attachedMethod = methodItem.name;
     node.fn = fn;
+    this.updateNodeDOM(node.id);
+  }
+
+  adaptRefFunctionNode(node, fnRef) {
+    const args = this.getArgNames(fnRef);
+    const hasReturn = this.hasReturn(fnRef);
+
+    // Preserve exec + reference pins
+    const preservedInputs = node.inputs.filter(
+      p => p.type === "action" || p.name === "reference"
+    );
+
+    const preservedOutputs = node.outputs.filter(
+      p => p.type === "action"
+    );
+
+    node.inputs = [...preservedInputs];
+    node.outputs = [...preservedOutputs];
+
+    // 🔹 Real argument pins
+    args.forEach(arg => {
+      if(!node.inputs.some(p => p.name === arg)) {
+        node.inputs.push({
+          name: arg,
+          type: "value"
+        });
+      }
+    });
+
+    // 🔹 Real return
+    if(hasReturn) {
+      if(!node.outputs.some(p => p.name === "return")) {
+        node.outputs.push({
+          name: "return",
+          type: "value"
+        });
+      }
+    }
+
+    // Execution logic
+    node.fn = (...callArgs) => fnRef(...callArgs);
+
     this.updateNodeDOM(node.id);
   }
 
@@ -679,7 +742,11 @@ export default class FluxCodexVertex {
         if(selected) this.adaptNodeToMethod(node, selected);
       };
     } else if(node.category === "functions") {
-      console.log('new')
+
+      const dom = document.querySelector(`.node[data-id="${nodeId}"]`);
+      this.restoreDynamicFunctionNode(node, dom);
+    } else if(node.category === "reffunctions") {
+      console.log('new ref')
       const dom = document.querySelector(`.node[data-id="${nodeId}"]`);
       this.restoreDynamicFunctionNode(node, dom);
     }
@@ -801,20 +868,19 @@ export default class FluxCodexVertex {
     let toNode = this.nodes[to.node];
     let fromNode = this.nodes[from.node];
 
-    if(toNode && toNode.category === "functions" && toNode.code && to.pin === "reference") {
+    if(toNode && toNode.title === "reffunctions" && to.pin === "reference") {
+      console.log('sss ')
       const fnRef = this.getPinValue(fromNode, from.pin);
       if(typeof fnRef !== "function") return;
       toNode._fnRef = fnRef;
-      const fnName = fnRef.name || "wrappedFn";
-      toNode.code = `
-        function ${fnName}(fn, ...args) {
-          return fn(...args);
-        }
-        `.trim();
-      this.adaptNodeToMethod2(toNode, {
-        name: this.methodsManager.extractName(toNode.code),
-        code: toNode.code,
-      });
+
+      this.adaptRefFunctionNode(toNode, fnRef);
+
+      // this.adaptNodeToMethod2(toNode, {
+      //   name: this.methodsManager.extractName(toNode.code),
+      //   code: toNode.code,
+      // });
+
     }
 
     // Get Sub Object – adapt pins on connect
@@ -824,7 +890,7 @@ export default class FluxCodexVertex {
   }
 
   _adaptGetSubObjectOnConnect(getSubNode, sourceNode) {
-    alert('adapt')
+    // alert('adapt')
     const obj = sourceNode._returnCache;
     if(!obj || typeof obj !== "object") return;
     const varField = sourceNode.fields?.find(f => f.key === "var");
@@ -855,9 +921,13 @@ export default class FluxCodexVertex {
     }
   }
 
+  // get func fro ref pin
   getPinValue(node, pinName) {
     const out = node.outputs?.find(p => p.name === pinName);
-    return out?.value;
+    let getName = node.fields.find(item => item.key == "selectedObject").value;
+    // app.getSceneLightByName(getName) later
+    getName = parseInt(getName.replace("light", ""));
+    return node.accessObject[getName][pinName];
   }
 
   normalizePinType(type) {
@@ -1186,7 +1256,6 @@ export default class FluxCodexVertex {
     let current = spec.fields.find(item => item.key == "selectedObject").value;
     for(const opt of select.options) {
       if(opt.text === current) {
-        alert()
         opt.selected = true;
         break;
       }
@@ -1612,6 +1681,16 @@ export default class FluxCodexVertex {
         accessObjectLiteral: "window.app",
       }),
 
+      refFunction: (id, x, y) => ({
+        id, title: "reffunctions", x, y,
+        category: "action",
+        inputs: [
+          {name: "exec", type: "action"},
+          {name: "reference", type: "any"}
+        ],
+        outputs: [{name: "execOut", type: "action"}],
+      }),
+
       getSceneObject: (id, x, y) => ({
         noExec: true, id,
         title: "Get Scene Object", x, y,
@@ -1635,7 +1714,7 @@ export default class FluxCodexVertex {
         builtIn: true,
         accessObject: window.app?.lightContainer,
         accessObjectLiteral: "window.app?.lightContainer",
-        exposeProps: ["ambientFactor", "setProjection"],
+        exposeProps: ["ambientFactor", "setPosX", "setPosY", "setPosZ", "setIntensity"],
       }),
 
       getObjectAnimation: (id, x, y) => ({

@@ -11,6 +11,7 @@
 
 export class BloomPass {
   constructor(width, height, device, intensity = 1.5) {
+    this.enabled = false;
     this.device = device;
     this.width = width;
     this.height = height;

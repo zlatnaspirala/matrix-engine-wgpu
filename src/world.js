@@ -200,6 +200,14 @@ export default class MatrixEngineWGPU {
 
   createGlobalStuff() {
 
+    // Just syntetic to help visual scripting part
+    this.bloomPass = {
+      enabled: false,
+      setIntesity: (v) => {},
+      setKnee: (v) => {},
+      setBlurRadius: (v) => {},
+      setThreshold: (v) => {},
+    };
     //------------------ TEST
     this.bloomOutputTex = this.device.createTexture({
       size: [this.canvas.width, this.canvas.height],
@@ -345,15 +353,19 @@ export default class MatrixEngineWGPU {
     this.createMe();
   }
 
-  getSceneObjectByName(name) {
+  getSceneObjectByName = (name) => {
     return this.mainRenderBundle.find((sceneObject) => sceneObject.name === name)
+  }
+
+  getSceneLightByName = (name) => {
+    return this.lightContainer.find((l) => l.name === name)
   }
 
   getNameFromPath(p) {
     return p.split(/[/\\]/).pop().replace(/\.[^/.]+$/, "");
   }
 
-  removeSceneObjectByName(name) {
+  removeSceneObjectByName = (name) => {
     const index = this.mainRenderBundle.findIndex(obj => obj.name === name);
 
     if(index === -1) {
@@ -801,12 +813,9 @@ export default class MatrixEngineWGPU {
 
 
       const canvasView = this.context.getCurrentTexture().createView();
-      // test bloom 
-      if(this.bloomPass) {
-        // render
-        // this.bloomPass.render(commandEncoder, this.sceneTexture, canvasView);
+      // Bloom
+      if(this.bloomPass.enabled == true) {
         this.bloomPass.render(commandEncoder, this.sceneTextureView, this.bloomOutputTex);
-
       }
 
       pass = commandEncoder.beginRenderPass({
@@ -1026,9 +1035,7 @@ export default class MatrixEngineWGPU {
   }
 
   activateBloomEffect = () => {
-
     this.bloomPass = new BloomPass(this.canvas.width, this.canvas.height, this.device, 1.5);
-    // alert('BLOOM');
-
+    this.bloomPass.enabled = true;
   }
 }
