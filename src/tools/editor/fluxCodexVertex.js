@@ -83,13 +83,14 @@ export default class FluxCodexVertex {
 
     this._varInputs = {};
 
-    this.init();
+    // EXTRA TIME
+    setTimeout(() => this.init() , 4000);
 
     document.addEventListener("keydown", e => {
       if(e.key == "F6") {
         e.preventDefault();
         this.runGraph();
-      } else if(e.key === "Delete" /*|| e.key === "Backspace"*/) {
+      } else if(e.key === "Delete") {
         if(this.state.selectedNode) {
           this.deleteNode(this.state.selectedNode);
           this.state.selectedNode = null;
@@ -98,7 +99,6 @@ export default class FluxCodexVertex {
     });
 
     this.createContextMenu();
-
     // not in use - alternative for refresh getters/ no exec nodes
     document.addEventListener("fluxcodex.input.change", e => {
       console.log('fluxcodex.input.change')
@@ -166,6 +166,11 @@ export default class FluxCodexVertex {
     <button onclick="app.editor.fluxCodexVertex.addNode('getSceneObject')">Get Scene Object</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('getSceneLight')">Get Scene Light</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('setPosition')">Set Position</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('setRotation')">Set Rotation</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('setRotate')">Set Rotate</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('setRotateX')">Set RotateX</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('setRotateY')">Set RotateY</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('setRotateZ')">Set RotateZ</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('onTargetPositionReach')">onTargetPositionReach</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('getObjectAnimation')">Get Object Animation</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('dynamicFunction')">Function Dinamic</button>
@@ -837,6 +842,31 @@ export default class FluxCodexVertex {
     };
   }
 
+  _applyConnectionRuntime(from, to, type) {
+    const toNode = this.nodes[to.node];
+    const fromNode = this.nodes[from.node];
+    if(!toNode || !fromNode) return;
+
+    // RefFunction special case
+    if(toNode.title === "reffunctions" && to.pin === "reference") {
+      const fnRef = this.getPinValue(fromNode, from.pin);
+      if(typeof fnRef === "function") {
+        toNode._fnRef = fnRef;
+        this.adaptRefFunctionNode(toNode, fnRef);
+      }
+    }
+
+    // generic hook
+    this.onPinsConnected(fromNode, from.pin, toNode, to.pin);
+  }
+
+
+  restoreConnectionsRuntime() {
+    for(const link of this.links) {
+      this._applyConnectionRuntime(link.from, link.to, link.type);
+    }
+  }
+
   finishConnect(nodeId, pinName, type) {
     if(!this.state.connecting || this.state.connecting.node === nodeId) {
       this.state.connecting = null;
@@ -873,16 +903,8 @@ export default class FluxCodexVertex {
       const fnRef = this.getPinValue(fromNode, from.pin);
       if(typeof fnRef !== "function") return;
       toNode._fnRef = fnRef;
-
       this.adaptRefFunctionNode(toNode, fnRef);
-
-      // this.adaptNodeToMethod2(toNode, {
-      //   name: this.methodsManager.extractName(toNode.code),
-      //   code: toNode.code,
-      // });
-
     }
-
     // Get Sub Object – adapt pins on connect
     toNode = this.nodes[to.node];
     fromNode = this.nodes[from.node];
@@ -921,13 +943,21 @@ export default class FluxCodexVertex {
     }
   }
 
-  // get func fro ref pin
+  // get func for ref pin
   getPinValue(node, pinName) {
     const out = node.outputs?.find(p => p.name === pinName);
     let getName = node.fields.find(item => item.key == "selectedObject").value;
-    // app.getSceneLightByName(getName) later
-    getName = parseInt(getName.replace("light", ""));
-    return node.accessObject[getName][pinName];
+    // little hard code - fix in future
+    // By current light rule of given names.
+    if(node.title == "Get Scene Object") {
+      return app.getSceneObjectByName(getName)[out.name];
+    } else if(node.title == "Get Scene Animation") {
+      return app.getSceneObjectByName(getName)[out.name];
+    } else {
+      // light for now
+      getName = parseInt(getName.replace("light", ""));
+      return node.accessObject[getName][pinName];
+    }
   }
 
   normalizePinType(type) {
@@ -1260,48 +1290,6 @@ export default class FluxCodexVertex {
         break;
       }
     }
-  }
-
-  updateFunctionPins(node, objectName, funcName) {
-    const obj = this.resolveAccessObject(node.accessObject, objectName);
-    if(!obj) {
-      console.warn("Access object not found:", objectName);
-      return;
-    }
-
-    const fn = obj[funcName];
-    if(typeof fn !== "function") {
-      console.warn("Not a function:", funcName);
-      return;
-    }
-
-    alert('FN', fn)
-
-    // reset exec pins
-    node.inputs = [{name: "exec", type: "action"}];
-    node.outputs = [{name: "execOut", type: "action"}];
-
-    // args → inputs
-    const args = this.getArgNames(fn);
-    args.forEach(arg => {
-      node.inputs.push({name: arg, type: "value"});
-    });
-
-    // return → output
-    if(this.hasReturn(fn)) {
-      node.outputs.push({name: "return", type: "value"});
-    }
-
-    // store metadata only
-    node._access = {
-      objectName,
-      methodName: funcName,
-    };
-
-    node.category = "functions";
-    node.title = `${objectName}.${funcName}`;
-
-    this.updateNodeDOM(node.id);
   }
 
   isTypeCompatible(fromType, toType) {
@@ -1714,7 +1702,9 @@ export default class FluxCodexVertex {
         builtIn: true,
         accessObject: window.app?.lightContainer,
         accessObjectLiteral: "window.app?.lightContainer",
-        exposeProps: ["ambientFactor", "setPosX", "setPosY", "setPosZ", "setIntensity"],
+        exposeProps: ["ambientFactor", "setPosX", "setPosY", "setPosZ", "setIntensity",
+          "setInnerCutoff", "setOuterCutoff", "setColor", "setColorR",
+          "setColorB", "setColorG", "setRange", "setAmbientFactor", "setShadowBias"],
       }),
 
       getObjectAnimation: (id, x, y) => ({
@@ -1730,11 +1720,13 @@ export default class FluxCodexVertex {
           "name",
           "glb.glbJsonData.animations",
           "glb.animationIndex",
+          "playAnimationByName",
+          "playAnimationByIndex"
         ],
       }),
 
       getPosition: (id, x, y) => ({
-        id,
+        id, x, y,
         title: "Get Position",
         category: "scene",
         inputs: [{name: "position", semantic: "position"}],
@@ -1747,12 +1739,76 @@ export default class FluxCodexVertex {
       }),
 
       setPosition: (id, x, y) => ({
-        id,
+        id, x, y,
         title: "Set Position",
         category: "scene",
         inputs: [
           {name: "exec", type: "action"},
           {name: "position", semantic: "position"},
+          {name: "x", semantic: "number"},
+          {name: "y", semantic: "number"},
+          {name: "z", semantic: "number"},
+        ],
+        outputs: [{name: "execOut", type: "action"}],
+      }),
+
+      setRotate: (id, x, y) => ({
+        id, x, y,
+        title: "Set Rotate",
+        category: "scene",
+        inputs: [
+          {name: "exec", type: "action"},
+          {name: "rotation", semantic: "rotation"},
+          {name: "x", semantic: "number"},
+          {name: "y", semantic: "number"},
+          {name: "z", semantic: "number"},
+        ],
+        outputs: [{name: "execOut", type: "action"}],
+      }),
+
+      setRotateX: (id, x, y) => ({
+        id, x, y,
+        title: "Set RotateX",
+        category: "scene",
+        inputs: [
+          {name: "exec", type: "action"},
+          {name: "rotation", semantic: "rotation"},
+          {name: "x", semantic: "number"}
+        ],
+        outputs: [{name: "execOut", type: "action"}],
+      }),
+
+      setRotateY: (id, x, y) => ({
+        id, x, y,
+        title: "Set RotateY",
+        category: "scene",
+        inputs: [
+          {name: "exec", type: "action"},
+          {name: "rotation", semantic: "rotation"},
+          {name: "y", semantic: "number"}
+        ],
+        outputs: [{name: "execOut", type: "action"}],
+      }),
+
+      setRotateZ: (id, x, y) => ({
+        id, x, y,
+        title: "Set RotateZ",
+        category: "scene",
+        inputs: [
+          {name: "exec", type: "action"},
+          {name: "rotation", semantic: "rotation"},
+          {name: "z", semantic: "number"}
+        ],
+        outputs: [{name: "execOut", type: "action"}],
+      }),
+
+      setRotation: (id, x, y) => ({
+        id, x, y,
+        title: "Set Rotation",
+        category: "scene",
+        inputs: [
+          {name: "exec", type: "action"},
+          {name: "rotation", semantic: "rotation"},
           {name: "x", semantic: "number"},
           {name: "y", semantic: "number"},
           {name: "z", semantic: "number"},
@@ -2254,7 +2310,7 @@ export default class FluxCodexVertex {
       }
 
       if(node.fields[0].value) select.value = node.fields[0].value;
-      // }
+      console.log('>>>>>>>>>>>>>>>>>>>>>')
 
       const obj = (node.accessObject || []).find(o => o.name === objName);
       if(!obj) return undefined;
@@ -2663,6 +2719,41 @@ export default class FluxCodexVertex {
       }
       this.enqueueOutputs(n, "execOut");
       return;
+    } else if(n.title === "Set Rotation") {
+      const rot = this.getValue(nodeId, "rotation");
+      if(rot?.setRotation) {
+        rot.setRotation(this.getValue(nodeId, "x"), this.getValue(nodeId, "y"), this.getValue(nodeId, "z"));
+      }
+      this.enqueueOutputs(n, "execOut");
+      return;
+    } else if(n.title === "Set Rotate") {
+      const rot = this.getValue(nodeId, "rotation");
+      if(rot?.setRotate) {
+        rot.setRotate(this.getValue(nodeId, "x"), this.getValue(nodeId, "y"), this.getValue(nodeId, "z"));
+      }
+      this.enqueueOutputs(n, "execOut");
+      return;
+    } else if(n.title === "Set RotateX") {
+      const rot = this.getValue(nodeId, "rotation");
+      if(rot?.setRotateX) {
+        rot.setRotateX(this.getValue(nodeId, "x"));
+      }
+      this.enqueueOutputs(n, "execOut");
+      return;
+    } else if(n.title === "Set RotateY") {
+      const rot = this.getValue(nodeId, "rotation");
+      if(rot?.setRotateY) {
+        rot.setRotateY(this.getValue(nodeId, "y"));
+      }
+      this.enqueueOutputs(n, "execOut");
+      return;
+    } else if(n.title === "Set RotateZ") {
+      const rot = this.getValue(nodeId, "rotation");
+      if(rot?.setRotateZ) {
+        rot.setRotateZ(this.getValue(nodeId, "z"));
+      }
+      this.enqueueOutputs(n, "execOut");
+      return;
     } else if(n.title === "Translate By X") {
       const pos = this.getValue(nodeId, "position");
       if(pos?.translateByX) {
@@ -2755,8 +2846,7 @@ export default class FluxCodexVertex {
   }
 
   populateAccessMethods(select) {
-
-    console.log("populateAccessMethods")
+    // console.log("populateAccessMethods")
     select.innerHTML = "";
     this.accessObject.forEach(obj => {
       Object.getOwnPropertyNames(obj.__proto__)
@@ -3052,6 +3142,8 @@ export default class FluxCodexVertex {
         });
         this.updateLinks();
         this.updateValueDisplays();
+
+        this.restoreConnectionsRuntime();
         this.log("Restored graph.");
         return;
       } catch(e) {

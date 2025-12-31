@@ -2459,19 +2459,45 @@ var Rotation = class {
     this.axis = { x: 0, y: 0, z: 0 };
     this.matrixRotation = null;
   }
-  toDegree() {
+  setRotate = (x2, y2, z) => {
+    this.rotationSpeed = { x: x2, y: y2, z };
+  };
+  setRotateX = (x2) => {
+    this.rotationSpeed.x = x2;
+  };
+  setRotateY = (y2) => {
+    this.rotationSpeed.y = y2;
+  };
+  setRotateZ = (z) => {
+    this.rotationSpeed.z = z;
+  };
+  setRotation = (x2, y2, z) => {
+    this.x = x2;
+    this.y = y2;
+    this.z = z;
+  };
+  setRotationX = (x2) => {
+    this.x = x2;
+  };
+  setRotationY = (y2) => {
+    this.y = y2;
+  };
+  setRotationZ = (z) => {
+    this.z = z;
+  };
+  toDegree = () => {
     return [radToDeg(this.axis.x), radToDeg(this.axis.y), radToDeg(this.axis.z)];
-  }
-  toDegreeX() {
+  };
+  toDegreeX = () => {
     return Math.cos(radToDeg(this.axis.x) / 2);
-  }
-  toDegreeY() {
+  };
+  toDegreeY = () => {
     return Math.cos(radToDeg(this.axis.z) / 2);
-  }
-  toDegreeZ() {
+  };
+  toDegreeZ = () => {
     return Math.cos(radToDeg(this.axis.y) / 2);
-  }
-  getRotX() {
+  };
+  getRotX = () => {
     if (this.rotationSpeed.x == 0) {
       if (this.netx != this.x && this.emitX) {
         app.net.send({
@@ -2486,8 +2512,8 @@ var Rotation = class {
       this.x = this.x + this.rotationSpeed.x * 1e-3;
       return degToRad(this.x);
     }
-  }
-  getRotY() {
+  };
+  getRotY = () => {
     if (this.rotationSpeed.y == 0) {
       if (this.nety != this.y && this.emitY) {
         if (this.teams.length == 0) {
@@ -2518,8 +2544,8 @@ var Rotation = class {
       this.y = this.y + this.rotationSpeed.y * 1e-3;
       return degToRad(this.y);
     }
-  }
-  getRotZ() {
+  };
+  getRotZ = () => {
     if (this.rotationSpeed.z == 0) {
       if (this.netz != this.z && this.emitZ) {
         app.net.send({
@@ -2534,7 +2560,7 @@ var Rotation = class {
       this.z = this.z + this.rotationSpeed.z * 1e-3;
       return degToRad(this.z);
     }
-  }
+  };
 };
 
 // ../../../engine/engine.js
@@ -7670,7 +7696,7 @@ var SpotLight = class {
   setAmbientFactor = (ambientFactor) => {
     this.ambientFactor = ambientFactor;
   };
-  setAmbientFactor = (shadowBias) => {
+  setShadowBias = (shadowBias) => {
     this.shadowBias = shadowBias;
   };
 };
@@ -11128,6 +11154,20 @@ var BVHPlayer = class extends MEMeshObj {
     const invBindArray = this.getAccessorArray(this.glb, invBindAccessorIndex);
     this.inverseBindMatrices = invBindArray;
   }
+  playAnimationByIndex = (animationIndex) => {
+    this.glb.animationIndex = animationIndex;
+  };
+  playAnimationByName = (animationName) => {
+    const animations = this.glb.glbJsonData.animations;
+    const index = animations.findIndex(
+      (anim) => anim.name === animationName
+    );
+    if (index === -1) {
+      console.warn(`Animation '${animationName}' not found`);
+      return;
+    }
+    this.glb.animationIndex = index;
+  };
   getNumberOfFramesCurAni() {
     let anim = this.glb.glbJsonData.animations[this.glb.animationIndex];
     const sampler = anim.samplers[0];
@@ -15736,7 +15776,7 @@ var FluxCodexVertex = class _FluxCodexVertex {
     this._createImportInput();
     this.bindGlobalListeners();
     this._varInputs = {};
-    this.init();
+    setTimeout(() => this.init(), 4e3);
     document.addEventListener("keydown", (e) => {
       if (e.key == "F6") {
         e.preventDefault();
@@ -15808,6 +15848,11 @@ var FluxCodexVertex = class _FluxCodexVertex {
     <button onclick="app.editor.fluxCodexVertex.addNode('getSceneObject')">Get Scene Object</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('getSceneLight')">Get Scene Light</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('setPosition')">Set Position</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('setRotation')">Set Rotation</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('setRotate')">Set Rotate</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('setRotateX')">Set RotateX</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('setRotateY')">Set RotateY</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('setRotateZ')">Set RotateZ</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('onTargetPositionReach')">onTargetPositionReach</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('getObjectAnimation')">Get Object Animation</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('dynamicFunction')">Function Dinamic</button>
@@ -16348,6 +16393,24 @@ var FluxCodexVertex = class _FluxCodexVertex {
       out: isOut
     };
   }
+  _applyConnectionRuntime(from, to, type2) {
+    const toNode = this.nodes[to.node];
+    const fromNode = this.nodes[from.node];
+    if (!toNode || !fromNode) return;
+    if (toNode.title === "reffunctions" && to.pin === "reference") {
+      const fnRef = this.getPinValue(fromNode, from.pin);
+      if (typeof fnRef === "function") {
+        toNode._fnRef = fnRef;
+        this.adaptRefFunctionNode(toNode, fnRef);
+      }
+    }
+    this.onPinsConnected(fromNode, from.pin, toNode, to.pin);
+  }
+  restoreConnectionsRuntime() {
+    for (const link of this.links) {
+      this._applyConnectionRuntime(link.from, link.to, link.type);
+    }
+  }
   finishConnect(nodeId, pinName, type2) {
     if (!this.state.connecting || this.state.connecting.node === nodeId) {
       this.state.connecting = null;
@@ -16405,12 +16468,18 @@ var FluxCodexVertex = class _FluxCodexVertex {
       this._adaptGetSubObjectOnConnect(targetNode, sourceNode, sourcePin);
     }
   }
-  // get func fro ref pin
+  // get func for ref pin
   getPinValue(node2, pinName) {
     const out = node2.outputs?.find((p) => p.name === pinName);
     let getName = node2.fields.find((item) => item.key == "selectedObject").value;
-    getName = parseInt(getName.replace("light", ""));
-    return node2.accessObject[getName][pinName];
+    if (node2.title == "Get Scene Object") {
+      return app.getSceneObjectByName(getName)[out.name];
+    } else if (node2.title == "Get Scene Animation") {
+      return app.getSceneObjectByName(getName)[out.name];
+    } else {
+      getName = parseInt(getName.replace("light", ""));
+      return node2.accessObject[getName][pinName];
+    }
   }
   normalizePinType(type2) {
     if (!type2) return "any";
@@ -16667,35 +16736,6 @@ var FluxCodexVertex = class _FluxCodexVertex {
         break;
       }
     }
-  }
-  updateFunctionPins(node2, objectName, funcName) {
-    const obj = this.resolveAccessObject(node2.accessObject, objectName);
-    if (!obj) {
-      console.warn("Access object not found:", objectName);
-      return;
-    }
-    const fn = obj[funcName];
-    if (typeof fn !== "function") {
-      console.warn("Not a function:", funcName);
-      return;
-    }
-    alert("FN", fn);
-    node2.inputs = [{ name: "exec", type: "action" }];
-    node2.outputs = [{ name: "execOut", type: "action" }];
-    const args = this.getArgNames(fn);
-    args.forEach((arg) => {
-      node2.inputs.push({ name: arg, type: "value" });
-    });
-    if (this.hasReturn(fn)) {
-      node2.outputs.push({ name: "return", type: "value" });
-    }
-    node2._access = {
-      objectName,
-      methodName: funcName
-    };
-    node2.category = "functions";
-    node2.title = `${objectName}.${funcName}`;
-    this.updateNodeDOM(node2.id);
   }
   isTypeCompatible(fromType, toType) {
     if (fromType === "action" || toType === "action") {
@@ -17109,7 +17149,22 @@ var FluxCodexVertex = class _FluxCodexVertex {
         builtIn: true,
         accessObject: window.app?.lightContainer,
         accessObjectLiteral: "window.app?.lightContainer",
-        exposeProps: ["ambientFactor", "setPosX", "setPosY", "setPosZ", "setIntensity"]
+        exposeProps: [
+          "ambientFactor",
+          "setPosX",
+          "setPosY",
+          "setPosZ",
+          "setIntensity",
+          "setInnerCutoff",
+          "setOuterCutoff",
+          "setColor",
+          "setColorR",
+          "setColorB",
+          "setColorG",
+          "setRange",
+          "setAmbientFactor",
+          "setShadowBias"
+        ]
       }),
       getObjectAnimation: (id2, x2, y2) => ({
         noExec: true,
@@ -17127,11 +17182,15 @@ var FluxCodexVertex = class _FluxCodexVertex {
         exposeProps: [
           "name",
           "glb.glbJsonData.animations",
-          "glb.animationIndex"
+          "glb.animationIndex",
+          "playAnimationByName",
+          "playAnimationByIndex"
         ]
       }),
       getPosition: (id2, x2, y2) => ({
         id: id2,
+        x: x2,
+        y: y2,
         title: "Get Position",
         category: "scene",
         inputs: [{ name: "position", semantic: "position" }],
@@ -17144,11 +17203,82 @@ var FluxCodexVertex = class _FluxCodexVertex {
       }),
       setPosition: (id2, x2, y2) => ({
         id: id2,
+        x: x2,
+        y: y2,
         title: "Set Position",
         category: "scene",
         inputs: [
           { name: "exec", type: "action" },
           { name: "position", semantic: "position" },
+          { name: "x", semantic: "number" },
+          { name: "y", semantic: "number" },
+          { name: "z", semantic: "number" }
+        ],
+        outputs: [{ name: "execOut", type: "action" }]
+      }),
+      setRotate: (id2, x2, y2) => ({
+        id: id2,
+        x: x2,
+        y: y2,
+        title: "Set Rotate",
+        category: "scene",
+        inputs: [
+          { name: "exec", type: "action" },
+          { name: "rotation", semantic: "rotation" },
+          { name: "x", semantic: "number" },
+          { name: "y", semantic: "number" },
+          { name: "z", semantic: "number" }
+        ],
+        outputs: [{ name: "execOut", type: "action" }]
+      }),
+      setRotateX: (id2, x2, y2) => ({
+        id: id2,
+        x: x2,
+        y: y2,
+        title: "Set RotateX",
+        category: "scene",
+        inputs: [
+          { name: "exec", type: "action" },
+          { name: "rotation", semantic: "rotation" },
+          { name: "x", semantic: "number" }
+        ],
+        outputs: [{ name: "execOut", type: "action" }]
+      }),
+      setRotateY: (id2, x2, y2) => ({
+        id: id2,
+        x: x2,
+        y: y2,
+        title: "Set RotateY",
+        category: "scene",
+        inputs: [
+          { name: "exec", type: "action" },
+          { name: "rotation", semantic: "rotation" },
+          { name: "y", semantic: "number" }
+        ],
+        outputs: [{ name: "execOut", type: "action" }]
+      }),
+      setRotateZ: (id2, x2, y2) => ({
+        id: id2,
+        x: x2,
+        y: y2,
+        title: "Set RotateZ",
+        category: "scene",
+        inputs: [
+          { name: "exec", type: "action" },
+          { name: "rotation", semantic: "rotation" },
+          { name: "z", semantic: "number" }
+        ],
+        outputs: [{ name: "execOut", type: "action" }]
+      }),
+      setRotation: (id2, x2, y2) => ({
+        id: id2,
+        x: x2,
+        y: y2,
+        title: "Set Rotation",
+        category: "scene",
+        inputs: [
+          { name: "exec", type: "action" },
+          { name: "rotation", semantic: "rotation" },
           { name: "x", semantic: "number" },
           { name: "y", semantic: "number" },
           { name: "z", semantic: "number" }
@@ -17581,6 +17711,7 @@ var FluxCodexVertex = class _FluxCodexVertex {
         });
       }
       if (node2.fields[0].value) select2.value = node2.fields[0].value;
+      console.log(">>>>>>>>>>>>>>>>>>>>>");
       const obj = (node2.accessObject || []).find((o) => o.name === objName);
       if (!obj) return void 0;
       const out = node2.outputs.find((o) => o.name === pinName);
@@ -17910,6 +18041,41 @@ var FluxCodexVertex = class _FluxCodexVertex {
       }
       this.enqueueOutputs(n, "execOut");
       return;
+    } else if (n.title === "Set Rotation") {
+      const rot = this.getValue(nodeId, "rotation");
+      if (rot?.setRotation) {
+        rot.setRotation(this.getValue(nodeId, "x"), this.getValue(nodeId, "y"), this.getValue(nodeId, "z"));
+      }
+      this.enqueueOutputs(n, "execOut");
+      return;
+    } else if (n.title === "Set Rotate") {
+      const rot = this.getValue(nodeId, "rotation");
+      if (rot?.setRotate) {
+        rot.setRotate(this.getValue(nodeId, "x"), this.getValue(nodeId, "y"), this.getValue(nodeId, "z"));
+      }
+      this.enqueueOutputs(n, "execOut");
+      return;
+    } else if (n.title === "Set RotateX") {
+      const rot = this.getValue(nodeId, "rotation");
+      if (rot?.setRotateX) {
+        rot.setRotateX(this.getValue(nodeId, "x"));
+      }
+      this.enqueueOutputs(n, "execOut");
+      return;
+    } else if (n.title === "Set RotateY") {
+      const rot = this.getValue(nodeId, "rotation");
+      if (rot?.setRotateY) {
+        rot.setRotateY(this.getValue(nodeId, "y"));
+      }
+      this.enqueueOutputs(n, "execOut");
+      return;
+    } else if (n.title === "Set RotateZ") {
+      const rot = this.getValue(nodeId, "rotation");
+      if (rot?.setRotateZ) {
+        rot.setRotateZ(this.getValue(nodeId, "z"));
+      }
+      this.enqueueOutputs(n, "execOut");
+      return;
     } else if (n.title === "Translate By X") {
       const pos = this.getValue(nodeId, "position");
       if (pos?.translateByX) {
@@ -17996,7 +18162,6 @@ var FluxCodexVertex = class _FluxCodexVertex {
     };
   }
   populateAccessMethods(select2) {
-    console.log("populateAccessMethods");
     select2.innerHTML = "";
     this.accessObject.forEach((obj) => {
       Object.getOwnPropertyNames(obj.__proto__).filter((k) => typeof obj[k] === "function" && k !== "constructor").forEach((fn) => {
@@ -18238,6 +18403,7 @@ var FluxCodexVertex = class _FluxCodexVertex {
         });
         this.updateLinks();
         this.updateValueDisplays();
+        this.restoreConnectionsRuntime();
         this.log("Restored graph.");
         return;
       } catch (e) {
@@ -18702,6 +18868,8 @@ var EditorHud = class {
           item.classList.add("js");
         } else if (i.name.split(".")[1] == "ttf" || i.name.split(".")[1] == "ttf" || i.name.split(".")[1] == "TTF" || i.name.split(".")[1] == "otf" || i.name.split(".")[1] == "woff" || i.name.split(".")[1] == "woff2") {
           item.classList.add("ttf");
+        } else if (i.name.split(".")[1] == "glb") {
+          item.classList.add("glb");
         } else {
           item.classList.add("unknown");
         }
@@ -19658,6 +19826,7 @@ var Editor = class {
       <span>Scene objects [agnostic]</span>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getSceneObject')">Get scene object</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setPosition')">Set position</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setRotation')">Set rotation</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('translateByX')">TranslateByX</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('translateByY')">TranslateByY</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('translateByZ')">TranslateByZ</button>
@@ -21065,19 +21234,6 @@ var app2 = new MatrixEngineWGPU(
           physics: { enabled: false, geometry: "Cube" }
         });
       }, { scale: [1, 1, 1] });
-      var glbFile01 = await fetch("res/meshes/glb/bot.glb").then((res) => res.arrayBuffer().then((buf) => uploadGLBModel(buf, app3.device)));
-      texturesPaths = ["./res/meshes/blender/cube.png"];
-      app3.addGlbObj({
-        position: { x: 0, y: 0, z: -20 },
-        rotation: { x: 0, y: 0, z: 0 },
-        rotationSpeed: { x: 0, y: 0, z: 0 },
-        texturesPaths: [texturesPaths],
-        scale: [2, 2, 2],
-        name: app3.getNameFromPath("res/meshes/glb/bot.glb"),
-        material: { type: "power", useTextureFromGlb: true },
-        raycast: { enabled: true, radius: 2 },
-        physics: { enabled: false, geometry: "Cube" }
-      }, null, glbFile01);
       downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, (m) => {
         let texturesPaths2 = ["./res/meshes/blender/cube.png"];
         app3.addMeshObj({
@@ -21092,17 +21248,39 @@ var app2 = new MatrixEngineWGPU(
         });
       }, { scale: [1, 1, 1] });
       setTimeout(() => {
+        app3.getSceneObjectByName("Cube_0").position.SetZ(-20);
+      }, 200);
+      setTimeout(() => {
+        app3.getSceneObjectByName("Cube_1").position.SetY(0);
+      }, 200);
+      setTimeout(() => {
+        app3.getSceneObjectByName("Cube_1").position.SetZ(-20);
+      }, 200);
+      setTimeout(() => {
+        app3.getSceneObjectByName("Cube_1").position.SetX(-3);
+      }, 200);
+      setTimeout(() => {
         app3.getSceneObjectByName("Cube_0").position.SetX(3);
       }, 200);
+      var glbFile01 = await fetch("res/meshes/glb/woman1.glb").then((res) => res.arrayBuffer().then((buf) => uploadGLBModel(buf, app3.device)));
+      texturesPaths = ["./res/meshes/blender/cube.png"];
+      app3.addGlbObj({
+        position: { x: 0, y: 0, z: -20 },
+        rotation: { x: 0, y: 0, z: 0 },
+        rotationSpeed: { x: 0, y: 0, z: 0 },
+        texturesPaths: [texturesPaths],
+        scale: [2, 2, 2],
+        name: app3.getNameFromPath("res/meshes/glb/woman1.glb"),
+        material: { type: "power", useTextureFromGlb: true },
+        raycast: { enabled: true, radius: 2 },
+        physics: { enabled: false, geometry: "Cube" }
+      }, null, glbFile01);
       setTimeout(() => {
-        app3.getSceneObjectByName("Cube_1").position.SetZ(-24);
-      }, 200);
+        app3.getSceneObjectByName("woman1-Maria-0").position.SetY(-1);
+      }, 800);
       setTimeout(() => {
-        app3.getSceneObjectByName("Cube_1").position.SetY(1);
-      }, 200);
-      setTimeout(() => {
-        app3.getSceneObjectByName("Cube_1").position.SetX(0);
-      }, 200);
+        app3.getSceneObjectByName("woman1-Maria-0-sword-0").position.SetY(-1);
+      }, 800);
     });
   }
 );

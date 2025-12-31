@@ -47,39 +47,39 @@ export class Position {
   }
 
   translateByX(x) {
-    if (parseFloat(x) == this.targetX) return;
+    if(parseFloat(x) == this.targetX) return;
     this.inMove = true;
     this.targetX = parseFloat(x);
   };
 
   translateByY(y) {
-    if (parseFloat(y) == this.targetY) return;
+    if(parseFloat(y) == this.targetY) return;
     this.inMove = true;
     this.targetY = parseFloat(y);
   }
 
   translateByZ(z) {
-    if (parseFloat(z) == this.targetZ) return;
+    if(parseFloat(z) == this.targetZ) return;
     this.inMove = true;
     this.targetZ = parseFloat(z);
   }
 
   translateByXY(x, y) {
-    if (parseFloat(y) == this.targetY && parseFloat(x) == this.targetX) return;
+    if(parseFloat(y) == this.targetY && parseFloat(x) == this.targetX) return;
     this.inMove = true;
     this.targetX = parseFloat(x);
     this.targetY = parseFloat(y);
   }
 
   translateByXZ(x, z) {
-    if (parseFloat(z) == this.targetZ && parseFloat(x) == this.targetX) return;
+    if(parseFloat(z) == this.targetZ && parseFloat(x) == this.targetX) return;
     this.inMove = true;
     this.targetX = parseFloat(x);
     this.targetZ = parseFloat(z);
   }
 
   translateByYZ(y, z) {
-    if (parseFloat(y) == this.targetY && parseFloat(z) == this.targetZ) return;
+    if(parseFloat(y) == this.targetY && parseFloat(z) == this.targetZ) return;
     this.inMove = true;
     this.targetY = parseFloat(y);
     this.targetZ = parseFloat(z);
@@ -241,8 +241,41 @@ export class Rotation {
     this.matrixRotation = null;
   }
 
-  toDegree() {
+  setRotate = (x, y, z) => {
+    this.rotationSpeed = {x: x, y: y, z: z};
+  }
 
+  setRotateX = (x) => {
+    this.rotationSpeed.x = x;
+  }
+
+  setRotateY = (y) => {
+    this.rotationSpeed.y = y;
+  }
+
+  setRotateZ = (z) => {
+    this.rotationSpeed.z = z;
+  }
+
+  setRotation = (x, y, z) => {
+    this.x = x;
+    this.y = y;
+    this.z = z;
+  }
+
+  setRotationX = (x) => {
+    this.x = x;
+  }
+
+  setRotationY = (y) => {
+    this.y = y;
+  }
+
+  setRotationZ = (z) => {
+    this.z = z;
+  }
+
+  toDegree = () => {
     /*
     heading = atan2(y * sin(angle)- x * z * (1 - cos(angle)) , 1 - (y2 + z2 ) * (1 - cos(angle)))
     attitude = asin(x * y * (1 - cos(angle)) + z * sin(angle))
@@ -251,19 +284,19 @@ export class Rotation {
     return [radToDeg(this.axis.x), radToDeg(this.axis.y), radToDeg(this.axis.z)];
   }
 
-  toDegreeX() {
+  toDegreeX = () => {
     return Math.cos(radToDeg(this.axis.x) / 2)
   }
 
-  toDegreeY() {
+  toDegreeY = () => {
     return Math.cos(radToDeg(this.axis.z) / 2)
   }
 
-  toDegreeZ() {
+  toDegreeZ = () => {
     return Math.cos(radToDeg(this.axis.y) / 2)
   }
 
-  getRotX() {
+  getRotX = () => {
     if(this.rotationSpeed.x == 0) {
       if(this.netx != this.x && this.emitX) {
         app.net.send({
@@ -280,7 +313,7 @@ export class Rotation {
     }
   }
 
-  getRotY() {
+  getRotY = () => {
     if(this.rotationSpeed.y == 0) {
       if(this.nety != this.y && this.emitY) {
         // ---------------------------------------
@@ -306,9 +339,7 @@ export class Rotation {
           });
           this.nety = this.y;
         }
-        //-------------------------------------------
       }
-
       return degToRad(this.y);
     } else {
       this.y = this.y + this.rotationSpeed.y * 0.001;
@@ -316,7 +347,7 @@ export class Rotation {
     }
   }
 
-  getRotZ() {
+  getRotZ = () => {
     if(this.rotationSpeed.z == 0) {
       if(this.netz != this.z && this.emitZ) {
         app.net.send({

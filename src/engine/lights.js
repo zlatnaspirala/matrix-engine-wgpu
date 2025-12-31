@@ -364,7 +364,7 @@ export class SpotLight {
   setAmbientFactor = (ambientFactor) => {
    this.ambientFactor = ambientFactor;
   }
-  setAmbientFactor = (shadowBias) => {
+  setShadowBias = (shadowBias) => {
    this.shadowBias = shadowBias;
   }
 
