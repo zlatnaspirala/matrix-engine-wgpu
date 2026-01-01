@@ -83,8 +83,8 @@ export default class FluxCodexVertex {
 
     this._varInputs = {};
 
-    // EXTRA TIME
-    setTimeout(() => this.init() , 4000);
+    // EXTRA TIME 
+    setTimeout(() => this.init(), 4000);
 
     document.addEventListener("keydown", e => {
       if(e.key == "F6") {
@@ -99,7 +99,7 @@ export default class FluxCodexVertex {
     });
 
     this.createContextMenu();
-    // not in use - alternative for refresh getters/ no exec nodes
+    // not in use ? - alternative for refresh getters/ no exec nodes
     document.addEventListener("fluxcodex.input.change", e => {
       console.log('fluxcodex.input.change')
       const {nodeId, field, value} = e.detail;
@@ -166,6 +166,9 @@ export default class FluxCodexVertex {
     <button onclick="app.editor.fluxCodexVertex.addNode('getSceneObject')">Get Scene Object</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('getSceneLight')">Get Scene Light</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('setPosition')">Set Position</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('translateByX')">Translate by X</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('setSpeed')">Set Speed</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('getSpeed')">Get Speed</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('setRotation')">Set Rotation</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('setRotate')">Set Rotate</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('setRotateX')">Set RotateX</button>
@@ -440,14 +443,8 @@ export default class FluxCodexVertex {
 
         btnDel.onclick = () => {
           if(!confirm(`Delete variable "${name}" (${type}) ?`)) return;
-
-          // remove variable
           delete this.variables[type][name];
-
-          // remove cached input ref
           delete this._varInputs[`${type}.${name}`];
-
-          // refresh UI
           this._refreshVarsList(container);
         };
 
@@ -631,7 +628,6 @@ export default class FluxCodexVertex {
   adaptRefFunctionNode(node, fnRef) {
     const args = this.getArgNames(fnRef);
     const hasReturn = this.hasReturn(fnRef);
-
     // Preserve exec + reference pins
     const preservedInputs = node.inputs.filter(
       p => p.type === "action" || p.name === "reference"
@@ -643,7 +639,6 @@ export default class FluxCodexVertex {
 
     node.inputs = [...preservedInputs];
     node.outputs = [...preservedOutputs];
-
     // 🔹 Real argument pins
     args.forEach(arg => {
       if(!node.inputs.some(p => p.name === arg)) {
@@ -653,7 +648,6 @@ export default class FluxCodexVertex {
         });
       }
     });
-
     // 🔹 Real return
     if(hasReturn) {
       if(!node.outputs.some(p => p.name === "return")) {
@@ -663,10 +657,8 @@ export default class FluxCodexVertex {
         });
       }
     }
-
     // Execution logic
     node.fn = (...callArgs) => fnRef(...callArgs);
-
     this.updateNodeDOM(node.id);
   }
 
@@ -711,24 +703,18 @@ export default class FluxCodexVertex {
     if(node.title === "Get Scene Object" || node.title === "Get Scene Light" || node.title === "Get Scene Animation") {
       const select = el.querySelector("select.scene-select");
       if(select) {
-        console.log('TEST!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
-        const objects = spec.accessObject || []; // window.app?.mainRenderBundle || [];
+        console.log('!TEST! ???')
+        const objects = spec.accessObject || [];
         objects.forEach(obj => {
           const opt = document.createElement("option");
           opt.value = obj.name;
           opt.textContent = obj.name;
           select.appendChild(opt);
         });
-
         const selected = this._getSceneSelectedName(node);
         if(selected) {
           select.value = selected;
         }
-        // // restore previous value
-        // const field = node.fields?.find(f => f.key === "object");
-        // if(field?.value) {
-        //   select.value = field.value;
-        // }
       }
     } else if(node.category === "action" && node.title === "Function") {
       let select = el.querySelector("select.method-select");
@@ -790,9 +776,7 @@ export default class FluxCodexVertex {
       select.id = node.id;
       select.className = "method-select";
       select.style.cssText = "width:100%; margin-top:6px;";
-
       dom.appendChild(select);
-
     }
 
     if(select && node.accessObject) {
@@ -800,9 +784,8 @@ export default class FluxCodexVertex {
       const newLength = Object.keys(node.accessObject)
         .filter(key => typeof node.accessObject[key] === "function")
 
-      // Only repopulate if length differs
-      if(numOptions !== newLength.length + 1) { // +1 for placeholder
-        console.log('BALBLA')
+      // Only repopulate if length differs // +1 for placeholder
+      if(numOptions !== newLength.length + 1) { 
         select.innerHTML = "";
         const placeholder = document.createElement("option");
         placeholder.value = "";
@@ -855,11 +838,9 @@ export default class FluxCodexVertex {
         this.adaptRefFunctionNode(toNode, fnRef);
       }
     }
-
     // generic hook
     this.onPinsConnected(fromNode, from.pin, toNode, to.pin);
   }
-
 
   restoreConnectionsRuntime() {
     for(const link of this.links) {
@@ -1341,7 +1322,7 @@ export default class FluxCodexVertex {
           {name: "false", type: "action"},
         ],
         fields: [
-          {key: "condition", value: true}, // default literal for condition
+          {key: "condition", value: true},
         ],
       }),
       genrand: (id, x, y) => ({
@@ -1474,6 +1455,7 @@ export default class FluxCodexVertex {
         ],
         outputs: [{name: "result", type: "boolean"}],
       }),
+
       less: (id, x, y) => ({
         id,
         title: "A < B",
@@ -1486,11 +1468,9 @@ export default class FluxCodexVertex {
         ],
         outputs: [{name: "result", type: "boolean"}],
       }),
+
       equal: (id, x, y) => ({
-        id,
-        title: "A == B",
-        x,
-        y,
+        id, title: "A == B", x, y,
         category: "compare",
         inputs: [
           {name: "A", type: "any"},
@@ -1498,11 +1478,9 @@ export default class FluxCodexVertex {
         ],
         outputs: [{name: "result", type: "boolean"}],
       }),
+
       notequal: (id, x, y) => ({
-        id,
-        title: "A != B",
-        x,
-        y,
+        id, title: "A != B", x, y,
         category: "compare",
         inputs: [
           {name: "A", type: "any"},
@@ -1510,11 +1488,9 @@ export default class FluxCodexVertex {
         ],
         outputs: [{name: "result", type: "boolean"}],
       }),
+
       greaterEqual: (id, x, y) => ({
-        id,
-        title: "A >= B",
-        x,
-        y,
+        id, title: "A >= B", x, y,
         category: "compare",
         inputs: [
           {name: "A", type: "number"},
@@ -1522,11 +1498,9 @@ export default class FluxCodexVertex {
         ],
         outputs: [{name: "result", type: "boolean"}],
       }),
+
       lessEqual: (id, x, y) => ({
-        id,
-        title: "A <= B",
-        x,
-        y,
+        id, title: "A <= B", x, y,
         category: "compare",
         inputs: [
           {name: "A", type: "number"},
@@ -1534,31 +1508,25 @@ export default class FluxCodexVertex {
         ],
         outputs: [{name: "result", type: "boolean"}],
       }),
+
       getNumber: (id, x, y) => ({
-        id,
-        title: "Get Number",
-        x,
-        y,
+        id, title: "Get Number", x, y,
         category: "value",
         outputs: [{name: "result", type: "number"}],
         fields: [{key: "var", value: ""}],
-        isGetterNode: true,
+        isGetterNode: true
       }),
+
       getBoolean: (id, x, y) => ({
-        id,
-        title: "Get Boolean",
-        x,
-        y,
+        id, title: "Get Boolean", x, y,
         category: "value",
         outputs: [{name: "result", type: "boolean"}],
         fields: [{key: "var", value: ""}],
-        isGetterNode: true,
+        isGetterNode: true
       }),
+
       getString: (id, x, y) => ({
-        id,
-        title: "Get String",
-        x,
-        y,
+        id, title: "Get String", x, y,
         category: "value",
         outputs: [{name: "result", type: "string"}],
         fields: [{key: "var", value: ""}],
@@ -1566,10 +1534,7 @@ export default class FluxCodexVertex {
       }),
 
       getObject: (id, x, y) => ({
-        id,
-        title: "Get Object",
-        x,
-        y,
+        id, title: "Get Object", x, y,
         category: "value",
         outputs: [{name: "result", type: "object"}],
         fields: [{key: "var", value: ""}],
@@ -1577,10 +1542,7 @@ export default class FluxCodexVertex {
       }),
 
       setObject: (id, x, y) => ({
-        id,
-        title: "Set Object",
-        x,
-        y,
+        id, title: "Set Object", x, y,
         category: "action",
         isVariableNode: true,
         inputs: [
@@ -1595,10 +1557,7 @@ export default class FluxCodexVertex {
       }),
 
       setNumber: (id, x, y) => ({
-        id,
-        title: "Set Number",
-        x,
-        y,
+        id, title: "Set Number", x, y,
         category: "action",
         isVariableNode: true,
         inputs: [
@@ -1611,11 +1570,9 @@ export default class FluxCodexVertex {
           {key: "literal", value: 0},
         ],
       }),
+
       setBoolean: (id, x, y) => ({
-        id,
-        title: "Set Boolean",
-        x,
-        y,
+        id, title: "Set Boolean", x, y,
         category: "action",
         isVariableNode: true,
         inputs: [
@@ -1628,11 +1585,9 @@ export default class FluxCodexVertex {
           {key: "literal", value: false},
         ],
       }),
+
       setString: (id, x, y) => ({
-        id,
-        title: "Set String",
-        x,
-        y,
+        id, title: "Set String", x, y,
         category: "action",
         isVariableNode: true,
         inputs: [
@@ -1647,10 +1602,7 @@ export default class FluxCodexVertex {
       }),
 
       comment: (id, x, y) => ({
-        id,
-        title: "Comment",
-        x,
-        y,
+        id, title: "Comment", x, y,
         category: "meta",
         inputs: [],
         outputs: [],
@@ -1752,6 +1704,32 @@ export default class FluxCodexVertex {
         outputs: [{name: "execOut", type: "action"}],
       }),
 
+      setSpeed: (id, x, y) => ({
+        id, x, y,
+        title: "Set Speed",
+        category: "scene",
+        inputs: [
+          {name: "exec", type: "action"},
+          {name: "position", semantic: "position"},
+          {name: "thrust", semantic: "number"},
+        ],
+        outputs: [{name: "execOut", type: "action"}],
+      }),
+
+      getSpeed: (id, x, y) => ({
+        id, x, y,
+        title: "Get Speed",
+        category: "scene",
+        inputs: [
+          {name: "exec", type: "action"},
+          {name: "position", semantic: "position"}
+        ],
+        outputs: [
+          {name: "execOut", type: "action"},
+          {name: "thrust", semantic: "number"},
+        ],
+      }),
+
       setRotate: (id, x, y) => ({
         id, x, y,
         title: "Set Rotate",
@@ -1817,8 +1795,7 @@ export default class FluxCodexVertex {
       }),
 
       translateByX: (id, x, y) => ({
-        id,
-        title: "Translate By X",
+        id, x, y, title: "Translate By X",
         category: "scene",
         inputs: [
           {name: "exec", type: "action"},
@@ -1828,9 +1805,9 @@ export default class FluxCodexVertex {
         outputs: [{name: "execOut", type: "action"}],
         builtIn: true,
       }),
+
       translateByY: (id, x, y) => ({
-        id,
-        title: "Translate By Y",
+        id, x, y, title: "Translate By Y",
         category: "scene",
         inputs: [
           {name: "exec", type: "action"},
@@ -1841,8 +1818,7 @@ export default class FluxCodexVertex {
       }),
 
       translateByZ: (id, x, y) => ({
-        id,
-        title: "Translate By Z",
+        id, x, y, title: "Translate By Z",
         category: "scene",
         inputs: [
           {name: "exec", type: "action"},
@@ -1853,7 +1829,7 @@ export default class FluxCodexVertex {
       }),
 
       onTargetPositionReach: (id, x, y) => ({
-        id,
+        id, x, y,
         title: "On Target Position Reach",
         category: "event",
         noExec: true,
@@ -1863,10 +1839,7 @@ export default class FluxCodexVertex {
       }),
 
       fetch: (id, x, y) => ({
-        id,
-        title: "Fetch",
-        x,
-        y,
+        id, title: "Fetch", x, y,
         category: "action",
         inputs: [
           {name: "exec", type: "action"},
@@ -1884,10 +1857,7 @@ export default class FluxCodexVertex {
       }),
 
       getSubObject: (id, x, y) => ({
-        id,
-        title: "Get Sub Object",
-        x,
-        y,
+        id, title: "Get Sub Object", x, y,
         category: "value",
         inputs: [
           {name: "exec", type: "action"},
@@ -2506,10 +2476,7 @@ export default class FluxCodexVertex {
 
       this.enqueueOutputs(n, "execOut");
       return;
-    }
-
-    // 🔹 Reference Function execution
-    if(n.title === "reffunctions") {
+    } else if(n.title === "reffunctions") {
       const fn = n._fnRef;
       if(typeof fn !== "function") {
         console.warn("[reffunctions] No function reference");
@@ -2712,7 +2679,23 @@ export default class FluxCodexVertex {
       return;
     }
 
-    if(n.title === "Set Position") {
+    if(n.title === "Get Speed") {
+      const pos = this.getValue(nodeId, "position");
+      if(pos?.getSpeed) {
+        // this.getValue(nodeId, "thrust")
+        console.log('pos.getSpeed()', pos.getSpeed())
+        n._returnCache = pos.getSpeed();
+      }
+      this.enqueueOutputs(n, "execOut");
+      return;
+    } else if(n.title === "Set Speed") {
+      const pos = this.getValue(nodeId, "position");
+      if(pos?.setSpeed) {
+        pos.setSpeed(this.getValue(nodeId, "thrust"));
+      }
+      this.enqueueOutputs(n, "execOut");
+      return;
+    } else if(n.title === "Set Position") {
       const pos = this.getValue(nodeId, "position");
       if(pos?.setPosition) {
         pos.setPosition(this.getValue(nodeId, "x"), this.getValue(nodeId, "y"), this.getValue(nodeId, "z"));

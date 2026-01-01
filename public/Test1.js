@@ -2268,13 +2268,16 @@ var Position = class {
     this.thrust = 0.01;
     return this;
   }
-  setSpeed(n) {
+  getSpeed = () => {
+    return this.thrust;
+  };
+  setSpeed = (n) => {
     if (typeof n === "number") {
       this.thrust = n;
     } else {
       console.log("Description: arguments (w, h) must be type of number.");
     }
-  }
+  };
   translateByX(x2) {
     if (parseFloat(x2) == this.targetX) return;
     this.inMove = true;
@@ -15848,6 +15851,9 @@ var FluxCodexVertex = class _FluxCodexVertex {
     <button onclick="app.editor.fluxCodexVertex.addNode('getSceneObject')">Get Scene Object</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('getSceneLight')">Get Scene Light</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('setPosition')">Set Position</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('translateByX')">Translate by X</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('setSpeed')">Set Speed</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('getSpeed')">Get Speed</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('setRotation')">Set Rotation</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('setRotate')">Set Rotate</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('setRotateX')">Set RotateX</button>
@@ -16296,7 +16302,7 @@ var FluxCodexVertex = class _FluxCodexVertex {
     if (node2.title === "Get Scene Object" || node2.title === "Get Scene Light" || node2.title === "Get Scene Animation") {
       const select2 = el2.querySelector("select.scene-select");
       if (select2) {
-        console.log("TEST!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+        console.log("!TEST! ???");
         const objects2 = spec.accessObject || [];
         objects2.forEach((obj) => {
           const opt = document.createElement("option");
@@ -16363,7 +16369,6 @@ var FluxCodexVertex = class _FluxCodexVertex {
       const numOptions = select.options.length;
       const newLength = Object.keys(node.accessObject).filter((key) => typeof node.accessObject[key] === "function");
       if (numOptions !== newLength.length + 1) {
-        console.log("BALBLA");
         select.innerHTML = "";
         const placeholder2 = document.createElement("option");
         placeholder2.value = "";
@@ -16784,7 +16789,6 @@ var FluxCodexVertex = class _FluxCodexVertex {
         ],
         fields: [
           { key: "condition", value: true }
-          // default literal for condition
         ]
       }),
       genrand: (id2, x2, y2) => ({
@@ -17216,6 +17220,34 @@ var FluxCodexVertex = class _FluxCodexVertex {
         ],
         outputs: [{ name: "execOut", type: "action" }]
       }),
+      setSpeed: (id2, x2, y2) => ({
+        id: id2,
+        x: x2,
+        y: y2,
+        title: "Set Speed",
+        category: "scene",
+        inputs: [
+          { name: "exec", type: "action" },
+          { name: "position", semantic: "position" },
+          { name: "thrust", semantic: "number" }
+        ],
+        outputs: [{ name: "execOut", type: "action" }]
+      }),
+      getSpeed: (id2, x2, y2) => ({
+        id: id2,
+        x: x2,
+        y: y2,
+        title: "Get Speed",
+        category: "scene",
+        inputs: [
+          { name: "exec", type: "action" },
+          { name: "position", semantic: "position" }
+        ],
+        outputs: [
+          { name: "execOut", type: "action" },
+          { name: "thrust", semantic: "number" }
+        ]
+      }),
       setRotate: (id2, x2, y2) => ({
         id: id2,
         x: x2,
@@ -17287,6 +17319,8 @@ var FluxCodexVertex = class _FluxCodexVertex {
       }),
       translateByX: (id2, x2, y2) => ({
         id: id2,
+        x: x2,
+        y: y2,
         title: "Translate By X",
         category: "scene",
         inputs: [
@@ -17299,6 +17333,8 @@ var FluxCodexVertex = class _FluxCodexVertex {
       }),
       translateByY: (id2, x2, y2) => ({
         id: id2,
+        x: x2,
+        y: y2,
         title: "Translate By Y",
         category: "scene",
         inputs: [
@@ -17310,6 +17346,8 @@ var FluxCodexVertex = class _FluxCodexVertex {
       }),
       translateByZ: (id2, x2, y2) => ({
         id: id2,
+        x: x2,
+        y: y2,
         title: "Translate By Z",
         category: "scene",
         inputs: [
@@ -17321,6 +17359,8 @@ var FluxCodexVertex = class _FluxCodexVertex {
       }),
       onTargetPositionReach: (id2, x2, y2) => ({
         id: id2,
+        x: x2,
+        y: y2,
         title: "On Target Position Reach",
         category: "event",
         noExec: true,
@@ -17875,8 +17915,7 @@ var FluxCodexVertex = class _FluxCodexVertex {
       n._returnCache = Array.isArray(arr) ? arr : arr ? arr[link.from.pin] : this.getValue(link.from.node, link.from.pin);
       this.enqueueOutputs(n, "execOut");
       return;
-    }
-    if (n.title === "reffunctions") {
+    } else if (n.title === "reffunctions") {
       const fn = n._fnRef;
       if (typeof fn !== "function") {
         console.warn("[reffunctions] No function reference");
@@ -18034,7 +18073,22 @@ var FluxCodexVertex = class _FluxCodexVertex {
       this._execContext = null;
       return;
     }
-    if (n.title === "Set Position") {
+    if (n.title === "Get Speed") {
+      const pos = this.getValue(nodeId, "position");
+      if (pos?.getSpeed) {
+        console.log("pos.getSpeed()", pos.getSpeed());
+        n._returnCache = pos.getSpeed();
+      }
+      this.enqueueOutputs(n, "execOut");
+      return;
+    } else if (n.title === "Set Speed") {
+      const pos = this.getValue(nodeId, "position");
+      if (pos?.setSpeed) {
+        pos.setSpeed(this.getValue(nodeId, "thrust"));
+      }
+      this.enqueueOutputs(n, "execOut");
+      return;
+    } else if (n.title === "Set Position") {
       const pos = this.getValue(nodeId, "position");
       if (pos?.setPosition) {
         pos.setPosition(this.getValue(nodeId, "x"), this.getValue(nodeId, "y"), this.getValue(nodeId, "z"));
@@ -18525,7 +18579,6 @@ var EditorHud = class {
       height: "30vh",
       backgroundColor: "rgba(0,0,0,0.85)",
       display: "flex",
-      // alignItems: "start",
       color: "white",
       fontFamily: "'Orbitron', sans-serif",
       zIndex: "15",
@@ -18629,7 +18682,6 @@ var EditorHud = class {
         </div>
       </div>
     </div>
-
 
     <div class="top-item">
       <div class="top-btn">View \u25BE</div>
@@ -18821,7 +18873,6 @@ var EditorHud = class {
       backgroundColor: "rgba(0,0,0,0.85)",
       display: "flex",
       alignItems: "start",
-      // overflow: "auto",
       color: "white",
       fontFamily: "'Orbitron', sans-serif",
       zIndex: "15",
@@ -18841,7 +18892,6 @@ var EditorHud = class {
       const t = getCurrent.substring(0, getCurrent.lastIndexOf("\\"));
       const last = t.substring(t.lastIndexOf("\\") + 1);
       if (last == "public") {
-        console.log(last + "<<<<<<<<<<<<<<<<<PREVENTED<<");
         return;
       }
       document.dispatchEvent(new CustomEvent("nav-folder", {
@@ -18910,7 +18960,6 @@ var EditorHud = class {
       backgroundColor: "rgba(0,0,0,0.85)",
       display: "flex",
       alignItems: "start",
-      // overflow: "auto",
       color: "white",
       fontFamily: "'Orbitron', sans-serif",
       zIndex: "15",
@@ -19004,7 +19053,6 @@ var EditorHud = class {
       backgroundColor: "rgba(0,0,0,0.85)",
       display: "flex",
       alignItems: "start",
-      // overflow: "auto",
       color: "white",
       fontFamily: "'Orbitron', sans-serif",
       zIndex: "15",
@@ -19012,7 +19060,7 @@ var EditorHud = class {
       boxSizing: "border-box",
       flexDirection: "row"
     });
-    this.editorMenu.innerHTML = " PROJECT MENU  ";
+    this.editorMenu.innerHTML = " PROJECT MENU ";
     this.editorMenu.innerHTML = `
     <div>INFLY Regime of work no saves. Nice for runtime debugging or get data for map setup.</div>
     <div class="top-item">
@@ -19140,7 +19188,6 @@ var EditorHud = class {
       display: "flex",
       alignItems: "start",
       color: "white",
-      // fontFamily: "'Orbitron', sans-serif",
       fontFamily: "monospace",
       zIndex: "15",
       padding: "2px",
@@ -19826,7 +19873,13 @@ var Editor = class {
       <span>Scene objects [agnostic]</span>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getSceneObject')">Get scene object</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setPosition')">Set position</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setSpeed')">Set Speed</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getSpeed')">Get Speed</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setRotation')">Set rotation</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setRotate')">Set Rotate</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setRotateX')">Set RotateX</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setRotateY')">Set RotateY</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setRotateZ')">Set RotateZ</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('translateByX')">TranslateByX</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('translateByY')">TranslateByY</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('translateByZ')">TranslateByZ</button>

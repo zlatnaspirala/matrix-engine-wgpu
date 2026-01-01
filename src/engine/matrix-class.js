@@ -38,7 +38,11 @@ export class Position {
     return this;
   }
 
-  setSpeed(n) {
+  getSpeed = () => {
+    return this.thrust;
+  }
+
+  setSpeed = (n) => {
     if(typeof n === 'number') {
       this.thrust = n;
     } else {

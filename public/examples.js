@@ -23453,6 +23453,7 @@ var _wgpuMatrix = require("wgpu-matrix");
 var _vertexShadow = require("../shaders/vertexShadow.wgsl");
 var _behavior = _interopRequireDefault(require("./behavior"));
 var _vertexShadowInstanced = require("../shaders/instanced/vertexShadow.instanced.wgsl");
+var _utils = require("./utils");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 /**
  * @description
@@ -23461,6 +23462,7 @@ function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e
  * @email zlatnaspirala@gmail.com
  */
 class SpotLight {
+  name;
   camera;
   inputHandler;
   position;
@@ -23477,7 +23479,11 @@ class SpotLight {
   innerCutoff;
   outerCutoff;
   spotlightUniformBuffer;
-  constructor(camera, inputHandler, device, position = _wgpuMatrix.vec3.create(0, 10, -20), target = _wgpuMatrix.vec3.create(0, 0, -20), fov = 45, aspect = 1.0, near = 0.1, far = 200) {
+  constructor(camera, inputHandler, device, indexx, position = _wgpuMatrix.vec3.create(0, 10, -20), target = _wgpuMatrix.vec3.create(0, 0, -20), fov = 45, aspect = 1.0, near = 0.1, far = 200) {
+    this.name = "light" + indexx;
+    this.getName = () => {
+      return "light" + indexx;
+    };
     this.fov = fov;
     this.aspect = aspect;
     this.near = near;
@@ -23567,8 +23573,6 @@ class SpotLight {
       });
       return this.shadowBindGroupContainer[index];
     };
-
-    // test
     this.getShadowBindGroup_bones = index => {
       if (this.shadowBindGroup[index]) {
         return this.shadowBindGroup[index];
@@ -23719,16 +23723,53 @@ class SpotLight {
   }
   getLightDataBuffer() {
     const m = this.viewProjMatrix;
-    return new Float32Array([...this.position, 0.0, ...this.direction, 0.0, this.innerCutoff, this.outerCutoff, this.intensity, 0.0, ...this.color, 0.0, this.range, this.ambientFactor, this.shadowBias,
-    // <<--- use shadowBias
-    0.0,
-    // keep padding
-    ...m]);
+    return new Float32Array([...this.position, 0.0, ...this.direction, 0.0, this.innerCutoff, this.outerCutoff, this.intensity, 0.0, ...this.color, 0.0, this.range, this.ambientFactor, this.shadowBias, 0.0, ...m]);
   }
+
+  // Setters
+  setPosX = x => {
+    this.position[0] = x;
+  };
+  setPosY = y => {
+    this.position[1] = y;
+  };
+  setPosZ = z => {
+    this.position[2] = z;
+  };
+  setInnerCutoff = innerCutoff => {
+    this.innerCutoff = innerCutoff;
+  };
+  setOuterCutoff = outerCutoff => {
+    this.outerCutoff = outerCutoff;
+  };
+  setIntensity = intensity => {
+    this.intensity = intensity;
+  };
+  setColor = color => {
+    this.color = color;
+  };
+  setColorR = colorR => {
+    this.color[0] = colorR;
+  };
+  setColorB = colorB => {
+    this.color[1] = colorB;
+  };
+  setColorG = colorG => {
+    this.color[2] = colorG;
+  };
+  setRange = range => {
+    this.range = range;
+  };
+  setAmbientFactor = ambientFactor => {
+    this.ambientFactor = ambientFactor;
+  };
+  setShadowBias = shadowBias => {
+    this.shadowBias = shadowBias;
+  };
 }
 exports.SpotLight = SpotLight;
 
-},{"../shaders/instanced/vertexShadow.instanced.wgsl":64,"../shaders/vertexShadow.wgsl":71,"./behavior":25,"wgpu-matrix":22}],40:[function(require,module,exports){
+},{"../shaders/instanced/vertexShadow.instanced.wgsl":64,"../shaders/vertexShadow.wgsl":71,"./behavior":25,"./utils":50,"wgpu-matrix":22}],40:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -24869,6 +24910,18 @@ class BVHPlayer extends _meshObj.default {
     // ✅ store directly as typed array (one big contiguous Float32Array)
     this.inverseBindMatrices = invBindArray;
   }
+  playAnimationByIndex = animationIndex => {
+    this.glb.animationIndex = animationIndex;
+  };
+  playAnimationByName = animationName => {
+    const animations = this.glb.glbJsonData.animations;
+    const index = animations.findIndex(anim => anim.name === animationName);
+    if (index === -1) {
+      console.warn(`Animation '${animationName}' not found`);
+      return;
+    }
+    this.glb.animationIndex = index;
+  };
   getNumberOfFramesCurAni() {
     let anim = this.glb.glbJsonData.animations[this.glb.animationIndex];
     const sampler = anim.samplers[0];
@@ -26394,13 +26447,16 @@ class Position {
     this.thrust = 0.01;
     return this;
   }
-  setSpeed(n) {
+  getSpeed = () => {
+    return this.thrust;
+  };
+  setSpeed = n => {
     if (typeof n === 'number') {
       this.thrust = n;
     } else {
       console.log('Description: arguments (w, h) must be type of number.');
     }
-  }
+  };
   translateByX(x) {
     if (parseFloat(x) == this.targetX) return;
     this.inMove = true;
@@ -26621,24 +26677,54 @@ class Rotation {
     // not in use good for exstend logic
     this.matrixRotation = null;
   }
-  toDegree() {
+  setRotate = (x, y, z) => {
+    this.rotationSpeed = {
+      x: x,
+      y: y,
+      z: z
+    };
+  };
+  setRotateX = x => {
+    this.rotationSpeed.x = x;
+  };
+  setRotateY = y => {
+    this.rotationSpeed.y = y;
+  };
+  setRotateZ = z => {
+    this.rotationSpeed.z = z;
+  };
+  setRotation = (x, y, z) => {
+    this.x = x;
+    this.y = y;
+    this.z = z;
+  };
+  setRotationX = x => {
+    this.x = x;
+  };
+  setRotationY = y => {
+    this.y = y;
+  };
+  setRotationZ = z => {
+    this.z = z;
+  };
+  toDegree = () => {
     /*
     heading = atan2(y * sin(angle)- x * z * (1 - cos(angle)) , 1 - (y2 + z2 ) * (1 - cos(angle)))
     attitude = asin(x * y * (1 - cos(angle)) + z * sin(angle))
     bank = atan2(x * sin(angle)-y * z * (1 - cos(angle)) , 1 - (x2 + z2) * (1 - cos(angle)))
     */
     return [(0, _utils.radToDeg)(this.axis.x), (0, _utils.radToDeg)(this.axis.y), (0, _utils.radToDeg)(this.axis.z)];
-  }
-  toDegreeX() {
+  };
+  toDegreeX = () => {
     return Math.cos((0, _utils.radToDeg)(this.axis.x) / 2);
-  }
-  toDegreeY() {
+  };
+  toDegreeY = () => {
     return Math.cos((0, _utils.radToDeg)(this.axis.z) / 2);
-  }
-  toDegreeZ() {
+  };
+  toDegreeZ = () => {
     return Math.cos((0, _utils.radToDeg)(this.axis.y) / 2);
-  }
-  getRotX() {
+  };
+  getRotX = () => {
     if (this.rotationSpeed.x == 0) {
       if (this.netx != this.x && this.emitX) {
         app.net.send({
@@ -26653,8 +26739,8 @@ class Rotation {
       this.x = this.x + this.rotationSpeed.x * 0.001;
       return (0, _utils.degToRad)(this.x);
     }
-  }
-  getRotY() {
+  };
+  getRotY = () => {
     if (this.rotationSpeed.y == 0) {
       if (this.nety != this.y && this.emitY) {
         // ---------------------------------------
@@ -26680,15 +26766,14 @@ class Rotation {
           });
           this.nety = this.y;
         }
-        //-------------------------------------------
       }
       return (0, _utils.degToRad)(this.y);
     } else {
       this.y = this.y + this.rotationSpeed.y * 0.001;
       return (0, _utils.degToRad)(this.y);
     }
-  }
-  getRotZ() {
+  };
+  getRotZ = () => {
     if (this.rotationSpeed.z == 0) {
       if (this.netz != this.z && this.emitZ) {
         app.net.send({
@@ -26703,7 +26788,7 @@ class Rotation {
       this.z = this.z + this.rotationSpeed.z * 0.001;
       return (0, _utils.degToRad)(this.z);
     }
-  }
+  };
 }
 exports.Rotation = Rotation;
 
@@ -27563,6 +27648,7 @@ exports.fullscreenQuadWGSL = fullscreenQuadWGSL;
 
 class BloomPass {
   constructor(width, height, device, intensity = 1.5) {
+    this.enabled = false;
     this.device = device;
     this.width = width;
     this.height = height;
@@ -27695,22 +27781,22 @@ class BloomPass {
   _updateParams() {
     this.device.queue.writeBuffer(this.paramBuffer, 0, new Float32Array([this.params.intensity, this.params.threshold, this.params.knee, this.params.blurRadius]));
   }
-  setIntensity(v) {
+  setIntensity = v => {
     this.params.intensity = v;
     this._updateParams();
-  }
-  setThreshold(v) {
+  };
+  setThreshold = v => {
     this.params.threshold = v;
     this._updateParams();
-  }
-  setKnee(v) {
+  };
+  setKnee = v => {
     this.params.knee = v;
     this._updateParams();
-  }
-  setBlurRadius(v) {
+  };
+  setBlurRadius = v => {
     this.params.blurRadius = v;
     this._updateParams();
-  }
+  };
   _createUniformBuffer(data) {
     const buffer = this.device.createBuffer({
       size: 16,
@@ -32096,6 +32182,7 @@ class Editor {
       <span>Scene objects [agnostic]</span>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getSceneObject')">Get scene object</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setPosition')">Set position</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setRotation')">Set rotation</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('translateByX')">TranslateByX</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('translateByY')">TranslateByY</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('translateByZ')">TranslateByZ</button>
@@ -32448,12 +32535,14 @@ class FluxCodexVertex {
     this._createImportInput();
     this.bindGlobalListeners();
     this._varInputs = {};
-    this.init();
+
+    // EXTRA TIME 
+    setTimeout(() => this.init(), 4000);
     document.addEventListener("keydown", e => {
       if (e.key == "F6") {
         e.preventDefault();
         this.runGraph();
-      } else if (e.key === "Delete" /*|| e.key === "Backspace"*/) {
+      } else if (e.key === "Delete") {
         if (this.state.selectedNode) {
           this.deleteNode(this.state.selectedNode);
           this.state.selectedNode = null;
@@ -32461,8 +32550,7 @@ class FluxCodexVertex {
       }
     });
     this.createContextMenu();
-
-    // not in use - alternative for refresh getters/ no exec nodes
+    // not in use ? - alternative for refresh getters/ no exec nodes
     document.addEventListener("fluxcodex.input.change", e => {
       console.log('fluxcodex.input.change');
       const {
@@ -32524,10 +32612,20 @@ class FluxCodexVertex {
     <hr>
     <span>Scene</span>
     <button onclick="app.editor.fluxCodexVertex.addNode('getSceneObject')">Get Scene Object</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('getSceneLight')">Get Scene Light</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('setPosition')">Set Position</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('setSpeed')">Set Speed</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('getSpeed')">Get Speed</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('setRotation')">Set Rotation</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('setRotate')">Set Rotate</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('setRotateX')">Set RotateX</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('setRotateY')">Set RotateY</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('setRotateZ')">Set RotateZ</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('onTargetPositionReach')">onTargetPositionReach</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('getObjectAnimation')">Get Object Animation</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('dynamicFunction')">Function Dinamic</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('refFunction')">Function by Ref</button>
+    
     <button onclick="app.editor.fluxCodexVertex.addNode('getSubObject')">Get Sub Object</button>
     <hr>
     <span>Comment</span>
@@ -32913,24 +33011,68 @@ class FluxCodexVertex {
   adaptNodeToMethod2(node, methodItem) {
     const fn = this.methodsManager.compileFunction(methodItem.code);
     const args = this.getArgNames(fn);
-    // RESET value pins (keep exec)
-    node.inputs = node.inputs.filter(p => p.type === "action");
-    node.outputs = node.outputs.filter(p => p.type === "action");
-    // Create input pins from function signature
+
+    // Preserve action + reference pins
+    const preservedInputs = node.inputs.filter(p => p.type === "action" || p.name === "reference");
+    const preservedOutputs = node.outputs.filter(p => p.type === "action");
+    node.inputs = [...preservedInputs];
+    node.outputs = [...preservedOutputs];
+
+    // Add argument pins (reuse if exists)
     args.forEach(arg => {
-      node.inputs.push({
-        name: arg,
-        type: "value"
-      });
+      if (!node.inputs.some(p => p.name === arg)) {
+        node.inputs.push({
+          name: arg,
+          type: "value"
+        });
+      }
     });
+
+    // Return value
     if (this.hasReturn(fn)) {
-      node.outputs.push({
-        name: "return",
-        type: "value"
-      });
+      if (!node.outputs.some(p => p.name === "return")) {
+        node.outputs.push({
+          name: "return",
+          type: "value"
+        });
+      }
     }
     node.attachedMethod = methodItem.name;
     node.fn = fn;
+    this.updateNodeDOM(node.id);
+  }
+  adaptRefFunctionNode(node, fnRef) {
+    const args = this.getArgNames(fnRef);
+    const hasReturn = this.hasReturn(fnRef);
+
+    // Preserve exec + reference pins
+    const preservedInputs = node.inputs.filter(p => p.type === "action" || p.name === "reference");
+    const preservedOutputs = node.outputs.filter(p => p.type === "action");
+    node.inputs = [...preservedInputs];
+    node.outputs = [...preservedOutputs];
+
+    // 🔹 Real argument pins
+    args.forEach(arg => {
+      if (!node.inputs.some(p => p.name === arg)) {
+        node.inputs.push({
+          name: arg,
+          type: "value"
+        });
+      }
+    });
+
+    // 🔹 Real return
+    if (hasReturn) {
+      if (!node.outputs.some(p => p.name === "return")) {
+        node.outputs.push({
+          name: "return",
+          type: "value"
+        });
+      }
+    }
+
+    // Execution logic
+    node.fn = (...callArgs) => fnRef(...callArgs);
     this.updateNodeDOM(node.id);
   }
   populateMethodsSelect(selectEl) {
@@ -32946,6 +33088,9 @@ class FluxCodexVertex {
       selectEl.appendChild(opt);
     });
   }
+  _getSceneSelectedName(node) {
+    return node.fields?.find(f => f.key === "selectedObject" || f.key === "object")?.value;
+  }
   updateNodeDOM(nodeId) {
     const node = this.nodes[nodeId];
     const el = document.querySelector(`.node[data-id="${nodeId}"]`);
@@ -32960,9 +33105,28 @@ class FluxCodexVertex {
     const outputs = node.outputs || [];
     inputs.forEach(pin => left.appendChild(this._pinElement(pin, false, nodeId)));
     outputs.forEach(pin => right.appendChild(this._pinElement(pin, true, nodeId)));
-
-    // Method select (only for Function nodes)
-    if (node.category === "action" && node.title === "Function") {
+    if (node.title === "Get Scene Object" || node.title === "Get Scene Light" || node.title === "Get Scene Animation") {
+      const select = el.querySelector("select.scene-select");
+      if (select) {
+        console.log('TEST!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
+        const objects = spec.accessObject || []; // window.app?.mainRenderBundle || [];
+        objects.forEach(obj => {
+          const opt = document.createElement("option");
+          opt.value = obj.name;
+          opt.textContent = obj.name;
+          select.appendChild(opt);
+        });
+        const selected = this._getSceneSelectedName(node);
+        if (selected) {
+          select.value = selected;
+        }
+        // // restore previous value
+        // const field = node.fields?.find(f => f.key === "object");
+        // if(field?.value) {
+        //   select.value = field.value;
+        // }
+      }
+    } else if (node.category === "action" && node.title === "Function") {
       let select = el.querySelector("select.method-select");
       if (!select) {
         select = document.createElement("select");
@@ -32976,6 +33140,88 @@ class FluxCodexVertex {
         const selected = this.methodsManager.methodsContainer.find(m => m.name === e.target.value);
         if (selected) this.adaptNodeToMethod(node, selected);
       };
+    } else if (node.category === "functions") {
+      const dom = document.querySelector(`.node[data-id="${nodeId}"]`);
+      this.restoreDynamicFunctionNode(node, dom);
+    } else if (node.category === "reffunctions") {
+      console.log('new ref');
+      const dom = document.querySelector(`.node[data-id="${nodeId}"]`);
+      this.restoreDynamicFunctionNode(node, dom);
+    }
+  }
+  restoreDynamicFunctionNode(node, dom) {
+    // Restore accessObject reference from literal
+    if (!node.accessObject && node.accessObjectLiteral) {
+      try {
+        node.accessObject = eval(node.accessObjectLiteral);
+      } catch (e) {
+        console.warn("Failed to eval accessObjectLiteral:", node.accessObjectLiteral, e);
+        node.accessObject = [];
+      }
+    }
+
+    // Ensure fields exist
+    if (!node.fields) node.fields = [];
+    if (!node.fields.find(f => f.key === "selectedObject")) {
+      node.fields.push({
+        key: "selectedObject",
+        value: ""
+      });
+    }
+
+    // Ensure pins exist
+    if (!node.inputs || node.inputs.length === 0) {
+      node.inputs = [{
+        name: "exec",
+        type: "action"
+      }];
+    }
+    if (!node.outputs || node.outputs.length === 0) {
+      node.outputs = [{
+        name: "execOut",
+        type: "action"
+      }];
+    }
+
+    // Rebuild DOM select for this node
+    let select = dom.querySelector("select");
+    if (select == null) {
+      select = document.createElement("select");
+      select.id = node.id;
+      select.className = "method-select";
+      select.style.cssText = "width:100%; margin-top:6px;";
+      dom.appendChild(select);
+    }
+    if (select && node.accessObject) {
+      const numOptions = select.options.length;
+      const newLength = Object.keys(node.accessObject).filter(key => typeof node.accessObject[key] === "function");
+
+      // Only repopulate if length differs
+      if (numOptions !== newLength.length + 1) {
+        // +1 for placeholder
+        console.log('BALBLA');
+        select.innerHTML = "";
+        const placeholder = document.createElement("option");
+        placeholder.value = "";
+        placeholder.textContent = "-- Select Function --";
+        select.appendChild(placeholder);
+        Object.keys(node.accessObject).filter(key => typeof node.accessObject[key] === "function").forEach(fnName => {
+          const opt = document.createElement("option");
+          opt.value = fnName;
+          opt.textContent = fnName;
+          select.appendChild(opt);
+        });
+
+        // restore previously selected
+        const selected = node.fields.find(f => f.key === "selectedObject")?.value;
+        if (selected) select.value = selected;
+      }
+
+      // Attach onchange
+      select.onchange = e => {
+        const val = e.target.value;
+        node.fields.find(f => f.key === "selectedObject").value = val;
+      };
     }
   }
 
@@ -32987,6 +33233,28 @@ class FluxCodexVertex {
       type: type,
       out: isOut
     };
+  }
+  _applyConnectionRuntime(from, to, type) {
+    const toNode = this.nodes[to.node];
+    const fromNode = this.nodes[from.node];
+    if (!toNode || !fromNode) return;
+
+    // RefFunction special case
+    if (toNode.title === "reffunctions" && to.pin === "reference") {
+      const fnRef = this.getPinValue(fromNode, from.pin);
+      if (typeof fnRef === "function") {
+        toNode._fnRef = fnRef;
+        this.adaptRefFunctionNode(toNode, fnRef);
+      }
+    }
+
+    // generic hook
+    this.onPinsConnected(fromNode, from.pin, toNode, to.pin);
+  }
+  restoreConnectionsRuntime() {
+    for (const link of this.links) {
+      this._applyConnectionRuntime(link.from, link.to, link.type);
+    }
   }
   finishConnect(nodeId, pinName, type) {
     if (!this.state.connecting || this.state.connecting.node === nodeId) {
@@ -33018,28 +33286,20 @@ class FluxCodexVertex {
     this.state.connecting = null;
     let toNode = this.nodes[to.node];
     let fromNode = this.nodes[from.node];
-    if (toNode && toNode.category === "functions" && toNode.code && to.pin === "reference") {
+    if (toNode && toNode.title === "reffunctions" && to.pin === "reference") {
+      console.log('sss ');
       const fnRef = this.getPinValue(fromNode, from.pin);
       if (typeof fnRef !== "function") return;
       toNode._fnRef = fnRef;
-      const fnName = fnRef.name || "wrappedFn";
-      toNode.code = `
-        function ${fnName}(fn, ...args) {
-          return fn(...args);
-        }
-        `.trim();
-      this.adaptNodeToMethod2(toNode, {
-        name: this.methodsManager.extractName(toNode.code),
-        code: toNode.code
-      });
+      this.adaptRefFunctionNode(toNode, fnRef);
     }
-
     // Get Sub Object – adapt pins on connect
     toNode = this.nodes[to.node];
     fromNode = this.nodes[from.node];
     this.onPinsConnected(fromNode, from.pin, toNode, to.pin);
   }
   _adaptGetSubObjectOnConnect(getSubNode, sourceNode) {
+    // alert('adapt')
     const obj = sourceNode._returnCache;
     if (!obj || typeof obj !== "object") return;
     const varField = sourceNode.fields?.find(f => f.key === "var");
@@ -33061,13 +33321,26 @@ class FluxCodexVertex {
     this.updateNodeDOM(getSubNode.id);
   }
   onPinsConnected(sourceNode, sourcePin, targetNode) {
-    if (targetNode.title === "Get Scene Object" || targetNode.title === "Get Sub Object") {
+    if (targetNode.title === "Get Scene Object" || targetNode.title === "Get Sub Object" || targetNode.title === "Get Scene Light") {
       this._adaptGetSubObjectOnConnect(targetNode, sourceNode, sourcePin);
     }
   }
+
+  // get func for ref pin
   getPinValue(node, pinName) {
     const out = node.outputs?.find(p => p.name === pinName);
-    return out?.value;
+    let getName = node.fields.find(item => item.key == "selectedObject").value;
+    // little hard code - fix in future
+    // By current light rule of given names.
+    if (node.title == "Get Scene Object") {
+      return app.getSceneObjectByName(getName)[out.name];
+    } else if (node.title == "Get Scene Animation") {
+      return app.getSceneObjectByName(getName)[out.name];
+    } else {
+      // light for now
+      getName = parseInt(getName.replace("light", ""));
+      return node.accessObject[getName][pinName];
+    }
   }
   normalizePinType(type) {
     if (!type) return "any";
@@ -33130,6 +33403,7 @@ class FluxCodexVertex {
     // --- Header ---
     const header = document.createElement("div");
     header.className = "header";
+    console.log('.....................spec.title.', spec.title);
     header.textContent = spec.title;
     el.appendChild(header);
 
@@ -33223,6 +33497,7 @@ class FluxCodexVertex {
     // Function Method Selector
     if (spec.title === "Function" && spec.category === "action" && !spec.builtIn && !spec.isVariableNode) {
       const select = document.createElement("select");
+      select.id = spec.id;
       select.className = "method-select";
       select.style.cssText = "width:100%; margin-top:6px;";
       body.appendChild(select);
@@ -33254,7 +33529,10 @@ class FluxCodexVertex {
       const select = document.createElement("select");
       select.style.width = "100%";
       select.style.marginTop = "6px";
-      this.populateDynamicFunctionSelect(select, spec.accessObject);
+      if (spec.accessObject === undefined) {
+        spec.accessObject = eval(spec.accessObjectLiteral);
+      }
+      this.populateDynamicFunctionSelect(select, spec);
       select.addEventListener("change", e => {
         const fnName = e.target.value;
         if (fnName) {
@@ -33263,18 +33541,22 @@ class FluxCodexVertex {
       });
       body.appendChild(select);
     }
-    if (spec.title === "Get Scene Object" || spec.title === "Get Scene Animation") {
+    if (spec.title === "Get Scene Object" || spec.title === "Get Scene Animation" || spec.title === "Get Scene Light") {
       const select = document.createElement("select");
+      select.id = spec._id;
       select.style.width = "100%";
       select.style.marginTop = "6px";
 
       // Populate scene objects
+      if (spec.accessObject === undefined) spec.accessObject = eval(spec.accessObjectLiteral);
       const objects = spec.accessObject || []; // window.app?.mainRenderBundle || [];
+
       const placeholder = document.createElement("option");
       placeholder.textContent = "-- Select Object --";
       placeholder.value = "";
       select.appendChild(placeholder);
-      objects.forEach(obj => {
+      console.log('WORKS objects', spec.accessObject.length);
+      spec.accessObject.forEach(obj => {
         const opt = document.createElement("option");
         opt.value = obj.name;
         opt.textContent = obj.name;
@@ -33302,6 +33584,7 @@ class FluxCodexVertex {
     el.addEventListener("click", e => {
       e.stopPropagation();
       this.selectNode(spec.id);
+      this.updateNodeDOM(spec.id);
     });
     return el;
   }
@@ -33312,69 +33595,29 @@ class FluxCodexVertex {
     this.state.selectedNode = id;
     document.querySelector(`.node[data-id="${id}"]`)?.classList.add("selected");
   }
-  populateDynamicFunctionSelect(select, accessObject) {
+  populateDynamicFunctionSelect(select, spec) {
     select.innerHTML = "";
     const placeholder = document.createElement("option");
     placeholder.value = "";
     placeholder.textContent = "-- Select Function --";
     select.appendChild(placeholder);
-    if (!accessObject || typeof accessObject !== "object") return;
-    for (const key in accessObject) {
-      if (typeof accessObject[key] === "function") {
+    if (!spec.accessObject || typeof spec.accessObject !== "object") return;
+    for (const key in spec.accessObject) {
+      if (typeof spec.accessObject[key] === "function") {
         const opt = document.createElement("option");
         opt.value = key;
         opt.textContent = key;
         select.appendChild(opt);
       }
     }
-  }
-  updateFunctionPins(node, objectName, funcName) {
-    const obj = this.resolveAccessObject(node.accessObject, objectName);
-    if (!obj) {
-      console.warn("Access object not found:", objectName);
-      return;
+    // console.log(spec.fields.find(item => item.key == "selectedObject").value)
+    let current = spec.fields.find(item => item.key == "selectedObject").value;
+    for (const opt of select.options) {
+      if (opt.text === current) {
+        opt.selected = true;
+        break;
+      }
     }
-    const fn = obj[funcName];
-    if (typeof fn !== "function") {
-      console.warn("Not a function:", funcName);
-      return;
-    }
-
-    // reset exec pins
-    node.inputs = [{
-      name: "exec",
-      type: "action"
-    }];
-    node.outputs = [{
-      name: "execOut",
-      type: "action"
-    }];
-
-    // args → inputs
-    const args = this.getArgNames(fn);
-    args.forEach(arg => {
-      node.inputs.push({
-        name: arg,
-        type: "value"
-      });
-    });
-
-    // return → output
-    if (this.hasReturn(fn)) {
-      node.outputs.push({
-        name: "return",
-        type: "value"
-      });
-    }
-
-    // store metadata only
-    node._access = {
-      objectName,
-      methodName: funcName
-    };
-    node.category = "functions";
-    node.title = `${objectName}.${funcName}`;
-    this.updateNodeDOM(node.id);
   }
   isTypeCompatible(fromType, toType) {
     if (fromType === "action" || toType === "action") {
@@ -33916,22 +34159,7 @@ class FluxCodexVertex {
           value: "Add comment"
         }]
       }),
-      // 'downloadMeshes': (id, x, y) => ({
-      //   id, title: 'downloadMeshes',
-      //   category: 'functions', x, y,
-      //   builtIn: true,
-      //   inputs: [
-      //     {name: 'exec', type: 'action'},
-      //     {name: 'name', type: 'value'},
-      //     {name: 'path', type: 'value'},
-      //   ],
-      //   outputs: [
-      //     {name: 'execOut', type: 'action'}
-      //   ],  // generated dynamically
-      //   noExec: false,
-      // }),
-      // full dinamic  functions taje ref from object (only funcs)
-      dynamicFunction: (id, x, y) => ({
+      dynamicFunction: (id, x, y, accessObject) => ({
         id,
         title: "functions",
         x,
@@ -33945,7 +34173,30 @@ class FluxCodexVertex {
           name: "execOut",
           type: "action"
         }],
-        accessObject: window.app
+        fields: [{
+          key: "selectedObject",
+          value: ""
+        }],
+        accessObject: accessObject ? accessObject : window.app,
+        accessObjectLiteral: "window.app"
+      }),
+      refFunction: (id, x, y) => ({
+        id,
+        title: "reffunctions",
+        x,
+        y,
+        category: "action",
+        inputs: [{
+          name: "exec",
+          type: "action"
+        }, {
+          name: "reference",
+          type: "any"
+        }],
+        outputs: [{
+          name: "execOut",
+          type: "action"
+        }]
       }),
       getSceneObject: (id, x, y) => ({
         noExec: true,
@@ -33962,7 +34213,26 @@ class FluxCodexVertex {
         }],
         builtIn: true,
         accessObject: window.app?.mainRenderBundle,
+        accessObjectLiteral: "window.app?.mainRenderBundle",
         exposeProps: ["name", "position", "rotation", "scale"]
+      }),
+      getSceneLight: (id, x, y) => ({
+        noExec: true,
+        id,
+        title: "Get Scene Light",
+        x,
+        y,
+        category: "scene",
+        inputs: [],
+        outputs: [],
+        fields: [{
+          key: "selectedObject",
+          value: ""
+        }],
+        builtIn: true,
+        accessObject: window.app?.lightContainer,
+        accessObjectLiteral: "window.app?.lightContainer",
+        exposeProps: ["ambientFactor", "setPosX", "setPosY", "setPosZ", "setIntensity", "setInnerCutoff", "setOuterCutoff", "setColor", "setColorR", "setColorB", "setColorG", "setRange", "setAmbientFactor", "setShadowBias"]
       }),
       getObjectAnimation: (id, x, y) => ({
         noExec: true,
@@ -33972,20 +34242,20 @@ class FluxCodexVertex {
         y,
         category: "scene",
         inputs: [],
-        // no inputs
         outputs: [],
-        // will be filled dynamically
         fields: [{
           key: "selectedObject",
           value: ""
         }],
         builtIn: true,
         accessObject: window.app?.mainRenderBundle,
-        // direct man
-        exposeProps: ["name", "glb.glbJsonData.animations", "glb.animationIndex"]
+        accessObjectLiteral: "window.app?.mainRenderBundle",
+        exposeProps: ["name", "glb.glbJsonData.animations", "glb.animationIndex", "playAnimationByName", "playAnimationByIndex"]
       }),
       getPosition: (id, x, y) => ({
         id,
+        x,
+        y,
         title: "Get Position",
         category: "scene",
         inputs: [{
@@ -34006,6 +34276,8 @@ class FluxCodexVertex {
       }),
       setPosition: (id, x, y) => ({
         id,
+        x,
+        y,
         title: "Set Position",
         category: "scene",
         inputs: [{
@@ -34014,6 +34286,165 @@ class FluxCodexVertex {
         }, {
           name: "position",
           semantic: "position"
+        }, {
+          name: "x",
+          semantic: "number"
+        }, {
+          name: "y",
+          semantic: "number"
+        }, {
+          name: "z",
+          semantic: "number"
+        }],
+        outputs: [{
+          name: "execOut",
+          type: "action"
+        }]
+      }),
+      setSpeed: (id, x, y) => ({
+        id,
+        x,
+        y,
+        title: "Set Speed",
+        category: "scene",
+        inputs: [{
+          name: "exec",
+          type: "action"
+        }, {
+          name: "position",
+          semantic: "position"
+        }, {
+          name: "thrust",
+          semantic: "number"
+        }],
+        outputs: [{
+          name: "execOut",
+          type: "action"
+        }]
+      }),
+      getSpeed: (id, x, y) => ({
+        id,
+        x,
+        y,
+        title: "Get Speed",
+        category: "scene",
+        inputs: [{
+          name: "exec",
+          type: "action"
+        }, {
+          name: "position",
+          semantic: "position"
+        }],
+        outputs: [{
+          name: "execOut",
+          type: "action"
+        }, {
+          name: "thrust",
+          semantic: "number"
+        }]
+      }),
+      setRotate: (id, x, y) => ({
+        id,
+        x,
+        y,
+        title: "Set Rotate",
+        category: "scene",
+        inputs: [{
+          name: "exec",
+          type: "action"
+        }, {
+          name: "rotation",
+          semantic: "rotation"
+        }, {
+          name: "x",
+          semantic: "number"
+        }, {
+          name: "y",
+          semantic: "number"
+        }, {
+          name: "z",
+          semantic: "number"
+        }],
+        outputs: [{
+          name: "execOut",
+          type: "action"
+        }]
+      }),
+      setRotateX: (id, x, y) => ({
+        id,
+        x,
+        y,
+        title: "Set RotateX",
+        category: "scene",
+        inputs: [{
+          name: "exec",
+          type: "action"
+        }, {
+          name: "rotation",
+          semantic: "rotation"
+        }, {
+          name: "x",
+          semantic: "number"
+        }],
+        outputs: [{
+          name: "execOut",
+          type: "action"
+        }]
+      }),
+      setRotateY: (id, x, y) => ({
+        id,
+        x,
+        y,
+        title: "Set RotateY",
+        category: "scene",
+        inputs: [{
+          name: "exec",
+          type: "action"
+        }, {
+          name: "rotation",
+          semantic: "rotation"
+        }, {
+          name: "y",
+          semantic: "number"
+        }],
+        outputs: [{
+          name: "execOut",
+          type: "action"
+        }]
+      }),
+      setRotateZ: (id, x, y) => ({
+        id,
+        x,
+        y,
+        title: "Set RotateZ",
+        category: "scene",
+        inputs: [{
+          name: "exec",
+          type: "action"
+        }, {
+          name: "rotation",
+          semantic: "rotation"
+        }, {
+          name: "z",
+          semantic: "number"
+        }],
+        outputs: [{
+          name: "execOut",
+          type: "action"
+        }]
+      }),
+      setRotation: (id, x, y) => ({
+        id,
+        x,
+        y,
+        title: "Set Rotation",
+        category: "scene",
+        inputs: [{
+          name: "exec",
+          type: "action"
+        }, {
+          name: "rotation",
+          semantic: "rotation"
         }, {
           name: "x",
           semantic: "number"
@@ -34231,7 +34662,23 @@ class FluxCodexVertex {
 
     // Generate node spec
     let spec = null;
-    if (nodeFactories[type]) spec = nodeFactories[type](id, x, y);
+    if (type === 'dynamicFunction') {
+      // Exception for dynamic access
+      let AO = prompt(`Add global access object !`);
+      if (AO) {
+        console.warn("Adding AO ", eval(AO));
+        options.accessObject = eval(AO);
+      } else {
+        console.warn("Adding global access object failed...");
+        options.accessObject = window.app;
+        return;
+      }
+      ;
+      if (nodeFactories[type]) spec = nodeFactories[type](id, x, y, options.accessObject);
+      spec.accessObjectLiteral = AO;
+    } else {
+      if (nodeFactories[type]) spec = nodeFactories[type](id, x, y);
+    }
     if (spec && spec.fields && options) {
       for (const f of spec.fields) {
         if (options[f.key] !== undefined) {
@@ -34340,7 +34787,49 @@ class FluxCodexVertex {
     if (node.title === "Get Sub Object" && field.key === "path") {
       input.oninput = () => {
         const link = this.getConnectedSource(node.id, "object");
-        if (!link?.node?.isGetterNode) return;
+        if (!link?.node?.isGetterNode) {
+          if (link.node.title == "Get Sub Object") {
+            console.log('special sub sub test ', link.node.title);
+            let target = this.resolvePath(link.node._returnCache, link.pin);
+            node.outputs = node.outputs.filter(p => p.type === "action"); // clear old object pins
+            if (target && typeof target === "object") {
+              for (const k in target) {
+                node.outputs.push({
+                  name: k,
+                  type: this.detectType(target[k])
+                });
+              }
+            }
+          }
+          if (link.node.title == "Get Scene Animation") {
+            console.log('special test ', link.node.title);
+            const varField = link.node.fields?.find(f => f.key === "selectedObject");
+            console.log('special test ', varField);
+
+            // pin: "glb.glbJsonData.animations"
+
+            if (link.pin.indexOf('.') != -1) {
+              let target = this.resolvePath(app.getSceneObjectByName(varField.value), link.pin);
+              console.log('special test target ', target);
+              link.node._subCache = target;
+              node.outputs = node.outputs.filter(p => p.type === "action"); // clear old object pins
+              if (target && typeof target === "object") {
+                for (const k in target) {
+                  node.outputs.push({
+                    name: k,
+                    type: this.detectType(target[k])
+                  });
+                }
+              }
+              node._needsRebuild = false;
+              node._pinsBuilt = true;
+              this.updateNodeDOM(node.id);
+            }
+            console.log('special test :::: ', link.node.accessObject[varField.value]);
+            // this.getValue(link.node.id, "")
+          }
+          return;
+        }
         const varField = link.node.fields?.find(f => f.key === "var");
         const varName = varField?.value;
         const rootObj = this.variables?.object?.[varName];
@@ -34482,12 +34971,33 @@ class FluxCodexVertex {
     if (link) return this.getValue(link.from.node, link.from.pin, visited);
     const inputPin = node.inputs?.find(p => p.name === pinName);
     if (inputPin) return inputPin.default ?? 0;
-    if (node.title === "Get Scene Object" || node.title === "Get Scene Animation") {
-      const objName = node.fields[0].value;
+    if (node.title === "Get Scene Object" || node.title === "Get Scene Animation" || node.title === "Get Scene Light") {
+      const objName = this._getSceneSelectedName(node);
+      if (!objName) return undefined;
+      //repopulate
+      const dom = this.board.querySelector(`[data-id="${nodeId}"]`);
+      const selects = dom.querySelectorAll("select"); // returns NodeList
+      let select = selects[0];
+      // alert()
+      // if((select.options.length-1) != node.accessObject.length) {
+      select.innerHTML = ``;
+      if (select) {
+        node.accessObject.forEach(obj => {
+          const opt = document.createElement("option");
+          opt.value = obj.name;
+          opt.textContent = obj.name;
+          select.appendChild(opt);
+        });
+      }
+      if (node.fields[0].value) select.value = node.fields[0].value;
+      console.log('>>>>>>>>>>>>>>>>>>>>>');
       const obj = (node.accessObject || []).find(o => o.name === objName);
       if (!obj) return undefined;
       const out = node.outputs.find(o => o.name === pinName);
       if (!out) return undefined;
+      if (pinName.indexOf('.' != -1)) {
+        return this.resolvePath(obj, pinName);
+      }
       return obj[pinName];
     } else if (node.title === "Get Position") {
       const pos = this.getValue(nodeId, "position");
@@ -34499,11 +35009,13 @@ class FluxCodexVertex {
       };
       return node._returnCache[pinName];
     } else if (node.title === "Get Sub Object") {
-      let varField = node.fields?.find(f => f.key === "var");
-      if (!varField || !varField.value) {
-        varField = node.fields?.find(f => f.key === "objectPreview");
+      let varField = node.outputs?.find(f => f.name === "0");
+      let isName = node.outputs?.find(f => f.name === "name");
+      console.log('test1 :::', varField);
+      if (varField) if (varField.type == 'object') {
+        return node._subCache[parseInt(varField.name)];
       }
-      console.log('test   const obj = this.variables.object?.[varField.value]?.value; ', this.variables.object?.[varField.value]?.value);
+      console.log('test2 :::', isName);
       return node._subCache;
     } else if (node.type === "forEach") {
       if (pinName === "item") return node.state?.item;
@@ -34546,6 +35058,7 @@ class FluxCodexVertex {
     return match[1].split(",").map(a => a.trim()).filter(Boolean);
   }
   adaptDynamicFunction(node, fnName) {
+    console.log('adaptDynamicFunction(node, fnName) ');
     const fn = node.accessObject?.[fnName];
     if (typeof fn !== "function") return;
     node.inputs = [{
@@ -34573,7 +35086,8 @@ class FluxCodexVertex {
     node.category = "functions";
     node.fn = fn; // REAL FUNCTION
     node.fnName = fnName;
-    node.title = fnName;
+    node.descFunc = fnName;
+    // node.title = fnName;
     this.updateNodeDOM(node.id);
   }
   invalidateVariableGetters(type, varName) {
@@ -34607,16 +35121,7 @@ class FluxCodexVertex {
       console.warn('SET CACHE target is ', target);
       // n.outputs = n.outputs.filter(p => p.type === "action");
       n._subCache = target;
-
-      // if(target && typeof target === "object") {
-      //   for(const k in target) {
-      //     n.outputs.push({
-      //       name: k,
-      //       type: this.detectType(target[k]),
-      //     });
-      //   }
-      // }
-
+      n._returnCache = target;
       n._needsRebuild = false;
       n._pinsBuilt = true;
       this.enqueueOutputs(n, "execOut");
@@ -34669,7 +35174,23 @@ class FluxCodexVertex {
         arr = n.inputs?.find(p => p.name === "array")?.default ?? [];
       }
       // make it fluid 
-      n._returnCache = Array.isArray(arr) ? arr : arr[link.from.pin] ? arr[link.from.pin] : [];
+      n._returnCache = Array.isArray(arr) ? arr : arr ? arr[link.from.pin] : this.getValue(link.from.node, link.from.pin);
+      this.enqueueOutputs(n, "execOut");
+      return;
+    } else if (n.title === "reffunctions") {
+      const fn = n._fnRef;
+      if (typeof fn !== "function") {
+        console.warn("[reffunctions] No function reference");
+        this.enqueueOutputs(n, "execOut");
+        return;
+      }
+
+      // Collect REAL args (exclude exec + reference)
+      const args = n.inputs.filter(p => p.type !== "action" && p.name !== "reference").map(p => this.getValue(n.id, p.name));
+      const result = fn(...args);
+      if (this.hasReturn(fn)) {
+        n._returnCache = result;
+      }
       this.enqueueOutputs(n, "execOut");
       return;
     }
@@ -34708,7 +35229,11 @@ class FluxCodexVertex {
     }
 
     // functionDinamic execution
-    if (n.category === "functions" && n.fn) {
+    if (n.category === "functions") {
+      console.log('n.category === functions ');
+      if (n.fn === undefined) {
+        n.fn = n.accessObject[n.fnName];
+      }
       const args = n.inputs.filter(p => p.type !== "action").map(p => this.getValue(n.id, p.name));
       const result = n.fn(...args);
       if (this.hasReturn(n.fn)) {
@@ -34825,10 +35350,61 @@ class FluxCodexVertex {
       this._execContext = null;
       return;
     }
-    if (n.title === "Set Position") {
+    if (n.title === "Get Speed") {
+      const pos = this.getValue(nodeId, "position");
+      if (pos?.getSpeed) {
+        // this.getValue(nodeId, "thrust")
+        console.log('pos.getSpeed()', pos.getSpeed());
+        n._returnCache = pos.getSpeed();
+      }
+      this.enqueueOutputs(n, "execOut");
+      return;
+    } else if (n.title === "Set Speed") {
+      const pos = this.getValue(nodeId, "position");
+      if (pos?.setSpeed) {
+        pos.setSpeed(this.getValue(nodeId, "thrust"));
+      }
+      this.enqueueOutputs(n, "execOut");
+      return;
+    } else if (n.title === "Set Position") {
       const pos = this.getValue(nodeId, "position");
       if (pos?.setPosition) {
         pos.setPosition(this.getValue(nodeId, "x"), this.getValue(nodeId, "y"), this.getValue(nodeId, "z"));
+      }
+      this.enqueueOutputs(n, "execOut");
+      return;
+    } else if (n.title === "Set Rotation") {
+      const rot = this.getValue(nodeId, "rotation");
+      if (rot?.setRotation) {
+        rot.setRotation(this.getValue(nodeId, "x"), this.getValue(nodeId, "y"), this.getValue(nodeId, "z"));
+      }
+      this.enqueueOutputs(n, "execOut");
+      return;
+    } else if (n.title === "Set Rotate") {
+      const rot = this.getValue(nodeId, "rotation");
+      if (rot?.setRotate) {
+        rot.setRotate(this.getValue(nodeId, "x"), this.getValue(nodeId, "y"), this.getValue(nodeId, "z"));
+      }
+      this.enqueueOutputs(n, "execOut");
+      return;
+    } else if (n.title === "Set RotateX") {
+      const rot = this.getValue(nodeId, "rotation");
+      if (rot?.setRotateX) {
+        rot.setRotateX(this.getValue(nodeId, "x"));
+      }
+      this.enqueueOutputs(n, "execOut");
+      return;
+    } else if (n.title === "Set RotateY") {
+      const rot = this.getValue(nodeId, "rotation");
+      if (rot?.setRotateY) {
+        rot.setRotateY(this.getValue(nodeId, "y"));
+      }
+      this.enqueueOutputs(n, "execOut");
+      return;
+    } else if (n.title === "Set RotateZ") {
+      const rot = this.getValue(nodeId, "rotation");
+      if (rot?.setRotateZ) {
+        rot.setRotateZ(this.getValue(nodeId, "z"));
       }
       this.enqueueOutputs(n, "execOut");
       return;
@@ -34918,6 +35494,7 @@ class FluxCodexVertex {
     };
   }
   populateAccessMethods(select) {
+    // console.log("populateAccessMethods")
     select.innerHTML = "";
     this.accessObject.forEach(obj => {
       Object.getOwnPropertyNames(obj.__proto__).filter(k => typeof obj[k] === "function" && k !== "constructor").forEach(fn => {
@@ -35044,7 +35621,13 @@ class FluxCodexVertex {
       pan: this.state.pan,
       variables: this.variables
     };
-    localStorage.setItem(FluxCodexVertex.SAVE_KEY, JSON.stringify(bundle));
+    function saveReplacer(key, value) {
+      if (key === 'fn') return undefined;
+      if (key === 'accessObject') return undefined;
+      if (key === '_returnCache') return undefined;
+      return value;
+    }
+    localStorage.setItem(FluxCodexVertex.SAVE_KEY, JSON.stringify(bundle, saveReplacer));
     this.log("Graph saved to LocalStorage!");
   }
   clearStorage() {
@@ -35153,12 +35736,13 @@ class FluxCodexVertex {
           if (spec.category === "value" && spec.title !== "GenRandInt" || spec.category === "math" || spec.title === "Print") {
             spec.displayEl = domEl.querySelector(".value-display");
           }
-          if (spec.category === "action" && spec.title === "Function") {
-            this.updateNodeDOM(spec.id);
-          }
+          // if(spec.category === "action" && spec.title === "Function") {
+          this.updateNodeDOM(spec.id);
+          // }
         });
         this.updateLinks();
         this.updateValueDisplays();
+        this.restoreConnectionsRuntime();
         this.log("Restored graph.");
         return;
       } catch (e) {
@@ -35221,8 +35805,6 @@ class EditorHud {
     this.createEditorSceneContainer();
     this.createScenePropertyBox();
     this.currentProperties = [];
-
-    // TEST 
     setTimeout(() => document.dispatchEvent(new CustomEvent('updateSceneContainer', {
       detail: {}
     })), 1000);
@@ -35234,10 +35816,9 @@ class EditorHud {
       let getPATH = e.detail.details.path.split("public")[1];
       const ext = getPATH.split('.').pop();
       if (ext == 'glb' && confirm("GLB FILE 📦 Do you wanna add it to the scene ?")) {
-        // e.detail.details[key].split("public")[1]
         let name = prompt("📦 GLB file : ", getPATH);
         if (confirm("⚛ Enable physics (Ammo)?")) {
-          // infly 
+          // infly
           let o = {
             physics: true,
             path: getPATH,
@@ -35257,9 +35838,7 @@ class EditorHud {
             detail: o
           }));
         }
-        // -
       } else if (ext == 'obj' && confirm("OBJ FILE 📦 Do you wanna add it to the scene ?")) {
-        // e.detail.details[key].split("public")[1]
         let name = prompt("📦 OBJ file : ", getPATH);
         if (confirm("⚛ Enable physics (Ammo)?")) {
           // infly 
@@ -35282,7 +35861,6 @@ class EditorHud {
             detail: o
           }));
         }
-        // -
       } else {
         let s = "";
         for (let key in e.detail.details) {
@@ -35307,7 +35885,6 @@ class EditorHud {
       height: "30vh",
       backgroundColor: "rgba(0,0,0,0.85)",
       display: "flex",
-      // alignItems: "start",
       color: "white",
       fontFamily: "'Orbitron', sans-serif",
       zIndex: "15",
@@ -35346,8 +35923,6 @@ class EditorHud {
       flexDirection: "row"
     });
     this.editorMenu.innerHTML = " PROJECT MENU  ";
-    // document.body.appendChild(this.editorMenu);
-
     this.editorMenu.innerHTML = `
     <div class="top-item">
       <div class="top-btn">Project ▾</div>
@@ -35408,7 +35983,6 @@ class EditorHud {
         </div>
       </div>
     </div>
-
 
     <div class="top-item">
       <div class="top-btn">View ▾</div>
@@ -35630,7 +36204,6 @@ class EditorHud {
       backgroundColor: "rgba(0,0,0,0.85)",
       display: "flex",
       alignItems: "start",
-      // overflow: "auto",
       color: "white",
       fontFamily: "'Orbitron', sans-serif",
       zIndex: "15",
@@ -35639,10 +36212,6 @@ class EditorHud {
       flexDirection: "column"
     });
     this.assetsBox.innerHTML = "ASSTES";
-    // document.body.appendChild(this.editorMenu);
-
-    // <div id="cnpBtn" class="drop-item">📦 Create new project</div>
-    //   <div class="drop-item">📂 Load</div>
     this.assetsBox.innerHTML = `
     <div id="folderTitle" >Root</div>
     <div id="folderBack" class="scenePropItem" >...</div>
@@ -35654,7 +36223,7 @@ class EditorHud {
       const t = getCurrent.substring(0, getCurrent.lastIndexOf("\\"));
       const last = t.substring(t.lastIndexOf("\\") + 1);
       if (last == "public") {
-        console.log(last + "<<<<<<<<<<<<<<<<<PREVENTED<<");
+        // console.log(last + "<PREVENTED>");
         return;
       }
       document.dispatchEvent(new CustomEvent("nav-folder", {
@@ -35681,6 +36250,8 @@ class EditorHud {
           item.classList.add('js');
         } else if (i.name.split('.')[1] == 'ttf' || i.name.split('.')[1] == 'ttf' || i.name.split('.')[1] == 'TTF' || i.name.split('.')[1] == 'otf' || i.name.split('.')[1] == 'woff' || i.name.split('.')[1] == 'woff2') {
           item.classList.add('ttf');
+        } else if (i.name.split('.')[1] == 'glb') {
+          item.classList.add('glb');
         } else {
           item.classList.add('unknown');
         }
@@ -35721,7 +36292,6 @@ class EditorHud {
       backgroundColor: "rgba(0,0,0,0.85)",
       display: "flex",
       alignItems: "start",
-      // overflow: "auto",
       color: "white",
       fontFamily: "'Orbitron', sans-serif",
       zIndex: "15",
@@ -35730,8 +36300,6 @@ class EditorHud {
       flexDirection: "row"
     });
     this.editorMenu.innerHTML = " PROJECT MENU  ";
-    // document.body.appendChild(this.editorMenu);
-
     this.editorMenu.innerHTML = `
     <div class="top-item">
       <div class="top-btn">Project ▾</div>
@@ -35749,18 +36317,14 @@ class EditorHud {
     </div>
   `;
     document.body.appendChild(this.editorMenu);
-
     // Mobile friendly toggles
     this.editorMenu.querySelectorAll(".top-btn").forEach(btn => {
       btn.addEventListener("click", e => {
         const menu = e.target.nextElementSibling;
-
         // close others
         this.editorMenu.querySelectorAll(".dropdown").forEach(d => {
           if (d !== menu) d.style.display = "none";
         });
-
-        // toggle
         menu.style.display = menu.style.display === "block" ? "none" : "block";
       });
     });
@@ -35774,8 +36338,6 @@ class EditorHud {
       }
     });
     if ((0, _utils.byId)('loadProjectBtn')) (0, _utils.byId)('loadProjectBtn').addEventListener('click', () => {
-      // ***************************
-      // ---------------------------
       document.dispatchEvent(new CustomEvent('lp', {
         detail: {}
       }));
@@ -35827,7 +36389,6 @@ class EditorHud {
       backgroundColor: "rgba(0,0,0,0.85)",
       display: "flex",
       alignItems: "start",
-      // overflow: "auto",
       color: "white",
       fontFamily: "'Orbitron', sans-serif",
       zIndex: "15",
@@ -35835,9 +36396,7 @@ class EditorHud {
       boxSizing: "border-box",
       flexDirection: "row"
     });
-    this.editorMenu.innerHTML = " PROJECT MENU  ";
-    // document.body.appendChild(this.editorMenu);
-
+    this.editorMenu.innerHTML = " PROJECT MENU ";
     this.editorMenu.innerHTML = `
     <div>INFLY Regime of work no saves. Nice for runtime debugging or get data for map setup.</div>
     <div class="top-item">
@@ -35848,18 +36407,14 @@ class EditorHud {
     </div>
   `;
     document.body.appendChild(this.editorMenu);
-
     // Mobile friendly toggles
     this.editorMenu.querySelectorAll(".top-btn").forEach(btn => {
       btn.addEventListener("click", e => {
         const menu = e.target.nextElementSibling;
-
         // close others
         this.editorMenu.querySelectorAll(".dropdown").forEach(d => {
           if (d !== menu) d.style.display = "none";
         });
-
-        // toggle
         menu.style.display = menu.style.display === "block" ? "none" : "block";
       });
     });
@@ -35973,7 +36528,6 @@ class EditorHud {
       display: "flex",
       alignItems: "start",
       color: "white",
-      // fontFamily: "'Orbitron', sans-serif",
       fontFamily: 'monospace',
       zIndex: "15",
       padding: "2px",
@@ -36138,7 +36692,6 @@ class SceneObjectProperty {
         <span style="border-radius:6px;background:gray;">${currSceneObj[propName]}</span></div>`;
       parentDOM.appendChild(this.propName);
     } else if (propName == 'editor-events') {
-      //
       this.addEditorEventsProp(currSceneObj, parentDOM);
       this.addEditorDeleteAction(currSceneObj, parentDOM);
     } else {
@@ -36881,6 +37434,14 @@ class MatrixEngineWGPU {
     this.run(callback);
   };
   createGlobalStuff() {
+    // Just syntetic to help visual scripting part
+    this.bloomPass = {
+      enabled: false,
+      setIntesity: v => {},
+      setKnee: v => {},
+      setBlurRadius: v => {},
+      setThreshold: v => {}
+    };
     //------------------ TEST
     this.bloomOutputTex = this.device.createTexture({
       size: [this.canvas.width, this.canvas.height],
@@ -37016,13 +37577,16 @@ class MatrixEngineWGPU {
     };
     this.createMe();
   }
-  getSceneObjectByName(name) {
+  getSceneObjectByName = name => {
     return this.mainRenderBundle.find(sceneObject => sceneObject.name === name);
-  }
+  };
+  getSceneLightByName = name => {
+    return this.lightContainer.find(l => l.name === name);
+  };
   getNameFromPath(p) {
     return p.split(/[/\\]/).pop().replace(/\.[^/.]+$/, "");
   }
-  removeSceneObjectByName(name) {
+  removeSceneObjectByName = name => {
     const index = this.mainRenderBundle.findIndex(obj => obj.name === name);
     if (index === -1) {
       console.warn("Scene object not found:", name);
@@ -37052,7 +37616,7 @@ class MatrixEngineWGPU {
     this.mainRenderBundle.splice(index, 1);
     console.log("Removed scene object:", name);
     return true;
-  }
+  };
 
   // Not in use for now -  Can be used with addBall have indipended pipeline and draw func.
   addCube = o => {
@@ -37255,7 +37819,7 @@ class MatrixEngineWGPU {
   };
   addLight(o) {
     const camera = this.cameras[this.mainCameraParams.type];
-    let newLight = new _lights.SpotLight(camera, this.inputHandler, this.device);
+    let newLight = new _lights.SpotLight(camera, this.inputHandler, this.device, this.lightContainer.length);
     this.lightContainer.push(newLight);
     this.createTexArrayForShadows();
     console.log(`%cAdd light: ${newLight}`, _utils.LOG_FUNNY_SMALL);
@@ -37609,10 +38173,8 @@ class MatrixEngineWGPU {
       }
       transPass.end();
       const canvasView = this.context.getCurrentTexture().createView();
-      // test bloom 
-      if (this.bloomPass) {
-        // render
-        // this.bloomPass.render(commandEncoder, this.sceneTexture, canvasView);
+      // Bloom
+      if (this.bloomPass.enabled == true) {
         this.bloomPass.render(commandEncoder, this.sceneTextureView, this.bloomOutputTex);
       }
       pass = commandEncoder.beginRenderPass({
@@ -37921,7 +38483,7 @@ class MatrixEngineWGPU {
   };
   activateBloomEffect = () => {
     this.bloomPass = new _bloom.BloomPass(this.canvas.width, this.canvas.height, this.device, 1.5);
-    // alert('BLOOM');
+    this.bloomPass.enabled = true;
   };
 }
 exports.default = MatrixEngineWGPU;

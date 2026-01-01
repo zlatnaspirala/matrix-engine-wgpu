@@ -25,8 +25,7 @@ export default class EditorHud {
     this.createScenePropertyBox();
     this.currentProperties = [];
 
-    // TEST 
-    setTimeout(() => document.dispatchEvent(new CustomEvent('updateSceneContainer', {detail: {}})), 1000)
+    setTimeout(() => document.dispatchEvent(new CustomEvent('updateSceneContainer', {detail: {}})), 1000);
 
     document.addEventListener('editor-not-running', () => {
       this.noEditorConn();
@@ -38,10 +37,9 @@ export default class EditorHud {
       const ext = getPATH.split('.').pop();
 
       if(ext == 'glb' && confirm("GLB FILE 📦 Do you wanna add it to the scene ?")) {
-        // e.detail.details[key].split("public")[1]
         let name = prompt("📦 GLB file : ", getPATH);
         if(confirm("⚛ Enable physics (Ammo)?")) {
-          // infly 
+          // infly
           let o = {
             physics: true,
             path: getPATH,
@@ -61,9 +59,7 @@ export default class EditorHud {
             detail: o
           }));
         }
-        // -
       } else if(ext == 'obj' && confirm("OBJ FILE 📦 Do you wanna add it to the scene ?")) {
-        // e.detail.details[key].split("public")[1]
         let name = prompt("📦 OBJ file : ", getPATH);
         if(confirm("⚛ Enable physics (Ammo)?")) {
           // infly 
@@ -86,7 +82,6 @@ export default class EditorHud {
             detail: o
           }));
         }
-        // -
       } else {
         let s = "";
         for(let key in e.detail.details) {
@@ -102,7 +97,6 @@ export default class EditorHud {
   }
 
   noEditorConn() {
-
     this.errorForm = document.createElement("div");
     this.errorForm.id = "errorForm";
     Object.assign(this.errorForm.style, {
@@ -113,7 +107,6 @@ export default class EditorHud {
       height: "30vh",
       backgroundColor: "rgba(0,0,0,0.85)",
       display: "flex",
-      // alignItems: "start",
       color: "white",
       fontFamily: "'Orbitron', sans-serif",
       zIndex: "15",
@@ -154,7 +147,6 @@ export default class EditorHud {
       flexDirection: "row"
     });
     this.editorMenu.innerHTML = " PROJECT MENU  ";
-    // document.body.appendChild(this.editorMenu);
 
     this.editorMenu.innerHTML = `
     <div class="top-item">
@@ -216,7 +208,6 @@ export default class EditorHud {
         </div>
       </div>
     </div>
-
 
     <div class="top-item">
       <div class="top-btn">View ▾</div>
@@ -295,7 +286,7 @@ export default class EditorHud {
       // byId('boardWrap').style.backgroundImage = 'url("res/icons/editor/chatgpt-gen-bg.png")';
       byId('boardWrap').style.backgroundImage = '';
     })
-    
+
     if(byId('stop-watch')) byId('stop-watch').addEventListener('click', () => {
       document.dispatchEvent(new CustomEvent('stop-watch', {
         detail: {}
@@ -446,7 +437,6 @@ export default class EditorHud {
         `);
     }
     byId('showAboutEditor').addEventListener('click', this.showAboutModal);
-
   }
 
   createAssets() {
@@ -461,7 +451,6 @@ export default class EditorHud {
       backgroundColor: "rgba(0,0,0,0.85)",
       display: "flex",
       alignItems: "start",
-      // overflow: "auto",
       color: "white",
       fontFamily: "'Orbitron', sans-serif",
       zIndex: "15",
@@ -470,16 +459,12 @@ export default class EditorHud {
       flexDirection: "column"
     });
     this.assetsBox.innerHTML = "ASSTES";
-    // document.body.appendChild(this.editorMenu);
 
-    // <div id="cnpBtn" class="drop-item">📦 Create new project</div>
-    //   <div class="drop-item">📂 Load</div>
     this.assetsBox.innerHTML = `
     <div id="folderTitle" >Root</div>
     <div id="folderBack" class="scenePropItem" >...</div>
     <div id='res-folder' class="file-browser">
-    </div>`
-      ;
+    </div>`;
 
     document.body.appendChild(this.assetsBox);
 
@@ -488,7 +473,7 @@ export default class EditorHud {
       const t = getCurrent.substring(0, getCurrent.lastIndexOf("\\"));
       const last = t.substring(t.lastIndexOf("\\") + 1);
       if(last == "public") {
-        console.log(last + "<<<<<<<<<<<<<<<<<PREVENTED<<");
+        // console.log(last + "<PREVENTED>");
         return;
       }
       document.dispatchEvent(new CustomEvent("nav-folder", {
@@ -569,7 +554,6 @@ export default class EditorHud {
       backgroundColor: "rgba(0,0,0,0.85)",
       display: "flex",
       alignItems: "start",
-      // overflow: "auto",
       color: "white",
       fontFamily: "'Orbitron', sans-serif",
       zIndex: "15",
@@ -578,7 +562,6 @@ export default class EditorHud {
       flexDirection: "row"
     });
     this.editorMenu.innerHTML = " PROJECT MENU  ";
-    // document.body.appendChild(this.editorMenu);
 
     this.editorMenu.innerHTML = `
     <div class="top-item">
@@ -598,18 +581,14 @@ export default class EditorHud {
   `;
 
     document.body.appendChild(this.editorMenu);
-
     // Mobile friendly toggles
     this.editorMenu.querySelectorAll(".top-btn").forEach(btn => {
       btn.addEventListener("click", e => {
         const menu = e.target.nextElementSibling;
-
         // close others
         this.editorMenu.querySelectorAll(".dropdown").forEach(d => {
           if(d !== menu) d.style.display = "none";
         });
-
-        // toggle
         menu.style.display =
           menu.style.display === "block" ? "none" : "block";
       });
@@ -624,20 +603,14 @@ export default class EditorHud {
       }
     });
 
-
-
     if(byId('loadProjectBtn')) byId('loadProjectBtn').addEventListener('click', () => {
-      // ***************************
-      // ---------------------------
       document.dispatchEvent(new CustomEvent('lp', {
         detail: {}
       }));
     });
 
     if(byId('cnpBtn')) byId('cnpBtn').addEventListener('click', () => {
-
       let name = prompt("📦 Project name :", "MyProject1");
-
       let features = {
         physics: false,
         networking: false
@@ -650,9 +623,7 @@ export default class EditorHud {
       if(confirm("🔌 Enable networking (kurento/ov)?")) {
         features.networking = true;
       }
-
       console.log(features);
-
       document.dispatchEvent(new CustomEvent('cnp', {
         detail: {
           name: name,
@@ -660,7 +631,6 @@ export default class EditorHud {
         }
       }));
     });
-
 
     this.showAboutModal = () => {
       alert(`
@@ -676,7 +646,6 @@ export default class EditorHud {
         `);
     }
     byId('showAboutEditor').addEventListener('click', this.showAboutModal);
-
   }
 
   createTopMenuInFly() {
@@ -691,7 +660,6 @@ export default class EditorHud {
       backgroundColor: "rgba(0,0,0,0.85)",
       display: "flex",
       alignItems: "start",
-      // overflow: "auto",
       color: "white",
       fontFamily: "'Orbitron', sans-serif",
       zIndex: "15",
@@ -699,9 +667,7 @@ export default class EditorHud {
       boxSizing: "border-box",
       flexDirection: "row"
     });
-    this.editorMenu.innerHTML = " PROJECT MENU  ";
-    // document.body.appendChild(this.editorMenu);
-
+    this.editorMenu.innerHTML = " PROJECT MENU ";
     this.editorMenu.innerHTML = `
     <div>INFLY Regime of work no saves. Nice for runtime debugging or get data for map setup.</div>
     <div class="top-item">
@@ -713,18 +679,14 @@ export default class EditorHud {
   `;
 
     document.body.appendChild(this.editorMenu);
-
     // Mobile friendly toggles
     this.editorMenu.querySelectorAll(".top-btn").forEach(btn => {
       btn.addEventListener("click", e => {
         const menu = e.target.nextElementSibling;
-
         // close others
         this.editorMenu.querySelectorAll(".dropdown").forEach(d => {
           if(d !== menu) d.style.display = "none";
         });
-
-        // toggle
         menu.style.display =
           menu.style.display === "block" ? "none" : "block";
       });
@@ -753,7 +715,6 @@ export default class EditorHud {
         `);
     }
     byId('showAboutEditor').addEventListener('click', this.showAboutModal);
-
   }
 
   createEditorSceneContainer() {
@@ -847,7 +808,6 @@ export default class EditorHud {
       display: "flex",
       alignItems: "start",
       color: "white",
-      // fontFamily: "'Orbitron', sans-serif",
       fontFamily: 'monospace',
       zIndex: "15",
       padding: "2px",
@@ -1032,9 +992,7 @@ class SceneObjectProperty {
         <span style="border-radius:6px;background:gray;">${currSceneObj[propName]}</span></div>`;
       parentDOM.appendChild(this.propName);
     } else if(propName == 'editor-events') {
-      //
       this.addEditorEventsProp(currSceneObj, parentDOM);
-
       this.addEditorDeleteAction(currSceneObj, parentDOM);
 
     } else {
@@ -1292,9 +1250,9 @@ class SceneObjectProperty {
       }
 
       alert(ruleOfNaming);
- 
+
       document.dispatchEvent(new CustomEvent('web.editor.delete', {
-        detail: { prefix: ruleOfNaming , fullName: currSceneObj.name }
+        detail: {prefix: ruleOfNaming, fullName: currSceneObj.name}
       }));
     });
   }
