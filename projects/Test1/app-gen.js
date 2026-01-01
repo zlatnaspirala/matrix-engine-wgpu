@@ -53,39 +53,9 @@ let app = new MatrixEngineWGPU(
  }, {scale: [1, 1, 1]});  
  // ME END Cube_2 addCube
  
-
-         // ME START Cube_0 updatePosz
- setTimeout(() => {
-  app.getSceneObjectByName('Cube_0').position.SetZ(-20);
- }, 200);
- // ME END Cube_0 updatePosz
- 
-  // ME START Cube_1 updatePosy
- setTimeout(() => {
-  app.getSceneObjectByName('Cube_1').position.SetY(0);
- }, 200);
- // ME END Cube_1 updatePosy
- 
-  // ME START Cube_1 updatePosz
- setTimeout(() => {
-  app.getSceneObjectByName('Cube_1').position.SetZ(-20);
- }, 200);
- // ME END Cube_1 updatePosz
- 
-          // ME START Cube_1 updatePosx
- setTimeout(() => {
-  app.getSceneObjectByName('Cube_1').position.SetX(-3);
- }, 200);
- // ME END Cube_1 updatePosx
- 
-      // ME START Cube_0 updatePosx
- setTimeout(() => {
-  app.getSceneObjectByName('Cube_0').position.SetX(3);
- }, 200);
- // ME END Cube_0 updatePosx
  
  
-       // ME START woman1
+      // ME START woman1
  var glbFile01 = await fetch('res/meshes/glb/woman1.glb').then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, app.device)));
    texturesPaths = ['./res/meshes/blender/cube.png']; 
     app.addGlbObj({ 
@@ -100,17 +70,9 @@ let app = new MatrixEngineWGPU(
  // ME END woman1
  
 
-       // ME START woman1-Maria-0 updatePosy
- setTimeout(() => {
-  app.getSceneObjectByName('woman1-Maria-0').position.SetY(-1);
- }, 800);
- // ME END woman1-Maria-0 updatePosy
  
-  // ME START woman1-Maria-0-sword-0 updatePosy
- setTimeout(() => {
-  app.getSceneObjectByName('woman1-Maria-0-sword-0').position.SetY(-1);
- }, 800);
- // ME END woman1-Maria-0-sword-0 updatePosy
+ 
+ 
  
  // [MAIN_REPLACE2]
  

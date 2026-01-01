@@ -21012,7 +21012,7 @@ var MatrixEngineWGPU = class {
       pass.setBindGroup(0, this.device.createBindGroup({
         layout: this.presentPipeline.getBindGroupLayout(0),
         entries: [
-          { binding: 0, resource: this.bloomPass ? this.bloomOutputTex : this.sceneTexture.createView() },
+          { binding: 0, resource: this.bloomPass.enabled === true ? this.bloomOutputTex : this.sceneTexture.createView() },
           { binding: 1, resource: this.presentSampler }
         ]
       }));
@@ -21307,21 +21307,6 @@ var app2 = new MatrixEngineWGPU(
           physics: { enabled: false, geometry: "Cube" }
         });
       }, { scale: [1, 1, 1] });
-      setTimeout(() => {
-        app3.getSceneObjectByName("Cube_0").position.SetZ(-20);
-      }, 200);
-      setTimeout(() => {
-        app3.getSceneObjectByName("Cube_1").position.SetY(0);
-      }, 200);
-      setTimeout(() => {
-        app3.getSceneObjectByName("Cube_1").position.SetZ(-20);
-      }, 200);
-      setTimeout(() => {
-        app3.getSceneObjectByName("Cube_1").position.SetX(-3);
-      }, 200);
-      setTimeout(() => {
-        app3.getSceneObjectByName("Cube_0").position.SetX(3);
-      }, 200);
       var glbFile01 = await fetch("res/meshes/glb/woman1.glb").then((res) => res.arrayBuffer().then((buf) => uploadGLBModel(buf, app3.device)));
       texturesPaths = ["./res/meshes/blender/cube.png"];
       app3.addGlbObj({
@@ -21335,12 +21320,6 @@ var app2 = new MatrixEngineWGPU(
         raycast: { enabled: true, radius: 2 },
         physics: { enabled: false, geometry: "Cube" }
       }, null, glbFile01);
-      setTimeout(() => {
-        app3.getSceneObjectByName("woman1-Maria-0").position.SetY(-1);
-      }, 800);
-      setTimeout(() => {
-        app3.getSceneObjectByName("woman1-Maria-0-sword-0").position.SetY(-1);
-      }, 800);
     });
   }
 );

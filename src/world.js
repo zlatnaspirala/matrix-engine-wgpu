@@ -831,7 +831,7 @@ export default class MatrixEngineWGPU {
       pass.setBindGroup(0, this.device.createBindGroup({
         layout: this.presentPipeline.getBindGroupLayout(0),
         entries: [
-          {binding: 0, resource: (this.bloomPass ?  this.bloomOutputTex : this.sceneTexture.createView())},
+          {binding: 0, resource: (this.bloomPass.enabled === true ?  this.bloomOutputTex : this.sceneTexture.createView())},
           {binding: 1, resource: this.presentSampler}
         ]
       }));
