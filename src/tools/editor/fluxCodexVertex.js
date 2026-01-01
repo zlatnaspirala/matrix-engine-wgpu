@@ -167,6 +167,8 @@ export default class FluxCodexVertex {
     <button onclick="app.editor.fluxCodexVertex.addNode('getSceneLight')">Get Scene Light</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('setPosition')">Set Position</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('translateByX')">Translate by X</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('translateByY')">Translate by Y</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('translateByZ')">Translate by Z</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('setSpeed')">Set Speed</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('getSpeed')">Get Speed</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('setRotation')">Set Rotation</button>
@@ -785,7 +787,7 @@ export default class FluxCodexVertex {
         .filter(key => typeof node.accessObject[key] === "function")
 
       // Only repopulate if length differs // +1 for placeholder
-      if(numOptions !== newLength.length + 1) { 
+      if(numOptions !== newLength.length + 1) {
         select.innerHTML = "";
         const placeholder = document.createElement("option");
         placeholder.value = "";
@@ -1011,7 +1013,6 @@ export default class FluxCodexVertex {
     // --- Header ---
     const header = document.createElement("div");
     header.className = "header";
-    console.log('.....................spec.title.', spec.title)
     header.textContent = spec.title;
     el.appendChild(header);
 
@@ -1308,10 +1309,7 @@ export default class FluxCodexVertex {
         outputs: [{name: "execOut", type: "action"}],
       }),
       if: (id, x, y) => ({
-        id,
-        title: "if",
-        x,
-        y,
+        id, title: "if", x, y,
         category: "logic",
         inputs: [
           {name: "exec", type: "action"},
@@ -1325,6 +1323,7 @@ export default class FluxCodexVertex {
           {key: "condition", value: true},
         ],
       }),
+
       genrand: (id, x, y) => ({
         id,
         title: "GenRandInt",
@@ -2219,15 +2218,23 @@ export default class FluxCodexVertex {
   getValue(nodeId, pinName, visited = new Set()) {
     const node = this.nodes[nodeId];
     if(visited.has(nodeId + ":" + pinName)) {
-      console.warn("[getValue] cycle blocked", nodeId, pinName);
+      // console.warn("[getValue] cycle blocked", nodeId, pinName);
       return undefined;
     }
     if(!node || visited.has(nodeId)) return undefined;
     visited.add(nodeId);
 
-    if(node.title === "if" && pinName === "condition" && this._execContext !== nodeId) {
-      console.warn(`[GET] Blocked IF condition outside exec for node ${nodeId}`);
-      return undefined;
+    if(node.title === "if" && pinName === "condition") {
+      let testLink = this.links.find(l => l.to.node === nodeId && l.to.pin === pinName);
+      let t = this.getValue(testLink.from.node, testLink.from.pin);
+      if(typeof t !== 'undefined') {
+        return t;
+      }
+      if(this._execContext !== nodeId) {
+        console.warn("[IF] condition read outside exec ignored");
+        return node.fields?.find(f => f.key === "condition")?.value;
+      }
+      // ?
     }
 
     if(node.isGetterNode) {
@@ -2287,7 +2294,7 @@ export default class FluxCodexVertex {
       const out = node.outputs.find(o => o.name === pinName);
       if(!out) return undefined;
 
-      if(pinName.indexOf('.' != -1)) {
+      if(pinName.indexOf('.') != -1) {
         return this.resolvePath(obj, pinName);
       }
 
@@ -2522,8 +2529,9 @@ export default class FluxCodexVertex {
     }
 
     if(n.title === "On Target Position Reach") {
-      console.info("On Target Position Reach ", pos);
+
       const pos = this.getValue(nodeId, "position");
+      console.info("On Target Position Reach ", pos);
       if(!pos) return;
       // Attach listener (engine-agnostic)
       pos.onTargetPositionReach = () => {

@@ -15852,6 +15852,8 @@ var FluxCodexVertex = class _FluxCodexVertex {
     <button onclick="app.editor.fluxCodexVertex.addNode('getSceneLight')">Get Scene Light</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('setPosition')">Set Position</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('translateByX')">Translate by X</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('translateByY')">Translate by Y</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('translateByZ')">Translate by Z</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('setSpeed')">Set Speed</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('getSpeed')">Get Speed</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('setRotation')">Set Rotation</button>
@@ -16544,7 +16546,6 @@ var FluxCodexVertex = class _FluxCodexVertex {
     el.dataset.id = spec.id;
     const header = document.createElement("div");
     header.className = "header";
-    console.log(".....................spec.title.", spec.title);
     header.textContent = spec.title;
     el.appendChild(header);
     const body = document.createElement("div");
@@ -17703,14 +17704,20 @@ var FluxCodexVertex = class _FluxCodexVertex {
   getValue(nodeId, pinName, visited = /* @__PURE__ */ new Set()) {
     const node2 = this.nodes[nodeId];
     if (visited.has(nodeId + ":" + pinName)) {
-      console.warn("[getValue] cycle blocked", nodeId, pinName);
       return void 0;
     }
     if (!node2 || visited.has(nodeId)) return void 0;
     visited.add(nodeId);
-    if (node2.title === "if" && pinName === "condition" && this._execContext !== nodeId) {
-      console.warn(`[GET] Blocked IF condition outside exec for node ${nodeId}`);
-      return void 0;
+    if (node2.title === "if" && pinName === "condition") {
+      let testLink = this.links.find((l) => l.to.node === nodeId && l.to.pin === pinName);
+      let t = this.getValue(testLink.from.node, testLink.from.pin);
+      if (typeof t !== "undefined") {
+        return t;
+      }
+      if (this._execContext !== nodeId) {
+        console.warn("[IF] condition read outside exec ignored");
+        return node2.fields?.find((f) => f.key === "condition")?.value;
+      }
     }
     if (node2.isGetterNode) {
       if (node2._returnCache === void 0) {
@@ -17756,7 +17763,7 @@ var FluxCodexVertex = class _FluxCodexVertex {
       if (!obj) return void 0;
       const out = node2.outputs.find((o) => o.name === pinName);
       if (!out) return void 0;
-      if (pinName.indexOf("." != -1)) {
+      if (pinName.indexOf(".") != -1) {
         return this.resolvePath(obj, pinName);
       }
       return obj[pinName];
@@ -17950,8 +17957,8 @@ var FluxCodexVertex = class _FluxCodexVertex {
       return;
     }
     if (n.title === "On Target Position Reach") {
-      console.info("On Target Position Reach ", pos);
       const pos = this.getValue(nodeId, "position");
+      console.info("On Target Position Reach ", pos);
       if (!pos) return;
       pos.onTargetPositionReach = () => {
         this.triggerNode(n);
