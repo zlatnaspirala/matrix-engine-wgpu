@@ -245,5 +245,17 @@ export class MEEditorClient {
       this.ws.send(o);
     });
 
+    document.addEventListener('web.editor.update.scale', (e) => {
+      console.log("[web.editor.update.scale]: ", e.detail);
+      console.info('web.editor.update.scale <signal>');
+      let o = {
+        action: "updateScale",
+        projectName: location.href.split('/public/')[1].split(".")[0],
+        data: e.detail
+      };
+      o = JSON.stringify(o);
+      this.ws.send(o);
+    });
+
   }
 }

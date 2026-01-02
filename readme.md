@@ -294,6 +294,12 @@ material: {type: 'power'},
 }, null, glbFile);
 ```
 
+Change only textures (no recreation of pipeline)
+```js
+await app.mainRenderBundle[0].loadTex0(['res/icons/editor/chatgpt-gen-bg.png']);
+app.mainRenderBundle[0].changeTexture(app.mainRenderBundle[0].texture0);
+```
+
 ### Bloom post processing
 Activete with : 
 ```js

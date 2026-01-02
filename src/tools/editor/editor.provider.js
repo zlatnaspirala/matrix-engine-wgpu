@@ -44,6 +44,24 @@ export default class EditorProvider {
             }));
             break;
           }
+        case 'scale':
+          {
+            console.log('change signal for scale');
+            if(e.detail.property == '0') {
+              document.dispatchEvent(new CustomEvent('web.editor.update.scale', {
+                detail: e.detail
+              }));
+            } else if(e.detail.property == '1') {
+              document.dispatchEvent(new CustomEvent('web.editor.update.scale', {
+                detail: e.detail
+              }));
+            } else if(e.detail.property == '2') {
+              document.dispatchEvent(new CustomEvent('web.editor.update.scale', {
+                detail: e.detail
+              }));
+            }
+            break;
+          }
         default:
           console.log('changes not saved.')
       }
@@ -121,7 +139,7 @@ export default class EditorProvider {
       e.detail.path = e.detail.path.replace('\\res', 'res');
       e.detail.path = e.detail.path.replace(/\\/g, '/');
       // THIS MUST BE SAME LIKE SERVER VERSION OF ADD CUBE
-      downloadMeshes({objMesh: `'${e.detail.path}'`}, (m) => {
+      downloadMeshes({objMesh: `${e.detail.path}`}, (m) => {
         const texturesPaths = './res/meshes/blender/cube.png';
         this.core.addMeshObj({
           position: {x: 0, y: 0, z: -20},
@@ -129,7 +147,7 @@ export default class EditorProvider {
           rotationSpeed: {x: 0, y: 0, z: 0},
           texturesPaths: [texturesPaths],
           // useUVShema4x2: true,
-          name: 'objmesh_' + app.mainRenderBundle.length,
+          name: 'Obj_' + app.mainRenderBundle.length,
           mesh: m.objMesh,
           raycast: {enabled: true, radius: 2},
           physics: {

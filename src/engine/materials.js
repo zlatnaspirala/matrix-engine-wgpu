@@ -122,6 +122,22 @@ export default class Materials {
     }
   }
 
+  /**
+ * Change ONLY base color texture (binding = 3)
+ * Does NOT rebuild pipeline or layout
+ */
+  changeTexture(newTexture) {
+    // Accept GPUTexture OR GPUTextureView
+    if(newTexture instanceof GPUTexture) {
+      this.texture0 = newTexture;
+    } else {
+      this.texture0 = {createView: () => newTexture};
+    }
+    this.isVideo = false;
+    // Recreate bind group only
+    this.createBindGroupForRender();
+  }
+
   getMaterial() {
     // console.log('Material TYPE:', this.material.type);
     if(this.material.type == 'standard') {

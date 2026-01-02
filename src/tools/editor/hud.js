@@ -60,13 +60,14 @@ export default class EditorHud {
           }));
         }
       } else if(ext == 'obj' && confirm("OBJ FILE 📦 Do you wanna add it to the scene ?")) {
+        let objName = prompt("📦 Enter uniq name : ");
         let name = prompt("📦 OBJ file : ", getPATH);
         if(confirm("⚛ Enable physics (Ammo)?")) {
           // infly 
           let o = {
             physics: true,
             path: name,
-            index: this.core.mainRenderBundle.length
+            index: objName
           }
           document.dispatchEvent(new CustomEvent('web.editor.addObj', {
             detail: o
@@ -76,7 +77,7 @@ export default class EditorHud {
           let o = {
             physics: false,
             path: name,
-            index: this.core.mainRenderBundle.length
+            index: objName
           }
           document.dispatchEvent(new CustomEvent('web.editor.addObj', {
             detail: o

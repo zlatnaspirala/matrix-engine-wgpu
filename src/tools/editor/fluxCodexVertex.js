@@ -176,6 +176,7 @@ export default class FluxCodexVertex {
     <button onclick="app.editor.fluxCodexVertex.addNode('setRotateX')">Set RotateX</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('setRotateY')">Set RotateY</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('setRotateZ')">Set RotateZ</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('setTexture')">Set Texture</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('onTargetPositionReach')">onTargetPositionReach</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('getObjectAnimation')">Get Object Animation</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('dynamicFunction')">Function Dinamic</button>
@@ -1291,23 +1292,19 @@ export default class FluxCodexVertex {
     // Node factory map
     const nodeFactories = {
       event: (id, x, y) => ({
-        id,
-        title: "onLoad",
-        x,
-        y,
+        id, title: "onLoad", x, y,
         category: "event",
         inputs: [],
         outputs: [{name: "exec", type: "action"}],
       }),
+
       function: (id, x, y) => ({
-        id,
-        title: "Function",
-        x,
-        y,
+        id, title: "Function", x, y,
         category: "action",
         inputs: [{name: "exec", type: "action"}],
         outputs: [{name: "execOut", type: "action"}],
       }),
+
       if: (id, x, y) => ({
         id, title: "if", x, y,
         category: "logic",
@@ -1325,10 +1322,7 @@ export default class FluxCodexVertex {
       }),
 
       genrand: (id, x, y) => ({
-        id,
-        title: "GenRandInt",
-        x,
-        y,
+        id, title: "GenRandInt", x, y,
         category: "value",
         inputs: [],
         outputs: [{name: "result", type: "value"}],
@@ -1337,11 +1331,9 @@ export default class FluxCodexVertex {
           {key: "max", value: "10"},
         ],
       }),
+
       print: (id, x, y) => ({
-        id,
-        title: "Print",
-        x,
-        y,
+        id, title: "Print", x, y,
         category: "actionprint",
         inputs: [
           {name: "exec", type: "action"},
@@ -1351,11 +1343,9 @@ export default class FluxCodexVertex {
         fields: [{key: "label", value: "Result"}],
         builtIn: true,
       }),
+
       timeout: (id, x, y) => ({
-        id,
-        title: "SetTimeout",
-        x,
-        y,
+        id, title: "SetTimeout", x, y,
         category: "timer",
         inputs: [
           {name: "exec", type: "action"},
@@ -1365,12 +1355,9 @@ export default class FluxCodexVertex {
         fields: [{key: "delay", value: "1000"}],
         builtIn: true,
       }),
-      // Math nodes
+      // Math
       add: (id, x, y) => ({
-        id,
-        title: "Add",
-        x,
-        y,
+        id, title: "Add", x, y,
         category: "math",
         inputs: [
           {name: "a", type: "value"},
@@ -1378,11 +1365,9 @@ export default class FluxCodexVertex {
         ],
         outputs: [{name: "result", type: "value"}],
       }),
+
       sub: (id, x, y) => ({
-        id,
-        title: "Sub",
-        x,
-        y,
+        id, title: "Sub", x, y,
         category: "math",
         inputs: [
           {name: "a", type: "value"},
@@ -1390,11 +1375,9 @@ export default class FluxCodexVertex {
         ],
         outputs: [{name: "result", type: "value"}],
       }),
+
       mul: (id, x, y) => ({
-        id,
-        title: "Mul",
-        x,
-        y,
+        id, title: "Mul", x, y,
         category: "math",
         inputs: [
           {name: "a", type: "value"},
@@ -1402,11 +1385,9 @@ export default class FluxCodexVertex {
         ],
         outputs: [{name: "result", type: "value"}],
       }),
+
       div: (id, x, y) => ({
-        id,
-        title: "Div",
-        x,
-        y,
+        id, title: "Div", x, y,
         category: "math",
         inputs: [
           {name: "a", type: "value"},
@@ -1414,24 +1395,21 @@ export default class FluxCodexVertex {
         ],
         outputs: [{name: "result", type: "value"}],
       }),
+
       sin: (id, x, y) => ({
-        id,
-        title: "Sin",
-        x,
-        y,
+        id, title: "Sin", x, y,
         category: "math",
         inputs: [{name: "a", type: "value"}],
         outputs: [{name: "result", type: "value"}],
       }),
+
       cos: (id, x, y) => ({
-        id,
-        title: "Cos",
-        x,
-        y,
+        id, title: "Cos", x, y,
         category: "math",
         inputs: [{name: "a", type: "value"}],
         outputs: [{name: "result", type: "value"}],
       }),
+
       pi: (id, x, y) => ({
         id,
         title: "Pi",
@@ -1711,6 +1689,18 @@ export default class FluxCodexVertex {
           {name: "exec", type: "action"},
           {name: "position", semantic: "position"},
           {name: "thrust", semantic: "number"},
+        ],
+        outputs: [{name: "execOut", type: "action"}],
+      }),
+
+      setTexture: (id, x, y) => ({
+        id, x, y,
+        title: "Set Texture",
+        category: "scene",
+        inputs: [
+          {name: "exec", type: "action"},
+          {name: "texturePath", semantic: "texturePath"},
+          {name: "sceneObjectName", semantic: "string"},
         ],
         outputs: [{name: "execOut", type: "action"}],
       }),
@@ -2693,6 +2683,20 @@ export default class FluxCodexVertex {
         // this.getValue(nodeId, "thrust")
         console.log('pos.getSpeed()', pos.getSpeed())
         n._returnCache = pos.getSpeed();
+      }
+      this.enqueueOutputs(n, "execOut");
+      return;
+    } else if(n.title === "Set Texture") {
+      const texpath = this.getValue(nodeId, "texturePath");
+      const sceneObjectName = this.getValue(nodeId, "sceneObjectName");
+      // sceneObjectName
+      if(texpath) {
+        console.log('textPath', texpath)
+        console.log('sceneObjectName', sceneObjectName)
+        app.getSceneObjectByName(sceneObjectName).loadTex0([texpath]);
+        app.mainRenderBundle[0].changeTexture(app.mainRenderBundle[0].texture0);
+        // pos.setSpeed(this.getValue(nodeId, "thrust"));
+
       }
       this.enqueueOutputs(n, "execOut");
       return;

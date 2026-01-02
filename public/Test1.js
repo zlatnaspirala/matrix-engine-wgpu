@@ -3648,9 +3648,9 @@ var MECube = class {
       resolve();
     });
   }
-  async loadTex0(texturesPaths2, device) {
+  async loadTex0(texturesPaths, device) {
     return new Promise(async (resolve) => {
-      const response = await fetch(texturesPaths2[0]);
+      const response = await fetch(texturesPaths[0]);
       const imageBitmap = await createImageBitmap(await response.blob());
       console.log("WHAT IS THIS ", this);
       this.texture0 = device.createTexture({
@@ -5347,6 +5347,19 @@ var Materials = class {
       });
     }
   }
+  /**
+  * Change ONLY base color texture (binding = 3)
+  * Does NOT rebuild pipeline or layout
+  */
+  changeTexture(newTexture) {
+    if (newTexture instanceof GPUTexture) {
+      this.texture0 = newTexture;
+    } else {
+      this.texture0 = { createView: () => newTexture };
+    }
+    this.isVideo = false;
+    this.createBindGroupForRender();
+  }
   getMaterial() {
     if (this.material.type == "standard") {
       return fragmentWGSL;
@@ -5388,13 +5401,13 @@ var Materials = class {
     const arrayBuffer = new Uint32Array([mode]);
     this.device.queue.writeBuffer(this.postFXModeBuffer, 0, arrayBuffer);
   }
-  async loadTex0(texturesPaths2) {
+  async loadTex0(texturesPaths) {
     this.sampler = this.device.createSampler({
       magFilter: "linear",
       minFilter: "linear"
     });
     return new Promise(async (resolve) => {
-      const response = await fetch(texturesPaths2[0]);
+      const response = await fetch(texturesPaths[0]);
       const imageBitmap = await createImageBitmap(await response.blob());
       this.texture0 = this.device.createTexture({
         size: [imageBitmap.width, imageBitmap.height, 1],
@@ -6528,8 +6541,8 @@ var MEMeshObj = class extends Materials {
           mat4Impl.rotateZ(modelMatrix2, this.rotation.getRotZ(), modelMatrix2);
         }
         if (this.glb || this.objAnim) {
-          mat4Impl.scale(modelMatrix2, [this.scale[0], this.scale[1], this.scale[2]], modelMatrix2);
         }
+        mat4Impl.scale(modelMatrix2, [this.scale[0], this.scale[1], this.scale[2]], modelMatrix2);
         return modelMatrix2;
       };
       const modelMatrix = mat4Impl.translation([0, 0, 0]);
@@ -11853,13 +11866,13 @@ var MaterialsInstanced = class {
     const arrayBuffer = new Uint32Array([mode]);
     this.device.queue.writeBuffer(this.postFXModeBuffer, 0, arrayBuffer);
   }
-  async loadTex0(texturesPaths2) {
+  async loadTex0(texturesPaths) {
     this.sampler = this.device.createSampler({
       magFilter: "linear",
       minFilter: "linear"
     });
     return new Promise(async (resolve) => {
-      const response = await fetch(texturesPaths2[0]);
+      const response = await fetch(texturesPaths[0]);
       const imageBitmap = await createImageBitmap(await response.blob());
       this.texture0 = this.device.createTexture({
         size: [imageBitmap.width, imageBitmap.height, 1],
@@ -15593,6 +15606,17 @@ var MEEditorClient = class {
       o = JSON.stringify(o);
       this.ws.send(o);
     });
+    document.addEventListener("web.editor.update.scale", (e) => {
+      console.log("[web.editor.update.scale]: ", e.detail);
+      console.info("web.editor.update.scale <signal>");
+      let o = {
+        action: "updateScale",
+        projectName: location.href.split("/public/")[1].split(".")[0],
+        data: e.detail
+      };
+      o = JSON.stringify(o);
+      this.ws.send(o);
+    });
   }
 };
 
@@ -15623,6 +15647,23 @@ var EditorProvider = class {
           }));
           break;
         }
+        case "scale": {
+          console.log("change signal for scale");
+          if (e.detail.property == "0") {
+            document.dispatchEvent(new CustomEvent("web.editor.update.scale", {
+              detail: e.detail
+            }));
+          } else if (e.detail.property == "1") {
+            document.dispatchEvent(new CustomEvent("web.editor.update.scale", {
+              detail: e.detail
+            }));
+          } else if (e.detail.property == "2") {
+            document.dispatchEvent(new CustomEvent("web.editor.update.scale", {
+              detail: e.detail
+            }));
+          }
+          break;
+        }
         default:
           console.log("changes not saved.");
       }
@@ -15636,12 +15677,12 @@ var EditorProvider = class {
     });
     document.addEventListener("web.editor.addCube", (e) => {
       downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, (m) => {
-        const texturesPaths2 = "./res/meshes/blender/cube.png";
+        const texturesPaths = "./res/meshes/blender/cube.png";
         this.core.addMeshObj({
           position: { x: 0, y: 0, z: -20 },
           rotation: { x: 0, y: 0, z: 0 },
           rotationSpeed: { x: 0, y: 0, z: 0 },
-          texturesPaths: [texturesPaths2],
+          texturesPaths: [texturesPaths],
           // useUVShema4x2: true,
           name: "Cube_" + app.mainRenderBundle.length,
           mesh: m.cube,
@@ -15655,12 +15696,12 @@ var EditorProvider = class {
     });
     document.addEventListener("web.editor.addSphere", (e) => {
       downloadMeshes({ cube: "./res/meshes/shapes/sphere.obj" }, (m) => {
-        const texturesPaths2 = "./res/meshes/blender/cube.png";
+        const texturesPaths = "./res/meshes/blender/cube.png";
         this.core.addMeshObj({
           position: { x: 0, y: 0, z: -20 },
           rotation: { x: 0, y: 0, z: 0 },
           rotationSpeed: { x: 0, y: 0, z: 0 },
-          texturesPaths: [texturesPaths2],
+          texturesPaths: [texturesPaths],
           // useUVShema4x2: true,
           name: "Sphere_" + app.mainRenderBundle.length,
           mesh: m.cube,
@@ -15688,15 +15729,15 @@ var EditorProvider = class {
       console.log("[web.editor.addObj]: ", e.detail);
       e.detail.path = e.detail.path.replace("\\res", "res");
       e.detail.path = e.detail.path.replace(/\\/g, "/");
-      downloadMeshes({ objMesh: `'${e.detail.path}'` }, (m) => {
-        const texturesPaths2 = "./res/meshes/blender/cube.png";
+      downloadMeshes({ objMesh: `${e.detail.path}` }, (m) => {
+        const texturesPaths = "./res/meshes/blender/cube.png";
         this.core.addMeshObj({
           position: { x: 0, y: 0, z: -20 },
           rotation: { x: 0, y: 0, z: 0 },
           rotationSpeed: { x: 0, y: 0, z: 0 },
-          texturesPaths: [texturesPaths2],
+          texturesPaths: [texturesPaths],
           // useUVShema4x2: true,
-          name: "objmesh_" + app.mainRenderBundle.length,
+          name: "Obj_" + app.mainRenderBundle.length,
           mesh: m.objMesh,
           raycast: { enabled: true, radius: 2 },
           physics: {
@@ -15861,6 +15902,7 @@ var FluxCodexVertex = class _FluxCodexVertex {
     <button onclick="app.editor.fluxCodexVertex.addNode('setRotateX')">Set RotateX</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('setRotateY')">Set RotateY</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('setRotateZ')">Set RotateZ</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('setTexture')">Set Texture</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('onTargetPositionReach')">onTargetPositionReach</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('getObjectAnimation')">Get Object Animation</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('dynamicFunction')">Function Dinamic</button>
@@ -16833,7 +16875,7 @@ var FluxCodexVertex = class _FluxCodexVertex {
         fields: [{ key: "delay", value: "1000" }],
         builtIn: true
       }),
-      // Math nodes
+      // Math
       add: (id2, x2, y2) => ({
         id: id2,
         title: "Add",
@@ -17231,6 +17273,19 @@ var FluxCodexVertex = class _FluxCodexVertex {
           { name: "exec", type: "action" },
           { name: "position", semantic: "position" },
           { name: "thrust", semantic: "number" }
+        ],
+        outputs: [{ name: "execOut", type: "action" }]
+      }),
+      setTexture: (id2, x2, y2) => ({
+        id: id2,
+        x: x2,
+        y: y2,
+        title: "Set Texture",
+        category: "scene",
+        inputs: [
+          { name: "exec", type: "action" },
+          { name: "texturePath", semantic: "texturePath" },
+          { name: "sceneObjectName", semantic: "string" }
         ],
         outputs: [{ name: "execOut", type: "action" }]
       }),
@@ -18088,6 +18143,17 @@ var FluxCodexVertex = class _FluxCodexVertex {
       }
       this.enqueueOutputs(n, "execOut");
       return;
+    } else if (n.title === "Set Texture") {
+      const texpath = this.getValue(nodeId, "texturePath");
+      const sceneObjectName = this.getValue(nodeId, "sceneObjectName");
+      if (texpath) {
+        console.log("textPath", texpath);
+        console.log("sceneObjectName", sceneObjectName);
+        app.getSceneObjectByName(sceneObjectName).loadTex0([texpath]);
+        app.mainRenderBundle[0].changeTexture(app.mainRenderBundle[0].texture0);
+      }
+      this.enqueueOutputs(n, "execOut");
+      return;
     } else if (n.title === "Set Speed") {
       const pos = this.getValue(nodeId, "position");
       if (pos?.setSpeed) {
@@ -18542,12 +18608,13 @@ var EditorHud = class {
           }));
         }
       } else if (ext == "obj" && confirm("OBJ FILE \u{1F4E6} Do you wanna add it to the scene ?")) {
+        let objName = prompt("\u{1F4E6} Enter uniq name : ");
         let name = prompt("\u{1F4E6} OBJ file : ", getPATH);
         if (confirm("\u269B Enable physics (Ammo)?")) {
           let o = {
             physics: true,
             path: name,
-            index: this.core.mainRenderBundle.length
+            index: objName
           };
           document.dispatchEvent(new CustomEvent("web.editor.addObj", {
             detail: o
@@ -18556,7 +18623,7 @@ var EditorHud = class {
           let o = {
             physics: false,
             path: name,
-            index: this.core.mainRenderBundle.length
+            index: objName
           };
           document.dispatchEvent(new CustomEvent("web.editor.addObj", {
             detail: o
@@ -21282,44 +21349,56 @@ var app2 = new MatrixEngineWGPU(
     addEventListener("AmmoReady", async () => {
       app3.addLight();
       downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, (m) => {
-        let texturesPaths2 = ["./res/meshes/blender/cube.png"];
+        let texturesPaths = ["./res/meshes/blender/cube.png"];
         app3.addMeshObj({
           position: { x: 0, y: 0, z: -20 },
           rotation: { x: 0, y: 0, z: 0 },
           rotationSpeed: { x: 0, y: 0, z: 0 },
-          texturesPaths: [texturesPaths2],
-          name: "Cube_" + app3.mainRenderBundle.length,
+          texturesPaths: [texturesPaths],
+          name: "FLOOR",
           mesh: m.cube,
           raycast: { enabled: true, radius: 2 },
           physics: { enabled: false, geometry: "Cube" }
         });
       }, { scale: [1, 1, 1] });
+      setTimeout(() => {
+        app3.getSceneObjectByName("FLOOR").scale[0] = 15;
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("FLOOR").scale[2] = 15;
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("FLOOR").scale[1] = 0.01;
+      }, 800);
       downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, (m) => {
-        let texturesPaths2 = ["./res/meshes/blender/cube.png"];
+        let texturesPaths = ["./res/meshes/blender/cube.png"];
         app3.addMeshObj({
           position: { x: 0, y: 0, z: -20 },
           rotation: { x: 0, y: 0, z: 0 },
           rotationSpeed: { x: 0, y: 0, z: 0 },
-          texturesPaths: [texturesPaths2],
-          name: "Cube_" + app3.mainRenderBundle.length,
+          texturesPaths: [texturesPaths],
+          name: "Cube_1",
           mesh: m.cube,
           raycast: { enabled: true, radius: 2 },
           physics: { enabled: false, geometry: "Cube" }
         });
       }, { scale: [1, 1, 1] });
-      var glbFile01 = await fetch("res/meshes/glb/woman1.glb").then((res) => res.arrayBuffer().then((buf) => uploadGLBModel(buf, app3.device)));
-      texturesPaths = ["./res/meshes/blender/cube.png"];
-      app3.addGlbObj({
-        position: { x: 0, y: 0, z: -20 },
-        rotation: { x: 0, y: 0, z: 0 },
-        rotationSpeed: { x: 0, y: 0, z: 0 },
-        texturesPaths: [texturesPaths],
-        scale: [2, 2, 2],
-        name: app3.getNameFromPath("res/meshes/glb/woman1.glb"),
-        material: { type: "power", useTextureFromGlb: true },
-        raycast: { enabled: true, radius: 2 },
-        physics: { enabled: false, geometry: "Cube" }
-      }, null, glbFile01);
+      downloadMeshes({ cube: "res/meshes/obj/reel.obj" }, (m) => {
+        const texturesPaths = ["./res/meshes/blender/cube.png"];
+        app3.addMeshObj({
+          position: { x: 0, y: 0, z: -20 },
+          rotation: { x: 0, y: 0, z: 0 },
+          rotationSpeed: { x: 0, y: 0, z: 0 },
+          texturesPaths: [texturesPaths],
+          name: "Obj_" + app3.mainRenderBundle.length,
+          mesh: m.cube,
+          raycast: { enabled: true, radius: 2 },
+          physics: { enabled: true, geometry: "Cube" }
+        });
+      }, { scale: [1, 1, 1] });
+      setTimeout(() => {
+        app3.getSceneObjectByName("Obj_2").position.SetY(4.55);
+      }, 800);
     });
   }
 );

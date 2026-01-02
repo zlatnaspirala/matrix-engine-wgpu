@@ -89,6 +89,8 @@ wss.on("connection", ws => {
         updatePos(msg, ws);
       } else if(msg.action == "updateRot") {
         updateRot(msg, ws);
+      } else if(msg.action == "updateScale") {
+        updateScale(msg, ws);
       }
 
     } catch(err) {
@@ -345,7 +347,7 @@ async function addCube(msg, ws) {
   content.addLine(`   app.addMeshObj({`);
   content.addLine(`     position: {x: 0, y: 0, z: -20}, rotation: {x: 0, y: 0, z: 0}, rotationSpeed: {x: 0, y: 0, z: 0},`);
   content.addLine(`     texturesPaths: [texturesPaths],`);
-  content.addLine(`     name: 'Cube_' + app.mainRenderBundle.length,`);
+  content.addLine(`     name: 'Cube_' + ${msg.options.index},`);
   content.addLine(`     mesh: m.cube,`);
   content.addLine(`     raycast: {enabled: true, radius: 2},`);
   content.addLine(`     physics: {enabled: ${msg.options.physics}, geometry: "Cube"}`);
@@ -436,7 +438,7 @@ async function addObj(msg, ws) {
   content.addLine(`   app.addMeshObj({`);
   content.addLine(`     position: {x: 0, y: 0, z: -20}, rotation: {x: 0, y: 0, z: 0}, rotationSpeed: {x: 0, y: 0, z: 0},`);
   content.addLine(`     texturesPaths: [texturesPaths],`);
-  content.addLine(`     name: 'Obj_' + app.mainRenderBundle.length,`);
+  content.addLine(`     name: 'Obj_' + ${msg.options.index},`);
   content.addLine(`     mesh: m.cube,`);
   content.addLine(`     raycast: {enabled: true, radius: 2},`);
   content.addLine(`     physics: {enabled: ${msg.options.physics}, geometry: "Cube"}`);
@@ -522,6 +524,24 @@ async function updateRot(msg, ws) {
   })
 }
 
+async function updateScale(msg, ws) {
+  //  // inputFor: "Cube_0" property: "0 1 2" propertyId: "scale" value: "1"
+  console.log('msg scale update :', msg.data);
+  const content = new CodeBuilder();
+  content.addLine(` // ME START ${msg.data.inputFor} ${msg.action + msg.data.property}`);
+  content.addLine(` setTimeout(() => {`);
+  content.addLine(`  app.getSceneObjectByName('${msg.data.inputFor}').scale[${msg.data.property}] = ${msg.data.value};`);
+  content.addLine(` }, 800);`);
+  content.addLine(` // ME END ${msg.data.inputFor} ${msg.action + msg.data.property}`);
+
+  const objScript = path.join(PROJECTS_DIR, msg.projectName + "\\app-gen.js");
+  fs.readFile(objScript).then((b) => {
+    let text = b.toString("utf8");
+    text = removeSceneBlock(text, (msg.action + msg.data.property), msg.data.inputFor);
+    text = text.replace('// [MAIN_REPLACE2]', `${content.toString()} \n // [MAIN_REPLACE2]`);
+    saveScript(objScript, text, ws);
+  })
+}
 // Delete object script code
 async function deleteSceneObject(n, ws) {
   const objScript = path.join(PROJECTS_DIR, PROJECT_NAME + "\\app-gen.js");

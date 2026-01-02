@@ -26007,6 +26007,28 @@ class Materials {
       });
     }
   }
+
+  /**
+  * Change ONLY base color texture (binding = 3)
+  * Does NOT rebuild pipeline or layout
+  */
+  changeTexture(newTexture) {
+    // Accept GPUTexture OR GPUTextureView
+    if (newTexture instanceof GPUTexture) {
+      this.texture0 = newTexture;
+    } else {
+      // assume it's already a view
+      this.texture0 = {
+        createView: () => newTexture
+      };
+    }
+
+    // Mark as non-video path
+    this.isVideo = false;
+
+    // Recreate bind group only
+    this.createBindGroupForRender();
+  }
   getMaterial() {
     // console.log('Material TYPE:', this.material.type);
     if (this.material.type == 'standard') {
@@ -27369,8 +27391,9 @@ class MEMeshObj extends _materials.default {
         // Apply scale if you have it, e.g.:
         // console.warn('what is csle comes from user level not glb ', this.scale)
         if (this.glb || this.objAnim) {
-          _wgpuMatrix.mat4.scale(modelMatrix, [this.scale[0], this.scale[1], this.scale[2]], modelMatrix);
+          // mat4.scale(modelMatrix, [this.scale[0], this.scale[1], this.scale[2]], modelMatrix);
         }
+        _wgpuMatrix.mat4.scale(modelMatrix, [this.scale[0], this.scale[1], this.scale[2]], modelMatrix);
         return modelMatrix;
       };
 
@@ -32111,6 +32134,17 @@ class MEEditorClient {
       o = JSON.stringify(o);
       this.ws.send(o);
     });
+    document.addEventListener('web.editor.update.scale', e => {
+      console.log("[web.editor.update.scale]: ", e.detail);
+      console.info('web.editor.update.scale <signal>');
+      let o = {
+        action: "updateScale",
+        projectName: location.href.split('/public/')[1].split(".")[0],
+        data: e.detail
+      };
+      o = JSON.stringify(o);
+      this.ws.send(o);
+    });
   }
 }
 exports.MEEditorClient = MEEditorClient;
@@ -32182,7 +32216,13 @@ class Editor {
       <span>Scene objects [agnostic]</span>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getSceneObject')">Get scene object</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setPosition')">Set position</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setSpeed')">Set Speed</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getSpeed')">Get Speed</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setRotation')">Set rotation</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setRotate')">Set Rotate</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setRotateX')">Set RotateX</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setRotateY')">Set RotateY</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setRotateZ')">Set RotateZ</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('translateByX')">TranslateByX</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('translateByY')">TranslateByY</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('translateByZ')">TranslateByZ</button>
@@ -32278,6 +32318,24 @@ class EditorProvider {
             if (e.detail.property == 'x' || e.detail.property == 'y' || e.detail.property == 'z') document.dispatchEvent(new CustomEvent('web.editor.update.rot', {
               detail: e.detail
             }));
+            break;
+          }
+        case 'scale':
+          {
+            console.log('change signal for scale');
+            if (e.detail.property == '0') {
+              document.dispatchEvent(new CustomEvent('web.editor.update.scale', {
+                detail: e.detail
+              }));
+            } else if (e.detail.property == '1') {
+              document.dispatchEvent(new CustomEvent('web.editor.update.scale', {
+                detail: e.detail
+              }));
+            } else if (e.detail.property == '2') {
+              document.dispatchEvent(new CustomEvent('web.editor.update.scale', {
+                detail: e.detail
+              }));
+            }
             break;
           }
         default:
@@ -32614,6 +32672,9 @@ class FluxCodexVertex {
     <button onclick="app.editor.fluxCodexVertex.addNode('getSceneObject')">Get Scene Object</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('getSceneLight')">Get Scene Light</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('setPosition')">Set Position</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('translateByX')">Translate by X</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('translateByY')">Translate by Y</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('translateByZ')">Translate by Z</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('setSpeed')">Set Speed</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('getSpeed')">Get Speed</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('setRotation')">Set Rotation</button>
@@ -32863,14 +32924,8 @@ class FluxCodexVertex {
         btnDel.style.color = "#ff5252";
         btnDel.onclick = () => {
           if (!confirm(`Delete variable "${name}" (${type}) ?`)) return;
-
-          // remove variable
           delete this.variables[type][name];
-
-          // remove cached input ref
           delete this._varInputs[`${type}.${name}`];
-
-          // refresh UI
           this._refreshVarsList(container);
         };
         row.append(label, input, btnGet, btnSet, btnDel);
@@ -33044,13 +33099,11 @@ class FluxCodexVertex {
   adaptRefFunctionNode(node, fnRef) {
     const args = this.getArgNames(fnRef);
     const hasReturn = this.hasReturn(fnRef);
-
     // Preserve exec + reference pins
     const preservedInputs = node.inputs.filter(p => p.type === "action" || p.name === "reference");
     const preservedOutputs = node.outputs.filter(p => p.type === "action");
     node.inputs = [...preservedInputs];
     node.outputs = [...preservedOutputs];
-
     // 🔹 Real argument pins
     args.forEach(arg => {
       if (!node.inputs.some(p => p.name === arg)) {
@@ -33060,7 +33113,6 @@ class FluxCodexVertex {
         });
       }
     });
-
     // 🔹 Real return
     if (hasReturn) {
       if (!node.outputs.some(p => p.name === "return")) {
@@ -33070,7 +33122,6 @@ class FluxCodexVertex {
         });
       }
     }
-
     // Execution logic
     node.fn = (...callArgs) => fnRef(...callArgs);
     this.updateNodeDOM(node.id);
@@ -33108,8 +33159,8 @@ class FluxCodexVertex {
     if (node.title === "Get Scene Object" || node.title === "Get Scene Light" || node.title === "Get Scene Animation") {
       const select = el.querySelector("select.scene-select");
       if (select) {
-        console.log('TEST!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
-        const objects = spec.accessObject || []; // window.app?.mainRenderBundle || [];
+        console.log('!TEST! ???');
+        const objects = spec.accessObject || [];
         objects.forEach(obj => {
           const opt = document.createElement("option");
           opt.value = obj.name;
@@ -33120,11 +33171,6 @@ class FluxCodexVertex {
         if (selected) {
           select.value = selected;
         }
-        // // restore previous value
-        // const field = node.fields?.find(f => f.key === "object");
-        // if(field?.value) {
-        //   select.value = field.value;
-        // }
       }
     } else if (node.category === "action" && node.title === "Function") {
       let select = el.querySelector("select.method-select");
@@ -33196,10 +33242,8 @@ class FluxCodexVertex {
       const numOptions = select.options.length;
       const newLength = Object.keys(node.accessObject).filter(key => typeof node.accessObject[key] === "function");
 
-      // Only repopulate if length differs
+      // Only repopulate if length differs // +1 for placeholder
       if (numOptions !== newLength.length + 1) {
-        // +1 for placeholder
-        console.log('BALBLA');
         select.innerHTML = "";
         const placeholder = document.createElement("option");
         placeholder.value = "";
@@ -33247,7 +33291,6 @@ class FluxCodexVertex {
         this.adaptRefFunctionNode(toNode, fnRef);
       }
     }
-
     // generic hook
     this.onPinsConnected(fromNode, from.pin, toNode, to.pin);
   }
@@ -33403,7 +33446,6 @@ class FluxCodexVertex {
     // --- Header ---
     const header = document.createElement("div");
     header.className = "header";
-    console.log('.....................spec.title.', spec.title);
     header.textContent = spec.title;
     el.appendChild(header);
 
@@ -33684,8 +33726,7 @@ class FluxCodexVertex {
         fields: [{
           key: "condition",
           value: true
-        } // default literal for condition
-        ]
+        }]
       }),
       genrand: (id, x, y) => ({
         id,
@@ -34462,6 +34503,8 @@ class FluxCodexVertex {
       }),
       translateByX: (id, x, y) => ({
         id,
+        x,
+        y,
         title: "Translate By X",
         category: "scene",
         inputs: [{
@@ -34482,6 +34525,8 @@ class FluxCodexVertex {
       }),
       translateByY: (id, x, y) => ({
         id,
+        x,
+        y,
         title: "Translate By Y",
         category: "scene",
         inputs: [{
@@ -34501,6 +34546,8 @@ class FluxCodexVertex {
       }),
       translateByZ: (id, x, y) => ({
         id,
+        x,
+        y,
         title: "Translate By Z",
         category: "scene",
         inputs: [{
@@ -34520,6 +34567,8 @@ class FluxCodexVertex {
       }),
       onTargetPositionReach: (id, x, y) => ({
         id,
+        x,
+        y,
         title: "On Target Position Reach",
         category: "event",
         noExec: true,
@@ -34937,14 +34986,22 @@ class FluxCodexVertex {
   getValue(nodeId, pinName, visited = new Set()) {
     const node = this.nodes[nodeId];
     if (visited.has(nodeId + ":" + pinName)) {
-      console.warn("[getValue] cycle blocked", nodeId, pinName);
+      // console.warn("[getValue] cycle blocked", nodeId, pinName);
       return undefined;
     }
     if (!node || visited.has(nodeId)) return undefined;
     visited.add(nodeId);
-    if (node.title === "if" && pinName === "condition" && this._execContext !== nodeId) {
-      console.warn(`[GET] Blocked IF condition outside exec for node ${nodeId}`);
-      return undefined;
+    if (node.title === "if" && pinName === "condition") {
+      let testLink = this.links.find(l => l.to.node === nodeId && l.to.pin === pinName);
+      let t = this.getValue(testLink.from.node, testLink.from.pin);
+      if (typeof t !== 'undefined') {
+        return t;
+      }
+      if (this._execContext !== nodeId) {
+        console.warn("[IF] condition read outside exec ignored");
+        return node.fields?.find(f => f.key === "condition")?.value;
+      }
+      // ?
     }
     if (node.isGetterNode) {
       if (node._returnCache === undefined) {
@@ -34995,7 +35052,7 @@ class FluxCodexVertex {
       if (!obj) return undefined;
       const out = node.outputs.find(o => o.name === pinName);
       if (!out) return undefined;
-      if (pinName.indexOf('.' != -1)) {
+      if (pinName.indexOf('.') != -1) {
         return this.resolvePath(obj, pinName);
       }
       return obj[pinName];
@@ -35215,8 +35272,8 @@ class FluxCodexVertex {
       return;
     }
     if (n.title === "On Target Position Reach") {
-      console.info("On Target Position Reach ", pos);
       const pos = this.getValue(nodeId, "position");
+      console.info("On Target Position Reach ", pos);
       if (!pos) return;
       // Attach listener (engine-agnostic)
       pos.onTargetPositionReach = () => {
@@ -38195,7 +38252,7 @@ class MatrixEngineWGPU {
         layout: this.presentPipeline.getBindGroupLayout(0),
         entries: [{
           binding: 0,
-          resource: this.bloomPass ? this.bloomOutputTex : this.sceneTexture.createView()
+          resource: this.bloomPass.enabled === true ? this.bloomOutputTex : this.sceneTexture.createView()
         }, {
           binding: 1,
           resource: this.presentSampler

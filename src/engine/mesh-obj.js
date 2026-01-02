@@ -581,8 +581,9 @@ export default class MEMeshObj extends Materials {
         // Apply scale if you have it, e.g.:
         // console.warn('what is csle comes from user level not glb ', this.scale)
         if(this.glb || this.objAnim) {
-          mat4.scale(modelMatrix, [this.scale[0], this.scale[1], this.scale[2]], modelMatrix);
+          // mat4.scale(modelMatrix, [this.scale[0], this.scale[1], this.scale[2]], modelMatrix);
         }
+        mat4.scale(modelMatrix, [this.scale[0], this.scale[1], this.scale[2]], modelMatrix);
         return modelMatrix;
       };
 
