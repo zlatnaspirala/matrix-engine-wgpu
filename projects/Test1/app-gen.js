@@ -76,28 +76,10 @@ let app = new MatrixEngineWGPU(
  
 
       
-       // ME START Obj_MASHINE_PART_1
- downloadMeshes({cube: "res/meshes/obj/reel.obj"}, (m) => { 
-   const texturesPaths = ['./res/meshes/blender/cube.png']; 
-   app.addMeshObj({
-     position: {x: 0, y: 0, z: -20}, rotation: {x: 0, y: 0, z: 0}, rotationSpeed: {x: 0, y: 0, z: 0},
-     texturesPaths: [texturesPaths],
-     name: 'Obj_' + app.mainRenderBundle.length,
-     mesh: m.cube,
-     raycast: {enabled: true, radius: 2},
-     physics: {enabled: true, geometry: "Cube"}
-   }); 
- }, {scale: [1, 1, 1]});  
- // ME END Obj_MASHINE_PART_1
+ 
  
 
-                       // ME START Obj_2 updatePosy
- setTimeout(() => {
-  app.getSceneObjectByName('Obj_2').position.SetY(4.55);
- }, 800);
- // ME END Obj_2 updatePosy
- 
- // [MAIN_REPLACE2]
+                       // [MAIN_REPLACE2]
  
     })
   });

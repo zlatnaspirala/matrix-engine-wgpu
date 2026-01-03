@@ -38,12 +38,13 @@ export default class EditorHud {
 
       if(ext == 'glb' && confirm("GLB FILE 📦 Do you wanna add it to the scene ?")) {
         let name = prompt("📦 GLB file : ", getPATH);
+        let objName = prompt("📦 Enter uniq name: ");
         if(confirm("⚛ Enable physics (Ammo)?")) {
           // infly
           let o = {
             physics: true,
             path: getPATH,
-            index: this.core.mainRenderBundle.length
+            index: objName
           }
           document.dispatchEvent(new CustomEvent('web.editor.addGlb', {
             detail: o
@@ -53,14 +54,14 @@ export default class EditorHud {
           let o = {
             physics: false,
             path: getPATH,
-            index: this.core.mainRenderBundle.length
+            index: objName
           }
           document.dispatchEvent(new CustomEvent('web.editor.addGlb', {
             detail: o
           }));
         }
       } else if(ext == 'obj' && confirm("OBJ FILE 📦 Do you wanna add it to the scene ?")) {
-        let objName = prompt("📦 Enter uniq name : ");
+        let objName = prompt("📦 Enter uniq name: ");
         let name = prompt("📦 OBJ file : ", getPATH);
         if(confirm("⚛ Enable physics (Ammo)?")) {
           // infly 

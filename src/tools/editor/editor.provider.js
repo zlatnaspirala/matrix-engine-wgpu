@@ -147,7 +147,7 @@ export default class EditorProvider {
           rotationSpeed: {x: 0, y: 0, z: 0},
           texturesPaths: [texturesPaths],
           // useUVShema4x2: true,
-          name: 'Obj_' + app.mainRenderBundle.length,
+          name: e.detail.index,
           mesh: m.objMesh,
           raycast: {enabled: true, radius: 2},
           physics: {

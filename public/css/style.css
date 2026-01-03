@@ -1553,6 +1553,7 @@ body {
   position: absolute;
   inset: 0;
   transform-origin: 0 0;
+  transform: translate(x, y) scale(zoom);
   border: solid 0.5px rgba(144, 144, 144, 0.4);
 }
 
@@ -1563,6 +1564,7 @@ svg.connections {
   height: 100%;
   pointer-events: none;
   overflow: visible;
+  transform: none !important;
 }
 
 /* --- UPDATED NODE STYLE --- */

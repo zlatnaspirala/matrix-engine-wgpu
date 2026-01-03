@@ -15737,7 +15737,7 @@ var EditorProvider = class {
           rotationSpeed: { x: 0, y: 0, z: 0 },
           texturesPaths: [texturesPaths],
           // useUVShema4x2: true,
-          name: "Obj_" + app.mainRenderBundle.length,
+          name: e.detail.index,
           mesh: m.objMesh,
           raycast: { enabled: true, radius: 2 },
           physics: {
@@ -18588,11 +18588,12 @@ var EditorHud = class {
       const ext = getPATH.split(".").pop();
       if (ext == "glb" && confirm("GLB FILE \u{1F4E6} Do you wanna add it to the scene ?")) {
         let name = prompt("\u{1F4E6} GLB file : ", getPATH);
+        let objName = prompt("\u{1F4E6} Enter uniq name: ");
         if (confirm("\u269B Enable physics (Ammo)?")) {
           let o = {
             physics: true,
             path: getPATH,
-            index: this.core.mainRenderBundle.length
+            index: objName
           };
           document.dispatchEvent(new CustomEvent("web.editor.addGlb", {
             detail: o
@@ -18601,14 +18602,14 @@ var EditorHud = class {
           let o = {
             physics: false,
             path: getPATH,
-            index: this.core.mainRenderBundle.length
+            index: objName
           };
           document.dispatchEvent(new CustomEvent("web.editor.addGlb", {
             detail: o
           }));
         }
       } else if (ext == "obj" && confirm("OBJ FILE \u{1F4E6} Do you wanna add it to the scene ?")) {
-        let objName = prompt("\u{1F4E6} Enter uniq name : ");
+        let objName = prompt("\u{1F4E6} Enter uniq name: ");
         let name = prompt("\u{1F4E6} OBJ file : ", getPATH);
         if (confirm("\u269B Enable physics (Ammo)?")) {
           let o = {
@@ -21383,22 +21384,6 @@ var app2 = new MatrixEngineWGPU(
           physics: { enabled: false, geometry: "Cube" }
         });
       }, { scale: [1, 1, 1] });
-      downloadMeshes({ cube: "res/meshes/obj/reel.obj" }, (m) => {
-        const texturesPaths = ["./res/meshes/blender/cube.png"];
-        app3.addMeshObj({
-          position: { x: 0, y: 0, z: -20 },
-          rotation: { x: 0, y: 0, z: 0 },
-          rotationSpeed: { x: 0, y: 0, z: 0 },
-          texturesPaths: [texturesPaths],
-          name: "Obj_" + app3.mainRenderBundle.length,
-          mesh: m.cube,
-          raycast: { enabled: true, radius: 2 },
-          physics: { enabled: true, geometry: "Cube" }
-        });
-      }, { scale: [1, 1, 1] });
-      setTimeout(() => {
-        app3.getSceneObjectByName("Obj_2").position.SetY(4.55);
-      }, 800);
     });
   }
 );
