@@ -2693,8 +2693,10 @@ export default class FluxCodexVertex {
       if(texpath) {
         console.log('textPath', texpath)
         console.log('sceneObjectName', sceneObjectName)
-        app.getSceneObjectByName(sceneObjectName).loadTex0([texpath]);
-        app.mainRenderBundle[0].changeTexture(app.mainRenderBundle[0].texture0);
+        app.getSceneObjectByName(sceneObjectName).loadTex0([texpath]).then(() => {
+          setTimeout(() => app.getSceneObjectByName(sceneObjectName)
+           .changeTexture(app.mainRenderBundle[0].texture0), 200);
+        })
         // pos.setSpeed(this.getValue(nodeId, "thrust"));
 
       }

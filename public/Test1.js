@@ -18149,8 +18149,9 @@ var FluxCodexVertex = class _FluxCodexVertex {
       if (texpath) {
         console.log("textPath", texpath);
         console.log("sceneObjectName", sceneObjectName);
-        app.getSceneObjectByName(sceneObjectName).loadTex0([texpath]);
-        app.mainRenderBundle[0].changeTexture(app.mainRenderBundle[0].texture0);
+        app.getSceneObjectByName(sceneObjectName).loadTex0([texpath]).then(() => {
+          setTimeout(() => app.getSceneObjectByName(sceneObjectName).changeTexture(app.mainRenderBundle[0].texture0), 200);
+        });
       }
       this.enqueueOutputs(n, "execOut");
       return;
@@ -21374,6 +21375,128 @@ var app2 = new MatrixEngineWGPU(
       }, 800);
       setTimeout(() => {
         app3.getSceneObjectByName("FLOOR").scale[1] = 0.01;
+      }, 800);
+      downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, (m) => {
+        let texturesPaths = ["./res/meshes/blender/cube.png"];
+        app3.addMeshObj({
+          position: { x: 0, y: 0, z: -20 },
+          rotation: { x: 0, y: 0, z: 0 },
+          rotationSpeed: { x: 0, y: 0, z: 0 },
+          texturesPaths: [texturesPaths],
+          name: "L_BOX",
+          mesh: m.cube,
+          raycast: { enabled: true, radius: 2 },
+          physics: { enabled: false, geometry: "Cube" }
+        });
+      }, { scale: [1, 1, 1] });
+      downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, (m) => {
+        let texturesPaths = ["./res/meshes/blender/cube.png"];
+        app3.addMeshObj({
+          position: { x: 0, y: 0, z: -20 },
+          rotation: { x: 0, y: 0, z: 0 },
+          rotationSpeed: { x: 0, y: 0, z: 0 },
+          texturesPaths: [texturesPaths],
+          name: "R_BOX",
+          mesh: m.cube,
+          raycast: { enabled: true, radius: 2 },
+          physics: { enabled: false, geometry: "Cube" }
+        });
+      }, { scale: [1, 1, 1] });
+      setTimeout(() => {
+        app3.getSceneObjectByName("L_BOX").position.SetX(-4);
+      }, 800);
+      downloadMeshes({ cube: "res/meshes/obj/reel.obj" }, (m) => {
+        const texturesPaths = ["./res/meshes/blender/cube.png"];
+        app3.addMeshObj({
+          position: { x: 0, y: 0, z: -20 },
+          rotation: { x: 0, y: 0, z: 0 },
+          rotationSpeed: { x: 0, y: 0, z: 0 },
+          texturesPaths: [texturesPaths],
+          name: "REEL_1",
+          mesh: m.cube,
+          raycast: { enabled: true, radius: 2 },
+          physics: { enabled: false, geometry: "Cube" }
+        });
+      }, { scale: [1, 1, 1] });
+      setTimeout(() => {
+        app3.getSceneObjectByName("REEL_1").scale[0] = 2;
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("REEL_1").scale[1] = 2;
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("REEL_1").scale[2] = 2;
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("R_BOX").position.SetX(4);
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("R_BOX").position.SetY(2);
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("L_BOX").position.SetY(2);
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("REEL_1").position.SetY(4);
+      }, 800);
+      downloadMeshes({ cube: "res/meshes/obj/reel.obj" }, (m) => {
+        const texturesPaths = ["./res/meshes/blender/cube.png"];
+        app3.addMeshObj({
+          position: { x: 0, y: 0, z: -20 },
+          rotation: { x: 0, y: 0, z: 0 },
+          rotationSpeed: { x: 0, y: 0, z: 0 },
+          texturesPaths: [texturesPaths],
+          name: "REEL_2",
+          mesh: m.cube,
+          raycast: { enabled: true, radius: 2 },
+          physics: { enabled: false, geometry: "Cube" }
+        });
+      }, { scale: [1, 1, 1] });
+      setTimeout(() => {
+        app3.getSceneObjectByName("REEL_1").position.SetX(-2);
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("REEL_2").scale[0] = 2;
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("REEL_2").scale[2] = 2;
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("REEL_2").scale[1] = 2;
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("REEL_2").position.SetX(0);
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("REEL_2").position.SetY(4);
+      }, 800);
+      downloadMeshes({ cube: "res/meshes/obj/reel.obj" }, (m) => {
+        const texturesPaths = ["./res/meshes/blender/cube.png"];
+        app3.addMeshObj({
+          position: { x: 0, y: 0, z: -20 },
+          rotation: { x: 0, y: 0, z: 0 },
+          rotationSpeed: { x: 0, y: 0, z: 0 },
+          texturesPaths: [texturesPaths],
+          name: "REEL_3",
+          mesh: m.cube,
+          raycast: { enabled: true, radius: 2 },
+          physics: { enabled: false, geometry: "Cube" }
+        });
+      }, { scale: [1, 1, 1] });
+      setTimeout(() => {
+        app3.getSceneObjectByName("REEL_3").scale[0] = 2;
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("REEL_3").scale[1] = 2;
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("REEL_3").scale[2] = 2;
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("REEL_3").position.SetX(2);
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("REEL_3").position.SetY(4);
       }, 800);
     });
   }
