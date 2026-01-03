@@ -58,28 +58,12 @@ let app = new MatrixEngineWGPU(
   app.getSceneObjectByName('FLOOR').scale[1] = 0.01;
  }, 800);
  // ME END FLOOR updateScale1
- 
- 
-       // ME START Cube_1 addCube
- downloadMeshes({cube: "./res/meshes/blender/cube.obj"}, (m) => { 
-   let texturesPaths = ['./res/meshes/blender/cube.png']; 
-   app.addMeshObj({
-     position: {x: 0, y: 0, z: -20}, rotation: {x: 0, y: 0, z: 0}, rotationSpeed: {x: 0, y: 0, z: 0},
-     texturesPaths: [texturesPaths],
-     name: 'Cube_' + 1,
-     mesh: m.cube,
-     raycast: {enabled: true, radius: 2},
-     physics: {enabled: false, geometry: "Cube"}
-   }); 
- }, {scale: [1, 1, 1]});  
- // ME END Cube_1 addCube
- 
 
-      
  
  
 
-                       // [MAIN_REPLACE2]
+                 
+       // [MAIN_REPLACE2]
  
     })
   });

@@ -15669,7 +15669,7 @@ var EditorProvider = class {
       }
       let sceneObj = this.core.getSceneObjectByName(e.detail.inputFor);
       if (sceneObj) {
-        sceneObj[e.detail.propertyId][e.detail.property] = e.detail.value;
+        sceneObj[e.detail.propertyId][e.detail.property] = parseFloat(e.detail.value);
       } else {
         console.warn("EditorProvider input error");
         return;
@@ -15684,7 +15684,7 @@ var EditorProvider = class {
           rotationSpeed: { x: 0, y: 0, z: 0 },
           texturesPaths: [texturesPaths],
           // useUVShema4x2: true,
-          name: "Cube_" + app.mainRenderBundle.length,
+          name: "" + e.detail.index,
           mesh: m.cube,
           raycast: { enabled: true, radius: 2 },
           physics: {
@@ -15695,7 +15695,7 @@ var EditorProvider = class {
       }, { scale: [1, 1, 1] });
     });
     document.addEventListener("web.editor.addSphere", (e) => {
-      downloadMeshes({ cube: "./res/meshes/shapes/sphere.obj" }, (m) => {
+      downloadMeshes({ mesh: "./res/meshes/shapes/sphere.obj" }, (m) => {
         const texturesPaths = "./res/meshes/blender/cube.png";
         this.core.addMeshObj({
           position: { x: 0, y: 0, z: -20 },
@@ -15703,8 +15703,8 @@ var EditorProvider = class {
           rotationSpeed: { x: 0, y: 0, z: 0 },
           texturesPaths: [texturesPaths],
           // useUVShema4x2: true,
-          name: "Sphere_" + app.mainRenderBundle.length,
-          mesh: m.cube,
+          name: e.detail.index,
+          mesh: m.mesh,
           raycast: { enabled: true, radius: 2 },
           physics: {
             enabled: e.detail.physics,
@@ -18854,36 +18854,40 @@ var EditorHud = class {
       location.reload(true);
     };
     if (byId("addCube")) byId("addCube").addEventListener("click", () => {
+      let objName = prompt("\u{1F4E6} Enter uniq name: ");
       let o = {
         physics: false,
-        index: this.core.mainRenderBundle.length
+        index: objName
       };
       document.dispatchEvent(new CustomEvent("web.editor.addCube", {
         detail: o
       }));
     });
     if (byId("addSphere")) byId("addSphere").addEventListener("click", () => {
+      let objName = prompt("\u{1F4E6} Enter uniq name: ");
       let o = {
         physics: false,
-        index: this.core.mainRenderBundle.length
+        index: objName
       };
       document.dispatchEvent(new CustomEvent("web.editor.addSphere", {
         detail: o
       }));
     });
     if (byId("addCubePhysics")) byId("addCubePhysics").addEventListener("click", () => {
+      let objName = prompt("\u{1F4E6} Enter uniq name: ");
       let o = {
         physics: true,
-        index: this.core.mainRenderBundle.length
+        index: objName
       };
       document.dispatchEvent(new CustomEvent("web.editor.addCube", {
         detail: o
       }));
     });
     if (byId("addSpherePhysics")) byId("addSpherePhysics").addEventListener("click", () => {
+      let objName = prompt("\u{1F4E6} Enter uniq name: ");
       let o = {
         physics: true,
-        index: this.core.mainRenderBundle.length
+        index: objName
       };
       document.dispatchEvent(new CustomEvent("web.editor.addSphere", {
         detail: o
@@ -21371,19 +21375,6 @@ var app2 = new MatrixEngineWGPU(
       setTimeout(() => {
         app3.getSceneObjectByName("FLOOR").scale[1] = 0.01;
       }, 800);
-      downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, (m) => {
-        let texturesPaths = ["./res/meshes/blender/cube.png"];
-        app3.addMeshObj({
-          position: { x: 0, y: 0, z: -20 },
-          rotation: { x: 0, y: 0, z: 0 },
-          rotationSpeed: { x: 0, y: 0, z: 0 },
-          texturesPaths: [texturesPaths],
-          name: "Cube_1",
-          mesh: m.cube,
-          raycast: { enabled: true, radius: 2 },
-          physics: { enabled: false, geometry: "Cube" }
-        });
-      }, { scale: [1, 1, 1] });
     });
   }
 );

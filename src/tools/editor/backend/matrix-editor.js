@@ -341,19 +341,19 @@ async function fileDetail(msg, ws) {
 
 async function addCube(msg, ws) {
   const content = new CodeBuilder();
-  content.addLine(` // ME START ${'Cube_' + msg.options.index} ${msg.action}`);
+  content.addLine(` // ME START ${msg.options.index} ${msg.action}`);
   content.addLine(` downloadMeshes({cube: "./res/meshes/blender/cube.obj"}, (m) => { `);
   content.addLine(`   let texturesPaths = ['./res/meshes/blender/cube.png']; `);
   content.addLine(`   app.addMeshObj({`);
   content.addLine(`     position: {x: 0, y: 0, z: -20}, rotation: {x: 0, y: 0, z: 0}, rotationSpeed: {x: 0, y: 0, z: 0},`);
   content.addLine(`     texturesPaths: [texturesPaths],`);
-  content.addLine(`     name: 'Cube_' + ${msg.options.index},`);
+  content.addLine(`     name: '${msg.options.index}',`);
   content.addLine(`     mesh: m.cube,`);
   content.addLine(`     raycast: {enabled: true, radius: 2},`);
   content.addLine(`     physics: {enabled: ${msg.options.physics}, geometry: "Cube"}`);
   content.addLine(`   }); `);
   content.addLine(` }, {scale: [1, 1, 1]});  `);
-  content.addLine(` // ME END ${'Cube_' + msg.options.index} ${msg.action}`);
+  content.addLine(` // ME END ${msg.options.index} ${msg.action}`);
 
   const objScript = path.join(PROJECTS_DIR, msg.projectName + "\\app-gen.js");
   fs.readFile(objScript).then((b) => {
@@ -432,19 +432,19 @@ async function addObj(msg, ws) {
   msg.options.path = msg.options.path.replace(/\\/g, '/');
   console.log('msg', msg.options.path);
   const content = new CodeBuilder();
-  content.addLine(` // ME START ${'Obj_' + msg.options.index}`);
+  content.addLine(` // ME START ${msg.options.index}`);
   content.addLine(` downloadMeshes({cube: "${msg.options.path}"}, (m) => { `);
   content.addLine(`   const texturesPaths = ['./res/meshes/blender/cube.png']; `);
   content.addLine(`   app.addMeshObj({`);
   content.addLine(`     position: {x: 0, y: 0, z: -20}, rotation: {x: 0, y: 0, z: 0}, rotationSpeed: {x: 0, y: 0, z: 0},`);
   content.addLine(`     texturesPaths: [texturesPaths],`);
-  content.addLine(`     name: 'Obj_' + ${msg.options.index},`);
+  content.addLine(`     name: '${msg.options.index}',`);
   content.addLine(`     mesh: m.cube,`);
   content.addLine(`     raycast: {enabled: true, radius: 2},`);
   content.addLine(`     physics: {enabled: ${msg.options.physics}, geometry: "Cube"}`);
   content.addLine(`   }); `);
   content.addLine(` }, {scale: [1, 1, 1]});  `);
-  content.addLine(` // ME END ${'Obj_' + msg.options.index}`);
+  content.addLine(` // ME END ${msg.options.index}`);
 
   const objScript = path.join(PROJECTS_DIR, msg.projectName + "\\app-gen.js");
   fs.readFile(objScript).then((b) => {
@@ -460,19 +460,19 @@ async function addObj(msg, ws) {
 
 async function addSphere(msg, ws) {
   const content = new CodeBuilder();
-  content.addLine(` // ME START ${'Sphere_' + msg.options.index} ${msg.action}`);
+  content.addLine(` // ME START ${msg.options.index} ${msg.action}`);
   content.addLine(` downloadMeshes({sphere: "./res/meshes/shapes/sphere.obj"}, (m) => { `);
   content.addLine(`   let texturesPaths = ['./res/meshes/blender/cube.png']; `);
   content.addLine(`   app.addMeshObj({`);
   content.addLine(`     position: {x: 0, y: 0, z: -20}, rotation: {x: 0, y: 0, z: 0}, rotationSpeed: {x: 0, y: 0, z: 0},`);
   content.addLine(`     texturesPaths: [texturesPaths],`);
-  content.addLine(`     name: 'Sphere_' + app.mainRenderBundle.length,`);
+  content.addLine(`     name: "${msg.options.index}",`);
   content.addLine(`     mesh: m.sphere,`);
   content.addLine(`     raycast: {enabled: true, radius: 2},`);
   content.addLine(`     physics: {enabled: ${msg.options.physics}, geometry: "Sphere"}`);
   content.addLine(`   }); `);
   content.addLine(` }, {scale: [1, 1, 1]});  `);
-  content.addLine(` // ME END ${'Sphere_' + msg.options.index} ${msg.action}`);
+  content.addLine(` // ME END ${msg.options.index} ${msg.action}`);
 
   const objScript = path.join(PROJECTS_DIR, msg.projectName + "\\app-gen.js");
   fs.readFile(objScript).then((b) => {

@@ -66,11 +66,10 @@ export default class EditorProvider {
           console.log('changes not saved.')
       }
       // inputFor: "Cube_0" property: "x" propertyId: "position" value: "1"
-
       // InFly Method
       let sceneObj = this.core.getSceneObjectByName(e.detail.inputFor);
       if(sceneObj) {
-        sceneObj[e.detail.propertyId][e.detail.property] = e.detail.value;
+        sceneObj[e.detail.propertyId][e.detail.property] = parseFloat(e.detail.value);
       } else {
         console.warn("EditorProvider input error");
         return;
@@ -88,7 +87,7 @@ export default class EditorProvider {
           rotationSpeed: {x: 0, y: 0, z: 0},
           texturesPaths: [texturesPaths],
           // useUVShema4x2: true,
-          name: 'Cube_' + app.mainRenderBundle.length,
+          name: "" + e.detail.index,
           mesh: m.cube,
           raycast: {enabled: true, radius: 2},
           physics: {
@@ -101,7 +100,7 @@ export default class EditorProvider {
 
     document.addEventListener('web.editor.addSphere', (e) => {
       // console.log("[web.editor.addCube]: ", e.detail);
-      downloadMeshes({cube: "./res/meshes/shapes/sphere.obj"}, (m) => {
+      downloadMeshes({mesh: "./res/meshes/shapes/sphere.obj"}, (m) => {
         const texturesPaths = './res/meshes/blender/cube.png';
         this.core.addMeshObj({
           position: {x: 0, y: 0, z: -20},
@@ -109,8 +108,8 @@ export default class EditorProvider {
           rotationSpeed: {x: 0, y: 0, z: 0},
           texturesPaths: [texturesPaths],
           // useUVShema4x2: true,
-          name: 'Sphere_' + app.mainRenderBundle.length,
-          mesh: m.cube,
+          name: e.detail.index,
+          mesh: m.mesh,
           raycast: {enabled: true, radius: 2},
           physics: {
             enabled: e.detail.physics,

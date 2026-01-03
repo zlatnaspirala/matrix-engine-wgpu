@@ -333,43 +333,32 @@ export default class EditorHud {
 
     // OBJECT LEVEL
     if(byId('addCube')) byId('addCube').addEventListener('click', () => {
+      let objName = prompt("📦 Enter uniq name: ");
       let o = {
         physics: false,
-        index: this.core.mainRenderBundle.length
+        index: objName
       };
-      // if(confirm(`⚛ Enable physics (Ammo) for cube ? \n
-      //    - Press OK for physics cube.
-      //    - Press cancel for 'classic position'.
-      //   (Also physics enabled objects can be kinematic with some collide efect in physics world)
-      //   `)) {
-      //   o.physics = true;
-      // }
       document.dispatchEvent(new CustomEvent('web.editor.addCube', {
         detail: o
       }));
     });
 
     if(byId('addSphere')) byId('addSphere').addEventListener('click', () => {
+      let objName = prompt("📦 Enter uniq name: ");
       let o = {
         physics: false,
-        index: this.core.mainRenderBundle.length
+        index: objName
       };
-      // if(confirm(`⚛ Enable physics (Ammo) for cube ? \n
-      //    - Press OK for physics cube.
-      //    - Press cancel for 'classic position'.
-      //   (Also physics enabled objects can be kinematic with some collide efect in physics world)
-      //   `)) {
-      //   o.physics = true;
-      // }
       document.dispatchEvent(new CustomEvent('web.editor.addSphere', {
         detail: o
       }));
     });
 
     if(byId('addCubePhysics')) byId('addCubePhysics').addEventListener('click', () => {
+      let objName = prompt("📦 Enter uniq name: ");
       let o = {
         physics: true,
-        index: this.core.mainRenderBundle.length
+        index: objName
       };
       document.dispatchEvent(new CustomEvent('web.editor.addCube', {
         detail: o
@@ -377,9 +366,10 @@ export default class EditorHud {
     });
 
     if(byId('addSpherePhysics')) byId('addSpherePhysics').addEventListener('click', () => {
+      let objName = prompt("📦 Enter uniq name: ");
       let o = {
         physics: true,
-        index: this.core.mainRenderBundle.length
+        index: objName
       };
       document.dispatchEvent(new CustomEvent('web.editor.addSphere', {
         detail: o
