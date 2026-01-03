@@ -1298,6 +1298,36 @@ export default class FluxCodexVertex {
         outputs: [{name: "exec", type: "action"}],
       }),
 
+      eventCustom: (id, x, y) => ({
+        id, x, y,
+        title: "Custom Event",
+        category: "event",
+        fields: [
+          {key: "name", value: "myEvent"}
+        ],
+        inputs: [],
+        outputs: [
+          {name: "exec", type: "action"},
+          {name: "detail", type: "object"}
+        ],
+        _listenerAttached: false,
+        _returnCache: null
+      }),
+
+      dispatchEvent: (id, x, y) => ({
+        id, x, y,
+        title: "Dispatch Event",
+        category: "event",
+        inputs: [
+          {name: "exec", type: "action"},
+          {name: "eventName", type: "string", default: "myEvent"},
+          {name: "detail", type: "object", default: {}}
+        ],
+        outputs: [
+          {name: "execOut", type: "action"}
+        ]
+      }),
+
       function: (id, x, y) => ({
         id, title: "Function", x, y,
         category: "action",
@@ -2180,6 +2210,7 @@ export default class FluxCodexVertex {
         console.log("real onTargetPositionReach called");
         this.enqueueOutputs(n, "exec");
       };
+      console('ttttttttttttttttttttttttttttttttttt')
       n._listenerAttached = true;
     }
   }
@@ -2225,6 +2256,16 @@ export default class FluxCodexVertex {
         return node.fields?.find(f => f.key === "condition")?.value;
       }
       // ?
+    }
+
+    if(node.title === "Custom Event" && pinName === "detail") {
+      console.warn("[Custom Event]  getvalue");
+      return node._returnCache;
+    }
+
+    if(node.title === "Dispatch Event" && (pinName === 'eventName' || pinName === 'detail')) {
+      let testLink = this.links.find(l => l.to.node === nodeId && l.to.pin === pinName);
+      return this.getValue(testLink.from.node, testLink.from.pin);
     }
 
     if(node.isGetterNode) {
@@ -2312,6 +2353,8 @@ export default class FluxCodexVertex {
       if(pinName === "item") return node.state?.item;
       if(pinName === "index") return node.state?.index;
     }
+
+
 
     if(node.outputs?.some(o => o.name === pinName)) {
       const dynamicNodes = ["GenRandInt", "RandomFloat"];
@@ -2494,6 +2537,42 @@ export default class FluxCodexVertex {
 
       this.enqueueOutputs(n, "execOut");
       return;
+    } else if(n.title === "Custom Event") {
+      console.log('********************************')
+      // if(n._listenerAttached === true) return;
+
+      const eventName = n.fields?.find(f => f.key === "name")?.value;
+      if(!eventName) return;
+      const handler = (e) => {
+        console.log('**************TRUE** HANDLER****************')
+        n._returnCache = e.detail; // 👈 expose detail
+        this.enqueueOutputs(n, "exec");
+      };
+
+      console.log('**eventName******************************', eventName)
+      window.removeEventListener(eventName, handler);
+      
+      window.addEventListener(eventName, handler);
+      n._eventHandler = handler;
+      n._listenerAttached = true;
+      return;
+    } else if(n.title === "Dispatch Event") {
+      const name = this.getValue(nodeId, "eventName");
+      if(!name) {
+        console.warn("[Dispatch] missing eventName");
+        this.enqueueOutputs(n, "execOut");
+        return;
+      }
+      const detail = this.getValue(nodeId, "detail");
+      console.log('*************window.dispatchEvent****************', name)
+      window.dispatchEvent(
+        new CustomEvent(name, {
+          detail: detail ?? {}
+        })
+      );
+
+      this.enqueueOutputs(n, "execOut");
+      return;
     }
 
     if(n.isGetterNode) {
@@ -2529,6 +2608,7 @@ export default class FluxCodexVertex {
         this.enqueueOutputs(n, "exec");
         // alert(" TARGET REACh ");
       };
+      console.log('**************rrrrrrrrrr***************')
       n._listenerAttached = true;
       return;
     }

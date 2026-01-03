@@ -2853,11 +2853,9 @@ function createInputHandler(window2, canvas) {
       case "KeyD":
         digital.right = value;
         break;
-      case "Space":
+      case "KeyV":
         digital.up = value;
         break;
-      case "ShiftLeft":
-      case "ControlLeft":
       case "KeyC":
         digital.down = value;
         break;
@@ -16807,6 +16805,38 @@ var FluxCodexVertex = class _FluxCodexVertex {
         inputs: [],
         outputs: [{ name: "exec", type: "action" }]
       }),
+      eventCustom: (id2, x2, y2) => ({
+        id: id2,
+        x: x2,
+        y: y2,
+        title: "Custom Event",
+        category: "event",
+        fields: [
+          { key: "name", value: "myEvent" }
+        ],
+        inputs: [],
+        outputs: [
+          { name: "exec", type: "action" },
+          { name: "detail", type: "object" }
+        ],
+        _listenerAttached: false,
+        _returnCache: null
+      }),
+      dispatchEvent: (id2, x2, y2) => ({
+        id: id2,
+        x: x2,
+        y: y2,
+        title: "Dispatch Event",
+        category: "event",
+        inputs: [
+          { name: "exec", type: "action" },
+          { name: "eventName", type: "string", default: "myEvent" },
+          { name: "detail", type: "object", default: {} }
+        ],
+        outputs: [
+          { name: "execOut", type: "action" }
+        ]
+      }),
       function: (id2, x2, y2) => ({
         id: id2,
         title: "Function",
@@ -17733,6 +17763,7 @@ var FluxCodexVertex = class _FluxCodexVertex {
         console.log("real onTargetPositionReach called");
         this.enqueueOutputs(n, "exec");
       };
+      console("ttttttttttttttttttttttttttttttttttt");
       n._listenerAttached = true;
     }
   }
@@ -17773,6 +17804,14 @@ var FluxCodexVertex = class _FluxCodexVertex {
         console.warn("[IF] condition read outside exec ignored");
         return node2.fields?.find((f) => f.key === "condition")?.value;
       }
+    }
+    if (node2.title === "Custom Event" && pinName === "detail") {
+      console.warn("[Custom Event]  getvalue");
+      return node2._returnCache;
+    }
+    if (node2.title === "Dispatch Event" && (pinName === "eventName" || pinName === "detail")) {
+      let testLink = this.links.find((l) => l.to.node === nodeId && l.to.pin === pinName);
+      return this.getValue(testLink.from.node, testLink.from.pin);
     }
     if (node2.isGetterNode) {
       if (node2._returnCache === void 0) {
@@ -17991,6 +18030,37 @@ var FluxCodexVertex = class _FluxCodexVertex {
       }
       this.enqueueOutputs(n, "execOut");
       return;
+    } else if (n.title === "Custom Event") {
+      console.log("********************************");
+      const eventName = n.fields?.find((f) => f.key === "name")?.value;
+      if (!eventName) return;
+      const handler = (e) => {
+        console.log("**************TRUE** HANDLER****************");
+        n._returnCache = e.detail;
+        this.enqueueOutputs(n, "exec");
+      };
+      console.log("**eventName******************************", eventName);
+      window.removeEventListener(eventName, handler);
+      window.addEventListener(eventName, handler);
+      n._eventHandler = handler;
+      n._listenerAttached = true;
+      return;
+    } else if (n.title === "Dispatch Event") {
+      const name = this.getValue(nodeId, "eventName");
+      if (!name) {
+        console.warn("[Dispatch] missing eventName");
+        this.enqueueOutputs(n, "execOut");
+        return;
+      }
+      const detail = this.getValue(nodeId, "detail");
+      console.log("*************window.dispatchEvent****************", name);
+      window.dispatchEvent(
+        new CustomEvent(name, {
+          detail: detail ?? {}
+        })
+      );
+      this.enqueueOutputs(n, "execOut");
+      return;
     }
     if (n.isGetterNode) {
       const varField = n.fields?.find((f) => f.key === "var");
@@ -18019,6 +18089,7 @@ var FluxCodexVertex = class _FluxCodexVertex {
         this.triggerNode(n);
         this.enqueueOutputs(n, "exec");
       };
+      console.log("**************rrrrrrrrrr***************");
       n._listenerAttached = true;
       return;
     }
@@ -19943,6 +20014,9 @@ var Editor = class {
     <div id="leftBar">
       <h3>Events/Func</h3>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('event')">Event: onLoad</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('eventCustom')">Custom Event</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('dispatchEvent')">Dispatch Event</button>
+      
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('function')">Function</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('if')">If Branch</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('genrand')">GenRandInt</button>

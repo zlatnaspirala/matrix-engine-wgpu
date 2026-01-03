@@ -363,9 +363,7 @@ export function createInputHandler(window, canvas) {
       case 'KeyS': digital.backward = value; break;
       case 'KeyA': digital.left = value; break;
       case 'KeyD': digital.right = value; break;
-      case 'Space': digital.up = value; break;
-      case 'ShiftLeft':
-      case 'ControlLeft':
+      case 'KeyV': digital.up = value; break;
       case 'KeyC': digital.down = value; break;
     }
     // if you wanna dosavle all keyboard input for some reason...
