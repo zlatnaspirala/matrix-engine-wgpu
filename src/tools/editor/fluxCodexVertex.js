@@ -1328,6 +1328,18 @@ export default class FluxCodexVertex {
         ]
       }),
 
+      rayHitEvent: (id, x, y) => ({
+        id, x, y,
+        title: "On Ray Hit",
+        category: "event",
+        inputs: [],
+        outputs: [
+          {name: "exec", type: "action"},
+          {name: "hitObject", type: "object"}
+        ],
+        _listenerAttached: false,
+      }),
+
       function: (id, x, y) => ({
         id, title: "Function", x, y,
         category: "action",
@@ -2258,11 +2270,15 @@ export default class FluxCodexVertex {
       // ?
     }
 
+
+    if(node.title === "On Ray Hit" && pinName === "hitObject") {
+      return node._returnCache;
+    }
+
     if(node.title === "Custom Event" && pinName === "detail") {
       console.warn("[Custom Event]  getvalue");
       return node._returnCache;
     }
-
     if(node.title === "Dispatch Event" && (pinName === 'eventName' || pinName === 'detail')) {
       let testLink = this.links.find(l => l.to.node === nodeId && l.to.pin === pinName);
       return this.getValue(testLink.from.node, testLink.from.pin);
@@ -2551,7 +2567,7 @@ export default class FluxCodexVertex {
 
       console.log('**eventName******************************', eventName)
       window.removeEventListener(eventName, handler);
-      
+
       window.addEventListener(eventName, handler);
       n._eventHandler = handler;
       n._listenerAttached = true;
@@ -2572,6 +2588,26 @@ export default class FluxCodexVertex {
       );
 
       this.enqueueOutputs(n, "execOut");
+      return;
+    } else if(n.title === "On Ray Hit") {
+      if(n._listenerAttached) return;
+
+      // one-time engine setup
+      if(!this._raycastAABBListenerAdded) {
+        app.reference.addRaycastsListener();
+        this._raycastAABBListenerAdded = true;
+      }
+
+      const handler = (e) => {
+        // expected e.detail = hit info
+        n._returnCache = e.detail?.hitObject ?? e.detail;
+        this.enqueueOutputs(n, "exec");
+      };
+
+      app.canvas.addEventListener("ray.hit.event", handler);
+
+      n._eventHandler = handler;
+      n._listenerAttached = true;
       return;
     }
 

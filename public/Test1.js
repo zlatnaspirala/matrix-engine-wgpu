@@ -60,11 +60,11 @@ function round$1(v, dst) {
   dst[2] = Math.round(v[2]);
   return dst;
 }
-function clamp$1(v, min = 0, max = 1, dst) {
+function clamp$1(v, min2 = 0, max2 = 1, dst) {
   dst = dst || new VecType$1(3);
-  dst[0] = Math.min(max, Math.max(min, v[0]));
-  dst[1] = Math.min(max, Math.max(min, v[1]));
-  dst[2] = Math.min(max, Math.max(min, v[2]));
+  dst[0] = Math.min(max2, Math.max(min2, v[0]));
+  dst[1] = Math.min(max2, Math.max(min2, v[1]));
+  dst[2] = Math.min(max2, Math.max(min2, v[2]));
   return dst;
 }
 function add$2(a, b, dst) {
@@ -74,11 +74,11 @@ function add$2(a, b, dst) {
   dst[2] = a[2] + b[2];
   return dst;
 }
-function addScaled$1(a, b, scale2, dst) {
+function addScaled$1(a, b, scale3, dst) {
   dst = dst || new VecType$1(3);
-  dst[0] = a[0] + b[0] * scale2;
-  dst[1] = a[1] + b[1] * scale2;
-  dst[2] = a[2] + b[2] * scale2;
+  dst[0] = a[0] + b[0] * scale3;
+  dst[1] = a[1] + b[1] * scale3;
+  dst[2] = a[2] + b[2] * scale3;
   return dst;
 }
 function angle$1(a, b) {
@@ -204,11 +204,11 @@ function normalize$2(v, dst) {
   const v0 = v[0];
   const v1 = v[1];
   const v2 = v[2];
-  const len = Math.sqrt(v0 * v0 + v1 * v1 + v2 * v2);
-  if (len > 1e-5) {
-    dst[0] = v0 / len;
-    dst[1] = v1 / len;
-    dst[2] = v2 / len;
+  const len2 = Math.sqrt(v0 * v0 + v1 * v1 + v2 * v2);
+  if (len2 > 1e-5) {
+    dst[0] = v0 / len2;
+    dst[1] = v1 / len2;
+    dst[2] = v2 / len2;
   } else {
     dst[0] = 0;
     dst[1] = 0;
@@ -247,14 +247,14 @@ function divide$1(a, b, dst) {
   return dst;
 }
 var div$1 = divide$1;
-function random(scale2 = 1, dst) {
+function random(scale3 = 1, dst) {
   dst = dst || new VecType$1(3);
   const angle2 = Math.random() * 2 * Math.PI;
   const z = Math.random() * 2 - 1;
-  const zScale = Math.sqrt(1 - z * z) * scale2;
+  const zScale = Math.sqrt(1 - z * z) * scale3;
   dst[0] = Math.cos(angle2) * zScale;
   dst[1] = Math.sin(angle2) * zScale;
-  dst[2] = z * scale2;
+  dst[2] = z * scale3;
   return dst;
 }
 function zero$1(dst) {
@@ -1635,8 +1635,8 @@ function inverse$1(q, dst) {
   const a1 = q[1];
   const a2 = q[2];
   const a3 = q[3];
-  const dot = a0 * a0 + a1 * a1 + a2 * a2 + a3 * a3;
-  const invDot = dot ? 1 / dot : 0;
+  const dot2 = a0 * a0 + a1 * a1 + a2 * a2 + a3 * a3;
+  const invDot = dot2 ? 1 / dot2 : 0;
   dst[0] = -a0 * invDot;
   dst[1] = -a1 * invDot;
   dst[2] = -a2 * invDot;
@@ -1809,12 +1809,12 @@ function normalize$1(v, dst) {
   const v1 = v[1];
   const v2 = v[2];
   const v3 = v[3];
-  const len = Math.sqrt(v0 * v0 + v1 * v1 + v2 * v2 + v3 * v3);
-  if (len > 1e-5) {
-    dst[0] = v0 / len;
-    dst[1] = v1 / len;
-    dst[2] = v2 / len;
-    dst[3] = v3 / len;
+  const len2 = Math.sqrt(v0 * v0 + v1 * v1 + v2 * v2 + v3 * v3);
+  if (len2 > 1e-5) {
+    dst[0] = v0 / len2;
+    dst[1] = v1 / len2;
+    dst[2] = v2 / len2;
+    dst[3] = v3 / len2;
   } else {
     dst[0] = 0;
     dst[1] = 0;
@@ -1845,8 +1845,8 @@ function rotationTo(aUnit, bUnit, dst) {
   tempVec3 = tempVec3 || create$4();
   xUnitVec3 = xUnitVec3 || create$4(1, 0, 0);
   yUnitVec3 = yUnitVec3 || create$4(0, 1, 0);
-  const dot = dot$2(aUnit, bUnit);
-  if (dot < -0.999999) {
+  const dot2 = dot$2(aUnit, bUnit);
+  if (dot2 < -0.999999) {
     cross(xUnitVec3, aUnit, tempVec3);
     if (len$2(tempVec3) < 1e-6) {
       cross(yUnitVec3, aUnit, tempVec3);
@@ -1854,7 +1854,7 @@ function rotationTo(aUnit, bUnit, dst) {
     normalize$2(tempVec3, tempVec3);
     fromAxisAngle(tempVec3, Math.PI, dst);
     return dst;
-  } else if (dot > 0.999999) {
+  } else if (dot2 > 0.999999) {
     dst[0] = 0;
     dst[1] = 0;
     dst[2] = 0;
@@ -1865,7 +1865,7 @@ function rotationTo(aUnit, bUnit, dst) {
     dst[0] = tempVec3[0];
     dst[1] = tempVec3[1];
     dst[2] = tempVec3[2];
-    dst[3] = 1 + dot;
+    dst[3] = 1 + dot2;
     return normalize$1(dst, dst);
   }
 }
@@ -1919,6 +1919,313 @@ var quatImpl = /* @__PURE__ */ Object.freeze({
   identity,
   rotationTo,
   sqlerp
+});
+var VecType = Float32Array;
+function setDefaultType$1(ctor) {
+  const oldType = VecType;
+  VecType = ctor;
+  return oldType;
+}
+function create(x2, y2, z, w) {
+  const dst = new VecType(4);
+  if (x2 !== void 0) {
+    dst[0] = x2;
+    if (y2 !== void 0) {
+      dst[1] = y2;
+      if (z !== void 0) {
+        dst[2] = z;
+        if (w !== void 0) {
+          dst[3] = w;
+        }
+      }
+    }
+  }
+  return dst;
+}
+var fromValues = create;
+function set(x2, y2, z, w, dst) {
+  dst = dst || new VecType(4);
+  dst[0] = x2;
+  dst[1] = y2;
+  dst[2] = z;
+  dst[3] = w;
+  return dst;
+}
+function ceil(v, dst) {
+  dst = dst || new VecType(4);
+  dst[0] = Math.ceil(v[0]);
+  dst[1] = Math.ceil(v[1]);
+  dst[2] = Math.ceil(v[2]);
+  dst[3] = Math.ceil(v[3]);
+  return dst;
+}
+function floor(v, dst) {
+  dst = dst || new VecType(4);
+  dst[0] = Math.floor(v[0]);
+  dst[1] = Math.floor(v[1]);
+  dst[2] = Math.floor(v[2]);
+  dst[3] = Math.floor(v[3]);
+  return dst;
+}
+function round(v, dst) {
+  dst = dst || new VecType(4);
+  dst[0] = Math.round(v[0]);
+  dst[1] = Math.round(v[1]);
+  dst[2] = Math.round(v[2]);
+  dst[3] = Math.round(v[3]);
+  return dst;
+}
+function clamp(v, min2 = 0, max2 = 1, dst) {
+  dst = dst || new VecType(4);
+  dst[0] = Math.min(max2, Math.max(min2, v[0]));
+  dst[1] = Math.min(max2, Math.max(min2, v[1]));
+  dst[2] = Math.min(max2, Math.max(min2, v[2]));
+  dst[3] = Math.min(max2, Math.max(min2, v[3]));
+  return dst;
+}
+function add(a, b, dst) {
+  dst = dst || new VecType(4);
+  dst[0] = a[0] + b[0];
+  dst[1] = a[1] + b[1];
+  dst[2] = a[2] + b[2];
+  dst[3] = a[3] + b[3];
+  return dst;
+}
+function addScaled(a, b, scale3, dst) {
+  dst = dst || new VecType(4);
+  dst[0] = a[0] + b[0] * scale3;
+  dst[1] = a[1] + b[1] * scale3;
+  dst[2] = a[2] + b[2] * scale3;
+  dst[3] = a[3] + b[3] * scale3;
+  return dst;
+}
+function subtract(a, b, dst) {
+  dst = dst || new VecType(4);
+  dst[0] = a[0] - b[0];
+  dst[1] = a[1] - b[1];
+  dst[2] = a[2] - b[2];
+  dst[3] = a[3] - b[3];
+  return dst;
+}
+var sub = subtract;
+function equalsApproximately(a, b) {
+  return Math.abs(a[0] - b[0]) < EPSILON && Math.abs(a[1] - b[1]) < EPSILON && Math.abs(a[2] - b[2]) < EPSILON && Math.abs(a[3] - b[3]) < EPSILON;
+}
+function equals(a, b) {
+  return a[0] === b[0] && a[1] === b[1] && a[2] === b[2] && a[3] === b[3];
+}
+function lerp(a, b, t, dst) {
+  dst = dst || new VecType(4);
+  dst[0] = a[0] + t * (b[0] - a[0]);
+  dst[1] = a[1] + t * (b[1] - a[1]);
+  dst[2] = a[2] + t * (b[2] - a[2]);
+  dst[3] = a[3] + t * (b[3] - a[3]);
+  return dst;
+}
+function lerpV(a, b, t, dst) {
+  dst = dst || new VecType(4);
+  dst[0] = a[0] + t[0] * (b[0] - a[0]);
+  dst[1] = a[1] + t[1] * (b[1] - a[1]);
+  dst[2] = a[2] + t[2] * (b[2] - a[2]);
+  dst[3] = a[3] + t[3] * (b[3] - a[3]);
+  return dst;
+}
+function max(a, b, dst) {
+  dst = dst || new VecType(4);
+  dst[0] = Math.max(a[0], b[0]);
+  dst[1] = Math.max(a[1], b[1]);
+  dst[2] = Math.max(a[2], b[2]);
+  dst[3] = Math.max(a[3], b[3]);
+  return dst;
+}
+function min(a, b, dst) {
+  dst = dst || new VecType(4);
+  dst[0] = Math.min(a[0], b[0]);
+  dst[1] = Math.min(a[1], b[1]);
+  dst[2] = Math.min(a[2], b[2]);
+  dst[3] = Math.min(a[3], b[3]);
+  return dst;
+}
+function mulScalar(v, k, dst) {
+  dst = dst || new VecType(4);
+  dst[0] = v[0] * k;
+  dst[1] = v[1] * k;
+  dst[2] = v[2] * k;
+  dst[3] = v[3] * k;
+  return dst;
+}
+var scale = mulScalar;
+function divScalar(v, k, dst) {
+  dst = dst || new VecType(4);
+  dst[0] = v[0] / k;
+  dst[1] = v[1] / k;
+  dst[2] = v[2] / k;
+  dst[3] = v[3] / k;
+  return dst;
+}
+function inverse(v, dst) {
+  dst = dst || new VecType(4);
+  dst[0] = 1 / v[0];
+  dst[1] = 1 / v[1];
+  dst[2] = 1 / v[2];
+  dst[3] = 1 / v[3];
+  return dst;
+}
+var invert = inverse;
+function dot(a, b) {
+  return a[0] * b[0] + a[1] * b[1] + a[2] * b[2] + a[3] * b[3];
+}
+function length(v) {
+  const v0 = v[0];
+  const v1 = v[1];
+  const v2 = v[2];
+  const v3 = v[3];
+  return Math.sqrt(v0 * v0 + v1 * v1 + v2 * v2 + v3 * v3);
+}
+var len = length;
+function lengthSq(v) {
+  const v0 = v[0];
+  const v1 = v[1];
+  const v2 = v[2];
+  const v3 = v[3];
+  return v0 * v0 + v1 * v1 + v2 * v2 + v3 * v3;
+}
+var lenSq = lengthSq;
+function distance(a, b) {
+  const dx = a[0] - b[0];
+  const dy = a[1] - b[1];
+  const dz = a[2] - b[2];
+  const dw = a[3] - b[3];
+  return Math.sqrt(dx * dx + dy * dy + dz * dz + dw * dw);
+}
+var dist = distance;
+function distanceSq(a, b) {
+  const dx = a[0] - b[0];
+  const dy = a[1] - b[1];
+  const dz = a[2] - b[2];
+  const dw = a[3] - b[3];
+  return dx * dx + dy * dy + dz * dz + dw * dw;
+}
+var distSq = distanceSq;
+function normalize(v, dst) {
+  dst = dst || new VecType(4);
+  const v0 = v[0];
+  const v1 = v[1];
+  const v2 = v[2];
+  const v3 = v[3];
+  const len2 = Math.sqrt(v0 * v0 + v1 * v1 + v2 * v2 + v3 * v3);
+  if (len2 > 1e-5) {
+    dst[0] = v0 / len2;
+    dst[1] = v1 / len2;
+    dst[2] = v2 / len2;
+    dst[3] = v3 / len2;
+  } else {
+    dst[0] = 0;
+    dst[1] = 0;
+    dst[2] = 0;
+    dst[3] = 0;
+  }
+  return dst;
+}
+function negate(v, dst) {
+  dst = dst || new VecType(4);
+  dst[0] = -v[0];
+  dst[1] = -v[1];
+  dst[2] = -v[2];
+  dst[3] = -v[3];
+  return dst;
+}
+function copy(v, dst) {
+  dst = dst || new VecType(4);
+  dst[0] = v[0];
+  dst[1] = v[1];
+  dst[2] = v[2];
+  dst[3] = v[3];
+  return dst;
+}
+var clone = copy;
+function multiply(a, b, dst) {
+  dst = dst || new VecType(4);
+  dst[0] = a[0] * b[0];
+  dst[1] = a[1] * b[1];
+  dst[2] = a[2] * b[2];
+  dst[3] = a[3] * b[3];
+  return dst;
+}
+var mul = multiply;
+function divide(a, b, dst) {
+  dst = dst || new VecType(4);
+  dst[0] = a[0] / b[0];
+  dst[1] = a[1] / b[1];
+  dst[2] = a[2] / b[2];
+  dst[3] = a[3] / b[3];
+  return dst;
+}
+var div = divide;
+function zero(dst) {
+  dst = dst || new VecType(4);
+  dst[0] = 0;
+  dst[1] = 0;
+  dst[2] = 0;
+  dst[3] = 0;
+  return dst;
+}
+function transformMat4(v, m, dst) {
+  dst = dst || new VecType(4);
+  const x2 = v[0];
+  const y2 = v[1];
+  const z = v[2];
+  const w = v[3];
+  dst[0] = m[0] * x2 + m[4] * y2 + m[8] * z + m[12] * w;
+  dst[1] = m[1] * x2 + m[5] * y2 + m[9] * z + m[13] * w;
+  dst[2] = m[2] * x2 + m[6] * y2 + m[10] * z + m[14] * w;
+  dst[3] = m[3] * x2 + m[7] * y2 + m[11] * z + m[15] * w;
+  return dst;
+}
+var vec4Impl = /* @__PURE__ */ Object.freeze({
+  __proto__: null,
+  create,
+  setDefaultType: setDefaultType$1,
+  fromValues,
+  set,
+  ceil,
+  floor,
+  round,
+  clamp,
+  add,
+  addScaled,
+  subtract,
+  sub,
+  equalsApproximately,
+  equals,
+  lerp,
+  lerpV,
+  max,
+  min,
+  mulScalar,
+  scale,
+  divScalar,
+  inverse,
+  invert,
+  dot,
+  length,
+  len,
+  lengthSq,
+  lenSq,
+  distance,
+  dist,
+  distanceSq,
+  distSq,
+  normalize,
+  negate,
+  copy,
+  clone,
+  multiply,
+  mul,
+  divide,
+  div,
+  zero,
+  transformMat4
 });
 
 // ../../../shaders/shaders.js
@@ -2038,13 +2345,13 @@ var scriptManager = {
     });
   }
 };
-function OSCILLATOR(min, max, step) {
-  if ((typeof min === "string" || typeof min === "number") && (typeof max === "string" || typeof max === "number") && (typeof step === "string" || typeof step === "number")) {
+function OSCILLATOR(min2, max2, step) {
+  if ((typeof min2 === "string" || typeof min2 === "number") && (typeof max2 === "string" || typeof max2 === "number") && (typeof step === "string" || typeof step === "number")) {
     var ROOT = this;
-    this.min = parseFloat(min);
-    this.max = parseFloat(max);
+    this.min = parseFloat(min2);
+    this.max = parseFloat(max2);
     this.step = parseFloat(step);
-    this.value_ = parseFloat(min);
+    this.value_ = parseFloat(min2);
     this.status = 0;
     this.on_maximum_value = function() {
     };
@@ -2080,20 +2387,20 @@ function OSCILLATOR(min, max, step) {
 var byId = function(id2) {
   return document.getElementById(id2);
 };
-function randomFloatFromTo(min, max) {
-  return Math.random() * (max - min) + min;
+function randomFloatFromTo(min2, max2) {
+  return Math.random() * (max2 - min2) + min2;
 }
-function randomIntFromTo(min, max) {
-  if (typeof min === "object" || typeof max === "object") {
+function randomIntFromTo(min2, max2) {
+  if (typeof min2 === "object" || typeof max2 === "object") {
     console.log(
-      "SYS : warning Desciption : Replace object with string , this >> " + typeof min + " and " + typeof min + " << must be string or number."
+      "SYS : warning Desciption : Replace object with string , this >> " + typeof min2 + " and " + typeof min2 + " << must be string or number."
     );
-  } else if (typeof min === "undefined" || typeof max === "undefined") {
+  } else if (typeof min2 === "undefined" || typeof max2 === "undefined") {
     console.log(
-      "SYS : warning Desciption : arguments (min, max) cant be undefined , this >> " + typeof min + " and " + typeof min + " << must be string or number."
+      "SYS : warning Desciption : arguments (min, max) cant be undefined , this >> " + typeof min2 + " and " + typeof min2 + " << must be string or number."
     );
   } else {
-    return Math.floor(Math.random() * (max - min + 1) + min);
+    return Math.floor(Math.random() * (max2 - min2 + 1) + min2);
   }
 }
 var urlQuery = (function() {
@@ -2138,10 +2445,10 @@ var LOG_WARN = "background: gray; color: yellow; font-size:10px";
 var LOG_MATRIX = "font-family: stormfaze;color: #lime; font-size:11px;text-shadow: 2px 2px 4px orangered;background: black;";
 var LOG_FUNNY = "font-family: stormfaze;color: #f1f033; font-size:14px;text-shadow: 2px 2px 4px #f335f4, 4px 4px 4px #d64444, 2px 2px 4px #c160a6, 6px 2px 0px #123de3;background: black;";
 var LOG_FUNNY_SMALL = "font-family: stormfaze;color: #f1f033; font-size:10px;text-shadow: 2px 2px 4px #f335f4, 4px 4px 4px #d64444, 1px 1px 2px #c160a6, 3px 1px 0px #123de3;background: black;";
-function genName(length) {
+function genName(length2) {
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
   let result = "";
-  for (let i = 0; i < length; i++) {
+  for (let i = 0; i < length2; i++) {
     result += chars.charAt(Math.floor(Math.random() * chars.length));
   }
   return result;
@@ -2314,12 +2621,12 @@ var Position = class {
   onTargetPositionReach() {
   }
   update() {
-    var tx = parseFloat(this.targetX) - parseFloat(this.x), ty = parseFloat(this.targetY) - parseFloat(this.y), tz = parseFloat(this.targetZ) - parseFloat(this.z), dist = Math.sqrt(tx * tx + ty * ty + tz * tz);
-    this.velX = tx / dist * this.thrust;
-    this.velY = ty / dist * this.thrust;
-    this.velZ = tz / dist * this.thrust;
+    var tx = parseFloat(this.targetX) - parseFloat(this.x), ty = parseFloat(this.targetY) - parseFloat(this.y), tz = parseFloat(this.targetZ) - parseFloat(this.z), dist2 = Math.sqrt(tx * tx + ty * ty + tz * tz);
+    this.velX = tx / dist2 * this.thrust;
+    this.velY = ty / dist2 * this.thrust;
+    this.velZ = tz / dist2 * this.thrust;
     if (this.inMove == true) {
-      if (dist > this.thrust) {
+      if (dist2 > this.thrust) {
         this.x += this.velX;
         this.y += this.velY;
         this.z += this.velZ;
@@ -2699,7 +3006,7 @@ var WASDCamera = class extends CameraBase {
     this.yaw -= input.analog.x * deltaTime2 * this.rotationSpeed;
     this.pitch -= input.analog.y * deltaTime2 * this.rotationSpeed;
     this.yaw = mod(this.yaw, Math.PI * 2);
-    this.pitch = clamp(this.pitch, -Math.PI / 2, Math.PI / 2);
+    this.pitch = clamp2(this.pitch, -Math.PI / 2, Math.PI / 2);
     const position = vec3Impl.copy(this.position);
     super.matrix = mat4Impl.rotateX(mat4Impl.rotationY(this.yaw), this.pitch);
     const digital = input.digital;
@@ -2712,7 +3019,7 @@ var WASDCamera = class extends CameraBase {
     vec3Impl.addScaled(targetVelocity, this.back, deltaBack, targetVelocity);
     vec3Impl.normalize(targetVelocity, targetVelocity);
     vec3Impl.mulScalar(targetVelocity, this.movementSpeed, targetVelocity);
-    this.velocity = lerp(
+    this.velocity = lerp2(
       targetVelocity,
       this.velocity,
       Math.pow(1 - this.frictionCoefficient, deltaTime2)
@@ -2812,16 +3119,16 @@ var ArcballCamera = class extends CameraBase {
     this.up = vec3Impl.normalize(vec3Impl.cross(this.back, this.right));
   }
 };
-function clamp(x2, min, max) {
-  return Math.min(Math.max(x2, min), max);
+function clamp2(x2, min2, max2) {
+  return Math.min(Math.max(x2, min2), max2);
 }
-function mod(x2, div) {
-  return x2 - Math.floor(Math.abs(x2) / div) * div * Math.sign(x2);
+function mod(x2, div2) {
+  return x2 - Math.floor(Math.abs(x2) / div2) * div2 * Math.sign(x2);
 }
 function rotate2(vec, axis, angle2) {
   return vec3Impl.transformMat4Upper3x3(vec, mat4Impl.rotation(axis, angle2));
 }
-function lerp(a, b, s) {
+function lerp2(a, b, s) {
   return vec3Impl.addScaled(a, vec3Impl.sub(b, a), s);
 }
 function createInputHandler(window2, canvas) {
@@ -2961,7 +3268,7 @@ var RPGCamera = class extends CameraBase {
     this.yaw = 0;
     this.pitch = -0.88;
     this.yaw = mod(this.yaw, Math.PI * 2);
-    this.pitch = clamp(this.pitch, -Math.PI / 2, Math.PI / 2);
+    this.pitch = clamp2(this.pitch, -Math.PI / 2, Math.PI / 2);
     if (this.followMe != null && this.followMe.inMove === true || this.mousRollInAction == true) {
       this.followMeOffset = this.scrollY;
       this.position[0] = this.followMe.x;
@@ -2991,7 +3298,7 @@ var RPGCamera = class extends CameraBase {
     vec3Impl.addScaled(targetVelocity, this.up, deltaUp, targetVelocity);
     vec3Impl.normalize(targetVelocity, targetVelocity);
     vec3Impl.mulScalar(targetVelocity, this.movementSpeed, targetVelocity);
-    this.velocity = lerp(
+    this.velocity = lerp2(
       targetVelocity,
       this.velocity,
       Math.pow(1 - this.frictionCoefficient, deltaTime2)
@@ -6934,9 +7241,9 @@ var MatrixAmmo = class {
     const flags = body2.getCollisionFlags();
     body2.setCollisionFlags(flags | CF_KINEMATIC_OBJECT);
     body2.setActivationState(DISABLE_DEACTIVATION);
-    const zero = new Ammo.btVector3(0, 0, 0);
-    body2.setLinearVelocity(zero);
-    body2.setAngularVelocity(zero);
+    const zero2 = new Ammo.btVector3(0, 0, 0);
+    body2.setLinearVelocity(zero2);
+    body2.setAngularVelocity(zero2);
     const currentTransform = body2.getWorldTransform();
     body2.setWorldTransform(currentTransform);
     body2.getMotionState().setWorldTransform(currentTransform);
@@ -7340,9 +7647,9 @@ var Behavior = class {
   constructor() {
     this.osc0 = new OSCILLATOR(0, 5, 0.01);
   }
-  setOsc0(min, max, step) {
-    this.osc0.min = min;
-    this.osc0.max = max;
+  setOsc0(min2, max2, step) {
+    this.osc0.min = min2;
+    this.osc0.max = max2;
     this.osc0.step = step;
   }
   // apend - keep init origin
@@ -7758,11 +8065,11 @@ function normalize$12(v, dst) {
   const v0 = v[0];
   const v1 = v[1];
   const v2 = v[2];
-  const len = Math.sqrt(v0 * v0 + v1 * v1 + v2 * v2);
-  if (len > 1e-5) {
-    dst[0] = v0 / len;
-    dst[1] = v1 / len;
-    dst[2] = v2 / len;
+  const len2 = Math.sqrt(v0 * v0 + v1 * v1 + v2 * v2);
+  if (len2 > 1e-5) {
+    dst[0] = v0 / len2;
+    dst[1] = v1 / len2;
+    dst[2] = v2 / len2;
   } else {
     dst[0] = 0;
     dst[1] = 0;
@@ -8699,7 +9006,7 @@ function dot3vs1(a, b) {
     console.error("Bad arguments for dot3vs1");
   }
 }
-function multiply(a, b) {
+function multiply2(a, b) {
   var aNumRows = a.length, aNumCols = a[0].length, bNumRows = b.length, bNumCols = b[0].length, m = new Array(aNumRows);
   for (var r = 0; r < aNumRows; ++r) {
     m[r] = new Array(bNumCols);
@@ -9111,7 +9418,7 @@ var MEBvh = class {
         console.warn("Unknown channel {channel}");
       }
       var M_channel = euler2mat(euler_rot[0], euler_rot[1], euler_rot[2], euler_rot[3]);
-      var M_rotation = multiply(M_rotation, M_channel);
+      var M_rotation = multiply2(M_rotation, M_channel);
     }
     return [M_rotation, index_offset];
   }
@@ -9166,7 +9473,7 @@ var MEBvh = class {
         [0, 0, 1]
       ];
     }
-    var M = multiply(M_parent, M_rotation);
+    var M = multiply2(M_parent, M_rotation);
     var position = arraySum3(p_parent, dot3vs1(M_parent, joint.offset));
     position = arraySum3(position, offset_position);
     var rotation3 = mat2euler(M, "rad2deg");
@@ -9265,14 +9572,14 @@ var radian = 180 / Math.PI;
 // ../../../../node_modules/gl-matrix/esm/mat4.js
 var mat4_exports = {};
 __export(mat4_exports, {
-  add: () => add,
+  add: () => add2,
   adjoint: () => adjoint,
-  clone: () => clone,
-  copy: () => copy,
-  create: () => create,
+  clone: () => clone2,
+  copy: () => copy2,
+  create: () => create2,
   decompose: () => decompose,
   determinant: () => determinant3,
-  equals: () => equals,
+  equals: () => equals2,
   exactEquals: () => exactEquals,
   frob: () => frob,
   fromQuat: () => fromQuat3,
@@ -9283,7 +9590,7 @@ __export(mat4_exports, {
   fromRotationTranslationScaleOrigin: () => fromRotationTranslationScaleOrigin,
   fromScaling: () => fromScaling,
   fromTranslation: () => fromTranslation,
-  fromValues: () => fromValues,
+  fromValues: () => fromValues2,
   fromXRotation: () => fromXRotation,
   fromYRotation: () => fromYRotation,
   fromZRotation: () => fromZRotation,
@@ -9292,10 +9599,10 @@ __export(mat4_exports, {
   getScaling: () => getScaling3,
   getTranslation: () => getTranslation3,
   identity: () => identity3,
-  invert: () => invert,
+  invert: () => invert2,
   lookAt: () => lookAt3,
-  mul: () => mul,
-  multiply: () => multiply2,
+  mul: () => mul2,
+  multiply: () => multiply3,
   multiplyScalar: () => multiplyScalar,
   multiplyScalarAndAdd: () => multiplyScalarAndAdd,
   ortho: () => ortho3,
@@ -9309,16 +9616,16 @@ __export(mat4_exports, {
   rotateX: () => rotateX3,
   rotateY: () => rotateY3,
   rotateZ: () => rotateZ3,
-  scale: () => scale,
-  set: () => set,
+  scale: () => scale2,
+  set: () => set2,
   str: () => str,
-  sub: () => sub,
-  subtract: () => subtract,
+  sub: () => sub2,
+  subtract: () => subtract2,
   targetTo: () => targetTo,
   translate: () => translate3,
   transpose: () => transpose3
 });
-function create() {
+function create2() {
   var out = new ARRAY_TYPE(16);
   if (ARRAY_TYPE != Float32Array) {
     out[1] = 0;
@@ -9340,7 +9647,7 @@ function create() {
   out[15] = 1;
   return out;
 }
-function clone(a) {
+function clone2(a) {
   var out = new ARRAY_TYPE(16);
   out[0] = a[0];
   out[1] = a[1];
@@ -9360,7 +9667,7 @@ function clone(a) {
   out[15] = a[15];
   return out;
 }
-function copy(out, a) {
+function copy2(out, a) {
   out[0] = a[0];
   out[1] = a[1];
   out[2] = a[2];
@@ -9379,7 +9686,7 @@ function copy(out, a) {
   out[15] = a[15];
   return out;
 }
-function fromValues(m00, m01, m02, m03, m10, m11, m12, m13, m20, m21, m22, m23, m30, m31, m32, m33) {
+function fromValues2(m00, m01, m02, m03, m10, m11, m12, m13, m20, m21, m22, m23, m30, m31, m32, m33) {
   var out = new ARRAY_TYPE(16);
   out[0] = m00;
   out[1] = m01;
@@ -9399,7 +9706,7 @@ function fromValues(m00, m01, m02, m03, m10, m11, m12, m13, m20, m21, m22, m23, 
   out[15] = m33;
   return out;
 }
-function set(out, m00, m01, m02, m03, m10, m11, m12, m13, m20, m21, m22, m23, m30, m31, m32, m33) {
+function set2(out, m00, m01, m02, m03, m10, m11, m12, m13, m20, m21, m22, m23, m30, m31, m32, m33) {
   out[0] = m00;
   out[1] = m01;
   out[2] = m02;
@@ -9474,7 +9781,7 @@ function transpose3(out, a) {
   }
   return out;
 }
-function invert(out, a) {
+function invert2(out, a) {
   var a00 = a[0], a01 = a[1], a02 = a[2], a03 = a[3];
   var a10 = a[4], a11 = a[5], a12 = a[6], a13 = a[7];
   var a20 = a[8], a21 = a[9], a22 = a[10], a23 = a[11];
@@ -9566,7 +9873,7 @@ function determinant3(a) {
   var b9 = a30 * b2 - a31 * b1 + a32 * b0;
   return a13 * b6 - a03 * b7 + a33 * b8 - a23 * b9;
 }
-function multiply2(out, a, b) {
+function multiply3(out, a, b) {
   var a00 = a[0], a01 = a[1], a02 = a[2], a03 = a[3];
   var a10 = a[4], a11 = a[5], a12 = a[6], a13 = a[7];
   var a20 = a[8], a21 = a[9], a22 = a[10], a23 = a[11];
@@ -9644,7 +9951,7 @@ function translate3(out, a, v) {
   }
   return out;
 }
-function scale(out, a, v) {
+function scale2(out, a, v) {
   var x2 = v[0], y2 = v[1], z = v[2];
   out[0] = a[0] * x2;
   out[1] = a[1] * x2;
@@ -9666,7 +9973,7 @@ function scale(out, a, v) {
 }
 function rotate4(out, a, rad, axis) {
   var x2 = axis[0], y2 = axis[1], z = axis[2];
-  var len = Math.sqrt(x2 * x2 + y2 * y2 + z * z);
+  var len2 = Math.sqrt(x2 * x2 + y2 * y2 + z * z);
   var s, c, t;
   var a00, a01, a02, a03;
   var a10, a11, a12, a13;
@@ -9674,13 +9981,13 @@ function rotate4(out, a, rad, axis) {
   var b00, b01, b02;
   var b10, b11, b12;
   var b20, b21, b22;
-  if (len < EPSILON3) {
+  if (len2 < EPSILON3) {
     return null;
   }
-  len = 1 / len;
-  x2 *= len;
-  y2 *= len;
-  z *= len;
+  len2 = 1 / len2;
+  x2 *= len2;
+  y2 *= len2;
+  z *= len2;
   s = Math.sin(rad);
   c = Math.cos(rad);
   t = 1 - c;
@@ -9858,15 +10165,15 @@ function fromScaling(out, v) {
 }
 function fromRotation(out, rad, axis) {
   var x2 = axis[0], y2 = axis[1], z = axis[2];
-  var len = Math.sqrt(x2 * x2 + y2 * y2 + z * z);
+  var len2 = Math.sqrt(x2 * x2 + y2 * y2 + z * z);
   var s, c, t;
-  if (len < EPSILON3) {
+  if (len2 < EPSILON3) {
     return null;
   }
-  len = 1 / len;
-  x2 *= len;
-  y2 *= len;
-  z *= len;
+  len2 = 1 / len2;
+  x2 *= len2;
+  y2 *= len2;
+  z *= len2;
   s = Math.sin(rad);
   c = Math.cos(rad);
   t = 1 - c;
@@ -10381,7 +10688,7 @@ function orthoZO(out, left2, right2, bottom, top, near, far) {
   return out;
 }
 function lookAt3(out, eye, center, up) {
-  var x0, x1, x2, y0, y1, y2, z0, z1, z2, len;
+  var x0, x1, x2, y0, y1, y2, z0, z1, z2, len2;
   var eyex = eye[0];
   var eyey = eye[1];
   var eyez = eye[2];
@@ -10397,37 +10704,37 @@ function lookAt3(out, eye, center, up) {
   z0 = eyex - centerx;
   z1 = eyey - centery;
   z2 = eyez - centerz;
-  len = 1 / Math.sqrt(z0 * z0 + z1 * z1 + z2 * z2);
-  z0 *= len;
-  z1 *= len;
-  z2 *= len;
+  len2 = 1 / Math.sqrt(z0 * z0 + z1 * z1 + z2 * z2);
+  z0 *= len2;
+  z1 *= len2;
+  z2 *= len2;
   x0 = upy * z2 - upz * z1;
   x1 = upz * z0 - upx * z2;
   x2 = upx * z1 - upy * z0;
-  len = Math.sqrt(x0 * x0 + x1 * x1 + x2 * x2);
-  if (!len) {
+  len2 = Math.sqrt(x0 * x0 + x1 * x1 + x2 * x2);
+  if (!len2) {
     x0 = 0;
     x1 = 0;
     x2 = 0;
   } else {
-    len = 1 / len;
-    x0 *= len;
-    x1 *= len;
-    x2 *= len;
+    len2 = 1 / len2;
+    x0 *= len2;
+    x1 *= len2;
+    x2 *= len2;
   }
   y0 = z1 * x2 - z2 * x1;
   y1 = z2 * x0 - z0 * x2;
   y2 = z0 * x1 - z1 * x0;
-  len = Math.sqrt(y0 * y0 + y1 * y1 + y2 * y2);
-  if (!len) {
+  len2 = Math.sqrt(y0 * y0 + y1 * y1 + y2 * y2);
+  if (!len2) {
     y0 = 0;
     y1 = 0;
     y2 = 0;
   } else {
-    len = 1 / len;
-    y0 *= len;
-    y1 *= len;
-    y2 *= len;
+    len2 = 1 / len2;
+    y0 *= len2;
+    y1 *= len2;
+    y2 *= len2;
   }
   out[0] = x0;
   out[1] = y0;
@@ -10450,20 +10757,20 @@ function lookAt3(out, eye, center, up) {
 function targetTo(out, eye, target, up) {
   var eyex = eye[0], eyey = eye[1], eyez = eye[2], upx = up[0], upy = up[1], upz = up[2];
   var z0 = eyex - target[0], z1 = eyey - target[1], z2 = eyez - target[2];
-  var len = z0 * z0 + z1 * z1 + z2 * z2;
-  if (len > 0) {
-    len = 1 / Math.sqrt(len);
-    z0 *= len;
-    z1 *= len;
-    z2 *= len;
+  var len2 = z0 * z0 + z1 * z1 + z2 * z2;
+  if (len2 > 0) {
+    len2 = 1 / Math.sqrt(len2);
+    z0 *= len2;
+    z1 *= len2;
+    z2 *= len2;
   }
   var x0 = upy * z2 - upz * z1, x1 = upz * z0 - upx * z2, x2 = upx * z1 - upy * z0;
-  len = x0 * x0 + x1 * x1 + x2 * x2;
-  if (len > 0) {
-    len = 1 / Math.sqrt(len);
-    x0 *= len;
-    x1 *= len;
-    x2 *= len;
+  len2 = x0 * x0 + x1 * x1 + x2 * x2;
+  if (len2 > 0) {
+    len2 = 1 / Math.sqrt(len2);
+    x0 *= len2;
+    x1 *= len2;
+    x2 *= len2;
   }
   out[0] = x0;
   out[1] = x1;
@@ -10489,7 +10796,7 @@ function str(a) {
 function frob(a) {
   return Math.sqrt(a[0] * a[0] + a[1] * a[1] + a[2] * a[2] + a[3] * a[3] + a[4] * a[4] + a[5] * a[5] + a[6] * a[6] + a[7] * a[7] + a[8] * a[8] + a[9] * a[9] + a[10] * a[10] + a[11] * a[11] + a[12] * a[12] + a[13] * a[13] + a[14] * a[14] + a[15] * a[15]);
 }
-function add(out, a, b) {
+function add2(out, a, b) {
   out[0] = a[0] + b[0];
   out[1] = a[1] + b[1];
   out[2] = a[2] + b[2];
@@ -10508,7 +10815,7 @@ function add(out, a, b) {
   out[15] = a[15] + b[15];
   return out;
 }
-function subtract(out, a, b) {
+function subtract2(out, a, b) {
   out[0] = a[0] - b[0];
   out[1] = a[1] - b[1];
   out[2] = a[2] - b[2];
@@ -10546,29 +10853,29 @@ function multiplyScalar(out, a, b) {
   out[15] = a[15] * b;
   return out;
 }
-function multiplyScalarAndAdd(out, a, b, scale2) {
-  out[0] = a[0] + b[0] * scale2;
-  out[1] = a[1] + b[1] * scale2;
-  out[2] = a[2] + b[2] * scale2;
-  out[3] = a[3] + b[3] * scale2;
-  out[4] = a[4] + b[4] * scale2;
-  out[5] = a[5] + b[5] * scale2;
-  out[6] = a[6] + b[6] * scale2;
-  out[7] = a[7] + b[7] * scale2;
-  out[8] = a[8] + b[8] * scale2;
-  out[9] = a[9] + b[9] * scale2;
-  out[10] = a[10] + b[10] * scale2;
-  out[11] = a[11] + b[11] * scale2;
-  out[12] = a[12] + b[12] * scale2;
-  out[13] = a[13] + b[13] * scale2;
-  out[14] = a[14] + b[14] * scale2;
-  out[15] = a[15] + b[15] * scale2;
+function multiplyScalarAndAdd(out, a, b, scale3) {
+  out[0] = a[0] + b[0] * scale3;
+  out[1] = a[1] + b[1] * scale3;
+  out[2] = a[2] + b[2] * scale3;
+  out[3] = a[3] + b[3] * scale3;
+  out[4] = a[4] + b[4] * scale3;
+  out[5] = a[5] + b[5] * scale3;
+  out[6] = a[6] + b[6] * scale3;
+  out[7] = a[7] + b[7] * scale3;
+  out[8] = a[8] + b[8] * scale3;
+  out[9] = a[9] + b[9] * scale3;
+  out[10] = a[10] + b[10] * scale3;
+  out[11] = a[11] + b[11] * scale3;
+  out[12] = a[12] + b[12] * scale3;
+  out[13] = a[13] + b[13] * scale3;
+  out[14] = a[14] + b[14] * scale3;
+  out[15] = a[15] + b[15] * scale3;
   return out;
 }
 function exactEquals(a, b) {
   return a[0] === b[0] && a[1] === b[1] && a[2] === b[2] && a[3] === b[3] && a[4] === b[4] && a[5] === b[5] && a[6] === b[6] && a[7] === b[7] && a[8] === b[8] && a[9] === b[9] && a[10] === b[10] && a[11] === b[11] && a[12] === b[12] && a[13] === b[13] && a[14] === b[14] && a[15] === b[15];
 }
-function equals(a, b) {
+function equals2(a, b) {
   var a0 = a[0], a1 = a[1], a2 = a[2], a3 = a[3];
   var a4 = a[4], a5 = a[5], a6 = a[6], a7 = a[7];
   var a8 = a[8], a9 = a[9], a10 = a[10], a11 = a[11];
@@ -10579,8 +10886,8 @@ function equals(a, b) {
   var b12 = b[12], b13 = b[13], b14 = b[14], b15 = b[15];
   return Math.abs(a0 - b0) <= EPSILON3 * Math.max(1, Math.abs(a0), Math.abs(b0)) && Math.abs(a1 - b1) <= EPSILON3 * Math.max(1, Math.abs(a1), Math.abs(b1)) && Math.abs(a2 - b2) <= EPSILON3 * Math.max(1, Math.abs(a2), Math.abs(b2)) && Math.abs(a3 - b3) <= EPSILON3 * Math.max(1, Math.abs(a3), Math.abs(b3)) && Math.abs(a4 - b4) <= EPSILON3 * Math.max(1, Math.abs(a4), Math.abs(b4)) && Math.abs(a5 - b5) <= EPSILON3 * Math.max(1, Math.abs(a5), Math.abs(b5)) && Math.abs(a6 - b6) <= EPSILON3 * Math.max(1, Math.abs(a6), Math.abs(b6)) && Math.abs(a7 - b7) <= EPSILON3 * Math.max(1, Math.abs(a7), Math.abs(b7)) && Math.abs(a8 - b8) <= EPSILON3 * Math.max(1, Math.abs(a8), Math.abs(b8)) && Math.abs(a9 - b9) <= EPSILON3 * Math.max(1, Math.abs(a9), Math.abs(b9)) && Math.abs(a10 - b10) <= EPSILON3 * Math.max(1, Math.abs(a10), Math.abs(b10)) && Math.abs(a11 - b11) <= EPSILON3 * Math.max(1, Math.abs(a11), Math.abs(b11)) && Math.abs(a12 - b12) <= EPSILON3 * Math.max(1, Math.abs(a12), Math.abs(b12)) && Math.abs(a13 - b13) <= EPSILON3 * Math.max(1, Math.abs(a13), Math.abs(b13)) && Math.abs(a14 - b14) <= EPSILON3 * Math.max(1, Math.abs(a14), Math.abs(b14)) && Math.abs(a15 - b15) <= EPSILON3 * Math.max(1, Math.abs(a15), Math.abs(b15));
 }
-var mul = multiply2;
-var sub = subtract;
+var mul2 = multiply3;
+var sub2 = subtract2;
 
 // ../../../engine/loaders/webgpu-gltf.js
 var GLTFRenderMode = {
@@ -10778,11 +11085,11 @@ function readNodeTransform(node2) {
       m[15]
     );
   } else {
-    var scale2 = [1, 1, 1];
+    var scale3 = [1, 1, 1];
     var rotation3 = [0, 0, 0, 1];
     var translation3 = [0, 0, 0];
     if (node2["scale"]) {
-      scale2 = node2["scale"];
+      scale3 = node2["scale"];
     }
     if (node2["rotation"]) {
       rotation3 = node2["rotation"];
@@ -10791,7 +11098,7 @@ function readNodeTransform(node2) {
       translation3 = node2["translation"];
     }
     var m = mat4_exports.create();
-    return mat4_exports.fromRotationTranslationScale(m, rotation3, translation3, scale2);
+    return mat4_exports.fromRotationTranslationScale(m, rotation3, translation3, scale3);
   }
 }
 function flattenGLTFChildren(nodes, node2, parent_transform) {
@@ -11145,10 +11452,10 @@ var BVHPlayer = class extends MEMeshObj {
         ]);
       }
       if (!jointNode.translation || !jointNode.rotation || !jointNode.scale) {
-        const { translation: translation3, rotation: rotation3, scale: scale2 } = this.decomposeMatrix(jointNode.transform);
+        const { translation: translation3, rotation: rotation3, scale: scale3 } = this.decomposeMatrix(jointNode.transform);
         jointNode.translation = translation3;
         jointNode.rotation = rotation3;
-        jointNode.scale = scale2;
+        jointNode.scale = scale3;
       }
     }
     this.glb.animationIndex = 0;
@@ -11298,17 +11605,17 @@ var BVHPlayer = class extends MEMeshObj {
   }
   // Example quaternion slerp (a,b = [x,y,z,w])
   quatSlerp(a, b, t) {
-    let dot = a[0] * b[0] + a[1] * b[1] + a[2] * b[2] + a[3] * b[3];
-    if (dot < 0) {
+    let dot2 = a[0] * b[0] + a[1] * b[1] + a[2] * b[2] + a[3] * b[3];
+    if (dot2 < 0) {
       b = b.map((v) => -v);
-      dot = -dot;
+      dot2 = -dot2;
     }
-    if (dot > 0.9995) return lerpVec(a, b, t);
-    const theta0 = Math.acos(dot);
+    if (dot2 > 0.9995) return lerpVec(a, b, t);
+    const theta0 = Math.acos(dot2);
     const theta = theta0 * t;
     const sinTheta = Math.sin(theta);
     const sinTheta0 = Math.sin(theta0);
-    const s0 = Math.cos(theta) - dot * sinTheta / sinTheta0;
+    const s0 = Math.cos(theta) - dot2 * sinTheta / sinTheta0;
     const s1 = sinTheta / sinTheta0;
     return a.map((v, i) => s0 * v + s1 * b[i]);
   }
@@ -11337,12 +11644,12 @@ var BVHPlayer = class extends MEMeshObj {
     ]);
   }
   // Compose TRS to a 4×4
-  composeMatrix(translation3, rotationQuat, scale2) {
+  composeMatrix(translation3, rotationQuat, scale3) {
     const m = mat4Impl.identity();
     mat4Impl.translate(m, translation3, m);
     const rot = mat4Impl.fromQuat(rotationQuat);
     mat4Impl.multiply(m, rot, m);
-    mat4Impl.scale(m, scale2, m);
+    mat4Impl.scale(m, scale3, m);
     return m;
   }
   decomposeMatrix(m) {
@@ -11350,8 +11657,8 @@ var BVHPlayer = class extends MEMeshObj {
     const cx = [m[0], m[1], m[2]];
     const cy = [m[4], m[5], m[6]];
     const cz = [m[8], m[9], m[10]];
-    const len = (v) => Math.hypot(v[0], v[1], v[2]);
-    let sx = len(cx), sy = len(cy), sz = len(cz);
+    const len2 = (v) => Math.hypot(v[0], v[1], v[2]);
+    let sx = len2(cx), sy = len2(cy), sz = len2(cz);
     if (sx === 0) sx = 1;
     if (sy === 0) sy = 1;
     if (sz === 0) sz = 1;
@@ -11390,26 +11697,26 @@ var BVHPlayer = class extends MEMeshObj {
       qz = 0.25 * s;
     }
     const rot = new Float32Array([qx, qy, qz, qw]);
-    const scale2 = new Float32Array([sx, sy, sz]);
-    return { translation: t, rotation: rot, scale: scale2 };
+    const scale3 = new Float32Array([sx, sy, sz]);
+    return { translation: t, rotation: rot, scale: scale3 };
   }
   slerp(q0, q1, t, out) {
-    let dot = q0[0] * q1[0] + q0[1] * q1[1] + q0[2] * q1[2] + q0[3] * q1[3];
-    if (dot < 0) {
-      dot = -dot;
+    let dot2 = q0[0] * q1[0] + q0[1] * q1[1] + q0[2] * q1[2] + q0[3] * q1[3];
+    if (dot2 < 0) {
+      dot2 = -dot2;
       q1 = [-q1[0], -q1[1], -q1[2], -q1[3]];
     }
-    if (dot > 0.9995) {
+    if (dot2 > 0.9995) {
       for (let i = 0; i < 4; i++) out[i] = q0[i] + t * (q1[i] - q0[i]);
-      const len = Math.hypot(...out);
-      for (let i = 0; i < 4; i++) out[i] /= len;
+      const len2 = Math.hypot(...out);
+      for (let i = 0; i < 4; i++) out[i] /= len2;
       return;
     }
-    const theta0 = Math.acos(dot);
+    const theta0 = Math.acos(dot2);
     const theta = theta0 * t;
     const sinTheta = Math.sin(theta);
     const sinTheta0 = Math.sin(theta0);
-    const s0 = Math.cos(theta) - dot * sinTheta / sinTheta0;
+    const s0 = Math.cos(theta) - dot2 * sinTheta / sinTheta0;
     const s1 = sinTheta / sinTheta0;
     for (let i = 0; i < 4; i++) {
       out[i] = s0 * q0[i] + s1 * q1[i];
@@ -12694,10 +13001,10 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
 
 // ../../../engine/effects/gen.js
 var GenGeo = class {
-  constructor(device, format, type2 = "sphere", scale2 = 1) {
+  constructor(device, format, type2 = "sphere", scale3 = 1) {
     this.device = device;
     this.format = format;
-    const geom = GeometryFactory.create(type2, scale2);
+    const geom = GeometryFactory.create(type2, scale3);
     this.vertexData = geom.positions;
     this.uvData = geom.uvs;
     this.indexData = geom.indices;
@@ -13749,10 +14056,10 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
 
 // ../../../engine/effects/gen-tex.js
 var GenGeoTexture = class {
-  constructor(device, format, type2 = "sphere", path, scale2 = 1) {
+  constructor(device, format, type2 = "sphere", path, scale3 = 1) {
     this.device = device;
     this.format = format;
-    const geom = GeometryFactory.create(type2, scale2);
+    const geom = GeometryFactory.create(type2, scale3);
     this.vertexData = geom.positions;
     this.uvData = geom.uvs;
     this.indexData = geom.indices;
@@ -13928,10 +14235,10 @@ var GenGeoTexture = class {
 
 // ../../../engine/effects/gen-tex2.js
 var GenGeoTexture2 = class {
-  constructor(device, format, type2 = "sphere", path, scale2 = 1) {
+  constructor(device, format, type2 = "sphere", path, scale3 = 1) {
     this.device = device;
     this.format = format;
-    const geom = GeometryFactory.create(type2, scale2);
+    const geom = GeometryFactory.create(type2, scale3);
     this.vertexData = geom.positions;
     this.uvData = geom.uvs;
     this.indexData = geom.indices;
@@ -15021,10 +15328,10 @@ var BVHPlayerInstances = class extends MEMeshObjInstances {
         ]);
       }
       if (!jointNode.translation || !jointNode.rotation || !jointNode.scale) {
-        const { translation: translation3, rotation: rotation3, scale: scale2 } = this.decomposeMatrix(jointNode.transform);
+        const { translation: translation3, rotation: rotation3, scale: scale3 } = this.decomposeMatrix(jointNode.transform);
         jointNode.translation = translation3;
         jointNode.rotation = rotation3;
-        jointNode.scale = scale2;
+        jointNode.scale = scale3;
       }
     }
     this.glb.animationIndex = 0;
@@ -15188,17 +15495,17 @@ var BVHPlayerInstances = class extends MEMeshObjInstances {
   }
   // Example quaternion slerp (a,b = [x,y,z,w])
   quatSlerp(a, b, t) {
-    let dot = a[0] * b[0] + a[1] * b[1] + a[2] * b[2] + a[3] * b[3];
-    if (dot < 0) {
+    let dot2 = a[0] * b[0] + a[1] * b[1] + a[2] * b[2] + a[3] * b[3];
+    if (dot2 < 0) {
       b = b.map((v) => -v);
-      dot = -dot;
+      dot2 = -dot2;
     }
-    if (dot > 0.9995) return lerpVec(a, b, t);
-    const theta0 = Math.acos(dot);
+    if (dot2 > 0.9995) return lerpVec(a, b, t);
+    const theta0 = Math.acos(dot2);
     const theta = theta0 * t;
     const sinTheta = Math.sin(theta);
     const sinTheta0 = Math.sin(theta0);
-    const s0 = Math.cos(theta) - dot * sinTheta / sinTheta0;
+    const s0 = Math.cos(theta) - dot2 * sinTheta / sinTheta0;
     const s1 = sinTheta / sinTheta0;
     return a.map((v, i) => s0 * v + s1 * b[i]);
   }
@@ -15227,12 +15534,12 @@ var BVHPlayerInstances = class extends MEMeshObjInstances {
     ]);
   }
   // Compose TRS to a 4×4
-  composeMatrix(translation3, rotationQuat, scale2) {
+  composeMatrix(translation3, rotationQuat, scale3) {
     const m = mat4Impl.identity();
     mat4Impl.translate(m, translation3, m);
     const rot = mat4Impl.fromQuat(rotationQuat);
     mat4Impl.multiply(m, rot, m);
-    mat4Impl.scale(m, scale2, m);
+    mat4Impl.scale(m, scale3, m);
     return m;
   }
   decomposeMatrix(m) {
@@ -15240,8 +15547,8 @@ var BVHPlayerInstances = class extends MEMeshObjInstances {
     const cx = [m[0], m[1], m[2]];
     const cy = [m[4], m[5], m[6]];
     const cz = [m[8], m[9], m[10]];
-    const len = (v) => Math.hypot(v[0], v[1], v[2]);
-    let sx = len(cx), sy = len(cy), sz = len(cz);
+    const len2 = (v) => Math.hypot(v[0], v[1], v[2]);
+    let sx = len2(cx), sy = len2(cy), sz = len2(cz);
     if (sx === 0) sx = 1;
     if (sy === 0) sy = 1;
     if (sz === 0) sz = 1;
@@ -15280,26 +15587,26 @@ var BVHPlayerInstances = class extends MEMeshObjInstances {
       qz = 0.25 * s;
     }
     const rot = new Float32Array([qx, qy, qz, qw]);
-    const scale2 = new Float32Array([sx, sy, sz]);
-    return { translation: t, rotation: rot, scale: scale2 };
+    const scale3 = new Float32Array([sx, sy, sz]);
+    return { translation: t, rotation: rot, scale: scale3 };
   }
   slerp(q0, q1, t, out) {
-    let dot = q0[0] * q1[0] + q0[1] * q1[1] + q0[2] * q1[2] + q0[3] * q1[3];
-    if (dot < 0) {
-      dot = -dot;
+    let dot2 = q0[0] * q1[0] + q0[1] * q1[1] + q0[2] * q1[2] + q0[3] * q1[3];
+    if (dot2 < 0) {
+      dot2 = -dot2;
       q1 = [-q1[0], -q1[1], -q1[2], -q1[3]];
     }
-    if (dot > 0.9995) {
+    if (dot2 > 0.9995) {
       for (let i = 0; i < 4; i++) out[i] = q0[i] + t * (q1[i] - q0[i]);
-      const len = Math.hypot(...out);
-      for (let i = 0; i < 4; i++) out[i] /= len;
+      const len2 = Math.hypot(...out);
+      for (let i = 0; i < 4; i++) out[i] /= len2;
       return;
     }
-    const theta0 = Math.acos(dot);
+    const theta0 = Math.acos(dot2);
     const theta = theta0 * t;
     const sinTheta = Math.sin(theta);
     const sinTheta0 = Math.sin(theta0);
-    const s0 = Math.cos(theta) - dot * sinTheta / sinTheta0;
+    const s0 = Math.cos(theta) - dot2 * sinTheta / sinTheta0;
     const s1 = sinTheta / sinTheta0;
     for (let i = 0; i < 4; i++) {
       out[i] = s0 * q0[i] + s1 * q1[i];
@@ -16557,9 +16864,9 @@ var FluxCodexVertex = class _FluxCodexVertex {
     pin.dataset.type = pinSpec.type;
     pin.dataset.io = isOutput ? "out" : "in";
     pin.dataset.node = nodeId;
-    const dot = document.createElement("div");
-    dot.className = "dot";
-    pin.appendChild(dot);
+    const dot2 = document.createElement("div");
+    dot2.className = "dot";
+    pin.appendChild(dot2);
     const label = document.createElement("span");
     label.className = "pin-label";
     label.textContent = pinSpec.name;
@@ -16836,6 +17143,19 @@ var FluxCodexVertex = class _FluxCodexVertex {
         outputs: [
           { name: "execOut", type: "action" }
         ]
+      }),
+      rayHitEvent: (id2, x2, y2) => ({
+        id: id2,
+        x: x2,
+        y: y2,
+        title: "On Ray Hit",
+        category: "event",
+        inputs: [],
+        outputs: [
+          { name: "exec", type: "action" },
+          { name: "hitObject", type: "object" }
+        ],
+        _listenerAttached: false
       }),
       function: (id2, x2, y2) => ({
         id: id2,
@@ -17805,6 +18125,9 @@ var FluxCodexVertex = class _FluxCodexVertex {
         return node2.fields?.find((f) => f.key === "condition")?.value;
       }
     }
+    if (node2.title === "On Ray Hit" && pinName === "hitObject") {
+      return node2._returnCache;
+    }
     if (node2.title === "Custom Event" && pinName === "detail") {
       console.warn("[Custom Event]  getvalue");
       return node2._returnCache;
@@ -18060,6 +18383,20 @@ var FluxCodexVertex = class _FluxCodexVertex {
         })
       );
       this.enqueueOutputs(n, "execOut");
+      return;
+    } else if (n.title === "On Ray Hit") {
+      if (n._listenerAttached) return;
+      if (!this._raycastAABBListenerAdded) {
+        app.reference.addRaycastsListener();
+        this._raycastAABBListenerAdded = true;
+      }
+      const handler = (e) => {
+        n._returnCache = e.detail?.hitObject ?? e.detail;
+        this.enqueueOutputs(n, "exec");
+      };
+      app.canvas.addEventListener("ray.hit.event", handler);
+      n._eventHandler = handler;
+      n._listenerAttached = true;
       return;
     }
     if (n.isGetterNode) {
@@ -18341,9 +18678,9 @@ var FluxCodexVertex = class _FluxCodexVertex {
           result = this.getValue(nodeId, "A") <= this.getValue(nodeId, "B");
           break;
         case "GenRandInt":
-          const min = +n.fields?.find((f) => f.key === "min")?.value || 0;
-          const max = +n.fields?.find((f) => f.key === "max")?.value || 10;
-          result = Math.floor(Math.random() * (max - min + 1)) + min;
+          const min2 = +n.fields?.find((f) => f.key === "min")?.value || 0;
+          const max2 = +n.fields?.find((f) => f.key === "max")?.value || 10;
+          result = Math.floor(Math.random() * (max2 - min2 + 1)) + min2;
           break;
         default:
           result = void 0;
@@ -20016,7 +20353,6 @@ var Editor = class {
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('event')">Event: onLoad</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('eventCustom')">Custom Event</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('dispatchEvent')">Dispatch Event</button>
-      
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('function')">Function</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('if')">If Branch</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('genrand')">GenRandInt</button>
@@ -20039,6 +20375,8 @@ var Editor = class {
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('translateByY')">TranslateByY</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('translateByZ')">TranslateByZ</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('onTargetPositionReach')">onTarget PositionReach</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('rayHitEvent')">Ray Hit Event</button>
+
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getObjectAnimation')">Get Object Animation</button>
       <hr>
       <span>Dinamics</span>
@@ -20375,6 +20713,130 @@ function combinePassWGSL() {
 `;
 }
 
+// ../../../engine/raycast.js
+var touchCoordinate = {
+  enabled: false,
+  x: 0,
+  y: 0,
+  stopOnFirstDetectedHit: false
+};
+function getRayFromMouse(event, canvas, camera) {
+  const rect = canvas.getBoundingClientRect();
+  const x2 = (event.clientX - rect.left) / rect.width * 2 - 1;
+  const y2 = -((event.clientY - rect.top) / rect.height * 2 - 1);
+  const invProjection = mat4Impl.inverse(camera.projectionMatrix);
+  const invView = mat4Impl.inverse(camera.view);
+  const clip = [x2, y2, 1, 1];
+  let eye = vec4Impl.transformMat4(clip, invProjection);
+  eye = [eye[0], eye[1], -1, 0];
+  const worldDir4 = vec4Impl.transformMat4(eye, invView);
+  const rayDirection = vec3Impl.normalize([worldDir4[0], worldDir4[1], worldDir4[2]]);
+  const rayOrigin = [...camera.position];
+  return { rayOrigin, rayDirection, screen: { x: x2, y: y2 } };
+}
+function rayIntersectsSphere(rayOrigin, rayDirection, sphereCenter, sphereRadius) {
+  const center = [sphereCenter.x, sphereCenter.y, sphereCenter.z];
+  const oc = vec3Impl.subtract(rayOrigin, center);
+  const a = vec3Impl.dot(rayDirection, rayDirection);
+  const b = 2 * vec3Impl.dot(oc, rayDirection);
+  const c = vec3Impl.dot(oc, oc) - sphereRadius * sphereRadius;
+  const discriminant = b * b - 4 * a * c;
+  if (discriminant < 0) return null;
+  const t = (-b - Math.sqrt(discriminant)) / (2 * a);
+  if (t < 0) return null;
+  const hitPoint = vec3Impl.add(rayOrigin, vec3Impl.mulScalar(rayDirection, t));
+  const hitNormal = vec3Impl.normalize(vec3Impl.subtract(hitPoint, center));
+  return { t, hitPoint, hitNormal };
+}
+function computeAABB(vertices) {
+  const min2 = [Infinity, Infinity, Infinity];
+  const max2 = [-Infinity, -Infinity, -Infinity];
+  for (let i = 0; i < vertices.length; i += 3) {
+    min2[0] = Math.min(min2[0], vertices[i]);
+    min2[1] = Math.min(min2[1], vertices[i + 1]);
+    min2[2] = Math.min(min2[2], vertices[i + 2]);
+    max2[0] = Math.max(max2[0], vertices[i]);
+    max2[1] = Math.max(max2[1], vertices[i + 1]);
+    max2[2] = Math.max(max2[2], vertices[i + 2]);
+  }
+  return [min2, max2];
+}
+function rayIntersectsAABB(rayOrigin, rayDirection, boxMin, boxMax) {
+  let tmin = (boxMin[0] - rayOrigin[0]) / rayDirection[0];
+  let tmax = (boxMax[0] - rayOrigin[0]) / rayDirection[0];
+  if (tmin > tmax) [tmin, tmax] = [tmax, tmin];
+  let tymin = (boxMin[1] - rayOrigin[1]) / rayDirection[1];
+  let tymax = (boxMax[1] - rayOrigin[1]) / rayDirection[1];
+  if (tymin > tymax) [tymin, tymax] = [tymax, tymin];
+  if (tmin > tymax || tymin > tmax) return null;
+  if (tymin > tmin) tmin = tymin;
+  if (tymax < tmax) tmax = tymax;
+  let tzmin = (boxMin[2] - rayOrigin[2]) / rayDirection[2];
+  let tzmax = (boxMax[2] - rayOrigin[2]) / rayDirection[2];
+  if (tzmin > tzmax) [tzmin, tzmax] = [tzmax, tzmin];
+  if (tmin > tzmax || tzmin > tmax) return null;
+  const t = Math.max(tmin, 0);
+  const hitPoint = vec3Impl.add(rayOrigin, vec3Impl.mulScalar(rayDirection, t));
+  return { t, hitPoint };
+}
+function computeWorldVertsAndAABB(object) {
+  const modelMatrix = object.getModelMatrix(object.position);
+  const worldVerts = [];
+  for (let i = 0; i < object.mesh.vertices.length; i += 3) {
+    const local = [object.mesh.vertices[i], object.mesh.vertices[i + 1], object.mesh.vertices[i + 2]];
+    const world = vec3Impl.transformMat4(local, modelMatrix);
+    worldVerts.push(...world);
+  }
+  const [boxMin, boxMax] = computeAABB(worldVerts);
+  return { modelMatrix, worldVerts, boxMin, boxMax };
+}
+function dispatchRayHitEvent(canvas, data) {
+  if (data.eventName == "click") {
+    canvas.dispatchEvent(new CustomEvent("ray.hit.event", { detail: data }));
+  } else {
+    canvas.dispatchEvent(new CustomEvent("ray.hit.event.mm", { detail: data }));
+  }
+}
+function addRaycastsListener(canvasId = "canvas1", eventName = "click") {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) {
+    console.warn(`[Raycaster] Canvas with id '${canvasId}' not found.`);
+    return;
+  }
+  canvas.addEventListener(eventName, (event) => {
+    const camera = app.cameras[app.mainCameraParams.type];
+    const { rayOrigin, rayDirection, screen } = getRayFromMouse(event, canvas, camera);
+    let closestHit = null;
+    for (const object of app.mainRenderBundle) {
+      if (!object.raycast?.enabled) continue;
+      const { boxMin, boxMax } = computeWorldVertsAndAABB(object);
+      const hitAABB = rayIntersectsAABB(rayOrigin, rayDirection, boxMin, boxMax);
+      if (!hitAABB) continue;
+      const sphereHit = rayIntersectsSphere(rayOrigin, rayDirection, object.position, object.raycast.radius);
+      const hit = sphereHit || hitAABB;
+      if (hit && (!closestHit || hit.t < closestHit.t)) {
+        closestHit = { ...hit, hitObject: object };
+        if (touchCoordinate.stopOnFirstDetectedHit) break;
+      }
+    }
+    if (closestHit) {
+      dispatchRayHitEvent(canvas, {
+        hitObject: closestHit.hitObject,
+        hitPoint: closestHit.hitPoint,
+        hitNormal: closestHit.hitNormal || null,
+        hitDistance: closestHit.t,
+        rayOrigin,
+        rayDirection,
+        screenCoords: screen,
+        camera,
+        timestamp: performance.now(),
+        button: event.button,
+        eventName
+      });
+    }
+  });
+}
+
 // ../../../world.js
 var MatrixEngineWGPU = class {
   // save class reference
@@ -20383,7 +20845,8 @@ var MatrixEngineWGPU = class {
     MEMeshObjInstances,
     BVHPlayerInstances,
     BVHPlayer,
-    downloadMeshes
+    downloadMeshes,
+    addRaycastsListener
   };
   mainRenderBundle = [];
   lightContainer = [];

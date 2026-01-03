@@ -14,8 +14,8 @@ import {BVHPlayer} from "./engine/loaders/bvh.js";
 import {BVHPlayerInstances} from "./engine/loaders/bvh-instaced.js";
 import {Editor} from "./tools/editor/editor.js";
 import MEMeshObjInstances from "./engine/instanced/mesh-obj-instances.js";
-
 import {BloomPass, fullscreenQuadWGSL} from "./engine/postprocessing/bloom.js";
+import {addRaycastsListener} from "./engine/raycast.js";
 
 /**
  * @description
@@ -33,7 +33,8 @@ export default class MatrixEngineWGPU {
     MEMeshObjInstances,
     BVHPlayerInstances,
     BVHPlayer,
-    downloadMeshes
+    downloadMeshes,
+    addRaycastsListener
   }
 
   mainRenderBundle = [];
