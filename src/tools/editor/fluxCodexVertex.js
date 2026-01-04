@@ -2560,14 +2560,12 @@ export default class FluxCodexVertex {
       const eventName = n.fields?.find(f => f.key === "name")?.value;
       if(!eventName) return;
       const handler = (e) => {
-        console.log('**************TRUE** HANDLER****************')
-        n._returnCache = e.detail; // 👈 expose detail
+        console.log('**TRUE** HANDLER**');
+        n._returnCache = e.detail;
         this.enqueueOutputs(n, "exec");
       };
-
-      console.log('**eventName******************************', eventName)
+      console.log('**eventName**', eventName)
       window.removeEventListener(eventName, handler);
-
       window.addEventListener(eventName, handler);
       n._eventHandler = handler;
       n._listenerAttached = true;
@@ -2590,16 +2588,14 @@ export default class FluxCodexVertex {
       this.enqueueOutputs(n, "execOut");
       return;
     } else if(n.title === "On Ray Hit") {
+      console.log('On Ray Hit 1', n._listenerAttached)
       if(n._listenerAttached) return;
-
       // one-time engine setup
-      if(!this._raycastAABBListenerAdded) {
-        app.reference.addRaycastsListener();
-        this._raycastAABBListenerAdded = true;
-      }
-
+      app.reference.addRaycastsListener();
+      console.log('On Ray Hit 2');
+      console.log('On Ray Hit 3')
       const handler = (e) => {
-        // expected e.detail = hit info
+        console.log('Look intro cache ')
         n._returnCache = e.detail?.hitObject ?? e.detail;
         this.enqueueOutputs(n, "exec");
       };
@@ -2678,8 +2674,19 @@ export default class FluxCodexVertex {
       const varField = n.fields?.find(f => f.key === "var");
 
       if(varField && varField.value) {
-        const value = this.getValue(nodeId, "value");
-        this.variables[type][varField.value] = {value};
+
+        let value = this.getValue(nodeId, "value");
+        // if 0 probably no pin connection
+        if(n.title == "Set Object") {
+          if(value == 0) {
+            let varliteral = n.fields?.find(f => f.key === "literal");
+            console.log("set object  varliteral.value ", varliteral.value);
+            this.variables[type][varField.value] = JSON.parse(varliteral.value);
+          }
+        } else {
+          console.log("set object ", value);
+          this.variables[type][varField.value] = {value};
+        }
 
         this.notifyVariableChanged(type, varField.value);
         // Update matching getter nodes instantly
@@ -3124,6 +3131,7 @@ export default class FluxCodexVertex {
       if(key === 'fn') return undefined;
       if(key === 'accessObject') return undefined;
       if(key === '_returnCache') return undefined;
+      if(key === '_listenerAttached') return false;
       return value;
     }
 

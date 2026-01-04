@@ -1395,11 +1395,10 @@ input[type=number]:hover::-webkit-outer-spin-button {
 }
 
 /* Visual editor part */
-
 :root {
   --bg: #101217;
   --text: #dfe7f0;
-  --grad-event: linear-gradient(135deg, #ff3838, #d10101);
+  --grad-event: linear-gradient(135deg, #b90000, #d10101);
   --grad-action: linear-gradient(135deg, #6ec6ff, #3a8fc1);
   --grad-control: linear-gradient(135deg, #f6d64e, #d4aa2b);
   --grad-math: linear-gradient(135deg, #ff6ec6, #d23aa1);
@@ -1409,16 +1408,6 @@ input[type=number]:hover::-webkit-outer-spin-button {
   --grad-scene: linear-gradient(135deg, #1068c0, #0f7ee6);
 }
 
-/* html,
-body {
-  /* margin: 0;
-  height: 100%;
-  font-family: Inter, sans-serif;
-  background: var(--bg);
-  user-select: none;
-  overflow: hidden; 
-} */
-
 #app {
   display: flex;
   position: absolute;
@@ -1426,7 +1415,7 @@ body {
   left: 17.55%;
   height: 100%;
   width: 80%;
-  gap: 8px;
+  gap: 0;
 }
 
 #leftBar {
