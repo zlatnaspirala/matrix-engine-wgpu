@@ -16119,8 +16119,22 @@ var FluxCodexVertex = class _FluxCodexVertex {
       selectedNode: null,
       pan: [0, 0],
       panning: false,
-      panStart: [0, 0]
+      panStart: [0, 0],
+      zoom: 1
     };
+    this.setZoom = (z) => {
+      this.state.zoom = Math.max(0.2, Math.min(2.5, z));
+      this.board.style.transform = `scale(${this.state.zoom})`;
+    };
+    this.onWheel = (e) => {
+      e.preventDefault();
+      const delta = e.deltaY > 0 ? -0.1 : 0.1;
+      this.setZoom(this.state.zoom + delta);
+    };
+    this.boardWrap.addEventListener("wheel", this.onWheel.bind(this), {
+      passive: false
+      // IMPORTANT
+    });
     this.createVariablesPopup();
     this._createImportInput();
     this.bindGlobalListeners();
@@ -18888,8 +18902,11 @@ var FluxCodexVertex = class _FluxCodexVertex {
     this.log("Graph saved to LocalStorage!");
   }
   clearStorage() {
-    localStorage.removeItem(_FluxCodexVertex.SAVE_KEY);
-    this.log("Save cleared. Refresh to reset.");
+    let ask = confirm("\u26A0\uFE0F Delete all nodes , are you sure ?");
+    if (ask) {
+      localStorage.removeItem(_FluxCodexVertex.SAVE_KEY);
+      location.reload(true);
+    }
   }
   clearAllNodes() {
     this.board.querySelectorAll(".node").forEach((n) => n.remove());

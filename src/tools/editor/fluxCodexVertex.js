@@ -74,7 +74,23 @@ export default class FluxCodexVertex {
       pan: [0, 0],
       panning: false,
       panStart: [0, 0],
+      zoom: 1
     };
+
+    this.setZoom = (z) => {
+      this.state.zoom = Math.max(0.2, Math.min(2.5, z));
+      this.board.style.transform = `scale(${this.state.zoom})`;
+    }
+
+    this.onWheel = (e) => {
+      e.preventDefault();
+      const delta = e.deltaY > 0 ? -0.1 : 0.1;
+      this.setZoom(this.state.zoom + delta);
+    }
+
+    this.boardWrap.addEventListener("wheel", this.onWheel.bind(this), {
+      passive: false // IMPORTANT
+    });
 
     // Bind event listeners
     this.createVariablesPopup();
@@ -2228,7 +2244,7 @@ export default class FluxCodexVertex {
         console.log("real onTargetPositionReach called");
         this.enqueueOutputs(n, "exec");
       };
-      
+
       n._listenerAttached = true;
     } else if(n.title == "On Ray Hit") {
       console.log('ON RAY HIT INIT ONLE !!!!!!!!!!!!!!!!!')
@@ -3195,8 +3211,11 @@ export default class FluxCodexVertex {
   }
 
   clearStorage() {
-    localStorage.removeItem(FluxCodexVertex.SAVE_KEY);
-    this.log("Save cleared. Refresh to reset.");
+    let ask = confirm("⚠️ Delete all nodes , are you sure ?");
+    if(ask) {
+      localStorage.removeItem(FluxCodexVertex.SAVE_KEY);
+      location.reload(true);
+    }
   }
 
   clearAllNodes() {
