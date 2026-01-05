@@ -1620,6 +1620,9 @@ svg.connections {
   background: rgb(3, 203, 217);
 }
 
+.node.audios .header {
+  background:  rgb(217, 3, 210);
+}
 
 /* New */
 

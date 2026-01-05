@@ -84,7 +84,20 @@ export default class EditorHud {
             detail: o
           }));
         }
-      } else {
+      } else if(ext == 'mp3' && confirm("MP3 FILE 📦 Do you wanna add it to the scene ?")) {
+        let objName = prompt("📦 Enter uniq name: ");
+        // infly
+        let o = {
+          path: getPATH,
+          name: objName
+        }
+        document.dispatchEvent(new CustomEvent('web.editor.addMp3', {
+          detail: o
+        }));
+      }
+
+
+      else {
         let s = "";
         for(let key in e.detail.details) {
           if(key == "path") {

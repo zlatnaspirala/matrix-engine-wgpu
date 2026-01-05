@@ -208,6 +208,18 @@ export class MEEditorClient {
       this.ws.send(o);
     });
 
+    document.addEventListener('web.editor.addMp3', (e) => {
+      // console.log("[web.editor.addMp3]: ", e.detail);
+      // console.info('addMp3 <signal>');
+      // let o = {
+      //   action: "addMp3",
+      //   projectName: location.href.split('/public/')[1].split(".")[0],
+      //   options: e.detail
+      // };
+      // o = JSON.stringify(o);
+      // this.ws.send(o);
+    });
+
     // delete obj
     document.addEventListener('web.editor.delete', (e) => {
       console.log("[web.editor.delete]: ", e.detail.prefix);

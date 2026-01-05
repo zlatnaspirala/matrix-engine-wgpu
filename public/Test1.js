@@ -15893,6 +15893,8 @@ var MEEditorClient = class {
       o = JSON.stringify(o);
       this.ws.send(o);
     });
+    document.addEventListener("web.editor.addMp3", (e) => {
+    });
     document.addEventListener("web.editor.delete", (e) => {
       console.log("[web.editor.delete]: ", e.detail.prefix);
       console.info("delete-obj <signal>");
@@ -16175,6 +16177,12 @@ var FluxCodexVertex = class _FluxCodexVertex {
       if (node2.type !== "getSubObject") return;
       this.handleGetSubObject(node2, value);
       if (field !== "path") return;
+    });
+    document.addEventListener("web.editor.addMp3", (e) => {
+      console.log("[web.editor.addMp3]: ", e.detail);
+      e.detail.path = e.detail.path.replace("\\res", "res");
+      e.detail.path = e.detail.path.replace(/\\/g, "/");
+      this.addNode("audioMP3", e.detail);
     });
   }
   createContextMenu() {
@@ -16914,6 +16922,8 @@ var FluxCodexVertex = class _FluxCodexVertex {
     const el = document.createElement("div");
     if (spec.title == "Fetch") {
       el.className = "node " + (spec.title.toLowerCase() || "");
+    } else if (spec.title == "Play MP3") {
+      el.className = "node audios";
     } else {
       el.className = "node " + (spec.category || "");
     }
@@ -17142,6 +17152,28 @@ var FluxCodexVertex = class _FluxCodexVertex {
         category: "event",
         inputs: [],
         outputs: [{ name: "exec", type: "action" }]
+      }),
+      audioMP3: (id2, x2, y2, options2) => ({
+        id: id2,
+        x: x2,
+        y: y2,
+        title: "Play MP3",
+        category: "action",
+        inputs: [
+          { name: "exec", type: "action" },
+          { name: "key", type: "string", default: "audio" },
+          { name: "src", type: "string", default: "" },
+          { name: "clones", type: "number", default: 1 }
+        ],
+        outputs: [
+          { name: "execOut", type: "action" }
+        ],
+        fields: [
+          { key: "created", value: false },
+          { key: "key", value: options2?.name },
+          { key: "src", value: options2?.path }
+        ],
+        noselfExec: "true"
       }),
       eventCustom: (id2, x2, y2) => ({
         id: id2,
@@ -17902,6 +17934,8 @@ var FluxCodexVertex = class _FluxCodexVertex {
       ;
       if (nodeFactories[type]) spec = nodeFactories[type](id, x, y, options.accessObject);
       spec.accessObjectLiteral = AO;
+    } else if (type === "audioMP3" && options?.path && options?.name) {
+      if (nodeFactories[type]) spec = nodeFactories[type](id, x, y, options);
     } else {
       if (nodeFactories[type]) spec = nodeFactories[type](id, x, y);
     }
@@ -18122,12 +18156,9 @@ var FluxCodexVertex = class _FluxCodexVertex {
       };
       n._listenerAttached = true;
     } else if (n.title == "On Ray Hit") {
-      console.log("ON RAY HIT INIT ONLE !!!!!!!!!!!!!!!!!");
       if (n._listenerAttached) return;
       app.reference.addRaycastsListener();
-      console.log("On Ray Hit 2");
       const handler = (e) => {
-        console.log("On Ray Hit Look intro cache ");
         n._returnCache = e.detail?.hitObject ?? e.detail;
         this.enqueueOutputs(n, "exec");
       };
@@ -18246,17 +18277,86 @@ var FluxCodexVertex = class _FluxCodexVertex {
     } else if (node2.title === "Get Sub Object") {
       let varField = node2.outputs?.find((f) => f.name === "0");
       let isName = node2.outputs?.find((f) => f.name === "name");
-      console.log("test1 :::", varField);
       if (varField) {
         if (varField.type == "object") {
           return node2._subCache[parseInt(varField.name)];
         }
       }
-      console.log("test2 :::", isName);
       return node2._subCache;
     } else if (node2.type === "forEach") {
       if (pinName === "item") return node2.state?.item;
       if (pinName === "index") return node2.state?.index;
+    }
+    if (["math", "value", "compare"].includes(node2.category)) {
+      let result;
+      switch (node2.title) {
+        case "Add":
+          result = this.getValue(nodeId, "a") + this.getValue(nodeId, "b");
+          break;
+        case "Sub":
+          result = this.getValue(nodeId, "a") - this.getValue(nodeId, "b");
+          break;
+        case "Mul":
+          result = this.getValue(nodeId, "a") * this.getValue(nodeId, "b");
+          break;
+        case "Div":
+          result = this.getValue(nodeId, "a") / this.getValue(nodeId, "b");
+          break;
+        case "Sin":
+          result = Math.sin(this.getValue(nodeId, "a"));
+          break;
+        case "Cos":
+          result = Math.cos(this.getValue(nodeId, "a"));
+          break;
+        case "Pi":
+          result = Math.PI;
+          break;
+        case "A > B":
+          result = this.getValue(nodeId, "A") > this.getValue(nodeId, "B");
+          break;
+        case "A < B":
+          result = this.getValue(nodeId, "A") < this.getValue(nodeId, "B");
+          break;
+        case "A == B":
+          let varA = this.getValue(nodeId, "A");
+          let varB = this.getValue(nodeId, "B");
+          console.log("TEST DEEP TEST ");
+          if (typeof varA == "object") {
+            console.log("TEST DEEP ");
+            const r = this.deepEqual(varA, varB);
+            console.log("TEST DEEP ", r);
+            result = r;
+          } else {
+            result = this.getValue(nodeId, "A") != this.getValue(nodeId, "B");
+          }
+          break;
+        case "A != B":
+          let varAN = this.getValue(nodeId, "A");
+          let varBN = this.getValue(nodeId, "B");
+          if (typeof varAN == "object") {
+            const r = this.deepEqual(varAN, varBN);
+            result = !r;
+          } else {
+            result = this.getValue(nodeId, "A") != this.getValue(nodeId, "B");
+          }
+          break;
+        case "A >= B":
+          result = this.getValue(nodeId, "A") >= this.getValue(nodeId, "B");
+          break;
+        case "A <= B":
+          result = this.getValue(nodeId, "A") <= this.getValue(nodeId, "B");
+          break;
+        case "GenRandInt":
+          const min2 = +node2.fields?.find((f) => f.key === "min")?.value || 0;
+          const max2 = +node2.fields?.find((f) => f.key === "max")?.value || 10;
+          result = Math.floor(Math.random() * (max2 - min2 + 1)) + min2;
+          break;
+        default:
+          result = void 0;
+      }
+      node2._returnCache = result;
+      if (node2.displayEl) node2.displayEl.textContent = typeof result === "number" ? result.toFixed(3) : String(result);
+      return result;
     }
     if (node2.outputs?.some((o) => o.name === pinName)) {
       const dynamicNodes = ["GenRandInt", "RandomFloat"];
@@ -18568,7 +18668,6 @@ var FluxCodexVertex = class _FluxCodexVertex {
       return;
     }
     if (["action", "actionprint", "timer"].includes(n.category)) {
-      console.log("TEST PRINT  n.", n);
       if (n.attachedMethod) this._executeAttachedMethod(n);
       if (n.title === "Print") {
         const label = n.fields?.find((f) => f.key === "label")?.value || "Print:";
@@ -18598,6 +18697,24 @@ var FluxCodexVertex = class _FluxCodexVertex {
       } else if (n.title === "SetTimeout") {
         const delay = +n.fields?.find((f) => f.key === "delay")?.value || 1e3;
         setTimeout(() => this.enqueueOutputs(n, "execOut"), delay);
+        return;
+      } else if (n.title === "Play MP3") {
+        const key = this.getValue(nodeId, "key");
+        const src = this.getValue(nodeId, "src");
+        const clones = Number(this.getValue(nodeId, "clones")) || 1;
+        if (!key || !src) {
+          console.warn("[Play MP3] Missing key or src");
+          this.enqueueOutputs(n, "execOut");
+          return;
+        }
+        const createdField = n.fields.find((f) => f.key === "created");
+        if (!createdField.value) {
+          console.log("!AUDIO ONCE!");
+          app.matrixSounds.createAudio(key, src, clones);
+          createdField.value = true;
+        }
+        app.matrixSounds.play(key);
+        this.enqueueOutputs(n, "execOut");
         return;
       }
       this.enqueueOutputs(n, "execOut");
@@ -18699,7 +18816,9 @@ var FluxCodexVertex = class _FluxCodexVertex {
       this.enqueueOutputs(n, "execOut");
       return;
     }
+    console.log("BEFORE COMPARE ");
     if (["math", "value", "compare"].includes(n.category)) {
+      console.log("BEFORE COMPARE ");
       let result;
       switch (n.title) {
         case "Add":
@@ -18732,8 +18851,11 @@ var FluxCodexVertex = class _FluxCodexVertex {
         case "A == B":
           let varA = this.getValue(nodeId, "A");
           let varB = this.getValue(nodeId, "B");
+          console.log("TEST DEEP TEST ");
           if (typeof varA == "object") {
+            console.log("TEST DEEP ");
             const r = this.deepEqual(varA, varB);
+            console.log("TEST DEEP ", r);
             result = r;
           } else {
             result = this.getValue(nodeId, "A") != this.getValue(nodeId, "B");
@@ -18806,7 +18928,7 @@ var FluxCodexVertex = class _FluxCodexVertex {
     this.links.filter((l) => l.from.node === n.id && l.from.pin === pinName && l.type === "action").forEach(
       (l) => setTimeout(() => {
         this.triggerNode(l.to.node);
-      }, 10)
+      }, 2)
     );
   }
   deleteNode(nodeId) {
@@ -19126,6 +19248,15 @@ var EditorHud = class {
             detail: o
           }));
         }
+      } else if (ext == "mp3" && confirm("MP3 FILE \u{1F4E6} Do you wanna add it to the scene ?")) {
+        let objName = prompt("\u{1F4E6} Enter uniq name: ");
+        let o = {
+          path: getPATH,
+          name: objName
+        };
+        document.dispatchEvent(new CustomEvent("web.editor.addMp3", {
+          detail: o
+        }));
       } else {
         let s = "";
         for (let key in e.detail.details) {
@@ -20471,6 +20602,9 @@ var Editor = class {
       <hr>
       <span>Networking</span>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('fetch')">Fetch</button>
+
+      <span>Media</span>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('audioMP3')">Add Mp3</button>
 
       <hr style="border:none; height:1px; background:rgba(255,255,255,0.03); margin:10px 0;">
       <span>Math</span>

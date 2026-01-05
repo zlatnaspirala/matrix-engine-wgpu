@@ -125,6 +125,16 @@ export default class FluxCodexVertex {
       this.handleGetSubObject(node, value);
       if(field !== "path") return;
     });
+
+
+    document.addEventListener('web.editor.addMp3', (e) => {
+      console.log("[web.editor.addMp3]: ", e.detail);
+      e.detail.path = e.detail.path.replace('\\res', 'res');
+      e.detail.path = e.detail.path.replace(/\\/g, '/');
+      // THIS MUST BE SAME LIKE SERVER VERSION OF ADD CUBE
+      this.addNode('audioMP3', e.detail);
+      // this.core.
+    });
   }
 
   createContextMenu() {
@@ -1019,6 +1029,8 @@ export default class FluxCodexVertex {
 
     if(spec.title == "Fetch") {
       el.className = "node " + (spec.title.toLowerCase() || "");
+    } else if(spec.title == "Play MP3") {
+      el.className = "node " + "audios";
     } else {
       el.className = "node " + (spec.category || "");
     }
@@ -1155,7 +1167,7 @@ export default class FluxCodexVertex {
       });
     }
 
-          console.log('AGAINB TEST')
+    console.log('AGAINB TEST')
 
     // Variable name input (temporary until popup)
     if(spec.fields?.some(f => f.key === "var") && !spec.comment) {
@@ -1309,6 +1321,26 @@ export default class FluxCodexVertex {
         category: "event",
         inputs: [],
         outputs: [{name: "exec", type: "action"}],
+      }),
+
+      audioMP3: (id, x, y, options) => ({
+        id, x, y, title: "Play MP3",
+        category: "action",
+        inputs: [
+          {name: "exec", type: "action"},
+          {name: "key", type: "string", default: "audio"},
+          {name: "src", type: "string", default: ""},
+          {name: "clones", type: "number", default: 1}
+        ],
+        outputs: [
+          {name: "execOut", type: "action"}
+        ],
+        fields: [
+          {key: "created", value: false},
+          {key: "key", value: options?.name},
+          {key: "src", value: options?.path},
+        ],
+        noselfExec: "true"
       }),
 
       eventCustom: (id, x, y) => ({
@@ -1977,6 +2009,8 @@ export default class FluxCodexVertex {
       if(nodeFactories[type]) spec = nodeFactories[type](id, x, y, options.accessObject);
       spec.accessObjectLiteral = AO;
 
+    } else if(type === 'audioMP3' && options?.path && options?.name) {
+      if(nodeFactories[type]) spec = nodeFactories[type](id, x, y, options);
     } else {
       if(nodeFactories[type]) spec = nodeFactories[type](id, x, y);
     }
@@ -2241,22 +2275,16 @@ export default class FluxCodexVertex {
         console.log("real onTargetPositionReach called");
         this.enqueueOutputs(n, "exec");
       };
-
       n._listenerAttached = true;
     } else if(n.title == "On Ray Hit") {
-      console.log('ON RAY HIT INIT ONLE !!!!!!!!!!!!!!!!!')
+      // console.log('ON RAY HIT INIT ONLE !!!!!!!!!!!!!!!!!')
       if(n._listenerAttached) return;
-      // one-time engine setup
       app.reference.addRaycastsListener();
-      console.log('On Ray Hit 2');
       const handler = (e) => {
-        console.log('On Ray Hit Look intro cache ')
         n._returnCache = e.detail?.hitObject ?? e.detail;
         this.enqueueOutputs(n, "exec");
       };
-
       app.canvas.addEventListener("ray.hit.event", handler);
-
       n._eventHandler = handler;
       n._listenerAttached = true;
       return;
@@ -2287,7 +2315,6 @@ export default class FluxCodexVertex {
   getValue(nodeId, pinName, visited = new Set()) {
     const node = this.nodes[nodeId];
     if(visited.has(nodeId + ":" + pinName)) {
-      // console.warn("[getValue] cycle blocked", nodeId, pinName);
       return undefined;
     }
     if(!node || visited.has(nodeId)) return undefined;
@@ -2305,7 +2332,6 @@ export default class FluxCodexVertex {
       }
       // ?
     }
-
 
     if(node.title === "On Ray Hit" && pinName === "hitObject") {
       console.info('get value ray hit', node._returnCache);
@@ -2349,9 +2375,7 @@ export default class FluxCodexVertex {
     const inputPin = node.inputs?.find(p => p.name === pinName);
     if(inputPin) return inputPin.default ?? 0;
 
-    if(node.title === "Get Scene Object" || node.title === "Get Scene Animation" ||
-      node.title === "Get Scene Light"
-    ) {
+    if(node.title === "Get Scene Object" || node.title === "Get Scene Animation" || node.title === "Get Scene Light") {
       const objName = this._getSceneSelectedName(node);
       if(!objName) return undefined;
       //repopulate
@@ -2396,18 +2420,90 @@ export default class FluxCodexVertex {
 
       let varField = node.outputs?.find(f => f.name === "0");
       let isName = node.outputs?.find(f => f.name === "name");
-      console.log('test1 :::', varField)
+      // console.log('test1 :::', varField)
       if(varField) if(varField.type == 'object') {
         return node._subCache[parseInt(varField.name)]
       }
-      console.log('test2 :::', isName);
+      // console.log('test2 :::', isName);
       return node._subCache;
     } else if(node.type === "forEach") {
       if(pinName === "item") return node.state?.item;
       if(pinName === "index") return node.state?.index;
     }
 
+    // console.log("GETVALUE COMPARE!")
+    if(["math", "value", "compare"].includes(node.category)) {
+      let result;
+      switch(node.title) {
+        case "Add":
+          result = this.getValue(nodeId, "a") + this.getValue(nodeId, "b");
+          break;
+        case "Sub":
+          result = this.getValue(nodeId, "a") - this.getValue(nodeId, "b");
+          break;
+        case "Mul":
+          result = this.getValue(nodeId, "a") * this.getValue(nodeId, "b");
+          break;
+        case "Div":
+          result = this.getValue(nodeId, "a") / this.getValue(nodeId, "b");
+          break;
+        case "Sin":
+          result = Math.sin(this.getValue(nodeId, "a"));
+          break;
+        case "Cos":
+          result = Math.cos(this.getValue(nodeId, "a"));
+          break;
+        case "Pi":
+          result = Math.PI;
+          break;
+        case "A > B":
+          result = this.getValue(nodeId, "A") > this.getValue(nodeId, "B");
+          break;
+        case "A < B":
+          result = this.getValue(nodeId, "A") < this.getValue(nodeId, "B");
+          break;
+        case "A == B":
+          let varA = this.getValue(nodeId, "A");
+          let varB = this.getValue(nodeId, "B");
+          console.log('TEST DEEP TEST ')
+          if(typeof varA == "object") {
+            console.log('TEST DEEP ')
+            const r = this.deepEqual(varA, varB);
+            console.log('TEST DEEP ', r)
+            result = r;
+          } else {
+            result = this.getValue(nodeId, "A") != this.getValue(nodeId, "B");
+          }
+          break;
+        case "A != B":
+          let varAN = this.getValue(nodeId, "A");
+          let varBN = this.getValue(nodeId, "B");
+          if(typeof varAN == "object") {
+            const r = this.deepEqual(varAN, varBN);
+            result = !r;
+          } else {
+            result = this.getValue(nodeId, "A") != this.getValue(nodeId, "B");
+          }
+          break;
+        case "A >= B":
+          result = this.getValue(nodeId, "A") >= this.getValue(nodeId, "B");
+          break;
+        case "A <= B":
+          result = this.getValue(nodeId, "A") <= this.getValue(nodeId, "B");
+          break;
+        case "GenRandInt":
+          const min =+ node.fields?.find(f => f.key === "min")?.value || 0;
+          const max =+ node.fields?.find(f => f.key === "max")?.value || 10;
+          result = Math.floor(Math.random() * (max - min + 1)) + min;
+          break;
+        default:
+          result = undefined;
+      }
 
+      node._returnCache = result;
+      if(node.displayEl) node.displayEl.textContent = typeof result === "number" ? result.toFixed(3) : String(result);
+      return result;
+    }
 
     if(node.outputs?.some(o => o.name === pinName)) {
       const dynamicNodes = ["GenRandInt", "RandomFloat"];
@@ -2483,20 +2579,15 @@ export default class FluxCodexVertex {
 
   deepEqual(a, b) {
     if(a === b) return true;
-
     if(typeof a !== "object" || typeof b !== "object" || a == null || b == null)
       return false;
-
     const keysA = Object.keys(a);
     const keysB = Object.keys(b);
-
     if(keysA.length !== keysB.length) return false;
-
     for(const key of keysA) {
       if(!keysB.includes(key)) return false;
       if(!this.deepEqual(a[key], b[key])) return false;
     }
-
     return true;
   }
 
@@ -2504,12 +2595,6 @@ export default class FluxCodexVertex {
     const n = this.nodes[nodeId];
     if(!n) return;
     this._execContext = nodeId;
-
-    // if(n.category === "event" && typeof n.noselfExec != 'undefined') {
-    //   console.log('PREVENT SELF EXEC', n.title)
-    //   return;
-    // }
-
     // Highlight node header
     const highlight = document.querySelector(`.node[data-id="${nodeId}"] .header`);
     if(highlight) {
@@ -2802,7 +2887,6 @@ export default class FluxCodexVertex {
 
     // Action / Print / Timer Nodes
     if(["action", "actionprint", "timer"].includes(n.category)) {
-      console.log('TEST PRINT  n.', n)
       // only for custom functions from managerfunction
       if(n.attachedMethod) this._executeAttachedMethod(n);
 
@@ -2842,6 +2926,29 @@ export default class FluxCodexVertex {
         const delay = +n.fields?.find(f => f.key === "delay")?.value || 1000;
         setTimeout(() => this.enqueueOutputs(n, "execOut"), delay);
         return;
+      } else if(n.title === "Play MP3") {
+        const key = this.getValue(nodeId, "key");
+        const src = this.getValue(nodeId, "src");
+        const clones = Number(this.getValue(nodeId, "clones")) || 1;
+
+        if(!key || !src) {
+          console.warn("[Play MP3] Missing key or src");
+          this.enqueueOutputs(n, "execOut");
+          return;
+        }
+
+        const createdField = n.fields.find(f => f.key === "created");
+
+        if(!createdField.value) {
+          console.log('!AUDIO ONCE!');
+          app.matrixSounds.createAudio(key, src, clones);
+          createdField.value = true;
+        }
+
+        app.matrixSounds.play(key);
+
+        this.enqueueOutputs(n, "execOut");
+        return;
       }
 
       this.enqueueOutputs(n, "execOut");
@@ -2849,6 +2956,7 @@ export default class FluxCodexVertex {
     }
 
     if(n.category === "logic" && n.title === "if") {
+      // console.log('TEST LOGIC ')
       const condition = Boolean(this.getValue(nodeId, "condition"));
       this.enqueueOutputs(n, condition ? "true" : "false");
       this._execContext = null;
@@ -2952,7 +3060,12 @@ export default class FluxCodexVertex {
       return;
     }
 
+
+    console.log("BEFORE COMPARE ")
+
     if(["math", "value", "compare"].includes(n.category)) {
+
+      console.log("BEFORE COMPARE ")
       let result;
 
       switch(n.title) {
@@ -2986,8 +3099,11 @@ export default class FluxCodexVertex {
         case "A == B":
           let varA = this.getValue(nodeId, "A");
           let varB = this.getValue(nodeId, "B");
+          console.log('TEST DEEP TEST ')
           if(typeof varA == "object") {
+            console.log('TEST DEEP ')
             const r = this.deepEqual(varA, varB);
+            console.log('TEST DEEP ', r)
             result = r;
           } else {
             result = this.getValue(nodeId, "A") != this.getValue(nodeId, "B");
@@ -3073,7 +3189,7 @@ export default class FluxCodexVertex {
       .forEach(l =>
         setTimeout(() => {
           this.triggerNode(l.to.node);
-        }, 10)
+        }, 2)
       );
   }
 
