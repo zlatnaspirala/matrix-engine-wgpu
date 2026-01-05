@@ -17127,7 +17127,8 @@ var FluxCodexVertex = class _FluxCodexVertex {
           { name: "detail", type: "object" }
         ],
         _listenerAttached: false,
-        _returnCache: null
+        _returnCache: null,
+        noselfExec: "true"
       }),
       dispatchEvent: (id2, x2, y2) => ({
         id: id2,
@@ -17142,7 +17143,8 @@ var FluxCodexVertex = class _FluxCodexVertex {
         ],
         outputs: [
           { name: "execOut", type: "action" }
-        ]
+        ],
+        noselfExec: "true"
       }),
       rayHitEvent: (id2, x2, y2) => ({
         id: id2,
@@ -17155,6 +17157,7 @@ var FluxCodexVertex = class _FluxCodexVertex {
           { name: "exec", type: "action" },
           { name: "hitObject", type: "object" }
         ],
+        noselfExec: "true",
         _listenerAttached: false
       }),
       function: (id2, x2, y2) => ({
@@ -17182,7 +17185,8 @@ var FluxCodexVertex = class _FluxCodexVertex {
         ],
         fields: [
           { key: "condition", value: true }
-        ]
+        ],
+        noselfExec: "true"
       }),
       genrand: (id2, x2, y2) => ({
         id: id2,
@@ -17209,7 +17213,8 @@ var FluxCodexVertex = class _FluxCodexVertex {
         ],
         outputs: [{ name: "execOut", type: "action" }],
         fields: [{ key: "label", value: "Result" }],
-        builtIn: true
+        builtIn: true,
+        noselfExec: "true"
       }),
       timeout: (id2, x2, y2) => ({
         id: id2,
@@ -17904,6 +17909,7 @@ var FluxCodexVertex = class _FluxCodexVertex {
     for (const nodeId in this.nodes) {
       const n = this.nodes[nodeId];
       if (n.category === "event") {
+        console.log("ACTIVATRE NODE ", n.title);
         this.activateEventNode(nodeId);
       }
     }
@@ -18083,8 +18089,21 @@ var FluxCodexVertex = class _FluxCodexVertex {
         console.log("real onTargetPositionReach called");
         this.enqueueOutputs(n, "exec");
       };
-      console("ttttttttttttttttttttttttttttttttttt");
       n._listenerAttached = true;
+    } else if (n.title == "On Ray Hit") {
+      console.log("ON RAY HIT INIT ONLE !!!!!!!!!!!!!!!!!");
+      if (n._listenerAttached) return;
+      app.reference.addRaycastsListener();
+      console.log("On Ray Hit 2");
+      const handler = (e) => {
+        console.log("On Ray Hit Look intro cache ");
+        n._returnCache = e.detail?.hitObject ?? e.detail;
+        this.enqueueOutputs(n, "exec");
+      };
+      app.canvas.addEventListener("ray.hit.event", handler);
+      n._eventHandler = handler;
+      n._listenerAttached = true;
+      return;
     }
   }
   _executeAttachedMethod(n) {
@@ -18126,6 +18145,7 @@ var FluxCodexVertex = class _FluxCodexVertex {
       }
     }
     if (node2.title === "On Ray Hit" && pinName === "hitObject") {
+      console.info("get value ray hit", node2._returnCache);
       return node2._returnCache;
     }
     if (node2.title === "Custom Event" && pinName === "detail") {
@@ -18175,7 +18195,6 @@ var FluxCodexVertex = class _FluxCodexVertex {
         });
       }
       if (node2.fields[0].value) select2.value = node2.fields[0].value;
-      console.log(">>>>>>>>>>>>>>>>>>>>>");
       const obj = (node2.accessObject || []).find((o) => o.name === objName);
       if (!obj) return void 0;
       const out = node2.outputs.find((o) => o.name === pinName);
@@ -18210,7 +18229,7 @@ var FluxCodexVertex = class _FluxCodexVertex {
     }
     if (node2.outputs?.some((o) => o.name === pinName)) {
       const dynamicNodes = ["GenRandInt", "RandomFloat"];
-      if (node2._returnCache === void 0 || dynamicNodes.includes(node2.title)) {
+      if ((node2._returnCache === void 0 || dynamicNodes.includes(node2.title)) && !node2.noselfExec) {
         this._execContext = nodeId;
         this.triggerNode(nodeId);
         this._execContext = null;
@@ -18270,6 +18289,19 @@ var FluxCodexVertex = class _FluxCodexVertex {
         delete n._returnCache;
       }
     }
+  }
+  deepEqual(a, b) {
+    if (a === b) return true;
+    if (typeof a !== "object" || typeof b !== "object" || a == null || b == null)
+      return false;
+    const keysA = Object.keys(a);
+    const keysB = Object.keys(b);
+    if (keysA.length !== keysB.length) return false;
+    for (const key of keysA) {
+      if (!keysB.includes(key)) return false;
+      if (!this.deepEqual(a[key], b[key])) return false;
+    }
+    return true;
   }
   triggerNode(nodeId) {
     const n = this.nodes[nodeId];
@@ -18385,20 +18417,7 @@ var FluxCodexVertex = class _FluxCodexVertex {
       this.enqueueOutputs(n, "execOut");
       return;
     } else if (n.title === "On Ray Hit") {
-      console.log("On Ray Hit 1", n._listenerAttached);
-      if (n._listenerAttached) return;
-      app.reference.addRaycastsListener();
-      console.log("On Ray Hit 2");
-      console.log("On Ray Hit 3");
-      const handler = (e) => {
-        console.log("Look intro cache ");
-        n._returnCache = e.detail?.hitObject ?? e.detail;
-        this.enqueueOutputs(n, "exec");
-      };
-      app.canvas.addEventListener("ray.hit.event", handler);
-      n._eventHandler = handler;
-      n._listenerAttached = true;
-      return;
+      console.log("On Ray Hit =NOTHING NOW", n._listenerAttached);
     }
     if (n.isGetterNode) {
       const varField = n.fields?.find((f) => f.key === "var");
@@ -18444,8 +18463,13 @@ var FluxCodexVertex = class _FluxCodexVertex {
       this.enqueueOutputs(n, "execOut");
       return;
     }
-    if (n.category === "event") {
+    if (n.category === "event" && typeof n.noselfExec === "undefined") {
+      console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>EXEC :  ", n.title);
       this.enqueueOutputs(n, "exec");
+      return;
+    }
+    if (n.category === "event" && typeof n.noselfExec != "undefined") {
+      console.log("PREVENT SELF EXEC");
       return;
     }
     if (n.isVariableNode) {
@@ -18513,6 +18537,7 @@ var FluxCodexVertex = class _FluxCodexVertex {
       return;
     }
     if (["action", "actionprint", "timer"].includes(n.category)) {
+      console.log("TEST PRINT  n.", n);
       if (n.attachedMethod) this._executeAttachedMethod(n);
       if (n.title === "Print") {
         const label = n.fields?.find((f) => f.key === "label")?.value || "Print:";
@@ -18565,8 +18590,6 @@ var FluxCodexVertex = class _FluxCodexVertex {
       const texpath = this.getValue(nodeId, "texturePath");
       const sceneObjectName = this.getValue(nodeId, "sceneObjectName");
       if (texpath) {
-        console.log("textPath", texpath);
-        console.log("sceneObjectName", sceneObjectName);
         let obj = app.getSceneObjectByName(sceneObjectName);
         obj.loadTex0([texpath]).then(() => {
           setTimeout(() => obj.changeTexture(obj.texture0), 200);
@@ -18676,10 +18699,24 @@ var FluxCodexVertex = class _FluxCodexVertex {
           result = this.getValue(nodeId, "A") < this.getValue(nodeId, "B");
           break;
         case "A == B":
-          result = this.getValue(nodeId, "A") == this.getValue(nodeId, "B");
+          let varA = this.getValue(nodeId, "A");
+          let varB = this.getValue(nodeId, "B");
+          if (typeof varA == "object") {
+            const r = this.deepEqual(varA, varB);
+            result = r;
+          } else {
+            result = this.getValue(nodeId, "A") != this.getValue(nodeId, "B");
+          }
           break;
         case "A != B":
-          result = this.getValue(nodeId, "A") != this.getValue(nodeId, "B");
+          let varAN = this.getValue(nodeId, "A");
+          let varBN = this.getValue(nodeId, "B");
+          if (typeof varAN == "object") {
+            const r = this.deepEqual(varAN, varBN);
+            result = !r;
+          } else {
+            result = this.getValue(nodeId, "A") != this.getValue(nodeId, "B");
+          }
           break;
         case "A >= B":
           result = this.getValue(nodeId, "A") >= this.getValue(nodeId, "B");
@@ -18791,8 +18828,6 @@ var FluxCodexVertex = class _FluxCodexVertex {
     }
   }
   handleMouseUp() {
-    if (this.state.draggingNode)
-      setTimeout(() => this.updateValueDisplays(), 0);
     this.state.draggingNode = null;
     this.state.panning = false;
     document.body.style.cursor = "default";
@@ -18829,7 +18864,6 @@ var FluxCodexVertex = class _FluxCodexVertex {
   }
   runGraph() {
     byId("app").style.opacity = 0.4;
-    this.updateValueDisplays();
     this.initEventNodes();
     Object.values(this.nodes).forEach((n) => n._returnCache = void 0);
     Object.values(this.nodes).filter((n) => n.category === "event" && n.title === "onLoad").forEach((n) => this.triggerNode(n.id));
@@ -18950,7 +18984,6 @@ var FluxCodexVertex = class _FluxCodexVertex {
           this.updateNodeDOM(spec2.id);
         });
         this.updateLinks();
-        this.updateValueDisplays();
         this.restoreConnectionsRuntime();
         this.log("Restored graph.");
         return;

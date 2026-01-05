@@ -1311,7 +1311,8 @@ export default class FluxCodexVertex {
           {name: "detail", type: "object"}
         ],
         _listenerAttached: false,
-        _returnCache: null
+        _returnCache: null,
+        noselfExec: 'true'
       }),
 
       dispatchEvent: (id, x, y) => ({
@@ -1325,7 +1326,8 @@ export default class FluxCodexVertex {
         ],
         outputs: [
           {name: "execOut", type: "action"}
-        ]
+        ],
+        noselfExec: 'true'
       }),
 
       rayHitEvent: (id, x, y) => ({
@@ -1337,6 +1339,7 @@ export default class FluxCodexVertex {
           {name: "exec", type: "action"},
           {name: "hitObject", type: "object"}
         ],
+        noselfExec: 'true',
         _listenerAttached: false,
       }),
 
@@ -1361,6 +1364,7 @@ export default class FluxCodexVertex {
         fields: [
           {key: "condition", value: true},
         ],
+        noselfExec: "true"
       }),
 
       genrand: (id, x, y) => ({
@@ -1384,6 +1388,7 @@ export default class FluxCodexVertex {
         outputs: [{name: "execOut", type: "action"}],
         fields: [{key: "label", value: "Result"}],
         builtIn: true,
+        noselfExec: 'true'
       }),
 
       timeout: (id, x, y) => ({
@@ -2004,7 +2009,8 @@ export default class FluxCodexVertex {
   initEventNodes() {
     for(const nodeId in this.nodes) {
       const n = this.nodes[nodeId];
-      if(n.category === "event") {
+      if(n.category === "event") { // && typeof n.noselfExec === 'undefined'
+        console.log('ACTIVATRE NODE ', n.title)
         this.activateEventNode(nodeId);
       }
     }
@@ -2222,8 +2228,25 @@ export default class FluxCodexVertex {
         console.log("real onTargetPositionReach called");
         this.enqueueOutputs(n, "exec");
       };
-      console('ttttttttttttttttttttttttttttttttttt')
+      
       n._listenerAttached = true;
+    } else if(n.title == "On Ray Hit") {
+      console.log('ON RAY HIT INIT ONLE !!!!!!!!!!!!!!!!!')
+      if(n._listenerAttached) return;
+      // one-time engine setup
+      app.reference.addRaycastsListener();
+      console.log('On Ray Hit 2');
+      const handler = (e) => {
+        console.log('On Ray Hit Look intro cache ')
+        n._returnCache = e.detail?.hitObject ?? e.detail;
+        this.enqueueOutputs(n, "exec");
+      };
+
+      app.canvas.addEventListener("ray.hit.event", handler);
+
+      n._eventHandler = handler;
+      n._listenerAttached = true;
+      return;
     }
   }
 
@@ -2272,6 +2295,7 @@ export default class FluxCodexVertex {
 
 
     if(node.title === "On Ray Hit" && pinName === "hitObject") {
+      console.info('get value ray hit', node._returnCache);
       return node._returnCache;
     }
 
@@ -2334,7 +2358,7 @@ export default class FluxCodexVertex {
       }
 
       if(node.fields[0].value) select.value = node.fields[0].value;
-      console.log('>>>>>>>>>>>>>>>>>>>>>')
+      // console.log('>>>>>>>>>>>>>>>>>>>>>')
 
       const obj = (node.accessObject || []).find(o => o.name === objName);
       if(!obj) return undefined;
@@ -2374,7 +2398,7 @@ export default class FluxCodexVertex {
 
     if(node.outputs?.some(o => o.name === pinName)) {
       const dynamicNodes = ["GenRandInt", "RandomFloat"];
-      if(node._returnCache === undefined || dynamicNodes.includes(node.title)) {
+      if((node._returnCache === undefined || dynamicNodes.includes(node.title)) && !node.noselfExec) {
         this._execContext = nodeId;
         this.triggerNode(nodeId);
         this._execContext = null;
@@ -2444,10 +2468,34 @@ export default class FluxCodexVertex {
     }
   }
 
+  deepEqual(a, b) {
+    if(a === b) return true;
+
+    if(typeof a !== "object" || typeof b !== "object" || a == null || b == null)
+      return false;
+
+    const keysA = Object.keys(a);
+    const keysB = Object.keys(b);
+
+    if(keysA.length !== keysB.length) return false;
+
+    for(const key of keysA) {
+      if(!keysB.includes(key)) return false;
+      if(!this.deepEqual(a[key], b[key])) return false;
+    }
+
+    return true;
+  }
+
   triggerNode(nodeId) {
     const n = this.nodes[nodeId];
     if(!n) return;
     this._execContext = nodeId;
+
+    // if(n.category === "event" && typeof n.noselfExec != 'undefined') {
+    //   console.log('PREVENT SELF EXEC', n.title)
+    //   return;
+    // }
 
     // Highlight node header
     const highlight = document.querySelector(`.node[data-id="${nodeId}"] .header`);
@@ -2588,23 +2636,8 @@ export default class FluxCodexVertex {
       this.enqueueOutputs(n, "execOut");
       return;
     } else if(n.title === "On Ray Hit") {
-      console.log('On Ray Hit 1', n._listenerAttached)
-      if(n._listenerAttached) return;
-      // one-time engine setup
-      app.reference.addRaycastsListener();
-      console.log('On Ray Hit 2');
-      console.log('On Ray Hit 3')
-      const handler = (e) => {
-        console.log('Look intro cache ')
-        n._returnCache = e.detail?.hitObject ?? e.detail;
-        this.enqueueOutputs(n, "exec");
-      };
+      console.log('On Ray Hit =NOTHING NOW', n._listenerAttached)
 
-      app.canvas.addEventListener("ray.hit.event", handler);
-
-      n._eventHandler = handler;
-      n._listenerAttached = true;
-      return;
     }
 
     if(n.isGetterNode) {
@@ -2664,8 +2697,14 @@ export default class FluxCodexVertex {
       return;
     }
 
-    if(n.category === "event") {
+    if(n.category === "event" && typeof n.noselfExec === 'undefined') {
+      console.log('>>>>>>>>>>>>>>>>>>>>>>>>>>>>EXEC :  ', n.title)
       this.enqueueOutputs(n, "exec");
+      return;
+    }
+
+    if(n.category === "event" && typeof n.noselfExec != 'undefined') {
+      console.log('PREVENT SELF EXEC')
       return;
     }
 
@@ -2750,6 +2789,8 @@ export default class FluxCodexVertex {
 
     // Action / Print / Timer Nodes
     if(["action", "actionprint", "timer"].includes(n.category)) {
+      console.log('TEST PRINT  n.', n)
+      // only for custom functions from managerfunction
       if(n.attachedMethod) this._executeAttachedMethod(n);
 
       if(n.title === "Print") {
@@ -2789,6 +2830,7 @@ export default class FluxCodexVertex {
         setTimeout(() => this.enqueueOutputs(n, "execOut"), delay);
         return;
       }
+
       this.enqueueOutputs(n, "execOut");
       return;
     }
@@ -2814,8 +2856,8 @@ export default class FluxCodexVertex {
       const sceneObjectName = this.getValue(nodeId, "sceneObjectName");
       // sceneObjectName
       if(texpath) {
-        console.log('textPath', texpath)
-        console.log('sceneObjectName', sceneObjectName)
+        // console.log('textPath', texpath)
+        // console.log('sceneObjectName', sceneObjectName)
         let obj = app.getSceneObjectByName(sceneObjectName);
         obj.loadTex0([texpath]).then(() => {
           setTimeout(() => obj.changeTexture(obj.texture0), 200);
@@ -2929,10 +2971,24 @@ export default class FluxCodexVertex {
           result = this.getValue(nodeId, "A") < this.getValue(nodeId, "B");
           break;
         case "A == B":
-          result = this.getValue(nodeId, "A") == this.getValue(nodeId, "B");
+          let varA = this.getValue(nodeId, "A");
+          let varB = this.getValue(nodeId, "B");
+          if(typeof varA == "object") {
+            const r = this.deepEqual(varA, varB);
+            result = r;
+          } else {
+            result = this.getValue(nodeId, "A") != this.getValue(nodeId, "B");
+          }
           break;
         case "A != B":
-          result = this.getValue(nodeId, "A") != this.getValue(nodeId, "B");
+          let varAN = this.getValue(nodeId, "A");
+          let varBN = this.getValue(nodeId, "B");
+          if(typeof varAN == "object") {
+            const r = this.deepEqual(varAN, varBN);
+            result = !r;
+          } else {
+            result = this.getValue(nodeId, "A") != this.getValue(nodeId, "B");
+          }
           break;
         case "A >= B":
           result = this.getValue(nodeId, "A") >= this.getValue(nodeId, "B");
@@ -3065,8 +3121,7 @@ export default class FluxCodexVertex {
   }
 
   handleMouseUp() {
-    if(this.state.draggingNode)
-      setTimeout(() => this.updateValueDisplays(), 0);
+    // if(this.state.draggingNode) setTimeout(() => this.updateValueDisplays(), 0);
     this.state.draggingNode = null;
     this.state.panning = false;
     document.body.style.cursor = "default";
@@ -3109,7 +3164,7 @@ export default class FluxCodexVertex {
 
   runGraph() {
     byId("app").style.opacity = 0.4;
-    this.updateValueDisplays();
+    // this.updateValueDisplays();
     this.initEventNodes();
     Object.values(this.nodes).forEach(n => (n._returnCache = undefined));
     Object.values(this.nodes)
@@ -3262,7 +3317,8 @@ export default class FluxCodexVertex {
           // }
         });
         this.updateLinks();
-        this.updateValueDisplays();
+        // TEST FIX SELF CALL TRIGGER
+        // this.updateValueDisplays();
 
         this.restoreConnectionsRuntime();
         this.log("Restored graph.");
