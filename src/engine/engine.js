@@ -90,6 +90,26 @@ export class WASDCamera extends CameraBase {
   // The camera absolute yaw angle
   yaw = 0;
 
+  setPitch = (pitch) => {
+    this.pitch = pitch;
+  }
+
+  setYaw = (yaw) => {
+    this.yaw = yaw;
+  }
+
+  setX = (x) => {
+    this.position[0] = x;
+  }
+
+  setY = (y) => {
+    this.position[1] = y;
+  }
+
+  setZ = (z) => {
+    this.position[2] = z;
+  }
+
   // The movement veloicty readonly
   velocity_ = vec3.create();
 

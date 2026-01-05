@@ -19,7 +19,7 @@ export default [
   },
   {
     "name": "getResultAngle",
-    "code": "function getResultAngle (input) {\n  return angle;\n}",
+    "code": "function getResultAngle (input) {\n  let result = input * 30;\n  return result;\n}",
     "type": "return",
     "intervalId": null
   }

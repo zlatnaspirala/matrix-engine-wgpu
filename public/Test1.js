@@ -2958,6 +2958,21 @@ var WASDCamera = class extends CameraBase {
   pitch = 0;
   // The camera absolute yaw angle
   yaw = 0;
+  setPitch = (pitch) => {
+    this.pitch = pitch;
+  };
+  setYaw = (yaw) => {
+    this.yaw = yaw;
+  };
+  setX = (x2) => {
+    this.position[0] = x2;
+  };
+  setY = (y2) => {
+    this.position[1] = y2;
+  };
+  setZ = (z) => {
+    this.position[2] = z;
+  };
   // The movement veloicty readonly
   velocity_ = vec3Impl.create();
   // Speed multiplier for camera movement
@@ -16946,7 +16961,7 @@ var FluxCodexVertex = class _FluxCodexVertex {
       };
       body.appendChild(textarea);
     }
-    if (spec.fields?.length && !spec.comment) {
+    if (spec.fields?.length && !spec.comment && spec.title != "GenRandInt") {
       const fieldsWrap = document.createElement("div");
       fieldsWrap.className = "node-fields";
       spec.fields.forEach((field) => {
@@ -16965,6 +16980,7 @@ var FluxCodexVertex = class _FluxCodexVertex {
       spec.fields.forEach((f) => {
         const input = document.createElement("input");
         input.type = "number";
+        console.log("?????????????");
         input.value = f.value;
         input.style.width = "40px";
         input.style.marginRight = "4px";
@@ -17002,6 +17018,7 @@ var FluxCodexVertex = class _FluxCodexVertex {
         }
       });
     }
+    console.log("AGAINB TEST");
     if (spec.fields?.some((f) => f.key === "var") && !spec.comment) {
       const input = document.createElement("input");
       input.type = "text";

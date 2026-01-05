@@ -1085,26 +1085,19 @@ export default class FluxCodexVertex {
 
       body.appendChild(textarea);
     }
-    // ==================================================
-    // 🔴 FIELD INPUTS (CORRECT PLACE)
-    // ==================================================
-    if(spec.fields?.length && !spec.comment) {
+    // 🔴 FIELD INPUTS
+    if(spec.fields?.length && !spec.comment && spec.title != "GenRandInt") {
       const fieldsWrap = document.createElement("div");
       fieldsWrap.className = "node-fields";
-
       spec.fields.forEach(field => {
         // skip special cases handled elsewhere
         if(field.key === "var") return;
-
         const input = this.createFieldInput(spec, field);
-
         if(field.key === "objectPreview") {
           spec.objectPreviewEl = input;
         }
-
         fieldsWrap.appendChild(input);
       });
-
       body.appendChild(fieldsWrap);
     }
 
@@ -1116,6 +1109,7 @@ export default class FluxCodexVertex {
       spec.fields.forEach(f => {
         const input = document.createElement("input");
         input.type = "number";
+        console.log("?????????????");
         input.value = f.value;
         input.style.width = "40px";
         input.style.marginRight = "4px";
@@ -1161,8 +1155,11 @@ export default class FluxCodexVertex {
       });
     }
 
+          console.log('AGAINB TEST')
+
     // Variable name input (temporary until popup)
     if(spec.fields?.some(f => f.key === "var") && !spec.comment) {
+
       const input = document.createElement("input");
       input.type = "text";
       input.value = spec.fields.find(f => f.key === "var")?.value ?? "";

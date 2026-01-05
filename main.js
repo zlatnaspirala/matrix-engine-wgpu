@@ -502,7 +502,7 @@ export let application = new MatrixEngineWGPU({
         app.dices.activateAllDicesPhysics();
       }, 1000);
 
-      console.log('se camera position 3')
+      // console.log('se camera position 3')
       app.cameras.WASD.yaw = 0;
       app.cameras.WASD.pitch = 0;
       app.cameras.WASD.position[2] = 0;
