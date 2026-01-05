@@ -3266,7 +3266,17 @@ export default class FluxCodexVertex {
 
   exportToJSON() {
     const bundle = this._buildSaveBundle();
-    const json = JSON.stringify(bundle, null, 2);
+    console.log(bundle);
+
+    function saveReplacer(key, value) {
+      if(key === 'fn') return undefined;
+      if(key === 'accessObject') return undefined;
+      if(key === '_returnCache') return undefined;
+      if(key === '_listenerAttached') return false;
+      return value;
+    }
+
+    const json = JSON.stringify(bundle, saveReplacer);
 
     const blob = new Blob([json], {type: "application/json"});
     const url = URL.createObjectURL(blob);

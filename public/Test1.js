@@ -18945,7 +18945,15 @@ var FluxCodexVertex = class _FluxCodexVertex {
   }
   exportToJSON() {
     const bundle = this._buildSaveBundle();
-    const json = JSON.stringify(bundle, null, 2);
+    console.log(bundle);
+    function saveReplacer(key, value) {
+      if (key === "fn") return void 0;
+      if (key === "accessObject") return void 0;
+      if (key === "_returnCache") return void 0;
+      if (key === "_listenerAttached") return false;
+      return value;
+    }
+    const json = JSON.stringify(bundle, saveReplacer);
     const blob = new Blob([json], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
