@@ -5,13 +5,13 @@ var _cameraTexture = require("./examples/camera-texture.js");
 var _glbLoader = require("./examples/glb-loader.js");
 var _loadObjFile = require("./examples/load-obj-file.js");
 var _loadObjsSequence = require("./examples/load-objs-sequence.js");
+var _physicsPlayground = require("./examples/physics-playground.js");
 var _unlitTextures = require("./examples/unlit-textures.js");
 var _videoTexture = require("./examples/video-texture.js");
 var _utils = require("./src/engine/utils.js");
 /**
  * @examples
  * MATRIX_ENGINE_WGPU EXAMPLE WORKSPACE
- * Nikola Lukic 2024
  */
 
 // import {loadJamb} from "./examples/load-jamb.js";
@@ -22,11 +22,18 @@ function destroyJambDoms() {
   if ((0, _utils.byId)('topTitleDOM')) (0, _utils.byId)('topTitleDOM').remove();
 }
 (0, _utils.byId)('loadObjFile').addEventListener("click", () => {
-  // byId('loadObjFile').setAttribute('disabled', true)
-  // byId('unlitTextures').removeAttribute('disabled')
   if (typeof app !== "undefined") app.destroyProgram();
   destroyJambDoms();
   (0, _loadObjFile.loadObjFile)();
+});
+(0, _utils.byId)('physicsPlayground').addEventListener("click", () => {
+  if (typeof app !== "undefined") {
+    // still not perfect
+    app.destroyProgram();
+    app = undefined;
+  }
+  destroyJambDoms();
+  (0, _physicsPlayground.physicsPlayground)();
 });
 (0, _utils.byId)('unlitTextures').addEventListener("click", () => {
   // byId('unlitTextures').setAttribute('disabled', true)
@@ -47,22 +54,18 @@ function destroyJambDoms() {
 });
 (0, _utils.byId)('glb-loader').addEventListener("click", () => {
   if (typeof app !== "undefined") app.destroyProgram();
-  // destroyJambDoms();
   (0, _glbLoader.loadGLBLoader)();
 });
 (0, _utils.byId)('jamb').addEventListener("click", () => {
-  open("https://maximumroulette.com/apps/webgpu/");
+  open("https://maximumroulette.com/apps/fohb");
 });
 (0, _utils.byId)('objs-anim').addEventListener("click", () => {
-  // byId('unlitTextures').setAttribute('disabled', true)
-  // byId('loadObjFile').setAttribute('disabled', true)
-  // byId('jamb').removeAttribute('disabled')
   if (typeof app !== "undefined") app.destroyProgram();
   destroyJambDoms();
   (0, _loadObjsSequence.loadObjsSequence)();
 });
 
-},{"./examples/camera-texture.js":2,"./examples/glb-loader.js":3,"./examples/load-obj-file.js":4,"./examples/load-objs-sequence.js":5,"./examples/unlit-textures.js":6,"./examples/video-texture.js":7,"./src/engine/utils.js":50}],2:[function(require,module,exports){
+},{"./examples/camera-texture.js":2,"./examples/glb-loader.js":3,"./examples/load-obj-file.js":4,"./examples/load-objs-sequence.js":5,"./examples/physics-playground.js":6,"./examples/unlit-textures.js":7,"./examples/video-texture.js":8,"./src/engine/utils.js":51}],2:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -143,7 +146,7 @@ var loadCameraTexture = function () {
 };
 exports.loadCameraTexture = loadCameraTexture;
 
-},{"../src/engine/loader-obj.js":40,"../src/engine/raycast.js":49,"../src/engine/utils.js":50,"../src/world.js":79}],3:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":41,"../src/engine/raycast.js":50,"../src/engine/utils.js":51,"../src/world.js":80}],3:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -350,7 +353,7 @@ function loadGLBLoader() {
 
 // loadGLBLoader()
 
-},{"../src/engine/loader-obj.js":40,"../src/engine/loaders/bvh.js":42,"../src/engine/loaders/webgpu-gltf.js":43,"../src/engine/utils.js":50,"../src/world.js":79}],4:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":41,"../src/engine/loaders/bvh.js":43,"../src/engine/loaders/webgpu-gltf.js":44,"../src/engine/utils.js":51,"../src/world.js":80}],4:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -498,7 +501,7 @@ var loadObjFile = function () {
 };
 exports.loadObjFile = loadObjFile;
 
-},{"../src/engine/loader-obj.js":40,"../src/engine/utils.js":50,"../src/world.js":79}],5:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":41,"../src/engine/utils.js":51,"../src/world.js":80}],5:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -634,7 +637,263 @@ var loadObjsSequence = function () {
 };
 exports.loadObjsSequence = loadObjsSequence;
 
-},{"../src/engine/loader-obj.js":40,"../src/engine/utils.js":50,"../src/world.js":79}],6:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":41,"../src/engine/utils.js":51,"../src/world.js":80}],6:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.physicsPlayground = void 0;
+var _world = _interopRequireDefault(require("../src/world.js"));
+var _loaderObj = require("../src/engine/loader-obj.js");
+var _utils = require("../src/engine/utils.js");
+var _raycast = require("../src/engine/raycast.js");
+function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
+var physicsPlayground = function () {
+  let physicsPlayground = new _world.default({
+    useSingleRenderPass: true,
+    canvasSize: 'fullscreen',
+    mainCameraParams: {
+      type: 'WASD',
+      responseCoef: 1000
+    },
+    clearColor: {
+      r: 0,
+      b: 0.122,
+      g: 0.122,
+      a: 1
+    }
+  }, () => {
+    (0, _raycast.addRaycastsListener)();
+    addEventListener('AmmoReady', () => {
+      (0, _loaderObj.downloadMeshes)({
+        ball: "./res/meshes/blender/sphere.obj",
+        cube: "./res/meshes/blender/cube.obj"
+      }, onLoadObj, {
+        scale: [1, 1, 1]
+      });
+      (0, _loaderObj.downloadMeshes)({
+        cube: "./res/meshes/blender/cube.obj"
+      }, onGround, {
+        scale: [20, 1, 20]
+      });
+    });
+    function onGround(m) {
+      setTimeout(() => {
+        app.cameras.WASD.yaw = -0.03;
+        app.cameras.WASD.pitch = -0.49;
+        app.cameras.WASD.position[2] = 0;
+        app.cameras.WASD.position[1] = 3.76;
+      }, 600);
+      physicsPlayground.addMeshObj({
+        position: {
+          x: 0,
+          y: -5,
+          z: -10
+        },
+        rotation: {
+          x: 0,
+          y: 0,
+          z: 0
+        },
+        rotationSpeed: {
+          x: 0,
+          y: 0,
+          z: 0
+        },
+        texturesPaths: ['./res/meshes/blender/cube.png'],
+        name: 'ground',
+        mesh: m.cube,
+        physics: {
+          enabled: false,
+          mass: 0,
+          geometry: "Cube"
+        }
+        // raycast: { enabled: true , radius: 2 }
+      });
+    }
+    function onLoadObj(m) {
+      physicsPlayground.myLoadedMeshes = m;
+      physicsPlayground.addMeshObj({
+        material: {
+          type: 'standard'
+        },
+        position: {
+          x: 0,
+          y: 2,
+          z: -20
+        },
+        rotation: {
+          x: 0,
+          y: 0,
+          z: 0
+        },
+        rotationSpeed: {
+          x: 0,
+          y: 0,
+          z: 0
+        },
+        texturesPaths: ['./res/meshes/blender/cube.png'],
+        name: 'cube1',
+        mesh: m.cube,
+        physics: {
+          enabled: true,
+          geometry: "Cube"
+        },
+        raycast: {
+          enabled: true,
+          radius: 1
+        }
+      });
+      physicsPlayground.addMeshObj({
+        material: {
+          type: 'standard'
+        },
+        position: {
+          x: 0,
+          y: 2,
+          z: -20
+        },
+        rotation: {
+          x: 0,
+          y: 0,
+          z: 0
+        },
+        rotationSpeed: {
+          x: 0,
+          y: 0,
+          z: 0
+        },
+        texturesPaths: ['./res/meshes/blender/cube.png'],
+        name: 'cube2',
+        mesh: m.cube,
+        physics: {
+          enabled: true,
+          geometry: "Cube"
+        },
+        raycast: {
+          enabled: true,
+          radius: 1
+        }
+      });
+      physicsPlayground.addMeshObj({
+        material: {
+          type: 'standard'
+        },
+        position: {
+          x: 0,
+          y: -1,
+          z: -20
+        },
+        rotation: {
+          x: 0,
+          y: 0,
+          z: 0
+        },
+        rotationSpeed: {
+          x: 0,
+          y: 111,
+          z: 0
+        },
+        texturesPaths: ['./res/meshes/blender/cube.png'],
+        name: 'ball1',
+        mesh: m.ball,
+        physics: {
+          enabled: true,
+          geometry: "Sphere"
+        },
+        raycast: {
+          enabled: true,
+          radius: 1
+        }
+      });
+      var TEST = physicsPlayground.getSceneObjectByName('cube1');
+      console.log(`%c Test access scene ${TEST} object.`, _utils.LOG_MATRIX);
+      physicsPlayground.addLight();
+      physicsPlayground.lightContainer[0].behavior.setOsc0(-1, 1, 0.1);
+      physicsPlayground.lightContainer[0].behavior.value_ = -1;
+      physicsPlayground.lightContainer[0].updater.push(light => {
+        light.position[0] = light.behavior.setPath0();
+      });
+      physicsPlayground.lightContainer[0].position[1] = 9;
+      let mybodycube = app.matrixAmmo.getBodyByName('cube1');
+      let mybodycube2 = app.matrixAmmo.getBodyByName('cube2');
+      const pivotA = new Ammo.btVector3(0, 0, 0); // door local pivot
+      const pivotB = new Ammo.btVector3(0, 0, 0); // frame local pivot
+
+      const axisA = new Ammo.btVector3(0, 1, 0); // Y axis
+      const axisB = new Ammo.btVector3(0, 1, 0);
+      const hinge = new Ammo.btHingeConstraint(mybodycube, mybodycube2, pivotA, pivotB, axisA, axisB, true);
+      hinge.setLimit(-Math.PI / 2, Math.PI / 2); // 90° open
+      physicsPlayground.matrixAmmo.dynamicsWorld.addConstraint(hinge, true);
+      //  app.matrixAmmo.getBodyByName(`CubePhysics${x}`).setAngularVelocity(new Ammo.btVector3(
+      //      randomFloatFromTo(3, 12), 9, 9
+      // ))
+
+      physicsPlayground.canvas.addEventListener("ray.hit.event", e => {
+        console.log('ray.hit.event detected', e.detail);
+        const body = app.matrixAmmo.getBodyByName(e.detail.hitObject.name);
+
+        // ------------------------------------------------------
+        // body.setAngularVelocity(new Ammo.btVector3(0, 9, 9));
+        // ------------------------------------------------------
+
+        // ------------------------------------------------------
+        // const impulse = new Ammo.btVector3(0, 5, -10);
+        // body.applyCentralImpulse(impulse);
+        // ------------------------------------------------------
+
+        // ------------------------------------------------------
+        // const torque = new Ammo.btVector3(0, 10, 0);
+        // body.applyTorqueImpulse(torque);
+        // ------------------------------------------------------
+
+        // ------------------------------------------------------
+        const dir = e.detail.rayDirection;
+        const strength = 20;
+        const impulse = new Ammo.btVector3(dir[0] * strength, dir[1] * strength, dir[2] * strength);
+        body.applyCentralImpulse(impulse);
+        // ------------------------------------------------------
+
+        // ------------------------------------------------------
+        body.activate(true);
+        // ------------------------------------------------------
+
+        //
+        // PhysicsMaterials = {
+        //   metal: {friction: 0.4, restitution: 0.1},
+        //   rubber: {friction: 1.0, restitution: 0.9},
+        //   ice: {friction: 0.01, restitution: 0.0}
+        // };
+        // body.setFriction(mat.friction);
+        // body.setRestitution(mat.restitution);
+
+        // explode(position, radius, strength) {
+        //   for(const body of this.bodies) {
+        //     const p = body.getWorldTransform().getOrigin();
+        //     const dx = p.x() - position[0];
+        //     const dy = p.y() - position[1];
+        //     const dz = p.z() - position[2];
+
+        //     const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+        //     if(dist > radius) continue;
+
+        //     const force = strength / (dist + 0.1);
+        //     body.activate(true);
+        //     body.applyCentralImpulse(
+        //       new Ammo.btVector3(dx * force, dy * force, dz * force)
+        //     );
+        //   }
+        // }
+      });
+    }
+  });
+  // just for dev
+  window.app = physicsPlayground;
+};
+exports.physicsPlayground = physicsPlayground;
+
+},{"../src/engine/loader-obj.js":41,"../src/engine/raycast.js":50,"../src/engine/utils.js":51,"../src/world.js":80}],7:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -698,7 +957,7 @@ var unlitTextures = function () {
 };
 exports.unlitTextures = unlitTextures;
 
-},{"../src/world.js":79}],7:[function(require,module,exports){
+},{"../src/world.js":80}],8:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -789,7 +1048,7 @@ var loadVideoTexture = function () {
 };
 exports.loadVideoTexture = loadVideoTexture;
 
-},{"../src/engine/loader-obj.js":40,"../src/engine/raycast.js":49,"../src/engine/utils.js":50,"../src/world.js":79}],8:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":41,"../src/engine/raycast.js":50,"../src/engine/utils.js":51,"../src/world.js":80}],9:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -799,7 +1058,7 @@ exports.default = void 0;
 var _bvhLoader = require("./module/bvh-loader");
 var _default = exports.default = _bvhLoader.MEBvh;
 
-},{"./module/bvh-loader":9}],9:[function(require,module,exports){
+},{"./module/bvh-loader":10}],10:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -1488,7 +1747,7 @@ class MEBvh {
 }
 exports.MEBvh = MEBvh;
 
-},{"webgpu-matrix":21}],10:[function(require,module,exports){
+},{"webgpu-matrix":22}],11:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -1566,7 +1825,7 @@ function equals(a, b) {
   return Math.abs(a - b) <= tolerance * Math.max(1, Math.abs(a), Math.abs(b));
 }
 
-},{}],11:[function(require,module,exports){
+},{}],12:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -1595,7 +1854,7 @@ var vec4 = _interopRequireWildcard(require("./vec4.js"));
 exports.vec4 = vec4;
 function _interopRequireWildcard(e, t) { if ("function" == typeof WeakMap) var r = new WeakMap(), n = new WeakMap(); return (_interopRequireWildcard = function (e, t) { if (!t && e && e.__esModule) return e; var o, i, f = { __proto__: null, default: e }; if (null === e || "object" != typeof e && "function" != typeof e) return f; if (o = t ? n : r) { if (o.has(e)) return o.get(e); o.set(e, f); } for (const t in e) "default" !== t && {}.hasOwnProperty.call(e, t) && ((i = (o = Object.defineProperty) && Object.getOwnPropertyDescriptor(e, t)) && (i.get || i.set) ? o(f, t, i) : f[t] = e[t]); return f; })(e, t); }
 
-},{"./common.js":10,"./mat2.js":12,"./mat2d.js":13,"./mat3.js":14,"./mat4.js":15,"./quat.js":16,"./quat2.js":17,"./vec2.js":18,"./vec3.js":19,"./vec4.js":20}],12:[function(require,module,exports){
+},{"./common.js":11,"./mat2.js":13,"./mat2d.js":14,"./mat3.js":15,"./mat4.js":16,"./quat.js":17,"./quat2.js":18,"./vec2.js":19,"./vec3.js":20,"./vec4.js":21}],13:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -2057,7 +2316,7 @@ var mul = exports.mul = multiply;
  */
 var sub = exports.sub = subtract;
 
-},{"./common.js":10}],13:[function(require,module,exports){
+},{"./common.js":11}],14:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -2571,7 +2830,7 @@ var mul = exports.mul = multiply;
  */
 var sub = exports.sub = subtract;
 
-},{"./common.js":10}],14:[function(require,module,exports){
+},{"./common.js":11}],15:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -3383,7 +3642,7 @@ var mul = exports.mul = multiply;
  */
 var sub = exports.sub = subtract;
 
-},{"./common.js":10}],15:[function(require,module,exports){
+},{"./common.js":11}],16:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -5403,7 +5662,7 @@ var mul = exports.mul = multiply;
  */
 var sub = exports.sub = subtract;
 
-},{"./common.js":10}],16:[function(require,module,exports){
+},{"./common.js":11}],17:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -6186,7 +6445,7 @@ var setAxes = exports.setAxes = function () {
   };
 }();
 
-},{"./common.js":10,"./mat3.js":14,"./vec3.js":19,"./vec4.js":20}],17:[function(require,module,exports){
+},{"./common.js":11,"./mat3.js":15,"./vec3.js":20,"./vec4.js":21}],18:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -7059,7 +7318,7 @@ function equals(a, b) {
   return Math.abs(a0 - b0) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a0), Math.abs(b0)) && Math.abs(a1 - b1) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a1), Math.abs(b1)) && Math.abs(a2 - b2) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a2), Math.abs(b2)) && Math.abs(a3 - b3) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a3), Math.abs(b3)) && Math.abs(a4 - b4) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a4), Math.abs(b4)) && Math.abs(a5 - b5) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a5), Math.abs(b5)) && Math.abs(a6 - b6) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a6), Math.abs(b6)) && Math.abs(a7 - b7) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a7), Math.abs(b7));
 }
 
-},{"./common.js":10,"./mat4.js":15,"./quat.js":16}],18:[function(require,module,exports){
+},{"./common.js":11,"./mat4.js":16,"./quat.js":17}],19:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -7737,7 +7996,7 @@ var forEach = exports.forEach = function () {
   };
 }();
 
-},{"./common.js":10}],19:[function(require,module,exports){
+},{"./common.js":11}],20:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -8589,7 +8848,7 @@ var forEach = exports.forEach = function () {
   };
 }();
 
-},{"./common.js":10}],20:[function(require,module,exports){
+},{"./common.js":11}],21:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -9296,7 +9555,7 @@ var forEach = exports.forEach = function () {
   };
 }();
 
-},{"./common.js":10}],21:[function(require,module,exports){
+},{"./common.js":11}],22:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -13229,7 +13488,7 @@ function setDefaultType(ctor) {
   setDefaultType$1(ctor);
 }
 
-},{}],22:[function(require,module,exports){
+},{}],23:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -18576,7 +18835,7 @@ function setDefaultType(ctor) {
   setDefaultType$1(ctor);
 }
 
-},{}],23:[function(require,module,exports){
+},{}],24:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -18647,7 +18906,7 @@ const en = exports.en = {
   "invertorysecret": "Corona Ignifera magic secret Sol Corona,Flamma Crystal\n  Aqua Sanctum magic secret Mare Pearl,Luna Gemma\n Umbra Silens magic secret Umbra Vellum,Noctis Band\n Terra Fortis magic secret Terra Clavis,Ardent Vine,Silva Heart\n Ventus Aegis magic secret Ventus Pluma,Ignifur Cape\n Ferrum Lux magic secret Ferrum Anulus,Lux Feather\n Sanguis Vita magic secret Sanguis Orb,Vita Flos \n Tenebris Vox magic secret Tenebris Fang,Vox Chime \n Aether Gladius magic secret Gladius Ignis,Aether Scale \n Fulgur Mortis magic secret Fulgur Stone,Mortis Bone \n Corona Umbra magic secret Umbra Silens,Corona Ignifera,Tenebris Vox \n Terra Sanctum magic secret Terra Fortis,Aqua Sanctum \n Aether Fortis magic secret Aether Gladius,Ferrum Lux \n  Vita Mindza magic secret Sanguis Vita,Ventus Aegis \n Mortis Ultima magic secret Fulgur Mortis,Corona Umbra,Aether Fortis"
 };
 
-},{}],24:[function(require,module,exports){
+},{}],25:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -19061,7 +19320,7 @@ class MEBall {
 }
 exports.default = MEBall;
 
-},{"../shaders/shaders":65,"./engine":35,"./matrix-class":45,"wgpu-matrix":22}],25:[function(require,module,exports){
+},{"../shaders/shaders":66,"./engine":36,"./matrix-class":46,"wgpu-matrix":23}],26:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -19099,7 +19358,7 @@ class Behavior {
 }
 exports.default = Behavior;
 
-},{"./utils":50}],26:[function(require,module,exports){
+},{"./utils":51}],27:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -19524,7 +19783,7 @@ class MECube {
 }
 exports.default = MECube;
 
-},{"../shaders/shaders":65,"./engine":35,"./matrix-class":45,"wgpu-matrix":22}],27:[function(require,module,exports){
+},{"../shaders/shaders":66,"./engine":36,"./matrix-class":46,"wgpu-matrix":23}],28:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -19687,7 +19946,7 @@ class HPBarEffect {
 }
 exports.HPBarEffect = HPBarEffect;
 
-},{"../../shaders/energy-bars/energy-bar-shader.js":53,"wgpu-matrix":22}],28:[function(require,module,exports){
+},{"../../shaders/energy-bars/energy-bar-shader.js":54,"wgpu-matrix":23}],29:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -19906,7 +20165,7 @@ class FlameEmitter {
 }
 exports.FlameEmitter = FlameEmitter;
 
-},{"../../shaders/flame-effect/flame-instanced":54,"../utils":50,"wgpu-matrix":22}],29:[function(require,module,exports){
+},{"../../shaders/flame-effect/flame-instanced":55,"../utils":51,"wgpu-matrix":23}],30:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -20077,7 +20336,7 @@ class FlameEffect {
 }
 exports.FlameEffect = FlameEffect;
 
-},{"../../shaders/flame-effect/flameEffect":55,"wgpu-matrix":22}],30:[function(require,module,exports){
+},{"../../shaders/flame-effect/flameEffect":56,"wgpu-matrix":23}],31:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -20318,7 +20577,7 @@ class GenGeoTexture {
 }
 exports.GenGeoTexture = GenGeoTexture;
 
-},{"../../shaders/standalone/geo.tex.js":67,"../geometry-factory.js":36,"wgpu-matrix":22}],31:[function(require,module,exports){
+},{"../../shaders/standalone/geo.tex.js":68,"../geometry-factory.js":37,"wgpu-matrix":23}],32:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -20575,7 +20834,7 @@ class GenGeoTexture2 {
 }
 exports.GenGeoTexture2 = GenGeoTexture2;
 
-},{"../../shaders/standalone/geo.tex.js":67,"../geometry-factory.js":36,"wgpu-matrix":22}],32:[function(require,module,exports){
+},{"../../shaders/standalone/geo.tex.js":68,"../geometry-factory.js":37,"wgpu-matrix":23}],33:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -20765,7 +21024,7 @@ class GenGeo {
 }
 exports.GenGeo = GenGeo;
 
-},{"../../shaders/standalone/geo.instanced.js":66,"../geometry-factory.js":36,"wgpu-matrix":22}],33:[function(require,module,exports){
+},{"../../shaders/standalone/geo.instanced.js":67,"../geometry-factory.js":37,"wgpu-matrix":23}],34:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -20928,7 +21187,7 @@ class MANABarEffect {
 }
 exports.MANABarEffect = MANABarEffect;
 
-},{"../../shaders/energy-bars/energy-bar-shader.js":53,"wgpu-matrix":22}],34:[function(require,module,exports){
+},{"../../shaders/energy-bars/energy-bar-shader.js":54,"wgpu-matrix":23}],35:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -21071,7 +21330,7 @@ class PointerEffect {
 }
 exports.PointerEffect = PointerEffect;
 
-},{"../../shaders/standalone/pointer.effect.js":68,"wgpu-matrix":22}],35:[function(require,module,exports){
+},{"../../shaders/standalone/pointer.effect.js":69,"wgpu-matrix":23}],36:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -21168,6 +21427,21 @@ class WASDCamera extends CameraBase {
   pitch = 0;
   // The camera absolute yaw angle
   yaw = 0;
+  setPitch = pitch => {
+    this.pitch = pitch;
+  };
+  setYaw = yaw => {
+    this.yaw = yaw;
+  };
+  setX = x => {
+    this.position[0] = x;
+  };
+  setY = y => {
+    this.position[1] = y;
+  };
+  setZ = z => {
+    this.position[2] = z;
+  };
 
   // The movement veloicty readonly
   velocity_ = _wgpuMatrix.vec3.create();
@@ -21436,11 +21710,9 @@ function createInputHandler(window, canvas) {
       case 'KeyD':
         digital.right = value;
         break;
-      case 'Space':
+      case 'KeyV':
         digital.up = value;
         break;
-      case 'ShiftLeft':
-      case 'ControlLeft':
       case 'KeyC':
         digital.down = value;
         break;
@@ -21614,7 +21886,7 @@ class RPGCamera extends CameraBase {
 }
 exports.RPGCamera = RPGCamera;
 
-},{"./utils":50,"wgpu-matrix":22}],36:[function(require,module,exports){
+},{"./utils":51,"wgpu-matrix":23}],37:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -21926,7 +22198,7 @@ class GeometryFactory {
 }
 exports.GeometryFactory = GeometryFactory;
 
-},{}],37:[function(require,module,exports){
+},{}],38:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -22453,7 +22725,7 @@ class MaterialsInstanced {
 }
 exports.default = MaterialsInstanced;
 
-},{"../../shaders/fragment.wgsl":57,"../../shaders/fragment.wgsl.metal":58,"../../shaders/fragment.wgsl.normalmap":59,"../../shaders/fragment.wgsl.pong":60,"../../shaders/fragment.wgsl.power":61,"../../shaders/instanced/fragment.instanced.wgsl":62}],38:[function(require,module,exports){
+},{"../../shaders/fragment.wgsl":58,"../../shaders/fragment.wgsl.metal":59,"../../shaders/fragment.wgsl.normalmap":60,"../../shaders/fragment.wgsl.pong":61,"../../shaders/fragment.wgsl.power":62,"../../shaders/instanced/fragment.instanced.wgsl":63}],39:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -23442,7 +23714,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
 }
 exports.default = MEMeshObjInstances;
 
-},{"../../shaders/fragment.video.wgsl":56,"../../shaders/instanced/vertex.instanced.wgsl":63,"../effects/energy-bar":27,"../effects/flame":29,"../effects/flame-emmiter":28,"../effects/gen":32,"../effects/gen-tex":30,"../effects/gen-tex2":31,"../effects/mana-bar":33,"../effects/pointerEffect":34,"../loaders/bvh-instaced":41,"../matrix-class":45,"../utils":50,"./materials-instanced":37,"wgpu-matrix":22}],39:[function(require,module,exports){
+},{"../../shaders/fragment.video.wgsl":57,"../../shaders/instanced/vertex.instanced.wgsl":64,"../effects/energy-bar":28,"../effects/flame":30,"../effects/flame-emmiter":29,"../effects/gen":33,"../effects/gen-tex":31,"../effects/gen-tex2":32,"../effects/mana-bar":34,"../effects/pointerEffect":35,"../loaders/bvh-instaced":42,"../matrix-class":46,"../utils":51,"./materials-instanced":38,"wgpu-matrix":23}],40:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -23769,7 +24041,7 @@ class SpotLight {
 }
 exports.SpotLight = SpotLight;
 
-},{"../shaders/instanced/vertexShadow.instanced.wgsl":64,"../shaders/vertexShadow.wgsl":71,"./behavior":25,"./utils":50,"wgpu-matrix":22}],40:[function(require,module,exports){
+},{"../shaders/instanced/vertexShadow.instanced.wgsl":65,"../shaders/vertexShadow.wgsl":72,"./behavior":26,"./utils":51,"wgpu-matrix":23}],41:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -24237,7 +24509,7 @@ function play(nameAni) {
   this.playing = true;
 }
 
-},{}],41:[function(require,module,exports){
+},{}],42:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -24778,7 +25050,7 @@ class BVHPlayerInstances extends _meshObjInstances.default {
 }
 exports.BVHPlayerInstances = BVHPlayerInstances;
 
-},{"../instanced/mesh-obj-instances.js":38,"./webgpu-gltf.js":43,"wgpu-matrix":22}],42:[function(require,module,exports){
+},{"../instanced/mesh-obj-instances.js":39,"./webgpu-gltf.js":44,"wgpu-matrix":23}],43:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -25300,7 +25572,7 @@ class BVHPlayer extends _meshObj.default {
 }
 exports.BVHPlayer = BVHPlayer;
 
-},{"../mesh-obj":46,"./webgpu-gltf.js":43,"bvh-loader":8,"wgpu-matrix":22}],43:[function(require,module,exports){
+},{"../mesh-obj":47,"./webgpu-gltf.js":44,"bvh-loader":9,"wgpu-matrix":23}],44:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -25881,7 +26153,7 @@ async function uploadGLBModel(buffer, device) {
   return R;
 }
 
-},{"gl-matrix":11}],44:[function(require,module,exports){
+},{"gl-matrix":12}],45:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -26017,15 +26289,11 @@ class Materials {
     if (newTexture instanceof GPUTexture) {
       this.texture0 = newTexture;
     } else {
-      // assume it's already a view
       this.texture0 = {
         createView: () => newTexture
       };
     }
-
-    // Mark as non-video path
     this.isVideo = false;
-
     // Recreate bind group only
     this.createBindGroupForRender();
   }
@@ -26429,7 +26697,7 @@ class Materials {
 }
 exports.default = Materials;
 
-},{"../shaders/fragment.wgsl":57,"../shaders/fragment.wgsl.metal":58,"../shaders/fragment.wgsl.normalmap":59,"../shaders/fragment.wgsl.pong":60,"../shaders/fragment.wgsl.power":61}],45:[function(require,module,exports){
+},{"../shaders/fragment.wgsl":58,"../shaders/fragment.wgsl.metal":59,"../shaders/fragment.wgsl.normalmap":60,"../shaders/fragment.wgsl.pong":61,"../shaders/fragment.wgsl.power":62}],46:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -26814,7 +27082,7 @@ class Rotation {
 }
 exports.Rotation = Rotation;
 
-},{"./utils":50}],46:[function(require,module,exports){
+},{"./utils":51}],47:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -27610,7 +27878,7 @@ class MEMeshObj extends _materials.default {
 }
 exports.default = MEMeshObj;
 
-},{"../shaders/fragment.video.wgsl":56,"../shaders/vertex.wgsl":69,"../shaders/vertex.wgsl.normalmap":70,"./effects/pointerEffect":34,"./materials":44,"./matrix-class":45,"./utils":50,"wgpu-matrix":22}],47:[function(require,module,exports){
+},{"../shaders/fragment.video.wgsl":57,"../shaders/vertex.wgsl":70,"../shaders/vertex.wgsl.normalmap":71,"./effects/pointerEffect":35,"./materials":45,"./matrix-class":46,"./utils":51,"wgpu-matrix":23}],48:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -27650,7 +27918,7 @@ class METoolTip {
 }
 exports.METoolTip = METoolTip;
 
-},{}],48:[function(require,module,exports){
+},{}],49:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -28032,7 +28300,7 @@ function combinePassWGSL() {
 `;
 }
 
-},{}],49:[function(require,module,exports){
+},{}],50:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -28221,7 +28489,7 @@ function addRaycastsListener(canvasId = "canvas1", eventName = 'click') {
   });
 }
 
-},{"wgpu-matrix":22}],50:[function(require,module,exports){
+},{"wgpu-matrix":23}],51:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -29250,7 +29518,7 @@ class FullscreenManager {
 }
 exports.FullscreenManager = FullscreenManager;
 
-},{}],51:[function(require,module,exports){
+},{}],52:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -29292,7 +29560,7 @@ class MultiLang {
 }
 exports.MultiLang = MultiLang;
 
-},{"../../public/res/multilang/en-backup":23,"../engine/utils":50}],52:[function(require,module,exports){
+},{"../../public/res/multilang/en-backup":24,"../engine/utils":51}],53:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -29576,7 +29844,7 @@ class MatrixAmmo {
 }
 exports.default = MatrixAmmo;
 
-},{"../engine/utils":50}],53:[function(require,module,exports){
+},{"../engine/utils":51}],54:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -29622,7 +29890,7 @@ fn fsMain(in : VertexOutput) -> @location(0) vec4f {
 }
 `;
 
-},{}],54:[function(require,module,exports){
+},{}],55:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -29748,7 +30016,7 @@ fn fsMain(in : VSOut) -> @location(0) vec4<f32> {
 }
 `;
 
-},{}],55:[function(require,module,exports){
+},{}],56:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -29836,7 +30104,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
 }
 `;
 
-},{}],56:[function(require,module,exports){
+},{}],57:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -29926,7 +30194,7 @@ fn main(input : FragmentInput) -> @location(0) vec4f {
 }
 `;
 
-},{}],57:[function(require,module,exports){
+},{}],58:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30157,7 +30425,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, 1.0);
 }`;
 
-},{}],58:[function(require,module,exports){
+},{}],59:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30335,7 +30603,7 @@ return vec4f(color, 1.0);
 // let radiance = spotlights[0].color * 10.0; // test high intensity
 // Lo += materialData.baseColor * radiance * NdotL;
 
-},{}],59:[function(require,module,exports){
+},{}],60:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30580,7 +30848,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, 1.0);
 }`;
 
-},{}],60:[function(require,module,exports){
+},{}],61:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30800,7 +31068,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, 1.0);
 }`;
 
-},{}],61:[function(require,module,exports){
+},{}],62:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30968,7 +31236,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 // let radiance = spotlights[0].color * 10.0; // test high intensity
 // Lo += materialData.baseColor * radiance * NdotL;
 
-},{}],62:[function(require,module,exports){
+},{}],63:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -31204,7 +31472,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, alpha);
 }`;
 
-},{}],63:[function(require,module,exports){
+},{}],64:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -31308,7 +31576,7 @@ fn main(
   return output;
 }`;
 
-},{}],64:[function(require,module,exports){
+},{}],65:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -31345,7 +31613,7 @@ fn main(
 }
 `;
 
-},{}],65:[function(require,module,exports){
+},{}],66:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -31403,7 +31671,7 @@ fn fragmentMain(input: VertexOutput) -> @location(0) vec4f {
   return vec4f(textureColor.rgb * lightColor, textureColor.a);
 }`;
 
-},{}],66:[function(require,module,exports){
+},{}],67:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -31461,7 +31729,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
 }
 `;
 
-},{}],67:[function(require,module,exports){
+},{}],68:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -31548,7 +31816,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
 }
 `;
 
-},{}],68:[function(require,module,exports){
+},{}],69:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -31606,7 +31874,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
   return vec4<f32>(color, 1.0);
 }`;
 
-},{}],69:[function(require,module,exports){
+},{}],70:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -31692,7 +31960,7 @@ fn main(
   return output;
 }`;
 
-},{}],70:[function(require,module,exports){
+},{}],71:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -31803,7 +32071,7 @@ fn main(
   return output;
 }`;
 
-},{}],71:[function(require,module,exports){
+},{}],72:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -31831,7 +32099,7 @@ fn main(
 }
 `;
 
-},{}],72:[function(require,module,exports){
+},{}],73:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -31901,7 +32169,7 @@ class MatrixSounds {
 }
 exports.MatrixSounds = MatrixSounds;
 
-},{}],73:[function(require,module,exports){
+},{}],74:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -32099,6 +32367,17 @@ class MEEditorClient {
       o = JSON.stringify(o);
       this.ws.send(o);
     });
+    document.addEventListener('web.editor.addMp3', e => {
+      // console.log("[web.editor.addMp3]: ", e.detail);
+      // console.info('addMp3 <signal>');
+      // let o = {
+      //   action: "addMp3",
+      //   projectName: location.href.split('/public/')[1].split(".")[0],
+      //   options: e.detail
+      // };
+      // o = JSON.stringify(o);
+      // this.ws.send(o);
+    });
 
     // delete obj
     document.addEventListener('web.editor.delete', e => {
@@ -32149,7 +32428,7 @@ class MEEditorClient {
 }
 exports.MEEditorClient = MEEditorClient;
 
-},{"../../engine/utils":50}],74:[function(require,module,exports){
+},{"../../engine/utils":51}],75:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -32205,6 +32484,8 @@ class Editor {
     <div id="leftBar">
       <h3>Events/Func</h3>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('event')">Event: onLoad</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('eventCustom')">Custom Event</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('dispatchEvent')">Dispatch Event</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('function')">Function</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('if')">If Branch</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('genrand')">GenRandInt</button>
@@ -32227,6 +32508,8 @@ class Editor {
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('translateByY')">TranslateByY</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('translateByZ')">TranslateByZ</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('onTargetPositionReach')">onTarget PositionReach</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('rayHitEvent')">Ray Hit Event</button>
+
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getObjectAnimation')">Get Object Animation</button>
       <hr>
       <span>Dinamics</span>
@@ -32235,7 +32518,9 @@ class Editor {
       <hr>
       <span>Networking</span>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('fetch')">Fetch</button>
-
+      <hr>
+      <span>Media</span>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('audioMP3')">Add Mp3</button>
       <hr style="border:none; height:1px; background:rgba(255,255,255,0.03); margin:10px 0;">
       <span>Math</span>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('add')">Add (+)</button>
@@ -32276,7 +32561,7 @@ class Editor {
 }
 exports.Editor = Editor;
 
-},{"./client":73,"./editor.provider":75,"./fluxCodexVertex":76,"./hud":77,"./methodsManager":78}],75:[function(require,module,exports){
+},{"./client":74,"./editor.provider":76,"./fluxCodexVertex":77,"./hud":78,"./methodsManager":79}],76:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -32342,11 +32627,10 @@ class EditorProvider {
           console.log('changes not saved.');
       }
       // inputFor: "Cube_0" property: "x" propertyId: "position" value: "1"
-
       // InFly Method
       let sceneObj = this.core.getSceneObjectByName(e.detail.inputFor);
       if (sceneObj) {
-        sceneObj[e.detail.propertyId][e.detail.property] = e.detail.value;
+        sceneObj[e.detail.propertyId][e.detail.property] = parseFloat(e.detail.value);
       } else {
         console.warn("EditorProvider input error");
         return;
@@ -32377,7 +32661,7 @@ class EditorProvider {
           },
           texturesPaths: [texturesPaths],
           // useUVShema4x2: true,
-          name: 'Cube_' + app.mainRenderBundle.length,
+          name: "" + e.detail.index,
           mesh: m.cube,
           raycast: {
             enabled: true,
@@ -32395,7 +32679,7 @@ class EditorProvider {
     document.addEventListener('web.editor.addSphere', e => {
       // console.log("[web.editor.addCube]: ", e.detail);
       (0, _loaderObj.downloadMeshes)({
-        cube: "./res/meshes/shapes/sphere.obj"
+        mesh: "./res/meshes/shapes/sphere.obj"
       }, m => {
         const texturesPaths = './res/meshes/blender/cube.png';
         this.core.addMeshObj({
@@ -32416,8 +32700,8 @@ class EditorProvider {
           },
           texturesPaths: [texturesPaths],
           // useUVShema4x2: true,
-          name: 'Sphere_' + app.mainRenderBundle.length,
-          mesh: m.cube,
+          name: e.detail.index,
+          mesh: m.mesh,
           raycast: {
             enabled: true,
             radius: 2
@@ -32457,7 +32741,7 @@ class EditorProvider {
       e.detail.path = e.detail.path.replace(/\\/g, '/');
       // THIS MUST BE SAME LIKE SERVER VERSION OF ADD CUBE
       (0, _loaderObj.downloadMeshes)({
-        objMesh: `'${e.detail.path}'`
+        objMesh: `${e.detail.path}`
       }, m => {
         const texturesPaths = './res/meshes/blender/cube.png';
         this.core.addMeshObj({
@@ -32478,7 +32762,7 @@ class EditorProvider {
           },
           texturesPaths: [texturesPaths],
           // useUVShema4x2: true,
-          name: 'objmesh_' + app.mainRenderBundle.length,
+          name: e.detail.index,
           mesh: m.objMesh,
           raycast: {
             enabled: true,
@@ -32505,7 +32789,7 @@ class EditorProvider {
 }
 exports.default = EditorProvider;
 
-},{"../../engine/loader-obj":40,"../../engine/loaders/webgpu-gltf":43}],76:[function(require,module,exports){
+},{"../../engine/loader-obj":41,"../../engine/loaders/webgpu-gltf":44}],77:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -32585,8 +32869,21 @@ class FluxCodexVertex {
       selectedNode: null,
       pan: [0, 0],
       panning: false,
-      panStart: [0, 0]
+      panStart: [0, 0],
+      zoom: 1
     };
+    this.setZoom = z => {
+      this.state.zoom = Math.max(0.2, Math.min(2.5, z));
+      this.board.style.transform = `scale(${this.state.zoom})`;
+    };
+    this.onWheel = e => {
+      e.preventDefault();
+      const delta = e.deltaY > 0 ? -0.1 : 0.1;
+      this.setZoom(this.state.zoom + delta);
+    };
+    this.boardWrap.addEventListener("wheel", this.onWheel.bind(this), {
+      passive: false // IMPORTANT
+    });
 
     // Bind event listeners
     this.createVariablesPopup();
@@ -32621,6 +32918,14 @@ class FluxCodexVertex {
       if (node.type !== "getSubObject") return;
       this.handleGetSubObject(node, value);
       if (field !== "path") return;
+    });
+    document.addEventListener('web.editor.addMp3', e => {
+      console.log("[web.editor.addMp3]: ", e.detail);
+      e.detail.path = e.detail.path.replace('\\res', 'res');
+      e.detail.path = e.detail.path.replace(/\\/g, '/');
+      // THIS MUST BE SAME LIKE SERVER VERSION OF ADD CUBE
+      this.addNode('audioMP3', e.detail);
+      // this.core.
     });
   }
   createContextMenu() {
@@ -32682,6 +32987,7 @@ class FluxCodexVertex {
     <button onclick="app.editor.fluxCodexVertex.addNode('setRotateX')">Set RotateX</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('setRotateY')">Set RotateY</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('setRotateZ')">Set RotateZ</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('setTexture')">Set Texture</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('onTargetPositionReach')">onTargetPositionReach</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('getObjectAnimation')">Get Object Animation</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('dynamicFunction')">Function Dinamic</button>
@@ -33187,10 +33493,10 @@ class FluxCodexVertex {
         if (selected) this.adaptNodeToMethod(node, selected);
       };
     } else if (node.category === "functions") {
+      console.log('!!!updateDOMNODE restoreDynamicFunctionNode', this.restoreDynamicFunctionNode);
       const dom = document.querySelector(`.node[data-id="${nodeId}"]`);
       this.restoreDynamicFunctionNode(node, dom);
     } else if (node.category === "reffunctions") {
-      console.log('new ref');
       const dom = document.querySelector(`.node[data-id="${nodeId}"]`);
       this.restoreDynamicFunctionNode(node, dom);
     }
@@ -33436,6 +33742,8 @@ class FluxCodexVertex {
     const el = document.createElement("div");
     if (spec.title == "Fetch") {
       el.className = "node " + (spec.title.toLowerCase() || "");
+    } else if (spec.title == "Play MP3") {
+      el.className = "node " + "audios";
     } else {
       el.className = "node " + (spec.category || "");
     }
@@ -33492,10 +33800,8 @@ class FluxCodexVertex {
       };
       body.appendChild(textarea);
     }
-    // ==================================================
-    // 🔴 FIELD INPUTS (CORRECT PLACE)
-    // ==================================================
-    if (spec.fields?.length && !spec.comment) {
+    // 🔴 FIELD INPUTS
+    if (spec.fields?.length && !spec.comment && spec.title != "GenRandInt") {
       const fieldsWrap = document.createElement("div");
       fieldsWrap.className = "node-fields";
       spec.fields.forEach(field => {
@@ -33517,6 +33823,7 @@ class FluxCodexVertex {
       spec.fields.forEach(f => {
         const input = document.createElement("input");
         input.type = "number";
+        console.log("?????????????");
         input.value = f.value;
         input.style.width = "40px";
         input.style.marginRight = "4px";
@@ -33554,7 +33861,6 @@ class FluxCodexVertex {
         }
       });
     }
-
     // Variable name input (temporary until popup)
     if (spec.fields?.some(f => f.key === "var") && !spec.comment) {
       const input = document.createElement("input");
@@ -33597,7 +33903,7 @@ class FluxCodexVertex {
       placeholder.textContent = "-- Select Object --";
       placeholder.value = "";
       select.appendChild(placeholder);
-      console.log('WORKS objects', spec.accessObject.length);
+      // console.log('WORKS objects', spec.accessObject.length);
       spec.accessObject.forEach(obj => {
         const opt = document.createElement("option");
         opt.value = obj.name;
@@ -33688,6 +33994,107 @@ class FluxCodexVertex {
           type: "action"
         }]
       }),
+      audioMP3: (id, x, y, options) => ({
+        id,
+        x,
+        y,
+        title: "Play MP3",
+        category: "action",
+        inputs: [{
+          name: "exec",
+          type: "action"
+        }, {
+          name: "key",
+          type: "string",
+          default: "audio"
+        }, {
+          name: "src",
+          type: "string",
+          default: ""
+        }, {
+          name: "clones",
+          type: "number",
+          default: 1
+        }],
+        outputs: [{
+          name: "execOut",
+          type: "action"
+        }],
+        fields: [{
+          key: "created",
+          value: false
+        }, {
+          key: "key",
+          value: options?.name
+        }, {
+          key: "src",
+          value: options?.path
+        }],
+        noselfExec: "true"
+      }),
+      eventCustom: (id, x, y) => ({
+        id,
+        x,
+        y,
+        title: "Custom Event",
+        category: "event",
+        fields: [{
+          key: "name",
+          value: "myEvent"
+        }],
+        inputs: [],
+        outputs: [{
+          name: "exec",
+          type: "action"
+        }, {
+          name: "detail",
+          type: "object"
+        }],
+        _listenerAttached: false,
+        _returnCache: null,
+        noselfExec: 'true'
+      }),
+      dispatchEvent: (id, x, y) => ({
+        id,
+        x,
+        y,
+        title: "Dispatch Event",
+        category: "event",
+        inputs: [{
+          name: "exec",
+          type: "action"
+        }, {
+          name: "eventName",
+          type: "string",
+          default: "myEvent"
+        }, {
+          name: "detail",
+          type: "object",
+          default: {}
+        }],
+        outputs: [{
+          name: "execOut",
+          type: "action"
+        }],
+        noselfExec: 'true'
+      }),
+      rayHitEvent: (id, x, y) => ({
+        id,
+        x,
+        y,
+        title: "On Ray Hit",
+        category: "event",
+        inputs: [],
+        outputs: [{
+          name: "exec",
+          type: "action"
+        }, {
+          name: "hitObject",
+          type: "object"
+        }],
+        noselfExec: 'true',
+        _listenerAttached: false
+      }),
       function: (id, x, y) => ({
         id,
         title: "Function",
@@ -33726,7 +34133,8 @@ class FluxCodexVertex {
         fields: [{
           key: "condition",
           value: true
-        }]
+        }],
+        noselfExec: "true"
       }),
       genrand: (id, x, y) => ({
         id,
@@ -33768,7 +34176,8 @@ class FluxCodexVertex {
           key: "label",
           value: "Result"
         }],
-        builtIn: true
+        builtIn: true,
+        noselfExec: 'true'
       }),
       timeout: (id, x, y) => ({
         id,
@@ -33793,7 +34202,7 @@ class FluxCodexVertex {
         }],
         builtIn: true
       }),
-      // Math nodes
+      // Math
       add: (id, x, y) => ({
         id,
         title: "Add",
@@ -34363,6 +34772,27 @@ class FluxCodexVertex {
           type: "action"
         }]
       }),
+      setTexture: (id, x, y) => ({
+        id,
+        x,
+        y,
+        title: "Set Texture",
+        category: "scene",
+        inputs: [{
+          name: "exec",
+          type: "action"
+        }, {
+          name: "texturePath",
+          semantic: "texturePath"
+        }, {
+          name: "sceneObjectName",
+          semantic: "string"
+        }],
+        outputs: [{
+          name: "execOut",
+          type: "action"
+        }]
+      }),
       getSpeed: (id, x, y) => ({
         id,
         x,
@@ -34725,6 +35155,8 @@ class FluxCodexVertex {
       ;
       if (nodeFactories[type]) spec = nodeFactories[type](id, x, y, options.accessObject);
       spec.accessObjectLiteral = AO;
+    } else if (type === 'audioMP3' && options?.path && options?.name) {
+      if (nodeFactories[type]) spec = nodeFactories[type](id, x, y, options);
     } else {
       if (nodeFactories[type]) spec = nodeFactories[type](id, x, y);
     }
@@ -34763,6 +35195,7 @@ class FluxCodexVertex {
     for (const nodeId in this.nodes) {
       const n = this.nodes[nodeId];
       if (n.category === "event") {
+        // console.log('ACTIVATRE NODE ', n.title)
         this.activateEventNode(nodeId);
       }
     }
@@ -34965,6 +35398,18 @@ class FluxCodexVertex {
         this.enqueueOutputs(n, "exec");
       };
       n._listenerAttached = true;
+    } else if (n.title == "On Ray Hit") {
+      // console.log('ON RAY HIT INIT ONLE !!!!!!!!!!!!!!!!!')
+      if (n._listenerAttached) return;
+      app.reference.addRaycastsListener();
+      const handler = e => {
+        n._returnCache = e.detail?.hitObject ?? e.detail;
+        this.enqueueOutputs(n, "exec");
+      };
+      app.canvas.addEventListener("ray.hit.event", handler);
+      n._eventHandler = handler;
+      n._listenerAttached = true;
+      return;
     }
   }
   _executeAttachedMethod(n) {
@@ -34986,7 +35431,6 @@ class FluxCodexVertex {
   getValue(nodeId, pinName, visited = new Set()) {
     const node = this.nodes[nodeId];
     if (visited.has(nodeId + ":" + pinName)) {
-      // console.warn("[getValue] cycle blocked", nodeId, pinName);
       return undefined;
     }
     if (!node || visited.has(nodeId)) return undefined;
@@ -35002,6 +35446,18 @@ class FluxCodexVertex {
         return node.fields?.find(f => f.key === "condition")?.value;
       }
       // ?
+    }
+    if (node.title === "On Ray Hit" && pinName === "hitObject") {
+      console.info('get value ray hit', node._returnCache);
+      return node._returnCache;
+    }
+    if (node.title === "Custom Event" && pinName === "detail") {
+      console.warn("[Custom Event]  getvalue");
+      return node._returnCache;
+    }
+    if (node.title === "Dispatch Event" && (pinName === 'eventName' || pinName === 'detail')) {
+      let testLink = this.links.find(l => l.to.node === nodeId && l.to.pin === pinName);
+      return this.getValue(testLink.from.node, testLink.from.pin);
     }
     if (node.isGetterNode) {
       if (node._returnCache === undefined) {
@@ -35047,7 +35503,8 @@ class FluxCodexVertex {
         });
       }
       if (node.fields[0].value) select.value = node.fields[0].value;
-      console.log('>>>>>>>>>>>>>>>>>>>>>');
+      // console.log('>>>>>>>>>>>>>>>>>>>>>')
+
       const obj = (node.accessObject || []).find(o => o.name === objName);
       if (!obj) return undefined;
       const out = node.outputs.find(o => o.name === pinName);
@@ -35068,19 +35525,92 @@ class FluxCodexVertex {
     } else if (node.title === "Get Sub Object") {
       let varField = node.outputs?.find(f => f.name === "0");
       let isName = node.outputs?.find(f => f.name === "name");
-      console.log('test1 :::', varField);
+      // console.log('test1 :::', varField)
       if (varField) if (varField.type == 'object') {
         return node._subCache[parseInt(varField.name)];
       }
-      console.log('test2 :::', isName);
+      // console.log('test2 :::', isName);
       return node._subCache;
     } else if (node.type === "forEach") {
       if (pinName === "item") return node.state?.item;
       if (pinName === "index") return node.state?.index;
     }
+
+    // console.log("GETVALUE COMPARE!")
+    if (["math", "value", "compare"].includes(node.category)) {
+      let result;
+      switch (node.title) {
+        case "Add":
+          result = this.getValue(nodeId, "a") + this.getValue(nodeId, "b");
+          break;
+        case "Sub":
+          result = this.getValue(nodeId, "a") - this.getValue(nodeId, "b");
+          break;
+        case "Mul":
+          result = this.getValue(nodeId, "a") * this.getValue(nodeId, "b");
+          break;
+        case "Div":
+          result = this.getValue(nodeId, "a") / this.getValue(nodeId, "b");
+          break;
+        case "Sin":
+          result = Math.sin(this.getValue(nodeId, "a"));
+          break;
+        case "Cos":
+          result = Math.cos(this.getValue(nodeId, "a"));
+          break;
+        case "Pi":
+          result = Math.PI;
+          break;
+        case "A > B":
+          result = this.getValue(nodeId, "A") > this.getValue(nodeId, "B");
+          break;
+        case "A < B":
+          result = this.getValue(nodeId, "A") < this.getValue(nodeId, "B");
+          break;
+        case "A == B":
+          let varA = this.getValue(nodeId, "A");
+          let varB = this.getValue(nodeId, "B");
+          console.log('TEST DEEP TEST ');
+          if (typeof varA == "object") {
+            console.log('TEST DEEP ');
+            const r = this.deepEqual(varA, varB);
+            console.log('TEST DEEP ', r);
+            result = r;
+          } else {
+            result = this.getValue(nodeId, "A") != this.getValue(nodeId, "B");
+          }
+          break;
+        case "A != B":
+          let varAN = this.getValue(nodeId, "A");
+          let varBN = this.getValue(nodeId, "B");
+          if (typeof varAN == "object") {
+            const r = this.deepEqual(varAN, varBN);
+            result = !r;
+          } else {
+            result = this.getValue(nodeId, "A") != this.getValue(nodeId, "B");
+          }
+          break;
+        case "A >= B":
+          result = this.getValue(nodeId, "A") >= this.getValue(nodeId, "B");
+          break;
+        case "A <= B":
+          result = this.getValue(nodeId, "A") <= this.getValue(nodeId, "B");
+          break;
+        case "GenRandInt":
+          const min = +node.fields?.find(f => f.key === "min")?.value || 0;
+          const max = +node.fields?.find(f => f.key === "max")?.value || 10;
+          result = Math.floor(Math.random() * (max - min + 1)) + min;
+          break;
+        default:
+          result = undefined;
+      }
+      node._returnCache = result;
+      if (node.displayEl) node.displayEl.textContent = typeof result === "number" ? result.toFixed(3) : String(result);
+      return result;
+    }
     if (node.outputs?.some(o => o.name === pinName)) {
       const dynamicNodes = ["GenRandInt", "RandomFloat"];
-      if (node._returnCache === undefined || dynamicNodes.includes(node.title)) {
+      if ((node._returnCache === undefined || dynamicNodes.includes(node.title)) && !node.noselfExec) {
         this._execContext = nodeId;
         this.triggerNode(nodeId);
         this._execContext = null;
@@ -35155,11 +35685,22 @@ class FluxCodexVertex {
       }
     }
   }
+  deepEqual(a, b) {
+    if (a === b) return true;
+    if (typeof a !== "object" || typeof b !== "object" || a == null || b == null) return false;
+    const keysA = Object.keys(a);
+    const keysB = Object.keys(b);
+    if (keysA.length !== keysB.length) return false;
+    for (const key of keysA) {
+      if (!keysB.includes(key)) return false;
+      if (!this.deepEqual(a[key], b[key])) return false;
+    }
+    return true;
+  }
   triggerNode(nodeId) {
     const n = this.nodes[nodeId];
     if (!n) return;
     this._execContext = nodeId;
-
     // Highlight node header
     const highlight = document.querySelector(`.node[data-id="${nodeId}"] .header`);
     if (highlight) {
@@ -35250,6 +35791,39 @@ class FluxCodexVertex {
       }
       this.enqueueOutputs(n, "execOut");
       return;
+    } else if (n.title === "Custom Event") {
+      console.log('********************************');
+      // if(n._listenerAttached === true) return;
+
+      const eventName = n.fields?.find(f => f.key === "name")?.value;
+      if (!eventName) return;
+      const handler = e => {
+        console.log('**TRUE** HANDLER**');
+        n._returnCache = e.detail;
+        this.enqueueOutputs(n, "exec");
+      };
+      console.log('**eventName**', eventName);
+      window.removeEventListener(eventName, handler);
+      window.addEventListener(eventName, handler);
+      n._eventHandler = handler;
+      n._listenerAttached = true;
+      return;
+    } else if (n.title === "Dispatch Event") {
+      const name = this.getValue(nodeId, "eventName");
+      if (!name) {
+        console.warn("[Dispatch] missing eventName");
+        this.enqueueOutputs(n, "execOut");
+        return;
+      }
+      const detail = this.getValue(nodeId, "detail");
+      console.log('*************window.dispatchEvent****************', name);
+      window.dispatchEvent(new CustomEvent(name, {
+        detail: detail ?? {}
+      }));
+      this.enqueueOutputs(n, "execOut");
+      return;
+    } else if (n.title === "On Ray Hit") {
+      console.log('On Ray Hit =NOTHING NOW', n._listenerAttached);
     }
     if (n.isGetterNode) {
       const varField = n.fields?.find(f => f.key === "var");
@@ -35281,13 +35855,16 @@ class FluxCodexVertex {
         this.enqueueOutputs(n, "exec");
         // alert(" TARGET REACh ");
       };
+      console.log('**************rrrrrrrrrr***************');
       n._listenerAttached = true;
       return;
     }
 
     // functionDinamic execution
     if (n.category === "functions") {
-      console.log('n.category === functions ');
+      console.log('TRIGGER n.category === functions ');
+      // bloomPass is created in post time - make always update
+      n.accessObject = eval(n.accessObjectLiteral);
       if (n.fn === undefined) {
         n.fn = n.accessObject[n.fnName];
       }
@@ -35299,18 +35876,33 @@ class FluxCodexVertex {
       this.enqueueOutputs(n, "execOut");
       return;
     }
-    if (n.category === "event") {
+    if (n.category === "event" && typeof n.noselfExec === 'undefined') {
+      console.log('>>>>>>>>>>>>>>>>>>>>>>>>>>>>EXEC :  ', n.title);
       this.enqueueOutputs(n, "exec");
+      return;
+    }
+    if (n.category === "event" && typeof n.noselfExec != 'undefined') {
+      console.log('PREVENT SELF EXEC');
       return;
     }
     if (n.isVariableNode) {
       const type = n.title.replace("Set ", "").toLowerCase();
       const varField = n.fields?.find(f => f.key === "var");
       if (varField && varField.value) {
-        const value = this.getValue(nodeId, "value");
-        this.variables[type][varField.value] = {
-          value
-        };
+        let value = this.getValue(nodeId, "value");
+        // if 0 probably no pin connection
+        if (n.title == "Set Object") {
+          if (value == 0) {
+            let varliteral = n.fields?.find(f => f.key === "literal");
+            console.log("set object  varliteral.value ", varliteral.value);
+            this.variables[type][varField.value] = JSON.parse(varliteral.value);
+          }
+        } else {
+          console.log("set object ", value);
+          this.variables[type][varField.value] = {
+            value
+          };
+        }
         this.notifyVariableChanged(type, varField.value);
         // Update matching getter nodes instantly
         for (const nodeId2 in this.nodes) {
@@ -35367,6 +35959,7 @@ class FluxCodexVertex {
 
     // Action / Print / Timer Nodes
     if (["action", "actionprint", "timer"].includes(n.category)) {
+      // only for custom functions from managerfunction
       if (n.attachedMethod) this._executeAttachedMethod(n);
       if (n.title === "Print") {
         const label = n.fields?.find(f => f.key === "label")?.value || "Print:";
@@ -35397,11 +35990,30 @@ class FluxCodexVertex {
         const delay = +n.fields?.find(f => f.key === "delay")?.value || 1000;
         setTimeout(() => this.enqueueOutputs(n, "execOut"), delay);
         return;
+      } else if (n.title === "Play MP3") {
+        const key = this.getValue(nodeId, "key");
+        const src = this.getValue(nodeId, "src");
+        const clones = Number(this.getValue(nodeId, "clones")) || 1;
+        if (!key || !src) {
+          console.warn("[Play MP3] Missing key or src");
+          this.enqueueOutputs(n, "execOut");
+          return;
+        }
+        const createdField = n.fields.find(f => f.key === "created");
+        if (!createdField.value) {
+          console.log('!AUDIO ONCE!');
+          app.matrixSounds.createAudio(key, src, clones);
+          createdField.value = true;
+        }
+        app.matrixSounds.play(key);
+        this.enqueueOutputs(n, "execOut");
+        return;
       }
       this.enqueueOutputs(n, "execOut");
       return;
     }
     if (n.category === "logic" && n.title === "if") {
+      // console.log('TEST LOGIC ')
       const condition = Boolean(this.getValue(nodeId, "condition"));
       this.enqueueOutputs(n, condition ? "true" : "false");
       this._execContext = null;
@@ -35413,6 +36025,21 @@ class FluxCodexVertex {
         // this.getValue(nodeId, "thrust")
         console.log('pos.getSpeed()', pos.getSpeed());
         n._returnCache = pos.getSpeed();
+      }
+      this.enqueueOutputs(n, "execOut");
+      return;
+    } else if (n.title === "Set Texture") {
+      const texpath = this.getValue(nodeId, "texturePath");
+      const sceneObjectName = this.getValue(nodeId, "sceneObjectName");
+      // sceneObjectName
+      if (texpath) {
+        // console.log('textPath', texpath)
+        // console.log('sceneObjectName', sceneObjectName)
+        let obj = app.getSceneObjectByName(sceneObjectName);
+        obj.loadTex0([texpath]).then(() => {
+          setTimeout(() => obj.changeTexture(obj.texture0), 200);
+        });
+        // pos.setSpeed(this.getValue(nodeId, "thrust"));
       }
       this.enqueueOutputs(n, "execOut");
       return;
@@ -35487,7 +36114,9 @@ class FluxCodexVertex {
       this.enqueueOutputs(n, "execOut");
       return;
     }
+    console.log("BEFORE COMPARE ");
     if (["math", "value", "compare"].includes(n.category)) {
+      console.log("BEFORE COMPARE ");
       let result;
       switch (n.title) {
         case "Add":
@@ -35518,10 +36147,27 @@ class FluxCodexVertex {
           result = this.getValue(nodeId, "A") < this.getValue(nodeId, "B");
           break;
         case "A == B":
-          result = this.getValue(nodeId, "A") == this.getValue(nodeId, "B");
+          let varA = this.getValue(nodeId, "A");
+          let varB = this.getValue(nodeId, "B");
+          console.log('TEST DEEP TEST ');
+          if (typeof varA == "object") {
+            console.log('TEST DEEP ');
+            const r = this.deepEqual(varA, varB);
+            console.log('TEST DEEP ', r);
+            result = r;
+          } else {
+            result = this.getValue(nodeId, "A") != this.getValue(nodeId, "B");
+          }
           break;
         case "A != B":
-          result = this.getValue(nodeId, "A") != this.getValue(nodeId, "B");
+          let varAN = this.getValue(nodeId, "A");
+          let varBN = this.getValue(nodeId, "B");
+          if (typeof varAN == "object") {
+            const r = this.deepEqual(varAN, varBN);
+            result = !r;
+          } else {
+            result = this.getValue(nodeId, "A") != this.getValue(nodeId, "B");
+          }
           break;
         case "A >= B":
           result = this.getValue(nodeId, "A") >= this.getValue(nodeId, "B");
@@ -35580,7 +36226,7 @@ class FluxCodexVertex {
   enqueueOutputs(n, pinName) {
     this.links.filter(l => l.from.node === n.id && l.from.pin === pinName && l.type === "action").forEach(l => setTimeout(() => {
       this.triggerNode(l.to.node);
-    }, 10));
+    }, 2));
   }
   deleteNode(nodeId) {
     const node = this.nodes[nodeId];
@@ -35630,7 +36276,7 @@ class FluxCodexVertex {
     }
   }
   handleMouseUp() {
-    if (this.state.draggingNode) setTimeout(() => this.updateValueDisplays(), 0);
+    // if(this.state.draggingNode) setTimeout(() => this.updateValueDisplays(), 0);
     this.state.draggingNode = null;
     this.state.panning = false;
     document.body.style.cursor = "default";
@@ -35664,7 +36310,7 @@ class FluxCodexVertex {
   }
   runGraph() {
     (0, _utils.byId)("app").style.opacity = 0.4;
-    this.updateValueDisplays();
+    // this.updateValueDisplays();
     this.initEventNodes();
     Object.values(this.nodes).forEach(n => n._returnCache = undefined);
     Object.values(this.nodes).filter(n => n.category === "event" && n.title === "onLoad").forEach(n => this.triggerNode(n.id));
@@ -35682,14 +36328,18 @@ class FluxCodexVertex {
       if (key === 'fn') return undefined;
       if (key === 'accessObject') return undefined;
       if (key === '_returnCache') return undefined;
+      if (key === '_listenerAttached') return false;
       return value;
     }
     localStorage.setItem(FluxCodexVertex.SAVE_KEY, JSON.stringify(bundle, saveReplacer));
     this.log("Graph saved to LocalStorage!");
   }
   clearStorage() {
-    localStorage.removeItem(FluxCodexVertex.SAVE_KEY);
-    this.log("Save cleared. Refresh to reset.");
+    let ask = confirm("⚠️ Delete all nodes , are you sure ?");
+    if (ask) {
+      localStorage.removeItem(FluxCodexVertex.SAVE_KEY);
+      location.reload(true);
+    }
   }
   clearAllNodes() {
     // Remove node DOMs
@@ -35737,7 +36387,15 @@ class FluxCodexVertex {
   }
   exportToJSON() {
     const bundle = this._buildSaveBundle();
-    const json = JSON.stringify(bundle, null, 2);
+    console.log(bundle);
+    function saveReplacer(key, value) {
+      if (key === 'fn') return undefined;
+      if (key === 'accessObject') return undefined;
+      if (key === '_returnCache') return undefined;
+      if (key === '_listenerAttached') return false;
+      return value;
+    }
+    const json = JSON.stringify(bundle, saveReplacer);
     const blob = new Blob([json], {
       type: "application/json"
     });
@@ -35798,7 +36456,9 @@ class FluxCodexVertex {
           // }
         });
         this.updateLinks();
-        this.updateValueDisplays();
+        // TEST FIX SELF CALL TRIGGER
+        // this.updateValueDisplays();
+
         this.restoreConnectionsRuntime();
         this.log("Restored graph.");
         return;
@@ -35830,7 +36490,7 @@ class FluxCodexVertex {
 exports.default = FluxCodexVertex;
 FluxCodexVertex.SAVE_KEY = "matrixEngineVisualScripting";
 
-},{"../../engine/plugin/tooltip/ToolTip":47,"../../engine/utils":50}],77:[function(require,module,exports){
+},{"../../engine/plugin/tooltip/ToolTip":48,"../../engine/utils":51}],78:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -35874,12 +36534,13 @@ class EditorHud {
       const ext = getPATH.split('.').pop();
       if (ext == 'glb' && confirm("GLB FILE 📦 Do you wanna add it to the scene ?")) {
         let name = prompt("📦 GLB file : ", getPATH);
+        let objName = prompt("📦 Enter uniq name: ");
         if (confirm("⚛ Enable physics (Ammo)?")) {
           // infly
           let o = {
             physics: true,
             path: getPATH,
-            index: this.core.mainRenderBundle.length
+            index: objName
           };
           document.dispatchEvent(new CustomEvent('web.editor.addGlb', {
             detail: o
@@ -35889,20 +36550,21 @@ class EditorHud {
           let o = {
             physics: false,
             path: getPATH,
-            index: this.core.mainRenderBundle.length
+            index: objName
           };
           document.dispatchEvent(new CustomEvent('web.editor.addGlb', {
             detail: o
           }));
         }
       } else if (ext == 'obj' && confirm("OBJ FILE 📦 Do you wanna add it to the scene ?")) {
+        let objName = prompt("📦 Enter uniq name: ");
         let name = prompt("📦 OBJ file : ", getPATH);
         if (confirm("⚛ Enable physics (Ammo)?")) {
           // infly 
           let o = {
             physics: true,
             path: name,
-            index: this.core.mainRenderBundle.length
+            index: objName
           };
           document.dispatchEvent(new CustomEvent('web.editor.addObj', {
             detail: o
@@ -35912,12 +36574,22 @@ class EditorHud {
           let o = {
             physics: false,
             path: name,
-            index: this.core.mainRenderBundle.length
+            index: objName
           };
           document.dispatchEvent(new CustomEvent('web.editor.addObj', {
             detail: o
           }));
         }
+      } else if (ext == 'mp3' && confirm("MP3 FILE 📦 Do you wanna add it to the scene ?")) {
+        let objName = prompt("📦 Enter uniq name: ");
+        // infly
+        let o = {
+          path: getPATH,
+          name: objName
+        };
+        document.dispatchEvent(new CustomEvent('web.editor.addMp3', {
+          detail: o
+        }));
       } else {
         let s = "";
         for (let key in e.detail.details) {
@@ -36148,50 +36820,40 @@ class EditorHud {
 
     // OBJECT LEVEL
     if ((0, _utils.byId)('addCube')) (0, _utils.byId)('addCube').addEventListener('click', () => {
+      let objName = prompt("📦 Enter uniq name: ");
       let o = {
         physics: false,
-        index: this.core.mainRenderBundle.length
+        index: objName
       };
-      // if(confirm(`⚛ Enable physics (Ammo) for cube ? \n
-      //    - Press OK for physics cube.
-      //    - Press cancel for 'classic position'.
-      //   (Also physics enabled objects can be kinematic with some collide efect in physics world)
-      //   `)) {
-      //   o.physics = true;
-      // }
       document.dispatchEvent(new CustomEvent('web.editor.addCube', {
         detail: o
       }));
     });
     if ((0, _utils.byId)('addSphere')) (0, _utils.byId)('addSphere').addEventListener('click', () => {
+      let objName = prompt("📦 Enter uniq name: ");
       let o = {
         physics: false,
-        index: this.core.mainRenderBundle.length
+        index: objName
       };
-      // if(confirm(`⚛ Enable physics (Ammo) for cube ? \n
-      //    - Press OK for physics cube.
-      //    - Press cancel for 'classic position'.
-      //   (Also physics enabled objects can be kinematic with some collide efect in physics world)
-      //   `)) {
-      //   o.physics = true;
-      // }
       document.dispatchEvent(new CustomEvent('web.editor.addSphere', {
         detail: o
       }));
     });
     if ((0, _utils.byId)('addCubePhysics')) (0, _utils.byId)('addCubePhysics').addEventListener('click', () => {
+      let objName = prompt("📦 Enter uniq name: ");
       let o = {
         physics: true,
-        index: this.core.mainRenderBundle.length
+        index: objName
       };
       document.dispatchEvent(new CustomEvent('web.editor.addCube', {
         detail: o
       }));
     });
     if ((0, _utils.byId)('addSpherePhysics')) (0, _utils.byId)('addSpherePhysics').addEventListener('click', () => {
+      let objName = prompt("📦 Enter uniq name: ");
       let o = {
         physics: true,
-        index: this.core.mainRenderBundle.length
+        index: objName
       };
       document.dispatchEvent(new CustomEvent('web.editor.addSphere', {
         detail: o
@@ -36978,7 +37640,7 @@ class SceneObjectProperty {
   }
 }
 
-},{"../../engine/utils.js":50}],78:[function(require,module,exports){
+},{"../../engine/utils.js":51}],79:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -37279,7 +37941,7 @@ class MethodsManager {
 }
 exports.default = MethodsManager;
 
-},{}],79:[function(require,module,exports){
+},{}],80:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -37302,6 +37964,7 @@ var _bvhInstaced = require("./engine/loaders/bvh-instaced.js");
 var _editor = require("./tools/editor/editor.js");
 var _meshObjInstances = _interopRequireDefault(require("./engine/instanced/mesh-obj-instances.js"));
 var _bloom = require("./engine/postprocessing/bloom.js");
+var _raycast = require("./engine/raycast.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 /**
  * @description
@@ -37318,7 +37981,8 @@ class MatrixEngineWGPU {
     MEMeshObjInstances: _meshObjInstances.default,
     BVHPlayerInstances: _bvhInstaced.BVHPlayerInstances,
     BVHPlayer: _bvh.BVHPlayer,
-    downloadMeshes: _loaderObj.downloadMeshes
+    downloadMeshes: _loaderObj.downloadMeshes,
+    addRaycastsListener: _raycast.addRaycastsListener
   };
   mainRenderBundle = [];
   lightContainer = [];
@@ -37494,7 +38158,7 @@ class MatrixEngineWGPU {
     // Just syntetic to help visual scripting part
     this.bloomPass = {
       enabled: false,
-      setIntesity: v => {},
+      setIntensity: v => {},
       setKnee: v => {},
       setBlurRadius: v => {},
       setThreshold: v => {}
@@ -38110,16 +38774,17 @@ class MatrixEngineWGPU {
     });
     try {
       let commandEncoder = this.device.createCommandEncoder();
+      if (this.matrixAmmo) this.matrixAmmo.updatePhysics();
       this.updateLights();
       // 1️⃣ Update light data (position, direction, uniforms)
       for (const light of this.lightContainer) {
         light.update();
         this.mainRenderBundle.forEach((meItem, index) => {
+          meItem.position.update();
           meItem.updateModelUniformBuffer();
           meItem.getTransformationMatrix(this.mainRenderBundle, light, index);
         });
       }
-      if (this.matrixAmmo) this.matrixAmmo.updatePhysics();
       let now, deltaTime;
       for (let i = 0; i < this.lightContainer.length; i++) {
         const light = this.lightContainer[i];
@@ -38174,7 +38839,7 @@ class MatrixEngineWGPU {
       // Loop over each mesh
 
       for (const mesh of this.mainRenderBundle) {
-        mesh.position.update();
+        // mesh.position.update()
         if (mesh.update) {
           now = performance.now() / 1000; // seconds
           deltaTime = now - (this.lastTime || now);
@@ -38539,10 +39204,12 @@ class MatrixEngineWGPU {
     }
   };
   activateBloomEffect = () => {
-    this.bloomPass = new _bloom.BloomPass(this.canvas.width, this.canvas.height, this.device, 1.5);
-    this.bloomPass.enabled = true;
+    if (this.bloomPass.enabled != true) {
+      this.bloomPass = new _bloom.BloomPass(this.canvas.width, this.canvas.height, this.device, 1.5);
+      this.bloomPass.enabled = true;
+    }
   };
 }
 exports.default = MatrixEngineWGPU;
 
-},{"./engine/ball.js":24,"./engine/cube.js":26,"./engine/engine.js":35,"./engine/instanced/mesh-obj-instances.js":38,"./engine/lights.js":39,"./engine/loader-obj.js":40,"./engine/loaders/bvh-instaced.js":41,"./engine/loaders/bvh.js":42,"./engine/mesh-obj.js":46,"./engine/postprocessing/bloom.js":48,"./engine/utils.js":50,"./multilang/lang.js":51,"./physics/matrix-ammo.js":52,"./sounds/sounds.js":72,"./tools/editor/editor.js":74,"wgpu-matrix":22}]},{},[1]);
+},{"./engine/ball.js":25,"./engine/cube.js":27,"./engine/engine.js":36,"./engine/instanced/mesh-obj-instances.js":39,"./engine/lights.js":40,"./engine/loader-obj.js":41,"./engine/loaders/bvh-instaced.js":42,"./engine/loaders/bvh.js":43,"./engine/mesh-obj.js":47,"./engine/postprocessing/bloom.js":49,"./engine/raycast.js":50,"./engine/utils.js":51,"./multilang/lang.js":52,"./physics/matrix-ammo.js":53,"./sounds/sounds.js":73,"./tools/editor/editor.js":75,"wgpu-matrix":23}]},{},[1]);

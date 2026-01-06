@@ -690,16 +690,20 @@ export default class MatrixEngineWGPU {
 
     try {
       let commandEncoder = this.device.createCommandEncoder();
+
+      if(this.matrixAmmo) this.matrixAmmo.updatePhysics();
+
       this.updateLights()
       // 1️⃣ Update light data (position, direction, uniforms)
       for(const light of this.lightContainer) {
         light.update()
         this.mainRenderBundle.forEach((meItem, index) => {
+          meItem.position.update()
           meItem.updateModelUniformBuffer()
           meItem.getTransformationMatrix(this.mainRenderBundle, light, index)
         })
       }
-      if(this.matrixAmmo) this.matrixAmmo.updatePhysics();
+      
 
       let now, deltaTime;
 
@@ -759,7 +763,7 @@ export default class MatrixEngineWGPU {
       // Loop over each mesh
 
       for(const mesh of this.mainRenderBundle) {
-        mesh.position.update()
+        // mesh.position.update()
         if(mesh.update) {
           now = performance.now() / 1000; // seconds
           deltaTime = now - (this.lastTime || now);
