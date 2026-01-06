@@ -17028,7 +17028,6 @@ var FluxCodexVertex = class _FluxCodexVertex {
         }
       });
     }
-    console.log("AGAINB TEST");
     if (spec.fields?.some((f) => f.key === "var") && !spec.comment) {
       const input = document.createElement("input");
       input.type = "text";
@@ -17067,7 +17066,6 @@ var FluxCodexVertex = class _FluxCodexVertex {
       placeholder.textContent = "-- Select Object --";
       placeholder.value = "";
       select.appendChild(placeholder);
-      console.log("WORKS objects", spec.accessObject.length);
       spec.accessObject.forEach((obj) => {
         const opt = document.createElement("option");
         opt.value = obj.name;
@@ -17974,7 +17972,6 @@ var FluxCodexVertex = class _FluxCodexVertex {
     for (const nodeId in this.nodes) {
       const n = this.nodes[nodeId];
       if (n.category === "event") {
-        console.log("ACTIVATRE NODE ", n.title);
         this.activateEventNode(nodeId);
       }
     }

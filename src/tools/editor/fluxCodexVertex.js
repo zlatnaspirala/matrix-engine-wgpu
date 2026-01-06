@@ -1166,9 +1166,6 @@ export default class FluxCodexVertex {
         }
       });
     }
-
-    console.log('AGAINB TEST')
-
     // Variable name input (temporary until popup)
     if(spec.fields?.some(f => f.key === "var") && !spec.comment) {
 
@@ -1219,8 +1216,7 @@ export default class FluxCodexVertex {
       placeholder.textContent = "-- Select Object --";
       placeholder.value = "";
       select.appendChild(placeholder);
-
-      console.log('WORKS objects', spec.accessObject.length);
+      // console.log('WORKS objects', spec.accessObject.length);
       spec.accessObject.forEach(obj => {
         const opt = document.createElement("option");
         opt.value = obj.name;
@@ -2056,8 +2052,8 @@ export default class FluxCodexVertex {
   initEventNodes() {
     for(const nodeId in this.nodes) {
       const n = this.nodes[nodeId];
-      if(n.category === "event") { // && typeof n.noselfExec === 'undefined'
-        console.log('ACTIVATRE NODE ', n.title)
+      if(n.category === "event") {
+        // console.log('ACTIVATRE NODE ', n.title)
         this.activateEventNode(nodeId);
       }
     }
