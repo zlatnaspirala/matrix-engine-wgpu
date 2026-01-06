@@ -204,7 +204,7 @@ export default class MatrixEngineWGPU {
     // Just syntetic to help visual scripting part
     this.bloomPass = {
       enabled: false,
-      setIntesity: (v) => {},
+      setIntensity: (v) => {},
       setKnee: (v) => {},
       setBlurRadius: (v) => {},
       setThreshold: (v) => {},
@@ -832,7 +832,7 @@ export default class MatrixEngineWGPU {
       pass.setBindGroup(0, this.device.createBindGroup({
         layout: this.presentPipeline.getBindGroupLayout(0),
         entries: [
-          {binding: 0, resource: (this.bloomPass.enabled === true ?  this.bloomOutputTex : this.sceneTexture.createView())},
+          {binding: 0, resource: (this.bloomPass.enabled === true ? this.bloomOutputTex : this.sceneTexture.createView())},
           {binding: 1, resource: this.presentSampler}
         ]
       }));
@@ -1036,7 +1036,9 @@ export default class MatrixEngineWGPU {
   }
 
   activateBloomEffect = () => {
-    this.bloomPass = new BloomPass(this.canvas.width, this.canvas.height, this.device, 1.5);
-    this.bloomPass.enabled = true;
+    if(this.bloomPass.enabled != true) {
+      this.bloomPass = new BloomPass(this.canvas.width, this.canvas.height, this.device, 1.5);
+      this.bloomPass.enabled = true;
+    }
   }
 }

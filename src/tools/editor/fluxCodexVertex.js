@@ -762,11 +762,10 @@ export default class FluxCodexVertex {
         if(selected) this.adaptNodeToMethod(node, selected);
       };
     } else if(node.category === "functions") {
-
+      console.log('!!!updateDOMNODE restoreDynamicFunctionNode', this.restoreDynamicFunctionNode)
       const dom = document.querySelector(`.node[data-id="${nodeId}"]`);
       this.restoreDynamicFunctionNode(node, dom);
     } else if(node.category === "reffunctions") {
-      console.log('new ref')
       const dom = document.querySelector(`.node[data-id="${nodeId}"]`);
       this.restoreDynamicFunctionNode(node, dom);
     }
@@ -2774,8 +2773,9 @@ export default class FluxCodexVertex {
 
     // functionDinamic execution
     if(n.category === "functions") {
-
-      console.log('n.category === functions ')
+      console.log('TRIGGER n.category === functions ')
+      // bloomPass is created in post time - make always update
+      n.accessObject = eval(n.accessObjectLiteral);
       if(n.fn === undefined) {
         n.fn = n.accessObject[n.fnName]
       }

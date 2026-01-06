@@ -1252,10 +1252,10 @@ function axisRotation(axis, angleInRadians, dst) {
   let x2 = axis[0];
   let y2 = axis[1];
   let z = axis[2];
-  const n = Math.sqrt(x2 * x2 + y2 * y2 + z * z);
-  x2 /= n;
-  y2 /= n;
-  z /= n;
+  const n2 = Math.sqrt(x2 * x2 + y2 * y2 + z * z);
+  x2 /= n2;
+  y2 /= n2;
+  z /= n2;
   const xx = x2 * x2;
   const yy = y2 * y2;
   const zz = z * z;
@@ -1286,10 +1286,10 @@ function axisRotate(m, axis, angleInRadians, dst) {
   let x2 = axis[0];
   let y2 = axis[1];
   let z = axis[2];
-  const n = Math.sqrt(x2 * x2 + y2 * y2 + z * z);
-  x2 /= n;
-  y2 /= n;
-  z /= n;
+  const n2 = Math.sqrt(x2 * x2 + y2 * y2 + z * z);
+  x2 /= n2;
+  y2 /= n2;
+  z /= n2;
   const xx = x2 * x2;
   const yy = y2 * y2;
   const zz = z * z;
@@ -2447,11 +2447,11 @@ var LOG_FUNNY = "font-family: stormfaze;color: #f1f033; font-size:14px;text-shad
 var LOG_FUNNY_SMALL = "font-family: stormfaze;color: #f1f033; font-size:10px;text-shadow: 2px 2px 4px #f335f4, 4px 4px 4px #d64444, 1px 1px 2px #c160a6, 3px 1px 0px #123de3;background: black;";
 function genName(length2) {
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-  let result = "";
+  let result2 = "";
   for (let i = 0; i < length2; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length));
+    result2 += chars.charAt(Math.floor(Math.random() * chars.length));
   }
-  return result;
+  return result2;
 }
 var mb = {
   root: () => byId("msgBox"),
@@ -2578,9 +2578,9 @@ var Position = class {
   getSpeed = () => {
     return this.thrust;
   };
-  setSpeed = (n) => {
-    if (typeof n === "number") {
-      this.thrust = n;
+  setSpeed = (n2) => {
+    if (typeof n2 === "number") {
+      this.thrust = n2;
     } else {
       console.log("Description: arguments (w, h) must be type of number.");
     }
@@ -6784,8 +6784,8 @@ var MEMeshObj = class extends Materials {
           }
         ]
       });
-      function alignTo256(n) {
-        return Math.ceil(n / 256) * 256;
+      function alignTo256(n2) {
+        return Math.ceil(n2 / 256) * 256;
       }
       let MAX_BONES = 100;
       this.MAX_BONES = MAX_BONES;
@@ -8814,10 +8814,10 @@ function axisRotation2(axis, angleInRadians, dst) {
   let x2 = axis[0];
   let y2 = axis[1];
   let z = axis[2];
-  const n = Math.sqrt(x2 * x2 + y2 * y2 + z * z);
-  x2 /= n;
-  y2 /= n;
-  z /= n;
+  const n2 = Math.sqrt(x2 * x2 + y2 * y2 + z * z);
+  x2 /= n2;
+  y2 /= n2;
+  z /= n2;
   const xx = x2 * x2;
   const yy = y2 * y2;
   const zz = z * z;
@@ -8848,10 +8848,10 @@ function axisRotate2(m, axis, angleInRadians, dst) {
   let x2 = axis[0];
   let y2 = axis[1];
   let z = axis[2];
-  const n = Math.sqrt(x2 * x2 + y2 * y2 + z * z);
-  x2 /= n;
-  y2 /= n;
-  z /= n;
+  const n2 = Math.sqrt(x2 * x2 + y2 * y2 + z * z);
+  x2 /= n2;
+  y2 /= n2;
+  z /= n2;
   const xx = x2 * x2;
   const yy = y2 * y2;
   const zz = z * z;
@@ -11061,13 +11061,13 @@ var GLTFMesh = class {
   }
 };
 var GLTFNode = class {
-  constructor(name, mesh, transform, n) {
+  constructor(name, mesh, transform, n2) {
     this.name = name;
     this.mesh = mesh;
     this.transform = transform;
     this.gpuUniforms = null;
     this.bindGroup = null;
-    this.children = n.children || [];
+    this.children = n2.children || [];
   }
   upload(device) {
     var buf = device.createBuffer(
@@ -11368,10 +11368,10 @@ async function uploadGLBModel(buffer, device) {
   const nodes = [];
   const gltfNodes = makeGLTFSingleLevel(glbJsonData.nodes);
   for (let i = 0; i < gltfNodes.length; i++) {
-    const n = gltfNodes[i];
-    const meshObj = n.mesh !== void 0 ? meshes[n.mesh] : null;
-    const node2 = new GLTFNode(n.name, meshObj, readNodeTransform(n), n);
-    if (n.skin !== void 0) node2.skin = n.skin;
+    const n2 = gltfNodes[i];
+    const meshObj = n2.mesh !== void 0 ? meshes[n2.mesh] : null;
+    const node2 = new GLTFNode(n2.name, meshObj, readNodeTransform(n2), n2);
+    if (n2.skin !== void 0) node2.skin = n2.skin;
     node2.upload(device);
     nodes.push(node2);
   }
@@ -11387,15 +11387,15 @@ async function uploadGLBModel(buffer, device) {
     if (node2.parent === void 0) node2.parent = null;
   }
   const skinnedMeshNodes = nodes.filter(
-    (n) => n.mesh && n.skin !== void 0
+    (n2) => n2.mesh && n2.skin !== void 0
   );
   let noSkinMeshNodes = null;
   if (skinnedMeshNodes.length === 0) {
     console.warn("No skins found \u2014 mesh not bound to skeleton");
-    noSkinMeshNodes = nodes.filter((n) => n.mesh);
+    noSkinMeshNodes = nodes.filter((n2) => n2.mesh);
   } else {
-    skinnedMeshNodes.forEach((n) => {
-      n.sceneUniformBuffer = device.createBuffer({
+    skinnedMeshNodes.forEach((n2) => {
+      n2.sceneUniformBuffer = device.createBuffer({
         size: 44 * 4,
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
       });
@@ -12878,10 +12878,10 @@ var GeometryFactory = class _GeometryFactory {
     const base = _GeometryFactory.sphere(S, detail);
     const p = base.positions;
     for (let i = 0; i < p.length; i += 3) {
-      const n = Math.random() * 0.3 + 0.85;
-      p[i] *= n;
-      p[i + 1] *= n;
-      p[i + 2] *= n;
+      const n2 = Math.random() * 0.3 + 0.85;
+      p[i] *= n2;
+      p[i + 1] *= n2;
+      p[i + 2] *= n2;
     }
     return base;
   }
@@ -14925,8 +14925,8 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
           }
         ]
       });
-      function alignTo256(n) {
-        return Math.ceil(n / 256) * 256;
+      function alignTo256(n2) {
+        return Math.ceil(n2 / 256) * 256;
       }
       let MAX_BONES = 100;
       this.MAX_BONES = MAX_BONES;
@@ -16171,8 +16171,8 @@ var FluxCodexVertex = class _FluxCodexVertex {
     this.createContextMenu();
     document.addEventListener("fluxcodex.input.change", (e) => {
       console.log("fluxcodex.input.change");
-      const { nodeId, field, value } = e.detail;
-      const node2 = this.nodes.find((n) => n.id === nodeId);
+      const { nodeId: nodeId2, field, value } = e.detail;
+      const node2 = this.nodes.find((n2) => n2.id === nodeId2);
       if (!node2) return;
       if (node2.type !== "getSubObject") return;
       this.handleGetSubObject(node2, value);
@@ -16275,8 +16275,8 @@ var FluxCodexVertex = class _FluxCodexVertex {
     <button onclick="app.editor.fluxCodexVertex.runGraph()">Run (F6)</button>
   `;
   }
-  log(...args) {
-    this.logEl.textContent = args.join(" ");
+  log(...args2) {
+    this.logEl.textContent = args2.join(" ");
   }
   createGetNumberNode(varName) {
     return this.addNode("getNumber", { var: varName });
@@ -16302,37 +16302,37 @@ var FluxCodexVertex = class _FluxCodexVertex {
   createSetObjectNode(varName) {
     return this.addNode("setObject", { var: varName });
   }
-  evaluateGetterNode(n) {
-    const key = n.fields?.find((f) => f.key === "var")?.value;
+  evaluateGetterNode(n2) {
+    const key = n2.fields?.find((f) => f.key === "var")?.value;
     if (!key) return;
-    const type2 = n.title.replace("Get ", "").toLowerCase();
+    const type2 = n2.title.replace("Get ", "").toLowerCase();
     const entry = this.variables[type2]?.[key];
-    n._returnCache = entry ? entry.value : type2 === "number" ? 0 : type2 === "boolean" ? false : type2 === "string" ? "" : type2 === "object" ? {} : void 0;
+    n2._returnCache = entry ? entry.value : type2 === "number" ? 0 : type2 === "boolean" ? false : type2 === "string" ? "" : type2 === "object" ? {} : void 0;
   }
   notifyVariableChanged(type2, key) {
     for (const id2 in this.nodes) {
-      const n = this.nodes[id2];
-      if (n.isGetterNode) {
-        const varField = n.fields?.find((f) => f.key === "var");
-        if (varField?.value === key && n.title.replace("Get ", "").toLowerCase() === type2) {
-          this.evaluateGetterNode(n);
-          if (n.displayEl) {
-            const val = n._returnCache;
+      const n2 = this.nodes[id2];
+      if (n2.isGetterNode) {
+        const varField = n2.fields?.find((f) => f.key === "var");
+        if (varField?.value === key && n2.title.replace("Get ", "").toLowerCase() === type2) {
+          this.evaluateGetterNode(n2);
+          if (n2.displayEl) {
+            const val = n2._returnCache;
             if (type2 === "object")
-              n.displayEl.textContent = JSON.stringify(val, null, 2);
+              n2.displayEl.textContent = JSON.stringify(val, null, 2);
             else if (type2 === "number")
-              n.displayEl.textContent = val.toFixed(3);
-            else n.displayEl.textContent = String(val);
+              n2.displayEl.textContent = val.toFixed(3);
+            else n2.displayEl.textContent = String(val);
           }
         }
       }
-      n.inputs?.forEach((pin) => {
-        const link = this.getConnectedSource(n.id, pin.name);
+      n2.inputs?.forEach((pin) => {
+        const link = this.getConnectedSource(n2.id, pin.name);
         if (link?.node?.isGetterNode) {
           const srcNode = link.node;
           const srcPin = link.pin;
           if (srcNode.fields?.find((f) => f.key === "var")?.value === key) {
-            this._adaptGetSubObjectOnConnect(n, srcNode, srcPin);
+            this._adaptGetSubObjectOnConnect(n2, srcNode, srcPin);
           }
         }
       });
@@ -16542,8 +16542,8 @@ var FluxCodexVertex = class _FluxCodexVertex {
     };
     return btn;
   }
-  _getPinDot(nodeId, pinName, isOutput) {
-    const nodeEl = document.querySelector(`.node[data-id="${nodeId}"]`);
+  _getPinDot(nodeId2, pinName, isOutput) {
+    const nodeEl = document.querySelector(`.node[data-id="${nodeId2}"]`);
     if (!nodeEl) return null;
     const io = isOutput ? "out" : "in";
     return nodeEl.querySelector(`.pin[data-pin="${pinName}"][data-io="${io}"] .dot`);
@@ -16592,8 +16592,8 @@ var FluxCodexVertex = class _FluxCodexVertex {
     const fn = this.methodsManager.compileFunction(methodItem.code);
     node2.inputs = [{ name: "exec", type: "action" }];
     node2.outputs = [{ name: "execOut", type: "action" }];
-    const args = this.getArgNames(fn);
-    args.forEach((arg) => node2.inputs.push({ name: arg, type: "value" }));
+    const args2 = this.getArgNames(fn);
+    args2.forEach((arg) => node2.inputs.push({ name: arg, type: "value" }));
     if (this.hasReturn(fn)) node2.outputs.push({ name: "return", type: "value" });
     node2.attachedMethod = methodItem.name;
     node2.fn = fn;
@@ -16601,7 +16601,7 @@ var FluxCodexVertex = class _FluxCodexVertex {
   }
   adaptNodeToMethod2(node2, methodItem) {
     const fn = this.methodsManager.compileFunction(methodItem.code);
-    const args = this.getArgNames(fn);
+    const args2 = this.getArgNames(fn);
     const preservedInputs = node2.inputs.filter(
       (p) => p.type === "action" || p.name === "reference"
     );
@@ -16610,7 +16610,7 @@ var FluxCodexVertex = class _FluxCodexVertex {
     );
     node2.inputs = [...preservedInputs];
     node2.outputs = [...preservedOutputs];
-    args.forEach((arg) => {
+    args2.forEach((arg) => {
       if (!node2.inputs.some((p) => p.name === arg)) {
         node2.inputs.push({ name: arg, type: "value" });
       }
@@ -16625,7 +16625,7 @@ var FluxCodexVertex = class _FluxCodexVertex {
     this.updateNodeDOM(node2.id);
   }
   adaptRefFunctionNode(node2, fnRef) {
-    const args = this.getArgNames(fnRef);
+    const args2 = this.getArgNames(fnRef);
     const hasReturn = this.hasReturn(fnRef);
     const preservedInputs = node2.inputs.filter(
       (p) => p.type === "action" || p.name === "reference"
@@ -16635,7 +16635,7 @@ var FluxCodexVertex = class _FluxCodexVertex {
     );
     node2.inputs = [...preservedInputs];
     node2.outputs = [...preservedOutputs];
-    args.forEach((arg) => {
+    args2.forEach((arg) => {
       if (!node2.inputs.some((p) => p.name === arg)) {
         node2.inputs.push({
           name: arg,
@@ -16672,9 +16672,9 @@ var FluxCodexVertex = class _FluxCodexVertex {
       (f) => f.key === "selectedObject" || f.key === "object"
     )?.value;
   }
-  updateNodeDOM(nodeId) {
-    const node2 = this.nodes[nodeId];
-    const el2 = document.querySelector(`.node[data-id="${nodeId}"]`);
+  updateNodeDOM(nodeId2) {
+    const node2 = this.nodes[nodeId2];
+    const el2 = document.querySelector(`.node[data-id="${nodeId2}"]`);
     if (!el2) return;
     const left2 = el2.querySelector(".pins-left");
     const right2 = el2.querySelector(".pins-right");
@@ -16683,8 +16683,8 @@ var FluxCodexVertex = class _FluxCodexVertex {
     right2.innerHTML = "";
     const inputs = node2.inputs || [];
     const outputs = node2.outputs || [];
-    inputs.forEach((pin) => left2.appendChild(this._pinElement(pin, false, nodeId)));
-    outputs.forEach((pin) => right2.appendChild(this._pinElement(pin, true, nodeId)));
+    inputs.forEach((pin) => left2.appendChild(this._pinElement(pin, false, nodeId2)));
+    outputs.forEach((pin) => right2.appendChild(this._pinElement(pin, true, nodeId2)));
     if (node2.title === "Get Scene Object" || node2.title === "Get Scene Light" || node2.title === "Get Scene Animation") {
       const select2 = el2.querySelector("select.scene-select");
       if (select2) {
@@ -16716,11 +16716,11 @@ var FluxCodexVertex = class _FluxCodexVertex {
         if (selected) this.adaptNodeToMethod(node2, selected);
       };
     } else if (node2.category === "functions") {
-      const dom2 = document.querySelector(`.node[data-id="${nodeId}"]`);
+      console.log("!!!updateDOMNODE restoreDynamicFunctionNode", this.restoreDynamicFunctionNode);
+      const dom2 = document.querySelector(`.node[data-id="${nodeId2}"]`);
       this.restoreDynamicFunctionNode(node2, dom2);
     } else if (node2.category === "reffunctions") {
-      console.log("new ref");
-      const dom2 = document.querySelector(`.node[data-id="${nodeId}"]`);
+      const dom2 = document.querySelector(`.node[data-id="${nodeId2}"]`);
       this.restoreDynamicFunctionNode(node2, dom2);
     }
   }
@@ -16776,9 +16776,9 @@ var FluxCodexVertex = class _FluxCodexVertex {
     }
   }
   // NODE/PIN
-  startConnect(nodeId, pinName, type2, isOut) {
+  startConnect(nodeId2, pinName, type2, isOut) {
     this.state.connecting = {
-      node: nodeId,
+      node: nodeId2,
       pin: pinName,
       type: type2,
       out: isOut
@@ -16802,13 +16802,13 @@ var FluxCodexVertex = class _FluxCodexVertex {
       this._applyConnectionRuntime(link.from, link.to, link.type);
     }
   }
-  finishConnect(nodeId, pinName, type2) {
-    if (!this.state.connecting || this.state.connecting.node === nodeId) {
+  finishConnect(nodeId2, pinName, type2) {
+    if (!this.state.connecting || this.state.connecting.node === nodeId2) {
       this.state.connecting = null;
       return;
     }
-    const from = this.state.connecting.out ? this.state.connecting : { node: nodeId, pin: pinName };
-    const to = this.state.connecting.out ? { node: nodeId, pin: pinName } : this.state.connecting;
+    const from = this.state.connecting.out ? this.state.connecting : { node: nodeId2, pin: pinName };
+    const to = this.state.connecting.out ? { node: nodeId2, pin: pinName } : this.state.connecting;
     if (from.pin && to.pin && this.isTypeCompatible(this.state.connecting.type, type2)) {
       const exists = this.links.find(
         (l) => l.from.node === from.node && l.from.pin === from.pin && l.to.node === to.node && l.to.pin === to.pin
@@ -16890,7 +16890,7 @@ var FluxCodexVertex = class _FluxCodexVertex {
     });
     this.updateNodeDOM(node2.id);
   }
-  _pinElement(pinSpec, isOutput, nodeId) {
+  _pinElement(pinSpec, isOutput, nodeId2) {
     const pin = document.createElement("div");
     if (pinSpec.name == "position") {
       pin.className = `pin pin-${pinSpec.name}`;
@@ -16900,7 +16900,7 @@ var FluxCodexVertex = class _FluxCodexVertex {
     pin.dataset.pin = pinSpec.name;
     pin.dataset.type = pinSpec.type;
     pin.dataset.io = isOutput ? "out" : "in";
-    pin.dataset.node = nodeId;
+    pin.dataset.node = nodeId2;
     const dot2 = document.createElement("div");
     dot2.className = "dot";
     pin.appendChild(dot2);
@@ -16910,11 +16910,11 @@ var FluxCodexVertex = class _FluxCodexVertex {
     pin.appendChild(label);
     pin.addEventListener(
       "mousedown",
-      () => this.startConnect(nodeId, pinSpec.name, pinSpec.type, isOutput)
+      () => this.startConnect(nodeId2, pinSpec.name, pinSpec.type, isOutput)
     );
     pin.addEventListener(
       "mouseup",
-      () => this.finishConnect(nodeId, pinSpec.name, pinSpec.type, isOutput)
+      () => this.finishConnect(nodeId2, pinSpec.name, pinSpec.type, isOutput)
     );
     return pin;
   }
@@ -17969,10 +17969,10 @@ var FluxCodexVertex = class _FluxCodexVertex {
     }
   }
   initEventNodes() {
-    for (const nodeId in this.nodes) {
-      const n = this.nodes[nodeId];
-      if (n.category === "event") {
-        this.activateEventNode(nodeId);
+    for (const nodeId2 in this.nodes) {
+      const n2 = this.nodes[nodeId2];
+      if (n2.category === "event") {
+        this.activateEventNode(nodeId2);
       }
     }
   }
@@ -18132,73 +18132,73 @@ var FluxCodexVertex = class _FluxCodexVertex {
     if (!obj) return;
     const method = obj[methodName];
     if (typeof method !== "function") return;
-    const args = this.getArgNames(method);
+    const args2 = this.getArgNames(method);
     node2.inputs = [{ name: "exec", type: "action" }];
     node2.outputs = [{ name: "execOut", type: "action" }];
-    args.forEach((arg) => node2.inputs.push({ name: arg, type: "value" }));
+    args2.forEach((arg) => node2.inputs.push({ name: arg, type: "value" }));
     if (this.hasReturn(method)) {
       node2.outputs.push({ name: "return", type: "value" });
     }
     node2._access = { objectName, methodName };
     this.updateNodeDOM(node2.id);
   }
-  activateEventNode(nodeId) {
-    const n = this.nodes[nodeId];
-    if (n.title === "On Target Position Reach") {
-      const pos = this.getValue(nodeId, "position");
+  activateEventNode(nodeId2) {
+    const n2 = this.nodes[nodeId2];
+    if (n2.title === "On Target Position Reach") {
+      const pos = this.getValue(nodeId2, "position");
       if (!pos) return;
       pos.onTargetPositionReach = () => {
         console.log("real onTargetPositionReach called");
-        this.enqueueOutputs(n, "exec");
+        this.enqueueOutputs(n2, "exec");
       };
-      n._listenerAttached = true;
-    } else if (n.title == "On Ray Hit") {
-      if (n._listenerAttached) return;
+      n2._listenerAttached = true;
+    } else if (n2.title == "On Ray Hit") {
+      if (n2._listenerAttached) return;
       app.reference.addRaycastsListener();
       const handler = (e) => {
-        n._returnCache = e.detail?.hitObject ?? e.detail;
-        this.enqueueOutputs(n, "exec");
+        n2._returnCache = e.detail?.hitObject ?? e.detail;
+        this.enqueueOutputs(n2, "exec");
       };
       app.canvas.addEventListener("ray.hit.event", handler);
-      n._eventHandler = handler;
-      n._listenerAttached = true;
+      n2._eventHandler = handler;
+      n2._listenerAttached = true;
       return;
     }
   }
-  _executeAttachedMethod(n) {
-    if (n.attachedMethod) {
+  _executeAttachedMethod(n2) {
+    if (n2.attachedMethod) {
       const method = this.methodsManager.methodsContainer.find(
-        (m) => m.name === n.attachedMethod
+        (m) => m.name === n2.attachedMethod
       );
       if (method) {
         const fn = this.methodsManager.compileFunction(method.code);
-        const args = this.getArgNames(fn).map(
-          (argName) => this.getValue(n.id, argName)
+        const args2 = this.getArgNames(fn).map(
+          (argName) => this.getValue(n2.id, argName)
         );
-        let result;
+        let result2;
         try {
-          result = fn(...args);
+          result2 = fn(...args2);
         } catch (err) {
           console.error("User method error:", err);
         }
-        if (this.hasReturn(fn)) n._returnCache = result;
+        if (this.hasReturn(fn)) n2._returnCache = result2;
       }
     }
   }
-  getValue(nodeId, pinName, visited = /* @__PURE__ */ new Set()) {
-    const node2 = this.nodes[nodeId];
-    if (visited.has(nodeId + ":" + pinName)) {
+  getValue(nodeId2, pinName, visited = /* @__PURE__ */ new Set()) {
+    const node2 = this.nodes[nodeId2];
+    if (visited.has(nodeId2 + ":" + pinName)) {
       return void 0;
     }
-    if (!node2 || visited.has(nodeId)) return void 0;
-    visited.add(nodeId);
+    if (!node2 || visited.has(nodeId2)) return void 0;
+    visited.add(nodeId2);
     if (node2.title === "if" && pinName === "condition") {
-      let testLink = this.links.find((l) => l.to.node === nodeId && l.to.pin === pinName);
+      let testLink = this.links.find((l) => l.to.node === nodeId2 && l.to.pin === pinName);
       let t = this.getValue(testLink.from.node, testLink.from.pin);
       if (typeof t !== "undefined") {
         return t;
       }
-      if (this._execContext !== nodeId) {
+      if (this._execContext !== nodeId2) {
         console.warn("[IF] condition read outside exec ignored");
         return node2.fields?.find((f) => f.key === "condition")?.value;
       }
@@ -18212,7 +18212,7 @@ var FluxCodexVertex = class _FluxCodexVertex {
       return node2._returnCache;
     }
     if (node2.title === "Dispatch Event" && (pinName === "eventName" || pinName === "detail")) {
-      let testLink = this.links.find((l) => l.to.node === nodeId && l.to.pin === pinName);
+      let testLink = this.links.find((l) => l.to.node === nodeId2 && l.to.pin === pinName);
       return this.getValue(testLink.from.node, testLink.from.pin);
     }
     if (node2.isGetterNode) {
@@ -18234,14 +18234,14 @@ var FluxCodexVertex = class _FluxCodexVertex {
     }
     const field = node2.fields?.find((f) => f.key === pinName);
     if (field) return field.value;
-    const link = this.links.find((l) => l.to.node === nodeId && l.to.pin === pinName);
+    const link = this.links.find((l) => l.to.node === nodeId2 && l.to.pin === pinName);
     if (link) return this.getValue(link.from.node, link.from.pin, visited);
     const inputPin = node2.inputs?.find((p) => p.name === pinName);
     if (inputPin) return inputPin.default ?? 0;
     if (node2.title === "Get Scene Object" || node2.title === "Get Scene Animation" || node2.title === "Get Scene Light") {
       const objName = this._getSceneSelectedName(node2);
       if (!objName) return void 0;
-      const dom2 = this.board.querySelector(`[data-id="${nodeId}"]`);
+      const dom2 = this.board.querySelector(`[data-id="${nodeId2}"]`);
       const selects = dom2.querySelectorAll("select");
       let select2 = selects[0];
       select2.innerHTML = ``;
@@ -18263,7 +18263,7 @@ var FluxCodexVertex = class _FluxCodexVertex {
       }
       return obj[pinName];
     } else if (node2.title === "Get Position") {
-      const pos = this.getValue(nodeId, "position");
+      const pos = this.getValue(nodeId2, "position");
       if (!pos) return void 0;
       node2._returnCache = {
         x: pos.x,
@@ -18285,81 +18285,81 @@ var FluxCodexVertex = class _FluxCodexVertex {
       if (pinName === "index") return node2.state?.index;
     }
     if (["math", "value", "compare"].includes(node2.category)) {
-      let result;
+      let result2;
       switch (node2.title) {
         case "Add":
-          result = this.getValue(nodeId, "a") + this.getValue(nodeId, "b");
+          result2 = this.getValue(nodeId2, "a") + this.getValue(nodeId2, "b");
           break;
         case "Sub":
-          result = this.getValue(nodeId, "a") - this.getValue(nodeId, "b");
+          result2 = this.getValue(nodeId2, "a") - this.getValue(nodeId2, "b");
           break;
         case "Mul":
-          result = this.getValue(nodeId, "a") * this.getValue(nodeId, "b");
+          result2 = this.getValue(nodeId2, "a") * this.getValue(nodeId2, "b");
           break;
         case "Div":
-          result = this.getValue(nodeId, "a") / this.getValue(nodeId, "b");
+          result2 = this.getValue(nodeId2, "a") / this.getValue(nodeId2, "b");
           break;
         case "Sin":
-          result = Math.sin(this.getValue(nodeId, "a"));
+          result2 = Math.sin(this.getValue(nodeId2, "a"));
           break;
         case "Cos":
-          result = Math.cos(this.getValue(nodeId, "a"));
+          result2 = Math.cos(this.getValue(nodeId2, "a"));
           break;
         case "Pi":
-          result = Math.PI;
+          result2 = Math.PI;
           break;
         case "A > B":
-          result = this.getValue(nodeId, "A") > this.getValue(nodeId, "B");
+          result2 = this.getValue(nodeId2, "A") > this.getValue(nodeId2, "B");
           break;
         case "A < B":
-          result = this.getValue(nodeId, "A") < this.getValue(nodeId, "B");
+          result2 = this.getValue(nodeId2, "A") < this.getValue(nodeId2, "B");
           break;
         case "A == B":
-          let varA = this.getValue(nodeId, "A");
-          let varB = this.getValue(nodeId, "B");
+          let varA = this.getValue(nodeId2, "A");
+          let varB = this.getValue(nodeId2, "B");
           console.log("TEST DEEP TEST ");
           if (typeof varA == "object") {
             console.log("TEST DEEP ");
             const r = this.deepEqual(varA, varB);
             console.log("TEST DEEP ", r);
-            result = r;
+            result2 = r;
           } else {
-            result = this.getValue(nodeId, "A") != this.getValue(nodeId, "B");
+            result2 = this.getValue(nodeId2, "A") != this.getValue(nodeId2, "B");
           }
           break;
         case "A != B":
-          let varAN = this.getValue(nodeId, "A");
-          let varBN = this.getValue(nodeId, "B");
+          let varAN = this.getValue(nodeId2, "A");
+          let varBN = this.getValue(nodeId2, "B");
           if (typeof varAN == "object") {
             const r = this.deepEqual(varAN, varBN);
-            result = !r;
+            result2 = !r;
           } else {
-            result = this.getValue(nodeId, "A") != this.getValue(nodeId, "B");
+            result2 = this.getValue(nodeId2, "A") != this.getValue(nodeId2, "B");
           }
           break;
         case "A >= B":
-          result = this.getValue(nodeId, "A") >= this.getValue(nodeId, "B");
+          result2 = this.getValue(nodeId2, "A") >= this.getValue(nodeId2, "B");
           break;
         case "A <= B":
-          result = this.getValue(nodeId, "A") <= this.getValue(nodeId, "B");
+          result2 = this.getValue(nodeId2, "A") <= this.getValue(nodeId2, "B");
           break;
         case "GenRandInt":
           const min2 = +node2.fields?.find((f) => f.key === "min")?.value || 0;
           const max2 = +node2.fields?.find((f) => f.key === "max")?.value || 10;
-          result = Math.floor(Math.random() * (max2 - min2 + 1)) + min2;
+          result2 = Math.floor(Math.random() * (max2 - min2 + 1)) + min2;
           break;
         default:
-          result = void 0;
+          result2 = void 0;
       }
-      node2._returnCache = result;
-      if (node2.displayEl) node2.displayEl.textContent = typeof result === "number" ? result.toFixed(3) : String(result);
-      return result;
+      node2._returnCache = result2;
+      if (node2.displayEl) node2.displayEl.textContent = typeof result2 === "number" ? result2.toFixed(3) : String(result2);
+      return result2;
     }
     if (node2.outputs?.some((o) => o.name === pinName)) {
       const dynamicNodes = ["GenRandInt", "RandomFloat"];
       if ((node2._returnCache === void 0 || dynamicNodes.includes(node2.title)) && !node2.noselfExec) {
-        this._execContext = nodeId;
-        this.triggerNode(nodeId);
+        this._execContext = nodeId2;
+        this.triggerNode(nodeId2);
         this._execContext = null;
       }
       return node2._returnCache;
@@ -18397,8 +18397,8 @@ var FluxCodexVertex = class _FluxCodexVertex {
     if (typeof fn !== "function") return;
     node2.inputs = [{ name: "exec", type: "action" }];
     node2.outputs = [{ name: "execOut", type: "action" }];
-    const args = this.getArgNames(fn);
-    args.forEach((arg) => {
+    const args2 = this.getArgNames(fn);
+    args2.forEach((arg) => {
       node2.inputs.push({ name: arg, type: "value" });
     });
     if (this.hasReturn(fn)) {
@@ -18412,9 +18412,9 @@ var FluxCodexVertex = class _FluxCodexVertex {
   }
   invalidateVariableGetters(type2, varName) {
     for (const id2 in this.nodes) {
-      const n = this.nodes[id2];
-      if (n.category === "value" && n.fields?.some((f) => f.key === "var" && f.value === varName) && n.title === `Get ${type2[0].toUpperCase() + type2.slice(1)}`) {
-        delete n._returnCache;
+      const n2 = this.nodes[id2];
+      if (n2.category === "value" && n2.fields?.some((f) => f.key === "var" && f.value === varName) && n2.title === `Get ${type2[0].toUpperCase() + type2.slice(1)}`) {
+        delete n2._returnCache;
       }
     }
   }
@@ -18506,10 +18506,10 @@ var FluxCodexVertex = class _FluxCodexVertex {
         this.enqueueOutputs(n, "execOut");
         return;
       }
-      const args = n.inputs.filter((p) => p.type !== "action" && p.name !== "reference").map((p) => this.getValue(n.id, p.name));
-      const result = fn(...args);
+      const args2 = n.inputs.filter((p) => p.type !== "action" && p.name !== "reference").map((p) => this.getValue(n.id, p.name));
+      const result2 = fn(...args2);
       if (this.hasReturn(fn)) {
-        n._returnCache = result;
+        n._returnCache = result2;
       }
       this.enqueueOutputs(n, "execOut");
       return;
@@ -18579,7 +18579,8 @@ var FluxCodexVertex = class _FluxCodexVertex {
       return;
     }
     if (n.category === "functions") {
-      console.log("n.category === functions ");
+      console.log("TRIGGER n.category === functions ");
+      n.accessObject = eval(n.accessObjectLiteral);
       if (n.fn === void 0) {
         n.fn = n.accessObject[n.fnName];
       }
@@ -18816,34 +18817,34 @@ var FluxCodexVertex = class _FluxCodexVertex {
     console.log("BEFORE COMPARE ");
     if (["math", "value", "compare"].includes(n.category)) {
       console.log("BEFORE COMPARE ");
-      let result;
+      let result2;
       switch (n.title) {
         case "Add":
-          result = this.getValue(nodeId, "a") + this.getValue(nodeId, "b");
+          result2 = this.getValue(nodeId, "a") + this.getValue(nodeId, "b");
           break;
         case "Sub":
-          result = this.getValue(nodeId, "a") - this.getValue(nodeId, "b");
+          result2 = this.getValue(nodeId, "a") - this.getValue(nodeId, "b");
           break;
         case "Mul":
-          result = this.getValue(nodeId, "a") * this.getValue(nodeId, "b");
+          result2 = this.getValue(nodeId, "a") * this.getValue(nodeId, "b");
           break;
         case "Div":
-          result = this.getValue(nodeId, "a") / this.getValue(nodeId, "b");
+          result2 = this.getValue(nodeId, "a") / this.getValue(nodeId, "b");
           break;
         case "Sin":
-          result = Math.sin(this.getValue(nodeId, "a"));
+          result2 = Math.sin(this.getValue(nodeId, "a"));
           break;
         case "Cos":
-          result = Math.cos(this.getValue(nodeId, "a"));
+          result2 = Math.cos(this.getValue(nodeId, "a"));
           break;
         case "Pi":
-          result = Math.PI;
+          result2 = Math.PI;
           break;
         case "A > B":
-          result = this.getValue(nodeId, "A") > this.getValue(nodeId, "B");
+          result2 = this.getValue(nodeId, "A") > this.getValue(nodeId, "B");
           break;
         case "A < B":
-          result = this.getValue(nodeId, "A") < this.getValue(nodeId, "B");
+          result2 = this.getValue(nodeId, "A") < this.getValue(nodeId, "B");
           break;
         case "A == B":
           let varA = this.getValue(nodeId, "A");
@@ -18853,9 +18854,9 @@ var FluxCodexVertex = class _FluxCodexVertex {
             console.log("TEST DEEP ");
             const r = this.deepEqual(varA, varB);
             console.log("TEST DEEP ", r);
-            result = r;
+            result2 = r;
           } else {
-            result = this.getValue(nodeId, "A") != this.getValue(nodeId, "B");
+            result2 = this.getValue(nodeId, "A") != this.getValue(nodeId, "B");
           }
           break;
         case "A != B":
@@ -18863,32 +18864,32 @@ var FluxCodexVertex = class _FluxCodexVertex {
           let varBN = this.getValue(nodeId, "B");
           if (typeof varAN == "object") {
             const r = this.deepEqual(varAN, varBN);
-            result = !r;
+            result2 = !r;
           } else {
-            result = this.getValue(nodeId, "A") != this.getValue(nodeId, "B");
+            result2 = this.getValue(nodeId, "A") != this.getValue(nodeId, "B");
           }
           break;
         case "A >= B":
-          result = this.getValue(nodeId, "A") >= this.getValue(nodeId, "B");
+          result2 = this.getValue(nodeId, "A") >= this.getValue(nodeId, "B");
           break;
         case "A <= B":
-          result = this.getValue(nodeId, "A") <= this.getValue(nodeId, "B");
+          result2 = this.getValue(nodeId, "A") <= this.getValue(nodeId, "B");
           break;
         case "GenRandInt":
           const min2 = +n.fields?.find((f) => f.key === "min")?.value || 0;
           const max2 = +n.fields?.find((f) => f.key === "max")?.value || 10;
-          result = Math.floor(Math.random() * (max2 - min2 + 1)) + min2;
+          result2 = Math.floor(Math.random() * (max2 - min2 + 1)) + min2;
           break;
         default:
-          result = void 0;
+          result2 = void 0;
       }
-      n._returnCache = result;
-      if (n.displayEl) n.displayEl.textContent = typeof result === "number" ? result.toFixed(3) : String(result);
+      n._returnCache = result2;
+      if (n.displayEl) n.displayEl.textContent = typeof result2 === "number" ? result2.toFixed(3) : String(result2);
     }
     this._execContext = null;
   }
-  getConnectedSource(nodeId, inputName) {
-    const link = this.links.find((l) => l.to.node === nodeId && l.to.pin === inputName);
+  getConnectedSource(nodeId2, inputName) {
+    const link = this.links.find((l) => l.to.node === nodeId2 && l.to.pin === inputName);
     if (!link) return null;
     return {
       node: this.nodes[link.from.node],
@@ -18921,27 +18922,27 @@ var FluxCodexVertex = class _FluxCodexVertex {
     }
     return entry;
   }
-  enqueueOutputs(n, pinName) {
-    this.links.filter((l) => l.from.node === n.id && l.from.pin === pinName && l.type === "action").forEach(
+  enqueueOutputs(n2, pinName) {
+    this.links.filter((l) => l.from.node === n2.id && l.from.pin === pinName && l.type === "action").forEach(
       (l) => setTimeout(() => {
         this.triggerNode(l.to.node);
       }, 2)
     );
   }
-  deleteNode(nodeId) {
-    const node2 = this.nodes[nodeId];
+  deleteNode(nodeId2) {
+    const node2 = this.nodes[nodeId2];
     if (!node2) return;
     this.links = this.links.filter((link) => {
-      if (link.from.node === nodeId || link.to.node === nodeId) {
+      if (link.from.node === nodeId2 || link.to.node === nodeId2) {
         const dom3 = document.getElementById(link.id);
         if (dom3) dom3.remove();
         return false;
       }
       return true;
     });
-    const dom2 = this.board.querySelector(`[data-id="${nodeId}"]`);
+    const dom2 = this.board.querySelector(`[data-id="${nodeId2}"]`);
     if (dom2) dom2.remove();
-    delete this.nodes[nodeId];
+    delete this.nodes[nodeId2];
     this.updateLinks();
   }
   bindGlobalListeners() {
@@ -19015,8 +19016,8 @@ var FluxCodexVertex = class _FluxCodexVertex {
   runGraph() {
     byId("app").style.opacity = 0.4;
     this.initEventNodes();
-    Object.values(this.nodes).forEach((n) => n._returnCache = void 0);
-    Object.values(this.nodes).filter((n) => n.category === "event" && n.title === "onLoad").forEach((n) => this.triggerNode(n.id));
+    Object.values(this.nodes).forEach((n2) => n2._returnCache = void 0);
+    Object.values(this.nodes).filter((n2) => n2.category === "event" && n2.title === "onLoad").forEach((n2) => this.triggerNode(n2.id));
   }
   compileGraph() {
     const bundle = {
@@ -19045,7 +19046,7 @@ var FluxCodexVertex = class _FluxCodexVertex {
     }
   }
   clearAllNodes() {
-    this.board.querySelectorAll(".node").forEach((n) => n.remove());
+    this.board.querySelectorAll(".node").forEach((n2) => n2.remove());
     this.nodes.length = 0;
     this.links.length = 0;
     this.state.selectedNode = null;
@@ -21211,7 +21212,7 @@ var MatrixEngineWGPU = class {
   createGlobalStuff() {
     this.bloomPass = {
       enabled: false,
-      setIntesity: (v) => {
+      setIntensity: (v) => {
       },
       setKnee: (v) => {
       },
@@ -22086,8 +22087,10 @@ var MatrixEngineWGPU = class {
     }
   };
   activateBloomEffect = () => {
-    this.bloomPass = new BloomPass(this.canvas.width, this.canvas.height, this.device, 1.5);
-    this.bloomPass.enabled = true;
+    if (this.bloomPass.enabled != true) {
+      this.bloomPass = new BloomPass(this.canvas.width, this.canvas.height, this.device, 1.5);
+      this.bloomPass.enabled = true;
+    }
   };
 };
 
