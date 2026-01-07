@@ -16,9 +16,8 @@ import {Editor} from "./tools/editor/editor.js";
 import MEMeshObjInstances from "./engine/instanced/mesh-obj-instances.js";
 import {BloomPass, fullscreenQuadWGSL} from "./engine/postprocessing/bloom.js";
 import {addRaycastsListener} from "./engine/raycast.js";
-import {physicsBodiesGenerator} from "./engine/generators/phisicsBodies.js";
+import {physicsBodiesGenerator, physicsBodiesGeneratorDeepPyramid, physicsBodiesGeneratorPyramid, physicsBodiesGeneratorTower, physicsBodiesGeneratorWall} from "./engine/generators/phisicsBodies.js";
 import {TextureCache} from "./engine/core-cache.js";
-import {physicsBodiesGeneratorWall} from "../src/engine/generators/phisicsBodies.js";
 
 /**
  * @description
@@ -81,8 +80,14 @@ export default class MatrixEngineWGPU {
       }
     }
 
-    this.physicsBodiesGenerator = physicsBodiesGenerator.bind(this);
-    this.physicsBodiesGeneratorWall = physicsBodiesGeneratorWall.bind(this);
+    // in case of optimisation
+    if(typeof options.dontUsePhysics == 'undefined') {
+      this.physicsBodiesGenerator = physicsBodiesGenerator.bind(this);
+      this.physicsBodiesGeneratorWall = physicsBodiesGeneratorWall.bind(this);
+      this.physicsBodiesGeneratorPyramid = physicsBodiesGeneratorPyramid.bind(this);
+      this.physicsBodiesGeneratorTower = physicsBodiesGeneratorTower.bind(this);
+      this.physicsBodiesGeneratorDeepPyramid = physicsBodiesGeneratorDeepPyramid.bind(this);
+    }
 
     if(typeof options.dontUsePhysics == 'undefined') {
       this.matrixAmmo = new MatrixAmmo();
@@ -206,9 +211,38 @@ export default class MatrixEngineWGPU {
   };
 
   createGlobalStuff() {
-
-    // test 
+    // OPTIMISATION
     this.textureCache = new TextureCache(this.device);
+    this._destroyQueue = new Set();
+    this.flushDestroyQueue = () => {
+      if(!this._destroyQueue.size) return;
+      this._destroyQueue.forEach(name => {
+        this.removeSceneObjectByName(name);
+      });
+      this._destroyQueue.clear();
+    };
+    this.destroyByPrefix = (prefix) => {
+      const toDestroy = [];
+      for(const obj of this.mainRenderBundle) {
+        if(obj.name.startsWith(prefix)) {
+          toDestroy.push(obj.name);
+        }
+      }
+      toDestroy.forEach(name =>
+        this._destroyQueue.add(name)
+      );
+    };
+    this.destroyBySufix = (sufix) => {
+      const toDestroy = [];
+      for(const obj of this.mainRenderBundle) {
+        if(obj.name.endsWith(sufix)) {
+          toDestroy.push(obj.name);
+        }
+      }
+      toDestroy.forEach(name =>
+        this._destroyQueue.add(name)
+      );
+    }
 
     // Just syntetic to help visual scripting part
     this.bloomPass = {

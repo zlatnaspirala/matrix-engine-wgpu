@@ -25,7 +25,7 @@ export var physicsPlayground = function() {
       downloadMeshes({
         cube: "./res/meshes/blender/cube.obj",
       }, onGround,
-        {scale: [20, 1, 20]})
+        {scale: [20, 0.01, 20]})
 
       // physicsPlayground.physicsBodiesGenerator(
       //   "standard",
@@ -39,17 +39,54 @@ export var physicsPlayground = function() {
       //   100
       // );
 
-      physicsPlayground.physicsBodiesGeneratorWall(
+      // physicsPlayground.physicsBodiesGeneratorWall(
+      //   "standard",
+      //   {x: -10, y: 1, z: -20},
+      //   {x: 0, y: 0, z: 0},
+      //   "res/textures/star1.png",
+      //   "cube",
+      //   "10x3",
+      //   true,
+      //   [1, 1, 1],
+      //   2,
+      //   100
+      // );
+
+      // physicsPlayground.physicsBodiesGeneratorPyramid(
+      //   "standard",
+      //   {x: 0, y: 1, z: -20},
+      //   {x: 0, y: 0, z: 0},
+      //   "./res/meshes/blender/cube.png",
+      //   "pyr",
+      //   6,
+      //   true,
+      //   [1, 1, 1],
+      //   2
+      // );
+
+      physicsPlayground.physicsBodiesGeneratorDeepPyramid(
         "standard",
-        {x: -10, y: 1, z: -20},
+        {x: 0, y: 1, z: -20},
         {x: 0, y: 0, z: 0},
         "./res/meshes/blender/cube.png",
-        "cube",
-        "10x3",
+        "deepPyr",
+        5,
         true,
         [1, 1, 1],
-        2
+        2,
+        200
       );
+      // physicsPlayground.physicsBodiesGeneratorTower(
+      //   "standard",
+      //   {x: 0, y: 0, z: -20},
+      //   {x: 0, y: 0, z: 0},
+      //   "./res/meshes/blender/cube.png",
+      //   "tower",
+      //   10,
+      //   true,
+      //   [1, 1, 1],
+      //   2
+      // );
 
     })
 
@@ -59,12 +96,12 @@ export var physicsPlayground = function() {
         app.cameras.WASD.pitch = -0.49;
         app.cameras.WASD.position[2] = 0;
         app.cameras.WASD.position[1] = 3.76;
-      }, 600)
+      }, 1000);
       physicsPlayground.addMeshObj({
-        position: {x: 0, y: -5, z: -10},
+        position: {x: 0, y: -3.5, z: -10},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
-        texturesPaths: ['./res/meshes/blender/cube.png'],
+        texturesPaths: ['res/icons/editor/chatgpt-gen-bg-inv.png'],
         name: 'ground',
         mesh: m.cube,
         physics: {

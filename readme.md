@@ -29,12 +29,11 @@ Published on npm as: **`matrix-engine-wgpu`**
 
 - ✔️ Support for 3D objects and scene transformations
 - ✔️ Ammo.js physics full integration
-- ✔️ Networking with Kurento/OpenVidu/Own middleware Nodejs -> frontend 
+- ✔️ Networking with Kurento/OpenVidu/Own middleware Nodejs -> frontend
 - ✔️ Bloom post processing
 - 🎯 Replicate matrix-engine (WebGL) features
 - 📦 Based on the `shadowMapping` sample from [webgpu-samples](https://webgpu.github.io/webgpu-samples/?sample=shadowMapping)
 - 🎯 Web GUI(online) Editor with Visual Scripting (Named: FlowCodexVertex) WIP
-
 
 ## FluxCodexVertex Web Editor 🚀 (since version 1.8.0)
 
@@ -44,7 +43,8 @@ EditorX has **two main parts**:
 - **Backend** (`./src/tools/editor/backend`)
 
 > **Before running anything**, install dependencies with `npm i`:
-> - in the **root** folder  
+>
+> - in the **root** folder
 > - and also inside `./src/tools/editor/backend`
 
 The backend is built using **Node.js** 🟢
@@ -56,7 +56,7 @@ The backend is built using **Node.js** 🟢
 - Editor creates and manages files (Windows tested only)
 - Scene container added
 - SceneObject property container added
-- Assets toolbar added (bottom panel)  
+- Assets toolbar added (bottom panel)
   - Add **GLB** or **OBJ** files from the asset toolbox by selecting them
 - Top menu for adding primitives (Cube / Sphere) with or without physics ⚙️
 - Integrated Visual Scripting system 🧠
@@ -65,7 +65,7 @@ The backend is built using **Node.js** 🟢
 
 ## Visual Scripting – Implemented Features ✅
 
-- Add **Math nodes**, **events / custom methods**, **variable popup**, **SceneObject access** 
+- Add **Math nodes**, **events / custom methods**, **variable popup**, **SceneObject access**
 - Get SceneObject → set position → bind `onTargetReach` events
 - Fetch, GetArray, forEach, Print, IF, Math, compare etc...
 - Custom func editor
@@ -82,7 +82,7 @@ The backend is built using **Node.js** 🟢
 ## ⚠️ Important Notes
 
 Visual Scripting is only available when running the engine **from source**  
-(not from `npm i matrix-engine-wgpu`).  
+(not from `npm i matrix-engine-wgpu`).
 
 You must clone or download the engine source from the **GitHub repository**.
 
@@ -131,11 +131,20 @@ All changes in graph must be saved manually/clicking for now 💾 (no autosave f
 
 - Destroy sceneObj:
   ```js
-  app.removeSceneObjectByName('Sphere1');
+  app.removeSceneObjectByName("Sphere1");
+  ```
+- Also interest for clearing physics body and render part:
+
+  ```js
+
+  app.destroyByPrefix("towers");
+  // OR
+  app.destroyBySufix("_001");
+  // Destroy objects become true after calling flushDestroyQueue function.
+  app.flushDestroyQueue();
   ```
 
 - Cleanly destroy the scene:
-
   ```js
   app.destroyProgram();
   ```
@@ -260,8 +269,8 @@ Small behavior object.
 - For now just one ocs0 object
   Everytime if called than updated (light.position[0] = light.behavior.setPath0())
   behavior.setOsc0(min, max, step);
-  app.lightContainer[0].behavior.osc0.on_maximum_value = function() {/_ what ever_/};
-  app.lightContainer[0].behavior.osc0.on_minimum_value = function() {/_ what ever_/};
+  app.lightContainer[0].behavior.osc0.on*maximum_value = function() {/* what ever*/};
+  app.lightContainer[0].behavior.osc0.on_minimum_value = function() {/* what ever\_/};
 
 Make light move by x.
 
@@ -295,25 +304,28 @@ material: {type: 'power'},
 ```
 
 Change only textures (no recreation of pipeline)
+
 ```js
-await app.mainRenderBundle[0].loadTex0(['res/icons/editor/chatgpt-gen-bg.png']);
+await app.mainRenderBundle[0].loadTex0(["res/icons/editor/chatgpt-gen-bg.png"]);
 app.mainRenderBundle[0].changeTexture(app.mainRenderBundle[0].texture0);
 ```
 
 ### Bloom post processing
-Activete with : 
+
+Activete with :
+
 ```js
- app.activateBloomEffect();
+app.activateBloomEffect();
 ```
 
 Manipulate with `app.bloomPass`:
- setKnee
- setIntensity
- setThreshold
- setBlurRadius
+setKnee
+setIntensity
+setThreshold
+setBlurRadius
 
- Fancy results: 
- <img src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/bloom.png?raw=true" />
+Fancy results:
+<img src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/bloom.png?raw=true" />
 
 ### Object Interaction (Raycasting)
 
@@ -641,32 +653,39 @@ Position will be emited for teams[0] and received for uniq scene obj name.
 Position will be emited for teams[1] and received for oposite (eg. enemy) uniq scene obj name.
 In this case toRemote is overrided (Don't pass it).
 Used for RPGMOG project.
+
 ```js
-mesh.position.teams[0] = [ connId0, connId1 ];
-mesh.position.teams[1] = [ connId2, connId3 ];
+mesh.position.teams[0] = [connId0, connId1];
+mesh.position.teams[1] = [connId2, connId3];
 
 // emiter in core engine file
-  if(this.teams.length > 0) if(this.teams[0].length > 0) app.net.send({
-    toRemote: this.teams[0], // default null remote conns
-    sceneName: this.netObject, // origin scene name to receive
-    netPos: {x: this.x, y: this.y, z: this.z},
-  });
-  if(this.teams.length > 0) if(this.teams[1].length > 0) app.net.send({
-    toRemote: this.teams[1], // default null remote conns
-    remoteName: this.remoteName, // to enemy players
-    sceneName: this.netObject, // now not important
-    netPos: {x: this.x, y: this.y, z: this.z},
-  });
+if (this.teams.length > 0)
+  if (this.teams[0].length > 0)
+    app.net.send({
+      toRemote: this.teams[0], // default null remote conns
+      sceneName: this.netObject, // origin scene name to receive
+      netPos: {x: this.x, y: this.y, z: this.z},
+    });
+if (this.teams.length > 0)
+  if (this.teams[1].length > 0)
+    app.net.send({
+      toRemote: this.teams[1], // default null remote conns
+      remoteName: this.remoteName, // to enemy players
+      sceneName: this.netObject, // now not important
+      netPos: {x: this.x, y: this.y, z: this.z},
+    });
 ```
 
 ## About URLParams
 
 Buildin Url Param check for multiLang. MultiLang feature is also buildin options.
 
- Load multilang json file data.
- - ?lang=en
+Load multilang json file data.
+
+- ?lang=en
 
 Access from code:
+
 ```js
 urlQuery.lang;
 ```
@@ -716,6 +735,7 @@ This is static file storage.
 ## MOBA game Beta version done
 
 Features done:
+
 - Navigation mesh
 - Hero class
 - GLB animations
@@ -772,37 +792,36 @@ Include the following notice (with working link) in any distributed version or a
 ## Web Editor FluxCodexVertex from version [1.8.0]
 
 Run editor
+
 ```js
 npm run editorx
 ```
+
 Navigate to `matrix-engine.html` it is landing page for editor.
 After create new project or load project page will be redirect to
 `./public/<PROJECT_NAME>.html`
 Source location : `./projects/<PROJECT_NAME>`
 
-
 Features :
- - Create new project/ load project - only on landing page
- - Create cubeMesh
- - Properties box for selected sceneObj
- - Events system (Create func and attach to sceneObj)
- - Resource navigation
- - Visual Scripting
+
+- Create new project/ load project - only on landing page
+- Create cubeMesh
+- Properties box for selected sceneObj
+- Events system (Create func and attach to sceneObj)
+- Resource navigation
+- Visual Scripting
 
   <img width="860" height="640" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/visual-scripting-math.png?raw=true" />
 
 @Note
-License for fluxCodexVertex.js (MPL 2.0) 
+License for fluxCodexVertex.js (MPL 2.0)
 Affect only this file! Just leave comment licence part in header of file.
 
-
-YT video promotion : 
-
+YT video promotion :
 
 About 'In fly' regime:
 Editor can be activated even without backend node but in that case no
 saves.
-
 
 ## License && Credits
 
@@ -810,8 +829,7 @@ saves.
 
 You may use, modify, and sell projects based on this code — just keep this notice and included references intact (whole licence paragraph).
 
-You need just to copy paste this text to about form on your web page or any other type of app.
----
+## You need just to copy paste this text to about form on your web page or any other type of app.
 
 ### Attribution & Credits
 
@@ -841,11 +859,11 @@ You need just to copy paste this text to about form on your web page or any othe
 
   'Ruined rock fence' (https://skfb.ly/6RLwN) by VladNeko is licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/).
 
-  // test 
+  // test
   "fantasy rock" (https://skfb.ly/oHXAz) by duckcracker02 is licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/).
 
   "Fantasy Rock" (https://skfb.ly/oHZSq) by lalune is licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/).
-  
+
   Invertory images
   https://djinnbestiary.itch.io/ancient-oddities-vol-1-13-free-potions
 

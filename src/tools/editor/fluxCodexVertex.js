@@ -1341,7 +1341,7 @@ export default class FluxCodexVertex {
         category: "action",
         inputs: [
           {name: "exec", type: "action"},
-          {name: "physicsGeometry", type: "string", default: "cube"},
+          {name: "physicsGeometry", type: "string", default: "Cube"},
           {name: "texturePath", type: "string", default: "res/textures/default.png"},
           {name: "position", type: "object"}
         ],
@@ -2979,7 +2979,7 @@ export default class FluxCodexVertex {
 
         if(!createdField.value) {
           console.log('!INTERNAL TIMER no visual part. ONCE!');
-          
+
           // app.matrixSounds.createAudio(key, src, clones);
           // createdField.value = true;
         }
