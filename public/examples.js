@@ -768,7 +768,7 @@ var physicsPlayground = function () {
         name: 'cube2',
         mesh: m.cube,
         physics: {
-          enabled: true,
+          enabled: false,
           geometry: "Cube"
         },
         raycast: {
@@ -818,14 +818,25 @@ var physicsPlayground = function () {
       physicsPlayground.lightContainer[0].position[1] = 9;
       let mybodycube = app.matrixAmmo.getBodyByName('cube1');
       let mybodycube2 = app.matrixAmmo.getBodyByName('cube2');
-      const pivotA = new Ammo.btVector3(0, 0, 0); // door local pivot
-      const pivotB = new Ammo.btVector3(0, 0, 0); // frame local pivot
 
-      const axisA = new Ammo.btVector3(0, 1, 0); // Y axis
-      const axisB = new Ammo.btVector3(0, 1, 0);
-      const hinge = new Ammo.btHingeConstraint(mybodycube, mybodycube2, pivotA, pivotB, axisA, axisB, true);
-      hinge.setLimit(-Math.PI / 2, Math.PI / 2); // 90° open
-      physicsPlayground.matrixAmmo.dynamicsWorld.addConstraint(hinge, true);
+      // const pivotA = new Ammo.btVector3(0, 0, 0); // door local pivot
+      // const pivotB = new Ammo.btVector3(0, 0, 0); // frame local pivot
+
+      // const axisA = new Ammo.btVector3(0, 1, 0); // Y axis
+      // const axisB = new Ammo.btVector3(0, 1, 0);
+
+      // const hinge = new Ammo.btHingeConstraint(
+      //   mybodycube,
+      //   mybodycube2,
+      //   pivotA,
+      //   pivotB,
+      //   axisA,
+      //   axisB,
+      //   true
+      // );
+
+      // hinge.setLimit(-Math.PI / 2, Math.PI / 2); // 90° open
+      // physicsPlayground.matrixAmmo.dynamicsWorld.addConstraint(hinge, true);
       //  app.matrixAmmo.getBodyByName(`CubePhysics${x}`).setAngularVelocity(new Ammo.btVector3(
       //      randomFloatFromTo(3, 12), 9, 9
       // ))
@@ -839,8 +850,8 @@ var physicsPlayground = function () {
         // ------------------------------------------------------
 
         // ------------------------------------------------------
-        // const impulse = new Ammo.btVector3(0, 5, -10);
-        // body.applyCentralImpulse(impulse);
+        const impulse = new Ammo.btVector3(0, 5, 0);
+        body.applyCentralImpulse(impulse);
         // ------------------------------------------------------
 
         // ------------------------------------------------------
@@ -849,14 +860,20 @@ var physicsPlayground = function () {
         // ------------------------------------------------------
 
         // ------------------------------------------------------
-        const dir = e.detail.rayDirection;
-        const strength = 20;
-        const impulse = new Ammo.btVector3(dir[0] * strength, dir[1] * strength, dir[2] * strength);
-        body.applyCentralImpulse(impulse);
-        // ------------------------------------------------------
+        // const dir = e.detail.rayDirection;
+        // const strength = 20;
 
-        // ------------------------------------------------------
-        body.activate(true);
+        // const impulse = new Ammo.btVector3(
+        //   dir[0] * strength,
+        //   dir[1] * strength,
+        //   dir[2] * strength
+        // );
+
+        // body.applyCentralImpulse(impulse);
+        // // ------------------------------------------------------
+
+        // // ------------------------------------------------------
+        // body.activate(true);
         // ------------------------------------------------------
 
         //
@@ -23424,7 +23441,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
         sceneData.set([this.globalAmbient[0], this.globalAmbient[1], this.globalAmbient[2], 0.0], 40);
         device.queue.writeBuffer(this.sceneUniformBuffer, 0, sceneData.buffer, sceneData.byteOffset, sceneData.byteLength);
       };
-      this.getModelMatrix = pos => {
+      this.getModelMatrix = (pos, useScale = false) => {
         let modelMatrix = _wgpuMatrix.mat4.identity();
         _wgpuMatrix.mat4.translate(modelMatrix, [pos.x, pos.y, pos.z], modelMatrix);
         if (this.itIsPhysicsBody) {
@@ -23436,7 +23453,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
         }
         // Apply scale if you have it, e.g.:
         // console.warn('what is csle comes from user level not glb ', this.scale)
-        if (this.glb || this.objAnim) {
+        if (this.glb || this.objAnim || useScale == true) {
           _wgpuMatrix.mat4.scale(modelMatrix, [this.scale[0], this.scale[1], this.scale[2]], modelMatrix);
         }
         return modelMatrix;
@@ -27646,7 +27663,7 @@ class MEMeshObj extends _materials.default {
         sceneData.set([this.globalAmbient[0], this.globalAmbient[1], this.globalAmbient[2], 0.0], 40);
         device.queue.writeBuffer(this.sceneUniformBuffer, 0, sceneData.buffer, sceneData.byteOffset, sceneData.byteLength);
       };
-      this.getModelMatrix = pos => {
+      this.getModelMatrix = (pos, useScale = false) => {
         let modelMatrix = _wgpuMatrix.mat4.identity();
         _wgpuMatrix.mat4.translate(modelMatrix, [pos.x, pos.y, pos.z], modelMatrix);
         if (this.itIsPhysicsBody) {
@@ -27656,12 +27673,13 @@ class MEMeshObj extends _materials.default {
           _wgpuMatrix.mat4.rotateY(modelMatrix, this.rotation.getRotY(), modelMatrix);
           _wgpuMatrix.mat4.rotateZ(modelMatrix, this.rotation.getRotZ(), modelMatrix);
         }
-        // Apply scale if you have it, e.g.:
         // console.warn('what is csle comes from user level not glb ', this.scale)
         if (this.glb || this.objAnim) {
           // mat4.scale(modelMatrix, [this.scale[0], this.scale[1], this.scale[2]], modelMatrix);
         }
-        _wgpuMatrix.mat4.scale(modelMatrix, [this.scale[0], this.scale[1], this.scale[2]], modelMatrix);
+        if (useScale == true) {
+          _wgpuMatrix.mat4.scale(modelMatrix, [this.scale[0], this.scale[1], this.scale[2]], modelMatrix);
+        }
         return modelMatrix;
       };
 
@@ -27721,7 +27739,7 @@ class MEMeshObj extends _materials.default {
   updateModelUniformBuffer = () => {
     if (this.done == false) return;
     // Per-object model matrix only
-    const modelMatrix = this.getModelMatrix(this.position);
+    const modelMatrix = this.getModelMatrix(this.position, true);
     this.device.queue.writeBuffer(this.modelUniformBuffer, 0, modelMatrix.buffer, modelMatrix.byteOffset, modelMatrix.byteLength);
   };
   createGPUBuffer(dataArray, usage) {

@@ -1365,7 +1365,7 @@ let myDom = exports.myDom = {
   }
 };
 
-},{"../../../src/engine/utils.js":44,"./html-content.js":1}],3:[function(require,module,exports){
+},{"../../../src/engine/utils.js":46,"./html-content.js":1}],3:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -2022,7 +2022,8 @@ let application = exports.application = new _world.default({
       setTimeout(() => {
         app.dices.activateAllDicesPhysics();
       }, 1000);
-      console.log('se camera position 3');
+
+      // console.log('se camera position 3')
       app.cameras.WASD.yaw = 0;
       app.cameras.WASD.pitch = 0;
       app.cameras.WASD.position[2] = 0;
@@ -2148,7 +2149,7 @@ let application = exports.application = new _world.default({
 });
 window.app = application;
 
-},{"./examples/games/jamb/jamb.js":2,"./src/engine/loader-obj.js":36,"./src/engine/raycast.js":43,"./src/engine/utils.js":44,"./src/world.js":67}],4:[function(require,module,exports){
+},{"./examples/games/jamb/jamb.js":2,"./src/engine/loader-obj.js":36,"./src/engine/raycast.js":45,"./src/engine/utils.js":46,"./src/world.js":75}],4:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -19944,6 +19945,7 @@ Object.defineProperty(exports, "__esModule", {
 exports.en = void 0;
 const en = exports.en = {
   "play": "Play",
+  "sendmsg": "Send message",
   "changeTheme": "Theme dark/light",
   "yes": "Yes",
   "no": "No",
@@ -19983,6 +19985,7 @@ const en = exports.en = {
   "aboutword": "About",
   "about": "<i>Jamb 3d deluxe</i> is a modern 3D dice game built entirely with MatrixEngineWGPU, a high-performance WebGPU-based rendering engine developed for creating interactive graphics directly in the browser. The game delivers smooth visuals, realistic dice physics, and an engaging user experience — all without requiring any plugins or installations. \n This project is powered by open technologies and is designed to be lightweight, fast, and highly customizable. It’s a great example of how WebGPU can be used for real-time interactive content. \n 🔗 Download / Try it: \n github.com/zlatnaspirala/matrix-engine-wgpu \n 🛠 License: \n The core engine and the Jamb 3d deluxe project are released under the GPL v3 license, making them free and open-source for both personal and commercial use — as long as you respect the terms of the license. \n Whether you're a developer, gamer, or enthusiast, Jamb 3d deluxe is a fun way to experience the potential of modern browser-based 3D technology. <img width='320' height='320' src='https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/public/res/icons/512.png?raw=true' />",
   "letthegame": "Let the game begin!",
+  "leaderboard": "Leaderboard",
   "about_": "About",
   "next": "Next",
   "back": "Back",
@@ -20000,7 +20003,8 @@ const en = exports.en = {
   "erika": "Erika moves like a shadow: quiet, precise and watchful. She carries one dark arrow — simple, deadly and personal.",
   "arissa": "Arissa hides her power behind calm eyes and empty hands. No blade or staff—only the swirling dark orbs she conjures when the fight begins.",
   "gameplayused": "Forest Of Hollow Blood for now have only one channel for gameplay. Please wait for current party end...",
-  "nogold": "Not enough gold!"
+  "nogold": "Not enough gold!",
+  "invertorysecret": "Corona Ignifera magic secret Sol Corona,Flamma Crystal\n  Aqua Sanctum magic secret Mare Pearl,Luna Gemma\n Umbra Silens magic secret Umbra Vellum,Noctis Band\n Terra Fortis magic secret Terra Clavis,Ardent Vine,Silva Heart\n Ventus Aegis magic secret Ventus Pluma,Ignifur Cape\n Ferrum Lux magic secret Ferrum Anulus,Lux Feather\n Sanguis Vita magic secret Sanguis Orb,Vita Flos \n Tenebris Vox magic secret Tenebris Fang,Vox Chime \n Aether Gladius magic secret Gladius Ignis,Aether Scale \n Fulgur Mortis magic secret Fulgur Stone,Mortis Bone \n Corona Umbra magic secret Umbra Silens,Corona Ignifera,Tenebris Vox \n Terra Sanctum magic secret Terra Fortis,Aqua Sanctum \n Aether Fortis magic secret Aether Gladius,Ferrum Lux \n  Vita Mindza magic secret Sanguis Vita,Ventus Aegis \n Mortis Ultima magic secret Fulgur Mortis,Corona Umbra,Aether Fortis"
 };
 
 },{}],20:[function(require,module,exports){
@@ -20417,7 +20421,7 @@ class MEBall {
 }
 exports.default = MEBall;
 
-},{"../shaders/shaders":59,"./engine":31,"./matrix-class":41,"wgpu-matrix":18}],21:[function(require,module,exports){
+},{"../shaders/shaders":61,"./engine":31,"./matrix-class":41,"wgpu-matrix":18}],21:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -20455,7 +20459,7 @@ class Behavior {
 }
 exports.default = Behavior;
 
-},{"./utils":44}],22:[function(require,module,exports){
+},{"./utils":46}],22:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -20880,7 +20884,7 @@ class MECube {
 }
 exports.default = MECube;
 
-},{"../shaders/shaders":59,"./engine":31,"./matrix-class":41,"wgpu-matrix":18}],23:[function(require,module,exports){
+},{"../shaders/shaders":61,"./engine":31,"./matrix-class":41,"wgpu-matrix":18}],23:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -21043,7 +21047,7 @@ class HPBarEffect {
 }
 exports.HPBarEffect = HPBarEffect;
 
-},{"../../shaders/energy-bars/energy-bar-shader.js":47,"wgpu-matrix":18}],24:[function(require,module,exports){
+},{"../../shaders/energy-bars/energy-bar-shader.js":49,"wgpu-matrix":18}],24:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -21262,7 +21266,7 @@ class FlameEmitter {
 }
 exports.FlameEmitter = FlameEmitter;
 
-},{"../../shaders/flame-effect/flame-instanced":48,"../utils":44,"wgpu-matrix":18}],25:[function(require,module,exports){
+},{"../../shaders/flame-effect/flame-instanced":50,"../utils":46,"wgpu-matrix":18}],25:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -21433,7 +21437,7 @@ class FlameEffect {
 }
 exports.FlameEffect = FlameEffect;
 
-},{"../../shaders/flame-effect/flameEffect":49,"wgpu-matrix":18}],26:[function(require,module,exports){
+},{"../../shaders/flame-effect/flameEffect":51,"wgpu-matrix":18}],26:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -21674,7 +21678,7 @@ class GenGeoTexture {
 }
 exports.GenGeoTexture = GenGeoTexture;
 
-},{"../../shaders/standalone/geo.tex.js":61,"../geometry-factory.js":32,"wgpu-matrix":18}],27:[function(require,module,exports){
+},{"../../shaders/standalone/geo.tex.js":63,"../geometry-factory.js":32,"wgpu-matrix":18}],27:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -21931,7 +21935,7 @@ class GenGeoTexture2 {
 }
 exports.GenGeoTexture2 = GenGeoTexture2;
 
-},{"../../shaders/standalone/geo.tex.js":61,"../geometry-factory.js":32,"wgpu-matrix":18}],28:[function(require,module,exports){
+},{"../../shaders/standalone/geo.tex.js":63,"../geometry-factory.js":32,"wgpu-matrix":18}],28:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -22121,7 +22125,7 @@ class GenGeo {
 }
 exports.GenGeo = GenGeo;
 
-},{"../../shaders/standalone/geo.instanced.js":60,"../geometry-factory.js":32,"wgpu-matrix":18}],29:[function(require,module,exports){
+},{"../../shaders/standalone/geo.instanced.js":62,"../geometry-factory.js":32,"wgpu-matrix":18}],29:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -22284,7 +22288,7 @@ class MANABarEffect {
 }
 exports.MANABarEffect = MANABarEffect;
 
-},{"../../shaders/energy-bars/energy-bar-shader.js":47,"wgpu-matrix":18}],30:[function(require,module,exports){
+},{"../../shaders/energy-bars/energy-bar-shader.js":49,"wgpu-matrix":18}],30:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -22427,7 +22431,7 @@ class PointerEffect {
 }
 exports.PointerEffect = PointerEffect;
 
-},{"../../shaders/standalone/pointer.effect.js":62,"wgpu-matrix":18}],31:[function(require,module,exports){
+},{"../../shaders/standalone/pointer.effect.js":64,"wgpu-matrix":18}],31:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -22524,6 +22528,21 @@ class WASDCamera extends CameraBase {
   pitch = 0;
   // The camera absolute yaw angle
   yaw = 0;
+  setPitch = pitch => {
+    this.pitch = pitch;
+  };
+  setYaw = yaw => {
+    this.yaw = yaw;
+  };
+  setX = x => {
+    this.position[0] = x;
+  };
+  setY = y => {
+    this.position[1] = y;
+  };
+  setZ = z => {
+    this.position[2] = z;
+  };
 
   // The movement veloicty readonly
   velocity_ = _wgpuMatrix.vec3.create();
@@ -22792,11 +22811,9 @@ function createInputHandler(window, canvas) {
       case 'KeyD':
         digital.right = value;
         break;
-      case 'Space':
+      case 'KeyV':
         digital.up = value;
         break;
-      case 'ShiftLeft':
-      case 'ControlLeft':
       case 'KeyC':
         digital.down = value;
         break;
@@ -22970,7 +22987,7 @@ class RPGCamera extends CameraBase {
 }
 exports.RPGCamera = RPGCamera;
 
-},{"./utils":44,"wgpu-matrix":18}],32:[function(require,module,exports){
+},{"./utils":46,"wgpu-matrix":18}],32:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -23809,7 +23826,7 @@ class MaterialsInstanced {
 }
 exports.default = MaterialsInstanced;
 
-},{"../../shaders/fragment.wgsl":51,"../../shaders/fragment.wgsl.metal":52,"../../shaders/fragment.wgsl.normalmap":53,"../../shaders/fragment.wgsl.pong":54,"../../shaders/fragment.wgsl.power":55,"../../shaders/instanced/fragment.instanced.wgsl":56}],34:[function(require,module,exports){
+},{"../../shaders/fragment.wgsl":53,"../../shaders/fragment.wgsl.metal":54,"../../shaders/fragment.wgsl.normalmap":55,"../../shaders/fragment.wgsl.pong":56,"../../shaders/fragment.wgsl.power":57,"../../shaders/instanced/fragment.instanced.wgsl":58}],34:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -24798,7 +24815,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
 }
 exports.default = MEMeshObjInstances;
 
-},{"../../shaders/fragment.video.wgsl":50,"../../shaders/instanced/vertex.instanced.wgsl":57,"../effects/energy-bar":23,"../effects/flame":25,"../effects/flame-emmiter":24,"../effects/gen":28,"../effects/gen-tex":26,"../effects/gen-tex2":27,"../effects/mana-bar":29,"../effects/pointerEffect":30,"../loaders/bvh-instaced":37,"../matrix-class":41,"../utils":44,"./materials-instanced":33,"wgpu-matrix":18}],35:[function(require,module,exports){
+},{"../../shaders/fragment.video.wgsl":52,"../../shaders/instanced/vertex.instanced.wgsl":59,"../effects/energy-bar":23,"../effects/flame":25,"../effects/flame-emmiter":24,"../effects/gen":28,"../effects/gen-tex":26,"../effects/gen-tex2":27,"../effects/mana-bar":29,"../effects/pointerEffect":30,"../loaders/bvh-instaced":37,"../matrix-class":41,"../utils":46,"./materials-instanced":33,"wgpu-matrix":18}],35:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -24809,6 +24826,7 @@ var _wgpuMatrix = require("wgpu-matrix");
 var _vertexShadow = require("../shaders/vertexShadow.wgsl");
 var _behavior = _interopRequireDefault(require("./behavior"));
 var _vertexShadowInstanced = require("../shaders/instanced/vertexShadow.instanced.wgsl");
+var _utils = require("./utils");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 /**
  * @description
@@ -24817,6 +24835,7 @@ function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e
  * @email zlatnaspirala@gmail.com
  */
 class SpotLight {
+  name;
   camera;
   inputHandler;
   position;
@@ -24833,7 +24852,11 @@ class SpotLight {
   innerCutoff;
   outerCutoff;
   spotlightUniformBuffer;
-  constructor(camera, inputHandler, device, position = _wgpuMatrix.vec3.create(0, 10, -20), target = _wgpuMatrix.vec3.create(0, 0, -20), fov = 45, aspect = 1.0, near = 0.1, far = 200) {
+  constructor(camera, inputHandler, device, indexx, position = _wgpuMatrix.vec3.create(0, 10, -20), target = _wgpuMatrix.vec3.create(0, 0, -20), fov = 45, aspect = 1.0, near = 0.1, far = 200) {
+    this.name = "light" + indexx;
+    this.getName = () => {
+      return "light" + indexx;
+    };
     this.fov = fov;
     this.aspect = aspect;
     this.near = near;
@@ -24923,8 +24946,6 @@ class SpotLight {
       });
       return this.shadowBindGroupContainer[index];
     };
-
-    // test
     this.getShadowBindGroup_bones = index => {
       if (this.shadowBindGroup[index]) {
         return this.shadowBindGroup[index];
@@ -25075,16 +25096,53 @@ class SpotLight {
   }
   getLightDataBuffer() {
     const m = this.viewProjMatrix;
-    return new Float32Array([...this.position, 0.0, ...this.direction, 0.0, this.innerCutoff, this.outerCutoff, this.intensity, 0.0, ...this.color, 0.0, this.range, this.ambientFactor, this.shadowBias,
-    // <<--- use shadowBias
-    0.0,
-    // keep padding
-    ...m]);
+    return new Float32Array([...this.position, 0.0, ...this.direction, 0.0, this.innerCutoff, this.outerCutoff, this.intensity, 0.0, ...this.color, 0.0, this.range, this.ambientFactor, this.shadowBias, 0.0, ...m]);
   }
+
+  // Setters
+  setPosX = x => {
+    this.position[0] = x;
+  };
+  setPosY = y => {
+    this.position[1] = y;
+  };
+  setPosZ = z => {
+    this.position[2] = z;
+  };
+  setInnerCutoff = innerCutoff => {
+    this.innerCutoff = innerCutoff;
+  };
+  setOuterCutoff = outerCutoff => {
+    this.outerCutoff = outerCutoff;
+  };
+  setIntensity = intensity => {
+    this.intensity = intensity;
+  };
+  setColor = color => {
+    this.color = color;
+  };
+  setColorR = colorR => {
+    this.color[0] = colorR;
+  };
+  setColorB = colorB => {
+    this.color[1] = colorB;
+  };
+  setColorG = colorG => {
+    this.color[2] = colorG;
+  };
+  setRange = range => {
+    this.range = range;
+  };
+  setAmbientFactor = ambientFactor => {
+    this.ambientFactor = ambientFactor;
+  };
+  setShadowBias = shadowBias => {
+    this.shadowBias = shadowBias;
+  };
 }
 exports.SpotLight = SpotLight;
 
-},{"../shaders/instanced/vertexShadow.instanced.wgsl":58,"../shaders/vertexShadow.wgsl":65,"./behavior":21,"wgpu-matrix":18}],36:[function(require,module,exports){
+},{"../shaders/instanced/vertexShadow.instanced.wgsl":60,"../shaders/vertexShadow.wgsl":67,"./behavior":21,"./utils":46,"wgpu-matrix":18}],36:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -26225,6 +26283,18 @@ class BVHPlayer extends _meshObj.default {
     // ✅ store directly as typed array (one big contiguous Float32Array)
     this.inverseBindMatrices = invBindArray;
   }
+  playAnimationByIndex = animationIndex => {
+    this.glb.animationIndex = animationIndex;
+  };
+  playAnimationByName = animationName => {
+    const animations = this.glb.glbJsonData.animations;
+    const index = animations.findIndex(anim => anim.name === animationName);
+    if (index === -1) {
+      console.warn(`Animation '${animationName}' not found`);
+      return;
+    }
+    this.glb.animationIndex = index;
+  };
   getNumberOfFramesCurAni() {
     let anim = this.glb.glbJsonData.animations[this.glb.animationIndex];
     const sampler = anim.samplers[0];
@@ -27310,6 +27380,24 @@ class Materials {
       });
     }
   }
+
+  /**
+  * Change ONLY base color texture (binding = 3)
+  * Does NOT rebuild pipeline or layout
+  */
+  changeTexture(newTexture) {
+    // Accept GPUTexture OR GPUTextureView
+    if (newTexture instanceof GPUTexture) {
+      this.texture0 = newTexture;
+    } else {
+      this.texture0 = {
+        createView: () => newTexture
+      };
+    }
+    this.isVideo = false;
+    // Recreate bind group only
+    this.createBindGroupForRender();
+  }
   getMaterial() {
     // console.log('Material TYPE:', this.material.type);
     if (this.material.type == 'standard') {
@@ -27710,7 +27798,7 @@ class Materials {
 }
 exports.default = Materials;
 
-},{"../shaders/fragment.wgsl":51,"../shaders/fragment.wgsl.metal":52,"../shaders/fragment.wgsl.normalmap":53,"../shaders/fragment.wgsl.pong":54,"../shaders/fragment.wgsl.power":55}],41:[function(require,module,exports){
+},{"../shaders/fragment.wgsl":53,"../shaders/fragment.wgsl.metal":54,"../shaders/fragment.wgsl.normalmap":55,"../shaders/fragment.wgsl.pong":56,"../shaders/fragment.wgsl.power":57}],41:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -27732,7 +27820,7 @@ class Position {
     this.netObject = null;
     this.toRemote = [];
     this.teams = [];
-    this.netTolerance = 1;
+    this.netTolerance = 3;
     this.netTolerance__ = 0;
     if (typeof x == 'undefined') x = 0;
     if (typeof y == 'undefined') y = 0;
@@ -27750,36 +27838,45 @@ class Position {
     this.thrust = 0.01;
     return this;
   }
-  setSpeed(n) {
+  getSpeed = () => {
+    return this.thrust;
+  };
+  setSpeed = n => {
     if (typeof n === 'number') {
       this.thrust = n;
     } else {
       console.log('Description: arguments (w, h) must be type of number.');
     }
-  }
+  };
   translateByX(x) {
+    if (parseFloat(x) == this.targetX) return;
     this.inMove = true;
     this.targetX = parseFloat(x);
   }
   translateByY(y) {
+    if (parseFloat(y) == this.targetY) return;
     this.inMove = true;
     this.targetY = parseFloat(y);
   }
   translateByZ(z) {
+    if (parseFloat(z) == this.targetZ) return;
     this.inMove = true;
     this.targetZ = parseFloat(z);
   }
   translateByXY(x, y) {
+    if (parseFloat(y) == this.targetY && parseFloat(x) == this.targetX) return;
     this.inMove = true;
     this.targetX = parseFloat(x);
     this.targetY = parseFloat(y);
   }
   translateByXZ(x, z) {
+    if (parseFloat(z) == this.targetZ && parseFloat(x) == this.targetX) return;
     this.inMove = true;
     this.targetX = parseFloat(x);
     this.targetZ = parseFloat(z);
   }
   translateByYZ(y, z) {
+    if (parseFloat(y) == this.targetY && parseFloat(z) == this.targetZ) return;
     this.inMove = true;
     this.targetY = parseFloat(y);
     this.targetZ = parseFloat(z);
@@ -27971,24 +28068,54 @@ class Rotation {
     // not in use good for exstend logic
     this.matrixRotation = null;
   }
-  toDegree() {
+  setRotate = (x, y, z) => {
+    this.rotationSpeed = {
+      x: x,
+      y: y,
+      z: z
+    };
+  };
+  setRotateX = x => {
+    this.rotationSpeed.x = x;
+  };
+  setRotateY = y => {
+    this.rotationSpeed.y = y;
+  };
+  setRotateZ = z => {
+    this.rotationSpeed.z = z;
+  };
+  setRotation = (x, y, z) => {
+    this.x = x;
+    this.y = y;
+    this.z = z;
+  };
+  setRotationX = x => {
+    this.x = x;
+  };
+  setRotationY = y => {
+    this.y = y;
+  };
+  setRotationZ = z => {
+    this.z = z;
+  };
+  toDegree = () => {
     /*
     heading = atan2(y * sin(angle)- x * z * (1 - cos(angle)) , 1 - (y2 + z2 ) * (1 - cos(angle)))
     attitude = asin(x * y * (1 - cos(angle)) + z * sin(angle))
     bank = atan2(x * sin(angle)-y * z * (1 - cos(angle)) , 1 - (x2 + z2) * (1 - cos(angle)))
     */
     return [(0, _utils.radToDeg)(this.axis.x), (0, _utils.radToDeg)(this.axis.y), (0, _utils.radToDeg)(this.axis.z)];
-  }
-  toDegreeX() {
+  };
+  toDegreeX = () => {
     return Math.cos((0, _utils.radToDeg)(this.axis.x) / 2);
-  }
-  toDegreeY() {
+  };
+  toDegreeY = () => {
     return Math.cos((0, _utils.radToDeg)(this.axis.z) / 2);
-  }
-  toDegreeZ() {
+  };
+  toDegreeZ = () => {
     return Math.cos((0, _utils.radToDeg)(this.axis.y) / 2);
-  }
-  getRotX() {
+  };
+  getRotX = () => {
     if (this.rotationSpeed.x == 0) {
       if (this.netx != this.x && this.emitX) {
         app.net.send({
@@ -28003,8 +28130,8 @@ class Rotation {
       this.x = this.x + this.rotationSpeed.x * 0.001;
       return (0, _utils.degToRad)(this.x);
     }
-  }
-  getRotY() {
+  };
+  getRotY = () => {
     if (this.rotationSpeed.y == 0) {
       if (this.nety != this.y && this.emitY) {
         // ---------------------------------------
@@ -28030,15 +28157,14 @@ class Rotation {
           });
           this.nety = this.y;
         }
-        //-------------------------------------------
       }
       return (0, _utils.degToRad)(this.y);
     } else {
       this.y = this.y + this.rotationSpeed.y * 0.001;
       return (0, _utils.degToRad)(this.y);
     }
-  }
-  getRotZ() {
+  };
+  getRotZ = () => {
     if (this.rotationSpeed.z == 0) {
       if (this.netz != this.z && this.emitZ) {
         app.net.send({
@@ -28053,11 +28179,11 @@ class Rotation {
       this.z = this.z + this.rotationSpeed.z * 0.001;
       return (0, _utils.degToRad)(this.z);
     }
-  }
+  };
 }
 exports.Rotation = Rotation;
 
-},{"./utils":44}],42:[function(require,module,exports){
+},{"./utils":46}],42:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -28631,11 +28757,11 @@ class MEMeshObj extends _materials.default {
           _wgpuMatrix.mat4.rotateY(modelMatrix, this.rotation.getRotY(), modelMatrix);
           _wgpuMatrix.mat4.rotateZ(modelMatrix, this.rotation.getRotZ(), modelMatrix);
         }
-        // Apply scale if you have it, e.g.:
         // console.warn('what is csle comes from user level not glb ', this.scale)
         if (this.glb || this.objAnim) {
-          _wgpuMatrix.mat4.scale(modelMatrix, [this.scale[0], this.scale[1], this.scale[2]], modelMatrix);
+          // mat4.scale(modelMatrix, [this.scale[0], this.scale[1], this.scale[2]], modelMatrix);
         }
+        // mat4.scale(modelMatrix, [this.scale[0], this.scale[1], this.scale[2]], modelMatrix);
         return modelMatrix;
       };
 
@@ -28677,7 +28803,7 @@ class MEMeshObj extends _materials.default {
           code: this.isVideo == true ? _fragmentVideo.fragmentVideoWGSL : this.getMaterial()
         }),
         targets: [{
-          format: this.presentationFormat
+          format: 'rgba16float' //this.presentationFormat,
         }],
         constants: {
           shadowDepthTextureSize: this.shadowDepthTextureSize
@@ -28852,7 +28978,429 @@ class MEMeshObj extends _materials.default {
 }
 exports.default = MEMeshObj;
 
-},{"../shaders/fragment.video.wgsl":50,"../shaders/vertex.wgsl":63,"../shaders/vertex.wgsl.normalmap":64,"./effects/pointerEffect":30,"./materials":40,"./matrix-class":41,"./utils":44,"wgpu-matrix":18}],43:[function(require,module,exports){
+},{"../shaders/fragment.video.wgsl":52,"../shaders/vertex.wgsl":65,"../shaders/vertex.wgsl.normalmap":66,"./effects/pointerEffect":30,"./materials":40,"./matrix-class":41,"./utils":46,"wgpu-matrix":18}],43:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.METoolTip = void 0;
+class METoolTip {
+  constructor() {
+    // --- Tooltip system ---
+    const tooltip = document.createElement('div');
+    tooltip.style.position = 'fixed';
+    tooltip.style.padding = '6px 10px';
+    tooltip.style.background = 'rgba(0,0,0,0.8)';
+    tooltip.style.color = '#fff';
+    tooltip.style.borderRadius = '6px';
+    tooltip.style.fontFamily = 'Arial';
+    tooltip.style.fontSize = '12px';
+    tooltip.style.pointerEvents = 'none';
+    tooltip.style.opacity = '0';
+    tooltip.style.transition = 'opacity 0.2s ease';
+    tooltip.style.zIndex = '9999';
+    document.body.appendChild(tooltip);
+  }
+  attachTooltip(element, text) {
+    element.addEventListener('mouseenter', e => {
+      tooltip.textContent = text;
+      tooltip.style.opacity = '1';
+    });
+    element.addEventListener('mousemove', e => {
+      tooltip.style.left = e.clientX + 12 + 'px';
+      tooltip.style.top = e.clientY + 12 + 'px';
+    });
+    element.addEventListener('mouseleave', () => {
+      tooltip.style.opacity = '0';
+    });
+  }
+}
+exports.METoolTip = METoolTip;
+
+},{}],44:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.BloomPass = void 0;
+exports.fullscreenQuadWGSL = fullscreenQuadWGSL;
+/**
+ * @description 
+ * Bloom class for matrix-engine-wgpu
+ * @public 
+ * 
+ * @setKnee
+ * @setIntensity
+ * @setThreshold
+ * @setBlurRadius
+ */
+
+class BloomPass {
+  constructor(width, height, device, intensity = 1.5) {
+    this.enabled = false;
+    this.device = device;
+    this.width = width;
+    this.height = height;
+    this.brightTex = this._createTexture();
+    this.blurTexA = this._createTexture();
+    this.blurTexB = this._createTexture();
+    this.sampler = device.createSampler({
+      magFilter: 'linear',
+      minFilter: 'linear'
+    });
+    this.intensityBuffer = this._createUniformBuffer([intensity]);
+    this.blurDirX = this._createUniformBuffer([1, 0]);
+    this.blurDirY = this._createUniformBuffer([0, 1]);
+    this.params = {
+      intensity: intensity,
+      threshold: 0.6,
+      knee: 0.5,
+      blurRadius: 6.0
+    };
+    this.paramBuffer = this.device.createBuffer({
+      size: 16,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    this._updateParams();
+    this.brightPipeline = this._createPipeline(brightPassWGSL(), [{
+      binding: 0,
+      visibility: GPUShaderStage.FRAGMENT,
+      texture: {
+        sampleType: 'float'
+      }
+    }, {
+      binding: 1,
+      visibility: GPUShaderStage.FRAGMENT,
+      sampler: {
+        type: 'filtering'
+      }
+    }, {
+      binding: 2,
+      visibility: GPUShaderStage.FRAGMENT,
+      buffer: {
+        type: 'uniform'
+      }
+    }]);
+    this.blurPipeline = this._createPipeline(blurPassWGSL(), [{
+      binding: 0,
+      visibility: GPUShaderStage.FRAGMENT,
+      texture: {
+        sampleType: 'float'
+      }
+    }, {
+      binding: 1,
+      visibility: GPUShaderStage.FRAGMENT,
+      sampler: {
+        type: 'filtering'
+      }
+    }, {
+      binding: 2,
+      visibility: GPUShaderStage.FRAGMENT,
+      buffer: {
+        type: 'uniform'
+      }
+    }, {
+      binding: 3,
+      visibility: GPUShaderStage.FRAGMENT,
+      buffer: {
+        type: 'uniform'
+      }
+    }]);
+    this.combinePipeline = this._createPipeline(combinePassWGSL(), [{
+      binding: 0,
+      visibility: GPUShaderStage.FRAGMENT,
+      texture: {
+        sampleType: 'float'
+      }
+    }, {
+      binding: 1,
+      visibility: GPUShaderStage.FRAGMENT,
+      texture: {
+        sampleType: 'float'
+      }
+    }, {
+      binding: 2,
+      visibility: GPUShaderStage.FRAGMENT,
+      sampler: {
+        type: 'filtering'
+      }
+    }, {
+      binding: 3,
+      visibility: GPUShaderStage.FRAGMENT,
+      buffer: {
+        type: 'uniform'
+      }
+    }]);
+  }
+  _createTexture() {
+    return this.device.createTexture({
+      size: [this.width, this.height],
+      format: 'rgba16float',
+      usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING
+    });
+  }
+  _createPipeline(fragmentWGSL, bindGroupLayoutEntries) {
+    const bindGroupLayout = this.device.createBindGroupLayout({
+      entries: bindGroupLayoutEntries
+    });
+    return this.device.createRenderPipeline({
+      layout: this.device.createPipelineLayout({
+        bindGroupLayouts: [bindGroupLayout]
+      }),
+      vertex: {
+        module: this.device.createShaderModule({
+          code: fullscreenQuadWGSL()
+        }),
+        entryPoint: 'vert'
+      },
+      fragment: {
+        module: this.device.createShaderModule({
+          code: fragmentWGSL
+        }),
+        entryPoint: 'main',
+        targets: [{
+          format: 'rgba16float'
+        }]
+      },
+      primitive: {
+        topology: 'triangle-list'
+      }
+    });
+  }
+  _updateParams() {
+    this.device.queue.writeBuffer(this.paramBuffer, 0, new Float32Array([this.params.intensity, this.params.threshold, this.params.knee, this.params.blurRadius]));
+  }
+  setIntensity = v => {
+    this.params.intensity = v;
+    this._updateParams();
+  };
+  setThreshold = v => {
+    this.params.threshold = v;
+    this._updateParams();
+  };
+  setKnee = v => {
+    this.params.knee = v;
+    this._updateParams();
+  };
+  setBlurRadius = v => {
+    this.params.blurRadius = v;
+    this._updateParams();
+  };
+  _createUniformBuffer(data) {
+    const buffer = this.device.createBuffer({
+      size: 16,
+      // std140 safe
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    this.device.queue.writeBuffer(buffer, 0, new Float32Array(data));
+    return buffer;
+  }
+  _brightBindGroup(view) {
+    return this.device.createBindGroup({
+      layout: this.brightPipeline.getBindGroupLayout(0),
+      entries: [{
+        binding: 0,
+        resource: view
+      }, {
+        binding: 1,
+        resource: this.sampler
+      }, {
+        binding: 2,
+        resource: {
+          buffer: this.paramBuffer
+        }
+      }]
+    });
+  }
+  _blurBindGroup(view, dirBuffer) {
+    return this.device.createBindGroup({
+      layout: this.blurPipeline.getBindGroupLayout(0),
+      entries: [{
+        binding: 0,
+        resource: view
+      }, {
+        binding: 1,
+        resource: this.sampler
+      }, {
+        binding: 2,
+        resource: {
+          buffer: dirBuffer
+        }
+      }, {
+        binding: 3,
+        resource: {
+          buffer: this.paramBuffer
+        }
+      }]
+    });
+  }
+  _combineBindGroup(sceneView, bloomView) {
+    return this.device.createBindGroup({
+      layout: this.combinePipeline.getBindGroupLayout(0),
+      entries: [{
+        binding: 0,
+        resource: sceneView
+      }, {
+        binding: 1,
+        resource: bloomView
+      }, {
+        binding: 2,
+        resource: this.sampler
+      }, {
+        binding: 3,
+        resource: {
+          buffer: this.paramBuffer
+        }
+      }]
+    });
+  }
+  _beginFullscreenPass(encoder, targetView) {
+    return encoder.beginRenderPass({
+      colorAttachments: [{
+        view: targetView,
+        loadOp: 'clear',
+        storeOp: 'store',
+        clearValue: {
+          r: 0,
+          g: 0,
+          b: 0,
+          a: 1
+        }
+      }]
+    });
+  }
+  render(encoder, sceneView, finalTargetView) {
+    // ----- Bright pass -----
+    {
+      const pass = this._beginFullscreenPass(encoder, this.brightTex.createView());
+      pass.setPipeline(this.brightPipeline);
+      pass.setBindGroup(0, this._brightBindGroup(sceneView));
+      pass.draw(6);
+      pass.end();
+    }
+    // ----- Blur X -----
+    {
+      const pass = this._beginFullscreenPass(encoder, this.blurTexA.createView());
+      pass.setPipeline(this.blurPipeline);
+      pass.setBindGroup(0, this._blurBindGroup(this.brightTex.createView(), this.blurDirX));
+      pass.draw(6);
+      pass.end();
+    }
+    // ----- Blur Y -----
+    {
+      const pass = this._beginFullscreenPass(encoder, this.blurTexB.createView());
+      pass.setPipeline(this.blurPipeline);
+      pass.setBindGroup(0, this._blurBindGroup(this.blurTexA.createView(), this.blurDirY));
+      pass.draw(6);
+      pass.end();
+    }
+    // ----- Combine -----
+    {
+      const pass = this._beginFullscreenPass(encoder, finalTargetView);
+      pass.setPipeline(this.combinePipeline);
+      pass.setBindGroup(0, this._combineBindGroup(sceneView, this.blurTexB.createView()));
+      pass.draw(6);
+      pass.end();
+    }
+  }
+}
+exports.BloomPass = BloomPass;
+function fullscreenQuadWGSL() {
+  return `
+    @vertex
+    fn vert(@builtin(vertex_index) i : u32) -> @builtin(position) vec4<f32> {
+      var pos = array<vec2<f32>, 6>(
+        vec2(-1.0, -1.0), vec2(1.0, -1.0), vec2(-1.0, 1.0),
+        vec2(-1.0, 1.0), vec2(1.0, -1.0), vec2(1.0, 1.0)
+      );
+      return vec4(pos[i], 0.0, 1.0);
+    }
+  `;
+}
+function brightPassWGSL() {
+  return `
+    struct BloomParams {
+    intensity: f32,
+    threshold: f32,
+    knee: f32,
+    radius: f32,
+  };
+    @group(0) @binding(0) var tex: texture_2d<f32>;
+    @group(0) @binding(1) var samp: sampler;
+    @group(0) @binding(2) var<uniform> bloom: BloomParams;
+    @fragment
+    fn main(@builtin(position) p: vec4<f32>) -> @location(0) vec4<f32> {
+      let size = vec2<f32>(textureDimensions(tex));
+      let uv = p.xy / size;
+      let c = textureSample(tex, samp, uv).rgb;
+      let lum = dot(c, vec3<f32>(0.2126,0.7152,0.0722));
+      let x = max(lum - bloom.threshold, 0.0);
+      let w = x * x / (x + bloom.knee);
+      return vec4(c * w, 1.0);
+    }
+  `;
+}
+function blurPassWGSL() {
+  return `
+   struct BloomParams {
+    intensity: f32,
+    threshold: f32,
+    knee: f32,
+    radius: f32,
+  };
+
+  @group(0) @binding(0) var tex: texture_2d<f32>;
+  @group(0) @binding(1) var samp: sampler;
+  @group(0) @binding(2) var<uniform> dir: vec2<f32>;
+  @group(0) @binding(3) var<uniform> bloom: BloomParams;
+
+  @fragment
+  fn main(@builtin(position) p: vec4<f32>) -> @location(0) vec4<f32> {
+    let size = vec2<f32>(textureDimensions(tex));
+    let uv = p.xy / size;
+    let r = bloom.radius;
+    let o = array<f32,5>(-r, -r*0.5, 0.0, r*0.5, r);
+    let w = array<f32,5>(0.1,0.2,0.4,0.2,0.1);
+    var col = vec3(0.0);
+    for(var i=0;i<5;i++){
+      col += textureSample(tex, samp, uv + o[i]*dir/size).rgb * w[i];
+    }
+    return vec4(col,1.0);
+  }
+`;
+}
+function combinePassWGSL() {
+  return `
+  struct BloomParams {
+    intensity: f32,
+    threshold: f32,
+    knee: f32,
+    radius: f32,
+  };
+  @group(0) @binding(0) var origTex: texture_2d<f32>;
+  @group(0) @binding(1) var bloomTex: texture_2d<f32>;
+  @group(0) @binding(2) var samp: sampler;
+  @group(0) @binding(3) var<uniform> bloom: BloomParams;
+
+  @fragment
+  fn main(@builtin(position) p: vec4<f32>) -> @location(0) vec4<f32> {
+    let size = vec2<f32>(textureDimensions(origTex));
+    let uv = p.xy / size;
+
+    let origColor = textureSample(origTex, samp, uv).rgb;
+    let bloomColor = textureSample(bloomTex, samp, uv).rgb;
+
+    // additive bloom
+    let color = origColor + bloomColor * bloom.intensity;
+
+    return vec4(color, 1.0);
+  }
+`;
+}
+
+},{}],45:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -29041,7 +29589,7 @@ function addRaycastsListener(canvasId = "canvas1", eventName = 'click') {
   });
 }
 
-},{"wgpu-matrix":18}],44:[function(require,module,exports){
+},{"wgpu-matrix":18}],46:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -29062,6 +29610,7 @@ exports.getAxisRot2 = getAxisRot2;
 exports.getAxisRot3 = getAxisRot3;
 exports.htmlHeader = void 0;
 exports.isEven = isEven;
+exports.isMobile = isMobile;
 exports.isOdd = isOdd;
 exports.mb = exports.mat4 = exports.jsonHeaders = void 0;
 exports.quaternion_rotation_matrix = quaternion_rotation_matrix;
@@ -29070,8 +29619,18 @@ exports.randomFloatFromTo = randomFloatFromTo;
 exports.randomIntFromTo = randomIntFromTo;
 exports.scriptManager = void 0;
 exports.setupCanvasFilters = setupCanvasFilters;
+exports.supportsTouch = void 0;
 exports.typeText = typeText;
 exports.vec3 = exports.urlQuery = void 0;
+var supportsTouch = exports.supportsTouch = 'ontouchstart' in window || navigator.msMaxTouchPoints;
+function isMobile() {
+  if (supportsTouch == true) return true;
+  const toMatch = [/Android/i, /webOS/i, /iPhone/i, /iPad/i, /iPod/i, /BlackBerry/i, /Windows Phone/i];
+  return toMatch.some(toMatchItem => {
+    return navigator.userAgent.match(toMatchItem);
+  });
+}
+;
 const vec3 = exports.vec3 = {
   cross(a, b, dst) {
     dst = dst || new Float32Array(3);
@@ -30059,7 +30618,7 @@ class FullscreenManager {
 }
 exports.FullscreenManager = FullscreenManager;
 
-},{}],45:[function(require,module,exports){
+},{}],47:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30101,7 +30660,7 @@ class MultiLang {
 }
 exports.MultiLang = MultiLang;
 
-},{"../../public/res/multilang/en-backup":19,"../engine/utils":44}],46:[function(require,module,exports){
+},{"../../public/res/multilang/en-backup":19,"../engine/utils":46}],48:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30385,7 +30944,7 @@ class MatrixAmmo {
 }
 exports.default = MatrixAmmo;
 
-},{"../engine/utils":44}],47:[function(require,module,exports){
+},{"../engine/utils":46}],49:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30431,7 +30990,7 @@ fn fsMain(in : VertexOutput) -> @location(0) vec4f {
 }
 `;
 
-},{}],48:[function(require,module,exports){
+},{}],50:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30557,7 +31116,7 @@ fn fsMain(in : VSOut) -> @location(0) vec4<f32> {
 }
 `;
 
-},{}],49:[function(require,module,exports){
+},{}],51:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30645,7 +31204,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
 }
 `;
 
-},{}],50:[function(require,module,exports){
+},{}],52:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30735,7 +31294,7 @@ fn main(input : FragmentInput) -> @location(0) vec4f {
 }
 `;
 
-},{}],51:[function(require,module,exports){
+},{}],53:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30966,7 +31525,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, 1.0);
 }`;
 
-},{}],52:[function(require,module,exports){
+},{}],54:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -31144,7 +31703,7 @@ return vec4f(color, 1.0);
 // let radiance = spotlights[0].color * 10.0; // test high intensity
 // Lo += materialData.baseColor * radiance * NdotL;
 
-},{}],53:[function(require,module,exports){
+},{}],55:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -31389,7 +31948,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, 1.0);
 }`;
 
-},{}],54:[function(require,module,exports){
+},{}],56:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -31609,7 +32168,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, 1.0);
 }`;
 
-},{}],55:[function(require,module,exports){
+},{}],57:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -31777,7 +32336,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 // let radiance = spotlights[0].color * 10.0; // test high intensity
 // Lo += materialData.baseColor * radiance * NdotL;
 
-},{}],56:[function(require,module,exports){
+},{}],58:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -32013,7 +32572,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     return vec4f(finalColor, alpha);
 }`;
 
-},{}],57:[function(require,module,exports){
+},{}],59:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -32117,7 +32676,7 @@ fn main(
   return output;
 }`;
 
-},{}],58:[function(require,module,exports){
+},{}],60:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -32154,7 +32713,7 @@ fn main(
 }
 `;
 
-},{}],59:[function(require,module,exports){
+},{}],61:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -32212,7 +32771,7 @@ fn fragmentMain(input: VertexOutput) -> @location(0) vec4f {
   return vec4f(textureColor.rgb * lightColor, textureColor.a);
 }`;
 
-},{}],60:[function(require,module,exports){
+},{}],62:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -32270,7 +32829,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
 }
 `;
 
-},{}],61:[function(require,module,exports){
+},{}],63:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -32357,7 +32916,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
 }
 `;
 
-},{}],62:[function(require,module,exports){
+},{}],64:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -32415,7 +32974,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
   return vec4<f32>(color, 1.0);
 }`;
 
-},{}],63:[function(require,module,exports){
+},{}],65:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -32501,7 +33060,7 @@ fn main(
   return output;
 }`;
 
-},{}],64:[function(require,module,exports){
+},{}],66:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -32612,7 +33171,7 @@ fn main(
   return output;
 }`;
 
-},{}],65:[function(require,module,exports){
+},{}],67:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -32640,7 +33199,7 @@ fn main(
 }
 `;
 
-},{}],66:[function(require,module,exports){
+},{}],68:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -32710,7 +33269,5779 @@ class MatrixSounds {
 }
 exports.MatrixSounds = MatrixSounds;
 
-},{}],67:[function(require,module,exports){
+},{}],69:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.MEEditorClient = void 0;
+var _utils = require("../../engine/utils");
+class MEEditorClient {
+  ws = null;
+  constructor(typeOfRun, name) {
+    this.ws = new WebSocket("ws://localhost:1243");
+    this.ws.onopen = () => {
+      if (typeOfRun == 'created from editor') {
+        console.info('created from editor - watch <signal>');
+        let o = {
+          action: "watch",
+          name: name
+        };
+        o = JSON.stringify(o);
+        this.ws.send(o);
+        o = {
+          action: "list",
+          path: name
+        };
+        o = JSON.stringify(o);
+        this.ws.send(o);
+      }
+      console.log("%c[WS OPEN] [Attach events]", "color: lime; font-weight: bold");
+    };
+    this.ws.onmessage = event => {
+      try {
+        const data = JSON.parse(event.data);
+        console.log("%c[WS MESSAGE]", "color: yellow", data);
+        if (data && data.ok == true && data.payload && data.payload.redirect == true) {
+          setTimeout(() => location.assign(data.name + ".html"), 2000);
+        } else if (data.payload && data.payload == "stop-watch done") {
+          _utils.mb.show("watch-stoped");
+        } else if (data.listAssets) {
+          document.dispatchEvent(new CustomEvent('la', {
+            detail: data
+          }));
+        } else if (data.projects) {
+          data.payload.forEach(item => {
+            console.log('.....' + item.name);
+            if (item.name != 'readme.md') {
+              let txt = `Project list: \n
+                - ${item.name}  \n
+               \n
+               Choose project name:
+              `;
+              let projectName = prompt(txt);
+              if (projectName !== null) {
+                console.log("Project name:", projectName);
+                projectName += ".html";
+                location.assign(projectName);
+              } else {
+                console.error('Something wrong with load project input!');
+              }
+            }
+          });
+        } else if (data.details) {
+          document.dispatchEvent(new CustomEvent('file-detail-data', {
+            detail: data
+          }));
+        } else if (data.refresh == 'refresh') {
+          // setTimeout(() => location.reload(true) , 1500);
+          setTimeout(() => document.dispatchEvent(new CustomEvent('updateSceneContainer', {
+            detail: {}
+          })), 1000);
+        } else {
+          _utils.mb.show("from editor:" + data.payload);
+        }
+      } catch (e) {
+        console.error("[WS ERROR PARSE]", e);
+      }
+    };
+    this.ws.onerror = err => {
+      console.error("%c[WS ERROR]", "color: red", err);
+      document.dispatchEvent(new CustomEvent("editor-not-running", {
+        detail: {}
+      }));
+    };
+    this.ws.onclose = () => {
+      console.log("%c[WS CLOSED]", "color: gray");
+    };
+    this.attachEvents();
+  }
+  attachEvents() {
+    document.addEventListener('lp', e => {
+      console.info('Load project <signal>');
+      let o = {
+        action: "lp"
+      };
+      o = JSON.stringify(o);
+      this.ws.send(o);
+    });
+    document.addEventListener('cnp', e => {
+      console.info('Create new project <signal>');
+      let o = {
+        action: "cnp",
+        name: e.detail.name,
+        features: e.detail.features
+      };
+      o = JSON.stringify(o);
+      this.ws.send(o);
+    });
+    document.addEventListener('stop-watch', e => {
+      console.info('stop-watch <signal>');
+      let o = {
+        action: "stop-watch",
+        name: e.detail.name
+      };
+      o = JSON.stringify(o);
+      this.ws.send(o);
+    });
+    document.addEventListener('start-watch', e => {
+      console.info('start-watch <signal>');
+      let o = {
+        action: "watch",
+        name: e.detail.name
+      };
+      o = JSON.stringify(o);
+      this.ws.send(o);
+    });
+    document.addEventListener('nav-folder', e => {
+      console.info('nav-folder <signal>');
+      let o = {
+        action: "nav-folder",
+        name: e.detail.name,
+        rootFolder: e.detail.rootFolder
+      };
+      o = JSON.stringify(o);
+      this.ws.send(o);
+    });
+    document.addEventListener('file-detail', e => {
+      console.info('file-detail <signal>');
+      let o = {
+        action: "file-detail",
+        name: e.detail.name,
+        rootFolder: e.detail.rootFolder
+      };
+      o = JSON.stringify(o);
+      this.ws.send(o);
+    });
+    document.addEventListener('web.editor.addCube', e => {
+      console.log("[web.editor.addCube]: ", e.detail);
+      console.info('addCube <signal>');
+      let o = {
+        action: "addCube",
+        projectName: location.href.split('/public/')[1].split(".")[0],
+        options: e.detail
+      };
+      o = JSON.stringify(o);
+      this.ws.send(o);
+    });
+    document.addEventListener('web.editor.addSphere', e => {
+      console.log("[web.editor.addSphere]: ", e.detail);
+      console.info('addSphere <signal>');
+      let o = {
+        action: "addSphere",
+        projectName: location.href.split('/public/')[1].split(".")[0],
+        options: e.detail
+      };
+      o = JSON.stringify(o);
+      this.ws.send(o);
+    });
+    document.addEventListener('save-methods', e => {
+      console.info('save script <signal>');
+      let o = {
+        action: "save-methods",
+        methodsContainer: e.detail.methodsContainer
+      };
+      o = JSON.stringify(o);
+      this.ws.send(o);
+    });
+    document.addEventListener('web.editor.addGlb', e => {
+      console.log("[web.editor.addGlb]: ", e.detail);
+      console.info('addGlb <signal>');
+      let o = {
+        action: "addGlb",
+        projectName: location.href.split('/public/')[1].split(".")[0],
+        options: e.detail
+      };
+      o = JSON.stringify(o);
+      this.ws.send(o);
+    });
+    document.addEventListener('web.editor.addObj', e => {
+      console.log("[web.editor.addObj]: ", e.detail);
+      console.info('addObj <signal>');
+      let o = {
+        action: "addObj",
+        projectName: location.href.split('/public/')[1].split(".")[0],
+        options: e.detail
+      };
+      o = JSON.stringify(o);
+      this.ws.send(o);
+    });
+    document.addEventListener('web.editor.addMp3', e => {
+      // console.log("[web.editor.addMp3]: ", e.detail);
+      // console.info('addMp3 <signal>');
+      // let o = {
+      //   action: "addMp3",
+      //   projectName: location.href.split('/public/')[1].split(".")[0],
+      //   options: e.detail
+      // };
+      // o = JSON.stringify(o);
+      // this.ws.send(o);
+    });
+
+    // delete obj
+    document.addEventListener('web.editor.delete', e => {
+      console.log("[web.editor.delete]: ", e.detail.prefix);
+      console.info('delete-obj <signal>');
+      let o = {
+        action: "delete-obj",
+        projectName: location.href.split('/public/')[1].split(".")[0],
+        name: e.detail.prefix
+      };
+      o = JSON.stringify(o);
+      this.ws.send(o);
+    });
+    document.addEventListener('web.editor.update.pos', e => {
+      console.log("[web.editor.update.pos]: ", e.detail);
+      console.info('web.editor.update.pos <signal>');
+      let o = {
+        action: "updatePos",
+        projectName: location.href.split('/public/')[1].split(".")[0],
+        data: e.detail
+      };
+      o = JSON.stringify(o);
+      this.ws.send(o);
+    });
+    document.addEventListener('web.editor.update.rot', e => {
+      console.log("[web.editor.update.rot]: ", e.detail);
+      console.info('web.editor.update.rot <signal>');
+      let o = {
+        action: "updateRot",
+        projectName: location.href.split('/public/')[1].split(".")[0],
+        data: e.detail
+      };
+      o = JSON.stringify(o);
+      this.ws.send(o);
+    });
+    document.addEventListener('web.editor.update.scale', e => {
+      console.log("[web.editor.update.scale]: ", e.detail);
+      console.info('web.editor.update.scale <signal>');
+      let o = {
+        action: "updateScale",
+        projectName: location.href.split('/public/')[1].split(".")[0],
+        data: e.detail
+      };
+      o = JSON.stringify(o);
+      this.ws.send(o);
+    });
+  }
+}
+exports.MEEditorClient = MEEditorClient;
+
+},{"../../engine/utils":46}],70:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.Editor = void 0;
+var _client = require("./client");
+var _editor = _interopRequireDefault(require("./editor.provider"));
+var _fluxCodexVertex = _interopRequireDefault(require("./fluxCodexVertex"));
+var _hud = _interopRequireDefault(require("./hud"));
+var _methodsManager = _interopRequireDefault(require("./methodsManager"));
+function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
+// import methodsContainer from './';
+
+class Editor {
+  constructor(core, a, projName) {
+    this.core = core;
+    this.methodsManager = new _methodsManager.default(this.check(a));
+    this.editorHud = new _hud.default(core, this.check(a));
+    this.editorProvider = new _editor.default(core, this.check(a));
+    if (this.check(a) == 'pre editor') {
+      this.client = new _client.MEEditorClient(this.check(a));
+    } else if (this.check(a) == 'created from editor') {
+      this.client = new _client.MEEditorClient(this.check(a), projName);
+      // Visual Scripting
+      this.createFluxCodexVertexDOM();
+      setTimeout(() => {
+        this.fluxCodexVertex = new _fluxCodexVertex.default('board', 'boardWrap', 'log', this.methodsManager);
+        setTimeout(() => {
+          this.fluxCodexVertex.updateLinks();
+        }, 3000);
+      }, 1500);
+    }
+    // console.log("methodsManager", this.methodsManager);
+  }
+  check(a) {
+    if (typeof a !== 'undefined' && a == "created from editor") {
+      return a;
+    } else if (typeof a !== 'undefined' && a == "pre editor") {
+      return a;
+    } else {
+      return "infly";
+    }
+  }
+  createFluxCodexVertexDOM() {
+    let FCV = document.createElement('div');
+    FCV.id = 'app';
+    FCV.style.display = 'none';
+    FCV.style.opacity = 1;
+    // test async 
+    // setTimeout(() => FCV.style.display = 'none' , 200);
+    FCV.innerHTML = `
+    <div id="leftBar">
+      <h3>Events/Func</h3>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('event')">Event: onLoad</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('eventCustom')">Custom Event</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('dispatchEvent')">Dispatch Event</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('function')">Function</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('if')">If Branch</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('genrand')">GenRandInt</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('print')">Print</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('timeout')">SetTimeout</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getArray')">getArray</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('forEach')">forEach</button>
+      <hr style="border:none; height:1px; background:rgba(255,255,255,0.03); margin:10px 0;">
+      <span>Scene objects [agnostic]</span>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getSceneObject')">Get scene object</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setPosition')">Set position</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setSpeed')">Set Speed</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getSpeed')">Get Speed</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setRotation')">Set rotation</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setRotate')">Set Rotate</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setRotateX')">Set RotateX</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setRotateY')">Set RotateY</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setRotateZ')">Set RotateZ</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('translateByX')">TranslateByX</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('translateByY')">TranslateByY</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('translateByZ')">TranslateByZ</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('onTargetPositionReach')">onTarget PositionReach</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('rayHitEvent')">Ray Hit Event</button>
+
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getObjectAnimation')">Get Object Animation</button>
+      <hr>
+      <span>Dinamics</span>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('dynamicFunction')">Function Dinamic</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getSubObject')">Get Sub Object</button>
+      <hr>
+      <span>Networking</span>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('fetch')">Fetch</button>
+      <hr>
+      <span>Media</span>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('audioMP3')">Add Mp3</button>
+      <hr style="border:none; height:1px; background:rgba(255,255,255,0.03); margin:10px 0;">
+      <span>Math</span>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('add')">Add (+)</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('sub')">Sub (-)</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('mul')">Mul (*)</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('div')">Div (/)</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('sin')">Sin</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('cos')">Cos</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('pi')">Pi</button>
+      <hr style="border:none; height:1px; background:rgba(255,255,255,0.03); margin:10px 0;">
+      <span>COMPARISON</span>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('equal')">Equal (==)</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('notequal')">Not Equal (!=)</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('greater')">Greater (>)</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('less')">Less (<)</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('greaterEqual')">Greater/Equal (>=)</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('lessEqual')">Less/Equal (<=)</button>
+      <hr style="border:none; height:1px; background:rgba(255,255,255,0.03); margin:10px 0;">
+      <hr style="border:none; height:1px; background:rgba(255,255,255,0.03); margin:10px 0;">
+      <span>Compile FluxCodexVertex</span>
+      <button style="color:#00bcd4;" class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.compileGraph()">Save to LocalStorage</button>
+      <button style="color:#00bcd4;" class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.clearStorage();">Clear Save</button>
+      <button style="color:#00bcd4;" class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.runGraph()">Run (F6)</button>
+      <hr style="border:none; height:1px; background:rgba(255,255,255,0.03); margin:10px 0;">
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.exportToJSON()">Export (JSON)</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex._importInput.click()">Import (JSON)</button>
+
+      <pre id="log" aria-live="polite"></pre>
+    </div>
+    <div id="boardWrap">
+      <div id="board">
+        <svg class="connections"></svg>
+      </div>
+    </div>
+    `;
+    document.body.appendChild(FCV);
+  }
+}
+exports.Editor = Editor;
+
+},{"./client":69,"./editor.provider":71,"./fluxCodexVertex":72,"./hud":73,"./methodsManager":74}],71:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+var _loaderObj = require("../../engine/loader-obj");
+var _webgpuGltf = require("../../engine/loaders/webgpu-gltf");
+/**
+ * @description
+ * For now it is posible for editor to work on fly
+ * with no memory/saves.
+ */
+
+class EditorProvider {
+  constructor(core) {
+    this.core = core;
+    this.addEditorEvents();
+  }
+  getNameFromPath(p) {
+    return p.split(/[/\\]/).pop().replace(/\.[^/.]+$/, ""); // + (this.core.mainRenderBundle.length);
+  }
+  addEditorEvents() {
+    document.addEventListener('web.editor.input', e => {
+      console.log("[EDITOR-input]: ", e.detail);
+      // Saves methods
+      switch (e.detail.propertyId) {
+        case 'position':
+          {
+            console.log('change signal for pos');
+            if (e.detail.property == 'x' || e.detail.property == 'y' || e.detail.property == 'z') document.dispatchEvent(new CustomEvent('web.editor.update.pos', {
+              detail: e.detail
+            }));
+            break;
+          }
+        case 'rotation':
+          {
+            console.log('change signal for rot');
+            if (e.detail.property == 'x' || e.detail.property == 'y' || e.detail.property == 'z') document.dispatchEvent(new CustomEvent('web.editor.update.rot', {
+              detail: e.detail
+            }));
+            break;
+          }
+        case 'scale':
+          {
+            console.log('change signal for scale');
+            if (e.detail.property == '0') {
+              document.dispatchEvent(new CustomEvent('web.editor.update.scale', {
+                detail: e.detail
+              }));
+            } else if (e.detail.property == '1') {
+              document.dispatchEvent(new CustomEvent('web.editor.update.scale', {
+                detail: e.detail
+              }));
+            } else if (e.detail.property == '2') {
+              document.dispatchEvent(new CustomEvent('web.editor.update.scale', {
+                detail: e.detail
+              }));
+            }
+            break;
+          }
+        default:
+          console.log('changes not saved.');
+      }
+      // inputFor: "Cube_0" property: "x" propertyId: "position" value: "1"
+      // InFly Method
+      let sceneObj = this.core.getSceneObjectByName(e.detail.inputFor);
+      if (sceneObj) {
+        sceneObj[e.detail.propertyId][e.detail.property] = parseFloat(e.detail.value);
+      } else {
+        console.warn("EditorProvider input error");
+        return;
+      }
+    });
+    document.addEventListener('web.editor.addCube', e => {
+      // console.log("[web.editor.addCube]: ", e.detail);
+      // THIS MUST BE SAME LIKE SERVER VERSION OF ADD CUBE
+      (0, _loaderObj.downloadMeshes)({
+        cube: "./res/meshes/blender/cube.obj"
+      }, m => {
+        const texturesPaths = './res/meshes/blender/cube.png';
+        this.core.addMeshObj({
+          position: {
+            x: 0,
+            y: 0,
+            z: -20
+          },
+          rotation: {
+            x: 0,
+            y: 0,
+            z: 0
+          },
+          rotationSpeed: {
+            x: 0,
+            y: 0,
+            z: 0
+          },
+          texturesPaths: [texturesPaths],
+          // useUVShema4x2: true,
+          name: "" + e.detail.index,
+          mesh: m.cube,
+          raycast: {
+            enabled: true,
+            radius: 2
+          },
+          physics: {
+            enabled: e.detail.physics,
+            geometry: "Cube"
+          }
+        });
+      }, {
+        scale: [1, 1, 1]
+      });
+    });
+    document.addEventListener('web.editor.addSphere', e => {
+      // console.log("[web.editor.addCube]: ", e.detail);
+      (0, _loaderObj.downloadMeshes)({
+        mesh: "./res/meshes/shapes/sphere.obj"
+      }, m => {
+        const texturesPaths = './res/meshes/blender/cube.png';
+        this.core.addMeshObj({
+          position: {
+            x: 0,
+            y: 0,
+            z: -20
+          },
+          rotation: {
+            x: 0,
+            y: 0,
+            z: 0
+          },
+          rotationSpeed: {
+            x: 0,
+            y: 0,
+            z: 0
+          },
+          texturesPaths: [texturesPaths],
+          // useUVShema4x2: true,
+          name: e.detail.index,
+          mesh: m.mesh,
+          raycast: {
+            enabled: true,
+            radius: 2
+          },
+          physics: {
+            enabled: e.detail.physics,
+            geometry: "Sphere"
+          }
+        });
+      }, {
+        scale: [1, 1, 1]
+      });
+    });
+    document.addEventListener('web.editor.addGlb', async e => {
+      console.log("[web.editor.addGlb]: ", e.detail.path);
+      e.detail.path = e.detail.path.replace('\\res', 'res');
+      // THIS MUST BE SAME LIKE SERVER VERSION OF ADD GLB
+      var glbFile01 = await fetch(e.detail.path).then(res => res.arrayBuffer().then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, this.core.device)));
+      this.core.addGlbObj({
+        material: {
+          type: 'power',
+          useTextureFromGlb: true
+        },
+        scale: [2, 2, 2],
+        position: {
+          x: 0,
+          y: 0,
+          z: -20
+        },
+        name: this.getNameFromPath(e.detail.path),
+        texturesPaths: ['./res/meshes/glb/textures/mutant_origin.png']
+      }, null, glbFile01);
+    });
+    document.addEventListener('web.editor.addObj', e => {
+      console.log("[web.editor.addObj]: ", e.detail);
+      e.detail.path = e.detail.path.replace('\\res', 'res');
+      e.detail.path = e.detail.path.replace(/\\/g, '/');
+      // THIS MUST BE SAME LIKE SERVER VERSION OF ADD CUBE
+      (0, _loaderObj.downloadMeshes)({
+        objMesh: `${e.detail.path}`
+      }, m => {
+        const texturesPaths = './res/meshes/blender/cube.png';
+        this.core.addMeshObj({
+          position: {
+            x: 0,
+            y: 0,
+            z: -20
+          },
+          rotation: {
+            x: 0,
+            y: 0,
+            z: 0
+          },
+          rotationSpeed: {
+            x: 0,
+            y: 0,
+            z: 0
+          },
+          texturesPaths: [texturesPaths],
+          // useUVShema4x2: true,
+          name: e.detail.index,
+          mesh: m.objMesh,
+          raycast: {
+            enabled: true,
+            radius: 2
+          },
+          physics: {
+            enabled: e.detail.physics,
+            geometry: "Cube"
+          }
+        });
+      }, {
+        scale: [1, 1, 1]
+      });
+    });
+
+    // delete
+    document.addEventListener('web.editor.delete', e => {
+      console.log("[web.editor.delete]: ", e.detail.fullName);
+      this.core.removeSceneObjectByName(e.detail.fullName);
+    });
+
+    // update procedure
+  }
+}
+exports.default = EditorProvider;
+
+},{"../../engine/loader-obj":36,"../../engine/loaders/webgpu-gltf":39}],72:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+var _ToolTip = require("../../engine/plugin/tooltip/ToolTip");
+var _utils = require("../../engine/utils");
+/**
+ * @description
+ * Flux Codex Vertex use visual scripting model.
+ *
+ * @filename
+ * fluxCodexVertex.js
+ *
+ * @Licence
+ * This Source Code Form is subject to the terms of the
+ * Mozilla Public License, v. 2.0.
+ * If a copy of the MPL was not distributed with this file,
+ * You can obtain one at https://mozilla.org/MPL/2.0/.
+ *
+ * Copyright (c) 2025 Nikola Lukić zlatnaspirala@gmail.com
+ *
+ * @Note
+ * License summary for fluxCodexVertex.js (MPL 2.0):
+ *
+ * ✔ You MAY:
+ * - Use this file in commercial and proprietary software
+ * - Modify and redistribute this file
+ * - Combine it with closed-source code
+ * - Sell software that includes this file
+ *
+ * ✘ You MUST:
+ * - Publish the source code of this file if you modify it
+ * - Keep this file under MPL 2.0
+ * - Provide a link to the MPL 2.0 license
+ * - Preserve copyright notices
+ *
+ * ✔ You do NOT have to:
+ * - Open-source your entire project
+ * - Publish files that merely import or use this file
+ * - Release unrelated source code
+ *
+ * - MPL applies ONLY to this file
+ */
+
+class FluxCodexVertex {
+  constructor(boardId, boardWrapId, logId, methodsManager) {
+    this.debugMode = true;
+    this.toolTip = new _ToolTip.METoolTip();
+    this.methodsManager = methodsManager;
+    this.variables = {
+      number: {},
+      boolean: {},
+      string: {},
+      object: {}
+    };
+
+    // DOM Elements
+    this.board = document.getElementById(boardId);
+    this.boardWrap = document.getElementById(boardWrapId);
+    this.svg = this.board.querySelector("svg.connections");
+    this.logEl = document.getElementById(logId);
+
+    // Data Model
+    this.nodes = {};
+    this.links = [];
+    this.nodeCounter = 1;
+    this.linkCounter = 1;
+    this._execContext = null;
+
+    // State Management
+    this.state = {
+      draggingNode: null,
+      dragOffset: [0, 0],
+      connecting: null,
+      selectedNode: null,
+      pan: [0, 0],
+      panning: false,
+      panStart: [0, 0],
+      zoom: 1
+    };
+    this.setZoom = z => {
+      this.state.zoom = Math.max(0.2, Math.min(2.5, z));
+      this.board.style.transform = `scale(${this.state.zoom})`;
+    };
+    this.onWheel = e => {
+      e.preventDefault();
+      const delta = e.deltaY > 0 ? -0.1 : 0.1;
+      this.setZoom(this.state.zoom + delta);
+    };
+    this.boardWrap.addEventListener("wheel", this.onWheel.bind(this), {
+      passive: false // IMPORTANT
+    });
+
+    // Bind event listeners
+    this.createVariablesPopup();
+    this._createImportInput();
+    this.bindGlobalListeners();
+    this._varInputs = {};
+
+    // EXTRA TIME 
+    setTimeout(() => this.init(), 4000);
+    document.addEventListener("keydown", e => {
+      if (e.key == "F6") {
+        e.preventDefault();
+        this.runGraph();
+      } else if (e.key === "Delete") {
+        if (this.state.selectedNode) {
+          this.deleteNode(this.state.selectedNode);
+          this.state.selectedNode = null;
+        }
+      }
+    });
+    this.createContextMenu();
+    // not in use ? - alternative for refresh getters/ no exec nodes
+    document.addEventListener("fluxcodex.input.change", e => {
+      console.log('fluxcodex.input.change');
+      const {
+        nodeId,
+        field,
+        value
+      } = e.detail;
+      const node = this.nodes.find(n => n.id === nodeId);
+      if (!node) return;
+      if (node.type !== "getSubObject") return;
+      this.handleGetSubObject(node, value);
+      if (field !== "path") return;
+    });
+    document.addEventListener('web.editor.addMp3', e => {
+      console.log("[web.editor.addMp3]: ", e.detail);
+      e.detail.path = e.detail.path.replace('\\res', 'res');
+      e.detail.path = e.detail.path.replace(/\\/g, '/');
+      // THIS MUST BE SAME LIKE SERVER VERSION OF ADD CUBE
+      this.addNode('audioMP3', e.detail);
+      // this.core.
+    });
+  }
+  createContextMenu() {
+    let CMenu = document.createElement("div");
+    CMenu.id = "fc-context-menu";
+    CMenu.classList.add("fc-context-menu");
+    CMenu.classList.add("hidden");
+    const board = document.getElementById("board");
+    board.addEventListener("contextmenu", e => {
+      e.preventDefault();
+      CMenu.innerHTML = this.getFluxCodexMenuHTML();
+      const menuRect = CMenu.getBoundingClientRect();
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      let x = e.clientX;
+      let y = e.clientY;
+      if (x + menuRect.width > vw) {
+        x = vw - menuRect.width - 5;
+      }
+      if (y > vh * 0.5) {
+        y = y - menuRect.height;
+      }
+      if (y < 5) y = 5;
+      CMenu.style.left = x + "px";
+      CMenu.style.top = y + "px";
+      CMenu.classList.remove("hidden");
+    });
+    document.addEventListener("click", () => {
+      CMenu.classList.add("hidden");
+    });
+    (0, _utils.byId)("app").appendChild(CMenu);
+  }
+  getFluxCodexMenuHTML() {
+    return `
+    <h3>Events / Func</h3>
+    <button onclick="app.editor.fluxCodexVertex.addNode('event')">Event: onLoad</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('function')">Function</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('if')">If Branch</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('genrand')">GenRandInt</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('print')">Print</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('timeout')">SetTimeout</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('getArray')">getArray</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('forEach')">forEach</button>
+    <hr>
+    <span>Networking</span>
+    <button onclick="app.editor.fluxCodexVertex.addNode('fetch')">Fetch</button>
+    <hr>
+    <span>Scene</span>
+    <button onclick="app.editor.fluxCodexVertex.addNode('getSceneObject')">Get Scene Object</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('getSceneLight')">Get Scene Light</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('setPosition')">Set Position</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('translateByX')">Translate by X</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('translateByY')">Translate by Y</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('translateByZ')">Translate by Z</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('setSpeed')">Set Speed</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('getSpeed')">Get Speed</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('setRotation')">Set Rotation</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('setRotate')">Set Rotate</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('setRotateX')">Set RotateX</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('setRotateY')">Set RotateY</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('setRotateZ')">Set RotateZ</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('setTexture')">Set Texture</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('onTargetPositionReach')">onTargetPositionReach</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('getObjectAnimation')">Get Object Animation</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('dynamicFunction')">Function Dinamic</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('refFunction')">Function by Ref</button>
+    
+    <button onclick="app.editor.fluxCodexVertex.addNode('getSubObject')">Get Sub Object</button>
+    <hr>
+    <span>Comment</span>
+    <button onclick="app.editor.fluxCodexVertex.addNode('comment')">Comment</button>
+    <hr>
+    <span>Math</span>
+    <button onclick="app.editor.fluxCodexVertex.addNode('add')">Add (+)</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('sub')">Sub (-)</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('mul')">Mul (*)</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('div')">Div (/)</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('sin')">Sin</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('cos')">Cos</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('pi')">Pi</button>
+    <hr>
+    <span>Comparison</span>
+    <button onclick="app.editor.fluxCodexVertex.addNode('equal')">Equal (==)</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('notequal')">Not Equal (!=)</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('greater')">Greater (>)</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('less')">Less (<)</button>
+    <hr>
+    <span>Compile</span>
+    <button onclick="app.editor.fluxCodexVertex.compileGraph()">Save</button>
+    <button onclick="app.editor.fluxCodexVertex.runGraph()">Run (F6)</button>
+  `;
+  }
+  log(...args) {
+    this.logEl.textContent = args.join(" ");
+  }
+  createGetNumberNode(varName) {
+    return this.addNode("getNumber", {
+      var: varName
+    });
+  }
+  createGetBooleanNode(varName) {
+    return this.addNode("getBoolean", {
+      var: varName
+    });
+  }
+  createGetStringNode(varName) {
+    return this.addNode("getString", {
+      var: varName
+    });
+  }
+  createGetObjectNode(varName) {
+    return this.addNode("getObject", {
+      var: varName
+    });
+  }
+  createSetNumberNode(varName) {
+    return this.addNode("setNumber", {
+      var: varName
+    });
+  }
+  createSetBooleanNode(varName) {
+    return this.addNode("setBoolean", {
+      var: varName
+    });
+  }
+  createSetStringNode(varName) {
+    return this.addNode("setString", {
+      var: varName
+    });
+  }
+  createSetObjectNode(varName) {
+    return this.addNode("setObject", {
+      var: varName
+    });
+  }
+  evaluateGetterNode(n) {
+    const key = n.fields?.find(f => f.key === "var")?.value;
+    if (!key) return;
+    const type = n.title.replace("Get ", "").toLowerCase();
+    const entry = this.variables[type]?.[key];
+    n._returnCache = entry ? entry.value : type === "number" ? 0 : type === "boolean" ? false : type === "string" ? "" : type === "object" ? {} : undefined;
+  }
+  notifyVariableChanged(type, key) {
+    for (const id in this.nodes) {
+      const n = this.nodes[id];
+      // Update getter nodes
+      if (n.isGetterNode) {
+        const varField = n.fields?.find(f => f.key === "var");
+        if (varField?.value === key && n.title.replace("Get ", "").toLowerCase() === type) {
+          this.evaluateGetterNode(n);
+          if (n.displayEl) {
+            const val = n._returnCache;
+            if (type === "object") n.displayEl.textContent = JSON.stringify(val, null, 2);else if (type === "number") n.displayEl.textContent = val.toFixed(3);else n.displayEl.textContent = String(val);
+          }
+        }
+      }
+      // Update sub-object nodes connected to this getter
+      n.inputs?.forEach(pin => {
+        const link = this.getConnectedSource(n.id, pin.name);
+        if (link?.node?.isGetterNode) {
+          const srcNode = link.node;
+          const srcPin = link.pin;
+          if (srcNode.fields?.find(f => f.key === "var")?.value === key) {
+            this._adaptGetSubObjectOnConnect(n, srcNode, srcPin);
+          }
+        }
+      });
+    }
+    // Update variable input UI if exists
+    const input = this._varInputs?.[`${type}.${key}`];
+    if (input) {
+      const storedValue = this.variables?.[type]?.[key];
+      if (type === "object") input.value = JSON.stringify(storedValue ?? {}, null, 2);else input.value = storedValue ?? "";
+    }
+  }
+  createVariablesPopup() {
+    if (this._varsPopup) return;
+    const popup = document.createElement("div");
+    popup.id = "varsPopup";
+    this._varsPopup = popup;
+    Object.assign(popup.style, {
+      display: "none",
+      flexDirection: "column",
+      position: "absolute",
+      top: "10%",
+      left: "0",
+      width: "60%",
+      height: "60%",
+      overflow: "scroll",
+      background: "linear-gradient(135deg, #1a1a1a 0%, #2b2b2b 100%), /* subtle dark gradient */ repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.05) 1px, transparent 1px, transparent 20px), repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.05) 1px, transparent 1px, transparent 20px)",
+      backgroundBlendMode: "overlay",
+      backgroundSize: "auto, 20px 20px, 20px 20px",
+      border: "1px solid #444",
+      borderRadius: "8px",
+      padding: "10px",
+      zIndex: 9999,
+      color: "#eee",
+      overflowX: "hidden"
+    });
+    // HEADER
+    const title = document.createElement("div");
+    title.innerHTML = `Variables`;
+    title.style.marginBottom = "8px";
+    title.style.fontWeight = "bold";
+    popup.appendChild(title);
+    const list = document.createElement("div");
+    list.id = "varslist";
+    popup.appendChild(list);
+    // CREATE BUTTONS
+    const btns = document.createElement("div");
+    btns.style.marginTop = "10px";
+    btns.style.display = "flex";
+    btns.style.gap = "6px";
+    btns.append(this._createVarBtn("Number", "number"), this._createVarBtn("Boolean", "boolean"), this._createVarBtn("String", "string"), this._createVarBtn("Object", "object"));
+    popup.appendChild(btns);
+    const hideVPopup = document.createElement("button");
+    hideVPopup.innerText = `Hide`;
+    hideVPopup.classList.add("btn4");
+    hideVPopup.style.margin = "8px 8px 8px 8px";
+    hideVPopup.style.width = "100px";
+    hideVPopup.style.fontWeight = "bold";
+    hideVPopup.style.webkitTextStrokeWidth = "0px";
+    hideVPopup.addEventListener("click", () => {
+      (0, _utils.byId)("varsPopup").style.display = "none";
+    });
+    popup.appendChild(hideVPopup);
+    document.body.appendChild(popup);
+    this.makePopupDraggable(popup);
+    this._refreshVarsList(list);
+  }
+  _refreshVarsList(container) {
+    container.innerHTML = "";
+    const colors = {
+      number: "#4fc3f7",
+      boolean: "#aed581",
+      string: "#ffb74d",
+      object: "#ce93d8"
+    };
+    for (const type in this.variables) {
+      for (const name in this.variables[type]) {
+        const row = document.createElement("div");
+        Object.assign(row.style, {
+          display: "flex",
+          alignItems: "center",
+          gap: "6px",
+          padding: "4px",
+          cursor: "pointer",
+          borderBottom: "1px solid #222",
+          color: colors[type] || "#fff"
+        });
+        const label = document.createElement("span");
+        label.textContent = `${name} (${type})`;
+        label.style.minWidth = "120px";
+        let input;
+        if (type === "object") {
+          input = document.createElement("textarea");
+          input.value = JSON.stringify(this.variables[type][name] ?? {}, null, 2);
+          input.style.width = "220px";
+          input.style.height = "40px";
+          input.style.webkitTextStrokeWidth = "0px";
+        } else {
+          input = document.createElement("input");
+          input.value = this.variables[type][name] ?? "";
+          input.style.width = "";
+        }
+        this._varInputs[`${type}.${name}`] = input;
+        Object.assign(input.style, {
+          background: "#000",
+          color: "#fff",
+          border: "1px solid #333"
+        });
+        input.oninput = () => {
+          if (type === "object") {
+            try {
+              this.variables.object[name] = JSON.parse(input.value);
+            } catch {
+              return;
+            }
+          } else if (type === "number") {
+            this.variables.number[name] = parseFloat(input.value);
+          } else if (type === "boolean") {
+            this.variables.boolean[name] = input.value === "true";
+          } else {
+            this.variables.string[name] = input.value;
+          }
+        };
+        const btnGet = document.createElement("button");
+        btnGet.innerText = "Get";
+        btnGet.classList.add("btnGetter");
+        btnGet.onclick = () => {
+          if (type === "number") this.createGetNumberNode(name);else if (type === "boolean") this.createGetBooleanNode(name);else if (type === "string") this.createGetStringNode(name);else if (type === "object") this.createGetObjectNode(name);
+        };
+        const btnSet = document.createElement("button");
+        btnSet.innerText = "Set";
+        btnSet.classList.add("btnGetter");
+        btnSet.onclick = () => {
+          if (type === "number") this.createSetNumberNode(name);else if (type === "boolean") this.createSetBooleanNode(name);else if (type === "string") this.createSetStringNode(name);else if (type === "object") this.createSetObjectNode(name);
+        };
+        const btnDel = document.createElement("button");
+        btnDel.innerText = "Del";
+        btnDel.classList.add("btnGetter");
+        btnDel.style.color = "#ff5252";
+        btnDel.onclick = () => {
+          if (!confirm(`Delete variable "${name}" (${type}) ?`)) return;
+          delete this.variables[type][name];
+          delete this._varInputs[`${type}.${name}`];
+          this._refreshVarsList(container);
+        };
+        row.append(label, input, btnGet, btnSet, btnDel);
+        container.appendChild(row);
+      }
+    }
+  }
+  makePopupDraggable(popup, handle = popup) {
+    let isDragging = false;
+    let startX = 0;
+    let startY = 0;
+    let startLeft = 0;
+    let startTop = 0;
+    handle.style.cursor = "move";
+    handle.addEventListener("mousedown", e => {
+      isDragging = true;
+      startX = e.clientX;
+      startY = e.clientY;
+      const rect = popup.getBoundingClientRect();
+      startLeft = rect.left;
+      startTop = rect.top;
+      popup.style.left = startLeft + "px";
+      popup.style.top = startTop + "px";
+      popup.style.transform = "none";
+      document.addEventListener("mousemove", onMove);
+      document.addEventListener("mouseup", onUp);
+    });
+    const onMove = e => {
+      if (!isDragging) return;
+      popup.style.left = startLeft + (e.clientX - startX) + "px";
+      popup.style.top = startTop + (e.clientY - startY) + "px";
+    };
+    const onUp = () => {
+      isDragging = false;
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup", onUp);
+    };
+  }
+  _createVarBtn(label, type) {
+    const btn = document.createElement("button");
+    btn.textContent = label;
+    btn.style.flex = "1";
+    btn.style.cursor = "pointer";
+    btn.classList.add("btn4");
+    btn.onclick = () => {
+      const name = prompt(`New ${type} variable name`);
+      if (!name) return;
+      if (!this.variables[type]) this.variables[type] = {};
+      if (this.variables[type][name]) {
+        alert("Variable exists");
+        return;
+      }
+      // Create variable
+      this.variables[type][name] = type === "object" ? {} : type === "number" ? 0 : type === "boolean" ? false : type === "string" ? "" : null;
+      this._refreshVarsList(this._varsPopup.children[1]);
+      // console.log("[NEW VARIABLE]", type, name, this.variables[type][name]);
+    };
+    return btn;
+  }
+  _getPinDot(nodeId, pinName, isOutput) {
+    const nodeEl = document.querySelector(`.node[data-id="${nodeId}"]`);
+    if (!nodeEl) return null;
+    const io = isOutput ? "out" : "in";
+    return nodeEl.querySelector(`.pin[data-pin="${pinName}"][data-io="${io}"] .dot`);
+  }
+  populateVariableSelect(select, type) {
+    select.innerHTML = "";
+    const vars = this.variables[type];
+    if (!vars.length) {
+      const opt = document.createElement("option");
+      opt.textContent = "(no variables)";
+      opt.disabled = true;
+      select.appendChild(opt);
+      return;
+    }
+    vars.forEach(v => {
+      const opt = document.createElement("option");
+      opt.value = v.name;
+      opt.textContent = v.name;
+      select.appendChild(opt);
+    });
+  }
+  // Dynamic Method Helpers
+  getArgNames(fn) {
+    const src = fn.toString().trim();
+    // Case 1: arrow function with no parentheses:  a => ...
+    const arrowNoParen = src.match(/^([a-zA-Z0-9_$]+)\s*=>/);
+    if (arrowNoParen) {
+      return [arrowNoParen[1].trim()];
+    }
+    // Case 2: normal (a,b) => ...  OR function(a,b) { ... }
+    const argsMatch = src.match(/\(([^)]*)\)/);
+    if (argsMatch && argsMatch[1].trim().length > 0) {
+      return argsMatch[1].split(",").map(a => a.trim()).filter(a => a.length > 0);
+    }
+    // Default: no args
+    return [];
+  }
+  hasReturn(fn) {
+    const src = fn.toString().trim();
+    // Case 1: implicit return in arrow: (a)=>a+2  OR  a=>a*2
+    // Detect arrow "=>" followed by an expression, not "{"
+    if (/=>\s*[^({]/.test(src)) {
+      return true;
+    }
+    // Case 2: normal "return" inside function body
+    if (/return\s+/.test(src)) {
+      return true;
+    }
+    return false;
+  }
+  adaptNodeToMethod(node, methodItem) {
+    const fn = this.methodsManager.compileFunction(methodItem.code);
+    // Reset pins except execution pins
+    node.inputs = [{
+      name: "exec",
+      type: "action"
+    }];
+    node.outputs = [{
+      name: "execOut",
+      type: "action"
+    }];
+    // Dynamic input pins
+    const args = this.getArgNames(fn);
+    args.forEach(arg => node.inputs.push({
+      name: arg,
+      type: "value"
+    }));
+    // Dynamic return pin
+    if (this.hasReturn(fn)) node.outputs.push({
+      name: "return",
+      type: "value"
+    });
+    node.attachedMethod = methodItem.name;
+    node.fn = fn;
+    this.updateNodeDOM(node.id);
+  }
+  adaptNodeToMethod2(node, methodItem) {
+    const fn = this.methodsManager.compileFunction(methodItem.code);
+    const args = this.getArgNames(fn);
+
+    // Preserve action + reference pins
+    const preservedInputs = node.inputs.filter(p => p.type === "action" || p.name === "reference");
+    const preservedOutputs = node.outputs.filter(p => p.type === "action");
+    node.inputs = [...preservedInputs];
+    node.outputs = [...preservedOutputs];
+
+    // Add argument pins (reuse if exists)
+    args.forEach(arg => {
+      if (!node.inputs.some(p => p.name === arg)) {
+        node.inputs.push({
+          name: arg,
+          type: "value"
+        });
+      }
+    });
+
+    // Return value
+    if (this.hasReturn(fn)) {
+      if (!node.outputs.some(p => p.name === "return")) {
+        node.outputs.push({
+          name: "return",
+          type: "value"
+        });
+      }
+    }
+    node.attachedMethod = methodItem.name;
+    node.fn = fn;
+    this.updateNodeDOM(node.id);
+  }
+  adaptRefFunctionNode(node, fnRef) {
+    const args = this.getArgNames(fnRef);
+    const hasReturn = this.hasReturn(fnRef);
+    // Preserve exec + reference pins
+    const preservedInputs = node.inputs.filter(p => p.type === "action" || p.name === "reference");
+    const preservedOutputs = node.outputs.filter(p => p.type === "action");
+    node.inputs = [...preservedInputs];
+    node.outputs = [...preservedOutputs];
+    // 🔹 Real argument pins
+    args.forEach(arg => {
+      if (!node.inputs.some(p => p.name === arg)) {
+        node.inputs.push({
+          name: arg,
+          type: "value"
+        });
+      }
+    });
+    // 🔹 Real return
+    if (hasReturn) {
+      if (!node.outputs.some(p => p.name === "return")) {
+        node.outputs.push({
+          name: "return",
+          type: "value"
+        });
+      }
+    }
+    // Execution logic
+    node.fn = (...callArgs) => fnRef(...callArgs);
+    this.updateNodeDOM(node.id);
+  }
+  populateMethodsSelect(selectEl) {
+    selectEl.innerHTML = "";
+    const placeholder = document.createElement("option");
+    placeholder.value = "";
+    placeholder.textContent = "-- Select Method --";
+    selectEl.appendChild(placeholder);
+    this.methodsManager.methodsContainer.forEach(method => {
+      const opt = document.createElement("option");
+      opt.value = method.name;
+      opt.textContent = method.name;
+      selectEl.appendChild(opt);
+    });
+  }
+  _getSceneSelectedName(node) {
+    return node.fields?.find(f => f.key === "selectedObject" || f.key === "object")?.value;
+  }
+  updateNodeDOM(nodeId) {
+    const node = this.nodes[nodeId];
+    const el = document.querySelector(`.node[data-id="${nodeId}"]`);
+    if (!el) return;
+    const left = el.querySelector(".pins-left");
+    const right = el.querySelector(".pins-right");
+    if (!left || !right) return;
+    // Clear only **non-exec pins**
+    left.innerHTML = "";
+    right.innerHTML = "";
+    const inputs = node.inputs || [];
+    const outputs = node.outputs || [];
+    inputs.forEach(pin => left.appendChild(this._pinElement(pin, false, nodeId)));
+    outputs.forEach(pin => right.appendChild(this._pinElement(pin, true, nodeId)));
+    if (node.title === "Get Scene Object" || node.title === "Get Scene Light" || node.title === "Get Scene Animation") {
+      const select = el.querySelector("select.scene-select");
+      if (select) {
+        console.log('!TEST! ???');
+        const objects = spec.accessObject || [];
+        objects.forEach(obj => {
+          const opt = document.createElement("option");
+          opt.value = obj.name;
+          opt.textContent = obj.name;
+          select.appendChild(opt);
+        });
+        const selected = this._getSceneSelectedName(node);
+        if (selected) {
+          select.value = selected;
+        }
+      }
+    } else if (node.category === "action" && node.title === "Function") {
+      let select = el.querySelector("select.method-select");
+      if (!select) {
+        select = document.createElement("select");
+        select.className = "method-select";
+        select.style.cssText = "width:100%; margin-top:6px;";
+        el.querySelector(".body").appendChild(select);
+      }
+      this.populateMethodsSelect(select);
+      if (node.attachedMethod) select.value = node.attachedMethod;
+      select.onchange = e => {
+        const selected = this.methodsManager.methodsContainer.find(m => m.name === e.target.value);
+        if (selected) this.adaptNodeToMethod(node, selected);
+      };
+    } else if (node.category === "functions") {
+      console.log('!!!updateDOMNODE restoreDynamicFunctionNode', this.restoreDynamicFunctionNode);
+      const dom = document.querySelector(`.node[data-id="${nodeId}"]`);
+      this.restoreDynamicFunctionNode(node, dom);
+    } else if (node.category === "reffunctions") {
+      const dom = document.querySelector(`.node[data-id="${nodeId}"]`);
+      this.restoreDynamicFunctionNode(node, dom);
+    }
+  }
+  restoreDynamicFunctionNode(node, dom) {
+    // Restore accessObject reference from literal
+    if (!node.accessObject && node.accessObjectLiteral) {
+      try {
+        node.accessObject = eval(node.accessObjectLiteral);
+      } catch (e) {
+        console.warn("Failed to eval accessObjectLiteral:", node.accessObjectLiteral, e);
+        node.accessObject = [];
+      }
+    }
+
+    // Ensure fields exist
+    if (!node.fields) node.fields = [];
+    if (!node.fields.find(f => f.key === "selectedObject")) {
+      node.fields.push({
+        key: "selectedObject",
+        value: ""
+      });
+    }
+
+    // Ensure pins exist
+    if (!node.inputs || node.inputs.length === 0) {
+      node.inputs = [{
+        name: "exec",
+        type: "action"
+      }];
+    }
+    if (!node.outputs || node.outputs.length === 0) {
+      node.outputs = [{
+        name: "execOut",
+        type: "action"
+      }];
+    }
+
+    // Rebuild DOM select for this node
+    let select = dom.querySelector("select");
+    if (select == null) {
+      select = document.createElement("select");
+      select.id = node.id;
+      select.className = "method-select";
+      select.style.cssText = "width:100%; margin-top:6px;";
+      dom.appendChild(select);
+    }
+    if (select && node.accessObject) {
+      const numOptions = select.options.length;
+      const newLength = Object.keys(node.accessObject).filter(key => typeof node.accessObject[key] === "function");
+
+      // Only repopulate if length differs // +1 for placeholder
+      if (numOptions !== newLength.length + 1) {
+        select.innerHTML = "";
+        const placeholder = document.createElement("option");
+        placeholder.value = "";
+        placeholder.textContent = "-- Select Function --";
+        select.appendChild(placeholder);
+        Object.keys(node.accessObject).filter(key => typeof node.accessObject[key] === "function").forEach(fnName => {
+          const opt = document.createElement("option");
+          opt.value = fnName;
+          opt.textContent = fnName;
+          select.appendChild(opt);
+        });
+
+        // restore previously selected
+        const selected = node.fields.find(f => f.key === "selectedObject")?.value;
+        if (selected) select.value = selected;
+      }
+
+      // Attach onchange
+      select.onchange = e => {
+        const val = e.target.value;
+        node.fields.find(f => f.key === "selectedObject").value = val;
+      };
+    }
+  }
+
+  // NODE/PIN
+  startConnect(nodeId, pinName, type, isOut) {
+    this.state.connecting = {
+      node: nodeId,
+      pin: pinName,
+      type: type,
+      out: isOut
+    };
+  }
+  _applyConnectionRuntime(from, to, type) {
+    const toNode = this.nodes[to.node];
+    const fromNode = this.nodes[from.node];
+    if (!toNode || !fromNode) return;
+
+    // RefFunction special case
+    if (toNode.title === "reffunctions" && to.pin === "reference") {
+      const fnRef = this.getPinValue(fromNode, from.pin);
+      if (typeof fnRef === "function") {
+        toNode._fnRef = fnRef;
+        this.adaptRefFunctionNode(toNode, fnRef);
+      }
+    }
+    // generic hook
+    this.onPinsConnected(fromNode, from.pin, toNode, to.pin);
+  }
+  restoreConnectionsRuntime() {
+    for (const link of this.links) {
+      this._applyConnectionRuntime(link.from, link.to, link.type);
+    }
+  }
+  finishConnect(nodeId, pinName, type) {
+    if (!this.state.connecting || this.state.connecting.node === nodeId) {
+      this.state.connecting = null;
+      return;
+    }
+    const from = this.state.connecting.out ? this.state.connecting : {
+      node: nodeId,
+      pin: pinName
+    };
+    const to = this.state.connecting.out ? {
+      node: nodeId,
+      pin: pinName
+    } : this.state.connecting;
+    // Prevent duplicate links and type mismatch
+    if (from.pin && to.pin && this.isTypeCompatible(this.state.connecting.type, type)) {
+      const exists = this.links.find(l => l.from.node === from.node && l.from.pin === from.pin && l.to.node === to.node && l.to.pin === to.pin);
+      if (!exists) {
+        this.links.push({
+          id: "link_" + this.linkCounter++,
+          from,
+          to,
+          type
+        });
+        this.updateLinks();
+        if (type === "value") setTimeout(() => this.updateValueDisplays(), 0);
+      }
+    }
+    this.state.connecting = null;
+    let toNode = this.nodes[to.node];
+    let fromNode = this.nodes[from.node];
+    if (toNode && toNode.title === "reffunctions" && to.pin === "reference") {
+      console.log('sss ');
+      const fnRef = this.getPinValue(fromNode, from.pin);
+      if (typeof fnRef !== "function") return;
+      toNode._fnRef = fnRef;
+      this.adaptRefFunctionNode(toNode, fnRef);
+    }
+    // Get Sub Object – adapt pins on connect
+    toNode = this.nodes[to.node];
+    fromNode = this.nodes[from.node];
+    this.onPinsConnected(fromNode, from.pin, toNode, to.pin);
+  }
+  _adaptGetSubObjectOnConnect(getSubNode, sourceNode) {
+    // alert('adapt')
+    const obj = sourceNode._returnCache;
+    if (!obj || typeof obj !== "object") return;
+    const varField = sourceNode.fields?.find(f => f.key === "var");
+    const previewField = getSubNode.fields?.find(f => f.key === "objectPreview");
+    if (previewField) {
+      previewField.value = varField?.value || "[object]";
+      if (getSubNode.objectPreviewEl) getSubNode.objectPreviewEl.value = previewField.value;
+    }
+    const path = getSubNode.fields?.find(f => f.key === "path")?.value;
+    const target = this.resolvePath(obj, path);
+    this.adaptSubObjectPins(getSubNode, target);
+    getSubNode._subCache = {};
+    if (target && typeof target === "object") {
+      for (const k in target) getSubNode._subCache[k] = target[k];
+    }
+    getSubNode._needsRebuild = false;
+    getSubNode._pinsBuilt = true;
+    // console.log("[ADAPT SUB OBJECT]", getSubNode.id, "path:", path, "target:", target);
+    this.updateNodeDOM(getSubNode.id);
+  }
+  onPinsConnected(sourceNode, sourcePin, targetNode) {
+    if (targetNode.title === "Get Scene Object" || targetNode.title === "Get Sub Object" || targetNode.title === "Get Scene Light") {
+      this._adaptGetSubObjectOnConnect(targetNode, sourceNode, sourcePin);
+    }
+  }
+
+  // get func for ref pin
+  getPinValue(node, pinName) {
+    const out = node.outputs?.find(p => p.name === pinName);
+    let getName = node.fields.find(item => item.key == "selectedObject").value;
+    // little hard code - fix in future
+    // By current light rule of given names.
+    if (node.title == "Get Scene Object") {
+      return app.getSceneObjectByName(getName)[out.name];
+    } else if (node.title == "Get Scene Animation") {
+      return app.getSceneObjectByName(getName)[out.name];
+    } else {
+      // light for now
+      getName = parseInt(getName.replace("light", ""));
+      return node.accessObject[getName][pinName];
+    }
+  }
+  normalizePinType(type) {
+    if (!type) return "any";
+    if (type === "number") return "value";
+    return type;
+  }
+  updateSceneObjectPins(node, objectName) {
+    const obj = (node.accessObject || []).find(o => o.name === objectName);
+    if (!obj) return;
+    // clear
+    node.outputs = [];
+    node.exposeProps.forEach(p => {
+      const value = this.getByPath(obj, p);
+      if (value !== undefined) {
+        const type = typeof value === "number" ? "number" : typeof value === "string" ? "string" : "object";
+        node.outputs.push({
+          name: p,
+          type
+        });
+      }
+    });
+    this.updateNodeDOM(node.id);
+  }
+  _pinElement(pinSpec, isOutput, nodeId) {
+    const pin = document.createElement("div");
+    if (pinSpec.name == "position") {
+      pin.className = `pin pin-${pinSpec.name}`;
+    } else {
+      pin.className = `pin pin-${pinSpec.type}`;
+    }
+    pin.dataset.pin = pinSpec.name;
+    pin.dataset.type = pinSpec.type;
+    pin.dataset.io = isOutput ? "out" : "in";
+    pin.dataset.node = nodeId;
+    // Dot (connect point)
+    const dot = document.createElement("div");
+    dot.className = "dot";
+    pin.appendChild(dot);
+    // Pin Label
+    const label = document.createElement("span");
+    label.className = "pin-label";
+    label.textContent = pinSpec.name;
+    pin.appendChild(label);
+    // Connect events
+    pin.addEventListener("mousedown", () => this.startConnect(nodeId, pinSpec.name, pinSpec.type, isOutput));
+    pin.addEventListener("mouseup", () => this.finishConnect(nodeId, pinSpec.name, pinSpec.type, isOutput));
+    return pin;
+  }
+  createNodeDOM(spec) {
+    const el = document.createElement("div");
+    if (spec.title == "Fetch") {
+      el.className = "node " + (spec.title.toLowerCase() || "");
+    } else if (spec.title == "Play MP3") {
+      el.className = "node " + "audios";
+    } else {
+      el.className = "node " + (spec.category || "");
+    }
+    el.style.left = spec.x + "px";
+    el.style.top = spec.y + "px";
+    el.dataset.id = spec.id;
+
+    // --- Header ---
+    const header = document.createElement("div");
+    header.className = "header";
+    header.textContent = spec.title;
+    el.appendChild(header);
+
+    // --- Body ---
+    const body = document.createElement("div");
+    body.className = "body";
+
+    // --- Pin row ---
+    const row = document.createElement("div");
+    if (spec.title == "Comment") {
+      row.classList.add('pin-row');
+      row.classList.add('comment');
+    } else {
+      row.className = "pin-row";
+    }
+    const left = document.createElement("div");
+    left.className = "pins-left";
+    const right = document.createElement("div");
+    right.className = "pins-right";
+
+    // Normalize pins before building DOM
+    (spec.inputs || []).forEach(pin => {
+      pin.type = this.normalizePinType(pin.type);
+      left.appendChild(this._pinElement(pin, false, spec.id));
+    });
+    (spec.outputs || []).forEach(pin => {
+      pin.type = this.normalizePinType(pin.type);
+      right.appendChild(this._pinElement(pin, true, spec.id));
+    });
+    row.appendChild(left);
+    row.appendChild(right);
+    body.appendChild(row);
+    if (spec.comment) {
+      const textarea = document.createElement("textarea");
+      // textarea.style
+      textarea.style.webkitBoxShadow = "inset 0px 0px 1px 4px #9E9E9E";
+      textarea.style.boxShadow = "inset 0px 0px 22px 1px rgba(118, 118, 118, 1)";
+      textarea.style.backgroundColor = "gray";
+      textarea.style.color = "black";
+      textarea.value = spec.fields.find(f => f.key === "text").value;
+      textarea.oninput = () => {
+        spec.fields.find(f => f.key === "text").value = textarea.value;
+        row.textContent = textarea.value || "Comment";
+      };
+      body.appendChild(textarea);
+    }
+    // 🔴 FIELD INPUTS
+    if (spec.fields?.length && !spec.comment && spec.title != "GenRandInt") {
+      const fieldsWrap = document.createElement("div");
+      fieldsWrap.className = "node-fields";
+      spec.fields.forEach(field => {
+        // skip special cases handled elsewhere
+        if (field.key === "var") return;
+        const input = this.createFieldInput(spec, field);
+        if (field.key === "objectPreview") {
+          spec.objectPreviewEl = input;
+        }
+        fieldsWrap.appendChild(input);
+      });
+      body.appendChild(fieldsWrap);
+    }
+
+    // Value display
+    if (spec.fields && spec.title === "GenRandInt") {
+      const container = document.createElement("div");
+      container.className = "genrand-inputs";
+      spec.fields.forEach(f => {
+        const input = document.createElement("input");
+        input.type = "number";
+        console.log("?????????????");
+        input.value = f.value;
+        input.style.width = "40px";
+        input.style.marginRight = "4px";
+        input.addEventListener("input", e => f.value = e.target.value);
+        container.appendChild(input);
+        const label = document.createElement("span");
+        label.textContent = f.key;
+        label.className = "field-label";
+        container.appendChild(label);
+      });
+      body.appendChild(container);
+    } else if (spec.category === "math" || spec.category === "value" || spec.title === "Print") {
+      const display = document.createElement("div");
+      display.className = "value-display";
+      display.textContent = "?";
+      spec.displayEl = display;
+      body.appendChild(display);
+    }
+
+    // Function Method Selector
+    if (spec.title === "Function" && spec.category === "action" && !spec.builtIn && !spec.isVariableNode) {
+      const select = document.createElement("select");
+      select.id = spec.id;
+      select.className = "method-select";
+      select.style.cssText = "width:100%; margin-top:6px;";
+      body.appendChild(select);
+      this.populateMethodsSelect(select);
+      if (spec.attachedMethod) {
+        select.value = spec.attachedMethod;
+      }
+      select.addEventListener("change", e => {
+        const selected = this.methodsManager.methodsContainer.find(m => m.name === e.target.value);
+        if (selected) {
+          this.adaptNodeToMethod(spec, selected);
+        }
+      });
+    }
+    // Variable name input (temporary until popup)
+    if (spec.fields?.some(f => f.key === "var") && !spec.comment) {
+      const input = document.createElement("input");
+      input.type = "text";
+      input.value = spec.fields.find(f => f.key === "var")?.value ?? "";
+      input.readOnly = true;
+      input.style.width = "100%";
+      input.style.marginTop = "6px";
+      input.style.opacity = "0.7";
+      input.style.cursor = "default";
+      body.appendChild(input);
+    }
+    if (spec.title === "functions") {
+      const select = document.createElement("select");
+      select.style.width = "100%";
+      select.style.marginTop = "6px";
+      if (spec.accessObject === undefined) {
+        spec.accessObject = eval(spec.accessObjectLiteral);
+      }
+      this.populateDynamicFunctionSelect(select, spec);
+      select.addEventListener("change", e => {
+        const fnName = e.target.value;
+        if (fnName) {
+          this.adaptDynamicFunction(spec, fnName);
+        }
+      });
+      body.appendChild(select);
+    }
+    if (spec.title === "Get Scene Object" || spec.title === "Get Scene Animation" || spec.title === "Get Scene Light") {
+      const select = document.createElement("select");
+      select.id = spec._id;
+      select.style.width = "100%";
+      select.style.marginTop = "6px";
+
+      // Populate scene objects
+      if (spec.accessObject === undefined) spec.accessObject = eval(spec.accessObjectLiteral);
+      const objects = spec.accessObject || []; // window.app?.mainRenderBundle || [];
+
+      const placeholder = document.createElement("option");
+      placeholder.textContent = "-- Select Object --";
+      placeholder.value = "";
+      select.appendChild(placeholder);
+      // console.log('WORKS objects', spec.accessObject.length);
+      spec.accessObject.forEach(obj => {
+        const opt = document.createElement("option");
+        opt.value = obj.name;
+        opt.textContent = obj.name;
+        select.appendChild(opt);
+      });
+      if (spec.fields[0].value) select.value = spec.fields[0].value;
+      select.addEventListener("change", e => {
+        const name = e.target.value;
+        spec.fields[0].value = name;
+        this.updateSceneObjectPins(spec, name);
+      });
+      el.appendChild(select);
+    }
+    el.appendChild(body);
+    // --- Dragging ---
+    header.addEventListener("mousedown", e => {
+      e.preventDefault();
+      this.state.draggingNode = el;
+      const rect = el.getBoundingClientRect();
+      const bx = this.board.getBoundingClientRect();
+      this.state.dragOffset = [e.clientX - rect.left + bx.left, e.clientY - rect.top + bx.top];
+      document.body.style.cursor = "grabbing";
+    });
+    // --- Selecting ---
+    el.addEventListener("click", e => {
+      e.stopPropagation();
+      this.selectNode(spec.id);
+      this.updateNodeDOM(spec.id);
+    });
+    return el;
+  }
+  selectNode(id) {
+    if (this.state.selectedNode) {
+      document.querySelector(`.node[data-id="${this.state.selectedNode}"]`)?.classList.remove("selected");
+    }
+    this.state.selectedNode = id;
+    document.querySelector(`.node[data-id="${id}"]`)?.classList.add("selected");
+  }
+  populateDynamicFunctionSelect(select, spec) {
+    select.innerHTML = "";
+    const placeholder = document.createElement("option");
+    placeholder.value = "";
+    placeholder.textContent = "-- Select Function --";
+    select.appendChild(placeholder);
+    if (!spec.accessObject || typeof spec.accessObject !== "object") return;
+    for (const key in spec.accessObject) {
+      if (typeof spec.accessObject[key] === "function") {
+        const opt = document.createElement("option");
+        opt.value = key;
+        opt.textContent = key;
+        select.appendChild(opt);
+      }
+    }
+    // console.log(spec.fields.find(item => item.key == "selectedObject").value)
+    let current = spec.fields.find(item => item.key == "selectedObject").value;
+    for (const opt of select.options) {
+      if (opt.text === current) {
+        opt.selected = true;
+        break;
+      }
+    }
+  }
+  isTypeCompatible(fromType, toType) {
+    if (fromType === "action" || toType === "action") {
+      return fromType === toType;
+    }
+    if (fromType === toType) return true;
+    if (fromType === "any" || toType === "any") return true;
+    return false;
+  }
+  addNode(type, options = {}) {
+    const id = "node_" + this.nodeCounter++;
+    const x = Math.abs(this.state.pan[0]) + 100 + Math.random() * 200;
+    const y = Math.abs(this.state.pan[1]) + 100 + Math.random() * 200;
+
+    // Node factory map
+    const nodeFactories = {
+      event: (id, x, y) => ({
+        id,
+        title: "onLoad",
+        x,
+        y,
+        category: "event",
+        inputs: [],
+        outputs: [{
+          name: "exec",
+          type: "action"
+        }]
+      }),
+      audioMP3: (id, x, y, options) => ({
+        id,
+        x,
+        y,
+        title: "Play MP3",
+        category: "action",
+        inputs: [{
+          name: "exec",
+          type: "action"
+        }, {
+          name: "key",
+          type: "string",
+          default: "audio"
+        }, {
+          name: "src",
+          type: "string",
+          default: ""
+        }, {
+          name: "clones",
+          type: "number",
+          default: 1
+        }],
+        outputs: [{
+          name: "execOut",
+          type: "action"
+        }],
+        fields: [{
+          key: "created",
+          value: false
+        }, {
+          key: "key",
+          value: options?.name
+        }, {
+          key: "src",
+          value: options?.path
+        }],
+        noselfExec: "true"
+      }),
+      eventCustom: (id, x, y) => ({
+        id,
+        x,
+        y,
+        title: "Custom Event",
+        category: "event",
+        fields: [{
+          key: "name",
+          value: "myEvent"
+        }],
+        inputs: [],
+        outputs: [{
+          name: "exec",
+          type: "action"
+        }, {
+          name: "detail",
+          type: "object"
+        }],
+        _listenerAttached: false,
+        _returnCache: null,
+        noselfExec: 'true'
+      }),
+      dispatchEvent: (id, x, y) => ({
+        id,
+        x,
+        y,
+        title: "Dispatch Event",
+        category: "event",
+        inputs: [{
+          name: "exec",
+          type: "action"
+        }, {
+          name: "eventName",
+          type: "string",
+          default: "myEvent"
+        }, {
+          name: "detail",
+          type: "object",
+          default: {}
+        }],
+        outputs: [{
+          name: "execOut",
+          type: "action"
+        }],
+        noselfExec: 'true'
+      }),
+      rayHitEvent: (id, x, y) => ({
+        id,
+        x,
+        y,
+        title: "On Ray Hit",
+        category: "event",
+        inputs: [],
+        outputs: [{
+          name: "exec",
+          type: "action"
+        }, {
+          name: "hitObject",
+          type: "object"
+        }],
+        noselfExec: 'true',
+        _listenerAttached: false
+      }),
+      function: (id, x, y) => ({
+        id,
+        title: "Function",
+        x,
+        y,
+        category: "action",
+        inputs: [{
+          name: "exec",
+          type: "action"
+        }],
+        outputs: [{
+          name: "execOut",
+          type: "action"
+        }]
+      }),
+      if: (id, x, y) => ({
+        id,
+        title: "if",
+        x,
+        y,
+        category: "logic",
+        inputs: [{
+          name: "exec",
+          type: "action"
+        }, {
+          name: "condition",
+          type: "boolean"
+        }],
+        outputs: [{
+          name: "true",
+          type: "action"
+        }, {
+          name: "false",
+          type: "action"
+        }],
+        fields: [{
+          key: "condition",
+          value: true
+        }],
+        noselfExec: "true"
+      }),
+      genrand: (id, x, y) => ({
+        id,
+        title: "GenRandInt",
+        x,
+        y,
+        category: "value",
+        inputs: [],
+        outputs: [{
+          name: "result",
+          type: "value"
+        }],
+        fields: [{
+          key: "min",
+          value: "0"
+        }, {
+          key: "max",
+          value: "10"
+        }]
+      }),
+      print: (id, x, y) => ({
+        id,
+        title: "Print",
+        x,
+        y,
+        category: "actionprint",
+        inputs: [{
+          name: "exec",
+          type: "action"
+        }, {
+          name: "value",
+          type: "any"
+        }],
+        outputs: [{
+          name: "execOut",
+          type: "action"
+        }],
+        fields: [{
+          key: "label",
+          value: "Result"
+        }],
+        builtIn: true,
+        noselfExec: 'true'
+      }),
+      timeout: (id, x, y) => ({
+        id,
+        title: "SetTimeout",
+        x,
+        y,
+        category: "timer",
+        inputs: [{
+          name: "exec",
+          type: "action"
+        }, {
+          name: "delay",
+          type: "value"
+        }],
+        outputs: [{
+          name: "execOut",
+          type: "action"
+        }],
+        fields: [{
+          key: "delay",
+          value: "1000"
+        }],
+        builtIn: true
+      }),
+      // Math
+      add: (id, x, y) => ({
+        id,
+        title: "Add",
+        x,
+        y,
+        category: "math",
+        inputs: [{
+          name: "a",
+          type: "value"
+        }, {
+          name: "b",
+          type: "value"
+        }],
+        outputs: [{
+          name: "result",
+          type: "value"
+        }]
+      }),
+      sub: (id, x, y) => ({
+        id,
+        title: "Sub",
+        x,
+        y,
+        category: "math",
+        inputs: [{
+          name: "a",
+          type: "value"
+        }, {
+          name: "b",
+          type: "value"
+        }],
+        outputs: [{
+          name: "result",
+          type: "value"
+        }]
+      }),
+      mul: (id, x, y) => ({
+        id,
+        title: "Mul",
+        x,
+        y,
+        category: "math",
+        inputs: [{
+          name: "a",
+          type: "value"
+        }, {
+          name: "b",
+          type: "value"
+        }],
+        outputs: [{
+          name: "result",
+          type: "value"
+        }]
+      }),
+      div: (id, x, y) => ({
+        id,
+        title: "Div",
+        x,
+        y,
+        category: "math",
+        inputs: [{
+          name: "a",
+          type: "value"
+        }, {
+          name: "b",
+          type: "value"
+        }],
+        outputs: [{
+          name: "result",
+          type: "value"
+        }]
+      }),
+      sin: (id, x, y) => ({
+        id,
+        title: "Sin",
+        x,
+        y,
+        category: "math",
+        inputs: [{
+          name: "a",
+          type: "value"
+        }],
+        outputs: [{
+          name: "result",
+          type: "value"
+        }]
+      }),
+      cos: (id, x, y) => ({
+        id,
+        title: "Cos",
+        x,
+        y,
+        category: "math",
+        inputs: [{
+          name: "a",
+          type: "value"
+        }],
+        outputs: [{
+          name: "result",
+          type: "value"
+        }]
+      }),
+      pi: (id, x, y) => ({
+        id,
+        title: "Pi",
+        x,
+        y,
+        category: "math",
+        inputs: [],
+        outputs: [{
+          name: "result",
+          type: "value"
+        }]
+      }),
+      // comparation nodes
+      greater: (id, x, y) => ({
+        id,
+        title: "A > B",
+        x,
+        y,
+        category: "compare",
+        inputs: [{
+          name: "A",
+          type: "number"
+        }, {
+          name: "B",
+          type: "number"
+        }],
+        outputs: [{
+          name: "result",
+          type: "boolean"
+        }]
+      }),
+      less: (id, x, y) => ({
+        id,
+        title: "A < B",
+        x,
+        y,
+        category: "compare",
+        inputs: [{
+          name: "A",
+          type: "number"
+        }, {
+          name: "B",
+          type: "number"
+        }],
+        outputs: [{
+          name: "result",
+          type: "boolean"
+        }]
+      }),
+      equal: (id, x, y) => ({
+        id,
+        title: "A == B",
+        x,
+        y,
+        category: "compare",
+        inputs: [{
+          name: "A",
+          type: "any"
+        }, {
+          name: "B",
+          type: "any"
+        }],
+        outputs: [{
+          name: "result",
+          type: "boolean"
+        }]
+      }),
+      notequal: (id, x, y) => ({
+        id,
+        title: "A != B",
+        x,
+        y,
+        category: "compare",
+        inputs: [{
+          name: "A",
+          type: "any"
+        }, {
+          name: "B",
+          type: "any"
+        }],
+        outputs: [{
+          name: "result",
+          type: "boolean"
+        }]
+      }),
+      greaterEqual: (id, x, y) => ({
+        id,
+        title: "A >= B",
+        x,
+        y,
+        category: "compare",
+        inputs: [{
+          name: "A",
+          type: "number"
+        }, {
+          name: "B",
+          type: "number"
+        }],
+        outputs: [{
+          name: "result",
+          type: "boolean"
+        }]
+      }),
+      lessEqual: (id, x, y) => ({
+        id,
+        title: "A <= B",
+        x,
+        y,
+        category: "compare",
+        inputs: [{
+          name: "A",
+          type: "number"
+        }, {
+          name: "B",
+          type: "number"
+        }],
+        outputs: [{
+          name: "result",
+          type: "boolean"
+        }]
+      }),
+      getNumber: (id, x, y) => ({
+        id,
+        title: "Get Number",
+        x,
+        y,
+        category: "value",
+        outputs: [{
+          name: "result",
+          type: "number"
+        }],
+        fields: [{
+          key: "var",
+          value: ""
+        }],
+        isGetterNode: true
+      }),
+      getBoolean: (id, x, y) => ({
+        id,
+        title: "Get Boolean",
+        x,
+        y,
+        category: "value",
+        outputs: [{
+          name: "result",
+          type: "boolean"
+        }],
+        fields: [{
+          key: "var",
+          value: ""
+        }],
+        isGetterNode: true
+      }),
+      getString: (id, x, y) => ({
+        id,
+        title: "Get String",
+        x,
+        y,
+        category: "value",
+        outputs: [{
+          name: "result",
+          type: "string"
+        }],
+        fields: [{
+          key: "var",
+          value: ""
+        }],
+        isGetterNode: true
+      }),
+      getObject: (id, x, y) => ({
+        id,
+        title: "Get Object",
+        x,
+        y,
+        category: "value",
+        outputs: [{
+          name: "result",
+          type: "object"
+        }],
+        fields: [{
+          key: "var",
+          value: ""
+        }],
+        isGetterNode: true
+      }),
+      setObject: (id, x, y) => ({
+        id,
+        title: "Set Object",
+        x,
+        y,
+        category: "action",
+        isVariableNode: true,
+        inputs: [{
+          name: "exec",
+          type: "action"
+        }, {
+          name: "value",
+          type: "object"
+        }],
+        outputs: [{
+          name: "execOut",
+          type: "action"
+        }],
+        fields: [{
+          key: "var",
+          value: ""
+        }, {
+          key: "literal",
+          value: {}
+        }]
+      }),
+      setNumber: (id, x, y) => ({
+        id,
+        title: "Set Number",
+        x,
+        y,
+        category: "action",
+        isVariableNode: true,
+        inputs: [{
+          name: "exec",
+          type: "action"
+        }, {
+          name: "value",
+          type: "number"
+        }],
+        outputs: [{
+          name: "execOut",
+          type: "action"
+        }],
+        fields: [{
+          key: "var",
+          value: ""
+        }, {
+          key: "literal",
+          value: 0
+        }]
+      }),
+      setBoolean: (id, x, y) => ({
+        id,
+        title: "Set Boolean",
+        x,
+        y,
+        category: "action",
+        isVariableNode: true,
+        inputs: [{
+          name: "exec",
+          type: "action"
+        }, {
+          name: "value",
+          type: "boolean"
+        }],
+        outputs: [{
+          name: "execOut",
+          type: "action"
+        }],
+        fields: [{
+          key: "var",
+          value: ""
+        }, {
+          key: "literal",
+          value: false
+        }]
+      }),
+      setString: (id, x, y) => ({
+        id,
+        title: "Set String",
+        x,
+        y,
+        category: "action",
+        isVariableNode: true,
+        inputs: [{
+          name: "exec",
+          type: "action"
+        }, {
+          name: "value",
+          type: "string"
+        }],
+        outputs: [{
+          name: "execOut",
+          type: "action"
+        }],
+        fields: [{
+          key: "var",
+          value: ""
+        }, {
+          key: "literal",
+          value: ""
+        }]
+      }),
+      comment: (id, x, y) => ({
+        id,
+        title: "Comment",
+        x,
+        y,
+        category: "meta",
+        inputs: [],
+        outputs: [],
+        comment: true,
+        noExec: true,
+        fields: [{
+          key: "text",
+          value: "Add comment"
+        }]
+      }),
+      dynamicFunction: (id, x, y, accessObject) => ({
+        id,
+        title: "functions",
+        x,
+        y,
+        category: "action",
+        inputs: [{
+          name: "exec",
+          type: "action"
+        }],
+        outputs: [{
+          name: "execOut",
+          type: "action"
+        }],
+        fields: [{
+          key: "selectedObject",
+          value: ""
+        }],
+        accessObject: accessObject ? accessObject : window.app,
+        accessObjectLiteral: "window.app"
+      }),
+      refFunction: (id, x, y) => ({
+        id,
+        title: "reffunctions",
+        x,
+        y,
+        category: "action",
+        inputs: [{
+          name: "exec",
+          type: "action"
+        }, {
+          name: "reference",
+          type: "any"
+        }],
+        outputs: [{
+          name: "execOut",
+          type: "action"
+        }]
+      }),
+      getSceneObject: (id, x, y) => ({
+        noExec: true,
+        id,
+        title: "Get Scene Object",
+        x,
+        y,
+        category: "scene",
+        inputs: [],
+        outputs: [],
+        fields: [{
+          key: "selectedObject",
+          value: ""
+        }],
+        builtIn: true,
+        accessObject: window.app?.mainRenderBundle,
+        accessObjectLiteral: "window.app?.mainRenderBundle",
+        exposeProps: ["name", "position", "rotation", "scale"]
+      }),
+      getSceneLight: (id, x, y) => ({
+        noExec: true,
+        id,
+        title: "Get Scene Light",
+        x,
+        y,
+        category: "scene",
+        inputs: [],
+        outputs: [],
+        fields: [{
+          key: "selectedObject",
+          value: ""
+        }],
+        builtIn: true,
+        accessObject: window.app?.lightContainer,
+        accessObjectLiteral: "window.app?.lightContainer",
+        exposeProps: ["ambientFactor", "setPosX", "setPosY", "setPosZ", "setIntensity", "setInnerCutoff", "setOuterCutoff", "setColor", "setColorR", "setColorB", "setColorG", "setRange", "setAmbientFactor", "setShadowBias"]
+      }),
+      getObjectAnimation: (id, x, y) => ({
+        noExec: true,
+        id,
+        title: "Get Scene Animation",
+        x,
+        y,
+        category: "scene",
+        inputs: [],
+        outputs: [],
+        fields: [{
+          key: "selectedObject",
+          value: ""
+        }],
+        builtIn: true,
+        accessObject: window.app?.mainRenderBundle,
+        accessObjectLiteral: "window.app?.mainRenderBundle",
+        exposeProps: ["name", "glb.glbJsonData.animations", "glb.animationIndex", "playAnimationByName", "playAnimationByIndex"]
+      }),
+      getPosition: (id, x, y) => ({
+        id,
+        x,
+        y,
+        title: "Get Position",
+        category: "scene",
+        inputs: [{
+          name: "position",
+          semantic: "position"
+        }],
+        outputs: [{
+          name: "x",
+          semantic: "number"
+        }, {
+          name: "y",
+          semantic: "number"
+        }, {
+          name: "z",
+          semantic: "number"
+        }],
+        noExec: true
+      }),
+      setPosition: (id, x, y) => ({
+        id,
+        x,
+        y,
+        title: "Set Position",
+        category: "scene",
+        inputs: [{
+          name: "exec",
+          type: "action"
+        }, {
+          name: "position",
+          semantic: "position"
+        }, {
+          name: "x",
+          semantic: "number"
+        }, {
+          name: "y",
+          semantic: "number"
+        }, {
+          name: "z",
+          semantic: "number"
+        }],
+        outputs: [{
+          name: "execOut",
+          type: "action"
+        }]
+      }),
+      setSpeed: (id, x, y) => ({
+        id,
+        x,
+        y,
+        title: "Set Speed",
+        category: "scene",
+        inputs: [{
+          name: "exec",
+          type: "action"
+        }, {
+          name: "position",
+          semantic: "position"
+        }, {
+          name: "thrust",
+          semantic: "number"
+        }],
+        outputs: [{
+          name: "execOut",
+          type: "action"
+        }]
+      }),
+      setTexture: (id, x, y) => ({
+        id,
+        x,
+        y,
+        title: "Set Texture",
+        category: "scene",
+        inputs: [{
+          name: "exec",
+          type: "action"
+        }, {
+          name: "texturePath",
+          semantic: "texturePath"
+        }, {
+          name: "sceneObjectName",
+          semantic: "string"
+        }],
+        outputs: [{
+          name: "execOut",
+          type: "action"
+        }]
+      }),
+      getSpeed: (id, x, y) => ({
+        id,
+        x,
+        y,
+        title: "Get Speed",
+        category: "scene",
+        inputs: [{
+          name: "exec",
+          type: "action"
+        }, {
+          name: "position",
+          semantic: "position"
+        }],
+        outputs: [{
+          name: "execOut",
+          type: "action"
+        }, {
+          name: "thrust",
+          semantic: "number"
+        }]
+      }),
+      setRotate: (id, x, y) => ({
+        id,
+        x,
+        y,
+        title: "Set Rotate",
+        category: "scene",
+        inputs: [{
+          name: "exec",
+          type: "action"
+        }, {
+          name: "rotation",
+          semantic: "rotation"
+        }, {
+          name: "x",
+          semantic: "number"
+        }, {
+          name: "y",
+          semantic: "number"
+        }, {
+          name: "z",
+          semantic: "number"
+        }],
+        outputs: [{
+          name: "execOut",
+          type: "action"
+        }]
+      }),
+      setRotateX: (id, x, y) => ({
+        id,
+        x,
+        y,
+        title: "Set RotateX",
+        category: "scene",
+        inputs: [{
+          name: "exec",
+          type: "action"
+        }, {
+          name: "rotation",
+          semantic: "rotation"
+        }, {
+          name: "x",
+          semantic: "number"
+        }],
+        outputs: [{
+          name: "execOut",
+          type: "action"
+        }]
+      }),
+      setRotateY: (id, x, y) => ({
+        id,
+        x,
+        y,
+        title: "Set RotateY",
+        category: "scene",
+        inputs: [{
+          name: "exec",
+          type: "action"
+        }, {
+          name: "rotation",
+          semantic: "rotation"
+        }, {
+          name: "y",
+          semantic: "number"
+        }],
+        outputs: [{
+          name: "execOut",
+          type: "action"
+        }]
+      }),
+      setRotateZ: (id, x, y) => ({
+        id,
+        x,
+        y,
+        title: "Set RotateZ",
+        category: "scene",
+        inputs: [{
+          name: "exec",
+          type: "action"
+        }, {
+          name: "rotation",
+          semantic: "rotation"
+        }, {
+          name: "z",
+          semantic: "number"
+        }],
+        outputs: [{
+          name: "execOut",
+          type: "action"
+        }]
+      }),
+      setRotation: (id, x, y) => ({
+        id,
+        x,
+        y,
+        title: "Set Rotation",
+        category: "scene",
+        inputs: [{
+          name: "exec",
+          type: "action"
+        }, {
+          name: "rotation",
+          semantic: "rotation"
+        }, {
+          name: "x",
+          semantic: "number"
+        }, {
+          name: "y",
+          semantic: "number"
+        }, {
+          name: "z",
+          semantic: "number"
+        }],
+        outputs: [{
+          name: "execOut",
+          type: "action"
+        }]
+      }),
+      translateByX: (id, x, y) => ({
+        id,
+        x,
+        y,
+        title: "Translate By X",
+        category: "scene",
+        inputs: [{
+          name: "exec",
+          type: "action"
+        }, {
+          name: "position",
+          semantic: "position"
+        }, {
+          name: "x",
+          semantic: "number"
+        }],
+        outputs: [{
+          name: "execOut",
+          type: "action"
+        }],
+        builtIn: true
+      }),
+      translateByY: (id, x, y) => ({
+        id,
+        x,
+        y,
+        title: "Translate By Y",
+        category: "scene",
+        inputs: [{
+          name: "exec",
+          type: "action"
+        }, {
+          name: "position",
+          semantic: "position"
+        }, {
+          name: "y",
+          semantic: "number"
+        }],
+        outputs: [{
+          name: "execOut",
+          type: "action"
+        }]
+      }),
+      translateByZ: (id, x, y) => ({
+        id,
+        x,
+        y,
+        title: "Translate By Z",
+        category: "scene",
+        inputs: [{
+          name: "exec",
+          type: "action"
+        }, {
+          name: "position",
+          semantic: "position"
+        }, {
+          name: "z",
+          semantic: "number"
+        }],
+        outputs: [{
+          name: "execOut",
+          type: "action"
+        }]
+      }),
+      onTargetPositionReach: (id, x, y) => ({
+        id,
+        x,
+        y,
+        title: "On Target Position Reach",
+        category: "event",
+        noExec: true,
+        inputs: [{
+          name: "position",
+          type: "object"
+        }],
+        outputs: [{
+          name: "exec",
+          type: "action"
+        }],
+        _listenerAttached: false
+      }),
+      fetch: (id, x, y) => ({
+        id,
+        title: "Fetch",
+        x,
+        y,
+        category: "action",
+        inputs: [{
+          name: "exec",
+          type: "action"
+        }, {
+          name: "url",
+          type: "string"
+        }, {
+          name: "method",
+          type: "string",
+          default: "GET"
+        }, {
+          name: "body",
+          type: "object"
+        }, {
+          name: "headers",
+          type: "object"
+        }],
+        outputs: [{
+          name: "execOut",
+          type: "action"
+        }, {
+          name: "error",
+          type: "action"
+        }, {
+          name: "response",
+          type: "object"
+        }, {
+          name: "status",
+          type: "number"
+        }]
+      }),
+      getSubObject: (id, x, y) => ({
+        id,
+        title: "Get Sub Object",
+        x,
+        y,
+        category: "value",
+        inputs: [{
+          name: "exec",
+          type: "action"
+        }, {
+          name: "object",
+          type: "object"
+        }],
+        outputs: [{
+          name: "execOut",
+          type: "action"
+        }],
+        fields: [{
+          key: "objectPreview",
+          value: "",
+          readonly: true
+        }, {
+          key: "path",
+          value: "",
+          placeholder: "SomeProperty"
+        }],
+        isDynamicNode: true,
+        _needsRebuild: true,
+        _pinsBuilt: false
+      }),
+      forEach: (id, x, y) => ({
+        id,
+        title: "For Each",
+        type: "forEach",
+        x,
+        y,
+        state: {
+          item: null,
+          index: 0
+        },
+        inputs: [{
+          name: "exec",
+          type: "action"
+        }, {
+          name: "array",
+          type: "any"
+        } // semantic array pin
+        ],
+        outputs: [{
+          name: "loop",
+          type: "action"
+        }, {
+          name: "completed",
+          type: "action"
+        }, {
+          name: "item",
+          type: "any"
+        }, {
+          name: "index",
+          type: "number"
+        }]
+      }),
+      getArray: (id, x, y, initialArray = []) => ({
+        id,
+        type: "getArray",
+        title: "Get Array",
+        x,
+        y,
+        fields: [{
+          key: "array",
+          value: initialArray.slice()
+        }],
+        inputs: [{
+          name: "exec",
+          type: "action"
+        }, {
+          name: "array",
+          type: "any"
+        }],
+        outputs: [{
+          name: "execOut",
+          type: "action"
+        }, {
+          name: "array",
+          type: "any"
+        }],
+        _returnCache: initialArray.slice()
+      })
+    };
+
+    // Generate node spec
+    let spec = null;
+    if (type === 'dynamicFunction') {
+      // Exception for dynamic access
+      let AO = prompt(`Add global access object !`);
+      if (AO) {
+        console.warn("Adding AO ", eval(AO));
+        options.accessObject = eval(AO);
+      } else {
+        console.warn("Adding global access object failed...");
+        options.accessObject = window.app;
+        return;
+      }
+      ;
+      if (nodeFactories[type]) spec = nodeFactories[type](id, x, y, options.accessObject);
+      spec.accessObjectLiteral = AO;
+    } else if (type === 'audioMP3' && options?.path && options?.name) {
+      if (nodeFactories[type]) spec = nodeFactories[type](id, x, y, options);
+    } else {
+      if (nodeFactories[type]) spec = nodeFactories[type](id, x, y);
+    }
+    if (spec && spec.fields && options) {
+      for (const f of spec.fields) {
+        if (options[f.key] !== undefined) {
+          f.value = options[f.key];
+        }
+      }
+    }
+    if (spec) {
+      const dom = this.createNodeDOM(spec);
+      this.board.appendChild(dom);
+      this.nodes[id] = spec;
+      return id;
+    }
+    return null;
+  }
+  setVariable(type, key, value) {
+    if (!this.variables[type][key]) return;
+    this.variables[type][key].value = value;
+    this.notifyVariableChanged(type, key);
+  }
+  updateArrayNode(node, newValue) {
+    if (!Array.isArray(newValue)) {
+      console.warn("Value must be an array");
+      return;
+    }
+    const field = node.fields.find(f => f.key === "array");
+    if (field) {
+      field.value = newValue;
+      node._returnCache = newValue;
+    }
+  }
+  initEventNodes() {
+    for (const nodeId in this.nodes) {
+      const n = this.nodes[nodeId];
+      if (n.category === "event") {
+        // console.log('ACTIVATRE NODE ', n.title)
+        this.activateEventNode(nodeId);
+      }
+    }
+  }
+  adaptSubObjectPins(node, obj) {
+    // 🚫 DO NOTHING if no valid object
+    if (!obj || typeof obj !== "object") return;
+    node.outputs = node.outputs.filter(p => p.type === "action");
+    if (obj && typeof obj === "object") {
+      for (const key of Object.keys(obj)) {
+        node.outputs.push({
+          name: key,
+          type: this.detectType(obj[key])
+        });
+      }
+    }
+  }
+  detectType(val) {
+    if (typeof val === "number") return "number";
+    if (typeof val === "boolean") return "boolean";
+    if (typeof val === "string") return "string";
+    if (typeof val === "object") return "object";
+    return "any";
+  }
+  createFieldInput(node, field) {
+    const input = document.createElement("input");
+    input.type = "text";
+    input.value = field.value ?? "";
+    input.placeholder = field.placeholder ?? "";
+    input.disabled = field.readonly === true;
+    if (field.readonly) {
+      input.style.opacity = "0.7";
+      input.style.cursor = "default";
+    }
+    const saveInputValue = () => {
+      let val;
+      if (field.type === "object") {
+        try {
+          val = JSON.parse(input.value);
+        } catch {
+          return;
+        }
+      } else {
+        val = input.value;
+      }
+      field.value = val;
+
+      // existing logic stays
+      if (node.isGetterNode && field.key === "var") {
+        this.notifyVariableChanged("object", val);
+      }
+
+      // ? not tested in last ver
+      document.dispatchEvent(new CustomEvent("fluxcodex.field.change", {
+        detail: {
+          nodeId: node.id,
+          nodeType: node.type,
+          fieldKey: field.key,
+          fieldType: field.type,
+          value: field.value
+        }
+      }));
+    };
+    input.onkeydown = e => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        saveInputValue();
+      }
+    };
+    input.onblur = () => saveInputValue();
+    if (node.title === "Get Sub Object" && field.key === "path") {
+      input.oninput = () => {
+        const link = this.getConnectedSource(node.id, "object");
+        if (!link?.node?.isGetterNode) {
+          if (link.node.title == "Get Sub Object") {
+            console.log('special sub sub test ', link.node.title);
+            let target = this.resolvePath(link.node._returnCache, link.pin);
+            node.outputs = node.outputs.filter(p => p.type === "action"); // clear old object pins
+            if (target && typeof target === "object") {
+              for (const k in target) {
+                node.outputs.push({
+                  name: k,
+                  type: this.detectType(target[k])
+                });
+              }
+            }
+          }
+          if (link.node.title == "Get Scene Animation") {
+            console.log('special test ', link.node.title);
+            const varField = link.node.fields?.find(f => f.key === "selectedObject");
+            console.log('special test ', varField);
+
+            // pin: "glb.glbJsonData.animations"
+
+            if (link.pin.indexOf('.') != -1) {
+              let target = this.resolvePath(app.getSceneObjectByName(varField.value), link.pin);
+              console.log('special test target ', target);
+              link.node._subCache = target;
+              node.outputs = node.outputs.filter(p => p.type === "action"); // clear old object pins
+              if (target && typeof target === "object") {
+                for (const k in target) {
+                  node.outputs.push({
+                    name: k,
+                    type: this.detectType(target[k])
+                  });
+                }
+              }
+              node._needsRebuild = false;
+              node._pinsBuilt = true;
+              this.updateNodeDOM(node.id);
+            }
+            console.log('special test :::: ', link.node.accessObject[varField.value]);
+            // this.getValue(link.node.id, "")
+          }
+          return;
+        }
+        const varField = link.node.fields?.find(f => f.key === "var");
+        const varName = varField?.value;
+        const rootObj = this.variables?.object?.[varName];
+        const path = input.value;
+        const target = this.resolvePath(rootObj, path);
+        node._subCache = {};
+        node._subCache = target;
+        node.outputs = node.outputs.filter(p => p.type === "action"); // clear old object pins
+        if (target && typeof target === "object") {
+          for (const k in target) {
+            node.outputs.push({
+              name: k,
+              type: this.detectType(target[k])
+            });
+          }
+        }
+        node._needsRebuild = false;
+        node._pinsBuilt = true;
+        this.updateNodeDOM(node.id);
+      };
+    }
+    return input;
+  }
+  resolvePath(obj, path) {
+    if (!obj || !path) return obj;
+    const parts = path.split(".").filter(p => p.length);
+    let current = obj;
+    for (const part of parts) {
+      if (current && typeof current === "object" && part in current) {
+        current = current[part];
+      } else {
+        return undefined;
+      }
+    }
+    return current;
+  }
+  resolveAccessObject(accessObject, objectName) {
+    if (!accessObject) return null;
+    if (Array.isArray(accessObject)) {
+      return accessObject.find(o => o.name === objectName) || null;
+    }
+    if (typeof accessObject === "object") {
+      return accessObject[objectName] || null;
+    }
+    return null;
+  }
+  adaptNodeToAccessMethod(node, objectName, methodName) {
+    const obj = this.accessObject.find(o => o.name === objectName);
+    if (!obj) return;
+    const method = obj[methodName];
+    if (typeof method !== "function") return;
+    const args = this.getArgNames(method);
+    node.inputs = [{
+      name: "exec",
+      type: "action"
+    }];
+    node.outputs = [{
+      name: "execOut",
+      type: "action"
+    }];
+    args.forEach(arg => node.inputs.push({
+      name: arg,
+      type: "value"
+    }));
+    if (this.hasReturn(method)) {
+      node.outputs.push({
+        name: "return",
+        type: "value"
+      });
+    }
+    node._access = {
+      objectName,
+      methodName
+    };
+    this.updateNodeDOM(node.id);
+  }
+  activateEventNode(nodeId) {
+    const n = this.nodes[nodeId];
+    if (n.title === "On Target Position Reach") {
+      const pos = this.getValue(nodeId, "position");
+      if (!pos) return;
+      pos.onTargetPositionReach = () => {
+        console.log("real onTargetPositionReach called");
+        this.enqueueOutputs(n, "exec");
+      };
+      n._listenerAttached = true;
+    } else if (n.title == "On Ray Hit") {
+      // console.log('ON RAY HIT INIT ONLE !!!!!!!!!!!!!!!!!')
+      if (n._listenerAttached) return;
+      app.reference.addRaycastsListener();
+      const handler = e => {
+        n._returnCache = e.detail?.hitObject ?? e.detail;
+        this.enqueueOutputs(n, "exec");
+      };
+      app.canvas.addEventListener("ray.hit.event", handler);
+      n._eventHandler = handler;
+      n._listenerAttached = true;
+      return;
+    }
+  }
+  _executeAttachedMethod(n) {
+    if (n.attachedMethod) {
+      const method = this.methodsManager.methodsContainer.find(m => m.name === n.attachedMethod);
+      if (method) {
+        const fn = this.methodsManager.compileFunction(method.code);
+        const args = this.getArgNames(fn).map(argName => this.getValue(n.id, argName));
+        let result;
+        try {
+          result = fn(...args);
+        } catch (err) {
+          console.error("User method error:", err);
+        }
+        if (this.hasReturn(fn)) n._returnCache = result;
+      }
+    }
+  }
+  getValue(nodeId, pinName, visited = new Set()) {
+    const node = this.nodes[nodeId];
+    if (visited.has(nodeId + ":" + pinName)) {
+      return undefined;
+    }
+    if (!node || visited.has(nodeId)) return undefined;
+    visited.add(nodeId);
+    if (node.title === "if" && pinName === "condition") {
+      let testLink = this.links.find(l => l.to.node === nodeId && l.to.pin === pinName);
+      let t = this.getValue(testLink.from.node, testLink.from.pin);
+      if (typeof t !== 'undefined') {
+        return t;
+      }
+      if (this._execContext !== nodeId) {
+        console.warn("[IF] condition read outside exec ignored");
+        return node.fields?.find(f => f.key === "condition")?.value;
+      }
+      // ?
+    }
+    if (node.title === "On Ray Hit" && pinName === "hitObject") {
+      console.info('get value ray hit', node._returnCache);
+      return node._returnCache;
+    }
+    if (node.title === "Custom Event" && pinName === "detail") {
+      console.warn("[Custom Event]  getvalue");
+      return node._returnCache;
+    }
+    if (node.title === "Dispatch Event" && (pinName === 'eventName' || pinName === 'detail')) {
+      let testLink = this.links.find(l => l.to.node === nodeId && l.to.pin === pinName);
+      return this.getValue(testLink.from.node, testLink.from.pin);
+    }
+    if (node.isGetterNode) {
+      if (node._returnCache === undefined) {
+        this.triggerNode(node.id);
+      }
+      let value = node._returnCache;
+      // Optional: parse string to array
+      if (typeof value === "string") {
+        try {
+          if (node.title == "Get String") {
+            // value = JSON.parse(value);
+          } else {
+            value = JSON.parse(value);
+          }
+        } catch (e) {
+          console.warn('[getValue][json parse err]:', e);
+        }
+      }
+      return value;
+    }
+    const field = node.fields?.find(f => f.key === pinName);
+    if (field) return field.value;
+    const link = this.links.find(l => l.to.node === nodeId && l.to.pin === pinName);
+    if (link) return this.getValue(link.from.node, link.from.pin, visited);
+    const inputPin = node.inputs?.find(p => p.name === pinName);
+    if (inputPin) return inputPin.default ?? 0;
+    if (node.title === "Get Scene Object" || node.title === "Get Scene Animation" || node.title === "Get Scene Light") {
+      const objName = this._getSceneSelectedName(node);
+      if (!objName) return undefined;
+      //repopulate
+      const dom = this.board.querySelector(`[data-id="${nodeId}"]`);
+      const selects = dom.querySelectorAll("select"); // returns NodeList
+      let select = selects[0];
+      // alert()
+      // if((select.options.length-1) != node.accessObject.length) {
+      select.innerHTML = ``;
+      if (select) {
+        node.accessObject.forEach(obj => {
+          const opt = document.createElement("option");
+          opt.value = obj.name;
+          opt.textContent = obj.name;
+          select.appendChild(opt);
+        });
+      }
+      if (node.fields[0].value) select.value = node.fields[0].value;
+      // console.log('>>>>>>>>>>>>>>>>>>>>>')
+
+      const obj = (node.accessObject || []).find(o => o.name === objName);
+      if (!obj) return undefined;
+      const out = node.outputs.find(o => o.name === pinName);
+      if (!out) return undefined;
+      if (pinName.indexOf('.') != -1) {
+        return this.resolvePath(obj, pinName);
+      }
+      return obj[pinName];
+    } else if (node.title === "Get Position") {
+      const pos = this.getValue(nodeId, "position");
+      if (!pos) return undefined;
+      node._returnCache = {
+        x: pos.x,
+        y: pos.y,
+        z: pos.z
+      };
+      return node._returnCache[pinName];
+    } else if (node.title === "Get Sub Object") {
+      let varField = node.outputs?.find(f => f.name === "0");
+      let isName = node.outputs?.find(f => f.name === "name");
+      // console.log('test1 :::', varField)
+      if (varField) if (varField.type == 'object') {
+        return node._subCache[parseInt(varField.name)];
+      }
+      // console.log('test2 :::', isName);
+      return node._subCache;
+    } else if (node.type === "forEach") {
+      if (pinName === "item") return node.state?.item;
+      if (pinName === "index") return node.state?.index;
+    }
+
+    // console.log("GETVALUE COMPARE!")
+    if (["math", "value", "compare"].includes(node.category)) {
+      let result;
+      switch (node.title) {
+        case "Add":
+          result = this.getValue(nodeId, "a") + this.getValue(nodeId, "b");
+          break;
+        case "Sub":
+          result = this.getValue(nodeId, "a") - this.getValue(nodeId, "b");
+          break;
+        case "Mul":
+          result = this.getValue(nodeId, "a") * this.getValue(nodeId, "b");
+          break;
+        case "Div":
+          result = this.getValue(nodeId, "a") / this.getValue(nodeId, "b");
+          break;
+        case "Sin":
+          result = Math.sin(this.getValue(nodeId, "a"));
+          break;
+        case "Cos":
+          result = Math.cos(this.getValue(nodeId, "a"));
+          break;
+        case "Pi":
+          result = Math.PI;
+          break;
+        case "A > B":
+          result = this.getValue(nodeId, "A") > this.getValue(nodeId, "B");
+          break;
+        case "A < B":
+          result = this.getValue(nodeId, "A") < this.getValue(nodeId, "B");
+          break;
+        case "A == B":
+          let varA = this.getValue(nodeId, "A");
+          let varB = this.getValue(nodeId, "B");
+          console.log('TEST DEEP TEST ');
+          if (typeof varA == "object") {
+            console.log('TEST DEEP ');
+            const r = this.deepEqual(varA, varB);
+            console.log('TEST DEEP ', r);
+            result = r;
+          } else {
+            result = this.getValue(nodeId, "A") != this.getValue(nodeId, "B");
+          }
+          break;
+        case "A != B":
+          let varAN = this.getValue(nodeId, "A");
+          let varBN = this.getValue(nodeId, "B");
+          if (typeof varAN == "object") {
+            const r = this.deepEqual(varAN, varBN);
+            result = !r;
+          } else {
+            result = this.getValue(nodeId, "A") != this.getValue(nodeId, "B");
+          }
+          break;
+        case "A >= B":
+          result = this.getValue(nodeId, "A") >= this.getValue(nodeId, "B");
+          break;
+        case "A <= B":
+          result = this.getValue(nodeId, "A") <= this.getValue(nodeId, "B");
+          break;
+        case "GenRandInt":
+          const min = +node.fields?.find(f => f.key === "min")?.value || 0;
+          const max = +node.fields?.find(f => f.key === "max")?.value || 10;
+          result = Math.floor(Math.random() * (max - min + 1)) + min;
+          break;
+        default:
+          result = undefined;
+      }
+      node._returnCache = result;
+      if (node.displayEl) node.displayEl.textContent = typeof result === "number" ? result.toFixed(3) : String(result);
+      return result;
+    }
+    if (node.outputs?.some(o => o.name === pinName)) {
+      const dynamicNodes = ["GenRandInt", "RandomFloat"];
+      if ((node._returnCache === undefined || dynamicNodes.includes(node.title)) && !node.noselfExec) {
+        this._execContext = nodeId;
+        this.triggerNode(nodeId);
+        this._execContext = null;
+      }
+      return node._returnCache;
+    }
+    return undefined;
+  }
+  updateValueDisplays() {
+    for (const id in this.nodes) {
+      const node = this.nodes[id];
+      if (!node.displayEl) continue;
+      if (node.title === "Print") {
+        const pin = node.inputs?.[0];
+        if (!pin) continue;
+        const val = this.getValue(node.id, pin.name);
+        if (val === undefined) {
+          node.displayEl.textContent = "undefined";
+        } else if (typeof val === "object") {
+          node.displayEl.textContent = JSON.stringify(val, null, 2);
+        } else if (typeof val === "number") {
+          node.displayEl.textContent = val.toFixed(3);
+        } else {
+          node.displayEl.textContent = String(val);
+        }
+      }
+    }
+  }
+  extractArgs(code) {
+    const match = code.match(/function\s+[^(]*\(([^)]*)\)/);
+    if (!match) return [];
+    return match[1].split(",").map(a => a.trim()).filter(Boolean);
+  }
+  adaptDynamicFunction(node, fnName) {
+    console.log('adaptDynamicFunction(node, fnName) ');
+    const fn = node.accessObject?.[fnName];
+    if (typeof fn !== "function") return;
+    node.inputs = [{
+      name: "exec",
+      type: "action"
+    }];
+    node.outputs = [{
+      name: "execOut",
+      type: "action"
+    }];
+    // args → inputs read
+    const args = this.getArgNames(fn);
+    args.forEach(arg => {
+      node.inputs.push({
+        name: arg,
+        type: "value"
+      });
+    });
+    if (this.hasReturn(fn)) {
+      node.outputs.push({
+        name: "return",
+        type: "value"
+      });
+    }
+    node.category = "functions";
+    node.fn = fn; // REAL FUNCTION
+    node.fnName = fnName;
+    node.descFunc = fnName;
+    // node.title = fnName;
+    this.updateNodeDOM(node.id);
+  }
+  invalidateVariableGetters(type, varName) {
+    for (const id in this.nodes) {
+      const n = this.nodes[id];
+      if (n.category === "value" && n.fields?.some(f => f.key === "var" && f.value === varName) && n.title === `Get ${type[0].toUpperCase() + type.slice(1)}`) {
+        delete n._returnCache;
+      }
+    }
+  }
+  deepEqual(a, b) {
+    if (a === b) return true;
+    if (typeof a !== "object" || typeof b !== "object" || a == null || b == null) return false;
+    const keysA = Object.keys(a);
+    const keysB = Object.keys(b);
+    if (keysA.length !== keysB.length) return false;
+    for (const key of keysA) {
+      if (!keysB.includes(key)) return false;
+      if (!this.deepEqual(a[key], b[key])) return false;
+    }
+    return true;
+  }
+  triggerNode(nodeId) {
+    const n = this.nodes[nodeId];
+    if (!n) return;
+    this._execContext = nodeId;
+    // Highlight node header
+    const highlight = document.querySelector(`.node[data-id="${nodeId}"] .header`);
+    if (highlight) {
+      highlight.style.filter = "brightness(1.5)";
+      setTimeout(() => highlight.style.filter = "none", 200);
+    }
+    if (n.title === "Get Sub Object") {
+      const obj = this.getValue(n.id, "object");
+      let path = n.fields.find(f => f.key === "path")?.value;
+      let target = this.resolvePath(obj, path);
+      if (target === undefined) {
+        // probably no prefix .value 
+        path = path.replace('value.', '');
+        target = this.resolvePath(obj, path);
+      }
+      console.warn('SET CACHE target is ', target);
+      // n.outputs = n.outputs.filter(p => p.type === "action");
+      n._subCache = target;
+      n._returnCache = target;
+      n._needsRebuild = false;
+      n._pinsBuilt = true;
+      this.enqueueOutputs(n, "execOut");
+      return;
+    } else if (n.type === "forEach") {
+      let arr;
+      const link = this.links.find(l => l.to.node === n.id);
+      if (link) arr = this.getValue(link.from.node, link.from.pin);
+      // Fallback to literal
+      if (arr === undefined) {
+        const inputPin = n.inputs?.find(p => p.name === "array");
+        arr = inputPin?.default;
+      }
+      if (typeof arr === "string") {
+        try {
+          arr = JSON.parse(arr);
+        } catch (e) {
+          console.warn("Failed to parse array string", arr);
+          arr = [];
+        }
+      }
+      if (!Array.isArray(arr)) return;
+      arr.forEach((item, index) => {
+        // update node runtime state!
+        n.state = {
+          item,
+          index
+        };
+        this.links.filter(l => l.type === "action" && l.from.node === n.id && l.from.pin === "loop").forEach(l => {
+          this.triggerNode(l.to.node);
+        });
+      });
+      // completed pin (once)
+      this.links.filter(l => l.type === "action" && l.from.node === n.id && l.from.pin === "completed").forEach(l => {
+        this.triggerNode(l.to.node);
+      });
+    } else if (n.title === "Get Array") {
+      let arr;
+      // Find input link BAd but ok for now
+      const link = this.links.find(l => l.to.node === n.id && (l.to.pin === "array" || l.to.pin === "result" || l.to.pin === "value"));
+      if (link) {
+        const fromNode = this.nodes[link.from.node];
+        if (fromNode._returnCache === undefined && fromNode._subCache === undefined) {
+          this.triggerNode(fromNode.id);
+        }
+        if (fromNode._returnCache) arr = fromNode._returnCache;
+        if (fromNode._subCache) arr = fromNode._subCache;
+      } else {
+        // fallback to default literal
+        arr = n.inputs?.find(p => p.name === "array")?.default ?? [];
+      }
+      // make it fluid 
+      n._returnCache = Array.isArray(arr) ? arr : arr ? arr[link.from.pin] : this.getValue(link.from.node, link.from.pin);
+      this.enqueueOutputs(n, "execOut");
+      return;
+    } else if (n.title === "reffunctions") {
+      const fn = n._fnRef;
+      if (typeof fn !== "function") {
+        console.warn("[reffunctions] No function reference");
+        this.enqueueOutputs(n, "execOut");
+        return;
+      }
+
+      // Collect REAL args (exclude exec + reference)
+      const args = n.inputs.filter(p => p.type !== "action" && p.name !== "reference").map(p => this.getValue(n.id, p.name));
+      const result = fn(...args);
+      if (this.hasReturn(fn)) {
+        n._returnCache = result;
+      }
+      this.enqueueOutputs(n, "execOut");
+      return;
+    } else if (n.title === "Custom Event") {
+      console.log('********************************');
+      // if(n._listenerAttached === true) return;
+
+      const eventName = n.fields?.find(f => f.key === "name")?.value;
+      if (!eventName) return;
+      const handler = e => {
+        console.log('**TRUE** HANDLER**');
+        n._returnCache = e.detail;
+        this.enqueueOutputs(n, "exec");
+      };
+      console.log('**eventName**', eventName);
+      window.removeEventListener(eventName, handler);
+      window.addEventListener(eventName, handler);
+      n._eventHandler = handler;
+      n._listenerAttached = true;
+      return;
+    } else if (n.title === "Dispatch Event") {
+      const name = this.getValue(nodeId, "eventName");
+      if (!name) {
+        console.warn("[Dispatch] missing eventName");
+        this.enqueueOutputs(n, "execOut");
+        return;
+      }
+      const detail = this.getValue(nodeId, "detail");
+      console.log('*************window.dispatchEvent****************', name);
+      window.dispatchEvent(new CustomEvent(name, {
+        detail: detail ?? {}
+      }));
+      this.enqueueOutputs(n, "execOut");
+      return;
+    } else if (n.title === "On Ray Hit") {
+      console.log('On Ray Hit =NOTHING NOW', n._listenerAttached);
+    }
+    if (n.isGetterNode) {
+      const varField = n.fields?.find(f => f.key === "var");
+      if (varField && varField.value) {
+        const type = n.title.replace("Get ", "").toLowerCase();
+        const value = this.getVariable(type, varField.value);
+        n._returnCache = value;
+        // Update visual label if exists
+        if (n.displayEl) {
+          if (type === "object") {
+            n.displayEl.textContent = value !== undefined ? JSON.stringify(value) : "{}";
+          } else if (typeof value === "number") {
+            n.displayEl.textContent = value.toFixed(3);
+          } else {
+            n.displayEl.textContent = String(value);
+          }
+        }
+      }
+      n.finished = true;
+      return;
+    }
+    if (n.title === "On Target Position Reach") {
+      const pos = this.getValue(nodeId, "position");
+      console.info("On Target Position Reach ", pos);
+      if (!pos) return;
+      // Attach listener (engine-agnostic)
+      pos.onTargetPositionReach = () => {
+        this.triggerNode(n);
+        this.enqueueOutputs(n, "exec");
+        // alert(" TARGET REACh ");
+      };
+      console.log('**************rrrrrrrrrr***************');
+      n._listenerAttached = true;
+      return;
+    }
+
+    // functionDinamic execution
+    if (n.category === "functions") {
+      console.log('TRIGGER n.category === functions ');
+      // bloomPass is created in post time - make always update
+      n.accessObject = eval(n.accessObjectLiteral);
+      if (n.fn === undefined) {
+        n.fn = n.accessObject[n.fnName];
+      }
+      const args = n.inputs.filter(p => p.type !== "action").map(p => this.getValue(n.id, p.name));
+      const result = n.fn(...args);
+      if (this.hasReturn(n.fn)) {
+        n._returnCache = result;
+      }
+      this.enqueueOutputs(n, "execOut");
+      return;
+    }
+    if (n.category === "event" && typeof n.noselfExec === 'undefined') {
+      console.log('>>>>>>>>>>>>>>>>>>>>>>>>>>>>EXEC :  ', n.title);
+      this.enqueueOutputs(n, "exec");
+      return;
+    }
+    if (n.category === "event" && typeof n.noselfExec != 'undefined') {
+      console.log('PREVENT SELF EXEC');
+      return;
+    }
+    if (n.isVariableNode) {
+      const type = n.title.replace("Set ", "").toLowerCase();
+      const varField = n.fields?.find(f => f.key === "var");
+      if (varField && varField.value) {
+        let value = this.getValue(nodeId, "value");
+        // if 0 probably no pin connection
+        if (n.title == "Set Object") {
+          if (value == 0) {
+            let varliteral = n.fields?.find(f => f.key === "literal");
+            console.log("set object  varliteral.value ", varliteral.value);
+            this.variables[type][varField.value] = JSON.parse(varliteral.value);
+          }
+        } else {
+          console.log("set object ", value);
+          this.variables[type][varField.value] = {
+            value
+          };
+        }
+        this.notifyVariableChanged(type, varField.value);
+        // Update matching getter nodes instantly
+        for (const nodeId2 in this.nodes) {
+          const node2 = this.nodes[nodeId2];
+          if (node2.isGetterNode) {
+            const vf2 = node2.fields?.find(f => f.key === "var");
+            if (vf2 && vf2.value === varField.value && node2.displayEl) {
+              if (type === "object") {
+                node2.displayEl.textContent = JSON.stringify(value);
+              } else {
+                node2.displayEl.textContent = typeof value === "number" ? value.toFixed(3) : String(value);
+              }
+              node2._returnCache = value;
+            }
+          }
+        }
+      }
+      n.finished = true;
+      this.enqueueOutputs(n, "execOut");
+      return;
+    }
+    if (n.title === "Fetch") {
+      const url = this.getValue(nodeId, "url");
+      if (!url) {
+        console.warn("[Fetch] URL missing");
+        this.enqueueOutputs(n, "error");
+        return;
+      }
+      const method = this.getValue(nodeId, "method") || "GET";
+      const body = this.getValue(nodeId, "body");
+      const headers = this.getValue(nodeId, "headers") || {};
+      const options = {
+        method,
+        headers
+      };
+      if (body && method !== "GET") {
+        options.body = typeof body === "string" ? body : JSON.stringify(body);
+        if (!headers["Content-Type"]) {
+          headers["Content-Type"] = "application/json";
+        }
+      }
+      fetch(url, options).then(async res => {
+        n._returnCache = {
+          response: await res.json().catch(() => null),
+          status: res.status
+        };
+        this.enqueueOutputs(n, "execOut");
+      }).catch(err => {
+        console.error("[Fetch]", err);
+        this.enqueueOutputs(n, "error");
+      });
+      return;
+    }
+
+    // Action / Print / Timer Nodes
+    if (["action", "actionprint", "timer"].includes(n.category)) {
+      // only for custom functions from managerfunction
+      if (n.attachedMethod) this._executeAttachedMethod(n);
+      if (n.title === "Print") {
+        const label = n.fields?.find(f => f.key === "label")?.value || "Print:";
+        let val;
+        const link = this.getConnectedSource(nodeId, "value");
+        if (link) {
+          const fromNode = link.node;
+          const fromPin = link.pin;
+          if (fromNode._subCache && typeof fromNode._subCache === "object" && fromPin in fromNode._subCache) {
+            val = fromNode._subCache[fromPin];
+          } else {
+            val = this.getValue(fromNode.id, fromPin);
+          }
+        } else {
+          val = this.getValue(nodeId, "value");
+        }
+        if (n.displayEl) {
+          if (typeof val === "object") {
+            n.displayEl.textContent = JSON.stringify(val);
+          } else if (typeof val === "number") {
+            n.displayEl.textContent = val.toFixed(3);
+          } else {
+            n.displayEl.textContent = String(val);
+          }
+        }
+        console.info(`[Print] ${label}`, val);
+      } else if (n.title === "SetTimeout") {
+        const delay = +n.fields?.find(f => f.key === "delay")?.value || 1000;
+        setTimeout(() => this.enqueueOutputs(n, "execOut"), delay);
+        return;
+      } else if (n.title === "Play MP3") {
+        const key = this.getValue(nodeId, "key");
+        const src = this.getValue(nodeId, "src");
+        const clones = Number(this.getValue(nodeId, "clones")) || 1;
+        if (!key || !src) {
+          console.warn("[Play MP3] Missing key or src");
+          this.enqueueOutputs(n, "execOut");
+          return;
+        }
+        const createdField = n.fields.find(f => f.key === "created");
+        if (!createdField.value) {
+          console.log('!AUDIO ONCE!');
+          app.matrixSounds.createAudio(key, src, clones);
+          createdField.value = true;
+        }
+        app.matrixSounds.play(key);
+        this.enqueueOutputs(n, "execOut");
+        return;
+      }
+      this.enqueueOutputs(n, "execOut");
+      return;
+    }
+    if (n.category === "logic" && n.title === "if") {
+      // console.log('TEST LOGIC ')
+      const condition = Boolean(this.getValue(nodeId, "condition"));
+      this.enqueueOutputs(n, condition ? "true" : "false");
+      this._execContext = null;
+      return;
+    }
+    if (n.title === "Get Speed") {
+      const pos = this.getValue(nodeId, "position");
+      if (pos?.getSpeed) {
+        // this.getValue(nodeId, "thrust")
+        console.log('pos.getSpeed()', pos.getSpeed());
+        n._returnCache = pos.getSpeed();
+      }
+      this.enqueueOutputs(n, "execOut");
+      return;
+    } else if (n.title === "Set Texture") {
+      const texpath = this.getValue(nodeId, "texturePath");
+      const sceneObjectName = this.getValue(nodeId, "sceneObjectName");
+      // sceneObjectName
+      if (texpath) {
+        // console.log('textPath', texpath)
+        // console.log('sceneObjectName', sceneObjectName)
+        let obj = app.getSceneObjectByName(sceneObjectName);
+        obj.loadTex0([texpath]).then(() => {
+          setTimeout(() => obj.changeTexture(obj.texture0), 200);
+        });
+        // pos.setSpeed(this.getValue(nodeId, "thrust"));
+      }
+      this.enqueueOutputs(n, "execOut");
+      return;
+    } else if (n.title === "Set Speed") {
+      const pos = this.getValue(nodeId, "position");
+      if (pos?.setSpeed) {
+        pos.setSpeed(this.getValue(nodeId, "thrust"));
+      }
+      this.enqueueOutputs(n, "execOut");
+      return;
+    } else if (n.title === "Set Position") {
+      const pos = this.getValue(nodeId, "position");
+      if (pos?.setPosition) {
+        pos.setPosition(this.getValue(nodeId, "x"), this.getValue(nodeId, "y"), this.getValue(nodeId, "z"));
+      }
+      this.enqueueOutputs(n, "execOut");
+      return;
+    } else if (n.title === "Set Rotation") {
+      const rot = this.getValue(nodeId, "rotation");
+      if (rot?.setRotation) {
+        rot.setRotation(this.getValue(nodeId, "x"), this.getValue(nodeId, "y"), this.getValue(nodeId, "z"));
+      }
+      this.enqueueOutputs(n, "execOut");
+      return;
+    } else if (n.title === "Set Rotate") {
+      const rot = this.getValue(nodeId, "rotation");
+      if (rot?.setRotate) {
+        rot.setRotate(this.getValue(nodeId, "x"), this.getValue(nodeId, "y"), this.getValue(nodeId, "z"));
+      }
+      this.enqueueOutputs(n, "execOut");
+      return;
+    } else if (n.title === "Set RotateX") {
+      const rot = this.getValue(nodeId, "rotation");
+      if (rot?.setRotateX) {
+        rot.setRotateX(this.getValue(nodeId, "x"));
+      }
+      this.enqueueOutputs(n, "execOut");
+      return;
+    } else if (n.title === "Set RotateY") {
+      const rot = this.getValue(nodeId, "rotation");
+      if (rot?.setRotateY) {
+        rot.setRotateY(this.getValue(nodeId, "y"));
+      }
+      this.enqueueOutputs(n, "execOut");
+      return;
+    } else if (n.title === "Set RotateZ") {
+      const rot = this.getValue(nodeId, "rotation");
+      if (rot?.setRotateZ) {
+        rot.setRotateZ(this.getValue(nodeId, "z"));
+      }
+      this.enqueueOutputs(n, "execOut");
+      return;
+    } else if (n.title === "Translate By X") {
+      const pos = this.getValue(nodeId, "position");
+      if (pos?.translateByX) {
+        pos.translateByX(this.getValue(nodeId, "x"));
+      }
+      this.enqueueOutputs(n, "execOut");
+      return;
+    } else if (n.title === "Translate By Y") {
+      const pos = this.getValue(nodeId, "position");
+      if (pos?.translateByY) {
+        pos.translateByX(this.getValue(nodeId, "y"));
+      }
+      this.enqueueOutputs(n, "execOut");
+      return;
+    } else if (n.title === "Translate By Z") {
+      const pos = this.getValue(nodeId, "position");
+      if (pos?.translateByZ) {
+        pos.translateByX(this.getValue(nodeId, "z"));
+      }
+      this.enqueueOutputs(n, "execOut");
+      return;
+    }
+    console.log("BEFORE COMPARE ");
+    if (["math", "value", "compare"].includes(n.category)) {
+      console.log("BEFORE COMPARE ");
+      let result;
+      switch (n.title) {
+        case "Add":
+          result = this.getValue(nodeId, "a") + this.getValue(nodeId, "b");
+          break;
+        case "Sub":
+          result = this.getValue(nodeId, "a") - this.getValue(nodeId, "b");
+          break;
+        case "Mul":
+          result = this.getValue(nodeId, "a") * this.getValue(nodeId, "b");
+          break;
+        case "Div":
+          result = this.getValue(nodeId, "a") / this.getValue(nodeId, "b");
+          break;
+        case "Sin":
+          result = Math.sin(this.getValue(nodeId, "a"));
+          break;
+        case "Cos":
+          result = Math.cos(this.getValue(nodeId, "a"));
+          break;
+        case "Pi":
+          result = Math.PI;
+          break;
+        case "A > B":
+          result = this.getValue(nodeId, "A") > this.getValue(nodeId, "B");
+          break;
+        case "A < B":
+          result = this.getValue(nodeId, "A") < this.getValue(nodeId, "B");
+          break;
+        case "A == B":
+          let varA = this.getValue(nodeId, "A");
+          let varB = this.getValue(nodeId, "B");
+          console.log('TEST DEEP TEST ');
+          if (typeof varA == "object") {
+            console.log('TEST DEEP ');
+            const r = this.deepEqual(varA, varB);
+            console.log('TEST DEEP ', r);
+            result = r;
+          } else {
+            result = this.getValue(nodeId, "A") != this.getValue(nodeId, "B");
+          }
+          break;
+        case "A != B":
+          let varAN = this.getValue(nodeId, "A");
+          let varBN = this.getValue(nodeId, "B");
+          if (typeof varAN == "object") {
+            const r = this.deepEqual(varAN, varBN);
+            result = !r;
+          } else {
+            result = this.getValue(nodeId, "A") != this.getValue(nodeId, "B");
+          }
+          break;
+        case "A >= B":
+          result = this.getValue(nodeId, "A") >= this.getValue(nodeId, "B");
+          break;
+        case "A <= B":
+          result = this.getValue(nodeId, "A") <= this.getValue(nodeId, "B");
+          break;
+        case "GenRandInt":
+          const min = +n.fields?.find(f => f.key === "min")?.value || 0;
+          const max = +n.fields?.find(f => f.key === "max")?.value || 10;
+          result = Math.floor(Math.random() * (max - min + 1)) + min;
+          break;
+        default:
+          result = undefined;
+      }
+      n._returnCache = result;
+      if (n.displayEl) n.displayEl.textContent = typeof result === "number" ? result.toFixed(3) : String(result);
+    }
+    this._execContext = null;
+  }
+  getConnectedSource(nodeId, inputName) {
+    const link = this.links.find(l => l.to.node === nodeId && l.to.pin === inputName);
+    if (!link) return null;
+    return {
+      node: this.nodes[link.from.node],
+      pin: link.from.pin
+    };
+  }
+  populateAccessMethods(select) {
+    // console.log("populateAccessMethods")
+    select.innerHTML = "";
+    this.accessObject.forEach(obj => {
+      Object.getOwnPropertyNames(obj.__proto__).filter(k => typeof obj[k] === "function" && k !== "constructor").forEach(fn => {
+        const opt = document.createElement("option");
+        opt.value = `${obj.name}.${fn}`;
+        opt.textContent = `${obj.name}.${fn}`;
+        select.appendChild(opt);
+      });
+    });
+    select.onchange = e => {
+      const [objName, fnName] = e.target.value.split(".");
+      this.adaptNodeToAccessMethod(node, objName, fnName);
+    };
+  }
+  getByPath(obj, path) {
+    return path.split(".").reduce((acc, key) => acc?.[key], obj);
+  }
+  getVariable(type, key) {
+    const entry = this.variables[type]?.[key];
+    if (entry === undefined) return undefined;
+    if (entry && typeof entry === "object" && "value" in entry) {
+      return entry.value;
+    }
+    return entry;
+  }
+  enqueueOutputs(n, pinName) {
+    this.links.filter(l => l.from.node === n.id && l.from.pin === pinName && l.type === "action").forEach(l => setTimeout(() => {
+      this.triggerNode(l.to.node);
+    }, 2));
+  }
+  deleteNode(nodeId) {
+    const node = this.nodes[nodeId];
+    if (!node) return;
+    this.links = this.links.filter(link => {
+      if (link.from.node === nodeId || link.to.node === nodeId) {
+        const dom = document.getElementById(link.id);
+        if (dom) dom.remove();
+        return false;
+      }
+      return true;
+    });
+    const dom = this.board.querySelector(`[data-id="${nodeId}"]`);
+    if (dom) dom.remove();
+    delete this.nodes[nodeId];
+    this.updateLinks();
+  }
+  bindGlobalListeners() {
+    document.addEventListener("mousemove", this.handleMouseMove.bind(this));
+    document.addEventListener("mouseup", this.handleMouseUp.bind(this));
+    this.boardWrap.addEventListener("mousedown", this.handleBoardWrapMouseDown.bind(this));
+    this.board.addEventListener("click", () => {
+      (0, _utils.byId)("app").style.opacity = 1;
+    });
+  }
+  handleMouseMove(e) {
+    if (this.state.draggingNode) {
+      const el = this.state.draggingNode;
+      const newX = e.clientX - this.state.dragOffset[0];
+      const newY = e.clientY - this.state.dragOffset[1];
+      el.style.left = newX + "px";
+      el.style.top = newY + "px";
+      const id = el.dataset.id;
+      if (this.nodes[id]) {
+        this.nodes[id].x = newX;
+        this.nodes[id].y = newY;
+      }
+      this.updateLinks();
+    } else if (this.state.panning) {
+      const dx = e.clientX - this.state.panStart[0],
+        dy = e.clientY - this.state.panStart[1];
+      this.state.pan[0] += dx;
+      this.state.pan[1] += dy;
+      this.board.style.transform = `translate(${this.state.pan[0]}px,${this.state.pan[1]}px)`;
+      this.state.panStart = [e.clientX, e.clientY];
+      this.updateLinks();
+    }
+  }
+  handleMouseUp() {
+    // if(this.state.draggingNode) setTimeout(() => this.updateValueDisplays(), 0);
+    this.state.draggingNode = null;
+    this.state.panning = false;
+    document.body.style.cursor = "default";
+  }
+  handleBoardWrapMouseDown(e) {
+    if (!e.target.closest(".node")) {
+      this.state.panning = true;
+      this.state.panStart = [e.clientX, e.clientY];
+      document.body.style.cursor = "grabbing";
+      this.selectNode(null);
+    }
+  }
+  updateLinks() {
+    while (this.svg.firstChild) this.svg.removeChild(this.svg.firstChild);
+    const bRect = this.board.getBoundingClientRect();
+    this.links.forEach(l => {
+      const fromDot = this._getPinDot(l.from.node, l.from.pin, true);
+      const toDot = this._getPinDot(l.to.node, l.to.pin, false);
+      if (!fromDot || !toDot) return;
+      const fRect = fromDot.getBoundingClientRect(),
+        tRect = toDot.getBoundingClientRect();
+      const x1 = fRect.left - bRect.left + 6,
+        y1 = fRect.top - bRect.top + 6;
+      const x2 = tRect.left - bRect.left + 6,
+        y2 = tRect.top - bRect.top + 6;
+      const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      path.setAttribute("class", "link " + (l.type === "value" ? "value" : ""));
+      path.setAttribute("d", `M${x1},${y1} C${x1 + 50},${y1} ${x2 - 50},${y2} ${x2},${y2}`);
+      this.svg.appendChild(path);
+    });
+  }
+  runGraph() {
+    (0, _utils.byId)("app").style.opacity = 0.4;
+    // this.updateValueDisplays();
+    this.initEventNodes();
+    Object.values(this.nodes).forEach(n => n._returnCache = undefined);
+    Object.values(this.nodes).filter(n => n.category === "event" && n.title === "onLoad").forEach(n => this.triggerNode(n.id));
+  }
+  compileGraph() {
+    const bundle = {
+      nodes: this.nodes,
+      links: this.links,
+      nodeCounter: this.nodeCounter,
+      linkCounter: this.linkCounter,
+      pan: this.state.pan,
+      variables: this.variables
+    };
+    function saveReplacer(key, value) {
+      if (key === 'fn') return undefined;
+      if (key === 'accessObject') return undefined;
+      if (key === '_returnCache') return undefined;
+      if (key === '_listenerAttached') return false;
+      return value;
+    }
+    localStorage.setItem(FluxCodexVertex.SAVE_KEY, JSON.stringify(bundle, saveReplacer));
+    this.log("Graph saved to LocalStorage!");
+  }
+  clearStorage() {
+    let ask = confirm("⚠️ Delete all nodes , are you sure ?");
+    if (ask) {
+      localStorage.removeItem(FluxCodexVertex.SAVE_KEY);
+      location.reload(true);
+    }
+  }
+  clearAllNodes() {
+    // Remove node DOMs
+    this.board.querySelectorAll(".node").forEach(n => n.remove());
+    // Clear data
+    this.nodes.length = 0;
+    this.links.length = 0;
+    // Clear state
+    this.state.selectedNode = null;
+    this.state.draggingNode = null;
+    this.state.connectingPin = null;
+    // Optional: redraw connections
+    this.updateLinks();
+  }
+  _buildSaveBundle() {
+    return {
+      nodes: this.nodes,
+      links: this.links,
+      nodeCounter: this.nodeCounter,
+      linkCounter: this.linkCounter,
+      pan: this.state.pan,
+      variables: this.variables,
+      version: 1
+    };
+  }
+  _loadFromBundle(data) {
+    this.nodes = data.nodes || {};
+    this.links = data.links || {};
+    this.nodeCounter = data.nodeCounter || 0;
+    this.linkCounter = data.linkCounter || 0;
+    this.state.pan = data.pan || {
+      x: 0,
+      y: 0
+    };
+    this.variables = data.variables || {
+      number: {},
+      boolean: {},
+      string: {}
+    };
+
+    // refresh UI
+    this._refreshVarsList(this._varsPopup.children[1]);
+    this.loadFromImport();
+    this.log("Graph imported from JSON");
+  }
+  exportToJSON() {
+    const bundle = this._buildSaveBundle();
+    console.log(bundle);
+    function saveReplacer(key, value) {
+      if (key === 'fn') return undefined;
+      if (key === 'accessObject') return undefined;
+      if (key === '_returnCache') return undefined;
+      if (key === '_listenerAttached') return false;
+      return value;
+    }
+    const json = JSON.stringify(bundle, saveReplacer);
+    const blob = new Blob([json], {
+      type: "application/json"
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "fluxcodex-graph.json";
+    a.click();
+    URL.revokeObjectURL(url);
+    this.log("Graph exported as JSON");
+  }
+  _createImportInput() {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".json";
+    input.style.display = "none";
+    input.onchange = e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const data = JSON.parse(reader.result);
+          this._loadFromBundle(data);
+        } catch (err) {
+          console.error("Invalid JSON file", err);
+        }
+      };
+      reader.readAsText(file);
+    };
+    document.body.appendChild(input);
+    this._importInput = input;
+  }
+  init() {
+    const saved = localStorage.getItem(FluxCodexVertex.SAVE_KEY);
+    if (saved) {
+      try {
+        const data = JSON.parse(saved);
+        // console.log("data.variables", data.variables);
+        if (data.variables) {
+          this.variables = data.variables;
+          this._refreshVarsList(this._varsPopup.children[1]);
+        }
+        this.nodes = data.nodes || {};
+        this.links = data.links || [];
+        this.nodeCounter = data.nodeCounter || 1;
+        this.linkCounter = data.linkCounter || 1;
+        this.state.pan = data.pan || [0, 0];
+        this.board.style.transform = `translate(${this.state.pan[0]}px,${this.state.pan[1]}px)`;
+        Object.values(this.nodes).forEach(spec => {
+          const domEl = this.createNodeDOM(spec);
+          this.board.appendChild(domEl);
+          if (spec.category === "value" && spec.title !== "GenRandInt" || spec.category === "math" || spec.title === "Print") {
+            spec.displayEl = domEl.querySelector(".value-display");
+          }
+          // if(spec.category === "action" && spec.title === "Function") {
+          this.updateNodeDOM(spec.id);
+          // }
+        });
+        this.updateLinks();
+        // TEST FIX SELF CALL TRIGGER
+        // this.updateValueDisplays();
+
+        this.restoreConnectionsRuntime();
+        this.log("Restored graph.");
+        return;
+      } catch (e) {
+        console.error("Failed to load graph from storage:", e);
+      }
+    }
+    this.addNode("event");
+  }
+  loadFromImport() {
+    Object.values(this.nodes).forEach(spec => {
+      const domEl = this.createNodeDOM(spec);
+      this.board.appendChild(domEl);
+      if (spec.category === "value" && spec.title !== "GenRandInt" || spec.category === "math" || spec.title === "Print") {
+        spec.displayEl = domEl.querySelector(".value-display");
+      }
+      // Only function nodes get dynamic pins updated
+      if (spec.category === "action" && spec.title === "Function") {
+        this.updateNodeDOM(spec.id);
+      }
+    });
+    this.updateLinks();
+    this.updateValueDisplays();
+    this.log("Restored graph.");
+    this.compileGraph();
+    return;
+  }
+}
+exports.default = FluxCodexVertex;
+FluxCodexVertex.SAVE_KEY = "matrixEngineVisualScripting";
+
+},{"../../engine/plugin/tooltip/ToolTip":43,"../../engine/utils":46}],73:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+var _utils = require("../../engine/utils.js");
+/**
+ * @Author NIkola Lukic
+ * @description
+ * Web Editor for matrix-engine-wgpu
+ * Using "file protocol" in direct way no virtual/syntetic assets
+ */
+class EditorHud {
+  constructor(core, a) {
+    this.core = core;
+    this.sceneContainer = null;
+    this.FS = new _utils.FullscreenManager();
+    if (a == 'infly') {
+      this.createTopMenuInFly();
+    } else if (a == "created from editor") {
+      this.createTopMenu();
+      this.createAssets();
+    } else if (a == "pre editor") {
+      this.createTopMenuPre();
+    } else {
+      throw console.error('Editor err');
+    }
+    this.createEditorSceneContainer();
+    this.createScenePropertyBox();
+    this.currentProperties = [];
+    setTimeout(() => document.dispatchEvent(new CustomEvent('updateSceneContainer', {
+      detail: {}
+    })), 1000);
+    document.addEventListener('editor-not-running', () => {
+      this.noEditorConn();
+    });
+    document.addEventListener('file-detail-data', e => {
+      console.log(e.detail.details);
+      let getPATH = e.detail.details.path.split("public")[1];
+      const ext = getPATH.split('.').pop();
+      if (ext == 'glb' && confirm("GLB FILE 📦 Do you wanna add it to the scene ?")) {
+        let name = prompt("📦 GLB file : ", getPATH);
+        let objName = prompt("📦 Enter uniq name: ");
+        if (confirm("⚛ Enable physics (Ammo)?")) {
+          // infly
+          let o = {
+            physics: true,
+            path: getPATH,
+            index: objName
+          };
+          document.dispatchEvent(new CustomEvent('web.editor.addGlb', {
+            detail: o
+          }));
+        } else {
+          // infly
+          let o = {
+            physics: false,
+            path: getPATH,
+            index: objName
+          };
+          document.dispatchEvent(new CustomEvent('web.editor.addGlb', {
+            detail: o
+          }));
+        }
+      } else if (ext == 'obj' && confirm("OBJ FILE 📦 Do you wanna add it to the scene ?")) {
+        let objName = prompt("📦 Enter uniq name: ");
+        let name = prompt("📦 OBJ file : ", getPATH);
+        if (confirm("⚛ Enable physics (Ammo)?")) {
+          // infly 
+          let o = {
+            physics: true,
+            path: name,
+            index: objName
+          };
+          document.dispatchEvent(new CustomEvent('web.editor.addObj', {
+            detail: o
+          }));
+        } else {
+          // infly
+          let o = {
+            physics: false,
+            path: name,
+            index: objName
+          };
+          document.dispatchEvent(new CustomEvent('web.editor.addObj', {
+            detail: o
+          }));
+        }
+      } else if (ext == 'mp3' && confirm("MP3 FILE 📦 Do you wanna add it to the scene ?")) {
+        let objName = prompt("📦 Enter uniq name: ");
+        // infly
+        let o = {
+          path: getPATH,
+          name: objName
+        };
+        document.dispatchEvent(new CustomEvent('web.editor.addMp3', {
+          detail: o
+        }));
+      } else {
+        let s = "";
+        for (let key in e.detail.details) {
+          if (key == "path") {
+            s += key + ":" + e.detail.details[key].split("public")[1] + "\n";
+          } else {
+            s += key + ":" + e.detail.details[key] + "\n";
+          }
+        }
+        _utils.mb.show(s);
+      }
+    });
+  }
+  noEditorConn() {
+    this.errorForm = document.createElement("div");
+    this.errorForm.id = "errorForm";
+    Object.assign(this.errorForm.style, {
+      position: "absolute",
+      top: "20%",
+      left: "25%",
+      width: "50%",
+      height: "30vh",
+      backgroundColor: "rgba(0,0,0,0.85)",
+      display: "flex",
+      color: "white",
+      fontFamily: "'Orbitron', sans-serif",
+      zIndex: "15",
+      padding: "2px",
+      boxSizing: "border-box",
+      flexDirection: "column",
+      justifyContent: 'center',
+      alignItems: 'center'
+    });
+    this.errorForm.innerHTML = `
+       <h2 class='fancy-label'>No connection with editor node app.</h2>
+       <h3 class='fancy-label'>Run from root [npm run editorx] \n 
+          or run from ./src/tools/editor/backend [npm run editorx] \n
+          Than refresh page [clear default cache browser with CTRL+F5] </h3>
+    `;
+    document.body.appendChild(this.errorForm);
+  }
+  createTopMenu() {
+    this.editorMenu = document.createElement("div");
+    this.editorMenu.id = "editorMenu";
+    Object.assign(this.editorMenu.style, {
+      position: "absolute",
+      top: "0",
+      left: "30%",
+      width: "60%",
+      height: "50px;",
+      backgroundColor: "rgba(0,0,0,0.85)",
+      display: "flex",
+      alignItems: "start",
+      // overflow: "auto",
+      color: "white",
+      fontFamily: "'Orbitron', sans-serif",
+      zIndex: "15",
+      padding: "2px",
+      boxSizing: "border-box",
+      flexDirection: "row"
+    });
+    this.editorMenu.innerHTML = " PROJECT MENU  ";
+    this.editorMenu.innerHTML = `
+    <div class="top-item">
+      <div class="top-btn">Project ▾</div>
+      <div class="dropdown">
+      <div id="start-watch" class="drop-item">🛠️ Watch</div>
+      <div id="stop-watch" class="drop-item">🛠️ Stop Watch</div>
+      <div class="drop-item">🛠️ Build</div>
+      <div id="start-refresh" class="drop-item">🛠️ Refresh</div>
+      </div>
+    </div>
+
+    <div class="top-item">
+      <div class="top-btn">Insert ▾</div>
+      <div class="dropdown">
+        <div id="addCube" class="drop-item">🧊Cube</div>
+        <div id="addCubePhysics" class="drop-item">🧊Cube with Physics</div>
+        <div id="addSphere" class="drop-item">⚪Sphere</div>
+        <div id="addSpherePhysics" class="drop-item">⚪Sphere with Physics</div>
+        <small>Glb and Obj files add direct from asset (by selecting)</small>
+        <!--div class="drop-item">💡 Light</div-->
+      </div>
+    </div>
+
+    <div class="top-item">
+      <div class="top-btn">Settings ▾</div>
+      <div class="dropdown">
+        <div id="cameraBox" class="drop-item">
+           <p>📽️Camera</p>
+           <div>Pitch: <input id="camera-settings-pitch" step='0.1' type='number' value='0' /></div>
+           <div>Yaw: <input id="camera-settings-yaw" step='0.1' type='number' value='0' /></div>
+           <div> Position :  </br>
+            \n 
+            X: <input id="camera-settings-pos-x" step='0.5' type='number' value='0' /> \n
+            Y: <input id="camera-settings-pos-y" step='0.5' type='number' value='0' /> \n
+            Z: <input id="camera-settings-pos-z" step='0.5' type='number' value='0' />
+           </div>
+        </div>
+      </div>
+    </div>
+    
+    
+    <div class="top-item">
+      <div class="top-btn">Script ▾</div>
+      <div class="dropdown">
+        <div id="showVisualCodeEditorBtn" class="drop-item">
+           <span>Visual Scripting</span>
+           <small>⌨️FluxCodexVertex</small>
+           <small>⌨️Press F6 for run</small>
+        </div>
+        <div id="showCodeVARSBtn" class="drop-item">
+           <span>Variable editor</span>
+           <small>⌨️Visual Script tool</small>
+        </div>
+        <div id="showCodeEditorBtn" class="drop-item">
+           <span>Show code editor</span>
+           <small>⌨️Function raw edit</small>
+           <small>Custom Functions</small>
+        </div>
+      </div>
+    </div>
+
+    <div class="top-item">
+      <div class="top-btn">View ▾</div>
+      <div class="dropdown">
+        <div id="hideEditorBtn" class="drop-item">
+           <p>Hide Editor UI</p>
+           <small>Show editor - press F4 ⌨️</small>
+        </div>
+        <div id="bg-transparent" class="drop-item">
+           <p>Background transparent</p>
+           <small>Fancy style</small>
+        </div>
+        <div id="bg-tradicional" class="drop-item">
+           <p>Background tradicional</p>
+           <small>Old school</small>
+        </div>
+        <div id="fullScreenBtn" class="drop-item">
+         <span>FullScreen</span>
+         <small>Exit - press F11 ⌨️</small>
+        </div>
+      </div>
+    </div>
+
+    <div class="top-item">
+      <div class="top-btn">About ▾</div>
+      <div class="dropdown">
+        <div id="showAboutEditor" class="drop-item">matrix-engine-wgpu</div>
+      </div>
+    </div>
+  `;
+    document.body.appendChild(this.editorMenu);
+
+    // Mobile friendly toggles
+    this.editorMenu.querySelectorAll(".top-btn").forEach(btn => {
+      btn.addEventListener("click", e => {
+        const menu = e.target.nextElementSibling;
+
+        // close others
+        this.editorMenu.querySelectorAll(".dropdown").forEach(d => {
+          if (d !== menu) d.style.display = "none";
+        });
+
+        // toggle
+        menu.style.display = menu.style.display === "block" ? "none" : "block";
+      });
+    });
+
+    // Close on outside tap
+    document.addEventListener("click", e => {
+      if (!this.editorMenu.contains(e.target)) {
+        this.editorMenu.querySelectorAll(".dropdown").forEach(d => {
+          d.style.display = "none";
+        });
+      }
+    });
+    (0, _utils.byId)('fullScreenBtn').addEventListener('click', () => {
+      this.FS.request();
+    });
+    (0, _utils.byId)('hideEditorBtn').addEventListener('click', () => {
+      this.editorMenu.style.display = 'none';
+      this.assetsBox.style.display = 'none';
+      this.sceneProperty.style.display = 'none';
+      this.sceneContainer.style.display = 'none';
+      (0, _utils.byId)('app').style.display = 'none';
+    });
+    (0, _utils.byId)('bg-transparent').addEventListener('click', () => {
+      (0, _utils.byId)('boardWrap').style.backgroundImage = 'none';
+    });
+    (0, _utils.byId)('bg-tradicional').addEventListener('click', () => {
+      // byId('boardWrap').style.backgroundImage = 'url("res/icons/editor/chatgpt-gen-bg.png")';
+      (0, _utils.byId)('boardWrap').style.backgroundImage = '';
+    });
+    if ((0, _utils.byId)('stop-watch')) (0, _utils.byId)('stop-watch').addEventListener('click', () => {
+      document.dispatchEvent(new CustomEvent('stop-watch', {
+        detail: {}
+      }));
+    });
+    if ((0, _utils.byId)('start-watch')) (0, _utils.byId)('start-watch').addEventListener('click', () => {
+      document.dispatchEvent(new CustomEvent('start-watch', {
+        detail: {}
+      }));
+    });
+    if ((0, _utils.byId)('cnpBtn')) (0, _utils.byId)('cnpBtn').addEventListener('click', () => {
+      let name = prompt("📦 Project name :", "MyProject1");
+      let features = {
+        physics: false,
+        networking: false
+      };
+      if (confirm("⚛ Enable physics (Ammo)?")) {
+        features.physics = true;
+      }
+      if (confirm("🔌 Enable networking (kurento/ov)?")) {
+        features.networking = true;
+      }
+      console.log(features);
+      document.dispatchEvent(new CustomEvent('cnp', {
+        detail: {
+          name: name,
+          features: features
+        }
+      }));
+    });
+    (0, _utils.byId)('start-refresh').onclick = () => {
+      location.reload(true);
+    };
+
+    // OBJECT LEVEL
+    if ((0, _utils.byId)('addCube')) (0, _utils.byId)('addCube').addEventListener('click', () => {
+      let objName = prompt("📦 Enter uniq name: ");
+      let o = {
+        physics: false,
+        index: objName
+      };
+      document.dispatchEvent(new CustomEvent('web.editor.addCube', {
+        detail: o
+      }));
+    });
+    if ((0, _utils.byId)('addSphere')) (0, _utils.byId)('addSphere').addEventListener('click', () => {
+      let objName = prompt("📦 Enter uniq name: ");
+      let o = {
+        physics: false,
+        index: objName
+      };
+      document.dispatchEvent(new CustomEvent('web.editor.addSphere', {
+        detail: o
+      }));
+    });
+    if ((0, _utils.byId)('addCubePhysics')) (0, _utils.byId)('addCubePhysics').addEventListener('click', () => {
+      let objName = prompt("📦 Enter uniq name: ");
+      let o = {
+        physics: true,
+        index: objName
+      };
+      document.dispatchEvent(new CustomEvent('web.editor.addCube', {
+        detail: o
+      }));
+    });
+    if ((0, _utils.byId)('addSpherePhysics')) (0, _utils.byId)('addSpherePhysics').addEventListener('click', () => {
+      let objName = prompt("📦 Enter uniq name: ");
+      let o = {
+        physics: true,
+        index: objName
+      };
+      document.dispatchEvent(new CustomEvent('web.editor.addSphere', {
+        detail: o
+      }));
+    });
+
+    // settings
+    setTimeout(() => {
+      this.core.cameras.WASD.pitch = (0, _utils.byId)('camera-settings-pitch').value;
+      this.core.cameras.WASD.yaw = (0, _utils.byId)('camera-settings-yaw').value;
+    }, 1500);
+    (0, _utils.byId)('camera-settings-pitch').addEventListener('change', e => {
+      console.log('setting camera pitch ', e);
+      this.core.cameras.WASD.pitch = e.target.value;
+    });
+    (0, _utils.byId)('camera-settings-yaw').addEventListener('change', e => {
+      console.log('setting camera', e);
+      this.core.cameras.WASD.yaw = e.target.value;
+    });
+    (0, _utils.byId)('showCodeEditorBtn').addEventListener('click', e => {
+      console.log('show-method-editor ', e);
+      document.dispatchEvent(new CustomEvent('show-method-editor', {
+        detail: {}
+      }));
+    });
+    (0, _utils.byId)('showVisualCodeEditorBtn').addEventListener('click', e => {
+      if ((0, _utils.byId)('app').style.display == 'flex') {
+        (0, _utils.byId)('app').style.display = 'none';
+      } else {
+        (0, _utils.byId)('app').style.display = 'flex';
+        if (this.core.editor.fluxCodexVertex) this.core.editor.fluxCodexVertex.updateLinks();
+      }
+    });
+    (0, _utils.byId)('showCodeVARSBtn').addEventListener('click', e => {
+      (0, _utils.byId)('app').style.display = 'flex';
+      (0, _utils.byId)('varsPopup').style.display = 'flex';
+      this.core.editor.fluxCodexVertex.updateLinks();
+      // document.dispatchEvent(new CustomEvent('show-method-editor', {detail: {}}));
+    });
+    document.addEventListener('updateSceneContainer', e => {
+      this.updateSceneContainer();
+    });
+    this.showAboutModal = () => {
+      alert(`
+  ✔️ Support for 3D objects and scene transformations
+  ✔️ Ammo.js physics integration
+  ✔️ Networking with Kurento/OpenVidu/Own middleware Nodejs -> frontend
+  ✔️ Event system
+  🎯 Save system - direct code line [file-protocol]
+  🎯 Adding Visual Scripting System called 
+     FlowCodexVertex (deactivete from top menu)(activate on pressing F4 key)
+     Source code: https://github.com/zlatnaspirala/matrix-engine-wgpu
+     More at https://maximumroulette.com
+        `);
+    };
+    (0, _utils.byId)('showAboutEditor').addEventListener('click', this.showAboutModal);
+  }
+  createAssets() {
+    this.assetsBox = document.createElement("div");
+    this.assetsBox.id = "assetsBox";
+    Object.assign(this.assetsBox.style, {
+      position: "absolute",
+      bottom: "0",
+      left: "17.55%",
+      width: "63%",
+      height: "250px",
+      backgroundColor: "rgba(0,0,0,0.85)",
+      display: "flex",
+      alignItems: "start",
+      color: "white",
+      fontFamily: "'Orbitron', sans-serif",
+      zIndex: "15",
+      padding: "2px",
+      boxSizing: "border-box",
+      flexDirection: "column"
+    });
+    this.assetsBox.innerHTML = "ASSTES";
+    this.assetsBox.innerHTML = `
+    <div id="folderTitle" >Root</div>
+    <div id="folderBack" class="scenePropItem" >...</div>
+    <div id='res-folder' class="file-browser">
+    </div>`;
+    document.body.appendChild(this.assetsBox);
+    (0, _utils.byId)('folderBack').addEventListener('click', () => {
+      let getCurrent = (0, _utils.byId)('res-folder').getAttribute('data-root-folder');
+      const t = getCurrent.substring(0, getCurrent.lastIndexOf("\\"));
+      const last = t.substring(t.lastIndexOf("\\") + 1);
+      if (last == "public") {
+        // console.log(last + "<PREVENTED>");
+        return;
+      }
+      document.dispatchEvent(new CustomEvent("nav-folder", {
+        detail: {
+          rootFolder: t || "",
+          name: ''
+        }
+      }));
+    });
+    document.addEventListener('la', e => {
+      console.log('root folder ', e.detail.rootFolder);
+      (0, _utils.byId)('res-folder').setAttribute('data-root-folder', e.detail.rootFolder);
+      (0, _utils.byId)('res-folder').innerHTML = '';
+      e.detail.payload.forEach(i => {
+        let item = document.createElement('div');
+        item.classList.add('file-item');
+        if (i.isDir == true) {
+          item.classList.add('folder');
+        } else if (i.name.split('.')[1] == 'jpg' || i.name.split('.')[1] == 'png' || i.name.split('.')[1] == 'jpeg') {
+          item.classList.add('png');
+        } else if (i.name.split('.')[1] == 'mp3') {
+          item.classList.add('mp3');
+        } else if (i.name.split('.')[1] == 'js') {
+          item.classList.add('js');
+        } else if (i.name.split('.')[1] == 'ttf' || i.name.split('.')[1] == 'ttf' || i.name.split('.')[1] == 'TTF' || i.name.split('.')[1] == 'otf' || i.name.split('.')[1] == 'woff' || i.name.split('.')[1] == 'woff2') {
+          item.classList.add('ttf');
+        } else if (i.name.split('.')[1] == 'glb') {
+          item.classList.add('glb');
+        } else {
+          item.classList.add('unknown');
+        }
+        item.innerHTML = "<p>" + i.name + "</p>";
+        (0, _utils.byId)('res-folder').appendChild(item);
+        item.addEventListener('click', e => {
+          if (i.isDir == true) document.dispatchEvent(new CustomEvent("nav-folder", {
+            detail: {
+              rootFolder: (0, _utils.byId)('res-folder').getAttribute('data-root-folder') || "",
+              name: item.children[0].innerText
+            }
+          }));
+          if (i.isDir == false) document.dispatchEvent(new CustomEvent("file-detail", {
+            detail: {
+              rootFolder: (0, _utils.byId)('res-folder').getAttribute('data-root-folder') || "",
+              name: item.innerText
+            }
+          }));
+        });
+      });
+      document.querySelectorAll('.file-item').forEach(el => {
+        el.addEventListener('click', () => {
+          document.querySelectorAll('.file-item').forEach(x => x.classList.remove('selected'));
+          el.classList.add('selected');
+        });
+      });
+    });
+  }
+  createTopMenuPre() {
+    this.editorMenu = document.createElement("div");
+    this.editorMenu.id = "editorMenu";
+    Object.assign(this.editorMenu.style, {
+      position: "absolute",
+      top: "0",
+      left: "20%",
+      width: "60%",
+      height: "50px;",
+      backgroundColor: "rgba(0,0,0,0.85)",
+      display: "flex",
+      alignItems: "start",
+      color: "white",
+      fontFamily: "'Orbitron', sans-serif",
+      zIndex: "15",
+      padding: "2px",
+      boxSizing: "border-box",
+      flexDirection: "row"
+    });
+    this.editorMenu.innerHTML = " PROJECT MENU  ";
+    this.editorMenu.innerHTML = `
+    <div class="top-item">
+      <div class="top-btn">Project ▾</div>
+      <div class="dropdown">
+      <div id="cnpBtn" class="drop-item">📦 Create new project</div>
+      <div id="loadProjectBtn" class="drop-item">📂 Load</div>
+      </div>
+    </div>
+
+    <div class="top-item">
+      <div class="top-btn">About ▾</div>
+      <div class="dropdown">
+        <div id="showAboutEditor" class="drop-item">matrix-engine-wgpu</div>
+      </div>
+    </div>
+  `;
+    document.body.appendChild(this.editorMenu);
+    // Mobile friendly toggles
+    this.editorMenu.querySelectorAll(".top-btn").forEach(btn => {
+      btn.addEventListener("click", e => {
+        const menu = e.target.nextElementSibling;
+        // close others
+        this.editorMenu.querySelectorAll(".dropdown").forEach(d => {
+          if (d !== menu) d.style.display = "none";
+        });
+        menu.style.display = menu.style.display === "block" ? "none" : "block";
+      });
+    });
+
+    // Close on outside tap
+    document.addEventListener("click", e => {
+      if (!this.editorMenu.contains(e.target)) {
+        this.editorMenu.querySelectorAll(".dropdown").forEach(d => {
+          d.style.display = "none";
+        });
+      }
+    });
+    if ((0, _utils.byId)('loadProjectBtn')) (0, _utils.byId)('loadProjectBtn').addEventListener('click', () => {
+      document.dispatchEvent(new CustomEvent('lp', {
+        detail: {}
+      }));
+    });
+    if ((0, _utils.byId)('cnpBtn')) (0, _utils.byId)('cnpBtn').addEventListener('click', () => {
+      let name = prompt("📦 Project name :", "MyProject1");
+      let features = {
+        physics: false,
+        networking: false
+      };
+      if (confirm("⚛ Enable physics (Ammo)?")) {
+        features.physics = true;
+      }
+      if (confirm("🔌 Enable networking (kurento/ov)?")) {
+        features.networking = true;
+      }
+      console.log(features);
+      document.dispatchEvent(new CustomEvent('cnp', {
+        detail: {
+          name: name,
+          features: features
+        }
+      }));
+    });
+    this.showAboutModal = () => {
+      alert(`
+  ✔️ Support for 3D objects and scene transformations
+  ✔️ Ammo.js physics integration
+  ✔️ Networking with Kurento/OpenVidu/Own middleware Nodejs -> frontend
+  ✔️ Event system
+  🎯 Save system - direct code line [file-protocol]
+  🎯 Adding Visual Scripting System called 
+     FlowCodexVertex (deactivete from top menu)(activate on pressing F4 key)
+     Source code: https://github.com/zlatnaspirala/matrix-engine-wgpu
+     More at https://maximumroulette.com
+        `);
+    };
+    (0, _utils.byId)('showAboutEditor').addEventListener('click', this.showAboutModal);
+  }
+  createTopMenuInFly() {
+    this.editorMenu = document.createElement("div");
+    this.editorMenu.id = "editorMenu";
+    Object.assign(this.editorMenu.style, {
+      position: "absolute",
+      top: "0",
+      left: "20%",
+      width: "60%",
+      height: "50px;",
+      backgroundColor: "rgba(0,0,0,0.85)",
+      display: "flex",
+      alignItems: "start",
+      color: "white",
+      fontFamily: "'Orbitron', sans-serif",
+      zIndex: "15",
+      padding: "2px",
+      boxSizing: "border-box",
+      flexDirection: "row"
+    });
+    this.editorMenu.innerHTML = " PROJECT MENU ";
+    this.editorMenu.innerHTML = `
+    <div>INFLY Regime of work no saves. Nice for runtime debugging or get data for map setup.</div>
+    <div class="top-item">
+      <div class="top-btn">About ▾</div>
+      <div class="dropdown">
+        <div id="showAboutEditor" class="drop-item">matrix-engine-wgpu</div>
+      </div>
+    </div>
+  `;
+    document.body.appendChild(this.editorMenu);
+    // Mobile friendly toggles
+    this.editorMenu.querySelectorAll(".top-btn").forEach(btn => {
+      btn.addEventListener("click", e => {
+        const menu = e.target.nextElementSibling;
+        // close others
+        this.editorMenu.querySelectorAll(".dropdown").forEach(d => {
+          if (d !== menu) d.style.display = "none";
+        });
+        menu.style.display = menu.style.display === "block" ? "none" : "block";
+      });
+    });
+
+    // Close on outside tap
+    document.addEventListener("click", e => {
+      if (!this.editorMenu.contains(e.target)) {
+        this.editorMenu.querySelectorAll(".dropdown").forEach(d => {
+          d.style.display = "none";
+        });
+      }
+    });
+    this.showAboutModal = () => {
+      alert(`
+  ✔️ Support for 3D objects and scene transformations
+  ✔️ Ammo.js physics integration
+  ✔️ Networking with Kurento/OpenVidu/Own middleware Nodejs -> frontend
+  ✔️ Event system
+  🎯 Save system - direct code line [file-protocol]
+     Adding Visual Scripting System called 
+     flowCodexVertex (deactivete from top menu)(activate on pressing F4 key)
+     Source code: https://github.com/zlatnaspirala/matrix-engine-wgpu
+     More at https://maximumroulette.com
+        `);
+    };
+    (0, _utils.byId)('showAboutEditor').addEventListener('click', this.showAboutModal);
+  }
+  createEditorSceneContainer() {
+    this.sceneContainer = document.createElement("div");
+    this.sceneContainer.id = "sceneContainer";
+    Object.assign(this.sceneContainer.style, {
+      position: "absolute",
+      top: "0",
+      left: "0",
+      width: "17.5%",
+      height: "100vh",
+      backgroundColor: "rgb(75 75 75 / 85%)",
+      display: "flex",
+      alignItems: "start",
+      overflow: "auto",
+      color: "white",
+      fontFamily: "'Orbitron', sans-serif",
+      zIndex: "15",
+      padding: "2px",
+      boxSizing: "border-box",
+      flexDirection: "column"
+    });
+    this.scene = document.createElement("div");
+    this.scene.id = "scene";
+    Object.assign(this.scene.style, {
+      width: "100%",
+      height: "100%",
+      backgroundColor: "rgba(0,0,0,0.85)",
+      display: "flex",
+      alignItems: "start",
+      color: "white",
+      fontFamily: "'Orbitron', sans-serif",
+      zIndex: "15",
+      padding: "2px",
+      boxSizing: "border-box",
+      flexDirection: "column"
+    });
+    this.sceneContainerTitle = document.createElement("div");
+    this.sceneContainerTitle.style.height = '30px';
+    this.sceneContainerTitle.style.width = "-webkit-fill-available";
+    this.sceneContainerTitle.style.fontSize = (0, _utils.isMobile)() == true ? "x-larger" : "larger";
+    this.sceneContainerTitle.style.padding = '5px';
+    this.sceneContainerTitle.innerHTML = 'Scene container';
+    this.sceneContainer.appendChild(this.sceneContainerTitle);
+    this.sceneContainer.appendChild(this.scene);
+    document.body.appendChild(this.sceneContainer);
+  }
+  updateSceneContainer() {
+    this.scene.innerHTML = ``;
+    this.core.mainRenderBundle.forEach(sceneObj => {
+      let so = document.createElement('div');
+      so.style.height = '20px';
+      so.classList.add('sceneContainerItem');
+      so.innerHTML = sceneObj.name;
+      so.addEventListener('click', this.updateSceneObjProperties);
+      this.scene.appendChild(so);
+    });
+  }
+  createScenePropertyBox() {
+    this.sceneProperty = document.createElement("div");
+    this.sceneProperty.id = "sceneProperty";
+    this.sceneProperty.classList.add('scenePropItem');
+    Object.assign(this.sceneProperty.style, {
+      position: "absolute",
+      top: "0",
+      right: "0",
+      width: "20%",
+      height: "100vh",
+      backgroundColor: "rgb(35 35 35 / 63%)",
+      display: "flex",
+      alignItems: "start",
+      overflow: "auto",
+      color: "white",
+      fontFamily: "'Orbitron', sans-serif",
+      zIndex: "15",
+      padding: "2px",
+      boxSizing: "border-box",
+      flexDirection: "column"
+    });
+    this.objectProperies = document.createElement("div");
+    this.objectProperies.id = "objectProperies";
+    Object.assign(this.objectProperies.style, {
+      width: "100%",
+      height: "auto",
+      backgroundColor: "rgba(0,0,0,0.85)",
+      display: "flex",
+      alignItems: "start",
+      color: "white",
+      fontFamily: 'monospace',
+      zIndex: "15",
+      padding: "2px",
+      boxSizing: "border-box",
+      flexDirection: "column"
+    });
+    this.objectProperiesTitle = document.createElement("div");
+    this.objectProperiesTitle.style.height = '40px';
+    this.objectProperiesTitle.style.fontSize = '120%';
+    this.objectProperiesTitle.innerHTML = 'Scene object properties';
+    this.sceneProperty.appendChild(this.objectProperiesTitle);
+    this.sceneProperty.appendChild(this.objectProperies);
+    document.body.appendChild(this.sceneProperty);
+  }
+  updateSceneObjProperties = e => {
+    this.currentProperties = [];
+    this.objectProperiesTitle.style.fontSize = '120%';
+    this.objectProperiesTitle.innerHTML = `Scene object properties`;
+    this.objectProperies.innerHTML = ``;
+    const currentSO = this.core.getSceneObjectByName(e.target.innerHTML);
+    this.objectProperiesTitle.innerHTML = `<span style="color:lime;">Name: ${e.target.innerHTML}</span> 
+      <span style="color:yellow;"> [${currentSO.constructor.name}]`;
+    const OK = Object.keys(currentSO);
+    OK.forEach(prop => {
+      // console.log('[key]:', prop);
+      if (prop == 'glb' && typeof currentSO[prop] !== 'undefined' && currentSO[prop] != null) {
+        this.currentProperties.push(new SceneObjectProperty(this.objectProperies, 'glb', currentSO, this.core));
+      } else {
+        this.currentProperties.push(new SceneObjectProperty(this.objectProperies, prop, currentSO, this.core));
+      }
+    });
+
+    // Add editor events system
+    this.currentProperties.push(new SceneObjectProperty(this.objectProperies, 'editor-events', currentSO, this.core));
+  };
+}
+exports.default = EditorHud;
+class SceneObjectProperty {
+  constructor(parentDOM, propName, currSceneObj, core) {
+    this.core = core;
+    this.subObjectsProps = [];
+    this.propName = document.createElement("div");
+    this.propName.style.width = '100%';
+    // console.log("init : " + propName)
+    // Register
+    if (propName == "device" || propName == "position" || propName == "rotation" || propName == "raycast" || propName == "entityArgPass" || propName == "scale" || propName == "maxInstances" || propName == "texturesPaths" || propName == "glb" || propName == "itIsPhysicsBody") {
+      this.propName.style.overflow = 'hidden';
+      this.propName.style.height = '20px';
+      this.propName.style.borderBottom = 'solid lime 2px';
+      this.propName.addEventListener('click', e => {
+        if (e.currentTarget.style.height != 'fit-content') {
+          this.propName.style.overflow = 'unset';
+          e.currentTarget.style.height = 'fit-content';
+        } else {
+          this.propName.style.overflow = 'hidden';
+          e.currentTarget.style.height = '20px';
+        }
+      });
+      if (propName == "itIsPhysicsBody") {
+        this.propName.innerHTML = `<div style="text-align:left;" >${propName} <span style="border-radius:7px;background:green;">PhysicsBody</span>
+        <span style="border-radius:6px;background:gray;">More info🔽</span></div>`;
+      } else if (propName == "position" || propName == "scale" || propName == "rotation" || propName == "glb") {
+        this.propName.innerHTML = `<div style="text-align:left;" >${propName} <span style="border-radius:7px;background:purple;">sceneObj</span>
+        <span style="border-radius:6px;background:gray;">More info🔽</span></div>`;
+      } else if (propName == "entityArgPass") {
+        this.propName.innerHTML = `<div style="text-align:left;" >${propName} <span style="border-radius:7px;background:brown;">webGPU props</span>
+        <span style="border-radius:6px;background:gray;">More info🔽</span></div>`;
+      } else if (propName == "maxInstances") {
+        this.propName.innerHTML = `<div style="text-align:left;" >${propName} <span style="border-radius:7px;background:brown;">instanced</span>
+        <span style="border-radius:6px;background:gray;"> <input type="number" value="${currSceneObj[propName]}" /> </span></div>`;
+      } else if (propName == "texturesPaths") {
+        this.propName.innerHTML = `<div style="text-align:left;" >${propName} <span style="border-radius:7px;background:purple;">sceneObj</span>
+         <span style="border-radius:6px;background:gray;"> 
+           Path: ${currSceneObj[propName]} 
+         </span>
+           <div style="text-align:center;padding:5px;margin:5px;"> <img src="${currSceneObj[propName]}" width="256px" height="auto" /> </div>
+        </div>`;
+      } else {
+        this.propName.innerHTML = `<div style="text-align:left;" >${propName} <span style="border-radius:7px;background:red;">sys</span> 
+        <span style="border-radius:6px;background:gray;">${currSceneObj[propName]}</span></div>`;
+      }
+
+      // console.log('[propName] ', propName);
+      if (currSceneObj[propName] && typeof currSceneObj[propName].adapterInfo !== 'undefined') {
+        this.exploreSubObject(currSceneObj[propName].adapterInfo, 'adapterInfo').forEach(item => {
+          if (typeof item === 'string') {
+            this.propName.innerHTML += `<div style="text-align:left;"> ${item.split(':'[1])} </div>`;
+          } else {
+            item.addEventListener('click', event => {
+              event.stopPropagation();
+            });
+            this.propName.appendChild(item);
+          }
+        });
+      } else if (propName == "itIsPhysicsBody") {
+        let body = this.core.matrixAmmo.getBodyByName(currSceneObj.name);
+        for (let key in body) {
+          if (typeof body[key] === 'string') {
+            this.propName.innerHTML += `<div style="display:flex;text-align:left;"> 
+              <div style="background:black;color:white;width:35%;">${key}</div>
+              <div style="background:lime;color:black;width:55%;">${body[key]} </div>`;
+          } else {
+            let item = document.createElement('div');
+            item.style.display = "flex";
+            let funcNameDesc = document.createElement('span');
+            funcNameDesc.style.background = "blue";
+            funcNameDesc.style.width = "55%";
+            funcNameDesc.innerHTML = key + ":";
+            item.appendChild(funcNameDesc);
+            if (typeof body[key] === "function") {
+              console.log("function");
+              let physicsFuncDesc = document.createElement('select');
+              // fill it
+              item.appendChild(physicsFuncDesc);
+            } else if (typeof body[key] === "object") {
+              console.log("OBJECT");
+              let objDesc = document.createElement('span');
+              objDesc.style.background = "yellow";
+              objDesc.style.color = "black";
+              objDesc.innerHTML = key;
+              item.appendChild(objDesc);
+            }
+            item.addEventListener('click', event => {
+              event.stopPropagation();
+            });
+            this.propName.style.textAlign = 'left';
+            this.propName.appendChild(item);
+          }
+        }
+      } else if (propName == 'position' || propName == 'rotation' || propName == "raycast" || propName == "entityArgPass" || propName == "scale") {
+        // console.log('currSceneObj[propName] ', currSceneObj[propName]);
+        this.exploreSubObject(currSceneObj[propName], propName, currSceneObj).forEach(item => {
+          if (typeof item === 'string') {
+            this.propName.innerHTML += `<div style="text-align:left;"> ${item.split(':'[1])} </div>`;
+          } else {
+            item.addEventListener('click', event => {
+              event.stopPropagation();
+            });
+            this.propName.appendChild(item);
+          }
+        });
+      } else if (propName == 'glb') {
+        this.exploreGlb(currSceneObj[propName], propName, currSceneObj).forEach(item => {
+          if (typeof item === 'string') {
+            this.propName.innerHTML += `<div style="text-align:left;"> ${item.split(':'[1])} </div>`;
+          } else {
+            item.addEventListener('click', event => {
+              event.stopPropagation();
+            });
+            this.propName.appendChild(item);
+          }
+        });
+      } else if (propName == 'itIsPhysicsBody') {
+        this.propName.style.borderBottom = 'solid lime 2px';
+        this.propName.innerHTML = `<div style="text-align:left;" >${propName} <span style="border-radius:7px;background:deepskyblue;">boolean</span>
+        <span style="border-radius:6px;background:gray;">${currSceneObj[propName]}</span></div>`;
+      }
+      parentDOM.appendChild(this.propName);
+    } else if (propName == "isVideo") {
+      this.propName.style.borderBottom = 'solid lime 2px';
+      this.propName.innerHTML = `<div style="text-align:left;" >${propName} <span style="border-radius:7px;background:deepskyblue;">boolean</span>
+        <span style="border-radius:6px;background:gray;">${currSceneObj[propName]}</span></div>`;
+      parentDOM.appendChild(this.propName);
+    } else if (propName == 'editor-events') {
+      this.addEditorEventsProp(currSceneObj, parentDOM);
+      this.addEditorDeleteAction(currSceneObj, parentDOM);
+    } else {
+      // this.propName.innerHTML = `<div>${propName}</div>`;
+      // this.propName.innerHTML += `<div>${currSceneObj[propName]}</div>`;
+    }
+  }
+  exploreSubObject(subobj, rootKey, currSceneObj) {
+    let a = [];
+    let __ = [];
+    for (const key in subobj) {
+      __.push(key);
+    }
+    __.forEach((prop, index) => {
+      if (index == 0) a.push(`${rootKey}`);
+      let d = null;
+      d = document.createElement("div");
+      d.style.textAlign = "left";
+      d.style.display = "flex";
+      if (typeof subobj[prop] === 'number') {
+        d.innerHTML += `<div style="width:50%;">${prop}</div> 
+         <div style="width:48%; background:lime;color:black;" > 
+
+         <input class="inputEditor" name="${prop}" 
+          onchange="console.log(this.value, 'change fired'); 
+          document.dispatchEvent(new CustomEvent('web.editor.input', {detail: {
+           'inputFor': ${currSceneObj ? "'" + currSceneObj.name + "'" : "'no info'"} ,
+           'propertyId': ${currSceneObj ? "'" + rootKey + "'" : "'no info'"} ,
+           'property': ${currSceneObj ? "'" + prop + "'" : "'no info'"} ,
+           'value': ${currSceneObj ? "this.value" : "'no info'"}
+          }}))" 
+         ${rootKey == "adapterInfo" ? " disabled='true'" : " "} type="number" value="${isNaN(subobj[prop]) ? 0 : subobj[prop]}" /> 
+        
+         </div>`;
+      } else if (Array.isArray(subobj[prop])) {
+        d.innerHTML += `<div style="width:50%">${prop}</div> 
+         <div style="width:${subobj[prop].length == 0 ? "unset" : "48%"}; background:lime;color:black;border-radius:5px;" > ${subobj[prop].length == 0 ? "[Empty array]" : subobj[prop]} </div>`;
+      } else if (subobj[prop] === null) {
+        d.innerHTML += `<div style="width:50%;">${prop}</div> 
+         <div style="width:unset; background:lime;color:black;padding:1px;border-radius:5px;" >${subobj[prop]}</div>`;
+      } else if (subobj[prop] == false) {
+        d.innerHTML += `<div style="width:50%;">${prop}</div> 
+         <div style="width:unset; background:lime;color:black;padding:1px;border-radius:5px;" >false</div>`;
+      } else if (subobj[prop] == "") {
+        d.innerHTML += `<div style="width:50%;">${prop}</div> 
+         <div style="width:unset; background:lime;color:black;padding:1px;border-radius:5px;" >none</div>`;
+      } else {
+        d.innerHTML += `<div style="width:50%;">${prop}</div> 
+         <div style="width:48%; background:lime;color:black;padding:1px;border-radius:5px;" >${subobj[prop]}</div>`;
+      }
+      a.push(d);
+    });
+    // this.subObjectsProps.push(a);
+    return a;
+  }
+  exploreGlb(subobj, rootKey, currSceneObj) {
+    let a = [];
+    let __ = [];
+    for (const key in subobj) {
+      __.push(key);
+    }
+    __.forEach((prop, index) => {
+      if (index == 0) a.push(`${rootKey}`);
+      let d = null;
+      d = document.createElement("div");
+      d.style.textAlign = "left";
+      d.style.display = "flex";
+      d.style.flexWrap = "wrap";
+      if (typeof subobj[prop] === 'number') {
+        d.innerHTML += `<div style="width:50%;">${prop}</div> 
+         <div style="width:48%; background:lime;color:black;" >
+           <input
+           class="inputEditor" name="${prop}" 
+           ${prop === "animationIndex" ? "max='" + subobj['glbJsonData']['animations'].length - 1 + "'" : ""}
+             onchange="console.log(this.value, 'change fired'); 
+            document.dispatchEvent(new CustomEvent('web.editor.input', {detail: {
+             'inputFor': ${currSceneObj ? "'" + currSceneObj.name + "'" : "'no info'"} ,
+             'propertyId': ${currSceneObj ? "'" + rootKey + "'" : "'no info'"} ,
+             'property': ${currSceneObj ? "'" + prop + "'" : "'no info'"} ,
+             'value': ${currSceneObj ? "this.value" : "'no info'"}
+            }}))" 
+           ${rootKey == "adapterInfo" ? "disabled='true'" : ""}" type="number" value="${subobj[prop]}" /> 
+           </div>`;
+      } else if (Array.isArray(subobj[prop]) && prop == "nodes") {
+        console.log("init prop: " + rootKey);
+        d.innerHTML += `<div style="width:50%">${prop}</div> 
+         <div style="width:${subobj[prop].length == 0 ? "unset" : "48%"}; background:lime;color:black;border-radius:5px;" > 
+            ${subobj[prop].length == 0 ? "[Empty array]" : subobj[prop].length}
+         </div>`;
+      } else if (Array.isArray(subobj[prop]) && prop == "skins") {
+        console.log("init prop: " + rootKey);
+        d.innerHTML += `<div style="width:50%">${prop}</div> 
+         <div style="width:${subobj[prop].length == 0 ? "unset" : "48%"}; background:lime;color:black;border-radius:5px;" > 
+            ${subobj[prop].length == 0 ? "[Empty array]" : subobj[prop].map(item => {
+          if (item && typeof item === "object" && "name" in item) {
+            return item.name + " Joints:" + item.joints.length + "\n inverseBindMatrices:" + item.inverseBindMatrices;
+          }
+          return String(item);
+        }).join(", ")}
+         </div>`;
+      } else if (prop == "glbJsonData") {
+        console.log("init glbJsonData: " + rootKey);
+        d.innerHTML += `<div style="width:50%">Animations:</div> 
+
+         <div style="width:${subobj[prop].animations.length == 0 ? "unset" : "48%"}; background:lime;color:black;border-radius:5px;" > 
+            ${subobj[prop].animations.length == 0 ? "[Empty array]" : subobj[prop].animations.map(item => {
+          if (item && typeof item === "object" && "name" in item) {
+            return item.name;
+          }
+          return String(item);
+        }).join(", ")}
+         </div>
+         \n
+         <div style="width:50%">Skinned meshes:</div> 
+         <div style="width:${subobj[prop].meshes.length == 0 ? "unset" : "48%"}; background:lime;color:black;border-radius:5px;" > 
+            ${subobj[prop].meshes.length == 0 ? "[Empty array]" : subobj[prop].meshes.map(item => {
+          if (item && typeof item === "object" && "name" in item) {
+            return item.name + " \n Primitives : " + item.primitives.length;
+          }
+          return String(item);
+        }).join(", ")}
+         </div>
+          \n
+         <div style="width:50%">Images:</div> 
+         <div style="width:${subobj[prop].images.length == 0 ? "unset" : "48%"}; background:lime;color:black;border-radius:5px;" > 
+            ${subobj[prop].images.length == 0 ? "[Empty array]" : subobj[prop].images.map(item => {
+          if (item && typeof item === "object" && "name" in item) {
+            return "<div>" + item.name + " \n mimeType: " + item.mimeType + "</div>";
+          }
+          return String(item);
+        }).join(", ")}
+         </div>
+
+         \n
+         <div style="width:50%">Materials:</div> 
+         <div style="width:${subobj[prop].materials.length == 0 ? "unset" : "48%"}; background:lime;color:black;border-radius:5px;" > 
+            ${subobj[prop].materials.length == 0 ? "[Empty array]" : subobj[prop].materials.map(item => {
+          if (item && typeof item === "object" && "name" in item) {
+            return "<div>" + item.name + " \n metallicFactor: " + item.pbrMetallicRoughness.metallicFactor + " \n roughnessFactor: " + item.pbrMetallicRoughness.roughnessFactor + "</div>";
+          }
+          return String(item);
+        }).join(", ")}
+         </div>
+         
+         `;
+      } else if (subobj[prop] === null) {
+        d.innerHTML += `<div style="width:50%;">${prop}</div> 
+         <div style="width:unset; background:lime;color:black;padding:1px;border-radius:5px;" >${subobj[prop]}</div>`;
+      } else if (subobj[prop] == false) {
+        d.innerHTML += `<div style="width:50%;">${prop}</div> 
+         <div style="width:unset; background:lime;color:black;padding:1px;border-radius:5px;" >false</div>`;
+      } else if (subobj[prop] == "") {
+        d.innerHTML += `<div style="width:50%;">${prop}</div> 
+         <div style="width:unset; background:lime;color:black;padding:1px;border-radius:5px;" >none</div>`;
+      } else {
+        d.innerHTML += `<div style="width:50%;">${prop}</div> 
+         <div style="width:48%; background:lime;color:black;padding:1px;border-radius:5px;" >${subobj[prop]}</div>`;
+      }
+      a.push(d);
+    });
+    // this.subObjectsProps.push(a);
+    return a;
+  }
+  addEditorEventsProp(currSceneObj, parentDOM) {
+    this.propName.innerHTML += `<div>HIT</div>`;
+    this.propName.innerHTML += `<div style='display:flex;'>
+      <div style="align-content: center;">onTargetReached (NoPhysics)</div>
+      <div><select id='sceneObjEditorPropEvents' ></select></div>
+    </div>`;
+    parentDOM.appendChild(this.propName);
+    (0, _utils.byId)('sceneObjEditorPropEvents').onchange = e => {
+      console.log('Event system selection:', e.target.value);
+      if (e.target.value == "none") {
+        currSceneObj.position.onTargetPositionReach = () => {};
+        console.log('clear event');
+        return;
+      }
+      const method = app.editor.methodsManager.methodsContainer.find(m => m.name === e.target.value);
+      let F = app.editor.methodsManager.compileFunction(method.code);
+      currSceneObj.position.onTargetPositionReach = F;
+      console.log('[position.onTargetPositionReach][attached]', F);
+    };
+    (0, _utils.byId)('sceneObjEditorPropEvents').innerHTML = "";
+    this.core.editor.methodsManager.methodsContainer.forEach((m, index) => {
+      if (index == 0) {
+        const op = document.createElement("option");
+        op.value = 'none';
+        op.textContent = `none`;
+        (0, _utils.byId)('sceneObjEditorPropEvents').appendChild(op);
+      }
+      const op = document.createElement("option");
+      op.value = m.name;
+      op.textContent = `${m.name}  [${m.type}]`;
+      (0, _utils.byId)('sceneObjEditorPropEvents').appendChild(op);
+    });
+  }
+  addEditorDeleteAction(currSceneObj, parentDOM) {
+    this.propName.innerHTML += `<div style='display:flex;'>
+      <div style="align-content: center;color:red;">Delete sceneObject:</div>
+      <div><button  data-sceneobject='${currSceneObj.name}' id='delete-${currSceneObj.name}'>DELETE</button></div>
+    </div>`;
+    (0, _utils.byId)(`delete-${currSceneObj.name}`).addEventListener('click', () => {
+      if (this.core.mainRenderBundle.length <= 1) {
+        alert("WARN - SCENE IS EMPTY IN EDITOR MODE YOU WILL GOT FREEZE - After adding first obj again you must refresh!");
+      }
+      // important
+      let name = currSceneObj.name;
+      let ruleOfNaming = name;
+      const underscoreIndex = name.indexOf('_');
+      const dashIndex = name.indexOf('-');
+
+      // Rule 1 & 2
+      if (underscoreIndex === -1 ||
+      // no '_'
+      dashIndex !== -1 && dashIndex < underscoreIndex // '-' before '_'
+      ) {
+        ruleOfNaming = name.split('-')[0];
+      }
+      alert(ruleOfNaming);
+      document.dispatchEvent(new CustomEvent('web.editor.delete', {
+        detail: {
+          prefix: ruleOfNaming,
+          fullName: currSceneObj.name
+        }
+      }));
+    });
+  }
+}
+
+},{"../../engine/utils.js":46}],74:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+/**
+ * @description
+ * MethodsManager only for web editor jobs.
+ * @author Nikola Lukic
+ * @email zlatnaspirala@gmail.com
+ * @format
+ * { name, code, fn, type, intervalId }
+ */
+class MethodsManager {
+  constructor(editorType) {
+    this.editorType = editorType;
+    this.methodsContainer = [];
+    this.createUI();
+    this.loadMethods(editorType).then(r => {
+      console.log('r: ', r);
+      this.methodsContainer = r;
+      this.refreshSelect();
+      console.log('r: ', r);
+      this.select.click();
+    });
+    document.addEventListener('show-method-editor', () => {
+      this.popup.style.display = "block";
+      this.wrapper.style.display = "block";
+    });
+    document.addEventListener('XcompileFunction', e => {
+      this.compileFunction(e.detail.code);
+    });
+  }
+  loadMethods = async editorType => {
+    return new Promise(async (resolve, reject) => {
+      if (editorType == 'created from editor') {
+        const page = location.pathname.split("/").pop().replace(".html", "");
+        const file = `../src/tools/editor/gen/${page}/methods.js`;
+        let module;
+        try {
+          module = await import(file);
+          if (module) {
+            resolve(module.default);
+          } else {
+            reject([]);
+          }
+        } catch (err) {
+          reject([]);
+        }
+      } else {
+        resolve([]);
+      }
+    });
+  };
+  makePopupDraggable() {
+    let isDragging = false;
+    let offsetX = 0;
+    let offsetY = 0;
+
+    // Use the wrapper as the drag handle
+    this.wrapper.style.cursor = "move";
+    this.wrapper.addEventListener("mousedown", e => {
+      isDragging = true;
+      const rect = this.popup.getBoundingClientRect();
+      offsetX = e.clientX - rect.left;
+      offsetY = e.clientY - rect.top;
+      this.popup.style.transition = "none"; // remove transition during drag
+    });
+    document.addEventListener("mousemove", e => {
+      if (!isDragging) return;
+      this.popup.style.left = e.clientX - offsetX + "px";
+      this.popup.style.top = e.clientY - offsetY + "px";
+      this.popup.style.transform = "none"; // cancel centering transform
+    });
+    document.addEventListener("mouseup", () => {
+      if (isDragging) isDragging = false;
+    });
+  }
+  createUI() {
+    // Wrapper
+    this.wrapper = document.createElement("div");
+    this.wrapper.style.cssText = `
+      padding: 10px; 
+      background:#2f2f2f;
+      border-radius:8px;
+      color:#ddd; 
+      font-family: monospace;
+      width:95%;
+    `;
+    this.select = document.createElement("select");
+    this.select.style.cssText = `
+      width:100%;
+      padding:5px;
+      background:#3a3a3a;
+      color:#fff;
+      border:1px solid #555;
+      margin-bottom:10px;
+    `;
+    this.wrapper.appendChild(this.select);
+    this.select.onchange = () => {
+      console.log("CHANGE SCRIPT SELECT");
+      const index = this.select.selectedIndex;
+      const method = this.methodsContainer[index];
+      if (!method) return;
+
+      // Open editor with selected method
+      this.openEditor(method);
+    };
+    this.select.onclick = () => {
+      const index = this.select.selectedIndex;
+      const method = this.methodsContainer[index];
+      if (method) this.openEditor(method);
+    };
+
+    // BUTTON Add new
+    this.btnNew = document.createElement("button");
+    this.btnNew.innerText = "New Method";
+    this.btnNew.style.cssText = `
+      width:30%;
+      padding:6px;
+      background:#444;
+      color:#fff;
+      border:1px solid #555;
+      cursor:pointer;
+    `;
+    this.btnNew.onclick = () => this.openEditor();
+    this.wrapper.appendChild(this.btnNew);
+
+    // Popup Editor
+    this.popup = document.createElement("div");
+    this.popup.style.cssText = `
+      position:fixed;
+      top:50%; left:50%;
+      transform:translate(-50%,-50%);
+      background:#2a2a2a;
+      padding:20px;
+      border:1px solid #555;
+      border-radius:8px;
+      display:none;
+      width:400px;
+      z-index:999;
+    `;
+    this.popup.appendChild(this.wrapper);
+
+    // Add after btnSave or btnExit creation
+    this.btnRemove = document.createElement("button");
+    this.btnRemove.innerText = "Remove method";
+    this.btnRemove.style.cssText = `
+        margin-top:10px;
+        margin-left:10px;
+        padding:6px 14px;
+        background:#a33;
+        color:#fff;
+        border:1px solid #800;
+        cursor:pointer;
+      `;
+    this.btnRemove.onclick = () => this.removeMethod();
+    this.popup.appendChild(this.btnRemove);
+    this.textarea = document.createElement("textarea");
+    this.textarea.id = "code-editor-textarea";
+    this.textarea.style.cssText = `
+      width:100%; 
+      height:160px; 
+      background:#1e1e1e; 
+      color:#fff; 
+      border:1px solid #555;
+      box-shadow: inset 0px 0px 16px 0px #3F51B5;
+      -webkit-text-stroke-color: #03A9F4;
+    `;
+    this.popup.appendChild(this.textarea);
+    this.btnSave = document.createElement("button");
+    this.btnSave.innerText = "Save method";
+    this.btnSave.style.cssText = `
+      margin-top:10px;
+      padding:6px 14px;
+      background:#555;
+      color:#fff;
+      border:1px solid #666;
+      cursor:pointer;
+    `;
+    this.btnSave.onclick = () => this.saveMethod();
+    this.popup.appendChild(this.btnSave);
+    this.btnExit = document.createElement("button");
+    this.btnExit.innerText = "Hide";
+    this.btnExit.style.cssText = `
+      margin-top:10px;
+      padding:6px 14px;
+      background:#555;
+      color:#fff;
+      border:1px solid #666;
+      cursor:pointer;
+    `;
+    this.btnExit.onclick = () => {
+      this.popup.style.display = "none";
+    };
+    this.popup.appendChild(this.btnExit);
+    this.makePopupDraggable();
+    document.body.appendChild(this.popup);
+  }
+  openEditor(existing) {
+    this.editing = existing || null;
+    this.textarea.value = existing ? existing.code : "";
+    // this.popup.style.display = "block";
+  }
+  saveMethod() {
+    const code = this.textarea.value.trim();
+    if (!code) return;
+    const name = this.extractName(code);
+    const obj = {
+      name,
+      code,
+      type: this.detectType(code),
+      fn: this.compileFunction(code),
+      intervalId: null
+    };
+    if (obj.type === "interval") {
+      obj.intervalId = obj.fn(); // start the interval
+    }
+
+    // Replace or add
+    if (this.editing) {
+      const idx = this.methodsContainer.indexOf(this.editing);
+      this.methodsContainer[idx] = obj;
+    } else {
+      this.methodsContainer.push(obj);
+    }
+    this.refreshSelect();
+    this.popup.style.display = "none";
+    document.dispatchEvent(new CustomEvent('save-methods', {
+      detail: {
+        methodsContainer: this.methodsContainer
+      }
+    }));
+  }
+  removeMethod() {
+    if (!this.editing) return; // nothing selected
+
+    const idx = this.methodsContainer.indexOf(this.editing);
+    if (idx === -1) return;
+
+    // If it was an interval, clear it
+    if (this.methodsContainer[idx].intervalId) {
+      clearInterval(this.methodsContainer[idx].intervalId);
+    }
+
+    // Remove from container
+    this.methodsContainer.splice(idx, 1);
+
+    // Reset editing
+    this.editing = null;
+
+    // Refresh select options
+    this.refreshSelect();
+
+    // Optionally clear editor
+    this.textarea.value = "";
+
+    // Dispatch update event
+    document.dispatchEvent(new CustomEvent('save-methods', {
+      detail: {
+        methodsContainer: this.methodsContainer
+      }
+    }));
+  }
+  refreshSelect() {
+    this.select.innerHTML = "";
+    this.methodsContainer.forEach(m => {
+      const op = document.createElement("option");
+      op.textContent = `${m.name}  [${m.type}]`;
+      this.select.appendChild(op);
+    });
+  }
+  extractName(code) {
+    const match = code.match(/function\s+([a-zA-Z0-9_]+)/);
+    return match ? match[1] : "method_" + (this.methodsContainer.length + 1);
+  }
+  detectType(code) {
+    if (code.includes("setInterval")) return "interval";
+    if (code.includes("return")) return "return";
+    return "void";
+  }
+  compileFunction(code) {
+    try {
+      // Wrap the function code into a callable unit
+      const fn = new Function(code + "; return " + this.extractName(code) + ";")();
+      return fn;
+    } catch (e) {
+      console.error("Compilation error:", e);
+      return () => {};
+    }
+  }
+  destroyIntervals() {
+    this.methodsContainer.forEach(m => {
+      if (m.intervalId) clearInterval(m.intervalId);
+    });
+  }
+}
+exports.default = MethodsManager;
+
+},{}],75:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -32730,6 +39061,10 @@ var _loaderObj = require("./engine/loader-obj.js");
 var _lights = require("./engine/lights.js");
 var _bvh = require("./engine/loaders/bvh.js");
 var _bvhInstaced = require("./engine/loaders/bvh-instaced.js");
+var _editor = require("./tools/editor/editor.js");
+var _meshObjInstances = _interopRequireDefault(require("./engine/instanced/mesh-obj-instances.js"));
+var _bloom = require("./engine/postprocessing/bloom.js");
+var _raycast = require("./engine/raycast.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 /**
  * @description
@@ -32740,6 +39075,15 @@ function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e
  * @github zlatnaspirala
  */
 class MatrixEngineWGPU {
+  // save class reference
+  reference = {
+    MEMeshObj: _meshObj.default,
+    MEMeshObjInstances: _meshObjInstances.default,
+    BVHPlayerInstances: _bvhInstaced.BVHPlayerInstances,
+    BVHPlayer: _bvh.BVHPlayer,
+    downloadMeshes: _loaderObj.downloadMeshes,
+    addRaycastsListener: _raycast.addRaycastsListener
+  };
   mainRenderBundle = [];
   lightContainer = [];
   frame = () => {};
@@ -32751,7 +39095,6 @@ class MatrixEngineWGPU {
     depthLoadOp: 'clear',
     depthStoreOp: 'store'
   };
-  // matrixAmmo = new MatrixAmmo();
   matrixSounds = new _sounds.MatrixSounds();
   constructor(options, callback) {
     if (typeof options == 'undefined' || typeof options == "function") {
@@ -32792,6 +39135,41 @@ class MatrixEngineWGPU {
     if (typeof options.dontUsePhysics == 'undefined') {
       this.matrixAmmo = new _matrixAmmo.default();
     }
+    this.editor = undefined;
+    if (typeof options.useEditor !== "undefined") {
+      if (typeof options.projectType !== "undefined" && options.projectType == "created from editor") {
+        this.editor = new _editor.Editor(this, "created from editor", options.projectName);
+      } else if (typeof options.projectType !== "undefined" && options.projectType == "pre editor") {
+        this.editor = new _editor.Editor(this, options.projectType);
+      } else {
+        this.editor = new _editor.Editor(this, "infly");
+      }
+    }
+    window.addEventListener('keydown', e => {
+      if (e.code == "F4") {
+        e.preventDefault();
+        _utils.mb.error(`Activated WebEditor view.`);
+        app.activateEditor();
+        return false;
+      }
+    });
+    this.activateEditor = () => {
+      if (this.editor == null || typeof this.editor === 'undefined') {
+        if (typeof options.projectType !== "undefined" && options.projectType == "created from editor") {
+          this.editor = new _editor.Editor(this, "created from editor");
+        } else if (typeof options.projectType !== "undefined" && options.projectType == "pre editor") {
+          this.editor = new _editor.Editor(this, options.projectType);
+        } else {
+          this.editor = new _editor.Editor(this, "infly");
+        }
+        this.editor.editorHud.updateSceneContainer();
+      } else {
+        this.editor.editorHud.editorMenu.style.display = 'flex';
+        this.editor.editorHud.assetsBox.style.display = 'flex';
+        this.editor.editorHud.sceneProperty.style.display = 'flex';
+        this.editor.editorHud.sceneContainer.style.display = 'flex';
+      }
+    };
     this.options = options;
     this.mainCameraParams = options.mainCameraParams;
     const target = this.options.appendTo || document.body;
@@ -32805,7 +39183,6 @@ class MatrixEngineWGPU {
       canvas.height = this.options.canvasSize.h;
     }
     target.append(canvas);
-
     // The camera types
     const initialCameraPosition = _wgpuMatrix.vec3.create(0, 0, 0);
     this.mainCameraParams = {
@@ -32829,11 +39206,16 @@ class MatrixEngineWGPU {
     if (_utils.urlQuery.lang != null) {
       this.label.loadMultilang(_utils.urlQuery.lang).then(r => {
         this.label.get = r;
+      }).catch(r => {
+        this.label.get = r;
       });
     } else {
       this.label.loadMultilang().then(r => {
         this.label.get = r;
+      }).catch(r => {
+        this.label.get = r;
       });
+      ;
     }
     this.init({
       canvas,
@@ -32873,6 +39255,66 @@ class MatrixEngineWGPU {
     this.run(callback);
   };
   createGlobalStuff() {
+    // Just syntetic to help visual scripting part
+    this.bloomPass = {
+      enabled: false,
+      setIntensity: v => {},
+      setKnee: v => {},
+      setBlurRadius: v => {},
+      setThreshold: v => {}
+    };
+    //------------------ TEST
+    this.bloomOutputTex = this.device.createTexture({
+      size: [this.canvas.width, this.canvas.height],
+      format: 'rgba16float',
+      usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING
+    });
+    this.sceneTexture = this.device.createTexture({
+      label: "final pipeline sceneTexture",
+      size: [this.canvas.width, this.canvas.height],
+      format: 'rgba16float',
+      usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING
+    });
+    this.sceneTextureView = this.sceneTexture.createView();
+    this.presentSampler = this.device.createSampler({
+      magFilter: 'linear',
+      minFilter: 'linear'
+    });
+    this.presentPipeline = this.device.createRenderPipeline({
+      label: "final pipeline",
+      layout: 'auto',
+      vertex: {
+        module: this.device.createShaderModule({
+          code: (0, _bloom.fullscreenQuadWGSL)()
+        }),
+        entryPoint: 'vert'
+      },
+      fragment: {
+        module: this.device.createShaderModule({
+          code: `
+        @group(0) @binding(0) var hdrTex : texture_2d<f32>;
+        @group(0) @binding(1) var samp : sampler;
+
+        @fragment
+        fn main(@builtin(position) pos: vec4<f32>) -> @location(0) vec4<f32> {
+          let uv = pos.xy / vec2<f32>(textureDimensions(hdrTex));
+          let hdr = textureSample(hdrTex, samp, uv).rgb;
+
+          // simple tonemap
+          let ldr = hdr / (hdr + vec3(1.0));
+
+          return vec4<f32>(ldr, 1.0);
+        }
+      `
+        }),
+        entryPoint: 'main',
+        targets: [{
+          format: 'bgra8unorm'
+        }] // rgba16float  bgra8unorm
+      }
+    });
+    //------------------ TEST
+
     this.spotlightUniformBuffer = this.device.createBuffer({
       label: 'spotlightUniformBufferGLOBAL',
       size: this.MAX_SPOTLIGHTS * 144,
@@ -32956,11 +39398,48 @@ class MatrixEngineWGPU {
     };
     this.createMe();
   }
-  getSceneObjectByName(name) {
+  getSceneObjectByName = name => {
     return this.mainRenderBundle.find(sceneObject => sceneObject.name === name);
+  };
+  getSceneLightByName = name => {
+    return this.lightContainer.find(l => l.name === name);
+  };
+  getNameFromPath(p) {
+    return p.split(/[/\\]/).pop().replace(/\.[^/.]+$/, "");
   }
+  removeSceneObjectByName = name => {
+    const index = this.mainRenderBundle.findIndex(obj => obj.name === name);
+    if (index === -1) {
+      console.warn("Scene object not found:", name);
+      return false;
+    }
 
-  // Not in use for now
+    // Get object
+    const obj = this.mainRenderBundle[index];
+    let testPB = app.matrixAmmo.getBodyByName(obj.name);
+    if (testPB !== null) {
+      try {
+        this.matrixAmmo.dynamicsWorld.removeRigidBody(testPB);
+      } catch (e) {
+        console.warn("Physics cleanup error:", e);
+      }
+    }
+
+    // if(obj.destroy && typeof obj.destroy === "function") {
+    //   try {
+    //     obj.destroy();  // user-defined GPU cleanup
+    //   } catch(e) {
+    //     console.warn("Destroy() cleanup failed:", e);
+    //   }
+    // }
+
+    // Remove from render bundle
+    this.mainRenderBundle.splice(index, 1);
+    console.log("Removed scene object:", name);
+    return true;
+  };
+
+  // Not in use for now -  Can be used with addBall have indipended pipeline and draw func.
   addCube = o => {
     if (typeof o === 'undefined') {
       var o = {
@@ -33161,7 +39640,7 @@ class MatrixEngineWGPU {
   };
   addLight(o) {
     const camera = this.cameras[this.mainCameraParams.type];
-    let newLight = new _lights.SpotLight(camera, this.inputHandler, this.device);
+    let newLight = new _lights.SpotLight(camera, this.inputHandler, this.device, this.lightContainer.length);
     this.lightContainer.push(newLight);
     this.createTexArrayForShadows();
     console.log(`%cAdd light: ${newLight}`, _utils.LOG_FUNNY_SMALL);
@@ -33274,6 +39753,9 @@ class MatrixEngineWGPU {
       this.matrixAmmo.addPhysics(myMesh1, o.physics);
     }
     this.mainRenderBundle.push(myMesh1);
+    if (typeof this.editor !== 'undefined') {
+      this.editor.editorHud.updateSceneContainer();
+    }
   };
   run(callback) {
     setTimeout(() => {
@@ -33284,8 +39766,77 @@ class MatrixEngineWGPU {
     }, 20);
   }
   destroyProgram = () => {
-    this.mainRenderBundle = [];
-    this.canvas.remove();
+    console.warn('%c[MatrixEngineWGPU] Destroy program', 'color: orange');
+
+    // 1️⃣ Stop render loop
+    this.frame = () => {};
+    if (this._rafId) {
+      cancelAnimationFrame(this._rafId);
+      this._rafId = null;
+    }
+
+    // 2️⃣ Clear scene objects (GPU safe)
+    for (const obj of this.mainRenderBundle) {
+      try {
+        // if(obj.destroy) obj.destroy(); // optional per-object cleanup
+      } catch (e) {
+        console.warn('Object destroy error:', e);
+      }
+    }
+    this.mainRenderBundle.length = 0;
+
+    // 3️⃣ Physics cleanup
+    if (this.matrixAmmo) {
+      try {
+        this.matrixAmmo.destroy?.();
+        this.matrixAmmo = null;
+      } catch (e) {
+        console.warn('Physics destroy error:', e);
+      }
+    }
+
+    // 4️⃣ Editor cleanup
+    if (this.editor) {
+      try {
+        this.editor.destroy?.();
+      } catch (e) {
+        console.warn('Editor destroy error:', e);
+      }
+      this.editor = null;
+    }
+
+    // 5️⃣ Remove input handlers
+    if (this.inputHandler?.destroy) {
+      this.inputHandler.destroy();
+    }
+    this.inputHandler = null;
+
+    // 6️⃣ GPU resources
+    try {
+      this.mainDepthTexture?.destroy();
+      this.shadowTextureArray?.destroy();
+      this.shadowVideoTexture?.destroy();
+    } catch (e) {}
+    this.mainDepthTexture = null;
+    this.shadowTextureArray = null;
+    this.shadowVideoTexture = null;
+
+    // 7️⃣ Lose WebGPU context (IMPORTANT)
+    try {
+      this.context?.unconfigure?.();
+    } catch (e) {}
+
+    // 8️⃣ Remove canvas
+    if (this.canvas && this.canvas.parentNode) {
+      this.canvas.parentNode.removeChild(this.canvas);
+    }
+    this.canvas = null;
+    this.device = null;
+    this.context = null;
+    this.adapter = null;
+    console.warn('%c[MatrixEngineWGPU] Destroy complete ✔', 'color: lightgreen');
+    // this.mainRenderBundle = [];
+    // this.canvas.remove();
   };
   updateLights() {
     const floatsPerLight = 36; // not 20 anymore
@@ -33323,16 +39874,17 @@ class MatrixEngineWGPU {
     });
     try {
       let commandEncoder = this.device.createCommandEncoder();
+      if (this.matrixAmmo) this.matrixAmmo.updatePhysics();
       this.updateLights();
       // 1️⃣ Update light data (position, direction, uniforms)
       for (const light of this.lightContainer) {
         light.update();
         this.mainRenderBundle.forEach((meItem, index) => {
+          meItem.position.update();
           meItem.updateModelUniformBuffer();
           meItem.getTransformationMatrix(this.mainRenderBundle, light, index);
         });
       }
-      if (this.matrixAmmo) this.matrixAmmo.updatePhysics();
       let now, deltaTime;
       for (let i = 0; i < this.lightContainer.length; i++) {
         const light = this.lightContainer[i];
@@ -33381,12 +39933,13 @@ class MatrixEngineWGPU {
         shadowPass.end();
       }
       const currentTextureView = this.context.getCurrentTexture().createView();
-      this.mainRenderPassDesc.colorAttachments[0].view = currentTextureView;
+      // this.mainRenderPassDesc.colorAttachments[0].view = currentTextureView;
+      this.mainRenderPassDesc.colorAttachments[0].view = this.sceneTextureView;
       let pass = commandEncoder.beginRenderPass(this.mainRenderPassDesc);
       // Loop over each mesh
 
       for (const mesh of this.mainRenderBundle) {
-        mesh.position.update();
+        // mesh.position.update()
         if (mesh.update) {
           now = performance.now() / 1000; // seconds
           deltaTime = now - (this.lastTime || now);
@@ -33418,7 +39971,7 @@ class MatrixEngineWGPU {
       // transparent pointerEffect pass (load color, load depth)
       const transPassDesc = {
         colorAttachments: [{
-          view: currentTextureView,
+          view: this.sceneTextureView,
           loadOp: 'load',
           storeOp: 'store'
         }],
@@ -33441,10 +39994,41 @@ class MatrixEngineWGPU {
         });
       }
       transPass.end();
+      const canvasView = this.context.getCurrentTexture().createView();
+      // Bloom
+      if (this.bloomPass.enabled == true) {
+        this.bloomPass.render(commandEncoder, this.sceneTextureView, this.bloomOutputTex);
+      }
+      pass = commandEncoder.beginRenderPass({
+        colorAttachments: [{
+          view: canvasView,
+          loadOp: 'clear',
+          storeOp: 'store',
+          clearValue: {
+            r: 0,
+            g: 0,
+            b: 0,
+            a: 1
+          }
+        }]
+      });
+      pass.setPipeline(this.presentPipeline);
+      pass.setBindGroup(0, this.device.createBindGroup({
+        layout: this.presentPipeline.getBindGroupLayout(0),
+        entries: [{
+          binding: 0,
+          resource: this.bloomPass.enabled === true ? this.bloomOutputTex : this.sceneTexture.createView()
+        }, {
+          binding: 1,
+          resource: this.presentSampler
+        }]
+      }));
+      pass.draw(6);
+      pass.end();
       this.device.queue.submit([commandEncoder.finish()]);
       requestAnimationFrame(this.frame);
     } catch (err) {
-      // console.log('%cLoop(err):' + err + " info : " + err.stack, LOG_WARN)
+      console.log('%cLoop(err):' + err + " info : " + err.stack, _utils.LOG_WARN);
       requestAnimationFrame(this.frame);
     }
   };
@@ -33472,8 +40056,6 @@ class MatrixEngineWGPU {
     this.device.queue.submit([commandEncoder.finish()]);
     requestAnimationFrame(this.frame);
   };
-
-  // ---------------------------------------
   addGlbObj = (o, BVHANIM, glbFile, clearColor = this.options.clearColor) => {
     if (typeof o.name === 'undefined') {
       o.name = (0, _utils.genName)(9);
@@ -33583,14 +40165,18 @@ class MatrixEngineWGPU {
         // make it soft
         setTimeout(() => {
           this.mainRenderBundle.push(bvhPlayer);
-        }, 1000);
+          setTimeout(() => document.dispatchEvent(new CustomEvent('updateSceneContainer', {
+            detail: {}
+          })), 100);
+        }, 500);
         // this.mainRenderBundle.push(bvhPlayer)
         c++;
       }
     }
+    if (typeof this.editor !== 'undefined') {
+      this.editor.editorHud.updateSceneContainer();
+    }
   };
-
-  // NEW TEST INSTANCED DRAWS
   addGlbObjInctance = (o, BVHANIM, glbFile, clearColor = this.options.clearColor) => {
     if (typeof o.name === 'undefined') {
       o.name = (0, _utils.genName)(9);
@@ -33713,8 +40299,17 @@ class MatrixEngineWGPU {
       }
       skinnedNodeIndex++;
     }
+    if (typeof this.editor !== 'undefined') {
+      this.editor.editorHud.updateSceneContainer();
+    }
+  };
+  activateBloomEffect = () => {
+    if (this.bloomPass.enabled != true) {
+      this.bloomPass = new _bloom.BloomPass(this.canvas.width, this.canvas.height, this.device, 1.5);
+      this.bloomPass.enabled = true;
+    }
   };
 }
 exports.default = MatrixEngineWGPU;
 
-},{"./engine/ball.js":20,"./engine/cube.js":22,"./engine/engine.js":31,"./engine/lights.js":35,"./engine/loader-obj.js":36,"./engine/loaders/bvh-instaced.js":37,"./engine/loaders/bvh.js":38,"./engine/mesh-obj.js":42,"./engine/utils.js":44,"./multilang/lang.js":45,"./physics/matrix-ammo.js":46,"./sounds/sounds.js":66,"wgpu-matrix":18}]},{},[3]);
+},{"./engine/ball.js":20,"./engine/cube.js":22,"./engine/engine.js":31,"./engine/instanced/mesh-obj-instances.js":34,"./engine/lights.js":35,"./engine/loader-obj.js":36,"./engine/loaders/bvh-instaced.js":37,"./engine/loaders/bvh.js":38,"./engine/mesh-obj.js":42,"./engine/postprocessing/bloom.js":44,"./engine/raycast.js":45,"./engine/utils.js":46,"./multilang/lang.js":47,"./physics/matrix-ammo.js":48,"./sounds/sounds.js":68,"./tools/editor/editor.js":70,"wgpu-matrix":18}]},{},[3]);

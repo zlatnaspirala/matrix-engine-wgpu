@@ -77,7 +77,7 @@ export var physicsPlayground = function() {
         name: 'cube2',
         mesh: m.cube,
         physics: {
-          enabled: true,
+          enabled: false,
           geometry: "Cube",
         },
         raycast: {enabled: true, radius: 1}
@@ -113,24 +113,24 @@ export var physicsPlayground = function() {
       let mybodycube = app.matrixAmmo.getBodyByName('cube1');
       let mybodycube2 = app.matrixAmmo.getBodyByName('cube2');
 
-      const pivotA = new Ammo.btVector3(0, 0, 0); // door local pivot
-      const pivotB = new Ammo.btVector3(0, 0, 0); // frame local pivot
+      // const pivotA = new Ammo.btVector3(0, 0, 0); // door local pivot
+      // const pivotB = new Ammo.btVector3(0, 0, 0); // frame local pivot
 
-      const axisA = new Ammo.btVector3(0, 1, 0); // Y axis
-      const axisB = new Ammo.btVector3(0, 1, 0);
+      // const axisA = new Ammo.btVector3(0, 1, 0); // Y axis
+      // const axisB = new Ammo.btVector3(0, 1, 0);
 
-      const hinge = new Ammo.btHingeConstraint(
-        mybodycube,
-        mybodycube2,
-        pivotA,
-        pivotB,
-        axisA,
-        axisB,
-        true
-      );
+      // const hinge = new Ammo.btHingeConstraint(
+      //   mybodycube,
+      //   mybodycube2,
+      //   pivotA,
+      //   pivotB,
+      //   axisA,
+      //   axisB,
+      //   true
+      // );
  
-      hinge.setLimit(-Math.PI / 2, Math.PI / 2); // 90° open
-      physicsPlayground.matrixAmmo.dynamicsWorld.addConstraint(hinge, true);
+      // hinge.setLimit(-Math.PI / 2, Math.PI / 2); // 90° open
+      // physicsPlayground.matrixAmmo.dynamicsWorld.addConstraint(hinge, true);
       //  app.matrixAmmo.getBodyByName(`CubePhysics${x}`).setAngularVelocity(new Ammo.btVector3(
       //      randomFloatFromTo(3, 12), 9, 9
       // ))
@@ -145,8 +145,8 @@ export var physicsPlayground = function() {
         // ------------------------------------------------------
 
         // ------------------------------------------------------
-        // const impulse = new Ammo.btVector3(0, 5, -10);
-        // body.applyCentralImpulse(impulse);
+        const impulse = new Ammo.btVector3(0, 5, 0);
+        body.applyCentralImpulse(impulse);
         // ------------------------------------------------------
 
 
@@ -156,20 +156,20 @@ export var physicsPlayground = function() {
         // ------------------------------------------------------
 
         // ------------------------------------------------------
-        const dir = e.detail.rayDirection;
-        const strength = 20;
+        // const dir = e.detail.rayDirection;
+        // const strength = 20;
 
-        const impulse = new Ammo.btVector3(
-          dir[0] * strength,
-          dir[1] * strength,
-          dir[2] * strength
-        );
+        // const impulse = new Ammo.btVector3(
+        //   dir[0] * strength,
+        //   dir[1] * strength,
+        //   dir[2] * strength
+        // );
 
-        body.applyCentralImpulse(impulse);
-        // ------------------------------------------------------
+        // body.applyCentralImpulse(impulse);
+        // // ------------------------------------------------------
 
-        // ------------------------------------------------------
-        body.activate(true);
+        // // ------------------------------------------------------
+        // body.activate(true);
         // ------------------------------------------------------
 
         //

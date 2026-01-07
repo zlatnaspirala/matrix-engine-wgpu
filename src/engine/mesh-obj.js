@@ -564,7 +564,7 @@ export default class MEMeshObj extends Materials {
         );
       };
 
-      this.getModelMatrix = (pos) => {
+      this.getModelMatrix = (pos, useScale = false) => {
         let modelMatrix = mat4.identity();
         mat4.translate(modelMatrix, [pos.x, pos.y, pos.z], modelMatrix);
         if(this.itIsPhysicsBody) {
@@ -578,12 +578,15 @@ export default class MEMeshObj extends Materials {
           mat4.rotateY(modelMatrix, this.rotation.getRotY(), modelMatrix);
           mat4.rotateZ(modelMatrix, this.rotation.getRotZ(), modelMatrix);
         }
-        // Apply scale if you have it, e.g.:
         // console.warn('what is csle comes from user level not glb ', this.scale)
         if(this.glb || this.objAnim) {
           // mat4.scale(modelMatrix, [this.scale[0], this.scale[1], this.scale[2]], modelMatrix);
         }
-        mat4.scale(modelMatrix, [this.scale[0], this.scale[1], this.scale[2]], modelMatrix);
+
+        if(useScale == true) {
+          mat4.scale(modelMatrix, [this.scale[0], this.scale[1], this.scale[2]], modelMatrix);
+        }
+
         return modelMatrix;
       };
 
@@ -654,7 +657,7 @@ export default class MEMeshObj extends Materials {
   updateModelUniformBuffer = () => {
     if(this.done == false) return;
     // Per-object model matrix only
-    const modelMatrix = this.getModelMatrix(this.position);
+    const modelMatrix = this.getModelMatrix(this.position, true);
     this.device.queue.writeBuffer(
       this.modelUniformBuffer,
       0,
