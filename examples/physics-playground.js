@@ -27,16 +27,28 @@ export var physicsPlayground = function() {
       }, onGround,
         {scale: [20, 1, 20]})
 
-      physicsPlayground.physicsBodiesGenerator(
+      // physicsPlayground.physicsBodiesGenerator(
+      //   "standard",
+      //   {x: 0, y: 0, z: -20},
+      //   {x: 0, y: 0, z: 0},
+      //   "res/textures/star1.png",
+      //   "testGen",
+      //   "Cube",
+      //   false,
+      //   [1, 1, 1],
+      //   100
+      // );
+
+      physicsPlayground.physicsBodiesGeneratorWall(
         "standard",
-        {x: 0, y: 0, z: -20},
+        {x: -10, y: 1, z: -20},
         {x: 0, y: 0, z: 0},
-        "res/textures/star1.png",
-        "testGen",
-        "Cube",
-        false,
+        "./res/meshes/blender/cube.png",
+        "cube",
+        "10x3",
+        true,
         [1, 1, 1],
-        100
+        2
       );
 
     })

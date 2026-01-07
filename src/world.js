@@ -18,6 +18,7 @@ import {BloomPass, fullscreenQuadWGSL} from "./engine/postprocessing/bloom.js";
 import {addRaycastsListener} from "./engine/raycast.js";
 import {physicsBodiesGenerator} from "./engine/generators/phisicsBodies.js";
 import {TextureCache} from "./engine/core-cache.js";
+import {physicsBodiesGeneratorWall} from "../src/engine/generators/phisicsBodies.js";
 
 /**
  * @description
@@ -81,6 +82,7 @@ export default class MatrixEngineWGPU {
     }
 
     this.physicsBodiesGenerator = physicsBodiesGenerator.bind(this);
+    this.physicsBodiesGeneratorWall = physicsBodiesGeneratorWall.bind(this);
 
     if(typeof options.dontUsePhysics == 'undefined') {
       this.matrixAmmo = new MatrixAmmo();
@@ -903,6 +905,8 @@ export default class MatrixEngineWGPU {
     } else {
       alert('GLB not use objAnim (it is only for obj sequence). GLB use BVH skeletal for animation');
     }
+
+    o.textureCache = this.textureCache;
     let skinnedNodeIndex = 0;
     for(const skinnedNode of glbFile.skinnedMeshNodes) {
       let c = 0;

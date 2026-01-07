@@ -6,7 +6,6 @@ import {downloadMeshes} from "../loader-obj";
  * @param {string} material 
  * @enum "standard", "power"
  */
-
 export function physicsBodiesGenerator(
   material = "standard",
   pos,
@@ -28,7 +27,7 @@ export function physicsBodiesGenerator(
     console.log("GEN TEST", m.mesh)
     let RAY = {enabled: (raycast == true ? true : false), radius: 1};
 
-    for(var x = 0; x < sum; x++) {
+    for(var x = 0;x < sum;x++) {
       engine.addMeshObj({
         material: {type: 'standard'},
         position: pos,
@@ -52,4 +51,136 @@ export function physicsBodiesGenerator(
   }
 
 
-} 
+}
+
+
+/**
+ * @description Generate a wall of physics cubes
+ * @param {string} material
+ * @param {object} pos        starting position {x,y,z}
+ * @param {object} rot
+ * @param {string} texturePath
+ * @param {string} name       base name
+ * @param {string} size       "WIDTHxHEIGHT" → e.g. "10x3"
+ * @param {boolean} raycast
+ * @param {Array} scale
+ * @param {number} spacing    distance between cubes
+ */
+export function physicsBodiesGeneratorWall(
+  material = "standard",
+  pos,
+  rot,
+  texturePath,
+  name = "wallCube",
+  size = "10x3",
+  raycast = false,
+  scale = [1, 1, 1],
+  spacing = 2
+) {
+  const engine = this;
+
+  const [width, height] = size
+    .toLowerCase()
+    .split("x")
+    .map(n => parseInt(n, 10));
+
+  const inputCube = {mesh: "./res/meshes/blender/cube.obj"};
+
+  function handler(m) {
+    let index = 0;
+    const RAY = {enabled: !!raycast, radius: 1};
+
+    for(let y = 0;y < height;y++) {
+      for(let x = 0;x < width;x++) {
+
+        const cubeName = `${name}_${index}`;
+
+        engine.addMeshObj({
+          material: {type: material},
+          position: {
+            x: pos.x + x * spacing,
+            y: pos.y + y * spacing,
+            z: pos.z
+          },
+          rotation: rot,
+          rotationSpeed: {x: 0, y: 0, z: 0},
+          texturesPaths: [texturePath],
+          name: cubeName,
+          mesh: m.mesh,
+          physics: {
+            enabled: true,
+            geometry: "Cube"
+          },
+          raycast: RAY
+        });
+
+        index++;
+      }
+    }
+  }
+
+  downloadMeshes(inputCube, handler, {scale});
+}
+
+/**
+ * @description Generate a pyramid of physics cubes
+ * @param {object} pos       base position {x,y,z}
+ * @param {object} rot
+ * @param {string} texturePath
+ * @param {string} name
+ * @param {number} levels    number of pyramid levels
+ * @param {boolean} raycast
+ * @param {Array} scale
+ * @param {number} spacing
+ */
+export function physicsBodiesGeneratorPyramid(
+  material = "standard",
+  pos,
+  rot,
+  texturePath,
+  name = "pyramidCube",
+  levels = 5,
+  raycast = false,
+  scale = [1, 1, 1],
+  spacing = 2
+) {
+  const engine = this;
+  const inputCube = { mesh: "./res/meshes/blender/cube.obj" };
+
+  function handler(m) {
+    let index = 0;
+    const RAY = { enabled: !!raycast, radius: 1 };
+
+    for (let y = 0; y < levels; y++) {
+      const rowCount = levels - y;
+      const xOffset = (rowCount - 1) * spacing * 0.5;
+
+      for (let x = 0; x < rowCount; x++) {
+        const cubeName = `${name}_${index}`;
+
+        engine.addMeshObj({
+          material: { type: material },
+          position: {
+            x: pos.x + x * spacing - xOffset,
+            y: pos.y + y * spacing,
+            z: pos.z
+          },
+          rotation: rot,
+          rotationSpeed: { x: 0, y: 0, z: 0 },
+          texturesPaths: [texturePath],
+          name: cubeName,
+          mesh: m.mesh,
+          physics: {
+            enabled: true,
+            geometry: "Cube"
+          },
+          raycast: RAY
+        });
+
+        index++;
+      }
+    }
+  }
+
+  downloadMeshes(inputCube, handler, { scale });
+}

@@ -676,15 +676,28 @@ var physicsPlayground = function () {
       }, onGround, {
         scale: [20, 1, 20]
       });
-      physicsPlayground.physicsBodiesGenerator("standard", {
-        x: 0,
-        y: 0,
+
+      // physicsPlayground.physicsBodiesGenerator(
+      //   "standard",
+      //   {x: 0, y: 0, z: -20},
+      //   {x: 0, y: 0, z: 0},
+      //   "res/textures/star1.png",
+      //   "testGen",
+      //   "Cube",
+      //   false,
+      //   [1, 1, 1],
+      //   100
+      // );
+
+      physicsPlayground.physicsBodiesGeneratorWall("standard", {
+        x: -10,
+        y: 1,
         z: -20
       }, {
         x: 0,
         y: 0,
         z: 0
-      }, "res/textures/star1.png", "testGen", "Cube", false, [1, 1, 1], 100);
+      }, "./res/meshes/blender/cube.png", "cube", "10x3", true, [1, 1, 1], 2);
     });
     function onGround(m) {
       setTimeout(() => {
@@ -21965,6 +21978,8 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.physicsBodiesGenerator = physicsBodiesGenerator;
+exports.physicsBodiesGeneratorPyramid = physicsBodiesGeneratorPyramid;
+exports.physicsBodiesGeneratorWall = physicsBodiesGeneratorWall;
 var _loaderObj = require("../loader-obj");
 /**
  * @description Generator can be used also from visual scripting.
@@ -21972,7 +21987,6 @@ var _loaderObj = require("../loader-obj");
  * @param {string} material 
  * @enum "standard", "power"
  */
-
 function physicsBodiesGenerator(material = "standard", pos, rot, texturePath, name = "gen1", geometry = "Cube", raycast = false, scale = [1, 1, 1], sum = 100, mesh = null) {
   let engine = this;
   console.info("THIS", this);
@@ -22020,6 +22034,126 @@ function physicsBodiesGenerator(material = "standard", pos, rot, texturePath, na
       scale: scale
     });
   }
+}
+
+/**
+ * @description Generate a wall of physics cubes
+ * @param {string} material
+ * @param {object} pos        starting position {x,y,z}
+ * @param {object} rot
+ * @param {string} texturePath
+ * @param {string} name       base name
+ * @param {string} size       "WIDTHxHEIGHT" → e.g. "10x3"
+ * @param {boolean} raycast
+ * @param {Array} scale
+ * @param {number} spacing    distance between cubes
+ */
+function physicsBodiesGeneratorWall(material = "standard", pos, rot, texturePath, name = "wallCube", size = "10x3", raycast = false, scale = [1, 1, 1], spacing = 2) {
+  const engine = this;
+  const [width, height] = size.toLowerCase().split("x").map(n => parseInt(n, 10));
+  const inputCube = {
+    mesh: "./res/meshes/blender/cube.obj"
+  };
+  function handler(m) {
+    let index = 0;
+    const RAY = {
+      enabled: !!raycast,
+      radius: 1
+    };
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const cubeName = `${name}_${index}`;
+        engine.addMeshObj({
+          material: {
+            type: material
+          },
+          position: {
+            x: pos.x + x * spacing,
+            y: pos.y + y * spacing,
+            z: pos.z
+          },
+          rotation: rot,
+          rotationSpeed: {
+            x: 0,
+            y: 0,
+            z: 0
+          },
+          texturesPaths: [texturePath],
+          name: cubeName,
+          mesh: m.mesh,
+          physics: {
+            enabled: true,
+            geometry: "Cube"
+          },
+          raycast: RAY
+        });
+        index++;
+      }
+    }
+  }
+  (0, _loaderObj.downloadMeshes)(inputCube, handler, {
+    scale
+  });
+}
+
+/**
+ * @description Generate a pyramid of physics cubes
+ * @param {object} pos       base position {x,y,z}
+ * @param {object} rot
+ * @param {string} texturePath
+ * @param {string} name
+ * @param {number} levels    number of pyramid levels
+ * @param {boolean} raycast
+ * @param {Array} scale
+ * @param {number} spacing
+ */
+function physicsBodiesGeneratorPyramid(material = "standard", pos, rot, texturePath, name = "pyramidCube", levels = 5, raycast = false, scale = [1, 1, 1], spacing = 2) {
+  const engine = this;
+  const inputCube = {
+    mesh: "./res/meshes/blender/cube.obj"
+  };
+  function handler(m) {
+    let index = 0;
+    const RAY = {
+      enabled: !!raycast,
+      radius: 1
+    };
+    for (let y = 0; y < levels; y++) {
+      const rowCount = levels - y;
+      const xOffset = (rowCount - 1) * spacing * 0.5;
+      for (let x = 0; x < rowCount; x++) {
+        const cubeName = `${name}_${index}`;
+        engine.addMeshObj({
+          material: {
+            type: material
+          },
+          position: {
+            x: pos.x + x * spacing - xOffset,
+            y: pos.y + y * spacing,
+            z: pos.z
+          },
+          rotation: rot,
+          rotationSpeed: {
+            x: 0,
+            y: 0,
+            z: 0
+          },
+          texturesPaths: [texturePath],
+          name: cubeName,
+          mesh: m.mesh,
+          physics: {
+            enabled: true,
+            geometry: "Cube"
+          },
+          raycast: RAY
+        });
+        index++;
+      }
+    }
+  }
+  (0, _loaderObj.downloadMeshes)(inputCube, handler, {
+    scale
+  });
 }
 
 },{"../loader-obj":43}],39:[function(require,module,exports){
@@ -28502,6 +28636,7 @@ function combinePassWGSL() {
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
+exports.addRaycastsAABBListener = addRaycastsAABBListener;
 exports.addRaycastsListener = addRaycastsListener;
 exports.computeAABB = computeAABB;
 exports.computeWorldVertsAndAABB = computeWorldVertsAndAABB;
@@ -28659,6 +28794,54 @@ function addRaycastsListener(canvasId = "canvas1", eventName = 'click') {
       if (!hitAABB) continue;
       const sphereHit = rayIntersectsSphere(rayOrigin, rayDirection, object.position, object.raycast.radius);
       const hit = sphereHit || hitAABB;
+      if (hit && (!closestHit || hit.t < closestHit.t)) {
+        closestHit = {
+          ...hit,
+          hitObject: object
+        };
+        if (touchCoordinate.stopOnFirstDetectedHit) break;
+      }
+    }
+    if (closestHit) {
+      dispatchRayHitEvent(canvas, {
+        hitObject: closestHit.hitObject,
+        hitPoint: closestHit.hitPoint,
+        hitNormal: closestHit.hitNormal || null,
+        hitDistance: closestHit.t,
+        rayOrigin,
+        rayDirection,
+        screenCoords: screen,
+        camera,
+        timestamp: performance.now(),
+        button: event.button,
+        eventName: eventName
+      });
+    }
+  });
+}
+function addRaycastsAABBListener(canvasId = "canvas1", eventName = 'click') {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) {
+    console.warn(`[Raycaster] Canvas with id '${canvasId}' not found.`);
+    return;
+  }
+  canvas.addEventListener(eventName, event => {
+    const camera = app.cameras[app.mainCameraParams.type];
+    const {
+      rayOrigin,
+      rayDirection,
+      screen
+    } = getRayFromMouse(event, canvas, camera);
+    let closestHit = null;
+    for (const object of app.mainRenderBundle) {
+      if (!object.raycast?.enabled) continue;
+      const {
+        boxMin,
+        boxMax
+      } = computeWorldVertsAndAABB(object);
+      const hitAABB = rayIntersectsAABB(rayOrigin, rayDirection, boxMin, boxMax);
+      if (!hitAABB) continue;
+      const hit = hitAABB;
       if (hit && (!closestHit || hit.t < closestHit.t)) {
         closestHit = {
           ...hit,
@@ -38226,6 +38409,7 @@ var _bloom = require("./engine/postprocessing/bloom.js");
 var _raycast = require("./engine/raycast.js");
 var _phisicsBodies = require("./engine/generators/phisicsBodies.js");
 var _coreCache = require("./engine/core-cache.js");
+var _phisicsBodies2 = require("../src/engine/generators/phisicsBodies.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 /**
  * @description
@@ -38294,6 +38478,7 @@ class MatrixEngineWGPU {
       };
     }
     this.physicsBodiesGenerator = _phisicsBodies.physicsBodiesGenerator.bind(this);
+    this.physicsBodiesGeneratorWall = _phisicsBodies2.physicsBodiesGeneratorWall.bind(this);
     if (typeof options.dontUsePhysics == 'undefined') {
       this.matrixAmmo = new _matrixAmmo.default();
     }
@@ -39289,6 +39474,7 @@ class MatrixEngineWGPU {
     } else {
       alert('GLB not use objAnim (it is only for obj sequence). GLB use BVH skeletal for animation');
     }
+    o.textureCache = this.textureCache;
     let skinnedNodeIndex = 0;
     for (const skinnedNode of glbFile.skinnedMeshNodes) {
       let c = 0;
@@ -39455,4 +39641,4 @@ class MatrixEngineWGPU {
 }
 exports.default = MatrixEngineWGPU;
 
-},{"./engine/ball.js":25,"./engine/core-cache.js":27,"./engine/cube.js":28,"./engine/engine.js":37,"./engine/generators/phisicsBodies.js":38,"./engine/instanced/mesh-obj-instances.js":41,"./engine/lights.js":42,"./engine/loader-obj.js":43,"./engine/loaders/bvh-instaced.js":44,"./engine/loaders/bvh.js":45,"./engine/mesh-obj.js":49,"./engine/postprocessing/bloom.js":51,"./engine/raycast.js":52,"./engine/utils.js":53,"./multilang/lang.js":54,"./physics/matrix-ammo.js":55,"./sounds/sounds.js":75,"./tools/editor/editor.js":77,"wgpu-matrix":23}]},{},[1]);
+},{"../src/engine/generators/phisicsBodies.js":38,"./engine/ball.js":25,"./engine/core-cache.js":27,"./engine/cube.js":28,"./engine/engine.js":37,"./engine/generators/phisicsBodies.js":38,"./engine/instanced/mesh-obj-instances.js":41,"./engine/lights.js":42,"./engine/loader-obj.js":43,"./engine/loaders/bvh-instaced.js":44,"./engine/loaders/bvh.js":45,"./engine/mesh-obj.js":49,"./engine/postprocessing/bloom.js":51,"./engine/raycast.js":52,"./engine/utils.js":53,"./multilang/lang.js":54,"./physics/matrix-ammo.js":55,"./sounds/sounds.js":75,"./tools/editor/editor.js":77,"wgpu-matrix":23}]},{},[1]);

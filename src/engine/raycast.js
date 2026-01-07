@@ -159,3 +159,47 @@ export function addRaycastsListener(canvasId = "canvas1", eventName = 'click') {
     }
   });
 }
+
+
+
+export function addRaycastsAABBListener(canvasId = "canvas1", eventName = 'click') {
+  const canvas = document.getElementById(canvasId);
+  if(!canvas) {
+    console.warn(`[Raycaster] Canvas with id '${canvasId}' not found.`);
+    return;
+  }
+
+  canvas.addEventListener(eventName, (event) => {
+    const camera = app.cameras[app.mainCameraParams.type];
+    const {rayOrigin, rayDirection, screen} = getRayFromMouse(event, canvas, camera);
+    let closestHit = null;
+
+    for(const object of app.mainRenderBundle) {
+      if(!object.raycast?.enabled) continue;
+      const {boxMin, boxMax} = computeWorldVertsAndAABB(object);
+      const hitAABB = rayIntersectsAABB(rayOrigin, rayDirection, boxMin, boxMax);
+      if(!hitAABB) continue;
+      const hit = hitAABB;
+      if(hit && (!closestHit || hit.t < closestHit.t)) {
+        closestHit = {...hit, hitObject: object};
+        if(touchCoordinate.stopOnFirstDetectedHit) break;
+      }
+    }
+
+    if(closestHit) {
+      dispatchRayHitEvent(canvas, {
+        hitObject: closestHit.hitObject,
+        hitPoint: closestHit.hitPoint,
+        hitNormal: closestHit.hitNormal || null,
+        hitDistance: closestHit.t,
+        rayOrigin,
+        rayDirection,
+        screenCoords: screen,
+        camera,
+        timestamp: performance.now(),
+        button: event.button,
+        eventName: eventName
+      });
+    }
+  });
+}
