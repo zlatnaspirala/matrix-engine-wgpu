@@ -691,9 +691,7 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
           mat4.rotateY(modelMatrix, this.rotation.getRotY(), modelMatrix);
           mat4.rotateZ(modelMatrix, this.rotation.getRotZ(), modelMatrix);
         }
-        // Apply scale if you have it, e.g.:
-        // console.warn('what is csle comes from user level not glb ', this.scale)
-        if(this.glb || this.objAnim || useScale == true) {
+        if((this.glb || this.objAnim) && useScale == true) {
           mat4.scale(modelMatrix, [this.scale[0], this.scale[1], this.scale[2]], modelMatrix);
         }
         return modelMatrix;

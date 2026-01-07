@@ -23451,9 +23451,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
           _wgpuMatrix.mat4.rotateY(modelMatrix, this.rotation.getRotY(), modelMatrix);
           _wgpuMatrix.mat4.rotateZ(modelMatrix, this.rotation.getRotZ(), modelMatrix);
         }
-        // Apply scale if you have it, e.g.:
-        // console.warn('what is csle comes from user level not glb ', this.scale)
-        if (this.glb || this.objAnim || useScale == true) {
+        if ((this.glb || this.objAnim) && useScale == true) {
           _wgpuMatrix.mat4.scale(modelMatrix, [this.scale[0], this.scale[1], this.scale[2]], modelMatrix);
         }
         return modelMatrix;
@@ -27673,10 +27671,9 @@ class MEMeshObj extends _materials.default {
           _wgpuMatrix.mat4.rotateY(modelMatrix, this.rotation.getRotY(), modelMatrix);
           _wgpuMatrix.mat4.rotateZ(modelMatrix, this.rotation.getRotZ(), modelMatrix);
         }
-        // console.warn('what is csle comes from user level not glb ', this.scale)
-        if (this.glb || this.objAnim) {
-          // mat4.scale(modelMatrix, [this.scale[0], this.scale[1], this.scale[2]], modelMatrix);
-        }
+        // if(this.glb || this.objAnim) {
+        //   // mat4.scale(modelMatrix, [this.scale[0], this.scale[1], this.scale[2]], modelMatrix);
+        // }
         if (useScale == true) {
           _wgpuMatrix.mat4.scale(modelMatrix, [this.scale[0], this.scale[1], this.scale[2]], modelMatrix);
         }
@@ -27893,6 +27890,54 @@ class MEMeshObj extends _materials.default {
     shadowPass.setIndexBuffer(this.indexBuffer, 'uint16');
     shadowPass.drawIndexed(this.indexCount);
   };
+  destroy() {
+    if (this._destroyed) return;
+    this._destroyed = true;
+
+    // --- GPU Buffers ---
+    this.vertexBuffer?.destroy();
+    this.vertexNormalsBuffer?.destroy();
+    this.vertexTexCoordsBuffer?.destroy();
+    this.indexBuffer?.destroy();
+    this.modelUniformBuffer?.destroy();
+    this.sceneUniformBuffer?.destroy();
+    this.bonesBuffer?.destroy();
+    this.selectedBuffer?.destroy();
+
+    // Skinning
+    this.mesh?.weightsBuffer?.destroy();
+    this.mesh?.jointsBuffer?.destroy();
+    this.mesh?.tangentsBuffer?.destroy();
+
+    // Dummy skin buffers
+    this.joints?.buffer?.destroy();
+    this.weights?.buffer?.destroy();
+
+    // Obj sequence animation buffers
+    if (this.objAnim?.meshList) {
+      for (const k in this.objAnim.meshList) {
+        const m = this.objAnim.meshList[k];
+        m.vertexBuffer?.destroy();
+        m.vertexNormalsBuffer?.destroy();
+        m.vertexTexCoordsBuffer?.destroy();
+        m.indexBuffer?.destroy();
+      }
+    }
+    if (this.effects?.pointer?.destroy) {
+      this.effects.pointer.destroy();
+    }
+    this.pipeline = null;
+    this.modelBindGroup = null;
+    this.sceneBindGroupForRender = null;
+    this.selectedBindGroup = null;
+    this.material = null;
+    this.mesh = null;
+    this.objAnim = null;
+    this.drawElements = () => {};
+    this.drawElementsAnim = () => {};
+    this.drawShadows = () => {};
+    console.info(`🧹 MEMeshObj destroyed: ${this.name}`);
+  }
 }
 exports.default = MEMeshObj;
 
@@ -38693,68 +38738,48 @@ class MatrixEngineWGPU {
       this._rafId = null;
     }
 
-    // 2️⃣ Clear scene objects (GPU safe)
+    // 2️⃣ Destroy scene objects
     for (const obj of this.mainRenderBundle) {
       try {
-        // if(obj.destroy) obj.destroy(); // optional per-object cleanup
+        obj?.destroy?.();
       } catch (e) {
-        console.warn('Object destroy error:', e);
+        console.warn('Object destroy error:', obj?.name, e);
       }
     }
     this.mainRenderBundle.length = 0;
 
-    // 3️⃣ Physics cleanup
-    if (this.matrixAmmo) {
-      try {
-        this.matrixAmmo.destroy?.();
-        this.matrixAmmo = null;
-      } catch (e) {
-        console.warn('Physics destroy error:', e);
-      }
-    }
+    // 3️⃣ Physics
+    this.matrixAmmo?.destroy?.();
+    this.matrixAmmo = null;
 
-    // 4️⃣ Editor cleanup
-    if (this.editor) {
-      try {
-        this.editor.destroy?.();
-      } catch (e) {
-        console.warn('Editor destroy error:', e);
-      }
-      this.editor = null;
-    }
+    // 4️⃣ Editor
+    this.editor?.destroy?.();
+    this.editor = null;
 
-    // 5️⃣ Remove input handlers
-    if (this.inputHandler?.destroy) {
-      this.inputHandler.destroy();
-    }
+    // 5️⃣ Input
+    this.inputHandler?.destroy?.();
     this.inputHandler = null;
 
-    // 6️⃣ GPU resources
-    try {
-      this.mainDepthTexture?.destroy();
-      this.shadowTextureArray?.destroy();
-      this.shadowVideoTexture?.destroy();
-    } catch (e) {}
+    // 6️⃣ GLOBAL GPU RESOURCES
+    this.mainDepthTexture?.destroy();
+    this.shadowTextureArray?.destroy();
+    this.shadowVideoTexture?.destroy();
     this.mainDepthTexture = null;
     this.shadowTextureArray = null;
     this.shadowVideoTexture = null;
 
-    // 7️⃣ Lose WebGPU context (IMPORTANT)
+    // 7️⃣ Lose WebGPU context
     try {
       this.context?.unconfigure?.();
-    } catch (e) {}
+    } catch {}
 
-    // 8️⃣ Remove canvas
-    if (this.canvas && this.canvas.parentNode) {
-      this.canvas.parentNode.removeChild(this.canvas);
-    }
+    // 8️⃣ Canvas
+    this.canvas?.remove();
     this.canvas = null;
     this.device = null;
     this.context = null;
     this.adapter = null;
     console.warn('%c[MatrixEngineWGPU] Destroy complete ✔', 'color: lightgreen');
-    // this.mainRenderBundle = [];
-    // this.canvas.remove();
   };
   updateLights() {
     const floatsPerLight = 36; // not 20 anymore

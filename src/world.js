@@ -200,7 +200,6 @@ export default class MatrixEngineWGPU {
   };
 
   createGlobalStuff() {
-
     // Just syntetic to help visual scripting part
     this.bloomPass = {
       enabled: false,
@@ -588,62 +587,44 @@ export default class MatrixEngineWGPU {
       this._rafId = null;
     }
 
-    // 2️⃣ Clear scene objects (GPU safe)
+    // 2️⃣ Destroy scene objects
     for(const obj of this.mainRenderBundle) {
       try {
-        // if(obj.destroy) obj.destroy(); // optional per-object cleanup
+        obj?.destroy?.();
       } catch(e) {
-        console.warn('Object destroy error:', e);
+        console.warn('Object destroy error:', obj?.name, e);
       }
     }
     this.mainRenderBundle.length = 0;
 
-    // 3️⃣ Physics cleanup
-    if(this.matrixAmmo) {
-      try {
-        this.matrixAmmo.destroy?.();
-        this.matrixAmmo = null;
-      } catch(e) {
-        console.warn('Physics destroy error:', e);
-      }
-    }
+    // 3️⃣ Physics
+    this.matrixAmmo?.destroy?.();
+    this.matrixAmmo = null;
 
-    // 4️⃣ Editor cleanup
-    if(this.editor) {
-      try {
-        this.editor.destroy?.();
-      } catch(e) {
-        console.warn('Editor destroy error:', e);
-      }
-      this.editor = null;
-    }
+    // 4️⃣ Editor
+    this.editor?.destroy?.();
+    this.editor = null;
 
-    // 5️⃣ Remove input handlers
-    if(this.inputHandler?.destroy) {
-      this.inputHandler.destroy();
-    }
+    // 5️⃣ Input
+    this.inputHandler?.destroy?.();
     this.inputHandler = null;
 
-    // 6️⃣ GPU resources
-    try {
-      this.mainDepthTexture?.destroy();
-      this.shadowTextureArray?.destroy();
-      this.shadowVideoTexture?.destroy();
-    } catch(e) {}
+    // 6️⃣ GLOBAL GPU RESOURCES
+    this.mainDepthTexture?.destroy();
+    this.shadowTextureArray?.destroy();
+    this.shadowVideoTexture?.destroy();
 
     this.mainDepthTexture = null;
     this.shadowTextureArray = null;
     this.shadowVideoTexture = null;
 
-    // 7️⃣ Lose WebGPU context (IMPORTANT)
+    // 7️⃣ Lose WebGPU context
     try {
       this.context?.unconfigure?.();
-    } catch(e) {}
+    } catch {}
 
-    // 8️⃣ Remove canvas
-    if(this.canvas && this.canvas.parentNode) {
-      this.canvas.parentNode.removeChild(this.canvas);
-    }
+    // 8️⃣ Canvas
+    this.canvas?.remove();
 
     this.canvas = null;
     this.device = null;
@@ -651,9 +632,8 @@ export default class MatrixEngineWGPU {
     this.adapter = null;
 
     console.warn('%c[MatrixEngineWGPU] Destroy complete ✔', 'color: lightgreen');
-    // this.mainRenderBundle = [];
-    // this.canvas.remove();
-  }
+  };
+
 
   updateLights() {
     const floatsPerLight = 36; // not 20 anymore
@@ -703,7 +683,7 @@ export default class MatrixEngineWGPU {
           meItem.getTransformationMatrix(this.mainRenderBundle, light, index)
         })
       }
-      
+
 
       let now, deltaTime;
 
