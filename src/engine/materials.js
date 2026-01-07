@@ -12,8 +12,9 @@ import {fragmentWGSLPower} from "../shaders/fragment.wgsl.power";
  * @email zlatnaspirala@gmail.com
  */
 export default class Materials {
-  constructor(device, material, glb) {
+  constructor(device, material, glb, textureCache) {
     this.device = device;
+    this.textureCache = textureCache;
     this.glb = glb;
     this.material = material;
     this.isVideo = false;
@@ -183,29 +184,39 @@ export default class Materials {
     this.device.queue.writeBuffer(this.postFXModeBuffer, 0, arrayBuffer);
   }
 
+  // async loadTex0(texturesPaths) {
+  //   this.sampler = this.device.createSampler({
+  //     magFilter: 'linear',
+  //     minFilter: 'linear',
+  //   });
+  //   return new Promise(async (resolve) => {
+  //     const response = await fetch(texturesPaths[0]);
+  //     const imageBitmap = await createImageBitmap(await response.blob());
+  //     this.texture0 = this.device.createTexture({
+  //       size: [imageBitmap.width, imageBitmap.height, 1], // REMOVED 1
+  //       format: this.getFormat(),
+  //       usage:
+  //         GPUTextureUsage.TEXTURE_BINDING |
+  //         GPUTextureUsage.COPY_DST |
+  //         GPUTextureUsage.RENDER_ATTACHMENT,
+  //     });
+  //     this.device.queue.copyExternalImageToTexture(
+  //       {source: imageBitmap},
+  //       {texture: this.texture0},
+  //       [imageBitmap.width, imageBitmap.height]
+  //     );
+  //     resolve()
+  //   })
+  // }
+
   async loadTex0(texturesPaths) {
-    this.sampler = this.device.createSampler({
-      magFilter: 'linear',
-      minFilter: 'linear',
-    });
-    return new Promise(async (resolve) => {
-      const response = await fetch(texturesPaths[0]);
-      const imageBitmap = await createImageBitmap(await response.blob());
-      this.texture0 = this.device.createTexture({
-        size: [imageBitmap.width, imageBitmap.height, 1], // REMOVED 1
-        format: this.getFormat(),
-        usage:
-          GPUTextureUsage.TEXTURE_BINDING |
-          GPUTextureUsage.COPY_DST |
-          GPUTextureUsage.RENDER_ATTACHMENT,
-      });
-      this.device.queue.copyExternalImageToTexture(
-        {source: imageBitmap},
-        {texture: this.texture0},
-        [imageBitmap.width, imageBitmap.height]
-      );
-      resolve()
-    })
+    const path = texturesPaths[0];
+
+    const {texture, sampler} =
+      await this.textureCache.get(path, this.getFormat());
+
+    this.texture0 = texture;
+    this.sampler = sampler;
   }
 
   async loadVideoTexture(arg) {

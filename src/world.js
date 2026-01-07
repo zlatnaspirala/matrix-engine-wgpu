@@ -17,6 +17,7 @@ import MEMeshObjInstances from "./engine/instanced/mesh-obj-instances.js";
 import {BloomPass, fullscreenQuadWGSL} from "./engine/postprocessing/bloom.js";
 import {addRaycastsListener} from "./engine/raycast.js";
 import {physicsBodiesGenerator} from "./engine/generators/phisicsBodies.js";
+import {TextureCache} from "./engine/core-cache.js";
 
 /**
  * @description
@@ -203,6 +204,10 @@ export default class MatrixEngineWGPU {
   };
 
   createGlobalStuff() {
+
+    // test 
+    this.textureCache = new TextureCache(this.device);
+
     // Just syntetic to help visual scripting part
     this.bloomPass = {
       enabled: false,
@@ -560,6 +565,7 @@ export default class MatrixEngineWGPU {
       }
     }
 
+    o.textureCache = this.textureCache;
     let AM = this.globalAmbient.slice();
     let myMesh1 = new MEMeshObj(this.canvas, this.device, this.context, o, this.inputHandler, AM);
     myMesh1.spotlightUniformBuffer = this.spotlightUniformBuffer;
