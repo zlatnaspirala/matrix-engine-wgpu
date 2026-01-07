@@ -17,15 +17,28 @@ export var physicsPlayground = function() {
     addRaycastsListener();
 
     addEventListener('AmmoReady', () => {
-      downloadMeshes({
-        ball: "./res/meshes/blender/sphere.obj",
-        cube: "./res/meshes/blender/cube.obj",
-      }, onLoadObj,
-        {scale: [1, 1, 1]})
+      // downloadMeshes({
+      //   ball: "./res/meshes/blender/sphere.obj",
+      //   cube: "./res/meshes/blender/cube.obj",
+      // }, onLoadObj,
+      //   {scale: [1, 1, 1]})
       downloadMeshes({
         cube: "./res/meshes/blender/cube.obj",
       }, onGround,
         {scale: [20, 1, 20]})
+
+      physicsPlayground.physicsBodiesGenerator(
+        "standard",
+        {x: 0, y: 0, z: -20},
+        {x: 0, y: 0, z: 0},
+        "res/textures/star1.png",
+        "testGen",
+        "Cube",
+        false,
+        [1, 1, 1],
+        100
+      );
+
     })
 
     function onGround(m) {
@@ -48,7 +61,15 @@ export var physicsPlayground = function() {
           geometry: "Cube"
         },
         // raycast: { enabled: true , radius: 2 }
+      });
+
+      physicsPlayground.addLight();
+      physicsPlayground.lightContainer[0].behavior.setOsc0(-1, 1, 0.1)
+      physicsPlayground.lightContainer[0].behavior.value_ = -1;
+      physicsPlayground.lightContainer[0].updater.push((light) => {
+        light.position[0] = light.behavior.setPath0()
       })
+      physicsPlayground.lightContainer[0].position[1] = 9;
     }
 
     function onLoadObj(m) {
@@ -101,13 +122,8 @@ export var physicsPlayground = function() {
       var TEST = physicsPlayground.getSceneObjectByName('cube1');
       console.log(`%c Test access scene ${TEST} object.`, LOG_MATRIX);
 
-      physicsPlayground.addLight();
-      physicsPlayground.lightContainer[0].behavior.setOsc0(-1, 1, 0.1)
-      physicsPlayground.lightContainer[0].behavior.value_ = -1;
-      physicsPlayground.lightContainer[0].updater.push((light) => {
-        light.position[0] = light.behavior.setPath0()
-      })
-      physicsPlayground.lightContainer[0].position[1] = 9;
+
+
 
 
       let mybodycube = app.matrixAmmo.getBodyByName('cube1');
@@ -128,7 +144,7 @@ export var physicsPlayground = function() {
       //   axisB,
       //   true
       // );
- 
+
       // hinge.setLimit(-Math.PI / 2, Math.PI / 2); // 90° open
       // physicsPlayground.matrixAmmo.dynamicsWorld.addConstraint(hinge, true);
       //  app.matrixAmmo.getBodyByName(`CubePhysics${x}`).setAngularVelocity(new Ammo.btVector3(

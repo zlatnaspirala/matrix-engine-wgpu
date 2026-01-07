@@ -1,0 +1,10 @@
+{
+  "redirect": true,
+  "id": "PhysicsPlayground",
+  "name": "PhysicsPlayground",
+  "absolutePath": "G:\\web_server\\xampp\\htdocs\\PRIVATE_SERVER\\me\\meGPU\\matrix-engine-wgpu\\projects\\PhysicsPlayground\\PhysicsPlayground.json",
+  "PROJECTS_DIR": "G:\\web_server\\xampp\\htdocs\\PRIVATE_SERVER\\me\\meGPU\\matrix-engine-wgpu\\projects",
+  "projectData": "PhysicsPlayground\\PhysicsPlayground.json",
+  "physics": true,
+  "networking": true
+}

@@ -16,6 +16,7 @@ import {Editor} from "./tools/editor/editor.js";
 import MEMeshObjInstances from "./engine/instanced/mesh-obj-instances.js";
 import {BloomPass, fullscreenQuadWGSL} from "./engine/postprocessing/bloom.js";
 import {addRaycastsListener} from "./engine/raycast.js";
+import {physicsBodiesGenerator} from "./engine/generators/phisicsBodies.js";
 
 /**
  * @description
@@ -77,6 +78,8 @@ export default class MatrixEngineWGPU {
         responseCoef: 2000
       }
     }
+
+    this.physicsBodiesGenerator = physicsBodiesGenerator.bind(this);
 
     if(typeof options.dontUsePhysics == 'undefined') {
       this.matrixAmmo = new MatrixAmmo();
@@ -208,7 +211,7 @@ export default class MatrixEngineWGPU {
       setBlurRadius: (v) => {},
       setThreshold: (v) => {},
     };
-    //------------------ TEST
+
     this.bloomOutputTex = this.device.createTexture({
       size: [this.canvas.width, this.canvas.height],
       format: 'rgba16float',
@@ -258,7 +261,6 @@ export default class MatrixEngineWGPU {
         targets: [{format: 'bgra8unorm'}], // rgba16float  bgra8unorm
       },
     });
-    //------------------ TEST
 
     this.spotlightUniformBuffer = this.device.createBuffer({
       label: 'spotlightUniformBufferGLOBAL',

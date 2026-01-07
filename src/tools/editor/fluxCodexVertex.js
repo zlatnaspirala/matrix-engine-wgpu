@@ -100,7 +100,7 @@ export default class FluxCodexVertex {
     this._varInputs = {};
 
     // EXTRA TIME 
-    setTimeout(() => this.init(), 4000);
+    setTimeout(() => this.init(), 3000);
 
     document.addEventListener("keydown", e => {
       if(e.key == "F6") {
@@ -126,14 +126,12 @@ export default class FluxCodexVertex {
       if(field !== "path") return;
     });
 
-
+    // only node no need to write intro files
     document.addEventListener('web.editor.addMp3', (e) => {
       console.log("[web.editor.addMp3]: ", e.detail);
       e.detail.path = e.detail.path.replace('\\res', 'res');
       e.detail.path = e.detail.path.replace(/\\/g, '/');
-      // THIS MUST BE SAME LIKE SERVER VERSION OF ADD CUBE
       this.addNode('audioMP3', e.detail);
-      // this.core.
     });
   }
 
@@ -1338,6 +1336,27 @@ export default class FluxCodexVertex {
         noselfExec: "true"
       }),
 
+      generator: (id, x, y) => ({
+        id, x, y, title: "Generator",
+        category: "action",
+        inputs: [
+          {name: "exec", type: "action"},
+          {name: "physicsGeometry", type: "string", default: "cube"},
+          {name: "texturePath", type: "string", default: "res/textures/default.png"},
+          {name: "position", type: "object"}
+        ],
+        outputs: [
+          {name: "execOut", type: "action"}
+        ],
+        fields: [
+          {key: "physicsGeometry", value: false},
+          {key: "texturePath", value: ""},
+          {key: "position", value: ""},
+          {key: "created", value: false},
+        ],
+        noselfExec: "true"
+      }),
+
       eventCustom: (id, x, y) => ({
         id, x, y,
         title: "Custom Event",
@@ -2487,8 +2506,8 @@ export default class FluxCodexVertex {
           result = this.getValue(nodeId, "A") <= this.getValue(nodeId, "B");
           break;
         case "GenRandInt":
-          const min =+ node.fields?.find(f => f.key === "min")?.value || 0;
-          const max =+ node.fields?.find(f => f.key === "max")?.value || 10;
+          const min = + node.fields?.find(f => f.key === "min")?.value || 0;
+          const max = + node.fields?.find(f => f.key === "max")?.value || 10;
           result = Math.floor(Math.random() * (max - min + 1)) + min;
           break;
         default:
@@ -2942,6 +2961,28 @@ export default class FluxCodexVertex {
         }
 
         app.matrixSounds.play(key);
+
+        this.enqueueOutputs(n, "execOut");
+        return;
+      } else if(n.title === "Generator") {
+        const texturePath = this.getValue(nodeId, "texturePath");
+        const pos = this.getValue(nodeId, "position");
+        // const clones = Number(this.getValue(nodeId, "clones")) || 1;
+
+        if(!texturePath || !pos) {
+          console.warn("[Generator] Missing input fields...");
+          this.enqueueOutputs(n, "execOut");
+          return;
+        }
+
+        const createdField = n.fields.find(f => f.key === "created");
+
+        if(!createdField.value) {
+          console.log('!INTERNAL TIMER no visual part. ONCE!');
+          
+          // app.matrixSounds.createAudio(key, src, clones);
+          // createdField.value = true;
+        }
 
         this.enqueueOutputs(n, "execOut");
         return;
