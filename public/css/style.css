@@ -329,12 +329,12 @@ p {
 
 .btn2 {
   cursor: pointer;
-  background: #d93434;
-  background-image: -webkit-linear-gradient(top, orangered, #0a027a);
-  background-image: -moz-linear-gradient(top, orangered, #0a027a);
-  background-image: -ms-linear-gradient(top, orangered, #0a027a);
-  background-image: -o-linear-gradient(top, orangered, #0a027a);
-  background-image: linear-gradient(to bottom, orangered, #0a027a);
+  background: #333333;
+  background-image: -webkit-linear-gradient(top, #c2c1b5, #181818);
+  background-image: -moz-linear-gradient(top, #c2c1b5, #181818);
+  background-image: -ms-linear-gradient(top, #c2c1b5, #181818);
+  background-image: -o-linear-gradient(top, #c2c1b5, #181818);
+  background-image: linear-gradient(to bottom, #c2c1b5, #181818);
   -webkit-border-radius: 28;
   -moz-border-radius: 28;
   border-radius: 28px;
@@ -349,13 +349,13 @@ p {
 }
 
 .btn2:hover {
-  background: #0a027a;
-  background-image: -webkit-linear-gradient(top, #0a027a, #6e34d9);
-  background-image: -moz-linear-gradient(top, #0a027a, #6e34d9);
-  background-image: -ms-linear-gradient(top, #0a027a, #6e34d9);
-  background-image: -o-linear-gradient(top, #0a027a, #6e34d9);
-  background-image: linear-gradient(to bottom, #0a027a, #6e34d9);
-  text-decoration: none;
+  /* background: #0a027a;
+  background-image: -webkit-linear-gradient(top, #0a027a, #5719cc);
+  background-image: -moz-linear-gradient(top, #0a027a, #4710ac);
+  background-image: -ms-linear-gradient(top, #0a027a, #4a16a9);
+  background-image: -o-linear-gradient(top, #0a027a, #4916a7);
+  background-image: linear-gradient(to bottom, #0a027a, #4713a7);
+  text-decoration: none; */
 }
 
 #blocker {
@@ -1241,7 +1241,7 @@ input[type=number]:hover::-webkit-outer-spin-button {
 
 .top-btn {
   padding: 8px 12px;
-  background: #3a3a3a;
+  /* background: #3a3a3a; */
   border: 1px solid #555;
   border-radius: 6px;
   cursor: pointer;
@@ -1250,7 +1250,7 @@ input[type=number]:hover::-webkit-outer-spin-button {
 }
 
 .top-btn:hover {
-  background: #4a4a4a;
+  background: #000000;
   border-color: #777;
 }
 

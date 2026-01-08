@@ -370,11 +370,23 @@ export default class FluxCodexVertex {
     hideVPopup.innerText = `Hide`;
     hideVPopup.classList.add("btn4");
     hideVPopup.style.margin = "8px 8px 8px 8px";
-    hideVPopup.style.width = "100px";
+    hideVPopup.style.width = "200px";
     hideVPopup.style.fontWeight = "bold";
     hideVPopup.style.webkitTextStrokeWidth = "0px";
     hideVPopup.addEventListener("click", () => {byId("varsPopup").style.display = "none";});
     popup.appendChild(hideVPopup);
+
+    const saveVPopup = document.createElement("button");
+    saveVPopup.innerText = `Save`;
+    saveVPopup.classList.add("btn4");
+    saveVPopup.style.margin = "8px 8px 8px 8px";
+    saveVPopup.style.width = "200px";
+    saveVPopup.style.height = "70px";
+    saveVPopup.style.fontWeight = "bold";
+    saveVPopup.style.webkitTextStrokeWidth = "0px";
+    saveVPopup.addEventListener("click", () => { this.compileGraph() });
+    popup.appendChild(saveVPopup);
+
     document.body.appendChild(popup);
     this.makePopupDraggable(popup);
     this._refreshVarsList(list);
@@ -401,24 +413,24 @@ export default class FluxCodexVertex {
           cursor: "pointer",
           borderBottom: "1px solid #222",
           color: colors[type] || "#fff",
+          placeContent: "space-around"
         });
 
         const label = document.createElement("span");
         label.textContent = `${name} (${type})`;
-        label.style.minWidth = "120px";
+        label.style.width = "20%";
 
         let input;
         if(type === "object") {
           input = document.createElement("textarea");
           input.value = JSON.stringify(this.variables[type][name] ?? {}, null, 2);
-          input.style.width = "220px";
           input.style.height = "40px";
           input.style.webkitTextStrokeWidth = "0px";
         } else {
           input = document.createElement("input");
           input.value = this.variables[type][name] ?? "";
-          input.style.width = "";
         }
+        input.style.width = "30%";
 
         this._varInputs[`${type}.${name}`] = input;
         Object.assign(input.style, {
@@ -1445,7 +1457,16 @@ export default class FluxCodexVertex {
         inputs: [],
         outputs: [
           {name: "exec", type: "action"},
-          {name: "hitObject", type: "object"}
+          {name: "hitObjectName", type: "object"},
+          {name: "screenCoords", type: "object"},
+          {name: "rayOrigin", type: "object"},
+          {name: "rayDirection", type: "object"},
+          {name: "hitObject", type: "object"},
+          {name: "hitNormal", type: "object"},
+          {name: "hitDistance", type: "object"},
+          {name: "eventName", type: "object"},
+          {name: "button", type: "number"},
+          {name: "timestamp", type: "number"}
         ],
         noselfExec: 'true',
         _listenerAttached: false,
@@ -2340,11 +2361,12 @@ export default class FluxCodexVertex {
       };
       n._listenerAttached = true;
     } else if(n.title == "On Ray Hit") {
-      // console.log('ON RAY HIT INIT ONLE !!!!!!!!!!!!!!!!!')
+      console.log('ON RAY HIT INIT ONLE !!!!!!!!!!!!!!!!!')
       if(n._listenerAttached) return;
       app.reference.addRaycastsListener();
       const handler = (e) => {
-        n._returnCache = e.detail?.hitObject ?? e.detail;
+        console.log('ON RAY HIT !!!!!!!!!!!!!!!!!')
+        n._returnCache = e.detail;// e.detail?.hitObject ?? e.detail;
         this.enqueueOutputs(n, "exec");
       };
       app.canvas.addEventListener("ray.hit.event", handler);
@@ -2383,6 +2405,14 @@ export default class FluxCodexVertex {
     if(!node || visited.has(nodeId)) return undefined;
     visited.add(nodeId);
 
+    if(node.title === "On Ray Hit") {
+      if (pinName === "hitObjectName") {
+        return node._returnCache['hitObject']['name'];
+      } else {
+      return node._returnCache[pinName];
+      }
+    }
+
     if(node.title === "if" && pinName === "condition") {
       let testLink = this.links.find(l => l.to.node === nodeId && l.to.pin === pinName);
       let t = this.getValue(testLink.from.node, testLink.from.pin);
@@ -2395,12 +2425,7 @@ export default class FluxCodexVertex {
       }
       // ?
     }
-
-    if(node.title === "On Ray Hit" && pinName === "hitObject") {
-      console.info('get value ray hit', node._returnCache);
-      return node._returnCache;
-    }
-
+    
     if(node.title === "Custom Event" && pinName === "detail") {
       console.warn("[Custom Event]  getvalue");
       return node._returnCache;

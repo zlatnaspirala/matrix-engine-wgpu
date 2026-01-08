@@ -16443,13 +16443,25 @@ var FluxCodexVertex = class {
     hideVPopup.innerText = `Hide`;
     hideVPopup.classList.add("btn4");
     hideVPopup.style.margin = "8px 8px 8px 8px";
-    hideVPopup.style.width = "100px";
+    hideVPopup.style.width = "200px";
     hideVPopup.style.fontWeight = "bold";
     hideVPopup.style.webkitTextStrokeWidth = "0px";
     hideVPopup.addEventListener("click", () => {
       byId("varsPopup").style.display = "none";
     });
     popup.appendChild(hideVPopup);
+    const saveVPopup = document.createElement("button");
+    saveVPopup.innerText = `Save`;
+    saveVPopup.classList.add("btn4");
+    saveVPopup.style.margin = "8px 8px 8px 8px";
+    saveVPopup.style.width = "200px";
+    saveVPopup.style.height = "70px";
+    saveVPopup.style.fontWeight = "bold";
+    saveVPopup.style.webkitTextStrokeWidth = "0px";
+    saveVPopup.addEventListener("click", () => {
+      this.compileGraph();
+    });
+    popup.appendChild(saveVPopup);
     document.body.appendChild(popup);
     this.makePopupDraggable(popup);
     this._refreshVarsList(list);
@@ -16472,23 +16484,23 @@ var FluxCodexVertex = class {
           padding: "4px",
           cursor: "pointer",
           borderBottom: "1px solid #222",
-          color: colors[type2] || "#fff"
+          color: colors[type2] || "#fff",
+          placeContent: "space-around"
         });
         const label = document.createElement("span");
         label.textContent = `${name2} (${type2})`;
-        label.style.minWidth = "120px";
+        label.style.width = "20%";
         let input;
         if (type2 === "object") {
           input = document.createElement("textarea");
           input.value = JSON.stringify(this.variables[type2][name2] ?? {}, null, 2);
-          input.style.width = "220px";
           input.style.height = "40px";
           input.style.webkitTextStrokeWidth = "0px";
         } else {
           input = document.createElement("input");
           input.value = this.variables[type2][name2] ?? "";
-          input.style.width = "";
         }
+        input.style.width = "30%";
         this._varInputs[`${type2}.${name2}`] = input;
         Object.assign(input.style, {
           background: "#000",
@@ -17341,7 +17353,16 @@ var FluxCodexVertex = class {
         inputs: [],
         outputs: [
           { name: "exec", type: "action" },
-          { name: "hitObject", type: "object" }
+          { name: "hitObjectName", type: "object" },
+          { name: "screenCoords", type: "object" },
+          { name: "rayOrigin", type: "object" },
+          { name: "rayDirection", type: "object" },
+          { name: "hitObject", type: "object" },
+          { name: "hitNormal", type: "object" },
+          { name: "hitDistance", type: "object" },
+          { name: "eventName", type: "object" },
+          { name: "button", type: "number" },
+          { name: "timestamp", type: "number" }
         ],
         noselfExec: "true",
         _listenerAttached: false
@@ -18278,10 +18299,12 @@ var FluxCodexVertex = class {
       };
       n2._listenerAttached = true;
     } else if (n2.title == "On Ray Hit") {
+      console.log("ON RAY HIT INIT ONLE !!!!!!!!!!!!!!!!!");
       if (n2._listenerAttached) return;
       app.reference.addRaycastsListener();
       const handler = (e) => {
-        n2._returnCache = e.detail?.hitObject ?? e.detail;
+        console.log("ON RAY HIT !!!!!!!!!!!!!!!!!");
+        n2._returnCache = e.detail;
         this.enqueueOutputs(n2, "exec");
       };
       app.canvas.addEventListener("ray.hit.event", handler);
@@ -18317,6 +18340,13 @@ var FluxCodexVertex = class {
     }
     if (!node2 || visited.has(nodeId2)) return void 0;
     visited.add(nodeId2);
+    if (node2.title === "On Ray Hit") {
+      if (pinName === "hitObjectName") {
+        return node2._returnCache["hitObject"]["name"];
+      } else {
+        return node2._returnCache[pinName];
+      }
+    }
     if (node2.title === "if" && pinName === "condition") {
       let testLink = this.links.find((l) => l.to.node === nodeId2 && l.to.pin === pinName);
       let t = this.getValue(testLink.from.node, testLink.from.pin);
@@ -18327,10 +18357,6 @@ var FluxCodexVertex = class {
         console.warn("[IF] condition read outside exec ignored");
         return node2.fields?.find((f) => f.key === "condition")?.value;
       }
-    }
-    if (node2.title === "On Ray Hit" && pinName === "hitObject") {
-      console.info("get value ray hit", node2._returnCache);
-      return node2._returnCache;
     }
     if (node2.title === "Custom Event" && pinName === "detail") {
       console.warn("[Custom Event]  getvalue");
@@ -19521,16 +19547,16 @@ var EditorHud = class {
     <div class="top-item">
       <div class="top-btn">Script \u25BE</div>
       <div class="dropdown">
-        <div id="showVisualCodeEditorBtn" class="drop-item">
+        <div id="showVisualCodeEditorBtn" class="drop-item btn4">
            <span>Visual Scripting</span>
            <small>\u2328\uFE0FFluxCodexVertex</small>
            <small>\u2328\uFE0FPress F6 for run</small>
         </div>
-        <div id="showCodeVARSBtn" class="drop-item">
+        <div id="showCodeVARSBtn" class="drop-item btn4">
            <span>Variable editor</span>
            <small>\u2328\uFE0FVisual Script tool</small>
         </div>
-        <div id="showCodeEditorBtn" class="drop-item">
+        <div id="showCodeEditorBtn" class="drop-item btn4">
            <span>Show code editor</span>
            <small>\u2328\uFE0FFunction raw edit</small>
            <small>Custom Functions</small>
@@ -22657,6 +22683,15 @@ var app2 = new MatrixEngineWGPU(
       }, 800);
       setTimeout(() => {
         app3.getSceneObjectByName("FLOOR").position.SetY(-2);
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("L_BOX").scale[0] = 1;
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("L_BOX").scale[1] = 4;
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("R_BOX").scale[1] = 4;
       }, 800);
     });
   }

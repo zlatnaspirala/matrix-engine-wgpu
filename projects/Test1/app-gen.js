@@ -264,6 +264,24 @@ let app = new MatrixEngineWGPU(
  }, 800);
  // ME END FLOOR updatePosy
  
+     // ME START L_BOX updateScale0
+ setTimeout(() => {
+  app.getSceneObjectByName('L_BOX').scale[0] = 1;
+ }, 800);
+ // ME END L_BOX updateScale0
+ 
+    // ME START L_BOX updateScale1
+ setTimeout(() => {
+  app.getSceneObjectByName('L_BOX').scale[1] = 4;
+ }, 800);
+ // ME END L_BOX updateScale1
+ 
+    // ME START R_BOX updateScale1
+ setTimeout(() => {
+  app.getSceneObjectByName('R_BOX').scale[1] = 4;
+ }, 800);
+ // ME END R_BOX updateScale1
+ 
  // [MAIN_REPLACE2]
  
     })
