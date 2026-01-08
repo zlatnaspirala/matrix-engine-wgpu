@@ -6668,9 +6668,9 @@ var MEMeshObj = class extends Materials {
       }
       this.indexCount = this.mesh.indices.length;
       const indexCount = this.mesh.indices.length;
-      const size = Math.ceil(indexCount * Uint16Array.BYTES_PER_ELEMENT / 4) * 4;
+      const size2 = Math.ceil(indexCount * Uint16Array.BYTES_PER_ELEMENT / 4) * 4;
       this.indexBuffer = this.device.createBuffer({
-        size,
+        size: size2,
         usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST,
         mappedAtCreation: true
       });
@@ -6952,12 +6952,12 @@ var MEMeshObj = class extends Materials {
     if (!dataArray || typeof dataArray.length !== "number") {
       throw new Error("Invalid data array passed to createGPUBuffer");
     }
-    const size = dataArray.length * dataArray.BYTES_PER_ELEMENT;
-    if (!Number.isFinite(size) || size <= 0) {
-      throw new Error(`Invalid buffer size: ${size}`);
+    const size2 = dataArray.length * dataArray.BYTES_PER_ELEMENT;
+    if (!Number.isFinite(size2) || size2 <= 0) {
+      throw new Error(`Invalid buffer size: ${size2}`);
     }
     const buffer = this.device.createBuffer({
-      size,
+      size: size2,
       usage,
       mappedAtCreation: true
     });
@@ -7248,12 +7248,12 @@ var MatrixAmmo = class {
     this.rigidBodies.push(body2);
     return body2;
   }
-  setBodyVelocity(body2, x2, y2, z) {
+  setBodyVelocity = (body2, x2, y2, z) => {
     var tbv30 = new Ammo.btVector3();
     tbv30.setValue(x2, y2, z);
     body2.setLinearVelocity(tbv30);
-  }
-  setKinematicTransform(body2, x2, y2, z, rx, ry, rz) {
+  };
+  setKinematicTransform = (body2, x2, y2, z, rx, ry, rz) => {
     if (typeof rx == "undefined") {
       var rx = 0;
     }
@@ -7281,8 +7281,8 @@ var MatrixAmmo = class {
       tmpTrans.setRotation(localRot);
       ms.setWorldTransform(tmpTrans);
     }
-  }
-  getBodyByName(name2) {
+  };
+  getBodyByName = (name2) => {
     var b = null;
     this.rigidBodies.forEach((item, index, array) => {
       if (item.name == name2) {
@@ -7290,8 +7290,8 @@ var MatrixAmmo = class {
       }
     });
     return b;
-  }
-  getNameByBody(body2) {
+  };
+  getNameByBody = (body2) => {
     var b = null;
     this.rigidBodies.forEach((item, index, array) => {
       if (item.kB == body2.kB) {
@@ -7299,8 +7299,8 @@ var MatrixAmmo = class {
       }
     });
     return b;
-  }
-  deactivatePhysics(body2) {
+  };
+  deactivatePhysics = (body2) => {
     const CF_KINEMATIC_OBJECT = 2;
     const DISABLE_DEACTIVATION = 4;
     this.dynamicsWorld.removeRigidBody(body2);
@@ -7315,7 +7315,7 @@ var MatrixAmmo = class {
     body2.getMotionState().setWorldTransform(currentTransform);
     this.matrixAmmo.dynamicsWorld.addRigidBody(body2);
     body2.isKinematic = true;
-  }
+  };
   detectCollision() {
     return;
     this.lastRoll = "";
@@ -11036,9 +11036,9 @@ function gltfTypeSize(componentType, type2) {
   return gltfTypeNumComponents(type2) * typeSize;
 }
 var GLTFBuffer = class {
-  constructor(buffer, size, offset) {
+  constructor(buffer, size2, offset) {
     this.arrayBuffer = buffer;
-    this.size = size;
+    this.size = size2;
     this.byteOffset = offset;
   }
 };
@@ -12630,36 +12630,36 @@ fn main(
 
 // ../../../engine/geometry-factory.js
 var GeometryFactory = class _GeometryFactory {
-  static create(type2, size = 1, segments = 16, options2 = {}) {
+  static create(type2, size2 = 1, segments = 16, options2 = {}) {
     switch (type2) {
       case "quad":
-        return _GeometryFactory.quad(size);
+        return _GeometryFactory.quad(size2);
       case "cube":
-        return _GeometryFactory.cube(size);
+        return _GeometryFactory.cube(size2);
       case "sphere":
-        return _GeometryFactory.sphere(size, segments);
+        return _GeometryFactory.sphere(size2, segments);
       case "pyramid":
-        return _GeometryFactory.pyramid(size);
+        return _GeometryFactory.pyramid(size2);
       case "star":
-        return _GeometryFactory.star(size);
+        return _GeometryFactory.star(size2);
       case "circle":
-        return _GeometryFactory.circle(size, segments);
+        return _GeometryFactory.circle(size2, segments);
       case "circle2":
-        return _GeometryFactory.circle2(size, segments);
+        return _GeometryFactory.circle2(size2, segments);
       case "diamond":
-        return _GeometryFactory.diamond(size);
+        return _GeometryFactory.diamond(size2);
       case "rock":
-        return _GeometryFactory.rock(size, options2.detail || 3);
+        return _GeometryFactory.rock(size2, options2.detail || 3);
       case "meteor":
-        return _GeometryFactory.meteor(size, options2.detail || 6);
+        return _GeometryFactory.meteor(size2, options2.detail || 6);
       case "thunder":
-        return _GeometryFactory.thunder(size);
+        return _GeometryFactory.thunder(size2);
       case "shard":
-        return _GeometryFactory.shard(size);
+        return _GeometryFactory.shard(size2);
       case "circlePlane":
-        return _GeometryFactory.circlePlane(size, segments);
+        return _GeometryFactory.circlePlane(size2, segments);
       case "ring":
-        return _GeometryFactory.ring(size, options2.innerRatio || 0.7, segments, options2.height || 0.05);
+        return _GeometryFactory.ring(size2, options2.innerRatio || 0.7, segments, options2.height || 0.05);
       default:
         throw new Error(`Unknown geometry: ${type2}`);
     }
@@ -14764,9 +14764,9 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
       }
       this.indexCount = this.mesh.indices.length;
       const indexCount = this.mesh.indices.length;
-      const size = Math.ceil(indexCount * Uint16Array.BYTES_PER_ELEMENT / 4) * 4;
+      const size2 = Math.ceil(indexCount * Uint16Array.BYTES_PER_ELEMENT / 4) * 4;
       this.indexBuffer = this.device.createBuffer({
-        size,
+        size: size2,
         usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST,
         mappedAtCreation: true
       });
@@ -15180,12 +15180,12 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
     if (!dataArray || typeof dataArray.length !== "number") {
       throw new Error("Invalid data array passed to createGPUBuffer");
     }
-    const size = dataArray.length * dataArray.BYTES_PER_ELEMENT;
-    if (!Number.isFinite(size) || size <= 0) {
-      throw new Error(`Invalid buffer size: ${size}`);
+    const size2 = dataArray.length * dataArray.BYTES_PER_ELEMENT;
+    if (!Number.isFinite(size2) || size2 <= 0) {
+      throw new Error(`Invalid buffer size: ${size2}`);
     }
     const buffer = this.device.createBuffer({
-      size,
+      size: size2,
       usage,
       mappedAtCreation: true
     });
@@ -17286,10 +17286,10 @@ var FluxCodexVertex = class {
           { name: "rot", type: "object" },
           { name: "texturePath", type: "string" },
           { name: "name", type: "string" },
-          { name: "geometry", type: "string" },
+          { name: "size", type: "string" },
           { name: "raycast", type: "boolean" },
           { name: "scale", type: "object" },
-          { name: "sum", type: "number" },
+          { name: "spacing", type: "number" },
           { name: "delay", type: "number" }
         ],
         outputs: [
@@ -17301,13 +17301,68 @@ var FluxCodexVertex = class {
           { key: "rot", value: "{x:0, y:0, z:0}" },
           { key: "texturePath", value: "res/textures/star1.png" },
           { key: "name", value: "TEST" },
-          { key: "geometry", value: "Cube" },
+          { key: "size", value: "10x3" },
           { key: "raycast", value: true },
           { key: "scale", value: [1, 1, 1] },
-          { key: "sum", value: 10 },
+          { key: "spacing", value: 10 },
           { key: "delay", value: 500 },
           { key: "created", value: false }
         ],
+        noselfExec: "true"
+      }),
+      generatorPyramid: (id2, x2, y2) => ({
+        id: id2,
+        x: x2,
+        y: y2,
+        title: "Generator Pyramid",
+        category: "action",
+        inputs: [
+          { name: "exec", type: "action" },
+          { name: "material", type: "string" },
+          { name: "pos", type: "object" },
+          { name: "rot", type: "object" },
+          { name: "texturePath", type: "string" },
+          { name: "name", type: "string" },
+          { name: "size", type: "string" },
+          { name: "raycast", type: "boolean" },
+          { name: "scale", type: "object" },
+          { name: "spacing", type: "number" },
+          { name: "delay", type: "number" }
+        ],
+        outputs: [
+          { name: "execOut", type: "action" }
+        ],
+        fields: [
+          { key: "material", value: "standard" },
+          { key: "pos", value: "{x:0, y:0, z:-20}" },
+          { key: "rot", value: "{x:0, y:0, z:0}" },
+          { key: "texturePath", value: "res/textures/star1.png" },
+          { key: "name", value: "TEST" },
+          { key: "size", value: "10x3" },
+          { key: "raycast", value: true },
+          { key: "scale", value: [1, 1, 1] },
+          { key: "spacing", value: 10 },
+          { key: "delay", value: 500 },
+          { key: "created", value: false }
+        ],
+        noselfExec: "true"
+      }),
+      setForceOnHit: (id2, x2, y2) => ({
+        id: id2,
+        x: x2,
+        y: y2,
+        title: "Set Force On Hit",
+        category: "action",
+        inputs: [
+          { name: "exec", type: "action" },
+          { name: "objectName", type: "string" },
+          { name: "rayDirection", type: "object" },
+          { name: "strength", type: "number" }
+        ],
+        outputs: [
+          { name: "execOut", type: "action" }
+        ],
+        fields: [],
         noselfExec: "true"
       }),
       eventCustom: (id2, x2, y2) => ({
@@ -17353,7 +17408,7 @@ var FluxCodexVertex = class {
         inputs: [],
         outputs: [
           { name: "exec", type: "action" },
-          { name: "hitObjectName", type: "object" },
+          { name: "hitObjectName", type: "string" },
           { name: "screenCoords", type: "object" },
           { name: "rayOrigin", type: "object" },
           { name: "rayDirection", type: "object" },
@@ -17436,6 +17491,138 @@ var FluxCodexVertex = class {
         outputs: [{ name: "execOut", type: "action" }],
         fields: [{ key: "delay", value: "1000" }],
         builtIn: true
+      }),
+      // string operation
+      startsWith: (id2, x2, y2) => ({
+        id: id2,
+        title: "Starts With [string]",
+        x: x2,
+        y: y2,
+        category: "stringOperation",
+        inputs: [
+          { name: "input", type: "string" },
+          { name: "prefix", type: "string" }
+        ],
+        outputs: [{ name: "return", type: "boolean" }]
+      }),
+      endsWith: (id2, x2, y2) => ({
+        id: id2,
+        title: "Ends With [string]",
+        x: x2,
+        y: y2,
+        category: "stringOperation",
+        inputs: [
+          { name: "input", type: "string" },
+          { name: "suffix", type: "string" }
+        ],
+        outputs: [{ name: "return", type: "boolean" }]
+      }),
+      includes: (id2, x2, y2) => ({
+        id: id2,
+        title: "Includes [string]",
+        x: x2,
+        y: y2,
+        category: "stringOperation",
+        inputs: [
+          { name: "input", type: "string" },
+          { name: "search", type: "string" }
+        ],
+        outputs: [{ name: "return", type: "boolean" }]
+      }),
+      toUpperCase: (id2, x2, y2) => ({
+        id: id2,
+        title: "To Upper Case [string]",
+        x: x2,
+        y: y2,
+        category: "stringOperation",
+        inputs: [{ name: "input", type: "string" }],
+        outputs: [{ name: "return", type: "string" }]
+      }),
+      toLowerCase: (id2, x2, y2) => ({
+        id: id2,
+        title: "To Lower Case [string]",
+        x: x2,
+        y: y2,
+        category: "stringOperation",
+        inputs: [{ name: "input", type: "string" }],
+        outputs: [{ name: "return", type: "string" }]
+      }),
+      trim: (id2, x2, y2) => ({
+        id: id2,
+        title: "Trim [string]",
+        x: x2,
+        y: y2,
+        category: "stringOperation",
+        inputs: [{ name: "input", type: "string" }],
+        outputs: [{ name: "return", type: "string" }]
+      }),
+      length: (id2, x2, y2) => ({
+        id: id2,
+        title: "String Length",
+        x: x2,
+        y: y2,
+        category: "stringOperation",
+        inputs: [{ name: "input", type: "string" }],
+        outputs: [{ name: "return", type: "number" }]
+      }),
+      substring: (id2, x2, y2) => ({
+        id: id2,
+        title: "Substring [string]",
+        x: x2,
+        y: y2,
+        category: "stringOperation",
+        inputs: [
+          { name: "input", type: "string" },
+          { name: "start", type: "number" },
+          { name: "end", type: "number" }
+        ],
+        outputs: [{ name: "return", type: "string" }]
+      }),
+      replace: (id2, x2, y2) => ({
+        id: id2,
+        title: "Replace [string]",
+        x: x2,
+        y: y2,
+        category: "stringOperation",
+        inputs: [
+          { name: "input", type: "string" },
+          { name: "search", type: "string" },
+          { name: "replace", type: "string" }
+        ],
+        outputs: [{ name: "return", type: "string" }]
+      }),
+      split: (id2, x2, y2) => ({
+        id: id2,
+        title: "Split [string]",
+        x: x2,
+        y: y2,
+        category: "stringOperation",
+        inputs: [
+          { name: "input", type: "string" },
+          { name: "separator", type: "string" }
+        ],
+        outputs: [{ name: "return", type: "array" }]
+      }),
+      concat: (id2, x2, y2) => ({
+        id: id2,
+        title: "Concat [string]",
+        x: x2,
+        y: y2,
+        category: "stringOperation",
+        inputs: [
+          { name: "a", type: "string" },
+          { name: "b", type: "string" }
+        ],
+        outputs: [{ name: "return", type: "string" }]
+      }),
+      isEmpty: (id2, x2, y2) => ({
+        id: id2,
+        title: "Is Empty [string]",
+        x: x2,
+        y: y2,
+        category: "stringOperation",
+        inputs: [{ name: "input", type: "string" }],
+        outputs: [{ name: "return", type: "boolean" }]
       }),
       // Math
       add: (id2, x2, y2) => ({
@@ -18435,9 +18622,58 @@ var FluxCodexVertex = class {
       if (pinName === "item") return node2.state?.item;
       if (pinName === "index") return node2.state?.index;
     }
-    if (["math", "value", "compare"].includes(node2.category)) {
+    if (["math", "value", "compare", "stringOperation"].includes(node2.category)) {
       let result2;
       switch (node2.title) {
+        case "Starts With [string]":
+          console.log("test startsWith");
+          result2 = this.getValue(nodeId2, "input").startsWith(this.getValue(nodeId2, "prefix"));
+          break;
+        case "Ends With [string]":
+          result2 = this.getValue(nodeId2, "input")?.endsWith(this.getValue(nodeId2, "suffix"));
+          break;
+        case "Includes [string]":
+          result2 = this.getValue(nodeId2, "input")?.includes(this.getValue(nodeId2, "search"));
+          break;
+        case "Equals [string]":
+          result2 = this.getValue(nodeId2, "a") === this.getValue(nodeId2, "b");
+          break;
+        case "Not Equals [string]":
+          result2 = this.getValue(nodeId2, "a") !== this.getValue(nodeId2, "b");
+          break;
+        case "To Upper Case [string]":
+          result2 = this.getValue(nodeId2, "input")?.toUpperCase();
+          break;
+        case "To Lower Case [string]":
+          result2 = this.getValue(nodeId2, "input")?.toLowerCase();
+          break;
+        case "Trim [string]":
+          result2 = this.getValue(nodeId2, "input")?.trim();
+          break;
+        case "String Length":
+          result2 = this.getValue(nodeId2, "input")?.length ?? 0;
+          break;
+        case "Substring [string]":
+          result2 = this.getValue(nodeId2, "input")?.substring(
+            this.getValue(nodeId2, "start"),
+            this.getValue(nodeId2, "end")
+          );
+          break;
+        case "Replace [string]":
+          result2 = this.getValue(nodeId2, "input")?.replace(
+            this.getValue(nodeId2, "search"),
+            this.getValue(nodeId2, "replace")
+          );
+          break;
+        case "Split [string]":
+          result2 = this.getValue(nodeId2, "input")?.split(this.getValue(nodeId2, "separator"));
+          break;
+        case "Concat [string]":
+          result2 = (this.getValue(nodeId2, "a") ?? "") + (this.getValue(nodeId2, "b") ?? "");
+          break;
+        case "Is Empty [string]":
+          result2 = !this.getValue(nodeId2, "input") || this.getValue(nodeId2, "input").length === 0;
+          break;
         case "Add":
           result2 = this.getValue(nodeId2, "a") + this.getValue(nodeId2, "b");
           break;
@@ -18550,7 +18786,7 @@ var FluxCodexVertex = class {
     node2.outputs = [{ name: "execOut", type: "action" }];
     const args2 = this.getArgNames(fn);
     args2.forEach((arg) => {
-      node2.inputs.push({ name: arg, type: "value" });
+      node2.inputs.push({ name: arg, type: "any" });
     });
     if (this.hasReturn(fn)) {
       node2.outputs.push({ name: "return", type: "value" });
@@ -18896,6 +19132,56 @@ var FluxCodexVertex = class {
         }
         this.enqueueOutputs(n, "execOut");
         return;
+      } else if (n.title === "Generator Wall") {
+        const texturePath = this.getValue(nodeId, "texturePath");
+        const mat = this.getValue(nodeId, "material");
+        let pos = this.getValue(nodeId, "pos");
+        const size = this.getValue(nodeId, "size");
+        let rot = this.getValue(nodeId, "rot");
+        let delay = this.getValue(nodeId, "delay");
+        let spacing = this.getValue(nodeId, "spacing");
+        let raycast = this.getValue(nodeId, "raycast");
+        let scale = this.getValue(nodeId, "scale");
+        let name = this.getValue(nodeId, "name");
+        if (raycast == "true") {
+          raycast = true;
+        } else {
+          raycast = false;
+        }
+        if (typeof delay == "string") delay = parseInt(delay);
+        if (typeof pos == "string") eval("pos = " + pos);
+        if (typeof rot == "string") eval("rot = " + rot);
+        if (typeof scale == "string") eval("scale = " + scale);
+        if (!texturePath || !pos) {
+          console.warn("[Generator] Missing input fields...");
+          this.enqueueOutputs(n, "execOut");
+          return;
+        }
+        const createdField = n.fields.find((f) => f.key === "created");
+        if (createdField.value == "false" || createdField.value == false) {
+          console.log("!GEN WALL! ONCE!");
+          app.physicsBodiesGeneratorWall(mat, pos, rot, texturePath, name, size, raycast, scale, spacing, delay);
+        }
+        this.enqueueOutputs(n, "execOut");
+        return;
+      } else if (n.title === "Set Force On Hit") {
+        const objectName = this.getValue(nodeId, "objectName");
+        const strength = this.getValue(nodeId, "strength");
+        const rayDirection = this.getValue(nodeId, "rayDirection");
+        if (!objectName || !rayDirection || !strength) {
+          console.warn("[Set Force On Hit] Missing input fields...");
+          this.enqueueOutputs(n, "execOut");
+          return;
+        }
+        let b = app.matrixAmmo.getBodyByName(objectName);
+        const i = new Ammo.btVector3(
+          rayDirection[0] * strength,
+          rayDirection[1] * strength,
+          rayDirection[2] * strength
+        );
+        b.applyCentralImpulse(i);
+        this.enqueueOutputs(n, "execOut");
+        return;
       }
       this.enqueueOutputs(n, "execOut");
       return;
@@ -18997,10 +19283,13 @@ var FluxCodexVertex = class {
       return;
     }
     console.log("BEFORE COMPARE ");
-    if (["math", "value", "compare"].includes(n.category)) {
+    if (["math", "value", "compare", "stringOperation"].includes(n.category)) {
       console.log("BEFORE COMPARE ");
       let result2;
       switch (n.title) {
+        case "Starts With [string]":
+          result2 = this.getValue(nodeId, "input").startsWith(this.getValue(nodeId, "prefix"));
+          break;
         case "Add":
           result2 = this.getValue(nodeId, "a") + this.getValue(nodeId, "b");
           break;
@@ -19221,7 +19510,7 @@ var FluxCodexVertex = class {
     this.log("Graph saved to LocalStorage!");
   }
   clearStorage() {
-    let ask = confirm("\u26A0\uFE0F Delete all nodes , are you sure ?");
+    let ask = confirm("\u26A0\uFE0F This will delete all nodes. Are you sure?");
     if (ask) {
       localStorage.removeItem(this.SAVE_KEY);
       location.reload(true);
@@ -20745,7 +21034,7 @@ var Editor = class {
     FCV.style.opacity = 1;
     FCV.innerHTML = `
     <div id="leftBar">
-      <h3>Events/Func</h3>
+      <span>Events/Func</span>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('event')">Event: onLoad</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('eventCustom')">Custom Event</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('dispatchEvent')">Dispatch Event</button>
@@ -20756,7 +21045,6 @@ var Editor = class {
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('timeout')">SetTimeout</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getArray')">getArray</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('forEach')">forEach</button>
-      <hr style="border:none; height:1px; background:rgba(255,255,255,0.03); margin:10px 0;">
       <span>Scene objects [agnostic]</span>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getSceneObject')">Get scene object</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getObjectAnimation')">Get Object Animation</button>
@@ -20773,22 +21061,34 @@ var Editor = class {
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('translateByZ')">TranslateByZ</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('onTargetPositionReach')">onTarget PositionReach</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('rayHitEvent')">Ray Hit Event</button>
-      <hr>
       <span>Dinamics</span>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('dynamicFunction')">Function Dinamic</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getSubObject')">Get Sub Object</button>
-      <hr>
       <span>Networking</span>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('fetch')">Fetch</button>
-      <hr>
       <span>Media</span>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('audioMP3')">Add Mp3</button>
-      <hr>
       <span>Physics</span>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('generator')">Generator in place</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('generatorWall')">Generator Wall</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('generatorWall')">Generate Wall</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('generatorPyramid')">Generate Pyramid</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setForceOnHit')">Set Force On Hit</button>
 
-      <hr style="border:none; height:1px; background:rgba(255,255,255,0.03); margin:10px 0;">
+      <span>String Operations</span>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('startsWith')">Starts With</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('startsWith')">Starts With</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('endsWith')">Ends With</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('includes')">includes</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('toUpperCase')">toUpperCase</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('toLowerCase')">toLowerCase</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('trim')">Trim</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('length')">Length</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('substring')">Substring</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('startsWith')">Replace</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('startsWith')">Split</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('concat')">Concat</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('isEmpty')">isEmpty</button>
+
       <span>Math</span>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('add')">Add (+)</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('sub')">Sub (-)</button>
@@ -20797,7 +21097,6 @@ var Editor = class {
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('sin')">Sin</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('cos')">Cos</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('pi')">Pi</button>
-      <hr style="border:none; height:1px; background:rgba(255,255,255,0.03); margin:10px 0;">
       <span>COMPARISON</span>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('equal')">Equal (==)</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('notequal')">Not Equal (!=)</button>
@@ -20806,14 +21105,13 @@ var Editor = class {
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('greaterEqual')">Greater/Equal (>=)</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('lessEqual')">Less/Equal (<=)</button>
       <hr style="border:none; height:1px; background:rgba(255,255,255,0.03); margin:10px 0;">
-      <hr style="border:none; height:1px; background:rgba(255,255,255,0.03); margin:10px 0;">
       <span>Compile FluxCodexVertex</span>
       <button style="color:#00bcd4;" class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.compileGraph()">Save to LocalStorage</button>
-      <button style="color:#00bcd4;" class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.clearStorage();">Clear Save</button>
+      <button style="color:#00bcd4;" class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.clearStorage();">Clear All</button>
       <button style="color:#00bcd4;" class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.runGraph()">Run (F6)</button>
       <hr style="border:none; height:1px; background:rgba(255,255,255,0.03); margin:10px 0;">
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.exportToJSON()">Export (JSON)</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex._importInput.click()">Import (JSON)</button>
+      <button style="color: lime;" class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.exportToJSON()">Export (JSON)</button>
+      <button style="color: lime;" class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex._importInput.click()">Import (JSON)</button>
 
       <pre id="log" aria-live="polite"></pre>
     </div>
@@ -21276,9 +21574,9 @@ function physicsBodiesGenerator(material = "standard", pos2, rot2, texturePath2,
     downloadMeshes(inputSphere, handler, { scale: scale4 });
   }
 }
-function physicsBodiesGeneratorWall(material = "standard", pos2, rot2, texturePath2, name2 = "wallCube", size = "10x3", raycast2 = false, scale4 = [1, 1, 1], spacing = 2, delay2 = 200) {
+function physicsBodiesGeneratorWall(material = "standard", pos2, rot2, texturePath2, name2 = "wallCube", size2 = "10x3", raycast2 = false, scale4 = [1, 1, 1], spacing2 = 2, delay2 = 200) {
   const engine = this;
-  const [width, height] = size.toLowerCase().split("x").map((n2) => parseInt(n2, 10));
+  const [width, height] = size2.toLowerCase().split("x").map((n2) => parseInt(n2, 10));
   const inputCube = { mesh: "./res/meshes/blender/cube.obj" };
   function handler(m) {
     let index = 0;
@@ -21290,8 +21588,8 @@ function physicsBodiesGeneratorWall(material = "standard", pos2, rot2, texturePa
           engine.addMeshObj({
             material: { type: material },
             position: {
-              x: pos2.x + x2 * spacing,
-              y: pos2.y + y2 * spacing - 2.8,
+              x: pos2.x + x2 * spacing2,
+              y: pos2.y + y2 * spacing2 - 2.8,
               z: pos2.z
             },
             rotation: rot2,
@@ -21313,7 +21611,7 @@ function physicsBodiesGeneratorWall(material = "standard", pos2, rot2, texturePa
   }
   downloadMeshes(inputCube, handler, { scale: scale4 });
 }
-function physicsBodiesGeneratorPyramid(material = "standard", pos2, rot2, texturePath2, name2 = "pyramidCube", levels = 5, raycast2 = false, scale4 = [1, 1, 1], spacing = 2) {
+function physicsBodiesGeneratorPyramid(material = "standard", pos2, rot2, texturePath2, name2 = "pyramidCube", levels = 5, raycast2 = false, scale4 = [1, 1, 1], spacing2 = 2) {
   const engine = this;
   const inputCube = { mesh: "./res/meshes/blender/cube.obj" };
   function handler(m) {
@@ -21321,14 +21619,14 @@ function physicsBodiesGeneratorPyramid(material = "standard", pos2, rot2, textur
     const RAY = { enabled: !!raycast2, radius: 1 };
     for (let y2 = 0; y2 < levels; y2++) {
       const rowCount = levels - y2;
-      const xOffset = (rowCount - 1) * spacing * 0.5;
+      const xOffset = (rowCount - 1) * spacing2 * 0.5;
       for (let x2 = 0; x2 < rowCount; x2++) {
         const cubeName = `${name2}_${index}`;
         engine.addMeshObj({
           material: { type: material },
           position: {
-            x: pos2.x + x2 * spacing - xOffset,
-            y: pos2.y + y2 * spacing,
+            x: pos2.x + x2 * spacing2 - xOffset,
+            y: pos2.y + y2 * spacing2,
             z: pos2.z
           },
           rotation: rot2,
@@ -21349,7 +21647,7 @@ function physicsBodiesGeneratorPyramid(material = "standard", pos2, rot2, textur
   }
   downloadMeshes(inputCube, handler, { scale: scale4 });
 }
-function physicsBodiesGeneratorDeepPyramid(material = "standard", pos2, rot2, texturePath2, name2 = "pyramidCube", levels = 5, raycast2 = false, scale4 = [1, 1, 1], spacing = 2, delay2 = 200) {
+function physicsBodiesGeneratorDeepPyramid(material = "standard", pos2, rot2, texturePath2, name2 = "pyramidCube", levels = 5, raycast2 = false, scale4 = [1, 1, 1], spacing2 = 2, delay2 = 200) {
   const engine = this;
   const inputCube = { mesh: "./res/meshes/blender/cube.obj" };
   function handler(m) {
@@ -21358,17 +21656,17 @@ function physicsBodiesGeneratorDeepPyramid(material = "standard", pos2, rot2, te
     for (let y2 = 0; y2 < levels; y2++) {
       const sizeX = levels - y2;
       const sizeZ = levels - y2;
-      const xOffset = (sizeX - 1) * spacing * 0.5;
-      const zOffset = (sizeZ - 1) * spacing * 0.5;
+      const xOffset = (sizeX - 1) * spacing2 * 0.5;
+      const zOffset = (sizeZ - 1) * spacing2 * 0.5;
       for (let x2 = 0; x2 < sizeX; x2++) {
         for (let z = 0; z < sizeZ; z++) {
           const cubeName = `${name2}_${index}`;
           engine.addMeshObj({
             material: { type: material },
             position: {
-              x: pos2.x + x2 * spacing - xOffset,
-              y: pos2.y + y2 * spacing,
-              z: pos2.z + z * spacing - zOffset
+              x: pos2.x + x2 * spacing2 - xOffset,
+              y: pos2.y + y2 * spacing2,
+              z: pos2.z + z * spacing2 - zOffset
             },
             rotation: rot2,
             rotationSpeed: { x: 0, y: 0, z: 0 },
@@ -21389,7 +21687,7 @@ function physicsBodiesGeneratorDeepPyramid(material = "standard", pos2, rot2, te
   }
   downloadMeshes(inputCube, handler, { scale: scale4 });
 }
-function physicsBodiesGeneratorTower(material = "standard", pos2, rot2, texturePath2, name2 = "towerCube", height = 10, raycast2 = false, scale4 = [1, 1, 1], spacing = 2) {
+function physicsBodiesGeneratorTower(material = "standard", pos2, rot2, texturePath2, name2 = "towerCube", height = 10, raycast2 = false, scale4 = [1, 1, 1], spacing2 = 2) {
   const engine = this;
   const inputCube = { mesh: "./res/meshes/blender/cube.obj" };
   function handler(m) {
@@ -21400,7 +21698,7 @@ function physicsBodiesGeneratorTower(material = "standard", pos2, rot2, textureP
         material: { type: material },
         position: {
           x: pos2.x,
-          y: pos2.y + y2 * spacing,
+          y: pos2.y + y2 * spacing2,
           z: pos2.z
         },
         rotation: rot2,
@@ -22613,15 +22911,6 @@ var app2 = new MatrixEngineWGPU(
       setTimeout(() => {
         app3.getSceneObjectByName("R_BOX").position.SetX(4);
       }, 800);
-      setTimeout(() => {
-        app3.getSceneObjectByName("R_BOX").position.SetY(2);
-      }, 800);
-      setTimeout(() => {
-        app3.getSceneObjectByName("L_BOX").position.SetY(2);
-      }, 800);
-      setTimeout(() => {
-        app3.getSceneObjectByName("REEL_1").position.SetY(4);
-      }, 800);
       downloadMeshes({ cube: "res/meshes/obj/reel.obj" }, (m) => {
         const texturesPaths = ["./res/meshes/blender/cube.png"];
         app3.addMeshObj({
@@ -22650,9 +22939,6 @@ var app2 = new MatrixEngineWGPU(
       setTimeout(() => {
         app3.getSceneObjectByName("REEL_2").position.SetX(0);
       }, 800);
-      setTimeout(() => {
-        app3.getSceneObjectByName("REEL_2").position.SetY(4);
-      }, 800);
       downloadMeshes({ cube: "res/meshes/obj/reel.obj" }, (m) => {
         const texturesPaths = ["./res/meshes/blender/cube.png"];
         app3.addMeshObj({
@@ -22679,12 +22965,6 @@ var app2 = new MatrixEngineWGPU(
         app3.getSceneObjectByName("REEL_3").position.SetX(2);
       }, 800);
       setTimeout(() => {
-        app3.getSceneObjectByName("REEL_3").position.SetY(4);
-      }, 800);
-      setTimeout(() => {
-        app3.getSceneObjectByName("FLOOR").position.SetY(-2);
-      }, 800);
-      setTimeout(() => {
         app3.getSceneObjectByName("L_BOX").scale[0] = 1;
       }, 800);
       setTimeout(() => {
@@ -22692,6 +22972,24 @@ var app2 = new MatrixEngineWGPU(
       }, 800);
       setTimeout(() => {
         app3.getSceneObjectByName("R_BOX").scale[1] = 4;
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("FLOOR").position.SetY(-3.5);
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("REEL_1").position.SetY(3);
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("REEL_2").position.SetY(3);
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("REEL_3").position.SetY(3);
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("L_BOX").position.SetY(1);
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("R_BOX").position.SetY(1);
       }, 800);
     });
   }

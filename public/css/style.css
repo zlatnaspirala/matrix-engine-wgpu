@@ -1428,7 +1428,7 @@ input[type=number]:hover::-webkit-outer-spin-button {
   z-index: 10;
   height: 74vh;
   overflow: scroll;
-
+  overflow-x: hidden;
   -webkit-text-stroke-width: 0.2px;
   -webkit-text-stroke-color: #27464c;
 }
@@ -1827,7 +1827,7 @@ svg.connections {
   display: block;
   padding: 5px 8px;
   margin: 3px 0;
-  background: #27464c;
+  /* background: #27464c; */
   border-radius: 8px;
   cursor: pointer;
   border: 1px solid rgba(255, 255, 255, 0.04);

@@ -3,12 +3,8 @@ import {LOG_FUNNY, degToRad, quaternion_rotation_matrix, radToDeg, scriptManager
 export default class MatrixAmmo {
   constructor() {
     // THIS PATH IS PATH FROM PUBLIC FINAL FOLDER
-    scriptManager.LOAD(
-      "https://maximumroulette.com/apps/megpu/ammo.js",
-      "ammojs",
-      undefined,
-      undefined,
-      this.init,
+    scriptManager.LOAD("https://maximumroulette.com/apps/megpu/ammo.js", "ammojs",
+      undefined, undefined, this.init,
     );
     this.lastRoll = '';
     this.presentScore = '';
@@ -27,7 +23,7 @@ export default class MatrixAmmo {
       // simulate async
       setTimeout(() => {
         dispatchEvent(new CustomEvent('AmmoReady', {}))
-      } , 200)
+      }, 200)
     });
   };
 
@@ -153,13 +149,13 @@ export default class MatrixAmmo {
     return body;
   }
 
-  setBodyVelocity(body, x, y, z) {
+  setBodyVelocity = (body, x, y, z) => {
     var tbv30 = new Ammo.btVector3();
     tbv30.setValue(x, y, z);
     body.setLinearVelocity(tbv30);
   }
 
-  setKinematicTransform(body, x, y, z, rx, ry, rz) {
+  setKinematicTransform = (body, x, y, z, rx, ry, rz) => {
     if(typeof rx == 'undefined') {var rx = 0;}
     if(typeof ry == 'undefined') {var ry = 0;}
     if(typeof rz == 'undefined') {var rz = 0;}
@@ -185,7 +181,7 @@ export default class MatrixAmmo {
     }
   }
 
-  getBodyByName(name) {
+  getBodyByName = (name) => {
     var b = null;
     this.rigidBodies.forEach((item, index, array) => {
       if(item.name == name) {
@@ -195,7 +191,7 @@ export default class MatrixAmmo {
     return b;
   }
 
-  getNameByBody(body) {
+  getNameByBody = (body) => {
     var b = null;
     this.rigidBodies.forEach((item, index, array) => {
       if(item.kB == body.kB) {
@@ -205,7 +201,7 @@ export default class MatrixAmmo {
     return b;
   }
 
-  deactivatePhysics(body) {
+  deactivatePhysics = (body) => {
     const CF_KINEMATIC_OBJECT = 2;
     const DISABLE_DEACTIVATION = 4;
     // 1. Remove from world
