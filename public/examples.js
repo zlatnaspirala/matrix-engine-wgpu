@@ -722,7 +722,7 @@ var physicsPlayground = function () {
         x: 0,
         y: 0,
         z: 0
-      }, "./res/meshes/blender/cube.png", "deepPyr", 5, true, [1, 1, 1], 2, 200);
+      }, "./res/meshes/blender/cube.png", "deepPyr", 5, true, [2, 2, 2], 2, 200);
       // physicsPlayground.physicsBodiesGeneratorTower(
       //   "standard",
       //   {x: 0, y: 0, z: -20},
@@ -22130,6 +22130,7 @@ function physicsBodiesGeneratorWall(material = "standard", pos, rot, texturePath
             name: cubeName,
             mesh: m.mesh,
             physics: {
+              scale: scale,
               enabled: true,
               geometry: "Cube"
             },
@@ -22193,6 +22194,7 @@ function physicsBodiesGeneratorPyramid(material = "standard", pos, rot, textureP
           name: cubeName,
           mesh: m.mesh,
           physics: {
+            scale: scale,
             enabled: true,
             geometry: "Cube"
           },
@@ -22256,6 +22258,7 @@ function physicsBodiesGeneratorDeepPyramid(material = "standard", pos, rot, text
             name: cubeName,
             mesh: m.mesh,
             physics: {
+              scale: scale,
               enabled: true,
               geometry: "Cube"
             },
@@ -22304,6 +22307,7 @@ function physicsBodiesGeneratorTower(material = "standard", pos, rot, texturePat
         name: cubeName,
         mesh: m.mesh,
         physics: {
+          scale: scale,
           enabled: true,
           geometry: "Cube"
         },
@@ -34586,31 +34590,45 @@ class FluxCodexVertex {
         inputs: [{
           name: "exec",
           type: "action"
-        }, {
-          name: "physicsGeometry",
-          type: "string",
-          default: "Cube"
-        }, {
-          name: "texturePath",
-          type: "string",
-          default: "res/textures/default.png"
-        }, {
-          name: "position",
-          type: "object"
-        }],
+        }
+        // {name: "physicsGeometry", type: "string", default: "Cube"},
+        // {name: "texturePath", type: "string", default: "res/textures/default.png"},
+        // {name: "position", type: "object"}
+        ],
         outputs: [{
           name: "execOut",
           type: "action"
         }],
         fields: [{
-          key: "physicsGeometry",
-          value: false
+          key: "material",
+          value: "standard"
+        }, {
+          key: "pos",
+          value: ""
+        }, {
+          key: "rot",
+          value: ""
         }, {
           key: "texturePath",
+          value: "res/textures/star1.png"
+        }, {
+          key: "name",
           value: ""
         }, {
-          key: "position",
+          key: "geometry",
+          value: "Cube"
+        }, {
+          key: "raycast",
           value: ""
+        }, {
+          key: "scale",
+          value: [1, 1, 1]
+        }, {
+          key: "sum",
+          value: ""
+        }, {
+          key: "delay",
+          value: 500
         }, {
           key: "created",
           value: false
@@ -36598,6 +36616,8 @@ class FluxCodexVertex {
         const pos = this.getValue(nodeId, "position");
         // const clones = Number(this.getValue(nodeId, "clones")) || 1;
 
+        console.log('!INTERNAL TIMER no visual part. TEST !', scale);
+        console.log('!INTERNAL TIMER no visual part. TEST !', pos);
         if (!texturePath || !pos) {
           console.warn("[Generator] Missing input fields...");
           this.enqueueOutputs(n, "execOut");

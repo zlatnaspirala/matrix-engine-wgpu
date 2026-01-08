@@ -109,6 +109,7 @@ export function physicsBodiesGeneratorWall(
             name: cubeName,
             mesh: m.mesh,
             physics: {
+              scale: scale,
               enabled: true,
               geometry: "Cube"
             },
@@ -174,6 +175,7 @@ export function physicsBodiesGeneratorPyramid(
           name: cubeName,
           mesh: m.mesh,
           physics: {
+            scale: scale,
             enabled: true,
             geometry: "Cube"
           },
@@ -237,6 +239,7 @@ export function physicsBodiesGeneratorDeepPyramid(
             name: cubeName,
             mesh: m.mesh,
             physics: {
+              scale: scale,
               enabled: true,
               geometry: "Cube"
             },
@@ -287,6 +290,7 @@ export function physicsBodiesGeneratorTower(
         name: cubeName,
         mesh: m.mesh,
         physics: {
+          scale: scale,
           enabled: true,
           geometry: "Cube"
         },

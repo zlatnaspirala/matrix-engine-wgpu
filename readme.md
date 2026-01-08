@@ -758,8 +758,9 @@ See more details at [FOHB Wiki](https://github.com/zlatnaspirala/matrix-engine-w
 
 ## Live Demos & Dev Links
 
-- [WebGPU Demos ](https://maximumroulette.com/apps/webgpu/examples.html)
-  Support JAMB 3D this project on [itch.io](https://goldenspiral.itch.io/jamb-3d-deluxe)
+- [Matrix-engine-wgpu Live demos](https://maximumroulette.com/apps/webgpu/examples.html)
+- 💲💲💲 Support JAMB 3D this project on [itch.io](https://goldenspiral.itch.io/jamb-3d-deluxe)
+- [MOBA Forest Of Hollow Blood Live](https://maximumroulette.com/apps/webgpu/examples.html)
 
   <img width="860" height="640" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/RPG.png?raw=true" />
 
@@ -768,7 +769,6 @@ See more details at [FOHB Wiki](https://github.com/zlatnaspirala/matrix-engine-w
   [https://maximumroulette.com/apps/megpu/empty.js](https://maximumroulette.com/apps/megpu/empty.js)
 - [CodeSandbox Implementation](https://codesandbox.io/p/github/zlatnaspirala/matrix-engine-wgpu/main?file=%2Fpackage.json%3A14%2C16)
 - 📘 Learning Resource: [WebGPU Ray Tracing](https://maierfelix.github.io/2020-01-13-webgpu-ray-tracing/)
-- 💲 Commercial part: [3d-jamb](https://goldenspiral.itch.io/jamb-3d-deluxe)
 
 ---
 
@@ -777,7 +777,6 @@ Performance for Jamb game:
 <img width="860" height="640" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/performance.png?raw=true" />
 
 Special licence for MOBA example:
-
 ```
 Creative Commons Attribution 4.0 International (CC BY 4.0)
 

@@ -39,10 +39,11 @@ import {METoolTip} from "../../engine/plugin/tooltip/ToolTip";
 import {byId} from "../../engine/utils";
 
 export default class FluxCodexVertex {
-  constructor(boardId, boardWrapId, logId, methodsManager) {
+  constructor(boardId, boardWrapId, logId, methodsManager, projName) {
     this.debugMode = true;
     this.toolTip = new METoolTip();
 
+    this.SAVE_KEY = "fluxCodexVertex" + projName;
     this.methodsManager = methodsManager;
     this.variables = {
       number: {},
@@ -99,7 +100,7 @@ export default class FluxCodexVertex {
 
     this._varInputs = {};
 
-    // EXTRA TIME 
+    // EXTRA TIME
     setTimeout(() => this.init(), 3000);
 
     document.addEventListener("keydown", e => {
@@ -189,6 +190,7 @@ export default class FluxCodexVertex {
     <span>Scene</span>
     <button onclick="app.editor.fluxCodexVertex.addNode('getSceneObject')">Get Scene Object</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('getSceneLight')">Get Scene Light</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('getObjectAnimation')">Get Object Animation</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('setPosition')">Set Position</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('translateByX')">Translate by X</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('translateByY')">Translate by Y</button>
@@ -202,10 +204,8 @@ export default class FluxCodexVertex {
     <button onclick="app.editor.fluxCodexVertex.addNode('setRotateZ')">Set RotateZ</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('setTexture')">Set Texture</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('onTargetPositionReach')">onTargetPositionReach</button>
-    <button onclick="app.editor.fluxCodexVertex.addNode('getObjectAnimation')">Get Object Animation</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('dynamicFunction')">Function Dinamic</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('refFunction')">Function by Ref</button>
-    
     <button onclick="app.editor.fluxCodexVertex.addNode('getSubObject')">Get Sub Object</button>
     <hr>
     <span>Comment</span>
@@ -1341,17 +1341,66 @@ export default class FluxCodexVertex {
         category: "action",
         inputs: [
           {name: "exec", type: "action"},
-          {name: "physicsGeometry", type: "string", default: "Cube"},
-          {name: "texturePath", type: "string", default: "res/textures/default.png"},
-          {name: "position", type: "object"}
+          {name: "material", type: "string"},
+          {name: "pos", type: "object"},
+          {name: "rot", type: "object"},
+          {name: "texturePath", type: "string"},
+          {name: "name", type: "string"},
+          {name: "geometry", type: "string"},
+          {name: "raycast", type: "boolean"},
+          {name: "scale", type: "object"},
+          {name: "sum", type: "number"},
+          {name: "delay", type: "number"},
         ],
         outputs: [
           {name: "execOut", type: "action"}
         ],
         fields: [
-          {key: "physicsGeometry", value: false},
-          {key: "texturePath", value: ""},
-          {key: "position", value: ""},
+          {key: "material", value: "standard"},
+          {key: "pos", value: '{x:0, y:0, z:-20}'},
+          {key: "rot", value: '{x:0, y:0, z:0}'},
+          {key: "texturePath", value: "res/textures/star1.png"},
+          {key: "name", value: "TEST"},
+          {key: "geometry", value: "Cube"},
+          {key: "raycast", value: true},
+          {key: "scale", value: [1, 1, 1]},
+          {key: "sum", value: 10},
+          {key: "delay", value: 500},
+          {key: "created", value: false},
+        ],
+        noselfExec: "true"
+      }),
+
+      generatorWall: (id, x, y) => ({
+        id, x, y, title: "Generator Wall",
+        category: "action",
+        inputs: [
+          {name: "exec", type: "action"},
+          {name: "material", type: "string"},
+          {name: "pos", type: "object"},
+          {name: "rot", type: "object"},
+          {name: "texturePath", type: "string"},
+          {name: "name", type: "string"},
+          {name: "geometry", type: "string"},
+          {name: "raycast", type: "boolean"},
+          {name: "scale", type: "object"},
+          {name: "sum", type: "number"},
+          {name: "delay", type: "number"},
+        ],
+        outputs: [
+          {name: "execOut", type: "action"}
+        ],
+        fields: [
+          {key: "material", value: "standard"},
+          {key: "pos", value: '{x:0, y:0, z:-20}'},
+          {key: "rot", value: '{x:0, y:0, z:0}'},
+          {key: "texturePath", value: "res/textures/star1.png"},
+          {key: "name", value: "TEST"},
+          {key: "geometry", value: "Cube"},
+          {key: "raycast", value: true},
+          {key: "scale", value: [1, 1, 1]},
+          {key: "sum", value: 10},
+          {key: "delay", value: 500},
           {key: "created", value: false},
         ],
         noselfExec: "true"
@@ -2966,21 +3015,29 @@ export default class FluxCodexVertex {
         return;
       } else if(n.title === "Generator") {
         const texturePath = this.getValue(nodeId, "texturePath");
-        const pos = this.getValue(nodeId, "position");
-        // const clones = Number(this.getValue(nodeId, "clones")) || 1;
-
+        const mat = this.getValue(nodeId, "material");
+        let pos = this.getValue(nodeId, "pos");
+        const geo = this.getValue(nodeId, "geometry");
+        let rot = this.getValue(nodeId, "rot");
+        let delay = this.getValue(nodeId, "delay");
+        let sum = this.getValue(nodeId, "sum");
+        let raycast = this.getValue(nodeId, "raycast");
+        let scale = this.getValue(nodeId, "scale");
+        let name = this.getValue(nodeId, "name");
+        // spec adaptation
+        if (raycast == "true") { raycast = true } else { raycast = false; }
+        if (typeof delay == 'string') delay = parseInt(delay);
+        if (typeof pos == 'string') eval("pos = " + pos)
+        if (typeof rot == 'string') eval("rot = " + rot)
         if(!texturePath || !pos) {
           console.warn("[Generator] Missing input fields...");
           this.enqueueOutputs(n, "execOut");
           return;
         }
-
         const createdField = n.fields.find(f => f.key === "created");
-
-        if(!createdField.value) {
-          console.log('!INTERNAL TIMER no visual part. ONCE!');
-
-          // app.matrixSounds.createAudio(key, src, clones);
+        if(createdField.value == "false" || createdField.value == false) {
+          console.log('!GEN! ONCE!');
+          app.physicsBodiesGenerator(mat, pos, rot, texturePath, name, geo, raycast, scale, sum, delay);
           // createdField.value = true;
         }
 
@@ -3356,14 +3413,14 @@ export default class FluxCodexVertex {
       return value;
     }
 
-    localStorage.setItem(FluxCodexVertex.SAVE_KEY, JSON.stringify(bundle, saveReplacer));
+    localStorage.setItem(this.SAVE_KEY, JSON.stringify(bundle, saveReplacer));
     this.log("Graph saved to LocalStorage!");
   }
 
   clearStorage() {
     let ask = confirm("⚠️ Delete all nodes , are you sure ?");
     if(ask) {
-      localStorage.removeItem(FluxCodexVertex.SAVE_KEY);
+      localStorage.removeItem(this.SAVE_KEY);
       location.reload(true);
     }
   }
@@ -3468,7 +3525,7 @@ export default class FluxCodexVertex {
   }
 
   init() {
-    const saved = localStorage.getItem(FluxCodexVertex.SAVE_KEY);
+    const saved = localStorage.getItem(this.SAVE_KEY);
     if(saved) {
       try {
         const data = JSON.parse(saved);
@@ -3532,4 +3589,4 @@ export default class FluxCodexVertex {
   }
 }
 
-FluxCodexVertex.SAVE_KEY = "matrixEngineVisualScripting";
+// FluxCodexVertex.SAVE_KEY = "matrixEngineVisualScripting";
