@@ -146,8 +146,8 @@ export function physicsBodiesGeneratorPyramid(
   levels = 5,
   raycast = false,
   scale = [1, 1, 1],
-  spacing = 2
-) {
+  spacing = 2,
+  delay = 500) {
   const engine = this;
   const inputCube = {mesh: "./res/meshes/blender/cube.obj"};
 
@@ -181,7 +181,6 @@ export function physicsBodiesGeneratorPyramid(
           },
           raycast: RAY
         });
-
         index++;
       }
     }
@@ -214,27 +213,27 @@ export function physicsBodiesGeneratorDeepPyramid(
   delay = 200
 ) {
   const engine = this;
-  const inputCube = { mesh: "./res/meshes/blender/cube.obj" };
+  const inputCube = {mesh: "./res/meshes/blender/cube.obj"};
   function handler(m) {
     let index = 0;
-    const RAY = { enabled: !!raycast, radius: 1 };
-    for (let y = 0; y < levels; y++) {
+    const RAY = {enabled: !!raycast, radius: 1};
+    for(let y = 0;y < levels;y++) {
       const sizeX = levels - y; // shrink X
       const sizeZ = levels - y; // shrink Z
       const xOffset = (sizeX - 1) * spacing * 0.5;
       const zOffset = (sizeZ - 1) * spacing * 0.5;
-      for (let x = 0; x < sizeX; x++) {
-        for (let z = 0; z < sizeZ; z++) {
+      for(let x = 0;x < sizeX;x++) {
+        for(let z = 0;z < sizeZ;z++) {
           const cubeName = `${name}_${index}`;
-          engine.addMeshObj({
-            material: { type: material },
+          setTimeout(() => engine.addMeshObj({
+            material: {type: material},
             position: {
               x: pos.x + x * spacing - xOffset,
               y: pos.y + y * spacing,
               z: pos.z + z * spacing - zOffset
             },
             rotation: rot,
-            rotationSpeed: { x: 0, y: 0, z: 0 },
+            rotationSpeed: {x: 0, y: 0, z: 0},
             texturesPaths: [texturePath],
             name: cubeName,
             mesh: m.mesh,
@@ -244,7 +243,7 @@ export function physicsBodiesGeneratorDeepPyramid(
               geometry: "Cube"
             },
             raycast: RAY
-          });
+          }), delay * index);
           // Optional: stabilize tower-style
           // const body = app.matrixAmmo.getBodyByName(cubeName);
           // stabilizeTowerBody(body);
@@ -254,7 +253,7 @@ export function physicsBodiesGeneratorDeepPyramid(
     }
   }
 
-  downloadMeshes(inputCube, handler, { scale });
+  downloadMeshes(inputCube, handler, {scale});
 }
 
 export function physicsBodiesGeneratorTower(

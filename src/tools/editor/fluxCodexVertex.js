@@ -1427,7 +1427,7 @@ export default class FluxCodexVertex {
           {name: "rot", type: "object"},
           {name: "texturePath", type: "string"},
           {name: "name", type: "string"},
-          {name: "size", type: "string"},
+          {name: "levels", type: "number"},
           {name: "raycast", type: "boolean"},
           {name: "scale", type: "object"},
           {name: "spacing", type: "number"},
@@ -1442,7 +1442,7 @@ export default class FluxCodexVertex {
           {key: "rot", value: '{x:0, y:0, z:0}'},
           {key: "texturePath", value: "res/textures/star1.png"},
           {key: "name", value: "TEST"},
-          {key: "size", value: "10x3"},
+          {key: "levels", value: "5"},
           {key: "raycast", value: true},
           {key: "scale", value: [1, 1, 1]},
           {key: "spacing", value: 10},
@@ -1460,7 +1460,7 @@ export default class FluxCodexVertex {
           {name: "objectName", type: "string"},
           {name: "rayDirection", type: "object"},
           {name: "strength", type: "number"},
-          
+
         ],
         outputs: [
           {name: "execOut", type: "action"}
@@ -3305,6 +3305,49 @@ export default class FluxCodexVertex {
         if(createdField.value == "false" || createdField.value == false) {
           console.log('!GEN WALL! ONCE!');
           app.physicsBodiesGeneratorWall(mat, pos, rot, texturePath, name, size, raycast, scale, spacing, delay);
+          // createdField.value = true;
+        }
+
+        this.enqueueOutputs(n, "execOut");
+        return;
+      } else if(n.title === "Generator Pyramid") {
+        //       export function physicsBodiesGeneratorDeepPyramid(
+        //   material = "standard",
+        //   pos,
+        //   rot,
+        //   texturePath,
+        //   name = "pyramidCube",
+        //   levels = 5,
+        //   raycast = false,
+        //   scale = [1, 1, 1],
+        //   spacing = 2,
+        //   delay = 200
+        // )
+        const texturePath = this.getValue(nodeId, "texturePath");
+        const mat = this.getValue(nodeId, "material");
+        let pos = this.getValue(nodeId, "pos");
+        const levels = this.getValue(nodeId, "levels");
+        let rot = this.getValue(nodeId, "rot");
+        let delay = this.getValue(nodeId, "delay");
+        let spacing = this.getValue(nodeId, "spacing");
+        let raycast = this.getValue(nodeId, "raycast");
+        let scale = this.getValue(nodeId, "scale");
+        let name = this.getValue(nodeId, "name");
+        // spec adaptation
+        if(raycast == "true") {raycast = true} else {raycast = false;}
+        if(typeof delay == 'string') delay = parseInt(delay);
+        if(typeof pos == 'string') eval("pos = " + pos);
+        if(typeof rot == 'string') eval("rot = " + rot);
+        if(typeof scale == 'string') eval("scale = " + scale);
+        if(!texturePath || !pos) {
+          console.warn("[Generator] Missing input fields...");
+          this.enqueueOutputs(n, "execOut");
+          return;
+        }
+        const createdField = n.fields.find(f => f.key === "created");
+        if(createdField.value == "false" || createdField.value == false) {
+          console.log('!GEN PYRAMID! ONCE!');
+          app.physicsBodiesGeneratorDeepPyramid(mat, pos, rot, texturePath, name, levels, raycast, scale, spacing, delay);
           // createdField.value = true;
         }
 
