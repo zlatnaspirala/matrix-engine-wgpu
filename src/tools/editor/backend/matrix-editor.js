@@ -31,11 +31,64 @@ console.log("\x1b[93m%s\x1b[0m", "- Add Obj  [mesh]                       -");
 console.log("\x1b[93m%s\x1b[0m", "- Add Glb  [skinned-mesh]               -");
 console.log("\x1b[92m%s\x1b[0m", "-----------------------------------------");
 
+async function buildAllProjectsOnStartup() {
+  console.log("🔨 Building all projects (startup)…");
+
+  const items = await fs.readdir(PROJECTS_DIR, {withFileTypes: true});
+
+  for(const dir of items) {
+    if(!dir.isDirectory()) continue;
+
+    const projectName = dir.name;
+    const entry = path.join(PROJECTS_DIR, projectName, "app-gen.js");
+
+    try {
+      await fs.access(entry);
+    } catch {
+      console.warn(`⚠️ Skipping ${projectName} (no app-gen.js)`);
+      continue;
+    }
+
+    const outfile = path.join(PUBLIC_DIR, `${projectName}.js`);
+
+    try {
+      await esbuild.build({
+        entryPoints: [entry],
+        bundle: true,
+        outfile,
+        format: "esm",
+        sourcemap: true,
+        platform: "browser",
+        minify: false
+      });
+
+      console.log(`✅ Built ${projectName}`);
+
+      // ensure HTML exists
+      const htmlFile = path.join(PUBLIC_DIR, `${projectName}.html`);
+      try {
+        await fs.access(htmlFile);
+      } catch {
+        const html = new CodeBuilder();
+        html.addLine(createHTMLProjectDocument(projectName));
+        await html.saveTo(htmlFile);
+        console.log(`📄 Created ${projectName}.html`);
+      }
+
+    } catch(err) {
+      console.error(`❌ Failed to build ${projectName}`, err.message);
+    }
+  }
+
+  console.log("✅ Startup build finished");
+}
+
+await buildAllProjectsOnStartup();
+
 wss.on("connection", ws => {
   ws.on("message", async (msg) => {
     try {
       msg = JSON.parse(msg);
-
       if(msg.action === "lp") {
         const folder = path.join(PROJECTS_DIR, "");
         const items = await fs.readdir(folder, {withFileTypes: true});
@@ -215,7 +268,7 @@ async function buildProject(projectName, ws, payload) {
     ws.send(JSON.stringify({
       name: projectName,
       ok: true,
-      payload: "watcher running..."
+      payload: "watcher is already running..."
     }))
     return;
   }
@@ -552,14 +605,13 @@ async function deleteSceneObject(n, ws) {
   });
 }
 
-
 function removeSceneBlock(text, type, objName) {
   let regex;
 
-  if (type === 'delete-obj') {
+  if(type === 'delete-obj') {
     // match ANY block that belongs to this object
     const start = `// ME START ${objName}`;
-    const end   = `// ME END ${objName}`;
+    const end = `// ME END ${objName}`;
 
     regex = new RegExp(
       `${escapeRegExp(start)}[\\s\\S]*?${escapeRegExp(end)}[^\\n]*\\s*`,
@@ -567,7 +619,7 @@ function removeSceneBlock(text, type, objName) {
     );
   } else {
     const start = `// ME START ${objName} ${type}`;
-    const end   = `// ME END ${objName} ${type}`;
+    const end = `// ME END ${objName} ${type}`;
 
     regex = new RegExp(
       `${escapeRegExp(start)}[\\s\\S]*?${escapeRegExp(end)}\\s*`,
