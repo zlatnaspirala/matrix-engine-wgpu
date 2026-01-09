@@ -3311,18 +3311,6 @@ export default class FluxCodexVertex {
         this.enqueueOutputs(n, "execOut");
         return;
       } else if(n.title === "Generator Pyramid") {
-        //       export function physicsBodiesGeneratorDeepPyramid(
-        //   material = "standard",
-        //   pos,
-        //   rot,
-        //   texturePath,
-        //   name = "pyramidCube",
-        //   levels = 5,
-        //   raycast = false,
-        //   scale = [1, 1, 1],
-        //   spacing = 2,
-        //   delay = 200
-        // )
         const texturePath = this.getValue(nodeId, "texturePath");
         const mat = this.getValue(nodeId, "material");
         let pos = this.getValue(nodeId, "pos");

@@ -21685,25 +21685,29 @@ function physicsBodiesGeneratorDeepPyramid(material = "standard", pos2, rot2, te
       for (let x2 = 0; x2 < sizeX; x2++) {
         for (let z = 0; z < sizeZ; z++) {
           const cubeName = `${name2}_${index}`;
-          setTimeout(() => engine.addMeshObj({
-            material: { type: material },
-            position: {
-              x: pos2.x + x2 * spacing2 - xOffset,
-              y: pos2.y + y2 * spacing2,
-              z: pos2.z + z * spacing2 - zOffset
-            },
-            rotation: rot2,
-            rotationSpeed: { x: 0, y: 0, z: 0 },
-            texturesPaths: [texturePath2],
-            name: cubeName,
-            mesh: m.mesh,
-            physics: {
-              scale: scale4,
-              enabled: true,
-              geometry: "Cube"
-            },
-            raycast: RAY
-          }), delay2 * index);
+          setTimeout(() => {
+            engine.addMeshObj({
+              material: { type: material },
+              position: {
+                x: pos2.x + x2 * spacing2 - xOffset,
+                y: pos2.y + y2 * spacing2,
+                z: pos2.z + z * spacing2 - zOffset
+              },
+              rotation: rot2,
+              rotationSpeed: { x: 0, y: 0, z: 0 },
+              texturesPaths: [texturePath2],
+              name: cubeName,
+              mesh: m.mesh,
+              physics: {
+                scale: scale4,
+                enabled: true,
+                geometry: "Cube"
+              },
+              raycast: RAY
+            });
+            const b = app.matrixAmmo.getBodyByName(cubeName);
+            stabilizeTowerBody(b);
+          }, delay2 * index);
           index++;
         }
       }
