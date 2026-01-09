@@ -39,10 +39,11 @@ import {METoolTip} from "../../engine/plugin/tooltip/ToolTip";
 import {byId} from "../../engine/utils";
 
 export default class FluxCodexVertex {
-  constructor(boardId, boardWrapId, logId, methodsManager) {
+  constructor(boardId, boardWrapId, logId, methodsManager, projName) {
     this.debugMode = true;
     this.toolTip = new METoolTip();
 
+    this.SAVE_KEY = "fluxCodexVertex" + projName;
     this.methodsManager = methodsManager;
     this.variables = {
       number: {},
@@ -99,8 +100,8 @@ export default class FluxCodexVertex {
 
     this._varInputs = {};
 
-    // EXTRA TIME 
-    setTimeout(() => this.init(), 4000);
+    // EXTRA TIME
+    setTimeout(() => this.init(), 3000);
 
     document.addEventListener("keydown", e => {
       if(e.key == "F6") {
@@ -126,14 +127,12 @@ export default class FluxCodexVertex {
       if(field !== "path") return;
     });
 
-
+    // only node no need to write intro files
     document.addEventListener('web.editor.addMp3', (e) => {
       console.log("[web.editor.addMp3]: ", e.detail);
       e.detail.path = e.detail.path.replace('\\res', 'res');
       e.detail.path = e.detail.path.replace(/\\/g, '/');
-      // THIS MUST BE SAME LIKE SERVER VERSION OF ADD CUBE
       this.addNode('audioMP3', e.detail);
-      // this.core.
     });
   }
 
@@ -191,6 +190,7 @@ export default class FluxCodexVertex {
     <span>Scene</span>
     <button onclick="app.editor.fluxCodexVertex.addNode('getSceneObject')">Get Scene Object</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('getSceneLight')">Get Scene Light</button>
+    <button onclick="app.editor.fluxCodexVertex.addNode('getObjectAnimation')">Get Object Animation</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('setPosition')">Set Position</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('translateByX')">Translate by X</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('translateByY')">Translate by Y</button>
@@ -204,10 +204,8 @@ export default class FluxCodexVertex {
     <button onclick="app.editor.fluxCodexVertex.addNode('setRotateZ')">Set RotateZ</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('setTexture')">Set Texture</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('onTargetPositionReach')">onTargetPositionReach</button>
-    <button onclick="app.editor.fluxCodexVertex.addNode('getObjectAnimation')">Get Object Animation</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('dynamicFunction')">Function Dinamic</button>
     <button onclick="app.editor.fluxCodexVertex.addNode('refFunction')">Function by Ref</button>
-    
     <button onclick="app.editor.fluxCodexVertex.addNode('getSubObject')">Get Sub Object</button>
     <hr>
     <span>Comment</span>
@@ -372,11 +370,23 @@ export default class FluxCodexVertex {
     hideVPopup.innerText = `Hide`;
     hideVPopup.classList.add("btn4");
     hideVPopup.style.margin = "8px 8px 8px 8px";
-    hideVPopup.style.width = "100px";
+    hideVPopup.style.width = "200px";
     hideVPopup.style.fontWeight = "bold";
     hideVPopup.style.webkitTextStrokeWidth = "0px";
     hideVPopup.addEventListener("click", () => {byId("varsPopup").style.display = "none";});
     popup.appendChild(hideVPopup);
+
+    const saveVPopup = document.createElement("button");
+    saveVPopup.innerText = `Save`;
+    saveVPopup.classList.add("btn4");
+    saveVPopup.style.margin = "8px 8px 8px 8px";
+    saveVPopup.style.width = "200px";
+    saveVPopup.style.height = "70px";
+    saveVPopup.style.fontWeight = "bold";
+    saveVPopup.style.webkitTextStrokeWidth = "0px";
+    saveVPopup.addEventListener("click", () => {this.compileGraph()});
+    popup.appendChild(saveVPopup);
+
     document.body.appendChild(popup);
     this.makePopupDraggable(popup);
     this._refreshVarsList(list);
@@ -403,24 +413,24 @@ export default class FluxCodexVertex {
           cursor: "pointer",
           borderBottom: "1px solid #222",
           color: colors[type] || "#fff",
+          placeContent: "space-around"
         });
 
         const label = document.createElement("span");
         label.textContent = `${name} (${type})`;
-        label.style.minWidth = "120px";
+        label.style.width = "20%";
 
         let input;
         if(type === "object") {
           input = document.createElement("textarea");
           input.value = JSON.stringify(this.variables[type][name] ?? {}, null, 2);
-          input.style.width = "220px";
           input.style.height = "40px";
           input.style.webkitTextStrokeWidth = "0px";
         } else {
           input = document.createElement("input");
           input.value = this.variables[type][name] ?? "";
-          input.style.width = "";
         }
+        input.style.width = "30%";
 
         this._varInputs[`${type}.${name}`] = input;
         Object.assign(input.style, {
@@ -881,7 +891,6 @@ export default class FluxCodexVertex {
       this.state.connecting = null;
       return;
     }
-
     const from = this.state.connecting.out
       ? this.state.connecting
       : {node: nodeId, pin: pinName};
@@ -1338,6 +1347,128 @@ export default class FluxCodexVertex {
         noselfExec: "true"
       }),
 
+      generator: (id, x, y) => ({
+        id, x, y, title: "Generator",
+        category: "action",
+        inputs: [
+          {name: "exec", type: "action"},
+          {name: "material", type: "string"},
+          {name: "pos", type: "object"},
+          {name: "rot", type: "object"},
+          {name: "texturePath", type: "string"},
+          {name: "name", type: "string"},
+          {name: "geometry", type: "string"},
+          {name: "raycast", type: "boolean"},
+          {name: "scale", type: "object"},
+          {name: "sum", type: "number"},
+          {name: "delay", type: "number"},
+        ],
+        outputs: [
+          {name: "execOut", type: "action"}
+        ],
+        fields: [
+          {key: "material", value: "standard"},
+          {key: "pos", value: '{x:0, y:0, z:-20}'},
+          {key: "rot", value: '{x:0, y:0, z:0}'},
+          {key: "texturePath", value: "res/textures/star1.png"},
+          {key: "name", value: "TEST"},
+          {key: "geometry", value: "Cube"},
+          {key: "raycast", value: true},
+          {key: "scale", value: [1, 1, 1]},
+          {key: "sum", value: 10},
+          {key: "delay", value: 500},
+          {key: "created", value: false},
+        ],
+        noselfExec: "true"
+      }),
+
+      generatorWall: (id, x, y) => ({
+        id, x, y, title: "Generator Wall",
+        category: "action",
+        inputs: [
+          {name: "exec", type: "action"},
+          {name: "material", type: "string"},
+          {name: "pos", type: "object"},
+          {name: "rot", type: "object"},
+          {name: "texturePath", type: "string"},
+          {name: "name", type: "string"},
+          {name: "size", type: "string"},
+          {name: "raycast", type: "boolean"},
+          {name: "scale", type: "object"},
+          {name: "spacing", type: "number"},
+          {name: "delay", type: "number"}
+        ],
+        outputs: [
+          {name: "execOut", type: "action"}
+        ],
+        fields: [
+          {key: "material", value: "standard"},
+          {key: "pos", value: '{x:0, y:0, z:-20}'},
+          {key: "rot", value: '{x:0, y:0, z:0}'},
+          {key: "texturePath", value: "res/textures/star1.png"},
+          {key: "name", value: "TEST"},
+          {key: "size", value: "10x3"},
+          {key: "raycast", value: true},
+          {key: "scale", value: [1, 1, 1]},
+          {key: "spacing", value: 10},
+          {key: "delay", value: 500},
+          {key: "created", value: false},
+        ],
+        noselfExec: "true"
+      }),
+
+      generatorPyramid: (id, x, y) => ({
+        id, x, y, title: "Generator Pyramid",
+        category: "action",
+        inputs: [
+          {name: "exec", type: "action"},
+          {name: "material", type: "string"},
+          {name: "pos", type: "object"},
+          {name: "rot", type: "object"},
+          {name: "texturePath", type: "string"},
+          {name: "name", type: "string"},
+          {name: "levels", type: "number"},
+          {name: "raycast", type: "boolean"},
+          {name: "scale", type: "object"},
+          {name: "spacing", type: "number"},
+          {name: "delay", type: "number"}
+        ],
+        outputs: [
+          {name: "execOut", type: "action"}
+        ],
+        fields: [
+          {key: "material", value: "standard"},
+          {key: "pos", value: '{x:0, y:0, z:-20}'},
+          {key: "rot", value: '{x:0, y:0, z:0}'},
+          {key: "texturePath", value: "res/textures/star1.png"},
+          {key: "name", value: "TEST"},
+          {key: "levels", value: "5"},
+          {key: "raycast", value: true},
+          {key: "scale", value: [1, 1, 1]},
+          {key: "spacing", value: 10},
+          {key: "delay", value: 500},
+          {key: "created", value: false},
+        ],
+        noselfExec: "true"
+      }),
+
+      setForceOnHit: (id, x, y) => ({
+        id, x, y, title: "Set Force On Hit",
+        category: "action",
+        inputs: [
+          {name: "exec", type: "action"},
+          {name: "objectName", type: "string"},
+          {name: "rayDirection", type: "object"},
+          {name: "strength", type: "number"},
+
+        ],
+        outputs: [
+          {name: "execOut", type: "action"}
+        ],
+        fields: [],
+        noselfExec: "true"
+      }),
+
       eventCustom: (id, x, y) => ({
         id, x, y,
         title: "Custom Event",
@@ -1377,7 +1508,16 @@ export default class FluxCodexVertex {
         inputs: [],
         outputs: [
           {name: "exec", type: "action"},
-          {name: "hitObject", type: "object"}
+          {name: "hitObjectName", type: "string"},
+          {name: "screenCoords", type: "object"},
+          {name: "rayOrigin", type: "object"},
+          {name: "rayDirection", type: "object"},
+          {name: "hitObject", type: "object"},
+          {name: "hitNormal", type: "object"},
+          {name: "hitDistance", type: "object"},
+          {name: "eventName", type: "object"},
+          {name: "button", type: "number"},
+          {name: "timestamp", type: "number"}
         ],
         noselfExec: 'true',
         _listenerAttached: false,
@@ -1442,6 +1582,108 @@ export default class FluxCodexVertex {
         fields: [{key: "delay", value: "1000"}],
         builtIn: true,
       }),
+
+      // string operation
+      startsWith: (id, x, y) => ({
+        id, title: "Starts With [string]", x, y,
+        category: "stringOperation",
+        inputs: [
+          {name: "input", type: "string"},
+          {name: "prefix", type: "string"}
+        ],
+        outputs: [{name: "return", type: "boolean"}],
+      }),
+
+      endsWith: (id, x, y) => ({
+        id, title: "Ends With [string]", x, y,
+        category: "stringOperation",
+        inputs: [
+          {name: "input", type: "string"},
+          {name: "suffix", type: "string"}
+        ],
+        outputs: [{name: "return", type: "boolean"}]
+      }),
+
+      includes: (id, x, y) => ({
+        id, title: "Includes [string]", x, y,
+        category: "stringOperation",
+        inputs: [
+          {name: "input", type: "string"},
+          {name: "search", type: "string"}
+        ],
+        outputs: [{name: "return", type: "boolean"}]
+      }),
+      toUpperCase: (id, x, y) => ({
+        id, title: "To Upper Case [string]", x, y,
+        category: "stringOperation",
+        inputs: [{name: "input", type: "string"}],
+        outputs: [{name: "return", type: "string"}]
+      }),
+      toLowerCase: (id, x, y) => ({
+        id, title: "To Lower Case [string]", x, y,
+        category: "stringOperation",
+        inputs: [{name: "input", type: "string"}],
+        outputs: [{name: "return", type: "string"}]
+      }),
+      trim: (id, x, y) => ({
+        id, title: "Trim [string]", x, y,
+        category: "stringOperation",
+        inputs: [{name: "input", type: "string"}],
+        outputs: [{name: "return", type: "string"}]
+      }),
+      length: (id, x, y) => ({
+        id, title: "String Length", x, y,
+        category: "stringOperation",
+        inputs: [{name: "input", type: "string"}],
+        outputs: [{name: "return", type: "number"}]
+      }),
+      substring: (id, x, y) => ({
+        id, title: "Substring [string]", x, y,
+        category: "stringOperation",
+        inputs: [
+          {name: "input", type: "string"},
+          {name: "start", type: "number"},
+          {name: "end", type: "number"}
+        ],
+        outputs: [{name: "return", type: "string"}]
+      }),
+      replace: (id, x, y) => ({
+        id, title: "Replace [string]", x, y,
+        category: "stringOperation",
+        inputs: [
+          {name: "input", type: "string"},
+          {name: "search", type: "string"},
+          {name: "replace", type: "string"}
+        ],
+        outputs: [{name: "return", type: "string"}]
+      }),
+      split: (id, x, y) => ({
+        id, title: "Split [string]", x, y,
+        category: "stringOperation",
+        inputs: [
+          {name: "input", type: "string"},
+          {name: "separator", type: "string"}
+        ],
+        outputs: [{name: "return", type: "array"}]
+      }),
+
+      concat: (id, x, y) => ({
+        id, title: "Concat [string]", x, y,
+        category: "stringOperation",
+        inputs: [
+          {name: "a", type: "string"},
+          {name: "b", type: "string"}
+        ],
+        outputs: [{name: "return", type: "string"}]
+      }),
+
+      isEmpty: (id, x, y) => ({
+        id, title: "Is Empty [string]", x, y,
+        category: "stringOperation",
+        inputs: [{name: "input", type: "string"}],
+        outputs: [{name: "return", type: "boolean"}]
+      }),
+
       // Math
       add: (id, x, y) => ({
         id, title: "Add", x, y,
@@ -2272,11 +2514,12 @@ export default class FluxCodexVertex {
       };
       n._listenerAttached = true;
     } else if(n.title == "On Ray Hit") {
-      // console.log('ON RAY HIT INIT ONLE !!!!!!!!!!!!!!!!!')
+      console.log('ON RAY HIT INIT ONLE !!!!!!!!!!!!!!!!!')
       if(n._listenerAttached) return;
       app.reference.addRaycastsListener();
       const handler = (e) => {
-        n._returnCache = e.detail?.hitObject ?? e.detail;
+        console.log('ON RAY HIT !!!!!!!!!!!!!!!!!')
+        n._returnCache = e.detail;// e.detail?.hitObject ?? e.detail;
         this.enqueueOutputs(n, "exec");
       };
       app.canvas.addEventListener("ray.hit.event", handler);
@@ -2315,6 +2558,14 @@ export default class FluxCodexVertex {
     if(!node || visited.has(nodeId)) return undefined;
     visited.add(nodeId);
 
+    if(node.title === "On Ray Hit") {
+      if(pinName === "hitObjectName") {
+        return node._returnCache['hitObject']['name'];
+      } else {
+        return node._returnCache[pinName];
+      }
+    }
+
     if(node.title === "if" && pinName === "condition") {
       let testLink = this.links.find(l => l.to.node === nodeId && l.to.pin === pinName);
       let t = this.getValue(testLink.from.node, testLink.from.pin);
@@ -2326,11 +2577,6 @@ export default class FluxCodexVertex {
         return node.fields?.find(f => f.key === "condition")?.value;
       }
       // ?
-    }
-
-    if(node.title === "On Ray Hit" && pinName === "hitObject") {
-      console.info('get value ray hit', node._returnCache);
-      return node._returnCache;
     }
 
     if(node.title === "Custom Event" && pinName === "detail") {
@@ -2427,9 +2673,67 @@ export default class FluxCodexVertex {
     }
 
     // console.log("GETVALUE COMPARE!")
-    if(["math", "value", "compare"].includes(node.category)) {
+    if(["math", "value", "compare", "stringOperation"].includes(node.category)) {
       let result;
       switch(node.title) {
+        case "Starts With [string]":
+          console.log('test startsWith');
+          result = this.getValue(nodeId, "input").startsWith(this.getValue(nodeId, "prefix"));
+          break;
+        case "Ends With [string]":
+          result = this.getValue(nodeId, "input")
+            ?.endsWith(this.getValue(nodeId, "suffix"));
+          break;
+        case "Includes [string]":
+          result = this.getValue(nodeId, "input")
+            ?.includes(this.getValue(nodeId, "search"));
+          break;
+        case "Equals [string]":
+          result = this.getValue(nodeId, "a") === this.getValue(nodeId, "b");
+          break;
+        case "Not Equals [string]":
+          result = this.getValue(nodeId, "a") !== this.getValue(nodeId, "b");
+          break;
+        case "To Upper Case [string]":
+          result = this.getValue(nodeId, "input")?.toUpperCase();
+          break;
+        case "To Lower Case [string]":
+          result = this.getValue(nodeId, "input")?.toLowerCase();
+          break;
+        case "Trim [string]":
+          result = this.getValue(nodeId, "input")?.trim();
+          break;
+        case "String Length":
+          result = this.getValue(nodeId, "input")?.length ?? 0;
+          break;
+        case "Substring [string]":
+          result = this.getValue(nodeId, "input")
+            ?.substring(
+              this.getValue(nodeId, "start"),
+              this.getValue(nodeId, "end")
+            );
+          break;
+        case "Replace [string]":
+          result = this.getValue(nodeId, "input")
+            ?.replace(
+              this.getValue(nodeId, "search"),
+              this.getValue(nodeId, "replace")
+            );
+          break;
+        case "Split [string]":
+          result = this.getValue(nodeId, "input")
+            ?.split(this.getValue(nodeId, "separator"));
+          break;
+        case "Concat [string]":
+          result =
+            (this.getValue(nodeId, "a") ?? "") +
+            (this.getValue(nodeId, "b") ?? "");
+          break;
+        case "Is Empty [string]":
+          result = !this.getValue(nodeId, "input") ||
+            this.getValue(nodeId, "input").length === 0;
+          break;
+
         case "Add":
           result = this.getValue(nodeId, "a") + this.getValue(nodeId, "b");
           break;
@@ -2487,8 +2791,8 @@ export default class FluxCodexVertex {
           result = this.getValue(nodeId, "A") <= this.getValue(nodeId, "B");
           break;
         case "GenRandInt":
-          const min =+ node.fields?.find(f => f.key === "min")?.value || 0;
-          const max =+ node.fields?.find(f => f.key === "max")?.value || 10;
+          const min = + node.fields?.find(f => f.key === "min")?.value || 0;
+          const max = + node.fields?.find(f => f.key === "max")?.value || 10;
           result = Math.floor(Math.random() * (max - min + 1)) + min;
           break;
         default:
@@ -2548,7 +2852,7 @@ export default class FluxCodexVertex {
     // args → inputs read
     const args = this.getArgNames(fn);
     args.forEach(arg => {
-      node.inputs.push({name: arg, type: "value"});
+      node.inputs.push({name: arg, type: "any"});
     });
     if(this.hasReturn(fn)) {
       node.outputs.push({name: "return", type: "value"});
@@ -2945,6 +3249,128 @@ export default class FluxCodexVertex {
 
         this.enqueueOutputs(n, "execOut");
         return;
+      } else if(n.title === "Generator") {
+        const texturePath = this.getValue(nodeId, "texturePath");
+        const mat = this.getValue(nodeId, "material");
+        let pos = this.getValue(nodeId, "pos");
+        const geo = this.getValue(nodeId, "geometry");
+        let rot = this.getValue(nodeId, "rot");
+        let delay = this.getValue(nodeId, "delay");
+        let sum = this.getValue(nodeId, "sum");
+        let raycast = this.getValue(nodeId, "raycast");
+        let scale = this.getValue(nodeId, "scale");
+        let name = this.getValue(nodeId, "name");
+        // spec adaptation
+        if(raycast == "true") {raycast = true} else {raycast = false;}
+        if(typeof delay == 'string') delay = parseInt(delay);
+        if(typeof pos == 'string') eval("pos = " + pos)
+        if(typeof rot == 'string') eval("rot = " + rot)
+        if(!texturePath || !pos) {
+          console.warn("[Generator] Missing input fields...");
+          this.enqueueOutputs(n, "execOut");
+          return;
+        }
+        const createdField = n.fields.find(f => f.key === "created");
+        if(createdField.value == "false" || createdField.value == false) {
+          console.log('!GEN! ONCE!');
+          app.physicsBodiesGenerator(mat, pos, rot, texturePath, name, geo, raycast, scale, sum, delay);
+          // createdField.value = true;
+        }
+
+        this.enqueueOutputs(n, "execOut");
+        return;
+      } else if(n.title === "Generator Wall") {
+        const texturePath = this.getValue(nodeId, "texturePath");
+        const mat = this.getValue(nodeId, "material");
+        let pos = this.getValue(nodeId, "pos");
+        const size = this.getValue(nodeId, "size");
+        let rot = this.getValue(nodeId, "rot");
+        let delay = this.getValue(nodeId, "delay");
+        let spacing = this.getValue(nodeId, "spacing");
+        let raycast = this.getValue(nodeId, "raycast");
+        let scale = this.getValue(nodeId, "scale");
+        let name = this.getValue(nodeId, "name");
+        // spec adaptation
+        if(raycast == "true") {raycast = true} else {raycast = false;}
+        if(typeof delay == 'string') delay = parseInt(delay);
+        if(typeof pos == 'string') eval("pos = " + pos);
+        if(typeof rot == 'string') eval("rot = " + rot);
+        if(typeof scale == 'string') eval("scale = " + scale);
+        if(!texturePath || !pos) {
+          console.warn("[Generator] Missing input fields...");
+          this.enqueueOutputs(n, "execOut");
+          return;
+        }
+        const createdField = n.fields.find(f => f.key === "created");
+        if(createdField.value == "false" || createdField.value == false) {
+          console.log('!GEN WALL! ONCE!');
+          app.physicsBodiesGeneratorWall(mat, pos, rot, texturePath, name, size, raycast, scale, spacing, delay);
+          // createdField.value = true;
+        }
+
+        this.enqueueOutputs(n, "execOut");
+        return;
+      } else if(n.title === "Generator Pyramid") {
+        //       export function physicsBodiesGeneratorDeepPyramid(
+        //   material = "standard",
+        //   pos,
+        //   rot,
+        //   texturePath,
+        //   name = "pyramidCube",
+        //   levels = 5,
+        //   raycast = false,
+        //   scale = [1, 1, 1],
+        //   spacing = 2,
+        //   delay = 200
+        // )
+        const texturePath = this.getValue(nodeId, "texturePath");
+        const mat = this.getValue(nodeId, "material");
+        let pos = this.getValue(nodeId, "pos");
+        const levels = this.getValue(nodeId, "levels");
+        let rot = this.getValue(nodeId, "rot");
+        let delay = this.getValue(nodeId, "delay");
+        let spacing = this.getValue(nodeId, "spacing");
+        let raycast = this.getValue(nodeId, "raycast");
+        let scale = this.getValue(nodeId, "scale");
+        let name = this.getValue(nodeId, "name");
+        // spec adaptation
+        if(raycast == "true") {raycast = true} else {raycast = false;}
+        if(typeof delay == 'string') delay = parseInt(delay);
+        if(typeof pos == 'string') eval("pos = " + pos);
+        if(typeof rot == 'string') eval("rot = " + rot);
+        if(typeof scale == 'string') eval("scale = " + scale);
+        if(!texturePath || !pos) {
+          console.warn("[Generator] Missing input fields...");
+          this.enqueueOutputs(n, "execOut");
+          return;
+        }
+        const createdField = n.fields.find(f => f.key === "created");
+        if(createdField.value == "false" || createdField.value == false) {
+          console.log('!GEN PYRAMID! ONCE!');
+          app.physicsBodiesGeneratorDeepPyramid(mat, pos, rot, texturePath, name, levels, raycast, scale, spacing, delay);
+          // createdField.value = true;
+        }
+
+        this.enqueueOutputs(n, "execOut");
+        return;
+      } else if(n.title === "Set Force On Hit") {
+        const objectName = this.getValue(nodeId, "objectName");
+        const strength = this.getValue(nodeId, "strength");
+        const rayDirection = this.getValue(nodeId, "rayDirection");
+        if(!objectName || !rayDirection || !strength) {
+          console.warn("[Set Force On Hit] Missing input fields...");
+          this.enqueueOutputs(n, "execOut");
+          return;
+        }
+        let b = app.matrixAmmo.getBodyByName(objectName);
+        const i = new Ammo.btVector3(
+          rayDirection[0] * strength,
+          rayDirection[1] * strength,
+          rayDirection[2] * strength
+        );
+        b.applyCentralImpulse(i);
+        this.enqueueOutputs(n, "execOut");
+        return;
       }
 
       this.enqueueOutputs(n, "execOut");
@@ -3059,12 +3485,16 @@ export default class FluxCodexVertex {
 
     console.log("BEFORE COMPARE ")
 
-    if(["math", "value", "compare"].includes(n.category)) {
+    if(["math", "value", "compare", "stringOperation"].includes(n.category)) {
 
       console.log("BEFORE COMPARE ")
       let result;
 
       switch(n.title) {
+        case "Starts With [string]":
+          // console.log('test startsWith');
+          result = this.getValue(nodeId, "input").startsWith(this.getValue(nodeId, "prefix"));
+          break;
         case "Add":
           result = this.getValue(nodeId, "a") + this.getValue(nodeId, "b");
           break;
@@ -3315,14 +3745,14 @@ export default class FluxCodexVertex {
       return value;
     }
 
-    localStorage.setItem(FluxCodexVertex.SAVE_KEY, JSON.stringify(bundle, saveReplacer));
+    localStorage.setItem(this.SAVE_KEY, JSON.stringify(bundle, saveReplacer));
     this.log("Graph saved to LocalStorage!");
   }
 
   clearStorage() {
-    let ask = confirm("⚠️ Delete all nodes , are you sure ?");
+    let ask = confirm("⚠️ This will delete all nodes. Are you sure?");
     if(ask) {
-      localStorage.removeItem(FluxCodexVertex.SAVE_KEY);
+      localStorage.removeItem(this.SAVE_KEY);
       location.reload(true);
     }
   }
@@ -3427,7 +3857,7 @@ export default class FluxCodexVertex {
   }
 
   init() {
-    const saved = localStorage.getItem(FluxCodexVertex.SAVE_KEY);
+    const saved = localStorage.getItem(this.SAVE_KEY);
     if(saved) {
       try {
         const data = JSON.parse(saved);
@@ -3491,4 +3921,4 @@ export default class FluxCodexVertex {
   }
 }
 
-FluxCodexVertex.SAVE_KEY = "matrixEngineVisualScripting";
+// FluxCodexVertex.SAVE_KEY = "matrixEngineVisualScripting";

@@ -207,16 +207,16 @@ export default class EditorHud {
     <div class="top-item">
       <div class="top-btn">Script ▾</div>
       <div class="dropdown">
-        <div id="showVisualCodeEditorBtn" class="drop-item">
+        <div id="showVisualCodeEditorBtn" class="drop-item btn4">
            <span>Visual Scripting</span>
            <small>⌨️FluxCodexVertex</small>
            <small>⌨️Press F6 for run</small>
         </div>
-        <div id="showCodeVARSBtn" class="drop-item">
+        <div id="showCodeVARSBtn" class="drop-item btn4">
            <span>Variable editor</span>
            <small>⌨️Visual Script tool</small>
         </div>
-        <div id="showCodeEditorBtn" class="drop-item">
+        <div id="showCodeEditorBtn" class="drop-item btn4">
            <span>Show code editor</span>
            <small>⌨️Function raw edit</small>
            <small>Custom Functions</small>

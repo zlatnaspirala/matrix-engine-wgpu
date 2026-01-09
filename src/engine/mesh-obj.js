@@ -9,7 +9,7 @@ import {PointerEffect} from './effects/pointerEffect';
 
 export default class MEMeshObj extends Materials {
   constructor(canvas, device, context, o, inputHandler, globalAmbient, _glbFile = null, primitiveIndex = null, skinnedNodeIndex = null) {
-    super(device, o.material, _glbFile);
+    super(device, o.material, _glbFile, o.textureCache);
     if(typeof o.name === 'undefined') o.name = genName(3);
     if(typeof o.raycast === 'undefined') {
       this.raycast = {enabled: false, radius: 2};
@@ -564,7 +564,7 @@ export default class MEMeshObj extends Materials {
         );
       };
 
-      this.getModelMatrix = (pos) => {
+      this.getModelMatrix = (pos, useScale = false) => {
         let modelMatrix = mat4.identity();
         mat4.translate(modelMatrix, [pos.x, pos.y, pos.z], modelMatrix);
         if(this.itIsPhysicsBody) {
@@ -578,12 +578,13 @@ export default class MEMeshObj extends Materials {
           mat4.rotateY(modelMatrix, this.rotation.getRotY(), modelMatrix);
           mat4.rotateZ(modelMatrix, this.rotation.getRotZ(), modelMatrix);
         }
-        // Apply scale if you have it, e.g.:
-        // console.warn('what is csle comes from user level not glb ', this.scale)
-        if(this.glb || this.objAnim) {
-          // mat4.scale(modelMatrix, [this.scale[0], this.scale[1], this.scale[2]], modelMatrix);
+        // if(this.glb || this.objAnim) {
+        //   // mat4.scale(modelMatrix, [this.scale[0], this.scale[1], this.scale[2]], modelMatrix);
+        // }
+        if(useScale == true) {
+          mat4.scale(modelMatrix, [this.scale[0], this.scale[1], this.scale[2]], modelMatrix);
         }
-        mat4.scale(modelMatrix, [this.scale[0], this.scale[1], this.scale[2]], modelMatrix);
+
         return modelMatrix;
       };
 
@@ -654,7 +655,7 @@ export default class MEMeshObj extends Materials {
   updateModelUniformBuffer = () => {
     if(this.done == false) return;
     // Per-object model matrix only
-    const modelMatrix = this.getModelMatrix(this.position);
+    const modelMatrix = this.getModelMatrix(this.position, true);
     this.device.queue.writeBuffer(
       this.modelUniformBuffer,
       0,
@@ -829,4 +830,60 @@ export default class MEMeshObj extends Materials {
     shadowPass.setIndexBuffer(this.indexBuffer, 'uint16');
     shadowPass.drawIndexed(this.indexCount);
   }
+
+  destroy() {
+    if(this._destroyed) return;
+    this._destroyed = true;
+
+    // --- GPU Buffers ---
+    this.vertexBuffer?.destroy();
+    this.vertexNormalsBuffer?.destroy();
+    this.vertexTexCoordsBuffer?.destroy();
+    this.indexBuffer?.destroy();
+
+    this.modelUniformBuffer?.destroy();
+    this.sceneUniformBuffer?.destroy();
+    this.bonesBuffer?.destroy();
+    this.selectedBuffer?.destroy();
+
+    // Skinning
+    this.mesh?.weightsBuffer?.destroy();
+    this.mesh?.jointsBuffer?.destroy();
+    this.mesh?.tangentsBuffer?.destroy();
+
+    // Dummy skin buffers
+    this.joints?.buffer?.destroy();
+    this.weights?.buffer?.destroy();
+
+    // Obj sequence animation buffers
+    if(this.objAnim?.meshList) {
+      for(const k in this.objAnim.meshList) {
+        const m = this.objAnim.meshList[k];
+        m.vertexBuffer?.destroy();
+        m.vertexNormalsBuffer?.destroy();
+        m.vertexTexCoordsBuffer?.destroy();
+        m.indexBuffer?.destroy();
+      }
+    }
+
+    if(this.effects?.pointer?.destroy) {
+      this.effects.pointer.destroy();
+    }
+
+    this.pipeline = null;
+    this.modelBindGroup = null;
+    this.sceneBindGroupForRender = null;
+    this.selectedBindGroup = null;
+
+    this.material = null;
+    this.mesh = null;
+    this.objAnim = null;
+
+    this.drawElements = () => {};
+    this.drawElementsAnim = () => {};
+    this.drawShadows = () => {};
+
+    console.info(`🧹 MEMeshObj destroyed: ${this.name}`);
+  }
+
 }

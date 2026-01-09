@@ -39,24 +39,23 @@ export class MEEditorClient {
             detail: data
           }))
         } else if(data.projects) {
-          data.payload.forEach((item) => {
-            console.log('.....' + item.name);
-            if(item.name != 'readme.md') {
-              let txt = `Project list: \n
-                - ${item.name}  \n
-               \n
-               Choose project name:
-              `;
-              let projectName = prompt(txt);
-              if(projectName !== null) {
-                console.log("Project name:", projectName);
-                projectName += ".html";
-                location.assign(projectName);
-              } else {
-                console.error('Something wrong with load project input!');
-              }
-            }
-          });
+          const projects = data.payload
+            .filter(item => item.name !== 'readme.md')
+            .map(item => item.name.trim());
+          if(projects.length === 0) {
+            console.warn('No projects found');
+            return;
+          }
+          const txt = "Project list: \n" +
+            projects.map(p => `- ${p}`).join("\n") + "\n" +
+            "  Choose project name:";
+          const projectName = prompt(txt);
+          if(projectName) {
+            console.log("Project name:", projectName);
+            location.assign(projectName + ".html");
+          } else {
+            console.error('Project loading cancelled');
+          }
         } else if(data.details) {
           document.dispatchEvent(new CustomEvent('file-detail-data', {
             detail: data

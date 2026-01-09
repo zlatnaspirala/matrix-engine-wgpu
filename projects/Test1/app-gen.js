@@ -141,26 +141,7 @@ let app = new MatrixEngineWGPU(
  }, 800);
  // ME END R_BOX updatePosx
  
-   // ME START R_BOX updatePosy
- setTimeout(() => {
-  app.getSceneObjectByName('R_BOX').position.SetY(2);
- }, 800);
- // ME END R_BOX updatePosy
- 
-     // ME START L_BOX updatePosy
- setTimeout(() => {
-  app.getSceneObjectByName('L_BOX').position.SetY(2);
- }, 800);
- // ME END L_BOX updatePosy
- 
-    // ME START REEL_1 updatePosy
- setTimeout(() => {
-  app.getSceneObjectByName('REEL_1').position.SetY(4);
- }, 800);
- // ME END REEL_1 updatePosy
- 
- 
-       // ME START REEL_2
+   // ME START REEL_2
  downloadMeshes({cube: "res/meshes/obj/reel.obj"}, (m) => { 
    const texturesPaths = ['./res/meshes/blender/cube.png']; 
    app.addMeshObj({
@@ -205,14 +186,7 @@ let app = new MatrixEngineWGPU(
  }, 800);
  // ME END REEL_2 updatePosx
  
-     // ME START REEL_2 updatePosy
- setTimeout(() => {
-  app.getSceneObjectByName('REEL_2').position.SetY(4);
- }, 800);
- // ME END REEL_2 updatePosy
- 
- 
-       // ME START REEL_3
+     // ME START REEL_3
  downloadMeshes({cube: "res/meshes/obj/reel.obj"}, (m) => { 
    const texturesPaths = ['./res/meshes/blender/cube.png']; 
    app.addMeshObj({
@@ -251,11 +225,59 @@ let app = new MatrixEngineWGPU(
  }, 800);
  // ME END REEL_3 updatePosx
  
-     // ME START REEL_3 updatePosy
+     // ME START L_BOX updateScale0
  setTimeout(() => {
-  app.getSceneObjectByName('REEL_3').position.SetY(4);
+  app.getSceneObjectByName('L_BOX').scale[0] = 1;
+ }, 800);
+ // ME END L_BOX updateScale0
+ 
+    // ME START L_BOX updateScale1
+ setTimeout(() => {
+  app.getSceneObjectByName('L_BOX').scale[1] = 4;
+ }, 800);
+ // ME END L_BOX updateScale1
+ 
+    // ME START R_BOX updateScale1
+ setTimeout(() => {
+  app.getSceneObjectByName('R_BOX').scale[1] = 4;
+ }, 800);
+ // ME END R_BOX updateScale1
+ 
+   // ME START FLOOR updatePosy
+ setTimeout(() => {
+  app.getSceneObjectByName('FLOOR').position.SetY(-3.5);
+ }, 800);
+ // ME END FLOOR updatePosy
+ 
+  // ME START REEL_1 updatePosy
+ setTimeout(() => {
+  app.getSceneObjectByName('REEL_1').position.SetY(3);
+ }, 800);
+ // ME END REEL_1 updatePosy
+ 
+  // ME START REEL_2 updatePosy
+ setTimeout(() => {
+  app.getSceneObjectByName('REEL_2').position.SetY(3);
+ }, 800);
+ // ME END REEL_2 updatePosy
+ 
+  // ME START REEL_3 updatePosy
+ setTimeout(() => {
+  app.getSceneObjectByName('REEL_3').position.SetY(3);
  }, 800);
  // ME END REEL_3 updatePosy
+ 
+  // ME START L_BOX updatePosy
+ setTimeout(() => {
+  app.getSceneObjectByName('L_BOX').position.SetY(1);
+ }, 800);
+ // ME END L_BOX updatePosy
+ 
+  // ME START R_BOX updatePosy
+ setTimeout(() => {
+  app.getSceneObjectByName('R_BOX').position.SetY(1);
+ }, 800);
+ // ME END R_BOX updatePosy
  
  // [MAIN_REPLACE2]
  

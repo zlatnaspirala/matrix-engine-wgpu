@@ -16,6 +16,8 @@ import {Editor} from "./tools/editor/editor.js";
 import MEMeshObjInstances from "./engine/instanced/mesh-obj-instances.js";
 import {BloomPass, fullscreenQuadWGSL} from "./engine/postprocessing/bloom.js";
 import {addRaycastsListener} from "./engine/raycast.js";
+import {physicsBodiesGenerator, physicsBodiesGeneratorDeepPyramid, physicsBodiesGeneratorPyramid, physicsBodiesGeneratorTower, physicsBodiesGeneratorWall} from "./engine/generators/phisicsBodies.js";
+import {TextureCache} from "./engine/core-cache.js";
 
 /**
  * @description
@@ -76,6 +78,15 @@ export default class MatrixEngineWGPU {
         type: 'WASD',
         responseCoef: 2000
       }
+    }
+
+    // in case of optimisation
+    if(typeof options.dontUsePhysics == 'undefined') {
+      this.physicsBodiesGenerator = physicsBodiesGenerator.bind(this);
+      this.physicsBodiesGeneratorWall = physicsBodiesGeneratorWall.bind(this);
+      this.physicsBodiesGeneratorPyramid = physicsBodiesGeneratorPyramid.bind(this);
+      this.physicsBodiesGeneratorTower = physicsBodiesGeneratorTower.bind(this);
+      this.physicsBodiesGeneratorDeepPyramid = physicsBodiesGeneratorDeepPyramid.bind(this);
     }
 
     if(typeof options.dontUsePhysics == 'undefined') {
@@ -200,6 +211,38 @@ export default class MatrixEngineWGPU {
   };
 
   createGlobalStuff() {
+    // OPTIMISATION
+    this.textureCache = new TextureCache(this.device);
+    this._destroyQueue = new Set();
+    this.flushDestroyQueue = () => {
+      if(!this._destroyQueue.size) return;
+      this._destroyQueue.forEach(name => {
+        this.removeSceneObjectByName(name);
+      });
+      this._destroyQueue.clear();
+    };
+    this.destroyByPrefix = (prefix) => {
+      const toDestroy = [];
+      for(const obj of this.mainRenderBundle) {
+        if(obj.name.startsWith(prefix)) {
+          toDestroy.push(obj.name);
+        }
+      }
+      toDestroy.forEach(name =>
+        this._destroyQueue.add(name)
+      );
+    };
+    this.destroyBySufix = (sufix) => {
+      const toDestroy = [];
+      for(const obj of this.mainRenderBundle) {
+        if(obj.name.endsWith(sufix)) {
+          toDestroy.push(obj.name);
+        }
+      }
+      toDestroy.forEach(name =>
+        this._destroyQueue.add(name)
+      );
+    }
 
     // Just syntetic to help visual scripting part
     this.bloomPass = {
@@ -209,7 +252,7 @@ export default class MatrixEngineWGPU {
       setBlurRadius: (v) => {},
       setThreshold: (v) => {},
     };
-    //------------------ TEST
+
     this.bloomOutputTex = this.device.createTexture({
       size: [this.canvas.width, this.canvas.height],
       format: 'rgba16float',
@@ -259,7 +302,6 @@ export default class MatrixEngineWGPU {
         targets: [{format: 'bgra8unorm'}], // rgba16float  bgra8unorm
       },
     });
-    //------------------ TEST
 
     this.spotlightUniformBuffer = this.device.createBuffer({
       label: 'spotlightUniformBufferGLOBAL',
@@ -559,6 +601,7 @@ export default class MatrixEngineWGPU {
       }
     }
 
+    o.textureCache = this.textureCache;
     let AM = this.globalAmbient.slice();
     let myMesh1 = new MEMeshObj(this.canvas, this.device, this.context, o, this.inputHandler, AM);
     myMesh1.spotlightUniformBuffer = this.spotlightUniformBuffer;
@@ -588,62 +631,44 @@ export default class MatrixEngineWGPU {
       this._rafId = null;
     }
 
-    // 2️⃣ Clear scene objects (GPU safe)
+    // 2️⃣ Destroy scene objects
     for(const obj of this.mainRenderBundle) {
       try {
-        // if(obj.destroy) obj.destroy(); // optional per-object cleanup
+        obj?.destroy?.();
       } catch(e) {
-        console.warn('Object destroy error:', e);
+        console.warn('Object destroy error:', obj?.name, e);
       }
     }
     this.mainRenderBundle.length = 0;
 
-    // 3️⃣ Physics cleanup
-    if(this.matrixAmmo) {
-      try {
-        this.matrixAmmo.destroy?.();
-        this.matrixAmmo = null;
-      } catch(e) {
-        console.warn('Physics destroy error:', e);
-      }
-    }
+    // 3️⃣ Physics
+    this.matrixAmmo?.destroy?.();
+    this.matrixAmmo = null;
 
-    // 4️⃣ Editor cleanup
-    if(this.editor) {
-      try {
-        this.editor.destroy?.();
-      } catch(e) {
-        console.warn('Editor destroy error:', e);
-      }
-      this.editor = null;
-    }
+    // 4️⃣ Editor
+    this.editor?.destroy?.();
+    this.editor = null;
 
-    // 5️⃣ Remove input handlers
-    if(this.inputHandler?.destroy) {
-      this.inputHandler.destroy();
-    }
+    // 5️⃣ Input
+    this.inputHandler?.destroy?.();
     this.inputHandler = null;
 
-    // 6️⃣ GPU resources
-    try {
-      this.mainDepthTexture?.destroy();
-      this.shadowTextureArray?.destroy();
-      this.shadowVideoTexture?.destroy();
-    } catch(e) {}
+    // 6️⃣ GLOBAL GPU RESOURCES
+    this.mainDepthTexture?.destroy();
+    this.shadowTextureArray?.destroy();
+    this.shadowVideoTexture?.destroy();
 
     this.mainDepthTexture = null;
     this.shadowTextureArray = null;
     this.shadowVideoTexture = null;
 
-    // 7️⃣ Lose WebGPU context (IMPORTANT)
+    // 7️⃣ Lose WebGPU context
     try {
       this.context?.unconfigure?.();
-    } catch(e) {}
+    } catch {}
 
-    // 8️⃣ Remove canvas
-    if(this.canvas && this.canvas.parentNode) {
-      this.canvas.parentNode.removeChild(this.canvas);
-    }
+    // 8️⃣ Canvas
+    this.canvas?.remove();
 
     this.canvas = null;
     this.device = null;
@@ -651,9 +676,8 @@ export default class MatrixEngineWGPU {
     this.adapter = null;
 
     console.warn('%c[MatrixEngineWGPU] Destroy complete ✔', 'color: lightgreen');
-    // this.mainRenderBundle = [];
-    // this.canvas.remove();
-  }
+  };
+
 
   updateLights() {
     const floatsPerLight = 36; // not 20 anymore
@@ -690,16 +714,20 @@ export default class MatrixEngineWGPU {
 
     try {
       let commandEncoder = this.device.createCommandEncoder();
+
+      if(this.matrixAmmo) this.matrixAmmo.updatePhysics();
+
       this.updateLights()
       // 1️⃣ Update light data (position, direction, uniforms)
       for(const light of this.lightContainer) {
         light.update()
         this.mainRenderBundle.forEach((meItem, index) => {
+          meItem.position.update()
           meItem.updateModelUniformBuffer()
           meItem.getTransformationMatrix(this.mainRenderBundle, light, index)
         })
       }
-      if(this.matrixAmmo) this.matrixAmmo.updatePhysics();
+
 
       let now, deltaTime;
 
@@ -759,7 +787,7 @@ export default class MatrixEngineWGPU {
       // Loop over each mesh
 
       for(const mesh of this.mainRenderBundle) {
-        mesh.position.update()
+        // mesh.position.update()
         if(mesh.update) {
           now = performance.now() / 1000; // seconds
           deltaTime = now - (this.lastTime || now);
@@ -911,6 +939,8 @@ export default class MatrixEngineWGPU {
     } else {
       alert('GLB not use objAnim (it is only for obj sequence). GLB use BVH skeletal for animation');
     }
+
+    o.textureCache = this.textureCache;
     let skinnedNodeIndex = 0;
     for(const skinnedNode of glbFile.skinnedMeshNodes) {
       let c = 0;
