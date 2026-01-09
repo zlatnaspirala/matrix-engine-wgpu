@@ -232,6 +232,23 @@ async function cnp(ws, msg) {
   if(p) content.addLine(`addEventListener('AmmoReady', async () => { `);
   content.addLine(`// [light]`);
   content.addLine(`app.addLight();`);
+
+  content.addLine(`
+      // ME START FLOOR addCube\n
+      downloadMeshes({mesh: "./res/meshes/blender/plane.obj"}, (m) => {
+          let texturesPaths = ['./res/meshes/blender/cube.png'];
+          app.addMeshObj({
+            position: {x: 0, y: -1, z: -20}, rotation: {x: 0, y: 0, z: 0}, rotationSpeed: {x: 0, y: 0, z: 0},
+            texturesPaths: [texturesPaths],
+            name: 'FLOOR',
+            mesh: m.mesh,
+            raycast: {enabled: true, radius: 2},
+            physics: {enabled: false, geometry: "Cube"}
+          });
+        }, {scale: [25, 1, 25]});\n
+      // ME END FLOOR addCube\n
+  `);
+
   content.addLine(`// [MAIN_REPLACE2]`);
   if(p) content.addLine(` })`);
   content.addLine(`})`);

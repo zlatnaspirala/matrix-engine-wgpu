@@ -22888,12 +22888,12 @@ var MatrixEngineWGPU = class {
   };
 };
 
-// ../../../../projects/Test1/app-gen.js
+// ../../../../projects/TEST-3/app-gen.js
 var app2 = new MatrixEngineWGPU(
   {
     useEditor: true,
     projectType: "created from editor",
-    projectName: "Test1",
+    projectName: "TEST-3",
     useSingleRenderPass: true,
     canvasSize: "fullscreen",
     mainCameraParams: {
@@ -22905,7 +22905,7 @@ var app2 = new MatrixEngineWGPU(
   (app3) => {
     addEventListener("AmmoReady", async () => {
       app3.addLight();
-      downloadMeshes({ cube: "./res/meshes/blender/plane.obj" }, (m) => {
+      downloadMeshes({ mesh: "./res/meshes/blender/plane.obj" }, (m) => {
         let texturesPaths = ["./res/meshes/blender/cube.png"];
         app3.addMeshObj({
           position: { x: 0, y: 0, z: -20 },
@@ -22913,154 +22913,11 @@ var app2 = new MatrixEngineWGPU(
           rotationSpeed: { x: 0, y: 0, z: 0 },
           texturesPaths: [texturesPaths],
           name: "FLOOR",
-          mesh: m.cube,
+          mesh: m.mesh,
           raycast: { enabled: true, radius: 2 },
           physics: { enabled: false, geometry: "Cube" }
         });
       }, { scale: [1, 1, 1] });
-      setTimeout(() => {
-        app3.getSceneObjectByName("FLOOR").scale[0] = 15;
-      }, 800);
-      setTimeout(() => {
-        app3.getSceneObjectByName("FLOOR").scale[2] = 15;
-      }, 800);
-      setTimeout(() => {
-        app3.getSceneObjectByName("FLOOR").scale[1] = 0.01;
-      }, 800);
-      downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, (m) => {
-        let texturesPaths = ["./res/meshes/blender/cube.png"];
-        app3.addMeshObj({
-          position: { x: 0, y: 0, z: -20 },
-          rotation: { x: 0, y: 0, z: 0 },
-          rotationSpeed: { x: 0, y: 0, z: 0 },
-          texturesPaths: [texturesPaths],
-          name: "L_BOX",
-          mesh: m.cube,
-          raycast: { enabled: true, radius: 2 },
-          physics: { enabled: false, geometry: "Cube" }
-        });
-      }, { scale: [1, 1, 1] });
-      downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, (m) => {
-        let texturesPaths = ["./res/meshes/blender/cube.png"];
-        app3.addMeshObj({
-          position: { x: 0, y: 0, z: -20 },
-          rotation: { x: 0, y: 0, z: 0 },
-          rotationSpeed: { x: 0, y: 0, z: 0 },
-          texturesPaths: [texturesPaths],
-          name: "R_BOX",
-          mesh: m.cube,
-          raycast: { enabled: true, radius: 2 },
-          physics: { enabled: false, geometry: "Cube" }
-        });
-      }, { scale: [1, 1, 1] });
-      setTimeout(() => {
-        app3.getSceneObjectByName("L_BOX").position.SetX(-4);
-      }, 800);
-      downloadMeshes({ cube: "res/meshes/obj/reel.obj" }, (m) => {
-        const texturesPaths = ["./res/meshes/blender/cube.png"];
-        app3.addMeshObj({
-          position: { x: 0, y: 0, z: -20 },
-          rotation: { x: 0, y: 0, z: 0 },
-          rotationSpeed: { x: 0, y: 0, z: 0 },
-          texturesPaths: [texturesPaths],
-          name: "REEL_1",
-          mesh: m.cube,
-          raycast: { enabled: true, radius: 2 },
-          physics: { enabled: false, geometry: "Cube" }
-        });
-      }, { scale: [1, 1, 1] });
-      setTimeout(() => {
-        app3.getSceneObjectByName("REEL_1").scale[0] = 2;
-      }, 800);
-      setTimeout(() => {
-        app3.getSceneObjectByName("REEL_1").scale[1] = 2;
-      }, 800);
-      setTimeout(() => {
-        app3.getSceneObjectByName("REEL_1").scale[2] = 2;
-      }, 800);
-      setTimeout(() => {
-        app3.getSceneObjectByName("R_BOX").position.SetX(4);
-      }, 800);
-      downloadMeshes({ cube: "res/meshes/obj/reel.obj" }, (m) => {
-        const texturesPaths = ["./res/meshes/blender/cube.png"];
-        app3.addMeshObj({
-          position: { x: 0, y: 0, z: -20 },
-          rotation: { x: 0, y: 0, z: 0 },
-          rotationSpeed: { x: 0, y: 0, z: 0 },
-          texturesPaths: [texturesPaths],
-          name: "REEL_2",
-          mesh: m.cube,
-          raycast: { enabled: true, radius: 2 },
-          physics: { enabled: false, geometry: "Cube" }
-        });
-      }, { scale: [1, 1, 1] });
-      setTimeout(() => {
-        app3.getSceneObjectByName("REEL_1").position.SetX(-2);
-      }, 800);
-      setTimeout(() => {
-        app3.getSceneObjectByName("REEL_2").scale[0] = 2;
-      }, 800);
-      setTimeout(() => {
-        app3.getSceneObjectByName("REEL_2").scale[2] = 2;
-      }, 800);
-      setTimeout(() => {
-        app3.getSceneObjectByName("REEL_2").scale[1] = 2;
-      }, 800);
-      setTimeout(() => {
-        app3.getSceneObjectByName("REEL_2").position.SetX(0);
-      }, 800);
-      downloadMeshes({ cube: "res/meshes/obj/reel.obj" }, (m) => {
-        const texturesPaths = ["./res/meshes/blender/cube.png"];
-        app3.addMeshObj({
-          position: { x: 0, y: 0, z: -20 },
-          rotation: { x: 0, y: 0, z: 0 },
-          rotationSpeed: { x: 0, y: 0, z: 0 },
-          texturesPaths: [texturesPaths],
-          name: "REEL_3",
-          mesh: m.cube,
-          raycast: { enabled: true, radius: 2 },
-          physics: { enabled: false, geometry: "Cube" }
-        });
-      }, { scale: [1, 1, 1] });
-      setTimeout(() => {
-        app3.getSceneObjectByName("REEL_3").scale[0] = 2;
-      }, 800);
-      setTimeout(() => {
-        app3.getSceneObjectByName("REEL_3").scale[1] = 2;
-      }, 800);
-      setTimeout(() => {
-        app3.getSceneObjectByName("REEL_3").scale[2] = 2;
-      }, 800);
-      setTimeout(() => {
-        app3.getSceneObjectByName("REEL_3").position.SetX(2);
-      }, 800);
-      setTimeout(() => {
-        app3.getSceneObjectByName("L_BOX").scale[0] = 1;
-      }, 800);
-      setTimeout(() => {
-        app3.getSceneObjectByName("L_BOX").scale[1] = 4;
-      }, 800);
-      setTimeout(() => {
-        app3.getSceneObjectByName("R_BOX").scale[1] = 4;
-      }, 800);
-      setTimeout(() => {
-        app3.getSceneObjectByName("FLOOR").position.SetY(-3.5);
-      }, 800);
-      setTimeout(() => {
-        app3.getSceneObjectByName("REEL_1").position.SetY(3);
-      }, 800);
-      setTimeout(() => {
-        app3.getSceneObjectByName("REEL_2").position.SetY(3);
-      }, 800);
-      setTimeout(() => {
-        app3.getSceneObjectByName("REEL_3").position.SetY(3);
-      }, 800);
-      setTimeout(() => {
-        app3.getSceneObjectByName("L_BOX").position.SetY(1);
-      }, 800);
-      setTimeout(() => {
-        app3.getSceneObjectByName("R_BOX").position.SetY(1);
-      }, 800);
     });
   }
 );
@@ -23075,4 +22932,4 @@ bvh-loader/module/bvh-loader.js:
    * @license GPL-V3
    *)
 */
-//# sourceMappingURL=Test1.js.map
+//# sourceMappingURL=TEST-3.js.map

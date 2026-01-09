@@ -82,6 +82,8 @@ export class Editor {
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('fetch')">Fetch</button>
       <span>Media</span>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('audioMP3')">Add Mp3</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setVideoTexture')">Set Video Tex[Mp4]</button>
+
       <span>Physics</span>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('generator')">Generator in place</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('generatorWall')">Generate Wall</button>

@@ -17357,6 +17357,26 @@ var FluxCodexVertex = class {
         fields: [],
         noselfExec: "true"
       }),
+      setVideoTexture: (id2, x2, y2) => ({
+        id: id2,
+        x: x2,
+        y: y2,
+        title: "Set Video Texture",
+        category: "action",
+        inputs: [
+          { name: "exec", type: "action" },
+          { name: "objectName", type: "string" },
+          { name: "VideoTextureArg", type: "object" }
+        ],
+        outputs: [
+          { name: "execOut", type: "action" }
+        ],
+        fields: [
+          { key: "objectName", value: "standard" },
+          { key: "VideoTextureArg", value: "{type: 'video', src: 'res/videos/tunel.mp4'}" }
+        ],
+        noselfExec: "true"
+      }),
       eventCustom: (id2, x2, y2) => ({
         id: id2,
         x: x2,
@@ -19204,6 +19224,26 @@ var FluxCodexVertex = class {
           rayDirection[2] * strength
         );
         b.applyCentralImpulse(i);
+        this.enqueueOutputs(n, "execOut");
+        return;
+      } else if (n.title === "Set Video Texture") {
+        const objectName = this.getValue(nodeId, "objectName");
+        let videoTextureArg = this.getValue(nodeId, "VideoTextureArg");
+        if (!objectName) {
+          console.warn("[Set Video Texture] Missing input fields...");
+          this.enqueueOutputs(n, "execOut");
+          return;
+        }
+        console.warn("[Set Video Texture] arg:", videoTextureArg);
+        if (typeof videoTextureArg != "object") {
+          videoTextureArg = {
+            type: "video",
+            // video , camera  //not tested canvas2d, canvas2dinline
+            src: "res/videos/tunel.mp4"
+          };
+        }
+        let o = app.getSceneObjectByName(objectName);
+        o.loadVideoTexture(videoTextureArg);
         this.enqueueOutputs(n, "execOut");
         return;
       }
@@ -21092,6 +21132,8 @@ var Editor = class {
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('fetch')">Fetch</button>
       <span>Media</span>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('audioMP3')">Add Mp3</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setVideoTexture')">Set Video Tex[Mp4]</button>
+
       <span>Physics</span>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('generator')">Generator in place</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('generatorWall')">Generate Wall</button>
@@ -21685,25 +21727,29 @@ function physicsBodiesGeneratorDeepPyramid(material = "standard", pos2, rot2, te
       for (let x2 = 0; x2 < sizeX; x2++) {
         for (let z = 0; z < sizeZ; z++) {
           const cubeName = `${name2}_${index}`;
-          setTimeout(() => engine.addMeshObj({
-            material: { type: material },
-            position: {
-              x: pos2.x + x2 * spacing2 - xOffset,
-              y: pos2.y + y2 * spacing2,
-              z: pos2.z + z * spacing2 - zOffset
-            },
-            rotation: rot2,
-            rotationSpeed: { x: 0, y: 0, z: 0 },
-            texturesPaths: [texturePath2],
-            name: cubeName,
-            mesh: m.mesh,
-            physics: {
-              scale: scale4,
-              enabled: true,
-              geometry: "Cube"
-            },
-            raycast: RAY
-          }), delay2 * index);
+          setTimeout(() => {
+            engine.addMeshObj({
+              material: { type: material },
+              position: {
+                x: pos2.x + x2 * spacing2 - xOffset,
+                y: pos2.y + y2 * spacing2,
+                z: pos2.z + z * spacing2 - zOffset
+              },
+              rotation: rot2,
+              rotationSpeed: { x: 0, y: 0, z: 0 },
+              texturesPaths: [texturePath2],
+              name: cubeName,
+              mesh: m.mesh,
+              physics: {
+                scale: scale4,
+                enabled: true,
+                geometry: "Cube"
+              },
+              raycast: RAY
+            });
+            const b = app.matrixAmmo.getBodyByName(cubeName);
+            stabilizeTowerBody(b);
+          }, delay2 * index);
           index++;
         }
       }

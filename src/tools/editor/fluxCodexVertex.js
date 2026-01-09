@@ -1469,6 +1469,24 @@ export default class FluxCodexVertex {
         noselfExec: "true"
       }),
 
+      setVideoTexture: (id, x, y) => ({
+        id, x, y, title: "Set Video Texture",
+        category: "action",
+        inputs: [
+          {name: "exec", type: "action"},
+          {name: "objectName", type: "string"},
+          {name: "VideoTextureArg", type: "object"},
+        ],
+        outputs: [
+          {name: "execOut", type: "action"}
+        ],
+        fields: [
+          {key: "objectName", value: "standard"},
+          {key: "VideoTextureArg", value: "{type: 'video', src: 'res/videos/tunel.mp4'}"}
+        ],
+        noselfExec: "true"
+      }),
+
       eventCustom: (id, x, y) => ({
         id, x, y,
         title: "Custom Event",
@@ -3359,7 +3377,34 @@ export default class FluxCodexVertex {
         b.applyCentralImpulse(i);
         this.enqueueOutputs(n, "execOut");
         return;
+      } else if(n.title === "Set Video Texture") {
+        const objectName = this.getValue(nodeId, "objectName");
+        let videoTextureArg = this.getValue(nodeId, "VideoTextureArg");
+
+        if(!objectName) {
+          console.warn("[Set Video Texture] Missing input fields...");
+          this.enqueueOutputs(n, "execOut");
+          return;
+        }
+
+        console.warn("[Set Video Texture] arg:", videoTextureArg);
+
+        if(typeof videoTextureArg != 'object') {
+          //default
+          videoTextureArg = {
+            type: "video", // video , camera  //not tested canvas2d, canvas2dinline
+            src: "res/videos/tunel.mp4",
+          };
+        }
+
+        let o = app.getSceneObjectByName(objectName);
+        o.loadVideoTexture(videoTextureArg);
+
+        this.enqueueOutputs(n, "execOut");
+        return;
       }
+
+
 
       this.enqueueOutputs(n, "execOut");
       return;
