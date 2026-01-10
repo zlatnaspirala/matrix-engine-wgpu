@@ -64,7 +64,13 @@ export class MEEditorClient {
           // setTimeout(() => location.reload(true) , 1500);
           setTimeout(() => document.dispatchEvent(new CustomEvent('updateSceneContainer', {detail: {}})), 1000)
         } else {
-          mb.show("from editor:" + data.payload);
+          console.log("data", data)
+          if(data.methodSaves && data.ok == true) {
+            mb.show("Graph saved ✅");
+          } else {
+            mb.show("From editorX:" + data.ok);
+          }
+
         }
       } catch(e) {
         console.error("[WS ERROR PARSE]", e);

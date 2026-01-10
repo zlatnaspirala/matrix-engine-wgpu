@@ -772,7 +772,6 @@ export default class FluxCodexVertex {
         if(selected) this.adaptNodeToMethod(node, selected);
       };
     } else if(node.category === "functions") {
-      console.log('!!!updateDOMNODE restoreDynamicFunctionNode', this.restoreDynamicFunctionNode)
       const dom = document.querySelector(`.node[data-id="${nodeId}"]`);
       this.restoreDynamicFunctionNode(node, dom);
     } else if(node.category === "reffunctions") {
@@ -1129,7 +1128,6 @@ export default class FluxCodexVertex {
       spec.fields.forEach(f => {
         const input = document.createElement("input");
         input.type = "number";
-        console.log("?????????????");
         input.value = f.value;
         input.style.width = "40px";
         input.style.marginRight = "4px";
@@ -3411,8 +3409,11 @@ export default class FluxCodexVertex {
         console.warn("[Set Video Texture] arg:", videoTextureArg);
 
         if(typeof videoTextureArg != 'object') {
-          //default
-          console.warn("[Set Video Texture] arg is not object !!!!:", videoTextureArg);
+          console.warn("[Set Video Texture] arg is not object!:", videoTextureArg);
+          if (typeof videoTextureArg != 'string') {
+            videoTextureArg = JSON.parse(videoTextureArg);
+          }
+          if (typeof videoTextureArg === "undefined" || videoTextureArg === null) 
           videoTextureArg = {
             type: "video", // video , camera  //not tested canvas2d, canvas2dinline
             src: "res/videos/tunel.mp4",

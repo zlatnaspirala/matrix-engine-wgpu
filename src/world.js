@@ -874,9 +874,7 @@ export default class MatrixEngineWGPU {
     }
   }
 
-  graphUpdate = (delta) => {
-    // console.log('graphUpdate')
-  }
+  graphUpdate = (delta) => {}
 
   framePassPerObject = () => {
     let commandEncoder = this.device.createCommandEncoder();
