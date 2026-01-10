@@ -15914,6 +15914,15 @@ var MEEditorClient = class {
       o = JSON.stringify(o);
       this.ws.send(o);
     });
+    document.addEventListener("save-graph", (e) => {
+      console.info("save graph <signal>");
+      let o = {
+        action: "save-graph",
+        graphData: e.detail
+      };
+      o = JSON.stringify(o);
+      this.ws.send(o);
+    });
     document.addEventListener("web.editor.addGlb", (e) => {
       console.log("[web.editor.addGlb]: ", e.detail);
       console.info("addGlb <signal>");
@@ -17434,6 +17443,24 @@ var FluxCodexVertex = class {
         noselfExec: "true",
         _listenerAttached: false
       }),
+      onDraw: (id2, x2, y2) => ({
+        id: id2,
+        x: x2,
+        y: y2,
+        title: "On Draw",
+        category: "event",
+        inputs: [],
+        outputs: [
+          { name: "exec", type: "action" },
+          { name: "delta", type: "number" },
+          { name: "skip", type: "number" }
+        ],
+        fields: [
+          { key: "skip", value: 5 }
+        ],
+        noselfExec: "true",
+        _listenerAttached: false
+      }),
       function: (id2, x2, y2) => ({
         id: id2,
         title: "Function",
@@ -18493,21 +18520,27 @@ var FluxCodexVertex = class {
       const pos2 = this.getValue(nodeId2, "position");
       if (!pos2) return;
       pos2.onTargetPositionReach = () => {
-        console.log("real onTargetPositionReach called");
         this.enqueueOutputs(n2, "exec");
       };
       n2._listenerAttached = true;
     } else if (n2.title == "On Ray Hit") {
-      console.log("ON RAY HIT INIT ONLE !!!!!!!!!!!!!!!!!");
       if (n2._listenerAttached) return;
       app.reference.addRaycastsListener();
       const handler = (e) => {
-        console.log("ON RAY HIT !!!!!!!!!!!!!!!!!");
         n2._returnCache = e.detail;
         this.enqueueOutputs(n2, "exec");
       };
       app.canvas.addEventListener("ray.hit.event", handler);
       n2._eventHandler = handler;
+      n2._listenerAttached = true;
+      return;
+    } else if (n2.title == "On Draw") {
+      console.log("ON DRAW INIT ONLE !!!!!", n2.fields.find((f) => f.key === "skip")?.value);
+      if (n2._listenerAttached) return;
+      app.onDraw = function(delta) {
+        n2._returnCache = delta;
+        this.enqueueOutputs(n2, "exec");
+      };
       n2._listenerAttached = true;
       return;
     }
@@ -19236,6 +19269,7 @@ var FluxCodexVertex = class {
         }
         console.warn("[Set Video Texture] arg:", videoTextureArg);
         if (typeof videoTextureArg != "object") {
+          console.warn("[Set Video Texture] arg is not object !!!!:", videoTextureArg);
           videoTextureArg = {
             type: "video",
             // video , camera  //not tested canvas2d, canvas2dinline
@@ -19549,7 +19583,7 @@ var FluxCodexVertex = class {
     });
   }
   runGraph() {
-    byId("app").style.opacity = 0.4;
+    byId("app").style.opacity = 0.5;
     this.initEventNodes();
     Object.values(this.nodes).forEach((n2) => n2._returnCache = void 0);
     Object.values(this.nodes).filter((n2) => n2.category === "event" && n2.title === "onLoad").forEach((n2) => this.triggerNode(n2.id));
@@ -19570,8 +19604,10 @@ var FluxCodexVertex = class {
       if (key === "_listenerAttached") return false;
       return value;
     }
-    localStorage.setItem(this.SAVE_KEY, JSON.stringify(bundle, saveReplacer));
-    this.log("Graph saved to LocalStorage!");
+    let d = JSON.stringify(bundle, saveReplacer);
+    localStorage.setItem(this.SAVE_KEY, d);
+    document.dispatchEvent(new CustomEvent("save-graph", { detail: d }));
+    this.log("Graph saved to LocalStorage and final script");
   }
   clearStorage() {
     let ask = confirm("\u26A0\uFE0F This will delete all nodes. Are you sure?");
@@ -20828,7 +20864,7 @@ var MethodsManager = class {
     return new Promise(async (resolve, reject) => {
       if (editorType == "created from editor") {
         const page = location.pathname.split("/").pop().replace(".html", "");
-        const file = `../src/tools/editor/gen/${page}/methods.js`;
+        const file = `../projects/${page}/methods.js`;
         let module;
         try {
           module = await import(file);
@@ -21100,6 +21136,7 @@ var Editor = class {
     <div id="leftBar">
       <span>Events/Func</span>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('event')">Event: onLoad</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('onDraw')">Event: onDraw</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('eventCustom')">Custom Event</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('dispatchEvent')">Dispatch Event</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('function')">Function</button>
@@ -22639,12 +22676,16 @@ var MatrixEngineWGPU = class {
       }));
       pass.draw(6);
       pass.end();
+      this.graphUpdate(deltaTime2);
       this.device.queue.submit([commandEncoder.finish()]);
       requestAnimationFrame(this.frame);
     } catch (err) {
       console.log("%cLoop(err):" + err + " info : " + err.stack, LOG_WARN);
       requestAnimationFrame(this.frame);
     }
+  };
+  graphUpdate = (delta) => {
+    console.log("graphUpdate");
   };
   framePassPerObject = () => {
     let commandEncoder = this.device.createCommandEncoder();
@@ -22888,12 +22929,12 @@ var MatrixEngineWGPU = class {
   };
 };
 
-// ../../../../projects/TTT/app-gen.js
+// ../../../../projects/MyProject1/app-gen.js
 var app2 = new MatrixEngineWGPU(
   {
     useEditor: true,
     projectType: "created from editor",
-    projectName: "TTT",
+    projectName: "MyProject1",
     useSingleRenderPass: true,
     canvasSize: "fullscreen",
     mainCameraParams: {
@@ -22918,19 +22959,6 @@ var app2 = new MatrixEngineWGPU(
           physics: { enabled: false, geometry: "Cube" }
         });
       }, { scale: [25, 1, 25] });
-      downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, (m) => {
-        let texturesPaths = ["./res/meshes/blender/cube.png"];
-        app3.addMeshObj({
-          position: { x: 0, y: 0, z: -20 },
-          rotation: { x: 0, y: 0, z: 0 },
-          rotationSpeed: { x: 0, y: 0, z: 0 },
-          texturesPaths: [texturesPaths],
-          name: "asd",
-          mesh: m.cube,
-          raycast: { enabled: true, radius: 2 },
-          physics: { enabled: false, geometry: "Cube" }
-        });
-      }, { scale: [1, 1, 1] });
     });
   }
 );
@@ -22945,4 +22973,4 @@ bvh-loader/module/bvh-loader.js:
    * @license GPL-V3
    *)
 */
-//# sourceMappingURL=TTT.js.map
+//# sourceMappingURL=MyProject1.js.map

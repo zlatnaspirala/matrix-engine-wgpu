@@ -9,17 +9,18 @@ import esbuild from "esbuild";
 import fs from "fs/promises";
 import path from "path";
 import {WebSocketServer} from "ws";
-// import {copyFile} from "fs/promises";
+import {DEFAULT_GRAPH_JS} from "./graph.js";
+import {DEFAUL_METHODS} from "./methods.js";
 
 // matrix-engine-wgpu repo root reference
 const ENGINE_PATH = path.resolve("../../../../");
-const GEN_METHODS_PATH = path.resolve("../gen");
 const PUBLIC_DIR = path.join(ENGINE_PATH, "public");
 const PUBLIC_RES = path.join(PUBLIC_DIR, "res");
 const PROJECTS_DIR = path.join(ENGINE_PATH, "projects");
+let PROJECT_NAME = "";
+
 await fs.mkdir(PROJECTS_DIR, {recursive: true});
 const watchers = new Map();
-let PROJECT_NAME = "";
 
 const wss = new WebSocketServer({port: 1243});
 console.log("\x1b[1m\x1b[92m%s\x1b[0m", " Editorx websock running on ws://localhost:1243");
@@ -33,24 +34,33 @@ console.log("\x1b[92m%s\x1b[0m", "-----------------------------------------");
 
 async function buildAllProjectsOnStartup() {
   console.log("🔨 Building all projects (startup)…");
-
   const items = await fs.readdir(PROJECTS_DIR, {withFileTypes: true});
-
   for(const dir of items) {
     if(!dir.isDirectory()) continue;
-
     const projectName = dir.name;
     const entry = path.join(PROJECTS_DIR, projectName, "app-gen.js");
-
+    // GRAPH
+    const graphFile = path.join(PROJECTS_DIR, projectName, "graph.js");
+    try {
+      await fs.access(graphFile);
+    } catch {
+      await fs.writeFile(graphFile, DEFAULT_GRAPH_JS, "utf8");
+      console.log(`🧠 Created default graph.js for ${projectName}`);
+    }
+    const methodsFile = path.join(PROJECTS_DIR, projectName, "methods.js");
+    try {
+      await fs.access(methodsFile);
+    } catch {
+      await fs.writeFile(methodsFile, DEFAUL_METHODS, "utf8");
+      console.log(`🧠 Created default methods.js for ${projectName}`);
+    }
     try {
       await fs.access(entry);
     } catch {
       console.warn(`⚠️ Skipping ${projectName} (no app-gen.js)`);
       continue;
     }
-
     const outfile = path.join(PUBLIC_DIR, `${projectName}.js`);
-
     try {
       await esbuild.build({
         entryPoints: [entry],
@@ -63,8 +73,6 @@ async function buildAllProjectsOnStartup() {
       });
 
       console.log(`✅ Built ${projectName}`);
-
-      // ensure HTML exists
       const htmlFile = path.join(PUBLIC_DIR, `${projectName}.html`);
       try {
         await fs.access(htmlFile);
@@ -74,13 +82,34 @@ async function buildAllProjectsOnStartup() {
         await html.saveTo(htmlFile);
         console.log(`📄 Created ${projectName}.html`);
       }
-
     } catch(err) {
       console.error(`❌ Failed to build ${projectName}`, err.message);
     }
   }
 
   console.log("✅ Startup build finished");
+}
+
+export class CodeBuilder {
+  constructor() {
+    this.lines = [];
+  }
+
+  addLine(line) {
+    this.lines.push(line + "\n");
+  }
+
+  addEmptyLine() {
+    this.lines.push("\n");
+  }
+
+  toString() {
+    return this.lines.join("");
+  }
+
+  async saveTo(filePath) {
+    await fs.writeFile(filePath, this.toString());
+  }
 }
 
 await buildAllProjectsOnStartup();
@@ -136,6 +165,8 @@ wss.on("connection", ws => {
         addObj(msg, ws);
       } else if(msg.action == "save-methods") {
         saveMethods(msg, ws);
+      } else if(msg.action == "save-graph") {
+        saveGraph(msg, ws);
       } else if(msg.action == "delete-obj") {
         deleteSceneObject(msg, ws);
       } else if(msg.action == "updatePos") {
@@ -152,32 +183,11 @@ wss.on("connection", ws => {
   });
 });
 
-export class CodeBuilder {
-  constructor() {
-    this.lines = [];
-  }
-
-  addLine(line) {
-    this.lines.push(line + "\n");
-  }
-
-  addEmptyLine() {
-    this.lines.push("\n");
-  }
-
-  toString() {
-    return this.lines.join("");
-  }
-
-  async saveTo(filePath) {
-    await fs.writeFile(filePath, this.toString());
-  }
-}
-
 function CBimport() {
   return `import MatrixEngineWGPU from "../../src/world.js";
 import {downloadMeshes} from '../../src/engine/loader-obj.js';
 import {uploadGLBModel} from "../../src/engine/loaders/webgpu-gltf.js";
+import graph from "./graph.js";
 `;
 }
 
@@ -230,6 +240,10 @@ async function cnp(ws, msg) {
   content.addLine(CBoptions(p, n, msg.name));
   content.addLine(`, (app) => {`);
   if(p) content.addLine(`addEventListener('AmmoReady', async () => { `);
+
+  content.addLine(`// [only fro projects created from editor]`);
+  content.addLine(`app.graph = graph;`);
+  // graph
   content.addLine(`// [light]`);
   content.addLine(`app.addLight();`);
 
@@ -450,7 +464,7 @@ async function saveScript(path, text, ws) {
 }
 
 async function saveMethods(msg, ws) {
-  const folderPerProject = path.join(GEN_METHODS_PATH, PROJECT_NAME);
+  const folderPerProject = path.join(PROJECTS_DIR, PROJECT_NAME);
   fs.mkdir(folderPerProject, {recursive: true});
   const file = path.join(folderPerProject, "\\methods.js");
   const content =
@@ -463,6 +477,23 @@ async function saveMethods(msg, ws) {
       methodSaves: 'OK'
     }));
     console.log("Saved methods.js");
+  });
+}
+
+async function saveGraph(msg, ws) {
+  const folderPerProject = path.join(PROJECTS_DIR, PROJECT_NAME);
+  fs.mkdir(folderPerProject, {recursive: true});
+  const file = path.join(folderPerProject, "\\graph.js");
+  const content =
+    "export default " +
+    msg.graphData + 
+    ";\n";
+  fs.writeFile(file, content, "utf8").then((e) => {
+    ws.send(JSON.stringify({
+      ok: true,
+      methodSaves: 'OK'
+    }));
+    console.log("Saved graph.js");
   });
 }
 

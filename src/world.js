@@ -727,8 +727,6 @@ export default class MatrixEngineWGPU {
           meItem.getTransformationMatrix(this.mainRenderBundle, light, index)
         })
       }
-
-
       let now, deltaTime;
 
       for(let i = 0;i < this.lightContainer.length;i++) {
@@ -840,7 +838,6 @@ export default class MatrixEngineWGPU {
       }
       transPass.end();
 
-
       const canvasView = this.context.getCurrentTexture().createView();
       // Bloom
       if(this.bloomPass.enabled == true) {
@@ -868,12 +865,17 @@ export default class MatrixEngineWGPU {
       pass.draw(6);
       pass.end();
 
+      this.graphUpdate(deltaTime);
       this.device.queue.submit([commandEncoder.finish()]);
       requestAnimationFrame(this.frame);
     } catch(err) {
       console.log('%cLoop(err):' + err + " info : " + err.stack, LOG_WARN)
       requestAnimationFrame(this.frame);
     }
+  }
+
+  graphUpdate = (delta) => {
+    // console.log('graphUpdate')
   }
 
   framePassPerObject = () => {

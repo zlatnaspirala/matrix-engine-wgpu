@@ -181,6 +181,16 @@ export class MEEditorClient {
       this.ws.send(o);
     });
 
+    document.addEventListener('save-graph', (e) => {
+      console.info('save graph <signal>');
+      let o = {
+        action: "save-graph",
+        graphData: e.detail
+      };
+      o = JSON.stringify(o);
+      this.ws.send(o);
+    });
+
     document.addEventListener('web.editor.addGlb', (e) => {
       console.log("[web.editor.addGlb]: ", e.detail);
 

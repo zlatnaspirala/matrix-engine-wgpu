@@ -8,7 +8,7 @@ let app = new MatrixEngineWGPU(
   
   useEditor: true,
   projectType: "created from editor",
-  projectName: 'TTT',
+  projectName: 'MyProject1',
   useSingleRenderPass: true,
   canvasSize: 'fullscreen',
   mainCameraParams: {
@@ -40,23 +40,7 @@ app.addLight();
       // ME END FLOOR addCube
 
   
-
-       // ME START asd addCube
- downloadMeshes({cube: "./res/meshes/blender/cube.obj"}, (m) => { 
-   let texturesPaths = ['./res/meshes/blender/cube.png']; 
-   app.addMeshObj({
-     position: {x: 0, y: 0, z: -20}, rotation: {x: 0, y: 0, z: 0}, rotationSpeed: {x: 0, y: 0, z: 0},
-     texturesPaths: [texturesPaths],
-     name: 'asd',
-     mesh: m.cube,
-     raycast: {enabled: true, radius: 2},
-     physics: {enabled: false, geometry: "Cube"}
-   }); 
- }, {scale: [1, 1, 1]});  
- // ME END asd addCube
- 
-
-      // [MAIN_REPLACE2]
+// [MAIN_REPLACE2]
  })
 })
 window.app = app;
