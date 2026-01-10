@@ -624,6 +624,10 @@ export default class FluxCodexVertex {
     args.forEach(arg => node.inputs.push({name: arg, type: "value"}));
     // Dynamic return pin
     if(this.hasReturn(fn)) node.outputs.push({name: "return", type: "value"});
+
+    // test 
+    node.outputs.push({name: "reference", type: "function"});
+
     node.attachedMethod = methodItem.name;
     node.fn = fn;
     this.updateNodeDOM(node.id);
@@ -769,6 +773,7 @@ export default class FluxCodexVertex {
 
       select.onchange = e => {
         const selected = this.methodsManager.methodsContainer.find(m => m.name === e.target.value);
+        console.log('test reference::::', selected)
         if(selected) this.adaptNodeToMethod(node, selected);
       };
     } else if(node.category === "functions") {
@@ -1168,6 +1173,7 @@ export default class FluxCodexVertex {
           m => m.name === e.target.value
         );
         if(selected) {
+          console.log('test reference', selected)
           this.adaptNodeToMethod(spec, selected);
         }
       });
@@ -1484,6 +1490,26 @@ export default class FluxCodexVertex {
         ],
         noselfExec: "true"
       }),
+
+      setCanvasInlineTexture: (id, x, y) => ({
+        id, x, y, title: "Set CanvasInline",
+        category: "action",
+        inputs: [
+          {name: "exec", type: "action"},
+          {name: "objectName", type: "string"},
+          {name: "canvaInlineProgram", type: "function"},
+        ],
+        outputs: [
+          {name: "execOut", type: "action"}
+        ],
+        fields: [
+          {key: "objectName", value: "standard"},
+          {key: "canvaInlineProgram", value: "function (ctx, canvas) {}"}
+        ],
+        noselfExec: "true"
+      }),
+
+
 
       eventCustom: (id, x, y) => ({
         id, x, y,
@@ -2599,6 +2625,12 @@ export default class FluxCodexVertex {
     if(!node || visited.has(nodeId)) return undefined;
     visited.add(nodeId);
 
+
+    if (node.title === "Function" && pinName === "reference") {
+      console.log('SPECIAL OUTPUT node.fn ', node.fn)
+      return node.fn;
+    }
+
     if(node.title === "On Ray Hit") {
       if(pinName === "hitObjectName") {
         return node._returnCache['hitObject']['name'];
@@ -2649,10 +2681,13 @@ export default class FluxCodexVertex {
       return value;
     }
 
-    const field = node.fields?.find(f => f.key === pinName);
-    if(field) return field.value;
+
     const link = this.links.find(l => l.to.node === nodeId && l.to.pin === pinName);
     if(link) return this.getValue(link.from.node, link.from.pin, visited);
+    
+    const field = node.fields?.find(f => f.key === pinName);
+    if(field) return field.value;
+    
 
     const inputPin = node.inputs?.find(p => p.name === pinName);
     if(inputPin) return inputPin.default ?? 0;
@@ -3410,14 +3445,14 @@ export default class FluxCodexVertex {
 
         if(typeof videoTextureArg != 'object') {
           console.warn("[Set Video Texture] arg is not object!:", videoTextureArg);
-          if (typeof videoTextureArg != 'string') {
+          if(typeof videoTextureArg != 'string') {
             videoTextureArg = JSON.parse(videoTextureArg);
           }
-          if (typeof videoTextureArg === "undefined" || videoTextureArg === null) 
-          videoTextureArg = {
-            type: "video", // video , camera  //not tested canvas2d, canvas2dinline
-            src: "res/videos/tunel.mp4",
-          };
+          if(typeof videoTextureArg === "undefined" || videoTextureArg === null)
+            videoTextureArg = {
+              type: "video", // video , camera  //not tested canvas2d, canvas2dinline
+              src: "res/videos/tunel.mp4",
+            };
         }
 
         let o = app.getSceneObjectByName(objectName);
@@ -3425,7 +3460,38 @@ export default class FluxCodexVertex {
 
         this.enqueueOutputs(n, "execOut");
         return;
+      } else if(n.title === "Set CanvasInline") {
+        const objectName = this.getValue(nodeId, "objectName");
+        let canvaInlineProgram = this.getValue(nodeId, "canvaInlineProgram");
+
+        if(!objectName) {
+          console.warn("[objectName] Missing input fields...");
+          this.enqueueOutputs(n, "execOut");
+          return;
+        }
+
+        console.warn("[canvaInlineProgram] arg:", canvaInlineProgram);
+
+        if(typeof canvaInlineProgram != 'function') {
+          console.warn("[canvaInlineProgram] arg is not object!:", canvaInlineProgram);
+          if(typeof canvaInlineProgram == 'string') {
+            canvaInlineProgram = eval("canvaInlineProgram = " + canvaInlineProgram);
+          }
+          if(typeof canvaInlineProgram === "undefined" || canvaInlineProgram === null)
+            canvaInlineProgram = function(ctx, canvas) {};
+        }
+
+        let o = app.getSceneObjectByName(objectName);
+        o.loadVideoTexture({
+          type: "canvas2d-inline",
+          canvaInlineProgram: canvaInlineProgram
+        });
+
+        this.enqueueOutputs(n, "execOut");
+        return;
       }
+
+
 
 
 
