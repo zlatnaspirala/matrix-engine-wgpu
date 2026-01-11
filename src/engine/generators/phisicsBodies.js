@@ -225,28 +225,31 @@ export function physicsBodiesGeneratorDeepPyramid(
       for(let x = 0;x < sizeX;x++) {
         for(let z = 0;z < sizeZ;z++) {
           const cubeName = `${name}_${index}`;
-          setTimeout(() => engine.addMeshObj({
-            material: {type: material},
-            position: {
-              x: pos.x + x * spacing - xOffset,
-              y: pos.y + y * spacing,
-              z: pos.z + z * spacing - zOffset
-            },
-            rotation: rot,
-            rotationSpeed: {x: 0, y: 0, z: 0},
-            texturesPaths: [texturePath],
-            name: cubeName,
-            mesh: m.mesh,
-            physics: {
-              scale: scale,
-              enabled: true,
-              geometry: "Cube"
-            },
-            raycast: RAY
-          }), delay * index);
-          // Optional: stabilize tower-style
-          // const body = app.matrixAmmo.getBodyByName(cubeName);
-          // stabilizeTowerBody(body);
+          setTimeout(() => {
+            engine.addMeshObj({
+              material: {type: material},
+              position: {
+                x: pos.x + x * spacing - xOffset,
+                y: pos.y + y * spacing,
+                z: pos.z + z * spacing - zOffset
+              },
+              rotation: rot,
+              rotationSpeed: {x: 0, y: 0, z: 0},
+              texturesPaths: [texturePath],
+              name: cubeName,
+              mesh: m.mesh,
+              physics: {
+                scale: scale,
+                enabled: true,
+                geometry: "Cube"
+              },
+              raycast: RAY
+            });
+            // Optional: stabilize tower-style
+            const b = app.matrixAmmo.getBodyByName(cubeName);
+            stabilizeTowerBody(b);
+          }, delay * index);
+
           index++;
         }
       }

@@ -1,5 +1,5 @@
 import {en} from "../../public/res/multilang/en-backup";
-import {LOG_MATRIX} from "../engine/utils";
+import {LOG_FUNNY_ARCADE, LOG_MATRIX} from "../engine/utils";
 
 export class MultiLang {
 
@@ -20,7 +20,7 @@ export class MultiLang {
   loadMultilang = async function(lang = 'en') {
     if (lang == 'rs') lang = 'sr'; // exc
     lang = 'res/multilang/' + lang + '.json';
-    console.info(`%cMultilang: ${lang}` , LOG_MATRIX);
+    console.info(`%cMultilang: ${lang}` , LOG_FUNNY_ARCADE);
     try {
       const r = await fetch(lang, {
         headers: {

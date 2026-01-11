@@ -1,4 +1,4 @@
-import {LOG_FUNNY, degToRad, quaternion_rotation_matrix, radToDeg, scriptManager} from "../engine/utils";
+import {LOG_FUNNY, LOG_FUNNY_ARCADE, degToRad, quaternion_rotation_matrix, radToDeg, scriptManager} from "../engine/utils";
 
 export default class MatrixAmmo {
   constructor() {
@@ -18,7 +18,7 @@ export default class MatrixAmmo {
       this.rigidBodies = [];
       this.Ammo = Ammo;
       this.lastUpdate = 0
-      console.log("%c Ammo core loaded.", LOG_FUNNY);
+      console.log("%c Ammo core loaded.", LOG_FUNNY_ARCADE);
       this.initPhysics();
       // simulate async
       setTimeout(() => {

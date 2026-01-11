@@ -1,4 +1,4 @@
-import {byId, FullscreenManager, isMobile, jsonHeaders, mb} from "../../engine/utils.js";
+import {byId, FullscreenManager, isMobile, jsonHeaders, LOG_FUNNY_ARCADE, mb} from "../../engine/utils.js";
 /**
  * @Author NIkola Lukic
  * @description
@@ -490,7 +490,7 @@ export default class EditorHud {
     })
 
     document.addEventListener('la', (e) => {
-      console.log('root folder ', e.detail.rootFolder)
+      console.log(`%c[Editor]Root Resource Folder: ${e.detail.rootFolder}`, LOG_FUNNY_ARCADE);
       byId('res-folder').setAttribute('data-root-folder', e.detail.rootFolder);
       byId('res-folder').innerHTML = '';
       e.detail.payload.forEach((i) => {

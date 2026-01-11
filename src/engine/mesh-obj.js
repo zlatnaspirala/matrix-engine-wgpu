@@ -1,7 +1,7 @@
 import {mat4, vec3} from 'wgpu-matrix';
 import {Position, Rotation} from "./matrix-class";
 import {vertexWGSL} from '../shaders/vertex.wgsl';
-import {degToRad, genName, LOG_FUNNY_SMALL} from './utils';
+import {degToRad, genName, LOG_FUNNY_ARCADE, LOG_FUNNY_SMALL} from './utils';
 import Materials from './materials';
 import {fragmentVideoWGSL} from '../shaders/fragment.video.wgsl';
 import {vertexWGSL_NM} from '../shaders/vertex.wgsl.normalmap';
@@ -210,7 +210,7 @@ export default class MEMeshObj extends Materials {
       // obj files flow
       this.mesh.uvs = this.mesh.textures;
     }
-    console.log(`%c Mesh loaded: ${o.name}`, LOG_FUNNY_SMALL);
+    console.log(`%cMesh loaded: ${o.name}`, LOG_FUNNY_ARCADE);
     // ObjSequence animation
     if(typeof o.objAnim !== 'undefined' && o.objAnim != null) {
       this.objAnim = o.objAnim;
