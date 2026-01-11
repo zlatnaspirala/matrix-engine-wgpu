@@ -171,7 +171,7 @@ export default class EditorHud {
       <div id="start-watch" class="drop-item">🛠️ Watch</div>
       <div id="stop-watch" class="drop-item">🛠️ Stop Watch</div>
       <div id="start-refresh" class="drop-item">🛠️ Refresh</div>
-      <div id="start-build" class="drop-item">🛠️ Build for production</div>
+      <div id="start-prod-build" class="drop-item">🛠️ Build for production</div>
       </div>
     </div>
 
@@ -256,6 +256,7 @@ export default class EditorHud {
 
     <div class="btn2">
       <button class="btn" id="runMainGraphDOM">RUN [F6]</button><button class="btn" id="stopMainGraphDOM">STOP</button>
+      <span id="graph-status">⚫</span>
     </div>
   `;
 
@@ -280,11 +281,17 @@ export default class EditorHud {
     // run top many
     byId('runMainGraphDOM').addEventListener('click', () => {
       // global for now.
-      app.editor.fluxCodexVertex.compileGraph();
+      app.editor.fluxCodexVertex.runGraph();
     });
 
     this.toolTip.attachTooltip(byId('runMainGraphDOM'), "Run main graph, sometimes engine need refresh.");
     this.toolTip.attachTooltip(byId('stopMainGraphDOM'), "Stop main graph, clear dynamic created objects.");
+
+    byId('stopMainGraphDOM').addEventListener('click', () => {
+      // global for now.
+      console.log('@@@@@@@@@@@@@')
+      app.editor.fluxCodexVertex.clearRuntime();
+    });
 
     // Close on outside tap
     document.addEventListener("click", e => {
@@ -364,7 +371,15 @@ export default class EditorHud {
     byId('start-refresh').onclick = () => {
       location.reload(true);
     };
-    if (byId('start-refresh')) this.toolTip.attachTooltip(byId('start-refresh'), "Simple refresh page.");
+    if(byId('start-refresh')) this.toolTip.attachTooltip(byId('start-refresh'), "Simple refresh page.");
+
+
+    byId('start-prod-build').onclick = () => {
+      //
+      console.log('.......start-prod-build.......');
+      console.log('................................')
+
+    };
 
     // OBJECT LEVEL
     if(byId('addCube')) byId('addCube').addEventListener('click', () => {

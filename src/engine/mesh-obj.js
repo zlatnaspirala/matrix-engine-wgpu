@@ -831,7 +831,7 @@ export default class MEMeshObj extends Materials {
     shadowPass.drawIndexed(this.indexCount);
   }
 
-  destroy() {
+  destroy = () => {
     if(this._destroyed) return;
     this._destroyed = true;
 
@@ -882,6 +882,17 @@ export default class MEMeshObj extends Materials {
     this.drawElements = () => {};
     this.drawElementsAnim = () => {};
     this.drawShadows = () => {};
+
+    let testPB = app.matrixAmmo.getBodyByName(this.name);
+    if(testPB !== null) {
+      try {
+        app.matrixAmmo.dynamicsWorld.removeRigidBody(testPB);
+        // global fix later
+        console.warn("Physics cleanup done for ", this.name);
+      } catch(e) {
+        console.warn("Physics cleanup error:", e);
+      }
+    }
 
     console.info(`🧹 MEMeshObj destroyed: ${this.name}`);
   }

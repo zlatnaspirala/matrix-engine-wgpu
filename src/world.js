@@ -461,14 +461,6 @@ export default class MatrixEngineWGPU {
       }
     }
 
-    // if(obj.destroy && typeof obj.destroy === "function") {
-    //   try {
-    //     obj.destroy();  // user-defined GPU cleanup
-    //   } catch(e) {
-    //     console.warn("Destroy() cleanup failed:", e);
-    //   }
-    // }
-
     // Remove from render bundle
     this.mainRenderBundle.splice(index, 1);
 

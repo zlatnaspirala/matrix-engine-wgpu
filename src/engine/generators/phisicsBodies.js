@@ -1,3 +1,4 @@
+import {runtimeCacheObjs} from "../../tools/editor/fluxCodexVertex";
 import {downloadMeshes} from "../loader-obj";
 
 // general function for stabilisation 
@@ -34,20 +35,25 @@ export function physicsBodiesGenerator(
   function handler(m) {
     let RAY = {enabled: (raycast == true ? true : false), radius: 1};
     for(var x = 0;x < sum;x++) {
-      setTimeout(() => engine.addMeshObj({
-        material: {type: 'standard'},
-        position: pos,
-        rotation: rot,
-        rotationSpeed: {x: 0, y: 0, z: 0},
-        texturesPaths: [texturePath],
-        name: name + '_' + x,
-        mesh: m.mesh,
-        physics: {
-          enabled: true,
-          geometry: geometry,
-        },
-        raycast: RAY
-      }), x * delay)
+      setTimeout(() => {
+        engine.addMeshObj({
+          material: {type: material},
+          position: pos,
+          rotation: rot,
+          rotationSpeed: {x: 0, y: 0, z: 0},
+          texturesPaths: [texturePath],
+          name: name + '_' + x,
+          mesh: m.mesh,
+          physics: {
+            enabled: true,
+            geometry: geometry,
+          },
+          raycast: RAY
+        });
+        // cache
+        const o = app.getSceneObjectByName(cubeName);
+        runtimeCacheObjs.push(o);
+      }, x * delay)
     }
   }
   if(geometry == "Cube") {
@@ -117,6 +123,9 @@ export function physicsBodiesGeneratorWall(
           });
           // const b = app.matrixAmmo.getBodyByName(cubeName);
           // stabilizeTowerBody(b);
+          // cache
+          const o = app.getSceneObjectByName(cubeName);
+          runtimeCacheObjs.push(o);
         }, index * delay)
         index++;
       }
@@ -158,29 +167,32 @@ export function physicsBodiesGeneratorPyramid(
     for(let y = 0;y < levels;y++) {
       const rowCount = levels - y;
       const xOffset = (rowCount - 1) * spacing * 0.5;
-
       for(let x = 0;x < rowCount;x++) {
         const cubeName = `${name}_${index}`;
-
-        engine.addMeshObj({
-          material: {type: material},
-          position: {
-            x: pos.x + x * spacing - xOffset,
-            y: pos.y + y * spacing,
-            z: pos.z
-          },
-          rotation: rot,
-          rotationSpeed: {x: 0, y: 0, z: 0},
-          texturesPaths: [texturePath],
-          name: cubeName,
-          mesh: m.mesh,
-          physics: {
-            scale: scale,
-            enabled: true,
-            geometry: "Cube"
-          },
-          raycast: RAY
-        });
+        setTimeout(() => {
+          engine.addMeshObj({
+            material: {type: material},
+            position: {
+              x: pos.x + x * spacing - xOffset,
+              y: pos.y + y * spacing,
+              z: pos.z
+            },
+            rotation: rot,
+            rotationSpeed: {x: 0, y: 0, z: 0},
+            texturesPaths: [texturePath],
+            name: cubeName,
+            mesh: m.mesh,
+            physics: {
+              scale: scale,
+              enabled: true,
+              geometry: "Cube"
+            },
+            raycast: RAY
+          });
+          // cache
+          const o = app.getSceneObjectByName(cubeName);
+          runtimeCacheObjs.push(o);
+        }, delay);
         index++;
       }
     }
@@ -248,8 +260,10 @@ export function physicsBodiesGeneratorDeepPyramid(
             // Optional: stabilize tower-style
             const b = app.matrixAmmo.getBodyByName(cubeName);
             stabilizeTowerBody(b);
+            // cache
+            const o = app.getSceneObjectByName(cubeName);
+            runtimeCacheObjs.push(o);
           }, delay * index);
-
           index++;
         }
       }
@@ -279,27 +293,32 @@ export function physicsBodiesGeneratorTower(
     for(let y = 0;y < height;y++) {
       const cubeName = `${name}_${y}`;
 
-      engine.addMeshObj({
-        material: {type: material},
-        position: {
-          x: pos.x,
-          y: pos.y + y * spacing,
-          z: pos.z
-        },
-        rotation: rot,
-        rotationSpeed: {x: 0, y: 0, z: 0},
-        texturesPaths: [texturePath],
-        name: cubeName,
-        mesh: m.mesh,
-        physics: {
-          scale: scale,
-          enabled: true,
-          geometry: "Cube"
-        },
-        raycast: RAY
-      });
-      const b = app.matrixAmmo.getBodyByName(cubeName);
-      stabilizeTowerBody(b);
+      setTimeout(() => {
+        engine.addMeshObj({
+          material: {type: material},
+          position: {
+            x: pos.x,
+            y: pos.y + y * spacing,
+            z: pos.z
+          },
+          rotation: rot,
+          rotationSpeed: {x: 0, y: 0, z: 0},
+          texturesPaths: [texturePath],
+          name: cubeName,
+          mesh: m.mesh,
+          physics: {
+            scale: scale,
+            enabled: true,
+            geometry: "Cube"
+          },
+          raycast: RAY
+        });
+        const b = app.matrixAmmo.getBodyByName(cubeName);
+        stabilizeTowerBody(b);
+        // cache
+        const o = app.getSceneObjectByName(cubeName);
+        runtimeCacheObjs.push(o);
+      }, delay);
     }
   }
 

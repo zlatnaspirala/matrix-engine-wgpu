@@ -38,6 +38,9 @@
 import {METoolTip} from "../../engine/plugin/tooltip/ToolTip";
 import {byId} from "../../engine/utils";
 
+// Engine agnostic
+export let runtimeCacheObjs = [];
+
 export default class FluxCodexVertex {
   constructor(boardId, boardWrapId, logId, methodsManager, projName) {
     this.debugMode = true;
@@ -76,6 +79,14 @@ export default class FluxCodexVertex {
       panning: false,
       panStart: [0, 0],
       zoom: 1
+    };
+
+    this.clearRuntime = () => {
+      for(let x = 0;x < runtimeCacheObjs.length;x++) {
+        console.info("Destroy runtime objects....", runtimeCacheObjs[x]);
+        runtimeCacheObjs[x].destroy();
+      }
+      byId("graph-status").innerHTML = '⚫';
     };
 
     this.setZoom = (z) => {
@@ -3842,12 +3853,12 @@ export default class FluxCodexVertex {
 
   runGraph() {
     byId("app").style.opacity = 0.5;
-    // this.updateValueDisplays();
     this.initEventNodes();
     Object.values(this.nodes).forEach(n => (n._returnCache = undefined));
     Object.values(this.nodes)
       .filter(n => n.category === "event" && n.title === "onLoad")
       .forEach(n => this.triggerNode(n.id));
+    byId("graph-status").innerHTML = '🔴';
   }
 
   compileGraph() {
@@ -3878,7 +3889,7 @@ export default class FluxCodexVertex {
     let ask = confirm("⚠️ This will delete all nodes. Are you sure?");
     if(ask) {
       localStorage.removeItem(this.SAVE_KEY);
-      this.compileGraph();
+      this.compileGraph(); // not just save empty
       // location.reload(true);
     }
   }
