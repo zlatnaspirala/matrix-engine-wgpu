@@ -2625,9 +2625,16 @@ export default class FluxCodexVertex {
     if(!node || visited.has(nodeId)) return undefined;
     visited.add(nodeId);
 
-
     if (node.title === "Function" && pinName === "reference") {
-      console.log('SPECIAL OUTPUT node.fn ', node.fn)
+      if (typeof node.fn === 'undefined') {
+        const selected = this.methodsManager.methodsContainer.find(m => m.name === node.attachedMethod);
+        if (selected) {
+          // console.log('SPECIAL OUTPUT node.fn ', selected)
+          node.fn = this.methodsManager.compileFunction(selected.code);
+        } else {
+          console.warn('Node: Function PinName: reference [reference not found at methodsContainer]')
+        }
+      }
       return node.fn;
     }
 
@@ -2684,7 +2691,7 @@ export default class FluxCodexVertex {
 
     const link = this.links.find(l => l.to.node === nodeId && l.to.pin === pinName);
     if(link) return this.getValue(link.from.node, link.from.pin, visited);
-    
+
     const field = node.fields?.find(f => f.key === pinName);
     if(field) return field.value;
     
@@ -3140,16 +3147,13 @@ export default class FluxCodexVertex {
       pos.onTargetPositionReach = () => {
         this.triggerNode(n);
         this.enqueueOutputs(n, "exec");
-        // alert(" TARGET REACh ");
       };
-      console.log('**************rrrrrrrrrr***************')
       n._listenerAttached = true;
       return;
     }
 
     // functionDinamic execution
     if(n.category === "functions") {
-      console.log('TRIGGER n.category === functions ')
       // bloomPass is created in post time - make always update
       n.accessObject = eval(n.accessObjectLiteral);
       if(n.fn === undefined) {
@@ -3168,7 +3172,7 @@ export default class FluxCodexVertex {
     }
 
     if(n.category === "event" && typeof n.noselfExec === 'undefined') {
-      console.log('>>>>>>>>>>>>>>>>>>>>>>>>>>>>EXEC :  ', n.title)
+      // console.log('EXEC :  ', n.title)
       this.enqueueOutputs(n, "exec");
       return;
     }
@@ -3375,7 +3379,7 @@ export default class FluxCodexVertex {
         }
         const createdField = n.fields.find(f => f.key === "created");
         if(createdField.value == "false" || createdField.value == false) {
-          console.log('!GEN WALL! ONCE!');
+          // console.log('!GEN WALL! ONCE!');
           app.physicsBodiesGeneratorWall(mat, pos, rot, texturePath, name, size, raycast, scale, spacing, delay);
           // createdField.value = true;
         }
@@ -3406,7 +3410,7 @@ export default class FluxCodexVertex {
         }
         const createdField = n.fields.find(f => f.key === "created");
         if(createdField.value == "false" || createdField.value == false) {
-          console.log('!GEN PYRAMID! ONCE!');
+          // console.log('!GEN PYRAMID! ONCE!');
           app.physicsBodiesGeneratorDeepPyramid(mat, pos, rot, texturePath, name, levels, raycast, scale, spacing, delay);
           // createdField.value = true;
         }
@@ -3979,7 +3983,6 @@ export default class FluxCodexVertex {
 
   init() {
     const saved = localStorage.getItem(this.SAVE_KEY);
-    console.log("test loading ", app.graph);
     if(saved || app.graph) {
       try {
         let data;
@@ -4006,14 +4009,11 @@ export default class FluxCodexVertex {
         Object.values(this.nodes).forEach(spec => {
           const domEl = this.createNodeDOM(spec);
           this.board.appendChild(domEl);
-
           if((spec.category === "value" && spec.title !== "GenRandInt") ||
             spec.category === "math" || spec.title === "Print") {
             spec.displayEl = domEl.querySelector(".value-display");
           }
-          // if(spec.category === "action" && spec.title === "Function") {
           this.updateNodeDOM(spec.id);
-          // }
         });
         this.updateLinks();
         this.restoreConnectionsRuntime();

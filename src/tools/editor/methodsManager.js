@@ -12,10 +12,8 @@ export default class MethodsManager {
     this.methodsContainer = [];
     this.createUI();
     this.loadMethods(editorType).then((r) => {
-      console.log('r: ', r);
       this.methodsContainer = r;
       this.refreshSelect();
-      console.log('r: ', r);
       this.select.click();
     });
     document.addEventListener('show-method-editor', () => {

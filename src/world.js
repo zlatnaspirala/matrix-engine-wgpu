@@ -5,7 +5,7 @@ import {ArcballCamera, RPGCamera, WASDCamera} from "./engine/engine.js";
 import {createInputHandler} from "./engine/engine.js";
 import MEMeshObj from "./engine/mesh-obj.js";
 import MatrixAmmo from "./physics/matrix-ammo.js";
-import {LOG_FUNNY_SMALL, LOG_WARN, genName, mb, scriptManager, urlQuery} from "./engine/utils.js";
+import {LOG_FUNNY_BIG_ARCADE, LOG_FUNNY_ARCADE, LOG_FUNNY_BIG_NEON, LOG_FUNNY_SMALL, LOG_WARN, genName, mb, scriptManager, urlQuery} from "./engine/utils.js";
 import {MultiLang} from "./multilang/lang.js";
 import {MatrixSounds} from "./sounds/sounds.js";
 import {downloadMeshes, play} from "./engine/loader-obj.js";
@@ -89,6 +89,8 @@ export default class MatrixEngineWGPU {
       this.physicsBodiesGeneratorDeepPyramid = physicsBodiesGeneratorDeepPyramid.bind(this);
     }
 
+    this.logLoopError = false;
+
     if(typeof options.dontUsePhysics == 'undefined') {
       this.matrixAmmo = new MatrixAmmo();
     }
@@ -102,7 +104,6 @@ export default class MatrixEngineWGPU {
       } else {
         this.editor = new Editor(this, "infly");
       }
-
     }
 
     window.addEventListener('keydown', e => {
@@ -207,7 +208,18 @@ export default class MatrixEngineWGPU {
     this.MAX_SPOTLIGHTS = 20;
     this.inputHandler = createInputHandler(window, canvas);
     this.createGlobalStuff();
-    this.run(callback)
+    this.run(callback);
+
+    console.log("%c🛸 Matrix-Engine-Wgpu 🛸", LOG_FUNNY_BIG_NEON);
+    console.log("%c👽 Hello developer ", LOG_FUNNY_BIG_NEON);
+    console.log(
+      "%cMatrix Engine WGPU is awake.\n" +
+      "Creative power loaded.\n" +
+      "No tracking. No hype. Just code. ⚙️🔥", LOG_FUNNY_BIG_ARCADE);
+    console.log(
+      "%cSource code: 👉 GitHub:\nhttps://github.com/zlatnaspirala/matrix-engine-wgpu",
+      LOG_FUNNY_ARCADE);
+
   };
 
   createGlobalStuff() {
@@ -547,7 +559,7 @@ export default class MatrixEngineWGPU {
     let newLight = new SpotLight(camera, this.inputHandler, this.device, this.lightContainer.length);
     this.lightContainer.push(newLight);
     this.createTexArrayForShadows();
-    console.log(`%cAdd light: ${newLight}`, LOG_FUNNY_SMALL);
+    console.log(`%cAdd light: ${newLight}`, LOG_FUNNY_ARCADE);
   }
 
   addMeshObj = (o, clearColor = this.options.clearColor) => {
@@ -869,7 +881,7 @@ export default class MatrixEngineWGPU {
       this.device.queue.submit([commandEncoder.finish()]);
       requestAnimationFrame(this.frame);
     } catch(err) {
-      console.log('%cLoop(err):' + err + " info : " + err.stack, LOG_WARN)
+      if(this.logLoopError) console.log('%cLoop(err):' + err + " info : " + err.stack, LOG_WARN)
       requestAnimationFrame(this.frame);
     }
   }

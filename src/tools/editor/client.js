@@ -1,4 +1,4 @@
-import {mb} from "../../engine/utils";
+import {LOG_FUNNY_ARCADE, LOG_FUNNY_BIG_TERMINAL, mb} from "../../engine/utils";
 
 export class MEEditorClient {
 
@@ -9,7 +9,7 @@ export class MEEditorClient {
 
     this.ws.onopen = () => {
       if(typeOfRun == 'created from editor') {
-        console.info('created from editor - watch <signal>');
+        console.log("%cCreated from editor. Watch <signal>", LOG_FUNNY_ARCADE);
         let o = {
           action: "watch",
           name: name
@@ -23,13 +23,13 @@ export class MEEditorClient {
         o = JSON.stringify(o);
         this.ws.send(o);
       }
-      console.log("%c[WS OPEN] [Attach events]", "color: lime; font-weight: bold");
+      console.log("%c[EDITOR][WS OPEN]", LOG_FUNNY_ARCADE);
     };
 
     this.ws.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
-        console.log("%c[WS MESSAGE]", "color: yellow", data);
+        console.log("%c[EDITOR][WS MESSAGE]", LOG_FUNNY_ARCADE, data);
         if(data && data.ok == true && data.payload && data.payload.redirect == true) {
           setTimeout(() => location.assign(data.name + ".html"), 2000);
         } else if(data.payload && data.payload == "stop-watch done") {
@@ -64,7 +64,6 @@ export class MEEditorClient {
           // setTimeout(() => location.reload(true) , 1500);
           setTimeout(() => document.dispatchEvent(new CustomEvent('updateSceneContainer', {detail: {}})), 1000)
         } else {
-          console.log("data", data)
           if(data.methodSaves && data.ok == true) {
             mb.show("Graph saved ✅");
           } else {
