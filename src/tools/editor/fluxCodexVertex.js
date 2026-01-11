@@ -2584,13 +2584,18 @@ export default class FluxCodexVertex {
       n._listenerAttached = true;
       return;
     } else if(n.title == "On Draw") {
-      console.log('ON DRAW INIT ONLE !!!!!', n.fields.find(f => f.key === "skip")?.value)
+      // console.log('ON DRAW INIT ONLE !!!!!', n.fields.find(f => f.key === "skip")?.value);
       if(n._listenerAttached) return;
-      app.onDraw = function(delta) {
-        n._returnCache = delta;
-        this.enqueueOutputs(n, "exec");
+      let skip = n.fields.find(f => f.key === "skip")?.value;
+      if(typeof n._frameCounter === "undefined") {n._frameCounter = 0;}
+      const graph = this;
+      app.graphUpdate = function(delta) {
+        n._frameCounter++;
+        if(skip > 0 && n._frameCounter < skip) return;
+        n._frameCounter = 0;
+        graph._returnCache = delta;
+        graph.enqueueOutputs(n, "exec");
       };
-
       n._listenerAttached = true;
       return;
     }
@@ -2625,10 +2630,10 @@ export default class FluxCodexVertex {
     if(!node || visited.has(nodeId)) return undefined;
     visited.add(nodeId);
 
-    if (node.title === "Function" && pinName === "reference") {
-      if (typeof node.fn === 'undefined') {
+    if(node.title === "Function" && pinName === "reference") {
+      if(typeof node.fn === 'undefined') {
         const selected = this.methodsManager.methodsContainer.find(m => m.name === node.attachedMethod);
-        if (selected) {
+        if(selected) {
           // console.log('SPECIAL OUTPUT node.fn ', selected)
           node.fn = this.methodsManager.compileFunction(selected.code);
         } else {
@@ -2694,7 +2699,7 @@ export default class FluxCodexVertex {
 
     const field = node.fields?.find(f => f.key === pinName);
     if(field) return field.value;
-    
+
 
     const inputPin = node.inputs?.find(p => p.name === pinName);
     if(inputPin) return inputPin.default ?? 0;
@@ -3473,9 +3478,7 @@ export default class FluxCodexVertex {
           this.enqueueOutputs(n, "execOut");
           return;
         }
-
         console.warn("[canvaInlineProgram] arg:", canvaInlineProgram);
-
         if(typeof canvaInlineProgram != 'function') {
           console.warn("[canvaInlineProgram] arg is not object!:", canvaInlineProgram);
           if(typeof canvaInlineProgram == 'string') {
@@ -3494,9 +3497,6 @@ export default class FluxCodexVertex {
         this.enqueueOutputs(n, "execOut");
         return;
       }
-
-
-
 
 
       this.enqueueOutputs(n, "execOut");
@@ -3878,7 +3878,8 @@ export default class FluxCodexVertex {
     let ask = confirm("⚠️ This will delete all nodes. Are you sure?");
     if(ask) {
       localStorage.removeItem(this.SAVE_KEY);
-      location.reload(true);
+      this.compileGraph();
+      // location.reload(true);
     }
   }
 

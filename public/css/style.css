@@ -337,7 +337,7 @@ p {
   background-image: linear-gradient(to bottom, #c2c1b5, #181818);
   -webkit-border-radius: 28;
   -moz-border-radius: 28;
-  border-radius: 28px;
+  border-radius: 2px;
   text-shadow: 0px 0px 14px #ffd52e;
   -webkit-box-shadow: 0px 1px 26px #666666;
   -moz-box-shadow: 0px 1px 26px #666666;
@@ -1260,7 +1260,7 @@ input[type=number]:hover::-webkit-outer-spin-button {
   top: 38px;
   left: 0;
   min-width: 160px;
-  background: #2f2f2f;
+  /* background: #2f2f2f; */
   border: 1px solid #444;
   border-radius: 8px;
   overflow: hidden;
@@ -1278,7 +1278,7 @@ input[type=number]:hover::-webkit-outer-spin-button {
 }
 
 .drop-item:hover {
-  background: #444;
+  background: #067bd43e;
 }
 
 
@@ -1426,7 +1426,7 @@ input[type=number]:hover::-webkit-outer-spin-button {
   display: flex;
   flex-direction: column;
   z-index: 10;
-  height: 74vh;
+  height: 81vh;
   overflow: scroll;
   overflow-x: hidden;
   -webkit-text-stroke-width: 0.2px;

@@ -242,8 +242,6 @@ export default class MatrixEngineWGPU {
       "%cSource code: 👉 GitHub:\nhttps://github.com/zlatnaspirala/matrix-engine-wgpu",
       LOG_FUNNY_ARCADE);
 
-    // console.log("%c🛸 Matrix-Engine-Wgpu 🛸", LOG_FUNNY_BIG_NEON);
-
   };
 
   createGlobalStuff() {

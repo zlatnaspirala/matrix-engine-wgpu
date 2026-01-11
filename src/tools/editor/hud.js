@@ -1,3 +1,4 @@
+import {METoolTip} from "../../engine/plugin/tooltip/ToolTip.js";
 import {byId, FullscreenManager, isMobile, jsonHeaders, LOG_FUNNY_ARCADE, mb} from "../../engine/utils.js";
 /**
  * @Author NIkola Lukic
@@ -10,7 +11,7 @@ export default class EditorHud {
     this.core = core;
     this.sceneContainer = null;
     this.FS = new FullscreenManager();
-
+    this.toolTip = new METoolTip();
     if(a == 'infly') {
       this.createTopMenuInFly();
     } else if(a == "created from editor") {
@@ -169,8 +170,8 @@ export default class EditorHud {
       <div class="dropdown">
       <div id="start-watch" class="drop-item">🛠️ Watch</div>
       <div id="stop-watch" class="drop-item">🛠️ Stop Watch</div>
-      <div class="drop-item">🛠️ Build</div>
       <div id="start-refresh" class="drop-item">🛠️ Refresh</div>
+      <div id="start-build" class="drop-item">🛠️ Build for production</div>
       </div>
     </div>
 
@@ -252,6 +253,10 @@ export default class EditorHud {
         <div id="showAboutEditor" class="drop-item">matrix-engine-wgpu</div>
       </div>
     </div>
+
+    <div class="btn2">
+      <button class="btn" id="runMainGraphDOM">RUN [F6]</button><button class="btn" id="stopMainGraphDOM">STOP</button>
+    </div>
   `;
 
     document.body.appendChild(this.editorMenu);
@@ -272,6 +277,15 @@ export default class EditorHud {
       });
     });
 
+    // run top many
+    byId('runMainGraphDOM').addEventListener('click', () => {
+      // global for now.
+      app.editor.fluxCodexVertex.compileGraph();
+    });
+
+    this.toolTip.attachTooltip(byId('runMainGraphDOM'), "Run main graph, sometimes engine need refresh.");
+    this.toolTip.attachTooltip(byId('stopMainGraphDOM'), "Stop main graph, clear dynamic created objects.");
+
     // Close on outside tap
     document.addEventListener("click", e => {
       if(!this.editorMenu.contains(e.target)) {
@@ -283,7 +297,9 @@ export default class EditorHud {
 
     byId('fullScreenBtn').addEventListener('click', () => {
       this.FS.request()
-    })
+    });
+
+    this.toolTip.attachTooltip(byId('fullScreenBtn'), "Just editor gui part for fullscreen - not fullscreen for real program.");
 
     byId('hideEditorBtn').addEventListener('click', () => {
       this.editorMenu.style.display = 'none';
@@ -291,28 +307,32 @@ export default class EditorHud {
       this.sceneProperty.style.display = 'none';
       this.sceneContainer.style.display = 'none';
       byId('app').style.display = 'none';
-    })
+    });
 
     byId('bg-transparent').addEventListener('click', () => {
       byId('boardWrap').style.backgroundImage = 'none';
-    })
+    });
+    this.toolTip.attachTooltip(byId('bg-transparent'), "Make visible both (mix) graphs and render.");
 
     byId('bg-tradicional').addEventListener('click', () => {
       // byId('boardWrap').style.backgroundImage = 'url("res/icons/editor/chatgpt-gen-bg.png")';
       byId('boardWrap').style.backgroundImage = '';
-    })
+    });
+    this.toolTip.attachTooltip(byId('bg-tradicional'), "Make visible graphs layout only.");
 
     if(byId('stop-watch')) byId('stop-watch').addEventListener('click', () => {
       document.dispatchEvent(new CustomEvent('stop-watch', {
         detail: {}
       }));
-    })
+    });
+    this.toolTip.attachTooltip(byId('stop-watch'), "Stops JavaScript compilers. Use this when working with Git, for example, to avoid unnecessary builds.");
 
     if(byId('start-watch')) byId('start-watch').addEventListener('click', () => {
       document.dispatchEvent(new CustomEvent('start-watch', {
         detail: {}
       }));
-    })
+    });
+    this.toolTip.attachTooltip(byId('start-watch'), "Start watch builds for JavaScript compilers.No need at start up - watcher already started on backend of editor.");
 
     if(byId('cnpBtn')) byId('cnpBtn').addEventListener('click', () => {
 
@@ -339,10 +359,12 @@ export default class EditorHud {
         }
       }));
     });
+    if(byId('cnpBtn')) this.toolTip.attachTooltip(byId('cnpBtn'), "Create new project. You must input project name.");
 
     byId('start-refresh').onclick = () => {
       location.reload(true);
-    }
+    };
+    if (byId('start-refresh')) this.toolTip.attachTooltip(byId('start-refresh'), "Simple refresh page.");
 
     // OBJECT LEVEL
     if(byId('addCube')) byId('addCube').addEventListener('click', () => {
@@ -355,6 +377,7 @@ export default class EditorHud {
         detail: o
       }));
     });
+    if(byId('addCube')) this.toolTip.attachTooltip(byId('addCube'), "Create Cube scene object with no physics.If you wanna objects who will be in kinematic also in physics regime (switching) then you need to use CubePhysics.");
 
     if(byId('addSphere')) byId('addSphere').addEventListener('click', () => {
       let objName = prompt("📦 Enter uniq name: ");
@@ -487,7 +510,14 @@ export default class EditorHud {
           name: ''
         }
       }));
-    })
+    });
+
+    this.toolTip.attachTooltip(byId('folderTitle'), `This represent real folders files present intro res folder (what ever is there).\n
+    From assets box you can add glb or obj files direct with simple click. Everyting will be saved automatic.\n
+    Support for mp3 adding by click also. No support for mp4 - mp4 can be added from 'Set Textures' node.
+
+    `);
+    // folderTitle
 
     document.addEventListener('la', (e) => {
       console.log(`%c[Editor]Root Resource Folder: ${e.detail.rootFolder}`, LOG_FUNNY_ARCADE);

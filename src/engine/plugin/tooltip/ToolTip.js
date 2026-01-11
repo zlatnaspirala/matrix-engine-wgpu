@@ -14,24 +14,21 @@ export class METoolTip {
     tooltip.style.opacity = '0';
     tooltip.style.transition = 'opacity 0.2s ease';
     tooltip.style.zIndex = '9999';
+    tooltip.style.whiteSpace = 'pre-line';
     document.body.appendChild(tooltip);
+    this.tooltip = tooltip;
   }
-
   attachTooltip(element, text) {
     element.addEventListener('mouseenter', (e) => {
-      tooltip.textContent = text;
-      tooltip.style.opacity = '1';
+      this.tooltip.textContent = text;
+      this.tooltip.style.opacity = '1';
     });
-
     element.addEventListener('mousemove', (e) => {
-      tooltip.style.left = e.clientX + 12 + 'px';
-      tooltip.style.top = e.clientY + 12 + 'px';
+      this.tooltip.style.left = e.clientX + 12 + 'px';
+      this.tooltip.style.top = e.clientY + 12 + 'px';
     });
-
     element.addEventListener('mouseleave', () => {
-      tooltip.style.opacity = '0';
+      this.tooltip.style.opacity = '0';
     });
-
   }
-
 }
