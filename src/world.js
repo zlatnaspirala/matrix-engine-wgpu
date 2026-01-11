@@ -5,7 +5,7 @@ import {ArcballCamera, RPGCamera, WASDCamera} from "./engine/engine.js";
 import {createInputHandler} from "./engine/engine.js";
 import MEMeshObj from "./engine/mesh-obj.js";
 import MatrixAmmo from "./physics/matrix-ammo.js";
-import {LOG_FUNNY_BIG_ARCADE, LOG_FUNNY_ARCADE, LOG_FUNNY_BIG_NEON, LOG_FUNNY_SMALL, LOG_WARN, genName, mb, scriptManager, urlQuery} from "./engine/utils.js";
+import {LOG_FUNNY_BIG_ARCADE, LOG_FUNNY_ARCADE, LOG_FUNNY_BIG_NEON, LOG_FUNNY_SMALL, LOG_WARN, genName, mb, scriptManager, urlQuery, LOGO_FRAMES} from "./engine/utils.js";
 import {MultiLang} from "./multilang/lang.js";
 import {MatrixSounds} from "./sounds/sounds.js";
 import {downloadMeshes, play} from "./engine/loader-obj.js";
@@ -210,7 +210,28 @@ export default class MatrixEngineWGPU {
     this.createGlobalStuff();
     this.run(callback);
 
-    console.log("%c🛸 Matrix-Engine-Wgpu 🛸", LOG_FUNNY_BIG_NEON);
+    // let ff = 0;
+    // const logoAnim = setInterval(() => {
+    //   console.clear();
+    //   console.log(
+    //     "%c" + LOGO_FRAMES[ff],
+    //     LOG_FUNNY_BIG_NEON
+    //   );
+    //   console.log(
+    //     "%cMatrix Engine WGPU • WebGPU Power Unleashed\n" +
+    //     "https://github.com/zlatnaspirala/matrix-engine-wgpu",
+    //     LOG_FUNNY_ARCADE
+    //   );
+    //   ff = (ff + 1) % LOGO_FRAMES.length;
+    // }, 190);
+
+    // stop after few seconds (optional)
+    // setTimeout(() => {
+    //   // clearInterval(logoAnim);
+    //   console.clear();
+    // }, 3200);
+
+    console.log("%c 🧬 Matrix-Engine-Wgpu 🧬 ", LOG_FUNNY_BIG_NEON);
     console.log("%c👽 Hello developer ", LOG_FUNNY_BIG_NEON);
     console.log(
       "%cMatrix Engine WGPU is awake.\n" +
@@ -219,6 +240,8 @@ export default class MatrixEngineWGPU {
     console.log(
       "%cSource code: 👉 GitHub:\nhttps://github.com/zlatnaspirala/matrix-engine-wgpu",
       LOG_FUNNY_ARCADE);
+
+    // console.log("%c🛸 Matrix-Engine-Wgpu 🛸", LOG_FUNNY_BIG_NEON);
 
   };
 
@@ -808,7 +831,7 @@ export default class MatrixEngineWGPU {
         if(!mesh.sceneBindGroupForRender || (mesh.FINISH_VIDIO_INIT == false && mesh.isVideo == true)) {
           for(const m of this.mainRenderBundle) {
             if(m.isVideo == true) {
-              console.log('✅shadowVideoView', this.shadowVideoView)
+              console.log("%c✅shadowVideoView ${this.shadowVideoView}", LOG_FUNNY_ARCADE);
               m.shadowDepthTextureView = this.shadowVideoView;
               m.FINISH_VIDIO_INIT = true;
               m.setupPipeline();

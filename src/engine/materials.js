@@ -3,6 +3,7 @@ import {fragmentWGSLMetal} from "../shaders/fragment.wgsl.metal";
 import {fragmentWGSLNormalMap} from "../shaders/fragment.wgsl.normalmap";
 import {fragmentWGSLPong} from "../shaders/fragment.wgsl.pong";
 import {fragmentWGSLPower} from "../shaders/fragment.wgsl.power";
+import {LOG_FUNNY_ARCADE} from "./utils";
 
 /**
  * @description
@@ -362,7 +363,7 @@ export default class Materials {
     }
 
     if(!textureResource || !this.sceneUniformBuffer || !this.shadowDepthTextureView) {
-      if(!textureResource) console.warn("❗Missing res texture: ", textureResource);
+      if(!textureResource) console.log("%c❗Missing res texture ", LOG_FUNNY_ARCADE);
       if(!this.sceneUniformBuffer) console.warn("❗Missing res: this.sceneUniformBuffer: ", this.sceneUniformBuffer);
       // if(!this.shadowDepthTextureView) // console.warn("❗Missing res: this.shadowDepthTextureView: ", this.shadowDepthTextureView);
       if(typeof textureResource === 'undefined') {

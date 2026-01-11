@@ -5880,7 +5880,7 @@ var Materials = class {
       textureResource = textureView;
     }
     if (!textureResource || !this.sceneUniformBuffer || !this.shadowDepthTextureView) {
-      if (!textureResource) console.warn("\u2757Missing res texture: ", textureResource);
+      if (!textureResource) console.log("%c\u2757Missing res texture ", LOG_FUNNY_ARCADE);
       if (!this.sceneUniformBuffer) console.warn("\u2757Missing res: this.sceneUniformBuffer: ", this.sceneUniformBuffer);
       if (typeof textureResource === "undefined") {
         this.updateVideoTexture();
@@ -22090,7 +22090,7 @@ var MatrixEngineWGPU = class {
     this.inputHandler = createInputHandler(window, canvas);
     this.createGlobalStuff();
     this.run(callback);
-    console.log("%c\u{1F6F8} Matrix-Engine-Wgpu \u{1F6F8}", LOG_FUNNY_BIG_NEON);
+    console.log("%c \u{1F9EC} Matrix-Engine-Wgpu \u{1F9EC} ", LOG_FUNNY_BIG_NEON);
     console.log("%c\u{1F47D} Hello developer ", LOG_FUNNY_BIG_NEON);
     console.log(
       "%cMatrix Engine WGPU is awake.\nCreative power loaded.\nNo tracking. No hype. Just code. \u2699\uFE0F\u{1F525}",
@@ -22691,7 +22691,7 @@ var MatrixEngineWGPU = class {
         if (!mesh.sceneBindGroupForRender || mesh.FINISH_VIDIO_INIT == false && mesh.isVideo == true) {
           for (const m of this.mainRenderBundle) {
             if (m.isVideo == true) {
-              console.log("\u2705shadowVideoView", this.shadowVideoView);
+              console.log("%c\u2705shadowVideoView ${this.shadowVideoView}", LOG_FUNNY_ARCADE);
               m.shadowDepthTextureView = this.shadowVideoView;
               m.FINISH_VIDIO_INIT = true;
               m.setupPipeline();

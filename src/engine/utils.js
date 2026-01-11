@@ -678,6 +678,24 @@ export const LOG_FUNNY_BIG_NEON =
   "text-shadow: 0 0 5px #01d6d6ff, 0 0 10px #00ffff, 4px 4px 0 #ff00ff;" +
   "background:black; padding:14px 18px;";
 
+export const LOGO_FRAMES = [
+` M                 `,
+` MA                 `,
+` MAT                `,
+` MATR               `,
+` MATRI              `,
+` MATRIX             `,
+` MATRIX-E           `,
+` MATRIX-ENG         `,
+` MATRIX-ENGI        `,
+` MATRIX-ENGIN       `,
+` MATRIX-ENGINE      `,
+` MATRIX-ENGINE-     `,
+` MATRIX-ENGINE-W    `,
+` MATRIX-ENGINE-WG   `,
+` MATRIX-ENGINE-WGPU `
+];
+
 export function genName(length) {
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
   let result = "";
