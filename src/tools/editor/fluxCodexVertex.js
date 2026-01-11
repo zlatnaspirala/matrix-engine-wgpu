@@ -36,7 +36,7 @@
  * - MPL applies ONLY to this file
  */
 import {METoolTip} from "../../engine/plugin/tooltip/ToolTip";
-import {byId} from "../../engine/utils";
+import {byId, LOG_FUNNY_ARCADE, mb} from "../../engine/utils";
 
 // Engine agnostic
 export let runtimeCacheObjs = [];
@@ -82,9 +82,16 @@ export default class FluxCodexVertex {
     };
 
     this.clearRuntime = () => {
+      app.graphUpdate = () => {};
+      // stop sepcial onDraw node
+      console.info("Destroy runtime objects....", Object.values(this.nodes).filter((n) => n.title == "On Draw"));
+      let allOnDraws = Object.values(this.nodes).filter((n) => n.title == "On Draw");
+      for(var x = 0;x < allOnDraws.length;x++) {
+        allOnDraws[x]._listenerAttached = false;
+      }
       for(let x = 0;x < runtimeCacheObjs.length;x++) {
-        console.info("Destroy runtime objects....", runtimeCacheObjs[x]);
-        runtimeCacheObjs[x].destroy();
+        // runtimeCacheObjs[x].destroy(); BUGGY - no sync with render loop logic
+        app.removeSceneObjectByName(runtimeCacheObjs[x].name);
       }
       byId("graph-status").innerHTML = '⚫';
     };
@@ -3485,13 +3492,13 @@ export default class FluxCodexVertex {
         let canvaInlineProgram = this.getValue(nodeId, "canvaInlineProgram");
 
         if(!objectName) {
-          console.warn("[objectName] Missing input fields...");
+          console.log(`%c Node [Set CanvasInline] probably objectname is missing...`, LOG_FUNNY_ARCADE);
           this.enqueueOutputs(n, "execOut");
           return;
         }
         console.warn("[canvaInlineProgram] arg:", canvaInlineProgram);
         if(typeof canvaInlineProgram != 'function') {
-          console.warn("[canvaInlineProgram] arg is not object!:", canvaInlineProgram);
+          // console.warn("[canvaInlineProgram] arg is not object!:", canvaInlineProgram);
           if(typeof canvaInlineProgram == 'string') {
             canvaInlineProgram = eval("canvaInlineProgram = " + canvaInlineProgram);
           }
@@ -3500,6 +3507,11 @@ export default class FluxCodexVertex {
         }
 
         let o = app.getSceneObjectByName(objectName);
+        if (typeof o === 'undefined') {
+          console.log(`%c Node [Set CanvasInline] probably objectname is wrong...`, LOG_FUNNY_ARCADE);
+          mb.show("FluxCodexVertex Exec order is breaked on [Set CanvasInline] node id:", n.id);
+          return;
+        }
         o.loadVideoTexture({
           type: "canvas2d-inline",
           canvaInlineProgram: canvaInlineProgram
@@ -3852,6 +3864,13 @@ export default class FluxCodexVertex {
   }
 
   runGraph() {
+    console.log('this.nodes', Object.values(this.nodes));
+    if(byId("graph-status").innerHTML == '🔴' || Object.values(this.nodes).length == 0) {
+      // Just dummy thoughts — this is wrong.
+      // Every data in DOMs is good to use like status flas or any others calls.
+      if(mb) mb.show('FluxCodexVertex not ready yet...');
+      return;
+    }
     byId("app").style.opacity = 0.5;
     this.initEventNodes();
     Object.values(this.nodes).forEach(n => (n._returnCache = undefined));

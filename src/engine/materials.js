@@ -293,7 +293,6 @@ export default class Materials {
       this.video.playsInline = true;
       this.video.style.display = 'none';
       document.body.append(this.video);
-      this.isVideo = true;
       const stream = canvas.captureStream?.() || canvas.mozCaptureStream?.();
       if(!stream) {
         console.error('❌ Cannot capture stream from inline canvas');
@@ -301,13 +300,15 @@ export default class Materials {
       }
       this.video.srcObject = stream;
       await this.video.play();
+      this.isVideo = true;
     }
     this.sampler = this.device.createSampler({
       magFilter: 'linear',
       minFilter: 'linear',
     });
     // ✅ Now - maybe noT
-    this.createLayoutForRender();
+    // this.createLayoutForRender();
+    // this.createBindGroupForRender();
   }
 
   updateVideoTexture() {
