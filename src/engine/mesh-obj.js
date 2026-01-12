@@ -35,6 +35,11 @@ export default class MEMeshObj extends Materials {
     }
     // console.log('Material class arg:', o.material)
     this.material = o.material;
+    addEventListener('update-pipeine', () => {
+      this.setupPipeline();
+      // alert('setup pipeline');
+    })
+
 
     // Mesh stuff - for single mesh or t-posed (fiktive-first in loading order)
     this.mesh = o.mesh;
@@ -831,7 +836,7 @@ export default class MEMeshObj extends Materials {
     shadowPass.drawIndexed(this.indexCount);
   }
 
-  destroy() {
+  destroy = () => {
     if(this._destroyed) return;
     this._destroyed = true;
 
@@ -882,6 +887,17 @@ export default class MEMeshObj extends Materials {
     this.drawElements = () => {};
     this.drawElementsAnim = () => {};
     this.drawShadows = () => {};
+
+    let testPB = app.matrixAmmo.getBodyByName(this.name);
+    if(testPB !== null) {
+      try {
+        app.matrixAmmo.dynamicsWorld.removeRigidBody(testPB);
+        // global fix later
+        console.warn("Physics cleanup done for ", this.name);
+      } catch(e) {
+        console.warn("Physics cleanup error:", e);
+      }
+    }
 
     console.info(`🧹 MEMeshObj destroyed: ${this.name}`);
   }

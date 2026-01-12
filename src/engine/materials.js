@@ -124,6 +124,34 @@ export default class Materials {
     }
   }
 
+  createDummyTexture(device, size = 256) {
+    const data = new Uint8Array(size * size * 4);
+
+    for(let i = 0;i < data.length;i += 4) {
+      data[i + 0] = 0;
+      data[i + 1] = 255;
+      data[i + 2] = 255;
+      data[i + 3] = 255;
+    }
+
+    const texture = device.createTexture({
+      size: [size, size],
+      format: "rgba8unorm",
+      usage:
+        GPUTextureUsage.TEXTURE_BINDING |
+        GPUTextureUsage.COPY_DST,
+    });
+
+    device.queue.writeTexture(
+      {texture},
+      data,
+      {bytesPerRow: size * 4},
+      {width: size, height: size}
+    );
+
+    return texture;
+  }
+
   /**
  * Change ONLY base color texture (binding = 3)
  * Does NOT rebuild pipeline or layout
@@ -265,7 +293,7 @@ export default class Materials {
       this.video = document.createElement('video');
       this.video.autoplay = true;
       this.video.muted = true;
-      this.video.playsInline = true;
+      this.video.crossOrigin = 'anonymous';
       this.video.style.display = 'none';
       document.body.append(this.video);
       const stream = arg.el.captureStream?.() || arg.el.mozCaptureStream?.();
@@ -274,33 +302,52 @@ export default class Materials {
       await this.video.play();
       this.isVideo = true;
     } else if(arg.type === 'canvas2d-inline') {
+      // console.log('what is arg', arg);
       // Miniature inline-drawn canvas created dynamically
       const canvas = document.createElement('canvas');
       canvas.width = arg.width || 256;
       canvas.height = arg.height || 256;
+      canvas.style.position = 'absolute';
+      canvas.style.left = '-1000px';
+      canvas.style.top = '0';
+      // canvas.style.zIndex = '10000';
+      document.body.appendChild(canvas);
       const ctx = canvas.getContext('2d');
       if(typeof arg.canvaInlineProgram === 'function') {
-        // Start drawing loop
         const drawLoop = () => {
-          arg.canvaInlineProgram(ctx, canvas);
+          ctx.save();
+          ctx.translate(canvas.width, 0);
+          ctx.scale(-1, 1);
+          arg.canvaInlineProgram(ctx, canvas, arg.specialCanvas2dArg);
+          ctx.restore();
           requestAnimationFrame(drawLoop);
         };
         drawLoop();
+      } else {
+        ctx.fillStyle = '#0ce325ff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
       }
+
       this.video = document.createElement('video');
+      this.video.style.position = 'absolute';
+      // this.video.style.zIndex = '1';
+      this.video.style.left = '0px';
+      this.video.style.top = '0';
       this.video.autoplay = true;
       this.video.muted = true;
       this.video.playsInline = true;
-      this.video.style.display = 'none';
+      this.video.srcObject = canvas.captureStream(60);
       document.body.append(this.video);
-      this.isVideo = true;
-      const stream = canvas.captureStream?.() || canvas.mozCaptureStream?.();
-      if(!stream) {
-        console.error('❌ Cannot capture stream from inline canvas');
-        return;
-      }
-      this.video.srcObject = stream;
       await this.video.play();
+      await new Promise(resolve => {
+        const check = () => {
+          if(this.video.readyState >= 2) resolve();
+          else requestAnimationFrame(check);
+        };
+        check();
+      });
+      // console.log('Canvas video stream READY');
+      this.isVideo = true;
     }
     this.sampler = this.device.createSampler({
       magFilter: 'linear',
@@ -308,10 +355,15 @@ export default class Materials {
     });
     // ✅ Now - maybe noT
     this.createLayoutForRender();
+    this.createBindGroupForRender();
+    // dispatchEvent(new CustomEvent('update-pipeine', {detail: {}}))
   }
 
   updateVideoTexture() {
-    if(!this.video || this.video.readyState < 2) return;
+    if(!this.video || this.video.readyState < 2) {
+      console.info('this.video.readyState', this.video.readyState)
+      return;
+    }
     if(!this.externalTexture) {
       // create it once
       this.externalTexture = this.device.importExternalTexture({source: this.video});

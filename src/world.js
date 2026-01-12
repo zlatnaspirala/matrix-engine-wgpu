@@ -242,8 +242,6 @@ export default class MatrixEngineWGPU {
       "%cSource code: 👉 GitHub:\nhttps://github.com/zlatnaspirala/matrix-engine-wgpu",
       LOG_FUNNY_ARCADE);
 
-    // console.log("%c🛸 Matrix-Engine-Wgpu 🛸", LOG_FUNNY_BIG_NEON);
-
   };
 
   createGlobalStuff() {
@@ -462,14 +460,6 @@ export default class MatrixEngineWGPU {
         console.warn("Physics cleanup error:", e);
       }
     }
-
-    // if(obj.destroy && typeof obj.destroy === "function") {
-    //   try {
-    //     obj.destroy();  // user-defined GPU cleanup
-    //   } catch(e) {
-    //     console.warn("Destroy() cleanup failed:", e);
-    //   }
-    // }
 
     // Remove from render bundle
     this.mainRenderBundle.splice(index, 1);
@@ -714,7 +704,6 @@ export default class MatrixEngineWGPU {
     console.warn('%c[MatrixEngineWGPU] Destroy complete ✔', 'color: lightgreen');
   };
 
-
   updateLights() {
     const floatsPerLight = 36; // not 20 anymore
     const data = new Float32Array(this.MAX_SPOTLIGHTS * floatsPerLight);
@@ -836,6 +825,7 @@ export default class MatrixEngineWGPU {
               m.shadowDepthTextureView = this.shadowVideoView;
               m.FINISH_VIDIO_INIT = true;
               m.setupPipeline();
+              pass.setPipeline(mesh.pipeline); // new
             } else {
               m.shadowDepthTextureView = this.shadowArrayView;
               m.setupPipeline();

@@ -142,7 +142,7 @@ export class MEEditorClient {
     });
 
     document.addEventListener('file-detail', (e) => {
-      console.info('file-detail <signal>');
+      console.info('%c[file-detail <signal>]', LOG_FUNNY_ARCADE);
       let o = {
         action: "file-detail",
         name: e.detail.name,
@@ -153,8 +153,7 @@ export class MEEditorClient {
     });
 
     document.addEventListener('web.editor.addCube', (e) => {
-      console.log("[web.editor.addCube]: ", e.detail);
-      console.info('addCube <signal>');
+      console.info('%c[web.editor.addCube]', LOG_FUNNY_ARCADE);
       let o = {
         action: "addCube",
         projectName: location.href.split('/public/')[1].split(".")[0],
@@ -165,8 +164,7 @@ export class MEEditorClient {
     });
 
     document.addEventListener('web.editor.addSphere', (e) => {
-      console.log("[web.editor.addSphere]: ", e.detail);
-      console.info('addSphere <signal>');
+      console.info('%c[web.editor.addSphere]', LOG_FUNNY_ARCADE);
       let o = {
         action: "addSphere",
         projectName: location.href.split('/public/')[1].split(".")[0],
@@ -177,7 +175,7 @@ export class MEEditorClient {
     });
 
     document.addEventListener('save-methods', (e) => {
-      console.info('save script <signal>');
+      console.info('%cSave methods <signal>', LOG_FUNNY_ARCADE);
       let o = {
         action: "save-methods",
         methodsContainer: e.detail.methodsContainer
@@ -187,7 +185,7 @@ export class MEEditorClient {
     });
 
     document.addEventListener('save-graph', (e) => {
-      console.info('save graph <signal>');
+      console.info('%cSave graph <signal>', LOG_FUNNY_ARCADE);
       let o = {
         action: "save-graph",
         graphData: e.detail
@@ -197,9 +195,7 @@ export class MEEditorClient {
     });
 
     document.addEventListener('web.editor.addGlb', (e) => {
-      console.log("[web.editor.addGlb]: ", e.detail);
-
-      console.info('addGlb <signal>');
+      console.log("%c[web.editor.addGlb]: " + e.detail, LOG_FUNNY_ARCADE);
       let o = {
         action: "addGlb",
         projectName: location.href.split('/public/')[1].split(".")[0],
@@ -210,9 +206,7 @@ export class MEEditorClient {
     });
 
     document.addEventListener('web.editor.addObj', (e) => {
-      console.log("[web.editor.addObj]: ", e.detail);
-
-      console.info('addObj <signal>');
+      console.log("%c[web.editor.addObj]: " + e.detail, LOG_FUNNY_ARCADE);
       let o = {
         action: "addObj",
         projectName: location.href.split('/public/')[1].split(".")[0],
@@ -236,8 +230,7 @@ export class MEEditorClient {
 
     // delete obj
     document.addEventListener('web.editor.delete', (e) => {
-      console.log("[web.editor.delete]: ", e.detail.prefix);
-      console.info('delete-obj <signal>');
+      console.log("%c[web.editor.delete]: " + e.detail, LOG_FUNNY_ARCADE);
       let o = {
         action: "delete-obj",
         projectName: location.href.split('/public/')[1].split(".")[0],
@@ -248,8 +241,7 @@ export class MEEditorClient {
     });
 
     document.addEventListener('web.editor.update.pos', (e) => {
-      console.log("[web.editor.update.pos]: ", e.detail);
-      console.info('web.editor.update.pos <signal>');
+      console.log("%c[web.editor.update.pos]: " + e.detail, LOG_FUNNY_ARCADE);
       let o = {
         action: "updatePos",
         projectName: location.href.split('/public/')[1].split(".")[0],
@@ -260,8 +252,7 @@ export class MEEditorClient {
     });
 
     document.addEventListener('web.editor.update.rot', (e) => {
-      console.log("[web.editor.update.rot]: ", e.detail);
-      console.info('web.editor.update.rot <signal>');
+      console.log("%c[web.editor.update.rot]: " + e.detail, LOG_FUNNY_ARCADE);
       let o = {
         action: "updateRot",
         projectName: location.href.split('/public/')[1].split(".")[0],
@@ -272,8 +263,7 @@ export class MEEditorClient {
     });
 
     document.addEventListener('web.editor.update.scale', (e) => {
-      console.log("[web.editor.update.scale]: ", e.detail);
-      console.info('web.editor.update.scale <signal>');
+      console.log("%c[web.editor.update.scale]: " + e.detail, LOG_FUNNY_ARCADE);
       let o = {
         action: "updateScale",
         projectName: location.href.split('/public/')[1].split(".")[0],

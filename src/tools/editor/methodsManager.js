@@ -83,7 +83,6 @@ export default class MethodsManager {
       border-radius:8px;
       color:#ddd; 
       font-family: monospace;
-      width:95%;
     `;
 
     this.select = document.createElement("select");
@@ -95,7 +94,6 @@ export default class MethodsManager {
       border:1px solid #555;
       margin-bottom:10px;
     `;
-    this.wrapper.appendChild(this.select);
 
     this.select.onchange = () => {
       console.log("CHANGE SCRIPT SELECT")
@@ -113,19 +111,34 @@ export default class MethodsManager {
       if(method) this.openEditor(method);
     };
 
+    this.managerTitle = document.createElement("p");
+    this.managerTitle.innerText = "Custom Method Box";
+    this.managerTitle.style.cssText = `
+      width:100%;
+      padding:6px;
+      margin-top: -10px;
+      color:#fff;
+      background: unset;
+      font-size: 140%;
+      font-family: 'stormfaze';
+    `;
+    this.wrapper.appendChild(this.managerTitle);
+
     // BUTTON Add new
     this.btnNew = document.createElement("button");
     this.btnNew.innerText = "New Method";
     this.btnNew.style.cssText = `
       width:30%;
       padding:6px;
-      background:#444;
+      margin-left:10px;
+      background:rgb(20 94 171);
       color:#fff;
       border:1px solid #555;
       cursor:pointer;
     `;
     this.btnNew.onclick = () => this.openEditor();
-    this.wrapper.appendChild(this.btnNew);
+    this.wrapper.appendChild(this.select);
+
 
     // Popup Editor
     this.popup = document.createElement("div");
@@ -138,12 +151,11 @@ export default class MethodsManager {
       border:1px solid #555;
       border-radius:8px;
       display:none;
-      width:400px;
+      width:30%;
+      height: 75%;
       z-index:999;
     `;
-
     this.popup.appendChild(this.wrapper);
-
 
     // Add after btnSave or btnExit creation
     this.btnRemove = document.createElement("button");
@@ -158,19 +170,20 @@ export default class MethodsManager {
         cursor:pointer;
       `;
     this.btnRemove.onclick = () => this.removeMethod();
-    this.popup.appendChild(this.btnRemove);
 
     this.textarea = document.createElement("textarea");
     this.textarea.id = "code-editor-textarea";
     this.textarea.style.cssText = `
-      width:100%; 
-      height:160px; 
-      background:#1e1e1e; 
+      width:99%; 
+      height:78%; 
+      background:#1e1e1e;
+      font-size: larger;
       color:#fff; 
       border:1px solid #555;
-      box-shadow: inset 0px 0px 16px 0px #3F51B5;
-      -webkit-text-stroke-color: #03A9F4;
+      box-shadow: inset 0px 0px 10px 0px #3F51B5;
+      -webkit-text-stroke-width:0;
     `;
+    // -webkit-text-stroke-color: #03A9F4;
     this.popup.appendChild(this.textarea);
 
     this.btnSave = document.createElement("button");
@@ -178,19 +191,23 @@ export default class MethodsManager {
     this.btnSave.style.cssText = `
       margin-top:10px;
       padding:6px 14px;
-      background:#555;
+      margin-left:10px;
+      background:rgb(45 133 0);
       color:#fff;
       border:1px solid #666;
       cursor:pointer;
     `;
     this.btnSave.onclick = () => this.saveMethod();
     this.popup.appendChild(this.btnSave);
+    this.popup.appendChild(this.btnRemove);
+    this.popup.appendChild(this.btnNew);
 
     this.btnExit = document.createElement("button");
     this.btnExit.innerText = "Hide";
     this.btnExit.style.cssText = `
       margin-top:10px;
       padding:6px 14px;
+      margin-left:10px;
       background:#555;
       color:#fff;
       border:1px solid #666;

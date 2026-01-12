@@ -36,7 +36,10 @@
  * - MPL applies ONLY to this file
  */
 import {METoolTip} from "../../engine/plugin/tooltip/ToolTip";
-import {byId} from "../../engine/utils";
+import {byId, LOG_FUNNY_ARCADE, mb} from "../../engine/utils";
+
+// Engine agnostic
+export let runtimeCacheObjs = [];
 
 export default class FluxCodexVertex {
   constructor(boardId, boardWrapId, logId, methodsManager, projName) {
@@ -76,6 +79,21 @@ export default class FluxCodexVertex {
       panning: false,
       panStart: [0, 0],
       zoom: 1
+    };
+
+    this.clearRuntime = () => {
+      app.graphUpdate = () => {};
+      // stop sepcial onDraw node
+      console.info("Destroy runtime objects....", Object.values(this.nodes).filter((n) => n.title == "On Draw"));
+      let allOnDraws = Object.values(this.nodes).filter((n) => n.title == "On Draw");
+      for(var x = 0;x < allOnDraws.length;x++) {
+        allOnDraws[x]._listenerAttached = false;
+      }
+      for(let x = 0;x < runtimeCacheObjs.length;x++) {
+        // runtimeCacheObjs[x].destroy(); BUGGY - no sync with render loop logic
+        app.removeSceneObjectByName(runtimeCacheObjs[x].name);
+      }
+      byId("graph-status").innerHTML = '⚫';
     };
 
     this.setZoom = (z) => {
@@ -1498,13 +1516,15 @@ export default class FluxCodexVertex {
           {name: "exec", type: "action"},
           {name: "objectName", type: "string"},
           {name: "canvaInlineProgram", type: "function"},
+          {name: "specialCanvas2dArg", type: "object"},
         ],
         outputs: [
           {name: "execOut", type: "action"}
         ],
         fields: [
           {key: "objectName", value: "standard"},
-          {key: "canvaInlineProgram", value: "function (ctx, canvas) {}"}
+          {key: "canvaInlineProgram", value: "function (ctx, canvas) {}"},
+          {key: "specialCanvas2dArg", value: "{ hue: 200, glow: 10, text: 'Hello programmer', fontSize: 60, flicker: 0.05, }"},
         ],
         noselfExec: "true"
       }),
@@ -2584,13 +2604,18 @@ export default class FluxCodexVertex {
       n._listenerAttached = true;
       return;
     } else if(n.title == "On Draw") {
-      console.log('ON DRAW INIT ONLE !!!!!', n.fields.find(f => f.key === "skip")?.value)
+      // console.log('ON DRAW INIT ONLE !!!!!', n.fields.find(f => f.key === "skip")?.value);
       if(n._listenerAttached) return;
-      app.onDraw = function(delta) {
-        n._returnCache = delta;
-        this.enqueueOutputs(n, "exec");
+      let skip = n.fields.find(f => f.key === "skip")?.value;
+      if(typeof n._frameCounter === "undefined") {n._frameCounter = 0;}
+      const graph = this;
+      app.graphUpdate = function(delta) {
+        n._frameCounter++;
+        if(skip > 0 && n._frameCounter < skip) return;
+        n._frameCounter = 0;
+        graph._returnCache = delta;
+        graph.enqueueOutputs(n, "exec");
       };
-
       n._listenerAttached = true;
       return;
     }
@@ -2625,10 +2650,10 @@ export default class FluxCodexVertex {
     if(!node || visited.has(nodeId)) return undefined;
     visited.add(nodeId);
 
-    if (node.title === "Function" && pinName === "reference") {
-      if (typeof node.fn === 'undefined') {
+    if(node.title === "Function" && pinName === "reference") {
+      if(typeof node.fn === 'undefined') {
         const selected = this.methodsManager.methodsContainer.find(m => m.name === node.attachedMethod);
-        if (selected) {
+        if(selected) {
           // console.log('SPECIAL OUTPUT node.fn ', selected)
           node.fn = this.methodsManager.compileFunction(selected.code);
         } else {
@@ -2694,7 +2719,7 @@ export default class FluxCodexVertex {
 
     const field = node.fields?.find(f => f.key === pinName);
     if(field) return field.value;
-    
+
 
     const inputPin = node.inputs?.find(p => p.name === pinName);
     if(inputPin) return inputPin.default ?? 0;
@@ -3297,7 +3322,7 @@ export default class FluxCodexVertex {
           }
         }
 
-        console.info(`[Print] ${label}`, val);
+        console.info(`%c[Print] ${label}` + val, LOG_FUNNY_ARCADE);
       } else if(n.title === "SetTimeout") {
         const delay = +n.fields?.find(f => f.key === "delay")?.value || 1000;
         setTimeout(() => this.enqueueOutputs(n, "execOut"), delay);
@@ -3308,7 +3333,7 @@ export default class FluxCodexVertex {
         const clones = Number(this.getValue(nodeId, "clones")) || 1;
 
         if(!key || !src) {
-          console.warn("[Play MP3] Missing key or src");
+          console.info(`%c[Play MP3] Missing key or src...`, LOG_FUNNY_ARCADE);
           this.enqueueOutputs(n, "execOut");
           return;
         }
@@ -3449,8 +3474,8 @@ export default class FluxCodexVertex {
 
         if(typeof videoTextureArg != 'object') {
           console.warn("[Set Video Texture] arg is not object!:", videoTextureArg);
-          if(typeof videoTextureArg != 'string') {
-            videoTextureArg = JSON.parse(videoTextureArg);
+          if(typeof videoTextureArg == 'string') {
+            eval("videoTextureArg = " + videoTextureArg);
           }
           if(typeof videoTextureArg === "undefined" || videoTextureArg === null)
             videoTextureArg = {
@@ -3468,16 +3493,22 @@ export default class FluxCodexVertex {
         const objectName = this.getValue(nodeId, "objectName");
         let canvaInlineProgram = this.getValue(nodeId, "canvaInlineProgram");
 
+        let specialCanvas2dArg = this.getValue(nodeId, "specialCanvas2dArg");
+        //     {key: "specialCanvas2dArg", value: "{ hue: 200, glow: 10, text: node.id, fontSize: 80, flicker: 0.05, }"},
+
         if(!objectName) {
-          console.warn("[objectName] Missing input fields...");
+          console.log(`%c Node [Set CanvasInline] probably objectname is missing...`, LOG_FUNNY_ARCADE);
           this.enqueueOutputs(n, "execOut");
           return;
         }
+        console.warn("[canvaInlineProgram] specialCanvas2dArg arg:", specialCanvas2dArg);
 
-        console.warn("[canvaInlineProgram] arg:", canvaInlineProgram);
+        if (typeof specialCanvas2dArg == 'string') {
+          eval("specialCanvas2dArg = " + specialCanvas2dArg);
+        }
 
         if(typeof canvaInlineProgram != 'function') {
-          console.warn("[canvaInlineProgram] arg is not object!:", canvaInlineProgram);
+          // console.warn("[canvaInlineProgram] arg is not object!:", canvaInlineProgram);
           if(typeof canvaInlineProgram == 'string') {
             canvaInlineProgram = eval("canvaInlineProgram = " + canvaInlineProgram);
           }
@@ -3486,17 +3517,21 @@ export default class FluxCodexVertex {
         }
 
         let o = app.getSceneObjectByName(objectName);
+        if (typeof o === 'undefined') {
+          console.log(`%c Node [Set CanvasInline] probably objectname is wrong...`, LOG_FUNNY_ARCADE);
+          mb.show("FluxCodexVertex Exec order is breaked on [Set CanvasInline] node id:", n.id);
+          return;
+        }
+          mb.show("FluxCodexVertex WHAT IS on [Set CanvasInline] node id:", n.id);
         o.loadVideoTexture({
           type: "canvas2d-inline",
-          canvaInlineProgram: canvaInlineProgram
+          canvaInlineProgram: canvaInlineProgram,
+          specialCanvas2dArg: specialCanvas2dArg ? specialCanvas2dArg : undefined
         });
 
         this.enqueueOutputs(n, "execOut");
         return;
       }
-
-
-
 
 
       this.enqueueOutputs(n, "execOut");
@@ -3841,13 +3876,20 @@ export default class FluxCodexVertex {
   }
 
   runGraph() {
+    // console.log('this.nodes', Object.values(this.nodes));
+    if(byId("graph-status").innerHTML == '🔴' || Object.values(this.nodes).length == 0) {
+      // Just dummy thoughts — this is wrong.
+      // Every data in DOMs is good to use like status flas or any others calls.
+      if(mb) mb.show('FluxCodexVertex not ready yet...');
+      return;
+    }
     byId("app").style.opacity = 0.5;
-    // this.updateValueDisplays();
     this.initEventNodes();
     Object.values(this.nodes).forEach(n => (n._returnCache = undefined));
     Object.values(this.nodes)
       .filter(n => n.category === "event" && n.title === "onLoad")
       .forEach(n => this.triggerNode(n.id));
+    byId("graph-status").innerHTML = '🔴';
   }
 
   compileGraph() {
@@ -3877,8 +3919,10 @@ export default class FluxCodexVertex {
   clearStorage() {
     let ask = confirm("⚠️ This will delete all nodes. Are you sure?");
     if(ask) {
+      this.clearAllNodes();
       localStorage.removeItem(this.SAVE_KEY);
-      location.reload(true);
+      this.compileGraph(); // not just save empty
+      // location.reload(true);
     }
   }
 
@@ -3886,6 +3930,7 @@ export default class FluxCodexVertex {
     // Remove node DOMs
     this.board.querySelectorAll(".node").forEach(n => n.remove());
     // Clear data
+    this.nodes = [];
     this.nodes.length = 0;
     this.links.length = 0;
     // Clear state
