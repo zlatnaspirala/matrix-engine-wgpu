@@ -279,6 +279,186 @@ let app = new MatrixEngineWGPU(
  }, 800);
  // ME END REEL_1 updatePosy
  
+ 
+       
+       // ME START BANNER1
+ downloadMeshes({cube: "res/meshes/blender/plane.obj"}, (m) => { 
+   const texturesPaths = ['./res/meshes/blender/cube.png']; 
+   app.addMeshObj({
+     position: {x: 0, y: 0, z: -20}, rotation: {x: 0, y: 0, z: 0}, rotationSpeed: {x: 0, y: 0, z: 0},
+     texturesPaths: [texturesPaths],
+     name: 'BANNER1',
+     mesh: m.cube,
+     raycast: {enabled: true, radius: 2},
+     physics: {enabled: false, geometry: "Cube"}
+   }); 
+ }, {scale: [1, 1, 1]});  
+ // ME END BANNER1
+ 
+
+             // ME START BANNER1 updateRotx
+ setTimeout(() => {
+  app.getSceneObjectByName('BANNER1').rotation.x = 90;
+ }, 800);
+ // ME END BANNER1 updateRotx
+ 
+   // ME START BANNER1 updatePosy
+ setTimeout(() => {
+  app.getSceneObjectByName('BANNER1').position.SetY(9);
+ }, 800);
+ // ME END BANNER1 updatePosy
+ 
+    // ME START BANNER1 updatePosx
+ setTimeout(() => {
+  app.getSceneObjectByName('BANNER1').position.SetX(0);
+ }, 800);
+ // ME END BANNER1 updatePosx
+ 
+                         // ME START BANNER1 updatePosz
+ setTimeout(() => {
+  app.getSceneObjectByName('BANNER1').position.SetZ(-18);
+ }, 800);
+ // ME END BANNER1 updatePosz
+ 
+         // ME START BANNER2
+ downloadMeshes({cube: "res/meshes/blender/plane.obj"}, (m) => { 
+   const texturesPaths = ['./res/meshes/blender/cube.png']; 
+   app.addMeshObj({
+     position: {x: 0, y: 0, z: -20}, rotation: {x: 0, y: 0, z: 0}, rotationSpeed: {x: 0, y: 0, z: 0},
+     texturesPaths: [texturesPaths],
+     name: 'BANNER2',
+     mesh: m.cube,
+     raycast: {enabled: true, radius: 2},
+     physics: {enabled: false, geometry: "Cube"}
+   }); 
+ }, {scale: [1, 1, 1]});  
+ // ME END BANNER2
+ 
+
+       // ME START BANNER2 updateRotx
+ setTimeout(() => {
+  app.getSceneObjectByName('BANNER2').rotation.x = 90;
+ }, 800);
+ // ME END BANNER2 updateRotx
+ 
+  // ME START BANNER2 updateScale1
+ setTimeout(() => {
+  app.getSceneObjectByName('BANNER2').scale[1] = 3;
+ }, 800);
+ // ME END BANNER2 updateScale1
+ 
+   // ME START BANNER2 updateScale2
+ setTimeout(() => {
+  app.getSceneObjectByName('BANNER2').scale[2] = 3;
+ }, 800);
+ // ME END BANNER2 updateScale2
+ 
+  // ME START BANNER2 updatePosy
+ setTimeout(() => {
+  app.getSceneObjectByName('BANNER2').position.SetY(9);
+ }, 800);
+ // ME END BANNER2 updatePosy
+ 
+     // ME START BANNER2 updateRoty
+ setTimeout(() => {
+  app.getSceneObjectByName('BANNER2').rotation.y = 0;
+ }, 800);
+ // ME END BANNER2 updateRoty
+ 
+        // ME START BANNER2 updateRotz
+ setTimeout(() => {
+  app.getSceneObjectByName('BANNER2').rotation.z = -30;
+ }, 800);
+ // ME END BANNER2 updateRotz
+ 
+  // ME START BANNER1 updateScale0
+ setTimeout(() => {
+  app.getSceneObjectByName('BANNER1').scale[0] = 3;
+ }, 800);
+ // ME END BANNER1 updateScale0
+ 
+  // ME START BANNER1 updateScale1
+ setTimeout(() => {
+  app.getSceneObjectByName('BANNER1').scale[1] = 3;
+ }, 800);
+ // ME END BANNER1 updateScale1
+ 
+  // ME START BANNER1 updateScale2
+ setTimeout(() => {
+  app.getSceneObjectByName('BANNER1').scale[2] = 3;
+ }, 800);
+ // ME END BANNER1 updateScale2
+ 
+  // ME START BANNER2 updateScale0
+ setTimeout(() => {
+  app.getSceneObjectByName('BANNER2').scale[0] = 4;
+ }, 800);
+ // ME END BANNER2 updateScale0
+ 
+  // ME START BANNER2 updatePosx
+ setTimeout(() => {
+  app.getSceneObjectByName('BANNER2').position.SetX(-9);
+ }, 800);
+ // ME END BANNER2 updatePosx
+ 
+ 
+       // ME START BANNER3
+ downloadMeshes({cube: "res/meshes/blender/plane.obj"}, (m) => { 
+   const texturesPaths = ['./res/meshes/blender/cube.png']; 
+   app.addMeshObj({
+     position: {x: 0, y: 0, z: -20}, rotation: {x: 0, y: 0, z: 0}, rotationSpeed: {x: 0, y: 0, z: 0},
+     texturesPaths: [texturesPaths],
+     name: 'BANNER3',
+     mesh: m.cube,
+     raycast: {enabled: true, radius: 2},
+     physics: {enabled: false, geometry: "Cube"}
+   }); 
+ }, {scale: [1, 1, 1]});  
+ // ME END BANNER3
+ 
+
+            // ME START BANNER3 updateRotx
+ setTimeout(() => {
+  app.getSceneObjectByName('BANNER3').rotation.x = 90;
+ }, 800);
+ // ME END BANNER3 updateRotx
+ 
+   // ME START BANNER3 updateScale0
+ setTimeout(() => {
+  app.getSceneObjectByName('BANNER3').scale[0] = 3;
+ }, 800);
+ // ME END BANNER3 updateScale0
+ 
+   // ME START BANNER3 updateScale1
+ setTimeout(() => {
+  app.getSceneObjectByName('BANNER3').scale[1] = 3;
+ }, 800);
+ // ME END BANNER3 updateScale1
+ 
+   // ME START BANNER3 updateScale2
+ setTimeout(() => {
+  app.getSceneObjectByName('BANNER3').scale[2] = 3;
+ }, 800);
+ // ME END BANNER3 updateScale2
+ 
+    // ME START BANNER3 updatePosy
+ setTimeout(() => {
+  app.getSceneObjectByName('BANNER3').position.SetY(9);
+ }, 800);
+ // ME END BANNER3 updatePosy
+ 
+    // ME START BANNER3 updatePosx
+ setTimeout(() => {
+  app.getSceneObjectByName('BANNER3').position.SetX(8);
+ }, 800);
+ // ME END BANNER3 updatePosx
+ 
+         // ME START BANNER3 updateRotz
+ setTimeout(() => {
+  app.getSceneObjectByName('BANNER3').rotation.z = 30;
+ }, 800);
+ // ME END BANNER3 updateRotz
+ 
  // [MAIN_REPLACE2]
 
     })

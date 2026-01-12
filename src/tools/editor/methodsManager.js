@@ -83,7 +83,6 @@ export default class MethodsManager {
       border-radius:8px;
       color:#ddd; 
       font-family: monospace;
-      width:95%;
     `;
 
     this.select = document.createElement("select");
@@ -131,7 +130,8 @@ export default class MethodsManager {
     this.btnNew.style.cssText = `
       width:30%;
       padding:6px;
-      background:#444;
+      margin-left:10px;
+      background:rgb(20 94 171);
       color:#fff;
       border:1px solid #555;
       cursor:pointer;
@@ -151,12 +151,11 @@ export default class MethodsManager {
       border:1px solid #555;
       border-radius:8px;
       display:none;
-      width:60%;
+      width:30%;
       height: 75%;
       z-index:999;
     `;
     this.popup.appendChild(this.wrapper);
-
 
     // Add after btnSave or btnExit creation
     this.btnRemove = document.createElement("button");
@@ -175,12 +174,14 @@ export default class MethodsManager {
     this.textarea = document.createElement("textarea");
     this.textarea.id = "code-editor-textarea";
     this.textarea.style.cssText = `
-      width:100%; 
+      width:99%; 
       height:78%; 
-      background:#1e1e1e; 
+      background:#1e1e1e;
+      font-size: larger;
       color:#fff; 
       border:1px solid #555;
       box-shadow: inset 0px 0px 10px 0px #3F51B5;
+      -webkit-text-stroke-width:0;
     `;
     // -webkit-text-stroke-color: #03A9F4;
     this.popup.appendChild(this.textarea);
@@ -190,7 +191,8 @@ export default class MethodsManager {
     this.btnSave.style.cssText = `
       margin-top:10px;
       padding:6px 14px;
-      background:#555;
+      margin-left:10px;
+      background:rgb(45 133 0);
       color:#fff;
       border:1px solid #666;
       cursor:pointer;
@@ -205,6 +207,7 @@ export default class MethodsManager {
     this.btnExit.style.cssText = `
       margin-top:10px;
       padding:6px 14px;
+      margin-left:10px;
       background:#555;
       color:#fff;
       border:1px solid #666;

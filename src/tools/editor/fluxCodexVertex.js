@@ -1516,13 +1516,15 @@ export default class FluxCodexVertex {
           {name: "exec", type: "action"},
           {name: "objectName", type: "string"},
           {name: "canvaInlineProgram", type: "function"},
+          {name: "specialCanvas2dArg", type: "object"},
         ],
         outputs: [
           {name: "execOut", type: "action"}
         ],
         fields: [
           {key: "objectName", value: "standard"},
-          {key: "canvaInlineProgram", value: "function (ctx, canvas) {}"}
+          {key: "canvaInlineProgram", value: "function (ctx, canvas) {}"},
+          {key: "specialCanvas2dArg", value: "{ hue: 200, glow: 10, text: 'Hello programmer', fontSize: 60, flicker: 0.05, }"},
         ],
         noselfExec: "true"
       }),
@@ -3320,7 +3322,7 @@ export default class FluxCodexVertex {
           }
         }
 
-        console.info(`[Print] ${label}`, val);
+        console.info(`%c[Print] ${label}` + val, LOG_FUNNY_ARCADE);
       } else if(n.title === "SetTimeout") {
         const delay = +n.fields?.find(f => f.key === "delay")?.value || 1000;
         setTimeout(() => this.enqueueOutputs(n, "execOut"), delay);
@@ -3331,7 +3333,7 @@ export default class FluxCodexVertex {
         const clones = Number(this.getValue(nodeId, "clones")) || 1;
 
         if(!key || !src) {
-          console.warn("[Play MP3] Missing key or src");
+          console.info(`%c[Play MP3] Missing key or src...`, LOG_FUNNY_ARCADE);
           this.enqueueOutputs(n, "execOut");
           return;
         }
@@ -3491,12 +3493,20 @@ export default class FluxCodexVertex {
         const objectName = this.getValue(nodeId, "objectName");
         let canvaInlineProgram = this.getValue(nodeId, "canvaInlineProgram");
 
+        let specialCanvas2dArg = this.getValue(nodeId, "specialCanvas2dArg");
+        //     {key: "specialCanvas2dArg", value: "{ hue: 200, glow: 10, text: node.id, fontSize: 80, flicker: 0.05, }"},
+
         if(!objectName) {
           console.log(`%c Node [Set CanvasInline] probably objectname is missing...`, LOG_FUNNY_ARCADE);
           this.enqueueOutputs(n, "execOut");
           return;
         }
-        console.warn("[canvaInlineProgram] arg:", canvaInlineProgram);
+        console.warn("[canvaInlineProgram] specialCanvas2dArg arg:", specialCanvas2dArg);
+
+        if (typeof specialCanvas2dArg == 'string') {
+          eval("specialCanvas2dArg = " + specialCanvas2dArg);
+        }
+
         if(typeof canvaInlineProgram != 'function') {
           // console.warn("[canvaInlineProgram] arg is not object!:", canvaInlineProgram);
           if(typeof canvaInlineProgram == 'string') {
@@ -3516,7 +3526,7 @@ export default class FluxCodexVertex {
         o.loadVideoTexture({
           type: "canvas2d-inline",
           canvaInlineProgram: canvaInlineProgram,
-          node: n
+          specialCanvas2dArg: specialCanvas2dArg ? specialCanvas2dArg : undefined
         });
 
         this.enqueueOutputs(n, "execOut");
@@ -3866,7 +3876,7 @@ export default class FluxCodexVertex {
   }
 
   runGraph() {
-    console.log('this.nodes', Object.values(this.nodes));
+    // console.log('this.nodes', Object.values(this.nodes));
     if(byId("graph-status").innerHTML == '🔴' || Object.values(this.nodes).length == 0) {
       // Just dummy thoughts — this is wrong.
       // Every data in DOMs is good to use like status flas or any others calls.
@@ -3909,6 +3919,7 @@ export default class FluxCodexVertex {
   clearStorage() {
     let ask = confirm("⚠️ This will delete all nodes. Are you sure?");
     if(ask) {
+      this.clearAllNodes();
       localStorage.removeItem(this.SAVE_KEY);
       this.compileGraph(); // not just save empty
       // location.reload(true);
@@ -3919,6 +3930,7 @@ export default class FluxCodexVertex {
     // Remove node DOMs
     this.board.querySelectorAll(".node").forEach(n => n.remove());
     // Clear data
+    this.nodes = [];
     this.nodes.length = 0;
     this.links.length = 0;
     // Clear state

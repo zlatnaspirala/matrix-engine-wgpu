@@ -302,35 +302,23 @@ export default class Materials {
       await this.video.play();
       this.isVideo = true;
     } else if(arg.type === 'canvas2d-inline') {
-      console.log('what is arg', arg);
+      // console.log('what is arg', arg);
       // Miniature inline-drawn canvas created dynamically
       const canvas = document.createElement('canvas');
       canvas.width = arg.width || 256;
       canvas.height = arg.height || 256;
       canvas.style.position = 'absolute';
-      canvas.style.right = '0px';
+      canvas.style.left = '-1000px';
       canvas.style.top = '0';
-      canvas.style.zIndex = '10000';
+      // canvas.style.zIndex = '10000';
       document.body.appendChild(canvas);
       const ctx = canvas.getContext('2d');
-
-      // 🔥 ensure frames are produced
       if(typeof arg.canvaInlineProgram === 'function') {
         const drawLoop = () => {
-          // ctx.save(); VER MIRR Y
-          // ctx.translate(0, canvas.height);
-          // ctx.scale(1, -1);
-          // drawContent(ctx);
-          // ctx.restore();
-          // ctx.save(); BOTH
-          // ctx.translate(canvas.width, canvas.height);
-          // ctx.scale(-1, -1);
-          // drawContent(ctx);
-          // ctx.restore();
           ctx.save();
           ctx.translate(canvas.width, 0);
           ctx.scale(-1, 1);
-          arg.canvaInlineProgram(ctx, canvas, arg?.node);
+          arg.canvaInlineProgram(ctx, canvas, arg.specialCanvas2dArg);
           ctx.restore();
           requestAnimationFrame(drawLoop);
         };
@@ -342,7 +330,7 @@ export default class Materials {
 
       this.video = document.createElement('video');
       this.video.style.position = 'absolute';
-      this.video.style.zIndex = '10000';
+      // this.video.style.zIndex = '1';
       this.video.style.left = '0px';
       this.video.style.top = '0';
       this.video.autoplay = true;

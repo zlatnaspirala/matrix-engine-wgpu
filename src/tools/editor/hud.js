@@ -63,12 +63,11 @@ export default class EditorHud {
         }
       } else if(ext == 'obj' && confirm("OBJ FILE 📦 Do you wanna add it to the scene ?")) {
         let objName = prompt("📦 Enter uniq name: ");
-        let name = prompt("📦 OBJ file : ", getPATH);
         if(confirm("⚛ Enable physics (Ammo)?")) {
           // infly 
           let o = {
             physics: true,
-            path: name,
+            path: getPATH,
             index: objName
           }
           document.dispatchEvent(new CustomEvent('web.editor.addObj', {
@@ -78,7 +77,7 @@ export default class EditorHud {
           // infly
           let o = {
             physics: false,
-            path: name,
+            path: getPATH,
             index: objName
           }
           document.dispatchEvent(new CustomEvent('web.editor.addObj', {
@@ -255,7 +254,9 @@ export default class EditorHud {
     </div>
 
     <div class="btn2">
-      <button class="btn" id="runMainGraphDOM">RUN [F6]</button><button class="btn" id="stopMainGraphDOM">STOP</button>
+      <button class="btn" id="saveMainGraphDOM">SAVE GRAPH</button>
+      <button class="btn" id="runMainGraphDOM">RUN [F6]</button>
+      <button class="btn" id="stopMainGraphDOM">STOP</button>
       <span id="graph-status">⚫</span>
     </div>
   `;
@@ -279,11 +280,17 @@ export default class EditorHud {
     });
 
     // run top many
+    
+    byId('saveMainGraphDOM').addEventListener('click', () => {
+      // global for now.
+      app.editor.fluxCodexVertex.compileGraph();
+    });
     byId('runMainGraphDOM').addEventListener('click', () => {
       // global for now.
       app.editor.fluxCodexVertex.runGraph();
     });
 
+    this.toolTip.attachTooltip(byId('saveMainGraphDOM'), "Any changes in graph must be saved.");
     this.toolTip.attachTooltip(byId('runMainGraphDOM'), "Run main graph, sometimes engine need refresh.");
     this.toolTip.attachTooltip(byId('stopMainGraphDOM'), "Stop main graph, clear dynamic created objects.");
 
