@@ -95,7 +95,6 @@ export default class MethodsManager {
       border:1px solid #555;
       margin-bottom:10px;
     `;
-    this.wrapper.appendChild(this.select);
 
     this.select.onchange = () => {
       console.log("CHANGE SCRIPT SELECT")
@@ -113,6 +112,19 @@ export default class MethodsManager {
       if(method) this.openEditor(method);
     };
 
+    this.managerTitle = document.createElement("p");
+    this.managerTitle.innerText = "Custom Method Box";
+    this.managerTitle.style.cssText = `
+      width:100%;
+      padding:6px;
+      margin-top: -10px;
+      color:#fff;
+      background: unset;
+      font-size: 140%;
+      font-family: 'stormfaze';
+    `;
+    this.wrapper.appendChild(this.managerTitle);
+
     // BUTTON Add new
     this.btnNew = document.createElement("button");
     this.btnNew.innerText = "New Method";
@@ -125,7 +137,8 @@ export default class MethodsManager {
       cursor:pointer;
     `;
     this.btnNew.onclick = () => this.openEditor();
-    this.wrapper.appendChild(this.btnNew);
+    this.wrapper.appendChild(this.select);
+
 
     // Popup Editor
     this.popup = document.createElement("div");
@@ -138,10 +151,10 @@ export default class MethodsManager {
       border:1px solid #555;
       border-radius:8px;
       display:none;
-      width:400px;
+      width:60%;
+      height: 75%;
       z-index:999;
     `;
-
     this.popup.appendChild(this.wrapper);
 
 
@@ -158,19 +171,18 @@ export default class MethodsManager {
         cursor:pointer;
       `;
     this.btnRemove.onclick = () => this.removeMethod();
-    this.popup.appendChild(this.btnRemove);
 
     this.textarea = document.createElement("textarea");
     this.textarea.id = "code-editor-textarea";
     this.textarea.style.cssText = `
       width:100%; 
-      height:160px; 
+      height:78%; 
       background:#1e1e1e; 
       color:#fff; 
       border:1px solid #555;
-      box-shadow: inset 0px 0px 16px 0px #3F51B5;
-      -webkit-text-stroke-color: #03A9F4;
+      box-shadow: inset 0px 0px 10px 0px #3F51B5;
     `;
+    // -webkit-text-stroke-color: #03A9F4;
     this.popup.appendChild(this.textarea);
 
     this.btnSave = document.createElement("button");
@@ -185,6 +197,8 @@ export default class MethodsManager {
     `;
     this.btnSave.onclick = () => this.saveMethod();
     this.popup.appendChild(this.btnSave);
+    this.popup.appendChild(this.btnRemove);
+    this.popup.appendChild(this.btnNew);
 
     this.btnExit = document.createElement("button");
     this.btnExit.innerText = "Hide";

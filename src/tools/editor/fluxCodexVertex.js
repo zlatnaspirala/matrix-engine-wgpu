@@ -3472,8 +3472,8 @@ export default class FluxCodexVertex {
 
         if(typeof videoTextureArg != 'object') {
           console.warn("[Set Video Texture] arg is not object!:", videoTextureArg);
-          if(typeof videoTextureArg != 'string') {
-            videoTextureArg = JSON.parse(videoTextureArg);
+          if(typeof videoTextureArg == 'string') {
+            eval("videoTextureArg = " + videoTextureArg);
           }
           if(typeof videoTextureArg === "undefined" || videoTextureArg === null)
             videoTextureArg = {
@@ -3512,9 +3512,11 @@ export default class FluxCodexVertex {
           mb.show("FluxCodexVertex Exec order is breaked on [Set CanvasInline] node id:", n.id);
           return;
         }
+          mb.show("FluxCodexVertex WHAT IS on [Set CanvasInline] node id:", n.id);
         o.loadVideoTexture({
           type: "canvas2d-inline",
-          canvaInlineProgram: canvaInlineProgram
+          canvaInlineProgram: canvaInlineProgram,
+          node: n
         });
 
         this.enqueueOutputs(n, "execOut");

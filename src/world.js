@@ -825,6 +825,7 @@ export default class MatrixEngineWGPU {
               m.shadowDepthTextureView = this.shadowVideoView;
               m.FINISH_VIDIO_INIT = true;
               m.setupPipeline();
+              pass.setPipeline(mesh.pipeline); // new
             } else {
               m.shadowDepthTextureView = this.shadowArrayView;
               m.setupPipeline();

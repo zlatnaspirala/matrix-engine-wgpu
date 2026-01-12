@@ -35,6 +35,11 @@ export default class MEMeshObj extends Materials {
     }
     // console.log('Material class arg:', o.material)
     this.material = o.material;
+    addEventListener('update-pipeine', () => {
+      this.setupPipeline();
+      // alert('setup pipeline');
+    })
+
 
     // Mesh stuff - for single mesh or t-posed (fiktive-first in loading order)
     this.mesh = o.mesh;
