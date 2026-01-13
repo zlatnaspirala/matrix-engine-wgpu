@@ -37,6 +37,7 @@
  */
 import {METoolTip} from "../../engine/plugin/tooltip/ToolTip";
 import {byId, LOG_FUNNY_ARCADE, mb} from "../../engine/utils";
+import {CurveEditor} from "./curve-editor";
 
 // Engine agnostic
 export let runtimeCacheObjs = [];
@@ -45,6 +46,8 @@ export default class FluxCodexVertex {
   constructor(boardId, boardWrapId, logId, methodsManager, projName) {
     this.debugMode = true;
     this.toolTip = new METoolTip();
+
+    this.curveEditor = new CurveEditor();
 
     this.SAVE_KEY = "fluxCodexVertex" + projName;
     this.methodsManager = methodsManager;
@@ -151,6 +154,12 @@ export default class FluxCodexVertex {
       e.detail.path = e.detail.path.replace('\\res', 'res');
       e.detail.path = e.detail.path.replace(/\\/g, '/');
       this.addNode('audioMP3', e.detail);
+    });
+
+    // curve editor stuff
+    document.addEventListener('show-curve-editor', (e) => {
+      console.log('show-showCurveEditorBtn editor ', e);
+      this.curveEditor.toggleEditor();
     });
   }
 
@@ -3503,7 +3512,7 @@ export default class FluxCodexVertex {
         }
         console.warn("[canvaInlineProgram] specialCanvas2dArg arg:", specialCanvas2dArg);
 
-        if (typeof specialCanvas2dArg == 'string') {
+        if(typeof specialCanvas2dArg == 'string') {
           eval("specialCanvas2dArg = " + specialCanvas2dArg);
         }
 
@@ -3517,12 +3526,12 @@ export default class FluxCodexVertex {
         }
 
         let o = app.getSceneObjectByName(objectName);
-        if (typeof o === 'undefined') {
+        if(typeof o === 'undefined') {
           console.log(`%c Node [Set CanvasInline] probably objectname is wrong...`, LOG_FUNNY_ARCADE);
           mb.show("FluxCodexVertex Exec order is breaked on [Set CanvasInline] node id:", n.id);
           return;
         }
-          mb.show("FluxCodexVertex WHAT IS on [Set CanvasInline] node id:", n.id);
+        mb.show("FluxCodexVertex WHAT IS on [Set CanvasInline] node id:", n.id);
         o.loadVideoTexture({
           type: "canvas2d-inline",
           canvaInlineProgram: canvaInlineProgram,
@@ -4092,6 +4101,7 @@ export default class FluxCodexVertex {
     this.compileGraph();
     return;
   }
+
 }
 
 // FluxCodexVertex.SAVE_KEY = "matrixEngineVisualScripting";

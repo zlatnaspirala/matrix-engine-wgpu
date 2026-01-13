@@ -2287,9 +2287,9 @@ function isMobile() {
 function degToRad(degrees) {
   return degrees * Math.PI / 180;
 }
-function radToDeg(r) {
+function radToDeg(r2) {
   var pi = Math.PI;
-  return r * (180 / pi);
+  return r2 * (180 / pi);
 }
 var scriptManager = {
   SCRIPT_ID: 0,
@@ -7523,13 +7523,13 @@ var MultiLang = class {
     lang = "res/multilang/" + lang + ".json";
     console.info(`%cMultilang: ${lang}`, LOG_FUNNY_ARCADE);
     try {
-      const r = await fetch(lang, {
+      const r2 = await fetch(lang, {
         headers: {
           "Accept": "application/json",
           "Content-Type": "application/json"
         }
       });
-      return await r.json();
+      return await r2.json();
     } catch (err) {
       console.warn("Not possible to access multilang json asset! Err => ", err, ". Use backup lang predefinited object. Only english avaible.");
       return en;
@@ -9128,12 +9128,12 @@ function dot3vs1(a, b) {
 }
 function multiply2(a, b) {
   var aNumRows = a.length, aNumCols = a[0].length, bNumRows = b.length, bNumCols = b[0].length, m = new Array(aNumRows);
-  for (var r = 0; r < aNumRows; ++r) {
-    m[r] = new Array(bNumCols);
+  for (var r2 = 0; r2 < aNumRows; ++r2) {
+    m[r2] = new Array(bNumCols);
     for (var c = 0; c < bNumCols; ++c) {
-      m[r][c] = 0;
+      m[r2][c] = 0;
       for (var i = 0; i < aNumCols; ++i) {
-        m[r][c] += a[r][i] * b[i][c];
+        m[r2][c] += a[r2][i] * b[i][c];
       }
     }
   }
@@ -9312,7 +9312,7 @@ var MEBvhJoint = class {
   matrixFromKeyframe(frameData) {
     const m = this.createIdentityMatrix();
     let t = [0, 0, 0];
-    let r = [0, 0, 0];
+    let r2 = [0, 0, 0];
     for (let i = 0; i < this.channels.length; i++) {
       const channel = this.channels[i];
       const value = frameData[this.channelOffset + i];
@@ -9327,20 +9327,20 @@ var MEBvhJoint = class {
           t[2] = value;
           break;
         case "Xrotation":
-          r[0] = degToRad2(value);
+          r2[0] = degToRad2(value);
           break;
         case "Yrotation":
-          r[1] = degToRad2(value);
+          r2[1] = degToRad2(value);
           break;
         case "Zrotation":
-          r[2] = degToRad2(value);
+          r2[2] = degToRad2(value);
           break;
       }
     }
     mat4Impl2.translate(m, t, m);
-    mat4Impl2.rotateX(m, r[0], m);
-    mat4Impl2.rotateY(m, r[1], m);
-    mat4Impl2.rotateZ(m, r[2], m);
+    mat4Impl2.rotateX(m, r2[0], m);
+    mat4Impl2.rotateY(m, r2[1], m);
+    mat4Impl2.rotateZ(m, r2[2], m);
     return m;
   }
 };
@@ -9562,7 +9562,7 @@ var MEBvh = class {
     }
     return [offset_position, index_offset];
   }
-  _recursive_apply_frame(joint, frame_pose, index_offset, p, r, M_parent, p_parent) {
+  _recursive_apply_frame(joint, frame_pose, index_offset, p, r2, M_parent, p_parent) {
     var joint_index;
     if (joint.position_animated()) {
       var local = this._extract_position(joint, frame_pose, index_offset);
@@ -9579,7 +9579,7 @@ var MEBvh = class {
         local2++;
       }
       p[joint_index] = arraySum3(p_parent, dot3vs1(M_parent, joint.offset));
-      r[joint_index] = mat2euler(M_parent);
+      r2[joint_index] = mat2euler(M_parent);
       return index_offset;
     }
     if (joint.rotation_animated()) {
@@ -9605,14 +9605,14 @@ var MEBvh = class {
       local++;
     }
     p[joint_index] = position;
-    r[joint_index] = rotation3;
+    r2[joint_index] = rotation3;
     for (var c in joint.children) {
       index_offset = this._recursive_apply_frame(
         joint.children[c],
         frame_pose,
         index_offset,
         p,
-        r,
+        r2,
         M,
         position
       );
@@ -9625,7 +9625,7 @@ var MEBvh = class {
       jointLength++;
     }
     var p = Array.from(Array(jointLength), () => [0, 0, 0]);
-    var r = Array.from(Array(jointLength), () => [0, 0, 0]);
+    var r2 = Array.from(Array(jointLength), () => [0, 0, 0]);
     var frame_pose = this.keyframes[frame];
     var M_parent = [
       [0, 0, 0],
@@ -9640,11 +9640,11 @@ var MEBvh = class {
       frame_pose,
       0,
       p,
-      r,
+      r2,
       M_parent,
       [0, 0, 0]
     );
-    return [p, r];
+    return [p, r2];
   }
   all_frame_poses() {
     var jointLength = 0;
@@ -9652,15 +9652,15 @@ var MEBvh = class {
       jointLength++;
     }
     var p = Array.from({ length: this.frames }, () => Array.from({ length: jointLength }, () => [0, 0, 0]));
-    var r = Array.from({ length: this.frames }, () => Array.from({ length: jointLength }, () => [0, 0, 0]));
+    var r2 = Array.from({ length: this.frames }, () => Array.from({ length: jointLength }, () => [0, 0, 0]));
     for (var frame = 0; frame < this.keyframes.length; frame++) {
       var local3 = this.frame_pose(frame);
       p[frame] = local3[0];
-      r[frame] = local3[1];
+      r2[frame] = local3[1];
     }
-    return [p, r];
+    return [p, r2];
   }
-  _plot_pose(p, r, fig, ax) {
+  _plot_pose(p, r2, fig, ax) {
   }
   // Meybe helps for draw
   // plot_frame(frame, fig=None, ax=None) {
@@ -12865,10 +12865,10 @@ var GeometryFactory = class _GeometryFactory {
     return { positions: pos2, uvs: uv, indices: idx };
   }
   static star(S = 1) {
-    const R = S, r = S * 0.4, v = [], uv = [], ind = [];
+    const R = S, r2 = S * 0.4, v = [], uv = [], ind = [];
     for (let i = 0; i < 10; i++) {
       const a = i / 10 * Math.PI * 2;
-      const rr = i % 2 ? r : R;
+      const rr = i % 2 ? r2 : R;
       v.push(Math.cos(a) * rr, Math.sin(a) * rr, 0);
       uv.push((Math.cos(a) + 1) / 2, (Math.sin(a) + 1) / 2);
     }
@@ -13396,8 +13396,8 @@ var HPBarEffect = class {
   setProgress(value) {
     this.progress = Math.max(0, Math.min(1, value));
   }
-  setColor(r, g, b, a = 1) {
-    this.color = [r, g, b, a];
+  setColor(r2, g, b, a = 1) {
+    this.color = [r2, g, b, a];
   }
   draw(pass, cameraMatrix, modelMatrix) {
     const color = new Float32Array(this.color);
@@ -13524,8 +13524,8 @@ var MANABarEffect = class {
   setProgress(value) {
     this.progress = Math.max(0, Math.min(1, value));
   }
-  setColor(r, g, b, a = 1) {
-    this.color = [r, g, b, a];
+  setColor(r2, g, b, a = 1) {
+    this.color = [r2, g, b, a];
   }
   draw(pass, cameraMatrix, modelMatrix) {
     const color = new Float32Array(this.color);
@@ -14193,7 +14193,7 @@ var GenGeoTexture = class {
   }
   async loadTexture(url) {
     return new Promise(async (resolve, reject) => {
-      const img = await fetch(url).then((r) => r.blob()).then(createImageBitmap);
+      const img = await fetch(url).then((r2) => r2.blob()).then(createImageBitmap);
       const texture = this.device.createTexture({
         size: [img.width, img.height, 1],
         format: "rgba8unorm",
@@ -14372,7 +14372,7 @@ var GenGeoTexture2 = class {
   }
   async loadTexture(url) {
     return new Promise(async (resolve, reject) => {
-      const img = await fetch(url).then((r) => r.blob()).then(createImageBitmap);
+      const img = await fetch(url).then((r2) => r2.blob()).then(createImageBitmap);
       const texture = this.device.createTexture({
         size: [img.width, img.height, 1],
         format: "rgba8unorm",
@@ -16212,12 +16212,498 @@ var METoolTip = class {
   }
 };
 
+// ../curve-editor.js
+var CurveEditor = class {
+  constructor({ width = 650, height = 300, samples = 128 } = {}) {
+    this.width = width;
+    this.height = height;
+    this.samples = samples;
+    this.keys = [
+      { time: 0, value: 0, inTangent: 0, outTangent: 0 },
+      { time: 1, value: 0, inTangent: 0, outTangent: 0 }
+    ];
+    this.valueMin = -1;
+    this.valueMax = 1;
+    this.padLeft = 32;
+    this.padBottom = 18;
+    this.canvas = document.createElement("canvas");
+    this.canvas.width = width;
+    this.canvas.height = height;
+    this.ctx = this.canvas.getContext("2d");
+    this.snapEnabled = true;
+    this.snapSteps = 20;
+    this.snapValueSteps = 20;
+    this.name = "Curve";
+    this.currentValue = 0;
+    this.value = 0;
+    this.activeKey = null;
+    this.dragMode = null;
+    this._grabDX = 0;
+    this._grabDY = 0;
+    this.time = 0;
+    this.loop = true;
+    this.speed = 1;
+    this.baked = this.bake(samples);
+    this.isGraphRunning = false;
+    this._editorOpen = false;
+    this._createPopup();
+    this._bindMouse();
+    this._buildToolbar();
+    this._enableDrag();
+    this.length = 1;
+    this._lastTime = performance.now();
+    this._runner = null;
+    setTimeout(() => this.draw(), 100);
+  }
+  _valueToY(v) {
+    const n2 = (v - this.valueMin) / (this.valueMax - this.valueMin);
+    return (1 - n2) * this.height;
+  }
+  _yToValue(y2) {
+    const n2 = 1 - y2 / this.height;
+    return this.valueMin + n2 * (this.valueMax - this.valueMin);
+  }
+  _snap(value, steps) {
+    if (!this.snapEnabled) return value;
+    const range = this.valueMax - this.valueMin;
+    return Math.round((value - this.valueMin) / range * steps) / steps * range + this.valueMin;
+  }
+  // VALUE EVALUATION (HERMITE)
+  getValue(t) {
+    t = Math.max(0, Math.min(1, t));
+    for (let i = 0; i < this.keys.length - 1; i++) {
+      const k0 = this.keys[i];
+      const k1 = this.keys[i + 1];
+      if (t >= k0.time && t <= k1.time) {
+        const dt = k1.time - k0.time;
+        const u = (t - k0.time) / dt;
+        const u2 = u * u;
+        const u3 = u2 * u;
+        const m0 = k0.outTangent * dt;
+        const m1 = k1.inTangent * dt;
+        return (2 * u3 - 3 * u2 + 1) * k0.value + (u3 - 2 * u2 + u) * m0 + (-2 * u3 + 3 * u2) * k1.value + (u3 - u2) * m1;
+      }
+    }
+    return this.keys.at(-1).value;
+  }
+  // DRAW
+  draw() {
+    const padLeft = 32;
+    const padBottom = 18;
+    const ctx = this.ctx;
+    const w = this.width - padLeft;
+    const h = this.height - padBottom;
+    ctx.save();
+    ctx.translate(padLeft, 0);
+    ctx.clearRect(0, 0, w, h);
+    ctx.fillStyle = "#0b0f14";
+    ctx.fillRect(0, 0, w, h);
+    ctx.strokeStyle = "#1c2533";
+    for (let i = 0; i <= 10; i++) {
+      const x2 = i / 10 * w;
+      const y3 = i / 10 * h;
+      ctx.beginPath();
+      ctx.moveTo(x2, 0);
+      ctx.lineTo(x2, h);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(0, y3);
+      ctx.lineTo(w, y3);
+      ctx.stroke();
+    }
+    ctx.fillStyle = "#9aa7b2";
+    ctx.font = "11px monospace";
+    ctx.textAlign = "right";
+    ctx.textBaseline = "middle";
+    ctx.fillText("+1", -6, this._valueToY(1));
+    ctx.fillText("0", -6, this._valueToY(0));
+    ctx.fillText("-1", -6, this._valueToY(-1));
+    const zeroY = this._valueToY(0);
+    ctx.strokeStyle = "#2e3b4e";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(0, zeroY);
+    ctx.lineTo(w, zeroY);
+    ctx.stroke();
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = "#4fc3f7";
+    ctx.beginPath();
+    for (let i = 0; i <= 100; i++) {
+      const t = i / 100;
+      const x2 = t * w;
+      const y3 = this._valueToY(this.getValue(t));
+      i === 0 ? ctx.moveTo(x2, y3) : ctx.lineTo(x2, y3);
+    }
+    ctx.stroke();
+    this.keys.forEach((k) => {
+      const x2 = k.time * (this.width - this.padLeft);
+      const y3 = this._valueToY(k.value);
+      ctx.strokeStyle = "#888";
+      ctx.beginPath();
+      ctx.moveTo(x2, y3);
+      ctx.lineTo(x2 + 30, y3 - k.outTangent * 30);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(x2, y3);
+      ctx.lineTo(x2 - 30, y3 + k.inTangent * 30);
+      ctx.stroke();
+      ctx.fillStyle = "#ffcc00";
+      ctx.beginPath();
+      ctx.arc(x2, y3, 4, 0, Math.PI * 2);
+      ctx.fill();
+    });
+    const playX = this.time * w;
+    const playY = this._valueToY(this.getValueNow());
+    ctx.strokeStyle = "#ff5555";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(playX, 0);
+    ctx.lineTo(playX, h);
+    ctx.stroke();
+    ctx.fillStyle = "#ff5555";
+    ctx.beginPath();
+    ctx.arc(playX, playY, 5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.lineWidth = 1;
+    ctx.restore();
+    ctx.fillStyle = "#9aa7b2";
+    ctx.font = "11px monospace";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "top";
+    const y2 = this.height - padBottom + 2;
+    ctx.fillText("0", padLeft, y2);
+    ctx.fillText(
+      (this.length * 0.5).toFixed(2) + "s",
+      padLeft + w * 0.5,
+      y2
+    );
+    ctx.fillText(
+      this.length.toFixed(2) + "s",
+      padLeft + w,
+      y2
+    );
+    this._updateToolbar();
+  }
+  _getMouse(e) {
+    const r2 = this.canvas.getBoundingClientRect();
+    return {
+      x: e.clientX - r2.left - this.padLeft,
+      y: e.clientY - r2.top
+    };
+  }
+  _bindMouse() {
+    const hitKey = (mx, my) => {
+      const w = this.width - this.padLeft;
+      return this.keys.find((k) => {
+        const x2 = k.time * w;
+        const y2 = this._valueToY(k.value);
+        const HIT_RADIUS = 10;
+        return Math.hypot(mx - x2, my - y2) <= HIT_RADIUS;
+      });
+    };
+    const hitPlayhead = (mx, my) => {
+      if (this.isGraphRunning) return false;
+      const w = this.width - this.padLeft;
+      const playX = this.time * w;
+      const playY = this._valueToY(this.getValueNow());
+      return Math.hypot(mx - playX, my - playY) < 8;
+    };
+    this.canvas.addEventListener("mousedown", (e) => {
+      const { x: mx, y: my } = this._getMouse(e);
+      if (hitPlayhead(mx, my)) {
+        this.activeKey = "playhead";
+        this.dragMode = "playhead";
+        return;
+      }
+      const k = hitKey(mx, my);
+      if (k) {
+        const w = this.width - this.padLeft;
+        const kx = k.time * w;
+        const ky = this._valueToY(k.value);
+        this._grabDX = mx - kx;
+        this._grabDY = my - ky;
+        this.activeKey = k;
+        this.dragMode = e.shiftKey ? "tangent" : "key";
+      }
+    });
+    window.addEventListener("mousemove", (e) => {
+      if (!this.activeKey) return;
+      const { x: mx, y: my } = this._getMouse(e);
+      if (this.dragMode === "playhead" && this.activeKey === "playhead") {
+        const w = this.width - this.padLeft;
+        let t = Math.max(0, Math.min(1, mx / w));
+        t = this._snap(t, this.snapSteps);
+        this.time = t;
+        this.draw();
+        return;
+      }
+      if (this.dragMode === "key") {
+        const w = this.width - this.padLeft;
+        let t = (mx - this._grabDX) / w;
+        let v = this._yToValue(my - this._grabDY);
+        v = Math.max(this.valueMin, Math.min(this.valueMax, v));
+        v = this._snap(v, this.snapValueSteps);
+        t = this._snap(t, this.snapSteps);
+        v = this._snap(v, this.snapValueSteps);
+        this.activeKey.time = t;
+        this.activeKey.value = v;
+        this.keys.sort((a, b) => a.time - b.time);
+      }
+      if (this.dragMode === "tangent") {
+        const dx = mx / r.width - this.activeKey.time;
+        const dy = 1 - my / r.height - this.activeKey.value;
+        this.activeKey.outTangent = dy / dx || 0;
+        this.activeKey.inTangent = this.activeKey.outTangent;
+      }
+      this.draw();
+      this._reBake();
+    });
+    window.addEventListener("mouseup", () => {
+      this.activeKey = null;
+      this.dragMode = null;
+    });
+    this.canvas.addEventListener("dblclick", (e) => {
+      const { x: x2, y: y2 } = this._getMouse(e);
+      const w = this.width - this.padLeft;
+      const t = Math.max(0, Math.min(1, x2 / w));
+      const v = this._yToValue(y2);
+      this.keys.push({
+        time: t,
+        value: v,
+        inTangent: 0,
+        outTangent: 0
+      });
+      this.keys.sort((a, b) => a.time - b.time);
+      this._reBake();
+      this.draw();
+    });
+    this.canvas.addEventListener("contextmenu", (e) => {
+      e.preventDefault();
+      const { x: mx, y: my } = this._getMouse(e);
+      const k = hitKey(mx, my);
+      if (k && this.keys.length > 2) {
+        this.keys = this.keys.filter((x2) => x2 !== k);
+        this.draw();
+        this._reBake();
+      }
+    });
+  }
+  // BAKING
+  bake(samples = this.samples) {
+    const data = new Float32Array(samples);
+    for (let i = 0; i < samples; i++) {
+      const t = i / (samples - 1);
+      data[i] = this.getValue(t);
+    }
+    return data;
+  }
+  _reBake() {
+    this.baked = this.bake(this.samples);
+  }
+  exec(delta) {
+    if (!this.isGraphRunning) return this.value;
+    this.time += delta / this.length * this.speed;
+    if (this.loop && this.time > 1) this.time = 0;
+    if (!this.loop && this.time > 1) {
+      this.time = 1;
+      this.stop();
+    }
+    const idx = Math.floor(this.time * (this.samples - 1));
+    this.value = this.baked[idx];
+    this.draw();
+    return this.value;
+  }
+  // SYNTETIC FOR NOW 
+  play() {
+    if (this.isGraphRunning) return;
+    this.isGraphRunning = true;
+    this._lastTime = performance.now();
+    this._runner = setInterval(() => {
+      const now = performance.now();
+      const delta = (now - this._lastTime) / 1e3;
+      this._lastTime = now;
+      this.exec(delta);
+    }, 16);
+  }
+  stop() {
+    this.isGraphRunning = false;
+    if (this._runner) {
+      clearInterval(this._runner);
+      this._runner = null;
+    }
+    this.draw();
+  }
+  getValueNow() {
+    return this.value;
+  }
+  _createPopup() {
+    this.popup = document.createElement("div");
+    this.popup.id = "curve-editor";
+    Object.assign(this.popup.style, {
+      position: "fixed",
+      top: "20%",
+      left: "20%",
+      transform: "translate(-50%,-50%)",
+      background: "#111",
+      border: "1px solid #333",
+      padding: "8px",
+      display: "none",
+      zIndex: 999999,
+      width: "650px",
+      height: "336px"
+    });
+    this.popup.appendChild(this.canvas);
+    document.body.appendChild(this.popup);
+  }
+  toggleEditor() {
+    console.log("_editorOpen");
+    this._editorOpen = !this._editorOpen;
+    this.popup.style.display = this._editorOpen ? "block" : "none";
+    this.draw();
+  }
+  _buildToolbar() {
+    this.root = document.createElement("div");
+    this.root.style.cssText = `
+    background:#0b0f14;
+    border:1px solid #1c2533;
+    font-family:monospace;
+    color:#cfd8dc;
+    width:${this.width}px;
+  `;
+    this.toolbar = document.createElement("div");
+    this.toolbar.style.cssText = `
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:4px 6px;
+    background:#121822;
+    border-bottom:1px solid #1c2533;
+    font-size:12px;
+  `;
+    this.nameInput = document.createElement("input");
+    this.nameInput.value = this.name;
+    this.nameInput.style.cssText = `
+    width:80px;
+    background:#0b0f14;
+    border:1px solid #1c2533;
+    color:#fff;
+    padding:2px 4px;
+  `;
+    this.nameInput.onchange = () => this.name = this.nameInput.value;
+    this.playBtn = document.createElement("button");
+    this.playBtn.textContent = "\u25B6";
+    this.playBtn.style.cssText = `
+      background:#1c2533;
+      color:#fff;
+      border:none;
+      padding:2px 8px;
+      cursor:pointer;
+    `;
+    this.playBtn.onclick = () => {
+      this.isGraphRunning ? this.stop() : this.play();
+    };
+    this.lengthInput = document.createElement("input");
+    this.lengthInput.type = "number";
+    this.lengthInput.value = this.length;
+    this.lengthInput.step = "0.1";
+    this.lengthInput.style.cssText = `
+      width:60px;
+      background:#0b0f14;
+      border:1px solid #1c2533;
+      color:#fff;
+      padding:2px 4px;
+    `;
+    this.lengthInput.onchange = () => {
+      this.length = Math.max(0.01, parseFloat(this.lengthInput.value));
+    };
+    this.timeLabel = document.createElement("span");
+    this.valueLabel = document.createElement("span");
+    this.runLabel = document.createElement("span");
+    this.snapBtn = document.createElement("button");
+    this.snapBtn.textContent = "Snap";
+    this.snapBtn.style.cssText = `
+    background:#1c2533;
+    color:#fff;
+    border:none;
+    padding:2px 6px;
+    cursor:pointer;
+  `;
+    this.snapBtn.onclick = () => {
+      this.snapEnabled = !this.snapEnabled;
+      this.snapBtn.style.opacity = this.snapEnabled ? "1" : "0.4";
+    };
+    const lenLabel = document.createElement("span");
+    lenLabel.textContent = "Len";
+    this.resetBtn = document.createElement("button");
+    this.resetBtn.textContent = "Reset";
+    this.resetBtn.style.cssText = this.snapBtn.style.cssText;
+    this.resetBtn.onclick = () => {
+      this.time = 0;
+      this.draw();
+    };
+    this.toolbar.append(
+      this.nameInput,
+      this.playBtn,
+      lenLabel,
+      this.lengthInput,
+      this.timeLabel,
+      this.valueLabel,
+      this.runLabel,
+      this.snapBtn,
+      this.resetBtn
+    );
+    this.root.append(this.toolbar);
+    this.popup.appendChild(this.root);
+  }
+  _updateToolbar = () => {
+    this.currentValue = this.getValueNow();
+    const timeSec = this.time * this.length;
+    this.timeLabel.textContent = `T: ${timeSec.toFixed(2)}s`;
+    this.valueLabel.textContent = `V: ${this.currentValue.toFixed(3)}`;
+    this.runLabel.textContent = this.isGraphRunning ? "\u25B6 RUN" : "\u23F8 STOP";
+    this.runLabel.style.color = this.isGraphRunning ? "#4caf50" : "#ff9800";
+    this.playBtn.textContent = this.isGraphRunning ? "\u23F8" : "\u25B6";
+  };
+  _enableDrag() {
+    const el2 = this.popup;
+    const handle = this.toolbar;
+    let isDown = false;
+    let startX = 0;
+    let startY = 0;
+    let startLeft = 0;
+    let startTop = 0;
+    handle.style.cursor = "move";
+    handle.addEventListener("mousedown", (e) => {
+      isDown = true;
+      startX = e.clientX;
+      startY = e.clientY;
+      const rect = el2.getBoundingClientRect();
+      startLeft = rect.left;
+      startTop = rect.top;
+      document.body.style.userSelect = "none";
+    });
+    window.addEventListener("mousemove", (e) => {
+      if (!isDown) return;
+      const dx = e.clientX - startX;
+      const dy = e.clientY - startY;
+      el2.style.left = startLeft + dx + "px";
+      el2.style.top = startTop + dy + "px";
+      el2.style.transform = "none";
+    });
+    window.addEventListener("mouseup", () => {
+      isDown = false;
+      document.body.style.userSelect = "";
+    });
+  }
+};
+
 // ../fluxCodexVertex.js
 var runtimeCacheObjs = [];
 var FluxCodexVertex = class {
   constructor(boardId, boardWrapId, logId, methodsManager, projName) {
     this.debugMode = true;
     this.toolTip = new METoolTip();
+    this.curveEditor = new CurveEditor();
     this.SAVE_KEY = "fluxCodexVertex" + projName;
     this.methodsManager = methodsManager;
     this.variables = {
@@ -16302,6 +16788,10 @@ var FluxCodexVertex = class {
       e.detail.path = e.detail.path.replace("\\res", "res");
       e.detail.path = e.detail.path.replace(/\\/g, "/");
       this.addNode("audioMP3", e.detail);
+    });
+    document.addEventListener("show-curve-editor", (e) => {
+      console.log("show-showCurveEditorBtn editor ", e);
+      this.curveEditor.toggleEditor();
     });
   }
   createContextMenu() {
@@ -18857,8 +19347,8 @@ var FluxCodexVertex = class {
           let varA = this.getValue(nodeId2, "A");
           let varB = this.getValue(nodeId2, "B");
           if (typeof varA == "object") {
-            const r = this.deepEqual(varA, varB);
-            result2 = r;
+            const r2 = this.deepEqual(varA, varB);
+            result2 = r2;
           } else {
             result2 = this.getValue(nodeId2, "A") != this.getValue(nodeId2, "B");
           }
@@ -18867,8 +19357,8 @@ var FluxCodexVertex = class {
           let varAN = this.getValue(nodeId2, "A");
           let varBN = this.getValue(nodeId2, "B");
           if (typeof varAN == "object") {
-            const r = this.deepEqual(varAN, varBN);
-            result2 = !r;
+            const r2 = this.deepEqual(varAN, varBN);
+            result2 = !r2;
           } else {
             result2 = this.getValue(nodeId2, "A") != this.getValue(nodeId2, "B");
           }
@@ -19557,8 +20047,8 @@ var FluxCodexVertex = class {
           let varA = this.getValue(nodeId, "A");
           let varB = this.getValue(nodeId, "B");
           if (typeof varA == "object") {
-            const r = this.deepEqual(varA, varB);
-            result2 = r;
+            const r2 = this.deepEqual(varA, varB);
+            result2 = r2;
           } else {
             result2 = this.getValue(nodeId, "A") != this.getValue(nodeId, "B");
           }
@@ -19567,8 +20057,8 @@ var FluxCodexVertex = class {
           let varAN = this.getValue(nodeId, "A");
           let varBN = this.getValue(nodeId, "B");
           if (typeof varAN == "object") {
-            const r = this.deepEqual(varAN, varBN);
-            result2 = !r;
+            const r2 = this.deepEqual(varAN, varBN);
+            result2 = !r2;
           } else {
             result2 = this.getValue(nodeId, "A") != this.getValue(nodeId, "B");
           }
@@ -20095,12 +20585,17 @@ var EditorHud = class {
         </div>
         <div id="showCodeVARSBtn" class="drop-item btn4">
            <span>Variable editor</span>
-           <small>\u2328\uFE0FVisual Script tool</small>
+           <small>\u{1F527}Visual Script tool</small>
         </div>
         <div id="showCodeEditorBtn" class="drop-item btn4">
            <span>Show code editor</span>
-           <small>\u2328\uFE0FFunction raw edit</small>
+           <small>\u{1F469}\u200D\u{1F4BB}Function raw edit</small>
            <small>Custom Functions</small>
+        </div>
+        <div id="showCurveEditorBtn" class="drop-item btn4">
+           <span>Show curve editor</span>
+           <small>\u{1F4C8}Timeline curve editor</small>
+           <small> </small>
         </div>
       </div>
     </div>
@@ -20287,6 +20782,10 @@ var EditorHud = class {
     byId("showCodeEditorBtn").addEventListener("click", (e) => {
       console.log("show-method-editor ", e);
       document.dispatchEvent(new CustomEvent("show-method-editor", { detail: {} }));
+    });
+    byId("showCurveEditorBtn").addEventListener("click", (e) => {
+      console.log("show-showCurveEditorBtn editor ", e);
+      document.dispatchEvent(new CustomEvent("show-curve-editor", { detail: {} }));
     });
     byId("showVisualCodeEditorBtn").addEventListener("click", (e) => {
       if (byId("app").style.display == "flex") {
@@ -21036,8 +21535,8 @@ var MethodsManager = class {
     this.editorType = editorType;
     this.methodsContainer = [];
     this.createUI();
-    this.loadMethods(editorType).then((r) => {
-      this.methodsContainer = r;
+    this.loadMethods(editorType).then((r2) => {
+      this.methodsContainer = r2;
       this.refreshSelect();
       this.select.click();
     });
@@ -22207,16 +22706,16 @@ var MatrixEngineWGPU = class {
     };
     this.label = new MultiLang();
     if (urlQuery.lang != null) {
-      this.label.loadMultilang(urlQuery.lang).then((r) => {
-        this.label.get = r;
-      }).catch((r) => {
-        this.label.get = r;
+      this.label.loadMultilang(urlQuery.lang).then((r2) => {
+        this.label.get = r2;
+      }).catch((r2) => {
+        this.label.get = r2;
       });
     } else {
-      this.label.loadMultilang().then((r) => {
-        this.label.get = r;
-      }).catch((r) => {
-        this.label.get = r;
+      this.label.loadMultilang().then((r2) => {
+        this.label.get = r2;
+      }).catch((r2) => {
+        this.label.get = r2;
       });
       ;
     }
