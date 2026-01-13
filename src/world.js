@@ -810,11 +810,11 @@ export default class MatrixEngineWGPU {
       // Loop over each mesh
 
       for(const mesh of this.mainRenderBundle) {
-        // mesh.position.update()
+        now = performance.now() / 1000;
+        deltaTime = now - (this.lastTime || now);
+        this.lastTime = now;
         if(mesh.update) {
-          now = performance.now() / 1000; // seconds
-          deltaTime = now - (this.lastTime || now);
-          this.lastTime = now;
+
           mesh.update(deltaTime); // glb
         }
         pass.setPipeline(mesh.pipeline);
@@ -891,7 +891,7 @@ export default class MatrixEngineWGPU {
       pass.draw(6);
       pass.end();
 
-      this.graphUpdate(deltaTime);
+      this.graphUpdate(now);
       this.device.queue.submit([commandEncoder.finish()]);
       requestAnimationFrame(this.frame);
     } catch(err) {

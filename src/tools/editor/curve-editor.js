@@ -3,8 +3,13 @@
  * Matrix-Engine-Wgpu Curve Editor
  */
 
+import {LOG_FUNNY_ARCADE} from "../../engine/utils";
+
 export class CurveEditor {
   constructor({width = 650, height = 300, samples = 128} = {}) {
+
+    this.curveStore = new CurveStore();
+
     this.width = width;
     this.height = height;
     this.samples = samples;
@@ -356,6 +361,7 @@ export class CurveEditor {
   _reBake() {this.baked = this.bake(this.samples);}
 
   exec(delta) {
+    console.log('???????????????????');
     if(!this.isGraphRunning) return this.value;
 
     this.time += (delta / this.length) * this.speed;
@@ -521,6 +527,40 @@ export class CurveEditor {
       this.draw();
     };
 
+    this.saveBtn = document.createElement("button");
+    this.saveBtn.textContent = "💾 Save";
+    this.saveBtn.style.cssText = `
+  background:#1c2533;
+  color:#fff;
+  border:none;
+  padding:2px 6px;
+  cursor:pointer;
+`;
+    this.saveBtn.onclick = () => {
+      if(!this.curveStore) this.curveStore = new CurveStore(); // make sure store exists
+      const data = new CurveData(this.name);
+      data.keys = this.keys.map(k => ({...k}));  // copy keys
+      data.length = this.length;
+      data.loop = this.loop;
+
+      this.curveStore.save(data); // save to store + localStorage
+      console.log(`%c Curve [${this.name}] saved!`, "color:#4caf50;font-weight:bold");
+    };
+
+    this.hideBtn = document.createElement("button");
+    this.hideBtn.textContent = "Hide";
+    this.hideBtn.style.cssText = `
+      background:#1c2533;
+      color:#fff;
+      border:none;
+      padding:2px 6px;
+      cursor:pointer;
+    `;
+    this.hideBtn.onclick = () => {
+      this.toggleEditor();
+      console.log(`%c Curve [${this.name}] saved!`, LOG_FUNNY_ARCADE);
+    };
+
     this.toolbar.append(
       this.nameInput,
       this.playBtn,
@@ -530,7 +570,9 @@ export class CurveEditor {
       this.valueLabel,
       this.runLabel,
       this.snapBtn,
-      this.resetBtn
+      this.resetBtn,
+      this.saveBtn,
+      this.hideBtn
     );
 
     this.root.append(this.toolbar);
@@ -596,5 +638,151 @@ export class CurveEditor {
       isDown = false;
       document.body.style.userSelect = "";
     });
+  }
+
+  bindCurve(curve) {
+    console.log(".............. curve", curve);
+    this.curve = curve;
+    this.keys = curve.keys;
+    this.length = curve.length;
+    this.loop = curve.loop;
+    this.name = curve.name || "Curve123";
+    this.time = 0;
+    this._reBake();
+    this.draw();
+  }
+}
+
+/**
+ * @description
+ * Data class
+ **/
+
+export class CurveData {
+  constructor(name) {
+    this.name = name;
+    this.keys = [
+      {time: 0, value: 0, inTangent: 0, outTangent: 0},
+      {time: 1, value: 1, inTangent: 0, outTangent: 0}
+    ];
+    this.length = 1;
+    this.loop = true;
+
+    this.baked = null;
+  }
+
+  bake(resolution = 256) {
+    this.baked = new Float32Array(resolution);
+    for(let i = 0;i < resolution;i++) {
+      const t = i / (resolution - 1);
+      this.baked[i] = this.evaluateRaw(t);
+    }
+  }
+
+  evaluateRaw(t) {
+    // simple linear for now
+    const k0 = this.keys[0];
+    const k1 = this.keys[this.keys.length - 1];
+    return k0.value + (k1.value - k0.value) * t;
+  }
+
+  evaluate(time01) {
+    if(!this.baked) this.bake();
+
+    let t = time01;
+    if(this.loop) t = t % 1;
+    else t = Math.min(1, Math.max(0, t));
+
+    const idx = Math.floor(t * (this.baked.length - 1));
+    return this.baked[idx];
+  }
+}
+
+class CurveStore {
+  constructor() {
+    this.CURVE_STORAGE_KEY = "PROJECT_NAME";
+    this.curves = [];
+    this.load();
+  }
+
+  has(name) {
+    return this.curves.some(c => c.name === name);
+  }
+
+  getOrCreate(curveArg) {
+    console.log('getOrCreate')
+    let curve = this.curves.find(c => c.name === curveArg.name);
+    if(curve) return curve;
+    curve = new CurveData(curveArg.name);
+    this.curves.push(curve);
+    return curve;
+  }
+
+  getByName(name) {
+    return this.curves.find(c => c.name === name) || null;
+  }
+
+  add(curve) {
+    this.curves.push(curve);
+    this.save();
+  }
+
+  removeByName(name) {
+    this.curves = this.curves.filter(c => c.name !== name);
+    this.save();
+  }
+
+  getByName(name) {
+    return this.curves.find(c => c.name === name);
+  }
+
+  getAll() {
+    return this.curves;
+  }
+
+  // =====================
+  // SAVE / LOAD
+  // =====================
+  save() {
+    const data = {
+      version: 1,
+      curves: this.curves
+    };
+    localStorage.setItem(this.CURVE_STORAGE_KEY, JSON.stringify(data));
+  }
+
+  //   save(curveData) {
+  //   // replace if exists
+  //   const idx = this.container.findIndex(c => c.name === curveData.name);
+  //   if(idx >= 0) this.container[idx] = curveData;
+  //   else this.container.push(curveData);
+
+  //   localStorage.setItem("curveStore", JSON.stringify(this.container));
+  // }
+
+  load() {
+    const raw = localStorage.getItem(this.CURVE_STORAGE_KEY);
+    if(!raw) return;
+
+    try {
+      const data = JSON.parse(raw);
+      if(!data.curves) return;
+
+      this.curves = data.curves.map(c => this._fromJSON(c));
+    } catch(e) {
+      console.warn("CurveStore load failed", e);
+      this.curves = [];
+    }
+  }
+
+  // =====================
+  // DESERIALIZE
+  // =====================
+  _fromJSON(obj) {
+    const c = new CurveData(obj.name);
+    c.keys = obj.keys || [];
+    c.length = obj.length ?? 1;
+    c.loop = !!obj.loop;
+    return c;
   }
 }

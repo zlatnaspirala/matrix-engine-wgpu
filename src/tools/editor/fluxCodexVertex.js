@@ -37,7 +37,7 @@
  */
 import {METoolTip} from "../../engine/plugin/tooltip/ToolTip";
 import {byId, LOG_FUNNY_ARCADE, mb} from "../../engine/utils";
-import {CurveEditor} from "./curve-editor";
+import {CurveData, CurveEditor} from "./curve-editor";
 
 // Engine agnostic
 export let runtimeCacheObjs = [];
@@ -1118,6 +1118,20 @@ export default class FluxCodexVertex {
     row.appendChild(right);
     body.appendChild(row);
 
+    if(spec.title == "Curve") {
+
+      const c = new CurveData(spec.id);
+      let curve = this.curveEditor.curveStore.getOrCreate(c);
+      spec.curve = curve;
+
+      console.log(`%c Create DOM corotine Node [CURVE] ${spec.curve}`, LOG_FUNNY_ARCADE);
+
+      this.curveEditor.bindCurve(spec.curve, {
+        name: spec.title,
+        idNode: spec.id
+      });
+    }
+
     if(spec.comment) {
       const textarea = document.createElement("textarea");
       // textarea.style
@@ -1292,6 +1306,13 @@ export default class FluxCodexVertex {
       this.selectNode(spec.id);
 
       this.updateNodeDOM(spec.id)
+    });
+
+    el.addEventListener("dblclick", e => {
+      e.stopPropagation();
+      console.log('DBL ' + spec.id);
+      this.onNodeDoubleClick(spec);
+
     });
 
     return el;
@@ -1538,7 +1559,24 @@ export default class FluxCodexVertex {
         noselfExec: "true"
       }),
 
-
+      curveTimeline: (id, x, y) => ({
+        id, x, y, title: "Curve",
+        category: "action",
+        inputs: [
+          {name: "exec", type: "action"},
+          {name: "name", type: "string"},
+          {name: "delta", type: "number"},
+        ],
+        outputs: [
+          {name: "execOut", type: "action"},
+          {name: "value", type: "number"}
+        ],
+        fields: [
+          {key: "name", value: "Curve1"}
+        ],
+        curve: {},
+        noselfExec: "true"
+      }),
 
       eventCustom: (id, x, y) => ({
         id, x, y,
@@ -2622,7 +2660,8 @@ export default class FluxCodexVertex {
         n._frameCounter++;
         if(skip > 0 && n._frameCounter < skip) return;
         n._frameCounter = 0;
-        graph._returnCache = delta;
+        console.info('.....', delta)
+        n._returnCache = delta;
         graph.enqueueOutputs(n, "exec");
       };
       n._listenerAttached = true;
@@ -2670,6 +2709,15 @@ export default class FluxCodexVertex {
         }
       }
       return node.fn;
+    }
+
+    if(node.title === "On Draw") {
+      if (pinName=="delta") {
+        return node._returnCache;
+      }
+    }
+    if(node.title === "Curve") {
+        console.warn('curve node', node);
     }
 
     if(node.title === "On Ray Hit") {
@@ -3501,21 +3549,16 @@ export default class FluxCodexVertex {
       } else if(n.title === "Set CanvasInline") {
         const objectName = this.getValue(nodeId, "objectName");
         let canvaInlineProgram = this.getValue(nodeId, "canvaInlineProgram");
-
         let specialCanvas2dArg = this.getValue(nodeId, "specialCanvas2dArg");
-        //     {key: "specialCanvas2dArg", value: "{ hue: 200, glow: 10, text: node.id, fontSize: 80, flicker: 0.05, }"},
-
         if(!objectName) {
           console.log(`%c Node [Set CanvasInline] probably objectname is missing...`, LOG_FUNNY_ARCADE);
           this.enqueueOutputs(n, "execOut");
           return;
         }
-        console.warn("[canvaInlineProgram] specialCanvas2dArg arg:", specialCanvas2dArg);
-
+        // console.warn("[canvaInlineProgram] specialCanvas2dArg arg:", specialCanvas2dArg);
         if(typeof specialCanvas2dArg == 'string') {
           eval("specialCanvas2dArg = " + specialCanvas2dArg);
         }
-
         if(typeof canvaInlineProgram != 'function') {
           // console.warn("[canvaInlineProgram] arg is not object!:", canvaInlineProgram);
           if(typeof canvaInlineProgram == 'string') {
@@ -3531,13 +3574,34 @@ export default class FluxCodexVertex {
           mb.show("FluxCodexVertex Exec order is breaked on [Set CanvasInline] node id:", n.id);
           return;
         }
-        mb.show("FluxCodexVertex WHAT IS on [Set CanvasInline] node id:", n.id);
+        // mb.show("FluxCodexVertex WHAT IS on [Set CanvasInline] node id:", n.id);
         o.loadVideoTexture({
           type: "canvas2d-inline",
           canvaInlineProgram: canvaInlineProgram,
           specialCanvas2dArg: specialCanvas2dArg ? specialCanvas2dArg : undefined
         });
 
+        this.enqueueOutputs(n, "execOut");
+        return;
+      } else if(n.title === "Curve") {
+        const cName = this.getValue(nodeId, "name");
+        const cDelta = this.getValue(nodeId, "delta");
+        console.log(`%c trigger [CURVE] name: ${cName}  cDelta: ${cDelta} `, LOG_FUNNY_ARCADE);
+        if(!cName) {
+          console.log(`%c Node [CURVE] probably name is missing...`, LOG_FUNNY_ARCADE);
+          this.enqueueOutputs(n, "execOut");
+          return;
+        }
+        const c = new CurveData(cName);
+        let curve = this.curveEditor.curveStore.getOrCreate(c);
+        if (!curve.baked) curve.bake();
+        n.curve = curve;
+        console.log(`%c Node setup from store [CURVE] ${n.curve}`, LOG_FUNNY_ARCADE);
+        // works only if playing 
+        // let V = this.curveEditor.exec(cDelta);
+        let V = n.curve.evaluate(cDelta);
+        console.log(`%c [CURVE VALUE FROM EXEC] ${V}`, LOG_FUNNY_ARCADE);
+        n._returnCache = V;
         this.enqueueOutputs(n, "execOut");
         return;
       }
@@ -4100,6 +4164,17 @@ export default class FluxCodexVertex {
 
     this.compileGraph();
     return;
+  }
+
+  // test
+  onNodeDoubleClick(node) {
+    console.log(`%c Node [CURVE  func] ${node.curve}`, LOG_FUNNY_ARCADE);
+    if(node.title !== "Curve") return;
+    this.curveEditor.bindCurve(node.curve, {
+      name: node.title,
+      idNode: node.id
+    });
+    this.curveEditor.toggleEditor(true);
   }
 
 }
