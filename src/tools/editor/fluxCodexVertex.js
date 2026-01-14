@@ -37,6 +37,7 @@
  */
 import {METoolTip} from "../../engine/plugin/tooltip/ToolTip";
 import {byId, LOG_FUNNY_ARCADE, mb, OSCILLATOR} from "../../engine/utils";
+import {MatrixMusicAsset} from "../../sounds/audioAsset";
 import {CurveData, CurveEditor} from "./curve-editor";
 
 // Engine agnostic
@@ -1557,6 +1558,25 @@ export default class FluxCodexVertex {
           {key: "objectName", value: "standard"},
           {key: "canvaInlineProgram", value: "function (ctx, canvas) {}"},
           {key: "specialCanvas2dArg", value: "{ hue: 200, glow: 10, text: 'Hello programmer', fontSize: 60, flicker: 0.05, }"},
+        ],
+        noselfExec: "true"
+      }),
+
+      audioReactiveNode: (id, x, y) => ({
+        id, x, y, title: "Audio Reactive Node",
+        category: "action",
+        inputs: [
+          {name: "exec", type: "action"},
+          {name: "audioSrc", type: "string"},
+        ],
+        outputs: [
+          {name: "execOut", type: "action"},
+          {name: "audioOut", type: "number"}
+        ],
+        fields: [
+          {key: "audioSrc", value: "res/audios/audionautix-black-fly.mp3"},
+          {key: "specialArg", value: "{}"},
+          {key: "created", value: false},
         ],
         noselfExec: "true"
       }),
@@ -3625,6 +3645,25 @@ export default class FluxCodexVertex {
       } else if(n.title === "getNumberLiteral") {
         const literailNum = this.getValue(nodeId, "number");
         n._returnCache = literailNum;
+      } else if(n.title === "Audio Reactive Node") {
+        const audioSrc = this.getValue(nodeId, "audioSrc");
+        console.log("TETS AUDIO")
+        const createdField = n.fields.find(f => f.key === "created");
+        if(createdField.value == "false" || createdField.value == false) {
+          console.log('!ONCE!');
+          return;
+          // createdField.value = true;
+        }
+        MatrixMusicAsset.load({path: audioSrc}).then((item) => {
+          console.log("TETS AUDIO", item)
+          let myUpdater = function() {
+            item.analyser.getByteFrequencyData(this.frequencyData);
+            for(var i = 1, j = 1;i < 1024;i = i + 80, j = j + 40) {
+              // position.SetY(blackfly.frequencyData[i]);
+            }
+          };
+        });
+        // console.log("TETS AUDIO", a)
       }
       this.enqueueOutputs(n, "execOut");
       return;
