@@ -3,10 +3,10 @@
  * Matrix-Engine-Wgpu Curve Editor
  */
 
-import {LOG_FUNNY_ARCADE} from "../../engine/utils";
+import {byId, LOG_FUNNY_ARCADE} from "../../engine/utils";
 
 export class CurveEditor {
-  constructor({width = 650, height = 300, samples = 128} = {}) {
+  constructor({width = 651, height = 300, samples = 128} = {}) {
 
     this.curveStore = new CurveStore();
 
@@ -48,8 +48,6 @@ export class CurveEditor {
     this.time = 0;
     this.loop = true;
     this.speed = 1;
-    this.baked = this.bake(samples);
-
     this.isGraphRunning = false;
 
     this._editorOpen = false;
@@ -61,6 +59,7 @@ export class CurveEditor {
     this.length = 1.0;
     this._lastTime = performance.now();
     this._runner = null;
+    this.baked = this.bake(samples);
     setTimeout(() => this.draw(), 100);
   }
 
@@ -119,7 +118,7 @@ export class CurveEditor {
     ctx.save();
     ctx.translate(padLeft, 0);
 
-    ctx.clearRect(0, 0, w, h);
+    ctx.clearRect(-50, -50, w + padLeft + 50, h + padBottom + 50);
     ctx.fillStyle = "#0b0f14";
     ctx.fillRect(0, 0, w, h);
 
@@ -138,9 +137,9 @@ export class CurveEditor {
     ctx.textAlign = "right";
     ctx.textBaseline = "middle";
 
-    ctx.fillText("+1", -6, this._valueToY(1));
+    ctx.fillText("+1", -6, this._valueToY(0.9));
     ctx.fillText("0", -6, this._valueToY(0));
-    ctx.fillText("-1", -6, this._valueToY(-1));
+    ctx.fillText("-1", -6, this._valueToY(-0.9));
 
     const zeroY = this._valueToY(0);
     ctx.strokeStyle = "#2e3b4e";
@@ -165,7 +164,7 @@ export class CurveEditor {
 
     // keys + tangents
     this.keys.forEach(k => {
-      const x = k.time * (this.width - this.padLeft);
+      const x = this._timeToX(k.time);
       const y = this._valueToY(k.value);
 
       // tangents
@@ -187,7 +186,7 @@ export class CurveEditor {
       ctx.fill();
     });
     // PLAYHEAD
-    const playX = this.time * w;
+    const playX = this._timeToX(this.time);
     const playY = this._valueToY(this.getValueNow());
     // vertical line
     ctx.strokeStyle = "#ff5555";
@@ -207,14 +206,14 @@ export class CurveEditor {
     ctx.restore();
 
     // ===== X AXIS LABELS =====
-    ctx.fillStyle = "#9aa7b2";
-    ctx.font = "11px monospace";
+    ctx.fillStyle = "#ffffffff";
+    ctx.font = "13px monospace";
     ctx.textAlign = "center";
     ctx.textBaseline = "top";
 
     const y = this.height - padBottom + 2;
 
-    ctx.fillText("0", padLeft, y);
+    ctx.fillText("0s", padLeft, y);
     ctx.fillText(
       (this.length * 0.5).toFixed(2) + "s",
       padLeft + w * 0.5,
@@ -239,11 +238,10 @@ export class CurveEditor {
 
   _bindMouse() {
     const hitKey = (mx, my) => {
-      const w = this.width - this.padLeft;
       return this.keys.find(k => {
-        const x = k.time * w;
+        const x = this._timeToX(k.time);
         const y = this._valueToY(k.value);
-        const HIT_RADIUS = 10;
+        const HIT_RADIUS = 20;
         return Math.hypot(mx - x, my - y) <= HIT_RADIUS;
       });
     };
@@ -251,7 +249,7 @@ export class CurveEditor {
     const hitPlayhead = (mx, my) => {
       if(this.isGraphRunning) return false;
       const w = this.width - this.padLeft;
-      const playX = this.time * w;
+      const playX = this._timeToX(this.time);
       const playY = this._valueToY(this.getValueNow());
       return Math.hypot(mx - playX, my - playY) < 8;
     };
@@ -290,7 +288,9 @@ export class CurveEditor {
       }
       if(this.dragMode === "key") {
         const w = this.width - this.padLeft;
+        // let t = (mx - this._grabDX) / w;
         let t = (mx - this._grabDX) / w;
+        t = Math.max(0, Math.min(1 - 1e-6, t));
         let v = this._yToValue(my - this._grabDY);
         v = Math.max(this.valueMin, Math.min(this.valueMax, v));
         v = this._snap(v, this.snapValueSteps);
@@ -348,6 +348,15 @@ export class CurveEditor {
     });
   }
 
+  _timeToX(t) {
+    const w = this.width - this.padLeft;
+    const R = 4;
+    let x = t * w;
+
+    // clamp so circle is fully inside canvas
+    return Math.min(Math.max(x, R), w - R);
+  }
+
   // BAKING
   bake(samples = this.samples) {
     const data = new Float32Array(samples);
@@ -361,17 +370,13 @@ export class CurveEditor {
   _reBake() {this.baked = this.bake(this.samples);}
 
   exec(delta) {
-    console.log('???????????????????');
     if(!this.isGraphRunning) return this.value;
-
     this.time += (delta / this.length) * this.speed;
-
     if(this.loop && this.time > 1) this.time = 0;
     if(!this.loop && this.time > 1) {
       this.time = 1;
       this.stop();
     }
-
     const idx = Math.floor(this.time * (this.samples - 1));
     this.value = this.baked[idx];
     this.draw();
@@ -412,12 +417,31 @@ export class CurveEditor {
       transform: "translate(-50%,-50%)",
       background: "#111",
       border: "1px solid #333",
-      padding: "8px",
+      padding: "5px",
       display: "none",
       zIndex: 999999,
       width: '650px',
-      height: '336px'
+      height: '409px',
+      paddingLeft: '2px',
+      paddingRight: '2px'
     });
+
+
+    this.toolbarTitle = document.createElement("div");
+    this.toolbarTitle.style.cssText = `
+      display:flex;
+      align-items:center;
+      gap:10px;
+      padding:4px 6px;
+      background:#121822;
+      border-bottom:1px solid #1c2533;
+      font-size:12px;
+      margin-bottom: 5px;
+    `;
+
+    this.toolbarTitle.innerHTML = `<h3>Curve Editor</h3>`
+
+    this.popup.appendChild(this.toolbarTitle);
     this.popup.appendChild(this.canvas);
     document.body.appendChild(this.popup);
   }
@@ -451,9 +475,10 @@ export class CurveEditor {
     font-size:12px;
   `;
 
-    // Curve name
     this.nameInput = document.createElement("input");
+    // console.log(this.name)
     this.nameInput.value = this.name;
+    this.nameInput.disabled = true;
     this.nameInput.style.cssText = `
     width:80px;
     background:#0b0f14;
@@ -530,21 +555,25 @@ export class CurveEditor {
     this.saveBtn = document.createElement("button");
     this.saveBtn.textContent = "💾 Save";
     this.saveBtn.style.cssText = `
-  background:#1c2533;
-  color:#fff;
-  border:none;
-  padding:2px 6px;
-  cursor:pointer;
-`;
+      background:#1c2533;
+      color:#fff;
+      border:none;
+      padding:2px 6px;
+      cursor:pointer;
+    `;
     this.saveBtn.onclick = () => {
-      if(!this.curveStore) this.curveStore = new CurveStore(); // make sure store exists
-      const data = new CurveData(this.name);
-      data.keys = this.keys.map(k => ({...k}));  // copy keys
-      data.length = this.length;
-      data.loop = this.loop;
-
-      this.curveStore.save(data); // save to store + localStorage
-      console.log(`%c Curve [${this.name}] saved!`, "color:#4caf50;font-weight:bold");
+      let curve = this.curveStore.getByName(this.name);
+      if(!curve) {
+        curve = new CurveData(this.name);
+        this.curveStore.curves.push(curve);
+      }
+      curve.keys = this.keys.map(k => ({...k}));
+      curve.length = this.length;
+      curve.loop = this.loop;
+      curve.bake(this.samples);
+      this.curveStore.save(curve);
+      byId('saveMainGraphDOM').click();
+      console.log(`%c Curve [${this.name}] saved`, "color:#4caf50;font-weight:bold");
     };
 
     this.hideBtn = document.createElement("button");
@@ -590,7 +619,7 @@ export class CurveEditor {
       `V: ${this.currentValue.toFixed(3)}`;
 
     this.runLabel.textContent =
-      this.isGraphRunning ? "▶ RUN" : "⏸ STOP";
+      this.isGraphRunning ? "ACTIVE" : "STOPED";
 
     this.runLabel.style.color =
       this.isGraphRunning ? "#4caf50" : "#ff9800";
@@ -602,6 +631,7 @@ export class CurveEditor {
   _enableDrag() {
     const el = this.popup;
     const handle = this.toolbar;
+    const handle2 = this.toolbarTitle;
 
     let isDown = false;
     let startX = 0;
@@ -610,8 +640,21 @@ export class CurveEditor {
     let startTop = 0;
 
     handle.style.cursor = "move";
+    handle2.style.cursor = "move";
 
     handle.addEventListener("mousedown", (e) => {
+      isDown = true;
+      startX = e.clientX;
+      startY = e.clientY;
+
+      const rect = el.getBoundingClientRect();
+      startLeft = rect.left;
+      startTop = rect.top;
+
+      document.body.style.userSelect = "none";
+    });
+
+    handle2.addEventListener("mousedown", (e) => {
       isDown = true;
       startX = e.clientX;
       startY = e.clientY;
@@ -640,13 +683,17 @@ export class CurveEditor {
     });
   }
 
-  bindCurve(curve) {
-    console.log(".............. curve", curve);
+  bindCurve(curve, meta = {}) {
+    console.log("BIND curve", curve, meta);
     this.curve = curve;
     this.keys = curve.keys;
     this.length = curve.length;
     this.loop = curve.loop;
-    this.name = curve.name || "Curve123";
+    this.name = meta.idNode;
+    this.nameInput.value = this.name;
+    this.lengthInput.value = this.length;
+    this.idNode = meta.idNode ?? null;
+
     this.time = 0;
     this._reBake();
     this.draw();
@@ -667,27 +714,48 @@ export class CurveData {
     ];
     this.length = 1;
     this.loop = true;
-
+    this.samples = 128;
     this.baked = null;
   }
 
-  bake(resolution = 256) {
-    this.baked = new Float32Array(resolution);
-    for(let i = 0;i < resolution;i++) {
-      const t = i / (resolution - 1);
-      this.baked[i] = this.evaluateRaw(t);
+  getValue(t) {
+    t = Math.max(0, Math.min(1, t));
+
+    for(let i = 0;i < this.keys.length - 1;i++) {
+      const k0 = this.keys[i];
+      const k1 = this.keys[i + 1];
+      if(t >= k0.time && t <= k1.time) {
+        const dt = k1.time - k0.time;
+        const u = (t - k0.time) / dt;
+        const u2 = u * u;
+        const u3 = u2 * u;
+        const m0 = k0.outTangent * dt;
+        const m1 = k1.inTangent * dt;
+        return (
+          (2 * u3 - 3 * u2 + 1) * k0.value +
+          (u3 - 2 * u2 + u) * m0 +
+          (-2 * u3 + 3 * u2) * k1.value +
+          (u3 - u2) * m1
+        );
+      }
+    }
+    return this.keys.at(-1).value;
+  }
+
+  // bake real values, not normalized 0-1
+  bake(samples = this.samples) {
+    this.baked = new Float32Array(samples);
+    for(let i = 0;i < samples;i++) {
+      const t = i / (samples - 1);
+      this.baked[i] = this.getValue(t);
     }
   }
 
-  evaluateRaw(t) {
-    // simple linear for now
-    const k0 = this.keys[0];
-    const k1 = this.keys[this.keys.length - 1];
-    return k0.value + (k1.value - k0.value) * t;
-  }
-
   evaluate(time01) {
-    if(!this.baked) this.bake();
+    if(!this.baked) {
+      console.warn("Curve not baked!");
+      return 0;
+    }
 
     let t = time01;
     if(this.loop) t = t % 1;
@@ -710,9 +778,10 @@ class CurveStore {
   }
 
   getOrCreate(curveArg) {
-    console.log('getOrCreate')
     let curve = this.curves.find(c => c.name === curveArg.name);
     if(curve) return curve;
+
+    console.log("PUSH in getOrCreate")
     curve = new CurveData(curveArg.name);
     this.curves.push(curve);
     return curve;
@@ -732,18 +801,13 @@ class CurveStore {
     this.save();
   }
 
-  getByName(name) {
-    return this.curves.find(c => c.name === name);
-  }
-
   getAll() {
     return this.curves;
   }
 
-  // =====================
   // SAVE / LOAD
-  // =====================
   save() {
+    console.log('TEST SAVE', this.curves);
     const data = {
       version: 1,
       curves: this.curves
@@ -751,13 +815,14 @@ class CurveStore {
     localStorage.setItem(this.CURVE_STORAGE_KEY, JSON.stringify(data));
   }
 
-  //   save(curveData) {
-  //   // replace if exists
-  //   const idx = this.container.findIndex(c => c.name === curveData.name);
-  //   if(idx >= 0) this.container[idx] = curveData;
-  //   else this.container.push(curveData);
-
-  //   localStorage.setItem("curveStore", JSON.stringify(this.container));
+  // saveCurve(curveData) {
+  //   const idx = this.curves.findIndex(c => c.name === curveData.name);
+  //   if(idx >= 0) {
+  //     this.curves[idx] = curveData;
+  //   } else {
+  //     this.curves.push(curveData);
+  //   }
+  //   this.save();
   // }
 
   load() {

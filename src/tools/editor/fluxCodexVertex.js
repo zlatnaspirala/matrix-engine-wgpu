@@ -1070,6 +1070,8 @@ export default class FluxCodexVertex {
       el.className = "node " + (spec.title.toLowerCase() || "");
     } else if(spec.title == "Play MP3") {
       el.className = "node " + "audios";
+    } else if(spec.title == "Curve") {
+      el.className = "node " + "curve";
     } else {
       el.className = "node " + (spec.category || "");
     }
@@ -1127,7 +1129,7 @@ export default class FluxCodexVertex {
       console.log(`%c Create DOM corotine Node [CURVE] ${spec.curve}`, LOG_FUNNY_ARCADE);
 
       this.curveEditor.bindCurve(spec.curve, {
-        name: spec.title,
+        name: spec.id,
         idNode: spec.id
       });
     }
@@ -2660,7 +2662,7 @@ export default class FluxCodexVertex {
         n._frameCounter++;
         if(skip > 0 && n._frameCounter < skip) return;
         n._frameCounter = 0;
-        console.info('.....', delta)
+        // console.info('.....', delta)
         n._returnCache = delta;
         graph.enqueueOutputs(n, "exec");
       };
@@ -2712,13 +2714,13 @@ export default class FluxCodexVertex {
     }
 
     if(node.title === "On Draw") {
-      if (pinName=="delta") {
+      if(pinName == "delta") {
         return node._returnCache;
       }
     }
-    if(node.title === "Curve") {
-        console.warn('curve node', node);
-    }
+    // if(node.title === "Curve") {
+    //     // console.warn('curve node', node);
+    // }
 
     if(node.title === "On Ray Hit") {
       if(pinName === "hitObjectName") {
@@ -3527,10 +3529,9 @@ export default class FluxCodexVertex {
           return;
         }
 
-        console.warn("[Set Video Texture] arg:", videoTextureArg);
-
+        // console.warn("[Set Video Texture] arg:", videoTextureArg);
         if(typeof videoTextureArg != 'object') {
-          console.warn("[Set Video Texture] arg is not object!:", videoTextureArg);
+          // console.warn("[Set Video Texture] arg is not object!:", videoTextureArg);
           if(typeof videoTextureArg == 'string') {
             eval("videoTextureArg = " + videoTextureArg);
           }
@@ -3586,26 +3587,30 @@ export default class FluxCodexVertex {
       } else if(n.title === "Curve") {
         const cName = this.getValue(nodeId, "name");
         const cDelta = this.getValue(nodeId, "delta");
-        console.log(`%c trigger [CURVE] name: ${cName}  cDelta: ${cDelta} `, LOG_FUNNY_ARCADE);
+        // console.log(`%c trigger [CURVE] name: ${cName}  cDelta: ${cDelta} `, LOG_FUNNY_ARCADE);
         if(!cName) {
           console.log(`%c Node [CURVE] probably name is missing...`, LOG_FUNNY_ARCADE);
           this.enqueueOutputs(n, "execOut");
           return;
         }
-        const c = new CurveData(cName);
-        let curve = this.curveEditor.curveStore.getOrCreate(c);
-        if (!curve.baked) curve.bake();
+        let curve = this.curveEditor.curveStore.getByName(nodeId);
+        if(!curve) {
+          console.warn("Curve not found:", cName);
+          this.enqueueOutputs(n, "execOut");
+          return;
+        }
+        if(!curve.baked) {
+          console.log(`%c Node [CURVE] ${curve} bake,....`, LOG_FUNNY_ARCADE);
+          curve.bake();
+        }
+
         n.curve = curve;
-        console.log(`%c Node setup from store [CURVE] ${n.curve}`, LOG_FUNNY_ARCADE);
-        // works only if playing 
-        // let V = this.curveEditor.exec(cDelta);
         let V = n.curve.evaluate(cDelta);
-        console.log(`%c [CURVE VALUE FROM EXEC] ${V}`, LOG_FUNNY_ARCADE);
+        // console.log(`%c [CURVE VALUE FROM evaluate] ${V}`, LOG_FUNNY_ARCADE);
         n._returnCache = V;
         this.enqueueOutputs(n, "execOut");
         return;
       }
-
 
       this.enqueueOutputs(n, "execOut");
       return;
@@ -4171,7 +4176,7 @@ export default class FluxCodexVertex {
     console.log(`%c Node [CURVE  func] ${node.curve}`, LOG_FUNNY_ARCADE);
     if(node.title !== "Curve") return;
     this.curveEditor.bindCurve(node.curve, {
-      name: node.title,
+      name: node.id,
       idNode: node.id
     });
     this.curveEditor.toggleEditor(true);

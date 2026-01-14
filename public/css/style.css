@@ -1623,6 +1623,17 @@ svg.connections {
   background:  rgb(217, 3, 210);
 }
 
+.node.curve .header {
+  background: linear-gradient(
+  45deg,
+  #000000 0%,
+  #007cf0 25%,
+  #00f5ff 50%,
+  #007cf0 75%,
+  #000000 100%
+);
+}
+
 /* New */
 
 .node .body {

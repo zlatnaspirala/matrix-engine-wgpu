@@ -3,7 +3,9 @@ import {LOG_FUNNY, LOG_FUNNY_ARCADE, degToRad, quaternion_rotation_matrix, radTo
 export default class MatrixAmmo {
   constructor() {
     // THIS PATH IS PATH FROM PUBLIC FINAL FOLDER
-    scriptManager.LOAD("https://maximumroulette.com/apps/megpu/ammo.js", "ammojs",
+    
+    // scriptManager.LOAD("https://maximumroulette.com/apps/megpu/ammo.js", "ammojs",
+    scriptManager.LOAD("ammojs/ammo.js", "ammojs",
       undefined, undefined, this.init,
     );
     this.lastRoll = '';
