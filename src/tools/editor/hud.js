@@ -193,12 +193,12 @@ export default class EditorHud {
            <p>📽️Camera</p>
            <div>Pitch: <input id="camera-settings-pitch" step='0.1' type='number' value='0' /></div>
            <div>Yaw: <input id="camera-settings-yaw" step='0.1' type='number' value='0' /></div>
-           <div> Position :  </br>
+           <!--div> Position :  </br>
             \n 
             X: <input id="camera-settings-pos-x" step='0.5' type='number' value='0' /> \n
             Y: <input id="camera-settings-pos-y" step='0.5' type='number' value='0' /> \n
             Z: <input id="camera-settings-pos-z" step='0.5' type='number' value='0' />
-           </div>
+           </div-->
         </div>
       </div>
     </div>
