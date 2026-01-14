@@ -2345,40 +2345,50 @@ var scriptManager = {
     });
   }
 };
-function OSCILLATOR(min2, max2, step) {
+function OSCILLATOR(min2, max2, step, resist) {
   if ((typeof min2 === "string" || typeof min2 === "number") && (typeof max2 === "string" || typeof max2 === "number") && (typeof step === "string" || typeof step === "number")) {
     var ROOT = this;
-    this.min = parseFloat(min2);
-    this.max = parseFloat(max2);
+    this.min0 = parseFloat(min2);
+    this.max0 = parseFloat(max2);
+    this.min = this.min0;
+    this.max = this.max0;
     this.step = parseFloat(step);
-    this.value_ = parseFloat(min2);
+    this.resist = parseFloat(resist) || 0;
+    this.value_ = this.min;
     this.status = 0;
     this.on_maximum_value = function() {
     };
     this.on_minimum_value = function() {
     };
     this.UPDATE = function(STATUS_) {
-      if (STATUS_ === void 0) {
-        if (this.status == 0 && this.value_ < this.max) {
-          this.value_ = this.value_ + this.step;
-          if (this.value_ >= this.max) {
-            this.value_ = this.max;
-            this.status = 1;
-            ROOT.on_maximum_value();
-          }
-          return this.value_;
-        } else if (this.status == 1 && this.value_ > this.min) {
-          this.value_ = this.value_ - this.step;
-          if (this.value_ <= this.min) {
-            this.value_ = this.min;
-            this.status = 0;
-            ROOT.on_minimum_value();
-          }
-          return this.value_;
+      if (STATUS_ !== void 0) return this.value_;
+      if (this.status === 0 && this.value_ < this.max) {
+        this.value_ += this.step;
+        if (this.value_ >= this.max) {
+          this.value_ = this.max;
+          this.status = 1;
+          ROOT.on_maximum_value();
         }
-      } else {
         return this.value_;
       }
+      if (this.status === 1 && this.value_ > this.min) {
+        this.value_ -= this.step;
+        if (this.value_ <= this.min) {
+          this.value_ = this.min;
+          this.status = 0;
+          if (this.resist > 0) {
+            var shrink = (this.max0 - this.min0) * this.resist;
+            this.min += shrink;
+            this.max -= shrink;
+            if (this.min > this.max) {
+              this.min = this.max = (this.min + this.max) / 2;
+            }
+          }
+          ROOT.on_minimum_value();
+        }
+        return this.value_;
+      }
+      return this.value_;
     };
   } else {
     console.log("OSCILLATOR ERROR");
@@ -16770,7 +16780,6 @@ var CurveEditor = class {
     });
   }
   bindCurve(curve, meta = {}) {
-    console.log("BIND curve", curve, meta);
     this.curve = curve;
     this.keys = curve.keys;
     this.length = curve.length;
@@ -20179,7 +20188,7 @@ var FluxCodexVertex = class {
           return;
         }
         if (!curve.baked) {
-          console.log(`%c Node [CURVE] ${curve} bake.`, LOG_FUNNY_ARCADE);
+          console.log(`%cNode [CURVE] ${curve} bake.`, LOG_FUNNY_ARCADE);
           curve.bake();
         }
         n.curve = curve;
@@ -22164,10 +22173,7 @@ var Editor = class {
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getSubObject')">Get Sub Object</button>
       <span>Data mod</span>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('curveTimeline')">Curve Timeline</button>
-
-
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getNumberLiteral')">getNumberLiteral</button>
-      
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getNumberLiteral')">Get Number Literal</button>
 
       <span>Networking</span>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('fetch')">Fetch</button>

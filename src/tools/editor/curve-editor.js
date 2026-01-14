@@ -680,7 +680,7 @@ export class CurveEditor {
   }
 
   bindCurve(curve, meta = {}) {
-    console.log("BIND curve", curve, meta);
+    // console.log("BIND curve", curve, meta);
     this.curve = curve;
     this.keys = curve.keys;
     this.length = curve.length;

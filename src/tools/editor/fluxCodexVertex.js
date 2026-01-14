@@ -36,7 +36,7 @@
  * - MPL applies ONLY to this file
  */
 import {METoolTip} from "../../engine/plugin/tooltip/ToolTip";
-import {byId, LOG_FUNNY_ARCADE, mb} from "../../engine/utils";
+import {byId, LOG_FUNNY_ARCADE, mb, OSCILLATOR} from "../../engine/utils";
 import {CurveData, CurveEditor} from "./curve-editor";
 
 // Engine agnostic
@@ -3597,7 +3597,6 @@ export default class FluxCodexVertex {
       } else if(n.title === "Curve") {
         const cName = this.getValue(nodeId, "name");
         const cDelta = this.getValue(nodeId, "delta");
-        // console.log(`%c trigger [CURVE] name: ${cName}  cDelta: ${cDelta} `, LOG_FUNNY_ARCADE);
         if(!cName) {
           console.log(`%c Node [CURVE] probably name is missing...`, LOG_FUNNY_ARCADE);
           this.enqueueOutputs(n, "execOut");
@@ -3610,7 +3609,7 @@ export default class FluxCodexVertex {
           return;
         }
         if(!curve.baked) {
-          console.log(`%c Node [CURVE] ${curve} bake.`, LOG_FUNNY_ARCADE);
+          console.log(`%cNode [CURVE] ${curve} bake.`, LOG_FUNNY_ARCADE);
           curve.bake();
         }
         n.curve = curve;
@@ -3618,7 +3617,6 @@ export default class FluxCodexVertex {
         // const t01 = curve.loop
         // ? (cDelta / curve.length) % 1
         // : Math.min(1, Math.max(0, cDelta / curve.length));
-
         let V = n.curve.evaluate(t01);
         // console.log(`%c [CURVE VALUE FROM evaluate] ${V}`, LOG_FUNNY_ARCADE);
         n._returnCache = V;
@@ -3628,7 +3626,6 @@ export default class FluxCodexVertex {
         const literailNum = this.getValue(nodeId, "number");
         n._returnCache = literailNum;
       }
-
       this.enqueueOutputs(n, "execOut");
       return;
     }
@@ -4200,5 +4197,3 @@ export default class FluxCodexVertex {
   }
 
 }
-
-// FluxCodexVertex.SAVE_KEY = "matrixEngineVisualScripting";
