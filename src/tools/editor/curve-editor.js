@@ -7,29 +7,25 @@ import {byId, LOG_FUNNY_ARCADE} from "../../engine/utils";
 
 export class CurveEditor {
   constructor({width = 651, height = 300, samples = 128} = {}) {
-
     this.curveStore = new CurveStore();
-
     this.width = width;
     this.height = height;
     this.samples = samples;
-
     this.keys = [
       {time: 0, value: 0, inTangent: 0, outTangent: 0},
       {time: 1, value: 0, inTangent: 0, outTangent: 0},
     ];
-
     this.valueMin = -1;
     this.valueMax = 1;
-
     this.padLeft = 32;
     this.padBottom = 18;
-
-
     this.canvas = document.createElement("canvas");
     this.canvas.width = width;
     this.canvas.height = height;
     this.ctx = this.canvas.getContext("2d");
+
+    this.zeroY = Math.round(this.height * 0.5) + 0.5;
+    this.graphHeight = this.height - this.padBottom;
 
     this.snapEnabled = true;
     this.snapSteps = 20;
@@ -60,13 +56,13 @@ export class CurveEditor {
     this._lastTime = performance.now();
     this._runner = null;
     this.baked = this.bake(samples);
+
     setTimeout(() => this.draw(), 100);
   }
 
-
   _valueToY(v) {
     const n = (v - this.valueMin) / (this.valueMax - this.valueMin);
-    return (1 - n) * this.height;
+    return (1 - n) * this.graphHeight;
   }
 
   _yToValue(y) {
@@ -840,9 +836,6 @@ class CurveStore {
     }
   }
 
-  // =====================
-  // DESERIALIZE
-  // =====================
   _fromJSON(obj) {
     const c = new CurveData(obj.name);
     c.keys = obj.keys || [];

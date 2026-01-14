@@ -2035,6 +2035,16 @@ export default class FluxCodexVertex {
         ],
       }),
 
+
+      getNumberLiteral: (id, x, y) => ({
+        id, title: "getNumberLiteral", x, y,
+        category: "action",
+        inputs: [{name: "exec", type: "action"}],
+        outputs: [{name: "execOut", type: "action"}, {name: "value", type: "number"}],
+        fields: [{key: "number", value: 999}],
+        noselfExec: "true"
+      }),
+
       comment: (id, x, y) => ({
         id, title: "Comment", x, y,
         category: "meta",
@@ -3600,16 +3610,23 @@ export default class FluxCodexVertex {
           return;
         }
         if(!curve.baked) {
-          console.log(`%c Node [CURVE] ${curve} bake,....`, LOG_FUNNY_ARCADE);
+          console.log(`%c Node [CURVE] ${curve} bake.`, LOG_FUNNY_ARCADE);
           curve.bake();
         }
-
         n.curve = curve;
-        let V = n.curve.evaluate(cDelta);
+        const t01 = cDelta / curve.length;
+        // const t01 = curve.loop
+        // ? (cDelta / curve.length) % 1
+        // : Math.min(1, Math.max(0, cDelta / curve.length));
+
+        let V = n.curve.evaluate(t01);
         // console.log(`%c [CURVE VALUE FROM evaluate] ${V}`, LOG_FUNNY_ARCADE);
         n._returnCache = V;
         this.enqueueOutputs(n, "execOut");
         return;
+      } else if(n.title === "getNumberLiteral") {
+        const literailNum = this.getValue(nodeId, "number");
+        n._returnCache = literailNum;
       }
 
       this.enqueueOutputs(n, "execOut");

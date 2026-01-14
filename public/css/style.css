@@ -69,7 +69,6 @@ div {
   -webkit-appearance: none;
 }
 
-/* This one works! */
 *::-webkit-media-controls-start-playback-button {
   display: none !important;
   -webkit-appearance: none;
@@ -114,18 +113,11 @@ iframe {
 
 .noselect {
   -webkit-touch-callout: none;
-  /* iOS Safari */
   -webkit-user-select: none;
-  /* Safari */
   -khtml-user-select: none;
-  /* Konqueror HTML */
   -moz-user-select: none;
-  /* Old versions of Firefox */
   -ms-user-select: none;
-  /* Internet Explorer/Edge */
   user-select: none;
-  /* Non-prefixed version, currently
-                                  supported by Chrome, Edge, Opera and Firefox */
 }
 
 #matrix-editor {
@@ -176,8 +168,6 @@ textarea {
   height: 512px;
 }
 
-/** Style for UI system hud controls */
-
 .matrixTagHolder {
   display: flex;
   flex-direction: column;
@@ -225,8 +215,8 @@ p {
   -webkit-text-stroke-width: 0px;
 }
 
-/* For animation Line */
 .slider {
+  appearance: none;
   -webkit-appearance: none;
   width: 100%;
   height: 15px;
@@ -268,7 +258,6 @@ p {
   border: 2px solid #00ffff;
   border-radius: 12px;
   box-shadow: 0 0 10px #00ffff44, 0 0 20px #00ffff22 inset;
-  /* cursor: pointer; */
   transition: all 0.25s ease-in-out;
   display: inline-block;
   text-align: center;
@@ -281,7 +270,9 @@ p {
   transform: scale(1.05);
 }
 
-.btn3 {}
+.btn3 {
+  background: #5d5d5d81;
+}
 
 .btn3:hover {
   background: #5d5d5d81;
@@ -349,13 +340,7 @@ p {
 }
 
 .btn2:hover {
-  /* background: #0a027a;
-  background-image: -webkit-linear-gradient(top, #0a027a, #5719cc);
-  background-image: -moz-linear-gradient(top, #0a027a, #4710ac);
-  background-image: -ms-linear-gradient(top, #0a027a, #4a16a9);
-  background-image: -o-linear-gradient(top, #0a027a, #4916a7);
-  background-image: linear-gradient(to bottom, #0a027a, #4713a7);
-  text-decoration: none; */
+  text-decoration: none;
 }
 
 #blocker {
@@ -389,13 +374,9 @@ p {
   z-index: 10;
   text-shadow: 0px 4px 4px #282828;
   -webkit-user-select: none;
-  /* Safari */
   -ms-user-select: none;
-  /* IE 10 and IE 11 */
   user-select: none;
-  /* Standard syntax */
   background: rgb(2, 0, 36);
-  /* background: radial-gradient(circle, rgba(2, 0, 36, 1) 0%, rgba(9, 81, 121, 0.8463760504201681) 34%, rgba(0, 212, 255, 1) 100%); */
 }
 
 .msg-box {
@@ -411,12 +392,10 @@ p {
   font-family: Arial, Helvetica, sans-serif;
 
   &.error {
-    /* background-color: rgb(93, 4, 5); */
     color: rgb(255, 0, 30);
   }
 
   &.success {
-    /* background-color: rgb(220, 14, 14); */
     color: rgb(32, 255, 84);
     text-align: center;
     margin-left: -150px;
@@ -432,16 +411,13 @@ p {
   border: unset;
 }
 
-
 .myTheme1 {
   background: rgb(235, 1, 110);
   background: radial-gradient(circle, rgb(255, 73, 179) 7%, rgba(0, 144, 224, 0.9332107843137255) 57%, rgba(0, 212, 255, 1) 85%);
 }
 
 .stroke {
-
   text-shadow: 0px 4px 4px #282828;
-
   -webkit-text-stroke-width: 1px;
   -webkit-text-stroke-color: black;
 }
@@ -463,11 +439,9 @@ p {
   0% {
     background-position: 0% 50%
   }
-
   50% {
     background-position: 100% 50%
   }
-
   100% {
     background-position: 0% 50%
   }
@@ -477,11 +451,9 @@ p {
   0% {
     background-position: 0% 50%
   }
-
   50% {
     background-position: 100% 50%
   }
-
   100% {
     background-position: 0% 50%
   }
@@ -491,21 +463,17 @@ p {
   0% {
     background-position: 0% 50%
   }
-
   50% {
     background-position: 100% 50%
   }
-
   100% {
     background-position: 0% 50%
   }
 }
 
-
 .bganim1 {
   background: linear-gradient(291deg, #2960bb, #b22710, #b22710);
   background-size: 600% 600%;
-
   -webkit-animation: bganim 10s ease infinite;
   -moz-animation: bganim 10s ease infinite;
   -o-animation: bganim 10s ease infinite;
@@ -516,11 +484,9 @@ p {
   0% {
     background-position: 0% 45%
   }
-
   50% {
     background-position: 100% 56%
   }
-
   100% {
     background-position: 0% 45%
   }
@@ -530,11 +496,9 @@ p {
   0% {
     background-position: 0% 45%
   }
-
   50% {
     background-position: 100% 56%
   }
-
   100% {
     background-position: 0% 45%
   }
@@ -544,11 +508,9 @@ p {
   0% {
     background-position: 0% 45%
   }
-
   50% {
     background-position: 100% 56%
   }
-
   100% {
     background-position: 0% 45%
   }
@@ -558,11 +520,9 @@ p {
   0% {
     background-position: 0% 45%
   }
-
   50% {
     background-position: 100% 56%
   }
-
   100% {
     background-position: 0% 45%
   }
@@ -572,7 +532,6 @@ p {
   position: relative;
   display: inline-block;
   width: 60px;
-  /* You can adjust */
   height: 32px;
 }
 
@@ -583,7 +542,6 @@ p {
   position: absolute;
 }
 
-/* Force span to fill the label exactly */
 .sliderSwitch {
   position: absolute;
   top: 0;
@@ -600,7 +558,6 @@ p {
   z-index: 1;
 }
 
-/* The circle inside the slider */
 .sliderSwitch::before {
   content: "";
   position: absolute;
@@ -615,7 +572,6 @@ p {
   box-shadow: 0 0 10px #00bbff;
 }
 
-/* ON state */
 .switch input:checked+.sliderSwitch {
   background-color: #002233;
   border-color: #00ffee;
@@ -630,7 +586,6 @@ p {
 
 select {
   appearance: none;
-  /* Remove default arrow */
   background-color: #111;
   color: #00ffee;
   border: 2px solid #00ffee55;
@@ -638,7 +593,6 @@ select {
   padding: 8px 12px;
   font-size: 16px;
   font-family: 'Orbitron', sans-serif;
-  /* Optional futuristic font */
   box-shadow: 0 0 8px #00ffee33;
   outline: none;
   transition: 0.3s ease;
@@ -669,7 +623,6 @@ option {
   left: 2%;
   width: 370px;
   transform: scale(1);
-  /* translate(-50%, -50%) */
   background: rgba(0, 0, 0, 0.9);
   border: 2px solid #0ff;
   padding: 15px;
@@ -679,18 +632,14 @@ option {
   font-family: 'Orbitron', sans-serif;
 }
 
-/* Visible state */
 #jambTable.show {
   display: flex;
   transform: scale(1);
-  /* translate(-50%, -50%) */
   opacity: 1;
 }
 
-/* Hidden state */
 #jambTable.hide {
   transform: scale(0);
-  /* translate(-50%, -50%) */
   opacity: 0;
   pointer-events: none;
 }
@@ -728,13 +677,11 @@ option {
     background-color: rgba(155, 101, 10, 0.95);
     height: 75px;
   }
-
   50% {
     background-color: rgba(238, 65, 13, 0.95);
     height: 50vh;
     opacity: 0.5;
   }
-
   100% {
     background-color: rgb(200, 54, 9);
     height: 100vh;
@@ -742,19 +689,16 @@ option {
   }
 }
 
-/* Standard syntax */
 @keyframes showByVetical {
   0% {
     background-color: rgba(155, 101, 10, 0.95);
     height: 75px;
   }
-
   50% {
     background-color: rgba(224, 64, 43, 0.95);
     height: 50vh;
     opacity: 0.5;
   }
-
   100% {
     background-color: rgb(200, 54, 9);
     height: 100vh;
@@ -762,7 +706,6 @@ option {
   }
 }
 
-/* Safari 4.0 - 8.0 */
 @-webkit-keyframes hideByVetical {
   0% {
     background-color: rgba(255, 166, 11, 0.95);
@@ -782,7 +725,6 @@ option {
   }
 }
 
-/* Standard syntax */
 @keyframes hideByVetical {
   0% {
     background-color: rgba(255, 166, 11, 0.95);
@@ -819,11 +761,6 @@ option {
   animation-name: hideByVetical;
   animation-duration: 1.2s;
 }
-
-/*
-new dom effect from
-
-*/
 
 .buttonMatrix {
   all: unset;
@@ -903,19 +840,12 @@ new dom effect from
 .buttonMatrix:hover .button-inner {
   clip-path: inset(clamp(1px, 0.0625em, 2px) clamp(1px, 0.0625em, 2px) clamp(1px, 0.0625em, 2px) clamp(1px, 0.0625em, 2px) round 8px);
   box-shadow:
-    /* 1 */
     0.1em 0.15em 0.05em 0 inset rgba(5, 5, 5, 0.75),
-    /* 2 */
     -0.025em -0.03em 0.05em 0.025em inset rgba(5, 5, 5, 0.5),
-    /* 3 */
     0.25em 0.25em 0.2em 0 inset rgba(5, 5, 5, 0.5),
-    /* 4 */
     0 0 0.05em 0.5em inset rgba(255, 255, 255, 0.15),
-    /* 5 */
     0 0 0 0 inset rgba(255, 255, 255, 1),
-    /* 6 */
     0.12em 0.12em 0.12em inset rgba(255, 255, 255, 0.25),
-    /* 7 */
     -0.075em -0.12em 0.2em 0.1em inset rgba(5, 5, 5, 0.25);
 }
 
@@ -932,7 +862,6 @@ new dom effect from
   -webkit-background-clip: text;
   background-clip: text;
   transition: transform 250ms ease;
-  /* display: block; */
   will-change: transform;
   text-shadow: rgba(0, 0, 0, 0.1) 0 0 0.1em;
   -webkit-user-select: none;
@@ -1009,56 +938,44 @@ new dom effect from
   height: auto;
 }
 
-
 @-webkit-keyframes showByRight {
   0% {
-    /* background-color: rgba(155, 101, 10, 0.95); */
     right: -52%;
   }
 
   100% {
-    /* background-color: rgb(200, 54, 9); */
     right: -4%;
     opacity: 1;
   }
 }
 
-/* Standard syntax */
 @keyframes showByRight {
   0% {
-    /* background-color: rgba(155, 101, 10, 0.95); */
     right: -52%;
   }
 
   100% {
-    /* background-color: rgb(200, 54, 9); */
     right: -4%;
     opacity: 1;
   }
 }
 
-/* Safari 4.0 - 8.0 */
 @-webkit-keyframes hideByRight {
   0% {
-    /* background-color: rgba(255, 166, 11, 0.95); */
     right: -4%;
   }
 
   100% {
-    /* background-color: rgba(0, 0, 0, 0.95); */
     right: -52%;
     opacity: 0.6;
   }
 }
 
-/* Standard syntax */
 @keyframes hideByRight {
   0% {
     right: -4%;
   }
-
   100% {
-    /* background-color: rgba(0, 0, 0, 0.95); */
     right: -52%;
     opacity: 0.6;
   }
@@ -1081,7 +998,6 @@ new dom effect from
   -webkit-scrollbar {
     width: 25px;
   }
-
   -webkit-animation-fill-mode: forwards;
   -webkit-animation-name: hideByRight;
   -webkit-animation-duration: 1.2s;
@@ -1092,20 +1008,16 @@ new dom effect from
 
 .vertical-text {
   writing-mode: vertical-lr;
-  /* or vertical-lr */
   text-orientation: upright;
 }
-
 
 .itemDOM {
   z-index: 2;
   width: 100px;
   background: black;
   height: 100%;
-
   transition: transform 0.3s ease;
   transform-origin: center center;
-
 }
 
 .itemDOM:hover {
@@ -1124,12 +1036,9 @@ new dom effect from
   left: 15%;
   width: 70%;
   padding: 10px 10px 10px 10px;
-  /* box-shadow: rgba(0, 0, 0, 0.07) 0px 1px 2px, rgba(0, 0, 0, 0.07) 0px 2px 4px, rgba(0, 0, 0, 0.07) 0px 4px 8px, rgba(0, 0, 0, 0.07) 0px 8px 16px, rgba(0, 0, 0, 0.07) 0px 16px 32px, rgba(0, 0, 0, 0.07) 0px 32px 64px; */
-
   -webkit-box-shadow: 1px 1px 43px -15px #de961f;
-
+  box-shadow:1px 1px 43px -15px #de961f;
   font-size: large;
-
   @media screen and (max-width: 700px) {
     width: 97.5%;
     left: 1%;
@@ -1153,21 +1062,16 @@ new dom effect from
   padding: 10px;
   margin: 0;
   top: 20%;
-  /* height: 57%; */
   background: darkslategrey;
-
   @media screen and (max-width: 1000px) {
     width: 45%;
     left: 28%;
   }
-
   @media screen and (max-width: 600px) {
     width: 95%;
     left: 0;
   }
 }
-
-/** Editor part can be removed for final build */
 
 .sceneContainerItem {
   -webkit-text-stroke-width: 2;
@@ -1190,7 +1094,6 @@ new dom effect from
 }
 
 .inputEditor {
-  /* font-family: "stormfaze"; */
   width: 90%;
   padding: 4px 8px;
   font-size: 13px;
@@ -1213,7 +1116,6 @@ new dom effect from
 input[type=number]::-webkit-inner-spin-button,
 input[type=number]::-webkit-outer-spin-button {
   -webkit-appearance: inner-spin-button !important;
-  /* force real arrows */
   opacity: 1 !important;
   display: block !important;
 
@@ -1227,13 +1129,11 @@ input[type=number]::-webkit-outer-spin-button {
   filter: grayscale(100%) brightness(1.4);
 }
 
-/* Hover + Focus */
 input[type=number]:hover::-webkit-inner-spin-button,
 input[type=number]:hover::-webkit-outer-spin-button {
   background: #e2ff02;
   filter: grayscale(100%) brightness(1.2);
 }
-
 
 .top-item {
   position: relative;
@@ -1241,7 +1141,6 @@ input[type=number]:hover::-webkit-outer-spin-button {
 
 .top-btn {
   padding: 8px 12px;
-  /* background: #3a3a3a; */
   border: 1px solid #555;
   border-radius: 6px;
   cursor: pointer;
@@ -1260,7 +1159,6 @@ input[type=number]:hover::-webkit-outer-spin-button {
   top: 38px;
   left: 0;
   min-width: 160px;
-  /* background: #2f2f2f; */
   border: 1px solid #444;
   border-radius: 8px;
   overflow: hidden;
@@ -1280,7 +1178,6 @@ input[type=number]:hover::-webkit-outer-spin-button {
 .drop-item:hover {
   background: #067bd43e;
 }
-
 
 #folderBack {
   width: 22px;
@@ -1335,10 +1232,8 @@ input[type=number]:hover::-webkit-outer-spin-button {
   line-height: 1.3;
 }
 
-/* Hover */
 .file-item:hover {
   color: #fff;
-  /* background: rgba(80, 160, 255, 0.2); */
   border-radius: 8px;
   transition: 0.15s;
 }
@@ -1394,7 +1289,6 @@ input[type=number]:hover::-webkit-outer-spin-button {
   background-image: url("../res/icons/editor/unknown.png");
 }
 
-/* Visual editor part */
 :root {
   --bg: #101217;
   --text: #dfe7f0;
@@ -1451,7 +1345,6 @@ input[type=number]:hover::-webkit-outer-spin-button {
   border: 2px solid #00ffff;
   border-radius: 12px;
   box-shadow: 0 0 10px #00ffff44, 0 0 20px #00ffff22 inset;
-  /* cursor: pointer; */
   transition: all 0.25s ease-in-out;
   display: inline-block;
   text-align: center;
@@ -1472,7 +1365,6 @@ input[type=number]:hover::-webkit-outer-spin-button {
   color: #fff200;
   text-transform: uppercase;
   letter-spacing: 1.5px;
-  /* padding: 12px 24px; */
   background: linear-gradient(145deg, #0f0f0f, #1a1a1a);
   border: 2px solid #fff200;
   border-radius: 12px;
@@ -1489,14 +1381,6 @@ input[type=number]:hover::-webkit-outer-spin-button {
   color: #ffffff;
   transform: scale(1.05);
 }
-
-/* #boardWrap {
-  flex: 1;
-  position: relative;
-  overflow: hidden;
-  background: #081018;
-  cursor: grab;
-} */
 
 #boardWrap {
   background:
@@ -1522,7 +1406,6 @@ input[type=number]:hover::-webkit-outer-spin-button {
   overflow: hidden;
 }
 
-/* Optional subtle hover effect to mimic UE editor depth */
 #boardWrap::before {
   content: '';
   position: absolute;
@@ -1533,7 +1416,6 @@ input[type=number]:hover::-webkit-outer-spin-button {
   background: radial-gradient(circle at center, rgba(255, 255, 255, 0.02), transparent 70%);
   pointer-events: none;
 }
-
 
 #board {
   width: 10000px;
@@ -1555,7 +1437,6 @@ svg.connections {
   transform: none !important;
 }
 
-/* --- UPDATED NODE STYLE --- */
 .node {
   position: absolute;
   min-width: 180px;
@@ -1620,21 +1501,12 @@ svg.connections {
 }
 
 .node.audios .header {
-  background:  rgb(217, 3, 210);
+  background: rgb(217, 3, 210);
 }
 
 .node.curve .header {
-  background: linear-gradient(
-  45deg,
-  #000000 0%,
-  #007cf0 25%,
-  #00f5ff 50%,
-  #007cf0 75%,
-  #000000 100%
-);
+  background: linear-gradient(45deg, #000000 0%, #001e3b 25%, #000000 50%, #001e3b 75%, #000000 100%);
 }
-
-/* New */
 
 .node .body {
   padding: 8px 10px;
@@ -1660,11 +1532,8 @@ svg.connections {
   width: 100%;
   min-height: 40px;
   resize: vertical;
-
   white-space: pre-wrap;
-  /* preserve new lines */
   word-break: break-word;
-
   background: rgba(0, 0, 0, 0.4);
   color: #cfd8dc;
   border: 1px solid #333;
@@ -1786,13 +1655,9 @@ svg.connections {
   padding: 2px 4px;
   border-radius: 4px;
   max-width: 200px;
-  /* maximum width */
   overflow: hidden;
-  /* hide overflow */
   text-overflow: ellipsis;
-  /* show "..." when text too long */
   white-space: nowrap;
-  /* keep in a single line */
 }
 
 .node-fields {
@@ -1806,7 +1671,6 @@ svg.connections {
   width: 100%;
   box-sizing: border-box;
 }
-
 
 #log {
   font-family: monospace;
@@ -1837,7 +1701,6 @@ svg.connections {
   display: block;
   padding: 5px 8px;
   margin: 3px 0;
-  /* background: #27464c; */
   border-radius: 8px;
   cursor: pointer;
   border: 1px solid rgba(255, 255, 255, 0.04);
@@ -1863,25 +1726,18 @@ svg.connections {
   color: #9fc9ff;
 }
 
-
-/* CMnenu */
-
 .fc-context-menu {
   position: fixed;
   z-index: 9999;
   width: 200px;
   max-height: 50vh;
-
   background: #1e1e1e;
   border: 1px solid #333;
   border-radius: 6px;
-
   overflow-y: auto;
   padding: 6px;
-
   font-size: 11px;
   font-family: Orbitron, monospace;
-
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6);
 }
 
