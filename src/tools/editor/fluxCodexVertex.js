@@ -1260,7 +1260,7 @@ export default class FluxCodexVertex {
 
     if(spec.title === "Get Scene Object" || spec.title === "Get Scene Animation" || spec.title === "Get Scene Light") {
       const select = document.createElement("select");
-      select.id = spec._id;
+      select.id = spec._id ? spec._id : spec.id;
       select.style.width = "100%";
       select.style.marginTop = "6px";
 
@@ -1568,14 +1568,22 @@ export default class FluxCodexVertex {
         inputs: [
           {name: "exec", type: "action"},
           {name: "audioSrc", type: "string"},
+          {name: "loop", type: "boolean"},
+          {name: "thresholdBeat", type: "number"},
+
         ],
         outputs: [
           {name: "execOut", type: "action"},
-          {name: "audioOut", type: "number"}
+          {name: "low", type: "number"},
+          {name: "mid", type: "number"},
+          {name: "high", type: "number"},
+          {name: "energy", type: "number"},
+          {name: "beat", type: "boolean"}
         ],
         fields: [
-          {key: "audioSrc", value: "res/audios/audionautix-black-fly.mp3"},
-          {key: "specialArg", value: "{}"},
+          {key: "audioSrc", value: "audionautix-black-fly.mp3"},
+          {key: "loop", value: true},
+          {key: "thresholdBeat", value: 0.7},
           {key: "created", value: false},
         ],
         noselfExec: "true"
@@ -2061,7 +2069,7 @@ export default class FluxCodexVertex {
         category: "action",
         inputs: [{name: "exec", type: "action"}],
         outputs: [{name: "execOut", type: "action"}, {name: "value", type: "number"}],
-        fields: [{key: "number", value: 999}],
+        fields: [{key: "value", value: 1}],
         noselfExec: "true"
       }),
 
@@ -2734,7 +2742,6 @@ export default class FluxCodexVertex {
       if(typeof node.fn === 'undefined') {
         const selected = this.methodsManager.methodsContainer.find(m => m.name === node.attachedMethod);
         if(selected) {
-          // console.log('SPECIAL OUTPUT node.fn ', selected)
           node.fn = this.methodsManager.compileFunction(selected.code);
         } else {
           console.warn('Node: Function PinName: reference [reference not found at methodsContainer]')
@@ -2744,13 +2751,21 @@ export default class FluxCodexVertex {
     }
 
     if(node.title === "On Draw") {
-      if(pinName == "delta") {
-        return node._returnCache;
+      if(pinName == "delta") return node._returnCache;
+    }
+    if(node.title === "Audio Reactive Node") {
+      if(pinName === "low") {
+        return node._returnCache[0]
+      } else if(pinName === "mid") {
+        return node._returnCache[1]
+      } else if(pinName === "high") {
+        return node._returnCache[2]
+      } else if(pinName === "energy") {
+        return node._returnCache[3]
+      } else if(pinName === "beat") {
+        return node._returnCache[4]
       }
     }
-    // if(node.title === "Curve") {
-    //     // console.warn('curve node', node);
-    // }
 
     if(node.title === "On Ray Hit") {
       if(pinName === "hitObjectName") {
@@ -2762,7 +2777,13 @@ export default class FluxCodexVertex {
 
     if(node.title === "if" && pinName === "condition") {
       let testLink = this.links.find(l => l.to.node === nodeId && l.to.pin === pinName);
-      let t = this.getValue(testLink.from.node, testLink.from.pin);
+      let t;
+      try {
+        t = this.getValue(testLink.from.node, testLink.from.pin);
+      } catch(err) {
+        console.log(`IF NODE ${node.id} have no conditional pin connected - default is false... fix this in FluxCodexVertex graph editor.`)
+        return false;
+      }
       if(typeof t !== 'undefined') {
         return t;
       }
@@ -3430,7 +3451,7 @@ export default class FluxCodexVertex {
         const createdField = n.fields.find(f => f.key === "created");
 
         if(!createdField.value) {
-          console.log('!AUDIO ONCE!');
+          createdField.disabled = true;
           app.matrixSounds.createAudio(key, src, clones);
           createdField.value = true;
         }
@@ -3644,27 +3665,59 @@ export default class FluxCodexVertex {
         return;
       } else if(n.title === "getNumberLiteral") {
         const literailNum = this.getValue(nodeId, "number");
+        console.log('liretal', literailNum)
         n._returnCache = literailNum;
+        this.enqueueOutputs(n, "execOut");
+        return;
       } else if(n.title === "Audio Reactive Node") {
-        const audioSrc = this.getValue(nodeId, "audioSrc");
-        console.log("TETS AUDIO")
+        const src = this.getValue(nodeId, "audioSrc");
+        const loop = this.getValue(nodeId, "loop");
+        const thresholdBeat = this.getValue(nodeId, "thresholdBeat");
         const createdField = n.fields.find(f => f.key === "created");
-        if(createdField.value == "false" || createdField.value == false) {
-          console.log('!ONCE!');
+        if(!n._audio && !n._loading) {
+          n._loading = true;
+          createdField.value = true;
+          createdField.disabled = true;
+          app.audioManager.load(src).then(asset => {
+            asset.audio.loop = loop;
+            n._audio = asset;
+            n._energyHistory = [];
+            n._beatCooldown = 0;
+            n._loading = false;
+          });
           return;
-          // createdField.value = true;
         }
-        MatrixMusicAsset.load({path: audioSrc}).then((item) => {
-          console.log("TETS AUDIO", item)
-          let myUpdater = function() {
-            item.analyser.getByteFrequencyData(this.frequencyData);
-            for(var i = 1, j = 1;i < 1024;i = i + 80, j = j + 40) {
-              // position.SetY(blackfly.frequencyData[i]);
-            }
-          };
-        });
-        // console.log("TETS AUDIO", a)
+
+        if(!n._audio || !n._audio.ready) return;
+        const data = n._audio.updateFFT();
+        if(!data) return;
+        let low = 0, mid = 0, high = 0;
+        for(let i = 0;i < 16;i++) low += data[i];
+        for(let i = 16;i < 64;i++) mid += data[i];
+        for(let i = 64;i < 128;i++) high += data[i];
+        low /= 16;
+        mid /= 48;
+        high /= 64;
+        const energy = (low + mid + high) / 3;
+        const hist = n._energyHistory;
+        hist.push(low);
+        if(hist.length > 30) hist.shift();
+        let avg = 0;
+        for(let i = 0;i < hist.length;i++) avg += hist[i];
+        avg /= hist.length;
+        let beat = false;
+        if(low > avg * thresholdBeat && n._beatCooldown <= 0) {
+          beat = true;
+          n._beatCooldown = 10;
+        }
+        if(n._beatCooldown > 0) n._beatCooldown--;
+        n._returnCache = [low, mid, high, energy, beat];
+
+        this.enqueueOutputs(n, "execOut");
+        return;
       }
+
+
       this.enqueueOutputs(n, "execOut");
       return;
     }
@@ -3689,16 +3742,12 @@ export default class FluxCodexVertex {
     } else if(n.title === "Set Texture") {
       const texpath = this.getValue(nodeId, "texturePath");
       const sceneObjectName = this.getValue(nodeId, "sceneObjectName");
-      // sceneObjectName
       if(texpath) {
-        // console.log('textPath', texpath)
         // console.log('sceneObjectName', sceneObjectName)
         let obj = app.getSceneObjectByName(sceneObjectName);
         obj.loadTex0([texpath]).then(() => {
           setTimeout(() => obj.changeTexture(obj.texture0), 200);
         })
-        // pos.setSpeed(this.getValue(nodeId, "thrust"));
-
       }
       this.enqueueOutputs(n, "execOut");
       return;
@@ -3774,9 +3823,7 @@ export default class FluxCodexVertex {
       return;
     }
 
-
-    console.log("BEFORE COMPARE ")
-
+    // console.log("BEFORE COMPARE ");
     if(["math", "value", "compare", "stringOperation"].includes(n.category)) {
 
       console.log("BEFORE COMPARE ")
@@ -3854,6 +3901,7 @@ export default class FluxCodexVertex {
     }
 
     this._execContext = null;
+
   }
 
   getConnectedSource(nodeId, inputName) {
@@ -4038,6 +4086,10 @@ export default class FluxCodexVertex {
       if(key === 'accessObject') return undefined;
       if(key === '_returnCache') return undefined;
       if(key === '_listenerAttached') return false;
+      if(key === '_audio') return undefined;
+      if(key === '_loading') return false;
+      if(key === '_energyHistory') return undefined;
+      if(key === '_beatCooldown') return 0;
       return value;
     }
 

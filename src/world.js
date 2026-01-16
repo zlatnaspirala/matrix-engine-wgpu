@@ -18,6 +18,7 @@ import {BloomPass, fullscreenQuadWGSL} from "./engine/postprocessing/bloom.js";
 import {addRaycastsListener} from "./engine/raycast.js";
 import {physicsBodiesGenerator, physicsBodiesGeneratorDeepPyramid, physicsBodiesGeneratorPyramid, physicsBodiesGeneratorTower, physicsBodiesGeneratorWall} from "./engine/generators/phisicsBodies.js";
 import {TextureCache} from "./engine/core-cache.js";
+import {AudioAssetManager} from "./sounds/audioAsset.js";
 
 /**
  * @description
@@ -52,6 +53,7 @@ export default class MatrixEngineWGPU {
   }
 
   matrixSounds = new MatrixSounds();
+  audioManager = new AudioAssetManager();
 
   constructor(options, callback) {
     if(typeof options == 'undefined' || typeof options == "function") {
