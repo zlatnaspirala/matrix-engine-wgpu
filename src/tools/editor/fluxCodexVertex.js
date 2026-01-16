@@ -88,13 +88,13 @@ export default class FluxCodexVertex {
     this.clearRuntime = () => {
       app.graphUpdate = () => {};
       // stop sepcial onDraw node
-      console.info("Destroy runtime objects....", Object.values(this.nodes).filter((n) => n.title == "On Draw"));
+      console.info("%cDestroy runtime objects." + Object.values(this.nodes).filter((n) => n.title == "On Draw") , LOG_FUNNY_ARCADE);
       let allOnDraws = Object.values(this.nodes).filter((n) => n.title == "On Draw");
       for(var x = 0;x < allOnDraws.length;x++) {
         allOnDraws[x]._listenerAttached = false;
       }
       for(let x = 0;x < runtimeCacheObjs.length;x++) {
-        // runtimeCacheObjs[x].destroy(); BUGGY - no sync with render loop logic
+        // runtimeCacheObjs[x].destroy(); BUGGY - no sync with render loop logic!
         app.removeSceneObjectByName(runtimeCacheObjs[x].name);
       }
       byId("graph-status").innerHTML = '⚫';
@@ -3655,17 +3655,16 @@ export default class FluxCodexVertex {
         }
         n.curve = curve;
         const t01 = cDelta / curve.length;
+        // smooth
         // const t01 = curve.loop
         // ? (cDelta / curve.length) % 1
         // : Math.min(1, Math.max(0, cDelta / curve.length));
         let V = n.curve.evaluate(t01);
-        // console.log(`%c [CURVE VALUE FROM evaluate] ${V}`, LOG_FUNNY_ARCADE);
         n._returnCache = V;
         this.enqueueOutputs(n, "execOut");
         return;
       } else if(n.title === "getNumberLiteral") {
         const literailNum = this.getValue(nodeId, "number");
-        console.log('liretal', literailNum)
         n._returnCache = literailNum;
         this.enqueueOutputs(n, "execOut");
         return;

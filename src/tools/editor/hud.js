@@ -301,7 +301,6 @@ export default class EditorHud {
 
     byId('stopMainGraphDOM').addEventListener('click', () => {
       // global for now.
-      console.log('@@@@@@@@@@@@@')
       app.editor.fluxCodexVertex.clearRuntime();
     });
 

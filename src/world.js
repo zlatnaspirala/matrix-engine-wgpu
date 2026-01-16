@@ -5,7 +5,7 @@ import {ArcballCamera, RPGCamera, WASDCamera} from "./engine/engine.js";
 import {createInputHandler} from "./engine/engine.js";
 import MEMeshObj from "./engine/mesh-obj.js";
 import MatrixAmmo from "./physics/matrix-ammo.js";
-import {LOG_FUNNY_BIG_ARCADE, LOG_FUNNY_ARCADE, LOG_FUNNY_BIG_NEON, LOG_FUNNY_SMALL, LOG_WARN, genName, mb, scriptManager, urlQuery, LOGO_FRAMES, LOG_FUNNY_BIG_TERMINAL, LOG_INFO, LOG_FUNNY} from "./engine/utils.js";
+import {LOG_FUNNY_BIG_ARCADE, LOG_FUNNY_ARCADE, LOG_FUNNY_BIG_NEON, LOG_FUNNY_SMALL, LOG_WARN, genName, mb, scriptManager, urlQuery, LOGO_FRAMES, LOG_FUNNY_BIG_TERMINAL, LOG_INFO, LOG_FUNNY, LOG_FUNNY_EXTRABIG} from "./engine/utils.js";
 import {MultiLang} from "./multilang/lang.js";
 import {MatrixSounds} from "./sounds/sounds.js";
 import {downloadMeshes, play} from "./engine/loader-obj.js";
@@ -235,11 +235,11 @@ export default class MatrixEngineWGPU {
     console.log("%c ---------------------------------------------------------------------------------------------- ", LOG_FUNNY);
     console.log("%c 🧬 Matrix-Engine-Wgpu 🧬 ", LOG_FUNNY_BIG_NEON);
     console.log("%c ---------------------------------------------------------------------------------------------- ", LOG_FUNNY);
-    console.log("%c👽 Hello developer ", LOG_FUNNY_BIG_NEON);
+    console.log("%c     Hello  \n 👽 ▄▀▄▀▄▀▄▀▄▀  \n  ", LOG_FUNNY_EXTRABIG);
     console.log(
-      "%cMatrix Engine WGPU is awake.\n" +
+      "%cMatrix Engine WGPU - Port is open.\n" +
       "Creative power loaded.\n" +
-      "No tracking. No hype. Just code. ⚙️🔥", LOG_FUNNY_BIG_ARCADE);
+      "No tracking. No hype. Just solutions. 🔥", LOG_FUNNY_BIG_ARCADE);
     console.log(
       "%cSource code: 👉 GitHub:\nhttps://github.com/zlatnaspirala/matrix-engine-wgpu",
       LOG_FUNNY_ARCADE);
