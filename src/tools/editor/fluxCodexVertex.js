@@ -88,7 +88,7 @@ export default class FluxCodexVertex {
     this.clearRuntime = () => {
       app.graphUpdate = () => {};
       // stop sepcial onDraw node
-      console.info("%cDestroy runtime objects." + Object.values(this.nodes).filter((n) => n.title == "On Draw") , LOG_FUNNY_ARCADE);
+      console.info("%cDestroy runtime objects." + Object.values(this.nodes).filter((n) => n.title == "On Draw"), LOG_FUNNY_ARCADE);
       let allOnDraws = Object.values(this.nodes).filter((n) => n.title == "On Draw");
       for(var x = 0;x < allOnDraws.length;x++) {
         allOnDraws[x]._listenerAttached = false;
@@ -1489,7 +1489,9 @@ export default class FluxCodexVertex {
           {name: "delay", type: "number"}
         ],
         outputs: [
-          {name: "execOut", type: "action"}
+          {name: "execOut", type: "action"},
+          {name: "complete", type: "action"},
+          {name: "objects", type: "object"}
         ],
         fields: [
           {key: "material", value: "standard"},
@@ -2753,6 +2755,12 @@ export default class FluxCodexVertex {
     if(node.title === "On Draw") {
       if(pinName == "delta") return node._returnCache;
     }
+
+    if(node.title === "Generator Pyramid" && pinName == "objects") {
+      // console.log("TTTTTTTTTTTTT", node._returnCache);
+      return node._returnCache;
+    }
+
     if(node.title === "Audio Reactive Node") {
       if(pinName === "low") {
         return node._returnCache[0]
@@ -2823,13 +2831,11 @@ export default class FluxCodexVertex {
       return value;
     }
 
-
     const link = this.links.find(l => l.to.node === nodeId && l.to.pin === pinName);
     if(link) return this.getValue(link.from.node, link.from.pin, visited);
 
     const field = node.fields?.find(f => f.key === pinName);
     if(field) return field.value;
-
 
     const inputPin = node.inputs?.find(p => p.name === pinName);
     if(inputPin) return inputPin.default ?? 0;
@@ -3546,10 +3552,14 @@ export default class FluxCodexVertex {
         const createdField = n.fields.find(f => f.key === "created");
         if(createdField.value == "false" || createdField.value == false) {
           // console.log('!GEN PYRAMID! ONCE!');
-          app.physicsBodiesGeneratorDeepPyramid(mat, pos, rot, texturePath, name, levels, raycast, scale, spacing, delay);
+          app.physicsBodiesGeneratorDeepPyramid(mat, pos, rot, texturePath, name, levels, raycast, scale, spacing, delay).then((objects) => {
+            console.log('!GEN PYRAMID COMPLETE!');
+            n._returnCache = objects;
+             this.enqueueOutputs(n, "complete");
+          })
           // createdField.value = true;
         }
-
+        // sync
         this.enqueueOutputs(n, "execOut");
         return;
       } else if(n.title === "Set Force On Hit") {

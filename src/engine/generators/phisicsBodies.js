@@ -224,53 +224,66 @@ export function physicsBodiesGeneratorDeepPyramid(
   spacing = 2,
   delay = 200
 ) {
-  const engine = this;
-  const inputCube = {mesh: "./res/meshes/blender/cube.obj"};
-  function handler(m) {
-    let index = 0;
-    const RAY = {enabled: !!raycast, radius: 1};
-    for(let y = 0;y < levels;y++) {
-      const sizeX = levels - y; // shrink X
-      const sizeZ = levels - y; // shrink Z
-      const xOffset = (sizeX - 1) * spacing * 0.5;
-      const zOffset = (sizeZ - 1) * spacing * 0.5;
-      for(let x = 0;x < sizeX;x++) {
-        for(let z = 0;z < sizeZ;z++) {
-          const cubeName = `${name}_${index}`;
-          setTimeout(() => {
-            engine.addMeshObj({
-              material: {type: material},
-              position: {
-                x: pos.x + x * spacing - xOffset,
-                y: pos.y + y * spacing,
-                z: pos.z + z * spacing - zOffset
-              },
-              rotation: rot,
-              rotationSpeed: {x: 0, y: 0, z: 0},
-              texturesPaths: [texturePath],
-              name: cubeName,
-              mesh: m.mesh,
-              physics: {
-                scale: scale,
-                enabled: true,
-                geometry: "Cube"
-              },
-              raycast: RAY
-            });
-            // Optional: stabilize tower-style
-            const b = app.matrixAmmo.getBodyByName(cubeName);
-            stabilizeTowerBody(b);
-            // cache
-            const o = app.getSceneObjectByName(cubeName);
-            runtimeCacheObjs.push(o);
-          }, delay * index);
-          index++;
+  return new Promise((resolve, reject) => {
+    const engine = this;
+    const inputCube = {mesh: "./res/meshes/blender/cube.obj"};
+    levels = parseFloat(levels);
+    function handler(m) {
+      let index = 0;
+      const totalCubes = (levels * (levels + 1) * (2 * levels + 1)) / 6;
+      const lastIndex = totalCubes - 1;
+      const RAY = {enabled: !!raycast, radius: 1};
+      const objects = [];
+      for (let y = 0; y < levels; y++) {
+        const sizeX = levels - y;
+        const sizeZ = levels - y;
+        const xOffset = (sizeX - 1) * spacing * 0.5;
+        const zOffset = (sizeZ - 1) * spacing * 0.5;
+        for (let x = 0; x < sizeX; x++) {
+          for (let z = 0; z < sizeZ; z++) {
+            const cubeName = `${name}_${index}`;
+            const currentIndex = index;
+            setTimeout(() => {
+              engine.addMeshObj({
+                material: {type: material},
+                position: {
+                  x: pos.x + x * spacing - xOffset,
+                  y: pos.y + y * spacing,
+                  z: pos.z + z * spacing - zOffset
+                },
+                rotation: rot,
+                rotationSpeed: {x: 0, y: 0, z: 0},
+                texturesPaths: [texturePath],
+                name: cubeName,
+                mesh: m.mesh,
+                physics: {
+                  scale: scale,
+                  enabled: true,
+                  geometry: "Cube"
+                },
+                raycast: RAY
+              });
+
+              const b = app.matrixAmmo.getBodyByName(cubeName);
+              stabilizeTowerBody(b);
+
+              const o = app.getSceneObjectByName(cubeName);
+              runtimeCacheObjs.push(o);
+              objects.push(o.name);
+
+              if (currentIndex === lastIndex) {
+                console.log("Last cube added!");
+                resolve(objects);
+              }
+            }, delay * index);
+            index++;
+          }
         }
       }
     }
-  }
 
-  downloadMeshes(inputCube, handler, {scale});
+    downloadMeshes(inputCube, handler, {scale});
+  });
 }
 
 export function physicsBodiesGeneratorTower(
