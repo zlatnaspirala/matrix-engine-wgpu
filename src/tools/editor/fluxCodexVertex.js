@@ -3334,13 +3334,14 @@ export default class FluxCodexVertex {
         if(n.title == "Set Object") {
           if(value == 0) {
             let varliteral = n.fields?.find(f => f.key === "literal");
-            console.log("set object  varliteral.value ", varliteral.value);
+            // console.log("set object  varliteral.value ", varliteral.value);
             this.variables[type][varField.value] = JSON.parse(varliteral.value);
+            // ??
           }
         } else {
           if(value == 0) {
             let varliteral = n.fields?.find(f => f.key === "literal");
-            console.log("set object  varliteral.value ", varliteral.value);
+            // console.log("set object  varliteral.value ", varliteral.value);
             this.variables[type][varField.value] = JSON.parse(varliteral.value);
             value = JSON.parse(varliteral.value);
           } else {
@@ -3559,9 +3560,8 @@ export default class FluxCodexVertex {
         }
         const createdField = n.fields.find(f => f.key === "created");
         if(createdField.value == "false" || createdField.value == false) {
-          // console.log('!GEN PYRAMID! ONCE!');
           app.physicsBodiesGeneratorDeepPyramid(mat, pos, rot, texturePath, name, levels, raycast, scale, spacing, delay).then((objects) => {
-            console.log('!GEN PYRAMID COMPLETE!');
+            // console.log('!GEN PYRAMID COMPLETE!');
             n._returnCache = objects;
             this.enqueueOutputs(n, "complete");
           })

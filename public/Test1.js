@@ -20024,13 +20024,11 @@ var FluxCodexVertex = class {
         if (n.title == "Set Object") {
           if (value == 0) {
             let varliteral = n.fields?.find((f) => f.key === "literal");
-            console.log("set object  varliteral.value ", varliteral.value);
             this.variables[type2][varField.value] = JSON.parse(varliteral.value);
           }
         } else {
           if (value == 0) {
             let varliteral = n.fields?.find((f) => f.key === "literal");
-            console.log("set object  varliteral.value ", varliteral.value);
             this.variables[type2][varField.value] = JSON.parse(varliteral.value);
             value = JSON.parse(varliteral.value);
           } else {
@@ -20226,7 +20224,6 @@ var FluxCodexVertex = class {
         const createdField = n.fields.find((f) => f.key === "created");
         if (createdField.value == "false" || createdField.value == false) {
           app.physicsBodiesGeneratorDeepPyramid(mat, pos, rot, texturePath, name, levels, raycast, scale, spacing, delay).then((objects2) => {
-            console.log("!GEN PYRAMID COMPLETE!");
             n._returnCache = objects2;
             this.enqueueOutputs(n, "complete");
           });
@@ -23003,7 +23000,6 @@ function physicsBodiesGeneratorDeepPyramid(material = "standard", pos2, rot2, te
               runtimeCacheObjs.push(o2);
               objects2.push(o2.name);
               if (currentIndex === lastIndex) {
-                console.log("Last cube added!");
                 resolve(objects2);
               }
             }, delay2 * index);

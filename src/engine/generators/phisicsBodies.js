@@ -272,7 +272,7 @@ export function physicsBodiesGeneratorDeepPyramid(
               objects.push(o.name);
 
               if (currentIndex === lastIndex) {
-                console.log("Last cube added!");
+                // console.log("Last cube added!");
                 resolve(objects);
               }
             }, delay * index);
