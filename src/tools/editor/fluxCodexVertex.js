@@ -3338,8 +3338,15 @@ export default class FluxCodexVertex {
             this.variables[type][varField.value] = JSON.parse(varliteral.value);
           }
         } else {
-          console.log("set object ", value);
-          this.variables[type][varField.value] = {value};
+          if(value == 0) {
+            let varliteral = n.fields?.find(f => f.key === "literal");
+            console.log("set object  varliteral.value ", varliteral.value);
+            this.variables[type][varField.value] = JSON.parse(varliteral.value);
+          } else {
+            console.log("set object ", value);
+            this.variables[type][varField.value] = {value};
+          }
+
         }
 
         this.notifyVariableChanged(type, varField.value);
@@ -3555,7 +3562,7 @@ export default class FluxCodexVertex {
           app.physicsBodiesGeneratorDeepPyramid(mat, pos, rot, texturePath, name, levels, raycast, scale, spacing, delay).then((objects) => {
             console.log('!GEN PYRAMID COMPLETE!');
             n._returnCache = objects;
-             this.enqueueOutputs(n, "complete");
+            this.enqueueOutputs(n, "complete");
           })
           // createdField.value = true;
         }
