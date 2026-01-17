@@ -59,7 +59,7 @@ The backend is built using **Node.js** 🟢
 - Assets toolbar added (bottom panel)
   - Add **GLB** or **OBJ** files from the asset toolbox by selecting them
 - Top menu for adding primitives (Cube / Sphere) with or without physics ⚙️
-- Integrated Visual Scripting system 🧠
+- Integrated Visual Scripting system 🧠 FluxCodexVertex
 
 ---
 
@@ -69,7 +69,12 @@ The backend is built using **Node.js** 🟢
 - Get SceneObject → set position → bind `onTargetReach` events
 - Fetch, GetArray, forEach, Print, IF, Math, compare etc...
 - Custom func editor
+- String operation set of nodes
+- Generator physics bodies in sequence pos in choosen geometry in world pos (Pyramid, wall , in place).
+- onDraw Event node - called on every frame.Can be multiply used and set skip value. More skip less calls.
+- Audio reactive node Audio to pos , rot, scale or geometry or any... Outputs low, mid, high, energy and beat.
 - Run the graph ▶️
+- Stop the graph Just basic - clear dinamic created object and stops onDraw calls.
 - Save graph
   - Currently saved to **LocalStorage**
   - For final builds, becomes a real **JS object** injected into the app flow.[NOT DONE]

@@ -361,7 +361,7 @@ export default class Materials {
 
   updateVideoTexture() {
     if(!this.video || this.video.readyState < 2) {
-      console.info('this.video.readyState', this.video.readyState)
+      // console.info('this.video.readyState', this.video.readyState)
       return;
     }
     if(!this.externalTexture) {
@@ -369,7 +369,7 @@ export default class Materials {
       this.externalTexture = this.device.importExternalTexture({source: this.video});
       this.createBindGroupForRender();
       this.videoIsReady = 'YES';
-      console.log("✅video bind.");
+      console.log("%c✅video bind.", LOG_FUNNY_ARCADE);
     } else {
       this.externalTexture = this.device.importExternalTexture({source: this.video});
       this.createBindGroupForRender();

@@ -436,43 +436,61 @@ export var scriptManager = {
 };
 
 // GET PULSE VALUES IN REAL TIME
-export function OSCILLATOR(min, max, step) {
-  if((typeof min === 'string' || typeof min === 'number') && (typeof max === 'string' || typeof max === 'number') && (typeof step === 'string' || typeof step === 'number')) {
+export function OSCILLATOR(min, max, step, resist) {
+  if(
+    (typeof min === 'string' || typeof min === 'number') &&
+    (typeof max === 'string' || typeof max === 'number') &&
+    (typeof step === 'string' || typeof step === 'number')
+  ) {
     var ROOT = this;
-    this.min = parseFloat(min);
-    this.max = parseFloat(max);
+    this.min0 = parseFloat(min);
+    this.max0 = parseFloat(max);
+    this.min = this.min0;
+    this.max = this.max0;
     this.step = parseFloat(step);
-    this.value_ = parseFloat(min);
+    this.resist = parseFloat(resist) || 0;
+    this.value_ = this.min;
     this.status = 0;
     this.on_maximum_value = function() {};
     this.on_minimum_value = function() {};
     this.UPDATE = function(STATUS_) {
-      if(STATUS_ === undefined) {
-        if(this.status == 0 && this.value_ < this.max) {
-          this.value_ = this.value_ + this.step;
-          if(this.value_ >= this.max) {
-            this.value_ = this.max;
-            this.status = 1;
-            ROOT.on_maximum_value();
-          }
-          return this.value_;
-        } else if(this.status == 1 && this.value_ > this.min) {
-          this.value_ = this.value_ - this.step;
-          if(this.value_ <= this.min) {
-            this.value_ = this.min;
-            this.status = 0;
-            ROOT.on_minimum_value();
-          }
-          return this.value_;
+      if(STATUS_ !== undefined) return this.value_;
+      // UP
+      if(this.status === 0 && this.value_ < this.max) {
+        this.value_ += this.step;
+
+        if(this.value_ >= this.max) {
+          this.value_ = this.max;
+          this.status = 1;
+          ROOT.on_maximum_value();
         }
-      } else {
         return this.value_;
       }
+      // DOWN
+      if(this.status === 1 && this.value_ > this.min) {
+        this.value_ -= this.step;
+        if(this.value_ <= this.min) {
+          this.value_ = this.min;
+          this.status = 0;
+          if(this.resist > 0) {
+            var shrink = (this.max0 - this.min0) * this.resist;
+            this.min += shrink;
+            this.max -= shrink;
+            if(this.min > this.max) {
+              this.min = this.max = (this.min + this.max) / 2;
+            }
+          }
+          ROOT.on_minimum_value();
+        }
+        return this.value_;
+      }
+      return this.value_;
     };
   } else {
     console.log("OSCILLATOR ERROR");
   }
 }
+
 
 // this is class not func ecma5
 export function SWITCHER() {
@@ -678,22 +696,28 @@ export const LOG_FUNNY_BIG_NEON =
   "text-shadow: 0 0 5px #01d6d6ff, 0 0 10px #00ffff, 4px 4px 0 #ff00ff;" +
   "background:black; padding:14px 18px;";
 
+  export const LOG_FUNNY_EXTRABIG =
+  "font-family: stormfaze; font-size:130px; font-weight:900;" +
+  "color:#00ffff;" +
+  "text-shadow: 0 0 5px #01d6d6ff, 0 0 10px #00ffff, 4px 4px 0 #ff00ff;" +
+  "background:black; padding:14px 18px;";
+
 export const LOGO_FRAMES = [
-` M                 `,
-` MA                 `,
-` MAT                `,
-` MATR               `,
-` MATRI              `,
-` MATRIX             `,
-` MATRIX-E           `,
-` MATRIX-ENG         `,
-` MATRIX-ENGI        `,
-` MATRIX-ENGIN       `,
-` MATRIX-ENGINE      `,
-` MATRIX-ENGINE-     `,
-` MATRIX-ENGINE-W    `,
-` MATRIX-ENGINE-WG   `,
-` MATRIX-ENGINE-WGPU `
+  ` M                 `,
+  ` MA                 `,
+  ` MAT                `,
+  ` MATR               `,
+  ` MATRI              `,
+  ` MATRIX             `,
+  ` MATRIX-E           `,
+  ` MATRIX-ENG         `,
+  ` MATRIX-ENGI        `,
+  ` MATRIX-ENGIN       `,
+  ` MATRIX-ENGINE      `,
+  ` MATRIX-ENGINE-     `,
+  ` MATRIX-ENGINE-W    `,
+  ` MATRIX-ENGINE-WG   `,
+  ` MATRIX-ENGINE-WGPU `
 ];
 
 export function genName(length) {

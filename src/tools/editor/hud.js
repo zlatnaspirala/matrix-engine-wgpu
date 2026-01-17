@@ -193,12 +193,12 @@ export default class EditorHud {
            <p>📽️Camera</p>
            <div>Pitch: <input id="camera-settings-pitch" step='0.1' type='number' value='0' /></div>
            <div>Yaw: <input id="camera-settings-yaw" step='0.1' type='number' value='0' /></div>
-           <div> Position :  </br>
+           <!--div> Position :  </br>
             \n 
             X: <input id="camera-settings-pos-x" step='0.5' type='number' value='0' /> \n
             Y: <input id="camera-settings-pos-y" step='0.5' type='number' value='0' /> \n
             Z: <input id="camera-settings-pos-z" step='0.5' type='number' value='0' />
-           </div>
+           </div-->
         </div>
       </div>
     </div>
@@ -214,12 +214,17 @@ export default class EditorHud {
         </div>
         <div id="showCodeVARSBtn" class="drop-item btn4">
            <span>Variable editor</span>
-           <small>⌨️Visual Script tool</small>
+           <small>🔧Visual Script tool</small>
         </div>
         <div id="showCodeEditorBtn" class="drop-item btn4">
            <span>Show code editor</span>
-           <small>⌨️Function raw edit</small>
+           <small>👩‍💻Function raw edit</small>
            <small>Custom Functions</small>
+        </div>
+        <div id="showCurveEditorBtn" class="drop-item btn4">
+           <span>Show curve editor</span>
+           <small>📈Timeline curve editor</small>
+           <small> </small>
         </div>
       </div>
     </div>
@@ -296,7 +301,6 @@ export default class EditorHud {
 
     byId('stopMainGraphDOM').addEventListener('click', () => {
       // global for now.
-      console.log('@@@@@@@@@@@@@')
       app.editor.fluxCodexVertex.clearRuntime();
     });
 
@@ -453,6 +457,12 @@ export default class EditorHud {
       console.log('show-method-editor ', e);
       document.dispatchEvent(new CustomEvent('show-method-editor', {detail: {}}));
     });
+
+    byId('showCurveEditorBtn').addEventListener('click', (e) => {
+      console.log('show-showCurveEditorBtn editor ', e);
+      document.dispatchEvent(new CustomEvent('show-curve-editor', {detail: {}}));
+    });
+    
 
     byId('showVisualCodeEditorBtn').addEventListener('click', (e) => {
       if(byId('app').style.display == 'flex') {

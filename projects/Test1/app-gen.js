@@ -459,6 +459,41 @@ let app = new MatrixEngineWGPU(
  }, 800);
  // ME END BANNER3 updateRotz
  
+ 
+       
+       // ME START CAMERA_JUMPER addCube
+ downloadMeshes({cube: "./res/meshes/blender/cube.obj"}, (m) => { 
+   let texturesPaths = ['./res/meshes/blender/cube.png']; 
+   app.addMeshObj({
+     position: {x: 0, y: 0, z: -20}, rotation: {x: 0, y: 0, z: 0}, rotationSpeed: {x: 0, y: 0, z: 0},
+     texturesPaths: [texturesPaths],
+     name: 'CAMERA_JUMPER',
+     mesh: m.cube,
+     raycast: {enabled: true, radius: 2},
+     physics: {enabled: true, geometry: "Cube"}
+   }); 
+ }, {scale: [1, 1, 1]});  
+ // ME END CAMERA_JUMPER addCube
+ 
+
+       // ME START CAMERA_JUMPER updateScale0
+ setTimeout(() => {
+  app.getSceneObjectByName('CAMERA_JUMPER').scale[0] = 2;
+ }, 800);
+ // ME END CAMERA_JUMPER updateScale0
+ 
+   // ME START CAMERA_JUMPER updateScale2
+ setTimeout(() => {
+  app.getSceneObjectByName('CAMERA_JUMPER').scale[2] = 2;
+ }, 800);
+ // ME END CAMERA_JUMPER updateScale2
+ 
+  // ME START CAMERA_JUMPER updateScale1
+ setTimeout(() => {
+  app.getSceneObjectByName('CAMERA_JUMPER').scale[1] = 2;
+ }, 800);
+ // ME END CAMERA_JUMPER updateScale1
+ 
  // [MAIN_REPLACE2]
 
     })

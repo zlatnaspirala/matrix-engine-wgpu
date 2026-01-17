@@ -36,7 +36,9 @@
  * - MPL applies ONLY to this file
  */
 import {METoolTip} from "../../engine/plugin/tooltip/ToolTip";
-import {byId, LOG_FUNNY_ARCADE, mb} from "../../engine/utils";
+import {byId, LOG_FUNNY_ARCADE, mb, OSCILLATOR} from "../../engine/utils";
+import {MatrixMusicAsset} from "../../sounds/audioAsset";
+import {CurveData, CurveEditor} from "./curve-editor";
 
 // Engine agnostic
 export let runtimeCacheObjs = [];
@@ -45,6 +47,8 @@ export default class FluxCodexVertex {
   constructor(boardId, boardWrapId, logId, methodsManager, projName) {
     this.debugMode = true;
     this.toolTip = new METoolTip();
+
+    this.curveEditor = new CurveEditor();
 
     this.SAVE_KEY = "fluxCodexVertex" + projName;
     this.methodsManager = methodsManager;
@@ -84,13 +88,13 @@ export default class FluxCodexVertex {
     this.clearRuntime = () => {
       app.graphUpdate = () => {};
       // stop sepcial onDraw node
-      console.info("Destroy runtime objects....", Object.values(this.nodes).filter((n) => n.title == "On Draw"));
+      console.info("%cDestroy runtime objects." + Object.values(this.nodes).filter((n) => n.title == "On Draw"), LOG_FUNNY_ARCADE);
       let allOnDraws = Object.values(this.nodes).filter((n) => n.title == "On Draw");
       for(var x = 0;x < allOnDraws.length;x++) {
         allOnDraws[x]._listenerAttached = false;
       }
       for(let x = 0;x < runtimeCacheObjs.length;x++) {
-        // runtimeCacheObjs[x].destroy(); BUGGY - no sync with render loop logic
+        // runtimeCacheObjs[x].destroy(); BUGGY - no sync with render loop logic!
         app.removeSceneObjectByName(runtimeCacheObjs[x].name);
       }
       byId("graph-status").innerHTML = '⚫';
@@ -151,6 +155,12 @@ export default class FluxCodexVertex {
       e.detail.path = e.detail.path.replace('\\res', 'res');
       e.detail.path = e.detail.path.replace(/\\/g, '/');
       this.addNode('audioMP3', e.detail);
+    });
+
+    // curve editor stuff
+    document.addEventListener('show-curve-editor', (e) => {
+      console.log('show-showCurveEditorBtn editor ', e);
+      this.curveEditor.toggleEditor();
     });
   }
 
@@ -1061,6 +1071,8 @@ export default class FluxCodexVertex {
       el.className = "node " + (spec.title.toLowerCase() || "");
     } else if(spec.title == "Play MP3") {
       el.className = "node " + "audios";
+    } else if(spec.title == "Curve") {
+      el.className = "node " + "curve";
     } else {
       el.className = "node " + (spec.category || "");
     }
@@ -1108,6 +1120,20 @@ export default class FluxCodexVertex {
     row.appendChild(left);
     row.appendChild(right);
     body.appendChild(row);
+
+    if(spec.title == "Curve") {
+
+      const c = new CurveData(spec.id);
+      let curve = this.curveEditor.curveStore.getOrCreate(c);
+      spec.curve = curve;
+
+      console.log(`%c Create DOM corotine Node [CURVE] ${spec.curve}`, LOG_FUNNY_ARCADE);
+
+      this.curveEditor.bindCurve(spec.curve, {
+        name: spec.id,
+        idNode: spec.id
+      });
+    }
 
     if(spec.comment) {
       const textarea = document.createElement("textarea");
@@ -1234,7 +1260,7 @@ export default class FluxCodexVertex {
 
     if(spec.title === "Get Scene Object" || spec.title === "Get Scene Animation" || spec.title === "Get Scene Light") {
       const select = document.createElement("select");
-      select.id = spec._id;
+      select.id = spec._id ? spec._id : spec.id;
       select.style.width = "100%";
       select.style.marginTop = "6px";
 
@@ -1283,6 +1309,13 @@ export default class FluxCodexVertex {
       this.selectNode(spec.id);
 
       this.updateNodeDOM(spec.id)
+    });
+
+    el.addEventListener("dblclick", e => {
+      e.stopPropagation();
+      console.log('DBL ' + spec.id);
+      this.onNodeDoubleClick(spec);
+
     });
 
     return el;
@@ -1456,7 +1489,9 @@ export default class FluxCodexVertex {
           {name: "delay", type: "number"}
         ],
         outputs: [
-          {name: "execOut", type: "action"}
+          {name: "execOut", type: "action"},
+          {name: "complete", type: "action"},
+          {name: "objectNames", type: "object"}
         ],
         fields: [
           {key: "material", value: "standard"},
@@ -1498,13 +1533,15 @@ export default class FluxCodexVertex {
           {name: "exec", type: "action"},
           {name: "objectName", type: "string"},
           {name: "VideoTextureArg", type: "object"},
+          {name: "muteAudio", type: "boolean"},
         ],
         outputs: [
           {name: "execOut", type: "action"}
         ],
         fields: [
           {key: "objectName", value: "standard"},
-          {key: "VideoTextureArg", value: "{type: 'video', src: 'res/videos/tunel.mp4'}"}
+          {key: "VideoTextureArg", value: "{type: 'video', src: 'res/videos/tunel.mp4'}"},
+          {key: "muteAudio", value: true},
         ],
         noselfExec: "true"
       }),
@@ -1529,7 +1566,51 @@ export default class FluxCodexVertex {
         noselfExec: "true"
       }),
 
+      audioReactiveNode: (id, x, y) => ({
+        id, x, y, title: "Audio Reactive Node",
+        category: "action",
+        inputs: [
+          {name: "exec", type: "action"},
+          {name: "audioSrc", type: "string"},
+          {name: "loop", type: "boolean"},
+          {name: "thresholdBeat", type: "number"},
 
+        ],
+        outputs: [
+          {name: "execOut", type: "action"},
+          {name: "low", type: "number"},
+          {name: "mid", type: "number"},
+          {name: "high", type: "number"},
+          {name: "energy", type: "number"},
+          {name: "beat", type: "boolean"}
+        ],
+        fields: [
+          {key: "audioSrc", value: "audionautix-black-fly.mp3"},
+          {key: "loop", value: true},
+          {key: "thresholdBeat", value: 0.7},
+          {key: "created", value: false},
+        ],
+        noselfExec: "true"
+      }),
+
+      curveTimeline: (id, x, y) => ({
+        id, x, y, title: "Curve",
+        category: "action",
+        inputs: [
+          {name: "exec", type: "action"},
+          {name: "name", type: "string"},
+          {name: "delta", type: "number"},
+        ],
+        outputs: [
+          {name: "execOut", type: "action"},
+          {name: "value", type: "number"}
+        ],
+        fields: [
+          {key: "name", value: "Curve1"}
+        ],
+        curve: {},
+        noselfExec: "true"
+      }),
 
       eventCustom: (id, x, y) => ({
         id, x, y,
@@ -1984,6 +2065,16 @@ export default class FluxCodexVertex {
           {key: "var", value: ""},
           {key: "literal", value: ""},
         ],
+      }),
+
+
+      getNumberLiteral: (id, x, y) => ({
+        id, title: "getNumberLiteral", x, y,
+        category: "action",
+        inputs: [{name: "exec", type: "action"}],
+        outputs: [{name: "execOut", type: "action"}, {name: "value", type: "number"}],
+        fields: [{key: "value", value: 1}],
+        noselfExec: "true"
       }),
 
       comment: (id, x, y) => ({
@@ -2613,7 +2704,8 @@ export default class FluxCodexVertex {
         n._frameCounter++;
         if(skip > 0 && n._frameCounter < skip) return;
         n._frameCounter = 0;
-        graph._returnCache = delta;
+        // console.info('.....', delta)
+        n._returnCache = delta;
         graph.enqueueOutputs(n, "exec");
       };
       n._listenerAttached = true;
@@ -2654,13 +2746,35 @@ export default class FluxCodexVertex {
       if(typeof node.fn === 'undefined') {
         const selected = this.methodsManager.methodsContainer.find(m => m.name === node.attachedMethod);
         if(selected) {
-          // console.log('SPECIAL OUTPUT node.fn ', selected)
           node.fn = this.methodsManager.compileFunction(selected.code);
         } else {
           console.warn('Node: Function PinName: reference [reference not found at methodsContainer]')
         }
       }
       return node.fn;
+    }
+
+    if(node.title === "On Draw") {
+      if(pinName == "delta") return node._returnCache;
+    }
+
+    if(node.title === "Generator Pyramid" && pinName == "objectNames") {
+      // console.log("TTTTTTTTTTTTT", node._returnCache);
+      return node._returnCache;
+    }
+
+    if(node.title === "Audio Reactive Node") {
+      if(pinName === "low") {
+        return node._returnCache[0]
+      } else if(pinName === "mid") {
+        return node._returnCache[1]
+      } else if(pinName === "high") {
+        return node._returnCache[2]
+      } else if(pinName === "energy") {
+        return node._returnCache[3]
+      } else if(pinName === "beat") {
+        return node._returnCache[4]
+      }
     }
 
     if(node.title === "On Ray Hit") {
@@ -2673,7 +2787,13 @@ export default class FluxCodexVertex {
 
     if(node.title === "if" && pinName === "condition") {
       let testLink = this.links.find(l => l.to.node === nodeId && l.to.pin === pinName);
-      let t = this.getValue(testLink.from.node, testLink.from.pin);
+      let t;
+      try {
+        t = this.getValue(testLink.from.node, testLink.from.pin);
+      } catch(err) {
+        console.log(`IF NODE ${node.id} have no conditional pin connected - default is false... fix this in FluxCodexVertex graph editor.`)
+        return false;
+      }
       if(typeof t !== 'undefined') {
         return t;
       }
@@ -2713,13 +2833,11 @@ export default class FluxCodexVertex {
       return value;
     }
 
-
     const link = this.links.find(l => l.to.node === nodeId && l.to.pin === pinName);
     if(link) return this.getValue(link.from.node, link.from.pin, visited);
 
     const field = node.fields?.find(f => f.key === pinName);
     if(field) return field.value;
-
 
     const inputPin = node.inputs?.find(p => p.name === pinName);
     if(inputPin) return inputPin.default ?? 0;
@@ -3062,12 +3180,10 @@ export default class FluxCodexVertex {
           l.to.pin === "result" || l.to.pin === "value")
       );
 
-
-
       if(link) {
         const fromNode = this.nodes[link.from.node];
         if(fromNode._returnCache === undefined && fromNode._subCache === undefined) {
-          this.triggerNode(fromNode.id);
+          // this.triggerNode(fromNode.id);
         }
         if(fromNode._returnCache) arr = fromNode._returnCache;
         if(fromNode._subCache) arr = fromNode._subCache;
@@ -3218,12 +3334,21 @@ export default class FluxCodexVertex {
         if(n.title == "Set Object") {
           if(value == 0) {
             let varliteral = n.fields?.find(f => f.key === "literal");
-            console.log("set object  varliteral.value ", varliteral.value);
+            // console.log("set object  varliteral.value ", varliteral.value);
             this.variables[type][varField.value] = JSON.parse(varliteral.value);
+            // ??
           }
         } else {
-          console.log("set object ", value);
-          this.variables[type][varField.value] = {value};
+          if(value == 0) {
+            let varliteral = n.fields?.find(f => f.key === "literal");
+            // console.log("set object  varliteral.value ", varliteral.value);
+            this.variables[type][varField.value] = JSON.parse(varliteral.value);
+            value = JSON.parse(varliteral.value);
+          } else {
+            console.log("set object ", value);
+            this.variables[type][varField.value] = {value};
+          }
+
         }
 
         this.notifyVariableChanged(type, varField.value);
@@ -3341,7 +3466,7 @@ export default class FluxCodexVertex {
         const createdField = n.fields.find(f => f.key === "created");
 
         if(!createdField.value) {
-          console.log('!AUDIO ONCE!');
+          createdField.disabled = true;
           app.matrixSounds.createAudio(key, src, clones);
           createdField.value = true;
         }
@@ -3435,11 +3560,14 @@ export default class FluxCodexVertex {
         }
         const createdField = n.fields.find(f => f.key === "created");
         if(createdField.value == "false" || createdField.value == false) {
-          // console.log('!GEN PYRAMID! ONCE!');
-          app.physicsBodiesGeneratorDeepPyramid(mat, pos, rot, texturePath, name, levels, raycast, scale, spacing, delay);
+          app.physicsBodiesGeneratorDeepPyramid(mat, pos, rot, texturePath, name, levels, raycast, scale, spacing, delay).then((objects) => {
+            // console.log('!GEN PYRAMID COMPLETE!');
+            n._returnCache = objects;
+            this.enqueueOutputs(n, "complete");
+          })
           // createdField.value = true;
         }
-
+        // sync
         this.enqueueOutputs(n, "execOut");
         return;
       } else if(n.title === "Set Force On Hit") {
@@ -3470,10 +3598,9 @@ export default class FluxCodexVertex {
           return;
         }
 
-        console.warn("[Set Video Texture] arg:", videoTextureArg);
-
+        // console.warn("[Set Video Texture] arg:", videoTextureArg);
         if(typeof videoTextureArg != 'object') {
-          console.warn("[Set Video Texture] arg is not object!:", videoTextureArg);
+          // console.warn("[Set Video Texture] arg is not object!:", videoTextureArg);
           if(typeof videoTextureArg == 'string') {
             eval("videoTextureArg = " + videoTextureArg);
           }
@@ -3492,21 +3619,16 @@ export default class FluxCodexVertex {
       } else if(n.title === "Set CanvasInline") {
         const objectName = this.getValue(nodeId, "objectName");
         let canvaInlineProgram = this.getValue(nodeId, "canvaInlineProgram");
-
         let specialCanvas2dArg = this.getValue(nodeId, "specialCanvas2dArg");
-        //     {key: "specialCanvas2dArg", value: "{ hue: 200, glow: 10, text: node.id, fontSize: 80, flicker: 0.05, }"},
-
         if(!objectName) {
           console.log(`%c Node [Set CanvasInline] probably objectname is missing...`, LOG_FUNNY_ARCADE);
           this.enqueueOutputs(n, "execOut");
           return;
         }
-        console.warn("[canvaInlineProgram] specialCanvas2dArg arg:", specialCanvas2dArg);
-
-        if (typeof specialCanvas2dArg == 'string') {
+        // console.warn("[canvaInlineProgram] specialCanvas2dArg arg:", specialCanvas2dArg);
+        if(typeof specialCanvas2dArg == 'string') {
           eval("specialCanvas2dArg = " + specialCanvas2dArg);
         }
-
         if(typeof canvaInlineProgram != 'function') {
           // console.warn("[canvaInlineProgram] arg is not object!:", canvaInlineProgram);
           if(typeof canvaInlineProgram == 'string') {
@@ -3517,17 +3639,96 @@ export default class FluxCodexVertex {
         }
 
         let o = app.getSceneObjectByName(objectName);
-        if (typeof o === 'undefined') {
+        if(typeof o === 'undefined') {
           console.log(`%c Node [Set CanvasInline] probably objectname is wrong...`, LOG_FUNNY_ARCADE);
           mb.show("FluxCodexVertex Exec order is breaked on [Set CanvasInline] node id:", n.id);
           return;
         }
-          mb.show("FluxCodexVertex WHAT IS on [Set CanvasInline] node id:", n.id);
+        // mb.show("FluxCodexVertex WHAT IS on [Set CanvasInline] node id:", n.id);
         o.loadVideoTexture({
           type: "canvas2d-inline",
           canvaInlineProgram: canvaInlineProgram,
           specialCanvas2dArg: specialCanvas2dArg ? specialCanvas2dArg : undefined
         });
+
+        this.enqueueOutputs(n, "execOut");
+        return;
+      } else if(n.title === "Curve") {
+        const cName = this.getValue(nodeId, "name");
+        const cDelta = this.getValue(nodeId, "delta");
+        if(!cName) {
+          console.log(`%c Node [CURVE] probably name is missing...`, LOG_FUNNY_ARCADE);
+          this.enqueueOutputs(n, "execOut");
+          return;
+        }
+        let curve = this.curveEditor.curveStore.getByName(nodeId);
+        if(!curve) {
+          console.warn("Curve not found:", cName);
+          this.enqueueOutputs(n, "execOut");
+          return;
+        }
+        if(!curve.baked) {
+          console.log(`%cNode [CURVE] ${curve} bake.`, LOG_FUNNY_ARCADE);
+          curve.bake();
+        }
+        n.curve = curve;
+        const t01 = cDelta / curve.length;
+        // smooth
+        // const t01 = curve.loop
+        // ? (cDelta / curve.length) % 1
+        // : Math.min(1, Math.max(0, cDelta / curve.length));
+        let V = n.curve.evaluate(t01);
+        n._returnCache = V;
+        this.enqueueOutputs(n, "execOut");
+        return;
+      } else if(n.title === "getNumberLiteral") {
+        const literailNum = this.getValue(nodeId, "number");
+        n._returnCache = literailNum;
+        this.enqueueOutputs(n, "execOut");
+        return;
+      } else if(n.title === "Audio Reactive Node") {
+        const src = this.getValue(nodeId, "audioSrc");
+        const loop = this.getValue(nodeId, "loop");
+        const thresholdBeat = this.getValue(nodeId, "thresholdBeat");
+        const createdField = n.fields.find(f => f.key === "created");
+        if(!n._audio && !n._loading) {
+          n._loading = true;
+          createdField.value = true;
+          createdField.disabled = true;
+          app.audioManager.load(src).then(asset => {
+            asset.audio.loop = loop;
+            n._audio = asset;
+            n._energyHistory = [];
+            n._beatCooldown = 0;
+            n._loading = false;
+          });
+          return;
+        }
+
+        if(!n._audio || !n._audio.ready) return;
+        const data = n._audio.updateFFT();
+        if(!data) return;
+        let low = 0, mid = 0, high = 0;
+        for(let i = 0;i < 16;i++) low += data[i];
+        for(let i = 16;i < 64;i++) mid += data[i];
+        for(let i = 64;i < 128;i++) high += data[i];
+        low /= 16;
+        mid /= 48;
+        high /= 64;
+        const energy = (low + mid + high) / 3;
+        const hist = n._energyHistory;
+        hist.push(low);
+        if(hist.length > 30) hist.shift();
+        let avg = 0;
+        for(let i = 0;i < hist.length;i++) avg += hist[i];
+        avg /= hist.length;
+        let beat = false;
+        if(low > avg * thresholdBeat && n._beatCooldown <= 0) {
+          beat = true;
+          n._beatCooldown = 10;
+        }
+        if(n._beatCooldown > 0) n._beatCooldown--;
+        n._returnCache = [low, mid, high, energy, beat];
 
         this.enqueueOutputs(n, "execOut");
         return;
@@ -3558,16 +3759,12 @@ export default class FluxCodexVertex {
     } else if(n.title === "Set Texture") {
       const texpath = this.getValue(nodeId, "texturePath");
       const sceneObjectName = this.getValue(nodeId, "sceneObjectName");
-      // sceneObjectName
       if(texpath) {
-        // console.log('textPath', texpath)
         // console.log('sceneObjectName', sceneObjectName)
         let obj = app.getSceneObjectByName(sceneObjectName);
         obj.loadTex0([texpath]).then(() => {
           setTimeout(() => obj.changeTexture(obj.texture0), 200);
         })
-        // pos.setSpeed(this.getValue(nodeId, "thrust"));
-
       }
       this.enqueueOutputs(n, "execOut");
       return;
@@ -3643,9 +3840,7 @@ export default class FluxCodexVertex {
       return;
     }
 
-
-    console.log("BEFORE COMPARE ")
-
+    // console.log("BEFORE COMPARE ");
     if(["math", "value", "compare", "stringOperation"].includes(n.category)) {
 
       console.log("BEFORE COMPARE ")
@@ -3723,6 +3918,7 @@ export default class FluxCodexVertex {
     }
 
     this._execContext = null;
+
   }
 
   getConnectedSource(nodeId, inputName) {
@@ -3907,6 +4103,10 @@ export default class FluxCodexVertex {
       if(key === 'accessObject') return undefined;
       if(key === '_returnCache') return undefined;
       if(key === '_listenerAttached') return false;
+      if(key === '_audio') return undefined;
+      if(key === '_loading') return false;
+      if(key === '_energyHistory') return undefined;
+      if(key === '_beatCooldown') return 0;
       return value;
     }
 
@@ -4092,6 +4292,16 @@ export default class FluxCodexVertex {
     this.compileGraph();
     return;
   }
-}
 
-// FluxCodexVertex.SAVE_KEY = "matrixEngineVisualScripting";
+  // test
+  onNodeDoubleClick(node) {
+    console.log(`%c Node [CURVE  func] ${node.curve}`, LOG_FUNNY_ARCADE);
+    if(node.title !== "Curve") return;
+    this.curveEditor.bindCurve(node.curve, {
+      name: node.id,
+      idNode: node.id
+    });
+    this.curveEditor.toggleEditor(true);
+  }
+
+}

@@ -291,7 +291,7 @@ export default class MaterialsInstanced {
       this.externalTexture = this.device.importExternalTexture({source: this.video});
       this.createBindGroupForRender();
       this.videoIsReady = 'YES';
-      console.log("✅video bind.");
+      console.log("%c✅video bind.", LOG_FUNNY_ARCADE);
     } else {
       this.externalTexture = this.device.importExternalTexture({source: this.video});
       this.createBindGroupForRender();
