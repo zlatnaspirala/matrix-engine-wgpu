@@ -47,7 +47,8 @@ async function buildAllProjectsOnStartup() {
       await fs.writeFile(graphFile, DEFAULT_GRAPH_JS, "utf8");
       console.log(`🧠 Created default graph.js for ${projectName}`);
     }
-    const methodsFile = path.join(PROJECTS_DIR, projectName, "methods.js");
+    const mname = projectName + "_methods.js";
+    const methodsFile = path.join(PUBLIC_DIR, mname);
     try {
       await fs.access(methodsFile);
     } catch {
@@ -328,6 +329,8 @@ async function buildProject(projectName, ws, payload) {
   const outHtmlFile = `${PUBLIC_DIR}\\${projectName}.html`;
   htmldoc.saveTo(outHtmlFile);
 
+  await buildAllProjectsOnStartup();
+
   ws.send(JSON.stringify({
     name: projectName,
     ok: true,
@@ -474,10 +477,10 @@ async function saveMethods(msg, ws) {
     JSON.stringify(msg.methodsContainer, null, 2) +
     ";\n";
   fs.writeFile(file, content, "utf8").then((e) => {
-    ws.send(JSON.stringify({
-      ok: true,
-      methodSaves: 'OK'
-    }));
+    // ws.send(JSON.stringify({
+    //   ok: true,
+    //   methodSaves: 'OK'
+    // }));
     console.log("Saved methods.js");
   });
   //
