@@ -3178,12 +3178,10 @@ export default class FluxCodexVertex {
           l.to.pin === "result" || l.to.pin === "value")
       );
 
-
-
       if(link) {
         const fromNode = this.nodes[link.from.node];
         if(fromNode._returnCache === undefined && fromNode._subCache === undefined) {
-          this.triggerNode(fromNode.id);
+          // this.triggerNode(fromNode.id);
         }
         if(fromNode._returnCache) arr = fromNode._returnCache;
         if(fromNode._subCache) arr = fromNode._subCache;
