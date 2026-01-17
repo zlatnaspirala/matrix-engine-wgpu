@@ -1533,13 +1533,15 @@ export default class FluxCodexVertex {
           {name: "exec", type: "action"},
           {name: "objectName", type: "string"},
           {name: "VideoTextureArg", type: "object"},
+          {name: "muteAudio", type: "boolean"},
         ],
         outputs: [
           {name: "execOut", type: "action"}
         ],
         fields: [
           {key: "objectName", value: "standard"},
-          {key: "VideoTextureArg", value: "{type: 'video', src: 'res/videos/tunel.mp4'}"}
+          {key: "VideoTextureArg", value: "{type: 'video', src: 'res/videos/tunel.mp4'}"},
+          {key: "muteAudio", value: true},
         ],
         noselfExec: "true"
       }),
