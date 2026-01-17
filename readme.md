@@ -76,9 +76,8 @@ The backend is built using **Node.js** 🟢
 - Run the graph ▶️
 - Stop the graph Just basic - clear dinamic created object and stops onDraw calls.
 - Save graph
-  - Currently saved to **LocalStorage**
-  - For final builds, becomes a real **JS object** injected into the app flow.[NOT DONE]
-    Now it is posible to hide editor on begin.
+  - Saved to file direct also cached on **LocalStorage**
+  - For final builds, becomes a real **JS object** injected into the app flow.[DONE]
 - Export graph to **JSON**
 - Import graph from **JSON**
 
