@@ -1683,6 +1683,28 @@ export default class FluxCodexVertex {
         _listenerAttached: false,
       }),
 
+      onKey: (id, x, y) => ({
+        id, x, y,
+        title: "On Key",
+        category: "event",
+        inputs: [],
+        outputs: [
+          {name: "keyDown", type: "action"},
+          {name: "keyUp", type: "action"},
+          {name: "isHeld", type: "boolean"},
+          {name: "anyKeyDown", type: "action"},
+          {name: "keyCode", type: "string"},
+          {name: "shift", type: "action"},
+          {name: "ctrl", type: "action"},
+          {name: "alt", type: "action"}
+        ],
+        fields: [
+          {key: "key", value: "W"},
+        ],
+        noselfExec: 'true',
+        _listenerAttached: false,
+      }),
+
       function: (id, x, y) => ({
         id, title: "Function", x, y,
         category: "action",
@@ -2710,6 +2732,45 @@ export default class FluxCodexVertex {
       };
       n._listenerAttached = true;
       return;
+    } else if(n.title == "On Key") {
+      if(n._listenerAttached) return;
+      const graph = this;
+      n._isHeld = false;
+      window.addEventListener("keydown", (e) => {
+        n.lastKey = e.key;
+        graph.enqueueOutputs(n, "anyKeyDown");
+        if(e.ctrlKey == true) graph.enqueueOutputs(n, "ctrl");
+        if(e.altKey == true) graph.enqueueOutputs(n, "alt");
+        if(e.shiftKey == true) graph.enqueueOutputs(n, "shift");
+        const keyValue = n.fields.find(f => f.key === "key")?.value;
+        if(!keyValue) return;
+        if(e.key.toLowerCase() === keyValue.toLowerCase()) {
+          // node._pressed = true;
+          n._isHeld = true;
+          graph.enqueueOutputs(n, "keyDown");
+        }
+      });
+      window.addEventListener("keyup", (e) => {
+
+        console.log('ON e.shiftKey !!!!!', e.shiftKey);
+        console.log('ON e.altKey !!!!!', e.altKey);
+        console.log('ON e.ctrltKey !!!!!', e.ctrlKey);
+
+        const keyValue = n.fields.find(f => f.key === "key")?.value;
+        if(!keyValue) return;
+        if(e.key.toLowerCase() === keyValue.toLowerCase()) {
+          // node._pressed = true;
+          n._isHeld = false;
+          graph.enqueueOutputs(n, "keyUp");
+        }
+      });
+      window.addEventListener("blur", () => {
+        if(n._isHeld) {
+          n._isHeld = false;
+          graph.enqueueOutputs(n, "keyUp");
+        }
+      });
+      n._listenerAttached = true;
     }
   }
 
@@ -2754,14 +2815,10 @@ export default class FluxCodexVertex {
       return node.fn;
     }
 
-    if(node.title === "On Draw") {
-      if(pinName == "delta") return node._returnCache;
-    }
-
-    if(node.title === "Generator Pyramid" && pinName == "objectNames") {
-      // console.log("TTTTTTTTTTTTT", node._returnCache);
-      return node._returnCache;
-    }
+    if(node.title === "On Draw") if(pinName == "delta") return node._returnCache;
+    if(node.title === "On Key" && pinName == "isHeld") return node._isHeld;
+    if(node.title === "On Key" && pinName == "keyCode") return node.lastKey;
+    if(node.title === "Generator Pyramid" && pinName == "objectNames") return node._returnCache;
 
     if(node.title === "Audio Reactive Node") {
       if(pinName === "low") {
@@ -3313,7 +3370,7 @@ export default class FluxCodexVertex {
     }
 
     if(n.category === "event" && typeof n.noselfExec === 'undefined') {
-      // console.log('EXEC :  ', n.title)
+      console.log('EMPTY EXEC :  ', n.title)
       this.enqueueOutputs(n, "exec");
       return;
     }
@@ -3733,7 +3790,6 @@ export default class FluxCodexVertex {
         this.enqueueOutputs(n, "execOut");
         return;
       }
-
 
       this.enqueueOutputs(n, "execOut");
       return;

@@ -235,10 +235,12 @@ export default class MatrixEngineWGPU {
     console.log("%c ---------------------------------------------------------------------------------------------- ", LOG_FUNNY);
     console.log("%c 🧬 Matrix-Engine-Wgpu 🧬 ", LOG_FUNNY_BIG_NEON);
     console.log("%c ---------------------------------------------------------------------------------------------- ", LOG_FUNNY);
-    console.log("%c     Hello  \n 👽 ▄▀▄▀▄▀▄▀▄▀  \n  ", LOG_FUNNY_EXTRABIG);
+    console.log("%c Version 1.8.7 ", LOG_FUNNY);
+    console.log("%c👽 ", LOG_FUNNY_EXTRABIG);
     console.log(
       "%cMatrix Engine WGPU - Port is open.\n" +
-      "Creative power loaded.\n" +
+      "Creative power loaded with visual scripting.\n" +
+      "Last features : audioReactiveNode, onDraw , onKey , curve editor.\n" +
       "No tracking. No hype. Just solutions. 🔥", LOG_FUNNY_BIG_ARCADE);
     console.log(
       "%cSource code: 👉 GitHub:\nhttps://github.com/zlatnaspirala/matrix-engine-wgpu",
@@ -446,27 +448,20 @@ export default class MatrixEngineWGPU {
 
   removeSceneObjectByName = (name) => {
     const index = this.mainRenderBundle.findIndex(obj => obj.name === name);
-
     if(index === -1) {
-      console.warn("Scene object not found:", name);
+      console.warn("%cScene object not found:" + name, LOG_FUNNY_ARCADE);
       return false;
     }
-
-    // Get object
     const obj = this.mainRenderBundle[index];
     let testPB = app.matrixAmmo.getBodyByName(obj.name);
     if(testPB !== null) {
       try {
         this.matrixAmmo.dynamicsWorld.removeRigidBody(testPB);
       } catch(e) {
-        console.warn("Physics cleanup error:", e);
+        console.warn("%cPhysics cleanup error:" + e , LOG_FUNNY_ARCADE);
       }
     }
-
-    // Remove from render bundle
     this.mainRenderBundle.splice(index, 1);
-
-    console.log("Removed scene object:", name);
     return true;
   }
 

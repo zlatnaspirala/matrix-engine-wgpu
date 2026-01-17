@@ -697,7 +697,7 @@ export const LOG_FUNNY_BIG_NEON =
   "background:black; padding:14px 18px;";
 
   export const LOG_FUNNY_EXTRABIG =
-  "font-family: stormfaze; font-size:130px; font-weight:900;" +
+  "font-family: stormfaze; font-size:230px; font-weight:900;" +
   "color:#00ffff;" +
   "text-shadow: 0 0 5px #01d6d6ff, 0 0 10px #00ffff, 4px 4px 0 #ff00ff;" +
   "background:black; padding:14px 18px;";

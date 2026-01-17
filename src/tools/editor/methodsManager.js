@@ -30,7 +30,8 @@ export default class MethodsManager {
     return new Promise(async (resolve, reject) => {
       if(editorType == 'created from editor') {
         const page = location.pathname.split("/").pop().replace(".html", "");
-        const file = `../projects/${page}/methods.js`;
+        // const file = `../projects/${page}/methods.js`;
+        const file = `./${page}_methods.js`;
         let module;
         try {
           module = await import(file);

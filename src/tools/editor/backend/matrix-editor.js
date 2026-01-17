@@ -54,6 +54,8 @@ async function buildAllProjectsOnStartup() {
       await fs.writeFile(methodsFile, DEFAUL_METHODS, "utf8");
       console.log(`🧠 Created default methods.js for ${projectName}`);
     }
+    //
+    //
     try {
       await fs.access(entry);
     } catch {
@@ -478,6 +480,21 @@ async function saveMethods(msg, ws) {
     }));
     console.log("Saved methods.js");
   });
+  //
+
+  let name = PROJECT_NAME + "_methods.js"
+  const finalPack = path.join(PUBLIC_DIR, name);
+  const contentPublic =
+    "export default " +
+    JSON.stringify(msg.methodsContainer, null, 2) +
+    ";\n";
+  fs.writeFile(finalPack, contentPublic, "utf8").then((e) => {
+    ws.send(JSON.stringify({
+      ok: true,
+      methodSaves: 'OK'
+    }));
+    console.log("Saved methods.js");
+  });
 }
 
 async function saveGraph(msg, ws) {
@@ -486,7 +503,7 @@ async function saveGraph(msg, ws) {
   const file = path.join(folderPerProject, "\\graph.js");
   const content =
     "export default " +
-    msg.graphData + 
+    msg.graphData +
     ";\n";
   fs.writeFile(file, content, "utf8").then((e) => {
     ws.send(JSON.stringify({
