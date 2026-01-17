@@ -1491,7 +1491,7 @@ export default class FluxCodexVertex {
         outputs: [
           {name: "execOut", type: "action"},
           {name: "complete", type: "action"},
-          {name: "objects", type: "object"}
+          {name: "objectNames", type: "object"}
         ],
         fields: [
           {key: "material", value: "standard"},
@@ -2756,7 +2756,7 @@ export default class FluxCodexVertex {
       if(pinName == "delta") return node._returnCache;
     }
 
-    if(node.title === "Generator Pyramid" && pinName == "objects") {
+    if(node.title === "Generator Pyramid" && pinName == "objectNames") {
       // console.log("TTTTTTTTTTTTT", node._returnCache);
       return node._returnCache;
     }
@@ -3342,6 +3342,7 @@ export default class FluxCodexVertex {
             let varliteral = n.fields?.find(f => f.key === "literal");
             console.log("set object  varliteral.value ", varliteral.value);
             this.variables[type][varField.value] = JSON.parse(varliteral.value);
+            value = JSON.parse(varliteral.value);
           } else {
             console.log("set object ", value);
             this.variables[type][varField.value] = {value};
