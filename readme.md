@@ -76,9 +76,8 @@ The backend is built using **Node.js** 🟢
 - Run the graph ▶️
 - Stop the graph Just basic - clear dinamic created object and stops onDraw calls.
 - Save graph
-  - Currently saved to **LocalStorage**
-  - For final builds, becomes a real **JS object** injected into the app flow.[NOT DONE]
-    Now it is posible to hide editor on begin.
+  - Saved to file direct also cached on **LocalStorage**
+  - For final builds, becomes a real **JS object** injected into the app flow.[DONE]
 - Export graph to **JSON**
 - Import graph from **JSON**
 
@@ -852,6 +851,10 @@ You may use, modify, and sell projects based on this code — just keep this not
   -🚫What you cannot do
   You cannot redistribute or sell the raw Mixamo character or animation files “as is” (i.e. as standalone assets) to others.You can’t use Mixamo content to create a competing library of characters / animations (i.e. you can’t just package them and sell them to others).
   You can’t use Mixamo’s content (or outputs) to train AI / machine learning models.
+
+- Music used: BLACK FLY by Audionautix | http://audionautix.com
+  Music promoted by https://www.free-stock-music.com
+  Creative Commons Attribution-ShareAlike 3.0 Unported
 
 - Used free assets from great https://craftpix.net
   Magic icons : https://craftpix.net/freebies/free-rpg-splash-game-512x512-icons/
