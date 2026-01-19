@@ -17,12 +17,17 @@ export let application = new MatrixEngineWGPU({
   console.log('light added.')
   application.lightContainer[0].outerCutoff = 0.5;
   application.lightContainer[0].position[2] = -16;
-  application.lightContainer[0].intensity = 5;
+  application.lightContainer[0].intensity = 6;
   application.lightContainer[0].target[2] = -20;
   application.lightContainer[0].position[1] = 9;
   application.globalAmbient[0] = 0.7;
   application.globalAmbient[1] = 0.7;
   application.globalAmbient[2] = 0.7;
+
+  application.activateBloomEffect();
+  application.bloomPass.setIntensity(5);
+  application.bloomPass.setKnee(25);
+  application.bloomPass.setBlurRadius(1300);
 
   const diceTexturePath = './res/meshes/jamb/dice.png';
 
@@ -32,15 +37,9 @@ export let application = new MatrixEngineWGPU({
     points: 0
   };
   application.myDom = myDom;
-  myDom.createJamb();
-  myDom.addDraggerForTable();
-  myDom.createBlocker();
   application.dices = dices;
-
   application.activateDiceClickListener = null;
 
-  // -------------------------
-  // TEST
   application.matrixAmmo.detectTopFaceFromQuat = (q) => {
     // Define based on *visual face* → object-space normal mapping
     const faces = [
@@ -179,10 +178,10 @@ export let application = new MatrixEngineWGPU({
     }
   });
 
-  addEventListener('mousemove', (e) => {
-    // console.log('only on click')
+  // addEventListener('mousemove', (e) => {
+  //   // console.log('only on click')
 
-  })
+  // })
 
   // Sounds
   application.matrixSounds.createAudio('start', 'res/audios/start.mp3', 1)
@@ -194,6 +193,9 @@ export let application = new MatrixEngineWGPU({
 
   addEventListener('AmmoReady', () => {
 
+    myDom.createJamb();
+    myDom.addDraggerForTable();
+    myDom.createBlocker();
     app.matrixAmmo.speedUpSimulation = 2;
 
     downloadMeshes({
@@ -341,7 +343,7 @@ export let application = new MatrixEngineWGPU({
     })
   }
 
-  function onLoadObj(m) {
+  function onLoadObj(m, originScale) {
     application.myLoadedMeshes = m;
     // Add dices
     application.addMeshObj({
@@ -354,6 +356,7 @@ export let application = new MatrixEngineWGPU({
       mesh: m.cube,
       raycast: {enabled: true, radius: 2},
       physics: {
+        scale: originScale,
         enabled: true,
         geometry: "Cube"
       }
@@ -369,6 +372,7 @@ export let application = new MatrixEngineWGPU({
       mesh: m.cube,
       raycast: {enabled: true, radius: 2},
       physics: {
+        scale: originScale,
         enabled: true,
         geometry: "Cube"
       }
@@ -384,6 +388,7 @@ export let application = new MatrixEngineWGPU({
       mesh: m.cube,
       raycast: {enabled: true, radius: 2},
       physics: {
+        scale: originScale,
         enabled: true,
         geometry: "Cube"
       }
@@ -399,6 +404,7 @@ export let application = new MatrixEngineWGPU({
       mesh: m.cube,
       raycast: {enabled: true, radius: 2},
       physics: {
+        scale: originScale,
         enabled: true,
         geometry: "Cube"
       }
@@ -414,6 +420,7 @@ export let application = new MatrixEngineWGPU({
       mesh: m.cube,
       raycast: {enabled: true, radius: 2},
       physics: {
+        scale: originScale,
         enabled: true,
         geometry: "Cube"
       }
@@ -429,6 +436,7 @@ export let application = new MatrixEngineWGPU({
       mesh: m.cube,
       raycast: {enabled: true, radius: 2},
       physics: {
+        scale: originScale,
         enabled: true,
         geometry: "Cube"
       }

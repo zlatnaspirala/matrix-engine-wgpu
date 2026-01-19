@@ -210,6 +210,7 @@ export default class MatrixEngineWGPU {
     this.MAX_SPOTLIGHTS = 20;
     this.inputHandler = createInputHandler(window, canvas);
     this.createGlobalStuff();
+
     this.run(callback);
 
     // let ff = 0;
@@ -458,7 +459,7 @@ export default class MatrixEngineWGPU {
       try {
         this.matrixAmmo.dynamicsWorld.removeRigidBody(testPB);
       } catch(e) {
-        console.warn("%cPhysics cleanup error:" + e , LOG_FUNNY_ARCADE);
+        console.warn("%cPhysics cleanup error:" + e, LOG_FUNNY_ARCADE);
       }
     }
     this.mainRenderBundle.splice(index, 1);
@@ -639,9 +640,10 @@ export default class MatrixEngineWGPU {
     }
   }
 
-  run(callback) {
-    setTimeout(() => {requestAnimationFrame(this.frame)}, 500)
-    setTimeout(() => {callback(this)}, 20)
+  async run(callback) {
+    // await this.device.queue.onSubmittedWorkDone();
+    setTimeout(() => {requestAnimationFrame(this.frame)}, 1000);
+    setTimeout(() => {callback(this)}, 1)
   }
 
   destroyProgram = () => {

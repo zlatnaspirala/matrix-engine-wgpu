@@ -43,10 +43,11 @@ export class SpotLight {
     target = vec3.create(0, 0, -20),
     fov = 45, aspect = 1.0, near = 0.1, far = 200) {
 
+    aspect = 1; //hot fix
     this.name = "light" + indexx;
     this.getName = () => {return "light" + indexx};
     this.fov = fov;
-    this.aspect = aspect;
+    this.aspect = 1;
     this.near = near;
     this.far = far;
 
@@ -264,6 +265,8 @@ export class SpotLight {
       depthStencil: {
         depthWriteEnabled: true,
         depthCompare: 'less',
+        depthBias: 2,              // Constant bias (try 1-4)
+        depthBiasSlopeScale: 2.0,
         format: 'depth32float',
       },
       primitive: this.primitive,
@@ -362,10 +365,10 @@ export class SpotLight {
     this.range = range;
   }
   setAmbientFactor = (ambientFactor) => {
-   this.ambientFactor = ambientFactor;
+    this.ambientFactor = ambientFactor;
   }
   setShadowBias = (shadowBias) => {
-   this.shadowBias = shadowBias;
+    this.shadowBias = shadowBias;
   }
 
 }

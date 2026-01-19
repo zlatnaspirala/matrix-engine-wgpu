@@ -1390,12 +1390,16 @@ let application = exports.application = new _world.default({
   console.log('light added.');
   application.lightContainer[0].outerCutoff = 0.5;
   application.lightContainer[0].position[2] = -16;
-  application.lightContainer[0].intensity = 5;
+  application.lightContainer[0].intensity = 6;
   application.lightContainer[0].target[2] = -20;
   application.lightContainer[0].position[1] = 9;
   application.globalAmbient[0] = 0.7;
   application.globalAmbient[1] = 0.7;
   application.globalAmbient[2] = 0.7;
+  application.activateBloomEffect();
+  application.bloomPass.setIntensity(5);
+  application.bloomPass.setKnee(25);
+  application.bloomPass.setBlurRadius(1300);
   const diceTexturePath = './res/meshes/jamb/dice.png';
 
   // Dom operations
@@ -1404,14 +1408,8 @@ let application = exports.application = new _world.default({
     points: 0
   };
   application.myDom = _jamb.myDom;
-  _jamb.myDom.createJamb();
-  _jamb.myDom.addDraggerForTable();
-  _jamb.myDom.createBlocker();
   application.dices = _jamb.dices;
   application.activateDiceClickListener = null;
-
-  // -------------------------
-  // TEST
   application.matrixAmmo.detectTopFaceFromQuat = q => {
     // Define based on *visual face* → object-space normal mapping
     const faces = [{
@@ -1566,9 +1564,11 @@ let application = exports.application = new _world.default({
       application.dices.pickDice(e.detail.hitObject.name);
     }
   });
-  addEventListener('mousemove', e => {
-    // console.log('only on click')
-  });
+
+  // addEventListener('mousemove', (e) => {
+  //   // console.log('only on click')
+
+  // })
 
   // Sounds
   application.matrixSounds.createAudio('start', 'res/audios/start.mp3', 1);
@@ -1578,6 +1578,9 @@ let application = exports.application = new _world.default({
   application.matrixSounds.createAudio('hover', 'res/audios/feel.mp3', 3);
   application.matrixSounds.createAudio('roll', 'res/audios/dice-roll.mp3', 2);
   addEventListener('AmmoReady', () => {
+    _jamb.myDom.createJamb();
+    _jamb.myDom.addDraggerForTable();
+    _jamb.myDom.createBlocker();
     app.matrixAmmo.speedUpSimulation = 2;
     (0, _loaderObj.downloadMeshes)({
       cube: "./res/meshes/jamb/dice.obj"
@@ -1783,7 +1786,7 @@ let application = exports.application = new _world.default({
       }
     });
   }
-  function onLoadObj(m) {
+  function onLoadObj(m, originScale) {
     application.myLoadedMeshes = m;
     // Add dices
     application.addMeshObj({
@@ -1811,6 +1814,7 @@ let application = exports.application = new _world.default({
         radius: 2
       },
       physics: {
+        scale: originScale,
         enabled: true,
         geometry: "Cube"
       }
@@ -1840,6 +1844,7 @@ let application = exports.application = new _world.default({
         radius: 2
       },
       physics: {
+        scale: originScale,
         enabled: true,
         geometry: "Cube"
       }
@@ -1869,6 +1874,7 @@ let application = exports.application = new _world.default({
         radius: 2
       },
       physics: {
+        scale: originScale,
         enabled: true,
         geometry: "Cube"
       }
@@ -1898,6 +1904,7 @@ let application = exports.application = new _world.default({
         radius: 2
       },
       physics: {
+        scale: originScale,
         enabled: true,
         geometry: "Cube"
       }
@@ -1927,6 +1934,7 @@ let application = exports.application = new _world.default({
         radius: 2
       },
       physics: {
+        scale: originScale,
         enabled: true,
         geometry: "Cube"
       }
@@ -1956,6 +1964,7 @@ let application = exports.application = new _world.default({
         radius: 2
       },
       physics: {
+        scale: originScale,
         enabled: true,
         geometry: "Cube"
       }
@@ -25247,12 +25256,13 @@ class SpotLight {
   outerCutoff;
   spotlightUniformBuffer;
   constructor(camera, inputHandler, device, indexx, position = _wgpuMatrix.vec3.create(0, 10, -20), target = _wgpuMatrix.vec3.create(0, 0, -20), fov = 45, aspect = 1.0, near = 0.1, far = 200) {
+    aspect = 1; //hot fix
     this.name = "light" + indexx;
     this.getName = () => {
       return "light" + indexx;
     };
     this.fov = fov;
-    this.aspect = aspect;
+    this.aspect = 1;
     this.near = near;
     this.far = far;
     this.camera = camera;
@@ -25445,6 +25455,9 @@ class SpotLight {
       depthStencil: {
         depthWriteEnabled: true,
         depthCompare: 'less',
+        depthBias: 2,
+        // Constant bias (try 1-4)
+        depthBiasSlopeScale: 2.0,
         format: 'depth32float'
       },
       primitive: this.primitive
@@ -25803,11 +25816,11 @@ var downloadMeshes = function (nameAndURLs, completionCallback, inputArg) {
   // a new object is created. this will be passed into the completionCallback
   if (typeof inputArg === 'undefined') {
     var inputArg = {
-      scale: [0.1, 0.1, 0.1],
+      scale: [1, 1, 1],
       swap: [null]
     };
   }
-  if (typeof inputArg.scale === 'undefined') inputArg.scale = [0.1, 0.1, 0.1];
+  if (typeof inputArg.scale === 'undefined') inputArg.scale = [1, 1, 1];
   if (typeof inputArg.swap === 'undefined') inputArg.swap = [null];
   var meshes = {};
 
@@ -25833,7 +25846,7 @@ var downloadMeshes = function (nameAndURLs, completionCallback, inputArg) {
             }
             // there haven't been any errors in retrieving the meshes
             // call the callback
-            completionCallback(meshes);
+            completionCallback(meshes, inputArg.scale);
           }
         };
       }(mesh_name));
@@ -42737,13 +42750,14 @@ class MatrixEngineWGPU {
       this.editor.editorHud.updateSceneContainer();
     }
   };
-  run(callback) {
+  async run(callback) {
+    // await this.device.queue.onSubmittedWorkDone();
     setTimeout(() => {
       requestAnimationFrame(this.frame);
-    }, 500);
+    }, 1000);
     setTimeout(() => {
       callback(this);
-    }, 20);
+    }, 1);
   }
   destroyProgram = () => {
     console.warn('%c[MatrixEngineWGPU] Destroy program', 'color: orange');

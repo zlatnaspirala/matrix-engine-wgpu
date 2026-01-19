@@ -266,11 +266,11 @@ export var downloadMeshes = function (nameAndURLs, completionCallback, inputArg)
   // a new object is created. this will be passed into the completionCallback
   if (typeof inputArg === 'undefined') {
     var inputArg = {
-      scale: [0.1,0.1,0.1],
+      scale: [1,1,1],
       swap: [null]
      };
   }
-  if (typeof inputArg.scale === 'undefined') inputArg.scale = [0.1,0.1,0.1];
+  if (typeof inputArg.scale === 'undefined') inputArg.scale = [1,1,1];
   if (typeof inputArg.swap === 'undefined') inputArg.swap = [null];
 
   var meshes = {};
@@ -299,7 +299,7 @@ export var downloadMeshes = function (nameAndURLs, completionCallback, inputArg)
               }
               // there haven't been any errors in retrieving the meshes
               // call the callback
-              completionCallback(meshes);
+              completionCallback(meshes, inputArg.scale );
             }
           };
         })(mesh_name)
